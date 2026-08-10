@@ -1585,8 +1585,8 @@ class ReferralService
                     ->where('referral_profiles.referrer_user_id', $referrerUserId)
                     ->orWhere(function (Builder $nested) use ($referrerUserId) {
                         $nested
-                        ->whereNull('referral_profiles.referrer_user_id')
-                        ->where('users.referrer_user_id', $referrerUserId);
+                            ->whereNull('referral_profiles.referrer_user_id')
+                            ->where('users.referrer_user_id', $referrerUserId);
                     });
             });
     }
