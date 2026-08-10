@@ -1,0 +1,93 @@
+@use '../variables.scss' as vars;
+
+@forward 'element-plus/theme-chalk/src/common/var.scss' with (
+  $colors: (
+    'primary': (
+      'base': vars.$color-primary,
+    ),
+    'success': (
+      'base': vars.$color-success,
+    ),
+    'warning': (
+      'base': vars.$color-warning,
+    ),
+    'danger': (
+      'base': vars.$color-danger,
+    ),
+    'error': (
+      'base': vars.$color-danger,
+    ),
+    'info': (
+      'base': vars.$color-info,
+    ),
+  ),
+  $text-color: (
+    'primary': vars.$text-color-primary,
+    'regular': vars.$text-color-secondary,
+    'secondary': vars.$text-color-secondary,
+    'placeholder': vars.$text-color-placeholder,
+    'disabled': vars.$text-color-disabled,
+  ),
+  $border-color: (
+    '': vars.$border-color,
+    'light': vars.$divider-color,
+    'lighter': vars.$divider-color,
+    'extra-light': vars.$bg-color-soft,
+    'dark': vars.$border-color-strong,
+    'darker': vars.$border-color-strong,
+  ),
+  $fill-color: (
+    '': vars.$bg-color-soft,
+    'light': vars.$bg-color-soft,
+    'lighter': vars.$bg-color-hover,
+    'extra-light': vars.$bg-color-soft,
+    'dark': vars.$bg-color-stripe,
+    'darker': vars.$border-color,
+    'blank': vars.$bg-color-card,
+  ),
+  $bg-color: (
+    '': vars.$bg-color-card,
+    'page': vars.$bg-color,
+    'overlay': vars.$bg-color-card,
+  ),
+  $border-radius: (
+    'base': vars.$sm-border-radius,
+    'small': vars.$sm-border-radius,
+    'round': 999px,
+    'circle': 100%,
+  ),
+  $box-shadow: (
+    '': (
+      vars.$shadow-md,
+    ),
+    'light': (
+      vars.$shadow-sm,
+    ),
+    'lighter': (
+      vars.$shadow-sm,
+    ),
+    'dark': (
+      vars.$shadow-lg,
+    ),
+  ),
+  $font-family: (
+    '': vars.$font-family-main,
+  ),
+  $font-size: (
+    'extra-large': vars.$font-size-h1,
+    'large': 18px,
+    'medium': vars.$font-size-lg,
+    'base': vars.$font-size-base,
+    'small': 13px,
+    'extra-small': vars.$font-size-sm,
+  ),
+  $common-component-size: (
+    'large': 40px,
+    'default': 40px,
+    'small': 32px,
+  ),
+  $mask-color: (
+    '': rgba(15, 23, 42, 0.14),
+    'extra-light': rgba(15, 23, 42, 0.08),
+  )
+);

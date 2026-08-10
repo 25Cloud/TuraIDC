@@ -1,0 +1,22 @@
+
+   InvalidArgumentException 
+
+  Unexpected end of input
+
+  at vendor\psy\psysh\src\Shell.php:1325
+    1321▕ 
+    1322▕         if (!$this->hasValidCode()) {
+    1323▕             $this->popCodeStack();
+    1324▕ 
+  ➜ 1325▕             throw new \InvalidArgumentException('Unexpected end of input');
+    1326▕         }
+    1327▕     }
+    1328▕ 
+    1329▕     /**
+
+  1   vendor\psy\psysh\src\Shell.php:1865
+      Psy\Shell::setCode("$service=App\Models\Service::findOrFail(89);$x=app(App\Services\ClientServiceConsole\ServiceSecurityGroupService::class)->getSecurityGroupsForUser($service->user,89);$items=array_map(function($g){return array(")
+
+  2   vendor\laravel\tinker\src\Console\TinkerCommand.php:77
+      Psy\Shell::execute("$service=App\Models\Service::findOrFail(89);$x=app(App\Services\ClientServiceConsole\ServiceSecurityGroupService::class)->getSecurityGroupsForUser($service->user,89);$items=array_map(function($g){return array(")
+

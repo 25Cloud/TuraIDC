@@ -1,0 +1,86 @@
+.finance-new-customers-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.report-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.report-head h1 {
+  margin: 4px 0 6px;
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-7, 22px);
+  line-height: 1.35;
+}
+
+.report-head p {
+  margin: 0;
+  color: var(--td-text-color-secondary);
+  line-height: 1.7;
+}
+
+.report-kicker {
+  color: var(--td-brand-color);
+  font-size: var(--td-font-size-size-2, 13px);
+  font-weight: 600;
+}
+
+.report-filter {
+  display: grid;
+  grid-template-columns: 170px 170px auto;
+  gap: 12px;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.report-filter > * {
+  min-width: 0;
+}
+
+.report-filter .t-button {
+  min-width: 72px;
+}
+
+@media (max-width: 768px) {
+  .report-head {
+    flex-direction: column;
+  }
+
+  .report-head .t-button {
+    width: 100%;
+  }
+
+  .report-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .report-filter > * {
+    min-width: 0;
+  }
+
+  .report-filter :where(.t-input, .t-select, .t-date-picker, .t-button) {
+    width: 100%;
+  }
+
+  .report-filter :where(.t-input, .t-select, .t-date-picker) {
+    height: 38px;
+  }
+
+  .report-filter .filter-month {
+    grid-column: 1 / -1;
+    height: 34px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 360px) {
+  .report-filter {
+    grid-template-columns: 1fr;
+  }
+}

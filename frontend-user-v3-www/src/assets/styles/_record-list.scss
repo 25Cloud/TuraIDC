@@ -1,0 +1,135 @@
+@use 'variables' as *;
+
+// 记录列表页公共样式（账单/充值统一）
+.record-page {
+  gap: 20px;
+}
+
+.record-toolbar-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(240px, 1.3fr) 180px 180px;
+
+  &--col2 {
+    grid-template-columns: minmax(220px, 1.3fr) 180px;
+  }
+}
+
+.record-stack-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  strong {
+    color: $text-color-primary;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  span {
+    color: $text-color-secondary;
+    font-size: 12px;
+  }
+}
+
+.record-pager-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+// 移动端卡片
+.record-mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.record-mobile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid $border-color;
+  border-radius: 12px;
+  background: $bg-color-card;
+  box-shadow: $shadow-sm;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+
+  &:active {
+    transform: scale(0.99);
+    background: $bg-color-hover;
+  }
+}
+
+.record-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.record-card-no {
+  color: $text-color-placeholder;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.record-card-title {
+  color: $text-color-primary;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.record-card-sub {
+  color: $text-color-secondary;
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.record-card-amount {
+  color: $text-color-secondary;
+  font-size: 12px;
+
+  strong {
+    color: $text-color-primary;
+    font-weight: 600;
+  }
+}
+
+.record-card-time {
+  color: $text-color-placeholder;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.record-card-payable {
+  color: $text-color-placeholder;
+  font-size: 11px;
+
+  strong {
+    color: $color-accent-orange;
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 960px) {
+  .record-toolbar-grid,
+  .record-toolbar-grid--col2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .record-toolbar-grid,
+  .record-toolbar-grid--col2 {
+    grid-template-columns: 1fr;
+  }
+
+  .record-pager-wrap {
+    justify-content: flex-start;
+  }
+}

@@ -1,0 +1,117 @@
+# ---- 操作系统 ----
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# ---- IDE / 编辑器 ----
+.idea/
+.vscode/
+*.suo
+*.njsproj
+*.sln
+
+# ---- Node / 前端 ----
+node_modules/
+.pnp
+.pnp.js
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# 构建产物
+dist/
+es/
+lib/
+typings/
+coverage/
+.vite/
+
+# 测试报告
+playwright-report/
+test-results/
+test-report.html
+
+# ---- 日志 ----
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+build_output*.txt
+build-*.log
+dev-*.log
+tsc.log
+
+# ---- 环境变量（保留 .env.example）----
+**/.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.env.testing
+
+# ---- PHP / Laravel ----
+/vendor/
+backend/vendor/
+backend/composer.phar
+backend/composer-setup.php
+backend/.php-cs-fixer.cache
+backend/.phpunit.result.cache
+backend/.phpunit.cache/
+backend/phpstan.neon
+backend/taskkill
+
+# Laravel 运行时文件
+backend/storage/*.key
+backend/storage/logs/
+backend/storage/framework/cache/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/storage/framework/testing/
+backend/storage/audit*.log
+backend/storage/pint-baseline.log
+backend/storage/test-*.log
+backend/public/uploads/
+backend/public/storage/
+backend/public/.well-known/
+
+# 本地数据备份（勿提交真实数据）
+backend/storage/app/private/
+backend/storage/app/backups/
+backend/storage/app/*-backfills/
+backend/storage/app/*-reconciliations/
+backend/storage/app/trace-id-backfills/
+backend/storage/framework/schema-*.sql
+backend/.env.bak*
+
+# 历史归档（含旧迁移与遗留数据导入，勿发布）
+backend/database/_archive/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- 其他临时文件 ----
+*.sql.dump
+*.sql.bak
+*.pen
+*.zip
+*.tar.gz
+frontend-user-v4-console/*.png
+
+# ---- 本地工具 ----
+/tools/
+php.bat

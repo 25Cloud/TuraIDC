@@ -1,0 +1,87 @@
+.admin-staff-page {
+  .staff-card {
+    border-radius: var(--td-radius-large, 8px);
+  }
+
+  .staff-filter {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.3fr) minmax(160px, 0.8fr) minmax(140px, 0.7fr) repeat(3, auto);
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .staff-summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    color: var(--td-text-color-secondary);
+    font-size: var(--td-font-size-size-2, 13px);
+  }
+
+  .staff-account,
+  .staff-login {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+
+    strong,
+    span,
+    em {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    span,
+    em {
+      color: var(--td-text-color-secondary);
+      font-style: normal;
+      font-size: var(--td-font-size-size-1, 12px);
+    }
+  }
+
+  .staff-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 16px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .admin-staff-page {
+    .staff-filter {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        "keyword keyword"
+        "role status"
+        "create create";
+
+      > :nth-child(1) {
+        grid-area: keyword;
+      }
+
+      > :nth-child(2) {
+        grid-area: role;
+      }
+
+      > :nth-child(3) {
+        grid-area: status;
+      }
+
+      > :nth-child(4) {
+        grid-area: create;
+      }
+    }
+
+    .staff-summary {
+      flex-direction: column;
+    }
+
+    .staff-form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}

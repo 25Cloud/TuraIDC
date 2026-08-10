@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="format-detection" content="telephone=no,email=no,address=no" />
+  <meta name="theme-color" content="#165dff" />
+  <meta name="description" content="二五云 — 稳定、安全、高性价比的云服务器与 IDC 服务平台，覆盖香港、美国与国内多地节点，提供云服务器、独立服务器、云电脑与工单支持。" />
+  <meta name="keywords" content="云服务器,独立服务器,高防服务器,云电脑,香港服务器,美国服务器,BGP 多线,IDC 服务,二五云" />
+  <meta name="author" content="二五云" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="二五云 - 稳定、安全、高性价比的云服务器与 IDC 服务平台" />
+  <meta property="og:description" content="二五云提供云服务器、独立服务器、云电脑与 IDC 服务，覆盖香港、美国与国内多地节点。" />
+  <meta property="og:url" content="https://www.example.com" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="https://www.example.com/" />
+  <title>二五云 - 稳定、安全、高性价比的云服务器与 IDC 服务平台</title>
+  <link rel="icon" type="image/svg+xml" href="/branding/logo1.svg" fetchpriority="high" />
+  <link rel="alternate" hreflang="zh-CN" href="/" />
+  <link rel="prefetch" href="%VITE_API_BASE_URL%/v2/site/config" as="fetch" crossorigin="anonymous" />
+  
+  <!-- 关键第三方域名预连接，减少 DNS + TLS 握手开销 -->
+  <link rel="preconnect" href="//api.geetest.com" crossorigin />
+  <link rel="dns-prefetch" href="//static.geetest.com" />
+  <link rel="dns-prefetch" href="//gcaptcha4.geetest.com" />
+  <link rel="dns-prefetch" href="//qr.alipay.com" />
+  <link rel="dns-prefetch" href="//mclient.alipay.com" />
+</head>
+<body>
+  <div id="app">
+    <!-- 初始加载动画：JS 解析完成前展示，Vue 挂载后自动替换 -->
+    <div id="app-splash" aria-label="页面加载中">
+      <style>
+        #app-splash {
+          position: fixed;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 28px;
+          background: linear-gradient(168deg, #f8fafc 0%, #f0f4ff 100%);
+          z-index: 9999;
+          opacity: 1;
+          transition: opacity 0.3s ease-out;
+        }
+        #app-splash.fade-out {
+          opacity: 0;
+          pointer-events: none;
+        }
+        #app-splash .splash-logo {
+          width: 48px;
+          height: 48px;
+          animation: splash-breathe 2s ease-in-out infinite;
+        }
+        #app-splash .splash-bar-track {
+          width: 180px;
+          height: 3px;
+          border-radius: 999px;
+          background: rgba(22, 93, 255, 0.1);
+          overflow: hidden;
+        }
+        #app-splash .splash-bar-fill {
+          width: 40%;
+          height: 100%;
+          border-radius: 999px;
+          background: linear-gradient(90deg, #165dff, #4d8eff);
+          animation: splash-slide 1.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        }
+        @keyframes splash-breathe {
+          0%, 100% { transform: scale(1); opacity: 0.92; }
+          50% { transform: scale(1.04); opacity: 1; }
+        }
+        @keyframes splash-slide {
+          0% { transform: translateX(-120%); }
+          100% { transform: translateX(350%); }
+        }
+      </style>
+      <img class="splash-logo" src="/branding/logo1.svg" alt="二五云" width="48" height="48" />
+      <div class="splash-bar-track"><div class="splash-bar-fill"></div></div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

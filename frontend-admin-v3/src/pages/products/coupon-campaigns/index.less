@@ -1,0 +1,257 @@
+.coupon-campaigns-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.campaigns-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.campaigns-head h1 {
+  margin: 4px 0 6px;
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-7, 22px);
+  line-height: 1.35;
+}
+
+.campaigns-head p {
+  margin: 0;
+  color: var(--td-text-color-secondary);
+  line-height: 1.7;
+}
+
+.campaigns-kicker {
+  color: var(--td-brand-color);
+  font-size: var(--td-font-size-size-2, 13px);
+  font-weight: 600;
+}
+
+.campaigns-filter {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) 160px auto;
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+
+.campaigns-filter > * {
+  min-width: 0;
+}
+
+.campaigns-filter .t-button {
+  min-width: 88px;
+  width: 100%;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.campaign-main,
+.campaign-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.campaign-main strong,
+.campaign-meta strong {
+  color: var(--td-text-color-primary);
+  font-weight: 600;
+}
+
+.campaign-main span,
+.campaign-meta span {
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-2, 13px);
+  line-height: 1.5;
+}
+
+.campaign-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta-highlight {
+  color: var(--td-warning-color) !important;
+}
+
+.campaign-mobile-list {
+  display: none;
+}
+
+.campaign-mobile-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pagination-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.campaign-edit-drawer .t-drawer__body {
+  padding: 0;
+  background: var(--td-bg-color-page);
+}
+
+.campaign-drawer-shell {
+  position: relative;
+  min-height: calc(100vh - 56px);
+  padding: 18px 22px 76px;
+  background: var(--td-bg-color-page);
+}
+
+.campaign-drawer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.campaign-drawer-section {
+  position: relative;
+  border: 1px solid var(--td-component-border);
+  border-radius: var(--td-radius-default, 4px);
+  padding: 50px 18px 16px;
+  background: var(--td-bg-color-container);
+  box-shadow: 0 4px 12px rgb(6 75 179 / 4%);
+}
+
+.campaign-drawer-section::before {
+  content: attr(data-title);
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  height: 38px;
+  border-radius: var(--td-radius-default, 4px) 4px 0 0;
+  padding: 0 18px;
+  background: #eef2fd;
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-2, 13px);
+  font-weight: 600;
+}
+
+.campaign-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 16px;
+}
+
+.form-span-2 {
+  grid-column: 1 / -1;
+}
+
+.campaign-switch-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  color: var(--td-text-color-secondary);
+}
+
+.campaign-drawer-footer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid var(--td-component-border);
+  padding: 14px 22px;
+  background: var(--td-bg-color-container);
+  box-shadow: 0 -4px 16px rgb(6 75 179 / 6%);
+}
+
+@media (max-width: 1024px) {
+  .campaigns-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .campaigns-head {
+    flex-direction: column;
+  }
+
+  .campaigns-actions,
+  .campaigns-actions .t-button {
+    width: 100%;
+  }
+
+  .campaigns-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "keyword keyword"
+      "status status"
+      "create create";
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .campaigns-filter > * {
+    min-width: 0;
+  }
+
+  .campaigns-filter > :nth-child(1) {
+    grid-area: keyword;
+  }
+
+  .campaigns-filter > :nth-child(2) {
+    grid-area: status;
+  }
+
+  .campaigns-filter > :nth-child(3) {
+    grid-area: create;
+  }
+
+  .campaigns-filter .t-button {
+    width: 100%;
+  }
+
+  .coupon-campaigns-page .table-scroll {
+    display: none;
+  }
+
+  .campaign-mobile-list {
+    display: block;
+  }
+
+  .campaign-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .campaign-edit-drawer {
+    width: 100vw !important;
+  }
+
+  .campaign-drawer-shell {
+    padding: 14px 14px 76px;
+  }
+
+  .pagination-row {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 360px) {
+  .campaigns-filter {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "keyword"
+      "status"
+      "create";
+  }
+}

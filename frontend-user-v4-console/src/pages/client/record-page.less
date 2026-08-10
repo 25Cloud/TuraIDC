@@ -1,0 +1,311 @@
+.record-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--td-comp-margin-m);
+  // padding 由 Starter 布局层统一提供
+}
+
+.record-card {
+  background: var(--td-bg-color-container);
+  border: thin solid var(--td-border-color);
+  border-radius: var(--td-radius-medium);
+  box-shadow: var(--td-shadow-1);
+}
+
+.record-toolbar {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1.4fr) minmax(10rem, 0.7fr) minmax(10rem, 0.7fr) auto;
+  gap: var(--td-comp-margin-s);
+  align-items: center;
+}
+
+.stack-cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--td-comp-margin-xxs);
+  min-width: 0;
+
+  strong,
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: var(--td-text-color-primary);
+    font: var(--td-font-body-medium);
+    font-weight: 600;
+  }
+
+  span {
+    color: var(--td-text-color-secondary);
+    font: var(--td-font-body-small);
+  }
+}
+
+.record-pagination {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.record-mobile-list {
+  display: none;
+}
+
+.record-mobile-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--td-comp-margin-s);
+  padding: 0.875rem 0.875rem 0.75rem;
+  overflow: hidden;
+  color: var(--td-text-color-primary);
+  background: var(--td-bg-color-container);
+  border: 0.0625rem solid var(--td-border-color);
+  border-radius: var(--td-radius-medium);
+  box-shadow: var(--td-shadow-1);
+}
+
+.record-mobile-card__head,
+.record-mobile-card__meta {
+  display: flex;
+  gap: var(--td-comp-margin-s);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.record-mobile-card__head {
+  padding-bottom: 0.625rem;
+  border-bottom: 0.0625rem solid #edf1f6;
+}
+
+.record-mobile-card__head strong {
+  color: var(--td-text-color-primary);
+  font: var(--td-font-body-medium);
+  font-weight: 600;
+}
+
+.record-mobile-card__meta {
+  color: var(--td-text-color-secondary);
+  font: var(--td-font-body-small);
+}
+
+.record-mobile-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--td-comp-margin-s);
+  justify-content: flex-end;
+}
+
+.record-detail-body {
+  display: grid;
+  gap: var(--td-comp-margin-m);
+}
+
+.record-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--td-comp-margin-s);
+  justify-content: flex-end;
+}
+
+.record-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--td-comp-margin-s);
+
+  h4 {
+    position: relative;
+    margin: 0;
+    padding-left: 0.625rem;
+    color: var(--td-text-color-primary);
+    font: var(--td-font-title-small);
+
+    &::before {
+      position: absolute;
+      top: 0.25rem;
+      bottom: 0.25rem;
+      left: 0;
+      width: 0.1875rem;
+      background: var(--td-brand-color);
+      border-radius: 0.125rem;
+      content: '';
+    }
+  }
+}
+
+.record-kv-grid,
+.record-line-list {
+  overflow: hidden;
+  background: var(--td-bg-color-component);
+  border: thin solid var(--td-border-color);
+  border-radius: var(--td-radius-medium);
+}
+
+.record-kv-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.0625rem;
+}
+
+.record-kv-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.record-kv-item,
+.record-line-item,
+.record-payment-item {
+  background: var(--td-bg-color-container);
+}
+
+.record-kv-item {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--td-comp-margin-xxs);
+  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-m);
+}
+
+.record-kv-item span,
+.record-line-item span,
+.record-payment-item span {
+  color: var(--td-text-color-secondary);
+  font: var(--td-font-body-small);
+}
+
+.record-kv-item strong,
+.record-line-item strong,
+.record-payment-item strong {
+  color: var(--td-text-color-primary);
+  font: var(--td-font-body-medium);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.record-kv-item--span-2 {
+  grid-column: 1 / -1;
+}
+
+.record-inline-action {
+  display: flex;
+  gap: var(--td-comp-margin-s);
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+
+  strong {
+    min-width: 0;
+  }
+}
+
+.record-line-list,
+.record-payment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+}
+
+.record-line-item {
+  display: flex;
+  gap: var(--td-comp-margin-s);
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-m);
+}
+
+.record-payment-list {
+  gap: var(--td-comp-margin-s);
+}
+
+.record-payment-item {
+  overflow: hidden;
+  border: thin solid var(--td-border-color);
+  border-radius: var(--td-radius-medium);
+}
+
+.record-payment-item__head {
+  display: flex;
+  gap: var(--td-comp-margin-s);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-m);
+  border-bottom: thin solid var(--td-border-color);
+
+  > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: var(--td-comp-margin-xxs);
+  }
+}
+
+@media (max-width: 67.5rem) {
+  .record-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width: @screen-sm-rem) {
+  .record-page {
+    padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-l);
+  }
+
+  .record-card :deep(.t-card__body) {
+    padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-l);
+  }
+
+  .record-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--td-comp-margin-s);
+
+    > :first-child {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .record-pagination {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .record-table {
+    display: none;
+  }
+
+  .record-mobile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .record-mobile-card__head,
+  .record-mobile-card__meta,
+  .record-mobile-card__actions {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--td-comp-margin-xs);
+  }
+
+  .record-mobile-card__actions :deep(.t-button) {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .record-detail-actions {
+    justify-content: flex-start;
+  }
+
+  .record-kv-grid--two {
+    grid-template-columns: 1fr;
+  }
+
+  .record-inline-action,
+  .record-line-item,
+  .record-payment-item__head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

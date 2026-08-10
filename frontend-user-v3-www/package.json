@@ -1,0 +1,34 @@
+{
+  "name": "chuangouyun-user-v3-www",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --mode production && node ./scripts/generate-sitemap.mjs && node ./scripts/prerender-www.mjs",
+    "build:type": "vue-tsc --noEmit -p tsconfig.json",
+    "preview": "vite preview",
+    "lint": "eslint src scripts --ext .js,.ts,.vue",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "check:source-health": "node ./scripts/check-source-health.mjs",
+    "verify:refactor": "node ./scripts/verify-refactor.mjs"
+  },
+  "dependencies": {
+    "@ewyfinance/shared": "file:../shared",
+    "@element-plus/icons-vue": "^2.3.0",
+    "axios": "^1.18.1",
+    "dayjs": "^1.11.21",
+    "element-plus": "^2.9.0",
+    "markdown-it": "^14.3.0",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.18",
+    "vue-router": "^4.6.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.0",
+    "sass": "^1.80.0",
+    "unplugin-auto-import": "^0.18.0",
+    "unplugin-vue-components": "^0.27.0",
+    "vite": "^6.2.2"
+  }
+}

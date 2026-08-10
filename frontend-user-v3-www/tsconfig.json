@@ -1,0 +1,29 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "ignoreDeprecations": "5.0",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@shared/*": [
+        "../shared/*"
+      ],
+      "@ewyfinance/shared": [
+        "../shared/index.ts"
+      ]
+    },
+    "types": [
+      "node",
+      "vite/client"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js",
+    "src/**/*.vue",
+    "scripts/**/*.mjs",
+    "env.d.ts"
+  ]
+}

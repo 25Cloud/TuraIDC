@@ -1,0 +1,218 @@
+.member-levels-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.member-levels-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.member-levels-head h1 {
+  margin: 4px 0 6px;
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-7, 22px);
+  line-height: 1.35;
+}
+
+.member-levels-head p {
+  margin: 0;
+  color: var(--td-text-color-secondary);
+  line-height: 1.7;
+}
+
+.member-levels-kicker {
+  color: var(--td-brand-color);
+  font-size: var(--td-font-size-size-2, 13px);
+  font-weight: 600;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.stack-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stack-cell strong {
+  overflow: hidden;
+  color: var(--td-text-color-primary);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stack-cell span {
+  overflow: hidden;
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-1, 12px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.member-form-span {
+  grid-column: span 2;
+}
+
+.member-form-grid .t-input-number {
+  width: 100%;
+}
+
+.mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.member-mobile-card {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--td-component-border);
+  border-radius: var(--td-radius-default, 4px);
+  background: var(--td-bg-color-container);
+}
+
+.member-mobile-card__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  border-bottom: 1px solid var(--td-component-border);
+  padding: 9px 10px;
+}
+
+.member-mobile-card__head > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.member-mobile-card__head strong {
+  overflow: hidden;
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-3, 14px);
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-mobile-card__head .t-tag {
+  flex: 0 0 auto;
+}
+
+.member-mobile-card__more {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  color: var(--td-text-color-placeholder);
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.member-mobile-card dl {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin: 0;
+  padding: 7px 10px 8px;
+}
+
+.member-mobile-card dl div:first-child {
+  grid-column: auto;
+}
+
+.member-mobile-card dl div {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  min-width: 0;
+  padding: 3px 0;
+}
+
+.member-mobile-card dt {
+  color: var(--td-text-color-placeholder);
+  font-size: var(--td-font-size-size-1, 12px);
+  line-height: 20px;
+}
+
+.member-mobile-card dd {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  max-width: 100%;
+  min-height: 20px;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-2, 13px);
+  font-weight: 600;
+  line-height: 20px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-mobile-card dd .t-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 44px;
+  padding-right: 8px;
+  padding-left: 8px;
+}
+
+@media (max-width: 1024px) {
+  .member-levels-head {
+    flex-direction: column;
+  }
+
+  .member-levels-head .t-space,
+  .member-levels-head .t-button {
+    width: 100%;
+  }
+
+  .member-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .member-form-span {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .mobile-list {
+    gap: 10px;
+  }
+
+  .member-mobile-card__head {
+    padding-right: 9px;
+    padding-left: 9px;
+  }
+
+  .member-mobile-card dl {
+    padding-right: 9px;
+    padding-left: 9px;
+  }
+}

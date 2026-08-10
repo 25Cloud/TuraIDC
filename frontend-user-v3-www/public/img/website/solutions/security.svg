@@ -1,0 +1,43 @@
+<svg width="1600" height="980" viewBox="0 0 1600 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="160" y1="74" x2="1450" y2="924" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAF6F5"/>
+      <stop offset="1" stop-color="#F8FCFC"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="822" y1="246" x2="1220" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D5A57"/>
+      <stop offset="1" stop-color="#0F2F35"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="180" y1="230" x2="740" y2="730" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#113740"/>
+      <stop offset="1" stop-color="#1E6971"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="980" rx="44" fill="url(#bg)"/>
+  <circle cx="1262" cy="150" r="148" fill="#DDF6F1"/>
+  <circle cx="274" cy="144" r="86" fill="#F4FBFA"/>
+  <path d="M100 898C314 760 588 690 862 708C1116 724 1320 782 1502 888" stroke="#D8ECE8" stroke-width="2"/>
+  <g>
+    <rect x="176" y="222" width="564" height="360" rx="38" fill="url(#panel)"/>
+    <rect x="216" y="258" width="180" height="22" rx="11" fill="#68B9B2"/>
+    <rect x="216" y="306" width="434" height="16" rx="8" fill="#81CFC8" opacity="0.74"/>
+    <rect x="216" y="342" width="364" height="16" rx="8" fill="#81CFC8" opacity="0.54"/>
+    <rect x="216" y="392" width="480" height="132" rx="28" fill="#F5FBFA"/>
+    <path d="M266 434H502" stroke="#D2EDE8" stroke-width="18" stroke-linecap="round"/>
+    <path d="M266 478H450" stroke="#ABD7D0" stroke-width="18" stroke-linecap="round"/>
+    <circle cx="620" cy="458" r="46" fill="#0F766E"/>
+    <path d="M600 458L614 472L642 442" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g>
+    <path d="M1032 248L1200 314V484C1200 606 1124 712 1032 760C940 712 864 606 864 484V314L1032 248Z" fill="url(#shield)"/>
+    <path d="M1032 346C1084 346 1126 388 1126 440V486H1152C1165 486 1176 497 1176 510V612C1176 625 1165 636 1152 636H912C899 636 888 625 888 612V510C888 497 899 486 912 486H938V440C938 388 980 346 1032 346ZM1032 398C1009 398 990 417 990 440V486H1074V440C1074 417 1055 398 1032 398Z" fill="#E5FBF7"/>
+  </g>
+  <g opacity="0.94">
+    <rect x="1194" y="362" width="220" height="138" rx="26" fill="#FFFFFF"/>
+    <rect x="1224" y="402" width="100" height="22" rx="11" fill="#CDEEE8"/>
+    <rect x="1224" y="444" width="148" height="18" rx="9" fill="#EAF8F5"/>
+    <circle cx="1342" cy="420" r="28" fill="#0F766E"/>
+    <path d="M1330 420H1354" stroke="white" stroke-width="8" stroke-linecap="round"/>
+    <path d="M1342 408V432" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  </g>
+</svg>
