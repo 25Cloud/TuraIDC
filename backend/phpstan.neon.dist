@@ -12,9 +12,9 @@ parameters:
 
     excludePaths:
         - bootstrap/cache
-        - storage
+        - storage (?)
         - vendor
-        - tests
+        - tests (?)
         - scripts
         - config
         - database/migrations
