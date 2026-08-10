@@ -30,6 +30,7 @@ jobs:
       run:
         working-directory: backend
     env:
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
       DB_CONNECTION: mysql
       DB_HOST: 127.0.0.1
       DB_PORT: 3306
@@ -60,6 +61,9 @@ jobs:
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Generate APP key
+        run: echo "APP_KEY=base64:$(openssl rand -base64 32)" >> $GITHUB_ENV
 
       - name: Check code style (Pint)
         run: composer format:check
