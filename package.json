@@ -5,13 +5,13 @@
   "license": "Apache-2.0",
   "version": "1.0.0",
   "author": "EwyFinance Contributors",
-  "homepage": "https://github.com/Wu-jiyan/EwyFinance",
+  "homepage": "https://github.com/25Cloud/EwyFinance",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Wu-jiyan/EwyFinance.git"
+    "url": "https://github.com/25Cloud/EwyFinance.git"
   },
   "bugs": {
-    "url": "https://github.com/Wu-jiyan/EwyFinance/issues"
+    "url": "https://github.com/25Cloud/EwyFinance/issues"
   },
   "engines": {
     "node": ">=20.19.0"
