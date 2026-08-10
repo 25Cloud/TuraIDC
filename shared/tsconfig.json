@@ -1,0 +1,19 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@shared/*": [
+        "./*"
+      ]
+    },
+    "noEmit": true
+  },
+  "include": [
+    "./**/*.ts",
+    "./**/*.d.ts",
+    "./**/*.vue"
+  ],
+  "exclude": [
+    "./**/*.js"
+  ]
+}

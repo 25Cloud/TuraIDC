@@ -1,0 +1,29 @@
+{
+  "name": "@ewyfinance/shared",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./status": "./status/index.ts",
+    "./runtime": "./runtime/index.ts",
+    "./content": "./content/index.ts",
+    "./components/StatusTag.vue": "./components/StatusTag.vue",
+    "./statusConfig": "./statusConfig.js",
+    "./extraStatusMaps": "./extraStatusMaps.js",
+    "./htmlSanitizer": "./htmlSanitizer.js"
+  },
+  "types": "./index.d.ts",
+  "dependencies": {
+    "axios": "^1.18.1",
+    "markdown-it": "^14.3.0",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2"
+  },
+  "scripts": {
+    "lint": "eslint . --ext .js,.ts,.vue",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

@@ -1,0 +1,346 @@
+.integration-plugins-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.plugins-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.plugins-toolbar .t-tabs {
+  min-width: 0;
+  flex: 1;
+}
+
+.plugins-state {
+  display: flex;
+  min-height: 220px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--td-radius-default, 4px);
+  background: var(--td-bg-color-container);
+}
+
+.plugin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.plugin-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid var(--td-component-border);
+  border-radius: var(--td-radius-default, 4px);
+  background: var(--td-bg-color-container);
+  padding: 16px;
+}
+
+.plugin-card__main {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.plugin-card__icon {
+  display: flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--td-radius-default, 4px);
+  background: var(--td-brand-color-light);
+  color: var(--td-brand-color);
+  font-weight: 700;
+}
+
+.plugin-card__body {
+  min-width: 0;
+}
+
+.plugin-card__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.plugin-card__title strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-4, 16px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-card__body p,
+.plugin-meta,
+.plugin-detail dt {
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-1, 12px);
+}
+
+.plugin-card__body p {
+  margin: 6px 0 0;
+}
+
+.plugin-meta,
+.plugin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.plugin-observability {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.plugin-actions {
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
+.plugin-detail {
+  margin-bottom: 18px;
+  border: 1px solid var(--td-component-border);
+  border-radius: var(--td-radius-default, 4px);
+  padding: 12px;
+}
+
+.plugin-detail dl {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin: 0;
+}
+
+.plugin-detail dl div {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.plugin-detail dt,
+.plugin-detail dd {
+  margin: 0;
+}
+
+.plugin-detail dd {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--td-text-color-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-config-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+  padding-bottom: 16px;
+}
+
+.plugin-config-form > .t-form__item,
+.plugin-config-form > .t-divider,
+.plugin-config-form > .plugin-config-notice {
+  grid-column: 1 / -1;
+}
+
+.plugin-config-form > .plugin-config-form__item--half {
+  grid-column: auto;
+}
+
+.plugin-config-form .t-input-number {
+  width: 100%;
+}
+
+.plugin-config-notice {
+  margin-bottom: 18px;
+}
+
+.plugin-field-description {
+  margin: 6px 0 0;
+  color: var(--td-text-color-placeholder);
+  font-size: var(--td-font-size-size-1, 12px);
+  line-height: 20px;
+}
+
+.plugin-secret-hint {
+  margin: 6px 0 0;
+  color: var(--td-text-color-placeholder);
+  font-size: var(--td-font-size-size-1, 12px);
+  line-height: 20px;
+}
+
+.plugin-secret-toggle {
+  display: inline-flex;
+  align-items: center;
+  color: var(--td-text-color-secondary);
+  cursor: pointer;
+}
+
+.plugin-secret-toggle:hover {
+  color: var(--td-brand-color);
+}
+
+.plugin-secret-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.plugin-secret-preview__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 4px 12px;
+  border: 1px solid var(--td-component-border);
+  border-radius: var(--td-radius-default, 4px);
+  background: var(--td-bg-color-secondarycontainer);
+  padding: 8px 10px;
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-1, 12px);
+  line-height: 20px;
+}
+
+.plugin-secret-preview__item strong {
+  overflow: hidden;
+  color: var(--td-text-color-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-secret-preview__item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.smtp-account-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.smtp-account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.smtp-account-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--td-component-border);
+  border-radius: var(--td-radius-default, 4px);
+  background: var(--td-bg-color-container);
+  padding: 10px 8px 10px 12px;
+}
+
+.smtp-account-item__main {
+  min-width: 0;
+}
+
+.smtp-account-item__title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.smtp-account-item__title strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--td-text-color-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.smtp-account-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 6px;
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-1, 12px);
+}
+
+.smtp-account-item__meta span {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.smtp-account-add {
+  align-self: flex-start;
+  min-width: 96px;
+}
+
+.smtp-account-form {
+  padding-top: 4px;
+}
+
+@media (max-width: 768px) {
+  .plugin-config-form {
+    grid-template-columns: 1fr;
+  }
+
+  .plugin-config-form > .plugin-config-form__item--half {
+    grid-column: 1 / -1;
+  }
+
+  .plugins-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .plugins-toolbar .t-space,
+  .plugins-toolbar .t-button {
+    width: 100%;
+  }
+
+  .plugin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plugin-actions {
+    justify-content: flex-start;
+  }
+}
+
+.plugin-test-section {
+  margin-top: 4px;
+}
+
+.plugin-test-section__header {
+  margin-bottom: 12px;
+
+  strong {
+    display: block;
+    color: var(--td-text-color-primary);
+    font-size: var(--td-font-size-m);
+  }
+}
+
+.plugin-test-section__hint {
+  display: block;
+  margin-top: 4px;
+  color: var(--td-text-color-placeholder);
+  font-size: var(--td-font-size-size-1, 12px);
+}

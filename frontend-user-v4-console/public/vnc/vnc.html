@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>VNC 控制台</title>
+  <style>
+    :root {
+      --bar-bg: rgb(110, 132, 163);
+      --bar-dark: rgb(83, 99, 122);
+      --bar-darker: rgb(60, 75, 95);
+      --container-bg: #313131;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: var(--container-bg);
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+
+    /* ---- 主容器 ---- */
+    #noVNC_container {
+      width: 100%;
+      height: 100%;
+      background: var(--container-bg);
+      position: relative;
+    }
+
+    /* ---- 状态条（顶部滑入） ---- */
+    #noVNC_status {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 100;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #fff;
+      transform: translateY(-100%);
+      transition: transform 0.4s ease, opacity 0.4s ease;
+      opacity: 0;
+      cursor: pointer;
+    }
+    #noVNC_status.open {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    #noVNC_status.normal  { background: rgba(92, 92, 92, 0.92); }
+    #noVNC_status.error   { background: rgba(200, 55, 55, 0.92); }
+    #noVNC_status.warn    { background: rgba(160, 140, 20, 0.92); }
+
+    /* ---- 控制栏锚点（左侧垂直居中） ---- */
+    #noVNC_control_bar_anchor {
+      position: fixed;
+      z-index: 10;
+      top: 0;
+      left: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    /* ---- 控制栏主体 ---- */
+    #noVNC_control_bar {
+      position: relative;
+      left: -100%;
+      transition: left 0.4s ease, box-shadow 0.4s ease;
+      background: var(--bar-bg);
+      border-radius: 0 12px 12px 0;
+      padding: 10px 8px;
+      pointer-events: auto;
+      user-select: none;
+    }
+    #noVNC_control_bar.open {
+      left: 0;
+      box-shadow: 6px 6px 0 rgba(0,0,0,0.5);
+    }
+
+    /* ---- 拉手 ---- */
+    #noVNC_control_bar_handle {
+      position: absolute;
+      right: -28px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 52px;
+      background: var(--bar-dark);
+      border-radius: 0 6px 6px 0;
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #noVNC_control_bar_handle::after {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 10px;
+      border-left: 2px solid #fff;
+      border-right: 2px solid #fff;
+      transition: transform 0.4s ease;
+    }
+    #noVNC_control_bar.open #noVNC_control_bar_handle::after {
+      transform: scaleX(-1);
+    }
+
+    /* ---- 控制栏内容 ---- */
+    .noVNC_scroll {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* logo */
+    .noVNC_logo {
+      font-size: 13px;
+      font-weight: bold;
+      color: #ff0;
+      text-shadow: 0.1em 0.1em 0 #000;
+      line-height: 0.9;
+      text-align: center;
+      padding: 4px 0;
+    }
+    .noVNC_logo span { color: #080; }
+
+    .noVNC_scroll hr {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      width: 100%;
+      margin: 4px 0;
+    }
+
+    /* 图标按钮 */
+    .noVNC_button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      cursor: pointer;
+      color: #fff;
+      font-size: 16px;
+      transition: background 0.15s;
+      padding: 0;
+    }
+    .noVNC_button:hover  { background: rgba(255,255,255,0.15); }
+    .noVNC_button:active { background: rgba(0,0,0,0.3); }
+    .noVNC_button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .noVNC_button svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* ---- 面板（弹出） ---- */
+    .panel_wrap {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .noVNC_panel {
+      pointer-events: auto;
+      transform: translateX(60px);
+      transition: transform 0.4s ease, opacity 0.4s ease, visibility 0.4s;
+      visibility: hidden;
+      opacity: 0;
+      background: #fff;
+      color: #111;
+      border-radius: 12px;
+      border: 2px solid #ddd;
+      box-shadow: 6px 6px 0 rgba(0,0,0,0.5);
+      padding: 16px;
+      min-width: 220px;
+      max-width: calc(100vw - 120px);
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .noVNC_panel.open {
+      transform: translateX(70px);
+      visibility: visible;
+      opacity: 1;
+    }
+    .panel_heading {
+      background: var(--bar-bg);
+      color: #fff;
+      font-size: 15px;
+      font-weight: bold;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-bottom: 12px;
+    }
+    .noVNC_panel textarea {
+      width: 300px;
+      height: 140px;
+      resize: both;
+      font-family: monospace;
+      font-size: 13px;
+    }
+
+    /* ---- 过渡遮罩（连接中） ---- */
+    #noVNC_transition {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(0,0,0,0.55);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.3em;
+      gap: 20px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.4s, visibility 0.4s;
+    }
+    #noVNC_transition.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    .noVNC_spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---- 错误遮罩 ---- */
+    #noVNC_error {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.4s, visibility 0.4s;
+    }
+    #noVNC_error.show { opacity: 1; visibility: visible; }
+    #noVNC_error_box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px 32px;
+      max-width: 460px;
+      text-align: center;
+      box-shadow: 6px 6px 0 rgba(0,0,0,0.4);
+    }
+    #noVNC_error_icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #dc2626;
+      color: #fff;
+      font-size: 28px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 14px;
+    }
+    #noVNC_error_title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    #noVNC_error_message { font-size: 13px; color: #555; line-height: 1.7; margin-bottom: 16px; word-break: break-word; }
+    #noVNC_error button {
+      padding: 7px 22px;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      background: #f1f5f9;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    #noVNC_error button:hover { background: #e2e8f0; }
+
+    @media (max-width: 767px) {
+      #noVNC_status {
+        padding: 8px 10px;
+        font-size: 13px;
+      }
+
+      #noVNC_control_bar {
+        padding: 8px 6px;
+        border-radius: 0 10px 10px 0;
+      }
+
+      #noVNC_control_bar_handle {
+        right: -22px;
+        width: 22px;
+        height: 46px;
+      }
+
+      .noVNC_button {
+        width: 34px;
+        height: 34px;
+      }
+
+      .noVNC_button svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .noVNC_panel {
+        min-width: 0;
+        width: calc(100vw - 74px);
+        max-width: calc(100vw - 74px);
+        padding: 12px;
+      }
+
+      .noVNC_panel.open {
+        transform: translateX(58px);
+      }
+
+      .noVNC_panel textarea {
+        width: 100%;
+        min-height: 120px;
+      }
+
+      #noVNC_error_box {
+        width: calc(100vw - 32px);
+        padding: 24px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 主画面 -->
+<div id="noVNC_container"></div>
+
+<!-- 顶部状态条 -->
+<div id="noVNC_status" title="点击关闭"></div>
+
+<!-- 控制栏锚点 -->
+<div id="noVNC_control_bar_anchor">
+  <div id="noVNC_control_bar">
+    <div id="noVNC_control_bar_handle"></div>
+    <div class="noVNC_scroll">
+
+      <!-- Logo -->
+      <div class="noVNC_logo"><span>no</span><br>VNC</div>
+      <hr>
+
+      <!-- Ctrl+Alt+Del -->
+      <button class="noVNC_button" id="btn_cad" title="发送 Ctrl+Alt+Del" disabled>
+        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="5" height="12" rx="1"/><rect x="9" y="6" width="5" height="12" rx="1"/><rect x="16" y="6" width="6" height="12" rx="1"/></svg>
+      </button>
+
+      <!-- 剪贴板 -->
+      <button class="noVNC_button" id="btn_clipboard" title="剪贴板">
+        <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M7 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h4"/></svg>
+      </button>
+
+      <!-- 全屏 -->
+      <button class="noVNC_button" id="btn_fullscreen" title="全屏">
+        <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+      </button>
+
+      <hr>
+
+      <!-- 断开 -->
+      <button class="noVNC_button" id="btn_disconnect" title="断开连接" disabled>
+        <svg viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<!-- 剪贴板面板 -->
+<div class="panel_wrap" id="wrap_clipboard">
+  <div class="noVNC_panel" id="panel_clipboard">
+    <div class="panel_heading">剪贴板</div>
+    <textarea id="clipboard_text" placeholder="在此编辑剪贴板内容..."></textarea>
+  </div>
+</div>
+
+<!-- 连接中遮罩 -->
+<div id="noVNC_transition">
+  <div class="noVNC_spinner"></div>
+  <div id="noVNC_transition_text">正在连接远程桌面...</div>
+</div>
+
+<!-- 错误遮罩 -->
+<div id="noVNC_error">
+  <div id="noVNC_error_box">
+    <div id="noVNC_error_icon">✕</div>
+    <div id="noVNC_error_title">VNC 连接失败</div>
+    <div id="noVNC_error_message">未知错误</div>
+    <button id="btn_retry">重新尝试</button>
+  </div>
+</div>
+
+<script type="module">
+  import RFB from './core/rfb.js'
+
+  // ---- DOM ----
+  const container      = document.getElementById('noVNC_container')
+  const statusEl       = document.getElementById('noVNC_status')
+  const transEl        = document.getElementById('noVNC_transition')
+  const transText      = document.getElementById('noVNC_transition_text')
+  const errorEl        = document.getElementById('noVNC_error')
+  const errorMsgEl     = document.getElementById('noVNC_error_message')
+  const controlBar     = document.getElementById('noVNC_control_bar')
+  const barHandle      = document.getElementById('noVNC_control_bar_handle')
+  const btnCad         = document.getElementById('btn_cad')
+  const btnClipboard   = document.getElementById('btn_clipboard')
+  const btnFullscreen  = document.getElementById('btn_fullscreen')
+  const btnDisconnect  = document.getElementById('btn_disconnect')
+  const btnRetry       = document.getElementById('btn_retry')
+  const panelClipboard = document.getElementById('panel_clipboard')
+  const clipboardText  = document.getElementById('clipboard_text')
+
+  let rfb = null
+  let statusTimer = null
+
+  // ---- 状态条 ----
+  function showStatus(text, type = 'normal', autohide = 3000) {
+    clearTimeout(statusTimer)
+    statusEl.textContent = text
+    statusEl.className = `open ${type}`
+    if (autohide > 0) {
+      statusTimer = setTimeout(() => statusEl.classList.remove('open'), autohide)
+    }
+  }
+  statusEl.addEventListener('click', () => statusEl.classList.remove('open'))
+
+  // ---- 控制栏开关 ----
+  barHandle.addEventListener('click', () => controlBar.classList.toggle('open'))
+
+  // ---- 面板开关（点击外部关闭） ----
+  function togglePanel(panel) {
+    const isOpen = panel.classList.contains('open')
+    document.querySelectorAll('.noVNC_panel').forEach(p => p.classList.remove('open'))
+    if (!isOpen) panel.classList.add('open')
+  }
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.noVNC_panel') && !e.target.closest('.noVNC_button')) {
+      document.querySelectorAll('.noVNC_panel').forEach(p => p.classList.remove('open'))
+    }
+  })
+
+  btnClipboard.addEventListener('click', (e) => { e.stopPropagation(); togglePanel(panelClipboard) })
+
+  // ---- 全屏 ----
+  btnFullscreen.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.()
+    } else {
+      document.exitFullscreen?.()
+    }
+  })
+
+  // ---- Ctrl+Alt+Del ----
+  btnCad.addEventListener('click', () => rfb?.sendCtrlAltDel())
+
+  // ---- 断开 ----
+  btnDisconnect.addEventListener('click', () => rfb?.disconnect())
+
+  // ---- 重试 ----
+  btnRetry.addEventListener('click', connectVnc)
+
+  // ---- 剪贴板同步 ----
+  clipboardText.addEventListener('change', () => {
+    if (rfb) rfb.clipboardPasteFrom(clipboardText.value)
+  })
+
+  // ---- 错误/成功状态 ----
+  function setConnected(yes) {
+    btnCad.disabled = !yes
+    btnDisconnect.disabled = !yes
+  }
+
+  function showError(msg) {
+    transEl.classList.remove('show')
+    errorMsgEl.textContent = msg || '未知错误'
+    errorEl.classList.add('show')
+    setConnected(false)
+  }
+
+  function hideError() {
+    errorEl.classList.remove('show')
+  }
+
+  // ---- URL 参数工具 ----
+  function q(name, def = '') {
+    return new URLSearchParams(location.search).get(name) || def
+  }
+
+  function readStorageValue(storage, key) {
+    try {
+      return storage?.getItem?.(key) || ''
+    } catch {
+      return ''
+    }
+  }
+
+  function readCookieValue(name) {
+    try {
+      const prefix = `${encodeURIComponent(name)}=`
+      const segments = document.cookie ? document.cookie.split('; ') : []
+      for (const segment of segments) {
+        if (segment.startsWith(prefix)) {
+          return decodeURIComponent(segment.slice(prefix.length))
+        }
+      }
+    } catch {}
+
+    return ''
+  }
+
+  // 读取 storage 前的属性访问本身就可能因跨域 iframe 限制抛出 SecurityError，
+  // 因此统一在 getter 外层包裹 try/catch，任何异常都静默跳过当前候选。
+  function safeResolveStorage(getter) {
+    try {
+      return getter()
+    } catch {
+      return null
+    }
+  }
+
+  function getAuthToken() {
+    return String(readCookieValue('client_token') || '').trim()
+  }
+
+  function buildRequestHeaders(extraHeaders = {}) {
+    const token = getAuthToken()
+    return {
+      Accept: 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...extraHeaders,
+    }
+  }
+
+  // 跨域 iframe 场景下 location.origin 指向 noVNC 宿主，相对路径无法命中业务后端，
+  // 因此允许宿主通过 URL 参数 api_base 显式指定业务 API 的绝对基址。
+  function resolveApiUrl(path) {
+    const rawPath = String(path || '')
+    if (/^https?:\/\//i.test(rawPath)) return rawPath
+
+    const apiBase = String(q('api_base', '') || '').trim().replace(/\/+$/, '')
+    if (!/^https?:\/\//i.test(apiBase)) {
+      throw new Error('VNC API 基址缺失或无效')
+    }
+    return new URL(rawPath, `${apiBase}/`).toString()
+  }
+
+  function isCrossOriginRequest(resolvedUrl) {
+    if (!/^https?:\/\//i.test(resolvedUrl)) return false
+    try {
+      return new URL(resolvedUrl).origin !== location.origin
+    } catch {
+      return false
+    }
+  }
+
+  async function readJson(url, options = {}, fallbackMessage = '请求失败') {
+    const resolvedUrl = resolveApiUrl(url)
+    const res = await fetch(resolvedUrl, {
+      // 跨域请求默认不带凭证，避免 CORS 预检失败；同域保留 include 以兼容 Cookie Session
+      credentials: isCrossOriginRequest(resolvedUrl) ? 'omit' : 'include',
+      headers: buildRequestHeaders(options.headers || {}),
+      ...options,
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok || json.code !== 0) {
+      throw new Error(json.message || fallbackMessage)
+    }
+    return json.data || {}
+  }
+
+  function buildRelayUrl(p) {
+    const token = String(p.token || '').trim()
+    const relayPath = String(p.relay_path || '').trim()
+    if (!token || !relayPath) return ''
+
+    // relay_path 属于 API 站点；不能按 noVNC 页面所在 console 域名解析。
+    const apiBase = String(q('api_base', '') || '').trim().replace(/\/+$/, '')
+    if (!/^https?:\/\//i.test(apiBase)) return ''
+
+    const relayUrl = new URL(relayPath, `${apiBase}/`)
+    if (relayUrl.protocol === 'https:') {
+      relayUrl.protocol = 'wss:'
+    } else if (relayUrl.protocol === 'http:') {
+      relayUrl.protocol = 'ws:'
+    }
+    relayUrl.searchParams.set('token', token)
+    return relayUrl.toString()
+  }
+
+  function buildWsUrl(p) {
+    const relayUrl = buildRelayUrl(p)
+    if (relayUrl) return relayUrl
+    return ''
+  }
+
+  function buildInitialCredentials(params) {
+    const creds = {}
+    const username = String(params?.username || '').trim()
+    const target = String(params?.target || '').trim()
+    const password = String(params?.password ?? '').trim()
+    const hasPasswordParam = Object.prototype.hasOwnProperty.call(params || {}, 'password')
+
+    if (username) {
+      creds.username = username
+    }
+
+    if (target) {
+      creds.target = target
+    }
+
+    if (password || hasPasswordParam) {
+      creds.password = password
+      return creds
+    }
+
+    // 用户侧 VNC 按免输入密码处理；公开 token 响应不下发真实密码，
+    // 未取到本地临时凭据时只提交空密码，避免浏览器弹窗向用户索要 VNC 密码。
+    creds.password = ''
+
+    return creds
+  }
+
+  const VNC_CREDENTIAL_STORAGE_PREFIX = 'EwyFinance:vnc-credentials:'
+
+  function normalizeVncCredentialsPayload(payload) {
+    if (!payload || typeof payload !== 'object') return null
+
+    const credentials = {}
+    const username = String(payload.username || '').trim()
+    const target = String(payload.target || '').trim()
+    const password = String(payload.password || '').trim()
+
+    if (username) credentials.username = username
+    if (target) credentials.target = target
+    if (password) credentials.password = password
+
+    return Object.keys(credentials).length > 0 ? credentials : null
+  }
+
+  function mergeVncCredentials(params, credentials) {
+    const normalized = normalizeVncCredentialsPayload(credentials)
+    if (!normalized) return params
+
+    return { ...params, ...normalized }
+  }
+
+  function readAndForgetStoredVncCredentials(token) {
+    const key = `${VNC_CREDENTIAL_STORAGE_PREFIX}${String(token || '').trim()}`
+    if (key === VNC_CREDENTIAL_STORAGE_PREFIX) return null
+
+    const candidates = [
+      () => window.sessionStorage,
+      () => (window.parent && window.parent !== window ? window.parent.sessionStorage : null),
+      () => (window.opener ? window.opener.sessionStorage : null),
+    ]
+
+    for (const getStorage of candidates) {
+      const storage = safeResolveStorage(getStorage)
+      const raw = readStorageValue(storage, key)
+      if (!raw) continue
+
+      try { storage?.removeItem?.(key) } catch {}
+
+      try {
+        const parsed = JSON.parse(raw)
+        const credentials = normalizeVncCredentialsPayload(parsed)
+        if (credentials) return credentials
+      } catch {}
+    }
+
+    return null
+  }
+
+  function withStoredVncCredentials(publicToken, params, fallbackCredentials = null) {
+    return mergeVncCredentials(params, fallbackCredentials || readAndForgetStoredVncCredentials(publicToken))
+  }
+
+  async function renewParamsByServiceId(serviceId) {
+    const id = Number(serviceId || 0)
+    if (!Number.isFinite(id) || id <= 0) {
+      throw new Error('服务编号无效，无法重新获取 VNC 连接')
+    }
+
+    const data = await readJson(`/api/v2/client/services/${id}/vnc`, {}, '重新获取 VNC 连接失败')
+    const freshUrl = String(data.url || '').trim()
+    if (!freshUrl) {
+      throw new Error('未获取到新的 VNC 链接')
+    }
+    const freshCredentials = normalizeVncCredentialsPayload(data.vnc_credentials)
+
+    const freshLocation = new URL(freshUrl, location.origin)
+    freshLocation.searchParams.set('service_id', String(id))
+    // 如果后端未回填 api_base，则继承当前页面的 api_base，避免 renew 后跨域请求失效
+    const currentApiBase = q('api_base', '')
+    if (currentApiBase && !freshLocation.searchParams.get('api_base')) {
+      freshLocation.searchParams.set('api_base', currentApiBase)
+    }
+    history.replaceState(null, '', freshLocation.toString())
+
+    const freshToken = freshLocation.searchParams.get('token')
+    const freshRelayPath = freshLocation.searchParams.get('relay_path')
+    if (freshToken) {
+      const relaySession = await readJson(`/api/v2/client/vnc-tokens/${encodeURIComponent(freshToken)}`, {}, '新的 VNC 链接已失效')
+      return withStoredVncCredentials(freshToken, {
+        token: freshToken,
+        ...relaySession,
+        relay_path: freshRelayPath || relaySession.relay_path || '',
+      }, freshCredentials)
+    }
+
+    return mergeVncCredentials({
+      host: freshLocation.searchParams.get('host') || '',
+      port: freshLocation.searchParams.get('port') || '',
+      password: freshLocation.searchParams.get('password') || '',
+      path: freshLocation.searchParams.get('path') || 'websockify',
+      encrypt: freshLocation.searchParams.get('encrypt') || (location.protocol === 'https:' ? '1' : '0'),
+      username: freshLocation.searchParams.get('username') || '',
+      target: freshLocation.searchParams.get('target') || '',
+    }, freshCredentials)
+  }
+
+  async function resolveParams() {
+    const token = q('token')
+    const relayPath = q('relay_path')
+    const serviceId = q('service_id') || q('sid')
+    if (token) {
+      try {
+        const relaySession = await readJson(`/api/v2/client/vnc-tokens/${encodeURIComponent(token)}`, {}, 'VNC 链接已失效，请重新获取')
+        return withStoredVncCredentials(token, {
+          token,
+          ...relaySession,
+          relay_path: relayPath || relaySession.relay_path || '',
+        })
+      } catch (error) {
+        if (serviceId) {
+          return await renewParamsByServiceId(serviceId)
+        }
+        throw error
+      }
+    }
+
+    if (serviceId && !q('host') && !q('port')) {
+      return await renewParamsByServiceId(serviceId)
+    }
+
+    return {
+      host: q('host', location.hostname),
+      port: q('port', location.port),
+      path: q('path', 'websockify'),
+      encrypt: q('encrypt', location.protocol === 'https:' ? '1' : '0'),
+      username: q('username'),
+      target: q('target'),
+      password: q('password') || q('pass'),
+    }
+  }
+
+  // ---- 主连接逻辑 ----
+  async function connectVnc() {
+    if (rfb) { try { rfb.disconnect() } catch (_) {} rfb = null }
+    hideError()
+    setConnected(false)
+    transText.textContent = '正在连接远程桌面...'
+    transEl.classList.add('show')
+
+    try {
+      const params = await resolveParams()
+      const url = buildWsUrl(params)
+      if (!url) throw new Error('VNC 连接参数无效')
+
+      const creds = buildInitialCredentials(params)
+
+      rfb = new RFB(container, url, { credentials: creds })
+      rfb.scaleViewport = true
+      // 部分上游 VNC 服务不支持 noVNC 的远程分辨率协商，开启后会持续警告 Invalid screen layout。
+      // 保留本地缩放即可，避免向服务端发送 resize 请求。
+      rfb.resizeSession = false
+      rfb.background    = '#313131'
+
+      rfb.addEventListener('connect', () => {
+        transEl.classList.remove('show')
+        setConnected(true)
+        showStatus('已连接', 'normal', 3000)
+        controlBar.classList.remove('open')
+        window.dispatchEvent(new Event('resize'))
+      })
+
+      rfb.addEventListener('disconnect', (e) => {
+        setConnected(false)
+        if (e.detail?.clean) {
+          showStatus('已断开连接', 'normal', 4000)
+        } else {
+          showError('VNC 连接已中断，请重新尝试\n\n目标地址：' + url)
+        }
+      })
+
+      rfb.addEventListener('desktopname', (e) => {
+        const name = String(e.detail?.name || '')
+        if (name) showStatus(`已连接：${name}`, 'normal', 4000)
+      })
+
+      rfb.addEventListener('clipboard', (e) => {
+        clipboardText.value = e.detail?.text || ''
+      })
+
+      rfb.addEventListener('credentialsrequired', async () => {
+        if (creds.password !== undefined) {
+          rfb.sendCredentials(creds)
+          return
+        }
+
+        showError('VNC 免密认证参数缺失，请刷新连接后重试')
+      })
+
+    } catch (err) {
+      const detail = err?.message || 'VNC 连接失败'
+      showError(detail)
+      console.error('[VNC] connectVnc 失败:', detail, err)
+    }
+  }
+
+  window.addEventListener('beforeunload', () => { try { rfb?.disconnect() } catch (_) {} })
+
+  connectVnc()
+</script>
+</body>
+</html>

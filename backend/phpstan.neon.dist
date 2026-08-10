@@ -1,0 +1,26 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+
+    paths:
+        - app
+
+    # The level 9 is the highest level
+    level: 5
+
+    excludePaths:
+        - bootstrap/cache
+        - storage
+        - vendor
+        - tests
+        - scripts
+        - config
+        - database/migrations
+
+    checkModelProperties: true
+
+    ignoreErrors:
+        # Add specific ignores here if needed
+        # - '#some regex pattern#'

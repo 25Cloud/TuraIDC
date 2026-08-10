@@ -1,0 +1,66 @@
+// 字号工具类与字号梯度 token，统一全站字号。
+// 说明：当前 TDesign 版本未内置 --td-font-size-size-* CSS 变量，
+// 这里集中定义一套自定义字号梯度变量，业务代码统一通过
+// var(--td-font-size-size-N, <px>) 引用，fallback 保证 token 缺失时不变。
+:root {
+  --td-font-size-size-1: 12px;
+  --td-font-size-size-2: 13px;
+  --td-font-size-size-3: 14px;
+  --td-font-size-size-4: 16px;
+  --td-font-size-size-5: 18px;
+  --td-font-size-size-6: 20px;
+  --td-font-size-size-7: 22px;
+}
+
+// 字号工具类，优先使用 var(--td-font-size-size-*)。
+.t-text-xs {
+  font-size: var(--td-font-size-size-1, 12px);
+  line-height: 20px;
+}
+
+.t-text-sm {
+  font-size: var(--td-font-size-size-2, 13px);
+  line-height: 20px;
+}
+
+.t-text-base {
+  font-size: var(--td-font-size-size-3, 14px);
+  line-height: 22px;
+}
+
+.t-text-lg {
+  font-size: var(--td-font-size-size-4, 16px);
+  line-height: 24px;
+}
+
+.t-text-xl {
+  font-size: var(--td-font-size-size-5, 18px);
+  line-height: 26px;
+}
+
+.t-text-2xl {
+  font-size: var(--td-font-size-size-6, 20px);
+  line-height: 28px;
+}
+
+.t-text-3xl {
+  font-size: var(--td-font-size-size-7, 22px);
+  line-height: 30px;
+}
+
+// 数字/金额强调
+.t-num-strong {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+// 响应式字号（随视口平滑缩放）
+.t-text-responsive-title {
+  font-size: clamp(16px, 2vw, 20px);
+  line-height: 1.4;
+}
+
+.t-text-responsive-body {
+  font-size: clamp(12px, 1.5vw, 14px);
+  line-height: 1.5;
+}

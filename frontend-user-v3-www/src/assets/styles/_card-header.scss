@@ -1,0 +1,51 @@
+// Card header pattern shared across Profile components
+@use 'variables' as *;
+
+@mixin card-header-base {
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 28px 32px;
+    border-bottom: 1px solid $border-color;
+    background: linear-gradient(to right, #fff 0%, $bg-color-soft 100%);
+  }
+
+  .card-header__meta {
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(22, 93, 255, 0.08);
+    color: $color-primary;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: $text-color-primary;
+    }
+  }
+
+  .title-bar {
+    width: 4px;
+    height: 20px;
+    background: $color-primary;
+    border-radius: 2px;
+  }
+
+  .header-desc {
+    margin: 8px 0 0 14px;
+    font-size: 13px;
+    color: $text-color-secondary;
+    line-height: 1.7;
+  }
+}

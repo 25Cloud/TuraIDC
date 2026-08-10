@@ -1,0 +1,42 @@
+<svg width="1600" height="980" viewBox="0 0 1600 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="110" y1="66" x2="1440" y2="916" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E4F4FF"/>
+      <stop offset="1" stop-color="#F9FCFF"/>
+    </linearGradient>
+    <linearGradient id="globe" x1="274" y1="248" x2="760" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#25B0F8"/>
+      <stop offset="1" stop-color="#116DCA"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="980" rx="44" fill="url(#bg)"/>
+  <circle cx="1280" cy="164" r="144" fill="#E2F5FF"/>
+  <path d="M74 896C316 748 594 694 884 710C1136 724 1328 782 1514 892" stroke="#D8ECFA" stroke-width="2"/>
+  <g>
+    <circle cx="498" cy="502" r="220" fill="url(#globe)"/>
+    <circle cx="498" cy="502" r="174" stroke="#D8F3FF" stroke-width="12"/>
+    <path d="M278 502H718" stroke="#D8F3FF" stroke-width="12"/>
+    <path d="M498 282C552 338 582 418 582 502C582 586 552 666 498 722" stroke="#D8F3FF" stroke-width="12"/>
+    <path d="M498 282C444 338 414 418 414 502C414 586 444 666 498 722" stroke="#D8F3FF" stroke-width="12"/>
+    <path d="M322 404C372 440 432 460 498 460C564 460 624 440 674 404" stroke="#D8F3FF" stroke-width="12" stroke-linecap="round"/>
+    <path d="M322 600C372 564 432 544 498 544C564 544 624 564 674 600" stroke="#D8F3FF" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="328" cy="430" r="20" fill="#F4FBFF"/>
+    <circle cx="678" cy="582" r="20" fill="#F4FBFF"/>
+    <circle cx="548" cy="332" r="20" fill="#F4FBFF"/>
+    <path d="M328 430L548 332L678 582" stroke="#F4FBFF" stroke-width="10"/>
+  </g>
+  <g opacity="0.96">
+    <rect x="928" y="222" width="322" height="178" rx="30" fill="#FFFFFF"/>
+    <rect x="964" y="262" width="136" height="20" rx="10" fill="#D6EEFB"/>
+    <rect x="964" y="304" width="210" height="18" rx="9" fill="#EEF7FC"/>
+    <path d="M1170 324L1210 284L1230 304L1188 346" stroke="#0EA5E9" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g opacity="0.96">
+    <rect x="1020" y="482" width="286" height="188" rx="30" fill="#FFFFFF"/>
+    <rect x="1058" y="526" width="164" height="20" rx="10" fill="#D9EEF9"/>
+    <rect x="1058" y="566" width="210" height="18" rx="9" fill="#EDF7FC"/>
+    <circle cx="1234" cy="596" r="44" fill="#EAF8FF"/>
+    <path d="M1214 596H1254" stroke="#0EA5E9" stroke-width="12" stroke-linecap="round"/>
+    <path d="M1234 576V616" stroke="#0EA5E9" stroke-width="12" stroke-linecap="round"/>
+  </g>
+</svg>

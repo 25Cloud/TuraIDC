@@ -1,0 +1,129 @@
+.specs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.specs-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.specs-head h1 {
+  margin: 4px 0 6px;
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-7, 22px);
+  line-height: 1.35;
+}
+
+.specs-head p {
+  margin: 0;
+  color: var(--td-text-color-secondary);
+  line-height: 1.7;
+}
+
+.specs-kicker {
+  color: var(--td-brand-color);
+  font-size: var(--td-font-size-size-2, 13px);
+  font-weight: 600;
+}
+
+.specs-filter {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) 180px repeat(2, max-content);
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+
+.specs-filter > * {
+  min-width: 0;
+}
+
+.specs-filter .t-button {
+  min-width: 88px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.spec-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.spec-cell strong {
+  color: var(--td-text-color-primary);
+  font-weight: 600;
+}
+
+.spec-cell span,
+.muted,
+.specs-footer {
+  color: var(--td-text-color-secondary);
+}
+
+.specs-footer {
+  margin: 14px 0 0;
+  font-size: var(--td-font-size-size-2, 13px);
+}
+
+@media (max-width: 768px) {
+  .specs-head {
+    flex-direction: column;
+  }
+
+  .specs-actions,
+  .specs-actions .t-button {
+    width: 100%;
+  }
+
+  .specs-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "keyword keyword"
+      "status status"
+      "add save";
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .specs-filter > * {
+    min-width: 0;
+  }
+
+  .specs-filter > :nth-child(1) {
+    grid-area: keyword;
+  }
+
+  .specs-filter > :nth-child(2) {
+    grid-area: status;
+  }
+
+  .specs-filter > :nth-child(3) {
+    grid-area: add;
+  }
+
+  .specs-filter > :nth-child(4) {
+    grid-area: save;
+  }
+
+  .specs-filter .t-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .specs-filter {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "keyword"
+      "status"
+      "add"
+      "save";
+  }
+}

@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class TicketReply extends Model
+{
+    public $timestamps = false;
+
+    protected $fillable = ['ticket_id', 'user_id', 'content', 'is_staff', 'attachments', 'quote_reply_id', 'recalled_at', 'created_at'];
+
+    protected function casts(): array
+    {
+        return [
+            'attachments' => 'array',
+            'created_at' => 'datetime',
+            'recalled_at' => 'datetime',
+        ];
+    }
+
+    public function ticket(): BelongsTo
+    {
+        return $this->belongsTo(Ticket::class);
+    }
+}

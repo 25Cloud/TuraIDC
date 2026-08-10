@@ -1,0 +1,175 @@
+/* ── 表单通用样式（login / register / forgot-password）── */
+
+.client-auth-form {
+  width: 100%;
+}
+
+.client-auth-field {
+  width: 100%;
+}
+
+.client-auth-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--td-text-color-primary);
+  line-height: 1.5;
+
+  &.is-required::before {
+    content: '*';
+    margin-right: 0.25rem;
+    color: var(--td-error-color);
+    font-weight: 400;
+  }
+}
+
+/* 输入框下方的小提示 */
+.client-auth-tip {
+  margin: 0.375rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--td-text-color-placeholder);
+  line-height: 1.4;
+}
+
+/* 表单项间距 */
+:deep(.t-form__item) {
+  margin-bottom: 1.25rem;
+}
+
+/* 含 extra 提示的表单项需要额外间距，避免绝对定位的 extra 文字被下方元素遮挡 */
+:deep(.t-form__item.t-form__item-with-extra) {
+  padding-bottom: var(--td-line-height-body-small, 20px);
+}
+
+:deep(.t-form__controls-content) {
+  line-height: normal;
+}
+
+:deep(.t-input) {
+  width: 100%;
+  min-height: 2.875rem;
+  border-color: var(--auth-field-border);
+  border-radius: 0.5rem;
+  background: var(--auth-field-bg);
+  box-shadow: none;
+  transition:
+    border-color @anim-duration-base @anim-time-fn-easing,
+    box-shadow @anim-duration-base @anim-time-fn-easing,
+    background-color @anim-duration-base @anim-time-fn-easing;
+}
+
+:deep(.t-input:hover) {
+  border-color: var(--auth-field-hover-border);
+}
+
+:deep(.t-input.t-input--focused) {
+  border-color: var(--td-brand-color);
+  box-shadow: 0 0 0 2px var(--auth-field-focus-shadow);
+}
+
+:deep(.t-input__inner) {
+  font-size: 0.875rem;
+}
+
+:deep(.t-input__inner::placeholder) {
+  color: rgba(147, 162, 184, 0.96);
+}
+
+:deep(.t-input__prefix),
+:deep(.t-input__suffix) {
+  color: var(--auth-field-icon);
+}
+
+:deep(.t-input__prefix .t-icon),
+:deep(.t-input__suffix .t-icon) {
+  color: inherit;
+  transition: color @anim-duration-base @anim-time-fn-easing;
+}
+
+:deep(.t-input.t-input--focused .t-input__prefix),
+:deep(.t-input.t-input--focused .t-input__suffix) {
+  color: var(--td-brand-color);
+}
+
+/* ── 忘记密码等链接行 ── */
+.client-auth-form__links {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 1.375rem;
+
+  a {
+    font-size: 0.875rem;
+    color: var(--td-brand-color);
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+/* ── 验证码行（input + button） ── */
+.client-auth-code-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.client-auth-code-row .t-button {
+  min-width: 8.5rem;
+  height: 3rem;
+}
+
+/* 密码可见性图标 */
+.client-auth-password-icon {
+  cursor: pointer;
+  color: var(--auth-field-icon);
+  transition: color @anim-duration-base @anim-time-fn-easing;
+}
+
+.client-auth-password-icon:hover {
+  color: var(--td-brand-color);
+}
+
+:deep(.t-button) {
+  border-radius: 0.5rem;
+  font-weight: 500;
+}
+
+.client-auth-submit {
+  margin-top: 0.5rem;
+}
+
+:deep(.t-button--variant-base.t-button--theme-primary) {
+  height: 3rem;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0.625rem 1.25rem rgba(22, 93, 255, 0.14);
+}
+
+:deep(.t-button--variant-base.t-button--theme-primary:hover) {
+  box-shadow: 0 0.75rem 1.5rem rgba(22, 93, 255, 0.18);
+}
+
+:deep(.t-form__error) {
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* ── 响应式 ── */
+@media (max-width: @screen-sm-max) {
+  :deep(.t-form__item) {
+    margin-bottom: 1rem;
+  }
+
+  .client-auth-form__links {
+    justify-content: flex-start;
+    margin: 0 0 1.25rem;
+  }
+
+  .client-auth-submit {
+    margin-top: 0.375rem;
+  }
+}

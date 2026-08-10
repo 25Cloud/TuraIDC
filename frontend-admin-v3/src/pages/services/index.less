@@ -1,0 +1,235 @@
+.services-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.service-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.service-head h1 {
+  margin: 4px 0 6px;
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-7, 22px);
+  line-height: 1.35;
+}
+
+.service-head p {
+  margin: 0;
+  color: var(--td-text-color-secondary);
+  line-height: 1.7;
+}
+
+.service-kicker {
+  color: var(--td-brand-color);
+  font-size: var(--td-font-size-size-2, 13px);
+  font-weight: 600;
+}
+
+.service-filter {
+  display: grid;
+  grid-template-columns: 150px minmax(280px, 1fr) repeat(2, auto);
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+
+.service-filter > * {
+  min-width: 0;
+}
+
+.service-filter .t-button {
+  min-width: 88px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.service-mobile-list {
+  min-height: 120px;
+}
+
+.service-mobile-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.service-cell,
+.billing-cell,
+.hostname-service,
+.hostname-current {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.service-primary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.service-cell strong,
+.billing-cell strong,
+.hostname-service strong {
+  overflow: hidden;
+  color: var(--td-text-color-primary);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.service-cell span,
+.billing-cell span,
+.hostname-service span,
+.hostname-current span,
+.hostname-current small {
+  overflow: hidden;
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-1, 12px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.host-cell {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.host-cell span {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-1, 12px);
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.host-cell em {
+  flex-shrink: 0;
+  margin-right: 4px;
+  color: var(--td-text-color-placeholder);
+  font-style: normal;
+}
+
+.user-link {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.user-link:disabled {
+  cursor: default;
+}
+
+.user-link strong {
+  overflow: hidden;
+  color: var(--td-text-color-primary);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-link:not(:disabled):hover strong {
+  color: var(--td-brand-color);
+}
+
+.user-link span {
+  overflow: hidden;
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-1, 12px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted {
+  color: var(--td-text-color-placeholder);
+}
+
+.expiring-soon {
+  color: var(--td-warning-color);
+  font-weight: 600;
+}
+
+.pagination-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.hostname-table {
+  margin-top: 14px;
+}
+
+@media (max-width: 1024px) {
+  .service-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .service-head {
+    flex-direction: column;
+  }
+
+  .service-head .t-button {
+    width: 100%;
+  }
+
+  .service-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "keyword keyword"
+      "status status";
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .service-filter > * {
+    min-width: 0;
+  }
+
+  .service-filter > :nth-child(1) {
+    grid-area: status;
+  }
+
+  .service-filter > :nth-child(2) {
+    grid-area: keyword;
+  }
+
+  .service-filter .t-button {
+    width: 100%;
+  }
+
+  .pagination-row {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 360px) {
+  .service-filter {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "keyword"
+      "status";
+  }
+}
