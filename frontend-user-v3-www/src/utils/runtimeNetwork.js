@@ -3,4 +3,4 @@ export {
   initRuntimeConnectionHints,
   primeConnectionHints,
   waitFor,
-} from '@ewyfinance/shared/runtime'
+} from '@turaidc/shared/runtime'

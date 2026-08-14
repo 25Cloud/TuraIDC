@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: 安全漏洞报告
-    url: https://github.com/25Cloud/EwyFinance/security/advisories/new
+    url: https://github.com/25Cloud/TuraIDC/security/advisories/new
     about: 请通过 Security Advisory 私下报告安全问题，不要创建公开 Issue

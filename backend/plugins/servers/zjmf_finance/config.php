@@ -11,12 +11,12 @@ use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\Contracts\ProvidesScheduledAuthRefresh;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
-use EwyFinance\Plugins\Servers\ZjmfFinance\Lib\ZjmfInventoryAndServiceSyncHook;
-use EwyFinance\Plugins\Servers\ZjmfFinance\Lib\ZjmfInventoryAndServiceSyncTask;
-use EwyFinance\Plugins\Servers\ZjmfFinance\Lib\ZjmfScheduledAuthRefreshHook;
-use EwyFinance\Plugins\Servers\ZjmfFinance\Lib\ZjmfScheduledAuthRefreshTask;
-use EwyFinance\Plugins\Servers\ZjmfFinance\Providers\ZjmfFinanceServiceProvider;
-use EwyFinance\Plugins\Servers\ZjmfFinance\ZjmfFinancePlugin;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfInventoryAndServiceSyncHook;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfInventoryAndServiceSyncTask;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfScheduledAuthRefreshHook;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfScheduledAuthRefreshTask;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Providers\ZjmfFinanceServiceProvider;
+use TuraIDC\Plugins\Servers\ZjmfFinance\ZjmfFinancePlugin;
 
 return [
     'info' => [

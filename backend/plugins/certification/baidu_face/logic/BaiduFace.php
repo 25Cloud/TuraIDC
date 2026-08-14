@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Certification\BaiduFace\Logic;
+namespace TuraIDC\Plugins\Certification\BaiduFace\Logic;
 
 class BaiduFace
 {

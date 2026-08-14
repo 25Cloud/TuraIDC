@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use EwyFinance\Plugins\Gateways\AliPay\AliPayPlugin;
+use TuraIDC\Plugins\Gateways\AliPay\AliPayPlugin;
 
 return [
     'info' => [

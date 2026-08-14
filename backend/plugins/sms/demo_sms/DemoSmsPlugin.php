@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Sms\DemoSms;
+namespace TuraIDC\Plugins\Sms\DemoSms;
 
-use EwyFinance\Plugins\Sms\DemoSms\Lib\DemoSmsService;
+use TuraIDC\Plugins\Sms\DemoSms\Lib\DemoSmsService;
 
 class DemoSmsPlugin extends DemoSmsService {}

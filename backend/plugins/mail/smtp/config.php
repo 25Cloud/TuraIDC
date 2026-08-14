@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use EwyFinance\Plugins\Mail\Smtp\SmtpPlugin;
+use TuraIDC\Plugins\Mail\Smtp\SmtpPlugin;
 
 return [
     'info' => [
@@ -31,7 +31,7 @@ return [
         'port' => ['title' => 'SMTP 端口', 'type' => 'number', 'value' => 465, 'required' => false, 'min' => 1, 'step' => 1],
         'username' => ['title' => 'SMTP 账号', 'type' => 'text', 'value' => '', 'required' => false, 'placeholder' => 'no-reply@example.com'],
         'password' => ['title' => 'SMTP 密码', 'type' => 'password', 'value' => '', 'required' => false, 'secret' => true, 'placeholder' => '请输入 SMTP 密码'],
-        'from_name' => ['title' => '发件名称', 'type' => 'text', 'value' => 'EwyFinance', 'required' => false],
+        'from_name' => ['title' => '发件名称', 'type' => 'text', 'value' => '图拉云', 'required' => false],
         'encryption' => [
             'title' => '加密方式',
             'type' => 'select',

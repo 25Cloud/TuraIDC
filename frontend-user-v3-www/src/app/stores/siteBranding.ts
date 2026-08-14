@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { applyDocumentTitle, deriveInitials, syncDocumentTitle, updateFavicon } from '@ewyfinance/shared/runtime'
+import { applyDocumentTitle, deriveInitials, syncDocumentTitle, updateFavicon } from '@turaidc/shared/runtime'
 import siteApi from '@/api/site'
 import { DEFAULT_SUPPORT_CONTACTS } from '@/data/supportContacts'
 import { resolveApiAssetUrl } from '@/utils/apiAssetUrl'
@@ -11,7 +11,7 @@ declare global {
   }
 }
 
-const DEFAULT_SITE_NAME = import.meta.env.VITE_APP_TITLE || '二五云'
+const DEFAULT_SITE_NAME = import.meta.env.VITE_APP_TITLE || '图拉云'
 const DEFAULT_SITE_LOGO = '/branding/logo.svg'
 const DEFAULT_FAVICON = '/branding/logo1.svg'
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || '')

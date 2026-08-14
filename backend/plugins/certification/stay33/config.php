@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types=1);
-use EwyFinance\Plugins\Certification\Stay33\Stay33Plugin;
+use TuraIDC\Plugins\Certification\Stay33\Stay33Plugin;
 
 return [
     'info' => [

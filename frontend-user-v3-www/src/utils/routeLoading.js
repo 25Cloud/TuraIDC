@@ -1,1 +1,1 @@
-export { beginRouteLoading, isRouteLoading } from '@ewyfinance/shared/runtime'
+export { beginRouteLoading, isRouteLoading } from '@turaidc/shared/runtime'

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Gateways\DemoPay;
+namespace TuraIDC\Plugins\Gateways\DemoPay;
 
-use EwyFinance\Plugins\Gateways\DemoPay\Lib\DemoPayService;
+use TuraIDC\Plugins\Gateways\DemoPay\Lib\DemoPayService;
 
 class DemoPayPlugin extends DemoPayService {}

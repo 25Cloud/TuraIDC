@@ -1,4 +1,4 @@
-import { createSessionDriver, initSessionActivityTracking } from '@ewyfinance/shared/runtime'
+import { createSessionDriver, initSessionActivityTracking } from '@turaidc/shared/runtime'
 
 const driver = createSessionDriver({
   tokenKey: 'client_token',

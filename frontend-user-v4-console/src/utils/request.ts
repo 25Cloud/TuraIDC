@@ -7,7 +7,7 @@ import {
   isSafeRequest,
   isWriteRequest,
   retrySafeRequest,
-} from '@ewyfinance/shared/runtime';
+} from '@turaidc/shared/runtime';
 import type { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import axios from 'axios';
 import { MessagePlugin } from 'tdesign-vue-next';

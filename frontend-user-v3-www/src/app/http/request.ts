@@ -8,7 +8,7 @@ import {
   isSafeRequest,
   isWriteRequest,
   retrySafeRequest,
-} from '@ewyfinance/shared/runtime'
+} from '@turaidc/shared/runtime'
 import { toUserMessage } from '@/utils/userMessage'
 import { getClientToken } from '@/app/runtime/session'
 

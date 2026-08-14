@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Gateways\YiPay\Controller;
+namespace TuraIDC\Plugins\Gateways\YiPay\Controller;
 
 class IndexController
 {

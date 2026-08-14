@@ -820,7 +820,7 @@ class TicketService
 
     private function siteName(): string
     {
-        return (string) config('idc.site_name', config('app.name', '二五云'));
+        return (string) config('idc.site_name', config('app.name', '图拉云'));
     }
 
     private function clientTicketsUrl(): string

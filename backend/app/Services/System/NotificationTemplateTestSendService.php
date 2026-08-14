@@ -126,7 +126,7 @@ class NotificationTemplateTestSendService
     private function sampleValue(string $key): string
     {
         return match ($key) {
-            'site_name' => '二五云',
+            'site_name' => '图拉云',
             'site_logo' => '/branding/logo.svg',
             'display_name' => '张三',
             'username' => 'zhangsan',

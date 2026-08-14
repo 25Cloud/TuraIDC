@@ -1,4 +1,4 @@
-import { initRuntimeConnectionHints, primeConnectionHints } from '@ewyfinance/shared/runtime';
+import { initRuntimeConnectionHints, primeConnectionHints } from '@turaidc/shared/runtime';
 
 export function initClientRuntimeConnectionHints(options = {}) {
   initRuntimeConnectionHints(options);

@@ -183,10 +183,10 @@ class ServeBackendStackCommand extends Command
                 ...$phpProcessArgs,
                 $artisan,
                 'queue:work',
-                '--queue='.(string) config('queue.EwyFinance_worker_queues', 'provision,referral,notification,coupon,default'),
+                '--queue='.(string) config('queue.TuraIDC_worker_queues', 'provision,referral,notification,coupon,default'),
                 '--sleep=1',
-                '--tries='.(string) config('queue.EwyFinance_worker_tries', 3),
-                '--timeout='.(string) config('queue.EwyFinance_worker_timeout', 1200),
+                '--tries='.(string) config('queue.TuraIDC_worker_tries', 3),
+                '--timeout='.(string) config('queue.TuraIDC_worker_timeout', 1200),
             ], base_path());
         }
 

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Gateways\DemoPay\Controller;
+namespace TuraIDC\Plugins\Gateways\DemoPay\Controller;
 
-use EwyFinance\Plugins\Gateways\DemoPay\DemoPayPlugin;
+use TuraIDC\Plugins\Gateways\DemoPay\DemoPayPlugin;
 use Illuminate\Http\Response;
 
 class IndexController

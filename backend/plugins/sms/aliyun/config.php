@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types=1);
-use EwyFinance\Plugins\Sms\Aliyun\AliyunPlugin;
+use TuraIDC\Plugins\Sms\Aliyun\AliyunPlugin;
 
 return [
     'info' => [

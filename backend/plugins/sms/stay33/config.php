@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use EwyFinance\Plugins\Sms\Stay33\Stay33Plugin;
+use TuraIDC\Plugins\Sms\Stay33\Stay33Plugin;
 
 return [
     'info' => [

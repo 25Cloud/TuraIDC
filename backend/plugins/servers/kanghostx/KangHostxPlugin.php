@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Servers\KangHostx;
+namespace TuraIDC\Plugins\Servers\KangHostx;
 
-use EwyFinance\Plugins\Servers\KangHostx\Logic\KangHostx;
+use TuraIDC\Plugins\Servers\KangHostx\Logic\KangHostx;
 
 class KangHostxPlugin extends KangHostx {}

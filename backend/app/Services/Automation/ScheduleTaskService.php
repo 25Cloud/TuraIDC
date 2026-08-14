@@ -149,9 +149,9 @@ class ScheduleTaskService
     {
         $quotedPhp = $this->quoteShellArgument($phpBinary);
         $quotedArtisan = $this->quoteShellArgument($artisanPath);
-        $queueWorkerQueues = (string) config('queue.EwyFinance_worker_queues', 'provision,referral,notification,coupon,default');
-        $queueWorkerTries = (int) config('queue.EwyFinance_worker_tries', 3);
-        $queueWorkerTimeout = (int) config('queue.EwyFinance_worker_timeout', 1200);
+        $queueWorkerQueues = (string) config('queue.TuraIDC_worker_queues', 'provision,referral,notification,coupon,default');
+        $queueWorkerTries = (int) config('queue.TuraIDC_worker_tries', 3);
+        $queueWorkerTimeout = (int) config('queue.TuraIDC_worker_timeout', 1200);
 
         return [
             [

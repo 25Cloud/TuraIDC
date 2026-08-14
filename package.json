@@ -1,17 +1,17 @@
 {
-  "name": "ewyfinance-frontends-workspace",
+  "name": "turaidc-frontends-workspace",
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
   "version": "1.0.0",
-  "author": "EwyFinance Contributors",
-  "homepage": "https://github.com/25Cloud/EwyFinance",
+  "author": "TuraIDC Contributors",
+  "homepage": "https://github.com/25Cloud/TuraIDC",
   "repository": {
     "type": "git",
-    "url": "https://github.com/25Cloud/EwyFinance.git"
+    "url": "https://github.com/25Cloud/TuraIDC.git"
   },
   "bugs": {
-    "url": "https://github.com/25Cloud/EwyFinance/issues"
+    "url": "https://github.com/25Cloud/TuraIDC/issues"
   },
   "engines": {
     "node": ">=20.19.0"

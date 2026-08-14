@@ -1,12 +1,14 @@
-# 二五云IDC财务系统
+# 图拉云业务/财务系统
+
+> 新一代的IDC云服务经营系统
 
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue)
 ![PHP](https://img.shields.io/badge/PHP-%3E%3D8.2-777BB4)
 ![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20)
 ![Vue](https://img.shields.io/badge/Vue-3-4FC08D)
-![CI](https://github.com/25Cloud/EwyFinance/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/25Cloud/TuraIDC/actions/workflows/ci.yml/badge.svg)
 
-面向 IDC / 云服务商的财务与业务管理系统。覆盖商品管理、订单计费、自动开通、发票、充值、分销返佣、工单、通知等完整业务闭环，提供管理后台、官网门户与用户控制台三端前端。
+面向 IDC / 云服务商的业务与财务经营系统。覆盖商品管理、订单计费、自动开通、发票、充值、分销返佣、工单、通知等完整业务闭环，提供管理后台、官网门户与用户控制台三端前端。
 
 ## 功能特性
 
@@ -32,7 +34,7 @@
 ## 目录结构
 
 ```
-EwyFinance/
+TuraIDC/
 ├── backend/                  # Laravel 后端
 │   ├── app/                  # 业务代码（模型/服务/命令/中间件）
 │   ├── config/               # 配置（含可选集成占位）

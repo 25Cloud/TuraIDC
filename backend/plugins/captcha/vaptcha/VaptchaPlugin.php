@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Captcha\Vaptcha;
+namespace TuraIDC\Plugins\Captcha\Vaptcha;
 
-use EwyFinance\Plugins\Captcha\Vaptcha\Lib\VaptchaCaptchaService;
+use TuraIDC\Plugins\Captcha\Vaptcha\Lib\VaptchaCaptchaService;
 
 class VaptchaPlugin extends VaptchaCaptchaService {}

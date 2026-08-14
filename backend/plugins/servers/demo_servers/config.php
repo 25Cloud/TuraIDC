@@ -11,7 +11,7 @@ use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\Contracts\ProvidesScheduledAuthRefresh;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
-use EwyFinance\Plugins\Servers\DemoServers\DemoServersPlugin;
+use TuraIDC\Plugins\Servers\DemoServers\DemoServersPlugin;
 
 return [
     'info' => [

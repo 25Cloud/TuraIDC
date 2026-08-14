@@ -2,7 +2,7 @@
 
 ZJMF addons can contain `config`, `controller`, `controller/clientarea`, `lang`, `template/admin`, `template/clientarea`, `template/public`, and `validate`.
 
-EwyFinance keeps that package concept but maps execution into explicit runtime actions:
+TuraIDC keeps that package concept but maps execution into explicit runtime actions:
 
 - `addon.metadata`
 - `addon.admin.index`

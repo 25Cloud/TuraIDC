@@ -16,8 +16,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@shared/*": ["../shared/*"],
-      "@ewyfinance/shared": ["../shared/index.ts"],
-      "@ewyfinance/shared/*": ["../shared/*"]
+      "@turaidc/shared": ["../shared/index.ts"],
+      "@turaidc/shared/*": ["../shared/*"]
     },
     "noImplicitAny": true,
     "strictFunctionTypes": true,

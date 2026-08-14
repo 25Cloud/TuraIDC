@@ -9,5 +9,5 @@
 ### 开源初始化
 
 - 基于 [TDesign Vue Next Starter](https://github.com/Tencent/tdesign-vue-next-starter) 二次开发，移除模板示例代码与脚手架文档
-- 接入 `@ewyfinance/shared` 共享包（状态映射、格式化、运行时工具等）
+- 接入 `@turaidc/shared` 共享包（状态映射、格式化、运行时工具等）
 - 随仓库整体开源，采用 Apache-2.0 许可（TDesign Starter 部分保留其 MIT 许可）

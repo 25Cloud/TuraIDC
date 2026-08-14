@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Mail\MultiSmtpRoundRobin;
+namespace TuraIDC\Plugins\Mail\MultiSmtpRoundRobin;
 
-use EwyFinance\Plugins\Mail\MultiSmtpRoundRobin\Lib\MultiSmtpRoundRobinService;
+use TuraIDC\Plugins\Mail\MultiSmtpRoundRobin\Lib\MultiSmtpRoundRobinService;
 
 class MultiSmtpRoundRobinPlugin extends MultiSmtpRoundRobinService {}

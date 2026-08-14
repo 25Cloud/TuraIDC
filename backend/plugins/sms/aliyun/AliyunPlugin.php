@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Sms\Aliyun;
+namespace TuraIDC\Plugins\Sms\Aliyun;
 
-use EwyFinance\Plugins\Sms\Aliyun\Lib\AliyunSmsService;
+use TuraIDC\Plugins\Sms\Aliyun\Lib\AliyunSmsService;
 
 class AliyunPlugin extends AliyunSmsService {}

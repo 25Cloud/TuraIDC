@@ -1,9 +1,9 @@
 <?php
 
-namespace EwyFinance\Plugins\Servers\ZjmfFinance\Commands;
+namespace TuraIDC\Plugins\Servers\ZjmfFinance\Commands;
 
-use EwyFinance\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreProfile;
-use EwyFinance\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreService;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreProfile;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreService;
 use Illuminate\Console\Command;
 use Throwable;
 

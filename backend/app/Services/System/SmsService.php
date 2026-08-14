@@ -378,10 +378,10 @@ class SmsService
         $siteName = trim((string) Setting::getValue(
             'basic',
             'site_name',
-            config('idc.site_name', config('app.name', '二五云'))
+            config('idc.site_name', config('app.name', '图拉云'))
         ));
 
-        return $siteName !== '' ? $siteName : (string) config('app.name', '二五云');
+        return $siteName !== '' ? $siteName : (string) config('app.name', '图拉云');
     }
 
     /**

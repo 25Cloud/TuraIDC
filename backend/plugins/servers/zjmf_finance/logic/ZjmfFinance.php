@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Servers\ZjmfFinance\Logic;
+namespace TuraIDC\Plugins\Servers\ZjmfFinance\Logic;
 
 use App\Constants\ProductType;
 use App\Exceptions\BusinessException;
 use App\Models\Supplier;
 use App\Services\ProductCatalog\ProductCatalogService;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
-use EwyFinance\Plugins\Servers\ZjmfFinance\Lib\ZjmfFinanceDriver;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfFinanceDriver;
 
 class ZjmfFinance
 {

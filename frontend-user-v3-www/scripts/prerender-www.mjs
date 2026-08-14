@@ -12,38 +12,38 @@ const siteUrl = normalizeSiteUrl(process.env.VITE_PUBLIC_SITE_URL || DEFAULT_SIT
 const staticRoutes = [
   {
     path: '/',
-    title: '二五云 - 稳定、安全、高性价比的云服务器与 IDC 服务平台',
-    description: '二五云提供云服务器、独立服务器、云电脑与 IDC 服务，覆盖香港、美国与国内多地节点。',
+    title: '图拉云 - 稳定、安全、高性价比的云服务器与 IDC 服务平台',
+    description: '图拉云提供云服务器、独立服务器、云电脑与 IDC 服务，覆盖香港、美国与国内多地节点。',
   },
   {
     path: '/products',
-    title: '产品与服务 - 二五云',
-    description: '浏览二五云云服务器、独立服务器、云电脑与 IDC 产品方案。',
+    title: '产品与服务 - 图拉云',
+    description: '浏览图拉云云服务器、独立服务器、云电脑与 IDC 产品方案。',
   },
   {
     path: '/about',
-    title: '关于我们 - 二五云',
-    description: '了解二五云的 IDC 服务能力、节点覆盖和平台优势。',
+    title: '关于我们 - 图拉云',
+    description: '了解图拉云的 IDC 服务能力、节点覆盖和平台优势。',
   },
   {
     path: '/terms',
-    title: '服务条款 - 二五云',
-    description: '查看二五云服务条款。',
+    title: '服务条款 - 图拉云',
+    description: '查看图拉云服务条款。',
   },
   {
     path: '/privacy',
-    title: '隐私政策 - 二五云',
-    description: '查看二五云隐私政策。',
+    title: '隐私政策 - 图拉云',
+    description: '查看图拉云隐私政策。',
   },
   {
     path: '/notices',
-    title: '官方公告 - 二五云',
-    description: '查看二五云平台公告和服务通知。',
+    title: '官方公告 - 图拉云',
+    description: '查看图拉云平台公告和服务通知。',
   },
   {
     path: '/help',
-    title: '帮助中心 - 二五云',
-    description: '查看二五云产品购买、账单支付和服务管理帮助。',
+    title: '帮助中心 - 图拉云',
+    description: '查看图拉云产品购买、账单支付和服务管理帮助。',
   },
 ]
 

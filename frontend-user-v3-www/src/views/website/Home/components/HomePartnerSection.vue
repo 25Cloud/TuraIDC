@@ -1,7 +1,7 @@
 <template>
   <section class="partner-section">
     <div class="container partner-section__head">
-      <h2 class="partner-section__title">优质合作伙伴 共建二五云计算生态</h2>
+      <h2 class="partner-section__title">优质合作伙伴 共建图拉云计算生态</h2>
       <p class="partner-section__desc">以优质资源与服务领航开拓，助力更多企业高效上云</p>
     </div>
 

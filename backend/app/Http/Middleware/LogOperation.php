@@ -77,7 +77,7 @@ class LogOperation
                 'request_id' => $requestId,
                 'duration_ms' => $this->elapsedMilliseconds($startedAt),
                 'user_agent' => $userAgent,
-                'service' => (string) config('app.name', 'EwyFinance-backend'),
+                'service' => (string) config('app.name', '图拉云-backend'),
             ];
 
             if ($exception !== null) {

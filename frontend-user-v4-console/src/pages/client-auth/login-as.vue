@@ -46,8 +46,8 @@ const userStore = useUserStore();
 const status = ref<'loading' | 'success' | 'error'>('loading');
 const loading = ref(false);
 const openerOrigin = resolveOpenerOrigin();
-const LOGIN_AS_READY_EVENT = 'EwyFinance:login-as-ready';
-const LOGIN_AS_CODE_EVENT = 'EwyFinance:login-as-code';
+const LOGIN_AS_READY_EVENT = 'TuraIDC:login-as-ready';
+const LOGIN_AS_CODE_EVENT = 'TuraIDC:login-as-code';
 const LOGIN_AS_MESSAGE_TIMEOUT_MS = 10000;
 let messageTimer: number | null = null;
 

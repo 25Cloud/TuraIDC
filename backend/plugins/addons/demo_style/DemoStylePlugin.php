@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Addons\DemoStyle;
+namespace TuraIDC\Plugins\Addons\DemoStyle;
 
-use EwyFinance\Plugins\Addons\DemoStyle\Logic\DemoStyle;
+use TuraIDC\Plugins\Addons\DemoStyle\Logic\DemoStyle;
 
 class DemoStylePlugin extends DemoStyle {}

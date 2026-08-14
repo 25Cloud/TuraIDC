@@ -1028,8 +1028,8 @@ const invoiceDrawer = reactive({
   detail: { invoice: {}, payments: [], items: [], logs: [] } as Row,
 });
 const canLoginAs = computed(() => hasAdminPermission(AdminPermissions.USER_LOGIN_AS));
-const LOGIN_AS_READY_EVENT = 'EwyFinance:login-as-ready';
-const LOGIN_AS_CODE_EVENT = 'EwyFinance:login-as-code';
+const LOGIN_AS_READY_EVENT = 'TuraIDC:login-as-ready';
+const LOGIN_AS_CODE_EVENT = 'TuraIDC:login-as-code';
 const LOGIN_AS_READY_TIMEOUT_MS = 10000;
 const addServiceProductId = ref<number | undefined>();
 const addServiceProductIdArray = computed<(string | number)[]>({

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use EwyFinance\Plugins\Certification\DemoVerification\DemoVerificationPlugin;
+use TuraIDC\Plugins\Certification\DemoVerification\DemoVerificationPlugin;
 
 return [
     'info' => [

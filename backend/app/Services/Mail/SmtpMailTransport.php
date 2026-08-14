@@ -18,7 +18,7 @@ class SmtpMailTransport
         $port = (int) (($account['port'] ?? 0) ?: 0);
         $username = trim((string) ($account['username'] ?? ''));
         $password = (string) ($account['password'] ?? '');
-        $fromName = trim((string) ($account['from_name'] ?? config('app.name', 'EwyFinance')));
+        $fromName = trim((string) ($account['from_name'] ?? config('app.name', '图拉云')));
 
         if ($host === '' || $port <= 0 || $username === '' || $password === '') {
             throw new \RuntimeException('邮件接口配置不完整');

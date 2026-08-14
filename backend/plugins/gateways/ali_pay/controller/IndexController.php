@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Gateways\AliPay\Controller;
+namespace TuraIDC\Plugins\Gateways\AliPay\Controller;
 
-use EwyFinance\Plugins\Gateways\AliPay\AliPayPlugin;
+use TuraIDC\Plugins\Gateways\AliPay\AliPayPlugin;
 use Illuminate\Http\Response;
 
 class IndexController

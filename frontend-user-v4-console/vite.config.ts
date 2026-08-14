@@ -203,7 +203,7 @@ export default ({ mode }: ConfigEnv): UserConfig => {
       alias: {
         '@': path.resolve(__dirname, './src'),
         '@shared': path.resolve(__dirname, '../shared'),
-        '@ewyfinance/shared': path.resolve(__dirname, '../shared'),
+        '@turaidc/shared': path.resolve(__dirname, '../shared'),
       },
       dedupe: ['vue'],
     },

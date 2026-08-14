@@ -21,8 +21,8 @@ class Setting extends Model
     private const CACHE_TTL_SECONDS = 600;
 
     private const BRAND_REPLACEMENTS = [
-        'IDC Finance 平台' => '二五云平台',
-        'IDC Finance' => '二五云',
+        'IDC Finance 平台' => '图拉云平台',
+        'IDC Finance' => '图拉云',
     ];
 
     private const SENSITIVE_KEYS = [

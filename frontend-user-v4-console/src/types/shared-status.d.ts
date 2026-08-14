@@ -31,7 +31,7 @@ declare module '@shared/statusConfig' {
   export function getStatusTagType(statusMap: Record<string | number, unknown>, status: string | number): string;
 }
 
-declare module '@ewyfinance/shared/statusConfig' {
+declare module '@turaidc/shared/statusConfig' {
   export const SERVICE_STATUS: Record<string, number>;
   export const ORDER_TYPE_MAP: Record<string, string>;
   export const INVOICE_TYPE_MAP: Record<string, string>;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use EwyFinance\Plugins\Mail\DemoMail\DemoMailPlugin;
+use TuraIDC\Plugins\Mail\DemoMail\DemoMailPlugin;
 
 return [
     'info' => [

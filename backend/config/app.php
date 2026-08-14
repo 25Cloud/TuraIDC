@@ -10,7 +10,7 @@ $normalizePublicUrl = static function (?string $url): string {
 };
 
 return [
-    'name' => env('APP_NAME', '二五云'),
+    'name' => env('APP_NAME', '图拉云'),
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
     'url' => $normalizePublicUrl(env('APP_URL', 'http://127.0.0.1:8000')),

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Gateways\AliPay;
+namespace TuraIDC\Plugins\Gateways\AliPay;
 
-use EwyFinance\Plugins\Gateways\AliPay\Lib\AlipayService;
+use TuraIDC\Plugins\Gateways\AliPay\Lib\AlipayService;
 
 class AliPayPlugin extends AlipayService {}

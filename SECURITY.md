@@ -14,7 +14,7 @@
 
 请通过以下任一方式私下报告：
 
-- GitHub Security Advisory：<https://github.com/25Cloud/EwyFinance/security/advisories/new>
+- GitHub Security Advisory：<https://github.com/25Cloud/TuraIDC/security/advisories/new>
 - 直接联系项目维护者
 
 报告中请尽可能包含以下信息：

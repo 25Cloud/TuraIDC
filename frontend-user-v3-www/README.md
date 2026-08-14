@@ -1,4 +1,4 @@
-# 二五云IDC财务系统 · 官网门户（frontend-user-v3-www）
+# 图拉云业务/财务系统 · 官网门户（frontend-user-v3-www）
 
 官网门户前端应用，负责品牌展示与购买入口。
 

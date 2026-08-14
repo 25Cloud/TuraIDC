@@ -13,7 +13,7 @@ backend/plugins/servers/kanghostx/
 - `config.php`：声明 `domain=upstream`、`slug=key=kanghostx`、能力和后台插件配置。
 - `KangHostxPlugin.php`：入口类，继承逻辑类。
 - `lib/KangHostxClient.php`：康乐 WHM API 签名、URL、HTTP、响应校验。
-- `logic/KangHostx.php`：实现 EwyFinance 上游契约方法和字段归一。
+- `logic/KangHostx.php`：实现 TuraIDC 上游契约方法和字段归一。
 
 ## 字段映射
 

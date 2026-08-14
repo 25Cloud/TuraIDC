@@ -95,7 +95,7 @@ withDefaults(
     navTo: '/client/login',
     ctaText: '',
     ctaTo: '/client/login',
-    heroTitle: '安全进入二五云控制台',
+    heroTitle: '安全进入图拉云控制台',
     heroDescription: '管理云服务、账单、工单与账户资料，所有操作继续沿用原有用户端接口。',
   },
 );
