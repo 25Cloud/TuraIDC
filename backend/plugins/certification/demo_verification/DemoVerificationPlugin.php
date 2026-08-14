@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Certification\DemoVerification;
+namespace TuraIDC\Plugins\Certification\DemoVerification;
 
-use EwyFinance\Plugins\Certification\DemoVerification\Logic\DemoVerification;
+use TuraIDC\Plugins\Certification\DemoVerification\Logic\DemoVerification;
 
 class DemoVerificationPlugin extends DemoVerification
 {

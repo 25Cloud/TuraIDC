@@ -1,6 +1,6 @@
 <template>
   <aside class="side-nav-shell">
-    <router-link class="side-nav-shell__brand" to="/client/dashboard">二五云</router-link>
+    <router-link class="side-nav-shell__brand" to="/client/dashboard">图拉云</router-link>
     <nav>
       <router-link v-for="item in items" :key="item.path" :to="item.path">{{ item.label }}</router-link>
     </nav>

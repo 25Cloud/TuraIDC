@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use EwyFinance\Plugins\Gateways\DemoPay\DemoPayPlugin;
+use TuraIDC\Plugins\Gateways\DemoPay\DemoPayPlugin;
 
 return [
     'info' => [

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Servers\DemoServers\Logic;
+namespace TuraIDC\Plugins\Servers\DemoServers\Logic;
 
 use App\Models\Order;
 use App\Models\Service;

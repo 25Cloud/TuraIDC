@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Servers\KangHostx\Logic;
+namespace TuraIDC\Plugins\Servers\KangHostx\Logic;
 
 use App\Exceptions\BusinessException;
 use App\Models\Order;
@@ -16,7 +16,7 @@ use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
 use App\Services\Upstream\Contracts\ProvidesSupplierFormSchema;
 use App\Services\Upstream\Contracts\UpstreamDriver;
-use EwyFinance\Plugins\Servers\KangHostx\Lib\KangHostxClient;
+use TuraIDC\Plugins\Servers\KangHostx\Lib\KangHostxClient;
 
 class KangHostx implements ProvidesConsoleCatalog, ProvidesConsoleRuntime, ProvidesProvisioning, ProvidesRenewal, ProvidesStatusSync, ProvidesSupplierFormSchema, UpstreamDriver
 {

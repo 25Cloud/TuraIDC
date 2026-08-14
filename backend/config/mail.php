@@ -27,6 +27,6 @@ return [
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', '二五云'),
+        'name' => env('MAIL_FROM_NAME', '图拉云'),
     ],
 ];

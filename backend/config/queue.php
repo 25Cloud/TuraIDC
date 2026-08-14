@@ -3,11 +3,11 @@
 return [
     'default' => env('QUEUE_CONNECTION', 'database'),
 
-    'EwyFinance_worker_queues' => 'provision,referral,notification,coupon,default',
-    'EwyFinance_worker_timeout' => 1200,
-    'EwyFinance_worker_max_timeout' => 3600,
-    'EwyFinance_worker_tries' => 3,
-    'EwyFinance_worker_drain_lock_ttl' => 3960,
+    'TuraIDC_worker_queues' => 'provision,referral,notification,coupon,default',
+    'TuraIDC_worker_timeout' => 1200,
+    'TuraIDC_worker_max_timeout' => 3600,
+    'TuraIDC_worker_tries' => 3,
+    'TuraIDC_worker_drain_lock_ttl' => 3960,
 
     'connections' => [
         'sync' => [

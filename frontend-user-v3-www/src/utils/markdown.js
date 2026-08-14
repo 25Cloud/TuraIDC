@@ -1,4 +1,4 @@
-import { createMarkdownRenderer } from '@ewyfinance/shared/content'
+import { createMarkdownRenderer } from '@turaidc/shared/content'
 
 export const renderMarkdown = createMarkdownRenderer({
   demoteHeadings: true,

@@ -1,4 +1,4 @@
-import { ORDER_STATUS_MAP, ORDER_TYPE_MAP, toSelectOptions } from '@ewyfinance/shared/statusConfig';
+import { ORDER_STATUS_MAP, ORDER_TYPE_MAP, toSelectOptions } from '@turaidc/shared/statusConfig';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { onMounted, reactive, ref, shallowRef } from 'vue';
 

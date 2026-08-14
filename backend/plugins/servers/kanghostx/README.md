@@ -1,6 +1,6 @@
 # 康乐虚拟主机插件
 
-该插件把 `kanghostx` 原模块接入 EwyFinance 的 `upstream` 插件运行时，provider key 为 `kanghostx`。
+该插件把 `kanghostx` 原模块接入 TuraIDC 的 `upstream` 插件运行时，provider key 为 `kanghostx`。
 
 ## 接口来源
 
@@ -62,4 +62,4 @@ upstream_host_id = service_id
 - NAT/安全组
 - 上游真实账单支付
 
-订单、账单、服务状态、审计日志仍由 EwyFinance 平台负责。
+订单、账单、服务状态、审计日志仍由 TuraIDC 平台负责。

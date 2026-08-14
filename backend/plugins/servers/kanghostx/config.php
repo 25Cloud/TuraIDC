@@ -7,7 +7,7 @@ use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
-use EwyFinance\Plugins\Servers\KangHostx\KangHostxPlugin;
+use TuraIDC\Plugins\Servers\KangHostx\KangHostxPlugin;
 
 return [
     'info' => [

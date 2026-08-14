@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Mail\Smtp;
+namespace TuraIDC\Plugins\Mail\Smtp;
 
-use EwyFinance\Plugins\Mail\Smtp\Lib\SmtpMailService;
+use TuraIDC\Plugins\Mail\Smtp\Lib\SmtpMailService;
 
 class SmtpPlugin extends SmtpMailService {}

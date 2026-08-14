@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Addons\DemoStyle\Logic;
+namespace TuraIDC\Plugins\Addons\DemoStyle\Logic;
 
 class DemoStyle
 {

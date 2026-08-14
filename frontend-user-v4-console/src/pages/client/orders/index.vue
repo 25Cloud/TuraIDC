@@ -170,9 +170,9 @@
   </section>
 </template>
 <script setup lang="ts">
-import { INVOICE_STATUS_MAP, ORDER_STATUS_MAP } from '@ewyfinance/shared/statusConfig';
 import DataState from '@shared/user-v3/components/DataState.vue';
 import StatusTag from '@shared/user-v3/components/StatusTag.vue';
+import { INVOICE_STATUS_MAP, ORDER_STATUS_MAP } from '@turaidc/shared/statusConfig';
 import { SearchIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { useRouter } from 'vue-router';

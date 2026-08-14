@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types=1);
-use EwyFinance\Plugins\Mail\MultiSmtpRoundRobin\MultiSmtpRoundRobinPlugin;
+use TuraIDC\Plugins\Mail\MultiSmtpRoundRobin\MultiSmtpRoundRobinPlugin;
 
 return [
     'info' => [

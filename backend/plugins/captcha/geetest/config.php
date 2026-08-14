@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use EwyFinance\Plugins\Captcha\Geetest\GeetestPlugin;
+use TuraIDC\Plugins\Captcha\Geetest\GeetestPlugin;
 
 return [
     'info' => [

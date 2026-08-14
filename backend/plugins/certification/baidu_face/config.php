@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use EwyFinance\Plugins\Certification\BaiduFace\BaiduFacePlugin;
-use EwyFinance\Plugins\Certification\BaiduFace\Logic\BaiduFaceClient;
+use TuraIDC\Plugins\Certification\BaiduFace\BaiduFacePlugin;
+use TuraIDC\Plugins\Certification\BaiduFace\Logic\BaiduFaceClient;
 
 return [
     'info' => [

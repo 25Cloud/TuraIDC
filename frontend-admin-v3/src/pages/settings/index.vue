@@ -702,7 +702,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             key: 'pt_archiver_defaults_file',
             label: '默认配置文件',
             type: 'input',
-            default: '/etc/EwyFinance/pt-archiver.cnf',
+            default: '/etc/TuraIDC/pt-archiver.cnf',
             required: true,
             maxlength: 255,
           },
@@ -734,7 +734,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             type: 'input',
             default: '',
             maxlength: 50,
-            placeholder: '例如：二五云',
+            placeholder: '例如：图拉云',
           },
           {
             key: 'browser_title',

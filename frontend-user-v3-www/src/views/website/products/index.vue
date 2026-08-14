@@ -2,7 +2,7 @@
   <div class="shop-wrap">
     <div v-if="showMobileTypePicker" class="mobile-type-stage" v-loading="pageLoading">
       <section class="mobile-stage-card mobile-stage-card--intro">
-        <h1 class="mobile-stage-title">二五云产品中心 · 选择一级菜单</h1>
+        <h1 class="mobile-stage-title">图拉云产品中心 · 选择一级菜单</h1>
         <p class="mobile-stage-desc">请先选择你要购买的产品大类，进入对应目录后再继续选择分类、商品和具体配置。</p>
       </section>
 

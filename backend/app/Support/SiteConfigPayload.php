@@ -13,7 +13,7 @@ class SiteConfigPayload
 {
     public const SETTING_GROUP_BASIC = 'basic';
 
-    public const DEFAULT_SITE_NAME = '二五云';
+    public const DEFAULT_SITE_NAME = '图拉云';
 
     public const DEFAULT_SITE_LOGO = '/branding/logo.svg';
 

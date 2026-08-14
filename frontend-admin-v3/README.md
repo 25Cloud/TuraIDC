@@ -1,4 +1,4 @@
-# 二五云IDC财务系统 · 管理后台（frontend-admin-v3）
+# 图拉云业务/财务系统 · 管理后台（frontend-admin-v3）
 
 管理后台前端应用，负责商品、订单、用户、财务、工单、供应商等后台运营管理。
 
@@ -9,7 +9,7 @@
 - Vue 3.5 / TypeScript / Vite 6
 - TDesign Vue Next（UI 组件库）
 - Pinia / Vue Router / ECharts
-- 共享包：`@ewyfinance/shared`（本仓库 monorepo workspace）
+- 共享包：`@turaidc/shared`（本仓库 monorepo workspace）
 
 ## 开发
 

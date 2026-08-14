@@ -3,7 +3,7 @@
     <section class="about-hero">
       <div class="container">
         <p class="about-kicker">关于我们</p>
-        <h1>{{ appStore.siteName || '二五云' }}</h1>
+        <h1>{{ appStore.siteName || '图拉云' }}</h1>
         <p class="about-desc">
           我们专注于云服务器、独立服务器与相关基础设施服务，提供从选型、购买、开通到运维支持的一体化体验。
         </p>

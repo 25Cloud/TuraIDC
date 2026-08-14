@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Certification\BaiduFace;
+namespace TuraIDC\Plugins\Certification\BaiduFace;
 
-use EwyFinance\Plugins\Certification\BaiduFace\Logic\BaiduFace;
+use TuraIDC\Plugins\Certification\BaiduFace\Logic\BaiduFace;
 
 class BaiduFacePlugin extends BaiduFace {}

@@ -8,7 +8,7 @@
 
 return [
     // 站点名称
-    'site_name' => env('IDC_SITE_NAME', '二五云'),
+    'site_name' => env('IDC_SITE_NAME', '图拉云'),
 
     // 订单自动取消时间（分钟）
     'order_auto_cancel_minutes' => 30,

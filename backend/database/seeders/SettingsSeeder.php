@@ -24,8 +24,8 @@ class SettingsSeeder
         ]);
 
         static::seedGroup('basic', [
-            'site_name' => '二五云',
-            'browser_title' => '二五云 - 云计算服务平台',
+            'site_name' => '图拉云',
+            'browser_title' => '图拉云 - 云计算服务平台',
             'site_logo' => '',
             'site_favicon' => '',
             'client_console_icon' => '',

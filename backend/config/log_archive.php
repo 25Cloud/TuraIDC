@@ -12,7 +12,7 @@ return [
 
     // 可执行参数的运行时默认值；管理员后台可覆盖。
     'pt_archiver_binary' => '/usr/bin/pt-archiver',
-    'pt_archiver_defaults_file' => '/etc/EwyFinance/pt-archiver.cnf',
+    'pt_archiver_defaults_file' => '/etc/TuraIDC/pt-archiver.cnf',
 
     'concurrency' => 2,
     'batch_size' => 1000,

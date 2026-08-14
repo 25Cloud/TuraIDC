@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Certification\Stay33\Logic;
+namespace TuraIDC\Plugins\Certification\Stay33\Logic;
 
 use App\Exceptions\BusinessException;
 use Illuminate\Support\Facades\Log;

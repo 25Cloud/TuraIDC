@@ -379,7 +379,7 @@ class UserService
             : NotificationService::TEMPLATE_CLIENT_ORDER_PENDING;
 
         $this->notificationService->sendTemplateEmail((string) $user->email, $templateCode, [
-            'site_name' => (string) config('idc.site_name', config('app.name', '二五云')),
+            'site_name' => (string) config('idc.site_name', config('app.name', '图拉云')),
             'display_name' => (string) $user->display_name,
             'notice_title' => $isPaidInvoice ? '账单支付确认' : '账单支付提醒',
             'invoice_no' => (string) $invoice->invoice_no,

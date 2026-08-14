@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Certification\Stay33\Logic;
+namespace TuraIDC\Plugins\Certification\Stay33\Logic;
 
 class Stay33
 {

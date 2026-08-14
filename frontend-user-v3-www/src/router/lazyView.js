@@ -1,1 +1,1 @@
-export { lazyRouteView } from '@ewyfinance/shared/runtime'
+export { lazyRouteView } from '@turaidc/shared/runtime'

@@ -1,6 +1,6 @@
 # 部署指南
 
-本文档说明如何将二五云IDC财务系统部署到生产环境。部署拓扑：后端 API、三个前端静态站点、Redis、MySQL，另需常驻队列 Worker 与调度进程。
+本文档说明如何将图拉云业务/财务系统部署到生产环境。部署拓扑：后端 API、三个前端静态站点、Redis、MySQL，另需常驻队列 Worker 与调度进程。
 
 ## 一、环境要求
 
@@ -15,8 +15,8 @@
 ## 二、准备代码
 
 ```bash
-git clone <你的仓库地址> EwyFinance
-cd EwyFinance
+git clone <你的仓库地址> TuraIDC
+cd TuraIDC
 ```
 
 ## 三、后端部署
@@ -96,7 +96,7 @@ App\Models\AdminUser::create([
 将以下命令加入系统 crontab（每分钟执行一次 Laravel 调度器）：
 
 ```cron
-* * * * * cd /path/to/EwyFinance/backend && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /path/to/TuraIDC/backend && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 Laravel 调度器内部会按 `routes/console.php` 定义的节奏驱动心跳、服务生命周期、账单、工单关闭、日志归档等任务。数据库为唯一时钟源，无需单独配置多条 cron。
@@ -147,7 +147,7 @@ server {
 
     # ssl_certificate / ssl_certificate_key ...
 
-    root /path/to/EwyFinance/backend/public;
+    root /path/to/TuraIDC/backend/public;
     index index.php;
 
     location / {
@@ -174,7 +174,7 @@ server {
     listen 443 ssl http2;
     server_name www.example.com;
 
-    root /path/to/EwyFinance/frontend-user-v3-www/dist;
+    root /path/to/TuraIDC/frontend-user-v3-www/dist;
     index index.html;
 
     location / {
@@ -191,7 +191,7 @@ server {
 
 ```ini
 [program:finance-queue]
-directory=/path/to/EwyFinance/backend
+directory=/path/to/TuraIDC/backend
 command=php artisan queue:work --queue=provision,referral,notification,coupon,default --sleep=1 --tries=3 --timeout=1200
 autostart=true
 autorestart=true
@@ -205,7 +205,7 @@ user=www-data
 
 ```ini
 [program:finance-vnc-relay]
-directory=/path/to/EwyFinance/backend
+directory=/path/to/TuraIDC/backend
 command=php artisan vnc:relay --host=127.0.0.1 --port=8100
 autostart=true
 autorestart=true

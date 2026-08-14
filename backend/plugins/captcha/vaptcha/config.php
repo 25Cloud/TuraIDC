@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use EwyFinance\Plugins\Captcha\Vaptcha\VaptchaPlugin;
+use TuraIDC\Plugins\Captcha\Vaptcha\VaptchaPlugin;
 
 return [
     'info' => [

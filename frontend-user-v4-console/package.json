@@ -16,7 +16,7 @@
     "verify:refactor": "node scripts/verify-refactor.mjs"
   },
   "dependencies": {
-    "@ewyfinance/shared": "file:../shared",
+    "@turaidc/shared": "file:../shared",
     "@vueuse/core": "^14.2.0",
     "axios": "^1.18.1",
     "dayjs": "^1.11.13",

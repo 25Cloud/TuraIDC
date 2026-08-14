@@ -10,7 +10,7 @@
       "@shared/*": [
         "../shared/*"
       ],
-      "@ewyfinance/shared": [
+      "@turaidc/shared": [
         "../shared/index.ts"
       ]
     },

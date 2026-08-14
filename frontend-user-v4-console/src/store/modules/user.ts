@@ -14,7 +14,7 @@ function normalizeUserInfo(raw: Record<string, unknown> = {}): ClientUserInfo {
   const nickname = String(raw.nickname || raw.name || raw.email || '').trim();
   return {
     ...raw,
-    name: nickname || '二五云用户',
+    name: nickname || '图拉云用户',
     nickname,
     roles: ['client'],
   };

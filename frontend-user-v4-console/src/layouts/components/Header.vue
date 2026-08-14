@@ -160,7 +160,7 @@ const {
 const { isMobile } = useDeviceLayout();
 
 const active = computed(() => getActive());
-const accountName = computed(() => user.userInfo.name || '二五云用户');
+const accountName = computed(() => user.userInfo.name || '图拉云用户');
 const userInitials = computed(() => {
   const name = accountName.value.trim();
   return name.slice(0, 1) || siteBranding.brandInitials || '创';

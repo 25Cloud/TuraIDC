@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use EwyFinance\Plugins\Sms\DemoSms\DemoSmsPlugin;
+use TuraIDC\Plugins\Sms\DemoSms\DemoSmsPlugin;
 
 return [
     'info' => [

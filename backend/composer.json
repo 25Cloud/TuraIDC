@@ -1,7 +1,7 @@
 {
     "name": "idc/finance",
     "type": "project",
-    "description": "二五云IDC财务系统 - Laravel 12",
+    "description": "图拉云业务/财务系统 - 新一代的IDC云服务经营系统 (Laravel 12)",
     "keywords": [
         "idc",
         "cloud",
@@ -10,18 +10,18 @@
         "laravel"
     ],
     "license": "Apache-2.0",
-    "homepage": "https://github.com/25Cloud/EwyFinance",
+    "homepage": "https://github.com/25Cloud/TuraIDC",
     "repository": {
         "type": "git",
-        "url": "https://github.com/25Cloud/EwyFinance.git"
+        "url": "https://github.com/25Cloud/TuraIDC.git"
     },
     "support": {
-        "issues": "https://github.com/25Cloud/EwyFinance/issues",
-        "source": "https://github.com/25Cloud/EwyFinance"
+        "issues": "https://github.com/25Cloud/TuraIDC/issues",
+        "source": "https://github.com/25Cloud/TuraIDC"
     },
     "authors": [
         {
-            "name": "EwyFinance Contributors"
+            "name": "TuraIDC Contributors"
         }
     ],
     "require": {

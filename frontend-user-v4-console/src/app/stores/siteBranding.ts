@@ -1,4 +1,4 @@
-import { applyDocumentTitle, deriveInitials, syncDocumentTitle, updateFavicon } from '@ewyfinance/shared/runtime';
+import { applyDocumentTitle, deriveInitials, syncDocumentTitle, updateFavicon } from '@turaidc/shared/runtime';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 
@@ -6,7 +6,7 @@ import siteApi from '@/api/site';
 import { DEFAULT_SUPPORT_CONTACTS } from '@/data/supportContacts';
 import { resolveApiManagedAssetUrl } from '@/utils/apiOrigin';
 
-const DEFAULT_SITE_NAME = import.meta.env.VITE_APP_TITLE || '二五云';
+const DEFAULT_SITE_NAME = import.meta.env.VITE_APP_TITLE || '图拉云';
 const DEFAULT_SITE_LOGO = '/favicon.ico';
 const DEFAULT_FAVICON = '/favicon.ico';
 const DEFAULT_CLIENT_CONSOLE_ICON = DEFAULT_FAVICON;

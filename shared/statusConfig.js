@@ -3,7 +3,7 @@
  *  IDC 财务系统 —— 全局状态颜色 & 映射配置
  * ============================================================
  *  多个前端共用此文件
- *  引入方式：import { ORDER_STATUS, ... } from '@ewyfinance/shared/statusConfig'
+ *  引入方式：import { ORDER_STATUS, ... } from '@turaidc/shared/statusConfig'
  *
  *  颜色体系说明：
  *  ┌──────────┬────────────┬───────────────────────────────┐

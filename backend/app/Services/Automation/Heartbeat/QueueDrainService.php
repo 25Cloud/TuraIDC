@@ -51,10 +51,10 @@ class QueueDrainService
         }
 
         $parameters = [
-            '--queue' => (string) config('queue.EwyFinance_worker_queues', 'provision,referral,notification,coupon,default'),
+            '--queue' => (string) config('queue.TuraIDC_worker_queues', 'provision,referral,notification,coupon,default'),
             '--sleep' => 1,
-            '--tries' => (int) config('queue.EwyFinance_worker_tries', 3),
-            '--timeout' => (int) config('queue.EwyFinance_worker_timeout', 1200),
+            '--tries' => (int) config('queue.TuraIDC_worker_tries', 3),
+            '--timeout' => (int) config('queue.TuraIDC_worker_timeout', 1200),
             '--stop-when-empty' => true,
             '--max-time' => 50,
         ];
@@ -86,8 +86,8 @@ class QueueDrainService
     private function drainLockTtl(): int
     {
         return max(
-            (int) config('queue.EwyFinance_worker_drain_lock_ttl', 3960),
-            (int) config('queue.EwyFinance_worker_max_timeout', 3600) + 60,
+            (int) config('queue.TuraIDC_worker_drain_lock_ttl', 3960),
+            (int) config('queue.TuraIDC_worker_max_timeout', 3600) + 60,
             (int) config('queue.connections.database.retry_after', 3900) + 60,
         );
     }

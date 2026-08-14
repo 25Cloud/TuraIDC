@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Servers\ZjmfFinance\Providers;
+namespace TuraIDC\Plugins\Servers\ZjmfFinance\Providers;
 
 use App\Services\Upstream\Contracts\UpstreamBillingRestoreProfile;
-use EwyFinance\Plugins\Servers\ZjmfFinance\Commands\RestoreZjmfBillingCommand;
-use EwyFinance\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreProfile;
-use EwyFinance\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreService;
-use EwyFinance\Plugins\Servers\ZjmfFinance\Lib\ZjmfCredentialParser;
-use EwyFinance\Plugins\Servers\ZjmfFinance\Lib\ZjmfLegacyPasswordVerifier;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Commands\RestoreZjmfBillingCommand;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreProfile;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreService;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfCredentialParser;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfLegacyPasswordVerifier;
 use Illuminate\Support\ServiceProvider;
 
 final class ZjmfFinanceServiceProvider extends ServiceProvider

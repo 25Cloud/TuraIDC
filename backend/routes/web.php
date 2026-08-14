@@ -5,7 +5,7 @@ use App\Support\PublicUrl;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return ['message' => '二五云 API'];
+    return ['message' => '图拉云 API'];
 });
 
 Route::get('/api/secure-assets/view', [SecureAssetController::class, 'show'])

@@ -1466,7 +1466,7 @@ class ProvisionService
 
     private function supplierCartLockTtl(): int
     {
-        return max(90, (int) config('queue.EwyFinance_worker_timeout', 1200) + 60);
+        return max(90, (int) config('queue.TuraIDC_worker_timeout', 1200) + 60);
     }
 
     /**

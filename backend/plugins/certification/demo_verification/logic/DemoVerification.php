@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace EwyFinance\Plugins\Certification\DemoVerification\Logic;
+namespace TuraIDC\Plugins\Certification\DemoVerification\Logic;
 
 class DemoVerification
 {

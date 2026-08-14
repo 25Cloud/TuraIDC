@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use EwyFinance\Plugins\Gateways\YiPay\YiPayPlugin;
+use TuraIDC\Plugins\Gateways\YiPay\YiPayPlugin;
 
 return [
     'info' => [

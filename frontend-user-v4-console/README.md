@@ -1,4 +1,4 @@
-# 二五云IDC财务系统 · 用户控制台（frontend-user-v4-console）
+# 图拉云业务/财务系统 · 用户控制台（frontend-user-v4-console）
 
 用户控制台前端应用，负责用户登录、服务管理、订单、发票、财务充值、工单等自助服务。
 
@@ -9,7 +9,7 @@
 - Vue 3.5 / TypeScript / Vite 6
 - TDesign Vue Next（UI 组件库）
 - Pinia / Vue Router / ECharts
-- 共享包：`@ewyfinance/shared`（本仓库 monorepo workspace）
+- 共享包：`@turaidc/shared`（本仓库 monorepo workspace）
 
 ## 开发
 

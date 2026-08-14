@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use EwyFinance\Plugins\Addons\DemoStyle\DemoStylePlugin;
-use EwyFinance\Plugins\Addons\DemoStyle\Lib\DemoStyleHook;
-use EwyFinance\Plugins\Addons\DemoStyle\Lib\DemoStyleScheduledTask;
+use TuraIDC\Plugins\Addons\DemoStyle\DemoStylePlugin;
+use TuraIDC\Plugins\Addons\DemoStyle\Lib\DemoStyleHook;
+use TuraIDC\Plugins\Addons\DemoStyle\Lib\DemoStyleScheduledTask;
 
 return [
     'info' => [
@@ -49,7 +49,7 @@ return [
             'title' => 'ZJMF Addon 结构参考',
             'type' => 'notice',
             'theme' => 'info',
-            'content' => '该示例参考 ZJMF addons/demo_style 的目录语义，但运行时使用 EwyFinance 统一插件 execute() 入口。',
+            'content' => '该示例参考 ZJMF addons/demo_style 的目录语义，但运行时使用 TuraIDC 统一插件 execute() 入口。',
         ],
         'theme_name' => [
             'title' => '主题名称',
