@@ -69,7 +69,7 @@
     "repositories": {
         "packagist": {
             "type": "composer",
-            "url": "https://packagist.org"
+            "url": "https://mirrors.cloud.tencent.com/composer/"
         }
     }
 }
