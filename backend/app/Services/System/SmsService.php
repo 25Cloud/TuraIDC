@@ -6,10 +6,12 @@ use App\Models\MessageLog;
 use App\Models\Setting;
 use App\Services\Integrations\Plugins\IntegrationDriverBindingResolver;
 use App\Services\Integrations\Plugins\PluginConfigRepository;
+use App\Services\Sms\Contracts\ProvidesVerifyCodeTemplate;
 use App\Services\Sms\Contracts\SmsDriver;
 use App\Services\Sms\Data\SmsMessageRequest;
 use App\Services\Sms\Data\SmsSendRequest;
 use App\Services\Sms\SmsDriverManager;
+use App\Support\SensitiveDataSanitizer;
 use App\Support\SmsTemplateCatalog;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -59,20 +61,32 @@ class SmsService
     private function sendAliyunVerifyCode(string $phone, string $code, array $options, ?SmsDriver $driver): void
     {
         $purpose = $this->normalizeVerifyCodePurpose($options);
+        $expireMinutes = (string) ($options['min'] ?? '5');
         $sendOptions = array_merge($options, [
             'purpose' => $purpose,
-            'min' => (string) ($options['min'] ?? '5'),
+            'min' => $expireMinutes,
         ]);
         $logParams = [
             'code' => $code,
-            'min' => (string) $sendOptions['min'],
+            'min' => $expireMinutes,
             'purpose' => $purpose,
         ];
 
+        // 短信日志含验证码明文，管理端需完整真实审计信息，不做脱敏（项目红线）
+
+        // 文案模板优先由短信驱动（插件）提供，系统层仅保留默认回退，避免硬编码特定服务商语法。
+        $templateText = $driver instanceof ProvidesVerifyCodeTemplate
+            ? trim((string) $driver->verifyCodeTemplate($purpose))
+            : '';
+        // 插件模板缺失/为空时回退系统文案，避免日志正文留空。
+        if ($templateText === '') {
+            $templateText = $this->aliyunVerifyTemplateText($purpose);
+        }
+        $content = str_replace(['${code}', '${min}'], [$code, $expireMinutes], $templateText);
         $logContext = $this->createSmsLog(
             $phone,
             'aliyun_verify_code',
-            "阿里云短信验证码已发送，验证码：{$code}",
+            $content,
             $logParams,
             'aliyun',
             'sms_verify'
@@ -92,7 +106,7 @@ class SmsService
 
             $this->updateSmsLog($logContext, [
                 'status' => 'success',
-                'request_id' => $result->requestId,
+                'request_id' => $result->bizId ?? $result->requestId,
                 'sent_at' => now(),
                 'template_code' => $providerTemplateCode !== '' ? $providerTemplateCode : 'aliyun_verify_code',
                 'params_json' => $updatedParams,
@@ -273,11 +287,11 @@ class SmsService
 
             return ['id' => (int) $log->getKey()];
         } catch (\Throwable $exception) {
-            Log::warning('短信日志写入失败，已跳过日志写入继续发送', [
+            Log::warning('短信日志写入失败，已跳过日志写入继续发送', SensitiveDataSanitizer::sanitize([
                 'phone' => $phone,
                 'template_code' => $templateCode,
                 'message' => $exception->getMessage(),
-            ]);
+            ]));
         }
 
         return ['id' => null];
@@ -443,5 +457,17 @@ class SmsService
                 'message' => $exception->getMessage(),
             ]);
         }
+    }
+
+    private function aliyunVerifyTemplateText(string $purpose): string
+    {
+        return match ($purpose) {
+            'change_phone', 'phone_change', 'update_phone' => '尊敬的客户，您正在进行修改手机号操作，您的验证码为${code}。以上验证码${min}分钟内有效，请注意保密，切勿告知他人。',
+            'reset', 'reset_password', 'password_reset' => '尊敬的客户，您正在进行重置密码操作，您的验证码为${code}。以上验证码${min}分钟内有效，请注意保密，切勿告知他人。',
+            'bind_phone', 'new_phone' => '尊敬的客户，您正在进行绑定手机号操作，您的验证码为${code}。以上验证码${min}分钟内有效，请注意保密，切勿告知他人。',
+            'verify_bound_phone', 'verify_phone' => '尊敬的客户，您正在验证绑定手机号操作，您的验证码为${code}。以上验证码${min}分钟内有效，请注意保密，切勿告知他人。',
+            default // login, register, generic
+            => '您的验证码为${code}。尊敬的客户，以上验证码${min}分钟内有效，请注意保密，切勿告知他人。',
+        };
     }
 }

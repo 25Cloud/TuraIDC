@@ -63,7 +63,8 @@
           <template #product="{ row }">
             {{
               fieldValue(
-                row.product_display_name ||
+                row.product_full_path ||
+                  row.product_display_name ||
                   row.product?.display_name ||
                   (row.product_id ? `未配置规格 #${row.product_id}` : ''),
               )
@@ -100,7 +101,9 @@
                     : row.upstream_host_id_text || row.upstream_host_id,
                 )
               "
-              :description="fieldValue(row.product_display_name || row.product?.display_name || row.domain)"
+              :description="
+                fieldValue(row.product_full_path || row.product_display_name || row.product?.display_name || row.domain)
+              "
               highlight-label="服务金额"
               :highlight-value="formatMoney(row.amount)"
               :status-map="SERVICE_STATUS_MAP"
@@ -316,7 +319,10 @@ function buildHostnameRow(row: ServiceRecord): HostnameRow {
     service_id: Number(row.id || 0),
     service_name: String(row.service_id || row.id || ''),
     product_name: String(
-      row.product_display_name || row.product?.display_name || (row.product_id ? `未配置规格 #${row.product_id}` : ''),
+      row.product_full_path ||
+        row.product_display_name ||
+        row.product?.display_name ||
+        (row.product_id ? `未配置规格 #${row.product_id}` : ''),
     ),
     user_name: userName(row.user),
     current_domain: String(row.domain || ''),

@@ -196,6 +196,48 @@ class UserService
     }
 
     /**
+     * 删除用户（资产保护）：
+     * 仅当无在用服务、无未付账单、账户余额为 0 时才允许删除，否则拒绝并提示先处理资产。
+     */
+    public function deleteUser(User $user, array $context = []): void
+    {
+        $activeServiceCount = Service::query()
+            ->where('user_id', (int) $user->id)
+            ->whereIn('status', [ServiceStatus::PENDING, ServiceStatus::ACTIVE, ServiceStatus::SUSPENDED])
+            ->count();
+        throw_if($activeServiceCount > 0, new BusinessException('该用户存在在用服务，请先处理服务后再删除'));
+
+        $unpaidInvoiceCount = Invoice::query()
+            ->where('user_id', (int) $user->id)
+            ->whereIn('status', [InvoiceStatus::UNPAID, InvoiceStatus::OVERDUE])
+            ->count();
+        throw_if($unpaidInvoiceCount > 0, new BusinessException('该用户存在未付账单，请先处理账单后再删除'));
+
+        $balance = (float) $user->balance;
+        throw_if($balance != 0, new BusinessException('该用户账户仍有余额，请先清零后再删除'));
+
+        // 事务内软删：唯一键释放（ReleasesUniqueKeysOnDelete）与 deleted_at 写入原子
+        DB::transaction(function () use ($user): void {
+            $user->delete();
+        });
+
+        $this->operationLogService->write(
+            userId: ((int) ($context['operator_id'] ?? 0)) ?: null,
+            userType: 'admin',
+            action: 'user.deleted',
+            module: 'user',
+            targetId: (int) $user->id,
+            detail: [
+                'email' => (string) $user->email,
+                'nickname' => (string) $user->nickname,
+                'operator_name' => (string) ($context['operator_name'] ?? ''),
+                'trace_id' => (string) ($context['trace_id'] ?? ''),
+            ],
+            ipAddress: (string) ($context['ip_address'] ?? ''),
+        );
+    }
+
+    /**
      * 用户详情（含完整统计）
      */
     public function detail(User $user): array
@@ -883,10 +925,15 @@ class UserService
             ->filter(fn (Payment $payment) => $payment->isThirdPartyGateway())
             ->values();
 
+        // 已转入余额的异常支付（重复支付/超额支付）不作为主支付单：
+        // 其金额已退回用户余额，展示与退款决策均不应再按该支付单处理。
+        $isRefundablePayment = fn (Payment $payment): bool => in_array((int) $payment->status, [PaymentStatus::SUCCESS, PaymentStatus::REFUNDED], true)
+            && ! (bool) data_get((array) ($payment->callback_raw ?? []), 'credited_to_balance', false);
+
         return $collection
-            ->first(fn (Payment $payment) => ! (bool) data_get((array) ($payment->callback_raw ?? []), 'duplicate_paid', false)
-                && in_array((int) $payment->status, [PaymentStatus::SUCCESS, PaymentStatus::REFUNDED], true))
-            ?? $collection->first(fn (Payment $payment) => in_array((int) $payment->status, [PaymentStatus::SUCCESS, PaymentStatus::REFUNDED], true));
+            ->first(fn (Payment $payment) => $isRefundablePayment($payment)
+                && ! (bool) data_get((array) ($payment->callback_raw ?? []), 'duplicate_paid', false))
+            ?? $collection->first($isRefundablePayment);
     }
 
     private function resolveInvoiceDisplayStatus(Invoice $invoice, ?array $paymentSummary): array
@@ -926,7 +973,17 @@ class UserService
             $canBalance = true;
             $canOriginal = in_array($paymentGateway, [PaymentGatewayCode::ALIPAY, PaymentGatewayCode::BALANCE], true);
 
-            if (! $canOriginal) {
+            // 混付账单：余额部分无法走支付宝原路退款，全额会超过支付宝该笔交易实收金额，
+            // 仅允许「退回余额」，禁止原路退款并给出明确原因。
+            $primaryPaymentAmount = round((float) ($paymentSummary['amount'] ?? 0), 2);
+            $invoicePaidAmount = round((float) ($invoice->paid_amount ?? $invoice->amount ?? 0), 2);
+            $involvesBalance = $primaryPaymentAmount > 0
+                && $invoicePaidAmount - $primaryPaymentAmount > 0.0001;
+
+            if ($involvesBalance) {
+                $canOriginal = false;
+                $originalBlockedReason = '该账单包含余额支付，无法全额原路退款，请使用「退回余额」';
+            } elseif (! $canOriginal) {
                 $originalBlockedReason = '当前支付方式不支持原路退款';
             }
         }

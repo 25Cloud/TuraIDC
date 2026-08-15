@@ -34,6 +34,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import AuthShell from '@/components/auth/AuthShell.vue';
 import { useUserStore } from '@/store';
+import { toUserMessage } from '@/utils/userMessage';
 
 interface RuntimeHandledError {
   __handled?: boolean;
@@ -46,8 +47,8 @@ const userStore = useUserStore();
 const status = ref<'loading' | 'success' | 'error'>('loading');
 const loading = ref(false);
 const openerOrigin = resolveOpenerOrigin();
-const LOGIN_AS_READY_EVENT = 'TuraIDC:login-as-ready';
-const LOGIN_AS_CODE_EVENT = 'TuraIDC:login-as-code';
+const LOGIN_AS_READY_EVENT = 'turaidc:login-as-ready';
+const LOGIN_AS_CODE_EVENT = 'turaidc:login-as-code';
 const LOGIN_AS_MESSAGE_TIMEOUT_MS = 10000;
 let messageTimer: number | null = null;
 
@@ -106,7 +107,7 @@ async function runExchange(code: string) {
     const runtimeError = error as RuntimeHandledError;
     status.value = 'error';
     if (!runtimeError.__handled) {
-      MessagePlugin.error(runtimeError.message || '代登录失败');
+      MessagePlugin.error(toUserMessage(runtimeError.message, '代登录失败'));
     }
   } finally {
     loading.value = false;

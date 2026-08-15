@@ -34,7 +34,11 @@
           <template v-if="currentArticle">
             <el-divider />
 
-            <div ref="contentRef" class="reader-content" v-html="articleContentHtml" />
+            <div
+              ref="contentRef"
+              class="reader-content"
+              v-html="articleContentHtml"
+            />
           </template>
 
           <el-empty v-else-if="!loading" :description="config.emptyText" class="reader-empty" />
@@ -51,6 +55,8 @@
               type="button"
               class="category-item"
               :class="{ 'is-active': currentCategoryId === item.id }"
+              :aria-current="currentCategoryId === item.id ? 'page' : undefined"
+              :aria-label="`${item.name}，共 ${item.articles_count || 0} 篇`"
               @click="goCategoryList(item.id)"
             >
               <span class="category-item__name">{{ item.name }}</span>
@@ -59,7 +65,7 @@
           </div>
         </section>
 
-        <section class="sidebar-card">
+        <section v-if="tocItems.length > 1" class="sidebar-card">
           <div class="sidebar-card__title">目录结构</div>
           <div class="toc-list">
             <button
@@ -68,6 +74,7 @@
               type="button"
               class="toc-item"
               :class="[`level-${item.level}`]"
+              :aria-label="`跳转到 ${item.label}`"
               @click="scrollToAnchor(item.id)"
             >
               {{ item.label }}
@@ -87,6 +94,32 @@ import siteApi from '@/api/site'
 import { renderMarkdown } from '@/utils/markdown'
 import { rewriteApiAssetUrlsInHtml } from '@/utils/apiAssetUrl'
 import { getContentConfig } from './contentConfig'
+
+// ---- 模块级分类缓存 ----
+const overviewCache = new Map()
+const OVERVIEW_CACHE_TTL = 5 * 60 * 1000 // 5 分钟
+
+function getCachedOverview(cacheKey) {
+  const entry = overviewCache.get(cacheKey)
+  if (entry && Date.now() - entry.ts < OVERVIEW_CACHE_TTL) {
+    return entry.data
+  }
+  overviewCache.delete(cacheKey)
+  return null
+}
+
+function setCachedOverview(cacheKey, data) {
+  overviewCache.set(cacheKey, { data, ts: Date.now() })
+}
+
+// ---- 工具函数 ----
+
+function sanitizeMarkdownSource(content) {
+  if (!content) return ''
+  return String(content)
+    .replace(/\*\*\s*(<[^>]+>)/g, '$1')
+    .replace(/(<\/[^>]+>)\s*\*\*/g, '$1')
+}
 
 const props = defineProps({
   contentType: {
@@ -155,13 +188,25 @@ const currentPublishTime = computed(() => (
   || '--'
 ))
 
-const articleContentHtml = computed(() => rewriteApiAssetUrlsInHtml(renderMarkdown(currentArticle.value?.content, {
-  imageAltFallback: currentArticle.value?.title || config.value.detailTitle || '相关配图',
-}), apiBaseUrl))
+const articleContentHtml = computed(() => {
+  const source = sanitizeMarkdownSource(currentArticle.value?.content || '')
+  const rendered = renderMarkdown(source, {
+    imageAltFallback: currentArticle.value?.title || config.value.detailTitle || '相关配图',
+  })
+  return rewriteApiAssetUrlsInHtml(rendered, apiBaseUrl)
+})
 
 async function loadOverview() {
+  const cacheKey = config.value.overviewCategoryKey
+  const cached = getCachedOverview(cacheKey)
+  if (cached) {
+    categories.value = cached
+    return
+  }
   const res = await api.value.contentOverview()
-  categories.value = res.data?.[config.value.overviewCategoryKey] || []
+  const data = res.data?.[cacheKey] || []
+  categories.value = data
+  setCachedOverview(cacheKey, data)
 }
 
 async function loadArticleDetail(articleId) {
@@ -519,6 +564,35 @@ watch(
 
   .reader-article__header h1 {
     font-size: 22px;
+  }
+}
+
+// ---- 打印样式 ----
+@media print {
+  .reader-breadcrumb,
+  .reader-sidebar {
+    display: none !important;
+  }
+
+  .reader-layout {
+    display: block;
+  }
+
+  .reader-article {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .reader-content {
+    font-size: 12pt;
+    line-height: 1.8;
+    color: #000;
+
+    :deep(a) {
+      color: #000;
+      text-decoration: underline;
+    }
   }
 }
 </style>

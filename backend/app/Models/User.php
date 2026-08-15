@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Casts\LegacyEncrypted;
+use App\Models\Concerns\ReleasesUniqueKeysOnDelete;
 use App\Services\User\AccountService;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,6 +20,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use ReleasesUniqueKeysOnDelete;
 
     protected $fillable = [
         'email', 'password', 'phone', 'status',
@@ -55,6 +57,17 @@ class User extends Authenticatable
             'referrer_user_id' => 'integer',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * 软删时释放 email/phone 全局唯一键（见 ReleasesUniqueKeysOnDelete）。
+     * 删除是终局性操作（UserService::deleteUser 含资产保护），原始值由操作日志留痕。
+     *
+     * @return array<int, string>
+     */
+    public function uniqueKeysToReleaseOnDelete(): array
+    {
+        return ['email', 'phone'];
     }
 
     public function getNicknameAttribute(mixed $value): string
@@ -232,6 +245,20 @@ class User extends Authenticatable
         return (int) $this->is_verified === 1 || (int) $this->verification_status === 2;
     }
 
+    public const VERIFICATION_STATUS_LABELS = [
+        0 => '未认证',
+        1 => '待认证',
+        2 => '已认证',
+        3 => '认证失败',
+        4 => '待认证',
+        5 => '已解绑',
+    ];
+
+    public static function verificationStatusLabel(int $status): string
+    {
+        return self::VERIFICATION_STATUS_LABELS[$status] ?? (string) $status;
+    }
+
     // -------- 关联 --------
 
     public function orders(): HasMany
@@ -348,6 +375,7 @@ class User extends Authenticatable
 
         $keyword = trim($keyword);
 
+        // 注意：id_card 由 LegacyEncrypted 加密存储，明文 LIKE 永不命中，故不纳入搜索字段。
         return $query->where(function ($q) use ($keyword) {
             if (ctype_digit($keyword)) {
                 $q->where('id', (int) $keyword)
@@ -356,8 +384,7 @@ class User extends Authenticatable
                     ->orWhere('nickname', 'like', '%'.$keyword.'%')
                     ->orWhere('company', 'like', '%'.$keyword.'%')
                     ->orWhere('qq', 'like', '%'.$keyword.'%')
-                    ->orWhere('real_name', 'like', '%'.$keyword.'%')
-                    ->orWhere('id_card', 'like', '%'.$keyword.'%');
+                    ->orWhere('real_name', 'like', '%'.$keyword.'%');
 
                 return;
             }
@@ -367,8 +394,7 @@ class User extends Authenticatable
                 ->orWhere('nickname', 'like', '%'.$keyword.'%')
                 ->orWhere('company', 'like', '%'.$keyword.'%')
                 ->orWhere('qq', 'like', '%'.$keyword.'%')
-                ->orWhere('real_name', 'like', '%'.$keyword.'%')
-                ->orWhere('id_card', 'like', '%'.$keyword.'%');
+                ->orWhere('real_name', 'like', '%'.$keyword.'%');
         });
     }
 

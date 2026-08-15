@@ -12,7 +12,7 @@ return [
         'name' => 'Demo 实名认证',
         'version' => '1.0.0',
         'entry' => DemoVerificationPlugin::class,
-        'capabilities' => ['personal', 'scan_url', 'query_status', 'callback_verify', 'fee_config'],
+        'capabilities' => ['personal', 'scan_url', 'query_status', 'verify_callback', 'fee_config'],
     ],
     'config' => [
         'demo_notice' => ['title' => '演示插件', 'type' => 'notice', 'theme' => 'info', 'content' => '该插件用于验证插件流程，不建议在生产环境启用。'],

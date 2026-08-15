@@ -3,15 +3,24 @@
 namespace App\Services\Automation;
 
 use App\Models\ScheduleRunLog;
+use App\Models\ScheduleTaskRun;
 use App\Services\Automation\Heartbeat\Contracts\ScheduledTask;
+use App\Services\Automation\Heartbeat\Contracts\ScheduledTaskCadence;
 use App\Services\Automation\Heartbeat\HeartbeatTaskRegistry;
 use App\Services\Automation\Heartbeat\Providers\LegacyScheduleHookTaskProvider;
 use App\Services\Automation\Heartbeat\Providers\PluginScheduledTaskProvider;
+use App\Services\Automation\Heartbeat\Rules\CronRule;
+use App\Services\Automation\Heartbeat\Rules\DailyTick;
+use App\Services\Automation\Heartbeat\Rules\EveryTicks;
 use App\Services\Automation\Heartbeat\ScheduleTaskRunRepository;
 use App\Services\System\SettingService;
 use App\Support\AutomationScheduleExpression;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator as ConcreteLengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class ScheduleTaskService
 {
@@ -26,13 +35,16 @@ class ScheduleTaskService
 
     public function overview(): array
     {
-        $jobsTableReady = Schema::hasTable('jobs');
-        $failedJobsTableReady = Schema::hasTable('failed_jobs');
+        [$jobsConnection, $jobsTable] = $this->databaseQueueTable();
+        [$failedJobsConnection, $failedJobsTable] = $this->failedQueueTable();
+        $jobsTableReady = $this->tableReady($jobsConnection, $jobsTable);
+        $failedJobsTableReady = $this->tableReady($failedJobsConnection, $failedJobsTable);
         $appTimezone = (string) config('app.timezone', date_default_timezone_get());
         $phpBinary = PHP_BINARY;
         $artisanPath = base_path('artisan');
-        $runtimeState = $this->resolveScheduleRuntimeState();
         $thirdPartyTaskKeys = $this->thirdPartyTaskKeys();
+        // 插件 Provider 可能在扫描过程中更新降级状态，环境快照应反映本次扫描结果。
+        $runtimeState = $this->resolveScheduleRuntimeState();
 
         return [
             'environment' => [
@@ -42,22 +54,53 @@ class ScheduleTaskService
                 'artisan_path' => $artisanPath,
                 'schedule_source' => base_path('routes/console.php'),
                 'queue_driver' => (string) config('queue.default', 'sync'),
+                'business_queue' => (string) config('queue.turaidc_business_queues', 'provision,referral,notification,coupon,default'),
+                'automation_queue' => (string) config('queue.turaidc_schedule_queue', 'automation'),
+                'queue_connection' => $jobsConnection,
+                'jobs_table' => $jobsTable,
                 'jobs_table_ready' => $jobsTableReady,
+                'failed_jobs_connection' => $failedJobsConnection,
+                'failed_jobs_table' => $failedJobsTable,
                 'failed_jobs_table_ready' => $failedJobsTableReady,
-                'pending_jobs' => $jobsTableReady ? (int) DB::table('jobs')->count() : null,
-                'failed_jobs' => $failedJobsTableReady ? (int) DB::table('failed_jobs')->count() : null,
+                'pending_jobs' => $jobsTableReady ? $this->tableCount($jobsConnection, $jobsTable) : null,
+                'failed_jobs' => $failedJobsTableReady ? $this->tableCount($failedJobsConnection, $failedJobsTable) : null,
                 'queue_runtime_mode' => $this->resolveQueueRuntimeMode($jobsTableReady),
+                'missed_slot_policy' => 'strict_current_slot',
                 'schedule_mutex' => $runtimeState['mutex'],
                 'automation_config' => $runtimeState['automation_config'],
+                'plugin_tasks' => $runtimeState['plugin_tasks'],
             ],
             'commands' => $this->buildCommands($phpBinary, $artisanPath),
             'tasks' => collect($this->registry->enabledTasks())
                 ->map(fn (ScheduledTask $task): array => $this->serializeTask($task, $appTimezone, $thirdPartyTaskKeys))
                 ->values()
                 ->all(),
+            'runs_summary' => $this->taskRuns->runStatsSummary(),
             'recent_logs' => $this->recentLogs(),
             'settings_snapshot' => $this->buildSettingsSnapshot(),
         ];
+    }
+
+    /**
+     * 查询运行台账。表尚未在当前环境落库时返回空分页，避免只读管理端被基础设施状态拖垮。
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function paginateRuns(array $filters, int $page = 1, int $perPage = 20): LengthAwarePaginator
+    {
+        $page = max(1, $page);
+        $perPage = max(1, min(100, $perPage));
+
+        if (! $this->taskRuns->tableReady()) {
+            return new ConcreteLengthAwarePaginator([], 0, $perPage, $page);
+        }
+
+        return $this->taskRuns->paginateRuns($filters, $page, $perPage);
+    }
+
+    public function runDetail(int $runId): ?ScheduleTaskRun
+    {
+        return $this->taskRuns->findRun($runId);
     }
 
     /**
@@ -84,6 +127,8 @@ class ScheduleTaskService
             'source_type' => $sourceType,
             'source_label' => $sourceType === 'third_party' ? '第三方任务' : '系统任务',
             'description' => $task->description(),
+            'declared_cadence' => $task instanceof ScheduledTaskCadence ? $task->declaredCadence() : null,
+            'effective_cadence' => $this->effectiveCadenceFor($task),
             'manual_triggerable' => $this->scheduleTaskTriggerService->supports($task->key()),
             'expression' => $expression !== '' ? $expression : '手动触发',
             'summary' => $expression !== '' ? $expression : '手动触发',
@@ -97,6 +142,29 @@ class ScheduleTaskService
     }
 
     /**
+     * 按 15 分钟槽位真实语义推断有效频率；兼容名称（every_minute 等）不作为推断依据。
+     */
+    private function effectiveCadenceFor(ScheduledTask $task): string
+    {
+        $parts = [];
+
+        foreach ($task->triggers() as $rule) {
+            if ($rule instanceof EveryTicks) {
+                $minutes = $rule->interval() * 15;
+                $parts[] = $minutes === 15 ? '15分钟' : "{$minutes}分钟";
+            } elseif ($rule instanceof CronRule) {
+                $parts[] = 'cron '.$rule->describe();
+            } elseif ($rule instanceof DailyTick) {
+                $parts[] = '每日第 '.$rule->index().' 个心跳';
+            } else {
+                $parts[] = $rule->describe();
+            }
+        }
+
+        return implode('；', $parts) ?: '手动触发';
+    }
+
+    /**
      * @return array<string, bool>
      */
     private function thirdPartyTaskKeys(): array
@@ -104,13 +172,21 @@ class ScheduleTaskService
         $keys = [];
 
         foreach ([$this->legacyScheduleHookTaskProvider, $this->pluginScheduledTaskProvider] as $provider) {
-            foreach ($provider->tasks() as $task) {
-                if ($task instanceof ScheduledTask) {
-                    $taskKey = trim($task->key());
-                    if ($taskKey !== '') {
-                        $keys[$taskKey] = true;
+            try {
+                foreach ($provider->tasks() as $task) {
+                    if ($task instanceof ScheduledTask) {
+                        $taskKey = trim($task->key());
+                        if ($taskKey !== '') {
+                            $keys[$taskKey] = true;
+                        }
                     }
                 }
+            } catch (Throwable $exception) {
+                Log::warning('[定时任务] 任务来源标记失败，已按系统任务展示其余任务', [
+                    'provider' => $provider::class,
+                    'message' => $exception->getMessage(),
+                    'exception' => $exception::class,
+                ]);
             }
         }
 
@@ -128,6 +204,9 @@ class ScheduleTaskService
         $mutexReason = trim((string) ($runtimeState['mutex']['reason'] ?? ''));
         $automationStatus = trim((string) ($runtimeState['automation_config']['status'] ?? 'loaded'));
         $fallbackReason = trim((string) ($runtimeState['automation_config']['fallback_reason'] ?? ''));
+        $pluginTaskState = is_array($runtimeState['plugin_tasks'] ?? null)
+            ? $runtimeState['plugin_tasks']
+            : ['status' => 'loaded', 'error_count' => 0];
 
         return [
             'mutex' => [
@@ -142,6 +221,10 @@ class ScheduleTaskService
                 'status' => $automationStatus !== '' ? $automationStatus : 'loaded',
                 'fallback_reason' => $fallbackReason,
             ],
+            'plugin_tasks' => [
+                'status' => trim((string) ($pluginTaskState['status'] ?? 'loaded')) ?: 'loaded',
+                'error_count' => max(0, (int) ($pluginTaskState['error_count'] ?? 0)),
+            ],
         ];
     }
 
@@ -149,15 +232,19 @@ class ScheduleTaskService
     {
         $quotedPhp = $this->quoteShellArgument($phpBinary);
         $quotedArtisan = $this->quoteShellArgument($artisanPath);
-        $queueWorkerQueues = (string) config('queue.TuraIDC_worker_queues', 'provision,referral,notification,coupon,default');
-        $queueWorkerTries = (int) config('queue.TuraIDC_worker_tries', 3);
-        $queueWorkerTimeout = (int) config('queue.TuraIDC_worker_timeout', 1200);
+        $businessQueues = (string) config('queue.turaidc_business_queues', 'provision,referral,notification,coupon,default');
+        $automationQueue = (string) config('queue.turaidc_schedule_queue', 'automation');
+        $queueWorkerTries = (int) config('queue.turaidc_worker_tries', 3);
+        $queueWorkerTimeout = max(
+            (int) config('queue.turaidc_worker_timeout', 1200),
+            (int) config('queue.turaidc_worker_max_timeout', 3600),
+        );
 
         return [
             [
                 'key' => 'schedule_run',
                 'title' => '调度入口',
-                'description' => '宝塔生产环境请仅保留这一条，每 1 分钟运行一次；业务任务按 15 分钟槽位去重，队列也会每分钟尝试消费。',
+                'description' => '宝塔生产环境请仅保留这一条，每 1 分钟运行一次；心跳派发定时任务，queue:drain 后台消费业务与 automation 队列。',
                 'command' => "{$quotedPhp} {$quotedArtisan} schedule:run",
             ],
             [
@@ -167,16 +254,40 @@ class ScheduleTaskService
                 'command' => "{$quotedPhp} {$quotedArtisan} scheduler:heartbeat",
             ],
             [
+                'key' => 'queue_drain',
+                'title' => '队列消费命令',
+                'description' => '由 schedule:run 每分钟后台触发；排查时可手动执行一次消费业务与 automation 队列。',
+                'command' => "{$quotedPhp} {$quotedArtisan} queue:drain",
+            ],
+            [
                 'key' => 'schedule_work',
                 'title' => '本地调度 Worker',
                 'description' => '本地开发环境可常驻运行以下命令，无需额外系统 Cron。',
                 'command' => "{$quotedPhp} {$quotedArtisan} schedule:work",
             ],
             [
-                'key' => 'queue_work',
-                'title' => '队列 Worker（可选）',
-                'description' => '仅在你需要更低延迟时再单独常驻运行；宝塔单计划任务方案下不是必需。',
-                'command' => "{$quotedPhp} {$quotedArtisan} queue:work --queue={$queueWorkerQueues} --sleep=1 --tries={$queueWorkerTries} --timeout={$queueWorkerTimeout}",
+                'key' => 'app_serve_schedule_without_vnc',
+                'title' => '本地调度入口（独立 Relay）',
+                'description' => '本地需要同时运行 HTTP 和调度时使用；VNC Relay 另行运行 vnc:relay。',
+                'command' => "{$quotedPhp} {$quotedArtisan} app:serve --with-schedule --without-vnc",
+            ],
+            [
+                'key' => 'queue_work_business',
+                'title' => '业务队列 Worker',
+                'description' => '独立消费新购、续费履约、通知、返佣、优惠券和默认业务队列。',
+                'command' => "{$quotedPhp} {$quotedArtisan} queue:work --queue={$businessQueues} --sleep=1 --tries={$queueWorkerTries} --timeout={$queueWorkerTimeout}",
+            ],
+            [
+                'key' => 'queue_work_automation',
+                'title' => '定时队列 Worker',
+                'description' => '只消费 automation 队列，避免长定时任务占用业务队列。',
+                'command' => "{$quotedPhp} {$quotedArtisan} queue:work --queue={$automationQueue} --sleep=1 --tries={$queueWorkerTries} --timeout={$queueWorkerTimeout}",
+            ],
+            [
+                'key' => 'vnc_relay',
+                'title' => 'VNC Relay 守护',
+                'description' => '生产环境由宝塔守护或进程管理器常驻运行并自动重启。',
+                'command' => "{$quotedPhp} {$quotedArtisan} vnc:relay",
             ],
         ];
     }
@@ -242,7 +353,7 @@ class ScheduleTaskService
         $driver = (string) config('queue.default', 'sync');
 
         return match ($driver) {
-            'database' => $jobsTableReady ? 'database_queue_heartbeat_drained' : 'after_response_fallback',
+            'database' => $jobsTableReady ? 'database_queue_drain_command' : 'after_response_fallback',
             'redis' => 'redis_queue',
             'sync' => 'sync_inline',
             default => $driver,
@@ -252,6 +363,50 @@ class ScheduleTaskService
     private function quoteShellArgument(string $value): string
     {
         return '"'.str_replace('"', '\"', $value).'"';
+    }
+
+    /** @return array{0:string,1:string} */
+    private function databaseQueueTable(): array
+    {
+        $config = (array) config('queue.connections.database', []);
+
+        return [
+            trim((string) ($config['connection'] ?? '')) ?: (string) config('database.default'),
+            trim((string) ($config['table'] ?? 'jobs')),
+        ];
+    }
+
+    /** @return array{0:string,1:string} */
+    private function failedQueueTable(): array
+    {
+        $config = (array) config('queue.failed', []);
+
+        return [
+            trim((string) ($config['database'] ?? '')) ?: (string) config('database.default'),
+            trim((string) ($config['table'] ?? 'failed_jobs')),
+        ];
+    }
+
+    private function tableReady(string $connection, string $table): bool
+    {
+        if ($connection === '' || $table === '') {
+            return false;
+        }
+
+        try {
+            return Schema::connection($connection)->hasTable($table);
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function tableCount(string $connection, string $table): ?int
+    {
+        try {
+            return (int) DB::connection($connection)->table($table)->count();
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     private function buildSettingsSnapshot(): array

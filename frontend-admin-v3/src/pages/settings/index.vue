@@ -702,7 +702,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             key: 'pt_archiver_defaults_file',
             label: '默认配置文件',
             type: 'input',
-            default: '/etc/TuraIDC/pt-archiver.cnf',
+            default: '/etc/turaidc/pt-archiver.cnf',
             required: true,
             maxlength: 255,
           },

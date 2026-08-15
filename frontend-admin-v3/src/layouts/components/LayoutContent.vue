@@ -60,7 +60,7 @@
         </template>
       </t-tab-panel>
     </t-tabs>
-    <t-content :class="`${prefix}-content-layout`">
+    <t-content id="main-content" :class="`${prefix}-content-layout`">
       <l-breadcrumb v-if="settingStore.showBreadcrumb" />
       <l-content />
     </t-content>

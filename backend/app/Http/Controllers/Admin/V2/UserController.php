@@ -81,7 +81,13 @@ class UserController extends Controller
 
     public function destroy(DeleteUserRequest $request, User $user): JsonResponse
     {
-        $user->delete();
+        // 资产保护：无在用服务、未付账单且余额为 0 才允许删除。
+        $this->users->deleteUser($user, [
+            'operator_id' => (int) ($request->user()?->id ?? 0),
+            'operator_name' => (string) ($request->user()?->username ?? $request->user()?->name ?? $request->user()?->email ?? 'admin'),
+            'trace_id' => (string) $request->header('X-Request-Id', ''),
+            'ip_address' => (string) $request->ip(),
+        ]);
 
         return $this->success(null, '删除成功');
     }

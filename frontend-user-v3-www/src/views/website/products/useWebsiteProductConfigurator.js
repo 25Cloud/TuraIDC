@@ -111,17 +111,17 @@ export function useWebsiteProductConfigurator(productDetail) {
     return NETWORK_KEYS.some((keyword) => text.includes(keyword.toLowerCase()))
   }
 
-  function allParsedConfigs() {
+  const allParsedConfigs = computed(() => {
     const raw = productDetail.value?.config_options || []
     return raw
       .map(parseConfigItem)
       .filter((cfg) => cfg.key && !cfg.hidden && !OS_KEYS.includes(cfg.key) && !REGION_FIELD_KEYS.includes(cfg.key))
       .sort((left, right) => left.sortOrder - right.sortOrder)
-  }
+  })
 
-  const machineConfigs = computed(() => allParsedConfigs().filter(isMachine))
-  const networkConfigs = computed(() => allParsedConfigs().filter((cfg) => !isMachine(cfg) && isNetwork(cfg)))
-  const otherConfigs = computed(() => allParsedConfigs().filter((cfg) => !isMachine(cfg) && !isNetwork(cfg)))
+  const machineConfigs = computed(() => allParsedConfigs.value.filter(isMachine))
+  const networkConfigs = computed(() => allParsedConfigs.value.filter((cfg) => !isMachine(cfg) && isNetwork(cfg)))
+  const otherConfigs = computed(() => allParsedConfigs.value.filter((cfg) => !isMachine(cfg) && !isNetwork(cfg)))
 
   const regionOptions = computed(() => {
     const raw = productDetail.value?.config_options || []
@@ -317,7 +317,7 @@ export function useWebsiteProductConfigurator(productDetail) {
       selectedCycleRef.value = pricingEntries.value[0].cycle
     }
 
-    allParsedConfigs().forEach((cfg) => {
+    allParsedConfigs.value.forEach((cfg) => {
       if (cfg.isNumber) {
         configForm[cfg.key + '_num'] = cfg.defaultNum
       } else if (cfg.options.length) {

@@ -95,4 +95,19 @@ class TicketWorkflowController extends Controller
 
         return $this->success(null, '工单已关闭');
     }
+
+    public function reopen(Request $request, int $id)
+    {
+        $ticket = Ticket::where('user_id', $request->user()->id)->findOrFail($id);
+        $updated = $this->ticketService->reopen($ticket, [
+            'operator_type' => 'client',
+            'operator_id' => (int) $request->user()->id,
+            'trace_id' => (string) $request->header('X-Request-Id', ''),
+        ]);
+
+        return $this->success([
+            'id' => (int) $updated->id,
+            'status' => (int) $updated->status,
+        ], '工单已重新开启');
+    }
 }

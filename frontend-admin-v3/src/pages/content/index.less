@@ -338,7 +338,7 @@
 
 .cover-drawer-card:hover {
   border-color: var(--td-brand-color-light);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 12%);
   transform: translateY(-1px);
 }
 
@@ -359,7 +359,7 @@
   align-items: center;
   gap: 4px;
   padding: 6px 8px;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgb(0 0 0 / 50%);
   backdrop-filter: blur(4px);
   pointer-events: none;
   position: absolute;
@@ -392,7 +392,7 @@
   font-size: var(--td-font-size-size-3, 14px);
 }
 
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   .content-filter {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -402,7 +402,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .content-head {
     flex-direction: column;
   }
@@ -480,7 +480,7 @@
   }
 }
 
-@media (max-width: 360px) {
+@media (width <= 360px) {
   .content-filter {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -570,7 +570,7 @@
 }
 
 // Edit page responsive
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .edit-section__body {
     grid-template-columns: 1fr;
   }

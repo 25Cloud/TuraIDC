@@ -1,0 +1,398 @@
+<title>www 性能诊断</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --surface:#ffffff; --ink:#182036; --ink-2:#4b5872; --ink-3:#78849c;
+    --line:#e2e8f4; --accent:#165dff; --accent-ink:#ffffff; --accent-soft:#eaf1ff;
+    --bad:#cf3d3d; --bad-soft:#fbeaea; --warn:#a85f00; --warn-soft:#fbf1e2;
+    --info:#165dff; --info-soft:#eaf1ff; --mute:#5a6780;
+    --shadow:0 1px 2px rgba(20,40,80,.05),0 10px 30px rgba(20,40,80,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b111f; --surface:#111a2c; --ink:#e7ecf6; --ink-2:#a4b0c8; --ink-3:#6f7c96;
+      --line:#26324a; --accent:#6b9bff; --accent-ink:#0a1430; --accent-soft:rgba(107,155,255,.14);
+      --bad:#ff6b6b; --bad-soft:rgba(255,107,107,.12); --warn:#ffb45c; --warn-soft:rgba(255,180,92,.12);
+      --info:#6b9bff; --info-soft:rgba(107,155,255,.14); --mute:#7d8aa5;
+      --shadow:0 1px 2px rgba(0,0,0,.2),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b111f; --surface:#111a2c; --ink:#e7ecf6; --ink-2:#a4b0c8; --ink-3:#6f7c96;
+    --line:#26324a; --accent:#6b9bff; --accent-ink:#0a1430; --accent-soft:rgba(107,155,255,.14);
+    --bad:#ff6b6b; --bad-soft:rgba(255,107,107,.12); --warn:#ffb45c; --warn-soft:rgba(255,180,92,.12);
+    --info:#6b9bff; --info-soft:rgba(107,155,255,.14); --mute:#7d8aa5;
+    --shadow:0 1px 2px rgba(0,0,0,.2),0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+    line-height:1.7;font-size:15px;font-variant-numeric:tabular-nums;}
+  .wrap{max-width:880px;margin:0 auto;padding:48px 28px 80px;}
+  a{color:var(--accent)}
+  .mono{font-family:"SF Mono","Cascadia Code","Roboto Mono",Consolas,ui-monospace,monospace;font-size:.88em}
+
+  /* Header */
+  header{padding-bottom:34px;border-bottom:1px solid var(--line);margin-bottom:38px}
+  .eyebrow{font-size:12px;letter-spacing:.14em;color:var(--ink-3);margin:0 0 10px;font-weight:600}
+  .title{font-size:34px;line-height:1.15;font-weight:800;letter-spacing:-.01em;margin:0 0 6px}
+  .meta{font-size:13px;color:var(--ink-2);margin:0 0 22px}
+  .summary{font-size:15.5px;color:var(--ink);max-width:62ch;margin:0}
+  .summary strong{color:var(--accent)}
+
+  /* Rating band */
+  .verdict{display:flex;gap:20px;align-items:flex-start;background:linear-gradient(135deg,var(--accent-soft),var(--surface));
+    border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:26px 0 8px}
+  .rating{flex:0 0 auto;width:72px;height:72px;border-radius:16px;background:var(--accent);color:var(--accent-ink);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+  .rating b{font-size:30px;line-height:1;font-weight:800}
+  .rating span{font-size:12px;margin-top:3px;opacity:.85}
+  .verdict p{margin:0;font-size:14.5px;color:var(--ink-2)}
+  .verdict .done{margin-top:10px;font-size:12.5px;color:var(--mute)}
+
+  /* KPI tiles */
+  .tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:26px 0 6px}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+  .tile .k{font-size:11.5px;color:var(--ink-3);letter-spacing:.03em;margin-bottom:6px;line-height:1.4}
+  .tile .v{font-size:19px;font-weight:700;color:var(--ink);line-height:1.2}
+  .tile .v small{font-size:12px;color:var(--ink-3);font-weight:500}
+  .tile .s{font-size:11.5px;color:var(--mute);margin-top:5px}
+
+  /* Sections */
+  section{margin-top:44px}
+  h2{font-size:20px;font-weight:750;margin:0 0 6px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+  .sec-desc{font-size:13.5px;color:var(--ink-2);margin:0 0 20px;max-width:70ch}
+  .tag{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;letter-spacing:.02em}
+
+  /* Bottleneck cards */
+  .bn{display:grid;gap:14px;margin-top:16px}
+  .bn-card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--bad);
+    border-radius:12px;padding:18px 20px;box-shadow:var(--shadow)}
+  .bn-card .n{font-family:"SF Mono","Cascadia Code",Consolas,monospace;font-size:12px;color:var(--bad);font-weight:700}
+  .bn-card h3{margin:4px 0 8px;font-size:16px;line-height:1.45}
+  .bn-card p{margin:0;font-size:14px;color:var(--ink-2)}
+
+  /* Finding cards */
+  .f-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);
+    margin-bottom:16px;overflow:hidden}
+  .f-head{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+  .f-head .num{flex:0 0 auto;font-family:"SF Mono","Cascadia Code",Consolas,monospace;font-size:13px;font-weight:700;
+    padding:3px 10px;border-radius:8px;background:var(--sev-soft,var(--accent-soft));color:var(--sev,var(--accent))}
+  .f-head h3{margin:2px 0 0;font-size:15.5px;line-height:1.5;flex:1}
+  .f-head .chev{margin-left:auto;color:var(--ink-3);font-size:13px;transition:transform .2s}
+  .f-card.open .chev{transform:rotate(90deg)}
+  .f-body{display:none;padding:16px 20px 20px}
+  .f-card.open .f-body{display:block}
+  .f-row{margin-top:12px}
+  .f-row:first-child{margin-top:0}
+  .f-label{font-size:11.5px;font-weight:700;letter-spacing:.08em;color:var(--ink-3);margin-bottom:4px}
+  .f-text{font-size:14px;color:var(--ink-2);line-height:1.75}
+  .f-text b{color:var(--ink);font-weight:650}
+  .f-row.what .f-text{color:var(--ink)}
+  .f-code{font-family:"SF Mono","Cascadia Code",Consolas,ui-monospace,monospace;font-size:12.5px;color:var(--ink-2);
+    background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px 6px;white-space:nowrap}
+  .files{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .file{font-family:"SF Mono","Cascadia Code",Consolas,ui-monospace,monospace;font-size:12px;color:var(--accent);
+    background:var(--accent-soft);border:1px solid var(--line);border-radius:8px;padding:3px 10px}
+
+  /* severity mapping */
+  .p0{--sev:var(--bad);--sev-soft:var(--bad-soft)}
+  .p1{--sev:var(--warn);--sev-soft:var(--warn-soft)}
+  .p2{--sev:var(--info);--sev-soft:var(--info-soft)}
+  .p3{--sev:var(--ink-3);--sev-soft:var(--bg)}
+  .tag.p0{background:var(--bad-soft);color:var(--bad)}
+  .tag.p1{background:var(--warn-soft);color:var(--warn)}
+  .tag.p2{background:var(--info-soft);color:var(--info)}
+  .tag.p3{background:var(--bg);color:var(--ink-3)}
+
+  /* compact P2 cards */
+  .p2-card{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--info);
+    border-radius:10px;padding:14px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .p2-card .t{font-weight:650;font-size:14.5px;margin-bottom:4px}
+  .p2-card p{margin:0 0 6px;font-size:13.5px;color:var(--ink-2)}
+  .p2-card .files{margin-top:8px}
+
+  /* P3 list */
+  .p3-list{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+  .p3-list li{padding:13px 18px;border-bottom:1px solid var(--line);font-size:14px;line-height:1.7}
+  .p3-list li:last-child{border-bottom:none}
+  .p3-list b{color:var(--ink)}
+  .p3-list .fix{color:var(--ink-2)}
+  .p3-list .code{font-family:"SF Mono","Cascadia Code",Consolas,monospace;font-size:12.5px;color:var(--ink-2)}
+
+  /* tables */
+  .tbl-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  table{width:100%;border-collapse:collapse;background:var(--surface);font-size:14px;min-width:560px}
+  th{background:var(--accent-soft);color:var(--ink);font-size:12px;letter-spacing:.05em;text-align:left;
+    padding:11px 16px;font-weight:650;white-space:nowrap}
+  td{padding:11px 16px;border-top:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+  td:first-child{color:var(--ink);font-weight:550;white-space:nowrap}
+  tr:hover td{background:var(--bg)}
+
+  /* verification */
+  .verif{list-style:none;margin:0;padding:0;counter-reset:v}
+  .verif li{position:relative;padding:14px 18px 14px 58px;background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;margin-bottom:10px;font-size:14px;color:var(--ink-2)}
+  .verif li::before{counter-increment:v;content:counter(v);position:absolute;left:16px;top:14px;width:28px;height:28px;
+    border-radius:9px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13px;
+    display:flex;align-items:center;justify-content:center;font-family:"SF Mono",Consolas,monospace}
+  .verif b{color:var(--ink)}
+
+  footer{margin-top:52px;padding-top:20px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-3)}
+
+  @media (max-width:680px){
+    .wrap{padding:28px 16px 60px}
+    .title{font-size:26px}
+    .tiles{grid-template-columns:repeat(2,1fr)}
+    .verdict{flex-direction:column}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important;transition:none!important}
+  }
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">图拉云 · frontend-user-v3-www · 深度性能审查</p>
+  <h1 class="title">官网性能诊断</h1>
+  <p class="meta mono">2026-08-15 · 6 维度专家并行 + 综合评审（7 个智能体 / 568 次工具调用） · 共 28 项发现</p>
+  <p class="summary">图拉云官网 www 前端（Vue 3.5 + Vite 6 + Element Plus 2.9）整体架构健康：<strong>路由全懒加载、manualChunks 划分合理、Element Plus 样式按组件拆分、构建期预压缩 .gz/.br、preconnect / fetchpriority 均已就位</strong>。但首页 LCP 关键路径存在「JS 链 → 两跳动态 chunk → 跨域 API」三级串行且 API 无预热、入口渲染阻塞 CSS 含约 17KB 默认主题死字节、branding SVG（74KB / 43KB）超规格且作为 favicon 每页必载——这三大瓶颈直接拖住首屏指标。</p>
+
+  <div class="verdict">
+    <div class="rating"><b>B</b><span>良</span></div>
+    <div>
+      <p><strong>整体健康度评级 B（良）。</strong>建议优先处理：API 预热 + 路由链 modulepreload（P0-1）、入口 CSS 去默认主题死块并异步化（P0-4）、SVG 重生成（P0-5）。配合 en locale 与 seo 数据瘦身、popper 换轻量实现，可将首页首屏 JS 从约 <span class="mono">138KB br</span> 降至约 <span class="mono">110KB br</span>，LCP 从约 <span class="mono">2.5–4s</span> 压到约 <span class="mono">1.8–2.5s</span>。</p>
+      <p class="done">已实施的优化（不再重复报告）：路由全懒加载 · manualChunks(vendor-vue/axios/content) · 预压缩 .gz/.br · 入口 fetchpriority=high · preconnect/dns-prefetch · mount 后并行预热 config · hero 视频 preload auto</p>
+    </div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">首页首屏 JS 链</div><div class="v">138KB <small>br</small></div><div class="s mono">433KB raw</div></div>
+    <div class="tile"><div class="k">首页首屏 CSS</div><div class="v">17.5KB <small>br</small></div><div class="s mono">112KB raw</div></div>
+    <div class="tile"><div class="k">LCP 估算</div><div class="v">2.5–4s</div><div class="s">4G / 中端机</div></div>
+    <div class="tile"><div class="k">FCP 拖累</div><div class="v">+75–150ms</div><div class="s">渲染阻塞 CSS</div></div>
+    <div class="tile"><div class="k">全站 JS / CSS</div><div class="v">823 / 275KB</div><div class="s mono">raw · 各路由懒加载</div></div>
+  </div>
+</header>
+
+<section>
+  <h2>三大核心瓶颈</h2>
+  <p class="sec-desc">按对首屏 / Core Web Vitals 的影响排序，建议作为第一轮修复。</p>
+  <div class="bn">
+    <div class="bn-card"><div class="n">BOTTLENECK 01</div><h3>首页 LCP 被 <span class="f-code">/v2/site/home</span> API 串行阻塞，且关键路由 chunk 无预热</h3><p>LCP 元素要等 JS 关键链执行完、onMounted 才发 API、返回后才 v-if 渲染；入口只 preconnect+prefetch config，对 home 接口与首页 chunk 均无预热。形成「entry → 布局+popper → 首页 → API」四级串行，API 往返约 150–400ms 属可避免。</p></div>
+    <div class="bn-card"><div class="n">BOTTLENECK 02</div><h3>入口渲染阻塞 CSS：约 17KB 默认主题死字节 + 28KB 阻塞 FCP</h3><p>bootstrap 手工引入 message 预编译 CSS 把 EP 默认主题 base.css（含未覆盖的 <span class="f-code">--el-color-primary-rgb</span>）打进入口 CSS，阻塞 splash 首绘约 75–150ms，弹层主题还依赖脆弱的 CSS 顺序。</p></div>
+    <div class="bn-card"><div class="n">BOTTLENECK 03</div><h3>branding SVG 严重超规格：74KB / 43KB，favicon 每页必载</h3><p>logo1.svg（favicon+splash）与 logo.svg（页头/页脚）是单个极复杂 path 的自动描边，压缩后仍 48KB br，与 entry JS 争抢首屏关键带宽。</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>P0 · 高优先级</h2>
+  <p class="sec-desc">直接影响 LCP / FCP / 首屏体积，建议第一轮修复。</p>
+
+  <div class="f-card p0 open">
+    <div class="f-head"><span class="num">P0-1</span><h3>首页 LCP 完全被 <span class="f-code">/v2/site/home</span> 往返阻塞 + 首页路由 chunk 无预热</h3><span class="chev">›</span></div>
+    <div class="f-body">
+      <div class="f-row what"><div class="f-label">问题</div><div class="f-text">LCP 元素（hero 标题/视频）要等整条 JS 关键链执行完，在 onMounted 才发起 <span class="f-code">siteApi.home()</span>，返回后才 <span class="f-code">v-if</span> 渲染 HomeHeroCarousel；构建产物只 preconnect + prefetch config，WebsiteLayout / home / popper 都等 entry 执行后才动态拉取。</div></div>
+      <div class="f-row"><div class="f-label">证据</div><div class="f-text"><b>home/index.vue</b> 第 3 行 <span class="f-code">&lt;HomeHeroCarousel v-if="homeHeroReady"&gt;</span>；62-68 行 homeHeroReady 依赖 loadHomePage 中 <span class="f-code">await siteApi.home()</span>（99 行）返回；请求在 onMounted（124-125 行）才发起。dist/index.html 仅 preconnect+prefetch config（23-24 行），仅 modulepreload vendor-vue/axios。首屏关键 JS 链合计 raw 433,813B / br 138,460B。</div></div>
+      <div class="f-row"><div class="f-label">影响</div><div class="f-text">LCP ≈ 137KB br JS 关键链 + 两跳动态 chunk + 一次串行跨域 API RTT。4G 中端机估算 2.5–4s，其中 API 往返约 150–400ms 属可避免部分；且没有任何手段在 JS 执行前启动该请求。</div></div>
+      <div class="f-row"><div class="f-label">修复（按成本排序）</div><div class="f-text">① head 内联极小 module script 提前 <span class="f-code">fetch('/v2/site/home')</span> 存入 <span class="f-code">window.__HOME_FETCH__</span>，home 页直接复用，砍 1 个 RTT（注意与 axios 的 CORS/credentials 一致才可命中缓存）；② 扩展 client-fetch-priority 插件为首页路由链（WebsiteLayout + home + popper + button）注入 modulepreload 并行下载；③ 长期：对首页 prerender 预渲染 hero 文案（现有 prerender-www.mjs 只改写 meta）。</div></div>
+      <div class="files"><span class="file">index.html</span><span class="file">vite.config.js</span><span class="file">src/pages/website/home/index.vue</span></div>
+    </div>
+  </div>
+
+  <div class="f-card p0 open">
+    <div class="f-head"><span class="num">P0-2</span><h3>hero 标题/描述入场动画把 LCP 文字绘制推迟最多约 420ms</h3><span class="chev">›</span></div>
+    <div class="f-body">
+      <div class="f-row what"><div class="f-label">问题</div><div class="f-text">h1/p 因 <span class="f-code">:key</span> 每次（含首帧）重新挂载，<span class="f-code">hero-body-rise</span> 动画从 opacity:0 重放，LCP 候选文字绘制时刻被推迟约 200–420ms（每次切 slide 也重复）。</div></div>
+      <div class="f-row"><div class="f-label">证据</div><div class="f-text"><b>HomeHeroCarousel.vue</b> 85-86 行 <span class="f-code">:key="activeSlide.key"</span>；1136/1146 行 <span class="f-code">.hero-title/.hero-desc { animation: hero-body-rise 0.42s … }</span>；1215-1225 行 keyframes 起点 <span class="f-code">opacity:0; transform: translate3d(0,14px,0)</span>。</div></div>
+      <div class="f-row"><div class="f-label">影响</div><div class="f-text">LCP 文字绘制被推迟约 200–420ms，与 API 延迟叠加，是纯加法延迟。</div></div>
+      <div class="f-row"><div class="f-label">修复</div><div class="f-text">首帧渲染禁用该动画（复用已有 <span class="f-code">instantVideoReveal</span> 模式：初始置类去掉 animation，nextTick 后再恢复），只在轮播切换时保留 0.42s 淡入。</div></div>
+      <div class="files"><span class="file">src/views/website/Home/components/HomeHeroCarousel.vue</span></div>
+    </div>
+  </div>
+
+  <div class="f-card p0 open">
+    <div class="f-head"><span class="num">P0-3</span><h3>桌面端 hero 视频可能成为 LCP：无 poster、无体积约束、双缓冲预取两支视频</h3><span class="chev">›</span></div>
+    <div class="f-body">
+      <div class="f-row what"><div class="f-label">问题</div><div class="f-text">video 元素无 poster、无 <span class="f-code">&lt;source type&gt;</span>、无 fetchpriority；src 由 <span class="f-code">resolvedVideoSrc(slide.video)</span> 动态生成，HTML 无法预加载；switchToSlide 赋新 src 后立即置 activeVideoSlot，使新 video 变 preload=auto 开始整段下载，而旧 slot 仍在播放。</div></div>
+      <div class="f-row"><div class="f-label">证据</div><div class="f-text">HomeHeroCarousel.vue 9-48 行两个 <span class="f-code">&lt;video&gt;</span> 仅 <span class="f-code">:src</span>；17/22 行 <span class="f-code">:preload="… 'auto' : 'none'"</span>；651-706 行双缓冲逻辑。默认 5 个 slide 的 video 均为空串故默认不产生请求；一旦管理端给多 slide 配置视频，首页停留期间会按轮播依次预取多支，前端无码率/时长上限。</div></div>
+      <div class="f-row"><div class="f-label">影响</div><div class="f-text">桌面端（≥769px）首屏 slide 带视频时，LCP 从「文字绘制」变为「视频下载+解码+首帧」，在约 2.5–4s 基础上再叠加数百 KB~MB，可能突破 5s+；多视频弱网下与首屏关键资源竞争带宽。</div></div>
+      <div class="f-row"><div class="f-label">修复</div><div class="f-text">① video 补 poster 静态首帧图（来自 API、可缓存/preload），把 LCP 锚定在快速绘制的 poster/h1 上；② 后端约束视频 ≤5MB、≤20s，MP4(H.264)+WebM 双格式并带正确 MIME；③ 首屏优先单支循环视频而非多支轮播预取；保持 <span class="f-code">shouldEnableHeroVideo</span> 慢网拦截。</div></div>
+      <div class="files"><span class="file">src/views/website/Home/components/HomeHeroCarousel.vue</span><span class="file">后端 hero 数据约定</span></div>
+    </div>
+  </div>
+
+  <div class="f-card p0 open">
+    <div class="f-head"><span class="num">P0-4</span><h3>入口渲染阻塞 CSS：默认主题 base.css 死块 + 28KB 阻塞 FCP</h3><span class="chev">›</span></div>
+    <div class="f-body">
+      <div class="f-row what"><div class="f-label">问题</div><div class="f-text"><span class="f-code">bootstrap.ts</span> 第 5 行 <span class="f-code">import 'element-plus/es/components/message/style/css'</span> 走 EP 预编译 CSS，经 base 引入 <span class="f-code">element-plus/theme-chalk/base.css</span>（默认主题，不含注入的主题变量）；其余组件都经 ElementPlusResolver(importStyle:'sass') 编译为主题化 CSS。产物入口 CSS 同时含默认 <span class="f-code">:root</span> 块（<span class="f-code">--el-color-primary-rgb:64,158,255</span>，约 4.8KB 纯死字节）与主题化 <span class="f-code">:root</span>，且 <span class="f-code">--el-color-primary-rgb</span> 未被主题覆盖。</div></div>
+      <div class="f-row"><div class="f-label">证据</div><div class="f-text">dist/assets/css/index-Dmyntsrs.css 28KB，offset 67 起默认 :root 块长 4,823 字符；全文件仅 1 处 <span class="f-code">--el-color-primary-rgb</span> 且为默认值；主题值 <span class="f-code">22, 93, 255</span> 只存在于 sass 产物 base css。该 28KB 入口 CSS 以 <span class="f-code">&lt;link rel=stylesheet&gt;</span> 渲染阻塞加载，而 splash 首绘完全不需要它。</div></div>
+      <div class="f-row"><div class="f-label">影响</div><div class="f-text">FCP 被阻塞约 1 RTT + 解析（4G 约 +75–150ms，慢网更大）；约 17KB 默认主题重复内容（gz 约 3.7KB）属无效字节；弹层主题依赖「默认 :root 先出现、主题 :root 后出现」的顺序，一旦构建顺序变化回退默认蓝 #409eff。</div></div>
+      <div class="f-row"><div class="f-label">修复</div><div class="f-text">① bootstrap.ts:5 改 sass 路径 <span class="f-code">import 'element-plus/es/components/message/style/index'</span>，走 additionalData 主题变量编译（入口 CSS 预期 28KB/6.3KB gz → 约 11KB/3KB gz），消除顺序依赖；② global.scss :root 补 <span class="f-code">--el-color-primary-rgb</span> 及 primary-light-3/5/7/8/9、primary-dark-2 派生变量；③ splash + 应用壳关键 CSS 内联进 index.html，head 入口 CSS 改异步加载（preload as=style onload 切换或 media=print）。</div></div>
+      <div class="files"><span class="file">src/app/bootstrap.ts</span><span class="file">src/assets/styles/global.scss</span><span class="file">index.html</span></div>
+    </div>
+  </div>
+
+  <div class="f-card p0 open">
+    <div class="f-head"><span class="num">P0-5</span><h3>branding SVG 严重超规格：logo1.svg 74KB（favicon+splash）、logo.svg 43KB（页头/页脚）</h3><span class="chev">›</span></div>
+    <div class="f-body">
+      <div class="f-row what"><div class="f-label">问题</div><div class="f-text">两个 SVG 体积巨大却用于极小渲染尺寸（favicon 48×48、splash 48×48、页头 ≤148×32）；favicon 每个页面都会请求一次。</div></div>
+      <div class="f-row"><div class="f-label">证据</div><div class="f-text">logo1.svg 共 73,952B（1352×940 整幅自动描边，1 个 path 的 d 占 73,796B，数值精度压到 2 位小数仅降到 66,521B——证明体积来自描边段数量而非精度）；logo.svg 43,258B（d 占 42,757B）。压缩后 br 仍 25,192B / 15,286B。使用位置：favicon（index.html:20）、splash（index.html:83）、页头/页脚（WebsiteLayout.vue:668）。</div></div>
+      <div class="f-row"><div class="f-label">影响</div><div class="f-text">首屏需下载约 116KB 原始图片（压缩后约 48KB），与 entry JS 争抢关键带宽窗口（4G 约 +50–90ms）；favicon 用 73KB（br 25KB）的 SVG 极不合理，每页必载。</div></div>
+      <div class="f-row"><div class="f-label">修复</div><div class="f-text">SVGO / Illustrator 简化 + 降点数精度 + multipass 将两文件压到几 KB；为 favicon 单独提供 ≤2KB 小图标（或复用简化后的 logo1），splash 与 favicon 复用同一份小图。当前构建期已生成 .gz/.br，但根因是源文件，应从源头根治。</div></div>
+      <div class="files"><span class="file">public/branding/logo1.svg</span><span class="file">public/branding/logo.svg</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>P1 · 中等优先级</h2>
+  <p class="sec-desc">显著优化收益，建议第二轮修复。</p>
+
+  <div class="f-card p1 open">
+    <div class="f-head"><span class="num">P1-1</span><h3>products 目录加载链路网络低效：深链重复拉目录、productsInit 兜底绕过缓存、children 串行、switchType 重复请求</h3><span class="chev">›</span></div>
+    <div class="f-body">
+      <div class="f-row what"><div class="f-label">问题与证据</div><div class="f-text">① 深链重复拉取：useWebsiteProductsCatalog.js 559-562 行 hasRouteTarget 分支直接 applyRouteSelection（rootGroups 仍空），必走 479-487 行重拉根分组 + loadGroupPayload 重拉目标组完整目录；② 兜底绕过缓存：site.js 141-144 行当响应无 catalog 时直接 fetchV2SiteProductGroupCatalog，未先查 catalogCache，且每次进 /products 都重新 GET purchase-context（无 TTL）；③ 串行：site.js 93-117 行 await children 完成才执行根产品，本可并行；④ switchType：344-349 行每次切类型都打 productGroups 接口。</div></div>
+      <div class="f-row"><div class="f-label">影响</div><div class="f-text">深链首屏最少 3 次串行请求（purchase-context → product-groups → 目标组目录），最坏串行链 5–20+ 个请求；频繁切类型请求量线性增长；3 分钟目录缓存对首组形同虚设。</div></div>
+      <div class="f-row"><div class="f-label">修复</div><div class="f-text">路由分支先 setCachedCatalog 再 applyRouteSelection，loadGroupPayload 优先从 catalogCache 命中；缓存查询下沉到 site.js（同一模块级 Map），productsInit 兜底前先查缓存；children 与根产品用 Promise.all 并行；switchType 改本地按 first_product_group_code 过滤，仅本地无数据才请求。</div></div>
+      <div class="files"><span class="file">src/views/website/products/useWebsiteProductsCatalog.js</span><span class="file">src/api/site.js</span></div>
+    </div>
+  </div>
+
+  <div class="f-card p1 open">
+    <div class="f-head"><span class="num">P1-2</span><h3>入口 chunk 死代码瘦身：EP en 语言包 + seoLandingPages 全量文案</h3><span class="chev">›</span></div>
+    <div class="f-body">
+      <div class="f-row what"><div class="f-label">问题与证据</div><div class="f-text">① en locale：入口 chunk index-KfwYUMUb.js（66,660B raw / 19,495B br）同时打包 en 与 zh-cn 两个 EP locale（en 约 8,007 字符），来源是 element-plus use-locale hook 静态 import en_default，即使 bootstrap 始终 provideGlobalConfig({locale:zhCn})；② seoLandingPages：routes.ts 第 2 行静态 import 全量数据（390 行/19KB，含 9 个落地页 hero/features/scenarios 全部文案），而落地页组件本身已懒加载。</div></div>
+      <div class="f-row"><div class="f-label">影响</div><div class="f-text">en locale 为纯死代码，约占入口 chunk raw 14%（约 2.4KB br/页）；seo 数据 9 个落地页正文从未访问也照常加载（约 8.9KB minified）。两项合计约 11KB br/页，全站每页首屏背负。</div></div>
+      <div class="f-row"><div class="f-label">修复</div><div class="f-text">vite.config.js resolve.alias 将 element-plus/es/locale/lang/en.mjs 指向最小 stub（或直接指向 zh-cn）；seoLandingPages 拆两部分——entry 只保留 path/title/description/keywords 等路由 meta 必需字段的轻量表，hero/features/scenarios 等正文数据单独模块随落地页懒加载引入。</div></div>
+      <div class="files"><span class="file">vite.config.js</span><span class="file">src/app/router/routes.ts</span><span class="file">src/data/seoLandingPages.js</span></div>
+    </div>
+  </div>
+
+  <div class="f-card p1 open">
+    <div class="f-head"><span class="num">P1-3</span><h3>header el-dropdown 连带 element-plus popper 机制 53KB 进入每页首屏</h3><span class="chev">›</span></div>
+    <div class="f-body">
+      <div class="f-row"><div class="f-label">问题与证据</div><div class="f-text">WebsiteLayout 顶栏用户菜单用 el-dropdown/el-dropdown-menu（183/225 行等），连带 popper/tooltip/scrollbar/use-form-item 全链 chunk popper-BG62XCjp.js（52,752B raw / 16,925B br）进入所有页面首屏。</div></div>
+      <div class="f-row"><div class="f-label">影响</div><div class="f-text">仅为一个头部下拉菜单，每页首屏多载约 53KB raw / 17KB br。</div></div>
+      <div class="f-row"><div class="f-label">修复</div><div class="f-text">改为轻量自定义下拉（CSS + 原生事件，约 2–3KB），或点击后动态 import 该 el-dropdown 组件。</div></div>
+      <div class="files"><span class="file">src/layout/WebsiteLayout.vue</span></div>
+    </div>
+  </div>
+
+  <div class="f-card p1 open">
+    <div class="f-head"><span class="num">P1-4</span><h3>fetchAll 分页 do-while 无空页/最大页数终止保护，total 不一致时无限翻页</h3><span class="chev">›</span></div>
+    <div class="f-body">
+      <div class="f-row what"><div class="f-label">问题与证据</div><div class="f-text">site.js 43-67 / 69-91 行 <span class="f-code">do { …list.push(...data.list); total = Number(data.total || list.length); page += 1 } while (list.length &lt; total)</span>；退出条件仅 list.length ≥ total。若后端 total 含 level 过滤/下架等未随页返回的条目（total 恒定且任意页返回空/不足），list.length 永远小于 total，page 无限递增。</div></div>
+      <div class="f-row"><div class="f-label">影响</div><div class="f-text">一旦触发即为无界请求风暴（每页一个 GET，页数无上限），与失败重试叠加放大；安全收敛完全寄托于后端分页语义正确。</div></div>
+      <div class="f-row"><div class="f-label">修复</div><div class="f-text">增加终止保护：记录「本页返回空 list」或「连续空页」即 break，并加最大页数硬上限（如 page ≤ 100）；或改后端一次性返回（调大 page_size / 增加 total 一致性校验）。</div></div>
+      <div class="files"><span class="file">src/api/site.js</span></div>
+    </div>
+  </div>
+
+  <div class="f-card p1 open">
+    <div class="f-head"><span class="num">P1-5</span><h3>选中商品对当前分类全部商品逐个预取详情（可达 50 请求），选中后后台 worker 不中止</h3><span class="chev">›</span></div>
+    <div class="f-body">
+      <div class="f-row what"><div class="f-label">问题与证据</div><div class="f-text">prefetchProductDetails（useWebsiteProductCheckout.js 491-527 行）对 visibleProducts 全部 id（排除当前商品）发起 GET /v2/site/products/{id}，仅 2 个并发 worker；loadSelectedProduct（456-483 行）abort 了 detail/stock/quote 三个 controller 但未调 cancelProductDetailPrefetch；useWebsiteProductsPage.js 12-18 行 watch 每次切分类都启动新一轮预取。</div></div>
+      <div class="f-row"><div class="f-label">影响</div><div class="f-text">大分类（page_size=50 全量分页）首看即触发几十个详情请求，与选中商品的 detail/stock/quote 争抢连接；分类来回切换时预取总量为「产品数 × 切分类次数」。</div></div>
+      <div class="f-row"><div class="f-label">修复</div><div class="f-text">限制单分类预取上限（如仅前 8–10 个 + 视口内产品）；loadSelectedProduct 里调用 cancelProductDetailPrefetch 停掉后台预取；或改懒加载（hover/进入视口才拉详情）。</div></div>
+      <div class="files"><span class="file">src/views/website/products/useWebsiteProductCheckout.js</span><span class="file">src/views/website/products/useWebsiteProductsPage.js</span></div>
+    </div>
+  </div>
+
+  <div class="f-card p1 open">
+    <div class="f-head"><span class="num">P1-6</span><h3>机器规格正则解析重复执行：products 全 SKU 双份解析 + 详情页同级 Tab 每次渲染重跑</h3><span class="chev">›</span></div>
+    <div class="f-body">
+      <div class="f-row what"><div class="f-label">问题与证据</div><div class="f-text">products/index.vue 1517-1596 行 desktopMachineSpecRows 与 mobileProductSpecRows 各自对全部 visibleProducts 逐条执行 resolveMachineSpecSelection / parseMachineSpecFromText / normalizeMemorySpecText 等多次正则解析；两条 computed 都读 selectedProduct.id，每次点击表行两份列表全部重算、同一 SKU 解析两遍，还级联刷新 1619-1759 行一串 computed，整表 v-for 全量重渲染。ProductDetail/index.vue 第 26 行 <span class="f-code">{{ resolveMachineSpecPresentation(sib).displayName }}</span> 直接写在 v-for 内，组件在配置变更、quoteLoading 翻转时整体重渲染，对所有同级产品重复正则解析。</div></div>
+      <div class="f-row"><div class="f-label">影响</div><div class="f-text">目录含 50–150 个 SKU 时每次产品选择触发约 2×N 次完整正则解析与整表行对象重建，低端机/移动端点击行后明显掉帧；详情页同级 5–30 个产品每次重渲染累计 CPU 开销明显。</div></div>
+      <div class="f-row"><div class="f-label">修复</div><div class="f-text">按 product.id 建立规格展示缓存 Map，desktop 与 mobile 两套行构建共用（仅 visibleProducts 变化或该商品 detail 变化时失效对应条目）；详情页抽 siblingPresentations computed（Map&lt;id, displayName&gt;），模板改为从 Map 读取。</div></div>
+      <div class="files"><span class="file">src/views/website/products/index.vue</span><span class="file">src/views/website/ProductDetail/index.vue</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>P2 · 一般收益</h2>
+  <p class="sec-desc">结构健康但可进一步优化，按需纳入迭代。</p>
+
+  <div class="p2-card"><div class="t">P2-1 · products 目录 children 与根产品串行</div><p>site.js 93-117 行：children 列表与根产品用 Promise.all 并行拉取，再并行子组产品，整体目录首屏延迟可省约一个 RTT。</p><div class="files"><span class="file">src/api/site.js</span></div></div>
+
+  <div class="p2-card"><div class="t">P2-2 · ContentListPage 侧边栏冗余请求</div><p>首屏 loadList（page_size=10）与 loadSidebarContent（page_size=20）并发拉同一接口第 1 页，前 10 条完全重叠；每次分页/搜索同步都重拉并整体替换 hotArticles/recentArticles。建议合并为单次 page_size=20（主列表取前 10，sidebar 从同 20 条排序取 5+5），侧边栏仅首次进入时加载一次。</p><div class="files"><span class="file">src/views/website/content/ContentListPage.vue</span></div></div>
+
+  <div class="p2-card"><div class="t">P2-3 · index.html prefetch /v2/site/config 死重</div><p>首页从不请求该接口（config 内嵌于 /v2/site/home 并 hydrate，bootstrap 对首页直接 return）；非首页浏览器级 prefetch 与 bootstrap fetchSiteConfig 各打一次。建议移除，config 统一交给 bootstrap 的 fetchPromise 单例；真正缺预热的是 /v2/site/home（见 P0-1）。</p><div class="files"><span class="file">index.html</span></div></div>
+
+  <div class="p2-card"><div class="t">P2-4 · 商品详情缓存为 composable 实例级</div><p>productDetailCache 定义在 composable 内部，离开 /products 页即随实例销毁，与模块级 catalogCache 生命周期不一致，往返时同一批详情反复下载。建议提升为模块级并加 TTL。</p><div class="files"><span class="file">src/views/website/products/useWebsiteProductCheckout.js</span></div></div>
+
+  <div class="p2-card"><div class="t">P2-5 · normalizer 全量透传原始字段</div><p>…item / …payload 展开保留全部原始字段，大目录（pricing_entries/config_options）在 catalog/productsByGroup/detail 多处完整驻留内存。建议 pick 白名单字段，非活跃分类浅表化/丢弃。</p><div class="files"><span class="file">src/api/productCatalogNormalizer.js</span><span class="file">src/api/contentNormalizer.js</span></div></div>
+
+  <div class="p2-card"><div class="t">P2-6 · 模板内未缓存 find/格式化函数调用</div><p>cpuConfig.options.find、selectedOptionLabel、formatFrequencyPair、normalizeInstanceSpecNote（同一参数 1010/1027 行调两次）等每次重渲染对每行/每配置重复执行。建议提为 computed，同一参数先在局部变量计算再复用。</p><div class="files"><span class="file">src/views/website/products/index.vue</span></div></div>
+
+  <div class="p2-card"><div class="t">P2-7 · HomeHeroCarousel resolvedVideoSrc 每次渲染调用 + watch 冗余重入</div><p>:src="resolvedVideoSrc(videoSlotA)" 为模板函数调用，每次渲染都做字符串归一化与正则；watch(activeSlide) 在 772 行重入 switchToSlide（auto=false 提前返回条件不成立，重走完整 slot 判断）。建议提为两个 computed；watch 分支当前 slot 已是目标视频时直接 queueActiveVideoPlayback。</p><div class="files"><span class="file">src/views/website/Home/components/HomeHeroCarousel.vue</span></div></div>
+
+  <div class="p2-card"><div class="t">P2-8 · hero 骨架屏高度与真实 hero 不一致</div><p>API 返回瞬间 LCP 元素出现的同时发生约 30–80px 垂直位移，估算 CLS 约 0.02–0.08。建议对齐骨架与真实 hero 的 min-height/padding，或给真实 hero 容器固定占位高度。</p><div class="files"><span class="file">src/views/website/Home/components/HomeSectionSkeleton.vue</span><span class="file">HomeHeroCarousel.vue</span></div></div>
+
+  <div class="p2-card"><div class="t">P2-9 · 汉堡菜单打开触发 3 个并发 API + touch 非被动监听</div><p>菜单打开同步调用 navProductInit + navNoticesMenu + navHelpMenu 三个请求并渲染多级菜单树，慢网下交互响应可能达 200ms+（INP 风险点）；touchstart/touchend 在 Vue3 下注册为非被动监听。建议只请求当前展开的一层（或复用 home 响应 root_groups），touch 事件加 .passive。</p><div class="files"><span class="file">src/layout/WebsiteLayout.vue</span><span class="file">HomeHeroCarousel.vue</span></div></div>
+
+  <div class="p2-card"><div class="t">P2-10 · splash 在 app.mount 瞬间被硬清除、首屏出现 3 种连续加载态</div><p>Vue3 mount 清空容器 innerHTML，fade-out 作用在已脱离文档的节点上不生效；挂载后主区经历「骨架 → 空白 → 另一骨架 → 内容」3 种加载态衔接生硬。建议把 #app-splash 移出 #app 作兄弟节点，在首页骨架/hero 挂载完成后再淡出移除；去掉 App 层与 Layout 层重复骨架。</p><div class="files"><span class="file">index.html</span><span class="file">src/app/bootstrap.ts</span><span class="file">src/App.vue</span></div></div>
+
+  <div class="p2-card"><div class="t">P2-11 · products 页（核心购买页）首屏 JS 链全站最重（查漏补充）</div><p>主 chunk index-qkf6aL8G.js 112KB raw（全站最大页面 chunk），连带 select 36KB / popper 53KB / websiteCheckout 15KB 等，估算首屏约 575KB raw / 180KB br。建议评估将结算（quote/checkout）、OS 图标映射等非首看逻辑拆出或懒加载；public/img/os/ 下 XenServer.svg(15.7KB)/Debian.svg(14.5KB) 等可 SVGO 压缩至 1–2KB。</p><div class="files"><span class="file">src/views/website/products/index.vue</span><span class="file">public/img/os/</span></div></div>
+
+  <div class="p2-card"><div class="t">P2-12 · 文章正文图片无宽高占位</div><p>正文仅 :deep(img){max-width:100%;height:auto}，htmlSanitizer 补 loading=lazy 但 width/height 只保留源文自带值（绝大多数不带），懒加载图片加载完成瞬间高度从 0 跳变。建议渲染管线为图片注入 aspect-ratio 占位或按元数据补宽高。</p><div class="files"><span class="file">src/views/website/content/ContentDetailPage.vue</span><span class="file">shared/htmlSanitizer.js</span></div></div>
+</section>
+
+<section>
+  <h2>P3 · 低优先级</h2>
+  <ul class="p3-list">
+    <li><b>P3-1 dayjs 冗余</b>：package.json 声明但全项目无直接使用，作为 EP 内部传递依赖经 WebsiteLayout 静态引用进入每页首屏（base chunk 7KB raw / 2.8KB br）。<span class="fix">修复：</span>确认布局链哪个 EP 组件传递引入；从 dependencies 移除；或对 dayjs 做 sideEffects 标记避免进布局链。<span class="code">（package.json / WebsiteLayout.vue）</span></li>
+    <li><b>P3-2 页头/页脚 logo &lt;img&gt; 缺 width/height</b>：CSS 已固定尺寸无 CLS，仅规范缺口。<span class="fix">修复：</span>补 width="148" height="32"/"40" 显式声明。<span class="code">（WebsiteLayout.vue 7-13/456-462）</span></li>
+    <li><b>P3-3 死资源</b>：public/img/os/ 下 cart.svg、slider.svg、no-upgrade.svg 全仓库无引用。<span class="fix">修复：</span>确认后删除或归档。<span class="code">（public/img/os/）</span></li>
+    <li><b>P3-4 axios GET 去重 key 不含 Authorization</b>：buildSafeRequestKey 仅取 method/baseURL/url/params/data，同 URL 同 params 的 GET 若一个在 token 就绪前、一个在就绪后并发会共享先发起者的（可能未鉴权）响应。<span class="fix">修复：</span>key 增加 header 维度或对带 token 的 GET 关闭去重。<span class="code">（@turaidc/shared/runtime/http/core.ts 39-49）</span></li>
+    <li><b>P3-5 catalogPendingMap 取消后静默空载</b>：切组 abort 后 pending map 中未 settle 的已取消 promise 被再次命中，await 抛 CanceledError 被 catch 静默吞掉且不重试，组 A→B→A 连点时组 A 可能停在空态无自愈。<span class="fix">修复：</span>pending 命中时先判断是否已因取消而拒绝，catch 到 CanceledError 且 token 仍匹配时重新发起。<span class="code">（useWebsiteProductsCatalog.js 380-394/413-418）</span></li>
+  </ul>
+</section>
+
+<section>
+  <h2>预期收益</h2>
+  <p class="sec-desc">en locale + seo 数据 + popper 三项合计约省 28KB br/页首屏；配合 P0-1 的 modulepreload 与 API 预热，首页首屏关键路径从「JS 链 → 两跳 chunk → API」三级串行收敛为「JS/CSS 并行 + 数据并行」两级，LCP 收益约 1–1.5s，FCP 收益约 75–150ms。</p>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>优化项</th><th>当前</th><th>优化后</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>入口 CSS（去默认主题死块）</td><td class="mono">28KB raw / 6.3KB gz</td><td class="mono">约 11KB / 3KB gz</td><td>bootstrap 改 sass 路径，移除约 17KB 默认主题重复内容</td></tr>
+        <tr><td>入口 CSS（异步化）</td><td>渲染阻塞 FCP +75–150ms</td><td>不阻塞首绘</td><td>splash + 应用壳内联，head CSS 改 preload/onload</td></tr>
+        <tr><td>en locale 死代码</td><td class="mono">约 8KB raw / 2.4KB br/页</td><td>0</td><td>alias 指向 zh-cn/stub</td></tr>
+        <tr><td>seoLandingPages 正文</td><td class="mono">约 8.9KB minified/页</td><td>路由 meta 轻量表</td><td>正文随落地页懒加载</td></tr>
+        <tr><td>popper 机制</td><td class="mono">53KB raw / 17KB br/页</td><td class="mono">约 2–3KB</td><td>header 下拉改轻量实现</td></tr>
+        <tr><td>branding SVG</td><td class="mono">116KB raw / 48KB br</td><td>数 KB</td><td>SVGO 重生成 + 独立 favicon</td></tr>
+        <tr><td>首页 LCP</td><td class="mono">约 2.5–4s</td><td class="mono">约 1.8–2.5s</td><td>API 预热（-1 RTT）+ 动画首帧禁用（-200–420ms）+ modulepreload</td></tr>
+        <tr><td>首页首屏 JS br</td><td class="mono">约 138KB</td><td class="mono">约 110KB</td><td>en + seo + popper 三项合计约省 28KB br/页</td></tr>
+        <tr><td>products 目录网络</td><td>深链 3+ 次串行、首组拉两遍</td><td>1 次目录</td><td>缓存复用 + 并行化</td></tr>
+        <tr><td>products 详情预取</td><td>每分类 50 请求</td><td>8–10 个</td><td>上限 + worker 中止</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>验证建议</h2>
+  <ol class="verif">
+    <li><b>体积验证</b>：每项修复后执行 <span class="f-code">npm run build</span>，比对 dist/assets 与 dist/index.html——入口 CSS 是否仍含默认主题块（<span class="f-code">--el-color-primary-rgb:64,158,255</span>，应为 0 处）；入口 JS 是否仍含 <span class="f-code">name:"en"</span> 与 5 个落地页 slug；用 <span class="f-code">du -b dist/assets/js/*.js</span> 比对对应 chunk 体积变化。</li>
+    <li><b>行为验证</b>：fetchAll 终止保护——mock 接口返回 total 恒定且第 N 页空 list，确认循环在空页/上限处退出；深链目录去重——进 /products?typeId..&amp;groupId.. 观察 Network，确认 purchase-context 之后不再重复拉 product-groups + 目标组目录；详情预取中止——选中商品后确认剩余详情请求出现 canceled。</li>
+    <li><b>指标验证</b>：Lighthouse / PageSpeed Insights（4G + Moto G）对比改动前后——LCP 候选元素类型从 video 变为 h1/poster 且数值变化；FCP 确认 splash 首绘不再等 28KB 入口 CSS；CLS 观察 hero 骨架替换瞬间是否还有 30–80px 位移；用 PerformanceObserver 确认 LCP 元素与绘制时间戳。</li>
+    <li><b>主题正确性</b>：修复 bootstrap sass 路径后，确认 ElMessage 弹层颜色仍为主题蓝 <span class="f-code">#165dff</span>（而非默认 #409eff），且 global.scss 补齐 primary-rgb 后 <span class="f-code">rgba(var(--el-color-primary-rgb),…)</span> 渲染正确。</li>
+    <li><b>真机弱网</b>：DevTools Network 节流（Slow 4G）抓首页首屏请求瀑布，期望 modulepreload 与 /v2/site/home 并行，不再出现四级串行。</li>
+  </ol>
+</section>
+
+<footer>
+  审查方法：6 个维度专家（打包与首屏 / 图片与媒体 / 运行时渲染 / 网络与 API / 框架使用 / Core Web Vitals）并行审查源码与构建产物，再由综合评审专家去重合并、按 P0–P3 排序。所有发现均带可核查证据（文件 + 行号）。指标估值为 4G / 中端机下的保守估算，实际以 Lighthouse 实测为准。
+</footer>
+
+</div>
+
+<script>
+  document.querySelectorAll('.f-head').forEach(function(head){
+    head.addEventListener('click', function(){
+      head.parentElement.classList.toggle('open')
+    })
+  })
+</script>

@@ -120,8 +120,8 @@
               <t-dropdown
                 trigger="click"
                 placement="bottom-right"
-                :options="mobileActionOptions(row)"
-                @click="(data: { value: unknown }) => handleMobileAction(data.value, row)"
+                :options="mobileActionOptions()"
+                @click="handleMobileActionHandler(row)"
               >
                 <t-button class="content-mobile-card__more" variant="text" shape="square">...</t-button>
               </t-dropdown>
@@ -220,7 +220,7 @@
 import './index.less';
 
 import { AddIcon, FolderIcon, SearchIcon } from 'tdesign-icons-vue-next';
-import type { FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
+import type { DropdownOption, FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -341,11 +341,15 @@ function handlePageChange(data: { current: number; pageSize: number }) {
   loadArticles();
 }
 
-function mobileActionOptions(_row: ContentArticleRecord) {
+function mobileActionOptions() {
   return [
     { content: '编辑', value: 'edit' },
     { content: '删除', value: 'delete', theme: 'error' },
   ];
+}
+
+function handleMobileActionHandler(row: ContentArticleRecord) {
+  return (data: DropdownOption) => handleMobileAction(data.value, row);
 }
 
 function handleMobileAction(value: unknown, row: ContentArticleRecord) {

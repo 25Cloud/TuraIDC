@@ -76,11 +76,7 @@
                 取消
               </t-button>
             </t-space>
-            <t-dropdown
-              v-else
-              :options="mobileActionOptions(row)"
-              @click="(data: { value: unknown }) => handleMobileAction(data.value, row)"
-            >
+            <t-dropdown v-else :options="mobileActionOptions(row)" @click="handleMobileActionHandler(row)">
               <t-button size="small" variant="text">更多</t-button>
             </t-dropdown>
           </template>
@@ -145,7 +141,7 @@
 import './index.less';
 
 import { INVOICE_STATUS_MAP, INVOICE_TYPE_MAP, toLabelMap, toTagTypeMap } from '@shared/statusConfig';
-import type { PrimaryTableCol } from 'tdesign-vue-next';
+import type { DropdownOption, PrimaryTableCol } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -198,7 +194,9 @@ const detailState = reactive({
 const statusLabelMap = toLabelMap(INVOICE_STATUS_MAP);
 const statusTypeMap = toTagTypeMap(INVOICE_STATUS_MAP);
 
-const invoiceTypeOptions = Object.entries(INVOICE_TYPE_MAP).map(([value, label]) => ({ value, label }));
+const invoiceTypeOptions = Object.entries(INVOICE_TYPE_MAP)
+  .filter(([value]) => value !== 'normal') // 历史兼容别名，不单独列出
+  .map(([value, label]) => ({ value, label }));
 const invoiceStatusOptions = Object.entries(statusLabelMap).map(([value, label]) => ({ value, label }));
 
 const columns: PrimaryTableCol<InvoiceRecord>[] = [
@@ -363,6 +361,10 @@ function mobileActionOptions(row: InvoiceRecord) {
   ];
 }
 
+function handleMobileActionHandler(row: InvoiceRecord) {
+  return (data: DropdownOption) => handleMobileAction(data.value, row);
+}
+
 function handleMobileAction(action: unknown, row: InvoiceRecord) {
   if (action === 'detail') openDetail(row);
   if (action === 'cancel' && canCancel(row)) confirmCancel(row);
@@ -380,7 +382,8 @@ function invoiceMobileRows(row: InvoiceRecord) {
 
 function invoiceTitle(row: InvoiceRecord) {
   return fieldValue(
-    row.combined_display_name ||
+    row.product_full_path ||
+      row.combined_display_name ||
       row.product_display_name ||
       row.product_spec_display ||
       row.type_label ||

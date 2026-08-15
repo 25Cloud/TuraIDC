@@ -52,6 +52,7 @@ class AdminProductDetailResource extends JsonResource
                 'setup_fee' => number_format((float) ($product->setup_fee ?? 0), 2, '.', ''),
             ],
             'configuration' => [
+                'console_template' => $product->console_template,
                 'config_options' => $this->removeSensitiveKeys((array) ($product->config_options ?? [])),
             ],
             'purchase_requirements' => [

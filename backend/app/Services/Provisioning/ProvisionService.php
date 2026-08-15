@@ -67,6 +67,18 @@ class ProvisionService
 
         $service = $this->ensureLocalService($order);
 
+        // 管理员手动开通的服务在建单时就已就绪，事后付款只需完成订单，
+        // 不能因为商品非自动开通就把已激活的服务打回待开通。
+        if ($this->isAdminManualOrder($order) && $service->status !== ServiceStatus::PENDING) {
+            $order->forceFill([
+                'service_id' => $service->id,
+                'status' => OrderStatus::COMPLETED,
+                'service_snapshot' => $this->buildServiceSnapshot($service),
+            ])->save();
+
+            return $service;
+        }
+
         if (! $this->shouldAutoProvision($order->product)) {
             $this->markPending($order, $service, '待人工开通');
 
@@ -128,6 +140,7 @@ class ProvisionService
                 $invoice->amount
             ),
             'status' => ServiceStatus::PENDING,
+            'auto_renew' => 0,
             'provision_data' => [
                 'created_from_invoice' => $invoice->invoice_no,
             ],
@@ -352,6 +365,7 @@ class ProvisionService
                 $order->amount
             ),
             'status' => ServiceStatus::PENDING,
+            'auto_renew' => 0,
             'provision_data' => [
                 'requested_config' => $this->sanitizeRequestedConfig(
                     array_merge((array) ($order->config_snapshot ?? []), [
@@ -368,6 +382,13 @@ class ProvisionService
         ])->save();
 
         return $service;
+    }
+
+    private function isAdminManualOrder(Order $order): bool
+    {
+        $snapshot = (array) $order->config_snapshot;
+
+        return filter_var($snapshot['admin_manual'] ?? false, FILTER_VALIDATE_BOOL);
     }
 
     private function markPending(Order $order, Service $service, ?string $reason = null): void
@@ -422,7 +443,15 @@ class ProvisionService
             $cartLockKey = $this->supplierCartLockKey($supplier);
 
             return Cache::lock($cartLockKey, $this->supplierCartLockTtl())->block(10, function () use ($order, $supplier, $provisioning, $service) {
-                return $provisioning->provisionOrder($order, $supplier, $service ?? $order->service);
+                // 锁内基于 DB 最新状态复查幂等：并发"队列履约 + 管理员手动重试"时，
+                // 另一路径可能已 checkout 并提交 checkpoint（upstream_invoice_id/upstream_host_id 已落库）。
+                // 必须用 fresh 数据做幂等回查，避免基于旧内存值重复走购物车流程造成上游二次开通。
+                $freshService = ($service ?? $order->service)?->fresh();
+                if ($freshService instanceof Service) {
+                    $this->assertNoUnresolvedUpstreamProvisionInvoice($freshService);
+                }
+
+                return $provisioning->provisionOrder($order, $supplier, $freshService ?? $service ?? $order->service);
             });
         }
 
@@ -1091,7 +1120,7 @@ class ProvisionService
             }
         })();
 
-        if (! is_array($rule) || $rule === []) {
+        if ($rule === []) {
             Cache::forget($cacheKey);
 
             return [];
@@ -1466,7 +1495,7 @@ class ProvisionService
 
     private function supplierCartLockTtl(): int
     {
-        return max(90, (int) config('queue.TuraIDC_worker_timeout', 1200) + 60);
+        return max(90, (int) config('queue.turaidc_worker_timeout', 1200) + 60);
     }
 
     /**

@@ -10,6 +10,7 @@ use App\Services\Notification\UserNotificationService;
 use App\Services\System\NotificationService;
 use App\Services\System\SettingService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ServiceLifecycleAutomationService
@@ -53,14 +54,35 @@ class ServiceLifecycleAutomationService
         $count = 0;
 
         foreach ($services as $service) {
-            $provisionData = is_array($service->provision_data ?? null) ? $service->provision_data : [];
-            $provisionData[self::EXPIRED_SUSPENDED_AT_KEY] = $handledAt->format('Y-m-d H:i:s');
+            $suspended = DB::transaction(function () use ($service, $handledAt, $threshold) {
+                $locked = Service::query()->lockForUpdate()->find((int) $service->id);
 
-            $service->forceFill([
-                'status' => ServiceStatus::SUSPENDED,
-                'suspended_reason' => 'expired',
-                'provision_data' => $provisionData,
-            ])->save();
+                if (! $locked instanceof Service) {
+                    return false;
+                }
+
+                // 写前重读校验：续费等并发操作已改变状态或到期时间时跳过，防止把刚续费的服务打回暂停
+                if ((int) $locked->status !== ServiceStatus::ACTIVE
+                    || ! $locked->expires_at instanceof Carbon
+                    || $locked->expires_at->gte($threshold)) {
+                    return false;
+                }
+
+                $provisionData = is_array($locked->provision_data ?? null) ? $locked->provision_data : [];
+                $provisionData[self::EXPIRED_SUSPENDED_AT_KEY] = $handledAt->format('Y-m-d H:i:s');
+
+                $locked->forceFill([
+                    'status' => ServiceStatus::SUSPENDED,
+                    'suspended_reason' => 'expired',
+                    'provision_data' => $provisionData,
+                ])->save();
+
+                return true;
+            });
+
+            if (! $suspended) {
+                continue;
+            }
 
             Log::info('[定时任务] 服务到期自动暂停', [
                 'service_id' => $service->id,
@@ -172,24 +194,48 @@ class ServiceLifecycleAutomationService
         $count = 0;
 
         foreach ($services as $service) {
-            $suspendedAt = $this->resolveExpiredSuspendedAt($service, (int) ($config['expire_suspend_after_days'] ?? 0));
+            $suspendedAt = DB::transaction(function () use ($service, $graceDays, $config) {
+                $locked = Service::query()->lockForUpdate()->find((int) $service->id);
+
+                if (! $locked instanceof Service) {
+                    return null;
+                }
+
+                // 写前重读校验：续费后服务已恢复 ACTIVE 或暂停原因变化时跳过，防止不可逆取消刚续费的服务
+                if ((int) $locked->status !== ServiceStatus::SUSPENDED
+                    || (string) $locked->suspended_reason !== 'expired') {
+                    return null;
+                }
+
+                $resolvedSuspendedAt = $this->resolveExpiredSuspendedAt(
+                    $locked,
+                    (int) ($config['expire_suspend_after_days'] ?? 0)
+                );
+
+                if (! $resolvedSuspendedAt instanceof Carbon) {
+                    return null;
+                }
+
+                $terminateAt = $resolvedSuspendedAt->copy()->addDays($graceDays);
+                if ($terminateAt->isFuture()) {
+                    return null;
+                }
+
+                $provisionData = is_array($locked->provision_data ?? null) ? $locked->provision_data : [];
+                unset($provisionData[self::EXPIRED_SUSPENDED_AT_KEY]);
+
+                $locked->forceFill([
+                    'status' => ServiceStatus::CANCELLED,
+                    'suspended_reason' => null,
+                    'provision_data' => $provisionData,
+                ])->save();
+
+                return $resolvedSuspendedAt;
+            });
+
             if (! $suspendedAt instanceof Carbon) {
                 continue;
             }
-
-            $terminateAt = $suspendedAt->copy()->addDays($graceDays);
-            if ($terminateAt->isFuture()) {
-                continue;
-            }
-
-            $provisionData = is_array($service->provision_data ?? null) ? $service->provision_data : [];
-            unset($provisionData[self::EXPIRED_SUSPENDED_AT_KEY]);
-
-            $service->forceFill([
-                'status' => ServiceStatus::CANCELLED,
-                'suspended_reason' => null,
-                'provision_data' => $provisionData,
-            ])->save();
 
             Log::info('[定时任务] 服务超保留期自动取消', [
                 'service_id' => $service->id,
@@ -197,7 +243,7 @@ class ServiceLifecycleAutomationService
                 'expires_at' => $service->expires_at?->toDateTimeString(),
                 'suspended_at' => $suspendedAt->toDateTimeString(),
                 'grace_days' => $graceDays,
-                'terminate_at' => $terminateAt->toDateTimeString(),
+                'terminate_at' => $suspendedAt->copy()->addDays($graceDays)->toDateTimeString(),
                 'handled_at' => $resolvedNow->toDateTimeString(),
             ]);
 

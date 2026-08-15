@@ -145,8 +145,8 @@
   </section>
 </template>
 <script setup lang="ts">
-import StatusTag from '@shared/user-v3/components/StatusTag.vue';
 import { INVOICE_STATUS_MAP, ORDER_STATUS_MAP, PAYMENT_STATUS_MAP } from '@turaidc/shared/statusConfig';
+import StatusTag from '@shared/user-v3/components/StatusTag.vue';
 import { RefreshIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { computed, onMounted, ref } from 'vue';
@@ -299,7 +299,7 @@ onMounted(() => {
   text-align: center;
 }
 
-@media (max-width: 40rem) {
+@media (width <= 40rem) {
   .detail-kv-grid {
     grid-template-columns: 1fr;
   }

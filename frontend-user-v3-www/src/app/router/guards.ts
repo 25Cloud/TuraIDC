@@ -1,7 +1,7 @@
 import { useAppStore } from '@/stores/app'
 import { applyRouteMeta } from '@/utils/pageMeta'
 
-const DEFAULT_PUBLIC_SITE_URL = 'https://www.example.com'
+const DEFAULT_PUBLIC_SITE_URL = 'https://www.coyjs.cn'
 const DYNAMIC_IMPORT_RELOAD_KEY = 'www-router-dynamic-import-reload'
 const dynamicImportErrorPattern = /Failed to fetch dynamically imported module|Importing a module script failed/i
 

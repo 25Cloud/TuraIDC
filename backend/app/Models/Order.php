@@ -153,6 +153,8 @@ class Order extends Model
      *
      * 注意：在 CheckoutService 新路径中，Invoice 先于 Order 创建，
      * 访问此关联前请确认 Invoice 已与 Order 完成双向绑定。
+     *
+     * @return HasOne<Invoice, $this>
      */
     public function invoice(): HasOne
     {

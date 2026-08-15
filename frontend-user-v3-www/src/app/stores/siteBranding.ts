@@ -13,7 +13,7 @@ declare global {
 
 const DEFAULT_SITE_NAME = import.meta.env.VITE_APP_TITLE || '图拉云'
 const DEFAULT_SITE_LOGO = '/branding/logo.svg'
-const DEFAULT_FAVICON = '/branding/logo1.svg'
+const DEFAULT_FAVICON = '/branding/favicon-32.png'
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || '')
 
 function pick(raw, keys, fallback) {

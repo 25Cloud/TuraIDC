@@ -42,6 +42,7 @@ class AdminUserInvoiceDetailResource extends JsonResource
                 'product_spec_display' => (string) ($invoice['product_spec_display'] ?? ''),
                 'product_display_name' => (string) ($invoice['product_display_name'] ?? ''),
                 'combined_display_name' => (string) ($invoice['combined_display_name'] ?? ''),
+                'product_full_path' => (string) ($invoice['product_full_path'] ?? ''),
                 'summary' => $this->stripSensitiveKeys((array) ($invoice['summary'] ?? [])),
                 'user' => $this->stripSensitiveKeys((array) ($invoice['user'] ?? [])),
                 'order' => $this->stripSensitiveKeys((array) ($invoice['order'] ?? [])),

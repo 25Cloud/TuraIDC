@@ -55,6 +55,7 @@ tsc.log
 .env.production
 .env.development
 .env.testing
+**/.env.dev
 
 # ---- PHP / Laravel ----
 /vendor/
@@ -115,3 +116,7 @@ frontend-user-v4-console/*.png
 # ---- 本地工具 ----
 /tools/
 php.bat
+
+# ---- 平行开发副本与临时分析文件（勿提交）----
+caiwu_update/
+.tmp/

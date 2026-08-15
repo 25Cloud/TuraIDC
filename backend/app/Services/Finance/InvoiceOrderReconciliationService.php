@@ -30,6 +30,8 @@ class InvoiceOrderReconciliationService
         $invalidInvoices = $this->invalidInvoices($sampleLimit);
         $ordersWithoutInvoice = $this->ordersWithoutInvoice($sampleLimit);
         $statusMismatches = $this->statusMismatches($sampleLimit);
+        $amountMismatches = $this->amountMismatches($sampleLimit);
+        $completedCancelled = $this->completedInvoiceCancelled($sampleLimit);
 
         return [
             'dry_run' => true,
@@ -38,11 +40,15 @@ class InvoiceOrderReconciliationService
                 'invoices_invalid_order' => $this->invalidInvoicesCount(),
                 'orders_without_invoice' => $this->ordersWithoutInvoiceCount(),
                 'paid_order_invoice_status_mismatch' => $this->statusMismatchesCount(),
+                'amount_mismatch' => $this->amountMismatchesCount(),
+                'completed_invoice_cancelled' => $this->completedInvoiceCancelledCount(),
             ],
             'samples' => [
                 'invoices_invalid_order' => $invalidInvoices->map(fn ($row) => $this->invalidInvoicePayload($row))->values()->all(),
                 'orders_without_invoice' => $ordersWithoutInvoice->map(fn ($row) => $this->orderWithoutInvoicePayload($row))->values()->all(),
                 'paid_order_invoice_status_mismatch' => $statusMismatches->map(fn ($row) => $this->statusMismatchPayload($row))->values()->all(),
+                'amount_mismatch' => $amountMismatches->map(fn ($row) => $this->amountMismatchPayload($row))->values()->all(),
+                'completed_invoice_cancelled' => $completedCancelled->map(fn ($row) => $this->completedCancelledPayload($row))->values()->all(),
             ],
         ];
     }
@@ -99,6 +105,16 @@ class InvoiceOrderReconciliationService
     private function statusMismatchesCount(): int
     {
         return (int) $this->statusMismatchesQuery()->count();
+    }
+
+    private function amountMismatchesCount(): int
+    {
+        return (int) $this->amountMismatchesQuery()->count();
+    }
+
+    private function completedInvoiceCancelledCount(): int
+    {
+        return (int) $this->completedInvoiceCancelledQuery()->count();
     }
 
     /**
@@ -176,6 +192,71 @@ class InvoiceOrderReconciliationService
         return $query->get();
     }
 
+    /**
+     * 金额口径漂移：orders（开通投影）与 invoices（对外财务实体）的
+     * amount/discount/paid_amount 不一致。财务口径以发票为准，订单金额列
+     * 仅用于展示；本方法只检测报告，不自动修复（无法判断哪一侧为真实意图）。
+     *
+     * @return Collection<int,object>
+     */
+    private function amountMismatches(?int $limit): Collection
+    {
+        $query = $this->amountMismatchesQuery()
+            ->select([
+                'o.id as order_id',
+                'o.order_no',
+                'o.amount as order_amount',
+                'o.discount as order_discount',
+                'o.paid_amount as order_paid_amount',
+                'i.id as invoice_id',
+                'i.invoice_no',
+                'i.amount as invoice_amount',
+                'i.discount as invoice_discount',
+                'i.paid_amount as invoice_paid_amount',
+                'i.status as invoice_status',
+            ])
+            ->orderBy('o.id')
+            ->orderBy('i.id');
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * 状态矛盾：订单已完成（COMPLETED）但关联发票仍为已取消（CANCELLED）。
+     * 同一笔业务不可能"完成且取消"，属投影与财务实体状态漂移；
+     * 只检测报告，不自动修复，避免误改真实状态。
+     *
+     * @return Collection<int,object>
+     */
+    private function completedInvoiceCancelled(?int $limit): Collection
+    {
+        $query = $this->completedInvoiceCancelledQuery()
+            ->select([
+                'o.id as order_id',
+                'o.order_no',
+                'o.status as order_status',
+                'o.paid_amount as order_paid_amount',
+                'o.paid_at as order_paid_at',
+                'i.id as invoice_id',
+                'i.invoice_no',
+                'i.status as invoice_status',
+                'i.amount as invoice_amount',
+                'i.paid_at as invoice_paid_at',
+            ])
+            ->orderBy('o.id')
+            ->orderBy('i.id');
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        return $query->get();
+    }
+
     private function invalidInvoicesQuery()
     {
         return DB::table('invoices as i')
@@ -206,6 +287,26 @@ class InvoiceOrderReconciliationService
                         ->whereNotIn('o.status', self::PAID_ORDER_STATUSES);
                 });
             });
+    }
+
+    private function amountMismatchesQuery()
+    {
+        return DB::table('orders as o')
+            ->join('invoices as i', 'i.order_id', '=', 'o.id')
+            ->where(function ($query): void {
+                // whereColumn 做列对列比较；用 where 会把 'i.amount' 当绑定值导致全部命中。
+                $query->whereColumn('o.amount', '<>', 'i.amount')
+                    ->orWhereColumn('o.discount', '<>', 'i.discount')
+                    ->orWhereColumn('o.paid_amount', '<>', 'i.paid_amount');
+            });
+    }
+
+    private function completedInvoiceCancelledQuery()
+    {
+        return DB::table('orders as o')
+            ->join('invoices as i', 'i.order_id', '=', 'o.id')
+            ->where('o.status', OrderStatus::COMPLETED)
+            ->where('i.status', InvoiceStatus::CANCELLED);
     }
 
     /**
@@ -286,6 +387,47 @@ class InvoiceOrderReconciliationService
             'invoice_status' => (int) $pair->invoice_status,
             'invoice_amount' => (string) $pair->invoice_amount,
             'suggested_action' => $suggestedAction,
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function amountMismatchPayload(object $pair): array
+    {
+        return [
+            'order_id' => (int) $pair->order_id,
+            'order_no' => (string) $pair->order_no,
+            'order_amount' => (string) $pair->order_amount,
+            'order_discount' => (string) $pair->order_discount,
+            'order_paid_amount' => (string) $pair->order_paid_amount,
+            'invoice_id' => (int) $pair->invoice_id,
+            'invoice_no' => (string) $pair->invoice_no,
+            'invoice_amount' => (string) $pair->invoice_amount,
+            'invoice_discount' => (string) $pair->invoice_discount,
+            'invoice_paid_amount' => (string) $pair->invoice_paid_amount,
+            'invoice_status' => (int) $pair->invoice_status,
+            'suggested_action' => 'manual_review', // 金额口径漂移无法自动判断正确侧，人工核对
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function completedCancelledPayload(object $pair): array
+    {
+        return [
+            'order_id' => (int) $pair->order_id,
+            'order_no' => (string) $pair->order_no,
+            'order_status' => (int) $pair->order_status,
+            'order_paid_amount' => (string) $pair->order_paid_amount,
+            'order_paid_at' => (string) ($pair->order_paid_at ?? ''),
+            'invoice_id' => (int) $pair->invoice_id,
+            'invoice_no' => (string) $pair->invoice_no,
+            'invoice_status' => (int) $pair->invoice_status,
+            'invoice_amount' => (string) $pair->invoice_amount,
+            'invoice_paid_at' => (string) ($pair->invoice_paid_at ?? ''),
+            'suggested_action' => 'manual_review', // 状态矛盾需业务确认后处理
         ];
     }
 

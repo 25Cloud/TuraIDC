@@ -34,6 +34,7 @@ class AdminInvoiceDetailResource extends AdminInvoiceSummaryResource
                 'product_spec_display' => (string) ($invoice['product_spec_display'] ?? ''),
                 'product_display_name' => (string) ($invoice['product_display_name'] ?? ''),
                 'combined_display_name' => (string) ($invoice['combined_display_name'] ?? ''),
+                'product_full_path' => (string) ($invoice['product_full_path'] ?? ''),
                 'summary' => $this->summary($invoice['summary'] ?? null),
             ],
             'financial' => [

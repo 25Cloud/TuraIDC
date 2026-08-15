@@ -92,7 +92,8 @@ class LogArchiveService
                 return $report;
             } catch (Throwable $exception) {
                 foreach ($audits as $table => $audit) {
-                    if ((string) ($report['tables'][$table]['status'] ?? 'running') === 'running') {
+                    // 收尾所有尚未完成的表（含 pending：中途失败时未开始执行的表审计行不得停留在 running）。
+                    if ((string) ($report['tables'][$table]['status'] ?? 'running') !== 'completed') {
                         $this->finishAuditLog($audit, [
                             'status' => 'failed',
                             'error_message' => mb_substr($exception->getMessage(), 0, 500),
@@ -251,6 +252,8 @@ class LogArchiveService
         $fileSize = $fileExists ? filesize($archiveFile) : false;
         $checksum = $fileExists ? hash_file('sha256', $archiveFile) : false;
         $headerValid = $fileExists && $this->hasHeader($archiveFile);
+        // 无超期数据时 pt-archiver 不会创建文件；空归档视为成功，不要求文件存在。
+        $hasEligibleRows = (int) $tableReport['eligible_rows'] > 0;
 
         if ($fileExists) {
             @chmod($archiveFile, 0640);
@@ -261,7 +264,7 @@ class LogArchiveService
         $tableReport['deleted_rows'] = $deletedRows;
         $tableReport['file_size'] = $fileSize === false ? null : $fileSize;
         $tableReport['checksum_sha256'] = $checksum === false ? null : $checksum;
-        $tableReport['status'] = $successful && $fileExists && $headerValid ? 'completed' : 'failed';
+        $tableReport['status'] = $successful && ($fileExists && $headerValid || ! $hasEligibleRows) ? 'completed' : 'failed';
 
         if ($tableReport['status'] === 'failed') {
             $tableReport['error_message'] = ! $successful
@@ -299,7 +302,8 @@ class LogArchiveService
             '--retries=3',
             '--statistics',
             '--why-quit',
-            '--charset=utf8mb4',
+            // pt-archiver 3.2.1 对 MySQL 8.0+ 自动使用 utf8mb4 连接 + utf8 文件编码；
+            // 显式 --charset=utf8mb4 会触发 Perl :encoding(utf8mb4) 错误。
             '--pid='.$pidFile,
             '--no-version-check',
         ];
@@ -320,7 +324,6 @@ class LogArchiveService
     {
         $batchId = Str::uuid()->toString();
         $now = CarbonImmutable::now();
-        $runDate = $now->format('Ymd');
         $reportPath = rtrim((string) $settings['report_root'], DIRECTORY_SEPARATOR.'/\\')
             .DIRECTORY_SEPARATOR.'run_'.$now->format('Ymd_His').'_'.substr(str_replace('-', '', $batchId), 0, 8).'.json';
         $executionLog = rtrim((string) $settings['report_root'], DIRECTORY_SEPARATOR.'/\\')
@@ -330,9 +333,11 @@ class LogArchiveService
 
         foreach ($policies as $table => $description) {
             $eligibleRows = (int) DB::table($table)->whereRaw($archiveWhere)->count();
+            // 文件名含到秒时间与批次号：同日失败重试/运维补跑不会覆盖前一批已归档文件
+            // （首运行行已从库 purge，一旦被覆盖即不可恢复）。
             $archiveFile = rtrim((string) $settings['archive_root'], DIRECTORY_SEPARATOR.'/\\')
                 .DIRECTORY_SEPARATOR.$table
-                .DIRECTORY_SEPARATOR.$table.'_'.$runDate.'.log';
+                .DIRECTORY_SEPARATOR.$table.'_'.$now->format('Ymd_His').'_'.substr(str_replace('-', '', $batchId), 0, 8).'.log';
 
             $tables[$table] = [
                 'description' => $description,

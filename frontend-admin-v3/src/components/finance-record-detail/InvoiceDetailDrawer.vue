@@ -213,7 +213,8 @@ const tabs = computed<RecordDetailTab[]>(() => [
 
 function invoiceTitle(row: InvoiceRecord) {
   return fieldValue(
-    row.combined_display_name ||
+    row.product_full_path ||
+      row.combined_display_name ||
       row.product_display_name ||
       row.product_spec_display ||
       row.type_label ||
@@ -367,7 +368,7 @@ function toRecord(value: unknown): Record<string, unknown> {
   min-width: 0;
 }
 
-@media (max-width: 560px) {
+@media (width <= 560px) {
   .finance-detail-grid {
     grid-template-columns: 1fr;
   }

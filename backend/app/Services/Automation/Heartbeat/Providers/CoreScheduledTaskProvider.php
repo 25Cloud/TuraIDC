@@ -12,6 +12,7 @@ use App\Services\Automation\Heartbeat\Contracts\ScheduledTask;
 use App\Services\Automation\Heartbeat\Contracts\ScheduledTaskProvider;
 use App\Services\Automation\Heartbeat\Contracts\TriggerRule;
 use App\Services\Automation\Heartbeat\Data\TaskContext;
+use App\Services\Automation\Heartbeat\HeartbeatTaskRegistry;
 use App\Services\Automation\Heartbeat\ScheduleRule;
 use App\Services\Automation\InvoiceCleanupAutomationService;
 use App\Services\Automation\ServiceLifecycleAutomationService;
@@ -50,7 +51,7 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
                 triggers: [ScheduleRule::everyTicks(1)],
                 handler: fn (): array => $this->refreshHostingPanelAuth(),
                 timeout: 600,
-                lockTtlSeconds: 600,
+                lockTtlSeconds: 660,
             ),
             $this->task(
                 key: 'service-auto-renew',
@@ -108,7 +109,7 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
                     return $summary;
                 },
                 timeout: 900,
-                lockTtlSeconds: 900,
+                lockTtlSeconds: 960,
             ),
             $this->task(
                 key: 'service-status-sync',
@@ -117,7 +118,13 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
                 description: '定时拉取上游实例详情与运行状态，并同步回本地用户服务状态。',
                 triggers: [ScheduleRule::everyTicks(1)],
                 handler: function (): array {
-                    $summary = app(ServiceStatusSyncService::class)->handle();
+                    // 插件任务 sync-zjmf-finance-inventory-and-services 已定向同步 ZJMF 服务状态时，
+                    // 全量任务排除 ZJMF，避免同一服务每 15 分钟被上游拉取两轮；插件禁用时回退全量兜底。
+                    $excludedProviderKeys = app(HeartbeatTaskRegistry::class)
+                        ->supports('sync-zjmf-finance-inventory-and-services')
+                        ? [ProviderKey::ZJMF_FINANCE_API]
+                        : [];
+                    $summary = app(ServiceStatusSyncService::class)->handle(100, 10, $excludedProviderKeys);
                     Log::info('[定时任务] 用户产品状态同步执行完成', $summary);
 
                     return $summary;
@@ -161,6 +168,20 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
                 lockTtlSeconds: 3660,
             ),
             $this->task(
+                key: 'log-archive',
+                title: '日志归档',
+                category: '系统维护',
+                description: '每天归档超过保留期限的普通日志，并写入归档审计与执行报告。',
+                triggers: [ScheduleRule::cron('0 2 * * *')],
+                handler: fn (): array => $this->runArtisan('db:archive-logs', [
+                    '--execute' => true,
+                    '--json' => true,
+                ]),
+                timeout: 3600,
+                lockTtlSeconds: 3660,
+                manualTriggerable: false,
+            ),
+            $this->task(
                 key: 'coupon-campaign-dispatch',
                 title: '优惠券活动发放',
                 category: '营销活动',
@@ -175,7 +196,7 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
                     return $summary;
                 },
                 timeout: 900,
-                lockTtlSeconds: 900,
+                lockTtlSeconds: 960,
             ),
             $this->task(
                 key: 'ticket-auto-close',
@@ -217,7 +238,7 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
                     return $summary;
                 },
                 timeout: 900,
-                lockTtlSeconds: 900,
+                lockTtlSeconds: 960,
             ),
             $this->task(
                 key: 'reconcile-account-balance',
@@ -238,6 +259,25 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
                 lockTtlSeconds: 1800,
             ),
             $this->task(
+                key: 'audit-ledger-consistency',
+                title: '资金流水一致性审计',
+                category: '财务对账',
+                description: '每日审计账户流水来源完整性、余额与流水一致性、充值桥接覆盖，账实不符即告警。',
+                triggers: [ScheduleRule::cron('0 3 * * *')],
+                handler: function (): array {
+                    $summary = $this->runArtisan('finance:audit-ledger-consistency', ['--strict' => true], false);
+                    if (($summary['exit_code'] ?? 0) !== 0) {
+                        Log::warning('[定时任务] 资金流水一致性审计发现差异，已记录告警且不进行队列重试', $summary);
+                        $summary['status'] = 'warning';
+                    }
+
+                    return $summary;
+                },
+                timeout: 1200,
+                lockTtlSeconds: 1800,
+                manualTriggerable: false,
+            ),
+            $this->task(
                 key: 'provision-retry-failed',
                 title: '上游开通孤儿单补偿告警',
                 category: '上游开通',
@@ -245,17 +285,7 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
                 triggers: [ScheduleRule::everyTicks(1)],
                 handler: fn (): array => $this->runArtisan('provision:retry-failed'),
                 timeout: 900,
-                lockTtlSeconds: 900,
-            ),
-            $this->task(
-                key: 'vnc-ensure-relay',
-                title: 'VNC Relay 守护',
-                category: '运行时守护',
-                description: '检测并自动拉起 VNC WebSocket 中转服务。',
-                triggers: [ScheduleRule::everyTicks(1)],
-                handler: fn (): array => $this->runArtisan('vnc:ensure-relay'),
-                timeout: 600,
-                lockTtlSeconds: 900,
+                lockTtlSeconds: 960,
             ),
             $this->task(
                 key: 'site-cache-warmup',
@@ -265,7 +295,7 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
                 triggers: [ScheduleRule::everyTicks(1)],
                 handler: fn (): array => $this->runArtisan('app:warmup-site-cache'),
                 timeout: 900,
-                lockTtlSeconds: 900,
+                lockTtlSeconds: 960,
             ),
             $this->task(
                 key: 'compensate-recharge-invoices',
@@ -291,7 +321,7 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
         string $description,
         array $triggers,
         Closure $handler,
-        string $queue = 'default',
+        ?string $queue = null,
         int $timeout = 900,
         int $lockTtlSeconds = 1200,
         bool $manualTriggerable = true,

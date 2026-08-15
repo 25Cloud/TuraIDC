@@ -695,6 +695,17 @@ class CouponService
 
         throw_if(! $userCoupon, new BusinessException('优惠券不存在或已失效'));
 
+        // 防双花兜底：该券已有已支付账单但异步同步尚未完成（reserved_until 已过期的窗口），
+        // 直接拒绝再次占用，避免同一张券重复抵扣
+        throw_if(
+            Invoice::query()
+                ->where('user_id', $userId)
+                ->where('user_coupon_id', $resolvedUserCouponId)
+                ->whereIn('status', self::USED_INVOICE_STATUSES)
+                ->exists(),
+            new BusinessException('优惠券已使用')
+        );
+
         $payload = $this->buildOwnedCouponPayload($userCoupon, $product, $billingCycle, $amount, $userId, $orderType);
         $userCoupon->forceFill([
             'reserved_until' => now()->addMinutes(10),

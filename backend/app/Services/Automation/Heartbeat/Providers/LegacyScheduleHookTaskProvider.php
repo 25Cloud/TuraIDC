@@ -18,6 +18,7 @@ class LegacyScheduleHookTaskProvider implements ScheduledTaskProvider
             'hook' => ScheduleHookService::HOOK_EVERY_MINUTE,
             'description' => '兼容 tick.every_minute 监听器名称，当前按每 15 分钟心跳触发。',
             'interval' => 1,
+            'declared_cadence' => 'every_minute',
         ],
         [
             'key' => 'schedule-hook-every-five-minutes',
@@ -25,6 +26,7 @@ class LegacyScheduleHookTaskProvider implements ScheduledTaskProvider
             'hook' => ScheduleHookService::HOOK_EVERY_FIVE_MINUTES,
             'description' => '兼容 tick.every_five_minutes 监听器名称，当前按每 15 分钟心跳触发。',
             'interval' => 1,
+            'declared_cadence' => 'every_five_minutes',
         ],
         [
             'key' => 'schedule-hook-after-five-minute-cron',
@@ -32,6 +34,7 @@ class LegacyScheduleHookTaskProvider implements ScheduledTaskProvider
             'hook' => ScheduleHookService::HOOK_AFTER_FIVE_MINUTE_CRON,
             'description' => '兼容旧系统 after_five_minute_cron 钩子，当前按每 15 分钟心跳触发。',
             'interval' => 1,
+            'declared_cadence' => 'after_five_minute_cron',
         ],
         [
             'key' => 'schedule-hook-after-half-hour-minute-cron',
@@ -39,6 +42,7 @@ class LegacyScheduleHookTaskProvider implements ScheduledTaskProvider
             'hook' => ScheduleHookService::HOOK_AFTER_HALF_HOUR_MINUTE_CRON,
             'description' => '兼容旧系统 after_half_hour_minute_cron 钩子。',
             'interval' => 2,
+            'declared_cadence' => 'after_half_hour_minute_cron',
         ],
         [
             'key' => 'schedule-hook-hourly',
@@ -46,6 +50,7 @@ class LegacyScheduleHookTaskProvider implements ScheduledTaskProvider
             'hook' => ScheduleHookService::HOOK_HOURLY,
             'description' => '兼容 tick.hourly 监听器名称。',
             'interval' => 4,
+            'declared_cadence' => 'hourly',
         ],
         [
             'key' => 'schedule-hook-daily',
@@ -53,6 +58,7 @@ class LegacyScheduleHookTaskProvider implements ScheduledTaskProvider
             'hook' => ScheduleHookService::HOOK_DAILY,
             'description' => '兼容 tick.daily 监听器名称。',
             'cron' => '0 3 * * *',
+            'declared_cadence' => 'daily',
         ],
         [
             'key' => 'schedule-hook-before-daily-cron',
@@ -60,6 +66,7 @@ class LegacyScheduleHookTaskProvider implements ScheduledTaskProvider
             'hook' => ScheduleHookService::HOOK_BEFORE_DAILY_CRON,
             'description' => '兼容旧系统 before_daily_cron 钩子。',
             'cron' => '0 3 * * *',
+            'declared_cadence' => 'before_daily_cron',
         ],
         [
             'key' => 'schedule-hook-after-daily-cron',
@@ -67,6 +74,7 @@ class LegacyScheduleHookTaskProvider implements ScheduledTaskProvider
             'hook' => ScheduleHookService::HOOK_AFTER_DAILY_CRON,
             'description' => '兼容旧系统 after_daily_cron 钩子。',
             'cron' => '0 3 * * *',
+            'declared_cadence' => 'after_daily_cron',
         ],
     ];
 
@@ -102,10 +110,10 @@ class LegacyScheduleHookTaskProvider implements ScheduledTaskProvider
                         'source' => 'heartbeat_schedule_hook',
                     ]),
                 ],
-                queue: 'default',
                 timeout: 600,
                 lockTtlSeconds: 900,
                 manualTriggerable: false,
+                declaredCadence: (string) $definition['declared_cadence'],
             );
         }
 

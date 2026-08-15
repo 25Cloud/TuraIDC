@@ -17,6 +17,8 @@ class UpdatePhoneRequest extends ClientFormRequest
 
     public function rules(): array
     {
+        $hasBoundPhone = trim((string) ($this->user()?->phone ?? '')) !== '';
+
         return [
             'phone' => ['required', 'string', 'max:20', function (string $attribute, mixed $value, Closure $fail) {
                 if (AccountIdentifier::detectType((string) $value) !== 'phone') {
@@ -24,6 +26,7 @@ class UpdatePhoneRequest extends ClientFormRequest
                 }
             }],
             'code' => 'required|string|size:6',
+            'old_code' => $hasBoundPhone ? 'required|string|size:6' : 'nullable|string|size:6',
         ];
     }
 }

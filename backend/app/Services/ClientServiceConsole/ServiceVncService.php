@@ -23,7 +23,7 @@ class ServiceVncService
 {
     private const VNC_TOKEN_TTL_SECONDS = 600;
 
-    private const VNC_RELAY_TOKEN_TTL_SECONDS = 120;
+    private const VNC_RELAY_TOKEN_TTL_SECONDS = 60;
 
     public function __construct(
         private readonly OperationLogService $operationLogService,
@@ -86,7 +86,11 @@ class ServiceVncService
                 $noVncCredentials = $this->buildNoVncCredentialPayload($vncParams);
 
                 $token = bin2hex(random_bytes(24));
-                Cache::store('redis_volatile')->put(CacheKey::vncToken($token), array_merge($vncParams, [
+                $tokenPayload = $vncParams;
+                // Redis 不落明文 VNC 密码：密码仅经 vnc_credentials 返回给当前认证用户
+                // 供本地 noVNC 认证，token 载荷只承载 relay 建连所需参数。
+                unset($tokenPayload['password']);
+                Cache::store('redis_volatile')->put(CacheKey::vncToken($token), array_merge($tokenPayload, [
                     'service_id' => $serviceId,
                     'allowed_origin' => $this->resolveAllowedVncOrigin(),
                     'single_use' => ($context['actor_type'] ?? 'client') !== 'admin',
@@ -237,8 +241,10 @@ class ServiceVncService
     {
         $params = $this->consumeVncLaunchToken($token);
         $relayToken = bin2hex(random_bytes(24));
-
-        Cache::store('redis_volatile')->put(CacheKey::vncToken($relayToken), array_merge($params, [
+        $relayPayload = $params;
+        // relay 建连仅需 host/port/path/encrypt/origin，不落明文 VNC 密码到 Redis。
+        unset($relayPayload['password']);
+        Cache::store('redis_volatile')->put(CacheKey::vncToken($relayToken), array_merge($relayPayload, [
             'token_scope' => 'relay',
             'single_use' => false,
             'public_token_hash' => hash('sha256', $token),

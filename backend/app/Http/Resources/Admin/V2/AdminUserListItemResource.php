@@ -34,6 +34,7 @@ class AdminUserListItemResource extends JsonResource
             'qq' => trim((string) ($profile?->qq ?? $this->resource->getRawOriginal('qq') ?? '')),
             'member_level_id' => $this->member_level_id !== null ? (int) $this->member_level_id : null,
             'verification_status' => (int) ($this->verification_status ?? 0),
+            'verification_status_label' => User::verificationStatusLabel((int) ($this->verification_status ?? 0)),
             'real_name' => $privacy->name($realName),
             'cash_balance' => (float) ($this->resource->balance ?? 0),
             'credit_limit' => (float) ($this->resource->credit_limit ?? 0),

@@ -194,6 +194,16 @@
             </div>
           </div>
         </section>
+
+        <section v-if="serviceSnapshotItems.length" class="order-detail-section">
+          <h4>实例快照</h4>
+          <div class="config-list">
+            <div v-for="item in serviceSnapshotItems" :key="item.label" class="config-item">
+              <span>{{ item.label }}</span>
+              <strong>{{ item.value }}</strong>
+            </div>
+          </div>
+        </section>
       </template>
 
       <template #tab-payments>
@@ -278,6 +288,7 @@ import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
 
 const SNAPSHOT_LABEL_MAP: Record<string, string> = {
+  // ── 产品配置 ──
   bw: '带宽',
   in_bw: '下行带宽',
   out_bw: '上行带宽',
@@ -293,6 +304,8 @@ const SNAPSHOT_LABEL_MAP: Record<string, string> = {
   memory: '内存',
   hostname: '主机名',
   quantity: '数量',
+  instance_id: '实例ID',
+  // ── 金额 ──
   setup_fee: '初装费',
   base_amount: '基础金额',
   total_amount: '合计金额',
@@ -302,20 +315,58 @@ const SNAPSHOT_LABEL_MAP: Record<string, string> = {
   amount: '金额',
   price: '价格',
   pricing: '价格',
+  // ── 通用 ──
   items: '配置项',
   meta: '扩展信息',
   configoption: '配置参数',
   kind: '类型',
   mode: '模式',
+  source_type: '来源类型',
+  created_by: '创建者',
+  source: '来源',
+  remark: '备注',
+  // ── 产品/服务 ──
   target_label: '目标服务',
   target_service_id: '目标服务ID',
   product_id: '产品ID',
   product_name: '产品名称',
+  product_full_path: '产品路径',
+  product_path_segments: '产品路径段',
+  first_product_group_name: '一级分组',
+  second_product_group_name: '二级分组',
+  third_product_group_name: '三级分组',
+  // ── 计费周期 ──
   billing_cycle: '周期',
   billingcycle: '周期',
   billingcycle_zh: '周期',
   period: '周期',
-  remark: '备注',
+  // ── 续费 ──
+  renew_service_id: '续费服务ID',
+  renew_service_name: '续费服务名称',
+  auto_renew: '自动续费',
+  auto_renew_trace_id: '自动续费追踪',
+  local_renew_amount: '本地续费金额',
+  // ── 上游供应商 ──
+  upstream_host_id: '上游主机ID',
+  upstream_host_ids: '上游主机列表',
+  upstream_invoice_id: '上游账单ID',
+  upstream_product_id: '上游产品ID',
+  upstream_product_name: '上游产品名称',
+  upstream_amount: '上游金额',
+  upstream_status: '上游状态',
+  supports_upstream: '支持上游开通',
+  provider_key: '供应商标识',
+  supplier_id: '供应商ID',
+  // ── 开通 ──
+  requested_host: '请求主机名',
+  dedicated_ip: '独立IP',
+  assigned_ips: '分配IP',
+  host_config_option: '主机配置',
+  connection_secret: '连接信息',
+  connection_cached_at: '连接缓存时间',
+  last_provisioned_at: '开通时间',
+  last_provision_attempt_at: '开通尝试时间',
+  provision_error: '开通失败原因',
 };
 
 const route = useRoute();
@@ -382,6 +433,16 @@ const pricingItems = computed(() => {
   return flattenSnapshot(snapshot as Record<string, unknown>);
 });
 
+// 实例快照仅在「新购」订单写入，作为开通时实例的存档展示。
+const isNewOrder = computed(() => order.value.type === 'new');
+
+const serviceSnapshotItems = computed(() => {
+  if (!isNewOrder.value) return [];
+  const snapshot = order.value.service_snapshot;
+  if (!snapshot || typeof snapshot !== 'object') return [];
+  return flattenSnapshot(snapshot as Record<string, unknown>);
+});
+
 const configValueLabelMap = computed<Record<string, string>>(() => {
   const snapshot = order.value.config_pricing_snapshot as Record<string, unknown> | null | undefined;
   const items = Array.isArray(snapshot?.items) ? snapshot.items : [];
@@ -415,7 +476,9 @@ function flattenSnapshot(
   const result: { label: string; value: string }[] = [];
   for (const [key, val] of Object.entries(obj)) {
     if (['unit_setup_fee', 'unit_base_amount', 'unit_total_amount', 'unit_config_amount'].includes(key)) continue;
+    if (key.startsWith('_')) continue;
     if (val === null || val === undefined || val === '') continue;
+    if (key === 'connection_secret') continue;
     if (key === 'items' && Array.isArray(val)) {
       val.forEach((item, index) => {
         const record = toRecord(item);

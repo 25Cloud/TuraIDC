@@ -20,7 +20,7 @@
 
     <div class="auth-shell__stage">
       <header class="auth-shell__header">
-        <router-link class="auth-brand" to="/client/login">
+        <a class="auth-brand" :href="authBrandHref">
           <img
             v-if="showLogo"
             :src="authLogoSrc"
@@ -34,7 +34,7 @@
           </template>
           <span class="auth-brand__divider" />
           <span class="auth-brand__context">用户控制台</span>
-        </router-link>
+        </a>
         <span class="auth-shell__header-spacer" />
         <button class="auth-shell__back" type="button" @click="handleBack">
           <chevron-left-icon />
@@ -111,6 +111,8 @@ function handleLogoError() {
   logoLoadFailed.value = true;
 }
 
+const authBrandHref = computed(() => siteBranding.frontendUrl || '/client/login');
+
 function handleBack() {
   if (window.history.length > 1) {
     router.back();
@@ -132,28 +134,29 @@ onMounted(() => {
   --auth-bg-start: #f8fafc;
   --auth-bg-middle: #f8fafc;
   --auth-bg-end: #f8fafc;
-  --auth-line-color: rgba(140, 156, 184, 0.14);
-  --auth-grid-color: rgba(162, 177, 202, 0.1);
-  --auth-panel-primary: rgba(255, 255, 255, 0.84);
-  --auth-panel-secondary: rgba(255, 255, 255, 0.84);
-  --auth-panel-edge: rgba(214, 223, 235, 0.6);
-  --auth-glow-color: rgba(234, 239, 247, 0.74);
-  --auth-card-bg: rgba(255, 255, 255, 0.94);
-  --auth-card-border: rgba(211, 220, 234, 0.82);
-  --auth-card-shadow: 0 18px 42px rgba(114, 131, 161, 0.12);
+  --auth-line-color: rgb(140 156 184 / 14%);
+  --auth-grid-color: rgb(162 177 202 / 10%);
+  --auth-panel-primary: rgb(255 255 255 / 84%);
+  --auth-panel-secondary: rgb(255 255 255 / 84%);
+  --auth-panel-edge: rgb(214 223 235 / 60%);
+  --auth-glow-color: rgb(234 239 247 / 74%);
+  --auth-card-bg: rgb(255 255 255 / 94%);
+  --auth-card-border: rgb(211 220 234 / 82%);
+  --auth-card-shadow: 0 18px 42px rgb(114 131 161 / 12%);
   --auth-heading-color: #1d2738;
   --auth-title-color: #2563eb;
   --auth-copy-color: #617086;
   --auth-footer-color: #94a0b2;
-  --auth-brand-divider: rgba(110, 123, 149, 0.24);
-  --auth-guide-cta-bg: rgba(255, 255, 255, 0.72);
-  --auth-guide-cta-border: rgba(22, 93, 255, 0.26);
-  --auth-guide-cta-shadow: 0 10px 24px rgba(22, 93, 255, 0.06);
-  --auth-field-bg: #ffffff;
-  --auth-field-border: rgba(208, 218, 233, 0.98);
-  --auth-field-hover-border: rgba(183, 198, 224, 0.98);
-  --auth-field-focus-shadow: rgba(22, 93, 255, 0.12);
+  --auth-brand-divider: rgb(110 123 149 / 24%);
+  --auth-guide-cta-bg: rgb(255 255 255 / 72%);
+  --auth-guide-cta-border: rgb(22 93 255 / 26%);
+  --auth-guide-cta-shadow: 0 10px 24px rgb(22 93 255 / 6%);
+  --auth-field-bg: #fff;
+  --auth-field-border: rgb(208 218 233 / 98%);
+  --auth-field-hover-border: rgb(183 198 224 / 98%);
+  --auth-field-focus-shadow: rgb(22 93 255 / 12%);
   --auth-field-icon: #90a0b7;
+
   min-height: 100vh;
   position: relative;
   overflow: hidden;
@@ -166,28 +169,28 @@ onMounted(() => {
   --auth-bg-start: #0b1220;
   --auth-bg-middle: #0b1220;
   --auth-bg-end: #0b1220;
-  --auth-line-color: rgba(118, 138, 170, 0.12);
-  --auth-grid-color: rgba(132, 150, 182, 0.06);
-  --auth-panel-primary: rgba(255, 255, 255, 0.05);
-  --auth-panel-secondary: rgba(255, 255, 255, 0.05);
-  --auth-panel-edge: rgba(142, 160, 189, 0.18);
-  --auth-glow-color: rgba(67, 118, 255, 0.14);
-  --auth-card-bg: rgba(14, 21, 36, 0.84);
-  --auth-card-border: rgba(90, 108, 138, 0.28);
-  --auth-card-shadow: 0 22px 52px rgba(0, 0, 0, 0.36);
+  --auth-line-color: rgb(118 138 170 / 12%);
+  --auth-grid-color: rgb(132 150 182 / 6%);
+  --auth-panel-primary: rgb(255 255 255 / 5%);
+  --auth-panel-secondary: rgb(255 255 255 / 5%);
+  --auth-panel-edge: rgb(142 160 189 / 18%);
+  --auth-glow-color: rgb(67 118 255 / 14%);
+  --auth-card-bg: rgb(14 21 36 / 84%);
+  --auth-card-border: rgb(90 108 138 / 28%);
+  --auth-card-shadow: 0 22px 52px rgb(0 0 0 / 36%);
   --auth-heading-color: #f6f8fc;
   --auth-title-color: #8fb0ff;
-  --auth-copy-color: rgba(226, 233, 244, 0.78);
-  --auth-footer-color: rgba(190, 202, 220, 0.6);
-  --auth-brand-divider: rgba(226, 233, 244, 0.14);
-  --auth-guide-cta-bg: rgba(19, 30, 50, 0.72);
-  --auth-guide-cta-border: rgba(132, 172, 255, 0.32);
-  --auth-guide-cta-shadow: 0 14px 32px rgba(0, 0, 0, 0.24);
-  --auth-field-bg: rgba(12, 19, 33, 0.9);
-  --auth-field-border: rgba(86, 105, 138, 0.36);
-  --auth-field-hover-border: rgba(128, 157, 214, 0.38);
-  --auth-field-focus-shadow: rgba(99, 141, 255, 0.18);
-  --auth-field-icon: rgba(201, 213, 232, 0.58);
+  --auth-copy-color: rgb(226 233 244 / 78%);
+  --auth-footer-color: rgb(190 202 220 / 60%);
+  --auth-brand-divider: rgb(226 233 244 / 14%);
+  --auth-guide-cta-bg: rgb(19 30 50 / 72%);
+  --auth-guide-cta-border: rgb(132 172 255 / 32%);
+  --auth-guide-cta-shadow: 0 14px 32px rgb(0 0 0 / 24%);
+  --auth-field-bg: rgb(12 19 33 / 90%);
+  --auth-field-border: rgb(86 105 138 / 36%);
+  --auth-field-hover-border: rgb(128 157 214 / 38%);
+  --auth-field-focus-shadow: rgb(99 141 255 / 18%);
+  --auth-field-icon: rgb(201 213 232 / 58%);
 }
 
 .auth-shell__scene {
@@ -220,7 +223,7 @@ onMounted(() => {
   bottom: -14%;
   width: min(18rem, 24vw);
   height: min(18rem, 24vw);
-  background: rgba(22, 93, 255, 0.08);
+  background: rgb(22 93 255 / 8%);
   opacity: 0.26;
   filter: blur(5rem);
   border-radius: 50%;
@@ -294,8 +297,8 @@ onMounted(() => {
   width: min(21vw, 18rem);
   height: 0.75rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 0 1rem rgba(255, 255, 255, 0.32);
+  background: rgb(255 255 255 / 72%);
+  box-shadow: 0 0 1rem rgb(255 255 255 / 32%);
   transform: rotate(-24deg);
 }
 
@@ -306,8 +309,8 @@ onMounted(() => {
   width: min(16vw, 13rem);
   height: 0.875rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 0 1.25rem rgba(255, 255, 255, 0.28);
+  background: rgb(255 255 255 / 72%);
+  box-shadow: 0 0 1.25rem rgb(255 255 255 / 28%);
   transform: rotate(-28deg);
 }
 
@@ -326,19 +329,19 @@ onMounted(() => {
   bottom: 0;
   height: 1.5rem;
   border-radius: 1rem;
-  background: rgba(239, 243, 248, 0.72);
-  box-shadow: 0 1rem 1.5rem rgba(123, 138, 165, 0.1);
+  background: rgb(239 243 248 / 72%);
+  box-shadow: 0 1rem 1.5rem rgb(123 138 165 / 10%);
 }
 
 .auth-shell__cluster-block {
   position: absolute;
   bottom: 1.125rem;
   border-radius: 0.875rem 0.875rem 0.625rem 0.625rem;
-  border: 1px solid rgba(224, 231, 241, 0.72);
-  background: rgba(248, 250, 253, 0.9);
+  border: 1px solid rgb(224 231 241 / 72%);
+  background: rgb(248 250 253 / 90%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.76),
-    0 0.875rem 1.5rem rgba(122, 138, 167, 0.1);
+    inset 0 1px 0 rgb(255 255 255 / 76%),
+    0 0.875rem 1.5rem rgb(122 138 167 / 10%);
 }
 
 .auth-shell__cluster-block--one {
@@ -352,8 +355,8 @@ onMounted(() => {
   left: 45%;
   width: 4rem;
   height: 9.25rem;
-  border-color: rgba(118, 148, 255, 0.42);
-  background: rgba(229, 236, 252, 0.86);
+  border-color: rgb(118 148 255 / 42%);
+  background: rgb(229 236 252 / 86%);
 }
 
 .auth-shell__cluster-block--three {
@@ -370,8 +373,8 @@ onMounted(() => {
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 0.5rem;
-  background: rgba(90, 133, 255, 0.72);
-  box-shadow: 0 0.5rem 0.875rem rgba(65, 100, 214, 0.18);
+  background: rgb(90 133 255 / 72%);
+  box-shadow: 0 0.5rem 0.875rem rgb(65 100 214 / 18%);
 }
 
 .auth-shell__stage {
@@ -439,9 +442,9 @@ onMounted(() => {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 0.75rem;
-  background: #165dff;
-  box-shadow: 0 0.875rem 1.75rem rgba(22, 93, 255, 0.2);
-  color: #ffffff;
+  background: var(--td-brand-color);
+  box-shadow: 0 0.875rem 1.75rem rgb(22 93 255 / 20%);
+  color: #fff;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -561,7 +564,7 @@ onMounted(() => {
   max-width: 28rem;
   margin: 1rem 0 0;
   color: var(--auth-copy-color);
-  font-size: 0.96875rem;
+  font-size: 0.9688rem;
   line-height: 1.86;
   text-wrap: pretty;
 }
@@ -590,8 +593,8 @@ onMounted(() => {
 
 .auth-guide__cta:hover {
   transform: translateY(-1px);
-  box-shadow: 0 0.875rem 1.5rem rgba(22, 93, 255, 0.1);
-  border-color: rgba(22, 93, 255, 0.42);
+  box-shadow: 0 0.875rem 1.5rem rgb(22 93 255 / 10%);
+  border-color: rgb(22 93 255 / 42%);
 }
 
 .auth-shell__footer {
@@ -726,7 +729,7 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 420px) {
+@media (width <= 420px) {
   .auth-shell__stage {
     width: calc(100% - 1.5rem);
   }

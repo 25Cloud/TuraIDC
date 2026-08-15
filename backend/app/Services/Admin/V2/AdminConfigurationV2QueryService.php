@@ -128,10 +128,10 @@ class AdminConfigurationV2QueryService
     /**
      * @return array<string, mixed>
      */
-    public function uninstallPlugin(IntegrationPlugin $plugin): array
+    public function uninstallPlugin(IntegrationPlugin $plugin, bool $force = false): array
     {
         $pluginId = (int) $plugin->id;
-        $result = $this->pluginService->uninstall($plugin);
+        $result = $this->pluginService->uninstall($plugin, $force);
 
         return $this->actionResult($pluginId, 'deleted', '插件已删除', [
             'deleted' => (bool) ($result['deleted'] ?? false),

@@ -22,11 +22,13 @@ class ServiceController extends Controller
 
     public function show(ShowServiceRequest $request, int $service): JsonResponse
     {
-        $detail = $this->services->getDetailForUser(
-            $request->user(),
-            $service,
-            $request->boolean('refresh'),
-            true
+        $detail = $this->services->sanitizeClientDetail(
+            $this->services->getDetailForUser(
+                $request->user(),
+                $service,
+                $request->boolean('refresh'),
+                true
+            )
         );
 
         return $this->success([
@@ -45,7 +47,9 @@ class ServiceController extends Controller
 
     public function runtime(ShowServiceRuntimeRequest $request, int $service): JsonResponse
     {
-        $detail = $this->services->getRemoteStatusPatchForUser($request->user(), $service, true);
+        $detail = $this->services->sanitizeClientDetail(
+            $this->services->getRemoteStatusPatchForUser($request->user(), $service, true)
+        );
 
         return $this->success([
             'runtime' => (new ServiceRuntimeResource($detail))->resolve(),

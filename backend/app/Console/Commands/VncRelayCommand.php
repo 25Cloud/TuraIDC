@@ -26,6 +26,15 @@ class VncRelayCommand extends Command
 
     private bool $running = true;
 
+    /** 防 DoS 上限：并发连接、握手时限、空闲时限、单侧缓冲上限。 */
+    private const MAX_CONNECTIONS = 512;
+
+    private const HANDSHAKE_TIMEOUT_SECONDS = 15;
+
+    private const IDLE_TIMEOUT_SECONDS = 300;
+
+    private const MAX_BUFFER_BYTES = 1048576;
+
     public function handle(ClientServiceConsoleService $consoleService): int
     {
         set_time_limit(0);
@@ -57,6 +66,8 @@ class VncRelayCommand extends Command
         $this->line(sprintf('前端代理路径：%s', (string) config('idc.vnc_relay.path', '/ws/vnc')));
 
         while ($this->running) {
+            $this->reapStaleConnections();
+
             $read = [$this->server];
             $write = [];
             $except = [];
@@ -156,8 +167,15 @@ class VncRelayCommand extends Command
             return;
         }
 
+        if (count($this->connections) >= self::MAX_CONNECTIONS) {
+            @fclose($client);
+
+            return;
+        }
+
         stream_set_blocking($client, false);
 
+        $now = time();
         $id = (int) $client;
         $this->connections[$id] = [
             'client' => $client,
@@ -168,7 +186,50 @@ class VncRelayCommand extends Command
             'upstream_out' => '',
             'handshake_done' => false,
             'token' => '',
+            'created_at' => $now,
+            'last_activity_at' => $now,
         ];
+    }
+
+    /**
+     * 每轮事件循环清理：握手超时、空闲超时、缓冲超限的连接，
+     * 防止半截请求头/不读数据的客户端耗尽 FD 与内存。
+     */
+    private function reapStaleConnections(): void
+    {
+        $now = time();
+
+        foreach ($this->connections as $id => $connection) {
+            if (! is_resource($connection['client'] ?? null)) {
+                $this->closeConnection($id);
+
+                continue;
+            }
+
+            // 任一侧转发缓冲超限：视为异常/滥用连接，关闭。
+            foreach (['client_in', 'client_out', 'upstream_in', 'upstream_out'] as $bufferKey) {
+                if (strlen((string) ($connection[$bufferKey] ?? '')) > self::MAX_BUFFER_BYTES) {
+                    $this->closeConnection($id);
+
+                    continue 2;
+                }
+            }
+
+            $createdAt = (int) ($connection['created_at'] ?? $now);
+            $lastActivity = (int) ($connection['last_activity_at'] ?? $createdAt);
+
+            // 握手超时：客户端连接后未在时限内完成 WebSocket 握手。
+            if (! ($connection['handshake_done'] ?? false) && ($now - $createdAt) > self::HANDSHAKE_TIMEOUT_SECONDS) {
+                $this->closeConnection($id);
+
+                continue;
+            }
+
+            // 空闲超时：已建立的双向连接长时间无活动。
+            if (($now - $lastActivity) > self::IDLE_TIMEOUT_SECONDS) {
+                $this->closeConnection($id);
+            }
+        }
     }
 
     private function readClientSocket(int $connectionId, ClientServiceConsoleService $consoleService): void
@@ -192,6 +253,7 @@ class VncRelayCommand extends Command
         }
 
         $connection['client_in'] .= $chunk;
+        $connection['last_activity_at'] = time();
         $this->connections[$connectionId] = $connection;
 
         if (! ($connection['handshake_done'] ?? false)) {
@@ -224,6 +286,7 @@ class VncRelayCommand extends Command
         }
 
         $connection['upstream_in'] .= $chunk;
+        $connection['last_activity_at'] = time();
         $this->connections[$connectionId] = $connection;
 
         $this->forwardUpstreamFrames($connectionId);
@@ -313,7 +376,7 @@ class VncRelayCommand extends Command
                 'params' => [
                     'host' => $params['host'] ?? '',
                     'port' => $params['port'] ?? 0,
-                    'path' => $params['path'] ?? '',
+                    'path' => $this->maskUpstreamPath((string) ($params['path'] ?? '')),
                     'encrypt' => $params['encrypt'] ?? '0',
                     'origin' => $params['origin'] ?? '',
                 ],
@@ -401,6 +464,9 @@ class VncRelayCommand extends Command
             throw new \RuntimeException('上游 VNC 参数无效');
         }
 
+        // SSRF 纵深防护：拒绝内网/保留地址，避免上游或 Redis 受控时把 relay 变成内网 TCP 桥。
+        $this->assertPublicUpstreamTarget($host);
+
         $timeout = max(1, (int) config('idc.vnc_relay.connect_timeout', 10));
         $contextOptions = [];
 
@@ -482,6 +548,127 @@ class VncRelayCommand extends Command
         stream_set_blocking($socket, false);
 
         return [$socket, $extra];
+    }
+
+    /**
+     * SSRF 纵深防护：拒绝把中继导向内网/保留地址。
+     *
+     * 目标 host 虽来自上游 VNC 地址或缓存连接数据（非用户直接输入），但上游或 Redis
+     * 受控时可能被导向内网任意主机端口，形成内网 TCP 桥。此处解析目标并拦截内网段。
+     */
+    private function assertPublicUpstreamTarget(string $host): void
+    {
+        // 代理 fake-ip 环境（Clash TUN 等）域名统一解析为保留地址，DNS 校验不可靠；
+        // 该环境仅限本地联调，Relay 只监听内网端口，默认跳过，生产保持严格。
+        if ((bool) config('idc.vnc_relay.allow_private_upstream', false)) {
+            return;
+        }
+
+        $host = trim($host);
+        if ($host === '') {
+            return;
+        }
+
+        $lower = strtolower($host);
+        if (in_array($lower, ['localhost', 'localhost.localdomain', 'ip6-localhost'], true)
+            || $lower === '::1'
+            || str_starts_with($lower, '0.0.0.0')
+            || $lower === '::'
+        ) {
+            throw new \RuntimeException('上游 VNC 目标为本地地址，已拒绝连接');
+        }
+
+        $resolved = $this->resolveTargetIps($host);
+        if ($resolved === []) {
+            // 无法解析（DNS 不可用或下游有解析能力），交由连接层处理，不阻断合法目标。
+            return;
+        }
+
+        foreach ($resolved as $ip) {
+            if ($this->isPrivateOrReservedIp($ip)) {
+                throw new \RuntimeException('上游 VNC 目标解析到内网/保留地址，已拒绝连接');
+            }
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function resolveTargetIps(string $host): array
+    {
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            return [$host];
+        }
+
+        $ips = [];
+        $ipv4 = @gethostbynamel($host);
+        if (is_array($ipv4)) {
+            $ips = array_merge($ips, array_values($ipv4));
+        }
+
+        if (function_exists('dns_get_record')) {
+            try {
+                $records = @dns_get_record($host, DNS_AAAA);
+                if (is_array($records)) {
+                    foreach ($records as $record) {
+                        if (($record['type'] ?? '') === 'AAAA' && ! empty($record['ipv6'])) {
+                            $ips[] = (string) $record['ipv6'];
+                        }
+                    }
+                }
+            } catch (Throwable) {
+                // DNS 解析失败不阻断合法目标，交由连接层处理。
+            }
+        }
+
+        return $ips;
+    }
+
+    private function isPrivateOrReservedIp(string $ip): bool
+    {
+        $ip = trim($ip);
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $long = ip2long($ip);
+            if ($long === false) {
+                return true;
+            }
+            $long = (int) $long;
+
+            // 0.0.0.0/8、10/8、127/8、169.254/16、172.16/12、192.168/16、100.64/10、192.0.0/24
+            $networks = [
+                [0x00000000, 0xFF000000],
+                [0x0A000000, 0xFF000000],
+                [0x7F000000, 0xFF000000],
+                [0xA9FE0000, 0xFFFF0000],
+                [0xAC100000, 0xFFF00000],
+                [0xC0A80000, 0xFFFF0000],
+                [0x64400000, 0xFFC00000],
+                [0xC0000000, 0xFFFFFF00],
+            ];
+
+            foreach ($networks as [$base, $mask]) {
+                if (($long & $mask) === ($base & $mask)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $lower = strtolower($ip);
+            if ($lower === '::1' || $lower === '::') {
+                return true;
+            }
+
+            $firstGroup = explode(':', $lower)[0] ?? '';
+
+            return preg_match('/^fe[89ab]/', $firstGroup) === 1     // fe80::/10 链路本地
+                || preg_match('/^f[cd]/', $firstGroup) === 1;        // fc00::/7 唯一本地
+        }
+
+        return true;
     }
 
     private function resolveOriginHeader(array $params = []): string
@@ -567,6 +754,29 @@ class VncRelayCommand extends Command
         }
 
         return substr($token, 0, 4).str_repeat('*', max(strlen($token) - 8, 0)).substr($token, -4);
+    }
+
+    /**
+     * 上游 VNC URL 的 query 可能携带 password/token 等敏感凭据（如
+     * wss://vnc.example.test/websockify?password=secret），日志侧只保留路径段，
+     * 剥离整个 query，避免实例密码以明文落入日志与告警链路。
+     */
+    private function maskUpstreamPath(string $path): string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            return '';
+        }
+
+        $parts = parse_url($path);
+        if (is_array($parts)) {
+            $pathOnly = trim((string) ($parts['path'] ?? ''));
+            if ($pathOnly !== '') {
+                return $pathOnly;
+            }
+        }
+
+        return preg_replace('/[?#].*$/', '', $path) ?? '';
     }
 
     private function buildClientHandshakeResponse(string $clientKey): string

@@ -20,6 +20,7 @@ export interface BindingTreeNode {
   label: string;
   text: string;
   selectable: boolean;
+  activable?: boolean;
   product_id?: number;
   binding_value?: string;
   raw_value?: string;
@@ -239,14 +240,15 @@ export type BindingTreeMode = 'multiple' | 'batch' | 'single';
 // ---- tree building ----
 
 function isBindingTreeNodeCheckDisabled(node: { data?: Record<string, unknown> }) {
-  return !toPlainRecord(node?.data).selectable;
+  // 只有明确标记 disabled 的节点才禁用，分类/类型节点均可展开/点击
+  return toPlainRecord(node?.data).disabled === true;
 }
 
 function ensureBindingTreeTypeNode(
   nodes: Map<string, BindingTreeNode>,
   productType: string,
   label: string,
-  _mode: BindingTreeMode = 'multiple',
+  mode: BindingTreeMode = 'multiple',
 ) {
   const key = `type:${productType}`;
   const existing = nodes.get(key);
@@ -256,7 +258,9 @@ function ensureBindingTreeTypeNode(
     value: key,
     label,
     text: label,
-    selectable: false,
+    selectable: true,
+    // 添加实例使用单选树：类型仅用于分组，不能作为商品写入表单。
+    activable: mode === 'single' ? false : undefined,
     children: [],
   };
   nodes.set(key, node);
@@ -324,8 +328,9 @@ function buildBindingCategoryTreeNode(
   const label = String(node.label || node.name || node.title || node.text || '未命名分类').trim();
   if (!label && result.length === 0) return null;
 
-  // 批量模式下分类节点可选
-  const selectable = mode === 'batch';
+  // 添加实例使用单选树：分类仅用于导航，不能作为商品写入表单。
+  // 批量模式保留按分类勾选并展开为商品的语义。
+  const selectable = true;
   const rawValue = String(node.value || node.id || nodeKey).trim() || nodeKey;
 
   return {
@@ -333,6 +338,7 @@ function buildBindingCategoryTreeNode(
     label: label || '未命名分类',
     text: label || '未命名分类',
     selectable,
+    activable: mode === 'single' ? false : undefined,
     raw_value: rawValue,
     children: result,
     ...currentContext,

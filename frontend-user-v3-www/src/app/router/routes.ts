@@ -1,8 +1,8 @@
 import { lazyRouteView } from '@turaidc/shared/runtime'
-import { buildSeoLandingRouteMeta, seoLandingPages } from '@/data/seoLandingPages'
+import { buildSeoLandingRouteMeta, seoLandingMetaPages } from '@/data/seoLandingMeta'
 import type { RouteRecordRaw } from 'vue-router'
 
-const seoLandingRoutes: RouteRecordRaw[] = seoLandingPages.map((page) => ({
+const seoLandingRoutes: RouteRecordRaw[] = seoLandingMetaPages.map((page) => ({
   path: page.path.replace(/^\/+/, ''),
   name: page.routeName,
   component: lazyRouteView(() => import('@/pages/website/seo-landing/index.vue')),
@@ -36,13 +36,13 @@ export const clientRoutes: RouteRecordRaw[] = [
       },
       ...seoLandingRoutes,
       {
-        path: 'products/:typeId(\\d+)/:groupId(\\d+)/:childGroupId(\\d+)/:productId(\\d+)',
+        path: 'products/:typeId/:groupId(\\d+)/:childGroupId(\\d+)/:productId(\\d+)',
         name: 'WwwProductsPurchaseWithChild',
         component: lazyRouteView(() => import('@/pages/website/products/index.vue')),
         meta: { title: '产品与服务', noSitemap: true, robots: 'noindex,nofollow' },
       },
       {
-        path: 'products/:typeId(\\d+)/:groupId(\\d+)/:productId(\\d+)',
+        path: 'products/:typeId/:groupId(\\d+)/:productId(\\d+)',
         name: 'WwwProductsPurchase',
         component: lazyRouteView(() => import('@/pages/website/products/index.vue')),
         meta: { title: '产品与服务', noSitemap: true, robots: 'noindex,nofollow' },

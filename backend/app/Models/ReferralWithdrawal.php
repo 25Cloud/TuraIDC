@@ -16,6 +16,21 @@ class ReferralWithdrawal extends Model
 
     public const STATUS_REJECTED = 2;
 
+    /** 已打款：支付宝方式审核通过后，管理员确认打款并回填凭证。 */
+    public const STATUS_PAID = 3;
+
+    public const STATUS_LABELS = [
+        self::STATUS_PENDING => '待处理',
+        self::STATUS_APPROVED => '已通过',
+        self::STATUS_REJECTED => '已拒绝',
+        self::STATUS_PAID => '已打款',
+    ];
+
+    public static function statusLabel(int $status): string
+    {
+        return self::STATUS_LABELS[$status] ?? (string) $status;
+    }
+
     protected $fillable = [
         'user_id',
         'amount',
@@ -23,9 +38,11 @@ class ReferralWithdrawal extends Model
         'account_name',
         'account_no',
         'status',
+        'payment_no',
         'remark',
         'operator',
         'trace_id',
+        'paid_at',
         'processed_at',
     ];
 
@@ -35,6 +52,7 @@ class ReferralWithdrawal extends Model
             'user_id' => 'integer',
             'amount' => 'decimal:2',
             'status' => 'integer',
+            'paid_at' => 'datetime',
             'processed_at' => 'datetime',
         ];
     }

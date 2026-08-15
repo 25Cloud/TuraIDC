@@ -12,6 +12,7 @@ use App\Support\SiteConfigPayload;
 use App\Support\UploadUrl;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use TijsVerkoyen\CssToInlineStyles\CssToInlineStyles;
 
 class NotificationService
 {
@@ -19,8 +20,10 @@ class NotificationService
 
     public const TEMPLATE_REGISTRATION_SUCCESS = '100002';
 
+    /** 登录提醒：与 TEMPLATE_LOGIN_FAILURE_ALERT / TEMPLATE_LOGIN_LOCATION_ALERT 共用数据库模板 100003 */
     public const TEMPLATE_LOGIN_ALERT = '100003';
 
+    /** 账号绑定/安全提醒：与密码/手机/邮箱变更提醒共用数据库模板 100004 */
     public const TEMPLATE_ACCOUNT_BINDING_ALERT = '100004';
 
     public const TEMPLATE_SERVICE_ACTIVATED = '100005';
@@ -33,6 +36,7 @@ class NotificationService
 
     public const TEMPLATE_SERVICE_REINSTALL_SUCCESS = '100009';
 
+    /** 新订单待支付：与 TEMPLATE_INVOICE_NOTICE 共用数据库模板 100010 */
     public const TEMPLATE_CLIENT_ORDER_PENDING = '100010';
 
     public const TEMPLATE_INVOICE_NOTICE = '100010';
@@ -47,6 +51,7 @@ class NotificationService
 
     public const TEMPLATE_AUTO_RENEW_NOTICE = '100015';
 
+    /** 付款成功通知：与 TEMPLATE_MANUAL_PAYMENT_CONFIRM 共用数据库模板 100016 */
     public const TEMPLATE_PAYMENT_SUCCESS = '100016';
 
     public const TEMPLATE_MANUAL_PAYMENT_CONFIRM = '100016';
@@ -106,7 +111,7 @@ class NotificationService
                 throw new \RuntimeException('邮件通知未启用');
             }
 
-            $this->mailDriverManager->resolve()->sendHtml($to, $subject, $content, [
+            $this->mailDriverManager->resolve()->sendHtml($to, $subject, $this->inlineEmailCss($content), [
                 'template_code' => $templateCode,
             ]);
 
@@ -146,6 +151,7 @@ class NotificationService
         ], $this->stringifyParams($params));
 
         $subject = $this->renderTemplateText($subjectTemplate, $renderParams);
+        $subject = str_replace(["\r", "\n"], '', $subject);
         $content = $this->buildTemplateEmailHtml(
             $subject,
             $this->renderTemplateContent($contentTemplate, $renderParams)
@@ -376,6 +382,7 @@ class NotificationService
     /**
      * @return array{id: int|null}
      */
+    // 邮件日志明文保存完整正文，供管理端真实审计；管理员端不做脱敏（项目红线）
     private function createEmailLog(string $to, string $subject, string $content, ?string $templateCode): array
     {
         $traceId = $this->notificationTraceId('email', $templateCode);
@@ -529,7 +536,7 @@ class NotificationService
             $normalized[trim($key)] = match (true) {
                 is_string($value) => $value,
                 is_int($value), is_float($value) => (string) $value,
-                is_bool($value) => $value ? '1' : '',
+                is_bool($value) => $value ? '1' : '0',
                 $value === null => '',
                 default => (string) $value,
             };
@@ -556,7 +563,7 @@ class NotificationService
             $siteLogo = SiteConfigPayload::DEFAULT_SITE_LOGO;
         }
 
-        if (preg_match('/^(https?:)?\/\//i', $siteLogo) === 1 || str_starts_with($siteLogo, 'data:')) {
+        if (preg_match('/^(https?:)?\/\//i', $siteLogo) === 1) {
             return $siteLogo;
         }
 
@@ -605,7 +612,7 @@ class NotificationService
                 return $this->hasTemplateValue($value) ? (string) ($matches[2] ?? '') : '';
             },
             $template
-        );
+        ) ?? $template;
 
         $rendered = preg_replace_callback(
             '/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/u',
@@ -672,7 +679,7 @@ class NotificationService
     {
         $normalized = ltrim(trim($content));
 
-        return preg_match('/^(<!doctype\s+html|<html\b)/iu', $normalized) === 1;
+        return preg_match('/^(<!doctype\s+html|<html\b|<body\b)/iu', $normalized) === 1;
     }
 
     private function wrapTemplateEmailHtml(string $subject, string $content): string
@@ -697,5 +704,22 @@ HTML;
     private function hasTemplateValue(mixed $value): bool
     {
         return ! in_array($value, [null, '', false], true);
+    }
+
+    /**
+     * 将 HTML 邮件中的 <style> 内联到各元素，确保 Gmail 等剥离 <head> 的客户端正常渲染。
+     */
+    private function inlineEmailCss(string $content): string
+    {
+        $content = trim($content);
+        if ($content === '' || ! $this->looksLikeFullHtmlDocument($content)) {
+            return $content;
+        }
+
+        try {
+            return (new CssToInlineStyles)->convert($content);
+        } catch (\Throwable) {
+            return $content;
+        }
     }
 }

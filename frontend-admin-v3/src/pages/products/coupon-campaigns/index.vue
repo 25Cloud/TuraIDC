@@ -124,11 +124,7 @@
                 删除
               </t-button>
             </t-space>
-            <t-dropdown
-              v-else
-              :options="mobileActionOptions(row)"
-              @click="(data: { value: unknown }) => handleMobileAction(data.value, row)"
-            >
+            <t-dropdown v-else :options="mobileActionOptions(row)" @click="handleMobileActionHandler(row)">
               <t-button size="small" variant="text">更多</t-button>
             </t-dropdown>
           </template>
@@ -296,7 +292,7 @@
 import './index.less';
 
 import { AddIcon, SearchIcon } from 'tdesign-icons-vue-next';
-import type { FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
+import type { DropdownOption, FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -701,6 +697,10 @@ function campaignMobileRows(row: CouponCampaignRecord) {
 
 function handleCampaignCardAction(row: CouponCampaignRecord, action: unknown) {
   handleMobileAction(action, row);
+}
+
+function handleMobileActionHandler(row: CouponCampaignRecord) {
+  return (data: DropdownOption) => handleMobileAction(data.value, row);
 }
 
 function handleMobileAction(action: unknown, row: CouponCampaignRecord) {

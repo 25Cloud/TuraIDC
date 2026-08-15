@@ -19,6 +19,10 @@ class Product extends Model
 {
     use SoftDeletes;
 
+    public const CONSOLE_TEMPLATE_COMPUTE = 'compute';
+
+    public const CONSOLE_TEMPLATE_PORT_MAPPING = 'port_mapping';
+
     /**
      * products 表列清单缓存，按连接名分组，避免重复 getColumnListing 调用。
      *
@@ -37,6 +41,7 @@ class Product extends Model
         'product_group_id',
         'service_type_code',
         'product_type', 'type',
+        'console_template',
         'custom_display_name', 'remark',
         'pricing',
         'setup_fee', 'config_options', 'purchase_requires', 'stock', 'status',
@@ -95,6 +100,15 @@ class Product extends Model
         return $this->decodeJsonArrayAttribute($value);
     }
 
+    public function getConsoleTemplateAttribute(mixed $value): string
+    {
+        $normalized = strtolower(trim((string) $value));
+
+        return $normalized === self::CONSOLE_TEMPLATE_PORT_MAPPING
+            ? self::CONSOLE_TEMPLATE_PORT_MAPPING
+            : self::CONSOLE_TEMPLATE_COMPUTE;
+    }
+
     public function getSupplierProductNameAttribute(mixed $value): ?string
     {
         $normalized = trim((string) $value);
@@ -150,6 +164,14 @@ class Product extends Model
     {
         $normalized = trim((string) $value);
         $this->attributes['remark'] = $normalized !== '' ? $normalized : null;
+    }
+
+    public function setConsoleTemplateAttribute(mixed $value): void
+    {
+        $normalized = strtolower(trim((string) $value));
+        $this->attributes['console_template'] = $normalized === self::CONSOLE_TEMPLATE_PORT_MAPPING
+            ? self::CONSOLE_TEMPLATE_PORT_MAPPING
+            : self::CONSOLE_TEMPLATE_COMPUTE;
     }
 
     public function getFirstProductGroupIdAttribute(): ?int
@@ -414,6 +436,7 @@ class Product extends Model
         };
 
         $setIfColumnExists('product_type', (string) ($product->product_type ?: 'other'));
+        $setIfColumnExists('console_template', $product->console_template);
         $setIfColumnExists('product_group_id', (int) ($product->product_group_id ?? 0) ?: null);
         $setIfColumnExists('custom_display_name', $product->custom_display_name);
         $setIfColumnExists('remark', $product->remark);

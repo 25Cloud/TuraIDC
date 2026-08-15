@@ -49,6 +49,7 @@
     }
   },
   "layout": {
+    "skipToContent": "Skip to main content",
     "header": {
       "code": "Code Repository",
       "help": "Document",

@@ -459,6 +459,7 @@ class AdminLogService
         ]);
     }
 
+    // 管理端短信/邮件日志查询返回完整 content、params 与收件人，不做脱敏（项目红线：管理员需真实审计信息）
     private function buildSmsLogQuery(array $filters): ?Builder
     {
         if (! Schema::hasTable('message_logs')) {
@@ -1124,7 +1125,7 @@ class AdminLogService
             function () use ($logPath, $lineLimit) {
                 return collect($this->readLastLines($logPath, $lineLimit))
                     ->reverse()
-                    ->map(fn (string $line, int $index) => $this->parseLaravelLogLine($line, $index))
+                    ->map(fn (array $item) => $this->parseLaravelLogLine((string) $item['content'], (int) $item['line_no']))
                     ->filter()
                     ->values()
                     ->all();
@@ -1132,6 +1133,14 @@ class AdminLogService
         );
     }
 
+    /**
+     * 返回文件尾部窗口内最后 $limit 行非空行，元素为 `['line_no' => 物理行号, 'content' => 行内容]`。
+     *
+     * 物理行号用于生成日志 ID，保证文件持续追加时既有日志行的 ID 不因窗口滑动而漂移，
+     * 否则列表返回的 ID 在详情请求时可能已无法复现（行序号随追加变化）。
+     *
+     * @return list<array{line_no: int, content: string}>
+     */
     private function readLastLines(string $path, int $limit): array
     {
         $file = new \SplFileObject($path, 'r');
@@ -1144,8 +1153,9 @@ class AdminLogService
 
         while (! $file->eof()) {
             $line = rtrim((string) $file->current(), "\r\n");
+            $lineNo = (int) $file->key();
             if ($line !== '') {
-                $lines[] = $line;
+                $lines[] = ['line_no' => $lineNo, 'content' => $line];
             }
             $file->next();
         }
@@ -1153,7 +1163,7 @@ class AdminLogService
         return $lines;
     }
 
-    private function parseLaravelLogLine(string $line, int $index): ?array
+    private function parseLaravelLogLine(string $line, int $lineNo): ?array
     {
         $line = trim($line);
         if ($line === '') {
@@ -1168,7 +1178,7 @@ class AdminLogService
         $taskKey = $this->resolveTaskKeyFromMessage($message);
 
         return [
-            'id' => md5($line.'|'.$index),
+            'id' => md5($line.'|'.$lineNo),
             'time' => trim((string) $matches['time']),
             'level' => trim((string) $matches['level']),
             'message' => preg_replace('/\s+\{.*$/u', '', $message) ?: $message,

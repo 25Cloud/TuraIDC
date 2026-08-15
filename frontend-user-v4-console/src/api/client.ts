@@ -32,6 +32,7 @@ import type {
   ReferralAccountLogRecord,
   ReferralOverviewPayload,
   ReferralRewardRecord,
+  ReferralUserBrief,
   ReferralWithdrawalApplyResult,
   ReferralWithdrawalRecord,
   SecurityGroupPayload,
@@ -374,6 +375,8 @@ const clientApi = {
     getEnvelope<PagedList<ReferralAccountLogRecord>>('/v2/client/referral/account-logs', { params }),
   referralWithdrawals: (params?: QueryParams) =>
     getEnvelope<PagedList<ReferralWithdrawalRecord>>('/v2/client/referral/withdrawals', { params }),
+  referralDirectReferrals: (params?: QueryParams) =>
+    getEnvelope<PagedList<ReferralUserBrief>>('/v2/client/referral/direct-referrals', { params }),
   applyWithdrawal: (data: Record<string, unknown>) =>
     postEnvelope<ReferralWithdrawalApplyResult>('/v2/client/referral/withdrawals', data),
 

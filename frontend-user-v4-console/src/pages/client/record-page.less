@@ -77,7 +77,7 @@
 
 .record-mobile-card__head {
   padding-bottom: 0.625rem;
-  border-bottom: 0.0625rem solid #edf1f6;
+  border-bottom: 0.0625rem solid var(--td-component-stroke);
 }
 
 .record-mobile-card__head strong {
@@ -241,7 +241,7 @@
   }
 }
 
-@media (max-width: 67.5rem) {
+@media (width <= 67.5rem) {
   .record-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

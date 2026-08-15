@@ -50,7 +50,7 @@ class ServiceOverviewService
                 'created_at', 'auto_renew',
             ])
             ->with([
-                'product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires',
+                'product:id,product_type,service_type_code,product_group_id,console_template,config_options,purchase_requires',
                 'product.productGroup.secondProductGroup.firstProductGroup',
                 'order:id,order_no,status,paid_at',
                 'invoice:id,invoice_no',
@@ -184,7 +184,7 @@ class ServiceOverviewService
     {
         $services = Service::query()
             ->with([
-                'product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires',
+                'product:id,product_type,service_type_code,product_group_id,console_template,config_options,purchase_requires',
                 'product.productGroup.secondProductGroup.firstProductGroup',
             ])
             ->where('user_id', $user->id)

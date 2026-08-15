@@ -87,7 +87,7 @@
   color: var(--td-text-color-primary);
   line-height: 22px;
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .is-staff .message-bubble {
@@ -335,7 +335,7 @@
   margin-top: var(--td-comp-margin-l);
 }
 
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   .conversation-layout {
     grid-template-columns: 1fr;
   }
@@ -345,7 +345,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .conversation-action-bar,
   .composer-actions,
   .assign-box {

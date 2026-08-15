@@ -149,8 +149,8 @@ function displayValue(value: string | number | null | undefined) {
   overflow: hidden;
   border: 1px solid var(--td-component-border);
   border-radius: var(--td-radius-large, 8px);
-  background: linear-gradient(135deg, rgba(0, 82, 217, 0.07), transparent 42%), var(--td-bg-color-container);
-  box-shadow: 0 8px 20px rgba(28, 45, 84, 0.06);
+  background: linear-gradient(135deg, rgb(0 82 217 / 7%), transparent 42%), var(--td-bg-color-container);
+  box-shadow: 0 8px 20px rgb(28 45 84 / 6%);
 }
 
 .record-detail-summary > div {
@@ -219,7 +219,7 @@ function displayValue(value: string | number | null | undefined) {
   padding: 16px;
 }
 
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   .record-detail-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -229,7 +229,7 @@ function displayValue(value: string | number | null | undefined) {
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .record-detail-toolbar {
     align-items: stretch;
     flex-direction: column;

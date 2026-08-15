@@ -18,9 +18,25 @@ class HeartbeatTaskRunner
     /**
      * @return array<string, mixed>
      */
-    public function run(ScheduledTask $task, TaskContext $context): array
+    public function run(ScheduledTask $task, TaskContext $context, bool $finalFailure = false): array
     {
-        $this->taskRuns->markRunning($context->taskRunId);
+        // 队列重复投递、锁过期后的迟到 Job 不得再次执行业务处理。
+        // 旧的测试替身/调用方可能没有返回值；只有明确返回 false 才表示 CAS 拒绝执行。
+        if ($this->taskRuns->markRunning($context->taskRunId, $context->attempt) === false) {
+            if ($context->taskRunId !== null && $context->taskRunId > 0) {
+                $this->taskRuns->recordLateJobRejection(
+                    (int) $context->taskRunId,
+                    $context->attempt,
+                    'schedule_run_not_active',
+                );
+            }
+
+            return [
+                'status' => 'skipped',
+                'reason' => 'schedule_run_not_active',
+                'task_run_id' => $context->taskRunId,
+            ];
+        }
 
         $startedAt = (int) (microtime(true) * 1000);
 
@@ -38,7 +54,12 @@ class HeartbeatTaskRunner
             return $summary;
         } catch (\Throwable $exception) {
             $durationMs = (int) (microtime(true) * 1000) - $startedAt;
-            $this->taskRuns->markFailed($context->taskRunId, $exception->getMessage(), $durationMs);
+            if ($finalFailure) {
+                $this->taskRuns->markTerminalFailed($context->taskRunId, $exception->getMessage(), $durationMs);
+            } else {
+                // 队列仍会重试，记录保持 active，阻止新的心跳/手动触发重复入队。
+                $this->taskRuns->markRetrying($context->taskRunId, $exception->getMessage(), $durationMs);
+            }
 
             throw $exception;
         }

@@ -6,6 +6,7 @@ namespace App\Services\Order\Concerns;
 
 use App\Exceptions\BusinessException;
 use App\Models\Product;
+use App\Support\Money;
 use Illuminate\Support\Str;
 
 trait HandlesOrderCalculation
@@ -56,7 +57,7 @@ trait HandlesOrderCalculation
         $quote = $this->buildQuoteBreakdown($product, $billingCycle, $config);
         $setupFee = (float) $product->setup_fee;
 
-        return round($baseAmount + (float) $quote['config_amount'] + $setupFee, 2);
+        return Money::add($baseAmount, $quote['config_amount'] ?? 0, $setupFee);
     }
 
     public function quote(Product $product, string $billingCycle, array $config = [], int $quantity = 1): array
@@ -69,16 +70,16 @@ trait HandlesOrderCalculation
 
         $quote = $this->buildQuoteBreakdown($product, $billingCycle, $config);
         $setupFee = (float) $product->setup_fee;
-        $unitTotalAmount = round($baseAmount + (float) $quote['config_amount'] + $setupFee, 2);
-        $scaledBaseAmount = round($baseAmount * $quantity, 2);
-        $scaledConfigAmount = round((float) $quote['config_amount'] * $quantity, 2);
-        $scaledSetupFee = round($setupFee * $quantity, 2);
-        $totalAmount = round($unitTotalAmount * $quantity, 2);
+        $unitTotalAmount = Money::add($baseAmount, $quote['config_amount'] ?? 0, $setupFee);
+        $scaledBaseAmount = Money::multiply($baseAmount, $quantity);
+        $scaledConfigAmount = Money::multiply($quote['config_amount'] ?? 0, $quantity);
+        $scaledSetupFee = Money::multiply($setupFee, $quantity);
+        $totalAmount = Money::multiply($unitTotalAmount, $quantity);
         $scaledItems = collect($quote['items'])
             ->map(function (array $item) use ($quantity) {
                 return [
                     ...$item,
-                    'amount' => $this->formatAmount((float) ($item['amount'] ?? 0) * $quantity),
+                    'amount' => $this->formatAmount(Money::multiply($item['amount'] ?? 0, $quantity)),
                 ];
             })
             ->values()
@@ -107,12 +108,12 @@ trait HandlesOrderCalculation
         $quote = $this->buildConfigPricingBreakdown($product, $billingCycle, $config);
         $setupFee = (float) $product->setup_fee;
         $quantity = max($quantity, 1);
-        $unitTotalAmount = round($baseAmount + (float) $quote['config_amount'] + $setupFee, 2);
+        $unitTotalAmount = Money::add($baseAmount, $quote['config_amount'] ?? 0, $setupFee);
         $scaledItems = collect($quote['items'])
             ->map(function (array $item) use ($quantity) {
                 return [
                     ...$item,
-                    'amount' => $this->formatAmount((float) ($item['amount'] ?? 0) * $quantity),
+                    'amount' => $this->formatAmount(Money::multiply($item['amount'] ?? 0, $quantity)),
                 ];
             })
             ->values()
@@ -124,9 +125,9 @@ trait HandlesOrderCalculation
             'unit_config_amount' => $this->formatAmount((float) $quote['config_amount']),
             'unit_setup_fee' => $this->formatAmount($setupFee),
             'unit_total_amount' => $this->formatAmount($unitTotalAmount),
-            'base_amount' => $this->formatAmount($baseAmount * $quantity),
-            'config_amount' => $this->formatAmount((float) $quote['config_amount'] * $quantity),
-            'setup_fee' => $this->formatAmount($setupFee * $quantity),
+            'base_amount' => $this->formatAmount(Money::multiply($baseAmount, $quantity)),
+            'config_amount' => $this->formatAmount(Money::multiply($quote['config_amount'] ?? 0, $quantity)),
+            'setup_fee' => $this->formatAmount(Money::multiply($setupFee, $quantity)),
             'total_amount' => $this->formatAmount($unitTotalAmount * $quantity),
             'items' => $scaledItems,
         ];
@@ -294,11 +295,14 @@ trait HandlesOrderCalculation
         $rangeMin = (int) ($item['qty_minimum'] ?? 0);
         $rangeStep = max((int) ($item['qty_stage'] ?? 1), 1);
         $value = max((int) ($config[$field] ?? $rangeMin), $rangeMin);
+        $visibleSubCount = 0;
 
         foreach ((array) ($item['sub'] ?? []) as $sub) {
             if ((int) ($sub['hidden'] ?? 0) === 1) {
                 continue;
             }
+
+            $visibleSubCount++;
 
             $subMin = (int) ($sub['qty_minimum'] ?? 0);
             $subMax = (int) ($sub['qty_maximum'] ?? 0);
@@ -322,10 +326,17 @@ trait HandlesOrderCalculation
             $steps = $this->calculateRangeChargeSteps($value, $subMin, $rangeStep);
 
             return [
-                'amount' => round($stepPrice * $steps, 2),
+                'amount' => Money::multiply($stepPrice, $steps),
                 'selected_value' => $value,
                 'steps' => $steps,
             ];
+        }
+
+        // 超出所有阶梯且不存在"无上限"兜底段：拒绝按 0 元计费，防止超大配置值绕过定价。
+        // 无可见阶梯的历史配置保持原行为（按 0 元），避免误伤既有产品。
+        if ($visibleSubCount > 0) {
+            $label = trim((string) ($item['name'] ?? $field));
+            throw new BusinessException($label !== '' ? "配置项「{$label}」超出可选范围" : '配置值超出可选范围');
         }
 
         return [
@@ -480,7 +491,7 @@ trait HandlesOrderCalculation
 
     private function formatAmount(float $amount): string
     {
-        return number_format($amount, 2, '.', '');
+        return Money::format($amount);
     }
 
     private function resolveConfigSnapshotValueLabel(array $item, string $field, string $selectedValue, bool $isRange): string

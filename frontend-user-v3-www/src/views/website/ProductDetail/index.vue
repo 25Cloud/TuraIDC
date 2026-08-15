@@ -1,15 +1,50 @@
 <template>
   <div class="pd-page" v-loading="loading">
     <div v-if="product">
-
       <!-- 顶部工具栏：分类 + 型号横向Tab -->
       <div class="pd-topbar">
-        <button type="button" class="category-btn" @click="router.push('/products')">
+        <button
+          type="button"
+          class="category-btn"
+          @click="router.push('/products')"
+        >
           <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
-            <rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
-            <rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
-            <rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
-            <rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <rect
+              x="1"
+              y="1"
+              width="6"
+              height="6"
+              rx="1"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <rect
+              x="9"
+              y="1"
+              width="6"
+              height="6"
+              rx="1"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <rect
+              x="1"
+              y="9"
+              width="6"
+              height="6"
+              rx="1"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <rect
+              x="9"
+              y="9"
+              width="6"
+              height="6"
+              rx="1"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
           </svg>
           <span>分类</span>
         </button>
@@ -23,7 +58,9 @@
             class="sib-tab"
             :class="{ active: sib.id === product.id }"
             @click="switchProduct(sib.id)"
-          >{{ resolveMachineSpecPresentation(sib).displayName }}</button>
+          >
+            {{ siblingDisplayNames[sib.id] }}
+          </button>
         </div>
       </div>
 
@@ -31,25 +68,39 @@
       <div class="pd-name-bar">
         <button type="button" class="product-name-btn active">
           <span>{{ selectedMachineSpec.displayName }}</span>
-          <svg viewBox="0 0 12 12" fill="none" width="12" height="12"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg viewBox="0 0 12 12" fill="none" width="12" height="12">
+            <path
+              d="M3 4.5l3 3 3-3"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
         </button>
       </div>
 
       <section v-if="showCatalogHero" class="pd-hero">
         <div class="pd-hero-copy">
-          <span v-if="detailCatalogEyebrow" class="pd-hero-eyebrow">{{ detailCatalogEyebrow }}</span>
+          <span v-if="detailCatalogEyebrow" class="pd-hero-eyebrow">{{
+            detailCatalogEyebrow
+          }}</span>
           <h1>{{ detailCatalogTitle }}</h1>
           <p v-if="detailCatalogSlogan">{{ detailCatalogSlogan }}</p>
         </div>
         <div v-if="detailCatalogTags.length" class="pd-hero-tags">
-          <span v-for="tag in detailCatalogTags" :key="tag" class="pd-hero-tag">{{ tag }}</span>
+          <span
+            v-for="tag in detailCatalogTags"
+            :key="tag"
+            class="pd-hero-tag"
+            >{{ tag }}</span
+          >
         </div>
       </section>
 
       <!-- 主体：左配置 + 右摘要 -->
       <div class="pd-body">
         <div class="pd-config">
-
           <!-- 区域 -->
           <div class="cfg-group" v-if="regionOptions.length">
             <div class="cfg-group-head">区域</div>
@@ -61,8 +112,13 @@
                   type="button"
                   class="opt-btn"
                   :class="{ active: configForm[regionKey] === opt.id }"
-                  @click="configForm[regionKey] = opt.id; fetchQuote()"
-                >{{ opt.label }}</button>
+                  @click="
+                    configForm[regionKey] = opt.id;
+                    fetchQuote();
+                  "
+                >
+                  {{ opt.label }}
+                </button>
               </div>
             </div>
           </div>
@@ -92,7 +148,7 @@
                   <el-select
                     v-model="configForm.os"
                     placeholder="请选择版本"
-                    :disabled="!(currentOsGroup?.versions?.length)"
+                    :disabled="!currentOsGroup?.versions?.length"
                     @change="fetchQuote"
                   >
                     <el-option
@@ -130,10 +186,21 @@
                       type="button"
                       class="opt-btn"
                       :class="{ active: configForm[cfg.key] === opt.id }"
-                      @click="configForm[cfg.key] = opt.id; fetchQuote()"
-                    >{{ opt.label }}</button>
+                      @click="
+                        configForm[cfg.key] = opt.id;
+                        fetchQuote();
+                      "
+                    >
+                      {{ opt.label }}
+                    </button>
                   </div>
-                  <button v-else-if="cfg.options.length === 1" type="button" class="opt-btn active">{{ cfg.options[0].label }}</button>
+                  <button
+                    v-else-if="cfg.options.length === 1"
+                    type="button"
+                    class="opt-btn active"
+                  >
+                    {{ cfg.options[0].label }}
+                  </button>
                 </div>
               </div>
             </div>
@@ -162,10 +229,21 @@
                       type="button"
                       class="opt-btn"
                       :class="{ active: configForm[cfg.key] === opt.id }"
-                      @click="configForm[cfg.key] = opt.id; fetchQuote()"
-                    >{{ opt.label }}</button>
+                      @click="
+                        configForm[cfg.key] = opt.id;
+                        fetchQuote();
+                      "
+                    >
+                      {{ opt.label }}
+                    </button>
                   </div>
-                  <button v-else-if="cfg.options.length === 1" type="button" class="opt-btn active">{{ cfg.options[0].label }}</button>
+                  <button
+                    v-else-if="cfg.options.length === 1"
+                    type="button"
+                    class="opt-btn active"
+                  >
+                    {{ cfg.options[0].label }}
+                  </button>
                 </div>
               </div>
             </div>
@@ -203,25 +281,36 @@
               </div>
             </div>
           </div>
-
-        </div><!-- /pd-config -->
+        </div>
+        <!-- /pd-config -->
 
         <!-- 右侧：配置费用摘要 -->
         <aside class="pd-aside">
           <div class="aside-card">
             <div class="cost-header">
               <span class="cost-title">配置费用</span>
-              <span class="stock-badge" :class="stockClass">{{ stockLabel }}</span>
+              <span class="stock-badge" :class="stockClass">{{
+                stockLabel
+              }}</span>
             </div>
 
             <div :class="['stock-info', `stock-info--${stockClass}`]">
-              <div v-if="resolvedStock !== null && resolvedStock !== -1" class="stock-main">
+              <div
+                v-if="resolvedStock !== null && resolvedStock !== -1"
+                class="stock-main"
+              >
                 当前库存&nbsp;&nbsp;
                 <strong>剩余 {{ resolvedStock }} 台</strong>
               </div>
-              <div v-else-if="productStockLoading" class="stock-main">当前库存&nbsp;&nbsp;<strong>同步中...</strong></div>
-              <div v-else-if="productStockError" class="stock-main">当前库存&nbsp;&nbsp;<strong>同步失败</strong></div>
-              <div v-else class="stock-main">当前库存&nbsp;&nbsp;<strong>可直接购买</strong></div>
+              <div v-else-if="productStockLoading" class="stock-main">
+                当前库存&nbsp;&nbsp;<strong>同步中...</strong>
+              </div>
+              <div v-else-if="productStockError" class="stock-main">
+                当前库存&nbsp;&nbsp;<strong>同步失败</strong>
+              </div>
+              <div v-else class="stock-main">
+                当前库存&nbsp;&nbsp;<strong>可直接购买</strong>
+              </div>
               <div class="stock-hint">{{ stockHint }}</div>
             </div>
 
@@ -232,19 +321,28 @@
               show-icon
               class="purchase-guard-alert"
             >
-              <template #title>购买要求：{{ purchaseRequirementSummary }}</template>
+              <template #title
+                >购买要求：{{ purchaseRequirementSummary }}</template
+              >
             </el-alert>
 
             <div class="aside-divider"></div>
 
             <section class="aside-section">
               <div class="aside-section-title">配置摘要</div>
-              <div class="cost-detail" :class="{ 'cost-detail--loading': quoteLoading }">
+              <div
+                class="cost-detail"
+                :class="{ 'cost-detail--loading': quoteLoading }"
+              >
                 <div class="cost-item">
                   <span>产品</span>
                   <span>{{ selectedMachineSpec.displayName }}</span>
                 </div>
-                <div class="cost-item" v-for="item in summaryItems" :key="item.key">
+                <div
+                  class="cost-item"
+                  v-for="item in summaryItems"
+                  :key="item.key"
+                >
                   <span>{{ item.label }}</span>
                   <span>{{ item.value }}</span>
                 </div>
@@ -255,7 +353,10 @@
 
             <section class="aside-section">
               <div class="aside-section-title">费用明细</div>
-              <div class="cost-breakdown" :class="{ 'cost-breakdown--loading': quoteLoading }">
+              <div
+                class="cost-breakdown"
+                :class="{ 'cost-breakdown--loading': quoteLoading }"
+              >
                 <div class="cost-item">
                   <span>基础价格</span>
                   <span>¥{{ baseAmount }}</span>
@@ -264,12 +365,18 @@
                   <span>开通费</span>
                   <span>¥{{ setupFee }}</span>
                 </div>
-                <div class="cost-item cost-item--extra" v-for="item in quoteItems" :key="item.field">
+                <div
+                  class="cost-item cost-item--extra"
+                  v-for="item in quoteItems"
+                  :key="item.field"
+                >
                   <span>+ {{ item.label }}</span>
                   <span>¥{{ item.amount }}</span>
                 </div>
                 <div class="cost-item cost-item--discount" v-if="appliedCoupon">
-                  <span>优惠券 {{ appliedCoupon.code || appliedCoupon.name }}</span>
+                  <span
+                    >优惠券 {{ appliedCoupon.code || appliedCoupon.name }}</span
+                  >
                   <span>-¥{{ appliedCoupon.discount_amount }}</span>
                 </div>
               </div>
@@ -278,7 +385,14 @@
             <div class="coupon-panel">
               <div class="coupon-panel-head">
                 <span class="coupon-panel-title">优惠券</span>
-                <button v-if="appliedCoupon" type="button" class="coupon-clear-btn" @click="clearCoupon">移除</button>
+                <button
+                  v-if="appliedCoupon"
+                  type="button"
+                  class="coupon-clear-btn"
+                  @click="clearCoupon"
+                >
+                  移除
+                </button>
               </div>
               <div class="coupon-panel-form">
                 <el-select
@@ -296,22 +410,40 @@
                 </el-select>
               </div>
               <div v-if="appliedCoupon" class="coupon-panel-tip">
-                {{ appliedCoupon.name }}，{{ appliedCoupon.discount_label }}，本次已减免 ¥{{ appliedCoupon.discount_amount }}
+                {{ appliedCoupon.name }}，{{
+                  appliedCoupon.discount_label
+                }}，本次已减免 ¥{{ appliedCoupon.discount_amount }}
               </div>
-              <div v-else-if="!availableCoupons.length" class="coupon-panel-tip coupon-panel-tip--muted">
-                {{ product ? '当前暂无可用优惠券，登录后如有优惠券会自动展示在这里。' : '请选择商品后查看可用优惠券。' }}
+              <div
+                v-else-if="!availableCoupons.length"
+                class="coupon-panel-tip coupon-panel-tip--muted"
+              >
+                {{
+                  product
+                    ? "当前暂无可用优惠券，登录后如有优惠券会自动展示在这里。"
+                    : "请选择商品后查看可用优惠券。"
+                }}
               </div>
             </div>
 
             <div class="aside-divider"></div>
 
-            <div class="cost-total" :class="{ 'cost-total--loading': quoteLoading }">
+            <div
+              class="cost-total"
+              :class="{ 'cost-total--loading': quoteLoading }"
+            >
               <span class="cost-total-label">合计费用</span>
               <div class="cost-price-wrap">
                 <span class="cost-currency">¥</span>
-                <span v-if="quoteLoading" class="cost-amount cost-amount--loading">计算中</span>
+                <span
+                  v-if="quoteLoading"
+                  class="cost-amount cost-amount--loading"
+                  >计算中</span
+                >
                 <span v-else class="cost-amount">{{ totalAmount }}</span>
-                <span class="cost-cycle">/{{ selectedCycleLabel || '月付' }}</span>
+                <span class="cost-cycle"
+                  >/{{ selectedCycleLabel || "月付" }}</span
+                >
               </div>
             </div>
 
@@ -325,7 +457,8 @@
             </button>
           </div>
         </aside>
-      </div><!-- /pd-body -->
+      </div>
+      <!-- /pd-body -->
 
       <div class="allocation-footer">
         <div class="allocation-footer-inner">
@@ -334,13 +467,20 @@
             <div class="allocation-footer-price">
               <span class="allocation-footer-symbol">¥</span>
               <span class="allocation-footer-num" v-if="quoteLoading">…</span>
-              <span class="allocation-footer-num" v-else>{{ totalAmount }}</span>
-              <span class="allocation-footer-cycle">/{{ selectedCycleLabel || '月付' }}</span>
+              <span class="allocation-footer-num" v-else>{{
+                totalAmount
+              }}</span>
+              <span class="allocation-footer-cycle"
+                >/{{ selectedCycleLabel || "月付" }}</span
+              >
             </div>
             <div class="allocation-footer-meta">
               <span v-if="selectedCycleLabel">{{ selectedCycleLabel }}</span>
               <span v-if="regionOptions.length && configForm[regionKey]">
-                {{ regionOptions.find(o => o.id === configForm[regionKey])?.label || configForm[regionKey] }}
+                {{
+                  regionOptions.find((o) => o.id === configForm[regionKey])
+                    ?.label || configForm[regionKey]
+                }}
               </span>
               <span v-if="currentOsVerLabel">{{ currentOsVerLabel }}</span>
             </div>
@@ -359,258 +499,359 @@
 
     <div class="pd-empty" v-else-if="!loading">
       <el-empty description="商品不存在或已下架">
-        <el-button type="primary" @click="router.push('/products')">返回产品页</el-button>
+        <el-button type="primary" @click="router.push('/products')"
+          >返回产品页</el-button
+        >
       </el-empty>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus/es/components/message/index.mjs'
-import siteApi from '@/api/site'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { ElMessage } from "element-plus/es/components/message/index.mjs";
+import siteApi from "@/api/site";
 import {
   resolvePurchaseRequirementList,
   resolvePurchaseRequirementSummary,
-} from '@/utils/productPurchaseRequirements'
+} from "@/utils/productPurchaseRequirements";
 import {
   buildWebsiteProductPath,
   resolveWebsiteProductRoutePayloadByDetail,
-} from '@/utils/productRoute'
+} from "@/utils/productRoute";
 import {
   normalizeMoneyText,
   resolveProductDisplayName,
-} from '@/utils/websiteProductConfig'
-import { navigateToConsole } from '@/utils/consoleUrl'
-import { buildIdempotencyKey, encodePendingWebsiteCheckout, savePendingWebsiteCheckout } from '@/utils/websiteCheckout'
-import { buildPendingCouponRedirectUrl } from '@/utils/websiteCoupon'
-import { isCpuConfigKey, isMemoryConfigKey, resolveMachineSpecPresentation } from '@/domains/products/machineSpecResolver'
-import { useWebsiteProductConfigurator } from '@/domains/products/useWebsiteProductConfigurator'
+} from "@/utils/websiteProductConfig";
+import { navigateToConsole } from "@/utils/consoleUrl";
+import {
+  buildIdempotencyKey,
+  encodePendingWebsiteCheckout,
+  savePendingWebsiteCheckout,
+} from "@/utils/websiteCheckout";
+import { buildPendingCouponRedirectUrl } from "@/utils/websiteCoupon";
+import {
+  isCpuConfigKey,
+  isMemoryConfigKey,
+  resolveMachineSpecPresentation,
+} from "@/domains/products/machineSpecResolver";
+import { useWebsiteProductConfigurator } from "@/domains/products/useWebsiteProductConfigurator";
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
-const loading = ref(false)
-const submitting = ref(false)
-const product = ref(null)
-const siblings = ref([])
-const selectedCycle = ref('')
-const hostname = ref('')
-const password = ref('')
-const quantity = ref(1)
-const selectedCouponId = ref(0)
+const loading = ref(false);
+const submitting = ref(false);
+const product = ref(null);
+const siblings = ref([]);
+const selectedCycle = ref("");
+const hostname = ref("");
+const password = ref("");
+const quantity = ref(1);
+const selectedCouponId = ref(0);
 
-const productDetailRef = computed(() => product.value)
-const configurator = useWebsiteProductConfigurator(productDetailRef)
-const configForm = configurator.configForm
-const quoteResult = ref(null)
-const quoteLoading = ref(false)
-const quoteToken = ref('')
-const productStock = ref(null)
-const productStockLoading = ref(false)
-const productStockError = ref('')
+const productDetailRef = computed(() => product.value);
+const configurator = useWebsiteProductConfigurator(productDetailRef);
+const configForm = configurator.configForm;
+const quoteResult = ref(null);
+const quoteLoading = ref(false);
+const quoteToken = ref("");
+const productStock = ref(null);
+const productStockLoading = ref(false);
+const productStockError = ref("");
 
 // 网络关键词（带宽/IP/流量/防护等）
-const NET_KEYWORDS = ['bandwidth', 'bw', 'ip', 'traffic', 'ddos', 'port', 'speed', 'mbps', 'gbps', '带宽', '流量']
+const NET_KEYWORDS = [
+  "bandwidth",
+  "bw",
+  "ip",
+  "traffic",
+  "ddos",
+  "port",
+  "speed",
+  "mbps",
+  "gbps",
+  "带宽",
+  "流量",
+];
 
 function isNetConfig(key, label) {
-  const k = key.toLowerCase()
-  const l = String(label || '').toLowerCase()
-  return NET_KEYWORDS.some(kw => k.includes(kw) || l.includes(kw))
+  const k = key.toLowerCase();
+  const l = String(label || "").toLowerCase();
+  return NET_KEYWORDS.some((kw) => k.includes(kw) || l.includes(kw));
 }
-const regionKey = computed(() => configurator.regionFieldKey.value || 'region')
-const regionOptions = computed(() => configurator.regionOptions.value || [])
-const osConfig = computed(() => configurator.osConfig.value || null)
-const osGroups = computed(() => configurator.osGroups.value || [])
-const currentOsGroup = computed(() => configurator.currentOsGroup.value || null)
-const currentOsVerLabel = computed(() => configurator.currentOsVersionLabel.value || '')
-const selectedMachineSpec = computed(() => resolveMachineSpecPresentation(product.value, {
-  cpu: configForm.cpu,
-  memory: configForm.memory,
-}))
+const regionKey = computed(() => configurator.regionFieldKey.value || "region");
+const regionOptions = computed(() => configurator.regionOptions.value || []);
+const osConfig = computed(() => configurator.osConfig.value || null);
+const osGroups = computed(() => configurator.osGroups.value || []);
+const currentOsGroup = computed(
+  () => configurator.currentOsGroup.value || null,
+);
+const currentOsVerLabel = computed(
+  () => configurator.currentOsVersionLabel.value || "",
+);
+const selectedMachineSpec = computed(() =>
+  resolveMachineSpecPresentation(product.value, {
+    cpu: configForm.cpu,
+    memory: configForm.memory,
+  }),
+);
+
+// 同级 Tab 的规格展示名缓存：仅 siblings 变化时重算，避免每次渲染对每个同级重复正则解析
+const siblingDisplayNames = computed(() => {
+  const map = new Map();
+  (siblings.value || []).forEach((sib) => {
+    const id = Number(sib?.id || 0);
+    if (id > 0) {
+      map.set(id, resolveMachineSpecPresentation(sib).displayName);
+    }
+  });
+  return map;
+});
 
 function selectOsGroup(os) {
-  configForm.os_group = os.id
-  if (os.versions?.length) configForm.os = os.versions[0].id
-  fetchQuote()
+  configForm.os_group = os.id;
+  if (os.versions?.length) configForm.os = os.versions[0].id;
+  fetchQuote();
 }
 
 function handleOsGroupChange(value) {
-  const nextGroup = osGroups.value.find((item) => item.id === value)
+  const nextGroup = osGroups.value.find((item) => item.id === value);
   if (!nextGroup) {
-    configForm.os = ''
-    fetchQuote()
-    return
+    configForm.os = "";
+    fetchQuote();
+    return;
   }
 
-  selectOsGroup(nextGroup)
+  selectOsGroup(nextGroup);
 }
 
 // 机型配置（排除 区域/OS/网络）
-const specConfigs = computed(() => (
-  configurator.machineConfigs.value
-    .filter((cfg) => !isNetConfig(cfg.key, cfg.label))
-))
+const specConfigs = computed(() =>
+  configurator.machineConfigs.value.filter(
+    (cfg) => !isNetConfig(cfg.key, cfg.label),
+  ),
+);
 
 // 网络配置
-const netConfigs = computed(() => (
-  [...configurator.networkConfigs.value, ...configurator.otherConfigs.value]
-    .filter((cfg) => isNetConfig(cfg.key, cfg.label))
-))
+const netConfigs = computed(() =>
+  [
+    ...configurator.networkConfigs.value,
+    ...configurator.otherConfigs.value,
+  ].filter((cfg) => isNetConfig(cfg.key, cfg.label)),
+);
 
 function isSpecSummaryConfig(cfg) {
-  return isCpuConfigKey(cfg.key, cfg.label) || isMemoryConfigKey(cfg.key, cfg.label)
+  return (
+    isCpuConfigKey(cfg.key, cfg.label) || isMemoryConfigKey(cfg.key, cfg.label)
+  );
 }
 
 function resolveSummaryConfigValue(cfg) {
   if (cfg.isNumber) {
-    const value = configForm[cfg.key + '_num']
-    return value !== undefined && value !== null && value !== '' ? String(value) : ''
+    const value = configForm[cfg.key + "_num"];
+    return value !== undefined && value !== null && value !== ""
+      ? String(value)
+      : "";
   }
 
-  const value = configForm[cfg.key]
-  if (value === undefined || value === null || value === '') {
-    return ''
+  const value = configForm[cfg.key];
+  if (value === undefined || value === null || value === "") {
+    return "";
   }
 
-  return cfg.options.find((item) => item.id === value)?.label || String(value)
+  return cfg.options.find((item) => item.id === value)?.label || String(value);
 }
 
 // 价格
-const pricingEntries = computed(() => configurator.pricingEntries.value || [])
-const detailGroup = computed(() => product.value?.group || {})
-const detailCatalogTitle = computed(() => selectedMachineSpec.value.displayName || resolveProductDisplayName(product.value))
-const detailCatalogSlogan = computed(() => String(
-  detailGroup.value.slogan
-  || detailGroup.value.parent_slogan
-  || ''
-).trim())
+const pricingEntries = computed(() => configurator.pricingEntries.value || []);
+const detailGroup = computed(() => product.value?.group || {});
+const detailCatalogTitle = computed(
+  () =>
+    selectedMachineSpec.value.displayName ||
+    resolveProductDisplayName(product.value),
+);
+const detailCatalogSlogan = computed(() =>
+  String(
+    detailGroup.value.slogan || detailGroup.value.parent_slogan || "",
+  ).trim(),
+);
 const detailCatalogEyebrow = computed(() => {
-  const parentTitle = String(detailGroup.value.parent_name || '').trim()
+  const parentTitle = String(detailGroup.value.parent_name || "").trim();
   if (parentTitle && parentTitle !== detailCatalogTitle.value) {
-    return parentTitle
+    return parentTitle;
   }
 
-  return String(product.value?.type_label || '').trim()
-})
+  return String(product.value?.type_label || "").trim();
+});
 const detailCatalogTags = computed(() => {
-  const tags = []
-  const fullName = String(detailGroup.value.full_name || '').trim()
-  const typeLabel = String(product.value?.type_label || '').trim()
+  const tags = [];
+  const fullName = String(detailGroup.value.full_name || "").trim();
+  const typeLabel = String(product.value?.type_label || "").trim();
 
   if (fullName) {
-    tags.push(fullName)
+    tags.push(fullName);
   }
 
   if (typeLabel && !tags.includes(typeLabel)) {
-    tags.push(typeLabel)
+    tags.push(typeLabel);
   }
 
-  return tags
-})
-const showCatalogHero = computed(() => Boolean(
-  detailCatalogTitle.value
-  || detailCatalogSlogan.value
-  || detailCatalogEyebrow.value
-))
+  return tags;
+});
+const showCatalogHero = computed(() =>
+  Boolean(
+    detailCatalogTitle.value ||
+    detailCatalogSlogan.value ||
+    detailCatalogEyebrow.value,
+  ),
+);
 
-const selectedPricingEntry = computed(() => pricingEntries.value.find(i => i.cycle === selectedCycle.value) || null)
-const selectedCycleLabel = computed(() => selectedPricingEntry.value?.label || '')
-const baseAmount = computed(() => quoteResult.value?.base_amount ?? selectedPricingEntry.value?.amount ?? '0.00')
-const setupFee = computed(() => quoteResult.value?.setup_fee ?? product.value?.setup_fee_display ?? normalizeMoneyText(product.value?.setup_fee || 0))
-const quoteItems = computed(() => quoteResult.value?.items || [])
-const appliedCoupon = computed(() => quoteResult.value?.coupon || null)
-const availableCoupons = computed(() => quoteResult.value?.available_coupons || [])
+const selectedPricingEntry = computed(
+  () =>
+    pricingEntries.value.find((i) => i.cycle === selectedCycle.value) || null,
+);
+const selectedCycleLabel = computed(
+  () => selectedPricingEntry.value?.label || "",
+);
+const baseAmount = computed(
+  () =>
+    quoteResult.value?.base_amount ??
+    selectedPricingEntry.value?.amount ??
+    "0.00",
+);
+const setupFee = computed(
+  () =>
+    quoteResult.value?.setup_fee ??
+    product.value?.setup_fee_display ??
+    normalizeMoneyText(product.value?.setup_fee || 0),
+);
+const quoteItems = computed(() => quoteResult.value?.items || []);
+const appliedCoupon = computed(() => quoteResult.value?.coupon || null);
+const availableCoupons = computed(
+  () => quoteResult.value?.available_coupons || [],
+);
 const totalAmount = computed(() => {
-  if (quoteResult.value) return quoteResult.value.total_amount || '0.00'
-  return (Number(selectedPricingEntry.value?.total_amount || 0) * quantity.value).toFixed(2)
-})
+  if (quoteResult.value) return quoteResult.value.total_amount || "0.00";
+  return (
+    Number(selectedPricingEntry.value?.total_amount || 0) * quantity.value
+  ).toFixed(2);
+});
 const summaryItems = computed(() => {
-  const items = []
+  const items = [];
 
   if (regionOptions.value.length && configForm[regionKey.value]) {
     items.push({
-      key: 'region',
-      label: '区域',
-      value: regionOptions.value.find((item) => item.id === configForm[regionKey.value])?.label || configForm[regionKey.value],
-    })
+      key: "region",
+      label: "区域",
+      value:
+        regionOptions.value.find(
+          (item) => item.id === configForm[regionKey.value],
+        )?.label || configForm[regionKey.value],
+    });
   }
 
   if (currentOsVerLabel.value) {
     items.push({
-      key: 'os',
-      label: '系统',
+      key: "os",
+      label: "系统",
       value: currentOsVerLabel.value,
-    })
+    });
   }
 
   if (selectedCycleLabel.value) {
     items.push({
-      key: 'billing_cycle',
-      label: '周期',
+      key: "billing_cycle",
+      label: "周期",
       value: selectedCycleLabel.value,
-    })
+    });
   }
 
   specConfigs.value.forEach((cfg) => {
     if (isSpecSummaryConfig(cfg)) {
-      return
+      return;
     }
 
-    const value = resolveSummaryConfigValue(cfg)
+    const value = resolveSummaryConfigValue(cfg);
     if (!value) {
-      return
+      return;
     }
 
     items.push({
       key: `spec-${cfg.key}`,
       label: cfg.label,
       value,
-    })
-  })
+    });
+  });
 
   netConfigs.value.forEach((cfg) => {
-    const value = resolveSummaryConfigValue(cfg)
+    const value = resolveSummaryConfigValue(cfg);
     if (!value) {
-      return
+      return;
     }
 
     items.push({
       key: `net-${cfg.key}`,
       label: cfg.label,
       value,
-    })
-  })
+    });
+  });
 
-  return items
-})
-const purchaseRequirementList = computed(() => resolvePurchaseRequirementList(product.value))
-const purchaseRequirementSummary = computed(() => resolvePurchaseRequirementSummary(product.value))
+  return items;
+});
+const purchaseRequirementList = computed(() =>
+  resolvePurchaseRequirementList(product.value),
+);
+const purchaseRequirementSummary = computed(() =>
+  resolvePurchaseRequirementSummary(product.value),
+);
 
-let quoteTimer = null
+let quoteTimer = null;
+let quoteAbortController = null;
+let quoteExecuteToken = 0;
+let productLoadToken = 0;
+
+function createQuoteSignal() {
+  // 新报价请求发出前取消上一次在途请求，避免卸载后旧响应回写组件状态
+  quoteAbortController?.abort();
+  quoteAbortController = new AbortController();
+  return quoteAbortController.signal;
+}
+
 function applyQuoteResult(payload, nextCouponId = selectedCouponId.value) {
-  quoteResult.value = payload || null
-  quoteToken.value = String(payload?.quote_token || '')
-  selectedCouponId.value = Number(nextCouponId || payload?.user_coupon_id || 0)
+  quoteResult.value = payload || null;
+  quoteToken.value = String(payload?.quote_token || "");
+  selectedCouponId.value = Number(nextCouponId || payload?.user_coupon_id || 0);
 }
 
 async function requestQuote(nextCouponId = selectedCouponId.value) {
-  return siteApi.productQuote(product.value.id, {
-    billing_cycle: selectedCycle.value,
-    config: buildConfigPayload(),
-    quantity: quantity.value,
-    user_coupon_id: Number(nextCouponId || 0) || undefined,
-  })
+  return siteApi.productQuote(
+    product.value.id,
+    {
+      billing_cycle: selectedCycle.value,
+      config: buildConfigPayload(),
+      quantity: quantity.value,
+      user_coupon_id: Number(nextCouponId || 0) || undefined,
+    },
+    { signal: createQuoteSignal() },
+  );
 }
 
 function looksLikeCouponError(error) {
-  const message = String(error?.response?.data?.message || error?.message || '')
-  return message.includes('优惠券') || message.includes('优惠码')
+  const message = String(
+    error?.response?.data?.message || error?.message || "",
+  );
+  return message.includes("优惠券") || message.includes("优惠码");
 }
 
-async function executeQuote(nextCouponId = selectedCouponId.value, options = {}) {
-  if (!product.value || !selectedCycle.value) return
+async function executeQuote(
+  nextCouponId = selectedCouponId.value,
+  options = {},
+) {
+  if (!product.value || !selectedCycle.value) return;
+
+  const token = ++quoteExecuteToken;
 
   const snapshot = options.rollbackOnError
     ? {
@@ -618,119 +859,141 @@ async function executeQuote(nextCouponId = selectedCouponId.value, options = {})
         quoteToken: quoteToken.value,
         selectedCouponId: selectedCouponId.value,
       }
-    : null
+    : null;
 
-  quoteLoading.value = true
+  quoteLoading.value = true;
 
   try {
-    const res = await requestQuote(nextCouponId)
-    applyQuoteResult(res.data || null, nextCouponId)
-    return true
+    const res = await requestQuote(nextCouponId);
+    // 已被更新的报价请求取代：不写状态，新请求会接管
+    if (token !== quoteExecuteToken) return true;
+    applyQuoteResult(res.data || null, nextCouponId);
+    return true;
   } catch (error) {
+    if (token !== quoteExecuteToken) return false;
+
     if (snapshot) {
-      quoteResult.value = snapshot.quoteResult
-      quoteToken.value = snapshot.quoteToken
-      selectedCouponId.value = snapshot.selectedCouponId
-      return false
+      quoteResult.value = snapshot.quoteResult;
+      quoteToken.value = snapshot.quoteToken;
+      selectedCouponId.value = snapshot.selectedCouponId;
+      return false;
     }
 
-    if (Number(nextCouponId || 0) > 0 && options.fallbackInvalidCoupon && looksLikeCouponError(error)) {
-      selectedCouponId.value = 0
+    if (
+      Number(nextCouponId || 0) > 0 &&
+      options.fallbackInvalidCoupon &&
+      looksLikeCouponError(error)
+    ) {
+      selectedCouponId.value = 0;
 
       try {
-        const fallbackRes = await requestQuote(0)
-        applyQuoteResult(fallbackRes.data || null, 0)
-        return false
+        const fallbackRes = await requestQuote(0);
+        if (token !== quoteExecuteToken) return false;
+        applyQuoteResult(fallbackRes.data || null, 0);
+        return false;
       } catch {
-        quoteResult.value = null
-        quoteToken.value = ''
-        return false
+        quoteResult.value = null;
+        quoteToken.value = "";
+        return false;
       }
     }
 
-    quoteResult.value = null
-    quoteToken.value = ''
-    return false
+    quoteResult.value = null;
+    quoteToken.value = "";
+    return false;
   } finally {
-    quoteLoading.value = false
+    if (token === quoteExecuteToken) {
+      quoteLoading.value = false;
+    }
   }
 }
 
 function handleCouponChange(value) {
   if (!product.value || !selectedCycle.value) {
-    selectedCouponId.value = Number(value || 0)
-    return
+    selectedCouponId.value = Number(value || 0);
+    return;
   }
 
-  selectedCouponId.value = Number(value || 0)
-  fetchQuote()
+  selectedCouponId.value = Number(value || 0);
+  fetchQuote();
 }
 
 async function clearCoupon() {
-  selectedCouponId.value = 0
-  await executeQuote(0, { fallbackInvalidCoupon: false })
+  selectedCouponId.value = 0;
+  await executeQuote(0, { fallbackInvalidCoupon: false });
 }
 
 function fetchQuote() {
-  clearTimeout(quoteTimer)
+  clearTimeout(quoteTimer);
   quoteTimer = setTimeout(() => {
-    executeQuote(selectedCouponId.value, { fallbackInvalidCoupon: true })
-  }, 300)
+    executeQuote(selectedCouponId.value, { fallbackInvalidCoupon: true });
+  }, 300);
 }
 
 function buildConfigPayload() {
-  return configurator.buildConfigPayload()
+  return configurator.buildConfigPayload();
 }
 
-const defaultHostname = computed(() => `svr${Math.floor(Math.random() * 9e8 + 1e8)}`)
+const defaultHostname = computed(
+  () => `svr${Math.floor(Math.random() * 9e8 + 1e8)}`,
+);
 const resolvedStock = computed(() => {
   if (productStock.value !== null && productStock.value !== undefined) {
-    return Number(productStock.value)
+    return Number(productStock.value);
   }
 
-  return null
-})
+  return null;
+});
 const stockClass = computed(() => {
-  if (productStockLoading.value || productStockError.value) return 'sync'
-  const stock = resolvedStock.value
-  if (stock === null) return 'sync'
-  if (stock === -1 || stock > 10) return 'ok'
-  if (stock > 0) return 'warn'
-  return 'empty'
-})
+  if (productStockLoading.value || productStockError.value) return "sync";
+  const stock = resolvedStock.value;
+  if (stock === null) return "sync";
+  if (stock === -1 || stock > 10) return "ok";
+  if (stock > 0) return "warn";
+  return "empty";
+});
 const stockLabel = computed(() => {
-  if (productStockLoading.value) return '库存同步中'
-  if (productStockError.value) return '库存同步失败'
-  const stock = resolvedStock.value
-  if (stock === null) return '库存同步中'
-  if (stock === -1 || stock > 10) return '库存充足'
-  if (stock > 0) return '库存紧张'
-  return '暂无库存'
-})
+  if (productStockLoading.value) return "库存同步中";
+  if (productStockError.value) return "库存同步失败";
+  const stock = resolvedStock.value;
+  if (stock === null) return "库存同步中";
+  if (stock === -1 || stock > 10) return "库存充足";
+  if (stock > 0) return "库存紧张";
+  return "暂无库存";
+});
 const stockHint = computed(() => {
-  if (productStockLoading.value) return '正在同步实时库存，请稍候。'
-  if (productStockError.value) return '实时库存同步失败，请稍后重试。'
-  const stock = resolvedStock.value
-  if (stock === null) return '正在同步实时库存，请稍候。'
-  if (stock === -1 || stock > 10) return '当前库存充足，可直接提交账单。'
-  if (stock > 0) return `剩余 ${stock} 台，请尽快购买。`
-  return '当前库存不足，请联系客服。'
-})
-const soldOut = computed(() => (
-  resolvedStock.value !== null
-  && !productStockLoading.value
-  && !productStockError.value
-  && resolvedStock.value === 0
-))
+  if (productStockLoading.value) return "正在同步实时库存，请稍候。";
+  if (productStockError.value) return "实时库存同步失败，请稍后重试。";
+  const stock = resolvedStock.value;
+  if (stock === null) return "正在同步实时库存，请稍候。";
+  if (stock === -1 || stock > 10) return "当前库存充足，可直接提交账单。";
+  if (stock > 0) return `剩余 ${stock} 台，请尽快购买。`;
+  return "当前库存不足，请联系客服。";
+});
+const soldOut = computed(
+  () =>
+    resolvedStock.value !== null &&
+    !productStockLoading.value &&
+    !productStockError.value &&
+    resolvedStock.value === 0,
+);
 const canSubmit = computed(() => {
-  const stock = resolvedStock.value
-  return Boolean(selectedCycle.value) && Boolean(quoteToken.value) && !quoteLoading.value && !productStockLoading.value && !productStockError.value && stock !== null && stock !== 0
-})
+  const stock = resolvedStock.value;
+  return (
+    Boolean(selectedCycle.value) &&
+    Boolean(quoteToken.value) &&
+    !quoteLoading.value &&
+    !productStockLoading.value &&
+    !productStockError.value &&
+    stock !== null &&
+    stock !== 0
+  );
+});
 const submitButtonText = computed(() => {
-  if (submitting.value) return '提交中...'
-  if (soldOut.value) return '已售罄'
-  return '立即购买'
-})
+  if (submitting.value) return "提交中...";
+  if (soldOut.value) return "已售罄";
+  return "立即购买";
+});
 
 function buildOrderPayload() {
   const payload = {
@@ -739,74 +1002,80 @@ function buildOrderPayload() {
     quantity: quantity.value,
     config: buildConfigPayload(),
     quote_token: quoteToken.value,
-  }
+  };
 
   if (selectedCouponId.value > 0) {
-    payload.user_coupon_id = selectedCouponId.value
+    payload.user_coupon_id = selectedCouponId.value;
   }
 
-  return payload
+  return payload;
 }
 
 function redirectToConsoleCheckout(orderPayload, idempotencyKey) {
   const pendingCheckout = {
-    source: 'website-product-detail',
+    source: "website-product-detail",
     createdAt: Date.now(),
     idempotencyKey,
     orderPayload,
-  }
+  };
 
-  savePendingWebsiteCheckout(pendingCheckout)
-  const checkoutPayload = encodePendingWebsiteCheckout(pendingCheckout)
-  const checkoutPath = buildPendingCouponRedirectUrl('/client/checkout-resume', orderPayload.user_coupon_id)
-  ElMessage.success('正在进入控制台继续创建账单')
+  savePendingWebsiteCheckout(pendingCheckout);
+  const checkoutPayload = encodePendingWebsiteCheckout(pendingCheckout);
+  const checkoutPath = buildPendingCouponRedirectUrl(
+    "/client/checkout-resume",
+    orderPayload.user_coupon_id,
+  );
+  ElMessage.success("正在进入控制台继续创建账单");
 
-  navigateToConsole(checkoutPath, checkoutPayload
-    ? { checkout_payload: checkoutPayload }
-    : {})
+  navigateToConsole(
+    checkoutPath,
+    checkoutPayload ? { checkout_payload: checkoutPayload } : {},
+  );
 }
 
 async function submitOrder() {
   if (productStockLoading.value) {
-    ElMessage.warning('库存同步中，请稍候')
-    return
+    ElMessage.warning("库存同步中，请稍候");
+    return;
   }
   if (productStockError.value) {
-    ElMessage.warning('库存同步失败，请稍后重试')
-    return
+    ElMessage.warning("库存同步失败，请稍后重试");
+    return;
   }
   if (resolvedStock.value === 0) {
-    ElMessage.warning('当前库存不足，暂时无法购买')
-    return
+    ElMessage.warning("当前库存不足，暂时无法购买");
+    return;
   }
   if (!quoteToken.value) {
-    ElMessage.warning('报价凭证已失效，请稍后重试')
-    return
+    ElMessage.warning("报价凭证已失效，请稍后重试");
+    return;
   }
   if (!canSubmit.value) {
-    ElMessage.warning('请选择计费周期')
-    return
+    ElMessage.warning("请选择计费周期");
+    return;
   }
 
-  submitting.value = true
+  submitting.value = true;
   try {
-    const orderPayload = buildOrderPayload()
-    const idempotencyKey = buildIdempotencyKey('website-order')
+    const orderPayload = buildOrderPayload();
+    const idempotencyKey = buildIdempotencyKey("website-order");
 
-    redirectToConsoleCheckout(orderPayload, idempotencyKey)
+    redirectToConsoleCheckout(orderPayload, idempotencyKey);
   } catch (err) {
-    ElMessage.error(err?.response?.data?.message || '跳转控制台失败，请重试')
+    ElMessage.error(err?.response?.data?.message || "跳转控制台失败，请重试");
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
 }
 
 function switchProduct(id) {
-  const routePayload = resolveWebsiteProductRoutePayloadByDetail(product.value)
-  router.replace(buildWebsiteProductPath({
-    ...routePayload,
-    productId: Number(id || 0),
-  }))
+  const routePayload = resolveWebsiteProductRoutePayloadByDetail(product.value);
+  router.replace(
+    buildWebsiteProductPath({
+      ...routePayload,
+      productId: Number(id || 0),
+    }),
+  );
 }
 
 function initDefaults() {
@@ -814,71 +1083,99 @@ function initDefaults() {
     selectedCycleRef: selectedCycle,
     quantityRef: quantity,
     resetQuoteState: () => {
-      quoteResult.value = null
-      quoteToken.value = ''
+      quoteResult.value = null;
+      quoteToken.value = "";
     },
-  })
+  });
 
-  hostname.value = defaultHostname.value
-  password.value = ''
-  fetchQuote()
+  hostname.value = defaultHostname.value;
+  password.value = "";
+  fetchQuote();
 }
 
 async function loadProduct() {
-  const pid = Number(route.params.id || 0)
-  if (!pid) { router.push('/products'); return }
-  productStock.value = null
-  productStockError.value = ''
-  refreshProductStock(pid)
-  loading.value = true
+  const pid = Number(route.params.id || 0);
+  if (!pid) {
+    router.push("/products");
+    return;
+  }
+  const token = ++productLoadToken;
+  productStock.value = null;
+  productStockError.value = "";
+  refreshProductStock(pid);
+  loading.value = true;
   try {
-    const res = await siteApi.product(pid)
-    product.value = res.data.product || null
-    siblings.value = res.data.product?.siblings || []
-    initDefaults()
-  } catch { product.value = null } finally { loading.value = false }
-}
-
-async function refreshProductStock(id) {
-  if (!id) return
-
-  productStockLoading.value = true
-  productStockError.value = ''
-  productStock.value = null
-
-  try {
-    const res = await siteApi.productStock(id)
-    if (Number(route.params.id || 0) !== id) return
-    productStock.value = Number(res.data?.stock ?? 0)
-  } catch (err) {
-    if (Number(route.params.id || 0) !== id) return
-    productStockError.value = err?.response?.data?.message || '库存同步失败'
+    const res = await siteApi.product(pid);
+    if (token !== productLoadToken) return;
+    product.value = res.data.product || null;
+    siblings.value = res.data.product?.siblings || [];
+    initDefaults();
+  } catch {
+    if (token !== productLoadToken) return;
+    product.value = null;
   } finally {
-    if (Number(route.params.id || 0) === id) {
-      productStockLoading.value = false
+    if (token === productLoadToken) {
+      loading.value = false;
     }
   }
 }
 
-watch(() => route.params.id, (v) => { if (v) loadProduct() })
-watch(selectedCycle, fetchQuote)
-watch(configForm, fetchQuote, { deep: true })
-watch(quantity, fetchQuote)
-watch(() => route.query.user_coupon_id, (value) => {
-  const nextCouponId = Number(value || 0)
+async function refreshProductStock(id) {
+  if (!id) return;
 
-  if (nextCouponId === selectedCouponId.value) {
-    return
+  productStockLoading.value = true;
+  productStockError.value = "";
+  productStock.value = null;
+
+  try {
+    const res = await siteApi.productStock(id);
+    if (Number(route.params.id || 0) !== id) return;
+    productStock.value = Number(res.data?.stock ?? 0);
+  } catch (err) {
+    if (Number(route.params.id || 0) !== id) return;
+    productStockError.value = err?.response?.data?.message || "库存同步失败";
+  } finally {
+    if (Number(route.params.id || 0) === id) {
+      productStockLoading.value = false;
+    }
   }
+}
 
-  selectedCouponId.value = nextCouponId
+watch(
+  () => route.params.id,
+  (v) => {
+    if (v) loadProduct();
+  },
+);
+watch(selectedCycle, fetchQuote);
+watch(configForm, fetchQuote, { deep: true });
+watch(quantity, fetchQuote);
+watch(
+  () => route.query.user_coupon_id,
+  (value) => {
+    const nextCouponId = Number(value || 0);
 
-  if (product.value && selectedCycle.value) {
-    fetchQuote()
-  }
-}, { immediate: true })
-onMounted(loadProduct)
+    if (nextCouponId === selectedCouponId.value) {
+      return;
+    }
 
+    selectedCouponId.value = nextCouponId;
+
+    if (product.value && selectedCycle.value) {
+      fetchQuote();
+    }
+  },
+  { immediate: true },
+);
+onMounted(loadProduct);
+
+onBeforeUnmount(() => {
+  // 清理报价防抖定时器与在途请求，避免卸载后仍发请求/写已卸载组件状态
+  clearTimeout(quoteTimer);
+  quoteAbortController?.abort();
+  // 使仍在途的 loadProduct 响应失效
+  productLoadToken += 1;
+});
 </script>
 
 <style scoped lang="scss">
@@ -926,11 +1223,18 @@ onMounted(loadProduct)
   font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 
-  &:hover { border-color: #165dff; color: #165dff; }
+  &:hover {
+    border-color: #165dff;
+    color: #165dff;
+  }
 
-  svg { color: #86909c; }
+  svg {
+    color: #86909c;
+  }
 }
 
 .sibling-scroll {
@@ -938,7 +1242,9 @@ onMounted(loadProduct)
   gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
-  &::-webkit-scrollbar { display: none; }
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .sib-tab {
@@ -954,7 +1260,10 @@ onMounted(loadProduct)
   white-space: nowrap;
   transition: all 0.15s;
 
-  &:hover { border-color: #165dff; color: #165dff; }
+  &:hover {
+    border-color: #165dff;
+    color: #165dff;
+  }
   &.active {
     border-color: #165dff;
     background: #165dff;
@@ -1051,12 +1360,17 @@ onMounted(loadProduct)
     white-space: nowrap;
   }
 
-  svg { flex-shrink: 0; color: #86909c; }
+  svg {
+    flex-shrink: 0;
+    color: #86909c;
+  }
 
   &.active {
     border-color: #165dff;
     color: #165dff;
-    svg { color: #165dff; }
+    svg {
+      color: #165dff;
+    }
   }
 }
 
@@ -1131,7 +1445,11 @@ onMounted(loadProduct)
   white-space: nowrap;
   transition: all 0.15s;
 
-  &:hover { border-color: #165dff; color: #165dff; background: #fff; }
+  &:hover {
+    border-color: #165dff;
+    color: #165dff;
+    background: #fff;
+  }
   &.active {
     border-color: #165dff;
     background: #e8f1ff;
@@ -1148,8 +1466,14 @@ onMounted(loadProduct)
   padding: 10px 0;
   border-bottom: 1px solid #f2f3f5;
 
-  &:first-child { padding-top: 0; }
-  &:last-child, &--last { border-bottom: none; padding-bottom: 0; }
+  &:first-child {
+    padding-top: 0;
+  }
+  &:last-child,
+  &--last {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
 }
 
 .spec-label {
@@ -1189,12 +1513,22 @@ onMounted(loadProduct)
   transition: background 0.15s;
   flex-shrink: 0;
 
-  &:hover:not(:disabled) { background: #e8f1ff; color: #165dff; }
-  &:disabled { opacity: 0.38; cursor: not-allowed; }
+  &:hover:not(:disabled) {
+    background: #e8f1ff;
+    color: #165dff;
+  }
+  &:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+  }
 }
 
-.stepper-dec { border-right: 1px solid #d0d3d9; }
-.stepper-inc { border-left: 1px solid #d0d3d9; }
+.stepper-dec {
+  border-right: 1px solid #d0d3d9;
+}
+.stepper-inc {
+  border-left: 1px solid #d0d3d9;
+}
 
 .stepper-val {
   width: 52px;
@@ -1207,7 +1541,9 @@ onMounted(loadProduct)
   outline: none;
 
   &::-webkit-outer-spin-button,
-  &::-webkit-inner-spin-button { -webkit-appearance: none; }
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+  }
 }
 
 /* ===== 操作系统双列 ===== */
@@ -1250,13 +1586,20 @@ onMounted(loadProduct)
   cursor: pointer;
   transition: all 0.15s;
 
-  &:hover { border-color: #165dff; }
+  &:hover {
+    border-color: #165dff;
+  }
   &.active {
     border-color: #165dff;
     background: #e8f1ff;
 
-    .cycle-name { color: #165dff; font-weight: 600; }
-    .cycle-price { color: #165dff; }
+    .cycle-name {
+      color: #165dff;
+      font-weight: 600;
+    }
+    .cycle-price {
+      color: #165dff;
+    }
   }
 }
 
@@ -1308,10 +1651,22 @@ onMounted(loadProduct)
   padding: 2px 10px;
   border-radius: 2px;
 
-  &.ok { background: $color-success-soft; color: $color-success; }
-  &.warn { background: $color-warning-soft; color: $color-warning; }
-  &.empty { background: $color-danger-soft; color: $color-danger; }
-  &.sync { background: $color-primary-soft; color: $color-primary; }
+  &.ok {
+    background: $color-success-soft;
+    color: $color-success;
+  }
+  &.warn {
+    background: $color-warning-soft;
+    color: $color-warning;
+  }
+  &.empty {
+    background: $color-danger-soft;
+    color: $color-danger;
+  }
+  &.sync {
+    background: $color-primary-soft;
+    color: $color-primary;
+  }
 }
 
 .stock-info {
@@ -1346,10 +1701,18 @@ onMounted(loadProduct)
   }
 }
 
-.stock-info--ok .stock-main strong { color: $color-success; }
-.stock-info--warn .stock-main strong { color: $color-warning; }
-.stock-info--empty .stock-main strong { color: $color-danger; }
-.stock-info--sync .stock-main strong { color: $color-primary; }
+.stock-info--ok .stock-main strong {
+  color: $color-success;
+}
+.stock-info--warn .stock-main strong {
+  color: $color-warning;
+}
+.stock-info--empty .stock-main strong {
+  color: $color-danger;
+}
+.stock-info--sync .stock-main strong {
+  color: $color-primary;
+}
 
 .stock-hint {
   font-size: 12px;
@@ -1387,11 +1750,18 @@ onMounted(loadProduct)
   position: relative;
 
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: -4px -6px;
     border-radius: 8px;
-    background: linear-gradient(90deg, rgba(#fff, 0) 0%, rgba(#165dff, 0.08) 35%, rgba(#fff, 0.45) 50%, rgba(#165dff, 0.08) 65%, rgba(#fff, 0) 100%);
+    background: linear-gradient(
+      90deg,
+      rgba(#fff, 0) 0%,
+      rgba(#165dff, 0.08) 35%,
+      rgba(#fff, 0.45) 50%,
+      rgba(#165dff, 0.08) 65%,
+      rgba(#fff, 0) 100%
+    );
     background-size: 220% 100%;
     pointer-events: none;
     animation: costLoadingSweep 1.35s linear infinite;
@@ -1543,14 +1913,17 @@ onMounted(loadProduct)
   color: #86909c;
 
   &::after {
-    content: '';
+    content: "";
     width: 22px;
     height: 8px;
     border-radius: 999px;
     background:
-      radial-gradient(circle, rgba(#165dff, 0.85) 0 2px, transparent 2.4px) left center / 8px 8px no-repeat,
-      radial-gradient(circle, rgba(#165dff, 0.55) 0 2px, transparent 2.4px) center center / 8px 8px no-repeat,
-      radial-gradient(circle, rgba(#165dff, 0.3) 0 2px, transparent 2.4px) right center / 8px 8px no-repeat;
+      radial-gradient(circle, rgba(#165dff, 0.85) 0 2px, transparent 2.4px) left
+        center / 8px 8px no-repeat,
+      radial-gradient(circle, rgba(#165dff, 0.55) 0 2px, transparent 2.4px)
+        center center / 8px 8px no-repeat,
+      radial-gradient(circle, rgba(#165dff, 0.3) 0 2px, transparent 2.4px) right
+        center / 8px 8px no-repeat;
     animation: costLoadingDots 0.95s ease-in-out infinite;
   }
 }
@@ -1578,11 +1951,20 @@ onMounted(loadProduct)
   font-weight: 700;
   cursor: pointer;
   letter-spacing: 0.04em;
-  transition: background 0.15s, opacity 0.15s;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
 
-  &:hover:not(:disabled) { background: #0e4ee0; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-  &.loading { opacity: 0.7; }
+  &:hover:not(:disabled) {
+    background: #0e4ee0;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  &.loading {
+    opacity: 0.7;
+  }
 
   &.is-sold-out {
     background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
@@ -1683,11 +2065,20 @@ onMounted(loadProduct)
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
 
-  &:hover:not(:disabled) { background: #0e4ee0; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-  &.loading { opacity: 0.7; }
+  &:hover:not(:disabled) {
+    background: #0e4ee0;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  &.loading {
+    opacity: 0.7;
+  }
 
   &.is-sold-out {
     background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
@@ -1711,7 +2102,8 @@ onMounted(loadProduct)
 }
 
 @keyframes costLoadingDots {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.8;
     transform: translateX(0);
   }
@@ -1723,7 +2115,8 @@ onMounted(loadProduct)
 }
 
 @keyframes soldOutPulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(#ef4444, 0.34);
   }
 

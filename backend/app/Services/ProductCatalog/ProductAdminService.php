@@ -72,11 +72,7 @@ class ProductAdminService
                 ->withCount([
                     'orders',
                     'services as total_services_count',
-                    'services as services_count' => fn (Builder $query) => $query
-                        ->where('status', ServiceStatus::ACTIVE)
-                        ->where(fn (Builder $query) => $query
-                            ->whereNull('expires_at')
-                            ->orWhere('expires_at', '>', now())),
+                    'services as services_count',
                 ]),
             $filters
         );
@@ -285,6 +281,10 @@ class ProductAdminService
     public function updateProduct(Product $product, array $data): Product
     {
         $updatedProduct = DB::transaction(function () use ($product, $data) {
+            if (! array_key_exists('console_template', $data)) {
+                $data['console_template'] = $product->console_template;
+            }
+
             $prepared = $this->prepareProductPayload(array_replace($data, [
                 'id' => (int) $product->id,
             ]));
@@ -870,6 +870,7 @@ class ProductAdminService
         return [
             'name' => (string) $variant['name'],
             'product_type' => $sourceProductType,
+            'console_template' => $source->console_template,
             'product_group_id' => (int) ($source->product_group_id ?? 0) ?: null,
             'service_type_code' => $sourceProductType,
             'remark' => $source->remark,
@@ -1522,6 +1523,7 @@ class ProductAdminService
                 'name' => $derivedDisplayName,
                 'custom_display_name' => $customDisplayName,
                 'product_type' => $productTypeCode,
+                'console_template' => $this->normalizeConsoleTemplate($data['console_template'] ?? null),
                 ...$this->hierarchyProductPayload($targetHierarchy),
                 'remark' => $this->normalizeNullableString($data['remark'] ?? null),
                 'pricing' => $pricing,
@@ -1540,6 +1542,13 @@ class ProductAdminService
             'binding_supplier' => $supplier,
             'upstream_product_id' => $upstreamProductId,
         ];
+    }
+
+    private function normalizeConsoleTemplate(mixed $value): string
+    {
+        return $this->normalizeNullableString($value) === Product::CONSOLE_TEMPLATE_PORT_MAPPING
+            ? Product::CONSOLE_TEMPLATE_PORT_MAPPING
+            : Product::CONSOLE_TEMPLATE_COMPUTE;
     }
 
     private function deriveInternalProductName(array $data): string

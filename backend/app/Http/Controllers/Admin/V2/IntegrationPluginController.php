@@ -18,11 +18,13 @@ use App\Http\Resources\Admin\V2\AdminActionResultResource;
 use App\Models\AdminUser;
 use App\Models\IntegrationPlugin;
 use App\Services\Admin\V2\AdminConfigurationV2QueryService;
+use App\Services\System\OperationLogService;
 
 class IntegrationPluginController extends Controller
 {
     public function __construct(
         private readonly AdminConfigurationV2QueryService $queryService,
+        private readonly OperationLogService $operationLogService,
     ) {}
 
     public function index(ListIntegrationPluginsRequest $request)
@@ -46,7 +48,27 @@ class IntegrationPluginController extends Controller
 
     public function revealSecret(RevealIntegrationPluginSecretRequest $request, IntegrationPlugin $plugin)
     {
-        return $this->success($this->queryService->pluginSecret($plugin, $request->secretKey()));
+        $result = $this->queryService->pluginSecret($plugin, $request->secretKey());
+
+        // 密钥 reveal 统一审计：记录谁在何时查看了哪个敏感字段。
+        $this->operationLogService->write(
+            userId: (int) ($request->user()?->id ?? 0),
+            userType: 'admin',
+            action: 'secret.reveal',
+            module: 'secret',
+            targetId: (int) $plugin->id,
+            detail: [
+                'secret_type' => 'plugin',
+                'secret_key' => (string) $request->secretKey(),
+                'plugin_id' => (int) $plugin->id,
+                'plugin_name' => (string) ($plugin->name ?? ''),
+                'operator_name' => (string) ($request->user()?->username ?? $request->user()?->name ?? ''),
+                'trace_id' => (string) $request->header('X-Request-Id', ''),
+            ],
+            ipAddress: (string) $request->ip(),
+        );
+
+        return $this->success($result);
     }
 
     public function scan(ScanIntegrationPluginsRequest $request)
@@ -80,7 +102,7 @@ class IntegrationPluginController extends Controller
 
     public function destroy(DeleteIntegrationPluginRequest $request, IntegrationPlugin $plugin)
     {
-        $result = $this->queryService->uninstallPlugin($plugin);
+        $result = $this->queryService->uninstallPlugin($plugin, $request->force());
 
         return $this->success(AdminActionResultResource::make($result)->resolve(), (string) $result['message']);
     }

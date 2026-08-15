@@ -165,12 +165,14 @@ httpClient.interceptors.response.use(
         return Promise.reject(new Error(msg));
       }
 
-      if (!captchaRequired && !runtimeConfig?.silentError) {
+      const shownByInterceptor = !captchaRequired && !runtimeConfig?.silentError;
+      if (shownByInterceptor) {
         showError(msg);
       }
 
       const err = new Error(msg) as RuntimeHandledError;
-      err.__handled = captchaRequired;
+      // __handled 表示提示已经由拦截器或验证码流程接管，调用方据此避免重复弹窗。
+      err.__handled = shownByInterceptor || captchaRequired;
       err.response = { ...response, data: res };
       err.config = response.config;
       return Promise.reject(err);
@@ -227,12 +229,14 @@ httpClient.interceptors.response.use(
     }
 
     const runtimeConfig = (error.config || {}) as ClientRuntimeRequestConfig;
-    if (!runtimeConfig.silentError) {
+    const shownByInterceptor = !runtimeConfig.silentError;
+    if (shownByInterceptor) {
       showError(msg);
     }
 
     const err = new Error(msg) as RuntimeHandledError;
-    err.__handled = true;
+    // silentError 的请求由调用方自行提示，这里不能谎报已处理，否则错误会被静默吞掉。
+    err.__handled = shownByInterceptor;
     err.response = error.response;
     err.config = error.config;
     return Promise.reject(err);

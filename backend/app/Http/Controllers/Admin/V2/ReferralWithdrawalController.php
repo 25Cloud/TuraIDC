@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin\V2;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\V2\ReferralWithdrawal\ApproveReferralWithdrawalRequest;
+use App\Http\Requests\Admin\V2\ReferralWithdrawal\ConfirmWithdrawalPaymentRequest;
 use App\Http\Requests\Admin\V2\ReferralWithdrawal\ListReferralWithdrawalsRequest;
 use App\Http\Requests\Admin\V2\ReferralWithdrawal\RejectReferralWithdrawalRequest;
 use App\Http\Resources\Admin\V2\AdminActionResultResource;
@@ -53,6 +54,19 @@ class ReferralWithdrawalController extends Controller
         $result = $this->actions->reject(
             withdrawal: $withdrawal,
             operator: $request->user(),
+            remark: $request->remark(),
+            traceId: (string) $request->header('X-Request-Id', ''),
+        );
+
+        return $this->success(AdminActionResultResource::make($result)->resolve(), (string) $result['message']);
+    }
+
+    public function confirmPayment(ConfirmWithdrawalPaymentRequest $request, ReferralWithdrawal $withdrawal): JsonResponse
+    {
+        $result = $this->actions->confirmPayment(
+            withdrawal: $withdrawal,
+            operator: $request->user(),
+            paymentNo: $request->paymentNo(),
             remark: $request->remark(),
             traceId: (string) $request->header('X-Request-Id', ''),
         );

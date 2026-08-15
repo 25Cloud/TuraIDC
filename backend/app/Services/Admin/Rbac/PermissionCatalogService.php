@@ -104,7 +104,7 @@ class PermissionCatalogService
             AdminPermissions::SETTINGS_VIEW, AdminPermissions::SETTINGS_MANAGE, AdminPermissions::SETTINGS_SECRET_REVEAL => 'system_config',
             AdminPermissions::DATABASE_VIEW, AdminPermissions::DATABASE_MANAGE => 'system_database',
             AdminPermissions::INTEGRATION_PLUGIN_VIEW, AdminPermissions::INTEGRATION_PLUGIN_MANAGE, AdminPermissions::INTEGRATION_PLUGIN_TEST, AdminPermissions::INTEGRATION_PLUGIN_SECRET_REVEAL => 'system_integration',
-            AdminPermissions::SCHEDULE_VIEW, AdminPermissions::SCHEDULE_TRIGGER => 'system_schedule',
+            AdminPermissions::SCHEDULE_VIEW, AdminPermissions::SCHEDULE_TRIGGER, AdminPermissions::SCHEDULE_RETRY => 'system_schedule',
             AdminPermissions::SITE_VIEW, AdminPermissions::SITE_MANAGE => 'site_ops',
             AdminPermissions::LOG_LIST, AdminPermissions::LOG_MANAGE => 'system_audit',
             default => $this->detectModule($permission),
@@ -192,6 +192,7 @@ class PermissionCatalogService
             'withdraw' => '提现',
             'sync' => '同步',
             'trigger' => '触发',
+            'retry' => '人工重跑',
             'test' => '测试',
             'secret_reveal' => '查看密钥',
             'view_raw' => '查看原始隐私',
@@ -217,6 +218,7 @@ class PermissionCatalogService
             AdminPermissions::USER_RECHARGE,
             AdminPermissions::VERIFICATION_UNBIND,
             AdminPermissions::USER_LOGIN_AS => 'high',
+            AdminPermissions::SCHEDULE_RETRY => 'high',
             default => (
                 str_ends_with($permission, '.manage')
                 || str_ends_with($permission, '.reply')
@@ -261,6 +263,7 @@ class PermissionCatalogService
             'withdraw' => 80,
             'sync' => 82,
             'trigger' => 84,
+            'retry' => 85,
             'test' => 86,
             'secret_reveal' => 88,
             'view_raw' => 89,
@@ -308,6 +311,7 @@ class PermissionCatalogService
             AdminPermissions::INTEGRATION_PLUGIN_SECRET_REVEAL => '查看插件密钥',
             AdminPermissions::SCHEDULE_VIEW => '查看自动化任务',
             AdminPermissions::SCHEDULE_TRIGGER => '触发自动化任务',
+            AdminPermissions::SCHEDULE_RETRY => '人工重跑失败任务',
             AdminPermissions::SITE_VIEW => '查看站点展示',
             AdminPermissions::SITE_MANAGE => '管理站点展示',
             AdminPermissions::LOG_LIST => '查看日志',

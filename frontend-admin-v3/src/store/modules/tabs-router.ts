@@ -21,6 +21,8 @@ const state = {
 // 不需要做多标签tabs页缓存的列表 值为每个页面对应的name 如 DashboardDetail
 // const ignoreCacheRoutes = ['DashboardDetail'];
 const ignoreCacheRoutes = ['login'];
+/** 标签页最大数量，超出后移除最早的非常驻标签 */
+const MAX_TAB_COUNT = 20;
 
 export const useTabsRouterStore = defineStore('tabsRouter', {
   state: () => state,
@@ -39,6 +41,13 @@ export const useTabsRouterStore = defineStore('tabsRouter', {
       // 不要将判断条件newRoute.meta.keepAlive !== false修改为newRoute.meta.keepAlive，starter默认开启保活，所以meta.keepAlive未定义时也需要进行保活，只有显式说明false才禁用保活。
       const needAlive = !ignoreCacheRoutes.includes(newRoute.name as string) && newRoute.meta?.keepAlive !== false;
       if (!this.tabRouters.some((route: TRouterInfo) => route.path === newRoute.path)) {
+        // 超过最大标签数时，移除最早的非首页标签
+        if (this.tabRouterList.length >= MAX_TAB_COUNT) {
+          const removeIdx = this.tabRouterList.findIndex((r: TRouterInfo) => !r.isHome);
+          if (removeIdx !== -1) {
+            this.tabRouterList.splice(removeIdx, 1);
+          }
+        }
         this.tabRouterList = this.tabRouterList.concat({ ...newRoute, isAlive: needAlive });
       }
     },

@@ -6,10 +6,24 @@ namespace App\Services\Integrations\Plugins;
 
 use App\Exceptions\BusinessException;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class PluginScanner
 {
     private string $pluginsBasePath;
+
+    /**
+     * 清单缓存，键为 `domain:slug`。find() 会被运行时、绑定解析、列表接口和框架 boot
+     * 反复调用，没有这层缓存时每次都要 realpath + require config.php。
+     *
+     * 只缓存解析成功的清单，并附带来源文件的 mtime：队列 worker 是长驻进程，
+     * 容器单例跨任务存活，靠 mtime 校验才能在插件文件更新后自动失效。
+     *
+     * @var array<string, array{manifest: PluginManifest, path: string, mtime: int}>
+     */
+    private array $manifestCache = [];
 
     public function __construct(
         private readonly Filesystem $files,
@@ -37,6 +51,7 @@ class PluginScanner
             foreach ($this->files->directories($domainDirectory) as $pluginDirectory) {
                 $manifest = $this->readManifest($currentDomain, $pluginDirectory);
                 if ($manifest instanceof PluginManifest) {
+                    $this->rememberManifest($manifest);
                     $manifests[] = $manifest;
                 }
             }
@@ -57,9 +72,63 @@ class PluginScanner
             return null;
         }
 
-        $directory = $this->domainDirectory($resolvedDomain).DIRECTORY_SEPARATOR.$resolvedSlug;
+        $cached = $this->cachedManifest($resolvedDomain.':'.$resolvedSlug);
+        if ($cached instanceof PluginManifest) {
+            return $cached;
+        }
 
-        return $this->readManifest($resolvedDomain, $directory, false);
+        $directory = $this->domainDirectory($resolvedDomain).DIRECTORY_SEPARATOR.$resolvedSlug;
+        $manifest = $this->readManifest($resolvedDomain, $directory, false);
+        $this->rememberManifest($manifest);
+
+        return $manifest;
+    }
+
+    private function cachedManifest(string $cacheKey): ?PluginManifest
+    {
+        $entry = $this->manifestCache[$cacheKey] ?? null;
+        if ($entry === null) {
+            return null;
+        }
+
+        clearstatcache(true, $entry['path']);
+        if (@filemtime($entry['path']) !== $entry['mtime']) {
+            unset($this->manifestCache[$cacheKey]);
+
+            return null;
+        }
+
+        return $entry['manifest'];
+    }
+
+    private function rememberManifest(?PluginManifest $manifest): void
+    {
+        if (! $manifest instanceof PluginManifest) {
+            return;
+        }
+
+        $path = $this->manifestSourcePath($manifest);
+        $mtime = $path === null ? false : @filemtime($path);
+        if ($path === null || $mtime === false) {
+            return;
+        }
+
+        $this->manifestCache[$manifest->domain.':'.$manifest->slug] = [
+            'manifest' => $manifest,
+            'path' => $path,
+            'mtime' => $mtime,
+        ];
+    }
+
+    private function manifestSourcePath(PluginManifest $manifest): ?string
+    {
+        foreach ([$manifest->configPath(), $manifest->basePath.DIRECTORY_SEPARATOR.'plugin.json'] as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return null;
     }
 
     public function requireManifest(string $domain, string $slug): PluginManifest
@@ -70,7 +139,70 @@ class PluginScanner
             throw new BusinessException('插件目录不存在或清单无效', 42200);
         }
 
+        $this->assertManifestHash($domain, $slug, $manifest);
+
         return $manifest;
+    }
+
+    /**
+     * 计算插件清单文件（config.php 或 plugin.json）的内容哈希，供安装时记录。
+     */
+    public function manifestContentHash(string $domain, string $slug): ?string
+    {
+        $manifest = $this->find($domain, $slug);
+
+        return $manifest instanceof PluginManifest ? $this->configHashFor($manifest) : null;
+    }
+
+    /**
+     * 轻量篡改检测：已安装插件清单内容哈希与安装时记录不一致时记 warning（不阻断运行）。
+     */
+    private function assertManifestHash(string $domain, string $slug, PluginManifest $manifest): void
+    {
+        try {
+            if (! Schema::hasTable('integration_plugins') || ! Schema::hasColumn('integration_plugins', 'manifest_hash')) {
+                return;
+            }
+
+            $recorded = DB::table('integration_plugins')
+                ->where('domain', $domain)
+                ->where('slug', $slug)
+                ->value('manifest_hash');
+            if ($recorded === null) {
+                return;
+            }
+
+            $current = $this->configHashFor($manifest);
+            if ($current !== null && hash_equals((string) $recorded, $current) === false) {
+                Log::warning('[plugins] 插件清单被篡改：清单文件内容与安装时记录不一致', [
+                    'domain' => $domain,
+                    'slug' => $slug,
+                    'recorded_hash' => $recorded,
+                    'current_hash' => $current,
+                ]);
+            }
+        } catch (\Throwable $exception) {
+            Log::debug('[plugins] 插件清单哈希比对失败，已跳过', [
+                'domain' => $domain,
+                'slug' => $slug,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function configHashFor(PluginManifest $manifest): ?string
+    {
+        $configPath = $manifest->configPath();
+        if ($this->files->exists($configPath)) {
+            return hash('sha256', (string) $this->files->get($configPath));
+        }
+
+        $jsonPath = $manifest->basePath.DIRECTORY_SEPARATOR.'plugin.json';
+        if ($this->files->exists($jsonPath)) {
+            return hash('sha256', (string) $this->files->get($jsonPath));
+        }
+
+        return null;
     }
 
     public function domainDirectory(string $domain): string

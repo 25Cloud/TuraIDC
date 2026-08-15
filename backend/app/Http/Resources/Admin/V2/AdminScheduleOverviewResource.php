@@ -32,6 +32,7 @@ class AdminScheduleOverviewResource extends JsonResource
         return [
             'environment' => $this->environment((array) ($overview['environment'] ?? [])),
             'tasks' => $this->limitedList($overview['tasks'] ?? [], self::TASK_LIMIT, fn (array $task): array => $this->task($task)),
+            'runs_summary' => $this->compactValue($overview['runs_summary'] ?? [], 0),
             'recent_logs' => $this->limitedList($overview['recent_logs'] ?? [], self::LOG_LIMIT, fn (array $log): array => $this->log($log)),
             'settings_snapshot' => $this->limitedList($overview['settings_snapshot'] ?? [], self::SETTINGS_LIMIT, fn (array $item): array => $this->settingsSnapshotItem($item)),
         ];
@@ -47,13 +48,21 @@ class AdminScheduleOverviewResource extends JsonResource
             'app_env' => $this->compactScalar($environment['app_env'] ?? null),
             'app_timezone' => $this->compactScalar($environment['app_timezone'] ?? null),
             'queue_driver' => $this->compactScalar($environment['queue_driver'] ?? null),
+            'business_queue' => $this->compactScalar($environment['business_queue'] ?? null),
+            'automation_queue' => $this->compactScalar($environment['automation_queue'] ?? null),
+            'queue_connection' => $this->compactScalar($environment['queue_connection'] ?? null),
+            'jobs_table' => $this->compactScalar($environment['jobs_table'] ?? null),
             'jobs_table_ready' => (bool) ($environment['jobs_table_ready'] ?? false),
+            'failed_jobs_connection' => $this->compactScalar($environment['failed_jobs_connection'] ?? null),
+            'failed_jobs_table' => $this->compactScalar($environment['failed_jobs_table'] ?? null),
             'failed_jobs_table_ready' => (bool) ($environment['failed_jobs_table_ready'] ?? false),
             'pending_jobs' => $environment['pending_jobs'] ?? null,
             'failed_jobs' => $environment['failed_jobs'] ?? null,
             'queue_runtime_mode' => $this->compactScalar($environment['queue_runtime_mode'] ?? null),
+            'missed_slot_policy' => $this->compactScalar($environment['missed_slot_policy'] ?? null),
             'schedule_mutex' => $this->compactValue($environment['schedule_mutex'] ?? [], 0),
             'automation_config' => $this->compactValue($environment['automation_config'] ?? [], 0),
+            'plugin_tasks' => $this->compactValue($environment['plugin_tasks'] ?? [], 0),
         ];
     }
 
@@ -72,6 +81,8 @@ class AdminScheduleOverviewResource extends JsonResource
             'source_type' => $sourceType,
             'source_label' => $sourceType === 'third_party' ? '第三方任务' : '系统任务',
             'description' => $this->compactScalar($task['description'] ?? ''),
+            'declared_cadence' => $this->compactScalar($task['declared_cadence'] ?? null),
+            'effective_cadence' => $this->compactScalar($task['effective_cadence'] ?? null),
             'manual_triggerable' => (bool) ($task['manual_triggerable'] ?? false),
             'expression' => $this->compactScalar($task['expression'] ?? ''),
             'summary' => $this->compactScalar($task['summary'] ?? ''),

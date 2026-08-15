@@ -89,6 +89,7 @@ class AdminUserDetailResource extends JsonResource
             'status' => (int) ($user->status ?? 0),
             'is_verified' => (int) ($user->is_verified ?? 0),
             'verification_status' => (int) ($user->verification_status ?? 0),
+            'verification_status_label' => User::verificationStatusLabel((int) ($user->verification_status ?? 0)),
             'real_name' => $privacy->name($realName),
             'id_card_masked' => $privacy->idCard($user->id_card),
             'referred_at' => $user->referred_at?->format('Y-m-d H:i:s'),

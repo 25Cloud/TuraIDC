@@ -10,7 +10,7 @@ class UpdatePasswordRequest extends ClientFormRequest
     {
         return [
             'oldPassword' => 'required|string|min:6',
-            'newPassword' => 'required|string|min:6',
+            'newPassword' => 'required|string|min:8',
             'confirmPassword' => 'required|string|same:newPassword',
         ];
     }

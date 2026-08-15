@@ -72,6 +72,9 @@ export interface UserServicePayload {
   name?: string;
   amount: number;
   auto_renew?: number;
+  create_order?: number;
+  create_invoice?: number;
+  deduct_balance?: number;
   upstream_host_id?: number | null;
   upstream_status?: string;
   os?: string;

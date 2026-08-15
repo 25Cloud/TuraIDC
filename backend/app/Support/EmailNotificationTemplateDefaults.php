@@ -105,10 +105,11 @@ final class EmailNotificationTemplateDefaults
     <table role="presentation" class="email-shell" cellpadding="0" cellspacing="0" width="100%">
       <tr>
         <td align="center">
+          <!--[if mso]><table role="presentation" width="680" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
           <table role="presentation" class="email-card" cellpadding="0" cellspacing="0" width="100%">
             <tr>
               <td class="email-brand">
-                {{#site_logo}}<img class="email-logo" src="{{site_logo}}" alt="{{site_name}}">{{/site_logo}}<span class="email-brand-name">{{site_name}}</span>
+                {{#site_logo}}<img class="email-logo" src="{{site_logo}}" alt="{{site_name}}" width="148" height="36">{{/site_logo}}<span class="email-brand-name">{{site_name}}</span>
               </td>
             </tr>
             <tr>
@@ -141,6 +142,7 @@ final class EmailNotificationTemplateDefaults
               <td class="email-footer">本邮件由 {{site_name}} 系统发送，请勿直接回复。</td>
             </tr>
           </table>
+          <!--[if mso]></td></tr></table><![endif]-->
         </td>
       </tr>
     </table>
@@ -209,6 +211,7 @@ body {
   margin: 8px 0 0;
   color: #111827;
   font-size: 24px;
+  font-weight: 700;
   line-height: 1.35;
 }
 .cw-email-template-{$code} .email-lead {
@@ -301,6 +304,30 @@ body {
     width: auto;
     text-align: left;
   }
+  .cw-email-template-{$code} .email-brand {
+    white-space: normal;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  .cw-email-template-{$code} { background: #1a1a2e; }
+  .cw-email-template-{$code} .email-shell { background: #1a1a2e; }
+  .cw-email-template-{$code} .email-card { background: #1e2130; border-color: #2d3244; }
+  .cw-email-template-{$code} .email-hero,
+  .cw-email-template-{$code} .email-section,
+  .cw-email-template-{$code} .email-action { background: #1e2130; }
+  .cw-email-template-{$code} h1,
+  .cw-email-template-{$code} .section-title,
+  .cw-email-template-{$code} .action-title,
+  .cw-email-template-{$code} .email-brand-name { color: #e5e7eb; }
+  .cw-email-template-{$code} .email-lead,
+  .cw-email-template-{$code} .action-copy,
+  .cw-email-template-{$code} .detail-value { color: #d1d5db; }
+  .cw-email-template-{$code} .detail-label { background: #252839; color: #9ca3af; }
+  .cw-email-template-{$code} .detail-table { border-color: #374151; }
+  .cw-email-template-{$code} .detail-label,
+  .cw-email-template-{$code} .detail-value { border-color: #374151; }
+  .cw-email-template-{$code} .email-brand { border-color: #2d3244; }
+  .cw-email-template-{$code} .email-footer { color: #6b7280; }
 }
 CSS;
     }

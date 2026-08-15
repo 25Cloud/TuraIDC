@@ -33,7 +33,14 @@
           </div>
         </t-card>
 
-        <t-card v-for="item in summaryCards" :key="item.key" class="metric-card dashboard-card" :bordered="false">
+        <t-card
+          v-for="item in summaryCards"
+          :key="item.key"
+          class="metric-card dashboard-card"
+          :bordered="false"
+          role="region"
+          :aria-label="`${item.label}：${item.value} ${item.unit}，${item.note}`"
+        >
           <div class="metric-card__label">{{ item.label }}</div>
           <div class="metric-card__value" :class="{ 'is-warning': item.warning }">
             {{ item.value }}
@@ -52,12 +59,11 @@
             </template>
 
             <div class="product-grid">
-              <button
+              <router-link
                 v-for="item in productCards"
                 :key="item.key"
-                type="button"
                 class="product-tile"
-                @click="handleProductCardClick(item)"
+                :to="`/client/services?catalog_type=${item.key}`"
               >
                 <span class="product-tile__icon" :class="item.tone">
                   <component :is="item.icon" />
@@ -66,7 +72,7 @@
                   <strong>{{ item.title }}</strong>
                   <span>{{ item.countText }}</span>
                 </span>
-              </button>
+              </router-link>
             </div>
           </t-card>
 
@@ -91,7 +97,12 @@
                     placement="top"
                     show-arrow
                   >
-                    <div class="bar-chart__slot">
+                    <div
+                      class="bar-chart__slot"
+                      tabindex="0"
+                      role="img"
+                      :aria-label="`${bar.label}：${bar.amountLabel ? `¥${bar.amountLabel}` : '无消费'}`"
+                    >
                       <div class="bar-chart__col" :style="{ height: bar.height }">
                         <span v-if="bar.amountLabel" class="bar-chart__value">¥{{ bar.amountLabel }}</span>
                         <span class="bar-chart__bar"></span>
@@ -118,7 +129,12 @@
               <t-loading :loading="!balanceLogsLoaded" text="加载中">
                 <div v-if="dailyBarsHasData" class="bar-chart bar-chart--daily" aria-label="近 7 天每日消费">
                   <t-tooltip v-for="bar in dailyBars" :key="bar.date" :content="bar.tooltip" placement="top" show-arrow>
-                    <div class="bar-chart__slot">
+                    <div
+                      class="bar-chart__slot"
+                      tabindex="0"
+                      role="img"
+                      :aria-label="`${bar.label} · 消费 ¥${formatMoney(bar.amount)}`"
+                    >
                       <span class="bar-chart__bar" :style="{ height: bar.height }"></span>
                       <span v-if="bar.showLabel" class="bar-chart__label">{{ bar.label }}</span>
                     </div>
@@ -178,19 +194,22 @@
           <t-card class="dashboard-card" :bordered="false">
             <template #title>待办事项</template>
             <div class="todo-list">
-              <button
+              <router-link
                 v-for="item in todoItems"
                 :key="item.key"
-                type="button"
                 class="todo-row"
-                @click="router.push(item.path)"
+                :to="item.path"
+                :aria-label="item.count > 0 ? `${item.label}：${item.count} 项，需要处理` : `${item.label}：0 项`"
               >
                 <span class="todo-row__left">
                   <span class="todo-row__icon" :class="item.tone"><component :is="item.icon" /></span>
                   <span>{{ item.label }}</span>
                 </span>
-                <span class="todo-row__count" :class="{ 'is-alert': item.count > 0 }">{{ item.count }}</span>
-              </button>
+                <span class="todo-row__count" :class="{ 'is-alert': item.count > 0 }">
+                  <error-circle-icon v-if="item.count > 0" class="todo-row__alert-icon" aria-hidden="true" />
+                  {{ item.count }}
+                </span>
+              </router-link>
             </div>
           </t-card>
 
@@ -235,6 +254,7 @@ import LoadingState from '@shared/user-v3/components/LoadingState.vue';
 import {
   CouponIcon,
   DashboardIcon,
+  ErrorCircleIcon,
   FileIcon,
   GiftIcon,
   HelpCircleIcon,
@@ -266,6 +286,7 @@ import type {
   ServiceOverviewPayload,
   TicketRecord,
 } from '@/types/client';
+import { getErrorMessage } from '@/utils/error';
 import { formatMoney, formatShortDateTime as formatDate } from '@/utils/format';
 
 interface ProductCard {
@@ -314,14 +335,6 @@ const serviceOverview = ref<ServiceOverviewPayload>({
   list: [],
   catalog_types: [],
 });
-
-function getErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message) return error.message;
-  if (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') {
-    return error.message;
-  }
-  return fallback;
-}
 
 function isHandledError(error: unknown): error is { __handled: boolean } {
   return typeof error === 'object' && error !== null && '__handled' in error && Boolean(error.__handled);
@@ -529,10 +542,6 @@ const productCards = computed<ProductCard[]>(() => {
   ];
 });
 
-function handleProductCardClick(item: ProductCard) {
-  router.push({ path: '/client/services', query: { catalog_type: item.key } });
-}
-
 const dailyExpenseData = computed(() => {
   const days: { date: string; amount: number }[] = [];
   const now = new Date();
@@ -665,12 +674,13 @@ const quickLinks = [
 
 async function loadDashboard() {
   loading.value = true;
+  const currentYear = new Date().getFullYear();
 
   try {
     await userStore.getUserInfo().catch(() => {});
 
     if (!siteBranding.siteName) {
-      await siteBranding.fetchSiteConfig();
+      void siteBranding.fetchSiteConfig().catch(() => {});
     } else {
       void siteBranding.fetchSiteConfig();
     }
@@ -732,7 +742,13 @@ async function loadDashboard() {
           clientApi.helpArticles({ page: 1, page_size: 10 }),
           fetchUnreadCount(true),
           clientApi.balanceLogs({ ...last7DaysRange(), page_size: 200 }),
-          clientApi.invoices({ page: 1, page_size: 100, status: 1 }),
+          clientApi.invoices({
+            page: 1,
+            page_size: 100,
+            status: 1,
+            start_date: `${currentYear}-01-01`,
+            end_date: `${currentYear}-12-31`,
+          }),
         ]);
 
         if (helpRes.status === 'fulfilled') {
@@ -888,10 +904,16 @@ onMounted(() => {
   background: var(--td-bg-color-container);
   color: var(--td-text-color-primary);
   cursor: pointer;
+  text-decoration: none;
   transition:
     border-color var(--td-anim-duration-base) var(--td-anim-time-fn-easing),
     background-color var(--td-anim-duration-base) var(--td-anim-time-fn-easing),
     color var(--td-anim-duration-base) var(--td-anim-time-fn-easing);
+
+  &:focus-visible {
+    outline: 2px solid var(--td-brand-color);
+    outline-offset: 1px;
+  }
 }
 
 .product-tile {
@@ -925,6 +947,31 @@ onMounted(() => {
   border-radius: var(--td-radius-medium);
   color: var(--td-text-color-secondary);
   background: var(--td-bg-color-component);
+
+  &.is-brand {
+    color: #fff;
+    background: var(--td-brand-color);
+  }
+
+  &.is-info {
+    color: #fff;
+    background: var(--td-brand-color-7);
+  }
+
+  &.is-success {
+    color: #fff;
+    background: var(--td-success-color);
+  }
+
+  &.is-warning {
+    color: #fff;
+    background: var(--td-warning-color);
+  }
+
+  &.is-muted {
+    color: var(--td-text-color-secondary);
+    background: var(--td-bg-color-component);
+  }
 }
 
 .product-tile__content {
@@ -1000,7 +1047,7 @@ onMounted(() => {
   width: 68%;
   min-height: 0;
   background: var(--td-brand-color);
-  border-radius: var(--td-radius-small) var(--td-radius-small) 0 0;
+  border-radius: 3px 3px 0 0;
 }
 
 .bar-chart__label {
@@ -1060,7 +1107,8 @@ onMounted(() => {
   transition: opacity 0.2s ease;
 }
 
-.bar-chart__slot:hover .bar-chart__value {
+.bar-chart__slot:hover .bar-chart__value,
+.bar-chart__slot:focus-within .bar-chart__value {
   opacity: 1;
 }
 
@@ -1114,6 +1162,7 @@ onMounted(() => {
 
   &:hover {
     color: var(--td-brand-color);
+    border-color: var(--td-brand-color);
   }
 }
 
@@ -1131,6 +1180,12 @@ onMounted(() => {
   &.is-alert {
     color: var(--td-error-color);
   }
+}
+
+.todo-row__alert-icon {
+  margin-right: 2px;
+  font-size: 14px;
+  vertical-align: -1px;
 }
 
 .quick-grid {
@@ -1197,7 +1252,7 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 73.75rem) {
+@media (width <= 73.75rem) {
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1217,7 +1272,7 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 56.25rem) {
+@media (width <= 56.25rem) {
   .chart-grid,
   .dashboard-aside {
     grid-template-columns: 1fr;
@@ -1228,7 +1283,7 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 40rem) {
+@media (width <= 40rem) {
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--td-comp-margin-s);
@@ -1299,7 +1354,7 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 30rem) {
+@media (width <= 30rem) {
   .quick-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

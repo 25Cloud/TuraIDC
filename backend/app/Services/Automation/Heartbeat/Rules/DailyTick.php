@@ -31,6 +31,11 @@ final readonly class DailyTick implements TriggerRule
         return "每日第 {$this->index} 个心跳";
     }
 
+    public function index(): int
+    {
+        return $this->index;
+    }
+
     public function nextDueAfter(CarbonInterface $time): ?CarbonImmutable
     {
         $slot = TickSlot::floorToFifteenMinutes($time)->addMinutes(15);

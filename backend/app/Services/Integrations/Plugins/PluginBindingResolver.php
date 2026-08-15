@@ -144,6 +144,7 @@ class PluginBindingResolver
             'account_name' => $this->nullableString($binding->account_name ?? null),
             'has_base_url' => $this->nullableString($binding->base_url ?? null) !== null,
             'has_api_key' => ($hasSecretValues['api_key'] ?? false) === true,
+            'web_session_cookie' => $this->nullableString($secrets['web_session_cookie'] ?? null, 4000),
             'provider_config' => $providerConfig,
             'has_secret_values' => $hasSecretValues,
             'last_checked_at' => $this->formatDateTime($binding->last_checked_at ?? null),
@@ -172,6 +173,7 @@ class PluginBindingResolver
 
         if ($includeSecrets) {
             $supplier->setAttribute('api_key', $projection['api_key'] ?? null);
+            $supplier->setAttribute('web_session_cookie', $projection['web_session_cookie'] ?? null);
         }
 
         return $supplier;

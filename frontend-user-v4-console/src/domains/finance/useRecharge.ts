@@ -10,20 +10,13 @@ import type {
   RechargeStatusPayload,
   ServiceInstance,
 } from '@/types/client';
+import { getErrorMessage } from '@/utils/error';
 import { copyText, formatMoney } from '@/utils/format';
 
 const ACTIVE_SERVICE_STATUS = 1;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const RECHARGE_PRESET_AMOUNTS = [20, 50, 100, 200, 500];
-
-function getErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message) return error.message;
-  if (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') {
-    return error.message;
-  }
-  return fallback;
-}
 
 export { formatMoney };
 
@@ -181,6 +174,11 @@ export function useRecharge() {
     paymentPayload.value = null;
   }
 
+  function notifyScreenReader(message: string) {
+    const region = document.getElementById('aria-live-region');
+    if (region) region.textContent = message;
+  }
+
   async function createRechargeOrder(overrideAmount?: number) {
     const targetAmount = normalizeRechargeAmount(overrideAmount ?? amount.value);
     const gateway = selectedPaymentGateway.value;
@@ -240,8 +238,10 @@ export function useRecharge() {
         rechargeSummary.cashBalance = formatMoney(
           payload.cash_balance ?? userStore.info?.cash_balance ?? rechargeSummary.cashBalance,
         );
+        notifyScreenReader('支付已成功，充值金额已到账');
         MessagePlugin.success('充值成功，余额已刷新');
       } else if (!options.silentPending) {
+        notifyScreenReader('支付仍在处理中，请稍候');
         MessagePlugin.info(payload.message || '当前仍未支付成功');
       }
     } catch (error: unknown) {

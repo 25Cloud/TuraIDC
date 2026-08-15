@@ -32,7 +32,9 @@
                 clearable
               >
                 <template #append>
-                  <el-button type="primary" @click="submitSearch">搜索</el-button>
+                  <el-button type="primary" @click="submitSearch"
+                    >搜索</el-button
+                  >
                 </template>
               </el-input>
             </div>
@@ -76,7 +78,11 @@
                   {{ item.title }}
                 </router-link>
 
-                <span v-if="Number(item.is_pinned) === 1" class="list-item__badge">置顶</span>
+                <span
+                  v-if="Number(item.is_pinned) === 1"
+                  class="list-item__badge"
+                  >置顶</span
+                >
               </div>
 
               <p v-if="item.excerpt" class="list-item__summary">
@@ -85,7 +91,7 @@
 
               <div class="list-item__meta">
                 <span>{{ item.category_name || currentCategoryLabel }}</span>
-                <span>{{ item.publish_at || item.created_at || '--' }}</span>
+                <span>{{ item.publish_at || item.created_at || "--" }}</span>
                 <span>浏览量: {{ item.view_count || 0 }}</span>
               </div>
             </article>
@@ -107,7 +113,9 @@
 
       <aside class="content-sidebar">
         <section class="sidebar-card">
-          <div class="sidebar-card__title">{{ config.sidebarCategoryTitle }}</div>
+          <div class="sidebar-card__title">
+            {{ config.sidebarCategoryTitle }}
+          </div>
 
           <div class="shortcut-grid">
             <button
@@ -135,7 +143,9 @@
               class="ranking-item"
               :to="buildDetailRoute(item)"
             >
-              <span class="ranking-item__index" :class="`top-${index + 1}`">{{ index + 1 }}</span>
+              <span class="ranking-item__index" :class="`top-${index + 1}`">{{
+                index + 1
+              }}</span>
               <span class="ranking-item__title">{{ item.title }}</span>
             </router-link>
           </div>
@@ -153,7 +163,9 @@
               :to="buildDetailRoute(item)"
             >
               <span class="recent-item__title">{{ item.title }}</span>
-              <span class="recent-item__time">{{ item.publish_at || item.created_at || '--' }}</span>
+              <span class="recent-item__time">{{
+                item.publish_at || item.created_at || "--"
+              }}</span>
             </router-link>
           </div>
           <el-empty v-else description="暂无内容" />
@@ -164,10 +176,10 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import siteApi from '@/api/site'
-import { getContentConfig } from './contentConfig'
+import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import siteApi from "@/api/site";
+import { getContentConfig } from "./contentConfig";
 
 const props = defineProps({
   contentType: {
@@ -176,168 +188,182 @@ const props = defineProps({
   },
   scope: {
     type: String,
-    default: 'client',
+    default: "client",
   },
-})
+});
 
-const route = useRoute()
-const router = useRouter()
-const api = computed(() => siteApi)
-const config = computed(() => getContentConfig(props.contentType, props.scope))
+const route = useRoute();
+const router = useRouter();
+const api = computed(() => siteApi);
+const config = computed(() => getContentConfig(props.contentType, props.scope));
 
-const loading = ref(false)
-const categories = ref([])
-const articleList = ref([])
-const hotArticles = ref([])
-const recentArticles = ref([])
-const keyword = ref('')
-const page = ref(1)
-const pageSize = 10
-const total = ref(0)
-const activeCategoryId = ref(0)
+const loading = ref(false);
+const categories = ref([]);
+const articleList = ref([]);
+const hotArticles = ref([]);
+const recentArticles = ref([]);
+const keyword = ref("");
+const page = ref(1);
+const pageSize = 10;
+const total = ref(0);
+const activeCategoryId = ref(0);
 
 const heroKeywords = computed(() => {
-  const categoryNames = categories.value.slice(0, 5).map((item) => item.name)
-  return categoryNames.length ? categoryNames : config.value.keywordSuggestions
-})
+  const categoryNames = categories.value.slice(0, 5).map((item) => item.name);
+  return categoryNames.length ? categoryNames : config.value.keywordSuggestions;
+});
 
 const currentCategoryLabel = computed(() => {
-  const matched = categories.value.find((item) => item.id === activeCategoryId.value)
-  return matched?.name || config.value.allCategoryLabel
-})
-
+  const matched = categories.value.find(
+    (item) => item.id === activeCategoryId.value,
+  );
+  return matched?.name || config.value.allCategoryLabel;
+});
 
 function parseQueryNumber(value, fallback = 0) {
-  const normalized = Array.isArray(value) ? value[0] : value
-  const parsed = Number.parseInt(normalized || '', 10)
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
+  const normalized = Array.isArray(value) ? value[0] : value;
+  const parsed = Number.parseInt(normalized || "", 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function parseQueryString(value) {
-  const normalized = Array.isArray(value) ? value[0] : value
-  return String(normalized || '').trim()
+  const normalized = Array.isArray(value) ? value[0] : value;
+  return String(normalized || "").trim();
 }
 
 function normalizeQuery(query) {
   return Object.fromEntries(
-    Object.entries(query).filter(([, value]) => value !== undefined && value !== null && value !== '' && value !== 0),
-  )
+    Object.entries(query).filter(
+      ([, value]) =>
+        value !== undefined && value !== null && value !== "" && value !== 0,
+    ),
+  );
 }
 
-async function loadOverview() {
-  const res = await api.value.contentOverview()
-  categories.value = res.data?.[config.value.overviewCategoryKey] || []
+async function loadOverview(token) {
+  const res = await api.value.contentOverview();
+  if (token !== syncToken) return;
+  categories.value = res.data?.[config.value.overviewCategoryKey] || [];
 }
 
-async function loadList() {
-  loading.value = true
+async function loadList(token) {
+  loading.value = true;
 
   try {
     const params = {
       page: page.value,
       page_size: pageSize,
-    }
+    };
 
     if (activeCategoryId.value > 0) {
-      params.category_id = activeCategoryId.value
+      params.category_id = activeCategoryId.value;
     }
 
     if (keyword.value) {
-      params.keyword = keyword.value
+      params.keyword = keyword.value;
     }
 
-    const res = await api.value[config.value.apiListMethod](params)
-    articleList.value = res.data?.list || []
-    total.value = Number(res.data?.total || 0)
+    const res = await api.value[config.value.apiListMethod](params);
+    if (token !== syncToken) return;
+    articleList.value = res.data?.list || [];
+    total.value = Number(res.data?.total || 0);
 
     if (!categories.value.length) {
-      categories.value = res.data?.categories || []
+      categories.value = res.data?.categories || [];
     }
   } finally {
-    loading.value = false
+    if (token === syncToken) {
+      loading.value = false;
+    }
   }
 }
 
-async function loadSidebarContent() {
+async function loadSidebarContent(token) {
   const res = await api.value[config.value.apiListMethod]({
     page: 1,
     page_size: 20,
-  })
+  });
 
-  const list = res.data?.list || []
+  if (token !== syncToken) return;
+  const list = res.data?.list || [];
   hotArticles.value = [...list]
     .sort((a, b) => Number(b.view_count || 0) - Number(a.view_count || 0))
-    .slice(0, 5)
+    .slice(0, 5);
 
   recentArticles.value = [...list]
     .sort((a, b) => {
-      const timeA = new Date(a.publish_at || a.created_at || 0).getTime()
-      const timeB = new Date(b.publish_at || b.created_at || 0).getTime()
-      return timeB - timeA
+      const timeA = new Date(a.publish_at || a.created_at || 0).getTime();
+      const timeB = new Date(b.publish_at || b.created_at || 0).getTime();
+      return timeB - timeA;
     })
-    .slice(0, 5)
+    .slice(0, 5);
 }
 
+let syncToken = 0;
+let syncDebounceTimer = null;
+let didInitialSync = false;
+
 async function syncPage() {
-  keyword.value = parseQueryString(route.query.keyword)
-  page.value = parseQueryNumber(route.query.page, 1)
-  activeCategoryId.value = parseQueryNumber(route.query.category, 0)
+  const token = ++syncToken;
+  keyword.value = parseQueryString(route.query.keyword);
+  page.value = parseQueryNumber(route.query.page, 1);
+  activeCategoryId.value = parseQueryNumber(route.query.category, 0);
 
   await Promise.all([
-    loadOverview(),
-    loadList(),
-    loadSidebarContent(),
-  ])
+    loadOverview(token),
+    loadList(token),
+    loadSidebarContent(token),
+  ]);
 }
 
 function replaceListQuery(nextQuery) {
   router.replace({
     path: config.value.routeBasePath,
     query: normalizeQuery(nextQuery),
-  })
+  });
 }
 
 function selectCategory(categoryId) {
-  activeCategoryId.value = Number(categoryId || 0)
-  page.value = 1
+  activeCategoryId.value = Number(categoryId || 0);
+  page.value = 1;
 
   replaceListQuery({
     ...route.query,
     category: activeCategoryId.value || undefined,
     page: undefined,
-  })
+  });
 }
 
 function updatePage(nextPage) {
-  page.value = nextPage
+  page.value = nextPage;
 
   replaceListQuery({
     ...route.query,
     page: nextPage > 1 ? nextPage : undefined,
-  })
+  });
 }
 
 function submitSearch() {
-  page.value = 1
+  page.value = 1;
 
   replaceListQuery({
     ...route.query,
     keyword: keyword.value.trim() || undefined,
     page: undefined,
-  })
+  });
 }
 
 function applyKeyword(value) {
-  keyword.value = value
-  submitSearch()
+  keyword.value = value;
+  submitSearch();
 }
 
 function goShortcut(path) {
   if (path === route.path) {
-    return
+    return;
   }
 
-  router.push(path)
+  router.push(path);
 }
 
 function buildDetailRoute(item) {
@@ -349,17 +375,29 @@ function buildDetailRoute(item) {
       keyword: keyword.value || undefined,
       page: page.value > 1 ? page.value : undefined,
     }),
-  }
+  };
 }
 
 watch(
-  () => [route.query.category, route.query.keyword, route.query.page],
+  () => [route.query.category, route.query.keyword, route.query.page].join("|"),
   () => {
-    syncPage()
+    // 首次同步立即执行；后续分类/翻页连续变化防抖合并，避免连发多组请求
+    if (!didInitialSync) {
+      didInitialSync = true;
+      syncPage();
+      return;
+    }
+    clearTimeout(syncDebounceTimer);
+    syncDebounceTimer = setTimeout(syncPage, 250);
   },
   { immediate: true },
-)
+);
 
+onBeforeUnmount(() => {
+  clearTimeout(syncDebounceTimer);
+  // 使仍在途的列表请求响应失效，避免写已卸载组件状态
+  syncToken += 1;
+});
 </script>
 
 <style scoped lang="scss">
@@ -386,12 +424,20 @@ watch(
   margin-bottom: 18px;
   border: 1px solid $border-color;
   background:
-    radial-gradient(circle at top right, rgba(221, 122, 31, 0.12), transparent 32%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 247, 251, 0.96));
+    radial-gradient(
+      circle at top right,
+      rgba(221, 122, 31, 0.12),
+      transparent 32%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.98),
+      rgba(245, 247, 251, 0.96)
+    );
   box-shadow: $shadow-md;
 
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background-image:
@@ -490,7 +536,7 @@ watch(
   }
 
   &.is-active::after {
-    content: '';
+    content: "";
     position: absolute;
     right: 0;
     bottom: 0;

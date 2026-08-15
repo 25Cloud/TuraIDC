@@ -183,23 +183,23 @@ export class VAxios {
     };
   }
 
-  get<T = any>(config: AxiosRequestConfig, options?: RequestOptions): Promise<T> {
+  get<T = any>(config: AxiosRequestConfigRetry, options?: RequestOptions): Promise<T> {
     return this.request({ ...config, method: 'GET' }, options);
   }
 
-  post<T = any>(config: AxiosRequestConfig, options?: RequestOptions): Promise<T> {
+  post<T = any>(config: AxiosRequestConfigRetry, options?: RequestOptions): Promise<T> {
     return this.request({ ...config, method: 'POST' }, options);
   }
 
-  put<T = any>(config: AxiosRequestConfig, options?: RequestOptions): Promise<T> {
+  put<T = any>(config: AxiosRequestConfigRetry, options?: RequestOptions): Promise<T> {
     return this.request({ ...config, method: 'PUT' }, options);
   }
 
-  delete<T = any>(config: AxiosRequestConfig, options?: RequestOptions): Promise<T> {
+  delete<T = any>(config: AxiosRequestConfigRetry, options?: RequestOptions): Promise<T> {
     return this.request({ ...config, method: 'DELETE' }, options);
   }
 
-  patch<T = any>(config: AxiosRequestConfig, options?: RequestOptions): Promise<T> {
+  patch<T = any>(config: AxiosRequestConfigRetry, options?: RequestOptions): Promise<T> {
     return this.request({ ...config, method: 'PATCH' }, options);
   }
 
@@ -274,7 +274,13 @@ export class VAxios {
    * @private
    */
   private async synthesisRequest<T = any>(config: AxiosRequestConfigRetry, options?: RequestOptions): Promise<T> {
-    let conf: CreateAxiosOptions = cloneDeep(config);
+    // cloneDeep 会损坏 FormData（转为空对象），文件上传等场景需用浅拷贝保留原始 data。
+    const hasFormData = config.data instanceof FormData;
+    let conf: CreateAxiosOptions = hasFormData ? { ...config, data: config.data } : cloneDeep(config);
+    if (hasFormData) {
+      // 覆盖实例默认 JSON 头；否则 Axios 会把 FormData 序列化成 { file: {} }。
+      conf.headers = { ...conf.headers, 'Content-Type': ContentTypeEnum.FormData };
+    }
     const transform = this.getTransform();
 
     const { requestOptions } = this.options;

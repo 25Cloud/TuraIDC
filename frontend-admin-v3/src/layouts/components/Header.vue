@@ -6,7 +6,7 @@
           <logo-full class="t-logo" />
         </span>
         <div v-else-if="!isMobileSideHeader" class="header-operate-left">
-          <t-button theme="default" shape="square" variant="text" @click="changeCollapsed">
+          <t-button theme="default" shape="square" variant="text" aria-label="折叠侧边栏" @click="changeCollapsed">
             <t-icon class="collapsed-icon" name="view-list" />
           </t-button>
         </div>
@@ -46,12 +46,18 @@
             </t-button>
           </t-dropdown>
           <t-tooltip placement="bottom" :content="t('layout.header.setting')">
-            <t-button theme="default" shape="square" variant="text" @click="toggleSettingPanel">
+            <t-button theme="default" shape="square" variant="text" aria-label="设置" @click="toggleSettingPanel">
               <setting-icon />
             </t-button>
           </t-tooltip>
           <t-tooltip placement="bottom" content="仪表盘">
-            <t-button theme="default" shape="square" variant="text" @click="handleNav('/admin/dashboard')">
+            <t-button
+              theme="default"
+              shape="square"
+              variant="text"
+              aria-label="仪表盘"
+              @click="handleNav('/admin/dashboard')"
+            >
               <home-icon />
             </t-button>
           </t-tooltip>
@@ -69,13 +75,13 @@
     >
       <t-form ref="passwordFormRef" :data="passwordForm" :rules="passwordRules" label-align="top">
         <t-form-item label="当前密码" name="current_password">
-          <t-input v-model="passwordForm.current_password" type="password" />
+          <t-input v-model="passwordForm.current_password" type="password" autocomplete="current-password" />
         </t-form-item>
         <t-form-item label="新密码" name="password">
-          <t-input v-model="passwordForm.password" type="password" />
+          <t-input v-model="passwordForm.password" type="password" autocomplete="new-password" />
         </t-form-item>
         <t-form-item label="确认新密码" name="password_confirmation">
-          <t-input v-model="passwordForm.password_confirmation" type="password" />
+          <t-input v-model="passwordForm.password_confirmation" type="password" autocomplete="new-password" />
         </t-form-item>
       </t-form>
     </t-dialog>
@@ -353,7 +359,7 @@ const handleLogout = () => {
 }
 
 /* 手机端 side 布局：顶栏显示菜单按钮，隐藏 logo 为右侧操作区腾空间 */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .header-mobile-logo-bar {
     display: inline-flex;
     align-items: center;

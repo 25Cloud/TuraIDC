@@ -19,7 +19,7 @@ class StoreUserRequest extends AdminFormRequest
     {
         $rules = [
             'email' => ['required', 'email', 'max:100'],
-            'password' => ['required', 'string', 'min:6'],
+            'password' => ['required', 'string', 'min:8'],
             'nickname' => ['nullable', 'string', 'max:50'],
             'phone' => [
                 'nullable',

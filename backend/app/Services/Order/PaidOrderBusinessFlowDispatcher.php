@@ -6,20 +6,16 @@ use App\Jobs\ProcessPaidOrderFulfillmentJob;
 use App\Jobs\ProcessPaidOrderReferralRewardJob;
 use App\Models\Invoice;
 use App\Models\Order;
-use App\Models\Product;
-use App\Services\Upstream\Contracts\ProvidesSynchronousNewPurchaseFulfillment;
-use App\Services\Upstream\ProviderResolver;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Predis\Client;
 
 class PaidOrderBusinessFlowDispatcher
 {
-    private ?bool $databaseQueueReady = null;
+    /** 支付后同步履约的订单类型：立即开通，失败回退队列兜底 */
+    private const SYNCHRONOUS_FULFILLMENT_TYPES = ['new', 'renew'];
 
-    public function __construct(
-        private readonly ProviderResolver $providerResolver,
-    ) {}
+    private ?bool $databaseQueueReady = null;
 
     public function dispatchPaidInvoice(Invoice $invoice, ?string $traceId = null): void
     {
@@ -31,12 +27,8 @@ class PaidOrderBusinessFlowDispatcher
 
         $shouldDispatchReferralReward = $this->shouldDispatchReferralReward($invoice);
 
-        if ($this->shouldSynchronouslyFulfillNewPurchase($invoice)) {
-            if ($shouldDispatchReferralReward) {
-                ProcessPaidOrderReferralRewardJob::dispatch($orderId, $traceId);
-            }
-
-            ProcessPaidOrderFulfillmentJob::dispatchSync($orderId);
+        if ($this->shouldSynchronouslyFulfill($invoice)) {
+            $this->dispatchFulfillmentSynchronously($orderId, $invoice, $traceId, $shouldDispatchReferralReward);
 
             return;
         }
@@ -81,28 +73,65 @@ class PaidOrderBusinessFlowDispatcher
         ProcessPaidOrderFulfillmentJob::dispatchAfterResponse($orderId);
     }
 
+    private function dispatchFulfillmentSynchronously(
+        int $orderId,
+        Invoice $invoice,
+        ?string $traceId,
+        bool $shouldDispatchReferralReward,
+    ): void {
+        if ($shouldDispatchReferralReward) {
+            ProcessPaidOrderReferralRewardJob::dispatch($orderId, $traceId);
+        }
+
+        try {
+            ProcessPaidOrderFulfillmentJob::dispatchSync($orderId);
+
+            return;
+        } catch (\Throwable $exception) {
+            Log::warning('[支付后业务流] 同步履约失败，回退队列等待重试', [
+                'order_id' => $orderId,
+                'invoice_id' => (int) $invoice->id,
+                'message' => $exception->getMessage(),
+                'exception' => $exception::class,
+            ]);
+        }
+
+        $this->dispatchFulfillmentViaQueueOrFallback($orderId);
+    }
+
+    private function dispatchFulfillmentViaQueueOrFallback(int $orderId): void
+    {
+        if ($this->shouldUseQueue()) {
+            ProcessPaidOrderFulfillmentJob::dispatch($orderId);
+
+            return;
+        }
+
+        $this->logFallbackDispatch($orderId);
+
+        if (app()->runningInConsole()) {
+            ProcessPaidOrderFulfillmentJob::dispatchSync($orderId);
+
+            return;
+        }
+
+        ProcessPaidOrderFulfillmentJob::dispatchAfterResponse($orderId);
+    }
+
     private function shouldDispatchReferralReward(Invoice $invoice): bool
     {
         return (string) ($invoice->order?->type ?? $invoice->type ?? '') === 'new';
     }
 
-    private function shouldSynchronouslyFulfillNewPurchase(Invoice $invoice): bool
+    private function shouldSynchronouslyFulfill(Invoice $invoice): bool
     {
-        $invoice->loadMissing('order.product');
         $order = $invoice->order;
 
-        if (! $order instanceof Order || (string) $order->type !== 'new') {
-            return false;
-        }
+        $type = $order instanceof Order
+            ? (string) $order->getAttribute('type')
+            : (string) $invoice->getAttribute('type');
 
-        $product = $order->product;
-        if (! $product instanceof Product) {
-            return false;
-        }
-
-        return $this->providerResolver
-            ->resolveForProduct($product)
-            ->supports(ProvidesSynchronousNewPurchaseFulfillment::class);
+        return in_array($type, self::SYNCHRONOUS_FULFILLMENT_TYPES, true);
     }
 
     private function shouldUseQueue(): bool

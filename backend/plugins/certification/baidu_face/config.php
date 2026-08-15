@@ -13,7 +13,7 @@ return [
         'name' => '百度智能云人脸实名认证',
         'version' => '1.0.0',
         'entry' => BaiduFacePlugin::class,
-        'capabilities' => ['personal', 'scan_url', 'query_status', 'direct_verify', 'fee_config'],
+        'capabilities' => ['personal', 'scan_url', 'query_status', 'direct_verify', 'verify_callback', 'fee_config'],
         'extra' => [
             'driver_binding' => [
                 'binding_key' => 'verification_driver',
@@ -69,6 +69,30 @@ return [
             'min' => 1,
             'step' => 1,
             'description' => '使用 H5 人脸实名认证方案时必填，用于获取 verify_token。',
+        ],
+        'billing_divider' => ['title' => '计费设置', 'type' => 'divider'],
+        'charge_enabled' => [
+            'title' => '插件收费',
+            'type' => 'switch',
+            'value' => false,
+            'description' => '开启后，用户发起实名认证时按配置金额扣费。',
+        ],
+        'amount' => [
+            'title' => '收费金额',
+            'type' => 'number',
+            'value' => 0,
+            'min' => 0,
+            'step' => 0.01,
+            'description' => '单位：元。关闭收费时该字段不生效。',
+            'visible_when' => ['field' => 'charge_enabled', 'operator' => 'eq', 'value' => true],
+        ],
+        'free_times' => [
+            'title' => '免费次数',
+            'type' => 'number',
+            'value' => 0,
+            'min' => 0,
+            'step' => 1,
+            'description' => '每个用户可免费发起认证的次数。',
         ],
     ],
 ];

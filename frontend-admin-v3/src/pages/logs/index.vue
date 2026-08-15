@@ -939,6 +939,18 @@ const scheduleEnvAlerts = computed(() => {
     theme: mutexEnabled ? 'success' : 'warning',
   });
 
+  const businessQueue = String(env.business_queue || '');
+  const automationQueue = String(env.automation_queue || '');
+  if (businessQueue && automationQueue) {
+    alerts.push({
+      key: 'queue_isolation',
+      label: '队列隔离',
+      value: '业务与定时已分离',
+      detail: `业务：${businessQueue}；定时：${automationQueue}`,
+      theme: 'success',
+    });
+  }
+
   const pendingJobs = env.pending_jobs;
   if (typeof pendingJobs === 'number') {
     alerts.push({

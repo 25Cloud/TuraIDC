@@ -75,12 +75,22 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
     if (!serviceId.value) return;
     detailLoading.value = true;
     try {
-      const res = await clientApi.serviceBaseDetail(serviceId.value);
+      const res = await clientApi.serviceDetail(serviceId.value);
       detail.value = normalizeConsoleDetail(res.data || {});
     } catch (error: unknown) {
       MessagePlugin.error(resolveErrorMessage(error, '加载实例信息失败'));
     } finally {
       detailLoading.value = false;
+    }
+  }
+
+  async function fetchConnectionInfo() {
+    if (!serviceId.value) return;
+    try {
+      const res = await clientApi.serviceBaseDetail(serviceId.value);
+      detail.value = normalizeConsoleDetail(res.data || {});
+    } catch {
+      // 静默失败，不影响已展示的页面
     }
   }
 
@@ -108,6 +118,7 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
     activeTab.value = DEFAULT_TAB;
     await loadDetailBase();
     void loadRemoteStatus(true);
+    void fetchConnectionInfo();
   }
 
   return {
@@ -132,5 +143,6 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
     loadRemoteStatus,
     refreshHostStatus,
     bootstrap,
+    fetchConnectionInfo,
   };
 }

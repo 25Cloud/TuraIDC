@@ -8,7 +8,7 @@ export interface SessionDriverOptions {
   /**
    * Cookie 作用域。设置后会话信息写入 Cookie 而非 localStorage，
    * 以便在同一主域的不同子域 / 端口间共享登录态。
-   * 例如生产环境传 `.example.com`，开发环境可留空（同主机不同端口的 Cookie 默认共享）。
+   * 例如生产环境传 `.coyjs.cn`，开发环境可留空（同主机不同端口的 Cookie 默认共享）。
    */
   cookieDomain?: string
 }

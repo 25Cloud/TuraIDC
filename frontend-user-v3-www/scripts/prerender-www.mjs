@@ -1,11 +1,11 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { listSeoLandingSitemapRoutes } from '../src/data/seoLandingPages.js'
+import { listSeoLandingSitemapRoutes } from '../src/data/seoLandingMeta.js'
 import { loadBuildEnv } from './build-env.mjs'
 
 const distDir = path.resolve(process.cwd(), 'dist')
 const indexPath = path.join(distDir, 'index.html')
-const DEFAULT_SITE_URL = 'https://www.example.com'
+const DEFAULT_SITE_URL = 'https://www.coyjs.cn'
 loadBuildEnv()
 const siteUrl = normalizeSiteUrl(process.env.VITE_PUBLIC_SITE_URL || DEFAULT_SITE_URL)
 

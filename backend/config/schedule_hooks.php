@@ -18,6 +18,11 @@ return [
     | Listener classes receive: handle(string $hook, array $context): mixed.
     | Hook failures are logged and will not interrupt the scheduler.
     |
+    | 频率语义：tick.every_minute / tick.every_five_minutes / *_five_minute_cron
+    | 只是兼容旧命名的“声明频率”，平台真实执行粒度是 15 分钟心跳槽位，错过槽位
+    | 不自动补跑。调度总览会同时输出 declared_cadence（声明）与 effective_cadence
+    | （按 15 分钟槽位推断的真实频率），插件不得把兼容名称当作真实 1/5 分钟依据。
+    |
     */
     'listeners' => [
         ScheduleHookService::HOOK_BEFORE_CRON => [

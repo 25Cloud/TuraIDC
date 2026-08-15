@@ -52,6 +52,7 @@ class ServiceStatusSyncService
     public function handle(
         int $serviceChunkSize = self::DEFAULT_SERVICE_CHUNK_SIZE,
         int $supplierRequestChunkSize = self::DEFAULT_SUPPLIER_REQUEST_CHUNK_SIZE,
+        array $excludedProviderKeys = [],
     ): array {
         $summary = [
             'scanned' => 0,
@@ -69,7 +70,7 @@ class ServiceStatusSyncService
                 ServiceStatus::SUSPENDED,
                 ServiceStatus::EXPIRED,
             ])
-            ->tap(fn ($query) => $this->applySyncableUpstreamBindingScope($query))
+            ->tap(fn ($query) => $this->applySyncableUpstreamBindingScope($query, null, $excludedProviderKeys))
             ->chunkById(max(1, $serviceChunkSize), function (EloquentCollection $services) use (&$summary, $supplierRequestChunkSize) {
                 $summary['scanned'] += $services->count();
                 $this->syncChunk($services, max(1, $supplierRequestChunkSize), $summary);
@@ -728,7 +729,7 @@ class ServiceStatusSyncService
         return 0;
     }
 
-    private function applySyncableUpstreamBindingScope($query, ?string $providerKey = null): void
+    private function applySyncableUpstreamBindingScope($query, ?string $providerKey = null, array $excludedProviderKeys = []): void
     {
         if (! Schema::hasTable('service_upstream_bindings')) {
             $query->whereRaw('0 = 1');
@@ -737,8 +738,12 @@ class ServiceStatusSyncService
         }
 
         $normalizedProviderKey = trim((string) $providerKey);
+        $normalizedExcluded = array_values(array_unique(array_map(
+            static fn (string $key): string => trim($key),
+            $excludedProviderKeys
+        )));
 
-        $query->whereExists(function ($subQuery) use ($normalizedProviderKey): void {
+        $query->whereExists(function ($subQuery) use ($normalizedProviderKey, $normalizedExcluded): void {
             $subQuery
                 ->selectRaw('1')
                 ->from('service_upstream_bindings as sub')
@@ -748,6 +753,10 @@ class ServiceStatusSyncService
 
             if ($normalizedProviderKey !== '') {
                 $subQuery->where('sub.provider_key', $normalizedProviderKey);
+            }
+
+            if ($normalizedExcluded !== []) {
+                $subQuery->whereNotIn('sub.provider_key', $normalizedExcluded);
             }
         });
     }
@@ -864,8 +873,19 @@ class ServiceStatusSyncService
     {
         $nextDueDate = $host['nextduedate'] ?? null;
 
-        if (is_numeric($nextDueDate) && (int) $nextDueDate > 0) {
-            return Carbon::createFromTimestamp((int) $nextDueDate);
+        if (is_numeric($nextDueDate)) {
+            $timestamp = (int) $nextDueDate;
+
+            if ($timestamp > 0) {
+                return Carbon::createFromTimestamp($timestamp);
+            }
+        } elseif (is_string($nextDueDate) && trim($nextDueDate) !== '') {
+            // 兼容上游 Y-m-d / Y-m-d H:i:s 日期字符串，避免静默回退本地 expires_at 造成口径漂移。
+            try {
+                return Carbon::parse(trim($nextDueDate));
+            } catch (\Throwable) {
+                return null;
+            }
         }
 
         return $service->expires_at;

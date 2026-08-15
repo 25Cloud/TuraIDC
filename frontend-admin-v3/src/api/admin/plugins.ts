@@ -193,8 +193,10 @@ export const pluginsApi = {
       url: `/v2/admin/integration-plugins/${id}/status`,
       data: { enabled: false },
     }),
-  remove: (id: number | string) =>
-    request.delete<IntegrationPluginActionResult>({ url: `/v2/admin/integration-plugins/${id}` }),
+  remove: (id: number | string, force = false) =>
+    request.delete<IntegrationPluginActionResult>({
+      url: `/v2/admin/integration-plugins/${id}${force ? '?force=1' : ''}`,
+    }),
   healthCheck: (id: number | string) =>
     request.post<IntegrationPluginActionResult>({
       url: `/v2/admin/integration-plugins/${id}/tasks`,

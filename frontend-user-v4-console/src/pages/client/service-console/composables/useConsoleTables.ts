@@ -17,6 +17,7 @@ export const natColumns: PrimaryTableCol[] = [
   { colKey: 'external_address', title: '公网地址' },
   { colKey: 'internal_port', title: '内网端口' },
   { colKey: 'protocol_label', title: '协议' },
+  { colKey: 'operation', title: '操作', width: 96 },
 ];
 
 export const logColumns: PrimaryTableCol[] = [

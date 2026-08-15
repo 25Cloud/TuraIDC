@@ -175,7 +175,7 @@ class NotificationTemplateService
             return true;
         }
 
-        $template->{$field} = is_string($value) ? $value : (string) $value;
+        $template->{$field} = is_string($value) ? $this->sanitizeTemplateField($field, $value) : (string) $value;
         $template->is_custom = true;
         $template->save();
 
@@ -223,5 +223,17 @@ class NotificationTemplateService
     private function normalizeEnabledValue(mixed $value): bool
     {
         return in_array($value, [true, 1, '1', 'true', 'on', 'yes'], true);
+    }
+
+    /**
+     * 对模板字段值做安全净化：移除 script/iframe/object/embed 标签和事件处理器。
+     */
+    private function sanitizeTemplateField(string $field, string $value): string
+    {
+        if ($field !== 'content' && $field !== 'subject') {
+            return $value;
+        }
+
+        return preg_replace('/<\/?script\b[^>]*>/iu', '', $value);
     }
 }

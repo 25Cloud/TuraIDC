@@ -100,7 +100,7 @@
   font-size: var(--td-font-size-size-3, 14px);
   font-weight: 600;
   line-height: 20px;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .ticket-card__meta {
@@ -167,7 +167,7 @@
   justify-content: flex-end;
 }
 
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   .tickets-filter {
     grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(120px, 150px));
   }
@@ -177,7 +177,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .tickets-filter {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
@@ -228,7 +228,7 @@
   }
 }
 
-@media (max-width: 360px) {
+@media (width <= 360px) {
   .tickets-filter {
     grid-template-columns: 1fr;
     grid-template-areas:

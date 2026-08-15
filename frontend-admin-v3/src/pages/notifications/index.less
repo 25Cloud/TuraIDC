@@ -282,7 +282,7 @@
 .template-test-result-row small {
   grid-column: 1 / -1;
   color: var(--td-error-color);
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .api-layout {
@@ -379,7 +379,7 @@
   margin-top: 16px;
 }
 
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   .channel-grid,
   .api-layout {
     grid-template-columns: 1fr;
@@ -398,7 +398,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .notifications-head,
   .template-toolbar,
   .api-directory-head {
