@@ -30,6 +30,7 @@ export function useListPage<F extends Record<string, any>, T>(options: UseListPa
   const list: Ref<T[]> = ref([]);
   const total = ref(0);
   const loading = ref(false);
+  const error = ref<string | null>(null);
   const pagination = reactive({
     page: 1,
     page_size: defaultPageSize,
@@ -48,8 +49,10 @@ export function useListPage<F extends Record<string, any>, T>(options: UseListPa
       total.value = Number(res.total || 0);
       if (res.page) pagination.page = Number(res.page);
       if (res.page_size) pagination.page_size = Number(res.page_size);
-    } catch (error) {
-      if (onError) onError(error);
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '加载失败，请稍后重试';
+      console.error('[useListPage] 列表加载失败:', err);
+      if (onError) onError(err);
     } finally {
       loading.value = false;
     }
@@ -91,8 +94,12 @@ export function useListPage<F extends Record<string, any>, T>(options: UseListPa
     list,
     total,
     loading,
+    error,
     pagination,
     loadList,
+    clearError: () => {
+      error.value = null;
+    },
     handleSearch,
     resetFilters,
     handlePageChange,

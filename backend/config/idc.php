@@ -86,6 +86,11 @@ return [
         'ssl_verify' => env('VNC_RELAY_SSL_VERIFY', env('APP_ENV') !== 'local'),
         'ca_bundle' => env('VNC_RELAY_CA_BUNDLE', ''),
         'connect_timeout' => (int) env('VNC_RELAY_CONNECT_TIMEOUT', 10),
+        // 本地联调常在代理 fake-ip 环境（Clash TUN 等）运行，任意域名统一解析为
+        // 198.18/15 与 fc00::/7 ULA 假地址，SSRF 内网段拦截会误杀合法 VNC 上游，
+        // 且本地 Relay 仅监听 127.0.0.1 内网端口。默认本地跳过校验、生产保持严格，
+        // 可用 VNC_RELAY_ALLOW_PRIVATE_UPSTREAM 显式覆盖（生产不建议开启）。
+        'allow_private_upstream' => (bool) env('VNC_RELAY_ALLOW_PRIVATE_UPSTREAM', env('APP_ENV') === 'local'),
     ],
 
     'frontend' => [

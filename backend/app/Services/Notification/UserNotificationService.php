@@ -2,6 +2,7 @@
 
 namespace App\Services\Notification;
 
+use App\Models\User;
 use App\Models\UserNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -20,6 +21,7 @@ class UserNotificationService
      * 创建一条站内信。
      *
      * @param  array<string,mixed>  $data  附加业务数据
+     * @param  bool  $marketing  是否营销/推广类通知：受用户 marketing_alert 偏好控制，关闭则不写入
      */
     public function create(
         int $userId,
@@ -27,9 +29,15 @@ class UserNotificationService
         string $title,
         ?string $content = null,
         ?string $link = null,
-        array $data = []
+        array $data = [],
+        bool $marketing = false
     ): ?UserNotification {
         if ($userId <= 0 || ! $this->tableReady()) {
+            return null;
+        }
+
+        // 通知偏好生效：营销类站内信按用户偏好过滤，业务必要提醒不受影响。
+        if ($marketing && ! $this->userAcceptsMarketing($userId)) {
             return null;
         }
 
@@ -51,6 +59,16 @@ class UserNotificationService
 
             return null;
         }
+    }
+
+    /**
+     * 用户是否接受营销类通知（marketing_alert 默认关闭）。
+     */
+    private function userAcceptsMarketing(int $userId): bool
+    {
+        $user = User::query()->find($userId);
+
+        return $user instanceof User && (bool) ($user->marketing_alert ?? 0);
     }
 
     public function unreadCount(int $userId): int

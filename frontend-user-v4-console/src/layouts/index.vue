@@ -1,11 +1,12 @@
 <template>
   <div>
+    <a class="skip-to-content" href="#main-content">跳到主内容</a>
     <template v-if="setting.layout.value === 'side'">
       <t-layout key="side" :class="mainLayoutCls">
         <t-aside><layout-side-nav /></t-aside>
         <t-layout>
           <t-header><layout-header /></t-header>
-          <t-content><layout-content /></t-content>
+          <t-content id="main-content"><layout-content /></t-content>
         </t-layout>
       </t-layout>
     </template>
@@ -15,11 +16,12 @@
         <t-header><layout-header /> </t-header>
         <t-layout :class="mainLayoutCls">
           <layout-side-nav />
-          <layout-content />
+          <t-content id="main-content"><layout-content /></t-content>
         </t-layout>
       </t-layout>
     </template>
     <setting-com />
+    <div id="aria-live-region" class="sr-only" aria-live="polite" role="status"></div>
   </div>
 </template>
 <script setup lang="ts">

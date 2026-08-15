@@ -1,5 +1,6 @@
 <template>
   <div class="website-layout">
+    <a class="skip-to-content" href="#main-content">跳到主内容</a>
     <header class="site-header" :class="{ scrolled: headerScrolled }">
       <div class="container header-bar">
         <router-link to="/" class="logo" :aria-label="appStore.siteName">
@@ -9,12 +10,15 @@
             class="logo-image"
             @error="handleLogoError"
           />
-          <span v-if="logoLoadFailed" class="logo-fallback">{{ appStore.siteName }}</span>
+          <span v-if="logoLoadFailed" class="logo-fallback">{{
+            appStore.siteName
+          }}</span>
         </router-link>
 
         <nav
           class="main-nav"
           @mouseleave="scheduleCloseMegaMenu()"
+          aria-label="主导航"
         >
           <router-link
             v-for="item in navigationItems"
@@ -25,7 +29,9 @@
             @mouseenter="handleNavHover(item)"
           >
             <span>{{ item.label }}</span>
-            <el-icon v-if="item.menuId" class="main-nav__arrow"><ArrowDown /></el-icon>
+            <el-icon v-if="item.menuId" class="main-nav__arrow"
+              ><ArrowDown
+            /></el-icon>
           </router-link>
         </nav>
 
@@ -48,7 +54,9 @@
                     @mouseenter="navActivateType(type.value)"
                   >
                     <span class="mega-type-btn__label">{{ type.label }}</span>
-                    <span class="mega-type-btn__count">{{ type.product_count }}</span>
+                    <span class="mega-type-btn__count">{{
+                      type.product_count
+                    }}</span>
                   </button>
                 </div>
                 <div class="mega-menu__groups">
@@ -59,9 +67,14 @@
                     class="mega-group-card"
                   >
                     <span class="mega-group-card__name">{{ group.name }}</span>
-                    <span class="mega-group-card__desc">{{ group.slogan || `${group.product_count} 款产品` }}</span>
+                    <span class="mega-group-card__desc">{{
+                      group.slogan || `${group.product_count} 款产品`
+                    }}</span>
                   </router-link>
-                  <div v-if="!navActiveGroups.length && !navLoading" class="mega-menu__empty">
+                  <div
+                    v-if="!navActiveGroups.length && !navLoading"
+                    class="mega-menu__empty"
+                  >
                     暂无产品分类
                   </div>
                 </div>
@@ -76,7 +89,9 @@
                     @mouseenter="navNoticesActivateCategory(null)"
                   >
                     <span class="mega-type-btn__label">全部公告</span>
-                    <span class="mega-type-btn__count">{{ navNoticesItems.length }}</span>
+                    <span class="mega-type-btn__count">{{
+                      navNoticesItems.length
+                    }}</span>
                   </button>
                   <button
                     v-for="cat in navNoticesCategories"
@@ -89,7 +104,9 @@
                     <span class="mega-type-btn__label">{{ cat.label }}</span>
                     <span class="mega-type-btn__count">{{ cat.count }}</span>
                   </button>
-                  <router-link to="/notices" class="mega-type-more">查看全部 →</router-link>
+                  <router-link to="/notices" class="mega-type-more"
+                    >查看全部 →</router-link
+                  >
                 </div>
                 <div class="mega-menu__groups">
                   <router-link
@@ -99,9 +116,14 @@
                     class="mega-group-card"
                   >
                     <span class="mega-group-card__name">{{ item.title }}</span>
-                    <span class="mega-group-card__desc">{{ item.summary || formatDate(item.publish_at) }}</span>
+                    <span class="mega-group-card__desc">{{
+                      item.summary || formatDate(item.publish_at)
+                    }}</span>
                   </router-link>
-                  <div v-if="!navNoticesFiltered.length && !navNoticesLoading" class="mega-menu__empty">
+                  <div
+                    v-if="!navNoticesFiltered.length && !navNoticesLoading"
+                    class="mega-menu__empty"
+                  >
                     暂无公告
                   </div>
                 </div>
@@ -116,7 +138,9 @@
                     @mouseenter="navHelpActivateCategory(null)"
                   >
                     <span class="mega-type-btn__label">全部文档</span>
-                    <span class="mega-type-btn__count">{{ navHelpItems.length }}</span>
+                    <span class="mega-type-btn__count">{{
+                      navHelpItems.length
+                    }}</span>
                   </button>
                   <button
                     v-for="cat in navHelpCategories"
@@ -129,7 +153,9 @@
                     <span class="mega-type-btn__label">{{ cat.label }}</span>
                     <span class="mega-type-btn__count">{{ cat.count }}</span>
                   </button>
-                  <router-link to="/help" class="mega-type-more">查看全部 →</router-link>
+                  <router-link to="/help" class="mega-type-more"
+                    >查看全部 →</router-link
+                  >
                 </div>
                 <div class="mega-menu__groups">
                   <router-link
@@ -139,9 +165,14 @@
                     class="mega-group-card"
                   >
                     <span class="mega-group-card__name">{{ item.title }}</span>
-                    <span class="mega-group-card__desc">{{ item.summary || '查看详情' }}</span>
+                    <span class="mega-group-card__desc">{{
+                      item.summary || "查看详情"
+                    }}</span>
                   </router-link>
-                  <div v-if="!navHelpFiltered.length && !navHelpLoading" class="mega-menu__empty">
+                  <div
+                    v-if="!navHelpFiltered.length && !navHelpLoading"
+                    class="mega-menu__empty"
+                  >
                     暂无文档
                   </div>
                 </div>
@@ -159,15 +190,15 @@
                       :href="consoleUrl(link.to)"
                       class="mega-group-card"
                     >
-                      <span class="mega-group-card__name">{{ link.title }}</span>
+                      <span class="mega-group-card__name">{{
+                        link.title
+                      }}</span>
                       <span class="mega-group-card__desc">{{ link.desc }}</span>
                     </a>
-                    <router-link
-                      v-else
-                      :to="link.to"
-                      class="mega-group-card"
-                    >
-                      <span class="mega-group-card__name">{{ link.title }}</span>
+                    <router-link v-else :to="link.to" class="mega-group-card">
+                      <span class="mega-group-card__name">{{
+                        link.title
+                      }}</span>
                       <span class="mega-group-card__desc">{{ link.desc }}</span>
                     </router-link>
                   </template>
@@ -178,90 +209,140 @@
         </transition>
 
         <div class="header-actions">
-          <el-dropdown
+          <div
             v-if="userStore.isLoggedIn"
-            trigger="click"
-            placement="bottom-end"
-            @command="handleUserMenuCommand"
+            ref="userMenuTriggerRef"
+            class="user-menu"
           >
-            <span class="header-user-trigger" aria-label="用户菜单">
-              <span class="user-avatar-initial">{{ userAvatarInitial }}</span>
-              <span class="header-user-name">{{ userDisplayName }}</span>
-              <el-icon class="header-user-arrow"><ArrowDown /></el-icon>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item :command="consoleUrl('/client/dashboard')">
-                  <el-icon><Monitor /></el-icon>
-                  控制台
-                </el-dropdown-item>
-                <el-dropdown-item :command="consoleUrl('/client/services')">
-                  <el-icon><Box /></el-icon>
-                  我的服务
-                </el-dropdown-item>
-                <el-dropdown-item divided :command="consoleUrl('/client/profile')">
-                  <el-icon><User /></el-icon>
-                  个人资料
-                </el-dropdown-item>
-                <el-dropdown-item :command="consoleUrl('/client/recharge')">
-                  <el-icon><Wallet /></el-icon>
-                  账户充值
-                </el-dropdown-item>
-                <el-dropdown-item divided command="logout">
-                  <el-icon><CircleClose /></el-icon>
-                  退出登录
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+          <button
+            type="button"
+            class="header-user-trigger"
+            :class="{ 'is-active': userMenuOpen }"
+            aria-label="用户菜单"
+            :aria-expanded="userMenuOpen"
+            @click="toggleUserMenu"
+          >
+            <span class="user-avatar-initial">{{ userAvatarInitial }}</span>
+            <span class="header-user-name">{{ userDisplayName }}</span>
+            <el-icon class="header-user-arrow"><ArrowDown /></el-icon>
+          </button>
+          <transition name="user-menu-fade">
+            <div v-if="userMenuOpen" class="user-menu-panel" role="menu">
+              <button
+                type="button"
+                role="menuitem"
+                class="user-menu-item"
+                @click="onUserMenuCommand(consoleUrl('/client/dashboard'))"
+              >
+                <el-icon><Monitor /></el-icon>控制台
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                class="user-menu-item"
+                @click="onUserMenuCommand(consoleUrl('/client/services'))"
+              >
+                <el-icon><Box /></el-icon>我的服务
+              </button>
+              <div class="user-menu-divider"></div>
+              <button
+                type="button"
+                role="menuitem"
+                class="user-menu-item"
+                @click="onUserMenuCommand(consoleUrl('/client/profile'))"
+              >
+                <el-icon><User /></el-icon>个人资料
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                class="user-menu-item"
+                @click="onUserMenuCommand(consoleUrl('/client/recharge'))"
+              >
+                <el-icon><Wallet /></el-icon>账户充值
+              </button>
+              <div class="user-menu-divider"></div>
+              <button
+                type="button"
+                role="menuitem"
+                class="user-menu-item is-danger"
+                @click="onUserMenuCommand('logout')"
+              >
+                <el-icon><CircleClose /></el-icon>退出登录
+              </button>
+            </div>
+          </transition>
+          </div>
           <template v-if="!userStore.isLoggedIn">
             <a :href="consoleUrl('/client/login')" class="header-link">登录</a>
-            <a :href="consoleUrl('/client/register')" class="header-register">免费注册</a>
+            <a :href="consoleUrl('/client/register')" class="header-register"
+              >免费注册</a
+            >
           </template>
         </div>
 
-        <el-dropdown
+        <div
           v-if="userStore.isLoggedIn"
-          trigger="click"
-          placement="bottom-end"
-          @command="handleUserMenuCommand"
+          ref="mobileUserMenuTriggerRef"
+          class="mobile-user-menu"
         >
-          <span
+          <button
+            type="button"
             class="mobile-user-icon is-avatar"
             aria-label="用户菜单"
+            :aria-expanded="mobileUserMenuOpen"
+            @click="toggleMobileUserMenu"
           >
             <span class="user-avatar-initial">{{ userAvatarInitial }}</span>
-          </span>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item :command="consoleUrl('/client/dashboard')">
-                <el-icon><Monitor /></el-icon>
-                控制台
-              </el-dropdown-item>
-              <el-dropdown-item :command="consoleUrl('/client/services')">
-                <el-icon><Box /></el-icon>
-                我的服务
-              </el-dropdown-item>
-              <el-dropdown-item divided :command="consoleUrl('/client/profile')">
-                <el-icon><User /></el-icon>
-                个人资料
-              </el-dropdown-item>
-              <el-dropdown-item :command="consoleUrl('/client/recharge')">
-                <el-icon><Wallet /></el-icon>
-                账户充值
-              </el-dropdown-item>
-              <el-dropdown-item divided command="logout">
-                <el-icon><CircleClose /></el-icon>
-                退出登录
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        <a
-          v-else
-          :href="consoleUrl('/client/login')"
-          class="mobile-user-icon"
-        >
+          </button>
+          <transition name="user-menu-fade">
+            <div v-if="mobileUserMenuOpen" class="user-menu-panel" role="menu">
+              <button
+                type="button"
+                role="menuitem"
+                class="user-menu-item"
+                @click="onUserMenuCommand(consoleUrl('/client/dashboard'))"
+              >
+                <el-icon><Monitor /></el-icon>控制台
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                class="user-menu-item"
+                @click="onUserMenuCommand(consoleUrl('/client/services'))"
+              >
+                <el-icon><Box /></el-icon>我的服务
+              </button>
+              <div class="user-menu-divider"></div>
+              <button
+                type="button"
+                role="menuitem"
+                class="user-menu-item"
+                @click="onUserMenuCommand(consoleUrl('/client/profile'))"
+              >
+                <el-icon><User /></el-icon>个人资料
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                class="user-menu-item"
+                @click="onUserMenuCommand(consoleUrl('/client/recharge'))"
+              >
+                <el-icon><Wallet /></el-icon>账户充值
+              </button>
+              <div class="user-menu-divider"></div>
+              <button
+                type="button"
+                role="menuitem"
+                class="user-menu-item is-danger"
+                @click="onUserMenuCommand('logout')"
+              >
+                <el-icon><CircleClose /></el-icon>退出登录
+              </button>
+            </div>
+          </transition>
+        </div>
+        <a v-else :href="consoleUrl('/client/login')" class="mobile-user-icon">
           <el-icon :size="20"><User /></el-icon>
         </a>
         <button
@@ -292,7 +373,10 @@
       <div v-if="isMobile && mobileNavVisible" class="mobile-menu-panel">
         <div class="mobile-menu-two-col">
           <div class="mobile-menu-col mobile-menu-col--left">
-            <template v-for="item in navigationItems" :key="`mobile-${item.to}`">
+            <template
+              v-for="item in navigationItems"
+              :key="`mobile-${item.to}`"
+            >
               <a
                 v-if="item.menuId"
                 class="mobile-first-level-item"
@@ -304,10 +388,18 @@
             </template>
             <div class="mobile-left-bottom">
               <template v-if="userStore.isLoggedIn">
-                <a :href="consoleUrl('/client/dashboard')" class="mobile-left-login-btn">控制台</a>
+                <a
+                  :href="consoleUrl('/client/dashboard')"
+                  class="mobile-left-login-btn"
+                  >控制台</a
+                >
               </template>
               <template v-else>
-                <a :href="consoleUrl('/client/login')" class="mobile-left-login-btn">登录 / 注册</a>
+                <a
+                  :href="consoleUrl('/client/login')"
+                  class="mobile-left-login-btn"
+                  >登录 / 注册</a
+                >
               </template>
             </div>
           </div>
@@ -315,21 +407,51 @@
           <div class="mobile-menu-col mobile-menu-col--right">
             <template v-if="mobileActiveFirstLevel === 'products'">
               <template v-if="navProductTypes.length">
-                <div v-for="type in navProductTypes" :key="`m-type-${type.value}`" class="mobile-second-group">
+                <div
+                  v-for="type in navProductTypes"
+                  :key="`m-type-${type.value}`"
+                  class="mobile-second-group"
+                >
                   <button
                     type="button"
                     class="mobile-second-level-item"
                     :class="{ active: mobileExpandedType === type.value }"
-                    @click="mobileExpandedType = mobileExpandedType === type.value ? '' : type.value; navLoadGroupsForType(type.value)"
+                    @click="
+                      mobileExpandedType =
+                        mobileExpandedType === type.value ? '' : type.value;
+                      navLoadGroupsForType(type.value);
+                    "
                   >
-                    <span class="mobile-second-level-label">{{ type.label }}</span>
+                    <span class="mobile-second-level-label">{{
+                      type.label
+                    }}</span>
                     <span class="mobile-second-level-right">
-                      <svg class="mobile-second-level-arrow" :class="{ expanded: mobileExpandedType === type.value }" viewBox="0 0 10 6" fill="none" width="10" height="6" aria-hidden="true">
-                        <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      <svg
+                        class="mobile-second-level-arrow"
+                        :class="{ expanded: mobileExpandedType === type.value }"
+                        viewBox="0 0 10 6"
+                        fill="none"
+                        width="10"
+                        height="6"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M1 1l4 4 4-4"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
                       </svg>
                     </span>
                   </button>
-                  <div v-if="mobileExpandedType === type.value && navGetGroupsForType(type.value).length" class="mobile-third-level-list">
+                  <div
+                    v-if="
+                      mobileExpandedType === type.value &&
+                      navGetGroupsForType(type.value).length
+                    "
+                    class="mobile-third-level-list"
+                  >
                     <router-link
                       v-for="group in navGetGroupsForType(type.value)"
                       :key="`m-group-${group.id}`"
@@ -342,27 +464,57 @@
                   </div>
                 </div>
               </template>
-              <div v-else-if="navLoading" class="mobile-menu-loading">加载中…</div>
+              <div v-else-if="navLoading" class="mobile-menu-loading">
+                加载中…
+              </div>
               <div v-else class="mobile-menu-empty">暂无产品分类</div>
             </template>
 
             <template v-else-if="mobileActiveFirstLevel === 'notices'">
               <template v-if="navNoticesCategories.length">
-                <div v-for="cat in navNoticesCategories" :key="`m-ncat-${cat.label}`" class="mobile-second-group">
+                <div
+                  v-for="cat in navNoticesCategories"
+                  :key="`m-ncat-${cat.label}`"
+                  class="mobile-second-group"
+                >
                   <button
                     type="button"
                     class="mobile-second-level-item"
                     :class="{ active: navNoticesActiveCategory === cat.label }"
                     @click="navNoticesActivateCategory(cat.label)"
                   >
-                    <span class="mobile-second-level-label">{{ cat.label }}</span>
+                    <span class="mobile-second-level-label">{{
+                      cat.label
+                    }}</span>
                     <span class="mobile-second-level-right">
-                      <svg class="mobile-second-level-arrow" :class="{ expanded: navNoticesActiveCategory === cat.label }" viewBox="0 0 10 6" fill="none" width="10" height="6" aria-hidden="true">
-                        <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      <svg
+                        class="mobile-second-level-arrow"
+                        :class="{
+                          expanded: navNoticesActiveCategory === cat.label,
+                        }"
+                        viewBox="0 0 10 6"
+                        fill="none"
+                        width="10"
+                        height="6"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M1 1l4 4 4-4"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
                       </svg>
                     </span>
                   </button>
-                  <div v-if="navNoticesActiveCategory === cat.label && navNoticesFiltered.length" class="mobile-third-level-list">
+                  <div
+                    v-if="
+                      navNoticesActiveCategory === cat.label &&
+                      navNoticesFiltered.length
+                    "
+                    class="mobile-third-level-list"
+                  >
                     <router-link
                       v-for="item in navNoticesFiltered"
                       :key="`m-ni-${item.id}`"
@@ -374,29 +526,64 @@
                     </router-link>
                   </div>
                 </div>
-                <router-link to="/notices" class="mobile-view-all" @click="closeMobileMenu()">查看全部公告 →</router-link>
+                <router-link
+                  to="/notices"
+                  class="mobile-view-all"
+                  @click="closeMobileMenu()"
+                  >查看全部公告 →</router-link
+                >
               </template>
-              <div v-else-if="navNoticesLoading" class="mobile-menu-loading">加载中…</div>
+              <div v-else-if="navNoticesLoading" class="mobile-menu-loading">
+                加载中…
+              </div>
               <div v-else class="mobile-menu-empty">暂无公告</div>
             </template>
 
             <template v-else-if="mobileActiveFirstLevel === 'help'">
               <template v-if="navHelpCategories.length">
-                <div v-for="cat in navHelpCategories" :key="`m-hcat-${cat.label}`" class="mobile-second-group">
+                <div
+                  v-for="cat in navHelpCategories"
+                  :key="`m-hcat-${cat.label}`"
+                  class="mobile-second-group"
+                >
                   <button
                     type="button"
                     class="mobile-second-level-item"
                     :class="{ active: navHelpActiveCategory === cat.label }"
                     @click="navHelpActivateCategory(cat.label)"
                   >
-                    <span class="mobile-second-level-label">{{ cat.label }}</span>
+                    <span class="mobile-second-level-label">{{
+                      cat.label
+                    }}</span>
                     <span class="mobile-second-level-right">
-                      <svg class="mobile-second-level-arrow" :class="{ expanded: navHelpActiveCategory === cat.label }" viewBox="0 0 10 6" fill="none" width="10" height="6" aria-hidden="true">
-                        <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      <svg
+                        class="mobile-second-level-arrow"
+                        :class="{
+                          expanded: navHelpActiveCategory === cat.label,
+                        }"
+                        viewBox="0 0 10 6"
+                        fill="none"
+                        width="10"
+                        height="6"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M1 1l4 4 4-4"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
                       </svg>
                     </span>
                   </button>
-                  <div v-if="navHelpActiveCategory === cat.label && navHelpFiltered.length" class="mobile-third-level-list">
+                  <div
+                    v-if="
+                      navHelpActiveCategory === cat.label &&
+                      navHelpFiltered.length
+                    "
+                    class="mobile-third-level-list"
+                  >
                     <router-link
                       v-for="item in navHelpFiltered"
                       :key="`m-hi-${item.id}`"
@@ -408,14 +595,24 @@
                     </router-link>
                   </div>
                 </div>
-                <router-link to="/help" class="mobile-view-all" @click="closeMobileMenu()">查看全部文档 →</router-link>
+                <router-link
+                  to="/help"
+                  class="mobile-view-all"
+                  @click="closeMobileMenu()"
+                  >查看全部文档 →</router-link
+                >
               </template>
-              <div v-else-if="navHelpLoading" class="mobile-menu-loading">加载中…</div>
+              <div v-else-if="navHelpLoading" class="mobile-menu-loading">
+                加载中…
+              </div>
               <div v-else class="mobile-menu-empty">暂无文档</div>
             </template>
 
             <template v-else-if="mobileActiveFirstLevel === 'about'">
-              <template v-for="link in aboutQuickLinks" :key="`m-about-${link.to}`">
+              <template
+                v-for="link in aboutQuickLinks"
+                :key="`m-about-${link.to}`"
+              >
                 <a
                   v-if="isConsolePath(link.to)"
                   :href="consoleUrl(link.to)"
@@ -438,13 +635,13 @@
       </div>
     </transition>
 
-  <main class="site-main">
+    <main id="main-content" class="site-main">
       <router-view v-slot="{ Component }">
         <transition name="page-fade" mode="out-in">
           <component :is="Component" />
         </transition>
       </router-view>
-  </main>
+    </main>
 
     <footer class="site-footer">
       <div class="container">
@@ -457,7 +654,9 @@
                 class="footer-logo-image"
                 @error="handleFooterLogoError"
               />
-              <span v-if="footerLogoLoadFailed" class="footer-logo-fallback">{{ appStore.siteName }}</span>
+              <span v-if="footerLogoLoadFailed" class="footer-logo-fallback">{{
+                appStore.siteName
+              }}</span>
             </div>
             <p class="footer-brand__desc">
               为企业与开发者提供稳定、安全、高性价比的云计算与 IDC 服务。
@@ -473,7 +672,11 @@
           <div class="footer-columns">
             <div class="footer-col">
               <h4>产品</h4>
-              <router-link v-for="item in seoLandingFooterLinks" :key="item.to" :to="item.to">
+              <router-link
+                v-for="item in seoLandingFooterLinks"
+                :key="item.to"
+                :to="item.to"
+              >
                 {{ item.label }}
               </router-link>
             </div>
@@ -505,10 +708,20 @@
         </div>
 
         <div class="footer-bottom">
-          <p>&copy; {{ new Date().getFullYear() }} {{ appStore.siteName }}. All rights reserved.</p>
-          <p v-if="appStore.valueAddedLicense || appStore.icpRecord" class="footer-bottom__meta">
-            <span v-if="appStore.valueAddedLicense">增值电信业务经营许可证：{{ appStore.valueAddedLicense }}</span>
-            <span v-if="appStore.icpRecord">ICP 备案号：{{ appStore.icpRecord }}</span>
+          <p>
+            &copy; {{ new Date().getFullYear() }} {{ appStore.siteName }}. All
+            rights reserved.
+          </p>
+          <p
+            v-if="appStore.valueAddedLicense || appStore.icpRecord"
+            class="footer-bottom__meta"
+          >
+            <span v-if="appStore.valueAddedLicense"
+              >增值电信业务经营许可证：{{ appStore.valueAddedLicense }}</span
+            >
+            <span v-if="appStore.icpRecord"
+              >ICP 备案号：{{ appStore.icpRecord }}</span
+            >
           </p>
         </div>
       </div>
@@ -517,9 +730,9 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { ElIcon } from 'element-plus/es/components/icon/index.mjs'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import { ElIcon } from "element-plus/es/components/icon/index.mjs";
 import {
   ArrowDown,
   Box,
@@ -527,217 +740,328 @@ import {
   Monitor,
   User,
   Wallet,
-} from '@element-plus/icons-vue'
-import { useAppStore } from '@/stores/app'
-import { useUserStore } from '@/stores/user'
-import { buildSupportContacts } from '@/data/supportContacts'
-import { seoLandingFooterLinks } from '@/data/seoLandingPages'
-import { buildConsoleUrl, isConsolePath } from '@/utils/consoleUrl'
-import { useNavProductMenu } from './useNavProductMenu'
-import { useNavContentMenu } from './useNavContentMenu'
+} from "@element-plus/icons-vue";
+import { useAppStore } from "@/stores/app";
+import { useUserStore } from "@/stores/user";
+import { buildSupportContacts } from "@/data/supportContacts";
+import { seoLandingFooterLinks } from "@/data/seoLandingMeta";
+import { buildConsoleUrl, isConsolePath } from "@/utils/consoleUrl";
+import { useNavProductMenu } from "./useNavProductMenu";
+import { useNavContentMenu } from "./useNavContentMenu";
 
-const route = useRoute()
-const appStore = useAppStore()
-const userStore = useUserStore()
+const route = useRoute();
+const appStore = useAppStore();
+const userStore = useUserStore();
 
 // 登录态恢复放到 onMounted，避免 setup 顶层产生路由跳转副作用
 // 跨端口登录传递仍走 query _token（与控制台 v4-console 约定保持一致），收到后立即持久化并从 URL 剥离
 onMounted(() => {
-    // 仅在本地已有 token 时才拉取用户信息，避免未登录时触发 401
-    userStore.fetchUserInfo().catch(() => {})
-})
+  // 仅在本地已有 token 时才拉取用户信息，避免未登录时触发 401
+  userStore.fetchUserInfo().catch(() => {});
+});
 
-const navProductMenu = useNavProductMenu()
-const { productTypes: navProductTypes, activeTypeValue: navActiveTypeValue, activeGroups: navActiveGroups, getGroupsForType: navGetGroupsForType, loading: navLoading, activateType: navActivateType, loadGroupsForType: navLoadGroupsForType, init: navProductInit } = navProductMenu
-const navNoticesMenu = useNavContentMenu('notice')
-const { items: navNoticesItems, loading: navNoticesLoading, categories: navNoticesCategories, activeCategory: navNoticesActiveCategory, filteredItems: navNoticesFiltered, activateCategory: navNoticesActivateCategory } = navNoticesMenu
-const navHelpMenu = useNavContentMenu('help')
-const { items: navHelpItems, loading: navHelpLoading, categories: navHelpCategories, activeCategory: navHelpActiveCategory, filteredItems: navHelpFiltered, activateCategory: navHelpActivateCategory } = navHelpMenu
+const navProductMenu = useNavProductMenu();
+const {
+  productTypes: navProductTypes,
+  activeTypeValue: navActiveTypeValue,
+  activeGroups: navActiveGroups,
+  getGroupsForType: navGetGroupsForType,
+  loading: navLoading,
+  activateType: navActivateType,
+  loadGroupsForType: navLoadGroupsForType,
+  init: navProductInit,
+} = navProductMenu;
+const navNoticesMenu = useNavContentMenu("notice");
+const {
+  items: navNoticesItems,
+  loading: navNoticesLoading,
+  categories: navNoticesCategories,
+  activeCategory: navNoticesActiveCategory,
+  filteredItems: navNoticesFiltered,
+  activateCategory: navNoticesActivateCategory,
+} = navNoticesMenu;
+const navHelpMenu = useNavContentMenu("help");
+const {
+  items: navHelpItems,
+  loading: navHelpLoading,
+  categories: navHelpCategories,
+  activeCategory: navHelpActiveCategory,
+  filteredItems: navHelpFiltered,
+  activateCategory: navHelpActivateCategory,
+} = navHelpMenu;
 
-const mobileNavVisible = ref(false)
-const mobileActiveFirstLevel = ref('products')
-const mobileExpandedType = ref('')
-const headerScrolled = ref(false)
-const isMobile = ref(typeof window === 'undefined' ? false : window.innerWidth <= 960)
-const logoLoadFailed = ref(false)
-const footerLogoLoadFailed = ref(false)
+const mobileNavVisible = ref(false);
+const mobileActiveFirstLevel = ref("products");
+const mobileExpandedType = ref("");
+const headerScrolled = ref(false);
+const isMobile = ref(
+  typeof window === "undefined" ? false : window.innerWidth <= 960,
+);
+const logoLoadFailed = ref(false);
+const footerLogoLoadFailed = ref(false);
 
 const userAvatarInitial = computed(() => {
-  if (!userStore.isLoggedIn) return ''
-  const info = userStore.info
-  const name = (info?.display_name || info?.nickname || info?.email || '').trim()
-  return name ? name.charAt(0).toUpperCase() : 'U'
-})
+  if (!userStore.isLoggedIn) return "";
+  const info = userStore.info;
+  const name = (
+    info?.display_name ||
+    info?.nickname ||
+    info?.email ||
+    ""
+  ).trim();
+  return name ? name.charAt(0).toUpperCase() : "U";
+});
 
 const userDisplayName = computed(() => {
-  if (!userStore.isLoggedIn) return ''
-  const info = userStore.info
-  return (info?.display_name || info?.nickname || info?.email || '').trim()
-})
+  if (!userStore.isLoggedIn) return "";
+  const info = userStore.info;
+  return (info?.display_name || info?.nickname || info?.email || "").trim();
+});
 
 function handleUserMenuCommand(command) {
-  if (command === 'logout') {
+  if (command === "logout") {
     userStore.logout().then(() => {
-      window.location.reload()
-    })
+      window.location.reload();
+    });
   } else {
-    window.location.href = command
+    window.location.href = command;
   }
 }
 
-const activeMenuId = ref(null)
-let megaMenuCloseTimer = null
-let megaMenuOpenTimer = null
-const MEGA_MENU_OPEN_DELAY = 120
+// 轻量自定义用户下拉（替代 el-dropdown，避免 element-plus popper 机制进首屏）
+const userMenuOpen = ref(false);
+const mobileUserMenuOpen = ref(false);
+const userMenuTriggerRef = ref(null);
+const mobileUserMenuTriggerRef = ref(null);
+
+function toggleUserMenu() {
+  userMenuOpen.value = !userMenuOpen.value;
+}
+
+function toggleMobileUserMenu() {
+  mobileUserMenuOpen.value = !mobileUserMenuOpen.value;
+}
+
+function onUserMenuCommand(command) {
+  userMenuOpen.value = false;
+  mobileUserMenuOpen.value = false;
+  handleUserMenuCommand(command);
+}
+
+function closeUserMenusOnOutside(event) {
+  const desktopRoot = userMenuTriggerRef.value;
+  const mobileRoot = mobileUserMenuTriggerRef.value;
+  const insideDesktop = desktopRoot && desktopRoot.contains(event.target);
+  const insideMobile = mobileRoot && mobileRoot.contains(event.target);
+  if (!insideDesktop && !insideMobile) {
+    userMenuOpen.value = false;
+    mobileUserMenuOpen.value = false;
+  }
+}
+
+function closeUserMenusOnEscape(event) {
+  if (event.key === "Escape") {
+    userMenuOpen.value = false;
+    mobileUserMenuOpen.value = false;
+  }
+}
+
+const activeMenuId = ref(null);
+let megaMenuCloseTimer = null;
+let megaMenuOpenTimer = null;
+const MEGA_MENU_OPEN_DELAY = 120;
 
 function openMegaMenu(menuId) {
-  clearTimeout(megaMenuCloseTimer)
-  clearTimeout(megaMenuOpenTimer)
-  activeMenuId.value = menuId
-  if (menuId === 'products') {
-    navProductInit()
-  } else if (menuId === 'notices') {
-    navNoticesMenu.init()
-  } else if (menuId === 'help') {
-    navHelpMenu.init()
+  clearTimeout(megaMenuCloseTimer);
+  clearTimeout(megaMenuOpenTimer);
+  activeMenuId.value = menuId;
+  if (menuId === "products") {
+    navProductInit();
+  } else if (menuId === "notices") {
+    navNoticesMenu.init();
+  } else if (menuId === "help") {
+    navHelpMenu.init();
   }
 }
 
 function handleNavHover(item) {
   if (item.menuId) {
-    const suppressOnActive = item.menuId !== 'about'
+    const suppressOnActive = item.menuId !== "about";
     if (suppressOnActive && isNavActive(item)) {
-      scheduleCloseMegaMenu()
-      return
+      scheduleCloseMegaMenu();
+      return;
     }
     // 延迟打开，避免鼠标快速滑过导航时触发菜单与接口拉取
-    clearTimeout(megaMenuOpenTimer)
+    clearTimeout(megaMenuOpenTimer);
     megaMenuOpenTimer = setTimeout(() => {
-      openMegaMenu(item.menuId)
-    }, MEGA_MENU_OPEN_DELAY)
+      openMegaMenu(item.menuId);
+    }, MEGA_MENU_OPEN_DELAY);
   } else {
-    scheduleCloseMegaMenu()
+    scheduleCloseMegaMenu();
   }
 }
 
 function keepMegaMenu() {
-  clearTimeout(megaMenuCloseTimer)
-  clearTimeout(megaMenuOpenTimer)
+  clearTimeout(megaMenuCloseTimer);
+  clearTimeout(megaMenuOpenTimer);
 }
 
 function scheduleCloseMegaMenu() {
-  clearTimeout(megaMenuCloseTimer)
-  clearTimeout(megaMenuOpenTimer)
+  clearTimeout(megaMenuCloseTimer);
+  clearTimeout(megaMenuOpenTimer);
   megaMenuCloseTimer = setTimeout(() => {
-    activeMenuId.value = null
-  }, 180)
+    activeMenuId.value = null;
+  }, 180);
 }
 
 function resolveGroupPath(group) {
-  const typeId = Number(group.product_type_id || 0)
-  const groupId = Number(group.id || 0)
-  if (!typeId || !groupId) {
-    return '/products'
+  const typeCode = String(group.first_product_group_code || "");
+  const groupId = Number(group.id || 0);
+  if (!typeCode || !groupId) {
+    return "/products";
   }
-  return `/products?type=${typeId}&group=${groupId}`
+  return `/products?type=${encodeURIComponent(typeCode)}&group=${groupId}`;
 }
 
 function formatDate(value) {
-  if (!value) return ''
-  const str = String(value)
-  return str.slice(0, 10)
+  if (!value) return "";
+  const str = String(value);
+  return str.slice(0, 10);
 }
 
 const navigationItems = [
-  { to: '/', label: '首页', match: ['WwwHome'] },
-  { to: '/products', label: '产品', match: ['WwwProducts', 'WwwProductsPurchase', 'WwwProductsPurchaseWithChild', 'WwwProductDetail'], menuId: 'products' },
-  { to: '/notices', label: '公告', match: ['WwwNotices', 'WwwNoticeDetail'], menuId: 'notices' },
-  { to: '/help', label: '帮助', match: ['WwwHelp', 'WwwHelpDetail'], menuId: 'help' },
-  { to: '/about', label: '其他', match: ['WwwAbout'], menuId: 'about' },
-]
+  { to: "/", label: "首页", match: ["WwwHome"] },
+  {
+    to: "/products",
+    label: "产品",
+    match: [
+      "WwwProducts",
+      "WwwProductsPurchase",
+      "WwwProductsPurchaseWithChild",
+      "WwwProductDetail",
+    ],
+    menuId: "products",
+  },
+  {
+    to: "/notices",
+    label: "公告",
+    match: ["WwwNotices", "WwwNoticeDetail"],
+    menuId: "notices",
+  },
+  {
+    to: "/help",
+    label: "帮助",
+    match: ["WwwHelp", "WwwHelpDetail"],
+    menuId: "help",
+  },
+  { to: "/about", label: "其他", match: ["WwwAbout"], menuId: "about" },
+];
 
 const aboutQuickLinks = [
-  { to: '/about', title: '关于我们', desc: '企业简介、发展愿景与服务承诺' },
-  { to: '/client/tickets', title: '工单支持', desc: '提交售后工单，获得 1v1 响应' },
-  { to: '/help', title: '帮助文档', desc: '常见问题与使用指南' },
-  { to: '/notices', title: '公告动态', desc: '产品更新、活动与维护通知' },
-]
+  { to: "/about", title: "关于我们", desc: "企业简介、发展愿景与服务承诺" },
+  {
+    to: "/client/tickets",
+    title: "工单支持",
+    desc: "提交售后工单，获得 1v1 响应",
+  },
+  { to: "/help", title: "帮助文档", desc: "常见问题与使用指南" },
+  { to: "/notices", title: "公告动态", desc: "产品更新、活动与维护通知" },
+];
 
-const logoSrc = '/branding/logo.svg'
-const supportContacts = computed(() => buildSupportContacts({
-  serviceQqGroup: appStore.serviceQqGroup,
-  serviceEmail: appStore.serviceEmail,
-  serviceHours: appStore.serviceHours,
-}))
+const logoSrc = "/branding/logo.svg";
+const supportContacts = computed(() =>
+  buildSupportContacts({
+    serviceQqGroup: appStore.serviceQqGroup,
+    serviceEmail: appStore.serviceEmail,
+    serviceHours: appStore.serviceHours,
+  }),
+);
 
 function consoleUrl(path) {
-  return buildConsoleUrl(path)
+  return buildConsoleUrl(path);
 }
 
 function isNavActive(item) {
-  if (item.menuId === 'products' && route.meta?.seoLanding) {
-    return true
+  if (item.menuId === "products" && route.meta?.seoLanding) {
+    return true;
   }
-  return item.match.includes(route.name)
+  return item.match.includes(route.name);
 }
 
 function handleLogoError() {
-  logoLoadFailed.value = true
+  logoLoadFailed.value = true;
 }
 
 function handleFooterLogoError() {
-  footerLogoLoadFailed.value = true
+  footerLogoLoadFailed.value = true;
 }
 
 function closeMobileMenu() {
-  mobileNavVisible.value = false
+  mobileNavVisible.value = false;
 }
 
+let scrollRaf = null;
 function handleScroll() {
-  if (typeof window === 'undefined') return
-  headerScrolled.value = window.scrollY > 8
+  // rAF 合并，一帧只处理一次滚动
+  if (scrollRaf) return;
+  scrollRaf = requestAnimationFrame(() => {
+    scrollRaf = null;
+    if (typeof window === "undefined") return;
+    headerScrolled.value = window.scrollY > 8;
+  });
 }
 
 function handleResize() {
-  if (typeof window === 'undefined') return
-  isMobile.value = window.innerWidth <= 960
+  if (typeof window === "undefined") return;
+  const nextMobile = window.innerWidth <= 960;
+  if (nextMobile === isMobile.value) return;
+  isMobile.value = nextMobile;
   if (!isMobile.value) {
-    closeMobileMenu()
+    closeMobileMenu();
   }
 }
 
-watch(() => route.fullPath, () => {
-  closeMobileMenu()
-  activeMenuId.value = null
-  mobileExpandedType.value = ''
-})
+watch(
+  () => route.fullPath,
+  () => {
+    closeMobileMenu();
+    activeMenuId.value = null;
+    mobileExpandedType.value = "";
+  },
+);
 
 watch(mobileNavVisible, (visible) => {
   if (visible) {
-    document.body.style.overflow = 'hidden'
-    mobileExpandedType.value = ''
-    navProductInit()
-    navNoticesMenu.init()
-    navHelpMenu.init()
+    document.body.style.overflow = "hidden";
+    mobileExpandedType.value = "";
+    navProductInit();
+    navNoticesMenu.init();
+    navHelpMenu.init();
   } else {
-    document.body.style.overflow = ''
+    document.body.style.overflow = "";
   }
-})
+});
 
 onMounted(() => {
-  handleScroll()
-  handleResize()
-  window.addEventListener('scroll', handleScroll, { passive: true })
-  window.addEventListener('resize', handleResize, { passive: true })
-})
+  handleScroll();
+  handleResize();
+  window.addEventListener("scroll", handleScroll, { passive: true });
+  window.addEventListener("resize", handleResize, { passive: true });
+  document.addEventListener("pointerdown", closeUserMenusOnOutside);
+  document.addEventListener("keydown", closeUserMenusOnEscape);
+});
 
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', handleScroll)
-  window.removeEventListener('resize', handleResize)
-  document.body.style.overflow = ''
-  clearTimeout(megaMenuCloseTimer)
-  clearTimeout(megaMenuOpenTimer)
-})
+  window.removeEventListener("scroll", handleScroll);
+  window.removeEventListener("resize", handleResize);
+  document.removeEventListener("pointerdown", closeUserMenusOnOutside);
+  document.removeEventListener("keydown", closeUserMenusOnEscape);
+  if (scrollRaf) cancelAnimationFrame(scrollRaf);
+  scrollRaf = null;
+  document.body.style.overflow = "";
+  clearTimeout(megaMenuCloseTimer);
+  clearTimeout(megaMenuOpenTimer);
+});
 </script>
 
 <style scoped lang="scss">
@@ -762,7 +1086,9 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid transparent;
-  transition: border-color $motion-base ease, box-shadow $motion-base ease;
+  transition:
+    border-color $motion-base ease,
+    box-shadow $motion-base ease;
 }
 
 .site-header.scrolled {
@@ -832,7 +1158,7 @@ onBeforeUnmount(() => {
 }
 
 .main-nav__link::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 50%;
   bottom: 12px;
@@ -842,7 +1168,9 @@ onBeforeUnmount(() => {
   background: $color-primary;
   opacity: 0;
   transform: translateX(-50%) scaleX(0.6);
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
 
 .main-nav__link:hover {
@@ -909,7 +1237,9 @@ onBeforeUnmount(() => {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: color 0.14s ease, background 0.14s ease;
+  transition:
+    color 0.14s ease,
+    background 0.14s ease;
   text-align: left;
 }
 
@@ -1015,13 +1345,16 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 
-
 .mega-menu-enter-active {
-  transition: opacity 0.18s ease-out, transform 0.18s ease-out;
+  transition:
+    opacity 0.18s ease-out,
+    transform 0.18s ease-out;
 }
 
 .mega-menu-leave-active {
-  transition: opacity 0.14s ease, transform 0.14s ease;
+  transition:
+    opacity 0.14s ease,
+    transform 0.14s ease;
 }
 
 .mega-menu-enter-from,
@@ -1047,7 +1380,9 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   color: #374151;
   text-decoration: none;
-  transition: color 0.16s ease, background 0.16s ease;
+  transition:
+    color 0.16s ease,
+    background 0.16s ease;
 }
 
 .header-user-trigger {
@@ -1055,6 +1390,8 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   padding: 4px 12px 4px 4px;
+  border: none;
+  background: transparent;
   border-radius: 999px;
   cursor: pointer;
   transition: background 0.16s ease;
@@ -1092,7 +1429,9 @@ onBeforeUnmount(() => {
   .header-user-arrow {
     font-size: 12px;
     color: #9ca3af;
-    transition: transform 0.25s ease, color 0.16s ease;
+    transition:
+      transform 0.25s ease,
+      color 0.16s ease;
   }
 
   &.is-active .header-user-arrow,
@@ -1101,20 +1440,105 @@ onBeforeUnmount(() => {
   }
 }
 
-// Dropdown 展开/关闭动画
-.el-dropdown__popper {
-  transform-origin: top right !important;
-  animation-duration: 0.2s !important;
+// 轻量自定义用户下拉（替代 el-dropdown，避免 element-plus popper 机制进首屏）
+.user-menu,
+.mobile-user-menu {
+  position: relative;
+}
 
-  &.el-zoom-in-top-enter-active,
-  &.el-zoom-in-top-leave-active {
-    transition: opacity 0.2s ease, transform 0.2s ease !important;
+.user-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  min-width: 180px;
+  padding: 6px;
+  background: $bg-color-card;
+  border: 1px solid $border-color;
+  border-radius: 12px;
+  box-shadow: $shadow-lg;
+}
+
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: $text-color-primary;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background $motion-fast ease,
+    color $motion-fast ease;
+
+  .el-icon {
+    font-size: 16px;
+    color: $text-color-placeholder;
+    transition: color $motion-fast ease;
   }
 
-  &.el-zoom-in-top-enter-from,
-  &.el-zoom-in-top-leave-to {
-    opacity: 0 !important;
-    transform: scaleY(0.8) !important;
+  &:hover {
+    background: rgba(22, 93, 255, 0.06);
+    color: $color-primary;
+
+    .el-icon {
+      color: $color-primary;
+    }
+  }
+
+  &.is-danger {
+    color: $color-danger;
+
+    .el-icon {
+      color: $color-danger;
+    }
+  }
+
+  &.is-danger:hover {
+    background: rgba(240, 68, 56, 0.08);
+  }
+}
+
+.user-menu-divider {
+  height: 1px;
+  margin: 6px 4px;
+  background: $divider-color;
+}
+
+.user-menu-fade-enter-active,
+.user-menu-fade-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  transform-origin: top right;
+}
+
+.user-menu-fade-enter-from,
+.user-menu-fade-leave-to {
+  opacity: 0;
+  transform: scaleY(0.85);
+}
+
+.mobile-user-menu {
+  display: none;
+
+  .mobile-user-icon {
+    border: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+  }
+}
+
+@media (max-width: 960px) {
+  .mobile-user-menu {
+    display: block;
   }
 }
 
@@ -1156,7 +1580,9 @@ onBeforeUnmount(() => {
   font-weight: 500;
   text-decoration: none;
   border-radius: 999px;
-  transition: color 0.16s ease, background 0.16s ease;
+  transition:
+    color 0.16s ease,
+    background 0.16s ease;
 }
 
 .header-link:hover {
@@ -1237,7 +1663,9 @@ onBeforeUnmount(() => {
   text-decoration: none;
   flex-shrink: 0;
   border-radius: 50%;
-  transition: color 0.16s ease, background 0.16s ease;
+  transition:
+    color 0.16s ease,
+    background 0.16s ease;
 }
 
 .mobile-user-icon.is-avatar {
@@ -1271,7 +1699,9 @@ onBeforeUnmount(() => {
   height: 2px;
   background: currentColor;
   border-radius: 1px;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
   transform-origin: center;
 }
 
@@ -1348,7 +1778,9 @@ onBeforeUnmount(() => {
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
 
 .mobile-first-level-item.active {
@@ -1358,7 +1790,7 @@ onBeforeUnmount(() => {
 }
 
 .mobile-first-level-item.active::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 50%;
@@ -1393,7 +1825,9 @@ onBeforeUnmount(() => {
   font-weight: 500;
   cursor: pointer;
   border-bottom: 1px solid $divider-color;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
 
 .mobile-second-level-item.active {
@@ -1657,7 +2091,9 @@ onBeforeUnmount(() => {
 .mobile-menu-mask-leave-active,
 .mobile-menu-panel-enter-active,
 .mobile-menu-panel-leave-active {
-  transition: opacity 0.16s ease, transform 0.16s ease;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
 }
 
 .mobile-menu-mask-enter-from,

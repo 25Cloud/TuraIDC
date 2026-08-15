@@ -27,7 +27,7 @@ class RegisterRequest extends ClientFormRequest
                 }
             }],
             'code' => 'required|string|size:6',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => 'required|string|min:8|confirmed',
             'nickname' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:100',
             'phone' => ['nullable', 'string', 'max:20', function (string $attribute, mixed $value, Closure $fail) {

@@ -21,6 +21,7 @@ class ServiceDetailResource extends JsonResource
             'name' => (string) ($detail['name'] ?? ''),
             'product_display_name' => (string) ($detail['product_display_name'] ?? ''),
             'combined_display_name' => (string) ($detail['combined_display_name'] ?? ''),
+            'product_full_path' => (string) ($detail['product_full_path'] ?? ''),
             'domain' => (string) ($detail['domain'] ?? ''),
             'status' => (int) ($detail['status'] ?? 0),
             'status_label' => (string) ($detail['status_label'] ?? ''),
@@ -37,11 +38,12 @@ class ServiceDetailResource extends JsonResource
             'has_custom_service_name' => (bool) ($detail['has_custom_service_name'] ?? false),
             'custom_hostname' => (string) ($detail['custom_hostname'] ?? ''),
             'has_custom_hostname' => (bool) ($detail['has_custom_hostname'] ?? false),
+            'console_template' => (string) ($detail['console_template'] ?? ''),
             'console_mode' => (string) ($detail['console_mode'] ?? ''),
             'is_nat_console' => (bool) ($detail['is_nat_console'] ?? false),
             'product' => $this->product((array) ($detail['product'] ?? [])),
             'invoice' => $this->invoice((array) ($detail['invoice'] ?? [])),
-            'upstream' => $this->upstream((array) ($detail['upstream'] ?? [])),
+            'upstream' => $this->upstream((array) ($detail['upstream'] ?? []), $request),
             'runtime' => $this->runtime((array) ($detail['runtime'] ?? [])),
             'specs' => $this->specs((array) ($detail['specs'] ?? [])),
             'traffic' => $this->traffic((array) ($detail['traffic'] ?? [])),
@@ -67,6 +69,7 @@ class ServiceDetailResource extends JsonResource
             'type' => (string) ($product['type'] ?? ''),
             'type_label' => (string) ($product['type_label'] ?? ''),
             'catalog_type' => (string) ($product['catalog_type'] ?? ''),
+            'console_template' => (string) ($product['console_template'] ?? ''),
         ];
     }
 
@@ -89,12 +92,9 @@ class ServiceDetailResource extends JsonResource
      * @param  array<string, mixed>  $upstream
      * @return array<string, mixed>
      */
-    private function upstream(array $upstream): array
+    private function upstream(array $upstream, Request $request): array
     {
-        return [
-            'provider_key' => (string) ($upstream['provider_key'] ?? ''),
-            'supplier_id' => (int) ($upstream['supplier_id'] ?? 0),
-            'upstream_product_id' => (string) ($upstream['upstream_product_id'] ?? ''),
+        $payload = [
             'host_id' => (int) ($upstream['host_id'] ?? 0),
             'status' => (string) ($upstream['status'] ?? ''),
             'status_label' => (string) ($upstream['status_label'] ?? ''),
@@ -102,6 +102,18 @@ class ServiceDetailResource extends JsonResource
             'dedicated_ip' => (string) ($upstream['dedicated_ip'] ?? ''),
             'os' => (string) ($upstream['os'] ?? ''),
         ];
+
+        // 用户端不输出供应商身份字段，管理端仍保留。
+        if (! $request->is('api/v2/client/*')) {
+            $payload = [
+                'provider_key' => (string) ($upstream['provider_key'] ?? ''),
+                'supplier_id' => (int) ($upstream['supplier_id'] ?? 0),
+                'upstream_product_id' => (string) ($upstream['upstream_product_id'] ?? ''),
+                ...$payload,
+            ];
+        }
+
+        return $payload;
     }
 
     /**

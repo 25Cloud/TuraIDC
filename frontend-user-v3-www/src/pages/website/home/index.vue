@@ -18,61 +18,81 @@
       <HomeNewsSection :notices="notices" />
       <HomeRegisterBar />
     </template>
-    <template v-else>
+    <div v-else ref="deferredSkeletonRef">
       <HomeSectionSkeleton type="solutions" />
       <HomeSectionSkeleton type="partner" />
       <HomeSectionSkeleton type="news" />
       <HomeSectionSkeleton type="register" />
-    </template>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
-import siteApi from '@/api/site'
-import { useAppStore } from '@/stores/app'
-import HomeHeroCarousel from '@/views/website/Home/components/HomeHeroCarousel.vue'
-import HomeProductTabs from '@/views/website/Home/components/HomeProductTabs.vue'
-import HomeSectionSkeleton from '@/views/website/Home/components/HomeSectionSkeleton.vue'
+import {
+  computed,
+  defineAsyncComponent,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+} from "vue";
+import siteApi from "@/api/site";
+import { useAppStore } from "@/stores/app";
+import HomeHeroCarousel from "@/views/website/Home/components/HomeHeroCarousel.vue";
+import HomeProductTabs from "@/views/website/Home/components/HomeProductTabs.vue";
+import HomeSectionSkeleton from "@/views/website/Home/components/HomeSectionSkeleton.vue";
 
-const HomeSolutionSection = defineAsyncComponent(() => import('@/views/website/Home/components/HomeSolutionSection.vue'))
-const HomePartnerSection = defineAsyncComponent(() => import('@/views/website/Home/components/HomePartnerSection.vue'))
-const HomeNewsSection = defineAsyncComponent(() => import('@/views/website/Home/components/HomeNewsSection.vue'))
-const HomeRegisterBar = defineAsyncComponent(() => import('@/views/website/Home/components/HomeRegisterBar.vue'))
+const HomeSolutionSection = defineAsyncComponent(
+  () => import("@/views/website/Home/components/HomeSolutionSection.vue"),
+);
+const HomePartnerSection = defineAsyncComponent(
+  () => import("@/views/website/Home/components/HomePartnerSection.vue"),
+);
+const HomeNewsSection = defineAsyncComponent(
+  () => import("@/views/website/Home/components/HomeNewsSection.vue"),
+);
+const HomeRegisterBar = defineAsyncComponent(
+  () => import("@/views/website/Home/components/HomeRegisterBar.vue"),
+);
 
 interface ProductTypeItem {
-  id?: number
-  value?: string
-  label?: string
-  product_count?: number
+  id?: number;
+  value?: string;
+  label?: string;
+  product_count?: number;
 }
 
-const appStore = useAppStore()
-const loading = ref(true)
-const homeLoaded = ref(false)
-const homeLoadSucceeded = ref(false)
-const mountDeferredSections = ref(false)
-const homeHero = ref<Record<string, unknown> | null>(null)
-const notices = ref<any[]>([])
-const rootGroups = ref<any[]>([])
-const groupCatalogMap = ref<Record<string, unknown>>({})
-const productTypes = ref<ProductTypeItem[]>([])
-const homeContentReady = computed(() => homeLoaded.value && homeLoadSucceeded.value)
+const appStore = useAppStore();
+const loading = ref(true);
+const homeLoaded = ref(false);
+const homeLoadSucceeded = ref(false);
+const mountDeferredSections = ref(false);
+const deferredSkeletonRef = ref<HTMLElement | null>(null);
+let deferredObserver: IntersectionObserver | null = null;
+const homeHero = ref<Record<string, unknown> | null>(null);
+const notices = ref<any[]>([]);
+const rootGroups = ref<any[]>([]);
+const groupCatalogMap = ref<Record<string, unknown>>({});
+const productTypes = ref<ProductTypeItem[]>([]);
+const homeContentReady = computed(
+  () => homeLoaded.value && homeLoadSucceeded.value,
+);
 const homeHeroReady = computed(() => {
-  const hero = homeHero.value
-  const slides = hero && typeof hero === 'object' ? hero.slides : null
+  const hero = homeHero.value;
+  const slides = hero && typeof hero === "object" ? hero.slides : null;
 
-  return homeContentReady.value && Array.isArray(slides) && slides.length > 0
-})
-const productContentReady = computed(() => homeContentReady.value && rootGroups.value.length > 0)
+  return homeContentReady.value && Array.isArray(slides) && slides.length > 0;
+});
+const productContentReady = computed(
+  () => homeContentReady.value && rootGroups.value.length > 0,
+);
 
 function deriveProductTypesFromGroups(groups: any[]) {
-  const map = new Map<string, ProductTypeItem>()
+  const map = new Map<string, ProductTypeItem>();
 
   groups.forEach((group, index) => {
-    const value = String(group?.first_product_group_code || '')
+    const value = String(group?.first_product_group_code || "");
     if (!value) {
-      return
+      return;
     }
 
     const current = map.get(value) || {
@@ -80,71 +100,103 @@ function deriveProductTypesFromGroups(groups: any[]) {
       value,
       label: String(group?.first_product_group_name || `产品分类 ${index + 1}`),
       product_count: 0,
+    };
+
+    current.product_count =
+      Number(current.product_count || 0) + Number(group?.product_count || 0);
+    map.set(value, current);
+  });
+
+  return Array.from(map.values());
+}
+
+function resolveHome() {
+  // 优先消费 index.html 预热期 fetch 的 /v2/site/home 响应（window.__HOME_FETCH__），
+  // 复用正常化管线；预热失败/无预热则回退常规 axios 请求。
+  const prefetchPromise = (window as any).__HOME_FETCH__;
+  if (!prefetchPromise) {
+    return siteApi.home();
+  }
+
+  (window as any).__HOME_FETCH__ = undefined;
+  return prefetchPromise.then((raw: any) => {
+    if (raw && raw.code === 0 && raw.data && typeof raw.data === "object") {
+      return siteApi.homeFromRaw(raw);
     }
-
-    current.product_count = Number(current.product_count || 0) + Number(group?.product_count || 0)
-    map.set(value, current)
-  })
-
-  return Array.from(map.values())
+    return siteApi.home();
+  });
 }
 
 async function loadHomePage() {
-  loading.value = true
-  homeLoaded.value = false
-  homeLoadSucceeded.value = false
+  loading.value = true;
+  homeLoaded.value = false;
+  homeLoadSucceeded.value = false;
 
-  try {
-    // 优化：移除 home-hero 请求，hero 数据已包含在 home 响应中
-    const [homeRes, typeRes] = await Promise.allSettled([
-      siteApi.home(),
-      siteApi.productTypes(),
-    ])
-
-    if (homeRes.status === 'fulfilled') {
-      homeLoadSucceeded.value = true
-      const data = homeRes.value.data || {}
-      notices.value = Array.isArray(data.notices) ? data.notices : []
-      rootGroups.value = Array.isArray(data.root_groups) ? data.root_groups : []
-      groupCatalogMap.value = data.group_catalog_map && typeof data.group_catalog_map === 'object'
+  const homeRes = await resolveHome().catch(() => undefined);
+  if (homeRes?.data) {
+    homeLoadSucceeded.value = true;
+    const data = homeRes.data || {};
+    notices.value = Array.isArray(data.notices) ? data.notices : [];
+    rootGroups.value = Array.isArray(data.root_groups) ? data.root_groups : [];
+    groupCatalogMap.value =
+      data.group_catalog_map && typeof data.group_catalog_map === "object"
         ? data.group_catalog_map
-        : {}
+        : {};
 
-      // 从 home 响应中提取 hero 数据
-      homeHero.value = data.hero || {}
+    // 从 home 响应中提取 hero 数据
+    homeHero.value = data.hero || {};
 
-      if (data.site_config) {
-        appStore.hydrateSiteConfig(data.site_config)
-      }
+    if (data.site_config) {
+      appStore.hydrateSiteConfig(data.site_config);
     }
-
-    if (typeRes.status === 'fulfilled') {
-      productTypes.value = Array.isArray(typeRes.value.data?.list) ? typeRes.value.data.list : []
-    }
-
-    if (!productTypes.value.length) {
-      productTypes.value = deriveProductTypesFromGroups(rootGroups.value)
-    }
-  } finally {
-    homeLoaded.value = true
-    loading.value = false
   }
+
+  // 产品分类由 home 响应的 root_groups 推导，避免额外一次 /v2/site/product-types 请求
+  productTypes.value = deriveProductTypesFromGroups(rootGroups.value);
+
+  homeLoaded.value = true;
+  loading.value = false;
 }
 
 onMounted(async () => {
-  await loadHomePage()
+  await loadHomePage();
 
   if (!homeLoadSucceeded.value) {
-    return
+    return;
   }
 
-  if (typeof window !== 'undefined') {
-    window.requestAnimationFrame(() => {
-      mountDeferredSections.value = true
-    })
-    return
-  }
+  // 使用 IntersectionObserver 在骨架屏进入视口时才挂载延迟区域
+  if (typeof window !== "undefined" && "IntersectionObserver" in window) {
+    deferredObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          mountDeferredSections.value = true;
+          if (deferredObserver) {
+            deferredObserver.disconnect();
+            deferredObserver = null;
+          }
+        }
+      },
+      { rootMargin: "200px" },
+    );
 
-  mountDeferredSections.value = true
-})
+    // 骨架屏 ref 就绪后开始观察
+    if (deferredSkeletonRef.value) {
+      deferredObserver.observe(deferredSkeletonRef.value);
+    } else {
+      // ref 尚未挂载（数据就绪时骨架不会渲染），直接挂载
+      mountDeferredSections.value = true;
+    }
+  } else {
+    // 不支持 IntersectionObserver 的旧浏览器直接挂载
+    mountDeferredSections.value = true;
+  }
+});
+
+onBeforeUnmount(() => {
+  if (deferredObserver) {
+    deferredObserver.disconnect();
+    deferredObserver = null;
+  }
+});
 </script>

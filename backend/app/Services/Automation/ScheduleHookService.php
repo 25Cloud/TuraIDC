@@ -4,6 +4,7 @@ namespace App\Services\Automation;
 
 use App\Models\IntegrationPlugin;
 use App\Services\Automation\Contracts\ScheduleHook;
+use App\Services\Automation\Heartbeat\ScheduleDeclarationNormalizer;
 use App\Services\Integrations\Plugins\PluginFileLoader;
 use App\Services\Integrations\Plugins\PluginScanner;
 use Illuminate\Contracts\Container\Container;
@@ -96,13 +97,42 @@ class ScheduleHookService
 
     private function listenersFor(string $hook): array
     {
-        $listeners = config("schedule_hooks.listeners.{$hook}", []);
+        // 系统配置也支持单个 [ClassName::class, 'method'] 描述器；不能直接
+        // array_merge，否则描述器会被拆成两个独立字符串监听器。
+        $listeners = ScheduleDeclarationNormalizer::list($this->configuredListenersFor($hook));
         $pluginListeners = $this->pluginListenersFor($hook);
 
         return array_values(array_filter(array_merge(
-            is_array($listeners) ? $listeners : [],
+            $listeners,
             $pluginListeners,
         )));
+    }
+
+    /**
+     * Hook 名允许使用点号（例如 task.before），不能直接拼到 config() 的路径中，
+     * 否则会被 Laravel 当作嵌套键而读不到 config/schedule_hooks.php 中的字面量键。
+     * 同时兼容运行时用 config()->set() 写入嵌套路径的测试和诊断场景。
+     *
+     * @return array<mixed>
+     */
+    private function configuredListenersFor(string $hook): array
+    {
+        $configured = config('schedule_hooks.listeners', []);
+        if (! is_array($configured)) {
+            return [];
+        }
+
+        $literalListeners = $configured[$hook] ?? [];
+        if (is_array($literalListeners) && $literalListeners !== []) {
+            return $literalListeners;
+        }
+
+        $nestedListeners = config("schedule_hooks.listeners.{$hook}", []);
+        if (is_array($nestedListeners) && $nestedListeners !== []) {
+            return $nestedListeners;
+        }
+
+        return is_array($literalListeners) ? $literalListeners : [];
     }
 
     private function pluginListenersFor(string $hook): array
@@ -115,15 +145,27 @@ class ScheduleHookService
             return [];
         }
 
-        $scanner = $this->container->make(PluginScanner::class);
-        $fileLoader = $this->container->make(PluginFileLoader::class);
+        try {
+            $scanner = $this->container->make(PluginScanner::class);
+            $fileLoader = $this->container->make(PluginFileLoader::class);
+            $plugins = IntegrationPlugin::query()
+                ->where('status', IntegrationPlugin::STATUS_ENABLED)
+                ->orderBy('domain')
+                ->orderBy('slug')
+                ->get();
+        } catch (Throwable $exception) {
+            Log::warning('[调度Hook] 查询已启用插件失败，已跳过插件监听器', [
+                'hook' => $hook,
+                'message' => $exception->getMessage(),
+                'exception' => $exception::class,
+            ]);
+
+            return [];
+        }
+
         $listeners = [];
 
-        IntegrationPlugin::query()
-            ->where('status', IntegrationPlugin::STATUS_ENABLED)
-            ->orderBy('domain')
-            ->orderBy('slug')
-            ->get()
+        $plugins
             ->each(function (IntegrationPlugin $plugin) use ($hook, $scanner, $fileLoader, &$listeners): void {
                 try {
                     $manifest = $scanner->find((string) $plugin->domain, (string) $plugin->slug);
@@ -157,7 +199,7 @@ class ScheduleHookService
                     return;
                 }
 
-                foreach ((array) $definitions as $definition) {
+                foreach (ScheduleDeclarationNormalizer::list($definitions) as $definition) {
                     $listeners[] = $definition;
                 }
             });
@@ -178,7 +220,7 @@ class ScheduleHookService
                 $instance = $this->container->make((string) $listener['class']);
                 $method = (string) ($listener['method'] ?? 'handle');
 
-                if (! method_exists($instance, $method)) {
+                if (! is_callable([$instance, $method])) {
                     throw new InvalidArgumentException("调度Hook监听器缺少方法：{$method}");
                 }
 
@@ -189,7 +231,7 @@ class ScheduleHookService
                 $instance = $this->container->make($listener[0]);
                 $method = $listener[1];
 
-                if (! method_exists($instance, $method)) {
+                if (! is_callable([$instance, $method])) {
                     throw new InvalidArgumentException("调度Hook监听器缺少方法：{$method}");
                 }
 
@@ -218,7 +260,7 @@ class ScheduleHookService
             return $instance($hook, $context);
         }
 
-        if (method_exists($instance, 'handle')) {
+        if (is_callable([$instance, 'handle'])) {
             return $instance->handle($hook, $context);
         }
 

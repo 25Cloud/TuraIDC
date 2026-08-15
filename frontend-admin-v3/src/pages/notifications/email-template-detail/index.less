@@ -72,7 +72,7 @@
   color: var(--td-text-color-primary);
   font-size: var(--td-font-size-size-1, 12px);
   text-align: right;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .subject-preview {
@@ -94,7 +94,7 @@
 .subject-preview strong {
   color: var(--td-text-color-primary);
   line-height: 1.6;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .status-control {
@@ -152,7 +152,7 @@
   min-height: 460px;
   border: 0;
   border-radius: 0;
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: "Cascadia Code", SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: var(--td-font-size-size-2, 13px);
   line-height: 1.75;
 }
@@ -183,7 +183,7 @@
   font-size: var(--td-font-size-size-3, 14px);
   line-height: 1.8;
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .template-test-dialog {
@@ -279,16 +279,16 @@
 .template-test-result-row small {
   grid-column: 1 / -1;
   color: var(--td-error-color);
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   .editor-grid {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .template-toolbar,
   .template-toolbar__left,
   .pane-header {

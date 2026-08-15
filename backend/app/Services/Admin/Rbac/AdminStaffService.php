@@ -66,6 +66,8 @@ class AdminStaffService
      */
     public function create(array $data, AdminUser $operator, ?string $ipAddress = null): AdminUser
     {
+        $this->ensureAssignableRole((int) $data['role_id'], $operator);
+
         $staff = DB::transaction(function () use ($data): AdminUser {
             $staff = AdminUser::query()->create([
                 'username' => trim((string) $data['username']),
@@ -103,6 +105,18 @@ class AdminStaffService
         ) {
             throw new BusinessException('只有超级管理员可以修改员工账号和邮箱', 40300, 403);
         }
+
+        $targetRoleId = (int) $data['role_id'];
+        $operatorIsSuperAdmin = in_array(AdminPermissions::ALL, $operator->resolvedPermissions(), true);
+        if (
+            ! $operatorIsSuperAdmin
+            && (int) $staff->id === (int) $operator->id
+            && $targetRoleId !== (int) ($staff->role_id ?? 0)
+        ) {
+            throw new BusinessException('不能修改当前登录管理员自己的角色', 40300, 403);
+        }
+
+        $this->ensureAssignableRole($targetRoleId, $operator);
 
         $targetStatus = (int) ($data['status'] ?? $staff->status);
         if ((int) $staff->id === (int) $operator->id && $targetStatus !== 1) {
@@ -276,6 +290,21 @@ class AdminStaffService
         }
 
         return in_array(AdminPermissions::ALL, $role->resolvedPermissions(), true);
+    }
+
+    /**
+     * 超级管理员角色只能由超级管理员指派，否则持 staff.manage 即可一步拿到全部权限。
+     * 普通职能角色仍可由 staff.manage 指派，保持委派管理模型不变。
+     */
+    private function ensureAssignableRole(int $roleId, AdminUser $operator): void
+    {
+        if (in_array(AdminPermissions::ALL, $operator->resolvedPermissions(), true)) {
+            return;
+        }
+
+        if ($this->roleHasAllPermission($roleId)) {
+            throw new BusinessException('只有超级管理员可以指派超级管理员角色', 40300, 403);
+        }
     }
 
     private function ensureSuperAdmin(AdminUser $operator, string $message): void

@@ -36,7 +36,7 @@ class UpdateUserRequest extends AdminFormRequest
                 },
                 Rule::unique('users', 'phone')->ignore($ignoreUserId),
             ],
-            'password' => ['nullable', 'string', 'min:6'],
+            'password' => ['nullable', 'string', 'min:8'],
             'status' => ['nullable', 'in:0,1'],
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
             'admin_note' => ['nullable', 'string', 'max:2000'],

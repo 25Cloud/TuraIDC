@@ -68,7 +68,7 @@
           </template>
           <template #product="{ row }">
             <div class="stack-cell">
-              <strong>{{ fieldValue(row.product_name) }}</strong>
+              <strong>{{ fieldValue(row.product_full_path || row.product_name) }}</strong>
               <span>{{ serviceIdLabel(row.service) }}</span>
             </div>
           </template>
@@ -106,7 +106,7 @@
               :title="fieldValue(row.order_no || row.id)"
               :eyebrow="mobileEyebrow"
               :subtitle="row.type_label || orderTypeLabel(row.type)"
-              :description="fieldValue(row.product_name)"
+              :description="fieldValue(row.product_full_path || row.product_name)"
               highlight-label="订单金额"
               :highlight-value="formatMoney(row.amount)"
               :status-map="ORDER_STATUS_MAP"

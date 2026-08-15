@@ -98,6 +98,31 @@ class AutoRenewService
                             $payableAmount = max((float) ($selectedCycle['amount'] ?? $preview['renew_price'] ?? 0), 0);
                             $service->user->refresh();
 
+                            // 已有用户支付过且未履约完成的续费账单：等待既有账单履约，跳过本次扣款避免重复建单
+                            $reusedPaidOrder = $this->serviceRenewService->findPaidUnfulfilledRenewOrder(
+                                $service->user,
+                                $service,
+                                $resolvedCycle,
+                                0
+                            );
+                            if ($reusedPaidOrder instanceof Order) {
+                                AutomationLog::markExecuted(
+                                    'auto_renew',
+                                    'charge',
+                                    'service',
+                                    (int) $service->id,
+                                    $ruleKey,
+                                    [
+                                        'amount' => (float) ($reusedPaidOrder->invoice?->amount ?? $payableAmount),
+                                        'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
+                                        'reused_order_id' => (int) $reusedPaidOrder->id,
+                                    ]
+                                );
+                                $summary['paid']++;
+
+                                return true;
+                            }
+
                             if ((float) $service->user->balance < $payableAmount || $payableAmount <= 0) {
                                 $summary['pending']++;
                                 // 余额不足不标记 executed，下次调度可以重试

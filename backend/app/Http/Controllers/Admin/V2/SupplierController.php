@@ -23,12 +23,14 @@ use App\Http\Resources\Admin\V2\AdminSupplierRemoteProductsResource;
 use App\Http\Resources\Admin\V2\AdminSupplierSummaryResource;
 use App\Models\Supplier;
 use App\Services\Admin\V2\AdminConfigurationV2QueryService;
+use App\Services\System\OperationLogService;
 use App\Services\Upstream\ProviderRegistry;
 
 class SupplierController extends Controller
 {
     public function __construct(
         private readonly AdminConfigurationV2QueryService $queryService,
+        private readonly OperationLogService $operationLogService,
     ) {}
 
     public function index(ListSuppliersRequest $request)
@@ -82,7 +84,27 @@ class SupplierController extends Controller
 
     public function revealSecret(RevealSupplierSecretRequest $request, Supplier $supplier)
     {
-        return $this->success($this->queryService->supplierSecret($supplier, $request->secretKey()));
+        $result = $this->queryService->supplierSecret($supplier, $request->secretKey());
+
+        // 密钥 reveal 统一审计：记录谁在何时查看了哪个敏感字段。
+        $this->operationLogService->write(
+            userId: (int) ($request->user()?->id ?? 0),
+            userType: 'admin',
+            action: 'secret.reveal',
+            module: 'secret',
+            targetId: (int) $supplier->id,
+            detail: [
+                'secret_type' => 'supplier',
+                'secret_key' => (string) $request->secretKey(),
+                'supplier_id' => (int) $supplier->id,
+                'supplier_name' => (string) ($supplier->name ?? ''),
+                'operator_name' => (string) ($request->user()?->username ?? $request->user()?->name ?? ''),
+                'trace_id' => (string) $request->header('X-Request-Id', ''),
+            ],
+            ipAddress: (string) $request->ip(),
+        );
+
+        return $this->success($result);
     }
 
     public function updateStatus(UpdateSupplierStatusRequest $request, Supplier $supplier)

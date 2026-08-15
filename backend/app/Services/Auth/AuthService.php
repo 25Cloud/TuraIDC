@@ -14,6 +14,7 @@ use App\Services\System\NotificationService;
 use App\Services\System\OperationLogService;
 use App\Services\User\AdminRoleBridgeService;
 use App\Support\AccountIdentifier;
+use App\Support\SensitiveDataSanitizer;
 use App\Support\TextSanitizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,10 @@ use Illuminate\Support\Str;
 class AuthService
 {
     private const ADMIN_LOGIN_AS_CODE_TTL_SECONDS = 120;
+
+    private const ADMIN_LOGIN_MAX_FAILED_ATTEMPTS = 5;
+
+    private const ADMIN_LOGIN_FAILED_WINDOW_SECONDS = 1800;
 
     private const PASSWORD_TIMING_GUARD_HASH = '$2y$10$9i4SuhzLa07GghDFTutcTeB5w1sRFYJhPguXpXxeSElBVdggfyff2';
 
@@ -213,7 +218,7 @@ class AuthService
 
         $user = DB::transaction(function () use ($data, $ip, $email, $storablePhone) {
             $nickname = TextSanitizer::clean((string) ($data['nickname'] ?? ''));
-            $normalizedNickname = $nickname !== '' ? $nickname : null;
+            $normalizedNickname = $nickname !== '' ? $nickname : '';
 
             $user = User::create([
                 'email' => $email,
@@ -589,19 +594,30 @@ class AuthService
             throw new BusinessException('后台管理员未初始化，请先执行数据初始化', 42200, 422);
         }
 
+        $normalizedUsername = mb_strtolower(trim($username));
+        $this->ensureAdminLoginNotLocked($normalizedUsername);
+
         $admin = AdminUser::query()
             ->with('role')
             ->where('username', $username)
             ->first();
 
         // 防止时序攻击：即使用户不存在也执行 Hash::check
-        if (! $admin || ! Hash::check($password, $admin->password ?? '')) {
+        $passwordValid = $admin !== null
+            ? Hash::check($password, (string) $admin->password)
+            : Hash::check($password, self::PASSWORD_TIMING_GUARD_HASH);
+
+        if ($admin === null || ! $passwordValid) {
+            $this->recordAdminLoginFailure($normalizedUsername);
+
             throw new BusinessException('用户名或密码错误', 40100, 401);
         }
 
         if ($admin->status !== 1) {
             throw new BusinessException('账号已被禁用', 40300, 403);
         }
+
+        $this->clearAdminLoginFailures($normalizedUsername);
 
         $admin->update([
             'last_login_at' => now(),
@@ -883,11 +899,11 @@ class AuthService
                 ->whereKey($userId)
                 ->update($payload);
         } catch (\Throwable $exception) {
-            Log::warning('登录后更新用户登录状态失败', [
+            Log::warning('登录后更新用户登录状态失败', SensitiveDataSanitizer::sanitize([
                 'user_id' => $userId,
                 'ip' => $ip,
                 'message' => $exception->getMessage(),
-            ]);
+            ]));
         }
     }
 
@@ -909,12 +925,12 @@ class AuthService
                     $email, $displayName, $loginAt, $ip, $userAgent
                 );
             } catch (\Throwable $exception) {
-                Log::warning('同步发送用户登录邮件提醒失败', [
+                Log::warning('同步发送用户登录邮件提醒失败', SensitiveDataSanitizer::sanitize([
                     'user_id' => $userId,
                     'email' => $email,
                     'ip' => $ip,
                     'message' => $exception->getMessage(),
-                ]);
+                ]));
             }
 
             return;
@@ -930,12 +946,12 @@ class AuthService
                 userAgent: $userAgent,
             );
         } catch (\Throwable $exception) {
-            Log::warning('投递用户登录邮件提醒任务失败', [
+            Log::warning('投递用户登录邮件提醒任务失败', SensitiveDataSanitizer::sanitize([
                 'user_id' => $userId,
                 'email' => $email,
                 'ip' => $ip,
                 'message' => $exception->getMessage(),
-            ]);
+            ]));
         }
     }
 
@@ -959,13 +975,13 @@ class AuthService
                     $userAgent
                 );
             } catch (\Throwable $exception) {
-                Log::warning('同步发送用户登录失败提醒邮件失败', [
+                Log::warning('同步发送用户登录失败提醒邮件失败', SensitiveDataSanitizer::sanitize([
                     'user_id' => $userId,
                     'email' => $email,
                     'account' => $account,
                     'ip' => $ip,
                     'message' => $exception->getMessage(),
-                ]);
+                ]));
             }
 
             return;
@@ -982,13 +998,13 @@ class AuthService
                 userAgent: $userAgent,
             );
         } catch (\Throwable $exception) {
-            Log::warning('投递用户登录失败提醒邮件任务失败', [
+            Log::warning('投递用户登录失败提醒邮件任务失败', SensitiveDataSanitizer::sanitize([
                 'user_id' => $userId,
                 'email' => $email,
                 'account' => $account,
                 'ip' => $ip,
                 'message' => $exception->getMessage(),
-            ]);
+            ]));
         }
     }
 
@@ -1011,13 +1027,13 @@ class AuthService
                 $userAgent
             );
         } catch (\Throwable $exception) {
-            Log::warning('发送用户异地登录提醒失败', [
+            Log::warning('发送用户异地登录提醒失败', SensitiveDataSanitizer::sanitize([
                 'user_id' => $userId,
                 'email' => $email,
                 'ip' => $ip,
                 'previous_ip' => $previousIp,
                 'message' => $exception->getMessage(),
-            ]);
+            ]));
         }
     }
 
@@ -1037,11 +1053,11 @@ class AuthService
                 $userAgent
             );
         } catch (\Throwable $exception) {
-            Log::warning('发送密码变更提醒失败', [
+            Log::warning('发送密码变更提醒失败', SensitiveDataSanitizer::sanitize([
                 'email' => $email,
                 'ip' => $ip,
                 'message' => $exception->getMessage(),
-            ]);
+            ]));
         }
     }
 
@@ -1065,11 +1081,11 @@ class AuthService
                 $userAgent
             );
         } catch (\Throwable $exception) {
-            Log::warning('发送手机号变更提醒失败', [
+            Log::warning('发送手机号变更提醒失败', SensitiveDataSanitizer::sanitize([
                 'email' => $email,
                 'ip' => $ip,
                 'message' => $exception->getMessage(),
-            ]);
+            ]));
         }
     }
 
@@ -1091,12 +1107,12 @@ class AuthService
                 $userAgent
             );
         } catch (\Throwable $exception) {
-            Log::warning('发送邮箱变更提醒失败', [
+            Log::warning('发送邮箱变更提醒失败', SensitiveDataSanitizer::sanitize([
                 'old_email' => $oldEmail,
                 'new_email' => $newEmail,
                 'ip' => $ip,
                 'message' => $exception->getMessage(),
-            ]);
+            ]));
         }
     }
 
@@ -1127,11 +1143,11 @@ class AuthService
                 throw $exception;
             }
 
-            Log::warning('登录失败提醒用户解析失败', [
+            Log::warning('登录失败提醒用户解析失败', SensitiveDataSanitizer::sanitize([
                 'account_type' => $accountType,
                 'account' => $account,
                 'message' => $exception->getMessage(),
-            ]);
+            ]));
 
             return null;
         }
@@ -1178,6 +1194,32 @@ class AuthService
     private function buildAdminLoginAsCacheKey(string $code): string
     {
         return 'auth:admin_login_as:'.hash('sha256', $code);
+    }
+
+    private function ensureAdminLoginNotLocked(string $normalizedUsername): void
+    {
+        $attempts = (int) Cache::store('redis_volatile')->get($this->adminLoginFailureKey($normalizedUsername), 0);
+
+        if ($attempts >= self::ADMIN_LOGIN_MAX_FAILED_ATTEMPTS) {
+            throw new BusinessException('登录失败次数过多，请 30 分钟后再试', 42900, 429);
+        }
+    }
+
+    private function recordAdminLoginFailure(string $normalizedUsername): void
+    {
+        $key = $this->adminLoginFailureKey($normalizedUsername);
+        $attempts = (int) Cache::store('redis_volatile')->increment($key, 1);
+        Cache::store('redis_volatile')->put($key, $attempts, now()->addSeconds(self::ADMIN_LOGIN_FAILED_WINDOW_SECONDS));
+    }
+
+    private function clearAdminLoginFailures(string $normalizedUsername): void
+    {
+        Cache::store('redis_volatile')->forget($this->adminLoginFailureKey($normalizedUsername));
+    }
+
+    private function adminLoginFailureKey(string $normalizedUsername): string
+    {
+        return 'admin-login-fail:account:'.sha1($normalizedUsername);
     }
 
     private function hashLoginAsUserAgent(string $userAgent): string

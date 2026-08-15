@@ -102,7 +102,7 @@ class ServiceTransformService
         $leafGroupName = trim((string) ($leafGroup?->name ?? ''));
         $catalogProductType = $this->resolverService->resolveGroupedOverviewTypeValue($service);
         $catalogProductTypeLabel = ProductType::businessLabelOf($catalogProductType);
-        $consoleMode = $this->resolverService->resolveConsoleMode($service, $provisionData);
+        $consoleMode = $this->resolverService->resolveConsoleMode($service);
         $productConfigOptions = is_array($service->product?->config_options ?? null)
             ? $service->product->config_options
             : [];
@@ -112,6 +112,7 @@ class ServiceTransformService
             'id' => $service->id,
             'name' => $service->name,
             'product_display_name' => $productDisplayName,
+            'product_full_path' => $this->resolveServiceProductPath($service, $productDisplayName),
             'domain' => $displayDomain,
             'custom_hostname' => ServiceHostname::custom($provisionData),
             'has_custom_hostname' => ServiceHostname::hasCustom($provisionData),
@@ -130,6 +131,7 @@ class ServiceTransformService
                 'type' => $service->product?->product_type ?? '',
                 'type_label' => $catalogProductTypeLabel,
                 'catalog_type' => $catalogProductType,
+                'console_template' => $service->product?->console_template,
                 'group_name' => $leafGroupName,
                 'root_group_name' => $rootGroupName,
                 'menu_name' => $catalogProductTypeLabel,
@@ -149,6 +151,7 @@ class ServiceTransformService
             ],
             'remark' => (string) ($provisionData['client_remark'] ?? ''),
             'can_manage' => $this->canManageService($service),
+            'console_template' => $service->product?->console_template,
             'console_mode' => $consoleMode,
             'is_nat_console' => $consoleMode === self::CONSOLE_MODE_NAT,
             'machine_category' => $this->resolveMachineCategory($service, $catalogProductType, $consoleMode),
@@ -183,7 +186,7 @@ class ServiceTransformService
         $canExecuteConsoleActions = $this->canExecuteConsoleActions($service, $serviceStatus, $runtimeState);
         $catalogProductType = $this->resolverService->resolveGroupedOverviewTypeValue($service);
         $catalogProductTypeLabel = ProductType::businessLabelOf($catalogProductType);
-        $consoleMode = $this->resolverService->resolveConsoleMode($service, $provisionData);
+        $consoleMode = $this->resolverService->resolveConsoleMode($service);
         $productPricing = Service::extractSupportedRenewPricing(
             is_array($service->product?->pricing ?? null) ? $service->product->pricing : []
         );
@@ -197,6 +200,7 @@ class ServiceTransformService
             'id' => $service->id,
             'name' => $instanceName !== '' ? $instanceName : ($service->name ?? ''),
             'product_display_name' => $productDisplayName,
+            'product_full_path' => $this->resolveServiceProductPath($service, $productDisplayName),
             'combined_display_name' => $this->resolveCombinedDisplayName($service),
             'domain' => $displayDomain,
             'status' => (int) $service->status,
@@ -217,6 +221,7 @@ class ServiceTransformService
             'has_custom_renew_pricing' => $service->usesCustomRenewPricing($productPricing),
             'has_locked_pricing' => $service->usesCustomRenewPricing($productPricing),
             'renew_pricing_cycles' => $this->transformRenewPricingCycles($renewPricingConfig),
+            'console_template' => $service->product?->console_template,
             'console_mode' => $consoleMode,
             'is_nat_console' => $consoleMode === self::CONSOLE_MODE_NAT,
             'product' => [
@@ -226,6 +231,7 @@ class ServiceTransformService
                 'type' => $service->product?->product_type ?? '',
                 'type_label' => $catalogProductTypeLabel,
                 'catalog_type' => $catalogProductType,
+                'console_template' => $service->product?->console_template,
             ],
             'invoice' => [
                 'id' => (int) ($service->invoice?->id ?? 0),
@@ -282,6 +288,21 @@ class ServiceTransformService
                 'available' => array_keys(self::POWER_ACTIONS),
             ],
         ];
+    }
+
+    /**
+     * 用户端出口脱敏：移除 upstream 中的供应商身份字段，避免泄露上游提供商信息。
+     * 管理端仍使用完整 detail（transformDetail 原样输出）。
+     */
+    public function sanitizeClientDetail(array $detail): array
+    {
+        if (is_array($detail['upstream'] ?? null)) {
+            foreach (['provider_key', 'supplier_id', 'upstream_product_id', 'invoice_id'] as $field) {
+                unset($detail['upstream'][$field]);
+            }
+        }
+
+        return $detail;
     }
 
     private function sanitizeRemoteErrorMessage(string $message): string
@@ -457,6 +478,10 @@ class ServiceTransformService
             return $directConnection;
         }
 
+        // 注意：$directConnection 的来源既可能是历史遗留的 provision_data 明文，也可能是
+        // service_connection_snapshots 归一化快照（secret_json 解密后的值）。快照是新的事实来源，
+        // 必须压过 legacy provision_data 里的 connection_secret 旧值，因此这里保持
+        // “direct 覆盖 decoded”。真正的明文风险改由写入端消除（见 cacheSubmittedPasswordForService）。
         return is_array($decoded) ? array_replace($decoded, $directConnection) : $directConnection;
     }
 
@@ -486,6 +511,11 @@ class ServiceTransformService
         $provisionData['connection_secret'] = $this->writeCachedConnection($connection);
         $provisionData['connection_cached_at'] = now()->format('Y-m-d H:i:s');
         $provisionData['last_password_reset_requested_at'] = now()->format('Y-m-d H:i:s');
+
+        // $provisionData 是 legacy provision_data 与快照投影（includeSecrets 已解密）的合并结果，
+        // 直接回写会把明文密码落进 services.provision_data JSON 列。密码只保留在 connection_secret
+        // （以及快照 secret_json）里，这里显式剔除明文，避免明文旁路加密字段。
+        unset($provisionData['password']);
 
         $service->forceFill(['provision_data' => $provisionData])->save();
         app(ServiceUpstreamBindingWriter::class)
@@ -836,7 +866,7 @@ class ServiceTransformService
     {
         $normalizedType = strtolower(trim($catalogProductType));
 
-        if ($consoleMode === self::CONSOLE_MODE_NAT || in_array($normalizedType, ['nat', 'cloud_desktop', 'cloud_pc', 'cloudpc', 'nat_console'], true)) {
+        if ($consoleMode === self::CONSOLE_MODE_NAT) {
             return ['key' => 'nat', 'label' => 'NAT / 云电脑'];
         }
 
@@ -863,7 +893,7 @@ class ServiceTransformService
             $service->product?->productGroup?->secondProductGroup?->firstProductGroup?->description ?? '',
             $service->product?->productGroup?->secondProductGroup?->name ?? '',
             $service->product?->productGroup?->secondProductGroup?->description ?? '',
-            $service->product?->productGroup?->name ?? '',
+            $service->product?->name ?? '',
             $service->product?->productGroup?->description ?? '',
         ])));
         $keywordMap = [
@@ -1519,10 +1549,34 @@ class ServiceTransformService
         return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
     }
 
+    private function resolveServiceProductPath(Service $service, string $productDisplayName): string
+    {
+        $service->loadMissing([
+            'product.productGroup.secondProductGroup.firstProductGroup',
+        ]);
+        $leafGroup = $service->product?->productGroup;
+        $rootGroup = $this->resolverService->resolveServiceRootGroup($service);
+        $clean = [];
+        foreach ([
+            trim((string) ($rootGroup?->name ?? '')),
+            trim((string) ($leafGroup?->secondProductGroup?->name ?? '')),
+            trim((string) ($leafGroup?->name ?? '')),
+            trim((string) $productDisplayName),
+        ] as $segment) {
+            $segment = trim((string) $segment);
+            if ($segment === '' || in_array($segment, $clean, true)) {
+                continue;
+            }
+            $clean[] = $segment;
+        }
+
+        return $clean !== [] ? implode('/', $clean) : $productDisplayName;
+    }
+
     private function resolveProductDisplayName(Service $service): string
     {
         $orderDisplayName = trim((string) ($service->order?->display_product_name ?? ''));
-        if ($orderDisplayName !== '') {
+        if ($orderDisplayName !== '' && $orderDisplayName !== '未配置规格') {
             return $orderDisplayName;
         }
 

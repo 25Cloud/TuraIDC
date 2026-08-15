@@ -3,11 +3,12 @@
 return [
     'default' => env('QUEUE_CONNECTION', 'database'),
 
-    'TuraIDC_worker_queues' => 'provision,referral,notification,coupon,default',
-    'TuraIDC_worker_timeout' => 1200,
-    'TuraIDC_worker_max_timeout' => 3600,
-    'TuraIDC_worker_tries' => 3,
-    'TuraIDC_worker_drain_lock_ttl' => 3960,
+    'turaidc_business_queues' => env('TURAIDC_BUSINESS_QUEUES', 'provision,referral,notification,coupon,default'),
+    'turaidc_schedule_queue' => env('TURAIDC_SCHEDULE_QUEUE', 'automation'),
+    'turaidc_worker_timeout' => 1200,
+    'turaidc_worker_max_timeout' => 3600,
+    'turaidc_worker_tries' => 3,
+    'turaidc_worker_drain_lock_ttl' => 3960,
 
     'connections' => [
         'sync' => [

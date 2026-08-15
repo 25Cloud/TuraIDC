@@ -510,6 +510,7 @@ class DemoServers implements ProvidesConsoleAccess, ProvidesConsoleCatalog, Prov
         return [
             'id' => $hostId,
             'name' => 'demo-host-'.$hostId,
+            'domainstatus' => 'Active',
             'status' => 'Active',
             'power_state' => 'running',
             'dedicated_ip' => '203.0.113.'.($hostId % 200 + 1),

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Admin\Rbac;
 
 use App\Exceptions\BusinessException;
+use App\Models\AdminUser;
 use App\Models\Role;
 use App\Support\AdminPermissions;
 use Illuminate\Database\Eloquent\Collection;
@@ -52,9 +53,9 @@ class AdminRoleService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function create(array $data): Role
+    public function create(array $data, ?AdminUser $operator = null): Role
     {
-        return DB::transaction(function () use ($data): Role {
+        return DB::transaction(function () use ($data, $operator): Role {
             $name = $this->normalizeName($data['name'] ?? '');
             if (AdminPermissions::isBuiltInRoleName($name)) {
                 throw new BusinessException('系统默认角色编码不可用于自定义角色');
@@ -63,7 +64,7 @@ class AdminRoleService
             $role = Role::query()->create([
                 'name' => $name,
                 'label' => $this->normalizeLabel($data['label'] ?? ''),
-                'permissions' => $this->normalizePermissions((array) ($data['permissions'] ?? [])),
+                'permissions' => $this->normalizePermissions((array) ($data['permissions'] ?? []), $operator),
             ]);
 
             return $role->loadCount('adminUsers');
@@ -73,7 +74,7 @@ class AdminRoleService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function update(Role $role, array $data): Role
+    public function update(Role $role, array $data, ?AdminUser $operator = null): Role
     {
         if ($role->isLocked()) {
             throw new BusinessException('系统默认角色不可直接编辑，请复制后自定义');
@@ -84,7 +85,7 @@ class AdminRoleService
             throw new BusinessException('系统默认角色编码不可用于自定义角色');
         }
 
-        $permissions = $this->normalizePermissions((array) ($data['permissions'] ?? []));
+        $permissions = $this->normalizePermissions((array) ($data['permissions'] ?? []), $operator);
         if ($this->roleHasAllPermission($role) && ! in_array(AdminPermissions::ALL, $permissions, true)) {
             throw new BusinessException('不能移除超级角色的全部权限');
         }
@@ -139,7 +140,7 @@ class AdminRoleService
      * @param  string[]  $permissions
      * @return string[]
      */
-    private function normalizePermissions(array $permissions): array
+    private function normalizePermissions(array $permissions, ?AdminUser $operator = null): array
     {
         $validKeys = $this->permissionCatalogService->validKeys();
         $normalized = array_values(array_unique(array_filter(array_map(
@@ -150,6 +151,15 @@ class AdminRoleService
         $invalid = array_values(array_diff($normalized, $validKeys));
         if ($invalid !== []) {
             throw new BusinessException('包含无效权限码：'.implode(', ', $invalid));
+        }
+
+        // 通配符权限只能由超级管理员授予，否则持 role.manage 即可自造超级角色再挂到自己身上
+        if (
+            $operator !== null
+            && in_array(AdminPermissions::ALL, $normalized, true)
+            && ! in_array(AdminPermissions::ALL, $operator->resolvedPermissions(), true)
+        ) {
+            throw new BusinessException('只有超级管理员可以授予全部权限', 40300, 403);
         }
 
         if (in_array(AdminPermissions::ALL, $normalized, true)) {

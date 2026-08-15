@@ -1,5 +1,5 @@
-import { MessagePlugin } from 'tdesign-vue-next';
-import { reactive } from 'vue';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
+import { reactive, ref } from 'vue';
 
 import clientApi from '@/api/client';
 import type {
@@ -71,6 +71,7 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
 
   const natState = reactive({
     loading: false,
+    submitting: false,
     supported: true,
     message: '',
     error: '',
@@ -78,6 +79,8 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
     protocols: [] as ConsoleSelectOption[],
     list: [] as NatForwardingRecord[],
   });
+  const natVisible = ref(false);
+  const natForm = reactive({ name: '', ext_port: '', int_port: '', protocol: '' });
 
   const logsState = reactive(createEmptyLogsState());
   const financeState = reactive(createEmptyFinanceState());
@@ -129,6 +132,78 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
     }
   }
 
+  function openNatForwardingDialog() {
+    natForm.name = '';
+    natForm.ext_port = '';
+    natForm.int_port = '';
+    natForm.protocol = String(natState.protocols[0]?.value || '');
+    natVisible.value = true;
+  }
+
+  async function submitNatForwarding() {
+    const name = natForm.name.trim();
+    const externalPort = natForm.ext_port.trim();
+    const internalPort = natForm.int_port.trim();
+    const protocol = natForm.protocol.trim();
+
+    if (!name || !internalPort || !protocol) {
+      MessagePlugin.warning('请填写完整的端口转发信息');
+      return;
+    }
+
+    if (!isValidPort(internalPort) || (externalPort !== '' && !isValidPort(externalPort))) {
+      MessagePlugin.warning('端口范围应为 1 到 65535');
+      return;
+    }
+
+    natState.submitting = true;
+    try {
+      const response = await clientApi.createNatForwarding(serviceId.value, {
+        name,
+        ext_port: externalPort || undefined,
+        int_port: internalPort,
+        protocol,
+      });
+      natVisible.value = false;
+      const message = String((response.data as { message?: unknown } | undefined)?.message || '').trim();
+      MessagePlugin.success(message || '端口转发创建成功');
+      await loadNatForwardings();
+    } catch (error: unknown) {
+      MessagePlugin.error(resolveErrorMessage(error, '创建端口转发失败'));
+    } finally {
+      natState.submitting = false;
+    }
+  }
+
+  function deleteNatForwarding(forwarding: NatForwardingRecord) {
+    const forwardingId = Number(forwarding.id || 0);
+    if (!forwardingId || forwarding.can_delete === false) return;
+
+    const dialog = DialogPlugin.confirm({
+      header: '删除端口转发',
+      body: `确认删除端口转发“${String(forwarding.name || forwardingId)}”吗？`,
+      theme: 'warning',
+      confirmBtn: '确认删除',
+      cancelBtn: '取消',
+      onConfirm: async () => {
+        dialog.setConfirmLoading(true);
+        natState.submitting = true;
+        try {
+          const response = await clientApi.deleteNatForwarding(serviceId.value, forwardingId);
+          const message = String((response.data as { message?: unknown } | undefined)?.message || '').trim();
+          MessagePlugin.success(message || '端口转发删除成功');
+          await loadNatForwardings();
+          dialog.hide();
+        } catch (error: unknown) {
+          MessagePlugin.error(resolveErrorMessage(error, '删除端口转发失败'));
+        } finally {
+          natState.submitting = false;
+          dialog.setConfirmLoading(false);
+        }
+      },
+    });
+  }
+
   async function loadLogs() {
     logsState.loading = true;
     try {
@@ -178,13 +253,24 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
   return {
     monitorState,
     natState,
+    natVisible,
+    natForm,
     logsState,
     financeState,
     loadedTabs,
     resetLazyTabs,
     loadMonitor,
     loadNatForwardings,
+    openNatForwardingDialog,
+    submitNatForwarding,
+    deleteNatForwarding,
     loadLogs,
     loadFinanceLogs,
   };
+}
+
+function isValidPort(value: string): boolean {
+  const port = Number(value);
+
+  return Number.isInteger(port) && port >= 1 && port <= 65535;
 }

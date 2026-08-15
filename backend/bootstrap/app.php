@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
@@ -107,6 +108,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (NotFoundHttpException $exception, Request $request) {
             if ($request->is('api/*')) {
                 return ApiResponseBuilder::error(40400, '请求的接口不存在', null, 404);
+            }
+
+            return null;
+        });
+
+        // 限流触发统一返回中文 429 消息，避免 Symfony 默认英文文案。
+        $exceptions->render(function (ThrottleRequestsException $exception, Request $request) {
+            if ($request->is('api/*')) {
+                return ApiResponseBuilder::error(42900, '请求过于频繁，请稍后再试', null, 429);
             }
 
             return null;

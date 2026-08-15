@@ -1263,6 +1263,11 @@ function normalizeMobileModelBaseName(value, cpuText, memoryText) {
       .replace(new RegExp(`[-_\\s]*${escaped.replace(/\\s\\+/g, '\\s*')}\\s*$`, 'i'), '')
   })
 
+  // Fallback: strip any remaining vCPU / memory spec patterns that may not have been
+  // caught above (e.g. when cpuText / memoryText were not separately available).
+  text = text.replace(/[-_\s]+\d+vcpu\s*$/i, '')
+  text = text.replace(/[-_\s]+\d+g(?:ib?)?\s*$/i, '')
+
   return text.replace(/[-_\s]+$/g, '').trim()
 }
 
@@ -1509,60 +1514,141 @@ function setMachineSpecSort(key, direction) {
   machineSpecSort.value = { key, direction }
 }
 
-const desktopProductSpecRows = computed(() => {
+// 机器规格解析缓存：按 product.id 缓存解析结果，命中条件为 product 与选中 detail 的引用未变，
+// 避免每次选中切换对所有 SKU 重复正则解析（仅重算选中商品那一行）
+const desktopSpecRowCache = new Map();
+const mobileSpecCache = new Map();
+
+function resolveDesktopSpecRowBase(product) {
+  const cacheKey = Number(product?.id || 0);
+  if (!cacheKey) return null;
+
+  const detailProduct =
+    selectedProduct.value?.id === product.id ? selectedProduct.value : null;
+  const detailRef = detailProduct || null;
+  const cached = desktopSpecRowCache.get(cacheKey);
+  if (cached && cached.productRef === product && cached.detailRef === detailRef) {
+    return cached.base;
+  }
+
+  const sourceProduct = mergeProductPresentationSource(product, detailProduct);
+  const displayName = resolveProductDisplayName(sourceProduct);
+  const specSource = String(
+    sourceProduct.instance_spec_text ||
+      sourceProduct.instance_spec_alias ||
+      displayName ||
+      "",
+  ).trim();
+  const cpuMemoryDisplay = String(
+    sourceProduct.cpu_memory_display || "",
+  ).trim();
+  const configSpec = resolveMachineSpecSelection(sourceProduct.config_options, {
+    cpu: sourceProduct.purchase_requires?.upstream_default_config?.cpu,
+    memory: sourceProduct.purchase_requires?.upstream_default_config?.memory,
+  });
+  const spec = parseMachineSpecFromText(
+    [
+      cpuMemoryDisplay,
+      specSource,
+      displayName || "",
+      configSpec.cpuRaw,
+      configSpec.memoryRaw,
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
+  const cpuText = String(sourceProduct.cpu_display || "").trim();
+  const memoryText = normalizeMemorySpecText(sourceProduct.memory_display);
+  const resolvedCpuText = cpuText || configSpec.cpuText || spec.cpuText || "";
+  const resolvedMemoryText =
+    memoryText || configSpec.memoryText || spec.memoryText || "";
+  const rowName = buildMachineSpecDisplayName({
+    combinedDisplayName: sourceProduct.combined_display_name,
+    displayName,
+    cpuText: resolvedCpuText,
+    memoryText: resolvedMemoryText,
+  });
+
+  const base = {
+    productId: product.id,
+    name:
+      rowName ||
+      displayName ||
+      buildInstanceSpecName(specSource, spec, product.id),
+    note: normalizeInstanceSpecNote(sourceProduct.instance_spec_note),
+    family: spec.family,
+    cpuText: resolvedCpuText || "-",
+    memoryText: resolvedMemoryText || "-",
+    processor: spec.processor,
+    processorLabel: sourceProduct.cpu_model_name || spec.processor,
+    baseFrequency: sourceProduct.cpu_base_frequency || "",
+    turboFrequency: sourceProduct.cpu_turbo_frequency || "",
+    basePriceText: formatProductListPrice(product) || "-",
+    cpuValue: parseMachineSpecNumber(resolvedCpuText),
+    memoryValue: parseMachineSpecNumber(resolvedMemoryText),
+    basePriceValue: resolveProductPriceNumber(product),
+  };
+  desktopSpecRowCache.set(cacheKey, {
+    productRef: product,
+    detailRef,
+    base,
+  });
+  return base;
+}
+
+function resolveMobileSpecCached(product) {
+  const cacheKey = Number(product?.id || 0);
+  if (!cacheKey) return null;
+
+  const detailProduct =
+    selectedProduct.value?.id === product.id ? selectedProduct.value : null;
+  const detailRef = detailProduct || null;
+  const cached = mobileSpecCache.get(cacheKey);
+  if (cached && cached.productRef === product && cached.detailRef === detailRef) {
+    return cached.value;
+  }
+
+  const value = resolveMobileProductSpec(product);
+  mobileSpecCache.set(cacheKey, {
+    productRef: product,
+    detailRef,
+    value,
+  });
+  return value;
+}
+
+const desktopMachineSpecRows = computed(() => {
   if (!visibleProducts.value.length) {
     return []
   }
 
-  return visibleProducts.value.map((product, index) => {
-    const detailProduct = selectedProduct.value?.id === product.id ? selectedProduct.value : null
-    const sourceProduct = mergeProductPresentationSource(product, detailProduct)
-    const displayName = resolveProductDisplayName(sourceProduct)
-    const specSource = String(sourceProduct.instance_spec_text || sourceProduct.instance_spec_alias || displayName || '').trim()
-    const cpuMemoryDisplay = String(sourceProduct.cpu_memory_display || '').trim()
-    const configSpec = resolveMachineSpecSelection(sourceProduct.config_options, {
-      cpu: sourceProduct.purchase_requires?.upstream_default_config?.cpu,
-      memory: sourceProduct.purchase_requires?.upstream_default_config?.memory,
-    })
-    const spec = parseMachineSpecFromText([cpuMemoryDisplay, specSource, displayName || '', configSpec.cpuRaw, configSpec.memoryRaw].filter(Boolean).join(' '))
-    const cpuText = String(sourceProduct.cpu_display || '').trim()
-    const memoryText = normalizeMemorySpecText(sourceProduct.memory_display)
-    const resolvedCpuText = cpuText || configSpec.cpuText || spec.cpuText || ''
-    const resolvedMemoryText = memoryText || configSpec.memoryText || spec.memoryText || ''
-    const rowName = buildMachineSpecDisplayName({
-      combinedDisplayName: sourceProduct.combined_display_name,
-      displayName,
-      cpuText: resolvedCpuText,
-      memoryText: resolvedMemoryText,
-    })
+  const rows = visibleProducts.value
+    .map((product, index) => {
+      const base = resolveDesktopSpecRowBase(product);
+      if (!base) {
+        return null;
+      }
 
-    return {
-      id: `product-${product.id}`,
-      productId: product.id,
-      active: selectedProductId.value === product.id,
-      name: rowName || displayName || buildInstanceSpecName(specSource, spec, product.id),
-      note: normalizeInstanceSpecNote(sourceProduct.instance_spec_note),
-      family: spec.family || activeChildName.value || activeGroupName.value || '通用型',
-      cpuText: resolvedCpuText || '-',
-      memoryText: resolvedMemoryText || '-',
-      processor: spec.processor,
-      processorLabel: sourceProduct.cpu_model_name || spec.processor,
-      baseFrequency: sourceProduct.cpu_base_frequency || '',
-      turboFrequency: sourceProduct.cpu_turbo_frequency || '',
-      basePriceText: formatProductListPrice(product) || '-',
-      cpuValue: parseMachineSpecNumber(resolvedCpuText),
-      memoryValue: parseMachineSpecNumber(resolvedMemoryText),
-      basePriceValue: resolveProductPriceNumber(product),
-      originalIndex: index,
-    }
-  })
-})
-const desktopMachineSpecRows = computed(() => (
-  desktopProductSpecRows.value.slice().sort((left, right) => {
-    if (!machineSpecSort.value.key || !machineSpecSort.value.direction) {
-      return left.originalIndex - right.originalIndex
-    }
+      return {
+        ...base,
+        id: `product-${product.id}`,
+        active: selectedProductId.value === product.id,
+        // family 的上下文回退（当前分组名）不缓存，取实时值
+        family:
+          base.family ||
+          activeChildName.value ||
+          activeGroupName.value ||
+          "通用型",
+        originalIndex: index,
+      };
+    })
+    .filter(Boolean);
 
+  if (!machineSpecSort.value.key || !machineSpecSort.value.direction) {
+    return rows
+  }
+
+  return rows.slice().sort((left, right) => {
     const leftValue = resolveMachineSpecSortValue(left)
     const rightValue = resolveMachineSpecSortValue(right)
     const leftValid = Number.isFinite(leftValue)
@@ -1584,12 +1670,16 @@ const desktopMachineSpecRows = computed(() => (
     const result = (leftValue - rightValue) * factor
     return result === 0 ? left.originalIndex - right.originalIndex : result
   })
-))
+})
 
-const mobileProductSpecRows = computed(() => visibleProducts.value.map((product, index) => ({
-  ...resolveMobileProductSpec(product),
-  originalIndex: index,
-})))
+const mobileProductSpecRows = computed(() =>
+  visibleProducts.value
+    .map((product, index) => {
+      const base = resolveMobileSpecCached(product);
+      return base ? { ...base, originalIndex: index } : null;
+    })
+    .filter(Boolean),
+)
 const selectedProductSummaryName = computed(() => {
   const productId = Number(selectedProductId.value || selectedProduct.value?.id || 0)
   const listProduct = visibleProducts.value.find((product) => Number(product.id || 0) === productId) || null
@@ -1710,11 +1800,14 @@ const selectedMobileProductGroup = computed(() => {
     group.products.some((row) => row.productId === selectedId)
   )) || mobileProductGroups.value[0] || null
 })
-const selectedMobileProductModelLabel = computed(() => (
-  hasMobileProductGroups.value
-    ? (selectedMobileProductGroup.value?.label || '')
-    : selectedProductDisplayName.value
-))
+const selectedMobileProductModelLabel = computed(() => {
+  if (hasMobileProductGroups.value) {
+    return selectedMobileProductGroup.value?.label || ''
+  }
+  const selectedId = Number(selectedProductId.value || 0)
+  const matched = mobileProductSpecRows.value.find((row) => row.productId === selectedId)
+  return matched?.baseName || selectedProductDisplayName.value
+})
 const selectedMobileCpuLabel = computed(() => (
   selectedMobileProductGroup.value?.cpuText
   || selectedMobileProductGroup.value?.label

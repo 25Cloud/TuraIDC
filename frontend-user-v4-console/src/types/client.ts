@@ -257,6 +257,7 @@ export interface ConsoleServiceDetail extends ServiceInstance {
   combined_display_name?: string;
   domain?: string;
   can_manage?: boolean;
+  console_template?: string;
   console_mode?: string;
   machine_category?: ConsoleMachineCategory | null;
   runtime?: ConsoleRuntimeInfo | null;
@@ -486,6 +487,7 @@ export interface ReferralRewardRecord {
   reward_amount?: number | string;
   reward_rate?: number | string;
   order_amount?: number | string;
+  order_type?: string;
   status?: number | string;
   rewarded_at?: string;
   available_at?: string;

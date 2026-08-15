@@ -103,13 +103,13 @@ function handleAction(option: DropdownOption) {
   border: 1px solid var(--td-component-border);
   border-radius: var(--td-radius-large, 8px);
   background: var(--td-bg-color-container);
-  box-shadow: 0 4px 14px rgba(28, 45, 84, 0.06);
+  box-shadow: 0 4px 14px rgb(28 45 84 / 6%);
 }
 
 .mobile-record-card.is-selected {
   border-color: var(--td-component-border);
   background: var(--td-bg-color-page);
-  box-shadow: 0 4px 14px rgba(28, 45, 84, 0.08);
+  box-shadow: 0 4px 14px rgb(28 45 84 / 8%);
 }
 
 .mobile-record-card__select {

@@ -96,4 +96,5 @@ export interface Result<T = any> {
 
 export interface AxiosRequestConfigRetry extends AxiosRequestConfig {
   retryCount?: number;
+  requestOptions?: RequestOptions;
 }

@@ -190,7 +190,7 @@ onUnmounted(() => {
 
 const goHome = () => {
   closeMobileSidebar();
-  router.push('/dashboard/base');
+  router.push('/admin/dashboard');
 };
 
 const getLogo = () => {

@@ -321,7 +321,7 @@ async function handleMarkAllRead() {
   justify-content: flex-end;
 }
 
-@media (max-width: 72rem) {
+@media (width <= 72rem) {
   .content-list-layout {
     grid-template-columns: 1fr;
   }
@@ -332,7 +332,7 @@ async function handleMarkAllRead() {
   }
 }
 
-@media (max-width: 48rem) {
+@media (width <= 48rem) {
   .hero-card,
   .content-sidebar {
     grid-template-columns: 1fr;

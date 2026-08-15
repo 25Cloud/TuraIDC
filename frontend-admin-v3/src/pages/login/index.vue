@@ -7,13 +7,27 @@
       </div>
       <t-form ref="formRef" :data="formData" :rules="formRules" label-align="top" @submit="handleLogin">
         <t-form-item label="账号" name="account">
-          <t-input v-model="formData.account" placeholder="请输入管理员账号" size="large" clearable />
+          <t-input
+            v-model="formData.account"
+            placeholder="请输入管理员账号"
+            size="large"
+            clearable
+            autocomplete="username"
+          />
         </t-form-item>
         <t-form-item label="密码" name="password">
-          <t-input v-model="formData.password" type="password" placeholder="请输入密码" size="large" clearable />
+          <t-input
+            v-model="formData.password"
+            type="password"
+            placeholder="请输入密码"
+            size="large"
+            clearable
+            autocomplete="current-password"
+          />
         </t-form-item>
         <t-form-item class="login-submit-item">
           <t-button block theme="primary" size="large" type="submit" :loading="loading"> 登录 </t-button>
+          <span class="sr-only" role="alert" aria-live="assertive">{{ errorMessage }}</span>
         </t-form-item>
       </t-form>
       <div class="login-footer">
@@ -34,6 +48,7 @@ const router = useRouter();
 const userStore = useUserStore();
 const formRef = ref<FormInstanceFunctions>();
 const loading = ref(false);
+const errorMessage = ref('');
 const currentYear = computed(() => new Date().getFullYear());
 
 const formData = ref({
@@ -64,7 +79,9 @@ async function handleLogin() {
       router.push('/admin/dashboard');
     }
   } catch (error) {
-    MessagePlugin.error(error instanceof Error ? error.message : '登录失败，请检查账号密码');
+    const msg = error instanceof Error ? error.message : '登录失败，请检查账号密码';
+    errorMessage.value = msg;
+    MessagePlugin.error(msg);
   } finally {
     loading.value = false;
   }
@@ -96,7 +113,7 @@ async function handleLogin() {
     right: -120px;
     width: 520px;
     height: 520px;
-    background: radial-gradient(circle, rgba(22, 93, 255, 0.1), rgba(22, 93, 255, 0) 70%);
+    background: radial-gradient(circle, rgb(22 93 255 / 10%), rgb(22 93 255 / 0%) 70%);
   }
 
   &::after {
@@ -104,7 +121,7 @@ async function handleLogin() {
     left: -100px;
     width: 440px;
     height: 440px;
-    background: radial-gradient(circle, rgba(22, 93, 255, 0.07), rgba(22, 93, 255, 0) 70%);
+    background: radial-gradient(circle, rgb(22 93 255 / 7%), rgb(22 93 255 / 0%) 70%);
   }
 }
 
@@ -115,8 +132,8 @@ async function handleLogin() {
   background: var(--td-bg-color-container, #fff);
   border-radius: var(--td-radius-extraLarge, 12px);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.06),
-    0 1px 4px rgba(0, 0, 0, 0.04);
+    0 8px 32px rgb(0 0 0 / 6%),
+    0 1px 4px rgb(0 0 0 / 4%);
   position: relative;
   z-index: 1;
 }
@@ -156,7 +173,7 @@ async function handleLogin() {
 }
 
 /* responsive: remove decorative glow on small screens */
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .login-container {
     padding: 24px 16px;
 
@@ -169,7 +186,7 @@ async function handleLogin() {
   .login-card {
     padding: 36px 24px 28px;
     border-radius: 10px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 12px rgb(0 0 0 / 5%);
   }
 
   .login-header {

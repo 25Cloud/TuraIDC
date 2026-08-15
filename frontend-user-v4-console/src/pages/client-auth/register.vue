@@ -12,8 +12,9 @@
     <t-form ref="formRef" class="client-auth-form" :data="form" :rules="rules" label-width="0" @submit="handleRegister">
       <t-form-item name="account">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required">手机号 / 邮箱</label>
+          <label class="client-auth-label is-required" for="register-account">手机号 / 邮箱</label>
           <t-input
+            id="register-account"
             v-model="form.account"
             size="large"
             clearable
@@ -25,9 +26,9 @@
 
       <t-form-item name="code">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required">验证码</label>
+          <label class="client-auth-label is-required" for="register-code">验证码</label>
           <div class="client-auth-code-row">
-            <t-input v-model="form.code" size="large" maxlength="6" placeholder="请输入验证码" />
+            <t-input id="register-code" v-model="form.code" size="large" maxlength="6" placeholder="请输入验证码" />
             <t-button
               variant="outline"
               :disabled="countdown > 0"
@@ -42,22 +43,35 @@
 
       <t-form-item name="nickname">
         <div class="client-auth-field">
-          <label class="client-auth-label">用户名</label>
-          <t-input v-model="form.nickname" size="large" maxlength="50" placeholder="选填，最多 50 个字符" />
+          <label class="client-auth-label" for="register-nickname">用户名</label>
+          <t-input
+            id="register-nickname"
+            v-model="form.nickname"
+            size="large"
+            maxlength="50"
+            placeholder="选填，最多 50 个字符"
+          />
         </div>
       </t-form-item>
 
       <t-form-item name="referral_code">
         <div class="client-auth-field">
-          <label class="client-auth-label">推荐码</label>
-          <t-input v-model="form.referral_code" size="large" maxlength="24" placeholder="选填，如有邀请推荐可填写" />
+          <label class="client-auth-label" for="register-referral">推荐码</label>
+          <t-input
+            id="register-referral"
+            v-model="form.referral_code"
+            size="large"
+            maxlength="24"
+            placeholder="选填，如有邀请推荐可填写"
+          />
         </div>
       </t-form-item>
 
       <t-form-item name="password">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required">登录密码</label>
+          <label class="client-auth-label is-required" for="register-password">登录密码</label>
           <t-input
+            id="register-password"
             v-model="form.password"
             size="large"
             :type="showPassword ? 'text' : 'password'"
@@ -67,8 +81,7 @@
           >
             <template #prefix-icon><lock-on-icon /></template>
             <template #suffix-icon>
-              <browse-icon v-if="showPassword" class="client-auth-password-icon" @click="showPassword = false" />
-              <browse-off-icon v-else class="client-auth-password-icon" @click="showPassword = true" />
+              <password-toggle v-model="showPassword" />
             </template>
           </t-input>
         </div>
@@ -76,8 +89,9 @@
 
       <t-form-item name="password_confirmation">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required">确认密码</label>
+          <label class="client-auth-label is-required" for="register-confirm-password">确认密码</label>
           <t-input
+            id="register-confirm-password"
             v-model="form.password_confirmation"
             size="large"
             :type="showConfirmPassword ? 'text' : 'password'"
@@ -88,12 +102,7 @@
           >
             <template #prefix-icon><lock-on-icon /></template>
             <template #suffix-icon>
-              <browse-icon
-                v-if="showConfirmPassword"
-                class="client-auth-password-icon"
-                @click="showConfirmPassword = false"
-              />
-              <browse-off-icon v-else class="client-auth-password-icon" @click="showConfirmPassword = true" />
+              <password-toggle v-model="showConfirmPassword" />
             </template>
           </t-input>
         </div>
@@ -106,7 +115,7 @@
   </auth-shell>
 </template>
 <script setup lang="ts">
-import { BrowseIcon, BrowseOffIcon, LockOnIcon } from 'tdesign-icons-vue-next';
+import { LockOnIcon } from 'tdesign-icons-vue-next';
 import type { FormInstanceFunctions, FormRule, FormValidateMessage, SubmitContext } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onBeforeUnmount, reactive, ref } from 'vue';
@@ -114,9 +123,11 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { clientAuthApi } from '@/api/auth';
 import AuthShell from '@/components/auth/AuthShell.vue';
+import PasswordToggle from '@/components/auth/PasswordToggle.vue';
 import { useGeeTestCaptcha } from '@/composables/useGeeTestCaptcha';
 import { useUserStore } from '@/store';
 import { buildAccountPayload, detectAccountType, normalizeAccountValue } from '@/utils/account';
+import { toUserMessage } from '@/utils/userMessage';
 
 interface RegisterForm {
   account: string;
@@ -238,7 +249,7 @@ async function handleSendCode() {
   } catch (error: unknown) {
     const runtimeError = error as RuntimeHandledError;
     if (!runtimeError.__handled) {
-      MessagePlugin.error(runtimeError.message || '验证码发送失败');
+      MessagePlugin.error(toUserMessage(runtimeError.message, '验证码发送失败'));
     }
   } finally {
     sendingCode.value = false;
@@ -323,7 +334,7 @@ async function runRegister() {
   } catch (error: unknown) {
     const runtimeError = error as RuntimeHandledError;
     if (!runtimeError.__handled) {
-      MessagePlugin.error(runtimeError.message || '注册失败');
+      MessagePlugin.error(toUserMessage(runtimeError.message, '注册失败'));
     }
   } finally {
     loading.value = false;

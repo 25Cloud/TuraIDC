@@ -1,11 +1,12 @@
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { clientAuthApi } from '@/api/auth';
 import { useGeeTestCaptcha } from '@/composables/useGeeTestCaptcha';
 import { useUserStore } from '@/store';
 import type { ClientNotificationPreferences, ClientUserInfo } from '@/types/client';
+import { getErrorMessage } from '@/utils/error';
 import { copyText as copyShared } from '@/utils/format';
 
 type TagTheme = 'default' | 'success' | 'warning' | 'primary' | 'danger';
@@ -20,10 +21,6 @@ interface NotificationItem {
 
 const PROFILE_TABS = new Set<ProfileTab>(['profile', 'security', 'agent', 'notification']);
 
-function getErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
-
 export function useProfile() {
   const router = useRouter();
   const userStore = useUserStore();
@@ -34,12 +31,16 @@ export function useProfile() {
   const phoneDialogVisible = ref(false);
   const emailDialogVisible = ref(false);
   const notificationLoading = ref(false);
-  const phoneForm = reactive({ phone: '', code: '' });
-  const emailForm = reactive({ email: '', code: '' });
+  const phoneForm = reactive({ phone: '', code: '', oldCode: '' });
+  const emailForm = reactive({ email: '', code: '', oldCode: '' });
   const phoneCountdown = ref(0);
   const emailCountdown = ref(0);
+  const phoneOldCountdown = ref(0);
+  const emailOldCountdown = ref(0);
   let phoneTimer: ReturnType<typeof setInterval> | null = null;
   let emailTimer: ReturnType<typeof setInterval> | null = null;
+  let phoneOldTimer: ReturnType<typeof setInterval> | null = null;
+  let emailOldTimer: ReturnType<typeof setInterval> | null = null;
   const profileForm = reactive({
     id: '',
     email: '',
@@ -145,6 +146,18 @@ export function useProfile() {
       emailTimer = null;
     }
   }
+  function clearPhoneOldTimer() {
+    if (phoneOldTimer) {
+      clearInterval(phoneOldTimer);
+      phoneOldTimer = null;
+    }
+  }
+  function clearEmailOldTimer() {
+    if (emailOldTimer) {
+      clearInterval(emailOldTimer);
+      emailOldTimer = null;
+    }
+  }
   function clearResetTimer() {
     if (resetTimer) {
       clearInterval(resetTimer);
@@ -230,17 +243,69 @@ export function useProfile() {
   function openPhoneDialog() {
     phoneForm.phone = '';
     phoneForm.code = '';
+    phoneForm.oldCode = '';
     phoneCountdown.value = 0;
+    phoneOldCountdown.value = 0;
     clearPhoneTimer();
+    clearPhoneOldTimer();
     phoneDialogVisible.value = true;
   }
 
   function openEmailDialog() {
     emailForm.email = '';
     emailForm.code = '';
+    emailForm.oldCode = '';
     emailCountdown.value = 0;
+    emailOldCountdown.value = 0;
     clearEmailTimer();
+    clearEmailOldTimer();
     emailDialogVisible.value = true;
+  }
+
+  async function sendPhoneOldVerificationCode() {
+    if (!profileForm.phone) {
+      MessagePlugin.warning('当前账号未绑定手机号');
+      return;
+    }
+    try {
+      await runWithCaptcha(async (captcha: unknown) => {
+        await clientAuthApi.sendPhoneCode({ phone: profileForm.phone, purpose: 'verify_bound_phone', captcha });
+      });
+      MessagePlugin.success('验证码已发送至原手机号');
+      phoneOldCountdown.value = 60;
+      phoneOldTimer = setInterval(() => {
+        phoneOldCountdown.value -= 1;
+        if (phoneOldCountdown.value <= 0) {
+          clearPhoneOldTimer();
+          phoneOldCountdown.value = 0;
+        }
+      }, 1000);
+    } catch (error: unknown) {
+      MessagePlugin.error(getErrorMessage(error, '验证码发送失败'));
+    }
+  }
+
+  async function sendEmailOldVerificationCode() {
+    if (!profileForm.email) {
+      MessagePlugin.warning('当前账号未绑定邮箱');
+      return;
+    }
+    try {
+      await runWithCaptcha(async (captcha: unknown) => {
+        await clientAuthApi.sendEmailCode({ email: profileForm.email, purpose: 'verify_bound_email', captcha });
+      });
+      MessagePlugin.success('验证码已发送至原邮箱');
+      emailOldCountdown.value = 60;
+      emailOldTimer = setInterval(() => {
+        emailOldCountdown.value -= 1;
+        if (emailOldCountdown.value <= 0) {
+          clearEmailOldTimer();
+          emailOldCountdown.value = 0;
+        }
+      }, 1000);
+    } catch (error: unknown) {
+      MessagePlugin.error(getErrorMessage(error, '验证码发送失败'));
+    }
   }
 
   async function sendPhoneVerificationCode() {
@@ -302,12 +367,21 @@ export function useProfile() {
       MessagePlugin.warning('请输入 6 位验证码');
       return;
     }
+    if (profileForm.phone && (!phoneForm.oldCode || phoneForm.oldCode.length !== 6)) {
+      MessagePlugin.warning('请输入原手机号验证码');
+      return;
+    }
     profileLoading.value = true;
     try {
-      await clientAuthApi.updatePhone({ phone: phoneForm.phone, code: phoneForm.code });
+      await clientAuthApi.updatePhone({
+        phone: phoneForm.phone,
+        code: phoneForm.code,
+        old_code: phoneForm.oldCode || undefined,
+      });
       MessagePlugin.success('手机号修改成功');
       phoneDialogVisible.value = false;
       clearPhoneTimer();
+      clearPhoneOldTimer();
       await loadProfile();
     } catch (error: unknown) {
       MessagePlugin.error(getErrorMessage(error, '手机号修改失败'));
@@ -325,12 +399,21 @@ export function useProfile() {
       MessagePlugin.warning('请输入 6 位验证码');
       return;
     }
+    if (profileForm.email && (!emailForm.oldCode || emailForm.oldCode.length !== 6)) {
+      MessagePlugin.warning('请输入原邮箱验证码');
+      return;
+    }
     profileLoading.value = true;
     try {
-      await clientAuthApi.updateEmail({ email: emailForm.email, code: emailForm.code });
+      await clientAuthApi.updateEmail({
+        email: emailForm.email,
+        code: emailForm.code,
+        old_code: emailForm.oldCode || undefined,
+      });
       MessagePlugin.success('邮箱修改成功');
       emailDialogVisible.value = false;
       clearEmailTimer();
+      clearEmailOldTimer();
       await loadProfile();
     } catch (error: unknown) {
       MessagePlugin.error(getErrorMessage(error, '邮箱修改失败'));
@@ -367,9 +450,18 @@ export function useProfile() {
   }
 
   async function updateProfile() {
+    const trimmed = (profileForm.nickname || '').trim();
+    if (!trimmed) {
+      MessagePlugin.warning('用户名不能为空');
+      return;
+    }
+    if (trimmed.length > 50) {
+      MessagePlugin.warning('用户名最多 50 个字符');
+      return;
+    }
     profileLoading.value = true;
     try {
-      await clientAuthApi.updateProfile({ nickname: profileForm.nickname });
+      await clientAuthApi.updateProfile({ nickname: trimmed });
       await loadProfile();
       MessagePlugin.success('用户名修改成功');
     } catch (error: unknown) {
@@ -435,6 +527,14 @@ export function useProfile() {
     void Promise.all([loadProfile(), loadNotificationPreferences()]);
   });
 
+  onBeforeUnmount(() => {
+    clearPhoneTimer();
+    clearEmailTimer();
+    clearPhoneOldTimer();
+    clearEmailOldTimer();
+    clearResetTimer();
+  });
+
   return {
     router,
     activeTab,
@@ -452,6 +552,8 @@ export function useProfile() {
     emailForm,
     phoneCountdown,
     emailCountdown,
+    phoneOldCountdown,
+    emailOldCountdown,
     notificationList,
     balanceText,
     enabledNotificationCount,
@@ -464,6 +566,8 @@ export function useProfile() {
     submitResetPassword,
     sendPhoneVerificationCode,
     sendEmailVerificationCode,
+    sendPhoneOldVerificationCode,
+    sendEmailOldVerificationCode,
     submitPhoneChange,
     submitEmailChange,
     saveNotificationPreferences,

@@ -14,7 +14,7 @@ class ListVerificationsRequest extends AdminFormRequest
         return [
             'keyword' => ['nullable', 'string', 'max:100'],
             'is_verified' => ['nullable', 'in:0,1'],
-            'verification_status' => ['nullable', 'in:0,1,2,3,5'],
+            'verification_status' => ['nullable', 'in:0,1,2,3,4,5'],
             'page' => ['nullable', 'integer', 'min:1'],
             'page_size' => ['nullable', 'integer', 'min:1', 'max:100'],
             'per_page' => ['prohibited'],

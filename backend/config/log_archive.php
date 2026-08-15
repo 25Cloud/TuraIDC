@@ -12,7 +12,7 @@ return [
 
     // 可执行参数的运行时默认值；管理员后台可覆盖。
     'pt_archiver_binary' => '/usr/bin/pt-archiver',
-    'pt_archiver_defaults_file' => '/etc/TuraIDC/pt-archiver.cnf',
+    'pt_archiver_defaults_file' => '/etc/turaidc/pt-archiver.cnf',
 
     'concurrency' => 2,
     'batch_size' => 1000,
@@ -24,7 +24,6 @@ return [
         'message_logs' => '短信/邮件统一消息日志',
         'automation_logs' => '自动化任务业务日志',
         'schedule_run_logs' => 'Laravel 调度运行日志',
-        'schedule_task_runs' => '平台自动任务运行日志',
         'integration_plugin_runtime_logs' => '插件运行日志',
         'gateway_logs' => '支付网关交互日志',
     ],
@@ -37,5 +36,7 @@ return [
         'invoices',
         'invoice_items',
         'failed_jobs',
+        // 运行台账是人工重跑和审计追溯的长期记录，不得随普通日志在线删除。
+        'schedule_task_runs',
     ],
 ];

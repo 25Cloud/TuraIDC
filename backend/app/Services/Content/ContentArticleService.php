@@ -133,7 +133,10 @@ class ContentArticleService
 
     public function delete(ContentArticle $article): void
     {
-        $article->delete();
+        // 事务内软删：slug 唯一键释放（ReleasesUniqueKeysOnDelete）与 deleted_at 写入原子
+        DB::transaction(function () use ($article): void {
+            $article->delete();
+        });
         $this->bumpPublishedCacheVersion();
     }
 

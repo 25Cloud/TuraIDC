@@ -16,9 +16,12 @@ class UpdateEmailRequest extends ClientFormRequest
 
     public function rules(): array
     {
+        $hasBoundEmail = trim((string) ($this->user()?->email ?? '')) !== '';
+
         return [
             'email' => 'required|email|max:100|unique:users,email,'.$this->user()?->id,
             'code' => 'required|string|size:6',
+            'old_code' => $hasBoundEmail ? 'required|string|size:6' : 'nullable|string|size:6',
         ];
     }
 }

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\User\Concerns;
 
+use App\Constants\FinanceLedgerEventType;
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
+use App\Models\AccountTransaction;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Product;
@@ -16,7 +18,6 @@ use App\Models\Supplier;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Services\ClientServiceConsole\ServiceDetailService;
-use App\Services\Finance\InvoiceService;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\Integrations\Plugins\UpstreamBindingWriter;
@@ -532,6 +533,12 @@ trait HandlesAdminUserServices
             throw_if($upstreamHostId <= 0, new BusinessException('请输入有效的上游实例 ID'));
         }
 
+        $createOrder = (int) ($data['create_order'] ?? 1) === 1;
+        $createInvoice = (int) ($data['create_invoice'] ?? 1) === 1;
+        $deductBalance = (int) ($data['deduct_balance'] ?? 1) === 1;
+
+        throw_if($deductBalance && ! $createInvoice, new BusinessException('从余额扣款需同时开启自动创建账单'));
+
         $now = now();
         $orderStatus = $status === ServiceStatus::PENDING ? OrderStatus::PROCESSING : OrderStatus::COMPLETED;
         $expiresAt = $this->resolveManualServiceExpiresAt(
@@ -561,6 +568,9 @@ trait HandlesAdminUserServices
         $os = trim((string) ($data['os'] ?? ''));
         $port = (int) (($data['port'] ?? 0) ?: 0);
 
+        $balanceTransactionId = 0;
+        $balanceAfter = '';
+
         $service = DB::transaction(function () use (
             $user,
             $product,
@@ -588,40 +598,39 @@ trait HandlesAdminUserServices
             $password,
             $os,
             $port,
-            $autoRenew
+            $autoRenew,
+            $createOrder,
+            $createInvoice,
+            $deductBalance,
+            &$balanceTransactionId,
+            &$balanceAfter
         ) {
-            $order = Order::create([
-                'order_no' => Order::generateOrderNo(),
-                'projection_type' => Order::PROJECTION_TYPE_PROVISIONING,
-                'user_id' => $user->id,
-                'product_id' => $product->id,
-                'product_spec_snapshot' => trim((string) $product->name),
-                'product_type_snapshot' => (string) $product->product_type,
-                'type' => 'new',
-                'amount' => $amount,
-                'discount' => 0,
-                'paid_amount' => $amount,
-                'billing_cycle' => $billingCycle,
-                'config_snapshot' => array_filter([
-                    'hostname' => $domain,
-                    'source_type' => $sourceType,
-                    'admin_manual' => true,
-                    'remark' => $remark,
-                    'trace_id' => $traceId,
-                ], fn ($value) => ! in_array($value, ['', null], true)),
-                'status' => $orderStatus,
-                'paid_at' => $now,
-            ]);
-
-            $invoice = $this->createPaidInvoiceForManualService(
-                $order,
-                $now,
-                $remark,
-                $sourceType,
-                $operatorId,
-                $operatorName,
-                $traceId
-            );
+            $order = null;
+            if ($createOrder) {
+                $order = Order::create([
+                    'order_no' => Order::generateOrderNo(),
+                    'projection_type' => Order::PROJECTION_TYPE_PROVISIONING,
+                    'user_id' => $user->id,
+                    'product_id' => $product->id,
+                    'product_spec_snapshot' => trim((string) $product->name),
+                    'product_type_snapshot' => (string) $product->product_type,
+                    'type' => 'new',
+                    'amount' => $amount,
+                    'discount' => 0,
+                    'paid_amount' => 0,
+                    'billing_cycle' => $billingCycle,
+                    'config_snapshot' => array_filter([
+                        'hostname' => $domain,
+                        'source_type' => $sourceType,
+                        'admin_manual' => true,
+                        'remark' => $remark,
+                        'trace_id' => $traceId,
+                    ], fn ($value) => ! in_array($value, ['', null], true)),
+                    'status' => OrderStatus::PENDING,
+                    'operator' => $operatorName !== '' ? $operatorName : null,
+                    'trace_id' => $traceId !== '' ? $traceId : null,
+                ]);
+            }
 
             $provisionData = array_filter([
                 'source_type' => $sourceType,
@@ -662,7 +671,6 @@ trait HandlesAdminUserServices
             $service = Service::create([
                 'user_id' => $user->id,
                 'product_id' => $product->id,
-                'order_id' => $order->id,
                 'name' => $serviceName,
                 'domain' => $domain,
                 'billing_cycle' => $billingCycle,
@@ -681,9 +689,97 @@ trait HandlesAdminUserServices
                     : ($status === ServiceStatus::SUSPENDED ? '管理员手动暂停' : null),
             ]);
 
-            $order->forceFill([
-                'service_id' => $service->id,
-            ])->save();
+            if ($order instanceof Order) {
+                $order->forceFill([
+                    'service_id' => $service->id,
+                ])->save();
+                $service->forceFill(['order_id' => $order->id])->save();
+            }
+
+            $invoice = null;
+            if ($createInvoice) {
+                $invoice = $order instanceof Order
+                    ? $this->invoiceService->createFromOrder($order)
+                    : $this->invoiceService->createDirect([
+                        'user_id' => $user->id,
+                        'product_id' => $product->id,
+                        'product_spec_snapshot' => trim((string) $product->name),
+                        'product_type_snapshot' => (string) $product->product_type,
+                        'service_id' => $service->id,
+                        'type' => 'normal',
+                        'amount' => $amount,
+                        'billing_cycle' => $billingCycle,
+                        'config_snapshot' => array_filter([
+                            'hostname' => $domain,
+                            'source_type' => $sourceType,
+                            'admin_manual' => true,
+                            'remark' => $remark,
+                            'trace_id' => $traceId,
+                        ], fn ($value) => ! in_array($value, ['', null], true)),
+                        'trace_id' => $traceId !== '' ? $traceId : null,
+                    ]);
+
+                $invoice->forceFill([
+                    'service_id' => $service->id,
+                    'remark' => $remark !== '' ? $remark : null,
+                    'operator' => $operatorName !== '' ? $operatorName : null,
+                ])->save();
+
+                $provisionData['source_invoice_id'] = (int) $invoice->id;
+                $service->forceFill([
+                    'invoice_id' => $invoice->id,
+                    'provision_data' => $provisionData,
+                ])->save();
+            }
+
+            if ($deductBalance && $invoice instanceof Invoice) {
+                $lockedUser = User::query()
+                    ->lockForUpdate()
+                    ->findOrFail($user->id);
+                $currentBalance = $this->accounts()->cashBalance($lockedUser, true);
+
+                throw_if(
+                    $currentBalance < $amount,
+                    new BusinessException('余额不足，无法创建实例')
+                );
+
+                if ($amount > 0) {
+                    $balanceAfter = $this->accounts()->setCashBalance($lockedUser, $currentBalance - $amount);
+                    $balanceTransaction = AccountTransaction::query()->create([
+                        'user_id' => (int) $lockedUser->id,
+                        'account_type' => 'cash',
+                        'event_type' => FinanceLedgerEventType::INVOICE_PAYMENT,
+                        'change_amount' => number_format(-$amount, 2, '.', ''),
+                        'balance_after' => $balanceAfter,
+                        'source_type' => 'invoice',
+                        'source_id' => (int) $invoice->id,
+                        'origin_type' => 'invoice',
+                        'origin_id' => (int) $invoice->id,
+                        'remark' => '支付账单 '.(string) $invoice->invoice_no,
+                        'operator' => $operatorName !== '' ? $operatorName : null,
+                        'trace_id' => $traceId !== '' ? $traceId : null,
+                    ]);
+                    $balanceTransactionId = (int) $balanceTransaction->id;
+                }
+
+                if ($order instanceof Order) {
+                    $order->forceFill([
+                        'status' => $orderStatus,
+                        'paid_amount' => $amount,
+                        'paid_at' => $now,
+                    ])->save();
+                }
+
+                $invoice->forceFill([
+                    'status' => InvoiceStatus::PAID,
+                    'paid_amount' => $amount,
+                    'paid_at' => $now,
+                ])->save();
+            }
+
+            if ($invoice instanceof Invoice) {
+                $this->invoiceService->syncProjection($invoice);
+            }
 
             if ($sourceType === 'upstream' && (int) $product->stock > 0) {
                 $product->decrement('stock');
@@ -692,7 +788,7 @@ trait HandlesAdminUserServices
             return $service;
         });
 
-        $service->loadMissing('order.invoice');
+        $service->loadMissing(['order.invoice', 'invoice']);
         if ($sourceType === 'upstream') {
             $service->loadMissing('product.supplier');
             app(ServiceUpstreamBindingWriter::class)->syncServiceState(
@@ -703,21 +799,28 @@ trait HandlesAdminUserServices
         }
 
         try {
+            $invoice = $service->invoice ?? $service->order?->invoice;
             $this->operationLogService->write(
                 userId: $operatorId > 0 ? $operatorId : null,
                 userType: 'admin',
                 action: 'order.service.manual_create',
-                module: 'order',
-                targetId: (int) ($service->order?->id ?? 0) ?: null,
+                module: $service->order ? 'order' : 'service',
+                targetId: (int) ($service->order?->id ?? $service->id),
                 detail: [
                     'order_no' => $service->order?->order_no ?? '',
-                    'invoice_id' => (int) ($service->order?->invoice?->id ?? 0),
-                    'invoice_no' => $service->order?->invoice?->invoice_no ?? '',
+                    'invoice_id' => (int) ($invoice?->id ?? 0),
+                    'invoice_no' => $invoice?->invoice_no ?? '',
                     'service_id' => (int) $service->id,
                     'source_type' => $sourceType,
                     'service_status' => $status,
                     'billing_cycle' => $billingCycle,
                     'amount' => number_format($amount, 2, '.', ''),
+                    'create_order' => $createOrder,
+                    'create_invoice' => $createInvoice,
+                    'deduct_balance' => $deductBalance,
+                    'payment_method' => $deductBalance ? 'balance' : null,
+                    'balance_transaction_id' => $balanceTransactionId ?: null,
+                    'balance_after' => $balanceAfter !== '' ? $balanceAfter : null,
                     'operator_name' => $operatorName,
                     'trace_id' => $traceId,
                 ],
@@ -1094,34 +1197,6 @@ trait HandlesAdminUserServices
         }
 
         return trim((string) $product->name) !== '' ? (string) $product->name : '未命名服务';
-    }
-
-    private function createPaidInvoiceForManualService(
-        Order $order,
-        Carbon $paidAt,
-        string $remark,
-        string $sourceType,
-        int $operatorId,
-        string $operatorName,
-        string $traceId,
-    ): Invoice {
-        $invoiceAmount = round(max((float) $order->amount - (float) $order->discount, 0), 2);
-
-        $invoice = Invoice::query()->create([
-            'invoice_no' => Invoice::generateInvoiceNoFromOrderNo((string) $order->order_no),
-            'user_id' => $order->user_id,
-            'order_id' => $order->id,
-            'type' => $order->type === 'renew' ? 'renew' : 'normal',
-            'amount' => $invoiceAmount,
-            'paid_amount' => $invoiceAmount,
-            'status' => InvoiceStatus::PAID,
-            'due_date' => $paidAt->copy()->addDays(7)->toDateString(),
-            'paid_at' => $paidAt,
-            'trace_id' => $traceId,
-        ]);
-        app(InvoiceService::class)->syncProjection($invoice);
-
-        return $invoice;
     }
 
     private function buildConnectionSecret(array $connection): ?string

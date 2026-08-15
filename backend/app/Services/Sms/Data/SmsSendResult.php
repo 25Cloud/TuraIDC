@@ -12,6 +12,7 @@ final readonly class SmsSendResult
     public function __construct(
         public string $status,
         public ?string $requestId = null,
+        public ?string $bizId = null,
         public string $templateCode = '',
         public array $templateParams = [],
         public array $raw = [],

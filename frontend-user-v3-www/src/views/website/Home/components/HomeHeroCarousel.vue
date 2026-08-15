@@ -1,5 +1,5 @@
 <template>
-  <section class="hero-section">
+  <section ref="heroSectionRef" class="hero-section">
     <div class="hero-bg" aria-hidden="true">
       <div class="hero-bg__cloud hero-bg__cloud--a"></div>
       <div class="hero-bg__cloud hero-bg__cloud--b"></div>
@@ -10,13 +10,17 @@
           v-if="heroVideoEnabled"
           ref="videoARef"
           class="hero-bg__video"
-          :class="{ 'hero-bg__video--active': activeVideoSlot === 'a' && videoReady }"
+          :class="{
+            'hero-bg__video--active': activeVideoSlot === 'a' && videoReady,
+            'hero-bg__video--instant': instantVideoReveal,
+          }"
           :src="resolvedVideoSrc(videoSlotA)"
+          :poster="resolvedVideoSrc(activePoster)"
           autoplay
           muted
           loop
           playsinline
-          :preload="activeVideoSlot === 'a' ? 'metadata' : 'none'"
+          :preload="videoSlotA && activeVideoSlot === 'a' ? 'auto' : 'none'"
           @loadeddata="onVideoALoadedData"
           @canplay="onVideoACanPlay"
           @loadedmetadata="onVideoMetadata($event, 'a')"
@@ -27,13 +31,17 @@
           v-if="heroVideoEnabled"
           ref="videoBRef"
           class="hero-bg__video"
-          :class="{ 'hero-bg__video--active': activeVideoSlot === 'b' && videoReady }"
+          :class="{
+            'hero-bg__video--active': activeVideoSlot === 'b' && videoReady,
+            'hero-bg__video--instant': instantVideoReveal,
+          }"
           :src="resolvedVideoSrc(videoSlotB)"
+          :poster="resolvedVideoSrc(activePoster)"
           autoplay
           muted
           loop
           playsinline
-          :preload="activeVideoSlot === 'b' ? 'metadata' : 'none'"
+          :preload="videoSlotB && activeVideoSlot === 'b' ? 'auto' : 'none'"
           @loadeddata="onVideoBLoadedData"
           @canplay="onVideoBCanPlay"
           @loadedmetadata="onVideoMetadata($event, 'b')"
@@ -44,7 +52,13 @@
       </div>
     </div>
 
-    <div class="container hero-stage">
+    <div
+      class="container hero-stage"
+      @mouseenter="pauseRotation"
+      @mouseleave="resumeRotation"
+      @touchstart="handleTouchStart"
+      @touchend="handleTouchEnd"
+    >
       <aside class="hero-rail" role="tablist" aria-label="产品入口">
         <button
           v-for="(slide, index) in heroSlides"
@@ -66,12 +80,18 @@
           <span class="hero-rail__label">{{ slide.railTitle }}</span>
           <el-icon class="hero-rail__arrow"><ArrowRight /></el-icon>
         </button>
-
       </aside>
 
-      <div :key="activeSlide.key" class="hero-body">
-        <h1 class="hero-title">{{ activeSlide.title }}</h1>
-        <p class="hero-desc">{{ activeSlide.desc }}</p>
+      <div
+        class="hero-body"
+        :class="{ 'hero-body--instant': instantBodyReveal }"
+      >
+        <h1 :key="activeSlide.key" class="hero-title">
+          {{ activeSlide.title }}
+        </h1>
+        <p :key="`hero-desc-${activeSlide.key}`" class="hero-desc">
+          {{ activeSlide.desc }}
+        </p>
         <div class="hero-actions">
           <button
             type="button"
@@ -138,617 +158,757 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElIcon } from 'element-plus/es/components/icon/index.mjs'
-import { ArrowRight } from '@element-plus/icons-vue'
-import { resolveApiAssetUrl } from '@/utils/apiAssetUrl'
-
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch,
+} from "vue";
+import { useRouter } from "vue-router";
+import { ElIcon } from "element-plus/es/components/icon/index.mjs";
+import { ArrowRight } from "@element-plus/icons-vue";
+import { resolveApiAssetUrl } from "@/utils/apiAssetUrl";
 
 const props = defineProps({
   hero: {
     type: Object,
     default: () => ({}),
   },
-})
+});
 
-
-const router = useRouter()
-const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '')
-const videoARef = ref(null)
-const videoBRef = ref(null)
-const videoReady = ref(false)
-const heroVideoEnabled = ref(false)
-const activeVideoSlot = ref('a')
-const videoSlotA = ref('')
-const videoSlotB = ref('')
-const videoDurations = new Map()
-const activeIndex = ref(0)
-const heroSlides = shallowRef(Object.freeze([]))
-const heroFeatures = shallowRef(Object.freeze([]))
+const router = useRouter();
+const heroSectionRef = ref(null);
+const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "");
+const videoARef = ref(null);
+const videoBRef = ref(null);
+const videoReady = ref(false);
+// 首次显示视频时跳过 0.8s 淡入，避免 LCP 首帧再叠加过渡延迟
+const instantVideoReveal = ref(true);
+// 首帧渲染禁用 hero 标题/描述的入场动画（LCP 文字立即绘制），首帧完成后恢复轮播切换淡入
+const instantBodyReveal = ref(true);
+const heroVideoEnabled = ref(false);
+const activeVideoSlot = ref("a");
+const videoSlotA = ref("");
+const videoSlotB = ref("");
+const videoDurations = new Map();
+const activeIndex = ref(0);
+const heroSlides = shallowRef(Object.freeze([]));
+const heroFeatures = shallowRef(Object.freeze([]));
 
 function resolvedVideoSrc(url) {
-  return resolveApiAssetUrl(url, apiBaseUrl)
+  return resolveApiAssetUrl(url, apiBaseUrl);
 }
-
 
 // 与管理端 HomeHeroService::defaultSlides() 保持一致，后端不可用时仍保留兜底
 function freezeConfigList(list) {
-  return Object.freeze(list.map((item) => Object.freeze({ ...item })))
+  return Object.freeze(list.map((item) => Object.freeze({ ...item })));
 }
 
 function freezeNormalizedList(list, normalizer) {
   return Object.freeze(
     list.map((item, index) => Object.freeze(normalizer(item, index))),
-  )
+  );
 }
 
 const DEFAULT_SLIDES = freezeConfigList([
   {
-    key: 'refresh',
-    railTitle: '官网换新',
-    title: '官网焕新 · 云上新体验',
-    desc: '产品目录、购买支付、自动开通、账单结算与服务支持统一打通；首页即是控制台入口，让资源采购和后续管理始终在同一条链路里完成。',
-    primaryText: '立即体验',
-    primaryPath: '/products',
-    secondaryText: '查看详情',
-    secondaryPath: '/about',
-    shape: 'computer',
-    video: '',
-    ribbon: '',
-    ribbonType: 'new',
+    key: "refresh",
+    railTitle: "官网换新",
+    title: "官网焕新 · 云上新体验",
+    desc: "产品目录、购买支付、自动开通、账单结算与服务支持统一打通；首页即是控制台入口，让资源采购和后续管理始终在同一条链路里完成。",
+    primaryText: "立即体验",
+    primaryPath: "/products",
+    secondaryText: "查看详情",
+    secondaryPath: "/about",
+    shape: "computer",
+    video: "",
+    ribbon: "",
+    ribbonType: "new",
   },
   {
-    key: 'global',
-    railTitle: '全球互联',
-    title: '多地节点 · 全球低延迟互联',
-    desc: '覆盖香港、美国与国内多地优质节点，三网 CN2 / BGP 线路优化回国；跨区域组网、跨境业务秒级响应，适合建站、代理、跨境电商与出海 SaaS。',
-    primaryText: '选购节点',
-    primaryPath: '/products',
-    secondaryText: '查看线路',
-    secondaryPath: '/help',
-    shape: 'connection',
-    video: '',
-    ribbon: '',
-    ribbonType: 'new',
+    key: "global",
+    railTitle: "全球互联",
+    title: "多地节点 · 全球低延迟互联",
+    desc: "覆盖香港、美国与国内多地优质节点，三网 CN2 / BGP 线路优化回国；跨区域组网、跨境业务秒级响应，适合建站、代理、跨境电商与出海 SaaS。",
+    primaryText: "选购节点",
+    primaryPath: "/products",
+    secondaryText: "查看线路",
+    secondaryPath: "/help",
+    shape: "connection",
+    video: "",
+    ribbon: "",
+    ribbonType: "new",
   },
   {
-    key: 'security',
-    railTitle: '安全防护',
-    title: '企业级安全 · 稳定可靠交付',
-    desc: 'T3+ 数据中心 + BGP 多线接入 + 100G 抗 DDoS 防护；实名认证、权限分级与操作留痕保障账户安全，长期业务和合规场景稳定承载。',
-    primaryText: '查看防护',
-    primaryPath: '/products',
-    secondaryText: '在线咨询',
-    secondaryPath: '/help',
-    shape: 'security',
-    video: '',
-    ribbon: '',
-    ribbonType: 'new',
+    key: "security",
+    railTitle: "安全防护",
+    title: "企业级安全 · 稳定可靠交付",
+    desc: "T3+ 数据中心 + BGP 多线接入 + 100G 抗 DDoS 防护；实名认证、权限分级与操作留痕保障账户安全，长期业务和合规场景稳定承载。",
+    primaryText: "查看防护",
+    primaryPath: "/products",
+    secondaryText: "在线咨询",
+    secondaryPath: "/help",
+    shape: "security",
+    video: "",
+    ribbon: "",
+    ribbonType: "new",
   },
   {
-    key: 'value',
-    railTitle: '实惠专区',
-    title: '低门槛套餐 · 直享实惠价',
-    desc: '新客首单 2 核 2G 云服务器 39 元/年起，轻量云电脑按月订阅即开即用；优惠券、折扣券灵活叠加，配置随业务弹性升级，先用后付更省心。',
-    primaryText: '立即抢购',
-    primaryPath: '/products',
-    secondaryText: '查看优惠',
-    secondaryPath: '/products',
-    shape: 'value',
-    video: '',
-    ribbon: '',
-    ribbonType: 'warm',
+    key: "value",
+    railTitle: "实惠专区",
+    title: "低门槛套餐 · 直享实惠价",
+    desc: "新客首单 2 核 2G 云服务器 39 元/年起，轻量云电脑按月订阅即开即用；优惠券、折扣券灵活叠加，配置随业务弹性升级，先用后付更省心。",
+    primaryText: "立即抢购",
+    primaryPath: "/products",
+    secondaryText: "查看优惠",
+    secondaryPath: "/products",
+    shape: "value",
+    video: "",
+    ribbon: "",
+    ribbonType: "warm",
   },
   {
-    key: 'support',
-    railTitle: '企业客服',
-    title: '企业客服 · 一对一专属服务',
-    desc: '7×24 小时工单、官方QQ群与一对一商务对接，覆盖选型、部署、迁移、运维与结算；支持对公结算、批量采购、子账号协作与统一对账。',
-    primaryText: '联系客服',
-    primaryPath: '/help',
-    secondaryText: '企业采购',
-    secondaryPath: '/about',
-    shape: 'support',
-    video: '',
-    ribbon: '',
-    ribbonType: 'new',
+    key: "support",
+    railTitle: "企业客服",
+    title: "企业客服 · 一对一专属服务",
+    desc: "7×24 小时工单、官方QQ群与一对一商务对接，覆盖选型、部署、迁移、运维与结算；支持对公结算、批量采购、子账号协作与统一对账。",
+    primaryText: "联系客服",
+    primaryPath: "/help",
+    secondaryText: "企业采购",
+    secondaryPath: "/about",
+    shape: "support",
+    video: "",
+    ribbon: "",
+    ribbonType: "new",
   },
-])
+]);
 
 const DEFAULT_FEATURES = freezeConfigList([
   {
-    key: 'dynamic',
-    kicker: '产品动态',
-    title: '香港 CN2 精品线路 上线',
-    desc: '三网 CN2 GIA 优化回国，跨境业务低时延稳定承载。',
-    path: '/products',
+    key: "dynamic",
+    kicker: "产品动态",
+    title: "香港 CN2 精品线路 上线",
+    desc: "三网 CN2 GIA 优化回国，跨境业务低时延稳定承载。",
+    path: "/products",
   },
   {
-    key: 'activity',
-    kicker: '活动内容',
-    title: '新客首单 39 元/年',
-    desc: '2H2G 云服务器覆盖建站、代理、轻量业务全场景。',
-    path: '/products',
+    key: "activity",
+    kicker: "活动内容",
+    title: "新客首单 39 元/年",
+    desc: "2H2G 云服务器覆盖建站、代理、轻量业务全场景。",
+    path: "/notices",
   },
   {
-    key: 'enterprise',
-    kicker: '企业专区',
-    title: 'IDC 企业采购通道',
-    desc: '统一账单、多子账号协作与对公结算能力同步上线。',
-    path: '/about',
+    key: "enterprise",
+    kicker: "企业专区",
+    title: "IDC 企业采购通道",
+    desc: "统一账单、多子账号协作与对公结算能力同步上线。",
+    path: "/about",
   },
   {
-    key: 'cloud-desktop',
-    kicker: '轻量产品',
-    title: '西安云电脑 即开即用',
-    desc: '西安节点低延迟，支持远程办公、外包协作、教学实训。',
-    path: '/products',
+    key: "cloud-desktop",
+    kicker: "轻量产品",
+    title: "西安云电脑 即开即用",
+    desc: "西安节点低延迟，支持远程办公、外包协作、教学实训。",
+    path: "/products",
   },
   {
-    key: 'new',
-    kicker: '新开产品',
-    title: '十堰高防独立服务器',
-    desc: '100G 抗 DDoS + BGP 多线，面向长期稳定业务承载。',
-    path: '/products',
+    key: "new",
+    kicker: "新开产品",
+    title: "十堰高防独立服务器",
+    desc: "100G 抗 DDoS + BGP 多线，面向长期稳定业务承载。",
+    path: "/products",
   },
-])
+]);
 
-const ALLOWED_SHAPES = new Set(['computer', 'connection', 'security', 'value', 'support'])
-const ALLOWED_RIBBON_TYPES = new Set(['hot', 'warm', 'new'])
+const ALLOWED_SHAPES = new Set([
+  "computer",
+  "connection",
+  "security",
+  "value",
+  "support",
+]);
+const ALLOWED_RIBBON_TYPES = new Set(["hot", "warm", "new"]);
 
-function pickString(value, fallback = '') {
-  if (value === undefined || value === null) return fallback
-  const text = String(value)
-  return text.trim() === '' ? fallback : text
+function pickString(value, fallback = "") {
+  if (value === undefined || value === null) return fallback;
+  const text = String(value);
+  return text.trim() === "" ? fallback : text;
 }
 
 function normalizeSlide(raw, index = 0) {
-  const source = raw && typeof raw === 'object' ? raw : {}
-  const shape = pickString(source.shape, 'computer')
-  const ribbonType = pickString(source.ribbon_type ?? source.ribbonType, 'new')
+  const source = raw && typeof raw === "object" ? raw : {};
+  const shape = pickString(source.shape, "computer");
+  const ribbonType = pickString(source.ribbon_type ?? source.ribbonType, "new");
 
   return {
     key: pickString(source.key, `slide-${index}`),
-    railTitle: pickString(source.rail_title ?? source.railTitle, '未命名'),
-    title: pickString(source.title, ''),
-    desc: pickString(source.desc, ''),
-    primaryText: pickString(source.primary_text ?? source.primaryText, '了解更多'),
-    primaryPath: pickString(source.primary_path ?? source.primaryPath, '/products'),
-    secondaryText: pickString(source.secondary_text ?? source.secondaryText, '查看详情'),
-    secondaryPath: pickString(source.secondary_path ?? source.secondaryPath, '/about'),
-    shape: ALLOWED_SHAPES.has(shape) ? shape : 'computer',
-    video: pickString(source.video, ''),
-    ribbon: pickString(source.ribbon, ''),
-    ribbonType: ALLOWED_RIBBON_TYPES.has(ribbonType) ? ribbonType : 'new',
-  }
+    railTitle: pickString(source.rail_title ?? source.railTitle, "未命名"),
+    title: pickString(source.title, ""),
+    desc: pickString(source.desc, ""),
+    primaryText: pickString(
+      source.primary_text ?? source.primaryText,
+      "了解更多",
+    ),
+    primaryPath: pickString(
+      source.primary_path ?? source.primaryPath,
+      "/products",
+    ),
+    secondaryText: pickString(
+      source.secondary_text ?? source.secondaryText,
+      "查看详情",
+    ),
+    secondaryPath: pickString(
+      source.secondary_path ?? source.secondaryPath,
+      "/about",
+    ),
+    shape: ALLOWED_SHAPES.has(shape) ? shape : "computer",
+    video: pickString(source.video, ""),
+    // 视频首帧静态封面：管理端可配置，前端据此为 <video> 补 poster，
+    // 使 LCP 锚定在快速绘制的占位图上，而非等视频下载+解码。
+    poster: pickString(source.video_poster ?? source.videoPoster ?? source.poster, ""),
+    ribbon: pickString(source.ribbon, ""),
+    ribbonType: ALLOWED_RIBBON_TYPES.has(ribbonType) ? ribbonType : "new",
+  };
 }
 
 function normalizeFeature(raw, index = 0) {
-  const source = raw && typeof raw === 'object' ? raw : {}
+  const source = raw && typeof raw === "object" ? raw : {};
   return {
     key: pickString(source.key, `feature-${index}`),
-    kicker: pickString(source.kicker, ''),
-    title: pickString(source.title, ''),
-    desc: pickString(source.desc, ''),
-    path: pickString(source.path, ''),
-  }
+    kicker: pickString(source.kicker, ""),
+    title: pickString(source.title, ""),
+    desc: pickString(source.desc, ""),
+    path: pickString(source.path, ""),
+  };
 }
 
-const EMPTY_SLIDES = Object.freeze([])
-const EMPTY_FEATURES = Object.freeze([])
+const EMPTY_SLIDES = Object.freeze([]);
+const EMPTY_FEATURES = Object.freeze([]);
 const EMPTY_HERO = Object.freeze({
   slides: EMPTY_SLIDES,
   features: EMPTY_FEATURES,
-})
+});
 
-const hero = computed(() => (props.hero && typeof props.hero === 'object' ? props.hero : EMPTY_HERO))
+const hero = computed(() =>
+  props.hero && typeof props.hero === "object" ? props.hero : EMPTY_HERO,
+);
 
 function hasHeroField(data, key) {
-  return Boolean(data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, key))
+  return Boolean(
+    data &&
+    typeof data === "object" &&
+    Object.prototype.hasOwnProperty.call(data, key),
+  );
 }
 
 function normalizeHeroSlides(data) {
-  const slides = Array.isArray(data?.slides) ? data.slides : []
-  if (hasHeroField(data, 'slides')) {
-    return freezeNormalizedList(slides, normalizeSlide)
+  const slides = Array.isArray(data?.slides) ? data.slides : [];
+  if (hasHeroField(data, "slides")) {
+    return freezeNormalizedList(slides, normalizeSlide);
   }
 
-  return freezeNormalizedList(DEFAULT_SLIDES, normalizeSlide)
+  return freezeNormalizedList(DEFAULT_SLIDES, normalizeSlide);
 }
 
 function normalizeHeroFeatures(data) {
-  const features = Array.isArray(data?.features) ? data.features : []
-  if (hasHeroField(data, 'features')) {
-    return freezeNormalizedList(features, normalizeFeature)
+  const features = Array.isArray(data?.features) ? data.features : [];
+  if (hasHeroField(data, "features")) {
+    return freezeNormalizedList(features, normalizeFeature);
   }
 
-  return freezeNormalizedList(DEFAULT_FEATURES, normalizeFeature)
+  return freezeNormalizedList(DEFAULT_FEATURES, normalizeFeature);
 }
 
+// hero 是 computed，父组件传入新 hero 对象时引用即变化，无需 deep 遍历
 watch(
   hero,
   (value) => {
-    const nextSlides = normalizeHeroSlides(value)
-    const nextFeatures = normalizeHeroFeatures(value)
+    const nextSlides = normalizeHeroSlides(value);
+    const nextFeatures = normalizeHeroFeatures(value);
 
-    heroSlides.value = nextSlides
-    heroFeatures.value = nextFeatures
+    heroSlides.value = nextSlides;
+    heroFeatures.value = nextFeatures;
 
     if (activeIndex.value >= nextSlides.length) {
-      activeIndex.value = 0
+      activeIndex.value = 0;
     }
   },
-  { immediate: true, deep: true },
-)
+  { immediate: true },
+);
 
-const activeSlide = computed(() => heroSlides.value[activeIndex.value] || heroSlides.value[0] || DEFAULT_SLIDES[0])
+const activeSlide = computed(
+  () =>
+    heroSlides.value[activeIndex.value] ||
+    heroSlides.value[0] ||
+    DEFAULT_SLIDES[0],
+);
 
-const MIN_ROTATION_INTERVAL = 6000
-const MAX_ROTATION_INTERVAL = 15000
-const PLAYBACK_RETRY_DELAY = 400
-const MAX_PLAYBACK_RETRIES = 3
-const HERO_VIDEO_IDLE_TIMEOUT = 1200
-const HERO_VIDEO_MOBILE_WIDTH = 768
-const SLOW_CONNECTION_TYPES = new Set(['slow-2g', '2g', '3g'])
-let rotationTimer = null
-let playbackRetryTimer = null
-let videoEnableTimer = null
-let videoEnableIdleId = null
-let playbackRetryCount = 0
-let isUnmounting = false
+// 当前 slide 的视频首帧封面：为空时不设 poster，由 video 默认行为兜底
+const activePoster = computed(() => String(activeSlide.value?.poster || ""));
+
+const MIN_ROTATION_INTERVAL = 6000;
+const MAX_ROTATION_INTERVAL = 15000;
+const PLAYBACK_RETRY_DELAY = 400;
+const MAX_PLAYBACK_RETRIES = 3;
+const HERO_VIDEO_IDLE_TIMEOUT = 1200;
+const HERO_VIDEO_MOBILE_WIDTH = 768;
+const SLOW_CONNECTION_TYPES = new Set(["slow-2g", "2g", "3g"]);
+const SWIPE_THRESHOLD = 50;
+let rotationTimer = null;
+let heroVisibilityObserver = null;
+let playbackRetryTimer = null;
+let videoEnableTimer = null;
+let videoEnableIdleId = null;
+let playbackRetryCount = 0;
+let isUnmounting = false;
+let isHovering = false;
+let touchStartX = 0;
 
 function getNavigatorConnection() {
-  if (typeof navigator === 'undefined') return null
-  return navigator.connection || navigator.mozConnection || navigator.webkitConnection || null
+  if (typeof navigator === "undefined") return null;
+  return (
+    navigator.connection ||
+    navigator.mozConnection ||
+    navigator.webkitConnection ||
+    null
+  );
 }
 
 function clearVideoSlots() {
-  videoSlotA.value = ''
-  videoSlotB.value = ''
-  activeVideoSlot.value = 'a'
-  videoReady.value = false
+  videoSlotA.value = "";
+  videoSlotB.value = "";
+  activeVideoSlot.value = "a";
+  videoReady.value = false;
 }
 
 function shouldEnableHeroVideo() {
-  if (typeof window === 'undefined') return false
-  if (window.matchMedia?.(`(max-width: ${HERO_VIDEO_MOBILE_WIDTH}px)`).matches) {
-    return false
+  if (typeof window === "undefined") return false;
+  if (
+    window.matchMedia?.(`(max-width: ${HERO_VIDEO_MOBILE_WIDTH}px)`).matches
+  ) {
+    return false;
   }
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-    return false
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+    return false;
   }
 
-  const connection = getNavigatorConnection()
+  const connection = getNavigatorConnection();
   if (connection?.saveData) {
-    return false
+    return false;
   }
 
-  return !SLOW_CONNECTION_TYPES.has(connection?.effectiveType)
+  return !SLOW_CONNECTION_TYPES.has(connection?.effectiveType);
 }
 
 function clearVideoEnableSchedule() {
   if (videoEnableTimer) {
-    window.clearTimeout(videoEnableTimer)
-    videoEnableTimer = null
+    window.clearTimeout(videoEnableTimer);
+    videoEnableTimer = null;
   }
 
-  if (videoEnableIdleId !== null && typeof window !== 'undefined' && typeof window.cancelIdleCallback === 'function') {
-    window.cancelIdleCallback(videoEnableIdleId)
-    videoEnableIdleId = null
+  if (
+    videoEnableIdleId !== null &&
+    typeof window !== "undefined" &&
+    typeof window.cancelIdleCallback === "function"
+  ) {
+    window.cancelIdleCallback(videoEnableIdleId);
+    videoEnableIdleId = null;
   }
 }
 
 function disableHeroVideo() {
-  clearVideoEnableSchedule()
-  heroVideoEnabled.value = false
-  resetPlaybackRetry()
-  stopPlaybackRetry()
-  pauseAllVideos()
-  clearVideoSlots()
+  clearVideoEnableSchedule();
+  heroVideoEnabled.value = false;
+  resetPlaybackRetry();
+  stopPlaybackRetry();
+  pauseAllVideos();
+  clearVideoSlots();
 }
 
 function enableHeroVideo() {
   if (!shouldEnableHeroVideo()) {
-    disableHeroVideo()
-    return
+    disableHeroVideo();
+    return;
   }
 
-  heroVideoEnabled.value = true
-  switchToSlide(activeIndex.value)
+  heroVideoEnabled.value = true;
+  switchToSlide(activeIndex.value);
 }
 
 function scheduleHeroVideoEnable() {
   if (!shouldEnableHeroVideo()) {
-    disableHeroVideo()
-    return
+    disableHeroVideo();
+    return;
   }
 
-  clearVideoEnableSchedule()
+  clearVideoEnableSchedule();
 
   const activate = () => {
-    videoEnableTimer = null
-    videoEnableIdleId = null
+    videoEnableTimer = null;
+    videoEnableIdleId = null;
     if (!isUnmounting) {
-      enableHeroVideo()
+      enableHeroVideo();
     }
+  };
+
+  if (
+    typeof window !== "undefined" &&
+    typeof window.requestIdleCallback === "function"
+  ) {
+    videoEnableIdleId = window.requestIdleCallback(activate, {
+      timeout: HERO_VIDEO_IDLE_TIMEOUT,
+    });
+    return;
   }
 
-  if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
-    videoEnableIdleId = window.requestIdleCallback(activate, { timeout: HERO_VIDEO_IDLE_TIMEOUT })
-    return
-  }
-
-  videoEnableTimer = window.setTimeout(activate, HERO_VIDEO_IDLE_TIMEOUT)
+  videoEnableTimer = window.setTimeout(activate, HERO_VIDEO_IDLE_TIMEOUT);
 }
 
 function getRotationInterval() {
-  const src = activeSlide.value.video
-  if (!src) return MIN_ROTATION_INTERVAL
-  const duration = videoDurations.get(src)
+  const src = activeSlide.value.video;
+  if (!src) return MIN_ROTATION_INTERVAL;
+  const duration = videoDurations.get(src);
   if (duration && duration > 0) {
-    return Math.min(MAX_ROTATION_INTERVAL, Math.max(MIN_ROTATION_INTERVAL, duration * 1000))
+    return Math.min(
+      MAX_ROTATION_INTERVAL,
+      Math.max(MIN_ROTATION_INTERVAL, duration * 1000),
+    );
   }
-  return MIN_ROTATION_INTERVAL
+  return MIN_ROTATION_INTERVAL;
 }
 
 function stopRotation() {
   if (rotationTimer) {
-    clearTimeout(rotationTimer)
-    rotationTimer = null
+    clearTimeout(rotationTimer);
+    rotationTimer = null;
   }
 }
 
 function stopPlaybackRetry() {
   if (playbackRetryTimer) {
-    clearTimeout(playbackRetryTimer)
-    playbackRetryTimer = null
+    clearTimeout(playbackRetryTimer);
+    playbackRetryTimer = null;
   }
 }
 
 function resetPlaybackRetry() {
-  playbackRetryCount = 0
-  stopPlaybackRetry()
+  playbackRetryCount = 0;
+  stopPlaybackRetry();
 }
 
 function isDocumentVisible() {
-  return typeof document === 'undefined' || document.visibilityState !== 'hidden'
+  return (
+    typeof document === "undefined" || document.visibilityState !== "hidden"
+  );
 }
 
 function getVideoElement(slot = activeVideoSlot.value) {
-  return slot === 'a' ? videoARef.value : videoBRef.value
+  return slot === "a" ? videoARef.value : videoBRef.value;
 }
 
 function prepareVideoElement(videoEl) {
-  if (!videoEl) return
-  videoEl.muted = true
-  videoEl.loop = true
-  videoEl.playsInline = true
-  videoEl.setAttribute('playsinline', '')
+  if (!videoEl) return;
+  videoEl.muted = true;
+  videoEl.loop = true;
+  videoEl.playsInline = true;
+  videoEl.setAttribute("playsinline", "");
 }
 
 function pauseVideo(videoEl) {
   if (videoEl && !videoEl.paused) {
-    videoEl.pause()
+    videoEl.pause();
   }
 }
 
 function pauseInactiveVideo() {
-  const inactiveSlot = activeVideoSlot.value === 'a' ? 'b' : 'a'
-  pauseVideo(getVideoElement(inactiveSlot))
+  const inactiveSlot = activeVideoSlot.value === "a" ? "b" : "a";
+  pauseVideo(getVideoElement(inactiveSlot));
 }
 
 function pauseAllVideos() {
-  pauseVideo(videoARef.value)
-  pauseVideo(videoBRef.value)
+  pauseVideo(videoARef.value);
+  pauseVideo(videoBRef.value);
 }
 
 function ensureActiveVideoPlayback() {
-  if (isUnmounting) return
-  if (!isDocumentVisible()) return
+  if (isUnmounting) return;
+  if (!isDocumentVisible()) return;
 
-  const videoEl = getVideoElement()
-  if (!videoEl) return
+  const videoEl = getVideoElement();
+  if (!videoEl) return;
 
-  prepareVideoElement(videoEl)
-  pauseInactiveVideo()
+  prepareVideoElement(videoEl);
+  pauseInactiveVideo();
 
-  if (!videoEl.currentSrc && !videoEl.src) return
+  if (!videoEl.currentSrc && !videoEl.src) return;
 
   if (videoEl.readyState === 0) {
-    videoEl.load?.()
-    return
+    videoEl.load?.();
+    return;
   }
 
-  const playResult = videoEl.play?.()
-  if (playResult && typeof playResult.catch === 'function') {
+  const playResult = videoEl.play?.();
+  if (playResult && typeof playResult.catch === "function") {
     playResult.catch(() => {
-      if (!isDocumentVisible() || playbackRetryCount >= MAX_PLAYBACK_RETRIES) return
-      playbackRetryCount += 1
-      queueActiveVideoPlayback(PLAYBACK_RETRY_DELAY)
-    })
+      if (!isDocumentVisible() || playbackRetryCount >= MAX_PLAYBACK_RETRIES)
+        return;
+      playbackRetryCount += 1;
+      queueActiveVideoPlayback(PLAYBACK_RETRY_DELAY);
+    });
   }
 }
 
 function queueActiveVideoPlayback(delay = 0) {
-  if (isUnmounting) return
-  stopPlaybackRetry()
+  if (isUnmounting) return;
+  stopPlaybackRetry();
 
   const run = () => {
-    playbackRetryTimer = null
+    playbackRetryTimer = null;
     nextTick(() => {
-      ensureActiveVideoPlayback()
-    })
-  }
+      ensureActiveVideoPlayback();
+    });
+  };
 
   if (delay > 0) {
-    playbackRetryTimer = setTimeout(run, delay)
+    playbackRetryTimer = setTimeout(run, delay);
   } else {
-    run()
+    run();
   }
 }
 
 function startRotation() {
-  stopRotation()
+  stopRotation();
+  if (isHovering) return;
   rotationTimer = setTimeout(() => {
-    const count = heroSlides.value.length || 1
-    const nextIndex = (activeIndex.value + 1) % count
-    switchToSlide(nextIndex, true)
-  }, getRotationInterval())
+    const count = heroSlides.value.length || 1;
+    const nextIndex = (activeIndex.value + 1) % count;
+    switchToSlide(nextIndex, true);
+  }, getRotationInterval());
+}
+
+function pauseRotation() {
+  isHovering = true;
+  stopRotation();
+}
+
+function resumeRotation() {
+  isHovering = false;
+  startRotation();
+}
+
+function handleTouchStart(event) {
+  if (!event.touches || event.touches.length !== 1) return;
+  touchStartX = event.touches[0].clientX;
+}
+
+function handleTouchEnd(event) {
+  if (!event.changedTouches || event.changedTouches.length !== 1) return;
+  const deltaX = event.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
+  stopRotation();
+  const count = heroSlides.value.length || 1;
+  if (deltaX < 0) {
+    activeIndex.value = (activeIndex.value + 1) % count;
+  } else {
+    activeIndex.value = (activeIndex.value - 1 + count) % count;
+  }
+  switchToSlide(activeIndex.value);
+  startRotation();
 }
 
 function switchToSlide(index, auto = false) {
-  if (index === activeIndex.value && auto) return
-  activeIndex.value = index
-  const slide = heroSlides.value[index]
-  const videoSrc = slide?.video || ''
+  if (index === activeIndex.value && auto) return;
+  activeIndex.value = index;
+  const slide = heroSlides.value[index];
+  const videoSrc = slide?.video || "";
   if (!heroVideoEnabled.value) {
-    clearVideoSlots()
-    pauseAllVideos()
-    if (auto) startRotation()
-    return
+    clearVideoSlots();
+    pauseAllVideos();
+    if (auto) startRotation();
+    return;
   }
 
   if (!videoSrc) {
-    resetPlaybackRetry()
-    clearVideoSlots()
-    pauseAllVideos()
-    if (auto) startRotation()
-    return
+    resetPlaybackRetry();
+    clearVideoSlots();
+    pauseAllVideos();
+    if (auto) startRotation();
+    return;
   }
 
   // 优化：检查当前活跃 slot 是否已加载该视频，避免重复加载
-  const currentSlotSrc = activeVideoSlot.value === 'a' ? videoSlotA.value : videoSlotB.value
+  const currentSlotSrc =
+    activeVideoSlot.value === "a" ? videoSlotA.value : videoSlotB.value;
   if (currentSlotSrc === videoSrc) {
     // 当前 slot 已是目标视频，直接显示
-    videoReady.value = true
-    queueActiveVideoPlayback()
-    if (auto) startRotation()
-    return
+    videoReady.value = true;
+    queueActiveVideoPlayback();
+    if (auto) startRotation();
+    return;
   }
 
   // 优化：检查另一个 slot 是否已缓存该视频
-  const otherSlot = activeVideoSlot.value === 'a' ? 'b' : 'a'
-  const otherSlotSrc = otherSlot === 'a' ? videoSlotA.value : videoSlotB.value
+  const otherSlot = activeVideoSlot.value === "a" ? "b" : "a";
+  const otherSlotSrc = otherSlot === "a" ? videoSlotA.value : videoSlotB.value;
   if (otherSlotSrc === videoSrc) {
     // 另一个 slot 已缓存该视频，直接切换
-    resetPlaybackRetry()
-    activeVideoSlot.value = otherSlot
-    videoReady.value = true
-    queueActiveVideoPlayback()
-    if (auto) startRotation()
-    return
+    resetPlaybackRetry();
+    activeVideoSlot.value = otherSlot;
+    videoReady.value = true;
+    queueActiveVideoPlayback();
+    if (auto) startRotation();
+    return;
   }
 
   // 需要加载新视频，使用非活跃 slot
-  const nextSlot = otherSlot
-  if (nextSlot === 'a') {
-    videoSlotA.value = videoSrc
+  const nextSlot = otherSlot;
+  if (nextSlot === "a") {
+    videoSlotA.value = videoSrc;
   } else {
-    videoSlotB.value = videoSrc
+    videoSlotB.value = videoSrc;
   }
-  resetPlaybackRetry()
-  videoReady.value = false
-  activeVideoSlot.value = nextSlot
-  queueActiveVideoPlayback()
-  if (auto) startRotation()
+  resetPlaybackRetry();
+  videoReady.value = false;
+  activeVideoSlot.value = nextSlot;
+  queueActiveVideoPlayback();
+  if (auto) startRotation();
 }
 
 function activateSlide(index) {
-  stopRotation()
-  switchToSlide(index)
-  startRotation()
+  stopRotation();
+  switchToSlide(index);
+  startRotation();
 }
 
 function onVideoACanPlay() {
-  markVideoReady('a')
+  markVideoReady("a");
 }
 
 function onVideoBCanPlay() {
-  markVideoReady('b')
+  markVideoReady("b");
 }
 
 function onVideoALoadedData() {
-  markVideoReady('a')
+  markVideoReady("a");
 }
 
 function onVideoBLoadedData() {
-  markVideoReady('b')
+  markVideoReady("b");
 }
 
 function markVideoReady(slot) {
-  if (activeVideoSlot.value !== slot) return
-  videoReady.value = true
-  queueActiveVideoPlayback()
+  if (activeVideoSlot.value !== slot) return;
+  videoReady.value = true;
+  // 首次渲染帧保留 --instant（无过渡立即显示），渲染完成后关闭，轮播切换恢复淡入
+  if (instantVideoReveal.value) {
+    nextTick(() => {
+      instantVideoReveal.value = false;
+    });
+  }
+  queueActiveVideoPlayback();
 }
 
 function onVideoPlaying(slot) {
   if (activeVideoSlot.value === slot) {
-    resetPlaybackRetry()
+    resetPlaybackRetry();
   }
 }
 
 function onVideoPaused(slot) {
   if (!isUnmounting && activeVideoSlot.value === slot && isDocumentVisible()) {
-    queueActiveVideoPlayback(PLAYBACK_RETRY_DELAY)
+    queueActiveVideoPlayback(PLAYBACK_RETRY_DELAY);
   }
 }
 
 function onVideoMetadata(event, slot) {
-  const videoEl = event.target
-  const slotSrc = slot === 'a' ? videoSlotA.value : videoSlotB.value
-  const src = slotSrc || (videoEl?.src || '').split('#')[0]
-  const duration = videoEl?.duration
+  const videoEl = event.target;
+  const slotSrc = slot === "a" ? videoSlotA.value : videoSlotB.value;
+  const src = slotSrc || (videoEl?.src || "").split("#")[0];
+  const duration = videoEl?.duration;
   if (src && duration && Number.isFinite(duration) && duration > 0) {
-    videoDurations.set(src, duration)
+    videoDurations.set(src, duration);
   }
 }
 
 watch(activeSlide, (slide) => {
-  if (!heroVideoEnabled.value) return
-  if (!slide?.video) return
-  const currentSlotSrc = activeVideoSlot.value === 'a' ? videoSlotA.value : videoSlotB.value
+  if (!heroVideoEnabled.value) return;
+  if (!slide?.video) return;
+  const currentSlotSrc =
+    activeVideoSlot.value === "a" ? videoSlotA.value : videoSlotB.value;
   if (currentSlotSrc === slide.video) {
-    queueActiveVideoPlayback()
-    return
+    queueActiveVideoPlayback();
+    return;
   }
-  switchToSlide(activeIndex.value)
-})
+  switchToSlide(activeIndex.value);
+});
 
 function handleVisibilityChange() {
-  if (typeof document === 'undefined') return
-  if (document.visibilityState === 'hidden') {
-    stopRotation()
-    stopPlaybackRetry()
-    pauseAllVideos()
+  if (typeof document === "undefined") return;
+  if (document.visibilityState === "hidden") {
+    stopRotation();
+    stopPlaybackRetry();
+    pauseAllVideos();
   } else {
-    startRotation()
+    startRotation();
     if (heroVideoEnabled.value) {
-      queueActiveVideoPlayback()
+      queueActiveVideoPlayback();
     } else {
-      scheduleHeroVideoEnable()
+      scheduleHeroVideoEnable();
     }
   }
 }
 
 onMounted(() => {
-  startRotation()
-  scheduleHeroVideoEnable()
-  if (typeof document !== 'undefined') {
-    document.addEventListener('visibilitychange', handleVisibilityChange)
+  startRotation();
+  // 首帧渲染完成后关闭 instantBodyReveal，让后续轮播切换恢复 hero-body-rise 淡入动画
+  if (instantBodyReveal.value) {
+    nextTick(() => {
+      instantBodyReveal.value = false;
+    });
   }
-})
+  // 首屏视频是 LCP 元素：不等 idle 回调，立即启动加载，避免把 ~1.2s 的空等计入 LCP。
+  // 慢网络/移动端/减弱动效场景由 shouldEnableHeroVideo() 在内部拦截。
+  enableHeroVideo();
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+  }
+
+  // 滚出视口暂停轮播，进入视口恢复，避免离屏空转开销
+  if (typeof window !== "undefined" && "IntersectionObserver" in window) {
+    heroVisibilityObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          startRotation();
+        } else {
+          stopRotation();
+        }
+      },
+      { threshold: 0 },
+    );
+    if (heroSectionRef.value) {
+      heroVisibilityObserver.observe(heroSectionRef.value);
+    }
+  }
+});
 
 onBeforeUnmount(() => {
-  isUnmounting = true
-  clearVideoEnableSchedule()
-  stopRotation()
-  stopPlaybackRetry()
-  pauseAllVideos()
-  if (typeof document !== 'undefined') {
-    document.removeEventListener('visibilitychange', handleVisibilityChange)
+  isUnmounting = true;
+  clearVideoEnableSchedule();
+  stopRotation();
+  stopPlaybackRetry();
+  pauseAllVideos();
+  if (heroVisibilityObserver) {
+    heroVisibilityObserver.disconnect();
+    heroVisibilityObserver = null;
   }
-})
+  if (typeof document !== "undefined") {
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }
+});
 </script>
 
 <style scoped lang="scss">
@@ -777,13 +937,18 @@ onBeforeUnmount(() => {
 }
 
 .hero-section::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   height: 96px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.72) 60%, #ffffff 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.72) 60%,
+    #ffffff 100%
+  );
   pointer-events: none;
   z-index: 1;
 }
@@ -810,11 +975,20 @@ onBeforeUnmount(() => {
   object-fit: cover;
   opacity: 0;
   transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: opacity;
+}
+
+@media (min-width: 769px) {
+  .hero-bg__video {
+    will-change: opacity;
+  }
 }
 
 .hero-bg__video--active {
   opacity: 1;
+}
+
+.hero-bg__video--instant {
+  transition: none;
 }
 
 .hero-bg__video-overlay {
@@ -842,7 +1016,11 @@ onBeforeUnmount(() => {
   left: -180px;
   width: 640px;
   height: 640px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0) 68%);
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.86),
+    rgba(255, 255, 255, 0) 68%
+  );
 }
 
 .hero-bg__cloud--b {
@@ -850,7 +1028,11 @@ onBeforeUnmount(() => {
   left: 38%;
   width: 520px;
   height: 520px;
-  background: radial-gradient(circle, rgba(236, 240, 245, 0.92), rgba(236, 240, 245, 0) 70%);
+  background: radial-gradient(
+    circle,
+    rgba(236, 240, 245, 0.92),
+    rgba(236, 240, 245, 0) 70%
+  );
   opacity: 0.28;
 }
 
@@ -859,7 +1041,11 @@ onBeforeUnmount(() => {
   right: -220px;
   width: 780px;
   height: 780px;
-  background: radial-gradient(circle, rgba(221, 227, 234, 0.72), rgba(221, 227, 234, 0) 68%);
+  background: radial-gradient(
+    circle,
+    rgba(221, 227, 234, 0.72),
+    rgba(221, 227, 234, 0) 68%
+  );
   opacity: 0.24;
 }
 
@@ -979,7 +1165,9 @@ onBeforeUnmount(() => {
   font-size: 12px;
   opacity: 0;
   transform: translateX(-4px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .hero-rail__item.is-active .hero-rail__arrow,
@@ -1037,7 +1225,6 @@ onBeforeUnmount(() => {
   justify-content: center;
   min-width: 0;
   padding: 8px 0 0;
-  animation: hero-body-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hero-title {
@@ -1048,6 +1235,7 @@ onBeforeUnmount(() => {
   line-height: 1.14;
   letter-spacing: -0.02em;
   text-wrap: pretty;
+  animation: hero-body-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hero-desc {
@@ -1055,8 +1243,9 @@ onBeforeUnmount(() => {
   margin: 24px 0 0;
   color: rgba(31, 42, 77, 0.78);
   font-size: 15px;
-  line-height: 1.9;
+  line-height: 1.7;
   text-wrap: pretty;
+  animation: hero-body-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hero-actions {
@@ -1087,7 +1276,9 @@ onBeforeUnmount(() => {
 
 .hero-cta:focus-visible {
   outline: none;
-  box-shadow: 0 14px 30px rgba(47, 94, 243, 0.34), 0 0 0 3px rgba(47, 94, 243, 0.32);
+  box-shadow:
+    0 14px 30px rgba(47, 94, 243, 0.34),
+    0 0 0 3px rgba(47, 94, 243, 0.32);
 }
 
 .hero-cta:active {
@@ -1123,7 +1314,6 @@ onBeforeUnmount(() => {
 .hero-mobile-nav {
   display: none;
 }
-
 
 @keyframes hero-body-rise {
   0% {
@@ -1169,7 +1359,11 @@ onBeforeUnmount(() => {
   bottom: 6px;
   height: 2px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(47, 94, 243, 0.6), rgba(122, 155, 255, 0));
+  background: linear-gradient(
+    90deg,
+    rgba(47, 94, 243, 0.6),
+    rgba(122, 155, 255, 0)
+  );
   transform: scaleX(0);
   transform-origin: left center;
   transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1427,7 +1621,10 @@ onBeforeUnmount(() => {
     border-radius: 50%;
     background: rgba(44, 54, 84, 0.22);
     cursor: pointer;
-    transition: background 0.22s ease, width 0.22s ease, border-radius 0.22s ease;
+    transition:
+      background 0.22s ease,
+      width 0.22s ease,
+      border-radius 0.22s ease;
   }
 
   .hero-mobile-nav__dot.is-active {
@@ -1489,7 +1686,8 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-body {
+  .hero-title,
+  .hero-desc {
     animation: none !important;
   }
 
@@ -1507,6 +1705,15 @@ onBeforeUnmount(() => {
   .hero-cta:hover,
   .hero-cta:active {
     transform: none !important;
+  }
+}
+
+// 首帧渲染（LCP）禁用 hero 标题/描述的入场动画：instantBodyReveal 初始为 true，
+// onMounted + nextTick 后置 false，此后轮播切换恢复 hero-body-rise 淡入。
+.hero-body--instant {
+  .hero-title,
+  .hero-desc {
+    animation: none;
   }
 }
 </style>

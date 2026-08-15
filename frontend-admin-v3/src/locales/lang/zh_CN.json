@@ -49,6 +49,7 @@
     }
   },
   "layout": {
+    "skipToContent": "跳到主内容",
     "header": {
       "code": "代码仓库",
       "help": "帮助文档",

@@ -138,7 +138,7 @@ class InvoiceService
      */
     public function createForReferralCredit(User $user, float $amount, ?string $remark = null, ?string $traceId = null): Invoice
     {
-        return Invoice::create([
+        $invoice = Invoice::create([
             'invoice_no' => Invoice::generateInvoiceNo(),
             'user_id' => $user->id,
             'type' => InvoiceType::REFERRAL_CREDIT,
@@ -150,6 +150,8 @@ class InvoiceService
             'config_snapshot' => $remark ? ['remark' => $remark] : null,
             'trace_id' => $traceId,
         ]);
+
+        return $this->syncProjection($invoice);
     }
 
     /**
@@ -157,7 +159,7 @@ class InvoiceService
      */
     public function createForDeduction(User $user, float $amount, ?string $remark = null, ?string $traceId = null): Invoice
     {
-        return Invoice::create([
+        $invoice = Invoice::create([
             'invoice_no' => Invoice::generateInvoiceNo(),
             'user_id' => $user->id,
             'type' => InvoiceType::DEDUCTION,
@@ -169,6 +171,8 @@ class InvoiceService
             'config_snapshot' => $remark ? ['remark' => $remark] : null,
             'trace_id' => $traceId,
         ]);
+
+        return $this->syncProjection($invoice);
     }
 
     /**
@@ -235,8 +239,11 @@ class InvoiceService
     {
         $invoice = Invoice::with([
             'user:id,email,nickname,phone',
-            'order:id,order_no,status,type,service_id,paid_at,product_id,billing_cycle',
+            'order:id,order_no,status,type,service_id,paid_at,product_id,billing_cycle,product_spec_snapshot,product_type_snapshot,config_snapshot',
             'order.product:id,product_type,service_type_code,product_group_id,remark,config_options,purchase_requires',
+            'order.product.productGroup:id,second_product_group_id,name',
+            'order.product.productGroup.secondProductGroup:id,first_product_group_id,name',
+            'order.product.productGroup.secondProductGroup.firstProductGroup:id,code,name',
             'product:id,product_type,service_type_code,product_group_id,remark,config_options,purchase_requires',
             'service:id,name,status,expires_at',
             'payments',
@@ -258,6 +265,7 @@ class InvoiceService
             'product_spec_display' => $productSpecDisplay,
             'product_display_name' => $productDisplayName,
             'combined_display_name' => $combinedDisplayName,
+            'product_full_path' => $invoice->order ? $this->resolveOrderProductPath($invoice->order) : '',
             'user' => $this->adminUserPayload($invoice->user),
             'order_id' => (int) ($invoice->order_id ?? 0),
             'order' => $invoice->order ? [
@@ -407,6 +415,7 @@ class InvoiceService
             'product_spec_display' => $productSpecDisplay,
             'product_display_name' => $productDisplayName,
             'combined_display_name' => $combinedDisplayName,
+            'product_full_path' => $invoice->order ? $this->resolveOrderProductPath($invoice->order) : '',
             'product_id' => (int) ($invoice->product_id ?? 0),
             'product' => $invoice->product ? [
                 'id' => (int) $invoice->product->id,
@@ -462,8 +471,11 @@ class InvoiceService
     {
         $invoice->loadMissing([
             'user:id,email,nickname,phone',
-            'order:id,order_no,status,type,service_id,paid_at,product_id,billing_cycle',
+            'order:id,order_no,status,type,service_id,paid_at,product_id,billing_cycle,product_spec_snapshot,product_type_snapshot,config_snapshot',
             'order.product:id,product_type,service_type_code,product_group_id,remark,config_options,purchase_requires',
+            'order.product.productGroup:id,second_product_group_id,name',
+            'order.product.productGroup.secondProductGroup:id,first_product_group_id,name',
+            'order.product.productGroup.secondProductGroup.firstProductGroup:id,code,name',
             'product:id,product_type,service_type_code,product_group_id,remark,config_options,purchase_requires',
             'service:id,name,status,expires_at',
             'payments',
@@ -489,6 +501,7 @@ class InvoiceService
             'product_spec_display' => $productSpecDisplay,
             'product_display_name' => $productDisplayName,
             'combined_display_name' => $combinedDisplayName,
+            'product_full_path' => $invoice->order ? $this->resolveOrderProductPath($invoice->order) : '',
             'user' => $this->adminUserPayload($invoice->user),
             'order_id' => (int) ($invoice->order_id ?? 0),
             'order' => $invoice->order ? [
@@ -1150,12 +1163,14 @@ class InvoiceService
             ? Carbon::parse((string) $payload['paid_at'])
             : now();
         $requestedAmount = round((float) ($payload['amount'] ?? $invoice->amount), 2);
+        $paymentGateway = trim((string) ($payload['payment_gateway'] ?? 'manual')) ?: 'manual';
+        $tradeNo = trim((string) ($payload['trade_no'] ?? ''));
         $sendEmail = (bool) ($payload['send_email'] ?? false);
         $remark = trim((string) ($payload['remark'] ?? ''));
         $syncBusinessFlow = (bool) ($payload['sync_business_flow'] ?? false);
         $traceId = trim((string) ($context['trace_id'] ?? ''));
 
-        $updatedInvoice = DB::transaction(function () use ($invoice, $paidAt, $requestedAmount, $traceId): Invoice {
+        $updatedInvoice = DB::transaction(function () use ($invoice, $paidAt, $requestedAmount, $traceId, $paymentGateway, $tradeNo, $remark, $context): Invoice {
             $lockedInvoice = Invoice::query()
                 ->lockForUpdate()
                 ->with('order')
@@ -1186,6 +1201,30 @@ class InvoiceService
                     ])->save();
                     app(PaymentService::class)->syncProjection($payment);
                 });
+
+            // 补一条 manual Payment 审计记录，保留 trade_no 与入账信息，供财务对账追溯。
+            $manualPayment = new Payment([
+                'payment_no' => Payment::generatePaymentNo(),
+                'user_id' => (int) $lockedInvoice->user_id,
+                'order_id' => (int) ($lockedInvoice->order_id ?? 0) ?: null,
+                'invoice_id' => (int) $lockedInvoice->id,
+                'gateway' => PaymentGatewayCode::MANUAL,
+                'trade_no' => $tradeNo !== '' ? $tradeNo : null,
+                'amount' => $lockedInvoice->amount,
+                'status' => PaymentStatus::SUCCESS,
+                'paid_at' => $paidAt,
+                'trace_id' => $traceId,
+                'callback_raw' => [
+                    'source' => 'admin_manual_entry',
+                    'payment_gateway' => $paymentGateway,
+                    'operator_id' => (int) ($context['operator_id'] ?? 0),
+                    'operator_name' => (string) ($context['operator_name'] ?? ''),
+                    'remark' => $remark,
+                    'trade_no' => $tradeNo,
+                ],
+            ]);
+            $manualPayment->allowNonThirdPartyGateway = true;
+            $manualPayment->save();
 
             $lockedInvoice->forceFill([
                 'status' => InvoiceStatus::PAID,

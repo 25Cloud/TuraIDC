@@ -46,24 +46,24 @@ const cards = computed(() => [
     label: '本月营业额',
     value: formatCurrency(props.stats?.month?.income),
     icon: 'chart',
-    iconBg: 'var(--td-success-color-light, #e8f5e9)',
-    iconColor: 'var(--td-success-color, #12b76a)',
+    iconBg: 'var(--td-success-color-light, #EAFBF3)',
+    iconColor: 'var(--td-success-color, #12B76A)',
   },
   {
     key: 'open_tickets',
     label: '未处理工单',
     value: String(props.stats?.counts?.open_tickets ?? 0),
     icon: 'chat',
-    iconBg: 'var(--td-warning-color-light, #fff6e5)',
-    iconColor: 'var(--td-warning-color, #f59e0b)',
+    iconBg: 'var(--td-warning-color-light, #FFF6E5)',
+    iconColor: 'var(--td-warning-color, #F59E0B)',
   },
   {
     key: 'today_new_users',
     label: '今日新增用户',
     value: String(props.stats?.today?.new_users ?? 0),
     icon: 'user',
-    iconBg: 'var(--td-brand-color-light, #f0f9ff)',
-    iconColor: 'var(--td-brand-color, #0ea5e9)',
+    iconBg: 'var(--td-brand-color-light, #ECF2FE)',
+    iconColor: 'var(--td-brand-color, #165DFF)',
   },
 ]);
 </script>
@@ -125,13 +125,13 @@ const cards = computed(() => [
   }
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .top-panel {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .top-panel {
     grid-template-columns: 1fr;
   }

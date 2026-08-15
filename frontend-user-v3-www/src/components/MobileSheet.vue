@@ -1,43 +1,45 @@
 <template>
-  <el-drawer
-    :model-value="visibleValue"
-    direction="btt"
-    :size="size"
-    :with-header="false"
-    :close-on-press-modal="closeOnPressModal"
-    class="ms-drawer"
-    @update:model-value="handleVisibleChange"
-    @opened="$emit('opened')"
-  >
-    <div class="ms">
-      <div class="ms-head">
-        <button
-          v-if="cancelText"
-          type="button"
-          class="ms-action"
-          @click="handleCancel"
-        >{{ cancelText }}</button>
-        <span v-else class="ms-action ms-action--placeholder" aria-hidden="true"></span>
-        <strong v-if="title" class="ms-title">{{ title }}</strong>
-        <span v-else class="ms-title" aria-hidden="true"></span>
-        <button
-          v-if="confirmText"
-          type="button"
-          class="ms-action ms-action--primary"
-          @click="$emit('confirm')"
-        >{{ confirmText }}</button>
-        <span v-else class="ms-action ms-action--placeholder" aria-hidden="true"></span>
-      </div>
+  <template v-if="drawerAlive">
+    <el-drawer
+      :model-value="visibleValue"
+      direction="btt"
+      :size="size"
+      :with-header="false"
+      :close-on-press-modal="closeOnPressModal"
+      class="ms-drawer"
+      @update:model-value="handleVisibleChange"
+      @opened="$emit('opened')"
+    >
+      <div class="ms">
+        <div class="ms-head">
+          <button
+            v-if="cancelText"
+            type="button"
+            class="ms-action"
+            @click="handleCancel"
+          >{{ cancelText }}</button>
+          <span v-else class="ms-action ms-action--placeholder" aria-hidden="true"></span>
+          <strong v-if="title" class="ms-title">{{ title }}</strong>
+          <span v-else class="ms-title" aria-hidden="true"></span>
+          <button
+            v-if="confirmText"
+            type="button"
+            class="ms-action ms-action--primary"
+            @click="$emit('confirm')"
+          >{{ confirmText }}</button>
+          <span v-else class="ms-action ms-action--placeholder" aria-hidden="true"></span>
+        </div>
 
-      <div class="ms-body">
-        <slot />
+        <div class="ms-body">
+          <slot />
+        </div>
       </div>
-    </div>
-  </el-drawer>
+    </el-drawer>
+  </template>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
   modelValue: {
@@ -73,6 +75,24 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'update:visible', 'close', 'cancel', 'confirm', 'opened'])
 
 const visibleValue = computed(() => props.visible ?? props.modelValue)
+
+// 抽屉关闭后延迟销毁 DOM，避免 10+ 个隐藏抽屉常驻 DOM 和 aria-modal 污染
+const drawerAlive = ref(false)
+let destroyTimer = null
+
+watch(visibleValue, (v) => {
+  clearTimeout(destroyTimer)
+  if (v) {
+    drawerAlive.value = true
+  } else {
+    // 等关闭动画完成后再销毁（el-drawer 动画约 300ms）
+    destroyTimer = setTimeout(() => { drawerAlive.value = false }, 350)
+  }
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+  clearTimeout(destroyTimer)
+})
 
 function updateVisible(value) {
   emit('update:modelValue', value)

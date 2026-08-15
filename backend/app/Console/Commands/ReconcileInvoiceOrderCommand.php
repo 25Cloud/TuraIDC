@@ -74,5 +74,7 @@ class ReconcileInvoiceOrderCommand extends Command
         $this->line('- invoices_invalid_order: '.$summary['invoices_invalid_order']);
         $this->line('- orders_without_invoice: '.$summary['orders_without_invoice']);
         $this->line('- paid_order_invoice_status_mismatch: '.$summary['paid_order_invoice_status_mismatch']);
+        $this->line('- amount_mismatch: '.($summary['amount_mismatch'] ?? 0));
+        $this->line('- completed_invoice_cancelled: '.($summary['completed_invoice_cancelled'] ?? 0));
     }
 }

@@ -67,7 +67,7 @@ class ServiceDetailService
     public function getServiceConfigForUser(User $user, int $serviceId): array
     {
         $service = $this->findUserService($user, $serviceId, [
-            'product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires',
+            'product:id,product_type,service_type_code,product_group_id,console_template,updated_at,config_options,purchase_requires',
             'product.productGroup.secondProductGroup.firstProductGroup',
         ]);
 
@@ -79,7 +79,7 @@ class ServiceDetailService
 
         $provisionData = $this->serviceProvisionData($service);
         $catalogProductType = $this->resolverService->resolveGroupedOverviewTypeValue($service);
-        $consoleMode = $this->resolverService->resolveConsoleMode($service, $provisionData);
+        $consoleMode = $this->resolverService->resolveConsoleMode($service);
 
         $payload = [
             'id' => $service->id,
@@ -88,6 +88,7 @@ class ServiceDetailService
             'status_label' => ServiceStatus::$labels[$service->status] ?? (string) $service->status,
             'product_type' => $catalogProductType,
             'product_type_label' => ProductType::businessLabelOf($catalogProductType),
+            'console_template' => $service->product?->console_template,
             'machine_category' => $this->transformService->resolveMachineCategory($service, $catalogProductType, $consoleMode),
             'console_mode' => $consoleMode,
             'is_nat_console' => $consoleMode === 'nat',
@@ -102,7 +103,7 @@ class ServiceDetailService
     public function getDetailForUser(User $user, int $serviceId, bool $refreshRemote = false): array
     {
         $service = $this->findUserService($user, $serviceId, [
-            'product:id,product_type,service_type_code,product_group_id,config_options,pricing,purchase_requires',
+            'product:id,product_type,service_type_code,product_group_id,console_template,updated_at,config_options,pricing,purchase_requires',
             'product.productGroup.secondProductGroup.firstProductGroup',
             'product.supplier',
             'order:id,order_no,status,paid_at,created_at',
@@ -134,7 +135,7 @@ class ServiceDetailService
                 if (! empty($remote['host']) || ! empty($remote['runtime']) || ! empty($remote['nat'])) {
                     $this->syncServiceFromRemote($service, $remote['host'] ?? [], $remote['runtime'] ?? [], $remote['nat'] ?? []);
                     $service->refresh()->loadMissing([
-                        'product:id,product_type,service_type_code,product_group_id,config_options,pricing,purchase_requires',
+                        'product:id,product_type,service_type_code,product_group_id,console_template,updated_at,config_options,pricing,purchase_requires',
                         'product.productGroup.secondProductGroup.firstProductGroup',
                         'product.supplier',
                         'order:id,order_no,status,paid_at,created_at',
@@ -167,7 +168,7 @@ class ServiceDetailService
     public function getBaseDetailForUser(User $user, int $serviceId): array
     {
         $service = $this->findUserService($user, $serviceId, [
-            'product:id,product_type,service_type_code,product_group_id,config_options,pricing,purchase_requires',
+            'product:id,product_type,service_type_code,product_group_id,console_template,updated_at,config_options,pricing,purchase_requires',
             'product.productGroup.secondProductGroup.firstProductGroup',
             'product.supplier',
             'order:id,order_no,status,paid_at,created_at',
@@ -191,7 +192,7 @@ class ServiceDetailService
     public function getRemoteStatusPatchForUser(User $user, int $serviceId): array
     {
         $service = $this->findUserService($user, $serviceId, [
-            'product:id,product_type,service_type_code,product_group_id,config_options,pricing,purchase_requires',
+            'product:id,product_type,service_type_code,product_group_id,console_template,updated_at,config_options,pricing,purchase_requires',
             'product.productGroup.secondProductGroup.firstProductGroup',
             'product.supplier',
             'order:id,order_no,status,paid_at,created_at',
@@ -214,7 +215,7 @@ class ServiceDetailService
                 if (! empty($remote['host']) || ! empty($remote['runtime']) || ! empty($remote['nat'])) {
                     $this->syncServiceFromRemote($service, $remote['host'] ?? [], $remote['runtime'] ?? [], $remote['nat'] ?? []);
                     $service->refresh()->loadMissing([
-                        'product:id,product_type,service_type_code,product_group_id,config_options,pricing,purchase_requires',
+                        'product:id,product_type,service_type_code,product_group_id,console_template,updated_at,config_options,pricing,purchase_requires',
                         'product.productGroup.secondProductGroup.firstProductGroup',
                         'product.supplier',
                         'order:id,order_no,status,paid_at,created_at',
@@ -321,7 +322,7 @@ class ServiceDetailService
     public function updateRemarkForUser(User $user, int $serviceId, ?string $remark, array $context = []): array
     {
         $service = $this->findUserService($user, $serviceId, [
-            'product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires',
+            'product:id,product_type,service_type_code,product_group_id,console_template,updated_at,config_options,purchase_requires',
             'product.productGroup.secondProductGroup.firstProductGroup',
             'order:id,order_no,status,paid_at',
             'invoice:id,invoice_no,status,paid_at',
@@ -346,7 +347,7 @@ class ServiceDetailService
     public function updateServiceNameForUser(User $user, int $serviceId, ?string $serviceName, array $context = []): array
     {
         $service = $this->findUserService($user, $serviceId, [
-            'product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires',
+            'product:id,product_type,service_type_code,product_group_id,console_template,updated_at,config_options,purchase_requires',
             'product.productGroup.secondProductGroup.firstProductGroup',
             'order:id,order_no,status,paid_at',
             'invoice:id,invoice_no,status,paid_at',
@@ -373,7 +374,7 @@ class ServiceDetailService
         ], $context);
 
         return $this->transformService->transformListItem($service->fresh([
-            'product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires',
+            'product:id,product_type,service_type_code,product_group_id,console_template,updated_at,config_options,purchase_requires',
             'product.productGroup.secondProductGroup.firstProductGroup',
             'order:id,order_no,status,paid_at',
             'invoice:id,invoice_no,status,paid_at',
@@ -813,12 +814,16 @@ class ServiceDetailService
 
     public function buildDetailResponseCacheKey(Service $service): string
     {
-        return 'service_console:detail:'.$service->id.':'.$service->user_id.':'.optional($service->updated_at)?->timestamp;
+        return 'service_console:detail:v2:'.$service->id.':'.$service->user_id.':'
+            .optional($service->updated_at)?->timestamp.':'
+            .optional($service->product?->updated_at)?->timestamp;
     }
 
     public function buildServiceConfigCacheKey(Service $service): string
     {
-        return 'service_console:config:'.$service->id.':'.$service->user_id.':'.optional($service->updated_at)?->timestamp;
+        return 'service_console:config:v2:'.$service->id.':'.$service->user_id.':'
+            .optional($service->updated_at)?->timestamp.':'
+            .optional($service->product?->updated_at)?->timestamp;
     }
 
     public function buildMonitorModuleCacheKey(Supplier $supplier, int $hostId): string

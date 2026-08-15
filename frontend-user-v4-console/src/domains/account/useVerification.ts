@@ -139,10 +139,14 @@ export function useVerification() {
       return;
     }
     if (!verificationForm.realName && form.real_name) verificationForm.realName = form.real_name;
-    showVerificationDialog.value = true;
-    if (certifyId.value && !verificationUrl.value) {
-      void refreshVerificationLink();
+    // 仅当内存中仍有未过期二维码时继续展示当前会话；
+    // 否则清空会话状态回到表单，重新提交以新建会话，避免复用数据库中的历史/过期 token。
+    if (!verificationUrl.value) {
+      clearVerificationSessionState();
+      certifyId.value = '';
+      verificationMessage.value = '';
     }
+    showVerificationDialog.value = true;
   }
 
   function validateVerificationForm() {
@@ -169,7 +173,13 @@ export function useVerification() {
       verificationExpiresAt.value = resolveExpiresAt(data);
       verificationMessage.value = '';
       startExpiryCountdown();
+      return;
     }
+
+    // 后端未返回可用链接（会话已失效）时回到表单状态，等待用户重新提交。
+    stopExpiryCountdown();
+    verificationExpiresAt.value = 0;
+    verificationRemainingSeconds.value = 0;
   }
 
   async function submitVerification() {
@@ -194,6 +204,13 @@ export function useVerification() {
   async function refreshVerificationLink() {
     if (!certifyId.value) {
       MessagePlugin.warning('缺少认证会话，请重新提交实名信息');
+      return;
+    }
+    if (isVerificationQrExpired.value) {
+      clearVerificationSessionState();
+      certifyId.value = '';
+      verificationMessage.value = '二维码已失效，请重新提交认证';
+      MessagePlugin.warning('二维码已失效，请重新提交认证');
       return;
     }
     verificationLoading.value = true;
@@ -232,10 +249,14 @@ export function useVerification() {
     verificationRemainingSeconds.value = Math.max(0, Math.ceil((verificationExpiresAt.value - Date.now()) / 1000));
     if (verificationRemainingSeconds.value > 0) return;
 
+    // 二维码过期即会话失效：清空会话状态并回到表单，强制新建会话，避免复用过期 token。
     stopExpiryCountdown();
     stopPolling();
     if (verificationUrl.value) {
-      verificationMessage.value = '二维码已失效，请刷新后继续认证';
+      clearVerificationSessionState();
+      certifyId.value = '';
+      canRestartVerification.value = false;
+      verificationMessage.value = '二维码已失效，请重新提交认证';
     }
   }
 
@@ -257,11 +278,11 @@ export function useVerification() {
 
   function startPolling() {
     stopPolling();
-    if (!showVerificationDialog.value || !verificationUrl.value || !certifyId.value || isVerificationQrExpired.value)
-      return;
+    // 回跳/查询场景可能没有二维码 URL，只要会话存在且对话框打开即持续轮询结果。
+    if (!showVerificationDialog.value || !certifyId.value || isVerificationQrExpired.value) return;
     pollingTimer = window.setInterval(() => {
       void checkVerificationStatus(true);
-    }, 1000);
+    }, 3000);
   }
 
   async function checkVerificationStatus(silent = false) {
@@ -329,6 +350,8 @@ export function useVerification() {
       if (!silent) MessagePlugin.error(resolveMessage(error, '关闭认证会话失败'));
     } finally {
       closingSession.value = false;
+      // 关闭会话后清空 certifyId，再次打开时回到表单并新建会话，避免复用旧 token。
+      certifyId.value = '';
     }
   }
 
@@ -343,6 +366,9 @@ export function useVerification() {
     if (callbackCertifyId) certifyId.value = callbackCertifyId;
     if (!isVerified.value) showVerificationDialog.value = true;
     await checkVerificationStatus(false);
+
+    // 认证处理中时持续轮询，直到出结果或用户关闭会话。
+    if (!isVerified.value) startPolling();
 
     const query = { ...route.query };
     delete query.verification_callback;

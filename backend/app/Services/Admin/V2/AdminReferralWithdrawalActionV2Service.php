@@ -59,6 +59,28 @@ class AdminReferralWithdrawalActionV2Service
     /**
      * @return array<string, mixed>
      */
+    public function confirmPayment(
+        ReferralWithdrawal $withdrawal,
+        AdminUser $operator,
+        string $paymentNo,
+        ?string $remark = null,
+        ?string $traceId = null,
+    ): array {
+        $record = $this->referrals->confirmWithdrawalPayment(
+            withdrawal: $withdrawal,
+            operatorUserId: (int) $operator->id,
+            operator: $operator->username ?: 'admin',
+            paymentNo: $paymentNo,
+            remark: $remark,
+            traceId: $traceId,
+        );
+
+        return $this->result($record, 'payment_confirmation', '打款确认成功');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     private function result(ReferralWithdrawal $record, string $type, string $message): array
     {
         return [

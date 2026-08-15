@@ -166,17 +166,41 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { adminApi } from '@/api/admin';
-import type { NotificationTemplateItem } from '@/api/admin/types';
 import { resolveApiAssetUrl } from '@/utils/apiAssetUrl';
 
-interface EditableTemplate extends NotificationTemplateItem {
-  providerTemplateId?: string;
-  isEnabled?: boolean;
+interface NotificationTemplateSource {
+  code: string;
+  name: string;
+  channel: 'email' | 'sms';
+  audience?: string;
+  variables: string[];
+  subject?: string;
+  content?: string;
+  provider_template_id?: string;
+  is_enabled?: unknown;
+  setting_keys?: Record<string, string>;
+}
+
+interface NotificationTemplate extends NotificationTemplateSource {
+  subject: string;
+  content: string;
+  providerTemplateId: string;
+  isEnabled: boolean;
   defaultSubject: string;
   defaultContent: string;
   defaultProviderTemplateId: string;
   defaultIsEnabled: boolean;
 }
+
+interface TestSendResult {
+  status: string;
+  success_count: number;
+  failed_count: number;
+  results?: Array<{ recipient: string; status: string; error?: string }>;
+}
+
+type PreviewParams = Record<string, string>;
+type SettingsMap = Record<string, unknown>;
 
 const route = useRoute();
 const router = useRouter();
@@ -185,12 +209,12 @@ const saving = ref(false);
 const testSendVisible = ref(false);
 const testSending = ref(false);
 const testSendRecipient = ref('');
-const testSendResult = ref(null);
+const testSendResult = ref<TestSendResult | null>(null);
 const DEFAULT_SITE_NAME = '图拉云';
 const DEFAULT_SITE_LOGO = '/branding/logo.svg';
 const siteName = ref(DEFAULT_SITE_NAME);
 const siteLogo = ref(DEFAULT_SITE_LOGO);
-const templateDefinitions = ref<EditableTemplate[]>([]);
+const templateDefinitions = ref<NotificationTemplate[]>([]);
 
 const templateCode = computed(() => String(route.params.code || '').trim());
 const templateChannel = computed(() => (route.path.includes('/sms-templates/') ? 'sms' : 'email'));
@@ -273,14 +297,23 @@ const previewBaseParams = computed(() => ({
   bound_at: '2026-04-01 09:30:00',
 }));
 
-function normalizeSettings(response: any): Record<string, any> {
-  if (Array.isArray(response)) return Object.fromEntries(response.map((item: any) => [item.key, item.value]));
-  if (response && Array.isArray(response.list))
-    return Object.fromEntries(response.list.map((item: any) => [item.key, item.value]));
-  return response && typeof response === 'object' ? response : {};
+interface SettingEntry {
+  key: string;
+  value: unknown;
 }
 
-function applySettings(template: NotificationTemplateItem, settings: Record<string, any>): EditableTemplate {
+function normalizeSettings(response: unknown): SettingsMap {
+  if (Array.isArray(response)) {
+    return Object.fromEntries((response as SettingEntry[]).map((item) => [item.key, item.value]));
+  }
+  const list = (response as { list?: unknown })?.list;
+  if (Array.isArray(list)) {
+    return Object.fromEntries((list as SettingEntry[]).map((item) => [item.key, item.value]));
+  }
+  return response && typeof response === 'object' ? (response as SettingsMap) : {};
+}
+
+function applySettings(template: NotificationTemplateSource, settings: SettingsMap): NotificationTemplate {
   const settingKeys = template.setting_keys || {};
   const subjectKey = settingKeys.subject || `email_template_subject_${template.code}`;
   const contentKey = settingKeys.content || `${template.channel}_template_content_${template.code}`;
@@ -330,7 +363,7 @@ async function saveCurrentTemplate() {
   saving.value = true;
   try {
     const settingKeys = templateDefinition.value.setting_keys || {};
-    const settings: Record<string, any> = {
+    const settings = {
       [settingKeys.content || `${templateDefinition.value.channel}_template_content_${templateDefinition.value.code}`]:
         templateDefinition.value.content,
       [settingKeys.enabled || `${templateDefinition.value.channel}_template_enabled_${templateDefinition.value.code}`]:
@@ -401,7 +434,7 @@ async function submitTestSend() {
   }
 }
 
-function resetTemplate(template: EditableTemplate) {
+function resetTemplate(template: NotificationTemplate) {
   template.subject = template.defaultSubject || '';
   template.content = template.defaultContent;
   template.providerTemplateId = template.defaultProviderTemplateId || '';
@@ -415,9 +448,9 @@ function goBack() {
   });
 }
 
-function getPreviewParams(template: EditableTemplate) {
-  const params: Record<string, any> = { ...previewBaseParams.value };
-  template.variables.forEach((key) => {
+function getPreviewParams(template: NotificationTemplate): PreviewParams {
+  const params: PreviewParams = { ...previewBaseParams.value };
+  template.variables.forEach((key: string) => {
     if (!(key in params)) params[key] = `示例${key}`;
   });
   return params;
@@ -428,15 +461,15 @@ function getPreviewValue(key: string) {
   return String(getPreviewParams(templateDefinition.value)[key] ?? '-');
 }
 
-function renderPreviewSubject(template: EditableTemplate) {
+function renderPreviewSubject(template: NotificationTemplate) {
   return renderTemplateText(template.subject, getPreviewParams(template)) || '未设置主题';
 }
 
-function renderPreviewSmsContent(template: EditableTemplate) {
+function renderPreviewSmsContent(template: NotificationTemplate) {
   return renderTemplateText(template.content, getPreviewParams(template)) || '未设置短信正文';
 }
 
-function buildPreviewDocument(template: EditableTemplate) {
+function buildPreviewDocument(template: NotificationTemplate) {
   const params = getPreviewParams(template);
   const subject = renderPreviewSubject(template);
   const content = renderTemplateContent(template.content, params);
@@ -444,7 +477,7 @@ function buildPreviewDocument(template: EditableTemplate) {
   return `<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(subject)}</title></head><body>${content}</body></html>`;
 }
 
-function renderTemplateContent(template: string, params: Record<string, any>) {
+function renderTemplateContent(template: string, params: PreviewParams) {
   if (looksLikeHtml(template))
     return renderTemplateWithResolver(template, params, (key) => escapeHtml(params[key] ?? ''), true);
   return String(renderTemplateText(template, params) || '')
@@ -453,19 +486,19 @@ function renderTemplateContent(template: string, params: Record<string, any>) {
     .join('');
 }
 
-function renderTemplateText(template: string | null | undefined, params: Record<string, any>) {
+function renderTemplateText(template: string, params: PreviewParams) {
   return renderTemplateWithResolver(template, params, (key) => String(params[key] ?? ''));
 }
 
 function renderTemplateWithResolver(
-  template: string | null | undefined,
-  params: Record<string, any>,
+  template: string,
+  params: PreviewParams,
   resolver: (key: string) => string,
   htmlMode = false,
 ) {
-  const variablePattern = /\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
-  const resolveVariable = (_match: string, key: string, content: string) => (hasValue(params[key]) ? content : '');
-  let rendered = String(template || '').replace(variablePattern, resolveVariable);
+  let rendered = String(template || '').replace(/\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_match, key, content) => {
+    return hasValue(params[key]) ? content : '';
+  });
   rendered = rendered.replace(/\{\{\s*(\w+)\s*\}\}/g, (_match, key) => resolver(key));
   return htmlMode
     ? rendered.trim()
@@ -475,41 +508,41 @@ function renderTemplateWithResolver(
         .trim();
 }
 
-function looksLikeHtml(template: string | null | undefined) {
+function looksLikeHtml(template: string) {
   return /<[a-z][a-z0-9]*(?:\s|>)/i.test(String(template || '').trim());
 }
 
-function looksLikeFullHtmlDocument(template: string | null | undefined) {
+function looksLikeFullHtmlDocument(template: string) {
   return /^(?:<!doctype\s+html|<html\b)/i.test(String(template || '').trim());
 }
 
-function hasValue(value: any) {
-  return ![null, undefined, '', false].includes(value);
+function hasValue(value: unknown) {
+  return ![null, undefined, '', false].includes(value as null | undefined | string | boolean);
 }
 
-function settingValue(settings: Record<string, any>, key: string, fallback: any) {
-  return Object.hasOwn(settings, key) ? (settings[key] ?? '') : fallback;
+function settingValue<T>(settings: SettingsMap, key: string, fallback: T): T {
+  return Object.hasOwn(settings, key) ? ((settings[key] ?? '') as T) : fallback;
 }
 
-function normalizeRecipient(value: any) {
+function normalizeRecipient(value: unknown) {
   const recipient = String(value || '').trim();
   if (templateChannel.value === 'sms') return recipient.replace(/[\s-]+/g, '');
   return recipient;
 }
 
-function toBooleanValue(value: any) {
+function toBooleanValue(value: unknown) {
   if (value === true || value === 1) return true;
   return ['1', 'true', 'on', 'yes'].includes(String(value).trim().toLowerCase());
 }
 
-function resolvePreviewLogo(value: any) {
+function resolvePreviewLogo(value: unknown) {
   const logo = String(value || '').trim() || DEFAULT_SITE_LOGO;
   const resolved = resolveApiAssetUrl(logo, import.meta.env.VITE_API_BASE_URL);
   if (/^(?:https?:)?\/\//i.test(resolved) || resolved.startsWith('data:') || resolved.startsWith('/')) return resolved;
   return `/${resolved}`;
 }
 
-function escapeHtml(value: any) {
+function escapeHtml(value: unknown) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -518,8 +551,9 @@ function escapeHtml(value: any) {
     .replace(/'/g, '&#39;');
 }
 
-function errorMessage(error: any, fallback: string) {
-  return String(error?.response?.data?.message || error?.message || fallback);
+function errorMessage(error: unknown, fallback: string) {
+  const payload = error as { response?: { data?: { message?: string } }; message?: string } | null;
+  return String(payload?.response?.data?.message || payload?.message || fallback);
 }
 
 onMounted(loadSettings);

@@ -119,6 +119,7 @@ function normalizeV2AdminOrderDetail(payload: V2AdminOrderDetailPayload): OrderR
     coupon_code: coupon.code,
     config_snapshot: configuration.config_snapshot,
     config_pricing_snapshot: configuration.config_pricing_snapshot,
+    service_snapshot: configuration.service_snapshot as Record<string, unknown> | null | undefined,
     payments: Array.isArray(paymentChain.payments) ? paymentChain.payments : [],
     trace_id: audit.trace_id,
     created_at: timestamps.created_at as string | undefined,

@@ -15,6 +15,7 @@ use App\Http\Resources\Admin\V2\AdminNotificationTemplateResource;
 use App\Services\Admin\V2\AdminConfigurationV2QueryService;
 use App\Services\System\NotificationTemplateService;
 use App\Services\System\NotificationTemplateTestSendService;
+use App\Services\System\OperationLogService;
 use App\Services\System\SettingService;
 use Illuminate\Http\JsonResponse;
 
@@ -25,6 +26,7 @@ class SettingController extends Controller
         private readonly SettingService $settings,
         private readonly NotificationTemplateService $notificationTemplates,
         private readonly NotificationTemplateTestSendService $templateTestSender,
+        private readonly OperationLogService $operationLogService,
     ) {}
 
     public function index(ListSettingsRequest $request)
@@ -48,10 +50,28 @@ class SettingController extends Controller
 
     public function revealSecret(RevealSettingSecretRequest $request)
     {
-        return $this->success($this->queryService->settingSecret(
-            $request->groupKey(),
-            $request->secretKey()
-        ));
+        $group = $request->groupKey();
+        $key = $request->secretKey();
+        $result = $this->queryService->settingSecret($group, $key);
+
+        // 密钥 reveal 统一审计：记录谁在何时查看了哪个敏感字段。
+        $this->operationLogService->write(
+            userId: (int) ($request->user()?->id ?? 0),
+            userType: 'admin',
+            action: 'secret.reveal',
+            module: 'secret',
+            targetId: 0,
+            detail: [
+                'secret_type' => 'setting',
+                'secret_key' => $key,
+                'group' => $group,
+                'operator_name' => (string) ($request->user()?->username ?? $request->user()?->name ?? ''),
+                'trace_id' => (string) $request->header('X-Request-Id', ''),
+            ],
+            ipAddress: (string) $request->ip(),
+        );
+
+        return $this->success($result);
     }
 
     public function update(UpdateSettingsRequest $request): JsonResponse

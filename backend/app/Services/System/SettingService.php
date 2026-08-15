@@ -122,7 +122,7 @@ class SettingService
             'retention_days' => (int) config('log_archive.retention_days', 30),
             'file_retention_days' => (int) config('log_archive.file_retention_days', 180),
             'pt_archiver_binary' => (string) config('log_archive.pt_archiver_binary', '/usr/bin/pt-archiver'),
-            'pt_archiver_defaults_file' => (string) config('log_archive.pt_archiver_defaults_file', '/etc/TuraIDC/pt-archiver.cnf'),
+            'pt_archiver_defaults_file' => (string) config('log_archive.pt_archiver_defaults_file', '/etc/turaidc/pt-archiver.cnf'),
             'concurrency' => (int) config('log_archive.concurrency', 2),
             'batch_size' => (int) config('log_archive.batch_size', 1000),
             'sleep_seconds' => (int) config('log_archive.sleep_seconds', 1),

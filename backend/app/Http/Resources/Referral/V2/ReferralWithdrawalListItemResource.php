@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Referral\V2;
 
+use App\Models\ReferralWithdrawal;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,8 +24,11 @@ class ReferralWithdrawalListItemResource extends JsonResource
             'account_name' => (string) ($item['account_name'] ?? ''),
             'account_no' => (string) ($item['account_no'] ?? ''),
             'status' => (int) ($item['status'] ?? 0),
+            'status_label' => ReferralWithdrawal::statusLabel((int) ($item['status'] ?? 0)),
+            'payment_no' => $item['payment_no'] ?? null,
             'remark' => $item['remark'] ?? null,
             'operator' => $item['operator'] ?? null,
+            'paid_at' => $item['paid_at'] ?? null,
             'created_at' => $item['created_at'] ?? null,
             'processed_at' => $item['processed_at'] ?? null,
             'user' => $this->user($item['user'] ?? null),

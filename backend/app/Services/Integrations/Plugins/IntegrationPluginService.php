@@ -14,6 +14,22 @@ use Illuminate\Support\Facades\Schema;
 
 class IntegrationPluginService
 {
+    /** 卸载受阻提示里用的引用表中文名 */
+    private const REFERENCE_TABLE_LABELS = [
+        'integration_plugin_bindings' => '插件绑定',
+        'supplier_plugin_bindings' => '供应商绑定',
+        'product_upstream_bindings' => '商品上游绑定',
+        'service_upstream_bindings' => '服务上游绑定',
+        'service_runtime_snapshots' => '服务运行快照',
+        'service_connection_snapshots' => '服务连接快照',
+        'service_provision_attempts' => '开通记录',
+        'integration_plugin_runtime_logs' => '插件运行日志',
+        'payments' => '支付记录',
+        'payment_callbacks' => '支付回调',
+        'gateway_logs' => '网关日志',
+        'message_logs' => '消息记录',
+    ];
+
     public function __construct(
         private readonly PluginScanner $scanner,
         private readonly PluginInstaller $installer,
@@ -26,8 +42,9 @@ class IntegrationPluginService
      */
     public function list(?string $domain = null): array
     {
+        $scannedManifests = $this->scanner->scan($domain);
         $manifests = array_values(array_filter(
-            $this->scanner->scan($domain),
+            $scannedManifests,
             fn (PluginManifest $manifest): bool => ! $this->isDemoManifest($manifest),
         ));
         $installedMap = $this->installedPluginMap($domain);
@@ -36,10 +53,11 @@ class IntegrationPluginService
         $referenceCountsByPluginId = $this->pluginReferenceCountsByPlugin($installedPlugins);
         $latestRuntimeLogsByPluginId = $this->latestRuntimeLogsByPlugin($installedPlugins);
 
-        // 已在文件系统中找到的 domain:slug 键集合
+        // 已在文件系统中找到的 domain:slug 键集合。
+        // 必须基于未过滤 demo 的扫描结果，否则已安装的 demo 插件会被误判成“文件已丢失”。
         $scannedKeys = array_flip(array_map(
             fn (PluginManifest $m): string => $m->domain.':'.$m->slug,
-            $manifests,
+            $scannedManifests,
         ));
 
         $items = array_map(
@@ -77,6 +95,12 @@ class IntegrationPluginService
 
     public function install(string $domain, string $slug): array
     {
+        // demo 插件不在管理端列表展示，也不允许通过管理端安装，
+        // 否则会产生“已安装但列表不可见”的状态，无法再停用或卸载。
+        if ($this->isDemoManifest($this->scanner->requireManifest($domain, $slug))) {
+            throw new BusinessException('示例插件仅供开发调试，不支持在管理端安装', 42200);
+        }
+
         $plugin = $this->installer->install($domain, $slug);
 
         return $this->detail($plugin);
@@ -141,8 +165,12 @@ class IntegrationPluginService
     /**
      * @return array<string, mixed>
      */
-    public function uninstall(IntegrationPlugin $plugin): array
+    public function uninstall(IntegrationPlugin $plugin, bool $force = false): array
     {
+        if (! $force) {
+            $this->assertUninstallable($plugin);
+        }
+
         $result = [
             'deleted' => false,
             'plugin_id' => (int) $plugin->id,
@@ -426,22 +454,43 @@ class IntegrationPluginService
             return null;
         }
 
-        return $this->singleEnabledDomainMessage($enabledPlugin);
-    }
-
-    private function singleEnabledDomainMessage(IntegrationPlugin $enabledPlugin): string
-    {
-        $pluginName = trim((string) $enabledPlugin->name) !== ''
-            ? (string) $enabledPlugin->name
-            : ((string) $enabledPlugin->slug ?: '其他插件');
-
-        return "当前功能域已启用「{$pluginName}」，请先停用后再启用其他插件";
+        return PluginInstaller::singleEnabledDomainMessage($enabledPlugin);
     }
 
     /**
+     * 卸载会硬删绑定关系，历史支付记录的 plugin_id 也会被外键置空（payments_plugin_fk 为 nullOnDelete），
+     * 属于不可逆操作。存在任何业务引用时要求管理端显式确认后再走强制卸载。
+     */
+    private function assertUninstallable(IntegrationPlugin $plugin): void
+    {
+        $counts = $this->pluginReferenceCounts($plugin, $this->pluginReferenceTables());
+        if ($counts === []) {
+            return;
+        }
+
+        throw new BusinessException($this->uninstallBlockedMessage($counts), 42200);
+    }
+
+    /**
+     * @param  array<string, int>  $counts
+     */
+    private function uninstallBlockedMessage(array $counts): string
+    {
+        $labels = self::REFERENCE_TABLE_LABELS;
+        $details = [];
+
+        foreach ($counts as $table => $count) {
+            $details[] = ($labels[$table] ?? $table)." {$count} 条";
+        }
+
+        return '插件仍被业务数据引用（'.implode('、', $details).'），卸载会删除这些绑定关系且无法恢复，请确认后再强制卸载';
+    }
+
+    /**
+     * @param  array<int, string>  $tables
      * @return array<string, int>
      */
-    private function pluginReferenceCounts(?IntegrationPlugin $plugin): array
+    private function pluginReferenceCounts(?IntegrationPlugin $plugin, array $tables): array
     {
         $pluginId = (int) ($plugin?->id ?? 0);
         if ($pluginId <= 0) {
@@ -449,7 +498,7 @@ class IntegrationPluginService
         }
 
         $counts = [];
-        foreach ($this->availablePluginReferenceTables() as $table) {
+        foreach ($this->availableTables($tables) as $table) {
             $count = DB::table($table)->where('plugin_id', $pluginId)->count();
             if ($count > 0) {
                 $counts[$table] = (int) $count;
@@ -460,6 +509,9 @@ class IntegrationPluginService
     }
 
     /**
+     * 列表和详情只统计绑定表：这些表小、有索引，且是“插件被哪些业务场景选用”的真实答案。
+     * payments / gateway_logs / message_logs 这类历史大表只在卸载校验时才统计。
+     *
      * @param  array<int, IntegrationPlugin>  $plugins
      * @return array<int, array<string, int>>
      */
@@ -471,7 +523,7 @@ class IntegrationPluginService
         }
 
         $countsByPluginId = array_fill_keys($pluginIds, []);
-        foreach ($this->availablePluginReferenceTables() as $table) {
+        foreach ($this->availableTables($this->bindingReferenceTables()) as $table) {
             $counts = DB::table($table)
                 ->select('plugin_id', DB::raw('COUNT(*) as aggregate'))
                 ->whereIn('plugin_id', $pluginIds)
@@ -557,7 +609,7 @@ class IntegrationPluginService
             return $referenceCountsByPluginId[$pluginId];
         }
 
-        return $this->pluginReferenceCounts($plugin);
+        return $this->pluginReferenceCounts($plugin, $this->bindingReferenceTables());
     }
 
     /**
@@ -631,26 +683,40 @@ class IntegrationPluginService
     }
 
     /**
+     * @param  array<int, string>  $tables
      * @return array<int, string>
      */
-    private function availablePluginReferenceTables(): array
+    private function availableTables(array $tables): array
     {
         return array_values(array_filter(
-            $this->pluginReferenceTables(),
+            $tables,
             fn (string $table): bool => Schema::hasTable($table) && Schema::hasColumn($table, 'plugin_id'),
         ));
     }
 
     /**
+     * 绑定表：表达“插件被哪个业务场景选用”，卸载时会被硬删。
+     *
      * @return array<int, string>
      */
-    private function pluginReferenceTables(): array
+    private function bindingReferenceTables(): array
     {
         return [
             'integration_plugin_bindings',
             'supplier_plugin_bindings',
             'product_upstream_bindings',
             'service_upstream_bindings',
+        ];
+    }
+
+    /**
+     * 卸载校验用的全量引用表：绑定表 + 历史业务记录表。
+     *
+     * @return array<int, string>
+     */
+    private function pluginReferenceTables(): array
+    {
+        return array_merge($this->bindingReferenceTables(), [
             'service_runtime_snapshots',
             'service_connection_snapshots',
             'service_provision_attempts',
@@ -659,6 +725,6 @@ class IntegrationPluginService
             'payment_callbacks',
             'gateway_logs',
             'message_logs',
-        ];
+        ]);
     }
 }

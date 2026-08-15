@@ -25,6 +25,9 @@ use Illuminate\Support\Str;
 
 class PluginRuntimeRegistry
 {
+    /** 支付回调验签动作：未认证入口，验签失败不落 runtime log */
+    private const VERIFY_NOTIFY_ACTION = 'payment.verify_notify';
+
     public function __construct(
         private readonly Container $container,
         private readonly PluginScanner $scanner,
@@ -90,8 +93,11 @@ class PluginRuntimeRegistry
         try {
             $raw = $entry->execute($request);
             $result = is_array($raw) ? $raw : ['data' => $raw];
-            $response = array_merge([
-                'success' => (bool) ($result['success'] ?? true),
+            // 插件自定义字段先并入，随后由平台统一覆盖归一化字段。
+            // 顺序不能反：array_merge 会让插件返回的原始值盖掉类型转换结果，
+            // 例如字符串 'false' 会被下游 `=== false` 判定为成功。
+            $response = array_merge($result, [
+                'success' => $this->normalizeSuccess($result),
                 'action' => $resolvedAction,
                 'plugin' => [
                     'domain' => $manifest->domain,
@@ -99,10 +105,10 @@ class PluginRuntimeRegistry
                     'key' => $manifest->key,
                     'name' => $manifest->name,
                 ],
-                'message' => (string) ($result['message'] ?? ''),
+                'message' => $this->normalizeMessage($result['message'] ?? null),
                 'data' => $result['data'] ?? [],
                 'raw' => $result['raw'] ?? [],
-            ], $result);
+            ]);
 
             $this->recordRuntimeLog($plugin, $manifest, $resolvedAction, $payload, $context, $response, 'success', $startedAt, $traceId);
 
@@ -152,6 +158,10 @@ class PluginRuntimeRegistry
             return;
         }
 
+        if ($this->shouldSkipRuntimeLog($action, $response)) {
+            return;
+        }
+
         try {
             IntegrationPluginRuntimeLog::query()->create([
                 'trace_id' => $traceId !== '' ? $traceId : null,
@@ -184,6 +194,76 @@ class PluginRuntimeRegistry
                 'message' => $logException->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * 支付回调验签是未认证入口，任何人都能高频触发。验签未通过时不落 runtime log，
+     * 避免被利用做磁盘/表膨胀；验签通过（真实回调）仍然完整落库，保留支付审计链路。
+     * 验签失败本身已由 VerifyPaymentCallbackSignature / VerifyAlipayCallbackSignature
+     * 中间件以脱敏方式写入应用日志，审计不丢失。
+     *
+     * @param  array<string, mixed>|null  $response
+     */
+    private function shouldSkipRuntimeLog(string $action, ?array $response): bool
+    {
+        if ($action !== self::VERIFY_NOTIFY_ACTION) {
+            return false;
+        }
+
+        $data = is_array($response['data'] ?? null) ? $response['data'] : [];
+
+        return ! (bool) ($data['verified'] ?? false);
+    }
+
+    /**
+     * 归一化插件返回的 success。平台下游用严格 `=== false` 判失败，
+     * 因此这里必须产出真正的 bool，否则失败会被当成功放行。
+     *
+     * 字符串按 Laravel `$request->boolean()` 的同一套语义处理：
+     * 'false'、'0'、'off'、'no'、'' 视为失败。直接 `(bool)` 强转的话
+     * 字符串 'false' 会变成 true，正是要防的那种情况。
+     * 缺省视为成功；非标量属于契约违规，失败关闭。
+     *
+     * @param  array<string, mixed>  $result
+     */
+    private function normalizeSuccess(array $result): bool
+    {
+        if (! array_key_exists('success', $result)) {
+            return true;
+        }
+
+        $success = $result['success'];
+
+        if (is_bool($success)) {
+            return $success;
+        }
+
+        if (is_string($success)) {
+            return filter_var(trim($success), FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if (is_int($success) || is_float($success)) {
+            return (bool) $success;
+        }
+
+        return false;
+    }
+
+    /**
+     * 插件返回的 message 约定是字符串；数组或对象直接强转会触发 PHP 警告，
+     * 这里统一降级为空串，避免坏插件把 runtime log 写坏。
+     */
+    private function normalizeMessage(mixed $message): string
+    {
+        if (is_string($message)) {
+            return $message;
+        }
+
+        if (is_scalar($message)) {
+            return (string) $message;
+        }
+
+        return '';
     }
 
     /**

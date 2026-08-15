@@ -76,6 +76,7 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
   const supportGroupLink = ref<string>('');
   const termsUrl = ref<string>('');
   const privacyUrl = ref<string>('');
+  const frontendUrl = ref<string>('');
   const brandInitials = computed(() => deriveInitials(siteName.value));
 
   let fetchPromise: Promise<void> | null = null;
@@ -132,6 +133,7 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
     supportGroupLink.value = pick(data, ['support_group_link', 'supportGroupLink'], supportGroupLink.value || '');
     termsUrl.value = pick(data, ['terms_url'], termsUrl.value || '');
     privacyUrl.value = pick(data, ['privacy_url'], privacyUrl.value || '');
+    frontendUrl.value = pick(data, ['frontend_url'], frontendUrl.value || '');
     syncDocumentTitle(browserTitle.value || siteName.value || DEFAULT_SITE_NAME, previousBaseTitle, DEFAULT_SITE_NAME);
     updateFavicon(siteFavicon.value || DEFAULT_FAVICON, DEFAULT_FAVICON);
   }
@@ -178,6 +180,7 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
     supportGroupLink,
     termsUrl,
     privacyUrl,
+    frontendUrl,
     brandInitials,
     toggleSidebar,
     applyPageTitle,

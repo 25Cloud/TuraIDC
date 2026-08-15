@@ -23,6 +23,7 @@ class AdminUserServiceListItemResource extends JsonResource
             'id' => (int) ($item['id'] ?? 0),
             'name' => (string) ($item['name'] ?? ''),
             'product_display_name' => (string) ($item['product_display_name'] ?? ''),
+            'product_full_path' => (string) ($item['product_full_path'] ?? ''),
             'domain' => (string) ($item['domain'] ?? ''),
             'custom_hostname' => (string) ($item['custom_hostname'] ?? ''),
             'has_custom_hostname' => (bool) ($item['has_custom_hostname'] ?? false),

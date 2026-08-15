@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Admin\V2;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,6 +22,7 @@ class AdminVerificationHistoryItemResource extends JsonResource
             'real_name' => (string) ($history['real_name'] ?? ''),
             'id_card_masked' => (string) ($history['id_card_masked'] ?? ''),
             'verification_status' => (int) ($history['verification_status'] ?? 0),
+            'verification_status_label' => User::verificationStatusLabel((int) ($history['verification_status'] ?? 0)),
             'verification_message' => (string) ($history['verification_message'] ?? ''),
             'verification_method_label' => (string) ($history['verification_method_label'] ?? ''),
             'verification_type_label' => (string) ($history['verification_type_label'] ?? ''),

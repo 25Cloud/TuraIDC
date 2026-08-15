@@ -1,5 +1,5 @@
 /* 平板端大弹窗/抽屉宽度兜底：769-1024px 区间限制最大宽度 */
-@media (min-width: 769px) and (max-width: 1024px) {
+@media (width >= 769px) and (width <= 1024px) {
   .t-dialog {
     max-width: calc(100vw - 32px) !important;
   }
@@ -10,7 +10,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .t-dialog__position {
     align-items: center !important;
     min-height: 100vh;
@@ -84,10 +84,14 @@
 
   .t-drawer__footer {
     padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .t-drawer__footer .t-button {
     width: 100%;
+    min-width: 0;
   }
 
   .drawer-actions {
@@ -102,7 +106,7 @@
   }
 }
 
-@media (max-width: 420px) {
+@media (width <= 420px) {
   .drawer-actions {
     grid-template-columns: 1fr;
   }

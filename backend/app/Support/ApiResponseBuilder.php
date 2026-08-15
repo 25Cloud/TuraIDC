@@ -49,6 +49,7 @@ class ApiResponseBuilder
     {
         return match (true) {
             $code >= 50000 => 500,
+            $code >= 42900 => 429,
             $code >= 42200 => 422,
             $code >= 40900 => 409,
             $code >= 40400 => 404,

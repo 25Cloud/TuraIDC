@@ -78,6 +78,8 @@ class AdminPermissions
 
     public const SCHEDULE_TRIGGER = 'schedule.trigger';
 
+    public const SCHEDULE_RETRY = 'schedule.retry';
+
     public const SITE_VIEW = 'site.view';
 
     public const SITE_MANAGE = 'site.manage';
@@ -254,6 +256,7 @@ class AdminPermissions
             self::INTEGRATION_PLUGIN_MANAGE => [self::INTEGRATION_PLUGIN_VIEW],
             self::INTEGRATION_PLUGIN_TEST => [self::INTEGRATION_PLUGIN_VIEW],
             self::SCHEDULE_TRIGGER => [self::SCHEDULE_VIEW],
+            self::SCHEDULE_RETRY => [self::SCHEDULE_VIEW],
             self::SITE_MANAGE => [self::SITE_VIEW],
             self::LOG_MANAGE => [self::LOG_LIST],
             self::MEMBER_LEVEL_MANAGE => [self::MEMBER_LEVEL_LIST],

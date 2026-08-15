@@ -8,17 +8,41 @@
   <meta name="description" content="图拉云 — 稳定、安全、高性价比的云服务器与 IDC 服务平台，覆盖香港、美国与国内多地节点，提供云服务器、独立服务器、云电脑与工单支持。" />
   <meta name="keywords" content="云服务器,独立服务器,高防服务器,云电脑,香港服务器,美国服务器,BGP 多线,IDC 服务,图拉云" />
   <meta name="author" content="图拉云" />
+  <meta name="msvalidate.01" content="EA1D7C1A527755CFEACE1520F36EC05F" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="图拉云 - 稳定、安全、高性价比的云服务器与 IDC 服务平台" />
   <meta property="og:description" content="图拉云提供云服务器、独立服务器、云电脑与 IDC 服务，覆盖香港、美国与国内多地节点。" />
-  <meta property="og:url" content="https://www.example.com" />
+  <meta property="og:url" content="https://www.coyjs.cn" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="canonical" href="https://www.example.com/" />
+  <link rel="canonical" href="https://www.coyjs.cn/" />
   <title>图拉云 - 稳定、安全、高性价比的云服务器与 IDC 服务平台</title>
-  <link rel="icon" type="image/svg+xml" href="/branding/logo1.svg" fetchpriority="high" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/branding/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/branding/favicon-16.png" />
   <link rel="alternate" hreflang="zh-CN" href="/" />
+  <!-- API 源站预连接：首屏数据请求与 hero 视频均指向该跨域源，提前 DNS + TLS -->
+  <link rel="preconnect" href="%VITE_API_BASE_URL%" crossorigin />
   <link rel="prefetch" href="%VITE_API_BASE_URL%/v2/site/config" as="fetch" crossorigin="anonymous" />
+
+  <!-- 首页 LCP 关键路径预热：在 JS 下载前提前发起 /v2/site/home，home 页消费 window.__HOME_FETCH__ 复用响应，砍掉 1 个串行 RTT -->
+  <script>
+    (function () {
+      var base = '%VITE_API_BASE_URL%'
+      if (!base || typeof window === 'undefined' || !window.fetch) return
+      // 仅根路径（首页）预热；seo 落地页/products 等页面不消费该响应，避免浪费
+      if (window.location.pathname !== '/' && window.location.pathname !== '') return
+      var url = base.replace(/\/+$/, '') + '/v2/site/home'
+      window.__HOME_FETCH__ = window.fetch(url, { credentials: 'omit' })
+        .then(function (res) {
+          if (!res.ok) throw new Error('home prefetch: ' + res.status)
+          return res.json()
+        })
+        .catch(function () {
+          // 预热失败静默降级，home 页回退 axios 常规请求
+          window.__HOME_FETCH__ = undefined
+        })
+    })()
+  </script>
   
   <!-- 关键第三方域名预连接，减少 DNS + TLS 握手开销 -->
   <link rel="preconnect" href="//api.geetest.com" crossorigin />
@@ -77,7 +101,7 @@
           100% { transform: translateX(350%); }
         }
       </style>
-      <img class="splash-logo" src="/branding/logo1.svg" alt="图拉云" width="48" height="48" />
+      <img class="splash-logo" src="/branding/splash-96.png" alt="图拉云" width="48" height="48" />
       <div class="splash-bar-track"><div class="splash-bar-fill"></div></div>
     </div>
   </div>

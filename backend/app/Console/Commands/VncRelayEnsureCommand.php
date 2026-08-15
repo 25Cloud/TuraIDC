@@ -12,10 +12,10 @@ use Throwable;
  * 确保 VNC Relay 进程在运行。
  *
  * 设计意图：
- *   - 由 schedule:run 每 15 分钟调用一次
+ *   - 不再注册到心跳任务，仅保留为手工健康检查/故障修复命令
  *   - 检测目标端口是否有进程监听
  *   - 如果没有，以后台方式拉起 vnc:relay
- *   - 命令本身立即返回，不阻塞调度器
+ *   - 命令本身立即返回，不阻塞调用方
  */
 class VncRelayEnsureCommand extends Command
 {
@@ -23,7 +23,7 @@ class VncRelayEnsureCommand extends Command
         {--host= : Relay 监听地址，默认读取 VNC_RELAY_HOST}
         {--port= : Relay 监听端口，默认读取 VNC_RELAY_PORT}';
 
-    protected $description = '检测并自动拉起 VNC WebSocket 中转服务（适合放入 schedule:run）';
+    protected $description = '检测并自动拉起 VNC WebSocket 中转服务（手工健康检查/故障修复）';
 
     public function handle(): int
     {

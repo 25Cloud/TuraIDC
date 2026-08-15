@@ -89,13 +89,13 @@
   margin-top: 16px;
 }
 
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   .recharge-filter {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .recharge-head {
     flex-direction: column;
   }
@@ -146,7 +146,7 @@
   }
 }
 
-@media (max-width: 360px) {
+@media (width <= 360px) {
   .recharge-filter {
     grid-template-columns: 1fr;
     grid-template-areas:

@@ -217,7 +217,7 @@
                       trigger="click"
                       placement="bottom-right"
                       :options="smtpAccountActionOptions(account)"
-                      @click="(data: { value: unknown }) => handleSmtpAccountAction(String(data.value), index)"
+                      @click="handleSmtpAccountActionHandler(index)"
                     >
                       <t-button variant="text" shape="square">
                         <more-icon />
@@ -368,7 +368,8 @@
 import './index.less';
 
 import { BrowseIcon, BrowseOffIcon, MoreIcon } from 'tdesign-icons-vue-next';
-import { MessagePlugin } from 'tdesign-vue-next';
+import type { DropdownOption } from 'tdesign-vue-next';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -545,17 +546,43 @@ async function disablePlugin(plugin: IntegrationPluginRecord) {
   });
 }
 
-async function deletePlugin(plugin: IntegrationPluginRecord) {
+const BINDING_TABLE_LABELS: Record<string, string> = {
+  integration_plugin_bindings: '插件绑定',
+  supplier_plugin_bindings: '供应商绑定',
+  product_upstream_bindings: '商品上游绑定',
+  service_upstream_bindings: '服务上游绑定',
+};
+
+function bindingSummary(plugin: IntegrationPluginRecord): string {
+  return Object.entries(plugin.binding_counts || {})
+    .filter(([, count]) => Number(count) > 0)
+    .map(([table, count]) => `${BINDING_TABLE_LABELS[table] || table} ${count} 条`)
+    .join('、');
+}
+
+function deletePlugin(plugin: IntegrationPluginRecord) {
   if (!canManagePlugins.value) return;
   if (!plugin.id) return;
-  // eslint-disable-next-line no-alert
-  if (!window.confirm(`确定删除插件「${plugin.name}」的安装记录和配置吗？插件目录文件不会被删除。`)) return;
 
-  await runAction(plugin, 'delete', async () => {
-    await pluginsApi.remove(plugin.id as string | number);
-    MessagePlugin.success('插件已删除');
-    await loadPlugins();
-    if (currentPlugin.value?.id === plugin.id) configVisible.value = false;
+  // 插件仍被业务绑定引用时，卸载会硬删这些绑定且无法恢复，必须让管理员看到影响范围再确认。
+  const summary = bindingSummary(plugin);
+  const force = Number(plugin.business_reference_count || 0) > 0 || summary !== '';
+
+  const dialog = DialogPlugin.confirm({
+    header: force ? '强制卸载插件' : '删除插件',
+    body: force
+      ? `插件「${plugin.name}」仍被业务数据引用${summary ? `（${summary}）` : ''}。卸载会一并删除这些绑定关系且无法恢复，确定继续吗？`
+      : `确定删除插件「${plugin.name}」的安装记录和配置吗？插件目录文件不会被删除。`,
+    confirmBtn: { content: force ? '强制卸载' : '确认删除', theme: 'danger' },
+    async onConfirm() {
+      dialog.destroy();
+      await runAction(plugin, 'delete', async () => {
+        await pluginsApi.remove(plugin.id as string | number, force);
+        MessagePlugin.success('插件已删除');
+        await loadPlugins();
+        if (currentPlugin.value?.id === plugin.id) configVisible.value = false;
+      });
+    },
   });
 }
 
@@ -894,6 +921,10 @@ function smtpAccountActionOptions(account: SmtpAccountForm) {
   return actions;
 }
 
+function handleSmtpAccountActionHandler(index: number) {
+  return (data: DropdownOption) => handleSmtpAccountAction(String(data.value), index);
+}
+
 async function handleSmtpAccountAction(action: string, index: number) {
   if (action === 'edit') {
     openSmtpAccountDialog(index);
@@ -920,10 +951,16 @@ async function handleSmtpAccountAction(action: string, index: number) {
 
   if (action === 'delete') {
     if (!canManagePlugins.value) return;
-    // eslint-disable-next-line no-alert
-    if (!window.confirm('确定删除这个 SMTP 账号吗？')) return;
-    smtpAccounts.value.splice(index, 1);
-    await saveConfig();
+    const dialog = DialogPlugin.confirm({
+      header: '删除 SMTP 账号',
+      body: '确定删除这个 SMTP 账号吗？',
+      confirmBtn: { content: '确认删除', theme: 'danger' },
+      async onConfirm() {
+        dialog.destroy();
+        smtpAccounts.value.splice(index, 1);
+        await saveConfig();
+      },
+    });
   }
 }
 
@@ -1040,9 +1077,12 @@ function clearEmailTestErrors() {
   });
 }
 
+interface FieldErrorPayload {
+  response?: { data?: { data?: { errors?: Record<string, string[]> } } };
+}
+
 function extractFieldErrors(error: unknown) {
-  const responseData = error as { response?: { data?: { data?: { errors?: Record<string, string[]> } } } };
-  const errors = responseData?.response?.data?.data?.errors;
+  const errors = (error as FieldErrorPayload)?.response?.data?.data?.errors;
   return {
     to: firstError(errors?.to),
   };

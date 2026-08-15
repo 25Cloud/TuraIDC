@@ -25,13 +25,15 @@ class ProductTypeService
 
         $items = ProductType::items();
         $values = array_values(array_map(fn (array $item): string => (string) $item['value'], $items));
-        $firstGroups = Schema::hasTable('first_product_groups')
+        $hasFirstProductGroups = $this->hierarchySourceExists('first_product_groups');
+        $hasSecondProductGroups = $this->hierarchySourceExists('second_product_groups');
+        $hasThirdProductGroups = $this->hierarchySourceExists('third_product_groups');
+        $hasProductHierarchy = $hasFirstProductGroups && $hasSecondProductGroups && $hasThirdProductGroups;
+
+        $firstGroups = $hasFirstProductGroups
             ? FirstProductGroup::query()->whereIn('code', $values)->get()->keyBy('code')
             : collect();
-        $usageMap = Schema::hasTable('products')
-            && Schema::hasTable('third_product_groups')
-            && Schema::hasTable('second_product_groups')
-            && Schema::hasTable('first_product_groups')
+        $usageMap = Schema::hasTable('products') && $hasProductHierarchy
             ? Product::query()
                 ->join('third_product_groups', 'third_product_groups.id', '=', 'products.product_group_id')
                 ->join('second_product_groups', 'second_product_groups.id', '=', 'third_product_groups.second_product_group_id')
@@ -42,7 +44,7 @@ class ProductTypeService
                 ->all()
             : [];
 
-        $secondGroupUsageMap = Schema::hasTable('second_product_groups') && Schema::hasTable('first_product_groups')
+        $secondGroupUsageMap = $hasFirstProductGroups && $hasSecondProductGroups
             ? SecondProductGroup::query()
                 ->join('first_product_groups', 'first_product_groups.id', '=', 'second_product_groups.first_product_group_id')
                 ->selectRaw('first_product_groups.code as product_type, COUNT(second_product_groups.id) as total')
@@ -51,7 +53,7 @@ class ProductTypeService
                 ->all()
             : [];
 
-        $thirdGroupUsageMap = Schema::hasTable('third_product_groups') && Schema::hasTable('second_product_groups') && Schema::hasTable('first_product_groups')
+        $thirdGroupUsageMap = $hasProductHierarchy
             ? ThirdProductGroup::query()
                 ->join('second_product_groups', 'second_product_groups.id', '=', 'third_product_groups.second_product_group_id')
                 ->join('first_product_groups', 'first_product_groups.id', '=', 'second_product_groups.first_product_group_id')
@@ -94,6 +96,11 @@ class ProductTypeService
                 'group_count' => (int) ($groupUsageMap[$value] ?? 0),
             ];
         }, $items, array_keys($items));
+    }
+
+    private function hierarchySourceExists(string $name): bool
+    {
+        return Schema::hasTable($name) || Schema::hasView($name);
     }
 
     public function create(string $label, ?string $icon = null, ?string $productType = null): array

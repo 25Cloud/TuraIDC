@@ -12,6 +12,7 @@ class RestoreZjmfBillingCommand extends Command
     protected $signature = 'finance:restore-zjmf-billing
         {dump : 原始 ZJMF 账单 SQL 文件绝对路径}
         {--confirm= : 危险确认短语，默认必须为 RESTORE_ZJMF_BILLING}
+        {--force : 目标 invoices/balance_logs 表存在既有数据时，允许物理删除后覆盖重插}
         {--dry-run : 仅解析并输出统计，不写入数据库}';
 
     protected $description = '从历史 ZJMF SQL 备份恢复账单、支付流水与余额记录';
@@ -23,6 +24,7 @@ class RestoreZjmfBillingCommand extends Command
         $dumpPath = (string) $this->argument('dump');
         $confirm = (string) $this->option('confirm');
         $dryRun = (bool) $this->option('dry-run');
+        $forceOverwrite = (bool) $this->option('force');
 
         if (! in_array($confirm, $profile->confirmationPhrases(), true)) {
             $this->error('危险确认未通过，请追加 --confirm='.$profile->defaultConfirmationPhrase());
@@ -31,7 +33,7 @@ class RestoreZjmfBillingCommand extends Command
         }
 
         try {
-            $summary = $restoreService->restoreFromSqlDump($dumpPath, $dryRun);
+            $summary = $restoreService->restoreFromSqlDump($dumpPath, $dryRun, $forceOverwrite);
         } catch (Throwable $e) {
             $this->error('恢复失败: '.$e->getMessage());
 
@@ -40,6 +42,8 @@ class RestoreZjmfBillingCommand extends Command
 
         $this->info($dryRun ? '账单恢复预检完成' : '账单恢复完成');
         $this->line('SQL 文件: '.$dumpPath);
+        $this->line('既有账单数（将被覆盖）: '.$summary['existing_invoices']);
+        $this->line('既有余额日志数（将被覆盖）: '.$summary['existing_balance_logs']);
         $this->line('账单数: '.$summary['invoices']);
         $this->line('余额日志数: '.$summary['balance_logs']);
         $this->line('同步余额用户数: '.$summary['user_balances']);

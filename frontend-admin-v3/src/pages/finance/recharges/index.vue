@@ -79,7 +79,7 @@
               :status-map="PAYMENT_STATUS_MAP"
               :status="row.status"
               :rows="rechargeMobileRows(row)"
-              :action-options="mobileActionOptions(row)"
+              :action-options="mobileActionOptions()"
               @action="(value) => handleMobileAction(value, row)"
             />
           </div>
@@ -315,7 +315,7 @@ function handleMobileAction(value: unknown, row: RechargeRecord) {
   if (value === 'detail') openDetail(row);
 }
 
-function mobileActionOptions(_row: RechargeRecord) {
+function mobileActionOptions() {
   return [{ content: '详情', value: 'detail' }];
 }
 

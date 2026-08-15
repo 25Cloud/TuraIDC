@@ -26,6 +26,7 @@ class ServeBackendStackCommand extends Command
         {--internal-http-port=18000 : Laravel 内部 HTTP 服务监听端口}
         {--internal-relay-host=127.0.0.1 : VNC Relay 内部监听地址}
         {--internal-relay-port=8100 : VNC Relay 内部监听端口}
+        {--without-vnc : 不启动 VNC Relay 子进程（由独立进程托管）}
         {--without-queue : 不启动队列 Worker}
         {--with-schedule : 额外启动调度 Worker}';
 
@@ -110,8 +111,12 @@ class ServeBackendStackCommand extends Command
         $this->info(sprintf('统一入口已启动：http://%s:%d', $publicHost, $publicPort));
         $this->info(sprintf('VNC WebSocket 入口：ws://%s:%d%s', $publicHost, $publicPort, $relayPath));
         $this->line($this->scheduleProcess instanceof Process
-            ? '已同时托管 Laravel HTTP、VNC Relay、调度 Worker；队列由每分钟心跳消费。'
-            : '已托管 Laravel HTTP、VNC Relay、队列 Worker；计划任务需独立运行。');
+            ? ($this->relayProcess instanceof Process
+                ? '已同时托管 Laravel HTTP、VNC Relay、调度 Worker；队列由 queue:drain 后台消费。'
+                : '已托管 Laravel HTTP、调度 Worker；VNC Relay 由独立进程托管，队列由 queue:drain 后台消费。')
+            : ($this->relayProcess instanceof Process
+                ? '已托管 Laravel HTTP、VNC Relay、队列 Worker；计划任务需独立运行。'
+                : '已托管 Laravel HTTP、队列 Worker；VNC Relay 由独立进程托管，计划任务需独立运行。'));
         $this->line('对外只需要这一组地址，内部 HTTP 与 Relay 端口不需要暴露。');
         $this->line('按 Ctrl+C 可同时停止整个后端栈。');
 
@@ -133,7 +138,7 @@ class ServeBackendStackCommand extends Command
             return self::FAILURE;
         }
 
-        if (! $this->relayProcess?->isSuccessful()) {
+        if ($this->relayProcess instanceof Process && ! $this->relayProcess->isSuccessful()) {
             $this->error('VNC Relay 服务已退出。');
 
             return self::FAILURE;
@@ -170,23 +175,28 @@ class ServeBackendStackCommand extends Command
             base_path('vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php'),
         ], base_path('public'));
 
-        $this->relayProcess = new Process([
-            ...$phpProcessArgs,
-            $artisan,
-            'vnc:relay',
-            '--host='.$relayHost,
-            '--port='.$relayPort,
-        ], base_path());
+        if (! (bool) $this->option('without-vnc')) {
+            $this->relayProcess = new Process([
+                ...$phpProcessArgs,
+                $artisan,
+                'vnc:relay',
+                '--host='.$relayHost,
+                '--port='.$relayPort,
+            ], base_path());
+        }
 
         if (! (bool) $this->option('without-queue') && ! (bool) $this->option('with-schedule')) {
             $this->queueProcess = new Process([
                 ...$phpProcessArgs,
                 $artisan,
                 'queue:work',
-                '--queue='.(string) config('queue.TuraIDC_worker_queues', 'provision,referral,notification,coupon,default'),
+                '--queue='.(string) config('queue.turaidc_business_queues', 'provision,referral,notification,coupon,default'),
                 '--sleep=1',
-                '--tries='.(string) config('queue.TuraIDC_worker_tries', 3),
-                '--timeout='.(string) config('queue.TuraIDC_worker_timeout', 1200),
+                '--tries='.(string) config('queue.turaidc_worker_tries', 3),
+                '--timeout='.max(
+                    (int) config('queue.turaidc_worker_timeout', 1200),
+                    (int) config('queue.turaidc_worker_max_timeout', 3600),
+                ),
             ], base_path());
         }
 

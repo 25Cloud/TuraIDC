@@ -10,6 +10,7 @@ use App\Constants\OrderType;
 use App\Exceptions\BusinessException;
 use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Service;
 use App\Models\User;
 use App\Services\Finance\CheckoutService;
@@ -18,6 +19,9 @@ use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\System\OperationLogService;
+use App\Support\OrderInvoiceNoGenerator;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -84,7 +88,9 @@ class ServiceUpgradeService
     {
         $service = $this->detailService->findUserService($user, $serviceId, ['product.supplier', 'product']);
         $product = $service->product;
-        throw_if(! $product, new BusinessException('服务关联商品不存在，无法创建升降级账单'));
+        if (! $product instanceof Product) {
+            throw new BusinessException('服务关联商品不存在，无法创建升降级账单');
+        }
 
         $quote = $this->quoteForUser($user, $serviceId, $selection);
         $quotePayload = is_array($quote['quote'] ?? null) ? $quote['quote'] : [];
@@ -109,7 +115,10 @@ class ServiceUpgradeService
             $sameAmount = round((float) ($existingInvoice->amount ?? 0), 2) === round((float) $amount, 2);
 
             if ($sameKind && $sameProduct && $sameCycle && $samePromo && $sameAmount) {
-                return $existingInvoice->loadMissing(['product', 'service']);
+                $this->ensureHostUpgradeOrderForInvoice($existingInvoice);
+
+                return $existingInvoice->fresh(['product', 'service', 'order'])
+                    ?? $existingInvoice->loadMissing(['product', 'service', 'order']);
             }
 
             app(CheckoutService::class)->cancel($existingInvoice, array_merge($context, [
@@ -167,8 +176,9 @@ class ServiceUpgradeService
             ]);
 
             $this->invoiceService->syncProjection($invoice);
+            $this->createHostUpgradeOrderForInvoice($invoice, $service, $product, $productSpecDisplay);
 
-            return $invoice->load(['product', 'service']);
+            return $invoice->load(['product', 'service', 'order']);
         });
 
         $this->operationLogService->writeServiceConsoleLog($service, 'service.console.host_upgrade.invoice.create', [
@@ -177,6 +187,7 @@ class ServiceUpgradeService
             'amount' => $amount,
             'invoice_id' => (int) $invoice->id,
             'invoice_no' => (string) $invoice->invoice_no,
+            'order_id' => (int) ($invoice->order_id ?? 0),
             'target_product_id' => $productId,
             'billing_cycle' => $billingCycle,
             'promo_code' => $promoCode,
@@ -185,12 +196,145 @@ class ServiceUpgradeService
         return $invoice;
     }
 
+    /**
+     * 为历史或异常缺失内部 Order 的主机升降级账单恢复履约投影。
+     *
+     * 正常创建路径在同一事务内已创建 Order；此方法只承担旧未付账单
+     * 或支付回调竞争窗口的保护，不能把 invoice-only 语义扩展到其他账单类型。
+     */
+    public function ensureHostUpgradeOrderForInvoice(Invoice $invoice): ?Order
+    {
+        if ((string) data_get($invoice->config_pricing_snapshot ?? [], 'meta.kind', '') !== self::ORDER_KIND) {
+            return null;
+        }
+
+        $invoice->loadMissing(['order', 'service', 'product']);
+        if ($invoice->order instanceof Order) {
+            return $invoice->order;
+        }
+
+        if (! in_array((int) $invoice->status, [InvoiceStatus::UNPAID, InvoiceStatus::PAID], true)) {
+            return null;
+        }
+
+        $service = $invoice->service;
+        if (! $service instanceof Service) {
+            $this->logMissingHostUpgradeOrderContext($invoice);
+
+            return null;
+        }
+
+        $product = $invoice->product;
+        if (! $product instanceof Product) {
+            $product = $service->product;
+        }
+
+        if (! $product instanceof Product) {
+            $this->logMissingHostUpgradeOrderContext($invoice);
+
+            return null;
+        }
+
+        return DB::transaction(function () use ($invoice, $service, $product): ?Order {
+            $lockedInvoice = Invoice::query()
+                ->lockForUpdate()
+                ->with('order')
+                ->find((int) $invoice->id);
+
+            if (! $lockedInvoice instanceof Invoice) {
+                return null;
+            }
+
+            if ($lockedInvoice->order instanceof Order) {
+                return $lockedInvoice->order;
+            }
+
+            if ((string) data_get($lockedInvoice->config_pricing_snapshot ?? [], 'meta.kind', '') !== self::ORDER_KIND
+                || ! in_array((int) $lockedInvoice->status, [InvoiceStatus::UNPAID, InvoiceStatus::PAID], true)) {
+                return null;
+            }
+
+            $displayPayload = (new ProductDisplayNameResolver)->resolveForProduct($product);
+            $productSpecDisplay = (string) ($lockedInvoice->product_spec_snapshot
+                ?: $displayPayload['product_spec_display']);
+
+            return $this->createHostUpgradeOrderForInvoice($lockedInvoice, $service, $product, $productSpecDisplay);
+        });
+    }
+
+    private function createHostUpgradeOrderForInvoice(
+        Invoice $invoice,
+        Service $service,
+        Product $product,
+        string $productSpecDisplay,
+    ): Order {
+        $orderNo = OrderInvoiceNoGenerator::deriveOrderNoFromInvoiceNo((string) $invoice->invoice_no)
+            ?? Order::generateOrderNo();
+
+        $order = Order::query()->create([
+            'order_no' => $orderNo,
+            'projection_type' => Order::PROJECTION_TYPE_PROVISIONING,
+            'user_id' => (int) $invoice->user_id,
+            'product_id' => (int) $product->id,
+            'product_spec_snapshot' => $productSpecDisplay,
+            'product_type_snapshot' => (string) $product->product_type,
+            'service_id' => (int) $service->id,
+            'type' => OrderType::UPGRADE,
+            'amount' => (string) $invoice->amount,
+            'discount' => (string) ($invoice->discount ?? '0.00'),
+            'paid_amount' => (string) ($invoice->paid_amount ?? '0.00'),
+            'billing_cycle' => (string) ($invoice->billing_cycle ?: 'one_time'),
+            'quantity' => 1,
+            'config_snapshot' => (array) ($invoice->config_snapshot ?? []),
+            'config_pricing_snapshot' => (array) ($invoice->config_pricing_snapshot ?? []),
+            'coupon_snapshot' => (array) ($invoice->coupon_snapshot ?? []),
+            'status' => (int) $invoice->status === InvoiceStatus::PAID ? OrderStatus::PAID : OrderStatus::PENDING,
+            'paid_at' => $invoice->paid_at,
+            'trace_id' => (string) ($invoice->trace_id ?? ''),
+        ]);
+
+        $invoice->forceFill(['order_id' => (int) $order->id])->save();
+
+        return $order;
+    }
+
+    private function logMissingHostUpgradeOrderContext(Invoice $invoice): void
+    {
+        Log::error('[产品升降级] 无法恢复履约订单，账单缺少服务或商品', [
+            'invoice_id' => (int) $invoice->id,
+            'invoice_no' => (string) $invoice->invoice_no,
+            'service_id' => (int) ($invoice->service_id ?? 0),
+            'product_id' => (int) ($invoice->product_id ?? 0),
+            'trace_id' => (string) ($invoice->trace_id ?? ''),
+        ]);
+    }
+
     public function processPaidUpgradeOrder(Order $order): ?Service
+    {
+        try {
+            return Cache::lock("lock:host-upgrade:order:{$order->id}", 300)
+                ->block(3, fn () => $this->processPaidUpgradeOrderLocked($order));
+        } catch (LockTimeoutException) {
+            Log::info('[产品升降级] 同一订单正在处理，跳过本次重复履约', [
+                'order_id' => (int) $order->id,
+                'order_no' => (string) ($order->order_no ?? ''),
+            ]);
+
+            return $order->service?->fresh(['product.supplier', 'order']);
+        }
+    }
+
+    private function processPaidUpgradeOrderLocked(Order $order): ?Service
     {
         $order->loadMissing(['service.product.supplier']);
         $service = $order->service;
         if (! $service instanceof Service) {
             return null;
+        }
+
+        // 已完成的订单是上游操作的幂等边界，不能因重复回调或任务重放再次升降级。
+        if ((int) $order->status === OrderStatus::COMPLETED) {
+            return $service->fresh(['product.supplier', 'order']) ?? $service;
         }
 
         $meta = (array) data_get($order->config_pricing_snapshot ?? [], 'meta', []);

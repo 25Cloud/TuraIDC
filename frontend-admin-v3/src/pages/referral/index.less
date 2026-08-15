@@ -212,7 +212,7 @@
   color: var(--td-text-color-secondary);
 }
 
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   .referral-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -222,7 +222,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .referral-head {
     flex-direction: column;
   }
@@ -267,7 +267,7 @@
   }
 }
 
-@media (max-width: 360px) {
+@media (width <= 360px) {
   .referral-filter {
     grid-template-columns: 1fr;
     grid-template-areas:

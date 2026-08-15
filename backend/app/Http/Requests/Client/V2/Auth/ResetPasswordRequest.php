@@ -25,7 +25,7 @@ class ResetPasswordRequest extends ClientFormRequest
                 }
             }],
             'code' => 'required|string|size:6',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => 'required|string|min:8|confirmed',
         ];
     }
 }

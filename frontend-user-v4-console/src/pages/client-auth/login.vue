@@ -24,8 +24,9 @@
     >
       <t-form-item name="account">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required">手机号 / 邮箱</label>
+          <label class="client-auth-label is-required" for="login-account">手机号 / 邮箱</label>
           <t-input
+            id="login-account"
             v-model="form.account"
             size="large"
             clearable
@@ -40,8 +41,9 @@
 
       <t-form-item name="password">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required">密码</label>
+          <label class="client-auth-label is-required" for="login-password">密码</label>
           <t-input
+            id="login-password"
             v-model="form.password"
             size="large"
             :type="showPassword ? 'text' : 'password'"
@@ -52,8 +54,7 @@
           >
             <template #prefix-icon><lock-on-icon /></template>
             <template #suffix-icon>
-              <browse-icon v-if="showPassword" @click="showPassword = false" />
-              <browse-off-icon v-else @click="showPassword = true" />
+              <password-toggle v-model="showPassword" />
             </template>
           </t-input>
         </div>
@@ -80,8 +81,9 @@
     >
       <t-form-item name="account">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required">手机号 / 邮箱</label>
+          <label class="client-auth-label is-required" for="login-code-account">手机号 / 邮箱</label>
           <t-input
+            id="login-code-account"
             v-model="codeForm.account"
             size="large"
             clearable
@@ -95,7 +97,7 @@
 
       <t-form-item name="code">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required">验证码</label>
+          <label class="client-auth-label is-required" for="login-code">验证码</label>
           <div class="client-auth-code-row">
             <t-input
               v-model="codeForm.code"
@@ -129,7 +131,7 @@
   </auth-shell>
 </template>
 <script setup lang="ts">
-import { BrowseIcon, BrowseOffIcon, LockOnIcon, UserIcon } from 'tdesign-icons-vue-next';
+import { LockOnIcon, UserIcon } from 'tdesign-icons-vue-next';
 import type { FormInstanceFunctions, FormRule, FormValidateMessage, SubmitContext } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
@@ -137,6 +139,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { clientAuthApi } from '@/api/auth';
 import AuthShell from '@/components/auth/AuthShell.vue';
+import PasswordToggle from '@/components/auth/PasswordToggle.vue';
 import { useGeeTestCaptcha } from '@/composables/useGeeTestCaptcha';
 import { useUserStore } from '@/store';
 import { buildAccountPayload, detectAccountType, normalizeAccountValue } from '@/utils/account';

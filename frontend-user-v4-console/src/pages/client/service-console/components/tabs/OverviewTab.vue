@@ -6,11 +6,14 @@
         <info-cell
           label="实例规格"
           :value="
-            detail.combined_display_name ||
-            detail.product_display_name ||
-            detail.product?.display_name ||
-            detail.product?.type_label ||
-            '--'
+            String(
+              detail.product_full_path ||
+                detail.combined_display_name ||
+                detail.product_display_name ||
+                detail.product?.display_name ||
+                detail.product?.type_label ||
+                '--',
+            )
           "
           strong
         />

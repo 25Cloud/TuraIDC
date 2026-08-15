@@ -92,13 +92,15 @@ class AdminServiceListService
         $statusLabels = ServiceStatus::$labels ?? [];
         $invoice = $this->resolvePrimaryInvoice($service);
         $order = $invoice ? null : $service->order;
+        $productDisplayName = $this->resolveProductDisplayName($service);
 
         return [
             'id' => $service->id,
             'service_id' => (int) $service->id,
             'instance_id' => (int) $service->id,
             'name' => (string) $service->name,
-            'product_display_name' => $this->resolveProductDisplayName($service),
+            'product_display_name' => $productDisplayName,
+            'product_full_path' => $this->resolveServiceProductPath($service, $productDisplayName),
             'domain' => ServiceHostname::resolveDisplayDomain($service, $provisionData),
             'requested_hostname' => (string) ($provisionData['requested_host'] ?? ''),
             'custom_hostname' => ServiceHostname::custom($provisionData),
@@ -354,15 +356,34 @@ class AdminServiceListService
         return is_array($decoded) ? $decoded : [];
     }
 
+    private function resolveServiceProductPath(Service $service, string $productDisplayName): string
+    {
+        $leafGroup = $service->product?->productGroup;
+        $clean = [];
+        foreach ([
+            trim((string) ($leafGroup?->secondProductGroup?->firstProductGroup?->name ?? '')),
+            trim((string) ($leafGroup?->secondProductGroup?->name ?? '')),
+            trim((string) ($leafGroup?->name ?? '')),
+            trim((string) $productDisplayName),
+        ] as $segment) {
+            $segment = trim((string) $segment);
+            if ($segment === '' || in_array($segment, $clean, true)) {
+                continue;
+            }
+            $clean[] = $segment;
+        }
+
+        return $clean !== [] ? implode('/', $clean) : $productDisplayName;
+    }
+
     private function resolveProductDisplayName(Service $service): string
     {
-        $invoiceDisplayName = trim((string) ($this->resolvePrimaryInvoice($service)?->product_spec_snapshot ?? ''));
-        if ($invoiceDisplayName !== '') {
+        $invoiceDisplayName = trim((string) ($this->resolvePrimaryInvoice($service)?->product_spec_snapshot ?? ''));        if ($invoiceDisplayName !== '') {
             return $invoiceDisplayName;
         }
 
         $orderDisplayName = trim((string) ($service->order?->display_product_name ?? ''));
-        if ($orderDisplayName !== '') {
+        if ($orderDisplayName !== '' && $orderDisplayName !== '未配置规格') {
             return $orderDisplayName;
         }
 

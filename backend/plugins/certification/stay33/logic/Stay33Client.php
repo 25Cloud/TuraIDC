@@ -256,7 +256,8 @@ class Stay33Client
             return $fallback;
         }
 
-        if (preg_match('/[a-z]{3,}|error|failed|exception|timeout|curl|http/i', $text) === 1) {
+        // 服务商文案预期为中文；出现连续英文字母一律视为技术细节，直接回退到安全文案。
+        if (preg_match('/[a-z]{3,}/i', $text) === 1) {
             return $fallback;
         }
 

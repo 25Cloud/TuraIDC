@@ -15,6 +15,12 @@ use Illuminate\Support\Facades\Schema;
 
 class PluginConfigRepository
 {
+    /**
+     * 这里刻意不缓存解密结果。凭据必须每次读当前值：
+     * updated_at 是秒级精度，同一秒内的两次保存无法区分；而队列 worker 是长驻进程，
+     * 容器单例跨任务存活，缓存住的旧密钥会在管理员轮换凭据后继续被使用。
+     * 单次 AES 解密的开销远小于这个风险。
+     */
     public function resolvedConfig(IntegrationPlugin $plugin): array
     {
         $config = $plugin->relationLoaded('config') ? $plugin->config : $plugin->config()->first();

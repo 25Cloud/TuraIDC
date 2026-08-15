@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Services\System;
 
 use App\Constants\InvoiceStatus;
+use App\Constants\InvoiceType;
 use App\Models\Invoice;
 use App\Models\Service;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Support\AdminPrivacy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 
 class DashboardService
@@ -77,7 +79,7 @@ class DashboardService
             ->selectRaw('COALESCE(SUM(CASE WHEN status IN (0, 1, 2) THEN 1 ELSE 0 END), 0) as open_tickets')
             ->first();
 
-        $invoiceIncomeStats = Invoice::query()
+        $invoiceIncomeStats = $this->salesIncomeInvoices()
             ->selectRaw('COALESCE(SUM(CASE WHEN status = ? AND paid_at >= ? THEN paid_amount ELSE 0 END), 0) as today_income', [InvoiceStatus::PAID, $today])
             ->selectRaw('COALESCE(SUM(CASE WHEN status = ? AND paid_at >= ? THEN paid_amount ELSE 0 END), 0) as month_income', [InvoiceStatus::PAID, $month])
             ->first();
@@ -161,7 +163,7 @@ class DashboardService
         $daysInMonth = (int) now()->format('t');
 
         // 本月各产品营收占比（已付账单，Top 8 + 其他）
-        $allProducts = Invoice::query()
+        $allProducts = $this->salesIncomeInvoices()
             ->where('created_at', '>=', $month)
             ->where('status', InvoiceStatus::PAID)
             ->selectRaw('
@@ -196,7 +198,7 @@ class DashboardService
         }
 
         // 本月每日已付金额趋势
-        $dailyPaid = Invoice::query()
+        $dailyPaid = $this->salesIncomeInvoices()
             ->where('status', InvoiceStatus::PAID)
             ->where('paid_at', '>=', $month)
             ->selectRaw('DATE(paid_at) as date, COALESCE(SUM(paid_amount), 0) as daily_amount, COUNT(*) as daily_count')
@@ -220,5 +222,21 @@ class DashboardService
             'daily_revenue' => $dailyRevenue,
             'month_label' => now()->format('Y年n月'),
         ];
+    }
+
+    /**
+     * 商品销售收入不包含充值、后台扣款和推荐奖励等资金流水；退款红字账单保留，用于冲抵销售收入。
+     *
+     * @return Builder<Invoice>
+     */
+    private function salesIncomeInvoices(): Builder
+    {
+        return Invoice::query()->where(function (Builder $query): void {
+            $query->whereNull('type')->orWhereNotIn('type', [
+                InvoiceType::RECHARGE,
+                InvoiceType::DEDUCTION,
+                InvoiceType::REFERRAL_CREDIT,
+            ]);
+        });
     }
 }

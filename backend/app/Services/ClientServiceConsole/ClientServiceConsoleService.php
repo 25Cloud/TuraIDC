@@ -109,6 +109,11 @@ class ClientServiceConsoleService
         );
     }
 
+    public function sanitizeClientDetail(array $detail): array
+    {
+        return $this->transformService->sanitizeClientDetail($detail);
+    }
+
     public function getOperationLogsForUser(User $user, int $serviceId, array $filters = [], int $perPage = 10): array
     {
         return $this->detailService->getOperationLogsForUser($user, $serviceId, $filters, $perPage);

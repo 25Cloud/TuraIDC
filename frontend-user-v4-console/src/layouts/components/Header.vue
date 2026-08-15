@@ -35,7 +35,7 @@
                     theme="primary"
                     variant="text"
                     size="small"
-                    @click="handleMarkAllRead"
+                    @click="handleMarkAllReadClick"
                   >
                     全部已读
                   </t-button>
@@ -98,6 +98,7 @@
 </template>
 <script setup lang="ts">
 import { ChevronDownIcon, NotificationIcon, PoweroffIcon, UserCircleIcon, WalletIcon } from 'tdesign-icons-vue-next';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import type { PropType } from 'vue';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -163,7 +164,7 @@ const active = computed(() => getActive());
 const accountName = computed(() => user.userInfo.name || '图拉云用户');
 const userInitials = computed(() => {
   const name = accountName.value.trim();
-  return name.slice(0, 1) || siteBranding.brandInitials || '创';
+  return name.slice(0, 1) || siteBranding.brandInitials || '图';
 });
 const formattedBalance = computed(() => {
   const value = user.userInfo.cash_balance;
@@ -223,8 +224,33 @@ const handleInboxItemClick = (item: InboxItem) => {
   }
 };
 
-const handleMarkAllRead = () => {
+const handleMarkAllRead = async () => {
+  const confirmed = await new Promise<boolean>((resolve) => {
+    const dialog = DialogPlugin.confirm({
+      header: '全部标记已读',
+      body: '确认将所有未读消息标记为已读吗？此操作不可撤销。',
+      confirmBtn: '确认',
+      onConfirm: () => {
+        dialog.destroy();
+        resolve(true);
+      },
+      onCancel: () => {
+        dialog.destroy();
+        resolve(false);
+      },
+      onClose: () => {
+        dialog.destroy();
+        resolve(false);
+      },
+    });
+  });
+  if (!confirmed) return;
   markAllRead();
+  MessagePlugin.success('已全部标记为已读');
+};
+
+const handleMarkAllReadClick = () => {
+  handleMarkAllRead();
 };
 
 const resolveTagTheme = (type: string): 'primary' | 'warning' | 'danger' | 'success' | 'default' => {
@@ -252,6 +278,26 @@ const formatInboxTime = (value: string | null): string => {
 };
 
 const handleLogout = async () => {
+  const confirmed = await new Promise<boolean>((resolve) => {
+    const dialog = DialogPlugin.confirm({
+      header: '退出登录',
+      body: '确认退出当前账户吗？',
+      confirmBtn: '确认退出',
+      onConfirm: () => {
+        dialog.destroy();
+        resolve(true);
+      },
+      onCancel: () => {
+        dialog.destroy();
+        resolve(false);
+      },
+      onClose: () => {
+        dialog.destroy();
+        resolve(false);
+      },
+    });
+  });
+  if (!confirmed) return;
   const redirect = router.currentRoute.value.fullPath;
   await user.logout();
   await router.push({

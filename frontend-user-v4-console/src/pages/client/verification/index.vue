@@ -68,6 +68,9 @@
       @confirm="submitVerification"
       @close="handleVerificationDialogClose"
     >
+      <p v-if="!verificationUrl && verificationMessage" class="verification-message">
+        {{ verificationMessage }}
+      </p>
       <t-form v-if="!verificationUrl" label-align="top" class="verification-form">
         <t-form-item label="真实姓名" required-mark>
           <t-input v-model="verificationForm.realName" placeholder="请输入真实姓名" />

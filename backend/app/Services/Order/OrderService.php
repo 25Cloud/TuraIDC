@@ -21,6 +21,7 @@ use App\Services\Finance\PaymentService;
 use App\Services\Order\Concerns\HandlesOrderCalculation;
 use App\Services\System\NotificationService;
 use App\Services\System\OperationLogService;
+use App\Support\StockReservation;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -45,6 +46,13 @@ class OrderService
     public function cancel(Order $order, array $context = []): Order
     {
         $updatedOrder = DB::transaction(function () use ($order, $context) {
+            // 与 CheckoutService::cancel 保持一致的锁顺序：先锁 Invoice，再锁 Order，
+            // 避免同一笔订单/账单经双入口并发取消时发生行锁死锁。
+            $invoice = Invoice::query()
+                ->where('order_id', $order->id)
+                ->lockForUpdate()
+                ->first();
+
             $lockedOrder = Order::query()
                 ->lockForUpdate()
                 ->findOrFail($order->id);
@@ -53,11 +61,6 @@ class OrderService
                 (int) $lockedOrder->status !== OrderStatus::PENDING,
                 new BusinessException('仅待付款订单可取消')
             );
-
-            $invoice = Invoice::query()
-                ->where('order_id', $lockedOrder->id)
-                ->lockForUpdate()
-                ->first();
 
             $lockedOrder->setRelation('invoice', $invoice);
             if ($invoice instanceof Invoice) {
@@ -73,6 +76,14 @@ class OrderService
                     ->get();
 
                 foreach ($pendingPayments as $pendingPayment) {
+                    // 组合支付（余额+网关）先行扣除了余额，取消时需把预扣余额退回。
+                    if ($this->paymentService->restoreReservedMixBalance($pendingPayment, [
+                        'trace_id' => (string) ($context['trace_id'] ?? ''),
+                        'closed_reason' => 'order_cancelled',
+                    ])) {
+                        continue;
+                    }
+
                     $callbackRaw = (array) ($pendingPayment->callback_raw ?? []);
                     $callbackRaw['closed_reason'] = 'order_cancelled';
                     $callbackRaw['closed_by'] = (string) ($context['actor_type'] ?? 'system');
@@ -100,14 +111,14 @@ class OrderService
                 $this->couponService->syncInvoiceCouponUsage($invoice);
             }
 
-            // 仅新购订单在创建时预扣库存，取消时恢复库存。
+            // 仅新购订单在创建时预扣库存，取消时按创建时实际预扣量对称恢复。
             if ((string) $lockedOrder->type === OrderType::NEW && $lockedOrder->product_id) {
                 $product = Product::query()
                     ->lockForUpdate()
                     ->find($lockedOrder->product_id);
 
-                if ($product instanceof Product && (int) $product->stock >= 0) {
-                    $product->increment('stock', max((int) ($lockedOrder->quantity ?? 1), 1));
+                if ($product instanceof Product) {
+                    StockReservation::restore($product, $lockedOrder->config_snapshot, (int) ($lockedOrder->quantity ?? 1));
                 }
             }
 
@@ -184,6 +195,12 @@ class OrderService
         $count = 0;
 
         foreach ($query->get() as $order) {
+            // 管理员手动开通产生的挂账订单按 due_date 计费，不受 5 分钟支付会话窗口约束；
+            // 且这类订单从未扣过库存，被取消会触发 stock+1 造成库存虚增。
+            if ($this->isAdminManualOrder($order)) {
+                continue;
+            }
+
             $updated = $this->cancelExpiredPendingOrder($order, $context);
             if ((int) $updated->status === OrderStatus::CANCELLED) {
                 $count++;
@@ -191,6 +208,16 @@ class OrderService
         }
 
         return $count;
+    }
+
+    private function isAdminManualOrder(Order $order): bool
+    {
+        $snapshot = $order->config_snapshot;
+        if (! is_array($snapshot)) {
+            return false;
+        }
+
+        return filter_var($snapshot['admin_manual'] ?? false, FILTER_VALIDATE_BOOL);
     }
 
     /**
@@ -276,18 +303,46 @@ class OrderService
         $sendEmail = (bool) ($payload['send_email'] ?? false);
         $remark = trim((string) ($payload['remark'] ?? ''));
         $syncBusinessFlow = (bool) ($payload['sync_business_flow'] ?? false);
-        $paidAmount = $payableAmount;
+        // paid_amount 记录账单累计实收额，$payableAmount 仅表示本次补款金额。
+        $paidAmount = $invoice->amount;
 
         throw_if($payableAmount <= 0, new BusinessException('当前账单无需再入账'));
         throw_if(abs($requestedAmount - $payableAmount) > 0.00001, new BusinessException('当前仅支持按账单应付金额全额入账'));
 
-        DB::transaction(function () use ($order, $invoice, $paidAt, $paidAmount) {
+        DB::transaction(function () use ($order, $invoice, $paidAt, $paidAmount, $payableAmount, $paymentGateway, $tradeNo, $remark, $context) {
             Payment::query()
                 ->where('invoice_id', $invoice->id)
                 ->where('status', PaymentStatus::PENDING)
                 ->update([
                     'status' => PaymentStatus::FAILED,
                 ]);
+
+            // 补一条 manual Payment 审计记录，保留 trade_no 与入账信息，
+            // 供 markUnpaidManually 回退判定与财务对账追溯。
+            // amount 记录本次实收（$payableAmount），累计口径只投影到 invoice/order.paid_amount，
+            // 避免先期已入账 + 本次补款时按 Payment.amount 汇总虚增。
+            $manualPayment = new Payment([
+                'payment_no' => Payment::generatePaymentNo(),
+                'user_id' => (int) $order->user_id,
+                'order_id' => (int) $order->id,
+                'invoice_id' => (int) $invoice->id,
+                'gateway' => PaymentGatewayCode::MANUAL,
+                'trade_no' => $tradeNo !== '' ? $tradeNo : null,
+                'amount' => $payableAmount,
+                'status' => PaymentStatus::SUCCESS,
+                'paid_at' => $paidAt,
+                'trace_id' => (string) ($context['trace_id'] ?? ''),
+                'callback_raw' => [
+                    'source' => 'admin_manual_entry',
+                    'payment_gateway' => $paymentGateway,
+                    'operator_id' => (int) ($context['operator_id'] ?? 0),
+                    'operator_name' => (string) ($context['operator_name'] ?? ''),
+                    'remark' => $remark,
+                    'trade_no' => $tradeNo,
+                ],
+            ]);
+            $manualPayment->allowNonThirdPartyGateway = true;
+            $manualPayment->save();
 
             $invoice->forceFill([
                 'status' => InvoiceStatus::PAID,
@@ -363,13 +418,10 @@ class OrderService
             ->whereGatewayKey(PaymentGatewayCode::MANUAL)
             ->where('status', PaymentStatus::SUCCESS);
 
+        // 仅允许回退后台手动入账（markPaidManually 已补 manual Payment 记录）；
+        // 删除旧的无 manual 记录时的宽泛兜底分支，避免误回退余额/免支付等真实入账。
         throw_if(
-            ! $manualSuccessPayments->exists()
-            && ! (
-                (int) $order->status === OrderStatus::PAID
-                && (int) $invoice->status === InvoiceStatus::PAID
-                && round((float) ($invoice->paid_amount ?? 0), 2) > 0
-            ),
+            ! $manualSuccessPayments->exists(),
             new BusinessException('仅支持回退后台手动设为已支付的订单')
         );
 

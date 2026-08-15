@@ -3,9 +3,9 @@
 use Illuminate\Support\Facades\Schedule;
 
 /**
- * 唯一时钟源：Laravel Schedule 每分钟驱动一次全局心跳。
- * 具体业务任务仍由 HeartbeatTaskRegistry 按其 15 分钟槽位规则去重派发，
- * 队列则可在每分钟获得一次消费机会。
+ * 唯一时钟源：Laravel Schedule 每分钟驱动一次全局心跳与队列消费。
+ * 心跳负责按 15 分钟槽位规则去重派发定时任务，不再内联消费队列；
+ * 队列由独立的 queue:drain 后台消费，二者互不阻塞（对应参考系统 cron/task 分离）。
  */
 $shouldUseScheduleMutex = ! (
     PHP_OS_FAMILY === 'Windows'
@@ -35,6 +35,18 @@ config([
 $heartbeat = Schedule::command('scheduler:heartbeat')
     ->everyMinute()
     ->name('scheduler-heartbeat');
+
+// 队列消费与心跳解耦：queue:drain 在后台子进程中运行，长任务不会阻塞
+// schedule:run 与心跳派发；drain 锁保证同一队列不并发消费。
+Schedule::command('queue:drain')
+    ->everyMinute()
+    ->name('queue-drain')
+    ->runInBackground();
+
+// 存活探针与心跳解耦：即使心跳命令抛异常，探针仍能发现并告警。
+Schedule::command('scheduler:liveness')
+    ->everyMinute()
+    ->name('scheduler-liveness');
 
 if ($shouldUseScheduleMutex) {
     $heartbeat->withoutOverlapping(2);

@@ -2,6 +2,15 @@
 
 :root {
   --el-color-primary: #{$color-primary};
+  // EP 派生变量：与 theme-chalk 的 set-color-mix-level 公式一致（#165dff 与白/黑按层级混合）。
+  // 显式补齐可避免入口 CSS 混入默认主题 base.css 时 --el-color-primary-rgb 仍为默认蓝。
+  --el-color-primary-rgb: 22, 93, 255;
+  --el-color-primary-light-3: #5c8eff;
+  --el-color-primary-light-5: #8baeff;
+  --el-color-primary-light-7: #b9ceff;
+  --el-color-primary-light-8: #d0dfff;
+  --el-color-primary-light-9: #e8efff;
+  --el-color-primary-dark-2: #124acc;
   --el-color-success: #{$color-success};
   --el-color-warning: #{$color-warning};
   --el-color-danger: #{$color-danger};
@@ -25,6 +34,37 @@
   --el-box-shadow: #{$shadow-md};
   --site-grain:
     radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.045) 1px, transparent 0);
+}
+
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: 10000;
+  padding: 8px 16px;
+  background: $color-primary;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 $sm-border-radius 0;
+
+  &:focus {
+    top: 0;
+    outline: 2px solid $color-primary-active;
+    outline-offset: 2px;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 *,

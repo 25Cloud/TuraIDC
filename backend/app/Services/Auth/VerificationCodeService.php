@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Cache;
 
 class VerificationCodeService
 {
+    private const MAX_VERIFY_ATTEMPTS = 5;
+
     /**
      * 存储邮箱验证码
      */
@@ -14,6 +16,7 @@ class VerificationCodeService
     {
         $key = $this->emailCodeKey($userId, $email);
         Cache::store('redis_volatile')->put(CacheKey::verificationCode($key), $code, now()->addMinutes($minutes));
+        Cache::store('redis_volatile')->forget($this->emailCodeAttemptKey($userId, $email));
     }
 
     /**
@@ -22,15 +25,17 @@ class VerificationCodeService
     public function verifyEmailCode(int|string $userId, string $email, string $code): bool
     {
         $key = $this->emailCodeKey($userId, $email);
-        $cached = Cache::store('redis_volatile')->get(CacheKey::verificationCode($key));
+        $cacheKey = CacheKey::verificationCode($key);
+        $cached = Cache::store('redis_volatile')->get($cacheKey);
 
-        if ($cached === $code) {
-            Cache::store('redis_volatile')->forget(CacheKey::verificationCode($key));
+        if ($cached !== null && $cached === $code) {
+            Cache::store('redis_volatile')->forget($cacheKey);
+            Cache::store('redis_volatile')->forget($this->emailCodeAttemptKey($userId, $email));
 
             return true;
         }
 
-        return false;
+        return $cached !== null && $this->recordFailedAttempt($this->emailCodeAttemptKey($userId, $email), $cacheKey);
     }
 
     /**
@@ -40,6 +45,7 @@ class VerificationCodeService
     {
         $key = $this->phoneCodeKey($userId, $phone);
         Cache::store('redis_volatile')->put(CacheKey::verificationCode($key), $code, now()->addMinutes($minutes));
+        Cache::store('redis_volatile')->forget($this->phoneCodeAttemptKey($userId, $phone));
     }
 
     /**
@@ -48,12 +54,30 @@ class VerificationCodeService
     public function verifyPhoneCode(int|string $userId, string $phone, string $code): bool
     {
         $key = $this->phoneCodeKey($userId, $phone);
-        $cached = Cache::store('redis_volatile')->get(CacheKey::verificationCode($key));
+        $cacheKey = CacheKey::verificationCode($key);
+        $cached = Cache::store('redis_volatile')->get($cacheKey);
 
-        if ($cached === $code) {
-            Cache::store('redis_volatile')->forget(CacheKey::verificationCode($key));
+        if ($cached !== null && $cached === $code) {
+            Cache::store('redis_volatile')->forget($cacheKey);
+            Cache::store('redis_volatile')->forget($this->phoneCodeAttemptKey($userId, $phone));
 
             return true;
+        }
+
+        return $cached !== null && $this->recordFailedAttempt($this->phoneCodeAttemptKey($userId, $phone), $cacheKey);
+    }
+
+    /**
+     * 记录错误尝试，超过上限后作废验证码
+     */
+    private function recordFailedAttempt(string $attemptKey, string $cacheKey): bool
+    {
+        $attempts = (int) Cache::store('redis_volatile')->increment($attemptKey, 1);
+        Cache::store('redis_volatile')->put($attemptKey, $attempts, now()->addMinutes(10));
+
+        if ($attempts >= self::MAX_VERIFY_ATTEMPTS) {
+            Cache::store('redis_volatile')->forget($cacheKey);
+            Cache::store('redis_volatile')->forget($attemptKey);
         }
 
         return false;
@@ -67,5 +91,15 @@ class VerificationCodeService
     private function phoneCodeKey(int|string $userId, string $phone): string
     {
         return 'phone_code:'.$userId.':'.preg_replace('/\D+/', '', $phone);
+    }
+
+    private function emailCodeAttemptKey(int|string $userId, string $email): string
+    {
+        return 'email_code_attempts:'.$userId.':'.md5(mb_strtolower($email));
+    }
+
+    private function phoneCodeAttemptKey(int|string $userId, string $phone): string
+    {
+        return 'phone_code_attempts:'.$userId.':'.preg_replace('/\D+/', '', $phone);
     }
 }

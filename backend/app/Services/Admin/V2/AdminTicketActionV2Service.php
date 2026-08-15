@@ -40,6 +40,29 @@ class AdminTicketActionV2Service
     /**
      * @return array<string, mixed>
      */
+    public function reopen(Ticket $ticket, string $operatorType = 'admin'): array
+    {
+        $ticket = $this->tickets->reopen($ticket, ['operator_type' => $operatorType]);
+        $ticket = $ticket->fresh() ?? $ticket;
+
+        return [
+            'id' => (int) $ticket->id,
+            'status' => 'completed',
+            'message' => '工单已重新开启',
+            'detail' => [
+                'type' => 'reopen',
+                'ticket' => [
+                    'id' => (int) $ticket->id,
+                    'status' => (int) $ticket->status,
+                    'close_reason' => $ticket->close_reason,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function assign(Ticket $ticket, int $assigneeId): array
     {
         $ticket = $this->tickets->assign($ticket, $assigneeId)

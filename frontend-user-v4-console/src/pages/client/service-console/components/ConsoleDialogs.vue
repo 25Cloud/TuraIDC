@@ -1,6 +1,7 @@
 <template>
   <security-group-dialog />
   <security-rule-dialog />
+  <nat-forwarding-dialog />
   <password-reset-dialog />
   <reinstall-dialog />
   <renew-dialog />
@@ -10,6 +11,7 @@
 </template>
 <script setup lang="ts">
 import NameDialog from './dialogs/NameDialog.vue';
+import NatForwardingDialog from './dialogs/NatForwardingDialog.vue';
 import PasswordResetDialog from './dialogs/PasswordResetDialog.vue';
 import ReinstallDialog from './dialogs/ReinstallDialog.vue';
 import RemarkDialog from './dialogs/RemarkDialog.vue';

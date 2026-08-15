@@ -50,6 +50,9 @@ class AdminOrderDetailResource extends AdminOrderSummaryResource
             'configuration' => [
                 'config_snapshot' => $this->stripSensitiveKeys((array) ($order->config_snapshot ?? [])),
                 'config_pricing_snapshot' => $this->stripSensitiveKeys((array) ($order->config_pricing_snapshot ?? [])),
+                'service_snapshot' => $order->type === OrderType::NEW
+                    ? $this->stripSensitiveKeys((array) ($order->service_snapshot ?? []))
+                    : null,
             ],
             'payment_chain' => [
                 'payments' => $this->payments($order),

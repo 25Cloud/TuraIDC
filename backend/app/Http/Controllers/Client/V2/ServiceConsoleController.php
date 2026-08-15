@@ -23,6 +23,7 @@ use App\Http\Requests\Client\V2\Service\UpdateNameRequest;
 use App\Http\Requests\Client\V2\Service\UpdateRemarkRequest;
 use App\Services\ClientServiceConsole\ClientServiceConsoleService;
 use App\Services\Provisioning\ServiceRenewService;
+use App\Support\PublicUrl;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -462,21 +463,50 @@ class ServiceConsoleController extends Controller
 
     public function vnc(Request $request, int $id)
     {
-        return $this->success(
-            $this->clientServiceConsoleService->getVncUrlForUser(
-                $request->user(),
-                $id,
-                $this->buildOperationContext($request)
-            ),
-            '获取VNC链接成功'
+        $result = $this->clientServiceConsoleService->getVncUrlForUser(
+            $request->user(),
+            $id,
+            $this->buildOperationContext($request)
         );
+        $result['detail'] = $this->clientServiceConsoleService->sanitizeClientDetail(
+            (array) ($result['detail'] ?? [])
+        );
+
+        return $this->success($result, '获取VNC链接成功');
     }
 
     public function vncToken(Request $request, string $token)
     {
+        $this->assertVncTokenOriginAllowed($request);
+
         return $this->success(
             $this->clientServiceConsoleService->resolvePublicVncTokenPayload($token)
         );
+    }
+
+    /**
+     * VNC 兑换端点 Origin 纵深校验：请求带 Origin 且不在本站白名单（console/api 域）时拒绝。
+     * 同源请求或非浏览器客户端不带 Origin 时放行，避免误伤。
+     */
+    private function assertVncTokenOriginAllowed(Request $request): void
+    {
+        $origin = trim((string) $request->headers->get('Origin', ''));
+        if ($origin === '') {
+            return;
+        }
+
+        $allowed = array_values(array_filter([
+            PublicUrl::console(),
+            PublicUrl::api(),
+        ]));
+
+        foreach ($allowed as $allowedOrigin) {
+            if (strcasecmp(rtrim((string) $allowedOrigin, '/'), rtrim($origin, '/')) === 0) {
+                return;
+            }
+        }
+
+        throw new BusinessException('VNC 兑换来源未获授权', 40300, 403);
     }
 
     private function buildOperationContext(Request $request, string $actorType = 'client'): array

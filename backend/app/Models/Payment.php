@@ -22,6 +22,12 @@ class Payment extends Model
 {
     use EnsuresTraceId, NormalizesTraceId, SoftDeletes;
 
+    /**
+     * 允许创建非第三方网关的 Payment 审计记录（管理端手动入账专用，保留 trade_no 等凭证）。
+     * 默认保持“仅第三方真实资金流入”约束；仅显式开启时才放行 manual 网关。
+     */
+    public bool $allowNonThirdPartyGateway = false;
+
     protected $fillable = [
         'payment_no', 'user_id',
         /**
@@ -49,7 +55,7 @@ class Payment extends Model
         static::creating(function (Payment $payment): void {
             $gateway = $payment->gatewayKey();
 
-            if (! PaymentGatewayCode::isThirdParty($gateway)) {
+            if (! $payment->allowNonThirdPartyGateway && ! PaymentGatewayCode::isThirdParty($gateway)) {
                 throw new InvalidArgumentException('Payment 仅允许记录第三方真实资金流入，余额、手工、免费流程请使用账单和账户流水表达。');
             }
 

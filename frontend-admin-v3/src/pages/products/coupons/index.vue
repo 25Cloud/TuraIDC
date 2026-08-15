@@ -130,11 +130,7 @@
                   删除
                 </t-button>
               </t-space>
-              <t-dropdown
-                v-else
-                :options="mobileActionOptions(row)"
-                @click="(data: { value: unknown }) => handleMobileAction(data.value, row)"
-              >
+              <t-dropdown v-else :options="mobileActionOptions(row)" @click="handleMobileActionHandler(row)">
                 <t-button size="small" variant="text">更多</t-button>
               </t-dropdown>
             </template>
@@ -393,7 +389,7 @@
 </template>
 <script setup lang="ts">
 import { AddIcon, SearchIcon } from 'tdesign-icons-vue-next';
-import type { FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
+import type { DropdownOption, FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, defineAsyncComponent, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -886,6 +882,10 @@ function couponMobileRows(row: CouponRecord) {
 
 function handleCouponCardAction(row: CouponRecord, action: unknown) {
   handleMobileAction(action, row);
+}
+
+function handleMobileActionHandler(row: CouponRecord) {
+  return (data: DropdownOption) => handleMobileAction(data.value, row);
 }
 
 function handleMobileAction(action: unknown, row: CouponRecord) {

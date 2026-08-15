@@ -174,13 +174,13 @@
   box-shadow: 0 -4px 16px rgb(6 75 179 / 6%);
 }
 
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   .campaigns-filter {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .campaigns-head {
     flex-direction: column;
   }
@@ -246,7 +246,7 @@
   }
 }
 
-@media (max-width: 360px) {
+@media (width <= 360px) {
   .campaigns-filter {
     grid-template-columns: 1fr;
     grid-template-areas:

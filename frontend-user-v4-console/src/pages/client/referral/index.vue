@@ -55,6 +55,14 @@
 
       <t-card class="referral-card" :bordered="false">
         <t-tabs v-model="activeTab">
+          <t-tab-panel value="direct" label="被邀请人列表">
+            <t-table row-key="id" :data="directReferrals" :columns="directColumns" :pagination="null">
+              <template #user="{ row }">{{ row.display_name || row.nickname || row.email || '--' }}</template>
+              <template #referred_at="{ row }">{{ row.referred_at || row.created_at || '--' }}</template>
+              <template #consumption="{ row }">¥{{ money(row.customer_consumption) }}</template>
+              <template #earnings="{ row }">¥{{ money(row.my_earnings) }}</template>
+            </t-table>
+          </t-tab-panel>
           <t-tab-panel value="rewards" label="奖励明细">
             <t-table row-key="id" :data="rewards" :columns="rewardColumns" :pagination="null">
               <template #user="{ row }">{{
@@ -63,7 +71,11 @@
               <template #product="{ row }">{{
                 row.invoice?.product_display_name || row.product?.display_name || row.product?.name || '--'
               }}</template>
-              <template #amount="{ row }">¥{{ money(row.reward_amount) }}</template>
+              <template #order_type="{ row }">{{ row.order_type || '--' }}</template>
+              <template #order_amount="{ row }">¥{{ money(row.order_amount) }}</template>
+              <template #amount="{ row }"
+                >¥{{ money(row.reward_amount) }}({{ Number(row.reward_rate || 0) }}%)</template
+              >
               <template #status="{ row }">
                 <t-tag :theme="rewardStatus(row.status).theme" variant="light">{{
                   rewardStatus(row.status).label
@@ -95,7 +107,7 @@
 
     <t-dialog v-model:visible="bindDialogVisible" header="绑定提现支付宝" width="min(30rem, calc(100vw - 2rem))">
       <t-form label-align="top">
-        <p class="bind-dialog-tip">仅需填写实名、支付宝绑定手机号和短信验证码，无需上传支付宝图片。</p>
+        <p class="bind-dialog-tip">请填写实名、支付宝绑定手机号、短信验证码与登录密码，用于提现打款。</p>
         <t-form-item label="真实姓名"
           ><t-input v-model="bindForm.real_name" placeholder="请输入支付宝实名姓名"
         /></t-form-item>
@@ -103,6 +115,9 @@
           ><t-input v-model="bindForm.account" placeholder="请输入支付宝绑定手机号"
         /></t-form-item>
         <t-form-item label="短信验证码"><t-input v-model="bindForm.code" placeholder="请输入短信验证码" /></t-form-item>
+        <t-form-item label="登录密码"
+          ><t-input v-model="bindForm.password" type="password" placeholder="请输入登录密码确认"
+        /></t-form-item>
       </t-form>
       <template #footer>
         <t-button variant="outline" @click="bindDialogVisible = false">取消</t-button>
@@ -123,6 +138,7 @@ const {
   rewards,
   accountLogs,
   withdrawals,
+  directReferrals,
   alipayAccount,
   withdrawForm,
   bindForm,
@@ -146,8 +162,17 @@ const rewardColumns: PrimaryTableCol[] = [
   { colKey: 'rewarded_at', title: '时间', minWidth: '12rem' },
   { colKey: 'user', title: '来源用户', minWidth: '10rem' },
   { colKey: 'product', title: '产品', minWidth: '14rem' },
+  { colKey: 'order_type', title: '消费类型', width: '8rem' },
+  { colKey: 'order_amount', title: '消费金额', width: '8rem' },
   { colKey: 'amount', title: '奖励金额', width: '8rem' },
   { colKey: 'status', title: '状态', width: '8rem' },
+];
+const directColumns: PrimaryTableCol[] = [
+  { colKey: 'user', title: '用户', minWidth: '10rem' },
+  { colKey: 'email', title: '邮箱', minWidth: '14rem' },
+  { colKey: 'referred_at', title: '被邀请时间', minWidth: '12rem' },
+  { colKey: 'consumption', title: '客户消费', width: '8rem' },
+  { colKey: 'earnings', title: '我的收益', width: '8rem' },
 ];
 const withdrawColumns: PrimaryTableCol[] = [
   { colKey: 'created_at', title: '时间', minWidth: '12rem' },
@@ -237,9 +262,15 @@ const logColumns: PrimaryTableCol[] = [
   align-items: center;
 }
 
-@media (max-width: 72rem) {
+@media (width <= 80rem) {
   .referral-stats {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (width <= 48rem) {
+  .referral-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

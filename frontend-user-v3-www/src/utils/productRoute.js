@@ -3,8 +3,13 @@ function toPositiveInt(value) {
   return Number.isInteger(number) && number > 0 ? number : 0
 }
 
+function normalizeTypeId(value) {
+  const text = String(value ?? '').trim()
+  return text === '' ? '' : text
+}
+
 export function readWebsiteProductRouteParams(route) {
-  const typeId = toPositiveInt(route?.params?.typeId) || toPositiveInt(route?.query?.type)
+  const typeId = normalizeTypeId(route?.params?.typeId) || normalizeTypeId(route?.query?.type)
   const groupId = toPositiveInt(route?.params?.groupId) || toPositiveInt(route?.query?.group)
   return {
     typeId,
@@ -16,11 +21,11 @@ export function readWebsiteProductRouteParams(route) {
 
 export function hasWebsiteProductRouteParams(payload = {}) {
   return toPositiveInt(payload.productId) > 0
-    || (toPositiveInt(payload.typeId) > 0 && toPositiveInt(payload.groupId) > 0)
+    || (payload.typeId !== '' && toPositiveInt(payload.groupId) > 0)
 }
 
 export function buildWebsiteProductPath(payload = {}) {
-  const typeId = toPositiveInt(payload.typeId)
+  const typeId = String(payload.typeId ?? '').trim()
   const groupId = toPositiveInt(payload.groupId)
   const childGroupId = toPositiveInt(payload.childGroupId)
   const productId = toPositiveInt(payload.productId)
@@ -44,9 +49,7 @@ export function resolveWebsiteProductRoutePayloadByDetail(product) {
   const hasChildGroup = parentGroupId > 0
 
   return {
-    typeId: hasChildGroup
-      ? toPositiveInt(group.parent_product_type_id) || toPositiveInt(group.product_type_id)
-      : toPositiveInt(group.product_type_id),
+    typeId: String(group.first_product_group_code || ''),
     groupId: hasChildGroup ? parentGroupId : currentGroupId,
     childGroupId: hasChildGroup ? currentGroupId : 0,
     productId,

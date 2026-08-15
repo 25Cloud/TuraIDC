@@ -32,7 +32,7 @@ function toV2Params(params: LogListParams = {}) {
 }
 
 function toV2SummaryParams(params: LogListParams = {}) {
-  const { ...rest } = params;
+  const { page: _page, page_size: _pageSize, include_summary: _includeSummary, ...rest } = params;
   return rest;
 }
 

@@ -14,6 +14,7 @@ final readonly class TaskContext
         public ?TickContext $tick = null,
         public ?int $taskRunId = null,
         public ?int $adminUserId = null,
+        public int $attempt = 1,
         public ?CarbonImmutable $triggeredAt = null,
     ) {}
 
@@ -31,6 +32,7 @@ final readonly class TaskContext
             'daily_tick_index' => $this->tick?->dailyIndex,
             'task_run_id' => $this->taskRunId,
             'admin_user_id' => $this->adminUserId,
+            'attempt' => $this->attempt,
         ], static fn (mixed $value): bool => $value !== null);
     }
 }

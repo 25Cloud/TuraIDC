@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Admin\V2;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,6 +25,7 @@ class AdminVerificationDetailResource extends JsonResource
             'real_name' => (string) ($verification['real_name'] ?? ''),
             'id_card_masked' => (string) ($verification['id_card_masked'] ?? ''),
             'verification_status' => (int) ($verification['verification_status'] ?? 0),
+            'verification_status_label' => User::verificationStatusLabel((int) ($verification['verification_status'] ?? 0)),
             'verification_message' => (string) ($verification['verification_message'] ?? ''),
             'verification_biz_code' => (string) ($verification['verification_biz_code'] ?? ''),
             'verification_method_label' => (string) ($verification['verification_method_label'] ?? ''),

@@ -7,7 +7,12 @@
           返回用户列表
         </t-button>
         <div class="user-detail-actions">
-          <t-button theme="primary" :disabled="!user.id" :loading="loginAsLoading" @click="handleLoginAs"
+          <t-button
+            v-if="canLoginAs"
+            theme="primary"
+            :disabled="!user.id"
+            :loading="loginAsLoading"
+            @click="handleLoginAs"
             >代登录</t-button
           >
           <t-button theme="default" :disabled="!user.id" @click="openEditDialog">编辑资料</t-button>
@@ -412,13 +417,13 @@
       v-model:visible="addServiceVisible"
       header="添加实例"
       width="760px"
-      :confirm-btn="{ content: '确认添加', loading: addServiceSubmitting }"
+      :confirm-btn="{ content: '确认创建', loading: addServiceSubmitting }"
       @cancel="addServiceVisible = false"
       @confirm="handleSubmitAddService"
     >
       <t-alert
         theme="info"
-        message="录入实例信息只创建本地服务记录，不会自动发起上游控制。需要对接上游时，在服务控制台绑定上游实例。"
+        message="确认后会创建本地服务；可按开关选择自动创建订单、账单和从余额扣款。余额扣款需同时创建账单，余额不足时会回滚本次创建。不会自动发起上游控制，需要时请在服务控制台绑定上游实例。"
       />
       <t-form
         ref="addServiceFormRef"
@@ -481,8 +486,33 @@
           <t-form-item label="服务名称">
             <t-input v-model="addServiceForm.name" placeholder="为空时默认使用配置名" />
           </t-form-item>
-          <t-form-item label="自动续费">
-            <t-switch v-model="addServiceForm.auto_renew" :custom-value="[1, 0]" />
+          <t-form-item class="form-item-full">
+            <div class="add-service-automation-switches">
+              <div class="add-service-automation-switch">
+                <span>自动续费</span>
+                <t-switch v-model="addServiceForm.auto_renew" :custom-value="[1, 0]" />
+              </div>
+              <div class="add-service-automation-switch">
+                <span>自动创建订单</span>
+                <t-switch v-model="addServiceForm.create_order" :custom-value="[1, 0]" />
+              </div>
+              <div class="add-service-automation-switch">
+                <span>自动创建账单</span>
+                <t-switch
+                  v-model="addServiceForm.create_invoice"
+                  :custom-value="[1, 0]"
+                  @change="handleAddServiceCreateInvoiceChange"
+                />
+              </div>
+              <div class="add-service-automation-switch">
+                <span>从余额扣款</span>
+                <t-switch
+                  v-model="addServiceForm.deduct_balance"
+                  :custom-value="[1, 0]"
+                  :disabled="!addServiceForm.create_invoice"
+                />
+              </div>
+            </div>
           </t-form-item>
         </div>
         <t-form-item label="备注">
@@ -756,7 +786,8 @@
               <p>
                 {{
                   fieldValue(
-                    currentInvoice.product_spec_display ||
+                    currentInvoice.product_full_path ||
+                      currentInvoice.product_spec_display ||
                       currentInvoice.product_display_name ||
                       currentInvoice.product?.display_name,
                   )
@@ -999,6 +1030,9 @@ const addServiceForm = reactive({
   name: '',
   amount: 0,
   auto_renew: 1,
+  create_order: 1,
+  create_invoice: 1,
+  deduct_balance: 1,
   os: '',
   remark: '',
 });
@@ -1028,8 +1062,8 @@ const invoiceDrawer = reactive({
   detail: { invoice: {}, payments: [], items: [], logs: [] } as Row,
 });
 const canLoginAs = computed(() => hasAdminPermission(AdminPermissions.USER_LOGIN_AS));
-const LOGIN_AS_READY_EVENT = 'TuraIDC:login-as-ready';
-const LOGIN_AS_CODE_EVENT = 'TuraIDC:login-as-code';
+const LOGIN_AS_READY_EVENT = 'turaidc:login-as-ready';
+const LOGIN_AS_CODE_EVENT = 'turaidc:login-as-code';
 const LOGIN_AS_READY_TIMEOUT_MS = 10000;
 const addServiceProductId = ref<number | undefined>();
 const addServiceProductIdArray = computed<(string | number)[]>({
@@ -1478,6 +1512,9 @@ function resetAddServiceForm() {
     name: '',
     amount: 0,
     auto_renew: 1,
+    create_order: 1,
+    create_invoice: 1,
+    deduct_balance: 1,
     os: '',
     remark: '',
   });
@@ -1535,6 +1572,12 @@ function syncAddServiceAmountFromCycle() {
   addServiceForm.amount = matched?.amount || 0;
 }
 
+function handleAddServiceCreateInvoiceChange(value: unknown) {
+  if (Number(value) !== 1) {
+    addServiceForm.deduct_balance = 0;
+  }
+}
+
 async function handleSubmitAddService() {
   const result = await addServiceFormRef.value?.validate?.();
   if (!isValidationPass(result)) return;
@@ -1547,12 +1590,20 @@ async function handleSubmitAddService() {
       name: addServiceForm.name,
       amount: toNumber(addServiceForm.amount),
       auto_renew: Number(addServiceForm.auto_renew ? 1 : 0),
+      create_order: Number(addServiceForm.create_order ? 1 : 0),
+      create_invoice: Number(addServiceForm.create_invoice ? 1 : 0),
+      deduct_balance: Number(addServiceForm.deduct_balance ? 1 : 0),
       os: addServiceForm.os,
       remark: addServiceForm.remark,
     });
-    MessagePlugin.success('实例已添加');
+    MessagePlugin.success('实例已创建');
     addServiceVisible.value = false;
-    await Promise.all([loadServices(), loadDetail()]);
+    await Promise.all([
+      loadServices(),
+      loadDetail(),
+      ...(loadedTabs.invoices ? [loadInvoices()] : []),
+      ...(loadedTabs.balance ? [loadBalance()] : []),
+    ]);
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '添加实例失败'));
   } finally {
@@ -1618,43 +1669,62 @@ async function handleLoginAs() {
     return;
   }
 
+  const popup = window.open('about:blank', '_blank');
+  if (!popup) {
+    MessagePlugin.error('浏览器拦截了代登录窗口，请允许弹窗后重试');
+    return;
+  }
+
   loginAsLoading.value = true;
   try {
     const response = await userApi.loginAs(userId.value);
     const code = String(response.login_code || '').trim();
     if (!code) {
+      closeLoginAsPopup(popup);
       MessagePlugin.error('未获取到代登录凭证');
       return;
     }
+
     const target = resolveLoginAsTarget(response.target_url);
-    const popup = window.open(target, '_blank');
-    if (!popup) {
-      MessagePlugin.error('娴忚鍣ㄦ嫤姝簡浠ｇ櫥褰曠獥鍙ｏ紝璇峰厑璁稿脊绐楀悗閲嶈瘯');
+    if (!target) {
+      closeLoginAsPopup(popup);
+      MessagePlugin.error('客户端代登录地址无效，请检查客户端控制台配置');
       return;
     }
 
+    popup.location.replace(target);
     await waitForLoginAsReady(popup, target);
     popup.postMessage({ type: LOGIN_AS_CODE_EVENT, code }, new URL(target, window.location.origin).origin);
     MessagePlugin.success('已打开客户端登录页');
   } catch (error) {
+    closeLoginAsPopup(popup);
     MessagePlugin.error(errorMessage(error, '代登录失败'));
   } finally {
     loginAsLoading.value = false;
   }
 }
 
+function closeLoginAsPopup(popup: Window) {
+  if (!popup.closed) {
+    popup.close();
+  }
+}
+
 function resolveLoginAsTarget(targetUrl: string | undefined) {
-  const fallbackPath = '/client/login-as';
   const rawTarget = String(targetUrl || '').trim();
-  if (!rawTarget) return fallbackPath;
+  if (!rawTarget) return '';
 
   try {
     const target = new URL(rawTarget, window.location.origin);
+    if (!['http:', 'https:'].includes(target.protocol)) {
+      return '';
+    }
     target.pathname = '/client/login-as';
-    target.searchParams.delete('code');
+    target.search = '';
+    target.hash = '';
     return target.toString();
   } catch {
-    return fallbackPath;
+    return '';
   }
 }
 
@@ -1664,7 +1734,7 @@ function waitForLoginAsReady(targetWindow: Window, targetUrl: string) {
   return new Promise<void>((resolve, reject) => {
     const timer = window.setTimeout(() => {
       window.removeEventListener('message', handleMessage);
-      reject(new Error('客户端模拟登录窗口未完成初始化'));
+      reject(new Error('客户端代登录窗口未完成初始化'));
     }, LOGIN_AS_READY_TIMEOUT_MS);
 
     function handleMessage(event: MessageEvent) {
@@ -2069,6 +2139,7 @@ function paginationOf(state: PageState) {
 }
 function serviceName(row: Row) {
   return (
+    row.product_full_path ||
     row.name ||
     row.product_display_name ||
     row.product?.display_name ||

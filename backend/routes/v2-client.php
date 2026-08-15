@@ -33,10 +33,13 @@ Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->m
 Route::post('/auth/login-by-code', [AuthController::class, 'loginByCode'])->middleware('throttle:5,1,client-auth-login-by-code');
 Route::match(['GET', 'POST'], '/verification/callback', [VerificationController::class, 'callback'])->middleware('verify.callback');
 Route::get('/verification/scan', [VerificationController::class, 'scan']);
+// 支付回调为未认证入口：限流放在验签之前，避免高频请求打穿验签与 DB 写入。
+// 60/分钟按 IP 计数，足以覆盖网关正常重试（支付宝异步通知最多 8 次递增退避），
+// 又能挡住脚本化高频刷回调造成的写放大。
 Route::post('/payment/alipay/notify', [PaymentCallbackController::class, 'alipayNotify'])
-    ->middleware('verify.alipay.callback');
+    ->middleware(['throttle:60,1,client-payment-alipay-notify', 'verify.alipay.callback']);
 Route::match(['GET', 'POST'], '/payment/notify/{gateway}', [PaymentCallbackController::class, 'notify'])
-    ->middleware('verify.payment.callback');
+    ->middleware(['throttle:60,1,client-payment-notify', 'verify.payment.callback']);
 Route::get('/vnc-tokens/{token}', [ServiceConsoleController::class, 'vncToken'])->middleware('throttle:30,1,client-vnc-token');
 
 Route::middleware(['auth:sanctum', 'ensure.client'])->group(function (): void {
@@ -114,6 +117,7 @@ Route::middleware(['auth:sanctum', 'ensure.client'])->group(function (): void {
     Route::get('/referral/rewards', [ReferralController::class, 'rewards']);
     Route::get('/referral/account-logs', [ReferralController::class, 'accountLogs']);
     Route::get('/referral/withdrawals', [ReferralController::class, 'withdrawals']);
+    Route::get('/referral/direct-referrals', [ReferralController::class, 'directReferrals']);
     Route::post('/referral/withdrawals', [ReferralController::class, 'applyWithdrawal'])->middleware('throttle:3,1,client-referral-withdraw');
 
     Route::get('/services', [ServiceConsoleController::class, 'index']);
@@ -166,4 +170,5 @@ Route::middleware(['auth:sanctum', 'ensure.client'])->group(function (): void {
     Route::post('/tickets/{ticket}/replies/{reply}/recalls', [ActionController::class, 'recallTicketReply'])
         ->middleware('throttle:10,1,client-ticket-recall');
     Route::post('/tickets/{id}/closures', [TicketWorkflowController::class, 'close'])->middleware('throttle:10,1,client-ticket-close');
+    Route::post('/tickets/{id}/reopen', [TicketWorkflowController::class, 'reopen'])->middleware('throttle:10,1,client-ticket-reopen');
 });

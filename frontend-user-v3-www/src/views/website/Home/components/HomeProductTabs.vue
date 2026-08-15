@@ -198,14 +198,14 @@ function resolveEnterpriseCategoryDesc(group, summary, primaryProduct) {
 
 function resolveEnterpriseCategoryPath(group, primaryProduct) {
   if (!primaryProduct?.product) {
-    const typeId = Number(group?.product_type_id || 0)
+    const typeCode = String(group?.first_product_group_code || '')
     const groupId = Number(group?.id || 0)
 
-    if (typeId > 0 && groupId > 0) {
+    if (typeCode && groupId > 0) {
       return {
         path: '/products',
         query: {
-          type: String(typeId),
+          type: typeCode,
           group: String(groupId),
         },
       }
@@ -215,7 +215,7 @@ function resolveEnterpriseCategoryPath(group, primaryProduct) {
   }
 
   return buildWebsiteProductPath({
-    typeId: Number(group?.product_type_id || 0),
+    typeId: String(group?.first_product_group_code || ''),
     groupId: Number(group?.id || 0),
     childGroupId: Number(primaryProduct.childGroupId || 0),
     productId: Number(primaryProduct.product?.id || 0),

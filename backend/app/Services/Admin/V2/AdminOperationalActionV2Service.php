@@ -66,6 +66,44 @@ class AdminOperationalActionV2Service
                     'key' => $taskKey,
                     'title' => (string) ($result['title'] ?? ''),
                     'execution_mode' => (string) ($result['execution_mode'] ?? ''),
+                    'task_run_id' => isset($result['task_run_id']) ? (int) $result['task_run_id'] : null,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function retryScheduleTaskRun(
+        int $runId,
+        ?int $adminUserId,
+        string $reason,
+        ?string $ipAddress = null,
+    ): array {
+        $result = $this->scheduleTasks->retryFailedRun(
+            runId: $runId,
+            adminUserId: $adminUserId,
+            reason: $reason,
+            ipAddress: $ipAddress,
+        );
+
+        return [
+            'id' => (int) ($result['task_run_id'] ?? 0),
+            'status' => (string) ($result['status'] ?? 'queued'),
+            'message' => '失败任务已重新排队',
+            'detail' => [
+                'type' => 'schedule_retry',
+                'task' => [
+                    'key' => (string) ($result['task'] ?? ''),
+                    'title' => (string) ($result['title'] ?? ''),
+                    'execution_mode' => (string) ($result['execution_mode'] ?? ''),
+                ],
+                'run' => [
+                    'task_run_id' => (int) ($result['task_run_id'] ?? 0),
+                    'parent_run_id' => (int) ($result['parent_run_id'] ?? 0),
+                    'source' => (string) ($result['source'] ?? 'manual_retry'),
+                    'status' => (string) ($result['status'] ?? 'queued'),
                 ],
             ],
         ];

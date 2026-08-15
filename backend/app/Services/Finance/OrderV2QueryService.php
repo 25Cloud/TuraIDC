@@ -73,6 +73,7 @@ class OrderV2QueryService
                 'config_snapshot',
                 'config_pricing_snapshot',
                 'coupon_snapshot',
+                'service_snapshot',
                 'paid_at',
                 'remark',
                 'trace_id',

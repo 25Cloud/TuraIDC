@@ -1,7 +1,7 @@
 {
     "meta": {
-        "generatedAt": "2026-07-06 04:55:12",
-        "total": 329,
+        "generatedAt": "2026-08-03 18:05:42",
+        "total": 338,
         "baseURL": "/api/v2",
         "dataSource": "php artisan route:list --json v2-only",
         "scopeLabels": {
@@ -21,15 +21,15 @@
             "permission": "登录 + 权限"
         },
         "scopeCounts": {
-            "admin": 188,
-            "client": 123,
+            "admin": 196,
+            "client": 124,
             "site": 17,
             "system": 1
         },
         "accessCounts": {
-            "public": 329
+            "public": 338
         },
-        "moduleCount": 71
+        "moduleCount": 73
     },
     "items": [
         {
@@ -539,6 +539,29 @@
             "sourceFiles": []
         },
         {
+            "id": "POST:/api/v2/admin/coupon-product-groups/batch-products",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "coupon-product-groups",
+            "moduleLabel": "Coupon Product Groups",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/coupon-product-groups/batch-products",
+            "backendPath": "/api/v2/admin/coupon-product-groups/batch-products",
+            "normalizedPath": "/admin/coupon-product-groups/batch-products",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\CouponProductGroupController@batchProducts",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
             "id": "GET:/api/v2/admin/coupon-product-groups/{group}/children",
             "scope": "admin",
             "scopeLabel": "管理端",
@@ -833,6 +856,75 @@
             "throttle": "",
             "guards": [],
             "handler": "App\\Http\\Controllers\\Admin\\V2\\DashboardController@stats",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/database/backups",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "database",
+            "moduleLabel": "Database",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/database/backups",
+            "backendPath": "/api/v2/admin/database/backups",
+            "normalizedPath": "/admin/database/backups",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\DatabaseStatusController@exportBackup",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/database/optimizations",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "database",
+            "moduleLabel": "Database",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/database/optimizations",
+            "backendPath": "/api/v2/admin/database/optimizations",
+            "normalizedPath": "/admin/database/optimizations",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\DatabaseStatusController@optimize",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/database/status",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "database",
+            "moduleLabel": "Database",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/database/status",
+            "backendPath": "/api/v2/admin/database/status",
+            "normalizedPath": "/admin/database/status",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\DatabaseStatusController@status",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []
@@ -1597,6 +1689,29 @@
             "sourceFiles": []
         },
         {
+            "id": "GET:/api/v2/admin/media-files/{mediaFile}/references",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "media-files",
+            "moduleLabel": "媒体文件",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/media-files/{mediaFile}/references",
+            "backendPath": "/api/v2/admin/media-files/{mediaFile}/references",
+            "normalizedPath": "/admin/media-files/{param}/references",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\MediaFileController@references",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
             "id": "GET:/api/v2/admin/member-levels",
             "scope": "admin",
             "scopeLabel": "管理端",
@@ -1684,6 +1799,52 @@
             "throttle": "",
             "guards": [],
             "handler": "App\\Http\\Controllers\\Admin\\V2\\MemberLevelController@update",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/notification-templates",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "notification-templates",
+            "moduleLabel": "Notification Templates",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/notification-templates",
+            "backendPath": "/api/v2/admin/notification-templates",
+            "normalizedPath": "/admin/notification-templates",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\SettingController@notificationTemplates",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/notification-templates/test-send",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "notification-templates",
+            "moduleLabel": "Notification Templates",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/notification-templates/test-send",
+            "backendPath": "/api/v2/admin/notification-templates/test-send",
+            "normalizedPath": "/admin/notification-templates/test-send",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\SettingController@testNotificationTemplate",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []
@@ -1845,6 +2006,29 @@
             "throttle": "",
             "guards": [],
             "handler": "App\\Http\\Controllers\\Admin\\V2\\ProductGroupController@reorder",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/product-groups/tree",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "product-groups",
+            "moduleLabel": "产品分组",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/product-groups/tree",
+            "backendPath": "/api/v2/admin/product-groups/tree",
+            "normalizedPath": "/admin/product-groups/tree",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\ProductGroupController@tree",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []
@@ -5830,6 +6014,29 @@
             "sourceFiles": []
         },
         {
+            "id": "GET:/api/v2/client/referral/direct-referrals",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "referral",
+            "moduleLabel": "分销",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/client/referral/direct-referrals",
+            "backendPath": "/api/v2/client/referral/direct-referrals",
+            "normalizedPath": "/client/referral/direct-referrals",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\ReferralController@directReferrals",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
             "id": "GET:/api/v2/client/referral/overview",
             "scope": "client",
             "scopeLabel": "客户端",
@@ -7596,7 +7803,7 @@
             "permission": "",
             "throttle": "",
             "guards": [],
-            "handler": "Closure",
+            "handler": "App\\Http\\Controllers\\System\\HealthController@live",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []

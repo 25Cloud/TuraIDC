@@ -50,14 +50,14 @@ class RoleController extends Controller
 
     public function store(CreateRoleRequest $request)
     {
-        $role = $this->roles->create($request->payload());
+        $role = $this->roles->create($request->payload(), $request->user());
 
         return $this->success(AdminRoleDetailResource::make($role)->resolve(), '角色创建成功');
     }
 
     public function update(UpdateRoleRequest $request, Role $role)
     {
-        $role = $this->roles->update($role, $request->payload());
+        $role = $this->roles->update($role, $request->payload(), $request->user());
 
         return $this->success(AdminRoleDetailResource::make($role)->resolve(), '角色更新成功');
     }

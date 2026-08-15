@@ -7,6 +7,7 @@ namespace App\Services\Integrations\Plugins;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Services\Upstream\ProviderRegistry;
+use App\Services\Upstream\Support\WebSessionCookieParser;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -39,9 +40,23 @@ class UpstreamBindingWriter
             $apiKey = $this->nullableString($existingSecrets['api_key'] ?? null, 255);
         }
 
+        // 上游 Web 会话 Cookie 纳入加密存储：优先 bindingPayload 显式提交，
+        // 其次从供应商 notes 的会话 Cookie 行提取迁入（历史明文），最后保留既有 secret。
+        $webSessionCookie = $this->nullableString($bindingPayload['web_session_cookie'] ?? null, 4000);
+        if ($webSessionCookie === null) {
+            $webSessionCookie = $this->nullableString(
+                $this->webSessionCookieFromNotes((string) ($supplier->notes ?? '')),
+                4000
+            );
+        }
+        if ($webSessionCookie === null) {
+            $webSessionCookie = $this->nullableString($existingSecrets['web_session_cookie'] ?? null, 4000);
+        }
+
         $now = now();
         $secretPayload = [
             'api_key' => $apiKey,
+            'web_session_cookie' => $webSessionCookie,
             'provider_config' => $providerConfig,
         ];
         $payload = [
@@ -308,6 +323,10 @@ class UpstreamBindingWriter
             $map['api_key'] = true;
         }
 
+        if ($this->nullableString($secrets['web_session_cookie'] ?? null, 4000) !== null) {
+            $map['web_session_cookie'] = true;
+        }
+
         $providerConfig = is_array($secrets['provider_config'] ?? null) ? (array) $secrets['provider_config'] : [];
         $descriptor = app(ProviderRegistry::class)->descriptor($providerKey);
         foreach ((array) ($descriptor?->supplierForm['fields'] ?? []) as $field) {
@@ -326,6 +345,20 @@ class UpstreamBindingWriter
         }
 
         return $map === [] ? null : $map;
+    }
+
+    /**
+     * 从供应商 notes 提取会话 Cookie（JSON 或文本行），用于加密迁入 secret_json。
+     */
+    private function webSessionCookieFromNotes(string $notes): ?string
+    {
+        if (trim($notes) === '') {
+            return null;
+        }
+
+        $cookie = app(WebSessionCookieParser::class)->parse($notes);
+
+        return trim($cookie) !== '' ? $cookie : null;
     }
 
     private function nullableString(mixed $value, int $maxLength): ?string

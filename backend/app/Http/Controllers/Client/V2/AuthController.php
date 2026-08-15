@@ -29,6 +29,7 @@ use App\Services\System\NotificationService;
 use App\Services\System\SmsService;
 use App\Support\AccountIdentifier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
@@ -52,6 +53,11 @@ class AuthController extends Controller
 
         $normalizedAccount = AccountIdentifier::normalizeAccount((string) $data['account']);
         $requestIp = (string) $request->ip();
+
+        // 验证码插件未启用时的兜底锁定：失败次数超阈值直接拒绝登录
+        if ($this->loginRiskControlService->isLoginLocked($normalizedAccount, $requestIp)) {
+            return $this->error(42900, '登录尝试次数过多，请稍后再试');
+        }
 
         if (
             $this->loginRiskControlService->shouldRequireCaptcha($normalizedAccount, $requestIp)
@@ -96,25 +102,27 @@ class AuthController extends Controller
         $accountType = AccountIdentifier::detectType($account);
         $code = (string) $data['code'];
 
-        // 查找用户用于验证码校验
-        $user = $this->authService->findClientByAccount($accountType, $account);
-        if (! $user) {
-            return $this->error(42200, $accountType === 'phone' ? '手机号未注册' : '邮箱未注册');
+        // 验证码插件未启用时的兜底锁定：防止验证码登录通道被爆破。
+        // 验证码本身就是第二因素，不连带密码通道的账号维度软锁定（避免第三方用密码通道失败锁定他人验证码登录）。
+        if ($this->loginRiskControlService->isLoginLocked($account, (string) $request->ip(), false)) {
+            return $this->error(42900, '登录尝试次数过多，请稍后再试');
         }
 
-        // 验证码校验：先尝试 guest，再用用户ID重试
+        // 先校验验证码再解析用户，未注册与验证码错误统一文案并保持时序一致
+        $user = $this->authService->findClientByAccount($accountType, $account);
+
         $verified = $accountType === 'phone'
             ? $this->codeService->verifyPhoneCode('guest', $account, $code)
             : $this->codeService->verifyEmailCode('guest', $account, $code);
 
-        if (! $verified) {
+        if (! $verified && $user) {
             $verified = $accountType === 'phone'
                 ? $this->codeService->verifyPhoneCode((int) $user->id, $account, $code)
                 : $this->codeService->verifyEmailCode((int) $user->id, $account, $code);
         }
 
-        if (! $verified) {
-            return $this->error(42200, $accountType === 'phone' ? '短信验证码错误或已过期' : '邮箱验证码错误或已过期');
+        if (! $verified || ! $user) {
+            return $this->error(42200, '账号或验证码错误');
         }
 
         $result = $this->authService->clientLoginByCode(
@@ -297,11 +305,27 @@ class AuthController extends Controller
         $data = $request->validated();
 
         $user = $request->user();
+        $requestIp = (string) $request->ip();
+        $account = AccountIdentifier::normalizeAccount((string) ($user->email ?? $user->phone ?? ''));
+
+        // 密码二次确认失败会累积登录风险计数；先按锁定状态拒绝，防止该接口成为
+        // 无速率限制的密码爆破预言机（拿到 token 即可高频尝试、凭响应差异还原密码）。
+        if ($this->loginRiskControlService->isLoginLocked($account, $requestIp)) {
+            return $this->error(42900, '登录尝试次数过多，请稍后再试');
+        }
+
+        // 提现账户改绑必须登录密码二次确认，防止登录态被滥用直接改绑提现账户
+        if (! Hash::check((string) $data['password'], (string) $user->password)) {
+            $this->loginRiskControlService->recordFailedAttempt($account, $requestIp);
+
+            return $this->error(42200, '登录密码错误');
+        }
+
+        // 密码已确认：解除该账号密码通道的失败计数，避免后续验证码校验失败把已确认密码的用户连带锁定。
+        $this->loginRiskControlService->clearSuccessfulLogin($account, $requestIp);
+
         $phone = trim((string) $data['account']);
         $verified = $this->codeService->verifyPhoneCode($user->id, $phone, (string) $data['code']);
-        if (! $verified) {
-            $verified = $this->codeService->verifyPhoneCode('guest', $phone, (string) $data['code']);
-        }
 
         if (! $verified) {
             return $this->error(42200, '短信验证码错误或已过期');
@@ -363,11 +387,14 @@ class AuthController extends Controller
 
         $user = $request->user();
         $phone = (string) $data['phone'];
-        $verified = $this->codeService->verifyPhoneCode($user->id, $phone, (string) $data['code']);
-        if (! $verified) {
-            $verified = $this->codeService->verifyPhoneCode('guest', $phone, (string) $data['code']);
+        $oldPhone = trim((string) ($user->phone ?? ''));
+
+        // 已有绑定手机时，必须验证旧手机验证码，防止登录态被直接换绑
+        if ($oldPhone !== '' && ! $this->codeService->verifyPhoneCode($user->id, $oldPhone, (string) $data['old_code'])) {
+            return $this->error(42200, '原手机验证码错误或已过期');
         }
 
+        $verified = $this->codeService->verifyPhoneCode($user->id, $phone, (string) $data['code']);
         if (! $verified) {
             return $this->error(42200, '短信验证码错误或已过期');
         }
@@ -405,6 +432,14 @@ class AuthController extends Controller
             }
         }
 
+        // 旧手机验证场景：目标必须是当前账号已绑定的手机，防止向任意号码发送旧码
+        if (in_array((string) ($data['purpose'] ?? ''), ['verify_bound_phone', 'verify_phone'], true)) {
+            $currentPhone = trim((string) ($request->user()->phone ?? ''));
+            if ($currentPhone === '' || $currentPhone !== $phone) {
+                return $this->error(42200, '目标手机号与当前绑定不一致');
+            }
+        }
+
         $userId = $this->resolveCodeOwnerId($request);
         $code = (string) random_int(100000, 999999);
         $ip = $request->ip();
@@ -435,11 +470,14 @@ class AuthController extends Controller
 
         $user = $request->user();
         $email = (string) $data['email'];
-        $verified = $this->codeService->verifyEmailCode($user->id, $email, (string) $data['code']);
-        if (! $verified) {
-            $verified = $this->codeService->verifyEmailCode('guest', $email, (string) $data['code']);
+        $oldEmail = trim((string) ($user->email ?? ''));
+
+        // 已有绑定邮箱时，必须验证旧邮箱验证码，防止登录态被直接换绑
+        if ($oldEmail !== '' && ! $this->codeService->verifyEmailCode($user->id, $oldEmail, (string) $data['old_code'])) {
+            return $this->error(42200, '原邮箱验证码错误或已过期');
         }
 
+        $verified = $this->codeService->verifyEmailCode($user->id, $email, (string) $data['code']);
         if (! $verified) {
             return $this->error(42200, '邮箱验证码错误或已过期');
         }
@@ -477,6 +515,14 @@ class AuthController extends Controller
             }
         }
 
+        // 旧邮箱验证场景：目标必须是当前账号已绑定的邮箱，防止向任意邮箱发送旧码
+        if (in_array((string) ($data['purpose'] ?? ''), ['verify_bound_email', 'change_email'], true)) {
+            $currentEmail = trim((string) ($request->user()->email ?? ''));
+            if ($currentEmail === '' || $currentEmail !== $email) {
+                return $this->error(42200, '目标邮箱与当前绑定不一致');
+            }
+        }
+
         $userId = $this->resolveCodeOwnerId($request);
         $code = (string) random_int(100000, 999999);
         $ip = $request->ip();
@@ -505,24 +551,22 @@ class AuthController extends Controller
 
         $accountType = AccountIdentifier::detectType((string) $data['account']);
         $account = AccountIdentifier::normalizeAccount((string) $data['account']);
-        $user = $this->authService->findClientByAccount($accountType, $account);
 
-        if (! $user) {
-            return $this->error(42200, $accountType === 'phone' ? '手机号未注册' : '邮箱未注册');
-        }
-
+        // 先校验验证码再解析用户，未注册与验证码错误统一文案并保持时序一致
         $verified = $accountType === 'phone'
             ? $this->codeService->verifyPhoneCode('guest', $account, (string) $data['code'])
             : $this->codeService->verifyEmailCode('guest', $account, (string) $data['code']);
 
-        if (! $verified) {
+        $user = $this->authService->findClientByAccount($accountType, $account);
+
+        if (! $verified && $user) {
             $verified = $accountType === 'phone'
                 ? $this->codeService->verifyPhoneCode((int) $user->id, $account, (string) $data['code'])
                 : $this->codeService->verifyEmailCode((int) $user->id, $account, (string) $data['code']);
         }
 
-        if (! $verified) {
-            return $this->error(42200, $accountType === 'phone' ? '短信验证码错误或已过期' : '邮箱验证码错误或已过期');
+        if (! $verified || ! $user) {
+            return $this->error(42200, '账号或验证码错误');
         }
 
         $this->authService->resetClientPassword($user, (string) $data['password']);

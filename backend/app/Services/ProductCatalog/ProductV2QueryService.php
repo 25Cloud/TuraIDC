@@ -176,6 +176,7 @@ class ProductV2QueryService
                 'custom_display_name',
                 'product_group_id',
                 'service_type_code',
+                'console_template',
             ]),
             'created_at',
             'updated_at',

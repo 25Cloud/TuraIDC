@@ -647,7 +647,7 @@ onMounted(() => {
   background: var(--td-bg-color-container);
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .verification-filter {
     grid-template-columns: minmax(140px, 1fr) 130px;
     gap: var(--td-comp-margin-s);
@@ -683,7 +683,7 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 360px) {
+@media (width <= 360px) {
   .verification-filter {
     grid-template-columns: 1fr 110px;
   }

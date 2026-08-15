@@ -107,7 +107,9 @@
         <t-form-item label="原密码"><t-input v-model="passwordForm.oldPassword" type="password" /></t-form-item>
         <t-form-item label="新密码"><t-input v-model="passwordForm.newPassword" type="password" /></t-form-item>
         <t-form-item label="确认密码"><t-input v-model="passwordForm.confirmPassword" type="password" /></t-form-item>
-        <div class="password-forgot" @click="togglePasswordMode">忘记原密码？</div>
+        <t-button variant="text" theme="primary" class="password-forgot" @click="togglePasswordMode"
+          >忘记原密码？</t-button
+        >
       </t-form>
       <t-form v-else label-align="top">
         <t-tabs v-if="profileForm.phone && profileForm.email" v-model="resetForm.type" theme="normal">
@@ -131,7 +133,9 @@
           ><t-input v-model="resetForm.password" type="password" placeholder="至少 6 位"
         /></t-form-item>
         <t-form-item label="确认密码"><t-input v-model="resetForm.confirmPassword" type="password" /></t-form-item>
-        <div class="password-forgot" @click="togglePasswordMode">使用原密码修改</div>
+        <t-button variant="text" theme="primary" class="password-forgot" @click="togglePasswordMode"
+          >使用原密码修改</t-button
+        >
       </t-form>
       <template #footer>
         <t-button variant="outline" @click="passwordDialogVisible = false">取消</t-button>

@@ -292,7 +292,7 @@ watchEffect(() => {
 }
 
 /* 手机端不提供导航布局切换，显示灰色不可用 */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .setting-drawer-container .setting-container .t-form {
     > .setting-group-title {
       color: var(--td-text-color-disabled);

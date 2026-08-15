@@ -57,7 +57,8 @@ const transform: AxiosTransform = {
     }
 
     const message = toUserMessage(data.message, `请求接口错误，错误码：${code}`);
-    if (code === 40100) {
+    // 登录接口自身的失败（用户名或密码错误）不需要清 token 或跳转，避免重复导航
+    if (code === 40100 && !String(res.config?.url ?? '').includes('/v2/admin/login')) {
       removeAdminToken();
       router.push('/admin/login');
     }
@@ -154,6 +155,10 @@ const transform: AxiosTransform = {
     }
 
     if (!config || !config.requestOptions.retry) return Promise.reject(error);
+
+    // 4xx 客户端错误（认证失败/无权限/参数错误/限流等）重试无意义且会加剧限流，直接返回
+    const status = error?.response?.status;
+    if (status && status >= 400 && status < 500) return Promise.reject(error);
 
     config.retryCount = config.retryCount || 0;
 

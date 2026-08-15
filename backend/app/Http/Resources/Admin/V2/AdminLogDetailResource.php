@@ -78,6 +78,7 @@ class AdminLogDetailResource extends JsonResource
         return $sanitized;
     }
 
+    // 通知通道（短信/邮件）日志对管理端返回完整原文，不做脱敏（项目红线：管理员需真实审计信息）
     private function isRawNotificationChannel(string $channel): bool
     {
         return in_array($channel, ['sms', 'email'], true);

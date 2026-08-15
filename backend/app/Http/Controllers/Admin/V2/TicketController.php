@@ -11,6 +11,7 @@ use App\Http\Requests\Admin\V2\Ticket\ListTicketAdminUsersRequest;
 use App\Http\Requests\Admin\V2\Ticket\ListTicketRepliesRequest;
 use App\Http\Requests\Admin\V2\Ticket\ListTicketsRequest;
 use App\Http\Requests\Admin\V2\Ticket\RecallTicketReplyRequest;
+use App\Http\Requests\Admin\V2\Ticket\ReopenTicketRequest;
 use App\Http\Requests\Admin\V2\Ticket\ReplyTicketRequest;
 use App\Http\Requests\Admin\V2\Ticket\ShowTicketRequest;
 use App\Http\Requests\Admin\V2\Ticket\ShowTicketSummaryRequest;
@@ -102,6 +103,13 @@ class TicketController extends Controller
     public function close(CloseTicketRequest $request, Ticket $ticket): JsonResponse
     {
         $result = $this->actions->close($ticket);
+
+        return $this->success(AdminActionResultResource::make($result)->resolve(), (string) $result['message']);
+    }
+
+    public function reopen(ReopenTicketRequest $request, Ticket $ticket): JsonResponse
+    {
+        $result = $this->actions->reopen($ticket, 'admin');
 
         return $this->success(AdminActionResultResource::make($result)->resolve(), (string) $result['message']);
     }

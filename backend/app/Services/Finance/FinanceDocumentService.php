@@ -17,6 +17,10 @@ use App\Models\Refund;
 
 class FinanceDocumentService
 {
+    public function __construct(
+        private readonly InvoiceService $invoiceService,
+    ) {}
+
     public function recordThirdPartyPayment(Payment $payment, Invoice $invoice): RechargeRecord
     {
         $this->assertSameUser($payment->user_id, $invoice->user_id);
@@ -156,6 +160,7 @@ class FinanceDocumentService
         ]);
 
         $refund->forceFill(['refund_invoice_id' => (int) $refundInvoice->id])->save();
+        $refundInvoice = $this->invoiceService->syncProjection($refundInvoice);
 
         $originRechargeRecord = $payment instanceof Payment
             ? RechargeRecord::query()

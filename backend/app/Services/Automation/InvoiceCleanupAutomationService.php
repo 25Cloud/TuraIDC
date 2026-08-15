@@ -37,6 +37,20 @@ class InvoiceCleanupAutomationService
         ];
     }
 
+    /**
+     * 管理端手动开通的账单：创建时 config_snapshot 打了 admin_manual 标记
+     * （createDirect 直接写入，createFromOrder 从订单快照继承）。
+     */
+    private function isAdminManualInvoice(Invoice $invoice): bool
+    {
+        $snapshot = $invoice->config_snapshot;
+        if (! is_array($snapshot)) {
+            return false;
+        }
+
+        return filter_var($snapshot['admin_manual'] ?? false, FILTER_VALIDATE_BOOL);
+    }
+
     private function cleanupPendingInvoices(array $config): int
     {
         $ttlSeconds = CheckoutSecurityService::paymentSessionTtlSeconds();
@@ -51,6 +65,11 @@ class InvoiceCleanupAutomationService
         $count = 0;
 
         foreach ($invoices as $invoice) {
+            // 管理员手动开通产生的挂账账单按 due_date 计费，不受 5 分钟支付会话窗口约束
+            if ($this->isAdminManualInvoice($invoice)) {
+                continue;
+            }
+
             try {
                 $updated = $this->checkoutService->cancelExpiredUnpaidInvoice($invoice, [
                     'actor_type' => 'system',

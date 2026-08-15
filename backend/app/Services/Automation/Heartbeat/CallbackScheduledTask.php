@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Services\Automation\Heartbeat;
 
 use App\Services\Automation\Heartbeat\Contracts\ScheduledTask;
+use App\Services\Automation\Heartbeat\Contracts\ScheduledTaskCadence;
 use App\Services\Automation\Heartbeat\Contracts\TriggerRule;
 use App\Services\Automation\Heartbeat\Data\TaskContext;
 use Closure;
 
-final readonly class CallbackScheduledTask implements ScheduledTask
+final readonly class CallbackScheduledTask implements ScheduledTask, ScheduledTaskCadence
 {
     /**
      * @param  list<TriggerRule>  $triggers
@@ -22,10 +23,11 @@ final readonly class CallbackScheduledTask implements ScheduledTask
         private string $category,
         private array $triggers,
         private Closure $handler,
-        private string $queue = 'default',
+        private ?string $queue = null,
         private int $timeout = 900,
         private int $lockTtlSeconds = 1200,
         private bool $manualTriggerable = true,
+        private ?string $declaredCadence = null,
     ) {}
 
     public function key(): string
@@ -66,7 +68,9 @@ final readonly class CallbackScheduledTask implements ScheduledTask
 
     public function queue(): string
     {
-        return $this->queue;
+        $queue = trim((string) $this->queue);
+
+        return $queue !== '' ? $queue : (string) config('queue.turaidc_schedule_queue', 'automation');
     }
 
     public function timeout(): int
@@ -82,5 +86,10 @@ final readonly class CallbackScheduledTask implements ScheduledTask
     public function manualTriggerable(): bool
     {
         return $this->manualTriggerable;
+    }
+
+    public function declaredCadence(): ?string
+    {
+        return $this->declaredCadence;
     }
 }

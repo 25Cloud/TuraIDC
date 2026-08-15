@@ -131,13 +131,13 @@
   font-size: var(--td-font-size-size-2, 13px);
 }
 
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   .cpu-layout {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .cpu-head,
   .model-head {
     flex-direction: column;

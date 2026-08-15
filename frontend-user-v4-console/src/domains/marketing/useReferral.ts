@@ -10,8 +10,10 @@ import type {
   ReferralAccountLogRecord,
   ReferralOverviewPayload,
   ReferralRewardRecord,
+  ReferralUserBrief,
   ReferralWithdrawalRecord,
 } from '@/types/client';
+import { getErrorMessage } from '@/utils/error';
 import { copyText } from '@/utils/format';
 
 type TagTheme = 'default' | 'success' | 'warning' | 'primary' | 'danger';
@@ -20,18 +22,11 @@ interface BindFormState {
   real_name: string;
   account: string;
   code: string;
+  password: string;
 }
 
 interface WithdrawFormState {
   amount: string;
-}
-
-function getErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message) return error.message;
-  if (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') {
-    return error.message;
-  }
-  return fallback;
 }
 
 export function money(value: unknown) {
@@ -68,7 +63,7 @@ function resolveList<T>(list: T[] | undefined) {
 export function useReferral() {
   const userStore = useUserStore();
   const loading = ref(false);
-  const activeTab = ref<'rewards' | 'withdrawals' | 'logs'>('rewards');
+  const activeTab = ref<'rewards' | 'withdrawals' | 'logs' | 'direct'>('direct');
   const bindDialogVisible = ref(false);
   const withdrawSubmitting = ref(false);
   const bindSubmitting = ref(false);
@@ -76,13 +71,14 @@ export function useReferral() {
   const rewards = ref<ReferralRewardRecord[]>([]);
   const accountLogs = ref<ReferralAccountLogRecord[]>([]);
   const withdrawals = ref<ReferralWithdrawalRecord[]>([]);
+  const directReferrals = ref<ReferralUserBrief[]>([]);
   const alipayAccount = reactive<ClientAlipayAccount & { is_bound: boolean }>({
     real_name: '',
     account: '',
     is_bound: false,
   });
   const withdrawForm = reactive<WithdrawFormState>({ amount: '' });
-  const bindForm = reactive<BindFormState>({ real_name: '', account: '', code: '' });
+  const bindForm = reactive<BindFormState>({ real_name: '', account: '', code: '', password: '' });
 
   const availableAmountText = computed(() => money(overview.referral_available_amount));
   const frozenAmountText = computed(() => money(overview.referral_frozen_amount));
@@ -125,16 +121,18 @@ export function useReferral() {
   async function loadAll() {
     loading.value = true;
     try {
-      const [overviewRes, rewardsRes, logsRes, withdrawalsRes] = await Promise.all([
+      const [overviewRes, rewardsRes, logsRes, withdrawalsRes, directRes] = await Promise.all([
         clientApi.referralOverview(),
         clientApi.referralRewards({ page: 1, page_size: 10 }),
         clientApi.referralAccountLogs({ page: 1, page_size: 10 }),
         clientApi.referralWithdrawals({ page: 1, page_size: 10 }),
+        clientApi.referralDirectReferrals({ page: 1, page_size: 10 }),
       ]);
       Object.assign(overview, overviewRes.data || {});
       rewards.value = resolveList(rewardsRes.data?.list);
       accountLogs.value = resolveList(logsRes.data?.list);
       withdrawals.value = resolveList(withdrawalsRes.data?.list);
+      directReferrals.value = resolveList(directRes.data?.list);
     } catch (error: unknown) {
       MessagePlugin.error(getErrorMessage(error, '推荐奖励数据加载失败'));
     } finally {
@@ -154,6 +152,7 @@ export function useReferral() {
     bindForm.real_name = alipayAccount.real_name || String(userStore.info?.real_name || '');
     bindForm.account = alipayAccount.account || '';
     bindForm.code = '';
+    bindForm.password = '';
     bindDialogVisible.value = true;
   }
 
@@ -210,6 +209,7 @@ export function useReferral() {
     rewards,
     accountLogs,
     withdrawals,
+    directReferrals,
     alipayAccount,
     withdrawForm,
     bindForm,

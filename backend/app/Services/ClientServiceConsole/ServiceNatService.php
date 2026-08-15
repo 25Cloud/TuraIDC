@@ -64,7 +64,8 @@ class ServiceNatService
                 'error' => '',
                 'module_key' => $natContext['module_key'],
                 'module_name' => $natContext['module_name'],
-                'endpoint' => $natContext['endpoint'],
+                // 用户端不提交该地址，置空避免暴露上游请求地址（可能包含上游域名）。
+                'endpoint' => '',
                 'can_create' => $natContext['can_create'],
                 'protocols' => $natContext['protocols'],
                 'list' => $natContext['list'],

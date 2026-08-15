@@ -33,6 +33,12 @@ class UserNotificationType
     /** 工单待客户处理（超时未跟进，即将自动关闭） */
     public const TICKET_PENDING_REMINDER = 'ticket_pending_reminder';
 
+    /** 工单已自动关闭 */
+    public const TICKET_AUTO_CLOSED = 'ticket_auto_closed';
+
+    /** 工单已重新开启 */
+    public const TICKET_REOPENED = 'ticket_reopened';
+
     /**
      * 类型对应的中文标签，用于前端展示分组/图标。
      */
@@ -45,6 +51,8 @@ class UserNotificationType
         self::INVOICE_OVERDUE_REMINDER => '逾期提醒',
         self::TICKET_STAFF_REPLY => '工单回复',
         self::TICKET_PENDING_REMINDER => '工单提醒',
+        self::TICKET_AUTO_CLOSED => '工单自动关闭',
+        self::TICKET_REOPENED => '工单重新开启',
     ];
 
     public static function label(string $type): string

@@ -20,6 +20,9 @@ final readonly class EveryTicks implements TriggerRule
         if ($this->interval < 1) {
             throw new InvalidArgumentException('心跳间隔必须大于 0');
         }
+        if ($this->offset < 0) {
+            throw new InvalidArgumentException('心跳偏移不能为负');
+        }
     }
 
     public function isDue(TickContext $tick): bool
@@ -34,19 +37,21 @@ final readonly class EveryTicks implements TriggerRule
             : "每 {$this->interval} 次心跳";
     }
 
-    public function nextDueAfter(CarbonInterface $time): ?CarbonImmutable
+    public function interval(): int
     {
-        $slot = TickSlot::floorToFifteenMinutes($time)->addMinutes(15);
+        return $this->interval;
+    }
 
-        for ($i = 0; $i < 10000; $i++) {
-            $tick = TickSlot::context(null, $slot);
-            if ($this->isDue($tick)) {
-                return $slot;
-            }
+    public function nextDueAfter(CarbonInterface $time): CarbonImmutable
+    {
+        $slot = TickSlot::floorToFifteenMinutes($time);
+        $globalNumber = TickSlot::context(null, $slot)->globalNumber;
 
-            $slot = $slot->addMinutes(15);
-        }
+        // 下一个严格晚于当前槽、且满足 (gn - offset) % interval === 0 的命中槽序号。
+        // interval >= 1 保证结果始终严格在未来，O(1) 数学计算，无需逐槽枚举。
+        $remainder = ($globalNumber + 1 - $this->offset) % $this->interval;
+        $steps = (($this->interval - $remainder) % $this->interval) + 1;
 
-        return null;
+        return $slot->addMinutes(15 * $steps);
     }
 }

@@ -22,7 +22,7 @@ class ServiceRuntimeResource extends JsonResource
             'status_label' => (string) ($detail['status_label'] ?? ''),
             'status_tone' => (string) ($detail['status_tone'] ?? ''),
             'expires_at' => $detail['expires_at'] ?? null,
-            'upstream' => $this->upstream((array) ($detail['upstream'] ?? [])),
+            'upstream' => $this->upstream((array) ($detail['upstream'] ?? []), $request),
             'runtime' => $this->runtime((array) ($detail['runtime'] ?? [])),
             'traffic' => $this->traffic((array) ($detail['traffic'] ?? [])),
             'actions' => $this->actions((array) ($detail['actions'] ?? [])),
@@ -34,12 +34,9 @@ class ServiceRuntimeResource extends JsonResource
      * @param  array<string, mixed>  $upstream
      * @return array<string, mixed>
      */
-    private function upstream(array $upstream): array
+    private function upstream(array $upstream, Request $request): array
     {
-        return [
-            'provider_key' => (string) ($upstream['provider_key'] ?? ''),
-            'supplier_id' => (int) ($upstream['supplier_id'] ?? 0),
-            'upstream_product_id' => (string) ($upstream['upstream_product_id'] ?? ''),
+        $payload = [
             'host_id' => (int) ($upstream['host_id'] ?? 0),
             'status' => (string) ($upstream['status'] ?? ''),
             'status_label' => (string) ($upstream['status_label'] ?? ''),
@@ -47,6 +44,18 @@ class ServiceRuntimeResource extends JsonResource
             'dedicated_ip' => (string) ($upstream['dedicated_ip'] ?? ''),
             'os' => (string) ($upstream['os'] ?? ''),
         ];
+
+        // 用户端不输出供应商身份字段，管理端仍保留。
+        if (! $request->is('api/v2/client/*')) {
+            $payload = [
+                'provider_key' => (string) ($upstream['provider_key'] ?? ''),
+                'supplier_id' => (int) ($upstream['supplier_id'] ?? 0),
+                'upstream_product_id' => (string) ($upstream['upstream_product_id'] ?? ''),
+                ...$payload,
+            ];
+        }
+
+        return $payload;
     }
 
     /**

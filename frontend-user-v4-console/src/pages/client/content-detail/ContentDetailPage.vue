@@ -157,7 +157,7 @@ const {
   color: var(--td-text-color-primary);
   font: var(--td-font-body-medium);
   line-height: var(--td-line-height-body-large);
-  word-break: break-word;
+  overflow-wrap: break-word;
 
   :deep(h1),
   :deep(h2),
@@ -258,13 +258,13 @@ const {
   }
 }
 
-@media (max-width: 72rem) {
+@media (width <= 72rem) {
   .reader-layout {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 48rem) {
+@media (width <= 48rem) {
   .content-detail-page {
     padding: var(--td-comp-paddingTB-m) var(--td-comp-paddingLR-s);
   }

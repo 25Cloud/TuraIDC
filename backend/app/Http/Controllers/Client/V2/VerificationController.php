@@ -139,6 +139,11 @@ class VerificationController extends Controller
             return $this->error(40000, '您已完成实名认证');
         }
 
+        // 仅“认证失败”状态允许复用资料重新发起；待认证/未提交等状态应先查询结果或重新提交。
+        if ((int) $user->verification_status !== 3) {
+            return $this->error(42200, '当前状态不支持重新认证，请先查询认证结果');
+        }
+
         $result = $this->verificationService->restartVerificationSession($user);
 
         return $this->success($result);

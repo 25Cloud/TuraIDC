@@ -32,18 +32,31 @@
         "sentry/sentry-laravel": "^4.26"
     },
     "require-dev": {
+        "fakerphp/faker": "^1.23",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.13",
         "laravel/sail": "^1.26",
-        "phpstan/phpstan": "^2.1"
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.1",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.0"
     },
     "autoload": {
         "psr-4": {
             "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "scripts": {
+        "test": [
+            "@php artisan test"
+        ],
         "format": [
             "@php vendor/bin/pint"
         ],

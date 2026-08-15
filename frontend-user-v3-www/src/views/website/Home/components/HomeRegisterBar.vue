@@ -125,7 +125,7 @@ function goRegister() {
   border: none;
   border-radius: 6px;
   background: #ffffff;
-  color: #2f5ef3;
+  color: #2f5ef3; /* Using blue for primary as per AGENTS.md */
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
