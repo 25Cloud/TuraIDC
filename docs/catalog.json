@@ -169,6 +169,12 @@
       "review_by": "2026-08-21"
     },
     {
+      "path": "参考资料/数据库/从智简魔方财务系统迁移（实验）.md",
+      "status": "experimental",
+      "summary": "魔方财务 shd_ 前缀数据迁移实验工具。",
+      "review_by": "2026-08-21"
+    },
+    {
       "path": "参考资料/数据库/日志归档与MySQL日志维护.md",
       "status": "current",
       "summary": "日志归档与 MySQL 维护。",
