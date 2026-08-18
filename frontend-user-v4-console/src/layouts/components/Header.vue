@@ -11,7 +11,7 @@
             <t-icon class="collapsed-icon" name="view-list" />
           </t-button>
           <t-breadcrumb class="header-breadcrumb">
-            <t-breadcrumbItem v-for="item in breadcrumbs" :key="item.to" :to="item.to">
+            <t-breadcrumbItem v-for="item in breadcrumbs" :key="item.key" :to="item.to">
               {{ item.title }}
             </t-breadcrumbItem>
           </t-breadcrumb>
@@ -106,6 +106,7 @@ import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import type { PropType } from 'vue';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import type { RouteLocationRaw } from 'vue-router';
 
 import { useSiteBrandingStore } from '@/app/stores/siteBranding';
 import { useDeviceLayout } from '@/composables/useDeviceLayout';
@@ -170,7 +171,7 @@ const { isMobile } = useDeviceLayout();
 
 const active = computed(() => getActive());
 const breadcrumbs = computed(() => {
-  return route.matched.reduce<Array<{ to: string; title: string }>>((breadcrumbArray, matchedRoute) => {
+  return route.matched.reduce<Array<{ key: string; to: RouteLocationRaw; title: string }>>((breadcrumbArray, matchedRoute) => {
     const { meta, path } = matchedRoute;
     if (path === '/client' || meta?.hiddenBreadcrumb) {
       return breadcrumbArray;
@@ -179,7 +180,10 @@ const breadcrumbs = computed(() => {
     const title = meta?.title as LocalizedTitle | undefined;
     const renderedTitle = title?.[locale.value as keyof LocalizedTitle] || '';
     if (renderedTitle) {
-      breadcrumbArray.push({ to: path, title: renderedTitle });
+      const to: RouteLocationRaw = matchedRoute.name
+        ? { name: matchedRoute.name, params: route.params }
+        : path;
+      breadcrumbArray.push({ key: matchedRoute.name?.toString() || path, to, title: renderedTitle });
     }
     return breadcrumbArray;
   }, []);
