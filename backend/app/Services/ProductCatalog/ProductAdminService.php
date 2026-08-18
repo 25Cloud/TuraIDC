@@ -671,6 +671,12 @@ class ProductAdminService
         throw_if(! $product->trashed(), new BusinessException('请先删除商品，再执行彻底删除'));
         throw_if($product->services()->count() > 0, new BusinessException('该商品已有服务实例，无法彻底删除'));
 
+        if (Schema::hasTable('product_upstream_bindings')) {
+            DB::table('product_upstream_bindings')
+                ->where('product_id', (int) $product->id)
+                ->delete();
+        }
+
         $product->forceDelete();
         $this->forgetSiteCatalogCache();
     }
