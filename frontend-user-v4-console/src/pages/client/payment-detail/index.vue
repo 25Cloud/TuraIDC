@@ -114,11 +114,18 @@ const paymentId = computed(() => Number(route.params.id || 0));
 let requestSeq = 0;
 
 async function loadPayment(id = paymentId.value) {
-  if (!id) return;
+  const validId = Number(id);
+  if (!Number.isInteger(validId) || validId <= 0) {
+    // 无效 ID（0/负数/NaN）：失效进行中的请求并复位详情与加载态，避免调用接口。
+    requestSeq += 1;
+    detail.value = null;
+    loading.value = false;
+    return;
+  }
   const seq = ++requestSeq;
   loading.value = true;
   try {
-    const res = await clientApi.paymentDetail(id);
+    const res = await clientApi.paymentDetail(validId);
     if (seq !== requestSeq) {
       return;
     }

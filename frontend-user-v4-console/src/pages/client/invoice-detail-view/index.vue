@@ -210,11 +210,18 @@ const paymentColumns: PrimaryTableCol[] = [
 let requestSeq = 0;
 
 async function loadInvoice(id = invoiceId.value) {
-  if (!id) return;
+  const validId = Number(id);
+  if (!Number.isInteger(validId) || validId <= 0) {
+    // 无效 ID（0/负数/NaN）：失效进行中的请求并复位详情与加载态，避免调用接口。
+    requestSeq += 1;
+    detail.value = null;
+    loading.value = false;
+    return;
+  }
   const seq = ++requestSeq;
   loading.value = true;
   try {
-    const res = await clientApi.invoiceDetail(id);
+    const res = await clientApi.invoiceDetail(validId);
     if (seq !== requestSeq) {
       return;
     }
