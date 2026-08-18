@@ -22,7 +22,7 @@ turaidc/
 
 技术基线：
 
-- PHP 8.2+
+- PHP 8.3+
 - Laravel 12
 - Sanctum 4 Token 鉴权
 - MySQL 8

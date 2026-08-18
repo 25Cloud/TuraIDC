@@ -5,7 +5,7 @@
 ## 一、环境要求
 
 - 操作系统：Linux（推荐 Ubuntu 22.04+ / Debian 12）或 Windows Server
-- PHP 8.2+（扩展：`pdo_mysql`、`redis`、`mbstring`、`openssl`、`gd` 或 `imagick` 按需）
+- PHP 8.3+（扩展：`pdo_mysql`、`redis`、`mbstring`、`openssl`、`zip`、`gd` 或 `imagick` 按需）
 - MySQL 8.0+（建议 utf8mb4）
 - Redis 6.0+（生产必需：分布式锁、缓存）
 - Composer 2.x
