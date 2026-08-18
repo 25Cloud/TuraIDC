@@ -204,6 +204,34 @@ class DatabaseEngineeringCommandTest extends TestCase
         }
     }
 
+    public function test_db_normalize_core_relations_dry_run_does_not_alter_column_nullability(): void
+    {
+        $schema = (string) config('database.connections.'.config('database.default').'.database');
+
+        $readNullable = function () use ($schema): string {
+            $row = DB::selectOne(
+                "SELECT IS_NULLABLE FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'services' AND COLUMN_NAME = 'order_id'",
+                [$schema]
+            );
+
+            return (string) ($row->IS_NULLABLE ?? 'NO');
+        };
+
+        $before = $readNullable();
+
+        // 不带 --execute 执行，应为纯 dry-run
+        Artisan::call('db:normalize-core-relations');
+
+        $after = $readNullable();
+
+        $this->assertSame(
+            $before,
+            $after,
+            'dry-run 不应修改 services.order_id 的可空性（避免 MySQL DDL 隐式提交与表锁定）'
+        );
+    }
+
     private function ensureUserId(): int
     {
         $id = (int) DB::table('users')->value('id');
