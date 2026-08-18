@@ -176,11 +176,16 @@ export function useOrderDetail() {
   let requestSeq = 0;
 
   async function loadDetail(id: number | string) {
-    if (!id) return;
+    const validId = Number(id);
+    if (!Number.isInteger(validId) || validId <= 0) {
+      // 无效 ID（0/负数/NaN）：失效进行中的请求并复位详情与加载态，避免调用接口。
+      invalidateDetail();
+      return;
+    }
     const seq = ++requestSeq;
     loading.value = true;
     try {
-      const res = await clientApi.orderDetail(id);
+      const res = await clientApi.orderDetail(validId);
       if (seq !== requestSeq) {
         return;
       }
