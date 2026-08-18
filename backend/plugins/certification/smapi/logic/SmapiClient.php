@@ -223,7 +223,10 @@ class SmapiClient
 
     private function resolveEndpoint(): string
     {
-        return (string) ($this->config['api_url'] ?? self::DEFAULT_API_ENDPOINT);
+        // 用空值判断而非 ??：管理员清空 api_url 后回退到默认地址，避免拼出相对 URL。
+        $endpoint = trim((string) ($this->config['api_url'] ?? ''));
+
+        return $endpoint !== '' ? $endpoint : self::DEFAULT_API_ENDPOINT;
     }
 
     private function resolveAppKey(): string
