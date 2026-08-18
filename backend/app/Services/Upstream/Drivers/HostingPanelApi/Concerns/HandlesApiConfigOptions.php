@@ -173,7 +173,7 @@ trait HandlesApiConfigOptions
         return $this->extractStorefrontConfigOptionsFromResponse($response);
     }
 
-    private function resolveSupplierRootUrl(Supplier $supplier): string
+    public function resolveSupplierRootUrl(Supplier $supplier): string
     {
         $baseUrl = trim((string) $supplier->api_url);
         $parts = parse_url($baseUrl);

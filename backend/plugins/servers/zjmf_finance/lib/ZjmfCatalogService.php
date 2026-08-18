@@ -129,35 +129,110 @@ final class ZjmfCatalogService
      */
     private function fetchBatchProductPricing(Supplier $supplier, array $productIds, int $chunkSize = 8): array
     {
+        $ids = collect($productIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            return [];
+        }
+
         $chunkSize = max(1, min($chunkSize, 12));
+        $rootUrl = $this->transport->resolveSupplierRootUrl($supplier);
         $results = [];
 
-        foreach (array_chunk($productIds, $chunkSize) as $chunk) {
+        foreach (array_chunk($ids, $chunkSize) as $chunk) {
+            // 优先并行拉取（每批并发，替代逐商品串行请求，减少 RTT）。
+            $pricingMap = $this->fetchPricingChunkInParallel($supplier, $chunk, $rootUrl);
+
             foreach ($chunk as $productId) {
-                try {
-                    // 使用串行 requestWithMeta（含 WAF 挑战页 cookie 自动重试），
-                    // parallelGet 走 Http::pool 不经过该逻辑，会被上游 WAF 拦截。
-                    $response = $this->transport->get(
-                        $supplier,
-                        '/cart/get_product_config',
-                        null,
-                        ['pid' => $productId],
-                    );
-                    $pricing = is_array($response) ? $this->extractProductPricingFromResponse($response) : [];
-                    if ($pricing !== []) {
-                        $results[$productId] = $pricing;
-                    }
-                } catch (\Throwable $exception) {
-                    Log::warning('[ZJMF 财务接口] 单个商品价格补充失败', [
-                        'supplier_id' => $supplier->id,
-                        'product_id' => $productId,
-                        'message' => $exception->getMessage(),
-                    ]);
+                if (isset($pricingMap[$productId])) {
+                    $results[$productId] = $pricingMap[$productId];
+                    continue;
+                }
+
+                // 并行通道未拿到有效价格（如上游 WAF 挑战页被 Http::pool 拦截），
+                // 回退串行 requestWithMeta（含 WAF 挑战页 cookie 自动重试）。
+                $pricing = $this->fetchPricingFallback($supplier, $productId);
+                if ($pricing !== []) {
+                    $results[$productId] = $pricing;
                 }
             }
         }
 
         return $results;
+    }
+
+    /**
+     * 并发拉取一批商品的 /cart/get_product_config 并提取价格。
+     *
+     * @param  array<int, int>  $chunk
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchPricingChunkInParallel(Supplier $supplier, array $chunk, string $rootUrl): array
+    {
+        try {
+            $responses = $this->transport->parallelGet(
+                $supplier,
+                collect($chunk)->mapWithKeys(fn (int $productId) => [
+                    (string) $productId => [
+                        'uri' => $rootUrl.'/cart/get_product_config',
+                        'query' => ['pid' => $productId],
+                    ],
+                ])->all()
+            );
+        } catch (\Throwable $exception) {
+            Log::warning('[ZJMF 财务接口] 批量价格并发拉取失败，回退串行', [
+                'supplier_id' => $supplier->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return [];
+        }
+
+        $results = [];
+        foreach ($chunk as $productId) {
+            $response = $responses[(string) $productId]['response'] ?? null;
+            if (! is_array($response)) {
+                continue;
+            }
+            $pricing = $this->extractProductPricingFromResponse($response);
+            if ($pricing !== []) {
+                $results[$productId] = $pricing;
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * 单个商品串行补充价格（保留 WAF 挑战页 cookie 自动重试路径）。
+     *
+     * @return array<string, mixed>
+     */
+    private function fetchPricingFallback(Supplier $supplier, int $productId): array
+    {
+        try {
+            $response = $this->transport->get(
+                $supplier,
+                '/cart/get_product_config',
+                null,
+                ['pid' => $productId],
+            );
+
+            return is_array($response) ? $this->extractProductPricingFromResponse($response) : [];
+        } catch (\Throwable $exception) {
+            Log::warning('[ZJMF 财务接口] 单个商品价格补充失败', [
+                'supplier_id' => $supplier->id,
+                'product_id' => $productId,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return [];
+        }
     }
 
     /**
