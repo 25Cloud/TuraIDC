@@ -4,7 +4,7 @@
       <div class="summary-grid">
         <t-card class="account-card dashboard-card" :bordered="false">
           <div class="account-card__user">
-            <t-avatar :image="avatarUrl || undefined" size="large">{{ avatarText }}</t-avatar>
+            <t-avatar style="margin-top:5px" :image="avatarUrl || undefined" size="large">{{ avatarText }}</t-avatar>
             <div class="account-card__main">
               <h2>{{ greetingText }}，{{ displayName }}</h2>
               <p>{{ todayDateText }}</p>
@@ -457,7 +457,7 @@ const greetingText = computed(() => {
 const todayDateText = computed(() => {
   const now = new Date();
   const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
-  return `${now.getFullYear()}年 ${now.getMonth() + 1}月 ${now.getDate()}日 星期${weekDays[now.getDay()]}`;
+  return `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 星期${weekDays[now.getDay()]}`;
 });
 
 const productCards = computed<ProductCard[]>(() => {
