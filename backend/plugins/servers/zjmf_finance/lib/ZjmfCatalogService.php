@@ -6,6 +6,7 @@ namespace TuraIDC\Plugins\Servers\ZjmfFinance\Lib;
 
 use App\Exceptions\BusinessException;
 use App\Models\Supplier;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 final class ZjmfCatalogService
@@ -67,6 +68,137 @@ final class ZjmfCatalogService
         $response = $this->transport->get($supplier, '/cart/all', $this->transport->login($supplier));
 
         return $this->normalizeProductCatalog($response);
+    }
+
+    /**
+     * 批量对接时按需补充选中商品的价格（ZJMF 的 /cart/all 列表不含价格，
+     * 价格在 /cart/get_product_config 的 product_pricings 中）。
+     *
+     * @param  array<int, array<string, mixed>>  $products
+     * @param  array<int, int>  $selectedIds
+     * @return array<int, array<string, mixed>> 回填价格后的商品列表
+     */
+    public function hydrateSelectedPricing(Supplier $supplier, array $products, array $selectedIds): array
+    {
+        $selectedIdSet = collect($selectedIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->flip();
+
+        if ($selectedIdSet->isEmpty()) {
+            return $products;
+        }
+
+        $productsById = collect($products)
+            ->filter(fn (array $product): bool => $selectedIdSet->has((int) ($product['id'] ?? 0)))
+            ->keyBy(fn (array $product): int => (int) ($product['id'] ?? 0))
+            ->all();
+
+        if ($productsById === []) {
+            return $products;
+        }
+
+        $pricingMap = $this->fetchBatchProductPricing($supplier, array_keys($productsById));
+
+        return collect($products)
+            ->map(function (array $product) use ($pricingMap): array {
+                $productId = (int) ($product['id'] ?? 0);
+                $pricing = $pricingMap[$productId] ?? null;
+
+                if (! is_array($pricing) || $pricing === []) {
+                    return $product;
+                }
+
+                return array_replace($product, [
+                    'product_price' => $pricing['monthly_price'] ?? $pricing['product_price'] ?? $product['product_price'] ?? null,
+                    'monthly_price' => $pricing['monthly_price'] ?? $product['monthly_price'] ?? null,
+                    'billingcycle' => trim((string) ($pricing['billingcycle'] ?? $product['billingcycle'] ?? '')) !== ''
+                        ? (string) $pricing['billingcycle']
+                        : $product['billingcycle'] ?? '',
+                    'setup_fee' => $pricing['setup_fee'] ?? $product['setup_fee'] ?? null,
+                ]);
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, int>  $productIds
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchBatchProductPricing(Supplier $supplier, array $productIds, int $chunkSize = 8): array
+    {
+        $chunkSize = max(1, min($chunkSize, 12));
+        $results = [];
+
+        foreach (array_chunk($productIds, $chunkSize) as $chunk) {
+            foreach ($chunk as $productId) {
+                try {
+                    // 使用串行 requestWithMeta（含 WAF 挑战页 cookie 自动重试），
+                    // parallelGet 走 Http::pool 不经过该逻辑，会被上游 WAF 拦截。
+                    $response = $this->transport->get(
+                        $supplier,
+                        '/cart/get_product_config',
+                        null,
+                        ['pid' => $productId],
+                    );
+                    $pricing = is_array($response) ? $this->extractProductPricingFromResponse($response) : [];
+                    if ($pricing !== []) {
+                        $results[$productId] = $pricing;
+                    }
+                } catch (\Throwable $exception) {
+                    Log::warning('[ZJMF 财务接口] 单个商品价格补充失败', [
+                        'supplier_id' => $supplier->id,
+                        'product_id' => $productId,
+                        'message' => $exception->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * 从 /cart/get_product_config 响应中提取商品基础价格（product_pricings 的 monthly 等）。
+     *
+     * @return array<string, mixed>
+     */
+    private function extractProductPricingFromResponse(array $response): array
+    {
+        $data = is_array($response['data'] ?? null) ? $response['data'] : $response;
+        $pricings = is_array($data['product_pricings'] ?? null) ? $data['product_pricings'] : [];
+
+        foreach ($pricings as $pricing) {
+            if (! is_array($pricing)) {
+                continue;
+            }
+
+            $type = trim((string) ($pricing['type'] ?? ''));
+            if ($type !== '' && $type !== 'product') {
+                continue;
+            }
+
+            $monthly = $this->normalizeCatalogAmount($pricing['monthly'] ?? null);
+            $productPrice = $this->normalizeCatalogAmount($pricing['monthly'] ?? $pricing['product_price'] ?? null);
+
+            if ($monthly === null && $productPrice === null) {
+                continue;
+            }
+
+            $billingCycle = strtolower(trim((string) ($pricing['billingcycle'] ?? '')));
+            $billingCycle = $billingCycle !== '' && $billingCycle !== 'monthly' ? $billingCycle : 'monthly';
+
+            return [
+                'monthly_price' => $monthly,
+                'product_price' => $productPrice,
+                'billingcycle' => $billingCycle,
+                'setup_fee' => $this->normalizeCatalogAmount($pricing['msetupfee'] ?? null),
+            ];
+        }
+
+        return [];
     }
 
     public function getProductConfigTemplate(Supplier $supplier, int $productId): array
