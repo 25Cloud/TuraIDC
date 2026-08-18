@@ -643,7 +643,7 @@
       </router-view>
     </main>
 
-    <footer class="site-footer">
+    <footer v-if="!hideFooter" class="site-footer">
       <div class="container">
         <div class="footer-top">
           <div class="footer-brand">
@@ -928,6 +928,12 @@ function formatDate(value) {
   const str = String(value);
   return str.slice(0, 10);
 }
+
+// 产品选购页隐藏页脚，避免干扰购买流程
+const hideFooter = computed(() => {
+  const path = route.path;
+  return path === "/products" || path.startsWith("/products/");
+});
 
 const navigationItems = [
   { to: "/", label: "首页", match: ["WwwHome"] },

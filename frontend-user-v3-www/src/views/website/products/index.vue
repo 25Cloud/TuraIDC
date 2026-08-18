@@ -1688,12 +1688,27 @@ const selectedProductSummaryName = computed(() => {
   const specSource = String(sourceProduct.instance_spec_text || sourceProduct.instance_spec_alias || displayName || '').trim()
   const cpuMemoryDisplay = String(sourceProduct.cpu_memory_display || '').trim()
   const configSpec = resolveMachineSpecSelection(sourceProduct.config_options, {
-    cpu: sourceProduct.purchase_requires?.upstream_default_config?.cpu,
-    memory: sourceProduct.purchase_requires?.upstream_default_config?.memory,
+    cpu: configForm.cpu,
+    memory: configForm.memory,
   })
   const spec = parseMachineSpecFromText([cpuMemoryDisplay, specSource, displayName, configSpec.cpuRaw, configSpec.memoryRaw].filter(Boolean).join(' '))
-  const cpuText = String(sourceProduct.cpu_display || '').trim() || configSpec.cpuText || spec.cpuText || ''
-  const memoryText = normalizeMemorySpecText(sourceProduct.memory_display) || configSpec.memoryText || spec.memoryText || ''
+
+  // 用户已选 CPU/内存时，当前配置优先于 API 静态默认规格
+  const hasSelectedCpu = String(configForm.cpu || '').trim() !== ''
+  const hasSelectedMemory = String(configForm.memory || '').trim() !== ''
+
+  const cpuText =
+    (hasSelectedCpu ? configSpec.cpuText : '')
+    || String(sourceProduct.cpu_display || '').trim()
+    || configSpec.cpuText
+    || spec.cpuText
+    || ''
+  const memoryText =
+    (hasSelectedMemory ? configSpec.memoryText : '')
+    || normalizeMemorySpecText(sourceProduct.memory_display)
+    || configSpec.memoryText
+    || spec.memoryText
+    || ''
 
   return buildMachineSpecDisplayName({
     combinedDisplayName: sourceProduct.combined_display_name,

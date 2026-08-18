@@ -70,6 +70,13 @@ class AuthService
 
         $normalizedAccount = AccountIdentifier::normalizeAccount($account);
         $user = $this->findClientByAccount($accountType, $normalizedAccount);
+
+        // 旧站迁移账号（密码为 ###+MD5 等非 bcrypt 格式）不再支持直接登录，
+        // 强制用户走“忘记密码”流程重置密码，避免 Hash::check 对非 bcrypt 抛 RuntimeException。
+        if ($user instanceof User && ! $this->isBcryptHash((string) ($user->password ?? ''))) {
+            throw new BusinessException('该账号为旧站迁移账号，请使用忘记密码重置密码', 40100, 422);
+        }
+
         $needsPasswordRehash = false;
         $passwordValid = $user
             ? $this->verifyPassword($password, $user->password ?? '', $needsPasswordRehash)
@@ -551,6 +558,11 @@ class AuthService
             $displayName = (string) $lockedUser->display_name;
             $alertEnabled = (bool) ($lockedUser->password_change_alert ?? true);
 
+            // 非 bcrypt 格式（旧站迁移密码等）一律视为无效，绝不交给 Hash::check，避免 500。
+            if (! $this->isBcryptHash((string) $lockedUser->password)) {
+                throw new BusinessException('原密码错误', 42200, 422);
+            }
+
             if (! Hash::check($oldPassword, (string) $lockedUser->password)) {
                 throw new BusinessException('原密码错误', 42200, 422);
             }
@@ -834,12 +846,27 @@ class AuthService
 
     private function verifyPassword(string $plaintext, string $stored, bool &$needsPasswordRehash = false): bool
     {
+        // 非 bcrypt 格式（旧站迁移密码等）一律视为无效，绝不交给 Hash::check，避免 500。
+        if (! $this->isBcryptHash($stored)) {
+            return false;
+        }
+
         $legacyMatched = $this->legacyPasswordVerifier->verify($plaintext, $stored, $needsPasswordRehash);
         if ($legacyMatched !== null) {
             return $legacyMatched;
         }
 
         return Hash::check($plaintext, $stored);
+    }
+
+    /**
+     * 判断是否为 bcrypt 哈希。旧站迁移密码（###+MD5 等）不属于 bcrypt，直接登录一律拒绝。
+     */
+    private function isBcryptHash(string $stored): bool
+    {
+        return str_starts_with($stored, '$2y$')
+            || str_starts_with($stored, '$2a$')
+            || str_starts_with($stored, '$2b$');
     }
 
     private function finishClientLoginAfterResponse(
