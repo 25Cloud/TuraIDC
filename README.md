@@ -3,7 +3,7 @@
 > 新一代的IDC云服务经营系统
 
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue)
-![PHP](https://img.shields.io/badge/PHP-%3E%3D8.2-777BB4)
+![PHP](https://img.shields.io/badge/PHP-%3E%3D8.3-777BB4)
 ![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20)
 ![Vue](https://img.shields.io/badge/Vue-3-4FC08D)
 ![CI](https://github.com/25Cloud/TuraIDC/actions/workflows/ci.yml/badge.svg)
@@ -53,7 +53,7 @@ TuraIDC/
 
 ## 环境要求
 
-- PHP 8.2+（扩展：`pdo_mysql`、`redis`、`mbstring`、`openssl` 等）
+- PHP 8.3+（扩展：`pdo_mysql`、`redis`、`mbstring`、`openssl` 等）
 - MySQL 8.0+
 - Redis 6.0+（生产环境必需，分布式锁依赖 Redis）
 - Composer 2.x
