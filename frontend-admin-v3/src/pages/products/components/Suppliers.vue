@@ -227,22 +227,18 @@
                     'is-selectable': !row.product?.is_connected,
                     'is-selected': supplierBatchSelectedKeySet.has(row.productId || 0),
                   }"
-                  role="checkbox"
-                  :aria-checked="supplierBatchSelectedKeySet.has(row.productId || 0)"
-                  :aria-label="`${row.product?.name || '商品'}，点击切换选择`"
-                  :tabindex="row.product?.is_connected ? -1 : 0"
                   @click="
                     !row.product?.is_connected &&
-                      handleSupplierBatchProductCheck(row.productId || 0, !supplierBatchSelectedKeySet.has(row.productId || 0))
-                  "
-                  @keydown.enter.prevent="
-                    !row.product?.is_connected &&
-                      handleSupplierBatchProductCheck(row.productId || 0, !supplierBatchSelectedKeySet.has(row.productId || 0))
+                    handleSupplierBatchProductCheck(
+                      row.productId || 0,
+                      !supplierBatchSelectedKeySet.has(row.productId || 0),
+                    )
                   "
                 >
                   <t-checkbox
                     :checked="supplierBatchSelectedKeySet.has(row.productId || 0)"
                     :disabled="row.product?.is_connected"
+                    :aria-label="`${row.product?.name || '商品'}，点击切换选择`"
                     @click.stop
                     @change="
                       (checked: boolean) =>

@@ -64,6 +64,12 @@ export const useSettingStore = defineStore('setting', {
       document.documentElement.setAttribute('theme-mode', isDarkMode ? 'dark' : '');
 
       this.chartColors = isDarkMode ? DARK_CHART_COLORS : LIGHT_CHART_COLORS;
+
+      // 模式/跟随系统变化后重放品牌主题色：品牌色阶分浅/深两套动态样式且仅按 displayMode 插入，
+      // 若不重放，切换模式后品牌色（--td-brand-color-N）会残留旧模式的样式。
+      if (this.brandTheme) {
+        this.changeBrandTheme(this.brandTheme as string);
+      }
     },
     async changeSideMode(mode: ModeType) {
       const isDarkMode = mode === 'dark';
