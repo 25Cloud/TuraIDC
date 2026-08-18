@@ -10,7 +10,11 @@
           <t-button theme="default" shape="square" variant="text" :title="sidebarButtonTitle" @click="changeCollapsed">
             <t-icon class="collapsed-icon" name="view-list" />
           </t-button>
-          <span class="header-page-brand">{{ siteBranding.siteName }}</span>
+          <t-breadcrumb class="header-breadcrumb">
+            <t-breadcrumbItem v-for="item in breadcrumbs" :key="item.key" :to="item.to">
+              {{ item.title }}
+            </t-breadcrumbItem>
+          </t-breadcrumb>
         </div>
       </template>
       <template v-if="layout !== 'side'" #default>
@@ -101,13 +105,16 @@ import { ChevronDownIcon, NotificationIcon, PoweroffIcon, UserCircleIcon, Wallet
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import type { PropType } from 'vue';
 import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import type { RouteLocationRaw } from 'vue-router';
 
 import { useSiteBrandingStore } from '@/app/stores/siteBranding';
 import { useDeviceLayout } from '@/composables/useDeviceLayout';
 import { prefix } from '@/config/global';
 import type { InboxItem } from '@/domains/content/useInbox';
 import { useInbox } from '@/domains/content/useInbox';
+import type { LocalizedTitle } from '@/locales';
+import { useLocale } from '@/locales/useLocale';
 import { getActive } from '@/router';
 import { useSettingStore, useUserStore } from '@/store';
 import type { MenuRoute, ModeType } from '@/types/interface';
@@ -146,6 +153,8 @@ const { theme, layout, showLogo, menu, isFixed, isCompact } = defineProps({
 });
 
 const router = useRouter();
+const route = useRoute();
+const { locale } = useLocale();
 const settingStore = useSettingStore();
 const user = useUserStore();
 const siteBranding = useSiteBrandingStore();
@@ -161,6 +170,24 @@ const {
 const { isMobile } = useDeviceLayout();
 
 const active = computed(() => getActive());
+const breadcrumbs = computed(() => {
+  return route.matched.reduce<Array<{ key: string; to: RouteLocationRaw; title: string }>>((breadcrumbArray, matchedRoute) => {
+    const { meta, path } = matchedRoute;
+    if (path === '/client' || meta?.hiddenBreadcrumb) {
+      return breadcrumbArray;
+    }
+
+    const title = meta?.title as LocalizedTitle | undefined;
+    const renderedTitle = title?.[locale.value as keyof LocalizedTitle] || '';
+    if (renderedTitle) {
+      const to: RouteLocationRaw = matchedRoute.name
+        ? { name: matchedRoute.name, params: route.params }
+        : path;
+      breadcrumbArray.push({ key: matchedRoute.name?.toString() || path, to, title: renderedTitle });
+    }
+    return breadcrumbArray;
+  }, []);
+});
 const accountName = computed(() => user.userInfo.name || '图拉云用户');
 const userInitials = computed(() => {
   const name = accountName.value.trim();
@@ -370,10 +397,12 @@ onMounted(() => {
   gap: var(--td-comp-margin-m);
 }
 
-.header-page-brand {
-  color: var(--td-text-color-primary);
-  font: var(--td-font-body-medium);
-  line-height: var(--td-line-height-body-medium);
+.header-breadcrumb {
+  margin: 0;
+
+  :deep(.t-breadcrumb__item) {
+    max-width: 150px;
+  }
 }
 
 .header-logo-container {
@@ -456,7 +485,7 @@ onMounted(() => {
 }
 
 @media (max-width: @screen-sm-max) {
-  .header-page-brand,
+  .header-breadcrumb,
   .header-user-balance {
     display: none;
   }
