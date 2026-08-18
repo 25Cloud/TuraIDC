@@ -266,7 +266,7 @@
 #app .t-default-menu .t-menu__item .t-icon,
 #app .t-default-menu .t-submenu__title .t-icon {
   flex-shrink: 0;
-  color: currentColor;
+  color: currentcolor;
 }
 
 #app *,
@@ -317,7 +317,7 @@
   width: 1em;
   height: 1em;
   box-sizing: border-box;
-  border: 2px solid currentColor;
+  border: 2px solid currentcolor;
   border-top-color: transparent;
   border-radius: 50% !important;
   animation: tura-button-loading-spin 0.8s linear infinite;
@@ -548,7 +548,7 @@
   height: 4px;
   margin-top: -2px;
   border-radius: 50%;
-  background: currentColor;
+  background: currentcolor;
 }
 
 /* 二级终端菜单选中：灰色背景（排除子菜单父级） */

@@ -339,7 +339,7 @@ watchEffect(() => {
       color: var(--td-text-color-disabled);
     }
 
-    > .t-radio-group.t-size-m {
+    > .t-radio-group.t-size-m:not(.setting-mode-radio) {
       pointer-events: none;
       opacity: 0.4;
       filter: grayscale(1);

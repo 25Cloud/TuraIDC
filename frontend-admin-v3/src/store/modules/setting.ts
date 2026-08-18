@@ -36,14 +36,15 @@ export const useSettingStore = defineStore('setting', {
       }
       return state.mode as ModeType;
     },
-    displaySideMode: (state): ModeType => {
+    displaySideMode(state: TState): ModeType {
       // 侧边栏跟随主主题模式：浅色主题 → 浅色侧边栏；深色主题 → 深色侧边栏。
       // 若 sideMode 被显式配置为深色，则侧边栏独立使用深色（保留独立配色能力）。
       const explicitSideMode = state.sideMode as ModeType;
       if (explicitSideMode === 'dark') {
         return 'dark';
       }
-      return state.displayMode;
+      // displayMode 是 getter 而非 state 字段，必须通过 this 访问。
+      return this.displayMode;
     },
   },
   actions: {
@@ -52,7 +53,12 @@ export const useSettingStore = defineStore('setting', {
 
       if (mode === 'auto') {
         theme = this.getMediaColor();
+        // auto 模式：监听系统主题变化，切回其他模式时移除监听。
+        watchSystemTheme();
+      } else {
+        unwatchSystemTheme();
       }
+
       const isDarkMode = theme === 'dark';
 
       document.documentElement.setAttribute('theme-mode', isDarkMode ? 'dark' : '');
@@ -115,4 +121,42 @@ export const useSettingStore = defineStore('setting', {
 
 export function getSettingStore() {
   return useSettingStore(store);
+}
+
+// auto 模式系统主题监听：模块级变量，不参与持久化。
+let systemThemeMedia: MediaQueryList | null = null;
+let systemThemeHandler: ((event: MediaQueryListEvent) => void) | null = null;
+
+function watchSystemTheme(): void {
+  if (typeof window === 'undefined' || !window.matchMedia) {
+    return;
+  }
+  if (systemThemeMedia && systemThemeHandler) {
+    return; // 已监听，避免重复挂载
+  }
+  systemThemeMedia = window.matchMedia('(prefers-color-scheme:dark)');
+  systemThemeHandler = () => {
+    // 仅当仍处于 auto 模式时跟随系统主题变化。
+    if (getSettingStore().mode === 'auto') {
+      getSettingStore().changeMode('auto');
+    }
+  };
+  if (typeof systemThemeMedia.addEventListener === 'function') {
+    systemThemeMedia.addEventListener('change', systemThemeHandler);
+  } else {
+    // 旧浏览器兼容
+    systemThemeMedia.addListener(systemThemeHandler);
+  }
+}
+
+function unwatchSystemTheme(): void {
+  if (systemThemeMedia && systemThemeHandler) {
+    if (typeof systemThemeMedia.removeEventListener === 'function') {
+      systemThemeMedia.removeEventListener('change', systemThemeHandler);
+    } else {
+      systemThemeMedia.removeListener(systemThemeHandler);
+    }
+    systemThemeMedia = null;
+    systemThemeHandler = null;
+  }
 }
