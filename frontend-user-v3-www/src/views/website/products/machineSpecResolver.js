@@ -74,11 +74,11 @@ export function resolveMachineSpecSelection(configOptions, selectedConfig = {}) 
 
 export function buildMachineSpecDisplayName({ combinedDisplayName, displayName, cpuText, memoryText }) {
   const explicitCombinedName = String(combinedDisplayName || '').trim()
-  if (hasMachineSpecSuffix(explicitCombinedName)) {
-    return explicitCombinedName
-  }
+  const rawBaseName = String(displayName || explicitCombinedName || '').trim()
+  const baseName = hasMachineSpecSuffix(rawBaseName)
+    ? stripMachineSpecSuffix(rawBaseName)
+    : rawBaseName
 
-  const baseName = String(displayName || explicitCombinedName || '').trim()
   if (!baseName) {
     return ''
   }
@@ -100,6 +100,19 @@ export function buildMachineSpecDisplayName({ combinedDisplayName, displayName, 
   }
 
   return nextSegments.join('-')
+}
+
+function stripMachineSpecSuffix(value) {
+  return String(value || '')
+    .replace(
+      /[-_\s]+\d+(?:\.\d+)?vcpu(?:[-_\s]+\d+(?:\.\d+)?(?:gib|mib|tib|g|m|t))?\s*$/i,
+      ''
+    )
+    .replace(
+      /[-_\s]+\d+(?:\.\d+)?(?:gib|mib|tib)\s*$/i,
+      ''
+    )
+    .trim()
 }
 
 export function buildInstanceSpecName(name, spec, id) {
@@ -134,8 +147,24 @@ export function resolveMachineSpecPresentation(product, selectedConfig = {}) {
     configSpec.cpuRaw,
     configSpec.memoryRaw,
   ].filter(Boolean).join(' '))
-  const cpuText = String(sourceProduct.cpu_display || '').trim() || configSpec.cpuText || parsedSpec.cpuText || ''
-  const memoryText = normalizeMemorySpecText(sourceProduct.memory_display) || configSpec.memoryText || parsedSpec.memoryText || ''
+
+  // 用户已选 CPU/内存时，当前配置优先于 API 静态默认规格
+  const hasSelectedCpu = String(selectedConfig.cpu || '').trim() !== ''
+  const hasSelectedMemory = String(selectedConfig.memory || '').trim() !== ''
+
+  const cpuText =
+    (hasSelectedCpu ? configSpec.cpuText : '')
+    || String(sourceProduct.cpu_display || '').trim()
+    || configSpec.cpuText
+    || parsedSpec.cpuText
+    || ''
+
+  const memoryText =
+    (hasSelectedMemory ? configSpec.memoryText : '')
+    || normalizeMemorySpecText(sourceProduct.memory_display)
+    || configSpec.memoryText
+    || parsedSpec.memoryText
+    || ''
   const specName = buildMachineSpecDisplayName({
     combinedDisplayName: sourceProduct.combined_display_name,
     displayName,
