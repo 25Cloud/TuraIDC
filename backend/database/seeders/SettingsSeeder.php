@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\Setting;
+use App\Support\EmailNotificationTemplateDefaults;
+use App\Support\SmsNotificationTemplateDefaults;
 use App\Support\SmsTemplateCatalog;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class SettingsSeeder
 {
@@ -119,6 +122,63 @@ class SettingsSeeder
         static::seedGroup('content', [
             'published_cache_version' => '1',
         ]);
+
+        // 通知模板默认数据（email 全量 + sms 验证码）：幂等种入，
+        // 修复 schema baseline 只含表结构不含模板数据的部署缺口。
+        static::seedNotificationTemplates();
+    }
+
+    /**
+     * 幂等种入通知模板默认数据：按 channel+code 跳过已存在的模板，
+     * 不会覆盖管理员在后台的个性化内容。
+     */
+    private static function seedNotificationTemplates(): void
+    {
+        if (! Schema::hasTable('notification_templates')) {
+            return;
+        }
+
+        $definitions = [
+            'email' => EmailNotificationTemplateDefaults::templates(),
+            'sms' => SmsNotificationTemplateDefaults::templates(),
+        ];
+
+        foreach ($definitions as $channel => $templates) {
+            foreach ($templates as $definition) {
+                $code = trim((string) ($definition['code'] ?? ''));
+                if ($code === '') {
+                    continue;
+                }
+
+                $exists = DB::table('notification_templates')
+                    ->where('channel', $channel)
+                    ->where('code', $code)
+                    ->exists();
+                if ($exists) {
+                    continue;
+                }
+
+                DB::table('notification_templates')->insert([
+                    'channel' => $channel,
+                    'code' => $code,
+                    'name' => (string) ($definition['name'] ?? $code),
+                    'description' => (string) ($definition['description'] ?? ''),
+                    'audience' => (string) ($definition['audience'] ?? 'user'),
+                    'subject' => isset($definition['subject']) && trim((string) $definition['subject']) !== ''
+                        ? (string) $definition['subject']
+                        : null,
+                    'content' => (string) ($definition['content'] ?? ''),
+                    'variables_json' => json_encode(array_values((array) ($definition['variables'] ?? []))),
+                    'provider_variables_json' => '[]',
+                    'provider_template_id' => null,
+                    'is_enabled' => 1,
+                    'is_custom' => 0,
+                    'sort_order' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
     }
 
     private static function seedGroup(string $group, array $values): void
