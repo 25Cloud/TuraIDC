@@ -41,6 +41,7 @@ function createEmptyFinanceState() {
     loading: false,
     list: [] as FinanceLedgerRecord[],
     total: 0,
+    error: '',
     page: 1,
     page_size: 10,
     summary: {
@@ -228,6 +229,7 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
   async function loadFinanceLogs() {
     financeState.loading = true;
     try {
+      financeState.error = '';
       const params: Record<string, unknown> = {
         page: financeState.page,
         page_size: financeState.page_size,
@@ -244,7 +246,10 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       financeState.total = Number(listPayload.total || 0);
       financeState.summary = { ...financeState.summary, ...summaryPayload };
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '加载财务日志失败'));
+      financeState.list = [];
+      financeState.total = 0;
+      financeState.error = resolveErrorMessage(error, '加载财务日志失败');
+      MessagePlugin.error(financeState.error);
     } finally {
       financeState.loading = false;
     }

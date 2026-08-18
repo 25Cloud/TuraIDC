@@ -102,7 +102,13 @@ export function useWebsiteProductsCatalog({
 
     return Number(activeGroup.value?.effective_product_group_id || 0);
   });
-  const showMobileTypePicker = computed(() => false);
+  const showMobileTypePicker = computed(
+    () =>
+      isMobile.value &&
+      !mobileTypeEntered.value &&
+      productTypes.value.length > 1 &&
+      !hasWebsiteProductRouteParams(readWebsiteProductRouteParams(route)),
+  );
   const shouldAutoSelectProduct = computed(
     () => getPendingWebsiteCouponId() <= 0,
   );
@@ -640,6 +646,16 @@ export function useWebsiteProductsCatalog({
 
         const linked = await applyRouteSelection();
         return linked;
+      }
+
+      if (!hasRouteTarget && isMobile.value) {
+        activeTypeValue.value = "";
+        rootGroups.value = [];
+        childGroups.value = [];
+        productsByGroup.value = {};
+        resetSelectedProduct({ syncRoute: false });
+        mobileTypeEntered.value = false;
+        return true;
       }
 
       const types = productTypes.value;

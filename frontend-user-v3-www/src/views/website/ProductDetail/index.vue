@@ -512,7 +512,10 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus/es/components/message/index.mjs";
 import siteApi from "@/api/site";
+import { useUserStore } from "@/stores/user";
+import { getToken } from "@/utils/auth";
 import {
+  resolveMissingPurchaseRequirements,
   resolvePurchaseRequirementList,
   resolvePurchaseRequirementSummary,
 } from "@/utils/productPurchaseRequirements";
@@ -531,6 +534,7 @@ import {
   savePendingWebsiteCheckout,
 } from "@/utils/websiteCheckout";
 import { buildPendingCouponRedirectUrl } from "@/utils/websiteCoupon";
+import { updatePageMeta } from "@/utils/pageMeta";
 import {
   isCpuConfigKey,
   isMemoryConfigKey,
@@ -540,6 +544,7 @@ import { useWebsiteProductConfigurator } from "@/domains/products/useWebsiteProd
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore();
 
 const loading = ref(false);
 const submitting = ref(false);
@@ -810,6 +815,7 @@ const purchaseRequirementSummary = computed(() =>
 let quoteTimer = null;
 let quoteAbortController = null;
 let quoteExecuteToken = 0;
+let quoteWatchSuspendCount = 0;
 let productLoadToken = 0;
 
 function createQuoteSignal() {
@@ -924,6 +930,10 @@ async function clearCoupon() {
 }
 
 function fetchQuote() {
+  if (quoteWatchSuspendCount > 0) {
+    return;
+  }
+
   clearTimeout(quoteTimer);
   quoteTimer = setTimeout(() => {
     executeQuote(selectedCouponId.value, { fallbackInvalidCoupon: true });
@@ -1033,6 +1043,40 @@ function redirectToConsoleCheckout(orderPayload, idempotencyKey) {
   );
 }
 
+async function ensurePurchaseRequirementsBeforeCheckout() {
+  const requirements = resolvePurchaseRequirementList(product.value);
+  if (!requirements.length) {
+    return true;
+  }
+
+  if (!getToken()) {
+    ElMessage.warning("请先登录后再购买该商品");
+    navigateToConsole("/client/login");
+    return false;
+  }
+
+  let user = userStore.info;
+  if (!user) {
+    try {
+      user = await userStore.fetchUserInfo();
+    } catch {
+      ElMessage.warning("登录状态已失效，请重新登录");
+      navigateToConsole("/client/login");
+      return false;
+    }
+  }
+
+  const missing = resolveMissingPurchaseRequirements(product.value, user);
+  if (!missing.length) {
+    return true;
+  }
+
+  const primary = missing[0];
+  ElMessage.warning(primary.unmetMessage || "请先完成购买前置要求");
+  navigateToConsole(primary.route || "/client/profile");
+  return false;
+}
+
 async function submitOrder() {
   if (productStockLoading.value) {
     ElMessage.warning("库存同步中，请稍候");
@@ -1052,6 +1096,10 @@ async function submitOrder() {
   }
   if (!canSubmit.value) {
     ElMessage.warning("请选择计费周期");
+    return;
+  }
+
+  if (!(await ensurePurchaseRequirementsBeforeCheckout())) {
     return;
   }
 
@@ -1079,18 +1127,57 @@ function switchProduct(id) {
 }
 
 function initDefaults() {
-  configurator.initProductDefaults({
-    selectedCycleRef: selectedCycle,
-    quantityRef: quantity,
-    resetQuoteState: () => {
-      quoteResult.value = null;
-      quoteToken.value = "";
+  quoteWatchSuspendCount += 1;
+  try {
+    configurator.initProductDefaults({
+      selectedCycleRef: selectedCycle,
+      quantityRef: quantity,
+      resetQuoteState: () => {
+        quoteResult.value = null;
+        quoteToken.value = "";
+      },
+    });
+
+    hostname.value = defaultHostname.value;
+    password.value = "";
+  } finally {
+    quoteWatchSuspendCount = Math.max(0, quoteWatchSuspendCount - 1);
+  }
+
+  fetchQuote();
+}
+
+function plainTextSummary(value, maxLength = 160) {
+  return String(value || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function syncProductMeta(nextProduct) {
+  if (!nextProduct) return;
+  const title = resolveProductDisplayName(nextProduct) || "云产品详情";
+  const description = plainTextSummary(
+    nextProduct.description ||
+      nextProduct.group?.slogan ||
+      nextProduct.group?.parent_slogan ||
+      "图拉云产品详情与实时购买报价",
+  );
+  const canonical = typeof window !== "undefined" ? new URL(route.path, window.location.origin).toString() : "";
+
+  updatePageMeta({
+    title: `${title} - 云产品`,
+    description,
+    keywords: [title, nextProduct.type_label, nextProduct.group?.full_name].filter(Boolean).join(","),
+    canonical,
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: title,
+      description,
     },
   });
-
-  hostname.value = defaultHostname.value;
-  password.value = "";
-  fetchQuote();
 }
 
 async function loadProduct() {
@@ -1109,6 +1196,7 @@ async function loadProduct() {
     if (token !== productLoadToken) return;
     product.value = res.data.product || null;
     siblings.value = res.data.product?.siblings || [];
+    syncProductMeta(product.value);
     initDefaults();
   } catch {
     if (token !== productLoadToken) return;

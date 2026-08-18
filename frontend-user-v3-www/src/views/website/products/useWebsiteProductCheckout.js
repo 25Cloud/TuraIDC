@@ -2,6 +2,7 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { ElMessage } from "element-plus/es/components/message/index.mjs";
 import siteApi from "@/api/site";
 import {
+  resolveMissingPurchaseRequirements,
   resolvePurchaseRequirementList,
   resolvePurchaseRequirementSummary,
 } from "@/utils/productPurchaseRequirements";
@@ -9,6 +10,8 @@ import {
   normalizeMoneyText,
   resolveProductDisplayName,
 } from "@/utils/websiteProductConfig";
+import { useUserStore } from "@/stores/user";
+import { getToken } from "@/utils/auth";
 import { navigateToConsole } from "@/utils/consoleUrl";
 import {
   buildIdempotencyKey,
@@ -29,6 +32,7 @@ export function useWebsiteProductCheckout({
   initProductDefaults,
   resetConfigForm,
 }) {
+  const userStore = useUserStore();
   const configLoading = ref(false);
   const submitting = ref(false);
   const selectedCycle = ref("");
@@ -417,6 +421,40 @@ export function useWebsiteProductCheckout({
     }, 250);
   }
 
+  async function ensurePurchaseRequirementsBeforeCheckout() {
+    const requirements = resolvePurchaseRequirementList(selectedProduct.value);
+    if (!requirements.length) {
+      return true;
+    }
+
+    if (!getToken()) {
+      ElMessage.warning("请先登录后再购买该商品");
+      navigateToConsole("/client/login");
+      return false;
+    }
+
+    let user = userStore.info;
+    if (!user) {
+      try {
+        user = await userStore.fetchUserInfo();
+      } catch {
+        ElMessage.warning("登录状态已失效，请重新登录");
+        navigateToConsole("/client/login");
+        return false;
+      }
+    }
+
+    const missing = resolveMissingPurchaseRequirements(selectedProduct.value, user);
+    if (!missing.length) {
+      return true;
+    }
+
+    const primary = missing[0];
+    ElMessage.warning(primary.unmetMessage || "请先完成购买前置要求");
+    navigateToConsole(primary.route || "/client/profile");
+    return false;
+  }
+
   async function submitOrder() {
     if (productStockLoading.value) {
       ElMessage.warning("库存同步中，请稍候");
@@ -445,6 +483,10 @@ export function useWebsiteProductCheckout({
 
     if (quoteLoading.value) {
       ElMessage.warning("价格计算中，请稍候");
+      return;
+    }
+
+    if (!(await ensurePurchaseRequirementsBeforeCheckout())) {
       return;
     }
 

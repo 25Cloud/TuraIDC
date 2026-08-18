@@ -14,7 +14,7 @@ class CreateNatForwardingRequest extends ClientFormRequest
             'name' => ['required', 'string', 'max:255'],
             'ext_port' => ['nullable', 'integer', 'between:1,65535'],
             'int_port' => ['required', 'integer', 'between:1,65535'],
-            'protocol' => ['required', 'string', 'in:1,2,3'],
+            'protocol' => ['required', 'string', 'regex:/\A[A-Za-z0-9_.-]+\z/', 'max:50'],
         ];
     }
 }

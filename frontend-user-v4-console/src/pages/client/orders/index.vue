@@ -39,7 +39,7 @@
     </t-card>
 
     <section class="record-list-card">
-      <data-state :loading="loading" :empty="!list.length" description="暂无订单记录">
+      <data-state :loading="loading" :empty="!list.length" :description="listError || '暂无订单记录'">
         <t-table class="record-table" row-key="id" :data="list" :columns="columns" :pagination="null" hover>
           <template #order="{ row }">
             <div class="stack-cell">
@@ -80,11 +80,11 @@
                 详情
               </t-button>
               <t-button
-                v-if="Number(row.status) === 0"
+                v-if="canPayOrder(row)"
                 size="small"
                 theme="primary"
                 variant="outline"
-                @click="router.push(`/client/invoices/${row.invoice?.id}/pay`)"
+                @click="goPayOrder(row)"
               >
                 去支付
               </t-button>
@@ -132,11 +132,11 @@
                 详情
               </t-button>
               <t-button
-                v-if="Number(row.status) === 0"
+                v-if="canPayOrder(row)"
                 size="small"
                 theme="primary"
                 variant="outline"
-                @click.stop="router.push(`/client/invoices/${row.invoice?.id}/pay`)"
+                @click.stop="goPayOrder(row)"
               >
                 去支付
               </t-button>
@@ -191,6 +191,7 @@ const {
   loading,
   canceling,
   list,
+  listError,
   total,
   filters,
   loadList,
@@ -199,6 +200,22 @@ const {
   applyQuickFilter,
   cancelOrder,
 } = useOrderList();
+
+function invoicePayId(row: { invoice?: { id?: number | string | null } | null; invoice_id?: number | string | null }) {
+  const id = Number(row.invoice?.id || row.invoice_id || 0);
+  return Number.isFinite(id) && id > 0 ? id : 0;
+}
+
+function canPayOrder(row: { status?: number | string; invoice?: { id?: number | string | null } | null; invoice_id?: number | string | null }) {
+  return Number(row.status) === 0 && invoicePayId(row) > 0;
+}
+
+function goPayOrder(row: { invoice?: { id?: number | string | null } | null; invoice_id?: number | string | null }) {
+  const id = invoicePayId(row);
+  if (id > 0) {
+    router.push(`/client/invoices/${id}/pay`);
+  }
+}
 
 const quickFilters = [
   { key: '', label: '全部' },

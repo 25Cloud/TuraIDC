@@ -172,6 +172,7 @@ export function useInvoiceList(options: { fixedTypes?: unknown; pageSize?: numbe
   const summaryLoading = ref(false);
   const canceling = ref(false);
   const list = shallowRef<InvoiceRecord[]>([]);
+  const listError = ref('');
   const total = ref(0);
   const summary = shallowRef<InvoiceListSummary>({});
   const detailVisible = ref(false);
@@ -224,12 +225,16 @@ export function useInvoiceList(options: { fixedTypes?: unknown; pageSize?: numbe
   async function loadList() {
     loading.value = true;
     try {
+      listError.value = '';
       const res = await clientApi.invoices(buildParams());
       const payload = resolveListPayload(res);
       list.value = payload.list;
       total.value = payload.total;
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '账单列表加载失败'));
+      list.value = [];
+      total.value = 0;
+      listError.value = getErrorMessage(error, '账单列表加载失败');
+      MessagePlugin.error(listError.value);
     } finally {
       loading.value = false;
     }
@@ -309,8 +314,14 @@ export function useInvoiceList(options: { fixedTypes?: unknown; pageSize?: numbe
   }
 
   function goToPay(row: InvoiceRecord) {
+    const invoiceId = normalizeInvoiceId(row?.id);
+    if (!invoiceId) {
+      MessagePlugin.warning('账单 ID 缺失，无法发起支付');
+      return;
+    }
+
     detailVisible.value = false;
-    router.push(`/client/invoices/${row.id}/pay`);
+    router.push(`/client/invoices/${invoiceId}/pay`);
   }
 
   function cancelInvoice(row: InvoiceRecord) {
@@ -367,6 +378,7 @@ export function useInvoiceList(options: { fixedTypes?: unknown; pageSize?: numbe
     summaryLoading,
     canceling,
     list,
+    listError,
     total,
     summary,
     filters,
@@ -718,9 +730,17 @@ export function useInvoiceDetail() {
     },
   );
 
-  onMounted(() => {
-    void loadDetail();
-  });
+  watch(
+    invoiceId,
+    (id) => {
+      detail.value = null;
+      selectedPayMethod.value = '';
+      allowBalanceDeduction.value = false;
+      resetPaymentPayload();
+      if (id > 0) void loadDetail();
+    },
+    { immediate: true },
+  );
 
   onBeforeUnmount(() => {
     clearPollingTimer();

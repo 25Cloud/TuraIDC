@@ -5,7 +5,7 @@
       <template #subtitle>共 {{ levels.length }} 个档位</template>
       <template #actions>
         <t-space>
-          <t-button theme="primary" @click="openCreateDialog">
+          <t-button v-if="canManage" theme="primary" @click="openCreateDialog">
             <template #icon><add-icon /></template>
             新增等级
           </t-button>
@@ -37,10 +37,11 @@
           <template #updatedAt="{ row }">{{ formatDateTime(row.updated_at) }}</template>
           <template #remark="{ row }">{{ fieldValue(row.remark) }}</template>
           <template #actions="{ row }">
-            <t-space size="small">
+            <t-space v-if="canManage" size="small">
               <t-button theme="primary" variant="text" @click="openEditDialog(row)">编辑</t-button>
               <t-button theme="danger" variant="text" @click="handleDelete(row)">删除</t-button>
             </t-space>
+            <span v-else>-</span>
           </template>
         </t-table>
       </div>
@@ -53,6 +54,7 @@
               <t-tag theme="success" variant="light">{{ formatPercent(row.reward_rate) }}</t-tag>
             </div>
             <t-dropdown
+              v-if="canManage"
               trigger="click"
               placement="bottom-right"
               :options="mobileActionOptions"
@@ -86,7 +88,7 @@
       v-model:visible="dialogVisible"
       :header="form.id ? '编辑会员等级' : '新增会员等级'"
       width="720px"
-      :confirm-btn="{ content: '保存', theme: 'primary' }"
+      :confirm-btn="canManage ? { content: '保存', theme: 'primary' } : null"
       :confirm-loading="saving"
       @confirm="submitForm"
     >
@@ -127,13 +129,15 @@ import './index.less';
 import { AddIcon } from 'tdesign-icons-vue-next';
 import type { DropdownOption, FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 import type { MemberLevelPayload, MemberLevelRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
+import { AdminPermissions } from '@/constants/permissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
+import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
 
 interface MemberLevelForm {
@@ -154,6 +158,7 @@ const dialogVisible = ref(false);
 const formRef = ref<FormInstanceFunctions>();
 const levels = ref<MemberLevelRecord[]>([]);
 const isMobile = useMediaQuery('(max-width: 768px)');
+const canManage = computed(() => hasAdminPermission(AdminPermissions.MEMBER_LEVEL_MANAGE));
 
 const form = reactive<MemberLevelForm>(createDefaultForm());
 
@@ -205,11 +210,21 @@ async function loadLevels() {
 }
 
 function openCreateDialog() {
+  if (!canManage.value) {
+    MessagePlugin.warning('当前账号无会员等级管理权限');
+    return;
+  }
+
   Object.assign(form, createDefaultForm());
   dialogVisible.value = true;
 }
 
 function openEditDialog(row: MemberLevelRecord) {
+  if (!canManage.value) {
+    MessagePlugin.warning('当前账号无会员等级管理权限');
+    return;
+  }
+
   Object.assign(form, {
     id: row.id,
     name: String(row.name || ''),
@@ -226,6 +241,11 @@ function openEditDialog(row: MemberLevelRecord) {
 }
 
 async function submitForm() {
+  if (!canManage.value) {
+    MessagePlugin.warning('当前账号无会员等级管理权限');
+    return;
+  }
+
   const result = await formRef.value?.validate?.();
   if (result !== true) return;
 
@@ -269,6 +289,11 @@ function buildPayload(): MemberLevelPayload | null {
 }
 
 function handleDelete(row: MemberLevelRecord) {
+  if (!canManage.value) {
+    MessagePlugin.warning('当前账号无会员等级管理权限');
+    return;
+  }
+
   const dialog = DialogPlugin.confirm({
     header: '删除会员等级',
     body: `确认删除等级“${fieldValue(row.name)}”吗？`,

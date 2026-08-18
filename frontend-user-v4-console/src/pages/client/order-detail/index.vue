@@ -16,9 +16,9 @@
           刷新
         </t-button>
         <t-button
-          v-if="detail && Number(detail.status) === 0"
+          v-if="canPayDetail"
           theme="primary"
-          @click="router.push(`/client/invoices/${detail.invoice?.id}/pay`)"
+          @click="goPayDetail"
         >
           去支付
         </t-button>
@@ -193,7 +193,7 @@
 import { INVOICE_STATUS_MAP, ORDER_STATUS_MAP } from '@turaidc/shared/statusConfig';
 import StatusTag from '@shared/user-v3/components/StatusTag.vue';
 import { RefreshIcon } from 'tdesign-icons-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { formatMoney, orderProductDisplay, useOrderDetail } from '@/domains/finance/useOrders';
@@ -202,6 +202,8 @@ import { configValueLabelMap, flattenSnapshot } from '@/domains/finance/useRecor
 const route = useRoute();
 const router = useRouter();
 const activeTab = ref('basic');
+const { loading, canceling, detail, loadDetail, cancelOrder } = useOrderDetail();
+
 const showConfigTab = computed(() => {
   const type = String(detail.value?.type || '').toLowerCase();
   return ['new', 'normal'].includes(type);
@@ -215,9 +217,19 @@ const pricingSnapshotView = computed(() =>
   flattenSnapshot(detail.value?.config_pricing_snapshot as Record<string, unknown> | undefined),
 );
 
-const { loading, canceling, detail, loadDetail, cancelOrder } = useOrderDetail();
+const payableInvoiceId = computed(() => {
+  const id = Number(detail.value?.invoice?.id || detail.value?.invoice_id || 0);
+  return Number.isFinite(id) && id > 0 ? id : 0;
+});
+const canPayDetail = computed(() => Number(detail.value?.status) === 0 && payableInvoiceId.value > 0);
 
-const orderId = Number(route.params.id || 0);
+function goPayDetail() {
+  if (payableInvoiceId.value > 0) {
+    router.push(`/client/invoices/${payableInvoiceId.value}/pay`);
+  }
+}
+
+const orderId = computed(() => Number(route.params.id || 0));
 
 const BILLING_CYCLE_MAP: Record<string, string> = {
   monthly: '月付',
@@ -235,11 +247,14 @@ function billingCycleLabel(value?: string) {
   return BILLING_CYCLE_MAP[value] || value;
 }
 
-onMounted(() => {
-  if (orderId) {
-    void loadDetail(orderId);
-  }
-});
+watch(
+  orderId,
+  (id) => {
+    detail.value = null;
+    if (id > 0) void loadDetail(id);
+  },
+  { immediate: true },
+);
 </script>
 <style scoped lang="less">
 .order-breadcrumb {
