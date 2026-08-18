@@ -197,6 +197,12 @@ export function useOrderDetail() {
     }
   }
 
+  function invalidateDetail(): void {
+    requestSeq += 1; // 使进行中的旧请求失效
+    detail.value = null;
+    loading.value = false;
+  }
+
   function cancelOrder(onSuccess?: () => void) {
     if (!detail.value) return;
     const row = detail.value;
@@ -230,6 +236,7 @@ export function useOrderDetail() {
     canceling,
     detail,
     loadDetail,
+    invalidateDetail,
     cancelOrder,
   };
 }

@@ -15,13 +15,7 @@
           <template #icon><refresh-icon /></template>
           刷新
         </t-button>
-        <t-button
-          v-if="canPayDetail"
-          theme="primary"
-          @click="goPayDetail"
-        >
-          去支付
-        </t-button>
+        <t-button v-if="canPayDetail" theme="primary" @click="goPayDetail"> 去支付 </t-button>
         <t-button
           v-if="detail && Number(detail.status) === 0"
           theme="danger"
@@ -190,8 +184,8 @@
   </section>
 </template>
 <script setup lang="ts">
-import { INVOICE_STATUS_MAP, ORDER_STATUS_MAP } from '@turaidc/shared/statusConfig';
 import StatusTag from '@shared/user-v3/components/StatusTag.vue';
+import { INVOICE_STATUS_MAP, ORDER_STATUS_MAP } from '@turaidc/shared/statusConfig';
 import { RefreshIcon } from 'tdesign-icons-vue-next';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -202,7 +196,7 @@ import { configValueLabelMap, flattenSnapshot } from '@/domains/finance/useRecor
 const route = useRoute();
 const router = useRouter();
 const activeTab = ref('basic');
-const { loading, canceling, detail, loadDetail, cancelOrder } = useOrderDetail();
+const { loading, canceling, detail, loadDetail, invalidateDetail, cancelOrder } = useOrderDetail();
 
 const showConfigTab = computed(() => {
   const type = String(detail.value?.type || '').toLowerCase();
@@ -250,8 +244,11 @@ function billingCycleLabel(value?: string) {
 watch(
   orderId,
   (id) => {
-    detail.value = null;
-    if (id > 0) void loadDetail(id);
+    if (id > 0) {
+      void loadDetail(id);
+    } else {
+      invalidateDetail(); // 失效进行中的旧请求并将详情/加载态复位
+    }
   },
   { immediate: true },
 );
