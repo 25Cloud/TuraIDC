@@ -96,6 +96,11 @@ final class ZjmfFinanceAdapter implements ProvidesConsoleAccess, ProvidesConsole
         return $this->catalogService->getProductCatalog($supplier);
     }
 
+    public function hydrateSelectedPricing(Supplier $supplier, array $products, array $selectedIds): array
+    {
+        return $this->catalogService->hydrateSelectedPricing($supplier, $products, $selectedIds);
+    }
+
     public function fetchRealConfigOptions(Supplier $supplier, int $productId): array
     {
         return $this->catalogService->fetchRealConfigOptions($supplier, $productId);
