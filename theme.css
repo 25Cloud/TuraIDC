@@ -216,6 +216,12 @@
   --td-scrollbar-color: rgba(255, 255, 255, 0.1);
   --td-scrollbar-hover-color: rgba(255, 255, 255, 0.3);
   --td-scroll-track-color: #333;
+  /* 暗色下 -light 系列用「品牌主色半透明」叠深色容器，避免继承浅色设定的亮底导致卡片 hover 泛白；
+     dark 模式品牌色阶会被 insertThemeStylesheet 反转（-1/-2 为亮色），故不能引用 -color-N，必须脱离色阶 */
+  --td-brand-color-light: color-mix(in srgb, var(--td-brand-color) 24%, transparent);
+  --td-warning-color-light: color-mix(in srgb, var(--td-warning-color) 24%, transparent);
+  --td-error-color-light: color-mix(in srgb, var(--td-error-color) 24%, transparent);
+  --td-success-color-light: color-mix(in srgb, var(--td-success-color) 24%, transparent);
 }
 
 :root {
