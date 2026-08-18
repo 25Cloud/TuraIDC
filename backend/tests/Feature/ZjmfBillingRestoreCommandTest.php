@@ -68,10 +68,9 @@ class ZjmfBillingRestoreCommandTest extends TestCase
         }
     }
 
-    public function test_restore_rejects_non_empty_target_without_force(): void
+    public function test_restore_rejects_non_empty_target_even_with_force(): void
     {
-        // 目标 invoices 表存在既有数据时，未显式 --force 必须拒绝物理删除覆盖，
-        // 防止误把 dump 快照后的新账单抹掉。
+        // 财务审计表非空时禁止覆盖恢复；--force 保留为兼容参数，但不再允许物理删除。
         $userId = (int) DB::table('users')->value('id');
         $invoiceNo = 'RESTORE-GUARD-'.strtoupper(bin2hex(random_bytes(4)));
         DB::table('invoices')->insert([
@@ -87,8 +86,8 @@ class ZjmfBillingRestoreCommandTest extends TestCase
 
         try {
             $this->expectException(\RuntimeException::class);
-            $this->expectExceptionMessage('--force');
-            app(ZjmfBillingRestoreService::class)->restoreFromSqlDump($path, false, false);
+            $this->expectExceptionMessage('禁止覆盖或物理删除既有账单/余额日志');
+            app(ZjmfBillingRestoreService::class)->restoreFromSqlDump($path, false, true);
         } finally {
             @unlink($path);
             DB::table('invoices')->where('invoice_no', $invoiceNo)->delete();

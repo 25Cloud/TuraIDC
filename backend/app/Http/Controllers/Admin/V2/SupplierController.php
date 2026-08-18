@@ -142,7 +142,12 @@ class SupplierController extends Controller
 
     public function runTask(RunSupplierTaskRequest $request, Supplier $supplier)
     {
-        $result = $this->queryService->runSupplierTask($supplier, $request->taskType(), $request->payload());
+        $result = $this->queryService->runSupplierTask(
+            $supplier,
+            $request->taskType(),
+            $request->payload(),
+            $request->user()
+        );
 
         return $this->success(AdminActionResultResource::make($result)->resolve(), (string) $result['message']);
     }

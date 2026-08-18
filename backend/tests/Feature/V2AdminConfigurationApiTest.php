@@ -522,6 +522,13 @@ class V2AdminConfigurationApiTest extends TestCase
 
         Sanctum::actingAs($this->createAdmin([AdminPermissions::SUPPLIER_SYNC]));
 
+        $this->postJson('/api/v2/admin/suppliers/'.$supplier->id.'/tasks', [
+            'type' => 'server.supplier.bulk_connect',
+            'payload' => ['product_ids' => [1], 'first_product_group_code' => 'cloud_server'],
+        ])
+            ->assertForbidden()
+            ->assertJsonPath('code', 40300);
+
         $this->postJson('/api/v2/admin/suppliers/'.$supplier->id.'/tasks?per_page=20', [
             'type' => 'server.supplier.refresh_card',
         ])

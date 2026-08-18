@@ -26,6 +26,7 @@ use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\ProviderRegistry;
 use App\Services\Upstream\ProviderResolver;
+use App\Support\AdminPermissions;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -438,8 +439,10 @@ class AdminConfigurationV2QueryService
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
-    public function runSupplierTask(Supplier $supplier, string $type, array $payload): array
+    public function runSupplierTask(Supplier $supplier, string $type, array $payload, ?AdminUser $operator = null): array
     {
+        $this->assertSupplierTaskPermission($type, $operator);
+
         $binding = app(PluginBindingResolver::class)->supplierBindingProjection($supplier, includeSecrets: true);
         $providerKey = trim((string) ($binding['provider_key'] ?? ''));
         if ($providerKey === '') {
@@ -497,6 +500,27 @@ class AdminConfigurationV2QueryService
             'type' => $type,
             'result' => $this->compactSupplierTaskResult($data),
         ]);
+    }
+
+    private function assertSupplierTaskPermission(string $type, ?AdminUser $operator): void
+    {
+        $requiredPermission = $this->requiredPermissionForSupplierTask($type);
+        if ($requiredPermission === null) {
+            throw new BusinessException('不支持的供应商插件动作', 42200);
+        }
+
+        if (! $operator?->hasPermission($requiredPermission)) {
+            throw new BusinessException('当前账号无权执行该供应商插件动作', 40300, 403);
+        }
+    }
+
+    private function requiredPermissionForSupplierTask(string $type): ?string
+    {
+        return match ($type) {
+            'server.supplier.refresh_card' => AdminPermissions::SUPPLIER_SYNC,
+            'server.supplier.bulk_connect' => AdminPermissions::PRODUCT_SYNC,
+            default => null,
+        };
     }
 
     /**

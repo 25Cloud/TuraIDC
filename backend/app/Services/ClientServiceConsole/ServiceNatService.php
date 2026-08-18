@@ -101,12 +101,14 @@ class ServiceNatService
         ]);
 
         [$runtime, $supplier, $hostId, $jwt, $natContext] = $this->resolveNatAclContext($service, true);
+        $protocol = trim((string) ($data['protocol'] ?? ''));
+        $this->assertNatProtocolAllowed((array) ($natContext['protocols'] ?? []), $protocol);
         $payload = [
             'func' => 'addNatAcl',
             'name' => trim((string) ($data['name'] ?? '')),
             'ext_port' => trim((string) ($data['ext_port'] ?? '')),
             'int_port' => trim((string) ($data['int_port'] ?? '')),
-            'select-protocol' => trim((string) ($data['protocol'] ?? '')),
+            'select-protocol' => $protocol,
         ];
         $response = is_callable([$runtime, 'submitCustomModuleAction'])
             ? $runtime->submitCustomModuleAction($supplier, $natContext['endpoint'], $payload, $jwt)
@@ -128,8 +130,8 @@ class ServiceNatService
             'forwarding_name' => trim((string) ($data['name'] ?? '')),
             'external_port' => trim((string) ($data['ext_port'] ?? '')),
             'internal_port' => trim((string) ($data['int_port'] ?? '')),
-            'protocol' => trim((string) ($data['protocol'] ?? '')),
-            'protocol_label' => $this->transformService->resolveSelectOptionLabel((array) ($natContext['protocols'] ?? []), trim((string) ($data['protocol'] ?? ''))),
+            'protocol' => $protocol,
+            'protocol_label' => $this->transformService->resolveSelectOptionLabel((array) ($natContext['protocols'] ?? []), $protocol),
             'message' => $message,
         ], $context);
 
@@ -227,6 +229,27 @@ class ServiceNatService
         }
 
         Cache::forget($this->buildNatAclContextCacheKey($service));
+    }
+
+    private function assertNatProtocolAllowed(array $options, string $protocol): void
+    {
+        throw_if($protocol === '', new BusinessException('请选择 NAT 转发协议', 42200));
+
+        if ($options === []) {
+            throw new BusinessException('当前上游未返回可用 NAT 协议选项，请刷新后重试', 42200);
+        }
+
+        $allowed = collect($options)
+            ->filter(fn ($item): bool => is_array($item))
+            ->map(fn (array $item): string => trim((string) ($item['value'] ?? '')))
+            ->filter(fn (string $item): bool => $item !== '')
+            ->values()
+            ->all();
+
+        throw_if(
+            $allowed === [] || ! in_array($protocol, $allowed, true),
+            new BusinessException('NAT 转发协议不在当前上游允许范围内', 42200)
+        );
     }
 
     // ── NAT ACL HTML parsing ───────────────────────────────────────────────

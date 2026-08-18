@@ -11,7 +11,7 @@
     <div class="detail-toolbar">
       <t-button variant="outline" @click="router.push('/client/payments')">返回列表</t-button>
       <div class="detail-toolbar__actions">
-        <t-button variant="outline" :loading="loading" @click="loadPayment">
+        <t-button variant="outline" :loading="loading" @click="loadPayment()">
           <template #icon><refresh-icon /></template>
           刷新
         </t-button>
@@ -96,7 +96,7 @@
 import { INVOICE_STATUS_MAP, PAYMENT_STATUS_MAP } from '@shared/statusConfig';
 import StatusTag from '@shared/user-v3/components/StatusTag.vue';
 import { RefreshIcon } from 'tdesign-icons-vue-next';
-import { onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
@@ -108,13 +108,13 @@ const router = useRouter();
 const loading = ref(false);
 const detail = ref<PaymentRecord | null>(null);
 
-const paymentId = Number(route.params.id || 0);
+const paymentId = computed(() => Number(route.params.id || 0));
 
-async function loadPayment() {
-  if (!paymentId) return;
+async function loadPayment(id = paymentId.value) {
+  if (!id) return;
   loading.value = true;
   try {
-    const res = await clientApi.paymentDetail(paymentId);
+    const res = await clientApi.paymentDetail(id);
     detail.value = res.data || null;
   } catch {
     detail.value = null;
@@ -123,9 +123,14 @@ async function loadPayment() {
   }
 }
 
-onMounted(() => {
-  void loadPayment();
-});
+watch(
+  paymentId,
+  (id) => {
+    detail.value = null;
+    if (id > 0) void loadPayment(id);
+  },
+  { immediate: true },
+);
 </script>
 <style scoped lang="less">
 .payment-breadcrumb {

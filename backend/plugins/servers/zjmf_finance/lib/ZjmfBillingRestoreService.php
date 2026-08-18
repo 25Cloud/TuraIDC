@@ -139,8 +139,8 @@ class ZjmfBillingRestoreService
         usort($invoicePayload, fn (array $a, array $b) => $a['id'] <=> $b['id']);
         usort($balanceLogPayload, fn (array $a, array $b) => $a['id'] <=> $b['id']);
 
-        // 空库强制审计：先统计目标表既有数据供 dry-run 预检展示；非 dry-run 且目标表
-        // 非空时必须显式 --force 才允许物理删除重插，防止误把 dump 快照后的新财务数据抹掉。
+        // 仅允许恢复到空财务表：invoices/balance_logs 属于审计链路，禁止用 dump 覆盖
+        // 当前库中已产生的账单/余额日志。--force 保留为兼容旧脚本的无效参数，不再触发删除。
         $existingInvoices = Schema::hasTable('invoices') ? (int) DB::table('invoices')->count() : 0;
         $existingBalanceLogs = Schema::hasTable('balance_logs') ? (int) DB::table('balance_logs')->count() : 0;
         $summary['existing_invoices'] = $existingInvoices;
@@ -150,20 +150,18 @@ class ZjmfBillingRestoreService
             return $summary;
         }
 
-        if (($existingInvoices > 0 || $existingBalanceLogs > 0) && ! $forceOverwrite) {
+        if ($existingInvoices > 0 || $existingBalanceLogs > 0) {
             throw new RuntimeException(
                 '目标库 invoices/balance_logs 已有数据（invoices='.$existingInvoices.', balance_logs='.$existingBalanceLogs.'），'
-                .'恢复将物理删除并覆盖全部现有财务数据；如确认覆盖，请追加 --force'
+                .'为保护财务审计链路，禁止覆盖或物理删除既有账单/余额日志；请仅在空库或隔离库执行恢复'
             );
         }
 
-        $summary['overwrite_forced'] = true;
+        $summary['overwrite_forced'] = false;
 
         DB::transaction(function () use ($invoicePayload, $balanceLogPayload, $clientBalances): void {
             $now = now()->format('Y-m-d H:i:s');
 
-            DB::table('balance_logs')->delete();
-            DB::table('invoices')->delete();
             DB::table('users')->update([
                 'updated_at' => $now,
             ]);

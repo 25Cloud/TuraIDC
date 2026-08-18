@@ -45,7 +45,7 @@
     </t-card>
 
     <section class="record-list-card">
-      <data-state :loading="loading" :empty="!list.length" description="暂无账单记录">
+      <data-state :loading="loading" :empty="!list.length" :description="listError || '暂无账单记录'">
         <t-table class="record-table" row-key="id" :data="list" :columns="columns" :pagination="null" hover>
           <template #invoice="{ row }">
             <div class="stack-cell">
@@ -186,6 +186,7 @@ const router = useRouter();
 const {
   loading,
   list,
+  listError,
   total,
   filters,
   loadList,

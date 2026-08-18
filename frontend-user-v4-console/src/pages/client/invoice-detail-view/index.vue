@@ -11,7 +11,7 @@
     <div class="detail-toolbar">
       <t-button variant="outline" @click="router.push('/client/invoices')">返回列表</t-button>
       <div class="detail-toolbar__actions">
-        <t-button variant="outline" :loading="loading" @click="loadInvoice">
+        <t-button variant="outline" :loading="loading" @click="loadInvoice()">
           <template #icon><refresh-icon /></template>
           刷新
         </t-button>
@@ -149,7 +149,7 @@ import { INVOICE_STATUS_MAP, ORDER_STATUS_MAP, PAYMENT_STATUS_MAP } from '@turai
 import StatusTag from '@shared/user-v3/components/StatusTag.vue';
 import { RefreshIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
@@ -163,7 +163,7 @@ const loading = ref(false);
 const detail = ref<InvoiceRecord | null>(null);
 const activeTab = ref('basic');
 
-const invoiceId = Number(route.params.id || 0);
+const invoiceId = computed(() => Number(route.params.id || 0));
 
 function isPayable(row: InvoiceRecord | null) {
   return isPayableInvoice(row);
@@ -206,11 +206,11 @@ const paymentColumns: PrimaryTableCol[] = [
   { colKey: 'paid_at', title: '支付时间', minWidth: '12rem' },
 ];
 
-async function loadInvoice() {
-  if (!invoiceId) return;
+async function loadInvoice(id = invoiceId.value) {
+  if (!id) return;
   loading.value = true;
   try {
-    const res = await clientApi.invoiceDetail(invoiceId);
+    const res = await clientApi.invoiceDetail(id);
     detail.value = res.data || null;
   } catch {
     detail.value = null;
@@ -219,9 +219,14 @@ async function loadInvoice() {
   }
 }
 
-onMounted(() => {
-  void loadInvoice();
-});
+watch(
+  invoiceId,
+  (id) => {
+    detail.value = null;
+    if (id > 0) void loadInvoice(id);
+  },
+  { immediate: true },
+);
 </script>
 <style scoped lang="less">
 .invoice-breadcrumb {

@@ -185,7 +185,7 @@ function v2InvoiceDetail(id: number | string) {
 }
 
 function v2FinanceLedger(params?: QueryParams) {
-  return getEnvelope<V2ClientLedgerPayload>('/v2/client/ledger', { params }).then((response) =>
+  return getEnvelope<V2ClientLedgerPayload>('/v2/client/finance/ledger', { params }).then((response) =>
     dataEnvelope(response, {
       list: response.data?.list || [],
       total: Number(response.data?.total || 0),
@@ -196,13 +196,9 @@ function v2FinanceLedger(params?: QueryParams) {
 }
 
 function v2FinanceLedgerSummary(params?: QueryParams) {
-  return getEnvelope<V2ClientLedgerPayload>('/v2/client/ledger', {
-    params: {
-      ...(params || {}),
-      page: 1,
-      page_size: 1,
-    },
-  }).then((response) => dataEnvelope(response, response.data?.summary || {}));
+  return getEnvelope<FinanceLedgerSummary>('/v2/client/finance/ledger/summary', { params }).then((response) =>
+    dataEnvelope(response, response.data || {}),
+  );
 }
 
 function v2ServiceDetail(id: number | string, config?: RequestConfig) {

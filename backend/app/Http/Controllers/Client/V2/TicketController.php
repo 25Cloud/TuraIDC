@@ -9,7 +9,6 @@ use App\Http\Requests\Client\V2\Ticket\ListTicketRepliesRequest;
 use App\Http\Requests\Client\V2\Ticket\ShowTicketRequest;
 use App\Http\Resources\Ticket\V2\TicketDetailResource;
 use App\Http\Resources\Ticket\V2\TicketReplyResource;
-use App\Models\Ticket;
 use App\Services\Ticket\TicketService;
 use Illuminate\Http\JsonResponse;
 
@@ -34,10 +33,8 @@ class TicketController extends Controller
         );
     }
 
-    private function findUserTicket(ShowTicketRequest|ListTicketRepliesRequest $request, int $ticket): Ticket
+    private function findUserTicket(ShowTicketRequest|ListTicketRepliesRequest $request, int $ticket)
     {
-        return Ticket::query()
-            ->where('user_id', (int) $request->user()->id)
-            ->findOrFail($ticket);
+        return $this->tickets->clientTicket((int) $request->user()->id, $ticket);
     }
 }

@@ -19,6 +19,24 @@ if (!host) {
   throw new Error('VITE_API_BASE_URL 必须配置');
 }
 
+const SAFE_RETRY_METHODS = new Set(['get', 'head', 'options']);
+
+function normalizeRequestMethod(config: Recordable | undefined): string {
+  return String(config?.method || 'get').toLowerCase();
+}
+
+function canRetryRequest(config: Recordable | undefined): boolean {
+  return Boolean(config?.requestOptions?.retry && SAFE_RETRY_METHODS.has(normalizeRequestMethod(config)));
+}
+
+function createRequestId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `admin-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 // 数据处理，方便区分多种处理方式
 const transform: AxiosTransform = {
   // 处理请求数据。如果数据不是预期格式，可直接抛出错误
@@ -135,9 +153,18 @@ const transform: AxiosTransform = {
     // 请求之前处理config
     const token = getAdminToken();
 
+    const headers = { ...((config as Recordable).headers || {}) };
+
     if (token && (config as Recordable)?.requestOptions?.withToken !== false) {
-      (config as Recordable).headers.Authorization = `${options.authenticationScheme || 'Bearer'} ${token}`;
+      headers.Authorization = `${options.authenticationScheme || 'Bearer'} ${token}`;
     }
+
+    if (!SAFE_RETRY_METHODS.has(normalizeRequestMethod(config as Recordable))) {
+      headers['X-Request-Id'] = String(headers['X-Request-Id'] || createRequestId());
+    }
+
+    (config as Recordable).headers = headers;
+
     return config;
   },
 
@@ -154,7 +181,7 @@ const transform: AxiosTransform = {
       error.message = toUserMessage(responseMessage, error.message || '请求接口错误');
     }
 
-    if (!config || !config.requestOptions.retry) return Promise.reject(error);
+    if (!canRetryRequest(config)) return Promise.reject(error);
 
     // 4xx 客户端错误（认证失败/无权限/参数错误/限流等）重试无意义且会加剧限流，直接返回
     const status = error?.response?.status;

@@ -30,6 +30,7 @@ export function useOrderList(options: { pageSize?: number } = {}) {
   const summaryLoading = ref(false);
   const canceling = ref(false);
   const list = shallowRef<OrderRecord[]>([]);
+  const listError = ref('');
   const total = ref(0);
   const summary = shallowRef<OrderListSummary>({});
   const filters = reactive({
@@ -72,12 +73,16 @@ export function useOrderList(options: { pageSize?: number } = {}) {
   async function loadList() {
     loading.value = true;
     try {
+      listError.value = '';
       const res = await clientApi.orders(buildParams());
       const payload = res.data;
       list.value = payload && !Array.isArray(payload) && Array.isArray(payload.list) ? payload.list : [];
       total.value = payload && !Array.isArray(payload) ? Number(payload.total || 0) : 0;
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '订单列表加载失败'));
+      list.value = [];
+      total.value = 0;
+      listError.value = getErrorMessage(error, '订单列表加载失败');
+      MessagePlugin.error(listError.value);
     } finally {
       loading.value = false;
     }
@@ -148,6 +153,7 @@ export function useOrderList(options: { pageSize?: number } = {}) {
     summaryLoading,
     canceling,
     list,
+    listError,
     total,
     summary,
     filters,
