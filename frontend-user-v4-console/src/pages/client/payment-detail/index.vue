@@ -138,8 +138,13 @@ async function loadPayment(id = paymentId.value) {
 watch(
   paymentId,
   (id) => {
+    requestSeq += 1; // 失效进行中的旧请求，避免其晚返回覆盖当前路由
     detail.value = null;
-    if (id > 0) void loadPayment(id);
+    if (id > 0) {
+      void loadPayment(id);
+    } else {
+      loading.value = false;
+    }
   },
   { immediate: true },
 );

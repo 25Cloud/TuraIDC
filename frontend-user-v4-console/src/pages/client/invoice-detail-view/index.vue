@@ -234,8 +234,13 @@ async function loadInvoice(id = invoiceId.value) {
 watch(
   invoiceId,
   (id) => {
+    requestSeq += 1; // 失效进行中的旧请求，避免其晚返回覆盖当前路由
     detail.value = null;
-    if (id > 0) void loadInvoice(id);
+    if (id > 0) {
+      void loadInvoice(id);
+    } else {
+      loading.value = false;
+    }
   },
   { immediate: true },
 );
