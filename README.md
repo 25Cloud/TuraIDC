@@ -25,7 +25,7 @@
 
 | 端 | 技术 |
 | --- | --- |
-| 后端 | Laravel 12（PHP 8.2+）、Sanctum、MySQL 8、Redis |
+| 后端 | Laravel 12（PHP 8.3+）、Sanctum、MySQL 8、Redis |
 | 管理后台 | Vue 3 + TypeScript + TDesign Vue Next + Vite |
 | 官网门户 | Vue 3 + JavaScript + Element Plus + Vite |
 | 用户控制台 | Vue 3 + TypeScript + TDesign Vue Next + Vite |
@@ -53,7 +53,7 @@ TuraIDC/
 
 ## 环境要求
 
-- PHP 8.3+（扩展：`pdo_mysql`、`redis`、`mbstring`、`openssl` 等）
+- PHP 8.3+（扩展：`pdo_mysql`、`redis`、`mbstring`、`openssl`、`zip` 等）
 - MySQL 8.0+
 - Redis 6.0+（生产环境必需，分布式锁依赖 Redis）
 - Composer 2.x
@@ -65,10 +65,10 @@ TuraIDC/
 
 ```bash
 cd backend
-composer install
 cp .env.example .env
-php artisan key:generate
 # 编辑 .env：DB_HOST / DB_PORT / DB_DATABASE / DB_USERNAME / DB_PASSWORD 等
+composer install
+php artisan key:generate
 
 # 初始化数据库（新库）：先导入完整结构，再执行增量迁移
 mysql -u root -p finance < database/schema/mysql-schema.sql
@@ -81,7 +81,7 @@ php artisan db:seed --class=Database\\Seeders\\SettingsSeeder
 php artisan tinker
 App\Models\AdminUser::create([
     'username' => 'admin',
-    'password' => 'your-strong-password',
+    'password' => 'password',
     'role_id'  => 1,
     'nickname' => '管理员',
     'status'   => 1,
