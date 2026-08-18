@@ -233,7 +233,11 @@ const getThumbnailUrl = (name: string): string => {
 };
 
 watchEffect(() => {
-  if (formData.value.brandTheme) settingStore.updateConfig(formData.value);
+  // 仅设置面板打开时把表单同步到 store；面板关闭时不写 store，
+  // 避免常驻 watchEffect 在用户切换主题后把 mode 重置回表单旧值。
+  if (formData.value.brandTheme && settingStore.showSettingPanel) {
+    settingStore.updateConfig(formData.value);
+  }
 });
 </script>
 <!-- teleport导致drawer 内 scoped样式问题无法生效 先规避下 -->
