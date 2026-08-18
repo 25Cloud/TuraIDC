@@ -145,8 +145,8 @@
   </section>
 </template>
 <script setup lang="ts">
-import { INVOICE_STATUS_MAP, ORDER_STATUS_MAP, PAYMENT_STATUS_MAP } from '@turaidc/shared/statusConfig';
 import StatusTag from '@shared/user-v3/components/StatusTag.vue';
+import { INVOICE_STATUS_MAP, ORDER_STATUS_MAP, PAYMENT_STATUS_MAP } from '@turaidc/shared/statusConfig';
 import { RefreshIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { computed, ref, watch } from 'vue';
@@ -206,16 +206,28 @@ const paymentColumns: PrimaryTableCol[] = [
   { colKey: 'paid_at', title: '支付时间', minWidth: '12rem' },
 ];
 
+// 并发守卫：快速切换发票详情时丢弃晚返回的旧请求结果。
+let requestSeq = 0;
+
 async function loadInvoice(id = invoiceId.value) {
   if (!id) return;
+  const seq = ++requestSeq;
   loading.value = true;
   try {
     const res = await clientApi.invoiceDetail(id);
+    if (seq !== requestSeq) {
+      return;
+    }
     detail.value = res.data || null;
   } catch {
+    if (seq !== requestSeq) {
+      return;
+    }
     detail.value = null;
   } finally {
-    loading.value = false;
+    if (seq === requestSeq) {
+      loading.value = false;
+    }
   }
 }
 
