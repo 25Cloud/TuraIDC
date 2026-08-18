@@ -52,58 +52,88 @@
   <link rel="dns-prefetch" href="//mclient.alipay.com" />
 </head>
 <body>
-  <div id="app">
-    <!-- 初始加载动画：JS 解析完成前展示，Vue 挂载后自动替换 -->
-    <div id="app-splash" aria-label="页面加载中">
-      <style>
-        #app-splash {
-          position: fixed;
-          inset: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 28px;
-          background: linear-gradient(168deg, #f8fafc 0%, #f0f4ff 100%);
-          z-index: 9999;
-          opacity: 1;
-          transition: opacity 0.3s ease-out;
-        }
-        #app-splash.fade-out {
-          opacity: 0;
-          pointer-events: none;
-        }
-        #app-splash .splash-logo {
-          width: 48px;
-          height: 48px;
-          animation: splash-breathe 2s ease-in-out infinite;
-        }
-        #app-splash .splash-bar-track {
-          width: 180px;
-          height: 3px;
-          border-radius: 999px;
-          background: rgba(22, 93, 255, 0.1);
-          overflow: hidden;
-        }
+  <div id="app"></div>
+  <!-- 初始加载动画：JS 解析完成前展示，Vue 挂载后淡出移除 -->
+  <div id="app-splash" aria-label="页面加载中">
+    <style>
+      #app-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        background: linear-gradient(168deg, #f8fafc 0%, #f0f4ff 100%);
+        z-index: 9999;
+        opacity: 1;
+        transition: opacity 0.3s ease-out;
+      }
+      #app-splash.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #app-splash .splash-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: #165dff;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        animation: splash-breathe 2s ease-in-out infinite;
+      }
+      #app-splash .splash-mark {
+        display: inline-flex;
+        width: 44px;
+        height: 44px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #165dff 0%, #4d8eff 100%);
+        box-shadow: 0 14px 32px rgba(22, 93, 255, 0.22);
+        color: #fff;
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      #app-splash .splash-word {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      #app-splash .splash-bar-track {
+        width: 180px;
+        height: 3px;
+        border-radius: 999px;
+        background: rgba(22, 93, 255, 0.1);
+        overflow: hidden;
+      }
+      #app-splash .splash-bar-fill {
+        width: 40%;
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #165dff, #4d8eff);
+        animation: splash-slide 1.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #app-splash .splash-brand,
         #app-splash .splash-bar-fill {
-          width: 40%;
-          height: 100%;
-          border-radius: 999px;
-          background: linear-gradient(90deg, #165dff, #4d8eff);
-          animation: splash-slide 1.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+          animation: none;
         }
-        @keyframes splash-breathe {
-          0%, 100% { transform: scale(1); opacity: 0.92; }
-          50% { transform: scale(1.04); opacity: 1; }
-        }
-        @keyframes splash-slide {
-          0% { transform: translateX(-120%); }
-          100% { transform: translateX(350%); }
-        }
-      </style>
-      <img class="splash-logo" src="/branding/splash-96.png" alt="图拉云" width="48" height="48" />
-      <div class="splash-bar-track"><div class="splash-bar-fill"></div></div>
+      }
+      @keyframes splash-breathe {
+        0%, 100% { transform: scale(1); opacity: 0.92; }
+        50% { transform: scale(1.04); opacity: 1; }
+      }
+      @keyframes splash-slide {
+        0% { transform: translateX(-120%); }
+        100% { transform: translateX(350%); }
+      }
+    </style>
+    <div class="splash-brand" aria-hidden="true">
+      <span class="splash-mark">T</span>
+      <span class="splash-word">图拉云</span>
     </div>
+    <div class="splash-bar-track"><div class="splash-bar-fill"></div></div>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>
