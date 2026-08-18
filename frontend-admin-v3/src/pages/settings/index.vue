@@ -776,6 +776,28 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
           { key: 'privacy_url', label: '隐私政策链接', type: 'input', default: '', maxlength: 255 },
         ],
       },
+      {
+        title: '通知总开关',
+        description: '邮件与短信的全局开关；关闭后对应渠道的验证码与业务通知不再发送。',
+        fields: [
+          {
+            key: 'email_enabled',
+            label: '启用邮件通知',
+            type: 'switch',
+            group: 'notification',
+            default: false,
+            help: '关闭后系统邮件（邮箱验证码、服务/账单等通知）不再发送。',
+          },
+          {
+            key: 'sms_enabled',
+            label: '启用短信通知',
+            type: 'switch',
+            group: 'notification',
+            default: false,
+            help: '关闭后系统短信（短信验证码等）不再发送。',
+          },
+        ],
+      },
     ],
   },
 };
