@@ -98,7 +98,7 @@
         </div>
       </t-card>
 
-      <t-card v-else class="profile-card" :bordered="false">
+      <t-card v-else-if="activeTab === 'display'" class="profile-card" :bordered="false">
         <template #title>显示设置</template>
         <template #actions><t-tag variant="light">主题外观</t-tag></template>
         <div class="display-options">
