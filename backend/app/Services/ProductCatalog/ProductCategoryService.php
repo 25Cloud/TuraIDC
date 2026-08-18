@@ -14,6 +14,7 @@ use App\Services\ProductCatalog\Concerns\HandlesProductCatalogHelpers;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class ProductCategoryService
@@ -209,21 +210,74 @@ class ProductCategoryService
             if ($level === 1) {
                 $group = $this->findFirstGroup($groupId);
                 throw_if($group->secondProductGroups()->exists(), new BusinessException('请先删除下级分类'));
-                throw_if(Product::query()->inFirstProductGroup((int) $group->id)->exists(), new BusinessException('请先迁移或删除该分类下的商品'));
+                $this->assertNoActiveProductsInGroup($groupId, fn (Builder $query) => $query->inFirstProductGroup($groupId));
+                $this->forceDeleteSoftDeletedProductsInGroup($groupId, fn (Builder $query) => $query->inFirstProductGroup($groupId));
                 $group->delete();
             } elseif ($level === 2) {
                 $group = $this->findSecondGroup($groupId);
                 throw_if($group->thirdProductGroups()->exists(), new BusinessException('请先删除下级分类'));
-                throw_if(Product::query()->inSecondProductGroup((int) $group->id)->exists(), new BusinessException('请先迁移或删除该分类下的商品'));
+                $this->assertNoActiveProductsInGroup($groupId, fn (Builder $query) => $query->inSecondProductGroup($groupId));
+                $this->forceDeleteSoftDeletedProductsInGroup($groupId, fn (Builder $query) => $query->inSecondProductGroup($groupId));
                 $group->delete();
             } else {
                 $group = $this->findThirdGroup($groupId);
-                throw_if($group->products()->exists(), new BusinessException('请先迁移或删除该分类下的商品'));
+                $this->assertNoActiveProductsInGroup($groupId, fn (Builder $query) => $query->where('product_group_id', $groupId));
+                $this->forceDeleteSoftDeletedProductsInGroup($groupId, fn (Builder $query) => $query->where('product_group_id', $groupId));
                 $group->delete();
             }
         });
 
         $this->forgetSiteCatalogCache();
+    }
+
+    /**
+     * 校验分组下不存在未删除商品（软删除商品由 forceDeleteSoftDeletedProductsInGroup 清理）。
+     *
+     * @param  \Closure(Builder): Builder  $scopeQuery
+     */
+    private function assertNoActiveProductsInGroup(int $groupId, \Closure $scopeQuery): void
+    {
+        $hasActive = Product::query()
+            ->withoutGlobalScopes()
+            ->whereNull('products.deleted_at')
+            ->tap($scopeQuery)
+            ->exists();
+
+        throw_if($hasActive, new BusinessException('请先迁移或删除该分类下的商品'));
+    }
+
+    /**
+     * 物理删除分组下已软删除的商品，避免其外键引用阻塞分组删除。
+     * 软删除商品的上游绑定（product_upstream_bindings）一并清除。
+     *
+     * @param  \Closure(Builder): Builder  $scopeQuery
+     */
+    private function forceDeleteSoftDeletedProductsInGroup(int $groupId, \Closure $scopeQuery): void
+    {
+        $trashedProductIds = Product::query()
+            ->withoutGlobalScopes()
+            ->whereNotNull('products.deleted_at')
+            ->tap($scopeQuery)
+            ->pluck('products.id')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->values()
+            ->all();
+
+        if ($trashedProductIds === []) {
+            return;
+        }
+
+        if (Schema::hasTable('product_upstream_bindings')) {
+            DB::table('product_upstream_bindings')
+                ->whereIn('product_id', $trashedProductIds)
+                ->delete();
+        }
+
+        Product::query()
+            ->withoutGlobalScopes()
+            ->whereIn('products.id', $trashedProductIds)
+            ->forceDelete();
     }
 
     public function reorderAdminCategories(int $level, ?int $parentGroupId, array $groupIds): array
