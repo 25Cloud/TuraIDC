@@ -224,8 +224,13 @@ class DatabaseEngineeringService
             'trace_ids_backfilled' => 0,
         ];
 
-        DB::transaction(function () use (&$summary, $execute): void {
+        // 结构调整（ALTER）只允许在执行模式发生，dry-run 绝不改库：
+        // MySQL DDL 会隐式提交并锁定表，与 dry-run 只读承诺冲突。
+        if ($execute) {
             $this->ensureNullableUnsignedBigInt('services', 'order_id');
+        }
+
+        DB::transaction(function () use (&$summary, $execute): void {
             $summary['services_order_id_zero_to_null'] = $execute
                 ? $this->normalizeZeroReference('services', 'order_id')
                 : $this->countZeroReference('services', 'order_id');
