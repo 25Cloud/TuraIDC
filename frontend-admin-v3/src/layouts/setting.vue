@@ -10,6 +10,20 @@
   >
     <div class="setting-container">
       <t-form :data="formData" label-align="left">
+        <div class="setting-group-title">{{ t('layout.setting.theme.mode') }}</div>
+        <t-form-item :label="t('layout.setting.theme.mode')" name="mode">
+          <t-radio-group
+            v-model="formData.mode"
+            class="setting-mode-radio"
+            variant="default-filled"
+            @change="handleModeChange"
+          >
+            <t-radio-button :value="'light'">{{ t('layout.setting.theme.options.light') }}</t-radio-button>
+            <t-radio-button :value="'dark'">{{ t('layout.setting.theme.options.dark') }}</t-radio-button>
+            <t-radio-button :value="'auto'">{{ t('layout.setting.theme.options.auto') }}</t-radio-button>
+          </t-radio-group>
+        </t-form-item>
+
         <div class="setting-group-title">{{ t('layout.setting.navigationLayout') }}</div>
         <t-radio-group v-model="formData.layout">
           <div v-for="(item, index) in LAYOUT_OPTION" :key="index" class="setting-layout-drawer">
@@ -57,6 +71,7 @@ import Thumbnail from '@/components/thumbnail/index.vue';
 import STYLE_CONFIG from '@/config/style';
 import { t } from '@/locales';
 import { useSettingStore } from '@/store';
+import type { ModeType } from '@/types/interface';
 
 const settingStore = useSettingStore();
 
@@ -114,6 +129,12 @@ const showSettingPanel = computed({
 const handleCloseDrawer = () => {
   settingStore.updateConfig({
     showSettingPanel: false,
+  });
+};
+
+const handleModeChange = (mode: unknown) => {
+  settingStore.updateConfig({
+    mode: (mode as ModeType | 'auto') || 'light',
   });
 };
 
