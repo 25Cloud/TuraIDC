@@ -30,6 +30,7 @@ import { computed } from 'vue';
 import type { LocalizedTitle } from '@/locales';
 import { useLocale } from '@/locales/useLocale';
 import { getActive } from '@/router';
+import router from '@/router';
 import type { MenuRoute } from '@/types/interface';
 
 type ListItemType = MenuRoute;
@@ -108,7 +109,9 @@ const getHref = (item: MenuRoute) => {
 const getPath = (item: ListItemType) => {
   const activeLevel = active.value.split('/').length;
   const pathLevel = item.path.split('/').length;
-  const hasExactActiveItem = list.value.some((menuItem) => menuItem.path === active.value);
+  // 判断当前路由是否为已注册的精确路由（跨分组同级前缀路径如
+  // /admin/products 与 /admin/products/suppliers 不应互相误高亮）。
+  const hasExactActiveItem = hasExactRegisteredRoute(active.value);
 
   if (activeLevel > pathLevel && !hasExactActiveItem && active.value.startsWith(`${item.path}/`)) {
     return active.value;
@@ -120,6 +123,13 @@ const getPath = (item: ListItemType) => {
 
   return item.meta?.single ? item.redirect : item.path;
 };
+
+/**
+ * 判断指定路径是否精确匹配某个已注册路由（含隐藏路由）。
+ */
+function hasExactRegisteredRoute(path: string): boolean {
+  return router.getRoutes().some((route) => route.path === path);
+}
 
 const openHref = (url: string) => {
   window.open(url, '_blank', 'noopener,noreferrer');
