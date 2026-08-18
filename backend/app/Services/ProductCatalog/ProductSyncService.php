@@ -218,6 +218,19 @@ class ProductSyncService
             ->filter(fn ($item) => is_array($item) && (int) ($item['id'] ?? 0) > 0)
             ->keyBy(fn (array $item) => (int) ($item['id'] ?? 0));
 
+        // ZJMF 等上游的列表接口不返回价格，价格需要按选中的商品单独补充，
+        // 避免批量对接时因缺少可导入价格而全部跳过。
+        if (method_exists($catalogCapability, 'hydrateSelectedPricing')) {
+            $catalog['products'] = $catalogCapability->hydrateSelectedPricing(
+                $supplier,
+                $catalog['products'] ?? [],
+                $supplierProductIds->all(),
+            );
+            $catalogProducts = collect($catalog['products'] ?? [])
+                ->filter(fn ($item) => is_array($item) && (int) ($item['id'] ?? 0) > 0)
+                ->keyBy(fn (array $item) => (int) ($item['id'] ?? 0));
+        }
+
         $existingProducts = $this->findExistingProductsBySupplierUpstreamIds($supplier, $supplierProductIds->all());
 
         $defaultStatus = (int) ($data['default_status'] ?? 1) === 1 ? 1 : 0;

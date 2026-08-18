@@ -663,6 +663,38 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
         $httpCode = $this->resolveHttpCode($responseHeaders);
         $contentType = $this->resolveHeaderValue($responseHeaders, 'Content-Type');
 
+        // WAF 挑战页自动会话：部分上游（如 idcxl 系）在无 cookie 时返回
+        // <script>document.cookie = 'xxx_token=...; path=/'</script> 形式的 JS 挑战页，
+        // 携带该 cookie 重试一次即可正常返回 JSON。仅重试一次，避免死循环。
+        if ($output !== false
+            && ! is_array(json_decode($output, true))
+            && $this->looksLikeHtmlResponse((string) $output, $contentType)
+            && ! $this->hasCookieHeader($requestHeaders)
+        ) {
+            $challengeCookie = $this->extractChallengeCookie((string) $output);
+            if ($challengeCookie !== '') {
+                $this->safeLog('info', '[主机面板接口] 检测到 WAF 挑战页，携带会话 cookie 重试', [
+                    'supplier_id' => $supplier->id,
+                    'method' => $method,
+                    'url' => $this->maskUrlForLog($url),
+                    'cookie_name' => $this->maskChallengeCookieName($challengeCookie),
+                ]);
+
+                $retryHeaders = [...$requestHeaders, 'Cookie: '.$challengeCookie];
+                $retryContext = stream_context_create($this->buildContextOptions($method, $retryHeaders, $body));
+                error_clear_last();
+                $retryOutput = @file_get_contents($url, false, $retryContext);
+                $retryHeadersRaw = is_array($http_response_header) ? $http_response_header : [];
+
+                if ($retryOutput !== false) {
+                    $output = $retryOutput;
+                    $responseHeaders = $retryHeadersRaw;
+                    $httpCode = $this->resolveHttpCode($responseHeaders);
+                    $contentType = $this->resolveHeaderValue($responseHeaders, 'Content-Type');
+                }
+            }
+        }
+
         if ($output === false) {
             $this->safeLog('error', '[主机面板接口] 接口请求失败', [
                 'supplier_id' => $supplier->id,
@@ -702,6 +734,30 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
             'http_code' => $httpCode,
             'content_type' => $contentType,
         ];
+    }
+
+    /**
+     * 从 WAF JS 挑战页中提取会话 cookie（如 document.cookie = 'yxd_token=xxx; path=/'）。
+     */
+    private function extractChallengeCookie(string $body): string
+    {
+        if (preg_match("/document\.cookie\s*=\s*['\"]?([A-Za-z0-9_\-]+)=([^;'\"\s]+)/", $body, $matches) === 1) {
+            $name = trim((string) $matches[1]);
+            $value = trim((string) $matches[2]);
+
+            if ($name !== '' && $value !== '') {
+                return $name.'='.$value;
+            }
+        }
+
+        return '';
+    }
+
+    private function maskChallengeCookieName(string $cookie): string
+    {
+        $name = strtok($cookie, '=') ?: 'cookie';
+
+        return substr($name, 0, 2).'***'.substr($name, -2);
     }
 
     private function applyUserAgent(): void
