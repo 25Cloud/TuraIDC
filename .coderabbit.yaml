@@ -1,0 +1,128 @@
+# CodeRabbit 配置（图拉云 TuraIDC）
+# 参考：https://docs.coderabbit.ai/reference/configuration
+
+language: "zh-CN"
+tone_instructions: |
+  请用简洁、直接的中文输出评审意见。
+  - 每条意见按严重度分级：Critical（阻断合并）> Warning（建议修复）> Suggestion（可选项）> Nitpick（吹毛求疵）。
+  - 对非显而易见的问题给出具体代码示例（代码片段保留原文语言）。
+  - 优先关注资金安全、越权访问、数据完整性问题，避免对格式、命名等风格问题纠缠。
+  - 不要对未变更的代码提出无关建议。
+early_access: false
+
+reviews:
+  # quiet=只保留最重要反馈；chill=平衡；assertive=更积极
+  profile: "chill"
+  # 机器人不自动阻塞合并，评审意见仅作为参考
+  request_changes_workflow: false
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  review_status: true
+  collapse_walkthrough: false
+  sequence_diagrams: true
+  poem: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+      - "chore(deps)"
+      - "chore: bump"
+
+  # 排除无评审价值的文件
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/vendor/**"
+    - "!**/dist/**"
+    - "!**/build/**"
+    - "!**/*.lock"
+    - "!**/package-lock.json"
+    - "!**/composer.lock"
+    - "!**/yarn.lock"
+    - "!**/*.min.js"
+    - "!**/*.min.css"
+    - "!**/*.map"
+    - "!**/*.png"
+    - "!**/*.jpg"
+    - "!**/*.jpeg"
+    - "!**/*.gif"
+    - "!**/*.svg"
+    - "!**/*.ico"
+    - "!**/*.mp4"
+    - "!**/*.webm"
+    - "!backend/public/media/**"
+    - "!docs/自动生成/**"
+
+  # 忽略机器人提交
+  ignore_usernames:
+    - "dependabot[bot]"
+    - "renovate[bot]"
+
+  # 路径级评审指令（按仓库业务域定制）
+  path_instructions:
+    - path: "backend/app/**"
+      instructions: |
+        这是图拉云 Laravel 财务/业务核心代码，评审优先级：
+        - 金额与账务：金额必须使用 Money/分单位处理，禁止浮点运算；检查账户余额变更、订单/账单状态流转是否有事务保护与幂等。
+        - SQL 安全：所有查询必须参数化，禁止字符串拼接 SQL。
+        - 越权：检查每个 API 是否校验当前用户权限与资源归属（水平/垂直越权）。
+        - 日志脱敏：不得在日志中输出密码、密钥、完整手机号等敏感字段。
+        - 遵循项目既有模式（ApiResponseBuilder、BusinessException、服务层分层），不要引入新框架模式。
+
+    - path: "backend/plugins/**"
+      instructions: |
+        支付网关/服务器/SMS 等插件，评审优先级：
+        - 支付回调必须验签、校验金额一致性、防重放。
+        - 插件与上游交互的密钥不得硬编码或输出到日志。
+        - 上游返回的实例数据不得直接信任，检查越权与注入。
+
+    - path: "backend/scripts/**"
+      instructions: |
+        运维与数据迁移脚本，评审优先级：
+        - 不得硬编码数据库凭据或 API 密钥（如确需示例请用占位符）。
+        - 涉及批量写库必须检查事务、批量大小与幂等性。
+        - 数据迁移脚本应支持 dry-run 与白名单，防止误清空。
+
+    - path: "frontend-*/src/**"
+      instructions: |
+        Vue 3 + TypeScript 前端，评审优先级：
+        - XSS：禁止直接使用 v-html 渲染用户/上游内容，必须经过 shared/content/htmlSanitizer。
+        - 权限：页面路由与按钮需校验权限码；金额展示使用统一格式化工具。
+        - 类型安全：避免 any 泄漏，axios 返回体需与后端 API 契约一致。
+
+    - path: "shared/**"
+      instructions: |
+        跨端共享代码（组件/运行时/工具），改动影响所有前端，评审须检查向后兼容。
+
+    - path: ".github/workflows/**"
+      instructions: |
+        GitHub Actions 检查：action 版本尽量固定到 tag/SHA；不得将 secrets 打印到日志或写入文件。
+
+    - path: "docs/**"
+      instructions: |
+        文档规范：使用中文；链接使用仓库内相对路径而非绝对路径；不得包含真实凭据/密钥/个人敏感信息。
+
+  tools:
+    # 复用仓库既有 lint 工具输出（仓库已配置 ESLint/PHPStan）
+    eslint:
+      enabled: true
+      extensions: [js, ts, jsx, tsx, vue]
+    phpstan:
+      enabled: true
+      config: "backend/phpstan.neon.dist"
+    markdownlint:
+      enabled: false
+    shellcheck:
+      enabled: true
+      extensions: [sh, bash]
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: auto
