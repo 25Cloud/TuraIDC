@@ -102,7 +102,9 @@ const expanded = ref<MenuValue[]>([]);
 
 const getExpanded = () => {
   const path = getActive();
-  const result = findExpandedByMenu(menu as MenuRoute[], path) || fallbackExpanded(path);
+  // 优先精确匹配菜单叶子（跨分组同级前缀路由如 /admin/products 与
+  // /admin/products/suppliers 不会互相误展开）；无精确项（隐藏路由）时回退前缀匹配。
+  const result = findExactMenuBranch(menu as MenuRoute[], path) || findExpandedByMenu(menu as MenuRoute[], path) || fallbackExpanded(path);
 
   expanded.value = result;
 };
@@ -197,6 +199,25 @@ const getLogo = () => {
   if (collapsed.value) return AssetLogo;
   return AssetLogoFull;
 };
+
+/**
+ * 精确匹配：返回 activePath 对应菜单叶子（path 完全相等）的祖先链。
+ * 与 findExpandedByMenu 的前缀匹配不同，避免同级前缀路由（如
+ * /admin/products 与 /admin/products/suppliers）互相误展开。
+ */
+function findExactMenuBranch(list: MenuRoute[], activePath: string, parents: MenuValue[] = []): MenuValue[] | null {
+  for (const item of list || []) {
+    const currentPath = String(item.path);
+    if (currentPath === activePath) {
+      return parents;
+    }
+
+    const childResult = findExactMenuBranch(item.children || [], activePath, [...parents, currentPath]);
+    if (childResult) return childResult;
+  }
+
+  return null;
+}
 
 function findExpandedByMenu(list: MenuRoute[], activePath: string, parents: MenuValue[] = []): MenuValue[] | null {
   for (const item of list || []) {
