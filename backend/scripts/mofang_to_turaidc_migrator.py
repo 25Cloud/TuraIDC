@@ -12,33 +12,45 @@
 - 支持 dry-run 模式：仅解析+映射+计数，不写库
 - 支持指定表清单（白名单）
 
+连接配置按优先级合并：命令行参数 > 环境变量 MOFANG_MIGRATE_* > 配置文件
+（默认读取脚本同目录 mofang_migrate.conf，可用 --config 指定）。
+未提供 --dump 时会自动发现项目根/脚本目录下的 25y_*.sql dump 文件。
+
 用法:
-    # dry-run 全量预演
+    # 零参数：从 mofang_migrate.conf 读取配置，自动发现 dump
+    python backend/scripts/mofang_to_turaidc_migrator.py --dry-run
+
+    # dry-run 全量预演（全部参数手动指定，优先级最高）
     python backend/scripts/mofang_to_turaidc_migrator.py \\
         --dump e:\\TuraIDC\\25y_2026-08-17_20-39-46_mysql_data_HSoN5.sql \\
         --host 43.240.220.81 --port 3306 \\
-        --user turaidc --password SZ5LtL45NA8AixnB \\
+        --user turaidc --password <PASSWORD> \\
         --database turaidc --dry-run
 
     # 实际迁移（按白名单表）
     python backend/scripts/mofang_to_turaidc_migrator.py \\
         --dump e:\\TuraIDC\\25y_2026-08-17_20-39-46_mysql_data_HSoN5.sql \\
         --host 43.240.220.81 --port 3306 \\
-        --user turaidc --password SZ5LtL45NA8AixnB \\
+        --user turaidc --password <PASSWORD> \\
         --database turaidc \\
         --tables shd_clients,shd_products,shd_orders,shd_invoices,shd_host,shd_ticket
 
     # 全量迁移
     python backend/scripts/mofang_to_turaidc_migrator.py \\
         --dump ... --host ... --database turaidc
+
+配置示例见脚本同目录 mofang_migrate.conf.example（复制为 mofang_migrate.conf
+即可免输参数；该文件含密码，已加入 .gitignore 不会提交）。
 """
 from __future__ import annotations
 
 import argparse
 import json
 import logging
+import os
 import re
 import sys
+from configparser import RawConfigParser
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -1580,6 +1592,83 @@ class Migrator:
 # 五、入口
 # =============================================================================
 
+CONFIG_ENV_PREFIX = "MOFANG_MIGRATE_"
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent / "mofang_migrate.conf"
+
+
+def _env_value(key: str) -> str | None:
+    """读取环境变量 MOFANG_MIGRATE_<KEY>（key 大写），未设置返回 None"""
+    return os.environ.get(CONFIG_ENV_PREFIX + key.upper()) or None
+
+
+def _load_config_file(config_path: Path) -> dict[str, str]:
+    """解析 mofang_migrate.conf（INI 格式，[db] / [source] 两节）
+
+    示例：
+        [db]
+        host = 43.240.220.81
+        port = 3306
+        user = turaidc
+        password = xxx
+        database = turaidc
+
+        [source]
+        dump = e:\\TuraIDC\\25y_xxx_mysql_data.sql
+    """
+    if not config_path.is_file():
+        return {}
+    parser = RawConfigParser()
+    try:
+        parser.read(config_path, encoding="utf-8")
+    except Exception as e:
+        logger.warning("配置文件 %s 解析失败，忽略: %s", config_path, e)
+        return {}
+
+    result: dict[str, str] = {}
+    for section in ("db", "source"):
+        if parser.has_section(section):
+            for key in parser.options(section):
+                value = parser.get(section, key).strip()
+                if value:
+                    result[f"{section}.{key}"] = value
+    return result
+
+
+def _discover_dump_files() -> list[Path]:
+    """自动发现项目根 / 脚本目录下的魔方财务 dump 文件（25y_*.sql）"""
+    script_dir = Path(__file__).resolve().parent
+    project_root = script_dir.parent.parent
+    candidates: dict[str, Path] = {}
+    for base in (project_root, script_dir):
+        for pattern in ("25y_*.sql", "*_mysql_data_*.sql"):
+            for p in sorted(base.glob(pattern)):
+                candidates[str(p.resolve())] = p.resolve()
+    return sorted(candidates.values(), key=lambda p: p.stat().st_mtime, reverse=True)
+
+
+def _pick_from_list(items: list[str], prompt: str, default_index: int = 0) -> str:
+    print(prompt)
+    for i, item in enumerate(items, start=1):
+        marker = " (默认)" if i - 1 == default_index else ""
+        print(f"  {i}. {item}{marker}")
+    while True:
+        try:
+            raw = input(f"请输入序号 [1-{len(items)}]（回车选默认）: ").strip()
+        except EOFError:
+            print("  无输入，使用默认项。")
+            return items[default_index]
+        if raw == "":
+            return items[default_index]
+        try:
+            idx = int(raw)
+        except ValueError:
+            print("  输入无效，请重新输入。")
+            continue
+        if 1 <= idx <= len(items):
+            return items[idx - 1]
+        print("  序号超出范围，请重新输入。")
+
+
 def main() -> int:
     logging.basicConfig(
         level=logging.INFO,
@@ -1588,32 +1677,98 @@ def main() -> int:
     )
 
     p = argparse.ArgumentParser(description="魔方财务 → 图拉云 turaidc 全量定制迁移器")
-    p.add_argument("--dump", required=True, help="源 MySQL dump 路径")
-    p.add_argument("--host", default="43.240.220.81")
-    p.add_argument("--port", type=int, default=3306)
-    p.add_argument("--user", default="turaidc")
-    p.add_argument("--password", default="SZ5LtL45NA8AixnB")
-    p.add_argument("--database", default="turaidc")
+    p.add_argument("--dump", help="源 MySQL dump 路径（缺省时自动发现 25y_*.sql 或读取配置）")
+    p.add_argument("--config", default=str(DEFAULT_CONFIG_PATH), help="配置文件路径（INI，默认脚本同目录 mofang_migrate.conf）")
+    p.add_argument("--host", help="目标库主机")
+    p.add_argument("--port", type=int, help="目标库端口")
+    p.add_argument("--user", help="目标库用户")
+    p.add_argument("--password", help="目标库密码（也可用环境变量 MOFANG_MIGRATE_PASSWORD，避免明文入命令行）")
+    p.add_argument("--database", help="目标库名")
     p.add_argument("--tables", default="", help="逗号分隔的白名单表名（默认全部）")
     p.add_argument("--batch-size", type=int, default=500)
     p.add_argument("--dry-run", action="store_true", help="仅预演，不写库")
     p.add_argument("--truncate", action="store_true", help="迁移前清空目标表（危险！仅干净库使用）")
     args = p.parse_args()
 
+    # 合并配置：命令行 > 环境变量 > 配置文件
+    file_cfg = _load_config_file(Path(args.config))
+
+    def resolve(cli_value, file_key: str) -> str | None:
+        env_key = file_key.split(".", 1)[1].upper()
+        if cli_value not in (None, ""):
+            return str(cli_value)
+        env = _env_value(env_key)
+        if env:
+            return env
+        return file_cfg.get(file_key)
+
+    host = resolve(args.host, "db.host") or "127.0.0.1"
+    port_raw = resolve(args.port if args.port else None, "db.port") or "3306"
+    try:
+        port = int(port_raw)
+    except ValueError:
+        logger.warning("端口值无效: %s，使用默认 3306", port_raw)
+        port = 3306
+    user = resolve(args.user, "db.user")
+    password = resolve(args.password, "db.password")
+    database = resolve(args.database, "db.database") or "turaidc"
+
+    # dump 路径：命令行 > 环境变量 > 配置文件 > 自动发现
+    dump = resolve(args.dump, "source.dump")
+    if dump:
+        dump_path = Path(dump)
+    else:
+        discovered = _discover_dump_files()
+        if not discovered:
+            logger.error(
+                "未找到 dump 文件。请用 --dump 指定源 dump 路径，"
+                "或在配置文件中配置 [source] dump，"
+                "或把 25y_*.sql 放到项目根目录/backend/scripts 下。"
+            )
+            return 2
+        if len(discovered) == 1:
+            dump_path = discovered[0]
+            logger.info("自动发现 dump: %s", dump_path)
+        elif sys.stdin.isatty():
+            chosen = _pick_from_list(
+                [str(p) for p in discovered],
+                "发现多个 dump 文件，请选择:",
+            )
+            dump_path = Path(chosen)
+        else:
+            dump_path = discovered[0]
+            logger.warning(
+                "检测到 %d 个 dump 文件，非交互模式默认选用最新的: %s",
+                len(discovered),
+                dump_path,
+            )
+
+    # 缺少连接凭据时给出清晰指引（凭据来自命令行/环境变量/配置文件）
+    if not user or not password:
+        logger.error(
+            "缺少目标库连接凭据（user/password）。请用 --user/--password 指定，"
+            "或设置环境变量 %sUSER / %sPASSWORD，"
+            "或在配置文件 %s 的 [db] 节填写。",
+            CONFIG_ENV_PREFIX,
+            CONFIG_ENV_PREFIX,
+            DEFAULT_CONFIG_PATH,
+        )
+        return 2
+
     only_tables: set[str] | None = None
     if args.tables:
         only_tables = {t.strip() for t in args.tables.split(",") if t.strip()}
 
     cfg = DbConfig(
-        host=args.host,
-        port=args.port,
-        user=args.user,
-        password=args.password,
-        database=args.database,
+        host=host,
+        port=port,
+        user=user,
+        password=password,
+        database=database,
     )
 
     migrator = Migrator(
-        dump_path=Path(args.dump),
+        dump_path=dump_path,
         db_config=cfg,
         only_tables=only_tables,
         batch_size=args.batch_size,
