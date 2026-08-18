@@ -150,15 +150,9 @@ class SettingsSeeder
                     continue;
                 }
 
-                $exists = DB::table('notification_templates')
-                    ->where('channel', $channel)
-                    ->where('code', $code)
-                    ->exists();
-                if ($exists) {
-                    continue;
-                }
-
-                DB::table('notification_templates')->insert([
+                // insertOrIgnore 依赖 (channel, code) 唯一约束原子跳过已存在模板，
+                // 避免 exists() + insert() 之间的并发窗口造成重复键异常；不覆盖后台个性化内容。
+                DB::table('notification_templates')->insertOrIgnore([
                     'channel' => $channel,
                     'code' => $code,
                     'name' => (string) ($definition['name'] ?? $code),

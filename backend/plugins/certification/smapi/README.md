@@ -21,7 +21,7 @@ backend/plugins/certification/smapi/
 | `api_url`      | url      | 否   | 平台地址，默认 `https://smapi.x1m1.cn`           |
 | `app_key`      | text     | 是   | 用户中心 API 密钥 AppKey                         |
 | `secret_key`   | password | 是   | 用户中心 API 密钥 AppSecret（加密保存）          |
-| `product_code` | textarea | 是   | 产品标识；多产品按 `code,名称|code,名称` 填写     |
+| `product_code` | textarea | 是   | 产品标识；多产品按 `code,名称\|code,名称` 填写     |
 | `ssl_verify`   | switch   | 否   | 是否校验服务商 HTTPS 证书，默认开启              |
 | `ca_bundle`    | text     | 否   | 本地 CA bundle 文件路径                          |
 | `charge_enabled` | switch | 否 | 开启后用户发起认证按配置金额扣费                 |
