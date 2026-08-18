@@ -1863,6 +1863,30 @@
   background: var(--td-bg-color-container-hover);
 }
 
+/* 上游商品卡片：整体可点击切换选中（左侧未对接面板） */
+.supplier-tree-node--product .supplier-tree-node__content--product.is-selectable {
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--td-brand-color-light);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--td-brand-color-focus);
+    outline-offset: 1px;
+  }
+}
+
+.supplier-tree-node--product .supplier-tree-node__content--product.is-selected {
+  border-color: var(--td-brand-color);
+  background: var(--td-brand-color-light);
+
+  .supplier-tree-product strong,
+  .supplier-tree-product span {
+    color: var(--td-brand-color);
+  }
+}
+
 .supplier-tree-node--product.is-disabled {
   .supplier-tree-node__content--product {
     background: var(--td-bg-color-component);
