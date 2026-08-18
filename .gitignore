@@ -104,6 +104,13 @@ env/
 .mypy_cache/
 .ruff_cache/
 
+# ---- 迁移器本地配置（含数据库密码，勿提交）----
+backend/scripts/mofang_migrate.conf
+
+# ---- 魔方财务迁移源 dump（含客户数据，勿提交）----
+25y_*.sql
+*_mysql_data_*.sql
+
 # ---- 其他临时文件 ----
 *.sql.dump
 *.sql.bak
