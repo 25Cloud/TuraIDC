@@ -221,10 +221,29 @@
                 </div>
               </template>
               <template v-else>
-                <div class="supplier-tree-node__content supplier-tree-node__content--product">
+                <div
+                  class="supplier-tree-node__content supplier-tree-node__content--product"
+                  :class="{
+                    'is-selectable': !row.product?.is_connected,
+                    'is-selected': supplierBatchSelectedKeySet.has(row.productId || 0),
+                  }"
+                  role="checkbox"
+                  :aria-checked="supplierBatchSelectedKeySet.has(row.productId || 0)"
+                  :aria-label="`${row.product?.name || '商品'}，点击切换选择`"
+                  :tabindex="row.product?.is_connected ? -1 : 0"
+                  @click="
+                    !row.product?.is_connected &&
+                      handleSupplierBatchProductCheck(row.productId || 0, !supplierBatchSelectedKeySet.has(row.productId || 0))
+                  "
+                  @keydown.enter.prevent="
+                    !row.product?.is_connected &&
+                      handleSupplierBatchProductCheck(row.productId || 0, !supplierBatchSelectedKeySet.has(row.productId || 0))
+                  "
+                >
                   <t-checkbox
                     :checked="supplierBatchSelectedKeySet.has(row.productId || 0)"
                     :disabled="row.product?.is_connected"
+                    @click.stop
                     @change="
                       (checked: boolean) =>
                         !row.product?.is_connected && handleSupplierBatchProductCheck(row.productId || 0, checked)
