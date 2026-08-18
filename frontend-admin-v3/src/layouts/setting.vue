@@ -10,6 +10,18 @@
   >
     <div class="setting-container">
       <t-form :data="formData" label-align="left">
+        <div class="setting-group-title">{{ t('layout.setting.theme.mode') }}</div>
+        <t-radio-group
+          v-model="formData.mode"
+          class="setting-mode-radio"
+          variant="default-filled"
+          @change="handleModeChange"
+        >
+          <t-radio-button :value="'light'">{{ t('layout.setting.theme.options.light') }}</t-radio-button>
+          <t-radio-button :value="'dark'">{{ t('layout.setting.theme.options.dark') }}</t-radio-button>
+          <t-radio-button :value="'auto'">{{ t('layout.setting.theme.options.auto') }}</t-radio-button>
+        </t-radio-group>
+
         <div class="setting-group-title">{{ t('layout.setting.navigationLayout') }}</div>
         <t-radio-group v-model="formData.layout">
           <div v-for="(item, index) in LAYOUT_OPTION" :key="index" class="setting-layout-drawer">
@@ -57,6 +69,7 @@ import Thumbnail from '@/components/thumbnail/index.vue';
 import STYLE_CONFIG from '@/config/style';
 import { t } from '@/locales';
 import { useSettingStore } from '@/store';
+import type { ModeType } from '@/types/interface';
 
 const settingStore = useSettingStore();
 
@@ -114,6 +127,12 @@ const showSettingPanel = computed({
 const handleCloseDrawer = () => {
   settingStore.updateConfig({
     showSettingPanel: false,
+  });
+};
+
+const handleModeChange = (mode: unknown) => {
+  settingStore.updateConfig({
+    mode: (mode as ModeType | 'auto') || 'light',
   });
 };
 
@@ -238,6 +257,28 @@ watchEffect(() => {
 
   .t-radio-group.t-size-m .t-radio-button {
     height: auto;
+  }
+
+  /* 主题模式切换：三个选项等宽均分、文字居中，紧凑整齐 */
+  .setting-mode-radio {
+    display: flex;
+    width: 100%;
+    gap: var(--td-comp-margin-s);
+
+    .t-radio-button {
+      flex: 1 1 0;
+      justify-content: center;
+      min-width: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    .t-radio-button__label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
   }
 
   .setting-layout-drawer {

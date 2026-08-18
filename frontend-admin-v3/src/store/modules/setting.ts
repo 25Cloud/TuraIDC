@@ -37,7 +37,13 @@ export const useSettingStore = defineStore('setting', {
       return state.mode as ModeType;
     },
     displaySideMode: (state): ModeType => {
-      return state.sideMode as ModeType;
+      // 侧边栏跟随主主题模式：浅色主题 → 浅色侧边栏；深色主题 → 深色侧边栏。
+      // 若 sideMode 被显式配置为深色，则侧边栏独立使用深色（保留独立配色能力）。
+      const explicitSideMode = state.sideMode as ModeType;
+      if (explicitSideMode === 'dark') {
+        return 'dark';
+      }
+      return state.displayMode;
     },
   },
   actions: {

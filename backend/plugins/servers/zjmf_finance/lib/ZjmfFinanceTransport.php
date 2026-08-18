@@ -80,6 +80,11 @@ final class ZjmfFinanceTransport
         return $this->transport->fetchBatchProductStocks($supplier, $productIds, $chunkSize);
     }
 
+    public function resolveSupplierRootUrl(Supplier $supplier): string
+    {
+        return $this->transport->resolveSupplierRootUrl($supplier);
+    }
+
     public function getHostDetail(Supplier $supplier, int $hostId, ?string $jwt = null): array
     {
         $response = $this->get($supplier, '/host/header', $this->resolveJwt($supplier, $jwt), [
