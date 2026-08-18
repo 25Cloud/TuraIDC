@@ -6,7 +6,7 @@
 
 参考 [README.md](./README.md)「快速开始」章节搭建本地开发环境：
 
-- 后端：PHP 8.2+ / MySQL 8 / Redis / Composer
+- 后端：PHP 8.3+ / MySQL 8 / Redis / Composer
 - 前端：Node.js 20+（npm workspaces 管理三端 + 共享包）
 
 ## 代码规范

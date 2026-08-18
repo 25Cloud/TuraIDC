@@ -6,14 +6,19 @@ namespace Database\Seeders;
 
 use App\Models\Setting;
 use App\Support\SmsTemplateCatalog;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class SettingsSeeder
+class SettingsSeeder extends Seeder
 {
     /**
      * 系统核心默认配置。
      * 敏感字段（支付密钥、邮箱密码等）写入占位值，部署后通过管理后台更新。
      */
+    public function run(): void            // ← 添加 run() 方法
+    {
+        self::seed();                     // 调用已有的静态 seed 方法
+    }
     public static function seed(): void
     {
         static::seedGroup('system', [
