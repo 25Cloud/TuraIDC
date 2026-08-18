@@ -110,16 +110,28 @@ const detail = ref<PaymentRecord | null>(null);
 
 const paymentId = computed(() => Number(route.params.id || 0));
 
+// 并发守卫：快速切换支付详情时丢弃晚返回的旧请求结果。
+let requestSeq = 0;
+
 async function loadPayment(id = paymentId.value) {
   if (!id) return;
+  const seq = ++requestSeq;
   loading.value = true;
   try {
     const res = await clientApi.paymentDetail(id);
+    if (seq !== requestSeq) {
+      return;
+    }
     detail.value = res.data || null;
   } catch {
+    if (seq !== requestSeq) {
+      return;
+    }
     detail.value = null;
   } finally {
-    loading.value = false;
+    if (seq === requestSeq) {
+      loading.value = false;
+    }
   }
 }
 

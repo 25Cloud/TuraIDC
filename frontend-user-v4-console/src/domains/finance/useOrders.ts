@@ -172,16 +172,28 @@ export function useOrderDetail() {
   const canceling = ref(false);
   const detail = shallowRef<OrderRecord | null>(null);
 
+  // 并发守卫：快速切换订单详情时丢弃晚返回的旧请求结果。
+  let requestSeq = 0;
+
   async function loadDetail(id: number | string) {
     if (!id) return;
+    const seq = ++requestSeq;
     loading.value = true;
     try {
       const res = await clientApi.orderDetail(id);
+      if (seq !== requestSeq) {
+        return;
+      }
       detail.value = res.data || null;
     } catch (error: unknown) {
+      if (seq !== requestSeq) {
+        return;
+      }
       MessagePlugin.error(getErrorMessage(error, '订单详情加载失败'));
     } finally {
-      loading.value = false;
+      if (seq === requestSeq) {
+        loading.value = false;
+      }
     }
   }
 

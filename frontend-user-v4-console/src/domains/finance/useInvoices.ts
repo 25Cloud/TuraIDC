@@ -529,11 +529,18 @@ export function useInvoiceDetail() {
     alipayDialogVisible.value = Boolean(alipayQrCode.value);
   }
 
+  // 详情并发守卫：快速切换发票/订单/支付详情时，旧请求晚返回不得覆盖当前路由的最新态。
+  let detailRequestSeq = 0;
+
   async function loadDetail() {
     if (!invoiceId.value) return;
+    const seq = ++detailRequestSeq;
     loading.value = true;
     try {
       const res = await clientApi.invoiceDetail(invoiceId.value);
+      if (seq !== detailRequestSeq) {
+        return;
+      }
       detail.value = res.data || null;
       alipayAmount.value = formatMoney(payableAmount.value);
       syncPayMethod();
@@ -549,9 +556,14 @@ export function useInvoiceDetail() {
         resetPaymentPayload();
       }
     } catch (error: unknown) {
+      if (seq !== detailRequestSeq) {
+        return;
+      }
       MessagePlugin.error(getErrorMessage(error, '账单详情加载失败'));
     } finally {
-      loading.value = false;
+      if (seq === detailRequestSeq) {
+        loading.value = false;
+      }
     }
   }
 
