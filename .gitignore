@@ -127,5 +127,4 @@ php.bat
 caiwu_update/
 .tmp/
 
-# 部署环境相关：open_basedir 由部署方维护，禁止入库/覆盖
 backend/public/.user.ini
