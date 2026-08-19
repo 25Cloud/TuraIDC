@@ -108,7 +108,7 @@
 import { useClipboard } from '@vueuse/core';
 import type { PopupVisibleChangeContext } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue';
 
 import SettingAutoIcon from '@/assets/assets-setting-auto.svg';
 import SettingDarkIcon from '@/assets/assets-setting-dark.svg';
@@ -148,6 +148,24 @@ const dynamicColor = computed(() => {
 });
 const formData = ref({ ...initStyleConfig() });
 const isColoPickerDisplay = ref(false);
+
+// 打开设置抽屉前从 store 刷新表单快照：用户在个人设置等处改了主题后，
+// 若沿用初始化时的旧 formData，watchEffect 会在打开抽屉时把旧值写回 store，撤销用户的选择。
+watch(
+  () => settingStore.showSettingPanel,
+  (visible) => {
+    if (!visible) {
+      return;
+    }
+    const fresh = { ...STYLE_CONFIG } as Record<keyof typeof STYLE_CONFIG, unknown>;
+    for (const key of Object.keys(STYLE_CONFIG) as Array<keyof typeof STYLE_CONFIG>) {
+      if (settingStore[key] !== undefined) {
+        fresh[key] = settingStore[key];
+      }
+    }
+    formData.value = fresh as typeof STYLE_CONFIG;
+  },
+);
 
 const showSettingPanel = computed({
   get() {
@@ -233,7 +251,11 @@ const getThumbnailUrl = (name: string): string => {
 };
 
 watchEffect(() => {
-  if (formData.value.brandTheme) settingStore.updateConfig(formData.value);
+  // 仅设置面板打开时把表单同步到 store；面板关闭时不写 store，
+  // 避免常驻 watchEffect 在用户切换主题后把 mode 重置回表单旧值。
+  if (formData.value.brandTheme && settingStore.showSettingPanel) {
+    settingStore.updateConfig(formData.value);
+  }
 });
 </script>
 <!-- teleport导致drawer 内 scoped样式问题无法生效 先规避下 -->

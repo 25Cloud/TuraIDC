@@ -262,7 +262,8 @@ class ClientInvoiceInvoiceOnlyRegressionTest extends TestCase
             ->assertJsonPath('data.invoice.service.id', (int) $service->id)
             ->assertJsonPath('data.invoice.display.product_display_name', '客户端云主机 2核4G')
             ->assertJsonMissingPath('data.raw_status')
-            ->assertJsonPath('data.invoice.payment_chain.payments.0.trade_no', 'TRADE-CLIENT-VISIBLE-'.$suffix);
+            ->assertJsonMissingPath('data.invoice.payment_chain.payment_summary.trade_no')
+            ->assertJsonMissingPath('data.invoice.payment_chain.payments.0.trade_no');
 
         $this->getJson('/api/v2/client/invoices?keyword=TRADE-CLIENT-VISIBLE-'.$suffix.'&page_size=20')
             ->assertOk()

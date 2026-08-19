@@ -911,8 +911,8 @@ onMounted(() => {
     color var(--td-anim-duration-base) var(--td-anim-time-fn-easing);
 
   &:focus-visible {
-    outline: 2px solid var(--td-brand-color);
-    outline-offset: 1px;
+    outline: 0.125rem solid var(--td-brand-color);
+    outline-offset: 0.0625rem;
   }
 }
 
@@ -1047,7 +1047,7 @@ onMounted(() => {
   width: 68%;
   min-height: 0;
   background: var(--td-brand-color);
-  border-radius: 3px 3px 0 0;
+  border-radius: 0.1875rem 0.1875rem 0 0;
 }
 
 .bar-chart__label {
@@ -1183,9 +1183,9 @@ onMounted(() => {
 }
 
 .todo-row__alert-icon {
-  margin-right: 2px;
-  font-size: 14px;
-  vertical-align: -1px;
+  margin-right: 0.125rem;
+  font-size: var(--td-font-size-body-medium);
+  vertical-align: -0.0625rem;
 }
 
 .quick-grid {

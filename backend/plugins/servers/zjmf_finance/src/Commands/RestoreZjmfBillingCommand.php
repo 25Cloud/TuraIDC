@@ -12,7 +12,7 @@ class RestoreZjmfBillingCommand extends Command
     protected $signature = 'finance:restore-zjmf-billing
         {dump : 原始 ZJMF 账单 SQL 文件绝对路径}
         {--confirm= : 危险确认短语，默认必须为 RESTORE_ZJMF_BILLING}
-        {--force : 目标 invoices/balance_logs 表存在既有数据时，允许物理删除后覆盖重插}
+        {--force : 已废弃兼容参数；不再允许覆盖既有 invoices/balance_logs 财务审计数据}
         {--dry-run : 仅解析并输出统计，不写入数据库}';
 
     protected $description = '从历史 ZJMF SQL 备份恢复账单、支付流水与余额记录';
@@ -42,8 +42,8 @@ class RestoreZjmfBillingCommand extends Command
 
         $this->info($dryRun ? '账单恢复预检完成' : '账单恢复完成');
         $this->line('SQL 文件: '.$dumpPath);
-        $this->line('既有账单数（将被覆盖）: '.$summary['existing_invoices']);
-        $this->line('既有余额日志数（将被覆盖）: '.$summary['existing_balance_logs']);
+        $this->line('既有账单数（非空即拒绝恢复）: '.$summary['existing_invoices']);
+        $this->line('既有余额日志数（非空即拒绝恢复）: '.$summary['existing_balance_logs']);
         $this->line('账单数: '.$summary['invoices']);
         $this->line('余额日志数: '.$summary['balance_logs']);
         $this->line('同步余额用户数: '.$summary['user_balances']);

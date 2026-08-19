@@ -10,7 +10,12 @@
         <span>支出 ¥{{ formatMoney(financeState.summary.total_out || 0) }}</span>
         <span>退款 ¥{{ formatMoney(financeState.summary.refund_in || 0) }}</span>
       </div>
-      <t-table
+      <data-state
+        :loading="financeState.loading"
+        :empty="!financeState.list.length"
+        :description="financeState.error || '暂无财务记录'"
+      >
+        <t-table
         row-key="id"
         :data="financeState.list"
         :columns="financeColumns"
@@ -47,20 +52,22 @@
           {{ row.invoice?.invoice_no || '--' }}
         </template>
       </t-table>
-      <div v-if="financeState.total > 0" class="console-pagination">
-        <t-pagination
-          v-model="financeState.page"
-          v-model:page-size="financeState.page_size"
-          :total="financeState.total"
-          :page-size-options="[10, 20, 50]"
-          show-total
-          @change="loadFinanceLogs"
-        />
-      </div>
+        <div v-if="financeState.total > 0" class="console-pagination">
+          <t-pagination
+            v-model="financeState.page"
+            v-model:page-size="financeState.page_size"
+            :total="financeState.total"
+            :page-size-options="[10, 20, 50]"
+            show-total
+            @change="loadFinanceLogs"
+          />
+        </div>
+      </data-state>
     </t-card>
   </section>
 </template>
 <script setup lang="ts">
+import DataState from '@shared/user-v3/components/DataState.vue';
 import {
   financeColumns,
   resolveFinanceBusinessLabel,

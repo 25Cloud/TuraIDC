@@ -75,6 +75,11 @@ class ClientInvoiceDetailResource extends AdminInvoiceSummaryResource
         ];
     }
 
+    protected function isSensitiveKey(string $key): bool
+    {
+        return parent::isSensitiveKey($key) || str_contains($key, 'trade_no');
+    }
+
     private function productWithOptions(mixed $product): ?array
     {
         if (! is_array($product)) {

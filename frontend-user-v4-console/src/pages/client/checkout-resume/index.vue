@@ -34,6 +34,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
 import { formatBillingCycle } from '@/domains/finance/useRecords';
+import { openPublicProducts } from '@/utils/publicSite';
 import type { PendingWebsiteCheckout } from '@/utils/websiteCheckout';
 import {
   clearPendingWebsiteCheckout,
@@ -141,7 +142,7 @@ function resolvePendingCheckout() {
 }
 
 function openProducts() {
-  router.push('/products');
+  openPublicProducts();
 }
 
 function openInvoices() {

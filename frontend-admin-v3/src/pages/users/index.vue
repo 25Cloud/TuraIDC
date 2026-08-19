@@ -15,7 +15,7 @@
           <t-option label="正常" :value="1" />
           <t-option label="禁用" :value="0" />
         </t-select>
-        <t-button size="medium" theme="primary" @click="openCreateDialog">
+        <t-button v-if="canManageUsers" size="medium" theme="primary" @click="openCreateDialog">
           <template #icon><user-add-icon /></template>
           新增用户
         </t-button>
@@ -152,14 +152,17 @@ import { useRouter } from 'vue-router';
 
 import type { AdminUser } from '@/api/user';
 import { userApi } from '@/api/user';
+import { AdminPermissions } from '@/constants/permissions';
 import { formatDateTime, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
+import { hasAdminPermission } from '@/utils/permission';
 
 defineOptions({
   name: 'AdminUsers',
 });
 
 const router = useRouter();
+const canManageUsers = computed(() => hasAdminPermission(AdminPermissions.USER_MANAGE));
 
 const loading = ref(false);
 const submitLoading = ref(false);
@@ -226,11 +229,21 @@ function handlePageChange(pageInfo: PageInfo) {
 }
 
 function openCreateDialog() {
+  if (!canManageUsers.value) {
+    MessagePlugin.warning('当前账号无用户管理权限');
+    return;
+  }
+
   Object.assign(createForm, { email: '', nickname: '', phone: '', password: '' });
   createVisible.value = true;
 }
 
 async function handleCreate() {
+  if (!canManageUsers.value) {
+    MessagePlugin.warning('当前账号无用户管理权限');
+    return;
+  }
+
   const result = await createFormRef.value?.validate?.();
   if (result !== true) return;
 

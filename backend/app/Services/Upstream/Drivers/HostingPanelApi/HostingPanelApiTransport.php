@@ -666,10 +666,21 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
         // WAF 挑战页自动会话：部分上游（如 idcxl 系）在无 cookie 时返回
         // <script>document.cookie = 'xxx_token=...; path=/'</script> 形式的 JS 挑战页，
         // 携带该 cookie 重试一次即可正常返回 JSON。仅重试一次，避免死循环。
+        // 重试前提收紧为“WAF 标记 + 典型状态码 + 幂等性”三重条件：
+        // - extractChallengeCookie 命中 document.cookie 赋值语句（WAF JS 挑战页强特征，
+        //   业务异常页不会携带该标记），说明请求被 WAF 拦截在业务处理之前；
+        // - 状态码仅 200/403（挑战页典型响应），排除 4xx/5xx 业务错误页被误重放；
+        // - 仅幂等方法（GET/HEAD/OPTIONS）可自动重试；POST/PUT/DELETE 等非幂等请求
+        //   只在登录端点（如 /passport/login，重复登录幂等）且仍无会话时重试，
+        //   避免续费/结算/流量包购买等写操作被重放造成重复扣款。
+        $isIdempotentMethod = in_array($method, ['GET', 'HEAD', 'OPTIONS'], true);
+        $retryAllowed = $isIdempotentMethod || $this->isLoginEndpoint($uri);
         if ($output !== false
             && ! is_array(json_decode($output, true))
+            && in_array($httpCode, [200, 403], true)
             && $this->looksLikeHtmlResponse((string) $output, $contentType)
             && ! $this->hasCookieHeader($requestHeaders)
+            && $retryAllowed
         ) {
             $challengeCookie = $this->extractChallengeCookie((string) $output);
             if ($challengeCookie !== '') {

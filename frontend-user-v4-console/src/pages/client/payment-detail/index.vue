@@ -11,7 +11,7 @@
     <div class="detail-toolbar">
       <t-button variant="outline" @click="router.push('/client/payments')">返回列表</t-button>
       <div class="detail-toolbar__actions">
-        <t-button variant="outline" :loading="loading" @click="loadPayment">
+        <t-button variant="outline" :loading="loading" @click="loadPayment()">
           <template #icon><refresh-icon /></template>
           刷新
         </t-button>
@@ -96,7 +96,7 @@
 import { INVOICE_STATUS_MAP, PAYMENT_STATUS_MAP } from '@shared/statusConfig';
 import StatusTag from '@shared/user-v3/components/StatusTag.vue';
 import { RefreshIcon } from 'tdesign-icons-vue-next';
-import { onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
@@ -108,24 +108,53 @@ const router = useRouter();
 const loading = ref(false);
 const detail = ref<PaymentRecord | null>(null);
 
-const paymentId = Number(route.params.id || 0);
+const paymentId = computed(() => Number(route.params.id || 0));
 
-async function loadPayment() {
-  if (!paymentId) return;
+// 并发守卫：快速切换支付详情时丢弃晚返回的旧请求结果。
+let requestSeq = 0;
+
+async function loadPayment(id = paymentId.value) {
+  const validId = Number(id);
+  if (!Number.isInteger(validId) || validId <= 0) {
+    // 无效 ID（0/负数/NaN）：失效进行中的请求并复位详情与加载态，避免调用接口。
+    requestSeq += 1;
+    detail.value = null;
+    loading.value = false;
+    return;
+  }
+  const seq = ++requestSeq;
   loading.value = true;
   try {
-    const res = await clientApi.paymentDetail(paymentId);
+    const res = await clientApi.paymentDetail(validId);
+    if (seq !== requestSeq) {
+      return;
+    }
     detail.value = res.data || null;
   } catch {
+    if (seq !== requestSeq) {
+      return;
+    }
     detail.value = null;
   } finally {
-    loading.value = false;
+    if (seq === requestSeq) {
+      loading.value = false;
+    }
   }
 }
 
-onMounted(() => {
-  void loadPayment();
-});
+watch(
+  paymentId,
+  (id) => {
+    requestSeq += 1; // 失效进行中的旧请求，避免其晚返回覆盖当前路由
+    detail.value = null;
+    if (id > 0) {
+      void loadPayment(id);
+    } else {
+      loading.value = false;
+    }
+  },
+  { immediate: true },
+);
 </script>
 <style scoped lang="less">
 .payment-breadcrumb {

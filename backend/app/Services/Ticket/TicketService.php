@@ -342,6 +342,13 @@ class TicketService
         return $ticket->fresh();
     }
 
+    public function clientTicket(int $userId, int $ticketId): Ticket
+    {
+        return Ticket::query()
+            ->where('user_id', $userId)
+            ->findOrFail($ticketId);
+    }
+
     /**
      * 客户端列表
      */

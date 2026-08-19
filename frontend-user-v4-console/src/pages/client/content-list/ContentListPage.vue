@@ -2,7 +2,7 @@
   <section class="content-list-page">
     <div class="content-list-layout">
       <main class="content-main">
-        <t-card class="content-card hero-card" :bordered="false">
+        <section class="content-intro">
           <div class="hero-copy">
             <h1>{{ config.pageTitle }}</h1>
             <p>{{ config.heroDescription }}</p>
@@ -28,7 +28,7 @@
           >
             <template #suffixIcon><search-icon /></template>
           </t-input>
-        </t-card>
+        </section>
 
         <t-card class="content-card category-card" :bordered="false">
           <t-space break-line>
@@ -176,10 +176,12 @@ async function handleMarkAllRead() {
   box-shadow: var(--td-shadow-1);
 }
 
-.hero-card {
+.content-intro {
   display: flex;
   flex-direction: column;
   gap: var(--td-comp-margin-m);
+  padding: var(--td-comp-paddingTB-m) 0;
+  border-bottom: thin solid var(--td-border-color);
 }
 
 .hero-copy {
@@ -333,7 +335,6 @@ async function handleMarkAllRead() {
 }
 
 @media (width <= 48rem) {
-  .hero-card,
   .content-sidebar {
     grid-template-columns: 1fr;
   }

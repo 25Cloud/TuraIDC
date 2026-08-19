@@ -17,15 +17,15 @@
           variant="default-filled"
           @change="handleModeChange"
         >
-          <t-radio-button :value="'light'">{{ t('layout.setting.theme.options.light') }}</t-radio-button>
-          <t-radio-button :value="'dark'">{{ t('layout.setting.theme.options.dark') }}</t-radio-button>
-          <t-radio-button :value="'auto'">{{ t('layout.setting.theme.options.auto') }}</t-radio-button>
+          <t-radio-button value="light">{{ t('layout.setting.theme.options.light') }}</t-radio-button>
+          <t-radio-button value="dark">{{ t('layout.setting.theme.options.dark') }}</t-radio-button>
+          <t-radio-button value="auto">{{ t('layout.setting.theme.options.auto') }}</t-radio-button>
         </t-radio-group>
 
         <div class="setting-group-title">{{ t('layout.setting.navigationLayout') }}</div>
-        <t-radio-group v-model="formData.layout">
+        <t-radio-group v-model="formData.layout" :disabled="isMobile">
           <div v-for="(item, index) in LAYOUT_OPTION" :key="index" class="setting-layout-drawer">
-            <t-radio-button :key="index" :value="item">
+            <t-radio-button :key="index" :value="item" :disabled="isMobile">
               <thumbnail :src="getThumbnailUrl(item)" />
             </t-radio-button>
           </div>
@@ -339,7 +339,7 @@ watchEffect(() => {
       color: var(--td-text-color-disabled);
     }
 
-    > .t-radio-group.t-size-m {
+    > .t-radio-group.t-size-m:not(.setting-mode-radio) {
       pointer-events: none;
       opacity: 0.4;
       filter: grayscale(1);

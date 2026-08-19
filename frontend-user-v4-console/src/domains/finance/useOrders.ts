@@ -30,6 +30,7 @@ export function useOrderList(options: { pageSize?: number } = {}) {
   const summaryLoading = ref(false);
   const canceling = ref(false);
   const list = shallowRef<OrderRecord[]>([]);
+  const listError = ref('');
   const total = ref(0);
   const summary = shallowRef<OrderListSummary>({});
   const filters = reactive({
@@ -72,12 +73,16 @@ export function useOrderList(options: { pageSize?: number } = {}) {
   async function loadList() {
     loading.value = true;
     try {
+      listError.value = '';
       const res = await clientApi.orders(buildParams());
       const payload = res.data;
       list.value = payload && !Array.isArray(payload) && Array.isArray(payload.list) ? payload.list : [];
       total.value = payload && !Array.isArray(payload) ? Number(payload.total || 0) : 0;
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '订单列表加载失败'));
+      list.value = [];
+      total.value = 0;
+      listError.value = getErrorMessage(error, '订单列表加载失败');
+      MessagePlugin.error(listError.value);
     } finally {
       loading.value = false;
     }
@@ -148,6 +153,7 @@ export function useOrderList(options: { pageSize?: number } = {}) {
     summaryLoading,
     canceling,
     list,
+    listError,
     total,
     summary,
     filters,
@@ -166,17 +172,40 @@ export function useOrderDetail() {
   const canceling = ref(false);
   const detail = shallowRef<OrderRecord | null>(null);
 
+  // 并发守卫：快速切换订单详情时丢弃晚返回的旧请求结果。
+  let requestSeq = 0;
+
   async function loadDetail(id: number | string) {
-    if (!id) return;
+    const validId = Number(id);
+    if (!Number.isInteger(validId) || validId <= 0) {
+      // 无效 ID（0/负数/NaN）：失效进行中的请求并复位详情与加载态，避免调用接口。
+      invalidateDetail();
+      return;
+    }
+    const seq = ++requestSeq;
     loading.value = true;
     try {
-      const res = await clientApi.orderDetail(id);
+      const res = await clientApi.orderDetail(validId);
+      if (seq !== requestSeq) {
+        return;
+      }
       detail.value = res.data || null;
     } catch (error: unknown) {
+      if (seq !== requestSeq) {
+        return;
+      }
       MessagePlugin.error(getErrorMessage(error, '订单详情加载失败'));
     } finally {
-      loading.value = false;
+      if (seq === requestSeq) {
+        loading.value = false;
+      }
     }
+  }
+
+  function invalidateDetail(): void {
+    requestSeq += 1; // 使进行中的旧请求失效
+    detail.value = null;
+    loading.value = false;
   }
 
   function cancelOrder(onSuccess?: () => void) {
@@ -212,6 +241,7 @@ export function useOrderDetail() {
     canceling,
     detail,
     loadDetail,
+    invalidateDetail,
     cancelOrder,
   };
 }

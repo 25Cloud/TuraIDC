@@ -222,7 +222,17 @@ function findExactMenuBranch(list: MenuRoute[], activePath: string, parents: Men
 function findExpandedByMenu(list: MenuRoute[], activePath: string, parents: MenuValue[] = []): MenuValue[] | null {
   for (const item of list || []) {
     const currentPath = String(item.path);
-    if (isRouteMatch(currentPath, activePath)) return parents;
+    if (isRouteMatch(currentPath, activePath)) {
+      // 前缀命中分组（隐藏子路由场景）：继续深入找最深匹配的祖先链；
+      // 子级无更深命中时展开本分组，避免返回空数组导致上层分组不展开。
+      if (item.children && item.children.length > 0) {
+        const childResult = findExpandedByMenu(item.children, activePath, [...parents, currentPath]);
+        return childResult ?? [...parents, currentPath];
+      }
+
+      // 叶子精确命中：无需展开自身，返回祖先链。
+      return parents;
+    }
 
     const childResult = findExpandedByMenu(item.children || [], activePath, [...parents, currentPath]);
     if (childResult) return childResult;

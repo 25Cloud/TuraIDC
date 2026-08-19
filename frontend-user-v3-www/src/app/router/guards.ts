@@ -1,4 +1,5 @@
 import { useAppStore } from '@/stores/app'
+import { setToken } from '@/utils/auth'
 import { applyRouteMeta } from '@/utils/pageMeta'
 
 const DEFAULT_PUBLIC_SITE_URL = 'https://www.coyjs.cn'
@@ -6,6 +7,26 @@ const DYNAMIC_IMPORT_RELOAD_KEY = 'www-router-dynamic-import-reload'
 const dynamicImportErrorPattern = /Failed to fetch dynamically imported module|Importing a module script failed/i
 
 export function registerClientGuards(router) {
+  router.beforeEach((to) => {
+    const rawToken = to.query?._token
+    const token = Array.isArray(rawToken) ? rawToken[0] : rawToken
+
+    if (typeof token !== 'string' || token.trim() === '') {
+      return true
+    }
+
+    setToken(token.trim())
+    const query = { ...to.query }
+    delete query._token
+
+    return {
+      path: to.path,
+      query,
+      hash: to.hash,
+      replace: true,
+    }
+  })
+
   router.afterEach((to) => {
     if (typeof window === 'undefined') {
       return
