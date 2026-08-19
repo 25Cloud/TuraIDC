@@ -756,7 +756,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             type: 'image',
             default: '',
             maxlength: 255,
-            placeholder: '/branding/logo.svg',
+            placeholder: '/branding/logo.png',
           },
           {
             key: 'site_favicon',
@@ -764,7 +764,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             type: 'image',
             default: '',
             maxlength: 255,
-            placeholder: '/branding/logo1.svg',
+            placeholder: '/branding/favicon-32.png',
           },
           {
             key: 'client_console_icon',
@@ -772,7 +772,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             type: 'image',
             default: '',
             maxlength: 255,
-            placeholder: '/branding/logo1.svg',
+            placeholder: '/branding/logo.png',
             help: '用于用户控制台侧边栏与登录页 Logo，留空则使用站点 Favicon。',
           },
           { key: 'service_phone', label: '官方QQ群', type: 'input', default: '', maxlength: 40 },

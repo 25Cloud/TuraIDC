@@ -260,13 +260,13 @@ onBeforeUnmount(() => {
   color: var(--td-text-color-secondary);
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .chart-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .chart-box {
     height: 260px;
   }

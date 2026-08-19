@@ -165,7 +165,7 @@ onMounted(() => {
   color: var(--td-text-color-primary);
 }
 
-:global(:root[theme-mode='dark']) .auth-shell {
+:deep(:root[theme-mode='dark']) .auth-shell {
   --auth-bg-start: #0b1220;
   --auth-bg-middle: #0b1220;
   --auth-bg-end: #0b1220;
