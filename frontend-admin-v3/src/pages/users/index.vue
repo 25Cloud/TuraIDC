@@ -125,16 +125,16 @@
       @confirm="handleCreate"
     >
       <t-form ref="createFormRef" class="users-dialog-form" :data="createForm" :rules="createRules" label-align="top">
-        <t-form-item label="邮箱" name="email">
+        <t-form-item label="邮箱" name="email" required-mark>
           <t-input v-model="createForm.email" />
         </t-form-item>
         <t-form-item label="昵称" name="nickname">
           <t-input v-model="createForm.nickname" />
         </t-form-item>
-        <t-form-item label="手机号" name="phone">
+        <t-form-item label="手机号" name="phone" required-mark>
           <t-input v-model="createForm.phone" />
         </t-form-item>
-        <t-form-item label="密码" name="password">
+        <t-form-item label="密码" name="password" required-mark>
           <t-input v-model="createForm.password" type="password" />
         </t-form-item>
       </t-form>
@@ -195,6 +195,7 @@ const createFormRef = ref<FormInstanceFunctions>();
 const createForm = reactive({ email: '', nickname: '', phone: '', password: '' });
 const createRules: Record<string, FormRule[]> = {
   email: [required('请输入有效邮箱'), { email: true, message: '请输入有效邮箱', type: 'warning' }],
+  phone: [required('请输入手机号')],
   password: [required('请输入密码')],
 };
 
