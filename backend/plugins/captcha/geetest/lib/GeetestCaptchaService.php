@@ -105,7 +105,10 @@ class GeetestCaptchaService
                     'body' => $response->body(),
                 ]);
 
-                return $this->failure($action, '行为验证服务暂时不可用，请稍后重试');
+                return $this->failure($action, '行为验证服务暂时不可用，请稍后重试', [
+                    'error_type' => 'upstream_http_error',
+                    'status' => $response->status(),
+                ]);
             }
 
             $data = $response->json();
@@ -124,9 +127,13 @@ class GeetestCaptchaService
             Log::warning('[captcha:geetest] validate exception', [
                 'message' => $exception->getMessage(),
                 'exception' => $exception::class,
+                'error_type' => $this->classifyHttpException($exception),
+                'endpoint' => $endpoint,
             ]);
 
-            return $this->failure($action, '行为验证服务暂时不可用，请稍后重试');
+            return $this->failure($action, '行为验证服务暂时不可用，请稍后重试', [
+                'error_type' => $this->classifyHttpException($exception),
+            ]);
         }
     }
 
@@ -179,6 +186,15 @@ class GeetestCaptchaService
             'message' => '',
             'data' => ['content' => $content],
         ];
+    }
+
+    private function classifyHttpException(\Throwable $exception): string
+    {
+        $message = strtolower($exception->getMessage());
+
+        return str_contains($message, 'ssl certificate') || str_contains($message, 'certificate verify')
+            ? 'tls_certificate_error'
+            : (str_contains($message, 'timed out') ? 'timeout' : 'connection_error');
     }
 
     /**
