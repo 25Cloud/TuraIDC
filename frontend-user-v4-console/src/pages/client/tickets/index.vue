@@ -423,6 +423,7 @@ onMounted(() => {
 
   .ticket-pagination {
     justify-content: flex-start;
+    overflow-x: auto;
   }
 
   .ticket-table-shell {
@@ -432,10 +433,6 @@ onMounted(() => {
   .mobile-ticket-list {
     display: grid;
     gap: 0.75rem;
-  }
-
-  .ticket-pagination {
-    overflow-x: auto;
   }
 }
 </style>
