@@ -10,15 +10,15 @@ const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 const applications = {
   admin: {
-    workspace: 'chuangouyun-admin-v3',
+    workspace: 'turaidc-admin-v3',
     assetVariable: 'VITE_ADMIN_ASSET_BASE_URL',
   },
   www: {
-    workspace: 'chuangouyun-user-v3-www',
+    workspace: 'turaidc-user-v3-www',
     assetVariable: 'VITE_WWW_ASSET_BASE_URL',
   },
   console: {
-    workspace: 'chuangouyun-user-v4-console',
+    workspace: 'turaidc-user-v4-console',
     assetVariable: 'VITE_CONSOLE_ASSET_BASE_URL',
   },
 };

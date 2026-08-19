@@ -36,6 +36,8 @@ tsc.log
 *.out.log
 *.png
 *.jpg
+!src/assets/logo.png
+!src/assets/logo-mini.png
 
 .env.local
 .env.*.local

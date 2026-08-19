@@ -7,7 +7,7 @@ import { DEFAULT_SUPPORT_CONTACTS } from '@/data/supportContacts';
 import { resolveApiManagedAssetUrl } from '@/utils/apiOrigin';
 
 const DEFAULT_SITE_NAME = import.meta.env.VITE_APP_TITLE || '图拉云';
-const DEFAULT_SITE_LOGO = '/favicon.ico';
+const DEFAULT_SITE_LOGO = '/branding/logo.png';
 const DEFAULT_FAVICON = '/favicon.ico';
 const DEFAULT_CLIENT_CONSOLE_ICON = DEFAULT_FAVICON;
 
@@ -24,7 +24,8 @@ function normalizeBrandAsset(raw: unknown, fallback: string) {
     return normalized;
   }
 
-  if (/(?:^|\/)branding\/logo\.svg(?:[?#].*)?$/i.test(normalized)) {
+  if (/(?:^|\/)branding\/logo\.svg(?:[?#].*)?$/i.test(normalized)
+    || /(?:^|\/)branding\/logo\.png(?:[?#].*)?$/i.test(normalized)) {
     return DEFAULT_SITE_LOGO;
   }
 

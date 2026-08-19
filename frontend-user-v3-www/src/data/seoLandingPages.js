@@ -303,7 +303,7 @@ export function buildSeoLandingStructuredData(page, siteUrl = DEFAULT_SITE_URL) 
       '@id': organizationId,
       name: SITE_NAME,
       url: homeUrl,
-      logo: absoluteUrl(normalizedSiteUrl, '/branding/logo1.svg'),
+      logo: absoluteUrl(normalizedSiteUrl, '/branding/logo.png'),
     },
     {
       '@context': 'https://schema.org',
