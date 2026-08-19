@@ -171,7 +171,7 @@ class DashboardService
                 COALESCE(SUM(paid_amount), 0) as total_amount,
                 COUNT(*) as count
             ')
-            ->groupByRaw('COALESCE(NULLIF(product_spec_snapshot, ""), "未知产品")')
+            ->groupBy('product_spec_snapshot')
             ->orderByDesc('total_amount')
             ->get();
 
