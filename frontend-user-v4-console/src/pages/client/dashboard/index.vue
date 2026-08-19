@@ -4,7 +4,7 @@
       <div class="summary-grid">
         <t-card class="account-card dashboard-card" :bordered="false">
           <div class="account-card__user">
-            <t-avatar style="margin-top:5px" :image="avatarUrl || undefined" size="large">{{ avatarText }}</t-avatar>
+            <t-avatar style="margin-top: 5px" :image="avatarUrl || undefined" size="large">{{ avatarText }}</t-avatar>
             <div class="account-card__main">
               <h2>{{ greetingText }}，{{ displayName }}</h2>
               <p>{{ todayDateText }}</p>

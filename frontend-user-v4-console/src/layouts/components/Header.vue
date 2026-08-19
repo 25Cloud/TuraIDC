@@ -105,8 +105,8 @@ import { ChevronDownIcon, NotificationIcon, PoweroffIcon, UserCircleIcon, Wallet
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import type { PropType } from 'vue';
 import { computed, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
 import type { RouteLocationRaw } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import { useSiteBrandingStore } from '@/app/stores/siteBranding';
 import { useDeviceLayout } from '@/composables/useDeviceLayout';
@@ -171,22 +171,23 @@ const { isMobile } = useDeviceLayout();
 
 const active = computed(() => getActive());
 const breadcrumbs = computed(() => {
-  return route.matched.reduce<Array<{ key: string; to: RouteLocationRaw; title: string }>>((breadcrumbArray, matchedRoute) => {
-    const { meta, path } = matchedRoute;
-    if (path === '/client' || meta?.hiddenBreadcrumb) {
-      return breadcrumbArray;
-    }
+  return route.matched.reduce<Array<{ key: string; to: RouteLocationRaw; title: string }>>(
+    (breadcrumbArray, matchedRoute) => {
+      const { meta, path } = matchedRoute;
+      if (path === '/client' || meta?.hiddenBreadcrumb) {
+        return breadcrumbArray;
+      }
 
-    const title = meta?.title as LocalizedTitle | undefined;
-    const renderedTitle = title?.[locale.value as keyof LocalizedTitle] || '';
-    if (renderedTitle) {
-      const to: RouteLocationRaw = matchedRoute.name
-        ? { name: matchedRoute.name, params: route.params }
-        : path;
-      breadcrumbArray.push({ key: matchedRoute.name?.toString() || path, to, title: renderedTitle });
-    }
-    return breadcrumbArray;
-  }, []);
+      const title = meta?.title as LocalizedTitle | undefined;
+      const renderedTitle = title?.[locale.value as keyof LocalizedTitle] || '';
+      if (renderedTitle) {
+        const to: RouteLocationRaw = matchedRoute.name ? { name: matchedRoute.name, params: route.params } : path;
+        breadcrumbArray.push({ key: matchedRoute.name?.toString() || path, to, title: renderedTitle });
+      }
+      return breadcrumbArray;
+    },
+    [],
+  );
 });
 const accountName = computed(() => user.userInfo.name || '图拉云用户');
 const userInitials = computed(() => {
