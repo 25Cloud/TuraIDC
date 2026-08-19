@@ -89,6 +89,7 @@ class GeetestCaptchaService
 
         try {
             $response = Http::asForm()
+                ->withOptions($this->httpOptions($config))
                 ->timeout(10)
                 ->post($endpoint, [
                     'lot_number' => $lotNumber,
@@ -105,7 +106,10 @@ class GeetestCaptchaService
                     'body' => $response->body(),
                 ]);
 
-                return $this->failure($action, '行为验证服务暂时不可用，请稍后重试');
+                return $this->failure($action, '行为验证服务暂时不可用，请稍后重试', [
+                    'error_type' => 'upstream_http_error',
+                    'status' => $response->status(),
+                ]);
             }
 
             $data = $response->json();
@@ -124,9 +128,13 @@ class GeetestCaptchaService
             Log::warning('[captcha:geetest] validate exception', [
                 'message' => $exception->getMessage(),
                 'exception' => $exception::class,
+                'error_type' => $this->classifyHttpException($exception),
+                'endpoint' => $endpoint,
             ]);
 
-            return $this->failure($action, '行为验证服务暂时不可用，请稍后重试');
+            return $this->failure($action, '行为验证服务暂时不可用，请稍后重试', [
+                'error_type' => $this->classifyHttpException($exception),
+            ]);
         }
     }
 
@@ -142,7 +150,8 @@ class GeetestCaptchaService
         }
 
         try {
-            $response = Http::timeout(10)
+            $response = Http::withOptions($this->httpOptions($config))
+                ->timeout(10)
                 ->get(self::SCRIPT_UPSTREAM_URL);
 
             if (! $response->successful()) {
@@ -179,6 +188,34 @@ class GeetestCaptchaService
             'message' => '',
             'data' => ['content' => $content],
         ];
+    }
+
+    /**
+     * 本地代理可能使用自签名根证书，沿用系统 GeeTest TLS 配置；
+     * 生产环境默认仍开启证书校验，也支持通过 CA bundle 指定信任链。
+     *
+     * @param  array<string, mixed>  $config
+     * @return array{verify: bool|string}
+     */
+    private function httpOptions(array $config): array
+    {
+        $caBundle = trim((string) config('idc.geetest.ca_bundle', ''));
+        if ($caBundle !== '') {
+            return ['verify' => $caBundle];
+        }
+
+        return [
+            'verify' => (bool) config('idc.geetest.ssl_verify', true),
+        ];
+    }
+
+    private function classifyHttpException(\Throwable $exception): string
+    {
+        $message = strtolower($exception->getMessage());
+
+        return str_contains($message, 'ssl certificate') || str_contains($message, 'certificate verify')
+            ? 'tls_certificate_error'
+            : (str_contains($message, 'timed out') ? 'timeout' : 'connection_error');
     }
 
     /**

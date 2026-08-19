@@ -1,0 +1,306 @@
+import { ref } from 'vue';
+
+import { request } from '@/utils/request';
+
+interface GeeTestConfig {
+  enabled: boolean;
+  captcha_id: string;
+  script_url?: string;
+}
+
+interface CaptchaInstance {
+  onReady?: (callback: () => void) => void;
+  onSuccess?: (callback: () => void) => void;
+  onError?: (callback: (error: unknown) => void) => void;
+  onClose?: (callback: () => void) => void;
+  showCaptcha?: () => void;
+  validate?: () => unknown;
+  getValidate?: () => unknown;
+  getVerifyResult?: () => unknown;
+  reset?: () => void;
+  destroy?: () => void;
+}
+
+type GeeTestInitializer = NonNullable<Window['initGeetest4']>;
+
+declare global {
+  interface Window {
+    initGeetest4?: (options: Record<string, unknown>, callback: (instance: CaptchaInstance) => void) => void;
+    __TURA_GEETEST_FALLBACK__?: boolean;
+  }
+}
+
+const defaultConfig: GeeTestConfig = {
+  enabled: false,
+  captcha_id: '',
+  script_url: 'https://static.geetest.com/v4/gt4.js',
+};
+
+let captchaConfigPromise: Promise<GeeTestConfig> | null = null;
+let geetestScriptPromise: Promise<GeeTestInitializer> | null = null;
+
+async function getCaptchaConfig() {
+  if (!captchaConfigPromise) {
+    captchaConfigPromise = request
+      .get<GeeTestConfig>({ url: '/v2/client/auth/captcha-config' })
+      .then((response: unknown) => {
+        const config = { ...defaultConfig, ...(response as GeeTestConfig) };
+        if (!config.enabled || !config.captcha_id) {
+          throw new Error('人机验证插件未启用或配置不完整');
+        }
+
+        return config;
+      })
+      .catch((error: unknown) => {
+        captchaConfigPromise = null;
+        const message = error instanceof Error ? error.message : '人机验证配置请求失败';
+        throw new Error(`人机验证配置加载失败：${message}`);
+      });
+  }
+
+  return captchaConfigPromise;
+}
+
+function resolveScriptUrl(src: string) {
+  const raw = src.trim();
+  if (!raw) return '';
+
+  try {
+    const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '').trim();
+    if (/^\/(?!\/)/.test(raw) && apiBaseUrl) {
+      const apiUrl = new URL(apiBaseUrl);
+      return `${apiUrl.origin}${raw}`;
+    }
+
+    return new URL(raw, apiBaseUrl || window.location.origin).toString();
+  } catch {
+    return raw;
+  }
+}
+
+function appendScriptCacheKey(src: string, cacheKey: string) {
+  try {
+    const url = new URL(src);
+    url.searchParams.set('_captcha_key', cacheKey);
+    return url.toString();
+  } catch {
+    return src;
+  }
+}
+
+function loadGeeTestScript(src: string, cacheKey: string): Promise<GeeTestInitializer> {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('浏览器环境不可用'));
+  }
+
+  const scriptUrl = appendScriptCacheKey(resolveScriptUrl(src), cacheKey);
+  if (!scriptUrl) {
+    return Promise.reject(new Error('GeeTest 脚本地址为空'));
+  }
+
+  const existing = document.querySelector<HTMLScriptElement>('script[data-geetest-script="gt4"]');
+  if (existing && existing.dataset.captchaKey !== cacheKey) {
+    existing.remove();
+    window.initGeetest4 = undefined;
+    geetestScriptPromise = null;
+  }
+
+  if (window.initGeetest4 && (!existing || existing.dataset.captchaKey === cacheKey)) {
+    return Promise.resolve(window.initGeetest4 as GeeTestInitializer);
+  }
+
+  if (!geetestScriptPromise) {
+    geetestScriptPromise = new Promise<GeeTestInitializer>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = scriptUrl;
+      script.async = true;
+      script.defer = true;
+      script.dataset.geetestScript = 'gt4';
+      script.dataset.captchaKey = cacheKey;
+      const timeout = window.setTimeout(() => {
+        script.remove();
+        reject(new Error(`GeeTest 脚本加载超时：${scriptUrl}`));
+      }, 15000);
+      script.onload = () => {
+        window.clearTimeout(timeout);
+        if (window.__TURA_GEETEST_FALLBACK__) {
+          reject(new Error(`GeeTest 代理脚本不可用：${scriptUrl}`));
+          return;
+        }
+
+        if (typeof window.initGeetest4 !== 'function') {
+          reject(new Error(`GeeTest 脚本未提供初始化方法：${scriptUrl}`));
+          return;
+        }
+
+        resolve(window.initGeetest4 as GeeTestInitializer);
+      };
+      script.onerror = () => {
+        window.clearTimeout(timeout);
+        reject(new Error(`GeeTest 脚本加载失败：${scriptUrl}`));
+      };
+      document.head.appendChild(script);
+    }).catch((error: unknown) => {
+      geetestScriptPromise = null;
+      const failed = document.querySelector<HTMLScriptElement>('script[data-geetest-script="gt4"]');
+      failed?.remove();
+      window.initGeetest4 = undefined;
+      window.__TURA_GEETEST_FALLBACK__ = false;
+      throw error;
+    });
+  }
+
+  return geetestScriptPromise;
+}
+
+/**
+ * 管理端极验弹窗验证。用于插件测试：真人完成一次行为验证后，
+ * 把 getValidate() 结果交给后端走完整验证链路。
+ */
+export function useGeeTestCaptcha() {
+  const loading = ref(false);
+
+  let captchaObj: CaptchaInstance | null = null;
+  let initPromise: Promise<CaptchaInstance | null> | null = null;
+  let pendingResolver: ((value: unknown) => void) | null = null;
+  let pendingRejecter: ((error: Error) => void) | null = null;
+
+  const clearPending = () => {
+    pendingResolver = null;
+    pendingRejecter = null;
+    loading.value = false;
+  };
+
+  const rejectPending = (error: Error) => {
+    pendingRejecter?.(error);
+    clearPending();
+  };
+
+  const readCaptchaResult = (instance: CaptchaInstance) => {
+    if (typeof instance.getValidate === 'function') {
+      return instance.getValidate();
+    }
+
+    if (typeof instance.getVerifyResult === 'function') {
+      return instance.getVerifyResult();
+    }
+
+    return null;
+  };
+
+  const resolveSuccess = (instance: CaptchaInstance) => {
+    const result = readCaptchaResult(instance);
+    instance.reset?.();
+    pendingResolver?.(result);
+    clearPending();
+  };
+
+  const initCaptcha = async (): Promise<CaptchaInstance | null> => {
+    const config = await getCaptchaConfig();
+
+    if (!config.enabled || !config.captcha_id) {
+      throw new Error('行为验证当前不可用，请检查人机验证插件配置');
+    }
+
+    if (captchaObj) {
+      return captchaObj;
+    }
+
+    if (initPromise) {
+      return initPromise;
+    }
+
+    const proxyUrl = resolveScriptUrl(config.script_url || '');
+    const directUrl = defaultConfig.script_url || '';
+    const candidates =
+      proxyUrl && proxyUrl !== directUrl
+        ? [
+            { url: directUrl, key: `${config.captcha_id}:direct` },
+            { url: proxyUrl, key: config.captcha_id },
+          ]
+        : [{ url: directUrl, key: `${config.captcha_id}:direct` }];
+    let initGeetest4: typeof window.initGeetest4;
+    let lastError: unknown = null;
+
+    for (const candidate of candidates) {
+      try {
+        initGeetest4 = await loadGeeTestScript(candidate.url, candidate.key);
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (!initGeetest4) {
+      throw lastError instanceof Error ? lastError : new Error('GeeTest 脚本加载失败');
+    }
+    initPromise = new Promise((resolve, reject) => {
+      try {
+        initGeetest4?.(
+          {
+            captchaId: config.captcha_id,
+            product: 'bind',
+            language: 'zho',
+          },
+          (instance) => {
+            captchaObj = instance;
+            const markReady = () => resolve(instance);
+
+            if (typeof instance.onReady === 'function') {
+              instance.onReady(markReady);
+            } else {
+              markReady();
+            }
+
+            instance.onSuccess?.(() => resolveSuccess(instance));
+            instance.onError?.((error) => {
+              rejectPending(new Error(error instanceof Error ? error.message : String(error || '行为验证失败')));
+            });
+            instance.onClose?.(() => {
+              rejectPending(new Error('请先完成行为验证'));
+            });
+          },
+        );
+      } catch (error) {
+        reject(error instanceof Error ? error : new Error('行为验证初始化失败'));
+      }
+    });
+
+    return initPromise;
+  };
+
+  const verify = async () => {
+    const instance = await initCaptcha();
+    if (!instance) {
+      throw new Error('行为验证组件初始化失败，请稍后重试');
+    }
+
+    loading.value = true;
+
+    return new Promise((resolve, reject) => {
+      pendingResolver = resolve;
+      pendingRejecter = reject;
+
+      try {
+        if (typeof instance.showCaptcha === 'function') {
+          instance.showCaptcha();
+        } else if (typeof instance.validate === 'function') {
+          Promise.resolve(instance.validate())
+            .then(() => resolveSuccess(instance))
+            .catch((error: unknown) => {
+              rejectPending(new Error(error instanceof Error ? error.message : String(error || '行为验证失败')));
+            });
+        } else {
+          rejectPending(new Error('行为验证组件版本不兼容，请刷新页面后重试'));
+        }
+      } catch (error) {
+        rejectPending(new Error(error instanceof Error ? error.message : '行为验证打开失败'));
+      }
+    });
+  };
+
+  return {
+    loading,
+    verify,
+  };
+}

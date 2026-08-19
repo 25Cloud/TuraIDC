@@ -163,6 +163,10 @@ class AdminConfigurationV2QueryService
             RunIntegrationPluginTaskRequest::TYPE_HEALTH_CHECK => $this->pluginService->healthCheck($plugin),
             RunIntegrationPluginTaskRequest::TYPE_TEST_EMAIL => $this->pluginService->testEmail($plugin, $payload),
             RunIntegrationPluginTaskRequest::TYPE_TEST_SMS => $this->pluginService->testSms($plugin, $payload),
+            RunIntegrationPluginTaskRequest::TYPE_TEST_VERIFICATION => $this->pluginService->testVerification($plugin, $payload),
+            RunIntegrationPluginTaskRequest::TYPE_TEST_PAYMENT => $this->pluginService->testPayment($plugin, $payload),
+            RunIntegrationPluginTaskRequest::TYPE_TEST_CAPTCHA => $this->pluginService->testCaptcha($plugin, $payload),
+            RunIntegrationPluginTaskRequest::TYPE_TEST_CONNECTION => $this->pluginService->testConnection($plugin, $payload),
             default => throw new BusinessException('不支持的插件任务', 42200),
         };
 
@@ -598,6 +602,10 @@ class AdminConfigurationV2QueryService
             RunIntegrationPluginTaskRequest::TYPE_HEALTH_CHECK => '插件健康检查完成',
             RunIntegrationPluginTaskRequest::TYPE_TEST_EMAIL => '测试邮件发送成功',
             RunIntegrationPluginTaskRequest::TYPE_TEST_SMS => '测试短信发送成功',
+            RunIntegrationPluginTaskRequest::TYPE_TEST_VERIFICATION => '实名认证测试任务已创建',
+            RunIntegrationPluginTaskRequest::TYPE_TEST_PAYMENT => '测试支付单创建成功',
+            RunIntegrationPluginTaskRequest::TYPE_TEST_CAPTCHA => '行为验证通过',
+            RunIntegrationPluginTaskRequest::TYPE_TEST_CONNECTION => '插件连接测试完成',
             default => '插件任务执行完成',
         };
     }
@@ -614,12 +622,21 @@ class AdminConfigurationV2QueryService
             'healthy',
             'success',
             'sent',
+            'error_type',
             'status',
             'message',
             'provider',
             'entry_class',
             'provider_class',
             'trace_id',
+            'verify_url',
+            'task_no',
+            'certify_id',
+            'qr_code',
+            'out_trade_no',
+            'verified',
+            'capability',
+            'amount',
         ];
 
         return array_filter(
