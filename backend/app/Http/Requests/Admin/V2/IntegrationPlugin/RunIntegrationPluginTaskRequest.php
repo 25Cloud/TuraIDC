@@ -15,21 +15,23 @@ class RunIntegrationPluginTaskRequest extends AdminFormRequest
 
     public const TYPE_TEST_SMS = 'test_sms';
 
+    public const TYPE_TEST_VERIFICATION = 'test_verification';
+
+    public const TYPE_TEST_PAYMENT = 'test_payment';
+
+    public const TYPE_TEST_CAPTCHA = 'test_captcha';
+
+    public const TYPE_TEST_CONNECTION = 'test_connection';
+
     protected function prepareForValidation(): void
     {
         $payload = $this->input('payload', []);
         $payload = is_array($payload) ? $payload : [];
 
-        if (array_key_exists('to', $payload)) {
-            $payload['to'] = trim((string) $payload['to']);
-        }
-
-        if (array_key_exists('subject', $payload)) {
-            $payload['subject'] = trim((string) $payload['subject']);
-        }
-
-        if (array_key_exists('phone', $payload)) {
-            $payload['phone'] = trim((string) $payload['phone']);
+        foreach (['to', 'subject', 'phone', 'real_name', 'card_no', 'lot_number', 'captcha_output', 'pass_token', 'gen_time'] as $field) {
+            if (array_key_exists($field, $payload)) {
+                $payload[$field] = trim((string) $payload[$field]);
+            }
         }
 
         $this->merge([
@@ -47,6 +49,10 @@ class RunIntegrationPluginTaskRequest extends AdminFormRequest
                 self::TYPE_HEALTH_CHECK,
                 self::TYPE_TEST_EMAIL,
                 self::TYPE_TEST_SMS,
+                self::TYPE_TEST_VERIFICATION,
+                self::TYPE_TEST_PAYMENT,
+                self::TYPE_TEST_CAPTCHA,
+                self::TYPE_TEST_CONNECTION,
             ])],
             'payload' => ['nullable', 'array'],
             'payload.account_index' => [
@@ -69,6 +75,36 @@ class RunIntegrationPluginTaskRequest extends AdminFormRequest
                 Rule::requiredIf($type === self::TYPE_TEST_SMS),
                 'string',
                 'max:20',
+            ],
+            'payload.real_name' => [
+                Rule::requiredIf($type === self::TYPE_TEST_VERIFICATION),
+                'string',
+                'max:64',
+            ],
+            'payload.card_no' => [
+                Rule::requiredIf($type === self::TYPE_TEST_VERIFICATION),
+                'string',
+                'max:32',
+            ],
+            'payload.lot_number' => [
+                Rule::requiredIf($type === self::TYPE_TEST_CAPTCHA),
+                'string',
+                'max:128',
+            ],
+            'payload.captcha_output' => [
+                Rule::requiredIf($type === self::TYPE_TEST_CAPTCHA),
+                'string',
+                'max:512',
+            ],
+            'payload.pass_token' => [
+                Rule::requiredIf($type === self::TYPE_TEST_CAPTCHA),
+                'string',
+                'max:512',
+            ],
+            'payload.gen_time' => [
+                Rule::requiredIf($type === self::TYPE_TEST_CAPTCHA),
+                'string',
+                'max:32',
             ],
             'page' => ['prohibited'],
             'page_size' => ['prohibited'],

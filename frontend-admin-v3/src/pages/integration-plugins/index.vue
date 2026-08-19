@@ -103,11 +103,14 @@
       v-model:visible="configVisible"
       size="560px"
       :header="currentPlugin ? `${currentPlugin.name} 管理` : '插件管理'"
-      :confirm-btn="canManagePlugins ? { content: '保存配置', loading: savingConfig } : null"
+      :confirm-btn="canManagePlugins ? { content: '保存配置', loading: savingConfig, disabled: configLoading } : null"
       cancel-btn="关闭"
       @confirm="saveConfig"
     >
-      <template v-if="currentPlugin">
+      <div v-if="configLoading" class="plugin-config-loading">
+        <t-loading text="正在加载插件配置" />
+      </div>
+      <template v-else-if="currentPlugin">
         <div class="plugin-detail">
           <dl>
             <div>
@@ -282,20 +285,147 @@
             </t-form-item>
           </template>
         </t-form>
+      </template>
+    </t-drawer>
 
-        <div v-if="canTestPlugins && currentPlugin.domain === 'sms'" class="plugin-test-section">
-          <t-divider />
+    <t-dialog
+      v-model:visible="testVisible"
+      width="560px"
+      :header="currentPlugin ? `${currentPlugin.name} 测试` : '插件测试'"
+      cancel-btn="关闭"
+    >
+      <template v-if="currentPlugin">
+        <div v-if="currentPlugin.domain === 'sms'" class="plugin-test-section">
           <div class="plugin-test-section__header">
             <strong>发送测试短信</strong>
-            <span class="plugin-test-section__hint">向指定手机号发送一条验证码测试短信</span>
+            <span class="plugin-test-section__hint">通过系统短信驱动发送一条验证码测试短信</span>
           </div>
           <t-space direction="vertical" style="width: 100%">
             <t-input v-model="smsTestPhone" placeholder="请输入手机号码" maxlength="20" />
-            <t-button block variant="outline" :loading="smsTesting" @click="sendTestSms"> 发送测试短信 </t-button>
+            <t-button block variant="outline" :loading="smsTesting" @click="sendTestSms">发送测试短信</t-button>
           </t-space>
         </div>
+
+        <div v-else-if="currentPlugin.domain === 'mail'" class="plugin-test-section">
+          <div class="plugin-test-section__header">
+            <strong>发送测试邮件</strong>
+            <span class="plugin-test-section__hint">通过系统邮件驱动发送一封验证码测试邮件</span>
+          </div>
+          <t-space direction="vertical" style="width: 100%">
+            <t-input v-model="systemEmailTestTo" placeholder="请输入收件人邮箱" type="email" />
+            <t-button block variant="outline" :loading="emailTesting" @click="openSystemEmailTest"
+              >发送测试邮件</t-button
+            >
+          </t-space>
+        </div>
+
+        <div v-else-if="currentPlugin.domain === 'verification'" class="plugin-test-section">
+          <div class="plugin-test-section__header">
+            <strong>创建测试认证任务</strong>
+            <span class="plugin-test-section__hint">将真实创建一条认证任务，测试结果只返回不保存</span>
+          </div>
+          <t-space direction="vertical" style="width: 100%">
+            <t-input v-model="verificationTestForm.real_name" placeholder="请输入测试姓名" maxlength="64" />
+            <t-input v-model="verificationTestForm.card_no" placeholder="请输入测试身份证号" maxlength="32" />
+            <t-button block variant="outline" :loading="verificationTesting" @click="runVerificationTest"
+              >创建测试任务</t-button
+            >
+          </t-space>
+          <div v-if="verificationTestResult" class="plugin-test-result">
+            <div class="plugin-test-result__item">
+              <span class="plugin-test-result__label">认证链接</span>
+              <t-input
+                :model-value="String(verificationTestResult.verify_url || '')"
+                readonly
+                class="plugin-test-result__value"
+              />
+              <t-button variant="text" @click="copyText(String(verificationTestResult.verify_url || ''))"
+                >复制</t-button
+              >
+            </div>
+            <div v-if="verificationTestResult.task_no" class="plugin-test-result__item">
+              <span class="plugin-test-result__label">任务编号</span>
+              <span>{{ verificationTestResult.task_no }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="currentPlugin.domain === 'payment'" class="plugin-test-section">
+          <div class="plugin-test-section__header">
+            <strong>创建测试支付订单</strong>
+            <span class="plugin-test-section__hint">真实创建一笔 0.01 元测试订单，测试结果只返回不保存</span>
+          </div>
+          <t-button block variant="outline" :loading="paymentTesting" @click="runPaymentTest"
+            >创建 0.01 元测试订单</t-button
+          >
+          <div v-if="paymentTestResult" class="plugin-test-result">
+            <div class="plugin-test-result__item">
+              <span class="plugin-test-result__label">支付链接</span>
+              <t-input
+                :model-value="String(paymentTestResult.qr_code || '')"
+                readonly
+                class="plugin-test-result__value"
+              />
+              <t-button variant="text" @click="copyText(String(paymentTestResult.qr_code || ''))">复制</t-button>
+            </div>
+            <div v-if="paymentTestResult.out_trade_no" class="plugin-test-result__item">
+              <span class="plugin-test-result__label">测试单号</span>
+              <span>{{ paymentTestResult.out_trade_no }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="currentPlugin.domain === 'captcha'" class="plugin-test-section">
+          <div class="plugin-test-section__header">
+            <strong>真人验证测试</strong>
+            <span class="plugin-test-section__hint">弹出验证码由管理员真人完成，走完整验证链路</span>
+          </div>
+          <t-button block variant="outline" :loading="captchaTesting" @click="runCaptchaTest"
+            >弹出验证码并测试</t-button
+          >
+          <div v-if="captchaTestResult" class="plugin-test-result">
+            <div class="plugin-test-result__item">
+              <span class="plugin-test-result__label">验证结果</span>
+              <t-tag :theme="captchaTestResult.verified ? 'success' : 'danger'" variant="light">
+                {{ captchaTestResult.verified ? '验证通过' : '验证失败' }}
+              </t-tag>
+            </div>
+            <div v-if="captchaTestResult.message" class="plugin-test-result__item">
+              <span>{{ captchaTestResult.message }}</span>
+            </div>
+            <div v-if="captchaTestResult.error_type" class="plugin-test-result__item">
+              <span class="plugin-test-result__label">诊断</span>
+              <span>{{ captchaTestResult.error_type }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="currentPlugin.domain === 'upstream'" class="plugin-test-section">
+          <div class="plugin-test-section__header">
+            <strong>连接测试</strong>
+            <span class="plugin-test-section__hint">解析插件声明的第一个能力，验证上游插件加载正常</span>
+          </div>
+          <t-button block variant="outline" :loading="connectionTesting" @click="runConnectionTest"
+            >开始连接测试</t-button
+          >
+          <div v-if="connectionTestResult" class="plugin-test-result">
+            <div class="plugin-test-result__item">
+              <span class="plugin-test-result__label">连接状态</span>
+              <t-tag :theme="connectionTestResult.healthy ? 'success' : 'danger'" variant="light">
+                {{ connectionTestResult.healthy ? '连接正常' : '连接异常' }}
+              </t-tag>
+            </div>
+            <div v-if="connectionTestResult.capability" class="plugin-test-result__item">
+              <span class="plugin-test-result__label">能力</span>
+              <span>{{ connectionTestResult.capability }}</span>
+            </div>
+            <div v-if="connectionTestResult.message" class="plugin-test-result__item">
+              <span>{{ connectionTestResult.message }}</span>
+            </div>
+          </div>
+        </div>
       </template>
-    </t-drawer>
+    </t-dialog>
 
     <t-dialog
       v-model:visible="smtpAccountDialogVisible"
@@ -377,10 +507,13 @@ import type {
   IntegrationPluginConfigSchema,
   IntegrationPluginDomain,
   IntegrationPluginRecord,
+  IntegrationPluginTestResult,
+  IntegrationPluginTestResultData,
 } from '@/api/admin/plugins';
 import { pluginsApi } from '@/api/admin/plugins';
 import SecretInput from '@/components/secret-input/index.vue';
 import { AdminPermissions } from '@/constants/permissions';
+import { useGeeTestCaptcha } from '@/hooks/useGeeTestCaptcha';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
 
@@ -417,6 +550,9 @@ const scanning = ref(false);
 const savingConfig = ref(false);
 const actionLoading = ref('');
 const configVisible = ref(false);
+const configLoading = ref(false);
+const testVisible = ref(false);
+const healthCheckSequence = ref(0);
 const currentPlugin = ref<IntegrationPluginRecord | null>(null);
 const configForm = reactive<Record<string, any>>({});
 const smtpAccountDialogVisible = ref(false);
@@ -441,6 +577,7 @@ const emailTestVisible = ref(false);
 const emailTesting = ref(false);
 const testingAccountIndex = ref(-1);
 const emailTestForm = reactive({ to: '' });
+const systemEmailTestTo = ref('');
 const emailTestErrors = reactive<Record<'to', string>>({
   to: '',
 });
@@ -452,6 +589,16 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
 const smsTestPhone = ref('');
 const smsTesting = ref(false);
 const smtpAccountPasswordEdited = ref(false);
+const verificationTestForm = reactive({ real_name: '', card_no: '' });
+const verificationTesting = ref(false);
+const verificationTestResult = ref<IntegrationPluginTestResultData | null>(null);
+const paymentTesting = ref(false);
+const paymentTestResult = ref<IntegrationPluginTestResultData | null>(null);
+const captchaTesting = ref(false);
+const captchaTestResult = ref<IntegrationPluginTestResultData | null>(null);
+const connectionTesting = ref(false);
+const connectionTestResult = ref<IntegrationPluginTestResultData | null>(null);
+const { verify: openCaptchaVerify } = useGeeTestCaptcha();
 const MASKED_SECRET_VALUE = '********';
 const visibleSecretKeys = reactive<Record<string, boolean>>({});
 const loadedSecretValues = reactive<Record<string, string>>({});
@@ -478,6 +625,12 @@ watch(
     loadPlugins();
   },
 );
+
+watch(testVisible, (visible) => {
+  if (!visible) {
+    resetTestResults();
+  }
+});
 
 async function loadPlugins() {
   loading.value = true;
@@ -589,27 +742,103 @@ function deletePlugin(plugin: IntegrationPluginRecord) {
 async function healthCheck(plugin: IntegrationPluginRecord) {
   if (!canTestPlugins.value) return;
   if (!plugin.id) return;
+  const sequence = ++healthCheckSequence.value;
   await runAction(plugin, 'health', async () => {
     const result = await pluginsApi.healthCheck(plugin.id as string | number);
+    if (sequence !== healthCheckSequence.value) return;
+    const healthy = result.detail?.result?.healthy !== false;
+    if (!healthy) {
+      MessagePlugin.error(String(result.message || '插件检测失败'));
+      return;
+    }
+
     MessagePlugin.success(String(result.message || '插件加载正常'));
+    if (supportsSystemTest(plugin.domain)) {
+      await openTest(plugin, sequence);
+    }
   });
+}
+
+function supportsSystemTest(domain: IntegrationPluginDomain) {
+  return ['mail', 'sms', 'verification', 'payment', 'captcha', 'upstream'].includes(domain);
 }
 
 async function openConfig(plugin: IntegrationPluginRecord) {
   if (!plugin.id) return;
+
+  currentPlugin.value = plugin;
+  fillConfigForm(plugin);
+  resetTestResults();
+  configLoading.value = true;
+  configVisible.value = true;
+
   try {
     const detail = await pluginsApi.detail(plugin.id);
     currentPlugin.value = detail;
     fillConfigForm(detail);
-    configVisible.value = true;
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '加载插件配置失败'));
+  } finally {
+    configLoading.value = false;
+  }
+}
+
+async function openTest(plugin: IntegrationPluginRecord, sequence?: number) {
+  if (!plugin.id) return;
+  try {
+    const detail = await pluginsApi.detail(plugin.id);
+    if (sequence !== undefined && sequence !== healthCheckSequence.value) return;
+    if (String(detail.id ?? '') !== String(plugin.id)) return;
+    currentPlugin.value = detail;
+    resetTestResults();
+    testVisible.value = true;
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '加载插件测试失败'));
+  }
+}
+
+function resetTestResults() {
+  verificationTestResult.value = null;
+  paymentTestResult.value = null;
+  captchaTestResult.value = null;
+  connectionTestResult.value = null;
+  verificationTestForm.real_name = '';
+  verificationTestForm.card_no = '';
+  smsTestPhone.value = '';
+  systemEmailTestTo.value = '';
+}
+
+async function openSystemEmailTest() {
+  const to = systemEmailTestTo.value.trim();
+  if (!to || !EMAIL_PATTERN.test(to)) {
+    MessagePlugin.error('请输入正确的收件人邮箱');
+    return;
+  }
+
+  if (!currentPlugin.value?.id) return;
+
+  emailTesting.value = true;
+  try {
+    await pluginsApi.testEmail(currentPlugin.value.id, {
+      account_index: 0,
+      to,
+    });
+    MessagePlugin.success('测试邮件发送成功');
+    systemEmailTestTo.value = '';
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '测试邮件发送失败'));
+  } finally {
+    emailTesting.value = false;
   }
 }
 
 async function saveConfig() {
   if (!canManagePlugins.value) {
     MessagePlugin.warning('当前账号无插件管理权限');
+    return;
+  }
+
+  if (configLoading.value) {
     return;
   }
 
@@ -1112,6 +1341,144 @@ async function sendTestSms() {
     MessagePlugin.error(errorMessage(error, '测试短信发送失败'));
   } finally {
     smsTesting.value = false;
+  }
+}
+
+function readTestResult(response: IntegrationPluginTestResult) {
+  const raw = response?.detail?.result;
+  if (!raw) return null;
+
+  const data = raw.data && typeof raw.data === 'object' ? raw.data : {};
+  const source = { ...data, ...raw };
+  const rawData = source.raw && typeof source.raw === 'object' ? source.raw : {};
+  const certifyId = String(source.certify_id || '');
+  const taskNo = String(source.task_no || rawData.task_no || certifyId || '');
+
+  return {
+    ...source,
+    message: String(source.message || data.message || response.message || ''),
+    task_no: taskNo || undefined,
+    verify_url: String(source.verify_url || rawData.verify_url || '') || undefined,
+  } as IntegrationPluginTestResultData;
+}
+
+async function runVerificationTest() {
+  if (!canTestPlugins.value) return;
+
+  const realName = verificationTestForm.real_name.trim();
+  const cardNo = verificationTestForm.card_no.trim();
+  if (!realName || !cardNo) {
+    MessagePlugin.error('请填写测试姓名和身份证号');
+    return;
+  }
+  if (!currentPlugin.value?.id) return;
+
+  verificationTesting.value = true;
+  verificationTestResult.value = null;
+  try {
+    const response = await pluginsApi.testVerification(currentPlugin.value.id, {
+      real_name: realName,
+      card_no: cardNo,
+    });
+    const result = readTestResult(response);
+    verificationTestResult.value = result;
+    if (result?.success) {
+      MessagePlugin.success(result.message || '测试任务创建成功');
+      verificationTestForm.card_no = '';
+    } else {
+      MessagePlugin.error(result?.message || '测试任务创建失败');
+    }
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '创建测试任务失败'));
+  } finally {
+    verificationTesting.value = false;
+  }
+}
+
+async function runPaymentTest() {
+  if (!canTestPlugins.value) return;
+  if (!currentPlugin.value?.id) return;
+
+  paymentTesting.value = true;
+  paymentTestResult.value = null;
+  try {
+    const response = await pluginsApi.testPayment(currentPlugin.value.id);
+    const result = readTestResult(response);
+    paymentTestResult.value = result;
+    if (result?.success) {
+      MessagePlugin.success(result.message || '测试支付单创建成功');
+    } else {
+      MessagePlugin.error(result?.message || '测试支付单创建失败');
+    }
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '创建测试支付单失败'));
+  } finally {
+    paymentTesting.value = false;
+  }
+}
+
+async function runCaptchaTest() {
+  if (!canTestPlugins.value) return;
+  if (!currentPlugin.value?.id) return;
+
+  captchaTesting.value = true;
+  captchaTestResult.value = null;
+  try {
+    const captcha = (await openCaptchaVerify()) as Record<string, unknown> | null;
+    if (!captcha) {
+      MessagePlugin.error('未获取到验证结果');
+      return;
+    }
+
+    const response = await pluginsApi.testCaptcha(currentPlugin.value.id, {
+      lot_number: String(captcha.lot_number || ''),
+      captcha_output: String(captcha.captcha_output || ''),
+      pass_token: String(captcha.pass_token || ''),
+      gen_time: String(captcha.gen_time || ''),
+    });
+    const result = readTestResult(response);
+    captchaTestResult.value = result;
+    if (result?.success) {
+      MessagePlugin.success(result.message || '验证通过');
+    } else {
+      MessagePlugin.error(result?.message || '验证未通过');
+    }
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '验证测试失败'));
+  } finally {
+    captchaTesting.value = false;
+  }
+}
+
+async function runConnectionTest() {
+  if (!canTestPlugins.value) return;
+  if (!currentPlugin.value?.id) return;
+
+  connectionTesting.value = true;
+  connectionTestResult.value = null;
+  try {
+    const response = await pluginsApi.testConnection(currentPlugin.value.id);
+    const result = readTestResult(response);
+    connectionTestResult.value = result;
+    if (result?.success) {
+      MessagePlugin.success(result.message || '连接正常');
+    } else {
+      MessagePlugin.error(result?.message || '连接测试失败');
+    }
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '连接测试失败'));
+  } finally {
+    connectionTesting.value = false;
+  }
+}
+
+async function copyText(value: string) {
+  if (!value) return;
+  try {
+    await navigator.clipboard.writeText(value);
+    MessagePlugin.success('已复制');
+  } catch {
+    MessagePlugin.error('复制失败，请手动复制');
   }
 }
 
