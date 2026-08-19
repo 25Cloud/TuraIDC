@@ -37,4 +37,4 @@ npm run build:frontends
 
 ## 许可
 
-本项目基于 [TDesign Vue Next Starter](https://github.com/Tencent/tdesign-vue-next-starter) 二次开发，本目录保留其 [MIT 许可](./LICENSE)。整体项目采用 Apache-2.0（见根目录 [LICENSE](../../LICENSE)）。
+本项目基于 [TDesign Vue Next Starter](https://github.com/Tencent/tdesign-vue-next-starter) 二次开发。本目录的 [LICENSE](./LICENSE) 保留 TDesign 原始代码的 MIT 许可；TuraIDC 自有代码及其修改部分采用 AGPL-3.0-or-later，详见根目录 [LICENSE](../../LICENSE)。

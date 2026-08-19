@@ -24,7 +24,7 @@
             :aria-label="t('common.appName')"
             @click="goHome"
           >
-            <component :is="getLogo()" :class="logoCls" />
+            <img :src="logoImg" :class="logoCls" :style="logoStyle" alt="" />
           </button>
         </template>
         <menu-content :nav-data="menu" />
@@ -41,12 +41,12 @@
 </template>
 <script setup lang="ts">
 import type { MenuValue } from 'tdesign-vue-next';
-import type { PropType } from 'vue';
+import type { CSSProperties, PropType } from 'vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
-import AssetLogoFull from '@/assets/assets-logo-full.svg?component';
-import AssetLogo from '@/assets/assets-t-logo.svg?component';
+import logoFull from '@/assets/logo.png';
+import logoMini from '@/assets/logo-mini.png';
 import { prefix } from '@/config/global';
 import { t } from '@/locales';
 import { getActive } from '@/router';
@@ -198,10 +198,13 @@ const goHome = () => {
   router.push('/admin/dashboard');
 };
 
-const getLogo = () => {
-  if (collapsed.value) return AssetLogo;
-  return AssetLogoFull;
-};
+const logoImg = computed(() => (collapsed.value ? logoMini : logoFull));
+const logoStyle = computed<CSSProperties>(() => ({
+  height: collapsed.value ? '24px' : '28px',
+  width: 'auto',
+  objectFit: 'contain',
+  display: 'block',
+}));
 
 /**
  * 精确匹配：返回 activePath 对应菜单叶子（path 完全相等）的祖先链。

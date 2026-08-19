@@ -47,7 +47,7 @@
 }
 
 // 平板断点：解除 760px 强制宽度，避免 769-1024 区间横向滚动
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   .t-layout.t-layout--with-sider {
     > .t-layout {
       min-width: 0;
@@ -61,7 +61,7 @@
   overflow: visible;
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   html,
   body,
   #app {
@@ -323,7 +323,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .@{starter-prefix}-content-layout {
     padding: 8px;
   }

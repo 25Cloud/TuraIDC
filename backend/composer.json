@@ -9,7 +9,7 @@
         "billing",
         "laravel"
     ],
-    "license": "Apache-2.0",
+    "license": "AGPL-3.0-or-later",
     "homepage": "https://github.com/25Cloud/TuraIDC",
     "repository": {
         "type": "git",

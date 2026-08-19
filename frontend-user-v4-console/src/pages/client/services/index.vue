@@ -341,7 +341,6 @@ import { CatalogIcon, DashboardIcon, EditIcon, SearchIcon } from 'tdesign-icons-
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { shallowRef, triggerRef } from 'vue';
 
-import { openPublicProducts } from '@/utils/publicSite';
 import {
   findListSpecValue,
   formatMoney,
@@ -356,6 +355,7 @@ import {
   resolveTdesignStatusTheme,
   useServiceCenter,
 } from '@/domains/services/useServiceCenter';
+import { openPublicProducts } from '@/utils/publicSite';
 
 const {
   loading,
@@ -388,7 +388,6 @@ const {
   submitRemark,
   copyText,
   handleServiceAction,
-  router,
 } = useServiceCenter();
 
 const failedServiceOsIconKeys = shallowRef(new Set<string>());

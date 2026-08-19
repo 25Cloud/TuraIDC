@@ -16,42 +16,42 @@
         :description="financeState.error || '暂无财务记录'"
       >
         <t-table
-        row-key="id"
-        :data="financeState.list"
-        :columns="financeColumns"
-        :loading="financeState.loading"
-        :pagination="null"
-        size="small"
-      >
-        <template #event_type="{ row }">
-          <div class="finance-type-cell">
-            <t-tag size="small" :theme="resolveFinanceTagTheme(row)" variant="light">
-              {{ resolveFinanceBusinessLabel(row) }}
-            </t-tag>
-            <span>{{ resolveFinanceEventLabel(row.event_type) || row.display?.badge || '--' }}</span>
-          </div>
-        </template>
-        <template #amount="{ row }">
-          <span
-            class="finance-amount"
-            :class="{
-              'is-income': Number(row.change_amount || 0) > 0,
-              'is-outcome': Number(row.change_amount || 0) < 0,
-            }"
-          >
-            {{ Number(row.change_amount || 0) > 0 ? '+' : '' }}¥{{ formatMoney(row.change_amount || 0) }}
-          </span>
-        </template>
-        <template #summary="{ row }">
-          <div class="finance-summary-cell">
-            <strong>{{ resolveFinanceBusinessLabel(row) }}</strong>
-            <span>{{ row.remark || row.display?.subtitle || '--' }}</span>
-          </div>
-        </template>
-        <template #invoice_no="{ row }">
-          {{ row.invoice?.invoice_no || '--' }}
-        </template>
-      </t-table>
+          row-key="id"
+          :data="financeState.list"
+          :columns="financeColumns"
+          :loading="financeState.loading"
+          :pagination="null"
+          size="small"
+        >
+          <template #event_type="{ row }">
+            <div class="finance-type-cell">
+              <t-tag size="small" :theme="resolveFinanceTagTheme(row)" variant="light">
+                {{ resolveFinanceBusinessLabel(row) }}
+              </t-tag>
+              <span>{{ resolveFinanceEventLabel(row.event_type) || row.display?.badge || '--' }}</span>
+            </div>
+          </template>
+          <template #amount="{ row }">
+            <span
+              class="finance-amount"
+              :class="{
+                'is-income': Number(row.change_amount || 0) > 0,
+                'is-outcome': Number(row.change_amount || 0) < 0,
+              }"
+            >
+              {{ Number(row.change_amount || 0) > 0 ? '+' : '' }}¥{{ formatMoney(row.change_amount || 0) }}
+            </span>
+          </template>
+          <template #summary="{ row }">
+            <div class="finance-summary-cell">
+              <strong>{{ resolveFinanceBusinessLabel(row) }}</strong>
+              <span>{{ row.remark || row.display?.subtitle || '--' }}</span>
+            </div>
+          </template>
+          <template #invoice_no="{ row }">
+            {{ row.invoice?.invoice_no || '--' }}
+          </template>
+        </t-table>
         <div v-if="financeState.total > 0" class="console-pagination">
           <t-pagination
             v-model="financeState.page"
@@ -68,6 +68,7 @@
 </template>
 <script setup lang="ts">
 import DataState from '@shared/user-v3/components/DataState.vue';
+
 import {
   financeColumns,
   resolveFinanceBusinessLabel,
