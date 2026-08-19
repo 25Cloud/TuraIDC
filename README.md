@@ -150,9 +150,15 @@ flowchart TB
 - 短信验证码链路完善
 - 告警通道接入（待产品/运维确认渠道）
 
-## �📊 项目热度
+## 📊 项目热度
 
-[![Star History Chart](https://api.star-history.com/svg?repos=25Cloud/TuraIDC&type=Date)](https://star-history.com/#25Cloud/TuraIDC&Date)
+<a href="https://www.star-history.com/?repos=25Cloud%2FTuraIDC&type=date&legend=top-left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=25Cloud/TuraIDC&type=date&theme=dark&legend=top-left&sealed_token=DLZeeKcw05mIrh2HqJHHcah_CJlwXqq0_AW-LpSPtWsFoVE6Px46XG3BoaMrvOmP-N-Pcp22-B-fQna7PXyJum3iYhdzpsJD0xsfA7tCvxXDdFS3-MSOeg" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=25Cloud/TuraIDC&type=date&legend=top-left&sealed_token=DLZeeKcw05mIrh2HqJHHcah_CJlwXqq0_AW-LpSPtWsFoVE6Px46XG3BoaMrvOmP-N-Pcp22-B-fQna7PXyJum3iYhdzpsJD0xsfA7tCvxXDdFS3-MSOeg" />
+    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=25Cloud/TuraIDC&type=date&legend=top-left&sealed_token=DLZeeKcw05mIrh2HqJHHcah_CJlwXqq0_AW-LpSPtWsFoVE6Px46XG3BoaMrvOmP-N-Pcp22-B-fQna7PXyJum3iYhdzpsJD0xsfA7tCvxXDdFS3-MSOeg" />
+  </picture>
+</a>
 
 ## 🧑‍💻 贡献者
 
