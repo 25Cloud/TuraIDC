@@ -2,7 +2,7 @@
 
 > 新一代的IDC云服务经营系统
 
-![License](https://img.shields.io/badge/license-Apache--2.0-blue)
+![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)
 ![PHP](https://img.shields.io/badge/PHP-%3E%3D8.3-777BB4)
 ![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20)
 ![Vue](https://img.shields.io/badge/Vue-3-4FC08D)
