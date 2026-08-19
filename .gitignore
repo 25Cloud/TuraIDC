@@ -126,5 +126,6 @@ php.bat
 caiwu_update/
 .tmp/
 
+backend/public/.user.ini
 # ---- 内部安全分析资料（第三方系统漏洞分析，勿公开）----
 zjmf(ignore this)/

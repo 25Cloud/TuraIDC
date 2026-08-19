@@ -29,8 +29,8 @@ class ListTicketsRequest extends ClientFormRequest
         return $this->safe()->only(['keyword', 'status']);
     }
 
-    public function perPage(int $default = 15): int
+    public function perPage(int $default = 15, int $max = 50): int
     {
-        return max(1, min((int) $this->integer('page_size', $default), 50));
+        return max(1, min((int) $this->integer('page_size', $default), $max));
     }
 }
