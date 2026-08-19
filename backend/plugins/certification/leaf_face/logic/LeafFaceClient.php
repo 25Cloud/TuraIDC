@@ -75,12 +75,15 @@ class LeafFaceClient
             return ['status' => 400, 'message' => '创建 leaf实名认证任务失败，请联系管理员', 'raw' => $result];
         }
 
+        $verifyUrl = trim((string) ($result['verify_url'] ?? ''));
         $this->cacheVerifyUrl($taskNo, $result);
 
         return [
             'status' => 200,
             'message' => '实名认证初始化成功',
             'certify_id' => $taskNo,
+            'task_no' => $taskNo,
+            'verify_url' => $verifyUrl,
             'raw' => $result,
         ];
     }

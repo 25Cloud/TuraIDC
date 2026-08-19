@@ -754,13 +754,13 @@ async function healthCheck(plugin: IntegrationPluginRecord) {
 
     MessagePlugin.success(String(result.message || '插件加载正常'));
     if (supportsSystemTest(plugin.domain)) {
-      await openTest(plugin);
+      await openTest(plugin, sequence);
     }
   });
 }
 
 function supportsSystemTest(domain: IntegrationPluginDomain) {
-  return ['mail', 'sms', 'verification', 'payment', 'captcha'].includes(domain);
+  return ['mail', 'sms', 'verification', 'payment', 'captcha', 'upstream'].includes(domain);
 }
 
 async function openConfig(plugin: IntegrationPluginRecord) {
@@ -783,10 +783,11 @@ async function openConfig(plugin: IntegrationPluginRecord) {
   }
 }
 
-async function openTest(plugin: IntegrationPluginRecord) {
+async function openTest(plugin: IntegrationPluginRecord, sequence?: number) {
   if (!plugin.id) return;
   try {
     const detail = await pluginsApi.detail(plugin.id);
+    if (sequence !== undefined && sequence !== healthCheckSequence.value) return;
     if (String(detail.id ?? '') !== String(plugin.id)) return;
     currentPlugin.value = detail;
     resetTestResults();
@@ -1344,7 +1345,21 @@ async function sendTestSms() {
 }
 
 function readTestResult(response: IntegrationPluginTestResult) {
-  return response?.detail?.result || null;
+  const raw = response?.detail?.result;
+  if (!raw) return null;
+
+  const data = raw.data && typeof raw.data === 'object' ? raw.data : {};
+  const source = { ...data, ...raw };
+  const rawData = source.raw && typeof source.raw === 'object' ? source.raw : {};
+  const certifyId = String(source.certify_id || '');
+  const taskNo = String(source.task_no || rawData.task_no || certifyId || '');
+
+  return {
+    ...source,
+    message: String(source.message || data.message || response.message || ''),
+    task_no: taskNo || undefined,
+    verify_url: String(source.verify_url || rawData.verify_url || '') || undefined,
+  } as IntegrationPluginTestResultData;
 }
 
 async function runVerificationTest() {
