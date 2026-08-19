@@ -103,7 +103,7 @@
       v-model:visible="configVisible"
       size="560px"
       :header="currentPlugin ? `${currentPlugin.name} 管理` : '插件管理'"
-      :confirm-btn="canManagePlugins ? { content: '保存配置', loading: savingConfig } : null"
+      :confirm-btn="canManagePlugins ? { content: '保存配置', loading: savingConfig, disabled: configLoading } : null"
       cancel-btn="关闭"
       @confirm="saveConfig"
     >
@@ -626,6 +626,12 @@ watch(
   },
 );
 
+watch(testVisible, (visible) => {
+  if (!visible) {
+    resetTestResults();
+  }
+});
+
 async function loadPlugins() {
   loading.value = true;
   try {
@@ -797,6 +803,8 @@ function resetTestResults() {
   connectionTestResult.value = null;
   verificationTestForm.real_name = '';
   verificationTestForm.card_no = '';
+  smsTestPhone.value = '';
+  systemEmailTestTo.value = '';
 }
 
 async function openSystemEmailTest() {
@@ -826,6 +834,10 @@ async function openSystemEmailTest() {
 async function saveConfig() {
   if (!canManagePlugins.value) {
     MessagePlugin.warning('当前账号无插件管理权限');
+    return;
+  }
+
+  if (configLoading.value) {
     return;
   }
 
@@ -1357,6 +1369,7 @@ async function runVerificationTest() {
     verificationTestResult.value = result;
     if (result?.success) {
       MessagePlugin.success(result.message || '测试任务创建成功');
+      verificationTestForm.card_no = '';
     } else {
       MessagePlugin.error(result?.message || '测试任务创建失败');
     }

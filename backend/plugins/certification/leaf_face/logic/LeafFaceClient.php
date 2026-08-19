@@ -58,7 +58,10 @@ class LeafFaceClient
             return ['status' => 400, 'message' => '创建 leaf实名认证任务失败，请联系管理员'];
         }
 
-        if (! $this->isCreateTaskSuccess($result)) {
+        $taskNo = trim((string) ($result['task_no'] ?? ($result['task']['task_no'] ?? '')));
+        $code = $result['code'] ?? $result['error_code'] ?? null;
+
+        if ($code !== null && $code !== 0 && $code !== '0') {
             return [
                 'status' => 400,
                 'message' => $this->createTaskFailureMessage($result),
@@ -66,7 +69,6 @@ class LeafFaceClient
             ];
         }
 
-        $taskNo = trim((string) ($result['task_no'] ?? ($result['task']['task_no'] ?? '')));
         if ($taskNo === '') {
             Log::warning('[leaf实名] 创建任务响应缺少 task_no', SensitiveDataSanitizer::sanitize($result));
 
@@ -205,16 +207,6 @@ class LeafFaceClient
             'code' => 40001,
             'http_status' => 401,
         ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $result
-     */
-    private function isCreateTaskSuccess(array $result): bool
-    {
-        $code = $result['code'] ?? $result['error_code'] ?? null;
-
-        return $code === null || $code === 0 || $code === '0';
     }
 
     /**

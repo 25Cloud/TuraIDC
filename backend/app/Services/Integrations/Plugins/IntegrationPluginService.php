@@ -357,7 +357,7 @@ class IntegrationPluginService
     {
         $this->assertTestDomain($plugin, PluginDomain::VERIFICATION, '实名认证');
 
-        return $this->runtimeRegistry->execute(
+        $result = $this->runtimeRegistry->execute(
             domain: (string) $plugin->domain,
             slugOrKey: (string) $plugin->slug,
             action: 'certification.initialize',
@@ -368,6 +368,19 @@ class IntegrationPluginService
                 'return_url' => PublicUrl::api('/api/v2/client/verification/callback'),
             ],
         );
+
+        $data = is_array($result['data'] ?? null) ? $result['data'] : [];
+        $status = (int) ($data['status'] ?? 0);
+        $success = $status === 200;
+
+        return [
+            'success' => $success,
+            'action' => 'certification.initialize',
+            'message' => $success
+                ? (string) ($result['message'] ?? '测试任务创建成功')
+                : (string) ($data['message'] ?? $result['message'] ?? '测试任务创建失败'),
+            'data' => $data,
+        ];
     }
 
     /**
@@ -407,6 +420,15 @@ class IntegrationPluginService
     public function testCaptcha(IntegrationPlugin $plugin, array $payload): array
     {
         $this->assertTestDomain($plugin, PluginDomain::CAPTCHA, '人机验证');
+
+        if (! $this->geeTestService->isEnabled()) {
+            return [
+                'success' => false,
+                'action' => 'captcha.test',
+                'message' => '人机验证插件未完成配置（captcha_id 或 captcha_key 缺失），无法执行测试',
+                'data' => ['verified' => false],
+            ];
+        }
 
         $result = $this->geeTestService->verify($payload);
         $ok = (bool) ($result['ok'] ?? false);

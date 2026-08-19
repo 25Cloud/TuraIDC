@@ -336,12 +336,18 @@ class IntegrationPluginSystemTest extends TestCase
                 $table->string('plugin_key', 120);
                 $table->string('name', 120);
                 $table->string('version', 32)->default('1.0.0');
+                $table->string('manifest_hash', 64)->nullable();
+                $table->string('source_hash', 64)->nullable();
                 $table->string('provider_class', 255)->nullable();
                 $table->string('entry_class', 255);
                 $table->json('capabilities_json')->nullable();
                 $table->json('config_schema_json')->nullable();
                 $table->unsignedTinyInteger('status')->default(0);
                 $table->timestamp('installed_at')->nullable();
+                $table->unsignedBigInteger('installed_by')->nullable();
+                $table->timestamp('enabled_at')->nullable();
+                $table->unsignedBigInteger('enabled_by')->nullable();
+                $table->timestamp('disabled_at')->nullable();
                 $table->timestamps();
                 $table->unique(['domain', 'slug']);
                 $table->unique(['domain', 'plugin_key']);
@@ -392,14 +398,33 @@ class IntegrationPluginSystemTest extends TestCase
             return;
         }
 
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
-        if (Schema::hasTable('integration_plugin_bindings')) {
-            DB::table('integration_plugin_bindings')->truncate();
+        $isMysql = DB::getDriverName() === 'mysql';
+        if ($isMysql) {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
         }
-        if (Schema::hasTable('integration_plugin_configs')) {
-            DB::table('integration_plugin_configs')->truncate();
+
+        foreach (
+            [
+                'integration_plugin_bindings',
+                'integration_plugin_configs',
+                'integration_plugin_runtime_logs',
+                'product_upstream_bindings',
+                'service_upstream_bindings',
+                'supplier_plugin_bindings',
+                'service_runtime_snapshots',
+                'service_connection_snapshots',
+                'service_provision_attempts',
+            ] as $table
+        ) {
+            if (Schema::hasTable($table)) {
+                DB::table($table)->delete();
+            }
         }
-        DB::table('integration_plugins')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+        DB::table('integration_plugins')->delete();
+
+        if ($isMysql) {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        }
     }
 }
