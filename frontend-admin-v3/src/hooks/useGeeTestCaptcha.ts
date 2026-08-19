@@ -163,8 +163,10 @@ export function useGeeTestCaptcha() {
 
   let captchaObj: CaptchaInstance | null = null;
   let initPromise: Promise<CaptchaInstance | null> | null = null;
+  let initRejecter: ((error: Error) => void) | null = null;
   let pendingResolver: ((value: unknown) => void) | null = null;
   let pendingRejecter: ((error: Error) => void) | null = null;
+  let destroyed = false;
 
   const clearPending = () => {
     pendingResolver = null;
@@ -199,6 +201,10 @@ export function useGeeTestCaptcha() {
   const initCaptcha = async (): Promise<CaptchaInstance | null> => {
     const config = await getCaptchaConfig();
 
+    if (destroyed) {
+      throw new Error('行为验证组件已卸载');
+    }
+
     if (!config.enabled || !config.captcha_id) {
       throw new Error('行为验证当前不可用，请检查人机验证插件配置');
     }
@@ -226,6 +232,9 @@ export function useGeeTestCaptcha() {
     for (const candidate of candidates) {
       try {
         initGeetest4 = await loadGeeTestScript(candidate.url, candidate.key);
+        if (destroyed) {
+          throw new Error('行为验证组件已卸载');
+        }
         break;
       } catch (error) {
         lastError = error;
@@ -235,7 +244,8 @@ export function useGeeTestCaptcha() {
     if (!initGeetest4) {
       throw lastError instanceof Error ? lastError : new Error('GeeTest 脚本加载失败');
     }
-    initPromise = new Promise((resolve, reject) => {
+    const currentInitPromise = new Promise<CaptchaInstance | null>((resolve, reject) => {
+      initRejecter = reject;
       try {
         initGeetest4?.(
           {
@@ -244,8 +254,16 @@ export function useGeeTestCaptcha() {
             language: 'zho',
           },
           (instance) => {
+            if (destroyed) {
+              reject(new Error('行为验证组件已卸载'));
+              return;
+            }
+
             captchaObj = instance;
-            const markReady = () => resolve(instance);
+            const markReady = () => {
+              initRejecter = null;
+              resolve(instance);
+            };
 
             if (typeof instance.onReady === 'function') {
               instance.onReady(markReady);
@@ -263,11 +281,20 @@ export function useGeeTestCaptcha() {
           },
         );
       } catch (error) {
+        initRejecter = null;
         reject(error instanceof Error ? error : new Error('行为验证初始化失败'));
       }
     });
 
-    return initPromise;
+    initPromise = currentInitPromise;
+    try {
+      return await currentInitPromise;
+    } catch (error) {
+      if (initPromise === currentInitPromise) {
+        initPromise = null;
+      }
+      throw error;
+    }
   };
 
   const verify = async () => {
@@ -301,6 +328,9 @@ export function useGeeTestCaptcha() {
   };
 
   const cleanup = () => {
+    destroyed = true;
+    initRejecter?.(new Error('行为验证组件已卸载'));
+    initRejecter = null;
     if (captchaObj) {
       captchaObj.destroy?.();
       captchaObj = null;

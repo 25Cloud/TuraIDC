@@ -101,6 +101,10 @@ export interface IntegrationPluginTestResultData {
   action?: string;
   message?: string;
   data?: Record<string, unknown>;
+  raw?: Record<string, unknown>;
+  status?: number;
+  sent?: boolean;
+  certify_id?: string;
   verify_url?: string;
   task_no?: string;
   qr_code?: string;
@@ -109,6 +113,11 @@ export interface IntegrationPluginTestResultData {
   healthy?: boolean;
   capability?: string;
   error_type?: string;
+  amount?: number | string;
+  provider?: string;
+  entry_class?: string;
+  provider_class?: string;
+  trace_id?: string;
 }
 
 export interface IntegrationPluginTestResult {
@@ -229,12 +238,12 @@ export const pluginsApi = {
       data: { type: 'health_check' },
     }),
   testEmail: (id: number | string, data: { account_index: number; to: string }) =>
-    request.post<IntegrationPluginActionResult>({
+    request.post<IntegrationPluginTestResult>({
       url: `/v2/admin/integration-plugins/${id}/tasks`,
       data: { type: 'test_email', payload: data },
     }),
   testSms: (id: number | string, data: { phone: string }) =>
-    request.post<IntegrationPluginActionResult>({
+    request.post<IntegrationPluginTestResult>({
       url: `/v2/admin/integration-plugins/${id}/tasks`,
       data: { type: 'test_sms', payload: data },
     }),
