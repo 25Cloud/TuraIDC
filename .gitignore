@@ -117,7 +117,6 @@ backend/scripts/mofang_migrate.conf
 *.pen
 *.zip
 *.tar.gz
-frontend-user-v4-console/*.png
 
 # ---- 本地工具 ----
 /tools/
