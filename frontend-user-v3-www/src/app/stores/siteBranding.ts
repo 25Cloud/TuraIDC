@@ -4,6 +4,7 @@ import { applyDocumentTitle, deriveInitials, syncDocumentTitle, updateFavicon } 
 import siteApi from '@/api/site'
 import { DEFAULT_SUPPORT_CONTACTS } from '@/data/supportContacts'
 import { resolveApiAssetUrl } from '@/utils/apiAssetUrl'
+import { normalizeExternalLink } from '@/utils/externalLink'
 
 declare global {
   interface Window {
@@ -12,7 +13,7 @@ declare global {
 }
 
 const DEFAULT_SITE_NAME = import.meta.env.VITE_APP_TITLE || '图拉云'
-const DEFAULT_SITE_LOGO = '/branding/logo.svg'
+const DEFAULT_SITE_LOGO = '/branding/logo.png'
 const DEFAULT_FAVICON = '/branding/favicon-32.png'
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || '')
 
@@ -52,7 +53,7 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
     pick(initialSiteConfig, ['support_group_qr', 'supportGroupQr'], DEFAULT_SUPPORT_CONTACTS.groupQr),
     API_BASE_URL,
   ))
-  const supportGroupLink = ref(pick(initialSiteConfig, ['support_group_link', 'supportGroupLink'], ''))
+  const supportGroupLink = ref(normalizeExternalLink(pick(initialSiteConfig, ['support_group_link', 'supportGroupLink'], '')))
   const termsUrl = ref(pick(initialSiteConfig, ['terms_url'], ''))
   const privacyUrl = ref(pick(initialSiteConfig, ['privacy_url'], ''))
   const icpRecord = ref(pick(initialSiteConfig, ['icp_record', 'icpRecord'], String(import.meta.env.VITE_ICP_RECORD || '')))
@@ -91,7 +92,7 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
       pick(data, ['support_group_qr', 'supportGroupQr'], supportGroupQr.value || DEFAULT_SUPPORT_CONTACTS.groupQr),
       API_BASE_URL,
     )
-    supportGroupLink.value = pick(data, ['support_group_link', 'supportGroupLink'], supportGroupLink.value || '')
+    supportGroupLink.value = normalizeExternalLink(pick(data, ['support_group_link', 'supportGroupLink'], supportGroupLink.value || ''))
     termsUrl.value = pick(data, ['terms_url'], termsUrl.value || '')
     privacyUrl.value = pick(data, ['privacy_url'], privacyUrl.value || '')
     icpRecord.value = pick(data, ['icp_record', 'icpRecord'], icpRecord.value || '')

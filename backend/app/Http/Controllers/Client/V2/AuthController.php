@@ -175,15 +175,17 @@ class AuthController extends Controller
 
     public function captchaScript()
     {
+        $status = 200;
         try {
             $scriptContent = $this->geeTestService->getScriptContent();
         } catch (\Throwable $exception) {
             report($exception);
 
             $scriptContent = $this->geeTestService->getFallbackScriptContent();
+            $status = 503;
         }
 
-        return response($scriptContent, 200, [
+        return response($scriptContent, $status, [
             'Content-Type' => 'application/javascript; charset=UTF-8',
             'Cache-Control' => 'public, max-age=43200',
         ]);

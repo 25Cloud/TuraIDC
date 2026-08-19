@@ -59,6 +59,7 @@ class GeeTestService
     public function getFallbackScriptContent(): string
     {
         return <<<'JS'
+window.__TURA_GEETEST_FALLBACK__ = true;
 window.initGeetest4 = window.initGeetest4 || function (options, callback) {
     var errorCallbacks = [];
     var instance = {

@@ -34,8 +34,6 @@ dev-*.log
 tsc.log
 *.err.log
 *.out.log
-*.png
-*.jpg
 
 .env.local
 .env.*.local

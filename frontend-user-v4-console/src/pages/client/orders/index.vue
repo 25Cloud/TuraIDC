@@ -79,13 +79,7 @@
               <t-button size="small" theme="primary" variant="text" @click="router.push(`/client/orders/${row.id}`)">
                 详情
               </t-button>
-              <t-button
-                v-if="canPayOrder(row)"
-                size="small"
-                theme="primary"
-                variant="outline"
-                @click="goPayOrder(row)"
-              >
+              <t-button v-if="canPayOrder(row)" size="small" theme="primary" variant="outline" @click="goPayOrder(row)">
                 去支付
               </t-button>
               <t-button
@@ -206,7 +200,11 @@ function invoicePayId(row: { invoice?: { id?: number | string | null } | null; i
   return Number.isFinite(id) && id > 0 ? id : 0;
 }
 
-function canPayOrder(row: { status?: number | string; invoice?: { id?: number | string | null } | null; invoice_id?: number | string | null }) {
+function canPayOrder(row: {
+  status?: number | string;
+  invoice?: { id?: number | string | null } | null;
+  invoice_id?: number | string | null;
+}) {
   return Number(row.status) === 0 && invoicePayId(row) > 0;
 }
 
