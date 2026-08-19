@@ -137,7 +137,7 @@
 import './index.less';
 
 import { ORDER_STATUS_MAP, ORDER_TYPE_MAP, toSelectOptions } from '@shared/statusConfig';
-import type { PrimaryTableCol } from 'tdesign-vue-next';
+import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -221,8 +221,8 @@ const {
   },
 });
 
-const columns = computed<PrimaryTableCol<OrderRecord>[]>(() => {
-  const base: PrimaryTableCol<OrderRecord>[] = [
+const columns = computed<PrimaryTableCol<TableRowData>[]>(() => {
+  const base: PrimaryTableCol<TableRowData>[] = [
     { colKey: 'order_no', title: '订单号', minWidth: 170 },
     { colKey: 'user', title: '用户', minWidth: 180 },
     { colKey: 'product', title: '产品/服务', minWidth: 240 },

@@ -198,7 +198,14 @@
 </template>
 <script setup lang="ts">
 import { ChevronLeftIcon, SearchIcon } from 'tdesign-icons-vue-next';
-import type { FormInstanceFunctions, FormRule, PageInfo, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
+import type {
+  FormInstanceFunctions,
+  FormRule,
+  PageInfo,
+  PrimaryTableCol,
+  SelectValue,
+  TableRowData,
+} from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -337,7 +344,7 @@ function handleSearch() {
   loadList();
 }
 
-function handleQuickStatusChange(value: string | number) {
+function handleQuickStatusChange(value: SelectValue) {
   quickStatus.value = String(value || 'all');
   page.value = 1;
   loadList();

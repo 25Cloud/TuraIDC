@@ -78,10 +78,7 @@
   "lint-staged": {
     "*.{js,jsx,vue,ts,tsx}": [
       "prettier --write",
-      "npm run lint:fix"
-    ],
-    "*.{html,vue,css,sass,less}": [
-      "npm run stylelint:fix"
+      "eslint --fix --max-warnings 0"
     ]
   },
   "engines": {

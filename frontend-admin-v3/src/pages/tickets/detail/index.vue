@@ -607,7 +607,7 @@ async function handleUpload(files: UploadFileLike | UploadFileLike[]) {
     const response = await adminApi.tickets.uploadImage(formData);
     replyAttachments.value = [...replyAttachments.value, response].slice(0, MAX_TICKET_IMAGES);
     return {
-      status: 'success',
+      status: 'success' as const,
       response: {
         ...response,
         url: response.url || undefined,
@@ -615,7 +615,7 @@ async function handleUpload(files: UploadFileLike | UploadFileLike[]) {
     };
   } catch (error) {
     return {
-      status: 'fail',
+      status: 'fail' as const,
       error: errorMessage(error, '上传失败'),
       response: {},
     };

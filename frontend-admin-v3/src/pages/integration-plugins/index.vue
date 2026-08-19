@@ -734,7 +734,6 @@ function fieldPlaceholder(field: IntegrationPluginConfigSchema) {
 
 function inputType(field: IntegrationPluginConfigSchema) {
   if (field.secret || field.type === 'password') return 'password';
-  if (field.type === 'email') return 'email';
   if (field.type === 'url') return 'url';
   if (field.type === 'phone') return 'tel';
   return 'text';

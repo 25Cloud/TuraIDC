@@ -170,7 +170,8 @@ function handleMoreCommand(command: string) {
   }
 }
 
-function handleMoreClick(payload: { value: string | number }) {
-  handleMoreCommand(String(payload.value));
+function handleMoreClick(payload: string | number | { [key: string]: any }) {
+  const command = typeof payload === 'object' && payload !== null ? payload.value : payload;
+  handleMoreCommand(String(command));
 }
 </script>
