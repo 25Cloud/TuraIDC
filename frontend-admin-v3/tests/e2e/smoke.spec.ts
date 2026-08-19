@@ -3574,9 +3574,19 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await page.getByRole('button', { name: '搜索' }).click();
     await expect(visibleAccount(page, 'filtered@example.com')).toBeVisible();
 
+    const dialog = page.locator('.t-dialog:visible');
     await page.getByRole('button', { name: '新增用户' }).click();
-    await expect(page.locator('.t-dialog:visible').getByText('新增用户')).toBeVisible();
-    await expect(page.locator('.t-dialog:visible').getByText('邮箱')).toBeVisible();
+    await expect(dialog.getByText('新增用户')).toBeVisible();
+    await expect(dialog.getByText('邮箱')).toBeVisible();
+    await expect(dialog.getByText('手机号')).toBeVisible();
+    await expect(dialog.getByText('密码')).toBeVisible();
+    await expect(dialog.locator('.t-form__label--required')).toHaveCount(3);
+
+    const inputs = dialog.locator('input');
+    await inputs.nth(0).fill('required@example.com');
+    await inputs.nth(3).fill('password123');
+    await dialog.getByRole('button', { name: '确定' }).click();
+    await expect(dialog.getByText('请输入手机号')).toBeVisible();
   });
 
   test('opens user recharge dialog', async ({ page }) => {
