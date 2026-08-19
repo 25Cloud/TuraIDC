@@ -197,9 +197,10 @@ class DatabaseEngineeringService
     /**
      * @return array<string, int>
      */
-    public function normalizeCoreRelations(): array
+    public function normalizeCoreRelations(bool $execute = false): array
     {
         $summary = [
+            'mode' => $execute ? 'execute' : 'dry_run',
             'services_order_id_zero_to_null' => 0,
             'services_invoice_id_zero_to_null' => 0,
             'payments_order_id_zero_to_null' => 0,
@@ -213,71 +214,89 @@ class DatabaseEngineeringService
             'services_cleared_orphan_invoice_id' => 0,
             'invoices_cleared_orphan_order_id' => 0,
             'invoices_deleted_orphan_user_or_product' => 0,
+            'invoice_items_orphan_reported' => 0,
+            'payment_callbacks_orphan_reported' => 0,
+            'user_accounts_orphan_reported' => 0,
+            'ticket_replies_orphan_reported' => 0,
+            'services_orphan_user_or_product_reported' => 0,
+            'invoices_orphan_user_or_product_reported' => 0,
             'payments_orphan_user_or_invoice_reported' => 0,
             'trace_ids_backfilled' => 0,
         ];
 
-        DB::transaction(function () use (&$summary): void {
+        // 结构调整（ALTER）只允许在执行模式发生，dry-run 绝不改库：
+        // MySQL DDL 会隐式提交并锁定表，与 dry-run 只读承诺冲突。
+        if ($execute) {
             $this->ensureNullableUnsignedBigInt('services', 'order_id');
-            $summary['services_order_id_zero_to_null'] = $this->normalizeZeroReference('services', 'order_id');
-            $summary['services_invoice_id_zero_to_null'] = $this->normalizeZeroReference('services', 'invoice_id');
-            $summary['payments_order_id_zero_to_null'] = $this->normalizeZeroReference('payments', 'order_id');
-            $summary['payments_invoice_id_zero_to_null'] = $this->normalizeZeroReference('payments', 'invoice_id');
-            $summary['invoices_order_id_zero_to_null'] = $this->normalizeZeroReference('invoices', 'order_id');
+        }
 
-            $summary['invoice_items_deleted_orphans'] = $this->deleteOrphans(
+        DB::transaction(function () use (&$summary, $execute): void {
+            $summary['services_order_id_zero_to_null'] = $execute
+                ? $this->normalizeZeroReference('services', 'order_id')
+                : $this->countZeroReference('services', 'order_id');
+            $summary['services_invoice_id_zero_to_null'] = $execute
+                ? $this->normalizeZeroReference('services', 'invoice_id')
+                : $this->countZeroReference('services', 'invoice_id');
+            $summary['payments_order_id_zero_to_null'] = $execute
+                ? $this->normalizeZeroReference('payments', 'order_id')
+                : $this->countZeroReference('payments', 'order_id');
+            $summary['payments_invoice_id_zero_to_null'] = $execute
+                ? $this->normalizeZeroReference('payments', 'invoice_id')
+                : $this->countZeroReference('payments', 'invoice_id');
+            $summary['invoices_order_id_zero_to_null'] = $execute
+                ? $this->normalizeZeroReference('invoices', 'order_id')
+                : $this->countZeroReference('invoices', 'order_id');
+
+            $summary['invoice_items_orphan_reported'] = $this->countOrphans(
                 'invoice_items',
                 'invoice_id',
                 'invoices',
                 'id'
             );
-            $summary['payment_callbacks_deleted_orphans'] = $this->deleteOrphans(
+            $summary['payment_callbacks_orphan_reported'] = $this->countOrphans(
                 'payment_callbacks',
                 'payment_id',
                 'payments',
                 'id'
             );
-            $summary['user_accounts_deleted_orphans'] = $this->deleteOrphans(
+            $summary['user_accounts_orphan_reported'] = $this->countOrphans(
                 'user_accounts',
                 'user_id',
                 'users',
-                'id',
-                'user_id'
+                'id'
             );
-            $summary['ticket_replies_deleted_orphans'] = $this->deleteOrphans(
+            $summary['ticket_replies_orphan_reported'] = $this->countOrphans(
                 'ticket_replies',
                 'ticket_id',
                 'tickets',
                 'id'
             );
 
-            $summary['services_deleted_orphan_user_or_product'] =
-                $this->deleteOrphans('services', 'user_id', 'users', 'id')
-                + $this->deleteOrphans('services', 'product_id', 'products', 'id');
-            $summary['services_cleared_orphan_invoice_id'] = $this->clearOrphansToNull(
-                'services',
-                'invoice_id',
-                'invoices',
-                'id'
-            );
-            $summary['invoices_cleared_orphan_order_id'] = $this->clearOrphansToNull(
-                'invoices',
-                'order_id',
-                'orders',
-                'id'
-            );
-            $summary['invoices_deleted_orphan_user_or_product'] =
-                $this->deleteOrphans('invoices', 'user_id', 'users', 'id')
-                + $this->deleteOrphans('invoices', 'product_id', 'products', 'id');
+            $summary['services_orphan_user_or_product_reported'] =
+                $this->countOrphans('services', 'user_id', 'users', 'id')
+                + $this->countOrphans('services', 'product_id', 'products', 'id');
+            $summary['services_cleared_orphan_invoice_id'] = $execute
+                ? $this->clearOrphansToNull('services', 'invoice_id', 'invoices', 'id')
+                : $this->countOrphans('services', 'invoice_id', 'invoices', 'id');
+            $summary['invoices_cleared_orphan_order_id'] = $execute
+                ? $this->clearOrphansToNull('invoices', 'order_id', 'orders', 'id')
+                : $this->countOrphans('invoices', 'order_id', 'orders', 'id');
+            $summary['invoices_orphan_user_or_product_reported'] =
+                $this->countOrphans('invoices', 'user_id', 'users', 'id')
+                + $this->countOrphans('invoices', 'product_id', 'products', 'id');
             $summary['payments_orphan_user_or_invoice_reported'] =
                 $this->countOrphans('payments', 'user_id', 'users', 'id')
                 + $this->countOrphans('payments', 'invoice_id', 'invoices', 'id');
 
-            $summary['trace_ids_backfilled'] =
-                $this->backfillTraceIds('invoices') +
-                $this->backfillTraceIds('payments') +
-                $this->backfillTraceIds('services') +
-                $this->backfillTraceIds('account_transactions');
+            $summary['trace_ids_backfilled'] = $execute
+                ? $this->backfillTraceIds('invoices')
+                    + $this->backfillTraceIds('payments')
+                    + $this->backfillTraceIds('services')
+                    + $this->backfillTraceIds('account_transactions')
+                : $this->countMissingTraceId('invoices')
+                    + $this->countMissingTraceId('payments')
+                    + $this->countMissingTraceId('services')
+                    + $this->countMissingTraceId('account_transactions');
         });
 
         return $summary;
@@ -597,6 +616,15 @@ class DatabaseEngineeringService
         }
 
         return DB::table($table)->where($column, 0)->update([$column => null]);
+    }
+
+    private function countZeroReference(string $table, string $column): int
+    {
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column)) {
+            return 0;
+        }
+
+        return DB::table($table)->where($column, 0)->count();
     }
 
     private function deleteOrphans(string $table, string $column, string $parentTable, string $parentColumn, string $primaryColumn = 'id'): int

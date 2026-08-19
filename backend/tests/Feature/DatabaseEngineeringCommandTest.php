@@ -75,7 +75,7 @@ class DatabaseEngineeringCommandTest extends TestCase
             DB::statement('SET FOREIGN_KEY_CHECKS=1');
         }
 
-        Artisan::call('db:normalize-core-relations');
+        Artisan::call('db:normalize-core-relations', ['--execute' => true]);
 
         $this->assertDatabaseHas('services', [
             'id' => $serviceId,
@@ -150,7 +150,7 @@ class DatabaseEngineeringCommandTest extends TestCase
         }
 
         try {
-            Artisan::call('db:normalize-core-relations', ['--json' => true]);
+            Artisan::call('db:normalize-core-relations', ['--execute' => true, '--json' => true]);
 
             $payload = json_decode(Artisan::output(), true, 512, JSON_THROW_ON_ERROR);
 
@@ -162,6 +162,74 @@ class DatabaseEngineeringCommandTest extends TestCase
         } finally {
             DB::table('invoices')->where('id', $invoiceId)->delete();
         }
+    }
+
+    public function test_db_normalize_core_relations_reports_but_does_not_delete_orphan_invoices(): void
+    {
+        $invoiceNo = 'norm-report-orphan-'.bin2hex(random_bytes(4));
+        $invoiceId = 0;
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        try {
+            $invoiceId = (int) DB::table('invoices')->insertGetId([
+                'invoice_no' => $invoiceNo,
+                'user_id' => 999999997,
+                'product_id' => 999999996,
+                'type' => 'normal',
+                'amount' => '1.00',
+                'discount' => '0.00',
+                'paid_amount' => '0.00',
+                'status' => 0,
+                'due_date' => now()->addDay()->toDateString(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } finally {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        }
+
+        try {
+            Artisan::call('db:normalize-core-relations', ['--execute' => true, '--json' => true]);
+
+            $payload = json_decode(Artisan::output(), true, 512, JSON_THROW_ON_ERROR);
+
+            $this->assertSame(0, (int) ($payload['invoices_deleted_orphan_user_or_product'] ?? -1));
+            $this->assertGreaterThanOrEqual(1, (int) ($payload['invoices_orphan_user_or_product_reported'] ?? 0));
+            $this->assertDatabaseHas('invoices', [
+                'id' => $invoiceId,
+                'invoice_no' => $invoiceNo,
+            ]);
+        } finally {
+            DB::table('invoices')->where('id', $invoiceId)->delete();
+        }
+    }
+
+    public function test_db_normalize_core_relations_dry_run_does_not_alter_column_nullability(): void
+    {
+        $schema = (string) config('database.connections.'.config('database.default').'.database');
+
+        $readNullable = function () use ($schema): string {
+            $row = DB::selectOne(
+                "SELECT IS_NULLABLE FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'services' AND COLUMN_NAME = 'order_id'",
+                [$schema]
+            );
+
+            return (string) ($row->IS_NULLABLE ?? 'NO');
+        };
+
+        $before = $readNullable();
+
+        // 不带 --execute 执行，应为纯 dry-run
+        Artisan::call('db:normalize-core-relations');
+
+        $after = $readNullable();
+
+        $this->assertSame(
+            $before,
+            $after,
+            'dry-run 不应修改 services.order_id 的可空性（避免 MySQL DDL 隐式提交与表锁定）'
+        );
     }
 
     private function ensureUserId(): int

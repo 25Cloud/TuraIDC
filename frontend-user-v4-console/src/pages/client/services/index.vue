@@ -242,7 +242,7 @@
       </data-state>
 
       <div v-if="!loading && !list.length" class="service-empty-action">
-        <t-button theme="primary" @click="router.push('/products')">去选购产品</t-button>
+        <t-button theme="primary" @click="openPublicProducts">去选购产品</t-button>
       </div>
     </section>
 
@@ -341,6 +341,7 @@ import { CatalogIcon, DashboardIcon, EditIcon, SearchIcon } from 'tdesign-icons-
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { shallowRef, triggerRef } from 'vue';
 
+import { openPublicProducts } from '@/utils/publicSite';
 import {
   findListSpecValue,
   formatMoney,

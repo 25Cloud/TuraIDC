@@ -31,7 +31,16 @@
             </div>
           </header>
 
-          <template v-if="currentArticle">
+          <el-alert
+            v-if="errorText && !loading"
+            :title="errorText"
+            type="error"
+            show-icon
+            :closable="false"
+            class="reader-error"
+          />
+
+          <template v-else-if="currentArticle">
             <el-divider />
 
             <div
@@ -92,6 +101,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ArrowRight } from '@element-plus/icons-vue'
 import siteApi from '@/api/site'
 import { renderMarkdown } from '@/utils/markdown'
+import { updatePageMeta } from '@/utils/pageMeta'
 import { rewriteApiAssetUrlsInHtml } from '@/utils/apiAssetUrl'
 import { getContentConfig } from './contentConfig'
 
@@ -139,6 +149,7 @@ const api = computed(() => siteApi)
 const config = computed(() => getContentConfig(props.contentType, props.scope))
 
 const loading = ref(false)
+const errorText = ref('')
 const categories = ref([])
 const currentArticle = ref(null)
 const currentCategoryId = ref(null)
@@ -196,6 +207,42 @@ const articleContentHtml = computed(() => {
   return rewriteApiAssetUrlsInHtml(rendered, apiBaseUrl)
 })
 
+function plainTextSummary(value, maxLength = 160) {
+  return String(value || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`[^`]*`/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[>#*_\-[\]()!]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength)
+}
+
+function currentCanonicalUrl() {
+  if (typeof window === 'undefined') return ''
+  return new URL(route.path, window.location.origin).toString()
+}
+
+function syncArticleMeta(article) {
+  if (!article) return
+  const title = String(article.title || config.value.detailTitle || '').trim()
+  const description = plainTextSummary(article.summary || article.excerpt || article.content || config.value.description)
+  updatePageMeta({
+    title: `${title} - ${config.value.pageTitle}`,
+    description,
+    keywords: [article.category_name, title, config.value.pageTitle].filter(Boolean).join(','),
+    canonical: currentCanonicalUrl(),
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: title,
+      description,
+      datePublished: article.publish_at || article.created_at || undefined,
+      dateModified: article.updated_at || undefined,
+    },
+  })
+}
+
 async function loadOverview() {
   const cacheKey = config.value.overviewCategoryKey
   const cached = getCachedOverview(cacheKey)
@@ -213,16 +260,25 @@ async function loadArticleDetail(articleId) {
   const res = await api.value[config.value.apiDetailMethod](articleId)
   currentArticle.value = res.data || null
   currentCategoryId.value = Number(res.data?.category_id || 0) || null
+  syncArticleMeta(currentArticle.value)
 }
 
 async function syncPage() {
   loading.value = true
+  errorText.value = ''
+  currentArticle.value = null
+  currentCategoryId.value = null
+  tocItems.value = [{ id: 'article-top', label: '全文', level: 1 }]
 
   try {
     await Promise.all([
       loadOverview(),
       loadArticleDetail(route.params.id),
     ])
+  } catch (error) {
+    currentArticle.value = null
+    currentCategoryId.value = null
+    errorText.value = error?.response?.data?.message || error?.message || `${config.value.detailTitle}加载失败，请稍后重试`
   } finally {
     loading.value = false
   }
@@ -341,6 +397,10 @@ watch(
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 20px;
   align-items: start;
+}
+
+.reader-error {
+  margin-top: 18px;
 }
 
 .reader-main {

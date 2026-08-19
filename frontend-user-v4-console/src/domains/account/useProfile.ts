@@ -10,7 +10,7 @@ import { getErrorMessage } from '@/utils/error';
 import { copyText as copyShared } from '@/utils/format';
 
 type TagTheme = 'default' | 'success' | 'warning' | 'primary' | 'danger';
-type ProfileTab = 'profile' | 'security' | 'agent' | 'notification';
+type ProfileTab = 'profile' | 'security' | 'agent' | 'notification' | 'display';
 type NotificationKey = keyof ClientNotificationPreferences;
 interface NotificationItem {
   key: NotificationKey;
@@ -19,7 +19,7 @@ interface NotificationItem {
   enabled: boolean;
 }
 
-const PROFILE_TABS = new Set<ProfileTab>(['profile', 'security', 'agent', 'notification']);
+const PROFILE_TABS = new Set<ProfileTab>(['profile', 'security', 'agent', 'notification', 'display']);
 
 export function useProfile() {
   const router = useRouter();

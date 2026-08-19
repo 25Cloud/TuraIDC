@@ -621,6 +621,7 @@ php artisan schedule:list
 | 支付渠道      | `backend/plugins/gateways/yi_pay`                 | 易支付插件                      |
 | 实名认证      | `backend/plugins/certification/stay33`            | Stay33 实名认证插件             |
 | 实名认证      | `backend/plugins/certification/baidu_face`        | 百度人脸实名认证插件            |
+| 实名认证      | `backend/plugins/certification/smapi`             | 聚合实名认证插件（小沐实名 API）|
 | 实名认证      | `backend/plugins/certification/demo_verification` | 模拟实名插件                    |
 | 人机验证      | `backend/plugins/captcha/geetest`                 | GeeTest 验证码插件              |
 | 人机验证      | `backend/plugins/captcha/vaptcha`                 | Vaptcha 验证码插件              |

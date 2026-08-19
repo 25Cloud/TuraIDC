@@ -24,6 +24,8 @@ class BackendStructureBoundaryTest extends TestCase
             'Http/Controllers/Client/V2/OrderController.php',
             'Http/Controllers/Client/V2/PaymentController.php',
             'Http/Controllers/Client/V2/RechargeController.php',
+            'Http/Controllers/Client/V2/TicketController.php',
+            'Http/Controllers/Client/V2/TicketWorkflowController.php',
         ] as $path) {
             $source = $this->appSource($path);
 

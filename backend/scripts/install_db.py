@@ -87,7 +87,10 @@ if (Schema::hasTable('settings')) {
     SettingsSeeder::seed();
 }
 
-// 通知模板默认数据已包含在 schema baseline 中，无需额外迁移
+// SettingsSeeder 会幂等种入：
+// 1) 系统核心默认配置（settings 表，含 notification.email_enabled / sms_enabled / sms_template_code）；
+// 2) 通知模板默认数据（notification_templates 表）：email 全量模板 + sms 验证码模板。
+// schema baseline 仅导出表结构、不含模板数据，模板种子必须经此入口执行。
 """
 
 

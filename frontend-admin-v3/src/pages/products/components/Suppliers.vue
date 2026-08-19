@@ -221,10 +221,25 @@
                 </div>
               </template>
               <template v-else>
-                <div class="supplier-tree-node__content supplier-tree-node__content--product">
+                <div
+                  class="supplier-tree-node__content supplier-tree-node__content--product"
+                  :class="{
+                    'is-selectable': !row.product?.is_connected,
+                    'is-selected': supplierBatchSelectedKeySet.has(row.productId || 0),
+                  }"
+                  @click="
+                    !row.product?.is_connected &&
+                    handleSupplierBatchProductCheck(
+                      row.productId || 0,
+                      !supplierBatchSelectedKeySet.has(row.productId || 0),
+                    )
+                  "
+                >
                   <t-checkbox
                     :checked="supplierBatchSelectedKeySet.has(row.productId || 0)"
                     :disabled="row.product?.is_connected"
+                    :aria-label="`${row.product?.name || '商品'}，点击切换选择`"
+                    @click.stop
                     @change="
                       (checked: boolean) =>
                         !row.product?.is_connected && handleSupplierBatchProductCheck(row.productId || 0, checked)
@@ -546,6 +561,7 @@ const supplierCredentialValues = reactive<Record<string, unknown>>({});
 const supplierSecretEdited = reactive<Record<string, boolean>>({});
 const canManageSuppliers = computed(() => hasAdminPermission(AdminPermissions.SUPPLIER_MANAGE));
 const canSyncSuppliers = computed(() => hasAdminPermission(AdminPermissions.SUPPLIER_SYNC));
+const canBulkConnectSupplierProducts = computed(() => hasAdminPermission(AdminPermissions.PRODUCT_SYNC));
 const canRevealSupplierSecrets = computed(() => hasAdminPermission(AdminPermissions.SUPPLIER_SECRET_REVEAL));
 
 const supplierRules = {
@@ -652,6 +668,16 @@ function supplierCardFields(row: SupplierRecord): SupplierCardField[] {
     : [];
 }
 
+function canRunSupplierCardAction(action: SupplierCardAction) {
+  if (!canSyncSuppliers.value) return false;
+  const requestAction = String(action.request_action || '').trim();
+  if (requestAction === 'server.supplier.bulk_connect' || action.action === 'supplier.batch_connect') {
+    return canBulkConnectSupplierProducts.value;
+  }
+
+  return true;
+}
+
 function supplierCardActions(row: SupplierRecord): SupplierCardAction[] {
   const actions = supplierCard(row).actions;
   if (!canSyncSuppliers.value || !Array.isArray(actions)) return [];
@@ -671,7 +697,10 @@ function supplierCardActions(row: SupplierRecord): SupplierCardAction[] {
     })
     .filter(
       (action) =>
-        String(action.key || '').trim() && String(action.action || '').trim() && String(action.label || '').trim(),
+        String(action.key || '').trim() &&
+        String(action.action || '').trim() &&
+        String(action.label || '').trim() &&
+        canRunSupplierCardAction(action),
     );
 }
 
@@ -784,6 +813,11 @@ function patchSupplierCard(supplierId: SupplierRecord['id'], card: unknown) {
 }
 
 function handleSupplierCardAction(row: SupplierRecord, action: SupplierCardAction) {
+  if (!canRunSupplierCardAction(action)) {
+    MessagePlugin.warning('当前账号无权执行该供应商插件动作');
+    return;
+  }
+
   if (supplierCardActionDisabled(action)) {
     MessagePlugin.warning(action.disabled_reason || '插件动作暂不可用');
     return;
@@ -1268,7 +1302,10 @@ async function loadSupplierBatchProducts() {
 }
 
 async function openSupplierBatchDialog(row: SupplierRecord, action: SupplierCardAction) {
-  if (!canSyncSuppliers.value) return;
+  if (!canRunSupplierCardAction(action)) {
+    MessagePlugin.warning('当前账号无权执行批量商品对接');
+    return;
+  }
 
   if (supplierCardActionDisabled(action)) {
     MessagePlugin.warning(action.disabled_reason || '插件动作暂不可用');
@@ -1309,7 +1346,7 @@ function selectSupplierBatchTargetGroup(groupKey: string) {
 }
 
 async function reloadSupplierBatchProducts() {
-  if (!canSyncSuppliers.value) return;
+  if (!canRunSupplierCardAction(supplierBatchAction.value || ({} as SupplierCardAction))) return;
 
   await Promise.all([loadSupplierBatchProducts(), loadSupplierBatchLocalProducts()]);
   setAllSupplierBatchRemoteExpanded(true);
@@ -1326,7 +1363,10 @@ function resolveSupplierBatchTargetFirstGroupCode() {
 }
 
 async function submitSupplierBatchConnect() {
-  if (!canSyncSuppliers.value) return;
+  if (!canRunSupplierCardAction(supplierBatchAction.value || ({} as SupplierCardAction))) {
+    MessagePlugin.warning('当前账号无权执行批量商品对接');
+    return;
+  }
   if (!supplierBatchSupplier.value?.id) return;
   const requestAction = String(supplierBatchAction.value?.request_action || '').trim();
   if (!requestAction) {

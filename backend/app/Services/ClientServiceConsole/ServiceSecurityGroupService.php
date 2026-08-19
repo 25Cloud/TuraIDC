@@ -258,17 +258,24 @@ class ServiceSecurityGroupService
         ]);
 
         $securityGroupContext = $this->assertSecurityGroupVisibleToCurrentHost($service, $groupId);
+        $direction = trim((string) ($data['direction'] ?? ''));
+        $protocol = trim((string) ($data['protocol'] ?? ''));
+        $port = trim((string) ($data['port'] ?? ''));
+        $ip = trim((string) ($data['ip'] ?? ''));
+        $description = trim((string) ($data['description'] ?? ''));
+
+        $this->assertSecurityRulePayload($securityGroupContext, $direction, $protocol, $port, $ip);
 
         $result = $this->callSecurityGroupAction(
             $service,
             'createSecurityRule',
             [
                 'id' => $groupId,
-                'direction' => trim((string) ($data['direction'] ?? '')),
-                'protocol' => trim((string) ($data['protocol'] ?? '')),
-                'port' => trim((string) ($data['port'] ?? '')),
-                'ip' => trim((string) ($data['ip'] ?? '')),
-                'description' => trim((string) ($data['description'] ?? '')),
+                'direction' => $direction,
+                'protocol' => $protocol,
+                'port' => $port,
+                'ip' => $ip,
+                'description' => $description,
             ],
             '创建安全组规则',
             $securityGroupContext
@@ -282,13 +289,13 @@ class ServiceSecurityGroupService
             'host_id' => (int) ($result['context']['host_id'] ?? 0),
             'group_id' => $groupId,
             'group_name' => $this->resolveSecurityGroupName((array) ($result['context']['groups'] ?? []), $groupId),
-            'direction' => trim((string) ($data['direction'] ?? '')),
-            'direction_label' => $this->transformService->resolveSelectOptionLabel((array) ($result['context']['directions'] ?? []), trim((string) ($data['direction'] ?? ''))),
-            'protocol' => trim((string) ($data['protocol'] ?? '')),
-            'protocol_label' => $this->transformService->resolveSelectOptionLabel((array) ($result['context']['protocols'] ?? []), trim((string) ($data['protocol'] ?? ''))),
-            'port' => trim((string) ($data['port'] ?? '')),
-            'ip' => trim((string) ($data['ip'] ?? '')),
-            'description' => trim((string) ($data['description'] ?? '')),
+            'direction' => $direction,
+            'direction_label' => $this->transformService->resolveSelectOptionLabel((array) ($result['context']['directions'] ?? []), $direction),
+            'protocol' => $protocol,
+            'protocol_label' => $this->transformService->resolveSelectOptionLabel((array) ($result['context']['protocols'] ?? []), $protocol),
+            'port' => $port,
+            'ip' => $ip,
+            'description' => $description,
             'message' => $message,
         ], $context);
 
@@ -467,6 +474,99 @@ class ServiceSecurityGroupService
         $this->detailService->assertSuccess($response, $action);
 
         return ['context' => $context, 'response' => $response];
+    }
+
+    private function assertSecurityRulePayload(array $context, string $direction, string $protocol, string $port, string $ip): void
+    {
+        $this->assertSecurityOptionAllowed((array) ($context['directions'] ?? []), $direction, '方向');
+        $this->assertSecurityOptionAllowed((array) ($context['protocols'] ?? []), $protocol, '协议');
+        $this->assertSecurityPortExpression($port);
+        $this->assertSecurityIpExpression($ip);
+    }
+
+    private function assertSecurityOptionAllowed(array $options, string $value, string $label): void
+    {
+        if ($value === '') {
+            throw new BusinessException('请选择安全组规则'.$label, 42200);
+        }
+
+        if ($options === []) {
+            return;
+        }
+
+        $allowed = collect($options)
+            ->filter(fn ($item): bool => is_array($item))
+            ->map(fn (array $item): string => trim((string) ($item['value'] ?? '')))
+            ->filter(fn (string $item): bool => $item !== '')
+            ->values()
+            ->all();
+
+        throw_if(
+            $allowed !== [] && ! in_array($value, $allowed, true),
+            new BusinessException('安全组规则'.$label.'不在当前上游允许范围内', 42200)
+        );
+    }
+
+    private function assertSecurityPortExpression(string $value): void
+    {
+        throw_if($value === '', new BusinessException('请填写安全组规则端口', 42200));
+
+        $segments = preg_split('/\s*,\s*/', $value, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        throw_if($segments === [], new BusinessException('请填写安全组规则端口', 42200));
+
+        foreach ($segments as $segment) {
+            $segment = trim($segment);
+            if ($segment === '*') {
+                continue;
+            }
+
+            if (preg_match('/^\d{1,5}$/', $segment) === 1) {
+                $port = (int) $segment;
+                throw_if($port < 1 || $port > 65535, new BusinessException('端口必须在 1-65535 之间', 42200));
+                continue;
+            }
+
+            if (preg_match('/^(\d{1,5})-(\d{1,5})$/', $segment, $matches) === 1) {
+                $start = (int) $matches[1];
+                $end = (int) $matches[2];
+                throw_if($start < 1 || $start > 65535 || $end < 1 || $end > 65535 || $start > $end, new BusinessException('端口范围必须在 1-65535 之间且起始端口不能大于结束端口', 42200));
+                continue;
+            }
+
+            throw new BusinessException('端口格式不正确，仅支持单端口、端口范围或英文逗号分隔列表', 42200);
+        }
+    }
+
+    private function assertSecurityIpExpression(string $value): void
+    {
+        throw_if($value === '', new BusinessException('请填写安全组规则授权地址', 42200));
+
+        $segments = preg_split('/\s*,\s*/', $value, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        throw_if($segments === [], new BusinessException('请填写安全组规则授权地址', 42200));
+
+        foreach ($segments as $segment) {
+            $segment = trim($segment);
+            if ($segment === '*') {
+                continue;
+            }
+
+            if (filter_var($segment, FILTER_VALIDATE_IP) !== false) {
+                continue;
+            }
+
+            if (preg_match('/^([^\/]+)\/(\d{1,3})$/', $segment, $matches) === 1) {
+                $ip = trim((string) $matches[1]);
+                $prefix = (int) $matches[2];
+                $isV4 = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false;
+                $isV6 = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
+                throw_if(! $isV4 && ! $isV6, new BusinessException('授权地址必须是合法 IP 或 CIDR', 42200));
+                throw_if($isV4 && ($prefix < 0 || $prefix > 32), new BusinessException('IPv4 CIDR 前缀必须在 0-32 之间', 42200));
+                throw_if($isV6 && ($prefix < 0 || $prefix > 128), new BusinessException('IPv6 CIDR 前缀必须在 0-128 之间', 42200));
+                continue;
+            }
+
+            throw new BusinessException('授权地址必须是合法 IP、CIDR 或英文逗号分隔列表', 42200);
+        }
     }
 
     private function isNativeSecurityGroupContext(array $context): bool

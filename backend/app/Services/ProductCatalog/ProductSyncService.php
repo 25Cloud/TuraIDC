@@ -1210,10 +1210,13 @@ class ProductSyncService
             return [];
         }
 
+        // 上游金额是两位小数字符串（如 '19.99'）。周期换算先转为“分”整数再相乘，
+        // 避免浮点乘法（如 19.99 * 12 = 239.87999...）在边界产生一分钱误差。
+        $monthlyBaseCents = (int) round(((float) $monthlyBasePrice) * 100);
         $pricing = [];
 
         foreach (self::IMPORT_PRICING_MONTHS as $cycle => $months) {
-            $pricing[$cycle] = number_format($monthlyBasePrice * $months, 2, '.', '');
+            $pricing[$cycle] = number_format($monthlyBaseCents * $months / 100, 2, '.', '');
         }
 
         return $pricing;

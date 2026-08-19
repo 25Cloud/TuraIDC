@@ -24,6 +24,7 @@
           <t-menu-item value="profile">个人资料</t-menu-item>
           <t-menu-item value="security">账户安全</t-menu-item>
           <t-menu-item value="notification">消息提醒</t-menu-item>
+          <t-menu-item value="display">显示设置</t-menu-item>
         </t-menu>
       </t-card>
     </aside>
@@ -75,7 +76,7 @@
         </div>
       </t-card>
 
-      <t-card v-else class="profile-card" :bordered="false">
+      <t-card v-else-if="activeTab === 'notification'" class="profile-card" :bordered="false">
         <template #title>消息提醒</template>
         <template #actions
           ><t-tag variant="light">已开启 {{ enabledNotificationCount }}</t-tag></template
@@ -94,6 +95,22 @@
           <t-button theme="primary" :loading="notificationLoading" @click="saveNotificationPreferences"
             >保存设置</t-button
           >
+        </div>
+      </t-card>
+
+      <t-card v-else-if="activeTab === 'display'" class="profile-card" :bordered="false">
+        <template #title>显示设置</template>
+        <template #actions><t-tag variant="light">主题外观</t-tag></template>
+        <div class="display-options">
+          <div class="display-option-head">
+            <strong>主题模式</strong>
+            <p>选择明亮、深色或跟随系统的外观主题；选择会保存在本机。</p>
+          </div>
+          <t-radio-group v-model="themeMode" variant="default-filled" @change="handleThemeModeChange">
+            <t-radio-button value="light">明亮</t-radio-button>
+            <t-radio-button value="dark">深色</t-radio-button>
+            <t-radio-button value="auto">跟随系统</t-radio-button>
+          </t-radio-group>
         </div>
       </t-card>
     </main>
@@ -185,13 +202,30 @@
 </template>
 <script setup lang="ts">
 import { CopyIcon } from 'tdesign-icons-vue-next';
+import { ref } from 'vue';
 
 import { useProfile } from '@/domains/account/useProfile';
+import { getSettingStore, useSettingStore } from '@/store';
+
+const settingStore = useSettingStore();
+const themeMode = ref<'light' | 'dark' | 'auto'>(
+  settingStore.mode === 'auto' ? 'auto' : (settingStore.mode as 'light' | 'dark') || 'light',
+);
+
+const handleThemeModeChange = (mode: unknown) => {
+  const next = (mode === 'auto' ? 'auto' : mode === 'dark' ? 'dark' : 'light') as 'light' | 'dark' | 'auto';
+  const s = getSettingStore();
+  if (s.mode !== next) {
+    s.mode = next;
+  }
+  s.changeMode(next);
+};
 
 const profileTabs = [
   { value: 'profile', label: '个人资料' },
   { value: 'security', label: '账户安全' },
   { value: 'notification', label: '消息提醒' },
+  { value: 'display', label: '显示设置' },
 ] as const;
 
 const {
@@ -306,6 +340,26 @@ const {
 
 .profile-tabs-mobile {
   display: none;
+}
+
+.display-options {
+  max-width: 46rem;
+
+  .display-option-head {
+    margin-bottom: var(--td-comp-margin-m);
+
+    strong {
+      color: var(--td-text-color-primary);
+      font: var(--td-font-title-small);
+    }
+
+    p {
+      margin: var(--td-comp-margin-xs) 0 0;
+      color: var(--td-text-color-secondary);
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+  }
 }
 
 .profile-footer {

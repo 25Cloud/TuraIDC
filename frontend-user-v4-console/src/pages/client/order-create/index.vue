@@ -4,7 +4,7 @@
       <div class="order-create-state">
         <t-tag theme="warning" variant="light">购买链路</t-tag>
         <h1>购买入口已重定向到统一购买链路</h1>
-        <p>新的购买、登录续接与账单创建均在 /products 与 /client/checkout-resume 中完成。</p>
+        <p>新的购买、登录续接与账单创建均在官网产品目录与 /client/checkout-resume 中完成。</p>
         <div class="order-create-actions">
           <t-button theme="primary" @click="openProducts">打开购买页</t-button>
         </div>
@@ -13,12 +13,10 @@
   </section>
 </template>
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
-
-const router = useRouter();
+import { openPublicProducts } from '@/utils/publicSite';
 
 function openProducts() {
-  router.push('/products');
+  openPublicProducts();
 }
 </script>
 <style scoped lang="less">
