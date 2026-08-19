@@ -247,11 +247,11 @@ php artisan schedule:work
 
 ## 🐳 快速开始（Docker 部署）
 
-`docker compose` 一键拉起 MySQL 8 + Redis 7 + 后端（PHP-FPM / Nginx / Cron / VNC Relay）+ 三个前端，共 6 个容器。详细说明见 [Docker 与 1Panel 部署指南](docs/参考资料/运维/Docker与1Panel部署指南.md)。
+`docker compose` 一键拉起 MySQL 8 + Redis 7 + 后端（PHP-FPM / Nginx / Cron / VNC Relay）+ 前端三端合一，共 4 个容器。详细说明见 [Docker 与 1Panel 部署指南](docs/参考资料/运维/Docker与1Panel部署指南.md)。
 
 ### 1. 配置 CI Secrets（自动构建镜像）
 
-CI（`.github/workflows/docker-image.yml`）在推送到 `main`、打 tag 或手动触发时，自动构建 4 个镜像推送到 GHCR（`GITHUB_TOKEN` 由 GitHub 自动注入，无需配置）。进入仓库 **Settings → Secrets and variables → Actions**，在 **Variables** 标签页（推荐，明文非敏感）或 Secrets 中添加：
+CI（`.github/workflows/docker-image.yml`）在推送到 `main`、打 tag 或手动触发时，自动构建 2 个镜像推送到 GHCR（`GITHUB_TOKEN` 由 GitHub 自动注入，无需配置）。进入仓库 **Settings → Secrets and variables → Actions**，在 **Variables** 标签页（推荐，明文非敏感）或 Secrets 中添加：
 
 | 变量                            | 必填 | 说明                                             | 示例                          |
 | ------------------------------- | ---- | ------------------------------------------------ | ----------------------------- |
@@ -273,8 +273,36 @@ cp .env.example .env
 # 编辑 .env：数据库密码、INSTALL_ADMIN_PASSWORD、对外端口等
 
 docker compose pull && docker compose up -d   # 拉取 CI 镜像（推荐）
-# 或 docker compose up -d --build             # 本地构建
+# 或 docker compose up -d --build             # 本地构建（全部）
 ```
+
+### 2b. 混合模式（后端拉镜像 + 前端本地构建）
+
+不想在 CI 配域名 Variables、但也不想本地 build 后端？可以只 build 前端，后端照常 pull：
+
+```bash
+git clone https://github.com/<owner>/TuraIDC.git   # 服务器上拉源码（前端构建需要）
+cd TuraIDC/deploy/docker
+cp .env.example .env
+# 编辑 .env：域名、数据库密码、INSTALL_ADMIN_PASSWORD 等
+
+docker compose pull app              # 只拉后端镜像（CI 构建，不含域名）
+docker compose build frontends       # 只构建前端（域名从 .env 读，CI 零配置）
+docker compose up -d                 # 启动全部
+```
+
+前端地址直接读 `deploy/docker/.env`，改域名后重新 `build frontends && up -d` 即可，不用碰 GitHub。
+
+升级同理：
+
+```bash
+git pull                            # 拉最新源码（前端要这个）
+docker compose pull app             # 拉最新后端镜像
+docker compose build frontends      # 重新构建前端
+docker compose up -d
+```
+
+> 后端不受前端域名影响——`APP_URL` 等通过 `env_file: .env` 在容器启动时注入，是运行时配置，改 `.env` 重启就生效，不需要重新构建镜像。
 
 首次启动（空库）自动初始化数据库并创建管理员 `cerbo`（密码为 `.env` 中 `INSTALL_ADMIN_PASSWORD`，仅首次生效）。默认端口：API `8080` / 官网 `8081` / 控制台 `8082` / 管理端 `8083`。
 

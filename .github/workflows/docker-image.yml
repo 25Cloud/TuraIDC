@@ -7,10 +7,8 @@
 #   - 手动触发（workflow_dispatch）
 #
 # 产物（推送到 GHCR，镜像名全部小写）：
-#   ghcr.io/<owner>/turaidc-app     后端（PHP-FPM + Nginx + Cron + VNC Relay）
-#   ghcr.io/<owner>/turaidc-www     官网/用户入口
-#   ghcr.io/<owner>/turaidc-console 用户控制台
-#   ghcr.io/<owner>/turaidc-admin   管理端
+#   ghcr.io/<owner>/turaidc-app         后端（PHP-FPM + Nginx + Cron + VNC Relay）
+#   ghcr.io/<owner>/turaidc-frontends   前端三端合一（www:8081 / console:8082 / admin:8083）
 #
 # 前置配置（Settings → Secrets and variables → Actions）：
 #   前端构建需要四个公开地址（build args），推荐配在 Variables（明文，非敏感）：
@@ -89,21 +87,11 @@ jobs:
           echo "- Tags: ${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
 
   frontends:
-    name: Build & push turaidc-${{ matrix.target }}
+    name: Build & push turaidc-frontends
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: www
-            image: turaidc-www
-          - target: console
-            image: turaidc-console
-          - target: admin
-            image: turaidc-admin
     steps:
       - uses: actions/checkout@v4
 
@@ -124,7 +112,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.image }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/turaidc-frontends
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
@@ -137,7 +125,6 @@ jobs:
         with:
           context: .
           file: deploy/docker/frontends/Dockerfile
-          target: ${{ matrix.target }}
           build-args: |
             APP_URL=${{ vars.APP_URL || secrets.APP_URL }}
             FRONTEND_URL=${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}
@@ -152,6 +139,6 @@ jobs:
 
       - name: Job summary
         run: |
-          echo "## 前端镜像已推送 (${{ matrix.target }})" >> "$GITHUB_STEP_SUMMARY"
-          echo "- ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.image }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 前端镜像已推送（三端合一）" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/turaidc-frontends" >> "$GITHUB_STEP_SUMMARY"
           echo "- Tags: ${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"

@@ -1,6 +1,6 @@
 # TuraIDC Docker 一键部署
 
-`docker compose` 一键拉起：MySQL 8 + Redis 7 + 后端（PHP-FPM/Nginx/Cron/VNC Relay）+ 三个前端（Nginx）。
+`docker compose` 一键拉起：MySQL 8 + Redis 7 + 后端（PHP-FPM/Nginx/Cron/VNC Relay）+ 前端三端合一（Nginx 三端口）。
 
 ## 快速开始
 
@@ -50,7 +50,7 @@ deploy/docker/
 ## CI 自动打包推送
 
 `.github/workflows/docker-image.yml` 在推送到 `main`、打 `v*` tag 或手动触发时，
-用 buildx 构建并推送 4 个镜像到镜像仓库（默认 `ghcr.io/<owner>/turaidc-*`）。
+用 buildx 构建并推送 2 个镜像到镜像仓库（默认 `ghcr.io/<owner>/turaidc-*`）。
 
 使用前需在仓库 **Settings → Secrets and variables → Actions** 配置：
 
@@ -62,7 +62,7 @@ deploy/docker/
 | `ADMIN_URL` | 管理端地址 |
 | `CLIENT_SESSION_COOKIE_DOMAIN` | 跨子域共享登录态父域，不需要可留空（未配置则不传） |
 
-首次推送后需在 GHCR 页面把 4 个 `turaidc-*` 包设为 **public**（或服务器 `docker login ghcr.io`）。
+首次推送后需在 GHCR 页面把 2 个 `turaidc-*` 包设为 **public**（或服务器 `docker login ghcr.io`）。
 
 ## 生产注意
 
