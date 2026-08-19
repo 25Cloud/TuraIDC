@@ -138,7 +138,11 @@ export default antfu(
       },
     },
     {
-      files: ['src/pages/client/service-console/index.vue'],
+      files: [
+        'src/pages/client/service-console/index.vue',
+        'src/pages/client/service-console/compute/index.vue',
+        'src/pages/client/service-console/nat/index.vue',
+      ],
       rules: {
         // The external stylesheet intentionally styles the complete composed console subtree.
         'vue-scoped-css/enforce-style-type': 'off',

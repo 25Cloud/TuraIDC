@@ -29,8 +29,7 @@ import { computed } from 'vue';
 
 import type { LocalizedTitle } from '@/locales';
 import { useLocale } from '@/locales/useLocale';
-import { getActive } from '@/router';
-import router from '@/router';
+import router, { getActive } from '@/router';
 import type { MenuRoute } from '@/types/interface';
 
 type ListItemType = MenuRoute;
