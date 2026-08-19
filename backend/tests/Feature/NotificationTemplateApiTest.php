@@ -19,6 +19,7 @@ use App\Services\Sms\SmsDriverManager;
 use App\Services\System\NotificationService;
 use App\Services\System\SmsService;
 use App\Support\AdminPermissions;
+use App\Support\EmailNotificationTemplateDefaults;
 use App\Support\EmailTemplateCatalog;
 use App\Support\SmsTemplateCatalog;
 use Illuminate\Support\Facades\DB;
@@ -155,8 +156,15 @@ class NotificationTemplateApiTest extends TestCase
         $this->assertFalse($emailTemplates->pluck('name')->contains('新工单提醒'));
         $this->assertTrue($emailTemplates->every(
             fn (array $template): bool => ! str_contains((string) $template['content'], 'hero-visual')
-                && str_contains((string) $template['content'], '#1f5eff')
+                && str_contains((string) $template['content'], 'meta name="color-scheme"')
+                && str_contains((string) $template['content'], '@media (prefers-color-scheme: dark)')
+                && str_contains((string) $template['content'], 'background: #1e2130;')
+                && str_contains((string) $template['content'], 'color: #667085;')
+                && str_contains((string) $template['content'], 'color: #9ca3af;')
         ));
+        $suspendedEmailTemplate = (array) $emailTemplates->firstWhere('code', '100006');
+        $this->assertStringContainsString('#b91c1c', (string) ($suspendedEmailTemplate['content'] ?? ''));
+        $this->assertStringContainsString('#fca5a5', (string) ($suspendedEmailTemplate['content'] ?? ''));
         $this->assertTrue($emailTemplates->contains(
             fn (array $template): bool => $template['code'] === '100001'
                 && ! array_key_exists('css', $template)
@@ -165,6 +173,81 @@ class NotificationTemplateApiTest extends TestCase
                 && str_contains((string) $template['content'], 'class="email-logo"')
                 && ($template['setting_keys']['enabled'] ?? null) === EmailTemplateCatalog::enabledSettingKey('100001')
         ));
+    }
+
+    public function test_default_email_templates_include_dark_mode_styles_and_semantic_accents(): void
+    {
+        $templates = collect(EmailNotificationTemplateDefaults::templates());
+
+        $this->assertSame(29, $templates->count());
+        $this->assertTrue($templates->every(
+            fn (array $template): bool => str_contains((string) $template['content'], 'meta name="color-scheme"')
+                && str_contains((string) $template['content'], 'supported-color-schemes')
+                && str_contains((string) $template['content'], '@media (prefers-color-scheme: dark)')
+                && str_contains((string) $template['content'], '.detail-table { border-color: #374151; background: #1e2130; }')
+                && str_contains((string) $template['content'], '.detail-value { background: #1e2130; color: #f3f4f6; }')
+                && str_contains((string) $template['content'], '.email-footer { color: #9ca3af; }')
+        ));
+
+        $suspendedTemplate = (array) $templates->firstWhere('code', '100006');
+        $this->assertSame('#b91c1c', $suspendedTemplate['accent'] ?? null);
+        $this->assertStringContainsString('border-top: 4px solid #b91c1c;', (string) ($suspendedTemplate['content'] ?? ''));
+        $this->assertStringContainsString('border-top-color: #fca5a5;', (string) ($suspendedTemplate['content'] ?? ''));
+        $this->assertContrastAtLeast('#667085', '#ffffff', 4.5, '浅色页脚文本对比度不足');
+        $this->assertContrastAtLeast('#9ca3af', '#1e2130', 4.5, '暗色页脚文本对比度不足');
+        $this->assertContrastAtLeast('#f3f4f6', '#1e2130', 4.5, '暗色明细值文本对比度不足');
+    }
+
+    public function test_seed_email_templates_command_refreshes_unmodified_templates_and_preserves_custom_templates(): void
+    {
+        $template = $this->notificationTemplate('email', NotificationService::TEMPLATE_EMAIL_CODE);
+        $templateSnapshot = [
+            'name' => $template->name,
+            'description' => $template->description,
+            'audience' => $template->audience,
+            'subject' => $template->subject,
+            'content' => $template->content,
+            'variables_json' => $template->variables_json,
+            'provider_variables_json' => $template->provider_variables_json,
+            'provider_template_id' => $template->provider_template_id,
+            'is_enabled' => $template->is_enabled,
+            'is_custom' => $template->is_custom,
+            'sort_order' => $template->sort_order,
+        ];
+
+        try {
+            $template->forceFill([
+                'content' => '<p>旧默认邮件模板</p>',
+                'is_custom' => false,
+            ])->save();
+
+            $this->artisan('app:seed-email-templates')->assertExitCode(0);
+
+            $template->refresh();
+            $this->assertFalse((bool) $template->is_custom);
+            $this->assertStringContainsString('@media (prefers-color-scheme: dark)', (string) $template->content);
+            $this->assertStringContainsString('.detail-table { border-color: #374151; background: #1e2130; }', (string) $template->content);
+
+            $template->forceFill([
+                'content' => '<p>后台自定义邮件模板</p>',
+                'is_custom' => true,
+            ])->save();
+
+            $this->artisan('app:seed-email-templates')->assertExitCode(0);
+
+            $template->refresh();
+            $this->assertTrue((bool) $template->is_custom);
+            $this->assertSame('<p>后台自定义邮件模板</p>', (string) $template->content);
+
+            $this->artisan('app:seed-email-templates', ['--force' => true])->assertExitCode(0);
+
+            $template->refresh();
+            $this->assertFalse((bool) $template->is_custom);
+            $this->assertNotSame('<p>后台自定义邮件模板</p>', (string) $template->content);
+            $this->assertStringContainsString('@media (prefers-color-scheme: dark)', (string) $template->content);
+        } finally {
+            $template->forceFill($templateSnapshot)->save();
+        }
     }
 
     public function test_admin_notification_template_test_send_requires_manage_permission_and_valid_recipient(): void
@@ -611,6 +694,34 @@ class NotificationTemplateApiTest extends TestCase
             NotificationTemplate::query()->whereKey($template->getKey())->update($templateSnapshot);
             $this->deleteSmsLogsByRecipient($phone);
         }
+    }
+
+    private function assertContrastAtLeast(string $foreground, string $background, float $minimum, string $message): void
+    {
+        $this->assertGreaterThanOrEqual($minimum, self::contrastRatio($foreground, $background), $message);
+    }
+
+    private static function contrastRatio(string $foreground, string $background): float
+    {
+        $foregroundLuminance = self::relativeLuminance($foreground);
+        $backgroundLuminance = self::relativeLuminance($background);
+        $lighter = max($foregroundLuminance, $backgroundLuminance);
+        $darker = min($foregroundLuminance, $backgroundLuminance);
+
+        return ($lighter + 0.05) / ($darker + 0.05);
+    }
+
+    private static function relativeLuminance(string $hex): float
+    {
+        $hex = ltrim($hex, '#');
+        $red = hexdec(substr($hex, 0, 2)) / 255;
+        $green = hexdec(substr($hex, 2, 2)) / 255;
+        $blue = hexdec(substr($hex, 4, 2)) / 255;
+        $linear = static fn (float $channel): float => $channel <= 0.03928
+            ? $channel / 12.92
+            : (($channel + 0.055) / 1.055) ** 2.4;
+
+        return 0.2126 * $linear($red) + 0.7152 * $linear($green) + 0.0722 * $linear($blue);
     }
 
     private function latestSmsLog(string $phone): ?object

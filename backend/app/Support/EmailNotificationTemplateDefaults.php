@@ -6,8 +6,6 @@ namespace App\Support;
 
 final class EmailNotificationTemplateDefaults
 {
-    private const THEME_BLUE = '#1f5eff';
-
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -70,10 +68,10 @@ final class EmailNotificationTemplateDefaults
             'name' => $name,
             'description' => $description,
             'subject' => $subject,
-            'content' => self::content($code, $name, $lead, $rows, $notice, self::THEME_BLUE),
+            'content' => self::content($code, $name, $lead, $rows, $notice, $accent),
             'variables' => $variables,
             'audience' => $audience,
-            'accent' => self::THEME_BLUE,
+            'accent' => $accent,
         ];
     }
 
@@ -96,6 +94,8 @@ final class EmailNotificationTemplateDefaults
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <style>
 {$style}
   </style>
@@ -154,7 +154,13 @@ HTML;
 
     private static function style(string $code, string $accent): string
     {
+        $darkAccent = self::darkAccent($accent);
+
         return <<<CSS
+html {
+  color-scheme: light dark;
+  supported-color-schemes: light dark;
+}
 body {
   margin: 0;
   background: #f3f6fb;
@@ -248,6 +254,7 @@ body {
   background: #f8fafc;
 }
 .cw-email-template-{$code} .detail-value {
+  background: #ffffff;
   color: #111827;
   font-weight: 700;
   text-align: right;
@@ -272,7 +279,7 @@ body {
 }
 .cw-email-template-{$code} .email-footer {
   padding: 24px 32px 26px;
-  color: #8a95a5;
+  color: #667085;
   font-size: 12px;
   line-height: 1.7;
 }
@@ -309,9 +316,10 @@ body {
   }
 }
 @media (prefers-color-scheme: dark) {
+  body { background: #1a1a2e; color: #d1d5db; }
   .cw-email-template-{$code} { background: #1a1a2e; }
   .cw-email-template-{$code} .email-shell { background: #1a1a2e; }
-  .cw-email-template-{$code} .email-card { background: #1e2130; border-color: #2d3244; }
+  .cw-email-template-{$code} .email-card { background: #1e2130; border-color: #2d3244; border-top-color: {$darkAccent}; }
   .cw-email-template-{$code} .email-hero,
   .cw-email-template-{$code} .email-section,
   .cw-email-template-{$code} .email-action { background: #1e2130; }
@@ -320,15 +328,31 @@ body {
   .cw-email-template-{$code} .action-title,
   .cw-email-template-{$code} .email-brand-name { color: #e5e7eb; }
   .cw-email-template-{$code} .email-lead,
-  .cw-email-template-{$code} .action-copy,
-  .cw-email-template-{$code} .detail-value { color: #d1d5db; }
+  .cw-email-template-{$code} .action-copy { color: #d1d5db; }
+  .cw-email-template-{$code} .email-eyebrow { color: {$darkAccent}; }
+  .cw-email-template-{$code} .detail-value { background: #1e2130; color: #f3f4f6; }
+  .cw-email-template-{$code} .action-title { border-left-color: {$darkAccent}; }
   .cw-email-template-{$code} .detail-label { background: #252839; color: #9ca3af; }
-  .cw-email-template-{$code} .detail-table { border-color: #374151; }
+  .cw-email-template-{$code} .detail-table { border-color: #374151; background: #1e2130; }
   .cw-email-template-{$code} .detail-label,
   .cw-email-template-{$code} .detail-value { border-color: #374151; }
   .cw-email-template-{$code} .email-brand { border-color: #2d3244; }
-  .cw-email-template-{$code} .email-footer { color: #6b7280; }
+  .cw-email-template-{$code} .email-footer { color: #9ca3af; }
 }
 CSS;
+    }
+
+    private static function darkAccent(string $accent): string
+    {
+        return match (strtolower($accent)) {
+            '#0f766e' => '#5eead4',
+            '#b45309' => '#fbbf24',
+            '#2563eb', '#1d4ed8', '#1f5eff' => '#93c5fd',
+            '#15803d' => '#86efac',
+            '#b91c1c' => '#fca5a5',
+            '#7c3aed' => '#c4b5fd',
+            '#667085' => '#cbd5e1',
+            default => '#93c5fd',
+        };
     }
 }
