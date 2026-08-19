@@ -134,8 +134,10 @@ class SettingsSeeder extends Seeder
     }
 
     /**
-     * 幂等种入通知模板默认数据：按 channel+code 跳过已存在的模板，
-     * 不会覆盖管理员在后台的个性化内容。
+     * 幂等种入/刷新通知模板默认数据：
+     * - 不存在：插入默认模板；
+     * - 已存在且 has is_custom=0（未个性化）：刷新为最新默认内容（如暗色适配升级）；
+     * - 已存在且 is_custom=1：按 channel+code 跳过，保留管理员在后台的个性化内容。
      */
     private static function seedNotificationTemplates(): void
     {
@@ -155,9 +157,7 @@ class SettingsSeeder extends Seeder
                     continue;
                 }
 
-                // insertOrIgnore 依赖 (channel, code) 唯一约束原子跳过已存在模板，
-                // 避免 exists() + insert() 之间的并发窗口造成重复键异常；不覆盖后台个性化内容。
-                DB::table('notification_templates')->insertOrIgnore([
+                $payload = [
                     'channel' => $channel,
                     'code' => $code,
                     'name' => (string) ($definition['name'] ?? $code),
@@ -173,9 +173,28 @@ class SettingsSeeder extends Seeder
                     'is_enabled' => 1,
                     'is_custom' => 0,
                     'sort_order' => 0,
+                ];
+
+                $existing = DB::table('notification_templates')
+                    ->where('channel', $channel)
+                    ->where('code', $code)
+                    ->first(['id', 'is_custom']);
+
+                if ($existing !== null && (int) ($existing->is_custom ?? 0) === 1) {
+                    continue; // 后台个性化模板：不覆盖
+                }
+
+                if ($existing !== null) {
+                    DB::table('notification_templates')
+                        ->where('id', (int) $existing->id)
+                        ->update(array_merge($payload, ['updated_at' => now()]));
+                    continue;
+                }
+
+                DB::table('notification_templates')->insert(array_merge($payload, [
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]);
+                ]));
             }
         }
     }
