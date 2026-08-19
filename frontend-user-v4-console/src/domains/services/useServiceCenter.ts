@@ -17,6 +17,7 @@ import { copyText, formatMoney } from '@/utils/format';
 export const OS_ICON_MAP: Record<string, string> = {
   windows: '/img/os/Windows.svg',
   win: '/img/os/Windows.svg',
+  tencentos: '/img/os/TencentOS.png',
   ubuntu: '/img/os/Ubuntu.svg',
   debian: '/img/os/Debian.svg',
   centos: '/img/os/CentOS.svg',

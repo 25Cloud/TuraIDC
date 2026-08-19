@@ -96,6 +96,41 @@ export interface IntegrationPluginActionResult {
   detail?: Record<string, unknown>;
 }
 
+export interface IntegrationPluginTestResultData {
+  success?: boolean;
+  action?: string;
+  message?: string;
+  data?: Record<string, unknown>;
+  raw?: Record<string, unknown>;
+  status?: number;
+  sent?: boolean;
+  certify_id?: string;
+  verify_url?: string;
+  task_no?: string;
+  qr_code?: string;
+  out_trade_no?: string;
+  verified?: boolean;
+  healthy?: boolean;
+  capability?: string;
+  error_type?: string;
+  amount?: number | string;
+  provider?: string;
+  entry_class?: string;
+  provider_class?: string;
+  trace_id?: string;
+}
+
+export interface IntegrationPluginTestResult {
+  id?: number | string;
+  status?: string;
+  task_id?: string;
+  message?: string;
+  detail?: {
+    type?: string;
+    result?: IntegrationPluginTestResultData;
+  };
+}
+
 export interface IntegrationPluginListResponse {
   list?: IntegrationPluginRecord[];
   total?: number;
@@ -198,18 +233,46 @@ export const pluginsApi = {
       url: `/v2/admin/integration-plugins/${id}${force ? '?force=1' : ''}`,
     }),
   healthCheck: (id: number | string) =>
-    request.post<IntegrationPluginActionResult>({
+    request.post<IntegrationPluginTestResult>({
       url: `/v2/admin/integration-plugins/${id}/tasks`,
       data: { type: 'health_check' },
     }),
   testEmail: (id: number | string, data: { account_index: number; to: string }) =>
-    request.post<IntegrationPluginActionResult>({
+    request.post<IntegrationPluginTestResult>({
       url: `/v2/admin/integration-plugins/${id}/tasks`,
       data: { type: 'test_email', payload: data },
     }),
   testSms: (id: number | string, data: { phone: string }) =>
-    request.post<IntegrationPluginActionResult>({
+    request.post<IntegrationPluginTestResult>({
       url: `/v2/admin/integration-plugins/${id}/tasks`,
       data: { type: 'test_sms', payload: data },
+    }),
+  testVerification: (id: number | string, data: { real_name: string; card_no: string }) =>
+    request.post<IntegrationPluginTestResult>({
+      url: `/v2/admin/integration-plugins/${id}/tasks`,
+      data: { type: 'test_verification', payload: data },
+    }),
+  testPayment: (id: number | string) =>
+    request.post<IntegrationPluginTestResult>({
+      url: `/v2/admin/integration-plugins/${id}/tasks`,
+      data: { type: 'test_payment', payload: {} },
+    }),
+  testCaptcha: (
+    id: number | string,
+    data: {
+      lot_number: string;
+      captcha_output: string;
+      pass_token: string;
+      gen_time: string;
+    },
+  ) =>
+    request.post<IntegrationPluginTestResult>({
+      url: `/v2/admin/integration-plugins/${id}/tasks`,
+      data: { type: 'test_captcha', payload: data },
+    }),
+  testConnection: (id: number | string) =>
+    request.post<IntegrationPluginTestResult>({
+      url: `/v2/admin/integration-plugins/${id}/tasks`,
+      data: { type: 'test_connection', payload: {} },
     }),
 };

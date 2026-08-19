@@ -50,4 +50,4 @@
 
 ## 许可
 
-参与贡献即表示你同意你的贡献将遵循 [Apache License 2.0](./LICENSE) 发布。
+参与贡献即表示你同意你的贡献将遵循 [GNU Affero General Public License v3.0 或更高版本（AGPL-3.0-or-later）](./LICENSE) 发布。

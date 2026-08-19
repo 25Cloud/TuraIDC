@@ -37,6 +37,7 @@ export function registerClientGuards(router) {
     applyRouteMeta(to, {
       siteUrl: import.meta.env.VITE_PUBLIC_SITE_URL || DEFAULT_PUBLIC_SITE_URL,
       siteName: appStore.siteName || '',
+      browserTitle: appStore.browserTitle || '',
     })
 
     if (window.sessionStorage.getItem(DYNAMIC_IMPORT_RELOAD_KEY) === to.fullPath) {

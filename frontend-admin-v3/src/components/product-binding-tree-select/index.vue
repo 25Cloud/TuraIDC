@@ -165,7 +165,7 @@ loadTree();
   }
 }
 
-:global(.binding-tree-select-popup) {
+:deep(.binding-tree-select-popup) {
   max-width: calc(100vw - 32px);
 }
 </style>

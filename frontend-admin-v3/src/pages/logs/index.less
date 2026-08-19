@@ -173,11 +173,8 @@
 .section-title h2 {
   margin: 4px 0 6px;
   color: var(--td-text-color-primary);
-  line-height: 1.35;
-}
-
-.section-title h2 {
   font-size: var(--td-font-size-size-5, 18px);
+  line-height: 1.35;
 }
 
 .section-title p {
@@ -302,7 +299,7 @@
   display: -webkit-box;
   overflow: hidden;
   line-height: 1.6;
-  word-break: break-word;
+  overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -312,7 +309,7 @@
   gap: 8px;
   align-items: flex-start;
   line-height: 1.6;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .log-message__tag {
@@ -328,7 +325,7 @@
 }
 
 /* 平板端：筛选区缩小列数 */
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   .log-filter-grid {
     grid-template-columns: repeat(3, minmax(140px, 1fr)) auto auto;
   }
@@ -351,7 +348,7 @@
 }
 
 /* 手机端：筛选区单列，表格移除强制最小宽度 */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .logs-page .t-tabs__nav {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -415,7 +412,7 @@
     color: var(--td-text-color-primary);
     font-size: var(--td-font-size-size-3, 14px);
     line-height: 1.5;
-    word-break: break-word;
+    overflow-wrap: anywhere;
   }
 
   .log-mobile-card__meta {
@@ -472,7 +469,7 @@
   display: block;
   color: var(--td-error-color);
   line-height: 1.5;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .pagination-row {
@@ -536,7 +533,7 @@
 
 .detail-grid strong {
   color: var(--td-text-color-primary);
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .detail-block {
@@ -572,7 +569,7 @@
   font-size: var(--td-font-size-size-1, 12px);
   line-height: 1.7;
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .mail-preview-frame {
@@ -583,7 +580,7 @@
   background: var(--td-bg-color-page);
 }
 
-@media (max-width: 1280px) {
+@media (width <= 1280px) {
   .log-filter-grid,
   .log-filter-grid--api,
   .log-filter-grid--tasks {
@@ -591,7 +588,7 @@
   }
 }
 
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
   .cleanup-card-grid,
   .file-meta-grid,
   .cleanup-form {
@@ -605,7 +602,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .log-filter-grid,
   .log-filter-grid--api,
   .log-filter-grid--tasks {

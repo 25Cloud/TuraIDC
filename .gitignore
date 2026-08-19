@@ -117,7 +117,6 @@ backend/scripts/mofang_migrate.conf
 *.pen
 *.zip
 *.tar.gz
-frontend-user-v4-console/*.png
 
 # ---- 本地工具 ----
 /tools/
@@ -128,3 +127,5 @@ caiwu_update/
 .tmp/
 
 backend/public/.user.ini
+# ---- 内部安全分析资料（第三方系统漏洞分析，勿公开）----
+zjmf(ignore this)/
