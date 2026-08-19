@@ -144,7 +144,7 @@ planned -> staging -> verified -> published -> purging -> purged
 | 清除     | 发布前零删除、精确 ID/截止时间约束、部分删除中断、重试幂等、全局锁和每表 PID 冲突。                                                                        |
 | 恢复     | dry-run、成功导入、重复导入、ID 内容冲突、路径越界、哈希篡改、非白名单表。                                                                                 |
 | 运维     | 无 `pt-archiver`、不可读凭据、不可写目录、过期成功批次、滞留批次和心跳任务未执行。                                                                         |
-| 回归     | `php artisan test tests/Feature/DatabaseArchiveLogsCommandTest.php` 及新增恢复/健康检查测试、Pint、PHPStan、`npm run docs:check`。                         |
+| 回归     | `php artisan test tests/Feature/DatabaseArchiveLogsCommandTest.php` 及新增恢复/健康检查测试、Pint、PHPStan、`pnpm run docs:check`。                        |
 | 日志迁移 | `OperationLogService`、`LogOperation`、`AdminLogV2QueryService`、`ScheduleRunLogService` 与管理端日志 API 的定向测试；双写回填、去重、冷热边界和直删拒绝。 |
 | 状态保护 | `AutomationLog` 幂等、`ScheduleTaskRunRepository::activeRunForTask()` 与支付网关排除的定向回归。                                                           |
 

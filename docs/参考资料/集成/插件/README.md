@@ -614,27 +614,27 @@ php artisan schedule:list
 
 以下插件直接放在 `backend/plugins/{能力域}/`，会像普通插件一样被后台扫描到。`demo_*` 用于开发研究，不建议在生产环境启用；真实插件启用前必须完成配置、测试和回调边界确认。
 
-| 能力域        | 插件目录                                          | 说明                            |
-| ------------- | ------------------------------------------------- | ------------------------------- |
-| 支付渠道      | `backend/plugins/gateways/ali_pay`                | 支付宝当面付真实支付插件        |
-| 支付渠道      | `backend/plugins/gateways/demo_pay`               | 模拟支付网关                    |
-| 支付渠道      | `backend/plugins/gateways/yi_pay`                 | 易支付插件                      |
-| 实名认证      | `backend/plugins/certification/stay33`            | Stay33 实名认证插件             |
-| 实名认证      | `backend/plugins/certification/baidu_face`        | 百度人脸实名认证插件            |
-| 实名认证      | `backend/plugins/certification/smapi`             | 聚合实名认证插件（小沐实名 API）|
-| 实名认证      | `backend/plugins/certification/demo_verification` | 模拟实名插件                    |
-| 人机验证      | `backend/plugins/captcha/geetest`                 | GeeTest 验证码插件              |
-| 人机验证      | `backend/plugins/captcha/vaptcha`                 | Vaptcha 验证码插件              |
-| 邮件发送      | `backend/plugins/mail/multi_smtp_round_robin`     | 多 SMTP 轮询邮件插件            |
-| 邮件发送      | `backend/plugins/mail/smtp`                       | 单 SMTP 邮件插件                |
-| 邮件发送      | `backend/plugins/mail/demo_mail`                  | 模拟邮件插件                    |
-| 短信发送      | `backend/plugins/sms/aliyun`                      | 阿里云短信插件                  |
-| 短信发送      | `backend/plugins/sms/stay33`                      | Stay33 短信插件                 |
-| 短信发送      | `backend/plugins/sms/demo_sms`                    | 模拟短信插件                    |
-| 上游开通/控制 | `backend/plugins/servers/zjmf_finance`            | ZJMF 财务上游插件               |
-| 上游开通/控制 | `backend/plugins/servers/kanghostx`               | 康乐虚拟主机插件                |
-| 上游开通/控制 | `backend/plugins/servers/demo_servers`            | 模拟上游插件                    |
-| 功能扩展      | `backend/plugins/addons/demo_style`               | Addon、调度任务和 hook 示例插件 |
+| 能力域        | 插件目录                                          | 说明                             |
+| ------------- | ------------------------------------------------- | -------------------------------- |
+| 支付渠道      | `backend/plugins/gateways/ali_pay`                | 支付宝当面付真实支付插件         |
+| 支付渠道      | `backend/plugins/gateways/demo_pay`               | 模拟支付网关                     |
+| 支付渠道      | `backend/plugins/gateways/yi_pay`                 | 易支付插件                       |
+| 实名认证      | `backend/plugins/certification/stay33`            | Stay33 实名认证插件              |
+| 实名认证      | `backend/plugins/certification/baidu_face`        | 百度人脸实名认证插件             |
+| 实名认证      | `backend/plugins/certification/smapi`             | 聚合实名认证插件（小沐实名 API） |
+| 实名认证      | `backend/plugins/certification/demo_verification` | 模拟实名插件                     |
+| 人机验证      | `backend/plugins/captcha/geetest`                 | GeeTest 验证码插件               |
+| 人机验证      | `backend/plugins/captcha/vaptcha`                 | Vaptcha 验证码插件               |
+| 邮件发送      | `backend/plugins/mail/multi_smtp_round_robin`     | 多 SMTP 轮询邮件插件             |
+| 邮件发送      | `backend/plugins/mail/smtp`                       | 单 SMTP 邮件插件                 |
+| 邮件发送      | `backend/plugins/mail/demo_mail`                  | 模拟邮件插件                     |
+| 短信发送      | `backend/plugins/sms/aliyun`                      | 阿里云短信插件                   |
+| 短信发送      | `backend/plugins/sms/stay33`                      | Stay33 短信插件                  |
+| 短信发送      | `backend/plugins/sms/demo_sms`                    | 模拟短信插件                     |
+| 上游开通/控制 | `backend/plugins/servers/zjmf_finance`            | ZJMF 财务上游插件                |
+| 上游开通/控制 | `backend/plugins/servers/kanghostx`               | 康乐虚拟主机插件                 |
+| 上游开通/控制 | `backend/plugins/servers/demo_servers`            | 模拟上游插件                     |
+| 功能扩展      | `backend/plugins/addons/demo_style`               | Addon、调度任务和 hook 示例插件  |
 
 每个 demo 包都包含：
 
@@ -678,5 +678,5 @@ php artisan test tests/Feature/MultiSmtpRoundRobinPluginTest.php
 
 ```bash
 cd frontend-admin-v3
-npm.cmd run build
+pnpm.cmd run build
 ```
