@@ -68,7 +68,7 @@
                 <t-dropdown
                   trigger="click"
                   :options="actionOptions(item)"
-                  @click="({ value }: { value: string | number }) => handleServiceAction(String(value), item)"
+                  @click="(option) => handleDropdownAction(option, item)"
                 >
                   <button
                     type="button"
@@ -230,7 +230,7 @@
                   <t-dropdown
                     trigger="click"
                     :options="actionOptions(row)"
-                    @click="({ value }: { value: string | number }) => handleServiceAction(String(value), row)"
+                    @click="(option) => handleDropdownAction(option, row)"
                   >
                     <t-button size="small" variant="outline">更多</t-button>
                   </t-dropdown>
@@ -341,7 +341,6 @@ import { CatalogIcon, DashboardIcon, EditIcon, SearchIcon } from 'tdesign-icons-
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { shallowRef, triggerRef } from 'vue';
 
-import { openPublicProducts } from '@/utils/publicSite';
 import {
   findListSpecValue,
   formatMoney,
@@ -356,6 +355,7 @@ import {
   resolveTdesignStatusTheme,
   useServiceCenter,
 } from '@/domains/services/useServiceCenter';
+import { openPublicProducts } from '@/utils/publicSite';
 
 const {
   loading,
@@ -388,7 +388,6 @@ const {
   submitRemark,
   copyText,
   handleServiceAction,
-  router,
 } = useServiceCenter();
 
 const failedServiceOsIconKeys = shallowRef(new Set<string>());
@@ -415,6 +414,18 @@ const columns: PrimaryTableCol[] = [
   { colKey: 'ip', title: '公网 IP', minWidth: '10rem' },
   { colKey: 'operation', title: '操作', width: '13rem', fixed: 'right', align: 'right' },
 ];
+
+function resolveDropdownValue(option: unknown) {
+  if (typeof option === 'object' && option !== null) {
+    return String((option as { value?: string | number }).value ?? '');
+  }
+
+  return String(option);
+}
+
+function handleDropdownAction(option: unknown, target: Parameters<typeof handleServiceAction>[1]) {
+  return handleServiceAction(resolveDropdownValue(option), target);
+}
 
 function actionOptions(item: Record<string, any>) {
   const options = [{ content: '立即续费', value: 'renew' }];

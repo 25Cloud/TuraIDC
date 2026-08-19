@@ -393,19 +393,24 @@
         </t-select>
         <t-switch
           v-else-if="field.type === 'switch' || field.type === 'boolean'"
-          v-model="supplierCredentialValues[field.key]"
+          :value="supplierCredentialValues[field.key] as boolean"
+          @update:model-value="(value: unknown) => (supplierCredentialValues[field.key] = value as boolean)"
         />
         <t-input-number
           v-else-if="field.type === 'number'"
-          v-model="supplierCredentialValues[field.key]"
+          :value="supplierCredentialValues[field.key] as number | null"
           :placeholder="field.placeholder || `请输入${field.label}`"
           style="width: 100%"
+          @update:model-value="(value: unknown) => (supplierCredentialValues[field.key] = value as number | null)"
         />
         <t-textarea
           v-else-if="field.type === 'textarea'"
-          v-model="supplierCredentialValues[field.key]"
+          :value="supplierCredentialValues[field.key] as string | number | null"
           :autosize="{ minRows: 3, maxRows: 6 }"
           :placeholder="field.placeholder || `请输入${field.label}`"
+          @update:model-value="
+            (value: unknown) => (supplierCredentialValues[field.key] = value as string | number | null)
+          "
         />
         <secret-input
           v-else-if="field.secret"
@@ -421,10 +426,13 @@
         />
         <t-input
           v-else
-          v-model="supplierCredentialValues[field.key]"
+          :value="supplierCredentialValues[field.key] as string | number | null"
           :type="field.type === 'password' ? 'password' : 'text'"
           clearable
           :placeholder="supplierFieldPlaceholder(field)"
+          @update:model-value="
+            (value: unknown) => (supplierCredentialValues[field.key] = value as string | number | null)
+          "
         />
         <p v-if="field.description" class="supplier-field-tip">{{ field.description }}</p>
       </t-form-item>
@@ -436,7 +444,7 @@
 </template>
 <script setup lang="ts">
 import { AddIcon, ChevronRightIcon, SearchIcon } from 'tdesign-icons-vue-next';
-import type { PageInfo } from 'tdesign-vue-next';
+import type { FormRules, PageInfo } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -469,6 +477,12 @@ import {
   providerTypeFallbackLabels,
   toPlainRecord,
 } from '../composables/useProductShared';
+
+type ThemeType = 'default' | 'warning' | 'success' | 'primary' | 'danger';
+type TagVariantType = 'outline' | 'light' | 'dark' | 'light-outline';
+type ButtonVariantType = 'base' | 'text' | 'outline' | 'dashed';
+type TDesignSupplierCardStatus = Required<SupplierCardStatus> & { theme: ThemeType; variant: TagVariantType };
+type TDesignSupplierCardAction = SupplierCardAction & { theme?: ThemeType; variant?: ButtonVariantType };
 
 interface SupplierBatchProduct {
   id: number;
@@ -557,14 +571,14 @@ const supplierForm = reactive({
   name: '',
   status: 1,
 });
-const supplierCredentialValues = reactive<Record<string, unknown>>({});
+const supplierCredentialValues = reactive<Record<string, string | number | boolean | null>>({});
 const supplierSecretEdited = reactive<Record<string, boolean>>({});
 const canManageSuppliers = computed(() => hasAdminPermission(AdminPermissions.SUPPLIER_MANAGE));
 const canSyncSuppliers = computed(() => hasAdminPermission(AdminPermissions.SUPPLIER_SYNC));
 const canBulkConnectSupplierProducts = computed(() => hasAdminPermission(AdminPermissions.PRODUCT_SYNC));
 const canRevealSupplierSecrets = computed(() => hasAdminPermission(AdminPermissions.SUPPLIER_SECRET_REVEAL));
 
-const supplierRules = {
+const supplierRules: FormRules<typeof supplierForm> = {
   provider_key: [{ required: true, message: '请选择插件提供商', trigger: 'change' }],
   name: [{ required: true, message: '请输入接口名称', trigger: 'blur' }],
 };
@@ -650,12 +664,12 @@ function supplierCardSubtitle(row: SupplierRecord) {
   return String(supplierCard(row).subtitle || '').trim();
 }
 
-function supplierCardStatus(row: SupplierRecord): Required<SupplierCardStatus> {
+function supplierCardStatus(row: SupplierRecord): TDesignSupplierCardStatus {
   const status = toPlainRecord(supplierCard(row).status);
   return {
     label: String(status.label || '').trim(),
-    theme: String(status.theme || 'default').trim(),
-    variant: String(status.variant || 'light').trim(),
+    theme: toThemeType(status.theme || 'default'),
+    variant: toTagVariantType(status.variant || 'light'),
   };
 }
 
@@ -678,7 +692,7 @@ function canRunSupplierCardAction(action: SupplierCardAction) {
   return true;
 }
 
-function supplierCardActions(row: SupplierRecord): SupplierCardAction[] {
+function supplierCardActions(row: SupplierRecord): TDesignSupplierCardAction[] {
   const actions = supplierCard(row).actions;
   if (!canSyncSuppliers.value || !Array.isArray(actions)) return [];
   return actions
@@ -689,8 +703,8 @@ function supplierCardActions(row: SupplierRecord): SupplierCardAction[] {
         label: String(record.label || '').trim(),
         action: String(record.action || '').trim(),
         request_action: String(record.request_action || '').trim(),
-        theme: String(record.theme || '').trim(),
-        variant: String(record.variant || '').trim(),
+        theme: toThemeType(record.theme || 'default'),
+        variant: toButtonVariantType(record.variant || 'text'),
         disabled: Boolean(record.disabled),
         disabled_reason: String(record.disabled_reason || '').trim(),
       };
@@ -702,6 +716,24 @@ function supplierCardActions(row: SupplierRecord): SupplierCardAction[] {
         String(action.label || '').trim() &&
         canRunSupplierCardAction(action),
     );
+}
+
+function toThemeType(value: unknown): ThemeType {
+  const theme = String(value || 'default').trim();
+  if (theme === 'warning' || theme === 'success' || theme === 'primary' || theme === 'danger') return theme;
+  return 'default';
+}
+
+function toTagVariantType(value: unknown): TagVariantType {
+  const variant = String(value || 'light').trim();
+  if (variant === 'outline' || variant === 'dark' || variant === 'light-outline') return variant;
+  return 'light';
+}
+
+function toButtonVariantType(value: unknown): ButtonVariantType {
+  const variant = String(value || 'text').trim();
+  if (variant === 'base' || variant === 'outline' || variant === 'dashed') return variant;
+  return 'text';
 }
 
 function supplierCardEmptyText(row: SupplierRecord) {
@@ -1560,20 +1592,34 @@ function resetSupplierCredentialValues(source: SupplierRecord | null) {
   const upstreamBinding = toPlainRecord(source?.upstream_binding);
   supplierCredentialFields.value.forEach((field) => {
     if (field.key === 'api_url') {
-      supplierCredentialValues[field.key] = upstreamBinding.base_url || source?.api_url || field.default || '';
+      supplierCredentialValues[field.key] = normalizeSupplierCredentialValue(
+        upstreamBinding.base_url || source?.api_url || field.default || '',
+      );
       return;
     }
     if (field.key === 'api_username') {
-      supplierCredentialValues[field.key] = upstreamBinding.account_name || source?.api_username || field.default || '';
+      supplierCredentialValues[field.key] = normalizeSupplierCredentialValue(
+        upstreamBinding.account_name || source?.api_username || field.default || '',
+      );
       return;
     }
     if (field.key === 'api_key') {
       supplierCredentialValues[field.key] = '';
       return;
     }
-    supplierCredentialValues[field.key] =
-      providerConfig[field.key] ?? field.default ?? defaultSupplierFieldValue(field);
+    supplierCredentialValues[field.key] = normalizeSupplierCredentialValue(
+      providerConfig[field.key] ?? field.default ?? defaultSupplierFieldValue(field),
+    );
   });
+}
+
+function normalizeSupplierCredentialValue(value: unknown): string | number | boolean | null {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'boolean') return value;
+  if (value === null) return null;
+  if (value === undefined) return '';
+  return String(value);
 }
 
 function defaultSupplierFieldValue(field: SupplierFormField) {

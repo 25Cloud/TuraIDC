@@ -139,7 +139,7 @@
 import './index.less';
 
 import { AddIcon } from 'tdesign-icons-vue-next';
-import type { FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
+import type { FormInstanceFunctions, FormRule, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -197,7 +197,7 @@ const modelRules: Record<string, FormRule[]> = {
   name: [{ required: true, message: '请输入 CPU 型号名称', type: 'error' }],
 };
 
-const columns: PrimaryTableCol<CpuModel>[] = [
+const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'name', title: '型号名称', minWidth: 220 },
   { colKey: 'frequency', title: '主频 / 睿频', minWidth: 180 },
   { colKey: 'value', title: '内部标识', minWidth: 180 },

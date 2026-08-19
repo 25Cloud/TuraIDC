@@ -126,7 +126,7 @@
               v-model="testSendRecipient"
               :placeholder="testSendPlaceholder"
               clearable
-              :type="templateChannel === 'sms' ? 'tel' : 'email'"
+              :type="templateChannel === 'sms' ? 'tel' : 'text'"
               @input="testSendResult = null"
             />
           </t-form-item>

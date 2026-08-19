@@ -288,6 +288,7 @@
 </template>
 <script setup lang="ts">
 import { ChevronLeftIcon, DeleteIcon } from 'tdesign-icons-vue-next';
+import type { FormRules, SelectValue } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -343,7 +344,7 @@ const form = reactive({
   config_options: [] as ConfigOptionRecord[],
 });
 
-const rules = {
+const rules: FormRules<typeof form> = {
   display_name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
   selected_product_group_key: [{ required: true, message: '请选择所属分类', trigger: 'change' }],
 };
@@ -520,12 +521,13 @@ function supplierProductOptionLabel(row: SupplierBatchProduct) {
   return typeLabel ? `${productLabel} · ${typeLabel}` : productLabel;
 }
 
-function handleSupplierChange(value: string | number) {
-  form.supplier_id = value || '';
+function handleSupplierChange(value: SelectValue) {
+  const supplierId = typeof value === 'string' || typeof value === 'number' ? value : '';
+  form.supplier_id = supplierId;
   form.upstream_product_id = '';
   supplierProductOptions.value = [];
-  if (value) {
-    loadSupplierProducts(value, true);
+  if (supplierId) {
+    loadSupplierProducts(supplierId, true);
   }
 }
 
@@ -692,7 +694,7 @@ function removeConfigSubItemRow(index: number) {
   configOptionSubItemRows.value.splice(index, 1);
 }
 
-function handleConfigOptionModeChange(value: string | number) {
+function handleConfigOptionModeChange(value: SelectValue) {
   configOptionForm.option_mode = String(value || 'select');
   if (configOptionForm.option_mode === 'select' && configOptionSubItemRows.value.length === 0) {
     configOptionSubItemRows.value = [createConfigSubItemRow({}, 0)];

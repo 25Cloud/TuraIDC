@@ -53,6 +53,10 @@ export default antfu(
          */
         'no-console': 'off',
         'ts/no-explicit-any': 'off',
+        // v-model 的 update:modelValue 属 Vue 惯例 camelCase；项目另有 Vue2 filter 历史语法，
+        // 均关闭以兼容既有代码（运行兼容另行处理）。
+        'vue/custom-event-name-casing': 'off',
+        'vue/no-deprecated-filter': 'off',
 
         /* Disallow person rules */
         'antfu/top-level-function': 'off',
@@ -101,7 +105,8 @@ export default antfu(
 
       rules: {
         'vue/component-name-in-template-casing': ['error', 'kebab-case'],
-        'vue/custom-event-name-casing': ['error', 'kebab-case'],
+        // 与顶层一致关闭：v-model 的 update:modelValue 属 Vue 惯例 camelCase。
+        'vue/custom-event-name-casing': 'off',
         'vue/block-order': [
           'error',
           {

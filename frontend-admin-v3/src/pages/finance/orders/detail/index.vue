@@ -287,6 +287,8 @@ import RecordDetailPage from '@/components/record-detail-page/index.vue';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
 
+type ThemeType = 'default' | 'warning' | 'success' | 'primary' | 'danger';
+
 const SNAPSHOT_LABEL_MAP: Record<string, string> = {
   // ── 产品配置 ──
   bw: '带宽',
@@ -632,27 +634,30 @@ function orderStatusLabel(status: unknown) {
   return orderStatusLabelMap[String(status ?? '')] || fieldValue(status);
 }
 
-function orderStatusTheme(status: unknown) {
+function orderStatusTheme(status: unknown): ThemeType {
   const value = orderStatusTypeMap[String(status ?? '')] || 'default';
-  return value === 'info' ? 'default' : value;
+  if (value === 'warning' || value === 'success' || value === 'primary' || value === 'danger') return value;
+  return 'default';
 }
 
 function invoiceStatusLabel(status: unknown) {
   return invoiceStatusLabelMap[String(status ?? '')] || fieldValue(status);
 }
 
-function invoiceStatusTheme(status: unknown) {
+function invoiceStatusTheme(status: unknown): ThemeType {
   const value = invoiceStatusTypeMap[String(status ?? '')] || 'default';
-  return value === 'info' ? 'default' : value;
+  if (value === 'warning' || value === 'success' || value === 'primary' || value === 'danger') return value;
+  return 'default';
 }
 
 function paymentStatusLabel(payment: Record<string, unknown>) {
   return getStatusLabel(PAYMENT_STATUS_MAP, Number(payment.status));
 }
 
-function paymentStatusTheme(payment: Record<string, unknown>) {
+function paymentStatusTheme(payment: Record<string, unknown>): ThemeType {
   const value = getStatusTagType(PAYMENT_STATUS_MAP, Number(payment.status));
-  return value === 'info' || value === 'purple' ? 'default' : value;
+  if (value === 'warning' || value === 'success' || value === 'primary' || value === 'danger') return value;
+  return 'default';
 }
 
 function userName(user: unknown) {

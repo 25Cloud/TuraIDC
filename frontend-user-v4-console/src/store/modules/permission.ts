@@ -20,9 +20,9 @@ function toMenuRoutes(routes: RouteRecordRaw[] = []): MenuRoute[] {
 export const usePermissionStore = defineStore('permission', {
   state: () => ({
     whiteListRouters: ['/client/login', '/client/register', '/client/forgot-password', '/client/login-as'],
-    routers: [],
-    removeRoutes: [],
-    asyncRoutes: [],
+    routers: [] as MenuRoute[],
+    removeRoutes: [] as any[],
+    asyncRoutes: [] as any[],
     routesBuilt: false,
   }),
   actions: {
@@ -43,7 +43,7 @@ export const usePermissionStore = defineStore('permission', {
       }
     },
     async restoreRoutes() {
-      this.asyncRoutes.forEach((item: RouteRecordRaw) => {
+      this.asyncRoutes.forEach((item) => {
         if (item.name) {
           router.removeRoute(item.name);
         }

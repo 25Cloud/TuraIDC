@@ -110,7 +110,7 @@ function createPrecompressedAssetsPlugin() {
     apply: 'build' as const,
     async closeBundle() {
       const distDirectory = path.resolve(__dirname, 'dist');
-      const distStats = await stat(distDirectory).catch(() => null);
+      const distStats = await stat(distDirectory).catch((): null => null);
 
       if (!distStats?.isDirectory()) {
         return;

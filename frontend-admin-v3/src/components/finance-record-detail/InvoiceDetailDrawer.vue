@@ -152,6 +152,8 @@ import type { RecordDetailMetric, RecordDetailTab } from '@/components/record-de
 import RecordDetailPage from '@/components/record-detail-page/index.vue';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
+type ThemeType = 'default' | 'warning' | 'success' | 'primary' | 'danger';
+
 const props = withDefaults(
   defineProps<{
     visible: boolean;
@@ -235,9 +237,10 @@ function paymentStatusLabel(payment: Record<string, unknown>) {
   return getStatusLabel(PAYMENT_STATUS_MAP, Number(payment.status));
 }
 
-function paymentStatusTheme(payment: Record<string, unknown>) {
+function paymentStatusTheme(payment: Record<string, unknown>): ThemeType {
   const value = getStatusTagType(PAYMENT_STATUS_MAP, Number(payment.status));
-  return value === 'info' || value === 'purple' ? 'default' : value;
+  if (value === 'warning' || value === 'success' || value === 'primary' || value === 'danger') return value;
+  return 'default';
 }
 
 function fieldValue(value: unknown) {

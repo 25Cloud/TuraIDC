@@ -39,6 +39,8 @@ import { computed } from 'vue';
 
 import StatusTag from '@/components/status-tag/index.vue';
 
+type ThemeType = 'default' | 'warning' | 'success' | 'primary' | 'danger';
+
 export interface MobileRecordCardRow {
   label: string;
   value?: string | number | null;
@@ -55,7 +57,7 @@ const props = withDefaults(
     highlightLabel?: string;
     highlightValue?: string | number | null;
     statusLabel?: string;
-    statusTheme?: string;
+    statusTheme?: ThemeType;
     statusMap?: Record<string, any>;
     status?: number | string;
     rows?: MobileRecordCardRow[];

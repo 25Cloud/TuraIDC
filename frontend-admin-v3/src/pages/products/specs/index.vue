@@ -100,7 +100,7 @@
 import './index.less';
 
 import { AddIcon, SearchIcon } from 'tdesign-icons-vue-next';
-import type { FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
+import type { FormInstanceFunctions, FormRule, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { onMounted, reactive, ref } from 'vue';
 
@@ -150,7 +150,7 @@ const specRules: Record<string, FormRule[]> = {
   text: [{ required: true, message: '请输入实例规格文本', type: 'error' }],
 };
 
-const columns: PrimaryTableCol<SpecRecord>[] = [
+const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'spec', title: '实例规格文本', minWidth: 220 },
   { colKey: 'note', title: '说明', minWidth: 220, ellipsis: true },
   { colKey: 'status', title: '状态', width: 110 },

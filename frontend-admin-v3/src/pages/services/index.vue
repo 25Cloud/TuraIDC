@@ -171,7 +171,7 @@ import './index.less';
 
 import { SERVICE_STATUS_MAP, toSelectOptions } from '@shared/statusConfig';
 import { SearchIcon } from 'tdesign-icons-vue-next';
-import type { PageInfo, PrimaryTableCol } from 'tdesign-vue-next';
+import type { PageInfo, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -218,7 +218,7 @@ const statusOptions = computed(() =>
   toSelectOptions(SERVICE_STATUS_MAP, false).map((item) => ({ ...item, value: String(item.value) })),
 );
 
-const columns: PrimaryTableCol<ServiceRecord>[] = [
+const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'row-select', type: 'multiple', width: 54, fixed: 'left' },
   { colKey: 'service', title: '服务', minWidth: 280 },
   { colKey: 'host', title: '主机信息', minWidth: 240 },
@@ -230,7 +230,7 @@ const columns: PrimaryTableCol<ServiceRecord>[] = [
   { colKey: 'created', title: '开通时间', width: 120 },
 ];
 
-const hostnameColumns: PrimaryTableCol<HostnameRow>[] = [
+const hostnameColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'service_id', title: '服务ID', width: 90 },
   { colKey: 'service', title: '服务信息', minWidth: 240 },
   { colKey: 'current', title: '当前展示', minWidth: 170 },
