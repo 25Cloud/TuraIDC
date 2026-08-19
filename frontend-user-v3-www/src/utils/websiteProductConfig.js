@@ -17,6 +17,7 @@ export const REGION_FIELD_KEYS = ['region', 'area', 'location', 'zone', 'datacen
 const OS_ICON_MAP = {
   windows: '/img/os/Windows.svg',
   win: '/img/os/Windows.svg',
+  tencentos: '/img/os/TencentOS.png',
   ubuntu: '/img/os/Ubuntu.svg',
   debian: '/img/os/Debian.svg',
   centos: '/img/os/CentOS.svg',
