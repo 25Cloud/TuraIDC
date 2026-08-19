@@ -19,7 +19,7 @@ export function resolveApiOrigin(apiBaseUrl) {
  * separately. Other relative values are static WWW assets and stay untouched.
  */
 export function resolveApiAssetUrl(value, apiBaseUrl) {
-  const normalized = String(value || '').trim().replace(/\\/g, '/')
+  const normalized = String(value || '').trim().replace(/^`\s*|\s*`$/g, '').replace(/\\/g, '/')
   if (!normalized || /^(?:https?:)?\/\//i.test(normalized) || normalized.startsWith('data:')) {
     return normalized
   }

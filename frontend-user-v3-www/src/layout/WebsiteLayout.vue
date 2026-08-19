@@ -664,7 +664,14 @@
             <ul class="footer-contact">
               <li v-for="item in supportContacts" :key="item.key">
                 <span class="footer-contact__label">{{ item.label }}</span>
-                <span class="footer-contact__value">{{ item.value }}</span>
+                <a
+                  v-if="item.key === 'qq-group' && appStore.supportGroupLink"
+                  :href="appStore.supportGroupLink"
+                  class="footer-contact__value footer-contact__link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >{{ item.value }}</a>
+                <span v-else class="footer-contact__value">{{ item.value }}</span>
               </li>
             </ul>
           </div>
@@ -974,7 +981,7 @@ const aboutQuickLinks = [
   { to: "/notices", title: "公告动态", desc: "产品更新、活动与维护通知" },
 ];
 
-const logoSrc = "/branding/logo.png";
+const logoSrc = computed(() => appStore.siteLogo || "/branding/logo.png");
 const supportContacts = computed(() =>
   buildSupportContacts({
     serviceQqGroup: appStore.serviceQqGroup,
@@ -1001,6 +1008,11 @@ function handleLogoError() {
 function handleFooterLogoError() {
   footerLogoLoadFailed.value = true;
 }
+
+watch(logoSrc, () => {
+  logoLoadFailed.value = false;
+  footerLogoLoadFailed.value = false;
+});
 
 function closeMobileMenu() {
   mobileNavVisible.value = false;
@@ -2036,6 +2048,14 @@ onBeforeUnmount(() => {
   color: $text-color-primary;
   font-size: 13px;
   font-weight: 500;
+}
+
+.footer-contact__link {
+  text-decoration: none;
+
+  &:hover {
+    color: $color-primary;
+  }
 }
 
 .footer-columns {

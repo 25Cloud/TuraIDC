@@ -108,7 +108,7 @@ export function updatePageMeta(options = {}) {
 export function applyRouteMeta(to, baseConfig = {}) {
   const meta = to?.meta || {}
   const siteUrl = String(baseConfig.siteUrl || '').replace(/\/+$/, '')
-  const siteName = baseConfig.siteName || ''
+  const siteName = baseConfig.browserTitle || baseConfig.siteName || ''
 
   const pageTitle = typeof meta.title === 'string' ? meta.title : ''
   const description = typeof meta.description === 'string' ? meta.description : ''

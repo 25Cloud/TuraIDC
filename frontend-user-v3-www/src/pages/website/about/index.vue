@@ -20,7 +20,16 @@
           <h2>联系方式</h2>
           <p>客服邮箱：{{ appStore.serviceEmail || '暂无配置' }}</p>
           <p>服务时间：{{ appStore.serviceHours || '以站内通知为准' }}</p>
-          <p>官方群号：{{ appStore.serviceQqGroup || '暂无配置' }}</p>
+          <p>
+            官方群号：
+            <a
+              v-if="appStore.supportGroupLink"
+              :href="appStore.supportGroupLink"
+              target="_blank"
+              rel="noopener noreferrer"
+            >{{ appStore.serviceQqGroup || '暂无配置' }}</a>
+            <span v-else>{{ appStore.serviceQqGroup || '暂无配置' }}</span>
+          </p>
         </article>
       </div>
     </section>
