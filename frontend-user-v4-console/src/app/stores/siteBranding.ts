@@ -24,8 +24,10 @@ function normalizeBrandAsset(raw: unknown, fallback: string) {
     return normalized;
   }
 
-  if (/(?:^|\/)branding\/logo\.svg(?:[?#].*)?$/i.test(normalized)
-    || /(?:^|\/)branding\/logo\.png(?:[?#].*)?$/i.test(normalized)) {
+  if (
+    /(?:^|\/)branding\/logo\.svg(?:[?#].*)?$/i.test(normalized) ||
+    /(?:^|\/)branding\/logo\.png(?:[?#].*)?$/i.test(normalized)
+  ) {
     return DEFAULT_SITE_LOGO;
   }
 
