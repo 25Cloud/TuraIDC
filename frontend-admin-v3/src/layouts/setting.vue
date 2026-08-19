@@ -17,9 +17,9 @@
           variant="default-filled"
           @change="handleModeChange"
         >
-          <t-radio-button :value="'light'">{{ t('layout.setting.theme.options.light') }}</t-radio-button>
-          <t-radio-button :value="'dark'">{{ t('layout.setting.theme.options.dark') }}</t-radio-button>
-          <t-radio-button :value="'auto'">{{ t('layout.setting.theme.options.auto') }}</t-radio-button>
+          <t-radio-button value="light">{{ t('layout.setting.theme.options.light') }}</t-radio-button>
+          <t-radio-button value="dark">{{ t('layout.setting.theme.options.dark') }}</t-radio-button>
+          <t-radio-button value="auto">{{ t('layout.setting.theme.options.auto') }}</t-radio-button>
         </t-radio-group>
 
         <div class="setting-group-title">{{ t('layout.setting.navigationLayout') }}</div>

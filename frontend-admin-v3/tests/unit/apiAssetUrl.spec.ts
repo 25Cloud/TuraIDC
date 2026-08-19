@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { runInThisContext } from 'node:vm';
 
 import ts from 'typescript';
 
@@ -14,7 +15,7 @@ const { outputText } = ts.transpileModule(source, {
   },
 });
 const module = { exports: {} as Record<string, (...args: unknown[]) => string> };
-new Function('exports', 'require', 'module', outputText)(module.exports, require, module);
+runInThisContext(`(function (exports, require, module) {\n${outputText}\n})`)(module.exports, require, module);
 
 const { resolveApiAssetUrl } = module.exports;
 
