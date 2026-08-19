@@ -129,3 +129,6 @@ caiwu_update/
 backend/public/.user.ini
 # ---- 内部安全分析资料（第三方系统漏洞分析，勿公开）----
 zjmf(ignore this)/
+
+# AI IDE工具自动生成
+.workbuddy/

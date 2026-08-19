@@ -1,0 +1,146 @@
+# ============================================================================
+# TuraIDC Docker 镜像构建与推送
+#
+# 触发：
+#   - push 到 main / master
+#   - push 任意 tag
+#   - 手动触发（workflow_dispatch）
+#
+# 产物（推送到 GHCR，镜像名全部小写）：
+#   ghcr.io/<owner>/turaidc-app         后端（PHP-FPM + Nginx + Cron + VNC Relay）
+#   ghcr.io/<owner>/turaidc-frontends   前端三端合一（www:8081 / console:8082 / admin:8083）
+#
+# 前置配置（Settings → Secrets and variables → Actions）：
+#   前端构建需要四个公开地址（build args），推荐配在 Variables（明文，非敏感）：
+#   APP_URL / FRONTEND_URL / CLIENT_CONSOLE_URL / ADMIN_URL
+#   （CLIENT_SESSION_COOKIE_DOMAIN 跨子域共享登录态时再配，未配置则传空）
+#   未配 Variables 时回落读取同名 Secrets；两者都没配则前端构建失败，以提示你补全。
+#   注意：不想用 CI 也可本地构建——deploy/docker/.env 直接提供这些值，
+#   运行 docker compose up -d --build 即可，GitHub 侧无需任何配置。
+# ============================================================================
+name: Docker Image Build & Push
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["*"]
+  workflow_dispatch:
+
+concurrency:
+  group: docker-image-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  backend:
+    name: Build & push turaidc-app
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # GHCR 镜像名必须全小写
+      - name: Set image namespace (lowercase)
+        run: echo "IMAGE_NAMESPACE=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags/labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/turaidc-app
+          # latest 只在打 tag（正式发布）时打，分支推送只打分支名 + sha
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Job summary
+        run: |
+          echo "## 后端镜像已推送" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/turaidc-app" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Tags: ${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+
+  frontends:
+    name: Build & push turaidc-frontends
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image namespace (lowercase)
+        run: echo "IMAGE_NAMESPACE=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags/labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/turaidc-frontends
+          # latest 只在打 tag（正式发布）时打，分支推送只打分支名 + sha
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/frontends/Dockerfile
+          build-args: |
+            APP_URL=${{ vars.APP_URL || secrets.APP_URL }}
+            FRONTEND_URL=${{ vars.FRONTEND_URL || secrets.FRONTEND_URL }}
+            CLIENT_CONSOLE_URL=${{ vars.CLIENT_CONSOLE_URL || secrets.CLIENT_CONSOLE_URL }}
+            ADMIN_URL=${{ vars.ADMIN_URL || secrets.ADMIN_URL }}
+            CLIENT_SESSION_COOKIE_DOMAIN=${{ vars.CLIENT_SESSION_COOKIE_DOMAIN || secrets.CLIENT_SESSION_COOKIE_DOMAIN }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Job summary
+        run: |
+          echo "## 前端镜像已推送（三端合一）" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/turaidc-frontends" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Tags: ${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"

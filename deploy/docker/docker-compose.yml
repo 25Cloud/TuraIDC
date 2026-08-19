@@ -1,0 +1,126 @@
+# ============================================================================
+# TuraIDC 一键编排：MySQL + Redis + 后端(app) + 前端(frontends 三端口)
+#
+# 两种用法：
+#   1. 拉取模式（推荐，配合 CI 自动推送镜像）：
+#        cd deploy/docker && cp .env.example .env
+#        docker compose pull && docker compose up -d
+#   2. 本地构建模式（无镜像仓库时）：
+#        docker compose up -d --build
+#
+# 镜像地址由 .env 控制：REGISTRY / IMAGE_NAMESPACE / IMAGE_TAG
+# 详细说明见 docs/参考资料/运维/Docker与1Panel部署指南.md
+# ============================================================================
+name: turaidc
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: turaidc-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?请在 .env 设置 DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE:?请在 .env 设置 DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME:?请在 .env 设置 DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?请在 .env 设置 DB_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      # 初始化阶段 MySQL 跑临时服务器（port 0，仅 socket），TCP 探活必失败；
+      # 慢盘首次初始化可能 4-5 分钟。给足宽限期，避免 compose 误判依赖失败。
+      test: ["CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 300s
+
+  redis:
+    image: redis:7-alpine
+    container_name: turaidc-redis
+    restart: unless-stopped
+    # 有密码时加 --requirepass；无密码时只开 AOF 持久化
+    command: >-
+      sh -c '[ -n "$$REDIS_PASSWORD" ] &&
+        redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD" ||
+        redis-server --appendonly yes'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      # 有密码时带 -a 认证，无密码时普通 ping
+      test: ["CMD-SHELL", "redis-cli $${REDIS_PASSWORD:+-a $$REDIS_PASSWORD} ping 2>/dev/null | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # 后端：PHP-FPM + Nginx + Cron(schedule:run) + VNC Relay，supervisor 统一托管
+  app:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-25cloud}/turaidc-app:${IMAGE_TAG:-latest}
+    build:
+      context: ../..
+      dockerfile: deploy/docker/backend/Dockerfile
+    container_name: turaidc-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      TZ: Asia/Shanghai
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - app-storage:/var/www/backend/storage
+      - app-uploads:/var/www/backend/public/uploads
+      - app-media:/var/www/backend/public/media
+    # tmpfs 放代码：Docker Desktop Windows overlayfs 导致 php-fpm fork 的 worker
+    # 读镜像层/可写层文件 EPERM。tmpfs 是纯内存文件系统，绕开 overlayfs。
+    # Linux 生产环境无此 bug，tmpfs 拷贝开销 <2s 可忽略。
+    # 命名卷(storage/uploads/media)会叠在 tmpfs 之上，持久化不受影响。
+    tmpfs:
+      - /var/www/backend:rw,size=256m
+    ports:
+      - "${API_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  # 前端：三端合一，容器内 8081(www) / 8082(console) / 8083(admin) 三端口
+  frontends:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-25cloud}/turaidc-frontends:${IMAGE_TAG:-latest}
+    build:
+      context: ../..
+      dockerfile: deploy/docker/frontends/Dockerfile
+      args:
+        APP_URL: ${APP_URL:?请在 .env 设置 APP_URL}
+        FRONTEND_URL: ${FRONTEND_URL:?请在 .env 设置 FRONTEND_URL}
+        CLIENT_CONSOLE_URL: ${CLIENT_CONSOLE_URL:?请在 .env 设置 CLIENT_CONSOLE_URL}
+        ADMIN_URL: ${ADMIN_URL:?请在 .env 设置 ADMIN_URL}
+        CLIENT_SESSION_COOKIE_DOMAIN: ${CLIENT_SESSION_COOKIE_DOMAIN:-}
+    container_name: turaidc-frontends
+    restart: unless-stopped
+    ports:
+      - "${WWW_PORT:-8081}:8081"
+      - "${CONSOLE_PORT:-8082}:8082"
+      - "${ADMIN_PORT:-8083}:8083"
+    depends_on:
+      - app
+
+volumes:
+  mysql-data:
+  redis-data:
+  app-storage:
+  app-uploads:
+  app-media:
