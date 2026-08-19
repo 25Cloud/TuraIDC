@@ -124,6 +124,6 @@ php artisan schedule:work
 
 ## 开源许可
 
-本项目采用 [Apache License 2.0](./LICENSE) 开源。
+本项目采用 [GNU Affero General Public License v3.0 或更高版本（AGPL-3.0-or-later）](./LICENSE) 开源。
 
-> 说明：本项目管理后台与控制台基于 [TDesign Vue Next Starter](https://github.com/Tencent/tdesign-vue-next-starter) 构建，相关目录保留其 MIT 许可声明。
+> 说明：本项目管理后台与控制台基于 [TDesign Vue Next Starter](https://github.com/Tencent/tdesign-vue-next-starter) 构建；TuraIDC 自有代码采用 AGPL-3.0-or-later，TDesign 原始代码及其许可声明继续采用 MIT，详见各子目录的 `LICENSE`。

@@ -6,9 +6,10 @@
 
 ### 开源初始化
 
+- 项目自有代码许可证由 Apache-2.0 调整为 AGPL-3.0-or-later，TDesign 原始代码保留 MIT 许可
 - 重构仓库结构为 monorepo（backend / frontend-admin-v3 / frontend-user-v3-www / frontend-user-v4-console / shared）
 - 移除测试文件、AI 协作中间态文档与内部工具脚本，适配开源发布
-- 新增 Apache-2.0 许可证与部署、贡献文档
+- 新增开源许可证与部署、贡献文档
 - 源码中硬编码的生产域名替换为占位符 `example.com`
 
 ## [1.0.0] - 初始开源版本
