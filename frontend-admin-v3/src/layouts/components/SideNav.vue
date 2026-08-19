@@ -104,7 +104,10 @@ const getExpanded = () => {
   const path = getActive();
   // 优先精确匹配菜单叶子（跨分组同级前缀路由如 /admin/products 与
   // /admin/products/suppliers 不会互相误展开）；无精确项（隐藏路由）时回退前缀匹配。
-  const result = findExactMenuBranch(menu as MenuRoute[], path) || findExpandedByMenu(menu as MenuRoute[], path) || fallbackExpanded(path);
+  const result =
+    findExactMenuBranch(menu as MenuRoute[], path) ||
+    findExpandedByMenu(menu as MenuRoute[], path) ||
+    fallbackExpanded(path);
 
   expanded.value = result;
 };
