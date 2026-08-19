@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import { onScopeDispose } from 'vue';
 
 import { request } from '@/utils/request';
 
@@ -215,8 +216,8 @@ export function useGeeTestCaptcha() {
     const candidates =
       proxyUrl && proxyUrl !== directUrl
         ? [
-            { url: directUrl, key: `${config.captcha_id}:direct` },
             { url: proxyUrl, key: config.captcha_id },
+            { url: directUrl, key: `${config.captcha_id}:direct` },
           ]
         : [{ url: directUrl, key: `${config.captcha_id}:direct` }];
     let initGeetest4: typeof window.initGeetest4;
@@ -298,6 +299,17 @@ export function useGeeTestCaptcha() {
       }
     });
   };
+
+  const cleanup = () => {
+    if (captchaObj) {
+      captchaObj.destroy?.();
+      captchaObj = null;
+    }
+    initPromise = null;
+    rejectPending(new Error('行为验证组件已卸载'));
+  };
+
+  onScopeDispose(cleanup);
 
   return {
     loading,

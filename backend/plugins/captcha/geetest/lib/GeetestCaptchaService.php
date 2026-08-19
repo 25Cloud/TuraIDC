@@ -89,7 +89,6 @@ class GeetestCaptchaService
 
         try {
             $response = Http::asForm()
-                ->withOptions($this->httpOptions($config))
                 ->timeout(10)
                 ->post($endpoint, [
                     'lot_number' => $lotNumber,
@@ -150,8 +149,7 @@ class GeetestCaptchaService
         }
 
         try {
-            $response = Http::withOptions($this->httpOptions($config))
-                ->timeout(10)
+            $response = Http::timeout(10)
                 ->get(self::SCRIPT_UPSTREAM_URL);
 
             if (! $response->successful()) {
@@ -187,25 +185,6 @@ class GeetestCaptchaService
             'action' => $action,
             'message' => '',
             'data' => ['content' => $content],
-        ];
-    }
-
-    /**
-     * 本地代理可能使用自签名根证书，沿用系统 GeeTest TLS 配置；
-     * 生产环境默认仍开启证书校验，也支持通过 CA bundle 指定信任链。
-     *
-     * @param  array<string, mixed>  $config
-     * @return array{verify: bool|string}
-     */
-    private function httpOptions(array $config): array
-    {
-        $caBundle = trim((string) config('idc.geetest.ca_bundle', ''));
-        if ($caBundle !== '') {
-            return ['verify' => $caBundle];
-        }
-
-        return [
-            'verify' => (bool) config('idc.geetest.ssl_verify', true),
         ];
     }
 
