@@ -42,11 +42,18 @@ services:
     image: redis:7-alpine
     container_name: turaidc-redis
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
+    # 有密码时加 --requirepass；无密码时只开 AOF 持久化
+    command: >-
+      sh -c '[ -n "$$REDIS_PASSWORD" ] &&
+        redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD" ||
+        redis-server --appendonly yes'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      # 有密码时带 -a 认证，无密码时普通 ping
+      test: ["CMD-SHELL", "redis-cli $${REDIS_PASSWORD:+-a $$REDIS_PASSWORD} ping 2>/dev/null | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 20
