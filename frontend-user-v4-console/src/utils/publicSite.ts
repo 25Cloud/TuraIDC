@@ -1,5 +1,7 @@
 function resolvePublicSiteOrigin() {
-  const configuredOrigin = String(import.meta.env.VITE_PUBLIC_SITE_URL || '').trim().replace(/\/+$/, '');
+  const configuredOrigin = String(import.meta.env.VITE_PUBLIC_SITE_URL || '')
+    .trim()
+    .replace(/\/+$/, '');
   if (configuredOrigin) return configuredOrigin;
 
   if (typeof window === 'undefined') return '';

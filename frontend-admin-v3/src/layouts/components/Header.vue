@@ -3,7 +3,7 @@
     <t-head-menu :class="menuCls" :theme="menuTheme" expand-type="popup" :value="active">
       <template #logo>
         <span v-if="showLogo" class="header-logo-container" @click="handleNav('/dashboard/base')">
-          <logo-full class="t-logo" />
+          <img class="t-logo" :src="logoPng" alt="TuraIDC" />
         </span>
         <div v-else-if="!isMobileSideHeader" class="header-operate-left">
           <t-button theme="default" shape="square" variant="text" aria-label="折叠侧边栏" @click="changeCollapsed">
@@ -16,7 +16,7 @@
             <t-icon name="view-list" />
           </t-button>
           <span class="header-mobile-logo" @click="handleNav('/dashboard/base')">
-            <logo-full class="t-logo" />
+            <img class="t-logo" :src="logoPng" alt="TuraIDC" />
           </span>
         </div>
       </template>
@@ -96,7 +96,7 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { adminAuthApi } from '@/api/auth';
-import LogoFull from '@/assets/assets-logo-full.svg?component';
+import logoPng from '@/assets/logo.png';
 import { prefix } from '@/config/global';
 import { t } from '@/locales';
 import { getActive } from '@/router';
