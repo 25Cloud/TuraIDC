@@ -130,7 +130,7 @@ planned -> staging -> verified -> published -> purging -> purged
 - `automation_logs` 删除或归档回归测试必须证明不会改变 `recordOnce()`、`hasRecord()`、`markExecuted()` 的幂等结果；默认验收是该表完全不参与归档。
 - 心跳重试、进程中断、磁盘满、哈希失败、清除中断和归档物篡改均可定位到批次并恢复或告警。
 - 管理端直删路径、文件逐行重写和绕过归档的 Crontab 在切换完成后不存在。
-- 每次迁移均运行受影响 PHP 测试、Pint、PHPStan 与 `npm run docs:check`；涉及管理端冷检索时追加端到端测试。
+- 每次迁移均运行受影响 PHP 测试、Pint、PHPStan 与 `pnpm run docs:check`；涉及管理端冷检索时追加端到端测试。
 
 ## 开放决策
 

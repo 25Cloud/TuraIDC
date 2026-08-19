@@ -23,8 +23,8 @@
 
 ## 验证与提交
 
-- 文档改动运行 `npm run docs:check`；必要时运行 `npm run docs:freshness`。
-- 后端改动运行受影响的 `php artisan test`；前端按受影响应用运行 `npm run build`，重构按各应用规范补充 `verify:refactor`。
+- 文档改动运行 `pnpm run docs:check`；必要时运行 `pnpm run docs:freshness`。
+- 后端改动运行受影响的 `php artisan test`；前端按受影响应用运行 `pnpm run build`，重构按各应用规范补充 `verify:refactor`。
 - 每个子任务先展示改动与验证摘要；得到用户确认后独立提交，格式为 `Fix:中文描述`、`Feat:中文描述` 或 `Refactor:中文描述`。
 
 具体工程约束从 [BACKEND.md](../BACKEND.md)、[FRONTEND.md](../FRONTEND.md)、[DATABASE.md](../DATABASE.md) 和 [参考索引](../参考资料/README.md) 按需进入。

@@ -102,7 +102,7 @@ API 直接重构路由口径：
 - 页面：`src/pages/`，按业务域组织。
 - API：`src/api/`。
 - 样式：`src/style/`，沿用 TDesign/TDesign Starter token。
-- 验证：`cd frontend-admin-v3 && npm run build`。
+- 验证：`cd frontend-admin-v3 && pnpm run build`。
 
 ### 3.2 `frontend-user-v3-www`
 
@@ -113,7 +113,7 @@ API 直接重构路由口径：
 - 领域逻辑：`src/domains/`、`src/composables/`、`src/features/`。
 - 样式：`src/assets/styles/`。
 - 构建附带 sitemap/prerender。
-- 验证：`cd frontend-user-v3-www && npm run build`，重构时追加 `npm run verify:refactor`。
+- 验证：`cd frontend-user-v3-www && pnpm run build`，重构时追加 `pnpm run verify:refactor`。
 
 ### 3.3 `frontend-user-v4-console`
 
@@ -123,7 +123,7 @@ API 直接重构路由口径：
 - 页面：`src/pages/client/`。
 - 领域逻辑：`src/domains/`、`src/composables/`、`src/api/`。
 - 共享组件：优先复用 `shared/user-v3` 与 `@turaidc/shared`。
-- 验证：`cd frontend-user-v4-console && npm run build`，重构时追加 `npm run verify:refactor`。
+- 验证：`cd frontend-user-v4-console && pnpm run build`，重构时追加 `pnpm run verify:refactor`。
 
 ### 3.4 `shared`
 
@@ -142,9 +142,9 @@ API 直接重构路由口径：
 cd backend
 php artisan app:serve
 
-npm run dev:admin-v3
-npm run dev:user-v3-www
-npm run dev:user-v4-console
+pnpm run dev:admin-v3
+pnpm run dev:user-v3-www
+pnpm run dev:user-v4-console
 ```
 
 不要使用 `php artisan serve` 替代 `app:serve`。
