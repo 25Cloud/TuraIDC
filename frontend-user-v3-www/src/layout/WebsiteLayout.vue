@@ -974,7 +974,7 @@ const aboutQuickLinks = [
   { to: "/notices", title: "公告动态", desc: "产品更新、活动与维护通知" },
 ];
 
-const logoSrc = "/branding/logo.svg";
+const logoSrc = "/branding/logo.png";
 const supportContacts = computed(() =>
   buildSupportContacts({
     serviceQqGroup: appStore.serviceQqGroup,

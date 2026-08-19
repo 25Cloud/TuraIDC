@@ -39,6 +39,8 @@ tsc.log
 *.out.log
 *.png
 *.jpg
+!public/branding/logo.png
+!public/branding/logo@2x.png
 
 .env.local
 .env.*.local
