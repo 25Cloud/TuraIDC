@@ -39,6 +39,25 @@ cd "$BACKEND_DIR"
 # 值统一用双引号包裹；密码不要包含双引号/反斜杠。
 # ---------------------------------------------------------------------------
 log "生成 backend/.env"
+
+# 安全检查：拒绝使用未修改的示例密码，防止生产环境裸奔
+INSTALL_ADMIN_PASSWORD_VAL="$(printenv INSTALL_ADMIN_PASSWORD || true)"
+DB_PASSWORD_VAL="$(printenv DB_PASSWORD || true)"
+DB_ROOT_PASSWORD_VAL="$(printenv DB_ROOT_PASSWORD || true)"
+for chk_var in "INSTALL_ADMIN_PASSWORD:$INSTALL_ADMIN_PASSWORD_VAL" \
+               "DB_PASSWORD:$DB_PASSWORD_VAL" \
+               "DB_ROOT_PASSWORD:$DB_ROOT_PASSWORD_VAL"; do
+  chk_name="${chk_var%%:*}"
+  chk_val="${chk_var#*:}"
+  case "$chk_val" in
+    ""|PLEASE_CHANGE*)
+      log "错误：$chk_name 未设置或仍为示例值。请编辑 deploy/docker/.env 设置强密码后重试。"
+      exit 1
+      ;;
+  esac
+done
+unset INSTALL_ADMIN_PASSWORD_VAL DB_PASSWORD_VAL DB_ROOT_PASSWORD_VAL
+
 : > .env
 # 空值兜底：这些键若容器环境未提供，显式给默认值，避免"写空覆盖 Laravel 默认"。
 # （REDIS_CLIENT 为空会导致 RedisManager 拿不到 phpredis connector，MAIL_MAILER 为空会破坏邮件默认驱动）

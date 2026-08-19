@@ -62,12 +62,13 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/turaidc-app
+          # latest 只在打 tag（正式发布）时打，分支推送只打分支名 + sha
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -113,12 +114,13 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/turaidc-frontends
+          # latest 只在打 tag（正式发布）时打，分支推送只打分支名 + sha
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
