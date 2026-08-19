@@ -7,7 +7,13 @@ namespace App\Services\Integrations\Plugins;
 use App\Exceptions\BusinessException;
 use App\Models\AdminUser;
 use App\Models\IntegrationPlugin;
+use App\Services\Auth\GeeTestService;
+use App\Services\Integrations\Payments\PaymentGatewayOperationService;
+use App\Services\Mail\MailDriverManager;
+use App\Services\Sms\Data\SmsSendRequest;
+use App\Services\Sms\SmsDriverManager;
 use App\Services\System\NotificationService;
+use App\Support\PublicUrl;
 use App\Support\SmsTemplateCatalog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -35,6 +41,10 @@ class IntegrationPluginService
         private readonly PluginInstaller $installer,
         private readonly PluginConfigRepository $configRepository,
         private readonly PluginRuntimeRegistry $runtimeRegistry,
+        private readonly GeeTestService $geeTestService,
+        private readonly PaymentGatewayOperationService $paymentGatewayOperationService,
+        private readonly MailDriverManager $mailDriverManager,
+        private readonly SmsDriverManager $smsDriverManager,
     ) {}
 
     /**
@@ -222,6 +232,9 @@ class IntegrationPluginService
             throw new BusinessException('插件系统尚未初始化', 42200);
         }
 
+        $manifest = $this->scanner->requireManifest((string) $plugin->domain, (string) $plugin->slug);
+        $this->configRepository->assertConfigReady($plugin, $manifest);
+
         return $this->runtimeRegistry->healthCheck($plugin);
     }
 
@@ -231,20 +244,32 @@ class IntegrationPluginService
      */
     public function testEmail(IntegrationPlugin $plugin, array $payload): array
     {
-        if (! Schema::hasTable('integration_plugins')) {
-            throw new BusinessException('插件系统尚未初始化', 42200);
-        }
+        $this->assertTestDomain($plugin, PluginDomain::MAIL, '邮件发送');
 
-        if (! $plugin->isEnabled()) {
-            throw new BusinessException('插件未启用，无法发送测试邮件', 42200);
-        }
-
-        return $this->runtimeRegistry->execute(
-            domain: (string) $plugin->domain,
-            slugOrKey: (string) $plugin->slug,
-            action: 'mail.test_smtp',
-            payload: $this->verificationEmailPayload($payload),
+        $testPayload = $this->verificationEmailPayload($payload);
+        $driver = $this->mailDriverManager->resolve((string) $plugin->plugin_key);
+        $driver->sendHtml(
+            to: (string) $testPayload['to'],
+            subject: (string) $testPayload['subject'],
+            html: (string) $testPayload['html'],
+            context: array_merge((array) ($testPayload['context'] ?? []), [
+                'test' => true,
+                'account_index' => (int) ($testPayload['account_index'] ?? 0),
+            ]),
         );
+
+        return [
+            'success' => true,
+            'action' => 'mail.test_smtp',
+            'message' => '测试邮件发送成功',
+            'data' => [
+                'sent' => true,
+                'to' => $testPayload['to'],
+                'subject' => $testPayload['subject'],
+                'template_code' => $testPayload['template_code'],
+                'account_index' => (int) ($testPayload['account_index'] ?? 0),
+            ],
+        ];
     }
 
     /**
@@ -253,20 +278,29 @@ class IntegrationPluginService
      */
     public function testSms(IntegrationPlugin $plugin, array $payload): array
     {
-        if (! Schema::hasTable('integration_plugins')) {
-            throw new BusinessException('插件系统尚未初始化', 42200);
-        }
+        $this->assertTestDomain($plugin, PluginDomain::SMS, '短信发送');
 
-        if (! $plugin->isEnabled()) {
-            throw new BusinessException('插件未启用，无法发送测试短信', 42200);
-        }
+        $testPayload = $this->verificationSmsPayload($payload);
+        $driver = $this->smsDriverManager->resolve((string) $plugin->plugin_key);
+        $result = $driver->sendVerifyCode(new SmsSendRequest(
+            phone: (string) $testPayload['phone'],
+            code: (string) $testPayload['code'],
+            options: (array) ($testPayload['options'] ?? []),
+        ));
 
-        return $this->runtimeRegistry->execute(
-            domain: (string) $plugin->domain,
-            slugOrKey: (string) $plugin->slug,
-            action: 'sms.test',
-            payload: $this->verificationSmsPayload($payload),
-        );
+        return [
+            'success' => true,
+            'action' => 'sms.test',
+            'message' => '测试短信发送成功',
+            'data' => [
+                'sent' => true,
+                'phone' => $testPayload['phone'],
+                'status' => $result->status,
+                'template_code' => $testPayload['template_code'],
+                'request_id' => $result->requestId,
+                'template_params' => $result->templateParams,
+            ],
+        ];
     }
 
     /**
@@ -310,6 +344,156 @@ class IntegrationPluginService
             'code' => $code,
             'options' => $options,
         ]);
+    }
+
+    /**
+     * 实名域测试：按插件流程真实创建一次认证任务。
+     * 测试结果只返回给管理员，不落库、不关联任何用户。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function testVerification(IntegrationPlugin $plugin, array $payload): array
+    {
+        $this->assertTestDomain($plugin, PluginDomain::VERIFICATION, '实名认证');
+
+        return $this->runtimeRegistry->execute(
+            domain: (string) $plugin->domain,
+            slugOrKey: (string) $plugin->slug,
+            action: 'certification.initialize',
+            payload: [
+                'real_name' => (string) ($payload['real_name'] ?? ''),
+                'id_card' => (string) ($payload['card_no'] ?? ''),
+                'cert_type' => 'IDENTITY_CARD',
+                'return_url' => PublicUrl::api('/api/v2/client/verification/callback'),
+            ],
+        );
+    }
+
+    /**
+     * 支付域测试：按插件流程预创建一笔 0.01 元测试支付单。
+     * 只返回支付链接，不写入系统订单表。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function testPayment(IntegrationPlugin $plugin, array $payload): array
+    {
+        $this->assertTestDomain($plugin, PluginDomain::PAYMENT, '支付渠道');
+
+        $outTradeNo = 'TEST'.date('YmdHis').substr(bin2hex(random_bytes(4)), 0, 6);
+        $result = $this->paymentGatewayOperationService->precreate(
+            gateway: (string) ($plugin->plugin_key ?? $plugin->key),
+            outTradeNo: $outTradeNo,
+            amount: 0.01,
+            subject: '插件测试订单',
+            timeoutExpress: '10m',
+        );
+
+        return [
+            'success' => true,
+            'action' => 'payment.test',
+            'message' => '测试支付单创建成功，请扫描二维码完成测试',
+            'data' => $result,
+        ];
+    }
+
+    /**
+     * 人机验证域测试：管理员在管理端完成验证码交互后提交结果，走完整验证链路。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function testCaptcha(IntegrationPlugin $plugin, array $payload): array
+    {
+        $this->assertTestDomain($plugin, PluginDomain::CAPTCHA, '人机验证');
+
+        $result = $this->geeTestService->verify($payload);
+        $ok = (bool) ($result['ok'] ?? false);
+        if (! $ok) {
+            return [
+                'success' => false,
+                'action' => 'captcha.test',
+                'message' => (string) ($result['message'] ?? '行为验证未通过'),
+                'data' => ['verified' => false],
+            ];
+        }
+
+        return [
+            'success' => true,
+            'action' => 'captcha.test',
+            'message' => '行为验证通过',
+            'data' => ['verified' => true],
+        ];
+    }
+
+    /**
+     * 上游域测试：解析插件声明的第一个能力，验证插件可加载且能力可解析。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function testConnection(IntegrationPlugin $plugin, array $payload): array
+    {
+        $this->assertTestDomain($plugin, PluginDomain::UPSTREAM, '上游开通');
+
+        $manifest = $this->scanner->find((string) $plugin->domain, (string) $plugin->slug);
+        $capabilities = array_values(array_filter(
+            (array) ($manifest?->capabilities ?? []),
+            static fn (mixed $value): bool => is_string($value) && trim($value) !== ''
+        ));
+
+        if ($capabilities === []) {
+            return [
+                'success' => false,
+                'action' => 'upstream.test',
+                'message' => '插件未声明任何能力，无法执行连接测试',
+                'data' => ['healthy' => false],
+            ];
+        }
+
+        $capability = $capabilities[0];
+        $result = $this->runtimeRegistry->execute(
+            domain: (string) $plugin->domain,
+            slugOrKey: (string) $plugin->slug,
+            action: 'server.resolve_capability',
+            payload: ['capability' => $capability],
+        );
+
+        $resolved = $result['data']['resolved'] ?? null;
+        if (! $result['success'] || ! is_object($resolved)) {
+            return [
+                'success' => false,
+                'action' => 'upstream.test',
+                'message' => (string) ($result['message'] ?? '插件能力解析失败'),
+                'data' => ['healthy' => false, 'capability' => $capability],
+            ];
+        }
+
+        return [
+            'success' => true,
+            'action' => 'upstream.test',
+            'message' => '插件加载正常，能力解析成功',
+            'data' => ['healthy' => true, 'capability' => $capability],
+        ];
+    }
+
+    /**
+     * @throws BusinessException
+     */
+    private function assertTestDomain(IntegrationPlugin $plugin, string $expectedDomain, string $label): void
+    {
+        if (! Schema::hasTable('integration_plugins')) {
+            throw new BusinessException('插件系统尚未初始化', 42200);
+        }
+
+        if ((string) $plugin->domain !== $expectedDomain) {
+            throw new BusinessException("该测试类型仅适用于{$label}插件", 42200);
+        }
+
+        if (! $plugin->isEnabled()) {
+            throw new BusinessException('插件未启用，无法执行测试', 42200);
+        }
     }
 
     private function verificationCode(): string

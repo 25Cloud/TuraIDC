@@ -158,11 +158,20 @@ class VerificationController extends Controller
     }
 
     /**
-     * 认证完成回跳页
+     * 认证完成回跳/服务端回调。
+     *
+     * certify_id/order_no 用于回跳型驱动；task.task_no、task.merchant_extra 用于
+     * 服务端回调型驱动（如 leaf 平台按任务号通知终态）。
      */
     public function callback(Request $request)
     {
-        $certifyId = (string) $request->input('certify_id', $request->input('order_no', ''));
+        $certifyId = (string) $request->input(
+            'certify_id',
+            $request->input(
+                'order_no',
+                $request->input('task.task_no', $request->input('task.merchant_extra', ''))
+            )
+        );
 
         if ($certifyId === '') {
             return $this->success([
