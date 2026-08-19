@@ -1,5 +1,5 @@
 # ============================================================================
-# TuraIDC 一键编排：MySQL + Redis + 后端(app) + 三个前端
+# TuraIDC 一键编排：MySQL + Redis + 后端(app) + 前端(frontends 三端口)
 #
 # 两种用法：
 #   1. 拉取模式（推荐，配合 CI 自动推送镜像）：
@@ -30,11 +30,13 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
+      # 初始化阶段 MySQL 跑临时服务器（port 0，仅 socket），TCP 探活必失败；
+      # 慢盘首次初始化可能 4-5 分钟。给足宽限期，避免 compose 误判依赖失败。
       test: ["CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 30
-      start_period: 30s
+      retries: 60
+      start_period: 300s
 
   redis:
     image: redis:7-alpine
@@ -88,60 +90,24 @@ services:
       retries: 5
       start_period: 90s
 
-  frontend-www:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-25cloud}/turaidc-www:${IMAGE_TAG:-latest}
+  # 前端：三端合一，容器内 8081(www) / 8082(console) / 8083(admin) 三端口
+  frontends:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-25cloud}/turaidc-frontends:${IMAGE_TAG:-latest}
     build:
       context: ../..
       dockerfile: deploy/docker/frontends/Dockerfile
-      target: www
       args:
         APP_URL: ${APP_URL:?请在 .env 设置 APP_URL}
         FRONTEND_URL: ${FRONTEND_URL:?请在 .env 设置 FRONTEND_URL}
         CLIENT_CONSOLE_URL: ${CLIENT_CONSOLE_URL:?请在 .env 设置 CLIENT_CONSOLE_URL}
         ADMIN_URL: ${ADMIN_URL:?请在 .env 设置 ADMIN_URL}
         CLIENT_SESSION_COOKIE_DOMAIN: ${CLIENT_SESSION_COOKIE_DOMAIN:-}
-    container_name: turaidc-www
+    container_name: turaidc-frontends
     restart: unless-stopped
     ports:
-      - "${WWW_PORT:-8081}:80"
-    depends_on:
-      - app
-
-  frontend-console:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-25cloud}/turaidc-console:${IMAGE_TAG:-latest}
-    build:
-      context: ../..
-      dockerfile: deploy/docker/frontends/Dockerfile
-      target: console
-      args:
-        APP_URL: ${APP_URL:?请在 .env 设置 APP_URL}
-        FRONTEND_URL: ${FRONTEND_URL:?请在 .env 设置 FRONTEND_URL}
-        CLIENT_CONSOLE_URL: ${CLIENT_CONSOLE_URL:?请在 .env 设置 CLIENT_CONSOLE_URL}
-        ADMIN_URL: ${ADMIN_URL:?请在 .env 设置 ADMIN_URL}
-        CLIENT_SESSION_COOKIE_DOMAIN: ${CLIENT_SESSION_COOKIE_DOMAIN:-}
-    container_name: turaidc-console
-    restart: unless-stopped
-    ports:
-      - "${CONSOLE_PORT:-8082}:80"
-    depends_on:
-      - app
-
-  frontend-admin:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-25cloud}/turaidc-admin:${IMAGE_TAG:-latest}
-    build:
-      context: ../..
-      dockerfile: deploy/docker/frontends/Dockerfile
-      target: admin
-      args:
-        APP_URL: ${APP_URL:?请在 .env 设置 APP_URL}
-        FRONTEND_URL: ${FRONTEND_URL:?请在 .env 设置 FRONTEND_URL}
-        CLIENT_CONSOLE_URL: ${CLIENT_CONSOLE_URL:?请在 .env 设置 CLIENT_CONSOLE_URL}
-        ADMIN_URL: ${ADMIN_URL:?请在 .env 设置 ADMIN_URL}
-        CLIENT_SESSION_COOKIE_DOMAIN: ${CLIENT_SESSION_COOKIE_DOMAIN:-}
-    container_name: turaidc-admin
-    restart: unless-stopped
-    ports:
-      - "${ADMIN_PORT:-8083}:80"
+      - "${WWW_PORT:-8081}:8081"
+      - "${CONSOLE_PORT:-8082}:8082"
+      - "${ADMIN_PORT:-8083}:8083"
     depends_on:
       - app
 

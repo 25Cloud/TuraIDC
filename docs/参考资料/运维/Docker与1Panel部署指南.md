@@ -19,14 +19,12 @@ deploy/docker/docker-compose.yml  (project: turaidc)
 │     ├── cron      (每分钟 php artisan schedule:run，驱动心跳与队列消费)
 │     └── vnc:relay (VNC WebSocket 中继, 127.0.0.1:8100)
 │     命名卷: app-storage / app-uploads / app-media
-├── frontend-www    (nginx:alpine, 官网/用户入口 dist)
-├── frontend-console(nginx:alpine, 用户控制台 dist)
-└── frontend-admin  (nginx:alpine, 管理端 dist)
+├── frontends (nginx:alpine, 三端口: 8081=官网 / 8082=控制台 / 8083=管理端)
 ```
 
-镜像流向：GitHub Actions 构建并推送 `ghcr.io/<owner>/turaidc-{app,www,console,admin}` → 服务器 `docker compose pull`。
+镜像流向：GitHub Actions 构建并推送 `ghcr.io/<owner>/turaidc-{app,frontends}` → 服务器 `docker compose pull`。
 
-与宝塔生产拓扑一一对应：三个前端各自独立静态站点、后端走 PHP-FPM、无常驻 `queue:work`（由每分钟 `schedule:run` 并行消费业务队列与 `automation` 队列）、VNC Relay 独立常驻。
+与宝塔生产拓扑一一对应：前端三端合一（一个容器三端口分别托管 www/console/admin 静态站点）、后端走 PHP-FPM、无常驻 `queue:work`（由每分钟 `schedule:run` 并行消费业务队列与 `automation` 队列）、VNC Relay 独立常驻。
 
 ## 二、前置条件
 
@@ -76,9 +74,7 @@ vim .env
 
 ```
 ghcr.io/<owner>/turaidc-app
-ghcr.io/<owner>/turaidc-www
-ghcr.io/<owner>/turaidc-console
-ghcr.io/<owner>/turaidc-admin
+ghcr.io/<owner>/turaidc-frontends
 ```
 
 ### 4.1 首次使用需要配置
@@ -95,13 +91,13 @@ ghcr.io/<owner>/turaidc-admin
 
    四个公开地址未配置时前端构建会直接失败（`build_frontends.mjs` 校验），这是有意的，提醒你补全。
 
-2. 首次推送后，打开 GitHub → 头像 → Your packages（或仓库右侧 Packages），把 4 个 `turaidc-*` 包设为 **public**，服务器才能匿名拉取；私有包需要在服务器 `docker login ghcr.io`。
+2. 首次推送后，打开 GitHub → 头像 → Your packages（或仓库右侧 Packages），把 2 个 `turaidc-*` 包设为 **public**，服务器才能匿名拉取；私有包需要在服务器 `docker login ghcr.io`。
 
 ### 4.2 切换镜像仓库（如腾讯云 TCR / 阿里云 ACR）
 
 国内服务器拉 GHCR 较慢时可切到国内镜像仓库：
 
-1. 在对应云厂商开通个人版容器镜像服务，创建 `turaidc-app/www/console/admin` 四个仓库。
+1. 在对应云厂商开通个人版容器镜像服务，创建 `turaidc-app` / `turaidc-frontends` 两个仓库。
 2. 在仓库增加 `REGISTRY` 与 `IMAGE_NAMESPACE` 的 Secrets/变量（如 `REGISTRY=ccr.ccs.tencentyun.com`），并在 workflow 的 `env.REGISTRY` 处改用对应值。
 3. 在 workflow 中把 GHCR 登录步骤换成目标仓库的用户名/密码（或云厂商的长期凭证 Secret），并给对应 `login-action` 配置。
 4. 服务器 `.env` 中同步修改 `REGISTRY` / `IMAGE_NAMESPACE`。
@@ -167,7 +163,7 @@ vim .env
 | 来源 | 本机路径 |
 | 路径 | `/opt/turaidc/deploy/docker/docker-compose.yml` |
 
-创建后点击"构建并启动"（1Panel 会自动执行 `pull`/`build`）。查看"容器"页确认 `turaidc-mysql`、`turaidc-app` 等 6 个容器均运行；点 `turaidc-app` 的日志确认 entrypoint 完成数据库初始化。
+创建后点击"构建并启动"（1Panel 会自动执行 `pull`/`build`）。查看"容器"页确认 `turaidc-mysql`、`turaidc-app`、`turaidc-frontends` 等 4 个容器均运行；点 `turaidc-app` 的日志确认 entrypoint 完成数据库初始化。
 
 > 编排内变量来自同目录 `.env`，与命令行 `docker compose` 行为一致。
 
@@ -226,7 +222,7 @@ server {
 }
 ```
 
-三个前端站点去掉 WebSocket 段即可。证书可用 `acme.sh` 或 `certbot` 申请。要求：四个地址协议统一（全 HTTPS）、`.env` 中 `SESSION_SECURE_COOKIE=true`。
+前端站点去掉 WebSocket 段即可。证书可用 `acme.sh` 或 `certbot` 申请。要求：四个地址协议统一（全 HTTPS）、`.env` 中 `SESSION_SECURE_COOKIE=true`。
 
 ## 八、升级与回滚
 
@@ -283,7 +279,7 @@ gunzip -c backups/turaidc-xxx.sql.gz | docker compose exec -T mysql \
 ```bash
 docker compose ps                        # 状态
 docker compose logs -f app               # 后端日志（php-fpm/nginx/cron/relay 均走 stdout）
-docker compose logs -f frontend-www      # 前端日志
+docker compose logs -f frontends          # 前端日志
 docker compose exec app bash             # 进入后端容器
 docker compose exec app php artisan schedule:run   # 手动触发一次调度
 docker compose exec app php artisan queue:retry all # 重试失败队列
@@ -307,7 +303,7 @@ docker compose restart app               # 重启后端
 
 ### 11.3 拉取镜像 401 / 拉不下来
 
-- CI 首次推送后 GHCR 包默认 private：去 Packages 页把 4 个 `turaidc-*` 包设为 public
+- CI 首次推送后 GHCR 包默认 private：去 Packages 页把 2 个 `turaidc-*` 包设为 public
 - 或服务器执行 `docker login ghcr.io` 用 PAT 登录
 - 国内拉取慢可切腾讯云/阿里云镜像仓库（见 4.2）
 
