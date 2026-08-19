@@ -204,6 +204,12 @@
       "review_by": "2026-08-21"
     },
     {
+      "path": "参考资料/运维/Docker与1Panel部署指南.md",
+      "status": "current",
+      "summary": "Docker Compose 一键部署与 1Panel 托管指南。",
+      "review_by": "2026-08-21"
+    },
+    {
       "path": "参考资料/运维/本地启动指南.md",
       "status": "current",
       "summary": "本地启动与构建命令。",

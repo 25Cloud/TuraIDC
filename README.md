@@ -255,6 +255,77 @@ php artisan queue:work --queue=provision,referral,notification,coupon,default --
 php artisan schedule:work
 ```
 
+## 🐳 快速开始（Docker 部署）
+
+`docker compose` 一键拉起 MySQL 8 + Redis 7 + 后端（PHP-FPM / Nginx / Cron / VNC Relay）+ 前端三端合一，共 4 个容器。详细说明见 [Docker 与 1Panel 部署指南](docs/参考资料/运维/Docker与1Panel部署指南.md)。
+
+### 1. 配置 CI Secrets（自动构建镜像）
+
+CI（`.github/workflows/docker-image.yml`）在推送到 `main`、打 tag 或手动触发时，自动构建 2 个镜像推送到 GHCR（`GITHUB_TOKEN` 由 GitHub 自动注入，无需配置）。进入仓库 **Settings → Secrets and variables → Actions**，在 **Variables** 标签页（推荐，明文非敏感）或 Secrets 中添加：
+
+| 变量                            | 必填 | 说明                                             | 示例                          |
+| ------------------------------- | ---- | ------------------------------------------------ | ----------------------------- |
+| `APP_URL`                       | 是   | API 公开地址                                     | `https://api.example.com`     |
+| `FRONTEND_URL`                  | 是   | 官网地址                                         | `https://www.example.com`     |
+| `CLIENT_CONSOLE_URL`            | 是   | 用户控制台地址                                   | `https://console.example.com` |
+| `ADMIN_URL`                     | 是   | 管理端地址                                       | `https://admin.example.com`   |
+| `CLIENT_SESSION_COOKIE_DOMAIN`  | 否   | 跨子域共享登录态时填父域，单域部署可不配         | `.example.com`                |
+
+四个地址必须互不相同、同一协议、无路径。未配置时前端构建会直接失败以提醒补全。
+
+> 地址在构建时被 Vite 静态编译进前端产物，无法运行时注入，因此 CI 构建必须在 GitHub 侧配置。不使用 CI 时可走本地构建（`docker compose up -d --build`），地址直接读 `deploy/docker/.env`，GitHub 侧零配置。
+
+### 2. 服务器上启动
+
+```bash
+cd deploy/docker
+cp .env.example .env
+# 编辑 .env：数据库密码、INSTALL_ADMIN_PASSWORD、对外端口等
+
+docker compose pull && docker compose up -d   # 拉取 CI 镜像（推荐）
+# 或 docker compose up -d --build             # 本地构建（全部）
+```
+
+### 2b. 混合模式（后端拉镜像 + 前端本地构建）
+
+不想在 CI 配域名 Variables、但也不想本地 build 后端？可以只 build 前端，后端照常 pull：
+
+```bash
+git clone https://github.com/<owner>/TuraIDC.git   # 服务器上拉源码（前端构建需要）
+cd TuraIDC/deploy/docker
+cp .env.example .env
+# 编辑 .env：域名、数据库密码、INSTALL_ADMIN_PASSWORD 等
+
+docker compose pull app              # 只拉后端镜像（CI 构建，不含域名）
+docker compose build frontends       # 只构建前端（域名从 .env 读，CI 零配置）
+docker compose up -d                 # 启动全部
+```
+
+前端地址直接读 `deploy/docker/.env`，改域名后重新 `build frontends && up -d` 即可，不用碰 GitHub。
+
+升级同理：
+
+```bash
+git pull                            # 拉最新源码（前端要这个）
+docker compose pull app             # 拉最新后端镜像
+docker compose build frontends      # 重新构建前端
+docker compose up -d
+```
+
+> 后端不受前端域名影响——`APP_URL` 等通过 `env_file: .env` 在容器启动时注入，是运行时配置，改 `.env` 重启就生效，不需要重新构建镜像。
+
+首次启动（空库）自动初始化数据库并创建管理员 `cerbo`（密码为 `.env` 中 `INSTALL_ADMIN_PASSWORD`，仅首次生效）。默认端口：API `8080` / 官网 `8081` / 控制台 `8082` / 管理端 `8083`。
+
+### 3. 常用命令
+
+```bash
+docker compose ps                          # 容器状态（应全部 healthy）
+docker compose logs -f app                 # 跟踪后端日志
+curl http://127.0.0.1:8080/api/ready       # 就绪检查（DB/Cache/Storage/Scheduler）
+docker compose pull && docker compose up -d   # 升级到新镜像
+./backup.sh                                # 备份数据库
+```
+
 ## 🏗️ 构建前端产物
 
 `npm run build:frontends` 会读取 `backend/.env` 中的 `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL`（四个地址必须互不相同且协议一致），依次构建三端并输出到各自 `dist/`。

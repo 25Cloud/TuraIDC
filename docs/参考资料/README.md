@@ -21,3 +21,4 @@
 | 运维   | [部署与调度指南](运维/部署与调度指南.md)                                   | current      | 现网部署、调度与队列口径。            |
 | 运维   | [宝塔部署项目指南](运维/宝塔部署项目指南.md)                               | current      | 全新服务器部署步骤。                  |
 | 运维   | [前端 Nginx 伪静态配置](运维/前端Nginx伪静态配置.md)                       | current      | 四端站点 Nginx 规则。                 |
+| 运维   | [Docker 与 1Panel 部署指南](运维/Docker与1Panel部署指南.md)                | current      | Docker Compose 一键部署与 1Panel 托管。|
