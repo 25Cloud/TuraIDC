@@ -136,6 +136,16 @@ flowchart TB
 | 邮件       | SMTP、多 SMTP 轮询（MultiSmtpRoundRobin）      |
 | 桥接扩展   | ZJMF Bridge（存量智简魔方数据兼容）            |
 
+## 💬 开发交流
+
+欢迎加入 TuraIDC 开发交流 QQ 群 **1105174267**，讨论产品、架构、插件开发与部署运维。
+
+<p align="center">
+  <a href="https://qm.qq.com/q/Doa31p5M30" target="_blank">点击链接加入群聊【TuraIDC 业务财务系统】</a>
+  <br>
+  <img src="./docs/img/qrcode_1787147945469.jpg" alt="TuraIDC 开发交流 QQ 群二维码" width="220">
+</p>
+
 ## 🗺️ Roadmap
 
 当前版本进行中的工作（详见 `docs/执行计划/进行中/`）：
