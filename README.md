@@ -131,7 +131,7 @@ flowchart TB
 | 上游供应商 | 智简魔方财务（ZJMF）、KangHostx                |
 | 支付网关   | 支付宝（AliPay）、易支付（EPay）               |
 | 短信服务   | 阿里云短信（Aliyun）、Stay33                   |
-| 验证码     | 极验（Geetest）、Vaptcha                       |
+| 验证码     | 极验（Geetest）、Vaptcha、Corptcha             |
 | 实名认证   | 百度人脸（BaiduFace）、LeafFace、Smapi、Stay33 |
 | 邮件       | SMTP、多 SMTP 轮询（MultiSmtpRoundRobin）      |
 | 桥接扩展   | ZJMF Bridge（存量智简魔方数据兼容）            |
