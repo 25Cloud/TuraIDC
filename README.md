@@ -351,6 +351,7 @@ docker compose pull && docker compose up -d   # 升级到新镜像
 
 ## 📚 文档
 
+- [文档官网维护指南](docs/governance/docs-web-maintenance.md)
 - [部署指南 DEPLOYMENT.md](./DEPLOYMENT.md)
 - [贡献指南 CONTRIBUTING.md](./CONTRIBUTING.md)
 - [安全政策 SECURITY.md](./SECURITY.md)

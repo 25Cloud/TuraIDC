@@ -18,6 +18,7 @@
 | 用户价值、范围与验收         | [产品规格索引](product-specs/README.md)                                                                  |
 | 当前工作、已完成工作、技术债 | [执行计划索引](execution-plans/README.md)                                                                |
 | API、集成、运维与数据库参考  | [参考资料索引](references/README.md)                                                                     |
+| 官方文档站维护与发布         | [文档官网维护指南](governance/docs-web-maintenance.md)                                                   |
 | 脚本生成的快照               | [自动生成文档](generated/README.md)                                                                      |
 
 ## 目录边界

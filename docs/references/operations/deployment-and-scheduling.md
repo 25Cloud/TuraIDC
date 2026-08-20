@@ -142,6 +142,8 @@ npm run build:frontends
 
 产物目录分别是 `frontend-user-v3-www/dist`、`frontend-user-v4-console/dist`、`frontend-admin-v3/dist`，各自指向对应宝塔站点根目录。
 
+VitePress 文档官网不属于上述三端，必须通过 `npm run build:docs` 独立构建和发布。内容维护、产物目录与发布检查见[文档官网维护指南](../../governance/docs-web-maintenance.md)。
+
 > **dev 与 build 的 env 分开**：本地开发（`npm run dev`）读取各前端目录下的 `.env.dev`（dev 脚本用 `--mode dev`）；构建（`npm run build:frontends`）读取各前端目录下的 `.env`。前端构建不依赖 backend 环境文件。
 >
 > 每个前端目录（`frontend-admin-v3`、`frontend-user-v3-www`、`frontend-user-v4-console`）需要两份 env（均 gitignore，不入库）：
