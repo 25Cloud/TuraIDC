@@ -64,6 +64,8 @@
         <router-link to="/client/forgot-password">忘记密码？</router-link>
       </div>
 
+      <div v-show="enabled" ref="captchaContainer" class="client-auth-captcha"></div>
+
       <t-button block size="large" theme="primary" :loading="loading || captchaLoading" @click="submitForm"
         >登录</t-button
       >
@@ -118,6 +120,8 @@
         </div>
       </t-form-item>
 
+      <div v-show="enabled" ref="captchaContainer" class="client-auth-captcha"></div>
+
       <t-button
         class="client-auth-submit"
         block
@@ -134,7 +138,7 @@
 import { LockOnIcon, UserIcon } from 'tdesign-icons-vue-next';
 import type { FormInstanceFunctions, FormRule, FormValidateMessage, SubmitContext } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { clientAuthApi } from '@/api/auth';
@@ -182,7 +186,15 @@ const userStore = useUserStore();
 const formRef = ref<FormInstanceFunctions<LoginForm>>();
 const loading = ref(false);
 const showPassword = ref(false);
-const { enabled, loading: captchaLoading, runWithCaptcha } = useGeeTestCaptcha();
+const captchaContainer = ref<HTMLElement>();
+const {
+  enabled,
+  loading: captchaLoading,
+  runWithCaptcha,
+  reinit,
+} = useGeeTestCaptcha({
+  appendTo: captchaContainer,
+});
 
 const form = reactive<LoginForm>({
   account: '',
@@ -190,6 +202,15 @@ const form = reactive<LoginForm>({
 });
 
 const loginMode = ref<'password' | 'code'>('password');
+
+// 切换登录方式时表单 v-if 重建会卸载旧容器，需重新渲染验证组件到新容器
+watch(
+  loginMode,
+  () => {
+    reinit();
+  },
+  { flush: 'post' },
+);
 const codeFormRef = ref<FormInstanceFunctions<CodeLoginForm>>();
 const codeForm = reactive<CodeLoginForm>({ account: '', code: '' });
 const codeLoading = ref(false);

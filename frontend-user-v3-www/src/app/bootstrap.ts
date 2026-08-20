@@ -72,17 +72,14 @@ export function bootstrapClientApp() {
   app.mount("#app");
   hideSplash();
 
-  if (isHomeRoute(window.location.pathname)) {
-    // 首页 config 已内嵌在 /v2/site/home 响应的 site_config 中，无需单独预热
-    return;
-  }
-
   const primeHints = () => {
     primeClientConnectionHints({
       urls: [appStore.siteLogo, appStore.siteFavicon],
     });
   };
 
+  // 首页 config 虽内嵌在 /v2/site/home 响应中，但仍需提前并行拉取，
+  // 使首屏标题/图标尽快替换硬编码的默认品牌（preloadSiteConfig 对首页立即返回，不阻塞首屏）。
   void preloadSiteConfig(appStore).then((preloaded) => {
     if (preloaded) {
       primeHints();
