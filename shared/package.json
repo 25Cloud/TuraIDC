@@ -9,9 +9,11 @@
     "./runtime": "./runtime/index.ts",
     "./content": "./content/index.ts",
     "./components/StatusTag.vue": "./components/StatusTag.vue",
+    "./components/CapCaptchaCard.vue": "./components/CapCaptchaCard.vue",
     "./statusConfig": "./statusConfig.js",
     "./extraStatusMaps": "./extraStatusMaps.js",
-    "./htmlSanitizer": "./htmlSanitizer.js"
+    "./htmlSanitizer": "./htmlSanitizer.js",
+    "./captcha": "./captcha.ts"
   },
   "types": "./index.d.ts",
   "dependencies": {
