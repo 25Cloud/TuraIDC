@@ -6,6 +6,10 @@ interface GeeTestConfig {
   enabled: boolean;
   captcha_id: string;
   script_url?: string;
+  /** 验证码 provider 标识：geetest / vaptcha / cap */
+  provider?: string;
+  /** Cap 等自托管验证码的前端初始化端点（{server}/{siteId}/） */
+  api_endpoint?: string;
 }
 
 interface CaptchaInstance {
@@ -38,6 +42,7 @@ const defaultConfig: GeeTestConfig = {
 
 let captchaConfigPromise: Promise<GeeTestConfig> | null = null;
 let geetestScriptPromise: Promise<GeeTestInitializer> | null = null;
+let capScriptPromise: Promise<boolean> | null = null;
 
 async function getCaptchaConfig() {
   if (!captchaConfigPromise) {
@@ -153,6 +158,127 @@ function loadGeeTestScript(src: string, cacheKey: string): Promise<GeeTestInitia
   return geetestScriptPromise;
 }
 
+/** 加载 Cap 前端脚本（经后端代理下发，注册 <cap-widget> 自定义元素）。 */
+function loadCapScript(src: string, cacheKey = '') {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('浏览器环境不可用'));
+  }
+
+  const scriptKey = cacheKey || src;
+  const marker = 'cap-widget-script';
+  const existing = document.querySelector<HTMLScriptElement>(`script[data-${marker}]`);
+
+  if (existing && existing.dataset.captchaKey !== scriptKey) {
+    existing.remove();
+    capScriptPromise = null;
+  }
+
+  if (typeof customElements !== 'undefined' && customElements.get('cap-widget')) {
+    return Promise.resolve(true);
+  }
+
+  if (!capScriptPromise) {
+    capScriptPromise = new Promise<boolean>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = appendScriptCacheKey(resolveScriptUrl(src), scriptKey);
+      script.async = true;
+      script.defer = true;
+      script.dataset[marker] = '';
+      script.dataset.captchaKey = scriptKey;
+      script.onload = () => {
+        // 脚本可能异步注册自定义元素，轮询等待
+        const waitRegistered = () => {
+          if (typeof customElements !== 'undefined' && customElements.get('cap-widget')) {
+            resolve(true);
+            return;
+          }
+          window.setTimeout(waitRegistered, 100);
+        };
+        waitRegistered();
+      };
+      script.onerror = () => reject(new Error('Cap 脚本加载失败'));
+      document.head.appendChild(script);
+    }).catch((error: unknown) => {
+      capScriptPromise = null;
+      throw error;
+    });
+  }
+
+  return capScriptPromise;
+}
+
+/**
+ * Cap widget 适配器：以项目统一的 CaptchaInstance 表面暴露 <cap-widget>。
+ * 验证结果统一为 { token }（与后端 GeeTestService::verify 的数组 payload 契约一致）。
+ */
+function createCapInstance(appendTarget: HTMLElement | string | undefined, apiEndpoint: string): CaptchaInstance {
+  let token: string | null = null;
+  let successCallback: (() => void) | null = null;
+  let errorCallback: ((error: unknown) => void) | null = null;
+  let closeCallback: (() => void) | null = null;
+  let readyCallback: (() => void) | null = null;
+  let element: HTMLElement | null = null;
+
+  const mount = () => {
+    element?.remove();
+    element = null;
+    token = null;
+
+    const widget = document.createElement('cap-widget');
+    widget.setAttribute('data-cap-api-endpoint', apiEndpoint);
+
+    widget.addEventListener('solve', ((event: Event) => {
+      const detail = (event as CustomEvent<{ token?: string }>).detail;
+      token = detail?.token ?? null;
+      if (token) {
+        successCallback?.();
+      }
+    }) as EventListener);
+    widget.addEventListener('error', ((event: Event) => {
+      const detail = (event as CustomEvent<{ message?: string }>).detail;
+      errorCallback?.(new Error(detail?.message || 'Cap 人机验证失败，请重试'));
+    }) as EventListener);
+    widget.addEventListener('reset', (() => {
+      token = null;
+      closeCallback?.();
+    }) as EventListener);
+
+    const target = typeof appendTarget === 'string' ? document.querySelector<HTMLElement>(appendTarget) : appendTarget;
+    (target || document.body).appendChild(widget);
+    element = widget;
+    readyCallback?.();
+  };
+
+  return {
+    onReady: (callback: () => void) => {
+      readyCallback = callback;
+    },
+    onSuccess: (callback: () => void) => {
+      successCallback = callback;
+    },
+    onError: (callback: (error: unknown) => void) => {
+      errorCallback = callback;
+    },
+    onClose: (callback: () => void) => {
+      closeCallback = callback;
+    },
+    showCaptcha: () => {
+      if (!element) {
+        mount();
+      }
+    },
+    getValidate: () => (token ? { token } : null),
+    reset: () => {
+      mount();
+    },
+    destroy: () => {
+      element?.remove();
+      element = null;
+      token = null;
+    },
+  };
+}
+
 /**
  * 管理端极验弹窗验证。用于插件测试：真人完成一次行为验证后，
  * 把 getValidate() 结果交给后端走完整验证链路。
@@ -218,6 +344,50 @@ export function useGeeTestCaptcha() {
 
     const proxyUrl = resolveScriptUrl(config.script_url || '');
     const directUrl = defaultConfig.script_url || '';
+
+    if (config.provider === 'cap') {
+      const apiEndpoint = config.api_endpoint || '';
+      if (!apiEndpoint) {
+        throw new Error('Cap 人机验证配置缺少服务端地址');
+      }
+
+      const capScriptUrl = resolveScriptUrl(config.script_url || defaultConfig.script_url || '');
+      await loadCapScript(capScriptUrl, config.captcha_id);
+
+      const currentInitPromise = new Promise<CaptchaInstance | null>((resolve, reject) => {
+        initRejecter = reject;
+        try {
+          const instance = createCapInstance(undefined, apiEndpoint);
+          captchaObj = instance;
+          instance.onReady?.(() => {
+            initRejecter = null;
+            resolve(instance);
+          });
+          instance.onSuccess?.(() => resolveSuccess(instance));
+          instance.onError?.((error) => {
+            rejectPending(new Error(error instanceof Error ? error.message : String(error || '行为验证失败')));
+          });
+          instance.onClose?.(() => {
+            rejectPending(new Error('请先完成行为验证'));
+          });
+          instance.showCaptcha?.();
+        } catch (error) {
+          initRejecter = null;
+          reject(error instanceof Error ? error : new Error('行为验证初始化失败'));
+        }
+      });
+
+      initPromise = currentInitPromise;
+      try {
+        return await currentInitPromise;
+      } catch (error) {
+        if (initPromise === currentInitPromise) {
+          initPromise = null;
+        }
+        throw error;
+      }
+    }
+
     const candidates =
       proxyUrl && proxyUrl !== directUrl
         ? [
