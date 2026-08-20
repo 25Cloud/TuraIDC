@@ -69,7 +69,7 @@ deploy/docker/
 - 生产 HTTPS 由 1Panel / 宿主机 Nginx / Cloudflare 反代终止，容器内部保持 HTTP；`.env` 中四个地址仍填 `https://` 域名。
 - 如需限制端口仅本机访问（配合反代），将 `.env` 中端口改为 `127.0.0.1:8080` 形式。
 - 升级服务器：`git pull`（更新 .env 与 compose 文件）→ `docker compose pull && docker compose up -d`，后端增量迁移由容器启动时自动执行。
-- 详细部署与运维指南见 `docs/参考资料/运维/Docker与1Panel部署指南.md`。
+- 详细部署与运维指南见 `docs/references/operations/docker-and-1panel-deployment.md`。
 
 ## 从智简魔方财务系统迁移
 
@@ -85,4 +85,4 @@ php artisan services:backfill-upstream-bindings                    # 服务控�
 php artisan optimize:clear && php artisan app:warmup-site-cache    # 预热缓存
 ```
 
-> 📖 完整分步教程（含生产踩坑记录）：[从智简魔方财务系统迁移](../../docs/参考资料/数据库/从智简魔方财务系统迁移.md)
+> 📖 完整分步教程（含生产踩坑记录）：[从智简魔方财务系统迁移](../../docs/references/database/migrate-from-zjmf-finance.md)
