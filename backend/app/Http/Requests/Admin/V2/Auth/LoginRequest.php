@@ -11,6 +11,8 @@ class LoginRequest extends AdminFormRequest
         return array_merge([
             'username' => 'required|string',
             'password' => 'required|string|min:6',
+            'captcha' => ['nullable', 'array', 'max:8'],
+            'captcha.*' => ['nullable', 'string', 'max:2048'],
         ], [
             'per_page' => ['prohibited'],
         ]);

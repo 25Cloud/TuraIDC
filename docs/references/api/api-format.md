@@ -162,6 +162,7 @@ API 直接重构已完成，后续遵循以下 V2 边界：
 | `40301` | 邮箱验证或实名认证前置条件未满足 | `EnsureEmailIsVerified`                         |
 | `40400` | 资源不存在                       | 控制器内资源查询失败                            |
 | `42200` | 参数验证失败或一般业务校验失败   | `ValidationException`、`BusinessException`      |
+| `42210` | 人机验证未通过或验证服务不可用   | 用户端与管理端认证入口                          |
 | `50000` | 通用服务端错误                   | 未分类服务异常                                  |
 
 ## 5. 参数校验失败格式
@@ -201,7 +202,16 @@ Authorization: Bearer <token>
 Accept: application/json
 ```
 
-### 6.2 认证失败
+### 6.2 管理员登录人机验证
+
+管理员登录在启用人机验证插件时，先通过以下公开接口初始化验证组件。配置响应包含 `provider`、`captcha_id` 和不含密钥的 `cache_key`，前端必须把 `cache_key` 用于脚本资源隔离：
+
+- `GET /api/v2/admin/auth/captcha-config`
+- `GET /api/v2/admin/auth/captcha-script`
+
+完成验证后，`POST /api/v2/admin/login` 在原有 `username`、`password` 外提交插件生成的 `captcha` 对象。服务端必须在密码认证前核验该对象；缺失、无效或上游验证异常统一返回 `code=42210`、HTTP `422`，不得降级绕过。人机验证插件未启用或配置不完整时，登录保持可用并继续受接口限流和账户失败锁定保护。
+
+### 6.3 认证失败
 
 示例：
 

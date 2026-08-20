@@ -5,6 +5,7 @@
 | 位置                                                                                            | 状态      | 简介                                                                                      |
 | ----------------------------------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------- |
 | [文档路径英文化迁移](completed/documentation-path-migration-2026-08-20.md)                      | completed | 将 `docs/` 下中文目录和文件名迁移为英文路径，并同步 VitePress URL 与全仓引用。            |
+| [管理员登录人机验证](active/admin-login-captcha-2026-08-21.md)                                  | active    | 管理员登录接入现有人机验证插件、服务端强制核验与前端 E2E 回归。                           |
 | [后端专家团审查修复计划](active/backend-expert-review-remediation-2026-08-13.md)                | active    | 6 功能域 × 5 视角专家团审查结论的分批修复计划，P0 资金与账号安全优先。                    |
 | [定时任务体系重构方案](active/scheduler-refactor-2026-08-09.md)                                 | active    | ZJMF 定时任务机制与 TuraIDC 心跳、队列、台账、Hook 和人工重跑能力的差距及分阶段重构计划。 |
 | [调度、VNC 与插件链路审查修复](active/scheduler-vnc-provisioning-renewal-review-2026-08-13.md)  | active    | 定时任务、VNC、上游开通、续费与插件链路的专项审查与修复，P0 资金与并发安全优先。          |

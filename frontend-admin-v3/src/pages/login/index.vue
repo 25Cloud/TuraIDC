@@ -26,7 +26,7 @@
           />
         </t-form-item>
         <t-form-item class="login-submit-item">
-          <t-button block theme="primary" size="large" type="submit" :loading="loading"> 登录 </t-button>
+          <t-button block theme="primary" size="large" type="submit" :loading="submitting"> 登录 </t-button>
           <span class="sr-only" role="alert" aria-live="assertive">{{ errorMessage }}</span>
         </t-form-item>
       </t-form>
@@ -42,14 +42,17 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { useGeeTestCaptcha } from '@/hooks/useGeeTestCaptcha';
 import { useUserStore } from '@/store';
 
 const router = useRouter();
 const userStore = useUserStore();
 const formRef = ref<FormInstanceFunctions>();
-const loading = ref(false);
+const loginLoading = ref(false);
 const errorMessage = ref('');
 const currentYear = computed(() => new Date().getFullYear());
+const { loading: captchaLoading, verify: verifyCaptcha } = useGeeTestCaptcha('/v2/admin/auth/captcha-config');
+const submitting = computed(() => loginLoading.value || captchaLoading.value);
 
 const formData = ref({
   account: '',
@@ -61,15 +64,25 @@ const formRules: Record<string, FormRule[]> = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 };
 
-async function handleLogin() {
-  const valid = await formRef.value?.validate();
-  if (valid !== true) return;
+let submitLocked = false;
 
-  loading.value = true;
+async function handleLogin() {
+  if (submitLocked || submitting.value) return;
+  submitLocked = true;
+  const valid = await formRef.value?.validate();
+  if (valid !== true) {
+    submitLocked = false;
+    return;
+  }
+
+  errorMessage.value = '';
   try {
+    const captcha = await verifyCaptcha();
+    loginLoading.value = true;
     await userStore.login({
       account: formData.value.account,
       password: formData.value.password,
+      captcha,
     });
     MessagePlugin.success('登录成功');
     const redirect = router.currentRoute.value.query.redirect;
@@ -83,7 +96,8 @@ async function handleLogin() {
     errorMessage.value = msg;
     MessagePlugin.error(msg);
   } finally {
-    loading.value = false;
+    loginLoading.value = false;
+    submitLocked = false;
   }
 }
 </script>

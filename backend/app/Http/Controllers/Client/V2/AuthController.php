@@ -168,7 +168,9 @@ class AuthController extends Controller
     {
         return $this->success([
             'enabled' => $this->geeTestService->isEnabled(),
+            'provider' => $this->geeTestService->getProvider(),
             'captcha_id' => $this->geeTestService->getCaptchaId(),
+            'cache_key' => $this->geeTestService->getConfigCacheKey(),
             'script_url' => $this->geeTestService->getScriptUrl(),
         ]);
     }
@@ -187,7 +189,7 @@ class AuthController extends Controller
 
         return response($scriptContent, $status, [
             'Content-Type' => 'application/javascript; charset=UTF-8',
-            'Cache-Control' => 'public, max-age=43200',
+            'Cache-Control' => 'no-store, max-age=0',
         ]);
     }
 

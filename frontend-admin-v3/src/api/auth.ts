@@ -1,9 +1,22 @@
 import { request } from '@/utils/request';
 
+export interface AdminCaptchaPayload {
+  lot_number?: string;
+  captcha_output?: string;
+  pass_token?: string;
+  gen_time?: string;
+  token?: string;
+  knock?: string;
+  dfu?: string;
+  provider?: string;
+  [key: string]: string | undefined;
+}
+
 export interface AdminLoginPayload {
   username?: string;
   account?: string;
   password?: string;
+  captcha?: AdminCaptchaPayload;
   [key: string]: unknown;
 }
 

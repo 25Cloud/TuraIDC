@@ -125,6 +125,12 @@
       "summary": "日志归档两阶段持久化、恢复、清理与生产切换计划；不在当前迭代排期，保留决策依据。"
     },
     {
+      "path": "execution-plans/active/admin-login-captcha-2026-08-21.md",
+      "status": "active",
+      "summary": "管理员登录接入现有人机验证插件、服务端强制核验与管理端 E2E 回归。",
+      "review_by": "2026-09-04"
+    },
+    {
       "path": "execution-plans/active/scheduler-refactor-2026-08-09.md",
       "status": "active",
       "summary": "ZJMF 定时任务机制与 TuraIDC 心跳、队列、台账、Hook 和人工重跑能力的差距及分阶段重构计划。",

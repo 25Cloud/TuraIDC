@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\Role;
+use App\Services\Auth\GeeTestService;
 use App\Support\AdminPermissions;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
@@ -41,6 +42,63 @@ class V2AdminAuthApiTest extends TestCase
         $this->assertSame($this->adminProfileWhitelist(), array_keys($response->json('data.admin')));
         $this->assertNoSensitiveKeys($response->json());
         $this->assertLessThan(100 * 1024, strlen((string) $response->getContent()));
+    }
+
+    public function test_admin_captcha_config_uses_admin_public_script_endpoint(): void
+    {
+        $captcha = $this->mock(GeeTestService::class);
+        $captcha->shouldReceive('isEnabled')->once()->andReturn(true);
+        $captcha->shouldReceive('getProvider')->once()->andReturn('geetest');
+        $captcha->shouldReceive('getCaptchaId')->once()->andReturn('admin-captcha-id');
+        $captcha->shouldReceive('getConfigCacheKey')->once()->andReturn('geetest:admin-captcha-id:v1');
+        $captcha->shouldReceive('getAdminScriptUrl')->once()->andReturn('/api/v2/admin/auth/captcha-script');
+
+        $this->getJson('/api/v2/admin/auth/captcha-config')
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.enabled', true)
+            ->assertJsonPath('data.provider', 'geetest')
+            ->assertJsonPath('data.captcha_id', 'admin-captcha-id')
+            ->assertJsonPath('data.cache_key', 'geetest:admin-captcha-id:v1')
+            ->assertJsonPath('data.script_url', '/api/v2/admin/auth/captcha-script');
+    }
+
+    public function test_admin_login_requires_enabled_captcha_and_passes_payload_to_verifier(): void
+    {
+        $admin = $this->createAdmin([AdminPermissions::ALL]);
+        $captcha = $this->mock(GeeTestService::class);
+        $captcha->shouldReceive('verify')
+            ->once()
+            ->with(null, '127.0.0.1')
+            ->andReturn(['ok' => false, 'message' => '请先完成行为验证']);
+
+        $this->postJson('/api/v2/admin/login', [
+            'username' => $admin->username,
+            'password' => 'Temp@123456',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 42210)
+            ->assertJsonPath('message', '请先完成行为验证');
+
+        $captchaPayload = [
+            'lot_number' => 'lot-number',
+            'captcha_output' => 'captcha-output',
+            'pass_token' => 'pass-token',
+            'gen_time' => '1760000000',
+        ];
+        $captcha->shouldReceive('verify')
+            ->once()
+            ->with($captchaPayload, '127.0.0.1')
+            ->andReturn(['ok' => true]);
+
+        $this->postJson('/api/v2/admin/login', [
+            'username' => $admin->username,
+            'password' => 'Temp@123456',
+            'captcha' => $captchaPayload,
+        ])
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.admin.id', $admin->id);
     }
 
     public function test_admin_auth_info_requires_login_and_returns_profile_resource(): void

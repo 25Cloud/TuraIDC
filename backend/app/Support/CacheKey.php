@@ -112,9 +112,11 @@ final class CacheKey
     /**
      * 极验脚本缓存。
      */
-    public static function geeTestScript(): string
+    public static function geeTestScript(string $variant = 'default'): string
     {
-        return 'geetest:script';
+        $variant = trim($variant) !== '' ? trim($variant) : 'default';
+
+        return 'geetest:script:'.$variant;
     }
 
     /**

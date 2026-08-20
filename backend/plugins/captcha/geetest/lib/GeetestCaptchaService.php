@@ -143,7 +143,7 @@ class GeetestCaptchaService
      */
     private function script(string $action, array $config): array
     {
-        $cachedScript = Cache::get(CacheKey::geeTestScript());
+        $cachedScript = Cache::get(CacheKey::geeTestScript($this->scriptCacheVariant($config)));
         if (is_string($cachedScript) && $cachedScript !== '') {
             return $this->scriptResult($action, $cachedScript);
         }
@@ -162,7 +162,7 @@ class GeetestCaptchaService
             }
 
             Cache::put(
-                CacheKey::geeTestScript(),
+                CacheKey::geeTestScript($this->scriptCacheVariant($config)),
                 $scriptContent,
                 now()->addSeconds(self::SCRIPT_CACHE_TTL_SECONDS)
             );
@@ -214,6 +214,16 @@ class GeetestCaptchaService
     /**
      * @param  array<string, mixed>  $config
      */
+    /**
+     * 脚本缓存必须随站点配置变化，避免切换账号后继续使用旧内容。
+     *
+     * @param  array<string, mixed>  $config
+     */
+    private function scriptCacheVariant(array $config): string
+    {
+        return substr(hash('sha256', $this->captchaId($config)), 0, 16);
+    }
+
     private function isConfigured(array $config): bool
     {
         return $this->captchaId($config) !== '' && $this->captchaKey($config) !== '';

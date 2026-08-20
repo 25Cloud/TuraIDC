@@ -2983,14 +2983,54 @@ async function mockVerifications(page: import('@playwright/test').Page) {
   });
 }
 
-async function mockLogin(page: import('@playwright/test').Page) {
-  await page.route('**/api/v2/admin/login**', async (route) => {
-    const body = route.request().postDataJSON() as { username?: string; password?: string };
+async function mockCaptcha(page: import('@playwright/test').Page) {
+  await page.route('**/api/v2/admin/auth/captcha-config**', async (route) => {
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
-        code: body.username && body.password ? 0 : 422,
-        message: body.username && body.password ? '登录成功' : '参数错误',
+        code: 0,
+        message: '操作成功',
+        data: {
+          enabled: true,
+          provider: 'geetest',
+          captcha_id: 'admin-login-captcha',
+          cache_key: 'geetest:admin-login-captcha:v1',
+          script_url: '/api/v2/admin/auth/captcha-script',
+        },
+      }),
+    });
+  });
+  await page.route('**/api/v2/admin/auth/captcha-script**', async (route) => {
+    await route.fulfill({
+      contentType: 'application/javascript; charset=UTF-8',
+      body: `window.initGeetest4 = function (_options, callback) {
+        var successCallback;
+        var instance = {
+          onReady: function (fn) { fn(); return instance; },
+          onSuccess: function (fn) { successCallback = fn; return instance; },
+          onError: function () { return instance; },
+          onClose: function () { return instance; },
+          showCaptcha: function () { successCallback(); return instance; },
+          getValidate: function () {
+            return { lot_number: 'lot-number', captcha_output: 'captcha-output', pass_token: 'pass-token', gen_time: '1760000000' };
+          },
+          reset: function () { return instance; },
+          destroy: function () { return instance; }
+        };
+        callback(instance);
+      };`,
+    });
+  });
+}
+
+async function mockLogin(page: import('@playwright/test').Page) {
+  await page.route('**/api/v2/admin/login**', async (route) => {
+    const body = route.request().postDataJSON() as { username?: string; password?: string; captcha?: unknown };
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: body.username && body.password && body.captcha ? 0 : 422,
+        message: body.username && body.password && body.captcha ? '登录成功' : '参数错误',
         data: {
           token: 'login-token',
           admin: {
@@ -3440,7 +3480,8 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await expect(page.getByRole('button', { name: /登录|sign in/i })).toBeVisible();
   });
 
-  test('submits admin login and opens dashboard', async ({ page }) => {
+  test('submits admin login after captcha and opens dashboard', async ({ page }) => {
+    await mockCaptcha(page);
     await mockLogin(page);
     await mockAdminInfo(page);
     await mockDashboard(page);
@@ -3453,6 +3494,12 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await expect((await loginRequest).postDataJSON()).toMatchObject({
       username: 'cerbo',
       password: 'Temp@123456',
+      captcha: {
+        lot_number: 'lot-number',
+        captcha_output: 'captcha-output',
+        pass_token: 'pass-token',
+        gen_time: '1760000000',
+      },
     });
 
     await expect(page).toHaveURL(/\/admin\/dashboard/);

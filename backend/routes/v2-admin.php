@@ -37,6 +37,8 @@ use App\Http\Controllers\Admin\V2\VerificationController;
 use App\Support\AdminPermissions;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/auth/captcha-config', [AuthController::class, 'captchaConfig']);
+Route::get('/auth/captcha-script', [AuthController::class, 'captchaScript']);
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1,v2-admin-login');
 
 Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {

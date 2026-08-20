@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\Log;
 
 class GeeTestService
 {
-    private const SCRIPT_PROXY_PATH = '/api/v2/client/auth/captcha-script';
+    private const CLIENT_SCRIPT_PROXY_PATH = '/api/v2/client/auth/captcha-script';
+
+    private const ADMIN_SCRIPT_PROXY_PATH = '/api/v2/admin/auth/captcha-script';
 
     private ?array $captchaConfigCache = null;
 
@@ -36,9 +38,30 @@ class GeeTestService
         return (string) ($this->captchaConfig()['captcha_id'] ?? '');
     }
 
+    public function getProvider(): string
+    {
+        return $this->activeDriver();
+    }
+
+    public function getConfigCacheKey(): string
+    {
+        $config = $this->captchaConfig();
+
+        return substr(hash('sha256', implode('|', [
+            $this->getProvider(),
+            (string) ($config['captcha_id'] ?? ''),
+            (string) ($config['config_version'] ?? ''),
+        ])), 0, 24);
+    }
+
     public function getScriptUrl(): string
     {
-        return self::SCRIPT_PROXY_PATH;
+        return self::CLIENT_SCRIPT_PROXY_PATH;
+    }
+
+    public function getAdminScriptUrl(): string
+    {
+        return self::ADMIN_SCRIPT_PROXY_PATH;
     }
 
     public function getScriptContent(): string
@@ -119,6 +142,7 @@ JS;
             return $this->captchaConfigCache = [
                 'enabled' => false,
                 'captcha_id' => '',
+                'config_version' => 'disabled',
                 'script_url' => $this->getScriptUrl(),
             ];
         }
@@ -129,6 +153,7 @@ JS;
         return $this->captchaConfigCache = [
             'enabled' => (bool) ($result['success'] ?? false) && (bool) ($data['enabled'] ?? false),
             'captcha_id' => (string) ($data['captcha_id'] ?? ''),
+            'config_version' => substr(hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)), 0, 16),
             'script_url' => $this->getScriptUrl(),
         ];
     }

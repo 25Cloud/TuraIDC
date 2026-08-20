@@ -12,6 +12,7 @@ use App\Http\Resources\Admin\V2\AdminAuthProfileResource;
 use App\Http\Resources\Admin\V2\AdminAuthSessionResource;
 use App\Services\Admin\Rbac\AdminStaffService;
 use App\Services\Auth\AuthService;
+use App\Services\Auth\GeeTestService;
 use App\Support\TextSanitizer;
 use Illuminate\Http\Request;
 
@@ -20,10 +21,45 @@ class AuthController extends Controller
     public function __construct(
         private readonly AuthService $authService,
         private readonly AdminStaffService $adminStaffService,
+        private readonly GeeTestService $geeTestService,
     ) {}
+
+    public function captchaConfig()
+    {
+        return $this->success([
+            'enabled' => $this->geeTestService->isEnabled(),
+            'provider' => $this->geeTestService->getProvider(),
+            'captcha_id' => $this->geeTestService->getCaptchaId(),
+            'cache_key' => $this->geeTestService->getConfigCacheKey(),
+            'script_url' => $this->geeTestService->getAdminScriptUrl(),
+        ]);
+    }
+
+    public function captchaScript()
+    {
+        $status = 200;
+        try {
+            $scriptContent = $this->geeTestService->getScriptContent();
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            $scriptContent = $this->geeTestService->getFallbackScriptContent();
+            $status = 503;
+        }
+
+        return response($scriptContent, $status, [
+            'Content-Type' => 'application/javascript; charset=UTF-8',
+            'Cache-Control' => 'no-store, max-age=0',
+        ]);
+    }
 
     public function login(LoginRequest $request)
     {
+        $captchaResult = $this->geeTestService->verify($request->input('captcha'), (string) $request->ip());
+        if (! ($captchaResult['ok'] ?? false)) {
+            return $this->error(42210, $captchaResult['message'] ?? '行为验证未通过，请重试');
+        }
+
         $result = $this->authService->adminLogin(
             (string) $request->input('username'),
             (string) $request->input('password'),

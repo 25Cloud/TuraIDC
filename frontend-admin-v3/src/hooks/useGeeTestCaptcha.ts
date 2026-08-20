@@ -6,6 +6,8 @@ interface GeeTestConfig {
   enabled: boolean;
   captcha_id: string;
   script_url?: string;
+  provider?: string;
+  cache_key?: string;
 }
 
 interface CaptchaInstance {
@@ -33,16 +35,16 @@ declare global {
 const defaultConfig: GeeTestConfig = {
   enabled: false,
   captcha_id: '',
-  script_url: 'https://static.geetest.com/v4/gt4.js',
+  script_url: '',
 };
 
-let captchaConfigPromise: Promise<GeeTestConfig> | null = null;
+const captchaConfigPromises = new Map<string, Promise<GeeTestConfig>>();
 let geetestScriptPromise: Promise<GeeTestInitializer> | null = null;
 
-async function getCaptchaConfig() {
-  if (!captchaConfigPromise) {
-    captchaConfigPromise = request
-      .get<GeeTestConfig>({ url: '/v2/client/auth/captcha-config' })
+async function getCaptchaConfig(configUrl: string) {
+  if (!captchaConfigPromises.has(configUrl)) {
+    const configPromise = request
+      .get<GeeTestConfig>({ url: configUrl })
       .then((response: unknown) => {
         const config = { ...defaultConfig, ...(response as GeeTestConfig) };
         if (!config.enabled || !config.captcha_id) {
@@ -52,13 +54,14 @@ async function getCaptchaConfig() {
         return config;
       })
       .catch((error: unknown) => {
-        captchaConfigPromise = null;
+        captchaConfigPromises.delete(configUrl);
         const message = error instanceof Error ? error.message : '人机验证配置请求失败';
         throw new Error(`人机验证配置加载失败：${message}`);
       });
+    captchaConfigPromises.set(configUrl, configPromise);
   }
 
-  return captchaConfigPromise;
+  return captchaConfigPromises.get(configUrl) as Promise<GeeTestConfig>;
 }
 
 function resolveScriptUrl(src: string) {
@@ -157,7 +160,7 @@ function loadGeeTestScript(src: string, cacheKey: string): Promise<GeeTestInitia
  * 管理端极验弹窗验证。用于插件测试：真人完成一次行为验证后，
  * 把 getValidate() 结果交给后端走完整验证链路。
  */
-export function useGeeTestCaptcha() {
+export function useGeeTestCaptcha(configUrl = '/v2/client/auth/captcha-config') {
   const loading = ref(false);
 
   let captchaObj: CaptchaInstance | null = null;
@@ -165,6 +168,7 @@ export function useGeeTestCaptcha() {
   let initRejecter: ((error: Error) => void) | null = null;
   let pendingResolver: ((value: unknown) => void) | null = null;
   let pendingRejecter: ((error: Error) => void) | null = null;
+  let verifyPromise: Promise<unknown> | null = null;
   let destroyed = false;
 
   const clearPending = () => {
@@ -198,7 +202,7 @@ export function useGeeTestCaptcha() {
   };
 
   const initCaptcha = async (): Promise<CaptchaInstance | null> => {
-    const config = await getCaptchaConfig();
+    const config = await getCaptchaConfig(configUrl);
 
     if (destroyed) {
       throw new Error('行为验证组件已卸载');
@@ -216,32 +220,20 @@ export function useGeeTestCaptcha() {
       return initPromise;
     }
 
-    const proxyUrl = resolveScriptUrl(config.script_url || '');
-    const directUrl = defaultConfig.script_url || '';
-    const candidates =
-      proxyUrl && proxyUrl !== directUrl
-        ? [
-            { url: proxyUrl, key: config.captcha_id },
-            { url: directUrl, key: `${config.captcha_id}:direct` },
-          ]
-        : [{ url: directUrl, key: `${config.captcha_id}:direct` }];
-    let initGeetest4: typeof window.initGeetest4;
-    let lastError: unknown = null;
-
-    for (const candidate of candidates) {
-      try {
-        initGeetest4 = await loadGeeTestScript(candidate.url, candidate.key);
-        if (destroyed) {
-          throw new Error('行为验证组件已卸载');
-        }
-        break;
-      } catch (error) {
-        lastError = error;
-      }
+    const scriptUrl = resolveScriptUrl(config.script_url || '');
+    const cacheKey = config.cache_key || `${config.provider || 'captcha'}:${config.captcha_id}`;
+    if (!scriptUrl) {
+      throw new Error('人机验证脚本地址为空，请联系管理员检查配置');
     }
 
-    if (!initGeetest4) {
-      throw lastError instanceof Error ? lastError : new Error('GeeTest 脚本加载失败');
+    let initGeetest4: typeof window.initGeetest4;
+    try {
+      initGeetest4 = await loadGeeTestScript(scriptUrl, cacheKey);
+      if (destroyed) {
+        throw new Error('行为验证组件已卸载');
+      }
+    } catch (error) {
+      throw error instanceof Error ? error : new Error('人机验证脚本加载失败');
     }
     const currentInitPromise = new Promise<CaptchaInstance | null>((resolve, reject) => {
       initRejecter = reject;
@@ -297,33 +289,48 @@ export function useGeeTestCaptcha() {
   };
 
   const verify = async () => {
-    const instance = await initCaptcha();
-    if (!instance) {
-      throw new Error('行为验证组件初始化失败，请稍后重试');
+    if (verifyPromise) {
+      return verifyPromise;
     }
 
-    loading.value = true;
-
-    return new Promise((resolve, reject) => {
-      pendingResolver = resolve;
-      pendingRejecter = reject;
-
-      try {
-        if (typeof instance.showCaptcha === 'function') {
-          instance.showCaptcha();
-        } else if (typeof instance.validate === 'function') {
-          Promise.resolve(instance.validate())
-            .then(() => resolveSuccess(instance))
-            .catch((error: unknown) => {
-              rejectPending(new Error(error instanceof Error ? error.message : String(error || '行为验证失败')));
-            });
-        } else {
-          rejectPending(new Error('行为验证组件版本不兼容，请刷新页面后重试'));
-        }
-      } catch (error) {
-        rejectPending(new Error(error instanceof Error ? error.message : '行为验证打开失败'));
+    const currentVerifyPromise = (async () => {
+      const instance = await initCaptcha();
+      if (!instance) {
+        throw new Error('行为验证组件初始化失败，请稍后重试');
       }
-    });
+
+      loading.value = true;
+
+      return new Promise((resolve, reject) => {
+        pendingResolver = resolve;
+        pendingRejecter = reject;
+
+        try {
+          if (typeof instance.showCaptcha === 'function') {
+            instance.showCaptcha();
+          } else if (typeof instance.validate === 'function') {
+            Promise.resolve(instance.validate())
+              .then(() => resolveSuccess(instance))
+              .catch((error: unknown) => {
+                rejectPending(new Error(error instanceof Error ? error.message : String(error || '行为验证失败')));
+              });
+          } else {
+            rejectPending(new Error('行为验证组件版本不兼容，请刷新页面后重试'));
+          }
+        } catch (error) {
+          rejectPending(new Error(error instanceof Error ? error.message : '行为验证打开失败'));
+        }
+      });
+    })();
+
+    verifyPromise = currentVerifyPromise;
+    try {
+      return await currentVerifyPromise;
+    } finally {
+      if (verifyPromise === currentVerifyPromise) {
+        verifyPromise = null;
+      }
+    }
   };
 
   const cleanup = () => {
@@ -334,6 +341,7 @@ export function useGeeTestCaptcha() {
       captchaObj.destroy?.();
       captchaObj = null;
     }
+    verifyPromise = null;
     initPromise = null;
     rejectPending(new Error('行为验证组件已卸载'));
   };
