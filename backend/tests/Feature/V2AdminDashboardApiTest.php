@@ -316,7 +316,6 @@ class V2AdminDashboardApiTest extends TestCase
         $service = app(DashboardService::class);
         $baselineUnknown = collect($service->monthlyRevenue()['revenue_by_product'])
             ->where('label', '未知产品');
-        $baselineUnknownRows = $baselineUnknown->count();
         $baselineUnknownCount = (int) $baselineUnknown->sum('count');
         $baselineUnknownAmount = (float) $baselineUnknown->sum('amount');
 
@@ -339,14 +338,17 @@ class V2AdminDashboardApiTest extends TestCase
 
         // 规格快照分别为 NULL 与空字符串：SQL 按原始列分组后，PHP 层按 label 归一合并为同一个“未知产品”行
         // （MariaDB ONLY_FULL_GROUP_BY 只能按原始列分组，不能按表达式分组）。
+        // 使用大金额（50,000 × 2）确保“未知产品”进入 Top 8，避免被 revenue_by_product 截断。
+        $paidAmount = '50000.00';
+
         foreach ([null, ''] as $index => $spec) {
             Invoice::query()->create([
                 'invoice_no' => 'V2DASHUK'.$suffix.'-'.$index,
                 'user_id' => (int) $user->id,
                 'type' => InvoiceType::NEW_PURCHASE,
-                'amount' => '50.00',
+                'amount' => $paidAmount,
                 'discount' => '0.00',
-                'paid_amount' => '50.00',
+                'paid_amount' => $paidAmount,
                 'status' => InvoiceStatus::PAID,
                 'product_spec_snapshot' => $spec,
                 'billing_cycle' => 'monthly',
@@ -360,12 +362,13 @@ class V2AdminDashboardApiTest extends TestCase
 
         $unknown = collect($service->monthlyRevenue()['revenue_by_product'])->where('label', '未知产品');
 
-        // 只新增一行“未知产品”，且其金额/单数都合并了 NULL 与空串两张账单。
-        $this->assertCount($baselineUnknownRows + 1, $unknown->values());
+        // 归一分组后“未知产品”只可能有一行（无论基线是否已存在该标签，均合并到同一行）。
+        $this->assertCount(1, $unknown->values());
         $this->assertSame($baselineUnknownCount + 2, (int) $unknown->sum('count'));
-        $this->assertSame(
-            $baselineUnknownAmount + 100.0,
-            (float) $unknown->sum('amount')
+        $this->assertEqualsWithDelta(
+            $baselineUnknownAmount + 100000.0,
+            (float) $unknown->sum('amount'),
+            0.001
         );
     }
 
