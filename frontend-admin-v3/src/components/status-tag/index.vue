@@ -11,10 +11,11 @@
 </template>
 <script setup lang="ts">
 import { getStatusConfig } from '@shared/statusConfig';
+import type { TagProps } from 'tdesign-vue-next';
 import type { PropType } from 'vue';
 import { computed } from 'vue';
 
-type ThemeType = 'default' | 'warning' | 'success' | 'primary' | 'danger';
+type ThemeType = NonNullable<TagProps['theme']>;
 
 const props = defineProps({
   statusMap: { type: Object as PropType<Record<string, any>>, required: true },

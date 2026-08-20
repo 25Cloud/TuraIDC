@@ -444,7 +444,7 @@
 </template>
 <script setup lang="ts">
 import { AddIcon, ChevronRightIcon, SearchIcon } from 'tdesign-icons-vue-next';
-import type { FormRules, PageInfo } from 'tdesign-vue-next';
+import type { FormRules, PageInfo, TagProps } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -478,7 +478,7 @@ import {
   toPlainRecord,
 } from '../composables/useProductShared';
 
-type ThemeType = 'default' | 'warning' | 'success' | 'primary' | 'danger';
+type ThemeType = NonNullable<TagProps['theme']>;
 type TagVariantType = 'outline' | 'light' | 'dark' | 'light-outline';
 type ButtonVariantType = 'base' | 'text' | 'outline' | 'dashed';
 type TDesignSupplierCardStatus = Required<SupplierCardStatus> & { theme: ThemeType; variant: TagVariantType };

@@ -578,7 +578,7 @@
 import './index.less';
 
 import { SearchIcon } from 'tdesign-icons-vue-next';
-import type { PageInfo, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
+import type { PageInfo, PrimaryTableCol, TableRowData, TagProps } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -596,7 +596,7 @@ import LogDetailDrawer from './components/LogDetailDrawer.vue';
 type LogTab = 'system' | 'runtime' | 'admin-logins' | 'api' | 'sms' | 'email' | 'tasks' | 'gateway';
 type LogsTab = LogTab | 'schedules' | 'cleanup';
 type RecordRow = Record<string, unknown>;
-type ThemeType = 'default' | 'warning' | 'success' | 'primary' | 'danger';
+type ThemeType = NonNullable<TagProps['theme']>;
 
 const route = useRoute();
 const router = useRouter();

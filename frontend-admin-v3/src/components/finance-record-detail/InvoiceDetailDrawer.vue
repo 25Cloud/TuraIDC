@@ -145,6 +145,7 @@
 </template>
 <script setup lang="ts">
 import { getStatusLabel, getStatusTagType, INVOICE_TYPE_MAP, PAYMENT_STATUS_MAP } from '@shared/statusConfig';
+import type { TagProps } from 'tdesign-vue-next';
 import { computed, ref } from 'vue';
 
 import type { InvoiceRecord } from '@/api/admin';
@@ -152,7 +153,7 @@ import type { RecordDetailMetric, RecordDetailTab } from '@/components/record-de
 import RecordDetailPage from '@/components/record-detail-page/index.vue';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
-type ThemeType = 'default' | 'warning' | 'success' | 'primary' | 'danger';
+type ThemeType = NonNullable<TagProps['theme']>;
 
 const props = withDefaults(
   defineProps<{
