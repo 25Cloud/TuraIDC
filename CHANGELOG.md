@@ -2,11 +2,15 @@
 
 本项目采用 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 格式，并遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [未发布]
+## [v0.3.3] - 2026-08-20
 
 ### 修复
 
 - ZJMF Bridge 插件启用失败（"Provider 初始化未完成"）：`PluginProviderRegistry` 的系统级组件检查误伤 addons 域插件——addons（如 zjmf_bridge）注册自己的路由命名空间与中间件别名属合法能力，现豁免该检查，但仍禁止注册系统级调度
+
+### 文档
+
+- README Trusted Partners 新增合作伙伴：7iNet、StarVM 星空云、二五云
 
 ## [v0.3.2] - 2026-08-20
 

@@ -146,6 +146,12 @@ flowchart TB
 <p align="center">
   <a href="https://www.7inet.moe/" target="_blank">
     <img src="./docs/images/7inet.svg" alt="7iNet" height="80" />
+  </a><!--
+  --><a href="https://www.starvm.cn/" target="_blank">
+    <img src="./docs/images/starvm.png" alt="StarVM 星空云" height="80" />
+  </a><!--
+  --><a href="https://idc.25y.cn/" target="_blank">
+    <img src="./docs/images/turaidc.png" alt="二五云" height="80" />
   </a>
 </p>
 
