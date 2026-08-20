@@ -5621,28 +5621,9 @@ test.describe('frontend-admin-v3 shell smoke', () => {
       window.localStorage.setItem('admin_last_active_at', String(Date.now()));
     });
 
+    // 邮件模板：测试发送收件人输入为邮箱地址
     await page.goto('/admin/notifications', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: '通知管理' })).toBeVisible();
-
-    // 短信模板：测试发送收件人输入为手机号
-    await page.locator('.t-tabs__nav-item-text-wrapper').filter({ hasText: '短信模板' }).click();
-    await expect(page.getByText('发送验证码')).toBeVisible();
-    const smsSendRequest = page.waitForRequest('**/api/v2/admin/notification-templates/test-send');
-    await page.getByRole('button', { name: '测试发送' }).first().click();
-    await expect(page.getByText('测试发送短信')).toBeVisible();
-    await expect(page.getByText('接收手机号')).toBeVisible();
-    await page.getByPlaceholder('请输入接收手机号，例如：13900001234').fill('13900001234');
-    await page.getByRole('button', { name: '确认发送' }).click();
-    await expect((await smsSendRequest).postDataJSON()).toMatchObject({
-      channel: 'sms',
-      code: '100001',
-      recipient: '13900001234',
-    });
-    await expect(page.locator('.template-test-feedback--success')).toBeVisible();
-    await page.locator('.t-dialog:visible .t-dialog__close').click();
-
-    // 邮件模板：收件人输入切换为邮箱地址
-    await page.locator('.t-tabs__nav-item-text-wrapper').filter({ hasText: '邮件模板' }).click();
+    await expect(page.getByRole('heading', { name: '邮件模板' })).toBeVisible();
     await expect(page.getByText('测试验证码邮件')).toBeVisible();
     const emailSendRequest = page.waitForRequest('**/api/v2/admin/notification-templates/test-send');
     await page.getByRole('button', { name: '测试发送' }).first().click();
@@ -5654,6 +5635,24 @@ test.describe('frontend-admin-v3 shell smoke', () => {
       channel: 'email',
       code: '100001',
       recipient: 'tester@example.com',
+    });
+    await expect(page.locator('.template-test-feedback--success')).toBeVisible();
+    await page.locator('.t-dialog:visible .t-dialog__close').click();
+
+    // 短信模板（独立路由）：收件人输入切换为手机号
+    await page.goto('/admin/notifications/sms-templates', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: '短信模板' })).toBeVisible();
+    await expect(page.getByText('发送验证码')).toBeVisible();
+    const smsSendRequest = page.waitForRequest('**/api/v2/admin/notification-templates/test-send');
+    await page.getByRole('button', { name: '测试发送' }).first().click();
+    await expect(page.getByText('测试发送短信')).toBeVisible();
+    await expect(page.getByText('接收手机号')).toBeVisible();
+    await page.getByPlaceholder('请输入接收手机号，例如：13900001234').fill('13900001234');
+    await page.getByRole('button', { name: '确认发送' }).click();
+    await expect((await smsSendRequest).postDataJSON()).toMatchObject({
+      channel: 'sms',
+      code: '100001',
+      recipient: '13900001234',
     });
     await expect(page.locator('.template-test-feedback--success')).toBeVisible();
   });
@@ -5697,9 +5696,8 @@ test.describe('frontend-admin-v3 shell smoke', () => {
       window.localStorage.setItem('admin_last_active_at', String(Date.now()));
     });
 
-    await page.goto('/admin/referral', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: '推广返利' })).toBeVisible();
-    await page.locator('.t-tabs__nav-item').filter({ hasText: '奖励' }).click();
+    // 奖励列表走独立路由 /admin/referral/rewards（重构后为路由级 Tab，无页内 Tab）
+    await page.goto('/admin/referral/rewards', { waitUntil: 'domcontentloaded' });
 
     const isMobileViewport = () => (page.viewportSize()?.width || 1440) <= 768;
     const row = isMobileViewport()
