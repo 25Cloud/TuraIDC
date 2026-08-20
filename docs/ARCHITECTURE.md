@@ -57,7 +57,7 @@ API 直接重构路由口径：
 - 旧接口 `/api/admin/*`、`/api/client/*`、`/api/site/*` 已删除，不再注册或保留兼容层。
 - 当前业务接口统一使用 `/api/v2/admin/*`、`/api/v2/client/*`、`/api/v2/site/*` 命名空间。
 - v2 路由仍复用现有鉴权、权限码、业务 Service、插件边界和统一响应外层；变化集中在 FormRequest、Resource/Response DTO、字段投影、分页和子资源拆分。
-- 具体任务、接口拆分和验收标准见 `docs/设计文档/后端/API直接重构方案.md`。
+- 具体任务、接口拆分和验收标准见 `docs/designs/backend/direct-api-refactor.md`。
 
 响应规范：
 
