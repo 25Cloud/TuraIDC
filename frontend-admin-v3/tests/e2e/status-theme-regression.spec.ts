@@ -525,9 +525,9 @@ async function mockNotifications(page: import('@playwright/test').Page) {
 // =====================================================================
 
 test('订单详情：订单状态主题归一化（info/空值回退 default，支持主题直通）', async ({ page }) => {
+  await mockRemainingAdminApi(page);
   await mockAdminInfo(page);
   await mockOrderDetailStatuses(page);
-  await mockRemainingAdminApi(page);
   await seedAdminSession(page);
 
   for (const statusCase of ORDER_STATUS_CASES) {
@@ -546,10 +546,10 @@ test('订单详情：订单状态主题归一化（info/空值回退 default，�
 });
 
 test('订单详情：账单详情抽屉与支付记录状态主题', async ({ page }) => {
+  await mockRemainingAdminApi(page);
   await mockAdminInfo(page);
   await mockOrderDetailStatuses(page);
   await mockInvoiceDetail(page);
-  await mockRemainingAdminApi(page);
   await seedAdminSession(page);
 
   await page.goto('/admin/finance/orders/800', { waitUntil: 'domcontentloaded' });
@@ -593,9 +593,9 @@ test('订单详情：账单详情抽屉与支付记录状态主题', async ({ pa
 });
 
 test('充值管理：列表与账单抽屉状态主题', async ({ page }) => {
+  await mockRemainingAdminApi(page);
   await mockAdminInfo(page);
   await mockRecharges(page);
-  await mockRemainingAdminApi(page);
   await seedAdminSession(page);
 
   await page.goto('/admin/finance/recharges', { waitUntil: 'domcontentloaded' });
@@ -643,9 +643,9 @@ test('充值管理：列表与账单抽屉状态主题', async ({ page }) => {
 });
 
 test('推广返利：奖励与提现状态主题', async ({ page }) => {
+  await mockRemainingAdminApi(page);
   await mockAdminInfo(page);
   await mockReferralStatuses(page);
-  await mockRemainingAdminApi(page);
   await seedAdminSession(page);
 
   // 奖励记录：purple→primary 映射 / success 直通 / info 回退 default
@@ -662,9 +662,9 @@ test('推广返利：奖励与提现状态主题', async ({ page }) => {
 });
 
 test('通知中心：邮件/短信模板测试发送收件人输入随渠道切换并可提交', async ({ page }) => {
+  await mockRemainingAdminApi(page);
   await mockAdminInfo(page);
   await mockNotifications(page);
-  await mockRemainingAdminApi(page);
   await seedAdminSession(page);
 
   // ── 邮件模板 → 收件人为邮箱输入 ──
