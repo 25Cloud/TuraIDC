@@ -194,6 +194,7 @@ const {
   reinit,
 } = useGeeTestCaptcha({
   appendTo: captchaContainer,
+  onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
 });
 
 const form = reactive<LoginForm>({
