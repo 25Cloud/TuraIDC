@@ -5,7 +5,7 @@ import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:z
 
 import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
-import type { ConfigEnv, UserConfig } from 'vite';
+import type { ConfigEnv, PluginOption, UserConfig } from 'vite';
 import { loadEnv } from 'vite';
 import svgLoader from 'vite-svg-loader';
 
@@ -231,7 +231,10 @@ export default ({ mode }: ConfigEnv): UserConfig => {
     plugins: [
       vue(),
       vueJsx(),
-      svgLoader(),
+      // vite-svg-loader 未声明 vite peer，其类型 import 在 pnpm .pnpm 层级可能解析到
+      // docs-web(vitepress) 引入的 vite@5，而运行时实际解析为本端 vite@6（API 兼容），
+      // 仅做类型对齐，避免双 vite 版本造成的类型伪冲突。
+      svgLoader() as unknown as PluginOption,
       createIndexNetworkHintsPlugin(assetBase),
       createPrecompressedAssetsPlugin(),
     ],

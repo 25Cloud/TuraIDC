@@ -48,7 +48,7 @@
 
 ```bash
 cd frontend-admin-v3
-npm run build
+pnpm run build
 ```
 
 ## 4. `frontend-user-v3-www`
@@ -76,11 +76,11 @@ npm run build
 
 ```bash
 cd frontend-user-v3-www
-npm run build
-npm run verify:refactor
+pnpm run build
+pnpm run verify:refactor
 ```
 
-只做小改时至少执行 `npm run build`；涉及重构或共享逻辑时追加 `verify:refactor`。
+只做小改时至少执行 `pnpm run build`；涉及重构或共享逻辑时追加 `verify:refactor`。
 
 ## 5. `frontend-user-v4-console`
 
@@ -110,11 +110,11 @@ npm run verify:refactor
 
 ```bash
 cd frontend-user-v4-console
-npm run build
-npm run verify:refactor
+pnpm run build
+pnpm run verify:refactor
 ```
 
-只做小改时至少执行 `npm run build`；涉及重构或共享逻辑时追加 `verify:refactor`。
+只做小改时至少执行 `pnpm run build`；涉及重构或共享逻辑时追加 `verify:refactor`。
 
 ## 6. `shared`
 
@@ -133,8 +133,8 @@ npm run verify:refactor
 - 修改 `shared` 后至少执行：
 
 ```bash
-npm run typecheck:shared
-npm run test:shared
+pnpm run typecheck:shared
+pnpm run test:shared
 ```
 
 并按影响范围执行对应前端 build。
@@ -142,14 +142,14 @@ npm run test:shared
 ## 7. 根 workspace 命令
 
 ```bash
-npm run dev:admin-v3
-npm run dev:user-v3-www
-npm run dev:user-v4-console
+pnpm run dev:admin-v3
+pnpm run dev:user-v3-www
+pnpm run dev:user-v4-console
 
-npm run build:frontends
-npm run typecheck:frontends
-npm run test:frontends
-npm run verify:frontends
+pnpm run build:frontends
+pnpm run typecheck:frontends
+pnpm run test:frontends
+pnpm run verify:frontends
 ```
 
 根 `package.json` 只保留当前真实 workspace。新增前端项目时，必须同步更新 `package.json`、`package-lock.json`、`AGENTS.md`、`docs/references/operations/local-development.md` 和本规范。

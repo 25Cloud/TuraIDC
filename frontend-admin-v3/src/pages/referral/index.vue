@@ -274,7 +274,7 @@ import './index.less';
 
 import { REWARD_STATUS_MAP, toLabelMap, toSelectOptions, toTagTypeMap } from '@shared/statusConfig';
 import { SearchIcon } from 'tdesign-icons-vue-next';
-import type { PrimaryTableCol } from 'tdesign-vue-next';
+import type { PrimaryTableCol, TableRowData, TagProps } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -287,6 +287,7 @@ import { errorMessage } from '@/utils/userMessage';
 
 type ReferralTab = 'overview' | 'rewards' | 'withdrawals';
 type WithdrawalMode = 'approve' | 'reject';
+type ThemeType = NonNullable<TagProps['theme']>;
 
 const route = useRoute();
 const validTabs: ReferralTab[] = ['overview', 'rewards', 'withdrawals'];
@@ -383,7 +384,7 @@ const overviewColumns: PrimaryTableCol<Record<string, unknown>>[] = [
   { colKey: 'withdrawn', title: '已提现', width: 120 },
 ];
 
-const rewardColumns: PrimaryTableCol<ReferralRewardRecord>[] = [
+const rewardColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'id', title: 'ID', width: 80 },
   { colKey: 'relation', title: '推荐关系', minWidth: 220 },
   { colKey: 'order', title: '订单 / 配置', minWidth: 220 },
@@ -395,7 +396,7 @@ const rewardColumns: PrimaryTableCol<ReferralRewardRecord>[] = [
   { colKey: 'remark', title: '备注', minWidth: 180 },
 ];
 
-const withdrawalColumns: PrimaryTableCol<ReferralWithdrawalRecord>[] = [
+const withdrawalColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'id', title: 'ID', width: 80 },
   { colKey: 'user', title: '申请用户', minWidth: 220 },
   { colKey: 'amount', title: '提现金额', width: 120 },
@@ -540,11 +541,11 @@ function rewardStatusLabel(status: unknown) {
   return rewardLabelMap[String(status ?? '')] || fieldValue(status);
 }
 
-function rewardStatusTheme(status: unknown) {
+function rewardStatusTheme(status: unknown): ThemeType {
   const value = rewardTypeMap[String(status ?? '')] || 'default';
-  if (value === 'info') return 'default';
   if (value === 'purple') return 'primary';
-  return value;
+  if (value === 'warning' || value === 'success' || value === 'danger') return value;
+  return 'default';
 }
 
 function withdrawalStatusLabel(status: unknown) {
@@ -556,7 +557,7 @@ function withdrawalStatusLabel(status: unknown) {
   return labels[String(status ?? '')] || fieldValue(status);
 }
 
-function withdrawalStatusTheme(status: unknown) {
+function withdrawalStatusTheme(status: unknown): ThemeType {
   const themes: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
     0: 'warning',
     1: 'success',

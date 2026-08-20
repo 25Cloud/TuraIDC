@@ -43,4 +43,4 @@ docs/
 
 `current` 表示当前可依赖的规则或快照；`active` 表示正在执行；`completed` 表示保留结果；`tech-debt` 表示已知欠账；`needs-review` 表示不能在未对照代码前直接执行；`generated` 表示必须由对应脚本刷新；`archived` 只用于追溯。
 
-[catalog.json](catalog.json) 是机器可读目录。`npm run docs:check` 校验目录、链接、计划结构和目录覆盖；`npm run docs:freshness` 扫描到期复核项。
+[catalog.json](catalog.json) 是机器可读目录。`pnpm run docs:check` 校验目录、链接、计划结构和目录覆盖；`pnpm run docs:freshness` 扫描到期复核项。

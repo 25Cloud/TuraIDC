@@ -57,14 +57,14 @@
 
 ## 验证
 
-| 影响范围                    | 最小验证                                                                           |
-| --------------------------- | ---------------------------------------------------------------------------------- |
-| 文档                        | `npm run docs:check`                                                               |
-| `backend/`                  | `cd backend && php artisan test`（可先缩小到受影响文件）                           |
-| `frontend-admin-v3/`        | `cd frontend-admin-v3 && npm run build`                                            |
-| `frontend-user-v3-www/`     | `cd frontend-user-v3-www && npm run build`；重构追加 `npm run verify:refactor`     |
-| `frontend-user-v4-console/` | `cd frontend-user-v4-console && npm run build`；重构追加 `npm run verify:refactor` |
-| `shared/`                   | `npm run typecheck:shared && npm run test:shared`，再按影响端构建                  |
+| 影响范围                    | 最小验证                                                                             |
+| --------------------------- | ------------------------------------------------------------------------------------ |
+| 文档                        | `pnpm run docs:check`                                                                |
+| `backend/`                  | `cd backend && php artisan test`（可先缩小到受影响文件）                             |
+| `frontend-admin-v3/`        | `cd frontend-admin-v3 && pnpm run build`                                             |
+| `frontend-user-v3-www/`     | `cd frontend-user-v3-www && pnpm run build`；重构追加 `pnpm run verify:refactor`     |
+| `frontend-user-v4-console/` | `cd frontend-user-v4-console && pnpm run build`；重构追加 `pnpm run verify:refactor` |
+| `shared/`                   | `pnpm run typecheck:shared && pnpm run test:shared`，再按影响端构建                  |
 
 每个子任务先跑受影响验证；全部完成后跑本次变更覆盖范围的完整验证。不能运行时，说明原因和未覆盖风险。
 
@@ -73,4 +73,4 @@
 - 所有长期文档放入 `docs/` 的正确分区；不在仓库根或应用根新增临时说明。
 - 设计、产品规格、执行计划、参考资料和生成物分别进入对应索引；不为同一主题创建重复真源。
 - 执行计划必须放在 `active/`、`completed/` 或 `tech-debt/`，包含状态、进度和决策日志。
-- 文档链接与目录覆盖由 `npm run docs:check` 校验；复核期限由 `npm run docs:freshness` 扫描。
+- 文档链接与目录覆盖由 `pnpm run docs:check` 校验；复核期限由 `pnpm run docs:freshness` 扫描。

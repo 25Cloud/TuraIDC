@@ -262,7 +262,7 @@
               v-model="testSendRecipient"
               :placeholder="testSendPlaceholder"
               clearable
-              :type="testSendTemplate?.channel === 'sms' ? 'tel' : 'email'"
+              :type="testSendTemplate?.channel === 'sms' ? 'tel' : 'text'"
               @input="testSendResult = null"
             />
           </t-form-item>
@@ -297,7 +297,7 @@
 import './index.less';
 
 import { SearchIcon } from 'tdesign-icons-vue-next';
-import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
+import type { PrimaryTableCol, TableRowData, TagProps } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -309,6 +309,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { errorMessage } from '@/utils/userMessage';
 
 type NotificationTab = 'email-templates' | 'sms-templates' | 'api-directory';
+type ThemeType = NonNullable<TagProps['theme']>;
 type TemplateChannel = 'email' | 'sms';
 type TemplateAudience = 'user' | 'admin';
 
@@ -472,7 +473,7 @@ const filteredApiItems = computed(() => {
   });
 });
 
-const templateColumns: PrimaryTableCol<TemplateRow>[] = [
+const templateColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'name', title: '模板信息', minWidth: 260 },
   { colKey: 'code', title: '编号 / 对象', minWidth: 180 },
   { colKey: 'subject', title: '当前主题', minWidth: 220, ellipsis: true },
@@ -483,7 +484,7 @@ const templateColumns: PrimaryTableCol<TemplateRow>[] = [
   { colKey: 'status', title: '发送状态', width: 130 },
   { colKey: 'actions', title: '操作', fixed: 'right', width: 150 },
 ];
-const apiColumns: PrimaryTableCol<ApiCatalogItem>[] = [
+const apiColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'category', title: '所属分类', minWidth: 220 },
   { colKey: 'method', title: '方法', width: 100 },
   { colKey: 'path', title: '路径', minWidth: 340 },
@@ -661,7 +662,7 @@ function extractSettingItems(response: SettingItem[] | Record<string, unknown>) 
   return Array.isArray(record.list) ? (record.list as SettingItem[]) : [];
 }
 
-function methodTheme(method: string) {
+function methodTheme(method: string): ThemeType {
   if (method === 'GET') return 'primary';
   if (method === 'POST') return 'success';
   if (method === 'PUT') return 'warning';
@@ -669,7 +670,7 @@ function methodTheme(method: string) {
   return 'default';
 }
 
-function accessTheme(access: string) {
+function accessTheme(access: string): ThemeType {
   if (access === 'permission') return 'warning';
   if (access === 'auth') return 'success';
   return 'default';

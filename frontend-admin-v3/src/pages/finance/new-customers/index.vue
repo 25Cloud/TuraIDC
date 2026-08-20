@@ -36,7 +36,7 @@
 import './index.less';
 
 import { RefreshIcon } from 'tdesign-icons-vue-next';
-import type { PrimaryTableCol } from 'tdesign-vue-next';
+import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { onMounted, reactive, ref } from 'vue';
 
@@ -48,7 +48,7 @@ const loading = ref(false);
 const dailyList = ref<NewCustomerDailyRecord[]>([]);
 const dateRange = reactive(currentMonthRange());
 
-const columns: PrimaryTableCol<NewCustomerDailyRecord>[] = [
+const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'date', title: '日期', minWidth: 130 },
   { colKey: 'new_customers', title: '新增客户', minWidth: 110 },
   { colKey: 'new_orders', title: '新订单', minWidth: 100 },

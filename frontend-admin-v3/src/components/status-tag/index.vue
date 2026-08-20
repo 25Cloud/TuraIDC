@@ -11,8 +11,11 @@
 </template>
 <script setup lang="ts">
 import { getStatusConfig } from '@shared/statusConfig';
+import type { TagProps } from 'tdesign-vue-next';
 import type { PropType } from 'vue';
 import { computed } from 'vue';
+
+type ThemeType = NonNullable<TagProps['theme']>;
 
 const props = defineProps({
   statusMap: { type: Object as PropType<Record<string, any>>, required: true },
@@ -24,7 +27,7 @@ const props = defineProps({
 // shared/statusConfig 的 tagType 用 Element Plus 命名（success/info/warning/danger/''/purple），
 // TDesign theme 仅有 default/primary/success/warning/danger。
 // 与现有各页 *StatusTheme helper 行为对齐：info/purple/'' 统一落到 default（灰），其余同名。
-const TDESIGN_THEME_MAP: Record<string, string> = {
+const TDESIGN_THEME_MAP: Record<string, ThemeType> = {
   success: 'success',
   warning: 'warning',
   danger: 'danger',

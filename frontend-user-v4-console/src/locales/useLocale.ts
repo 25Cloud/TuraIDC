@@ -24,7 +24,11 @@ export function useLocale() {
   };
 
   const getComponentsLocale = computed(() => {
-    return i18n.global.getLocaleMessage(locale.value).componentsLocale as GlobalConfigProvider;
+    const message = i18n.global.getLocaleMessage(locale.value) as unknown as Record<
+      string,
+      GlobalConfigProvider | undefined
+    >;
+    return message.componentsLocale as GlobalConfigProvider;
   });
 
   return {

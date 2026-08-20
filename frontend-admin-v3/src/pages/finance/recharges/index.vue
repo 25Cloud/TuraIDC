@@ -120,7 +120,7 @@
 import './index.less';
 
 import { PAYMENT_STATUS_MAP, toLabelMap, toTagTypeMap } from '@shared/statusConfig';
-import type { PrimaryTableCol } from 'tdesign-vue-next';
+import type { PrimaryTableCol, TableRowData, TagProps } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -133,6 +133,8 @@ import StatusTag from '@/components/status-tag/index.vue';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
+
+type ThemeType = NonNullable<TagProps['theme']>;
 
 const loading = ref(false);
 const recharges = ref<RechargeRecord[]>([]);
@@ -167,7 +169,7 @@ const statusLabelMap = toLabelMap(PAYMENT_STATUS_MAP);
 const statusTypeMap = toTagTypeMap(PAYMENT_STATUS_MAP);
 const paymentStatusOptions = computed(() => Object.entries(statusLabelMap).map(([value, label]) => ({ value, label })));
 
-const columns: PrimaryTableCol<RechargeRecord>[] = [
+const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'payment_no', title: '支付单号', minWidth: 190 },
   { colKey: 'user', title: '用户', minWidth: 180 },
   { colKey: 'payment', title: '支付记录', minWidth: 220 },
@@ -345,9 +347,10 @@ function invoiceStatusLabel(status: unknown) {
   return statusLabelMap[String(status ?? '')] || fieldValue(status);
 }
 
-function invoiceStatusTheme(status: unknown) {
+function invoiceStatusTheme(status: unknown): ThemeType {
   const value = statusTypeMap[String(status ?? '')] || 'default';
-  return value === 'info' ? 'default' : value;
+  if (value === 'warning' || value === 'success' || value === 'primary' || value === 'danger') return value;
+  return 'default';
 }
 
 function toRecord(value: unknown): Record<string, unknown> {
