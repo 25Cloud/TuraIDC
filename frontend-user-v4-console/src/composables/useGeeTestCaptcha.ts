@@ -7,6 +7,10 @@ interface GeeTestConfig {
   enabled: boolean;
   captcha_id: string;
   script_url?: string;
+  /** 验证码 provider 标识：geetest / vaptcha / cap */
+  provider?: string;
+  /** Cap 等自托管验证码的前端初始化端点（{server}/{siteId}/） */
+  api_endpoint?: string;
 }
 
 interface CaptchaInstance {
@@ -30,6 +34,7 @@ declare global {
 
 let captchaConfigPromise: Promise<GeeTestConfig> | null = null;
 let geetestScriptPromise: Promise<typeof window.initGeetest4> | null = null;
+let capScriptPromise: Promise<boolean> | null = null;
 
 const defaultConfig: GeeTestConfig = {
   enabled: false,
@@ -94,11 +99,7 @@ function appendScriptCacheKey(src: string, cacheKey: string) {
 }
 
 type CaptchaAppendTarget =
-  | string
-  | HTMLElement
-  | { value?: string | HTMLElement | null | undefined }
-  | null
-  | undefined;
+  string | HTMLElement | { value?: string | HTMLElement | null | undefined } | null | undefined;
 
 function resolveAppendTarget(target: CaptchaAppendTarget): string | HTMLElement | undefined {
   if (target && typeof target === 'object' && 'value' in target) {
@@ -152,6 +153,124 @@ function loadGeeTestScript(src: string, cacheKey = '') {
   }
 
   return geetestScriptPromise;
+}
+
+/** 加载 Cap 前端脚本（经后端代理下发，注册 <cap-widget> 自定义元素）。 */
+function loadCapScript(src: string, cacheKey = '') {
+  if (typeof window === 'undefined') {
+    throw new TypeError('浏览器环境不可用');
+  }
+
+  const scriptKey = cacheKey || src;
+  const marker = 'cap-widget-script';
+  const existing = document.querySelector<HTMLScriptElement>(`script[data-${marker}]`);
+
+  if (existing && existing.dataset.captchaKey !== scriptKey) {
+    existing.remove();
+    capScriptPromise = null;
+  }
+
+  if (typeof customElements !== 'undefined' && customElements.get('cap-widget')) {
+    return Promise.resolve(true);
+  }
+
+  if (!capScriptPromise) {
+    capScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = appendScriptCacheKey(src, scriptKey);
+      script.async = true;
+      script.defer = true;
+      script.dataset[marker] = '';
+      script.dataset.captchaKey = scriptKey;
+      script.onload = () => {
+        // 脚本可能异步注册自定义元素，轮询等待
+        const waitRegistered = () => {
+          if (typeof customElements !== 'undefined' && customElements.get('cap-widget')) {
+            resolve(true);
+            return;
+          }
+          window.setTimeout(waitRegistered, 100);
+        };
+        waitRegistered();
+      };
+      script.onerror = () => reject(new Error('Cap 脚本加载失败'));
+      document.head.appendChild(script);
+    });
+  }
+
+  return capScriptPromise;
+}
+
+/**
+ * Cap widget 适配器：以项目统一的 CaptchaInstance 表面暴露 <cap-widget>。
+ * 验证结果统一为 { token }（与后端 GeeTestService::verify 的数组 payload 契约一致）。
+ */
+function createCapInstance(appendTarget: HTMLElement | string | undefined, apiEndpoint: string): CaptchaInstance {
+  let token: string | null = null;
+  let successCallback: (() => void) | null = null;
+  let errorCallback: ((error: unknown) => void) | null = null;
+  let closeCallback: (() => void) | null = null;
+  let readyCallback: (() => void) | null = null;
+  let element: HTMLElement | null = null;
+
+  const mount = () => {
+    element?.remove();
+    element = null;
+    token = null;
+
+    const widget = document.createElement('cap-widget');
+    widget.setAttribute('data-cap-api-endpoint', apiEndpoint);
+
+    widget.addEventListener('solve', ((event: Event) => {
+      const detail = (event as CustomEvent<{ token?: string }>).detail;
+      token = detail?.token ?? null;
+      if (token) {
+        successCallback?.();
+      }
+    }) as EventListener);
+    widget.addEventListener('error', ((event: Event) => {
+      const detail = (event as CustomEvent<{ message?: string }>).detail;
+      errorCallback?.(new Error(detail?.message || 'Cap 人机验证失败，请重试'));
+    }) as EventListener);
+    widget.addEventListener('reset', (() => {
+      token = null;
+      closeCallback?.();
+    }) as EventListener);
+
+    const target = typeof appendTarget === 'string' ? document.querySelector<HTMLElement>(appendTarget) : appendTarget;
+    (target || document.body).appendChild(widget);
+    element = widget;
+    readyCallback?.();
+  };
+
+  return {
+    onReady: (callback: () => void) => {
+      readyCallback = callback;
+    },
+    onSuccess: (callback: () => void) => {
+      successCallback = callback;
+    },
+    onError: (callback: (error: unknown) => void) => {
+      errorCallback = callback;
+    },
+    onClose: (callback: () => void) => {
+      closeCallback = callback;
+    },
+    showCaptcha: () => {
+      if (!element) {
+        mount();
+      }
+    },
+    getValidate: () => (token ? { token } : null),
+    reset: () => {
+      mount();
+    },
+    destroy: () => {
+      element?.remove();
+      element = null;
+      token = null;
+    },
+  };
 }
 
 export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
@@ -249,6 +368,40 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
       config.script_url || defaultConfig.script_url || '',
       import.meta.env.VITE_API_BASE_URL,
     );
+
+    if (config.provider === 'cap') {
+      const apiEndpoint = config.api_endpoint || '';
+      if (!apiEndpoint) {
+        throw new Error('Cap 人机验证配置缺少服务端地址');
+      }
+
+      await loadCapScript(scriptUrl, config.captcha_id);
+
+      const appendTarget = resolveAppendTarget((options.appendTo ?? options.container) as CaptchaAppendTarget);
+      initPromise = new Promise((resolve, reject) => {
+        try {
+          const instance = createCapInstance(appendTarget, apiEndpoint);
+          captchaObj = instance;
+          instance.onReady?.(() => {
+            ready.value = true;
+            resolve(instance);
+          });
+          instance.onSuccess?.(() => resolveSuccess(instance));
+          instance.onError?.((error) => {
+            rejectPending(normalizeCaptchaError(error));
+          });
+          instance.onClose?.(() => {
+            rejectPending(new Error('请先完成行为验证'));
+          });
+          instance.showCaptcha?.();
+        } catch (error) {
+          reject(normalizeCaptchaError(error, '行为验证初始化失败，请稍后重试'));
+        }
+      });
+
+      return initPromise;
+    }
+
     const initGeetest4 = await loadGeeTestScript(scriptUrl, config.captcha_id);
     const appendTarget = resolveAppendTarget((options.appendTo ?? options.container) as CaptchaAppendTarget);
     initPromise = new Promise((resolve, reject) => {

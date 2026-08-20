@@ -170,6 +170,8 @@ class AuthController extends Controller
             'enabled' => $this->geeTestService->isEnabled(),
             'captcha_id' => $this->geeTestService->getCaptchaId(),
             'script_url' => $this->geeTestService->getScriptUrl(),
+            'provider' => $this->geeTestService->getProvider(),
+            'api_endpoint' => $this->geeTestService->getApiEndpoint(),
         ]);
     }
 
