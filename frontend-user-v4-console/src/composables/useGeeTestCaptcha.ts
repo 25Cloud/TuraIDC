@@ -93,6 +93,25 @@ function appendScriptCacheKey(src: string, cacheKey: string) {
   }
 }
 
+type CaptchaAppendTarget =
+  | string
+  | HTMLElement
+  | { value?: string | HTMLElement | null | undefined }
+  | null
+  | undefined;
+
+function resolveAppendTarget(target: CaptchaAppendTarget): string | HTMLElement | undefined {
+  if (target && typeof target === 'object' && 'value' in target) {
+    return resolveAppendTarget((target as { value?: string | HTMLElement | null | undefined }).value);
+  }
+
+  if (typeof target === 'string' || target instanceof HTMLElement) {
+    return target;
+  }
+
+  return undefined;
+}
+
 function loadGeeTestScript(src: string, cacheKey = '') {
   if (typeof window === 'undefined') {
     throw new TypeError('浏览器环境不可用');
@@ -221,6 +240,7 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
       import.meta.env.VITE_API_BASE_URL,
     );
     const initGeetest4 = await loadGeeTestScript(scriptUrl, config.captcha_id);
+    const appendTarget = resolveAppendTarget((options.appendTo ?? options.container) as CaptchaAppendTarget);
     initPromise = new Promise((resolve, reject) => {
       try {
         initGeetest4?.(
@@ -229,6 +249,7 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
             product: 'bind',
             language: 'zho',
             ...options,
+            ...(appendTarget ? { appendTo: appendTarget, container: appendTarget } : {}),
           },
           (instance) => {
             captchaObj = instance;
@@ -292,6 +313,16 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     return callback(captcha);
   };
 
+  const reinit = async () => {
+    captchaObj?.destroy?.();
+    captchaObj = null;
+    initPromise = null;
+    ready.value = false;
+    await initCaptcha().catch(() => {
+      initialized.value = true;
+    });
+  };
+
   onMounted(() => {
     initCaptcha().catch(() => {
       initialized.value = true;
@@ -311,5 +342,6 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     ready,
     verify,
     runWithCaptcha,
+    reinit,
   };
 }

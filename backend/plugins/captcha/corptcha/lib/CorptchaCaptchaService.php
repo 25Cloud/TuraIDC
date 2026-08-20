@@ -349,20 +349,24 @@ class CorptchaCaptchaService
         return value || LANGUAGE;
     }
 
-    function ensureContainer() {
+    function resolveContainer(options) {
+        // 优先使用前端传入的容器（options.appendTo / options.container）
+        var configured = options.appendTo || options.container;
+        if (typeof configured === 'string') {
+            configured = document.querySelector(configured);
+        }
+        if (configured && configured.nodeType === 1) {
+            return { element: configured, autoCreated: false };
+        }
+
+        // 兜底：创建可见浮动容器（不再隐藏，避免组件不可见不可点）
         var element = document.createElement('div');
         var id = 'corptcha-container-' + Date.now() + '-' + Math.random().toString(16).slice(2);
         element.id = id;
-        element.style.position = 'fixed';
-        element.style.left = '0';
-        element.style.top = '0';
-        element.style.width = '1px';
-        element.style.height = '1px';
-        element.style.opacity = '0';
-        element.style.pointerEvents = 'none';
+        element.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2147483000;';
         document.body.appendChild(element);
 
-        return element;
+        return { element: element, autoCreated: true };
     }
 
     global.initGeetest4 = function (options, callback) {
@@ -375,6 +379,7 @@ class CorptchaCaptchaService
         var widget = null;
         var lastResult = null;
         var container = null;
+        var containerAutoCreated = false;
 
         var instance = {
             onReady: function (fn) {
@@ -428,7 +433,7 @@ class CorptchaCaptchaService
                     widget.destroy();
                 }
 
-                if (container && container.parentNode) {
+                if (container && containerAutoCreated && container.parentNode) {
                     container.parentNode.removeChild(container);
                 }
                 emit(closeCallbacks);
@@ -447,7 +452,9 @@ class CorptchaCaptchaService
                     throw new Error('Corptcha Site ID 不能为空');
                 }
 
-                container = ensureContainer();
+                var resolvedContainer = resolveContainer(options);
+                container = resolvedContainer.element;
+                containerAutoCreated = resolvedContainer.autoCreated;
 
                 widget = Corptcha.render(container, {
                     apiBaseUrl: options.apiBaseUrl || API_BASE_URL,

@@ -26,6 +26,14 @@ $allowedOrigins = array_values(array_unique(array_filter([
     $normalizeOrigin(env('ADMIN_URL')),
 ])));
 
+// 额外允许来源（逗号分隔，如官网备用域名）：CORS_ALLOWED_ORIGINS=https://idc.example.com
+$extraOrigins = array_values(array_unique(array_filter(array_map(
+    static fn (string $raw) => $normalizeOrigin($raw),
+    array_map('trim', explode(',', (string) env('CORS_ALLOWED_ORIGINS', '')))
+))));
+
+$allowedOrigins = array_values(array_unique(array_filter(array_merge($allowedOrigins, $extraOrigins))));
+
 return [
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
     'allowed_methods' => ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

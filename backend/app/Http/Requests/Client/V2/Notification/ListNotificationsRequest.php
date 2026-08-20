@@ -34,8 +34,8 @@ class ListNotificationsRequest extends FormRequest
         return max(1, (int) $this->integer('page', 1));
     }
 
-    public function perPage(): int
+    public function perPage(int $default = 15, int $max = 50): int
     {
-        return max(1, min((int) $this->integer('page_size', 15), 50));
+        return max(1, min((int) $this->integer('page_size', $default), $max));
     }
 }
