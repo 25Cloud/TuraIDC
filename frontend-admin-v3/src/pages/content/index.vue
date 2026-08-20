@@ -220,7 +220,7 @@
 import './index.less';
 
 import { AddIcon, FolderIcon, SearchIcon } from 'tdesign-icons-vue-next';
-import type { DropdownOption, FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
+import type { DropdownOption, FormInstanceFunctions, FormRule, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -278,7 +278,7 @@ const pageTitle = computed(() => (contentType.value === 'help' ? '帮助中心' 
 const articleLabel = computed(() => (contentType.value === 'help' ? '帮助文章' : '公告'));
 const isMobile = useMediaQuery('(max-width: 768px)');
 
-const columns: PrimaryTableCol<ContentArticleRecord>[] = [
+const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'id', title: 'ID', width: 80 },
   { colKey: 'title', title: '标题', minWidth: 300 },
   { colKey: 'category', title: '分类', minWidth: 160 },
@@ -288,7 +288,7 @@ const columns: PrimaryTableCol<ContentArticleRecord>[] = [
   { colKey: 'updated', title: '更新信息', minWidth: 180 },
   { colKey: 'actions', title: '操作', fixed: 'right', width: 130 },
 ];
-const categoryColumns: PrimaryTableCol<ContentCategoryRecord>[] = [
+const categoryColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'name', title: '分类名称', minWidth: 150 },
   { colKey: 'slug', title: '别名', minWidth: 130 },
   { colKey: 'status', title: '状态', width: 100 },
@@ -341,11 +341,11 @@ function handlePageChange(data: { current: number; pageSize: number }) {
   loadArticles();
 }
 
-function mobileActionOptions() {
+function mobileActionOptions(): DropdownOption[] {
   return [
     { content: '编辑', value: 'edit' },
     { content: '删除', value: 'delete', theme: 'error' },
-  ];
+  ] as DropdownOption[];
 }
 
 function handleMobileActionHandler(row: ContentArticleRecord) {

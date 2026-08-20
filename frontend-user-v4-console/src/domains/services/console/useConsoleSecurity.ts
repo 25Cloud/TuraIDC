@@ -1,3 +1,4 @@
+import type { SelectValue } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, reactive, ref } from 'vue';
 
@@ -89,8 +90,8 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
   const isAllPortProtocol = computed(() => resolveProtocolDefaultPort() === '1-65535');
 
   /** 协议变化时自动填充端口 */
-  function onProtocolChange(val: string) {
-    ruleForm.protocol = val;
+  function onProtocolChange(val: SelectValue) {
+    ruleForm.protocol = String(val);
     const defaultPort = resolveProtocolDefaultPort();
     if (defaultPort === undefined) {
       // 普通协议：若之前是自动填充值则清空，让用户输入

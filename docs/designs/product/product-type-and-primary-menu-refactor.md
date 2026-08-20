@@ -401,7 +401,7 @@ ProvidesProductStatusMapping
 
 验收：
 
-- `frontend-admin-v3` 执行 `npm.cmd run build`。
+- `frontend-admin-v3` 执行 `pnpm.cmd run build`。
 - 后台可以创建/编辑一级菜单并绑定产品类型。
 
 ### Phase 4：官网选购页
@@ -415,7 +415,7 @@ ProvidesProductStatusMapping
 
 验收：
 
-- `frontend-user-v3-www` 执行 `npm.cmd run build`。
+- `frontend-user-v3-www` 执行 `pnpm.cmd run build`。
 - 云服务器类产品选购链路可用。
 - `other` 无插件能力时不能进入伪购买流程。
 
@@ -429,7 +429,7 @@ ProvidesProductStatusMapping
 
 验收：
 
-- `frontend-user-v4-console` 执行 `npm.cmd run build`。
+- `frontend-user-v4-console` 执行 `pnpm.cmd run build`。
 - 现有云服务器控制台能力不回退。
 - 非对应类型不展示错误动作按钮。
 
@@ -480,6 +480,6 @@ ProvidesProductStatusMapping
 - [ ] 用户控制台按 `console_template` 和 capabilities 分流。
 - [ ] `other` 产品必须由插件提供购买/控制台能力。
 - [ ] 后端执行 `php artisan test`。
-- [ ] 管理端执行 `npm.cmd run build`。
-- [ ] 官网执行 `npm.cmd run build`。
-- [ ] 用户控制台执行 `npm.cmd run build`。
+- [ ] 管理端执行 `pnpm.cmd run build`。
+- [ ] 官网执行 `pnpm.cmd run build`。
+- [ ] 用户控制台执行 `pnpm.cmd run build`。

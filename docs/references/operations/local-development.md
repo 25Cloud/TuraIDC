@@ -57,26 +57,26 @@ php artisan schedule:run
 
 ## 前端
 
-推荐在仓库根目录使用 npm workspace 脚本：
+推荐在仓库根目录使用 pnpm workspace 脚本：
 
 ```bash
-npm run dev:admin-v3
-npm run dev:user-v3-www
-npm run dev:user-v4-console
-npm run dev:docs
+pnpm run dev:admin-v3
+pnpm run dev:user-v3-www
+pnpm run dev:user-v4-console
+pnpm run dev:docs
 ```
 
 也可以进入子项目：
 
 ```bash
 cd frontend-admin-v3
-npm run dev
+pnpm run dev
 
 cd frontend-user-v3-www
-npm run dev
+pnpm run dev
 
 cd frontend-user-v4-console
-npm run dev
+pnpm run dev
 ```
 
 当前真实前端目录：
@@ -91,17 +91,17 @@ npm run dev
 
 ```bash
 # 全部当前前端
-npm run build:frontends
-npm run typecheck:frontends
-npm run test:frontends
-npm run verify:frontends
+pnpm run build:frontends
+pnpm run typecheck:frontends
+pnpm run test:frontends
+pnpm run verify:frontends
 
 # 单项目
-npm run build:admin-v3
-npm run build:user-v3-www
-npm run build:user-v4-console
-npm run build:docs
-npm run docs:check
+pnpm run build:admin-v3
+pnpm run build:user-v3-www
+pnpm run build:user-v4-console
+pnpm run build:docs
+pnpm run docs:check
 ```
 
 后端验证：

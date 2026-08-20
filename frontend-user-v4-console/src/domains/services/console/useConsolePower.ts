@@ -1,3 +1,4 @@
+import type { SwitchValue } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
 import clientApi from '@/api/client';
@@ -99,12 +100,13 @@ export interface UseConsoleAutoRenewOptions {
 export function useConsoleAutoRenew(options: UseConsoleAutoRenewOptions) {
   const { serviceId, autoRenewLoading, mergeDetail } = options;
 
-  async function handleToggleAutoRenew(value: boolean) {
+  async function handleToggleAutoRenew(value: SwitchValue) {
+    const enabled = Boolean(value);
     autoRenewLoading.value = true;
     try {
-      await clientApi.updateAutoRenew(serviceId.value, { auto_renew: value ? 1 : 0 });
-      mergeDetail({ auto_renew: value ? 1 : 0 });
-      MessagePlugin.success(`自动续费已${value ? '开启' : '关闭'}`);
+      await clientApi.updateAutoRenew(serviceId.value, { auto_renew: enabled ? 1 : 0 });
+      mergeDetail({ auto_renew: enabled ? 1 : 0 });
+      MessagePlugin.success(`自动续费已${enabled ? '开启' : '关闭'}`);
     } catch (error: unknown) {
       MessagePlugin.error(resolveErrorMessage(error, '自动续费更新失败'));
     } finally {

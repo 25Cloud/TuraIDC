@@ -24,7 +24,7 @@
           </div>
           <div v-if="statusLabel" class="record-detail-summary__status">
             <span>状态</span>
-            <t-tag :theme="statusTheme" variant="light">{{ statusLabel }}</t-tag>
+            <t-tag :theme="normalizedStatusTheme" variant="light">{{ statusLabel }}</t-tag>
           </div>
           <div v-for="metric in visibleMetrics" :key="metric.label" class="record-detail-summary__metric">
             <span>{{ metric.label }}</span>
@@ -55,7 +55,10 @@
 </template>
 <script setup lang="ts">
 import { ChevronLeftIcon, RefreshIcon } from 'tdesign-icons-vue-next';
+import type { TagProps } from 'tdesign-vue-next';
 import { computed } from 'vue';
+
+type ThemeType = NonNullable<TagProps['theme']>;
 
 export interface RecordDetailMetric {
   label: string;
@@ -110,6 +113,13 @@ const emit = defineEmits<{
 const visibleMetrics = computed(() => props.metrics.filter((item) => item.show !== false));
 const visibleTabs = computed(() => props.tabs.filter((item) => item.show !== false));
 const currentTab = computed(() => props.activeTab || visibleTabs.value[0]?.value || 'basic');
+const normalizedStatusTheme = computed<ThemeType>(() => normalizeThemeType(props.statusTheme));
+
+function normalizeThemeType(value: unknown): ThemeType {
+  const theme = String(value || 'default').trim();
+  if (theme === 'warning' || theme === 'success' || theme === 'primary' || theme === 'danger') return theme;
+  return 'default';
+}
 
 function displayValue(value: string | number | null | undefined) {
   if (value === null || value === undefined || value === '') return '-';

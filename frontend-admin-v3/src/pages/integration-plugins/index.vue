@@ -312,7 +312,7 @@
             <span class="plugin-test-section__hint">通过系统邮件驱动发送一封验证码测试邮件</span>
           </div>
           <t-space direction="vertical" style="width: 100%">
-            <t-input v-model="systemEmailTestTo" placeholder="请输入收件人邮箱" type="email" />
+            <t-input v-model="systemEmailTestTo" placeholder="请输入收件人邮箱" />
             <t-button block variant="outline" :loading="emailTesting" @click="openSystemEmailTest"
               >发送测试邮件</t-button
             >
@@ -963,7 +963,6 @@ function fieldPlaceholder(field: IntegrationPluginConfigSchema) {
 
 function inputType(field: IntegrationPluginConfigSchema) {
   if (field.secret || field.type === 'password') return 'password';
-  if (field.type === 'email') return 'email';
   if (field.type === 'url') return 'url';
   if (field.type === 'phone') return 'tel';
   return 'text';

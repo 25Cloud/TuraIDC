@@ -55,7 +55,7 @@ ZJMF v10.4.6 将“调度判断”和“耗时执行”分离：`Cron` 每分钟
 | ZJMF 机制                                                                                                                                      | turaidc 现状                                                                                                                                                                                                                                      | 差距/结论                                                                                                                                                                                                                                                                                 | 是否需要动作                                                                                         |
 | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | 三层调度：`minuteCron`、`fiveMinuteCron`、`dayCron`                                                                                            | `routes/console.php` 每分钟进入心跳；`HeartbeatScheduler` 将时间归一到 15 分钟槽位；`TriggerRuleMatcher` 支持 Cron、每日序号和每 N 个槽位；`LegacyScheduleHookTaskProvider` 将 `tick.every_minute`、`tick.every_five_minutes` 注册为任务          | 架构上已有“入口、规则、任务注册、队列执行”分层，但真实最小粒度是 15 分钟。兼容名称可能造成插件时效性误判；`ScheduleTaskService` 的 `missed_slot_policy` 已明确为 `strict_current_slot`，错过槽位不补跑                                                                                    | 是。为任务元数据增加“声明频率/有效频率”区分，补充插件文档和告警；是否建设真实 1/5 分钟入口需另行立项 |
-| `configuration` 锁键：`cron_lock`、`cron_lock_start_time`、`cron_lock_last_time`、五分钟/日任务时间戳                                          | `HeartbeatScheduler` 使用 `Cache::lock('scheduler:heartbeat:{slot}', 840)`；任务触发使用 `scheduler:task-trigger:{task}`；`QueueDrainService` 使用按 Worker 的队列锁；`schedule_ticks.slot_started_at`、`schedule_task_runs` 唯一键提供数据库幂等 | turaidc 没有配置表锁键，且分布式锁与唯一约束的边界更明确；复制配置锁会引入读改写非原子、锁过期和多时钟问题                                                                                                                                                                                | 否。不新增配置锁；只补充锁后端可用性、降级模式、租约和重复派发监控                                   |
+| `configuration` 锁键：`cron_lock`、`cron_lock_start_time`、`cron_lock_last_time`、五分钟/日任务时间戳                                          | `HeartbeatScheduler` 使用 `Cache::lock('scheduler:heartbeat:{slot}', 900)`；任务触发使用 `scheduler:task-trigger:{task}`；`QueueDrainService` 使用按 Worker 的队列锁；`schedule_ticks.slot_started_at`、`schedule_task_runs` 唯一键提供数据库幂等 | turaidc 没有配置表锁键，且分布式锁与唯一约束的边界更明确；复制配置锁会引入读改写非原子、锁过期和多时钟问题                                                                                                                                                                                | 否。不新增配置锁；只补充锁后端可用性、降级模式、租约和重复派发监控                                   |
 | `task/task_wait` 双表：长期台账与短生命周期等待队列                                                                                            | `schedule_task_runs` 保存槽位、任务、来源、状态、耗时、摘要和错误；Laravel `jobs` 保存待消费载荷，`failed_jobs` 保存最终失败的队列 Job；`ScheduleTaskRunRepository` 负责状态机                                                                    | 分工已经由 Laravel Queue 承担，不需要再建一套 DB 队列。当前运行台账缺少分页过滤、尝试次数/父运行、人工重跑结果等可观测字段                                                                                                                                                                | 不建双表；是，增强现有台账查询和必要的追加字段/索引                                                  |
 | CAS 消费：事务内 `FOR UPDATE` 取 10 条，提交后按 `status` 条件更新为 `Exec`                                                                    | Laravel Queue 负责 reserve/可见性；`RunHeartbeatTaskJob` 通过 `HeartbeatTaskRunner` 调用 `markRunning()`，仅 `queued/retrying` 可进入 `running`；`WithoutOverlapping` 做任务级互斥；派发失败为 `dispatch_failed`，后续同槽心跳可复用记录重派      | 消费语义已覆盖，且迟到/重复 Job 在状态 CAS 失败时不会再次执行；缺少高并发、重复投递、Worker 崩溃与租约边界的系统性回归和指标                                                                                                                                                              | 不新增自建消费者；是，补并发测试、迟到 Job 拒绝执行测试和租约/可见性告警                             |
 | 失败重试：`task_wait` 失败回 `Wait/Failed`，最多三次；完成/超限记录清理                                                                        | `RunHeartbeatTaskJob::$tries=3`、`backoff=60`；运行台账显式记录 `retrying`、`failed`、`dispatch_failed`，`failed_jobs` 保留失败 Job；成功/失败台账不会自动删除；租约回收只标失败不自动重跑                                                        | turaidc 的审计留存优于 ZJMF，但总览没有展示尝试序号、最终失败原因分类、自动重试与人工重跑关系；没有失败运行手动重跑接口                                                                                                                                                                   | 是。增加运行详情/过滤、重试 lineage 和人工重跑，保持“不自动重跑未知副作用”的安全边界                 |
@@ -131,7 +131,7 @@ ZJMF v10.4.6 将“调度判断”和“耗时执行”分离：`Cron` 每分钟
 
 **回滚策略**：无实现变更；撤回本阶段只需删除本阶段产生的审计报告，不删除生产台账或队列记录。
 
-**最小验证**：执行针对调度的只读查询和现有 `php artisan test tests/Feature/HeartbeatSchedulerTest.php tests/Feature/ScheduleTaskOverviewTest.php`；文档变更执行 `npm run docs:check`。
+**最小验证**：执行针对调度的只读查询和现有 `php artisan test tests/Feature/HeartbeatSchedulerTest.php tests/Feature/ScheduleTaskOverviewTest.php`；文档变更执行 `pnpm run docs:check`。
 
 ### Phase 0 审计基线（2026-08-11 登记）
 
@@ -271,7 +271,7 @@ LegacyScheduleHookTaskProvider 的 `schedule-hook-*` 任务当前因没有任何
 
 - 未授权管理员、非终态、插件卸载、任务禁用、重复点击和并发重跑均返回明确错误且不新增 Job。
 - 合法失败运行生成新的运行 ID，父子关系、管理员、原因和最终状态可查询。
-- API Feature 测试通过后再考虑管理端页面；若修改 `frontend-admin-v3`，必须追加对应 e2e 和 `npm run build`，本计划阶段不默认包含前端改动。
+- API Feature 测试通过后再考虑管理端页面；若修改 `frontend-admin-v3`，必须追加对应 e2e 和 `pnpm run build`，本计划阶段不默认包含前端改动。
 
 ### Phase 4：业务规则差异确认与受控收敛
 
@@ -314,8 +314,8 @@ LegacyScheduleHookTaskProvider 的 `schedule-hook-*` 任务当前因没有任何
 **最小验证**：
 
 - `cd backend && php artisan test`。
-- 若本阶段修改共享或前端契约，按影响范围执行 `npm run typecheck:shared && npm run test:shared`、对应前端 `npm run build` 和 e2e。
-- `npm run docs:check`，并核对 API 自动生成物没有手工漂移。
+- 若本阶段修改共享或前端契约，按影响范围执行 `pnpm run typecheck:shared && pnpm run test:shared`、对应前端 `pnpm run build` 和 e2e。
+- `pnpm run docs:check`，并核对 API 自动生成物没有手工漂移。
 
 ## 阶段依赖与发布顺序
 
@@ -346,7 +346,7 @@ Phase 1 + Phase 2 + Phase 3 + Phase 4
 | 后台 API       | 分页/过滤/排序、权限、详情、人工重跑、重复请求                                          | 仅合法终态可重跑；操作审计完整；不暴露任务载荷敏感信息            |
 | 业务规则       | 到期提醒、逾期提醒、暂停/终止、幂等与补偿                                               | 产品确认的每个日期/渠道有固定时钟测试；同一规则只产生一次业务动作 |
 | 运维           | 心跳、Worker、Cache、队列积压、失败运行和告警                                           | 生产只需每分钟调度入口；异常可定位到任务键、运行 ID 和阶段        |
-| 文档与生成物   | `npm run docs:check`、路由生成脚本（如有）                                              | 链接、目录覆盖、计划结构和自动生成物均通过                        |
+| 文档与生成物   | `pnpm run docs:check`、路由生成脚本（如有）                                             | 链接、目录覆盖、计划结构和自动生成物均通过                        |
 
 ## 风险清单
 

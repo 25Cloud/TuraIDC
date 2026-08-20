@@ -288,10 +288,12 @@ sudo chmod -R 775 public/uploads public/media
 cd /www/wwwroot/你的项目
 
 # 先校验 backend/.env 中注入的四个公开地址和协议是否一致，不生成文件。
-npm run build:frontends -- --dry-run
+pnpm run build:frontends -- --dry-run
 
-npm ci
-npm run build:frontends
+# --shamefully-hoist：本项目依赖根 hoist 布局（如 element-plus），避免 monorepo 依赖布局不一致导致构建失败；
+# --config.verify-deps-before-run=false：跳过 pnpm 10+ 默认的依赖预校验，适用于宝塔等先 install 再构建的部署流程。
+pnpm install --frozen-lockfile --shamefully-hoist --config.verify-deps-before-run=false
+pnpm run build:frontends
 # 产物仍分别位于三个前端目录的 dist/，不会写入 backend/public。
 ```
 

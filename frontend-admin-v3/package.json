@@ -53,7 +53,7 @@
     "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "eslint-plugin-vue-scoped-css": "^2.9.0",
-    "globals": "^16.0.0",
+    "globals": "^16.5.0",
     "husky": "^9.1.7",
     "less": "^4.6.4",
     "lint-staged": "^15.2.2",
@@ -68,7 +68,7 @@
     "typescript-eslint": "^8.26.1",
     "vite": "^6.2.2",
     "vite-svg-loader": "^5.1.0",
-    "vue-tsc": "^3.2.5"
+    "vue-tsc": "^2.2.12"
   },
   "config": {
     "commitizen": {
@@ -78,13 +78,11 @@
   "lint-staged": {
     "*.{js,jsx,vue,ts,tsx}": [
       "prettier --write",
-      "npm run lint:fix"
-    ],
-    "*.{html,vue,css,sass,less}": [
-      "npm run stylelint:fix"
+      "eslint --fix --max-warnings 0"
     ]
   },
   "engines": {
     "node": ">=20.19.0"
-  }
+  },
+  "packageManager": "pnpm@11.13.1"
 }

@@ -48,25 +48,28 @@
                 </t-select>
                 <t-input-number
                   v-else-if="field.type === 'number'"
-                  v-model="form[field.key]"
+                  :value="form[field.key] as FieldNumberValue"
                   theme="normal"
                   :min="field.min"
                   :max="field.max"
                   :placeholder="field.placeholder || `请输入${field.label}`"
+                  @update:model-value="(value: unknown) => (form[field.key] = value as FieldNumberValue)"
                 />
                 <t-textarea
                   v-else-if="field.type === 'textarea'"
-                  v-model="form[field.key]"
+                  :value="form[field.key] as FieldStringValue"
                   :autosize="{ minRows: field.rows || 3, maxRows: Math.max(field.rows || 3, 6) }"
                   :maxlength="field.maxlength"
                   :placeholder="field.placeholder || `请输入${field.label}`"
+                  @update:model-value="(value: FieldStringValue) => (form[field.key] = value)"
                 />
                 <t-time-picker
                   v-else-if="field.type === 'time'"
-                  v-model="form[field.key]"
+                  :value="form[field.key] as string"
                   clearable
                   format="HH:mm:ss"
                   :placeholder="field.placeholder || `请选择${field.label}`"
+                  @update:model-value="(value: string) => (form[field.key] = value)"
                 />
                 <div v-else-if="field.type === 'image'" class="cover-image-selector" @click="selectImage(field)">
                   <image-icon />
@@ -89,10 +92,11 @@
                 />
                 <t-input
                   v-else
-                  v-model="form[field.key]"
+                  :value="form[field.key] as FieldStringValue"
                   :type="field.type === 'password' ? 'password' : 'text'"
                   :maxlength="field.maxlength"
                   :placeholder="field.placeholder || `请输入${field.label}`"
+                  @update:model-value="(value: FieldStringValue) => (form[field.key] = value)"
                 />
               </div>
             </article>
@@ -420,6 +424,8 @@ import { errorMessage } from '@/utils/userMessage';
 type SettingsTab = 'referral' | 'automation' | 'log_archive' | 'site_basic' | 'site_hero';
 type FieldType = 'input' | 'password' | 'textarea' | 'switch' | 'select' | 'number' | 'image' | 'time';
 type FieldValue = string | number | boolean | null;
+type FieldStringValue = string | number | null;
+type FieldNumberValue = number | null;
 
 interface FieldOption {
   label: string;
@@ -887,9 +893,10 @@ async function loadSettings() {
   try {
     const maps = Object.fromEntries(
       await Promise.all(
-        activeGroups.value.map(
-          async (group): Promise<[string, Record<string, unknown>]> => [group, await loadSettingsGroup(group)],
-        ),
+        activeGroups.value.map(async (group): Promise<[string, Record<string, unknown>]> => [
+          group,
+          await loadSettingsGroup(group),
+        ]),
       ),
     );
     allFields.value.forEach((field) => {
