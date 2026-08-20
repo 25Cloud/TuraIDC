@@ -36,6 +36,7 @@
     "dev:docs": "npm run dev --workspace turaidc-docs-web",
     "build:docs": "npm run build --workspace turaidc-docs-web",
     "docs:check": "node backend/scripts/check_docs.mjs",
+    "docs:freshness": "node backend/scripts/check_docs.mjs --freshness",
     "dev:admin-v3": "npm run dev --workspace turaidc-admin-v3",
     "dev:user-v3-www": "npm run dev --workspace turaidc-user-v3-www",
     "dev:user-v4-console": "npm run dev --workspace turaidc-user-v4-console",
