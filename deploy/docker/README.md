@@ -54,12 +54,12 @@ deploy/docker/
 
 使用前需在仓库 **Settings → Secrets and variables → Actions** 配置：
 
-| Secret | 说明 |
-| ------ | ---- |
-| `APP_URL` | API 公开地址，如 `https://api.example.com` |
-| `FRONTEND_URL` | 官网地址 |
-| `CLIENT_CONSOLE_URL` | 控制台地址 |
-| `ADMIN_URL` | 管理端地址 |
+| Secret                         | 说明                                               |
+| ------------------------------ | -------------------------------------------------- |
+| `APP_URL`                      | API 公开地址，如 `https://api.example.com`         |
+| `FRONTEND_URL`                 | 官网地址                                           |
+| `CLIENT_CONSOLE_URL`           | 控制台地址                                         |
+| `ADMIN_URL`                    | 管理端地址                                         |
 | `CLIENT_SESSION_COOKIE_DOMAIN` | 跨子域共享登录态父域，不需要可留空（未配置则不传） |
 
 首次推送后需在 GHCR 页面把 2 个 `turaidc-*` 包设为 **public**（或服务器 `docker login ghcr.io`）。
@@ -70,3 +70,19 @@ deploy/docker/
 - 如需限制端口仅本机访问（配合反代），将 `.env` 中端口改为 `127.0.0.1:8080` 形式。
 - 升级服务器：`git pull`（更新 .env 与 compose 文件）→ `docker compose pull && docker compose up -d`，后端增量迁移由容器启动时自动执行。
 - 详细部署与运维指南见 `docs/参考资料/运维/Docker与1Panel部署指南.md`。
+
+## 从智简魔方财务系统迁移
+
+正在使用智简魔方财务（ZJMF，`shd_` 前缀）？TuraIDC 支持将老站产品、用户、订单、上游供应商与实名数据完整迁移过来：
+
+```bash
+# 进入后端工作目录后执行（详见官方教程）
+python3 backend/scripts/mofang_to_turaidc_migrator.py --dry-run   # 预检
+python3 backend/scripts/mofang_to_turaidc_migrator.py --truncate  # 干净库迁移
+php artisan app:reorganize-product-groups                          # 重建三级分组
+php artisan app:sync-upstreams --api-keys-file /tmp/keys.json      # 上游同步+解密
+php artisan services:backfill-upstream-bindings                    # 服务控制台恢复
+php artisan optimize:clear && php artisan app:warmup-site-cache    # 预热缓存
+```
+
+> 📖 完整分步教程（含生产踩坑记录）：[从智简魔方财务系统迁移](../../docs/参考资料/数据库/从智简魔方财务系统迁移.md)

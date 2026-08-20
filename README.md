@@ -48,6 +48,7 @@
 
 - **对接智简魔方财务系统**：作为上游供应商接入，商品目录、库存、开通、续费、网络/安全操作等通过官方 API 完整适配。
 - **支持被智简魔方财务系统原生对接（实验）**：通过内置 ZJMF Bridge 插件，为存量智简魔方财务系统提供兼容 API 与签名校验，让旧生态无缝迁移，降低替换成本。
+- **从智简魔方财务系统迁移**：老站业务数据（产品/用户/订单/上游/实名）完整迁移教程见 [从智简魔方财务系统迁移](docs/参考资料/数据库/从智简魔方财务系统迁移.md)。
 
 ## ❌ 我们没有
 
@@ -202,6 +203,24 @@ TuraIDC/
 - Composer 2.x
 - Node.js 20+（构建前端）
 
+## 🧭 从智简魔方财务系统迁移
+
+正在使用智简魔方财务（ZJMF，`shd_` 前缀）并想切换到 TuraIDC？支持将老站业务数据一键迁移：
+
+- **产品 / 用户 / 订单 / 账单 / 工单 / 服务** 全量迁移（从 `mysqldump` 流式解析，无需源库在线）
+- **上游供应商** 自动同步并解密 API 密钥，恢复实时开通 / 续费 / 控制能力
+- **实名认证、商品配置项、OS 系统选择** 等细节数据完整落地
+- 老用户密码 `###md5` 无缝兼容，登录后自动升级
+
+> 📖 完整分步教程（含生产踩坑记录）：[从智简魔方财务系统迁移](docs/参考资料/数据库/从智简魔方财务系统迁移.md)
+
+```bash
+# 示例：迁移主流程（预检 → 重建分组 → 迁移数据 → 预热缓存）
+python3 backend/scripts/mofang_to_turaidc_migrator.py --dry-run
+php artisan app:reorganize-product-groups
+php artisan optimize:clear && php artisan app:warmup-site-cache
+```
+
 ## 🚀 快速开始（开发环境）
 
 ### 1. 后端
@@ -263,13 +282,13 @@ php artisan schedule:work
 
 CI（`.github/workflows/docker-image.yml`）在推送到 `main`、打 tag 或手动触发时，自动构建 2 个镜像推送到 GHCR（`GITHUB_TOKEN` 由 GitHub 自动注入，无需配置）。进入仓库 **Settings → Secrets and variables → Actions**，在 **Variables** 标签页（推荐，明文非敏感）或 Secrets 中添加：
 
-| 变量                            | 必填 | 说明                                             | 示例                          |
-| ------------------------------- | ---- | ------------------------------------------------ | ----------------------------- |
-| `APP_URL`                       | 是   | API 公开地址                                     | `https://api.example.com`     |
-| `FRONTEND_URL`                  | 是   | 官网地址                                         | `https://www.example.com`     |
-| `CLIENT_CONSOLE_URL`            | 是   | 用户控制台地址                                   | `https://console.example.com` |
-| `ADMIN_URL`                     | 是   | 管理端地址                                       | `https://admin.example.com`   |
-| `CLIENT_SESSION_COOKIE_DOMAIN`  | 否   | 跨子域共享登录态时填父域，单域部署可不配         | `.example.com`                |
+| 变量                           | 必填 | 说明                                     | 示例                          |
+| ------------------------------ | ---- | ---------------------------------------- | ----------------------------- |
+| `APP_URL`                      | 是   | API 公开地址                             | `https://api.example.com`     |
+| `FRONTEND_URL`                 | 是   | 官网地址                                 | `https://www.example.com`     |
+| `CLIENT_CONSOLE_URL`           | 是   | 用户控制台地址                           | `https://console.example.com` |
+| `ADMIN_URL`                    | 是   | 管理端地址                               | `https://admin.example.com`   |
+| `CLIENT_SESSION_COOKIE_DOMAIN` | 否   | 跨子域共享登录态时填父域，单域部署可不配 | `.example.com`                |
 
 四个地址必须互不相同、同一协议、无路径。未配置时前端构建会直接失败以提醒补全。
 
