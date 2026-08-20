@@ -11,6 +11,8 @@ class MessageRateLimitService
 {
     private const DEFAULT_IP_MINUTE_LIMIT = 6;
 
+    private const DEFAULT_TARGET_MINUTE_LIMIT = 1;
+
     private const DEFAULT_TARGET_HOUR_LIMIT = 5;
 
     private const DEFAULT_TARGET_DAY_LIMIT = 10;
@@ -41,6 +43,19 @@ class MessageRateLimitService
 
         // 目标号码/邮箱维度限流：防止轮换 IP 对同一目标轰炸
         $target = trim($target);
+        if ($target !== '' && $config['target_minute_limit'] > 0) {
+            // 与阿里云 dypnsapi SendSmsVerifyCode 每分钟 1 条保持一致，提前拦截避免触发服务商 biz.FREQUENCY
+            if (RateLimiter::tooManyAttempts(
+                $this->key($channel, 'target-minute', $target),
+                $config['target_minute_limit']
+            )) {
+                return [
+                    'ok' => false,
+                    'message' => '验证码发送过于频繁，请稍后再试',
+                ];
+            }
+        }
+
         if ($target !== '' && $config['target_hour_limit'] > 0) {
             if (RateLimiter::tooManyAttempts(
                 $this->key($channel, 'target-hour', $target),
@@ -86,6 +101,13 @@ class MessageRateLimitService
         }
 
         $target = trim($target);
+        if ($target !== '' && $config['target_minute_limit'] > 0) {
+            RateLimiter::hit(
+                $this->key($channel, 'target-minute', $target),
+                60
+            );
+        }
+
         if ($target !== '' && $config['target_hour_limit'] > 0) {
             RateLimiter::hit(
                 $this->key($channel, 'target-hour', $target),
@@ -108,6 +130,7 @@ class MessageRateLimitService
             return [
                 'enabled' => false,
                 'ip_minute_limit' => 0,
+                'target_minute_limit' => 0,
                 'target_hour_limit' => 0,
                 'target_day_limit' => 0,
             ];
@@ -116,6 +139,7 @@ class MessageRateLimitService
         return [
             'enabled' => $this->boolValue($pluginConfig, 'rate_limit_enabled', true),
             'ip_minute_limit' => $this->intValue($pluginConfig, 'ip_minute_limit', self::DEFAULT_IP_MINUTE_LIMIT),
+            'target_minute_limit' => $this->intValue($pluginConfig, 'target_minute_limit', self::DEFAULT_TARGET_MINUTE_LIMIT),
             'target_hour_limit' => $this->intValue($pluginConfig, 'target_hour_limit', self::DEFAULT_TARGET_HOUR_LIMIT),
             'target_day_limit' => $this->intValue($pluginConfig, 'target_day_limit', self::DEFAULT_TARGET_DAY_LIMIT),
         ];

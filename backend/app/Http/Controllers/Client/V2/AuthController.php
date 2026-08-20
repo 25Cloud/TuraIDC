@@ -457,6 +457,12 @@ class AuthController extends Controller
         } catch (\Throwable $exception) {
             report($exception);
 
+            // 插件层已带用户可读原因的（如阿里云 biz.FREQUENCY 频繁限制）直接透传，
+            // 其余未知异常回退通用文案，避免吞掉关键提示导致用户盲目重试。
+            if ($exception instanceof BusinessException && trim((string) $exception->getMessage()) !== '') {
+                return $this->error(42200, $exception->getMessage());
+            }
+
             return $this->error(42200, '短信服务暂不可用，请稍后重试');
         }
 
