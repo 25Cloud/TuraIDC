@@ -172,4 +172,17 @@ export const financeRoutes: RouteRecordRaw[] = [
       permission: 'product.list',
     },
   },
+  {
+    path: 'services/:id',
+    name: 'AdminServiceDetail',
+    component: () => import('@/pages/services/detail/index.vue'),
+    meta: {
+      title: {
+        zh_CN: '服务实例管理',
+        en_US: 'Service Detail',
+      },
+      permission: 'product.list',
+      hidden: true,
+    },
+  },
 ];

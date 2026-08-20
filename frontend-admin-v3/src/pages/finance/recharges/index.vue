@@ -112,6 +112,7 @@
       @refresh="reloadDetail"
       @view-order="(id) => id && router.push(`/admin/finance/orders/${id}`)"
       @view-user="(id) => id && router.push(`/admin/users/${id}`)"
+      @view-service="(id) => viewLinkedService(id)"
     />
   </div>
 </template>
@@ -351,6 +352,15 @@ function invoiceStatusTheme(status: unknown) {
 
 function toRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+}
+
+function viewLinkedService(id: unknown) {
+  if (!Number(id || 0)) return;
+  const invoice = currentInvoice.value;
+  router.push({
+    path: `/admin/services/${Number(id)}`,
+    query: { user: String(invoice.user_id || (toRecord(invoice.user).id as number) || '') },
+  });
 }
 
 onMounted(() => loadList());
