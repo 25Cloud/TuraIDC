@@ -6,6 +6,7 @@
 - 传统宝塔部署见 [宝塔部署项目指南](宝塔部署项目指南.md)，现网运维口径见 [部署与调度指南](部署与调度指南.md)
 - 部署文件位于仓库根 `deploy/docker/`，唯一需要改的配置是 `deploy/docker/.env`
 - CI 构建推送见 `.github/workflows/docker-image.yml`
+- 🧭 **从智简魔方财务系统迁移**：部署前若需导入智简魔方财务（ZJMF）老站数据，先阅读 [从智简魔方财务系统迁移](../数据库/从智简魔方财务系统迁移.md)（产品/用户/订单/上游/实名全流程与踩坑记录）
 
 ## 一、容器拓扑
 
@@ -43,20 +44,20 @@ cp .env.example .env
 vim .env
 ```
 
-| 配置项 | 必填 | 说明 |
-| ------ | ---- | ---- |
-| `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL` | 是 | 四个公开地址，互不相同、同一协议、无路径；`https://api.example.com` 形式 |
-| `CLIENT_SESSION_COOKIE_DOMAIN` | 否 | 官网/控制台跨子域共享登录态时填父域如 `.example.com`；单域留空 |
-| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG` | 否 | 镜像仓库地址，默认 `ghcr.io` / `25cloud` / `latest`，与 CI 推送目标一致 |
-| `APP_KEY` | 否 | **不要在此文件设置**。容器启动时自动生成并写入 `backend/.env`。若在此设空值，Docker env_file 会注入容器环境变量，Dotenv 不覆盖已存在环境变量，导致生成的 key 被忽略 |
-| `INSTALL_ADMIN_PASSWORD` | 是 | 首次初始化默认管理员 `cerbo` 的密码，至少 12 位强密码，仅空库首次生效 |
-| `SESSION_SECURE_COOKIE` | 是 | HTTPS 环境 `true`，纯 HTTP 环境 `false` |
-| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` / `DB_ROOT_PASSWORD` | 是 | 数据库名与账号；同时用于 mysql 容器和 app 容器 |
-| `REDIS_PASSWORD` | 否 | Redis 密码；默认空。公网切勿放行 6379 |
-| `API_PORT` / `WWW_PORT` / `CONSOLE_PORT` / `ADMIN_PORT` | 否 | 宿主机映射端口，默认 8080/8081/8082/8083 |
-| `CACHE_STORE` / `QUEUE_CONNECTION` / `SESSION_DRIVER` | 否 | 与现网口径一致：redis / database / file，一般不用改 |
-| `SENTRY_LARAVEL_DSN` | 否 | Sentry DSN，留空关闭 |
-| `MAIL_FROM_ADDRESS` | 否 | 默认发件人；SMTP 凭据由管理端"邮件插件"配置 |
+| 配置项                                                             | 必填 | 说明                                                                                                                                                                |
+| ------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL`    | 是   | 四个公开地址，互不相同、同一协议、无路径；`https://api.example.com` 形式                                                                                            |
+| `CLIENT_SESSION_COOKIE_DOMAIN`                                     | 否   | 官网/控制台跨子域共享登录态时填父域如 `.example.com`；单域留空                                                                                                      |
+| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | 否   | 镜像仓库地址，默认 `ghcr.io` / `25cloud` / `latest`，与 CI 推送目标一致                                                                                             |
+| `APP_KEY`                                                          | 否   | **不要在此文件设置**。容器启动时自动生成并写入 `backend/.env`。若在此设空值，Docker env_file 会注入容器环境变量，Dotenv 不覆盖已存在环境变量，导致生成的 key 被忽略 |
+| `INSTALL_ADMIN_PASSWORD`                                           | 是   | 首次初始化默认管理员 `cerbo` 的密码，至少 12 位强密码，仅空库首次生效                                                                                               |
+| `SESSION_SECURE_COOKIE`                                            | 是   | HTTPS 环境 `true`，纯 HTTP 环境 `false`                                                                                                                             |
+| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` / `DB_ROOT_PASSWORD` | 是   | 数据库名与账号；同时用于 mysql 容器和 app 容器                                                                                                                      |
+| `REDIS_PASSWORD`                                                   | 否   | Redis 密码；默认空。公网切勿放行 6379                                                                                                                               |
+| `API_PORT` / `WWW_PORT` / `CONSOLE_PORT` / `ADMIN_PORT`            | 否   | 宿主机映射端口，默认 8080/8081/8082/8083                                                                                                                            |
+| `CACHE_STORE` / `QUEUE_CONNECTION` / `SESSION_DRIVER`              | 否   | 与现网口径一致：redis / database / file，一般不用改                                                                                                                 |
+| `SENTRY_LARAVEL_DSN`                                               | 否   | Sentry DSN，留空关闭                                                                                                                                                |
+| `MAIL_FROM_ADDRESS`                                                | 否   | 默认发件人；SMTP 凭据由管理端"邮件插件"配置                                                                                                                         |
 
 > 约束：密码与地址值不要包含双引号 `"` 和反斜杠 `\`，避免破坏 `.env` 解析。`.env` 已被 `.dockerignore` 排除，不会进镜像、不会入库。
 
@@ -64,11 +65,11 @@ vim .env
 
 `.github/workflows/docker-image.yml` 在以下时机触发构建：
 
-| 触发 | 说明 |
-| ---- | ---- |
-| push 到 `main` / `master` | 常规发版，推 `latest` + `main` + `sha-<短哈希>` |
-| push 任意 tag（如 `v1.2.0`） | 推 `1.2.0`、`1.2`、`latest` + `sha-<短哈希>` |
-| 手动触发（Actions 页 Run workflow） | 需要时手动出一版 |
+| 触发                                | 说明                                            |
+| ----------------------------------- | ----------------------------------------------- |
+| push 到 `main` / `master`           | 常规发版，推 `latest` + `main` + `sha-<短哈希>` |
+| push 任意 tag（如 `v1.2.0`）        | 推 `1.2.0`、`1.2`、`latest` + `sha-<短哈希>`    |
+| 手动触发（Actions 页 Run workflow） | 需要时手动出一版                                |
 
 构建产物（GHCR，包名全小写）：
 
@@ -81,13 +82,13 @@ ghcr.io/<owner>/turaidc-frontends
 
 1. 仓库 **Settings → Secrets and variables → Actions → New repository secret**，新增：
 
-   | Secret | 示例 | 说明 |
-   | ------ | ---- | ---- |
-   | `APP_URL` | `https://api.example.com` | 必填，前端构建注入 API 地址 |
-   | `FRONTEND_URL` | `https://www.example.com` | 必填 |
-   | `CLIENT_CONSOLE_URL` | `https://console.example.com` | 必填 |
-   | `ADMIN_URL` | `https://admin.example.com` | 必填 |
-   | `CLIENT_SESSION_COOKIE_DOMAIN` | `.example.com` | 选填，跨子域共享登录态时配置；不配置则构建传空 |
+   | Secret                         | 示例                          | 说明                                           |
+   | ------------------------------ | ----------------------------- | ---------------------------------------------- |
+   | `APP_URL`                      | `https://api.example.com`     | 必填，前端构建注入 API 地址                    |
+   | `FRONTEND_URL`                 | `https://www.example.com`     | 必填                                           |
+   | `CLIENT_CONSOLE_URL`           | `https://console.example.com` | 必填                                           |
+   | `ADMIN_URL`                    | `https://admin.example.com`   | 必填                                           |
+   | `CLIENT_SESSION_COOKIE_DOMAIN` | `.example.com`                | 选填，跨子域共享登录态时配置；不配置则构建传空 |
 
    四个公开地址未配置时前端构建会直接失败（`build_frontends.mjs` 校验），这是有意的，提醒你补全。
 
@@ -157,11 +158,11 @@ vim .env
 
 面板 → 容器 → 编排 → 创建编排：
 
-| 配置项 | 值 |
-| ------ | -- |
-| 名称 | `turaidc` |
-| 来源 | 本机路径 |
-| 路径 | `/opt/turaidc/deploy/docker/docker-compose.yml` |
+| 配置项 | 值                                              |
+| ------ | ----------------------------------------------- |
+| 名称   | `turaidc`                                       |
+| 来源   | 本机路径                                        |
+| 路径   | `/opt/turaidc/deploy/docker/docker-compose.yml` |
 
 创建后点击"构建并启动"（1Panel 会自动执行 `pull`/`build`）。查看"容器"页确认 `turaidc-mysql`、`turaidc-app`、`turaidc-frontends` 等 4 个容器均运行；点 `turaidc-app` 的日志确认 entrypoint 完成数据库初始化。
 
@@ -171,12 +172,12 @@ vim .env
 
 面板 → 网站 → 创建网站 → 反向代理，为四个域名各建一条：
 
-| 域名 | 目标地址 |
-| ---- | -------- |
-| `api.你的域名` | `http://127.0.0.1:8080` |
-| `www.你的域名` | `http://127.0.0.1:8081` |
+| 域名               | 目标地址                |
+| ------------------ | ----------------------- |
+| `api.你的域名`     | `http://127.0.0.1:8080` |
+| `www.你的域名`     | `http://127.0.0.1:8081` |
 | `console.你的域名` | `http://127.0.0.1:8082` |
-| `admin.你的域名` | `http://127.0.0.1:8083` |
+| `admin.你的域名`   | `http://127.0.0.1:8083` |
 
 面板 → 证书 → 申请证书（Let's Encrypt，四个域名可合并一张泛域名证书），绑定到对应网站并开启强制 HTTPS。1Panel 反代默认支持 WebSocket，`/ws/vnc` 可直接穿透；若控制台 VNC 连不上，检查该反代是否保留了 `Upgrade`/`Connection` 头。
 
