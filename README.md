@@ -152,6 +152,9 @@ flowchart TB
   </a><!--
   --><a href="https://idc.25y.cn/" target="_blank">
     <img src="./docs/images/turaidc.png" alt="二五云" height="80" />
+  </a><!--
+  --><a href="https://www.idcxl.cn/" target="_blank">
+    <img src="https://image.mefrp-tpca.yealqp.cn/images/new_logo.webp" alt="仙林云" height="80" />
   </a>
 </p>
 
