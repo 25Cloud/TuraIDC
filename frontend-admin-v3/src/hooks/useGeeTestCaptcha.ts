@@ -300,33 +300,38 @@ export function useGeeTestCaptcha(configUrl = '/v2/client/auth/captcha-config') 
     }
 
     const currentVerifyPromise = (async () => {
-      const instance = await initCaptcha();
-      if (!instance) {
-        throw new Error('行为验证组件初始化失败，请稍后重试');
-      }
-
+      // 配置和脚本首次加载期间也要反馈提交状态，避免用户重复点击。
       loading.value = true;
 
-      return new Promise((resolve, reject) => {
-        pendingResolver = resolve;
-        pendingRejecter = reject;
-
-        try {
-          if (typeof instance.showCaptcha === 'function') {
-            instance.showCaptcha();
-          } else if (typeof instance.validate === 'function') {
-            Promise.resolve(instance.validate())
-              .then(() => resolveSuccess(instance))
-              .catch((error: unknown) => {
-                rejectPending(new Error(error instanceof Error ? error.message : String(error || '行为验证失败')));
-              });
-          } else {
-            rejectPending(new Error('行为验证组件版本不兼容，请刷新页面后重试'));
-          }
-        } catch (error) {
-          rejectPending(new Error(error instanceof Error ? error.message : '行为验证打开失败'));
+      try {
+        const instance = await initCaptcha();
+        if (!instance) {
+          throw new Error('行为验证组件初始化失败，请稍后重试');
         }
-      });
+
+        return await new Promise((resolve, reject) => {
+          pendingResolver = resolve;
+          pendingRejecter = reject;
+
+          try {
+            if (typeof instance.showCaptcha === 'function') {
+              instance.showCaptcha();
+            } else if (typeof instance.validate === 'function') {
+              Promise.resolve(instance.validate())
+                .then(() => resolveSuccess(instance))
+                .catch((error: unknown) => {
+                  rejectPending(new Error(error instanceof Error ? error.message : String(error || '行为验证失败')));
+                });
+            } else {
+              rejectPending(new Error('行为验证组件版本不兼容，请刷新页面后重试'));
+            }
+          } catch (error) {
+            rejectPending(new Error(error instanceof Error ? error.message : '行为验证打开失败'));
+          }
+        });
+      } finally {
+        loading.value = false;
+      }
     })();
 
     verifyPromise = currentVerifyPromise;
