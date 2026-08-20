@@ -58,17 +58,17 @@ npm run build
 - `src/main.js`：应用入口。
 - `src/app/`：bootstrap、router、runtime、stores 等核心能力。
 - `src/api/`：站点与用户 API。
-- `src/pages/website/`：官网页面。
-- `src/pages/client/`：用户入口/用户中心页面。
-- `src/domains/`：产品、服务等领域逻辑。
-- `src/composables/`：跨页面组合逻辑。
-- `src/features/`：局部业务组件。
+- `src/pages/website/`：官网页面路由入口；实现主体在 `src/views/website/`，`pages` 下多为转发壳。
+- `src/pages/common/`：通用页面（当前为 `NotFound.vue`）。
+- `src/views/website/`：官网页面实现主体（首页、产品、产品详情、内容、SEO 落地页）。
+- `src/domains/`：领域逻辑（当前仅 `products`）。
 - `src/assets/styles/`：Sass token、全局样式、Element Plus 样式入口。
 
 实现约束：
 
 - UI 使用 Element Plus 和 `@element-plus/icons-vue`。
-- 官网首页、产品页、登录页可以有更强视觉表现；用户中心业务页保持浅色控制台结构。
+- 本应用是纯官网门户，不含登录注册与用户中心；认证与控制台页面在 `frontend-user-v4-console`。
+- 官网首页与产品页可以有更强视觉表现。
 - 购买、结算、优惠券、恢复下单优先复用 `src/domains/products/*` 与现有 composables。
 - SEO、sitemap、prerender 逻辑放脚本和构建流程，不在页面里硬拼。
 

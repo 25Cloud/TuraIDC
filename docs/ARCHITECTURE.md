@@ -106,11 +106,11 @@ API 直接重构路由口径：
 
 ### 3.2 `frontend-user-v3-www`
 
-- 定位：官网、登录注册、用户入口与部分用户中心页面。
+- 定位：官网门户——首页、产品展示与购买、公告、帮助中心与法律条款页。登录注册与用户中心已迁至 `frontend-user-v4-console`（`src/pages/client-auth/` 与 `src/pages/client/`），本应用不再包含认证路由。
 - 技术：Vue 3、Vite、Element Plus、Pinia、Sass。
-- 入口：`src/main.js`、`src/app/`、`src/router/`。
-- 页面：`src/pages/website`、`src/pages/client`，并保留部分 `src/views` 兼容结构。
-- 领域逻辑：`src/domains/`、`src/composables/`、`src/features/`。
+- 入口：`src/main.js`、`src/app/`（bootstrap、http、router、runtime、stores）、`src/router/`。
+- 页面：`src/pages/website`、`src/pages/common`。注意实现主体位于 `src/views/website`，`src/pages` 下多数 `index.vue` 只是指向 `views` 的路由转发壳（例如 `pages/website/products/index.vue` 仅 154 字节）。
+- 领域逻辑：`src/domains/`（当前仅 `products`）。
 - 样式：`src/assets/styles/`。
 - 构建附带 sitemap/prerender。
 - 验证：`cd frontend-user-v3-www && npm run build`，重构时追加 `npm run verify:refactor`。
