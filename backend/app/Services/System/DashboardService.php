@@ -163,37 +163,47 @@ class DashboardService
         $daysInMonth = (int) now()->format('t');
 
         // 本月各产品营收占比（已付账单，Top 8 + 其他）
-        $allProducts = $this->salesIncomeInvoices()
-            ->where('created_at', '>=', $month)
-            ->where('status', InvoiceStatus::PAID)
-            ->selectRaw('
-                COALESCE(NULLIF(product_spec_snapshot, ""), "未知产品") as product_name,
-                COALESCE(SUM(paid_amount), 0) as total_amount,
-                COUNT(*) as count
-            ')
-            ->groupBy('product_spec_snapshot')
-            ->orderByDesc('total_amount')
-            ->get();
+        // NULL/空字符串统一映射为“未知产品”。MariaDB 的 ONLY_FULL_GROUP_BY 不接受按表达式分组
+        // （会报 1055 isn't in GROUP BY，只认原始列），故 SQL 按原始列 product_spec_snapshot 分组，
+        // 再将 NULL/空串拆出的多个“未知产品”行在 PHP 层按 label 归一合并，避免重复标签挤占 Top 8 名额。
+        $rowsByLabel = [];
 
-        $topProducts = $allProducts->take(8);
-        $otherAmount = $allProducts->skip(8)->sum('total_amount');
+        foreach (
+            $this->salesIncomeInvoices()
+                ->where('created_at', '>=', $month)
+                ->where('status', InvoiceStatus::PAID)
+                ->selectRaw('
+                    COALESCE(NULLIF(product_spec_snapshot, ""), "未知产品") as product_name,
+                    COALESCE(SUM(paid_amount), 0) as total_amount,
+                    COUNT(*) as count
+                ')
+                ->groupBy('product_spec_snapshot')
+                ->get() as $row
+        ) {
+            $label = (string) ($row->product_name ?: '未知产品');
 
-        $revenueByProduct = $topProducts
-            ->map(function ($row) {
-                return [
-                    'label' => (string) ($row->product_name ?: '未知产品'),
-                    'amount' => (float) $row->total_amount,
-                    'count' => (int) $row->count,
-                ];
-            })
-            ->values()
-            ->all();
+            $rowsByLabel[$label] = [
+                'label' => $label,
+                'amount' => (float) ($rowsByLabel[$label]['amount'] ?? 0) + (float) $row->total_amount,
+                'count' => (int) ($rowsByLabel[$label]['count'] ?? 0) + (int) $row->count,
+            ];
+        }
+
+        usort($rowsByLabel, static fn (array $a, array $b): int => $b['amount'] <=> $a['amount']);
+
+        $sortedProducts = array_values($rowsByLabel);
+        $topProducts = array_slice($sortedProducts, 0, 8);
+        $restProducts = array_slice($sortedProducts, 8);
+
+        $otherAmount = (float) array_sum(array_column($restProducts, 'amount'));
+
+        $revenueByProduct = $topProducts;
 
         if ($otherAmount > 0) {
             $revenueByProduct[] = [
                 'label' => '其他',
-                'amount' => (float) $otherAmount,
-                'count' => (int) $allProducts->skip(8)->sum('count'),
+                'amount' => $otherAmount,
+                'count' => (int) array_sum(array_column($restProducts, 'count')),
             ];
         }
 

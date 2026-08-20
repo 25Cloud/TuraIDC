@@ -308,6 +308,67 @@ class V2AdminDashboardApiTest extends TestCase
         $this->assertNotContains('推荐奖励-'.$suffix, array_column($revenue['revenue_by_product'], 'label'));
     }
 
+    public function test_monthly_revenue_merges_null_and_empty_spec_snapshot_into_single_unknown_product(): void
+    {
+        Cache::flush();
+
+        $suffix = strtoupper(bin2hex(random_bytes(4)));
+        $service = app(DashboardService::class);
+        $baselineUnknown = collect($service->monthlyRevenue()['revenue_by_product'])
+            ->where('label', '未知产品');
+        $baselineUnknownRows = $baselineUnknown->count();
+        $baselineUnknownCount = (int) $baselineUnknown->sum('count');
+        $baselineUnknownAmount = (float) $baselineUnknown->sum('amount');
+
+        $user = User::query()->create([
+            'email' => 'dashboard-unknown-'.$suffix.'@example.com',
+            'password' => 'Temp@123456',
+            'phone' => '13'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT),
+            'status' => 1,
+            'nickname' => 'Dashboard Unknown '.$suffix,
+            'real_name' => '',
+            'id_card' => '',
+            'verification_status' => 0,
+            'verification_message' => '',
+            'verification_certify_id' => null,
+            'member_level_id' => null,
+            'total_sales_amount' => '0.00',
+            'referrer_user_id' => null,
+            'verified_at' => null,
+        ]);
+
+        // 规格快照分别为 NULL 与空字符串：SQL 按原始列分组后，PHP 层按 label 归一合并为同一个“未知产品”行
+        // （MariaDB ONLY_FULL_GROUP_BY 只能按原始列分组，不能按表达式分组）。
+        foreach ([null, ''] as $index => $spec) {
+            Invoice::query()->create([
+                'invoice_no' => 'V2DASHUK'.$suffix.'-'.$index,
+                'user_id' => (int) $user->id,
+                'type' => InvoiceType::NEW_PURCHASE,
+                'amount' => '50.00',
+                'discount' => '0.00',
+                'paid_amount' => '50.00',
+                'status' => InvoiceStatus::PAID,
+                'product_spec_snapshot' => $spec,
+                'billing_cycle' => 'monthly',
+                'quantity' => 1,
+                'paid_at' => now(),
+                'due_date' => now()->addDay(),
+            ]);
+        }
+
+        Cache::flush();
+
+        $unknown = collect($service->monthlyRevenue()['revenue_by_product'])->where('label', '未知产品');
+
+        // 只新增一行“未知产品”，且其金额/单数都合并了 NULL 与空串两张账单。
+        $this->assertCount($baselineUnknownRows + 1, $unknown->values());
+        $this->assertSame($baselineUnknownCount + 2, (int) $unknown->sum('count'));
+        $this->assertSame(
+            $baselineUnknownAmount + 100.0,
+            (float) $unknown->sum('amount')
+        );
+    }
+
     /**
      * @param  list<string>  $permissions
      */
