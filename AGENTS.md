@@ -20,6 +20,7 @@
 | 目录                        | 职责                                            |
 | --------------------------- | ----------------------------------------------- |
 | `backend/`                  | Laravel 12 API、业务服务、插件与 Artisan 命令。 |
+| `docs-web/`                 | 官方文档站，VitePress 构建，内容源为 `docs/`。  |
 | `frontend-admin-v3/`        | 管理端，Vue 3 + TDesign Vue Next。              |
 | `frontend-user-v3-www/`     | 官网与用户入口，Vue 3 + Element Plus。          |
 | `frontend-user-v4-console/` | 用户控制台，Vue 3 + TDesign Vue Next。          |
@@ -30,17 +31,17 @@
 
 ## 按任务阅读
 
-| 任务                         | 先读                                                                                                                                                                |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 入项、资料定位               | [docs/README.md](docs/README.md)                                                                                                                                    |
-| 系统边界、运行方式           | [ARCHITECTURE.md](docs/ARCHITECTURE.md) 与 [运维参考](docs/参考资料/运维/部署与调度指南.md)                                                                          |
-| 后端、API、上游或插件        | [BACKEND.md](docs/BACKEND.md)、[API 规范](docs/参考资料/接口/API格式规范.md)、[插件开发](docs/参考资料/集成/插件/README.md)                                         |
-| API 重构                     | [API 直接重构方案](docs/设计文档/后端/API直接重构方案.md) 与自动生成 [API 清单](docs/自动生成/接口/后端API清单.md)                                                  |
-| 前端或页面                   | [FRONTEND.md](docs/FRONTEND.md) 与 [DESIGN.md](docs/DESIGN.md)                                                                                                      |
-| 数据库、迁移、归档           | [DATABASE.md](docs/DATABASE.md) 与 [数据库参考](docs/参考资料/README.md)                                                                                            |
-| 产品范围与验收               | [产品规格/README.md](docs/产品规格/README.md)                                                                                                                       |
-| 跨模块、迁移、上线或回滚风险 | [执行计划/README.md](docs/执行计划/README.md)；先建或更新计划                                                                                                       |
-| 部署、本地启动、测试         | [本地启动](docs/参考资料/运维/本地启动指南.md)、[部署与调度](docs/参考资料/运维/部署与调度指南.md)、[测试指南](docs/参考资料/运维/测试指南.md)                       |
+| 任务                         | 先读                                                                                                                                           |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 入项、资料定位               | [docs/README.md](docs/README.md)                                                                                                               |
+| 系统边界、运行方式           | [ARCHITECTURE.md](docs/ARCHITECTURE.md) 与 [运维参考](docs/参考资料/运维/部署与调度指南.md)                                                    |
+| 后端、API、上游或插件        | [BACKEND.md](docs/BACKEND.md)、[API 规范](docs/参考资料/接口/API格式规范.md)、[插件开发](docs/参考资料/集成/插件/README.md)                    |
+| API 重构                     | [API 直接重构方案](docs/设计文档/后端/API直接重构方案.md) 与自动生成 [API 清单](docs/自动生成/接口/后端API清单.md)                             |
+| 前端或页面                   | [FRONTEND.md](docs/FRONTEND.md) 与 [DESIGN.md](docs/DESIGN.md)                                                                                 |
+| 数据库、迁移、归档           | [DATABASE.md](docs/DATABASE.md) 与 [数据库参考](docs/参考资料/README.md)                                                                       |
+| 产品范围与验收               | [产品规格/README.md](docs/产品规格/README.md)                                                                                                  |
+| 跨模块、迁移、上线或回滚风险 | [执行计划/README.md](docs/执行计划/README.md)；先建或更新计划                                                                                  |
+| 部署、本地启动、测试         | [本地启动](docs/参考资料/运维/本地启动指南.md)、[部署与调度](docs/参考资料/运维/部署与调度指南.md)、[测试指南](docs/参考资料/运维/测试指南.md) |
 
 ## 关键约束入口
 
