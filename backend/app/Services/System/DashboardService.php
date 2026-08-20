@@ -11,6 +11,7 @@ use App\Models\Service;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Support\AdminPrivacy;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 
@@ -163,14 +164,16 @@ class DashboardService
         $daysInMonth = (int) now()->format('t');
 
         // 本月各产品营收占比（已付账单，Top 8 + 其他）
+        // 按 paid_at 统计（与每日营收/月收入口径一致）：上月创建、本月支付的账单计入本月，本月创建未支付的不计入。
         // NULL/空字符串统一映射为“未知产品”。MariaDB 的 ONLY_FULL_GROUP_BY 不接受按表达式分组
         // （会报 1055 isn't in GROUP BY，只认原始列），故 SQL 按原始列 product_spec_snapshot 分组，
         // 再将 NULL/空串拆出的多个“未知产品”行在 PHP 层按 label 归一合并，避免重复标签挤占 Top 8 名额。
+        // 金额累加统一走项目 Money（分位舍入），禁止裸 float 累加。
         $rowsByLabel = [];
 
         foreach (
             $this->salesIncomeInvoices()
-                ->where('created_at', '>=', $month)
+                ->where('paid_at', '>=', $month)
                 ->where('status', InvoiceStatus::PAID)
                 ->selectRaw('
                     COALESCE(NULLIF(product_spec_snapshot, ""), "未知产品") as product_name,
@@ -184,7 +187,7 @@ class DashboardService
 
             $rowsByLabel[$label] = [
                 'label' => $label,
-                'amount' => (float) ($rowsByLabel[$label]['amount'] ?? 0) + (float) $row->total_amount,
+                'amount' => Money::add($rowsByLabel[$label]['amount'] ?? 0, $row->total_amount),
                 'count' => (int) ($rowsByLabel[$label]['count'] ?? 0) + (int) $row->count,
             ];
         }
@@ -195,7 +198,7 @@ class DashboardService
         $topProducts = array_slice($sortedProducts, 0, 8);
         $restProducts = array_slice($sortedProducts, 8);
 
-        $otherAmount = (float) array_sum(array_column($restProducts, 'amount'));
+        $otherAmount = Money::add(...array_column($restProducts, 'amount'));
 
         $revenueByProduct = $topProducts;
 
