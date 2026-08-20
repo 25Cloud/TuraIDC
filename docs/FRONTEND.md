@@ -152,4 +152,4 @@ npm run test:frontends
 npm run verify:frontends
 ```
 
-根 `package.json` 只保留当前真实 workspace。新增前端项目时，必须同步更新 `package.json`、`package-lock.json`、`AGENTS.md`、`docs/参考资料/运维/本地启动指南.md` 和本规范。
+根 `package.json` 只保留当前真实 workspace。新增前端项目时，必须同步更新 `package.json`、`package-lock.json`、`AGENTS.md`、`docs/references/operations/local-development.md` 和本规范。

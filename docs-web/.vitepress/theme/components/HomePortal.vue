@@ -2,11 +2,14 @@
 const guides = [
   {
     title: "快速开始",
-    description: "从项目入口、本地环境和验证方式开始。",
+    description: "选择适合生产环境的部署方式并完成上线检查。",
     links: [
-      ["文档首页", "/"],
-      ["本地启动", "/参考资料/运维/本地启动指南"],
-      ["测试指南", "/参考资料/运维/测试指南"],
+      ["部署方式选择", "/quick-start"],
+      ["宝塔部署", "/references/operations/bt-panel-deployment"],
+      [
+        "Docker / 1Panel",
+        "/references/operations/docker-and-1panel-deployment",
+      ],
     ],
   },
   {
@@ -15,7 +18,7 @@ const guides = [
     links: [
       ["后端规范", "/BACKEND"],
       ["前端规范", "/FRONTEND"],
-      ["插件开发", "/参考资料/集成/插件/"],
+      ["插件开发", "/references/integrations/plugins/"],
     ],
   },
   {
@@ -23,24 +26,24 @@ const guides = [
     description: "查看运行中的系统结构、模块边界与扩展架构。",
     links: [
       ["系统架构", "/ARCHITECTURE"],
-      ["架构设计", "/设计文档/架构/"],
+      ["架构设计", "/designs/architecture/"],
     ],
   },
   {
     title: "API 文档",
     description: "查看接口契约、业务域导航和后端 API 自动清单。",
     links: [
-      ["API 格式规范", "/参考资料/接口/API格式规范"],
-      ["后端 API 清单", "/自动生成/接口/后端API清单"],
+      ["API 格式规范", "/references/api/api-format"],
+      ["后端 API 清单", "/generated/api/backend-api-catalog"],
     ],
   },
   {
     title: "系统运维",
     description: "覆盖部署调度、数据迁移、维护操作与执行计划。",
     links: [
-      ["部署与调度", "/参考资料/运维/部署与调度指南"],
-      ["数据库迁移", "/参考资料/数据库/"],
-      ["执行计划", "/执行计划/"],
+      ["部署与调度", "/references/operations/deployment-and-scheduling"],
+      ["数据库迁移", "/references/database/"],
+      ["执行计划", "/execution-plans/"],
     ],
   },
 ];
@@ -55,8 +58,8 @@ const guides = [
       </a>
       <nav class="portal-nav" aria-label="主要导航">
         <a href="/ARCHITECTURE">系统架构</a>
-        <a href="/自动生成/接口/后端API清单">API 参考</a>
-        <a href="/参考资料/运维/部署与调度指南">部署运维</a>
+        <a href="/generated/api/backend-api-catalog">API 参考</a>
+        <a href="/references/operations/deployment-and-scheduling">部署运维</a>
         <a
           href="https://github.com/25Cloud/TuraIDC"
           target="_blank"
@@ -75,7 +78,7 @@ const guides = [
             文档和系统运维组织项目知识。
           </p>
           <div class="portal-actions">
-            <a class="portal-primary-action" href="/快速开始">快速开始</a>
+            <a class="portal-primary-action" href="/quick-start">快速开始</a>
             <a class="portal-secondary-action" href="/BACKEND">开发指南</a>
           </div>
         </div>
