@@ -100,16 +100,16 @@
 
 ### 实名认证
 
-| 步骤         | 接口                                             |
-| ------------ | ------------------------------------------------ | ------------------------------------------ |
-| 查询状态     | `GET /api/v2/client/verification/status`         |
-| 获取费用配置 | `GET /api/v2/client/verification/fee-config`     |
-| 初始化实名   | `POST /api/v2/client/verification/init`          |
-| 获取二维码   | `POST /api/v2/client/verification/qrcode`        |
-| 重试流程     | `POST /api/v2/client/verification/restart`       |
-| 异步回调     | `GET                                             | POST /api/v2/client/verification/callback` |
-| 管理端查询   | `GET /api/v2/admin/verifications`                |
-| 管理端历史   | `GET /api/v2/admin/verifications/{user}/history` |
+| 步骤         | 接口                                                                                    |
+| ------------ | --------------------------------------------------------------------------------------- |
+| 查询状态     | `GET /api/v2/client/verification/status`                                                |
+| 获取费用配置 | `GET /api/v2/client/verification/fee-config`                                            |
+| 初始化实名   | `POST /api/v2/client/verification/init`                                                 |
+| 获取二维码   | `POST /api/v2/client/verification/qrcode`                                               |
+| 重试流程     | `POST /api/v2/client/verification/restart`                                              |
+| 异步回调     | `GET /api/v2/client/verification/callback`、`POST /api/v2/client/verification/callback` |
+| 管理端查询   | `GET /api/v2/admin/verifications`                                                       |
+| 管理端历史   | `GET /api/v2/admin/verifications/{user}/history`                                        |
 
 ### 工单
 
@@ -144,7 +144,7 @@
 
 ## 维护建议
 
-- 新增或移除接口后，先执行 `php backend/scripts/export_api_inventory.php` 重刷 `后端API清单.md`
+- 新增或移除接口后，先执行 `php backend/scripts/export_api_inventory.php` 重刷 `docs/generated/api/backend-api-catalog.md`
 - 如果业务主实体变化，例如从 `orders` 切到 `invoices`，必须同步更新本文的“业务域速览”和“核心业务流程”
 - 新增公开接口时，同时检查它属于：
   - 站点公开

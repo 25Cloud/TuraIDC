@@ -294,6 +294,12 @@
       "review_by": "2026-10-20"
     },
     {
+      "path": "governance/docs-web-maintenance.md",
+      "status": "current",
+      "summary": "VitePress 官方文档站的内容、导航、构建和独立发布维护流程。",
+      "review_by": "2026-11-20"
+    },
+    {
       "path": "templates/exec-plan.md",
       "status": "template",
       "summary": "执行计划模板。"
