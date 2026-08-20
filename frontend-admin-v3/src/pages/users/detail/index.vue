@@ -152,7 +152,9 @@
             @page-change="handleServicesPageChange"
           >
             <template #serviceName="{ row }">
-              <strong>{{ serviceName(row) }}</strong>
+              <button type="button" class="user-link" :disabled="!Number(row.id || 0)" @click="goServiceDetail(row)">
+                <strong>{{ serviceName(row) }}</strong>
+              </button>
               <p class="table-subtext">{{ row.domain || row.product?.group_name || '-' }}</p>
             </template>
             <template #serviceAmount="{ row }">{{ formatMoney(row.amount) }}</template>
@@ -811,6 +813,13 @@
           </section>
 
           <div class="drawer-actions">
+            <t-button
+              v-if="Number(currentInvoice.service?.id || 0)"
+              theme="primary"
+              variant="outline"
+              @click="viewInvoiceLinkedService"
+              >查看服务</t-button
+            >
             <t-button theme="default" :loading="invoiceDrawer.loading" @click="reloadInvoiceDrawer">刷新</t-button>
             <t-button
               v-if="isCancelableInvoice(currentInvoice)"
@@ -2145,6 +2154,17 @@ function serviceName(row: Row) {
     row.product?.display_name ||
     (row.product_id ? `未配置规格 #${row.product_id}` : '-')
   );
+}
+function goServiceDetail(row: Row) {
+  const id = Number(row.id || 0);
+  if (!id) return;
+  router.push({ path: `/admin/services/${id}`, query: { user: String(userId.value || '') } });
+}
+function viewInvoiceLinkedService() {
+  const service = (currentInvoice.value.service as Row | undefined) || {};
+  const id = Number(service.id || 0);
+  if (!id) return;
+  router.push({ path: `/admin/services/${id}`, query: { user: String(userId.value || '') } });
 }
 function normalizeServiceDetail(payload: Row = {}) {
   const empty = {
