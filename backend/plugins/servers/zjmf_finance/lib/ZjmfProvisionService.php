@@ -11,9 +11,13 @@ use App\Models\Service;
 use App\Models\Supplier;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Support\ProviderErrorMapper;
+use App\Services\Ticket\TicketUpstreamCallbackToken;
 use App\Services\Upstream\ProviderKey;
+use App\Support\PublicUrl;
 use App\Support\SensitiveDataSanitizer;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 final class ZjmfProvisionService
 {
@@ -63,6 +67,9 @@ final class ZjmfProvisionService
                 $detailPayload = $this->extractPayload($detailResponse);
                 $hostDetail = is_array($detailPayload['host'] ?? null) ? $detailPayload['host'] : [];
                 $this->assertHostDetailPresent($hostDetail, $existingHostId);
+                $callback = $existingService instanceof Service && $this->ticketDeliveryEnabled($supplier)
+                    ? $this->registerDownstreamCallback($supplier, $existingHostId, $jwt, $existingService)
+                    : ['token' => null, 'id' => null];
 
                 // 幂等回查除确认 host 存在外，还需校验其上游账单已支付：
                 // 若 host 在欠费/待支付模式下仍返回详情，本地会把服务确认成 ACTIVE、订单 COMPLETED，
@@ -93,6 +100,8 @@ final class ZjmfProvisionService
                     'upstream_host_ids' => $existingProvisionData['upstream_host_ids'] ?? [$existingHostId],
                     'upstream_host_id' => $existingHostId,
                     'host_detail' => $hostDetail,
+                    'downstream_token' => $callback['token'] ?? null,
+                    'downstream_id' => $callback['id'] ?? null,
                 ];
             } catch (\Throwable $exception) {
                 Log::warning('[ZJMF 财务开通] 上游 host 幂等回查失败，已停止重复开通', [
@@ -243,6 +252,9 @@ final class ZjmfProvisionService
             $detailPayload = $this->extractPayload($detailResponse);
             $hostDetail = is_array($detailPayload['host'] ?? null) ? $detailPayload['host'] : [];
             $this->assertHostDetailPresent($hostDetail, $hostId);
+            $callback = $existingService instanceof Service && $this->ticketDeliveryEnabled($supplier)
+                ? $this->registerDownstreamCallback($supplier, $hostId, $jwt, $existingService)
+                : ['token' => null, 'id' => null];
 
             $result = 'success';
 
@@ -252,6 +264,8 @@ final class ZjmfProvisionService
                 'upstream_host_ids' => $hostIds,
                 'upstream_host_id' => $hostId,
                 'host_detail' => $hostDetail,
+                'downstream_token' => $callback['token'] ?? null,
+                'downstream_id' => $callback['id'] ?? null,
             ];
         } catch (\Throwable $exception) {
             $errorMessage = $exception->getMessage();
@@ -549,6 +563,44 @@ final class ZjmfProvisionService
         }
 
         $this->assertUpstreamSuccess($response, [200], '清空上游购物车');
+    }
+
+    private function ticketDeliveryEnabled(Supplier $supplier): bool
+    {
+        if (! Schema::hasTable('supplier_plugin_bindings')) {
+            return false;
+        }
+
+        $binding = DB::table('supplier_plugin_bindings')
+            ->where('supplier_id', (int) $supplier->getKey())
+            ->where('provider_key', ProviderKey::ZJMF_FINANCE_API)
+            ->where('status', 1)
+            ->first(['ticket_delivery_enabled']);
+
+        return $binding !== null && (bool) $binding->ticket_delivery_enabled;
+    }
+
+    /** @return array{token: string, id: int} */
+    private function registerDownstreamCallback(Supplier $supplier, int $hostId, string $jwt, ?Service $service): array
+    {
+        $serviceId = (int) ($service?->id ?? 0);
+        throw_if($serviceId <= 0, new BusinessException('本地服务不存在，无法注册工单回调'));
+
+        $token = TicketUpstreamCallbackToken::forServiceId($serviceId);
+        $service?->loadMissing('product');
+        $productId = (int) ($service?->product?->id ?? $service?->product_id ?? 0);
+        $upstreamProductId = $service === null ? null : $this->bindingResolver()->upstreamProductIdForService($service);
+        $productId = (int) ($upstreamProductId ?: $productId);
+        $response = $this->transport->post($supplier, '/host/setdownstream', [
+            'id' => $hostId,
+            'pid' => $productId,
+            'downstream_url' => PublicUrl::api(),
+            'downstream_token' => $token,
+            'downstream_id' => $serviceId,
+        ], $jwt);
+        $this->assertUpstreamSuccess($response, [200], '注册上游工单回调');
+
+        return ['token' => $token, 'id' => $serviceId];
     }
 
     private function isKnownEmptyCartResponse(array $response): bool

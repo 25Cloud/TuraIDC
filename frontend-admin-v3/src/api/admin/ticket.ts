@@ -1,6 +1,16 @@
 import { request } from '@/utils/request';
 
-import type { TicketAdminUser, TicketAttachment, TicketDetail, TicketListParams, TicketRecord } from './types';
+import type {
+  TicketAdminUser,
+  TicketAttachment,
+  TicketDeliveryDepartmentsResponse,
+  TicketDeliveryRulePayload,
+  TicketDeliveryRuleRecord,
+  TicketDeliveryRulesResponse,
+  TicketDetail,
+  TicketListParams,
+  TicketRecord,
+} from './types';
 
 interface TicketV2DetailPayload {
   ticket?: TicketDetail | null;
@@ -61,4 +71,17 @@ export const ticketsApi = {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       .then((response) => response.attachment || {}),
+  deliveryDepartments: (supplierId: number | string) =>
+    request.get<TicketDeliveryDepartmentsResponse>({
+      url: '/v2/admin/ticket-delivery-departments',
+      params: { supplier_id: supplierId },
+    }),
+  deliveryRules: {
+    list: () => request.get<TicketDeliveryRulesResponse>({ url: '/v2/admin/ticket-delivery-rules' }),
+    create: (data: TicketDeliveryRulePayload) =>
+      request.post<TicketDeliveryRuleRecord>({ url: '/v2/admin/ticket-delivery-rules', data }),
+    update: (id: number | string, data: TicketDeliveryRulePayload) =>
+      request.put<TicketDeliveryRuleRecord>({ url: `/v2/admin/ticket-delivery-rules/${id}`, data }),
+    delete: (id: number | string) => request.delete({ url: `/v2/admin/ticket-delivery-rules/${id}` }),
+  },
 };

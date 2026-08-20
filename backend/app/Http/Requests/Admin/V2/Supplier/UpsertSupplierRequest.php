@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin\V2\Supplier;
 use App\Http\Requests\Admin\V2\Common\AdminFormRequest;
 use App\Models\Supplier;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
+use App\Services\Upstream\ProviderKey;
 use App\Services\Upstream\ProviderRegistry;
 use App\Services\Upstream\ProviderResolver;
 use Closure;
@@ -65,6 +66,14 @@ class UpsertSupplierRequest extends AdminFormRequest
             'contact_email' => ['nullable', 'email', 'max:100'],
             'website' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', 'in:0,1'],
+            'ticket_delivery_enabled' => [
+                'sometimes',
+                'boolean',
+                Rule::when(
+                    (string) $this->input('provider_key', '') !== ProviderKey::ZJMF_FINANCE_API,
+                    ['declined']
+                ),
+            ],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:999999'],
             'notes' => ['nullable', 'string', 'max:4000'],
         ];
@@ -93,6 +102,9 @@ class UpsertSupplierRequest extends AdminFormRequest
             (array) ($validated['provider_config'] ?? []),
             is_array($existingBinding['provider_config'] ?? null) ? (array) $existingBinding['provider_config'] : []
         );
+        $validated['ticket_delivery_enabled'] = array_key_exists('ticket_delivery_enabled', $validated)
+            ? (bool) $validated['ticket_delivery_enabled']
+            : (bool) ($existingBinding['ticket_delivery_enabled'] ?? false);
 
         if ($supplier !== null) {
             if ($validated['api_url'] === '') {
@@ -149,6 +161,7 @@ class UpsertSupplierRequest extends AdminFormRequest
             'provider_config' => $payload['provider_config'],
             'status' => $payload['status'],
             'priority' => $payload['sort_order'],
+            'ticket_delivery_enabled' => (bool) ($payload['ticket_delivery_enabled'] ?? false),
         ];
     }
 

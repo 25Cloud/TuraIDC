@@ -80,6 +80,7 @@ class AdminSupplierResource extends JsonResource
             'provider_key' => (string) $binding['provider_key'],
             'environment' => (string) $binding['environment'],
             'status' => (int) $binding['status'],
+            'ticket_delivery_enabled' => (bool) ($binding['ticket_delivery_enabled'] ?? false),
             'priority' => (int) $binding['priority'],
             'base_url' => (string) ($binding['base_url'] ?? ''),
             'base_url_configured' => (bool) ($binding['has_base_url'] ?? false),
