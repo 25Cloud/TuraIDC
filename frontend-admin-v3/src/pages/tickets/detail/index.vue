@@ -169,7 +169,14 @@
             <div class="service-grid">
               <div>
                 <span>商品名称</span>
-                <strong>{{ linkedServiceDisplayName }}</strong>
+                <button
+                  type="button"
+                  class="user-link"
+                  :disabled="!Number(linkedServiceId || 0)"
+                  @click="goLinkedService"
+                >
+                  <strong>{{ linkedServiceDisplayName }}</strong>
+                </button>
               </div>
               <div>
                 <span>公网 IP</span>
@@ -464,6 +471,15 @@ function goBack() {
 function goUserDetail(userId: unknown) {
   if (!userId) return;
   router.push(`/admin/users/${userId}`);
+}
+
+function goLinkedService() {
+  const id = Number(linkedServiceId.value || 0);
+  if (!id) return;
+  router.push({
+    path: `/admin/services/${id}`,
+    query: { user: String(detail.value?.user_id || detail.value?.user?.id || '') },
+  });
 }
 
 async function copyText(text: unknown) {

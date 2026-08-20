@@ -68,7 +68,14 @@
           </template>
           <template #product="{ row }">
             <div class="stack-cell">
-              <strong>{{ fieldValue(row.product_full_path || row.product_name) }}</strong>
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!Number(row.service?.id || 0)"
+                @click="goServiceDetail(row)"
+              >
+                <strong>{{ fieldValue(row.product_full_path || row.product_name) }}</strong>
+              </button>
               <span>{{ serviceIdLabel(row.service) }}</span>
             </div>
           </template>
@@ -258,6 +265,16 @@ function buildParams() {
 
 function goDetail(row: OrderRecord) {
   router.push(`/admin/finance/orders/${row.id}`);
+}
+
+function goServiceDetail(row: OrderRecord) {
+  const service = toRecord(row.service);
+  const id = Number(service.id || 0);
+  if (!id) return;
+  router.push({
+    path: `/admin/services/${id}`,
+    query: { user: String(row.user_id || (toRecord(row.user).id as number) || '') },
+  });
 }
 
 function handleMobileAction(value: unknown, row: OrderRecord) {

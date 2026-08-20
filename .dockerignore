@@ -1,0 +1,38 @@
+# Docker 构建上下文排除（作用于仓库根目录为上下文的构建：deploy/docker 下两个 Dockerfile）
+# 目的：避免把密钥、依赖、构建产物和本地数据打入镜像
+
+# 版本控制
+.git
+.gitignore
+.gitattributes
+.husky
+
+# 依赖
+**/node_modules
+**/vendor
+
+# 构建产物
+**/dist
+**/coverage
+
+# 环境变量（保留 .env.example）
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+backend/.env.bak*
+
+# 运行时数据（storage 以命名卷持久化，uploads/media 由 entrypoint 重建）
+backend/storage
+backend/public/uploads
+backend/public/storage
+
+# 部署目录内的真实 .env（含密钥，禁止入镜像）
+deploy/docker/.env
+
+# 日志与临时文件
+**/*.log
+**/.DS_Store
+**/.idea
+**/.vscode
+**/.tmp

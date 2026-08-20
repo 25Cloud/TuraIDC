@@ -1452,7 +1452,8 @@ class Migrator:
         - relid: 关联 products.id
         - currency: 货币 ID（默认 0）
         - 多个周期列：monthly/quarterly/semiannually/annually/biennially/triennially/hour/day/ontrial/onetime
-        - 初装费：msetupfee/qsetupfee/asetupfee 等
+
+        目标 products.pricing 为扁平格式 {周期: 金额}；一次性初装费写入 products.setup_fee。
         """
         if not pricing_batches:
             logger.info("[pricing] 源 shd_pricing 表无数据，跳过 JSON 转换")
@@ -1472,18 +1473,6 @@ class Migrator:
             "day": "day",
             "ontrial": "ontrial",
             "onetime": "onetime",
-        }
-        setup_fee_fields = {
-            "msetupfee": "monthly_setup",
-            "qsetupfee": "quarterly_setup",
-            "ssetupfee": "semiannually_setup",
-            "asetupfee": "annually_setup",
-            "bsetupfee": "biennially_setup",
-            "tsetupfee": "triennially_setup",
-            "hsetupfee": "hour_setup",
-            "dsetupfee": "day_setup",
-            "osetupfee": "onetime_setup",
-            "ontrialfee": "ontrial_setup",
         }
 
         # 按 relid 聚合
@@ -1514,33 +1503,11 @@ class Migrator:
             pricing_json: dict[str, Any] = {}
             setup_fee = to_float(row.get("osetupfee", 0))
 
+            # 目标 products.pricing 为扁平格式 {周期: 金额}（当前模型与结算链路均按扁平解析）
             for src_col, json_key in cycle_fields.items():
                 val = to_float(row.get(src_col), -1)
                 if val > 0:
-                    item = {"price": val}
-                    if src_col == "monthly":
-                        sf = to_float(row.get("msetupfee", 0))
-                    elif src_col == "quarterly":
-                        sf = to_float(row.get("qsetupfee", 0))
-                    elif src_col == "semiannually":
-                        sf = to_float(row.get("ssetupfee", 0))
-                    elif src_col == "annually":
-                        sf = to_float(row.get("asetupfee", 0))
-                    elif src_col == "biennially":
-                        sf = to_float(row.get("bsetupfee", 0))
-                    elif src_col == "triennially":
-                        sf = to_float(row.get("tsetupfee", 0))
-                    elif src_col == "hour":
-                        sf = to_float(row.get("hsetupfee", 0))
-                    elif src_col == "day":
-                        sf = to_float(row.get("dsetupfee", 0))
-                    elif src_col == "ontrial":
-                        sf = to_float(row.get("ontrialfee", 0))
-                    else:
-                        sf = 0
-                    if sf > 0:
-                        item["setup_fee"] = sf
-                    pricing_json[json_key] = item
+                    pricing_json[json_key] = val
 
             if not pricing_json:
                 continue

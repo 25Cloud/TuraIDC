@@ -251,7 +251,7 @@ function shouldInspectGenericAssignments(relativePath) {
     basename === "composer.lock" ||
     basename.endsWith(".snap") ||
     normalized.startsWith("backend/bootstrap/cache/") ||
-    normalized.startsWith("docs/自动生成/") ||
+    normalized.startsWith("docs/generated/") ||
     normalized.includes("/src/locales/")
   ) {
     return false;

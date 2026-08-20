@@ -1,4 +1,5 @@
 packages:
+  - docs-web
   - frontend-admin-v3
   - frontend-user-v3-www
   - frontend-user-v4-console

@@ -125,7 +125,11 @@ php.bat
 # ---- 平行开发副本与临时分析文件（勿提交）----
 caiwu_update/
 .tmp/
+.tmp_docs/
 
 backend/public/.user.ini
 # ---- 内部安全分析资料（第三方系统漏洞分析，勿公开）----
 zjmf(ignore this)/
+
+# AI IDE工具自动生成
+.workbuddy/

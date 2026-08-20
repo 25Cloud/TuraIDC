@@ -31,6 +31,9 @@
       </template>
 
       <template #relations>
+        <t-button v-if="linkedServiceId" variant="outline" size="small" @click="emit('view-service', linkedServiceId)">
+          查看服务
+        </t-button>
         <t-button
           v-if="invoice.order?.id || invoice.order_id"
           variant="outline"
@@ -188,6 +191,7 @@ const emit = defineEmits<{
   (event: 'cancel'): void;
   (event: 'view-order', id: unknown): void;
   (event: 'view-user', id: unknown): void;
+  (event: 'view-service', id: unknown): void;
 }>();
 
 const isMobile = useMediaQuery('(max-width: 768px)');
@@ -196,6 +200,11 @@ const activeTab = ref('basic');
 const invoice = computed(() => props.invoice || {});
 const payments = computed(() => props.payments || []);
 const logs = computed(() => props.logs || []);
+const linkedServiceId = computed(() => {
+  const service = (invoice.value.service as Record<string, unknown> | undefined) || {};
+  const order = (invoice.value.order as Record<string, unknown> | undefined) || {};
+  return Number(service.id || order.service_id || 0);
+});
 const items = computed(() => {
   const sceneItems = invoice.value.scene?.items;
   if (Array.isArray(sceneItems)) return sceneItems as Record<string, unknown>[];

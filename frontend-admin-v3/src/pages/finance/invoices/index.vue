@@ -50,7 +50,14 @@
           </template>
           <template #item="{ row }">
             <div class="stack-cell">
-              <strong>{{ invoiceTitle(row) }}</strong>
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!Number(toRecord(row.service).id || 0)"
+                @click="goServiceDetail(row)"
+              >
+                <strong>{{ invoiceTitle(row) }}</strong>
+              </button>
               <span>{{ fieldValue(row.order?.order_no || row.summary?.highlight || row.order_no) }}</span>
             </div>
           </template>
@@ -134,6 +141,7 @@
       @cancel="confirmCancel(currentInvoice, true)"
       @view-order="(id) => id && router.push(`/admin/finance/orders/${id}`)"
       @view-user="(id) => id && router.push(`/admin/users/${id}`)"
+      @view-service="(id) => viewLinkedService(id, currentInvoice)"
     />
   </div>
 </template>
@@ -389,6 +397,24 @@ function invoiceTitle(row: InvoiceRecord) {
       row.type_label ||
       invoiceTypeLabel(row.type),
   );
+}
+
+function goServiceDetail(row: InvoiceRecord) {
+  const service = toRecord(row.service);
+  const id = Number(service.id || 0);
+  if (!id) return;
+  router.push({
+    path: `/admin/services/${id}`,
+    query: { user: String(row.user_id || (toRecord(row.user).id as number) || '') },
+  });
+}
+
+function viewLinkedService(id: unknown, row: InvoiceRecord) {
+  if (!Number(id || 0)) return;
+  router.push({
+    path: `/admin/services/${Number(id)}`,
+    query: { user: String(row.user_id || (toRecord(row.user).id as number) || '') },
+  });
 }
 
 function invoiceTypeLabel(type: unknown) {

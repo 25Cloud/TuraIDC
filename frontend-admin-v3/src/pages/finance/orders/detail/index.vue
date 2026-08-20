@@ -132,7 +132,14 @@
             </div>
             <div class="detail-kv-item detail-kv-item--span-2">
               <span>服务 ID</span>
-              <strong>{{ serviceIdLabel(order.service) }}</strong>
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!Number(toRecord(order.service).id || 0)"
+                @click="goServiceDetail"
+              >
+                <strong>{{ serviceIdLabel(order.service) }}</strong>
+              </button>
             </div>
             <div class="detail-kv-item detail-kv-item--span-2">
               <span>服务到期</span>
@@ -259,6 +266,7 @@
       @refresh="reloadInvoiceDetail"
       @view-order="(id) => id && router.push(`/admin/finance/orders/${id}`)"
       @view-user="(id) => id && router.push(`/admin/users/${id}`)"
+      @view-service="(id) => viewLinkedService(id)"
     />
   </div>
 </template>
@@ -669,6 +677,24 @@ function userName(user: unknown) {
 function serviceIdLabel(service: unknown) {
   const record = toRecord(service);
   return fieldValue(record.service_id || record.id);
+}
+
+function goServiceDetail() {
+  const service = toRecord(order.value.service);
+  const id = Number(service.id || service.service_id || 0);
+  if (!id) return;
+  router.push({
+    path: `/admin/services/${id}`,
+    query: { user: String(order.value.user_id || (toRecord(order.value.user).id as number) || '') },
+  });
+}
+
+function viewLinkedService(id: unknown) {
+  if (!Number(id || 0)) return;
+  router.push({
+    path: `/admin/services/${Number(id)}`,
+    query: { user: String(order.value.user_id || (toRecord(order.value.user).id as number) || '') },
+  });
 }
 
 function toRecord(value: unknown): Record<string, unknown> {

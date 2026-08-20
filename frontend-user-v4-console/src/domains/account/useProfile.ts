@@ -24,7 +24,9 @@ const PROFILE_TABS = new Set<ProfileTab>(['profile', 'security', 'agent', 'notif
 export function useProfile() {
   const router = useRouter();
   const userStore = useUserStore();
-  const { runWithCaptcha } = useGeeTestCaptcha();
+  const { runWithCaptcha } = useGeeTestCaptcha({
+    onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
+  });
   const activeTab = ref<ProfileTab>('profile');
   const profileLoading = ref(false);
   const passwordDialogVisible = ref(false);
