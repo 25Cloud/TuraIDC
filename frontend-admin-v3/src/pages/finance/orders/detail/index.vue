@@ -275,6 +275,7 @@ import {
   toLabelMap,
   toTagTypeMap,
 } from '@shared/statusConfig';
+import type { TagProps } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -287,7 +288,7 @@ import RecordDetailPage from '@/components/record-detail-page/index.vue';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
 
-type ThemeType = 'default' | 'warning' | 'success' | 'primary' | 'danger';
+type ThemeType = NonNullable<TagProps['theme']>;
 
 const SNAPSHOT_LABEL_MAP: Record<string, string> = {
   // ── 产品配置 ──

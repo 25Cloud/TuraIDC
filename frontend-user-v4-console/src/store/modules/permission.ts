@@ -21,8 +21,7 @@ export const usePermissionStore = defineStore('permission', {
   state: () => ({
     whiteListRouters: ['/client/login', '/client/register', '/client/forgot-password', '/client/login-as'],
     routers: [] as MenuRoute[],
-    removeRoutes: [] as any[],
-    asyncRoutes: [] as any[],
+    asyncRoutes: [] as RouteRecordRaw[],
     routesBuilt: false,
   }),
   actions: {

@@ -297,7 +297,7 @@
 import './index.less';
 
 import { SearchIcon } from 'tdesign-icons-vue-next';
-import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
+import type { PrimaryTableCol, TableRowData, TagProps } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -309,7 +309,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { errorMessage } from '@/utils/userMessage';
 
 type NotificationTab = 'email-templates' | 'sms-templates' | 'api-directory';
-type ThemeType = 'default' | 'warning' | 'success' | 'primary' | 'danger';
+type ThemeType = NonNullable<TagProps['theme']>;
 type TemplateChannel = 'email' | 'sms';
 type TemplateAudience = 'user' | 'admin';
 

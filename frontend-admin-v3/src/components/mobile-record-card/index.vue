@@ -34,12 +34,12 @@
   </article>
 </template>
 <script setup lang="ts">
-import type { DropdownOption } from 'tdesign-vue-next';
+import type { DropdownOption, TagProps } from 'tdesign-vue-next';
 import { computed } from 'vue';
 
 import StatusTag from '@/components/status-tag/index.vue';
 
-type ThemeType = 'default' | 'warning' | 'success' | 'primary' | 'danger';
+type ThemeType = NonNullable<TagProps['theme']>;
 
 export interface MobileRecordCardRow {
   label: string;

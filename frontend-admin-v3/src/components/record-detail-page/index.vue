@@ -55,9 +55,10 @@
 </template>
 <script setup lang="ts">
 import { ChevronLeftIcon, RefreshIcon } from 'tdesign-icons-vue-next';
+import type { TagProps } from 'tdesign-vue-next';
 import { computed } from 'vue';
 
-type ThemeType = 'default' | 'warning' | 'success' | 'primary' | 'danger';
+type ThemeType = NonNullable<TagProps['theme']>;
 
 export interface RecordDetailMetric {
   label: string;

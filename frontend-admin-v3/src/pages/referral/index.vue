@@ -274,7 +274,7 @@ import './index.less';
 
 import { REWARD_STATUS_MAP, toLabelMap, toSelectOptions, toTagTypeMap } from '@shared/statusConfig';
 import { SearchIcon } from 'tdesign-icons-vue-next';
-import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
+import type { PrimaryTableCol, TableRowData, TagProps } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -287,7 +287,7 @@ import { errorMessage } from '@/utils/userMessage';
 
 type ReferralTab = 'overview' | 'rewards' | 'withdrawals';
 type WithdrawalMode = 'approve' | 'reject';
-type ThemeType = 'default' | 'warning' | 'success' | 'primary' | 'danger';
+type ThemeType = NonNullable<TagProps['theme']>;
 
 const route = useRoute();
 const validTabs: ReferralTab[] = ['overview', 'rewards', 'withdrawals'];
