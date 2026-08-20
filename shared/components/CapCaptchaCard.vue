@@ -102,9 +102,9 @@ function handleBodyClick() {
 <style scoped>
 .cap-card {
   width: 100%;
-  border: 1px solid var(--cap-border, rgba(0, 0, 0, 0.12));
-  border-radius: 8px;
-  background: var(--cap-bg, rgba(0, 0, 0, 0.02));
+  border: 1px solid var(--td-border-level-1-color, rgba(0, 0, 0, 0.12));
+  border-radius: var(--td-radius-default, 0);
+  background: var(--td-bg-color-container, rgba(0, 0, 0, 0.02));
   overflow: hidden;
 }
 
@@ -121,9 +121,9 @@ function handleBodyClick() {
 .cap-body {
   display: flex;
   align-items: center;
-  height: 40px;
-  padding: 10px 14px;
-  box-sizing: content-box;
+  height: 44px;
+  padding: 0 14px;
+  box-sizing: border-box;
 }
 
 .cap-clickable {
@@ -159,14 +159,14 @@ function handleBodyClick() {
   flex-shrink: 0;
   width: 20px;
   height: 20px;
-  border-radius: 4px;
-  border: 2px solid var(--cap-checkbox-border, #333);
+  border-radius: var(--td-radius-small, 2px);
+  border: 2px solid var(--td-text-color-primary, #333);
   background: transparent;
   transition: border-color 0.2s;
 }
 
 .cap-clickable:hover .cap-checkbox {
-  border-color: var(--cap-accent, #1f5eff);
+  border-color: var(--td-brand-color, #1f5eff);
 }
 
 .cap-spinner {
@@ -176,7 +176,7 @@ function handleBodyClick() {
   justify-content: center;
   width: 32px;
   height: 32px;
-  color: var(--cap-accent, #1f5eff);
+  color: var(--td-brand-color, #1f5eff);
   animation: cap-rotate 0.8s linear infinite;
 }
 
@@ -197,30 +197,30 @@ function handleBodyClick() {
 }
 
 .cap-ok {
-  color: var(--cap-ok, #12b76a);
-  background: var(--cap-ok-bg, rgba(18, 183, 106, 0.1));
-  border: 1px solid var(--cap-ok, #12b76a);
+  color: var(--td-success-color, #12b76a);
+  background: var(--td-success-color-light, rgba(18, 183, 106, 0.1));
+  border: 1px solid var(--td-success-color, #12b76a);
 }
 
 .cap-fail {
-  color: var(--cap-error, #e5484d);
-  background: var(--cap-error-bg, rgba(229, 72, 77, 0.1));
-  border: 1px solid var(--cap-error, #e5484d);
+  color: var(--td-error-color, #e5484d);
+  background: var(--td-error-color-light, rgba(229, 72, 77, 0.1));
+  border: 1px solid var(--td-error-color, #e5484d);
 }
 
 .cap-label {
   flex: 1;
   font-size: 13px;
-  color: var(--cap-text, #333);
+  color: var(--td-text-color-primary, #333);
   line-height: 1.3;
 }
 
 .cap-pct {
-  color: var(--cap-accent, #1f5eff);
+  color: var(--td-brand-color, #1f5eff);
   font-variant-numeric: tabular-nums;
 }
 
 .cap-error-text {
-  color: var(--cap-error, #e5484d);
+  color: var(--td-error-color, #e5484d);
 }
 </style>

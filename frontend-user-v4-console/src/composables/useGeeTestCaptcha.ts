@@ -185,6 +185,9 @@ function createCapInstance(appendTarget: HTMLElement | string | undefined, apiEn
 
     holder = document.createElement('div');
     holder.className = 'cap-card-holder';
+    // 容器多为 flex 居中布局，holder 必须占满宽度，否则卡片会被压缩成窄条
+    holder.style.width = '100%';
+    holder.style.minWidth = '0';
     target.appendChild(holder);
     app = createApp(CapCaptchaCard, {
       apiEndpoint,
