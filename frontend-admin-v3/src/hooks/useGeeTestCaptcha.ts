@@ -41,6 +41,7 @@ const defaultConfig: GeeTestConfig = {
 const captchaConfigPromises = new Map<string, Promise<GeeTestConfig>>();
 let geetestScriptPromise: Promise<GeeTestInitializer> | null = null;
 
+/** 加载指定业务入口的人机验证公开配置并复用进行中的请求。 */
 async function getCaptchaConfig(configUrl: string) {
   if (!captchaConfigPromises.has(configUrl)) {
     const configPromise = request
@@ -64,6 +65,7 @@ async function getCaptchaConfig(configUrl: string) {
   return captchaConfigPromises.get(configUrl) as Promise<GeeTestConfig>;
 }
 
+/** 将后端脚本地址解析为浏览器可加载的绝对地址。 */
 function resolveScriptUrl(src: string) {
   const raw = src.trim();
   if (!raw) return '';
@@ -81,6 +83,7 @@ function resolveScriptUrl(src: string) {
   }
 }
 
+/** 为脚本地址追加后端下发的配置隔离键。 */
 function appendScriptCacheKey(src: string, cacheKey: string) {
   try {
     const url = new URL(src);
@@ -91,6 +94,7 @@ function appendScriptCacheKey(src: string, cacheKey: string) {
   }
 }
 
+/** 只加载当前 provider 的代理脚本，禁止跨供应商回退。 */
 function loadGeeTestScript(src: string, cacheKey: string): Promise<GeeTestInitializer> {
   if (typeof window === 'undefined') {
     return Promise.reject(new Error('浏览器环境不可用'));
@@ -201,6 +205,7 @@ export function useGeeTestCaptcha(configUrl = '/v2/client/auth/captcha-config') 
     clearPending();
   };
 
+  /** 初始化当前验证码实例并等待其进入可交互状态。 */
   const initCaptcha = async (): Promise<CaptchaInstance | null> => {
     const config = await getCaptchaConfig(configUrl);
 
@@ -288,6 +293,7 @@ export function useGeeTestCaptcha(configUrl = '/v2/client/auth/captcha-config') 
     }
   };
 
+  /** 打开验证弹窗；并发调用共享同一个验证 Promise。 */
   const verify = async () => {
     if (verifyPromise) {
       return verifyPromise;

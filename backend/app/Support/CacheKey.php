@@ -112,6 +112,9 @@ final class CacheKey
     /**
      * 极验脚本缓存。
      */
+    /**
+     * 生成按站点配置变体隔离的 GeeTest 脚本缓存键。
+     */
     public static function geeTestScript(string $variant = 'default'): string
     {
         $variant = trim($variant) !== '' ? trim($variant) : 'default';

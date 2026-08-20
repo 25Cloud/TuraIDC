@@ -24,6 +24,9 @@ class AuthController extends Controller
         private readonly GeeTestService $geeTestService,
     ) {}
 
+    /**
+     * 返回管理员登录页初始化人机验证所需的公开配置，不返回任何密钥。
+     */
     public function captchaConfig()
     {
         return $this->success([
@@ -35,6 +38,9 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * 返回当前人机验证插件的适配脚本；上游不可用时返回会主动失败的兜底脚本。
+     */
     public function captchaScript()
     {
         $status = 200;
@@ -53,6 +59,9 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * 先完成服务端人机验证，再执行管理员账号密码认证。
+     */
     public function login(LoginRequest $request)
     {
         $captchaResult = $this->geeTestService->verify($request->input('captcha'), (string) $request->ip());

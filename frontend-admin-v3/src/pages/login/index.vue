@@ -66,6 +66,7 @@ const formRules: Record<string, FormRule[]> = {
 
 let submitLocked = false;
 
+/** 校验表单、完成行为验证并提交管理员登录请求。 */
 async function handleLogin() {
   if (submitLocked || submitting.value) return;
   submitLocked = true;

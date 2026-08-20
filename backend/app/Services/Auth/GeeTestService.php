@@ -21,6 +21,9 @@ class GeeTestService
         private ?IntegrationDriverBindingResolver $bindingResolver = null,
     ) {}
 
+    /**
+     * 判断当前验证码插件是否已绑定且具备可用的公开站点配置。
+     */
     public function isEnabled(): bool
     {
         if ($this->activeDriver() === '') {
@@ -33,16 +36,25 @@ class GeeTestService
             && $this->getCaptchaId() !== '';
     }
 
+    /**
+     * 返回可安全下发给前端的验证码站点标识。
+     */
     public function getCaptchaId(): string
     {
         return (string) ($this->captchaConfig()['captcha_id'] ?? '');
     }
 
+    /**
+     * 返回当前生效的人机验证插件标识，用于前端适配与缓存隔离。
+     */
     public function getProvider(): string
     {
         return $this->activeDriver();
     }
 
+    /**
+     * 生成不含密钥的配置版本摘要，避免浏览器复用其他插件的脚本。
+     */
     public function getConfigCacheKey(): string
     {
         $config = $this->captchaConfig();
@@ -54,16 +66,25 @@ class GeeTestService
         ])), 0, 24);
     }
 
+    /**
+     * 返回用户端验证码脚本代理地址。
+     */
     public function getScriptUrl(): string
     {
         return self::CLIENT_SCRIPT_PROXY_PATH;
     }
 
+    /**
+     * 返回管理员登录验证码脚本代理地址。
+     */
     public function getAdminScriptUrl(): string
     {
         return self::ADMIN_SCRIPT_PROXY_PATH;
     }
 
+    /**
+     * 从当前插件获取适配脚本，脚本为空或插件失败时抛出可记录异常。
+     */
     public function getScriptContent(): string
     {
         $result = $this->executePlugin('captcha.script');
@@ -79,6 +100,9 @@ class GeeTestService
         return $content;
     }
 
+    /**
+     * 返回会主动拒绝验证的兜底脚本，防止第三方脚本故障时绕过验证。
+     */
     public function getFallbackScriptContent(): string
     {
         return <<<'JS'
@@ -109,6 +133,11 @@ window.initGeetest4 = window.initGeetest4 || function (options, callback) {
 JS;
     }
 
+    /**
+     * 将前端验证结果交给当前插件二次核验，并附加客户端 IP 上下文。
+     *
+     * @return array{ok: bool, message?: string}
+     */
     public function verify(mixed $payload, ?string $clientIp = null): array
     {
         if (! $this->isEnabled()) {
@@ -132,6 +161,11 @@ JS;
         return ['ok' => true];
     }
 
+    /**
+     * 读取并缓存当前插件的公开配置及配置版本摘要。
+     *
+     * @return array<string, mixed>
+     */
     private function captchaConfig(): array
     {
         if ($this->captchaConfigCache !== null) {

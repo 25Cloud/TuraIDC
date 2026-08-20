@@ -178,6 +178,11 @@ class GeetestCaptchaService
         }
     }
 
+    /**
+     * 将脚本正文包装为插件运行时统一响应结构。
+     *
+     * @return array<string, mixed>
+     */
     private function scriptResult(string $action, string $content): array
     {
         return [
@@ -218,6 +223,9 @@ class GeetestCaptchaService
      * 脚本缓存必须随站点配置变化，避免切换账号后继续使用旧内容。
      *
      * @param  array<string, mixed>  $config
+     */
+    /**
+     * 根据公开站点标识隔离脚本缓存，不把服务端密钥写入缓存键。
      */
     private function scriptCacheVariant(array $config): string
     {
