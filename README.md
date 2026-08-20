@@ -137,6 +137,18 @@ flowchart TB
 | 邮件       | SMTP、多 SMTP 轮询（MultiSmtpRoundRobin）      |
 | 桥接扩展   | ZJMF Bridge（存量智简魔方数据兼容）            |
 
+## 🤝 Trusted Partners
+
+<p align="center">
+  <em>No particular order</em>
+</p>
+
+<p align="center">
+  <a href="https://www.7inet.moe/" target="_blank">
+    <img src="./docs/images/7inet.svg" alt="7iNet" height="80" />
+  </a>
+</p>
+
 ## 💬 开发交流
 
 欢迎加入 TuraIDC 开发交流 QQ 群 **1105174267**，讨论产品、架构、插件开发与部署运维。
