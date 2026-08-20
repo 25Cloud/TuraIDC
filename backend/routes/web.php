@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Client\V2\TicketUpstreamUploadController;
 use App\Http\Controllers\SecureAssetController;
 use App\Support\PublicUrl;
 use Illuminate\Support\Facades\Route;
@@ -11,6 +12,9 @@ Route::get('/', function () {
 Route::get('/api/secure-assets/view', [SecureAssetController::class, 'show'])
     ->middleware('signed:relative')
     ->name('secure-assets.show');
+
+Route::post('/upload_image', [TicketUpstreamUploadController::class, 'upload'])
+    ->middleware('throttle:30,1,ticket-upstream-upload');
 
 Route::get('/client/register', function () {
     $frontendUrl = PublicUrl::website();

@@ -736,6 +736,51 @@ export interface TicketListParams {
   page_size?: number;
 }
 
+export type TicketDeliveryScopeMode = 'all' | 'selected';
+
+export interface TicketDeliveryRuleRecord {
+  id: number | string;
+  name?: string;
+  department?: string;
+  supplier_id?: number | string | null;
+  provider_key?: string;
+  product_scope_mode?: TicketDeliveryScopeMode;
+  product_ids?: Array<number | string>;
+  upstream_department_id?: string;
+  enabled?: boolean | number;
+  sync_admin_replies?: boolean | number;
+  mask_keywords?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface TicketDeliveryRulePayload {
+  name: string;
+  department: string;
+  supplier_id: number | string;
+  provider_key: string;
+  product_scope_mode: TicketDeliveryScopeMode;
+  product_ids: Array<number | string>;
+  upstream_department_id: string;
+  enabled: boolean;
+  sync_admin_replies: boolean;
+  mask_keywords?: string;
+}
+
+export interface TicketDeliveryRulesResponse {
+  list?: TicketDeliveryRuleRecord[];
+}
+
+export interface TicketDeliveryDepartment {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface TicketDeliveryDepartmentsResponse {
+  list?: TicketDeliveryDepartment[];
+}
+
 export interface TicketRecord {
   id: number | string;
   subject?: string;

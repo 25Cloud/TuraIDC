@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\Ticket;
 use App\Models\TicketReply;
 use App\Models\User;
+use App\Services\Ticket\TicketDeliveryService;
 use App\Services\Ticket\TicketService;
 use App\Support\AdminPermissions;
 use Laravel\Sanctum\Sanctum;
@@ -16,6 +17,51 @@ use Tests\TestCase;
 
 class V2AdminTicketActionApiTest extends TestCase
 {
+    public function test_ticket_delivery_departments_require_manage_permission(): void
+    {
+        $this->getJson('/api/v2/admin/ticket-delivery-departments')
+            ->assertUnauthorized()
+            ->assertJsonPath('code', 40100);
+
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_LIST]));
+
+        $this->getJson('/api/v2/admin/ticket-delivery-departments?supplier_id=1')
+            ->assertForbidden()
+            ->assertJsonPath('code', 40300);
+    }
+
+    public function test_ticket_delivery_departments_returns_whitelisted_data(): void
+    {
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
+        $delivery = $this->createMock(TicketDeliveryService::class);
+        $delivery->expects($this->once())
+            ->method('upstreamDepartments')
+            ->with(7)
+            ->willReturn([
+                ['id' => 'tech-01', 'name' => '技术支持', 'description' => '技术部门'],
+            ]);
+        app()->instance(TicketDeliveryService::class, $delivery);
+
+        $response = $this->getJson('/api/v2/admin/ticket-delivery-departments?supplier_id=7')
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.list.0.id', 'tech-01')
+            ->assertJsonPath('data.list.0.name', '技术支持')
+            ->assertJsonMissingPath('data.list.0.jwt');
+
+        $this->assertSame(['list'], array_keys($response->json('data')));
+    }
+
+    public function test_ticket_delivery_departments_require_supplier_id(): void
+    {
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
+
+        $this->getJson('/api/v2/admin/ticket-delivery-departments')
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 42200)
+            ->assertJsonStructure(['data' => ['errors' => ['supplier_id']]]);
+    }
+
     public function test_ticket_actions_require_login_and_manage_permission(): void
     {
         $ticket = $this->createTicket();

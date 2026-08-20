@@ -216,6 +216,53 @@ class ZjmfFinanceTransportTest extends TestCase
         $this->assertSame(['Authorization: Bearer zjmf-jwt'], $transport->captured[1]['headers']);
     }
 
+    public function test_ticket_departments_are_normalized_from_upstream_response(): void
+    {
+        $supplier = (new Supplier)->forceFill([
+            'id' => 657,
+            'interface_type' => 'zjmf_finance_api',
+            'api_url' => 'https://zjmf.example.test',
+        ]);
+
+        $innerTransport = new class extends HostingPanelApiTransport
+        {
+            public array $captured = [];
+
+            public function request(
+                Supplier $supplier,
+                string $method,
+                string $uri,
+                array|string $payload = [],
+                ?string $jwt = null,
+                array $headers = [],
+                array $query = []
+            ): array {
+                $this->captured[] = compact('method', 'uri', 'payload', 'jwt', 'headers', 'query');
+
+                return [
+                    'status' => 200,
+                    'msg' => 'success',
+                    'data' => [
+                        ['id' => 12, 'name' => '技术支持', 'description' => '技术部门'],
+                        ['id' => '', 'name' => '无效项'],
+                        ['id' => 13, 'name' => '销售', 'description' => null],
+                    ],
+                ];
+            }
+        };
+
+        $client = new ZjmfFinanceTransport($innerTransport, new ZjmfAuthManager($innerTransport));
+        $departments = $client->getTicketDepartments($supplier, 'zjmf-jwt');
+
+        $this->assertSame([
+            ['id' => '12', 'name' => '技术支持', 'description' => '技术部门'],
+            ['id' => '13', 'name' => '销售', 'description' => ''],
+        ], $departments);
+        $this->assertSame('GET', $innerTransport->captured[0]['method']);
+        $this->assertSame('/ticket/department', $innerTransport->captured[0]['uri']);
+        $this->assertSame(['Authorization: Bearer zjmf-jwt'], $innerTransport->captured[0]['headers']);
+    }
+
     public function test_host_detail_uses_same_system_header_endpoint_and_normalizes_payload(): void
     {
         config(['idc.hosting_panel_api.jwt_cache_store' => 'array']);

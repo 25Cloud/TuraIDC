@@ -81,6 +81,7 @@ class TicketService
         private NotificationService $notificationService,
         private ServiceTransformService $serviceTransformService,
         private UserNotificationService $userNotificationService,
+        private TicketDeliveryService $ticketDeliveryService,
     ) {}
 
     /**
@@ -114,6 +115,8 @@ class TicketService
                 'user_id' => $userId,
                 'content' => $content,
                 'is_staff' => 0,
+                'sender_type' => 'client',
+                'sender_name' => null,
                 'attachments' => $attachments,
                 'created_at' => now(),
             ]);
@@ -122,6 +125,7 @@ class TicketService
         });
 
         $this->notifyAdminsOfNewTicket($ticket, $content, $attachments !== []);
+        $this->ticketDeliveryService->queueTicket($ticket);
 
         return $ticket;
     }
@@ -144,7 +148,7 @@ class TicketService
             throw_if($quoted->recalled_at !== null, new BusinessException('不能引用已撤回的消息'));
         }
 
-        $formattedReply = DB::transaction(function () use ($ticket, $userId, $content, $attachments, $quoteReplyId) {
+        [$formattedReply, $replyId] = DB::transaction(function () use ($ticket, $userId, $content, $attachments, $quoteReplyId) {
             // 行锁内重读：关闭与回复并发时先到先得，关闭已提交则拒绝再写入回复，防止已关闭工单被重新打开。
             $lockedTicket = Ticket::query()->lockForUpdate()->findOrFail($ticket->id);
             throw_if((int) $lockedTicket->status === self::STATUS_CLOSED, new BusinessException('工单已关闭'));
@@ -154,6 +158,8 @@ class TicketService
                 'user_id' => $userId,
                 'content' => $content,
                 'is_staff' => 0,
+                'sender_type' => 'client',
+                'sender_name' => null,
                 'attachments' => $attachments,
                 'quote_reply_id' => $quoteReplyId,
                 'created_at' => now(),
@@ -162,10 +168,14 @@ class TicketService
 
             $lockedTicket->loadMissing('user:id,email,nickname');
 
-            return $this->formatReply($reply, $lockedTicket->user?->display_name ?: '客户');
+            return [$this->formatReply($reply, $lockedTicket->user?->display_name ?: '客户'), (int) $reply->id];
         });
 
         $this->notifyAdminsOfClientReply($ticket, $content, $attachments !== []);
+        $reply = TicketReply::query()->find($replyId);
+        if ($reply instanceof TicketReply) {
+            $this->ticketDeliveryService->queueClientReply($reply);
+        }
 
         return $formattedReply;
     }
@@ -199,7 +209,7 @@ class TicketService
             throw_if($quoted->recalled_at !== null, new BusinessException('不能引用已撤回的消息'));
         }
 
-        $formattedReply = DB::transaction(function () use ($ticket, $staffId, $content, $attachments, $staffName, $quoteReplyId) {
+        [$formattedReply, $replyId] = DB::transaction(function () use ($ticket, $staffId, $content, $attachments, $staffName, $quoteReplyId) {
             // 行锁内重读：关闭与回复并发时先到先得，关闭已提交则拒绝再写入回复。
             $lockedTicket = Ticket::query()->lockForUpdate()->findOrFail($ticket->id);
             throw_if((int) $lockedTicket->status === self::STATUS_CLOSED, new BusinessException('工单已关闭'));
@@ -209,16 +219,22 @@ class TicketService
                 'user_id' => $staffId,
                 'content' => $content,
                 'is_staff' => 1,
+                'sender_type' => 'admin',
+                'sender_name' => $staffName,
                 'attachments' => $attachments,
                 'quote_reply_id' => $quoteReplyId,
                 'created_at' => now(),
             ]);
             $lockedTicket->update(['status' => self::STATUS_STAFF_REPLY]);
 
-            return $this->formatReply($reply, $staffName);
+            return [$this->formatReply($reply, $staffName), (int) $reply->id];
         });
 
         $this->notifyClientOfStaffReply($ticket, $staffName, $content, $attachments !== []);
+        $reply = TicketReply::query()->find($replyId);
+        if ($reply instanceof TicketReply) {
+            $this->ticketDeliveryService->queueStaffReply($reply);
+        }
 
         return $formattedReply;
     }
@@ -545,7 +561,9 @@ class TicketService
             $paginator->setCollection($items
                 ->map(fn (TicketReply $reply) => $this->formatReply(
                     $reply,
-                    $reply->is_staff ? ($staffMap[(int) $reply->user_id] ?? '员工') : $clientName
+                    $reply->sender_type === 'upstream_admin'
+                        ? ((string) ($reply->sender_name ?: '上游客服'))
+                        : ($reply->is_staff ? ($staffMap[(int) $reply->user_id] ?? '员工') : $clientName)
                 ))
                 ->values());
 
@@ -1284,7 +1302,7 @@ class TicketService
             'user_id' => (int) $reply->user_id,
             'content' => $isRecalled ? '' : $reply->content,
             'is_staff' => (int) $reply->is_staff,
-            'sender_name' => $senderName,
+            'sender_name' => (string) ($reply->sender_name ?: $senderName),
             'attachments' => $attachments,
             'recalled' => $isRecalled,
             'recalled_at' => $reply->recalled_at?->format('Y-m-d H:i:s'),
@@ -1324,7 +1342,9 @@ class TicketService
         return $ticket->replies
             ->map(fn (TicketReply $reply) => $this->formatReply(
                 $reply,
-                $reply->is_staff ? ($staffMap[(int) $reply->user_id] ?? '员工') : $clientName
+                $reply->sender_type === 'upstream_admin'
+                    ? ((string) ($reply->sender_name ?: '上游客服'))
+                    : ($reply->is_staff ? ($staffMap[(int) $reply->user_id] ?? '员工') : $clientName)
             ))
             ->values()
             ->all();

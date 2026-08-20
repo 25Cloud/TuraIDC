@@ -105,26 +105,26 @@ class PluginBindingResolver
     /**
      * @return array<string, mixed>
      */
-    public function supplierBindingProjection(Supplier $supplier, bool $includeSecrets = false): array
+    public function supplierBindingProjection(Supplier $supplier, bool $includeSecrets = false, ?string $providerKey = null): array
     {
         $supplierId = (int) $supplier->id;
         if ($supplierId <= 0) {
             return [];
         }
 
-        $binding = $this->supplierBindingForSupplier($supplier);
+        $binding = $this->supplierBindingForSupplier($supplier, $providerKey);
         if ($binding === null) {
             return [];
         }
 
         $config = $this->decodePayload($binding->config_json ?? null);
         $secrets = $this->decryptPayload($binding->secret_json ?? null);
-        $providerKey = $this->nullableString($binding->provider_key ?? null);
+        $resolvedProviderKey = $this->nullableString($binding->provider_key ?? null);
         $providerConfig = $this->providerConfigFromBinding($config, $secrets);
         $apiKey = $this->nullableString($secrets['api_key'] ?? null);
         $hasSecretValues = $this->decodePayload($binding->has_secret_json ?? null);
         $hasSecretValues = array_replace(
-            $this->providerSecretPresence($providerKey, $providerConfig),
+            $this->providerSecretPresence($resolvedProviderKey, $providerConfig),
             array_filter($hasSecretValues, static fn (mixed $value): bool => (bool) $value)
         );
 
@@ -136,9 +136,10 @@ class PluginBindingResolver
             'id' => (int) $binding->id,
             'supplier_id' => (int) $binding->supplier_id,
             'plugin_id' => (int) $binding->plugin_id,
-            'provider_key' => $providerKey,
+            'provider_key' => $resolvedProviderKey,
             'environment' => $this->nullableString($binding->environment ?? null) ?? 'production',
             'status' => (int) ($binding->status ?? 0),
+            'ticket_delivery_enabled' => (bool) ($binding->ticket_delivery_enabled ?? false),
             'priority' => (int) ($binding->priority ?? 0),
             'base_url' => $this->nullableString($binding->base_url ?? null),
             'account_name' => $this->nullableString($binding->account_name ?? null),
@@ -159,9 +160,9 @@ class PluginBindingResolver
         return array_filter($projection, static fn (mixed $value): bool => $value !== null);
     }
 
-    public function supplierWithRuntimeCredentials(Supplier $supplier, bool $includeSecrets = true): Supplier
+    public function supplierWithRuntimeCredentials(Supplier $supplier, bool $includeSecrets = true, ?string $providerKey = null): Supplier
     {
-        $projection = $this->supplierBindingProjection($supplier, $includeSecrets);
+        $projection = $this->supplierBindingProjection($supplier, $includeSecrets, $providerKey);
         if ($projection === []) {
             return $supplier;
         }
@@ -274,7 +275,7 @@ class PluginBindingResolver
         return array_filter($projection, static fn (mixed $value): bool => $value !== null && $value !== '');
     }
 
-    private function supplierBinding(int $supplierId): ?object
+    private function supplierBinding(int $supplierId, ?string $providerKey = null): ?object
     {
         if ($supplierId <= 0 || ! $this->hasTable('supplier_plugin_bindings')) {
             return null;
@@ -282,14 +283,19 @@ class PluginBindingResolver
 
         return DB::table('supplier_plugin_bindings')
             ->where('supplier_id', $supplierId)
+            ->when($providerKey !== null && trim($providerKey) !== '', fn ($query) => $query->where('provider_key', trim($providerKey)))
             ->orderByDesc('status')
             ->orderByDesc('priority')
             ->orderByDesc('id')
             ->first();
     }
 
-    private function supplierBindingForSupplier(Supplier $supplier): ?object
+    private function supplierBindingForSupplier(Supplier $supplier, ?string $providerKey = null): ?object
     {
+        if ($providerKey !== null && trim($providerKey) !== '') {
+            return $this->supplierBinding((int) $supplier->id, $providerKey);
+        }
+
         if ($supplier->relationLoaded('pluginBindings')) {
             $binding = $this->supplierBindingFromLoadedRelation($supplier);
             if ($binding !== null) {
@@ -504,6 +510,8 @@ class PluginBindingResolver
             $connection = array_replace($connection, [
                 'connection_secret' => $this->nullableString($secrets['connection_secret'] ?? null),
                 'password' => $this->nullableString($secrets['password'] ?? null),
+                'downstream_token' => $this->nullableString($secrets['downstream_token'] ?? null, 512),
+                'ticket_callback_token' => $this->nullableString($secrets['ticket_callback_token'] ?? null, 512),
             ]);
         }
 
