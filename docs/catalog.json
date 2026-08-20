@@ -2,6 +2,12 @@
   "version": 1,
   "records": [
     {
+      "path": "快速开始.md",
+      "status": "current",
+      "summary": "生产环境部署方式选择与部署后检查入口。",
+      "review_by": "2026-11-20"
+    },
+    {
       "path": "ARCHITECTURE.md",
       "status": "current",
       "summary": "运行中的系统结构与边界。",
