@@ -24,30 +24,31 @@ const catalogStatuses = new Set([
   "generated",
   "archived",
   "template",
+  "experimental",
 ]);
 
 const requiredGeneratedCatalogPaths = new Set([
   "DATABASE.md",
-  "自动生成/接口/后端API清单.md",
+  "generated/api/backend-api-catalog.md",
 ]);
 const statusesRequiringReviewBy = new Set(["current", "active"]);
 const requiredDirectories = [
-  "设计文档",
-  "产品规格",
-  "执行计划",
-  "执行计划/进行中",
-  "执行计划/已完成",
-  "执行计划/技术债",
-  "参考资料",
-  "自动生成",
+  "designs",
+  "product-specs",
+  "execution-plans",
+  "execution-plans/active",
+  "execution-plans/completed",
+  "execution-plans/tech-debt",
+  "references",
+  "generated",
 ];
 const requiredFiles = [
   "README.md",
-  "设计文档/index.md",
-  "产品规格/README.md",
-  "执行计划/README.md",
-  "参考资料/README.md",
-  "自动生成/README.md",
+  "designs/index.md",
+  "product-specs/README.md",
+  "execution-plans/README.md",
+  "references/README.md",
+  "generated/README.md",
   "catalog.json",
 ];
 
@@ -371,8 +372,8 @@ function isValidDate(value) {
 }
 
 function checkExecPlanRecords() {
-  for (const folder of ["进行中", "已完成", "技术债"]) {
-    const directoryPath = path.join(docsRoot, "执行计划", folder);
+  for (const folder of ["active", "completed", "tech-debt"]) {
+    const directoryPath = path.join(docsRoot, "execution-plans", folder);
     for (const markdownFile of walkMarkdown(directoryPath)) {
       if (isIndexMarkdown(markdownFile)) {
         continue;

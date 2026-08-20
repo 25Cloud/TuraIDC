@@ -93,6 +93,25 @@ function appendScriptCacheKey(src: string, cacheKey: string) {
   }
 }
 
+type CaptchaAppendTarget =
+  | string
+  | HTMLElement
+  | { value?: string | HTMLElement | null | undefined }
+  | null
+  | undefined;
+
+function resolveAppendTarget(target: CaptchaAppendTarget): string | HTMLElement | undefined {
+  if (target && typeof target === 'object' && 'value' in target) {
+    return resolveAppendTarget((target as { value?: string | HTMLElement | null | undefined }).value);
+  }
+
+  if (typeof target === 'string' || target instanceof HTMLElement) {
+    return target;
+  }
+
+  return undefined;
+}
+
 function loadGeeTestScript(src: string, cacheKey = '') {
   if (typeof window === 'undefined') {
     throw new TypeError('浏览器环境不可用');
@@ -145,6 +164,8 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
   let initPromise: Promise<CaptchaInstance | null> | null = null;
   let pendingResolver: ((value: unknown) => void) | null = null;
   let pendingRejecter: ((error: Error) => void) | null = null;
+  // 内嵌组件预先完成的验证结果（一次性消费）：无挂起动作时保留，按钮动作触发时取出并重置组件
+  let verifiedResult: unknown = null;
   let componentUnmounted = false;
 
   const clearPending = () => {
@@ -172,9 +193,17 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
 
   const resolveSuccess = (instance: CaptchaInstance) => {
     const result = readCaptchaResult(instance);
-    instance.reset?.();
-    pendingResolver?.(result);
-    clearPending();
+
+    if (pendingResolver) {
+      // 有挂起动作（按钮触发）：一次性消费并重置组件，保证 token 单次使用语义
+      pendingResolver(result);
+      instance.reset?.();
+      clearPending();
+      return;
+    }
+
+    // 无挂起动作（内嵌组件预先完成）：保留结果，不重置组件，避免"回退到未认证状态"
+    verifiedResult = result;
   };
 
   const openCaptcha = (instance: CaptchaInstance) => {
@@ -221,6 +250,7 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
       import.meta.env.VITE_API_BASE_URL,
     );
     const initGeetest4 = await loadGeeTestScript(scriptUrl, config.captcha_id);
+    const appendTarget = resolveAppendTarget((options.appendTo ?? options.container) as CaptchaAppendTarget);
     initPromise = new Promise((resolve, reject) => {
       try {
         initGeetest4?.(
@@ -229,6 +259,7 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
             product: 'bind',
             language: 'zho',
             ...options,
+            ...(appendTarget ? { appendTo: appendTarget, container: appendTarget } : {}),
           },
           (instance) => {
             captchaObj = instance;
@@ -273,11 +304,24 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
       throw new Error('行为验证组件初始化中，请稍后重试');
     }
 
+    // 已有预完成结果：直接复用（取出 + 清空 + 重置组件，保证 token 单次使用语义）
+    if (verifiedResult !== null && verifiedResult !== undefined) {
+      const result = verifiedResult;
+      verifiedResult = null;
+      instance.reset?.();
+      return result;
+    }
+
     loading.value = true;
 
     return new Promise((resolve, reject) => {
       pendingResolver = resolve;
       pendingRejecter = reject;
+
+      // 未完成验证：先提示用户"请先完成人机验证"再唤起组件
+      if (typeof options.onPrompt === 'function') {
+        options.onPrompt();
+      }
 
       try {
         openCaptcha(instance);
@@ -292,6 +336,18 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     return callback(captcha);
   };
 
+  const reinit = async () => {
+    // 组件销毁时清空预完成结果（旧 token 失效）
+    verifiedResult = null;
+    captchaObj?.destroy?.();
+    captchaObj = null;
+    initPromise = null;
+    ready.value = false;
+    await initCaptcha().catch(() => {
+      initialized.value = true;
+    });
+  };
+
   onMounted(() => {
     initCaptcha().catch(() => {
       initialized.value = true;
@@ -300,6 +356,7 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
 
   onBeforeUnmount(() => {
     componentUnmounted = true;
+    verifiedResult = null;
     rejectPending(new Error('行为验证已取消'));
     captchaObj?.destroy?.();
   });
@@ -311,5 +368,6 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     ready,
     verify,
     runWithCaptcha,
+    reinit,
   };
 }

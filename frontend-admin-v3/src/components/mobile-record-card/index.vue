@@ -6,7 +6,16 @@
     <div class="mobile-record-card__head">
       <div class="mobile-record-card__title">
         <span v-if="eyebrow" class="mobile-record-card__eyebrow">{{ eyebrow }}</span>
-        <strong>{{ title || '-' }}</strong>
+        <button
+          v-if="linkable"
+          type="button"
+          class="mobile-record-card__title-link"
+          :disabled="linkDisabled"
+          @click="emit('title-click')"
+        >
+          {{ title || '-' }}
+        </button>
+        <strong v-else>{{ title || '-' }}</strong>
         <t-tag v-if="subtitle" variant="light">{{ subtitle }}</t-tag>
       </div>
       <div class="mobile-record-card__tools">
@@ -64,6 +73,8 @@ const props = withDefaults(
     actionOptions?: DropdownOption[];
     selectable?: boolean;
     selected?: boolean;
+    linkable?: boolean;
+    linkDisabled?: boolean;
   }>(),
   {
     subtitle: '',
@@ -79,12 +90,15 @@ const props = withDefaults(
     actionOptions: () => [],
     selectable: false,
     selected: false,
+    linkable: false,
+    linkDisabled: false,
   },
 );
 
 const emit = defineEmits<{
   (event: 'action', value: unknown): void;
   (event: 'select', value: boolean): void;
+  (event: 'title-click'): void;
 }>();
 
 const visibleRows = computed(() => props.rows.filter((row) => row.show !== false));
@@ -164,6 +178,32 @@ function handleAction(option: DropdownOption) {
   line-height: 20px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.mobile-record-card__title-link {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--td-text-color-primary);
+  font: inherit;
+  font-size: var(--td-font-size-size-3, 14px);
+  font-weight: 600;
+  line-height: 20px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-record-card__title-link:not(:disabled) {
+  cursor: pointer;
+  color: var(--td-brand-color);
+}
+
+.mobile-record-card__title-link:disabled {
+  cursor: default;
 }
 
 .mobile-record-card__tools {

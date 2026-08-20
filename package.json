@@ -27,6 +27,9 @@
     "provisioning"
   ],
   "scripts": {
+    "dev:docs": "pnpm --filter turaidc-docs-web dev",
+    "build:docs": "pnpm --filter turaidc-docs-web build",
+    "docs:check": "node backend/scripts/check_docs.mjs",
     "dev:admin-v3": "pnpm --filter turaidc-admin-v3 dev",
     "dev:user-v3-www": "pnpm --filter turaidc-user-v3-www dev",
     "dev:user-v4-console": "pnpm --filter turaidc-user-v4-console dev",

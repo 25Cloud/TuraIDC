@@ -118,13 +118,17 @@ class PluginProviderRegistry
         $now = $this->captureSystemLevelRegistrations($router, $schedule);
         $violations = [];
 
-        if ($now['routes'] > $baseline['routes']) {
+        // addons 域插件（如 ZJMF Bridge）以提供对外扩展接口为核心能力，
+        // 注册自己的路由命名空间与中间件别名属于合法边界；但系统级调度仍一律禁止。
+        $isAddon = $manifest->domain === PluginDomain::ADDONS;
+
+        if (! $isAddon && $now['routes'] > $baseline['routes']) {
             $violations[] = '系统级路由';
         }
         if ($now['schedules'] > $baseline['schedules']) {
             $violations[] = '系统级调度';
         }
-        if ($now['middleware'] > $baseline['middleware'] || $now['middleware_groups'] > $baseline['middleware_groups']) {
+        if (! $isAddon && ($now['middleware'] > $baseline['middleware'] || $now['middleware_groups'] > $baseline['middleware_groups'])) {
             $violations[] = '全局中间件';
         }
 

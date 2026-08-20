@@ -85,6 +85,8 @@
         </div>
       </t-form-item>
 
+      <div v-show="enabled" ref="captchaContainer" class="client-auth-captcha"></div>
+
       <t-button class="client-auth-submit" block size="large" theme="primary" :loading="loading" @click="submitForm">
         重置密码
       </t-button>
@@ -123,7 +125,15 @@ const sendingCode = ref(false);
 const countdown = ref(0);
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
-const { loading: captchaLoading, runWithCaptcha } = useGeeTestCaptcha();
+const captchaContainer = ref<HTMLElement>();
+const {
+  enabled,
+  loading: captchaLoading,
+  runWithCaptcha,
+} = useGeeTestCaptcha({
+  appendTo: captchaContainer,
+  onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
+});
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
 const loginLink = computed(() => ({

@@ -64,8 +64,8 @@ class ListLedgerRequest extends FormRequest
         ]);
     }
 
-    public function perPage(int $default = 15): int
+    public function perPage(int $default = 15, int $max = 100): int
     {
-        return max(1, min((int) $this->integer('page_size', $default), 100));
+        return max(1, min((int) $this->integer('page_size', $default), $max));
     }
 }

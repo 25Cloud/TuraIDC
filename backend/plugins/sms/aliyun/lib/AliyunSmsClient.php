@@ -44,6 +44,27 @@ class AliyunSmsClient
     ];
 
     /**
+     * 阿里云错误码 → 用户可读文案。
+     * 命中时直接透传给前端，避免被通用脱敏吞掉导致用户盲目重试。
+     *
+     * @var array<string, string>
+     */
+    private const FAILURE_CODE_MESSAGES = [
+        'biz.FREQUENCY' => '验证码发送过于频繁，请稍后再试',
+        'isv.BUSINESS_LIMIT_CONTROL' => '验证码发送过于频繁，请稍后再试',
+        'isv.OUT_OF_SERVICE' => '短信服务暂不可用，请稍后再试',
+        'isv.AMOUNT_NOT_ENOUGH' => '短信账户余额不足，请充值后重试',
+        'isv.MOBILE_NUMBER_ILLEGAL' => '手机号码格式错误',
+        'isv.SMS_SIGNATURE_ILLEGAL' => '短信签名不合法',
+        'isv.SMS_TEMPLATE_ILLEGAL' => '短信模板不合法',
+        'isv.SMS_SIGNATURE_NO_PASS' => '短信签名未通过审核',
+        'isv.SMS_TEMPLATE_NO_PASS' => '短信模板未通过审核',
+        'isv.BLACK_KEY_WORDS_LIMIT' => '短信内容包含敏感词，请联系管理员',
+        'isv.TEMPLATE_MISSING_PARAMETERS' => '短信模板参数缺失，请联系管理员',
+        'isv.DOMESTIC_NUMBER_NOT_SUPPORTED' => '暂不支持该号码段发送短信',
+    ];
+
+    /**
      * @param  array<string, mixed>  $config  插件配置（来自 execute() 的 $request['config']）
      */
     public function __construct(
@@ -97,12 +118,13 @@ class AliyunSmsClient
         }
 
         if (($result['Code'] ?? '') !== 'OK' || ($result['Success'] ?? false) !== true) {
+            $failureCode = (string) ($result['Code'] ?? '');
             Log::warning('[短信] 阿里云短信发送失败', [
-                'code' => (string) ($result['Code'] ?? ''),
-                'message' => $this->resolveFailureMessage($result['Message'] ?? ''),
+                'code' => $failureCode,
+                'message' => $this->resolveFailureMessage($result['Message'] ?? '', $failureCode),
             ]);
 
-            return ['success' => false, 'message' => $this->resolveFailureMessage($result['Message'] ?? '')];
+            return ['success' => false, 'message' => $this->resolveFailureMessage($result['Message'] ?? '', $failureCode)];
         }
 
         $model = is_array($result['Model'] ?? null) ? $result['Model'] : [];
@@ -353,8 +375,14 @@ class AliyunSmsClient
         return mb_substr($phone, 0, 3).'****'.mb_substr($phone, -4);
     }
 
-    private function resolveFailureMessage(mixed $message): string
+    private function resolveFailureMessage(mixed $message, string $code = ''): string
     {
+        // 已知错误码优先映射为用户可读文案（如 biz.FREQUENCY 频繁限制）
+        $code = trim($code);
+        if ($code !== '' && isset(self::FAILURE_CODE_MESSAGES[$code])) {
+            return self::FAILURE_CODE_MESSAGES[$code];
+        }
+
         $text = trim((string) $message);
         if ($text === '') {
             return '短信发送失败，请稍后重试';
