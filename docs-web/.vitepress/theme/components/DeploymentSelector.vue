@@ -1,12 +1,18 @@
 <template>
   <div class="deployment-selector">
-    <a class="deployment-option" href="/参考资料/运维/宝塔部署项目指南">
+    <a
+      class="deployment-option"
+      href="/references/operations/bt-panel-deployment"
+    >
       <span class="deployment-option-kicker">面板部署</span>
       <strong>宝塔部署</strong>
       <span>适用于使用宝塔面板管理 PHP、Nginx 与计划任务的服务器。</span>
       <em>查看宝塔部署指南 →</em>
     </a>
-    <a class="deployment-option" href="/参考资料/运维/Docker与1Panel部署指南">
+    <a
+      class="deployment-option"
+      href="/references/operations/docker-and-1panel-deployment"
+    >
       <span class="deployment-option-kicker">容器部署</span>
       <strong>Docker / 1Panel</strong>
       <span

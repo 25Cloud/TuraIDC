@@ -48,7 +48,7 @@
 
 - **对接智简魔方财务系统**：作为上游供应商接入，商品目录、库存、开通、续费、网络/安全操作等通过官方 API 完整适配。
 - **支持被智简魔方财务系统原生对接（实验）**：通过内置 ZJMF Bridge 插件，为存量智简魔方财务系统提供兼容 API 与签名校验，让旧生态无缝迁移，降低替换成本。
-- **从智简魔方财务系统迁移**：老站业务数据（产品/用户/订单/上游/实名）完整迁移教程见 [从智简魔方财务系统迁移](docs/参考资料/数据库/从智简魔方财务系统迁移.md)。
+- **从智简魔方财务系统迁移**：老站业务数据（产品/用户/订单/上游/实名）完整迁移教程见 [从智简魔方财务系统迁移](docs/references/database/migrate-from-zjmf-finance.md)。
 
 ## ❌ 我们没有
 
@@ -149,7 +149,7 @@ flowchart TB
 
 ## 🗺️ Roadmap
 
-当前版本进行中的工作（详见 `docs/执行计划/进行中/`）：
+当前版本进行中的工作（详见 `docs/execution-plans/active/`）：
 
 - 后端专家团审查修复计划（认证、财务、并发安全域）收尾
 - 定时任务体系重构方案
@@ -212,7 +212,7 @@ TuraIDC/
 - **实名认证、商品配置项、OS 系统选择** 等细节数据完整落地
 - 老用户密码 `###md5` 无缝兼容，登录后自动升级
 
-> 📖 完整分步教程（含生产踩坑记录）：[从智简魔方财务系统迁移](docs/参考资料/数据库/从智简魔方财务系统迁移.md)
+> 📖 完整分步教程（含生产踩坑记录）：[从智简魔方财务系统迁移](docs/references/database/migrate-from-zjmf-finance.md)
 
 ```bash
 # 示例：迁移主流程（预检 → 重建分组 → 迁移数据 → 预热缓存）
@@ -276,7 +276,7 @@ php artisan schedule:work
 
 ## 🐳 快速开始（Docker 部署）
 
-`docker compose` 一键拉起 MySQL 8 + Redis 7 + 后端（PHP-FPM / Nginx / Cron / VNC Relay）+ 前端三端合一，共 4 个容器。详细说明见 [Docker 与 1Panel 部署指南](docs/参考资料/运维/Docker与1Panel部署指南.md)。
+`docker compose` 一键拉起 MySQL 8 + Redis 7 + 后端（PHP-FPM / Nginx / Cron / VNC Relay）+ 前端三端合一，共 4 个容器。详细说明见 [Docker 与 1Panel 部署指南](docs/references/operations/docker-and-1panel-deployment.md)。
 
 ### 1. 配置 CI Secrets（自动构建镜像）
 

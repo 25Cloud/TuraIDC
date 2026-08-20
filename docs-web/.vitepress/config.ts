@@ -4,13 +4,37 @@ import { defineConfig, type DefaultTheme } from "vitepress";
 
 const docsRoot = resolve(import.meta.dirname, "../../docs");
 
+const directoryTitles: Record<string, string> = {
+  "product-specs/active": "进行中",
+  "designs/architecture": "架构",
+  "designs/backend": "后端",
+  "designs/product": "产品",
+  "references/integrations/plugins": "插件",
+  "generated/api": "API",
+  "execution-plans/active": "进行中",
+  "execution-plans/completed": "已完成",
+  "execution-plans/tech-debt": "技术债",
+};
+
 function pageTitle(path: string): string {
   const source = readFileSync(path, "utf8");
   const title = source.match(/^#\s+(.+)$/m)?.[1];
 
-  return (title ?? path.split(/[\\/]/).pop() ?? "未命名文档")
-    .replace(/[`*_]/g, "")
-    .trim();
+  if (!title || !/\p{Script=Han}/u.test(title)) {
+    throw new Error(`文档缺少中文一级标题：${path}`);
+  }
+
+  return title.replace(/[`*_]/g, "").trim();
+}
+
+function directoryTitle(relativePath: string): string {
+  const title = directoryTitles[relativePath];
+
+  if (!title) {
+    throw new Error(`文档目录缺少中文侧栏标题：${relativePath}`);
+  }
+
+  return title;
 }
 
 function pageLink(relativePath: string): string {
@@ -48,7 +72,7 @@ function directoryItems(
       if (entry.isDirectory()) {
         return [
           {
-            text: entry.name,
+            text: directoryTitle(relativePath),
             collapsed: relativeDirectory !== "",
             items: directoryItems(fullPath, relativePath),
           },
@@ -96,16 +120,16 @@ const sidebar: DefaultTheme.SidebarItem[] = [
   {
     text: "快速开始",
     items: [
-      pageItem("快速开始.md"),
-      pageItem("参考资料/运维/宝塔部署项目指南.md"),
-      pageItem("参考资料/运维/Docker与1Panel部署指南.md"),
+      pageItem("quick-start.md"),
+      pageItem("references/operations/bt-panel-deployment.md"),
+      pageItem("references/operations/docker-and-1panel-deployment.md"),
     ],
   },
   {
     text: "开发指南",
     items: [
-      pageItem("参考资料/运维/本地启动指南.md"),
-      pageItem("参考资料/运维/测试指南.md"),
+      pageItem("references/operations/local-development.md"),
+      pageItem("references/operations/testing.md"),
       pageItem("BACKEND.md"),
       pageItem("FRONTEND.md"),
       pageItem("DATABASE.md"),
@@ -113,27 +137,30 @@ const sidebar: DefaultTheme.SidebarItem[] = [
       {
         text: "产品规格",
         collapsed: true,
-        items: directoryItems(resolve(docsRoot, "产品规格"), "产品规格"),
+        items: directoryItems(
+          resolve(docsRoot, "product-specs"),
+          "product-specs",
+        ),
       },
       {
         text: "设计文档",
         collapsed: true,
-        items: directoryItems(resolve(docsRoot, "设计文档"), "设计文档"),
+        items: directoryItems(resolve(docsRoot, "designs"), "designs"),
       },
       {
         text: "集成与插件",
         collapsed: true,
         items: directoryItems(
-          resolve(docsRoot, "参考资料/集成"),
-          "参考资料/集成",
+          resolve(docsRoot, "references/integrations"),
+          "references/integrations",
         ),
       },
       {
         text: "后端参考",
         collapsed: true,
         items: directoryItems(
-          resolve(docsRoot, "参考资料/后端"),
-          "参考资料/后端",
+          resolve(docsRoot, "references/backend"),
+          "references/backend",
         ),
       },
       {
@@ -143,12 +170,15 @@ const sidebar: DefaultTheme.SidebarItem[] = [
           {
             text: "治理规则",
             collapsed: true,
-            items: directoryItems(resolve(docsRoot, "治理"), "治理"),
+            items: directoryItems(
+              resolve(docsRoot, "governance"),
+              "governance",
+            ),
           },
           {
             text: "模板",
             collapsed: true,
-            items: directoryItems(resolve(docsRoot, "模板"), "模板"),
+            items: directoryItems(resolve(docsRoot, "templates"), "templates"),
           },
         ],
       },
@@ -162,8 +192,8 @@ const sidebar: DefaultTheme.SidebarItem[] = [
         text: "架构设计",
         collapsed: false,
         items: directoryItems(
-          resolve(docsRoot, "设计文档/架构"),
-          "设计文档/架构",
+          resolve(docsRoot, "designs/architecture"),
+          "designs/architecture",
         ),
       },
     ],
@@ -175,16 +205,16 @@ const sidebar: DefaultTheme.SidebarItem[] = [
         text: "API 规范",
         collapsed: false,
         items: directoryItems(
-          resolve(docsRoot, "参考资料/接口"),
-          "参考资料/接口",
+          resolve(docsRoot, "references/api"),
+          "references/api",
         ),
       },
       {
         text: "自动生成清单",
         collapsed: false,
-        items: directoryItems(resolve(docsRoot, "自动生成"), "自动生成"),
+        items: directoryItems(resolve(docsRoot, "generated"), "generated"),
       },
-      pageItem("设计文档/后端/API直接重构方案.md"),
+      pageItem("designs/backend/direct-api-refactor.md"),
     ],
   },
   {
@@ -194,30 +224,33 @@ const sidebar: DefaultTheme.SidebarItem[] = [
         text: "部署与运行",
         collapsed: false,
         items: directoryItems(
-          resolve(docsRoot, "参考资料/运维"),
-          "参考资料/运维",
+          resolve(docsRoot, "references/operations"),
+          "references/operations",
         ),
       },
       {
         text: "数据库维护与迁移",
         collapsed: true,
         items: directoryItems(
-          resolve(docsRoot, "参考资料/数据库"),
-          "参考资料/数据库",
+          resolve(docsRoot, "references/database"),
+          "references/database",
         ),
       },
       {
         text: "迁移记录",
         collapsed: true,
         items: directoryItems(
-          resolve(docsRoot, "参考资料/迁移记录"),
-          "参考资料/迁移记录",
+          resolve(docsRoot, "references/migration-records"),
+          "references/migration-records",
         ),
       },
       {
         text: "执行计划",
         collapsed: true,
-        items: directoryItems(resolve(docsRoot, "执行计划"), "执行计划"),
+        items: directoryItems(
+          resolve(docsRoot, "execution-plans"),
+          "execution-plans",
+        ),
       },
     ],
   },
@@ -244,8 +277,11 @@ export default defineConfig({
     nav: [
       { text: "文档首页", link: "/" },
       { text: "系统架构", link: "/ARCHITECTURE" },
-      { text: "API 参考", link: "/自动生成/接口/后端API清单" },
-      { text: "部署运维", link: "/参考资料/运维/部署与调度指南" },
+      { text: "API 参考", link: "/generated/api/backend-api-catalog" },
+      {
+        text: "部署运维",
+        link: "/references/operations/deployment-and-scheduling",
+      },
     ],
     sidebar,
     outline: { level: [2, 3], label: "本页内容" },
