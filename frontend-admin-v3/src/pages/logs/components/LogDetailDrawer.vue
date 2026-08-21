@@ -1,5 +1,5 @@
 <template>
-  <t-drawer :visible="visible" :size="drawerSize" :header="headerTitle" :footer="false" @close="emit('close')">
+  <t-drawer :visible="visible" :size="drawerSize" :header="headerTitle" @close="emit('close')">
     <template v-if="currentLog">
       <div class="detail-grid">
         <article v-for="item in detailFields" :key="item.label">
@@ -18,12 +18,12 @@
         />
         <pre v-else class="json-block">{{ item.value }}</pre>
       </div>
-      <div class="detail-drawer-actions">
-        <t-button variant="outline" @click="emit('close')">
-          <template #icon><chevron-left-icon /></template>
-          返回
-        </t-button>
-      </div>
+    </template>
+    <template #footer>
+      <t-button variant="outline" @click="emit('close')">
+        <template #icon><chevron-left-icon /></template>
+        返回
+      </t-button>
     </template>
   </t-drawer>
 </template>

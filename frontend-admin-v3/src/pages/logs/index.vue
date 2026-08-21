@@ -275,14 +275,18 @@
           />
         </div>
 
-        <div v-if="!isMobile" class="table-scroll">
+        <div v-if="!isMobile" class="table-scroll" :class="{ 'table-scroll--upstream': isUpstreamLogTab }">
           <t-table
             row-key="id"
-            :data="logRows"
+            :data="displayLogRows"
             :columns="logTableColumns"
             :loading="logLoading"
             hover
             table-layout="fixed"
+            :class="{ 'upstream-log-table': isUpstreamLogTab }"
+            :expand-icon="isUpstreamLogTab"
+            :expanded-row-keys="expandedLogGroupKeys"
+            @expand-change="handleLogGroupExpand"
           >
             <template #time="{ row }">{{
               formatDate(row.occurred_at || row.time || row.created_at || row.sent_at)
@@ -307,6 +311,12 @@
             </template>
             <template #status="{ row }">
               <t-tag :theme="statusTheme(statusValue(row))" variant="light">{{ statusLabel(statusValue(row)) }}</t-tag>
+            </template>
+            <template #ticket_id="{ row }">
+              <div class="stack-cell">
+                <strong>工单 #{{ fieldValue(row.ticket_id) }}</strong>
+                <span>{{ row.log_count || 1 }} 条推送记录</span>
+              </div>
             </template>
             <template #httpStatus="{ row }">
               <t-tag :theme="httpStatusTheme(row.status)" variant="light">{{ fieldValue(row.status) }}</t-tag>
@@ -350,14 +360,31 @@
             <template #actions="{ row }">
               <t-button theme="primary" variant="text" @click="openDetail(row)">详情</t-button>
             </template>
+            <template #expandedRow="{ row }">
+              <div v-if="isUpstreamLogTab" class="upstream-log-group">
+                <div class="upstream-log-group__title">共 {{ row.log_count || 0 }} 条推送记录</div>
+                <div v-for="log in upstreamGroupLogs(row)" :key="String(log.id)" class="upstream-log-group__item">
+                  <div class="upstream-log-group__meta">
+                    <t-tag :theme="statusTheme(log.status)" variant="light" size="small">{{
+                      statusLabel(log.status)
+                    }}</t-tag>
+                    <span>{{ fieldValue(log.operation) }}</span>
+                    <span>{{ fieldValue(log.event) }}</span>
+                    <time>{{ formatDate(log.occurred_at) }}</time>
+                  </div>
+                  <div class="upstream-log-group__message">{{ fieldValue(log.message || log.reason_code) }}</div>
+                  <t-button theme="primary" variant="text" size="small" @click="openDetail(log)">详情</t-button>
+                </div>
+              </div>
+            </template>
           </t-table>
         </div>
 
         <div v-else class="table-scroll">
           <t-loading :loading="logLoading" size="small">
-            <div v-if="logRows.length" class="log-mobile-stack">
+            <div v-if="displayLogRows.length" class="log-mobile-stack">
               <article
-                v-for="row in logRows"
+                v-for="row in displayLogRows"
                 :key="String(row.id || row.order_no || row.sent_no)"
                 class="log-mobile-card"
               >
@@ -396,7 +423,33 @@
                   <span v-if="row.status" class="muted-text">HTTP {{ fieldValue(row.status) }}</span>
                 </div>
                 <div class="log-mobile-card__actions">
+                  <t-button
+                    v-if="isUpstreamLogTab"
+                    theme="primary"
+                    variant="text"
+                    size="small"
+                    @click="toggleLogGroup(row)"
+                  >
+                    {{ isLogGroupExpanded(row) ? '收起日志' : `查看 ${row.log_count || 0} 条日志` }}
+                  </t-button>
                   <t-button theme="primary" variant="text" size="small" @click="openDetail(row)">详情</t-button>
+                </div>
+                <div
+                  v-if="isUpstreamLogTab && isLogGroupExpanded(row)"
+                  class="upstream-log-group upstream-log-group--mobile"
+                >
+                  <div v-for="log in upstreamGroupLogs(row)" :key="String(log.id)" class="upstream-log-group__item">
+                    <div class="upstream-log-group__meta">
+                      <t-tag :theme="statusTheme(log.status)" variant="light" size="small">{{
+                        statusLabel(log.status)
+                      }}</t-tag>
+                      <span>{{ fieldValue(log.operation) }}</span>
+                      <span>{{ fieldValue(log.event) }}</span>
+                      <time>{{ formatDate(log.occurred_at) }}</time>
+                    </div>
+                    <div class="upstream-log-group__message">{{ fieldValue(log.message || log.reason_code) }}</div>
+                    <t-button theme="primary" variant="text" size="small" @click="openDetail(log)">详情</t-button>
+                  </div>
                 </div>
               </article>
             </div>
@@ -442,6 +495,11 @@
         <t-card :bordered="false" :loading="scheduleLoading">
           <template #title>已注册任务</template>
           <template #subtitle>共 {{ scheduleTasks.length }} 个任务</template>
+          <t-alert
+            theme="info"
+            message="自动化任务通常需要 1 分钟左右执行完成，提交后请稍候查看状态。"
+            class="schedule-execution-tip"
+          />
           <div class="schedule-task-toolbar">
             <div class="schedule-task-stats" aria-label="任务来源统计">
               <div class="schedule-task-stat">
@@ -685,6 +743,7 @@ const triggeringKey = ref('');
 const detailVisible = ref(false);
 const currentLog = ref<RecordRow | null>(null);
 const logRows = ref<RecordRow[]>([]);
+const expandedLogGroupKeys = ref<Array<string | number>>([]);
 const scheduleOverview = ref<Record<string, unknown>>({ tasks: [], recent_logs: [] });
 const cleanupOverview = ref<Record<string, unknown>>({ database: {}, file: {}, supported_cleanup_types: [] });
 const lastCleanupResult = ref<Record<string, unknown> | null>(null);
@@ -957,6 +1016,33 @@ const scheduleColumns: PrimaryTableCol<RecordRow>[] = [
 ];
 const currentLogMeta = computed(() => (isLogTab(activeTab.value) ? logMeta[activeTab.value] : logMeta.system));
 const logTableColumns = computed(() => (isLogTab(activeTab.value) ? baseLogColumns[activeTab.value] : []));
+const isUpstreamLogTab = computed(() => activeTab.value === 'upstream');
+const upstreamLogGroups = computed<RecordRow[]>(() => {
+  if (!isUpstreamLogTab.value) return [];
+
+  const groups = new Map<string, RecordRow>();
+  for (const row of logRows.value) {
+    const ticketId = String(row.ticket_id || row.id || 'unknown');
+    const groupKey = `ticket-${ticketId}`;
+    const current = groups.get(groupKey);
+    if (current) {
+      (current.logs as RecordRow[]).push(row);
+      current.log_count = Number(current.log_count || 0) + 1;
+      continue;
+    }
+
+    groups.set(groupKey, {
+      ...row,
+      id: groupKey,
+      group_key: groupKey,
+      logs: [row],
+      log_count: 1,
+    });
+  }
+
+  return [...groups.values()];
+});
+const displayLogRows = computed(() => (isUpstreamLogTab.value ? upstreamLogGroups.value : logRows.value));
 const isTextLog = computed(
   () => activeTab.value === 'system' || activeTab.value === 'runtime' || activeTab.value === 'tasks',
 );
@@ -1112,6 +1198,7 @@ const databaseCards = computed(() => {
     { key: 'api', label: 'API 日志', value: numberText(database.api) },
     { key: 'admin_login', label: '管理员登录日志', value: numberText(database.admin_login) },
     { key: 'schedule_run', label: '调度执行日志', value: numberText(database.schedule_run) },
+    { key: 'ticket_upstream', label: '工单推送日志', value: numberText(database.ticket_upstream) },
   ];
 });
 const fileCards = computed(() => {
@@ -1198,6 +1285,7 @@ async function loadLogs() {
     const response = await requestLogList(activeTab.value, params);
     if (seq !== logRequestSeq.value) return;
     logRows.value = response.list || [];
+    expandedLogGroupKeys.value = [];
     logPagination.total = Number(response.total || 0);
     logPagination.page = Number(response.page || logPagination.page);
     logPagination.page_size = Number(response.page_size || logPagination.page_size);
@@ -1276,6 +1364,25 @@ function handleLogPageChange(data: PageInfo) {
   loadLogs();
 }
 
+function handleLogGroupExpand(keys: Array<string | number>) {
+  if (isUpstreamLogTab.value) expandedLogGroupKeys.value = keys;
+}
+
+function upstreamGroupLogs(row: RecordRow): RecordRow[] {
+  return Array.isArray(row.logs) ? (row.logs as RecordRow[]) : [row];
+}
+
+function isLogGroupExpanded(row: RecordRow) {
+  return expandedLogGroupKeys.value.includes(String(row.id));
+}
+
+function toggleLogGroup(row: RecordRow) {
+  const key = String(row.id);
+  expandedLogGroupKeys.value = isLogGroupExpanded(row)
+    ? expandedLogGroupKeys.value.filter((item) => String(item) !== key)
+    : [...expandedLogGroupKeys.value, key];
+}
+
 async function loadScheduleOverview() {
   if (!canViewSchedules.value) return;
   scheduleLoading.value = true;
@@ -1307,6 +1414,7 @@ async function triggerTask(row: TableRowData) {
         queue: '已进入队列',
       }[String(response.execution_mode || '').toLowerCase()] || '已提交执行';
     MessagePlugin.success(`${fieldValue(row.title || row.key)}${modeText}`);
+    MessagePlugin.info('自动化任务通常需要 1 分钟左右执行完成，请稍候查看状态。');
     await loadScheduleOverview();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, `${fieldValue(row.title || row.key)}执行失败`));
@@ -1363,16 +1471,20 @@ async function handleCleanup() {
 }
 
 async function openDetail(row: TableRowData) {
-  currentLog.value = row as RecordRow;
+  const detailRow =
+    activeTab.value === 'upstream' && Array.isArray((row as RecordRow).logs)
+      ? upstreamGroupLogs(row as RecordRow)[0]
+      : (row as RecordRow);
+  currentLog.value = detailRow;
   detailVisible.value = true;
 
-  if (!isLogTab(activeTab.value) || row.id === undefined || row.id === null || row.id === '') {
+  if (!isLogTab(activeTab.value) || detailRow.id === undefined || detailRow.id === null || detailRow.id === '') {
     return;
   }
 
   try {
-    const detail = await adminApi.logs.detail(activeTab.value, row.id as string | number);
-    currentLog.value = { ...(row as RecordRow), ...detail };
+    const detail = await adminApi.logs.detail(activeTab.value, detailRow.id as string | number);
+    currentLog.value = { ...detailRow, ...detail };
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '加载日志详情失败'));
   }
