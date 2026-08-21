@@ -1,6 +1,5 @@
 import MarkdownIt from 'markdown-it'
-import type { RenderRule } from 'markdown-it/lib/renderer.mjs'
-import type StateCore from 'markdown-it/lib/rules_core/state_core.mjs'
+import type { RendererRule, StateCore } from 'markdown-it'
 import { sanitizeRenderedHtml } from './htmlSanitizer'
 
 export interface MarkdownRendererOptions {
@@ -47,10 +46,10 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
   }
 
   const defaultImageRule = markdown.renderer.rules.image
-  const imageRule: RenderRule = (tokens, idx, renderOptions, env, self) => {
+  const imageRule: RendererRule = (tokens, idx, renderOptions, env, self) => {
     const token = tokens[idx]
     const altIndex = token.attrIndex('alt')
-    const altFromAttr = altIndex >= 0 ? (token.attrs?.[altIndex]?.[1] || '') : ''
+    const altFromAttr = altIndex >= 0 ? String(token.attrs?.[altIndex]?.[1] || '') : ''
     const altFromChildren = token.children && token.children.length
       ? token.children.map((child) => child.content || '').join('').trim()
       : ''
@@ -72,7 +71,7 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
   markdown.renderer.rules.image = imageRule
 
   const defaultLinkOpenRule = markdown.renderer.rules.link_open
-  const linkOpenRule: RenderRule = (tokens, idx, renderOptions, env, self) => {
+  const linkOpenRule: RendererRule = (tokens, idx, renderOptions, env, self) => {
     const token = tokens[idx]
     const targetIndex = token.attrIndex('target')
 
