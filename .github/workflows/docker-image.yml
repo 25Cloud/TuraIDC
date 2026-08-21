@@ -2,9 +2,10 @@
 # TuraIDC Docker 镜像构建与推送
 #
 # 触发：
-#   - push 到 main / master
-#   - push 任意 tag
-#   - 手动触发（workflow_dispatch）
+#   - push 任意版本 tag（无条件构建）
+#   - 手动触发（workflow_dispatch，无条件构建）
+#   - push 到 main / master 且变更涉及核心文件（backend/、前端三端、shared/、
+#     deploy/、根构建清单等）；纯文档类变更（docs/、docs-web/、*.md 等）不构建
 #
 # 产物（推送到 GHCR，镜像名全部小写）：
 #   ghcr.io/<owner>/turaidc-app         后端（PHP-FPM + Nginx + Cron + VNC Relay）
@@ -34,8 +35,57 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  changes:
+    name: 判断是否需要构建
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.decide.outputs.should_build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 需要完整历史才能对 before..after 做文件级 diff
+          fetch-depth: 0
+
+      - name: 判断是否需要构建
+        id: decide
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          GIT_REF: ${{ github.ref }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          # tag 推送与手动触发：无条件构建
+          if [[ "$EVENT_NAME" == "workflow_dispatch" || "$GIT_REF" == refs/tags/* ]]; then
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # 新分支/异常事件拿不到基线提交时，保守起见执行构建
+          if [[ ! "$BEFORE" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # 强推等场景 before 可能不在当前历史中，diff 失败则视为需要构建
+          CHANGED="$(git diff --name-only "$BEFORE" "$AFTER" || echo backend/)"
+          echo "本次变更文件："
+          echo "$CHANGED"
+
+          # 核心文件：后端、前端三端、共享层、部署与镜像定义、根构建清单、本工作流
+          CORE_PATTERN='^(backend/|frontend-admin-v3/|frontend-user-v3-www/|frontend-user-v4-console/|shared/|deploy/|docker-compose.*\.ya?ml$|Dockerfile$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|tsconfig\.base\.json$|\.github/workflows/docker-image\.yml$)'
+
+          if echo "$CHANGED" | grep -Eq "$CORE_PATTERN"; then
+            echo "检测到核心文件变更，执行镜像构建"
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "仅文档等非核心文件变更，跳过镜像构建"
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          fi
+
   backend:
     name: Build & push turaidc-app
+    needs: changes
+    if: needs.changes.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -89,6 +139,8 @@ jobs:
 
   frontends:
     name: Build & push turaidc-frontends
+    needs: changes
+    if: needs.changes.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
