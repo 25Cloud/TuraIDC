@@ -523,6 +523,7 @@ class ServiceSecurityGroupService
             if (preg_match('/^\d{1,5}$/', $segment) === 1) {
                 $port = (int) $segment;
                 throw_if($port < 1 || $port > 65535, new BusinessException('端口必须在 1-65535 之间', 42200));
+
                 continue;
             }
 
@@ -530,6 +531,7 @@ class ServiceSecurityGroupService
                 $start = (int) $matches[1];
                 $end = (int) $matches[2];
                 throw_if($start < 1 || $start > 65535 || $end < 1 || $end > 65535 || $start > $end, new BusinessException('端口范围必须在 1-65535 之间且起始端口不能大于结束端口', 42200));
+
                 continue;
             }
 
@@ -562,6 +564,7 @@ class ServiceSecurityGroupService
                 throw_if(! $isV4 && ! $isV6, new BusinessException('授权地址必须是合法 IP 或 CIDR', 42200));
                 throw_if($isV4 && ($prefix < 0 || $prefix > 32), new BusinessException('IPv4 CIDR 前缀必须在 0-32 之间', 42200));
                 throw_if($isV6 && ($prefix < 0 || $prefix > 128), new BusinessException('IPv6 CIDR 前缀必须在 0-128 之间', 42200));
+
                 continue;
             }
 

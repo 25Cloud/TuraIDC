@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Gateways\DemoPay\Controller;
 
-use TuraIDC\Plugins\Gateways\DemoPay\DemoPayPlugin;
 use Illuminate\Http\Response;
+use TuraIDC\Plugins\Gateways\DemoPay\DemoPayPlugin;
 
 class IndexController
 {

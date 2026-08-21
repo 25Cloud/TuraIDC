@@ -7,12 +7,12 @@ namespace Tests\Unit;
 use App\Services\Integrations\Plugins\PluginDomain;
 use App\Services\Integrations\Plugins\PluginFileLoader;
 use App\Services\Integrations\Plugins\PluginScanner;
-use TuraIDC\Plugins\Addons\ZjmfBridge\Http\Middleware\LogZjmfBridgeRequest;
-use TuraIDC\Plugins\Addons\ZjmfBridge\Logging\ZjmfBridgeLogger;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
+use TuraIDC\Plugins\Addons\ZjmfBridge\Http\Middleware\LogZjmfBridgeRequest;
+use TuraIDC\Plugins\Addons\ZjmfBridge\Logging\ZjmfBridgeLogger;
 
 class LogZjmfBridgeRequestTest extends TestCase
 {

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use TuraIDC\Plugins\Addons\ZjmfBridge\ZjmfBridgePlugin;
 use TuraIDC\Plugins\Addons\ZjmfBridge\Providers\ZjmfBridgeServiceProvider;
+use TuraIDC\Plugins\Addons\ZjmfBridge\ZjmfBridgePlugin;
 
 return [
     'info' => [

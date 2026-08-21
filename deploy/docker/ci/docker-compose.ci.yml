@@ -1,0 +1,91 @@
+# 本地 Docker CI 编排 —— 对齐 .github/workflows/ci.yml。
+# 三个服务全部使用 host 网络：容器内可直接访问 127.0.0.1:7897（HTTP 代理）
+# 与 127.0.0.1:3306（CI MySQL），与 CI 的 services 拓扑等价。
+#
+# 用法（推荐走 run-ci-local.sh）：
+#   docker compose -f deploy/docker/ci/docker-compose.ci.yml build
+#   docker compose -f deploy/docker/ci/docker-compose.ci.yml run --rm backend
+#   docker compose -f deploy/docker/ci/docker-compose.ci.yml run --rm frontend
+name: turaidc-ci
+
+services:
+  mysql:
+    image: gh.yealqp.cn/library/mysql:8.0
+    network_mode: host
+    environment:
+      MYSQL_DATABASE: finance
+      MYSQL_ROOT_PASSWORD: root
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h127.0.0.1', '-uroot', '-proot', '--silent']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    image: gh.yealqp.cn/turaidc-ci-php:8.3
+    build:
+      context: ../../..
+      dockerfile: deploy/docker/ci/Dockerfile.php
+    network_mode: host
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ../../../:/repo:ro
+      - ci-composer-cache:/tmp/composer-cache
+    environment:
+      HTTP_PROXY: http://127.0.0.1:7897
+      HTTPS_PROXY: http://127.0.0.1:7897
+      NO_PROXY: localhost,127.0.0.1,::1
+      # 对齐 ci.yml backend env
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_DATABASE: finance
+      DB_USERNAME: root
+      DB_PASSWORD: root
+    command: >-
+      bash -euxc '
+        git config --global --add safe.directory /repo
+        mkdir -p /ci && git -C /repo archive HEAD | tar -x -C /ci
+        cd /ci/backend
+        composer validate --strict --no-check-publish
+        composer install --no-interaction --prefer-dist --no-progress
+        composer format:check
+        composer analyse
+      '
+
+  frontend:
+    image: gh.yealqp.cn/library/node:22
+    network_mode: host
+    volumes:
+      - ../../../:/repo:ro
+      - ci-pnpm-store:/pnpm-store
+    environment:
+      HTTP_PROXY: http://127.0.0.1:7897
+      HTTPS_PROXY: http://127.0.0.1:7897
+      NO_PROXY: localhost,127.0.0.1,::1
+      # 对齐 ci.yml frontend env
+      APP_URL: https://api.example.com
+      FRONTEND_URL: https://www.example.com
+      CLIENT_CONSOLE_URL: https://console.example.com
+      ADMIN_URL: https://admin.example.com
+      CLIENT_SESSION_COOKIE_DOMAIN: .example.com
+    command: >-
+      bash -euxc '
+        set -e
+        git config --global --add safe.directory /repo
+        mkdir -p /ci && git -C /repo archive HEAD | tar -x -C /ci
+        cd /ci
+        corepack enable
+        corepack prepare pnpm@11.13.1 --activate
+        pnpm --store-dir /pnpm-store install --frozen-lockfile
+        pnpm run lint:frontends
+        pnpm run typecheck:frontends
+        pnpm run build:frontends
+      '
+
+volumes:
+  ci-composer-cache:
+  ci-pnpm-store:

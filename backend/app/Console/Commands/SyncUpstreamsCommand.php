@@ -72,6 +72,7 @@ class SyncUpstreamsCommand extends Command
 
             if ($apiId <= 0 || $baseUrl === '') {
                 $skippedSuppliers++;
+
                 continue;
             }
 
@@ -83,6 +84,7 @@ class SyncUpstreamsCommand extends Command
 
             if ($dryRun) {
                 $syncedSuppliers++;
+
                 continue;
             }
 

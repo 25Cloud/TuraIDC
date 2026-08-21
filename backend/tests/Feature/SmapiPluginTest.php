@@ -12,8 +12,8 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
-use TuraIDC\Plugins\Certification\Smapi\Logic\Smapi;
 use Tests\TestCase;
+use TuraIDC\Plugins\Certification\Smapi\Logic\Smapi;
 
 class SmapiPluginTest extends TestCase
 {
@@ -125,7 +125,7 @@ class SmapiPluginTest extends TestCase
                 'return_url' => '',
             ],
             'config' => array_merge($this->defaultConfig(), [
-                'product_code' => "alipay_v3,支付宝身份认证|tencent_sm,微信实名认证",
+                'product_code' => 'alipay_v3,支付宝身份认证|tencent_sm,微信实名认证',
             ]),
         ]);
 

@@ -21,9 +21,6 @@ use App\Services\Upstream\Data\UpstreamProviderDescriptor;
 use App\Services\Upstream\ProviderKey;
 use App\Services\Upstream\ProviderRegistry;
 use App\Services\Upstream\Support\WebSessionCookieParser;
-use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreProfile;
-use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreService;
-use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfFinanceAdapter;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Routing\Router;
@@ -32,6 +29,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Tests\TestCase;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreProfile;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreService;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfFinanceAdapter;
 
 class ZjmfServiceProviderTest extends TestCase
 {

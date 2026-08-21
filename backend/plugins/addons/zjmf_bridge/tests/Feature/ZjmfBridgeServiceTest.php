@@ -15,12 +15,12 @@ use App\Models\Product;
 use App\Models\SecondProductGroup;
 use App\Models\Service;
 use App\Models\User;
-use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfTokenService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Tests\Support\InstallsZjmfBridgeAddon;
 use Tests\TestCase;
+use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfTokenService;
 
 class ZjmfBridgeServiceTest extends TestCase
 {
