@@ -105,7 +105,7 @@ class ReferralRewardLifecycleRegressionTest extends TestCase
         ]);
 
         $reward = $service->rewardForPaidOrder($order, 'reward-life-'.$suffix);
-        $overview = $service->overview($referrer->fresh(), 'http://127.0.0.1:5173');
+        $overview = $service->overview($referrer->fresh());
 
         $this->assertInstanceOf(ReferralReward::class, $reward);
         $this->assertSame((int) $referrer->id, (int) $reward->referrer_user_id);

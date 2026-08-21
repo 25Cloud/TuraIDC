@@ -11,6 +11,8 @@ FROM node:22-slim AS builder
 
 # 跳过 husky 的 prepare（容器内无 .git）
 ENV HUSKY=0
+# corepack 在非 TTY 下载包管理器时不再等待确认
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 ARG APP_URL
 ARG FRONTEND_URL
@@ -26,15 +28,21 @@ RUN mkdir -p backend \
      "$APP_URL" "$FRONTEND_URL" "$CLIENT_CONSOLE_URL" "$ADMIN_URL" "$CLIENT_SESSION_COOKIE_DOMAIN" > backend/.env
 
 # 先拷贝清单文件并安装依赖（源码变更不重复安装，加速重建）
+# pnpm 工作区：lockfile 校验要求 pnpm-workspace.yaml 声明的全部成员清单都在场，
+# 缺一个就会判定 lockfile 过期，因此 docs-web 的清单也要拷进来
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY shared/package.json ./shared/
 COPY docs-web/package.json ./docs-web/
 COPY frontend-admin-v3/package.json ./frontend-admin-v3/
 COPY frontend-user-v3-www/package.json ./frontend-user-v3-www/
 COPY frontend-user-v4-console/package.json ./frontend-user-v4-console/
-# pnpm monorepo：--shamefully-hoist 保证根 hoist 依赖布局（与部署指南一致）
-RUN npm install -g pnpm@11.13.1 \
-  && pnpm install --frozen-lockfile --shamefully-hoist
+# 按 package.json 的 packageManager 字段启用 pnpm。
+# --shamefully-hoist：本项目依赖根 hoist 布局（v3-www 直接 import element-plus 深路径），
+# 与 docs/references/operations/deployment-and-scheduling.md 记载的部署命令保持一致。
+# verify-deps-before-run=false：关闭 pnpm run 前的依赖检查，否则它会 purge 掉根 hoist 布局
+# （容器内无 TTY，purge 会直接以 ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY 中止构建）
+RUN corepack enable pnpm \
+  && pnpm install --frozen-lockfile --shamefully-hoist --config.verify-deps-before-run=false
 
 # 源码（含仓库根公共文件：theme.css / tsconfig.base.json / logo / favicon）
 COPY backend/scripts ./backend/scripts
@@ -45,7 +53,7 @@ COPY frontend-user-v3-www ./frontend-user-v3-www
 COPY frontend-user-v4-console ./frontend-user-v4-console
 
 # 统一构建三个前端（产物分别在各自 dist/，互不写入 backend/public）
-RUN pnpm run build:frontends
+RUN pnpm --config.verify-deps-before-run=false run build:frontends
 
 # ---------- 运行时：三端合一（三端口） ----------
 FROM nginx:1.27-alpine

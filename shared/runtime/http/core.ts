@@ -1,5 +1,5 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
-import { getNetworkProfile, waitFor } from '../networkHints'
+import { getNetworkProfile, waitFor } from '../networkHints.ts'
 
 const SAFE_METHODS = new Set(['get', 'head', 'options'])
 const WRITE_METHODS = new Set(['post', 'put', 'patch', 'delete'])

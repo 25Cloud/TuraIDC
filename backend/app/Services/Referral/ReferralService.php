@@ -438,11 +438,19 @@ class ReferralService
         });
     }
 
-    public function overview(User $user, string $origin): array
+    /**
+     * 组装推荐中心概览：邀请链接、会员等级进度、奖励汇总与直推人数。
+     *
+     * 有副作用（不是纯查询）：进入时会先结算已到期的冻结奖励
+     * （releaseMaturedRewards）、并按需补齐用户的推荐码与会员等级，
+     * 因此概览页每次打开都会顺带推进这几项状态。
+     *
+     * @return array<string, mixed>
+     */
+    public function overview(User $user): array
     {
         $this->releaseMaturedRewards($user);
         $code = $this->ensureReferralCode($user);
-        $frontendBaseUrl = $this->resolveFrontendBaseUrl($origin);
         $user = $this->ensureUserLevel($user)->loadMissing(['memberLevel']);
 
         $levels = $this->memberLevelService->list(true);
@@ -463,7 +471,10 @@ class ReferralService
         return [
             'referral_code' => $code,
             'register_path' => '/client/register?ref='.$code,
-            'referral_link' => $frontendBaseUrl.'/client/register?ref='.$code,
+            // /client/register 是用户控制台的路由，必须用 CLIENT_CONSOLE_URL 拼接。
+            // 此前用官网基址（FRONTEND_URL）拼接，生成的邀请链接落到官网上不存在的
+            // 路径，被邀请人打开即 404，推荐注册漏斗从入口断裂。
+            'referral_link' => PublicUrl::console('/client/register?ref='.$code),
             'reward_rate' => $currentLevel
                 ? number_format((float) $currentLevel->reward_rate, 2, '.', '')
                 : number_format($this->rewardRate(), 2, '.', ''),
@@ -1552,11 +1563,6 @@ class ReferralService
     private function referralUserWithRelations(string $relation): array
     {
         return ["{$relation}:id,email,phone,nickname,real_name,verification_status,is_verified"];
-    }
-
-    private function resolveFrontendBaseUrl(string $origin): string
-    {
-        return PublicUrl::website();
     }
 
     private function maskAccountNo(string $accountNo): string

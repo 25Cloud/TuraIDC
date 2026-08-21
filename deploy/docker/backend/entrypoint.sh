@@ -60,9 +60,22 @@ unset INSTALL_ADMIN_PASSWORD_VAL DB_PASSWORD_VAL DB_ROOT_PASSWORD_VAL
 
 : > .env
 # 空值兜底：这些键若容器环境未提供，显式给默认值，避免"写空覆盖 Laravel 默认"。
+# 下面的 for 循环对未设置的键会写出 KEY=""，而 phpdotenv 把"存在但为空"视为有值，
+# env('KEY', '默认值') 因此返回空串而非默认值——即写空会静默覆盖掉 Laravel 的默认。
 # （REDIS_CLIENT 为空会导致 RedisManager 拿不到 phpredis connector，MAIL_MAILER 为空会破坏邮件默认驱动）
 export REDIS_CLIENT="${REDIS_CLIENT:-phpredis}"
 export MAIL_MAILER="${MAIL_MAILER:-log}"
+# QUEUE_CONNECTION 写空会让 config('queue.default') 变成 ''，QueueDrainService 判定
+# 非 database 直接跳过，而本镜像没有常驻 worker、queue:drain 是唯一消费者，
+# 结果是队列永不执行且容器仍显示 healthy（与此前 cron PATH 事故同一类"整体静默失效"）。
+export QUEUE_CONNECTION="${QUEUE_CONNECTION:-database}"
+export CACHE_STORE="${CACHE_STORE:-redis}"
+export SESSION_DRIVER="${SESSION_DRIVER:-file}"
+# 同理：这两个键写空会让 workerDefinitions() 拿到空队列列表，
+# queue:work --queue= 消费不到任何队列，drain 形同空转。
+export TURAIDC_BUSINESS_QUEUES="${TURAIDC_BUSINESS_QUEUES:-referral,notification,coupon,default}"
+export TURAIDC_PROVISION_QUEUES="${TURAIDC_PROVISION_QUEUES:-provision}"
+export TURAIDC_SCHEDULE_QUEUE="${TURAIDC_SCHEDULE_QUEUE:-automation}"
 # APP_KEY 不走引号模板：key:generate 用正则 ^APP_KEY=.* 替换整行，
 # 引号包裹会导致替换后残留 "" 使 key 损坏。单独写裸值。
 for var in \
@@ -72,7 +85,7 @@ for var in \
   DB_DATABASE DB_USERNAME DB_PASSWORD \
   REDIS_PASSWORD \
   CACHE_STORE QUEUE_CONNECTION SESSION_DRIVER REDIS_CLIENT \
-  TURAIDC_BUSINESS_QUEUES TURAIDC_SCHEDULE_QUEUE \
+  TURAIDC_PROVISION_QUEUES TURAIDC_BUSINESS_QUEUES TURAIDC_SCHEDULE_QUEUE \
   SENTRY_LARAVEL_DSN MAIL_MAILER MAIL_FROM_ADDRESS; do
   val="$(printenv "$var" || true)"
   printf '%s="%s"\n' "$var" "$val" >> .env
@@ -166,9 +179,18 @@ chown -R www-data:www-data storage bootstrap/cache
 # 结果是 crond 正常运行但 schedule:run 从未成功执行一次，且没有任何日志线索——
 # 心跳与 queue:drain 永不触发，/api/ready 始终 scheduler=false，队列永不消费。
 # 因此显式声明 PATH 并使用绝对路径（printf 保证结尾换行，否则 crontab 拒绝安装）。
-printf '%s\n%s\n' \
+#
+# 第二行是心跳存活探针的独立入口。SchedulerLivenessCommand 自称"由系统 Cron 每分钟
+# 独立驱动，不依赖心跳命令是否存活"，但它同时也注册在 routes/console.php 里、
+# 由 schedule:run 驱动——一旦 schedule:run 整体不执行（正是上面那次 PATH 事故的形态），
+# 探针会和被它监护的心跳一起死掉，不会发出任何告警。这里给它单独排一行，
+# 让"看门狗"与"被看护对象"不再共享同一个单点。
+# routes/console.php 里的注册保留不动：宝塔等部署方式只配一行 schedule:run，
+# 删掉会让那些部署彻底失去探针。本命令是只读检查且可重复执行，多跑一次无副作用。
+printf '%s\n%s\n%s\n' \
   'PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin' \
   '* * * * * cd /var/www/backend && /usr/local/bin/php artisan schedule:run >> /dev/null 2>&1' \
+  '* * * * * cd /var/www/backend && /usr/local/bin/php artisan scheduler:liveness >> /dev/null 2>&1' \
   | crontab -u www-data -
 
 # ---------------------------------------------------------------------------

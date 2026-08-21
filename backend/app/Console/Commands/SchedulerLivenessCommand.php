@@ -12,8 +12,17 @@ use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 /**
- * 心跳自身的死亡检测：由系统 Cron 每分钟独立驱动，
- * 不依赖心跳命令是否存活。心跳停滞时输出结构化告警并返回失败。
+ * 心跳自身的死亡检测：心跳停滞时输出结构化告警并返回失败。
+ *
+ * 驱动方式有两条，能覆盖的故障范围不同，不要混淆：
+ * 1. routes/console.php 里注册的 Schedule 条目——与心跳是各自独立的条目，
+ *    因此心跳命令抛异常时本探针仍会执行；但它同样由 schedule:run 驱动，
+ *    一旦 schedule:run 整体不执行（如 cron PATH 缺失），本探针会一起失效。
+ * 2. Docker 镜像的 entrypoint 额外给本命令排了一行独立 crontab，
+ *    不经 schedule:run，因此能发现"schedule:run 整体不执行"这类故障。
+ *
+ * 只配了一行 schedule:run 的部署（如宝塔）只有第 1 条，建议按第 2 条补一行 crontab，
+ * 或改由外部监控轮询 /api/ready。
  */
 class SchedulerLivenessCommand extends Command
 {
