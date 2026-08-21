@@ -15,7 +15,12 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'pnpm exec vite --host 127.0.0.1 --mode development --port 5177 --strictPort',
+    // 不带 .env 文件也能启动：CI/干净 clone 下 .env.development 被 gitignore，
+    // 而 request.ts 顶层要求 VITE_API_BASE_URL 存在，缺少会导致应用挂载失败。
+    // 默认指向本机后端（本地未起服务时请求失败不影响 AuthShell 静态渲染，
+    // 暗色主题断言只读 CSS 变量）。
+    command:
+      'VITE_API_BASE_URL=http://127.0.0.1:8000/api VITE_BASE_URL=/ pnpm exec vite --host 127.0.0.1 --mode development --port 5177 --strictPort',
     url: 'http://127.0.0.1:5177',
     reuseExistingServer: false,
     timeout: 120_000,
