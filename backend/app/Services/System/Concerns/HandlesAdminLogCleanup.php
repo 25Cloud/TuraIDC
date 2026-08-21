@@ -37,6 +37,9 @@ trait HandlesAdminLogCleanup
                         'admin_login' => $this->baseAdminLoginLogQuery()->count(),
                         'business_audit' => $this->businessAuditLogCount(),
                         'schedule_run' => ScheduleRunLog::query()->count(),
+                        'ticket_upstream' => Schema::hasTable('ticket_upstream_delivery_logs')
+                            ? DB::table('ticket_upstream_delivery_logs')->count()
+                            : 0,
                     ],
                     'file' => [
                         'path' => 'storage/logs/laravel.log',
@@ -54,6 +57,7 @@ trait HandlesAdminLogCleanup
                         ['value' => 'admin_login', 'label' => '管理员登录日志'],
                         ['value' => 'business_audit', 'label' => '系统日志（业务审计）'],
                         ['value' => 'schedule_run', 'label' => '调度执行日志'],
+                        ['value' => 'ticket_upstream', 'label' => '工单推送日志'],
                         ['value' => 'task', 'label' => '自动任务日志'],
                         ['value' => 'runtime', 'label' => '运行日志'],
                         ['value' => 'all_db', 'label' => '全部数据库日志'],
@@ -84,6 +88,7 @@ trait HandlesAdminLogCleanup
                     ->delete();
                 $affected['business_audit'] = $this->deleteBusinessAuditLogsBefore($cutoff);
                 $affected['schedule_run'] = ScheduleRunLog::query()->where('created_at', '<', $cutoff)->delete();
+                $affected['ticket_upstream'] = $this->deleteTicketUpstreamLogsBefore($cutoff);
             });
         } else {
             DB::transaction(function () use ($type, $cutoff, &$affected) {
@@ -113,6 +118,10 @@ trait HandlesAdminLogCleanup
 
                 if ($type === 'schedule_run') {
                     $affected['schedule_run'] = ScheduleRunLog::query()->where('created_at', '<', $cutoff)->delete();
+                }
+
+                if ($type === 'ticket_upstream') {
+                    $affected['ticket_upstream'] = $this->deleteTicketUpstreamLogsBefore($cutoff);
                 }
             });
         }
@@ -241,6 +250,17 @@ trait HandlesAdminLogCleanup
             : 0;
 
         return (int) $activityCount + (int) $operationCount;
+    }
+
+    private function deleteTicketUpstreamLogsBefore(Carbon $cutoff): int
+    {
+        if (! Schema::hasTable('ticket_upstream_delivery_logs')) {
+            return 0;
+        }
+
+        return (int) DB::table('ticket_upstream_delivery_logs')
+            ->where('occurred_at', '<', $cutoff)
+            ->delete();
     }
 
     private function deleteBusinessAuditLogsBefore(Carbon $cutoff): int

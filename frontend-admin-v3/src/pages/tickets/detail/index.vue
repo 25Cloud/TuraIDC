@@ -166,6 +166,11 @@
           </t-card>
 
           <t-card :bordered="false" header="自动转发">
+            <t-alert
+              theme="info"
+              message="自动化转发通常需要 1 分钟左右执行完成，请稍候查看状态。"
+              class="upstream-delivery-tip"
+            />
             <div class="upstream-delivery-head">
               <t-tag :theme="upstreamDeliveryTheme" variant="light">
                 {{ upstreamDelivery?.status_label || '未配置' }}
@@ -264,7 +269,13 @@
       </t-empty>
     </t-loading>
 
-    <t-drawer v-model:visible="deliveryLogsVisible" header="工单转发日志" size="620px">
+    <t-drawer
+      v-model:visible="deliveryLogsVisible"
+      header="工单转发日志"
+      size="620px"
+      @confirm="closeDeliveryLogs"
+      @cancel="closeDeliveryLogs"
+    >
       <t-loading :loading="deliveryLogsLoading" size="small">
         <t-empty v-if="deliveryLogs.length === 0" description="暂无转发日志" />
         <div v-else class="delivery-log-list">
@@ -519,6 +530,10 @@ async function openDeliveryLogs() {
   } finally {
     deliveryLogsLoading.value = false;
   }
+}
+
+function closeDeliveryLogs() {
+  deliveryLogsVisible.value = false;
 }
 
 function parseAttachments(
