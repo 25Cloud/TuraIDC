@@ -18,10 +18,11 @@ final class CleanupUnusedUpstreamUploadsCommand extends Command
         $result = $service->cleanupOrphanUploads();
 
         $this->line(sprintf(
-            '上游上传文件清理完成：检查 %d，删除 %d，保留（已引用）%d，失败 %d',
+            '上游上传文件清理完成：检查 %d，删除 %d，保留（已引用）%d，跳过（处理中）%d，失败 %d',
             $result['checked'],
             $result['deleted'],
             $result['referenced'],
+            $result['skipped'],
             $result['errors']
         ));
 
