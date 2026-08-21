@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreService;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfBillingRestoreService;
 
 class ZjmfBillingRestoreCommandTest extends TestCase
 {

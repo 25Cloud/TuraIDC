@@ -7,6 +7,7 @@ namespace TuraIDC\Plugins\Addons\ZjmfBridge\Logic;
 use App\Exceptions\BusinessException;
 use App\Models\User;
 use App\Services\Auth\AuthService;
+use Laravel\Sanctum\PersonalAccessToken;
 use TuraIDC\Plugins\Addons\ZjmfBridge\Models\AgentApplication;
 use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfErrorMapper;
 use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfFinanceService;
@@ -15,7 +16,6 @@ use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfReconcileService;
 use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfServiceService;
 use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfTicketService;
 use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfTokenService;
-use Laravel\Sanctum\PersonalAccessToken;
 
 class ZjmfBridge
 {

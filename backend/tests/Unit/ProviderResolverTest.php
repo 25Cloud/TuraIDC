@@ -17,10 +17,10 @@ use App\Services\Upstream\Drivers\HostingPanelApi\HostingPanelApiTransport;
 use App\Services\Upstream\ProviderKey;
 use App\Services\Upstream\ProviderRegistry;
 use App\Services\Upstream\ProviderResolver;
+use Tests\TestCase;
 use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfCloudConfigTemplate;
 use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfFinanceAdapter;
 use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfFinanceDriver;
-use Tests\TestCase;
 
 class ProviderResolverTest extends TestCase
 {

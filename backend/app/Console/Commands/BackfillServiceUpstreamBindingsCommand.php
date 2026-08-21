@@ -93,6 +93,7 @@ class BackfillServiceUpstreamBindingsCommand extends Command
                 if ($hostId === null) {
                     $failed++;
                     $this->warn("服务 #{$service->id} 未匹配到上游主机（domain: {$service->domain}）");
+
                     continue;
                 }
 
@@ -134,7 +135,7 @@ class BackfillServiceUpstreamBindingsCommand extends Command
                 ->select(['id', 'notes'])
                 ->whereIn('id', $serviceIds)
                 ->get();
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             return $map;
         }
 

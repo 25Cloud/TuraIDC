@@ -184,7 +184,7 @@ class AdminIntegrationPluginControllerTest extends TestCase
                     'port' => 465,
                     'username' => 'notice@example.test',
                     'password' => 'secret',
-                    'from_name' => "图拉云",
+                    'from_name' => '图拉云',
                     'encryption' => 'ssl',
                     'enabled' => true,
                 ]],

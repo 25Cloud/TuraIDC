@@ -20,13 +20,13 @@ use App\Services\Integrations\Plugins\PluginFileLoader;
 use App\Services\Integrations\Plugins\PluginInstaller;
 use App\Services\Integrations\Plugins\PluginRuntimeRegistry;
 use App\Services\Integrations\Plugins\PluginScanner;
-use TuraIDC\Plugins\Gateways\YiPay\Lib\YiPayClient;
-use TuraIDC\Plugins\Gateways\YiPay\YiPayPlugin;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use TuraIDC\Plugins\Gateways\YiPay\Lib\YiPayClient;
+use TuraIDC\Plugins\Gateways\YiPay\YiPayPlugin;
 
 class YiPayGatewayPluginTest extends TestCase
 {

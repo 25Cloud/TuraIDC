@@ -151,6 +151,7 @@ final class ZjmfCatalogService
             foreach ($chunk as $productId) {
                 if (isset($pricingMap[$productId])) {
                     $results[$productId] = $pricingMap[$productId];
+
                     continue;
                 }
 
