@@ -34,10 +34,14 @@ final class TicketUpstreamCallbackService
     {
         $upstreamTicketId = trim((string) ($payload['tid'] ?? ''));
         $content = TextSanitizer::cleanHtml((string) ($payload['content'] ?? ''), true);
+        $rawAttachments = $payload['attachment'] ?? [];
+        $hasAttachments = is_array($rawAttachments)
+            ? $rawAttachments !== []
+            : trim((string) $rawAttachments) !== '';
         throw_if($legacy && trim((string) ($payload['id'] ?? '')) === '', new BusinessException('回调服务标识不能为空', 42200));
         throw_if($legacy && trim((string) ($payload['rand_str'] ?? '')) === '', new BusinessException('回调随机串不能为空', 42200));
         throw_if($upstreamTicketId === '', new BusinessException('上游工单号不能为空', 42200));
-        throw_if($content === '', new BusinessException('上游回复内容不能为空', 42200));
+        throw_if($content === '' && ! $hasAttachments, new BusinessException('上游回复内容或图片至少填写一项', 42200));
 
         $binding = TicketUpstreamBinding::query()
             ->with('ticket.service')
