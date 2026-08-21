@@ -2,6 +2,7 @@
 
 namespace App\Services\Provisioning;
 
+use App\Constants\BillingCycle;
 use App\Constants\OrderStatus;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
@@ -927,15 +928,7 @@ class ProvisionService
             return Carbon::createFromTimestamp((int) $nextDueDate);
         }
 
-        return match ((string) $order->billing_cycle) {
-            'monthly' => now()->addMonth(),
-            'quarterly' => now()->addMonths(3),
-            'semiannually' => now()->addMonths(6),
-            'annually' => now()->addYear(),
-            'biennially' => now()->addYears(2),
-            'triennially' => now()->addYears(3),
-            default => null,
-        };
+        return BillingCycle::advance(now(), (string) $order->billing_cycle);
     }
 
     private function sanitizeRequestedConfig(array $config): array

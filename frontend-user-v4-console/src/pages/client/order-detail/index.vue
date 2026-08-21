@@ -184,6 +184,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { billingCycleLabel as billingCycleLabelOf } from '@shared/billingCycle';
 import StatusTag from '@shared/user-v3/components/StatusTag.vue';
 import { INVOICE_STATUS_MAP, ORDER_STATUS_MAP } from '@turaidc/shared/statusConfig';
 import { RefreshIcon } from 'tdesign-icons-vue-next';
@@ -225,20 +226,9 @@ function goPayDetail() {
 
 const orderId = computed(() => Number(route.params.id || 0));
 
-const BILLING_CYCLE_MAP: Record<string, string> = {
-  monthly: '月付',
-  quarterly: '季付',
-  semiannually: '半年付',
-  annually: '年付',
-  biennially: '两年付',
-  triennially: '三年付',
-  one_time: '一次性',
-  free: '免费',
-};
-
 function billingCycleLabel(value?: string) {
   if (!value) return '--';
-  return BILLING_CYCLE_MAP[value] || value;
+  return billingCycleLabelOf(value, value);
 }
 
 watch(

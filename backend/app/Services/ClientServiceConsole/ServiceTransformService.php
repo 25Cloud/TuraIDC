@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ClientServiceConsole;
 
+use App\Constants\BillingCycle;
 use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
 use App\Models\OperationLog;
@@ -815,16 +816,7 @@ class ServiceTransformService
 
     public function resolveBillingCycleLabel(string $billingCycle): string
     {
-        return match ($billingCycle) {
-            'monthly' => '月付',
-            'quarterly' => '季付',
-            'semiannually' => '半年付',
-            'annually' => '年付',
-            'biennially' => '两年付',
-            'triennially' => '三年付',
-            'one_time' => '一次性',
-            default => $billingCycle !== '' ? $billingCycle : '--',
-        };
+        return BillingCycle::label($billingCycle, $billingCycle) ?: '--';
     }
 
     public function resolveUpstreamStatusLabel(string $status): string

@@ -1,3 +1,4 @@
+import { billingCycleLabel } from '@shared/billingCycle';
 import {
   ACCOUNT_TRANSACTION_EVENT_MAP,
   getStatusLabel,
@@ -38,19 +39,6 @@ export function fieldValue(value: unknown) {
 
 export { formatDateTime } from '@/utils/format';
 
-const BILLING_CYCLE_LABEL_MAP: Record<string, string> = {
-  monthly: '月付',
-  quarterly: '季付',
-  semiannually: '半年付',
-  biennially: '两年付',
-  triennially: '三年付',
-  annually: '年付',
-  yearly: '年付',
-  one_time: '一次性',
-  onetime: '一次性',
-  free: '免费',
-};
-
 const BILLING_CYCLE_KEYS = new Set(['billing_cycle', 'billingcycle', 'billingcycle_zh', 'period']);
 const SNAPSHOT_DISPLAY_META_KEYS = new Set([
   'product_full_path',
@@ -65,7 +53,7 @@ const SNAPSHOT_DISPLAY_META_KEYS = new Set([
 export function formatBillingCycle(value: unknown) {
   const raw = String(value ?? '').trim();
   if (!raw) return '--';
-  return BILLING_CYCLE_LABEL_MAP[raw.toLowerCase()] || raw;
+  return billingCycleLabel(raw, raw);
 }
 
 export function toRecord(value: unknown): AnyRecord {

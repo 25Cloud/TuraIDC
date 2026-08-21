@@ -560,7 +560,6 @@ class SmapiPluginTest extends TestCase
             'app_key' => 'test-app-key',
             'secret_key' => 'test-secret-key',
             'product_code' => 'alipay_v3,支付宝身份认证',
-            'ssl_verify' => true,
         ];
     }
 

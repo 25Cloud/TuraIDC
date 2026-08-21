@@ -213,8 +213,6 @@ class AliyunSmsClient
             Log::error('[短信] CURL 请求失败', [
                 'errno' => $this->lastCurlError['errno'],
                 'error' => $this->lastCurlError['error'],
-                'ssl_verify' => $this->resolveSslVerify(),
-                'has_ca_bundle' => $this->resolveCaBundle() !== '',
             ]);
 
             return false;
@@ -223,36 +221,17 @@ class AliyunSmsClient
         return json_decode($result, true) ?: false;
     }
 
+    /**
+     * 证书校验始终开启，使用系统 CA。
+     *
+     * 项目硬规则：插件不需要 SSL 与 CA 配置。原实现读插件配置或
+     * config('idc.sms.ssl_verify')，而 ssl_verify / ca_bundle 从未在本插件的 config.php
+     * 里声明过——属于「读了自己 schema 里不存在的键」，且后者在 APP_ENV=local 时默认为 false。
+     */
     private function configureCurlSsl($ch): void
     {
-        $sslVerify = $this->resolveSslVerify();
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $sslVerify);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $sslVerify ? 2 : 0);
-
-        $caBundle = $this->resolveCaBundle();
-        if ($sslVerify && $caBundle !== '' && is_file($caBundle)) {
-            curl_setopt($ch, CURLOPT_CAINFO, $caBundle);
-        }
-    }
-
-    private function resolveSslVerify(): bool
-    {
-        $value = $this->config['ssl_verify'] ?? null;
-        if ($value !== null && $value !== '') {
-            return filter_var($value, FILTER_VALIDATE_BOOL);
-        }
-
-        return filter_var(config('idc.sms.ssl_verify', true), FILTER_VALIDATE_BOOL);
-    }
-
-    private function resolveCaBundle(): string
-    {
-        $value = $this->config['ca_bundle'] ?? null;
-        if ($value !== null && $value !== '') {
-            return trim((string) $value);
-        }
-
-        return trim((string) config('idc.sms.ca_bundle', ''));
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
     }
 
     private function encode(string $value): string
@@ -393,7 +372,8 @@ class AliyunSmsClient
         $error = strtolower((string) ($this->lastCurlError['error'] ?? ''));
 
         if ($errno === 60 || str_contains($error, 'certificate')) {
-            return '短信接口 SSL 证书校验失败，请检查服务器 CA 证书或 SMS_CA_BUNDLE 配置';
+            // SMS_CA_BUNDLE 已随「插件不提供 SSL/CA 配置」一并移除，文案改为指向系统 CA
+            return '短信接口 SSL 证书校验失败，请检查服务器系统 CA 证书是否过期';
         }
 
         if ($errno === 6 || str_contains($error, 'resolve host')) {

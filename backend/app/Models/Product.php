@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Constants\BillingCycle;
 use App\Constants\ProductType;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
@@ -30,12 +31,7 @@ class Product extends Model
      */
     protected static array $productColumnsCache = [];
 
-    private const BILLING_CYCLE_MONTHS = [
-        'monthly' => 1,
-        'quarterly' => 3,
-        'semiannually' => 6,
-        'annually' => 12,
-    ];
+    private const BILLING_CYCLE_MONTHS = BillingCycle::RENEWABLE_MONTHS;
 
     protected $fillable = [
         'product_group_id',

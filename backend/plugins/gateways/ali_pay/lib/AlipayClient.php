@@ -33,10 +33,6 @@ class AlipayClient
 
     private bool $enabled;
 
-    private bool $sslVerify;
-
-    private string $caBundle;
-
     /**
      * @param  array<string, mixed>  $config
      */
@@ -51,8 +47,6 @@ class AlipayClient
         $this->signType = 'RSA2';
         $this->charset = 'utf-8';
         $this->enabled = $this->configBool('alipay_enabled', 'alipay_enabled', false);
-        $this->sslVerify = $this->configBool('ssl_verify', null, (bool) config('alipay.ssl_verify', true));
-        $this->caBundle = $this->configString('ca_bundle', null, config('alipay.ca_bundle', ''));
     }
 
     /**
@@ -391,25 +385,16 @@ class AlipayClient
         return $result;
     }
 
+    /**
+     * 不设置 verify：项目硬规则要求插件不提供 SSL 与 CA 配置，统一依赖系统 CA
+     * （Guzzle 默认 verify=true）。原实现可经插件配置或 config('alipay.ssl_verify') 关闭校验，
+     * 而后者在 APP_ENV=local 时默认为 false——支付回调链路上留这条通路风险最高。
+     */
     private function buildHttpClient(): PendingRequest
     {
         return Http::asForm()
-            ->withOptions(['verify' => $this->httpVerifyOption()])
             ->timeout(15)
             ->retry(1, 200);
-    }
-
-    private function httpVerifyOption(): bool|string
-    {
-        if (! $this->sslVerify) {
-            return false;
-        }
-
-        if ($this->caBundle !== '' && is_file($this->caBundle)) {
-            return $this->caBundle;
-        }
-
-        return true;
     }
 
     /**
