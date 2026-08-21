@@ -329,6 +329,7 @@ interface UploadFileLike {
   name?: string;
   size?: number;
   type?: string;
+  raw?: File;
   rawFile?: File;
   file?: File;
   response?: TicketAttachment;
@@ -755,9 +756,17 @@ function beforeUpload(file: UploadFileLike) {
 
 async function handleUpload(files: UploadFileLike | UploadFileLike[]) {
   const file = Array.isArray(files) ? files[0] : files;
-  const rawFile = file.rawFile || file.file || (file as unknown as File);
+  const rawFile = file.raw || file.rawFile || file.file;
+  if (!(rawFile instanceof File)) {
+    return {
+      status: 'fail' as const,
+      error: '未获取到有效图片文件',
+      response: {},
+    };
+  }
+
   const formData = new FormData();
-  formData.append('file', rawFile);
+  formData.append('file', rawFile, rawFile.name);
 
   try {
     const response = await adminApi.tickets.uploadImage(formData);
