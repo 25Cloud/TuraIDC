@@ -18,13 +18,13 @@ use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\ProviderRegistry;
-use TuraIDC\Plugins\Servers\KangHostx\Logic\KangHostx;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use TuraIDC\Plugins\Servers\KangHostx\Logic\KangHostx;
 
 class KangHostxPluginTest extends TestCase
 {

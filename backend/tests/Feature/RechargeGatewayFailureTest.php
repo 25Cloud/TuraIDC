@@ -7,11 +7,11 @@ namespace Tests\Feature;
 use App\Exceptions\BusinessException;
 use App\Services\Integrations\Plugins\PluginFileLoader;
 use App\Services\Integrations\Plugins\PluginScanner;
-use TuraIDC\Plugins\Gateways\AliPay\Lib\AlipayClient;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use ReflectionMethod;
 use Tests\TestCase;
+use TuraIDC\Plugins\Gateways\AliPay\Lib\AlipayClient;
 
 class RechargeGatewayFailureTest extends TestCase
 {

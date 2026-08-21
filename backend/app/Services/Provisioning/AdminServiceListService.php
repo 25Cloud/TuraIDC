@@ -378,7 +378,8 @@ class AdminServiceListService
 
     private function resolveProductDisplayName(Service $service): string
     {
-        $invoiceDisplayName = trim((string) ($this->resolvePrimaryInvoice($service)?->product_spec_snapshot ?? ''));        if ($invoiceDisplayName !== '') {
+        $invoiceDisplayName = trim((string) ($this->resolvePrimaryInvoice($service)?->product_spec_snapshot ?? ''));
+        if ($invoiceDisplayName !== '') {
             return $invoiceDisplayName;
         }
 

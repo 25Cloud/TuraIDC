@@ -25,13 +25,13 @@ use App\Services\Upstream\Contracts\UpstreamDriver;
 use App\Services\Upstream\ProviderKey;
 use App\Services\Upstream\ProviderRegistry;
 use App\Services\Upstream\ProviderResolver;
-use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfInventoryAndServiceSyncTask;
-use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfScheduledAuthRefreshTask;
-use TuraIDC\Plugins\Servers\ZjmfFinance\ZjmfFinancePlugin;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfInventoryAndServiceSyncTask;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfScheduledAuthRefreshTask;
+use TuraIDC\Plugins\Servers\ZjmfFinance\ZjmfFinancePlugin;
 
 class ScheduleTaskExecutionCoverageTest extends TestCase
 {

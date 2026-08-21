@@ -44,6 +44,7 @@ class SeedNotificationEmailTemplatesCommand extends Command
                 $code = trim((string) ($default['code'] ?? ''));
                 if ($code === '') {
                     $skipped++;
+
                     continue;
                 }
 
@@ -67,6 +68,7 @@ class SeedNotificationEmailTemplatesCommand extends Command
                 if ($existing instanceof NotificationTemplate) {
                     if ((bool) $existing->is_custom && ! $force) {
                         $skipped++;
+
                         continue;
                     }
 

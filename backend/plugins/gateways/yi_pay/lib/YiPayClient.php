@@ -358,7 +358,7 @@ class YiPayClient
 
     private function resolveSiteName(): string
     {
-        return mb_substr(trim((string) config('app.name', "图拉云")), 0, 50);
+        return mb_substr(trim((string) config('app.name', '图拉云')), 0, 50);
     }
 
     private function resolveApiBaseUrl(): string

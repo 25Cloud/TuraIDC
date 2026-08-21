@@ -22,6 +22,7 @@ class SettingsSeeder extends Seeder
     {
         self::seed();                     // 调用已有的静态 seed 方法
     }
+
     public static function seed(): void
     {
         static::seedGroup('system', [
@@ -188,6 +189,7 @@ class SettingsSeeder extends Seeder
                     DB::table('notification_templates')
                         ->where('id', (int) $existing->id)
                         ->update(array_merge($payload, ['updated_at' => now()]));
+
                     continue;
                 }
 

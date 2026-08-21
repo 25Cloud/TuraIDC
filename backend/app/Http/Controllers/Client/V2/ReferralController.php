@@ -167,5 +167,4 @@ class ReferralController extends Controller
             default => '--',
         };
     }
-
 }

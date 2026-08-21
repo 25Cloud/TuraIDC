@@ -121,7 +121,7 @@ const { theme, layout, showLogo, menu, isFixed, isCompact } = defineProps({
   },
   menu: {
     type: Array as PropType<MenuRoute[]>,
-    default: () => [],
+    default: (): MenuRoute[] => [],
   },
   isFixed: {
     type: Boolean,

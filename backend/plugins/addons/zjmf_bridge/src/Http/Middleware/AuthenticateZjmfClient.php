@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Addons\ZjmfBridge\Http\Middleware;
 
 use App\Models\User;
-use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfResponseFactory;
-use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfTokenService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfResponseFactory;
+use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfTokenService;
 
 class AuthenticateZjmfClient
 {

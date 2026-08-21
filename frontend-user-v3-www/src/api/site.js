@@ -70,7 +70,7 @@ function normalizeProductListPayload(data = {}) {
 async function fetchAllV2SiteProductGroups(url, params = {}, config = {}) {
   const list = [];
   let page = 1;
-  let total = 0;
+  let total;
   let baseResponse = null;
 
   do {
@@ -106,7 +106,7 @@ async function fetchAllV2SiteProductGroups(url, params = {}, config = {}) {
 async function fetchAllV2SiteProducts(groupId, level, config = {}) {
   const products = [];
   let page = 1;
-  let total = 0;
+  let total;
 
   do {
     const response = await request

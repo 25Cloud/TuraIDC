@@ -118,6 +118,14 @@ final class CacheKey
     }
 
     /**
+     * Cap 人机验证前端脚本缓存。
+     */
+    public static function capScript(): string
+    {
+        return 'captcha:cap:script';
+    }
+
+    /**
      * VAPTCHA 已通过 token 防复用缓存。
      */
     public static function vaptchaVerifiedToken(string $fingerprint): string

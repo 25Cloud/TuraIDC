@@ -21,7 +21,11 @@
       <div class="mobile-record-card__tools">
         <status-tag v-if="statusMap" :status-map="statusMap" :status="status ?? ''" />
         <t-tag v-else-if="statusLabel" :theme="statusTheme" variant="light">{{ statusLabel }}</t-tag>
-        <t-dropdown v-if="actionOptions.length" :options="actionOptions" @click="handleAction">
+        <t-dropdown
+          v-if="actionOptions.length"
+          :options="actionOptions"
+          @click="handleAction($event as DropdownOption)"
+        >
           <t-button class="mobile-record-card__more" variant="text" shape="square">...</t-button>
         </t-dropdown>
       </div>
