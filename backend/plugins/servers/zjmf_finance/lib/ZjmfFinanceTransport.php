@@ -348,8 +348,9 @@ final class ZjmfFinanceTransport
         }
 
         $payload = is_array($response->json()) ? $response->json() : [];
-        $businessOk = (int) ($payload['status'] ?? $payload['code'] ?? 0) === 200
-            || (int) ($payload['code'] ?? -1) === 0;
+        $businessOk = array_key_exists('status', $payload)
+            ? (int) ($payload['status'] ?? 0) === 200
+            : (int) ($payload['code'] ?? -1) === 0;
         if (! $response->successful() || ! $businessOk) {
             throw new BusinessException('上游附件上传失败', 50000);
         }
