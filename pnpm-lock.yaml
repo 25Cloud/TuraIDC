@@ -242,6 +242,9 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.8.1(jiti@2.6.1))
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
       '@vitejs/plugin-vue':
         specifier: ^6.0.8
         version: 6.0.8(vite@8.2.2(@types/node@26.2.0)(jiti@2.6.1)(less@4.9.0)(sass@1.103.0)(stylus@0.57.0)(yaml@2.9.0))(vue@3.5.41(typescript@5.9.3))
