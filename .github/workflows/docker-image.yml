@@ -71,8 +71,9 @@ jobs:
           echo "本次变更文件："
           echo "$CHANGED"
 
-          # 核心文件：后端、前端三端、共享层、部署与镜像定义、根构建清单、本工作流
-          CORE_PATTERN='^(backend/|frontend-admin-v3/|frontend-user-v3-www/|frontend-user-v4-console/|shared/|deploy/|docker-compose.*\.ya?ml$|Dockerfile$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|tsconfig\.base\.json$|\.github/workflows/docker-image\.yml$)'
+          # 核心文件：会被编译进前后端镜像的内容——后端代码、前端三端、
+          # 共享层、镜像构建定义（deploy/ 含 Dockerfile）、根构建清单
+          CORE_PATTERN='^(backend/|frontend-admin-v3/|frontend-user-v3-www/|frontend-user-v4-console/|shared/|deploy/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|tsconfig\.base\.json$)'
 
           if echo "$CHANGED" | grep -Eq "$CORE_PATTERN"; then
             echo "检测到核心文件变更，执行镜像构建"
