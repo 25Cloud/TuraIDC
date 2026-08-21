@@ -41,6 +41,8 @@ class AdminLogService
 
     private const FILE_LOG_SUMMARY_CACHE_TTL_SECONDS = 60;
 
+    private const UPSTREAM_NESTED_LOG_LIMIT = 20;
+
     private const TASK_META = [
         'refresh-hosting-panel-auth' => [
             'title' => '接口认证刷新',
@@ -1302,10 +1304,16 @@ class AdminLogService
 
         $rows = [];
         if ($ticketIds !== []) {
-            $eventsByTicket = (clone $query)
-                ->whereIn('ticket_id', $ticketIds)
-                ->orderByDesc('occurred_at')
-                ->orderByDesc('id')
+            $eventsByTicket = TicketUpstreamDeliveryLog::query()
+                ->fromSub(
+                    (clone $query)
+                        ->whereIn('ticket_id', $ticketIds)
+                        ->select('ticket_upstream_delivery_logs.*')
+                        ->selectRaw('ROW_NUMBER() OVER (PARTITION BY ticket_id ORDER BY occurred_at DESC, id DESC) AS delivery_rank'),
+                    'ranked_delivery_logs'
+                )
+                ->where('delivery_rank', '<=', self::UPSTREAM_NESTED_LOG_LIMIT)
+                ->with('supplier:id,name')
                 ->get()
                 ->groupBy('ticket_id');
 
@@ -1344,9 +1352,16 @@ class AdminLogService
             return ['total' => 0, 'failed' => 0, 'delivered' => 0, 'skipped' => 0, 'pending' => 0, 'sending' => 0];
         }
 
-        $summary = (clone $query)
-            ->reorder()
-            ->selectRaw('COUNT(DISTINCT ticket_id) as total')
+        $summary = TicketUpstreamDeliveryLog::query()
+            ->fromSub(
+                (clone $query)
+                    ->reorder()
+                    ->select('ticket_upstream_delivery_logs.*')
+                    ->selectRaw('ROW_NUMBER() OVER (PARTITION BY ticket_id ORDER BY occurred_at DESC, id DESC) AS delivery_rank'),
+                'ranked_delivery_logs'
+            )
+            ->where('delivery_rank', 1)
+            ->selectRaw('COUNT(*) as total')
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) as failed")
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END), 0) as delivered")
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'skipped' THEN 1 ELSE 0 END), 0) as skipped")

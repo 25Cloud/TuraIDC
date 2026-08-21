@@ -5,19 +5,26 @@ declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use RuntimeException;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable('ticket_upstream_bindings') && ! Schema::hasColumn('ticket_upstream_bindings', 'delivered_at')) {
+        if (! Schema::hasTable('ticket_upstream_bindings')) {
+            throw new RuntimeException('ticket_upstream_bindings 表不存在，请先执行前置迁移');
+        }
+
+        if (! Schema::hasColumn('ticket_upstream_bindings', 'delivered_at')) {
             Schema::table('ticket_upstream_bindings', function (Blueprint $table): void {
                 $table->timestamp('delivered_at')->nullable()->after('last_attempt_at');
             });
         }
 
         if (Schema::hasTable('ticket_upstream_delivery_logs')) {
-            return;
+            // 漂移结构（旧部署已存在同名表）必须走独立修复流程，禁止静默跳过，
+            // 否则 down() 无法判断该表是否由本迁移创建，回滚会误删既有数据。
+            throw new RuntimeException('ticket_upstream_delivery_logs 表已存在，请先处理漂移结构再执行迁移');
         }
 
         Schema::create('ticket_upstream_delivery_logs', function (Blueprint $table): void {

@@ -300,14 +300,6 @@ const filteredProducts = computed(() => {
 });
 
 watch(
-  () => form.supplier_id,
-  () => {
-    const allowed = new Set(filteredProducts.value.map((product) => String(product.id)));
-    form.product_ids = form.product_ids.filter((id) => allowed.has(String(id)));
-  },
-);
-
-watch(
   () => form.product_scope_mode,
   (mode) => {
     if (mode === 'all') form.product_ids = [];
@@ -357,6 +349,8 @@ async function loadUpstreamDepartments(supplierId: number | string, configuredId
 
 async function handleSupplierChange(value: SelectValue) {
   form.upstream_department_id = '';
+  // 仅在管理员主动切换供应商时清空已选产品，避免首屏分页加载被误判为供应商变更而丢失已保存绑定
+  form.product_ids = [];
   upstreamDepartments.value = [];
   if (value !== '' && value !== undefined && value !== null) {
     await loadUpstreamDepartments(String(value));

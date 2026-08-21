@@ -4,10 +4,19 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Constants\ProductType;
+use App\Constants\ServiceStatus;
 use App\Models\AdminUser;
+use App\Models\FirstProductGroup;
+use App\Models\Product;
 use App\Models\Role;
+use App\Models\SecondProductGroup;
+use App\Models\Service;
+use App\Models\ThirdProductGroup;
+use App\Models\User;
 use App\Services\Content\MediaFileService;
 use App\Services\Ticket\TicketService;
+use App\Services\Ticket\TicketUpstreamCallbackToken;
 use App\Support\AdminPermissions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -111,8 +120,12 @@ class UploadSecurityTest extends TestCase
 
     public function test_upstream_ticket_upload_returns_legacy_savename_contract(): void
     {
+        $service = $this->createUpstreamUploadService();
+
         $response = $this->post('/upload_image', [
             'file' => UploadedFile::fake()->image('logo.png', 16, 16)->size(8),
+            'id' => (string) $service->id,
+            'token' => TicketUpstreamCallbackToken::forServiceId((int) $service->id),
         ]);
 
         $response->assertOk()
@@ -131,8 +144,12 @@ class UploadSecurityTest extends TestCase
 
     public function test_upstream_ticket_upload_does_not_call_get_size_after_move(): void
     {
+        $service = $this->createUpstreamUploadService();
+
         $response = $this->post('/upload_image', [
             'file' => UploadedFile::fake()->image('after-move.png', 32, 32)->size(16),
+            'id' => (string) $service->id,
+            'token' => TicketUpstreamCallbackToken::forServiceId((int) $service->id),
         ]);
 
         $response->assertOk()
@@ -143,6 +160,27 @@ class UploadSecurityTest extends TestCase
         $this->uploadedFiles[] = storage_path('app/private/tickets/upstream/'.$filename);
         $this->assertSame($filename, (string) $response->json('data.savename'));
         $this->assertFileExists(storage_path('app/private/tickets/upstream/'.$filename));
+    }
+
+    public function test_upstream_ticket_upload_rejects_requests_without_or_bad_credentials(): void
+    {
+        $service = $this->createUpstreamUploadService();
+
+        $this->post('/upload_image', [
+            'file' => UploadedFile::fake()->image('anon.png', 16, 16)->size(8),
+        ])->assertJsonPath('status', 400);
+
+        $this->post('/upload_image', [
+            'file' => UploadedFile::fake()->image('bad-token.png', 16, 16)->size(8),
+            'id' => (string) $service->id,
+            'token' => 'forged-token',
+        ])->assertJsonPath('status', 400);
+
+        $this->post('/upload_image', [
+            'file' => UploadedFile::fake()->image('bad-id.png', 16, 16)->size(8),
+            'id' => '99999999',
+            'token' => TicketUpstreamCallbackToken::forServiceId((int) $service->id),
+        ])->assertJsonPath('status', 400);
     }
 
     public function test_ticket_image_upload_still_accepts_normal_image(): void
@@ -196,6 +234,83 @@ class UploadSecurityTest extends TestCase
             'nickname' => 'Upload Security',
             'email' => 'upload-security-'.$suffix.'@example.com',
             'status' => 1,
+        ]);
+    }
+
+    private function createUpstreamUploadService(): Service
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = User::query()->create([
+            'email' => 'upload-'.$suffix.'@example.com',
+            'password' => 'Temp@123456',
+            'phone' => '13'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT),
+            'status' => 1,
+            'nickname' => 'Upload '.$suffix,
+            'real_name' => '',
+            'id_card' => '',
+            'verification_status' => 0,
+            'verification_message' => '',
+            'verification_certify_id' => null,
+            'member_level_id' => null,
+            'total_sales_amount' => '0.00',
+            'referrer_user_id' => null,
+            'verified_at' => null,
+        ]);
+
+        $firstGroup = FirstProductGroup::query()->create([
+            'code' => 'upload_security_'.$suffix,
+            'name' => '上传安全分组 '.$suffix,
+            'slug' => 'upload-security-'.$suffix,
+            'description' => '上传安全分组说明',
+            'sort_order' => 1,
+            'is_visible' => 1,
+            'is_system' => 0,
+            'legacy_product_type' => ProductType::VPS,
+        ]);
+        $secondGroup = SecondProductGroup::query()->create([
+            'first_product_group_id' => (int) $firstGroup->id,
+            'name' => '上传安全二级 '.$suffix,
+            'slug' => 'upload-security-child-'.$suffix,
+            'description' => '上传安全二级说明',
+            'sort_order' => 1,
+            'is_visible' => 1,
+        ]);
+        $thirdGroup = ThirdProductGroup::query()->create([
+            'second_product_group_id' => (int) $secondGroup->id,
+            'name' => '上传安全三级 '.$suffix,
+            'slug' => 'upload-security-leaf-'.$suffix,
+            'description' => '上传安全三级说明',
+            'sort_order' => 1,
+            'is_visible' => 1,
+        ]);
+        $product = Product::query()->create([
+            'product_group_id' => (int) $thirdGroup->id,
+            'service_type_code' => ProductType::VPS,
+            'name' => 'Upload Security Product '.$suffix,
+            'custom_display_name' => 'Upload Security Product '.$suffix,
+            'product_type' => ProductType::VPS,
+            'description' => '',
+            'pricing' => ['monthly' => '10.00'],
+            'setup_fee' => '0.00',
+            'config_options' => [],
+            'purchase_requires' => [],
+            'stock' => 10,
+            'status' => 1,
+            'sort_order' => 1,
+            'auto_setup' => 0,
+        ]);
+
+        return Service::query()->create([
+            'user_id' => (int) $user->id,
+            'product_id' => (int) $product->id,
+            'name' => 'Upload Security Service '.$suffix,
+            'domain' => 'upload-'.$suffix.'.example.test',
+            'billing_cycle' => 'monthly',
+            'amount' => '10.00',
+            'status' => ServiceStatus::ACTIVE,
+            'provision_data' => [],
+            'expires_at' => now()->addMonth(),
+            'auto_renew' => 0,
         ]);
     }
 }

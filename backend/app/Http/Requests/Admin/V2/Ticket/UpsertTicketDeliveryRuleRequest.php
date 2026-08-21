@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Admin\V2\Ticket;
 
 use App\Http\Requests\Admin\V2\Common\AdminFormRequest;
+use App\Services\Ticket\TicketService;
 use App\Services\Upstream\ProviderKey;
 use Illuminate\Validation\Rule;
 
@@ -14,7 +15,7 @@ final class UpsertTicketDeliveryRuleRequest extends AdminFormRequest
     {
         return [
             'name' => ['required', 'string', 'max:120'],
-            'department' => ['required', 'string', 'max:32'],
+            'department' => ['required', Rule::in(TicketService::DEPARTMENTS)],
             'supplier_id' => ['required', 'integer', 'exists:suppliers,id'],
             'provider_key' => ['nullable', Rule::in([ProviderKey::ZJMF_FINANCE_API])],
             'product_scope_mode' => ['required', Rule::in(['all', 'selected'])],

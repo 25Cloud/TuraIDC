@@ -309,6 +309,12 @@
       "path": "templates/exec-plan.md",
       "status": "template",
       "summary": "执行计划模板。"
+    },
+    {
+      "path": "execution-plans/active/coderabbit-security-remediation-ticket-upstream-2026-08-21.md",
+      "status": "active",
+      "summary": "按 PR #20 CodeRabbit 审查修复工单上游传递安全与一致性问题，含上游 zjmfv376 配套改动。",
+      "review_by": "2026-09-04"
     }
   ]
 }
