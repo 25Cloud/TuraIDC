@@ -106,8 +106,11 @@ jobs:
 
       # 浏览器态回归：console 暗色主题守卫 + admin smoke（vite dev server 由
       # playwright webServer 各自拉起，端口 5177/5176 互不冲突）
+      # playwright 是子包 devDependency，必须在对应子包内 exec；
+      # 浏览器二进制一次装到根缓存目录供两个子包共享。
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+        working-directory: frontend-admin-v3
+        run: pnpm exec playwright install chromium
 
       - name: E2E (console)
         working-directory: frontend-user-v4-console
