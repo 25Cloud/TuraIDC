@@ -6,8 +6,10 @@ namespace Tests\Feature;
 
 use App\Services\Integrations\Plugins\PluginFileLoader;
 use App\Services\Integrations\Plugins\PluginScanner;
+use App\Support\CacheKey;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 use TuraIDC\Plugins\Captcha\Cap\Lib\CapCaptchaService;
@@ -180,8 +182,8 @@ class CaptchaCapPluginTest extends TestCase
 
     public function test_script_returns_cached_content_without_upstream_call(): void
     {
-        \Illuminate\Support\Facades\Cache::put(
-            \App\Support\CacheKey::capScript(),
+        Cache::put(
+            CacheKey::capScript(),
             'cached<script>',
             now()->addMinutes(10)
         );
