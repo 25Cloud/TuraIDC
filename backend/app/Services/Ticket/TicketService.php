@@ -1271,7 +1271,14 @@ class TicketService
                 $attachment = $this->buildStoredAttachmentMeta($item['path'] ?? '', $item['name'] ?? null, $item['mime_type'] ?? null);
 
                 return $this->serializeAttachmentForClient($attachment);
-            } catch (\Throwable) {
+            } catch (\Throwable $exception) {
+                Log::warning('工单回复附件序列化失败', [
+                    'reply_id' => $reply->id,
+                    'path' => basename((string) ($item['path'] ?? '')),
+                    'message' => $exception->getMessage(),
+                    'exception' => $exception::class,
+                ]);
+
                 return null;
             }
         })->filter()->values()->all();
