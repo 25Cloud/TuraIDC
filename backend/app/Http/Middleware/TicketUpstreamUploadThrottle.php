@@ -127,10 +127,14 @@ final class TicketUpstreamUploadThrottle
 
     private function blockNonWhitelisted(): bool
     {
-        return (bool) \App\Models\Setting::getValue(
+        // 与 TicketDeliveryController 读取同一配置时保持一致的布尔解析规则：
+        // (bool) 强转会把字符串 'false' 判为 true，导致管理员关闭后白名单外上传仍被拒绝。
+        $value = \App\Models\Setting::getValue(
             'ticket_upstream',
             'block_non_whitelisted',
             config('ticket_upstream.upload_block_non_whitelisted', false)
         );
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
     }
 }
