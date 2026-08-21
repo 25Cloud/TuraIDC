@@ -3,6 +3,7 @@
     "target": "esnext",
     "module": "esnext",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "jsx": "preserve",
     "jsxImportSource": "vue",
     "sourceMap": true,

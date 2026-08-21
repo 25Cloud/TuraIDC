@@ -17,15 +17,31 @@ use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /**
+     * 收敛数据库连接并注册若干单例。
+     *
+     * 连接部分把 database.connections 收敛到 mysql，防止误用其他驱动；
+     * 但队列若被配置到独立连接（DB_QUEUE_CONNECTION），必须把该连接一并保留，
+     * 否则 Schema::connection() 找不到连接，QueueDrainService 会误判为
+     * jobs 表缺失并跳过消费，导致队列静默停摆。
+     */
     public function register(): void
     {
-        $mysqlConnection = config('database.connections.mysql', []);
+        $connections = (array) config('database.connections', []);
+        $keptConnections = ['mysql' => (array) ($connections['mysql'] ?? [])];
+
+        // 队列被配置到独立连接时（.env.example 里公开的 DB_QUEUE_CONNECTION），必须保留该连接定义。
+        // 否则连接名在 config 中已被抹掉，Schema::connection() 抛异常，QueueDrainService 判为
+        // jobs 表缺失并跳过消费；而本部署没有常驻 worker、queue:drain 是唯一消费者，
+        // 结果是"填了一个文档里公开的合法配置项 → 队列整体静默停摆"。
+        $queueConnection = trim((string) config('queue.connections.database.connection', ''));
+        if ($queueConnection !== '' && $queueConnection !== 'mysql' && isset($connections[$queueConnection])) {
+            $keptConnections[$queueConnection] = (array) $connections[$queueConnection];
+        }
 
         config([
             'database.default' => 'mysql',
-            'database.connections' => [
-                'mysql' => $mysqlConnection,
-            ],
+            'database.connections' => $keptConnections,
         ]);
 
         $this->app->singleton(UploadedAssetReferenceService::class);
