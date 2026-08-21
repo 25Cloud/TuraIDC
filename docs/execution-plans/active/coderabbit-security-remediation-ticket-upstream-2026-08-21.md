@@ -8,7 +8,7 @@ owner: YeHuaiJing
 
 ## 背景
 
-PR [#20](https://github.com/25Cloud/TuraIDC/pull/20)（feat: 增加对 zjmf_finance 的工单上游传递）收到 CodeRabbit 审查，共 13 条行级意见（2 条 Critical、11 条 Major）。本计划在 `fix/coderabbit-ticket-upstream-security` 分支逐条修复，并同步上游 zjmfv376 参考源码（`mf/zjmfv376-main/`）的配套改动。
+PR `#20`（feat: 增加对 zjmf_finance 的工单上游传递）收到 CodeRabbit 审查，共 13 条行级意见（2 条 Critical、11 条 Major）。本计划在 `fix/coderabbit-ticket-upstream-security` 分支逐条修复，并同步上游 zjmfv376 参考源码（`mf/zjmfv376-main/`）的配套改动。
 
 ## 范围与验收
 
