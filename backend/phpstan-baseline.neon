@@ -4897,6 +4897,12 @@ parameters:
 			path: app/Services/ProductCatalog/ProductCategoryService.php
 
 		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: app/Services/ProductCatalog/ProductCategoryService.php
+
+		-
 			message: '#^Using nullsafe property access "\?\-\>code" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 2
@@ -5073,12 +5079,6 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$group of static method App\\Constants\\ProductType\:\:businessValueForFirstGroup\(\) expects App\\Models\\FirstProductGroup\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
 			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Right side of && is always true\.$#'
-			identifier: booleanAnd.rightAlwaysTrue
 			count: 1
 			path: app/Services/ProductCatalog/ProductSiteService.php
 
@@ -5511,13 +5511,13 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$product of method App\\Services\\Provisioning\\ProvisionService\:\:resolveProductSupplierId\(\) expects App\\Models\\Product, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
 			identifier: argument.type
-			count: 5
+			count: 6
 			path: app/Services/Provisioning/ProvisionService.php
 
 		-
 			message: '#^Parameter \#1 \$product of method App\\Services\\Provisioning\\ProvisionService\:\:resolveProviderKeyForProduct\(\) expects App\\Models\\Product\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
 			identifier: argument.type
-			count: 6
+			count: 7
 			path: app/Services/Provisioning/ProvisionService.php
 
 		-
@@ -5529,7 +5529,7 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$product of method App\\Services\\Provisioning\\ProvisionService\:\:resolveUpstreamProductId\(\) expects App\\Models\\Product, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
 			identifier: argument.type
-			count: 7
+			count: 8
 			path: app/Services/Provisioning/ProvisionService.php
 
 		-
@@ -5540,6 +5540,12 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$product of static method App\\Support\\ServiceHostname\:\:resolveInstanceNameFromProduct\(\) expects App\\Models\\Product\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Provisioning/ProvisionService.php
+
+		-
+			message: '#^Parameter \#1 \$service of method App\\Services\\Provisioning\\ProvisionService\:\:checkpointUpstreamInvoice\(\) expects App\\Models\\Service\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
 			identifier: argument.type
 			count: 1
 			path: app/Services/Provisioning/ProvisionService.php
