@@ -138,13 +138,27 @@ async function solveSingleChallenge(
   }
 }
 
-self.onmessage = async (e: MessageEvent<{ type: 'solve'; token: string; count: number; saltLength: number; difficulty: number }>) => {
-  const { token, count, saltLength, difficulty } = e.data;
-  const solutions: number[] = [];
-  for (let i = 1; i <= count; i++) {
-    const nonce = await solveSingleChallenge(token, i, saltLength, difficulty);
-    solutions.push(nonce);
-    self.postMessage({ type: 'progress', pct: Math.round((i / count) * 100) });
+type SolveRequest = {
+  type: 'solve';
+  id: number;
+  token: string;
+  count: number;
+  saltLength: number;
+  difficulty: number;
+};
+
+self.onmessage = async (e: MessageEvent<SolveRequest>) => {
+  const { id, token, count, saltLength, difficulty } = e.data;
+  try {
+    const solutions: number[] = [];
+    for (let i = 1; i <= count; i++) {
+      const nonce = await solveSingleChallenge(token, i, saltLength, difficulty);
+      solutions.push(nonce);
+      self.postMessage({ type: 'progress', id, pct: Math.round((i / count) * 100) });
+    }
+    self.postMessage({ type: 'done', id, solutions });
+  } catch (error) {
+    // 求解失败必须回传 error 消息，否则主线程 Promise 永久挂起
+    self.postMessage({ type: 'error', id, error: error instanceof Error ? error.message : '验证求解失败' });
   }
-  self.postMessage({ type: 'done', solutions });
 };

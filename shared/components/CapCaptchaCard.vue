@@ -54,6 +54,14 @@ function handleBodyClick() {
     handleReset();
   }
 }
+
+function handleBodyKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Enter' && event.key !== ' ') {
+    return;
+  }
+  event.preventDefault();
+  handleBodyClick();
+}
 </script>
 
 <template>
@@ -61,7 +69,11 @@ function handleBodyClick() {
     <div
       class="cap-body"
       :class="{ 'cap-clickable': state === 'idle' || state === 'error' }"
+      role="button"
+      :tabindex="state === 'idle' || state === 'error' ? 0 : -1"
+      :aria-disabled="state === 'verifying' || state === 'solved'"
       @click="handleBodyClick"
+      @keydown="handleBodyKeydown"
     >
       <div class="cap-content">
         <div class="cap-state" :class="{ 'cap-active': state === 'idle' }">

@@ -223,7 +223,8 @@ function createCapInstance(appendTarget: HTMLElement | string | undefined, apiEn
     getValidate: () => (token ? { token } : null),
     reset: () => {
       token = null;
-      mount();
+      // 只回退内部状态并卸载，不重新挂载：悬浮模式下重挂会在页面残留一张无法关闭的卡片
+      unmount();
     },
     destroy: () => {
       unmount();
