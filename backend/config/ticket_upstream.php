@@ -11,7 +11,13 @@ return [
     // 一旦上游可携带凭证，应恢复 true（fail-closed）。
     'upload_token_required' => env('TICKET_UPSTREAM_UPLOAD_TOKEN_REQUIRED', false),
 
-    // 上游附件上传目录中孤儿文件的保留天数；超过保留期且未被任何工单回复引用的文件
-    // 由每日清理任务删除，用于缓解无凭证上传带来的磁盘占用。
-    'upload_retention_days' => (int) env('TICKET_UPSTREAM_UPLOAD_RETENTION_DAYS', 7),
+    // 上游附件上传的防滥用配置（可在管理端「工单传递设置」页调整，存于 settings 表 ticket_upstream 组）：
+    // - upload_allowed_ips：白名单 IP/CIDR（逗号或换行分隔），白名单内不限速
+    // - upload_rate_limit：非白名单来源每分钟上传次数上限，0 表示不限速
+    'upload_allowed_ips' => env('TICKET_UPSTREAM_UPLOAD_ALLOWED_IPS', ''),
+    'upload_rate_limit' => (int) env('TICKET_UPSTREAM_UPLOAD_RATE_LIMIT', 30),
+
+    // 上传文件「已保存但未被工单回复引用」的自动删除保留期（分钟）。
+    // 上传成功返回 savename 后，若超过该时长仍未被回调持久化引用，文件会被每分钟清理任务删除。
+    'upload_unused_retention_minutes' => (int) env('TICKET_UPSTREAM_UPLOAD_UNUSED_RETENTION_MINUTES', 5),
 ];

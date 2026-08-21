@@ -334,15 +334,15 @@ final class TicketUpstreamCallbackService
      *
      * @return array{checked: int, deleted: int, referenced: int, errors: int}
      */
-    public function cleanupOrphanUploads(?int $retentionDays = null, int $limit = 100): array
+    public function cleanupOrphanUploads(?int $retentionMinutes = null, int $limit = 100): array
     {
-        $retentionDays = $retentionDays ?? (int) config('ticket_upstream.upload_retention_days', 7);
+        $retentionMinutes = $retentionMinutes ?? (int) config('ticket_upstream.upload_unused_retention_minutes', 5);
         $directory = storage_path('app/private/tickets/upstream');
         if (! is_dir($directory)) {
             return ['checked' => 0, 'deleted' => 0, 'referenced' => 0, 'errors' => 0];
         }
 
-        $cutoff = now()->subDays($retentionDays);
+        $cutoff = now()->subMinutes($retentionMinutes);
         $files = collect(File::files($directory))
             ->sortBy(fn (\SplFileInfo $file): int => $file->getMTime())
             ->values();
@@ -370,10 +370,10 @@ final class TicketUpstreamCallbackService
             try {
                 File::delete($file->getPathname());
                 $deleted++;
-                Log::info('清理上游孤儿上传文件', ['filename' => $file->getFilename()]);
+                Log::info('清理上游未使用上传文件', ['filename' => $file->getFilename()]);
             } catch (\Throwable $exception) {
                 $errors++;
-                Log::warning('清理上游孤儿上传文件失败', [
+                Log::warning('清理上游未使用上传文件失败', [
                     'filename' => $file->getFilename(),
                     'message' => $exception->getMessage(),
                 ]);

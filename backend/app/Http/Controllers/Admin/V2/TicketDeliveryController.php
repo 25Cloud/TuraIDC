@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin\V2;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\V2\Ticket\ListTicketUpstreamDeliveryLogsRequest;
+use App\Http\Requests\Admin\V2\Ticket\SaveTicketUpstreamUploadGuardRequest;
 use App\Http\Requests\Admin\V2\Ticket\UpsertTicketDeliveryRuleRequest;
 use App\Http\Resources\Admin\V2\TicketDeliveryRuleResource;
 use App\Http\Resources\Admin\V2\TicketUpstreamDeliveryLogResource;
@@ -104,6 +105,31 @@ final class TicketDeliveryController extends Controller
             $deliveryService->deliveryLogs($ticket, (int) ($request->validated('page_size') ?? 20)),
             TicketUpstreamDeliveryLogResource::class
         );
+    }
+
+    public function uploadGuardConfig(): JsonResponse
+    {
+        return $this->success([
+            'allowed_ips' => (string) \App\Models\Setting::getValue(
+                'ticket_upstream',
+                'allowed_ips',
+                (string) config('ticket_upstream.upload_allowed_ips', '')
+            ),
+            'rate_limit' => (int) \App\Models\Setting::getValue(
+                'ticket_upstream',
+                'rate_limit',
+                (string) config('ticket_upstream.upload_rate_limit', 30)
+            ),
+            'unused_retention_minutes' => (int) config('ticket_upstream.upload_unused_retention_minutes', 5),
+        ]);
+    }
+
+    public function saveUploadGuardConfig(SaveTicketUpstreamUploadGuardRequest $request): JsonResponse
+    {
+        $payload = $request->payload();
+        \App\Models\Setting::setValues('ticket_upstream', $payload);
+
+        return $this->success($payload, '上传防护配置已保存');
     }
 
     private function ensureRuleTarget(array $data, ?TicketDeliveryRule $existing = null): void

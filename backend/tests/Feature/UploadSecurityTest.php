@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\Role;
 use App\Models\SecondProductGroup;
 use App\Models\Service;
+use App\Models\Setting;
 use App\Models\ThirdProductGroup;
 use App\Models\Ticket;
 use App\Models\TicketReply;
@@ -203,7 +204,9 @@ class UploadSecurityTest extends TestCase
     public function test_upstream_orphan_upload_cleanup_removes_only_unreferenced_files(): void
     {
         $directory = storage_path('app/private/tickets/upstream');
+        // 测试环境目录可能残留其他用例的上传文件，先清空保证删除计数精确
         File::ensureDirectoryExists($directory);
+        File::cleanDirectory($directory);
 
         $orphanName = 'upstream-'.now()->subDays(30)->format('YmdHis').'-'.bin2hex(random_bytes(6)).'.png';
         $referencedName = 'upstream-'.now()->subDays(30)->format('YmdHis').'-'.bin2hex(random_bytes(6)).'.png';
@@ -239,12 +242,61 @@ class UploadSecurityTest extends TestCase
             ]],
         ]);
 
-        $result = app(TicketUpstreamCallbackService::class)->cleanupOrphanUploads(retentionDays: 7, limit: 100);
+        $result = app(TicketUpstreamCallbackService::class)->cleanupOrphanUploads(retentionMinutes: 7, limit: 100);
 
         $this->assertSame(1, $result['deleted']);
         $this->assertSame(1, $result['referenced']);
         $this->assertFileDoesNotExist($orphanPath);
         $this->assertFileExists($referencedPath);
+    }
+
+    public function test_upstream_upload_throttle_respects_whitelist_and_rate_limit(): void
+    {
+        Setting::forgetCachedGroup('ticket_upstream');
+
+        // 白名单 IP 不限速：即使非白名单速率仅为 1 次/分钟，白名单 IP 连续上传也成功
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => '203.0.113.10',
+            'rate_limit' => '1',
+        ]);
+        for ($i = 0; $i < 3; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])
+                ->post('/upload_image', [
+                    'file' => UploadedFile::fake()->image('whitelist-'.$i.'.png', 8, 8)->size(4),
+                ])
+                ->assertJsonPath('status', 200);
+        }
+
+        // 非白名单 IP 限速：第 1 次成功，第 2 次被拒（429）
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('limited-1.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 200);
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('limited-2.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 429);
+
+        // rate_limit=0 表示不限速
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => '',
+            'rate_limit' => '0',
+        ]);
+        for ($i = 0; $i < 3; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.30'])
+                ->post('/upload_image', [
+                    'file' => UploadedFile::fake()->image('unlimited-'.$i.'.png', 8, 8)->size(4),
+                ])
+                ->assertJsonPath('status', 200);
+        }
+
+        // 恢复默认配置，避免影响其他测试
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => '',
+            'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
+        ]);
     }
 
     public function test_ticket_image_upload_still_accepts_normal_image(): void
