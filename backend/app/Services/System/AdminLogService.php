@@ -1303,6 +1303,12 @@ class AdminLogService
 
         $rows = [];
         if ($ticketIds !== []) {
+            $eventCounts = (clone $base)
+                ->whereIn('ticket_id', $ticketIds)
+                ->selectRaw('ticket_id, COUNT(*) AS aggregate')
+                ->groupBy('ticket_id')
+                ->pluck('aggregate', 'ticket_id');
+
             $eventsByTicket = TicketUpstreamDeliveryLog::query()
                 ->fromSub($this->upstreamLogRankedSubQuery($base, $ticketIds), 'ranked_delivery_logs')
                 ->where('delivery_rank', '<=', self::UPSTREAM_NESTED_LOG_LIMIT)
@@ -1323,7 +1329,7 @@ class AdminLogService
                 }
 
                 $rows[] = array_merge($eventRows[0], [
-                    'log_count' => count($eventRows),
+                    'log_count' => (int) ($eventCounts[$ticketId] ?? count($eventRows)),
                     'logs' => $eventRows,
                 ]);
             }
