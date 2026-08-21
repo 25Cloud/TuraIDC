@@ -6,8 +6,12 @@
 #   - backend：仅 backend job（composer validate → install → Pint → PHPStan）
 #   - frontend：仅 frontend job（pnpm install → lint → typecheck → build）
 #
-# 前置：root 侧 docker ≥ 29（含 compose 插件）、镜像走得通 gh.yealqp.cn 前缀，
-#       本机 127.0.0.1:7897 有 HTTP 代理（host 网络下容器直接复用）。
+# 前置要求：
+#   - 本机 docker ≥ 29（含 compose 插件）
+#   - 基础镜像可拉取（PHP/MySQL/Node 镜像；如本机配置了镜像加速器或代理则自动生效）
+#   - 如包仓库（composer/pnpm）需要 HTTP 代理，请先导出 CI_HTTP_PROXY / CI_HTTPS_PROXY：
+#       CI_HTTP_PROXY=http://127.0.0.1:7897 CI_HTTPS_PROXY=http://127.0.0.1:7897 \
+#         bash deploy/docker/ci/run-ci-local.sh
 set -u
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
