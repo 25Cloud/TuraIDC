@@ -16,7 +16,7 @@ set -u
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 COMPOSE_FILE="$REPO_ROOT/deploy/docker/ci/docker-compose.ci.yml"
-PHP_IMAGE="gh.yealqp.cn/turaidc-ci-php:8.3"
+PHP_IMAGE="turaidc-ci-php:8.3"
 
 TARGET="${1:-all}"
 case "$TARGET" in

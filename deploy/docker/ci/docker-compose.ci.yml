@@ -32,7 +32,7 @@ services:
       retries: 30
 
   backend:
-    image: gh.yealqp.cn/turaidc-ci-php:8.3
+    image: turaidc-ci-php:8.3
     build:
       context: ../../..
       dockerfile: deploy/docker/ci/Dockerfile.php

@@ -50,7 +50,7 @@
     "typecheck:frontends": "pnpm typecheck:shared && pnpm typecheck:admin-v3 && pnpm typecheck:user-v3-www && pnpm typecheck:user-v4-console",
     "test:shared": "pnpm --filter shared test",
     "test:admin-v3": "pnpm --filter turaidc-admin-v3 test:e2e",
-    "test:frontends": "pnpm test:shared && pnpm test:admin-v3",
+    "test:frontends": "pnpm test:shared && pnpm test:admin-v3 && pnpm --filter turaidc-user-v4-console test:e2e",
     "format": "prettier --write \"**/*.{js,ts,vue,json,css,scss,md}\"",
     "format:check": "prettier --check \"**/*.{js,ts,vue,json,css,scss,md}\"",
     "verify:frontends": "pnpm lint:frontends && pnpm typecheck:frontends && pnpm build:frontends && pnpm --filter turaidc-user-v3-www verify:refactor && pnpm --filter turaidc-user-v4-console verify:refactor",
