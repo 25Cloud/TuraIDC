@@ -183,7 +183,8 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, 'src'),
         '@shared': path.resolve(__dirname, '../shared'),
         '@turaidc/shared': path.resolve(__dirname, '../shared'),
-        'element-plus': path.resolve(__dirname, '../node_modules/element-plus'),
+        // 指向本包自己的 node_modules（pnpm 严格隔离下仓库根无 hoist）
+        'element-plus': path.resolve(__dirname, 'node_modules/element-plus'),
       },
     },
     server: {
