@@ -44,7 +44,7 @@ class UploadSecurityTest extends TestCase
         Setting::setValues('ticket_upstream', [
             'allowed_ips' => (string) config('ticket_upstream.upload_allowed_ips', ''),
             'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
-            'block_non_whitelisted' => '0',
+            'block_non_whitelisted' => config('ticket_upstream.upload_block_non_whitelisted', false) ? '1' : '0',
         ]);
 
         foreach ($this->tempDirectories as $directory) {
