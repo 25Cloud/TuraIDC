@@ -17,6 +17,117 @@ use Tests\TestCase;
 
 class V2AdminTicketActionApiTest extends TestCase
 {
+    public function test_ticket_upstream_delivery_status_and_logs_require_list_permission(): void
+    {
+        $ticket = $this->createTicket();
+
+        $this->getJson('/api/v2/admin/tickets/'.$ticket->id.'/upstream-delivery')
+            ->assertUnauthorized()
+            ->assertJsonPath('code', 40100);
+
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_LIST]));
+
+        $status = $this->getJson('/api/v2/admin/tickets/'.$ticket->id.'/upstream-delivery')
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.status', 'not_configured')
+            ->assertJsonPath('data.status_label', '未配置')
+            ->assertJsonPath('data.configured', false)
+            ->assertJsonPath('data.last_error', null);
+
+        $this->assertSame([
+            'configured',
+            'status',
+            'status_label',
+            'provider_key',
+            'supplier_id',
+            'upstream_department_id',
+            'upstream_service_id',
+            'upstream_ticket_id',
+            'attempts',
+            'last_attempt_at',
+            'delivered_at',
+            'last_error',
+            'last_event',
+        ], array_keys($status->json('data')));
+
+        $this->getJson('/api/v2/admin/tickets/'.$ticket->id.'/upstream-delivery/logs')
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.total', 1)
+            ->assertJsonPath('data.list.0.status', 'skipped')
+            ->assertJsonPath('data.list.0.reason_code', 'service_missing')
+            ->assertJsonStructure(['data' => ['list', 'total', 'page', 'page_size']]);
+    }
+
+    public function test_ticket_callback_registration_requires_manage_permission_and_binding(): void
+    {
+        $ticket = $this->createTicket();
+
+        $this->postJson('/api/v2/admin/tickets/'.$ticket->id.'/upstream-delivery/callback-registration')
+            ->assertUnauthorized()
+            ->assertJsonPath('code', 40100);
+
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_LIST]));
+
+        $this->postJson('/api/v2/admin/tickets/'.$ticket->id.'/upstream-delivery/callback-registration')
+            ->assertForbidden()
+            ->assertJsonPath('code', 40300);
+
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
+
+        $this->postJson('/api/v2/admin/tickets/'.$ticket->id.'/upstream-delivery/callback-registration')
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 42200);
+    }
+
+    public function test_ticket_upstream_delivery_logs_are_whitelisted_and_paginated(): void
+    {
+        $ticket = $this->createTicket();
+        \App\Models\TicketUpstreamDeliveryLog::query()->create([
+            'ticket_id' => $ticket->id,
+            'operation' => 'ticket.create',
+            'event' => 'failed',
+            'status' => 'failed',
+            'reason_code' => 'upstream_rejected',
+            'provider_key' => 'zjmf_finance_api',
+            'supplier_id' => 93,
+            'attempt' => 2,
+            'message' => '上游工单创建失败',
+            'occurred_at' => now(),
+        ]);
+
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_LIST]));
+
+        $response = $this->getJson('/api/v2/admin/tickets/'.$ticket->id.'/upstream-delivery/logs?page=1&page_size=10')
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.total', 1)
+            ->assertJsonPath('data.list.0.status', 'failed')
+            ->assertJsonPath('data.list.0.status_label', '转发失败')
+            ->assertJsonPath('data.list.0.message', '上游工单创建失败')
+            ->assertJsonMissingPath('data.list.0.raw_response');
+
+        $this->assertSame([
+            'id',
+            'ticket_id',
+            'ticket_reply_id',
+            'direction',
+            'operation',
+            'event',
+            'status',
+            'status_label',
+            'reason_code',
+            'provider_key',
+            'supplier_id',
+            'attempt',
+            'http_status',
+            'duration_ms',
+            'message',
+            'occurred_at',
+        ], array_keys($response->json('data.list.0')));
+    }
+
     public function test_ticket_delivery_departments_require_manage_permission(): void
     {
         $this->getJson('/api/v2/admin/ticket-delivery-departments')

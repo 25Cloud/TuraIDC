@@ -7,16 +7,22 @@ namespace App\Services\Ticket;
 use App\Exceptions\BusinessException;
 use App\Jobs\DeliverTicketReplyToUpstreamJob;
 use App\Jobs\DeliverTicketToUpstreamJob;
+use App\Models\Service;
 use App\Models\Supplier;
 use App\Models\Ticket;
 use App\Models\TicketDeliveryRule;
 use App\Models\TicketReply;
 use App\Models\TicketReplyDelivery;
 use App\Models\TicketUpstreamBinding;
+use App\Models\TicketUpstreamDeliveryLog;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Upstream\ProviderKey;
 use App\Support\PublicUrl;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator as LengthAwarePaginatorInstance;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfFinanceTransport;
 
@@ -43,16 +49,188 @@ class TicketDeliveryService
             ->where('supplier_id', $supplierId)
             ->where('provider_key', ProviderKey::ZJMF_FINANCE_API)
             ->where('status', 1)
-            ->first(['ticket_delivery_enabled']);
+            ->first(['id']);
         throw_if($binding === null, new BusinessException('供应商未配置启用的 ZJMF 财务接口绑定', 42200));
 
         return $this->zjmfTransport()->getTicketDepartments($supplier);
     }
 
+    public function registerTicketCallback(Ticket $ticket): void
+    {
+        $ticket->loadMissing(['service', 'upstreamBinding']);
+        $binding = $ticket->upstreamBinding;
+        if (! $binding instanceof TicketUpstreamBinding
+            || $binding->provider_key !== ProviderKey::ZJMF_FINANCE_API
+            || trim((string) $binding->upstream_ticket_id) === ''
+        ) {
+            throw new BusinessException('工单尚未形成可注册回调的上游绑定', 42200);
+        }
+
+        $service = $ticket->service;
+        throw_if($service === null, new BusinessException('工单关联服务不存在，无法注册回调', 42200));
+        $supplier = Supplier::query()->find((int) $binding->supplier_id);
+        throw_if($supplier === null || (int) $supplier->status !== 1, new BusinessException('上游供应商不存在或未启用', 42200));
+        $supplier = $this->bindings->supplierWithRuntimeCredentials($supplier, true, ProviderKey::ZJMF_FINANCE_API);
+
+        try {
+            $response = $this->registerTicketCallbackRequest($supplier, $service, $binding);
+            throw_if($this->extractSuccess($response) === false, new BusinessException((string) ($response['msg'] ?? '注册上游回调失败'), 42200));
+            $this->recordLog($ticket, [
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.callback_registration',
+                'event' => 'succeeded',
+                'status' => 'delivered',
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'message' => '上游工单回调已重新注册',
+            ]);
+        } catch (\Throwable $e) {
+            $this->recordLog($ticket, [
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.callback_registration',
+                'event' => 'failed',
+                'status' => 'failed',
+                'reason_code' => 'callback_registration_failed',
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'message' => mb_substr($e->getMessage(), 0, 2000),
+            ]);
+            throw $e;
+        }
+    }
+
+    /** @param array<string, mixed> $data */
+    public function recordInboundCallbackLog(Ticket $ticket, array $data): void
+    {
+        $this->recordLog($ticket, array_merge([
+            'direction' => self::DIRECTION_INBOUND,
+            'operation' => 'ticket.callback',
+        ], $data));
+    }
+
+    public function recordInboundCallbackFailure(string $upstreamTicketId, string $reasonCode, string $message): void
+    {
+        try {
+            $binding = TicketUpstreamBinding::query()
+                ->with('ticket')
+                ->where('provider_key', ProviderKey::ZJMF_FINANCE_API)
+                ->where('upstream_ticket_id', trim($upstreamTicketId))
+                ->first();
+            if ($binding?->ticket instanceof Ticket) {
+                $this->recordInboundCallbackLog($binding->ticket, [
+                    'event' => 'failed',
+                    'status' => 'failed',
+                    'reason_code' => $reasonCode,
+                    'provider_key' => $binding->provider_key,
+                    'supplier_id' => $binding->supplier_id,
+                    'message' => mb_substr($message, 0, 2000),
+                ]);
+            }
+        } catch (\Throwable $exception) {
+            Log::warning('记录上游工单回调失败事件异常', [
+                'upstream_ticket_id' => $upstreamTicketId !== '' ? $upstreamTicketId : null,
+                'reason_code' => $reasonCode,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function ticketStatus(Ticket $ticket): array
+    {
+        $binding = $ticket->upstreamBinding;
+        $latestLog = $this->logsQuery($ticket)->latest('occurred_at')->latest('id')->first();
+        $diagnostic = null;
+        $status = $binding?->status;
+        if ($status === null) {
+            $decision = $this->resolveContextDecision($ticket);
+            if ($decision['context'] === null) {
+                $diagnostic = [
+                    'event' => 'skipped',
+                    'status' => 'skipped',
+                    'reason_code' => $decision['reason_code'],
+                    'message' => $decision['message'],
+                    'occurred_at' => null,
+                ];
+            }
+            $status = 'not_configured';
+        }
+        $lastEvent = $latestLog ? [
+            'event' => (string) $latestLog->event,
+            'status' => (string) $latestLog->status,
+            'reason_code' => $latestLog->reason_code,
+            'message' => $latestLog->message,
+            'occurred_at' => $latestLog->occurred_at?->format('Y-m-d H:i:s'),
+        ] : $diagnostic;
+
+        return [
+            'configured' => $binding instanceof TicketUpstreamBinding,
+            'status' => (string) $status,
+            'status_label' => $this->statusLabel((string) $status),
+            'provider_key' => $binding?->provider_key,
+            'supplier_id' => $binding?->supplier_id ? (int) $binding->supplier_id : null,
+            'upstream_department_id' => $binding?->upstream_department_id,
+            'upstream_service_id' => $binding?->upstream_service_id,
+            'upstream_ticket_id' => $binding?->upstream_ticket_id,
+            'attempts' => (int) ($binding?->attempts ?? 0),
+            'last_attempt_at' => $binding?->last_attempt_at?->format('Y-m-d H:i:s'),
+            'delivered_at' => $binding?->delivered_at?->format('Y-m-d H:i:s'),
+            'last_error' => $binding?->last_error,
+            'last_event' => $lastEvent,
+        ];
+    }
+
+    public function deliveryLogs(Ticket $ticket, int $perPage = 20): LengthAwarePaginator
+    {
+        $perPage = max(1, min($perPage, 100));
+        $query = $this->logsQuery($ticket)->latest('occurred_at')->latest('id');
+        if ($query->exists()) {
+            return $query->paginate($perPage);
+        }
+
+        $decision = $this->resolveContextDecision($ticket);
+        if ($decision['context'] !== null) {
+            return new LengthAwarePaginatorInstance([], 0, $perPage, 1, [
+                'path' => request()->url(),
+            ]);
+        }
+
+        $virtual = new TicketUpstreamDeliveryLog([
+            'id' => 0,
+            'ticket_id' => $ticket->id,
+            'direction' => self::DIRECTION_OUTBOUND,
+            'operation' => 'ticket.create',
+            'event' => 'skipped',
+            'status' => 'skipped',
+            'reason_code' => $decision['reason_code'],
+            'provider_key' => $decision['provider_key'],
+            'supplier_id' => $decision['supplier_id'],
+            'message' => $decision['message'],
+            'occurred_at' => null,
+        ]);
+
+        return new LengthAwarePaginatorInstance([$virtual], 1, $perPage, 1, [
+            'path' => request()->url(),
+        ]);
+    }
+
     public function queueTicket(Ticket $ticket): void
     {
-        $context = $this->resolveContext($ticket);
+        $decision = $this->resolveContextDecision($ticket);
+        $context = $decision['context'];
         if ($context === null) {
+            $this->recordLog($ticket, [
+                'operation' => 'ticket.create',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => $decision['reason_code'],
+                'provider_key' => $decision['provider_key'],
+                'supplier_id' => $decision['supplier_id'],
+                'message' => $decision['message'],
+            ]);
+
             return;
         }
 
@@ -67,9 +245,29 @@ class TicketDeliveryService
             ]
         );
         if ($binding->upstream_ticket_id !== null || in_array($binding->status, ['sending', 'delivered'], true)) {
+            $this->recordLog($ticket, [
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.create',
+                'event' => 'skipped',
+                'status' => $binding->status,
+                'reason_code' => 'already_delivered',
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'message' => '工单已经完成上游投递，无需重复提交',
+            ]);
+
             return;
         }
         $binding->update(['status' => 'pending', 'last_error' => null]);
+        $this->recordLog($ticket, [
+            'binding_id' => $binding->id,
+            'operation' => 'ticket.create',
+            'event' => 'queued',
+            'status' => 'pending',
+            'provider_key' => $binding->provider_key,
+            'supplier_id' => $binding->supplier_id,
+            'message' => '工单已进入上游投递队列',
+        ]);
 
         DeliverTicketToUpstreamJob::dispatch((int) $ticket->id)->afterCommit();
     }
@@ -77,7 +275,20 @@ class TicketDeliveryService
     public function queueClientReply(TicketReply $reply): void
     {
         $ticket = $reply->relationLoaded('ticket') ? $reply->ticket : $reply->load('ticket')->ticket;
-        if (! $ticket instanceof Ticket || ! $ticket->upstreamBinding()->exists()) {
+        if (! $ticket instanceof Ticket) {
+            return;
+        }
+        $binding = $ticket->upstreamBinding()->first();
+        if (! $binding instanceof TicketUpstreamBinding) {
+            $this->recordLog($ticket, [
+                'ticket_reply_id' => $reply->id,
+                'operation' => 'ticket.reply',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => 'binding_missing',
+                'message' => '工单尚未成功提交到上游，客户回复暂不转发',
+            ]);
+
             return;
         }
 
@@ -92,7 +303,31 @@ class TicketDeliveryService
         }
 
         $binding = $ticket->upstreamBinding()->first();
-        if (! $binding instanceof TicketUpstreamBinding || ! $this->syncAdminReplies($binding, $ticket)) {
+        if (! $binding instanceof TicketUpstreamBinding) {
+            $this->recordLog($ticket, [
+                'ticket_reply_id' => $reply->id,
+                'operation' => 'ticket.reply',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => 'binding_missing',
+                'message' => '工单尚未成功提交到上游，管理员回复暂不转发',
+            ]);
+
+            return;
+        }
+        if (! $this->syncAdminReplies($binding, $ticket)) {
+            $this->recordLog($ticket, [
+                'ticket_reply_id' => $reply->id,
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.reply',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => 'admin_reply_sync_disabled',
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'message' => '当前规则未开启管理员回复同步',
+            ]);
+
             return;
         }
 
@@ -103,15 +338,53 @@ class TicketDeliveryService
     {
         $ticket = Ticket::query()->with(['service', 'upstreamBinding'])->find($ticketId);
         if (! $ticket instanceof Ticket) {
+            Log::warning('工单上游投递任务找不到工单', ['ticket_id' => $ticketId]);
+
             return;
         }
 
         $binding = $ticket->upstreamBinding;
-        if (! $binding instanceof TicketUpstreamBinding
-            || $binding->provider_key !== ProviderKey::ZJMF_FINANCE_API
-            || ! $this->supplierDeliveryEnabled((int) $binding->supplier_id)
-            || $binding->upstream_ticket_id !== null
-        ) {
+        if (! $binding instanceof TicketUpstreamBinding) {
+            $this->recordLog($ticket, [
+                'operation' => 'ticket.create',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => 'binding_missing',
+                'message' => '工单没有待投递的上游绑定',
+            ]);
+
+            return;
+        }
+        if ($binding->provider_key !== ProviderKey::ZJMF_FINANCE_API) {
+            $this->recordLog($ticket, [
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.create',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => 'provider_mismatch',
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'message' => '工单绑定的上游接口不支持投递',
+            ]);
+
+            return;
+        }
+        $decision = $this->resolveContextDecision($ticket);
+        if ($decision['context'] === null) {
+            $this->recordLog($ticket, [
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.create',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => $decision['reason_code'],
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'message' => $decision['message'],
+            ]);
+
+            return;
+        }
+        if ($binding->upstream_ticket_id !== null) {
             return;
         }
         $claimed = TicketUpstreamBinding::query()
@@ -123,9 +396,31 @@ class TicketDeliveryService
             })
             ->update(['status' => 'sending', 'last_attempt_at' => now()]);
         if ($claimed !== 1) {
+            $this->recordLog($ticket, [
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.create',
+                'event' => 'claim_skipped',
+                'status' => (string) $binding->status,
+                'reason_code' => 'queue_claim_failed',
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'attempt' => (int) $binding->attempts,
+                'message' => '投递任务未能获取工单发送锁，可能已有任务正在处理',
+            ]);
+
             return;
         }
         $binding->refresh();
+        $this->recordLog($ticket, [
+            'binding_id' => $binding->id,
+            'operation' => 'ticket.create',
+            'event' => 'sending',
+            'status' => 'sending',
+            'provider_key' => $binding->provider_key,
+            'supplier_id' => $binding->supplier_id,
+            'attempt' => (int) $binding->attempts + 1,
+            'message' => '开始提交工单到上游',
+        ]);
 
         $this->attemptBinding($binding, function () use ($ticket, $binding): string {
             $service = $ticket->service;
@@ -134,19 +429,16 @@ class TicketDeliveryService
             $supplier = Supplier::query()->find($binding->supplier_id);
             throw_if($supplier === null, new BusinessException('工单上游供应商未配置', 42200));
             $supplier = $this->bindings->supplierWithRuntimeCredentials($supplier, true, ProviderKey::ZJMF_FINANCE_API);
-            $token = TicketUpstreamCallbackToken::forServiceId((int) $service->id);
-            $transport = $this->zjmfTransport();
-            if (method_exists($transport, 'registerDownstreamCallback')) {
-                $response = $transport->registerDownstreamCallback(
-                    $supplier,
-                    (int) $binding->upstream_service_id,
-                    (int) ($this->bindings->upstreamProductIdForService($service) ?? 0),
-                    (int) $service->id,
-                    PublicUrl::api(),
-                    $token
-                );
-                throw_if($this->extractSuccess($response) === false, new BusinessException((string) ($response['msg'] ?? '注册上游回调失败'), 42200));
-            }
+            $this->registerTicketCallbackRequest($supplier, $service, $binding);
+            $this->recordLog($ticket, [
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.callback_registration',
+                'event' => 'succeeded',
+                'status' => 'delivered',
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'message' => '已注册上游工单回调地址 /api/ticket_reply/sync',
+            ]);
 
             $firstReply = $ticket->replies()->oldest('id')->first();
             $content = (string) ($firstReply?->content ?? '');
@@ -167,7 +459,21 @@ class TicketDeliveryService
 
             return $upstreamId;
         }, function (string $remoteId) use ($binding, $ticket): void {
-            $binding->update(['upstream_ticket_id' => $remoteId, 'status' => 'delivered']);
+            $binding->update([
+                'upstream_ticket_id' => $remoteId,
+                'status' => 'delivered',
+                'delivered_at' => now(),
+            ]);
+            $this->recordLog($ticket, [
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.create',
+                'event' => 'succeeded',
+                'status' => 'delivered',
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'attempt' => (int) $binding->attempts,
+                'message' => '工单已成功提交到上游，工单号：'.$remoteId,
+            ]);
             $firstReplyId = (int) ($ticket->replies()->oldest('id')->value('id') ?? 0);
             $ticket->replies()
                 ->where('id', '>', $firstReplyId)
@@ -186,18 +492,99 @@ class TicketDeliveryService
     public function deliverReply(int $replyId): void
     {
         $reply = TicketReply::query()->with(['ticket.service', 'ticket.upstreamBinding', 'delivery'])->find($replyId);
-        if (! $reply instanceof TicketReply
-            || ! $reply->ticket?->upstreamBinding?->upstream_ticket_id
-            || $reply->ticket->upstreamBinding->provider_key !== ProviderKey::ZJMF_FINANCE_API
-        ) {
-            return;
-        }
-        if (! $this->supplierDeliveryEnabled((int) $reply->ticket->upstreamBinding->supplier_id)) {
+        if (! $reply instanceof TicketReply || ! $reply->ticket instanceof Ticket) {
             return;
         }
 
+        $ticket = $reply->ticket;
+        $binding = $ticket->upstreamBinding;
+        if (! $binding instanceof TicketUpstreamBinding) {
+            $this->recordLog($ticket, [
+                'ticket_reply_id' => $reply->id,
+                'operation' => 'ticket.reply',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => 'binding_missing',
+                'message' => '工单没有上游绑定，回复未提交',
+            ]);
+
+            return;
+        }
+        if (! $binding->upstream_ticket_id) {
+            $this->recordLog($ticket, [
+                'ticket_reply_id' => $reply->id,
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.reply',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => 'upstream_ticket_missing',
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'message' => '上游工单尚未创建，回复未提交',
+            ]);
+
+            return;
+        }
+        if ($binding->provider_key !== ProviderKey::ZJMF_FINANCE_API) {
+            $this->recordLog($ticket, [
+                'ticket_reply_id' => $reply->id,
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.reply',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => 'provider_mismatch',
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'message' => '工单绑定的上游接口不支持回复同步',
+            ]);
+
+            return;
+        }
+        $decision = $this->resolveContextDecision($ticket);
+        if ($decision['context'] === null) {
+            $this->recordLog($ticket, [
+                'ticket_reply_id' => $reply->id,
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.reply',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => $decision['reason_code'],
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'message' => $decision['message'],
+            ]);
+
+            return;
+        }
+        if ((int) $reply->is_staff === 1 && ! $this->syncAdminReplies($binding, $ticket)) {
+            $this->recordLog($ticket, [
+                'ticket_reply_id' => $reply->id,
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.reply',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => 'admin_reply_sync_disabled',
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'message' => '当前规则未开启管理员回复推送',
+            ]);
+
+            return;
+        }
         $delivery = $reply->delivery;
-        if (! $delivery instanceof TicketReplyDelivery || $delivery->status === 'delivered') {
+        if (! $delivery instanceof TicketReplyDelivery) {
+            $this->recordLog($reply->ticket, [
+                'ticket_reply_id' => $reply->id,
+                'operation' => 'ticket.reply',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => 'delivery_record_missing',
+                'message' => '工单回复没有对应的上游投递记录',
+            ]);
+
+            return;
+        }
+        if ($delivery->status === 'delivered') {
             return;
         }
         $claimed = TicketReplyDelivery::query()
@@ -208,11 +595,38 @@ class TicketDeliveryService
             })
             ->update(['status' => 'sending', 'last_attempt_at' => now()]);
         if ($claimed !== 1) {
+            $this->recordLog($reply->ticket, [
+                'ticket_reply_id' => $reply->id,
+                'delivery_id' => $delivery->id,
+                'binding_id' => $reply->ticket->upstreamBinding->id,
+                'operation' => 'ticket.reply',
+                'event' => 'claim_skipped',
+                'status' => (string) $delivery->status,
+                'reason_code' => 'queue_claim_failed',
+                'provider_key' => $reply->ticket->upstreamBinding->provider_key,
+                'supplier_id' => $reply->ticket->upstreamBinding->supplier_id,
+                'attempt' => (int) $delivery->attempts,
+                'message' => '回复投递任务未能获取发送锁，可能已有任务正在处理',
+            ]);
+
             return;
         }
         $delivery->refresh();
+        $delivery->loadMissing('reply.ticket.upstreamBinding');
 
         $binding = $reply->ticket->upstreamBinding;
+        $this->recordLog($reply->ticket, [
+            'ticket_reply_id' => $reply->id,
+            'delivery_id' => $delivery->id,
+            'binding_id' => $binding->id,
+            'operation' => 'ticket.reply',
+            'event' => 'sending',
+            'status' => 'sending',
+            'provider_key' => $binding->provider_key,
+            'supplier_id' => $binding->supplier_id,
+            'attempt' => (int) $delivery->attempts + 1,
+            'message' => '开始提交工单回复到上游',
+        ]);
         $this->attemptReply($delivery, function () use ($reply, $binding): void {
             $supplier = $this->supplierForBinding($reply->ticket);
             $attachments = $this->uploadAttachments($supplier, (array) $reply->attachments);
@@ -226,33 +640,44 @@ class TicketDeliveryService
         });
     }
 
-    /** @return array<string, mixed>|null */
-    private function resolveContext(Ticket $ticket): ?array
+    /**
+     * @return array{context: array<string, mixed>|null, reason_code: string, message: string, provider_key: ?string, supplier_id: ?int}
+     */
+    private function resolveContextDecision(Ticket $ticket): array
     {
         $ticket->loadMissing('service');
         $service = $ticket->service;
         if ($service === null) {
-            return null;
+            return $this->decision('service_missing', '工单未关联服务');
         }
 
         $providerKey = $this->bindings->providerKeyForService($service);
         $upstreamServiceId = $this->bindings->upstreamServiceIdForService($service);
         $supplierId = $this->bindings->supplierIdForService($service);
-        if ($providerKey !== ProviderKey::ZJMF_FINANCE_API || $upstreamServiceId === null || $supplierId === null) {
-            return null;
+        if ($providerKey !== ProviderKey::ZJMF_FINANCE_API) {
+            return $this->decision('provider_mismatch', '关联服务未使用支持工单传递的上游接口', $providerKey, $supplierId);
+        }
+        if ($upstreamServiceId === null) {
+            return $this->decision('upstream_service_missing', '关联服务未配置上游服务', $providerKey, $supplierId);
+        }
+        if ($supplierId === null) {
+            return $this->decision('supplier_missing', '关联服务未配置上游供应商', $providerKey);
         }
 
         $supplier = Supplier::query()->find($supplierId);
         $supplierBinding = $supplier === null ? [] : $this->bindings->supplierBindingProjection($supplier, true, ProviderKey::ZJMF_FINANCE_API);
-        if ($supplier === null
-            || (int) $supplier->status !== 1
-            || (int) ($supplierBinding['status'] ?? 0) !== 1
-            || (string) ($supplierBinding['provider_key'] ?? '') !== ProviderKey::ZJMF_FINANCE_API
-            || (bool) ($supplierBinding['ticket_delivery_enabled'] ?? false) !== true
-        ) {
-            return null;
+        if ($supplier === null) {
+            return $this->decision('supplier_missing', '上游供应商不存在', $providerKey, $supplierId);
         }
-
+        if ((int) $supplier->status !== 1) {
+            return $this->decision('supplier_disabled', '上游供应商未启用', $providerKey, $supplierId);
+        }
+        if ((int) ($supplierBinding['status'] ?? 0) !== 1) {
+            return $this->decision('supplier_binding_disabled', '上游供应商接口绑定未启用', $providerKey, $supplierId);
+        }
+        if ((string) ($supplierBinding['provider_key'] ?? '') !== ProviderKey::ZJMF_FINANCE_API) {
+            return $this->decision('supplier_binding_missing', '上游供应商未配置 ZJMF 财务接口绑定', $providerKey, $supplierId);
+        }
         $productId = $this->bindings->productIdForService($service);
         $ruleQuery = TicketDeliveryRule::query()
             ->where('department', (string) $ticket->department)
@@ -269,21 +694,41 @@ class TicketDeliveryService
             ->orderBy('id')
             ->first();
         if (! $rule instanceof TicketDeliveryRule) {
-            return null;
+            return $this->decision('rule_not_matched', '没有匹配当前工单部门和产品的启用规则', $providerKey, $supplierId);
         }
 
         $firstReplyContent = (string) ($ticket->replies()->oldest('id')->value('content') ?? '');
         foreach ($rule->maskKeywordList() as $keyword) {
             if ($keyword !== '' && Str::contains((string) $ticket->subject.' '.$firstReplyContent, $keyword, true)) {
-                return null;
+                return $this->decision('mask_keyword_matched', '工单标题或首条回复命中屏蔽关键词', $providerKey, $supplierId);
             }
         }
 
         return [
+            'context' => [
+                'provider_key' => $providerKey,
+                'supplier_id' => $supplierId,
+                'upstream_department_id' => (string) $rule->upstream_department_id,
+                'upstream_service_id' => $upstreamServiceId,
+            ],
+            'reason_code' => 'matched',
+            'message' => '已匹配上游转发规则',
+            'provider_key' => $providerKey,
+            'supplier_id' => (int) $supplierId,
+        ];
+    }
+
+    /**
+     * @return array{context:null, reason_code:string, message:string, provider_key:?string, supplier_id:?int}
+     */
+    private function decision(string $reasonCode, string $message, ?string $providerKey = null, ?int $supplierId = null): array
+    {
+        return [
+            'context' => null,
+            'reason_code' => $reasonCode,
+            'message' => $message,
             'provider_key' => $providerKey,
             'supplier_id' => $supplierId,
-            'upstream_department_id' => (string) $rule->upstream_department_id,
-            'upstream_service_id' => $upstreamServiceId,
         ];
     }
 
@@ -302,12 +747,23 @@ class TicketDeliveryService
             return;
         }
 
+        $this->recordLog($reply->ticket, [
+            'ticket_reply_id' => $reply->id,
+            'delivery_id' => $delivery->id,
+            'binding_id' => $reply->ticket->upstreamBinding?->id,
+            'operation' => 'ticket.reply',
+            'event' => 'queued',
+            'status' => 'pending',
+            'provider_key' => $reply->ticket->upstreamBinding?->provider_key,
+            'supplier_id' => $reply->ticket->upstreamBinding?->supplier_id,
+            'message' => '工单回复已进入上游投递队列',
+        ]);
         DeliverTicketReplyToUpstreamJob::dispatch((int) $reply->id)->afterCommit();
     }
 
     private function syncAdminReplies(TicketUpstreamBinding $binding, Ticket $ticket): bool
     {
-        if ($binding->provider_key !== ProviderKey::ZJMF_FINANCE_API || ! $this->supplierDeliveryEnabled((int) $binding->supplier_id)) {
+        if ($binding->provider_key !== ProviderKey::ZJMF_FINANCE_API) {
             return false;
         }
 
@@ -325,21 +781,6 @@ class TicketDeliveryService
             || $base->where('product_scope_mode', 'all')->exists();
     }
 
-    private function supplierDeliveryEnabled(int $supplierId): bool
-    {
-        if ($supplierId <= 0) {
-            return false;
-        }
-
-        $binding = DB::table('supplier_plugin_bindings')
-            ->where('supplier_id', $supplierId)
-            ->where('provider_key', ProviderKey::ZJMF_FINANCE_API)
-            ->where('status', 1)
-            ->first(['ticket_delivery_enabled']);
-
-        return $binding !== null && (bool) $binding->ticket_delivery_enabled;
-    }
-
     private function attemptBinding(TicketUpstreamBinding $binding, callable $send, callable $success): void
     {
         try {
@@ -347,22 +788,86 @@ class TicketDeliveryService
             $binding->update(['last_attempt_at' => now(), 'last_error' => null]);
             $success($send());
         } catch (\Throwable $e) {
-            $binding->update(['status' => 'failed', 'last_error' => mb_substr($e->getMessage(), 0, 2000)]);
+            $message = mb_substr($e->getMessage(), 0, 2000);
+            $binding->update(['status' => 'failed', 'last_error' => $message]);
+            $this->recordLog($binding->ticket, [
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.create',
+                'event' => 'failed',
+                'status' => 'failed',
+                'reason_code' => 'upstream_rejected',
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'attempt' => (int) $binding->attempts,
+                'message' => $message,
+            ]);
             throw $e;
         }
     }
 
     private function attemptReply(TicketReplyDelivery $delivery, callable $send): void
     {
+        $ticket = $delivery->reply?->ticket;
         try {
             $delivery->increment('attempts');
             $delivery->update(['last_attempt_at' => now(), 'last_error' => null]);
             $send();
             $delivery->update(['status' => 'delivered', 'delivered_at' => now()]);
+            if ($ticket instanceof Ticket) {
+                $this->recordLog($ticket, [
+                    'ticket_reply_id' => $delivery->ticket_reply_id,
+                    'delivery_id' => $delivery->id,
+                    'binding_id' => $ticket->upstreamBinding?->id,
+                    'operation' => 'ticket.reply',
+                    'event' => 'succeeded',
+                    'status' => 'delivered',
+                    'provider_key' => $ticket->upstreamBinding?->provider_key,
+                    'supplier_id' => $ticket->upstreamBinding?->supplier_id,
+                    'attempt' => (int) $delivery->attempts,
+                    'message' => '工单回复已成功同步到上游',
+                ]);
+            }
         } catch (\Throwable $e) {
-            $delivery->update(['status' => 'failed', 'last_error' => mb_substr($e->getMessage(), 0, 2000)]);
+            $message = mb_substr($e->getMessage(), 0, 2000);
+            $delivery->update(['status' => 'failed', 'last_error' => $message]);
+            if ($ticket instanceof Ticket) {
+                $this->recordLog($ticket, [
+                    'ticket_reply_id' => $delivery->ticket_reply_id,
+                    'delivery_id' => $delivery->id,
+                    'binding_id' => $ticket->upstreamBinding?->id,
+                    'operation' => 'ticket.reply',
+                    'event' => 'failed',
+                    'status' => 'failed',
+                    'reason_code' => 'upstream_rejected',
+                    'provider_key' => $ticket->upstreamBinding?->provider_key,
+                    'supplier_id' => $ticket->upstreamBinding?->supplier_id,
+                    'attempt' => (int) $delivery->attempts,
+                    'message' => $message,
+                ]);
+            }
             throw $e;
         }
+    }
+
+    /** @return array<string, mixed> */
+    private function registerTicketCallbackRequest(Supplier $supplier, Service $service, TicketUpstreamBinding $binding): array
+    {
+        $transport = $this->zjmfTransport();
+        if (! method_exists($transport, 'registerDownstreamCallback')) {
+            throw new BusinessException('当前上游驱动不支持工单回调注册', 42200);
+        }
+
+        $response = $transport->registerDownstreamCallback(
+            $supplier,
+            (int) $binding->upstream_service_id,
+            (int) ($this->bindings->upstreamProductIdForService($service) ?? 0),
+            (int) $service->id,
+            PublicUrl::api(),
+            TicketUpstreamCallbackToken::forServiceId((int) $service->id),
+        );
+        throw_if($this->extractSuccess($response) === false, new BusinessException((string) ($response['msg'] ?? '注册上游回调失败'), 42200));
+
+        return $response;
     }
 
     private function supplierForBinding(Ticket $ticket): Supplier
@@ -373,6 +878,49 @@ class TicketDeliveryService
         throw_if($supplier === null, new BusinessException('工单上游供应商未配置', 42200));
 
         return $this->bindings->supplierWithRuntimeCredentials($supplier, true);
+    }
+
+    private function logsQuery(Ticket $ticket): \Illuminate\Database\Eloquent\Builder
+    {
+        return TicketUpstreamDeliveryLog::query()->where('ticket_id', (int) $ticket->id);
+    }
+
+    /** @param array<string, mixed> $data */
+    private function recordLog(?Ticket $ticket, array $data): void
+    {
+        if (! $ticket instanceof Ticket || ! Schema::hasTable('ticket_upstream_delivery_logs')) {
+            return;
+        }
+
+        try {
+            TicketUpstreamDeliveryLog::query()->create(array_merge([
+                'ticket_id' => $ticket->id,
+                'direction' => self::DIRECTION_OUTBOUND,
+                'operation' => 'ticket.create',
+                'event' => 'info',
+                'status' => 'pending',
+                'occurred_at' => now(),
+            ], $data));
+        } catch (\Throwable $e) {
+            Log::warning('写入工单上游投递日志失败', [
+                'ticket_id' => $ticket->id,
+                'message' => $e->getMessage(),
+                'exception' => $e::class,
+            ]);
+        }
+    }
+
+    private function statusLabel(string $status): string
+    {
+        return match ($status) {
+            'not_configured' => '未配置',
+            'pending' => '等待发送',
+            'sending' => '发送中',
+            'delivered' => '已转发',
+            'failed' => '转发失败',
+            'skipped' => '未转发',
+            default => $status !== '' ? $status : '未转发',
+        };
     }
 
     private function zjmfTransport(): object

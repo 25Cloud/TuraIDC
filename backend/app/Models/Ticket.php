@@ -39,6 +39,11 @@ class Ticket extends Model
         return $this->hasOne(TicketUpstreamBinding::class);
     }
 
+    public function upstreamDeliveryLogs(): HasMany
+    {
+        return $this->hasMany(TicketUpstreamDeliveryLog::class);
+    }
+
     public function scopeOpen($query)
     {
         return $query->whereIn('status', [0, 1, 2]);

@@ -6,24 +6,31 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TicketUpstreamBinding extends Model
 {
     protected $fillable = [
         'ticket_id', 'provider_key', 'supplier_id', 'upstream_department_id',
         'upstream_service_id', 'upstream_ticket_id', 'status', 'attempts',
-        'last_error', 'last_attempt_at',
+        'last_error', 'last_attempt_at', 'delivered_at',
     ];
 
     protected function casts(): array
     {
         return [
             'last_attempt_at' => 'datetime',
+            'delivered_at' => 'datetime',
         ];
     }
 
     public function ticket(): BelongsTo
     {
         return $this->belongsTo(Ticket::class);
+    }
+
+    public function deliveryLogs(): HasMany
+    {
+        return $this->hasMany(TicketUpstreamDeliveryLog::class, 'binding_id');
     }
 }

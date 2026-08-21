@@ -60,7 +60,7 @@ class TicketController extends Controller
     public function show(ShowTicketRequest $request, Ticket $ticket): JsonResponse
     {
         return $this->success([
-            'ticket' => (new TicketDetailResource($this->tickets->v2Detail($ticket)))->resolve(),
+            'ticket' => (new TicketDetailResource($this->tickets->v2Detail($ticket, true)))->resolve(),
         ]);
     }
 

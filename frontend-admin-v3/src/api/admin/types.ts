@@ -249,6 +249,13 @@ export interface LogListParams {
   result_status?: string;
   actor_type?: string;
   subject_type?: string;
+  ticket_id?: string | number;
+  ticket_reply_id?: string | number;
+  operation?: string;
+  event?: string;
+  reason_code?: string;
+  provider_key?: string;
+  supplier_id?: string | number;
 }
 
 export interface PaginatedList<T extends Record<string, unknown> = Record<string, unknown>> {
@@ -813,6 +820,7 @@ export interface TicketReply {
   user_id?: number | string;
   content?: string;
   is_staff?: boolean | number;
+  sender_type?: string;
   sender_name?: string;
   attachments?: TicketAttachment[];
   attachment_urls?: Array<string | TicketAttachment>;
@@ -825,6 +833,54 @@ export interface TicketReply {
     recalled?: boolean;
   } | null;
   created_at?: string;
+}
+
+export interface TicketUpstreamDelivery {
+  configured?: boolean;
+  status?: 'not_configured' | 'pending' | 'sending' | 'delivered' | 'failed' | 'skipped' | string;
+  status_label?: string;
+  provider_key?: string | null;
+  supplier_id?: number | string | null;
+  upstream_department_id?: string | null;
+  upstream_service_id?: string | null;
+  upstream_ticket_id?: string | null;
+  attempts?: number;
+  last_attempt_at?: string | null;
+  delivered_at?: string | null;
+  last_error?: string | null;
+  last_event?: {
+    event?: string;
+    status?: string;
+    reason_code?: string | null;
+    message?: string | null;
+    occurred_at?: string | null;
+  } | null;
+}
+
+export interface TicketUpstreamDeliveryLog {
+  id: number | string;
+  ticket_id?: number | string;
+  ticket_reply_id?: number | string | null;
+  direction?: string;
+  operation?: string;
+  event?: string;
+  status?: string;
+  status_label?: string;
+  reason_code?: string | null;
+  provider_key?: string | null;
+  supplier_id?: number | string | null;
+  attempt?: number | null;
+  http_status?: number | null;
+  duration_ms?: number | null;
+  message?: string | null;
+  occurred_at?: string | null;
+}
+
+export interface TicketUpstreamDeliveryLogsResponse {
+  list?: TicketUpstreamDeliveryLog[];
+  total?: number;
+  page?: number;
+  page_size?: number;
 }
 
 export interface TicketDetail extends TicketRecord {
@@ -851,6 +907,7 @@ export interface TicketDetail extends TicketRecord {
     [key: string]: unknown;
   } | null;
   replies?: TicketReply[];
+  upstream_delivery?: TicketUpstreamDelivery;
 }
 
 export interface TicketAdminUser {

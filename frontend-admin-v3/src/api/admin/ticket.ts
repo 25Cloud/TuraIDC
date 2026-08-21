@@ -10,6 +10,7 @@ import type {
   TicketDetail,
   TicketListParams,
   TicketRecord,
+  TicketUpstreamDeliveryLogsResponse,
 } from './types';
 
 interface TicketV2DetailPayload {
@@ -55,6 +56,13 @@ export const ticketsApi = {
     }),
   summary: () => request.get<Record<string, unknown>>({ url: '/v2/admin/tickets/summary' }),
   detail: (id: number | string) => v2TicketDetail(id),
+  upstreamDeliveryLogs: (id: number | string, params: { page?: number; page_size?: number } = {}) =>
+    request.get<TicketUpstreamDeliveryLogsResponse>({
+      url: `/v2/admin/tickets/${id}/upstream-delivery/logs`,
+      params,
+    }),
+  registerUpstreamCallback: (id: number | string) =>
+    request.post({ url: `/v2/admin/tickets/${id}/upstream-delivery/callback-registration` }),
   adminUsers: () => request.get<TicketV2AdminUsersPayload>({ url: '/v2/admin/tickets/admin-users' }),
   close: (id: number | string) => request.post({ url: `/v2/admin/tickets/${id}/closures` }),
   assign: (id: number | string, data: { assignee_id?: number | string | null }) =>
