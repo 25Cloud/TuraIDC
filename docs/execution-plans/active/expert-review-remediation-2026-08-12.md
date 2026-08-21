@@ -18,7 +18,7 @@ owner: backend-platform
 - [ ] 升降级履约 `processPaidUpgradeOrder` 增加内部并发锁，幂等边界进入锁内。
 - [ ] `shared/statusConfig.js` 补齐 `PARTIALLY_REFUNDED=6` 及对应展示映射与类型声明。
 - [ ] 支付宝回调 URL 兜底移除 `frontend_url` 指向，仅保留显式配置与后端 `APP_URL`。
-- [ ] 执行计划索引与目录对齐、`.gitignore` 污染行清理；`npm run docs:check` 通过。
+- [ ] 执行计划索引与目录对齐、`.gitignore` 污染行清理；`pnpm run docs:check` 通过。
 
 ## 实施步骤
 

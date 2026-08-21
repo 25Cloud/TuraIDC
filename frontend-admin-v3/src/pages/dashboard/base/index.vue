@@ -52,6 +52,7 @@ import { LineChart, PieChart } from 'echarts/charts';
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components';
 import * as echarts from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
+import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import {
   computed,
   nextTick,
@@ -89,7 +90,7 @@ let resizeFrame = 0;
 let productChart: echarts.ECharts | null = null;
 let dailyChart: echarts.ECharts | null = null;
 
-const invoiceColumns = [
+const invoiceColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'invoice_no', title: '账单号', minWidth: 180 },
   { colKey: 'amount', title: '金额', width: 140, align: 'right' },
   { colKey: 'status', title: '状态', width: 120 },

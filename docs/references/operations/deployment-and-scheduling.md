@@ -132,19 +132,25 @@ php artisan route:cache
 ### 3.2 前端部署
 
 ```bash
-# 项目根目录：只安装一次 workspace 依赖。
-npm ci
+# 项目根目录：只安装一次 workspace 依赖（pnpm monorepo，四个 workspace）。
+# --shamefully-hoist：多个 vite build（尤其 www 的 element-plus 深路径 import）
+# 会从根 node_modules 解析依赖，必须扁平提升，否则构建报 load-fallback ENOENT。
+# verify-deps-before-run=false：关闭 pnpm run 前的依赖检查，避免它重新 purge 掉 hoist 布局。
+pnpm install --frozen-lockfile --shamefully-hoist
+pnpm config set verify-deps-before-run false
 
 # 每个前端构建时读取各自目录下的 .env 获取后端/前端地址，
 # 构建三个完全独立的 dist，不复制任何文件到 backend/public。
-npm run build:frontends
+pnpm run build:frontends
+# 若在无 TTY 的 CI/脚本环境跑 build，需 CI=true（跳过 pnpm 的模块目录移除交互确认）。
+CI=true pnpm run build:frontends
 ```
 
 产物目录分别是 `frontend-user-v3-www/dist`、`frontend-user-v4-console/dist`、`frontend-admin-v3/dist`，各自指向对应宝塔站点根目录。
 
-VitePress 文档官网不属于上述三端，必须通过 `npm run build:docs` 独立构建和发布。内容维护、产物目录与发布检查见[文档官网维护指南](../../governance/docs-web-maintenance.md)。
+VitePress 文档官网不属于上述三端，必须通过 `pnpm run build:docs` 独立构建和发布。内容维护、产物目录与发布检查见[文档官网维护指南](../../governance/docs-web-maintenance.md)。
 
-> **dev 与 build 的 env 分开**：本地开发（`npm run dev`）读取各前端目录下的 `.env.dev`（dev 脚本用 `--mode dev`）；构建（`npm run build:frontends`）读取各前端目录下的 `.env`。前端构建不依赖 backend 环境文件。
+> **dev 与 build 的 env 分开**：本地开发（`pnpm run dev`）读取各前端目录下的 `.env.dev`（dev 脚本用 `--mode dev`）；构建（`pnpm run build:frontends`）读取各前端目录下的 `.env`。前端构建不依赖 backend 环境文件。
 >
 > 每个前端目录（`frontend-admin-v3`、`frontend-user-v3-www`、`frontend-user-v4-console`）需要两份 env（均 gitignore，不入库）：
 >
@@ -155,7 +161,7 @@ VitePress 文档官网不属于上述三端，必须通过 `npm run build:docs` 
 
 # 只预览构建目标，不实际构建
 
-npm run build:frontends:dry
+pnpm run build:frontends:dry
 
 ### 3.3 .env 关键项
 

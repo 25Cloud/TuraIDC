@@ -55,7 +55,7 @@ import MenuContent from './MenuContent.vue';
 const { menu, showLogo, isFixed, layout, theme, isCompact } = defineProps({
   menu: {
     type: Array as PropType<MenuRoute[]>,
-    default: () => [],
+    default: (): MenuRoute[] => [],
   },
   showLogo: {
     type: Boolean as PropType<boolean>,

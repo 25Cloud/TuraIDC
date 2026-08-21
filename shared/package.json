@@ -20,7 +20,8 @@
     "vue": "^3.5.0"
   },
   "devDependencies": {
-    "@types/markdown-it": "^14.1.2"
+    "@types/markdown-it": "^14.1.2",
+    "vite": "^6.4.3"
   },
   "scripts": {
     "lint": "eslint . --ext .js,.ts,.vue",

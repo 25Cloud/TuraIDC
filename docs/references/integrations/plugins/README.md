@@ -678,5 +678,5 @@ php artisan test tests/Feature/MultiSmtpRoundRobinPluginTest.php
 
 ```bash
 cd frontend-admin-v3
-npm.cmd run build
+pnpm.cmd run build
 ```
