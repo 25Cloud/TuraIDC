@@ -281,7 +281,7 @@ class AliyunSmsApiClient
                 'Authorization' => $authorization,
                 'Content-Type' => 'application/x-www-form-urlencoded',
             ]))
-                ->withOptions(['verify' => $this->resolveVerifyOption()])
+                // 不设置 verify：项目硬规则要求插件不提供 SSL 与 CA 配置，统一依赖系统 CA
                 ->timeout($this->requestTimeout())
                 // body 必须为空：签名计算用的是空 body 的 sha256
                 ->send('POST', 'https://'.$endpoint.'/?'.$canonicalQuery);
@@ -478,21 +478,6 @@ class AliyunSmsApiClient
         return $timeout >= 3 && $timeout <= 30 ? $timeout : self::DEFAULT_TIMEOUT_SECONDS;
     }
 
-    /**
-     * 与同域 aliyun 插件保持一致的 SSL 策略：插件配置优先，其次回落到 idc.sms 配置。
-     */
-    private function resolveVerifyOption(): bool|string
-    {
-        $sslVerify = filter_var(config('idc.sms.ssl_verify', true), FILTER_VALIDATE_BOOL);
-        if (! $sslVerify) {
-            return false;
-        }
-
-        $caBundle = trim((string) config('idc.sms.ca_bundle', ''));
-
-        return $caBundle !== '' && is_file($caBundle) ? $caBundle : true;
-    }
-
     private function resolveFailureMessage(mixed $message, string $code = ''): string
     {
         $code = trim($code);
@@ -518,7 +503,8 @@ class AliyunSmsApiClient
         $message = strtolower($exception->getMessage());
 
         if (str_contains($message, 'certificate') || str_contains($message, 'ssl')) {
-            return '短信接口 SSL 证书校验失败，请检查服务器 CA 证书或 SMS_CA_BUNDLE 配置';
+            // SMS_CA_BUNDLE 已随「插件不提供 SSL/CA 配置」一并移除，文案改为指向系统 CA
+            return '短信接口 SSL 证书校验失败，请检查服务器系统 CA 证书是否过期';
         }
 
         if (str_contains($message, 'resolve host') || str_contains($message, 'could not resolve')) {

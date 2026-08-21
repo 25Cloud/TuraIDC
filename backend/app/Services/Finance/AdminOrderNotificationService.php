@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Finance;
 
+use App\Constants\BillingCycle;
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
 use App\Constants\PaymentGatewayCode;
@@ -473,16 +474,7 @@ class AdminOrderNotificationService
 
     private function resolveBillingCycleLabel(string $cycle): string
     {
-        return [
-            'monthly' => '月付',
-            'quarterly' => '季付',
-            'semiannually' => '半年付',
-            'annually' => '年付',
-            'biennially' => '两年付',
-            'triennially' => '三年付',
-            'one_time' => '一次性',
-            'onetime' => '一次性',
-        ][$cycle] ?? ($cycle !== '' ? $cycle : '-');
+        return BillingCycle::label($cycle, $cycle) ?: '-';
     }
 
     private function resolveOrderTypeLabel(string $type): string

@@ -180,6 +180,7 @@
 <script setup lang="ts">
 import './index.less';
 
+import { billingCycleLabel as billingCycleLabelOf } from '@shared/billingCycle';
 import { SERVICE_STATUS_MAP, toSelectOptions } from '@shared/statusConfig';
 import { SearchIcon } from 'tdesign-icons-vue-next';
 import type { PageInfo, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
@@ -401,22 +402,8 @@ function hasHostInfo(row: ServiceRecord) {
 }
 
 function billingCycleLabel(cycle: unknown) {
-  const map: Record<string, string> = {
-    monthly: '月付',
-    quarterly: '季付',
-    // 后端真源是 semiannually（Service::SUPPORTED_RENEW_BILLING_CYCLES），
-    // 原先写的 biannually 拼错，导致半年付服务在列表里显示英文原文。
-    // biannually 保留为兼容读取，不删。
-    semiannually: '半年付',
-    biannually: '半年付',
-    annually: '年付',
-    biennially: '两年付',
-    triennially: '三年付',
-    // 后端产出 one_time，onetime 是历史别名，两者都要能显示
-    one_time: '一次性',
-    onetime: '一次性',
-  };
-  return map[String(cycle || '')] || fieldValue(cycle);
+  // 别名（biannually 拼写错误、onetime、yearly）统一由 @shared/billingCycle 归一
+  return billingCycleLabelOf(cycle) || fieldValue(cycle);
 }
 
 function isExpiringSoon(value: unknown) {

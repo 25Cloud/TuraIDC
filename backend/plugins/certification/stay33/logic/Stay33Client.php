@@ -192,7 +192,8 @@ class Stay33Client
 
         if (($this->lastRequestFailure['type'] ?? '') === 'curl') {
             if ($this->isSslFailure($this->lastRequestFailure)) {
-                return '实名认证接口 SSL 证书校验失败，请检查插件 CA 证书配置';
+                // 插件已不提供 CA 配置项，证书问题只可能出在服务器的系统 CA 上，据此给出指向
+                return '实名认证接口 SSL 证书校验失败，请检查服务器系统 CA 证书是否过期';
             }
 
             return '实名认证接口请求失败，请稍后重试';
@@ -201,37 +202,17 @@ class Stay33Client
         return '实名认证接口返回异常';
     }
 
+    /**
+     * 证书校验始终开启，使用系统 CA。
+     *
+     * 项目硬规则：插件不需要 SSL 与 CA 配置。原实现允许经插件配置或
+     * config('idc.verification.ssl_verify') 关闭校验，而后者在 APP_ENV=local 时默认为
+     * false——等于给证书校验留了一条静默禁用通路。这里显式写死，不再读任何配置。
+     */
     private function applySslOptions($ch): void
     {
-        $sslVerify = $this->resolveSslVerify();
-
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $sslVerify);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $sslVerify ? 2 : 0);
-
-        $caBundle = $this->resolveCaBundle();
-        if ($sslVerify && $caBundle !== '' && is_file($caBundle)) {
-            curl_setopt($ch, CURLOPT_CAINFO, $caBundle);
-        }
-    }
-
-    private function resolveSslVerify(): bool
-    {
-        $value = $this->config['ssl_verify'] ?? null;
-        if ($value !== null && $value !== '') {
-            return filter_var($value, FILTER_VALIDATE_BOOL);
-        }
-
-        return filter_var(config('idc.verification.ssl_verify', true), FILTER_VALIDATE_BOOL);
-    }
-
-    private function resolveCaBundle(): string
-    {
-        $value = $this->config['ca_bundle'] ?? null;
-        if ($value !== null && $value !== '') {
-            return trim((string) $value);
-        }
-
-        return trim((string) config('idc.verification.ca_bundle', ''));
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
     }
 
     /**

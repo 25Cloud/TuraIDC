@@ -64,38 +64,28 @@ class RechargeGatewayFailureTest extends TestCase
         $this->assertSame('https://api.example.test/api/v2/client/payment/alipay/notify', $this->getPrivateProperty($client, 'notifyUrl'));
     }
 
-    public function test_alipay_client_passes_configured_ca_bundle_to_http_client(): void
+    /**
+     * 证书校验不再可配置：支付网关插件不得关闭校验，也不得指定自定义 CA。
+     *
+     * 本测试取代原 test_alipay_client_passes_configured_ca_bundle_to_http_client 与
+     * test_alipay_client_can_disable_ssl_verification_from_config——那两条断言可经
+     * config('alipay.ssl_verify' / 'alipay.ca_bundle') 改变校验行为，把违规行为钉成了预期，
+     * 与 AGENTS.md「所有插件不需要 SSL 和 CA」冲突。支付回调链路上留这条通路风险最高。
+     */
+    public function test_alipay_client_always_verifies_certificates(): void
     {
-        $caBundle = tempnam(sys_get_temp_dir(), 'alipay-ca-');
-        $this->assertIsString($caBundle);
-        file_put_contents($caBundle, "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n");
-
-        try {
-            config([
-                'alipay.ssl_verify' => true,
-                'alipay.ca_bundle' => $caBundle,
-            ]);
-
-            $client = $this->makeAlipayClient();
-            $pendingRequest = $this->invokePrivateMethod($client, 'buildHttpClient');
-
-            $this->assertSame($caBundle, $pendingRequest->getOptions()['verify'] ?? null);
-        } finally {
-            @unlink($caBundle);
-        }
-    }
-
-    public function test_alipay_client_can_disable_ssl_verification_from_config(): void
-    {
+        // 即便把旧配置显式关成 false 并给出 CA 路径，也不应影响出网客户端
         config([
             'alipay.ssl_verify' => false,
-            'alipay.ca_bundle' => '',
+            'alipay.ca_bundle' => '/tmp/should-be-ignored.pem',
         ]);
 
         $client = $this->makeAlipayClient();
         $pendingRequest = $this->invokePrivateMethod($client, 'buildHttpClient');
 
-        $this->assertFalse($pendingRequest->getOptions()['verify'] ?? null);
+        // 不显式设置 verify，交由 Guzzle 默认值（true）与系统 CA 生效
+        $this->assertArrayNotHasKey('verify', $pendingRequest->getOptions());
+        $this->assertFalse(method_exists($client, 'httpVerifyOption'));
     }
 
     public function test_precreate_notify_url_accepts_public_https_address(): void

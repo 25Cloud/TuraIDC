@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ProductCatalog;
 
+use App\Constants\BillingCycle;
 use App\Constants\OrderStatus;
 use App\Constants\OrderType;
 use App\Constants\ProductType;
@@ -34,12 +35,7 @@ class ProductSyncService
 {
     use HandlesProductCatalogHelpers;
 
-    private const IMPORT_PRICING_MONTHS = [
-        'monthly' => 1,
-        'quarterly' => 3,
-        'semiannually' => 6,
-        'annually' => 12,
-    ];
+    private const IMPORT_PRICING_MONTHS = BillingCycle::RENEWABLE_MONTHS;
 
     private const REMOTE_STOCK_CACHE_TTL_SECONDS = 15;
 

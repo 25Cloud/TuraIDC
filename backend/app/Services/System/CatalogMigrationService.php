@@ -4,21 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\System;
 
+use App\Constants\BillingCycle;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CatalogMigrationService
 {
-    private const BILLING_CYCLE_SORT_ORDER = [
-        'monthly' => 10,
-        'quarterly' => 20,
-        'semiannually' => 30,
-        'annually' => 40,
-        'biennially' => 50,
-        'triennially' => 60,
-        'one_time' => 70,
-    ];
-
     private string $sourceConnection;
 
     private string $targetConnection;
@@ -392,7 +383,7 @@ class CatalogMigrationService
                 'stock_mode' => $stockMode,
                 'stock_value' => $stockValue,
                 'is_default' => $cycle === $defaultCycle ? 1 : 0,
-                'sort_order' => self::BILLING_CYCLE_SORT_ORDER[$cycle] ?? 999,
+                'sort_order' => $this->resolveCycleSortOrder($cycle),
                 'status' => $status,
                 'created_at' => $legacyProduct['created_at'] ?? null,
                 'updated_at' => $legacyProduct['updated_at'] ?? null,
@@ -402,6 +393,20 @@ class CatalogMigrationService
         usort($rows, static fn (array $left, array $right) => $left['sort_order'] <=> $right['sort_order']);
 
         return $rows;
+    }
+
+    /**
+     * 周期 → product_prices.sort_order。
+     *
+     * 排序次序取自 {@see BillingCycle::ORDER}（原本另有一份 10/20/30… 的私有表，
+     * 与之完全同序），但**步进 10 与未知值 999 必须保留**：这个值要落库，
+     * 步进给人工插入留空位，999 保证脏周期永远排在末尾。
+     */
+    private function resolveCycleSortOrder(string $cycle): int
+    {
+        $rank = BillingCycle::sortRank($cycle);
+
+        return $rank < count(BillingCycle::ORDER) ? ($rank + 1) * 10 : 999;
     }
 
     /**

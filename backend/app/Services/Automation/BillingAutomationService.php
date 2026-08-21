@@ -2,6 +2,7 @@
 
 namespace App\Services\Automation;
 
+use App\Constants\BillingCycle;
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderType;
 use App\Constants\ServiceStatus;
@@ -573,16 +574,7 @@ class BillingAutomationService
 
     private function resolveCycleLabel(string $cycle): string
     {
-        return [
-            'monthly' => '月付',
-            'quarterly' => '季付',
-            'semiannually' => '半年付',
-            'annually' => '年付',
-            'biennially' => '两年付',
-            'triennially' => '三年付',
-            'one_time' => '一次性',
-            'onetime' => '一次性',
-        ][$cycle] ?? $cycle;
+        return BillingCycle::label($cycle, $cycle);
     }
 
     private function resolveDaysLeft(Carbon $expiresAt, ?Carbon $resolvedNow = null): int

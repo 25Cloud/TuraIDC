@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Site\V2;
 
+use App\Constants\BillingCycle;
 use App\Constants\ProductType;
 use App\Models\Product;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
@@ -14,12 +15,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class SiteProductDetailResource extends JsonResource
 {
-    private const BILLING_CYCLES = [
-        'monthly' => '月付',
-        'quarterly' => '季付',
-        'semiannually' => '半年付',
-        'annually' => '年付',
-    ];
+    private const BILLING_CYCLES = BillingCycle::RENEWABLE_LABELS;
 
     /**
      * @return array<string, mixed>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ProductCatalog\Concerns;
 
+use App\Constants\BillingCycle;
 use App\Exceptions\BusinessException;
 use App\Models\Product;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
@@ -144,8 +145,7 @@ trait HandlesProductCatalogHelpers
             : null;
 
         if ($monthly !== null && $monthly > 0) {
-            $importPricingMonths = ['monthly' => 1, 'quarterly' => 3, 'semiannually' => 6, 'annually' => 12];
-            foreach ($importPricingMonths as $cycle => $months) {
+            foreach (BillingCycle::RENEWABLE_MONTHS as $cycle => $months) {
                 if (! array_key_exists($cycle, $normalized)) {
                     $normalized[$cycle] = number_format($monthly * $months, 2, '.', '');
                 }
