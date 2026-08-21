@@ -459,11 +459,30 @@ class TicketDeliveryService
 
             return $upstreamId;
         }, function (string $remoteId) use ($binding, $ticket): void {
-            $binding->update([
-                'upstream_ticket_id' => $remoteId,
-                'status' => 'delivered',
-                'delivered_at' => now(),
-            ]);
+            $updated = TicketUpstreamBinding::query()
+                ->whereKey($binding->id)
+                ->where('status', 'sending')
+                ->whereNull('upstream_ticket_id')
+                ->update([
+                    'upstream_ticket_id' => $remoteId,
+                    'status' => 'delivered',
+                    'delivered_at' => now(),
+                ]);
+            if ($updated !== 1) {
+                $this->recordLog($ticket, [
+                    'binding_id' => $binding->id,
+                    'operation' => 'ticket.create',
+                    'event' => 'late_success',
+                    'status' => (string) ($binding->fresh()?->status ?? 'unknown'),
+                    'reason_code' => 'stale_claim_completed',
+                    'provider_key' => $binding->provider_key,
+                    'supplier_id' => $binding->supplier_id,
+                    'message' => '投递任务返回成功，但本地绑定已由其他任务处理',
+                ]);
+
+                return;
+            }
+            $binding->refresh();
             $this->recordLog($ticket, [
                 'binding_id' => $binding->id,
                 'operation' => 'ticket.create',
@@ -479,11 +498,25 @@ class TicketDeliveryService
                 ->where('id', '>', $firstReplyId)
                 ->orderBy('id')
                 ->get()
-                ->each(function (TicketReply $reply): void {
-                    if ((int) $reply->is_staff === 1) {
-                        $this->queueStaffReply($reply);
-                    } else {
-                        $this->queueClientReply($reply);
+                ->each(function (TicketReply $reply) use ($ticket, $binding): void {
+                    try {
+                        if ((int) $reply->is_staff === 1) {
+                            $this->queueStaffReply($reply);
+                        } else {
+                            $this->queueClientReply($reply);
+                        }
+                    } catch (\Throwable $exception) {
+                        $this->recordLog($ticket, [
+                            'ticket_reply_id' => $reply->id,
+                            'binding_id' => $binding->id,
+                            'operation' => 'ticket.reply',
+                            'event' => 'failed',
+                            'status' => 'failed',
+                            'reason_code' => 'history_reply_queue_failed',
+                            'provider_key' => $binding->provider_key,
+                            'supplier_id' => $binding->supplier_id,
+                            'message' => mb_substr($exception->getMessage(), 0, 2000),
+                        ]);
                     }
                 });
         });
@@ -540,7 +573,7 @@ class TicketDeliveryService
 
             return;
         }
-        $decision = $this->resolveContextDecision($ticket);
+        $decision = $this->resolveContextDecision($ticket, requireRule: false);
         if ($decision['context'] === null) {
             $this->recordLog($ticket, [
                 'ticket_reply_id' => $reply->id,
@@ -552,21 +585,6 @@ class TicketDeliveryService
                 'provider_key' => $binding->provider_key,
                 'supplier_id' => $binding->supplier_id,
                 'message' => $decision['message'],
-            ]);
-
-            return;
-        }
-        if ((int) $reply->is_staff === 1 && ! $this->syncAdminReplies($binding, $ticket)) {
-            $this->recordLog($ticket, [
-                'ticket_reply_id' => $reply->id,
-                'binding_id' => $binding->id,
-                'operation' => 'ticket.reply',
-                'event' => 'skipped',
-                'status' => 'skipped',
-                'reason_code' => 'admin_reply_sync_disabled',
-                'provider_key' => $binding->provider_key,
-                'supplier_id' => $binding->supplier_id,
-                'message' => '当前规则未开启管理员回复推送',
             ]);
 
             return;
@@ -643,7 +661,7 @@ class TicketDeliveryService
     /**
      * @return array{context: array<string, mixed>|null, reason_code: string, message: string, provider_key: ?string, supplier_id: ?int}
      */
-    private function resolveContextDecision(Ticket $ticket): array
+    private function resolveContextDecision(Ticket $ticket, bool $requireRule = true): array
     {
         $ticket->loadMissing('service');
         $service = $ticket->service;
@@ -664,6 +682,11 @@ class TicketDeliveryService
             return $this->decision('supplier_missing', '关联服务未配置上游供应商', $providerKey);
         }
 
+        $upstreamProductId = $this->bindings->upstreamProductIdForService($service);
+        if ($requireRule && $upstreamProductId === null) {
+            return $this->decision('upstream_product_missing', '关联服务未配置上游产品', $providerKey, $supplierId);
+        }
+
         $supplier = Supplier::query()->find($supplierId);
         $supplierBinding = $supplier === null ? [] : $this->bindings->supplierBindingProjection($supplier, true, ProviderKey::ZJMF_FINANCE_API);
         if ($supplier === null) {
@@ -678,6 +701,21 @@ class TicketDeliveryService
         if ((string) ($supplierBinding['provider_key'] ?? '') !== ProviderKey::ZJMF_FINANCE_API) {
             return $this->decision('supplier_binding_missing', '上游供应商未配置 ZJMF 财务接口绑定', $providerKey, $supplierId);
         }
+        if (! $requireRule) {
+            return [
+                'context' => [
+                    'provider_key' => $providerKey,
+                    'supplier_id' => $supplierId,
+                    'upstream_service_id' => $upstreamServiceId,
+                    'upstream_product_id' => $upstreamProductId,
+                ],
+                'reason_code' => 'binding_ready',
+                'message' => '上游工单绑定可用',
+                'provider_key' => $providerKey,
+                'supplier_id' => (int) $supplierId,
+            ];
+        }
+
         $productId = $this->bindings->productIdForService($service);
         $ruleQuery = TicketDeliveryRule::query()
             ->where('department', (string) $ticket->department)
@@ -710,6 +748,7 @@ class TicketDeliveryService
                 'supplier_id' => $supplierId,
                 'upstream_department_id' => (string) $rule->upstream_department_id,
                 'upstream_service_id' => $upstreamServiceId,
+                'upstream_product_id' => $upstreamProductId,
             ],
             'reason_code' => 'matched',
             'message' => '已匹配上游转发规则',
@@ -773,12 +812,23 @@ class TicketDeliveryService
             ->where('department', (string) $ticket->department)
             ->where('supplier_id', (int) $binding->supplier_id)
             ->where('provider_key', ProviderKey::ZJMF_FINANCE_API)
-            ->where('enabled', true)
-            ->where('sync_admin_replies', true);
+            ->where('enabled', true);
 
-        return ($productId !== null && (clone $base)->where('product_scope_mode', 'selected')
-            ->whereHas('products', fn ($products) => $products->whereKey($productId))->exists())
-            || $base->where('product_scope_mode', 'all')->exists();
+        $selected = $productId === null ? null : (clone $base)
+            ->where('product_scope_mode', 'selected')
+            ->whereHas('products', fn ($products) => $products->whereKey($productId))
+            ->orderBy('id')
+            ->first();
+        if ($selected instanceof TicketDeliveryRule) {
+            return (bool) $selected->sync_admin_replies;
+        }
+
+        $all = (clone $base)
+            ->where('product_scope_mode', 'all')
+            ->orderBy('id')
+            ->first();
+
+        return $all instanceof TicketDeliveryRule && (bool) $all->sync_admin_replies;
     }
 
     private function attemptBinding(TicketUpstreamBinding $binding, callable $send, callable $success): void
@@ -789,7 +839,10 @@ class TicketDeliveryService
             $success($send());
         } catch (\Throwable $e) {
             $message = mb_substr($e->getMessage(), 0, 2000);
-            $binding->update(['status' => 'failed', 'last_error' => $message]);
+            TicketUpstreamBinding::query()
+                ->whereKey($binding->id)
+                ->where('status', 'sending')
+                ->update(['status' => 'failed', 'last_error' => $message]);
             $this->recordLog($binding->ticket, [
                 'binding_id' => $binding->id,
                 'operation' => 'ticket.create',
@@ -812,7 +865,26 @@ class TicketDeliveryService
             $delivery->increment('attempts');
             $delivery->update(['last_attempt_at' => now(), 'last_error' => null]);
             $send();
-            $delivery->update(['status' => 'delivered', 'delivered_at' => now()]);
+            $updated = TicketReplyDelivery::query()
+                ->whereKey($delivery->id)
+                ->where('status', 'sending')
+                ->update(['status' => 'delivered', 'delivered_at' => now()]);
+            if ($updated !== 1) {
+                if ($ticket instanceof Ticket) {
+                    $this->recordLog($ticket, [
+                        'ticket_reply_id' => $delivery->ticket_reply_id,
+                        'delivery_id' => $delivery->id,
+                        'operation' => 'ticket.reply',
+                        'event' => 'late_success',
+                        'status' => (string) ($delivery->fresh()?->status ?? 'unknown'),
+                        'reason_code' => 'stale_claim_completed',
+                        'message' => '回复投递返回成功，但本地记录已由其他任务处理',
+                    ]);
+                }
+
+                return;
+            }
+            $delivery->refresh();
             if ($ticket instanceof Ticket) {
                 $this->recordLog($ticket, [
                     'ticket_reply_id' => $delivery->ticket_reply_id,
@@ -829,7 +901,10 @@ class TicketDeliveryService
             }
         } catch (\Throwable $e) {
             $message = mb_substr($e->getMessage(), 0, 2000);
-            $delivery->update(['status' => 'failed', 'last_error' => $message]);
+            TicketReplyDelivery::query()
+                ->whereKey($delivery->id)
+                ->where('status', 'sending')
+                ->update(['status' => 'failed', 'last_error' => $message]);
             if ($ticket instanceof Ticket) {
                 $this->recordLog($ticket, [
                     'ticket_reply_id' => $delivery->ticket_reply_id,
@@ -857,10 +932,13 @@ class TicketDeliveryService
             throw new BusinessException('当前上游驱动不支持工单回调注册', 42200);
         }
 
+        $upstreamProductId = $this->bindings->upstreamProductIdForService($service);
+        throw_if($upstreamProductId === null, new BusinessException('关联服务未配置上游产品，无法注册回调', 42200));
+
         $response = $transport->registerDownstreamCallback(
             $supplier,
             (int) $binding->upstream_service_id,
-            (int) ($this->bindings->upstreamProductIdForService($service) ?? 0),
+            (int) $upstreamProductId,
             (int) $service->id,
             PublicUrl::api(),
             TicketUpstreamCallbackToken::forServiceId((int) $service->id),
@@ -877,7 +955,17 @@ class TicketDeliveryService
             : null;
         throw_if($supplier === null, new BusinessException('工单上游供应商未配置', 42200));
 
-        return $this->bindings->supplierWithRuntimeCredentials($supplier, true);
+        $providerKey = trim((string) ($ticket->upstreamBinding?->provider_key ?? ''));
+        $supplier = $this->bindings->supplierWithRuntimeCredentials(
+            $supplier,
+            true,
+            $providerKey !== '' ? $providerKey : null
+        );
+        if ($providerKey !== '' && (string) $supplier->getAttribute('provider_key') !== $providerKey) {
+            throw new BusinessException('工单供应商绑定与上游接口不一致', 42200);
+        }
+
+        return $supplier;
     }
 
     private function logsQuery(Ticket $ticket): \Illuminate\Database\Eloquent\Builder
