@@ -970,7 +970,9 @@ class TicketDeliveryService
 
     private function logsQuery(Ticket $ticket): \Illuminate\Database\Eloquent\Builder
     {
-        return TicketUpstreamDeliveryLog::query()->where('ticket_id', (int) $ticket->id);
+        return TicketUpstreamDeliveryLog::query()
+            ->with('supplier:id,name')
+            ->where('ticket_id', (int) $ticket->id);
     }
 
     /** @param array<string, mixed> $data */

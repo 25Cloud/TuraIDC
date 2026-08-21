@@ -41,6 +41,7 @@ class AdminLogSummaryResource extends JsonResource
         'driver_key',
         'plugin_key',
         'provider_key',
+        'supplier_name',
         'plugin_id',
         'trace_id',
         'out_trade_no',
@@ -77,6 +78,7 @@ class AdminLogSummaryResource extends JsonResource
         'gateway_key',
         'driver_key',
         'plugin_key',
+        'provider_key',
     ];
 
     /**
@@ -103,7 +105,30 @@ class AdminLogSummaryResource extends JsonResource
         $payload['context_excerpt'] = $this->excerpt($this->contextText($row, $rawNotification), 240, ! $rawNotification);
         $payload['error_excerpt'] = $this->excerpt((string) ($row['error_msg'] ?? $row['error_message'] ?? ''), 200, ! $rawNotification);
 
+        if ($channel === 'upstream' && is_array($row['logs'] ?? null)) {
+            $payload['log_count'] = (int) ($row['log_count'] ?? count($row['logs']));
+            $payload['logs'] = array_map(
+                fn (mixed $log): mixed => is_array($log) ? $this->sanitizeNestedRow($log) : $log,
+                $row['logs']
+            );
+        }
+
         return $this->dropSensitiveKeys($payload);
+    }
+
+    /** @return array<string, mixed> */
+    private function sanitizeNestedRow(array $row): array
+    {
+        $sanitized = [];
+        foreach ($row as $key => $value) {
+            if (! is_string($key) || $this->isSensitiveKey($key)) {
+                continue;
+            }
+
+            $sanitized[$key] = $this->sanitizeField($key, $value);
+        }
+
+        return $sanitized;
     }
 
     private function messageText(array $row): string

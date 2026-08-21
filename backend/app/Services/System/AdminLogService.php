@@ -1282,14 +1282,59 @@ class AdminLogService
             return $this->buildPaginatorPayload($this->emptyPaginator($perPage));
         }
 
-        $logs = (clone $query)->orderByDesc('occurred_at')->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
-        $logs->setCollection($logs->getCollection()->map(fn (TicketUpstreamDeliveryLog $log): array => $this->upstreamLogRow($log)));
+        $total = (int) (clone $query)
+            ->reorder()
+            ->distinct()
+            ->count('ticket_id');
+        $ticketIds = (clone $query)
+            ->reorder()
+            ->select('ticket_id')
+            ->selectRaw('MAX(occurred_at) as latest_occurred_at')
+            ->selectRaw('MAX(id) as latest_id')
+            ->groupBy('ticket_id')
+            ->orderByDesc('latest_occurred_at')
+            ->orderByDesc('latest_id')
+            ->forPage($page, $perPage)
+            ->pluck('ticket_id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->values()
+            ->all();
 
-        if (! $withSummary) {
-            return $this->buildPaginatorPayload($logs);
+        $rows = [];
+        if ($ticketIds !== []) {
+            $eventsByTicket = (clone $query)
+                ->whereIn('ticket_id', $ticketIds)
+                ->orderByDesc('occurred_at')
+                ->orderByDesc('id')
+                ->get()
+                ->groupBy('ticket_id');
+
+            foreach ($ticketIds as $ticketId) {
+                $eventRows = $eventsByTicket
+                    ->get($ticketId, collect())
+                    ->map(fn (TicketUpstreamDeliveryLog $log): array => $this->upstreamLogRow($log))
+                    ->values()
+                    ->all();
+                if ($eventRows === []) {
+                    continue;
+                }
+
+                $rows[] = array_merge($eventRows[0], [
+                    'log_count' => count($eventRows),
+                    'logs' => $eventRows,
+                ]);
+            }
         }
 
-        return $this->buildPaginatorPayload($logs, $this->getUpstreamLogsSummary($filters));
+        $paginator = new LengthAwarePaginator($rows, $total, $perPage, $page, [
+            'path' => request()->url(),
+            'query' => request()->query(),
+        ]);
+
+        return $this->buildPaginatorPayload(
+            $paginator,
+            $withSummary ? $this->getUpstreamLogsSummary($filters) : []
+        );
     }
 
     public function getUpstreamLogsSummary(array $filters): array
@@ -1300,7 +1345,8 @@ class AdminLogService
         }
 
         $summary = (clone $query)
-            ->selectRaw('COUNT(*) as total')
+            ->reorder()
+            ->selectRaw('COUNT(DISTINCT ticket_id) as total')
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) as failed")
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END), 0) as delivered")
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'skipped' THEN 1 ELSE 0 END), 0) as skipped")
@@ -1325,7 +1371,9 @@ class AdminLogService
             return null;
         }
 
-        $log = TicketUpstreamDeliveryLog::query()->find($id);
+        $log = TicketUpstreamDeliveryLog::query()
+            ->with('supplier:id,name')
+            ->find($id);
         if (! $log instanceof TicketUpstreamDeliveryLog) {
             return null;
         }
@@ -1349,7 +1397,7 @@ class AdminLogService
             return null;
         }
 
-        $query = TicketUpstreamDeliveryLog::query();
+        $query = TicketUpstreamDeliveryLog::query()->with('supplier:id,name');
         foreach (['ticket_id', 'ticket_reply_id', 'supplier_id'] as $field) {
             if (! empty($filters[$field])) {
                 $query->where($field, (int) $filters[$field]);
@@ -1397,6 +1445,7 @@ class AdminLogService
             'reason_code' => $log->reason_code,
             'provider_key' => $log->provider_key,
             'supplier_id' => $log->supplier_id ? (int) $log->supplier_id : null,
+            'supplier_name' => $log->supplier?->name,
             'attempt' => $log->attempt ? (int) $log->attempt : null,
             'http_status' => $log->http_status ? (int) $log->http_status : null,
             'duration_ms' => $log->duration_ms ? (int) $log->duration_ms : null,

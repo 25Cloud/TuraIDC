@@ -41,4 +41,9 @@ final class TicketUpstreamDeliveryLog extends Model
     {
         return $this->belongsTo(TicketReplyDelivery::class, 'delivery_id');
     }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id');
+    }
 }

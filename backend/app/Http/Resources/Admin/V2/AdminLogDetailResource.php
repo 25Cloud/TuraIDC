@@ -19,6 +19,7 @@ class AdminLogDetailResource extends JsonResource
         'gateway_key',
         'driver_key',
         'plugin_key',
+        'provider_key',
     ];
 
     /**

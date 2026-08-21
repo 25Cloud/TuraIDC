@@ -1020,6 +1020,17 @@ const isUpstreamLogTab = computed(() => activeTab.value === 'upstream');
 const upstreamLogGroups = computed<RecordRow[]>(() => {
   if (!isUpstreamLogTab.value) return [];
 
+  if (logRows.value.some((row) => Array.isArray(row.logs))) {
+    return logRows.value.map((row) => {
+      const logs = Array.isArray(row.logs) ? (row.logs as RecordRow[]) : [row];
+      return {
+        ...row,
+        logs,
+        log_count: Number(row.log_count || logs.length),
+      };
+    });
+  }
+
   const groups = new Map<string, RecordRow>();
   for (const row of logRows.value) {
     const ticketId = String(row.ticket_id || row.id || 'unknown');

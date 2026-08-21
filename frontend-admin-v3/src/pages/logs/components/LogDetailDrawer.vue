@@ -152,7 +152,7 @@ const detailFields = computed(() => {
       { label: '事件', value: fieldValue(row.event) },
       { label: '状态', value: statusLabel(row.status) },
       { label: '原因码', value: fieldValue(row.reason_code) },
-      { label: 'Provider', value: fieldValue(row.provider_key) },
+      { label: '供应商', value: fieldValue(row.supplier_name || row.provider_key) },
       { label: '供应商 ID', value: fieldValue(row.supplier_id) },
       { label: '尝试次数', value: fieldValue(row.attempt) },
       { label: 'HTTP 状态', value: fieldValue(row.http_status) },
