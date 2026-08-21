@@ -306,19 +306,23 @@ class V2AdminTicketActionApiTest extends TestCase
 
         $this->assertArrayHasKey('allowed_ips', $default->json('data'));
         $this->assertArrayHasKey('rate_limit', $default->json('data'));
+        $this->assertArrayHasKey('block_non_whitelisted', $default->json('data'));
 
         $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
             'allowed_ips' => "203.0.113.10\n198.51.100.0/24",
             'rate_limit' => 5,
+            'block_non_whitelisted' => true,
         ])->assertOk()
             ->assertJsonPath('code', 0)
             ->assertJsonPath('data.allowed_ips', "203.0.113.10\n198.51.100.0/24")
-            ->assertJsonPath('data.rate_limit', 5);
+            ->assertJsonPath('data.rate_limit', 5)
+            ->assertJsonPath('data.block_non_whitelisted', true);
 
         $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
             ->assertOk()
             ->assertJsonPath('data.allowed_ips', "203.0.113.10\n198.51.100.0/24")
-            ->assertJsonPath('data.rate_limit', 5);
+            ->assertJsonPath('data.rate_limit', 5)
+            ->assertJsonPath('data.block_non_whitelisted', true);
 
         // 非法 IP / CIDR 被拒绝
         $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [

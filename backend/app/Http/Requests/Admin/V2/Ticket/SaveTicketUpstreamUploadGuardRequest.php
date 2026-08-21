@@ -19,17 +19,19 @@ final class SaveTicketUpstreamUploadGuardRequest extends AdminFormRequest
                 fn (string $attribute, mixed $value, Closure $fail) => $this->validateAllowedIps($value, $fail),
             ],
             'rate_limit' => ['required', 'integer', 'min:0', 'max:10000'],
+            'block_non_whitelisted' => ['sometimes', 'boolean'],
         ];
     }
 
     /**
-     * @return array{allowed_ips: string, rate_limit: int}
+     * @return array{allowed_ips: string, rate_limit: int, block_non_whitelisted: bool}
      */
     public function payload(): array
     {
         return [
             'allowed_ips' => trim((string) ($this->validated('allowed_ips') ?? '')),
             'rate_limit' => (int) $this->validated('rate_limit'),
+            'block_non_whitelisted' => (bool) ($this->validated('block_non_whitelisted') ?? false),
         ];
     }
 

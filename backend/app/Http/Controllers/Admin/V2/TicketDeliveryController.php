@@ -120,6 +120,11 @@ final class TicketDeliveryController extends Controller
                 'rate_limit',
                 (string) config('ticket_upstream.upload_rate_limit', 30)
             ),
+            'block_non_whitelisted' => (bool) \App\Models\Setting::getValue(
+                'ticket_upstream',
+                'block_non_whitelisted',
+                config('ticket_upstream.upload_block_non_whitelisted', false)
+            ),
             'unused_retention_minutes' => (int) config('ticket_upstream.upload_unused_retention_minutes', 5),
         ]);
     }

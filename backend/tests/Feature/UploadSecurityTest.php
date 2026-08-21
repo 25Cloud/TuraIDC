@@ -296,6 +296,60 @@ class UploadSecurityTest extends TestCase
         Setting::setValues('ticket_upstream', [
             'allowed_ips' => '',
             'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
+            'block_non_whitelisted' => '0',
+        ]);
+    }
+
+    public function test_upstream_upload_throttle_blocks_non_whitelisted_when_enabled(): void
+    {
+        Setting::forgetCachedGroup('ticket_upstream');
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => '203.0.113.10',
+            'rate_limit' => '0',
+            'block_non_whitelisted' => '1',
+        ]);
+
+        // 白名单 IP 正常上传
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('whitelisted-block.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 200);
+
+        // 非白名单 IP 直接拒绝（即使 rate_limit=0）
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.40'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('blocked-1.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 403);
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.40'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('blocked-2.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 403);
+
+        // CIDR 白名单匹配
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => '198.51.100.0/24',
+            'rate_limit' => '0',
+            'block_non_whitelisted' => '1',
+        ]);
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.50'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('cidr-whitelisted.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 200);
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.60'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('cidr-blocked.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 403);
+
+        // 恢复默认配置
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => '',
+            'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
+            'block_non_whitelisted' => '0',
         ]);
     }
 

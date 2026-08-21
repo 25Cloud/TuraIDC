@@ -14,8 +14,10 @@ return [
     // 上游附件上传的防滥用配置（可在管理端「工单传递设置」页调整，存于 settings 表 ticket_upstream 组）：
     // - upload_allowed_ips：白名单 IP/CIDR（逗号或换行分隔），白名单内不限速
     // - upload_rate_limit：非白名单来源每分钟上传次数上限，0 表示不限速
+    // - upload_block_non_whitelisted：true 时直接拒绝白名单外的所有上传（忽略 rate_limit）
     'upload_allowed_ips' => env('TICKET_UPSTREAM_UPLOAD_ALLOWED_IPS', ''),
     'upload_rate_limit' => (int) env('TICKET_UPSTREAM_UPLOAD_RATE_LIMIT', 30),
+    'upload_block_non_whitelisted' => (bool) env('TICKET_UPSTREAM_UPLOAD_BLOCK_NON_WHITELISTED', false),
 
     // 上传文件「已保存但未被工单回复引用」的自动删除保留期（分钟）。
     // 上传成功返回 savename 后，若超过该时长仍未被回调持久化引用，文件会被每分钟清理任务删除。
