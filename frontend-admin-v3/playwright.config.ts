@@ -17,7 +17,7 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run dev:ci -- --port 5176 --strictPort',
+    command: 'pnpm run dev:ci -- --port 5176 --strictPort',
     url: 'http://127.0.0.1:5176',
     reuseExistingServer: false,
     timeout: 120_000,

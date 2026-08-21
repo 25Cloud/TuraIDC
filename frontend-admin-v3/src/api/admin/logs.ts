@@ -118,9 +118,10 @@ export const logsApi = {
   cleanupOverview: () => request.get<Record<string, unknown>>({ url: '/v2/admin/log-cleanups/overview' }),
   cleanup: (data: LogCleanupPayload) =>
     request
-      .post<
-        { detail?: { cleanup?: Record<string, unknown> } } | Record<string, unknown>
-      >({ url: '/v2/admin/log-cleanups', data })
+      .post<{ detail?: { cleanup?: Record<string, unknown> } } | Record<string, unknown>>({
+        url: '/v2/admin/log-cleanups',
+        data,
+      })
       .then((response) => {
         const detail = (response as { detail?: { cleanup?: Record<string, unknown> } }).detail;
         return detail?.cleanup || response;

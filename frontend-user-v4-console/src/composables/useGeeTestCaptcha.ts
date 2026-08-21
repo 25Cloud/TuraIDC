@@ -94,11 +94,7 @@ function appendScriptCacheKey(src: string, cacheKey: string) {
 }
 
 type CaptchaAppendTarget =
-  | string
-  | HTMLElement
-  | { value?: string | HTMLElement | null | undefined }
-  | null
-  | undefined;
+  string | HTMLElement | { value?: string | HTMLElement | null | undefined } | null | undefined;
 
 function resolveAppendTarget(target: CaptchaAppendTarget): string | HTMLElement | undefined {
   if (target && typeof target === 'object' && 'value' in target) {
