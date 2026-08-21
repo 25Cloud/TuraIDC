@@ -137,6 +137,19 @@ class AdminOrderNotificationService
         );
     }
 
+    /**
+     * 向全部管理员收件人发送同一封业务通知邮件。
+     *
+     * 幂等由 AutomationLog 台账保证：按 (任务, 动作, order, 收件人) 判重，
+     * 已发成功的收件人在重试时会被跳过。
+     *
+     * 失败语义：单个收件人失败只记日志并继续（个别地址问题不该阻断其他人）；
+     * 本轮全部收件人都失败时额外打一条 error 级日志，把「通道整体不可用」
+     * 与「个别地址失败」区分开，便于告警。不外抛：本服务不经队列执行，
+     * 外抛换不到重试，反而会把异常带进 terminating 回调或调用方流程。
+     *
+     * @param  callable(mixed):array<string, mixed>  $payloadBuilder  按收件人构造模板变量
+     */
     private function sendToAdmins(Order $order, string $templateCode, string $action, callable $payloadBuilder): void
     {
         $recipients = $this->resolveRecipients();
@@ -144,12 +157,22 @@ class AdminOrderNotificationService
             return;
         }
 
+        // 逐个收件人失败此前只记 Log::warning 且不外抛，队列任务因此拿到正常返回、
+        // 标记成功，$tries 一次都用不上；又因失败时没调 markExecuted，也没有任何
+        // 后续调度会重投——付款到账的管理员通知会在 SMTP 不可用时静默全丢。
+        // 这里统计成败：部分失败不重试（已成功的由 AutomationLog 幂等台账挡住重发），
+        // 全部失败则外抛，交给队列按 $backoff 重试。
+        $attempted = 0;
+        $failed = 0;
+
         foreach ($recipients as $admin) {
             $ruleKey = 'admin:'.(int) $admin->id;
 
             if (AutomationLog::hasRecord(self::TASK_KEY, $action, 'order', (int) $order->id, $ruleKey)) {
                 continue;
             }
+
+            $attempted++;
 
             try {
                 $this->notificationService->sendTemplateEmail(
@@ -171,6 +194,8 @@ class AdminOrderNotificationService
                     ]
                 );
             } catch (\Throwable $exception) {
+                $failed++;
+
                 Log::warning('[管理员账单通知] 邮件发送失败', [
                     'action' => $action,
                     'order_id' => $order->id,
@@ -181,6 +206,25 @@ class AdminOrderNotificationService
                     'message' => $exception->getMessage(),
                 ]);
             }
+        }
+
+        // 本轮全部收件人都失败：说明是发信通道整体不可用（而非个别地址问题）。
+        // 这里刻意只升级日志级别、不外抛——本服务不经队列任务执行：
+        // scheduleNotificationAfterResponse() 走 app()->terminating() 回调，
+        // console 场景下更是直接同步调用，整条链上没有任何 try/catch。
+        // 外抛既换不到重试（没有 worker 承接），还会把异常带进 terminating 回调、
+        // 甚至让调用方（如支付履约流程）连带失败。
+        // 要真正获得重试，需把通知改造成 ShouldQueue 任务并配置 $tries/$backoff，
+        // 那是独立的改动，不在本次范围。
+        if ($attempted > 0 && $failed === $attempted) {
+            Log::error('[管理员账单通知] 全部收件人发送失败，本次通知已丢失且不会自动重投', [
+                'action' => $action,
+                'order_id' => (int) $order->id,
+                'order_no' => (string) $order->order_no,
+                'template_code' => $templateCode,
+                'attempted' => $attempted,
+                'failed' => $failed,
+            ]);
         }
     }
 
