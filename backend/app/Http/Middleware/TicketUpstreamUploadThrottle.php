@@ -27,6 +27,13 @@ final class TicketUpstreamUploadThrottle
             return $next($request);
         }
 
+        // 拒绝白名单外上传：仅允许配置的白名单 IP/CIDR 来源，其余一律拒绝
+        if ($this->blockNonWhitelisted()) {
+            Log::warning('上游附件上传被白名单拒绝', ['ip' => $ip, 'reason' => 'non_whitelisted_blocked']);
+
+            return response()->json(['status' => 403, 'msg' => '上传失败'], 200);
+        }
+
         $maxAttempts = $this->maxAttempts();
         if ($maxAttempts <= 0) {
             return $next($request);
@@ -108,5 +115,14 @@ final class TicketUpstreamUploadThrottle
         );
 
         return max(0, (int) $value);
+    }
+
+    private function blockNonWhitelisted(): bool
+    {
+        return (bool) \App\Models\Setting::getValue(
+            'ticket_upstream',
+            'block_non_whitelisted',
+            config('ticket_upstream.upload_block_non_whitelisted', false)
+        );
     }
 }

@@ -220,8 +220,17 @@
           />
         </t-form-item>
         <t-form-item label="非白名单速率（次/分钟）">
-          <t-input-number v-model="uploadGuard.rate_limit" :disabled="!canManage" :min="0" :max="10000" />
+          <t-input-number
+            v-model="uploadGuard.rate_limit"
+            :disabled="!canManage || uploadGuard.block_non_whitelisted"
+            :min="0"
+            :max="10000"
+          />
           <span class="ticket-delivery-guard-hint">0 表示不限速（不推荐）</span>
+        </t-form-item>
+        <t-form-item label="拒绝白名单外上传">
+          <t-switch v-model="uploadGuard.block_non_whitelisted" :disabled="!canManage" />
+          <span class="ticket-delivery-guard-hint">开启后仅白名单 IP/CIDR 可上传，其余来源直接拒绝</span>
         </t-form-item>
         <t-form-item label="未使用文件保留期">
           <span>{{ uploadGuard.unused_retention_minutes }} 分钟（每分钟自动清理一次）</span>
@@ -274,6 +283,7 @@ let departmentsRequestId = 0;
 const uploadGuard = reactive({
   allowed_ips: '',
   rate_limit: 30,
+  block_non_whitelisted: false,
   unused_retention_minutes: 5,
 });
 
@@ -462,6 +472,7 @@ async function loadUploadGuard() {
     const config = await adminApi.tickets.uploadGuard.config();
     uploadGuard.allowed_ips = config.allowed_ips ?? '';
     uploadGuard.rate_limit = Number(config.rate_limit ?? 30);
+    uploadGuard.block_non_whitelisted = Boolean(config.block_non_whitelisted ?? false);
     uploadGuard.unused_retention_minutes = Number(config.unused_retention_minutes ?? 5);
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '加载上传防护配置失败'));
@@ -475,9 +486,11 @@ async function saveUploadGuard() {
     const saved = await adminApi.tickets.uploadGuard.save({
       allowed_ips: uploadGuard.allowed_ips,
       rate_limit: Number(uploadGuard.rate_limit),
+      block_non_whitelisted: Boolean(uploadGuard.block_non_whitelisted),
     });
     uploadGuard.allowed_ips = saved.allowed_ips ?? '';
     uploadGuard.rate_limit = Number(saved.rate_limit ?? 0);
+    uploadGuard.block_non_whitelisted = Boolean(saved.block_non_whitelisted ?? false);
     MessagePlugin.success('上传防护配置已保存');
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存上传防护配置失败'));

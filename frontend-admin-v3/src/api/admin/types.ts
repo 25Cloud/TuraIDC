@@ -792,12 +792,14 @@ export interface TicketDeliveryDepartmentsResponse {
 export interface TicketUpstreamUploadGuardConfig {
   allowed_ips?: string;
   rate_limit?: number;
+  block_non_whitelisted?: boolean;
   unused_retention_minutes?: number;
 }
 
 export interface TicketUpstreamUploadGuardPayload {
   allowed_ips: string;
   rate_limit: number;
+  block_non_whitelisted: boolean;
 }
 
 export interface TicketRecord {
