@@ -13,9 +13,12 @@ use App\Models\Role;
 use App\Models\SecondProductGroup;
 use App\Models\Service;
 use App\Models\ThirdProductGroup;
+use App\Models\Ticket;
+use App\Models\TicketReply;
 use App\Models\User;
 use App\Services\Content\MediaFileService;
 use App\Services\Ticket\TicketService;
+use App\Services\Ticket\TicketUpstreamCallbackService;
 use App\Services\Ticket\TicketUpstreamCallbackToken;
 use App\Support\AdminPermissions;
 use Illuminate\Http\UploadedFile;
@@ -120,12 +123,9 @@ class UploadSecurityTest extends TestCase
 
     public function test_upstream_ticket_upload_returns_legacy_savename_contract(): void
     {
-        $service = $this->createUpstreamUploadService();
-
+        // 默认兼容模式：旧上游（不携带凭证）上传应成功，保证回调附件可用
         $response = $this->post('/upload_image', [
             'file' => UploadedFile::fake()->image('logo.png', 16, 16)->size(8),
-            'id' => (string) $service->id,
-            'token' => TicketUpstreamCallbackToken::forServiceId((int) $service->id),
         ]);
 
         $response->assertOk()
@@ -162,8 +162,10 @@ class UploadSecurityTest extends TestCase
         $this->assertFileExists(storage_path('app/private/tickets/upstream/'.$filename));
     }
 
-    public function test_upstream_ticket_upload_rejects_requests_without_or_bad_credentials(): void
+    public function test_upstream_ticket_upload_credential_checks_are_enforced_when_required(): void
     {
+        // 强制校验开启时，无凭证/伪造凭证一律拒绝（fail-closed）
+        config()->set('ticket_upstream.upload_token_required', true);
         $service = $this->createUpstreamUploadService();
 
         $this->post('/upload_image', [
@@ -181,6 +183,68 @@ class UploadSecurityTest extends TestCase
             'id' => '99999999',
             'token' => TicketUpstreamCallbackToken::forServiceId((int) $service->id),
         ])->assertJsonPath('status', 400);
+
+        // 兼容模式下带凭证上传仍强制匹配，伪造 token 不被放行
+        config()->set('ticket_upstream.upload_token_required', false);
+        $this->post('/upload_image', [
+            'file' => UploadedFile::fake()->image('bad-token-2.png', 16, 16)->size(8),
+            'id' => (string) $service->id,
+            'token' => 'forged-token',
+        ])->assertJsonPath('status', 400);
+
+        // 兼容模式下有效凭证正常通过
+        $this->post('/upload_image', [
+            'file' => UploadedFile::fake()->image('good-token.png', 16, 16)->size(8),
+            'id' => (string) $service->id,
+            'token' => TicketUpstreamCallbackToken::forServiceId((int) $service->id),
+        ])->assertJsonPath('status', 200);
+    }
+
+    public function test_upstream_orphan_upload_cleanup_removes_only_unreferenced_files(): void
+    {
+        $directory = storage_path('app/private/tickets/upstream');
+        File::ensureDirectoryExists($directory);
+
+        $orphanName = 'upstream-'.now()->subDays(30)->format('YmdHis').'-'.bin2hex(random_bytes(6)).'.png';
+        $referencedName = 'upstream-'.now()->subDays(30)->format('YmdHis').'-'.bin2hex(random_bytes(6)).'.png';
+        $orphanPath = $directory.'/'.$orphanName;
+        $referencedPath = $directory.'/'.$referencedName;
+        File::put($orphanPath, 'orphan');
+        File::put($referencedPath, 'referenced');
+        touch($orphanPath, now()->subDays(30)->timestamp);
+        touch($referencedPath, now()->subDays(30)->timestamp);
+        $this->uploadedFiles[] = $orphanPath;
+        $this->uploadedFiles[] = $referencedPath;
+
+        $service = $this->createUpstreamUploadService();
+        $ticket = Ticket::query()->create([
+            'user_id' => (int) $service->user_id,
+            'department' => 'support',
+            'subject' => 'orphan cleanup',
+            'priority' => 2,
+            'status' => 1,
+            'service_id' => (int) $service->id,
+        ]);
+        TicketReply::query()->create([
+            'ticket_id' => (int) $ticket->id,
+            'user_id' => (int) $service->user_id,
+            'content' => 'referenced attachment',
+            'is_staff' => 0,
+            'attachments' => [[
+                'name' => $referencedName,
+                'path' => 'private/tickets/upstream/'.$referencedName,
+                'size' => 10,
+                'mime_type' => 'image/png',
+                'type' => 'image',
+            ]],
+        ]);
+
+        $result = app(TicketUpstreamCallbackService::class)->cleanupOrphanUploads(retentionDays: 7, limit: 100);
+
+        $this->assertSame(1, $result['deleted']);
+        $this->assertSame(1, $result['referenced']);
+        $this->assertFileDoesNotExist($orphanPath);
+        $this->assertFileExists($referencedPath);
     }
 
     public function test_ticket_image_upload_still_accepts_normal_image(): void
