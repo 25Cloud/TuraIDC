@@ -10,7 +10,7 @@ name: turaidc-ci
 
 services:
   mysql:
-    image: gh.yealqp.cn/library/mysql:8.0
+    image: mysql:8.0
     network_mode: host
     environment:
       MYSQL_DATABASE: finance
@@ -57,7 +57,7 @@ services:
       '
 
   frontend:
-    image: gh.yealqp.cn/library/node:22
+    image: node:22
     network_mode: host
     volumes:
       - ../../../:/repo:ro
