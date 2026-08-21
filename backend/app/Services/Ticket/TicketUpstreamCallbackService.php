@@ -327,4 +327,59 @@ final class TicketUpstreamCallbackService
 
         return $serviceId > 0 ? TicketUpstreamCallbackToken::forServiceId($serviceId) : '';
     }
+
+    /**
+     * 清理上游附件上传目录中的孤儿文件：超过保留期且未被任何工单回复引用的文件会被删除。
+     * 上游系统无法强制携带上传凭证时，该任务用于缓解匿名上传造成的磁盘占用。
+     *
+     * @return array{checked: int, deleted: int, referenced: int, errors: int}
+     */
+    public function cleanupOrphanUploads(?int $retentionDays = null, int $limit = 100): array
+    {
+        $retentionDays = $retentionDays ?? (int) config('ticket_upstream.upload_retention_days', 7);
+        $directory = storage_path('app/private/tickets/upstream');
+        if (! is_dir($directory)) {
+            return ['checked' => 0, 'deleted' => 0, 'referenced' => 0, 'errors' => 0];
+        }
+
+        $cutoff = now()->subDays($retentionDays);
+        $files = collect(File::files($directory))
+            ->sortBy(fn (\SplFileInfo $file): int => $file->getMTime())
+            ->values();
+        $checked = 0;
+        $deleted = 0;
+        $referenced = 0;
+        $errors = 0;
+
+        foreach ($files as $file) {
+            if ($deleted >= $limit) {
+                break;
+            }
+            if (now()->createFromTimestamp($file->getMTime())->gt($cutoff)) {
+                continue;
+            }
+            $checked++;
+            $path = 'private/tickets/upstream/'.$file->getFilename();
+            $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $path);
+            if (TicketReply::query()->where('attachments', 'like', "%{$escaped}%")->exists()) {
+                $referenced++;
+
+                continue;
+            }
+
+            try {
+                File::delete($file->getPathname());
+                $deleted++;
+                Log::info('清理上游孤儿上传文件', ['filename' => $file->getFilename()]);
+            } catch (\Throwable $exception) {
+                $errors++;
+                Log::warning('清理上游孤儿上传文件失败', [
+                    'filename' => $file->getFilename(),
+                    'message' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return ['checked' => $checked, 'deleted' => $deleted, 'referenced' => $referenced, 'errors' => $errors];
+    }
 }
