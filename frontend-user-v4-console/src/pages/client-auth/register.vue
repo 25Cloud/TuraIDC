@@ -108,9 +108,18 @@
         </div>
       </t-form-item>
 
-      <div v-show="enabled" ref="captchaContainer" class="client-auth-captcha"></div>
 
-      <t-button class="client-auth-submit" block size="large" theme="primary" :loading="loading" @click="submitForm">
+      <!-- inline 形态（Turnstile）的验证组件落点：点击时就地加载，无感通过时不占位 -->
+      <div v-show="renderMode === 'inline'" ref="captchaContainer" class="client-auth-captcha"></div>
+
+      <t-button
+        class="client-auth-submit"
+        block
+        size="large"
+        theme="primary"
+        :loading="loading || captchaLoading"
+        @click="submitForm"
+      >
         注册并进入控制台
       </t-button>
     </t-form>
@@ -154,14 +163,18 @@ const sendingCode = ref(false);
 const countdown = ref(0);
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
+// 验证 SDK 在点击提交时才加载。渲染形态由后端下发：
+// popup（极验）由插件自行弹窗，inline（Turnstile）则渲染进按钮上方的容器。
 const captchaContainer = ref<HTMLElement>();
 const {
-  enabled,
   loading: captchaLoading,
+  renderMode,
   runWithCaptcha,
 } = useGeeTestCaptcha({
   appendTo: captchaContainer,
   onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
+  // 本页涉及注册提交与发码两类动作，任一场景开启即需要验证
+  scenes: ['client_register', 'email_code', 'phone_code'],
 });
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -246,13 +259,17 @@ async function handleSendCode() {
 
   sendingCode.value = true;
   try {
-    await runWithCaptcha(async (captcha: unknown) => {
-      if (accountPayload.accountType === 'phone') {
-        await clientAuthApi.sendPhoneCode({ phone: accountPayload.phone, purpose: 'register', captcha });
-      } else {
-        await clientAuthApi.sendEmailCode({ email: accountPayload.email, captcha });
-      }
-    });
+    // 发码只看 email_code / phone_code，不受本页 client_register 开关牵连
+    await runWithCaptcha(
+      async (captcha: unknown) => {
+        if (accountPayload.accountType === 'phone') {
+          await clientAuthApi.sendPhoneCode({ phone: accountPayload.phone, purpose: 'register', captcha });
+        } else {
+          await clientAuthApi.sendEmailCode({ email: accountPayload.email, captcha });
+        }
+      },
+      { scene: accountPayload.accountType === 'phone' ? 'phone_code' : 'email_code' },
+    );
 
     MessagePlugin.success(`${accountPayload.accountType === 'phone' ? '短信' : '邮箱'}验证码已发送`);
     startCountdown();
@@ -331,14 +348,22 @@ function validateForm() {
 async function runRegister() {
   loading.value = true;
   try {
-    await userStore.clientRegister({
-      account: normalizeAccountValue(form.account),
-      code: form.code,
-      nickname: form.nickname || undefined,
-      referral_code: form.referral_code || undefined,
-      password: form.password,
-      password_confirmation: form.password_confirmation,
-    });
+    // 注册提交需要独立的人机验证：发码时那次的 token 已被一次性消费，
+    // 这里取的是组件重置后新解出的结果。注册是刷号主入口，后端默认要求验证。
+    await runWithCaptcha(
+      async (captcha: unknown) => {
+        await userStore.clientRegister({
+          account: normalizeAccountValue(form.account),
+          code: form.code,
+          nickname: form.nickname || undefined,
+          referral_code: form.referral_code || undefined,
+          password: form.password,
+          password_confirmation: form.password_confirmation,
+          ...(captcha ? { captcha } : {}),
+        });
+      },
+      { scene: 'client_register' },
+    );
     MessagePlugin.success('注册成功');
     await router.push(redirectPath.value);
   } catch (error: unknown) {

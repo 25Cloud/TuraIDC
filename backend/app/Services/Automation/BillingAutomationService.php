@@ -355,10 +355,16 @@ class BillingAutomationService
         $siteName = (string) config('idc.site_name', config('app.name', '服务商'));
         $targetDays = $config['invoice_unpaid_before_due_days'];
 
+        // 原实现取出全部未付账单，再在 PHP 里按 $days !== $targetDays 丢掉绝大多数。
+        // 未付账单集合随业务单调增长，这个任务每小时跑一次，是本类里唯一线性恶化的开销。
+        // 目标日期是可确定计算的，直接下推到 SQL；同文件 sendRenewNotices 早已是这个写法。
+        $targetDate = now()->startOfDay()->addDays($targetDays);
+
         $invoices = Invoice::query()
             ->with(['user:id,email,nickname', 'order.product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires'])
             ->where('status', InvoiceStatus::UNPAID)
             ->whereNotNull('due_date')
+            ->whereBetween('due_date', [$targetDate->copy()->startOfDay(), $targetDate->copy()->endOfDay()])
             ->get();
 
         $count = 0;
@@ -367,6 +373,7 @@ class BillingAutomationService
             $dueDate = Carbon::parse($invoice->due_date);
             $days = (int) now()->startOfDay()->diffInDays($dueDate->copy()->startOfDay(), false);
 
+            // SQL 已按目标日筛过，这里保留判断作为时区/边界的兜底，语义与原实现一致
             if ($days !== $targetDays) {
                 continue;
             }
@@ -422,10 +429,33 @@ class BillingAutomationService
 
         $siteName = (string) config('idc.site_name', config('app.name', '服务商'));
 
+        // 逾期集合只增不减（OVERDUE 没有清出路径），原实现每小时把它整体取出再在 PHP 里筛。
+        // invoice_overdue_reminder_days（默认 [1,3,5]）可以换算成具体的几个到期日，直接下推。
+        $reminderDays = $config['invoice_overdue_reminder_days'];
+        $today = now()->startOfDay();
+        $dueDateRanges = [];
+        foreach ($reminderDays as $day) {
+            $day = (int) $day;
+            if ($day <= 0) {
+                continue;
+            }
+            $target = $today->copy()->subDays($day);
+            $dueDateRanges[] = [$target->copy()->startOfDay(), $target->copy()->endOfDay()];
+        }
+
+        if ($dueDateRanges === []) {
+            return 0;
+        }
+
         $invoices = Invoice::query()
             ->with(['user:id,email,nickname', 'order.product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires'])
             ->whereIn('status', [InvoiceStatus::UNPAID, InvoiceStatus::OVERDUE])
             ->whereNotNull('due_date')
+            ->where(function ($builder) use ($dueDateRanges): void {
+                foreach ($dueDateRanges as $range) {
+                    $builder->orWhereBetween('due_date', $range);
+                }
+            })
             ->get();
 
         $count = 0;
@@ -434,7 +464,8 @@ class BillingAutomationService
             $dueDate = Carbon::parse($invoice->due_date);
             $overdue = (int) $dueDate->copy()->startOfDay()->diffInDays(now()->startOfDay(), false);
 
-            if ($overdue <= 0 || ! in_array($overdue, $config['invoice_overdue_reminder_days'], true)) {
+            // SQL 已按目标日筛过，保留判断作为时区/边界兜底
+            if ($overdue <= 0 || ! in_array($overdue, $reminderDays, true)) {
                 continue;
             }
 
@@ -584,11 +615,18 @@ class BillingAutomationService
      */
     private function recoverStuckFulfillments(): int
     {
+        // 原实现把"全部已支付续费账单"取出（含 service.product.supplier 三级预载），
+        // 再在 PHP 里解 config_snapshot 筛出 fulfillment_pending 的极少数。
+        // 已付续费账单随业务单调增长，这是本类里最危险的一处。改为 JSON 路径条件下推。
+        // 注意：写入侧可能是布尔 true 也可能是字符串/数字真值，因此这里用"存在且不为假值"的宽松判断，
+        // 由后面的 PHP 侧 !empty($config['fulfillment_pending']) 做最终裁定，语义与原实现一致。
         $stuckInvoices = Invoice::query()
             ->with(['service.product.supplier'])
             ->where('status', InvoiceStatus::PAID)
             ->where('type', OrderType::RENEW)
             ->whereNotNull('config_snapshot')
+            ->whereNotNull('config_snapshot->fulfillment_pending')
+            ->whereNotIn('config_snapshot->fulfillment_pending', [false, 0, '', '0'])
             ->get()
             ->filter(function (Invoice $invoice): bool {
                 $config = is_array($invoice->config_snapshot ?? null) ? $invoice->config_snapshot : [];

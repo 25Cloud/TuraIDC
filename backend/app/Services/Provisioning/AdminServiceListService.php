@@ -10,11 +10,11 @@ use App\Models\Product;
 use App\Models\Service;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
+use App\Support\DatabaseSchema;
 use App\Support\ServiceHostname;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class AdminServiceListService
 {
@@ -85,6 +85,15 @@ class AdminServiceListService
     }
 
     private function transform(Service $service): array
+    {
+        // 同 ServiceTransformService::transformListItem：逐行渲染包进只读作用域
+        return $this->bindingResolver()->withReadScope(fn (): array => $this->buildRow($service));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildRow(Service $service): array
     {
         $provisionData = $this->serviceProvisionData($service, includeSecrets: true);
         $connection = $this->resolveConnection($provisionData);
@@ -308,7 +317,7 @@ class AdminServiceListService
             ->limit(500)
             ->pluck('service_id'));
 
-        if (Schema::hasTable('service_runtime_snapshots')) {
+        if (DatabaseSchema::hasTableOrView('service_runtime_snapshots')) {
             $ids = $ids->merge(DB::table('service_runtime_snapshots')
                 ->where(function ($query) use ($likeKeyword): void {
                     $query->where('status_key', 'like', $likeKeyword)
@@ -321,7 +330,7 @@ class AdminServiceListService
                 ->pluck('service_id'));
         }
 
-        if (Schema::hasTable('service_connection_snapshots')) {
+        if (DatabaseSchema::hasTableOrView('service_connection_snapshots')) {
             $ids = $ids->merge(DB::table('service_connection_snapshots')
                 ->where(function ($query) use ($likeKeyword): void {
                     $query->where('hostname', 'like', $likeKeyword)
@@ -399,9 +408,13 @@ class AdminServiceListService
         return '';
     }
 
+    private ?ProductDisplayNameResolver $resolvedDisplayNameResolver = null;
+
     private function resolveProductDisplayNameResolver(): ProductDisplayNameResolver
     {
-        return $this->productDisplayNameResolver ?? new ProductDisplayNameResolver;
+        // 每次 new 会丢掉解析器自带的 customDisplayNameCache，列表页因此按行重复查 products
+        return $this->resolvedDisplayNameResolver
+            ??= ($this->productDisplayNameResolver ?? app(ProductDisplayNameResolver::class));
     }
 
     private function serviceProvisionData(Service $service, bool $includeSecrets = false): array

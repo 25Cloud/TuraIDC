@@ -12,6 +12,9 @@ class GeeTestService
 {
     private const SCRIPT_PROXY_PATH = '/api/v2/client/auth/captcha-script';
 
+    /** 插件未声明 render_mode 时的默认形态：由插件自行弹窗 */
+    private const DEFAULT_RENDER_MODE = 'popup';
+
     private ?array $captchaConfigCache = null;
 
     public function __construct(
@@ -34,6 +37,43 @@ class GeeTestService
     public function getCaptchaId(): string
     {
         return (string) ($this->captchaConfig()['captcha_id'] ?? '');
+    }
+
+    /**
+     * 当前生效的验证码提供商标识（geetest / vaptcha / corptcha / turnstile ...）。
+     *
+     * 各插件的 captcha.config 一直都在返回这个字段，但此前被 captchaConfig() 丢弃了，
+     * 前端因此只能假定是极验。下发它之后前端可以按提供商做差异化文案与样式。
+     * 未启用任何插件时返回空串。
+     */
+    public function getProvider(): string
+    {
+        return (string) ($this->captchaConfig()['provider'] ?? '');
+    }
+
+    /**
+     * 组件渲染形态，决定前端把验证组件放在哪里。
+     *
+     * - popup：插件自带浮层交互（极验等），前端不提供容器，插件自行弹窗；
+     * - inline：插件只提供内联 widget（Cloudflare Turnstile），前端在提交按钮上方
+     *   给出容器，点击提交时就地加载。
+     *
+     * 两种形态都是「点击提交才加载」，差别只在渲染位置。
+     */
+    public function getRenderMode(): string
+    {
+        return (string) ($this->captchaConfig()['render_mode'] ?? self::DEFAULT_RENDER_MODE);
+    }
+
+    /**
+     * 适配层脚本的版本标识（配置指纹）。
+     *
+     * captcha-script 端点带 12 小时强缓存，而脚本内容是按插件配置生成的。
+     * 前端把这个值并入脚本 URL 的查询参数，配置一改指纹就变，缓存随之失效。
+     */
+    public function getScriptVersion(): string
+    {
+        return (string) ($this->captchaConfig()['script_version'] ?? '');
     }
 
     public function getScriptUrl(): string
@@ -119,6 +159,9 @@ JS;
             return $this->captchaConfigCache = [
                 'enabled' => false,
                 'captcha_id' => '',
+                'provider' => '',
+                'render_mode' => self::DEFAULT_RENDER_MODE,
+                'script_version' => '',
                 'script_url' => $this->getScriptUrl(),
             ];
         }
@@ -129,8 +172,22 @@ JS;
         return $this->captchaConfigCache = [
             'enabled' => (bool) ($result['success'] ?? false) && (bool) ($data['enabled'] ?? false),
             'captcha_id' => (string) ($data['captcha_id'] ?? ''),
+            // 插件未显式声明时退回驱动键，保证这个字段总有值可用
+            'provider' => (string) ($data['provider'] ?? $this->activeDriver()),
+            'render_mode' => $this->normalizeRenderMode($data['render_mode'] ?? null),
+            // 插件未声明时回退到 captcha_id，与既有行为一致：
+            // 那些脚本内容不随配置变化的插件（如极验只是代理官方 SDK），
+            // 仅在换了 captcha_id 时才需要让前端重新拉取。
+            'script_version' => (string) ($data['script_version'] ?? ($data['captcha_id'] ?? '')),
             'script_url' => $this->getScriptUrl(),
         ];
+    }
+
+    private function normalizeRenderMode(mixed $value): string
+    {
+        $mode = is_string($value) ? trim($value) : '';
+
+        return in_array($mode, ['popup', 'inline'], true) ? $mode : self::DEFAULT_RENDER_MODE;
     }
 
     private function executePlugin(string $action, array $payload = []): array

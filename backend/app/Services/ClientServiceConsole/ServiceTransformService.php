@@ -91,6 +91,17 @@ class ServiceTransformService
 
     public function transformListItem(Service $service): array
     {
+        // 逐行渲染包进只读作用域：本方法内部会对同一行反复问同样的绑定与快照
+        // （实测单行 8 次 service_upstream_bindings + 各 4 次两张快照表），作用域内只查一次。
+        // 作用域随本行结束即清空，因此不会把绑定读结果带到写入之后（见 PluginBindingResolver 注释）。
+        return $this->bindingResolver()->withReadScope(fn (): array => $this->buildListItem($service));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildListItem(Service $service): array
+    {
         $provisionData = $this->serviceProvisionData($service);
         $displayDomain = ServiceHostname::resolveDisplayDomain($service, $provisionData);
         $service->loadMissing([
@@ -997,9 +1008,23 @@ class ServiceTransformService
         return 0;
     }
 
+    private ?PluginBindingResolver $resolvedBindingResolver = null;
+
+    private ?ProductDisplayNameResolver $resolvedDisplayNameResolver = null;
+
     private function bindingResolver(): PluginBindingResolver
     {
-        return app(PluginBindingResolver::class);
+        return $this->resolvedBindingResolver ??= app(PluginBindingResolver::class);
+    }
+
+    /**
+     * 商品显示名解析器自带 customDisplayNameCache，但此前每次调用都 new 一个新实例，
+     * 缓存从未跨行生效：实测 12 行列表、只有 1 个不同商品，却查了 60 次 products.custom_display_name。
+     */
+    private function displayNameResolver(): ProductDisplayNameResolver
+    {
+        return $this->resolvedDisplayNameResolver
+            ??= ($this->productDisplayNameResolver ?? app(ProductDisplayNameResolver::class));
     }
 
     private function serviceProvisionData(Service $service, bool $includeSecrets = false): array
@@ -1581,7 +1606,7 @@ class ServiceTransformService
         }
 
         if ($service->product instanceof Product) {
-            $resolver = $this->productDisplayNameResolver ?? new ProductDisplayNameResolver;
+            $resolver = $this->displayNameResolver();
             $resolved = $resolver->resolveForProduct(
                 $service->product,
                 (array) ($service->order?->config_snapshot ?? [])
@@ -1596,7 +1621,7 @@ class ServiceTransformService
     private function resolveCombinedDisplayName(Service $service): string
     {
         if ($service->product instanceof Product) {
-            $resolver = $this->productDisplayNameResolver ?? new ProductDisplayNameResolver;
+            $resolver = $this->displayNameResolver();
             $resolved = $resolver->resolveForProduct(
                 $service->product,
                 (array) ($service->order?->config_snapshot ?? [])

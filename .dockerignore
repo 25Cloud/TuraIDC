@@ -22,7 +22,10 @@
 !**/.env.example
 backend/.env.bak*
 
-# 运行时数据（storage 以命名卷持久化，uploads/media 由 entrypoint 重建）
+# 运行时数据：storage 与 uploads 由命名卷持久化，不从构建上下文携带。
+# 注意 public/media 刻意不排除——它是媒体库随镜像发布的初始内容，
+# MediaFileService::reindexMediaDirectory() 会扫描该目录并建立 MediaFile 记录，
+# compose 的 app-media 命名卷在首次挂载时接收这批文件。
 backend/storage
 backend/public/uploads
 backend/public/storage
@@ -38,6 +41,22 @@ backend/bootstrap/cache/*.php
 
 # 部署目录内的真实 .env（含密钥，禁止入镜像）
 deploy/docker/.env
+
+# 测试与静态分析资产：镜像内是 composer install --no-dev，没有 phpunit/phpstan/pint，
+# 这些文件在生产镜像里无法使用也不会被加载，只是净增体积（backend/tests 约 2.7 MB）。
+# 插件自带的测试（backend/plugins/*/tests）不排除：插件目录是运行时代码，
+# 排除子目录有影响插件装载的风险，收益也不足以匹配。
+backend/tests
+backend/phpunit.xml.dist
+backend/phpstan.neon.dist
+backend/phpstan-baseline.neon
+**/.phpunit.cache
+**/.phpunit.result.cache
+
+# 前端的测试与审计资产（同理，不进后端镜像；前端镜像只取各端 src 与清单）
+**/playwright.config.ts
+**/playwright-report
+**/test-results
 
 # 日志与临时文件
 **/*.log

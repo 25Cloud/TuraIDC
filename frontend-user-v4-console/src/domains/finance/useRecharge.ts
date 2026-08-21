@@ -317,6 +317,14 @@ export function useRecharge() {
         pageSize = Number(payload.page_size || pageSize || 50);
         collectedServices.push(...list);
         page += 1;
+
+        // 终止保护：本页返回空列表或已达最大页数即退出。
+        // 后端 total 与实际可返回行数不一致时（过滤、软删、权限裁剪都可能造成），
+        // 仅靠 collectedServices.length < total 会永不退出，进充值页即无限刷请求。
+        // 写法对齐 frontend-user-v3-www/src/api/site.js 的同类分页循环。
+        if (!list.length || page > 100) {
+          break;
+        }
       } while (collectedServices.length < total);
 
       const now = Date.now();

@@ -64,7 +64,8 @@
         <router-link to="/client/forgot-password">忘记密码？</router-link>
       </div>
 
-      <div v-show="enabled" ref="captchaContainer" class="client-auth-captcha"></div>
+      <!-- inline 形态（Turnstile）的验证组件落点：点击登录时就地加载，无感通过时不占位 -->
+      <div v-show="renderMode === 'inline'" ref="captchaContainer" class="client-auth-captcha"></div>
 
       <t-button block size="large" theme="primary" :loading="loading || captchaLoading" @click="submitForm"
         >登录</t-button
@@ -120,7 +121,9 @@
         </div>
       </t-form-item>
 
-      <div v-show="enabled" ref="captchaContainer" class="client-auth-captcha"></div>
+
+      <!-- 同上：验证码登录表单的 inline 验证组件落点 -->
+      <div v-show="renderMode === 'inline'" ref="captchaContainer" class="client-auth-captcha"></div>
 
       <t-button
         class="client-auth-submit"
@@ -186,15 +189,20 @@ const userStore = useUserStore();
 const formRef = ref<FormInstanceFunctions<LoginForm>>();
 const loading = ref(false);
 const showPassword = ref(false);
+// 验证 SDK 在点击提交时才加载。渲染形态由后端下发：
+// popup（极验）由插件自行弹窗，inline（Turnstile）则渲染进下方容器。
 const captchaContainer = ref<HTMLElement>();
 const {
   enabled,
   loading: captchaLoading,
-  runWithCaptcha,
+  renderMode,
   reinit,
+  runWithCaptcha,
 } = useGeeTestCaptcha({
   appendTo: captchaContainer,
   onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
+  // 本页涉及密码登录与验证码登录的发码动作，任一场景开启即需要验证
+  scenes: ['client_login', 'email_code', 'phone_code'],
 });
 
 const form = reactive<LoginForm>({
@@ -204,7 +212,8 @@ const form = reactive<LoginForm>({
 
 const loginMode = ref<'password' | 'code'>('password');
 
-// 切换登录方式时表单 v-if 重建会卸载旧容器，需重新渲染验证组件到新容器
+// 切换登录方式时表单 v-if 会重建 DOM，inline 形态的容器随之失效；
+// 丢弃已初始化的实例，下次提交时重新绑定到新容器。
 watch(
   loginMode,
   () => {
@@ -314,21 +323,22 @@ function validateForm() {
 async function runLogin() {
   loading.value = true;
   try {
-    if (enabled.value) {
-      await runWithCaptcha(
-        async (captcha: unknown) => {
-          await performLogin(captcha);
-        },
-        { required: true },
-      );
-    } else {
-      await performLogin();
-    }
+    // 密码登录只看 client_login 场景。此前用页面级 enabled.value 判定，
+    // 而它是「本页任一场景开启」，导致只开发码场景时密码登录也被要求验证。
+    // 场景关闭或插件未启用时 verify() 返回 null，performLogin 照常不带 captcha 执行。
+    await runWithCaptcha(
+      async (captcha: unknown) => {
+        await performLogin(captcha);
+      },
+      { scene: 'client_login' },
+    );
     MessagePlugin.success('登录成功');
     await router.push(redirectPath.value);
   } catch (error: unknown) {
     const runtimeError = asRuntimeLoginError(error);
-    if (!enabled.value && isCaptchaRequiredError(runtimeError)) {
+    // 后端口径优先：只要它以 captcha_required 索要验证，就带验证码重试一次，
+    // 不再附加 !enabled.value 条件（场景开关与后端判定不一致时也要能自愈）
+    if (isCaptchaRequiredError(runtimeError)) {
       try {
         await runWithCaptcha(
           async (captcha: unknown) => {
@@ -383,13 +393,18 @@ async function handleSendCode() {
 
   sendingCode.value = true;
   try {
-    await runWithCaptcha(async (captcha: unknown) => {
-      if (accountPayload.accountType === 'phone') {
-        await clientAuthApi.sendPhoneCode({ phone: accountPayload.phone, purpose: 'login', captcha });
-      } else {
-        await clientAuthApi.sendEmailCode({ email: accountPayload.email, purpose: 'login', captcha });
-      }
-    });
+    // 按本次动作对应的单一场景判定：发码只看 email_code / phone_code，
+    // 不受本页 client_login 开关的牵连（反之亦然）
+    await runWithCaptcha(
+      async (captcha: unknown) => {
+        if (accountPayload.accountType === 'phone') {
+          await clientAuthApi.sendPhoneCode({ phone: accountPayload.phone, purpose: 'login', captcha });
+        } else {
+          await clientAuthApi.sendEmailCode({ email: accountPayload.email, purpose: 'login', captcha });
+        }
+      },
+      { scene: accountPayload.accountType === 'phone' ? 'phone_code' : 'email_code' },
+    );
 
     MessagePlugin.success(`${accountPayload.accountType === 'phone' ? '短信' : '邮箱'}验证码已发送`);
     startCountdown();

@@ -168,7 +168,26 @@ class PluginRuntimeRegistryIntegrationTest extends TestCase
         $this->assertNotContains('notify_url', $alipayConfigKeys);
         $this->assertNotContains('api_base_url', $yipayConfigKeys);
         $this->assertNotContains('notify_url', $yipayConfigKeys);
-        $this->assertSame(['basic_notice', 'vid', 'vkey'], $vaptchaConfigKeys);
+
+        // captcha 域各插件共用一份「启用场景」开关声明（plugins/captcha/scene-switches.php），
+        // 它会合并进每个验证码插件的 config。这里从共享文件推导键名而不是硬编码，
+        // 避免新增场景时又要回来改测试；剥掉共享块后仍按原口径钉住插件自有字段，
+        // 保证不会悄悄多出 endpoint / ssl 一类可覆盖项。
+        $sceneSwitchKeys = array_keys(require base_path('plugins/captcha/scene-switches.php'));
+
+        $vaptchaOwnKeys = array_values(array_diff($vaptchaConfigKeys, $sceneSwitchKeys));
+        $this->assertSame(['basic_notice', 'vid', 'vkey'], $vaptchaOwnKeys);
+
+        // 场景开关必须真的接进每个验证码插件，否则开关在管理界面不可见、默认全开将无法关闭
+        foreach (['geetest', 'vaptcha'] as $captchaSlug) {
+            $captchaKeys = collect($scanner->requireManifest('captcha', $captchaSlug)->configSchema)
+                ->pluck('key')
+                ->all();
+
+            foreach ($sceneSwitchKeys as $sceneKey) {
+                $this->assertContains($sceneKey, $captchaKeys, "{$captchaSlug} 缺少场景开关字段 {$sceneKey}");
+            }
+        }
 
         foreach ([$alipayConfigKeys, $yipayConfigKeys, $geetestConfigKeys, $vaptchaConfigKeys, $aliyunConfigKeys] as $configKeys) {
             $this->assertNotContains('ssl_verify', $configKeys);

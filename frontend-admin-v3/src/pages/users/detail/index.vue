@@ -2426,7 +2426,9 @@ function priorityTheme(priority: unknown): 'default' | 'warning' | 'danger' {
   return 'default';
 }
 function ticketStatusLabel(status: unknown) {
-  return ({ 0: '待处理', 1: '用户回复', 2: '客服回复', 3: '已关闭' } as Record<number, string>)[Number(status)] || '-';
+  // 文案以后端 TicketService::STATUS_LABELS 为准（shared/statusConfig.js 的 TICKET_STATUS_MAP 同口径）。
+  // 此前这里写作"待处理/用户回复/客服回复"，与工单列表页的"开启/客户回复/员工回复"矛盾。
+  return ({ 0: '开启', 1: '客户回复', 2: '员工回复', 3: '已关闭' } as Record<number, string>)[Number(status)] || '-';
 }
 function ticketStatusTheme(status: unknown): 'default' | 'success' | 'warning' {
   const value = Number(status);
