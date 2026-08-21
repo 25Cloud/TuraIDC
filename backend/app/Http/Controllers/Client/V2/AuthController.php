@@ -118,10 +118,14 @@ class AuthController extends Controller
                 : CaptchaPolicyService::SCENE_EMAIL_CODE
         );
 
+        // 计数走验证码通道自己的作用域：与密码通道分开记账。
+        // 共用的话，多 IP 刷错验证码会写进密码通道的账号计数、锁死他人的密码登录，
+        // 而验证码登录成功又会清掉密码通道的失败计数、削弱密码爆破防护。
         if ($this->loginRiskControlService->isLoginLocked(
             $account,
             (string) $request->ip(),
             false,
+            LoginRiskControlService::SCOPE_CLIENT_CODE,
             captchaActive: $codeCaptchaActive
         )) {
             return $this->error(42900, '登录尝试次数过多，请稍后再试');
@@ -143,7 +147,11 @@ class AuthController extends Controller
         if (! $verified || ! $user) {
             // 与 resetPassword 同理：上面的 isLoginLocked 需要有人记账才可能触发。
             // 此前本通道只查锁不记数，只能借密码登录路径写入的计数生效。
-            $this->loginRiskControlService->recordFailedAttempt($account, (string) $request->ip());
+            $this->loginRiskControlService->recordFailedAttempt(
+                $account,
+                (string) $request->ip(),
+                LoginRiskControlService::SCOPE_CLIENT_CODE
+            );
 
             return $this->error(42200, '账号或验证码错误');
         }
@@ -155,7 +163,11 @@ class AuthController extends Controller
             $request->userAgent()
         );
 
-        $this->loginRiskControlService->clearSuccessfulLogin($account, (string) $request->ip());
+        $this->loginRiskControlService->clearSuccessfulLogin(
+            $account,
+            (string) $request->ip(),
+            LoginRiskControlService::SCOPE_CLIENT_CODE
+        );
 
         return $this->success($result, '登录成功');
     }
@@ -623,10 +635,12 @@ class AuthController extends Controller
                 : CaptchaPolicyService::SCENE_EMAIL_CODE
         );
 
+        // 与 loginByCode 一致地走验证码通道的作用域，避免与密码通道互相误锁
         if ($this->loginRiskControlService->isLoginLocked(
             $account,
             (string) $request->ip(),
             false,
+            LoginRiskControlService::SCOPE_CLIENT_CODE,
             captchaActive: $codeCaptchaActive
         )) {
             return $this->error(42900, '尝试次数过多，请稍后再试');
@@ -647,12 +661,20 @@ class AuthController extends Controller
 
         if (! $verified || ! $user) {
             // 必须记账，否则上面的 isLoginLocked 永远等不到计数、兜底锁形同虚设
-            $this->loginRiskControlService->recordFailedAttempt($account, (string) $request->ip());
+            $this->loginRiskControlService->recordFailedAttempt(
+                $account,
+                (string) $request->ip(),
+                LoginRiskControlService::SCOPE_CLIENT_CODE
+            );
 
             return $this->error(42200, '账号或验证码错误');
         }
 
-        $this->loginRiskControlService->clearSuccessfulLogin($account, (string) $request->ip());
+        $this->loginRiskControlService->clearSuccessfulLogin(
+            $account,
+            (string) $request->ip(),
+            LoginRiskControlService::SCOPE_CLIENT_CODE
+        );
 
         $this->authService->resetClientPassword($user, (string) $data['password']);
 

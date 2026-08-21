@@ -27,6 +27,12 @@ use App\Services\Verification\Contracts\ProvidesVerificationFeeConfig;
 use App\Services\Verification\Contracts\VerifiesVerificationCallbacks;
 use App\Services\Verification\Data\VerificationCallbackRequest;
 use App\Services\Verification\VerificationDriverManager;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
+use Tests\TestCase;
 use TuraIDC\Plugins\Captcha\Geetest\GeetestPlugin;
 use TuraIDC\Plugins\Captcha\Geetest\Lib\GeetestCaptchaService;
 use TuraIDC\Plugins\Captcha\Vaptcha\Lib\VaptchaCaptchaService;
@@ -43,12 +49,6 @@ use TuraIDC\Plugins\Servers\ZjmfFinance\Logic\ZjmfFinance;
 use TuraIDC\Plugins\Servers\ZjmfFinance\ZjmfFinancePlugin;
 use TuraIDC\Plugins\Sms\Aliyun\AliyunPlugin;
 use TuraIDC\Plugins\Sms\Aliyun\Lib\AliyunSmsService;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Schema;
-use Tests\TestCase;
 
 class PluginRuntimeRegistryIntegrationTest extends TestCase
 {
@@ -178,14 +178,21 @@ class PluginRuntimeRegistryIntegrationTest extends TestCase
         $vaptchaOwnKeys = array_values(array_diff($vaptchaConfigKeys, $sceneSwitchKeys));
         $this->assertSame(['basic_notice', 'vid', 'vkey'], $vaptchaOwnKeys);
 
-        // 场景开关必须真的接进每个验证码插件，否则开关在管理界面不可见、默认全开将无法关闭
-        foreach (['geetest', 'vaptcha'] as $captchaSlug) {
-            $captchaKeys = collect($scanner->requireManifest('captcha', $captchaSlug)->configSchema)
-                ->pluck('key')
-                ->all();
+        // 场景开关必须真的接进每个验证码插件，否则开关在管理界面不可见、默认全开将无法关闭。
+        // 遍历扫描结果而不是写死 slug 列表：新增验证码插件若漏接共享声明，这条会直接失败，
+        // 不会像硬编码那样悄悄放过。
+        $captchaManifests = $scanner->scan('captcha');
+        $this->assertNotEmpty($captchaManifests, 'captcha 域未扫描到任何插件');
+
+        foreach ($captchaManifests as $captchaManifest) {
+            $captchaKeys = collect($captchaManifest->configSchema)->pluck('key')->all();
 
             foreach ($sceneSwitchKeys as $sceneKey) {
-                $this->assertContains($sceneKey, $captchaKeys, "{$captchaSlug} 缺少场景开关字段 {$sceneKey}");
+                $this->assertContains(
+                    $sceneKey,
+                    $captchaKeys,
+                    "{$captchaManifest->slug} 缺少场景开关字段 {$sceneKey}"
+                );
             }
         }
 
