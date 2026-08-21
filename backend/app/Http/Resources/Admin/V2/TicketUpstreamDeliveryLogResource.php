@@ -24,6 +24,7 @@ final class TicketUpstreamDeliveryLogResource extends JsonResource
             'reason_code' => $this->reason_code,
             'provider_key' => $this->provider_key,
             'supplier_id' => $this->supplier_id ? (int) $this->supplier_id : null,
+            'supplier_name' => $this->supplier?->name,
             'attempt' => $this->attempt ? (int) $this->attempt : null,
             'http_status' => $this->http_status ? (int) $this->http_status : null,
             'duration_ms' => $this->duration_ms ? (int) $this->duration_ms : null,
