@@ -198,32 +198,77 @@ docker compose up -d
 不使用 1Panel 时，可用宿主机 Nginx/Caddy 或 Cloudflare 反代到四个端口。宿主机 Nginx 示例（每个域名一个 server）：
 
 ```nginx
+# WebSocket 升级映射放在 http 块（例如 /etc/nginx/conf.d/ 下的公共片段）
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+# 80 端口统一跳转，避免用户直接访问 http 得到 404
+server {
+    listen 80;
+    server_name api.example.com;
+    return 301 https://$host$request_uri;
+}
+
 server {
     listen 443 ssl;
+    http2 on;                       # nginx < 1.25.1 写作 listen 443 ssl http2;
     server_name api.example.com;
     ssl_certificate     /etc/nginx/certs/api/fullchain.pem;
     ssl_certificate_key /etc/nginx/certs/api/privkey.pem;
 
     client_max_body_size 100m;
+
+    # 关键：转发头必须放在 server 级。nginx 的 proxy_set_header 不跨 location 继承，
+    # 若只写在 location / 内，下面的 /ws/vnc 因为自己声明了 proxy_set_header，
+    # 会完全拿不到 Host / X-Forwarded-* —— Host 退化为 $proxy_host（127.0.0.1:8080），
+    # 导致 VNC token 的 Origin 校验与 wss 地址推导失败。
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
     location / {
         proxy_pass http://127.0.0.1:8080;
+    }
+
+    # VNC WebSocket 需升级头
+    # 注意：location 里一旦出现 proxy_set_header，就不再继承 server 级的同类指令，
+    # 因此 Host / X-Real-IP / X-Forwarded-For / X-Forwarded-Proto 必须在这里重复声明，
+    # 否则 VNC 通道会丢失真实客户端 IP 与 HTTPS 标识（后端据此判定 isSecure()）。
+    location /ws/vnc {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
         proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    # VNC WebSocket 需升级头
-    location /ws/vnc {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_http_version 1.1;
         proxy_set_header Upgrade    $http_upgrade;
-        proxy_set_header Connection "upgrade";
+        proxy_set_header Connection $connection_upgrade;
+        proxy_buffering off;
         proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
     }
 }
 ```
 
-前端站点去掉 WebSocket 段即可。证书可用 `acme.sh` 或 `certbot` 申请。要求：四个地址协议统一（全 HTTPS）、`.env` 中 `SESSION_SECURE_COOKIE=true`。
+前端站点去掉 WebSocket 段即可。要求：四个地址协议统一（全 HTTPS）、`.env` 中 `SESSION_SECURE_COOKIE=true`。
+
+`X-Forwarded-Proto: https` 是后端识别 HTTPS 的唯一依据：容器内 `deploy/docker/backend/nginx.conf` 用 `map` 把它转成 `fastcgi_param HTTPS on`，Laravel 的 `isSecure()` 才会返回 true。反代若不传该头，HTTPS 环境下后端仍按 HTTP 处理。
+
+压缩已由容器内部负责：`frontends` 容器对静态资源配置了 gzip 与 `gzip_static`（优先返回构建期生成的 `.gz`），`backend/nginx.conf` 也已为 API 的 JSON 响应开启 gzip。宿主机 Nginx **不需要**为这两类响应再配一遍——代理响应带 `Content-Encoding` 时 Nginx 不会二次压缩。
+
+若宿主机上还有其他不经这两个容器的响应需要压缩（例如宿主机直接提供的静态文件或第三方上游），可在 http 块按需加入。注意 Nginx 默认 `gzip off`，不存在“自动生效的全局压缩”：
+
+```nginx
+gzip            on;
+gzip_vary       on;
+gzip_min_length 1024;
+gzip_proxied    any;               # 必须，否则代理响应不会被压缩
+gzip_types      text/plain text/css application/javascript application/json
+                application/xml image/svg+xml;
+```
 
 ## 八、升级与回滚
 

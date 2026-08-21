@@ -14,7 +14,7 @@
     "lint:fix": "eslint --ext .vue,.js,jsx,.ts,.tsx ./ --max-warnings 0 --fix",
     "stylelint": "stylelint src/**/*.{html,vue,css,sass,less}",
     "stylelint:fix": "stylelint --fix src/**/*.{html,vue,css,sass,less}",
-    "test": "npm run test:e2e",
+    "test": "pnpm run test:e2e",
     "test:e2e": "playwright test"
   },
   "dependencies": {
