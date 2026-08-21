@@ -5750,4 +5750,113 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await page.getByRole('button', { name: '保存配置' }).click();
     await expect(page.getByText('保存成功')).toBeVisible();
   });
+
+  test('notification test-send switches recipient input between sms and email and submits', async ({ page }) => {
+    await mockAdminInfo(page);
+    await mockNotifications(page);
+    await page.route('**/api/v2/admin/notification-templates/test-send', async (route) => {
+      const body = route.request().postDataJSON() as { channel?: string; code?: string; recipient?: string };
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 0,
+          data: {
+            status: 'success',
+            success_count: 1,
+            failed_count: 0,
+            results: [{ recipient: body.recipient, status: 'success', error: null }],
+          },
+        }),
+      });
+    });
+    await page.addInitScript(() => {
+      window.localStorage.setItem('admin_token', 'test-token');
+      window.localStorage.setItem('admin_last_active_at', String(Date.now()));
+    });
+
+    // 邮件模板：测试发送收件人输入为邮箱地址
+    await page.goto('/admin/notifications', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: '邮件模板' })).toBeVisible();
+    await expect(page.getByText('测试验证码邮件')).toBeVisible();
+    const emailSendRequest = page.waitForRequest('**/api/v2/admin/notification-templates/test-send');
+    await page.getByRole('button', { name: '测试发送' }).first().click();
+    await expect(page.getByText('测试发送邮件')).toBeVisible();
+    await expect(page.getByText('接收邮箱地址')).toBeVisible();
+    await page.getByPlaceholder('请输入接收邮箱，例如：tester@example.com').fill('tester@example.com');
+    await page.getByRole('button', { name: '确认发送' }).click();
+    await expect((await emailSendRequest).postDataJSON()).toMatchObject({
+      channel: 'email',
+      code: '100001',
+      recipient: 'tester@example.com',
+    });
+    await expect(page.locator('.template-test-feedback--success')).toBeVisible();
+    await page.locator('.t-dialog:visible .t-dialog__close').click();
+
+    // 短信模板（独立路由）：收件人输入切换为手机号
+    await page.goto('/admin/notifications/sms-templates', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: '短信模板' })).toBeVisible();
+    await expect(page.getByText('发送验证码')).toBeVisible();
+    const smsSendRequest = page.waitForRequest('**/api/v2/admin/notification-templates/test-send');
+    await page.getByRole('button', { name: '测试发送' }).first().click();
+    await expect(page.getByText('测试发送短信')).toBeVisible();
+    await expect(page.getByText('接收手机号')).toBeVisible();
+    await page.getByPlaceholder('请输入接收手机号，例如：13900001234').fill('13900001234');
+    await page.getByRole('button', { name: '确认发送' }).click();
+    await expect((await smsSendRequest).postDataJSON()).toMatchObject({
+      channel: 'sms',
+      code: '100001',
+      recipient: '13900001234',
+    });
+    await expect(page.locator('.template-test-feedback--success')).toBeVisible();
+  });
+
+  test('referral reward with unknown status falls back to default tag theme', async ({ page }) => {
+    await mockAdminInfo(page);
+    await mockReferral(page);
+    // 覆盖奖励列表接口：插入未知状态（99）记录，主题必须回退为 default（灰），不得漂移到未知主题
+    await page.route('**/api/v2/admin/referral/rewards**', async (route) => {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 0,
+          data: {
+            list: [
+              {
+                id: 703,
+                referrer: { id: 21, display_name: '回退用户', email: 'fallback@example.test' },
+                referred_user: { id: 25, display_name: '未知状态客户', email: 'new-fallback@example.test' },
+                order: { order_no: 'ORD-FALLBACK-001', product_spec_display: '标准云服务器 2C4G' },
+                product: { display_name: '标准云服务器' },
+                order_amount: 100,
+                reward_rate: 5,
+                reward_amount: 5,
+                status: 99,
+                rewarded_at: '2026-06-06 10:00:00',
+                available_at: '2026-06-13 10:00:00',
+                released_at: null,
+                remark: '未知状态回退用例',
+              },
+            ],
+            total: 1,
+            page: 1,
+            page_size: 20,
+          },
+        }),
+      });
+    });
+    await page.addInitScript(() => {
+      window.localStorage.setItem('admin_token', 'test-token');
+      window.localStorage.setItem('admin_last_active_at', String(Date.now()));
+    });
+
+    // 奖励列表走独立路由 /admin/referral/rewards（重构后为路由级 Tab，无页内 Tab）
+    await page.goto('/admin/referral/rewards', { waitUntil: 'domcontentloaded' });
+
+    const isMobileViewport = () => (page.viewportSize()?.width || 1440) <= 768;
+    const row = isMobileViewport()
+      ? page.locator('.referral-mobile-card').filter({ hasText: 'ORD-FALLBACK-001' })
+      : page.locator('.t-table__body tr').filter({ hasText: 'ORD-FALLBACK-001' });
+    await expect(row).toBeVisible();
+    await expect(row.locator('.t-tag--default')).toBeVisible();
+  });
 });

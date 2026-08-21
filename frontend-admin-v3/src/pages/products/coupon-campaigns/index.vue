@@ -292,7 +292,7 @@
 import './index.less';
 
 import { AddIcon, SearchIcon } from 'tdesign-icons-vue-next';
-import type { DropdownOption, FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
+import type { DropdownOption, FormInstanceFunctions, FormRule, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -374,7 +374,7 @@ const formRules: Record<string, FormRule[]> = {
   discount_value: [{ required: true, message: '请输入优惠值', type: 'error' }],
 };
 
-const columns: PrimaryTableCol<CouponCampaignRecord>[] = [
+const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'id', title: 'ID', width: 72 },
   { colKey: 'campaign', title: '活动信息', minWidth: 260 },
   { colKey: 'schedule', title: '调度规则', minWidth: 220 },

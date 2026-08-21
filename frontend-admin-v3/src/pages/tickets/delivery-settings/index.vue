@@ -204,7 +204,7 @@ import './index.less';
 
 import { useWindowSize } from '@vueuse/core';
 import { AddIcon } from 'tdesign-icons-vue-next';
-import type { FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
+import type { FormInstanceFunctions, FormRule, PrimaryTableCol, SelectValue } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 
@@ -355,10 +355,12 @@ async function loadUpstreamDepartments(supplierId: number | string, configuredId
   }
 }
 
-async function handleSupplierChange(value: string | number) {
+async function handleSupplierChange(value: SelectValue) {
   form.upstream_department_id = '';
   upstreamDepartments.value = [];
-  if (value) await loadUpstreamDepartments(value);
+  if (value !== '' && value !== undefined && value !== null) {
+    await loadUpstreamDepartments(String(value));
+  }
 }
 
 function supplierLabel(supplier: SupplierRecord) {

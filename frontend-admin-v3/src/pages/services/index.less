@@ -123,43 +123,6 @@
   font-style: normal;
 }
 
-.user-link {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-
-.user-link:disabled {
-  cursor: default;
-}
-
-.user-link strong {
-  overflow: hidden;
-  color: var(--td-text-color-primary);
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.user-link:not(:disabled):hover strong {
-  color: var(--td-brand-color);
-}
-
-.user-link span {
-  overflow: hidden;
-  color: var(--td-text-color-secondary);
-  font-size: var(--td-font-size-size-1, 12px);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .muted {
   color: var(--td-text-color-placeholder);
 }

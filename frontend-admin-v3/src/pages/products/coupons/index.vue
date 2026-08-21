@@ -389,7 +389,7 @@
 </template>
 <script setup lang="ts">
 import { AddIcon, SearchIcon } from 'tdesign-icons-vue-next';
-import type { DropdownOption, FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
+import type { DropdownOption, FormInstanceFunctions, FormRule, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, defineAsyncComponent, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -499,7 +499,7 @@ const formRules: Record<string, FormRule[]> = {
   discount_value: [{ required: true, message: '请输入优惠值', type: 'error' }],
 };
 
-const columns: PrimaryTableCol<CouponRecord>[] = [
+const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'id', title: 'ID', width: 72 },
   { colKey: 'coupon', title: '优惠券信息', minWidth: 260 },
   { colKey: 'rule', title: '优惠规则', minWidth: 220 },

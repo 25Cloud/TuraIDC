@@ -7,7 +7,7 @@ import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import { TDesignResolver } from 'unplugin-vue-components/resolvers';
 import Components from 'unplugin-vue-components/vite';
-import type { ConfigEnv, UserConfig } from 'vite';
+import type { ConfigEnv, PluginOption, UserConfig } from 'vite';
 import { loadEnv } from 'vite';
 import svgLoader from 'vite-svg-loader';
 
@@ -110,7 +110,7 @@ function createPrecompressedAssetsPlugin() {
     apply: 'build' as const,
     async closeBundle() {
       const distDirectory = path.resolve(__dirname, 'dist');
-      const distStats = await stat(distDirectory).catch(() => null);
+      const distStats = await stat(distDirectory).catch((): null => null);
 
       if (!distStats?.isDirectory()) {
         return;
@@ -223,6 +223,8 @@ export default ({ mode }: ConfigEnv): UserConfig => {
     plugins: [
       vue(),
       vueJsx(),
+      // unplugin-vue-components 未声明 vite peer，类型解析可能命中 vite@5，
+      // 运行时实际解析为本端 vite@6（API 兼容），仅做类型对齐。
       Components({
         // 仅按需解析 TDesign 组件（含其样式），替代 main.ts 的全量 app.use(TDesign)。
         // 图标仍由各页面显式 import（tdesign-icons-vue-next），故关闭 resolveIcons。
@@ -235,8 +237,10 @@ export default ({ mode }: ConfigEnv): UserConfig => {
             esm: true,
           }),
         ],
-      }),
-      svgLoader(),
+      }) as unknown as PluginOption,
+      // 与 admin 相同：vite-svg-loader 未声明 vite peer，类型解析可能命中 vite@5，
+      // 运行时实际解析为本端 vite@6，仅做类型对齐避免双 vite 类型伪冲突。
+      svgLoader() as unknown as PluginOption,
       createIndexNetworkHintsPlugin(assetBase),
       createPrecompressedAssetsPlugin(),
     ],

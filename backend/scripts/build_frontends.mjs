@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(scriptDirectory, '..', '..');
 const backendEnvPath = path.join(repositoryRoot, 'backend', '.env');
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const npmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 
 const applications = {
   admin: {
@@ -173,7 +173,7 @@ if (options.dryRun) {
 for (const [name, application] of selectedApplications) {
   console.log(`构建 ${name} (${application.workspace})...`);
   await runNpm(
-    ['run', 'build', '--workspace', application.workspace],
+    ['--filter', application.workspace, 'run', 'build'],
     {
       ...baseBuildEnvironment,
       [application.assetVariable]: '/',

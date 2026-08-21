@@ -9,7 +9,7 @@
 #        docker compose up -d --build
 #
 # 镜像地址由 .env 控制：REGISTRY / IMAGE_NAMESPACE / IMAGE_TAG
-# 详细说明见 docs/参考资料/运维/Docker与1Panel部署指南.md
+# 详细说明见 docs/references/operations/docker-and-1panel-deployment.md
 # ============================================================================
 name: turaidc
 

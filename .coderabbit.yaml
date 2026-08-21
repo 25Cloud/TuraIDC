@@ -55,7 +55,7 @@ reviews:
     - "!**/*.mp4"
     - "!**/*.webm"
     - "!backend/public/media/**"
-    - "!docs/自动生成/**"
+    - "!docs/generated/**"
 
   # 忽略机器人提交
   ignore_usernames:

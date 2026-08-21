@@ -61,14 +61,22 @@
             </button>
           </template>
           <template #product="{ row }">
-            {{
-              fieldValue(
-                row.product_full_path ||
-                  row.product_display_name ||
-                  row.product?.display_name ||
-                  (row.product_id ? `未配置规格 #${row.product_id}` : ''),
-              )
-            }}
+            <button
+              type="button"
+              class="user-link"
+              :disabled="!Number(row.service_id || row.id || 0)"
+              @click="goServiceDetail(row)"
+            >
+              <strong>{{
+                fieldValue(
+                  row.product_full_path ||
+                    row.product_display_name ||
+                    row.product?.display_name ||
+                    (row.product_id ? `未配置规格 #${row.product_id}` : ''),
+                )
+              }}</strong>
+              <span>{{ fieldValue(row.domain) }}</span>
+            </button>
           </template>
           <template #status="{ row }">
             <status-tag :status-map="SERVICE_STATUS_MAP" :status="row.status" />
@@ -94,6 +102,8 @@
               :key="row.id"
               :title="serviceTitle(row)"
               eyebrow="服务列表"
+              linkable
+              :link-disabled="!Number(row.service_id || row.id || 0)"
               :subtitle="
                 fieldValue(
                   row.invoice?.invoice_no
@@ -110,6 +120,7 @@
               :status="row.status"
               :rows="serviceMobileRows(row)"
               :action-options="mobileActionOptions(row)"
+              @title-click="goServiceDetail(row)"
               @action="(value) => handleMobileAction(value, row)"
             />
           </div>
@@ -171,7 +182,7 @@ import './index.less';
 
 import { SERVICE_STATUS_MAP, toSelectOptions } from '@shared/statusConfig';
 import { SearchIcon } from 'tdesign-icons-vue-next';
-import type { PageInfo, PrimaryTableCol } from 'tdesign-vue-next';
+import type { PageInfo, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -218,7 +229,7 @@ const statusOptions = computed(() =>
   toSelectOptions(SERVICE_STATUS_MAP, false).map((item) => ({ ...item, value: String(item.value) })),
 );
 
-const columns: PrimaryTableCol<ServiceRecord>[] = [
+const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'row-select', type: 'multiple', width: 54, fixed: 'left' },
   { colKey: 'service', title: '服务', minWidth: 280 },
   { colKey: 'host', title: '主机信息', minWidth: 240 },
@@ -230,7 +241,7 @@ const columns: PrimaryTableCol<ServiceRecord>[] = [
   { colKey: 'created', title: '开通时间', width: 120 },
 ];
 
-const hostnameColumns: PrimaryTableCol<HostnameRow>[] = [
+const hostnameColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'service_id', title: '服务ID', width: 90 },
   { colKey: 'service', title: '服务信息', minWidth: 240 },
   { colKey: 'current', title: '当前展示', minWidth: 170 },
@@ -337,11 +348,21 @@ function goUserDetail(row: ServiceRecord) {
   }
 }
 
+function goServiceDetail(row: ServiceRecord) {
+  const id = Number(row.service_id || row.id || 0);
+  if (!id) return;
+  router.push({ path: `/admin/services/${id}`, query: { user: String(row.user?.id || '') } });
+}
+
 function mobileActionOptions(row: ServiceRecord) {
-  return [{ content: '查看用户', value: 'user', disabled: !row.user?.id }];
+  return [
+    { content: '管理实例', value: 'service', disabled: !Number(row.service_id || row.id || 0) },
+    { content: '查看用户', value: 'user', disabled: !row.user?.id },
+  ];
 }
 
 function handleMobileAction(value: unknown, row: ServiceRecord) {
+  if (value === 'service') goServiceDetail(row);
   if (value === 'user') goUserDetail(row);
 }
 

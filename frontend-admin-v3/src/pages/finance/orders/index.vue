@@ -68,7 +68,14 @@
           </template>
           <template #product="{ row }">
             <div class="stack-cell">
-              <strong>{{ fieldValue(row.product_full_path || row.product_name) }}</strong>
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!Number(row.service?.id || 0)"
+                @click="goServiceDetail(row)"
+              >
+                <strong>{{ fieldValue(row.product_full_path || row.product_name) }}</strong>
+              </button>
               <span>{{ serviceIdLabel(row.service) }}</span>
             </div>
           </template>
@@ -137,7 +144,7 @@
 import './index.less';
 
 import { ORDER_STATUS_MAP, ORDER_TYPE_MAP, toSelectOptions } from '@shared/statusConfig';
-import type { PrimaryTableCol } from 'tdesign-vue-next';
+import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -221,8 +228,8 @@ const {
   },
 });
 
-const columns = computed<PrimaryTableCol<OrderRecord>[]>(() => {
-  const base: PrimaryTableCol<OrderRecord>[] = [
+const columns = computed<PrimaryTableCol<TableRowData>[]>(() => {
+  const base: PrimaryTableCol<TableRowData>[] = [
     { colKey: 'order_no', title: '订单号', minWidth: 170 },
     { colKey: 'user', title: '用户', minWidth: 180 },
     { colKey: 'product', title: '产品/服务', minWidth: 240 },
@@ -258,6 +265,16 @@ function buildParams() {
 
 function goDetail(row: OrderRecord) {
   router.push(`/admin/finance/orders/${row.id}`);
+}
+
+function goServiceDetail(row: OrderRecord) {
+  const service = toRecord(row.service);
+  const id = Number(service.id || 0);
+  if (!id) return;
+  router.push({
+    path: `/admin/services/${id}`,
+    query: { user: String(row.user_id || (toRecord(row.user).id as number) || '') },
+  });
 }
 
 function handleMobileAction(value: unknown, row: OrderRecord) {

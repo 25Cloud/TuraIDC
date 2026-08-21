@@ -31,6 +31,9 @@
       </template>
 
       <template #relations>
+        <t-button v-if="linkedServiceId" variant="outline" size="small" @click="emit('view-service', linkedServiceId)">
+          查看服务
+        </t-button>
         <t-button
           v-if="invoice.order?.id || invoice.order_id"
           variant="outline"
@@ -145,12 +148,15 @@
 </template>
 <script setup lang="ts">
 import { getStatusLabel, getStatusTagType, INVOICE_TYPE_MAP, PAYMENT_STATUS_MAP } from '@shared/statusConfig';
+import type { TagProps } from 'tdesign-vue-next';
 import { computed, ref } from 'vue';
 
 import type { InvoiceRecord } from '@/api/admin';
 import type { RecordDetailMetric, RecordDetailTab } from '@/components/record-detail-page/index.vue';
 import RecordDetailPage from '@/components/record-detail-page/index.vue';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+
+type ThemeType = NonNullable<TagProps['theme']>;
 
 const props = withDefaults(
   defineProps<{
@@ -185,6 +191,7 @@ const emit = defineEmits<{
   (event: 'cancel'): void;
   (event: 'view-order', id: unknown): void;
   (event: 'view-user', id: unknown): void;
+  (event: 'view-service', id: unknown): void;
 }>();
 
 const isMobile = useMediaQuery('(max-width: 768px)');
@@ -193,6 +200,11 @@ const activeTab = ref('basic');
 const invoice = computed(() => props.invoice || {});
 const payments = computed(() => props.payments || []);
 const logs = computed(() => props.logs || []);
+const linkedServiceId = computed(() => {
+  const service = (invoice.value.service as Record<string, unknown> | undefined) || {};
+  const order = (invoice.value.order as Record<string, unknown> | undefined) || {};
+  return Number(service.id || order.service_id || 0);
+});
 const items = computed(() => {
   const sceneItems = invoice.value.scene?.items;
   if (Array.isArray(sceneItems)) return sceneItems as Record<string, unknown>[];
@@ -235,9 +247,10 @@ function paymentStatusLabel(payment: Record<string, unknown>) {
   return getStatusLabel(PAYMENT_STATUS_MAP, Number(payment.status));
 }
 
-function paymentStatusTheme(payment: Record<string, unknown>) {
+function paymentStatusTheme(payment: Record<string, unknown>): ThemeType {
   const value = getStatusTagType(PAYMENT_STATUS_MAP, Number(payment.status));
-  return value === 'info' || value === 'purple' ? 'default' : value;
+  if (value === 'warning' || value === 'success' || value === 'primary' || value === 'danger') return value;
+  return 'default';
 }
 
 function fieldValue(value: unknown) {

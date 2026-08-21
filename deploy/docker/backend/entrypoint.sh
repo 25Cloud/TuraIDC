@@ -161,7 +161,14 @@ chown -R www-data:www-data storage bootstrap/cache
 # ---------------------------------------------------------------------------
 # 6. crontab（每分钟 schedule:run，驱动心跳与队列消费；与宝塔口径一致）
 # ---------------------------------------------------------------------------
-echo '* * * * * cd /var/www/backend && php artisan schedule:run >> /dev/null 2>&1' \
+# cron 的默认 PATH 只有 /usr/bin:/bin，而官方 PHP 镜像把二进制装在 /usr/local/bin/php，
+# 裸 php 在 cron 环境下必然 command not found；再叠加 >> /dev/null 2>&1 把错误全部丢弃，
+# 结果是 crond 正常运行但 schedule:run 从未成功执行一次，且没有任何日志线索——
+# 心跳与 queue:drain 永不触发，/api/ready 始终 scheduler=false，队列永不消费。
+# 因此显式声明 PATH 并使用绝对路径（printf 保证结尾换行，否则 crontab 拒绝安装）。
+printf '%s\n%s\n' \
+  'PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin' \
+  '* * * * * cd /var/www/backend && /usr/local/bin/php artisan schedule:run >> /dev/null 2>&1' \
   | crontab -u www-data -
 
 # ---------------------------------------------------------------------------

@@ -102,7 +102,10 @@ export default antfu(
 
       rules: {
         'vue/component-name-in-template-casing': ['error', 'kebab-case'],
-        'vue/custom-event-name-casing': ['error', 'kebab-case'],
+        // 关闭：v-model 的 update:modelValue 属 Vue 惯例 camelCase，kebab 规则会误报；
+        // 项目另有 Vue2 filter 历史语法，vue/no-deprecated-filter 一并关闭（运行兼容另行处理）。
+        'vue/custom-event-name-casing': 'off',
+        'vue/no-deprecated-filter': 'off',
         'vue/block-order': [
           'error',
           {

@@ -638,7 +638,7 @@
 import './index.less';
 
 import { SearchIcon } from 'tdesign-icons-vue-next';
-import type { PageInfo, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
+import type { PageInfo, PrimaryTableCol, TableRowData, TagProps } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -656,6 +656,7 @@ import LogDetailDrawer from './components/LogDetailDrawer.vue';
 type LogTab = 'system' | 'runtime' | 'admin-logins' | 'api' | 'sms' | 'email' | 'tasks' | 'gateway' | 'upstream';
 type LogsTab = LogTab | 'schedules' | 'cleanup';
 type RecordRow = Record<string, unknown>;
+type TagTheme = NonNullable<TagProps['theme']>;
 
 const route = useRoute();
 const router = useRouter();
@@ -1557,37 +1558,35 @@ function logCardMessage(row: RecordRow) {
   return primaryTitle(row) || primarySubText(row) || '-';
 }
 
-function statusTheme(status: unknown) {
+function statusTheme(status: unknown): TagTheme {
   if (activeTab.value === 'admin-logins') return String(status) === 'operation_log' ? 'success' : 'warning';
-  return (
-    {
-      success: 'success',
-      failed: 'danger',
-      pending: 'warning',
-      skipped: 'warning',
-      delivered: 'success',
-      sending: 'warning',
-    }[String(status || '').toLowerCase()] || 'default'
-  );
+  const themes: Record<string, TagTheme> = {
+    success: 'success',
+    failed: 'danger',
+    pending: 'warning',
+    skipped: 'warning',
+    delivered: 'success',
+    sending: 'warning',
+  };
+  return themes[String(status || '').toLowerCase()] || 'default';
 }
 
-function levelTheme(level: unknown) {
-  return (
-    {
-      DEBUG: 'default',
-      INFO: 'success',
-      NOTICE: 'primary',
-      WARNING: 'warning',
-      ERROR: 'danger',
-      CRITICAL: 'danger',
-      ALERT: 'danger',
-      EMERGENCY: 'danger',
-      SUCCESS: 'success',
-    }[String(level || '').toUpperCase()] || 'default'
-  );
+function levelTheme(level: unknown): TagTheme {
+  const themes: Record<string, TagTheme> = {
+    DEBUG: 'default',
+    INFO: 'success',
+    NOTICE: 'primary',
+    WARNING: 'warning',
+    ERROR: 'danger',
+    CRITICAL: 'danger',
+    ALERT: 'danger',
+    EMERGENCY: 'danger',
+    SUCCESS: 'success',
+  };
+  return themes[String(level || '').toUpperCase()] || 'default';
 }
 
-function httpStatusTheme(status: unknown) {
+function httpStatusTheme(status: unknown): TagTheme {
   const code = Number(status || 0);
   if (code >= 500) return 'danger';
   if (code >= 400) return 'warning';
@@ -1703,14 +1702,13 @@ function gatewayLabel(value: unknown) {
   return gatewayOptions.find((item) => item.value === key)?.label || fieldValue(value);
 }
 
-function gatewayResultStatusTheme(value: unknown) {
-  return (
-    {
-      success: 'success',
-      failed: 'danger',
-      pending: 'warning',
-    }[String(value || '').toLowerCase()] || 'default'
-  );
+function gatewayResultStatusTheme(value: unknown): TagTheme {
+  const themes: Record<string, TagTheme> = {
+    success: 'success',
+    failed: 'danger',
+    pending: 'warning',
+  };
+  return themes[String(value || '').toLowerCase()] || 'default';
 }
 
 function formatScheduleCycle(row: RecordRow) {
