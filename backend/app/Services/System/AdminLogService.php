@@ -314,27 +314,25 @@ class AdminLogService
     {
         $entries = collect($this->readLaravelLogEntries())
             ->filter(fn (array $item): bool => $this->isUpstreamUploadLogEntry($item))
-            ->filter(function (array $item) use ($filters): bool {
-                if (! empty($filters['level']) && strtoupper((string) $item['level']) !== strtoupper((string) $filters['level'])) {
-                    return false;
-                }
-                if (! empty($filters['keyword']) && ! str_contains((string) $item['message'], trim((string) $filters['keyword']))) {
-                    return false;
-                }
-
-                return $this->matchLogDateRange((string) $item['time'], $filters);
-            })
+            ->filter(fn (array $item): bool => $this->matchesUpstreamUploadLogFilters($item, $filters))
             ->sortByDesc(fn (array $item): int => strtotime((string) ($item['time'] ?? '')) ?: 0)
             ->values();
 
         return $this->buildPaginatorPayload($this->paginateCollection($entries, $page, $perPage));
     }
 
+    /**
+     * 上游附件上传与清理日志汇总，复用与列表完全一致的过滤条件（level、keyword、日期），
+     * 保证管理端筛选后列表总数与汇总统计结果一致。
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array{total: int, errors: int, warnings: int, infos: int}
+     */
     public function getUpstreamUploadLogsSummary(array $filters): array
     {
         $entries = collect($this->readLaravelLogEntries())
             ->filter(fn (array $item): bool => $this->isUpstreamUploadLogEntry($item))
-            ->filter(fn (array $item): bool => $this->matchLogDateRange((string) $item['time'], $filters));
+            ->filter(fn (array $item): bool => $this->matchesUpstreamUploadLogFilters($item, $filters));
 
         return [
             'total' => $entries->count(),
@@ -342,6 +340,25 @@ class AdminLogService
             'warnings' => $entries->where('level', 'WARNING')->count(),
             'infos' => $entries->where('level', 'INFO')->count(),
         ];
+    }
+
+    /**
+     * 上游附件上传日志的统一过滤条件：level、keyword、日期范围。
+     * 列表与汇总共用该方法，避免两侧过滤逻辑漂移导致筛选后的总数与汇总不一致。
+     *
+     * @param  array<string, mixed>  $item
+     * @param  array<string, mixed>  $filters
+     */
+    private function matchesUpstreamUploadLogFilters(array $item, array $filters): bool
+    {
+        if (! empty($filters['level']) && strtoupper((string) $item['level']) !== strtoupper((string) $filters['level'])) {
+            return false;
+        }
+        if (! empty($filters['keyword']) && ! str_contains((string) $item['message'], trim((string) $filters['keyword']))) {
+            return false;
+        }
+
+        return $this->matchLogDateRange((string) $item['time'], $filters);
     }
 
     private function isUpstreamUploadLogEntry(array $item): bool

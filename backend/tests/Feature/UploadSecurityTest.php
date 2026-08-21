@@ -35,8 +35,22 @@ class UploadSecurityTest extends TestCase
 
     private array $uploadedFiles = [];
 
+    private array $tempDirectories = [];
+
     protected function tearDown(): void
     {
+        // 恢复 ticket_upstream 上传防护配置。恢复放在 tearDown 中保证任一断言失败后
+        // 也会执行，避免残留配置污染同一进程内其他访问 /upload_image 的用例。
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => (string) config('ticket_upstream.upload_allowed_ips', ''),
+            'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
+            'block_non_whitelisted' => '0',
+        ]);
+
+        foreach ($this->tempDirectories as $directory) {
+            File::deleteDirectory($directory);
+        }
+
         foreach ($this->uploadedFiles as $path) {
             File::delete($path);
         }
@@ -203,10 +217,11 @@ class UploadSecurityTest extends TestCase
 
     public function test_upstream_orphan_upload_cleanup_removes_only_unreferenced_files(): void
     {
-        $directory = storage_path('app/private/tickets/upstream');
-        // 测试环境目录可能残留其他用例的上传文件，先清空保证删除计数精确
+        // 使用系统临时目录下的隔离目录，避免清空与其他用例共享的 storage 上传目录
+        $directory = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+            .DIRECTORY_SEPARATOR.'turaidc-upstream-orphan-'.bin2hex(random_bytes(6));
         File::ensureDirectoryExists($directory);
-        File::cleanDirectory($directory);
+        $this->tempDirectories[] = $directory;
 
         $orphanName = 'upstream-'.now()->subDays(30)->format('YmdHis').'-'.bin2hex(random_bytes(6)).'.png';
         $referencedName = 'upstream-'.now()->subDays(30)->format('YmdHis').'-'.bin2hex(random_bytes(6)).'.png';
@@ -242,7 +257,11 @@ class UploadSecurityTest extends TestCase
             ]],
         ]);
 
-        $result = app(TicketUpstreamCallbackService::class)->cleanupOrphanUploads(retentionMinutes: 7, limit: 100);
+        $result = app(TicketUpstreamCallbackService::class)->cleanupOrphanUploads(
+            retentionMinutes: 7,
+            directory: $directory,
+            limit: 100,
+        );
 
         $this->assertSame(1, $result['deleted']);
         $this->assertSame(1, $result['referenced']);
@@ -291,13 +310,6 @@ class UploadSecurityTest extends TestCase
                 ])
                 ->assertJsonPath('status', 200);
         }
-
-        // 恢复默认配置，避免影响其他测试
-        Setting::setValues('ticket_upstream', [
-            'allowed_ips' => '',
-            'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
-            'block_non_whitelisted' => '0',
-        ]);
     }
 
     public function test_upstream_upload_throttle_blocks_non_whitelisted_when_enabled(): void
@@ -344,13 +356,34 @@ class UploadSecurityTest extends TestCase
                 'file' => UploadedFile::fake()->image('cidr-blocked.png', 8, 8)->size(4),
             ])
             ->assertJsonPath('status', 403);
+    }
 
-        // 恢复默认配置
+    public function test_upstream_upload_throttle_does_not_treat_invalid_cidr_prefix_as_wildcard(): void
+    {
+        Setting::forgetCachedGroup('ticket_upstream');
+
+        // 非法 CIDR 前缀（如 198.51.100.0/foo）不应被当作 /0 匹配所有来源：
+        // 前缀位解析失败时该条目不匹配任何 IP，非白名单 IP 仍按配置被拒绝。
+        // 该行为由配置直接写入 settings 表绕过管理端校验，模拟历史脏配置场景。
         Setting::setValues('ticket_upstream', [
-            'allowed_ips' => '',
-            'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
-            'block_non_whitelisted' => '0',
+            'allowed_ips' => '198.51.100.0/foo',
+            'rate_limit' => '0',
+            'block_non_whitelisted' => '1',
         ]);
+
+        // 名义上落在该子网内的 IP 也不被白名单匹配
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.50'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('invalid-cidr-in-subnet.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 403);
+
+        // 子网外的 IP 同样被拒绝
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.70'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('invalid-cidr-outside.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 403);
     }
 
     public function test_ticket_image_upload_still_accepts_normal_image(): void

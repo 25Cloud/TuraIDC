@@ -14,10 +14,26 @@ use App\Services\Ticket\TicketDeliveryService;
 use App\Services\Ticket\TicketService;
 use App\Support\AdminPermissions;
 use Laravel\Sanctum\Sanctum;
+use Tests\Support\Concerns\UpstreamDeliveryWhitelist;
 use Tests\TestCase;
 
 class V2AdminTicketActionApiTest extends TestCase
 {
+    use UpstreamDeliveryWhitelist;
+
+    protected function tearDown(): void
+    {
+        // 恢复 ticket_upstream 上传防护配置。恢复放在 tearDown 中保证任一断言失败后
+        // 也会执行，避免残留配置污染同一进程内其他访问 /upload_image 的用例。
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => (string) config('ticket_upstream.upload_allowed_ips', ''),
+            'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
+            'block_non_whitelisted' => '0',
+        ]);
+
+        parent::tearDown();
+    }
+
     public function test_ticket_upstream_delivery_status_and_logs_require_list_permission(): void
     {
         $ticket = $this->createTicket();
@@ -36,21 +52,7 @@ class V2AdminTicketActionApiTest extends TestCase
             ->assertJsonPath('data.configured', false)
             ->assertJsonPath('data.last_error', null);
 
-        $this->assertSame([
-            'configured',
-            'status',
-            'status_label',
-            'provider_key',
-            'supplier_id',
-            'upstream_department_id',
-            'upstream_service_id',
-            'upstream_ticket_id',
-            'attempts',
-            'last_attempt_at',
-            'delivered_at',
-            'last_error',
-            'last_event',
-        ], array_keys($status->json('data')));
+        $this->assertSame($this->upstreamDeliveryWhitelist(), array_keys($status->json('data')));
 
         $this->getJson('/api/v2/admin/tickets/'.$ticket->id.'/upstream-delivery/logs')
             ->assertOk()
@@ -336,12 +338,6 @@ class V2AdminTicketActionApiTest extends TestCase
             'rate_limit' => 5,
         ])->assertUnprocessable()
             ->assertJsonStructure(['data' => ['errors' => ['allowed_ips']]]);
-
-        // 清理测试数据
-        Setting::setValues('ticket_upstream', [
-            'allowed_ips' => '',
-            'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
-        ]);
     }
 
     /**

@@ -13,7 +13,7 @@ PR `#20`（feat: 增加对 zjmf_finance 的工单上游传递）收到 CodeRabbi
 ## 范围与验收
 
 - [ ] 附件上传路径遍历（CWE-22）与文件句柄泄漏、SSL 校验缺口已修复。
-- [ ] `/upload_image` 匿名上传已加轻量凭证校验，无凭证/错误凭证被拒绝。
+- [ ] `/upload_image` 上传凭证校验：`upload_token_required` 默认 `false`，无凭证上传放行以兼容部署中的上游，带凭证上传强制匹配；设为 `true` 时拒绝无凭证/错误凭证（fail-closed）。
 - [ ] legacy 回调验签在服务不存在或 token 为空时 fail-closed。
 - [ ] 供应商切换非 ZJMF 提供商时强制关闭工单投递；投递规则部门取值限制为本地部门枚举。
 - [ ] 日志中心嵌套事件有数量上限；状态摘要按每工单最新事件统计。
@@ -44,11 +44,11 @@ PR `#20`（feat: 增加对 zjmf_finance 的工单上游传递）收到 CodeRabbi
 - `app/openapi/controller/TicketController.php`：`createTicket()` 与 `replyTicket()` 支持 `request_id` 幂等——命中已存在 `request_id` 时直接返回既有结果，不重复创建/回复。
 - `data/upgrade_ticket_request_id.sql`：为 `ticket`、`ticket_reply` 增加 `request_id` 列与唯一索引（执行前先备份并清理潜在重复）。
 
-由于部署中的上游系统无法同步配套修改，本仓库 `/upload_image` 凭证校验默认放行无凭证上传（`upload_token_required=false`），以保证回调附件可用；带凭证的上传仍强制匹配。磁盘占用通过每日孤儿文件清理任务缓解（`CleanupUpstreamOrphanUploadsHook`，保留期 `upload_retention_days`，默认 7 天）。`request_id` 幂等在未部署上游前由上游忽略（行为与现状一致）。
+由于部署中的上游系统无法同步配套修改，本仓库 `/upload_image` 凭证校验默认放行无凭证上传（`upload_token_required=false`），以保证回调附件可用；带凭证的上传仍强制匹配。磁盘占用通过未使用上传文件清理缓解：超过保留期（`upload_unused_retention_minutes`，默认 5 分钟）仍未用于回复工单的文件由每分钟调度任务 `tickets:cleanup-unused-upstream-uploads` 删除。`request_id` 幂等在未部署上游前由上游忽略（行为与现状一致）。
 
 ## 风险与回滚
 
-- 上游系统不可改，`/upload_image` 凭证校验默认放行无凭证上传（安全修复降级为缓解）：匿名上传依赖每日孤儿文件清理与 `throttle` 控制，未来上游可携带凭证时应恢复 `upload_token_required=true`。
+- 上游系统不可改，`/upload_image` 凭证校验默认放行无凭证上传（安全修复降级为缓解）：匿名上传依赖未使用文件每分钟清理与自定义限流中间件（白名单 IP/CIDR 不限速、非白名单按速率、可开启拒绝白名单外上传）控制，未来上游可携带凭证时应恢复 `upload_token_required=true`（fail-closed）。
 - 两个迁移（150000/160000）为未发布 PR 的追加迁移，直接修正文件；已有漂移表的环境需先走独立修复流程（160000 会在表已存在时明确报错）。
 - 日志摘要语义从“历史事件求和”改为“每工单最新事件”，前端无需改动（字段与文案不变）。
 - 规则编辑页仅移除首屏自动过滤，供应商切换仍清空产品选择。
@@ -72,7 +72,7 @@ PR `#20`（feat: 增加对 zjmf_finance 的工单上游传递）收到 CodeRabbi
 
 | 日期       | 决策                                                                        | 原因                                                                                                                                                                                                                                                           |
 | ---------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-08-21 | `/upload_image` 采用 per-service legacy token 校验                          | 上游 `pushTicketReply` 已持有 `downstream_id`/`downstream_token`，与回调验签同源，无需引入新的共享密钥；凭证缺失即拒绝（fail-closed）。                                                                                                                        |
+| 2026-08-21 | `/upload_image` 采用 per-service legacy token 校验                          | 上游 `pushTicketReply` 已持有 `downstream_id`/`downstream_token`，与回调验签同源，无需引入新的共享密钥；带凭证上传按该 token 强制匹配，`upload_token_required=true` 时凭证缺失/错误即拒绝（fail-closed，默认 `false` 放行无凭证上传以兼容部署中的上游）。      |
 | 2026-08-21 | 幂等采用 `request_id` 下发 + 上游幂等去重                                   | 上游不支持幂等参数且无可按业务键回查的接口；`request_id` 为稳定业务键（绑定/回复 ID），上游命中后返回既有结果，重试不会重复创建。                                                                                                                              |
 | 2026-08-21 | 日志嵌套事件上限 20 条/工单                                                 | 列表接口返回最新事件与总数（`log_count`），展开详情走分页接口；避免历史长工单的大查询与大响应。                                                                                                                                                                |
 | 2026-08-21 | 迁移直接修正未发布文件                                                      | 150000/160000 均为 PR #20 未合并的追加迁移，直接修正文件符合“迁移只新增”与 fail-fast 原则；漂移表环境显式报错而非静默跳过。                                                                                                                                    |

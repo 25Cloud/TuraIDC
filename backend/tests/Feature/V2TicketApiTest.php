@@ -23,10 +23,13 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
+use Tests\Support\Concerns\UpstreamDeliveryWhitelist;
 use Tests\TestCase;
 
 class V2TicketApiTest extends TestCase
 {
+    use UpstreamDeliveryWhitelist;
+
     /**
      * @var list<string>
      */
@@ -575,28 +578,6 @@ class V2TicketApiTest extends TestCase
             'service',
             'assignee',
             'replies_summary',
-        ];
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function upstreamDeliveryWhitelist(): array
-    {
-        return [
-            'configured',
-            'status',
-            'status_label',
-            'provider_key',
-            'supplier_id',
-            'upstream_department_id',
-            'upstream_service_id',
-            'upstream_ticket_id',
-            'attempts',
-            'last_attempt_at',
-            'delivered_at',
-            'last_error',
-            'last_event',
         ];
     }
 

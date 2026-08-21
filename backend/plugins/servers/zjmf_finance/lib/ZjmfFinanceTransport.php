@@ -317,11 +317,18 @@ final class ZjmfFinanceTransport
         ], $jwt);
     }
 
-    public function uploadTicketAttachment(Supplier $supplier, string $path): ?string
+    /**
+     * 上传工单附件到上游图片接口，返回上游保存的文件名（savename）。
+     * 本地路径校验失败、文件句柄打开失败或上游返回失败/缺少 savename 时一律抛出 BusinessException，
+     * 保证调用方不会因空返回值而静默丢失附件（与上游业务失败保持一致的失败语义）。
+     *
+     * @throws BusinessException 路径非法、文件不可读、上游请求失败或缺少 savename 时抛出
+     */
+    public function uploadTicketAttachment(Supplier $supplier, string $path): string
     {
         $root = realpath(storage_path('app'));
         if ($root === false) {
-            return null;
+            throw new BusinessException('上游附件上传失败', 50000);
         }
 
         $absolutePath = realpath($root.'/'.ltrim(str_replace('\\', '/', $path), '/'));
@@ -329,13 +336,13 @@ final class ZjmfFinanceTransport
             || ! str_starts_with($absolutePath, $root.DIRECTORY_SEPARATOR)
             || ! is_file($absolutePath)
         ) {
-            return null;
+            throw new BusinessException('上游附件上传失败', 50000);
         }
 
         $jwt = $this->login($supplier);
         $handle = fopen($absolutePath, 'rb');
         if ($handle === false) {
-            return null;
+            throw new BusinessException('上游附件上传失败', 50000);
         }
 
         try {
