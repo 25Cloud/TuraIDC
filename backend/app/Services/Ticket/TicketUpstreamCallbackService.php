@@ -59,7 +59,13 @@ final class TicketUpstreamCallbackService
 
         $eventId = trim((string) ($payload['event_id'] ?? ''));
         if ($eventId === '' && $legacy) {
-            $eventId = 'legacy:'.hash('sha256', implode('|', [(string) ($payload['id'] ?? ''), (string) ($payload['rand_str'] ?? '')]));
+            $replyId = trim((string) ($payload['rid'] ?? ''));
+            $eventId = 'legacy:'.hash('sha256', implode('|', [
+                (string) $binding->provider_key,
+                (string) $binding->supplier_id,
+                $upstreamTicketId,
+                $replyId !== '' ? 'rid:'.$replyId : 'rand:'.(string) ($payload['rand_str'] ?? ''),
+            ]));
         }
         if ($eventId === '') {
             $eventId = hash('sha256', implode('|', [
