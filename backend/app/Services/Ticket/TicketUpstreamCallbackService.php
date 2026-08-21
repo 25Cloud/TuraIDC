@@ -9,9 +9,11 @@ use App\Exceptions\BusinessException;
 use App\Models\TicketReply;
 use App\Models\TicketReplyDelivery;
 use App\Models\TicketUpstreamBinding;
-use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Notification\UserNotificationService;
+use App\Services\Ticket\TicketDeliveryService;
+use App\Services\Ticket\TicketService;
 use App\Services\Upstream\ProviderKey;
+use App\Support\TextSanitizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
@@ -19,7 +21,7 @@ final class TicketUpstreamCallbackService
 {
     public function __construct(
         private readonly UserNotificationService $notifications,
-        private readonly PluginBindingResolver $bindings,
+        private readonly TicketDeliveryService $delivery,
     ) {}
 
     /**
@@ -31,7 +33,7 @@ final class TicketUpstreamCallbackService
     public function receiveReply(array $payload, bool $legacy = true): array
     {
         $upstreamTicketId = trim((string) ($payload['tid'] ?? ''));
-        $content = trim((string) ($payload['content'] ?? ''));
+        $content = TextSanitizer::cleanHtml((string) ($payload['content'] ?? ''), true);
         throw_if($legacy && trim((string) ($payload['id'] ?? '')) === '', new BusinessException('回调服务标识不能为空', 42200));
         throw_if($legacy && trim((string) ($payload['rand_str'] ?? '')) === '', new BusinessException('回调随机串不能为空', 42200));
         throw_if($upstreamTicketId === '', new BusinessException('上游工单号不能为空', 42200));
@@ -52,7 +54,6 @@ final class TicketUpstreamCallbackService
                 ->where('supplier_id', $binding->supplier_id)
                 ->where('provider_key', ProviderKey::ZJMF_FINANCE_API)
                 ->where('status', 1)
-                ->where('ticket_delivery_enabled', true)
                 ->exists();
         throw_if(! $supplierEnabled, new BusinessException('上游供应商已停用', 42200));
 
@@ -109,18 +110,27 @@ final class TicketUpstreamCallbackService
             $replyId = (int) $reply->id;
         });
 
-        if (! $duplicate && $replyId !== null) {
-            $ticket = $binding->ticket()->first();
-            if ($ticket !== null) {
-                $this->notifications->create(
-                    (int) $ticket->user_id,
-                    UserNotificationType::TICKET_STAFF_REPLY,
-                    '工单收到上游回复',
-                    '工单「'.(string) $ticket->subject.'」收到上游管理员回复',
-                    '/client/tickets/'.(int) $ticket->id,
-                    ['ticket_id' => (int) $ticket->id]
-                );
-            }
+        $ticket = $binding->ticket()->first();
+        if ($ticket !== null) {
+            $this->delivery->recordInboundCallbackLog($ticket, [
+                'ticket_reply_id' => $replyId,
+                'event' => $duplicate ? 'duplicate' : 'succeeded',
+                'status' => 'delivered',
+                'reason_code' => $duplicate ? 'duplicate_event' : null,
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'message' => $duplicate ? '上游工单回复重复回调，已按幂等结果处理' : '已接收上游工单回复',
+            ]);
+        }
+        if (! $duplicate && $ticket !== null) {
+            $this->notifications->create(
+                (int) $ticket->user_id,
+                UserNotificationType::TICKET_STAFF_REPLY,
+                '工单收到上游回复',
+                '工单「'.(string) $ticket->subject.'」收到上游管理员回复',
+                '/client/tickets/'.(int) $ticket->id,
+                ['ticket_id' => (int) $ticket->id]
+            );
         }
 
         return ['accepted' => true, 'duplicate' => $duplicate, 'reply_id' => $replyId];
@@ -192,14 +202,6 @@ final class TicketUpstreamCallbackService
         $service = $binding->ticket?->service;
         if ($service === null) {
             return '';
-        }
-
-        $projection = $this->bindings->serviceProvisionProjection($service, includeSecrets: true);
-        foreach (['downstream_token', 'ticket_callback_token', 'callback_token'] as $key) {
-            $token = trim((string) ($projection[$key] ?? ''));
-            if ($token !== '') {
-                return $token;
-            }
         }
 
         $serviceId = (int) ($service->id ?? 0);

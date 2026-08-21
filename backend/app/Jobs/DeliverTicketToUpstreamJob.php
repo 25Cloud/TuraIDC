@@ -34,8 +34,14 @@ final class DeliverTicketToUpstreamJob implements ShouldQueue
 
     public function failed(\Throwable $exception): void
     {
+        $binding = \App\Models\TicketUpstreamBinding::query()->where('ticket_id', $this->ticketId)->first();
         Log::warning('工单传递到上游失败', [
             'ticket_id' => $this->ticketId,
+            'binding_id' => $binding?->id,
+            'provider_key' => $binding?->provider_key,
+            'supplier_id' => $binding?->supplier_id,
+            'attempt' => $binding?->attempts,
+            'operation' => 'ticket.create',
             'message' => $exception->getMessage(),
         ]);
     }

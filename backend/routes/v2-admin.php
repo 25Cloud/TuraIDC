@@ -144,6 +144,8 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::get('/tickets/admin-users', [TicketController::class, 'adminUsers']);
         Route::get('/tickets', [TicketController::class, 'index']);
         Route::get('/tickets/{ticket}/replies', [TicketController::class, 'replies']);
+        Route::get('/tickets/{ticket}/upstream-delivery/logs', [TicketDeliveryController::class, 'ticketLogs']);
+        Route::get('/tickets/{ticket}/upstream-delivery', [TicketDeliveryController::class, 'ticketStatus']);
         Route::get('/tickets/{ticket}', [TicketController::class, 'show']);
     });
 
@@ -156,7 +158,7 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/ticket-delivery-rules', [TicketDeliveryController::class, 'store']);
         Route::put('/ticket-delivery-rules/{rule}', [TicketDeliveryController::class, 'update']);
         Route::delete('/ticket-delivery-rules/{rule}', [TicketDeliveryController::class, 'destroy']);
-        Route::get('/tickets/{ticketId}/upstream-delivery', [TicketDeliveryController::class, 'ticketStatus']);
+        Route::post('/tickets/{ticket}/upstream-delivery/callback-registration', [TicketDeliveryController::class, 'registerCallback']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::TICKET_REPLY])->group(function (): void {

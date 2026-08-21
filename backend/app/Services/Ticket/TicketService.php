@@ -478,7 +478,7 @@ class TicketService
      *
      * @return array<string, mixed>
      */
-    public function v2Detail(Ticket $ticket): array
+    public function v2Detail(Ticket $ticket, bool $includeUpstreamDelivery = false): array
     {
         $productColumns = Product::optionalSelectColumns([
             'id',
@@ -499,6 +499,7 @@ class TicketService
             'service:id,name,domain,product_id,billing_cycle,amount,status,provision_data,expires_at',
             'service.product:'.implode(',', $productColumns),
             'assignee:id,username,nickname',
+            ...($includeUpstreamDelivery ? ['upstreamBinding'] : []),
         ]);
 
         return [
@@ -533,6 +534,7 @@ class TicketService
                 'total' => $this->countReplies($ticket),
                 'default_page_size' => 20,
             ],
+            ...($includeUpstreamDelivery ? ['upstream_delivery' => $this->ticketDeliveryService->ticketStatus($ticket)] : []),
         ];
     }
 

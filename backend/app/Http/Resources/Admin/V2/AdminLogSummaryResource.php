@@ -40,6 +40,7 @@ class AdminLogSummaryResource extends JsonResource
         'gateway_key',
         'driver_key',
         'plugin_key',
+        'provider_key',
         'plugin_id',
         'trace_id',
         'out_trade_no',
@@ -56,6 +57,15 @@ class AdminLogSummaryResource extends JsonResource
         'time',
         'started_at',
         'finished_at',
+        'ticket_id',
+        'ticket_reply_id',
+        'direction',
+        'operation',
+        'event',
+        'reason_code',
+        'supplier_id',
+        'http_status',
+        'occurred_at',
     ];
 
     private const PRIVACY_PROJECTED_FIELDS = [

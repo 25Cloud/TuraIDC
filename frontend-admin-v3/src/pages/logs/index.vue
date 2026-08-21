@@ -62,6 +62,62 @@
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
+          <t-input
+            v-if="showFilter('ticket_id')"
+            v-model="filters.ticket_id"
+            clearable
+            placeholder="工单 ID"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
+          <t-input
+            v-if="showFilter('ticket_reply_id')"
+            v-model="filters.ticket_reply_id"
+            clearable
+            placeholder="回复 ID"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
+          <t-input
+            v-if="showFilter('operation')"
+            v-model="filters.operation"
+            clearable
+            placeholder="操作，例如 ticket.create"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
+          <t-input
+            v-if="showFilter('event')"
+            v-model="filters.event"
+            clearable
+            placeholder="事件，例如 failed"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
+          <t-input
+            v-if="showFilter('reason_code')"
+            v-model="filters.reason_code"
+            clearable
+            placeholder="原因码"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
+          <t-input
+            v-if="showFilter('provider_key')"
+            v-model="filters.provider_key"
+            clearable
+            placeholder="Provider key"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
+          <t-input
+            v-if="showFilter('supplier_id')"
+            v-model="filters.supplier_id"
+            clearable
+            placeholder="供应商 ID"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
           <t-select
             v-if="showFilter('user_type')"
             v-model="filters.user_type"
@@ -228,7 +284,9 @@
             hover
             table-layout="fixed"
           >
-            <template #time="{ row }">{{ formatDate(row.time || row.created_at || row.sent_at) }}</template>
+            <template #time="{ row }">{{
+              formatDate(row.occurred_at || row.time || row.created_at || row.sent_at)
+            }}</template>
             <template #primary="{ row }">
               <div class="stack-cell">
                 <strong>{{ primaryTitle(row) }}</strong>
@@ -304,7 +362,9 @@
                 class="log-mobile-card"
               >
                 <div class="log-mobile-card__head">
-                  <span class="log-mobile-card__time">{{ formatDate(row.time || row.created_at || row.sent_at) }}</span>
+                  <span class="log-mobile-card__time">{{
+                    formatDate(row.occurred_at || row.time || row.created_at || row.sent_at)
+                  }}</span>
                   <t-tag v-if="row.level" :theme="levelTheme(row.level)" variant="light" size="small">{{
                     fieldValue(row.level)
                   }}</t-tag>
@@ -593,7 +653,7 @@ import { errorMessage } from '@/utils/userMessage';
 
 import LogDetailDrawer from './components/LogDetailDrawer.vue';
 
-type LogTab = 'system' | 'runtime' | 'admin-logins' | 'api' | 'sms' | 'email' | 'tasks' | 'gateway';
+type LogTab = 'system' | 'runtime' | 'admin-logins' | 'api' | 'sms' | 'email' | 'tasks' | 'gateway' | 'upstream';
 type LogsTab = LogTab | 'schedules' | 'cleanup';
 type RecordRow = Record<string, unknown>;
 
@@ -610,6 +670,7 @@ const validTabs: LogsTab[] = [
   'email',
   'tasks',
   'gateway',
+  'upstream',
   'schedules',
   'cleanup',
 ];
@@ -651,6 +712,13 @@ const filters = reactive({
   result_status: '',
   actor_type: '',
   subject_type: '',
+  ticket_id: '',
+  ticket_reply_id: '',
+  operation: '',
+  event: '',
+  reason_code: '',
+  provider_key: '',
+  supplier_id: '',
 });
 type LogFilterKey = keyof typeof filters;
 
@@ -766,6 +834,23 @@ const logMeta: Record<LogTab, { title: string; description: string; filters: str
     filters: ['keyword', 'gateway', 'gateway_key', 'plugin_id', 'trace_id', 'action', 'result_status', 'date'],
     keyword: '交易号、网关名、Trace ID 或错误信息',
   },
+  upstream: {
+    title: '工单推送日志',
+    description: '查看工单提交、回复推送、跳过和失败原因。',
+    filters: [
+      'keyword',
+      'ticket_id',
+      'ticket_reply_id',
+      'status',
+      'operation',
+      'event',
+      'reason_code',
+      'provider_key',
+      'supplier_id',
+      'date',
+    ],
+    keyword: '工单号、原因或日志内容',
+  },
 };
 
 const baseLogColumns: Record<LogTab, PrimaryTableCol<RecordRow>[]> = {
@@ -850,6 +935,16 @@ const baseLogColumns: Record<LogTab, PrimaryTableCol<RecordRow>[]> = {
     { colKey: 'error_msg', title: '错误信息', minWidth: 150, ellipsis: true },
     { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
   ],
+  upstream: [
+    { colKey: 'time', title: '发生时间', width: 170 },
+    { colKey: 'ticket_id', title: '工单号', width: 100 },
+    { colKey: 'operation', title: '操作', width: 130 },
+    { colKey: 'event', title: '事件', width: 110 },
+    { colKey: 'status', title: '状态', width: 100 },
+    { colKey: 'reason_code', title: '原因码', minWidth: 170, ellipsis: true },
+    { colKey: 'message', title: '结果说明', minWidth: 320 },
+    { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
+  ],
 };
 const scheduleColumns: PrimaryTableCol<RecordRow>[] = [
   { colKey: 'task', title: '任务名称', minWidth: 260 },
@@ -868,6 +963,7 @@ const keywordPlaceholder = computed(() => currentLogMeta.value.keyword);
 const statusPlaceholder = computed(() => {
   if (activeTab.value === 'api') return '全部状态码';
   if (activeTab.value === 'tasks') return '全部任务状态';
+  if (activeTab.value === 'upstream') return '全部转发状态';
   return '全部发送状态';
 });
 const taskStatusOptions = [
@@ -875,9 +971,17 @@ const taskStatusOptions = [
   { label: '失败', value: 'failed' },
   { label: '跳过', value: 'skipped' },
 ];
+const upstreamStatusOptions = [
+  { label: '等待发送', value: 'pending' },
+  { label: '发送中', value: 'sending' },
+  { label: '已转发', value: 'delivered' },
+  { label: '转发失败', value: 'failed' },
+  { label: '未转发', value: 'skipped' },
+];
 const statusOptions = computed(() => {
   if (activeTab.value === 'api') return httpStatusOptions;
   if (activeTab.value === 'tasks') return taskStatusOptions;
+  if (activeTab.value === 'upstream') return upstreamStatusOptions;
   return notifyStatusOptions;
 });
 const drawerSize = computed(() => (isMobile.value ? '100%' : '700px'));
@@ -1037,7 +1141,7 @@ function resolveRouteTab(): LogsTab {
 }
 
 function isLogTab(value: LogsTab): value is LogTab {
-  return ['system', 'runtime', 'admin-logins', 'api', 'sms', 'email', 'tasks', 'gateway'].includes(value);
+  return ['system', 'runtime', 'admin-logins', 'api', 'sms', 'email', 'tasks', 'gateway', 'upstream'].includes(value);
 }
 
 function showFilter(name: string) {
@@ -1118,6 +1222,7 @@ function requestLogList(tab: LogTab, params: LogListParams): Promise<PaginatedLi
     email: adminApi.logs.email,
     tasks: adminApi.logs.tasks,
     gateway: adminApi.logs.gateway,
+    upstream: adminApi.logs.upstream,
   };
   return map[tab](params);
 }
@@ -1152,6 +1257,13 @@ function resetLogFilters(shouldLoad = true) {
     result_status: '',
     actor_type: '',
     subject_type: '',
+    ticket_id: '',
+    ticket_reply_id: '',
+    operation: '',
+    event: '',
+    reason_code: '',
+    provider_key: '',
+    supplier_id: '',
   });
   logPagination.page = 1;
   if (shouldLoad && isLogTab(activeTab.value)) loadLogs();
@@ -1277,6 +1389,7 @@ function primaryTitle(row: RecordRow) {
   if (activeTab.value === 'sms') return fieldValue(row.phone);
   if (activeTab.value === 'email') return fieldValue(row.to_email);
   if (activeTab.value === 'tasks') return fieldValue(row.task_title || row.task_key);
+  if (activeTab.value === 'upstream') return `工单 #${fieldValue(row.ticket_id)}`;
   return fieldValue(row.id);
 }
 
@@ -1287,13 +1400,14 @@ function primarySubText(row: RecordRow) {
   if (activeTab.value === 'api') return userTypeLabel(row.user_type);
   if (activeTab.value === 'sms' || activeTab.value === 'email') return `发送时间：${formatDate(row.sent_at)}`;
   if (activeTab.value === 'tasks') return fieldValue(row.task_key);
+  if (activeTab.value === 'upstream') return `${fieldValue(row.operation)} · ${fieldValue(row.event)}`;
   return '';
 }
 
 function messageText(row: RecordRow) {
   if (activeTab.value === 'email') return contentPreview(row.content);
   if (activeTab.value === 'system') return fieldValue(row.description);
-  return fieldValue(row.message || row.content);
+  return fieldValue(row.message || row.content || row.reason_code);
 }
 
 function subjectText(row: RecordRow) {
@@ -1412,6 +1526,13 @@ function statusLabel(status: unknown) {
   if (activeTab.value === 'tasks') {
     return String({ success: '成功', failed: '失败', skipped: '跳过' }[statusKey] || fieldValue(status));
   }
+  if (activeTab.value === 'upstream') {
+    return String(
+      { pending: '等待发送', sending: '发送中', delivered: '已转发', failed: '转发失败', skipped: '未转发' }[
+        statusKey
+      ] || fieldValue(status),
+    );
+  }
   return String({ success: '发送成功', failed: '发送失败', pending: '待发送' }[statusKey] || fieldValue(status));
 }
 
@@ -1444,6 +1565,8 @@ function statusTheme(status: unknown) {
       failed: 'danger',
       pending: 'warning',
       skipped: 'warning',
+      delivered: 'success',
+      sending: 'warning',
     }[String(status || '').toLowerCase()] || 'default'
   );
 }

@@ -12,6 +12,7 @@ use App\Models\IntegrationPluginRuntimeLog;
 use App\Models\MessageLog;
 use App\Models\OperationLog;
 use App\Models\ScheduleRunLog;
+use App\Models\TicketUpstreamDeliveryLog;
 use App\Support\SensitiveDataSanitizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
@@ -33,6 +34,7 @@ class AdminLogV2QueryService
         'sms',
         'system',
         'tasks',
+        'upstream',
     ];
 
     public function __construct(
@@ -85,6 +87,7 @@ class AdminLogV2QueryService
             'system', 'activity' => $this->adminLogService->getActivityLogsSummary($filters),
             'runtime' => $this->adminLogService->getRuntimeLogsSummary($filters),
             'schedule' => $this->scheduleSummary($filters),
+            'upstream' => $this->adminLogService->getUpstreamLogsSummary($filters),
             default => $this->legacyList($channel, $filters, 1, 1)['summary'] ?? [],
         };
     }
@@ -103,6 +106,7 @@ class AdminLogV2QueryService
             'gateway' => $this->gatewayDetail($log),
             'runtime' => $this->runtimeDetail($log),
             'tasks', 'schedule' => $this->scheduleDetail($channel, $log),
+            'upstream' => $this->adminLogService->getUpstreamLog($log),
             default => null,
         };
 
@@ -130,6 +134,7 @@ class AdminLogV2QueryService
             'admin-logins' => $this->adminLogService->getAdminLoginLogs($filters, $page, $perPage, $withSummary),
             'gateway' => $this->adminLogService->getGatewayLogs($filters, $page, $perPage, $withSummary),
             'schedule' => $this->scheduleRunLogService->getScheduleStatus($page, $perPage, $filters),
+            'upstream' => $this->adminLogService->getUpstreamLogs($filters, $page, $perPage, $withSummary),
             default => throw new NotFoundHttpException('日志 channel 不存在'),
         };
     }

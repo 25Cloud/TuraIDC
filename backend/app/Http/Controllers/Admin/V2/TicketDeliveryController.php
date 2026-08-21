@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin\V2;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\V2\Ticket\ListTicketUpstreamDeliveryLogsRequest;
 use App\Http\Requests\Admin\V2\Ticket\UpsertTicketDeliveryRuleRequest;
 use App\Http\Resources\Admin\V2\TicketDeliveryRuleResource;
+use App\Http\Resources\Admin\V2\TicketUpstreamDeliveryLogResource;
 use App\Models\ProductUpstreamBinding;
 use App\Models\Supplier;
+use App\Models\Ticket;
 use App\Models\TicketDeliveryRule;
-use App\Models\TicketUpstreamBinding;
 use App\Services\Ticket\TicketDeliveryService;
 use App\Services\Upstream\ProviderKey;
 use Illuminate\Http\JsonResponse;
@@ -81,9 +83,27 @@ final class TicketDeliveryController extends Controller
         return $this->success(null, '工单传递规则已删除');
     }
 
-    public function ticketStatus(int $ticketId): JsonResponse
+    public function ticketStatus(Ticket $ticket, TicketDeliveryService $deliveryService): JsonResponse
     {
-        return response()->json(['data' => TicketUpstreamBinding::query()->where('ticket_id', $ticketId)->first()]);
+        return $this->success($deliveryService->ticketStatus($ticket));
+    }
+
+    public function registerCallback(Ticket $ticket, TicketDeliveryService $deliveryService): JsonResponse
+    {
+        $deliveryService->registerTicketCallback($ticket);
+
+        return $this->success(null, '上游工单回调已重新注册');
+    }
+
+    public function ticketLogs(
+        ListTicketUpstreamDeliveryLogsRequest $request,
+        Ticket $ticket,
+        TicketDeliveryService $deliveryService
+    ): JsonResponse {
+        return $this->paginate(
+            $deliveryService->deliveryLogs($ticket, (int) ($request->validated('page_size') ?? 20)),
+            TicketUpstreamDeliveryLogResource::class
+        );
     }
 
     private function ensureRuleTarget(array $data, ?TicketDeliveryRule $existing = null): void
