@@ -19,6 +19,7 @@
   "dependencies": {
     "axios": "^1.18.1",
     "markdown-it": "^15.0.0",
+    "tdesign-vue-next": "^1.20.6",
     "vue": "^3.5.0"
   },
   "devDependencies": {
