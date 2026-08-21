@@ -1,12 +1,22 @@
 # 本地 Docker CI 编排 —— 对齐 .github/workflows/ci.yml。
-# 三个服务全部使用 host 网络：容器内可直接访问 127.0.0.1:7897（HTTP 代理）
-# 与 127.0.0.1:3306（CI MySQL），与 CI 的 services 拓扑等价。
+# 三个服务全部使用 host 网络：容器与宿主机共享网络栈，
+# MySQL 通过 127.0.0.1:3306 访问（与 CI 的 services 拓扑等价）。
+#
+# 网络代理约定：如本机需要走 HTTP 代理才能访问包仓库（composer/pnpm），
+# 请在运行前导出 CI_HTTP_PROXY / CI_HTTPS_PROXY（不设置则跳过代理），
+# 脚本本身不内置任何代理地址：
+#   CI_HTTP_PROXY=http://127.0.0.1:7897 bash deploy/docker/ci/run-ci-local.sh
 #
 # 用法（推荐走 run-ci-local.sh）：
 #   docker compose -f deploy/docker/ci/docker-compose.ci.yml build
 #   docker compose -f deploy/docker/ci/docker-compose.ci.yml run --rm backend
 #   docker compose -f deploy/docker/ci/docker-compose.ci.yml run --rm frontend
 name: turaidc-ci
+
+x-proxy-env: &proxy-env
+  HTTP_PROXY: ${CI_HTTP_PROXY:-}
+  HTTPS_PROXY: ${CI_HTTPS_PROXY:-}
+  NO_PROXY: ${CI_NO_PROXY:-localhost,127.0.0.1,::1}
 
 services:
   mysql:
@@ -34,9 +44,7 @@ services:
       - ../../../:/repo:ro
       - ci-composer-cache:/tmp/composer-cache
     environment:
-      HTTP_PROXY: http://127.0.0.1:7897
-      HTTPS_PROXY: http://127.0.0.1:7897
-      NO_PROXY: localhost,127.0.0.1,::1
+      <<: *proxy-env
       # 对齐 ci.yml backend env
       APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
       DB_CONNECTION: mysql
@@ -63,9 +71,7 @@ services:
       - ../../../:/repo:ro
       - ci-pnpm-store:/pnpm-store
     environment:
-      HTTP_PROXY: http://127.0.0.1:7897
-      HTTPS_PROXY: http://127.0.0.1:7897
-      NO_PROXY: localhost,127.0.0.1,::1
+      <<: *proxy-env
       # 对齐 ci.yml frontend env
       APP_URL: https://api.example.com
       FRONTEND_URL: https://www.example.com
