@@ -319,16 +319,34 @@ final class ZjmfFinanceTransport
 
     public function uploadTicketAttachment(Supplier $supplier, string $path): ?string
     {
-        $absolutePath = str_starts_with($path, '/') ? $path : storage_path('app/'.ltrim($path, '/'));
-        if (! is_file($absolutePath)) {
+        $root = realpath(storage_path('app'));
+        if ($root === false) {
+            return null;
+        }
+
+        $absolutePath = realpath($root.'/'.ltrim(str_replace('\\', '/', $path), '/'));
+        if ($absolutePath === false
+            || ! str_starts_with($absolutePath, $root.DIRECTORY_SEPARATOR)
+            || ! is_file($absolutePath)
+        ) {
             return null;
         }
 
         $jwt = $this->login($supplier);
-        $response = Http::timeout(30)
-            ->withToken($jwt)
-            ->attach('file', fopen($absolutePath, 'r'), basename($absolutePath))
-            ->post(rtrim((string) $supplier->api_url, '/').'/upload_image');
+        $handle = fopen($absolutePath, 'rb');
+        if ($handle === false) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(30)
+                ->withoutVerifying()
+                ->withToken($jwt)
+                ->attach('file', $handle, basename($absolutePath))
+                ->post(rtrim((string) $supplier->api_url, '/').'/upload_image');
+        } finally {
+            fclose($handle);
+        }
 
         if (! $response->successful()) {
             throw new BusinessException('上游附件上传失败', 50000);

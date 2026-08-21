@@ -174,6 +174,11 @@ class V2TicketApiTest extends TestCase
             [...$this->ticketDetailWhitelist(), 'upstream_delivery'],
             array_keys($detailResponse->json('data.ticket'))
         );
+        $this->assertSame(
+            $this->upstreamDeliveryWhitelist(),
+            array_keys($detailResponse->json('data.ticket.upstream_delivery'))
+        );
+        $detailResponse->assertJsonMissingPath('data.ticket.upstream_delivery.callback_token');
         $this->assertNoSensitiveKeys($detailResponse->json());
 
         $this->getJson('/api/v2/admin/tickets/'.$ticket->id.'/replies?per_page=20')
@@ -556,6 +561,28 @@ class V2TicketApiTest extends TestCase
             'service',
             'assignee',
             'replies_summary',
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function upstreamDeliveryWhitelist(): array
+    {
+        return [
+            'configured',
+            'status',
+            'status_label',
+            'provider_key',
+            'supplier_id',
+            'upstream_department_id',
+            'upstream_service_id',
+            'upstream_ticket_id',
+            'attempts',
+            'last_attempt_at',
+            'delivered_at',
+            'last_error',
+            'last_event',
         ];
     }
 

@@ -120,6 +120,7 @@ class V2AdminTicketActionApiTest extends TestCase
             'reason_code',
             'provider_key',
             'supplier_id',
+            'supplier_name',
             'attempt',
             'http_status',
             'duration_ms',
