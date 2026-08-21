@@ -5,6 +5,9 @@
  *  - POST {apiEndpoint}challenge → { token, challenge: { c, s, d }, expires }
  *  - POST {apiEndpoint}redeem（{ token, solutions }）→ { token }
  * 所得 token 交由后端 siteverify 校验（见 backend/plugins/captcha/cap）。
+ *
+ * 注意：CapChallenge 的字段名（token/count/saltLength/difficulty）是本站对协议
+ * JSON（token 与 challenge:{c,s,d}）的映射层命名，二者不同层，勿直接视为协议字段。
  */
 
 export interface CapChallenge {
@@ -14,8 +17,32 @@ export interface CapChallenge {
   difficulty: number;
 }
 
+/** API 请求超时：Cap 实例不可达（配置错误/宕机）时不让卡片无限转圈 */
+const CAP_FETCH_TIMEOUT_MS = 15_000;
+
+/** challenge 参数上限（capjs 默认量级为 count≤16、difficulty≤8）：防恶意/误配置实例让 Worker 空转 */
+const CAP_COUNT_LIMIT = 64;
+const CAP_DIFFICULTY_LIMIT = 8;
+const CAP_SALT_LENGTH_LIMIT = 128;
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CAP_FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (error) {
+    // AbortError 转成可读错误；网络异常原样抛给上层统一提示
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('验证服务响应超时，请稍后重试', { cause: error });
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchCapChallenge(apiEndpoint: string): Promise<CapChallenge> {
-  const res = await fetch(`${apiEndpoint}challenge`, {
+  const res = await fetchWithTimeout(`${apiEndpoint}challenge`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: '{}',
@@ -39,11 +66,15 @@ async function fetchCapChallenge(apiEndpoint: string): Promise<CapChallenge> {
     throw new Error('验证挑战参数解析失败');
   }
 
+  if (count <= 0 || count > CAP_COUNT_LIMIT || difficulty > CAP_DIFFICULTY_LIMIT || saltLength > CAP_SALT_LENGTH_LIMIT) {
+    throw new Error('验证挑战参数超出安全范围');
+  }
+
   return { token, count, saltLength, difficulty };
 }
 
 async function redeemCapSolution(apiEndpoint: string, token: string, solutions: number[]): Promise<string> {
-  const res = await fetch(`${apiEndpoint}redeem`, {
+  const res = await fetchWithTimeout(`${apiEndpoint}redeem`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, solutions }),
@@ -130,6 +161,12 @@ export async function solveCapCaptcha(apiEndpoint: string, onProgress?: (pct: nu
 
     const onError = (err: ErrorEvent) => {
       detach();
+      // Worker 崩溃后不可复用：终止并置空，下次求解会重建 worker，
+      // 避免向已死 worker postMessage 静默失败导致 Promise 永久 pending。
+      w.terminate();
+      if (worker === w) {
+        worker = null;
+      }
       reject(new Error(err.message || '验证求解失败'));
     };
 

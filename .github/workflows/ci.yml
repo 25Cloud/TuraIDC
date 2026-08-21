@@ -103,3 +103,16 @@ jobs:
           CLIENT_CONSOLE_URL: https://console.example.com
           ADMIN_URL: https://admin.example.com
           CLIENT_SESSION_COOKIE_DOMAIN: .example.com
+
+      # 浏览器态回归：console 暗色主题守卫 + admin smoke（vite dev server 由
+      # playwright webServer 各自拉起，端口 5177/5176 互不冲突）
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: E2E (console)
+        working-directory: frontend-user-v4-console
+        run: pnpm exec playwright test
+
+      - name: E2E (admin smoke)
+        working-directory: frontend-admin-v3
+        run: pnpm exec playwright test tests/e2e/smoke.spec.ts
