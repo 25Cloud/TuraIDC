@@ -92,6 +92,7 @@ final class TicketUpstreamCallbackService
         // 与 cleanupOrphanUploads() 使用同一把锁：清理任务在锁内重新查询引用后再删除，
         // 避免其在校验后、引用写入数据库前误删文件，导致记录指向已删除文件。
         // 锁在事务提交后才释放，避免清理任务在提交瞬间读到尚未落库的引用结论。
+        // 锁 TTL 仅作防死锁兜底（60s 远大于回调事务耗时），一致性边界是事务提交后的显式释放而非 TTL。
         $locks = $this->acquireInboundAttachmentLocks($rawAttachments);
         try {
             DB::transaction(function () use ($binding, $payload, $content, $eventId, $rawAttachments, &$duplicate, &$replyId): void {
@@ -342,6 +343,7 @@ final class TicketUpstreamCallbackService
     /**
      * 按附件文件名逐个获取共享缓存锁；已获取的锁由调用方在 finally 中配对释放。
      * 任一文件锁等待超时（cleanupOrphanUploads() 正持有锁）时，释放已获取的锁并抛出可重试的业务异常。
+     * 锁 TTL 为防死锁兜底，一致性由调用方在事务提交后的 finally 显式释放保证。
      *
      * @param  mixed  $raw  回调原始附件数据
      * @return list<\Illuminate\Contracts\Cache\Lock>
@@ -351,7 +353,7 @@ final class TicketUpstreamCallbackService
         $locks = [];
         try {
             foreach ($this->inboundAttachmentFilenames($raw) as $filename) {
-                $lock = Cache::lock('ticket-upstream-upload:'.$filename, 10);
+                $lock = Cache::lock('ticket-upstream-upload:'.$filename, 60);
                 $lock->block(10);
                 $locks[] = $lock;
             }
@@ -442,7 +444,7 @@ final class TicketUpstreamCallbackService
                 continue;
             }
             $checked++;
-            $lock = Cache::lock('ticket-upstream-upload:'.$file->getFilename(), 10);
+            $lock = Cache::lock('ticket-upstream-upload:'.$file->getFilename(), 60);
             try {
                 // 回调正在处理该文件（锁被持有）时跳过本次删除，等待下轮扫描
                 if (! $lock->get()) {
