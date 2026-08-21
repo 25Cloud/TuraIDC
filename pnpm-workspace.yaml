@@ -1,0 +1,12 @@
+packages:
+  - docs-web
+  - frontend-admin-v3
+  - frontend-user-v3-www
+  - frontend-user-v4-console
+  - shared
+
+# 允许这些依赖执行 postinstall（esbuild 需要下载本地二进制，parcel/watcher 需要 rebuild）
+allowBuilds:
+  '@parcel/watcher': true
+  core-js-pure: false
+  esbuild: true

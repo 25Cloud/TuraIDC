@@ -83,13 +83,13 @@ cd backend
 php artisan app:serve
 
 cd frontend-user-v3-www
-npm run dev
+pnpm run dev
 
 cd frontend-admin-v3
-npm run dev
+pnpm run dev
 
 cd frontend-user-v4-console
-npm run dev
+pnpm run dev
 ```
 
 ### 4.2 测试库要求
@@ -117,7 +117,7 @@ php backend/scripts/export_database_structure.php
 ### 5.1 代码准备
 
 - 拉取目标分支代码。
-- 确认 Composer 和 npm 依赖已安装。
+- 确认 Composer 和 pnpm 依赖已安装。
 - 记录当前提交哈希：
 
 ```bash
@@ -166,23 +166,23 @@ php artisan test --list-tests
 
 ```bash
 cd frontend-admin-v3
-npm run build
-npm run test
+pnpm run build
+pnpm run test
 ```
 
 ### 6.3 用户端自动化
 
 ```bash
 cd frontend-user-v3-www
-npm run build
-npm run test
+pnpm run build
+pnpm run test
 ```
 
 结构性重构或大改页面时追加：
 
 ```bash
 cd frontend-user-v3-www
-npm run verify:refactor
+pnpm run verify:refactor
 ```
 
 ## 7. 建议执行顺序
@@ -220,7 +220,7 @@ npm run verify:refactor
 - `mysql-schema.sql` 可被正确加载
 - 默认管理员可登录
 - 后端 `app:serve` 可启动
-- 用户端、管理端 `npm run build` 成功
+- 用户端、管理端 `pnpm run build` 成功
 - 站点、用户中心、管理后台首页均可访问
 
 ### 8.2 认证与权限
@@ -375,8 +375,8 @@ python backend/scripts/install_db.py --reset
 
 ```bash
 cd frontend-admin-v3
-npm run build
-npm run test
+pnpm run build
+pnpm run test
 ```
 
 人工重点：
@@ -395,15 +395,15 @@ npm run test
 
 ```bash
 cd frontend-user-v3-www
-npm run build
-npm run test
+pnpm run build
+pnpm run test
 ```
 
 结构性改动追加：
 
 ```bash
 cd frontend-user-v3-www
-npm run verify:refactor
+pnpm run verify:refactor
 ```
 
 人工重点：
@@ -527,12 +527,12 @@ composer analyse
 composer format:check
 
 cd ../frontend-admin-v3
-npm run build
-npm run test
+pnpm run build
+pnpm run test
 
 cd ../frontend-user-v3-www
-npm run build
-npm run test
+pnpm run build
+pnpm run test
 ```
 
 记录模板：
@@ -560,18 +560,18 @@ composer format:check
 
 # 3. 管理端
 cd ../frontend-admin-v3
-npm run build
-npm run test
+pnpm run build
+pnpm run test
 
 # 4. 官网与购买入口
 cd ../frontend-user-v3-www
-npm run build
-npm run test
-npm run verify:refactor
+pnpm run build
+pnpm run test
+pnpm run verify:refactor
 
 # 5. 用户控制台
 cd ../frontend-user-v4-console
-npm run build
+pnpm run build
 ```
 
 人工补充检查建议：

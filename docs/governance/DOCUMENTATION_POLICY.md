@@ -17,7 +17,7 @@
 
 ## 可验证性
 
-[catalog.json](../catalog.json) 列出非索引文档的路径、状态、简介和复核期限。`npm run docs:check` 必须在合并前通过；`npm run docs:freshness` 用于例行扫描。Markdown 使用相对链接，不链接本机绝对路径，不把凭据写入文档。
+[catalog.json](../catalog.json) 列出非索引文档的路径、状态、简介和复核期限。`pnpm run docs:check` 必须在合并前通过；`pnpm run docs:freshness` 用于例行扫描。Markdown 使用相对链接，不链接本机绝对路径，不把凭据写入文档。
 
 ## 生成与更新
 

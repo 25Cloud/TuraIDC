@@ -127,7 +127,7 @@
 import './index.less';
 
 import { AddIcon } from 'tdesign-icons-vue-next';
-import type { DropdownOption, FormInstanceFunctions, FormRule, PrimaryTableCol } from 'tdesign-vue-next';
+import type { DropdownOption, FormInstanceFunctions, FormRule, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -168,7 +168,7 @@ const rules: Record<string, FormRule[]> = {
   reward_rate: [required('请输入返利比例')],
 };
 
-const columns: PrimaryTableCol<MemberLevelRecord>[] = [
+const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'sort_order', title: '排序', width: 90 },
   { colKey: 'level', title: '等级信息', minWidth: 220 },
   { colKey: 'range', title: '累计销售额门槛', minWidth: 220 },

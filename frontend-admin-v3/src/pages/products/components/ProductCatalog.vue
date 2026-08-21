@@ -1062,7 +1062,7 @@ import {
   SearchIcon,
   SettingIcon,
 } from 'tdesign-icons-vue-next';
-import type { DropdownOption, PageInfo, PrimaryTableCol } from 'tdesign-vue-next';
+import type { DropdownOption, FormRules, PageInfo, PrimaryTableCol, SelectValue, TableRowData } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -1207,20 +1207,36 @@ const provisionHostnameForm = reactive({
   value: '',
   length: 12,
 });
-const productForm = reactive({
+interface ProductFormData {
+  display_name: string;
+  custom_display_name: string;
+  product_spec_display: string;
+  selected_product_group_key: string;
+  monthly_price: number;
+  quarterly_price: number;
+  semiannually_price: number;
+  annually_price: number;
+  auto_setup: number;
+  status: number;
+  supplier_id: number | string;
+  upstream_product_id: number | string;
+  config_options: ProductConfigOptionRecord[];
+}
+
+const productForm = reactive<ProductFormData>({
   display_name: '',
   custom_display_name: '',
   product_spec_display: '',
-  selected_product_group_key: '' as string,
+  selected_product_group_key: '',
   monthly_price: 0,
   quarterly_price: 0,
   semiannually_price: 0,
   annually_price: 0,
   auto_setup: 1,
   status: 1,
-  supplier_id: '' as number | string,
-  upstream_product_id: '' as number | string,
-  config_options: [] as ProductConfigOptionRecord[],
+  supplier_id: '',
+  upstream_product_id: '',
+  config_options: [],
 });
 const configOptionDialogVisible = ref(false);
 const configOptionSubmitting = ref(false);
@@ -1248,10 +1264,19 @@ const categorySubmitting = ref(false);
 const categorySortLoadingId = ref('');
 let categoryRequestVersion = 0;
 let productRequestVersion = 0;
-const categoryForm = reactive({
+interface CategoryFormData {
+  name: string;
+  product_type: string;
+  parent_id: number | string;
+  slogan: string;
+  sort_order: number;
+  is_visible: number;
+}
+
+const categoryForm = reactive<CategoryFormData>({
   name: '',
-  product_type: '' as string,
-  parent_id: '' as number | string,
+  product_type: '',
+  parent_id: '',
   slogan: '',
   sort_order: 0,
   is_visible: 1,
@@ -1293,7 +1318,7 @@ const productDrawerSections = [
   { key: 'config', label: '产品配置', description: '规格与可选项' },
 ];
 
-const productColumns: PrimaryTableCol<ProductRecord>[] = [
+const productColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'row-select', type: 'multiple', width: 54, fixed: 'left' },
   { colKey: 'id', title: 'ID', width: 80 },
   { colKey: 'name', title: '商品', minWidth: 220 },
@@ -1305,11 +1330,11 @@ const productColumns: PrimaryTableCol<ProductRecord>[] = [
   { colKey: 'operation', title: '操作', width: 72, fixed: 'right' },
 ];
 
-const productRules = {
+const productRules: FormRules<ProductFormData> = {
   display_name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
   selected_product_group_key: [{ required: true, message: '请选择所属分类', trigger: 'change' }],
 };
-const categoryRules = {
+const categoryRules: FormRules<CategoryFormData> = {
   name: [{ required: true, message: '请输入分类名称', trigger: 'blur' }],
   product_type: [{ required: true, message: '请选择一级分类', trigger: 'change' }],
 };
@@ -1510,9 +1535,7 @@ function isProductVisible(row: ProductRecord) {
   return Number(row.status) === 1;
 }
 
-function productRowMenuOptions(
-  row: ProductRecord,
-): Array<{ content: string; value: string; theme?: string; loading?: boolean }> {
+function productRowMenuOptions(row: ProductRecord): DropdownOption[] {
   if (row.is_deleted) {
     return [
       {
@@ -1527,7 +1550,7 @@ function productRowMenuOptions(
         theme: 'error',
         loading: productActionLoading.value === `force:${row.id}`,
       },
-    ];
+    ] as DropdownOption[];
   }
   return [
     { content: '编辑', value: 'edit', theme: 'default' },
@@ -1538,10 +1561,10 @@ function productRowMenuOptions(
       loading: productActionLoading.value === row.id,
     },
     { content: '删除', value: 'delete', theme: 'error' },
-  ];
+  ] as DropdownOption[];
 }
 
-function handleProductRowMenuClick(row: ProductRecord, dropdownItem: { value?: string }) {
+function handleProductRowMenuClick(row: ProductRecord, dropdownItem: DropdownOption) {
   const value = String(dropdownItem.value || '');
   switch (value) {
     case 'edit':
@@ -1830,10 +1853,11 @@ function categoryMenuOptions(row: ProductCategoryRecord): DropdownOption[] {
   if (productGroupLevel(row) === 2) {
     options.push({ content: '新增三级分类', value: 'create-child', divider: true });
   }
-  options.push(
-    { content: '编辑', value: 'edit', divider: productGroupLevel(row) !== 2 },
-    { content: '删除', value: 'delete', theme: 'error' },
-  );
+  options.push({ content: '编辑', value: 'edit', divider: productGroupLevel(row) !== 2 }, {
+    content: '删除',
+    value: 'delete',
+    theme: 'error',
+  } as DropdownOption);
   return options;
 }
 
@@ -2604,7 +2628,7 @@ function removeConfigSubItemRow(index: number) {
   configOptionSubItemRows.value.splice(index, 1);
 }
 
-function handleConfigOptionModeChange(value: string | number) {
+function handleConfigOptionModeChange(value: SelectValue) {
   configOptionForm.option_mode = String(value || 'select');
   if (configOptionForm.option_mode === 'select' && configOptionSubItemRows.value.length === 0) {
     configOptionSubItemRows.value = [createConfigSubItemRow({}, 0)];
@@ -3093,12 +3117,13 @@ function hasSupplierCredentialValue(value: unknown) {
   return String(value ?? '').trim() !== '';
 }
 
-function handleProductSupplierChange(value: string | number) {
-  productForm.supplier_id = value || '';
+function handleProductSupplierChange(value: SelectValue) {
+  const supplierId = typeof value === 'string' || typeof value === 'number' ? value : '';
+  productForm.supplier_id = supplierId;
   productForm.upstream_product_id = '';
   supplierProductOptions.value = [];
-  if (value) {
-    void loadProductSupplierProducts(value, true);
+  if (supplierId) {
+    void loadProductSupplierProducts(supplierId, true);
   }
 }
 

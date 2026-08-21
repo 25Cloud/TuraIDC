@@ -283,6 +283,7 @@ import {
   toLabelMap,
   toTagTypeMap,
 } from '@shared/statusConfig';
+import type { TagProps } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -294,6 +295,8 @@ import type { RecordDetailMetric, RecordDetailTab } from '@/components/record-de
 import RecordDetailPage from '@/components/record-detail-page/index.vue';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
+
+type ThemeType = NonNullable<TagProps['theme']>;
 
 const SNAPSHOT_LABEL_MAP: Record<string, string> = {
   // ── 产品配置 ──
@@ -640,27 +643,30 @@ function orderStatusLabel(status: unknown) {
   return orderStatusLabelMap[String(status ?? '')] || fieldValue(status);
 }
 
-function orderStatusTheme(status: unknown) {
+function orderStatusTheme(status: unknown): ThemeType {
   const value = orderStatusTypeMap[String(status ?? '')] || 'default';
-  return value === 'info' ? 'default' : value;
+  if (value === 'warning' || value === 'success' || value === 'primary' || value === 'danger') return value;
+  return 'default';
 }
 
 function invoiceStatusLabel(status: unknown) {
   return invoiceStatusLabelMap[String(status ?? '')] || fieldValue(status);
 }
 
-function invoiceStatusTheme(status: unknown) {
+function invoiceStatusTheme(status: unknown): ThemeType {
   const value = invoiceStatusTypeMap[String(status ?? '')] || 'default';
-  return value === 'info' ? 'default' : value;
+  if (value === 'warning' || value === 'success' || value === 'primary' || value === 'danger') return value;
+  return 'default';
 }
 
 function paymentStatusLabel(payment: Record<string, unknown>) {
   return getStatusLabel(PAYMENT_STATUS_MAP, Number(payment.status));
 }
 
-function paymentStatusTheme(payment: Record<string, unknown>) {
+function paymentStatusTheme(payment: Record<string, unknown>): ThemeType {
   const value = getStatusTagType(PAYMENT_STATUS_MAP, Number(payment.status));
-  return value === 'info' || value === 'purple' ? 'default' : value;
+  if (value === 'warning' || value === 'success' || value === 'primary' || value === 'danger') return value;
+  return 'default';
 }
 
 function userName(user: unknown) {

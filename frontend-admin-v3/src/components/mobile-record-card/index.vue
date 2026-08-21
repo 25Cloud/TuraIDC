@@ -43,10 +43,12 @@
   </article>
 </template>
 <script setup lang="ts">
-import type { DropdownOption } from 'tdesign-vue-next';
+import type { DropdownOption, TagProps } from 'tdesign-vue-next';
 import { computed } from 'vue';
 
 import StatusTag from '@/components/status-tag/index.vue';
+
+type ThemeType = NonNullable<TagProps['theme']>;
 
 export interface MobileRecordCardRow {
   label: string;
@@ -64,7 +66,7 @@ const props = withDefaults(
     highlightLabel?: string;
     highlightValue?: string | number | null;
     statusLabel?: string;
-    statusTheme?: string;
+    statusTheme?: ThemeType;
     statusMap?: Record<string, any>;
     status?: number | string;
     rows?: MobileRecordCardRow[];
