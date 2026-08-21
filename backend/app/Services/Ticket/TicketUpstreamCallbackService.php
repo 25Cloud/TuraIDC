@@ -14,6 +14,8 @@ use App\Services\Ticket\TicketDeliveryService;
 use App\Services\Ticket\TicketService;
 use App\Services\Upstream\ProviderKey;
 use App\Support\TextSanitizer;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -86,44 +88,53 @@ final class TicketUpstreamCallbackService
 
         $duplicate = false;
         $replyId = null;
-        DB::transaction(function () use ($binding, $payload, $content, $eventId, $rawAttachments, &$duplicate, &$replyId): void {
-            $binding = TicketUpstreamBinding::query()->lockForUpdate()->findOrFail($binding->id);
-            $existing = TicketReplyDelivery::query()
-                ->where('direction', TicketDeliveryService::DIRECTION_INBOUND)
-                ->where('remote_event_id', $eventId)
-                ->lockForUpdate()
-                ->first();
-            if ($existing !== null) {
-                $duplicate = true;
-                $replyId = (int) $existing->ticket_reply_id;
+        // 附件校验/归一化到 TicketReply::create() 落库（事务提交）期间，持有按文件名共享的缓存锁，
+        // 与 cleanupOrphanUploads() 使用同一把锁：清理任务在锁内重新查询引用后再删除，
+        // 避免其在校验后、引用写入数据库前误删文件，导致记录指向已删除文件。
+        // 锁在事务提交后才释放，避免清理任务在提交瞬间读到尚未落库的引用结论。
+        $locks = $this->acquireInboundAttachmentLocks($rawAttachments);
+        try {
+            DB::transaction(function () use ($binding, $payload, $content, $eventId, $rawAttachments, &$duplicate, &$replyId): void {
+                $binding = TicketUpstreamBinding::query()->lockForUpdate()->findOrFail($binding->id);
+                $existing = TicketReplyDelivery::query()
+                    ->where('direction', TicketDeliveryService::DIRECTION_INBOUND)
+                    ->where('remote_event_id', $eventId)
+                    ->lockForUpdate()
+                    ->first();
+                if ($existing !== null) {
+                    $duplicate = true;
+                    $replyId = (int) $existing->ticket_reply_id;
 
-                return;
-            }
+                    return;
+                }
 
-            $ticket = $binding->ticket()->lockForUpdate()->firstOrFail();
-            $attachments = $this->normalizeInboundAttachments($rawAttachments);
-            $reply = TicketReply::create([
-                'ticket_id' => $ticket->id,
-                'user_id' => 0,
-                'content' => $content,
-                'is_staff' => true,
-                'sender_type' => 'upstream_admin',
-                'sender_name' => trim((string) ($payload['admin_name'] ?? '')) ?: '上游客服',
-                'attachments' => $attachments,
-                'created_at' => now(),
-            ]);
-            TicketReplyDelivery::create([
-                'ticket_reply_id' => $reply->id,
-                'direction' => TicketDeliveryService::DIRECTION_INBOUND,
-                'content_prefix' => null,
-                'status' => 'delivered',
-                'idempotency_key' => 'inbound:'.$eventId,
-                'remote_event_id' => $eventId,
-                'delivered_at' => now(),
-            ]);
-            $ticket->update(['status' => TicketService::STATUS_STAFF_REPLY]);
-            $replyId = (int) $reply->id;
-        });
+                $ticket = $binding->ticket()->lockForUpdate()->firstOrFail();
+                $attachments = $this->normalizeInboundAttachments($rawAttachments);
+                $reply = TicketReply::create([
+                    'ticket_id' => $ticket->id,
+                    'user_id' => 0,
+                    'content' => $content,
+                    'is_staff' => true,
+                    'sender_type' => 'upstream_admin',
+                    'sender_name' => trim((string) ($payload['admin_name'] ?? '')) ?: '上游客服',
+                    'attachments' => $attachments,
+                    'created_at' => now(),
+                ]);
+                TicketReplyDelivery::create([
+                    'ticket_reply_id' => $reply->id,
+                    'direction' => TicketDeliveryService::DIRECTION_INBOUND,
+                    'content_prefix' => null,
+                    'status' => 'delivered',
+                    'idempotency_key' => 'inbound:'.$eventId,
+                    'remote_event_id' => $eventId,
+                    'delivered_at' => now(),
+                ]);
+                $ticket->update(['status' => TicketService::STATUS_STAFF_REPLY]);
+                $replyId = (int) $reply->id;
+            });
+        } finally {
+            $this->releaseInboundAttachmentLocks($locks);
+        }
 
         $ticket = $binding->ticket()->first();
         if ($ticket !== null) {
@@ -297,6 +308,76 @@ final class TicketUpstreamCallbackService
         return $attachments;
     }
 
+    /**
+     * 从回调原始附件数据中提取候选文件名（去重），用于构造与清理任务一致的按文件名共享锁。
+     * 只负责确定锁键，名称合法性仍由 normalizeInboundAttachments() 校验。
+     *
+     * @param  mixed  $raw  回调原始附件数据
+     * @return list<string>
+     */
+    private function inboundAttachmentFilenames(mixed $raw): array
+    {
+        if ($raw === null || $raw === '') {
+            return [];
+        }
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            $raw = is_array($decoded) ? $decoded : [$raw];
+        }
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $filenames = [];
+        foreach ($raw as $item) {
+            $filename = $this->localAttachmentFilename($item);
+            if ($filename !== '') {
+                $filenames[] = $filename;
+            }
+        }
+
+        return array_values(array_unique($filenames));
+    }
+
+    /**
+     * 按附件文件名逐个获取共享缓存锁；已获取的锁由调用方在 finally 中配对释放。
+     * 任一文件锁等待超时（cleanupOrphanUploads() 正持有锁）时，释放已获取的锁并抛出可重试的业务异常。
+     *
+     * @param  mixed  $raw  回调原始附件数据
+     * @return list<\Illuminate\Contracts\Cache\Lock>
+     */
+    private function acquireInboundAttachmentLocks(mixed $raw): array
+    {
+        $locks = [];
+        try {
+            foreach ($this->inboundAttachmentFilenames($raw) as $filename) {
+                $lock = Cache::lock('ticket-upstream-upload:'.$filename, 10);
+                $lock->block(10);
+                $locks[] = $lock;
+            }
+        } catch (LockTimeoutException $exception) {
+            foreach ($locks as $acquired) {
+                $acquired->release();
+            }
+
+            throw new BusinessException('上游附件正在处理，请稍后重试', 42900);
+        }
+
+        return $locks;
+    }
+
+    /**
+     * 释放 receiveReply() 持有的附件缓存锁，与 acquireInboundAttachmentLocks() 配对使用。
+     *
+     * @param  list<\Illuminate\Contracts\Cache\Lock>  $locks
+     */
+    private function releaseInboundAttachmentLocks(array $locks): void
+    {
+        foreach ($locks as $lock) {
+            $lock->release();
+        }
+    }
+
     private function localAttachmentFilename(mixed $item): string
     {
         if (is_string($item)) {
@@ -330,14 +411,16 @@ final class TicketUpstreamCallbackService
 
     /**
      * 清理上游附件上传目录中的孤儿文件：超过保留期且未被任何工单回复引用的文件会被删除。
+     * 对每个待删文件先获取与 receiveReply() 共享的按文件名缓存锁，并在锁内重新查询引用后再删除，
+     * 避免回调刚校验附件但引用尚未写入数据库时误删文件；File::delete 返回 false 时计入 errors。
      * 上游系统无法强制携带上传凭证时，该任务用于缓解匿名上传造成的磁盘占用。
      *
      * @return array{checked: int, deleted: int, referenced: int, errors: int}
      */
-    public function cleanupOrphanUploads(?int $retentionMinutes = null, int $limit = 100): array
+    public function cleanupOrphanUploads(?int $retentionMinutes = null, ?string $directory = null, int $limit = 100): array
     {
         $retentionMinutes = $retentionMinutes ?? (int) config('ticket_upstream.upload_unused_retention_minutes', 5);
-        $directory = storage_path('app/private/tickets/upstream');
+        $directory = $directory ?? storage_path('app/private/tickets/upstream');
         if (! is_dir($directory)) {
             return ['checked' => 0, 'deleted' => 0, 'referenced' => 0, 'errors' => 0];
         }
@@ -359,24 +442,37 @@ final class TicketUpstreamCallbackService
                 continue;
             }
             $checked++;
-            $path = 'private/tickets/upstream/'.$file->getFilename();
-            $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $path);
-            if (TicketReply::query()->where('attachments', 'like', "%{$escaped}%")->exists()) {
-                $referenced++;
-
-                continue;
-            }
-
+            $lock = Cache::lock('ticket-upstream-upload:'.$file->getFilename(), 10);
             try {
-                File::delete($file->getPathname());
-                $deleted++;
-                Log::info('清理上游未使用上传文件', ['filename' => $file->getFilename()]);
+                // 回调正在处理该文件（锁被持有）时跳过本次删除，等待下轮扫描
+                if (! $lock->get()) {
+                    $referenced++;
+
+                    continue;
+                }
+                // 引用结论必须在锁内重新查询：锁外查到的结果在竞态窗口内可能已经过期
+                $path = 'private/tickets/upstream/'.$file->getFilename();
+                $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $path);
+                if (TicketReply::query()->where('attachments', 'like', "%{$escaped}%")->exists()) {
+                    $referenced++;
+
+                    continue;
+                }
+                if (File::delete($file->getPathname())) {
+                    $deleted++;
+                    Log::info('清理上游未使用上传文件', ['filename' => $file->getFilename()]);
+                } else {
+                    $errors++;
+                    Log::warning('清理上游未使用上传文件删除失败', ['filename' => $file->getFilename()]);
+                }
             } catch (\Throwable $exception) {
                 $errors++;
                 Log::warning('清理上游未使用上传文件失败', [
                     'filename' => $file->getFilename(),
                     'message' => $exception->getMessage(),
                 ]);
+            } finally {
+                $lock->release();
             }
         }
 

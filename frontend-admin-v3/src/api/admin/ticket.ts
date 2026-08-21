@@ -97,6 +97,6 @@ export const ticketsApi = {
   uploadGuard: {
     config: () => request.get<TicketUpstreamUploadGuardConfig>({ url: '/v2/admin/ticket-delivery-upload-guard' }),
     save: (data: TicketUpstreamUploadGuardPayload) =>
-      request.post<TicketUpstreamUploadGuardConfig>({ url: '/v2/admin/ticket-delivery-upload-guard', data }),
+      request.post<TicketUpstreamUploadGuardPayload>({ url: '/v2/admin/ticket-delivery-upload-guard', data }),
   },
 };

@@ -62,6 +62,11 @@ final class TicketUpstreamUploadThrottle
         return false;
     }
 
+    /**
+     * 判断 IP 是否落在条目（IPv4 或 IPv4/CIDR）范围内。
+     * CIDR 前缀必须是纯数字（ctype_digit），否则 "1.2.3.4/foo" 会被 (int) 强转为 0，
+     * 误匹配全部 IPv4 导致白名单保护失效；"1.2.3.4/0" 仍为合法输入（匹配所有地址）。
+     */
     private function ipInRange(string $ip, string $entry): bool
     {
         if ($entry === '') {
@@ -70,6 +75,9 @@ final class TicketUpstreamUploadThrottle
 
         if (str_contains($entry, '/')) {
             [$subnet, $bits] = array_pad(explode('/', $entry, 2), 2, '');
+            if (! ctype_digit($bits)) {
+                return false;
+            }
             $bits = (int) $bits;
             if ($bits < 0 || $bits > 32 || ! filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
                 return false;

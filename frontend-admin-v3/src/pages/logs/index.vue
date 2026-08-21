@@ -1267,7 +1267,18 @@ function resolveRouteTab(): LogsTab {
 }
 
 function isLogTab(value: LogsTab): value is LogTab {
-  return ['system', 'runtime', 'admin-logins', 'api', 'sms', 'email', 'tasks', 'gateway', 'upstream'].includes(value);
+  return [
+    'system',
+    'runtime',
+    'admin-logins',
+    'api',
+    'sms',
+    'email',
+    'tasks',
+    'gateway',
+    'upstream',
+    'upstream-uploads',
+  ].includes(value);
 }
 
 function showFilter(name: string) {
