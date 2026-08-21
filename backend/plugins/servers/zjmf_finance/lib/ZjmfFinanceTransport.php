@@ -340,7 +340,6 @@ final class ZjmfFinanceTransport
 
         try {
             $response = Http::timeout(30)
-                ->withoutVerifying()
                 ->withToken($jwt)
                 ->attach('file', $handle, basename($absolutePath))
                 ->post(rtrim((string) $supplier->api_url, '/').'/upload_image');
@@ -348,14 +347,19 @@ final class ZjmfFinanceTransport
             fclose($handle);
         }
 
-        if (! $response->successful()) {
+        $payload = is_array($response->json()) ? $response->json() : [];
+        $businessOk = (int) ($payload['status'] ?? $payload['code'] ?? 0) === 200
+            || (int) ($payload['code'] ?? -1) === 0;
+        if (! $response->successful() || ! $businessOk) {
             throw new BusinessException('上游附件上传失败', 50000);
         }
 
-        $payload = $response->json();
         $name = data_get($payload, 'data.savename') ?? data_get($payload, 'savename');
+        if ($name === null || trim((string) $name) === '') {
+            throw new BusinessException('上游附件上传失败', 50000);
+        }
 
-        return $name === null || trim((string) $name) === '' ? null : (string) $name;
+        return (string) $name;
     }
 
     public function get(Supplier $supplier, string $uri, ?string $jwt = null, array $query = [], array $headers = []): array

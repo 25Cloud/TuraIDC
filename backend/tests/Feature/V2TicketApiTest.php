@@ -15,6 +15,7 @@ use App\Models\Service;
 use App\Models\ThirdProductGroup;
 use App\Models\Ticket;
 use App\Models\TicketReply;
+use App\Models\TicketUpstreamBinding;
 use App\Models\User;
 use App\Services\Ticket\TicketService;
 use App\Support\AdminPermissions;
@@ -140,6 +141,19 @@ class V2TicketApiTest extends TestCase
     public function test_admin_ticket_detail_and_replies_require_ticket_list_permission(): void
     {
         ['ticket' => $ticket] = $this->createTicketFixture();
+        // 构造带上游绑定的真实数据，确保 upstream_delivery 白名单与 callback_token
+        // 缺失断言在“已配置上游投递”的路径上被验证，而非空数据下的必然通过。
+        TicketUpstreamBinding::query()->create([
+            'ticket_id' => (int) $ticket->id,
+            'provider_key' => 'zjmf_finance_api',
+            'upstream_department_id' => '10',
+            'upstream_service_id' => '100',
+            'upstream_ticket_id' => 'T'.now()->format('YmdHis'),
+            'status' => 'delivered',
+            'attempts' => 1,
+            'delivered_at' => now(),
+        ]);
+        $ticket->unsetRelation('upstreamBinding');
 
         $this->getJson('/api/v2/admin/tickets/'.$ticket->id)
             ->assertUnauthorized()
