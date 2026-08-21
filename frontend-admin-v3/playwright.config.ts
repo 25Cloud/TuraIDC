@@ -17,7 +17,8 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'pnpm run dev:ci -- --port 5176 --strictPort',
+    // 不带 .env 文件也能启动：CI/干净 clone 下 .env.development 被 gitignore
+    command: 'VITE_API_BASE_URL=http://127.0.0.1:8000/api VITE_BASE_URL=/ pnpm run dev:ci -- --port 5176 --strictPort',
     url: 'http://127.0.0.1:5176',
     reuseExistingServer: false,
     timeout: 120_000,
