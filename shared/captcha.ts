@@ -65,6 +65,15 @@ async function redeemCapSolution(apiEndpoint: string, token: string, solutions: 
 }
 
 let worker: Worker | null = null;
+let workerRequestSeq = 0;
+
+interface CapWorkerReply {
+  type: 'progress' | 'done' | 'error';
+  id: number;
+  pct?: number;
+  solutions?: number[];
+  error?: string;
+}
 
 function getCapWorker(): Worker {
   if (!worker) {
@@ -91,30 +100,43 @@ export async function solveCapCaptcha(apiEndpoint: string, onProgress?: (pct: nu
   onProgress?.(15);
 
   const { token, count, saltLength, difficulty } = challenge;
+  // 请求 id 用于隔离并发求解：模块级单例 Worker 可能同时服务多个卡片实例，
+  // 消息必须按 id 归属，避免不同调用的 done/error 互相串扰。
+  const requestId = ++workerRequestSeq;
 
   const solutions = await new Promise<number[]>((resolve, reject) => {
     const w = getCapWorker();
 
-    const onMessage = (e: MessageEvent<{ type: string; pct?: number; solutions?: number[]; error?: string }>) => {
+    const detach = () => {
+      w.removeEventListener('message', onMessage);
+      w.removeEventListener('error', onError);
+    };
+
+    const onMessage = (e: MessageEvent<CapWorkerReply>) => {
+      if (e.data.id !== requestId) {
+        return;
+      }
+
       if (e.data.type === 'progress') {
         onProgress?.(15 + Math.round(((e.data.pct ?? 0) / 100) * 55));
       } else if (e.data.type === 'done') {
-        w.removeEventListener('message', onMessage);
-        w.removeEventListener('error', onError);
+        detach();
         resolve(e.data.solutions ?? []);
+      } else if (e.data.type === 'error') {
+        detach();
+        reject(new Error(e.data.error || '验证求解失败'));
       }
     };
 
     const onError = (err: ErrorEvent) => {
-      w.removeEventListener('message', onMessage);
-      w.removeEventListener('error', onError);
+      detach();
       reject(new Error(err.message || '验证求解失败'));
     };
 
     w.addEventListener('message', onMessage);
     w.addEventListener('error', onError);
 
-    w.postMessage({ type: 'solve', token, count, saltLength, difficulty });
+    w.postMessage({ type: 'solve', id: requestId, token, count, saltLength, difficulty });
   });
 
   if (solutions.length === 0) {

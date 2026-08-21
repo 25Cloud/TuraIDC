@@ -179,8 +179,9 @@ function createCapInstance(appendTarget: HTMLElement | string | undefined, apiEn
   const mount = () => {
     unmount();
     const target = typeof appendTarget === 'string' ? document.querySelector<HTMLElement>(appendTarget) : appendTarget;
+    // 无挂载容器时明确报错：静默返回会让 initPromise 永久 pending，登录/发码按钮无响应
     if (!target) {
-      return;
+      throw new Error('未找到人机验证挂载容器');
     }
 
     holder = document.createElement('div');
@@ -222,7 +223,8 @@ function createCapInstance(appendTarget: HTMLElement | string | undefined, apiEn
     getValidate: () => (token ? { token } : null),
     reset: () => {
       token = null;
-      mount();
+      // 只回退内部状态并卸载，不重新挂载：下次 showCaptcha 会按需重建
+      unmount();
     },
     destroy: () => {
       unmount();
@@ -334,7 +336,7 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
       }
 
       const appendTarget = resolveAppendTarget((options.appendTo ?? options.container) as CaptchaAppendTarget);
-      initPromise = new Promise((resolve, reject) => {
+      const currentInitPromise = new Promise<CaptchaInstance | null>((resolve, reject) => {
         try {
           const instance = createCapInstance(appendTarget, apiEndpoint);
           captchaObj = instance;
@@ -351,11 +353,22 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
           });
           instance.showCaptcha?.();
         } catch (error) {
+          // 挂载失败（如容器未就绪）：清理实例并复位，允许后续重试
+          captchaObj?.destroy?.();
+          captchaObj = null;
           reject(normalizeCaptchaError(error, '行为验证初始化失败，请稍后重试'));
         }
       });
 
-      return initPromise;
+      initPromise = currentInitPromise;
+      try {
+        return await currentInitPromise;
+      } catch (error) {
+        if (initPromise === currentInitPromise) {
+          initPromise = null;
+        }
+        throw error;
+      }
     }
 
     const initGeetest4 = await loadGeeTestScript(scriptUrl, config.captcha_id);
