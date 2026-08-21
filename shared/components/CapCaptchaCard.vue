@@ -76,11 +76,11 @@ function handleBodyKeydown(event: KeyboardEvent) {
       @keydown="handleBodyKeydown"
     >
       <div class="cap-content">
-        <div class="cap-state" :class="{ 'cap-active': state === 'idle' }">
+        <div class="cap-state" :class="{ 'cap-active': state === 'idle' }" :aria-hidden="state !== 'idle'">
           <div class="cap-checkbox" />
           <span class="cap-label">点击验证</span>
         </div>
-        <div class="cap-state" :class="{ 'cap-active': state === 'verifying' }">
+        <div class="cap-state" :class="{ 'cap-active': state === 'verifying' }" :aria-hidden="state !== 'verifying'">
           <div class="cap-spinner">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
               <circle cx="12" cy="12" r="10" stroke-dasharray="50" stroke-dashoffset="15" />
@@ -88,7 +88,7 @@ function handleBodyKeydown(event: KeyboardEvent) {
           </div>
           <span class="cap-label">验证中 <span class="cap-pct">{{ progress }}%</span></span>
         </div>
-        <div class="cap-state" :class="{ 'cap-active': state === 'solved' }">
+        <div class="cap-state" :class="{ 'cap-active': state === 'solved' }" :aria-hidden="state !== 'solved'">
           <div class="cap-icon cap-ok">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="4 12 9 17 20 6" />
@@ -96,7 +96,7 @@ function handleBodyKeydown(event: KeyboardEvent) {
           </div>
           <span class="cap-label">验证通过</span>
         </div>
-        <div class="cap-state" :class="{ 'cap-active': state === 'error' }">
+        <div class="cap-state" :class="{ 'cap-active': state === 'error' }" :aria-hidden="state !== 'error'">
           <div class="cap-icon cap-fail">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10" />
