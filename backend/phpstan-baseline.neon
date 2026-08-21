@@ -1,328 +1,478 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Access to an undefined property App\\Models\\Order\:\:\$cancelled\.$#'
-			identifier: property.notFound
+			message: '#^Call to function is_object\(\) with Illuminate\\Database\\Eloquent\\Model will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
 			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
+			path: app/Casts/LegacyEncrypted.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Order\:\:\$completed\.$#'
-			identifier: property.notFound
+			message: '#^Call to function method_exists\(\) with Illuminate\\Database\\Eloquent\\Model and ''getTable'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
 			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
+			path: app/Casts/LegacyEncrypted.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Order\:\:\$paid\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Order\:\:\$pending\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Order\:\:\$processing\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Order\:\:\$refunded\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Order\:\:\$total\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Order\:\:\$unpaid_amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$amount\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$due_date\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 4
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$invoice_no\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$paid_amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$paid_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Call to function is_array\(\) with string\|null will always evaluate to false\.$#'
-			identifier: function.impossibleType
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Cannot call method format\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Offset ''hostname'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''name'' on array\{name\: string, type\: string, type_name\: string, nullable\: bool, default\: mixed, auto_increment\: bool, comment\: string\|null, generation\: array\{type\: string, expression\: string\|null\}\|null\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
+			path: app/Casts/LegacyEncrypted.php
 
 		-
-			message: '#^Offset ''instance_id'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''type'' on array\{name\: string, type\: string, type_name\: string, nullable\: bool, default\: mixed, auto_increment\: bool, comment\: string\|null, generation\: array\{type\: string, expression\: string\|null\}\|null\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
+			path: app/Casts/LegacyEncrypted.php
 
 		-
-			message: '#^Result of && is always false\.$#'
-			identifier: booleanAnd.alwaysFalse
+			message: '#^Strict comparison using \!\=\= between \(int\|string\) and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
 			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
+			path: app/Console/Commands/BackfillInvoiceItemProjectionsCommand.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>cancelled" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$upstreamBindings\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Console/Commands/BackfillServiceUpstreamBindingsCommand.php
+
+		-
+			message: '#^Parameter &\$hostIndexBySupplier by\-ref type of method App\\Console\\Commands\\BackfillServiceUpstreamBindingsCommand\:\:resolveUpstreamHostId\(\) expects array\<int, array\<int, int\>\>, array\<int, array\<int\|string, int\>\> given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: app/Console/Commands/BackfillServiceUpstreamBindingsCommand.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Supplier\:\:\$api_key\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/LocalProductSimulateCommand.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Supplier\:\:\$api_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/LocalProductSimulateCommand.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Supplier\:\:\$api_username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/LocalProductSimulateCommand.php
+
+		-
+			message: '#^Constant App\\Console\\Commands\\ServeBackendStackCommand\:\:DEFAULT_INTERNAL_HTTP_PORT is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Console/Commands/ServeBackendStackCommand.php
+
+		-
+			message: '#^Constant App\\Console\\Commands\\ServeBackendStackCommand\:\:DEFAULT_INTERNAL_RELAY_PORT is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Console/Commands/ServeBackendStackCommand.php
+
+		-
+			message: '#^Offset 1 on array\{non\-falsy\-string, non\-empty\-string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Console/Commands/ServeBackendStackCommand.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-empty\-string and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Console/Commands/ServeBackendStackCommand.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-falsy\-string and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 3
+			path: app/Console/Commands/ServeBackendStackCommand.php
+
+		-
+			message: '#^Parameter \#1 \$product of method App\\Services\\Integrations\\Plugins\\PluginBindingResolver\:\:supplierForProduct\(\) expects App\\Models\\Product, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Console/Commands/SyncUpstreamServicesCommand.php
+
+		-
+			message: '#^Offset decimal\-int\-string&non\-falsy\-string on array\<string, string\> on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Console/Commands/SyncUpstreamsCommand.php
+
+		-
+			message: '#^Offset ''timed_out'' on array\{timed_out\: bool, blocked\: bool, eof\: bool, unread_bytes\: int, stream_type\: string, wrapper_type\: string, wrapper_data\: mixed, mode\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Console/Commands/VncRelayCommand.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Console/Commands/VncRelayCommand.php
+
+		-
+			message: '#^Offset 2 on array\{non\-falsy\-string, non\-falsy\-string, non\-empty\-string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Console/Commands/VncRelayCommand.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Console/Commands/VncRelayCommand.php
+
+		-
+			message: '#^Ternary operator condition is always true\.$#'
+			identifier: ternary.alwaysTrue
+			count: 1
+			path: app/Console/Commands/VncRelayEnsureCommand.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Laravel\\Sanctum\\PersonalAccessToken\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
+			path: app/Http/Controllers/Admin/V2/AuthController.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>completed" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Access to an undefined property App\\Models\\AdminUser\|App\\Models\\User\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/V2/CouponCampaignController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
+			path: app/Http/Controllers/Admin/V2/CouponCampaignController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
+			path: app/Http/Controllers/Admin/V2/CouponCampaignController.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>paid" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
+			path: app/Http/Controllers/Admin/V2/CouponCampaignController.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>pending" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Access to an undefined property App\\Models\\AdminUser\|App\\Models\\User\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/V2/CouponController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
+			path: app/Http/Controllers/Admin/V2/CouponController.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>processing" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
+			path: app/Http/Controllers/Admin/V2/CouponController.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>refunded" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
+			path: app/Http/Controllers/Admin/V2/CouponController.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>total" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>unpaid_amount" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Variable \$snapshot in empty\(\) is never defined\.$#'
-			identifier: empty.variable
-			count: 1
-			path: app/Http/Controllers/Client/V2/OrderController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$cancelled\.$#'
+			message: '#^Access to an undefined property App\\Models\\AdminUser\|App\\Models\\User\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$pending\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$refunded\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$success\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$total\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Controllers/Client/V2/PaymentController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$invoice_no\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Controllers/Client/V2/PaymentController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$paid_amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Controllers/Client/V2/PaymentController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
-
-		-
-			message: '#^Cannot call method format\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: app/Http/Controllers/Client/V2/PaymentController.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,App\\Models\\Payment\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>cancelled" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
+			path: app/Http/Controllers/Admin/V2/IntegrationPluginController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
+			path: app/Http/Controllers/Admin/V2/IntegrationPluginController.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>invoice_no" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
+			path: app/Http/Controllers/Admin/V2/IntegrationPluginController.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>pending" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
+			path: app/Http/Controllers/Admin/V2/IntegrationPluginController.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>refunded" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
+			message: '#^Access to an undefined property App\\Models\\AdminUser\|App\\Models\\User\:\:\$name\.$#'
+			identifier: property.notFound
 			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
+			path: app/Http/Controllers/Admin/V2/ProductController.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>success" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
+			path: app/Http/Controllers/Admin/V2/ProductController.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>total" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
+			path: app/Http/Controllers/Admin/V2/ProductController.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>type" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Client/V2/PaymentController.php
+			path: app/Http/Controllers/Admin/V2/ProductController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/ProductController.php
+
+		-
+			message: '#^Match expression does not handle remaining values\: int\<min, 0\>\|int\<4, max\>$#'
+			identifier: match.unhandled
+			count: 1
+			path: app/Http/Controllers/Admin/V2/ProductGroupController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Pagination\\LengthAwarePaginator\:\:setCollection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/V2/ReferralController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Pagination\\LengthAwarePaginator\:\:setCollection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/V2/ReferralWithdrawalController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AdminUser\|App\\Models\\User\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/V2/ServiceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/ServiceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/ServiceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/ServiceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/ServiceController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AdminUser\|App\\Models\\User\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/V2/SettingController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/SettingController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/SettingController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/SettingController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AdminUser\|App\\Models\\User\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/V2/SupplierController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/SupplierController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/SupplierController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/SupplierController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AdminUser\|App\\Models\\User\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Admin/V2/UserController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/Admin/V2/UserController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 3
+			path: app/Http/Controllers/Admin/V2/UserController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/Admin/V2/UserController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/Admin/V2/UserController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AdminUser\|App\\Models\\User\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Admin/V2/UserServiceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/Admin/V2/UserServiceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/Admin/V2/UserServiceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/Admin/V2/UserServiceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/Admin/V2/UserServiceController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AdminUser\|App\\Models\\User\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/V2/VerificationController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/VerificationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Client/V2/AuthController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Client/V2/AuthController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Client/V2/AuthController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$reward_rate\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Client/V2/AuthController.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Client/V2/AuthController.php
+
+		-
+			message: '#^Ternary operator condition is always true\.$#'
+			identifier: ternary.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/Client/V2/AuthController.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type App\\Models\\User\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 4
+			path: app/Http/Controllers/Client/V2/AuthController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>display_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Client/V2/InvoiceWorkflowController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Client/V2/InvoiceWorkflowController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Client/V2/InvoiceWorkflowController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>nickname" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Client/V2/InvoiceWorkflowController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>display_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
@@ -367,12 +517,6 @@ parameters:
 			path: app/Http/Controllers/Controller.php
 
 		-
-			message: '#^Result of && is always false\.$#'
-			identifier: booleanAnd.alwaysFalse
-			count: 1
-			path: app/Http/Controllers/Controller.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -390,12 +534,6 @@ parameters:
 			count: 1
 			path: app/Http/Middleware/EnsureClientAuthenticated.php
 
-
-
-
-
-
-
 		-
 			message: '#^Anonymous function with return type void returns null but should not return anything\.$#'
 			identifier: return.void
@@ -409,6 +547,18 @@ parameters:
 			path: app/Http/Requests/Admin/V2/Order/ListOrdersRequest.php
 
 		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Requests/Client/V2/Auth/UpdateEmailRequest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>phone" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Requests/Client/V2/Auth/UpdatePhoneRequest.php
+
+		-
 			message: '#^Anonymous function with return type void returns null but should not return anything\.$#'
 			identifier: return.void
 			count: 1
@@ -419,35 +569,6 @@ parameters:
 			identifier: return.void
 			count: 1
 			path: app/Http/Requests/Client/V2/Ledger/ListLedgerRequest.php
-
-
-
-
-
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminContentArticleListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminContentArticleListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$sort_order\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminContentArticleListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminContentArticleListResource.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
@@ -466,54 +587,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: app/Http/Resources/Admin/V2/AdminContentArticleListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$content_type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$created_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$sort_order\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$updated_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminContentCategoryResource.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
@@ -588,12 +661,6 @@ parameters:
 			path: app/Http/Resources/Admin/V2/AdminOrderDetailResource.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminOrderSummaryResource.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
 			identifier: property.notFound
 			count: 1
@@ -608,35 +675,11 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
 			identifier: property.notFound
-			count: 4
-			path: app/Http/Resources/Admin/V2/AdminOrderSummaryResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$invoice_no\.$#'
-			identifier: property.notFound
-			count: 1
+			count: 2
 			path: app/Http/Resources/Admin/V2/AdminOrderSummaryResource.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminOrderSummaryResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$paid_amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminOrderSummaryResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$paid_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminOrderSummaryResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$payments\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/Admin/V2/AdminOrderSummaryResource.php
@@ -656,13 +699,13 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 1
 			path: app/Http/Resources/Admin/V2/AdminOrderSummaryResource.php
 
 		-
 			message: '#^Cannot call method format\(\) on string\.$#'
 			identifier: method.nonObject
-			count: 2
+			count: 3
 			path: app/Http/Resources/Admin/V2/AdminOrderSummaryResource.php
 
 		-
@@ -688,42 +731,6 @@ parameters:
 			identifier: method.nonObject
 			count: 1
 			path: app/Http/Resources/Admin/V2/AdminProductDetailResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminProductGroupListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminProductGroupListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$first_product_group_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminProductGroupListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminProductGroupListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminProductGroupListResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$second_product_group_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/AdminProductGroupListResource.php
 
 		-
 			message: '#^Method App\\Http\\Resources\\Admin\\V2\\AdminProductGroupListResource\:\:firstGroup\(\) should return App\\Models\\FirstProductGroup\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
@@ -864,78 +871,6 @@ parameters:
 			path: app/Http/Resources/Admin/V2/AdminUserOperationLogResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/CouponProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$is_visible\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/CouponProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 4
-			path: app/Http/Resources/Admin/V2/CouponProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$sort_order\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/CouponProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$first_product_group_id\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Admin/V2/CouponProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$is_visible\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/CouponProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 4
-			path: app/Http/Resources/Admin/V2/CouponProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$sort_order\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/CouponProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$is_visible\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/CouponProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 4
-			path: app/Http/Resources/Admin/V2/CouponProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$second_product_group_id\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Admin/V2/CouponProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$sort_order\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Admin/V2/CouponProductGroupResource.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1068,54 +1003,6 @@ parameters:
 			path: app/Http/Resources/Content/ContentArticleResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$content_type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Content/ContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$created_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Content/ContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Content/ContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Content/ContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Content/ContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$sort_order\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Content/ContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Content/ContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$updated_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Content/ContentCategoryResource.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>config_snapshot" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -1182,42 +1069,6 @@ parameters:
 			path: app/Http/Resources/Site/V2/SiteProductDetailResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Site/V2/SiteProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Site/V2/SiteProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$first_product_group_id\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Site/V2/SiteProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Site/V2/SiteProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Site/V2/SiteProductGroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$second_product_group_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Site/V2/SiteProductGroupResource.php
-
-		-
 			message: '#^Method App\\Http\\Resources\\Site\\V2\\SiteProductGroupResource\:\:firstGroup\(\) should return App\\Models\\FirstProductGroup\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
 			identifier: return.type
 			count: 2
@@ -1270,24 +1121,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Resources/User/UserResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\V2\\Content\\PublishedContentCategoryResource\:\:\$content_type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/V2/Content/PublishedContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\V2\\Content\\PublishedContentCategoryResource\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/V2/Content/PublishedContentCategoryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\V2\\Content\\PublishedContentCategoryResource\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/V2/Content/PublishedContentCategoryResource.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
@@ -1344,10 +1177,28 @@ parameters:
 			path: app/Models/AdminUser.php
 
 		-
+			message: '#^Call to function is_array\(\) with string\|null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Models/AutomationLog.php
+
+		-
+			message: '#^Offset ''_retry_claimed_at'' on array\{\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Models/AutomationLog.php
+
+		-
 			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
 			identifier: identical.alwaysFalse
 			count: 1
 			path: app/Models/ContentArticle.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\EmailLog\:\:\$sent_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/EmailLog.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$discount\.$#'
@@ -1476,12 +1327,6 @@ parameters:
 			path: app/Models/Product.php
 
 		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\:\:where\(\) expects array\<int\|model property of App\\Models\\ThirdProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\ThirdProductGroup, ''second_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Models/Product.php
-
-		-
 			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:where\(\) expects array\<int\|model property of Illuminate\\Database\\Eloquent\\Model, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: Illuminate\\Database\\Eloquent\\Builder\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of Illuminate\\Database\\Eloquent\\Model, ''leaf\.is_visible'' given\.$#'
 			identifier: argument.type
 			count: 1
@@ -1526,6 +1371,12 @@ parameters:
 		-
 			message: '#^Cannot call method isPast\(\) on string\.$#'
 			identifier: method.nonObject
+			count: 1
+			path: app/Models/Service.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
 			count: 1
 			path: app/Models/Service.php
 
@@ -1620,10 +1471,34 @@ parameters:
 			path: app/Models/Setting.php
 
 		-
+			message: '#^Access to an undefined property App\\Models\\SmsLog\:\:\$sent_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/SmsLog.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:buildReleasedUniqueValue\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:uniqueKeysToReleaseOnDelete\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/User.php
+
+		-
 			message: '#^Method App\\Models\\User\:\:nullableValue\(\) is unused\.$#'
 			identifier: method.unused
 			count: 1
 			path: app/Models/User.php
+
+		-
+			message: '#^Parameter \#1 \$values of method Illuminate\\Database\\Eloquent\\Builder\<static\(App\\Models\\UserAccount\)\>\:\:update\(\) expects array\<model property of static\(App\\Models\\UserAccount\), mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Models/UserAccount.php
 
 		-
 			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
@@ -1676,6 +1551,18 @@ parameters:
 		-
 			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Admin/V2/AdminConfigurationV2QueryService.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Supplier\>\:\:create\(\) expects array\<model property of App\\Models\\Supplier, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Admin/V2/AdminConfigurationV2QueryService.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Model\:\:update\(\) expects array\<model property of App\\Models\\Supplier, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
 			count: 1
 			path: app/Services/Admin/V2/AdminConfigurationV2QueryService.php
 
@@ -1890,13 +1777,43 @@ parameters:
 			path: app/Services/Auth/VerificationService.php
 
 		-
+			message: '#^Constant App\\Services\\Auth\\VerificationService\:\:RESULT_STATUS_FAILED is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/Auth/VerificationService.php
+
+		-
 			message: '#^Method App\\Services\\Auth\\VerificationService\:\:maskIdCard\(\) is unused\.$#'
 			identifier: method.unused
 			count: 1
 			path: app/Services/Auth/VerificationService.php
 
 		-
+			message: '#^Offset ''amount'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Auth/VerificationService.php
+
+		-
+			message: '#^Offset ''charge_enabled'' on array\{free_attempts\: int, retry_fee\: float, charge_enabled\: bool, amount\: float\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Auth/VerificationService.php
+
+		-
 			message: '#^Offset ''driver_key'' on array\{plugin_id\: int\|null, driver_key\: string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Auth/VerificationService.php
+
+		-
+			message: '#^Offset ''free_attempts'' on array\{free_attempts\: int, retry_fee\: float, charge_enabled\: bool, amount\: float\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Auth/VerificationService.php
+
+		-
+			message: '#^Offset ''retry_fee'' on array\{free_attempts\: int, retry_fee\: float, charge_enabled\: bool, amount\: float\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/Auth/VerificationService.php
@@ -1926,6 +1843,12 @@ parameters:
 			path: app/Services/Automation/AutoRenewService.php
 
 		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\Provisioning\\ServiceRenewService\:\:findPaidUnfulfilledRenewOrder\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Automation/AutoRenewService.php
+
+		-
 			message: '#^Parameter \#1 \$user of method App\\Services\\Provisioning\\ServiceRenewService\:\:previewForUser\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model given\.$#'
 			identifier: argument.type
 			count: 1
@@ -1934,6 +1857,12 @@ parameters:
 		-
 			message: '#^Parameter \#2 \$user of method App\\Services\\Finance\\PaymentService\:\:payOrderByBalance\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model given\.$#'
 			identifier: argument.type
+			count: 1
+			path: app/Services/Automation/AutoRenewService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>amount" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/Automation/AutoRenewService.php
 
@@ -2072,13 +2001,31 @@ parameters:
 		-
 			message: '#^Cannot call method toDateTimeString\(\) on string\.$#'
 			identifier: method.nonObject
-			count: 2
+			count: 1
 			path: app/Services/Automation/ServiceLifecycleAutomationService.php
 
 		-
 			message: '#^Instanceof between string\|null and Carbon\\Carbon will always evaluate to false\.$#'
 			identifier: instanceof.alwaysFalse
+			count: 2
+			path: app/Services/Automation/ServiceLifecycleAutomationService.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
 			count: 1
+			path: app/Services/Automation/ServiceLifecycleAutomationService.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 2
+			path: app/Services/Automation/ServiceLifecycleAutomationService.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 2
 			path: app/Services/Automation/ServiceLifecycleAutomationService.php
 
 		-
@@ -2178,6 +2125,18 @@ parameters:
 			path: app/Services/ClientServiceConsole/ClientServiceConsoleService.php
 
 		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$console_template\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/ClientServiceConsole/ServiceDetailService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/ClientServiceConsole/ServiceDetailService.php
+
+		-
 			message: '#^Call to an undefined method App\\Services\\Upstream\\Contracts\\ProvidesConsoleRuntime\:\:getText\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -2220,15 +2179,15 @@ parameters:
 			path: app/Services/ClientServiceConsole/ServiceDetailService.php
 
 		-
-			message: '#^Offset 1 on array\{non\-empty\-string, non\-falsy\-string\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Services/ClientServiceConsole/ServiceDetailService.php
-
-		-
 			message: '#^Offset 1 on array\{non\-falsy\-string, non\-empty\-string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
+			path: app/Services/ClientServiceConsole/ServiceDetailService.php
+
+		-
+			message: '#^Offset 1 on array\{non\-falsy\-string, non\-falsy\-string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
 			path: app/Services/ClientServiceConsole/ServiceDetailService.php
 
 		-
@@ -2304,36 +2263,6 @@ parameters:
 			path: app/Services/ClientServiceConsole/ServiceNatService.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ClientServiceConsole/ServiceOverviewService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/ClientServiceConsole/ServiceOverviewService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\|App\\Models\\ThirdProductGroup\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ClientServiceConsole/ServiceOverviewService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\|App\\Models\\ThirdProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/ClientServiceConsole/ServiceOverviewService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\|App\\Models\\ThirdProductGroup\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ClientServiceConsole/ServiceOverviewService.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 3
@@ -2392,24 +2321,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: app/Services/ClientServiceConsole/ServicePowerService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ClientServiceConsole/ServiceResolverService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ClientServiceConsole/ServiceResolverService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ClientServiceConsole/ServiceResolverService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
@@ -2592,12 +2503,6 @@ parameters:
 			path: app/Services/ClientServiceConsole/ServiceTrafficPackageService.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ClientServiceConsole/ServiceTransformService.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$config_options\.$#'
 			identifier: property.notFound
 			count: 4
@@ -2607,6 +2512,12 @@ parameters:
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$config_snapshot\.$#'
 			identifier: property.notFound
 			count: 2
+			path: app/Services/ClientServiceConsole/ServiceTransformService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$console_template\.$#'
+			identifier: property.notFound
+			count: 4
 			path: app/Services/ClientServiceConsole/ServiceTransformService.php
 
 		-
@@ -2630,7 +2541,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
-			count: 3
+			count: 4
 			path: app/Services/ClientServiceConsole/ServiceTransformService.php
 
 		-
@@ -2780,7 +2691,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 8
+			count: 11
 			path: app/Services/ClientServiceConsole/ServiceTransformService.php
 
 		-
@@ -2820,14 +2731,8 @@ parameters:
 			path: app/Services/ClientServiceConsole/ServiceTransformService.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ClientServiceConsole/ServiceUpgradeService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$product_type\.$#'
-			identifier: property.notFound
+			message: '#^Method App\\Services\\ClientServiceConsole\\ServiceUpgradeService\:\:processPaidUpgradeOrder\(\) should return App\\Models\\Service\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
 			count: 1
 			path: app/Services/ClientServiceConsole/ServiceUpgradeService.php
 
@@ -2846,12 +2751,6 @@ parameters:
 		-
 			message: '#^Offset ''upgrade_error'' on non\-empty\-array\<string, mixed\> on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Services/ClientServiceConsole/ServiceUpgradeService.php
-
-		-
-			message: '#^Parameter \#1 \$product of method App\\Services\\ProductCatalog\\ProductDisplayNameResolver\:\:resolveForProduct\(\) expects App\\Models\\Product, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
 			count: 1
 			path: app/Services/ClientServiceConsole/ServiceUpgradeService.php
 
@@ -2892,20 +2791,20 @@ parameters:
 			path: app/Services/ClientServiceConsole/ServiceVncService.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$content_type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Content/ContentArticleService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Content/ContentArticleService.php
-
-		-
 			message: '#^PHPDoc tag @return with type array\<int, string\> is incompatible with native type Illuminate\\Database\\Eloquent\\Collection\.$#'
 			identifier: return.phpDocType
+			count: 1
+			path: app/Services/Content/ContentArticleService.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ContentArticle\>\:\:create\(\) expects array\<model property of App\\Models\\ContentArticle, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Content/ContentArticleService.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Model\:\:update\(\) expects array\<model property of App\\Models\\ContentArticle, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
 			count: 1
 			path: app/Services/Content/ContentArticleService.php
 
@@ -2952,20 +2851,14 @@ parameters:
 			path: app/Services/Content/ContentArticleService.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$name\.$#'
-			identifier: property.notFound
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ContentCategory\>\:\:create\(\) expects array\<model property of App\\Models\\ContentCategory, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
 			count: 1
 			path: app/Services/Content/ContentCategoryService.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$sort_order\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Content/ContentCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ContentCategory\:\:\$status\.$#'
-			identifier: property.notFound
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Model\:\:update\(\) expects array\<model property of App\\Models\\ContentCategory, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
 			count: 1
 			path: app/Services/Content/ContentCategoryService.php
 
@@ -3068,7 +2961,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$invoice_no\.$#'
 			identifier: property.notFound
-			count: 3
+			count: 2
 			path: app/Services/Finance/AdminFinanceQueryService.php
 
 		-
@@ -3086,7 +2979,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$paid_amount\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 1
 			path: app/Services/Finance/AdminFinanceQueryService.php
 
 		-
@@ -3096,7 +2989,7 @@ parameters:
 			path: app/Services/Finance/AdminFinanceQueryService.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$payments\.$#'
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$payment_no\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Services/Finance/AdminFinanceQueryService.php
@@ -3132,9 +3025,15 @@ parameters:
 			path: app/Services/Finance/AdminFinanceQueryService.php
 
 		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:gatewayKey\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Services/Finance/AdminFinanceQueryService.php
+
+		-
 			message: '#^Cannot call method format\(\) on string\.$#'
 			identifier: method.nonObject
-			count: 3
+			count: 4
 			path: app/Services/Finance/AdminFinanceQueryService.php
 
 		-
@@ -3152,6 +3051,18 @@ parameters:
 		-
 			message: '#^Offset ''product_spec_display'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Finance/AdminFinanceQueryService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Services/Finance/AdminFinanceQueryService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:filter\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|null, Closure\(App\\Models\\Payment\)\: bool given\.$#'
+			identifier: argument.type
 			count: 1
 			path: app/Services/Finance/AdminFinanceQueryService.php
 
@@ -3192,27 +3103,21 @@ parameters:
 			path: app/Services/Finance/AdminOrderNotificationService.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Finance/AdminOrderNotificationService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$invoice_no\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/Finance/AdminOrderNotificationService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$paid_at\.$#'
-			identifier: property.notFound
+			message: '#^Cannot access property \$invoice_no on null\.$#'
+			identifier: property.nonObject
 			count: 1
 			path: app/Services/Finance/AdminOrderNotificationService.php
 
 		-
 			message: '#^Cannot call method format\(\) on string\.$#'
 			identifier: method.nonObject
-			count: 4
+			count: 5
+			path: app/Services/Finance/AdminOrderNotificationService.php
+
+		-
+			message: '#^Expression on left side of \?\? is always null\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
 			path: app/Services/Finance/AdminOrderNotificationService.php
 
 		-
@@ -3236,7 +3141,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>invoice_no" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 2
+			count: 1
 			path: app/Services/Finance/AdminOrderNotificationService.php
 
 		-
@@ -3268,6 +3173,210 @@ parameters:
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Services/Finance/CheckoutService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$overdue\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$paid\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$unpaid\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$unpaid_amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$config_options\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$product\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>config_options" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>overdue" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>paid" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>total" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>unpaid" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>unpaid_amount" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Finance/ClientInvoicePaymentWorkflowService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$cancelled\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$pending\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$refunded\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$success\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$invoice_no\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$paid_amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>cancelled" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>invoice_no" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>pending" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>refunded" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>success" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>total" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>type" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Finance/ClientPaymentQueryService.php
 
 		-
 			message: '#^Access to an undefined property App\\Models\\CouponCampaign\:\:\$lastCoupon\.$#'
@@ -3312,18 +3421,6 @@ parameters:
 			path: app/Services/Finance/CouponCampaignService.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/Finance/CouponService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Services/Finance/CouponService.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$first_order_only\.$#'
 			identifier: property.notFound
 			count: 1
@@ -3332,6 +3429,12 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/CouponService.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments ''new''\|''renew'', array\{''new'', ''renew''\} and true will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
 			count: 1
 			path: app/Services/Finance/CouponService.php
 
@@ -3756,12 +3859,6 @@ parameters:
 			path: app/Services/Finance/InvoiceService.php
 
 		-
-			message: '#^Method App\\Services\\Finance\\InvoiceService\:\:resolveOrderProductPath\(\) is unused\.$#'
-			identifier: method.unused
-			count: 1
-			path: app/Services/Finance/InvoiceService.php
-
-		-
 			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
@@ -3801,6 +3898,12 @@ parameters:
 			message: '#^Parameter \#1 \$collection of method Illuminate\\Pagination\\AbstractPaginator\<int,App\\Models\\Invoice\>\:\:setCollection\(\) expects Illuminate\\Support\\Collection\<int, App\\Models\\Invoice\>, Illuminate\\Support\\Collection\<int, array\> given\.$#'
 			identifier: argument.type
 			count: 1
+			path: app/Services/Finance/InvoiceService.php
+
+		-
+			message: '#^Parameter \#1 \$order of method App\\Services\\Finance\\InvoiceService\:\:resolveOrderProductPath\(\) expects App\\Models\\Order, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 3
 			path: app/Services/Finance/InvoiceService.php
 
 		-
@@ -3890,7 +3993,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
 			identifier: property.notFound
-			count: 18
+			count: 15
 			path: app/Services/Finance/PaymentService.php
 
 		-
@@ -3944,18 +4047,6 @@ parameters:
 		-
 			message: '#^Offset ''trade_no'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Services/Finance/PaymentService.php
-
-		-
-			message: '#^Parameter \#1 \$invoice of method App\\Services\\Finance\\PaymentService\:\:clearFulfillmentPending\(\) expects App\\Models\\Invoice, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/Finance/PaymentService.php
-
-		-
-			message: '#^Parameter \#1 \$invoice of method App\\Services\\Finance\\PaymentService\:\:provisionPaidOrder\(\) expects App\\Models\\Invoice\|null, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
 			count: 1
 			path: app/Services/Finance/PaymentService.php
 
@@ -4044,6 +4135,24 @@ parameters:
 			path: app/Services/Finance/PaymentService.php
 
 		-
+			message: '#^Access to an undefined property App\\Models\\IntegrationPlugin\:\:\$key\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Integrations/Plugins/IntegrationPluginService.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Services/Integrations/Plugins/IntegrationPluginService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>capabilities" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Integrations/Plugins/IntegrationPluginService.php
+
+		-
 			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 4
@@ -4054,6 +4163,12 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/Integrations/Plugins/IntegrationPluginService.php
+
+		-
+			message: '#^Method App\\Services\\Integrations\\Plugins\\PluginBindingResolver\:\:nullableString\(\) invoked with 2 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: app/Services/Integrations/Plugins/PluginBindingResolver.php
 
 		-
 			message: '#^Match expression does not handle remaining value\: string$#'
@@ -4146,26 +4261,164 @@ parameters:
 			path: app/Services/Notification/InboxService.php
 
 		-
+			message: '#^Access to an undefined property App\\Models\\Order\:\:\$cancelled\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Order\:\:\$completed\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Order\:\:\$paid\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Order\:\:\$pending\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Order\:\:\$processing\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Order\:\:\$refunded\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Order\:\:\$total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Order\:\:\$unpaid_amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Call to function is_array\(\) with string\|null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 3
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Offset ''hostname'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Offset ''instance_id'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between \*NEVER\* and array\{\} will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>cancelled" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>completed" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>paid" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>pending" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>processing" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>refunded" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>total" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>unpaid_amount" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Services/Order/OrderService.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Services/Order/OrderService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$invoice_no\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/Order/OrderService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$payments\.$#'
-			identifier: property.notFound
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
 			count: 1
 			path: app/Services/Order/OrderService.php
 
@@ -4212,12 +4465,6 @@ parameters:
 			path: app/Services/Order/OrderService.php
 
 		-
-			message: '#^Strict comparison using \=\=\= between 1 and 1 will always evaluate to true\.$#'
-			identifier: identical.alwaysTrue
-			count: 1
-			path: app/Services/Order/OrderService.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -4260,8 +4507,14 @@ parameters:
 			path: app/Services/Order/PaidOrderBusinessFlowDispatcher.php
 
 		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\:\:where\(\) expects array\<int\|model property of App\\Models\\ThirdProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\ThirdProductGroup, ''second_product…'' given\.$#'
-			identifier: argument.type
+			message: '#^Offset ''id'' on array\{id\: int, level\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/ProductCatalog/CouponProductGroupQueryService.php
+
+		-
+			message: '#^Offset ''level'' on array\{id\: int, level\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ProductCatalog/CouponProductGroupQueryService.php
 
@@ -4342,30 +4595,6 @@ parameters:
 			identifier: arrayValues.list
 			count: 1
 			path: app/Services/ProductCatalog/InstanceSpecCatalogService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductAdminService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/ProductCatalog/ProductAdminService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductAdminService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductAdminService.php
 
 		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:inCurrentProductGroup\(\)\.$#'
@@ -4518,14 +4747,14 @@ parameters:
 			path: app/Services/ProductCatalog/ProductAdminService.php
 
 		-
-			message: '#^Property App\\Services\\ProductCatalog\\ProductAdminService\:\:\$hierarchyService is never read, only written\.$#'
-			identifier: property.onlyWritten
+			message: '#^Parameter \#1 \$values of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\:\:update\(\) expects array\<model property of App\\Models\\Product, mixed\>, array given\.$#'
+			identifier: argument.type
 			count: 1
 			path: app/Services/ProductCatalog/ProductAdminService.php
 
 		-
-			message: '#^Right side of && is always true\.$#'
-			identifier: booleanAnd.rightAlwaysTrue
+			message: '#^Property App\\Services\\ProductCatalog\\ProductAdminService\:\:\$hierarchyService is never read, only written\.$#'
+			identifier: property.onlyWritten
 			count: 1
 			path: app/Services/ProductCatalog/ProductAdminService.php
 
@@ -4534,132 +4763,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/ProductCatalog/ProductAdminService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$created_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$is_visible\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$sort_order\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$updated_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$created_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$first_product_group_id\.$#'
-			identifier: property.notFound
-			count: 4
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$is_visible\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$sort_order\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$updated_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$created_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$is_visible\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$second_product_group_id\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$sort_order\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$updated_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductCategoryService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
@@ -4683,6 +4786,18 @@ parameters:
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 4
+			path: app/Services/ProductCatalog/ProductCategoryService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:inFirstProductGroup\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Services/ProductCatalog/ProductCategoryService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:inSecondProductGroup\(\)\.$#'
+			identifier: method.notFound
+			count: 2
 			path: app/Services/ProductCatalog/ProductCategoryService.php
 
 		-
@@ -4758,14 +4873,26 @@ parameters:
 			path: app/Services/ProductCatalog/ProductCategoryService.php
 
 		-
-			message: '#^Parameter \#1 \$group of static method App\\Constants\\ProductType\:\:businessValueForFirstGroup\(\) expects App\\Models\\FirstProductGroup\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\FirstProductGroup\>\:\:create\(\) expects array\<model property of App\\Models\\FirstProductGroup, mixed\>, array given\.$#'
 			identifier: argument.type
 			count: 1
 			path: app/Services/ProductCatalog/ProductCategoryService.php
 
 		-
-			message: '#^Right side of && is always true\.$#'
-			identifier: booleanAnd.rightAlwaysTrue
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\:\:create\(\) expects array\<model property of App\\Models\\SecondProductGroup, mixed\>, array given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/ProductCatalog/ProductCategoryService.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\:\:create\(\) expects array\<model property of App\\Models\\ThirdProductGroup, mixed\>, array given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/ProductCatalog/ProductCategoryService.php
+
+		-
+			message: '#^Parameter \#1 \$group of static method App\\Constants\\ProductType\:\:businessValueForFirstGroup\(\) expects App\\Models\\FirstProductGroup\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
 			count: 1
 			path: app/Services/ProductCatalog/ProductCategoryService.php
 
@@ -4842,88 +4969,10 @@ parameters:
 			path: app/Services/ProductCatalog/ProductGroupV2QueryService.php
 
 		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\:\:where\(\) expects array\<int\|model property of App\\Models\\Product, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\Product, ''third_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductGroupV2QueryService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\:\:orWhere\(\) expects array\<int\|model property of App\\Models\\SecondProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\SecondProductGroup, ''first_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductGroupV2QueryService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\:\:where\(\) expects array\<int\|model property of App\\Models\\SecondProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\SecondProductGroup, ''first_product…'' given\.$#'
-			identifier: argument.type
-			count: 2
-			path: app/Services/ProductCatalog/ProductGroupV2QueryService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\:\:where\(\) expects array\<int\|model property of App\\Models\\SecondProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\SecondProductGroup, ''second_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductGroupV2QueryService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\:\:where\(\) expects array\<int\|model property of App\\Models\\ThirdProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\ThirdProductGroup, ''first_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductGroupV2QueryService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\:\:where\(\) expects array\<int\|model property of App\\Models\\ThirdProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\ThirdProductGroup, ''second_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductGroupV2QueryService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\:\:where\(\) expects array\<int\|model property of App\\Models\\ThirdProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\ThirdProductGroup, ''third_product…'' given\.$#'
-			identifier: argument.type
-			count: 2
-			path: app/Services/ProductCatalog/ProductGroupV2QueryService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:where\(\) expects array\<int\|model property of Illuminate\\Database\\Eloquent\\Model, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: Illuminate\\Database\\Eloquent\\Builder\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of Illuminate\\Database\\Eloquent\\Model, ''second_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductGroupV2QueryService.php
-
-		-
 			message: '#^Parameter \#2 \$columns of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:paginate\(\) expects array\<int, ''\*''\|model property of Illuminate\\Database\\Eloquent\\Model\>, array\{''second_product…''\} given\.$#'
 			identifier: argument.type
 			count: 1
 			path: app/Services/ProductCatalog/ProductGroupV2QueryService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\|App\\Models\\SecondProductGroup\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\|App\\Models\\ThirdProductGroup\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/ProductCatalog/ProductSiteService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
@@ -5022,78 +5071,6 @@ parameters:
 			path: app/Services/ProductCatalog/ProductSiteService.php
 
 		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\:\:where\(\) expects array\<int\|model property of App\\Models\\Product, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\Product, ''first_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\:\:where\(\) expects array\<int\|model property of App\\Models\\Product, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\Product, ''second_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\:\:where\(\) expects array\<int\|model property of App\\Models\\Product, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\Product, ''third_product…'' given\.$#'
-			identifier: argument.type
-			count: 2
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\:\:orWhere\(\) expects array\<int\|model property of App\\Models\\SecondProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\SecondProductGroup, ''first_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\:\:where\(\) expects array\<int\|model property of App\\Models\\SecondProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\SecondProductGroup, ''first_product…'' given\.$#'
-			identifier: argument.type
-			count: 3
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\:\:where\(\) expects array\<int\|model property of App\\Models\\SecondProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\SecondProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\SecondProductGroup, ''second_product…'' given\.$#'
-			identifier: argument.type
-			count: 2
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\:\:pluck\(\) expects Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\ThirdProductGroup, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\:\:where\(\) expects array\<int\|model property of App\\Models\\ThirdProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\ThirdProductGroup, ''first_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\:\:where\(\) expects array\<int\|model property of App\\Models\\ThirdProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\ThirdProductGroup, ''second_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\:\:where\(\) expects array\<int\|model property of App\\Models\\ThirdProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\ThirdProductGroup, ''third_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:pluck\(\) expects Illuminate\\Contracts\\Database\\Query\\Expression\|model property of Illuminate\\Database\\Eloquent\\Model, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:where\(\) expects array\<int\|model property of Illuminate\\Database\\Eloquent\\Model, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: Illuminate\\Database\\Eloquent\\Builder\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of Illuminate\\Database\\Eloquent\\Model, ''second_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
 			message: '#^Parameter \#1 \$group of static method App\\Constants\\ProductType\:\:businessValueForFirstGroup\(\) expects App\\Models\\FirstProductGroup\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
 			identifier: argument.type
 			count: 1
@@ -5122,24 +5099,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 3
 			path: app/Services/ProductCatalog/ProductSiteService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/ProductCatalog/ProductSyncService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$first_product_group_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductSyncService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$second_product_group_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductSyncService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
@@ -5292,12 +5251,6 @@ parameters:
 			path: app/Services/ProductCatalog/ProductSyncService.php
 
 		-
-			message: '#^Right side of && is always true\.$#'
-			identifier: booleanAnd.rightAlwaysTrue
-			count: 1
-			path: app/Services/ProductCatalog/ProductSyncService.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>config_options" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -5308,18 +5261,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 4
 			path: app/Services/ProductCatalog/ProductSyncService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/ProductCatalog/ProductTypeService.php
-
-		-
-			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\:\:where\(\) expects array\<int\|model property of App\\Models\\ThirdProductGroup, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\ThirdProductGroup\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\ThirdProductGroup, ''second_product…'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductTypeService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$config_snapshot\.$#'
@@ -5365,6 +5306,12 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$phone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Provisioning/AdminServiceListService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$productGroup\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Services/Provisioning/AdminServiceListService.php
@@ -5450,7 +5397,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 1
+			count: 4
 			path: app/Services/Provisioning/AdminServiceListService.php
 
 		-
@@ -5511,12 +5458,6 @@ parameters:
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$purchase_requires\.$#'
 			identifier: property.notFound
 			count: 2
-			path: app/Services/Provisioning/ProvisionService.php
-
-		-
-			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
 			path: app/Services/Provisioning/ProvisionService.php
 
 		-
@@ -5634,18 +5575,6 @@ parameters:
 			path: app/Services/Provisioning/ProvisionService.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Provisioning/ServiceRenewService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$discount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Provisioning/ServiceRenewService.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$display_name\.$#'
 			identifier: property.notFound
 			count: 1
@@ -5653,18 +5582,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Provisioning/ServiceRenewService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Provisioning/ServiceRenewService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$invoice_no\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Services/Provisioning/ServiceRenewService.php
@@ -5834,7 +5751,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 2
+			count: 1
 			path: app/Services/Provisioning/ServiceRenewService.php
 
 		-
@@ -6062,7 +5979,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property App\\Models\\ReferralReward\:\:\$order\.$#'
 			identifier: property.notFound
-			count: 1
+			count: 2
 			path: app/Services/Referral/ReferralService.php
 
 		-
@@ -6194,7 +6111,7 @@ parameters:
 		-
 			message: '#^Cannot call method format\(\) on string\.$#'
 			identifier: method.nonObject
-			count: 4
+			count: 5
 			path: app/Services/Referral/ReferralService.php
 
 		-
@@ -6225,6 +6142,18 @@ parameters:
 			message: '#^Parameter \#1 \$buyer of method App\\Services\\Referral\\ReferralService\:\:resolveBuyerReferrerUserId\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model given\.$#'
 			identifier: argument.type
 			count: 2
+			path: app/Services/Referral/ReferralService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: App\\Models\\User, Closure\(App\\Models\\User\)\: App\\Models\\User given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Referral/ReferralService.php
+
+		-
+			message: '#^Parameter \#1 \$collection of method Illuminate\\Pagination\\AbstractPaginator\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:setCollection\(\) expects Illuminate\\Support\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>, Illuminate\\Support\\Collection\<int, App\\Models\\User\> given\.$#'
+			identifier: argument.type
+			count: 1
 			path: app/Services/Referral/ReferralService.php
 
 		-
@@ -6696,6 +6625,12 @@ parameters:
 			path: app/Services/System/DashboardService.php
 
 		-
+			message: '#^Parameter \#1 \$array \(list\<array\{label\: string, amount\: float, count\: int\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Services/System/DashboardService.php
+
+		-
 			message: '#^Using nullsafe property access "\?\-\>active_services" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -6768,6 +6703,18 @@ parameters:
 			path: app/Services/System/DashboardService.php
 
 		-
+			message: '#^Method App\\Services\\System\\DatabaseEngineeringService\:\:deleteOrphans\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: app/Services/System/DatabaseEngineeringService.php
+
+		-
+			message: '#^Method App\\Services\\System\\DatabaseEngineeringService\:\:normalizeCoreRelations\(\) should return array\<string, int\> but returns array\<string, int\|string\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/System/DatabaseEngineeringService.php
+
+		-
 			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
@@ -6798,6 +6745,12 @@ parameters:
 			path: app/Services/System/GatewayLogService.php
 
 		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<numeric\-string\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/System/LogArchiveService.php
+
+		-
 			message: '#^Negated boolean expression is always true\.$#'
 			identifier: booleanNot.alwaysTrue
 			count: 1
@@ -6824,6 +6777,18 @@ parameters:
 		-
 			message: '#^Offset 2 on array\{non\-falsy\-string, non\-empty\-string, string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/System/NotificationService.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of static method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\MessageLog\>\:\:create\(\) expects array\<model property of App\\Models\\MessageLog, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/System/NotificationService.php
+
+		-
+			message: '#^Variable \$rendered on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
 			count: 1
 			path: app/Services/System/NotificationService.php
 
@@ -6930,12 +6895,6 @@ parameters:
 			path: app/Services/System/ServiceMigrationService.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$second_product_group_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/System/SettingService.php
-
-		-
 			message: '#^Method App\\Services\\System\\SettingService\:\:syncFallbackSettingsToDatabase\(\) is unused\.$#'
 			identifier: method.unused
 			count: 1
@@ -6966,6 +6925,12 @@ parameters:
 			path: app/Services/System/SmsService.php
 
 		-
+			message: '#^Parameter \#1 \$attributes of static method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\MessageLog\>\:\:create\(\) expects array\<model property of App\\Models\\MessageLog, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/System/SmsService.php
+
+		-
 			message: '#^Property App\\Services\\System\\SmsService\:\:\$pluginConfigRepository is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
@@ -6986,13 +6951,13 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$display_name\.$#'
 			identifier: property.notFound
-			count: 8
+			count: 9
 			path: app/Services/Ticket/TicketService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
 			identifier: property.notFound
-			count: 7
+			count: 8
 			path: app/Services/Ticket/TicketService.php
 
 		-
@@ -7034,7 +6999,7 @@ parameters:
 		-
 			message: '#^Call to function is_array\(\) with string will always evaluate to false\.$#'
 			identifier: function.impossibleType
-			count: 2
+			count: 3
 			path: app/Services/Ticket/TicketService.php
 
 		-
@@ -7046,6 +7011,12 @@ parameters:
 		-
 			message: '#^Instanceof between string and Illuminate\\Support\\Carbon will always evaluate to false\.$#'
 			identifier: instanceof.alwaysFalse
+			count: 1
+			path: app/Services/Ticket/TicketService.php
+
+		-
+			message: '#^Offset 3 on array\{''开启'', ''客户回复'', ''员工回复'', ''已关闭''\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/Ticket/TicketService.php
 
@@ -7086,12 +7057,6 @@ parameters:
 			path: app/Services/Ticket/TicketService.php
 
 		-
-			message: '#^Strict comparison using \!\=\= between array\{\} and array\{\} will always evaluate to false\.$#'
-			identifier: notIdentical.alwaysFalse
-			count: 1
-			path: app/Services/Ticket/TicketService.php
-
-		-
 			message: '#^Unreachable statement \- code above always terminates\.$#'
 			identifier: deadCode.unreachable
 			count: 2
@@ -7106,7 +7071,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 1
+			count: 2
 			path: app/Services/Ticket/TicketService.php
 
 		-
@@ -7148,7 +7113,7 @@ parameters:
 		-
 			message: '#^Call to function is_array\(\) with list\<string\> will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
-			count: 2
+			count: 3
 			path: app/Services/Upstream/Drivers/HostingPanelApi/HostingPanelApiTransport.php
 
 		-
@@ -7328,7 +7293,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$invoice\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 1
 			path: app/Services/User/UserService.php
 
 		-
@@ -7398,6 +7363,12 @@ parameters:
 			path: app/Services/User/UserService.php
 
 		-
+			message: '#^Instanceof between App\\Models\\Invoice and App\\Models\\Invoice will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: app/Services/User/UserService.php
+
+		-
 			message: '#^Method App\\Services\\User\\UserService\:\:buildInvoiceSummary\(\) is unused\.$#'
 			identifier: method.unused
 			count: 1
@@ -7430,6 +7401,12 @@ parameters:
 		-
 			message: '#^Method App\\Services\\User\\UserService\:\:resolveInvoiceScene\(\) is unused\.$#'
 			identifier: method.unused
+			count: 1
+			path: app/Services/User/UserService.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Model\:\:update\(\) expects array\<model property of App\\Models\\User, mixed\>, array given\.$#'
+			identifier: argument.type
 			count: 1
 			path: app/Services/User/UserService.php
 
@@ -7692,38 +7669,8 @@ parameters:
 			path: app/Support/AutomationScheduleExpression.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Support/ProductGroupHierarchyFields.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\FirstProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Support/ProductGroupHierarchyFields.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Support/ProductGroupHierarchyFields.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\SecondProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Support/ProductGroupHierarchyFields.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Support/ProductGroupHierarchyFields.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\ThirdProductGroup\:\:\$name\.$#'
-			identifier: property.notFound
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
 			count: 1
 			path: app/Support/ProductGroupHierarchyFields.php
 
@@ -7748,7 +7695,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 3
+			count: 2
 			path: app/Support/ProductGroupHierarchyFields.php
 
 		-
