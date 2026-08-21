@@ -238,6 +238,7 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
           '/admin/logs/tasks',
           '/admin/logs/gateway',
           '/admin/logs/upstream',
+          '/admin/logs/upstream-uploads',
           '/admin/logs/schedules',
           '/admin/logs/cleanup',
         ],
