@@ -271,7 +271,8 @@ class AliyunSmsApiClient
 
         $logContext = ['action' => $action, 'endpoint' => $endpoint];
         if ($phone !== '') {
-            $logContext['phone'] = $this->maskPhone($phone);
+            // 按项目规范记录完整手机号：日志不做脱敏，否则发送异常时无法定位到具体号码
+            $logContext['phone'] = $phone;
         }
         Log::info('[短信] 请求阿里云短信服务', $logContext);
 
@@ -490,15 +491,6 @@ class AliyunSmsApiClient
         $caBundle = trim((string) config('idc.sms.ca_bundle', ''));
 
         return $caBundle !== '' && is_file($caBundle) ? $caBundle : true;
-    }
-
-    private function maskPhone(string $phone): string
-    {
-        if (mb_strlen($phone) <= 7) {
-            return $phone;
-        }
-
-        return mb_substr($phone, 0, 3).'****'.mb_substr($phone, -4);
     }
 
     private function resolveFailureMessage(mixed $message, string $code = ''): string

@@ -23,6 +23,19 @@ class LoginRiskControlService
 
     public const SCOPE_ADMIN = 'admin';
 
+    /**
+     * 客户端「验证码通道」（验证码登录、重置密码）独立的计数作用域。
+     *
+     * 必须与密码通道（SCOPE_CLIENT）分开，否则两条通道会互相误锁：
+     * - 验证码通道的失败会写进密码通道的账号计数，攻击者多 IP 刷错验证码即可
+     *   锁死他人的密码登录，形成账号级 DoS；
+     * - 反过来，成功的验证码登录会清掉密码通道的失败计数，削弱密码爆破防护。
+     *
+     * 原先靠给密码通道的 isLoginLocked 传 includeAccountDimension=false 来缓解
+     * 「密码失败锁死验证码登录」这一个方向，但两条通道共用计数的根因没有解决。
+     */
+    public const SCOPE_CLIENT_CODE = 'client_code';
+
     private const ACCOUNT_IP_MAX_ATTEMPTS = 1;
 
     private const ACCOUNT_IP_DECAY_SECONDS = 900;
@@ -243,7 +256,7 @@ class LoginRiskControlService
     {
         $normalized = mb_strtolower(trim($scope));
 
-        return in_array($normalized, [self::SCOPE_CLIENT, self::SCOPE_ADMIN], true)
+        return in_array($normalized, [self::SCOPE_CLIENT, self::SCOPE_ADMIN, self::SCOPE_CLIENT_CODE], true)
             ? $normalized
             : self::SCOPE_CLIENT;
     }
