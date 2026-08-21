@@ -8,6 +8,7 @@ use App\Exceptions\BusinessException;
 use App\Models\Supplier;
 use App\Services\Upstream\Drivers\HostingPanelApi\HostingPanelApiTransport;
 use App\Services\Upstream\Support\WebSessionCookieParser;
+use Illuminate\Support\Facades\Http;
 
 final class ZjmfFinanceTransport
 {
@@ -261,6 +262,82 @@ final class ZjmfFinanceTransport
     public function post(Supplier $supplier, string $uri, array|string $payload = [], ?string $jwt = null, array $headers = [], array $query = []): array
     {
         return $this->request($supplier, 'POST', $uri, $payload, $jwt, $headers, $query);
+    }
+
+    /**
+     * @return array<int, array{id: string, name: string, description: string}>
+     */
+    public function getTicketDepartments(Supplier $supplier, ?string $jwt = null): array
+    {
+        $response = $this->get($supplier, '/ticket/department', $jwt);
+        $status = (int) ($response['status'] ?? $response['code'] ?? 0);
+        if ($status !== 200) {
+            throw new BusinessException((string) ($response['msg'] ?? '获取上游工单部门失败'), 42200);
+        }
+
+        $items = $response['data'] ?? null;
+        if (! is_array($items)) {
+            throw new BusinessException('上游工单部门响应格式异常', 42200);
+        }
+
+        return array_values(array_filter(array_map(static function (mixed $item): ?array {
+            if (! is_array($item)) {
+                return null;
+            }
+
+            $id = trim((string) ($item['id'] ?? ''));
+            $name = trim((string) ($item['name'] ?? ''));
+            if ($id === '' || $name === '') {
+                return null;
+            }
+
+            return [
+                'id' => $id,
+                'name' => $name,
+                'description' => trim((string) ($item['description'] ?? '')),
+            ];
+        }, $items)));
+    }
+
+    public function registerDownstreamCallback(
+        Supplier $supplier,
+        int $upstreamHostId,
+        int $upstreamProductId,
+        int $downstreamId,
+        string $downstreamUrl,
+        string $downstreamToken,
+        ?string $jwt = null,
+    ): array {
+        return $this->post($supplier, '/host/setdownstream', [
+            'id' => $upstreamHostId,
+            'pid' => $upstreamProductId,
+            'downstream_url' => rtrim($downstreamUrl, '/'),
+            'downstream_token' => $downstreamToken,
+            'downstream_id' => $downstreamId,
+        ], $jwt);
+    }
+
+    public function uploadTicketAttachment(Supplier $supplier, string $path): ?string
+    {
+        $absolutePath = str_starts_with($path, '/') ? $path : storage_path('app/'.ltrim($path, '/'));
+        if (! is_file($absolutePath)) {
+            return null;
+        }
+
+        $jwt = $this->login($supplier);
+        $response = Http::timeout(30)
+            ->withToken($jwt)
+            ->attach('file', fopen($absolutePath, 'r'), basename($absolutePath))
+            ->post(rtrim((string) $supplier->api_url, '/').'/upload_image');
+
+        if (! $response->successful()) {
+            throw new BusinessException('上游附件上传失败', 50000);
+        }
+
+        $payload = $response->json();
+        $name = data_get($payload, 'data.savename') ?? data_get($payload, 'savename');
+
+        return $name === null || trim((string) $name) === '' ? null : (string) $name;
     }
 
     public function get(Supplier $supplier, string $uri, ?string $jwt = null, array $query = [], array $headers = []): array

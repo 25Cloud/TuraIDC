@@ -63,6 +63,7 @@ final class ZjmfProvisionService
                 $detailPayload = $this->extractPayload($detailResponse);
                 $hostDetail = is_array($detailPayload['host'] ?? null) ? $detailPayload['host'] : [];
                 $this->assertHostDetailPresent($hostDetail, $existingHostId);
+                $callback = ['token' => null, 'id' => null];
 
                 // 幂等回查除确认 host 存在外，还需校验其上游账单已支付：
                 // 若 host 在欠费/待支付模式下仍返回详情，本地会把服务确认成 ACTIVE、订单 COMPLETED，
@@ -93,6 +94,8 @@ final class ZjmfProvisionService
                     'upstream_host_ids' => $existingProvisionData['upstream_host_ids'] ?? [$existingHostId],
                     'upstream_host_id' => $existingHostId,
                     'host_detail' => $hostDetail,
+                    'downstream_token' => $callback['token'] ?? null,
+                    'downstream_id' => $callback['id'] ?? null,
                 ];
             } catch (\Throwable $exception) {
                 Log::warning('[ZJMF 财务开通] 上游 host 幂等回查失败，已停止重复开通', [
@@ -243,6 +246,7 @@ final class ZjmfProvisionService
             $detailPayload = $this->extractPayload($detailResponse);
             $hostDetail = is_array($detailPayload['host'] ?? null) ? $detailPayload['host'] : [];
             $this->assertHostDetailPresent($hostDetail, $hostId);
+            $callback = ['token' => null, 'id' => null];
 
             $result = 'success';
 
@@ -252,6 +256,8 @@ final class ZjmfProvisionService
                 'upstream_host_ids' => $hostIds,
                 'upstream_host_id' => $hostId,
                 'host_detail' => $hostDetail,
+                'downstream_token' => $callback['token'] ?? null,
+                'downstream_id' => $callback['id'] ?? null,
             ];
         } catch (\Throwable $exception) {
             $errorMessage = $exception->getMessage();

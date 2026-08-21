@@ -38,7 +38,7 @@
             >
               <div class="message-item__body">
                 <div class="message-meta">
-                  <span>{{ message.sender_name || (message.is_staff ? '客服' : '客户') }}</span>
+                  <span>{{ messageSenderName(message) }}</span>
                   <time>{{ formatDateTime(message.created_at) }}</time>
                 </div>
 
@@ -165,6 +165,53 @@
             </div>
           </t-card>
 
+          <t-card :bordered="false" header="自动转发">
+            <t-alert
+              theme="info"
+              message="自动化转发通常需要 1 分钟左右执行完成，请稍候查看状态。"
+              class="upstream-delivery-tip"
+            />
+            <div class="upstream-delivery-head">
+              <t-tag :theme="upstreamDeliveryTheme" variant="light">
+                {{ upstreamDelivery?.status_label || '未配置' }}
+              </t-tag>
+              <div class="upstream-delivery-actions">
+                <t-button
+                  v-if="upstreamDelivery?.upstream_ticket_id"
+                  size="small"
+                  variant="text"
+                  theme="primary"
+                  :loading="callbackRegistrationLoading"
+                  @click="registerUpstreamCallback"
+                >
+                  重新注册回调
+                </t-button>
+                <t-button size="small" variant="text" theme="primary" @click="openDeliveryLogs">
+                  查看转发日志
+                </t-button>
+              </div>
+            </div>
+            <t-descriptions :column="1" bordered>
+              <t-descriptions-item label="上游工单号">
+                {{ upstreamDelivery?.upstream_ticket_id || '--' }}
+              </t-descriptions-item>
+              <t-descriptions-item label="尝试次数">
+                {{ upstreamDelivery?.attempts ?? 0 }}
+              </t-descriptions-item>
+              <t-descriptions-item label="最近尝试">
+                {{ upstreamDelivery?.last_attempt_at || '--' }}
+              </t-descriptions-item>
+              <t-descriptions-item
+                v-if="upstreamDelivery?.last_error || upstreamDelivery?.last_event?.message"
+                label="最近结果"
+              >
+                <span class="upstream-delivery-error">
+                  {{ upstreamDelivery.last_error || upstreamDelivery.last_event?.message }}
+                </span>
+              </t-descriptions-item>
+            </t-descriptions>
+          </t-card>
+
           <t-card :bordered="false" header="关联服务信息">
             <div class="service-grid">
               <div>
@@ -222,6 +269,29 @@
       </t-empty>
     </t-loading>
 
+    <t-drawer
+      v-model:visible="deliveryLogsVisible"
+      header="工单转发日志"
+      size="620px"
+      @confirm="closeDeliveryLogs"
+      @cancel="closeDeliveryLogs"
+    >
+      <t-loading :loading="deliveryLogsLoading" size="small">
+        <t-empty v-if="deliveryLogs.length === 0" description="暂无转发日志" />
+        <div v-else class="delivery-log-list">
+          <article v-for="log in deliveryLogs" :key="String(log.id)" class="delivery-log-item">
+            <div class="delivery-log-meta">
+              <t-tag :theme="deliveryLogTheme(log.status)" variant="light">{{ log.status_label || log.status }}</t-tag>
+              <span>{{ log.operation || '--' }}</span>
+              <time>{{ log.occurred_at || '--' }}</time>
+            </div>
+            <strong>{{ log.message || log.reason_code || '状态已更新' }}</strong>
+            <small v-if="log.attempt">第 {{ log.attempt }} 次尝试</small>
+          </article>
+        </div>
+      </t-loading>
+    </t-drawer>
+
     <t-dialog v-model:visible="previewVisible" header="图片预览" width="720px" :footer="false">
       <img v-if="previewUrl" class="preview-image" :src="previewUrl" alt="图片预览" />
       <div class="preview-dialog-actions">
@@ -241,7 +311,13 @@ import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import type { TicketAdminUser, TicketAttachment, TicketDetail, TicketReply } from '@/api/admin';
+import type {
+  TicketAdminUser,
+  TicketAttachment,
+  TicketDetail,
+  TicketReply,
+  TicketUpstreamDeliveryLog,
+} from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import { formatDateTime } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
@@ -253,6 +329,7 @@ interface UploadFileLike {
   name?: string;
   size?: number;
   type?: string;
+  raw?: File;
   rawFile?: File;
   file?: File;
   response?: TicketAttachment;
@@ -284,6 +361,10 @@ const previewUrl = ref('');
 const quoteReply = ref<{ id: number | string; sender_name: string; content: string } | null>(null);
 const replyForm = reactive({ content: '' });
 const linkedServicePasswordVisible = ref(false);
+const deliveryLogsVisible = ref(false);
+const deliveryLogsLoading = ref(false);
+const callbackRegistrationLoading = ref(false);
+const deliveryLogs = ref<TicketUpstreamDeliveryLog[]>([]);
 
 const priorityOptions = [
   { label: '低', value: 1 },
@@ -364,6 +445,14 @@ const linkedServiceSpecs = computed(() => {
     }));
 });
 const currentAssigneeId = computed(() => (detail.value?.assignee_id ? String(detail.value.assignee_id) : ''));
+const upstreamDelivery = computed(() => detail.value?.upstream_delivery || null);
+const upstreamDeliveryTheme = computed<'default' | 'success' | 'warning' | 'danger'>(() => {
+  const status = upstreamDelivery.value?.status;
+  if (status === 'delivered') return 'success';
+  if (status === 'failed') return 'danger';
+  if (status === 'pending' || status === 'sending') return 'warning';
+  return 'default';
+});
 const replyUploadDisabled = computed(() => replyAttachments.value.length >= MAX_TICKET_IMAGES);
 const replySubmitDisabled = computed(
   () => replyLoading.value || (!replyForm.content.trim() && replyAttachments.value.length === 0),
@@ -389,6 +478,14 @@ function departmentLabel(value: unknown) {
   return departmentOptions.find((item) => item.value === value)?.label || String(value || '--');
 }
 
+function messageSenderName(message: ConversationMessage) {
+  if (message.sender_type === 'upstream_admin' || (Number(message.user_id) === 0 && Number(message.is_staff) === 1)) {
+    return '上游客服';
+  }
+
+  return message.sender_name || (message.is_staff ? '客服' : '客户');
+}
+
 function adminOptionLabel(admin: TicketAdminUser) {
   const name = admin.nickname || admin.username || `管理员 #${admin.id}`;
   return admin.email ? `${name}(${admin.email})` : name;
@@ -398,10 +495,53 @@ function isClosed(status: unknown) {
   return Number(status) === 3;
 }
 
+function deliveryLogTheme(status?: string): 'default' | 'success' | 'warning' | 'danger' {
+  if (status === 'delivered') return 'success';
+  if (status === 'failed') return 'danger';
+  if (status === 'pending' || status === 'sending') return 'warning';
+  return 'default';
+}
+
+async function registerUpstreamCallback() {
+  const id = resolveTicketId();
+  if (!id || callbackRegistrationLoading.value) return;
+  callbackRegistrationLoading.value = true;
+  try {
+    await adminApi.tickets.registerUpstreamCallback(id);
+    MessagePlugin.success('上游工单回调已重新注册');
+    await reloadCurrentDetail();
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '重新注册回调失败'));
+  } finally {
+    callbackRegistrationLoading.value = false;
+  }
+}
+
+async function openDeliveryLogs() {
+  const id = resolveTicketId();
+  if (!id) return;
+  deliveryLogsVisible.value = true;
+  deliveryLogsLoading.value = true;
+  try {
+    const response = await adminApi.tickets.upstreamDeliveryLogs(id, { page: 1, page_size: 100 });
+    deliveryLogs.value = response.list || [];
+  } catch (error) {
+    deliveryLogs.value = [];
+    MessagePlugin.error(errorMessage(error, '加载工单转发日志失败'));
+  } finally {
+    deliveryLogsLoading.value = false;
+  }
+}
+
+function closeDeliveryLogs() {
+  deliveryLogsVisible.value = false;
+}
+
 function parseAttachments(
   item: { attachments?: TicketAttachment[]; attachment_urls?: Array<string | TicketAttachment> } | null,
 ) {
-  const attachments = item?.attachments || item?.attachment_urls || [];
+  const attachments =
+    Array.isArray(item?.attachments) && item.attachments.length > 0 ? item.attachments : item?.attachment_urls || [];
   return attachments
     .map((attachment, index) => {
       if (typeof attachment === 'string') {
@@ -437,6 +577,8 @@ async function loadDetail() {
 
   detailLoading.value = true;
   detail.value = null;
+  deliveryLogs.value = [];
+  deliveryLogsVisible.value = false;
   linkedServicePasswordVisible.value = false;
   resetReplyDraft();
   try {
@@ -615,9 +757,17 @@ function beforeUpload(file: UploadFileLike) {
 
 async function handleUpload(files: UploadFileLike | UploadFileLike[]) {
   const file = Array.isArray(files) ? files[0] : files;
-  const rawFile = file.rawFile || file.file || (file as unknown as File);
+  const rawFile = file.raw || file.rawFile || file.file;
+  if (!(rawFile instanceof File)) {
+    return {
+      status: 'fail' as const,
+      error: '未获取到有效图片文件',
+      response: {},
+    };
+  }
+
   const formData = new FormData();
-  formData.append('file', rawFile);
+  formData.append('file', rawFile, rawFile.name);
 
   try {
     const response = await adminApi.tickets.uploadImage(formData);

@@ -6,6 +6,7 @@ namespace App\Services\Integrations\Plugins;
 
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Services\Upstream\ProviderKey;
 use App\Services\Upstream\ProviderRegistry;
 use App\Services\Upstream\Support\WebSessionCookieParser;
 use Illuminate\Support\Facades\Crypt;
@@ -65,6 +66,9 @@ class UpstreamBindingWriter
             'provider_key' => $providerKey,
             'environment' => $this->nullableString($bindingPayload['environment'] ?? $existingBinding?->environment ?? null, 60) ?? 'production',
             'status' => (int) ($bindingPayload['status'] ?? $existingBinding?->status ?? $supplier->status ?? 0),
+            'ticket_delivery_enabled' => $providerKey === ProviderKey::ZJMF_FINANCE_API
+                ? (int) ($bindingPayload['ticket_delivery_enabled'] ?? $existingBinding?->ticket_delivery_enabled ?? 0)
+                : 0,
             'priority' => (int) ($bindingPayload['priority'] ?? $existingBinding?->priority ?? $supplier->sort_order ?? 0),
             'base_url' => $this->nullableString($bindingPayload['base_url'] ?? $existingBinding?->base_url ?? null, 255),
             'account_name' => $this->nullableString($bindingPayload['account_name'] ?? $existingBinding?->account_name ?? null, 120),

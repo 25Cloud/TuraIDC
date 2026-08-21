@@ -13,6 +13,7 @@ use App\Models\MessageLog;
 use App\Models\OperationLog;
 use App\Models\Role;
 use App\Models\ScheduleRunLog;
+use App\Models\TicketUpstreamDeliveryLog;
 use App\Models\User;
 use App\Services\System\Concerns\HandlesAdminLogCleanup;
 use App\Support\AdminPrivacy;
@@ -1272,6 +1273,185 @@ class AdminLogService
             'success' => (int) ($summary?->success ?? 0),
             'failed' => (int) ($summary?->failed ?? 0),
         ]);
+    }
+
+    public function getUpstreamLogs(array $filters, int $page, int $perPage, bool $withSummary = true): array
+    {
+        $query = $this->buildUpstreamLogQuery($filters);
+        if ($query === null) {
+            return $this->buildPaginatorPayload($this->emptyPaginator($perPage));
+        }
+
+        $total = (int) (clone $query)
+            ->reorder()
+            ->distinct()
+            ->count('ticket_id');
+        $ticketIds = (clone $query)
+            ->reorder()
+            ->select('ticket_id')
+            ->selectRaw('MAX(occurred_at) as latest_occurred_at')
+            ->selectRaw('MAX(id) as latest_id')
+            ->groupBy('ticket_id')
+            ->orderByDesc('latest_occurred_at')
+            ->orderByDesc('latest_id')
+            ->forPage($page, $perPage)
+            ->pluck('ticket_id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->values()
+            ->all();
+
+        $rows = [];
+        if ($ticketIds !== []) {
+            $eventsByTicket = (clone $query)
+                ->whereIn('ticket_id', $ticketIds)
+                ->orderByDesc('occurred_at')
+                ->orderByDesc('id')
+                ->get()
+                ->groupBy('ticket_id');
+
+            foreach ($ticketIds as $ticketId) {
+                $eventRows = $eventsByTicket
+                    ->get($ticketId, collect())
+                    ->map(fn (TicketUpstreamDeliveryLog $log): array => $this->upstreamLogRow($log))
+                    ->values()
+                    ->all();
+                if ($eventRows === []) {
+                    continue;
+                }
+
+                $rows[] = array_merge($eventRows[0], [
+                    'log_count' => count($eventRows),
+                    'logs' => $eventRows,
+                ]);
+            }
+        }
+
+        $paginator = new LengthAwarePaginator($rows, $total, $perPage, $page, [
+            'path' => request()->url(),
+            'query' => request()->query(),
+        ]);
+
+        return $this->buildPaginatorPayload(
+            $paginator,
+            $withSummary ? $this->getUpstreamLogsSummary($filters) : []
+        );
+    }
+
+    public function getUpstreamLogsSummary(array $filters): array
+    {
+        $query = $this->buildUpstreamLogQuery($filters);
+        if ($query === null) {
+            return ['total' => 0, 'failed' => 0, 'delivered' => 0, 'skipped' => 0, 'pending' => 0, 'sending' => 0];
+        }
+
+        $summary = (clone $query)
+            ->reorder()
+            ->selectRaw('COUNT(DISTINCT ticket_id) as total')
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) as failed")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END), 0) as delivered")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'skipped' THEN 1 ELSE 0 END), 0) as skipped")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) as pending")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'sending' THEN 1 ELSE 0 END), 0) as sending")
+            ->first();
+
+        return [
+            'total' => (int) ($summary?->total ?? 0),
+            'failed' => (int) ($summary?->failed ?? 0),
+            'delivered' => (int) ($summary?->delivered ?? 0),
+            'skipped' => (int) ($summary?->skipped ?? 0),
+            'pending' => (int) ($summary?->pending ?? 0),
+            'sending' => (int) ($summary?->sending ?? 0),
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    public function getUpstreamLog(int|string $id): ?array
+    {
+        if (! Schema::hasTable('ticket_upstream_delivery_logs')) {
+            return null;
+        }
+
+        $log = TicketUpstreamDeliveryLog::query()
+            ->with('supplier:id,name')
+            ->find($id);
+        if (! $log instanceof TicketUpstreamDeliveryLog) {
+            return null;
+        }
+
+        $row = $this->upstreamLogRow($log);
+
+        return [
+            'id' => (string) $log->id,
+            'channel' => 'upstream',
+            'source' => 'ticket_upstream_delivery_logs',
+            'fields' => $row,
+            'message' => (string) ($log->message ?? ''),
+            'context' => [],
+            'created_at' => $log->occurred_at?->format('Y-m-d H:i:s'),
+        ];
+    }
+
+    private function buildUpstreamLogQuery(array $filters): ?Builder
+    {
+        if (! Schema::hasTable('ticket_upstream_delivery_logs')) {
+            return null;
+        }
+
+        $query = TicketUpstreamDeliveryLog::query()->with('supplier:id,name');
+        foreach (['ticket_id', 'ticket_reply_id', 'supplier_id'] as $field) {
+            if (! empty($filters[$field])) {
+                $query->where($field, (int) $filters[$field]);
+            }
+        }
+        foreach (['status', 'operation', 'event', 'reason_code', 'provider_key'] as $field) {
+            if (! empty($filters[$field])) {
+                $query->where($field, trim((string) $filters[$field]));
+            }
+        }
+        if (! empty($filters['keyword'])) {
+            $keyword = trim((string) $filters['keyword']);
+            $query->where(function (Builder $builder) use ($keyword): void {
+                foreach (['message', 'reason_code', 'provider_key', 'operation', 'event'] as $field) {
+                    $builder->orWhere($field, 'like', "%{$keyword}%");
+                }
+                if (ctype_digit($keyword)) {
+                    $builder->orWhere('ticket_id', (int) $keyword)
+                        ->orWhere('ticket_reply_id', (int) $keyword)
+                        ->orWhere('supplier_id', (int) $keyword);
+                }
+            });
+        }
+        if (! empty($filters['start_date'])) {
+            $query->where('occurred_at', '>=', Carbon::parse((string) $filters['start_date'])->startOfDay());
+        }
+        if (! empty($filters['end_date'])) {
+            $query->where('occurred_at', '<=', Carbon::parse((string) $filters['end_date'])->endOfDay());
+        }
+
+        return $query;
+    }
+
+    /** @return array<string, mixed> */
+    private function upstreamLogRow(TicketUpstreamDeliveryLog $log): array
+    {
+        return [
+            'id' => (int) $log->id,
+            'ticket_id' => (int) $log->ticket_id,
+            'ticket_reply_id' => $log->ticket_reply_id ? (int) $log->ticket_reply_id : null,
+            'direction' => (string) $log->direction,
+            'operation' => (string) $log->operation,
+            'event' => (string) $log->event,
+            'status' => (string) $log->status,
+            'reason_code' => $log->reason_code,
+            'provider_key' => $log->provider_key,
+            'supplier_id' => $log->supplier_id ? (int) $log->supplier_id : null,
+            'supplier_name' => $log->supplier?->name,
+            'attempt' => $log->attempt ? (int) $log->attempt : null,
+            'http_status' => $log->http_status ? (int) $log->http_status : null,
+            'duration_ms' => $log->duration_ms ? (int) $log->duration_ms : null,
+            'message' => (string) ($log->message ?? ''),
+            'occurred_at' => $log->occurred_at?->format('Y-m-d H:i:s'),
+        ];
     }
 
     public function getActivityLogs(array $filters, int $page, int $perPage, bool $withSummary = true): array

@@ -109,6 +109,42 @@ class UploadSecurityTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_upstream_ticket_upload_returns_legacy_savename_contract(): void
+    {
+        $response = $this->post('/upload_image', [
+            'file' => UploadedFile::fake()->image('logo.png', 16, 16)->size(8),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('msg', '上传成功')
+            ->assertJsonPath('data.savename', $response->json('savename'));
+
+        $filename = (string) $response->json('savename');
+        $absolutePath = storage_path('app/private/tickets/upstream/'.$filename);
+        $this->uploadedFiles[] = $absolutePath;
+        $this->assertMatchesRegularExpression('/\\.png$/', $filename);
+        $this->assertFileExists($absolutePath);
+        $this->assertNotEmpty($filename);
+    }
+
+    public function test_upstream_ticket_upload_does_not_call_get_size_after_move(): void
+    {
+        $response = $this->post('/upload_image', [
+            'file' => UploadedFile::fake()->image('after-move.png', 32, 32)->size(16),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('code', 0);
+
+        $filename = (string) $response->json('savename');
+        $this->uploadedFiles[] = storage_path('app/private/tickets/upstream/'.$filename);
+        $this->assertSame($filename, (string) $response->json('data.savename'));
+        $this->assertFileExists(storage_path('app/private/tickets/upstream/'.$filename));
+    }
+
     public function test_ticket_image_upload_still_accepts_normal_image(): void
     {
         $image = app(TicketService::class)->uploadImage(
