@@ -26,12 +26,15 @@ RUN mkdir -p backend \
      "$APP_URL" "$FRONTEND_URL" "$CLIENT_CONSOLE_URL" "$ADMIN_URL" "$CLIENT_SESSION_COOKIE_DOMAIN" > backend/.env
 
 # 先拷贝清单文件并安装依赖（源码变更不重复安装，加速重建）
-COPY package.json package-lock.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY shared/package.json ./shared/
+COPY docs-web/package.json ./docs-web/
 COPY frontend-admin-v3/package.json ./frontend-admin-v3/
 COPY frontend-user-v3-www/package.json ./frontend-user-v3-www/
 COPY frontend-user-v4-console/package.json ./frontend-user-v4-console/
-RUN npm ci
+# pnpm monorepo：--shamefully-hoist 保证根 hoist 依赖布局（与部署指南一致）
+RUN npm install -g pnpm@11.13.1 \
+  && pnpm install --frozen-lockfile --shamefully-hoist
 
 # 源码（含仓库根公共文件：theme.css / tsconfig.base.json / logo / favicon）
 COPY backend/scripts ./backend/scripts
@@ -42,7 +45,7 @@ COPY frontend-user-v3-www ./frontend-user-v3-www
 COPY frontend-user-v4-console ./frontend-user-v4-console
 
 # 统一构建三个前端（产物分别在各自 dist/，互不写入 backend/public）
-RUN npm run build:frontends
+RUN pnpm run build:frontends
 
 # ---------- 运行时：三端合一（三端口） ----------
 FROM nginx:1.27-alpine
