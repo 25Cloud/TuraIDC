@@ -1,4 +1,8 @@
 // 对部分样式进行重置
+html {
+  color-scheme: light dark;
+}
+
 body {
   background: var(--td-bg-color-page);
   color: var(--td-text-color-secondary);
@@ -36,4 +40,41 @@ p {
 
 * {
   box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: 2px solid var(--td-brand-color);
+  outline-offset: 2px;
+}
+
+button,
+[role='button'],
+.t-button {
+  min-height: 32px;
+}
+
+@media (width <= 768px) {
+  button,
+  [role='button'],
+  .t-button {
+    min-height: 40px;
+    min-width: 40px;
+  }
+
+  // 操作列方形图标按钮放大触控区
+  .t-button[shape='square'] {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
