@@ -16,7 +16,7 @@
     "verify:refactor": "node scripts/verify-refactor.mjs"
   },
   "dependencies": {
-    "@turaidc/shared": "file:..\\shared",
+    "@turaidc/shared": "file:../shared",
     "@vueuse/core": "^14.4.0",
     "axios": "^1.19.0",
     "dayjs": "^1.11.23",
