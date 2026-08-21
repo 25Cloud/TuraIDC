@@ -711,7 +711,17 @@ import { errorMessage } from '@/utils/userMessage';
 
 import LogDetailDrawer from './components/LogDetailDrawer.vue';
 
-type LogTab = 'system' | 'runtime' | 'admin-logins' | 'api' | 'sms' | 'email' | 'tasks' | 'gateway' | 'upstream';
+type LogTab =
+  | 'system'
+  | 'runtime'
+  | 'admin-logins'
+  | 'api'
+  | 'sms'
+  | 'email'
+  | 'tasks'
+  | 'gateway'
+  | 'upstream'
+  | 'upstream-uploads';
 type LogsTab = LogTab | 'schedules' | 'cleanup';
 type RecordRow = Record<string, unknown>;
 type TagTheme = NonNullable<TagProps['theme']>;
@@ -730,6 +740,7 @@ const validTabs: LogsTab[] = [
   'tasks',
   'gateway',
   'upstream',
+  'upstream-uploads',
   'schedules',
   'cleanup',
 ];
@@ -911,6 +922,12 @@ const logMeta: Record<LogTab, { title: string; description: string; filters: str
     ],
     keyword: '工单号、原因或日志内容',
   },
+  'upstream-uploads': {
+    title: '上传/清理日志',
+    description: '上游附件上传成功、凭证校验、限流/白名单拒绝与未使用文件清理记录。',
+    filters: ['level', 'keyword', 'date'],
+    keyword: '上传、清理或拒绝原因',
+  },
 };
 
 const baseLogColumns: Record<LogTab, PrimaryTableCol<RecordRow>[]> = {
@@ -1005,6 +1022,12 @@ const baseLogColumns: Record<LogTab, PrimaryTableCol<RecordRow>[]> = {
     { colKey: 'message', title: '结果说明', minWidth: 320 },
     { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
   ],
+  'upstream-uploads': [
+    { colKey: 'time', title: '记录时间', width: 170 },
+    { colKey: 'level', title: '级别', width: 100 },
+    { colKey: 'message', title: '日志内容', minWidth: 520 },
+    { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
+  ],
 };
 const scheduleColumns: PrimaryTableCol<RecordRow>[] = [
   { colKey: 'task', title: '任务名称', minWidth: 260 },
@@ -1055,7 +1078,11 @@ const upstreamLogGroups = computed<RecordRow[]>(() => {
 });
 const displayLogRows = computed(() => (isUpstreamLogTab.value ? upstreamLogGroups.value : logRows.value));
 const isTextLog = computed(
-  () => activeTab.value === 'system' || activeTab.value === 'runtime' || activeTab.value === 'tasks',
+  () =>
+    activeTab.value === 'system' ||
+    activeTab.value === 'runtime' ||
+    activeTab.value === 'tasks' ||
+    activeTab.value === 'upstream-uploads',
 );
 const keywordPlaceholder = computed(() => currentLogMeta.value.keyword);
 const statusPlaceholder = computed(() => {
@@ -1323,6 +1350,7 @@ function requestLogList(tab: LogTab, params: LogListParams): Promise<PaginatedLi
     tasks: adminApi.logs.tasks,
     gateway: adminApi.logs.gateway,
     upstream: adminApi.logs.upstream,
+    'upstream-uploads': adminApi.logs.upstreamUploads,
   };
   return map[tab](params);
 }

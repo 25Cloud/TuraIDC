@@ -305,6 +305,59 @@ class AdminLogService
     }
 
     /**
+     * 上游附件上传与清理日志：过滤 Laravel 日志中与上传/清理相关的条目。
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    public function getUpstreamUploadLogs(array $filters, int $page, int $perPage): array
+    {
+        $entries = collect($this->readLaravelLogEntries())
+            ->filter(fn (array $item): bool => $this->isUpstreamUploadLogEntry($item))
+            ->filter(function (array $item) use ($filters): bool {
+                if (! empty($filters['level']) && strtoupper((string) $item['level']) !== strtoupper((string) $filters['level'])) {
+                    return false;
+                }
+                if (! empty($filters['keyword']) && ! str_contains((string) $item['message'], trim((string) $filters['keyword']))) {
+                    return false;
+                }
+
+                return $this->matchLogDateRange((string) $item['time'], $filters);
+            })
+            ->sortByDesc(fn (array $item): int => strtotime((string) ($item['time'] ?? '')) ?: 0)
+            ->values();
+
+        return $this->buildPaginatorPayload($this->paginateCollection($entries, $page, $perPage));
+    }
+
+    public function getUpstreamUploadLogsSummary(array $filters): array
+    {
+        $entries = collect($this->readLaravelLogEntries())
+            ->filter(fn (array $item): bool => $this->isUpstreamUploadLogEntry($item))
+            ->filter(fn (array $item): bool => $this->matchLogDateRange((string) $item['time'], $filters));
+
+        return [
+            'total' => $entries->count(),
+            'errors' => $entries->whereIn('level', ['ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'])->count(),
+            'warnings' => $entries->where('level', 'WARNING')->count(),
+            'infos' => $entries->where('level', 'INFO')->count(),
+        ];
+    }
+
+    private function isUpstreamUploadLogEntry(array $item): bool
+    {
+        $message = (string) ($item['message'] ?? '');
+
+        foreach (['上游工单附件上传', '上游附件上传', '清理上游未使用上传文件'] as $keyword) {
+            if ($keyword !== '' && str_contains($message, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Locate a runtime entry originating from the Laravel log file.
      *
      * @return array<string, mixed>|null
