@@ -352,7 +352,10 @@ final class TicketUpstreamCallbackService
     {
         $locks = [];
         try {
-            foreach ($this->inboundAttachmentFilenames($raw) as $filename) {
+            // 先排序再统一顺序获取，避免两个并发回调以相反顺序取同一批附件锁时互相等待。
+            $filenames = $this->inboundAttachmentFilenames($raw);
+            sort($filenames, SORT_STRING);
+            foreach ($filenames as $filename) {
                 $lock = Cache::lock('ticket-upstream-upload:'.$filename, 60);
                 $lock->block(10);
                 $locks[] = $lock;
@@ -415,16 +418,17 @@ final class TicketUpstreamCallbackService
      * 清理上游附件上传目录中的孤儿文件：超过保留期且未被任何工单回复引用的文件会被删除。
      * 对每个待删文件先获取与 receiveReply() 共享的按文件名缓存锁，并在锁内重新查询引用后再删除，
      * 避免回调刚校验附件但引用尚未写入数据库时误删文件；File::delete 返回 false 时计入 errors。
+     * 锁被回调持有而跳过删除的文件计入 skipped（此时引用结论未知，不归入 referenced）。
      * 上游系统无法强制携带上传凭证时，该任务用于缓解匿名上传造成的磁盘占用。
      *
-     * @return array{checked: int, deleted: int, referenced: int, errors: int}
+     * @return array{checked: int, deleted: int, referenced: int, errors: int, skipped: int}
      */
     public function cleanupOrphanUploads(?int $retentionMinutes = null, ?string $directory = null, int $limit = 100): array
     {
         $retentionMinutes = $retentionMinutes ?? (int) config('ticket_upstream.upload_unused_retention_minutes', 5);
         $directory = $directory ?? storage_path('app/private/tickets/upstream');
         if (! is_dir($directory)) {
-            return ['checked' => 0, 'deleted' => 0, 'referenced' => 0, 'errors' => 0];
+            return ['checked' => 0, 'deleted' => 0, 'referenced' => 0, 'errors' => 0, 'skipped' => 0];
         }
 
         $cutoff = now()->subMinutes($retentionMinutes);
@@ -435,6 +439,7 @@ final class TicketUpstreamCallbackService
         $deleted = 0;
         $referenced = 0;
         $errors = 0;
+        $skipped = 0;
 
         foreach ($files as $file) {
             if ($deleted >= $limit) {
@@ -446,9 +451,10 @@ final class TicketUpstreamCallbackService
             $checked++;
             $lock = Cache::lock('ticket-upstream-upload:'.$file->getFilename(), 60);
             try {
-                // 回调正在处理该文件（锁被持有）时跳过本次删除，等待下轮扫描
+                // 回调正在处理该文件（锁被持有）时跳过本次删除，等待下轮扫描。
+                // 此时数据库可能还没有附件引用，不能计入 referenced，单独归入 skipped。
                 if (! $lock->get()) {
-                    $referenced++;
+                    $skipped++;
 
                     continue;
                 }
@@ -478,6 +484,12 @@ final class TicketUpstreamCallbackService
             }
         }
 
-        return ['checked' => $checked, 'deleted' => $deleted, 'referenced' => $referenced, 'errors' => $errors];
+        return [
+            'checked' => $checked,
+            'deleted' => $deleted,
+            'referenced' => $referenced,
+            'errors' => $errors,
+            'skipped' => $skipped,
+        ];
     }
 }
