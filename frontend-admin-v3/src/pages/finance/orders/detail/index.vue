@@ -132,7 +132,14 @@
             </div>
             <div class="detail-kv-item detail-kv-item--span-2">
               <span>服务 ID</span>
-              <strong>{{ serviceIdLabel(order.service) }}</strong>
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!Number(toRecord(order.service).id || 0)"
+                @click="goServiceDetail"
+              >
+                <strong>{{ serviceIdLabel(order.service) }}</strong>
+              </button>
             </div>
             <div class="detail-kv-item detail-kv-item--span-2">
               <span>服务到期</span>
@@ -259,6 +266,7 @@
       @refresh="reloadInvoiceDetail"
       @view-order="(id) => id && router.push(`/admin/finance/orders/${id}`)"
       @view-user="(id) => id && router.push(`/admin/users/${id}`)"
+      @view-service="(id) => viewLinkedService(id)"
     />
   </div>
 </template>
@@ -275,6 +283,7 @@ import {
   toLabelMap,
   toTagTypeMap,
 } from '@shared/statusConfig';
+import type { TagProps } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -286,6 +295,8 @@ import type { RecordDetailMetric, RecordDetailTab } from '@/components/record-de
 import RecordDetailPage from '@/components/record-detail-page/index.vue';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
+
+type ThemeType = NonNullable<TagProps['theme']>;
 
 const SNAPSHOT_LABEL_MAP: Record<string, string> = {
   // ── 产品配置 ──
@@ -632,27 +643,30 @@ function orderStatusLabel(status: unknown) {
   return orderStatusLabelMap[String(status ?? '')] || fieldValue(status);
 }
 
-function orderStatusTheme(status: unknown) {
+function orderStatusTheme(status: unknown): ThemeType {
   const value = orderStatusTypeMap[String(status ?? '')] || 'default';
-  return value === 'info' ? 'default' : value;
+  if (value === 'warning' || value === 'success' || value === 'primary' || value === 'danger') return value;
+  return 'default';
 }
 
 function invoiceStatusLabel(status: unknown) {
   return invoiceStatusLabelMap[String(status ?? '')] || fieldValue(status);
 }
 
-function invoiceStatusTheme(status: unknown) {
+function invoiceStatusTheme(status: unknown): ThemeType {
   const value = invoiceStatusTypeMap[String(status ?? '')] || 'default';
-  return value === 'info' ? 'default' : value;
+  if (value === 'warning' || value === 'success' || value === 'primary' || value === 'danger') return value;
+  return 'default';
 }
 
 function paymentStatusLabel(payment: Record<string, unknown>) {
   return getStatusLabel(PAYMENT_STATUS_MAP, Number(payment.status));
 }
 
-function paymentStatusTheme(payment: Record<string, unknown>) {
+function paymentStatusTheme(payment: Record<string, unknown>): ThemeType {
   const value = getStatusTagType(PAYMENT_STATUS_MAP, Number(payment.status));
-  return value === 'info' || value === 'purple' ? 'default' : value;
+  if (value === 'warning' || value === 'success' || value === 'primary' || value === 'danger') return value;
+  return 'default';
 }
 
 function userName(user: unknown) {
@@ -663,6 +677,24 @@ function userName(user: unknown) {
 function serviceIdLabel(service: unknown) {
   const record = toRecord(service);
   return fieldValue(record.service_id || record.id);
+}
+
+function goServiceDetail() {
+  const service = toRecord(order.value.service);
+  const id = Number(service.id || service.service_id || 0);
+  if (!id) return;
+  router.push({
+    path: `/admin/services/${id}`,
+    query: { user: String(order.value.user_id || (toRecord(order.value.user).id as number) || '') },
+  });
+}
+
+function viewLinkedService(id: unknown) {
+  if (!Number(id || 0)) return;
+  router.push({
+    path: `/admin/services/${Number(id)}`,
+    query: { user: String(order.value.user_id || (toRecord(order.value.user).id as number) || '') },
+  });
 }
 
 function toRecord(value: unknown): Record<string, unknown> {

@@ -57,7 +57,7 @@ API 直接重构路由口径：
 - 旧接口 `/api/admin/*`、`/api/client/*`、`/api/site/*` 已删除，不再注册或保留兼容层。
 - 当前业务接口统一使用 `/api/v2/admin/*`、`/api/v2/client/*`、`/api/v2/site/*` 命名空间。
 - v2 路由仍复用现有鉴权、权限码、业务 Service、插件边界和统一响应外层；变化集中在 FormRequest、Resource/Response DTO、字段投影、分页和子资源拆分。
-- 具体任务、接口拆分和验收标准见 `docs/设计文档/后端/API直接重构方案.md`。
+- 具体任务、接口拆分和验收标准见 `docs/designs/backend/direct-api-refactor.md`。
 
 响应规范：
 
@@ -102,7 +102,7 @@ API 直接重构路由口径：
 - 页面：`src/pages/`，按业务域组织。
 - API：`src/api/`。
 - 样式：`src/style/`，沿用 TDesign/TDesign Starter token。
-- 验证：`cd frontend-admin-v3 && npm run build`。
+- 验证：`cd frontend-admin-v3 && pnpm run build`。
 
 ### 3.2 `frontend-user-v3-www`
 
@@ -113,7 +113,7 @@ API 直接重构路由口径：
 - 领域逻辑：`src/domains/`、`src/composables/`、`src/features/`。
 - 样式：`src/assets/styles/`。
 - 构建附带 sitemap/prerender。
-- 验证：`cd frontend-user-v3-www && npm run build`，重构时追加 `npm run verify:refactor`。
+- 验证：`cd frontend-user-v3-www && pnpm run build`，重构时追加 `pnpm run verify:refactor`。
 
 ### 3.3 `frontend-user-v4-console`
 
@@ -123,7 +123,7 @@ API 直接重构路由口径：
 - 页面：`src/pages/client/`。
 - 领域逻辑：`src/domains/`、`src/composables/`、`src/api/`。
 - 共享组件：优先复用 `shared/user-v3` 与 `@turaidc/shared`。
-- 验证：`cd frontend-user-v4-console && npm run build`，重构时追加 `npm run verify:refactor`。
+- 验证：`cd frontend-user-v4-console && pnpm run build`，重构时追加 `pnpm run verify:refactor`。
 
 ### 3.4 `shared`
 
@@ -142,9 +142,9 @@ API 直接重构路由口径：
 cd backend
 php artisan app:serve
 
-npm run dev:admin-v3
-npm run dev:user-v3-www
-npm run dev:user-v4-console
+pnpm run dev:admin-v3
+pnpm run dev:user-v3-www
+pnpm run dev:user-v4-console
 ```
 
 不要使用 `php artisan serve` 替代 `app:serve`。

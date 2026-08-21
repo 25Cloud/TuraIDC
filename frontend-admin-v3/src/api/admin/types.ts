@@ -69,6 +69,7 @@ export interface InvoiceRecord {
   user?: Record<string, unknown>;
   order?: Record<string, unknown> | null;
   product?: Record<string, unknown> | null;
+  service?: Record<string, unknown> | null;
   product_display_name?: string;
   product_spec_display?: string;
   combined_display_name?: string;

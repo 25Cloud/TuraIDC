@@ -211,7 +211,14 @@
             <div class="service-grid">
               <div>
                 <span>商品名称</span>
-                <strong>{{ linkedServiceDisplayName }}</strong>
+                <button
+                  type="button"
+                  class="user-link"
+                  :disabled="!Number(linkedServiceId || 0)"
+                  @click="goLinkedService"
+                >
+                  <strong>{{ linkedServiceDisplayName }}</strong>
+                </button>
               </div>
               <div>
                 <span>公网 IP</span>
@@ -591,6 +598,15 @@ function goUserDetail(userId: unknown) {
   router.push(`/admin/users/${userId}`);
 }
 
+function goLinkedService() {
+  const id = Number(linkedServiceId.value || 0);
+  if (!id) return;
+  router.push({
+    path: `/admin/services/${id}`,
+    query: { user: String(detail.value?.user_id || detail.value?.user?.id || '') },
+  });
+}
+
 async function copyText(text: unknown) {
   const value = String(text || '').trim();
   if (!value || value === '--' || !navigator?.clipboard) return;
@@ -732,7 +748,7 @@ async function handleUpload(files: UploadFileLike | UploadFileLike[]) {
     const response = await adminApi.tickets.uploadImage(formData);
     replyAttachments.value = [...replyAttachments.value, response].slice(0, MAX_TICKET_IMAGES);
     return {
-      status: 'success',
+      status: 'success' as const,
       response: {
         ...response,
         url: response.url || undefined,
@@ -740,7 +756,7 @@ async function handleUpload(files: UploadFileLike | UploadFileLike[]) {
     };
   } catch (error) {
     return {
-      status: 'fail',
+      status: 'fail' as const,
       error: errorMessage(error, '上传失败'),
       response: {},
     };

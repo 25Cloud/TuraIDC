@@ -4,7 +4,7 @@
 
 重要约束：当前开发文档、开发规范和其他约束性文档不具备完全真实性，不保证完全真实。后续治理必须以当前代码检查、真实路由、可观察运行行为和必要的受控验证为主，发现文档与当前代码冲突时，应先记录冲突，再按检查结论更新补充文档。
 
-治理执行原则：审计要覆盖关键目录和风险域，但修改只落在有价值文件上；不得为了“覆盖”机械加注释、机械格式化或制造无意义改动。自动生成的 `docs/自动生成/接口/后端API清单.md` 不手工编辑。
+治理执行原则：审计要覆盖关键目录和风险域，但修改只落在有价值文件上；不得为了“覆盖”机械加注释、机械格式化或制造无意义改动。自动生成的 `docs/generated/api/backend-api-catalog.md` 不手工编辑。
 
 ## 1. 治理目标
 
@@ -24,7 +24,7 @@
 1. 不做一次性大重写。
 2. 不为了抽象破坏当前稳定支付、账单、服务实例、回调链路。
 3. 不未经确认执行数据库初始化、迁移或历史迁移补跑。
-4. 不手工编辑自动生成的 `docs/自动生成/接口/后端API清单.md`。
+4. 不手工编辑自动生成的 `docs/generated/api/backend-api-catalog.md`。
 5. 不把所有第三方能力塞进一个万能接口。
 
 ## 3. 后端分层标准
@@ -127,7 +127,7 @@ backend/tests/Fakes/Integrations/
 
 ## 5. API 请求与响应工程化
 
-API 治理必须同时覆盖请求入口和响应出口。新增或重构接口时，以 `docs/参考资料/接口/API格式规范.md` 为当前 API 规范文档，并以当前代码检查结果反向补充该文档。
+API 治理必须同时覆盖请求入口和响应出口。新增或重构接口时，以 `docs/references/api/api-format.md` 为当前 API 规范文档，并以当前代码检查结果反向补充该文档。
 
 ### 请求侧
 
@@ -150,8 +150,8 @@ API 治理必须同时覆盖请求入口和响应出口。新增或重构接口�
 
 ### 文档同步
 
-- API 请求/响应规则变化时，优先更新 `docs/参考资料/接口/API格式规范.md`。
-- 路由清单变化时按脚本重刷 `docs/自动生成/接口/后端API清单.md`，禁止手工编辑该文件。
+- API 请求/响应规则变化时，优先更新 `docs/references/api/api-format.md`。
+- 路由清单变化时按脚本重刷 `docs/generated/api/backend-api-catalog.md`，禁止手工编辑该文件。
 - 影响前端字段时，必须同步前端调用和测试建议。
 
 ## 6. 注释标准
@@ -273,15 +273,15 @@ php artisan test
 
 - 项目规则：`AGENTS.md`，仅在规则升级且确认为仓库级硬约束时更新。
 - 后端文档：`docs/BACKEND.md`。
-- API 格式：`docs/参考资料/接口/API格式规范.md`。
-- API 分组导航：`docs/参考资料/接口/API清单导航.md`。
+- API 格式：`docs/references/api/api-format.md`。
+- API 分组导航：`docs/references/api/api-catalog-navigation.md`。
 - TuraIDC 主技能：`C:/Users/USER125536/.agents/skills/turaidc/SKILL.md`。
 - TuraIDC 后端审查技能：`C:/Users/USER125536/.agents/skills/turaidc/code-review/SKILL.md`。
 - TuraIDC reference：`C:/Users/USER125536/.agents/skills/turaidc/references/11-backend-engineering-governance.md`。
 
 禁止手工编辑：
 
-- `docs/自动生成/接口/后端API清单.md`，该文件由脚本生成。
+- `docs/generated/api/backend-api-catalog.md`，该文件由脚本生成。
 
 同步原则：
 

@@ -1,0 +1,126 @@
+.service-detail-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--td-comp-margin-l);
+}
+
+.detail-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--td-comp-margin-m);
+}
+
+.detail-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  flex: 1;
+
+  h3 {
+    overflow: hidden;
+    margin: 0;
+    color: var(--td-text-color-primary);
+    font-size: 18px;
+    line-height: 28px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  span {
+    color: var(--td-text-color-placeholder);
+    font-size: var(--td-font-size-size-1, 12px);
+  }
+}
+
+.drawer-alert {
+  margin-top: var(--td-comp-margin-l);
+}
+
+.drawer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--td-comp-margin-s);
+  margin-top: var(--td-comp-margin-l);
+}
+
+.spec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--td-comp-margin-s);
+  margin-top: var(--td-comp-margin-l);
+}
+
+.spec-chip {
+  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-s);
+  border: 1px solid var(--td-component-border);
+  border-radius: var(--td-radius-medium);
+  background: var(--td-bg-color-container);
+}
+
+.spec-chip span,
+.pricing-row span {
+  color: var(--td-text-color-placeholder);
+  font-size: var(--td-font-size-size-1, 12px);
+}
+
+.spec-chip strong,
+.pricing-row strong {
+  color: var(--td-text-color-primary);
+  font-weight: 600;
+}
+
+.pricing-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--td-comp-margin-s);
+  margin-top: var(--td-comp-margin-l);
+}
+
+.pricing-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 180px;
+  gap: var(--td-comp-margin-m);
+  align-items: center;
+  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-m);
+  border: 1px solid var(--td-component-border);
+  border-radius: var(--td-radius-medium);
+  background: var(--td-bg-color-container);
+}
+
+.pricing-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--td-comp-margin-xs);
+  min-width: 0;
+}
+
+.dialog-form {
+  margin-top: var(--td-comp-margin-l);
+}
+
+@media (width <= 768px) {
+  .detail-action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .detail-title {
+    align-items: center;
+  }
+
+  .drawer-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .drawer-actions .t-button {
+    min-width: 0;
+  }
+
+  .pricing-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -146,7 +146,7 @@
     <t-drawer
       :visible="coverImageDrawerVisible"
       header="选择封面媒体"
-      :size="520"
+      size="520px"
       placement="right"
       :footer="null"
       @close="closeCoverImageDrawer"

@@ -53,7 +53,7 @@ $lines = [
     '> **自动生成**，由 `backend/scripts/export_api_inventory.php` 扫描 Laravel 路由表导出，**不要手工编辑**。',
     '>',
     '> 需要更新本文件时，直接在项目根目录执行：`php backend/scripts/export_api_inventory.php`。',
-    '> 需要看业务分组、核心业务流程映射等人类可读导航，请查看 `docs/参考资料/接口/API清单导航.md`。',
+    '> 需要看业务分组、核心业务流程映射等人类可读导航，请查看 `docs/references/api/api-catalog-navigation.md`。',
     '',
     '| 分组 | 方法 | 路径 | 控制器动作 | 鉴权 | 中间件 |',
     '| --- | --- | --- | --- | --- | --- |',
@@ -71,7 +71,7 @@ foreach ($routes as $route) {
     );
 }
 
-$target = dirname($basePath).'/docs/自动生成/接口/后端API清单.md';
+$target = dirname($basePath).'/docs/generated/api/backend-api-catalog.md';
 // Windows 下 PHP 文件系统 API 按系统 ANSI(GBK) 编码解析路径，
 // UTF-8 中文路径需转 GBK 才能正确打开，否则报 "Failed to open stream: No such file or directory"。
 $writeTarget = PHP_OS_FAMILY === 'Windows'

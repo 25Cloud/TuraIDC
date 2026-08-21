@@ -29,6 +29,7 @@ class AdminInvoiceSummaryResource extends JsonResource
             'product_display_name' => (string) ($invoice['product_display_name'] ?? ''),
             'combined_display_name' => (string) ($invoice['combined_display_name'] ?? ''),
             'product_full_path' => (string) ($invoice['product_full_path'] ?? ''),
+            'service' => $this->service($invoice['service'] ?? null),
             'type' => (string) ($invoice['type'] ?? ''),
             'type_label' => (string) ($invoice['type_label'] ?? ''),
             'amount' => (string) ($invoice['amount'] ?? '0.00'),
