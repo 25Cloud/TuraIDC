@@ -232,6 +232,7 @@ class ProvisionService
                     'upstream_invoice_id' => $result['upstream_invoice_id'],
                     'upstream_host_id' => $result['upstream_host_id'],
                     'upstream_host_ids' => $result['upstream_host_ids'],
+                    'downstream_id' => $result['downstream_id'] ?? null,
                     'upstream_product_id' => $this->resolveUpstreamProductId($order->product),
                     'upstream_product_name' => trim((string) ($hostDetail['product_name'] ?? '')),
                     'upstream_status' => (string) ($hostDetail['domainstatus'] ?? ''),

@@ -170,7 +170,10 @@ class V2TicketApiTest extends TestCase
             ->assertJsonMissingPath('data.ticket.replies')
             ->assertJsonMissingPath('data.ticket.service.connection');
 
-        $this->assertSame($this->ticketDetailWhitelist(), array_keys($detailResponse->json('data.ticket')));
+        $this->assertSame(
+            [...$this->ticketDetailWhitelist(), 'upstream_delivery'],
+            array_keys($detailResponse->json('data.ticket'))
+        );
         $this->assertNoSensitiveKeys($detailResponse->json());
 
         $this->getJson('/api/v2/admin/tickets/'.$ticket->id.'/replies?per_page=20')

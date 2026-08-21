@@ -154,6 +154,111 @@ async function mockTickets(page: import('@playwright/test').Page) {
   });
 }
 
+async function mockTicketDeliverySettings(page: import('@playwright/test').Page) {
+  let nextId = 302;
+  let rules = [
+    {
+      id: 301,
+      name: '技术支持同步',
+      department: 'support',
+      supplier_id: 7,
+      provider_key: 'zjmf_finance_api',
+      product_scope_mode: 'selected',
+      product_ids: [501],
+      upstream_department_id: 'tech-01',
+      enabled: true,
+      sync_admin_replies: true,
+      mask_keywords: '敏感词',
+    },
+  ];
+
+  await page.route(/\/api\/v2\/admin\/suppliers(?:\?.*)?$/, async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        data: {
+          list: [{ id: 7, name: '主 ZJMF', provider_key: 'zjmf_finance_api', provider_label: 'ZJMF 财务', status: 1 }],
+          total: 1,
+          page: 1,
+          page_size: 100,
+        },
+      }),
+    });
+  });
+
+  await page.route(/\/api\/v2\/admin\/products(?:\?.*)?$/, async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        data: {
+          list: [
+            {
+              id: 501,
+              display_name: '测试云服务器',
+              upstream_binding: { supplier_id: 7, provider_key: 'zjmf_finance_api', status: 1 },
+            },
+          ],
+          total: 1,
+          page: 1,
+          page_size: 100,
+        },
+      }),
+    });
+  });
+
+  await page.route(/\/api\/v2\/admin\/ticket-delivery-departments(?:\?.*)?$/, async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        data: {
+          list: [
+            { id: 'tech-01', name: '技术支持', description: '技术支持部门' },
+            { id: 'sales-01', name: '销售', description: '销售支持部门' },
+          ],
+        },
+      }),
+    });
+  });
+
+  await page.route(/\/api\/v2\/admin\/ticket-delivery-rules(?:\/\d+)?(?:\?.*)?$/, async (route) => {
+    const request = route.request();
+    if (request.method() === 'GET') {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 0, data: { list: rules } }),
+      });
+      return;
+    }
+
+    const payload = request.postDataJSON() || {};
+    if (request.method() === 'POST') {
+      const created = { id: nextId++, ...payload };
+      rules = [...rules, created];
+      await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ code: 0, data: created }) });
+      return;
+    }
+
+    const id = Number(new URL(request.url()).pathname.split('/').pop());
+    if (request.method() === 'PUT') {
+      rules = rules.map((rule) => (rule.id === id ? { ...rule, ...payload } : rule));
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 0, data: rules.find((rule) => rule.id === id) }),
+      });
+      return;
+    }
+
+    rules = rules.filter((rule) => rule.id !== id);
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, data: null }),
+    });
+  });
+}
+
 async function mockTicketConversation(page: import('@playwright/test').Page) {
   let assigneeId: number | null = null;
   let replied = false;
@@ -3631,6 +3736,54 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await page.goto('/admin/tickets', { waitUntil: 'domcontentloaded' });
     await page.getByText('网络无法连接').click();
     await expect(page).toHaveURL(/\/admin\/ticket-conversations\/101/);
+  });
+
+  test('opens ticket delivery settings and manages rules', async ({ page }) => {
+    await mockAdminInfo(page);
+    await mockTicketDeliverySettings(page);
+    await page.addInitScript(() => {
+      window.localStorage.setItem('admin_token', 'test-token');
+      window.localStorage.setItem('admin_last_active_at', String(Date.now()));
+    });
+
+    await page.goto('/admin/ticket-delivery-rules', { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/\/admin\/ticket-delivery-rules/);
+    await expect(page.getByText('技术支持同步')).toBeVisible();
+    await expect(page.getByText('测试云服务器')).toBeVisible();
+
+    await page.getByRole('button', { name: '新增规则' }).click();
+    const dialog = page.locator('.t-dialog:visible');
+    await expect(dialog.getByText('新增工单传递规则')).toBeVisible();
+    await dialog.getByPlaceholder('例如：技术支持工单同步').fill('销售同步');
+    await dialog.locator('.t-form__item').filter({ hasText: '工单部门' }).locator('.t-select').click();
+    await page.locator('.t-popup:visible .t-select-option').filter({ hasText: '销售' }).click();
+    await dialog.locator('.t-form__item').filter({ hasText: '供应商' }).locator('.t-select').click();
+    await page.locator('.t-popup:visible .t-select-option').filter({ hasText: '主 ZJMF' }).click();
+    await dialog.locator('.t-radio').filter({ hasText: '全部产品' }).click();
+    await dialog.locator('.t-form__item').filter({ hasText: '上游部门' }).locator('.t-select').click();
+    await page.locator('.t-popup:visible .t-select-option').filter({ hasText: '销售 · 销售支持部门' }).click();
+
+    const createRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/ticket-delivery-rules') && request.method() === 'POST',
+    );
+    await dialog.getByRole('button', { name: '保存' }).click();
+    await expect((await createRequest).postDataJSON()).toMatchObject({
+      name: '销售同步',
+      department: 'sales',
+      supplier_id: 7,
+      provider_key: 'zjmf_finance_api',
+      product_scope_mode: 'all',
+      product_ids: [],
+      upstream_department_id: 'sales-01',
+    });
+    await expect(page.getByText('销售同步')).toBeVisible();
+
+    const deleteRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/ticket-delivery-rules/301') && request.method() === 'DELETE',
+    );
+    await page.getByRole('button', { name: '删除' }).first().click();
+    await page.locator('.t-dialog:visible').getByRole('button', { name: '删除' }).click();
+    await deleteRequest;
   });
 
   test('opens ticket conversation and handles core actions', async ({ page }) => {

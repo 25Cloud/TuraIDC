@@ -17,6 +17,7 @@ class TextSanitizer
     public static function cleanHtml(?string $value, bool $preserveNewLines = false): string
     {
         $normalized = html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $normalized = preg_replace('/<script\b[^>]*>.*?<\/script\s*>|<style\b[^>]*>.*?<\/style\s*>/isu', '', $normalized) ?? $normalized;
         $normalized = preg_replace('/<br\s*\/?>/iu', "\n", $normalized) ?? $normalized;
         $normalized = preg_replace('/<\/(p|div|li|tr|ul|ol|h[1-6])>/iu', "\n", $normalized) ?? $normalized;
         $normalized = strip_tags($normalized);
