@@ -9,6 +9,7 @@ use App\Support\UploadedImage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 final class TicketUpstreamUploadController extends Controller
@@ -27,7 +28,8 @@ final class TicketUpstreamUploadController extends Controller
             return response()->json(['status' => 400, 'msg' => '仅支持 JPG、PNG、WEBP 图片'], 200);
         }
 
-        if ($file->getSize() > 5 * 1024 * 1024) {
+        $size = (int) $file->getSize();
+        if ($size > 5 * 1024 * 1024) {
             return response()->json(['status' => 400, 'msg' => '图片大小不能超过 5MB'], 200);
         }
 
@@ -41,11 +43,24 @@ final class TicketUpstreamUploadController extends Controller
             return response()->json(['status' => 400, 'msg' => '文件保存失败'], 200);
         }
 
+        Log::info('上游工单附件上传成功', [
+            'filename' => $filename,
+            'mime_type' => $mimeType,
+            'size' => $size,
+        ]);
+
         return response()->json([
+            'code' => 0,
             'status' => 200,
+            'msg' => '上传成功',
             'savename' => $filename,
             'mime_type' => $mimeType,
             'name' => $filename,
+            'data' => [
+                'savename' => $filename,
+                'mime_type' => $mimeType,
+                'name' => $filename,
+            ],
         ]);
     }
 }

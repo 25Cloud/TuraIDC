@@ -540,7 +540,8 @@ function closeDeliveryLogs() {
 function parseAttachments(
   item: { attachments?: TicketAttachment[]; attachment_urls?: Array<string | TicketAttachment> } | null,
 ) {
-  const attachments = item?.attachments || item?.attachment_urls || [];
+  const attachments =
+    Array.isArray(item?.attachments) && item.attachments.length > 0 ? item.attachments : item?.attachment_urls || [];
   return attachments
     .map((attachment, index) => {
       if (typeof attachment === 'string') {

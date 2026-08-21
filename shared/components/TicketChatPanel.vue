@@ -478,7 +478,9 @@ function cancelQuote() {
 }
 
 function hasAttachments(item) {
-  const attachments = item?.attachments || item?.attachment_urls
+  const attachments = Array.isArray(item?.attachments) && item.attachments.length > 0
+    ? item.attachments
+    : item?.attachment_urls
   return Array.isArray(attachments) && attachments.length > 0
 }
 
@@ -541,7 +543,9 @@ function handleReplyUploadExceed() {
 }
 
 function parseAttachments(item) {
-  const attachments = item?.attachments || item?.attachment_urls || []
+  const attachments = Array.isArray(item?.attachments) && item.attachments.length > 0
+    ? item.attachments
+    : item?.attachment_urls || []
   return attachments.map((url, index) => ({
     id: index,
     url: typeof url === 'string' ? url : url.url,

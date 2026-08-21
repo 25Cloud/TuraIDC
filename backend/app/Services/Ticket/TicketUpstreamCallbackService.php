@@ -16,6 +16,7 @@ use App\Services\Upstream\ProviderKey;
 use App\Support\TextSanitizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 
 final class TicketUpstreamCallbackService
 {
@@ -34,10 +35,14 @@ final class TicketUpstreamCallbackService
     {
         $upstreamTicketId = trim((string) ($payload['tid'] ?? ''));
         $content = TextSanitizer::cleanHtml((string) ($payload['content'] ?? ''), true);
-        $rawAttachments = $payload['attachment'] ?? [];
-        $hasAttachments = is_array($rawAttachments)
-            ? $rawAttachments !== []
-            : trim((string) $rawAttachments) !== '';
+        $rawAttachments = $this->rawAttachments($payload);
+        $hasAttachments = $rawAttachments !== [];
+        if ($rawAttachments === []) {
+            Log::info('上游工单回调未识别到附件', [
+                'payload_keys' => array_values(array_keys($payload)),
+                'attachment_types' => $this->attachmentFieldTypes($payload),
+            ]);
+        }
         throw_if($legacy && trim((string) ($payload['id'] ?? '')) === '', new BusinessException('回调服务标识不能为空', 42200));
         throw_if($legacy && trim((string) ($payload['rand_str'] ?? '')) === '', new BusinessException('回调随机串不能为空', 42200));
         throw_if($upstreamTicketId === '', new BusinessException('上游工单号不能为空', 42200));
@@ -75,13 +80,13 @@ final class TicketUpstreamCallbackService
             $eventId = hash('sha256', implode('|', [
                 $upstreamTicketId,
                 $content,
-                json_encode($payload['attachment'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                json_encode($rawAttachments, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]));
         }
 
         $duplicate = false;
         $replyId = null;
-        DB::transaction(function () use ($binding, $payload, $content, $eventId, &$duplicate, &$replyId): void {
+        DB::transaction(function () use ($binding, $payload, $content, $eventId, $rawAttachments, &$duplicate, &$replyId): void {
             $binding = TicketUpstreamBinding::query()->lockForUpdate()->findOrFail($binding->id);
             $existing = TicketReplyDelivery::query()
                 ->where('direction', TicketDeliveryService::DIRECTION_INBOUND)
@@ -96,7 +101,7 @@ final class TicketUpstreamCallbackService
             }
 
             $ticket = $binding->ticket()->lockForUpdate()->firstOrFail();
-            $attachments = $this->normalizeInboundAttachments($payload['attachment'] ?? []);
+            $attachments = $this->normalizeInboundAttachments($rawAttachments);
             $reply = TicketReply::create([
                 'ticket_id' => $ticket->id,
                 'user_id' => 0,
@@ -147,6 +152,86 @@ final class TicketUpstreamCallbackService
     }
 
     /** @param array<string, mixed> $payload */
+    private function rawAttachments(array $payload): array
+    {
+        $raw = [];
+        foreach (['attachment', 'attachments', 'images', 'image'] as $key) {
+            if (! array_key_exists($key, $payload) || $this->isEmptyAttachmentValue($payload[$key])) {
+                continue;
+            }
+            $raw = $payload[$key];
+            break;
+        }
+        if ($raw === [] && is_array($payload['data'] ?? null)) {
+            foreach (['attachment', 'attachments', 'images', 'image'] as $key) {
+                if (array_key_exists($key, $payload['data']) && ! $this->isEmptyAttachmentValue($payload['data'][$key])) {
+                    $raw = $payload['data'][$key];
+                    break;
+                }
+            }
+        }
+        for ($depth = 0; $depth < 3; $depth++) {
+            if (is_string($raw)) {
+                $decoded = json_decode($raw, true);
+                $raw = $decoded ?? $raw;
+            }
+            if (! is_array($raw)) {
+                break;
+            }
+            foreach (['data', 'list', 'items', 'attachment', 'attachments', 'images', 'image'] as $key) {
+                if (array_key_exists($key, $raw) && count($raw) === 1) {
+                    $raw = $raw[$key];
+                    continue 2;
+                }
+            }
+            break;
+        }
+        if ($raw === null || $raw === '') {
+            return [];
+        }
+        if (! is_array($raw)) {
+            return [$raw];
+        }
+        if ($raw === [] || array_is_list($raw)) {
+            return $raw;
+        }
+        if (array_intersect(array_keys($raw), ['savename', 'save_name', 'filename', 'file_name', 'name']) !== []) {
+            return [$raw];
+        }
+        if (count(array_filter($raw, 'is_scalar')) === count($raw)) {
+            return array_values($raw);
+        }
+
+        return [$raw];
+    }
+
+    /** @return array<string, string> */
+    private function attachmentFieldTypes(array $payload): array
+    {
+        $result = [];
+        foreach (['attachment', 'attachments', 'images', 'image', 'data'] as $key) {
+            if (array_key_exists($key, $payload)) {
+                $value = $payload[$key];
+                $result[$key] = is_array($value) ? 'array' : get_debug_type($value);
+            }
+        }
+
+        return $result;
+    }
+
+    private function isEmptyAttachmentValue(mixed $value): bool
+    {
+        if ($value === null || $value === '') {
+            return true;
+        }
+        if (is_array($value)) {
+            return $value === [];
+        }
+
+        return trim((string) $value) === '';
+    }
+
+    /** @param array<string, mixed> $payload */
     private function verifySignature(array $payload, TicketUpstreamBinding $binding, bool $legacy): void
     {
         $provided = trim((string) ($payload['signature'] ?? ''));
@@ -182,12 +267,16 @@ final class TicketUpstreamCallbackService
         if ($raw === null || $raw === '') {
             return [];
         }
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            $raw = is_array($decoded) ? $decoded : [$raw];
+        }
         throw_if(! is_array($raw), new BusinessException('上游附件格式无效', 42200));
         throw_if(count($raw) > 9, new BusinessException('上游附件数量超限', 42200));
 
         $attachments = [];
         foreach ($raw as $item) {
-            $filename = is_string($item) ? trim($item) : '';
+            $filename = $this->localAttachmentFilename($item);
             throw_if($filename === '' || basename($filename) !== $filename || str_contains($filename, '..'), new BusinessException('上游附件名称无效', 42200));
             $path = 'private/tickets/upstream/'.$filename;
             $absolutePath = storage_path('app/'.str_replace('/', DIRECTORY_SEPARATOR, $path));
@@ -195,8 +284,9 @@ final class TicketUpstreamCallbackService
             throw_if((int) File::size($absolutePath) > 5 * 1024 * 1024, new BusinessException('上游附件大小超限', 42200));
             $mimeType = strtolower((string) File::mimeType($absolutePath));
             throw_if(! in_array($mimeType, ['image/jpeg', 'image/png', 'image/webp'], true), new BusinessException('上游附件类型无效', 42200));
+            $name = is_array($item) ? trim((string) ($item['name'] ?? $filename)) : $filename;
             $attachments[] = [
-                'name' => $filename,
+                'name' => $name !== '' ? basename($name) : $filename,
                 'path' => $path,
                 'size' => (int) File::size($absolutePath),
                 'mime_type' => $mimeType,
@@ -205,6 +295,25 @@ final class TicketUpstreamCallbackService
         }
 
         return $attachments;
+    }
+
+    private function localAttachmentFilename(mixed $item): string
+    {
+        if (is_string($item)) {
+            return trim($item);
+        }
+        if (! is_array($item)) {
+            return '';
+        }
+
+        foreach (['savename', 'save_name', 'filename', 'file_name', 'name'] as $key) {
+            $value = trim((string) ($item[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
     }
 
     private function legacyToken(TicketUpstreamBinding $binding): string
