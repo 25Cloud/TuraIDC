@@ -6,8 +6,13 @@ const env = import.meta.env.MODE || 'development';
 // 导入homepage相关固定路由
 const homepageModules = import.meta.glob('./modules/**/homepage.ts', { eager: true });
 
-// 导入modules非homepage相关固定路由
-const fixedModules = import.meta.glob('./modules/**/!(homepage).ts', { eager: true });
+// 导入modules非homepage相关固定路由。
+// 注意：vite 8（rolldown）的 import.meta.glob 不支持 extglob（!(...)）这类
+// picomatch 扩展语法，这里用全量 glob 后在代码层按文件名过滤。
+const allFixedModules = import.meta.glob<{ default: unknown }>('./modules/**/*.ts', { eager: true });
+const fixedModules = Object.fromEntries(
+  Object.entries(allFixedModules).filter(([key]) => !key.endsWith('/homepage.ts')),
+);
 
 // 其他固定路由
 const defaultRouterList: Array<RouteRecordRaw> = [

@@ -6,12 +6,12 @@ namespace Tests\Feature;
 
 require_once __DIR__.'/../Support/InstallsZjmfBridgeAddon.php';
 
-use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfErrorMapper;
-use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfTokenService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Cache;
 use Tests\Support\InstallsZjmfBridgeAddon;
 use Tests\TestCase;
+use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfErrorMapper;
+use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfTokenService;
 
 class ZjmfBridgeTest extends TestCase
 {
@@ -146,7 +146,7 @@ class ZjmfBridgeTest extends TestCase
         $this->assertSame(['profile.read'], $payload['scope']);
     }
 
-    public function test_error_mapper_converts_TURAIDC_codes_to_zjmf_statuses(): void
+    public function test_error_mapper_converts_turaid_c_codes_to_zjmf_statuses(): void
     {
         $mapper = app(ZjmfErrorMapper::class);
 

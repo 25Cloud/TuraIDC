@@ -88,6 +88,7 @@ class BackfillConfigOptionsCommand extends Command
             $decoded = json_decode((string) $row->config_options, true);
             if (! is_array($decoded) || $decoded === []) {
                 $skipped++;
+
                 continue;
             }
 

@@ -13,6 +13,7 @@ use App\Models\ThirdProductGroup;
 use App\Services\Order\Concerns\HandlesOrderCalculation;
 use App\Support\ProductGroupHierarchyFields;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 
 class ZjmfProductCatalogService
@@ -243,7 +244,7 @@ class ZjmfProductCatalogService
 
     /**
      * @param  int[]  $productIds
-     * @return \Illuminate\Support\Collection<int, Product>
+     * @return Collection<int, Product>
      */
     private function legacyProducts(array $productIds)
     {

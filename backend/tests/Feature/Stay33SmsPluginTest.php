@@ -12,13 +12,13 @@ use App\Services\Integrations\Plugins\PluginRuntimeRegistry;
 use App\Services\Integrations\Plugins\PluginScanner;
 use App\Services\Sms\SmsDriverManager;
 use App\Support\SmsTemplateCatalog;
-use TuraIDC\Plugins\Sms\Stay33\Lib\Stay33SmsClient;
-use TuraIDC\Plugins\Sms\Stay33\Stay33Plugin;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use TuraIDC\Plugins\Sms\Stay33\Lib\Stay33SmsClient;
+use TuraIDC\Plugins\Sms\Stay33\Stay33Plugin;
 
 class Stay33SmsPluginTest extends TestCase
 {
