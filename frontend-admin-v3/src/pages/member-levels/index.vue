@@ -58,7 +58,7 @@
               trigger="click"
               placement="bottom-right"
               :options="mobileActionOptions"
-              @click="handleMobileAction(row, $event)"
+              @click="handleMobileAction(row, $event as DropdownOption)"
             >
               <t-button class="member-mobile-card__more" variant="text" shape="square">...</t-button>
             </t-dropdown>

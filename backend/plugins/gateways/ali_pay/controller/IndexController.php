@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Gateways\AliPay\Controller;
 
-use TuraIDC\Plugins\Gateways\AliPay\AliPayPlugin;
 use Illuminate\Http\Response;
+use TuraIDC\Plugins\Gateways\AliPay\AliPayPlugin;
 
 class IndexController
 {

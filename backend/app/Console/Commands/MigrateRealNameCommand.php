@@ -81,6 +81,7 @@ class MigrateRealNameCommand extends Command
             $user = User::query()->find($userId);
             if (! $user instanceof User) {
                 $skipped++;
+
                 continue;
             }
 
@@ -91,6 +92,7 @@ class MigrateRealNameCommand extends Command
             // 已认证且非 --force：跳过
             if (! $force && (int) ($user->is_verified ?? 0) === 1 && trim((string) ($user->real_name ?? '')) !== '') {
                 $skipped++;
+
                 continue;
             }
 

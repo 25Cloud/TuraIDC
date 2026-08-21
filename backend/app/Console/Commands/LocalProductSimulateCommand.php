@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
 use App\Constants\ServiceStatus;
+use App\Models\IntegrationPlugin;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Product;
@@ -31,10 +32,13 @@ use Illuminate\Support\Facades\DB;
 class LocalProductSimulateCommand extends Command
 {
     protected $signature = 'simulate:product {--skip-setup : 跳过产品创建}';
+
     protected $description = '本地商品模拟：全8类账单覆盖，不调第三方，使用测试账号 #1';
 
     private User $user;
+
     private Product $product;
+
     private Supplier $supplier;
 
     /** @var array<int, array{type:string, label:string, id:int, no:string, status:string, amount:string}> */
@@ -58,7 +62,7 @@ class LocalProductSimulateCommand extends Command
         // 余额不足则补充
         if ((float) $this->user->balance < 500) {
             $this->user->forceFill(['balance' => '500.00'])->save();
-            $this->info("余额补充至 500.00");
+            $this->info('余额补充至 500.00');
         }
 
         // 创建产品和供应商
@@ -123,7 +127,7 @@ class LocalProductSimulateCommand extends Command
                 (string) $r['id'], $r['no'], $r['status'], $r['amount'],
             ], $this->results, array_keys($this->results))
         );
-        $this->info("可在管理端查看: http://127.0.0.1:5174/admin/finance/invoices");
+        $this->info('可在管理端查看: http://127.0.0.1:5174/admin/finance/invoices');
 
         return 0;
     }
@@ -338,7 +342,7 @@ class LocalProductSimulateCommand extends Command
             $plugin = $installer->install($domain, $slug);
             $installer->enable($plugin);
         } elseif ((int) $existing->status !== 1) {
-            $plugin = \App\Models\IntegrationPlugin::query()->find((int) $existing->id);
+            $plugin = IntegrationPlugin::query()->find((int) $existing->id);
             if ($plugin) {
                 $installer->enable($plugin);
             }
@@ -356,9 +360,9 @@ class LocalProductSimulateCommand extends Command
     }
 
     /**
-     * @param Invoice $invoice
-     * @param Order|null $order
-     * @param Service|null $service
+     * @param  Invoice  $invoice
+     * @param  Order|null  $order
+     * @param  Service|null  $service
      */
     private function push(string $type, string $label, $invoice, $order = null, $service = null): void
     {

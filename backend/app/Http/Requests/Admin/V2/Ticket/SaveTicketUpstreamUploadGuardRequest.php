@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Admin\V2\Ticket;
 
 use App\Http\Requests\Admin\V2\Common\AdminFormRequest;
+use App\Models\Setting;
 use Closure;
 
 final class SaveTicketUpstreamUploadGuardRequest extends AdminFormRequest
@@ -29,9 +30,26 @@ final class SaveTicketUpstreamUploadGuardRequest extends AdminFormRequest
     public function payload(): array
     {
         return [
-            'allowed_ips' => trim((string) ($this->validated('allowed_ips') ?? '')),
-            'rate_limit' => (int) $this->validated('rate_limit'),
-            'block_non_whitelisted' => (bool) ($this->validated('block_non_whitelisted') ?? false),
+            'allowed_ips' => trim((string) ($this->validated('allowed_ips') ?? Setting::getValue(
+                'ticket_upstream',
+                'allowed_ips',
+                (string) config('ticket_upstream.upload_allowed_ips', '')
+            ))),
+            'rate_limit' => (int) ($this->validated('rate_limit') ?? Setting::getValue(
+                'ticket_upstream',
+                'rate_limit',
+                (string) config('ticket_upstream.upload_rate_limit', 30)
+            )),
+            'block_non_whitelisted' => array_key_exists('block_non_whitelisted', $this->validated())
+                ? (bool) $this->validated('block_non_whitelisted')
+                : filter_var(
+                    (string) Setting::getValue(
+                        'ticket_upstream',
+                        'block_non_whitelisted',
+                        config('ticket_upstream.upload_block_non_whitelisted', false)
+                    ),
+                    FILTER_VALIDATE_BOOLEAN
+                ),
         ];
     }
 

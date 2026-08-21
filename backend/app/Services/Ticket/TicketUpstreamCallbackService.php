@@ -435,20 +435,46 @@ final class TicketUpstreamCallbackService
         $files = collect(File::files($directory))
             ->sortBy(fn (\SplFileInfo $file): int => $file->getMTime())
             ->values();
+        $candidateFiles = $files->filter(
+            fn (\SplFileInfo $file): bool => now()->createFromTimestamp($file->getMTime())->lte($cutoff)
+        )->take($limit)->values();
+        $candidatePaths = $candidateFiles
+            ->map(static fn (\SplFileInfo $file): string => 'private/tickets/upstream/'.$file->getFilename())
+            ->all();
+        $referencedPaths = [];
+        if ($candidatePaths !== []) {
+            $referencedPaths = TicketReply::query()
+                ->where(function ($query) use ($candidatePaths): void {
+                    foreach ($candidatePaths as $candidatePath) {
+                        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $candidatePath);
+                        $query->orWhere('attachments', 'like', "%{$escaped}%");
+                    }
+                })
+                ->get(['attachments'])
+                ->flatMap(static function (TicketReply $reply): array {
+                    $attachments = $reply->attachments;
+
+                    return is_array($attachments) ? $attachments : [];
+                })
+                ->map(static fn (mixed $attachment): string => is_array($attachment) ? (string) ($attachment['path'] ?? '') : '')
+                ->filter()
+                ->flip()
+                ->all();
+        }
         $checked = 0;
         $deleted = 0;
         $referenced = 0;
         $errors = 0;
         $skipped = 0;
 
-        foreach ($files as $file) {
-            if ($deleted >= $limit) {
-                break;
-            }
-            if (now()->createFromTimestamp($file->getMTime())->gt($cutoff)) {
+        foreach ($candidateFiles as $file) {
+            $checked++;
+            $path = 'private/tickets/upstream/'.$file->getFilename();
+            if (array_key_exists($path, $referencedPaths)) {
+                $referenced++;
+
                 continue;
             }
-            $checked++;
             $lock = Cache::lock('ticket-upstream-upload:'.$file->getFilename(), 60);
             try {
                 // 回调正在处理该文件（锁被持有）时跳过本次删除，等待下轮扫描。
@@ -458,8 +484,7 @@ final class TicketUpstreamCallbackService
 
                     continue;
                 }
-                // 引用结论必须在锁内重新查询：锁外查到的结果在竞态窗口内可能已经过期
-                $path = 'private/tickets/upstream/'.$file->getFilename();
+                // 引用结论必须在锁内重新查询：锁外批量结果在竞态窗口内可能已经过期
                 $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $path);
                 if (TicketReply::query()->where('attachments', 'like', "%{$escaped}%")->exists()) {
                     $referenced++;

@@ -54,6 +54,16 @@ class SyncInvoiceCouponUsageJob implements ShouldQueue
         }
     }
 
+    /**
+     * 任务用尽重试次数后的兜底：再同步执行一次优惠券占用同步，
+     * 缩小"券被重复占用"的双花窗口。
+     *
+     * 账单可能在此期间已被删除，故与 handle() 一致做 instanceof 判空——
+     * 直接把 find() 的结果传给要求 Invoice 的方法会抛 TypeError 并被下面的
+     * catch 吞掉，补偿实际不会发生。
+     *
+     * 补偿本身再失败时只记日志：reserve 侧的"已支付账单"检查会兜底拦截二次占用。
+     */
     public function failed(\Throwable $exception): void
     {
         Log::error('[账单优惠券同步] 队列任务失败', [
@@ -65,9 +75,14 @@ class SyncInvoiceCouponUsageJob implements ShouldQueue
         // 补偿：失败后同步执行一次同步，缩小券重复占用的双花窗口；
         // 同步仍失败时仅记日志，reserve 侧的"已支付账单"检查兜底拦截二次占用
         try {
-            app(CouponService::class)->syncInvoiceCouponUsage(
-                Invoice::query()->find($this->invoiceId)
-            );
+            // 账单可能已被删除。此处此前直接把 find() 的结果（可能为 null）传给
+            // syncInvoiceCouponUsage(Invoice $invoice)，会抛 TypeError 并被下面的
+            // catch 吞掉——补偿在"账单已删"这一支实际从未发生。与 handle() 保持一致判空。
+            $invoice = Invoice::query()->find($this->invoiceId);
+
+            if ($invoice instanceof Invoice) {
+                app(CouponService::class)->syncInvoiceCouponUsage($invoice);
+            }
         } catch (\Throwable $fallbackException) {
             Log::error('[账单优惠券同步] 失败补偿同步未成功', [
                 'invoice_id' => $this->invoiceId,

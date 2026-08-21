@@ -372,7 +372,14 @@ class NotificationService
         }
     }
 
-    private function isEmailEnabled(): bool
+    /**
+     * 「对外是否真的会发邮件」的唯一判定源。
+     *
+     * 除本类内部使用外，管理端插件的测试发信也必须查这里：测试发信走驱动直发，
+     * 不受该总开关约束，若不一并提示，管理员会因「测试邮件成功」误判为已配置可用，
+     * 而对外发码仍返回「邮件服务暂不可用」。
+     */
+    public function isEmailEnabled(): bool
     {
         $value = Setting::getValue('notification', 'email_enabled', '0');
 

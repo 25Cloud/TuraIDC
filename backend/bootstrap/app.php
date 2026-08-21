@@ -45,6 +45,33 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // 反代信任：四端部署一律在反向代理之后（1Panel / 宝塔 / 宿主机 Nginx，
+        // 见 docs/references/operations/）。此前未配置受信代理，Laravel 忽略
+        // X-Forwarded-For，request()->ip() 取到的是反代或 Docker 网关地址
+        // （容器部署下所有用户的 last_login_ip 都是 172.x.0.1）。影响不止审计：
+        // ReferralService 的自荐风控以「注册 IP == 推荐人 last_login_ip」为拒绝条件，
+        // 所有 IP 相同会让每一次推荐绑定都被判定为同 IP 而静默拒绝。
+        // 只信任回环与 RFC1918 私有网段：文档化的部署形态里反代都与应用同机或同
+        // Docker 网络，私有地址已覆盖；万一应用端口直接对外，公网来源的 XFF 也不会
+        // 被采信，避免 IP 伪造。
+        // 注意不要在此处调用 config()/env()：withMiddleware 闭包在配置与环境变量
+        // 加载之前执行，取用会抛 “Class "config" does not exist”。
+        // 不信任 X-Forwarded-Host：对外地址由 PublicUrl 依配置生成，无需依赖该头，
+        // 信任它会引入 Host 头注入面。
+        $middleware->trustProxies(
+            at: [
+                '127.0.0.1',
+                '::1',
+                '10.0.0.0/8',
+                '172.16.0.0/12',
+                '192.168.0.0/16',
+                'fc00::/7',
+            ],
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO,
+        );
+
         $middleware->api(
             prepend: [
                 SetJsonEncodingOptions::class,
