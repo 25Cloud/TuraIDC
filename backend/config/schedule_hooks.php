@@ -1,6 +1,5 @@
 <?php
 
-use App\Services\Automation\Hooks\CleanupUpstreamOrphanUploadsHook;
 use App\Services\Automation\ScheduleHookService;
 
 return [
@@ -39,7 +38,7 @@ return [
         ],
 
         ScheduleHookService::HOOK_AFTER_DAILY_CRON => [
-            CleanupUpstreamOrphanUploadsHook::class,
+            //
         ],
 
         ScheduleHookService::HOOK_AFTER_FIVE_MINUTE_CRON => [

@@ -197,6 +197,37 @@
         </t-form-item>
       </t-form>
     </t-dialog>
+
+    <t-card class="ticket-delivery-card ticket-delivery-guard-card" :bordered="false">
+      <div class="ticket-delivery-toolbar">
+        <div class="ticket-delivery-summary">
+          <strong>上游附件上传防护</strong>
+          <span>白名单 IP/CIDR 不限速；非白名单来源按速率限制。上传后超过保留期仍未用于回复工单的文件会自动删除。</span>
+        </div>
+        <t-button v-if="canManage" theme="primary" variant="outline" :loading="guardSaving" @click="saveUploadGuard">
+          保存配置
+        </t-button>
+      </div>
+
+      <t-form label-width="170px" class="ticket-delivery-guard-form">
+        <t-form-item label="白名单 IP / CIDR">
+          <t-textarea
+            v-model="uploadGuard.allowed_ips"
+            :disabled="!canManage"
+            :autosize="{ minRows: 2, maxRows: 5 }"
+            maxlength="2000"
+            placeholder="每行或逗号分隔一个 IP 或 CIDR，例如 203.0.113.10、10.0.0.0/8"
+          />
+        </t-form-item>
+        <t-form-item label="非白名单速率（次/分钟）">
+          <t-input-number v-model="uploadGuard.rate_limit" :disabled="!canManage" :min="0" :max="10000" />
+          <span class="ticket-delivery-guard-hint">0 表示不限速（不推荐）</span>
+        </t-form-item>
+        <t-form-item label="未使用文件保留期">
+          <span>{{ uploadGuard.unused_retention_minutes }} 分钟（每分钟自动清理一次）</span>
+        </t-form-item>
+      </t-form>
+    </t-card>
   </div>
 </template>
 <script setup lang="ts">
@@ -229,6 +260,7 @@ const isMobile = computed(() => width.value < 768);
 const canManage = computed(() => hasAdminPermission(AdminPermissions.TICKET_MANAGE));
 const loading = ref(false);
 const saving = ref(false);
+const guardSaving = ref(false);
 const dialogVisible = ref(false);
 const editingId = ref<number | string | null>(null);
 const formRef = ref<FormInstanceFunctions>();
@@ -238,6 +270,12 @@ const products = ref<ProductRecord[]>([]);
 const upstreamDepartments = ref<TicketDeliveryDepartment[]>([]);
 const departmentsLoading = ref(false);
 let departmentsRequestId = 0;
+
+const uploadGuard = reactive({
+  allowed_ips: '',
+  rate_limit: 30,
+  unused_retention_minutes: 5,
+});
 
 const departmentOptions = [
   { label: '销售', value: 'sales' },
@@ -413,9 +451,38 @@ async function loadRules() {
 
 async function loadPage() {
   try {
-    await Promise.all([loadOptions(), loadRules()]);
+    await Promise.all([loadOptions(), loadRules(), loadUploadGuard()]);
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '加载工单传递设置失败'));
+  }
+}
+
+async function loadUploadGuard() {
+  try {
+    const config = await adminApi.tickets.uploadGuard.config();
+    uploadGuard.allowed_ips = config.allowed_ips ?? '';
+    uploadGuard.rate_limit = Number(config.rate_limit ?? 30);
+    uploadGuard.unused_retention_minutes = Number(config.unused_retention_minutes ?? 5);
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '加载上传防护配置失败'));
+  }
+}
+
+async function saveUploadGuard() {
+  if (!canManage.value) return;
+  guardSaving.value = true;
+  try {
+    const saved = await adminApi.tickets.uploadGuard.save({
+      allowed_ips: uploadGuard.allowed_ips,
+      rate_limit: Number(uploadGuard.rate_limit),
+    });
+    uploadGuard.allowed_ips = saved.allowed_ips ?? '';
+    uploadGuard.rate_limit = Number(saved.rate_limit ?? 0);
+    MessagePlugin.success('上传防护配置已保存');
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '保存上传防护配置失败'));
+  } finally {
+    guardSaving.value = false;
   }
 }
 

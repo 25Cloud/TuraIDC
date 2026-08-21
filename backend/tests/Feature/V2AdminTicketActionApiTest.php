@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\Role;
+use App\Models\Setting;
 use App\Models\Ticket;
 use App\Models\TicketReply;
 use App\Models\User;
@@ -276,6 +277,67 @@ class V2AdminTicketActionApiTest extends TestCase
         $this->assertLessThan(100 * 1024, strlen((string) $response->getContent()));
         $this->assertNotNull($reply->refresh()->recalled_at);
         $this->assertSame('', (string) $reply->content);
+    }
+
+    public function test_ticket_upload_guard_config_requires_manage_permission_and_roundtrips(): void
+    {
+        Setting::forgetCachedGroup('ticket_upstream');
+
+        $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
+            ->assertUnauthorized()
+            ->assertJsonPath('code', 40100);
+
+        Sanctum::actingAs($this->createAdmin([]));
+
+        $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
+            ->assertForbidden()
+            ->assertJsonPath('code', 40300);
+        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'allowed_ips' => '203.0.113.10',
+            'rate_limit' => 5,
+        ])->assertForbidden()
+            ->assertJsonPath('code', 40300);
+
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
+
+        $default = $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
+            ->assertOk()
+            ->assertJsonPath('code', 0);
+
+        $this->assertArrayHasKey('allowed_ips', $default->json('data'));
+        $this->assertArrayHasKey('rate_limit', $default->json('data'));
+
+        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'allowed_ips' => "203.0.113.10\n198.51.100.0/24",
+            'rate_limit' => 5,
+        ])->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.allowed_ips', "203.0.113.10\n198.51.100.0/24")
+            ->assertJsonPath('data.rate_limit', 5);
+
+        $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
+            ->assertOk()
+            ->assertJsonPath('data.allowed_ips', "203.0.113.10\n198.51.100.0/24")
+            ->assertJsonPath('data.rate_limit', 5);
+
+        // 非法 IP / CIDR 被拒绝
+        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'allowed_ips' => 'not-an-ip',
+            'rate_limit' => 5,
+        ])->assertUnprocessable()
+            ->assertJsonStructure(['data' => ['errors' => ['allowed_ips']]]);
+
+        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'allowed_ips' => '203.0.113.10/99',
+            'rate_limit' => 5,
+        ])->assertUnprocessable()
+            ->assertJsonStructure(['data' => ['errors' => ['allowed_ips']]]);
+
+        // 清理测试数据
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => '',
+            'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
+        ]);
     }
 
     /**

@@ -1,0 +1,112 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Symfony\Component\HttpFoundation\Response;
+
+/**
+ * 上游附件上传限流：白名单 IP/CIDR 不限速，非白名单来源按配置速率限制（0 为不限速）。
+ * 配置存于 settings 表 ticket_upstream 组，可在管理端「工单传递设置」页调整。
+ */
+final class TicketUpstreamUploadThrottle
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        $ip = (string) $request->ip();
+        if ($ip === '' || $ip === 'unknown') {
+            return response()->json(['status' => 400, 'msg' => '上传失败'], 200);
+        }
+
+        if ($this->isWhitelisted($ip)) {
+            return $next($request);
+        }
+
+        $maxAttempts = $this->maxAttempts();
+        if ($maxAttempts <= 0) {
+            return $next($request);
+        }
+
+        $key = 'ticket-upstream-upload:'.$ip;
+        if (RateLimiter::tooManyAttempts($key, $maxAttempts)) {
+            Log::warning('上游附件上传触发限流', ['ip' => $ip, 'reason' => 'rate_limit_exceeded']);
+
+            return response()->json(['status' => 429, 'msg' => '上传过于频繁，请稍后再试'], 200);
+        }
+
+        RateLimiter::hit($key, 60);
+
+        return $next($request);
+    }
+
+    private function isWhitelisted(string $ip): bool
+    {
+        foreach ($this->allowedIps() as $entry) {
+            if ($this->ipInRange($ip, trim($entry))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function ipInRange(string $ip, string $entry): bool
+    {
+        if ($entry === '') {
+            return false;
+        }
+
+        if (str_contains($entry, '/')) {
+            [$subnet, $bits] = array_pad(explode('/', $entry, 2), 2, '');
+            $bits = (int) $bits;
+            if ($bits < 0 || $bits > 32 || ! filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+                return false;
+            }
+
+            $ipLong = ip2long($ip);
+            $subnetLong = ip2long($subnet);
+            if ($ipLong === false || $subnetLong === false) {
+                return false;
+            }
+
+            $mask = $bits === 0 ? 0 : (-1 << (32 - $bits)) & 0xFFFFFFFF;
+
+            return ($ipLong & $mask) === ($subnetLong & $mask);
+        }
+
+        return $ip === $entry;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function allowedIps(): array
+    {
+        $raw = (string) \App\Models\Setting::getValue(
+            'ticket_upstream',
+            'allowed_ips',
+            (string) config('ticket_upstream.upload_allowed_ips', '')
+        );
+
+        return array_values(array_filter(array_map(
+            static fn (string $item): string => trim($item),
+            preg_split('/[\s,]+/', $raw) ?: []
+        ), static fn (string $item): bool => $item !== ''));
+    }
+
+    private function maxAttempts(): int
+    {
+        $value = \App\Models\Setting::getValue(
+            'ticket_upstream',
+            'rate_limit',
+            (string) config('ticket_upstream.upload_rate_limit', 30)
+        );
+
+        return max(0, (int) $value);
+    }
+}

@@ -789,6 +789,17 @@ export interface TicketDeliveryDepartmentsResponse {
   list?: TicketDeliveryDepartment[];
 }
 
+export interface TicketUpstreamUploadGuardConfig {
+  allowed_ips?: string;
+  rate_limit?: number;
+  unused_retention_minutes?: number;
+}
+
+export interface TicketUpstreamUploadGuardPayload {
+  allowed_ips: string;
+  rate_limit: number;
+}
+
 export interface TicketRecord {
   id: number | string;
   subject?: string;
