@@ -1,13 +1,37 @@
 <script setup lang="ts">
-import { shallowRef } from 'vue';
+import { computed, shallowRef } from 'vue';
 
 import { solveCapCaptcha } from '../captcha';
 
-const props = defineProps<{
-  apiEndpoint: string;
-  /** 挂载在 body 等容器外时作为悬浮卡片展示（管理端插件测试用） */
-  floating?: boolean;
-}>();
+/** 状态文案；由适配器注入 i18n 文案，缺省回退中文 */
+export interface CapCaptchaLabels {
+  idle?: string;
+  verifying?: string;
+  solved?: string;
+  error?: string;
+}
+
+const props = withDefaults(
+  defineProps<{
+    apiEndpoint: string;
+    /** 挂载在 body 等容器外时作为悬浮卡片展示（管理端插件测试用） */
+    floating?: boolean;
+    labels?: CapCaptchaLabels;
+  }>(),
+  {
+    floating: false,
+    labels: () => ({}),
+  },
+);
+
+const DEFAULT_LABELS: Required<CapCaptchaLabels> = {
+  idle: '点击验证',
+  verifying: '验证中',
+  solved: '验证通过',
+  error: '验证失败',
+};
+
+const labels = computed<Required<CapCaptchaLabels>>(() => ({ ...DEFAULT_LABELS, ...props.labels }));
 
 const emit = defineEmits<{
   solve: [token: string];
@@ -18,6 +42,20 @@ type State = 'idle' | 'verifying' | 'solved' | 'error';
 const state = shallowRef<State>('idle');
 const progress = shallowRef(0);
 const errorMsg = shallowRef('');
+
+/** aria-live 播报文本：仅播报开始、完成、失败状态，避免与视觉文案重复朗读 */
+const liveStatusText = computed(() => {
+  if (state.value === 'verifying') {
+    return `${labels.value.verifying} ${progress.value}%`;
+  }
+  if (state.value === 'solved') {
+    return labels.value.solved;
+  }
+  if (state.value === 'error') {
+    return errorMsg.value || labels.value.error;
+  }
+  return '';
+});
 
 async function handleVerify() {
   if (state.value === 'verifying') {
@@ -36,7 +74,7 @@ async function handleVerify() {
     emit('solve', token);
   } catch (err) {
     state.value = 'error';
-    errorMsg.value = err instanceof Error ? err.message : '验证失败';
+    errorMsg.value = err instanceof Error ? err.message : labels.value.error;
     emit('error', errorMsg.value);
   }
 }
@@ -66,6 +104,7 @@ function handleBodyKeydown(event: KeyboardEvent) {
 
 <template>
   <div class="cap-card" :class="[`cap-${state}`, { 'cap-floating': floating }]">
+    <span class="cap-sr-only" role="status" aria-live="polite">{{ liveStatusText }}</span>
     <div
       class="cap-body"
       :class="{ 'cap-clickable': state === 'idle' || state === 'error' }"
@@ -78,7 +117,7 @@ function handleBodyKeydown(event: KeyboardEvent) {
       <div class="cap-content">
         <div class="cap-state" :class="{ 'cap-active': state === 'idle' }" :aria-hidden="state !== 'idle'">
           <div class="cap-checkbox" />
-          <span class="cap-label">点击验证</span>
+          <span class="cap-label">{{ labels.idle }}</span>
         </div>
         <div class="cap-state" :class="{ 'cap-active': state === 'verifying' }" :aria-hidden="state !== 'verifying'">
           <div class="cap-spinner">
@@ -86,7 +125,7 @@ function handleBodyKeydown(event: KeyboardEvent) {
               <circle cx="12" cy="12" r="10" stroke-dasharray="50" stroke-dashoffset="15" />
             </svg>
           </div>
-          <span class="cap-label">验证中 <span class="cap-pct">{{ progress }}%</span></span>
+          <span class="cap-label">{{ labels.verifying }} <span class="cap-pct">{{ progress }}%</span></span>
         </div>
         <div class="cap-state" :class="{ 'cap-active': state === 'solved' }" :aria-hidden="state !== 'solved'">
           <div class="cap-icon cap-ok">
@@ -94,7 +133,7 @@ function handleBodyKeydown(event: KeyboardEvent) {
               <polyline points="4 12 9 17 20 6" />
             </svg>
           </div>
-          <span class="cap-label">验证通过</span>
+          <span class="cap-label">{{ labels.solved }}</span>
         </div>
         <div class="cap-state" :class="{ 'cap-active': state === 'error' }" :aria-hidden="state !== 'error'">
           <div class="cap-icon cap-fail">
@@ -104,7 +143,7 @@ function handleBodyKeydown(event: KeyboardEvent) {
               <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
           </div>
-          <span class="cap-label cap-error-text">{{ errorMsg || '验证失败' }}</span>
+          <span class="cap-label cap-error-text">{{ errorMsg || labels.error }}</span>
         </div>
       </div>
     </div>
@@ -118,6 +157,19 @@ function handleBodyKeydown(event: KeyboardEvent) {
   border-radius: var(--td-radius-default, 0);
   background: var(--td-bg-color-container, rgba(0, 0, 0, 0.02));
   overflow: hidden;
+}
+
+/* aria-live 播报节点：视觉隐藏但保留给辅助技术朗读 */
+.cap-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .cap-card.cap-floating {

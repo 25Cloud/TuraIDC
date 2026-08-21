@@ -1,5 +1,7 @@
+import type { CapCaptchaLabels } from '@shared/components/CapCaptchaCard.vue';
 import CapCaptchaCard from '@shared/components/CapCaptchaCard.vue';
 import { createApp, onScopeDispose, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import { request } from '@/utils/request';
 
@@ -163,7 +165,11 @@ function loadGeeTestScript(src: string, cacheKey: string): Promise<GeeTestInitia
  * 无挂载容器时（管理端弹窗测试）悬浮展示于 body。
  * 验证结果统一为 { token }（与后端 GeeTestService::verify 的数组 payload 契约一致）。
  */
-function createCapInstance(appendTarget: HTMLElement | string | undefined, apiEndpoint: string): CaptchaInstance {
+function createCapInstance(
+  appendTarget: HTMLElement | string | undefined,
+  apiEndpoint: string,
+  labels: CapCaptchaLabels,
+): CaptchaInstance {
   let token: string | null = null;
   let successCallback: (() => void) | null = null;
   let errorCallback: ((error: unknown) => void) | null = null;
@@ -192,12 +198,13 @@ function createCapInstance(appendTarget: HTMLElement | string | undefined, apiEn
     app = createApp(CapCaptchaCard, {
       apiEndpoint,
       floating: !target,
+      labels,
       onSolve: (value: string) => {
         token = value;
         successCallback?.();
       },
       onError: (message: string) => {
-        errorCallback?.(new Error(message || 'Cap 人机验证失败，请重试'));
+        errorCallback?.(new Error(message || labels.error || 'Cap 人机验证失败，请重试'));
       },
     });
     app.mount(holder);
@@ -238,7 +245,16 @@ function createCapInstance(appendTarget: HTMLElement | string | undefined, apiEn
  * 把 getValidate() 结果交给后端走完整验证链路。
  */
 export function useGeeTestCaptcha() {
+  const { t } = useI18n();
   const loading = ref(false);
+
+  /** Cap 状态文案随当前界面语言注入（当前仅简体中文，预留扩展） */
+  const capLabels: CapCaptchaLabels = {
+    idle: t('components.captcha.clickToVerify'),
+    verifying: t('components.captcha.verifying'),
+    solved: t('components.captcha.solved'),
+    error: t('components.captcha.failed'),
+  };
 
   let captchaObj: CaptchaInstance | null = null;
   let initPromise: Promise<CaptchaInstance | null> | null = null;
@@ -308,7 +324,7 @@ export function useGeeTestCaptcha() {
       const currentInitPromise = new Promise<CaptchaInstance | null>((resolve, reject) => {
         initRejecter = reject;
         try {
-          const instance = createCapInstance(undefined, apiEndpoint);
+          const instance = createCapInstance(undefined, apiEndpoint, capLabels);
           captchaObj = instance;
           instance.onReady?.(() => {
             initRejecter = null;

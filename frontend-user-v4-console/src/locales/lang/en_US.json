@@ -46,6 +46,12 @@
       },
       "reset": "reset",
       "query": "query"
+    },
+    "captcha": {
+      "clickToVerify": "Click to verify",
+      "verifying": "Verifying",
+      "solved": "Verified",
+      "failed": "Verification failed"
     }
   },
   "layout": {

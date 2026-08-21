@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "vite --mode development",
     "dev:linux": "vite --mode development",
+    "dev:ci": "vite --host 127.0.0.1 --mode development",
+    "test:e2e": "playwright test",
     "build:test": "vite build --mode test",
     "build": "vue-tsc --noEmit && vite build --mode production",
     "build:type": "vue-tsc --noEmit",
@@ -38,6 +40,7 @@
     "@antfu/eslint-config": "^9.3.0",
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
+    "@playwright/test": "^1.62.1",
     "@types/nprogress": "^0.2.3",
     "@types/qs": "^6.15.1",
     "@vitejs/plugin-vue": "^5.0.4",

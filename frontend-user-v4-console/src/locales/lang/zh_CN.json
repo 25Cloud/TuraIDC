@@ -46,6 +46,12 @@
       },
       "reset": "重置",
       "query": "查询"
+    },
+    "captcha": {
+      "clickToVerify": "点击验证",
+      "verifying": "验证中",
+      "solved": "验证通过",
+      "failed": "验证失败"
     }
   },
   "layout": {
