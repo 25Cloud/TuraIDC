@@ -284,8 +284,12 @@ class BackendHealthFixRegressionTest extends TestCase
         $source = file_get_contents(app_path('Services/Automation/Heartbeat/QueueDrainService.php'));
 
         $this->assertIsString($source);
-        $this->assertSame('provision,referral,notification,coupon,default', config('queue.turaidc_business_queues'));
+        // provision 已拆为独立 worker：上游开通任务 timeout 可达 1200s，
+        // 与通知/优惠券/推荐奖励共用一个 worker 会造成队头阻塞。
+        $this->assertSame('provision', config('queue.turaidc_provision_queues'));
+        $this->assertSame('referral,notification,coupon,default', config('queue.turaidc_business_queues'));
         $this->assertSame('automation', config('queue.turaidc_schedule_queue'));
+        $this->assertStringContainsString('queue.turaidc_provision_queues', $source);
         $this->assertStringContainsString('queue.turaidc_business_queues', $source);
         $this->assertStringContainsString('queue.turaidc_schedule_queue', $source);
         $this->assertStringContainsString('queue:work', $source);

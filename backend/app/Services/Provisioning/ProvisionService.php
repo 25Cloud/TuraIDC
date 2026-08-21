@@ -497,7 +497,7 @@ class ProvisionService
 
         $startedAt = microtime(true);
 
-        return Cache::lock($cartLockKey, $this->supplierCartLockTtl())->block(10, function () use ($order, $product, $supplier, $startedAt, $provisioning) {
+        return Cache::lock($cartLockKey, $this->supplierCartLockTtl())->block(10, function () use ($order, $product, $supplier, $startedAt, $provisioning, $service) {
             $latency = [
                 'cart_lock_wait_ms' => 0,
                 'login_ms' => 0,
@@ -555,6 +555,11 @@ class ProvisionService
                 $checkoutPayload = $this->extractPayload($checkoutResponse);
                 $invoiceId = $this->extractInvoiceId($checkoutResponse, $checkoutPayload);
                 $hostIds = $this->extractHostIds($checkoutResponse, $checkoutPayload);
+
+                // checkout 已在上游产生账单，从这里往后的任何失败都必须留下 checkpoint：
+                // 否则 assertNoUnresolvedUpstreamProvisionInvoice() 读到 upstream_invoice_id=0 会放行，
+                // 队列重试（$tries=3）就会重新走一遍"清空购物车→加购→checkout"，造成上游重复开通。
+                $this->checkpointUpstreamInvoice($service ?? $order->service, $order, $invoiceId);
 
                 if ($hostIds === [] && $invoiceId > 0 && ! $this->isCompletedCheckoutResponse($checkoutResponse)) {
                     $stepStartedAt = microtime(true);
@@ -1479,6 +1484,36 @@ class ProvisionService
         $normalized = trim((string) ($value ?? ''));
 
         return $normalized !== '' ? $normalized : null;
+    }
+
+    /**
+     * checkout 成功后立即把上游账单号落库，让失败路径保留 checkpoint、
+     * 让重试去核对已有账单而不是再结算一次购物车。
+     *
+     * 与 ZjmfProvisionService::checkpointUpstreamProvision() 同一意图：
+     * 内置的主机面板接口驱动没有 provisionOrder()，走的是无 checkpoint 的内联分支，
+     * 因此这里必须补齐，否则 $tries=3 的队列重试会在上游产生 3 笔已付款订单。
+     */
+    private function checkpointUpstreamInvoice(?Service $service, Order $order, int $upstreamInvoiceId): void
+    {
+        if ($upstreamInvoiceId <= 0 || ! $service instanceof Service || ! $service->exists) {
+            return;
+        }
+
+        $freshService = $service->fresh() ?? $service;
+
+        $freshService->forceFill([
+            'provision_data' => array_merge($this->serviceProvisionData($freshService), [
+                'provider_key' => $this->resolveProviderKeyForProduct($order->product),
+                'supplier_id' => $this->resolveProductSupplierId($order->product),
+                'upstream_product_id' => $this->resolveUpstreamProductId($order->product),
+                'upstream_invoice_id' => $upstreamInvoiceId,
+                'last_provision_attempt_at' => now()->format('Y-m-d H:i:s'),
+            ]),
+        ])->save();
+
+        // 让调用方手里的实例与库内保持一致，避免后续基于旧内存值判断
+        $service->setAttribute('provision_data', $freshService->provision_data);
     }
 
     private function assertNoUnresolvedUpstreamProvisionInvoice(Service $service): void

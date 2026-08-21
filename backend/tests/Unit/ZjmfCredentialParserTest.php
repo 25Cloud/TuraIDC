@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfCredentialParser;
 use PHPUnit\Framework\TestCase;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfCredentialParser;
 
 class ZjmfCredentialParserTest extends TestCase
 {

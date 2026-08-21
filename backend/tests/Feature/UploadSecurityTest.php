@@ -25,6 +25,7 @@ use App\Support\AdminPermissions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -272,6 +273,9 @@ class UploadSecurityTest extends TestCase
     public function test_upstream_upload_throttle_respects_whitelist_and_rate_limit(): void
     {
         Setting::forgetCachedGroup('ticket_upstream');
+        foreach (['203.0.113.10', '198.51.100.20', '198.51.100.30'] as $ip) {
+            RateLimiter::clear('ticket-upstream-upload:'.$ip);
+        }
 
         // 白名单 IP 不限速：即使非白名单速率仅为 1 次/分钟，白名单 IP 连续上传也成功
         Setting::setValues('ticket_upstream', [

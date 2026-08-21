@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use TuraIDC\Plugins\Addons\ZjmfBridge\Http\Controllers\ZjmfBridge\AddonController;
 use Illuminate\Support\Facades\Route;
+use TuraIDC\Plugins\Addons\ZjmfBridge\Http\Controllers\ZjmfBridge\AddonController;
 
 $zjmfAddon = [AddonController::class, 'handle'];
 

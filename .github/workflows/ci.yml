@@ -75,23 +75,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint:frontends
+        run: pnpm run lint:frontends
 
       - name: Typecheck
-        run: npm run typecheck:frontends
+        run: pnpm run typecheck:frontends
 
       - name: Build
-        run: npm run build:frontends
+        run: pnpm run build:frontends
         env:
           APP_URL: https://api.example.com
           FRONTEND_URL: https://www.example.com

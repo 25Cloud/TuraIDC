@@ -10,7 +10,6 @@ use App\Http\Requests\Client\V2\Referral\RewardsRequest;
 use App\Http\Requests\Client\V2\Referral\WithdrawalsRequest;
 use App\Models\ReferralWithdrawal;
 use App\Services\Referral\ReferralService;
-use App\Support\PublicUrl;
 use Illuminate\Http\Request;
 
 class ReferralController extends Controller
@@ -19,9 +18,7 @@ class ReferralController extends Controller
 
     public function overview(Request $request)
     {
-        $origin = $this->resolveRequestOrigin($request);
-
-        return $this->success($this->referralService->overview($request->user(), $origin));
+        return $this->success($this->referralService->overview($request->user()));
     }
 
     public function rewards(RewardsRequest $request)
@@ -169,26 +166,5 @@ class ReferralController extends Controller
             OrderType::UPGRADE => '升级',
             default => '--',
         };
-    }
-
-    private function resolveRequestOrigin(Request $request): string
-    {
-        $origin = trim((string) $request->header('Origin', ''));
-        if ($origin !== '') {
-            return $origin;
-        }
-
-        $referer = trim((string) $request->header('Referer', ''));
-        if ($referer !== '') {
-            $scheme = parse_url($referer, PHP_URL_SCHEME);
-            $host = parse_url($referer, PHP_URL_HOST);
-            $port = parse_url($referer, PHP_URL_PORT);
-
-            if ($scheme && $host) {
-                return $scheme.'://'.$host.($port ? ':'.$port : '');
-            }
-        }
-
-        return PublicUrl::website();
     }
 }

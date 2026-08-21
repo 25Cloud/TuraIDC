@@ -8,12 +8,12 @@ require_once __DIR__.'/../Support/InstallsZjmfBridgeAddon.php';
 
 use App\Models\User;
 use App\Services\Ticket\TicketService;
-use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfTokenService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Tests\Support\InstallsZjmfBridgeAddon;
 use Tests\TestCase;
+use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfTokenService;
 
 class ZjmfBridgeTicketTest extends TestCase
 {

@@ -326,6 +326,13 @@ class V2AdminTicketActionApiTest extends TestCase
             ->assertJsonPath('data.rate_limit', 5)
             ->assertJsonPath('data.block_non_whitelisted', true);
 
+        // 部分更新缺少开关字段时，必须保留已保存的拦截状态。
+        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'allowed_ips' => '198.51.100.0/24',
+            'rate_limit' => 10,
+        ])->assertOk()
+            ->assertJsonPath('data.block_non_whitelisted', true);
+
         // 非法 IP / CIDR 被拒绝
         $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
             'allowed_ips' => 'not-an-ip',

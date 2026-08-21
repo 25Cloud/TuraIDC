@@ -190,7 +190,13 @@ class SmsService
         return $this->driverManager;
     }
 
-    private function isEnabled(): bool
+    /**
+     * 「对外是否真的会发短信」的唯一判定源。
+     *
+     * 与邮件同理：管理端插件测试发信走驱动直发，不受该总开关约束，
+     * 需要一并提示，避免「测试短信成功」被误判为对外已可用。
+     */
+    public function isEnabled(): bool
     {
         $value = Setting::getValue('notification', 'sms_enabled', '0');
 

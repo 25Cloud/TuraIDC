@@ -15,14 +15,7 @@ export interface SupplierFormOption {
 }
 
 export type SupplierFormFieldType =
-  | 'text'
-  | 'url'
-  | 'password'
-  | 'select'
-  | 'switch'
-  | 'boolean'
-  | 'number'
-  | 'textarea';
+  'text' | 'url' | 'password' | 'select' | 'switch' | 'boolean' | 'number' | 'textarea';
 
 export interface SupplierFormField {
   key: string;

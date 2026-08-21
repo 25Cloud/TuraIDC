@@ -106,7 +106,7 @@
               trigger="click"
               placement="bottom-right"
               :options="categoryMenuOptions(item)"
-              @click="handleCategoryMenuClick(item, $event)"
+              @click="handleCategoryMenuClick(item, $event as DropdownOption)"
             >
               <t-button
                 class="category-menu-trigger"
@@ -241,7 +241,7 @@
                 trigger="click"
                 placement="bottom-right"
                 :options="productRowMenuOptions(row)"
-                @click="handleProductRowMenuClick(row, $event)"
+                @click="handleProductRowMenuClick(row, $event as DropdownOption)"
               >
                 <t-button
                   size="small"
@@ -385,7 +385,7 @@
                 trigger="click"
                 placement="bottom-right"
                 :options="categoryMenuOptions(item)"
-                @click="handleCategoryMenuClick(item, $event)"
+                @click="handleCategoryMenuClick(item, $event as DropdownOption)"
               >
                 <t-button
                   class="category-menu-trigger"
@@ -1597,7 +1597,10 @@ function buildCategoryTree(list: ProductCategoryRecord[]): CategoryTreeNode[] {
       // Merge children from backend response if node already exists
       const backendChildren = Array.isArray(item.children) ? item.children : [];
       if (backendChildren.length > 0 && existingNode.children.length === 0) {
-        existingNode.children = backendChildren.map((child) => ({ item: child, children: [] }));
+        existingNode.children = backendChildren.map((child: ProductCategoryRecord): CategoryTreeNode => ({
+          item: child,
+          children: [],
+        }));
       }
     } else {
       nodeMap.set(key, { item, children: [] });

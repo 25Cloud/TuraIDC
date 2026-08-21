@@ -8,10 +8,10 @@ use App\Services\Sms\Data\SmsSendResult;
 use App\Services\Verification\Data\VerificationInitializeResult;
 use App\Services\Verification\Data\VerificationScanUrlResult;
 use App\Services\Verification\Data\VerificationStatusResult;
-use TuraIDC\Plugins\Certification\Stay33\Logic\Stay33Client;
-use TuraIDC\Plugins\Sms\Aliyun\Lib\AliyunSmsClient;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use TuraIDC\Plugins\Certification\Stay33\Logic\Stay33Client;
+use TuraIDC\Plugins\Sms\Aliyun\Lib\AliyunSmsClient;
 
 class IntegrationDtoTest extends TestCase
 {

@@ -27,6 +27,15 @@ backend/storage
 backend/public/uploads
 backend/public/storage
 
+# Laravel 包发现缓存：本地跑过带 dev 依赖的 composer install 后，
+# bootstrap/cache/packages.php 会记入仅存在于 dev 的服务提供者（如 collision）。
+# 镜像内是 composer install --no-dev，把这份缓存带进去会在启动时抛
+# Class "NunoMaduro\Collision\...\CollisionServiceProvider" not found 并陷入重启循环。
+# 该缓存由容器内的 package:discover 重新生成，无需从构建上下文携带。
+# 只排除生成物，保留仓库跟踪的 .gitignore 占位文件以确保目录存在（否则 Laravel 会报
+# "Please provide a valid cache path"）。
+backend/bootstrap/cache/*.php
+
 # 部署目录内的真实 .env（含密钥，禁止入镜像）
 deploy/docker/.env
 
