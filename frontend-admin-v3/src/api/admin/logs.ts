@@ -12,7 +12,8 @@ type LogChannel =
   | 'tasks'
   | 'gateway'
   | 'activity'
-  | 'upstream';
+  | 'upstream'
+  | 'upstream-uploads';
 
 interface V2LogPage {
   list?: Record<string, unknown>[];
@@ -126,13 +127,16 @@ export const logsApi = {
   activity: (params: LogListParams) => listChannel('activity', params),
   upstream: (params: LogListParams) => listChannel('upstream', params),
   upstreamSummary: (params: LogListParams) => summaryChannel('upstream', params),
+  upstreamUploads: (params: LogListParams) => listChannel('upstream-uploads', params),
+  upstreamUploadsSummary: (params: LogListParams) => summaryChannel('upstream-uploads', params),
   detail: (channel: LogChannel, id: number | string) => detailChannel(channel, id),
   cleanupOverview: () => request.get<Record<string, unknown>>({ url: '/v2/admin/log-cleanups/overview' }),
   cleanup: (data: LogCleanupPayload) =>
     request
-      .post<
-        { detail?: { cleanup?: Record<string, unknown> } } | Record<string, unknown>
-      >({ url: '/v2/admin/log-cleanups', data })
+      .post<{ detail?: { cleanup?: Record<string, unknown> } } | Record<string, unknown>>({
+        url: '/v2/admin/log-cleanups',
+        data,
+      })
       .then((response) => {
         const detail = (response as { detail?: { cleanup?: Record<string, unknown> } }).detail;
         return detail?.cleanup || response;

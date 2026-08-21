@@ -33,7 +33,17 @@ import { computed } from 'vue';
 
 import { fieldValue, formatDateTime } from '@/utils/format';
 
-type LogTab = 'system' | 'runtime' | 'admin-logins' | 'api' | 'sms' | 'email' | 'tasks' | 'gateway' | 'upstream';
+type LogTab =
+  | 'system'
+  | 'runtime'
+  | 'admin-logins'
+  | 'api'
+  | 'sms'
+  | 'email'
+  | 'tasks'
+  | 'gateway'
+  | 'upstream'
+  | 'upstream-uploads';
 type RecordRow = Record<string, unknown>;
 
 defineOptions({ name: 'LogDetailDrawer' });
