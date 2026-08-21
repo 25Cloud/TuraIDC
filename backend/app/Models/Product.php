@@ -208,7 +208,11 @@ class Product extends Model
         }
 
         try {
-            $display = (new ProductDisplayNameResolver)->resolveForProduct($this);
+            // products 表没有 name 列，所以每次读 $product->name 必然走到这里。
+            // 此前这里 new 一个解析器，导致解析器自带的 customDisplayNameCache 永不命中：
+            // 实测 12 行服务列表（仅 1 个商品）产生 49 次 products.custom_display_name 查询。
+            // 改用容器单例后同一商品只查一次。
+            $display = app(ProductDisplayNameResolver::class)->resolveForProduct($this);
 
             return trim((string) ($display['product_display_name'] ?? ''));
         } catch (\Throwable) {

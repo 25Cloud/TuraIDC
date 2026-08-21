@@ -327,6 +327,9 @@ class InstanceSpecCatalogService
     private function forgetSiteCatalogCache(): void
     {
         Cache::forget(self::SITE_CATALOG_CACHE_KEY);
+
+        // 同 HandlesProductCatalogHelpers：实例规格变更会改变规格文案，需失效解析器的进程内缓存
+        app(ProductDisplayNameResolver::class)->flushCaches();
     }
 
     private function normalizeId(mixed $id, int $index): string

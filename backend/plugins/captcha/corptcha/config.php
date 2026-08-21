@@ -20,7 +20,8 @@ return [
             ],
         ],
     ],
-    'config' => [
+    // 场景开关为 captcha 域各插件共用，见 plugins/captcha/scene-switches.php
+    'config' => array_merge([
         'basic_notice' => [
             'title' => '配置说明',
             'type' => 'notice',
@@ -92,5 +93,5 @@ return [
             'max' => 30,
             'description' => '后端调用验证服务核验 token 的超时时间。',
         ],
-    ],
+    ], require __DIR__.'/../scene-switches.php'),
 ];

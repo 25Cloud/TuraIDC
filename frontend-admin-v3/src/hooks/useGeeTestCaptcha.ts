@@ -6,7 +6,18 @@ interface GeeTestConfig {
   enabled: boolean;
   captcha_id: string;
   script_url?: string;
+  /** 当前生效的验证码提供商（geetest / vaptcha / corptcha / turnstile ...） */
+  provider?: string;
+  /** popup：插件自行弹窗；inline：需页面在提交按钮上方提供容器 */
+  render_mode?: string;
+  /** 适配层脚本的配置指纹，用作脚本缓存键 */
+  script_version?: string;
+  /** 各场景开关：场景标识 => 是否需要人机验证 */
+  scenes?: Record<string, boolean>;
 }
+
+/** 后端 CaptchaPolicyService 的场景标识 */
+export type CaptchaScene = 'client_login' | 'client_register' | 'admin_login' | 'email_code' | 'phone_code';
 
 interface CaptchaInstance {
   onReady?: (callback: () => void) => void;
@@ -38,6 +49,52 @@ const defaultConfig: GeeTestConfig = {
 
 let captchaConfigPromise: Promise<GeeTestConfig> | null = null;
 let geetestScriptPromise: Promise<GeeTestInitializer> | null = null;
+let captchaRequirementPromise: Promise<GeeTestConfig> | null = null;
+
+/**
+ * 探测人机验证是否可用、以及某个场景是否要求验证。
+ *
+ * 与下方 getCaptchaConfig 的关键区别：这里**不抛错**。插件未配置、接口失败都归一为
+ * 「不需要验证」。登录页必须用这个版本——验证码配置出问题不应该把管理员挡在后台之外，
+ * 后端在插件未启用时同样不会要求验证，两侧语义一致。
+ */
+export async function resolveCaptchaRequirement(
+  scene: CaptchaScene,
+): Promise<{ enabled: boolean; required: boolean; renderMode: 'popup' | 'inline' }> {
+  if (!captchaRequirementPromise) {
+    captchaRequirementPromise = request
+      .get<GeeTestConfig>({ url: '/v2/client/auth/captcha-config' })
+      .then((response: unknown) => ({ ...defaultConfig, ...(response as GeeTestConfig) }))
+      .catch(() => {
+        captchaRequirementPromise = null;
+        return defaultConfig;
+      });
+  }
+
+  const config = await captchaRequirementPromise;
+  const enabled = Boolean(config.enabled && config.captcha_id);
+
+  return {
+    enabled,
+    required: enabled && config.scenes?.[scene] === true,
+    renderMode: config.render_mode === 'inline' ? 'inline' : 'popup',
+  };
+}
+
+type CaptchaAppendTarget = string | HTMLElement | { value?: string | HTMLElement | null } | null | undefined;
+
+/** appendTo 允许直接传 ref，这里统一解引用 */
+function resolveAppendTarget(target: CaptchaAppendTarget): string | HTMLElement | undefined {
+  if (target && typeof target === 'object' && 'value' in target) {
+    return resolveAppendTarget((target as { value?: string | HTMLElement | null }).value);
+  }
+
+  if (typeof target === 'string' || target instanceof HTMLElement) {
+    return target;
+  }
+
+  return undefined;
+}
 
 async function getCaptchaConfig() {
   if (!captchaConfigPromise) {
@@ -157,7 +214,11 @@ function loadGeeTestScript(src: string, cacheKey: string): Promise<GeeTestInitia
  * 管理端极验弹窗验证。用于插件测试：真人完成一次行为验证后，
  * 把 getValidate() 结果交给后端走完整验证链路。
  */
-export function useGeeTestCaptcha() {
+/**
+ * @param options 透传给验证组件的初始化参数。传 appendTo（可为 ref）即改为内联渲染，
+ *                不传则沿用弹窗模式——插件配置页的自测按钮用的就是弹窗模式。
+ */
+export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
   const loading = ref(false);
 
   let captchaObj: CaptchaInstance | null = null;
@@ -166,6 +227,8 @@ export function useGeeTestCaptcha() {
   let pendingResolver: ((value: unknown) => void) | null = null;
   let pendingRejecter: ((error: Error) => void) | null = null;
   let destroyed = false;
+  // 内联组件在无人等待时预先完成的验证结果，一次性消费
+  let verifiedResult: unknown = null;
 
   const clearPending = () => {
     pendingResolver = null;
@@ -192,9 +255,19 @@ export function useGeeTestCaptcha() {
 
   const resolveSuccess = (instance: CaptchaInstance) => {
     const result = readCaptchaResult(instance);
-    instance.reset?.();
-    pendingResolver?.(result);
-    clearPending();
+
+    if (pendingResolver) {
+      // 有挂起动作（按钮触发）：一次性消费并重置组件，保证 token 单次使用语义
+      pendingResolver(result);
+      instance.reset?.();
+      clearPending();
+      return;
+    }
+
+    // 无挂起动作：内联渲染的组件会自行完成验证（Turnstile 即为此类），
+    // 此时必须保留结果且不重置——否则 reset 会让组件重新解题，
+    // 形成「解出 → 丢弃 → 重置 → 再解出」的死循环。
+    verifiedResult = result;
   };
 
   const initCaptcha = async (): Promise<CaptchaInstance | null> => {
@@ -218,13 +291,15 @@ export function useGeeTestCaptcha() {
 
     const proxyUrl = resolveScriptUrl(config.script_url || '');
     const directUrl = defaultConfig.script_url || '';
+    // 缓存键优先用配置指纹：脚本内容随插件配置变化，仅用 captcha_id 会让改动 12 小时不生效
+    const scriptKey = config.script_version || config.captcha_id;
     const candidates =
       proxyUrl && proxyUrl !== directUrl
         ? [
-            { url: proxyUrl, key: config.captcha_id },
-            { url: directUrl, key: `${config.captcha_id}:direct` },
+            { url: proxyUrl, key: scriptKey },
+            { url: directUrl, key: `${scriptKey}:direct` },
           ]
-        : [{ url: directUrl, key: `${config.captcha_id}:direct` }];
+        : [{ url: directUrl, key: `${scriptKey}:direct` }];
     let initGeetest4: typeof window.initGeetest4;
     let lastError: unknown = null;
 
@@ -246,11 +321,21 @@ export function useGeeTestCaptcha() {
     const currentInitPromise = new Promise<CaptchaInstance | null>((resolve, reject) => {
       initRejecter = reject;
       try {
+        // 只有 inline 形态（Turnstile）才需要页面提供容器；
+        // popup 形态（极验等）交给插件自己弹窗，传容器反而会让它内联展开。
+        const appendTarget =
+          config.render_mode === 'inline'
+            ? resolveAppendTarget((options.appendTo ?? options.container) as CaptchaAppendTarget)
+            : undefined;
+
         initGeetest4?.(
           {
             captchaId: config.captcha_id,
             product: 'bind',
             language: 'zho',
+            ...options,
+            // appendTo / container 同时给出，兼容各插件适配层的不同取名
+            ...(appendTarget ? { appendTo: appendTarget, container: appendTarget } : {}),
           },
           (instance) => {
             if (destroyed) {
@@ -272,7 +357,22 @@ export function useGeeTestCaptcha() {
 
             instance.onSuccess?.(() => resolveSuccess(instance));
             instance.onError?.((error) => {
-              rejectPending(new Error(error instanceof Error ? error.message : String(error || '行为验证失败')));
+              const normalized = new Error(error instanceof Error ? error.message : String(error || '行为验证失败'));
+
+              // 尚未就绪就报错（典型是 SDK 加载超时）：让初始化本身失败。
+              // 验证组件的 SDK 由适配层内部异步加载，加载失败只会以 onError 抛出；
+              // 不在这里 reject 的话，调用方会一直 await 一个永不落地的 promise。
+              if (initRejecter) {
+                const rejectInit = initRejecter;
+                initRejecter = null;
+                captchaObj = null;
+                initPromise = null;
+                rejectInit(normalized);
+
+                return;
+              }
+
+              rejectPending(normalized);
             });
             instance.onClose?.(() => {
               rejectPending(new Error('请先完成行为验证'));
@@ -302,6 +402,15 @@ export function useGeeTestCaptcha() {
       throw new Error('行为验证组件初始化失败，请稍后重试');
     }
 
+    // 组件已自行完成验证：取出结果并重置，同样保证 token 只用一次
+    if (verifiedResult !== null && verifiedResult !== undefined) {
+      const result = verifiedResult;
+      verifiedResult = null;
+      instance.reset?.();
+
+      return result;
+    }
+
     loading.value = true;
 
     return new Promise((resolve, reject) => {
@@ -328,6 +437,8 @@ export function useGeeTestCaptcha() {
 
   const cleanup = () => {
     destroyed = true;
+    // 组件销毁后旧 token 即失效，不能留到下次使用
+    verifiedResult = null;
     initRejecter?.(new Error('行为验证组件已卸载'));
     initRejecter = null;
     if (captchaObj) {

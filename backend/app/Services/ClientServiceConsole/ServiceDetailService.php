@@ -300,6 +300,14 @@ class ServiceDetailService
             });
         }
 
+        // 本查询的 WHERE 含 context->service_id JSON 路径条件，operation_logs 上无可用索引，
+        // list 与 paginate 的 count(*) 各是一次全表扫描（实测 180k 行各约 145ms）。
+        //
+        // 这里的 latest 探针看起来像第三次全表扫描，实际不是：它带 ORDER BY id DESC LIMIT 1，
+        // MySQL 沿主键倒序扫、命中即停，实测仅 0.79ms。曾尝试把它与 today_total 合并成一次
+        // COUNT(CASE)+MAX(created_at) 聚合，结果该聚合本身就是 149ms 全表扫描，净收益为零，已回退。
+        //
+        // 真正的优化需要给 context->service_id 建生成列 + 索引（需迁移），不在本批范围内。
         $latestLog = (clone $query)->orderByDesc('id')->first(['id', 'created_at']);
         $paginator = $query->orderByDesc('id')->paginate($perPage);
 

@@ -193,12 +193,24 @@ class FinanceLedgerQueryService
         return $result;
     }
 
+    /**
+     * summary 的缓存键必须覆盖全部参与计算的过滤条件。
+     *
+     * 原实现只拼了 user_id 与日期区间，而 summary() 里的 applyFilters 会应用全部 9 类过滤
+     * （event_type / direction / tab / status / invoice_no / payment_no / keyword / service_id / 日期）。
+     * 结果是同一用户在 30 秒 TTL 内切换 tab 或改 event_type 时，第二次会命中第一次的缓存，
+     * 返回与当前筛选条件不符的汇总数字。写法对齐 AdminLogService::buildListSummaryCacheKey。
+     *
+     * @param  array<string, mixed>  $filters
+     */
     private function buildSummaryCacheKey(array $filters): string
     {
-        $userId = (int) ($filters['user_id'] ?? 0);
-        $dateRange = trim((string) ($filters['start_date'] ?? '')).'_'.trim((string) ($filters['end_date'] ?? ''));
+        ksort($filters);
 
-        return 'finance:ledger:summary:'.$userId.':'.md5($dateRange);
+        return 'finance:ledger:summary:'.md5((string) json_encode(
+            $filters,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        ));
     }
 
     private function buildQuery(array $filters, bool $withRelations = true): Builder

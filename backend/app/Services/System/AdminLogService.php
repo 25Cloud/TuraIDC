@@ -16,13 +16,13 @@ use App\Models\ScheduleRunLog;
 use App\Models\User;
 use App\Services\System\Concerns\HandlesAdminLogCleanup;
 use App\Support\AdminPrivacy;
+use App\Support\DatabaseSchema;
 use App\Support\SensitiveDataSanitizer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Schema;
 
 class AdminLogService
 {
@@ -243,17 +243,29 @@ class AdminLogService
             return $this->buildPaginatorPayload($logs);
         }
 
-        $summary = (clone $query)
-            ->selectRaw('COUNT(*) as total')
-            ->selectRaw("COALESCE(SUM(CASE WHEN CAST(JSON_UNQUOTE(JSON_EXTRACT(context, '$.status')) AS UNSIGNED) >= 500 THEN 1 ELSE 0 END), 0) as errors")
-            ->selectRaw("COALESCE(SUM(CASE WHEN user_type = 'admin' THEN 1 ELSE 0 END), 0) as admin_count")
-            ->first();
+        // 该聚合对 operation_logs 做 action REGEXP + JSON_EXTRACT 的全表扫描，
+        // 与列表查询、paginate 的 count(*) 一起构成每页 3 次全表扫描。
+        // sms/email 频道早已用同一个缓存把 summary 兜住（见 getSmsLogsSummary），api 频道漏了。
+        $summary = Cache::remember(
+            $this->buildListSummaryCacheKey('api', $filters),
+            now()->addSeconds(self::LIST_SUMMARY_CACHE_TTL_SECONDS),
+            function () use ($query): array {
+                $row = (clone $query)
+                    ->reorder()
+                    ->selectRaw('COUNT(*) as total')
+                    ->selectRaw("COALESCE(SUM(CASE WHEN CAST(JSON_UNQUOTE(JSON_EXTRACT(context, '$.status')) AS UNSIGNED) >= 500 THEN 1 ELSE 0 END), 0) as errors")
+                    ->selectRaw("COALESCE(SUM(CASE WHEN user_type = 'admin' THEN 1 ELSE 0 END), 0) as admin_count")
+                    ->first();
 
-        return $this->buildPaginatorPayload($logs, [
-            'total' => (int) ($summary?->total ?? 0),
-            'errors' => (int) ($summary?->errors ?? 0),
-            'admin_count' => (int) ($summary?->admin_count ?? 0),
-        ]);
+                return [
+                    'total' => (int) ($row?->total ?? 0),
+                    'errors' => (int) ($row?->errors ?? 0),
+                    'admin_count' => (int) ($row?->admin_count ?? 0),
+                ];
+            }
+        );
+
+        return $this->buildPaginatorPayload($logs, $summary);
     }
 
     public function getTaskLogs(array $filters, int $page, int $perPage): array
@@ -262,7 +274,23 @@ class AdminLogService
 
         $paginator = $this->paginateCollection($entries, $page, $perPage);
 
-        return $this->buildPaginatorPayload($paginator);
+        // 顺带带上 summary：否则 AdminLogV2QueryService::resolveSummary 会再调
+        // getTaskLogsSummary，在缓存未命中时把 buildTaskLogEntries（1000 行取数 + 日志文件 IO）
+        // 整个跑第二遍。$entries 已在手，这里算这三个数是零成本的。
+        return $this->buildPaginatorPayload($paginator, $this->taskLogSummaryFrom($entries));
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>>  $entries
+     * @return array<string, int>
+     */
+    private function taskLogSummaryFrom(Collection $entries): array
+    {
+        return [
+            'total' => $entries->count(),
+            'tasks' => $entries->pluck('task_key')->filter()->unique()->count(),
+            'errors' => $entries->whereIn('level', ['ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'])->count(),
+        ];
     }
 
     public function getTaskLogsSummary(array $filters): array
@@ -298,7 +326,22 @@ class AdminLogService
 
         $paginator = $this->paginateCollection($entries, $page, $perPage);
 
-        return $this->buildPaginatorPayload($paginator);
+        // 同 getTaskLogs：带上 summary，避免 resolveSummary 把 1600 行大 JSON 取数重跑一遍
+        return $this->buildPaginatorPayload($paginator, $this->runtimeLogSummaryFrom($entries));
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>>  $entries
+     * @return array<string, int>
+     */
+    private function runtimeLogSummaryFrom(Collection $entries): array
+    {
+        return [
+            'total' => $entries->count(),
+            'errors' => $entries->whereIn('level', ['ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'])->count(),
+            'warnings' => $entries->where('level', 'WARNING')->count(),
+            'infos' => $entries->where('level', 'INFO')->count(),
+        ];
     }
 
     /**
@@ -462,7 +505,7 @@ class AdminLogService
     // 管理端短信/邮件日志查询返回完整 content、params 与收件人，不做脱敏（项目红线：管理员需真实审计信息）
     private function buildSmsLogQuery(array $filters): ?Builder
     {
-        if (! Schema::hasTable('message_logs')) {
+        if (! DatabaseSchema::hasTableOrView('message_logs')) {
             return null;
         }
 
@@ -498,7 +541,7 @@ class AdminLogService
 
     private function buildEmailLogQuery(array $filters): ?Builder
     {
-        if (! Schema::hasTable('message_logs')) {
+        if (! DatabaseSchema::hasTableOrView('message_logs')) {
             return null;
         }
 
@@ -535,7 +578,7 @@ class AdminLogService
 
     private function buildNotificationSummaryQuery(string $channel, array $filters): ?Builder
     {
-        if (! Schema::hasTable('message_logs')) {
+        if (! DatabaseSchema::hasTableOrView('message_logs')) {
             return null;
         }
 
@@ -641,7 +684,7 @@ class AdminLogService
 
     private function tableHasColumn(string $tableName, string $column): bool
     {
-        return Schema::hasTable($tableName) && Schema::hasColumn($tableName, $column);
+        return DatabaseSchema::hasTableOrView($tableName) && DatabaseSchema::hasColumn($tableName, $column);
     }
 
     private function normalizeNotificationParams(mixed $value): array
@@ -666,7 +709,7 @@ class AdminLogService
         // 当 schedule_run_logs 表存在并已有记录时，ScheduleRunLogService 同时会往 activity_logs
         // (module=cron) 写一条镜像记录，二者代表同一次执行。此时跳过 activity_logs cron 源，
         // 避免同一任务运行在列表中出现两行。
-        $cronActivityEntries = Schema::hasTable('schedule_run_logs') && ScheduleRunLog::query()->exists()
+        $cronActivityEntries = DatabaseSchema::hasTableOrView('schedule_run_logs') && ScheduleRunLog::query()->exists()
             ? collect()
             : $this->buildCronActivityTaskLogEntries($filters);
 
@@ -718,7 +761,7 @@ class AdminLogService
 
     private function buildScheduleRunTaskLogEntries(array $filters): Collection
     {
-        if (! Schema::hasTable('schedule_run_logs')) {
+        if (! DatabaseSchema::hasTableOrView('schedule_run_logs')) {
             return collect();
         }
 
@@ -783,7 +826,7 @@ class AdminLogService
 
     private function buildCronActivityTaskLogEntries(array $filters): Collection
     {
-        if (! Schema::hasTable('activity_logs')) {
+        if (! DatabaseSchema::hasTableOrView('activity_logs')) {
             return collect();
         }
 
@@ -871,7 +914,7 @@ class AdminLogService
 
     private function buildPluginRuntimeLogEntries(array $filters): Collection
     {
-        if (! Schema::hasTable('integration_plugin_runtime_logs')) {
+        if (! DatabaseSchema::hasTableOrView('integration_plugin_runtime_logs')) {
             return collect();
         }
 
@@ -1222,7 +1265,7 @@ class AdminLogService
 
     public function getGatewayLogs(array $filters, int $page, int $perPage, bool $withSummary = true): array
     {
-        if (! Schema::hasTable('gateway_logs')) {
+        if (! DatabaseSchema::hasTableOrView('gateway_logs')) {
             return $this->buildPaginatorPayload($this->emptyPaginator($perPage));
         }
 
@@ -1278,7 +1321,7 @@ class AdminLogService
     {
         // 仅在表不存在，或表完全没有任何数据（刚迁移、尚未写入）时才降级到 operation_logs。
         // 若表已存在并有历史数据，过滤条件导致的空结果不应降级，否则同一页面会混用两套数据源。
-        if (! Schema::hasTable('activity_logs') || ActivityLog::query()->doesntExist()) {
+        if (! DatabaseSchema::hasTableOrView('activity_logs') || ActivityLog::query()->doesntExist()) {
             return $this->getBusinessOperationLogsAsActivityLogs($filters, $page, $perPage, $withSummary);
         }
 
@@ -1318,9 +1361,24 @@ class AdminLogService
 
     public function getActivityLogsSummary(array $filters): array
     {
+        // 与 api 频道同理：COUNT(DISTINCT module) 是全表聚合，operation_logs 降级路径还要先跑
+        // action NOT REGEXP 全表正则。sms/email 早已缓存，activity 漏了。
+        return Cache::remember(
+            $this->buildListSummaryCacheKey('activity', $filters),
+            now()->addSeconds(self::LIST_SUMMARY_CACHE_TTL_SECONDS),
+            fn (): array => $this->computeActivityLogsSummary($filters)
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    private function computeActivityLogsSummary(array $filters): array
+    {
         // 与 getActivityLogs 保持一致：仅当表不存在或完全无数据时才降级。
         // 过滤条件导致的空结果不触发降级，否则 summary 与 list 的 source 不一致。
-        if (Schema::hasTable('activity_logs') && ActivityLog::query()->exists()) {
+        if (DatabaseSchema::hasTableOrView('activity_logs') && ActivityLog::query()->exists()) {
             $query = ActivityLog::query();
             $this->applyActivityLogFilters($query, $filters);
 
@@ -1336,7 +1394,7 @@ class AdminLogService
             ];
         }
 
-        if (! Schema::hasTable('operation_logs')) {
+        if (! DatabaseSchema::hasTableOrView('operation_logs')) {
             return [
                 'total' => 0,
                 'modules' => 0,
@@ -1415,7 +1473,7 @@ class AdminLogService
 
     private function getBusinessOperationLogsAsActivityLogs(array $filters, int $page, int $perPage, bool $withSummary = true): array
     {
-        if (! Schema::hasTable('operation_logs')) {
+        if (! DatabaseSchema::hasTableOrView('operation_logs')) {
             return $this->buildPaginatorPayload($this->emptyPaginator($perPage));
         }
 
@@ -1550,11 +1608,11 @@ class AdminLogService
 
     private function operationLogSubjectIdColumn(): ?string
     {
-        if (Schema::hasColumn('operation_logs', 'subject_id')) {
+        if (DatabaseSchema::hasColumn('operation_logs', 'subject_id')) {
             return 'subject_id';
         }
 
-        if (Schema::hasColumn('operation_logs', 'target_id')) {
+        if (DatabaseSchema::hasColumn('operation_logs', 'target_id')) {
             return 'target_id';
         }
 
@@ -1623,7 +1681,7 @@ class AdminLogService
         }
 
         $adminIds = collect();
-        if (Schema::hasTable('admin_users')) {
+        if (DatabaseSchema::hasTableOrView('admin_users')) {
             $adminIds = AdminUser::query()
                 ->where(function ($query) use ($keyword) {
                     $query->where('username', 'like', "%{$keyword}%")
@@ -1640,7 +1698,7 @@ class AdminLogService
         }
 
         $clientIds = collect();
-        if (Schema::hasTable('users')) {
+        if (DatabaseSchema::hasTableOrView('users')) {
             $clientIds = User::query()
                 ->where(function ($query) use ($keyword) {
                     $query->where('email', 'like', "%{$keyword}%")

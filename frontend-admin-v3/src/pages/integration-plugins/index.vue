@@ -134,14 +134,37 @@
 
         <t-form label-align="top" class="plugin-config-form">
           <template v-for="field in visibleSchema" :key="field.key">
-            <t-divider v-if="field.type === 'divider'" align="left">{{ fieldLabel(field) }}</t-divider>
+            <!-- 可折叠分组标题：高级项默认收起，点击展开，避免管理员误改默认值 -->
+            <button
+              v-if="field.type === 'divider' && field.collapsible"
+              type="button"
+              class="plugin-config-section"
+              :aria-expanded="!collapsedSections[field.key]"
+              @click="toggleSection(field.key)"
+            >
+              <chevron-right-icon
+                class="plugin-config-section__arrow"
+                :class="{ 'is-expanded': !collapsedSections[field.key] }"
+              />
+              <span class="plugin-config-section__title">{{ fieldLabel(field) }}</span>
+              <span class="plugin-config-section__hint">
+                {{ collapsedSections[field.key] ? '展开配置' : '收起' }}
+              </span>
+            </button>
+            <t-divider v-else-if="field.type === 'divider'" align="left">{{ fieldLabel(field) }}</t-divider>
             <t-alert
               v-else-if="field.type === 'notice'"
+              v-show="!isSectionCollapsed(field)"
               class="plugin-config-notice"
               :theme="noticeTheme(field)"
               :message="field.content || field.description || fieldLabel(field)"
             />
-            <t-form-item v-else :label="fieldLabel(field)" :class="fieldWidthClass(field)">
+            <t-form-item
+              v-else
+              v-show="!isSectionCollapsed(field)"
+              :label="fieldLabel(field)"
+              :class="fieldWidthClass(field)"
+            >
               <t-switch
                 v-if="field.type === 'switch'"
                 v-model="configForm[field.key]"
@@ -497,7 +520,7 @@
 <script setup lang="ts">
 import './index.less';
 
-import { BrowseIcon, BrowseOffIcon, MoreIcon } from 'tdesign-icons-vue-next';
+import { BrowseIcon, BrowseOffIcon, ChevronRightIcon, MoreIcon } from 'tdesign-icons-vue-next';
 import type { DropdownOption } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
@@ -570,7 +593,66 @@ const smtpAccountForm = reactive<SmtpAccountForm>({
 });
 
 const currentSchema = computed(() => currentPlugin.value?.config_schema || []);
-const visibleSchema = computed(() => currentSchema.value.filter((field) => isFieldVisible(field)));
+
+/** 可折叠分组的收起状态，键为该分组 divider 的 key */
+const collapsedSections = ref<Record<string, boolean>>({});
+
+/**
+ * 给每个字段标注所属的可折叠分组。
+ *
+ * 规则：标了 collapsible 的 divider，其后直到下一个 divider 之前的字段都归入该分组；
+ * 普通 divider 会把分组归属清空。divider 自身永远可见——它就是折叠开关。
+ *
+ * 这里返回带 __section 标记的副本而不是改变循环结构，模板中的字段渲染分支得以保持原样。
+ */
+const visibleSchema = computed(() => {
+  let sectionKey: string | null = null;
+
+  return currentSchema.value
+    .filter((field) => isFieldVisible(field))
+    .map((field) => {
+      if (field.type === 'divider') {
+        sectionKey = field.collapsible ? field.key : null;
+
+        return { ...field, __section: null as string | null };
+      }
+
+      return { ...field, __section: sectionKey };
+    });
+});
+
+function isSectionCollapsed(field: IntegrationPluginConfigSchema & { __section?: string | null }) {
+  const section = field.__section;
+
+  return Boolean(section) && collapsedSections.value[section as string] === true;
+}
+
+function toggleSection(key: string) {
+  collapsedSections.value = {
+    ...collapsedSections.value,
+    [key]: !collapsedSections.value[key],
+  };
+}
+
+/**
+ * 按 schema 重建折叠状态。可折叠分组默认收起，除非显式声明 collapsed: false。
+ *
+ * 已有状态优先保留：openConfig 会先用列表里的插件数据渲染、随后再用 detail 覆盖，
+ * 两次都会走到这里；不保留的话，用户在这个间隙展开的分组会被重新收起。
+ * 切换到另一个插件时由调用方先清空状态。
+ */
+function initCollapsedSections() {
+  const next: Record<string, boolean> = {};
+  const current = collapsedSections.value;
+
+  currentSchema.value.forEach((field) => {
+    if (field.type === 'divider' && field.collapsible) {
+      next[field.key] = field.key in current ? current[field.key] : field.collapsed !== false;
+    }
+  });
+
+  collapsedSections.value = next;
+}
 const smtpAccounts = computed<SmtpAccountForm[]>(() => (Array.isArray(configForm.accounts) ? configForm.accounts : []));
 
 const emailTestVisible = ref(false);
@@ -767,7 +849,10 @@ async function openConfig(plugin: IntegrationPluginRecord) {
   if (!plugin.id) return;
 
   currentPlugin.value = plugin;
+  // 切换插件时先清空折叠状态，避免沿用上一个插件的展开情况
+  collapsedSections.value = {};
   fillConfigForm(plugin);
+  initCollapsedSections();
   resetTestResults();
   configLoading.value = true;
   configVisible.value = true;
@@ -776,6 +861,7 @@ async function openConfig(plugin: IntegrationPluginRecord) {
     const detail = await pluginsApi.detail(plugin.id);
     currentPlugin.value = detail;
     fillConfigForm(detail);
+    initCollapsedSections();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '加载插件配置失败'));
   } finally {

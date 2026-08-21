@@ -30,7 +30,8 @@ trait HandlesProductSnapshot
 
         $product = $this->product ?? null;
         if ($product instanceof Product) {
-            $displayName = trim((string) ((new ProductDisplayNameResolver)->resolveForProduct($product)['product_display_name'] ?? ''));
+            // 同 Product::getNameAttribute()：走容器单例，避免每次访问都新建解析器而丢掉其内部缓存
+            $displayName = trim((string) (app(ProductDisplayNameResolver::class)->resolveForProduct($product)['product_display_name'] ?? ''));
 
             return $displayName !== '' ? $displayName : null;
         }
