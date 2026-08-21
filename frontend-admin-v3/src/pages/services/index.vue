@@ -36,7 +36,14 @@
           <template #service="{ row }">
             <div class="service-cell">
               <div class="service-primary">
-                <strong>服务/实例 #{{ fieldValue(row.service_id || row.id) }}</strong>
+                <button
+                  type="button"
+                  class="user-link"
+                  :disabled="!Number(row.service_id || row.id || 0)"
+                  @click="goServiceDetail(row)"
+                >
+                  <strong>服务/实例 #{{ fieldValue(row.service_id || row.id) }}</strong>
+                </button>
                 <t-tag v-if="row.invoice?.id" variant="light">账单 #{{ row.invoice.id }}</t-tag>
               </div>
               <span v-if="row.invoice?.invoice_no">账单号 {{ row.invoice.invoice_no }}</span>
@@ -91,6 +98,17 @@
             <span :class="{ 'expiring-soon': isExpiringSoon(row.expires_at) }">{{ shortDate(row.expires_at) }}</span>
           </template>
           <template #created="{ row }">{{ shortDate(row.created_at) }}</template>
+          <template #operation="{ row }">
+            <t-button
+              variant="text"
+              theme="primary"
+              size="small"
+              :disabled="!Number(row.service_id || row.id || 0)"
+              @click="goServiceDetail(row)"
+            >
+              管理实例
+            </t-button>
+          </template>
         </t-table>
       </div>
 
@@ -239,6 +257,7 @@ const columns: PrimaryTableCol<ServiceRecord>[] = [
   { colKey: 'billing', title: '计费/金额', width: 130 },
   { colKey: 'expires', title: '到期时间', width: 130 },
   { colKey: 'created', title: '开通时间', width: 120 },
+  { colKey: 'operation', title: '操作', width: 110 },
 ];
 
 const hostnameColumns: PrimaryTableCol<HostnameRow>[] = [

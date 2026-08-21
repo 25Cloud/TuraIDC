@@ -167,7 +167,7 @@
             <template #serviceExpires="{ row }">{{ formatDateTime(row.expires_at) }}</template>
             <template #serviceOperation="{ row }">
               <div class="row-actions">
-                <t-button variant="text" theme="primary" size="small" @click="openServiceDrawer(row)">管理</t-button>
+                <t-button variant="text" theme="primary" size="small" @click="goServiceDetail(row)">管理实例</t-button>
                 <t-button
                   variant="text"
                   theme="default"
@@ -1762,20 +1762,6 @@ function waitForLoginAsReady(targetWindow: Window, targetUrl: string) {
 
     window.addEventListener('message', handleMessage);
   });
-}
-
-async function openServiceDrawer(row: Row) {
-  serviceDrawer.visible = true;
-  serviceDrawer.loading = true;
-  serviceDrawer.serviceId = Number(row.id || 0);
-  serviceDrawer.detail = { ...row };
-  try {
-    const detail = await userApi.serviceDetail(userId.value, row.id);
-    serviceDrawer.detail = normalizeServiceDetail(detail);
-    patchServiceListItem(detail);
-  } finally {
-    serviceDrawer.loading = false;
-  }
 }
 
 function closeServiceDrawer() {
