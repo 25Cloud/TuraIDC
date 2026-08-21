@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\Role;
+use App\Models\Setting;
 use App\Models\Ticket;
 use App\Models\TicketReply;
 use App\Models\User;
@@ -13,10 +14,26 @@ use App\Services\Ticket\TicketDeliveryService;
 use App\Services\Ticket\TicketService;
 use App\Support\AdminPermissions;
 use Laravel\Sanctum\Sanctum;
+use Tests\Support\Concerns\UpstreamDeliveryWhitelist;
 use Tests\TestCase;
 
 class V2AdminTicketActionApiTest extends TestCase
 {
+    use UpstreamDeliveryWhitelist;
+
+    protected function tearDown(): void
+    {
+        // 恢复 ticket_upstream 上传防护配置。恢复放在 tearDown 中保证任一断言失败后
+        // 也会执行，避免残留配置污染同一进程内其他访问 /upload_image 的用例。
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => (string) config('ticket_upstream.upload_allowed_ips', ''),
+            'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
+            'block_non_whitelisted' => config('ticket_upstream.upload_block_non_whitelisted', false) ? '1' : '0',
+        ]);
+
+        parent::tearDown();
+    }
+
     public function test_ticket_upstream_delivery_status_and_logs_require_list_permission(): void
     {
         $ticket = $this->createTicket();
@@ -35,21 +52,7 @@ class V2AdminTicketActionApiTest extends TestCase
             ->assertJsonPath('data.configured', false)
             ->assertJsonPath('data.last_error', null);
 
-        $this->assertSame([
-            'configured',
-            'status',
-            'status_label',
-            'provider_key',
-            'supplier_id',
-            'upstream_department_id',
-            'upstream_service_id',
-            'upstream_ticket_id',
-            'attempts',
-            'last_attempt_at',
-            'delivered_at',
-            'last_error',
-            'last_event',
-        ], array_keys($status->json('data')));
+        $this->assertSame($this->upstreamDeliveryWhitelist(), array_keys($status->json('data')));
 
         $this->getJson('/api/v2/admin/tickets/'.$ticket->id.'/upstream-delivery/logs')
             ->assertOk()
@@ -120,6 +123,7 @@ class V2AdminTicketActionApiTest extends TestCase
             'reason_code',
             'provider_key',
             'supplier_id',
+            'supplier_name',
             'attempt',
             'http_status',
             'duration_ms',
@@ -275,6 +279,65 @@ class V2AdminTicketActionApiTest extends TestCase
         $this->assertLessThan(100 * 1024, strlen((string) $response->getContent()));
         $this->assertNotNull($reply->refresh()->recalled_at);
         $this->assertSame('', (string) $reply->content);
+    }
+
+    public function test_ticket_upload_guard_config_requires_manage_permission_and_roundtrips(): void
+    {
+        Setting::forgetCachedGroup('ticket_upstream');
+
+        $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
+            ->assertUnauthorized()
+            ->assertJsonPath('code', 40100);
+
+        Sanctum::actingAs($this->createAdmin([]));
+
+        $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
+            ->assertForbidden()
+            ->assertJsonPath('code', 40300);
+        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'allowed_ips' => '203.0.113.10',
+            'rate_limit' => 5,
+        ])->assertForbidden()
+            ->assertJsonPath('code', 40300);
+
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
+
+        $default = $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
+            ->assertOk()
+            ->assertJsonPath('code', 0);
+
+        $this->assertArrayHasKey('allowed_ips', $default->json('data'));
+        $this->assertArrayHasKey('rate_limit', $default->json('data'));
+        $this->assertArrayHasKey('block_non_whitelisted', $default->json('data'));
+
+        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'allowed_ips' => "203.0.113.10\n198.51.100.0/24",
+            'rate_limit' => 5,
+            'block_non_whitelisted' => true,
+        ])->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.allowed_ips', "203.0.113.10\n198.51.100.0/24")
+            ->assertJsonPath('data.rate_limit', 5)
+            ->assertJsonPath('data.block_non_whitelisted', true);
+
+        $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
+            ->assertOk()
+            ->assertJsonPath('data.allowed_ips', "203.0.113.10\n198.51.100.0/24")
+            ->assertJsonPath('data.rate_limit', 5)
+            ->assertJsonPath('data.block_non_whitelisted', true);
+
+        // 非法 IP / CIDR 被拒绝
+        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'allowed_ips' => 'not-an-ip',
+            'rate_limit' => 5,
+        ])->assertUnprocessable()
+            ->assertJsonStructure(['data' => ['errors' => ['allowed_ips']]]);
+
+        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'allowed_ips' => '203.0.113.10/99',
+            'rate_limit' => 5,
+        ])->assertUnprocessable()
+            ->assertJsonStructure(['data' => ['errors' => ['allowed_ips']]]);
     }
 
     /**

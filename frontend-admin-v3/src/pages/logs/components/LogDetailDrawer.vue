@@ -33,7 +33,17 @@ import { computed } from 'vue';
 
 import { fieldValue, formatDateTime } from '@/utils/format';
 
-type LogTab = 'system' | 'runtime' | 'admin-logins' | 'api' | 'sms' | 'email' | 'tasks' | 'gateway' | 'upstream';
+type LogTab =
+  | 'system'
+  | 'runtime'
+  | 'admin-logins'
+  | 'api'
+  | 'sms'
+  | 'email'
+  | 'tasks'
+  | 'gateway'
+  | 'upstream'
+  | 'upstream-uploads';
 type RecordRow = Record<string, unknown>;
 
 defineOptions({ name: 'LogDetailDrawer' });
@@ -61,6 +71,7 @@ const headerTitle = computed(() => {
   if (props.activeTab === 'system') return `系统日志 · ${fieldValue(row.actor_name) || '详情'}`;
   if (props.activeTab === 'runtime') return `运行日志 · ${fieldValue(row.id) || '详情'}`;
   if (props.activeTab === 'upstream') return `工单推送日志 · 工单 ${fieldValue(row.ticket_id) || '详情'}`;
+  if (props.activeTab === 'upstream-uploads') return `上传日志 · ${fieldValue(row.id) || '详情'}`;
   return `系统日志 · ${fieldValue(row.id) || '详情'}`;
 });
 
@@ -173,6 +184,15 @@ const detailFields = computed(() => {
       { label: '数据来源', value: activitySourceLabel(row.source) },
     ];
   }
+  if (props.activeTab === 'upstream-uploads') {
+    return [
+      { label: '日志级别', value: fieldValue(row.level) },
+      { label: '插件 ID', value: fieldValue(row.plugin_id) },
+      { label: '插件 key', value: fieldValue(row.plugin_key) },
+      { label: 'Trace ID', value: fieldValue(row.trace_id) },
+      { label: '记录时间', value: formatDate(row.time) },
+    ];
+  }
   return [
     { label: '日志级别', value: fieldValue(row.level) },
     { label: '插件 ID', value: fieldValue(row.plugin_id) },
@@ -230,6 +250,14 @@ const detailBlocks = computed(() => {
     return [
       { label: '描述', value: fieldValue(row.description) },
       { label: '上下文', value: formatJson(row.context) },
+    ];
+  }
+  if (props.activeTab === 'upstream-uploads') {
+    return [
+      { label: '格式化内容', value: fieldValue(row.message) },
+      { label: '请求上下文', value: formatJson(row.request_meta) },
+      { label: '响应上下文', value: formatJson(row.response_meta) },
+      { label: '原始日志', value: fieldValue(row.raw) },
     ];
   }
   return [

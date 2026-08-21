@@ -11,6 +11,8 @@ import type {
   TicketListParams,
   TicketRecord,
   TicketUpstreamDeliveryLogsResponse,
+  TicketUpstreamUploadGuardConfig,
+  TicketUpstreamUploadGuardPayload,
 } from './types';
 
 interface TicketV2DetailPayload {
@@ -91,5 +93,10 @@ export const ticketsApi = {
     update: (id: number | string, data: TicketDeliveryRulePayload) =>
       request.put<TicketDeliveryRuleRecord>({ url: `/v2/admin/ticket-delivery-rules/${id}`, data }),
     delete: (id: number | string) => request.delete({ url: `/v2/admin/ticket-delivery-rules/${id}` }),
+  },
+  uploadGuard: {
+    config: () => request.get<TicketUpstreamUploadGuardConfig>({ url: '/v2/admin/ticket-delivery-upload-guard' }),
+    save: (data: TicketUpstreamUploadGuardPayload) =>
+      request.post<TicketUpstreamUploadGuardPayload>({ url: '/v2/admin/ticket-delivery-upload-guard', data }),
   },
 };

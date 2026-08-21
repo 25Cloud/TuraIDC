@@ -317,27 +317,57 @@ final class ZjmfFinanceTransport
         ], $jwt);
     }
 
-    public function uploadTicketAttachment(Supplier $supplier, string $path): ?string
+    /**
+     * 上传工单附件到上游图片接口，返回上游保存的文件名（savename）。
+     * 本地路径校验失败、文件句柄打开失败或上游返回失败/缺少 savename 时一律抛出 BusinessException，
+     * 保证调用方不会因空返回值而静默丢失附件（与上游业务失败保持一致的失败语义）。
+     *
+     * @throws BusinessException 路径非法、文件不可读、上游请求失败或缺少 savename 时抛出
+     */
+    public function uploadTicketAttachment(Supplier $supplier, string $path): string
     {
-        $absolutePath = str_starts_with($path, '/') ? $path : storage_path('app/'.ltrim($path, '/'));
-        if (! is_file($absolutePath)) {
-            return null;
-        }
-
-        $jwt = $this->login($supplier);
-        $response = Http::timeout(30)
-            ->withToken($jwt)
-            ->attach('file', fopen($absolutePath, 'r'), basename($absolutePath))
-            ->post(rtrim((string) $supplier->api_url, '/').'/upload_image');
-
-        if (! $response->successful()) {
+        $root = realpath(storage_path('app'));
+        if ($root === false) {
             throw new BusinessException('上游附件上传失败', 50000);
         }
 
-        $payload = $response->json();
-        $name = data_get($payload, 'data.savename') ?? data_get($payload, 'savename');
+        $absolutePath = realpath($root.'/'.ltrim(str_replace('\\', '/', $path), '/'));
+        if ($absolutePath === false
+            || ! str_starts_with($absolutePath, $root.DIRECTORY_SEPARATOR)
+            || ! is_file($absolutePath)
+        ) {
+            throw new BusinessException('上游附件上传失败', 50000);
+        }
 
-        return $name === null || trim((string) $name) === '' ? null : (string) $name;
+        $jwt = $this->login($supplier);
+        $handle = fopen($absolutePath, 'rb');
+        if ($handle === false) {
+            throw new BusinessException('上游附件上传失败', 50000);
+        }
+
+        try {
+            $response = Http::timeout(30)
+                ->withToken($jwt)
+                ->attach('file', $handle, basename($absolutePath))
+                ->post(rtrim((string) $supplier->api_url, '/').'/upload_image');
+        } finally {
+            fclose($handle);
+        }
+
+        $payload = is_array($response->json()) ? $response->json() : [];
+        $businessOk = array_key_exists('status', $payload)
+            ? (int) ($payload['status'] ?? 0) === 200
+            : (int) ($payload['code'] ?? -1) === 0;
+        if (! $response->successful() || ! $businessOk) {
+            throw new BusinessException('上游附件上传失败', 50000);
+        }
+
+        $name = data_get($payload, 'data.savename') ?? data_get($payload, 'savename');
+        if ($name === null || trim((string) $name) === '') {
+            throw new BusinessException('上游附件上传失败', 50000);
+        }
+
+        return (string) $name;
     }
 
     public function get(Supplier $supplier, string $uri, ?string $jwt = null, array $query = [], array $headers = []): array

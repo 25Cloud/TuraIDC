@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin\V2;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\V2\Ticket\ListTicketUpstreamDeliveryLogsRequest;
+use App\Http\Requests\Admin\V2\Ticket\SaveTicketUpstreamUploadGuardRequest;
 use App\Http\Requests\Admin\V2\Ticket\UpsertTicketDeliveryRuleRequest;
 use App\Http\Resources\Admin\V2\TicketDeliveryRuleResource;
 use App\Http\Resources\Admin\V2\TicketUpstreamDeliveryLogResource;
@@ -13,6 +14,7 @@ use App\Models\ProductUpstreamBinding;
 use App\Models\Supplier;
 use App\Models\Ticket;
 use App\Models\TicketDeliveryRule;
+use App\Services\System\OperationLogService;
 use App\Services\Ticket\TicketDeliveryService;
 use App\Services\Upstream\ProviderKey;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +24,10 @@ use Illuminate\Validation\ValidationException;
 
 final class TicketDeliveryController extends Controller
 {
+    public function __construct(
+        private readonly OperationLogService $operationLogService,
+    ) {}
+
     public function index(): JsonResponse
     {
         return $this->success([
@@ -104,6 +110,81 @@ final class TicketDeliveryController extends Controller
             $deliveryService->deliveryLogs($ticket, (int) ($request->validated('page_size') ?? 20)),
             TicketUpstreamDeliveryLogResource::class
         );
+    }
+
+    public function uploadGuardConfig(): JsonResponse
+    {
+        return $this->success([
+            'allowed_ips' => (string) \App\Models\Setting::getValue(
+                'ticket_upstream',
+                'allowed_ips',
+                (string) config('ticket_upstream.upload_allowed_ips', '')
+            ),
+            'rate_limit' => (int) \App\Models\Setting::getValue(
+                'ticket_upstream',
+                'rate_limit',
+                (string) config('ticket_upstream.upload_rate_limit', 30)
+            ),
+            // 布尔值用格式无关解析（filter_var + FILTER_VALIDATE_BOOLEAN），
+            // 避免 (bool) 强转把字符串 'false' 判为 true 造成语义反转。
+            'block_non_whitelisted' => filter_var(
+                (string) \App\Models\Setting::getValue(
+                    'ticket_upstream',
+                    'block_non_whitelisted',
+                    config('ticket_upstream.upload_block_non_whitelisted', false)
+                ),
+                FILTER_VALIDATE_BOOLEAN
+            ),
+            'unused_retention_minutes' => (int) config('ticket_upstream.upload_unused_retention_minutes', 5),
+        ]);
+    }
+
+    public function saveUploadGuardConfig(SaveTicketUpstreamUploadGuardRequest $request): JsonResponse
+    {
+        $payload = $request->payload();
+
+        // 先读取变更前的 ticket_upstream 配置值，供审计做前后对照。
+        $before = [
+            'allowed_ips' => (string) \App\Models\Setting::getValue(
+                'ticket_upstream',
+                'allowed_ips',
+                (string) config('ticket_upstream.upload_allowed_ips', '')
+            ),
+            'rate_limit' => (int) \App\Models\Setting::getValue(
+                'ticket_upstream',
+                'rate_limit',
+                (string) config('ticket_upstream.upload_rate_limit', 30)
+            ),
+            'block_non_whitelisted' => filter_var(
+                (string) \App\Models\Setting::getValue(
+                    'ticket_upstream',
+                    'block_non_whitelisted',
+                    config('ticket_upstream.upload_block_non_whitelisted', false)
+                ),
+                FILTER_VALIDATE_BOOLEAN
+            ),
+        ];
+
+        \App\Models\Setting::setValues('ticket_upstream', $payload);
+
+        // 配置写入成功后记录管理员操作审计，便于追踪上传防护白名单/限流的变更。
+        $this->operationLogService->write(
+            userId: (int) ($request->user()?->id ?? 0),
+            userType: 'admin',
+            action: 'ticket.upload_guard.update',
+            module: 'ticket',
+            targetId: 0,
+            detail: [
+                'title' => '工单传递上传防护配置更新',
+                'before' => $before,
+                'after' => $payload,
+                'operator_name' => (string) ($request->user()?->username ?? $request->user()?->name ?? ''),
+                'trace_id' => (string) $request->header('X-Request-Id', ''),
+            ],
+            ipAddress: (string) $request->ip(),
+        );
+
+        return $this->success($payload, '上传防护配置已保存');
     }
 
     private function ensureRuleTarget(array $data, ?TicketDeliveryRule $existing = null): void

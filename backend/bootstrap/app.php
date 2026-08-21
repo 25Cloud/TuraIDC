@@ -7,10 +7,12 @@ use App\Http\Middleware\EnsureClientAuthenticated;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\LogOperation;
 use App\Http\Middleware\SetJsonEncodingOptions;
+use App\Http\Middleware\TicketUpstreamUploadThrottle;
 use App\Http\Middleware\VerifyAlipayCallbackSignature;
 use App\Http\Middleware\VerifyCallbackSignature;
 use App\Http\Middleware\VerifyPaymentCallbackSignature;
 use App\Http\Middleware\VerifyTicketUpstreamCallbackSignature;
+use App\Http\Middleware\VerifyTicketUpstreamUploadToken;
 use App\Support\ApiResponseBuilder;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -77,6 +79,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'verify.payment.callback' => VerifyPaymentCallbackSignature::class,
             'verify.callback' => VerifyCallbackSignature::class,
             'verify.ticket.upstream.callback' => VerifyTicketUpstreamCallbackSignature::class,
+            'verify.ticket.upstream.upload' => VerifyTicketUpstreamUploadToken::class,
+            'ticket.upstream.upload.throttle' => TicketUpstreamUploadThrottle::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

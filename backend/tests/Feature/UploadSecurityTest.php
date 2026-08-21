@@ -4,10 +4,23 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Constants\ProductType;
+use App\Constants\ServiceStatus;
 use App\Models\AdminUser;
+use App\Models\FirstProductGroup;
+use App\Models\Product;
 use App\Models\Role;
+use App\Models\SecondProductGroup;
+use App\Models\Service;
+use App\Models\Setting;
+use App\Models\ThirdProductGroup;
+use App\Models\Ticket;
+use App\Models\TicketReply;
+use App\Models\User;
 use App\Services\Content\MediaFileService;
 use App\Services\Ticket\TicketService;
+use App\Services\Ticket\TicketUpstreamCallbackService;
+use App\Services\Ticket\TicketUpstreamCallbackToken;
 use App\Support\AdminPermissions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -22,8 +35,22 @@ class UploadSecurityTest extends TestCase
 
     private array $uploadedFiles = [];
 
+    private array $tempDirectories = [];
+
     protected function tearDown(): void
     {
+        // 恢复 ticket_upstream 上传防护配置。恢复放在 tearDown 中保证任一断言失败后
+        // 也会执行，避免残留配置污染同一进程内其他访问 /upload_image 的用例。
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => (string) config('ticket_upstream.upload_allowed_ips', ''),
+            'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
+            'block_non_whitelisted' => config('ticket_upstream.upload_block_non_whitelisted', false) ? '1' : '0',
+        ]);
+
+        foreach ($this->tempDirectories as $directory) {
+            File::deleteDirectory($directory);
+        }
+
         foreach ($this->uploadedFiles as $path) {
             File::delete($path);
         }
@@ -111,6 +138,7 @@ class UploadSecurityTest extends TestCase
 
     public function test_upstream_ticket_upload_returns_legacy_savename_contract(): void
     {
+        // 默认兼容模式：旧上游（不携带凭证）上传应成功，保证回调附件可用
         $response = $this->post('/upload_image', [
             'file' => UploadedFile::fake()->image('logo.png', 16, 16)->size(8),
         ]);
@@ -131,8 +159,12 @@ class UploadSecurityTest extends TestCase
 
     public function test_upstream_ticket_upload_does_not_call_get_size_after_move(): void
     {
+        $service = $this->createUpstreamUploadService();
+
         $response = $this->post('/upload_image', [
             'file' => UploadedFile::fake()->image('after-move.png', 32, 32)->size(16),
+            'id' => (string) $service->id,
+            'token' => TicketUpstreamCallbackToken::forServiceId((int) $service->id),
         ]);
 
         $response->assertOk()
@@ -143,6 +175,215 @@ class UploadSecurityTest extends TestCase
         $this->uploadedFiles[] = storage_path('app/private/tickets/upstream/'.$filename);
         $this->assertSame($filename, (string) $response->json('data.savename'));
         $this->assertFileExists(storage_path('app/private/tickets/upstream/'.$filename));
+    }
+
+    public function test_upstream_ticket_upload_credential_checks_are_enforced_when_required(): void
+    {
+        // 强制校验开启时，无凭证/伪造凭证一律拒绝（fail-closed）
+        config()->set('ticket_upstream.upload_token_required', true);
+        $service = $this->createUpstreamUploadService();
+
+        $this->post('/upload_image', [
+            'file' => UploadedFile::fake()->image('anon.png', 16, 16)->size(8),
+        ])->assertJsonPath('status', 400);
+
+        $this->post('/upload_image', [
+            'file' => UploadedFile::fake()->image('bad-token.png', 16, 16)->size(8),
+            'id' => (string) $service->id,
+            'token' => 'forged-token',
+        ])->assertJsonPath('status', 400);
+
+        $this->post('/upload_image', [
+            'file' => UploadedFile::fake()->image('bad-id.png', 16, 16)->size(8),
+            'id' => '99999999',
+            'token' => TicketUpstreamCallbackToken::forServiceId((int) $service->id),
+        ])->assertJsonPath('status', 400);
+
+        // 兼容模式下带凭证上传仍强制匹配，伪造 token 不被放行
+        config()->set('ticket_upstream.upload_token_required', false);
+        $this->post('/upload_image', [
+            'file' => UploadedFile::fake()->image('bad-token-2.png', 16, 16)->size(8),
+            'id' => (string) $service->id,
+            'token' => 'forged-token',
+        ])->assertJsonPath('status', 400);
+
+        // 兼容模式下有效凭证正常通过
+        $this->post('/upload_image', [
+            'file' => UploadedFile::fake()->image('good-token.png', 16, 16)->size(8),
+            'id' => (string) $service->id,
+            'token' => TicketUpstreamCallbackToken::forServiceId((int) $service->id),
+        ])->assertJsonPath('status', 200);
+    }
+
+    public function test_upstream_orphan_upload_cleanup_removes_only_unreferenced_files(): void
+    {
+        // 使用系统临时目录下的隔离目录，避免清空与其他用例共享的 storage 上传目录
+        $directory = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+            .DIRECTORY_SEPARATOR.'turaidc-upstream-orphan-'.bin2hex(random_bytes(6));
+        File::ensureDirectoryExists($directory);
+        $this->tempDirectories[] = $directory;
+
+        $orphanName = 'upstream-'.now()->subDays(30)->format('YmdHis').'-'.bin2hex(random_bytes(6)).'.png';
+        $referencedName = 'upstream-'.now()->subDays(30)->format('YmdHis').'-'.bin2hex(random_bytes(6)).'.png';
+        $orphanPath = $directory.'/'.$orphanName;
+        $referencedPath = $directory.'/'.$referencedName;
+        File::put($orphanPath, 'orphan');
+        File::put($referencedPath, 'referenced');
+        touch($orphanPath, now()->subDays(30)->timestamp);
+        touch($referencedPath, now()->subDays(30)->timestamp);
+        $this->uploadedFiles[] = $orphanPath;
+        $this->uploadedFiles[] = $referencedPath;
+
+        $service = $this->createUpstreamUploadService();
+        $ticket = Ticket::query()->create([
+            'user_id' => (int) $service->user_id,
+            'department' => 'support',
+            'subject' => 'orphan cleanup',
+            'priority' => 2,
+            'status' => 1,
+            'service_id' => (int) $service->id,
+        ]);
+        TicketReply::query()->create([
+            'ticket_id' => (int) $ticket->id,
+            'user_id' => (int) $service->user_id,
+            'content' => 'referenced attachment',
+            'is_staff' => 0,
+            'attachments' => [[
+                'name' => $referencedName,
+                'path' => 'private/tickets/upstream/'.$referencedName,
+                'size' => 10,
+                'mime_type' => 'image/png',
+                'type' => 'image',
+            ]],
+        ]);
+
+        $result = app(TicketUpstreamCallbackService::class)->cleanupOrphanUploads(
+            retentionMinutes: 7,
+            directory: $directory,
+            limit: 100,
+        );
+
+        $this->assertSame(1, $result['deleted']);
+        $this->assertSame(1, $result['referenced']);
+        $this->assertFileDoesNotExist($orphanPath);
+        $this->assertFileExists($referencedPath);
+    }
+
+    public function test_upstream_upload_throttle_respects_whitelist_and_rate_limit(): void
+    {
+        Setting::forgetCachedGroup('ticket_upstream');
+
+        // 白名单 IP 不限速：即使非白名单速率仅为 1 次/分钟，白名单 IP 连续上传也成功
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => '203.0.113.10',
+            'rate_limit' => '1',
+        ]);
+        for ($i = 0; $i < 3; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])
+                ->post('/upload_image', [
+                    'file' => UploadedFile::fake()->image('whitelist-'.$i.'.png', 8, 8)->size(4),
+                ])
+                ->assertJsonPath('status', 200);
+        }
+
+        // 非白名单 IP 限速：第 1 次成功，第 2 次被拒（429）
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('limited-1.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 200);
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('limited-2.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 429);
+
+        // rate_limit=0 表示不限速
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => '',
+            'rate_limit' => '0',
+        ]);
+        for ($i = 0; $i < 3; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.30'])
+                ->post('/upload_image', [
+                    'file' => UploadedFile::fake()->image('unlimited-'.$i.'.png', 8, 8)->size(4),
+                ])
+                ->assertJsonPath('status', 200);
+        }
+    }
+
+    public function test_upstream_upload_throttle_blocks_non_whitelisted_when_enabled(): void
+    {
+        Setting::forgetCachedGroup('ticket_upstream');
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => '203.0.113.10',
+            'rate_limit' => '0',
+            'block_non_whitelisted' => '1',
+        ]);
+
+        // 白名单 IP 正常上传
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('whitelisted-block.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 200);
+
+        // 非白名单 IP 直接拒绝（即使 rate_limit=0）
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.40'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('blocked-1.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 403);
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.40'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('blocked-2.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 403);
+
+        // CIDR 白名单匹配
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => '198.51.100.0/24',
+            'rate_limit' => '0',
+            'block_non_whitelisted' => '1',
+        ]);
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.50'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('cidr-whitelisted.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 200);
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.60'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('cidr-blocked.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 403);
+    }
+
+    public function test_upstream_upload_throttle_does_not_treat_invalid_cidr_prefix_as_wildcard(): void
+    {
+        Setting::forgetCachedGroup('ticket_upstream');
+
+        // 非法 CIDR 前缀（如 198.51.100.0/foo）不应被当作 /0 匹配所有来源：
+        // 前缀位解析失败时该条目不匹配任何 IP，非白名单 IP 仍按配置被拒绝。
+        // 该行为由配置直接写入 settings 表绕过管理端校验，模拟历史脏配置场景。
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => '198.51.100.0/foo',
+            'rate_limit' => '0',
+            'block_non_whitelisted' => '1',
+        ]);
+
+        // 名义上落在该子网内的 IP 也不被白名单匹配
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.50'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('invalid-cidr-in-subnet.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 403);
+
+        // 子网外的 IP 同样被拒绝
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.70'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('invalid-cidr-outside.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 403);
     }
 
     public function test_ticket_image_upload_still_accepts_normal_image(): void
@@ -196,6 +437,83 @@ class UploadSecurityTest extends TestCase
             'nickname' => 'Upload Security',
             'email' => 'upload-security-'.$suffix.'@example.com',
             'status' => 1,
+        ]);
+    }
+
+    private function createUpstreamUploadService(): Service
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = User::query()->create([
+            'email' => 'upload-'.$suffix.'@example.com',
+            'password' => 'Temp@123456',
+            'phone' => '13'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT),
+            'status' => 1,
+            'nickname' => 'Upload '.$suffix,
+            'real_name' => '',
+            'id_card' => '',
+            'verification_status' => 0,
+            'verification_message' => '',
+            'verification_certify_id' => null,
+            'member_level_id' => null,
+            'total_sales_amount' => '0.00',
+            'referrer_user_id' => null,
+            'verified_at' => null,
+        ]);
+
+        $firstGroup = FirstProductGroup::query()->create([
+            'code' => 'upload_security_'.$suffix,
+            'name' => '上传安全分组 '.$suffix,
+            'slug' => 'upload-security-'.$suffix,
+            'description' => '上传安全分组说明',
+            'sort_order' => 1,
+            'is_visible' => 1,
+            'is_system' => 0,
+            'legacy_product_type' => ProductType::VPS,
+        ]);
+        $secondGroup = SecondProductGroup::query()->create([
+            'first_product_group_id' => (int) $firstGroup->id,
+            'name' => '上传安全二级 '.$suffix,
+            'slug' => 'upload-security-child-'.$suffix,
+            'description' => '上传安全二级说明',
+            'sort_order' => 1,
+            'is_visible' => 1,
+        ]);
+        $thirdGroup = ThirdProductGroup::query()->create([
+            'second_product_group_id' => (int) $secondGroup->id,
+            'name' => '上传安全三级 '.$suffix,
+            'slug' => 'upload-security-leaf-'.$suffix,
+            'description' => '上传安全三级说明',
+            'sort_order' => 1,
+            'is_visible' => 1,
+        ]);
+        $product = Product::query()->create([
+            'product_group_id' => (int) $thirdGroup->id,
+            'service_type_code' => ProductType::VPS,
+            'name' => 'Upload Security Product '.$suffix,
+            'custom_display_name' => 'Upload Security Product '.$suffix,
+            'product_type' => ProductType::VPS,
+            'description' => '',
+            'pricing' => ['monthly' => '10.00'],
+            'setup_fee' => '0.00',
+            'config_options' => [],
+            'purchase_requires' => [],
+            'stock' => 10,
+            'status' => 1,
+            'sort_order' => 1,
+            'auto_setup' => 0,
+        ]);
+
+        return Service::query()->create([
+            'user_id' => (int) $user->id,
+            'product_id' => (int) $product->id,
+            'name' => 'Upload Security Service '.$suffix,
+            'domain' => 'upload-'.$suffix.'.example.test',
+            'billing_cycle' => 'monthly',
+            'amount' => '10.00',
+            'status' => ServiceStatus::ACTIVE,
+            'provision_data' => [],
+            'expires_at' => now()->addMonth(),
+            'auto_renew' => 0,
         ]);
     }
 }

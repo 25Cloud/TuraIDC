@@ -35,6 +35,7 @@ class AdminLogV2QueryService
         'system',
         'tasks',
         'upstream',
+        'upstream-uploads',
     ];
 
     public function __construct(
@@ -86,6 +87,7 @@ class AdminLogV2QueryService
             'tasks' => $this->adminLogService->getTaskLogsSummary($filters),
             'system', 'activity' => $this->adminLogService->getActivityLogsSummary($filters),
             'runtime' => $this->adminLogService->getRuntimeLogsSummary($filters),
+            'upstream-uploads' => $this->adminLogService->getUpstreamUploadLogsSummary($filters),
             'schedule' => $this->scheduleSummary($filters),
             'upstream' => $this->adminLogService->getUpstreamLogsSummary($filters),
             default => $this->legacyList($channel, $filters, 1, 1)['summary'] ?? [],
@@ -105,6 +107,7 @@ class AdminLogV2QueryService
             'system', 'activity' => $this->activityDetail($channel, $log),
             'gateway' => $this->gatewayDetail($log),
             'runtime' => $this->runtimeDetail($log),
+            'upstream-uploads' => $this->runtimeDetail($log),
             'tasks', 'schedule' => $this->scheduleDetail($channel, $log),
             'upstream' => $this->adminLogService->getUpstreamLog($log),
             default => null,
@@ -131,6 +134,7 @@ class AdminLogV2QueryService
             'system' => $this->adminLogService->getSystemLogs($filters, $page, $perPage, $withSummary),
             'activity' => $this->adminLogService->getActivityLogs($filters, $page, $perPage, $withSummary),
             'runtime' => $this->adminLogService->getRuntimeLogs($filters, $page, $perPage),
+            'upstream-uploads' => $this->adminLogService->getUpstreamUploadLogs($filters, $page, $perPage),
             'admin-logins' => $this->adminLogService->getAdminLoginLogs($filters, $page, $perPage, $withSummary),
             'gateway' => $this->adminLogService->getGatewayLogs($filters, $page, $perPage, $withSummary),
             'schedule' => $this->scheduleRunLogService->getScheduleStatus($page, $perPage, $filters),

@@ -159,6 +159,8 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::put('/ticket-delivery-rules/{rule}', [TicketDeliveryController::class, 'update']);
         Route::delete('/ticket-delivery-rules/{rule}', [TicketDeliveryController::class, 'destroy']);
         Route::post('/tickets/{ticket}/upstream-delivery/callback-registration', [TicketDeliveryController::class, 'registerCallback']);
+        Route::get('/ticket-delivery-upload-guard', [TicketDeliveryController::class, 'uploadGuardConfig']);
+        Route::post('/ticket-delivery-upload-guard', [TicketDeliveryController::class, 'saveUploadGuardConfig']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::TICKET_REPLY])->group(function (): void {

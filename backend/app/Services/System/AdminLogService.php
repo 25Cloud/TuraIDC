@@ -41,6 +41,8 @@ class AdminLogService
 
     private const FILE_LOG_SUMMARY_CACHE_TTL_SECONDS = 60;
 
+    private const UPSTREAM_NESTED_LOG_LIMIT = 20;
+
     private const TASK_META = [
         'refresh-hosting-panel-auth' => [
             'title' => '接口认证刷新',
@@ -300,6 +302,76 @@ class AdminLogService
         $paginator = $this->paginateCollection($entries, $page, $perPage);
 
         return $this->buildPaginatorPayload($paginator);
+    }
+
+    /**
+     * 上游附件上传与清理日志：过滤 Laravel 日志中与上传/清理相关的条目。
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    public function getUpstreamUploadLogs(array $filters, int $page, int $perPage): array
+    {
+        $entries = collect($this->readLaravelLogEntries())
+            ->filter(fn (array $item): bool => $this->isUpstreamUploadLogEntry($item))
+            ->filter(fn (array $item): bool => $this->matchesUpstreamUploadLogFilters($item, $filters))
+            ->sortByDesc(fn (array $item): int => strtotime((string) ($item['time'] ?? '')) ?: 0)
+            ->values();
+
+        return $this->buildPaginatorPayload($this->paginateCollection($entries, $page, $perPage));
+    }
+
+    /**
+     * 上游附件上传与清理日志汇总，复用与列表完全一致的过滤条件（level、keyword、日期），
+     * 保证管理端筛选后列表总数与汇总统计结果一致。
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array{total: int, errors: int, warnings: int, infos: int}
+     */
+    public function getUpstreamUploadLogsSummary(array $filters): array
+    {
+        $entries = collect($this->readLaravelLogEntries())
+            ->filter(fn (array $item): bool => $this->isUpstreamUploadLogEntry($item))
+            ->filter(fn (array $item): bool => $this->matchesUpstreamUploadLogFilters($item, $filters));
+
+        return [
+            'total' => $entries->count(),
+            'errors' => $entries->whereIn('level', ['ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'])->count(),
+            'warnings' => $entries->where('level', 'WARNING')->count(),
+            'infos' => $entries->where('level', 'INFO')->count(),
+        ];
+    }
+
+    /**
+     * 上游附件上传日志的统一过滤条件：level、keyword、日期范围。
+     * 列表与汇总共用该方法，避免两侧过滤逻辑漂移导致筛选后的总数与汇总不一致。
+     *
+     * @param  array<string, mixed>  $item
+     * @param  array<string, mixed>  $filters
+     */
+    private function matchesUpstreamUploadLogFilters(array $item, array $filters): bool
+    {
+        if (! empty($filters['level']) && strtoupper((string) $item['level']) !== strtoupper((string) $filters['level'])) {
+            return false;
+        }
+        if (! empty($filters['keyword']) && ! str_contains((string) $item['message'], trim((string) $filters['keyword']))) {
+            return false;
+        }
+
+        return $this->matchLogDateRange((string) $item['time'], $filters);
+    }
+
+    private function isUpstreamUploadLogEntry(array $item): bool
+    {
+        $message = (string) ($item['message'] ?? '');
+
+        foreach (['上游工单附件上传', '上游附件上传', '清理上游未使用上传文件'] as $keyword) {
+            if ($keyword !== '' && str_contains($message, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1277,23 +1349,22 @@ class AdminLogService
 
     public function getUpstreamLogs(array $filters, int $page, int $perPage, bool $withSummary = true): array
     {
-        $query = $this->buildUpstreamLogQuery($filters);
-        if ($query === null) {
+        $base = $this->buildUpstreamLogBaseQuery($filters);
+        if ($base === null) {
             return $this->buildPaginatorPayload($this->emptyPaginator($perPage));
         }
 
-        $total = (int) (clone $query)
-            ->reorder()
-            ->distinct()
-            ->count('ticket_id');
-        $ticketIds = (clone $query)
-            ->reorder()
-            ->select('ticket_id')
-            ->selectRaw('MAX(occurred_at) as latest_occurred_at')
-            ->selectRaw('MAX(id) as latest_id')
-            ->groupBy('ticket_id')
-            ->orderByDesc('latest_occurred_at')
-            ->orderByDesc('latest_id')
+        // 每工单最新事件（delivery_rank=1）视为工单当前状态，status 筛选作用于最新事件；
+        // 嵌套历史事件不受 status 筛选影响，保证列表行与汇总使用相同的筛选顺序。
+        $latest = TicketUpstreamDeliveryLog::query()
+            ->fromSub($this->upstreamLogRankedSubQuery($base), 'ranked_delivery_logs')
+            ->where('delivery_rank', 1);
+        $this->applyUpstreamLogStatusFilter($latest, $filters);
+
+        $total = (int) (clone $latest)->count();
+        $ticketIds = (clone $latest)
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
             ->forPage($page, $perPage)
             ->pluck('ticket_id')
             ->map(static fn (mixed $id): int => (int) $id)
@@ -1302,10 +1373,18 @@ class AdminLogService
 
         $rows = [];
         if ($ticketIds !== []) {
-            $eventsByTicket = (clone $query)
+            $eventCounts = (clone $base)
                 ->whereIn('ticket_id', $ticketIds)
-                ->orderByDesc('occurred_at')
-                ->orderByDesc('id')
+                ->selectRaw('ticket_id, COUNT(*) AS aggregate')
+                ->groupBy('ticket_id')
+                ->pluck('aggregate', 'ticket_id');
+
+            $eventsByTicket = TicketUpstreamDeliveryLog::query()
+                ->fromSub($this->upstreamLogRankedSubQuery($base, $ticketIds), 'ranked_delivery_logs')
+                ->where('delivery_rank', '<=', self::UPSTREAM_NESTED_LOG_LIMIT)
+                ->orderBy('ticket_id')
+                ->orderBy('delivery_rank')
+                ->with('supplier:id,name')
                 ->get()
                 ->groupBy('ticket_id');
 
@@ -1320,7 +1399,7 @@ class AdminLogService
                 }
 
                 $rows[] = array_merge($eventRows[0], [
-                    'log_count' => count($eventRows),
+                    'log_count' => (int) ($eventCounts[$ticketId] ?? count($eventRows)),
                     'logs' => $eventRows,
                 ]);
             }
@@ -1339,14 +1418,18 @@ class AdminLogService
 
     public function getUpstreamLogsSummary(array $filters): array
     {
-        $query = $this->buildUpstreamLogQuery($filters);
-        if ($query === null) {
+        $base = $this->buildUpstreamLogBaseQuery($filters);
+        if ($base === null) {
             return ['total' => 0, 'failed' => 0, 'delivered' => 0, 'skipped' => 0, 'pending' => 0, 'sending' => 0];
         }
 
-        $summary = (clone $query)
-            ->reorder()
-            ->selectRaw('COUNT(DISTINCT ticket_id) as total')
+        $latest = TicketUpstreamDeliveryLog::query()
+            ->fromSub($this->upstreamLogRankedSubQuery($base), 'ranked_delivery_logs')
+            ->where('delivery_rank', 1);
+        $this->applyUpstreamLogStatusFilter($latest, $filters);
+
+        $summary = (clone $latest)
+            ->selectRaw('COUNT(*) as total')
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) as failed")
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END), 0) as delivered")
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'skipped' THEN 1 ELSE 0 END), 0) as skipped")
@@ -1391,7 +1474,7 @@ class AdminLogService
         ];
     }
 
-    private function buildUpstreamLogQuery(array $filters): ?Builder
+    private function buildUpstreamLogBaseQuery(array $filters): ?Builder
     {
         if (! Schema::hasTable('ticket_upstream_delivery_logs')) {
             return null;
@@ -1403,7 +1486,7 @@ class AdminLogService
                 $query->where($field, (int) $filters[$field]);
             }
         }
-        foreach (['status', 'operation', 'event', 'reason_code', 'provider_key'] as $field) {
+        foreach (['operation', 'event', 'reason_code', 'provider_key'] as $field) {
             if (! empty($filters[$field])) {
                 $query->where($field, trim((string) $filters[$field]));
             }
@@ -1429,6 +1512,36 @@ class AdminLogService
         }
 
         return $query;
+    }
+
+    /**
+     * status 筛选只作用于每个工单的最新事件（delivery_rank=1），
+     * 嵌套历史事件不参与状态筛选。
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    private function applyUpstreamLogStatusFilter(Builder $query, array $filters): void
+    {
+        if (! empty($filters['status'])) {
+            $query->where('status', trim((string) $filters['status']));
+        }
+    }
+
+    /**
+     * 构建按工单最新事件排序的排名子查询；可选限定 ticket_id 集合。
+     *
+     * @param  array<int, int>|null  $ticketIds
+     */
+    private function upstreamLogRankedSubQuery(Builder $base, ?array $ticketIds = null): Builder
+    {
+        $sub = (clone $base)
+            ->select('ticket_upstream_delivery_logs.*')
+            ->selectRaw('ROW_NUMBER() OVER (PARTITION BY ticket_id ORDER BY occurred_at DESC, id DESC) AS delivery_rank');
+        if ($ticketIds !== null && $ticketIds !== []) {
+            $sub->whereIn('ticket_id', $ticketIds);
+        }
+
+        return $sub;
     }
 
     /** @return array<string, mixed> */

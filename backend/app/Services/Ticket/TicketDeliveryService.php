@@ -451,6 +451,7 @@ class TicketDeliveryService
                 'attachment' => $this->uploadAttachments($supplier, $attachments),
                 'priority' => $this->priorityLabel((int) $ticket->priority),
                 'is_api' => 1,
+                'request_id' => 'ticket-create:'.$binding->id,
             ];
 
             $response = $this->zjmfTransport()->post($supplier, '/ticket/create', $payload);
@@ -645,7 +646,7 @@ class TicketDeliveryService
             'attempt' => (int) $delivery->attempts + 1,
             'message' => '开始提交工单回复到上游',
         ]);
-        $this->attemptReply($delivery, function () use ($reply, $binding): void {
+        $this->attemptReply($delivery, function () use ($reply, $binding, $delivery): void {
             $supplier = $this->supplierForBinding($reply->ticket);
             $attachments = $this->uploadAttachments($supplier, (array) $reply->attachments);
             $response = $this->zjmfTransport()->post($supplier, '/ticket/reply', [
@@ -653,6 +654,7 @@ class TicketDeliveryService
                 'content' => (string) ($reply->delivery?->content_prefix ?? '').ltrim((string) $reply->content),
                 'attachment' => $attachments,
                 'is_api' => 1,
+                'request_id' => (string) ($delivery->idempotency_key ?? 'ticket-reply:'.$reply->id),
             ]);
             throw_if($this->extractSuccess($response) === false, new BusinessException((string) ($response['msg'] ?? '上游回复同步失败'), 42200));
         });

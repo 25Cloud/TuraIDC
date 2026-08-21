@@ -151,6 +151,20 @@ export const systemRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    path: 'logs/upstream-uploads',
+    name: 'AdminUpstreamUploadLogs',
+    component: () => import('@/pages/logs/index.vue'),
+    meta: {
+      title: {
+        zh_CN: '上传/清理日志',
+        en_US: 'Upload & Cleanup Logs',
+      },
+      permission: 'log.list',
+      keepAlive: false,
+      logTab: 'upstream-uploads',
+    },
+  },
+  {
     path: 'logs/schedules',
     name: 'AdminScheduleTasks',
     component: () => import('@/pages/logs/index.vue'),

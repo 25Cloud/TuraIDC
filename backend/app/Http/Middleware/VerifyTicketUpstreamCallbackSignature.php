@@ -57,6 +57,21 @@ final class VerifyTicketUpstreamCallbackSignature
             return response()->json(['status' => 400, 'msg' => '签名错误'], 200);
         }
 
+        if ($token === '') {
+            $this->delivery->recordInboundCallbackFailure(
+                (string) $request->input('tid', ''),
+                'legacy_token_missing',
+                '上游工单回调 token 未配置或服务不存在'
+            );
+            Log::warning('上游工单回调 token 为空', [
+                'callback_path' => $request->path(),
+                'service_id' => $id,
+                'reason' => 'legacy_token_missing',
+            ]);
+
+            return response()->json(['status' => 400, 'msg' => '签名验证失败'], 200);
+        }
+
         $signed = ['id' => (string) $id, 'token' => $token, 'rand_str' => $rand];
         ksort($signed, SORT_STRING);
         $expected = strtoupper(md5((string) json_encode($signed)));

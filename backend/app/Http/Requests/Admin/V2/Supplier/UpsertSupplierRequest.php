@@ -102,9 +102,10 @@ class UpsertSupplierRequest extends AdminFormRequest
             (array) ($validated['provider_config'] ?? []),
             is_array($existingBinding['provider_config'] ?? null) ? (array) $existingBinding['provider_config'] : []
         );
-        $validated['ticket_delivery_enabled'] = array_key_exists('ticket_delivery_enabled', $validated)
-            ? (bool) $validated['ticket_delivery_enabled']
-            : (bool) ($existingBinding['ticket_delivery_enabled'] ?? false);
+        $validated['ticket_delivery_enabled'] = (string) ($validated['provider_key'] ?? '') === ProviderKey::ZJMF_FINANCE_API
+            && (array_key_exists('ticket_delivery_enabled', $validated)
+                ? (bool) $validated['ticket_delivery_enabled']
+                : (bool) ($existingBinding['ticket_delivery_enabled'] ?? false));
 
         if ($supplier !== null) {
             if ($validated['api_url'] === '') {
