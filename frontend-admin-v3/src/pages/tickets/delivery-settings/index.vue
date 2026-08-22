@@ -572,6 +572,11 @@ function openCreateDialog() {
 }
 
 function openEditDialog(row: TicketDeliveryRuleRecord) {
+  // 与新建流程一致：管理员在 /upload_image 未启用时禁止编辑（非管理员仅查看不受限）
+  if (canManage.value && !savedUploadImageEnabled.value) {
+    MessagePlugin.warning('请先启用 /upload_image 接口');
+    return;
+  }
   editingId.value = row.id;
   Object.assign(form, {
     name: row.name || '',
