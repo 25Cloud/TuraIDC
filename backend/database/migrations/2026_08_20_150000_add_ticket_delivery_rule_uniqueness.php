@@ -18,7 +18,7 @@ return new class extends Migration
         // 归一化 supplier_id 为空的安全唯一键：NULL 供应商范围统一映射为 0，
         // 使 (supplier_id, department, ...) 的空值重复记录也能被唯一约束拦截。
         if (! Schema::hasColumn('ticket_delivery_rules', 'supplier_scope_key')) {
-            DB::statement('ALTER TABLE ticket_delivery_rules ADD COLUMN supplier_scope_key BIGINT UNSIGNED GENERATED ALWAYS AS (COALESCE(supplier_id, 0)) STORED');
+            DB::statement('ALTER TABLE ticket_delivery_rules ADD COLUMN supplier_scope_key BIGINT UNSIGNED GENERATED ALWAYS AS (COALESCE(supplier_id, 0)) VIRTUAL');
         }
 
         if (DB::table('ticket_delivery_rules')
