@@ -517,7 +517,8 @@ class ServiceTransformService
         // （以及快照 secret_json）里，这里显式剔除明文，避免明文旁路加密字段。
         unset($provisionData['password']);
 
-        $service->forceFill(['provision_data' => $provisionData])->save();
+        $persistedProvisionData = $this->bindingResolver()->sanitizeServiceProvisionData($provisionData);
+        $service->forceFill(['provision_data' => $persistedProvisionData])->save();
         app(ServiceUpstreamBindingWriter::class)
             ->syncServiceState($service, null, $provisionData);
     }
@@ -1007,7 +1008,11 @@ class ServiceTransformService
         $legacy = (array) ($service->provision_data ?? []);
         $projection = $this->bindingResolver()->serviceProvisionProjection($service, $includeSecrets);
 
-        return $projection === [] ? $legacy : array_replace($legacy, $projection);
+        $provisionData = $projection === [] ? $legacy : array_replace($legacy, $projection);
+
+        return $includeSecrets
+            ? $provisionData
+            : $this->bindingResolver()->sanitizeServiceProvisionData($provisionData);
     }
 
     private function resolveProductSupplier(Product $product): ?Supplier

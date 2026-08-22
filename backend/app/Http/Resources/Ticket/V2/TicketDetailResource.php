@@ -16,7 +16,7 @@ class TicketDetailResource extends JsonResource
     {
         $ticket = is_array($this->resource) ? $this->resource : [];
 
-        return [
+        $data = [
             'id' => (int) ($ticket['id'] ?? 0),
             'user_id' => (int) ($ticket['user_id'] ?? 0),
             'department' => (string) ($ticket['department'] ?? ''),
@@ -37,6 +37,12 @@ class TicketDetailResource extends JsonResource
             'assignee' => $this->assignee($ticket['assignee'] ?? null),
             'replies_summary' => $this->repliesSummary((array) ($ticket['replies_summary'] ?? [])),
         ];
+
+        if (array_key_exists('upstream_delivery', $ticket)) {
+            $data['upstream_delivery'] = $this->upstreamDelivery($ticket['upstream_delivery']);
+        }
+
+        return $data;
     }
 
     private function user(mixed $user): ?array
@@ -103,6 +109,33 @@ class TicketDetailResource extends JsonResource
             ->filter(fn (array $item): bool => $item['key'] !== '' && $item['label'] !== '')
             ->values()
             ->all();
+    }
+
+    private function upstreamDelivery(mixed $delivery): array
+    {
+        $delivery = is_array($delivery) ? $delivery : [];
+
+        return [
+            'configured' => (bool) ($delivery['configured'] ?? false),
+            'status' => (string) ($delivery['status'] ?? 'not_configured'),
+            'status_label' => (string) ($delivery['status_label'] ?? '未配置'),
+            'provider_key' => $delivery['provider_key'] ?? null,
+            'supplier_id' => isset($delivery['supplier_id']) ? (int) $delivery['supplier_id'] : null,
+            'upstream_department_id' => $delivery['upstream_department_id'] ?? null,
+            'upstream_service_id' => $delivery['upstream_service_id'] ?? null,
+            'upstream_ticket_id' => $delivery['upstream_ticket_id'] ?? null,
+            'attempts' => (int) ($delivery['attempts'] ?? 0),
+            'last_attempt_at' => $delivery['last_attempt_at'] ?? null,
+            'delivered_at' => $delivery['delivered_at'] ?? null,
+            'last_error' => $delivery['last_error'] ?? null,
+            'last_event' => is_array($delivery['last_event'] ?? null) ? [
+                'event' => (string) ($delivery['last_event']['event'] ?? ''),
+                'status' => (string) ($delivery['last_event']['status'] ?? ''),
+                'reason_code' => $delivery['last_event']['reason_code'] ?? null,
+                'message' => $delivery['last_event']['message'] ?? null,
+                'occurred_at' => $delivery['last_event']['occurred_at'] ?? null,
+            ] : null,
+        ];
     }
 
     /**

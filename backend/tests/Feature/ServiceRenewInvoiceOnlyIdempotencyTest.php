@@ -1389,7 +1389,7 @@ final class FakeInvoiceRenewalBindingResolver extends PluginBindingResolver
         return $this->supplier;
     }
 
-    public function supplierWithRuntimeCredentials(Supplier $supplier, bool $includeSecrets = true): Supplier
+    public function supplierWithRuntimeCredentials(Supplier $supplier, bool $includeSecrets = true, ?string $providerKey = null): Supplier
     {
         return $supplier;
     }

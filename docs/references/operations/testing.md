@@ -341,9 +341,22 @@ php artisan test
 - 下单/支付/账单：`OrderQuantityCheckoutFlowTest`、`OrderZeroAmountPaymentFlowTest`、`RechargeStatusBalanceRegressionTest`、`PaymentInvoiceProjectionSyncTest`
 - 服务控制台/VNC：`ServiceVncTokenSecurityTest`、`ServiceConsoleSupplierBindingTest`
 - 优惠券/返佣：`CouponLifecycleRegressionTest`、`ReferralRewardLifecycleRegressionTest`
-- 工单/上传：`TicketServiceRegressionTest`、`UploadSecurityTest`
+- 工单/上传：`TicketServiceRegressionTest`、`UploadSecurityTest`、`ZjmfFinanceTransportTest`
 - 调度：`ScheduleTaskExecutionCoverageTest`、`ScheduleTaskOverviewTest`
 - 安装/数据库：`DatabaseEngineeringCommandTest`、`DatabaseIndexOptimizationRegressionTest`
+
+上传安全与上游传递的定向验证：
+
+```bash
+cd backend
+php artisan test --filter=UploadSecurityTest
+php artisan test --filter=ZjmfFinanceTransportTest
+php artisan test --filter=ServiceProvisionDataTokenSanitizationTest
+```
+
+- `UploadSecurityTest` 覆盖 `/upload_image` 凭证/白名单/限流与孤儿文件清理。测试缓存为 `array`（`phpunit.xml.dist`），限流计数不落 Redis；用例 `tearDown` 会清理固定测试 IP 的 `RateLimiter` 键，重复运行保持幂等。
+- `ZjmfFinanceTransportTest` 覆盖附件上传：复用共享 TLS 选项（`ssl_verify`/`ca_bundle`）、路径逃逸拒绝、上游失败抛业务异常。
+- `ServiceProvisionDataTokenSanitizationTest` 覆盖回调 token 不进入 `services.provision_data`、仅保留在加密 secret 快照。
 
 ### 9.3 空库初始化链路验证
 
