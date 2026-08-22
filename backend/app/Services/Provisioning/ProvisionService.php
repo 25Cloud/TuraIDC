@@ -219,43 +219,46 @@ class ProvisionService
             $hostDetail = $result['host_detail'];
             $serviceStatus = $this->resolveServiceStatusFromUpstream($hostDetail);
 
+            $provisionData = array_merge($this->serviceProvisionData($service), [
+                'provider_key' => $providerKey,
+                'supplier_id' => $this->resolveProductSupplierId($order->product),
+                'requested_host' => $result['requested_host'],
+                'upstream_invoice_id' => $result['upstream_invoice_id'],
+                'upstream_host_id' => $result['upstream_host_id'],
+                'upstream_host_ids' => $result['upstream_host_ids'],
+                'downstream_id' => $result['downstream_id'] ?? null,
+                'upstream_product_id' => $this->resolveUpstreamProductId($order->product),
+                'upstream_product_name' => trim((string) ($hostDetail['product_name'] ?? '')),
+                'upstream_status' => (string) ($hostDetail['domainstatus'] ?? ''),
+                'dedicated_ip' => (string) ($hostDetail['dedicatedip'] ?? ''),
+                'assigned_ips' => is_array($hostDetail['assignedips'] ?? null) ? $hostDetail['assignedips'] : [],
+                'host_config_option' => is_array($hostDetail['config_option'] ?? null) ? $hostDetail['config_option'] : [],
+                'os' => (string) ($hostDetail['os'] ?? ''),
+                'connection_secret' => $this->encryptConnectionCache([
+                    'hostname' => (string) ($hostDetail['domain'] ?? $result['requested_host']),
+                    'username' => (string) ($hostDetail['username'] ?? ''),
+                    'password' => (string) ($hostDetail['password'] ?? ''),
+                    'port' => (int) (($hostDetail['port'] ?? 0) ?: 0),
+                    'internal_ip' => (string) ($hostDetail['internalip'] ?? $hostDetail['privateip'] ?? ''),
+                ]),
+                'connection_cached_at' => now()->format('Y-m-d H:i:s'),
+                'last_provisioned_at' => now()->format('Y-m-d H:i:s'),
+                'provision_error' => null,
+            ]);
+            $persistedProvisionData = $this->pluginBindingResolver()->sanitizeServiceProvisionData($provisionData);
+
             $service->forceFill([
                 'status' => $serviceStatus,
                 'name' => (string) ($service->name ?: $order->display_product_name ?: $order->product?->name ?: '未命名服务'),
                 'domain' => (string) ($hostDetail['domain'] ?? $result['requested_host']),
                 'expires_at' => $this->resolveServiceExpiry($hostDetail, $order),
                 'suspended_reason' => null,
-                'provision_data' => array_merge($this->serviceProvisionData($service), [
-                    'provider_key' => $providerKey,
-                    'supplier_id' => $this->resolveProductSupplierId($order->product),
-                    'requested_host' => $result['requested_host'],
-                    'upstream_invoice_id' => $result['upstream_invoice_id'],
-                    'upstream_host_id' => $result['upstream_host_id'],
-                    'upstream_host_ids' => $result['upstream_host_ids'],
-                    'downstream_id' => $result['downstream_id'] ?? null,
-                    'upstream_product_id' => $this->resolveUpstreamProductId($order->product),
-                    'upstream_product_name' => trim((string) ($hostDetail['product_name'] ?? '')),
-                    'upstream_status' => (string) ($hostDetail['domainstatus'] ?? ''),
-                    'dedicated_ip' => (string) ($hostDetail['dedicatedip'] ?? ''),
-                    'assigned_ips' => is_array($hostDetail['assignedips'] ?? null) ? $hostDetail['assignedips'] : [],
-                    'host_config_option' => is_array($hostDetail['config_option'] ?? null) ? $hostDetail['config_option'] : [],
-                    'os' => (string) ($hostDetail['os'] ?? ''),
-                    'connection_secret' => $this->encryptConnectionCache([
-                        'hostname' => (string) ($hostDetail['domain'] ?? $result['requested_host']),
-                        'username' => (string) ($hostDetail['username'] ?? ''),
-                        'password' => (string) ($hostDetail['password'] ?? ''),
-                        'port' => (int) (($hostDetail['port'] ?? 0) ?: 0),
-                        'internal_ip' => (string) ($hostDetail['internalip'] ?? $hostDetail['privateip'] ?? ''),
-                    ]),
-                    'connection_cached_at' => now()->format('Y-m-d H:i:s'),
-                    'last_provisioned_at' => now()->format('Y-m-d H:i:s'),
-                    'provision_error' => null,
-                ]),
+                'provision_data' => $persistedProvisionData,
             ])->save();
             $this->serviceBindingWriter()->recordProvisionAttempt(
                 $service,
                 $order->product,
-                (array) ($service->provision_data ?? []),
+                $provisionData,
                 'success',
                 null,
                 [
@@ -284,21 +287,23 @@ class ProvisionService
                 ? $exception->getMessage()
                 : '上游开通失败，请检查供应商配置或日志';
 
+            $provisionData = array_merge($this->serviceProvisionData($service), [
+                'provider_key' => $providerKey,
+                'supplier_id' => $this->resolveProductSupplierId($order->product),
+                'upstream_product_id' => $this->resolveUpstreamProductId($order->product),
+                'last_provision_attempt_at' => now()->format('Y-m-d H:i:s'),
+                'provision_error' => $message,
+            ]);
+            $persistedProvisionData = $this->pluginBindingResolver()->sanitizeServiceProvisionData($provisionData);
             $service->forceFill([
                 'status' => ServiceStatus::PENDING,
                 'suspended_reason' => mb_substr($message, 0, 200),
-                'provision_data' => array_merge($this->serviceProvisionData($service), [
-                    'provider_key' => $providerKey,
-                    'supplier_id' => $this->resolveProductSupplierId($order->product),
-                    'upstream_product_id' => $this->resolveUpstreamProductId($order->product),
-                    'last_provision_attempt_at' => now()->format('Y-m-d H:i:s'),
-                    'provision_error' => $message,
-                ]),
+                'provision_data' => $persistedProvisionData,
             ])->save();
             $this->serviceBindingWriter()->recordProvisionAttempt(
                 $service,
                 $order->product,
-                (array) ($service->provision_data ?? []),
+                $provisionData,
                 'failed',
                 $message,
                 [
@@ -987,6 +992,8 @@ class ProvisionService
             ])
         );
 
+        $provisionData = $this->pluginBindingResolver()->sanitizeServiceProvisionData($provisionData);
+
         $service->forceFill([
             'status' => ServiceStatus::PENDING,
             'domain' => $hostname !== '' ? $hostname : $service->domain,
@@ -1597,7 +1604,10 @@ class ProvisionService
     {
         $legacy = (array) ($service->provision_data ?? []);
         $projection = $this->pluginBindingResolver()->serviceProvisionProjection($service, $includeSecrets);
+        $provisionData = $projection === [] ? $legacy : array_replace($legacy, $projection);
 
-        return $projection === [] ? $legacy : array_replace($legacy, $projection);
+        return $includeSecrets
+            ? $provisionData
+            : $this->pluginBindingResolver()->sanitizeServiceProvisionData($provisionData);
     }
 }

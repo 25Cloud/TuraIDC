@@ -23,6 +23,7 @@ use App\Services\Ticket\TicketUpstreamCallbackService;
 use App\Services\Ticket\TicketUpstreamCallbackToken;
 use App\Support\AdminPermissions;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\RateLimiter;
@@ -58,6 +59,12 @@ class UploadSecurityTest extends TestCase
 
         if ($this->mediaFileIds !== []) {
             DB::table('media_files')->whereIn('id', $this->mediaFileIds)->delete();
+        }
+
+        // 清理限流计数：固定测试 IP 的 RateLimiter key 会跨用例残留，任何断言失败也要清理，
+        // 避免同一进程内其他用例或重复运行被上一轮计数误限流。
+        foreach (['203.0.113.10', '198.51.100.20', '198.51.100.30', '198.51.100.40'] as $ip) {
+            RateLimiter::clear('ticket-upstream-upload:'.$ip);
         }
 
         parent::tearDown();
@@ -268,6 +275,112 @@ class UploadSecurityTest extends TestCase
         $this->assertSame(1, $result['referenced']);
         $this->assertFileDoesNotExist($orphanPath);
         $this->assertFileExists($referencedPath);
+    }
+
+    public function test_orphan_cleanup_uses_bounded_batch_reference_queries(): void
+    {
+        $directory = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+            .DIRECTORY_SEPARATOR.'turaidc-upstream-orphan-batch-'.bin2hex(random_bytes(6));
+        File::ensureDirectoryExists($directory);
+        $this->tempDirectories[] = $directory;
+
+        $service = $this->createUpstreamUploadService();
+        $ticket = Ticket::query()->create([
+            'user_id' => (int) $service->user_id,
+            'department' => 'support',
+            'subject' => 'batch cleanup',
+            'priority' => 2,
+            'status' => 1,
+            'service_id' => (int) $service->id,
+        ]);
+
+        $referencedName = 'upstream-'.now()->subDays(30)->format('YmdHis').'-'.bin2hex(random_bytes(6)).'.png';
+        TicketReply::query()->create([
+            'ticket_id' => (int) $ticket->id,
+            'user_id' => (int) $service->user_id,
+            'content' => 'referenced',
+            'is_staff' => 0,
+            'attachments' => [[
+                'name' => $referencedName,
+                'path' => 'private/tickets/upstream/'.$referencedName,
+                'size' => 10,
+                'mime_type' => 'image/png',
+                'type' => 'image',
+            ]],
+        ]);
+        $referencedPath = $directory.'/'.$referencedName;
+        File::put($referencedPath, 'referenced');
+        touch($referencedPath, now()->subDays(30)->timestamp);
+        $this->uploadedFiles[] = $referencedPath;
+
+        $orphanPaths = [];
+        for ($i = 0; $i < 3; $i++) {
+            $name = 'upstream-'.now()->subDays(30)->format('YmdHis').'-'.bin2hex(random_bytes(6)).'.png';
+            $path = $directory.'/'.$name;
+            File::put($path, 'orphan-'.$i);
+            touch($path, now()->subDays(30)->timestamp);
+            $this->uploadedFiles[] = $path;
+            $orphanPaths[] = $path;
+        }
+
+        $attachmentQueryCount = 0;
+        DB::listen(function ($query) use (&$attachmentQueryCount): void {
+            if (str_contains($query->sql, 'attachments') && str_contains($query->sql, 'like')) {
+                $attachmentQueryCount++;
+            }
+        });
+
+        $result = app(TicketUpstreamCallbackService::class)->cleanupOrphanUploads(
+            retentionMinutes: 7,
+            directory: $directory,
+            limit: 100,
+        );
+
+        $this->assertSame(3, $result['deleted']);
+        $this->assertSame(1, $result['referenced']);
+        // 初筛一次批量查询 + 锁内一次批量查询，次数不随文件数线性增长
+        $this->assertSame(2, $attachmentQueryCount);
+        foreach ($orphanPaths as $path) {
+            $this->assertFileDoesNotExist($path);
+        }
+        $this->assertFileExists($referencedPath);
+    }
+
+    public function test_orphan_cleanup_counts_lock_contention_as_skipped(): void
+    {
+        $directory = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+            .DIRECTORY_SEPARATOR.'turaidc-upstream-orphan-lock-'.bin2hex(random_bytes(6));
+        File::ensureDirectoryExists($directory);
+        $this->tempDirectories[] = $directory;
+
+        $lockedName = 'upstream-locked-'.bin2hex(random_bytes(6)).'.png';
+        $otherName = 'upstream-other-'.bin2hex(random_bytes(6)).'.png';
+        $lockedPath = $directory.'/'.$lockedName;
+        $otherPath = $directory.'/'.$otherName;
+        File::put($lockedPath, 'locked');
+        File::put($otherPath, 'other');
+        touch($lockedPath, now()->subDays(30)->timestamp);
+        touch($otherPath, now()->subDays(30)->timestamp);
+        $this->uploadedFiles[] = $lockedPath;
+        $this->uploadedFiles[] = $otherPath;
+
+        // 模拟回调正持有该文件锁：锁竞争的文件跳过删除，不计入 referenced
+        $lock = Cache::lock('ticket-upstream-upload:'.$lockedName, 60);
+        $this->assertTrue($lock->get());
+        try {
+            $result = app(TicketUpstreamCallbackService::class)->cleanupOrphanUploads(
+                retentionMinutes: 7,
+                directory: $directory,
+                limit: 100,
+            );
+        } finally {
+            $lock->release();
+        }
+
+        $this->assertSame(1, $result['skipped']);
+        $this->assertSame(1, $result['deleted']);
+        $this->assertFileExists($lockedPath);
+        $this->assertFileDoesNotExist($otherPath);
     }
 
     public function test_upstream_upload_throttle_respects_whitelist_and_rate_limit(): void

@@ -347,6 +347,7 @@ final class ZjmfFinanceTransport
 
         try {
             $response = Http::timeout(30)
+                ->withOptions($this->transport->httpClientOptions())
                 ->withToken($jwt)
                 ->attach('file', $handle, basename($absolutePath))
                 ->post(rtrim((string) $supplier->api_url, '/').'/upload_image');

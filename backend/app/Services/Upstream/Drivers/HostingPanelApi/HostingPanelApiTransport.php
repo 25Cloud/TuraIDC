@@ -935,6 +935,18 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
         return $headerMap;
     }
 
+    /**
+     * 与 buildHttpClientOptions() 一致的 TLS/重定向口径，供插件 transport 里
+     * 绕过本类发起的独立 Http 请求（如 ZjmfFinanceTransport 附件上传）复用，
+     * 保证 ssl_verify / ca_bundle 配置在直传路径上同样生效。
+     *
+     * @return array<string, mixed>
+     */
+    public function httpClientOptions(): array
+    {
+        return $this->buildHttpClientOptions();
+    }
+
     private function buildHttpClientOptions(): array
     {
         $verify = $this->serviceConfig['ssl_verify'];
