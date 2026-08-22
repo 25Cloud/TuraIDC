@@ -351,14 +351,26 @@ class AlipayCertifyClient
 
         // 同步响应验签：对象是响应节点在原始报文中的紧凑 JSON 原文。
         //
-        // fail-closed：无法验签一律判失败，不存在放行分支。实名结果是授信数据
-        // （passed=T 会被上层映射成 status=1「认证通过」并写进用户实名状态），
-        // 原实现只在「片段截到了且公钥可用」时才验签，于是 normalizePublicKey() 因公钥
-        // **格式错误**返回 null 时验签被静默跳过——入口的 missingCredentialLabels()
-        // 只挡「未配置」，挡不住「配错」，攻击者只要能改动响应体就能伪造认证通过。
-        // 上层把 null 映射为网络异常/处理中，配置问题另有下面这条 warning 可追。
+        // fail-closed，且**触发条件是「响应节点非空」而不是「报文带了 sign」**。
+        // 实名结果是授信数据：passed=T 会被上层映射成 status=1「认证通过」并写进用户实名状态，
+        // 所以任何一条「跳过验签仍然放行」的路径都等于允许伪造实名。历史上这里有两个这样的口子：
+        //
+        //   1. 早期只在「片段截到了且公钥可用」时才验签。normalizePublicKey() 在公钥
+        //      **格式错误**时返回 null，验签被静默跳过——入口的 missingCredentialLabels()
+        //      只挡「未配置」，挡不住「配错」。
+        //   2. 随后仍以 $sign !== '' 作为前置条件，于是攻击者只要把 sign 字段**删掉**
+        //      就能整段跳过验签，比伪造签名还省事。
+        //
+        // 因此现在只要响应节点有内容，就必须同时具备有效 sign、可截取的片段和可用公钥，
+        // 缺任何一项都返回 null（上层映射为网络异常/处理中），并留一条 warning 可追。
         $sign = trim((string) ($payload['sign'] ?? ''));
-        if ($sign !== '' && $data !== []) {
+        if ($data !== []) {
+            if ($sign === '') {
+                Log::warning('[支付宝实名] 同步响应缺少签名，按失败处理', ['method' => $method]);
+
+                return null;
+            }
+
             $segment = $this->extractResponseSegment($body, $node);
             $publicKey = $this->normalizePublicKey();
 
