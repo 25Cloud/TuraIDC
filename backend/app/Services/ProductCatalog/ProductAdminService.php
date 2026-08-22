@@ -741,7 +741,37 @@ class ProductAdminService
             })
             ->when(! empty($filters['third_product_group_id']), function (Builder $builder) use ($filters) {
                 $builder->inCurrentProductGroup((int) $filters['third_product_group_id']);
-            });
+            })
+            ->when(
+                ! empty($filters['supplier_id']) || ! empty($filters['provider_key']),
+                function (Builder $builder) use ($filters, $hasProductUpstreamBindings): void {
+                    if (! $hasProductUpstreamBindings) {
+                        // 绑定表缺失时不存在任何已绑定产品，返回空而非全量。
+                        $builder->whereKey(0);
+
+                        return;
+                    }
+
+                    $supplierId = (int) ($filters['supplier_id'] ?? 0);
+                    $providerKey = trim((string) ($filters['provider_key'] ?? ''));
+
+                    // 仅匹配启用的上游绑定（绑定 status 随产品启用状态写入），
+                    // 供工单传递规则按供应商选择已绑定上游产品。
+                    $builder->whereHas('upstreamBindings', function (Builder $bindingQuery) use ($supplierId, $providerKey): void {
+                        $bindingQuery->where('status', 1)
+                            ->when(
+                                $providerKey !== '',
+                                fn (Builder $query): Builder => $query->where('provider_key', $providerKey)
+                            )
+                            ->when($supplierId > 0, function (Builder $query) use ($supplierId): void {
+                                $query->whereHas(
+                                    'supplierPluginBinding',
+                                    fn (Builder $supplierQuery): Builder => $supplierQuery->where('supplier_id', $supplierId)
+                                );
+                            });
+                    });
+                }
+            );
     }
 
     /**
