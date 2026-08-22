@@ -3023,6 +3023,15 @@ async function mockCaptcha(page: import('@playwright/test').Page) {
   });
 }
 
+async function mockDisabledCaptcha(page: import('@playwright/test').Page) {
+  await page.route('**/api/v2/admin/auth/captcha-config**', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: '操作成功', data: { enabled: false, captcha_id: '', script_url: '' } }),
+    });
+  });
+}
+
 async function mockLogin(page: import('@playwright/test').Page) {
   await page.route('**/api/v2/admin/login**', async (route) => {
     const body = route.request().postDataJSON() as { username?: string; password?: string; captcha?: unknown };
@@ -3478,6 +3487,25 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await expect(page).toHaveURL(/\/admin\/login/);
     await expect(page.getByRole('heading', { name: '管理后台' })).toBeVisible();
     await expect(page.getByRole('button', { name: /登录|sign in/i })).toBeVisible();
+  });
+
+  test('submits admin login without captcha when captcha is disabled', async ({ page }) => {
+    await mockDisabledCaptcha(page);
+    await mockLogin(page);
+    await mockAdminInfo(page);
+    await mockDashboard(page);
+
+    await page.goto('/admin/login', { waitUntil: 'domcontentloaded' });
+    await page.getByPlaceholder('请输入管理员账号').fill('cerbo');
+    await page.getByPlaceholder('请输入密码').fill('Temp@123456');
+    const loginRequest = page.waitForRequest('**/api/v2/admin/login');
+    await page.getByRole('button', { name: '登录' }).click();
+    await expect((await loginRequest).postDataJSON()).toMatchObject({
+      username: 'cerbo',
+      password: 'Temp@123456',
+    });
+    await expect((await loginRequest).postDataJSON()).not.toHaveProperty('captcha');
+    await expect(page).toHaveURL(/\/admin\/dashboard/);
   });
 
   test('submits admin login after captcha and opens dashboard', async ({ page }) => {

@@ -48,8 +48,9 @@ async function getCaptchaConfig(configUrl: string) {
       .get<GeeTestConfig>({ url: configUrl })
       .then((response: unknown) => {
         const config = { ...defaultConfig, ...(response as GeeTestConfig) };
-        if (!config.enabled || !config.captcha_id) {
-          throw new Error('人机验证插件未启用或配置不完整');
+        // 未启用时返回配置，由调用方跳过验证；只有启用但配置不完整才阻断登录。
+        if (config.enabled && !config.captcha_id) {
+          throw new Error('人机验证插件配置不完整');
         }
 
         return config;
@@ -304,6 +305,11 @@ export function useGeeTestCaptcha(configUrl = '/v2/client/auth/captcha-config') 
       loading.value = true;
 
       try {
+        const config = await getCaptchaConfig(configUrl);
+        if (!config.enabled) {
+          return null;
+        }
+
         const instance = await initCaptcha();
         if (!instance) {
           throw new Error('行为验证组件初始化失败，请稍后重试');
