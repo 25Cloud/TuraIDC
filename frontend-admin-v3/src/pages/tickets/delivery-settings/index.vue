@@ -202,7 +202,10 @@
       <div class="ticket-delivery-toolbar">
         <div class="ticket-delivery-summary">
           <strong>上游附件上传防护</strong>
-          <span>白名单 IP/CIDR 不限速；非白名单来源按速率限制。上传后超过保留期仍未用于回复工单的文件会自动删除。</span>
+          <span
+            >默认关闭
+            /upload_image；开启后白名单外上传默认拒绝。上传后超过保留期仍未用于回复工单的文件会自动删除。</span
+          >
         </div>
         <t-button v-if="canManage" theme="primary" variant="outline" :loading="guardSaving" @click="saveUploadGuard">
           保存配置
@@ -210,6 +213,10 @@
       </div>
 
       <t-form label-width="170px" class="ticket-delivery-guard-form">
+        <t-form-item label="启用 /upload_image 接口">
+          <t-switch v-model="uploadGuard.upload_image_enabled" :disabled="!canManage" />
+          <span class="ticket-delivery-guard-hint">配置工单传递规则前必须先开启</span>
+        </t-form-item>
         <t-form-item label="白名单 IP / CIDR">
           <t-textarea
             v-model="uploadGuard.allowed_ips"
@@ -281,11 +288,16 @@ const departmentsLoading = ref(false);
 let departmentsRequestId = 0;
 
 const uploadGuard = reactive({
+  upload_image_enabled: false,
   allowed_ips: '',
   rate_limit: 30,
-  block_non_whitelisted: false,
+  block_non_whitelisted: true,
   unused_retention_minutes: 5,
 });
+
+// 已保存生效的接口开关状态：开关表单改动未点「保存配置」前不生效，
+// 新建/启停规则以该状态为准，避免未保存的本地状态绕过后端校验。
+const savedUploadImageEnabled = ref(false);
 
 const departmentOptions = [
   { label: '销售', value: 'sales' },
@@ -470,9 +482,11 @@ async function loadPage() {
 async function loadUploadGuard() {
   try {
     const config = await adminApi.tickets.uploadGuard.config();
+    uploadGuard.upload_image_enabled = config.upload_image_enabled === true;
+    savedUploadImageEnabled.value = uploadGuard.upload_image_enabled;
     uploadGuard.allowed_ips = config.allowed_ips ?? '';
     uploadGuard.rate_limit = Number(config.rate_limit ?? 30);
-    uploadGuard.block_non_whitelisted = Boolean(config.block_non_whitelisted ?? false);
+    uploadGuard.block_non_whitelisted = config.block_non_whitelisted !== false;
     uploadGuard.unused_retention_minutes = Number(config.unused_retention_minutes ?? 5);
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '加载上传防护配置失败'));
@@ -484,13 +498,16 @@ async function saveUploadGuard() {
   guardSaving.value = true;
   try {
     const saved = await adminApi.tickets.uploadGuard.save({
+      upload_image_enabled: Boolean(uploadGuard.upload_image_enabled),
       allowed_ips: uploadGuard.allowed_ips,
       rate_limit: Number(uploadGuard.rate_limit),
       block_non_whitelisted: Boolean(uploadGuard.block_non_whitelisted),
     });
+    uploadGuard.upload_image_enabled = saved.upload_image_enabled === true;
+    savedUploadImageEnabled.value = uploadGuard.upload_image_enabled;
     uploadGuard.allowed_ips = saved.allowed_ips ?? '';
     uploadGuard.rate_limit = Number(saved.rate_limit ?? 0);
-    uploadGuard.block_non_whitelisted = Boolean(saved.block_non_whitelisted ?? false);
+    uploadGuard.block_non_whitelisted = saved.block_non_whitelisted !== false;
     MessagePlugin.success('上传防护配置已保存');
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存上传防护配置失败'));
@@ -500,7 +517,10 @@ async function saveUploadGuard() {
 }
 
 function openCreateDialog() {
-  if (!canManage.value) return;
+  if (!canManage.value || !savedUploadImageEnabled.value) {
+    if (canManage.value) MessagePlugin.warning('请先启用 /upload_image 接口');
+    return;
+  }
   editingId.value = null;
   createDefaultForm();
   dialogVisible.value = true;
@@ -540,6 +560,10 @@ function buildPayload(): TicketDeliveryRulePayload {
 
 async function submitForm() {
   if (!canManage.value) return;
+  if (!savedUploadImageEnabled.value) {
+    MessagePlugin.warning('请先启用 /upload_image 接口');
+    return;
+  }
   const result = await formRef.value?.validate();
   if (result !== true) return;
   saving.value = true;
@@ -563,6 +587,10 @@ async function submitForm() {
 
 async function toggleRule(row: TicketDeliveryRuleRecord) {
   if (!canManage.value) return;
+  if (!savedUploadImageEnabled.value) {
+    MessagePlugin.warning('请先启用 /upload_image 接口');
+    return;
+  }
   try {
     await adminApi.tickets.deliveryRules.update(row.id, {
       name: row.name || '',

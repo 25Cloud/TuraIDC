@@ -129,6 +129,11 @@ class SettingsSeeder extends Seeder
             'published_cache_version' => '1',
         ]);
 
+        static::seedGroup('ticket_upstream', [
+            'upload_image_enabled' => '0',
+            'block_non_whitelisted' => '1',
+        ]);
+
         // 通知模板默认数据（email 全量 + sms 验证码）：幂等种入，
         // 修复 schema baseline 只含表结构不含模板数据的部署缺口。
         static::seedNotificationTemplates();
