@@ -182,23 +182,26 @@ final class BillingCycle
     }
 
     /**
-     * 按周期推进到期时间。未知周期返回 null，由调用方决定兜底。
+     * 按周期推进到期时间。未知周期与不产生续期的周期（一次性/免费）返回 null，
+     * 由调用方决定兜底。
      *
-     * 不统一走 addMonths()：原实现对 annually/biennially/triennially 用的是 addYear(s)，
-     * 与 addMonths(12/24/36) 在月末边界上语义相同但调用形态不同，此处照原样保留，
-     * 避免收敛顺手改掉了跨闰年的取整口径。
+     * 统一用 NoOverflow 变体：Carbon 的 addMonth()/addYear() 默认**允许溢出**，
+     * 实测 2026-01-31 addMonth() 得到 2026-03-03、addMonths(3) 得到 2026-05-01，
+     * 2024-02-29 addYear() 得到 2025-03-01。用在到期日上，「月付」会直接跳过 2 月，
+     * 到期日每期向后漂移，账期与月份对不上。NoOverflow 夹到当月最后一天（2026-02-28）。
+     *
+     * 已知取舍：NoOverflow 不记忆原始锚定日，1 月 31 日续期为 2 月 28 日后，
+     * 下一期从 2 月 28 日推进得到 3 月 28 日，锚定日会逐期回退。要修正需要单独存锚定日，
+     * 不在本次范围内；相比「跳过整月」，逐期回退是更小且更可解释的偏差。
      */
     public static function advance(Carbon $base, ?string $cycle): ?Carbon
     {
-        return match (self::normalize($cycle)) {
-            self::MONTHLY => $base->copy()->addMonth(),
-            self::QUARTERLY => $base->copy()->addMonths(3),
-            self::SEMIANNUALLY => $base->copy()->addMonths(6),
-            self::ANNUALLY => $base->copy()->addYear(),
-            self::BIENNIALLY => $base->copy()->addYears(2),
-            self::TRIENNIALLY => $base->copy()->addYears(3),
-            default => null,
-        };
+        $months = self::months($cycle);
+        if ($months === null || $months <= 0) {
+            return null;
+        }
+
+        return $base->copy()->addMonthsNoOverflow($months);
     }
 
     /**

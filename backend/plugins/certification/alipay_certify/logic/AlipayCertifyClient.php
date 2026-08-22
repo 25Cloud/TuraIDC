@@ -250,8 +250,21 @@ class AlipayCertifyClient
             ];
         }
 
-        $signType = strtoupper(trim((string) ($payload['sign_type'] ?? self::SIGN_TYPE)));
-        $algorithm = $signType === 'RSA' ? OPENSSL_ALGO_SHA1 : OPENSSL_ALGO_SHA256;
+        // 缺业务标识就没有重放标识可建立：同一条通知能被无限次消费，
+        // 而下面验签通过后会返回 passed=true。宁可拒收，也不能放一条无法去重的通知过去。
+        if ($certifyId === '') {
+            return [
+                'passed' => false,
+                'message' => '回调缺少认证标识，无法防重放',
+                'code' => 40001,
+                'http_status' => 401,
+            ];
+        }
+
+        // 算法固定 SHA256，不读报文里的 sign_type：
+        // 支付宝身份认证只签发 RSA2，若按报文取值，攻击者传 sign_type=RSA 即可把校验
+        // 降级到 SHA1，用一份 SHA1 碰撞签名绕过验签。
+        $algorithm = OPENSSL_ALGO_SHA256;
 
         // 异步通知的验签对象：剔除 sign 与 sign_type 后按 key 升序拼接
         $params = $payload;
@@ -279,7 +292,7 @@ class AlipayCertifyClient
             'code' => 0,
             'http_status' => 200,
             // 交给平台做重放拦截：同一 certify_id 的同一条签名只应被消费一次
-            'replay_key' => $certifyId === '' ? '' : 'alipay_certify:'.hash('sha256', $certifyId.'|'.$sign),
+            'replay_key' => 'alipay_certify:'.hash('sha256', $certifyId.'|'.$sign),
         ];
     }
 
@@ -337,23 +350,32 @@ class AlipayCertifyClient
         $data = is_array($payload[$node] ?? null) ? $payload[$node] : [];
 
         // 同步响应验签：对象是响应节点在原始报文中的紧凑 JSON 原文。
-        // 公钥未配置或截取不到片段时跳过验签而不是判失败——业务成功码仍会在上层校验，
-        // 这样「公钥配错」表现为可读的配置问题，而不是笼统的签名失败。
+        //
+        // fail-closed：无法验签一律判失败，不存在放行分支。实名结果是授信数据
+        // （passed=T 会被上层映射成 status=1「认证通过」并写进用户实名状态），
+        // 原实现只在「片段截到了且公钥可用」时才验签，于是 normalizePublicKey() 因公钥
+        // **格式错误**返回 null 时验签被静默跳过——入口的 missingCredentialLabels()
+        // 只挡「未配置」，挡不住「配错」，攻击者只要能改动响应体就能伪造认证通过。
+        // 上层把 null 映射为网络异常/处理中，配置问题另有下面这条 warning 可追。
         $sign = trim((string) ($payload['sign'] ?? ''));
         if ($sign !== '' && $data !== []) {
             $segment = $this->extractResponseSegment($body, $node);
             $publicKey = $this->normalizePublicKey();
 
-            if ($segment !== null && $publicKey !== null) {
-                $algorithm = strtoupper(trim((string) ($payload['sign_type'] ?? self::SIGN_TYPE))) === 'RSA'
-                    ? OPENSSL_ALGO_SHA1
-                    : OPENSSL_ALGO_SHA256;
+            if ($segment === null || $publicKey === null) {
+                Log::warning('[支付宝实名] 无法验签同步响应，按失败处理', [
+                    'method' => $method,
+                    'reason' => $publicKey === null ? 'invalid_public_key' : 'segment_not_found',
+                ]);
 
-                if (openssl_verify($segment, base64_decode($sign, true) ?: '', $publicKey, $algorithm) !== 1) {
-                    Log::warning('[支付宝实名] 同步响应验签失败', ['method' => $method]);
+                return null;
+            }
 
-                    return null;
-                }
+            // 与异步通知同理：算法固定 SHA256，不接受报文侧把校验降级为 SHA1
+            if (openssl_verify($segment, base64_decode($sign, true) ?: '', $publicKey, OPENSSL_ALGO_SHA256) !== 1) {
+                Log::warning('[支付宝实名] 同步响应验签失败', ['method' => $method]);
+
+                return null;
             }
         }
 

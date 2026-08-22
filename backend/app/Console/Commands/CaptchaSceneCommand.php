@@ -20,6 +20,9 @@ use Illuminate\Console\Command;
  * 管理员就进不了后台——而关闭开关、停用插件这些补救操作本身又要求先进后台，形成死锁。
  * 这个命令让运维可以直接在服务器上解锁，不依赖后台界面。
  *
+ * 注意：注册与两个发码场景是强制场景（CaptchaPolicyService::MANDATORY_SCENES），
+ * 本命令拒绝把它们关闭——死锁风险只来自登录类场景，而它们仍然可关。
+ *
  * 用法：
  *   php artisan captcha:scene --list                 查看当前驱动与各场景开关
  *   php artisan captcha:scene admin_login off        关闭管理员登录的人机验证
@@ -68,6 +71,22 @@ class CaptchaSceneCommand extends Command
             return self::FAILURE;
         }
 
+        // 强制场景不接受 off：写进配置也不会生效（isSceneEnabled 直接返回 true），
+        // 这里明确拒绝而不是假装写成功，避免运维以为关掉了而放心。
+        if ($state === 'off' && CaptchaPolicyService::isMandatory($scene)) {
+            $this->error(sprintf('「%s」是强制场景，不可关闭。', $scene));
+            $this->line('原因：注册写入账号唯一信息，两个发码入口是公开接口且直接产生对外成本');
+            $this->line('（短信按条计费、邮件受配额与投诉率约束），按 IP 限流挡不住换 IP 批量请求。');
+            $this->newLine();
+            $this->line('可关闭的场景：'.implode(', ', array_values(array_diff(
+                CaptchaPolicyService::scenes(),
+                CaptchaPolicyService::MANDATORY_SCENES
+            ))));
+            $this->line('若确实要整体停用人机验证，请用：php artisan captcha:scene --disable-plugin');
+
+            return self::FAILURE;
+        }
+
         if ($driver === '') {
             $this->warn('当前没有启用任何验证码插件，开关无处存放；此状态下全站本就不要求人机验证。');
 
@@ -108,11 +127,12 @@ class CaptchaSceneCommand extends Command
                 $scene['scene'],
                 $scene['label'],
                 $scene['enabled'] ? '开启' : '关闭',
+                $scene['mandatory'] ? '强制（不可关闭）' : '可关闭',
                 $policy->requiresCaptcha($scene['scene']) ? '是' : '否',
             ];
         }
 
-        $this->table(['场景标识', '名称', '开关', '本次是否要求验证'], $rows);
+        $this->table(['场景标识', '名称', '开关', '可否关闭', '本次是否要求验证'], $rows);
 
         return self::SUCCESS;
     }

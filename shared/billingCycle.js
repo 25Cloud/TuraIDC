@@ -126,11 +126,12 @@ export function billingCycleSortRank(value) {
 }
 
 /**
- * 加月份并夹住月末，与 PHP Carbon 的 addMonths() 语义一致。
+ * 加月份并夹住月末，与后端 BillingCycle::advance() 的 addMonthsNoOverflow() 一致。
  *
- * JS 原生 setMonth 会溢出：1 月 31 日 +3 个月得到 5 月 1 日（4 月 31 日不存在）；
- * Carbon 则夹到 4 月 30 日。收敛前控制台自己用 setMonth 算「续费后到期」，
- * 于是月末到期的服务在页面上预览到的日期与后端实际写入的到期日不一致。
+ * JS 原生 setMonth 与 PHP Carbon 的 addMonths() **都会溢出**：
+ * 1 月 31 日 +3 个月得到 5 月 1 日（4 月 31 日不存在）。用在到期日上，
+ * 「月付」会直接跳过 2 月、到期日每期向后漂移，账期与月份对不上。
+ * 两侧现在统一夹到当月最后一天（4 月 30 日）。
  */
 function addMonthsClamped(date, months) {
   const day = date.getDate()

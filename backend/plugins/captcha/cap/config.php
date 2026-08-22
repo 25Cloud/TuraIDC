@@ -20,7 +20,8 @@ return [
             ],
         ],
     ],
-    'config' => [
+    // 场景开关为 captcha 域各插件共用，见 plugins/captcha/scene-switches.php
+    'config' => array_merge([
         'basic_notice' => [
             'title' => '配置说明',
             'type' => 'notice',
@@ -52,5 +53,5 @@ return [
             'placeholder' => '请输入 Cap Secret Key',
             'description' => 'Cap 控制台的服务端密钥（sk- 开头），仅用于后端 siteverify，不下发前端。',
         ],
-    ],
+    ], require __DIR__.'/../scene-switches.php'),
 ];

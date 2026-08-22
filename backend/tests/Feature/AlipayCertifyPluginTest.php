@@ -123,6 +123,88 @@ class AlipayCertifyPluginTest extends TestCase
         ])['data']['passed']);
     }
 
+    /**
+     * 缺 certify_id 的通知必须拒收，即使签名合法。
+     *
+     * 没有业务标识就建立不了重放标识，同一条通知可被无限次消费；
+     * 而验签本身是会通过的，原实现会返回 passed=true 且 replay_key 为空串。
+     */
+    public function test_verify_callback_rejects_notify_without_certify_id(): void
+    {
+        $payload = $this->signedNotify(['passed' => 'T']);
+
+        $data = (new AlipayCertify)->execute([
+            'action' => 'certification.verify_callback',
+            'config' => $this->config(),
+            'payload' => ['payload' => $payload],
+        ])['data'];
+
+        $this->assertFalse($data['passed'], '缺认证标识的通知不得判为通过');
+        $this->assertSame(401, $data['http_status']);
+        $this->assertStringContainsString('防重放', (string) $data['message']);
+    }
+
+    /**
+     * sign_type 不得把校验算法降级为 SHA1。
+     *
+     * 身份认证产品只签发 RSA2。若按报文取 sign_type，攻击者传 sign_type=RSA
+     * 即可让服务端用 SHA1 验签，从而用一份 SHA1 碰撞签名绕过校验。
+     * 这里用 SHA1 真实签一份并声明 sign_type=RSA：算法固定为 SHA256 时它必须失败。
+     */
+    public function test_verify_callback_ignores_sign_type_and_never_downgrades_to_sha1(): void
+    {
+        $params = ['certify_id' => 'CERTIFY_0001', 'passed' => 'T', 'gmt_create' => '2026-08-22 10:00:00'];
+        ksort($params);
+
+        $pairs = [];
+        foreach ($params as $key => $value) {
+            $pairs[] = $key.'='.$value;
+        }
+
+        $sha1Signature = '';
+        openssl_sign(implode('&', $pairs), $sha1Signature, $this->privatePem, OPENSSL_ALGO_SHA1);
+
+        $payload = $params + ['sign_type' => 'RSA', 'sign' => base64_encode($sha1Signature)];
+
+        $data = (new AlipayCertify)->execute([
+            'action' => 'certification.verify_callback',
+            'config' => $this->config(),
+            'payload' => ['payload' => $payload],
+        ])['data'];
+
+        $this->assertFalse($data['passed'], 'sign_type=RSA 不得让校验降级到 SHA1');
+    }
+
+    /**
+     * 同步响应无法验签时必须判失败（fail-closed）。
+     *
+     * 实名结果是授信数据：passed=T 会被映射成 status=1 并写进用户实名状态。
+     * 原实现只在「公钥可用」时才验签，公钥格式错误（normalizePublicKey 返回 null）
+     * 时验签被静默跳过，于是任何能改动响应体的人都能伪造「认证通过」。
+     * 入口的凭据检查只挡「未配置」，挡不住「配错」。
+     */
+    public function test_query_status_fails_closed_when_public_key_cannot_verify_response(): void
+    {
+        Http::fake([
+            '*openapi.alipay.com*' => Http::response([
+                'alipay_user_certify_open_query_response' => ['code' => '10000', 'msg' => 'Success', 'passed' => 'T'],
+                // 带上 sign 才会进入验签分支；内容任意，因为公钥本就无法解析
+                'sign' => base64_encode('forged-signature'),
+            ], 200),
+        ]);
+
+        $status = (int) (new AlipayCertify)->execute([
+            'action' => 'certification.query_status',
+            'config' => array_merge($this->config(), [
+                // 已配置但格式非法：能过 missingCredentialLabels()，过不了 normalizePublicKey()
+                'alipay_public_key' => 'not-a-valid-public-key',
+            ]),
+            'payload' => ['certify_id' => 'CERTIFY_0001'],
+        ])['data']['status'];
+
+        $this->assertSame(3, $status, '无法验签的响应必须判为异常，不能采信上游的 passed=T');
+    }
+
     // 注意：这两个场景必须分成独立测试。Http::fake() 是「追加 stub、首个匹配生效」，
     // 在同一个测试里连续 fake 两次，第二次不会覆盖第一次。
     public function test_query_status_maps_passed_true_to_success(): void
