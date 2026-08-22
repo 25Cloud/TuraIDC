@@ -1716,8 +1716,11 @@ class ServiceRenewService
     {
         $legacy = is_array($service->provision_data ?? null) ? $service->provision_data : [];
         $projection = $this->pluginBindingResolver()->serviceProvisionProjection($service, $includeSecrets);
+        $provisionData = $projection === [] ? $legacy : array_replace($legacy, $projection);
 
-        return $projection === [] ? $legacy : array_replace($legacy, $projection);
+        return $includeSecrets
+            ? $provisionData
+            : $this->pluginBindingResolver()->sanitizeServiceProvisionData($provisionData);
     }
 
     private function extractPayload(array $response): array

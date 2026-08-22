@@ -275,6 +275,20 @@ class PluginBindingResolver
         return array_filter($projection, static fn (mixed $value): bool => $value !== null && $value !== '');
     }
 
+    /**
+     * Remove credentials that belong in the encrypted binding snapshot, not in
+     * the legacy services.provision_data JSON column.
+     *
+     * @param  array<string, mixed>  $provisionData
+     * @return array<string, mixed>
+     */
+    public function sanitizeServiceProvisionData(array $provisionData): array
+    {
+        unset($provisionData['downstream_token'], $provisionData['ticket_callback_token']);
+
+        return $provisionData;
+    }
+
     private function supplierBinding(int $supplierId, ?string $providerKey = null): ?object
     {
         if ($supplierId <= 0 || ! $this->hasTable('supplier_plugin_bindings')) {

@@ -441,70 +441,80 @@ final class TicketUpstreamCallbackService
         $candidatePaths = $candidateFiles
             ->map(static fn (\SplFileInfo $file): string => 'private/tickets/upstream/'.$file->getFilename())
             ->all();
-        $referencedPaths = [];
-        if ($candidatePaths !== []) {
-            $referencedPaths = TicketReply::query()
-                ->where(function ($query) use ($candidatePaths): void {
-                    foreach ($candidatePaths as $candidatePath) {
-                        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $candidatePath);
-                        $query->orWhere('attachments', 'like', "%{$escaped}%");
-                    }
-                })
-                ->get(['attachments'])
-                ->flatMap(static function (TicketReply $reply): array {
-                    $attachments = $reply->attachments;
-
-                    return is_array($attachments) ? $attachments : [];
-                })
-                ->map(static fn (mixed $attachment): string => is_array($attachment) ? (string) ($attachment['path'] ?? '') : '')
-                ->filter()
-                ->flip()
-                ->all();
-        }
-        $checked = 0;
+        $referencedPaths = $this->referencedUploadPaths($candidatePaths);
+        $checked = $candidateFiles->count();
         $deleted = 0;
-        $referenced = 0;
         $errors = 0;
         $skipped = 0;
+        $locks = [];
+        $lockedFiles = [];
 
-        foreach ($candidateFiles as $file) {
-            $checked++;
-            $path = 'private/tickets/upstream/'.$file->getFilename();
-            if (array_key_exists($path, $referencedPaths)) {
-                $referenced++;
+        // 所有文件锁按文件名排序获取，和 receiveReply() 保持一致，避免锁顺序反转。
+        $unreferencedFiles = $candidateFiles
+            ->filter(static fn (\SplFileInfo $file): bool => ! array_key_exists(
+                'private/tickets/upstream/'.$file->getFilename(),
+                $referencedPaths
+            ))
+            ->sortBy(static fn (\SplFileInfo $file): string => $file->getFilename())
+            ->values();
+        $referenced = $candidateFiles->count() - $unreferencedFiles->count();
 
-                continue;
-            }
+        foreach ($unreferencedFiles as $file) {
             $lock = Cache::lock('ticket-upstream-upload:'.$file->getFilename(), 60);
             try {
-                // 回调正在处理该文件（锁被持有）时跳过本次删除，等待下轮扫描。
-                // 此时数据库可能还没有附件引用，不能计入 referenced，单独归入 skipped。
                 if (! $lock->get()) {
                     $skipped++;
-
                     continue;
                 }
-                // 引用结论必须在锁内重新查询：锁外批量结果在竞态窗口内可能已经过期
-                $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $path);
-                if (TicketReply::query()->where('attachments', 'like', "%{$escaped}%")->exists()) {
-                    $referenced++;
 
-                    continue;
-                }
-                if (File::delete($file->getPathname())) {
-                    $deleted++;
-                    Log::info('清理上游未使用上传文件', ['filename' => $file->getFilename()]);
-                } else {
-                    $errors++;
-                    Log::warning('清理上游未使用上传文件删除失败', ['filename' => $file->getFilename()]);
-                }
+                $locks[$file->getFilename()] = $lock;
+                $lockedFiles[$file->getFilename()] = $file;
             } catch (\Throwable $exception) {
                 $errors++;
-                Log::warning('清理上游未使用上传文件失败', [
+                Log::warning('清理上游未使用上传文件获取锁失败', [
                     'filename' => $file->getFilename(),
                     'message' => $exception->getMessage(),
                 ]);
-            } finally {
+            }
+        }
+
+        try {
+            $lockedPaths = array_map(
+                static fn (string $filename): string => 'private/tickets/upstream/'.$filename,
+                array_keys($lockedFiles)
+            );
+            $referencedAfterLock = $this->referencedUploadPaths($lockedPaths);
+
+            foreach ($lockedFiles as $filename => $file) {
+                $path = 'private/tickets/upstream/'.$filename;
+                if (array_key_exists($path, $referencedAfterLock)) {
+                    $referenced++;
+                    continue;
+                }
+
+                try {
+                    if (File::delete($file->getPathname())) {
+                        $deleted++;
+                        Log::info('清理上游未使用上传文件', ['filename' => $filename]);
+                    } else {
+                        $errors++;
+                        Log::warning('清理上游未使用上传文件删除失败', ['filename' => $filename]);
+                    }
+                } catch (\Throwable $exception) {
+                    $errors++;
+                    Log::warning('清理上游未使用上传文件失败', [
+                        'filename' => $filename,
+                        'message' => $exception->getMessage(),
+                    ]);
+                }
+            }
+        } catch (\Throwable $exception) {
+            $errors += count($lockedFiles);
+            Log::warning('清理上游未使用上传文件引用查询失败', [
+                'message' => $exception->getMessage(),
+            ]);
+        } finally {
+            foreach ($locks as $lock) {
                 $lock->release();
             }
         }
@@ -516,5 +526,37 @@ final class TicketUpstreamCallbackService
             'errors' => $errors,
             'skipped' => $skipped,
         ];
+    }
+
+    /**
+     * Return attachment paths referenced by any reply in one bounded query.
+     *
+     * @param  list<string>  $paths
+     * @return array<string, true>
+     */
+    private function referencedUploadPaths(array $paths): array
+    {
+        if ($paths === []) {
+            return [];
+        }
+
+        return TicketReply::query()
+            ->where(function ($query) use ($paths): void {
+                foreach ($paths as $path) {
+                    $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $path);
+                    $query->orWhere('attachments', 'like', "%{$escaped}%");
+                }
+            })
+            ->get(['attachments'])
+            ->flatMap(static function (TicketReply $reply): array {
+                $attachments = $reply->attachments;
+
+                return is_array($attachments) ? $attachments : [];
+            })
+            ->map(static fn (mixed $attachment): string => is_array($attachment) ? (string) ($attachment['path'] ?? '') : '')
+            ->filter(static fn (string $path): bool => $path !== '')
+            ->flip()
+            ->map(static fn (): bool => true)
+            ->all();
     }
 }
