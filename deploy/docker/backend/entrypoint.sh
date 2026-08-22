@@ -95,13 +95,19 @@ done
 APP_KEY_VAL="$(printenv APP_KEY || true)"
 printf 'APP_KEY=%s\n' "$APP_KEY_VAL" >> .env
 
-# 容器内固定使用 compose 网络的服务名
+# 数据库与 Redis 指向：优先保留编排注入的值（远程模式为远程地址与端口），
+# 未提供时回落到 compose 网络服务名与默认端口（本地容器模式）。
+# 注意：install_db.py 直接解析本文件生成的 .env，写死会导致远程模式失效。
+export DB_HOST="${DB_HOST:-mysql}"
+export DB_PORT="${DB_PORT:-3306}"
+export REDIS_HOST="${REDIS_HOST:-redis}"
+export REDIS_PORT="${REDIS_PORT:-6379}"
 printf '%s\n' \
   'DB_CONNECTION="mysql"' \
-  'DB_HOST="mysql"' \
-  'DB_PORT="3306"' \
-  'REDIS_HOST="redis"' \
-  'REDIS_PORT="6379"' \
+  "DB_HOST=\"$DB_HOST\"" \
+  "DB_PORT=\"$DB_PORT\"" \
+  "REDIS_HOST=\"$REDIS_HOST\"" \
+  "REDIS_PORT=\"$REDIS_PORT\"" \
   'DB_TIMEZONE="+08:00"' \
   >> .env
 
@@ -112,6 +118,7 @@ chown www-data:www-data .env
 # ---------------------------------------------------------------------------
 log "等待 MySQL 就绪..."
 DB_HOST="$(grep '^DB_HOST=' .env | cut -d'"' -f2)"
+DB_PORT="$(grep '^DB_PORT=' .env | cut -d'"' -f2)"
 DB_USERNAME="$(grep '^DB_USERNAME=' .env | cut -d'"' -f2)"
 DB_PASSWORD="$(grep '^DB_PASSWORD=' .env | cut -d'"' -f2)"
 DB_DATABASE="$(grep '^DB_DATABASE=' .env | cut -d'"' -f2)"
@@ -120,7 +127,7 @@ DB_DATABASE="$(grep '^DB_DATABASE=' .env | cut -d'"' -f2)"
 DB_AUTH=()
 [ -n "$DB_PASSWORD" ] && DB_AUTH=(-p"$DB_PASSWORD")
 
-until mysqladmin ping -h"$DB_HOST" -u"$DB_USERNAME" "${DB_AUTH[@]}" --silent; do
+until mysqladmin ping -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USERNAME" "${DB_AUTH[@]}" --silent; do
   sleep 3
 done
 log "MySQL 已就绪"
@@ -157,7 +164,7 @@ chown -R www-data:www-data storage bootstrap/cache public/uploads
 #   空库  -> install_db.py（导入 baseline + 增量迁移 + 默认管理员）
 #   有数据 -> 只做增量迁移（与现网宝塔口径一致）
 # ---------------------------------------------------------------------------
-TABLE_COUNT="$(mysql -h"$DB_HOST" -u"$DB_USERNAME" "${DB_AUTH[@]}" -N -s \
+TABLE_COUNT="$(mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USERNAME" "${DB_AUTH[@]}" -N -s \
   -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$DB_DATABASE';" 2>/dev/null || echo 0)"
 
 if [ "${TABLE_COUNT:-0}" = "0" ]; then
