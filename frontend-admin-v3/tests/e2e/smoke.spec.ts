@@ -3032,14 +3032,16 @@ async function mockDisabledCaptcha(page: import('@playwright/test').Page) {
   });
 }
 
-async function mockLogin(page: import('@playwright/test').Page) {
+async function mockLogin(page: import('@playwright/test').Page, captchaRequired = true) {
   await page.route('**/api/v2/admin/login**', async (route) => {
     const body = route.request().postDataJSON() as { username?: string; password?: string; captcha?: unknown };
+    const validCredentials = Boolean(body.username && body.password);
+    const validCaptcha = !captchaRequired || Boolean(body.captcha);
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
-        code: body.username && body.password && body.captcha ? 0 : 422,
-        message: body.username && body.password && body.captcha ? '登录成功' : '参数错误',
+        code: validCredentials && validCaptcha ? 0 : 422,
+        message: validCredentials && validCaptcha ? '登录成功' : '参数错误',
         data: {
           token: 'login-token',
           admin: {
@@ -3491,7 +3493,7 @@ test.describe('frontend-admin-v3 shell smoke', () => {
 
   test('submits admin login without captcha when captcha is disabled', async ({ page }) => {
     await mockDisabledCaptcha(page);
-    await mockLogin(page);
+    await mockLogin(page, false);
     await mockAdminInfo(page);
     await mockDashboard(page);
 
