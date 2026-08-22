@@ -154,11 +154,29 @@ async function mockTickets(page: import('@playwright/test').Page) {
   });
 }
 
-async function mockTicketDeliverySettings(page: import('@playwright/test').Page, initialUploadImageEnabled = true) {
+interface DeliveryRuleFixture {
+  id: number;
+  name: string;
+  department: string;
+  supplier_id: number;
+  provider_key: string;
+  product_scope_mode: string;
+  product_ids: number[];
+  upstream_department_id: string;
+  enabled: boolean;
+  sync_admin_replies: boolean;
+  mask_keywords: string;
+}
+
+async function mockTicketDeliverySettings(
+  page: import('@playwright/test').Page,
+  initialUploadImageEnabled = true,
+  initialRules: DeliveryRuleFixture[] = [],
+) {
   let nextId = 302;
   let uploadImageEnabled = initialUploadImageEnabled;
   let blockNonWhitelisted = true;
-  let rules = [
+  const defaultRules: DeliveryRuleFixture[] = [
     {
       id: 301,
       name: '技术支持同步',
@@ -173,6 +191,7 @@ async function mockTicketDeliverySettings(page: import('@playwright/test').Page,
       mask_keywords: '敏感词',
     },
   ];
+  let rules: DeliveryRuleFixture[] = initialRules.length ? initialRules : defaultRules;
 
   await page.route(/\/api\/v2\/admin\/suppliers(?:\?.*)?$/, async (route) => {
     await route.fulfill({
@@ -189,23 +208,30 @@ async function mockTicketDeliverySettings(page: import('@playwright/test').Page,
     });
   });
 
+  // 模拟 150 个已绑定产品：分页接口第 1 页只返回 id 501-600，
+  // 第 2 页返回 601-650，用于验证指定产品分页拉全量与超首屏名称解析。
+  const catalogProducts = Array.from({ length: 150 }, (_, index) => {
+    const id = 501 + index;
+
+    return {
+      id,
+      display_name: id === 501 ? '测试云服务器' : `测试云服务器 #${id}`,
+      name: id === 501 ? '测试云服务器' : `测试云服务器 #${id}`,
+      upstream_binding: { supplier_id: 7, provider_key: 'zjmf_finance_api', status: 1 },
+    };
+  });
+
   await page.route(/\/api\/v2\/admin\/products(?:\?.*)?$/, async (route) => {
+    const url = new URL(route.request().url());
+    const page = Math.max(Number(url.searchParams.get('page') || '1'), 1);
+    const pageSize = Math.max(Number(url.searchParams.get('page_size') || '100'), 1);
+    const start = (page - 1) * pageSize;
+    const list = catalogProducts.slice(start, start + pageSize);
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
         code: 0,
-        data: {
-          list: [
-            {
-              id: 501,
-              display_name: '测试云服务器',
-              upstream_binding: { supplier_id: 7, provider_key: 'zjmf_finance_api', status: 1 },
-            },
-          ],
-          total: 1,
-          page: 1,
-          page_size: 100,
-        },
+        data: { list, total: catalogProducts.length, page, page_size: pageSize },
       }),
     });
   });
@@ -3823,6 +3849,44 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await page.getByRole('button', { name: '删除' }).first().click();
     await page.locator('.t-dialog:visible').getByRole('button', { name: '删除' }).click();
     await deleteRequest;
+  });
+
+  test('resolves delivery rule product names beyond the first page', async ({ page }) => {
+    await mockAdminInfo(page);
+    await mockTicketDeliverySettings(page, true, [
+      {
+        id: 302,
+        name: '超首屏产品规则',
+        department: 'support',
+        supplier_id: 7,
+        provider_key: 'zjmf_finance_api',
+        product_scope_mode: 'selected',
+        product_ids: [602],
+        upstream_department_id: 'tech-01',
+        enabled: true,
+        sync_admin_replies: true,
+        mask_keywords: '',
+      },
+    ]);
+    await page.addInitScript(() => {
+      window.localStorage.setItem('admin_token', 'test-token');
+      window.localStorage.setItem('admin_last_active_at', String(Date.now()));
+    });
+
+    await page.goto('/admin/ticket-delivery-rules', { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/\/admin\/ticket-delivery-rules/);
+    const ruleRow = page.locator('tr', { hasText: '超首屏产品规则' });
+    await expect(ruleRow).toBeVisible();
+    // 602 位于全局产品首屏（第 1 页 100 条）之外，初始只能显示"指定产品"
+    await expect(ruleRow.getByText('指定产品')).toBeVisible();
+
+    // 打开编辑对话框会按供应商分页拉取全部绑定产品并合并进全局产品缓存
+    await page.getByRole('button', { name: '编辑' }).first().click();
+    await expect(page.locator('.t-dialog:visible').getByText('编辑工单传递规则')).toBeVisible();
+    await page.locator('.t-dialog:visible').getByRole('button', { name: '取消' }).click();
+
+    // 合并后超首屏产品名称可解析，不再显示"指定产品"
+    await expect(ruleRow.getByText('测试云服务器 #602')).toBeVisible();
   });
 
   test('requires enabling upload_image before creating delivery rules', async ({ page }) => {
