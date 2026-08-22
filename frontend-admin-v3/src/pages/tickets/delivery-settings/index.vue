@@ -283,9 +283,11 @@ const formRef = ref<FormInstanceFunctions>();
 const rules = ref<TicketDeliveryRuleRecord[]>([]);
 const suppliers = ref<SupplierRecord[]>([]);
 const products = ref<ProductRecord[]>([]);
+const supplierProducts = ref<ProductRecord[]>([]);
 const upstreamDepartments = ref<TicketDeliveryDepartment[]>([]);
 const departmentsLoading = ref(false);
 let departmentsRequestId = 0;
+let productsRequestId = 0;
 
 const uploadGuard = reactive({
   upload_image_enabled: false,
@@ -348,15 +350,9 @@ const formRules: Record<string, FormRule[]> = {
 };
 
 const filteredProducts = computed(() => {
+  // 已按 supplier_id + provider_key 从后端过滤，无需再依赖本地 upstream_binding。
   if (!form.supplier_id) return [];
-  return products.value.filter((product) => {
-    const binding = product.upstream_binding;
-    return (
-      String(binding?.supplier_id ?? '') === String(form.supplier_id) &&
-      binding?.provider_key === PROVIDER_KEY &&
-      Number(binding?.status ?? 1) === 1
-    );
-  });
+  return supplierProducts.value;
 });
 
 watch(
@@ -379,6 +375,8 @@ function createDefaultForm() {
     mask_keywords: '',
   });
   upstreamDepartments.value = [];
+  productsRequestId += 1;
+  supplierProducts.value = [];
 }
 
 async function loadUpstreamDepartments(supplierId: number | string, configuredId = '') {
@@ -407,13 +405,34 @@ async function loadUpstreamDepartments(supplierId: number | string, configuredId
   }
 }
 
+async function loadSupplierProducts(supplierId: number | string) {
+  const requestId = ++productsRequestId;
+  supplierProducts.value = [];
+  try {
+    const response = await productApi.v2List({
+      page: 1,
+      page_size: 100,
+      lifecycle_status: 'active',
+      supplier_id: supplierId,
+      provider_key: PROVIDER_KEY,
+    });
+    if (requestId !== productsRequestId) return;
+    supplierProducts.value = response.list || [];
+  } catch (error) {
+    if (requestId !== productsRequestId) return;
+    supplierProducts.value = [];
+    MessagePlugin.error(errorMessage(error, '加载已绑定产品失败'));
+  }
+}
+
 async function handleSupplierChange(value: SelectValue) {
   form.upstream_department_id = '';
   // 仅在管理员主动切换供应商时清空已选产品，避免首屏分页加载被误判为供应商变更而丢失已保存绑定
   form.product_ids = [];
   upstreamDepartments.value = [];
   if (value !== '' && value !== undefined && value !== null) {
-    await loadUpstreamDepartments(String(value));
+    const supplierId = String(value);
+    await Promise.all([loadSupplierProducts(supplierId), loadUpstreamDepartments(supplierId)]);
   }
 }
 
@@ -540,7 +559,11 @@ function openEditDialog(row: TicketDeliveryRuleRecord) {
     mask_keywords: row.mask_keywords || '',
   });
   dialogVisible.value = true;
-  void loadUpstreamDepartments(String(form.supplier_id), String(form.upstream_department_id));
+  const supplierId = String(form.supplier_id);
+  void Promise.all([
+    loadSupplierProducts(supplierId),
+    loadUpstreamDepartments(supplierId, String(form.upstream_department_id)),
+  ]);
 }
 
 function buildPayload(): TicketDeliveryRulePayload {
