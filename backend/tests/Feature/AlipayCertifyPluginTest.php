@@ -185,13 +185,8 @@ class AlipayCertifyPluginTest extends TestCase
      */
     public function test_query_status_fails_closed_when_public_key_cannot_verify_response(): void
     {
-        Http::fake([
-            '*openapi.alipay.com*' => Http::response([
-                'alipay_user_certify_open_query_response' => ['code' => '10000', 'msg' => 'Success', 'passed' => 'T'],
-                // 带上 sign 才会进入验签分支；内容任意，因为公钥本就无法解析
-                'sign' => base64_encode('forged-signature'),
-            ], 200),
-        ]);
+        // 签名本身合法，唯一的问题是配置里的公钥格式非法
+        $this->fakeGateway('alipay_user_certify_open_query_response', ['code' => '10000', 'msg' => 'Success', 'passed' => 'T']);
 
         $status = (int) (new AlipayCertify)->execute([
             'action' => 'certification.query_status',
@@ -203,6 +198,39 @@ class AlipayCertifyPluginTest extends TestCase
         ])['data']['status'];
 
         $this->assertSame(3, $status, '无法验签的响应必须判为异常，不能采信上游的 passed=T');
+    }
+
+    /**
+     * 响应节点非空但**整个 sign 字段缺失**时必须拒绝。
+     *
+     * 这是比「伪造签名」更省事的绕过方式：原实现以 $sign !== '' 作为验签的前置条件，
+     * 攻击者只要把 sign 删掉，验签块整段被跳过，passed=T 被直接采信成 status=1。
+     */
+    public function test_query_status_fails_closed_when_response_has_no_signature(): void
+    {
+        Http::fake([
+            '*openapi.alipay.com*' => Http::response([
+                'alipay_user_certify_open_query_response' => ['code' => '10000', 'msg' => 'Success', 'passed' => 'T'],
+                // 刻意不带 sign
+            ], 200),
+        ]);
+
+        $this->assertSame(3, $this->queryStatus(), '缺签名的响应必须判为异常，不能采信 passed=T');
+    }
+
+    /**
+     * 签名对不上原文时必须拒绝（对签名内容本身的负向用例）。
+     */
+    public function test_query_status_fails_closed_when_signature_does_not_match_payload(): void
+    {
+        Http::fake([
+            '*openapi.alipay.com*' => Http::response([
+                'alipay_user_certify_open_query_response' => ['code' => '10000', 'msg' => 'Success', 'passed' => 'T'],
+                'sign' => base64_encode('forged-signature'),
+            ], 200),
+        ]);
+
+        $this->assertSame(3, $this->queryStatus(), '签名校验不通过的响应必须判为异常');
     }
 
     // 注意：这两个场景必须分成独立测试。Http::fake() 是「追加 stub、首个匹配生效」，
@@ -373,13 +401,36 @@ class AlipayCertifyPluginTest extends TestCase
     }
 
     /**
+     * 伪造一份**带合法签名**的同步响应。
+     *
+     * 客户端要求响应节点非空时必须验签通过，因此这里不能用 Http::response(array)
+     * 让 Laravel 去 json_encode——验签对象是节点在**原始报文**中的紧凑 JSON 原文，
+     * 必须先固定那段字符串、对它签名，再手工拼进报文，顺序反了签名就对不上。
+     *
      * @param  array<string, mixed>  $body
      */
     private function fakeGateway(string $node, array $body): void
     {
         Http::fake([
-            '*openapi.alipay.com*' => Http::response([$node => $body], 200),
+            '*openapi.alipay.com*' => Http::response($this->signedResponseBody($node, $body), 200, [
+                'Content-Type' => 'application/json',
+            ]),
         ]);
+    }
+
+    /**
+     * 拼出 `{"<node>":{...},"sign":"<base64>"}`，其中 sign 是对 node 那段原文的 RSA2 签名。
+     *
+     * @param  array<string, mixed>  $body
+     */
+    private function signedResponseBody(string $node, array $body): string
+    {
+        $segment = (string) json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $signature = '';
+        openssl_sign($segment, $signature, $this->privatePem, OPENSSL_ALGO_SHA256);
+
+        return '{"'.$node.'":'.$segment.',"sign":"'.base64_encode($signature).'"}';
     }
 
     private function queryStatus(): int
