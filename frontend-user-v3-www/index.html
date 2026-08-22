@@ -19,7 +19,7 @@
   <title>图拉云 - 稳定、安全、高性价比的云服务器与 IDC 服务平台</title>
   <link rel="icon" type="image/png" sizes="32x32" href="/branding/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/branding/favicon-16.png" />
-  <link rel="alternate" hreflang="zh-CN" href="/" />
+  <!-- vite 8 会把 html 内非外部 URL 当资源解析，href="/" 指向根目录会触发 EISDIR，故移除该 alternate 行 -->
   <!-- API 源站预连接：首屏数据请求与 hero 视频均指向该跨域源，提前 DNS + TLS -->
   <link rel="preconnect" href="%VITE_API_BASE_URL%" crossorigin />
   <link rel="prefetch" href="%VITE_API_BASE_URL%/v2/site/config" as="fetch" crossorigin="anonymous" />

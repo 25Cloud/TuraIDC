@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\ZjmfBridge\Http\Middleware;
 
-use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfResponseFactory;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfResponseFactory;
 
 class ZjmfBridgeEnabled
 {

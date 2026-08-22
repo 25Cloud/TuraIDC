@@ -21,7 +21,12 @@ export function useLocale() {
   };
 
   const getComponentsLocale = computed(() => {
-    return i18n.global.getLocaleMessage(locale.value).componentsLocale as GlobalConfigProvider;
+    // vue-i18n 11 的 getLocaleMessage 返回类型不含业务自定义字段，做类型收窄
+    const message = i18n.global.getLocaleMessage(locale.value) as unknown as Record<
+      string,
+      GlobalConfigProvider | undefined
+    >;
+    return message.componentsLocale as GlobalConfigProvider;
   });
 
   return {

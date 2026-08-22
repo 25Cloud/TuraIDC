@@ -67,6 +67,8 @@ location / {
 
 项目未启用 VNC 远程控制时，可以删除 `/ws/vnc` 的整个 `location` 块，保留 Laravel 回退规则。宝塔生成的 PHP-FPM 配置保持不变。`/api`、`/uploads`、`/media` 都由 API 站点的 Laravel/PHP-FPM 处理或直接提供静态文件。
 
+> 注：API 请求路径为 PHP-FPM 直连，Laravel 以 `REMOTE_ADDR` 为准，上方 `X-Forwarded-*` 仅用于 VNC Relay。若改为反向代理 API 端口，请遵守[受信代理与来源 IP 契约](deployment-and-scheduling.md)（单层受信代理把 `X-Forwarded-For` 重置为 `$remote_addr`，应用端口仅本机监听，不得把公网代理加入 `trustProxies`）。
+
 ## HTTP 与 HTTPS
 
 - HTTP 环境在宝塔关闭强制 HTTPS，并将 `SESSION_SECURE_COOKIE=false`。

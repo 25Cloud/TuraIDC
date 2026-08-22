@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\Auth\VerificationCodeService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class ClientAuthEnumerationTest extends TestCase
@@ -83,7 +84,7 @@ class ClientAuthEnumerationTest extends TestCase
         ])->assertOk();
 
         $this->assertNotSame('Newpass123', $user->fresh()->password);
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('Newpass123', $user->fresh()->password));
+        $this->assertTrue(Hash::check('Newpass123', $user->fresh()->password));
     }
 
     private function createClientUser(): User

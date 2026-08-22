@@ -73,6 +73,7 @@ class ScheduleTaskService
             'commands' => $this->buildCommands($phpBinary, $artisanPath),
             'tasks' => collect($this->registry->enabledTasks())
                 ->map(fn (ScheduledTask $task): array => $this->serializeTask($task, $appTimezone, $thirdPartyTaskKeys))
+                ->push($this->cleanupUpstreamUploadsTaskDescriptor($appTimezone))
                 ->values()
                 ->all(),
             'runs_summary' => $this->taskRuns->runStatsSummary(),
@@ -162,6 +163,36 @@ class ScheduleTaskService
         }
 
         return implode('；', $parts) ?: '手动触发';
+    }
+
+    /**
+     * 系统级守护任务描述：上游上传未使用文件清理。
+     * 该任务由 Laravel Schedule 每分钟执行（routes/console.php 注册），
+     * 不注册心跳触发，因此只在总览中展示为系统任务，不参与手动触发与运行台账。
+     *
+     * @return array<string, mixed>
+     */
+    private function cleanupUpstreamUploadsTaskDescriptor(string $appTimezone): array
+    {
+        return [
+            'key' => 'tickets-cleanup-unused-upstream-uploads',
+            'title' => '上游上传文件清理',
+            'category' => '维护',
+            'source_type' => 'system',
+            'source_label' => '系统任务',
+            'description' => '删除超过保留期（默认 5 分钟）且未被工单回复引用的上游上传文件，缓解匿名上传的磁盘占用。',
+            'declared_cadence' => 'every_minute',
+            'effective_cadence' => '每 1 分钟',
+            'manual_triggerable' => false,
+            'expression' => '* * * * *',
+            'summary' => '每 1 分钟',
+            'timezone' => $appTimezone,
+            'next_run_at' => now($appTimezone)->addMinute()->startOfMinute()->format('Y-m-d H:i:s'),
+            'without_overlapping' => true,
+            'run_in_background' => true,
+            'overlap_expires_minutes' => 2,
+            'last_log' => null,
+        ];
     }
 
     /**

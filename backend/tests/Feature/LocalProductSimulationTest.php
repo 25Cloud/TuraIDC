@@ -20,6 +20,7 @@ use App\Services\Integrations\Plugins\PluginFileLoader;
 use App\Services\Integrations\Plugins\PluginScanner;
 use App\Services\Integrations\Plugins\UpstreamBindingWriter;
 use App\Services\Provisioning\ProvisionService;
+use App\Services\Provisioning\ServiceRenewService;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\ProviderRegistry;
 use App\Services\Upstream\ProviderResolver;
@@ -146,7 +147,7 @@ class LocalProductSimulationTest extends TestCase
         $order->forceFill(['status' => OrderStatus::PAID])->save();
         $order->invoice->forceFill(['status' => InvoiceStatus::PAID, 'paid_amount' => $order->invoice->amount, 'paid_at' => now()])->save();
 
-        $provisionService = app(\App\Services\Provisioning\ProvisionService::class);
+        $provisionService = app(ProvisionService::class);
         $service = $provisionService->processPaidOrder($order);
 
         $this->assertNotNull($service, 'processPaidOrder 应返回 Service');
@@ -237,7 +238,7 @@ class LocalProductSimulationTest extends TestCase
             ->firstOrFail();
 
         // 续费：通过 ServiceRenewService 创建续费账单
-        $renewService = app(\App\Services\Provisioning\ServiceRenewService::class);
+        $renewService = app(ServiceRenewService::class);
         $renewInvoice = $renewService->createRenewInvoiceForUser(
             $user,
             (int) $service->id,

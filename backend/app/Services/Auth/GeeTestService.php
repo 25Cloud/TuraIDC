@@ -36,6 +36,22 @@ class GeeTestService
         return (string) ($this->captchaConfig()['captcha_id'] ?? '');
     }
 
+    /**
+     * 当前启用的验证码 provider 标识（geetest / vaptcha / cap / ''）。
+     */
+    public function getProvider(): string
+    {
+        return (string) ($this->captchaConfig()['provider'] ?? '');
+    }
+
+    /**
+     * 插件自定义的前端初始化参数（如 Cap 的 api_endpoint），未提供则为空字符串。
+     */
+    public function getApiEndpoint(): string
+    {
+        return (string) ($this->captchaConfig()['api_endpoint'] ?? '');
+    }
+
     public function getScriptUrl(): string
     {
         return self::SCRIPT_PROXY_PATH;
@@ -120,17 +136,27 @@ JS;
                 'enabled' => false,
                 'captcha_id' => '',
                 'script_url' => $this->getScriptUrl(),
+                'provider' => '',
             ];
         }
 
         $result = $this->executePlugin('captcha.config');
         $data = is_array($result['data'] ?? null) ? $result['data'] : [];
 
-        return $this->captchaConfigCache = [
+        $config = [
             'enabled' => (bool) ($result['success'] ?? false) && (bool) ($data['enabled'] ?? false),
             'captcha_id' => (string) ($data['captcha_id'] ?? ''),
             'script_url' => $this->getScriptUrl(),
+            'provider' => (string) ($data['provider'] ?? ''),
         ];
+
+        // 透传插件自定义的前端初始化参数（如 Cap 的 api_endpoint）
+        $apiEndpoint = trim((string) ($data['api_endpoint'] ?? ''));
+        if ($apiEndpoint !== '') {
+            $config['api_endpoint'] = $apiEndpoint;
+        }
+
+        return $this->captchaConfigCache = $config;
     }
 
     private function executePlugin(string $action, array $payload = []): array

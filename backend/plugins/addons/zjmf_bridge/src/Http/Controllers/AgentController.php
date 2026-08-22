@@ -5,16 +5,17 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Addons\ZjmfBridge\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use TuraIDC\Plugins\Addons\ZjmfBridge\Models\AgentApplication;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use TuraIDC\Plugins\Addons\ZjmfBridge\Models\AgentApplication;
 
 class AgentController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
         $existing = AgentApplication::query()
@@ -29,8 +30,10 @@ class AgentController extends Controller
                     $data['api_key'] = $this->generateApiKey();
                 }
                 $existing->update($data);
+
                 return $this->success(null, '代理申请已通过');
             }
+
             return $this->error(40900, '您已是代理，无需重复申请');
         }
 
@@ -45,7 +48,7 @@ class AgentController extends Controller
 
     public function info(Request $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
         $application = AgentApplication::query()

@@ -27,6 +27,12 @@ use App\Services\Verification\Contracts\ProvidesVerificationFeeConfig;
 use App\Services\Verification\Contracts\VerifiesVerificationCallbacks;
 use App\Services\Verification\Data\VerificationCallbackRequest;
 use App\Services\Verification\VerificationDriverManager;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
+use Tests\TestCase;
 use TuraIDC\Plugins\Captcha\Geetest\GeetestPlugin;
 use TuraIDC\Plugins\Captcha\Geetest\Lib\GeetestCaptchaService;
 use TuraIDC\Plugins\Captcha\Vaptcha\Lib\VaptchaCaptchaService;
@@ -43,12 +49,6 @@ use TuraIDC\Plugins\Servers\ZjmfFinance\Logic\ZjmfFinance;
 use TuraIDC\Plugins\Servers\ZjmfFinance\ZjmfFinancePlugin;
 use TuraIDC\Plugins\Sms\Aliyun\AliyunPlugin;
 use TuraIDC\Plugins\Sms\Aliyun\Lib\AliyunSmsService;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Schema;
-use Tests\TestCase;
 
 class PluginRuntimeRegistryIntegrationTest extends TestCase
 {

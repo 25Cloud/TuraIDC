@@ -1,5 +1,5 @@
 <template>
-  <t-drawer :visible="visible" :size="drawerSize" :header="headerTitle" :footer="false" @close="emit('close')">
+  <t-drawer :visible="visible" :size="drawerSize" :header="headerTitle" @close="emit('close')">
     <template v-if="currentLog">
       <div class="detail-grid">
         <article v-for="item in detailFields" :key="item.label">
@@ -18,12 +18,12 @@
         />
         <pre v-else class="json-block">{{ item.value }}</pre>
       </div>
-      <div class="detail-drawer-actions">
-        <t-button variant="outline" @click="emit('close')">
-          <template #icon><chevron-left-icon /></template>
-          返回
-        </t-button>
-      </div>
+    </template>
+    <template #footer>
+      <t-button variant="outline" @click="emit('close')">
+        <template #icon><chevron-left-icon /></template>
+        返回
+      </t-button>
     </template>
   </t-drawer>
 </template>
@@ -33,7 +33,17 @@ import { computed } from 'vue';
 
 import { fieldValue, formatDateTime } from '@/utils/format';
 
-type LogTab = 'system' | 'runtime' | 'admin-logins' | 'api' | 'sms' | 'email' | 'tasks' | 'gateway';
+type LogTab =
+  | 'system'
+  | 'runtime'
+  | 'admin-logins'
+  | 'api'
+  | 'sms'
+  | 'email'
+  | 'tasks'
+  | 'gateway'
+  | 'upstream'
+  | 'upstream-uploads';
 type RecordRow = Record<string, unknown>;
 
 defineOptions({ name: 'LogDetailDrawer' });
@@ -60,6 +70,8 @@ const headerTitle = computed(() => {
     return `网关日志 · ${fieldValue(row.gateway) || ''} ${fieldValue(row.action) || ''}`;
   if (props.activeTab === 'system') return `系统日志 · ${fieldValue(row.actor_name) || '详情'}`;
   if (props.activeTab === 'runtime') return `运行日志 · ${fieldValue(row.id) || '详情'}`;
+  if (props.activeTab === 'upstream') return `工单推送日志 · 工单 ${fieldValue(row.ticket_id) || '详情'}`;
+  if (props.activeTab === 'upstream-uploads') return `上传日志 · ${fieldValue(row.id) || '详情'}`;
   return `系统日志 · ${fieldValue(row.id) || '详情'}`;
 });
 
@@ -142,6 +154,23 @@ const detailFields = computed(() => {
       { label: '记录时间', value: formatDate(row.created_at) },
     ];
   }
+  if (props.activeTab === 'upstream') {
+    return [
+      { label: '工单 ID', value: fieldValue(row.ticket_id) },
+      { label: '回复 ID', value: fieldValue(row.ticket_reply_id) },
+      { label: '方向', value: fieldValue(row.direction) },
+      { label: '操作', value: fieldValue(row.operation) },
+      { label: '事件', value: fieldValue(row.event) },
+      { label: '状态', value: statusLabel(row.status) },
+      { label: '原因码', value: fieldValue(row.reason_code) },
+      { label: '供应商', value: fieldValue(row.supplier_name || row.provider_key) },
+      { label: '供应商 ID', value: fieldValue(row.supplier_id) },
+      { label: '尝试次数', value: fieldValue(row.attempt) },
+      { label: 'HTTP 状态', value: fieldValue(row.http_status) },
+      { label: '耗时(ms)', value: fieldValue(row.duration_ms) },
+      { label: '发生时间', value: formatDate(row.occurred_at || row.created_at) },
+    ];
+  }
   if (props.activeTab === 'system') {
     return [
       { label: '操作人', value: fieldValue(row.actor_name) },
@@ -153,6 +182,15 @@ const detailFields = computed(() => {
       { label: '记录时间', value: formatDate(row.created_at) },
       { label: 'IP 地址', value: fieldValue(row.ip_address) },
       { label: '数据来源', value: activitySourceLabel(row.source) },
+    ];
+  }
+  if (props.activeTab === 'upstream-uploads') {
+    return [
+      { label: '日志级别', value: fieldValue(row.level) },
+      { label: '插件 ID', value: fieldValue(row.plugin_id) },
+      { label: '插件 key', value: fieldValue(row.plugin_key) },
+      { label: 'Trace ID', value: fieldValue(row.trace_id) },
+      { label: '记录时间', value: formatDate(row.time) },
     ];
   }
   return [
@@ -195,6 +233,12 @@ const detailBlocks = computed(() => {
       { label: '错误信息', value: fieldValue(row.error_msg) },
     ];
   }
+  if (props.activeTab === 'upstream') {
+    return [
+      { label: '结果说明', value: fieldValue(row.message) },
+      { label: '原因码', value: fieldValue(row.reason_code) },
+    ];
+  }
   if (props.activeTab === 'tasks') {
     return [
       { label: '摘要 JSON', value: formatJson(row.summary) },
@@ -206,6 +250,14 @@ const detailBlocks = computed(() => {
     return [
       { label: '描述', value: fieldValue(row.description) },
       { label: '上下文', value: formatJson(row.context) },
+    ];
+  }
+  if (props.activeTab === 'upstream-uploads') {
+    return [
+      { label: '格式化内容', value: fieldValue(row.message) },
+      { label: '请求上下文', value: formatJson(row.request_meta) },
+      { label: '响应上下文', value: formatJson(row.response_meta) },
+      { label: '原始日志', value: fieldValue(row.raw) },
     ];
   }
   return [
@@ -224,6 +276,13 @@ function statusLabel(status: unknown) {
   if (props.activeTab === 'admin-logins') return sourceLabel(status);
   if (props.activeTab === 'tasks') return taskStatusLabel(status);
   const statusKey = String(status || '').toLowerCase();
+  if (props.activeTab === 'upstream') {
+    return String(
+      { pending: '等待发送', sending: '发送中', delivered: '已转发', failed: '转发失败', skipped: '未转发' }[
+        statusKey
+      ] || fieldValue(status),
+    );
+  }
   return String({ success: '发送成功', failed: '发送失败', pending: '待发送' }[statusKey] || fieldValue(status));
 }
 
