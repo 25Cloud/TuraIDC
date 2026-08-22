@@ -20,6 +20,10 @@ use App\Services\Integrations\Plugins\PluginDomain;
  * 邮箱/短信验证码，而发码入口已经过了人机验证，因此它们不再单独设开关——
  * 邮箱/短信验证码本身就是持有性证明，终态接口再验一次只是重复摩擦。
  *
+ * 其中三个场景不可关闭（见 MANDATORY_SCENES）：注册与两个发码入口。发码直接花钱、
+ * 注册直接写入账号唯一信息，把它们做成可关的开关等于给「关掉之后被刷」留了口子。
+ * 登录类场景仍然可关，逃生通道也只针对它们。
+ *
  * 开关存放在**当前生效的验证码插件**的配置里（各插件 config.php 声明 switch 字段），
  * 所以在插件管理界面即可调整。这里集中做读取与默认值兜底，避免四个插件各写一份同样的逻辑。
  *
@@ -75,6 +79,33 @@ final class CaptchaPolicyService
      */
     private const DEFAULT_ENABLED = true;
 
+    /**
+     * 不可关闭的场景：开关值一律按开启处理。
+     *
+     * 判定依据是「这个入口被刷会不会直接产生对外成本或污染账号唯一信息」：
+     *
+     * - email_code / phone_code：直接触发对外发信。短信按条计费，邮箱有发送配额与
+     *   投诉率约束（被刷会导致域名信誉下降甚至被服务商停用）。这两个端点是**公开**的
+     *   （routes/v2-client.php 的 /auth/phone-code、/auth/email-code 不在 auth 中间件内），
+     *   仅有 throttle:3,1 的按 IP 限流兜底——攻击者换 IP 即可绕过，人机验证是唯一有效防线。
+     *   一旦关掉这两个开关，就等于把「花钱的接口」完全敞开。
+     * - client_register：注册即写入手机号/邮箱这类账号唯一信息，是刷号的主入口；
+     *   且攻击者每次使用新账号，按失败次数计数的风控在此结构性失效
+     *   （注册没有"失败"可计），没有人机验证就没有任何门槛。
+     *
+     * 为什么这样做不会把管理员锁在外面：登录类场景（client_login / admin_login）**仍可关闭**，
+     * 它们才是「验证服务商故障 → 进不了后台」死锁的来源，逃生通道（captcha:scene、
+     * --disable-plugin）针对的也是它们。注册与发码被强制验证不影响管理员登录；
+     * 真要整体停掉，仍可用 --disable-plugin 停用插件（那是一次显式的全站决定）。
+     *
+     * @var list<string>
+     */
+    public const MANDATORY_SCENES = [
+        self::SCENE_CLIENT_REGISTER,
+        self::SCENE_EMAIL_CODE,
+        self::SCENE_PHONE_CODE,
+    ];
+
     /** @var array<string, mixed>|null 当次请求内的插件配置缓存 */
     private ?array $driverConfigCache = null;
 
@@ -107,6 +138,11 @@ final class CaptchaPolicyService
             return false;
         }
 
+        // 强制场景不读配置：脏数据、误操作或直接改库都不能把它关掉
+        if (self::isMandatory($scene)) {
+            return true;
+        }
+
         $config = $this->driverConfig();
         if (! array_key_exists($configKey, $config)) {
             return self::DEFAULT_ENABLED;
@@ -119,7 +155,10 @@ final class CaptchaPolicyService
     /**
      * 全部场景及其当前开关状态。
      *
-     * @return array<int, array{scene: string, label: string, enabled: bool}>
+     * mandatory 为 true 表示该场景不可关闭（见 MANDATORY_SCENES），
+     * 供命令行与管理界面把开关显示为锁定态，而不是让人误以为改得动。
+     *
+     * @return array<int, array{scene: string, label: string, enabled: bool, mandatory: bool}>
      */
     public function describeScenes(): array
     {
@@ -130,10 +169,19 @@ final class CaptchaPolicyService
                 'scene' => $scene,
                 'label' => self::SCENE_LABELS[$scene] ?? $scene,
                 'enabled' => $this->isSceneEnabled($scene),
+                'mandatory' => self::isMandatory($scene),
             ];
         }
 
         return $scenes;
+    }
+
+    /**
+     * 该场景是否属于不可关闭的强制场景。
+     */
+    public static function isMandatory(string $scene): bool
+    {
+        return in_array(trim($scene), self::MANDATORY_SCENES, true);
     }
 
     /**

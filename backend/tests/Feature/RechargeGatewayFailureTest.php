@@ -103,33 +103,64 @@ class RechargeGatewayFailureTest extends TestCase
         );
     }
 
+    /**
+     * 明文 HTTP + 非标端口的公网地址也应放行（自建后端常见形态）。
+     *
+     * 原用例以真实服务器的公网 IP+端口作为示例值，已按「不提交生产数据」改为
+     * 文档保留域名 example.test 的占位符；断言语义不变。
+     */
     public function test_precreate_notify_url_accepts_public_http_address(): void
     {
         config([
-            'alipay.notify_url' => 'http://47.109.144.223:6107/api/v2/client/payment/alipay/notify',
+            'alipay.notify_url' => 'http://backend.example.test:8080/api/v2/client/payment/alipay/notify',
             'app.url' => 'http://127.0.0.1:8000',
         ]);
 
         $service = $this->makeAlipayClient();
 
         $this->assertSame(
-            'http://47.109.144.223:6107/api/v2/client/payment/alipay/notify',
+            'http://backend.example.test:8080/api/v2/client/payment/alipay/notify',
             $this->invokePrivateMethod($service, 'resolvePrecreateNotifyUrl')
         );
     }
 
+    /**
+     * 未配置 ALIPAY_NOTIFY_URL 时回退到**后端** app.url，而不是前端来源。
+     *
+     * 支付宝直接 POST 到这个地址，而 /api 路由只在后端；发到控制台域名会静默丢回调。
+     * 详见 AlipayClient::resolveNotifyUrl() 的说明。
+     */
     public function test_precreate_notify_url_falls_back_to_backend_url(): void
     {
         config([
             'alipay.notify_url' => '',
-            'app.url' => 'http://47.109.144.223:6107',
+            'app.url' => 'http://backend.example.test:8080',
             'app.frontend_url' => 'http://console.example.test',
         ]);
 
         $service = $this->makeAlipayClient();
 
         $this->assertSame(
-            'http://47.109.144.223:6107/api/v2/client/payment/alipay/notify',
+            'http://backend.example.test:8080/api/v2/client/payment/alipay/notify',
+            $this->invokePrivateMethod($service, 'resolvePrecreateNotifyUrl')
+        );
+    }
+
+    /**
+     * app.url 缺失时才退到前端来源——供由控制台域名统一反代 API 的部署使用。
+     */
+    public function test_precreate_notify_url_falls_back_to_frontend_url_only_when_app_url_missing(): void
+    {
+        config([
+            'alipay.notify_url' => '',
+            'app.url' => '',
+            'app.frontend_url' => 'https://console.example.test',
+        ]);
+
+        $service = $this->makeAlipayClient();
+
+        $this->assertSame(
+            'https://console.example.test/api/v2/client/payment/alipay/notify',
             $this->invokePrivateMethod($service, 'resolvePrecreateNotifyUrl')
         );
     }
