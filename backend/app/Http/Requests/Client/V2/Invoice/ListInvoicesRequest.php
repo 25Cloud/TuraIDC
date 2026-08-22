@@ -70,6 +70,9 @@ class ListInvoicesRequest extends FormRequest
             InvoiceType::RECHARGE,
             InvoiceType::UPGRADE,
             InvoiceType::DEDUCTION,
+            // 与管理端同步补齐：当前控制台筛选项是硬编码窄集合、不含 refund 因此不可达，
+            // 但用户端账单列表本身会出现退款账单，先把校验口径对齐，避免以后放开筛选时复现同一缺陷。
+            InvoiceType::REFUND,
             InvoiceType::REFERRAL_CREDIT,
             InvoiceType::MANUAL,
         ];
