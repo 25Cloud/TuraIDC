@@ -171,7 +171,6 @@ JS;
                 'render_mode' => self::DEFAULT_RENDER_MODE,
                 'script_version' => '',
                 'script_url' => $this->getScriptUrl(),
-                'provider' => '',
             ];
         }
 
@@ -189,7 +188,6 @@ JS;
             // 仅在换了 captcha_id 时才需要让前端重新拉取。
             'script_version' => (string) ($data['script_version'] ?? ($data['captcha_id'] ?? '')),
             'script_url' => $this->getScriptUrl(),
-            'provider' => (string) ($data['provider'] ?? ''),
         ];
 
         // 透传插件自定义的前端初始化参数（如 Cap 的 api_endpoint）
