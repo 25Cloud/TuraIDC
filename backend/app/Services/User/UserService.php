@@ -162,7 +162,8 @@ class UserService
             $this->assertUniquePhone($baseUpdateData['phone'], (int) $user->id);
         }
 
-        if (! empty($data['password'])) {
+        $passwordChanged = ! empty($data['password']);
+        if ($passwordChanged) {
             $baseUpdateData['password'] = $data['password'];
         }
 
@@ -171,9 +172,23 @@ class UserService
             $accountUpdateData['credit_limit'] = number_format((float) $data['credit_limit'], 2, '.', '');
         }
 
-        DB::transaction(function () use ($user, $baseUpdateData, $accountUpdateData) {
+        DB::transaction(function () use ($user, $baseUpdateData, $accountUpdateData, $passwordChanged) {
             if ($baseUpdateData !== []) {
                 $user->update($baseUpdateData);
+            }
+
+            // 管理员改密后必须吊销该用户已签发的全部 token。
+            //
+            // 这条通道正是「处置盗号」的主入口：管理员改掉密码，管理员与用户都会认为
+            // 访问已被切断，但旧 token 不受密码变更影响，仍可用到闲置 3 小时
+            // （sanctum.idle_timeout）或签发满 24 小时（sanctum.expiration）为止，
+            // 这段窗口内攻击者照样能下单、改绑邮箱手机、动用余额。
+            //
+            // 本仓库另外三条改密路径（客户自助 AuthService::updateClientPassword、
+            // 忘记密码 resetClientPassword、超管重置员工密码 AdminStaffService）都已吊销，
+            // 唯独这条漏了——属遗漏而非有意设计，故补齐口径。
+            if ($passwordChanged) {
+                $user->tokens()->delete();
             }
 
             if ($accountUpdateData !== []) {

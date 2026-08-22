@@ -804,12 +804,20 @@ class AuthService
 
         $issuedUserAgentHash = trim((string) ($payload['issued_user_agent_hash'] ?? ''));
         $currentUserAgentHash = $this->hashLoginAsUserAgent((string) ($userAgent ?? ''));
-        if (
-            $issuedUserAgentHash !== ''
-            && $currentUserAgentHash !== ''
-            && ! hash_equals($issuedUserAgentHash, $currentUserAgentHash)
-        ) {
-            throw new BusinessException('代登录环境校验失败，请在原浏览器窗口重新发起', 40300, 403);
+
+        // 签发时记录了 UA 就必须能对上；**交换侧 UA 为空一律拒绝**。
+        //
+        // 原实现要求两侧都非空才比对（$issued !== '' && $current !== '' && ! hash_equals），
+        // 而 issued 侧由管理员自己的请求写入、攻击者控制不了，攻击者能控制的只有交换侧：
+        // 截获 code 后发一个不带 User-Agent 的请求，$current 为空串，整段绑定校验被跳过。
+        // 也就是说这道防线对唯一会攻击它的人恰好失效。
+        //
+        // issued 为空（签发请求本身没带 UA，例如脚本化的管理端调用）时无从绑定，
+        // 维持放行——该情形不受攻击者摆布，凭证本身仍有 64 字符随机 + 单次消费 + 120s TTL。
+        if ($issuedUserAgentHash !== '') {
+            if ($currentUserAgentHash === '' || ! hash_equals($issuedUserAgentHash, $currentUserAgentHash)) {
+                throw new BusinessException('代登录环境校验失败，请在原浏览器窗口重新发起', 40300, 403);
+            }
         }
 
         $user = User::query()->find((int) ($payload['user_id'] ?? 0));
