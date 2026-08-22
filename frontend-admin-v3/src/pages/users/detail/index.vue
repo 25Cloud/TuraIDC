@@ -932,6 +932,7 @@
 <script setup lang="ts">
 import './index.less';
 
+import { billingCycleLabel as billingCycleLabelOf } from '@shared/billingCycle';
 import {
   INVOICE_STATUS_MAP,
   SERVICE_STATUS_MAP,
@@ -2281,19 +2282,7 @@ function resolveBillingOptions(product: ProductRecord | null) {
     }));
 }
 function billingCycleLabel(value: unknown) {
-  return (
-    (
-      {
-        monthly: '月付',
-        quarterly: '季付',
-        semiannually: '半年付',
-        annually: '年付',
-        biennially: '两年付',
-        triennially: '三年付',
-        one_time: '一次性',
-      } as Record<string, string>
-    )[String(value)] || fieldValue(value)
-  );
+  return billingCycleLabelOf(value) || fieldValue(value);
 }
 function flattenOptionTree(items: Row[] = []) {
   const result: Array<{ value: string | number; label: string }> = [];
@@ -2412,7 +2401,9 @@ function priorityTheme(priority: unknown): 'default' | 'warning' | 'danger' {
   return 'default';
 }
 function ticketStatusLabel(status: unknown) {
-  return ({ 0: '待处理', 1: '用户回复', 2: '客服回复', 3: '已关闭' } as Record<number, string>)[Number(status)] || '-';
+  // 文案以后端 TicketService::STATUS_LABELS 为准（shared/statusConfig.js 的 TICKET_STATUS_MAP 同口径）。
+  // 此前这里写作"待处理/用户回复/客服回复"，与工单列表页的"开启/客户回复/员工回复"矛盾。
+  return ({ 0: '开启', 1: '客户回复', 2: '员工回复', 3: '已关闭' } as Record<number, string>)[Number(status)] || '-';
 }
 function ticketStatusTheme(status: unknown): 'default' | 'success' | 'warning' {
   const value = Number(status);

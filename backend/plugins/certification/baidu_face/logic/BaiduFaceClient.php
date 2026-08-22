@@ -360,16 +360,10 @@ class BaiduFaceClient
      */
     private function httpOptions(): array
     {
-        $sslVerify = $this->resolveSslVerify();
-        $caBundle = $this->resolveCaBundle();
-
-        if (! $sslVerify) {
-            return ['verify' => false];
-        }
-
-        return $caBundle !== '' && is_file($caBundle)
-            ? ['verify' => $caBundle]
-            : ['verify' => true];
+        // 项目硬规则：插件不需要 SSL 与 CA 配置，统一依赖系统 CA。
+        // 原实现允许经插件配置或 config('idc.verification.ssl_verify') 关闭证书校验，
+        // 而后者在 APP_ENV=local 时默认为 false——等于给证书校验留了一条静默禁用通路。
+        return [];
     }
 
     private function buildH5Url(string $verifyToken): string
@@ -582,23 +576,4 @@ class BaiduFaceClient
         return $value;
     }
 
-    private function resolveSslVerify(): bool
-    {
-        $value = $this->config['ssl_verify'] ?? null;
-        if ($value !== null && $value !== '') {
-            return filter_var($value, FILTER_VALIDATE_BOOL);
-        }
-
-        return filter_var(config('idc.verification.ssl_verify', true), FILTER_VALIDATE_BOOL);
-    }
-
-    private function resolveCaBundle(): string
-    {
-        $value = $this->config['ca_bundle'] ?? null;
-        if ($value !== null && $value !== '') {
-            return trim((string) $value);
-        }
-
-        return trim((string) config('idc.verification.ca_bundle', ''));
-    }
 }

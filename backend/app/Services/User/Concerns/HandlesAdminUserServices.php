@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\User\Concerns;
 
+use App\Constants\BillingCycle;
 use App\Constants\FinanceLedgerEventType;
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
@@ -1177,15 +1178,7 @@ trait HandlesAdminUserServices
             return null;
         }
 
-        return match ($billingCycle) {
-            'monthly' => now()->addMonth(),
-            'quarterly' => now()->addMonths(3),
-            'semiannually' => now()->addMonths(6),
-            'annually' => now()->addYear(),
-            'biennially' => now()->addYears(2),
-            'triennially' => now()->addYears(3),
-            default => null,
-        };
+        return BillingCycle::advance(now(), $billingCycle);
     }
 
     private function resolveManualServiceName(Product $product, array $data, string $domain): string

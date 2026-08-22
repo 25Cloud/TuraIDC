@@ -10,6 +10,7 @@
     "./content": "./content/index.ts",
     "./components/StatusTag.vue": "./components/StatusTag.vue",
     "./components/CapCaptchaCard.vue": "./components/CapCaptchaCard.vue",
+    "./billingCycle": "./billingCycle.js",
     "./statusConfig": "./statusConfig.js",
     "./extraStatusMaps": "./extraStatusMaps.js",
     "./htmlSanitizer": "./htmlSanitizer.js",

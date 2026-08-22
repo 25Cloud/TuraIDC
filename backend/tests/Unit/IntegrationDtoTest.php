@@ -110,27 +110,43 @@ class IntegrationDtoTest extends TestCase
         );
     }
 
-    public function test_aliyun_sms_client_resolves_ssl_options_and_curl_errors(): void
+    /**
+     * 证书校验不再可配置，且失败文案不再指向已移除的 env 项。
+     *
+     * 本测试取代原 test_aliyun_sms_client_resolves_ssl_options_and_curl_errors——那条断言
+     * resolveSslVerify() / resolveCaBundle() 会读插件配置，把违规行为钉成了预期，
+     * 与 AGENTS.md「所有插件不需要 SSL 和 CA」冲突。
+     */
+    public function test_aliyun_sms_client_always_verifies_certificates(): void
     {
         $this->loadPluginFile('sms/aliyun/lib/AliyunSmsClient.php');
 
+        // 即便塞入插件级 ssl 配置，也不应再有任何读取入口
         $client = new AliyunSmsClient([
             'ssl_verify' => '0',
             'ca_bundle' => ' C:/certs/cacert.pem ',
         ]);
 
-        $this->assertFalse($this->invokePrivate($client, 'resolveSslVerify', []));
-        $this->assertSame('C:/certs/cacert.pem', $this->invokePrivate($client, 'resolveCaBundle', []));
+        foreach (['resolveSslVerify', 'resolveCaBundle'] as $removed) {
+            $this->assertFalse(
+                method_exists($client, $removed),
+                "AliyunSmsClient 不应再有 {$removed}()：证书校验已固定开启，不读任何配置"
+            );
+        }
+
+        $source = (string) file_get_contents(base_path('plugins/sms/aliyun/lib/AliyunSmsClient.php'));
+        $this->assertStringContainsString('CURLOPT_SSL_VERIFYPEER, true', $source);
+        $this->assertStringNotContainsString('CURLOPT_CAINFO', $source);
 
         $this->setPrivateProperty($client, 'lastCurlError', [
             'errno' => 60,
             'error' => 'SSL certificate problem: unable to get local issuer certificate',
         ]);
 
-        $this->assertSame(
-            '短信接口 SSL 证书校验失败，请检查服务器 CA 证书或 SMS_CA_BUNDLE 配置',
-            $this->invokePrivate($client, 'resolveCurlFailureMessage', [])
-        );
+        // 文案不得再指向已移除的 SMS_CA_BUNDLE
+        $message = (string) $this->invokePrivate($client, 'resolveCurlFailureMessage', []);
+        $this->assertStringNotContainsString('SMS_CA_BUNDLE', $message);
+        $this->assertStringContainsString('系统 CA', $message);
     }
 
     private function invokePrivate(object $instance, string $method, array $args): mixed

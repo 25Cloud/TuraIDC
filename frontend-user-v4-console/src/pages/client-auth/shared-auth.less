@@ -159,11 +159,16 @@
 }
 
 /* ── 人机验证容器（登录/注册/找回密码） ── */
+/* 验证组件落点：Turnstile 走「无感」时容器内为空，此时不应占任何高度；
+   只有真的需要人工挑战、容器里被塞进组件后才撑开并留出间距。 */
 .client-auth-captcha {
   display: flex;
   justify-content: center;
-  margin: 0 0 1.25rem;
-  min-height: 2.75rem;
+
+  &:not(:empty) {
+    margin: 0 0 1.25rem;
+    min-height: 2.75rem;
+  }
 }
 
 /* ── 响应式 ── */
