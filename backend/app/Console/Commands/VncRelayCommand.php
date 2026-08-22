@@ -626,7 +626,7 @@ class VncRelayCommand extends Command
 
     private function isPrivateOrReservedIp(string $ip): bool
     {
-        $ip = trim($ip);
+        $ip = $this->normalizeIpForPolicyCheck(trim($ip));
 
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             $long = ip2long($ip);
@@ -669,6 +669,41 @@ class VncRelayCommand extends Command
         }
 
         return true;
+    }
+
+    /**
+     * 把 IPv4-mapped / IPv4-compatible IPv6 还原成点分十进制，再交给黑名单判定。
+     *
+     * 不归一化就会被绕过：`::ffff:127.0.0.1` 只通得过 FILTER_FLAG_IPV6，于是落进上面的
+     * IPv6 分支；而 explode(':', '::ffff:127.0.0.1')[0] 取到的是**空串**（开头就是 `::`），
+     * 既不匹配 fe[89ab] 也不匹配 f[cd]，结果被判成公网直接放行。随后
+     * stream_socket_client('tcp://::ffff:127.0.0.1:port') 由内核按 mapped 语义
+     * 直连 IPv4 回环，整道内网拦截形同不存在。`::ffff:169.254.169.254`
+     * （云元数据端点）、`::ffff:10.0.0.5` 等同理。
+     *
+     * 归一化后 `::` → 0.0.0.0、`::1` → 0.0.0.1，两者都落在 0.0.0.0/8，判定结果与
+     * 原先的字符串特例一致，不改变既有行为。
+     */
+    private function normalizeIpForPolicyCheck(string $ip): string
+    {
+        $packed = @inet_pton($ip);
+        if ($packed === false || strlen($packed) !== 16) {
+            return $ip;
+        }
+
+        // ::ffff:a.b.c.d（前 80 位 0 + 16 位 1）与 ::a.b.c.d（前 96 位 0）
+        $mappedPrefix = str_repeat("\x00", 10)."\xff\xff";
+        $compatiblePrefix = str_repeat("\x00", 12);
+
+        if (! str_starts_with($packed, $mappedPrefix) && ! str_starts_with($packed, $compatiblePrefix)) {
+            return $ip;
+        }
+
+        $ipv4 = @inet_ntop(substr($packed, 12));
+
+        return is_string($ipv4) && filter_var($ipv4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)
+            ? $ipv4
+            : $ip;
     }
 
     private function resolveOriginHeader(array $params = []): string
