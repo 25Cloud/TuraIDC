@@ -221,6 +221,21 @@ class V2ProductApiTest extends TestCase
         $this->assertContains((int) $enabled->id, $ids);
         $this->assertNotContains((int) $disabled->id, $ids);
 
+        // 将启用绑定的 status 置 0 后再次请求：验证服务层 where('status', 1) 过滤真正生效
+        ProductUpstreamBinding::query()
+            ->where('product_id', (int) $enabled->id)
+            ->update(['status' => 0]);
+
+        $responseDisabled = $this->getJson('/api/v2/admin/products?'.http_build_query([
+            'supplier_id' => (int) $supplier->id,
+            'page' => 1,
+            'page_size' => 50,
+        ]))
+            ->assertOk()
+            ->assertJsonPath('code', 0);
+        $idsAfterDisable = collect($responseDisabled->json('data.list'))->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $this->assertNotContains((int) $enabled->id, $idsAfterDisable);
+
         // 非法 supplier_id 参数返回 422
         $this->getJson('/api/v2/admin/products?'.http_build_query([
             'supplier_id' => 'abc',

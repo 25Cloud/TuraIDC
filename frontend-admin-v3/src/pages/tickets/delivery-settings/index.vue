@@ -413,15 +413,31 @@ async function loadSupplierProducts(supplierId: number | string) {
   const requestId = ++productsRequestId;
   supplierProducts.value = [];
   try {
-    const response = await productApi.v2List({
-      page: 1,
-      page_size: 100,
-      lifecycle_status: 'active',
-      supplier_id: supplierId,
-      provider_key: PROVIDER_KEY,
-    });
-    if (requestId !== productsRequestId) return;
-    supplierProducts.value = response.list || [];
+    // 供应商绑定产品可能超过单页上限，分页拉全量后再合并；
+    // 每页返回前都校验请求序号，避免旧响应覆盖新供应商的结果。
+    const products: ProductRecord[] = [];
+    const pageSize = 100;
+    let page = 1;
+    let total = 0;
+
+    do {
+      const response = await productApi.v2List({
+        page,
+        page_size: pageSize,
+        lifecycle_status: 'active',
+        supplier_id: supplierId,
+        provider_key: PROVIDER_KEY,
+      });
+      if (requestId !== productsRequestId) return;
+
+      const list = response.list || [];
+      products.push(...list);
+      total = Number(response.total ?? products.length);
+      page += 1;
+      if (list.length === 0) break;
+    } while (products.length < total);
+
+    supplierProducts.value = products;
   } catch (error) {
     if (requestId !== productsRequestId) return;
     supplierProducts.value = [];
