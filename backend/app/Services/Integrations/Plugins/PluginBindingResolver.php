@@ -39,7 +39,9 @@ class PluginBindingResolver
     private array $serviceBindingCache = [];
 
     /**
-     * @var array<int, object|null>
+     * 键为 "supplierId|providerKey"（providerKey 为空串表示不限定 provider）。
+     *
+     * @var array<string, object|null>
      */
     private array $supplierBindingCache = [];
 
@@ -358,20 +360,31 @@ class PluginBindingResolver
         return $provisionData;
     }
 
+    /**
+     * 缓存键必须带上 $providerKey。
+     *
+     * 只按 supplier_id 缓存会串味：同一供应商可同时绑定多个 provider（见
+     * supplier_plugin_bindings 的 provider_key 列），先查 zjmf_finance 再查 kanghostx
+     * 会拿到前者缓存的结果。null 与空串都表示「不限定 provider」，归一到同一个键。
+     */
     private function supplierBinding(int $supplierId, ?string $providerKey = null): ?object
     {
+        $normalizedProviderKey = trim((string) $providerKey);
+
         if (! $this->readScopeActive()) {
-            return $this->fetchSupplierBinding($supplierId);
+            return $this->fetchSupplierBinding($supplierId, $normalizedProviderKey);
         }
 
-        if (array_key_exists($supplierId, $this->supplierBindingCache)) {
-            return $this->supplierBindingCache[$supplierId];
+        $cacheKey = $supplierId.'|'.$normalizedProviderKey;
+
+        if (array_key_exists($cacheKey, $this->supplierBindingCache)) {
+            return $this->supplierBindingCache[$cacheKey];
         }
 
-        return $this->supplierBindingCache[$supplierId] = $this->fetchSupplierBinding($supplierId);
+        return $this->supplierBindingCache[$cacheKey] = $this->fetchSupplierBinding($supplierId, $normalizedProviderKey);
     }
 
-    private function fetchSupplierBinding(int $supplierId): ?object
+    private function fetchSupplierBinding(int $supplierId, string $providerKey = ''): ?object
     {
         if ($supplierId <= 0 || ! $this->hasTable('supplier_plugin_bindings')) {
             return null;
@@ -379,7 +392,7 @@ class PluginBindingResolver
 
         return DB::table('supplier_plugin_bindings')
             ->where('supplier_id', $supplierId)
-            ->when($providerKey !== null && trim($providerKey) !== '', fn ($query) => $query->where('provider_key', trim($providerKey)))
+            ->when($providerKey !== '', fn ($query) => $query->where('provider_key', $providerKey))
             ->orderByDesc('status')
             ->orderByDesc('priority')
             ->orderByDesc('id')

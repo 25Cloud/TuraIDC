@@ -1493,7 +1493,7 @@ class AdminLogService
     /** @return array<string, mixed>|null */
     public function getUpstreamLog(int|string $id): ?array
     {
-        if (! Schema::hasTable('ticket_upstream_delivery_logs')) {
+        if (! DatabaseSchema::hasTableOrView('ticket_upstream_delivery_logs')) {
             return null;
         }
 
@@ -1519,7 +1519,7 @@ class AdminLogService
 
     private function buildUpstreamLogBaseQuery(array $filters): ?Builder
     {
-        if (! Schema::hasTable('ticket_upstream_delivery_logs')) {
+        if (! DatabaseSchema::hasTableOrView('ticket_upstream_delivery_logs')) {
             return null;
         }
 
