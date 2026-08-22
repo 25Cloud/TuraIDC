@@ -207,11 +207,21 @@ export function useGeeTestCaptcha(configUrl = '/v2/client/auth/captcha-config') 
   const resolveSuccess = (instance: CaptchaInstance) => {
     const result = readCaptchaResult(instance) as CaptchaValidation | null;
     instance.reset?.();
-    if (result && result.isOffline === true) {
-      pendingRejecter?.(new Error('人机验证服务不可用，请稍后重试'));
+    const requiredFields = ['lot_number', 'captcha_output', 'pass_token', 'gen_time'];
+    const hasValidResult =
+      result &&
+      result.isOffline !== true &&
+      requiredFields.every((field) => {
+        const value = result[field];
+        return typeof value === 'string' && value.trim() !== '';
+      });
+
+    if (!hasValidResult) {
+      pendingRejecter?.(new Error('人机验证未完成，请重试'));
       clearPending();
       return;
     }
+
     pendingResolver?.(result);
     clearPending();
   };
