@@ -102,6 +102,20 @@ export DB_HOST="${DB_HOST:-mysql}"
 export DB_PORT="${DB_PORT:-3306}"
 export REDIS_HOST="${REDIS_HOST:-redis}"
 export REDIS_PORT="${REDIS_PORT:-6379}"
+
+# 端口合法性校验：必须为 1..65535 的十进制数。
+# 无效 DB_PORT 若放行，会让第 2 节的 mysqladmin 重试循环永远失败（无限重试）；
+# 无效 REDIS_PORT 则要到运行期才报连接错误。此处写入 .env 前统一拦截。
+validate_port() {
+  local name="$1" value="$2"
+  if ! [[ "$value" =~ ^[0-9]{1,5}$ ]] || ((10#$value < 1 || 10#$value > 65535)); then
+    log "错误：$name 必须为 1..65535 的十进制端口，当前值：'$value'。请检查 deploy/docker/.env。"
+    exit 1
+  fi
+}
+validate_port DB_PORT "$DB_PORT"
+validate_port REDIS_PORT "$REDIS_PORT"
+
 printf '%s\n' \
   'DB_CONNECTION="mysql"' \
   "DB_HOST=\"$DB_HOST\"" \
