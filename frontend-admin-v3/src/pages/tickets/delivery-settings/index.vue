@@ -415,7 +415,7 @@ async function loadSupplierProducts(supplierId: number | string) {
   try {
     // 供应商绑定产品可能超过单页上限，分页拉全量后再合并；
     // 每页返回前都校验请求序号，避免旧响应覆盖新供应商的结果。
-    const products: ProductRecord[] = [];
+    const loadedProducts: ProductRecord[] = [];
     const pageSize = 100;
     let page = 1;
     let total = 0;
@@ -431,13 +431,19 @@ async function loadSupplierProducts(supplierId: number | string) {
       if (requestId !== productsRequestId) return;
 
       const list = response.list || [];
-      products.push(...list);
-      total = Number(response.total ?? products.length);
+      loadedProducts.push(...list);
+      total = Number(response.total ?? loadedProducts.length);
       page += 1;
       if (list.length === 0) break;
-    } while (products.length < total);
+    } while (loadedProducts.length < total);
 
-    supplierProducts.value = products;
+    // 按 ID 合并进全局产品缓存，保证列表页 productNames() 能解析出超首屏产品的名称
+    const productIndex = new Map(products.value.map((product) => [String(product.id), product]));
+    for (const product of loadedProducts) {
+      productIndex.set(String(product.id), product);
+    }
+    products.value = [...productIndex.values()];
+    supplierProducts.value = loadedProducts;
   } catch (error) {
     if (requestId !== productsRequestId) return;
     supplierProducts.value = [];
