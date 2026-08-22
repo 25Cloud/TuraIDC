@@ -17,7 +17,14 @@ class LoginRequest extends AdminFormRequest
             'username' => 'required|string',
             'password' => 'required|string|min:6',
             'captcha' => ['nullable', 'array', 'max:8'],
-            'captcha.*' => ['nullable', 'string', 'max:2048'],
+            'captcha.lot_number' => ['nullable', 'string', 'max:2048'],
+            'captcha.captcha_output' => ['nullable', 'string', 'max:2048'],
+            'captcha.pass_token' => ['nullable', 'string', 'max:2048'],
+            'captcha.gen_time' => ['nullable', 'string', 'max:64'],
+            'captcha.token' => ['nullable', 'string', 'max:2048'],
+            'captcha.knock' => ['nullable', 'string', 'max:2048'],
+            'captcha.dfu' => ['nullable', 'string', 'max:2048'],
+            'captcha.provider' => ['nullable', 'string', 'max:64'],
         ], [
             'per_page' => ['prohibited'],
         ]);

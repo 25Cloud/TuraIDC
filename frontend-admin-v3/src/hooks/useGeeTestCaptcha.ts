@@ -10,6 +10,11 @@ interface GeeTestConfig {
   cache_key?: string;
 }
 
+interface CaptchaValidation {
+  isOffline?: boolean;
+  [key: string]: unknown;
+}
+
 interface CaptchaInstance {
   onReady?: (callback: () => void) => void;
   onSuccess?: (callback: () => void) => void;
@@ -200,8 +205,13 @@ export function useGeeTestCaptcha(configUrl = '/v2/client/auth/captcha-config') 
   };
 
   const resolveSuccess = (instance: CaptchaInstance) => {
-    const result = readCaptchaResult(instance);
+    const result = readCaptchaResult(instance) as CaptchaValidation | null;
     instance.reset?.();
+    if (result && result.isOffline === true) {
+      pendingRejecter?.(new Error('人机验证服务不可用，请稍后重试'));
+      clearPending();
+      return;
+    }
     pendingResolver?.(result);
     clearPending();
   };

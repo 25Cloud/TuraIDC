@@ -64,7 +64,10 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request)
     {
-        $captchaResult = $this->geeTestService->verify($request->input('captcha'), (string) $request->ip());
+        $captchaResult = $this->geeTestService->verify(
+            $this->captchaPayload($request->input('captcha')),
+            (string) $request->ip(),
+        );
         if (! ($captchaResult['ok'] ?? false)) {
             return $this->error(42210, $captchaResult['message'] ?? '行为验证未通过，请重试');
         }
@@ -76,6 +79,28 @@ class AuthController extends Controller
         );
 
         return $this->success(AdminAuthSessionResource::make($result)->resolve(), '登录成功');
+    }
+
+    /**
+     * 仅保留各验证码插件可能使用的字符串字段，避免离线模式附带字段污染验证请求。
+     *
+     * @return array<string, string>|null
+     */
+    private function captchaPayload(mixed $payload): ?array
+    {
+        if (! is_array($payload)) {
+            return null;
+        }
+
+        $allowedKeys = [
+            'lot_number', 'captcha_output', 'pass_token', 'gen_time',
+            'token', 'knock', 'dfu', 'provider',
+        ];
+
+        return array_filter(
+            array_intersect_key($payload, array_fill_keys($allowedKeys, true)),
+            static fn (mixed $value): bool => is_string($value),
+        );
     }
 
     public function info(Request $request)

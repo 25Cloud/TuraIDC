@@ -101,6 +101,28 @@ class V2AdminAuthApiTest extends TestCase
             ->assertJsonPath('data.admin.id', $admin->id);
     }
 
+    public function test_admin_login_ignores_non_string_offline_captcha_fields(): void
+    {
+        $admin = $this->createAdmin([AdminPermissions::ALL]);
+        $captcha = $this->mock(GeeTestService::class);
+        $captcha->shouldReceive('verify')
+            ->once()
+            ->with(['lot_number' => 'lot', 'captcha_output' => 'output'], '127.0.0.1')
+            ->andReturn(['ok' => false, 'message' => '行为验证未通过，请重试']);
+
+        $this->postJson('/api/v2/admin/login', [
+            'username' => $admin->username,
+            'password' => 'Temp@123456',
+            'captcha' => [
+                'lot_number' => 'lot',
+                'captcha_output' => 'output',
+                'isOffline' => true,
+            ],
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 42210);
+    }
+
     public function test_admin_auth_info_requires_login_and_returns_profile_resource(): void
     {
         $admin = $this->createAdmin([AdminPermissions::ORDER_LIST]);
