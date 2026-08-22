@@ -85,7 +85,6 @@
         </div>
       </t-form-item>
 
-
       <!-- inline 形态（Turnstile）的验证组件落点：点击时就地加载，无感通过时不占位 -->
       <div v-show="renderMode === 'inline'" ref="captchaContainer" class="client-auth-captcha"></div>
 

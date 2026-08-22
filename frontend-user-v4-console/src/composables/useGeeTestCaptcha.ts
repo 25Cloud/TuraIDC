@@ -549,7 +549,7 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
   const verify = async ({ required = false, scene = '' } = {}) => {
     // 先解析配置再判场景：该场景已关闭时不必加载第三方 SDK。
     // required=true 表示后端已经以 captcha_required 明确索要验证，后端口径优先，不跳过。
-    if (scene && ! required) {
+    if (scene && !required) {
       try {
         await resolveConfig();
       } catch {
@@ -557,7 +557,7 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
         // 后续 initCaptcha 会走既有的失败路径给出可读提示。
       }
 
-      if (! sceneActive(scene)) {
+      if (!sceneActive(scene)) {
         return null;
       }
     }
@@ -602,8 +602,13 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
   };
 
   /**
-   * @param options.scene 本次动作对应的单一场景（client_login / email_code / phone_code …）。
-   *                      传入后按该场景的开关判定，避免同页多场景互相牵连。
+   * 带人机验证执行一次动作。
+   *
+   * @param callback 拿到验证结果后要执行的动作
+   * @param options 验证选项
+   * @param options.required 后端已以 captcha_required 明确索要验证，不跳过
+   * @param options.scene 本次动作对应的**单一**场景（client_login / email_code / phone_code …）。
+   *                      按该场景的开关判定，避免同页多场景互相牵连。
    */
   const runWithCaptcha = async <T>(
     callback: (captcha: unknown) => Promise<T>,

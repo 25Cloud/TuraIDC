@@ -121,7 +121,6 @@
         </div>
       </t-form-item>
 
-
       <!-- 同上：验证码登录表单的 inline 验证组件落点 -->
       <div v-show="renderMode === 'inline'" ref="captchaContainer" class="client-auth-captcha"></div>
 
@@ -192,8 +191,10 @@ const showPassword = ref(false);
 // 验证 SDK 在点击提交时才加载。渲染形态由后端下发：
 // popup（极验）由插件自行弹窗，inline（Turnstile）则渲染进下方容器。
 const captchaContainer = ref<HTMLElement>();
+// 不再取 enabled：容器显隐改由 renderMode 判定（popup 形态不该渲染容器），
+// 是否要验证则交给 verify() 按具体场景判断——页面级 enabled 是「本页任一场景开启」，
+// 用它做判定会让只开发码场景时密码登录也被要求验证。
 const {
-  enabled,
   loading: captchaLoading,
   renderMode,
   reinit,
