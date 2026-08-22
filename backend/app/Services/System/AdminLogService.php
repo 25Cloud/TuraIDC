@@ -1404,7 +1404,19 @@ class AdminLogService
             ->where('delivery_rank', 1);
         $this->applyUpstreamLogStatusFilter($latest, $filters);
 
-        $total = (int) (clone $latest)->count();
+        // $latest 里的 ranked 子查询是 ROW_NUMBER() OVER (PARTITION BY ticket_id ...)，
+        // 不带 ticket 范围限制，因此每次求值都要对整表排序一遍。原实现在默认路径上要付三遍：
+        // count()、翻页取 ticket_id、以及 getUpstreamLogsSummary() 内部重建同一个子查询。
+        // 投递日志是持续追加的表，行数涨起来后每翻一页都付三倍代价。
+        //
+        // 现在只付两遍：汇总聚合本身已经算了 COUNT(*) as total，直接拿它当分页总数
+        // （两者都是对同一个过滤后 $latest 的 COUNT，口径一致，还顺带消除了两次独立
+        // 查询之间可能出现的数字不一致）；withSummary=false 时才单独 count()。
+        $summary = $withSummary ? $this->upstreamLogSummaryFrom($latest) : [];
+        $total = $withSummary
+            ? (int) ($summary['total'] ?? 0)
+            : (int) (clone $latest)->count();
+
         $ticketIds = (clone $latest)
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')
@@ -1453,10 +1465,7 @@ class AdminLogService
             'query' => request()->query(),
         ]);
 
-        return $this->buildPaginatorPayload(
-            $paginator,
-            $withSummary ? $this->getUpstreamLogsSummary($filters) : []
-        );
+        return $this->buildPaginatorPayload($paginator, $summary);
     }
 
     public function getUpstreamLogsSummary(array $filters): array
@@ -1471,6 +1480,20 @@ class AdminLogService
             ->where('delivery_rank', 1);
         $this->applyUpstreamLogStatusFilter($latest, $filters);
 
+        return $this->upstreamLogSummaryFrom($latest);
+    }
+
+    /**
+     * 由「每工单最新事件」查询算出状态汇总。
+     *
+     * 抽出来是为了让 getUpstreamLogs() 能复用它已经构造好的 $latest，
+     * 不必为了汇总再重建一遍 ranked 子查询（那意味着多一次全表窗口排序）。
+     * 入参只读：内部一律 clone 后再加聚合，不会污染调用方手里的 builder。
+     *
+     * @return array<string, int>
+     */
+    private function upstreamLogSummaryFrom(Builder $latest): array
+    {
         $summary = (clone $latest)
             ->selectRaw('COUNT(*) as total')
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) as failed")
