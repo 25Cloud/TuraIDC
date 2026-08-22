@@ -9,6 +9,9 @@
 #        docker compose up -d --build
 #
 # 镜像地址由 .env 控制：REGISTRY / IMAGE_NAMESPACE / IMAGE_TAG
+# 数据库与 Redis 来源由 .env 控制：
+#   DB_HOST / REDIS_HOST 留空 -> 拉起本地 mysql / redis 容器（默认）
+#   填写远程地址 -> 本地容器不拉取不启动，app 直连远程
 # 详细说明见 docs/references/operations/docker-and-1panel-deployment.md
 # ============================================================================
 name: turaidc
@@ -18,6 +21,9 @@ services:
     image: mysql:8.0
     container_name: turaidc-mysql
     restart: unless-stopped
+    # DB_HOST 留空 -> 插值展开为空，服务照常启动；
+    # 填了远程 DB_HOST -> 挂到永不激活的 profile，本地 mysql 不拉取不启动
+    profiles: ["${DB_HOST:+disabled-remote-mysql}"]
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
@@ -42,6 +48,8 @@ services:
     image: redis:7-alpine
     container_name: turaidc-redis
     restart: unless-stopped
+    # 同 mysql：REDIS_HOST 填了远程地址时不拉取不启动本地 redis
+    profiles: ["${REDIS_HOST:+disabled-remote-redis}"]
     # 有密码时加 --requirepass；无密码时只开 AOF 持久化
     command: >-
       sh -c '[ -n "$$REDIS_PASSWORD" ] &&
@@ -68,16 +76,21 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      DB_HOST: mysql
-      DB_PORT: "3306"
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
+      # 留空时回落到编排内服务名（本地容器模式）；
+      # 填写远程地址时 app 直连远程，端口可用 DB_PORT / REDIS_PORT 覆盖
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
       TZ: Asia/Shanghai
     depends_on:
       mysql:
         condition: service_healthy
+        # 远程模式本地 mysql 被 profile 排除，required:false 允许跳过依赖（Compose v2.20+）
+        required: false
       redis:
         condition: service_healthy
+        required: false
     volumes:
       - app-storage:/var/www/backend/storage
       - app-uploads:/var/www/backend/public/uploads

@@ -2,7 +2,7 @@
 
 面向全新服务器、使用容器化方式部署 TuraIDC 的完整指南。使用 Docker Compose 一键拉起全部服务，配合 GitHub Actions 自动构建推送镜像，服务器只负责拉取运行，不再逐端手工部署；也可直接用 1Panel 的编排与反代能力托管同一套 Compose 文件。
 
-- 对齐时间：`2026-08-19`
+- 对齐时间：`2026-08-22`
 - 传统宝塔部署见 [宝塔部署项目指南](bt-panel-deployment.md)，现网运维口径见 [部署与调度指南](deployment-and-scheduling.md)
 - 部署文件位于仓库根 `deploy/docker/`，唯一需要改的配置是 `deploy/docker/.env`
 - CI 构建推送见 `.github/workflows/docker-image.yml`
@@ -12,8 +12,8 @@
 
 ```
 deploy/docker/docker-compose.yml  (project: turaidc)
-├── mysql (mysql:8.0, 命名卷 mysql-data)
-├── redis (redis:7-alpine, 命名卷 redis-data)
+├── mysql (mysql:8.0, 命名卷 mysql-data)      [可选：DB_HOST 留空时才拉取并启动]
+├── redis (redis:7-alpine, 命名卷 redis-data) [可选：REDIS_HOST 留空时才拉取并启动]
 ├── app   (后端镜像, :80)
 │     ├── php-fpm   (PHP 8.3, 含 pdo_mysql/redis/pcntl/opcache/gd/zip/intl/bcmath)
 │     ├── nginx     (API + /ws/vnc WebSocket -> 127.0.0.1:8100)
@@ -22,6 +22,8 @@ deploy/docker/docker-compose.yml  (project: turaidc)
 │     命名卷: app-storage / app-uploads / app-media
 ├── frontends (nginx:alpine, 三端口: 8081=官网 / 8082=控制台 / 8083=管理端)
 ```
+
+`DB_HOST` / `REDIS_HOST` 留空（默认）时本地 mysql / redis 容器随编排启动；填写远程地址则对应本地容器不创建、镜像也不被 `docker compose pull` 拉取，app 直连远程服务，两者互相独立可单独切换。
 
 镜像流向：GitHub Actions 构建并推送 `ghcr.io/<owner>/turaidc-{app,frontends}` → 服务器 `docker compose pull`。
 
@@ -52,14 +54,18 @@ vim .env
 | `APP_KEY`                                                          | 否   | **不要在此文件设置**。容器启动时自动生成并写入 `backend/.env`。若在此设空值，Docker env_file 会注入容器环境变量，Dotenv 不覆盖已存在环境变量，导致生成的 key 被忽略 |
 | `INSTALL_ADMIN_PASSWORD`                                           | 是   | 首次初始化默认管理员 `cerbo` 的密码，至少 12 位强密码，仅空库首次生效                                                                                               |
 | `SESSION_SECURE_COOKIE`                                            | 是   | HTTPS 环境 `true`，纯 HTTP 环境 `false`                                                                                                                             |
-| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` / `DB_ROOT_PASSWORD` | 是   | 数据库名与账号；同时用于 mysql 容器和 app 容器                                                                                                                      |
-| `REDIS_PASSWORD`                                                   | 否   | Redis 密码；默认空。公网切勿放行 6379                                                                                                                               |
+| `DB_HOST` / `DB_PORT`                                              | 否   | 数据库来源：留空使用编排内 mysql 容器（默认）；填写远程地址则本地 mysql 不拉取不启动，app 直连远程库，端口默认 3306                                                 |
+| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` / `DB_ROOT_PASSWORD` | 是   | 数据库名与账号；同时用于 mysql 容器和 app 容器（远程模式仍需填写供 app 连接）                                                                                       |
+| `REDIS_HOST` / `REDIS_PORT`                                        | 否   | Redis 来源：留空使用编排内 redis 容器（默认）；填写远程地址则本地 redis 不拉取不启动，app 直连远程，端口默认 6379                                                   |
+| `REDIS_PASSWORD`                                                   | 否   | Redis 密码；默认空。公网切勿放行 6379；远程模式必须与远程实例一致                                                                                                   |
 | `API_PORT` / `WWW_PORT` / `CONSOLE_PORT` / `ADMIN_PORT`            | 否   | 宿主机映射端口，默认 8080/8081/8082/8083                                                                                                                            |
 | `CACHE_STORE` / `QUEUE_CONNECTION` / `SESSION_DRIVER`              | 否   | 与现网口径一致：redis / database / file，一般不用改                                                                                                                 |
 | `SENTRY_LARAVEL_DSN`                                               | 否   | Sentry DSN，留空关闭                                                                                                                                                |
 | `MAIL_FROM_ADDRESS`                                                | 否   | 默认发件人；SMTP 凭据由管理端"邮件插件"配置                                                                                                                         |
 
 > 约束：密码与地址值不要包含双引号 `"` 和反斜杠 `\`，避免破坏 `.env` 解析。`.env` 已被 `.dockerignore` 排除，不会进镜像、不会入库。
+>
+> 远程数据库 / Redis 模式：`DB_HOST` 或 `REDIS_HOST` 填写远程地址后，对应本地容器不会被创建，`docker compose pull` 也不拉取其镜像。要求服务器 Compose v2.20+（依赖跳过用 `required: false`）；远程库需自行建库、对服务器 IP 授权；数据库结构与初始化仍由 app 容器 entrypoint 在启动时执行。
 
 ## 四、CI 自动打包推送
 
