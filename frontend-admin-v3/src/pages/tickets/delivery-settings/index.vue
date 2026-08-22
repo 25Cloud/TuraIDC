@@ -107,7 +107,7 @@
       :confirm-btn="canManage ? { content: '保存', loading: saving } : null"
       :cancel-btn="canManage ? '取消' : '关闭'"
       placement="center"
-      width="720px"
+      :width="isMobile ? '94vw' : '720px'"
       @confirm="submitForm"
     >
       <t-form ref="formRef" :data="form" :rules="formRules" label-align="top">
@@ -212,7 +212,11 @@
         </t-button>
       </div>
 
-      <t-form label-width="170px" class="ticket-delivery-guard-form">
+      <t-form
+        class="ticket-delivery-guard-form"
+        :label-align="isMobile ? 'top' : 'right'"
+        :label-width="isMobile ? undefined : '170px'"
+      >
         <t-form-item label="启用 /upload_image 接口">
           <t-switch v-model="uploadGuard.upload_image_enabled" :disabled="!canManage" />
           <span class="ticket-delivery-guard-hint">配置工单传递规则前必须先开启</span>
