@@ -54,6 +54,22 @@ class RichHtmlSanitizer
 
     private const NUMERIC_ATTRS = ['width', 'height', 'colspan', 'rowspan'];
 
+    /**
+     * rel 的取值必须逐 token 过白名单，`opener` 因此被自动剔除。
+     *
+     * 现代浏览器对 target="_blank" 默认隐含 noopener，但 rel="opener" 会**显式覆盖**
+     * 这个默认、把 window.opener 还回去，于是目标页可以 window.opener.location = '钓鱼页'
+     * 改写原页面（tabnabbing）。放行整个 rel 字符串等于把这个开关交给内容作者。
+     */
+    private const REL_TOKENS = [
+        'alternate', 'author', 'bookmark', 'external', 'help', 'license',
+        'next', 'nofollow', 'noopener', 'noreferrer', 'prev', 'search',
+        'sponsored', 'tag', 'ugc',
+    ];
+
+    /** _parent / _top 只在被嵌套时有意义，公开正文里没有正当用途。 */
+    private const TARGET_VALUES = ['_blank', '_self'];
+
     /** @var array<string, list<string>> 取值枚举受限的属性 */
     private const ENUM_ATTRS = [
         'loading' => ['lazy', 'eager'],
@@ -61,6 +77,15 @@ class RichHtmlSanitizer
         'referrerpolicy' => ['no-referrer', 'same-origin', 'strict-origin', 'strict-origin-when-cross-origin'],
     ];
 
+    /**
+     * 消毒一段富文本 HTML，返回可安全嵌入页面的片段。
+     *
+     * 解析失败时**不**回退到原文，而是整段 htmlspecialchars 转义——宁可页面显示成
+     * 转义后的字面量，也不放行一段我们没能理解其结构的 HTML。
+     *
+     * @param  string  $html  不可信的 HTML 片段（本仓库的来源是管理员撰写的文章正文）
+     * @return string 只含白名单标签与白名单属性的片段；输入为空白时返回空串
+     */
     public static function sanitize(string $html): string
     {
         if (trim($html) === '') {
@@ -101,6 +126,12 @@ class RichHtmlSanitizer
         return $output;
     }
 
+    /**
+     * 递归清理一个节点的全部子节点。
+     *
+     * 只保留元素与文本：注释、CDATA、处理指令一律删除（注释能承载条件注释一类的载荷，
+     * 且对正文渲染毫无价值）。
+     */
     private static function walk(DOMNode $node): void
     {
         // 先快照子节点：清理过程中会增删节点，直接遍历活的 NodeList 会漏项。
@@ -118,6 +149,13 @@ class RichHtmlSanitizer
         }
     }
 
+    /**
+     * 按标签白名单处置单个元素，三种归宿：
+     *
+     * - DROP_TAGS：连内容一起删（留字反而危险，如 script/style 的正文）；
+     * - 不在 ALLOWED_TAGS：剥壳留字，标签去掉、子节点提到原位置，避免正文凭空消失；
+     * - 在白名单：逐个过滤属性，再递归处理子节点。
+     */
     private static function sanitizeElement(DOMElement $element): void
     {
         $tagName = strtolower($element->tagName);
@@ -139,7 +177,34 @@ class RichHtmlSanitizer
             self::cleanAttribute($element, $tagName, (string) $attribute->nodeName, (string) $attribute->nodeValue);
         }
 
+        if ($tagName === 'a') {
+            self::enforceLinkOpenerSafety($element);
+        }
+
         self::walk($element);
+    }
+
+    /**
+     * target="_blank" 的链接必须带 rel="noopener"。
+     *
+     * 浏览器的隐含 noopener 只在 rel 里没有相反指示时成立，且不同版本行为不一；把
+     * noopener 显式写出来才是稳定的。仅补 noopener，不补 nofollow/noreferrer——
+     * 那两个会影响 SEO 权重传递与 referrer 上报，属产品决策，不该由消毒器顺手决定。
+     */
+    private static function enforceLinkOpenerSafety(DOMElement $element): void
+    {
+        if (strtolower(trim($element->getAttribute('target'))) !== '_blank') {
+            return;
+        }
+
+        $tokens = preg_split('/\s+/', strtolower(trim($element->getAttribute('rel')))) ?: [];
+        $tokens = array_values(array_filter($tokens, static fn (string $token): bool => $token !== ''));
+
+        if (! in_array('noopener', $tokens, true)) {
+            $tokens[] = 'noopener';
+        }
+
+        $element->setAttribute('rel', implode(' ', $tokens));
     }
 
     /** 标签不在白名单：去掉标签本身，把子节点提到原位置。 */
@@ -157,6 +222,16 @@ class RichHtmlSanitizer
         $parent->removeChild($element);
     }
 
+    /**
+     * 过滤单个属性：不在白名单、或取值不合规的一律移除。
+     *
+     * 校验分四类——URI 属性过协议白名单、数值属性限 1~4 位数字、多 token 的 rel 逐个
+     * 过 token 白名单、其余枚举属性整串比对。`on*` 事件属性单独前置判断，不依赖
+     * ALLOWED_ATTRS 的完备性。
+     *
+     * @param  string  $tagName  所属标签名（小写），img 的 src 协议要求比 a 的 href 更严
+     * @param  string  $rawName  属性原始名，移除时必须用它而不是小写化后的名字
+     */
     private static function cleanAttribute(DOMElement $element, string $tagName, string $rawName, string $value): void
     {
         $name = strtolower($rawName);
@@ -180,12 +255,47 @@ class RichHtmlSanitizer
             return;
         }
 
+        if ($name === 'target') {
+            if (! in_array(strtolower(trim($value)), self::TARGET_VALUES, true)) {
+                $element->removeAttribute($rawName);
+            }
+
+            return;
+        }
+
+        // rel 是多 token 属性，不能整串比对：逐个过白名单，未知 token（含 opener）丢弃。
+        if ($name === 'rel') {
+            $tokens = preg_split('/\s+/', strtolower(trim($value))) ?: [];
+            $kept = array_values(array_filter(
+                $tokens,
+                static fn (string $token): bool => in_array($token, self::REL_TOKENS, true)
+            ));
+
+            if ($kept === []) {
+                $element->removeAttribute($rawName);
+
+                return;
+            }
+
+            $element->setAttribute($rawName, implode(' ', $kept));
+
+            return;
+        }
+
         $allowedValues = self::ENUM_ATTRS[$name] ?? null;
         if ($allowedValues !== null && ! in_array(strtolower(trim($value)), $allowedValues, true)) {
             $element->removeAttribute($rawName);
         }
     }
 
+    /**
+     * 判断 href/src 的取值是否可放行。
+     *
+     * 先剔除控制字符与空白再判协议：`java\tscript:` 这类插入是经典绕过手法，浏览器解析
+     * URL 时会自行忽略它们，比对前不归一化就会被绕过。锚点与相对路径没有协议，直接放行。
+     *
+     * @param  string  $tagName  img 与 src 只接受 http/https，不接受 mailto/tel
+     */
     private static function isSafeUrl(string $value, string $tagName, string $attrName): bool
     {
         // 先去掉控制字符与空白：`java\0script:` / `java\tscript:` 这类插入是经典绕过手法，

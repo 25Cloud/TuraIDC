@@ -109,6 +109,81 @@ class RichHtmlSanitizerTest extends TestCase
         $this->assertStringContainsString('正文', $output);
     }
 
+    /**
+     * rel="opener" 必须被剔除。
+     *
+     * 现代浏览器对 target="_blank" 默认隐含 noopener，但 rel="opener" 会显式覆盖该默认
+     * 把 window.opener 还回去，目标页于是能 window.opener.location = '钓鱼页' 改写原页面。
+     * 整串放行 rel 等于把这个开关交给内容作者。
+     */
+    public function test_rel_opener_token_is_stripped(): void
+    {
+        $output = RichHtmlSanitizer::sanitize(
+            '<a href="https://evil.test" target="_blank" rel="opener">tabnabbing</a>'
+        );
+
+        $this->assertStringContainsString('rel="noopener"', $output, '应补上 noopener');
+        // 按 token 断言而非子串：noopener 里就含 "opener" 字样，子串比对会自己骗自己
+        $this->assertDoesNotMatchRegularExpression(
+            '/rel="[^"]*\bopener\b/',
+            $output,
+            'rel 中不得残留裸 opener token'
+        );
+    }
+
+    /** target="_blank" 即使原本没有 rel，也要补出 noopener。 */
+    public function test_blank_target_gets_noopener_even_without_rel(): void
+    {
+        $output = RichHtmlSanitizer::sanitize('<a href="https://ok.test" target="_blank">x</a>');
+
+        $this->assertStringContainsString('noopener', $output);
+    }
+
+    /** 已有的安全 rel token 要保留，不能被覆盖掉。 */
+    public function test_existing_safe_rel_tokens_survive_alongside_noopener(): void
+    {
+        $output = RichHtmlSanitizer::sanitize(
+            '<a href="https://ok.test" target="_blank" rel="nofollow ugc">x</a>'
+        );
+
+        $this->assertStringContainsString('nofollow', $output);
+        $this->assertStringContainsString('ugc', $output);
+        $this->assertStringContainsString('noopener', $output);
+    }
+
+    /** 未知 rel token 一并丢弃，但不影响同串里的合法 token。 */
+    public function test_unknown_rel_tokens_are_dropped(): void
+    {
+        $output = RichHtmlSanitizer::sanitize('<a href="https://ok.test" rel="nofollow bogusrel">x</a>');
+
+        $this->assertStringContainsString('nofollow', $output);
+        $this->assertStringNotContainsString('bogusrel', $output);
+    }
+
+    /** 不带 target="_blank" 的链接不应被强塞 noopener（那是无意义噪音）。 */
+    public function test_same_tab_link_is_not_given_noopener(): void
+    {
+        $output = RichHtmlSanitizer::sanitize('<a href="https://ok.test">x</a>');
+
+        $this->assertStringNotContainsString('noopener', $output);
+    }
+
+    /** target 只允许 _blank / _self，_parent、_top 在公开正文里没有正当用途。 */
+    public function test_unsafe_target_values_are_removed(): void
+    {
+        foreach (['_parent', '_top', 'someframe'] as $target) {
+            $output = RichHtmlSanitizer::sanitize('<a href="https://ok.test" target="'.$target.'">x</a>');
+
+            $this->assertStringNotContainsString($target, $output, "target={$target} 应被剥离");
+        }
+
+        $this->assertStringContainsString(
+            'target="_self"',
+            RichHtmlSanitizer::sanitize('<a href="https://ok.test" target="_self">x</a>'),
+            'target="_self" 属合法取值，应保留'
+        );
+    }
+
     public function test_relative_and_anchor_urls_are_kept(): void
     {
         $output = RichHtmlSanitizer::sanitize(
