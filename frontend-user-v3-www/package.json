@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --mode production && node ./scripts/generate-sitemap.mjs && node ./scripts/prerender-www.mjs",
+    "build": "vite build --mode production",
     "build:type": "vue-tsc --noEmit -p tsconfig.json",
     "preview": "vite preview",
     "lint": "eslint src scripts --ext .js,.ts,.vue",

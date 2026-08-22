@@ -67,6 +67,7 @@ deploy/docker/
 ## 生产注意
 
 - 生产 HTTPS 由 1Panel / 宿主机 Nginx / Cloudflare 反代终止，容器内部保持 HTTP；`.env` 中四个地址仍填 `https://` 域名。
+- 官网 SEO：公开页面（首页、产品、落地页、公告/帮助等）由后端 Laravel 动态渲染完整 HTML，`frontends` 容器内 Nginx 已把公开路径转发到 `app` 容器的 `/seo/www/{path}`，无需额外配置。站点名/Logo/meta 实时读数据库；sitemap.xml 与 robots.txt 由后端动态生成（`/sitemap.xml`、`/robots.txt`）。
 - 如需限制端口仅本机访问（配合反代），将 `.env` 中端口改为 `127.0.0.1:8080` 形式。
 - 升级服务器：`git pull`（更新 .env 与 compose 文件）→ `docker compose pull && docker compose up -d`，后端增量迁移由容器启动时自动执行。
 - 详细部署与运维指南见 `docs/references/operations/docker-and-1panel-deployment.md`。
