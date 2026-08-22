@@ -230,6 +230,8 @@ class AuthController extends Controller
             // 脚本缓存键：配置变更后指纹跟着变，前端不会继续用旧脚本
             'script_version' => $this->geeTestService->getScriptVersion(),
             'script_url' => $this->geeTestService->getScriptUrl(),
+            // 插件自定义的前端初始化参数（如 Cap 自托管服务端地址）
+            'api_endpoint' => $this->geeTestService->getApiEndpoint(),
             'scenes' => $this->captchaPolicyService->sceneMap(),
         ]);
     }

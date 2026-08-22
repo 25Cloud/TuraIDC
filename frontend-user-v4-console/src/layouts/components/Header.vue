@@ -458,6 +458,9 @@ onMounted(() => {
 .header-user-avatar {
   background: var(--td-brand-color-light);
   color: var(--td-brand-color);
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
 }
 
 .header-user-balance {

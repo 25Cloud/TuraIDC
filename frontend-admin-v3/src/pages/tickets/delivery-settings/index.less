@@ -1,0 +1,134 @@
+.ticket-delivery-page {
+  .ticket-delivery-card {
+    border-radius: var(--td-radius-large, 8px);
+  }
+
+  .ticket-delivery-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .ticket-delivery-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    strong {
+      color: var(--td-text-color-primary);
+      font-size: var(--td-font-size-title-medium, 18px);
+    }
+
+    span {
+      color: var(--td-text-color-secondary);
+      font-size: var(--td-font-size-body-small, 13px);
+    }
+  }
+
+  .rule-name-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+
+    strong,
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    span {
+      color: var(--td-text-color-secondary);
+      font-size: var(--td-font-size-body-small, 13px);
+    }
+  }
+
+  .ticket-delivery-mobile-list {
+    display: none;
+  }
+
+  > .t-empty {
+    min-height: 180px;
+    padding: 36px 16px;
+  }
+
+  .ticket-delivery-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 16px;
+  }
+
+  .ticket-delivery-mobile-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ticket-delivery-mobile-card {
+    padding: 14px;
+    border: 1px solid var(--td-border-level-1-color);
+    border-radius: var(--td-radius-medium, 6px);
+    background: var(--td-bg-color-container);
+
+    &__head,
+    &__actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 16px;
+      margin: 16px 0;
+    }
+
+    dl div {
+      min-width: 0;
+    }
+
+    dt {
+      margin-bottom: 3px;
+      color: var(--td-text-color-secondary);
+      font-size: var(--td-font-size-body-small, 13px);
+    }
+
+    dd {
+      margin: 0;
+      overflow: hidden;
+      color: var(--td-text-color-primary);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
+@media (width <= 767px) {
+  .ticket-delivery-page {
+    .ticket-delivery-toolbar {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .ticket-delivery-toolbar .t-button {
+      width: 100%;
+    }
+
+    .ticket-delivery-card :deep(.t-table) {
+      display: none;
+    }
+
+    .ticket-delivery-mobile-list {
+      display: block;
+    }
+
+    .ticket-delivery-form-grid {
+      display: block;
+    }
+  }
+}

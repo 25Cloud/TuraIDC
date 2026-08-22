@@ -19,6 +19,7 @@ use App\Services\ClientServiceConsole\ServiceTransformService;
 use App\Services\Notification\UserNotificationService;
 use App\Services\System\NotificationService;
 use App\Services\System\UploadedAssetReferenceService;
+use App\Services\Ticket\TicketDeliveryService;
 use App\Services\Ticket\TicketService;
 use App\Support\AdminPermissions;
 use Illuminate\Support\Facades\Bus;
@@ -217,6 +218,7 @@ class TicketServiceRegressionTest extends TestCase
             $this->createMock(NotificationService::class),
             $this->createMock(ServiceTransformService::class),
             $userNotification,
+            $this->createMock(TicketDeliveryService::class),
         );
         $user = $this->createClientUser('ticket-autoclose');
         $ticket = $service->create((int) $user->id, [
@@ -256,6 +258,7 @@ class TicketServiceRegressionTest extends TestCase
             $this->createMock(NotificationService::class),
             $this->createMock(ServiceTransformService::class),
             $userNotification,
+            $this->createMock(TicketDeliveryService::class),
         );
         $user = $this->createClientUser('ticket-reopen');
         $ticket = $service->create((int) $user->id, [
@@ -428,6 +431,7 @@ class TicketServiceRegressionTest extends TestCase
             $notificationService,
             $this->createMock(ServiceTransformService::class),
             $this->createMock(UserNotificationService::class),
+            $this->createMock(TicketDeliveryService::class),
         );
 
         $user = $this->createClientUser('ticket-notify');
@@ -455,6 +459,7 @@ class TicketServiceRegressionTest extends TestCase
             $this->createMock(NotificationService::class),
             $this->createMock(ServiceTransformService::class),
             $this->createMock(UserNotificationService::class),
+            $this->createMock(TicketDeliveryService::class),
         );
     }
 

@@ -1,4 +1,7 @@
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import type { CapCaptchaLabels } from '@shared/components/CapCaptchaCard.vue';
+import CapCaptchaCard from '@shared/components/CapCaptchaCard.vue';
+import { createApp, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import { clientAuthApi } from '@/api/auth';
 import { resolveApiProxyUrl } from '@/utils/apiOrigin';
@@ -7,12 +10,14 @@ interface GeeTestConfig {
   enabled: boolean;
   captcha_id: string;
   script_url?: string;
-  /** 当前生效的验证码提供商（geetest / vaptcha / corptcha / turnstile ...） */
+  /** 当前生效的验证码提供商（geetest / vaptcha / corptcha / cap / turnstile ...） */
   provider?: string;
   /** popup：插件自行弹窗；inline：需页面在提交按钮上方提供容器 */
   render_mode?: string;
   /** 适配层脚本的配置指纹，用作脚本缓存键 */
   script_version?: string;
+  /** Cap 等自托管验证码的前端初始化端点（{server}/{siteId}/） */
+  api_endpoint?: string;
   /** 各场景开关：场景标识 => 是否需要人机验证 */
   scenes?: Record<string, boolean>;
 }
@@ -176,7 +181,92 @@ function loadGeeTestScript(src: string, cacheKey = '') {
   return geetestScriptPromise;
 }
 
+/**
+ * Cap 验证卡片适配器：以项目统一的 CaptchaInstance 表面暴露 CapCaptchaCard。
+ * 验证结果统一为 { token }（与后端 GeeTestService::verify 的数组 payload 契约一致）。
+ */
+function createCapInstance(
+  appendTarget: HTMLElement | string | undefined,
+  apiEndpoint: string,
+  labels: CapCaptchaLabels,
+): CaptchaInstance {
+  let token: string | null = null;
+  let successCallback: (() => void) | null = null;
+  let errorCallback: ((error: unknown) => void) | null = null;
+  let readyCallback: (() => void) | null = null;
+  let app: ReturnType<typeof createApp> | null = null;
+  let holder: HTMLElement | null = null;
+
+  const unmount = () => {
+    if (app) {
+      app.unmount();
+      app = null;
+    }
+    holder?.remove();
+    holder = null;
+  };
+
+  const mount = () => {
+    unmount();
+    const target = typeof appendTarget === 'string' ? document.querySelector<HTMLElement>(appendTarget) : appendTarget;
+    // 无挂载容器时明确报错：静默返回会让 initPromise 永久 pending，登录/发码按钮无响应
+    if (!target) {
+      throw new Error('未找到人机验证挂载容器');
+    }
+
+    holder = document.createElement('div');
+    holder.className = 'cap-card-holder';
+    // 容器多为 flex 居中布局，holder 必须占满宽度，否则卡片会被压缩成窄条
+    holder.style.width = '100%';
+    holder.style.minWidth = '0';
+    target.appendChild(holder);
+    app = createApp(CapCaptchaCard, {
+      apiEndpoint,
+      labels,
+      onSolve: (value: string) => {
+        token = value;
+        successCallback?.();
+      },
+      onError: (message: string) => {
+        errorCallback?.(new Error(message || labels.error || 'Cap 人机验证失败，请重试'));
+      },
+    });
+    app.mount(holder);
+    readyCallback?.();
+  };
+
+  return {
+    onReady: (callback: () => void) => {
+      readyCallback = callback;
+    },
+    onSuccess: (callback: () => void) => {
+      successCallback = callback;
+    },
+    onError: (callback: (error: unknown) => void) => {
+      errorCallback = callback;
+    },
+    onClose: () => {},
+    showCaptcha: () => {
+      if (!holder) {
+        mount();
+      }
+    },
+    getValidate: () => (token ? { token } : null),
+    reset: () => {
+      token = null;
+      // 只回退内部状态并卸载，不重新挂载：下次 showCaptcha 会按需重建
+      unmount();
+    },
+    destroy: () => {
+      unmount();
+      token = null;
+    },
+  };
+}
+
 export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
+  const { t } = useI18n();
+
   /**
    * 本页面涉及的场景是否还需要人机验证。
    *
@@ -220,6 +310,14 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
   const initialized = ref(false);
   // popup：插件自行弹窗（极验）；inline：需页面在提交按钮上方提供容器（Turnstile）
   const renderMode = ref<'popup' | 'inline'>('popup');
+
+  /** Cap 状态文案随当前界面语言注入，避免英文界面显示中文 */
+  const capLabels: CapCaptchaLabels = {
+    idle: t('components.captcha.clickToVerify'),
+    verifying: t('components.captcha.verifying'),
+    solved: t('components.captcha.solved'),
+    error: t('components.captcha.failed'),
+  };
 
   let captchaObj: CaptchaInstance | null = null;
   let initPromise: Promise<CaptchaInstance | null> | null = null;
@@ -325,6 +423,49 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
       config.script_url || defaultConfig.script_url || '',
       import.meta.env.VITE_API_BASE_URL,
     );
+
+    if (config.provider === 'cap') {
+      const apiEndpoint = config.api_endpoint || '';
+      if (!apiEndpoint) {
+        throw new Error('Cap 人机验证配置缺少服务端地址');
+      }
+
+      const appendTarget = resolveAppendTarget((options.appendTo ?? options.container) as CaptchaAppendTarget);
+      const currentInitPromise = new Promise<CaptchaInstance | null>((resolve, reject) => {
+        try {
+          const instance = createCapInstance(appendTarget, apiEndpoint, capLabels);
+          captchaObj = instance;
+          instance.onReady?.(() => {
+            ready.value = true;
+            resolve(instance);
+          });
+          instance.onSuccess?.(() => resolveSuccess(instance));
+          instance.onError?.((error) => {
+            rejectPending(normalizeCaptchaError(error));
+          });
+          instance.onClose?.(() => {
+            rejectPending(new Error('请先完成行为验证'));
+          });
+          instance.showCaptcha?.();
+        } catch (error) {
+          // 挂载失败（如容器未就绪）：清理实例并复位，允许后续重试
+          captchaObj?.destroy?.();
+          captchaObj = null;
+          reject(normalizeCaptchaError(error, '行为验证初始化失败，请稍后重试'));
+        }
+      });
+
+      initPromise = currentInitPromise;
+      try {
+        return await currentInitPromise;
+      } catch (error) {
+        if (initPromise === currentInitPromise) {
+          initPromise = null;
+        }
+        throw error;
+      }
+    }
+
     // 缓存键优先用配置指纹：脚本内容随插件配置变化，仅用 captcha_id 会让改动 12 小时不生效
     const initGeetest4 = await loadGeeTestScript(scriptUrl, config.script_version || config.captcha_id);
     // 只有 inline 形态（Turnstile）才需要页面提供容器；

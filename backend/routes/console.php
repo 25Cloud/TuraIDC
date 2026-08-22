@@ -48,6 +48,17 @@ Schedule::command('scheduler:liveness')
     ->everyMinute()
     ->name('scheduler-liveness');
 
+// 上游上传文件防滥用：删除超过保留期（默认 5 分钟）且未被工单回复引用的上传文件。
+// 上传即占用磁盘，需高频清理；withoutOverlapping 防止并发重复扫描。
+$cleanupUpstreamUploads = Schedule::command('tickets:cleanup-unused-upstream-uploads')
+    ->everyMinute()
+    ->name('tickets-cleanup-unused-upstream-uploads')
+    ->runInBackground();
+
+if ($shouldUseScheduleMutex) {
+    $cleanupUpstreamUploads->withoutOverlapping(2);
+}
+
 if ($shouldUseScheduleMutex) {
     $heartbeat->withoutOverlapping(2);
 }
