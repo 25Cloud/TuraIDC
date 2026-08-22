@@ -37,7 +37,13 @@ class AlipayCertifyPluginTest extends TestCase
         $manifest = app(PluginScanner::class)->requireManifest('verification', 'alipay_certify');
 
         $this->assertSame('支付宝身份认证', $manifest->name);
-        $this->assertSame('alipay_certify', $manifest->pluginKey ?? 'alipay_certify');
+        // 断言运行时真正使用的 PluginManifest::$key。
+        // 原写法是 `$manifest->pluginKey ?? 'alipay_certify'`：PluginManifest 上并没有
+        // pluginKey 这个属性（只有 key），而 ?? 会静默吞掉「未定义属性」告警，
+        // 于是整行退化成 assertSame('alipay_certify', 'alipay_certify') —— 恒真，什么都没验证。
+        $this->assertSame('alipay_certify', $manifest->key);
+        $this->assertSame('alipay_certify', $manifest->slug);
+        $this->assertSame('verification', $manifest->domain);
 
         foreach (['personal', 'scan_url', 'query_status', 'verify_callback', 'fee_config'] as $capability) {
             $this->assertContains($capability, (array) $manifest->capabilities);
