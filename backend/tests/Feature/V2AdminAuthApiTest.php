@@ -101,6 +101,18 @@ class V2AdminAuthApiTest extends TestCase
             ->assertJsonPath('data.admin.id', $admin->id);
     }
 
+    public function test_admin_captcha_script_is_rate_limited(): void
+    {
+        for ($attempt = 0; $attempt < 10; $attempt++) {
+            $this->getJson('/api/v2/admin/auth/captcha-script')
+                ->assertStatus(503);
+        }
+
+        $this->getJson('/api/v2/admin/auth/captcha-script')
+            ->assertStatus(429)
+            ->assertJsonPath('code', 42900);
+    }
+
     public function test_admin_login_ignores_non_string_offline_captcha_fields(): void
     {
         $admin = $this->createAdmin([AdminPermissions::ALL]);

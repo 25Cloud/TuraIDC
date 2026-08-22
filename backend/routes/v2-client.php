@@ -24,8 +24,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1,client-auth-login');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1,client-auth-register');
-Route::get('/auth/captcha-config', [AuthController::class, 'captchaConfig']);
-Route::get('/auth/captcha-script', [AuthController::class, 'captchaScript']);
+Route::get('/auth/captcha-config', [AuthController::class, 'captchaConfig'])
+    ->middleware('throttle:30,1,v2-client-captcha-config');
+Route::get('/auth/captcha-script', [AuthController::class, 'captchaScript'])
+    ->middleware('throttle:10,1,v2-client-captcha-script');
 Route::post('/auth/login-as/exchange', [AuthController::class, 'exchangeLoginAsCode'])->middleware('throttle:10,1,client-auth-login-as');
 Route::post('/auth/phone-code', [AuthController::class, 'sendPhoneCode'])->middleware('throttle:3,1,client-auth-phone-code');
 Route::post('/auth/email-code', [AuthController::class, 'sendEmailCode'])->middleware('throttle:3,1,client-auth-email-code');
