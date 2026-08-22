@@ -1161,8 +1161,11 @@ trait HandlesAdminUserServices
     {
         $legacy = is_array($service->provision_data ?? null) ? $service->provision_data : [];
         $projection = $this->bindingResolver()->serviceProvisionProjection($service, $includeSecrets);
+        $provisionData = $projection === [] ? $legacy : array_replace($legacy, $projection);
 
-        return $projection === [] ? $legacy : array_replace($legacy, $projection);
+        return $includeSecrets
+            ? $provisionData
+            : $this->bindingResolver()->sanitizeServiceProvisionData($provisionData);
     }
 
     private function resolveManualServiceExpiresAt(mixed $expiresAt, string $billingCycle, int $status): ?Carbon

@@ -448,6 +448,7 @@ class ServiceDetailService
             ? $this->transformService->resolveServiceStatusFromUpstream((string) ($host['domainstatus'] ?? ''))
             : (int) $service->status;
 
+        $persistedProvisionData = $this->bindingResolver->sanitizeServiceProvisionData($provisionData);
         $service->forceFill([
             'name' => ServiceHostname::resolveInstanceName($service, $provisionData, $host),
             'domain' => trim((string) ($host['domain'] ?? $service->domain)),
@@ -456,7 +457,7 @@ class ServiceDetailService
                 ? $this->transformService->resolveExpiry($host, $service)
                 : $service->expires_at,
             'suspended_reason' => $this->resolveConsoleSyncedSuspendedReason($service, $resolvedStatus),
-            'provision_data' => $provisionData,
+            'provision_data' => $persistedProvisionData,
         ])->save();
         $this->serviceBindingWriter()->syncServiceState($service, null, $provisionData);
     }
@@ -964,7 +965,11 @@ class ServiceDetailService
         $legacy = (array) ($service->provision_data ?? []);
         $projection = $this->bindingResolver->serviceProvisionProjection($service, $includeSecrets);
 
-        return $projection === [] ? $legacy : array_replace($legacy, $projection);
+        $provisionData = $projection === [] ? $legacy : array_replace($legacy, $projection);
+
+        return $includeSecrets
+            ? $provisionData
+            : $this->bindingResolver->sanitizeServiceProvisionData($provisionData);
     }
 
     private function parseFlowPacketPage(string $html): array

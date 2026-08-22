@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\AdminUser;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class AdminLoginFailureLockTest extends TestCase
@@ -56,7 +57,7 @@ class AdminLoginFailureLockTest extends TestCase
             ->assertJsonPath('message', '用户名或密码错误');
     }
 
-    private function postLogin(string $username, string $password, string $ip): \Illuminate\Testing\TestResponse
+    private function postLogin(string $username, string $password, string $ip): TestResponse
     {
         return $this->withServerVariables(['REMOTE_ADDR' => $ip])->postJson('/api/v2/admin/login', [
             'username' => $username,

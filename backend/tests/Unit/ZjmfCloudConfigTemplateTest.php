@@ -8,9 +8,9 @@ use App\Models\Supplier;
 use App\Services\Integrations\Plugins\PluginFileLoader;
 use App\Services\Integrations\Plugins\PluginScanner;
 use App\Services\Upstream\Drivers\HostingPanelApi\HostingPanelApiTransport;
+use Tests\TestCase;
 use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfCloudConfigTemplate;
 use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfFinanceAdapter;
-use Tests\TestCase;
 
 class ZjmfCloudConfigTemplateTest extends TestCase
 {

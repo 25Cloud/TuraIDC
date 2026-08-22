@@ -40,7 +40,7 @@ class GeeTestService
     }
 
     /**
-     * 当前生效的验证码提供商标识（geetest / vaptcha / corptcha / turnstile ...）。
+     * 当前生效的验证码提供商标识（geetest / vaptcha / corptcha / cap / turnstile ...）。
      *
      * 各插件的 captcha.config 一直都在返回这个字段，但此前被 captchaConfig() 丢弃了，
      * 前端因此只能假定是极验。下发它之后前端可以按提供商做差异化文案与样式。
@@ -55,8 +55,8 @@ class GeeTestService
      * 组件渲染形态，决定前端把验证组件放在哪里。
      *
      * - popup：插件自带浮层交互（极验等），前端不提供容器，插件自行弹窗；
-     * - inline：插件只提供内联 widget（Cloudflare Turnstile），前端在提交按钮上方
-     *   给出容器，点击提交时就地加载。
+     * - inline：插件只提供内联 widget（Cloudflare Turnstile、Cap 自绘卡片），
+     *   前端在提交按钮上方给出容器，点击提交时就地加载。
      *
      * 两种形态都是「点击提交才加载」，差别只在渲染位置。
      */
@@ -74,6 +74,14 @@ class GeeTestService
     public function getScriptVersion(): string
     {
         return (string) ($this->captchaConfig()['script_version'] ?? '');
+    }
+
+    /**
+     * 插件自定义的前端初始化参数（如 Cap 的 api_endpoint），未提供则为空字符串。
+     */
+    public function getApiEndpoint(): string
+    {
+        return (string) ($this->captchaConfig()['api_endpoint'] ?? '');
     }
 
     public function getScriptUrl(): string
@@ -163,13 +171,14 @@ JS;
                 'render_mode' => self::DEFAULT_RENDER_MODE,
                 'script_version' => '',
                 'script_url' => $this->getScriptUrl(),
+                'provider' => '',
             ];
         }
 
         $result = $this->executePlugin('captcha.config');
         $data = is_array($result['data'] ?? null) ? $result['data'] : [];
 
-        return $this->captchaConfigCache = [
+        $config = [
             'enabled' => (bool) ($result['success'] ?? false) && (bool) ($data['enabled'] ?? false),
             'captcha_id' => (string) ($data['captcha_id'] ?? ''),
             // 插件未显式声明时退回驱动键，保证这个字段总有值可用
@@ -180,7 +189,16 @@ JS;
             // 仅在换了 captcha_id 时才需要让前端重新拉取。
             'script_version' => (string) ($data['script_version'] ?? ($data['captcha_id'] ?? '')),
             'script_url' => $this->getScriptUrl(),
+            'provider' => (string) ($data['provider'] ?? ''),
         ];
+
+        // 透传插件自定义的前端初始化参数（如 Cap 的 api_endpoint）
+        $apiEndpoint = trim((string) ($data['api_endpoint'] ?? ''));
+        if ($apiEndpoint !== '') {
+            $config['api_endpoint'] = $apiEndpoint;
+        }
+
+        return $this->captchaConfigCache = $config;
     }
 
     private function normalizeRenderMode(mixed $value): string

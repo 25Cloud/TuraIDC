@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Constants\OrderStatus;
 use App\Models\MemberLevel;
+use App\Models\Order;
+use App\Models\ReferralReward;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
@@ -110,7 +113,7 @@ class ClientReferralRegressionTest extends TestCase
             'verified_at' => null,
         ]);
 
-        $order = \App\Models\Order::query()->create([
+        $order = Order::query()->create([
             'order_no' => 'ORDDIRECT'.strtoupper(bin2hex(random_bytes(4))),
             'user_id' => (int) $invited->id,
             'type' => 'new',
@@ -118,18 +121,18 @@ class ClientReferralRegressionTest extends TestCase
             'discount' => '0.00',
             'paid_amount' => '100.00',
             'billing_cycle' => 'monthly',
-            'status' => \App\Constants\OrderStatus::PAID,
+            'status' => OrderStatus::PAID,
             'paid_at' => now(),
         ]);
 
-        \App\Models\ReferralReward::query()->create([
+        ReferralReward::query()->create([
             'referrer_user_id' => $referrer->id,
             'referred_user_id' => $invited->id,
             'order_id' => $order->id,
             'order_amount' => '100.00',
             'reward_rate' => '5.00',
             'reward_amount' => '5.00',
-            'status' => \App\Models\ReferralReward::STATUS_FROZEN,
+            'status' => ReferralReward::STATUS_FROZEN,
             'rewarded_at' => now(),
         ]);
 

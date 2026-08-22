@@ -6,6 +6,8 @@ namespace Tests\Feature;
 
 use App\Exceptions\BusinessException;
 use App\Http\Resources\Product\SupplierResource;
+use App\Jobs\DeliverTicketReplyToUpstreamJob;
+use App\Jobs\DeliverTicketToUpstreamJob;
 use App\Jobs\ProcessPaidOrderFulfillmentJob;
 use App\Jobs\ProcessPaidOrderReferralRewardJob;
 use App\Jobs\RunScheduleTaskJob;
@@ -234,6 +236,27 @@ class BackendHealthFixRegressionTest extends TestCase
         $this->assertSame('job:invoice-coupon:42', $middleware[0]->key);
         $this->assertSame(10, $middleware[0]->releaseAfter);
         $this->assertSame(600, $middleware[0]->expiresAfter);
+    }
+
+    public function test_ticket_upstream_jobs_define_unique_overlap_and_retry_policy(): void
+    {
+        $ticketJob = new DeliverTicketToUpstreamJob(42);
+        $replyJob = new DeliverTicketReplyToUpstreamJob(84);
+
+        foreach ([
+            [$ticketJob, 'job:ticket-upstream:create:42'],
+            [$replyJob, 'job:ticket-upstream:reply:84'],
+        ] as [$job, $lockKey]) {
+            $this->assertSame(120, $job->timeout);
+            $this->assertSame(900, $job->uniqueFor);
+            $this->assertSame([30, 120, 300], $job->backoff);
+            $this->assertSame($job === $ticketJob ? '42' : '84', $job->uniqueId());
+            $this->assertCount(1, $job->middleware());
+            $this->assertInstanceOf(WithoutOverlapping::class, $job->middleware()[0]);
+            $this->assertSame($lockKey, $job->middleware()[0]->key);
+            $this->assertSame(10, $job->middleware()[0]->releaseAfter);
+            $this->assertSame(900, $job->middleware()[0]->expiresAfter);
+        }
     }
 
     public function test_queue_jobs_define_timeout_policy(): void

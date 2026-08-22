@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Client\V2\TicketUpstreamCallbackController;
 use App\Http\Controllers\Site\V2\ContentController as V2SiteContentController;
 use App\Http\Controllers\Site\V2\HomeController as V2SiteHomeController;
 use App\Http\Controllers\Site\V2\ProductController as V2SiteProductController;
@@ -32,3 +33,5 @@ Route::get('/v2/site/help-articles', [V2SiteContentController::class, 'helpArtic
 Route::get('/v2/site/help-articles/{article}', [V2SiteContentController::class, 'helpDetail']);
 Route::get('/health', [HealthController::class, 'live']);
 Route::get('/ready', [HealthController::class, 'ready']);
+Route::post('/ticket_reply/sync', [TicketUpstreamCallbackController::class, 'reply'])
+    ->middleware(['throttle:60,1,ticket-upstream-callback', 'verify.ticket.upstream.callback']);

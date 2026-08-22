@@ -36,8 +36,8 @@ router.beforeEach(async (to, from, next) => {
         await userStore.getUserInfo();
 
         const routeList = await permissionStore.buildAsyncRoutes(userStore.userInfo?.permissions || []);
-        routeList.forEach((item: RouteRecordRaw) => {
-          router.addRoute(item);
+        routeList.forEach((item) => {
+          router.addRoute(item as RouteRecordRaw);
         });
 
         if (to.name === PAGE_NOT_FOUND_ROUTE.name) {

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\ZjmfBridge\Providers;
 
+use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
 use TuraIDC\Plugins\Addons\ZjmfBridge\Http\Middleware\AuthenticateZjmfClient;
 use TuraIDC\Plugins\Addons\ZjmfBridge\Http\Middleware\LogZjmfBridgeRequest;
 use TuraIDC\Plugins\Addons\ZjmfBridge\Http\Middleware\ResolveZjmfActor;
 use TuraIDC\Plugins\Addons\ZjmfBridge\Http\Middleware\VerifyZjmfSignature;
 use TuraIDC\Plugins\Addons\ZjmfBridge\Http\Middleware\ZjmfBridgeEnabled;
-use Illuminate\Routing\Router;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\ServiceProvider;
 
 class ZjmfBridgeServiceProvider extends ServiceProvider
 {

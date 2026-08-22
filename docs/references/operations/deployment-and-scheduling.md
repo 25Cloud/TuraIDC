@@ -187,6 +187,22 @@ pnpm run build:frontends:dry
 
 Redis 当前用于缓存；不要在没有专项方案和验证的情况下把会话或队列切到 Redis。
 
+### 3.4 受信代理与来源 IP 契约
+
+后端在 `backend/bootstrap/app.php` 配置了 `trustProxies`：只信任回环与 RFC1918/ULA 私网段，且只采信 `X-Forwarded-For`、`X-Forwarded-Port`、`X-Forwarded-Proto`（不信任 `X-Forwarded-Host`）。`request()->ip()` 依赖该配置解析真实客户端 IP，直接影响：
+
+- 审计字段（如 `last_login_ip`）与推荐风控的“注册 IP == 推荐人 IP”判断；
+- `/upload_image` 上游附件上传的白名单/限流中间件（`TicketUpstreamUploadThrottle`）。
+
+部署必须满足以下契约，否则 IP 白名单与限流会被绕过或误判：
+
+1. **边缘反向代理是唯一公网入口**：后端 API 端口（宝塔 PHP-FPM 站点 / 容器 `8080`）只能被受信反代访问，不能直接暴露给公网或不可信私网来源。
+2. **代理必须真实生成来源头**：外部反代需携带 `X-Forwarded-For`、`X-Forwarded-Proto`。单层受信代理应把 `X-Forwarded-For` **重置为 `$remote_addr`**，不要用 `$proxy_add_x_forwarded_for` 原样追加——否则客户端可自带伪造 XFF 直接污染 `request()->ip()`。只有明确存在多层受信代理且每层都清洗时才允许追加。
+3. **不得把公网代理地址加入 `trustProxies`**：当前配置只信任回环与私网段；若实际入口代理不在这些网段（例如托管在公有云的 LB），必须先评估暴露面并收窄为明确的入口 IP/CIDR，再修改配置。
+4. 宝塔 PHP-FPM 直连形态（前端 Nginx 不反代 API）本身不产生 XFF；后端以 PHP-FPM 接收到的 `REMOTE_ADDR` 为准，不受上述契约影响，但也不能依赖 XFF 取客户端 IP。
+
+> 容器部署注意：`deploy/docker/.env.example` 默认把 `API_PORT=8080` 暴露到所有网卡。上线前应改为仅本机绑定（`127.0.0.1:8080`），由宿主机 Nginx/1Panel 反代进入；否则私网来源可直接访问 API 并伪造 XFF。
+
 ## 四、本地启动差异
 
 本地同样使用直连 API：三个前端分别在 `127.0.0.1:5175/5173/5174`，API 在 `127.0.0.1:8000`。前端开发环境的 `VITE_API_BASE_URL` 已指向 `http://127.0.0.1:8000/api`，因此会真实验证 CORS 和 VNC WebSocket。

@@ -13,6 +13,7 @@ use App\Models\MessageLog;
 use App\Models\OperationLog;
 use App\Models\Role;
 use App\Models\ScheduleRunLog;
+use App\Models\TicketUpstreamDeliveryLog;
 use App\Models\User;
 use App\Services\System\Concerns\HandlesAdminLogCleanup;
 use App\Support\AdminPrivacy;
@@ -39,6 +40,8 @@ class AdminLogService
     private const CLEANUP_OVERVIEW_CACHE_VERSION_KEY = 'admin_logs:cleanup_overview:version';
 
     private const FILE_LOG_SUMMARY_CACHE_TTL_SECONDS = 60;
+
+    private const UPSTREAM_NESTED_LOG_LIMIT = 20;
 
     private const TASK_META = [
         'refresh-hosting-panel-auth' => [
@@ -342,6 +345,76 @@ class AdminLogService
             'warnings' => $entries->where('level', 'WARNING')->count(),
             'infos' => $entries->where('level', 'INFO')->count(),
         ];
+    }
+
+    /**
+     * 上游附件上传与清理日志：过滤 Laravel 日志中与上传/清理相关的条目。
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    public function getUpstreamUploadLogs(array $filters, int $page, int $perPage): array
+    {
+        $entries = collect($this->readLaravelLogEntries())
+            ->filter(fn (array $item): bool => $this->isUpstreamUploadLogEntry($item))
+            ->filter(fn (array $item): bool => $this->matchesUpstreamUploadLogFilters($item, $filters))
+            ->sortByDesc(fn (array $item): int => strtotime((string) ($item['time'] ?? '')) ?: 0)
+            ->values();
+
+        return $this->buildPaginatorPayload($this->paginateCollection($entries, $page, $perPage));
+    }
+
+    /**
+     * 上游附件上传与清理日志汇总，复用与列表完全一致的过滤条件（level、keyword、日期），
+     * 保证管理端筛选后列表总数与汇总统计结果一致。
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array{total: int, errors: int, warnings: int, infos: int}
+     */
+    public function getUpstreamUploadLogsSummary(array $filters): array
+    {
+        $entries = collect($this->readLaravelLogEntries())
+            ->filter(fn (array $item): bool => $this->isUpstreamUploadLogEntry($item))
+            ->filter(fn (array $item): bool => $this->matchesUpstreamUploadLogFilters($item, $filters));
+
+        return [
+            'total' => $entries->count(),
+            'errors' => $entries->whereIn('level', ['ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'])->count(),
+            'warnings' => $entries->where('level', 'WARNING')->count(),
+            'infos' => $entries->where('level', 'INFO')->count(),
+        ];
+    }
+
+    /**
+     * 上游附件上传日志的统一过滤条件：level、keyword、日期范围。
+     * 列表与汇总共用该方法，避免两侧过滤逻辑漂移导致筛选后的总数与汇总不一致。
+     *
+     * @param  array<string, mixed>  $item
+     * @param  array<string, mixed>  $filters
+     */
+    private function matchesUpstreamUploadLogFilters(array $item, array $filters): bool
+    {
+        if (! empty($filters['level']) && strtoupper((string) $item['level']) !== strtoupper((string) $filters['level'])) {
+            return false;
+        }
+        if (! empty($filters['keyword']) && ! str_contains((string) $item['message'], trim((string) $filters['keyword']))) {
+            return false;
+        }
+
+        return $this->matchLogDateRange((string) $item['time'], $filters);
+    }
+
+    private function isUpstreamUploadLogEntry(array $item): bool
+    {
+        $message = (string) ($item['message'] ?? '');
+
+        foreach (['上游工单附件上传', '上游附件上传', '清理上游未使用上传文件'] as $keyword) {
+            if ($keyword !== '' && str_contains($message, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1315,6 +1388,226 @@ class AdminLogService
             'success' => (int) ($summary?->success ?? 0),
             'failed' => (int) ($summary?->failed ?? 0),
         ]);
+    }
+
+    public function getUpstreamLogs(array $filters, int $page, int $perPage, bool $withSummary = true): array
+    {
+        $base = $this->buildUpstreamLogBaseQuery($filters);
+        if ($base === null) {
+            return $this->buildPaginatorPayload($this->emptyPaginator($perPage));
+        }
+
+        // 每工单最新事件（delivery_rank=1）视为工单当前状态，status 筛选作用于最新事件；
+        // 嵌套历史事件不受 status 筛选影响，保证列表行与汇总使用相同的筛选顺序。
+        $latest = TicketUpstreamDeliveryLog::query()
+            ->fromSub($this->upstreamLogRankedSubQuery($base), 'ranked_delivery_logs')
+            ->where('delivery_rank', 1);
+        $this->applyUpstreamLogStatusFilter($latest, $filters);
+
+        $total = (int) (clone $latest)->count();
+        $ticketIds = (clone $latest)
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
+            ->forPage($page, $perPage)
+            ->pluck('ticket_id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->values()
+            ->all();
+
+        $rows = [];
+        if ($ticketIds !== []) {
+            $eventCounts = (clone $base)
+                ->whereIn('ticket_id', $ticketIds)
+                ->selectRaw('ticket_id, COUNT(*) AS aggregate')
+                ->groupBy('ticket_id')
+                ->pluck('aggregate', 'ticket_id');
+
+            $eventsByTicket = TicketUpstreamDeliveryLog::query()
+                ->fromSub($this->upstreamLogRankedSubQuery($base, $ticketIds), 'ranked_delivery_logs')
+                ->where('delivery_rank', '<=', self::UPSTREAM_NESTED_LOG_LIMIT)
+                ->orderBy('ticket_id')
+                ->orderBy('delivery_rank')
+                ->with('supplier:id,name')
+                ->get()
+                ->groupBy('ticket_id');
+
+            foreach ($ticketIds as $ticketId) {
+                $eventRows = $eventsByTicket
+                    ->get($ticketId, collect())
+                    ->map(fn (TicketUpstreamDeliveryLog $log): array => $this->upstreamLogRow($log))
+                    ->values()
+                    ->all();
+                if ($eventRows === []) {
+                    continue;
+                }
+
+                $rows[] = array_merge($eventRows[0], [
+                    'log_count' => (int) ($eventCounts[$ticketId] ?? count($eventRows)),
+                    'logs' => $eventRows,
+                ]);
+            }
+        }
+
+        $paginator = new LengthAwarePaginator($rows, $total, $perPage, $page, [
+            'path' => request()->url(),
+            'query' => request()->query(),
+        ]);
+
+        return $this->buildPaginatorPayload(
+            $paginator,
+            $withSummary ? $this->getUpstreamLogsSummary($filters) : []
+        );
+    }
+
+    public function getUpstreamLogsSummary(array $filters): array
+    {
+        $base = $this->buildUpstreamLogBaseQuery($filters);
+        if ($base === null) {
+            return ['total' => 0, 'failed' => 0, 'delivered' => 0, 'skipped' => 0, 'pending' => 0, 'sending' => 0];
+        }
+
+        $latest = TicketUpstreamDeliveryLog::query()
+            ->fromSub($this->upstreamLogRankedSubQuery($base), 'ranked_delivery_logs')
+            ->where('delivery_rank', 1);
+        $this->applyUpstreamLogStatusFilter($latest, $filters);
+
+        $summary = (clone $latest)
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) as failed")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END), 0) as delivered")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'skipped' THEN 1 ELSE 0 END), 0) as skipped")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) as pending")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'sending' THEN 1 ELSE 0 END), 0) as sending")
+            ->first();
+
+        return [
+            'total' => (int) ($summary?->total ?? 0),
+            'failed' => (int) ($summary?->failed ?? 0),
+            'delivered' => (int) ($summary?->delivered ?? 0),
+            'skipped' => (int) ($summary?->skipped ?? 0),
+            'pending' => (int) ($summary?->pending ?? 0),
+            'sending' => (int) ($summary?->sending ?? 0),
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    public function getUpstreamLog(int|string $id): ?array
+    {
+        if (! Schema::hasTable('ticket_upstream_delivery_logs')) {
+            return null;
+        }
+
+        $log = TicketUpstreamDeliveryLog::query()
+            ->with('supplier:id,name')
+            ->find($id);
+        if (! $log instanceof TicketUpstreamDeliveryLog) {
+            return null;
+        }
+
+        $row = $this->upstreamLogRow($log);
+
+        return [
+            'id' => (string) $log->id,
+            'channel' => 'upstream',
+            'source' => 'ticket_upstream_delivery_logs',
+            'fields' => $row,
+            'message' => (string) ($log->message ?? ''),
+            'context' => [],
+            'created_at' => $log->occurred_at?->format('Y-m-d H:i:s'),
+        ];
+    }
+
+    private function buildUpstreamLogBaseQuery(array $filters): ?Builder
+    {
+        if (! Schema::hasTable('ticket_upstream_delivery_logs')) {
+            return null;
+        }
+
+        $query = TicketUpstreamDeliveryLog::query()->with('supplier:id,name');
+        foreach (['ticket_id', 'ticket_reply_id', 'supplier_id'] as $field) {
+            if (! empty($filters[$field])) {
+                $query->where($field, (int) $filters[$field]);
+            }
+        }
+        foreach (['operation', 'event', 'reason_code', 'provider_key'] as $field) {
+            if (! empty($filters[$field])) {
+                $query->where($field, trim((string) $filters[$field]));
+            }
+        }
+        if (! empty($filters['keyword'])) {
+            $keyword = trim((string) $filters['keyword']);
+            $query->where(function (Builder $builder) use ($keyword): void {
+                foreach (['message', 'reason_code', 'provider_key', 'operation', 'event'] as $field) {
+                    $builder->orWhere($field, 'like', "%{$keyword}%");
+                }
+                if (ctype_digit($keyword)) {
+                    $builder->orWhere('ticket_id', (int) $keyword)
+                        ->orWhere('ticket_reply_id', (int) $keyword)
+                        ->orWhere('supplier_id', (int) $keyword);
+                }
+            });
+        }
+        if (! empty($filters['start_date'])) {
+            $query->where('occurred_at', '>=', Carbon::parse((string) $filters['start_date'])->startOfDay());
+        }
+        if (! empty($filters['end_date'])) {
+            $query->where('occurred_at', '<=', Carbon::parse((string) $filters['end_date'])->endOfDay());
+        }
+
+        return $query;
+    }
+
+    /**
+     * status 筛选只作用于每个工单的最新事件（delivery_rank=1），
+     * 嵌套历史事件不参与状态筛选。
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    private function applyUpstreamLogStatusFilter(Builder $query, array $filters): void
+    {
+        if (! empty($filters['status'])) {
+            $query->where('status', trim((string) $filters['status']));
+        }
+    }
+
+    /**
+     * 构建按工单最新事件排序的排名子查询；可选限定 ticket_id 集合。
+     *
+     * @param  array<int, int>|null  $ticketIds
+     */
+    private function upstreamLogRankedSubQuery(Builder $base, ?array $ticketIds = null): Builder
+    {
+        $sub = (clone $base)
+            ->select('ticket_upstream_delivery_logs.*')
+            ->selectRaw('ROW_NUMBER() OVER (PARTITION BY ticket_id ORDER BY occurred_at DESC, id DESC) AS delivery_rank');
+        if ($ticketIds !== null && $ticketIds !== []) {
+            $sub->whereIn('ticket_id', $ticketIds);
+        }
+
+        return $sub;
+    }
+
+    /** @return array<string, mixed> */
+    private function upstreamLogRow(TicketUpstreamDeliveryLog $log): array
+    {
+        return [
+            'id' => (int) $log->id,
+            'ticket_id' => (int) $log->ticket_id,
+            'ticket_reply_id' => $log->ticket_reply_id ? (int) $log->ticket_reply_id : null,
+            'direction' => (string) $log->direction,
+            'operation' => (string) $log->operation,
+            'event' => (string) $log->event,
+            'status' => (string) $log->status,
+            'reason_code' => $log->reason_code,
+            'provider_key' => $log->provider_key,
+            'supplier_id' => $log->supplier_id ? (int) $log->supplier_id : null,
+            'supplier_name' => $log->supplier?->name,
+            'attempt' => $log->attempt ? (int) $log->attempt : null,
+            'http_status' => $log->http_status ? (int) $log->http_status : null,
+            'duration_ms' => $log->duration_ms ? (int) $log->duration_ms : null,
+            'message' => (string) ($log->message ?? ''),
+            'occurred_at' => $log->occurred_at?->format('Y-m-d H:i:s'),
+        ];
     }
 
     public function getActivityLogs(array $filters, int $page, int $perPage, bool $withSummary = true): array

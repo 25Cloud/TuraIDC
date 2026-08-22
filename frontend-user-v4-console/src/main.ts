@@ -15,6 +15,9 @@ import 'tdesign-vue-next/es/message/style/index.css';
 import 'tdesign-vue-next/es/dialog/style/index.css';
 import 'tdesign-vue-next/es/popup/style/index.css';
 import 'tdesign-vue-next/es/loading/style/index.css';
+// 引入全量 TDesign 组件样式：TDesignResolver (esm) 不自动注入 CSS，
+// 布局/菜单/按钮/头像等组件需显式加载样式。
+import 'tdesign-vue-next/es/style/index.css';
 import '@/style/index.less';
 import './permission';
 

@@ -14,11 +14,11 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\User\AccountService;
-use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfTokenService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Cache;
 use Tests\Support\InstallsZjmfBridgeAddon;
 use Tests\TestCase;
+use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfTokenService;
 
 class ZjmfBridgeFinanceTest extends TestCase
 {

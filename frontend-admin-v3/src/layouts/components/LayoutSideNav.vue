@@ -26,12 +26,13 @@ const { routers: menuRouters } = storeToRefs(permissionStore);
 
 const sideMenu = computed(() => {
   const { layout, splitMenu } = settingStore;
+  const menuList = menuRouters.value as Array<MenuRoute>;
   if (layout === 'mix' && splitMenu) {
-    const active = menuRouters.value.find((m: MenuRoute) => route.path.startsWith(m.path));
+    const active = menuList.find((m: MenuRoute) => route.path.startsWith(m.path));
     return (
       active?.children?.map((subMenu: MenuRoute) => ({ ...subMenu, path: `${active.path}/${subMenu.path}` })) ?? []
     );
   }
-  return menuRouters.value as Array<MenuRoute>;
+  return menuList;
 });
 </script>

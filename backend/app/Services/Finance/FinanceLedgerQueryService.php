@@ -617,8 +617,9 @@ class FinanceLedgerQueryService
 
         $legacy = is_array($service->provision_data ?? null) ? $service->provision_data : [];
         $projection = app(PluginBindingResolver::class)->serviceProvisionProjection($service);
+        $provisionData = $projection === [] ? $legacy : array_replace($legacy, $projection);
 
-        return $projection === [] ? $legacy : array_replace($legacy, $projection);
+        return app(PluginBindingResolver::class)->sanitizeServiceProvisionData($provisionData);
     }
 
     private function buildSourceChain(AccountTransaction $record, ?Invoice $invoice, ?Payment $payment, ?Order $order): array

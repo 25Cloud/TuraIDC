@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Ticket extends Model
 {
@@ -31,6 +32,16 @@ class Ticket extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(AdminUser::class, 'assignee_id');
+    }
+
+    public function upstreamBinding(): HasOne
+    {
+        return $this->hasOne(TicketUpstreamBinding::class);
+    }
+
+    public function upstreamDeliveryLogs(): HasMany
+    {
+        return $this->hasMany(TicketUpstreamDeliveryLog::class);
     }
 
     public function scopeOpen($query)

@@ -16,6 +16,7 @@ class SupplierPluginBinding extends Model
         'provider_key',
         'environment',
         'status',
+        'ticket_delivery_enabled',
         'priority',
         'base_url',
         'account_name',
@@ -37,6 +38,7 @@ class SupplierPluginBinding extends Model
             'has_secret_json' => 'array',
             'last_checked_at' => 'datetime',
             'status' => 'integer',
+            'ticket_delivery_enabled' => 'boolean',
             'priority' => 'integer',
         ];
     }
