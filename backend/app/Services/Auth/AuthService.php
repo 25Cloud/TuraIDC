@@ -95,7 +95,40 @@ class AuthService
         }
 
         $loginAt = now();
-        $token = $user->createToken('client-token')->plainTextToken;
+
+        // 与「改密即吊销全部 token」序列化，消除竞态。
+        //
+        // 上面的校验是无锁快照读：本次登录可能已用旧密码通过校验，随后管理员改密并
+        // 吊销全部 token 的事务提交，而本次登录才执行 createToken——于是吊销之后又长出
+        // 一个有效 token，「处置盗号」这条通道恰好失效。改密侧的 UPDATE users 虽然持有
+        // 行锁，但拦不住无锁读。
+        //
+        // 锁住 users 行后重新读哈希再验一次即可闭合：改密事务先提交，这里读到新哈希、
+        // 旧密码校验失败，登录被拒；本次登录先提交，改密事务的 tokens()->delete() 能看到
+        // 并删掉刚签发的 token。两种交错都安全。
+        //
+        // 上面的校验保留不动——它让无效登录快速失败，不必进入事务与行锁，同时保住对
+        // 不存在账号的时序防护（假 hash 比对）。
+        $token = DB::transaction(function () use ($user, $password): string {
+            $lockedUser = User::query()->lockForUpdate()->find((int) $user->id);
+
+            if (! $lockedUser instanceof User) {
+                throw new BusinessException('账号或密码错误', 40100, 422);
+            }
+
+            $rehashAfterLock = false;
+            if (! $this->isBcryptHash((string) ($lockedUser->password ?? ''))
+                || ! $this->verifyPassword($password, (string) ($lockedUser->password ?? ''), $rehashAfterLock)) {
+                throw new BusinessException('账号或密码错误', 40100, 422);
+            }
+
+            if ((int) $lockedUser->status !== 1) {
+                throw new BusinessException('账号已被禁用', 40300, 403);
+            }
+
+            return $lockedUser->createToken('client-token')->plainTextToken;
+        });
+
         $this->finishClientLoginAfterResponse(
             userId: (int) $user->id,
             loginAt: $loginAt->format('Y-m-d H:i:s'),
@@ -372,12 +405,23 @@ class AuthService
         }
     }
 
+    /**
+     * 忘记密码流程重置客户密码，并吊销全部已签发 token。
+     *
+     * 原实现是裸的两条语句，各自 autocommit：UPDATE 提交后行锁即释放，delete 是独立
+     * 语句，中间的窗口比 updateClientPassword 更宽。与登录侧的 lockForUpdate 配对后，
+     * 「改密 + 吊销」成为一个不可分割的临界区，并发登录无法在吊销之后签出新 token。
+     */
     public function resetClientPassword(User $user, string $password): void
     {
-        $user->update([
-            'password' => $password,
-        ]);
-        $user->tokens()->delete();
+        DB::transaction(function () use ($user, $password): void {
+            $lockedUser = User::query()->lockForUpdate()->findOrFail((int) $user->id);
+
+            $lockedUser->update([
+                'password' => $password,
+            ]);
+            $lockedUser->tokens()->delete();
+        });
     }
 
     public function updateClientProfile(User $user, array $data, array $context = []): User
@@ -827,8 +871,22 @@ class AuthService
 
         $this->ensureClientAvailable($user);
 
-        $user->tokens()->where('name', 'admin-login-as')->delete();
-        $token = $user->createToken('admin-login-as', ['*'], now()->addHours(2));
+        // 代登录同样要与改密吊销序列化：凭证在改密之前签发、在吊销之后才被交换时，
+        // 无锁路径会在「全部 token 已吊销」之后又签出一个 2 小时有效的代登录 token。
+        $token = DB::transaction(function () use ($user) {
+            $lockedUser = User::query()->lockForUpdate()->find((int) $user->id);
+
+            if (! $lockedUser instanceof User) {
+                throw new BusinessException('目标用户不存在', 40400, 404);
+            }
+
+            // 持锁后复查可用性：改密事务可能同时禁用了账号。
+            $this->ensureClientAvailable($lockedUser);
+
+            $lockedUser->tokens()->where('name', 'admin-login-as')->delete();
+
+            return $lockedUser->createToken('admin-login-as', ['*'], now()->addHours(2));
+        });
 
         $this->operationLogService->write(
             userId: (int) $user->id,

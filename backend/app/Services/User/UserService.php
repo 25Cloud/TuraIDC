@@ -173,6 +173,16 @@ class UserService
         }
 
         DB::transaction(function () use ($user, $baseUpdateData, $accountUpdateData, $passwordChanged) {
+            // 改密时先显式持有 users 行锁，与登录侧 AuthService::clientLogin 的
+            // lockForUpdate 配对，把「改密 + 吊销 token」变成不可分割的临界区。
+            //
+            // 不能依赖下面 $user->update() 隐式产生的行锁：那要等 UPDATE 真正执行才
+            // 获得，锁的获取时机会随 $baseUpdateData 的内容和语句顺序漂移；显式取锁让
+            // 临界区从事务一开始就成立，意图也写在代码里而不是藏在副作用中。
+            if ($passwordChanged) {
+                User::query()->lockForUpdate()->find((int) $user->id);
+            }
+
             if ($baseUpdateData !== []) {
                 $user->update($baseUpdateData);
             }
