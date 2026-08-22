@@ -3903,6 +3903,11 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await expect(page.getByText('请先启用 /upload_image 接口').first()).toBeVisible();
     await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
 
+    // 接口关闭时编辑规则同样被拦截（打开开关前不得进入编辑流程）
+    await page.getByRole('button', { name: '编辑' }).first().click();
+    await expect(page.getByText('请先启用 /upload_image 接口').first()).toBeVisible();
+    await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
+
     const guardForm = page.locator('.ticket-delivery-guard-form');
     const uploadSwitch = guardForm
       .locator('.t-form__item')
