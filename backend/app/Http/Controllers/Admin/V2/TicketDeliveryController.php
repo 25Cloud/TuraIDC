@@ -115,6 +115,7 @@ final class TicketDeliveryController extends Controller
     public function uploadGuardConfig(): JsonResponse
     {
         return $this->success([
+            'upload_image_enabled' => $this->uploadImageEnabled(),
             'allowed_ips' => (string) \App\Models\Setting::getValue(
                 'ticket_upstream',
                 'allowed_ips',
@@ -127,14 +128,7 @@ final class TicketDeliveryController extends Controller
             ),
             // 布尔值用格式无关解析（filter_var + FILTER_VALIDATE_BOOLEAN），
             // 避免 (bool) 强转把字符串 'false' 判为 true 造成语义反转。
-            'block_non_whitelisted' => filter_var(
-                (string) \App\Models\Setting::getValue(
-                    'ticket_upstream',
-                    'block_non_whitelisted',
-                    config('ticket_upstream.upload_block_non_whitelisted', false)
-                ),
-                FILTER_VALIDATE_BOOLEAN
-            ),
+            'block_non_whitelisted' => $this->blockNonWhitelisted(),
             'unused_retention_minutes' => (int) config('ticket_upstream.upload_unused_retention_minutes', 5),
         ]);
     }
@@ -155,14 +149,8 @@ final class TicketDeliveryController extends Controller
                 'rate_limit',
                 (string) config('ticket_upstream.upload_rate_limit', 30)
             ),
-            'block_non_whitelisted' => filter_var(
-                (string) \App\Models\Setting::getValue(
-                    'ticket_upstream',
-                    'block_non_whitelisted',
-                    config('ticket_upstream.upload_block_non_whitelisted', false)
-                ),
-                FILTER_VALIDATE_BOOLEAN
-            ),
+            'upload_image_enabled' => $this->uploadImageEnabled(),
+            'block_non_whitelisted' => $this->blockNonWhitelisted(),
         ];
 
         \App\Models\Setting::setValues('ticket_upstream', $payload);
@@ -187,12 +175,39 @@ final class TicketDeliveryController extends Controller
         return $this->success($payload, '上传防护配置已保存');
     }
 
+    private function uploadImageEnabled(): bool
+    {
+        $value = \App\Models\Setting::getValue(
+            'ticket_upstream',
+            'upload_image_enabled',
+            config('ticket_upstream.upload_image_enabled', false)
+        );
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+    }
+
+    private function blockNonWhitelisted(): bool
+    {
+        $value = \App\Models\Setting::getValue(
+            'ticket_upstream',
+            'block_non_whitelisted',
+            config('ticket_upstream.upload_block_non_whitelisted', true)
+        );
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+    }
+
     private function ensureRuleTarget(array $data, ?TicketDeliveryRule $existing = null): void
     {
+        if (! $this->uploadImageEnabled()) {
+            throw ValidationException::withMessages(['upload_image_enabled' => '请先启用 /upload_image 接口']);
+        }
+
         $supplier = Supplier::query()->find((int) $data['supplier_id']);
         $binding = $supplier === null ? null : DB::table('supplier_plugin_bindings')
             ->where('supplier_id', $supplier->id)
             ->where('provider_key', ProviderKey::ZJMF_FINANCE_API)
+            ->where('status', 1)
             ->first();
         if ($supplier === null || (int) $supplier->status !== 1 || $binding === null || (int) $binding->status !== 1) {
             throw ValidationException::withMessages(['supplier_id' => '供应商必须启用并配置启用的 ZJMF 财务接口绑定']);

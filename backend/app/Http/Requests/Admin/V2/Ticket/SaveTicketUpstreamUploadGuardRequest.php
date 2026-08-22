@@ -20,36 +20,51 @@ final class SaveTicketUpstreamUploadGuardRequest extends AdminFormRequest
                 fn (string $attribute, mixed $value, Closure $fail) => $this->validateAllowedIps($value, $fail),
             ],
             'rate_limit' => ['required', 'integer', 'min:0', 'max:10000'],
+            'upload_image_enabled' => ['sometimes', 'boolean'],
             'block_non_whitelisted' => ['sometimes', 'boolean'],
         ];
     }
 
     /**
-     * @return array{allowed_ips: string, rate_limit: int, block_non_whitelisted: bool}
+     * @return array{allowed_ips: string, rate_limit: int, upload_image_enabled: bool, block_non_whitelisted: bool}
      */
     public function payload(): array
     {
+        $validated = $this->validated();
+
         return [
-            'allowed_ips' => trim((string) ($this->validated('allowed_ips') ?? Setting::getValue(
+            'allowed_ips' => trim((string) ($validated['allowed_ips'] ?? Setting::getValue(
                 'ticket_upstream',
                 'allowed_ips',
                 (string) config('ticket_upstream.upload_allowed_ips', '')
             ))),
-            'rate_limit' => (int) ($this->validated('rate_limit') ?? Setting::getValue(
+            'rate_limit' => (int) ($validated['rate_limit'] ?? Setting::getValue(
                 'ticket_upstream',
                 'rate_limit',
                 (string) config('ticket_upstream.upload_rate_limit', 30)
             )),
-            'block_non_whitelisted' => array_key_exists('block_non_whitelisted', $this->validated())
-                ? (bool) $this->validated('block_non_whitelisted')
-                : filter_var(
-                    (string) Setting::getValue(
+            'upload_image_enabled' => array_key_exists('upload_image_enabled', $validated)
+                ? (bool) $validated['upload_image_enabled']
+                : (filter_var(
+                    Setting::getValue(
+                        'ticket_upstream',
+                        'upload_image_enabled',
+                        config('ticket_upstream.upload_image_enabled', false)
+                    ),
+                    FILTER_VALIDATE_BOOLEAN,
+                    FILTER_NULL_ON_FAILURE
+                ) ?? false),
+            'block_non_whitelisted' => array_key_exists('block_non_whitelisted', $validated)
+                ? (bool) $validated['block_non_whitelisted']
+                : (filter_var(
+                    Setting::getValue(
                         'ticket_upstream',
                         'block_non_whitelisted',
-                        config('ticket_upstream.upload_block_non_whitelisted', false)
+                        config('ticket_upstream.upload_block_non_whitelisted', true)
                     ),
-                    FILTER_VALIDATE_BOOLEAN
-                ),
+                    FILTER_VALIDATE_BOOLEAN,
+                    FILTER_NULL_ON_FAILURE
+                ) ?? true),
         ];
     }
 

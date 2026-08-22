@@ -192,7 +192,7 @@ Redis 当前用于缓存；不要在没有专项方案和验证的情况下把�
 后端在 `backend/bootstrap/app.php` 配置了 `trustProxies`：只信任回环与 RFC1918/ULA 私网段，且只采信 `X-Forwarded-For`、`X-Forwarded-Port`、`X-Forwarded-Proto`（不信任 `X-Forwarded-Host`）。`request()->ip()` 依赖该配置解析真实客户端 IP，直接影响：
 
 - 审计字段（如 `last_login_ip`）与推荐风控的“注册 IP == 推荐人 IP”判断；
-- `/upload_image` 上游附件上传的白名单/限流中间件（`TicketUpstreamUploadThrottle`）。
+- `/upload_image` 上游附件上传的启用开关、白名单/限流中间件（`TicketUpstreamUploadThrottle`）。接口默认关闭，管理端配置工单传递规则前必须先开启；白名单外上传默认拒绝。
 
 部署必须满足以下契约，否则 IP 白名单与限流会被绕过或误判：
 

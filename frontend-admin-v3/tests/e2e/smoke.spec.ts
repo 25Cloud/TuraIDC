@@ -154,8 +154,10 @@ async function mockTickets(page: import('@playwright/test').Page) {
   });
 }
 
-async function mockTicketDeliverySettings(page: import('@playwright/test').Page) {
+async function mockTicketDeliverySettings(page: import('@playwright/test').Page, initialUploadImageEnabled = true) {
   let nextId = 302;
+  let uploadImageEnabled = initialUploadImageEnabled;
+  let blockNonWhitelisted = true;
   let rules = [
     {
       id: 301,
@@ -203,6 +205,40 @@ async function mockTicketDeliverySettings(page: import('@playwright/test').Page)
           total: 1,
           page: 1,
           page_size: 100,
+        },
+      }),
+    });
+  });
+
+  await page.route(/\/api\/v2\/admin\/ticket-delivery-upload-guard(?:\?.*)?$/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 0,
+          data: {
+            upload_image_enabled: uploadImageEnabled,
+            allowed_ips: '203.0.113.10',
+            rate_limit: 30,
+            block_non_whitelisted: blockNonWhitelisted,
+            unused_retention_minutes: 5,
+          },
+        }),
+      });
+      return;
+    }
+
+    const payload = route.request().postDataJSON() || {};
+    uploadImageEnabled = payload.upload_image_enabled === true;
+    blockNonWhitelisted = payload.block_non_whitelisted !== false;
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        data: {
+          ...payload,
+          upload_image_enabled: uploadImageEnabled,
+          block_non_whitelisted: blockNonWhitelisted,
         },
       }),
     });
@@ -3750,6 +3786,9 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await expect(page).toHaveURL(/\/admin\/ticket-delivery-rules/);
     await expect(page.getByText('技术支持同步')).toBeVisible();
     await expect(page.getByText('测试云服务器')).toBeVisible();
+    await expect(page.getByText('启用 /upload_image 接口')).toBeVisible();
+    await expect(page.getByText('配置工单传递规则前必须先开启')).toBeVisible();
+    await expect(page.getByText('开启后白名单外上传默认拒绝')).toBeVisible();
 
     await page.getByRole('button', { name: '新增规则' }).click();
     const dialog = page.locator('.t-dialog:visible');
@@ -3784,6 +3823,62 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await page.getByRole('button', { name: '删除' }).first().click();
     await page.locator('.t-dialog:visible').getByRole('button', { name: '删除' }).click();
     await deleteRequest;
+  });
+
+  test('requires enabling upload_image before creating delivery rules', async ({ page }) => {
+    await mockAdminInfo(page);
+    await mockTicketDeliverySettings(page, false);
+    await page.addInitScript(() => {
+      window.localStorage.setItem('admin_token', 'test-token');
+      window.localStorage.setItem('admin_last_active_at', String(Date.now()));
+    });
+
+    await page.goto('/admin/ticket-delivery-rules', { waitUntil: 'domcontentloaded' });
+    // 接口关闭时点击「新增规则」应弹出提示且不打开对话框
+    await page.getByRole('button', { name: '新增规则' }).click();
+    await expect(page.getByText('请先启用 /upload_image 接口').first()).toBeVisible();
+    await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
+
+    const guardForm = page.locator('.ticket-delivery-guard-form');
+    const uploadSwitch = guardForm
+      .locator('.t-form__item')
+      .filter({ hasText: '启用 /upload_image 接口' })
+      .locator('.t-switch');
+    await uploadSwitch.click();
+
+    // 打开开关但未点击「保存配置」：新建仍应被拦截（以已保存状态为准）
+    await page.getByRole('button', { name: '新增规则' }).click();
+    await expect(page.getByText('请先启用 /upload_image 接口').first()).toBeVisible();
+    await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
+
+    const saveRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/ticket-delivery-upload-guard') && request.method() === 'POST',
+    );
+    await page.getByRole('button', { name: '保存配置' }).click();
+    await expect((await saveRequest).postDataJSON()).toMatchObject({
+      upload_image_enabled: true,
+      block_non_whitelisted: true,
+    });
+
+    // 开启后「新增规则」可正常打开创建对话框
+    await page.getByRole('button', { name: '新增规则' }).click();
+    await expect(page.locator('.t-dialog:visible').getByText('新增工单传递规则')).toBeVisible();
+    await page.locator('.t-dialog:visible').getByRole('button', { name: '取消' }).click();
+
+    await uploadSwitch.click();
+    const disableRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/ticket-delivery-upload-guard') && request.method() === 'POST',
+    );
+    await page.getByRole('button', { name: '保存配置' }).click();
+    await expect((await disableRequest).postDataJSON()).toMatchObject({
+      upload_image_enabled: false,
+      block_non_whitelisted: true,
+    });
+
+    // 再次关闭后点击仍只弹提示
+    await page.getByRole('button', { name: '新增规则' }).click();
+    await expect(page.getByText('请先启用 /upload_image 接口').first()).toBeVisible();
+    await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
   });
 
   test('opens ticket conversation and handles core actions', async ({ page }) => {
