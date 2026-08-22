@@ -20,7 +20,8 @@ return [
             ],
         ],
     ],
-    'config' => [
+    // 场景开关为 captcha 域各插件共用，见 plugins/captcha/scene-switches.php
+    'config' => array_merge([
         'basic_notice' => [
             'title' => '配置说明',
             'type' => 'notice',
@@ -44,5 +45,5 @@ return [
             'placeholder' => '请输入 VAPTCHA VKEY',
             'description' => '来自 VAPTCHA 控制台的服务端密钥，仅用于后端二次验证。',
         ],
-    ],
+    ], require __DIR__.'/../scene-switches.php'),
 ];

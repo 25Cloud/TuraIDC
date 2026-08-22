@@ -25,8 +25,12 @@
             autocomplete="current-password"
           />
         </t-form-item>
+        <!-- inline 形态（Turnstile）的验证组件落点：点击登录时就地加载，无感通过时不占位 -->
+        <div v-show="captchaRenderMode === 'inline'" ref="captchaContainer" class="login-captcha"></div>
         <t-form-item class="login-submit-item">
-          <t-button block theme="primary" size="large" type="submit" :loading="loading"> 登录 </t-button>
+          <t-button block theme="primary" size="large" type="submit" :loading="loading || captchaLoading">
+            登录
+          </t-button>
           <span class="sr-only" role="alert" aria-live="assertive">{{ errorMessage }}</span>
         </t-form-item>
       </t-form>
@@ -39,9 +43,10 @@
 <script setup lang="ts">
 import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { resolveCaptchaRequirement, useGeeTestCaptcha } from '@/hooks/useGeeTestCaptcha';
 import { useUserStore } from '@/store';
 
 const router = useRouter();
@@ -50,6 +55,22 @@ const formRef = ref<FormInstanceFunctions>();
 const loading = ref(false);
 const errorMessage = ref('');
 const currentYear = computed(() => new Date().getFullYear());
+
+// 管理员登录的人机验证：是否要求由后端场景开关决定（验证码插件配置里的「管理员登录」）。
+// 探测失败一律视为不要求——验证码配置出问题不应该把管理员挡在后台之外。
+//
+// 验证 SDK 在点击登录时才加载。渲染形态由后端下发：popup（极验）由插件自行弹窗，
+// inline（Turnstile）渲染进登录按钮上方的容器，无感通过时不占位。
+const captchaRequired = ref(false);
+const captchaRenderMode = ref<'popup' | 'inline'>('popup');
+const captchaContainer = ref<HTMLElement>();
+const { verify: verifyCaptcha, loading: captchaLoading } = useGeeTestCaptcha({ appendTo: captchaContainer });
+
+onMounted(async () => {
+  const { required, renderMode } = await resolveCaptchaRequirement('admin_login');
+  captchaRequired.value = required;
+  captchaRenderMode.value = renderMode;
+});
 
 const formData = ref({
   account: '',
@@ -67,9 +88,13 @@ async function handleLogin() {
 
   loading.value = true;
   try {
+    // 验证结果随登录请求一起提交；未要求验证时不带 captcha 字段
+    const captcha = captchaRequired.value ? await verifyCaptcha() : null;
+
     await userStore.login({
       account: formData.value.account,
       password: formData.value.password,
+      ...(captcha ? { captcha } : {}),
     });
     MessagePlugin.success('登录成功');
     const redirect = router.currentRoute.value.query.redirect;
@@ -161,6 +186,16 @@ async function handleLogin() {
 .login-submit-item {
   :deep(.t-form__label) {
     display: none;
+  }
+}
+
+/* 验证组件落点：无感通过时容器内为空、不占高度；需要挑战时才撑开 */
+.login-captcha {
+  display: flex;
+  justify-content: center;
+
+  &:not(:empty) {
+    margin-bottom: 16px;
   }
 }
 

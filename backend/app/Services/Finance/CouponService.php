@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Finance;
 
+use App\Constants\BillingCycle;
 use App\Constants\CouponStatus;
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
@@ -45,12 +46,7 @@ class CouponService
         OrderStatus::REFUNDED,
     ];
 
-    private const SUPPORTED_BILLING_CYCLE_LABELS = [
-        'monthly' => '月付',
-        'quarterly' => '季付',
-        'semiannually' => '半年付',
-        'annually' => '年付',
-    ];
+    private const SUPPORTED_BILLING_CYCLE_LABELS = BillingCycle::RENEWABLE_LABELS;
 
     public function adminSummary(array $filters = []): array
     {

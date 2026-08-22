@@ -198,6 +198,7 @@
 <script setup lang="ts">
 import './index.less';
 
+import { billingCycleLabel as billingCycleLabelOf } from '@shared/billingCycle';
 import { SERVICE_STATUS_MAP, toSelectOptions } from '@shared/statusConfig';
 import { SearchIcon } from 'tdesign-icons-vue-next';
 import type { PageInfo, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
@@ -420,16 +421,8 @@ function hasHostInfo(row: ServiceRecord) {
 }
 
 function billingCycleLabel(cycle: unknown) {
-  const map: Record<string, string> = {
-    monthly: '月付',
-    quarterly: '季付',
-    biannually: '半年付',
-    annually: '年付',
-    biennially: '两年付',
-    triennially: '三年付',
-    onetime: '一次性',
-  };
-  return map[String(cycle || '')] || fieldValue(cycle);
+  // 别名（biannually 拼写错误、onetime、yearly）统一由 @shared/billingCycle 归一
+  return billingCycleLabelOf(cycle) || fieldValue(cycle);
 }
 
 function isExpiringSoon(value: unknown) {

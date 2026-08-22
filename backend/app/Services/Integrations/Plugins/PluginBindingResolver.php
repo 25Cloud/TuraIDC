@@ -10,10 +10,10 @@ use App\Models\Service;
 use App\Models\Supplier;
 use App\Models\SupplierPluginBinding;
 use App\Services\Upstream\ProviderRegistry;
+use App\Support\DatabaseSchema;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class PluginBindingResolver
 {
@@ -21,6 +21,77 @@ class PluginBindingResolver
      * @var array<int, object|null>
      */
     private array $productBindingCache = [];
+
+    /**
+     * 服务/供应商维度的行级记忆化，仅在"读作用域"内生效。
+     *
+     * 背景：渲染一行服务时，同一行会被反复问到同样的绑定与快照——实测客户端服务列表
+     * 单行要查 8 次 service_upstream_bindings、各 4 次两张快照表（12 行 = 192 次）。
+     *
+     * 为什么必须限定作用域而不是常驻缓存：本类是容器 singleton，若缓存跨调用存活，
+     * "先读（缓存了 null）→ 写入绑定 → 再读"就会拿到写前的旧值。绑定表存在不经
+     * ServiceUpstreamBindingWriter 的裸 SQL 写入路径（回填命令、测试夹具），无法靠写入侧
+     * 逐一失效兜住。限定在一行的渲染过程内后：渲染期间不会有写入，收益不变（本来就是
+     * 每行 1 次查询），脏读风险消除。
+     *
+     * @var array<int, object|null>
+     */
+    private array $serviceBindingCache = [];
+
+    /**
+     * 键为 "supplierId|providerKey"（providerKey 为空串表示不限定 provider）。
+     *
+     * @var array<string, object|null>
+     */
+    private array $supplierBindingCache = [];
+
+    /**
+     * @var array<int, array<string, mixed>>
+     */
+    private array $serviceRuntimeSnapshotCache = [];
+
+    /**
+     * @var array<string, array<string, mixed>>
+     */
+    private array $serviceConnectionSnapshotCache = [];
+
+    /**
+     * 读作用域嵌套深度。> 0 时上面四个缓存才生效。
+     */
+    private int $readScopeDepth = 0;
+
+    /**
+     * 在一个"只读作用域"内执行回调：期间同一服务的绑定与快照只查一次，退出时清空。
+     *
+     * 调用方应当只在确定不会发生写入的读路径上使用（例如列表逐行投影）。
+     *
+     * @template TReturn
+     * @param  callable(): TReturn  $callback
+     * @return TReturn
+     */
+    public function withReadScope(callable $callback): mixed
+    {
+        $this->readScopeDepth++;
+
+        try {
+            return $callback();
+        } finally {
+            $this->readScopeDepth--;
+            if ($this->readScopeDepth <= 0) {
+                $this->readScopeDepth = 0;
+                $this->productBindingCache = [];
+                $this->serviceBindingCache = [];
+                $this->supplierBindingCache = [];
+                $this->serviceRuntimeSnapshotCache = [];
+                $this->serviceConnectionSnapshotCache = [];
+            }
+        }
+    }
+
+    private function readScopeActive(): bool
+    {
+        return $this->readScopeDepth > 0;
+    }
 
     public function providerKeyForSupplier(Supplier $supplier): ?string
     {
@@ -289,7 +360,31 @@ class PluginBindingResolver
         return $provisionData;
     }
 
+    /**
+     * 缓存键必须带上 $providerKey。
+     *
+     * 只按 supplier_id 缓存会串味：同一供应商可同时绑定多个 provider（见
+     * supplier_plugin_bindings 的 provider_key 列），先查 zjmf_finance 再查 kanghostx
+     * 会拿到前者缓存的结果。null 与空串都表示「不限定 provider」，归一到同一个键。
+     */
     private function supplierBinding(int $supplierId, ?string $providerKey = null): ?object
+    {
+        $normalizedProviderKey = trim((string) $providerKey);
+
+        if (! $this->readScopeActive()) {
+            return $this->fetchSupplierBinding($supplierId, $normalizedProviderKey);
+        }
+
+        $cacheKey = $supplierId.'|'.$normalizedProviderKey;
+
+        if (array_key_exists($cacheKey, $this->supplierBindingCache)) {
+            return $this->supplierBindingCache[$cacheKey];
+        }
+
+        return $this->supplierBindingCache[$cacheKey] = $this->fetchSupplierBinding($supplierId, $normalizedProviderKey);
+    }
+
+    private function fetchSupplierBinding(int $supplierId, string $providerKey = ''): ?object
     {
         if ($supplierId <= 0 || ! $this->hasTable('supplier_plugin_bindings')) {
             return null;
@@ -297,7 +392,7 @@ class PluginBindingResolver
 
         return DB::table('supplier_plugin_bindings')
             ->where('supplier_id', $supplierId)
-            ->when($providerKey !== null && trim($providerKey) !== '', fn ($query) => $query->where('provider_key', trim($providerKey)))
+            ->when($providerKey !== '', fn ($query) => $query->where('provider_key', $providerKey))
             ->orderByDesc('status')
             ->orderByDesc('priority')
             ->orderByDesc('id')
@@ -387,7 +482,12 @@ class PluginBindingResolver
             return null;
         }
 
-        if (array_key_exists($productId, $this->productBindingCache)) {
+        // 与 serviceBinding 等同一策略：只在只读作用域内缓存。
+        // 本类改为容器 singleton 后，这份原本形同虚设的缓存（此前每个调用点都 new 新实例）
+        // 会变成长命缓存；而 product_upstream_bindings 有 10 个写入方，其中多数是裸 SQL
+        // （回填命令、迁移服务、绑定写入器），逐个挂失效钩子挂不全，漏一个就会让长驻进程
+        // 拿着旧的供应商/上游商品去开通或续费。限定作用域可从根上消除这类脏读。
+        if ($this->readScopeActive() && array_key_exists($productId, $this->productBindingCache)) {
             return $this->productBindingCache[$productId];
         }
 
@@ -402,7 +502,13 @@ class PluginBindingResolver
             $columns[] = 'spb.supplier_id';
         }
 
-        return $this->productBindingCache[$productId] = $query->first($columns);
+        $binding = $query->first($columns);
+
+        if ($this->readScopeActive()) {
+            $this->productBindingCache[$productId] = $binding;
+        }
+
+        return $binding;
     }
 
     private function supplierIdFromProductBinding(?object $binding): ?int
@@ -413,6 +519,19 @@ class PluginBindingResolver
     }
 
     private function serviceBinding(int $serviceId): ?object
+    {
+        if (! $this->readScopeActive()) {
+            return $this->fetchServiceBinding($serviceId);
+        }
+
+        if (array_key_exists($serviceId, $this->serviceBindingCache)) {
+            return $this->serviceBindingCache[$serviceId];
+        }
+
+        return $this->serviceBindingCache[$serviceId] = $this->fetchServiceBinding($serviceId);
+    }
+
+    private function fetchServiceBinding(int $serviceId): ?object
     {
         if ($serviceId <= 0 || ! $this->hasTable('service_upstream_bindings')) {
             return null;
@@ -447,6 +566,22 @@ class PluginBindingResolver
      * @return array<string, mixed>
      */
     private function serviceRuntimeSnapshot(int $serviceId): array
+    {
+        if (! $this->readScopeActive()) {
+            return $this->fetchServiceRuntimeSnapshot($serviceId);
+        }
+
+        if (array_key_exists($serviceId, $this->serviceRuntimeSnapshotCache)) {
+            return $this->serviceRuntimeSnapshotCache[$serviceId];
+        }
+
+        return $this->serviceRuntimeSnapshotCache[$serviceId] = $this->fetchServiceRuntimeSnapshot($serviceId);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function fetchServiceRuntimeSnapshot(int $serviceId): array
     {
         if ($serviceId <= 0 || ! $this->hasTable('service_runtime_snapshots')) {
             return [];
@@ -487,6 +622,24 @@ class PluginBindingResolver
      * @return array<string, mixed>
      */
     private function serviceConnectionSnapshot(int $serviceId, bool $includeSecrets = false): array
+    {
+        if (! $this->readScopeActive()) {
+            return $this->fetchServiceConnectionSnapshot($serviceId, $includeSecrets);
+        }
+
+        // includeSecrets 必须进缓存键：脱敏与含密版本是两份不同结果，混用会造成密钥意外外泄或缺失
+        $cacheKey = $serviceId.':'.($includeSecrets ? '1' : '0');
+        if (array_key_exists($cacheKey, $this->serviceConnectionSnapshotCache)) {
+            return $this->serviceConnectionSnapshotCache[$cacheKey];
+        }
+
+        return $this->serviceConnectionSnapshotCache[$cacheKey] = $this->fetchServiceConnectionSnapshot($serviceId, $includeSecrets);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function fetchServiceConnectionSnapshot(int $serviceId, bool $includeSecrets = false): array
     {
         if ($serviceId <= 0 || ! $this->hasTable('service_connection_snapshots')) {
             return [];
@@ -616,10 +769,38 @@ class PluginBindingResolver
         return is_array($decoded) ? $decoded : [];
     }
 
+    /**
+     * 失效某个服务的行级缓存。
+     *
+     * 本类现为容器 singleton，缓存跨请求/跨任务存活。写入绑定或快照后必须调用本方法，
+     * 否则长驻进程（队列 Worker、状态同步命令）会继续读到写前的旧投影。
+     */
+    public function forgetService(int $serviceId): void
+    {
+        unset(
+            $this->serviceBindingCache[$serviceId],
+            $this->serviceRuntimeSnapshotCache[$serviceId],
+            $this->serviceConnectionSnapshotCache[$serviceId.':0'],
+            $this->serviceConnectionSnapshotCache[$serviceId.':1'],
+        );
+    }
+
+    /**
+     * 清空全部行级缓存（供测试与长任务分批之间使用）。
+     */
+    public function flushCaches(): void
+    {
+        $this->productBindingCache = [];
+        $this->serviceBindingCache = [];
+        $this->supplierBindingCache = [];
+        $this->serviceRuntimeSnapshotCache = [];
+        $this->serviceConnectionSnapshotCache = [];
+    }
+
     private function hasTable(string $table): bool
     {
         try {
-            return Schema::hasTable($table);
+            return DatabaseSchema::hasTableOrView($table);
         } catch (\Throwable) {
             return false;
         }

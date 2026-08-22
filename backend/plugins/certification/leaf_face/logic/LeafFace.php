@@ -107,7 +107,10 @@ class LeafFace
 
         return [
             'free_attempts' => $freeTimes,
-            'retry_fee' => $amount,
+            // 与同域其余 4 个实名插件对齐：关闭收费时重试费必须为 0。
+            // 扣费路径本身有 charge_enabled 门控（VerificationService），所以此前不会错扣钱，
+            // 但 retry_fee 会随接口下发给前端展示，关闭收费时显示非零金额。
+            'retry_fee' => $chargeEnabled ? $amount : 0.0,
             'free_times' => $freeTimes,
             'amount' => $amount,
             'charge_enabled' => $chargeEnabled,

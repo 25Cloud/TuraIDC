@@ -152,8 +152,52 @@
 
 .plugin-config-form > .t-form__item,
 .plugin-config-form > .t-divider,
+.plugin-config-form > .plugin-config-section,
 .plugin-config-form > .plugin-config-notice {
   grid-column: 1 / -1;
+}
+
+/* 可折叠分组标题：高级项默认收起，点这里展开 */
+.plugin-config-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin: 4px 0 18px;
+  padding: 8px 12px;
+  border: 1px solid var(--td-component-border);
+  border-radius: var(--td-radius-default);
+  background: var(--td-bg-color-container-hover);
+  color: var(--td-text-color-primary);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background: var(--td-bg-color-container-active);
+  }
+
+  &__arrow {
+    flex: none;
+    color: var(--td-text-color-placeholder);
+    transition: transform 0.2s;
+
+    &.is-expanded {
+      transform: rotate(90deg);
+    }
+  }
+
+  &__title {
+    flex: 1;
+    font-weight: 500;
+  }
+
+  &__hint {
+    flex: none;
+    color: var(--td-text-color-placeholder);
+    font-size: 12px;
+  }
 }
 
 .plugin-config-form > .plugin-config-form__item--half {

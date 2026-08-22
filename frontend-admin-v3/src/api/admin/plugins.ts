@@ -23,6 +23,10 @@ export interface IntegrationPluginConfigSchema {
   max?: number;
   step?: number;
   rows?: number;
+  /** divider 专用：该分组是否可折叠 */
+  collapsible?: boolean;
+  /** divider 专用：初始是否收起（可折叠分组默认收起） */
+  collapsed?: boolean;
   visible_when?: {
     field?: string;
     operator?: 'eq' | 'neq' | 'in' | 'not_in';

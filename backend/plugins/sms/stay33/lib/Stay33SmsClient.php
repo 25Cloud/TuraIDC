@@ -285,40 +285,10 @@ class Stay33SmsClient
 
     private function http(): PendingRequest
     {
-        return Http::asForm()->withOptions([
-            'verify' => $this->sslVerifyOption(),
-        ]);
-    }
-
-    private function sslVerifyOption(): bool|string
-    {
-        $caBundle = $this->resolveCaBundle();
-
-        if ($this->resolveSslVerify() && $caBundle !== '' && is_file($caBundle)) {
-            return $caBundle;
-        }
-
-        return $this->resolveSslVerify();
-    }
-
-    private function resolveSslVerify(): bool
-    {
-        $value = $this->config['ssl_verify'] ?? null;
-        if ($value !== null && $value !== '') {
-            return filter_var($value, FILTER_VALIDATE_BOOL);
-        }
-
-        return filter_var(config('idc.sms.ssl_verify', true), FILTER_VALIDATE_BOOL);
-    }
-
-    private function resolveCaBundle(): string
-    {
-        $value = $this->config['ca_bundle'] ?? null;
-        if ($value !== null && $value !== '') {
-            return trim((string) $value);
-        }
-
-        return trim((string) config('idc.sms.ca_bundle', ''));
+        // 不设置 verify：项目硬规则要求插件不提供 SSL 与 CA 配置，统一依赖系统 CA。
+        // 原实现可经插件配置或 config('idc.sms.ssl_verify') 关闭校验，
+        // 而后者在 APP_ENV=local 时默认为 false。
+        return Http::asForm();
     }
 
     private function configString(string $key, string $default = ''): string

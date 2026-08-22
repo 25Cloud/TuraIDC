@@ -84,6 +84,10 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
 
   let fetchPromise: Promise<void> | null = null;
 
+  // 站点配置结果缓存的时间戳与有效期。0 表示尚未成功加载过。
+  let hydratedAt = 0;
+  const SITE_CONFIG_TTL_MS = 10 * 60 * 1000;
+
   function toggleSidebar() {
     sidebarCollapsed.value = !sidebarCollapsed.value;
   }
@@ -141,15 +145,23 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
     updateFavicon(siteFavicon.value || DEFAULT_FAVICON, DEFAULT_FAVICON);
   }
 
-  async function fetchSiteConfig() {
+  async function fetchSiteConfig(options: { force?: boolean } = {}) {
     if (fetchPromise) {
       return fetchPromise;
+    }
+
+    // 站点配置是准静态字典，一次会话内几乎不变。
+    // 原实现只有 in-flight 去重（fetchPromise 在 finally 里置 null），没有结果缓存；
+    // 而 permission.ts 在 router.beforeEach 里无条件调用它，导致每次路由跳转都多一个网络往返。
+    if (!options.force && hydratedAt > 0 && Date.now() - hydratedAt < SITE_CONFIG_TTL_MS) {
+      return Promise.resolve();
     }
 
     fetchPromise = siteApi
       .config({ silentError: true })
       .then((res: any) => {
         hydrateSiteConfig(res.data || {});
+        hydratedAt = Date.now();
       })
       .catch(() => {
         siteLogo.value = normalizeBrandAsset(siteLogo.value || DEFAULT_SITE_LOGO, DEFAULT_SITE_LOGO);

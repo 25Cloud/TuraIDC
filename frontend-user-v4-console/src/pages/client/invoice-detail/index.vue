@@ -310,6 +310,7 @@ import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch 
 
 const QrcodeVue = defineAsyncComponent(() => import('qrcode.vue'));
 
+import { advanceByBillingCycle } from '@shared/billingCycle';
 import { INVOICE_STATUS_MAP } from '@shared/statusConfig';
 import StatusTag from '@shared/user-v3/components/StatusTag.vue';
 
@@ -454,20 +455,11 @@ function renewedExpiresAt(row: InvoiceRecord | null | undefined) {
   const current = currentExpiresAt(row);
   const currentTime = current === '--' ? 0 : parseSessionExpiresTime(String(current));
   const baseTime = currentTime > Date.now() ? currentTime : Date.now();
-  const date = new Date(baseTime);
-  const cycle = String(row?.billing_cycle || '')
-    .trim()
-    .toLowerCase();
+  // 周期推进与后端 BillingCycle::advance() 同口径；一次性/免费/未知周期不产生新到期
+  const renewed = advanceByBillingCycle(baseTime, row?.billing_cycle);
+  if (!renewed) return currentTime ? formatSessionExpiresAt(baseTime, '--') : '--';
 
-  if (cycle === 'monthly') date.setMonth(date.getMonth() + 1);
-  else if (cycle === 'quarterly') date.setMonth(date.getMonth() + 3);
-  else if (cycle === 'semiannually') date.setMonth(date.getMonth() + 6);
-  else if (cycle === 'annually' || cycle === 'yearly') date.setFullYear(date.getFullYear() + 1);
-  else if (cycle === 'biennially') date.setFullYear(date.getFullYear() + 2);
-  else if (cycle === 'triennially') date.setFullYear(date.getFullYear() + 3);
-  else return currentTime ? formatSessionExpiresAt(baseTime, '--') : '--';
-
-  return formatSessionExpiresAt(date.getTime(), '--');
+  return formatSessionExpiresAt(renewed.getTime(), '--');
 }
 
 function renewInfoItems(row: InvoiceRecord | null | undefined) {

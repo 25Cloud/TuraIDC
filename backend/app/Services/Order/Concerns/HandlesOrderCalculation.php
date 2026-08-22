@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Order\Concerns;
 
+use App\Constants\BillingCycle;
 use App\Exceptions\BusinessException;
 use App\Models\Product;
 use App\Support\Money;
@@ -19,13 +20,8 @@ trait HandlesOrderCalculation
     /** OS 选择类型 —— 不参与数值计算 */
     private const OS_TYPES = [5];
 
-    /** 计费周期 → 月数映射 */
-    private const BILLING_CYCLE_MONTHS = [
-        'monthly' => 1,
-        'quarterly' => 3,
-        'semiannually' => 6,
-        'annually' => 12,
-    ];
+    /** 计费周期 → 月数映射，取自 {@see BillingCycle} */
+    private const BILLING_CYCLE_MONTHS = BillingCycle::RENEWABLE_MONTHS;
 
     /** 配置项 type → 字段名映射 */
     private const TYPE_FIELD_MAP = [
