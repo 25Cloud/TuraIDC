@@ -80,7 +80,23 @@ RUN set -eux; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark > /dev/null; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
     rm -rf /var/lib/apt/lists/*; \
-    php -r '$need = ["pdo_mysql","pcntl","bcmath","gd","zip","intl","exif","sockets","redis","mbstring","curl","openssl","xml"]; $bad = array_values(array_filter($need, fn ($e) => ! extension_loaded($e))); if ($bad !== []) { fwrite(STDERR, "构建自检失败：扩展未加载 ".implode(", ", $bad)."\n"); exit(1); } $gd = gd_info(); if (empty($gd["FreeType Support"]) || empty($gd["JPEG Support"])) { fwrite(STDERR, "构建自检失败：gd 缺少 FreeType/JPEG 支持\n"); exit(1); } echo "扩展自检通过\n";'
+    php -r '$need = ["pdo_mysql","pcntl","bcmath","gd","zip","intl","exif","sockets","redis","mbstring","curl","openssl","xml"]; $bad = array_values(array_filter($need, fn ($e) => ! extension_loaded($e))); if ($bad !== []) { fwrite(STDERR, "构建自检失败：扩展未加载 ".implode(", ", $bad)."\n"); exit(1); } $gd = gd_info(); if (empty($gd["FreeType Support"]) || empty($gd["JPEG Support"])) { fwrite(STDERR, "构建自检失败：gd 缺少 FreeType/JPEG 支持\n"); exit(1); } echo "扩展自检通过\n";' \
+    || { \
+        # 自检失败时把「哪个扩展缺哪个 .so」直接打出来。
+        # 上面只报扩展名，而根因总是「第一层的运行时库清单漏了某个包」——
+        # 缺了这一步就只能靠 buildkit 日志里 PHP 启动告警去猜，而那段常被截断。
+        # 结果按「补进第一层显式清单」的口径直接可用：dpkg -S <缺失的 .so> 即得包名。
+        echo '===== 自检失败：以下扩展存在未解析的动态库依赖 =====' >&2; \
+        for so in /usr/local/lib/php/extensions/*/*.so; do \
+            [ -e "$so" ] || continue; \
+            missing="$(ldd "$so" 2>/dev/null | grep 'not found' || true)"; \
+            [ -n "$missing" ] || continue; \
+            echo "--- $so" >&2; \
+            echo "$missing" >&2; \
+        done; \
+        echo '（若上面为空，则扩展未加载与共享库无关，请检查 docker-php-ext-enable 与 php.ini）' >&2; \
+        exit 1; \
+    }
 
 # ---- Composer（国内镜像已在 backend/composer.json 配置为腾讯云源）----
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
