@@ -46,6 +46,12 @@
       },
       "reset": "重置",
       "query": "查询"
+    },
+    "captcha": {
+      "clickToVerify": "点击验证",
+      "verifying": "验证中",
+      "solved": "验证通过",
+      "failed": "验证失败"
     }
   },
   "layout": {
@@ -313,7 +319,7 @@
         }
       },
       "product": {
-        "title": "产品目录",
+        "title": "购买产品",
         "add": "新增产品",
         "month": "月份",
         "quarter": "季度"

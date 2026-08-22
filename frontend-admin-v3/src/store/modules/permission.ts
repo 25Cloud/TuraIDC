@@ -103,6 +103,7 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
         children: [
           { path: '/admin/services', title: { zh_CN: '服务实例', en_US: 'Service Instances' } },
           '/admin/tickets',
+          '/admin/ticket-delivery-rules',
         ],
       },
     ],
@@ -236,6 +237,8 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
           '/admin/logs/email',
           '/admin/logs/tasks',
           '/admin/logs/gateway',
+          '/admin/logs/upstream',
+          '/admin/logs/upstream-uploads',
           '/admin/logs/schedules',
           '/admin/logs/cleanup',
         ],
@@ -246,10 +249,10 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
 
 export const usePermissionStore = defineStore('permission', {
   state: () => ({
-    whiteListRouters: ['/admin/login'],
-    routers: [],
-    removeRoutes: [],
-    asyncRoutes: [],
+    whiteListRouters: ['/admin/login'] as string[],
+    routers: [] as RouteRecordRaw[],
+    removeRoutes: [] as RouteRecordRaw[],
+    asyncRoutes: [] as RouteRecordRaw[],
     routesBuilt: false,
   }),
   actions: {
@@ -257,7 +260,10 @@ export const usePermissionStore = defineStore('permission', {
       const accessedRouters = this.asyncRoutes;
 
       // 菜单展示业务分组；真实路由仍使用 homepageRouterList 注册，不改变历史路径。
-      this.routers = buildGroupedMenuRouters(cloneDeep([...homepageRouterList, ...accessedRouters]), permissions);
+      this.routers = buildGroupedMenuRouters(
+        cloneDeep([...homepageRouterList, ...accessedRouters] as RouteRecordRaw[]),
+        permissions,
+      );
       // 在菜单只展示动态路由和首页
       // this.routers = [...homepageRouterList, ...accessedRouters];
       // 在菜单只展示动态路由
@@ -275,7 +281,7 @@ export const usePermissionStore = defineStore('permission', {
     },
     async restoreRoutes() {
       // 不需要在此额外调用initRoutes更新侧边导肮内容，在登录后asyncRoutes为空会调用
-      this.asyncRoutes.forEach((item: RouteRecordRaw) => {
+      this.asyncRoutes.forEach((item) => {
         if (item.name) {
           router.removeRoute(item.name);
         }

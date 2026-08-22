@@ -94,6 +94,8 @@ class QueueDrainService
                 $outputs[$name] = ['stdout' => '', 'stderr' => ''];
             }
 
+            $heartbeatRefreshedAt = 0.0;
+
             while (true) {
                 $hasRunningProcess = false;
                 foreach ($processes as $name => $process) {
@@ -109,6 +111,16 @@ class QueueDrainService
 
                 if (! $hasRunningProcess) {
                     break;
+                }
+
+                // 定期刷新存活心跳：进程被强杀就不会再刷新，后续 drain 据此判定残锁。
+                // 刷新周期取心跳 TTL 的三分之一，既留足容错又不至于每 100ms 打一次缓存。
+                $now = microtime(true);
+                if ($now - $heartbeatRefreshedAt >= max(5, (int) ($this->drainHeartbeatTtl() / 3))) {
+                    foreach (array_keys($locks) as $name) {
+                        $this->touchDrainHeartbeat($name);
+                    }
+                    $heartbeatRefreshedAt = $now;
                 }
 
                 usleep(100000);
@@ -179,10 +191,46 @@ class QueueDrainService
      */
     protected function workerDefinitions(): array
     {
-        return [
-            'business' => (string) config('queue.turaidc_business_queues', 'provision,referral,notification,coupon,default'),
-            'automation' => (string) config('queue.turaidc_schedule_queue', 'automation'),
-        ];
+        $provision = $this->normalizeQueueList(
+            (string) config('queue.turaidc_provision_queues', 'provision')
+        );
+        $business = $this->normalizeQueueList(
+            (string) config('queue.turaidc_business_queues', 'referral,notification,coupon,default')
+        );
+
+        // 已在 provision 组里的队列要从 business 组剔除：存量部署的 .env 里
+        // TURAIDC_BUSINESS_QUEUES 仍可能包含 provision，不剔除就会有两个 worker
+        // 同时消费同一队列，把本次拆分想避免的并发又带回来。
+        $business = array_values(array_diff($business, $provision));
+
+        $definitions = [];
+        if ($provision !== []) {
+            $definitions['provision'] = implode(',', $provision);
+        }
+        if ($business !== []) {
+            $definitions['business'] = implode(',', $business);
+        }
+
+        $automation = $this->normalizeQueueList(
+            (string) config('queue.turaidc_schedule_queue', 'automation')
+        );
+        if ($automation !== []) {
+            $definitions['automation'] = implode(',', $automation);
+        }
+
+        return $definitions;
+    }
+
+    /**
+     * 把逗号分隔的队列列表规整为去空、去重、保序的数组。
+     *
+     * @return list<string>
+     */
+    private function normalizeQueueList(string $queues): array
+    {
+        $items = array_map('trim', explode(',', $queues));
+
+        return array_values(array_unique(array_filter($items, static fn (string $q): bool => $q !== '')));
     }
 
     /**
@@ -202,10 +250,33 @@ class QueueDrainService
             try {
                 $lock = Cache::lock('scheduler:queue-drain:'.$name, $this->drainLockTtl());
                 if ($lock->get()) {
+                    $this->touchDrainHeartbeat($name);
                     $available[$name] = $queues;
                     $locks[$name] = $lock;
 
                     continue;
+                }
+
+                // 锁被占用时要区分两种情形：确有 drain 在跑，还是上一个持有者
+                // 被 SIGKILL / OOM / 容器重启带走后留下的残锁。
+                // 锁 TTL 必须覆盖最长任务（drainLockTtl() 可达 3960s）且无法续期，
+                // 仅靠它自然过期会让队列静默停摆最长 66 分钟；这里用短周期心跳判活。
+                if ($this->drainHeartbeatIsStale($name)) {
+                    Log::warning('[调度] 检测到队列 Worker 残锁（持有者心跳已过期），强制释放后重试', [
+                        'worker' => $name,
+                        'queue' => $queues,
+                        'heartbeat_ttl' => $this->drainHeartbeatTtl(),
+                    ]);
+
+                    $lock->forceRelease();
+
+                    if ($lock->get()) {
+                        $this->touchDrainHeartbeat($name);
+                        $available[$name] = $queues;
+                        $locks[$name] = $lock;
+
+                        continue;
+                    }
                 }
 
                 $busyWorkers[$name] = $queues;
@@ -261,6 +332,88 @@ class QueueDrainService
 
         $locks[$name]->release();
         unset($locks[$name]);
+        $this->forgetDrainHeartbeat($name);
+    }
+
+    /**
+     * 某个 Worker 的存活心跳缓存键。
+     *
+     * 与 drain 互斥锁（scheduler:queue-drain:{name}）配对使用：锁负责互斥，
+     * 心跳负责证明持有者还活着。
+     */
+    private function drainHeartbeatKey(string $name): string
+    {
+        return 'scheduler:queue-drain:'.$name.':heartbeat';
+    }
+
+    /**
+     * 存活心跳的有效期（秒）。
+     *
+     * 刻意远小于锁的 TTL（drainLockTtl() 可达 3960 秒）：锁的 TTL 必须覆盖
+     * 最长任务，而心跳只需覆盖一个刷新周期，这样进程被强杀后能在分钟级
+     * 被判定为已死，而不是等锁自然过期。下限 30 秒，避免配置成过短的值
+     * 导致正常运行中的 drain 被误判。
+     */
+    private function drainHeartbeatTtl(): int
+    {
+        return max(30, (int) config('queue.turaidc_worker_drain_heartbeat_ttl', 90));
+    }
+
+    /**
+     * 写入/刷新某个 Worker 的存活心跳。
+     *
+     * 在取得锁时写一次，并由 runWorkersInParallel() 的等待循环按周期刷新。
+     * 进程被 SIGKILL / OOM 带走后不会再刷新，心跳随即过期——这正是残锁的判定依据。
+     * 写失败只记日志不抛：心跳仅服务于残锁判定，不应影响本轮 drain 的正常执行。
+     */
+    private function touchDrainHeartbeat(string $name): void
+    {
+        try {
+            Cache::put($this->drainHeartbeatKey($name), time(), $this->drainHeartbeatTtl());
+        } catch (\Throwable $exception) {
+            // 心跳只服务于残锁判定，写失败不应影响本轮 drain 的正常执行
+            Log::warning('[调度] 写入队列 Worker 存活心跳失败', [
+                'worker' => $name,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 判断锁的持有者是否已经死亡（心跳已过期或从未写入）。
+     *
+     * 返回 true 表示可以安全地强制释放该锁并重新获取。
+     * 读取失败时返回 false（按"未过期"处理）：宁可本轮跳过该队列，
+     * 也不要在无法证明持有者已死的情况下抢锁、启动重复 Worker。
+     */
+    private function drainHeartbeatIsStale(string $name): bool
+    {
+        try {
+            return Cache::get($this->drainHeartbeatKey($name)) === null;
+        } catch (\Throwable $exception) {
+            // 读不到心跳状态时按"未过期"处理：宁可本轮跳过，也不要在无法证明
+            // 持有者已死的情况下强制释放锁并启动重复 Worker。
+            Log::warning('[调度] 读取队列 Worker 存活心跳失败，按未过期处理', [
+                'worker' => $name,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 正常释放锁时清掉对应的存活心跳，避免残留键误导下一轮判定。
+     *
+     * 清理失败可忽略：心跳自带 TTL，会在有效期内自然过期。
+     */
+    private function forgetDrainHeartbeat(string $name): void
+    {
+        try {
+            Cache::forget($this->drainHeartbeatKey($name));
+        } catch (\Throwable) {
+            // 心跳残留会在 TTL 内自然过期，忽略即可
+        }
     }
 
     /**

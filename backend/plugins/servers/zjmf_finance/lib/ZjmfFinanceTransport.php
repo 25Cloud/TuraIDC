@@ -8,6 +8,7 @@ use App\Exceptions\BusinessException;
 use App\Models\Supplier;
 use App\Services\Upstream\Drivers\HostingPanelApi\HostingPanelApiTransport;
 use App\Services\Upstream\Support\WebSessionCookieParser;
+use Illuminate\Support\Facades\Http;
 
 final class ZjmfFinanceTransport
 {
@@ -261,6 +262,113 @@ final class ZjmfFinanceTransport
     public function post(Supplier $supplier, string $uri, array|string $payload = [], ?string $jwt = null, array $headers = [], array $query = []): array
     {
         return $this->request($supplier, 'POST', $uri, $payload, $jwt, $headers, $query);
+    }
+
+    /**
+     * @return array<int, array{id: string, name: string, description: string}>
+     */
+    public function getTicketDepartments(Supplier $supplier, ?string $jwt = null): array
+    {
+        $response = $this->get($supplier, '/ticket/department', $jwt);
+        $status = (int) ($response['status'] ?? $response['code'] ?? 0);
+        if ($status !== 200) {
+            throw new BusinessException((string) ($response['msg'] ?? '获取上游工单部门失败'), 42200);
+        }
+
+        $items = $response['data'] ?? null;
+        if (! is_array($items)) {
+            throw new BusinessException('上游工单部门响应格式异常', 42200);
+        }
+
+        return array_values(array_filter(array_map(static function (mixed $item): ?array {
+            if (! is_array($item)) {
+                return null;
+            }
+
+            $id = trim((string) ($item['id'] ?? ''));
+            $name = trim((string) ($item['name'] ?? ''));
+            if ($id === '' || $name === '') {
+                return null;
+            }
+
+            return [
+                'id' => $id,
+                'name' => $name,
+                'description' => trim((string) ($item['description'] ?? '')),
+            ];
+        }, $items)));
+    }
+
+    public function registerDownstreamCallback(
+        Supplier $supplier,
+        int $upstreamHostId,
+        int $upstreamProductId,
+        int $downstreamId,
+        string $downstreamUrl,
+        string $downstreamToken,
+        ?string $jwt = null,
+    ): array {
+        return $this->post($supplier, '/host/setdownstream', [
+            'id' => $upstreamHostId,
+            'pid' => $upstreamProductId,
+            'downstream_url' => rtrim($downstreamUrl, '/'),
+            'downstream_token' => $downstreamToken,
+            'downstream_id' => $downstreamId,
+        ], $jwt);
+    }
+
+    /**
+     * 上传工单附件到上游图片接口，返回上游保存的文件名（savename）。
+     * 本地路径校验失败、文件句柄打开失败或上游返回失败/缺少 savename 时一律抛出 BusinessException，
+     * 保证调用方不会因空返回值而静默丢失附件（与上游业务失败保持一致的失败语义）。
+     *
+     * @throws BusinessException 路径非法、文件不可读、上游请求失败或缺少 savename 时抛出
+     */
+    public function uploadTicketAttachment(Supplier $supplier, string $path): string
+    {
+        $root = realpath(storage_path('app'));
+        if ($root === false) {
+            throw new BusinessException('上游附件上传失败', 50000);
+        }
+
+        $absolutePath = realpath($root.'/'.ltrim(str_replace('\\', '/', $path), '/'));
+        if ($absolutePath === false
+            || ! str_starts_with($absolutePath, $root.DIRECTORY_SEPARATOR)
+            || ! is_file($absolutePath)
+        ) {
+            throw new BusinessException('上游附件上传失败', 50000);
+        }
+
+        $jwt = $this->login($supplier);
+        $handle = fopen($absolutePath, 'rb');
+        if ($handle === false) {
+            throw new BusinessException('上游附件上传失败', 50000);
+        }
+
+        try {
+            $response = Http::timeout(30)
+                ->withOptions($this->transport->httpClientOptions())
+                ->withToken($jwt)
+                ->attach('file', $handle, basename($absolutePath))
+                ->post(rtrim((string) $supplier->api_url, '/').'/upload_image');
+        } finally {
+            fclose($handle);
+        }
+
+        $payload = is_array($response->json()) ? $response->json() : [];
+        $businessOk = array_key_exists('status', $payload)
+            ? (int) ($payload['status'] ?? 0) === 200
+            : (int) ($payload['code'] ?? -1) === 0;
+        if (! $response->successful() || ! $businessOk) {
+            throw new BusinessException('上游附件上传失败', 50000);
+        }
+
+        $name = data_get($payload, 'data.savename') ?? data_get($payload, 'savename');
+        if ($name === null || trim((string) $name) === '') {
+            throw new BusinessException('上游附件上传失败', 50000);
+        }
+
+        return (string) $name;
     }
 
     public function get(Supplier $supplier, string $uri, ?string $jwt = null, array $query = [], array $headers = []): array

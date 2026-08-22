@@ -10,7 +10,14 @@
   </section>
 </template>
 <script setup lang="ts">
+import { onMounted } from 'vue';
+
 import { openPublicProducts } from '@/utils/publicSite';
+
+// 购买入口收口到官网产品页：进入本页即跳转，本页保留为兜底（跳转被拦截时展示按钮）。
+onMounted(() => {
+  openPublicProducts();
+});
 </script>
 <style scoped lang="less">
 .catalog-page {

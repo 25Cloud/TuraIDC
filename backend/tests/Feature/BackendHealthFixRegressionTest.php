@@ -6,6 +6,8 @@ namespace Tests\Feature;
 
 use App\Exceptions\BusinessException;
 use App\Http\Resources\Product\SupplierResource;
+use App\Jobs\DeliverTicketReplyToUpstreamJob;
+use App\Jobs\DeliverTicketToUpstreamJob;
 use App\Jobs\ProcessPaidOrderFulfillmentJob;
 use App\Jobs\ProcessPaidOrderReferralRewardJob;
 use App\Jobs\RunScheduleTaskJob;
@@ -236,6 +238,27 @@ class BackendHealthFixRegressionTest extends TestCase
         $this->assertSame(600, $middleware[0]->expiresAfter);
     }
 
+    public function test_ticket_upstream_jobs_define_unique_overlap_and_retry_policy(): void
+    {
+        $ticketJob = new DeliverTicketToUpstreamJob(42);
+        $replyJob = new DeliverTicketReplyToUpstreamJob(84);
+
+        foreach ([
+            [$ticketJob, 'job:ticket-upstream:create:42'],
+            [$replyJob, 'job:ticket-upstream:reply:84'],
+        ] as [$job, $lockKey]) {
+            $this->assertSame(120, $job->timeout);
+            $this->assertSame(900, $job->uniqueFor);
+            $this->assertSame([30, 120, 300], $job->backoff);
+            $this->assertSame($job === $ticketJob ? '42' : '84', $job->uniqueId());
+            $this->assertCount(1, $job->middleware());
+            $this->assertInstanceOf(WithoutOverlapping::class, $job->middleware()[0]);
+            $this->assertSame($lockKey, $job->middleware()[0]->key);
+            $this->assertSame(10, $job->middleware()[0]->releaseAfter);
+            $this->assertSame(900, $job->middleware()[0]->expiresAfter);
+        }
+    }
+
     public function test_queue_jobs_define_timeout_policy(): void
     {
         $jobs = [
@@ -261,8 +284,12 @@ class BackendHealthFixRegressionTest extends TestCase
         $source = file_get_contents(app_path('Services/Automation/Heartbeat/QueueDrainService.php'));
 
         $this->assertIsString($source);
-        $this->assertSame('provision,referral,notification,coupon,default', config('queue.turaidc_business_queues'));
+        // provision 已拆为独立 worker：上游开通任务 timeout 可达 1200s，
+        // 与通知/优惠券/推荐奖励共用一个 worker 会造成队头阻塞。
+        $this->assertSame('provision', config('queue.turaidc_provision_queues'));
+        $this->assertSame('referral,notification,coupon,default', config('queue.turaidc_business_queues'));
         $this->assertSame('automation', config('queue.turaidc_schedule_queue'));
+        $this->assertStringContainsString('queue.turaidc_provision_queues', $source);
         $this->assertStringContainsString('queue.turaidc_business_queues', $source);
         $this->assertStringContainsString('queue.turaidc_schedule_queue', $source);
         $this->assertStringContainsString('queue:work', $source);

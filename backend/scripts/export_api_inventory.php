@@ -108,6 +108,7 @@ function resolveGroup(string $uri): string
         '/api/v2/admin/media-files' => '管理端 / 媒体',
         '/api/v2/admin/media-file-reindexes' => '管理端 / 媒体',
         '/api/v2/admin/tickets' => '管理端 / 工单',
+        '/api/v2/admin/ticket-delivery' => '管理端 / 工单',
         '/api/v2/admin/verifications' => '管理端 / 实名认证',
         '/api/v2/admin/integration-plugins' => '管理端 / Integration Plugins',
         '/api/v2/admin/integration-plugin-scans' => '管理端 / Integration Plugins',

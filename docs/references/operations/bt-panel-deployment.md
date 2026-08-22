@@ -152,6 +152,8 @@ location / {
 
 项目未启用 VNC 远程控制时，可以删除 `/ws/vnc` 的整个 `location` 块，保留 Laravel 回退规则。宝塔默认 PHP 处理块保持不变。
 
+> 注：API 请求路径是 PHP-FPM 直连，Laravel 以 `REMOTE_ADDR` 为准，不受上方 `X-Forwarded-*` 影响（这些头只发给 VNC Relay）。若改为宿主机 Nginx/1Panel 反向代理 API 端口，必须遵守[受信代理与来源 IP 契约](deployment-and-scheduling.md)：单层受信代理把 `X-Forwarded-For` 重置为 `$remote_addr`，不要原样透传客户端伪造的头。
+
 ### 4.2 三个前端站点伪静态
 
 官网、用户控制台和管理端都是 Vue History 路由站点。在三个前端站点的“伪静态”中均填入同一段：

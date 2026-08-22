@@ -18,6 +18,7 @@ use App\Http\Controllers\Client\V2\ReferralController;
 use App\Http\Controllers\Client\V2\ServiceConsoleController;
 use App\Http\Controllers\Client\V2\ServiceController;
 use App\Http\Controllers\Client\V2\TicketController;
+use App\Http\Controllers\Client\V2\TicketUpstreamCallbackController;
 use App\Http\Controllers\Client\V2\TicketWorkflowController;
 use App\Http\Controllers\Client\V2\VerificationController;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,8 @@ Route::post('/payment/alipay/notify', [PaymentCallbackController::class, 'alipay
 Route::match(['GET', 'POST'], '/payment/notify/{gateway}', [PaymentCallbackController::class, 'notify'])
     ->middleware(['throttle:60,1,client-payment-notify', 'verify.payment.callback']);
 Route::get('/vnc-tokens/{token}', [ServiceConsoleController::class, 'vncToken'])->middleware('throttle:30,1,client-vnc-token');
+Route::post('/tickets/upstream/replies', [TicketUpstreamCallbackController::class, 'reply'])
+    ->middleware(['throttle:60,1,ticket-upstream-callback', 'verify.ticket.upstream.callback']);
 
 Route::middleware(['auth:sanctum', 'ensure.client'])->group(function (): void {
     Route::get('/auth/info', [AuthController::class, 'info']);

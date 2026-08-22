@@ -28,6 +28,12 @@ use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\ProviderRegistry;
 use App\Support\SmsTemplateCatalog;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Mockery;
+use RuntimeException;
+use Tests\TestCase;
 use TuraIDC\Plugins\Addons\DemoStyle\DemoStylePlugin;
 use TuraIDC\Plugins\Addons\DemoStyle\Lib\DemoStyleScheduledTask;
 use TuraIDC\Plugins\Certification\DemoVerification\DemoVerificationPlugin;
@@ -36,12 +42,6 @@ use TuraIDC\Plugins\Mail\DemoMail\DemoMailPlugin;
 use TuraIDC\Plugins\Servers\DemoServers\DemoServersPlugin;
 use TuraIDC\Plugins\Servers\DemoServers\Logic\DemoServers;
 use TuraIDC\Plugins\Sms\DemoSms\DemoSmsPlugin;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use Mockery;
-use RuntimeException;
-use Tests\TestCase;
 
 class PluginSimulationTest extends TestCase
 {

@@ -165,7 +165,10 @@ onMounted(() => {
   color: var(--td-text-color-primary);
 }
 
-:deep(:root[theme-mode='dark']) .auth-shell {
+/* 注意：不能用 :deep(:root[...]) —— scoped 编译会在最前面安插 [data-v-xxx]，
+   变成「带 scope 祖先内的 html」，永远不匹配；直接写 :root 前缀即可，
+   编译只给最后的 .auth-shell 加 scope 属性 */
+:root[theme-mode='dark'] .auth-shell {
   --auth-bg-start: #0b1220;
   --auth-bg-middle: #0b1220;
   --auth-bg-end: #0b1220;

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\ZjmfBridge\Http\Middleware;
 
-use TuraIDC\Plugins\Addons\ZjmfBridge\Logging\ZjmfBridgeLogger;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
+use TuraIDC\Plugins\Addons\ZjmfBridge\Logging\ZjmfBridgeLogger;
 
 class LogZjmfBridgeRequest
 {

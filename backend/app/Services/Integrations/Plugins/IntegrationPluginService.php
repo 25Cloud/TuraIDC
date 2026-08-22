@@ -13,6 +13,7 @@ use App\Services\Mail\MailDriverManager;
 use App\Services\Sms\Data\SmsSendRequest;
 use App\Services\Sms\SmsDriverManager;
 use App\Services\System\NotificationService;
+use App\Services\System\SmsService;
 use App\Support\PublicUrl;
 use App\Support\SmsTemplateCatalog;
 use Illuminate\Support\Facades\DB;
@@ -258,12 +259,21 @@ class IntegrationPluginService
             ]),
         );
 
+        // 测试发信走驱动直发，绕过了「站点设置 → 通知设置 → 启用邮件通知」总开关，
+        // 因此必须回报总开关状态：否则总开关为关（默认值）时，管理员看到
+        // 「测试邮件发送成功」会误判为对外已可用，而注册/找回密码等对外发码
+        // 仍会返回「邮件服务暂不可用」。判定复用 NotificationService 的唯一真源。
+        $notificationEnabled = app(NotificationService::class)->isEmailEnabled();
+
         return [
             'success' => true,
             'action' => 'mail.test_smtp',
-            'message' => '测试邮件发送成功',
+            'message' => $notificationEnabled
+                ? '测试邮件发送成功'
+                : '测试邮件发送成功，但站点设置中的「启用邮件通知」当前为关闭状态，对外仍不会发送邮件（注册、找回密码等会提示「邮件服务暂不可用」）。请在 站点设置 → 通知设置 中开启后再验证。',
             'data' => [
                 'sent' => true,
+                'notification_enabled' => $notificationEnabled,
                 'to' => $testPayload['to'],
                 'subject' => $testPayload['subject'],
                 'template_code' => $testPayload['template_code'],
@@ -288,12 +298,18 @@ class IntegrationPluginService
             options: (array) ($testPayload['options'] ?? []),
         ));
 
+        // 同邮件：测试发信绕过「启用短信通知」总开关，需回报其状态避免误判。
+        $notificationEnabled = app(SmsService::class)->isEnabled();
+
         return [
             'success' => true,
             'action' => 'sms.test',
-            'message' => '测试短信发送成功',
+            'message' => $notificationEnabled
+                ? '测试短信发送成功'
+                : '测试短信发送成功，但站点设置中的「启用短信通知」当前为关闭状态，对外仍不会发送短信。请在 站点设置 → 通知设置 中开启后再验证。',
             'data' => [
                 'sent' => true,
+                'notification_enabled' => $notificationEnabled,
                 'phone' => $testPayload['phone'],
                 'status' => $result->status,
                 'template_code' => $testPayload['template_code'],

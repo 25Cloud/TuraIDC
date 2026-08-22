@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfLegacyPasswordVerifier;
 use PHPUnit\Framework\TestCase;
+use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfLegacyPasswordVerifier;
 
 class ZjmfLegacyPasswordVerifierTest extends TestCase
 {

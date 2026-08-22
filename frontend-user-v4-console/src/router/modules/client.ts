@@ -94,7 +94,7 @@ export default [
             path: '/client/catalog',
             name: 'ClientCatalog',
             component: () => import('@/pages/client/catalog/index.vue'),
-            meta: { title: title('产品目录'), icon: icon(CatalogIcon), requireAuth: true, orderNo: 20 },
+            meta: { title: title('购买产品', 'Buy Products'), icon: icon(CatalogIcon), requireAuth: true, orderNo: 20 },
           },
         ],
       },

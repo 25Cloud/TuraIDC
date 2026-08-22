@@ -10,12 +10,12 @@ use App\Services\Integrations\Plugins\PluginConfigRepository;
 use App\Services\Integrations\Plugins\PluginInstaller;
 use App\Services\Integrations\Plugins\PluginScanner;
 use App\Services\System\NotificationService;
-use TuraIDC\Plugins\Mail\MultiSmtpRoundRobin\Lib\MultiSmtpRoundRobinService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use TuraIDC\Plugins\Mail\MultiSmtpRoundRobin\Lib\MultiSmtpRoundRobinService;
 
 class MultiSmtpRoundRobinPluginTest extends TestCase
 {

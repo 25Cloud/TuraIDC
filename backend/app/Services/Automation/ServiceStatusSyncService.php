@@ -669,13 +669,14 @@ class ServiceStatusSyncService
             'status_sync_error' => null,
         ]);
 
+        $persistedProvisionData = $this->bindingResolver()->sanitizeServiceProvisionData($provisionData);
         $service->forceFill([
             'name' => ServiceHostname::resolveInstanceName($service, $provisionData, $host),
             'domain' => trim((string) ($host['domain'] ?? $service->domain)),
             'status' => $resolvedServiceStatus,
             'expires_at' => $this->resolveExpiry($host, $service),
             'suspended_reason' => $this->resolveSyncedSuspendedReason($service, $resolvedServiceStatus, $resolvedUpstreamStatus),
-            'provision_data' => $provisionData,
+            'provision_data' => $persistedProvisionData,
         ])->save();
 
         $service->refresh()->loadMissing('product.supplier');
@@ -776,7 +777,11 @@ class ServiceStatusSyncService
         $legacy = is_array($service->provision_data ?? null) ? $service->provision_data : [];
         $projection = $this->bindingResolver()->serviceProvisionProjection($service, $includeSecrets);
 
-        return $projection === [] ? $legacy : array_replace($legacy, $projection);
+        $provisionData = $projection === [] ? $legacy : array_replace($legacy, $projection);
+
+        return $includeSecrets
+            ? $provisionData
+            : $this->bindingResolver()->sanitizeServiceProvisionData($provisionData);
     }
 
     private function readCachedConnection(array $provisionData): array

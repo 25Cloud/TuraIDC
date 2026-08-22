@@ -8,6 +8,10 @@ use App\Models\AdminUser;
 use App\Models\MessageLog;
 use App\Models\OperationLog;
 use App\Models\Role;
+use App\Models\Supplier;
+use App\Models\Ticket;
+use App\Models\TicketUpstreamDeliveryLog;
+use App\Models\User;
 use App\Services\System\AdminLogService;
 use App\Services\System\NotificationService;
 use App\Support\AdminPermissions;
@@ -85,6 +89,155 @@ class V2AdminLogApiTest extends TestCase
             ->assertJsonPath('data.list.0.id', $apiLog->id);
 
         $this->assertSame([], $lightweightResponse->json('data.summary'));
+    }
+
+    public function test_upstream_log_channel_supports_filters_pagination_and_detail(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = User::query()->create([
+            'email' => 'upstream-log-'.$suffix.'@example.com',
+            'password' => 'Temp@123456',
+            'nickname' => '上游日志测试用户',
+            'phone' => '13'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT),
+            'status' => 1,
+        ]);
+        $ticket = Ticket::query()->create([
+            'user_id' => $user->id,
+            'department' => 'support',
+            'subject' => '上游日志测试工单',
+            'priority' => 2,
+            'status' => 1,
+        ]);
+        $ticketId = (int) $ticket->id;
+        $supplier = Supplier::query()->create([
+            'name' => '测试上游供应商',
+            'code' => 'test-upstream-'.$suffix,
+            'status' => 1,
+        ]);
+
+        TicketUpstreamDeliveryLog::query()->insert([
+            [
+                'ticket_id' => $ticketId,
+                'direction' => 'outbound',
+                'operation' => 'ticket.create',
+                'event' => 'failed',
+                'status' => 'failed',
+                'reason_code' => 'upstream_rejected_'.$suffix,
+                'provider_key' => 'zjmf_finance_api',
+                'supplier_id' => $supplier->id,
+                'attempt' => 2,
+                'message' => '上游拒绝工单创建',
+                'occurred_at' => now()->subMinute(),
+                'created_at' => now()->subMinute(),
+                'updated_at' => now()->subMinute(),
+            ],
+            [
+                'ticket_id' => $ticketId,
+                'direction' => 'outbound',
+                'operation' => 'ticket.create',
+                'event' => 'queued',
+                'status' => 'pending',
+                'reason_code' => 'queued_'.$suffix,
+                'provider_key' => 'zjmf_finance_api',
+                'supplier_id' => $supplier->id,
+                'attempt' => null,
+                'message' => '已进入队列',
+                'occurred_at' => now()->subMinutes(2),
+                'created_at' => now()->subMinutes(2),
+                'updated_at' => now()->subMinutes(2),
+            ],
+        ]);
+
+        $this->getJson('/api/v2/admin/logs/upstream')
+            ->assertUnauthorized()
+            ->assertJsonPath('code', 40100);
+
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::LOG_LIST]));
+
+        $response = $this->getJson('/api/v2/admin/logs/upstream?'.http_build_query([
+            'ticket_id' => $ticketId,
+            'status' => 'failed',
+            'page' => 1,
+            'page_size' => 1,
+        ]))
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.total', 1)
+            ->assertJsonPath('data.page_size', 1)
+            ->assertJsonPath('data.list.0.ticket_id', $ticketId)
+            ->assertJsonPath('data.list.0.status', 'failed')
+            ->assertJsonPath('data.list.0.provider_key', 'zjmf_finance_api')
+            ->assertJsonPath('data.list.0.supplier_name', '测试上游供应商')
+            ->assertJsonMissingPath('data.list.0.binding_id')
+            ->assertJsonMissingPath('data.list.0.delivery_id');
+
+        $logId = $response->json('data.list.0.id');
+        $this->getJson('/api/v2/admin/logs/upstream/'.$logId)
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.log.channel', 'upstream')
+            ->assertJsonPath('data.log.fields.reason_code', 'upstream_rejected_'.$suffix)
+            ->assertJsonPath('data.log.fields.provider_key', 'zjmf_finance_api')
+            ->assertJsonPath('data.log.fields.supplier_name', '测试上游供应商')
+            ->assertJsonPath('data.log.message', '上游拒绝工单创建')
+            ->assertJsonMissingPath('data.log.fields.binding_id')
+            ->assertJsonMissingPath('data.log.context.raw_response');
+
+        $secondUser = User::query()->create([
+            'email' => 'upstream-log-second-'.$suffix.'@example.com',
+            'password' => 'Temp@123456',
+            'nickname' => '上游日志第二用户',
+            'phone' => '13'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT),
+            'status' => 1,
+        ]);
+        $secondTicket = Ticket::query()->create([
+            'user_id' => $secondUser->id,
+            'department' => 'support',
+            'subject' => '上游日志第二工单',
+            'priority' => 2,
+            'status' => 1,
+        ]);
+        TicketUpstreamDeliveryLog::query()->create([
+            'ticket_id' => $secondTicket->id,
+            'direction' => 'outbound',
+            'operation' => 'ticket.create',
+            'event' => 'succeeded',
+            'status' => 'delivered',
+            'reason_code' => 'delivered_'.$suffix,
+            'provider_key' => 'zjmf_finance_api',
+            'supplier_id' => $supplier->id,
+            'message' => '上游日志第二工单已完成 '.$suffix,
+            'occurred_at' => now(),
+        ]);
+
+        $pageOne = $this->getJson('/api/v2/admin/logs/upstream?'.http_build_query([
+            'keyword' => $suffix,
+            'page' => 1,
+            'page_size' => 1,
+        ]))
+            ->assertOk()
+            ->assertJsonPath('data.total', 2)
+            ->assertJsonPath('data.page_size', 1)
+            ->assertJsonPath('data.summary.total', 2);
+
+        $this->assertCount(1, $pageOne->json('data.list'));
+        $this->assertNotSame($ticketId, (int) $pageOne->json('data.list.0.ticket_id'));
+
+        $pageTwo = $this->getJson('/api/v2/admin/logs/upstream?'.http_build_query([
+            'keyword' => $suffix,
+            'page' => 2,
+            'page_size' => 1,
+        ]))
+            ->assertOk()
+            ->assertJsonPath('data.total', 2)
+            ->assertJsonPath('data.list.0.ticket_id', $ticketId)
+            ->assertJsonPath('data.list.0.log_count', 2);
+
+        $this->assertCount(2, $pageTwo->json('data.list.0.logs'));
+        $this->assertSame(
+            ['failed', 'queued'],
+            array_column($pageTwo->json('data.list.0.logs'), 'event')
+        );
     }
 
     public function test_admin_log_detail_returns_full_context_without_sensitive_keys(): void

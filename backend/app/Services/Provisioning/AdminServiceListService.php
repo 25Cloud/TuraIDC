@@ -378,7 +378,8 @@ class AdminServiceListService
 
     private function resolveProductDisplayName(Service $service): string
     {
-        $invoiceDisplayName = trim((string) ($this->resolvePrimaryInvoice($service)?->product_spec_snapshot ?? ''));        if ($invoiceDisplayName !== '') {
+        $invoiceDisplayName = trim((string) ($this->resolvePrimaryInvoice($service)?->product_spec_snapshot ?? ''));
+        if ($invoiceDisplayName !== '') {
             return $invoiceDisplayName;
         }
 
@@ -408,8 +409,11 @@ class AdminServiceListService
     {
         $legacy = is_array($service->provision_data ?? null) ? $service->provision_data : [];
         $projection = $this->bindingResolver()->serviceProvisionProjection($service, $includeSecrets);
+        $provisionData = $projection === [] ? $legacy : array_replace($legacy, $projection);
 
-        return $projection === [] ? $legacy : array_replace($legacy, $projection);
+        return $includeSecrets
+            ? $provisionData
+            : $this->bindingResolver()->sanitizeServiceProvisionData($provisionData);
     }
 
     private function bindingResolver(): PluginBindingResolver

@@ -2,7 +2,7 @@
 
 面向全新服务器、使用容器化方式部署 TuraIDC 的完整指南。使用 Docker Compose 一键拉起全部服务，配合 GitHub Actions 自动构建推送镜像，服务器只负责拉取运行，不再逐端手工部署；也可直接用 1Panel 的编排与反代能力托管同一套 Compose 文件。
 
-- 对齐时间：`2026-08-19`
+- 对齐时间：`2026-08-22`
 - 传统宝塔部署见 [宝塔部署项目指南](bt-panel-deployment.md)，现网运维口径见 [部署与调度指南](deployment-and-scheduling.md)
 - 部署文件位于仓库根 `deploy/docker/`，唯一需要改的配置是 `deploy/docker/.env`
 - CI 构建推送见 `.github/workflows/docker-image.yml`
@@ -12,8 +12,8 @@
 
 ```
 deploy/docker/docker-compose.yml  (project: turaidc)
-├── mysql (mysql:8.0, 命名卷 mysql-data)
-├── redis (redis:7-alpine, 命名卷 redis-data)
+├── mysql (mysql:8.0, 命名卷 mysql-data)      [可选：DB_HOST 留空时才拉取并启动]
+├── redis (redis:7-alpine, 命名卷 redis-data) [可选：REDIS_HOST 留空时才拉取并启动]
 ├── app   (后端镜像, :80)
 │     ├── php-fpm   (PHP 8.3, 含 pdo_mysql/redis/pcntl/opcache/gd/zip/intl/bcmath)
 │     ├── nginx     (API + /ws/vnc WebSocket -> 127.0.0.1:8100)
@@ -22,6 +22,8 @@ deploy/docker/docker-compose.yml  (project: turaidc)
 │     命名卷: app-storage / app-uploads / app-media
 ├── frontends (nginx:alpine, 三端口: 8081=官网 / 8082=控制台 / 8083=管理端)
 ```
+
+`DB_HOST` / `REDIS_HOST` 留空（默认）时本地 mysql / redis 容器随编排启动；填写远程地址则对应本地容器不创建、镜像也不被 `docker compose pull` 拉取，app 直连远程服务，两者互相独立可单独切换。
 
 镜像流向：GitHub Actions 构建并推送 `ghcr.io/<owner>/turaidc-{app,frontends}` → 服务器 `docker compose pull`。
 
@@ -52,14 +54,18 @@ vim .env
 | `APP_KEY`                                                          | 否   | **不要在此文件设置**。容器启动时自动生成并写入 `backend/.env`。若在此设空值，Docker env_file 会注入容器环境变量，Dotenv 不覆盖已存在环境变量，导致生成的 key 被忽略 |
 | `INSTALL_ADMIN_PASSWORD`                                           | 是   | 首次初始化默认管理员 `cerbo` 的密码，至少 12 位强密码，仅空库首次生效                                                                                               |
 | `SESSION_SECURE_COOKIE`                                            | 是   | HTTPS 环境 `true`，纯 HTTP 环境 `false`                                                                                                                             |
-| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` / `DB_ROOT_PASSWORD` | 是   | 数据库名与账号；同时用于 mysql 容器和 app 容器                                                                                                                      |
-| `REDIS_PASSWORD`                                                   | 否   | Redis 密码；默认空。公网切勿放行 6379                                                                                                                               |
+| `DB_HOST` / `DB_PORT`                                              | 否   | 数据库来源：留空使用编排内 mysql 容器（默认）；填写远程地址则本地 mysql 不拉取不启动，app 直连远程库，端口默认 3306                                                 |
+| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` / `DB_ROOT_PASSWORD` | 是   | 数据库名与账号；同时用于 mysql 容器和 app 容器（远程模式仍需填写供 app 连接）                                                                                       |
+| `REDIS_HOST` / `REDIS_PORT`                                        | 否   | Redis 来源：留空使用编排内 redis 容器（默认）；填写远程地址则本地 redis 不拉取不启动，app 直连远程，端口默认 6379                                                   |
+| `REDIS_PASSWORD`                                                   | 否   | Redis 密码；默认空。公网切勿放行 6379；远程模式必须与远程实例一致                                                                                                   |
 | `API_PORT` / `WWW_PORT` / `CONSOLE_PORT` / `ADMIN_PORT`            | 否   | 宿主机映射端口，默认 8080/8081/8082/8083                                                                                                                            |
 | `CACHE_STORE` / `QUEUE_CONNECTION` / `SESSION_DRIVER`              | 否   | 与现网口径一致：redis / database / file，一般不用改                                                                                                                 |
 | `SENTRY_LARAVEL_DSN`                                               | 否   | Sentry DSN，留空关闭                                                                                                                                                |
 | `MAIL_FROM_ADDRESS`                                                | 否   | 默认发件人；SMTP 凭据由管理端"邮件插件"配置                                                                                                                         |
 
 > 约束：密码与地址值不要包含双引号 `"` 和反斜杠 `\`，避免破坏 `.env` 解析。`.env` 已被 `.dockerignore` 排除，不会进镜像、不会入库。
+>
+> 远程数据库 / Redis 模式：`DB_HOST` 或 `REDIS_HOST` 填写远程地址后，对应本地容器不会被创建，`docker compose pull` 也不拉取其镜像。要求服务器 Compose v2.20+（依赖跳过用 `required: false`）；远程库需自行建库、对服务器 IP 授权；数据库结构与初始化仍由 app 容器 entrypoint 在启动时执行。
 
 ## 四、CI 自动打包推送
 
@@ -198,32 +204,79 @@ docker compose up -d
 不使用 1Panel 时，可用宿主机 Nginx/Caddy 或 Cloudflare 反代到四个端口。宿主机 Nginx 示例（每个域名一个 server）：
 
 ```nginx
+# WebSocket 升级映射放在 http 块（例如 /etc/nginx/conf.d/ 下的公共片段）
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+# 80 端口统一跳转，避免用户直接访问 http 得到 404
+server {
+    listen 80;
+    server_name api.example.com;
+    return 301 https://$host$request_uri;
+}
+
 server {
     listen 443 ssl;
+    http2 on;                       # nginx < 1.25.1 写作 listen 443 ssl http2;
     server_name api.example.com;
     ssl_certificate     /etc/nginx/certs/api/fullchain.pem;
     ssl_certificate_key /etc/nginx/certs/api/privkey.pem;
 
     client_max_body_size 100m;
+
+    # 关键：转发头必须放在 server 级。nginx 的 proxy_set_header 不跨 location 继承，
+    # 若只写在 location / 内，下面的 /ws/vnc 因为自己声明了 proxy_set_header，
+    # 会完全拿不到 Host / X-Forwarded-* —— Host 退化为 $proxy_host（127.0.0.1:8080），
+    # 导致 VNC token 的 Origin 校验与 wss 地址推导失败。
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
     location / {
         proxy_pass http://127.0.0.1:8080;
+    }
+
+    # VNC WebSocket 需升级头
+    # 注意：location 里一旦出现 proxy_set_header，就不再继承 server 级的同类指令，
+    # 因此 Host / X-Real-IP / X-Forwarded-For / X-Forwarded-Proto 必须在这里重复声明，
+    # 否则 VNC 通道会丢失真实客户端 IP 与 HTTPS 标识（后端据此判定 isSecure()）。
+    location /ws/vnc {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
         proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    # VNC WebSocket 需升级头
-    location /ws/vnc {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_http_version 1.1;
         proxy_set_header Upgrade    $http_upgrade;
-        proxy_set_header Connection "upgrade";
+        proxy_set_header Connection $connection_upgrade;
+        proxy_buffering off;
         proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
     }
 }
 ```
 
-前端站点去掉 WebSocket 段即可。证书可用 `acme.sh` 或 `certbot` 申请。要求：四个地址协议统一（全 HTTPS）、`.env` 中 `SESSION_SECURE_COOKIE=true`。
+前端站点去掉 WebSocket 段即可。要求：四个地址协议统一（全 HTTPS）、`.env` 中 `SESSION_SECURE_COOKIE=true`。
+
+`X-Forwarded-Proto: https` 是后端识别 HTTPS 的唯一依据：容器内 `deploy/docker/backend/nginx.conf` 用 `map` 把它转成 `fastcgi_param HTTPS on`，Laravel 的 `isSecure()` 才会返回 true。反代若不传该头，HTTPS 环境下后端仍按 HTTP 处理。
+
+> **来源 IP 契约**：后端 `trustProxies` 只信任回环与 RFC1918/ULA 私网段并采信 `X-Forwarded-For`，`request()->ip()` 与 `/upload_image` 白名单/限流都依赖它。上面的 `$proxy_add_x_forwarded_for` 会保留客户端自带 XFF，公网客户端可借此伪造来源。单层受信反代应把该头重置为 `$remote_addr`（多层受信代理且逐级清洗时才可追加），并把 API 端口改为仅本机绑定（`127.0.0.1:8080`），不要向公网暴露容器端口。完整契约见 [部署与调度指南](deployment-and-scheduling.md) 的“受信代理与来源 IP 契约”。
+
+压缩已由容器内部负责：`frontends` 容器对静态资源配置了 gzip 与 `gzip_static`（优先返回构建期生成的 `.gz`），`backend/nginx.conf` 也已为 API 的 JSON 响应开启 gzip。宿主机 Nginx **不需要**为这两类响应再配一遍——代理响应带 `Content-Encoding` 时 Nginx 不会二次压缩。
+
+若宿主机上还有其他不经这两个容器的响应需要压缩（例如宿主机直接提供的静态文件或第三方上游），可在 http 块按需加入。注意 Nginx 默认 `gzip off`，不存在“自动生效的全局压缩”：
+
+```nginx
+gzip            on;
+gzip_vary       on;
+gzip_min_length 1024;
+gzip_proxied    any;               # 必须，否则代理响应不会被压缩
+gzip_types      text/plain text/css application/javascript application/json
+                application/xml image/svg+xml;
+```
 
 ## 八、升级与回滚
 

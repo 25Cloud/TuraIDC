@@ -9,14 +9,14 @@ use App\Services\Integrations\Plugins\PluginConfigRepository;
 use App\Services\Integrations\Plugins\PluginFileLoader;
 use App\Services\Integrations\Plugins\PluginInstaller;
 use App\Services\Integrations\Plugins\PluginScanner;
-use TuraIDC\Plugins\Certification\BaiduFace\Logic\BaiduFace;
-use TuraIDC\Plugins\Certification\BaiduFace\Logic\BaiduFaceClient;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use TuraIDC\Plugins\Certification\BaiduFace\Logic\BaiduFace;
+use TuraIDC\Plugins\Certification\BaiduFace\Logic\BaiduFaceClient;
 
 class BaiduFacePluginTest extends TestCase
 {

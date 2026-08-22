@@ -488,8 +488,9 @@ class ServiceUpgradeService
     {
         $legacy = is_array($service->provision_data ?? null) ? $service->provision_data : [];
         $projection = $this->bindingResolver->serviceProvisionProjection($service);
+        $provisionData = $projection === [] ? $legacy : array_replace($legacy, $projection);
 
-        return $projection === [] ? $legacy : array_replace($legacy, $projection);
+        return $this->bindingResolver->sanitizeServiceProvisionData($provisionData);
     }
 
     /**
