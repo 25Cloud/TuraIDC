@@ -7,6 +7,7 @@ namespace App\Services\Integrations\Plugins;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Supplier;
+use App\Services\Ticket\TicketUpstreamCallbackToken;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -87,7 +88,7 @@ class ServiceUpstreamBindingWriter
 
         $bindingId = (int) $binding->id;
         $this->syncRuntimeSnapshot($serviceId, $bindingId, $pluginId, $providerKey, $provisionData, $runtimeSnapshot);
-        $this->syncConnectionSnapshot($serviceId, $bindingId, $pluginId, $providerKey, $provisionData, $connectionSnapshot);
+        $this->syncConnectionSnapshot($service, $serviceId, $bindingId, $pluginId, $providerKey, $provisionData, $connectionSnapshot);
 
         return $bindingId;
     }
@@ -205,6 +206,7 @@ class ServiceUpstreamBindingWriter
     }
 
     private function syncConnectionSnapshot(
+        Service $service,
         int $serviceId,
         int $bindingId,
         int $pluginId,
@@ -230,10 +232,14 @@ class ServiceUpstreamBindingWriter
                 'secret_json' => $this->encryptSecrets([
                     'connection_secret' => $provisionData['connection_secret'] ?? null,
                     'password' => $provisionData['password'] ?? null,
+                    'downstream_token' => $this->callbackTokenForService($service, $provisionData),
+                    'ticket_callback_token' => $provisionData['ticket_callback_token'] ?? null,
                 ]),
                 'has_secret_json' => $this->encodeJson($this->hasSecretMap([
                     'connection_secret' => $provisionData['connection_secret'] ?? null,
                     'password' => $provisionData['password'] ?? null,
+                    'downstream_token' => $this->callbackTokenForService($service, $provisionData),
+                    'ticket_callback_token' => $provisionData['ticket_callback_token'] ?? null,
                 ])),
                 'checked_at' => $now,
                 'updated_at' => $now,
@@ -444,6 +450,16 @@ class ServiceUpstreamBindingWriter
      * @param  array<string, mixed>  $provisionData
      * @return array<string, mixed>
      */
+    private function callbackTokenForService(Service $service, array $provisionData): ?string
+    {
+        $provided = trim((string) ($provisionData['downstream_token'] ?? $provisionData['ticket_callback_token'] ?? ''));
+        if ($provided !== '') {
+            return $provided;
+        }
+
+        return (int) $service->id > 0 ? TicketUpstreamCallbackToken::forServiceId((int) $service->id) : null;
+    }
+
     private function connectionPayload(Service $service, array $provisionData): array
     {
         $assignedIps = is_array($provisionData['assigned_ips'] ?? null) ? $provisionData['assigned_ips'] : [];
@@ -477,6 +493,8 @@ class ServiceUpstreamBindingWriter
             'connection_cached_hostname' => $provisionData['connection_cached_hostname'] ?? null,
             'connection_cached_at' => $provisionData['connection_cached_at'] ?? null,
             'has_connection_secret' => trim((string) ($provisionData['connection_secret'] ?? '')) !== '',
+            'downstream_host_id' => $provisionData['downstream_host_id'] ?? ($provisionData['upstream_host_id'] ?? null),
+            'downstream_id' => $provisionData['downstream_id'] ?? $service->id,
         ], static fn (mixed $value): bool => $value !== null && $value !== '' && $value !== []);
     }
 

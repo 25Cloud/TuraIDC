@@ -62,6 +62,62 @@
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
+          <t-input
+            v-if="showFilter('ticket_id')"
+            v-model="filters.ticket_id"
+            clearable
+            placeholder="工单 ID"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
+          <t-input
+            v-if="showFilter('ticket_reply_id')"
+            v-model="filters.ticket_reply_id"
+            clearable
+            placeholder="回复 ID"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
+          <t-input
+            v-if="showFilter('operation')"
+            v-model="filters.operation"
+            clearable
+            placeholder="操作，例如 ticket.create"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
+          <t-input
+            v-if="showFilter('event')"
+            v-model="filters.event"
+            clearable
+            placeholder="事件，例如 failed"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
+          <t-input
+            v-if="showFilter('reason_code')"
+            v-model="filters.reason_code"
+            clearable
+            placeholder="原因码"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
+          <t-input
+            v-if="showFilter('provider_key')"
+            v-model="filters.provider_key"
+            clearable
+            placeholder="Provider key"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
+          <t-input
+            v-if="showFilter('supplier_id')"
+            v-model="filters.supplier_id"
+            clearable
+            placeholder="供应商 ID"
+            @enter="handleLogSearch"
+            @clear="handleLogSearch"
+          />
           <t-select
             v-if="showFilter('user_type')"
             v-model="filters.user_type"
@@ -219,16 +275,22 @@
           />
         </div>
 
-        <div v-if="!isMobile" class="table-scroll">
+        <div v-if="!isMobile" class="table-scroll" :class="{ 'table-scroll--upstream': isUpstreamLogTab }">
           <t-table
             row-key="id"
-            :data="logRows"
+            :data="displayLogRows"
             :columns="logTableColumns"
             :loading="logLoading"
             hover
             table-layout="fixed"
+            :class="{ 'upstream-log-table': isUpstreamLogTab }"
+            :expand-icon="isUpstreamLogTab"
+            :expanded-row-keys="expandedLogGroupKeys"
+            @expand-change="handleLogGroupExpand"
           >
-            <template #time="{ row }">{{ formatDate(row.time || row.created_at || row.sent_at) }}</template>
+            <template #time="{ row }">{{
+              formatDate(row.occurred_at || row.time || row.created_at || row.sent_at)
+            }}</template>
             <template #primary="{ row }">
               <div class="stack-cell">
                 <strong>{{ primaryTitle(row) }}</strong>
@@ -249,6 +311,12 @@
             </template>
             <template #status="{ row }">
               <t-tag :theme="statusTheme(statusValue(row))" variant="light">{{ statusLabel(statusValue(row)) }}</t-tag>
+            </template>
+            <template #ticket_id="{ row }">
+              <div class="stack-cell">
+                <strong>工单 #{{ fieldValue(row.ticket_id) }}</strong>
+                <span>{{ row.log_count || 1 }} 条推送记录</span>
+              </div>
             </template>
             <template #httpStatus="{ row }">
               <t-tag :theme="httpStatusTheme(row.status)" variant="light">{{ fieldValue(row.status) }}</t-tag>
@@ -292,19 +360,38 @@
             <template #actions="{ row }">
               <t-button theme="primary" variant="text" @click="openDetail(row)">详情</t-button>
             </template>
+            <template #expandedRow="{ row }">
+              <div v-if="isUpstreamLogTab" class="upstream-log-group">
+                <div class="upstream-log-group__title">共 {{ row.log_count || 0 }} 条推送记录</div>
+                <div v-for="log in upstreamGroupLogs(row)" :key="String(log.id)" class="upstream-log-group__item">
+                  <div class="upstream-log-group__meta">
+                    <t-tag :theme="statusTheme(log.status)" variant="light" size="small">{{
+                      statusLabel(log.status)
+                    }}</t-tag>
+                    <span>{{ fieldValue(log.operation) }}</span>
+                    <span>{{ fieldValue(log.event) }}</span>
+                    <time>{{ formatDate(log.occurred_at) }}</time>
+                  </div>
+                  <div class="upstream-log-group__message">{{ fieldValue(log.message || log.reason_code) }}</div>
+                  <t-button theme="primary" variant="text" size="small" @click="openDetail(log)">详情</t-button>
+                </div>
+              </div>
+            </template>
           </t-table>
         </div>
 
         <div v-else class="table-scroll">
           <t-loading :loading="logLoading" size="small">
-            <div v-if="logRows.length" class="log-mobile-stack">
+            <div v-if="displayLogRows.length" class="log-mobile-stack">
               <article
-                v-for="row in logRows"
+                v-for="row in displayLogRows"
                 :key="String(row.id || row.order_no || row.sent_no)"
                 class="log-mobile-card"
               >
                 <div class="log-mobile-card__head">
-                  <span class="log-mobile-card__time">{{ formatDate(row.time || row.created_at || row.sent_at) }}</span>
+                  <span class="log-mobile-card__time">{{
+                    formatDate(row.occurred_at || row.time || row.created_at || row.sent_at)
+                  }}</span>
                   <t-tag v-if="row.level" :theme="levelTheme(row.level)" variant="light" size="small">{{
                     fieldValue(row.level)
                   }}</t-tag>
@@ -336,7 +423,33 @@
                   <span v-if="row.status" class="muted-text">HTTP {{ fieldValue(row.status) }}</span>
                 </div>
                 <div class="log-mobile-card__actions">
+                  <t-button
+                    v-if="isUpstreamLogTab"
+                    theme="primary"
+                    variant="text"
+                    size="small"
+                    @click="toggleLogGroup(row)"
+                  >
+                    {{ isLogGroupExpanded(row) ? '收起日志' : `查看 ${row.log_count || 0} 条日志` }}
+                  </t-button>
                   <t-button theme="primary" variant="text" size="small" @click="openDetail(row)">详情</t-button>
+                </div>
+                <div
+                  v-if="isUpstreamLogTab && isLogGroupExpanded(row)"
+                  class="upstream-log-group upstream-log-group--mobile"
+                >
+                  <div v-for="log in upstreamGroupLogs(row)" :key="String(log.id)" class="upstream-log-group__item">
+                    <div class="upstream-log-group__meta">
+                      <t-tag :theme="statusTheme(log.status)" variant="light" size="small">{{
+                        statusLabel(log.status)
+                      }}</t-tag>
+                      <span>{{ fieldValue(log.operation) }}</span>
+                      <span>{{ fieldValue(log.event) }}</span>
+                      <time>{{ formatDate(log.occurred_at) }}</time>
+                    </div>
+                    <div class="upstream-log-group__message">{{ fieldValue(log.message || log.reason_code) }}</div>
+                    <t-button theme="primary" variant="text" size="small" @click="openDetail(log)">详情</t-button>
+                  </div>
                 </div>
               </article>
             </div>
@@ -382,6 +495,11 @@
         <t-card :bordered="false" :loading="scheduleLoading">
           <template #title>已注册任务</template>
           <template #subtitle>共 {{ scheduleTasks.length }} 个任务</template>
+          <t-alert
+            theme="info"
+            message="自动化任务通常需要 1 分钟左右执行完成，提交后请稍候查看状态。"
+            class="schedule-execution-tip"
+          />
           <div class="schedule-task-toolbar">
             <div class="schedule-task-stats" aria-label="任务来源统计">
               <div class="schedule-task-stat">
@@ -593,10 +711,20 @@ import { errorMessage } from '@/utils/userMessage';
 
 import LogDetailDrawer from './components/LogDetailDrawer.vue';
 
-type LogTab = 'system' | 'runtime' | 'admin-logins' | 'api' | 'sms' | 'email' | 'tasks' | 'gateway';
+type LogTab =
+  | 'system'
+  | 'runtime'
+  | 'admin-logins'
+  | 'api'
+  | 'sms'
+  | 'email'
+  | 'tasks'
+  | 'gateway'
+  | 'upstream'
+  | 'upstream-uploads';
 type LogsTab = LogTab | 'schedules' | 'cleanup';
 type RecordRow = Record<string, unknown>;
-type ThemeType = NonNullable<TagProps['theme']>;
+type TagTheme = NonNullable<TagProps['theme']>;
 
 const route = useRoute();
 const router = useRouter();
@@ -611,6 +739,8 @@ const validTabs: LogsTab[] = [
   'email',
   'tasks',
   'gateway',
+  'upstream',
+  'upstream-uploads',
   'schedules',
   'cleanup',
 ];
@@ -624,6 +754,7 @@ const triggeringKey = ref('');
 const detailVisible = ref(false);
 const currentLog = ref<RecordRow | null>(null);
 const logRows = ref<RecordRow[]>([]);
+const expandedLogGroupKeys = ref<Array<string | number>>([]);
 const scheduleOverview = ref<Record<string, unknown>>({ tasks: [], recent_logs: [] });
 const cleanupOverview = ref<Record<string, unknown>>({ database: {}, file: {}, supported_cleanup_types: [] });
 const lastCleanupResult = ref<Record<string, unknown> | null>(null);
@@ -652,6 +783,13 @@ const filters = reactive({
   result_status: '',
   actor_type: '',
   subject_type: '',
+  ticket_id: '',
+  ticket_reply_id: '',
+  operation: '',
+  event: '',
+  reason_code: '',
+  provider_key: '',
+  supplier_id: '',
 });
 type LogFilterKey = keyof typeof filters;
 
@@ -767,6 +905,29 @@ const logMeta: Record<LogTab, { title: string; description: string; filters: str
     filters: ['keyword', 'gateway', 'gateway_key', 'plugin_id', 'trace_id', 'action', 'result_status', 'date'],
     keyword: '交易号、网关名、Trace ID 或错误信息',
   },
+  upstream: {
+    title: '工单推送日志',
+    description: '查看工单提交、回复推送、跳过和失败原因。',
+    filters: [
+      'keyword',
+      'ticket_id',
+      'ticket_reply_id',
+      'status',
+      'operation',
+      'event',
+      'reason_code',
+      'provider_key',
+      'supplier_id',
+      'date',
+    ],
+    keyword: '工单号、原因或日志内容',
+  },
+  'upstream-uploads': {
+    title: '上传/清理日志',
+    description: '上游附件上传成功、凭证校验、限流/白名单拒绝与未使用文件清理记录。',
+    filters: ['level', 'keyword', 'date'],
+    keyword: '上传、清理或拒绝原因',
+  },
 };
 
 const baseLogColumns: Record<LogTab, PrimaryTableCol<RecordRow>[]> = {
@@ -851,6 +1012,22 @@ const baseLogColumns: Record<LogTab, PrimaryTableCol<RecordRow>[]> = {
     { colKey: 'error_msg', title: '错误信息', minWidth: 150, ellipsis: true },
     { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
   ],
+  upstream: [
+    { colKey: 'time', title: '发生时间', width: 170 },
+    { colKey: 'ticket_id', title: '工单号', width: 100 },
+    { colKey: 'operation', title: '操作', width: 130 },
+    { colKey: 'event', title: '事件', width: 110 },
+    { colKey: 'status', title: '状态', width: 100 },
+    { colKey: 'reason_code', title: '原因码', minWidth: 170, ellipsis: true },
+    { colKey: 'message', title: '结果说明', minWidth: 320 },
+    { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
+  ],
+  'upstream-uploads': [
+    { colKey: 'time', title: '记录时间', width: 170 },
+    { colKey: 'level', title: '级别', width: 100 },
+    { colKey: 'message', title: '日志内容', minWidth: 520 },
+    { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
+  ],
 };
 const scheduleColumns: PrimaryTableCol<RecordRow>[] = [
   { colKey: 'task', title: '任务名称', minWidth: 260 },
@@ -862,13 +1039,56 @@ const scheduleColumns: PrimaryTableCol<RecordRow>[] = [
 ];
 const currentLogMeta = computed(() => (isLogTab(activeTab.value) ? logMeta[activeTab.value] : logMeta.system));
 const logTableColumns = computed(() => (isLogTab(activeTab.value) ? baseLogColumns[activeTab.value] : []));
+const isUpstreamLogTab = computed(() => activeTab.value === 'upstream');
+const upstreamLogGroups = computed<RecordRow[]>(() => {
+  if (!isUpstreamLogTab.value) return [];
+
+  if (logRows.value.some((row) => Array.isArray(row.logs))) {
+    return logRows.value.map((row) => {
+      const logs = Array.isArray(row.logs) ? (row.logs as RecordRow[]) : [row];
+      return {
+        ...row,
+        logs,
+        log_count: Number(row.log_count || logs.length),
+      };
+    });
+  }
+
+  const groups = new Map<string, RecordRow>();
+  for (const row of logRows.value) {
+    const ticketId = String(row.ticket_id || row.id || 'unknown');
+    const groupKey = `ticket-${ticketId}`;
+    const current = groups.get(groupKey);
+    if (current) {
+      (current.logs as RecordRow[]).push(row);
+      current.log_count = Number(current.log_count || 0) + 1;
+      continue;
+    }
+
+    groups.set(groupKey, {
+      ...row,
+      id: groupKey,
+      group_key: groupKey,
+      logs: [row],
+      log_count: 1,
+    });
+  }
+
+  return [...groups.values()];
+});
+const displayLogRows = computed(() => (isUpstreamLogTab.value ? upstreamLogGroups.value : logRows.value));
 const isTextLog = computed(
-  () => activeTab.value === 'system' || activeTab.value === 'runtime' || activeTab.value === 'tasks',
+  () =>
+    activeTab.value === 'system' ||
+    activeTab.value === 'runtime' ||
+    activeTab.value === 'tasks' ||
+    activeTab.value === 'upstream-uploads',
 );
 const keywordPlaceholder = computed(() => currentLogMeta.value.keyword);
 const statusPlaceholder = computed(() => {
   if (activeTab.value === 'api') return '全部状态码';
   if (activeTab.value === 'tasks') return '全部任务状态';
+  if (activeTab.value === 'upstream') return '全部转发状态';
   return '全部发送状态';
 });
 const taskStatusOptions = [
@@ -876,9 +1096,17 @@ const taskStatusOptions = [
   { label: '失败', value: 'failed' },
   { label: '跳过', value: 'skipped' },
 ];
+const upstreamStatusOptions = [
+  { label: '等待发送', value: 'pending' },
+  { label: '发送中', value: 'sending' },
+  { label: '已转发', value: 'delivered' },
+  { label: '转发失败', value: 'failed' },
+  { label: '未转发', value: 'skipped' },
+];
 const statusOptions = computed(() => {
   if (activeTab.value === 'api') return httpStatusOptions;
   if (activeTab.value === 'tasks') return taskStatusOptions;
+  if (activeTab.value === 'upstream') return upstreamStatusOptions;
   return notifyStatusOptions;
 });
 const drawerSize = computed(() => (isMobile.value ? '100%' : '700px'));
@@ -1008,6 +1236,7 @@ const databaseCards = computed(() => {
     { key: 'api', label: 'API 日志', value: numberText(database.api) },
     { key: 'admin_login', label: '管理员登录日志', value: numberText(database.admin_login) },
     { key: 'schedule_run', label: '调度执行日志', value: numberText(database.schedule_run) },
+    { key: 'ticket_upstream', label: '工单推送日志', value: numberText(database.ticket_upstream) },
   ];
 });
 const fileCards = computed(() => {
@@ -1038,7 +1267,18 @@ function resolveRouteTab(): LogsTab {
 }
 
 function isLogTab(value: LogsTab): value is LogTab {
-  return ['system', 'runtime', 'admin-logins', 'api', 'sms', 'email', 'tasks', 'gateway'].includes(value);
+  return [
+    'system',
+    'runtime',
+    'admin-logins',
+    'api',
+    'sms',
+    'email',
+    'tasks',
+    'gateway',
+    'upstream',
+    'upstream-uploads',
+  ].includes(value);
 }
 
 function showFilter(name: string) {
@@ -1094,6 +1334,7 @@ async function loadLogs() {
     const response = await requestLogList(activeTab.value, params);
     if (seq !== logRequestSeq.value) return;
     logRows.value = response.list || [];
+    expandedLogGroupKeys.value = [];
     logPagination.total = Number(response.total || 0);
     logPagination.page = Number(response.page || logPagination.page);
     logPagination.page_size = Number(response.page_size || logPagination.page_size);
@@ -1119,6 +1360,8 @@ function requestLogList(tab: LogTab, params: LogListParams): Promise<PaginatedLi
     email: adminApi.logs.email,
     tasks: adminApi.logs.tasks,
     gateway: adminApi.logs.gateway,
+    upstream: adminApi.logs.upstream,
+    'upstream-uploads': adminApi.logs.upstreamUploads,
   };
   return map[tab](params);
 }
@@ -1153,6 +1396,13 @@ function resetLogFilters(shouldLoad = true) {
     result_status: '',
     actor_type: '',
     subject_type: '',
+    ticket_id: '',
+    ticket_reply_id: '',
+    operation: '',
+    event: '',
+    reason_code: '',
+    provider_key: '',
+    supplier_id: '',
   });
   logPagination.page = 1;
   if (shouldLoad && isLogTab(activeTab.value)) loadLogs();
@@ -1162,6 +1412,25 @@ function handleLogPageChange(data: PageInfo) {
   logPagination.page = data.current;
   logPagination.page_size = data.pageSize;
   loadLogs();
+}
+
+function handleLogGroupExpand(keys: Array<string | number>) {
+  if (isUpstreamLogTab.value) expandedLogGroupKeys.value = keys;
+}
+
+function upstreamGroupLogs(row: RecordRow): RecordRow[] {
+  return Array.isArray(row.logs) ? (row.logs as RecordRow[]) : [row];
+}
+
+function isLogGroupExpanded(row: RecordRow) {
+  return expandedLogGroupKeys.value.includes(String(row.id));
+}
+
+function toggleLogGroup(row: RecordRow) {
+  const key = String(row.id);
+  expandedLogGroupKeys.value = isLogGroupExpanded(row)
+    ? expandedLogGroupKeys.value.filter((item) => String(item) !== key)
+    : [...expandedLogGroupKeys.value, key];
 }
 
 async function loadScheduleOverview() {
@@ -1195,6 +1464,7 @@ async function triggerTask(row: TableRowData) {
         queue: '已进入队列',
       }[String(response.execution_mode || '').toLowerCase()] || '已提交执行';
     MessagePlugin.success(`${fieldValue(row.title || row.key)}${modeText}`);
+    MessagePlugin.info('自动化任务通常需要 1 分钟左右执行完成，请稍候查看状态。');
     await loadScheduleOverview();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, `${fieldValue(row.title || row.key)}执行失败`));
@@ -1251,16 +1521,20 @@ async function handleCleanup() {
 }
 
 async function openDetail(row: TableRowData) {
-  currentLog.value = row as RecordRow;
+  const detailRow =
+    activeTab.value === 'upstream' && Array.isArray((row as RecordRow).logs)
+      ? upstreamGroupLogs(row as RecordRow)[0]
+      : (row as RecordRow);
+  currentLog.value = detailRow;
   detailVisible.value = true;
 
-  if (!isLogTab(activeTab.value) || row.id === undefined || row.id === null || row.id === '') {
+  if (!isLogTab(activeTab.value) || detailRow.id === undefined || detailRow.id === null || detailRow.id === '') {
     return;
   }
 
   try {
-    const detail = await adminApi.logs.detail(activeTab.value, row.id as string | number);
-    currentLog.value = { ...(row as RecordRow), ...detail };
+    const detail = await adminApi.logs.detail(activeTab.value, detailRow.id as string | number);
+    currentLog.value = { ...detailRow, ...detail };
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '加载日志详情失败'));
   }
@@ -1278,6 +1552,7 @@ function primaryTitle(row: RecordRow) {
   if (activeTab.value === 'sms') return fieldValue(row.phone);
   if (activeTab.value === 'email') return fieldValue(row.to_email);
   if (activeTab.value === 'tasks') return fieldValue(row.task_title || row.task_key);
+  if (activeTab.value === 'upstream') return `工单 #${fieldValue(row.ticket_id)}`;
   return fieldValue(row.id);
 }
 
@@ -1288,13 +1563,14 @@ function primarySubText(row: RecordRow) {
   if (activeTab.value === 'api') return userTypeLabel(row.user_type);
   if (activeTab.value === 'sms' || activeTab.value === 'email') return `发送时间：${formatDate(row.sent_at)}`;
   if (activeTab.value === 'tasks') return fieldValue(row.task_key);
+  if (activeTab.value === 'upstream') return `${fieldValue(row.operation)} · ${fieldValue(row.event)}`;
   return '';
 }
 
 function messageText(row: RecordRow) {
   if (activeTab.value === 'email') return contentPreview(row.content);
   if (activeTab.value === 'system') return fieldValue(row.description);
-  return fieldValue(row.message || row.content);
+  return fieldValue(row.message || row.content || row.reason_code);
 }
 
 function subjectText(row: RecordRow) {
@@ -1413,6 +1689,13 @@ function statusLabel(status: unknown) {
   if (activeTab.value === 'tasks') {
     return String({ success: '成功', failed: '失败', skipped: '跳过' }[statusKey] || fieldValue(status));
   }
+  if (activeTab.value === 'upstream') {
+    return String(
+      { pending: '等待发送', sending: '发送中', delivered: '已转发', failed: '转发失败', skipped: '未转发' }[
+        statusKey
+      ] || fieldValue(status),
+    );
+  }
   return String({ success: '发送成功', failed: '发送失败', pending: '待发送' }[statusKey] || fieldValue(status));
 }
 
@@ -1437,19 +1720,21 @@ function logCardMessage(row: RecordRow) {
   return primaryTitle(row) || primarySubText(row) || '-';
 }
 
-function statusTheme(status: unknown): ThemeType {
+function statusTheme(status: unknown): TagTheme {
   if (activeTab.value === 'admin-logins') return String(status) === 'operation_log' ? 'success' : 'warning';
-  const themes: Record<string, ThemeType> = {
+  const themes: Record<string, TagTheme> = {
     success: 'success',
     failed: 'danger',
     pending: 'warning',
     skipped: 'warning',
+    delivered: 'success',
+    sending: 'warning',
   };
   return themes[String(status || '').toLowerCase()] || 'default';
 }
 
-function levelTheme(level: unknown): ThemeType {
-  const themes: Record<string, ThemeType> = {
+function levelTheme(level: unknown): TagTheme {
+  const themes: Record<string, TagTheme> = {
     DEBUG: 'default',
     INFO: 'success',
     NOTICE: 'primary',
@@ -1463,7 +1748,7 @@ function levelTheme(level: unknown): ThemeType {
   return themes[String(level || '').toUpperCase()] || 'default';
 }
 
-function httpStatusTheme(status: unknown): ThemeType {
+function httpStatusTheme(status: unknown): TagTheme {
   const code = Number(status || 0);
   if (code >= 500) return 'danger';
   if (code >= 400) return 'warning';
@@ -1507,7 +1792,7 @@ function scheduleTaskSourceType(row: RecordRow) {
   return String(row.source_type || '').trim() === 'third_party' ? 'third_party' : 'system';
 }
 
-function scheduleTaskSourceTheme(row: RecordRow): ThemeType {
+function scheduleTaskSourceTheme(row: RecordRow) {
   return scheduleTaskSourceType(row) === 'third_party' ? 'warning' : 'primary';
 }
 
@@ -1579,8 +1864,8 @@ function gatewayLabel(value: unknown) {
   return gatewayOptions.find((item) => item.value === key)?.label || fieldValue(value);
 }
 
-function gatewayResultStatusTheme(value: unknown): ThemeType {
-  const themes: Record<string, ThemeType> = {
+function gatewayResultStatusTheme(value: unknown): TagTheme {
+  const themes: Record<string, TagTheme> = {
     success: 'success',
     failed: 'danger',
     pending: 'warning',

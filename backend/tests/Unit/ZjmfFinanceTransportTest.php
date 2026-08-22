@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\Exceptions\BusinessException;
 use App\Models\Supplier;
 use App\Services\Integrations\Plugins\PluginFileLoader;
 use App\Services\Integrations\Plugins\PluginScanner;
 use App\Services\Upstream\Drivers\HostingPanelApi\HostingPanelApiTransport;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfAuthManager;
 use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfCatalogService;
@@ -216,6 +219,53 @@ class ZjmfFinanceTransportTest extends TestCase
         $this->assertSame(['Authorization: Bearer zjmf-jwt'], $transport->captured[1]['headers']);
     }
 
+    public function test_ticket_departments_are_normalized_from_upstream_response(): void
+    {
+        $supplier = (new Supplier)->forceFill([
+            'id' => 657,
+            'interface_type' => 'zjmf_finance_api',
+            'api_url' => 'https://zjmf.example.test',
+        ]);
+
+        $innerTransport = new class extends HostingPanelApiTransport
+        {
+            public array $captured = [];
+
+            public function request(
+                Supplier $supplier,
+                string $method,
+                string $uri,
+                array|string $payload = [],
+                ?string $jwt = null,
+                array $headers = [],
+                array $query = []
+            ): array {
+                $this->captured[] = compact('method', 'uri', 'payload', 'jwt', 'headers', 'query');
+
+                return [
+                    'status' => 200,
+                    'msg' => 'success',
+                    'data' => [
+                        ['id' => 12, 'name' => '技术支持', 'description' => '技术部门'],
+                        ['id' => '', 'name' => '无效项'],
+                        ['id' => 13, 'name' => '销售', 'description' => null],
+                    ],
+                ];
+            }
+        };
+
+        $client = new ZjmfFinanceTransport($innerTransport, new ZjmfAuthManager($innerTransport));
+        $departments = $client->getTicketDepartments($supplier, 'zjmf-jwt');
+
+        $this->assertSame([
+            ['id' => '12', 'name' => '技术支持', 'description' => '技术部门'],
+            ['id' => '13', 'name' => '销售', 'description' => ''],
+        ], $departments);
+        $this->assertSame('GET', $innerTransport->captured[0]['method']);
+        $this->assertSame('/ticket/department', $innerTransport->captured[0]['uri']);
+        $this->assertSame(['Authorization: Bearer zjmf-jwt'], $innerTransport->captured[0]['headers']);
+    }
+
     public function test_host_detail_uses_same_system_header_endpoint_and_normalizes_payload(): void
     {
         config(['idc.hosting_panel_api.jwt_cache_store' => 'array']);
@@ -406,5 +456,143 @@ class ZjmfFinanceTransportTest extends TestCase
         $this->assertSame('/cart/get_product_config', $innerTransport->captured[1]['uri']);
         $this->assertSame(['pid' => 453], $innerTransport->captured[1]['query']);
         $this->assertSame('zjmf-jwt', $innerTransport->captured[1]['jwt']);
+    }
+
+    public function test_upload_ticket_attachment_applies_shared_tls_options_and_returns_savename(): void
+    {
+        config(['idc.hosting_panel_api.jwt_cache_store' => 'array']);
+        $supplier = (new Supplier)->forceFill([
+            'id' => 700,
+            'interface_type' => 'zjmf_finance_api',
+            'api_url' => 'https://zjmf.example.test',
+            'api_username' => 'demo',
+            'api_key' => 'secret',
+        ]);
+
+        $inner = new class extends HostingPanelApiTransport
+        {
+            public bool $httpOptionsRead = false;
+
+            public function request(
+                Supplier $supplier,
+                string $method,
+                string $uri,
+                array|string $payload = [],
+                ?string $jwt = null,
+                array $headers = [],
+                array $query = []
+            ): array {
+                return ['status' => 200, 'jwt' => 'zjmf-plugin-jwt'];
+            }
+
+            public function httpClientOptions(): array
+            {
+                $this->httpOptionsRead = true;
+
+                return ['verify' => false, 'allow_redirects' => false];
+            }
+        };
+
+        $transport = new ZjmfFinanceTransport($inner, new ZjmfAuthManager($inner));
+        $relativePath = $this->createUploadAttachmentFile('zjmf-upload-test.png');
+
+        try {
+            Http::fake([
+                '*/upload_image' => Http::response(['status' => 200, 'data' => ['savename' => 'upstream-saved.png']], 200),
+            ]);
+
+            $name = $transport->uploadTicketAttachment($supplier, $relativePath);
+
+            $this->assertSame('upstream-saved.png', $name);
+            $this->assertTrue($inner->httpOptionsRead);
+            Http::assertSent(fn ($request) => $request->url() === 'https://zjmf.example.test/upload_image');
+        } finally {
+            File::delete(storage_path('app/'.$relativePath));
+        }
+    }
+
+    public function test_upload_ticket_attachment_rejects_path_outside_storage(): void
+    {
+        config(['idc.hosting_panel_api.jwt_cache_store' => 'array']);
+        $supplier = (new Supplier)->forceFill([
+            'id' => 701,
+            'interface_type' => 'zjmf_finance_api',
+            'api_url' => 'https://zjmf.example.test',
+        ]);
+
+        $inner = new class extends HostingPanelApiTransport
+        {
+            public function request(
+                Supplier $supplier,
+                string $method,
+                string $uri,
+                array|string $payload = [],
+                ?string $jwt = null,
+                array $headers = [],
+                array $query = []
+            ): array {
+                return ['status' => 200, 'jwt' => 'zjmf-plugin-jwt'];
+            }
+        };
+
+        $transport = new ZjmfFinanceTransport($inner, new ZjmfAuthManager($inner));
+
+        $this->expectException(BusinessException::class);
+        $transport->uploadTicketAttachment($supplier, '../../../etc/passwd');
+    }
+
+    public function test_upload_ticket_attachment_throws_when_upstream_rejects(): void
+    {
+        config(['idc.hosting_panel_api.jwt_cache_store' => 'array']);
+        $supplier = (new Supplier)->forceFill([
+            'id' => 702,
+            'interface_type' => 'zjmf_finance_api',
+            'api_url' => 'https://zjmf.example.test',
+            'api_username' => 'demo',
+            'api_key' => 'secret',
+        ]);
+
+        $inner = new class extends HostingPanelApiTransport
+        {
+            public function request(
+                Supplier $supplier,
+                string $method,
+                string $uri,
+                array|string $payload = [],
+                ?string $jwt = null,
+                array $headers = [],
+                array $query = []
+            ): array {
+                return ['status' => 200, 'jwt' => 'zjmf-plugin-jwt'];
+            }
+
+            public function httpClientOptions(): array
+            {
+                return ['verify' => true];
+            }
+        };
+
+        $transport = new ZjmfFinanceTransport($inner, new ZjmfAuthManager($inner));
+        $relativePath = $this->createUploadAttachmentFile('zjmf-upload-reject.png');
+
+        try {
+            Http::fake([
+                '*/upload_image' => Http::response(['status' => 400, 'msg' => 'rejected'], 200),
+            ]);
+
+            $this->expectException(BusinessException::class);
+            $transport->uploadTicketAttachment($supplier, $relativePath);
+        } finally {
+            File::delete(storage_path('app/'.$relativePath));
+        }
+    }
+
+    private function createUploadAttachmentFile(string $name): string
+    {
+        $directory = storage_path('app/private/tickets/upstream');
+        File::ensureDirectoryExists($directory);
+        File::put($directory.'/'.$name, 'fake-image-bytes');
+
+        return 'private/tickets/upstream/'.$name;
     }
 }

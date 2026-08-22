@@ -271,7 +271,9 @@ class ServiceVncService
     {
         $legacy = (array) ($service->provision_data ?? []);
         $projection = app(PluginBindingResolver::class)->serviceProvisionProjection($service, includeSecrets: true);
-        $provisionData = $projection === [] ? $legacy : array_replace($legacy, $projection);
+        $provisionData = app(PluginBindingResolver::class)->sanitizeServiceProvisionData(
+            $projection === [] ? $legacy : array_replace($legacy, $projection)
+        );
         $cachedConnection = $this->transformService->readCachedConnection($provisionData);
 
         if (trim((string) ($vncParams['username'] ?? '')) === '') {

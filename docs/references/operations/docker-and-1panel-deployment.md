@@ -257,6 +257,8 @@ server {
 
 `X-Forwarded-Proto: https` 是后端识别 HTTPS 的唯一依据：容器内 `deploy/docker/backend/nginx.conf` 用 `map` 把它转成 `fastcgi_param HTTPS on`，Laravel 的 `isSecure()` 才会返回 true。反代若不传该头，HTTPS 环境下后端仍按 HTTP 处理。
 
+> **来源 IP 契约**：后端 `trustProxies` 只信任回环与 RFC1918/ULA 私网段并采信 `X-Forwarded-For`，`request()->ip()` 与 `/upload_image` 白名单/限流都依赖它。上面的 `$proxy_add_x_forwarded_for` 会保留客户端自带 XFF，公网客户端可借此伪造来源。单层受信反代应把该头重置为 `$remote_addr`（多层受信代理且逐级清洗时才可追加），并把 API 端口改为仅本机绑定（`127.0.0.1:8080`），不要向公网暴露容器端口。完整契约见 [部署与调度指南](deployment-and-scheduling.md) 的“受信代理与来源 IP 契约”。
+
 压缩已由容器内部负责：`frontends` 容器对静态资源配置了 gzip 与 `gzip_static`（优先返回构建期生成的 `.gz`），`backend/nginx.conf` 也已为 API 的 JSON 响应开启 gzip。宿主机 Nginx **不需要**为这两类响应再配一遍——代理响应带 `Content-Encoding` 时 Nginx 不会二次压缩。
 
 若宿主机上还有其他不经这两个容器的响应需要压缩（例如宿主机直接提供的静态文件或第三方上游），可在 http 块按需加入。注意 Nginx 默认 `gzip off`，不存在“自动生效的全局压缩”：

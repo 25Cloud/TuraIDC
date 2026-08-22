@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\V2\SettingController;
 use App\Http\Controllers\Admin\V2\StaffController;
 use App\Http\Controllers\Admin\V2\SupplierController;
 use App\Http\Controllers\Admin\V2\TicketController;
+use App\Http\Controllers\Admin\V2\TicketDeliveryController;
 use App\Http\Controllers\Admin\V2\UserController;
 use App\Http\Controllers\Admin\V2\UserServiceController;
 use App\Http\Controllers\Admin\V2\VerificationController;
@@ -143,6 +144,8 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::get('/tickets/admin-users', [TicketController::class, 'adminUsers']);
         Route::get('/tickets', [TicketController::class, 'index']);
         Route::get('/tickets/{ticket}/replies', [TicketController::class, 'replies']);
+        Route::get('/tickets/{ticket}/upstream-delivery/logs', [TicketDeliveryController::class, 'ticketLogs']);
+        Route::get('/tickets/{ticket}/upstream-delivery', [TicketDeliveryController::class, 'ticketStatus']);
         Route::get('/tickets/{ticket}', [TicketController::class, 'show']);
     });
 
@@ -150,6 +153,14 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/tickets/{ticket}/closures', [TicketController::class, 'close']);
         Route::post('/tickets/{ticket}/reopen', [TicketController::class, 'reopen'])->middleware('throttle:10,1,admin-ticket-reopen');
         Route::put('/tickets/{ticket}/assignment', [TicketController::class, 'assign']);
+        Route::get('/ticket-delivery-departments', [TicketDeliveryController::class, 'upstreamDepartments']);
+        Route::get('/ticket-delivery-rules', [TicketDeliveryController::class, 'index']);
+        Route::post('/ticket-delivery-rules', [TicketDeliveryController::class, 'store']);
+        Route::put('/ticket-delivery-rules/{rule}', [TicketDeliveryController::class, 'update']);
+        Route::delete('/ticket-delivery-rules/{rule}', [TicketDeliveryController::class, 'destroy']);
+        Route::post('/tickets/{ticket}/upstream-delivery/callback-registration', [TicketDeliveryController::class, 'registerCallback']);
+        Route::get('/ticket-delivery-upload-guard', [TicketDeliveryController::class, 'uploadGuardConfig']);
+        Route::post('/ticket-delivery-upload-guard', [TicketDeliveryController::class, 'saveUploadGuardConfig']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::TICKET_REPLY])->group(function (): void {
