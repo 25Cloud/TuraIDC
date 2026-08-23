@@ -76,6 +76,15 @@ class AdminPermissionCatalogTest extends TestCase
         $this->assertNotContains(AdminPermissions::PRIVACY_VIEW_RAW, $resolved);
     }
 
+    public function test_ticket_manage_does_not_imply_delivery_manage(): void
+    {
+        $resolved = AdminPermissions::resolveRolePermissions(null, [AdminPermissions::TICKET_MANAGE]);
+
+        $this->assertContains(AdminPermissions::TICKET_LIST, $resolved);
+        $this->assertContains(AdminPermissions::TICKET_REPLY, $resolved);
+        $this->assertNotContains(AdminPermissions::TICKET_DELIVERY_MANAGE, $resolved);
+    }
+
     public function test_permission_catalog_api_returns_new_items(): void
     {
         Sanctum::actingAs($this->createAdmin([AdminPermissions::PERMISSION_LIST]));
