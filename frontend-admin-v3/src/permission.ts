@@ -7,6 +7,7 @@ import type { RouteRecordRaw } from 'vue-router';
 import { hasPermissionInList } from '@/constants/permissions';
 import router from '@/router';
 import { getPermissionStore, useUserStore } from '@/store';
+import { resolveAdminHomePath } from '@/utils/route/adminHome';
 import { PAGE_NOT_FOUND_ROUTE } from '@/utils/route/constant';
 import { toUserMessage } from '@/utils/userMessage';
 
@@ -57,7 +58,9 @@ router.beforeEach(async (to, from, next) => {
         const hasPermission = hasPermissionInList(userPermissions, requiredPermission);
         if (!hasPermission) {
           MessagePlugin.warning('您没有访问该页面的权限');
-          next({ path: '/admin/dashboard', replace: true });
+          // 回退到当前角色可访问的落地页而非硬编码主页：仅持非视图权限的角色
+          // 若被反复重定向回 /admin/dashboard 会形成自循环，导致登录后页面卡死。
+          next({ path: resolveAdminHomePath(userPermissions), replace: true });
           NProgress.done();
           return;
         }

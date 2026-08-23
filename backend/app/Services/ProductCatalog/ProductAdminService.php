@@ -756,7 +756,8 @@ class ProductAdminService
                     $providerKey = trim((string) ($filters['provider_key'] ?? ''));
 
                     // 仅匹配启用的上游绑定（绑定 status 随产品启用状态写入），
-                    // 供工单传递规则按供应商选择已绑定上游产品。
+                    // 且供应商插件绑定必须启用，与工单传递规则 ensureRuleTarget 的校验口径一致，
+                    // 避免停用的供应商绑定仍出现在「按供应商选择已绑定上游产品」的下拉中。
                     $builder->whereHas('upstreamBindings', function (Builder $bindingQuery) use ($supplierId, $providerKey): void {
                         $bindingQuery->where('status', 1)
                             ->when(
@@ -766,7 +767,9 @@ class ProductAdminService
                             ->when($supplierId > 0, function (Builder $query) use ($supplierId): void {
                                 $query->whereHas(
                                     'supplierPluginBinding',
-                                    fn (Builder $supplierQuery): Builder => $supplierQuery->where('supplier_id', $supplierId)
+                                    fn (Builder $supplierQuery): Builder => $supplierQuery
+                                        ->where('supplier_id', $supplierId)
+                                        ->where('status', 1)
                                 );
                             });
                     });
