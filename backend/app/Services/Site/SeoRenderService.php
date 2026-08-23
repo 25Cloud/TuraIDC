@@ -7,6 +7,7 @@ namespace App\Services\Site;
 use App\Models\ContentArticle;
 use App\Services\Content\ContentArticleService;
 use App\Support\ContentPublishedCacheVersion;
+use App\Support\RichHtmlSanitizer;
 use App\Support\Seo\SeoLandingPages;
 use App\Support\SiteConfigPayload;
 use Illuminate\Support\Facades\Cache;
@@ -806,13 +807,20 @@ HTML;
             ->all();
     }
 
+    /**
+     * SEO 正文消毒。
+     *
+     * 原实现是 `strip_tags($html, $白名单)`，而 strip_tags 的第二个参数只做**标签名**
+     * 白名单，属性一律原样保留：`<img src=x onerror=...>` 的 img 在白名单里，于是整条
+     * 带着 onerror 通过。而本类第 588 行的 content_html 是 renderArticleBody 里唯一
+     * 不走 e() 的字段，等于管理员写入的内容直达公开页与搜索引擎缓存——存储型 XSS 直通道。
+     *
+     * 改用 RichHtmlSanitizer 做标签 + 属性 + URL 协议三层白名单，口径与前端同内容链路
+     * 的 shared/htmlSanitizer.js 对齐。
+     */
     private function sanitizeHtml(string $html): string
     {
-        return (string) strip_tags($html, [
-            'p', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-            'strong', 'em', 'b', 'i', 'a', 'pre', 'code', 'blockquote',
-            'table', 'thead', 'tbody', 'tr', 'th', 'td', 'img', 'hr',
-        ]);
+        return RichHtmlSanitizer::sanitize($html);
     }
 
     private function siteName(?array $config = null): string
