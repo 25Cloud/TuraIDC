@@ -9,6 +9,4 @@ use App\Exceptions\BusinessException;
 /**
  * 安装流程中的可预期错误，消息面向安装者展示。
  */
-class InstallException extends BusinessException
-{
-}
+class InstallException extends BusinessException {}

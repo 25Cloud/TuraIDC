@@ -60,7 +60,7 @@ class InstallService
 
         // 锁文件丢失（如手动清理 storage）时以管理员表兜底，避免已装站点暴露向导。
         try {
-            return Schema::hasTable((new AdminUser())->getTable())
+            return Schema::hasTable((new AdminUser)->getTable())
                 && AdminUser::query()->exists();
         } catch (Throwable) {
             return false;
@@ -158,7 +158,7 @@ class InstallService
         }
 
         try {
-            $redis = new Redis();
+            $redis = new Redis;
             $connected = $redis->connect($config['host'], (int) $config['port'], 3.0);
             if (! $connected) {
                 return ['ok' => false, 'message' => 'Redis 连接失败'];
