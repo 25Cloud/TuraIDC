@@ -371,7 +371,8 @@ class V2AdminTicketActionApiTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath('code', 40300);
 
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE, AdminPermissions::TICKET_DELIVERY_MANAGE]));
+        // 权限隔离正面路径：仅持 delivery_manage（未显式授予 ticket.manage）即可访问上传防护配置。
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_DELIVERY_MANAGE]));
 
         $default = $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
             ->assertOk()
