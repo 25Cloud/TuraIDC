@@ -22,10 +22,25 @@ export function useConsoleRenew(options: UseConsoleRenewOptions) {
   const renewData = ref<ServiceRenewPreview | null>(null);
   const renewForm = reactive({ billing_cycle: '', user_coupon_id: 0 });
 
-  const renewAmount = computed(() => {
+  const currentRenewCycle = computed<RenewCycleOption | undefined>(() => {
     const cycles: RenewCycleOption[] = Array.isArray(renewData.value?.cycles) ? renewData.value.cycles : [];
-    const current = cycles.find((item) => item.billing_cycle === renewForm.billing_cycle);
-    return formatMoney(current?.amount || 0);
+    return cycles.find((item) => item.billing_cycle === renewForm.billing_cycle);
+  });
+
+  const renewAmount = computed(() => formatMoney(currentRenewCycle.value?.amount || 0));
+
+  const renewOriginalAmount = computed(() => formatMoney(currentRenewCycle.value?.original_amount || 0));
+
+  const renewAgentDiscountRate = computed(() => {
+    const rate = Number(currentRenewCycle.value?.agent_discount_rate);
+    return Number.isFinite(rate) ? rate : 0;
+  });
+
+  const renewAgentGroupName = computed(() => String(currentRenewCycle.value?.agent_group_name || ''));
+
+  const renewHasAgentDiscount = computed(() => {
+    const rate = renewAgentDiscountRate.value;
+    return rate > 0 && rate < 100;
   });
 
   const renewCoupons = computed<CouponOption[]>(() =>
@@ -95,6 +110,10 @@ export function useConsoleRenew(options: UseConsoleRenewOptions) {
     renewData,
     renewForm,
     renewAmount,
+    renewOriginalAmount,
+    renewAgentDiscountRate,
+    renewAgentGroupName,
+    renewHasAgentDiscount,
     renewCoupons,
     openRenewDialog,
     handleRenewCycleChange,

@@ -9,6 +9,7 @@ use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
 use App\Models\FirstProductGroup;
 use App\Models\Product;
+use App\Models\ProductDiscountGroup;
 use App\Models\SecondProductGroup;
 use App\Models\Service;
 use App\Models\Supplier;
@@ -1528,6 +1529,17 @@ class ProductAdminService
         $derivedDisplayName = $this->deriveInternalProductName($data);
         $customDisplayName = $this->resolveSubmittedCustomDisplayName($data, $derivedDisplayName);
 
+        $discountGroupId = null;
+        if (array_key_exists('product_discount_group_id', $data)) {
+            $discountGroupId = $this->normalizeNullableInt($data['product_discount_group_id'] ?? null);
+            if ($discountGroupId !== null) {
+                throw_unless(
+                    ProductDiscountGroup::query()->whereKey($discountGroupId)->exists(),
+                    new BusinessException('商品折扣分组不存在')
+                );
+            }
+        }
+
         return [
             'base' => [
                 'name' => $derivedDisplayName,
@@ -1535,6 +1547,9 @@ class ProductAdminService
                 'product_type' => $productTypeCode,
                 'console_template' => $this->normalizeConsoleTemplate($data['console_template'] ?? null),
                 ...$this->hierarchyProductPayload($targetHierarchy),
+                ...(array_key_exists('product_discount_group_id', $data)
+                    ? ['product_discount_group_id' => $discountGroupId]
+                    : []),
                 'remark' => $this->normalizeNullableString($data['remark'] ?? null),
                 'pricing' => $pricing,
                 'setup_fee' => max((float) ($data['setup_fee'] ?? 0), 0),

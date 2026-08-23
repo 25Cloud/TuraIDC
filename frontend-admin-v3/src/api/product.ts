@@ -316,6 +316,15 @@ function normalizeV2ProductDetail(response: V2ProductDetailResponse): ProductRec
     auto_setup: (provisioning.auto_setup as number | string | boolean) ?? 0,
     provision_hostname: provisionHostname,
     upstream_binding: (product.upstream_binding as ProductUpstreamBindingRecord | null) || null,
+    product_discount_group:
+      (product.product_discount_group as {
+        id?: number | string;
+        name?: string;
+        code?: string;
+        min_discount_rate?: number | string;
+        cost_rate?: number | string;
+      } | null) || null,
+    product_discount_group_id: (product.product_discount_group_id as number | string | null) ?? null,
     orders_count: (statistics.orders_count as number | string) ?? 0,
     services_count: (statistics.services_count as number | string) ?? 0,
     active_services_count: (statistics.active_services_count as number | string) ?? 0,

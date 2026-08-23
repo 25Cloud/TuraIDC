@@ -1375,6 +1375,14 @@
   line-height: 1;
 }
 
+.cost-amount--original {
+  font-size: 15px;
+  font-weight: 500;
+  color: $text-color-placeholder;
+  text-decoration: line-through;
+  margin-right: 8px;
+}
+
 .cost-amount--loading {
   display: inline-flex;
   align-items: center;
@@ -1503,6 +1511,15 @@
   font-size: 22px;
   line-height: 1.1;
   font-weight: 700;
+}
+
+.allocation-footer-original {
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: #b7bcc5;
+  text-decoration: line-through;
+  margin-right: 6px;
 }
 
 .allocation-footer-discount-text {

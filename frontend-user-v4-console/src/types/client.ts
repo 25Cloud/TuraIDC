@@ -40,6 +40,13 @@ export interface ClientMemberLevel {
   [key: string]: unknown;
 }
 
+export interface ClientAgentGroup {
+  id?: number | string;
+  name?: string;
+  code?: string;
+  [key: string]: unknown;
+}
+
 export interface ClientUserInfo {
   id?: number | string;
   name?: string;
@@ -59,6 +66,7 @@ export interface ClientUserInfo {
   member_level_id?: number | string | null;
   total_sales_amount?: string | number;
   member_level?: ClientMemberLevel | null;
+  agent_group?: ClientAgentGroup | null;
   is_verified?: number | string;
   real_name?: string;
   id_card_masked?: string;
@@ -364,6 +372,9 @@ export interface RenewCycleOption {
   billing_cycle?: string;
   billing_cycle_label?: string;
   amount?: number | string;
+  original_amount?: number | string;
+  agent_discount_rate?: number | string;
+  agent_group_name?: string;
   [key: string]: unknown;
 }
 

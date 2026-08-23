@@ -25,6 +25,13 @@ export interface AdminUser {
   real_name?: string;
   id_card_masked?: string;
   member_level?: Record<string, unknown> | null;
+  agent_group?: {
+    id?: number | string;
+    name?: string;
+    code?: string;
+    status?: number | string;
+  } | null;
+  agent_group_id?: number | string | null;
   referrer_user_id?: number | string | null;
   last_login_at?: string;
   last_login_ip?: string;
@@ -56,6 +63,7 @@ export interface UserUpdatePayload {
   password?: string;
   status?: number | string;
   admin_note?: string;
+  agent_group_id?: number | string | null;
 }
 
 export interface UserDetailResponse {

@@ -98,6 +98,29 @@ export function useWebsiteProductCheckout({
       Number(selectedPricingEntry.value?.total_amount || 0) * quantity.value
     ).toFixed(2);
   });
+  const agentDiscountAmount = computed(() =>
+    normalizeMoneyText(quoteResult.value?.agent_discount_amount),
+  );
+  const agentOriginalAmount = computed(() =>
+    normalizeMoneyText(quoteResult.value?.original_total_amount),
+  );
+  const agentAmount = computed(() =>
+    normalizeMoneyText(quoteResult.value?.agent_amount),
+  );
+  const agentGroupName = computed(() =>
+    String(quoteResult.value?.agent_group_name || ""),
+  );
+  const hasAgentDiscount = computed(() => {
+    const quote = quoteResult.value;
+    const rate = Number(quote?.agent_discount_rate);
+    return Boolean(
+      quote &&
+      quote.agent_discount_rate !== null &&
+      quote.agent_discount_rate !== undefined &&
+      Number.isFinite(rate) &&
+      rate < 100,
+    );
+  });
   const selectedCycleLabel = computed(
     () => selectedPricingEntry.value?.label || "",
   );
@@ -444,7 +467,10 @@ export function useWebsiteProductCheckout({
       }
     }
 
-    const missing = resolveMissingPurchaseRequirements(selectedProduct.value, user);
+    const missing = resolveMissingPurchaseRequirements(
+      selectedProduct.value,
+      user,
+    );
     if (!missing.length) {
       return true;
     }
@@ -725,6 +751,11 @@ export function useWebsiteProductCheckout({
     appliedCoupon,
     availableCoupons,
     totalPrice,
+    agentDiscountAmount,
+    agentOriginalAmount,
+    agentAmount,
+    agentGroupName,
+    hasAgentDiscount,
     selectedCycleLabel,
     resolvedStock,
     stockClass,

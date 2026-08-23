@@ -44,6 +44,12 @@ class AdminUserListItemResource extends JsonResource
             'referral_withdrawn_balance' => (float) ($this->resource->referral_withdrawn_amount ?? 0),
             'status' => (int) ($this->status ?? 0),
             'is_verified' => (int) ($this->is_verified ?? 0),
+            'agent_group' => $this->resource->agentGroup ? [
+                'id' => (int) $this->resource->agentGroup->id,
+                'name' => (string) $this->resource->agentGroup->name,
+                'code' => (string) $this->resource->agentGroup->code,
+                'status' => (int) $this->resource->agentGroup->status,
+            ] : null,
             'opened_product_count' => (int) ($this->opened_product_count ?? 0),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
         ];

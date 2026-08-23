@@ -57,6 +57,7 @@ class UpdateUserRequest extends AdminFormRequest
             'status',
             'credit_limit',
             'admin_note',
+            'agent_group_id',
         ]);
     }
 

@@ -39,6 +39,7 @@ class UpdateCouponRequest extends AdminFormRequest
             'user_ids' => ['nullable', 'array'],
             'user_ids.*' => ['integer', 'exists:users,id'],
             'first_order_only' => ['nullable', 'boolean'],
+            'allow_agent' => ['nullable', 'boolean'],
             'total_usage_limit' => ['nullable', 'integer', 'min:0'],
             'per_user_limit' => ['nullable', 'integer', 'min:0'],
             'status' => ['nullable', 'in:0,1'],

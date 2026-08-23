@@ -27,6 +27,12 @@
             />
           </t-select>
         </div>
+        <div v-if="renewHasAgentDiscount" class="renew-agent-discount">
+          <span class="renew-original-amount">原价 ¥{{ renewOriginalAmount }}</span>
+          <span class="renew-agent-label"
+            >代理折扣（{{ renewAgentGroupName }}）{{ renewAgentDiscountRate / 10 }}折</span
+          >
+        </div>
         <div class="renew-total-line">
           <span>本次应付</span>
           <strong>¥{{ renewAmount }}</strong>
@@ -54,6 +60,10 @@ const {
   renewData,
   renewForm,
   renewAmount,
+  renewOriginalAmount,
+  renewAgentDiscountRate,
+  renewAgentGroupName,
+  renewHasAgentDiscount,
   renewCoupons,
   formatMoney,
   handleRenewCycleChange,
@@ -61,3 +71,24 @@ const {
   submitRenew,
 } = useServiceConsoleContext();
 </script>
+<style scoped lang="less">
+.renew-agent-discount {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+
+  .renew-original-amount {
+    color: var(--td-text-color-placeholder);
+    font-size: 0.8125rem;
+    text-decoration: line-through;
+  }
+
+  .renew-agent-label {
+    color: var(--td-brand-color);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+}
+</style>

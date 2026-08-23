@@ -60,6 +60,10 @@
             {{ Number(row.opened_product_count || 0) ? `${row.opened_product_count} 个` : '-' }}
           </span>
         </template>
+        <template #agentGroup="{ row }">
+          <t-tag v-if="row.agent_group?.name" theme="primary" variant="light">{{ row.agent_group.name }}</t-tag>
+          <span v-else>-</span>
+        </template>
         <template #status="{ row }">
           <t-tag :theme="Number(row.status) === 1 ? 'success' : 'danger'" variant="light">
             {{ Number(row.status) === 1 ? '正常' : '禁用' }}
@@ -92,6 +96,15 @@
                 <div>
                   <dt>余额</dt>
                   <dd class="users-balance">{{ formatMoney(row.cash_balance) }}</dd>
+                </div>
+                <div>
+                  <dt>代理组</dt>
+                  <dd>
+                    <t-tag v-if="row.agent_group?.name" theme="primary" variant="light">{{
+                      row.agent_group.name
+                    }}</t-tag>
+                    <span v-else>-</span>
+                  </dd>
                 </div>
                 <div>
                   <dt>服务</dt>
@@ -178,6 +191,7 @@ const columns: PrimaryTableCol<TableRowData>[] = [
   { title: '昵称', colKey: 'nickname', width: 180 },
   { title: '余额', colKey: 'cash_balance', width: 120 },
   { title: '已开通服务', colKey: 'openedServices', width: 130, align: 'center' },
+  { title: '代理组', colKey: 'agentGroup', width: 140 },
   { title: '状态', colKey: 'status', width: 100 },
   { title: '注册时间', colKey: 'createdAt', width: 180 },
 ];

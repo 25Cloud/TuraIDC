@@ -51,6 +51,7 @@ class AdminUserDetailResource extends JsonResource
     private function projectUser(User $user, AdminPrivacy $privacy): array
     {
         $memberLevel = $user->relationLoaded('memberLevel') ? $user->getRelation('memberLevel') : null;
+        $agentGroup = $user->relationLoaded('agentGroup') ? $user->getRelation('agentGroup') : $user->agentGroup;
         $profile = $user->relationLoaded('profile') ? $user->getRelation('profile') : null;
         $nickname = trim((string) ($profile?->nickname ?? $user->getRawOriginal('nickname') ?? ''));
         $company = trim((string) ($profile?->company ?? $user->getRawOriginal('company') ?? ''));
@@ -78,6 +79,12 @@ class AdminUserDetailResource extends JsonResource
                 'name' => (string) $memberLevel->name,
                 'code' => (string) $memberLevel->code,
                 'reward_rate' => $this->formatMoney($memberLevel->reward_rate ?? 0),
+            ] : null,
+            'agent_group' => $agentGroup ? [
+                'id' => (int) $agentGroup->id,
+                'name' => (string) $agentGroup->name,
+                'code' => (string) $agentGroup->code,
+                'status' => (int) $agentGroup->status,
             ] : null,
             'cash_balance' => $this->formatMoney($user->balance ?? 0),
             'credit_limit' => $this->formatMoney($user->credit_limit ?? 0),

@@ -1270,6 +1270,7 @@ class CouponService
             ))),
             'product_scope_text' => $this->formatProductScopeText($productIds, $productNameMap),
             'first_order_only' => (bool) $coupon->first_order_only,
+            'allow_agent' => (bool) ($coupon->allow_agent ?? true),
             'total_usage_limit' => $coupon->total_usage_limit ? (int) $coupon->total_usage_limit : null,
             'per_user_limit' => $coupon->per_user_limit ? (int) $coupon->per_user_limit : null,
             'used_count' => (int) ($coupon->used_count ?? 0),
