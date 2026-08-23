@@ -65,6 +65,13 @@ class AdminProductDetailResource extends JsonResource
                 'auto_setup' => (int) ($product->auto_setup ?? 0),
             ],
             'upstream_binding' => $this->upstreamBinding($product),
+            'product_discount_group' => $product->productDiscountGroup ? [
+                'id' => (int) $product->productDiscountGroup->id,
+                'name' => (string) $product->productDiscountGroup->name,
+                'code' => (string) $product->productDiscountGroup->code,
+                'min_discount_rate' => (float) $product->productDiscountGroup->min_discount_rate,
+                'cost_rate' => (float) $product->productDiscountGroup->cost_rate,
+            ] : null,
             'statistics' => [
                 'orders_count' => (int) ($product->orders_count ?? 0),
                 'services_count' => (int) ($product->services_count ?? $product->total_services_count ?? 0),

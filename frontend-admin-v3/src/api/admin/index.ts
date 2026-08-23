@@ -1,3 +1,4 @@
+import { agentDiscountApi } from './agentDiscount';
 import { contentApi, mediaApi, siteHeroApi } from './content';
 import { couponCampaignsApi, couponsApi } from './coupon';
 import { dashboardApi } from './dashboard';
@@ -45,6 +46,9 @@ export const adminApi = {
 
   // Member Levels
   memberLevels: memberLevelsApi,
+
+  // Agent Discounts
+  agentDiscount: agentDiscountApi,
 
   // Content
   content: contentApi,

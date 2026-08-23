@@ -379,6 +379,22 @@
         <t-form-item label="状态" name="status">
           <t-switch v-model="editForm.status" :custom-value="[1, 0]" />
         </t-form-item>
+        <t-form-item v-if="canManageUsers" label="代理组" name="agent_group_id">
+          <t-select
+            v-model="editForm.agent_group_id"
+            clearable
+            filterable
+            :loading="agentGroupOptionsLoading"
+            placeholder="请选择代理组，留空表示不设置"
+          >
+            <t-option
+              v-for="item in agentGroupOptions"
+              :key="item.id"
+              :label="item.name || item.code"
+              :value="item.id"
+            />
+          </t-select>
+        </t-form-item>
       </t-form>
     </t-dialog>
 
@@ -1028,7 +1044,15 @@ const resetPasswordFormRef = ref<FormInstanceFunctions>();
 const manualProvisionFormRef = ref<FormInstanceFunctions>();
 const serviceRefundFormRef = ref<FormInstanceFunctions>();
 const invoiceRefundFormRef = ref<FormInstanceFunctions>();
-const editForm = reactive({ nickname: '', phone: '', password: '', status: 1 });
+const editForm = reactive({
+  nickname: '',
+  phone: '',
+  password: '',
+  status: 1,
+  agent_group_id: null as number | null,
+});
+const agentGroupOptions = ref<Array<{ id: number; name?: string; code?: string }>>([]);
+const agentGroupOptionsLoading = ref(false);
 const noteEditing = ref(false);
 const noteSaving = ref(false);
 const noteForm = ref('');
@@ -1072,6 +1096,7 @@ const invoiceDrawer = reactive({
   detail: { invoice: {}, payments: [], items: [], logs: [] } as Row,
 });
 const canLoginAs = computed(() => hasAdminPermission(AdminPermissions.USER_LOGIN_AS));
+const canManageUsers = computed(() => hasAdminPermission(AdminPermissions.USER_MANAGE));
 const LOGIN_AS_READY_EVENT = 'turaidc:login-as-ready';
 const LOGIN_AS_CODE_EVENT = 'turaidc:login-as-code';
 const LOGIN_AS_READY_TIMEOUT_MS = 10000;
@@ -1324,6 +1349,7 @@ const infoItems = computed(() => [
   { label: 'QQ', value: fieldValue(user.value.qq) },
   { label: '账户余额', value: formatMoney(user.value.cash_balance), tone: 'success' },
   { label: '会员等级', value: user.value.member_level?.name || '未分级' },
+  { label: '代理组', value: user.value.agent_group?.name || '未设置' },
   { label: '实名认证', value: verificationText(), tone: isVerified.value ? 'success' : 'warning' },
   { label: '证件号', value: fieldValue(user.value.id_card_masked) },
   { label: '推荐人 ID', value: fieldValue(user.value.referrer_user_id) },
@@ -1353,6 +1379,22 @@ function syncEditForm() {
   editForm.phone = String(user.value.phone || '');
   editForm.password = '';
   editForm.status = Number(user.value.status ?? 1);
+  editForm.agent_group_id = Number(user.value.agent_group_id ?? user.value.agent_group?.id ?? 0) || null;
+}
+
+async function loadAgentGroupOptions() {
+  if (agentGroupOptions.value.length) return;
+  agentGroupOptionsLoading.value = true;
+  try {
+    const response = await adminApi.agentDiscount.agentGroups.list();
+    agentGroupOptions.value = (Array.isArray(response) ? response : [])
+      .filter((item) => Number(item.status) === 1)
+      .map((item) => ({ id: Number(item.id), name: String(item.name || ''), code: String(item.code || '') }));
+  } catch {
+    agentGroupOptions.value = [];
+  } finally {
+    agentGroupOptionsLoading.value = false;
+  }
 }
 
 function handleTabChange(value: string | number) {
@@ -1446,6 +1488,7 @@ function handleNoticesPageChange(pageInfo: PageInfo) {
 
 function openEditDialog() {
   syncEditForm();
+  if (canManageUsers.value) loadAgentGroupOptions();
   editVisible.value = true;
 }
 
@@ -1475,6 +1518,7 @@ async function handleSave() {
       nickname: editForm.nickname,
       phone: editForm.phone,
       status: editForm.status,
+      agent_group_id: canManageUsers.value ? editForm.agent_group_id : undefined,
       ...(editForm.password.trim() ? { password: editForm.password.trim() } : {}),
     });
     MessagePlugin.success('用户资料已更新');

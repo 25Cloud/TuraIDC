@@ -46,6 +46,8 @@ export const AdminPermissions = {
   REFERRAL_WITHDRAWAL_LIST: 'referral_withdrawal.list',
   MEMBER_LEVEL_LIST: 'member_level.list',
   MEMBER_LEVEL_MANAGE: 'member_level.manage',
+  AGENT_DISCOUNT_LIST: 'agent_discount.list',
+  AGENT_DISCOUNT_MANAGE: 'agent_discount.manage',
   CONTENT_LIST: 'content.list',
   CONTENT_MANAGE: 'content.manage',
   STAFF_LIST: 'staff.list',
@@ -90,6 +92,7 @@ export const VISITOR_PERMISSION_CODES = [
   AdminPermissions.REFERRAL_WITHDRAWAL_LIST,
   AdminPermissions.FINANCE_REPORT,
   AdminPermissions.MEMBER_LEVEL_LIST,
+  AdminPermissions.AGENT_DISCOUNT_LIST,
   AdminPermissions.CONTENT_LIST,
   AdminPermissions.STAFF_LIST,
   AdminPermissions.ROLE_LIST,
@@ -111,6 +114,7 @@ export const ADMIN_DEFAULT_PERMISSION_CODES = [
   AdminPermissions.SITE_MANAGE,
   AdminPermissions.REFERRAL_LIST,
   AdminPermissions.MEMBER_LEVEL_MANAGE,
+  AdminPermissions.AGENT_DISCOUNT_MANAGE,
   AdminPermissions.CONTENT_MANAGE,
 ] as const;
 
@@ -151,6 +155,8 @@ export function impliedPermissions(permission: string): string[] {
       return [AdminPermissions.LOG_LIST];
     case AdminPermissions.MEMBER_LEVEL_MANAGE:
       return [AdminPermissions.MEMBER_LEVEL_LIST];
+    case AdminPermissions.AGENT_DISCOUNT_MANAGE:
+      return [AdminPermissions.AGENT_DISCOUNT_LIST];
     case AdminPermissions.CONTENT_MANAGE:
       return [AdminPermissions.CONTENT_LIST];
     case AdminPermissions.STAFF_MANAGE:

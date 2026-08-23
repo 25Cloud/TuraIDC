@@ -1107,6 +1107,10 @@
               <span>优惠券 {{ appliedCoupon.code }}</span
               ><span>-¥{{ appliedCoupon.discount_amount }}</span>
             </div>
+            <div class="cost-item cost-item--discount" v-if="hasAgentDiscount">
+              <span>代理折扣（{{ agentGroupName }}）</span
+              ><span>-¥{{ agentDiscountAmount }}</span>
+            </div>
           </div>
 
           <div class="cost-divider"></div>
@@ -1163,11 +1167,20 @@
           >
             <span class="cost-total-label">合计费用</span>
             <div class="cost-price-wrap">
-              <span class="cost-currency">¥</span>
-              <span v-if="quoteLoading" class="cost-amount cost-amount--loading"
-                >计算中</span
-              >
-              <span v-else class="cost-amount">{{ totalPrice }}</span>
+              <template v-if="quoteLoading">
+                <span class="cost-currency">¥</span>
+                <span class="cost-amount cost-amount--loading">计算中</span>
+              </template>
+              <template v-else-if="hasAgentDiscount">
+                <span class="cost-amount cost-amount--original"
+                  >¥{{ agentOriginalAmount }}</span
+                >
+                <span class="cost-amount">¥{{ agentAmount }}</span>
+              </template>
+              <template v-else>
+                <span class="cost-currency">¥</span>
+                <span class="cost-amount">{{ totalPrice }}</span>
+              </template>
               <span class="cost-cycle"
                 >/{{ selectedCycleLabel || "月付" }}</span
               >
@@ -1198,17 +1211,29 @@
             <div class="allocation-footer-summary">
               <span class="allocation-footer-label">费用合计：</span>
               <div class="allocation-footer-price">
-                <span class="allocation-footer-symbol">¥</span>
-                <span v-if="quoteLoading" class="allocation-footer-num">…</span>
-                <span v-else class="allocation-footer-num">{{
-                  totalPrice
-                }}</span>
+                <template v-if="quoteLoading">
+                  <span class="allocation-footer-symbol">¥</span>
+                  <span class="allocation-footer-num">…</span>
+                </template>
+                <template v-else-if="hasAgentDiscount">
+                  <span class="allocation-footer-original"
+                    >¥{{ agentOriginalAmount }}</span
+                  >
+                  <span class="allocation-footer-symbol">¥</span>
+                  <span class="allocation-footer-num">{{ agentAmount }}</span>
+                </template>
+                <template v-else>
+                  <span class="allocation-footer-symbol">¥</span>
+                  <span class="allocation-footer-num">{{ totalPrice }}</span>
+                </template>
               </div>
               <span class="allocation-footer-discount-text">
                 {{
-                  appliedCoupon
-                    ? `已优惠 ¥${appliedCoupon.discount_amount}`
-                    : "无折扣"
+                  hasAgentDiscount
+                    ? `代理折扣（${agentGroupName}）`
+                    : appliedCoupon
+                      ? `已优惠 ¥${appliedCoupon.discount_amount}`
+                      : "无折扣"
                 }}
               </span>
             </div>
@@ -1692,6 +1717,11 @@ const {
   appliedCoupon,
   availableCoupons,
   totalPrice,
+  agentDiscountAmount,
+  agentOriginalAmount,
+  agentAmount,
+  agentGroupName,
+  hasAgentDiscount,
   selectedCycleLabel,
   summaryItems,
   resolvedStock,

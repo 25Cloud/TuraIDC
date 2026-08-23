@@ -41,6 +41,7 @@ class AdminCouponListResource extends JsonResource
             'product_names' => array_values((array) ($item['product_names'] ?? [])),
             'product_scope_text' => (string) ($item['product_scope_text'] ?? ''),
             'first_order_only' => (bool) ($item['first_order_only'] ?? false),
+            'allow_agent' => (bool) ($item['allow_agent'] ?? true),
             'total_usage_limit' => $item['total_usage_limit'] ?? null,
             'per_user_limit' => $item['per_user_limit'] ?? null,
             'used_count' => (int) ($item['used_count'] ?? 0),

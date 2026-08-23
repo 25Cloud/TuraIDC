@@ -14,6 +14,18 @@ export const marketingRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    path: 'agent-discounts',
+    name: 'AdminAgentDiscounts',
+    component: () => import('@/pages/agent-discounts/index.vue'),
+    meta: {
+      title: {
+        zh_CN: '代理折扣',
+        en_US: 'Agent Discounts',
+      },
+      permission: 'agent_discount.list',
+    },
+  },
+  {
     path: 'coupons',
     name: 'AdminCoupons',
     component: () => import('@/pages/products/coupons/index.vue'),
