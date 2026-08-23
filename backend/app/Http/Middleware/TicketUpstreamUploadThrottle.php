@@ -18,6 +18,15 @@ final class TicketUpstreamUploadThrottle
 {
     public function handle(Request $request, Closure $next): Response
     {
+        if (! $this->uploadImageEnabled()) {
+            Log::warning('上游工单附件上传接口未启用', [
+                'reason' => 'upload_image_disabled',
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json(['status' => 400, 'msg' => '上传接口未启用'], 200);
+        }
+
         $ip = (string) $request->ip();
         if ($ip === '' || $ip === 'unknown') {
             return response()->json(['status' => 400, 'msg' => '上传失败'], 200);
@@ -49,6 +58,17 @@ final class TicketUpstreamUploadThrottle
         RateLimiter::hit($key, 60);
 
         return $next($request);
+    }
+
+    private function uploadImageEnabled(): bool
+    {
+        $value = \App\Models\Setting::getValue(
+            'ticket_upstream',
+            'upload_image_enabled',
+            config('ticket_upstream.upload_image_enabled', false)
+        );
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
     }
 
     private function isWhitelisted(string $ip): bool
@@ -132,9 +152,9 @@ final class TicketUpstreamUploadThrottle
         $value = \App\Models\Setting::getValue(
             'ticket_upstream',
             'block_non_whitelisted',
-            config('ticket_upstream.upload_block_non_whitelisted', false)
+            config('ticket_upstream.upload_block_non_whitelisted', true)
         );
 
-        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
     }
 }
