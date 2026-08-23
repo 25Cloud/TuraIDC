@@ -155,7 +155,7 @@ class V2AdminTicketActionApiTest extends TestCase
 
     public function test_ticket_delivery_departments_returns_whitelisted_data(): void
     {
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE, AdminPermissions::TICKET_DELIVERY_MANAGE]));
         $delivery = $this->createMock(TicketDeliveryService::class);
         $delivery->expects($this->once())
             ->method('upstreamDepartments')
@@ -177,7 +177,7 @@ class V2AdminTicketActionApiTest extends TestCase
 
     public function test_ticket_delivery_departments_require_supplier_id(): void
     {
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE, AdminPermissions::TICKET_DELIVERY_MANAGE]));
 
         $this->getJson('/api/v2/admin/ticket-delivery-departments')
             ->assertUnprocessable()
@@ -323,7 +323,7 @@ class V2AdminTicketActionApiTest extends TestCase
         Setting::setValues('ticket_upstream', [
             'upload_image_enabled' => '0',
         ]);
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE, AdminPermissions::TICKET_DELIVERY_MANAGE]));
         $ruleName = '接口关闭时不可配置 '.bin2hex(random_bytes(4));
         $payload = [
             'name' => $ruleName,
@@ -390,7 +390,13 @@ class V2AdminTicketActionApiTest extends TestCase
         ])->assertForbidden()
             ->assertJsonPath('code', 40300);
 
+        // 权限隔离：仅持 ticket.manage（未显式授予 delivery_manage）不能访问上传防护配置。
         Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
+        $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
+            ->assertForbidden()
+            ->assertJsonPath('code', 40300);
+
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE, AdminPermissions::TICKET_DELIVERY_MANAGE]));
 
         $default = $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
             ->assertOk()
@@ -482,7 +488,7 @@ class V2AdminTicketActionApiTest extends TestCase
             'upload_image_enabled' => '1',
             'block_non_whitelisted' => '1',
         ]);
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE, AdminPermissions::TICKET_DELIVERY_MANAGE]));
 
         $rule = TicketDeliveryRule::query()->create([
             'name' => '上传开关保护规则 '.$suffix,
