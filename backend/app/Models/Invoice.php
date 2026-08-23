@@ -243,10 +243,10 @@ class Invoice extends Model
         DB::transaction(function (): void {
             DB::table('invoice_items')->where('invoice_id', (int) $this->id)->delete();
 
-            $itemName = $this->display_product_name;
+            $itemName = $this->normalizeInvoiceItemName($this->display_product_name);
             if ($itemName === '') {
                 $this->loadMissing('order.product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires');
-                $itemName = trim((string) ($this->order?->display_product_name ?? ''));
+                $itemName = $this->normalizeInvoiceItemName((string) ($this->order?->display_product_name ?? ''));
             }
             $quantity = max((int) ($this->quantity ?? $this->order?->quantity ?? 1), 1);
             $grossAmount = (float) ($this->amount ?? 0) + (float) ($this->discount ?? 0);
@@ -280,6 +280,18 @@ class Invoice extends Model
         }
 
         return number_format((float) $value, 2, '.', '');
+    }
+
+    /**
+     * 账单明细名清洗：解码 HTML 实体、去标签、压缩空白、限长 190（对齐 item_name 列宽）。
+     * item_name 还可能从 Order::display_product_name 等其他快照来源取值，不全都经过 Resolver。
+     */
+    private function normalizeInvoiceItemName(string $value): string
+    {
+        $decoded = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $clean = trim((string) preg_replace('/\s+/u', ' ', strip_tags($decoded)));
+
+        return mb_strlen($clean) <= 190 ? $clean : mb_substr($clean, 0, 190);
     }
 
     private function encodeJson(?array $value): ?string
