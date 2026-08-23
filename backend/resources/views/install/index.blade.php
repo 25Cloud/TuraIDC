@@ -158,10 +158,16 @@
         box.scrollTop = box.scrollHeight;
     }
 
+    // 部署令牌：页面以 ?token=xxx 打开，后续请求携带 X-Install-Token 头，
+    // 不在表单中出现、不写入 .env。
+    var installToken = @json($install_token ?? '');
+
     function api(url, body) {
+        var headers = { 'Content-Type': 'application/json' };
+        if (installToken) headers['X-Install-Token'] = installToken;
         return fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: headers,
             body: JSON.stringify(body || {})
         }).then(function (response) {
             return response.json().then(function (data) { return { status: response.status, data: data }; });
@@ -260,11 +266,38 @@
                 return;
             }
             appendLog('安装完成', 'ok');
-            $('done-box').innerHTML =
-                '<strong>安装成功！</strong><br>' +
-                '管理员用户名：<span class="cred">' + data.data.admin_username + '</span><br>' +
-                '管理员邮箱：<span class="cred">' + data.data.admin_email + '</span><br>' +
-                '管理端地址：<a href="' + data.data.admin_url + '" target="_blank">' + data.data.admin_url + '</a>';
+            // 用 textContent 构建完成信息，并对管理端地址做协议白名单校验，
+            // 避免后端返回值经 innerHTML 注入（admin_url 仅经 FILTER_VALIDATE_URL，javascript: 等可绕过）。
+            var box = $('done-box');
+            box.innerHTML = '';
+            var title = document.createElement('strong');
+            title.textContent = '安装成功！';
+            box.appendChild(title);
+            box.appendChild(document.createElement('br'));
+            box.appendChild(document.createTextNode('管理员用户名：'));
+            var username = document.createElement('span');
+            username.className = 'cred';
+            username.textContent = data.data.admin_username;
+            box.appendChild(username);
+            box.appendChild(document.createElement('br'));
+            box.appendChild(document.createTextNode('管理员邮箱：'));
+            var email = document.createElement('span');
+            email.className = 'cred';
+            email.textContent = data.data.admin_email;
+            box.appendChild(email);
+            box.appendChild(document.createElement('br'));
+            box.appendChild(document.createTextNode('管理端地址：'));
+            var adminUrl = String(data.data.admin_url || '');
+            if (/^https?:\/\//i.test(adminUrl)) {
+                var link = document.createElement('a');
+                link.href = adminUrl;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.textContent = adminUrl;
+                box.appendChild(link);
+            } else {
+                box.appendChild(document.createTextNode(adminUrl));
+            }
             goStep(4);
         }).catch(function () {
             appendLog('网络中断，安装结果未知；请勿直接重试，先检查数据库与管理员是否已创建。', 'err');

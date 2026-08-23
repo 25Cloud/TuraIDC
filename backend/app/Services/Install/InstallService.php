@@ -119,6 +119,13 @@ class InstallService
         try {
             $pdo = $this->makePdo($config['host'], (int) $config['port'], '', $config['username'], $config['password']);
         } catch (Throwable $exception) {
+            // 详细原因仅写日志（对外回显由 InstallController 固定文案，避免内网探测）。
+            Log::debug('安装向导数据库连接测试失败', [
+                'host' => (string) $config['host'],
+                'port' => (int) $config['port'],
+                'error' => $exception->getMessage(),
+            ]);
+
             return ['ok' => false, 'message' => '数据库连接失败：'.$exception->getMessage(), 'database_exists' => false, 'database_empty' => false];
         }
 
@@ -169,6 +176,13 @@ class InstallService
             }
             $pong = (string) $redis->ping();
         } catch (RedisException|Throwable $exception) {
+            // 详细原因仅写日志（对外回显由 InstallController 固定文案，避免内网探测）。
+            Log::debug('安装向导 Redis 连接测试失败', [
+                'host' => (string) $config['host'],
+                'port' => (int) $config['port'],
+                'error' => $exception->getMessage(),
+            ]);
+
             return ['ok' => false, 'message' => 'Redis 连接失败：'.$exception->getMessage()];
         }
 
@@ -203,11 +217,36 @@ class InstallService
         fwrite($lockHandle, 'installing');
         fclose($lockHandle);
 
-        if (! $this->requirementsPassed()) {
-            @unlink($this->lockPath());
-            throw new InstallException('环境检测未通过，请先处理未满足的必选项');
-        }
+        try {
+            if (! $this->requirementsPassed()) {
+                throw new InstallException('环境检测未通过，请先处理未满足的必选项');
+            }
 
+            return $this->performInstall($payload, $logger);
+        } catch (Throwable $exception) {
+            // 任一环节失败：清理进行中的安装锁，允许修复后重试；
+            // 仅全部步骤成功后才由 writeLock 写入完成标记。
+            @unlink($this->lockPath());
+
+            if ($exception instanceof InstallException) {
+                throw $exception;
+            }
+
+            throw new InstallException('安装失败：'.$exception->getMessage());
+        }
+    }
+
+    /**
+     * 安装主流程（不含锁与并发控制，由 install() 统一包裹）。
+     *
+     * @param  array<string, mixed>  $payload  已通过 validatePayload 校验的配置
+     * @param  callable(string): void  $logger  步骤日志回调
+     * @return array{admin_username: string, admin_email: string}
+     *
+     * @throws InstallException 安装失败（消息可直接展示给用户）
+     */
+    private function performInstall(array $payload, callable $logger): array
+    {
         // 写 .env 并让当前进程立即使用新配置（后续 migrate / 种子都依赖）。
         $logger('生成 .env 配置文件');
         $this->writeEnvironmentFile($payload);
@@ -225,12 +264,16 @@ class InstallService
         }
         if (! $this->databaseExists($adminPdo, $database)) {
             $logger('创建数据库 '.$database);
-            $adminPdo->exec(
-                sprintf(
-                    'CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
-                    str_replace('`', '``', $database)
-                )
-            );
+            try {
+                $adminPdo->exec(
+                    sprintf(
+                        'CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
+                        str_replace('`', '``', $database)
+                    )
+                );
+            } catch (Throwable $exception) {
+                throw new InstallException('创建数据库失败：'.$exception->getMessage());
+            }
         }
 
         // 空库导入 schema baseline；非空库跳过（由增量迁移对齐）。
@@ -248,7 +291,11 @@ class InstallService
             if ($sql === false || trim($sql) === '') {
                 throw new InstallException('schema baseline 文件为空：'.$this->schemaPath());
             }
-            $dbPdo->exec($sql);
+            try {
+                $dbPdo->exec($sql);
+            } catch (Throwable $exception) {
+                throw new InstallException('导入数据库结构失败：'.$exception->getMessage());
+            }
         } else {
             $logger(sprintf('目标库已有 %d 张表，跳过 baseline 导入', $tableCount));
         }
