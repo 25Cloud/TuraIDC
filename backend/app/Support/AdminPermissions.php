@@ -40,6 +40,8 @@ class AdminPermissions
 
     public const TICKET_MANAGE = 'ticket.manage';
 
+    public const TICKET_DELIVERY_MANAGE = 'ticket.delivery_manage';
+
     public const PRODUCT_LIST = 'product.list';
 
     public const PRODUCT_MANAGE = 'product.manage';
@@ -199,6 +201,7 @@ class AdminPermissions
             self::INVOICE_MANAGE,
             self::TICKET_REPLY,
             self::TICKET_MANAGE,
+            self::TICKET_DELIVERY_MANAGE,
             self::PRODUCT_MANAGE,
             self::PRODUCT_SYNC,
             self::SUPPLIER_MANAGE,
@@ -245,7 +248,7 @@ class AdminPermissions
             self::USER_MANAGE => [self::USER_LIST, self::USER_DETAIL],
             self::ORDER_MANAGE => [self::ORDER_LIST, self::ORDER_DETAIL],
             self::INVOICE_MANAGE => [self::INVOICE_LIST, self::INVOICE_DETAIL],
-            self::TICKET_MANAGE => [self::TICKET_LIST, self::TICKET_REPLY],
+            self::TICKET_MANAGE => [self::TICKET_LIST, self::TICKET_REPLY, self::TICKET_DELIVERY_MANAGE],
             self::PRODUCT_MANAGE => [self::PRODUCT_LIST],
             self::PRODUCT_SYNC => [self::PRODUCT_LIST],
             self::SUPPLIER_DETAIL => [self::SUPPLIER_LIST],
