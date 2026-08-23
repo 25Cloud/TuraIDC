@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\Admin\V2\AuthController;
+use App\Http\Controllers\Admin\V2\AgentGroupController;
+use App\Http\Controllers\Admin\V2\AgentGroupDiscountController;
+use App\Http\Controllers\Admin\V2\ProductDiscountGroupController;
 use App\Http\Controllers\Admin\V2\ContentArticleController;
 use App\Http\Controllers\Admin\V2\ContentCategoryController;
 use App\Http\Controllers\Admin\V2\CouponCampaignController;
@@ -288,6 +291,22 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/member-levels', [MemberLevelController::class, 'store']);
         Route::put('/member-levels/{memberLevel}', [MemberLevelController::class, 'update']);
         Route::delete('/member-levels/{memberLevel}', [MemberLevelController::class, 'destroy']);
+    });
+
+    Route::middleware(['permission:'.AdminPermissions::AGENT_DISCOUNT_LIST])->group(function (): void {
+        Route::get('/agent-groups', [AgentGroupController::class, 'index']);
+        Route::get('/product-discount-groups', [ProductDiscountGroupController::class, 'index']);
+        Route::get('/agent-group-discounts', [AgentGroupDiscountController::class, 'index']);
+    });
+
+    Route::middleware(['permission:'.AdminPermissions::AGENT_DISCOUNT_MANAGE])->group(function (): void {
+        Route::post('/agent-groups', [AgentGroupController::class, 'store']);
+        Route::put('/agent-groups/{agentGroup}', [AgentGroupController::class, 'update']);
+        Route::delete('/agent-groups/{agentGroup}', [AgentGroupController::class, 'destroy']);
+        Route::post('/product-discount-groups', [ProductDiscountGroupController::class, 'store']);
+        Route::put('/product-discount-groups/{productDiscountGroup}', [ProductDiscountGroupController::class, 'update']);
+        Route::delete('/product-discount-groups/{productDiscountGroup}', [ProductDiscountGroupController::class, 'destroy']);
+        Route::put('/agent-group-discounts', [AgentGroupDiscountController::class, 'update']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::INTEGRATION_PLUGIN_VIEW])->group(function (): void {

@@ -44,6 +44,7 @@ class CheckoutService
         private CouponService $couponService,
         private OperationLogService $operationLogService,
         private AdminOrderNotificationService $adminOrderNotificationService,
+        private ?AgentDiscountService $agentDiscountService = null,
         private ?ProductDisplayNameResolver $productDisplayNameResolver = null,
     ) {}
 
@@ -103,6 +104,7 @@ class CheckoutService
                     $product = Product::query()->lockForUpdate()->findOrFail($productId);
                     throw_if($product->status !== 1, new BusinessException('产品已下架'));
                     $product->loadMissing('supplier');
+                    $user = User::query()->findOrFail($userId);
                     $this->productCatalogService->assertProductCanBeProvisioned($product, $quantity);
                     $this->assertPurchaseRequires($product, $userId);
 
@@ -122,7 +124,18 @@ class CheckoutService
                     }
 
                     $quote = $this->quote($product, $billingCycle, $normalizedConfig, $quantity);
-                    $amount = (float) ($quote['total_amount'] ?? 0);
+                    $originalAmount = (float) ($quote['total_amount'] ?? 0);
+                    $agentPricing = ($this->agentDiscountService ?? new AgentDiscountService)->apply($product, $user, $originalAmount);
+                    $amount = (float) $agentPricing['discounted_amount'];
+                    $agentPricing['agent_amount'] = $amount;
+                    $quote['original_total_amount'] = $this->formatAmount($originalAmount);
+                    $quote['agent_discount_rate'] = $this->formatAmount($agentPricing['discount_rate']);
+                    $quote['agent_discount_amount'] = $this->formatAmount($agentPricing['discount_amount']);
+                    $quote['agent_amount'] = $this->formatAmount($amount);
+                    $quote['cost_amount'] = $this->formatAmount($agentPricing['cost_amount']);
+                    $quote['agent_group_id'] = $agentPricing['agent_group_id'];
+                    $quote['product_discount_group_id'] = $agentPricing['product_discount_group_id'];
+                    $quote['cost_rate'] = $this->formatAmount($agentPricing['cost_rate']);
                     $configPricingSnapshot = $this->buildConfigPricingSnapshot($product, $billingCycle, $normalizedConfig, $quantity);
                     $displayNamePayload = $this->resolveProductDisplayNameResolver()->resolveForProduct($product, $normalizedConfig);
                     $productDisplayName = $this->resolveCheckoutProductDisplayName($displayNamePayload);
@@ -138,7 +151,8 @@ class CheckoutService
                     $this->checkoutSecurityService->assertQuoteToken(
                         $quoteToken, $product->id, $billingCycle, $quantity, $normalizedConfig,
                         $this->formatAmount($amount), $this->formatAmount($payableAmount),
-                        $couponPayload['user_coupon_id'] ?? $userCouponId
+                        $couponPayload['user_coupon_id'] ?? $userCouponId,
+                        $agentPricing
                     );
 
                     $invoice = Invoice::query()->create([
