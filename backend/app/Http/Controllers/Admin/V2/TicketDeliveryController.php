@@ -136,6 +136,20 @@ final class TicketDeliveryController extends Controller
     public function saveUploadGuardConfig(SaveTicketUpstreamUploadGuardRequest $request): JsonResponse
     {
         $payload = $request->payload();
+        $validated = $request->validated();
+
+        // 存在工单传递规则时不允许显式关闭 /upload_image：规则创建前置条件要求接口启用，
+        // 反向关闭会造成既有规则指向已停用的上传通道，附件将无法回传。
+        // 仅拦截「本次请求显式提交关闭」，部分更新（不带该字段）保留已保存值，不误伤。
+        if (
+            array_key_exists('upload_image_enabled', $validated)
+            && ! $payload['upload_image_enabled']
+            && TicketDeliveryRule::query()->exists()
+        ) {
+            throw ValidationException::withMessages([
+                'upload_image_enabled' => '存在工单传递规则时不能关闭 /upload_image 接口',
+            ]);
+        }
 
         // 先读取变更前的 ticket_upstream 配置值，供审计做前后对照。
         $before = [

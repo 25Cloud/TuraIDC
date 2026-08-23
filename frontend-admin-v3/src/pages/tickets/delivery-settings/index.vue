@@ -548,6 +548,10 @@ async function loadUploadGuard() {
 
 async function saveUploadGuard() {
   if (!canManage.value) return;
+  if (!uploadGuard.upload_image_enabled && rules.value.length > 0) {
+    MessagePlugin.warning('存在工单传递规则时不能关闭 /upload_image 接口');
+    return;
+  }
   guardSaving.value = true;
   try {
     const saved = await adminApi.tickets.uploadGuard.save({
