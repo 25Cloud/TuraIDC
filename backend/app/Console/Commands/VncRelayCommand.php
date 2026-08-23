@@ -626,7 +626,7 @@ class VncRelayCommand extends Command
 
     private function isPrivateOrReservedIp(string $ip): bool
     {
-        $ip = trim($ip);
+        $ip = $this->normalizeIpForPolicyCheck(trim($ip));
 
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             $long = ip2long($ip);
@@ -635,16 +635,26 @@ class VncRelayCommand extends Command
             }
             $long = (int) $long;
 
-            // 0.0.0.0/8、10/8、127/8、169.254/16、172.16/12、192.168/16、100.64/10、192.0.0/24
+            // IANA special-purpose registry（RFC 6890）里全部「非全局可达」的 IPv4 段。
+            // 判据取「是否 globally reachable」而不是「是否私网」：TEST-NET、benchmarking、
+            // 组播、保留段同样不该成为 VNC 上游目标，放行它们没有正当用途，只会给内网
+            // 探测留口子。
             $networks = [
-                [0x00000000, 0xFF000000],
-                [0x0A000000, 0xFF000000],
-                [0x7F000000, 0xFF000000],
-                [0xA9FE0000, 0xFFFF0000],
-                [0xAC100000, 0xFFF00000],
-                [0xC0A80000, 0xFFFF0000],
-                [0x64400000, 0xFFC00000],
-                [0xC0000000, 0xFFFFFF00],
+                [0x00000000, 0xFF000000],   // 0.0.0.0/8        本网络
+                [0x0A000000, 0xFF000000],   // 10.0.0.0/8       私网
+                [0x64400000, 0xFFC00000],   // 100.64.0.0/10    运营商级 NAT
+                [0x7F000000, 0xFF000000],   // 127.0.0.0/8      回环
+                [0xA9FE0000, 0xFFFF0000],   // 169.254.0.0/16   链路本地（含云元数据端点）
+                [0xAC100000, 0xFFF00000],   // 172.16.0.0/12    私网
+                [0xC0000000, 0xFFFFFF00],   // 192.0.0.0/24     IETF 协议分配
+                [0xC0000200, 0xFFFFFF00],   // 192.0.2.0/24     TEST-NET-1
+                [0xC0586300, 0xFFFFFF00],   // 192.88.99.0/24   6to4 中继任播（已废弃）
+                [0xC0A80000, 0xFFFF0000],   // 192.168.0.0/16   私网
+                [0xC6120000, 0xFFFE0000],   // 198.18.0.0/15    网络设备基准测试
+                [0xC6336400, 0xFFFFFF00],   // 198.51.100.0/24  TEST-NET-2
+                [0xCB007100, 0xFFFFFF00],   // 203.0.113.0/24   TEST-NET-3
+                [0xE0000000, 0xF0000000],   // 224.0.0.0/4      组播
+                [0xF0000000, 0xF0000000],   // 240.0.0.0/4      保留（含 255.255.255.255 广播）
             ];
 
             foreach ($networks as [$base, $mask]) {
@@ -669,6 +679,41 @@ class VncRelayCommand extends Command
         }
 
         return true;
+    }
+
+    /**
+     * 把 IPv4-mapped / IPv4-compatible IPv6 还原成点分十进制，再交给黑名单判定。
+     *
+     * 不归一化就会被绕过：`::ffff:127.0.0.1` 只通得过 FILTER_FLAG_IPV6，于是落进上面的
+     * IPv6 分支；而 explode(':', '::ffff:127.0.0.1')[0] 取到的是**空串**（开头就是 `::`），
+     * 既不匹配 fe[89ab] 也不匹配 f[cd]，结果被判成公网直接放行。随后
+     * stream_socket_client('tcp://::ffff:127.0.0.1:port') 由内核按 mapped 语义
+     * 直连 IPv4 回环，整道内网拦截形同不存在。`::ffff:169.254.169.254`
+     * （云元数据端点）、`::ffff:10.0.0.5` 等同理。
+     *
+     * 归一化后 `::` → 0.0.0.0、`::1` → 0.0.0.1，两者都落在 0.0.0.0/8，判定结果与
+     * 原先的字符串特例一致，不改变既有行为。
+     */
+    private function normalizeIpForPolicyCheck(string $ip): string
+    {
+        $packed = @inet_pton($ip);
+        if ($packed === false || strlen($packed) !== 16) {
+            return $ip;
+        }
+
+        // ::ffff:a.b.c.d（前 80 位 0 + 16 位 1）与 ::a.b.c.d（前 96 位 0）
+        $mappedPrefix = str_repeat("\x00", 10)."\xff\xff";
+        $compatiblePrefix = str_repeat("\x00", 12);
+
+        if (! str_starts_with($packed, $mappedPrefix) && ! str_starts_with($packed, $compatiblePrefix)) {
+            return $ip;
+        }
+
+        $ipv4 = @inet_ntop(substr($packed, 12));
+
+        return is_string($ipv4) && filter_var($ipv4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)
+            ? $ipv4
+            : $ip;
     }
 
     private function resolveOriginHeader(array $params = []): string
