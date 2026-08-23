@@ -315,6 +315,18 @@
       "status": "active",
       "summary": "按 PR #20 CodeRabbit 审查修复工单上游传递安全与一致性问题，含上游 zjmfv376 配套改动。",
       "review_by": "2026-09-04"
+    },
+    {
+      "path": "designs/backend/2026-08-20-agent-discount-design.md",
+      "status": "active",
+      "summary": "代理折扣体系设计：与会员等级独立、矩阵折扣、成本价保护与优惠券兼容。",
+      "review_by": "2026-09-20"
+    },
+    {
+      "path": "execution-plans/active/2026-08-20-agent-discount.md",
+      "status": "active",
+      "summary": "代理折扣体系实施计划：AgentDiscountService 与三张配置表的落地任务拆分。",
+      "review_by": "2026-09-20"
     }
   ]
 }

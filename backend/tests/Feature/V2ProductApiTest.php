@@ -135,6 +135,142 @@ class V2ProductApiTest extends TestCase
         $this->assertSame(2, $item['active_services_count']);
     }
 
+    public function test_admin_product_list_filters_by_upstream_supplier_binding(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $firstGroup = $this->createFirstGroup('v2_bind_'.$suffix, '绑定筛选 '.$suffix, true);
+        $secondGroup = $this->createSecondGroup($firstGroup, '绑定二级 '.$suffix, 1, true);
+        $boundA = Product::query()->create($this->productPayload($secondGroup, null, '绑定A '.$suffix, '19.00', 1));
+        $boundB = Product::query()->create($this->productPayload($secondGroup, null, '绑定B '.$suffix, '29.00', 2));
+        $plain = Product::query()->create($this->productPayload($secondGroup, null, '未绑定 '.$suffix, '39.00', 3));
+
+        $this->createProductBinding($boundA, $suffix.'_a');
+        $this->createProductBinding($boundB, $suffix.'_b');
+
+        $supplierA = Supplier::query()->where('code', 'mf-'.$suffix.'_a')->firstOrFail();
+        $supplierB = Supplier::query()->where('code', 'mf-'.$suffix.'_b')->firstOrFail();
+
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::PRODUCT_LIST]));
+
+        $ids = fn (array $list): array => collect($list)->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
+        $responseA = $this->getJson('/api/v2/admin/products?'.http_build_query([
+            'supplier_id' => (int) $supplierA->id,
+            'provider_key' => 'zjmf_finance_api',
+            'page' => 1,
+            'page_size' => 50,
+        ]))
+            ->assertOk()
+            ->assertJsonPath('code', 0);
+        $idsA = $ids($responseA->json('data.list'));
+        $this->assertContains((int) $boundA->id, $idsA);
+        $this->assertNotContains((int) $boundB->id, $idsA);
+        $this->assertNotContains((int) $plain->id, $idsA);
+
+        $responseB = $this->getJson('/api/v2/admin/products?'.http_build_query([
+            'supplier_id' => (int) $supplierB->id,
+            'provider_key' => 'zjmf_finance_api',
+            'page' => 1,
+            'page_size' => 50,
+        ]))
+            ->assertOk()
+            ->assertJsonPath('code', 0);
+        $idsB = $ids($responseB->json('data.list'));
+        $this->assertContains((int) $boundB->id, $idsB);
+        $this->assertNotContains((int) $boundA->id, $idsB);
+
+        $this->getJson('/api/v2/admin/products?'.http_build_query([
+            'supplier_id' => (int) $supplierA->id,
+            'provider_key' => 'unknown_provider',
+            'page' => 1,
+            'page_size' => 50,
+        ]))
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.list', []);
+    }
+
+    public function test_admin_product_binding_filter_excludes_disabled_and_rejects_bad_params(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $firstGroup = $this->createFirstGroup('v2_bind2_'.$suffix, '绑定筛选二 '.$suffix, true);
+        $secondGroup = $this->createSecondGroup($firstGroup, '绑定二二级 '.$suffix, 1, true);
+        $enabled = Product::query()->create($this->productPayload($secondGroup, null, '启用绑定 '.$suffix, '19.00', 1));
+        $disabled = Product::query()->create($this->productPayload($secondGroup, null, '停用绑定 '.$suffix, '29.00', 2));
+        $this->createProductBinding($enabled, $suffix.'_on');
+        $this->createProductBinding($disabled, $suffix.'_off');
+
+        $supplier = Supplier::query()->where('code', 'mf-'.$suffix.'_on')->firstOrFail();
+        $enabledBinding = ProductUpstreamBinding::query()
+            ->where('product_id', (int) $enabled->id)
+            ->firstOrFail();
+
+        // 停用产品复用启用产品同一个 supplier_plugin_binding 并置 status=0：
+        // 仅按供应商过滤时才能真正验证「同供应商下停用绑定被排除」，
+        // 而非因两个产品绑定在不同供应商下而假通过。
+        ProductUpstreamBinding::query()
+            ->where('product_id', (int) $disabled->id)
+            ->update([
+                'supplier_plugin_binding_id' => (int) $enabledBinding->supplier_plugin_binding_id,
+                'status' => 0,
+            ]);
+
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::PRODUCT_LIST]));
+
+        // 仅按供应商过滤（不传 provider_key）：启用绑定返回、停用绑定排除
+        $response = $this->getJson('/api/v2/admin/products?'.http_build_query([
+            'supplier_id' => (int) $supplier->id,
+            'page' => 1,
+            'page_size' => 50,
+        ]))
+            ->assertOk()
+            ->assertJsonPath('code', 0);
+        $ids = collect($response->json('data.list'))->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $this->assertContains((int) $enabled->id, $ids);
+        $this->assertNotContains((int) $disabled->id, $ids);
+
+        // 将启用绑定的 status 置 0 后再次请求：验证服务层 where('status', 1) 过滤真正生效
+        ProductUpstreamBinding::query()
+            ->where('product_id', (int) $enabled->id)
+            ->update(['status' => 0]);
+
+        $responseDisabled = $this->getJson('/api/v2/admin/products?'.http_build_query([
+            'supplier_id' => (int) $supplier->id,
+            'page' => 1,
+            'page_size' => 50,
+        ]))
+            ->assertOk()
+            ->assertJsonPath('code', 0);
+        $idsAfterDisable = collect($responseDisabled->json('data.list'))->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $this->assertNotContains((int) $enabled->id, $idsAfterDisable);
+
+        // 恢复启用绑定 status 后将供应商插件绑定置 0：验证服务层对停用供应商绑定的过滤，
+        // 与工单传递规则 ensureRuleTarget 要求「供应商绑定必须启用」的口径一致。
+        ProductUpstreamBinding::query()
+            ->where('product_id', (int) $enabled->id)
+            ->update(['status' => 1]);
+        $enabledBinding->supplierPluginBinding->update(['status' => 0]);
+
+        $responseSupplierDisabled = $this->getJson('/api/v2/admin/products?'.http_build_query([
+            'supplier_id' => (int) $supplier->id,
+            'page' => 1,
+            'page_size' => 50,
+        ]))
+            ->assertOk()
+            ->assertJsonPath('code', 0);
+        $idsWithSupplierDisabled = collect($responseSupplierDisabled->json('data.list'))->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $this->assertNotContains((int) $enabled->id, $idsWithSupplierDisabled);
+
+        // 非法 supplier_id 参数返回 422
+        $this->getJson('/api/v2/admin/products?'.http_build_query([
+            'supplier_id' => 'abc',
+            'page' => 1,
+            'page_size' => 50,
+        ]))
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 42200);
+    }
+
     public function test_admin_product_detail_is_modular_and_preserves_provider_key(): void
     {
         $suffix = bin2hex(random_bytes(4));

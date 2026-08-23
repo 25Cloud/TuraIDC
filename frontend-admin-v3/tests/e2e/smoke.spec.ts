@@ -154,9 +154,29 @@ async function mockTickets(page: import('@playwright/test').Page) {
   });
 }
 
-async function mockTicketDeliverySettings(page: import('@playwright/test').Page) {
+interface DeliveryRuleFixture {
+  id: number;
+  name: string;
+  department: string;
+  supplier_id: number;
+  provider_key: string;
+  product_scope_mode: string;
+  product_ids: number[];
+  upstream_department_id: string;
+  enabled: boolean;
+  sync_admin_replies: boolean;
+  mask_keywords: string;
+}
+
+async function mockTicketDeliverySettings(
+  page: import('@playwright/test').Page,
+  initialUploadImageEnabled = true,
+  initialRules: DeliveryRuleFixture[] | null = null,
+) {
   let nextId = 302;
-  let rules = [
+  let uploadImageEnabled = initialUploadImageEnabled;
+  let blockNonWhitelisted = true;
+  const defaultRules: DeliveryRuleFixture[] = [
     {
       id: 301,
       name: '技术支持同步',
@@ -171,6 +191,8 @@ async function mockTicketDeliverySettings(page: import('@playwright/test').Page)
       mask_keywords: '敏感词',
     },
   ];
+  // null 表示使用默认 1 条规则；显式传空数组表示无规则。
+  let rules: DeliveryRuleFixture[] = initialRules === null ? defaultRules : initialRules;
 
   await page.route(/\/api\/v2\/admin\/suppliers(?:\?.*)?$/, async (route) => {
     await route.fulfill({
@@ -187,22 +209,63 @@ async function mockTicketDeliverySettings(page: import('@playwright/test').Page)
     });
   });
 
+  // 模拟 150 个已绑定产品：分页接口第 1 页只返回 id 501-600，
+  // 第 2 页返回 601-650，用于验证指定产品分页拉全量与超首屏名称解析。
+  const catalogProducts = Array.from({ length: 150 }, (_, index) => {
+    const id = 501 + index;
+
+    return {
+      id,
+      display_name: id === 501 ? '测试云服务器' : `测试云服务器 #${id}`,
+      name: id === 501 ? '测试云服务器' : `测试云服务器 #${id}`,
+      upstream_binding: { supplier_id: 7, provider_key: 'zjmf_finance_api', status: 1 },
+    };
+  });
+
   await page.route(/\/api\/v2\/admin\/products(?:\?.*)?$/, async (route) => {
+    const url = new URL(route.request().url());
+    const pageNumber = Math.max(Number(url.searchParams.get('page') || '1'), 1);
+    const pageSize = Math.max(Number(url.searchParams.get('page_size') || '100'), 1);
+    const start = (pageNumber - 1) * pageSize;
+    const list = catalogProducts.slice(start, start + pageSize);
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        data: { list, total: catalogProducts.length, page: pageNumber, page_size: pageSize },
+      }),
+    });
+  });
+
+  await page.route(/\/api\/v2\/admin\/ticket-delivery-upload-guard(?:\?.*)?$/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 0,
+          data: {
+            upload_image_enabled: uploadImageEnabled,
+            allowed_ips: '203.0.113.10',
+            rate_limit: 30,
+            block_non_whitelisted: blockNonWhitelisted,
+            unused_retention_minutes: 5,
+          },
+        }),
+      });
+      return;
+    }
+
+    const payload = route.request().postDataJSON() || {};
+    uploadImageEnabled = payload.upload_image_enabled === true;
+    blockNonWhitelisted = payload.block_non_whitelisted !== false;
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
         code: 0,
         data: {
-          list: [
-            {
-              id: 501,
-              display_name: '测试云服务器',
-              upstream_binding: { supplier_id: 7, provider_key: 'zjmf_finance_api', status: 1 },
-            },
-          ],
-          total: 1,
-          page: 1,
-          page_size: 100,
+          ...payload,
+          upload_image_enabled: uploadImageEnabled,
+          block_non_whitelisted: blockNonWhitelisted,
         },
       }),
     });
@@ -3750,6 +3813,9 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await expect(page).toHaveURL(/\/admin\/ticket-delivery-rules/);
     await expect(page.getByText('技术支持同步')).toBeVisible();
     await expect(page.getByText('测试云服务器')).toBeVisible();
+    await expect(page.getByText('启用 /upload_image 接口')).toBeVisible();
+    await expect(page.getByText('配置工单传递规则前必须先开启')).toBeVisible();
+    await expect(page.getByText('开启后白名单外上传默认拒绝')).toBeVisible();
 
     await page.getByRole('button', { name: '新增规则' }).click();
     const dialog = page.locator('.t-dialog:visible');
@@ -3784,6 +3850,136 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await page.getByRole('button', { name: '删除' }).first().click();
     await page.locator('.t-dialog:visible').getByRole('button', { name: '删除' }).click();
     await deleteRequest;
+  });
+
+  test('resolves delivery rule product names beyond the first page', async ({ page }) => {
+    await mockAdminInfo(page);
+    await mockTicketDeliverySettings(page, true, [
+      {
+        id: 302,
+        name: '超首屏产品规则',
+        department: 'support',
+        supplier_id: 7,
+        provider_key: 'zjmf_finance_api',
+        product_scope_mode: 'selected',
+        product_ids: [602],
+        upstream_department_id: 'tech-01',
+        enabled: true,
+        sync_admin_replies: true,
+        mask_keywords: '',
+      },
+    ]);
+    await page.addInitScript(() => {
+      window.localStorage.setItem('admin_token', 'test-token');
+      window.localStorage.setItem('admin_last_active_at', String(Date.now()));
+    });
+
+    await page.goto('/admin/ticket-delivery-rules', { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/\/admin\/ticket-delivery-rules/);
+    const ruleRow = page.locator('tr', { hasText: '超首屏产品规则' });
+    await expect(ruleRow).toBeVisible();
+    // 602 位于全局产品首屏（第 1 页 100 条）之外，初始只能显示"指定产品"
+    await expect(ruleRow.getByText('指定产品')).toBeVisible();
+
+    // 打开编辑对话框会按供应商分页拉取全部绑定产品并合并进全局产品缓存
+    await page.getByRole('button', { name: '编辑' }).first().click();
+    await expect(page.locator('.t-dialog:visible').getByText('编辑工单传递规则')).toBeVisible();
+    await page.locator('.t-dialog:visible').getByRole('button', { name: '取消' }).click();
+
+    // 合并后超首屏产品名称可解析，不再显示"指定产品"
+    await expect(ruleRow.getByText('测试云服务器 #602')).toBeVisible();
+  });
+
+  test('requires enabling upload_image before creating delivery rules', async ({ page }) => {
+    await mockAdminInfo(page);
+    await mockTicketDeliverySettings(page, false);
+    await page.addInitScript(() => {
+      window.localStorage.setItem('admin_token', 'test-token');
+      window.localStorage.setItem('admin_last_active_at', String(Date.now()));
+    });
+
+    await page.goto('/admin/ticket-delivery-rules', { waitUntil: 'domcontentloaded' });
+    // 接口关闭时点击「新增规则」应弹出提示且不打开对话框
+    await page.getByRole('button', { name: '新增规则' }).click();
+    await expect(page.getByText('请先启用 /upload_image 接口').first()).toBeVisible();
+    await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
+
+    // 接口关闭时编辑规则同样被拦截（打开开关前不得进入编辑流程）
+    await page.getByRole('button', { name: '编辑' }).first().click();
+    await expect(page.getByText('请先启用 /upload_image 接口').first()).toBeVisible();
+    await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
+
+    const guardForm = page.locator('.ticket-delivery-guard-form');
+    const uploadSwitch = guardForm
+      .locator('.t-form__item')
+      .filter({ hasText: '启用 /upload_image 接口' })
+      .locator('.t-switch');
+    await uploadSwitch.click();
+
+    // 打开开关但未点击「保存配置」：新建仍应被拦截（以已保存状态为准）
+    await page.getByRole('button', { name: '新增规则' }).click();
+    await expect(page.getByText('请先启用 /upload_image 接口').first()).toBeVisible();
+    await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
+
+    const saveRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/ticket-delivery-upload-guard') && request.method() === 'POST',
+    );
+    await page.getByRole('button', { name: '保存配置' }).click();
+    await expect((await saveRequest).postDataJSON()).toMatchObject({
+      upload_image_enabled: true,
+      block_non_whitelisted: true,
+    });
+
+    // 开启后「新增规则」可正常打开创建对话框
+    await page.getByRole('button', { name: '新增规则' }).click();
+    await expect(page.locator('.t-dialog:visible').getByText('新增工单传递规则')).toBeVisible();
+    await page.locator('.t-dialog:visible').getByRole('button', { name: '取消' }).click();
+
+    // 存在规则时关闭上传接口：保存被前端拦截，不发请求且提示可见。
+    await uploadSwitch.click();
+    let disableRequestFired = false;
+    page.on('request', (request) => {
+      if (request.url().endsWith('/api/v2/admin/ticket-delivery-upload-guard') && request.method() === 'POST') {
+        disableRequestFired = true;
+      }
+    });
+    await page.getByRole('button', { name: '保存配置' }).click();
+    await expect(page.getByText('存在工单传递规则时不能关闭 /upload_image 接口').first()).toBeVisible();
+    expect(disableRequestFired).toBe(false);
+
+    // 因保存被拦截，接口实际仍处于启用状态，新增规则仍可正常打开
+    await page.getByRole('button', { name: '新增规则' }).click();
+    await expect(page.locator('.t-dialog:visible').getByText('新增工单传递规则')).toBeVisible();
+    await page.locator('.t-dialog:visible').getByRole('button', { name: '取消' }).click();
+  });
+
+  test('allows disabling upload_image when no delivery rules exist', async ({ page }) => {
+    await mockAdminInfo(page);
+    // 无已保存的工单传递规则，上传接口初始为开启。
+    await mockTicketDeliverySettings(page, true, []);
+    await page.addInitScript(() => {
+      window.localStorage.setItem('admin_token', 'test-token');
+      window.localStorage.setItem('admin_last_active_at', String(Date.now()));
+    });
+
+    await page.goto('/admin/ticket-delivery-rules', { waitUntil: 'domcontentloaded' });
+
+    const guardForm = page.locator('.ticket-delivery-guard-form');
+    const uploadSwitch = guardForm
+      .locator('.t-form__item')
+      .filter({ hasText: '启用 /upload_image 接口' })
+      .locator('.t-switch');
+    await uploadSwitch.click();
+
+    // 无规则时可正常关闭上传接口：发出保存请求且开关保存为关闭。
+    const disableRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/ticket-delivery-upload-guard') && request.method() === 'POST',
+    );
+    await page.getByRole('button', { name: '保存配置' }).click();
+    await expect((await disableRequest).postDataJSON()).toMatchObject({
+      upload_image_enabled: false,
+      block_non_whitelisted: true,
+    });
   });
 
   test('opens ticket conversation and handles core actions', async ({ page }) => {

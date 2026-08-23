@@ -107,7 +107,7 @@
       :confirm-btn="canManage ? { content: '保存', loading: saving } : null"
       :cancel-btn="canManage ? '取消' : '关闭'"
       placement="center"
-      width="720px"
+      :width="isMobile ? '94vw' : '720px'"
       @confirm="submitForm"
     >
       <t-form ref="formRef" :data="form" :rules="formRules" label-align="top">
@@ -198,18 +198,29 @@
       </t-form>
     </t-dialog>
 
-    <t-card class="ticket-delivery-card ticket-delivery-guard-card" :bordered="false">
+    <t-card v-if="canManage" class="ticket-delivery-card ticket-delivery-guard-card" :bordered="false">
       <div class="ticket-delivery-toolbar">
         <div class="ticket-delivery-summary">
           <strong>上游附件上传防护</strong>
-          <span>白名单 IP/CIDR 不限速；非白名单来源按速率限制。上传后超过保留期仍未用于回复工单的文件会自动删除。</span>
+          <span
+            >默认关闭
+            /upload_image；开启后白名单外上传默认拒绝。上传后超过保留期仍未用于回复工单的文件会自动删除。</span
+          >
         </div>
         <t-button v-if="canManage" theme="primary" variant="outline" :loading="guardSaving" @click="saveUploadGuard">
           保存配置
         </t-button>
       </div>
 
-      <t-form label-width="170px" class="ticket-delivery-guard-form">
+      <t-form
+        class="ticket-delivery-guard-form"
+        :label-align="isMobile ? 'top' : 'right'"
+        :label-width="isMobile ? undefined : '170px'"
+      >
+        <t-form-item label="启用 /upload_image 接口">
+          <t-switch v-model="uploadGuard.upload_image_enabled" :disabled="!canManage" />
+          <span class="ticket-delivery-guard-hint">配置工单传递规则前必须先开启</span>
+        </t-form-item>
         <t-form-item label="白名单 IP / CIDR">
           <t-textarea
             v-model="uploadGuard.allowed_ips"
@@ -266,7 +277,7 @@ import { errorMessage } from '@/utils/userMessage';
 const PROVIDER_KEY = 'zjmf_finance_api';
 const { width } = useWindowSize();
 const isMobile = computed(() => width.value < 768);
-const canManage = computed(() => hasAdminPermission(AdminPermissions.TICKET_MANAGE));
+const canManage = computed(() => hasAdminPermission(AdminPermissions.TICKET_DELIVERY_MANAGE));
 const loading = ref(false);
 const saving = ref(false);
 const guardSaving = ref(false);
@@ -276,16 +287,23 @@ const formRef = ref<FormInstanceFunctions>();
 const rules = ref<TicketDeliveryRuleRecord[]>([]);
 const suppliers = ref<SupplierRecord[]>([]);
 const products = ref<ProductRecord[]>([]);
+const supplierProducts = ref<ProductRecord[]>([]);
 const upstreamDepartments = ref<TicketDeliveryDepartment[]>([]);
 const departmentsLoading = ref(false);
 let departmentsRequestId = 0;
+let productsRequestId = 0;
 
 const uploadGuard = reactive({
+  upload_image_enabled: false,
   allowed_ips: '',
   rate_limit: 30,
-  block_non_whitelisted: false,
+  block_non_whitelisted: true,
   unused_retention_minutes: 5,
 });
+
+// 已保存生效的接口开关状态：开关表单改动未点「保存配置」前不生效，
+// 新建/启停规则以该状态为准，避免未保存的本地状态绕过后端校验。
+const savedUploadImageEnabled = ref(false);
 
 const departmentOptions = [
   { label: '销售', value: 'sales' },
@@ -336,15 +354,9 @@ const formRules: Record<string, FormRule[]> = {
 };
 
 const filteredProducts = computed(() => {
+  // 已按 supplier_id + provider_key 从后端过滤，无需再依赖本地 upstream_binding。
   if (!form.supplier_id) return [];
-  return products.value.filter((product) => {
-    const binding = product.upstream_binding;
-    return (
-      String(binding?.supplier_id ?? '') === String(form.supplier_id) &&
-      binding?.provider_key === PROVIDER_KEY &&
-      Number(binding?.status ?? 1) === 1
-    );
-  });
+  return supplierProducts.value;
 });
 
 watch(
@@ -367,6 +379,8 @@ function createDefaultForm() {
     mask_keywords: '',
   });
   upstreamDepartments.value = [];
+  productsRequestId += 1;
+  supplierProducts.value = [];
 }
 
 async function loadUpstreamDepartments(supplierId: number | string, configuredId = '') {
@@ -395,13 +409,56 @@ async function loadUpstreamDepartments(supplierId: number | string, configuredId
   }
 }
 
+async function loadSupplierProducts(supplierId: number | string) {
+  const requestId = ++productsRequestId;
+  supplierProducts.value = [];
+  try {
+    // 供应商绑定产品可能超过单页上限，分页拉全量后再合并；
+    // 每页返回前都校验请求序号，避免旧响应覆盖新供应商的结果。
+    const loadedProducts: ProductRecord[] = [];
+    const pageSize = 100;
+    let page = 1;
+    let total = 0;
+
+    do {
+      const response = await productApi.v2List({
+        page,
+        page_size: pageSize,
+        lifecycle_status: 'active',
+        supplier_id: supplierId,
+        provider_key: PROVIDER_KEY,
+      });
+      if (requestId !== productsRequestId) return;
+
+      const list = response.list || [];
+      loadedProducts.push(...list);
+      total = Number(response.total ?? loadedProducts.length);
+      page += 1;
+      if (list.length === 0) break;
+    } while (loadedProducts.length < total);
+
+    // 按 ID 合并进全局产品缓存，保证列表页 productNames() 能解析出超首屏产品的名称
+    const productIndex = new Map(products.value.map((product) => [String(product.id), product]));
+    for (const product of loadedProducts) {
+      productIndex.set(String(product.id), product);
+    }
+    products.value = [...productIndex.values()];
+    supplierProducts.value = loadedProducts;
+  } catch (error) {
+    if (requestId !== productsRequestId) return;
+    supplierProducts.value = [];
+    MessagePlugin.error(errorMessage(error, '加载已绑定产品失败'));
+  }
+}
+
 async function handleSupplierChange(value: SelectValue) {
   form.upstream_department_id = '';
   // 仅在管理员主动切换供应商时清空已选产品，避免首屏分页加载被误判为供应商变更而丢失已保存绑定
   form.product_ids = [];
   upstreamDepartments.value = [];
   if (value !== '' && value !== undefined && value !== null) {
-    await loadUpstreamDepartments(String(value));
+    const supplierId = String(value);
+    await Promise.all([loadSupplierProducts(supplierId), loadUpstreamDepartments(supplierId)]);
   }
 }
 
@@ -443,7 +500,13 @@ async function loadOptions() {
     productApi.v2List({ page: 1, page_size: 100, lifecycle_status: 'active' }),
   ]);
   suppliers.value = (supplierResponse.list || []).filter((supplier) => supplier.provider_key === PROVIDER_KEY);
-  products.value = productResponse.list || [];
+  // 按 ID 合并而非覆盖：loadSupplierProducts 可能已把分页产品写入缓存，
+  // 直接替换会清掉这些产品导致列表页名称解析回退为"指定产品"。
+  const productIndex = new Map(products.value.map((product) => [String(product.id), product]));
+  for (const product of productResponse.list || []) {
+    productIndex.set(String(product.id), product);
+  }
+  products.value = [...productIndex.values()];
 }
 
 async function loadRules() {
@@ -468,11 +531,15 @@ async function loadPage() {
 }
 
 async function loadUploadGuard() {
+  // 配置接口对无 TICKET_DELIVERY_MANAGE 权限的用户返回 403，只读用户无需加载与报错
+  if (!canManage.value) return;
   try {
     const config = await adminApi.tickets.uploadGuard.config();
+    uploadGuard.upload_image_enabled = config.upload_image_enabled === true;
+    savedUploadImageEnabled.value = uploadGuard.upload_image_enabled;
     uploadGuard.allowed_ips = config.allowed_ips ?? '';
     uploadGuard.rate_limit = Number(config.rate_limit ?? 30);
-    uploadGuard.block_non_whitelisted = Boolean(config.block_non_whitelisted ?? false);
+    uploadGuard.block_non_whitelisted = config.block_non_whitelisted !== false;
     uploadGuard.unused_retention_minutes = Number(config.unused_retention_minutes ?? 5);
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '加载上传防护配置失败'));
@@ -481,16 +548,23 @@ async function loadUploadGuard() {
 
 async function saveUploadGuard() {
   if (!canManage.value) return;
+  if (!uploadGuard.upload_image_enabled && rules.value.length > 0) {
+    MessagePlugin.warning('存在工单传递规则时不能关闭 /upload_image 接口');
+    return;
+  }
   guardSaving.value = true;
   try {
     const saved = await adminApi.tickets.uploadGuard.save({
+      upload_image_enabled: Boolean(uploadGuard.upload_image_enabled),
       allowed_ips: uploadGuard.allowed_ips,
       rate_limit: Number(uploadGuard.rate_limit),
       block_non_whitelisted: Boolean(uploadGuard.block_non_whitelisted),
     });
+    uploadGuard.upload_image_enabled = saved.upload_image_enabled === true;
+    savedUploadImageEnabled.value = uploadGuard.upload_image_enabled;
     uploadGuard.allowed_ips = saved.allowed_ips ?? '';
     uploadGuard.rate_limit = Number(saved.rate_limit ?? 0);
-    uploadGuard.block_non_whitelisted = Boolean(saved.block_non_whitelisted ?? false);
+    uploadGuard.block_non_whitelisted = saved.block_non_whitelisted !== false;
     MessagePlugin.success('上传防护配置已保存');
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存上传防护配置失败'));
@@ -500,13 +574,21 @@ async function saveUploadGuard() {
 }
 
 function openCreateDialog() {
-  if (!canManage.value) return;
+  if (!canManage.value || !savedUploadImageEnabled.value) {
+    if (canManage.value) MessagePlugin.warning('请先启用 /upload_image 接口');
+    return;
+  }
   editingId.value = null;
   createDefaultForm();
   dialogVisible.value = true;
 }
 
 function openEditDialog(row: TicketDeliveryRuleRecord) {
+  // 与新建流程一致：管理员在 /upload_image 未启用时禁止编辑（非管理员仅查看不受限）
+  if (canManage.value && !savedUploadImageEnabled.value) {
+    MessagePlugin.warning('请先启用 /upload_image 接口');
+    return;
+  }
   editingId.value = row.id;
   Object.assign(form, {
     name: row.name || '',
@@ -520,7 +602,11 @@ function openEditDialog(row: TicketDeliveryRuleRecord) {
     mask_keywords: row.mask_keywords || '',
   });
   dialogVisible.value = true;
-  void loadUpstreamDepartments(String(form.supplier_id), String(form.upstream_department_id));
+  const supplierId = String(form.supplier_id);
+  void Promise.all([
+    loadSupplierProducts(supplierId),
+    loadUpstreamDepartments(supplierId, String(form.upstream_department_id)),
+  ]);
 }
 
 function buildPayload(): TicketDeliveryRulePayload {
@@ -540,6 +626,10 @@ function buildPayload(): TicketDeliveryRulePayload {
 
 async function submitForm() {
   if (!canManage.value) return;
+  if (!savedUploadImageEnabled.value) {
+    MessagePlugin.warning('请先启用 /upload_image 接口');
+    return;
+  }
   const result = await formRef.value?.validate();
   if (result !== true) return;
   saving.value = true;
@@ -563,6 +653,10 @@ async function submitForm() {
 
 async function toggleRule(row: TicketDeliveryRuleRecord) {
   if (!canManage.value) return;
+  if (!savedUploadImageEnabled.value) {
+    MessagePlugin.warning('请先启用 /upload_image 接口');
+    return;
+  }
   try {
     await adminApi.tickets.deliveryRules.update(row.id, {
       name: row.name || '',

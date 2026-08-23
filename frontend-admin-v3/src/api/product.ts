@@ -126,6 +126,10 @@ export interface ProductGroupV2Record extends ProductCategoryRecord {
 
 export interface ProductV2ListParams extends ProductListParams {
   keyword?: string;
+  /** 仅返回已绑定该上游供应商（product_upstream_bindings）的产品 */
+  supplier_id?: number | string;
+  /** 与 supplier_id 配合限定上游绑定来源 */
+  provider_key?: string;
 }
 
 export interface ProductV2SummaryRecord {

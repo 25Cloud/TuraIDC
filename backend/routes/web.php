@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Client\V2\TicketUpstreamUploadController;
+use App\Http\Controllers\InstallController;
 use App\Http\Controllers\SecureAssetController;
 use App\Http\Controllers\Site\SeoController;
 use App\Support\PublicUrl;
@@ -9,6 +10,16 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return ['message' => '图拉云 API'];
 });
+
+// ---- 安装向导（已安装后所有入口 404，见 InstallController） ----
+Route::get('/install', [InstallController::class, 'index'])
+    ->middleware('throttle:30,1');
+Route::post('/install/requirements', [InstallController::class, 'requirements'])
+    ->middleware('throttle:10,1');
+Route::post('/install/test', [InstallController::class, 'test'])
+    ->middleware('throttle:10,1');
+Route::post('/install/run', [InstallController::class, 'run'])
+    ->middleware('throttle:4,1');
 
 // ---- 官网 SEO 动态渲染（由前端 Nginx 转发公开路径到此） ----
 Route::get('/seo/www/{path?}', [SeoController::class, 'render'])

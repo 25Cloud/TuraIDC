@@ -33,6 +33,16 @@ use Tests\TestCase;
 
 class UploadSecurityTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Setting::setValues('ticket_upstream', [
+            'upload_image_enabled' => '1',
+            'block_non_whitelisted' => '0',
+        ]);
+    }
+
     private array $mediaFileIds = [];
 
     private array $uploadedFiles = [];
@@ -44,9 +54,10 @@ class UploadSecurityTest extends TestCase
         // 恢复 ticket_upstream 上传防护配置。恢复放在 tearDown 中保证任一断言失败后
         // 也会执行，避免残留配置污染同一进程内其他访问 /upload_image 的用例。
         Setting::setValues('ticket_upstream', [
+            'upload_image_enabled' => config('ticket_upstream.upload_image_enabled', false) ? '1' : '0',
             'allowed_ips' => (string) config('ticket_upstream.upload_allowed_ips', ''),
             'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
-            'block_non_whitelisted' => config('ticket_upstream.upload_block_non_whitelisted', false) ? '1' : '0',
+            'block_non_whitelisted' => config('ticket_upstream.upload_block_non_whitelisted', true) ? '1' : '0',
         ]);
 
         foreach ($this->tempDirectories as $directory) {
@@ -144,9 +155,73 @@ class UploadSecurityTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_upstream_ticket_upload_is_disabled_by_default(): void
+    {
+        DB::table('settings')
+            ->where('group_key', 'ticket_upstream')
+            ->where('item_key', 'upload_image_enabled')
+            ->delete();
+        Setting::forgetCachedGroup('ticket_upstream');
+        config()->set('ticket_upstream.upload_image_enabled', false);
+
+        $response = $this->post('/upload_image', [
+            'file' => UploadedFile::fake()->image('disabled.png', 16, 16)->size(8),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 400)
+            ->assertJsonPath('msg', '上传接口未启用');
+    }
+
+    public function test_upload_token_required_config_normalizes_string_values(): void
+    {
+        $this->withEnvironmentValue('TICKET_UPSTREAM_UPLOAD_TOKEN_REQUIRED', 'true', function (): void {
+            $config = require base_path('config/ticket_upstream.php');
+            $this->assertTrue($config['upload_token_required']);
+        });
+
+        $this->withEnvironmentValue('TICKET_UPSTREAM_UPLOAD_TOKEN_REQUIRED', 'false', function (): void {
+            $config = require base_path('config/ticket_upstream.php');
+            $this->assertFalse($config['upload_token_required']);
+        });
+    }
+
+    private function withEnvironmentValue(string $key, string $value, callable $callback): void
+    {
+        $originalEnv = $_ENV[$key] ?? null;
+        $originalServer = $_SERVER[$key] ?? null;
+        $originalPutenv = getenv($key);
+
+        $_ENV[$key] = $value;
+        $_SERVER[$key] = $value;
+        putenv($key.'='.$value);
+
+        try {
+            $callback();
+        } finally {
+            if ($originalEnv === null) {
+                unset($_ENV[$key]);
+            } else {
+                $_ENV[$key] = $originalEnv;
+            }
+
+            if ($originalServer === null) {
+                unset($_SERVER[$key]);
+            } else {
+                $_SERVER[$key] = $originalServer;
+            }
+
+            if ($originalPutenv === false) {
+                putenv($key);
+            } else {
+                putenv($key.'='.$originalPutenv);
+            }
+        }
+    }
+
     public function test_upstream_ticket_upload_returns_legacy_savename_contract(): void
     {
-        // 默认兼容模式：旧上游（不携带凭证）上传应成功，保证回调附件可用
+        // 显式开启接口：旧上游（不携带凭证）上传应成功，保证回调附件可用
         $response = $this->post('/upload_image', [
             'file' => UploadedFile::fake()->image('logo.png', 16, 16)->size(8),
         ]);
@@ -471,6 +546,21 @@ class UploadSecurityTest extends TestCase
         $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.60'])
             ->post('/upload_image', [
                 'file' => UploadedFile::fake()->image('cidr-blocked.png', 8, 8)->size(4),
+            ])
+            ->assertJsonPath('status', 403);
+    }
+
+    public function test_upstream_upload_guard_fails_closed_for_invalid_block_setting(): void
+    {
+        Setting::setValues('ticket_upstream', [
+            'allowed_ips' => '203.0.113.10',
+            'rate_limit' => '0',
+            'block_non_whitelisted' => 'not-a-boolean',
+        ]);
+
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.41'])
+            ->post('/upload_image', [
+                'file' => UploadedFile::fake()->image('invalid-block-setting.png', 8, 8)->size(4),
             ])
             ->assertJsonPath('status', 403);
     }

@@ -791,6 +791,7 @@ export interface TicketDeliveryDepartmentsResponse {
 }
 
 export interface TicketUpstreamUploadGuardConfig {
+  upload_image_enabled?: boolean;
   allowed_ips?: string;
   rate_limit?: number;
   block_non_whitelisted?: boolean;
@@ -798,6 +799,7 @@ export interface TicketUpstreamUploadGuardConfig {
 }
 
 export interface TicketUpstreamUploadGuardPayload {
+  upload_image_enabled: boolean;
   allowed_ips: string;
   rate_limit: number;
   block_non_whitelisted: boolean;
