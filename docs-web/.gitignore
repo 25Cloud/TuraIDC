@@ -1,2 +1,4 @@
 .vitepress/cache
 .vitepress/dist
+# EdgeOne Pages 用 npm 独立构建本目录，lock 文件不入库（仓库标准为 pnpm）
+package-lock.json
