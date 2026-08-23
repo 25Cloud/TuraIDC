@@ -248,7 +248,7 @@ class AdminPermissions
             self::USER_MANAGE => [self::USER_LIST, self::USER_DETAIL],
             self::ORDER_MANAGE => [self::ORDER_LIST, self::ORDER_DETAIL],
             self::INVOICE_MANAGE => [self::INVOICE_LIST, self::INVOICE_DETAIL],
-            self::TICKET_MANAGE => [self::TICKET_LIST, self::TICKET_REPLY, self::TICKET_DELIVERY_MANAGE],
+            self::TICKET_MANAGE => [self::TICKET_LIST, self::TICKET_REPLY],
             self::PRODUCT_MANAGE => [self::PRODUCT_LIST],
             self::PRODUCT_SYNC => [self::PRODUCT_LIST],
             self::SUPPLIER_DETAIL => [self::SUPPLIER_LIST],

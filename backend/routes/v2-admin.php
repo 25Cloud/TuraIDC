@@ -157,7 +157,8 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
     });
 
     // 工单传递设置：规则、上游部门与上传防护配置归入独立权限，
-    // ticket.manage 通过隐含关系（AdminPermissions::impliedPermissions）仍可访问。
+    // ticket.delivery_manage 必须显式授予，不再由 ticket.manage 隐含。
+    // 存量角色由迁移 2026_08_23_120000_backfill_ticket_delivery_manage_permission 补勾选。
     Route::middleware(['permission:'.AdminPermissions::TICKET_DELIVERY_MANAGE])->group(function (): void {
         Route::get('/ticket-delivery-departments', [TicketDeliveryController::class, 'upstreamDepartments']);
         Route::get('/ticket-delivery-rules', [TicketDeliveryController::class, 'index']);
