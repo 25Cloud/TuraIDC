@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\V2\MemberLevelController;
 use App\Http\Controllers\Admin\V2\OrderController;
 use App\Http\Controllers\Admin\V2\ProductController;
 use App\Http\Controllers\Admin\V2\ProductGroupController;
+use App\Http\Controllers\Admin\V2\ProductSpecHighlightController;
 use App\Http\Controllers\Admin\V2\ProductTypeController;
 use App\Http\Controllers\Admin\V2\ReferralController;
 use App\Http\Controllers\Admin\V2\ReferralWithdrawalController;
@@ -194,6 +195,7 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::get('/products/summary', [ProductController::class, 'summary']);
         Route::get('/products', [ProductController::class, 'index']);
         Route::get('/products/{product}/owners', [ProductController::class, 'owners']);
+        Route::get('/products/{product}/spec-highlight', [ProductSpecHighlightController::class, 'show']);
         Route::get('/products/{product}', [ProductController::class, 'show']);
         Route::get('/services', [ServiceController::class, 'index']);
     });
@@ -226,6 +228,7 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/products/category-batches', [ProductController::class, 'batchUpdateCategory']);
         Route::post('/products/provision-hostname-batches', [ProductController::class, 'batchUpdateProvisionHostname']);
         Route::patch('/products/{product}/status', [ProductController::class, 'updateStatus']);
+        Route::post('/products/{product}/spec-highlight', [ProductSpecHighlightController::class, 'update']);
         Route::patch('/coupons/{coupon}/status', [CouponController::class, 'updateStatus']);
         Route::patch('/coupon-campaigns/{couponCampaign}/status', [CouponCampaignController::class, 'updateStatus']);
         Route::post('/coupon-campaigns/{couponCampaign}/tasks', [CouponCampaignController::class, 'runTask']);

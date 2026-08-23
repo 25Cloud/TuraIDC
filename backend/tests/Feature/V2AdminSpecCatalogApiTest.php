@@ -341,7 +341,6 @@ class V2AdminSpecCatalogApiTest extends TestCase
             'display_name',
             'custom_display_name',
             'cpu_memory_display',
-            'cpu_memory_slug_display',
             'product_spec_display',
             'combined_display_name',
             'category_full_name',

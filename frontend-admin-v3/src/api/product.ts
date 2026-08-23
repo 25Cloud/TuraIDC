@@ -166,6 +166,25 @@ type V2ProductDetailRecord = Record<string, unknown> & {
   timestamps?: Record<string, unknown>;
 };
 
+export interface SpecHighlightDimension {
+  key: string;
+  label: string;
+}
+
+export interface SpecHighlightItem {
+  key: string;
+  label: string;
+  value: string;
+}
+
+export interface ProductSpecHighlightResponse {
+  product_id: number | string;
+  spec_highlights?: SpecHighlightItem[];
+  spec_highlight_text?: string;
+  overrides?: Record<string, string>;
+  dimensions?: SpecHighlightDimension[];
+}
+
 interface V2ProductDetailResponse {
   product?: V2ProductDetailRecord;
 }
@@ -431,6 +450,10 @@ export const productApi = {
     request.post({ url: '/v2/admin/products/traffic-package-pulls', data }),
   owners: (id: number | string, params?: Record<string, unknown>) =>
     request.get({ url: `/v2/admin/products/${id}/owners`, params }),
+  specHighlight: (id: number | string) =>
+    request.get<ProductSpecHighlightResponse>({ url: `/v2/admin/products/${id}/spec-highlight` }),
+  saveSpecHighlight: (id: number | string, items: Record<string, string>) =>
+    request.post({ url: `/v2/admin/products/${id}/spec-highlight`, data: { items } }),
   types: () => request.get<ProductTypeRecord[] | { list?: ProductTypeRecord[] }>({ url: '/v2/admin/product-types' }),
   reorderTypes: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/product-types/reorders', data }),
   createType: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/product-types', data }),

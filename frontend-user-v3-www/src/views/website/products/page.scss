@@ -1,4 +1,3 @@
-
 /* ===== 整体布局 ===== */
 .shop-wrap {
   display: flex;
@@ -52,7 +51,10 @@
   background: #fff;
   text-align: left;
   cursor: pointer;
-  transition: transform $motion-fast ease, border-color $motion-fast ease, box-shadow $motion-fast ease;
+  transition:
+    transform $motion-fast ease,
+    border-color $motion-fast ease,
+    box-shadow $motion-fast ease;
 
   &:hover {
     border-color: rgba($color-primary, 0.45);
@@ -62,7 +64,11 @@
 
   &.active {
     border-color: $color-primary;
-    background: linear-gradient(180deg, rgba($color-primary, 0.08) 0%, #fff 78%);
+    background: linear-gradient(
+      180deg,
+      rgba($color-primary, 0.08) 0%,
+      #fff 78%
+    );
   }
 }
 
@@ -148,7 +154,9 @@
   padding: 4px;
   border-radius: 2px;
   transition: color $motion-fast ease;
-  &:hover { color: $color-primary; }
+  &:hover {
+    color: $color-primary;
+  }
 }
 
 .sidebar-section-label {
@@ -171,17 +179,31 @@
 
   &:hover {
     background: $bg-color-soft;
-    .item-name { color: $color-primary; }
-    .item-abbr { background: $color-primary-soft; color: $color-primary; }
+    .item-name {
+      color: $color-primary;
+    }
+    .item-abbr {
+      background: $color-primary-soft;
+      color: $color-primary;
+    }
   }
 
   &.active {
     background: $color-primary-soft;
     border-left-color: $color-primary;
 
-    .item-name { color: $color-primary; font-weight: 600; }
-    .item-abbr { background: $color-primary; color: #fff; }
-    .item-count { background: $color-primary; color: #fff; }
+    .item-name {
+      color: $color-primary;
+      font-weight: 600;
+    }
+    .item-abbr {
+      background: $color-primary;
+      color: #fff;
+    }
+    .item-count {
+      background: $color-primary;
+      color: #fff;
+    }
   }
 }
 
@@ -324,7 +346,9 @@
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: border-color $motion-fast ease, color $motion-fast ease;
+  transition:
+    border-color $motion-fast ease,
+    color $motion-fast ease;
   text-align: left;
 
   span {
@@ -417,7 +441,9 @@
   border-top: 1px solid rgba($divider-color, 0.8);
   scrollbar-width: none;
 
-  &::-webkit-scrollbar { display: none; }
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .mobile-child-tab {
@@ -533,7 +559,10 @@
   transition: all $motion-fast ease;
   white-space: nowrap;
 
-  &:hover { border-color: $color-primary; color: $color-primary; }
+  &:hover {
+    border-color: $color-primary;
+    color: $color-primary;
+  }
   &.active {
     border-color: $color-primary;
     background: $color-primary-soft;
@@ -564,7 +593,10 @@
   transition: all $motion-fast ease;
   white-space: nowrap;
 
-  &:hover { border-color: $color-primary; color: $color-primary; }
+  &:hover {
+    border-color: $color-primary;
+    color: $color-primary;
+  }
   &.active {
     border-color: $color-primary;
     background: $color-primary-soft;
@@ -610,7 +642,7 @@
   margin-bottom: 16px;
 
   &::before {
-    content: '';
+    content: "";
     display: inline-block;
     width: 3px;
     height: 14px;
@@ -643,7 +675,10 @@
   transition: all $motion-fast ease;
   white-space: nowrap;
 
-  &:hover { border-color: $color-primary; color: $color-primary; }
+  &:hover {
+    border-color: $color-primary;
+    color: $color-primary;
+  }
   &.active {
     border-color: $color-primary;
     background: $color-primary-soft;
@@ -660,9 +695,16 @@
   padding: 10px 20px;
   gap: 3px;
 }
-.cycle-name { font-size: 13px; }
-.cycle-amt { font-size: 12px; color: $text-color-placeholder; }
-.cycle-btn.active .cycle-amt { color: $color-primary; }
+.cycle-name {
+  font-size: 13px;
+}
+.cycle-amt {
+  font-size: 12px;
+  color: $text-color-placeholder;
+}
+.cycle-btn.active .cycle-amt {
+  color: $color-primary;
+}
 
 /* 规格行 */
 .spec-list {
@@ -702,9 +744,13 @@
 .desktop-machine-table-head,
 .desktop-machine-table-row {
   display: grid;
-  grid-template-columns: minmax(240px, 1.7fr) 100px 100px minmax(150px, 1fr) minmax(140px, 1fr) minmax(180px, 1.1fr);
+  grid-template-columns: var(
+    --machine-spec-cols,
+    minmax(240px, 1.7fr) 100px 100px minmax(150px, 1fr) minmax(140px, 1fr)
+      minmax(180px, 1.1fr)
+  );
   align-items: center;
-  min-width: 900px;
+  min-width: var(--machine-spec-min-width, 900px);
 }
 
 .desktop-machine-table-head {
@@ -836,6 +882,13 @@
   font-weight: 600;
 }
 
+.machine-spec-cell--highlight {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: $text-color-secondary;
+}
+
 .desktop-machine-extra-list {
   display: flex;
   flex-direction: column;
@@ -853,7 +906,9 @@
   padding: 12px 0;
   border-bottom: 1px solid rgba($divider-color, 0.6);
 
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
 .spec-label {
@@ -926,7 +981,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  :deep(.el-input-number) { width: 130px; }
+  :deep(.el-input-number) {
+    width: 130px;
+  }
 }
 
 .num-unit {
@@ -963,7 +1020,9 @@
   position: relative;
   text-align: left;
 
-  &:hover { border-color: $color-primary; }
+  &:hover {
+    border-color: $color-primary;
+  }
   &.active {
     border-color: $color-primary;
     background: $color-primary-soft;
@@ -1004,7 +1063,9 @@
   white-space: nowrap;
 }
 
-.os-placeholder { color: $text-color-placeholder; }
+.os-placeholder {
+  color: $text-color-placeholder;
+}
 
 .os-check-mark {
   position: absolute;
@@ -1053,7 +1114,10 @@
   transition: all $motion-fast ease;
   white-space: nowrap;
 
-  &:hover { border-color: $color-primary; color: $color-primary; }
+  &:hover {
+    border-color: $color-primary;
+    color: $color-primary;
+  }
   &.active {
     border-color: $color-primary;
     background: $color-primary-soft;
@@ -1097,10 +1161,22 @@
   padding: 2px 10px;
   border-radius: 2px;
 
-  &.ok { background: $color-success-soft; color: $color-success; }
-  &.warn { background: $color-warning-soft; color: $color-warning; }
-  &.empty { background: $color-danger-soft; color: $color-danger; }
-  &.sync { background: $color-primary-soft; color: $color-primary; }
+  &.ok {
+    background: $color-success-soft;
+    color: $color-success;
+  }
+  &.warn {
+    background: $color-warning-soft;
+    color: $color-warning;
+  }
+  &.empty {
+    background: $color-danger-soft;
+    color: $color-danger;
+  }
+  &.sync {
+    background: $color-primary-soft;
+    color: $color-primary;
+  }
 }
 
 .stock-info {
@@ -1113,7 +1189,11 @@
 .stock-main {
   font-size: 13px;
   color: $text-color-secondary;
-  strong { font-size: 14px; font-weight: 700; color: $color-success; }
+  strong {
+    font-size: 14px;
+    font-weight: 700;
+    color: $color-success;
+  }
 }
 
 .stock-hint {
@@ -1145,11 +1225,18 @@
   position: relative;
 
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: -4px -6px;
     border-radius: 8px;
-    background: linear-gradient(90deg, rgba(#fff, 0) 0%, rgba($color-primary, 0.08) 35%, rgba(#fff, 0.45) 50%, rgba($color-primary, 0.08) 65%, rgba(#fff, 0) 100%);
+    background: linear-gradient(
+      90deg,
+      rgba(#fff, 0) 0%,
+      rgba($color-primary, 0.08) 35%,
+      rgba(#fff, 0.45) 50%,
+      rgba($color-primary, 0.08) 65%,
+      rgba(#fff, 0) 100%
+    );
     background-size: 220% 100%;
     pointer-events: none;
     animation: costLoadingSweep 1.35s linear infinite;
@@ -1296,14 +1383,29 @@
   color: $text-color-placeholder;
 
   &::after {
-    content: '';
+    content: "";
     width: 22px;
     height: 8px;
     border-radius: 999px;
     background:
-      radial-gradient(circle, rgba($color-primary, 0.85) 0 2px, transparent 2.4px) left center / 8px 8px no-repeat,
-      radial-gradient(circle, rgba($color-primary, 0.55) 0 2px, transparent 2.4px) center center / 8px 8px no-repeat,
-      radial-gradient(circle, rgba($color-primary, 0.3) 0 2px, transparent 2.4px) right center / 8px 8px no-repeat;
+      radial-gradient(
+          circle,
+          rgba($color-primary, 0.85) 0 2px,
+          transparent 2.4px
+        )
+        left center / 8px 8px no-repeat,
+      radial-gradient(
+          circle,
+          rgba($color-primary, 0.55) 0 2px,
+          transparent 2.4px
+        )
+        center center / 8px 8px no-repeat,
+      radial-gradient(
+          circle,
+          rgba($color-primary, 0.3) 0 2px,
+          transparent 2.4px
+        )
+        right center / 8px 8px no-repeat;
     animation: costLoadingDots 0.95s ease-in-out infinite;
   }
 }
@@ -1327,9 +1429,16 @@
   letter-spacing: 0.06em;
   transition: background-color $motion-fast ease;
 
-  &:hover { background: $color-primary-hover; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-  &.loading { opacity: 0.7; }
+  &:hover {
+    background: $color-primary-hover;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  &.loading {
+    opacity: 0.7;
+  }
 
   &.is-sold-out {
     background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
@@ -1416,7 +1525,7 @@
     position: relative;
 
     &::before {
-      content: '';
+      content: "";
       position: absolute;
       left: -6px;
       top: 50%;
@@ -1501,11 +1610,20 @@
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color $motion-fast ease, opacity $motion-fast ease;
+  transition:
+    background-color $motion-fast ease,
+    opacity $motion-fast ease;
 
-  &:hover:not(:disabled) { background: $color-primary-hover; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-  &.loading { opacity: 0.7; }
+  &:hover:not(:disabled) {
+    background: $color-primary-hover;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  &.loading {
+    opacity: 0.7;
+  }
 
   &.is-sold-out {
     background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
@@ -1529,7 +1647,8 @@
 }
 
 @keyframes costLoadingDots {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
     opacity: 0.75;
   }
@@ -1541,7 +1660,8 @@
 }
 
 @keyframes soldOutPulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(#ef4444, 0.1);
     filter: saturate(0.96);
   }
@@ -1870,7 +1990,9 @@
 
 /* ===== 响应式 ===== */
 @media (max-width: 1100px) {
-  .shop-cost { width: 240px; }
+  .shop-cost {
+    width: 240px;
+  }
 }
 
 @media (max-width: 900px) {
@@ -1939,7 +2061,9 @@
     position: relative;
     z-index: 30;
     display: block;
-    min-height: calc(var(--allocation-footer-height, 136px) + env(safe-area-inset-bottom, 0px));
+    min-height: calc(
+      var(--allocation-footer-height, 136px) + env(safe-area-inset-bottom, 0px)
+    );
     margin-top: 24px;
 
     .allocation-footer-inner {

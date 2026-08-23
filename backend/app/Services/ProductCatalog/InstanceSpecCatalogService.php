@@ -217,7 +217,6 @@ class InstanceSpecCatalogService
                 'display_name' => $displayPayload['display_name'],
                 'custom_display_name' => $displayPayload['custom_display_name'],
                 'cpu_memory_display' => $displayPayload['cpu_memory_display'],
-                'cpu_memory_slug_display' => $displayPayload['cpu_memory_slug_display'],
                 'product_spec_display' => $displayPayload['product_spec_display'],
                 'combined_display_name' => $displayPayload['combined_display_name'],
                 'category_full_name' => $this->limitText((string) ($binding['category_full_name'] ?? ''), 160),
@@ -378,7 +377,6 @@ class InstanceSpecCatalogService
 
                 $haystacks[] = (string) ($binding['display_name'] ?? '');
                 $haystacks[] = (string) ($binding['custom_display_name'] ?? '');
-                $haystacks[] = (string) ($binding['cpu_memory_slug_display'] ?? '');
                 $haystacks[] = (string) ($binding['cpu_memory_display'] ?? '');
                 $haystacks[] = (string) ($binding['product_spec_display'] ?? '');
                 $haystacks[] = (string) ($binding['category_full_name'] ?? '');
@@ -399,7 +397,6 @@ class InstanceSpecCatalogService
      *     display_name: string,
      *     custom_display_name: string,
      *     cpu_memory_display: string,
-     *     cpu_memory_slug_display: string,
      *     product_spec_display: string,
      *     combined_display_name: string
      * }
@@ -426,18 +423,16 @@ class InstanceSpecCatalogService
         $resolver = $this->productDisplayNameResolver ?? new ProductDisplayNameResolver;
         $resolved = $resolver->resolveForProduct($product);
         $customDisplayName = trim((string) ($resolved['custom_display_name'] ?? ''));
-        $cpuMemorySlugDisplay = trim((string) ($resolved['cpu_memory_slug_display'] ?? ''));
         $productSpecDisplay = trim((string) ($resolved['product_spec_display'] ?? ''));
         $cpuMemoryDisplay = trim((string) ($resolved['cpu_memory_display'] ?? ''));
         $combinedDisplayName = trim((string) ($resolved['combined_display_name'] ?? ''));
         $displayName = $customDisplayName
-            ?: ($cpuMemorySlugDisplay ?: ($productSpecDisplay ?: ($cpuMemoryDisplay ?: ($combinedDisplayName ?: $fallback))));
+            ?: ($productSpecDisplay ?: ($cpuMemoryDisplay ?: ($combinedDisplayName ?: $fallback)));
 
         return [
             'display_name' => $displayName,
             'custom_display_name' => $customDisplayName,
             'cpu_memory_display' => $cpuMemoryDisplay,
-            'cpu_memory_slug_display' => $cpuMemorySlugDisplay,
             'product_spec_display' => $productSpecDisplay,
             'combined_display_name' => $combinedDisplayName,
         ];
@@ -448,7 +443,6 @@ class InstanceSpecCatalogService
      *     display_name: string,
      *     custom_display_name: string,
      *     cpu_memory_display: string,
-     *     cpu_memory_slug_display: string,
      *     product_spec_display: string,
      *     combined_display_name: string
      * }
@@ -459,7 +453,6 @@ class InstanceSpecCatalogService
             'display_name' => $fallback,
             'custom_display_name' => '',
             'cpu_memory_display' => $fallback,
-            'cpu_memory_slug_display' => '',
             'product_spec_display' => '',
             'combined_display_name' => '',
         ];

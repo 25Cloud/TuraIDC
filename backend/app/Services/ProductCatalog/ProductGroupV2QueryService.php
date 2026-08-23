@@ -275,6 +275,7 @@ class ProductGroupV2QueryService
                 'service_type_code',
                 'product_type',
                 'custom_display_name',
+                'remark',
                 'pricing',
                 'setup_fee',
                 'config_options',

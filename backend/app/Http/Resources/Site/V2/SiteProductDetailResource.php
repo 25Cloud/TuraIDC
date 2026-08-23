@@ -9,6 +9,7 @@ use App\Constants\ProductType;
 use App\Models\Product;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductSiteService;
+use App\Services\ProductCatalog\ProductSpecHighlightService;
 use App\Support\ProductGroupHierarchyFields;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -25,6 +26,7 @@ class SiteProductDetailResource extends JsonResource
         /** @var Product $product */
         $product = $this->resource;
         $display = app(ProductDisplayNameResolver::class)->resolveForProduct($product);
+        $specHighlight = app(ProductSpecHighlightService::class);
         $hierarchy = ProductGroupHierarchyFields::fromProduct($product);
         $cpuModelPayload = app(ProductSiteService::class)->cpuModelPayloadForProduct($product);
         $productType = (string) ($hierarchy['product_type'] ?? $hierarchy['service_type_code'] ?? $product->product_type ?? '');
@@ -56,6 +58,8 @@ class SiteProductDetailResource extends JsonResource
             'group' => $this->groupPayload($hierarchy, $productType, $display),
             'config_options' => $this->trimConfigOptions($product->config_options),
             'siblings' => [],
+            'spec_highlights' => $specHighlight->resolveHighlightsForProduct($product),
+            'spec_highlight_text' => $specHighlight->resolveHighlightText($product),
         ];
     }
 
