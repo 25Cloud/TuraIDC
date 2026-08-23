@@ -224,7 +224,8 @@ class InstallService
         } catch (Throwable $exception) {
             throw new InstallException('目标库连接失败：'.$exception->getMessage());
         }
-        $statement = $dbPdo->query('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '.$dbPdo->quote($database));
+        $statement = $dbPdo->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ?');
+        $statement->execute([$database]);
         $tableCount = (int) $statement->fetchColumn();
         if ($tableCount === 0) {
             $logger('导入数据库结构（schema baseline）');
