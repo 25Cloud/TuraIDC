@@ -6,6 +6,7 @@ namespace App\Http\Requests\Admin\V2\Ticket;
 
 use App\Http\Requests\Admin\V2\Common\AdminFormRequest;
 use App\Models\AdminUser;
+use App\Support\AdminPermissions;
 use App\Support\TextSanitizer;
 use Illuminate\Validation\Validator;
 
@@ -36,8 +37,13 @@ final class SaveTicketPreReplyRequest extends AdminFormRequest
             $adminId = (int) ($data['admin_user_id'] ?? 0);
             if ($adminId <= 0) {
                 $validator->errors()->add('admin_user_id', '启用预回复时必须选择管理员账号');
-            } elseif (! AdminUser::query()->whereKey($adminId)->exists()) {
-                $validator->errors()->add('admin_user_id', '所选管理员账号不存在');
+            } else {
+                // 与运行时 createAutoReply 口径一致：仅启用且持 ticket.reply 权限的管理员
+                // 才能作为预回复名义人，防止「保存成功但建单不生成预回复」的静默失效。
+                $admin = AdminUser::query()->where('status', 1)->find($adminId);
+                if ($admin === null || ! $admin->hasPermission(AdminPermissions::TICKET_REPLY)) {
+                    $validator->errors()->add('admin_user_id', '所选管理员不存在、已停用或不可回复工单');
+                }
             }
 
             // 与 payload() 使用同一 TextSanitizer::clean 转换后判断，纯标签/空白内容

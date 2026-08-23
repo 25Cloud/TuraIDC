@@ -332,6 +332,29 @@ class TicketPreReplyTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonPath('code', 42200)
             ->assertJsonStructure(['data' => ['errors' => ['admin_user_id']]]);
+
+        // 启用但所选管理员已停用：与运行时 createAutoReply 口径一致，拒绝保存避免静默失效。
+        $disabledAdmin = $this->createStaff();
+        $disabledAdmin->update(['status' => 0]);
+        $this->postJson('/api/v2/admin/ticket-pre-reply-settings', [
+            'enabled' => true,
+            'admin_user_id' => $disabledAdmin->id,
+            'content' => '请耐心等待管理员回复。',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 42200)
+            ->assertJsonStructure(['data' => ['errors' => ['admin_user_id']]]);
+
+        // 启用但所选管理员未持 ticket.reply 权限：同样拒绝保存。
+        $noReplyPermissionAdmin = $this->createStaff([]);
+        $this->postJson('/api/v2/admin/ticket-pre-reply-settings', [
+            'enabled' => true,
+            'admin_user_id' => $noReplyPermissionAdmin->id,
+            'content' => '请耐心等待管理员回复。',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 42200)
+            ->assertJsonStructure(['data' => ['errors' => ['admin_user_id']]]);
     }
 
     public function test_seeder_seeds_pre_reply_defaults_from_config(): void
