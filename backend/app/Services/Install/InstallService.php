@@ -47,6 +47,7 @@ class InstallService
         'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD',
         'REDIS_HOST', 'REDIS_PORT', 'REDIS_PASSWORD',
         'TICKET_UPSTREAM_CALLBACK_SECRET',
+        'SEO_SITE_URL', 'SEO_FRONTEND_SHELL_URL',
     ];
 
     /**
@@ -448,6 +449,12 @@ class InstallService
             'REDIS_PASSWORD' => (string) $payload['redis_password'],
             // 随机生成回调签名密钥，避免空密钥下上游回调验签失效。
             'TICKET_UPSTREAM_CALLBACK_SECRET' => Str::random(48),
+            // 官网 SEO 渲染：config/idc.php 的默认值是 Docker 编排里的服务名
+            // http://frontends:8081/index.html，源码/宝塔部署下这个主机名无法解析，
+            // 官网首页会直接 500（cURL error 6: Could not resolve host: frontends）。
+            // 向导既然知道部署路径与官网地址，这里一并写死为本机前端产物，零网络依赖。
+            'SEO_SITE_URL' => (string) $payload['frontend_url'],
+            'SEO_FRONTEND_SHELL_URL' => $this->defaultSeoShellUrl(),
         ];
 
         $replaced = [];
@@ -481,6 +488,19 @@ class InstallService
         if (file_put_contents(base_path('.env'), implode(PHP_EOL, $lines).PHP_EOL) === false) {
             throw new InstallException('写入 .env 失败，请检查 backend 目录权限');
         }
+    }
+
+    /**
+     * 官网 index.html 模板地址：源码部署直接读同机前端构建产物。
+     * backend/ 与 frontend-user-v3-www/ 在仓库里同级，故从 base_path() 上跳一层定位。
+     */
+    private function defaultSeoShellUrl(): string
+    {
+        $dist = dirname(base_path()).DIRECTORY_SEPARATOR
+            .'frontend-user-v3-www'.DIRECTORY_SEPARATOR
+            .'dist'.DIRECTORY_SEPARATOR.'index.html';
+
+        return 'file://'.str_replace('\\', '/', $dist);
     }
 
     private function formatEnvValue(string $value): string

@@ -27,6 +27,9 @@
         </t-form-item>
         <!-- inline 形态（Turnstile）的验证组件落点：点击登录时就地加载，无感通过时不占位 -->
         <div v-show="captchaRenderMode === 'inline'" ref="captchaContainer" class="login-captcha"></div>
+        <div class="login-remember">
+          <t-checkbox v-model="rememberAccount">记住账号</t-checkbox>
+        </div>
         <t-form-item class="login-submit-item">
           <t-button block theme="primary" size="large" type="submit" :loading="loading || captchaLoading">
             登录
@@ -73,10 +76,42 @@ onMounted(async () => {
   captchaRenderMode.value = renderMode;
 });
 
+// 「记住账号」只持久化账号，密码一律不落本地存储。
+// 后台账号一旦泄露即等同于整套财务系统失守，而 localStorage 可被任意同源脚本读取
+// （一个 XSS 就能把明文密码整包捞走），风险与收益不成比例。密码交给浏览器自带的
+// 凭据管理器——登录表单已带 autocomplete="username" / "current-password"，
+// 浏览器会在用户许可下加密保存并自动填充，体验一致但密钥由系统钥匙串保管。
+const REMEMBER_ACCOUNT_KEY = 'turaidc-admin-remembered-account';
+const rememberAccount = ref(false);
+
 const formData = ref({
   account: '',
   password: '',
 });
+
+onMounted(() => {
+  try {
+    const saved = window.localStorage.getItem(REMEMBER_ACCOUNT_KEY) || '';
+    if (saved) {
+      formData.value.account = saved;
+      rememberAccount.value = true;
+    }
+  } catch {
+    // 隐私模式等场景下 localStorage 不可用，忽略即可，不影响登录
+  }
+});
+
+function persistRememberedAccount(account: string) {
+  try {
+    if (rememberAccount.value && account) {
+      window.localStorage.setItem(REMEMBER_ACCOUNT_KEY, account);
+    } else {
+      window.localStorage.removeItem(REMEMBER_ACCOUNT_KEY);
+    }
+  } catch {
+    // 同上：存储不可用不应阻断登录流程
+  }
+}
 
 const formRules: Record<string, FormRule[]> = {
   account: [{ required: true, message: '请输入账号', trigger: 'blur' }],
@@ -97,6 +132,7 @@ async function handleLogin() {
       password: formData.value.password,
       ...(captcha ? { captcha } : {}),
     });
+    persistRememberedAccount(formData.value.account);
     MessagePlugin.success('登录成功');
     const redirect = router.currentRoute.value.query.redirect;
     if (redirect) {
@@ -200,6 +236,12 @@ async function handleLogin() {
   &:not(:empty) {
     margin-bottom: 16px;
   }
+}
+
+.login-remember {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 .login-footer {

@@ -189,6 +189,19 @@
             </t-button>
           </div>
         </div>
+        <div class="supplier-batch-panel__search">
+          <t-input
+            v-model="supplierBatchRemoteKeyword"
+            size="small"
+            clearable
+            placeholder="搜索上游商品名称 / 类型 / 分组 / ID"
+          >
+            <template #prefix-icon><search-icon /></template>
+          </t-input>
+          <span v-if="supplierBatchRemoteKeyword.trim()" class="supplier-batch-panel__search-hint">
+            命中 {{ supplierBatchRemoteMatchCount }} 个商品
+          </span>
+        </div>
         <div class="supplier-tree" :class="{ 'is-loading': supplierBatchLoading }">
           <template v-if="supplierBatchRemoteRows.length">
             <div
@@ -297,6 +310,19 @@
             </t-button>
           </div>
         </div>
+        <div class="supplier-batch-panel__search">
+          <t-input
+            v-model="supplierBatchLocalKeyword"
+            size="small"
+            clearable
+            placeholder="搜索本地商品 / 分类名称"
+          >
+            <template #prefix-icon><search-icon /></template>
+          </t-input>
+          <span v-if="supplierBatchLocalKeyword.trim()" class="supplier-batch-panel__search-hint">
+            命中 {{ supplierBatchLocalMatchCount }} 个商品
+          </span>
+        </div>
         <div class="supplier-tree supplier-tree--target">
           <template v-if="supplierBatchConnectedRows.length">
             <div
@@ -393,19 +419,19 @@
         </t-select>
         <t-switch
           v-else-if="field.type === 'switch' || field.type === 'boolean'"
-          :value="supplierCredentialValues[field.key] as boolean"
+          :model-value="supplierCredentialValues[field.key] as boolean"
           @update:model-value="(value: unknown) => (supplierCredentialValues[field.key] = value as boolean)"
         />
         <t-input-number
           v-else-if="field.type === 'number'"
-          :value="supplierCredentialValues[field.key] as number | null"
+          :model-value="supplierCredentialValues[field.key] as number | null"
           :placeholder="field.placeholder || `请输入${field.label}`"
           style="width: 100%"
           @update:model-value="(value: unknown) => (supplierCredentialValues[field.key] = value as number | null)"
         />
         <t-textarea
           v-else-if="field.type === 'textarea'"
-          :value="supplierCredentialValues[field.key] as string | number | null"
+          :model-value="supplierCredentialValues[field.key] as string | number | null"
           :autosize="{ minRows: 3, maxRows: 6 }"
           :placeholder="field.placeholder || `请输入${field.label}`"
           @update:model-value="
@@ -426,7 +452,7 @@
         />
         <t-input
           v-else
-          :value="supplierCredentialValues[field.key] as string | number | null"
+          :model-value="supplierCredentialValues[field.key] as string | number | null"
           :type="field.type === 'password' ? 'password' : 'text'"
           clearable
           :placeholder="supplierFieldPlaceholder(field)"
@@ -559,6 +585,8 @@ const supplierBatchTargetGroupKey = ref('');
 const supplierBatchResult = ref<Record<string, unknown> | null>(null);
 const supplierBatchRemoteExpandedKeys = ref<string[]>([]);
 const supplierBatchLocalExpandedKeys = ref<string[]>([]);
+const supplierBatchRemoteKeyword = ref('');
+const supplierBatchLocalKeyword = ref('');
 const supplierBatchRemoteExpansionInitialized = ref(false);
 const supplierBatchLocalExpansionInitialized = ref(false);
 const supplierBatchForm = reactive({
@@ -638,11 +666,28 @@ const supplierBatchConnectedRows = computed(() =>
 );
 const supplierBatchRemoteExpandedKeySet = computed(() => new Set(supplierBatchRemoteExpandedKeys.value));
 const supplierBatchLocalExpandedKeySet = computed(() => new Set(supplierBatchLocalExpandedKeys.value));
+const supplierBatchRemoteFilteredRows = computed(() =>
+  filterSupplierBatchTreeRows(supplierBatchRemoteRows.value, supplierBatchRemoteKeyword.value),
+);
+const supplierBatchLocalFilteredRows = computed(() =>
+  filterSupplierBatchTreeRows(supplierBatchConnectedRows.value, supplierBatchLocalKeyword.value),
+);
+// 搜索时直接展示过滤结果：命中项若落在折叠分组里会被隐藏，等于搜了个寂寞
 const supplierBatchVisibleRemoteRows = computed(() =>
-  visibleSupplierBatchTreeRows(supplierBatchRemoteRows.value, supplierBatchRemoteExpandedKeySet.value),
+  supplierBatchRemoteKeyword.value.trim()
+    ? supplierBatchRemoteFilteredRows.value
+    : visibleSupplierBatchTreeRows(supplierBatchRemoteRows.value, supplierBatchRemoteExpandedKeySet.value),
 );
 const supplierBatchVisibleConnectedRows = computed(() =>
-  visibleSupplierBatchTreeRows(supplierBatchConnectedRows.value, supplierBatchLocalExpandedKeySet.value),
+  supplierBatchLocalKeyword.value.trim()
+    ? supplierBatchLocalFilteredRows.value
+    : visibleSupplierBatchTreeRows(supplierBatchConnectedRows.value, supplierBatchLocalExpandedKeySet.value),
+);
+const supplierBatchRemoteMatchCount = computed(
+  () => supplierBatchRemoteFilteredRows.value.filter((row) => row.node_type === 'product').length,
+);
+const supplierBatchLocalMatchCount = computed(
+  () => supplierBatchLocalFilteredRows.value.filter((row) => row.node_type === 'product').length,
 );
 const supplierBatchTargetGroup = computed(() =>
   findProductGroupByKey(supplierBatchCategories.value, supplierBatchTargetGroupKey.value),
@@ -876,6 +921,8 @@ function resetSupplierBatchState() {
   supplierBatchLocalExpandedKeys.value = [];
   supplierBatchRemoteExpansionInitialized.value = false;
   supplierBatchLocalExpansionInitialized.value = false;
+  supplierBatchRemoteKeyword.value = '';
+  supplierBatchLocalKeyword.value = '';
   Object.assign(supplierBatchForm, {
     default_status: 1,
     default_auto_setup: 1,
@@ -1185,6 +1232,49 @@ function localProductSubtitle(product?: ProductRecord) {
   return (
     String(product.effective_product_group_full_name || product.product_type_label || '本地商品').trim() || '本地商品'
   );
+}
+
+/**
+ * 判断一行是否命中关键字。
+ * 上游侧匹配商品名、类型、上游分组名与上游商品 ID（运维常直接拿 ID 找货）；
+ * 本地侧匹配展示名与分类名——右栏本身就是「选导入位置」，按分类搜同样要能用。
+ */
+function supplierBatchRowMatches(row: SupplierBatchTreeRow, keyword: string): boolean {
+  const candidates: Array<string | number | undefined> = [
+    row.label,
+    row.product?.name,
+    row.product?.type_label,
+    row.product?.remote_group_name,
+    row.product?.id,
+    row.localProduct ? localProductDisplayName(row.localProduct) : undefined,
+  ];
+
+  return candidates.some((item) => String(item ?? '').toLowerCase().includes(keyword));
+}
+
+/**
+ * 按关键字过滤树行，并回溯保留命中行的全部祖先分组。
+ * 不保留祖先的话，命中商品会脱离层级、右栏还会失去可选的父分类。
+ */
+function filterSupplierBatchTreeRows(rows: SupplierBatchTreeRow[], keyword: string): SupplierBatchTreeRow[] {
+  const normalized = keyword.trim().toLowerCase();
+  if (!normalized) return rows;
+
+  const rowByKey = new Map(rows.map((row) => [row.key, row]));
+  const kept = new Set<string>();
+
+  rows.forEach((row) => {
+    if (!supplierBatchRowMatches(row, normalized)) return;
+    kept.add(row.key);
+
+    let parentKey = row.parentKey;
+    while (parentKey && !kept.has(parentKey)) {
+      kept.add(parentKey);
+      parentKey = rowByKey.get(parentKey)?.parentKey;
+    }
+  });
+
+  return rows.filter((row) => kept.has(row.key));
 }
 
 function visibleSupplierBatchTreeRows(rows: SupplierBatchTreeRow[], expandedKeySet: Set<string>) {
