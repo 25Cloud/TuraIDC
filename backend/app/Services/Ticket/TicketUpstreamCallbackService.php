@@ -10,10 +10,9 @@ use App\Models\TicketReply;
 use App\Models\TicketReplyDelivery;
 use App\Models\TicketUpstreamBinding;
 use App\Services\Notification\UserNotificationService;
-use App\Services\Ticket\TicketDeliveryService;
-use App\Services\Ticket\TicketService;
 use App\Services\Upstream\ProviderKey;
 use App\Support\TextSanitizer;
+use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -193,6 +192,7 @@ final class TicketUpstreamCallbackService
             foreach (['data', 'list', 'items', 'attachment', 'attachments', 'images', 'image'] as $key) {
                 if (array_key_exists($key, $raw) && count($raw) === 1) {
                     $raw = $raw[$key];
+
                     continue 2;
                 }
             }
@@ -346,7 +346,7 @@ final class TicketUpstreamCallbackService
      * 锁 TTL 为防死锁兜底，一致性由调用方在事务提交后的 finally 显式释放保证。
      *
      * @param  mixed  $raw  回调原始附件数据
-     * @return list<\Illuminate\Contracts\Cache\Lock>
+     * @return list<Lock>
      */
     private function acquireInboundAttachmentLocks(mixed $raw): array
     {
@@ -374,7 +374,7 @@ final class TicketUpstreamCallbackService
     /**
      * 释放 receiveReply() 持有的附件缓存锁，与 acquireInboundAttachmentLocks() 配对使用。
      *
-     * @param  list<\Illuminate\Contracts\Cache\Lock>  $locks
+     * @param  list<Lock>  $locks
      */
     private function releaseInboundAttachmentLocks(array $locks): void
     {
@@ -464,6 +464,7 @@ final class TicketUpstreamCallbackService
             try {
                 if (! $lock->get()) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -489,6 +490,7 @@ final class TicketUpstreamCallbackService
                 $path = 'private/tickets/upstream/'.$filename;
                 if (array_key_exists($path, $referencedAfterLock)) {
                     $referenced++;
+
                     continue;
                 }
 

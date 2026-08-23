@@ -11,6 +11,14 @@ use App\Services\Finance\AdminAgentDiscountService;
 class AgentGroupDiscountController extends Controller
 {
     public function __construct(private readonly AdminAgentDiscountService $service) {}
-    public function index() { return $this->success(['rows' => $this->service->matrix()]); }
-    public function update(AgentGroupDiscountRequest $request) { return $this->success($this->service->saveMatrix($request->items()), '折扣矩阵保存成功'); }
+
+    public function index()
+    {
+        return $this->success(['rows' => $this->service->matrix()]);
+    }
+
+    public function update(AgentGroupDiscountRequest $request)
+    {
+        return $this->success($this->service->saveMatrix($request->items()), '折扣矩阵保存成功');
+    }
 }

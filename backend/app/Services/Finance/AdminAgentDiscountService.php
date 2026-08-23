@@ -25,12 +25,14 @@ class AdminAgentDiscountService
     public function saveAgentGroup(?AgentGroup $group, array $data): AgentGroup
     {
         $this->assertUnique(AgentGroup::class, $data, $group);
+
         return $group ? tap($group)->update($data)->refresh() : AgentGroup::query()->create($data);
     }
 
     public function saveProductGroup(?ProductDiscountGroup $group, array $data): ProductDiscountGroup
     {
         $this->assertUnique(ProductDiscountGroup::class, $data, $group);
+
         return $group ? tap($group)->update($data)->refresh() : ProductDiscountGroup::query()->create($data);
     }
 
@@ -63,6 +65,7 @@ class AdminAgentDiscountService
             'min_discount_rate' => number_format((float) $product->min_discount_rate, 2, '.', ''),
             'discounts' => $groups->map(function (AgentGroup $group) use ($product, $discounts) {
                 $discount = $discounts->get($product->id, collect())->firstWhere('agent_group_id', $group->id);
+
                 return ['agent_group_id' => (int) $group->id, 'discount_rate' => $discount ? number_format((float) $discount->discount_rate, 2, '.', '') : null];
             })->values()->all(),
         ])->values()->all();
@@ -82,10 +85,11 @@ class AdminAgentDiscountService
                 );
             }
         });
+
         return AgentGroupDiscount::query()->whereIn('agent_group_id', array_column($items, 'agent_group_id'))->whereIn('product_discount_group_id', array_column($items, 'product_discount_group_id'))->get()->all();
     }
 
-    private function assertUnique(string $model, array $data, object|null $current): void
+    private function assertUnique(string $model, array $data, ?object $current): void
     {
         $query = $model::query()->where('code', $data['code']);
         if ($current) {

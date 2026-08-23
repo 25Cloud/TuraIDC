@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Models\TicketUpstreamBinding;
 use App\Services\Ticket\TicketDeliveryService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -53,7 +54,7 @@ final class DeliverTicketToUpstreamJob implements ShouldBeUnique, ShouldQueue
     public function failed(\Throwable $exception): void
     {
         try {
-            \App\Models\TicketUpstreamBinding::query()
+            TicketUpstreamBinding::query()
                 ->where('ticket_id', $this->ticketId)
                 ->where('status', 'sending')
                 ->update([
@@ -68,7 +69,7 @@ final class DeliverTicketToUpstreamJob implements ShouldBeUnique, ShouldQueue
             ]);
         }
 
-        $binding = \App\Models\TicketUpstreamBinding::query()->where('ticket_id', $this->ticketId)->first();
+        $binding = TicketUpstreamBinding::query()->where('ticket_id', $this->ticketId)->first();
         Log::warning('工单传递到上游失败', [
             'ticket_id' => $this->ticketId,
             'binding_id' => $binding?->id,

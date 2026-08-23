@@ -1,9 +1,8 @@
 <?php
 
-use App\Http\Controllers\Admin\V2\AuthController;
 use App\Http\Controllers\Admin\V2\AgentGroupController;
 use App\Http\Controllers\Admin\V2\AgentGroupDiscountController;
-use App\Http\Controllers\Admin\V2\ProductDiscountGroupController;
+use App\Http\Controllers\Admin\V2\AuthController;
 use App\Http\Controllers\Admin\V2\ContentArticleController;
 use App\Http\Controllers\Admin\V2\ContentCategoryController;
 use App\Http\Controllers\Admin\V2\CouponCampaignController;
@@ -23,6 +22,7 @@ use App\Http\Controllers\Admin\V2\MediaFileController;
 use App\Http\Controllers\Admin\V2\MemberLevelController;
 use App\Http\Controllers\Admin\V2\OrderController;
 use App\Http\Controllers\Admin\V2\ProductController;
+use App\Http\Controllers\Admin\V2\ProductDiscountGroupController;
 use App\Http\Controllers\Admin\V2\ProductGroupController;
 use App\Http\Controllers\Admin\V2\ProductSpecHighlightController;
 use App\Http\Controllers\Admin\V2\ProductTypeController;

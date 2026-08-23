@@ -4,11 +4,11 @@ namespace App\Services\Site;
 
 use App\Constants\ProductType;
 use App\Models\Product;
+use App\Models\User;
+use App\Services\Finance\AgentDiscountService;
 use App\Services\Finance\CheckoutSecurityService;
 use App\Services\Finance\CheckoutService;
 use App\Services\Finance\CouponService;
-use App\Services\Finance\AgentDiscountService;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 
 class SiteProductQuoteService
