@@ -189,7 +189,22 @@ class InstallService
         if ($this->isInstalled()) {
             throw new InstallException('系统已安装，如需重装请先删除 '.$this->lockPath());
         }
+
+        // 并发防重入：用文件独占创建实现原子锁（安装期 Redis/DB 尚未就绪，无法用 Cache::lock）。
+        // 锁文件同时是安装完成标记（writeLock 覆盖为 JSON），内容可区分「安装中」与「已完成」。
+        $lockHandle = @fopen($this->lockPath(), 'x');
+        if ($lockHandle === false) {
+            $lockContent = (string) @file_get_contents($this->lockPath());
+            if (str_starts_with(ltrim($lockContent), '{')) {
+                throw new InstallException('系统已安装，如需重装请先删除 '.$this->lockPath());
+            }
+            throw new InstallException('安装正在进行中，请稍后重试；若上次安装被中断，请先删除 '.$this->lockPath());
+        }
+        fwrite($lockHandle, 'installing');
+        fclose($lockHandle);
+
         if (! $this->requirementsPassed()) {
+            @unlink($this->lockPath());
             throw new InstallException('环境检测未通过，请先处理未满足的必选项');
         }
 
@@ -224,7 +239,8 @@ class InstallService
         } catch (Throwable $exception) {
             throw new InstallException('目标库连接失败：'.$exception->getMessage());
         }
-        $statement = $dbPdo->query('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '.$dbPdo->quote($database));
+        $statement = $dbPdo->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ?');
+        $statement->execute([$database]);
         $tableCount = (int) $statement->fetchColumn();
         if ($tableCount === 0) {
             $logger('导入数据库结构（schema baseline）');
@@ -313,10 +329,27 @@ class InstallService
             }
         }
 
+        // 四个站点 origin（scheme://host[:port]）必须互不相同，否则 CORS 与跳转行为异常。
+        $originByKey = [];
+        foreach (['app_url', 'frontend_url', 'client_console_url', 'admin_url'] as $urlKey) {
+            $parts = parse_url((string) $normalized[$urlKey]);
+            $originByKey[$urlKey] = ($parts['scheme'] ?? '').'://'.($parts['host'] ?? '').(isset($parts['port']) ? ':'.$parts['port'] : '');
+        }
+        $duplicates = array_keys(array_diff_assoc($originByKey, array_unique($originByKey)));
+        if ($duplicates !== []) {
+            throw new InstallException('站点地址不能重复：'.$duplicates[0].' 与另一地址使用了相同 origin（scheme://host:port）');
+        }
+
         foreach (['db_database' => '数据库名', 'db_username' => '数据库用户名'] as $key => $label) {
             if ((string) $normalized[$key] === '') {
                 throw new InstallException($label.'不能为空');
             }
+        }
+
+        // 数据库名会进入 DSN 拼接（;dbname=）与 CREATE DATABASE 标识符，
+        // 限定为 MySQL 标识符字符集，防止 `;` 等注入额外 DSN 参数。
+        if (preg_match('/\A[a-zA-Z0-9_]+\z/', (string) $normalized['db_database']) !== 1) {
+            throw new InstallException('数据库名只能包含字母、数字与下划线');
         }
 
         $username = (string) $normalized['admin_username'];

@@ -20,7 +20,9 @@ final class TicketUpstreamUploadThrottle
     public function handle(Request $request, Closure $next): Response
     {
         if (! $this->uploadImageEnabled()) {
-            Log::warning('上游工单附件上传接口未启用', [
+            // 接口未启用是配置态，属预期行为；/upload_image 为匿名公开路由，
+            // 外部扫描器持续请求会放大日志量，故用 debug 级别记录，避免刷屏告警。
+            Log::debug('上游工单附件上传接口未启用', [
                 'reason' => 'upload_image_disabled',
                 'ip' => $request->ip(),
             ]);
