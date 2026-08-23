@@ -12,7 +12,8 @@ Route::get('/', function () {
 });
 
 // ---- 安装向导（已安装后所有入口 404，见 InstallController） ----
-Route::get('/install', [InstallController::class, 'index']);
+Route::get('/install', [InstallController::class, 'index'])
+    ->middleware('throttle:30,1');
 Route::post('/install/requirements', [InstallController::class, 'requirements'])
     ->middleware('throttle:10,1');
 Route::post('/install/test', [InstallController::class, 'test'])

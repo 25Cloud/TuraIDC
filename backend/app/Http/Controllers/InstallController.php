@@ -15,6 +15,10 @@ use Throwable;
  *
  * 已安装（安装锁或管理员已存在）后所有入口直接 404，防止向导被重放。
  * 安装期间不依赖 session/cookie，接口统一豁免 CSRF（见 bootstrap/app.php）。
+ *
+ * 部署级访问控制：必须携带与 env INSTALL_TOKEN 匹配的令牌（请求头
+ * X-Install-Token 或 URL 参数 token）；未配置令牌或令牌不匹配一律 404，
+ * 避免外部请求者抢先安装创建管理员。令牌不进入安装表单、不写入 .env。
  */
 class InstallController extends Controller
 {
@@ -22,15 +26,19 @@ class InstallController extends Controller
         private readonly InstallService $installer,
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
+        $this->assertInstallAccess();
+
         abort_if($this->installer->isInstalled(), 404);
 
-        return view('install.index');
+        return view('install.index', ['install_token' => (string) $request->query('token', '')]);
     }
 
-    public function requirements(): JsonResponse
+    public function requirements(Request $request): JsonResponse
     {
+        $this->assertInstallAccess();
+
         abort_if($this->installer->isInstalled(), 404);
 
         return response()->json([
@@ -44,6 +52,8 @@ class InstallController extends Controller
 
     public function test(Request $request): JsonResponse
     {
+        $this->assertInstallAccess();
+
         abort_if($this->installer->isInstalled(), 404);
 
         $database = $this->installer->testDatabase([
@@ -60,17 +70,25 @@ class InstallController extends Controller
             'password' => (string) $request->input('redis_password', ''),
         ]);
 
+        // 失败时对外只返回固定文案，避免未认证探测端口的开放/拒绝差异；
+        // 详细异常由 InstallService 内部以 debug 级别记录。
         return response()->json([
             'code' => 0,
             'data' => [
-                'database' => $database,
-                'redis' => $redis,
+                'database' => $database['ok']
+                    ? $database
+                    : ['ok' => false, 'message' => '数据库连接失败，请检查配置', 'database_exists' => false, 'database_empty' => false],
+                'redis' => $redis['ok']
+                    ? $redis
+                    : ['ok' => false, 'message' => 'Redis 连接失败，请检查配置'],
             ],
         ]);
     }
 
     public function run(Request $request): JsonResponse
     {
+        $this->assertInstallAccess();
+
         abort_if($this->installer->isInstalled(), 404);
 
         try {
@@ -113,10 +131,26 @@ class InstallController extends Controller
      */
     private function installError(string $message, array $logs = []): JsonResponse
     {
+        // 安装期依赖（DB/Redis/.env）未就绪，ApiResponseBuilder 可能不可用，故手写统一结构。
         return response()->json([
             'code' => 50000,
             'message' => $message,
             'data' => ['logs' => $logs],
         ], 422);
+    }
+
+    /**
+     * 部署级访问控制：校验安装令牌（header X-Install-Token 或 URL 参数 token）。
+     * 未配置 INSTALL_TOKEN 或令牌不匹配一律 404，避免暴露安装入口存在性，
+     * 防止外部请求者抢先安装创建管理员。
+     */
+    private function assertInstallAccess(): void
+    {
+        $expectedToken = trim((string) config('install.token'));
+        $providedToken = trim((string) request()->header('X-Install-Token', (string) request()->query('token', '')));
+
+        if ($expectedToken === '' || ! hash_equals($expectedToken, $providedToken)) {
+            abort(404);
+        }
     }
 }

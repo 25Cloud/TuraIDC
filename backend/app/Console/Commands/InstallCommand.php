@@ -87,6 +87,13 @@ final class InstallCommand extends Command
             $this->components->error('安装失败：'.$exception->getMessage());
 
             return self::FAILURE;
+        } catch (Throwable $exception) {
+            // 兜底：install() 内部已包装大部分异常，这里防止未预期异常直接打印完整堆栈
+            // （堆栈可能包含 .env 相关连接参数），只输出简要错误。
+            report($exception);
+            $this->components->error('安装出现意外错误，请查看服务日志：'.$exception->getMessage());
+
+            return self::FAILURE;
         }
 
         $this->newLine();
