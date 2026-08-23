@@ -339,6 +339,42 @@ parameters:
 		-
 			message: '#^Access to an undefined property App\\Models\\AdminUser\|App\\Models\\User\:\:\$name\.$#'
 			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/V2/TicketDeliveryController.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Model\:\:update\(\) expects array\<model property of App\\Models\\TicketDeliveryRule, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Admin/V2/TicketDeliveryController.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of static method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\TicketDeliveryRule\>\:\:create\(\) expects array\<model property of App\\Models\\TicketDeliveryRule, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Admin/V2/TicketDeliveryController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/TicketDeliveryController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/TicketDeliveryController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/V2/TicketDeliveryController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AdminUser\|App\\Models\\User\:\:\$name\.$#'
+			identifier: property.notFound
 			count: 2
 			path: app/Http/Controllers/Admin/V2/UserController.php
 
@@ -547,6 +583,12 @@ parameters:
 			path: app/Http/Requests/Admin/V2/Order/ListOrdersRequest.php
 
 		-
+			message: '#^Offset ''provider_key'' on non\-empty\-array\<string, mixed\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Http/Requests/Admin/V2/Supplier/UpsertSupplierRequest.php
+
+		-
 			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -569,6 +611,54 @@ parameters:
 			identifier: return.void
 			count: 1
 			path: app/Http/Requests/Client/V2/Ledger/ListLedgerRequest.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminAgentGroupListItemResource\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminAgentGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminAgentGroupListItemResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminAgentGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminAgentGroupListItemResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminAgentGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminAgentGroupListItemResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminAgentGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminAgentGroupListItemResource\:\:\$remark\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminAgentGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminAgentGroupListItemResource\:\:\$sort_order\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminAgentGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminAgentGroupListItemResource\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminAgentGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminAgentGroupListItemResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminAgentGroupListItemResource.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
@@ -733,6 +823,66 @@ parameters:
 			path: app/Http/Resources/Admin/V2/AdminProductDetailResource.php
 
 		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminProductDiscountGroupListItemResource\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminProductDiscountGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminProductDiscountGroupListItemResource\:\:\$cost_rate\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminProductDiscountGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminProductDiscountGroupListItemResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminProductDiscountGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminProductDiscountGroupListItemResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminProductDiscountGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminProductDiscountGroupListItemResource\:\:\$min_discount_rate\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminProductDiscountGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminProductDiscountGroupListItemResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminProductDiscountGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminProductDiscountGroupListItemResource\:\:\$remark\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminProductDiscountGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminProductDiscountGroupListItemResource\:\:\$sort_order\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminProductDiscountGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminProductDiscountGroupListItemResource\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminProductDiscountGroupListItemResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\AdminProductDiscountGroupListItemResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/AdminProductDiscountGroupListItemResource.php
+
+		-
 			message: '#^Method App\\Http\\Resources\\Admin\\V2\\AdminProductGroupListResource\:\:firstGroup\(\) should return App\\Models\\FirstProductGroup\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
 			identifier: return.type
 			count: 2
@@ -751,13 +901,13 @@ parameters:
 			path: app/Http/Resources/Admin/V2/AdminProductGroupListResource.php
 
 		-
-			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Http/Resources/Admin/V2/AdminProductSummaryResource.php
 
 		-
-			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Http/Resources/Admin/V2/AdminProductSummaryResource.php
@@ -919,40 +1069,208 @@ parameters:
 			path: app/Http/Resources/Admin/V2/CouponProductGroupResource.php
 
 		-
-			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Http/Resources/Admin/V2/CouponProductResource.php
 
 		-
-			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Http/Resources/Admin/V2/CouponProductResource.php
 
 		-
-			message: '#^Offset ''cpu_memory_slug…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''custom_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Http/Resources/Admin/V2/CouponProductResource.php
 
 		-
-			message: '#^Offset ''custom_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 2
-			path: app/Http/Resources/Admin/V2/CouponProductResource.php
-
-		-
-			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Http/Resources/Admin/V2/CouponProductResource.php
 
 		-
-			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Http/Resources/Admin/V2/CouponProductResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketDeliveryRuleResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketDeliveryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketDeliveryRuleResource\:\:\$department\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketDeliveryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketDeliveryRuleResource\:\:\$enabled\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketDeliveryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketDeliveryRuleResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketDeliveryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketDeliveryRuleResource\:\:\$mask_keywords\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketDeliveryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketDeliveryRuleResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketDeliveryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketDeliveryRuleResource\:\:\$product_scope_mode\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketDeliveryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketDeliveryRuleResource\:\:\$products\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketDeliveryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketDeliveryRuleResource\:\:\$provider_key\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketDeliveryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketDeliveryRuleResource\:\:\$supplier_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketDeliveryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketDeliveryRuleResource\:\:\$sync_admin_replies\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketDeliveryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketDeliveryRuleResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketDeliveryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketDeliveryRuleResource\:\:\$upstream_department_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketDeliveryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$attempt\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$direction\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$duration_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$event\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$http_status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$message\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$occurred_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$operation\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$provider_key\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$reason_code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$supplier\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$supplier_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$ticket_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Admin\\V2\\TicketUpstreamDeliveryLogResource\:\:\$ticket_reply_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$description\.$#'
@@ -1033,13 +1351,13 @@ parameters:
 			path: app/Http/Resources/Finance/FinanceLedgerResource.php
 
 		-
-			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Http/Resources/Product/ProductResource.php
 
 		-
-			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Http/Resources/Product/ProductResource.php
@@ -1057,13 +1375,25 @@ parameters:
 			path: app/Http/Resources/Product/SupplierResource.php
 
 		-
-			message: '#^Offset ''cpu_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''cpu_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Http/Resources/Site/V2/SiteProductCardResource.php
+
+		-
+			message: '#^Offset ''memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Http/Resources/Site/V2/SiteProductCardResource.php
+
+		-
+			message: '#^Offset ''cpu_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Http/Resources/Site/V2/SiteProductDetailResource.php
 
 		-
-			message: '#^Offset ''memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Http/Resources/Site/V2/SiteProductDetailResource.php
@@ -1133,6 +1463,12 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/V2/Content/PublishedContentSummaryResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$upstreamBinding\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Jobs/DeliverTicketReplyToUpstreamJob.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$label\.$#'
@@ -1231,7 +1567,7 @@ parameters:
 			path: app/Models/Invoice.php
 
 		-
-			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Models/Invoice.php
@@ -1261,7 +1597,7 @@ parameters:
 			path: app/Models/Order.php
 
 		-
-			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Models/Order.php
@@ -1321,7 +1657,7 @@ parameters:
 			path: app/Models/Product.php
 
 		-
-			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Models/Product.php
@@ -1549,7 +1885,7 @@ parameters:
 			path: app/Services/Admin/V2/AdminConfigurationV2QueryService.php
 
 		-
-			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/Admin/V2/AdminConfigurationV2QueryService.php
@@ -1769,6 +2105,12 @@ parameters:
 			identifier: function.alreadyNarrowedType
 			count: 1
 			path: app/Services/Auth/AuthService.php
+
+		-
+			message: '#^Offset ''admin_login''\|''client_login''\|''client_register''\|''email_code''\|''phone_code'' on array\{client_login\: ''用户登录'', client_register\: ''用户注册'', admin_login\: ''管理员登录'', email_code\: ''发送邮箱验证码'', phone_code\: ''发送手机验证码''\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Auth/CaptchaPolicyService.php
 
 		-
 			message: '#^Constant App\\Services\\Auth\\VerificationService\:\:API_STATUS_FAILED is unused\.$#'
@@ -2437,7 +2779,7 @@ parameters:
 			path: app/Services/ClientServiceConsole/ServiceTrafficPackageService.php
 
 		-
-			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Services/ClientServiceConsole/ServiceTrafficPackageService.php
@@ -2629,7 +2971,7 @@ parameters:
 			path: app/Services/ClientServiceConsole/ServiceTransformService.php
 
 		-
-			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ClientServiceConsole/ServiceTransformService.php
@@ -2641,7 +2983,7 @@ parameters:
 			path: app/Services/ClientServiceConsole/ServiceTransformService.php
 
 		-
-			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ClientServiceConsole/ServiceTransformService.php
@@ -2743,7 +3085,7 @@ parameters:
 			path: app/Services/ClientServiceConsole/ServiceUpgradeService.php
 
 		-
-			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ClientServiceConsole/ServiceUpgradeService.php
@@ -3037,7 +3379,7 @@ parameters:
 			path: app/Services/Finance/AdminFinanceQueryService.php
 
 		-
-			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/Finance/AdminFinanceQueryService.php
@@ -3149,6 +3491,42 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 2
 			path: app/Services/Finance/AdminOrderNotificationService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$cost_rate\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/AgentDiscountService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$discounts\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/AgentDiscountService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$min_discount_rate\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/AgentDiscountService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Finance/AgentDiscountService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Finance/AgentDiscountService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:discounts\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Finance/AgentDiscountService.php
 
 		-
 			message: '#^Ternary operator condition is always false\.$#'
@@ -3475,38 +3853,38 @@ parameters:
 			path: app/Services/Finance/CouponService.php
 
 		-
-			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Services/Finance/CouponService.php
 
 		-
-			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/Finance/CouponService.php
 
 		-
-			message: '#^Offset ''cpu_memory_slug…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''custom_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/Finance/CouponService.php
 
 		-
-			message: '#^Offset ''custom_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Services/Finance/CouponService.php
-
-		-
-			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Services/Finance/CouponService.php
 
 		-
-			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Finance/CouponService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>agent_group_id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/Finance/CouponService.php
 
@@ -3859,7 +4237,7 @@ parameters:
 			path: app/Services/Finance/InvoiceService.php
 
 		-
-			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Services/Finance/InvoiceService.php
@@ -3877,7 +4255,7 @@ parameters:
 			path: app/Services/Finance/InvoiceService.php
 
 		-
-			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/Finance/InvoiceService.php
@@ -4135,6 +4513,12 @@ parameters:
 			path: app/Services/Finance/PaymentService.php
 
 		-
+			message: '#^Dead catch \- RedisException is never thrown in the try block\.$#'
+			identifier: catch.neverThrown
+			count: 1
+			path: app/Services/Install/InstallService.php
+
+		-
 			message: '#^Access to an undefined property App\\Models\\IntegrationPlugin\:\:\$key\.$#'
 			identifier: property.notFound
 			count: 1
@@ -4167,7 +4551,7 @@ parameters:
 		-
 			message: '#^Method App\\Services\\Integrations\\Plugins\\PluginBindingResolver\:\:nullableString\(\) invoked with 2 parameters, 1 required\.$#'
 			identifier: arguments.count
-			count: 1
+			count: 3
 			path: app/Services/Integrations/Plugins/PluginBindingResolver.php
 
 		-
@@ -4181,6 +4565,12 @@ parameters:
 			identifier: function.alreadyNarrowedType
 			count: 1
 			path: app/Services/Integrations/Plugins/PluginScanner.php
+
+		-
+			message: '#^PHPDoc tag @return with type array\<string, mixed\> is incompatible with native type string\|null\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: app/Services/Integrations/Plugins/ServiceUpstreamBindingWriter.php
 
 		-
 			message: '#^Strict comparison using \!\=\= between bool\|string and null will always evaluate to true\.$#'
@@ -4238,6 +4628,12 @@ parameters:
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>status" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Integrations/Plugins/UpstreamBindingWriter.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>ticket_delivery_enabled" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/Integrations/Plugins/UpstreamBindingWriter.php
@@ -4519,31 +4915,25 @@ parameters:
 			path: app/Services/ProductCatalog/CouponProductGroupQueryService.php
 
 		-
-			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ProductCatalog/CpuModelCatalogService.php
 
 		-
-			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ProductCatalog/CpuModelCatalogService.php
 
 		-
-			message: '#^Offset ''cpu_memory_slug…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''custom_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ProductCatalog/CpuModelCatalogService.php
 
 		-
-			message: '#^Offset ''custom_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Services/ProductCatalog/CpuModelCatalogService.php
-
-		-
-			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ProductCatalog/CpuModelCatalogService.php
@@ -4561,31 +4951,25 @@ parameters:
 			path: app/Services/ProductCatalog/InstanceSpecCatalogService.php
 
 		-
-			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ProductCatalog/InstanceSpecCatalogService.php
 
 		-
-			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ProductCatalog/InstanceSpecCatalogService.php
 
 		-
-			message: '#^Offset ''cpu_memory_slug…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''custom_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ProductCatalog/InstanceSpecCatalogService.php
 
 		-
-			message: '#^Offset ''custom_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Services/ProductCatalog/InstanceSpecCatalogService.php
-
-		-
-			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ProductCatalog/InstanceSpecCatalogService.php
@@ -4717,25 +5101,19 @@ parameters:
 			path: app/Services/ProductCatalog/ProductAdminService.php
 
 		-
-			message: '#^Offset ''cpu_memory_slug…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Services/ProductCatalog/ProductAdminService.php
-
-		-
 			message: '#^Offset ''defaults'' on array\{defaults\: non\-empty\-array\{cpu\?\: string, memory\?\: string\}, labels\: non\-empty\-array\{cpu\?\: string, memory\?\: string\}, pricing_delta\: array, variant_parts\: non\-empty\-list\<string\>, variant_key\: non\-falsy\-string, name\: string, pricing\: array\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ProductCatalog/ProductAdminService.php
 
 		-
-			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 7
 			path: app/Services/ProductCatalog/ProductAdminService.php
 
 		-
-			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ProductCatalog/ProductAdminService.php
@@ -4897,12 +5275,6 @@ parameters:
 			path: app/Services/ProductCatalog/ProductCategoryService.php
 
 		-
-			message: '#^Right side of && is always true\.$#'
-			identifier: booleanAnd.rightAlwaysTrue
-			count: 1
-			path: app/Services/ProductCatalog/ProductCategoryService.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>code" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 2
@@ -4945,13 +5317,7 @@ parameters:
 			path: app/Services/ProductCatalog/ProductDisplayNameResolver.php
 
 		-
-			message: '#^Strict comparison using \!\=\= between non\-empty\-string and '''' will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
-			count: 1
-			path: app/Services/ProductCatalog/ProductDisplayNameResolver.php
-
-		-
-			message: '#^Offset ''combined_display…''\|''product_display_name''\|''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''combined_display…''\|''product_display_name''\|''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ProductCatalog/ProductFullPathResolver.php
@@ -5035,37 +5401,37 @@ parameters:
 			path: app/Services/ProductCatalog/ProductSiteService.php
 
 		-
-			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 3
 			path: app/Services/ProductCatalog/ProductSiteService.php
 
 		-
-			message: '#^Offset ''cpu_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''cpu_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Services/ProductCatalog/ProductSiteService.php
 
 		-
-			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Services/ProductCatalog/ProductSiteService.php
 
 		-
-			message: '#^Offset ''instance_spec_text'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''instance_spec_text'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 3
 			path: app/Services/ProductCatalog/ProductSiteService.php
 
 		-
-			message: '#^Offset ''memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Services/ProductCatalog/ProductSiteService.php
 
 		-
-			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 3
 			path: app/Services/ProductCatalog/ProductSiteService.php
@@ -5079,6 +5445,12 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$group of static method App\\Constants\\ProductType\:\:businessValueForFirstGroup\(\) expects App\\Models\\FirstProductGroup\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
 			identifier: argument.type
+			count: 1
+			path: app/Services/ProductCatalog/ProductSiteService.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
 			count: 1
 			path: app/Services/ProductCatalog/ProductSiteService.php
 
@@ -5099,6 +5471,78 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 3
 			path: app/Services/ProductCatalog/ProductSiteService.php
+
+		-
+			message: '#^Constant App\\Services\\ProductCatalog\\ProductSpecHighlightService\:\:SITE_CHILD_GROUPS_CACHE_KEY is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/ProductCatalog/ProductSpecHighlightService.php
+
+		-
+			message: '#^Constant App\\Services\\ProductCatalog\\ProductSpecHighlightService\:\:SITE_GROUPS_CACHE_TTL_SECONDS is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/ProductCatalog/ProductSpecHighlightService.php
+
+		-
+			message: '#^Constant App\\Services\\ProductCatalog\\ProductSpecHighlightService\:\:SITE_GROUP_CATALOG_CACHE_KEY is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/ProductCatalog/ProductSpecHighlightService.php
+
+		-
+			message: '#^Constant App\\Services\\ProductCatalog\\ProductSpecHighlightService\:\:SITE_PRODUCTS_CACHE_KEY is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/ProductCatalog/ProductSpecHighlightService.php
+
+		-
+			message: '#^Constant App\\Services\\ProductCatalog\\ProductSpecHighlightService\:\:SITE_PRODUCTS_CACHE_TTL_SECONDS is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/ProductCatalog/ProductSpecHighlightService.php
+
+		-
+			message: '#^Constant App\\Services\\ProductCatalog\\ProductSpecHighlightService\:\:SITE_PRODUCT_DETAIL_CACHE_KEY is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/ProductCatalog/ProductSpecHighlightService.php
+
+		-
+			message: '#^Constant App\\Services\\ProductCatalog\\ProductSpecHighlightService\:\:SITE_PRODUCT_DETAIL_CACHE_TTL_SECONDS is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/ProductCatalog/ProductSpecHighlightService.php
+
+		-
+			message: '#^Constant App\\Services\\ProductCatalog\\ProductSpecHighlightService\:\:SITE_PRODUCT_STOCK_CACHE_KEY is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/ProductCatalog/ProductSpecHighlightService.php
+
+		-
+			message: '#^Constant App\\Services\\ProductCatalog\\ProductSpecHighlightService\:\:SITE_PRODUCT_STOCK_CACHE_TTL_SECONDS is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/ProductCatalog/ProductSpecHighlightService.php
+
+		-
+			message: '#^Constant App\\Services\\ProductCatalog\\ProductSpecHighlightService\:\:SITE_PRODUCT_TYPES_CACHE_KEY is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/ProductCatalog/ProductSpecHighlightService.php
+
+		-
+			message: '#^Constant App\\Services\\ProductCatalog\\ProductSpecHighlightService\:\:SITE_PRODUCT_TYPES_CACHE_TTL_SECONDS is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/ProductCatalog/ProductSpecHighlightService.php
+
+		-
+			message: '#^Constant App\\Services\\ProductCatalog\\ProductSpecHighlightService\:\:SITE_ROOT_GROUPS_CACHE_KEY is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Services/ProductCatalog/ProductSpecHighlightService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
@@ -5203,7 +5647,7 @@ parameters:
 			path: app/Services/ProductCatalog/ProductSyncService.php
 
 		-
-			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/ProductCatalog/ProductSyncService.php
@@ -5347,7 +5791,7 @@ parameters:
 			path: app/Services/Provisioning/AdminServiceListService.php
 
 		-
-			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Services/Provisioning/AdminServiceListService.php
@@ -5671,19 +6115,13 @@ parameters:
 			path: app/Services/Provisioning/ServiceRenewService.php
 
 		-
-			message: '#^Offset ''annually''\|''monthly''\|''quarterly''\|''semiannually'' on array\{monthly\: 1, quarterly\: 2, semiannually\: 3, annually\: 4, biennially\: 5, triennially\: 6, one_time\: 7, onetime\: 7\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Services/Provisioning/ServiceRenewService.php
 
 		-
-			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 2
-			path: app/Services/Provisioning/ServiceRenewService.php
-
-		-
-			message: '#^Parameter \#1 \$array \(list\<array\{billing_cycle\: ''annually'', billing_cycle_label\: ''年付'', amount\: numeric\-string, upstream_amount\: ''''\}\|array\{billing_cycle\: ''monthly'', billing_cycle_label\: ''月付'', amount\: numeric\-string, upstream_amount\: ''''\}\|array\{billing_cycle\: ''quarterly'', billing_cycle_label\: ''季付'', amount\: numeric\-string, upstream_amount\: ''''\}\|array\{billing_cycle\: ''semiannually'', billing_cycle_label\: ''半年付'', amount\: numeric\-string, upstream_amount\: ''''\}\>\) of array_values is already a list, call has no effect\.$#'
+			message: '#^Parameter \#1 \$array \(list\<array\{billing_cycle\: ''annually'', billing_cycle_label\: ''年付'', original_amount\: numeric\-string, amount\: numeric\-string, agent_group_id\: mixed, agent_group_name\: mixed, product_discount_group_id\: mixed, agent_discount_rate\: mixed, \.\.\.\}\|array\{billing_cycle\: ''monthly'', billing_cycle_label\: ''月付'', original_amount\: numeric\-string, amount\: numeric\-string, agent_group_id\: mixed, agent_group_name\: mixed, product_discount_group_id\: mixed, agent_discount_rate\: mixed, \.\.\.\}\|array\{billing_cycle\: ''quarterly'', billing_cycle_label\: ''季付'', original_amount\: numeric\-string, amount\: numeric\-string, agent_group_id\: mixed, agent_group_name\: mixed, product_discount_group_id\: mixed, agent_discount_rate\: mixed, \.\.\.\}\|array\{billing_cycle\: ''semiannually'', billing_cycle_label\: ''半年付'', original_amount\: numeric\-string, amount\: numeric\-string, agent_group_id\: mixed, agent_group_name\: mixed, product_discount_group_id\: mixed, agent_discount_rate\: mixed, \.\.\.\}\>\) of array_values is already a list, call has no effect\.$#'
 			identifier: arrayValues.list
 			count: 1
 			path: app/Services/Provisioning/ServiceRenewService.php
@@ -6139,7 +6577,7 @@ parameters:
 			path: app/Services/Referral/ReferralService.php
 
 		-
-			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_display_name'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 2
 			path: app/Services/Referral/ReferralService.php
@@ -6214,6 +6652,12 @@ parameters:
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1
+			path: app/Services/Site/SeoRenderService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
 			path: app/Services/Site/SiteHomeService.php
 
 		-
@@ -6225,6 +6669,12 @@ parameters:
 		-
 			message: '#^Method App\\Services\\Site\\SiteProductQuoteService\:\:findSaleProductForQuote\(\) should return App\\Models\\Product\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
 			identifier: return.type
+			count: 1
+			path: app/Services/Site/SiteProductQuoteService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/Site/SiteProductQuoteService.php
 
@@ -6295,9 +6745,15 @@ parameters:
 			path: app/Services/System/AdminLogService.php
 
 		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$delivered\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/System/AdminLogService.php
+
+		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$failed\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 3
 			path: app/Services/System/AdminLogService.php
 
 		-
@@ -6309,13 +6765,25 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
-			count: 1
+			count: 2
 			path: app/Services/System/AdminLogService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$pending\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 3
+			path: app/Services/System/AdminLogService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sending\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/System/AdminLogService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$skipped\.$#'
+			identifier: property.notFound
+			count: 1
 			path: app/Services/System/AdminLogService.php
 
 		-
@@ -6327,7 +6795,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$total\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 3
 			path: app/Services/System/AdminLogService.php
 
 		-
@@ -6345,7 +6813,7 @@ parameters:
 		-
 			message: '#^Cannot call method format\(\) on string\.$#'
 			identifier: method.nonObject
-			count: 6
+			count: 8
 			path: app/Services/System/AdminLogService.php
 
 		-
@@ -6463,13 +6931,25 @@ parameters:
 			path: app/Services/System/AdminLogService.php
 
 		-
+			message: '#^Strict comparison using \!\=\= between ''上游工单附件上传''\|''上游附件上传''\|''清理上游未使用上传文件'' and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/System/AdminLogService.php
+
+		-
 			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 3
+			path: app/Services/System/AdminLogService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>admin_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/System/AdminLogService.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>admin_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Using nullsafe property access "\?\-\>delivered" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/System/AdminLogService.php
@@ -6483,7 +6963,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>failed" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 3
+			count: 4
 			path: app/Services/System/AdminLogService.php
 
 		-
@@ -6495,7 +6975,19 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>pending" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 2
+			count: 3
+			path: app/Services/System/AdminLogService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>sending" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/System/AdminLogService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>skipped" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
 			path: app/Services/System/AdminLogService.php
 
 		-
@@ -6507,7 +6999,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>total" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 8
+			count: 9
 			path: app/Services/System/AdminLogService.php
 
 		-
@@ -6955,6 +7447,222 @@ parameters:
 			path: app/Services/System/TradeMigrationService.php
 
 		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$attachments\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$attempts\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$content\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$content_prefix\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$delivered_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$event\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$last_attempt_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$last_error\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$message\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$occurred_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$provider_key\.$#'
+			identifier: property.notFound
+			count: 6
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$reason_code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$supplier_id\.$#'
+			identifier: property.notFound
+			count: 6
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$ticket\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$upstreamBinding\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$upstream_department_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$upstream_service_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$upstream_ticket_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Class TuraIDC\\Plugins\\Servers\\ZjmfFinance\\Lib\\ZjmfFinanceTransport not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\TicketUpstreamDeliveryLog\>\:\:create\(\) expects array\<model property of App\\Models\\TicketUpstreamDeliveryLog, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:each\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: mixed, Closure\(App\\Models\\TicketReply\)\: void given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Parameter \#1 \$service of method App\\Services\\Integrations\\Plugins\\PluginBindingResolver\:\:productIdForService\(\) expects App\\Models\\Service, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Parameter \#1 \$service of method App\\Services\\Integrations\\Plugins\\PluginBindingResolver\:\:providerKeyForService\(\) expects App\\Models\\Service, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Parameter \#1 \$service of method App\\Services\\Integrations\\Plugins\\PluginBindingResolver\:\:supplierIdForService\(\) expects App\\Models\\Service, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Parameter \#1 \$service of method App\\Services\\Integrations\\Plugins\\PluginBindingResolver\:\:upstreamProductIdForService\(\) expects App\\Models\\Service, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Parameter \#1 \$service of method App\\Services\\Integrations\\Plugins\\PluginBindingResolver\:\:upstreamServiceIdForService\(\) expects App\\Models\\Service, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Parameter \#1 \$ticket of method App\\Services\\Ticket\\TicketDeliveryService\:\:recordLog\(\) expects App\\Models\\Ticket\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Parameter \#2 \$service of method App\\Services\\Ticket\\TicketDeliveryService\:\:registerTicketCallbackRequest\(\) expects App\\Models\\Service, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>attachments" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>attempts" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>content" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>content_prefix" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>provider_key" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>status" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Services/Ticket/TicketDeliveryService.php
+
+		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$display_name\.$#'
 			identifier: property.notFound
 			count: 9
@@ -7091,6 +7799,78 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 2
 			path: app/Services/Ticket/TicketService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/Ticket/TicketUpstreamCallbackService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$service\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketUpstreamCallbackService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$service_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketUpstreamCallbackService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$subject\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketUpstreamCallbackService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Ticket/TicketUpstreamCallbackService.php
+
+		-
+			message: '#^Call to function is_array\(\) with \*NEVER\* will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Services/Ticket/TicketUpstreamCallbackService.php
+
+		-
+			message: '#^Call to function is_array\(\) with string\|null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Services/Ticket/TicketUpstreamCallbackService.php
+
+		-
+			message: '#^Method App\\Services\\Ticket\\TicketUpstreamCallbackService\:\:referencedUploadPaths\(\) should return array\<string, true\> but returns array\<non\-empty\-string, bool\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/Ticket/TicketUpstreamCallbackService.php
+
+		-
+			message: '#^Offset ''path'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Ticket/TicketUpstreamCallbackService.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Services/Ticket/TicketUpstreamCallbackService.php
+
+		-
+			message: '#^Parameter \#1 \$ticket of method App\\Services\\Ticket\\TicketDeliveryService\:\:recordInboundCallbackLog\(\) expects App\\Models\\Ticket, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Ticket/TicketUpstreamCallbackService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>service_id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Ticket/TicketUpstreamCallbackService.php
 
 		-
 			message: '#^Instanceof between App\\Services\\Upstream\\Drivers\\HostingPanelApi\\HostingPanelApiTransport and ''App\\\\Services\\\\Upstream\\\\Contracts\\\\ProvidesConsoleAccess''\|''App\\\\Services\\\\Upstream\\\\Contracts\\\\ProvidesConsoleCatalog''\|''App\\\\Services\\\\Upstream\\\\Contracts\\\\ProvidesConsoleNetwork''\|''App\\\\Services\\\\Upstream\\\\Contracts\\\\ProvidesConsoleRuntime''\|''App\\\\Services\\\\Upstream\\\\Contracts\\\\ProvidesConsoleSecurity''\|''App\\\\Services\\\\Upstream\\\\Contracts\\\\ProvidesProvisioning''\|''App\\\\Services\\\\Upstream\\\\Contracts\\\\ProvidesRenewal''\|''App\\\\Services\\\\Upstream\\\\Contracts\\\\ProvidesScheduledAuthRefresh''\|''App\\\\Services\\\\Upstream\\\\Contracts\\\\ProvidesStatusSync'' will always evaluate to true\.$#'
@@ -7705,19 +8485,19 @@ parameters:
 			path: app/Support/ProductGroupHierarchyFields.php
 
 		-
-			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Support/ServiceHostname.php
 
 		-
-			message: '#^Offset ''instance_spec_text'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''instance_spec_text'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Support/ServiceHostname.php
 
 		-
-			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, cpu_memory_slug_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			message: '#^Offset ''product_spec_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Support/ServiceHostname.php
