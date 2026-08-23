@@ -500,7 +500,13 @@ async function loadOptions() {
     productApi.v2List({ page: 1, page_size: 100, lifecycle_status: 'active' }),
   ]);
   suppliers.value = (supplierResponse.list || []).filter((supplier) => supplier.provider_key === PROVIDER_KEY);
-  products.value = productResponse.list || [];
+  // 按 ID 合并而非覆盖：loadSupplierProducts 可能已把分页产品写入缓存，
+  // 直接替换会清掉这些产品导致列表页名称解析回退为"指定产品"。
+  const productIndex = new Map(products.value.map((product) => [String(product.id), product]));
+  for (const product of productResponse.list || []) {
+    productIndex.set(String(product.id), product);
+  }
+  products.value = [...productIndex.values()];
 }
 
 async function loadRules() {
