@@ -444,6 +444,100 @@ class V2AdminTicketActionApiTest extends TestCase
             ->assertJsonStructure(['data' => ['errors' => ['allowed_ips']]]);
     }
 
+    public function test_upload_image_cannot_be_disabled_while_delivery_rules_exist(): void
+    {
+        // 测试库可能残留历史规则数据，事务内清空保证断言可复现（回滚后不影响共享库其他测试）。
+        DB::table('ticket_delivery_rules')->delete();
+
+        $suffix = bin2hex(random_bytes(4));
+        $plugin = IntegrationPlugin::query()->create([
+            'domain' => 'servers',
+            'slug' => 'guard-rule-'.$suffix,
+            'plugin_key' => 'guard-rule-'.$suffix,
+            'name' => '上传开关规则测试插件 '.$suffix,
+            'version' => '1.0.0',
+            'entry_class' => 'Tests\\FakePlugin',
+            'capabilities_json' => [],
+            'config_schema_json' => [],
+            'status' => 1,
+            'installed_at' => now(),
+        ]);
+        $supplier = Supplier::query()->create([
+            'name' => '上传开关规则测试供应商 '.$suffix,
+            'code' => 'guard-rule-'.$suffix,
+            'status' => 1,
+        ]);
+        SupplierPluginBinding::query()->create([
+            'supplier_id' => (int) $supplier->id,
+            'plugin_id' => (int) $plugin->id,
+            'provider_key' => 'zjmf_finance_api',
+            'environment' => 'production',
+            'status' => 1,
+            'priority' => 1,
+            'config_json' => [],
+            'has_secret_json' => [],
+        ]);
+
+        Setting::setValues('ticket_upstream', [
+            'upload_image_enabled' => '1',
+            'block_non_whitelisted' => '1',
+        ]);
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
+
+        $rule = TicketDeliveryRule::query()->create([
+            'name' => '上传开关保护规则 '.$suffix,
+            'supplier_id' => (int) $supplier->id,
+            'provider_key' => 'zjmf_finance_api',
+            'department' => 'support',
+            'upstream_department_id' => 'support-01',
+            'product_scope_mode' => 'all',
+            'enabled' => true,
+            'sync_admin_replies' => true,
+        ]);
+
+        // 存在传递规则时，关闭 /upload_image 接口必须被拒绝，且配置不被改写。
+        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'upload_image_enabled' => false,
+            'allowed_ips' => '203.0.113.10',
+            'rate_limit' => 5,
+            'block_non_whitelisted' => true,
+        ])->assertUnprocessable()
+            ->assertJsonPath('code', 42200)
+            ->assertJsonPath('data.errors.upload_image_enabled.0', '存在工单传递规则时不能关闭 /upload_image 接口');
+        $this->assertSame('1', (string) Setting::getValue('ticket_upstream', 'upload_image_enabled', '0'));
+
+        // 部分更新（不带 upload_image_enabled 字段）只改白名单/限流，不应被误拦。
+        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'allowed_ips' => '198.51.100.0/24',
+            'rate_limit' => 10,
+        ])->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.upload_image_enabled', true);
+
+        // 构造「有规则 + 已保存关闭」的遗留状态（修复上线前可先建规则再关接口产生），
+        // 此时部分更新只改白名单/限流仍应放行，不得因回退值为 false 误拦。
+        Setting::setValues('ticket_upstream', ['upload_image_enabled' => '0']);
+        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'allowed_ips' => '203.0.113.10',
+            'rate_limit' => 5,
+        ])->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.upload_image_enabled', false);
+
+        // 规则全部删除后，允许正常关闭并写入配置。
+        $rule->delete();
+        $this->assertFalse(TicketDeliveryRule::query()->exists());
+        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'upload_image_enabled' => false,
+            'allowed_ips' => '203.0.113.10',
+            'rate_limit' => 5,
+            'block_non_whitelisted' => true,
+        ])->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.upload_image_enabled', false);
+        $this->assertSame('0', (string) Setting::getValue('ticket_upstream', 'upload_image_enabled', '1'));
+    }
+
     /**
      * @return list<string>
      */

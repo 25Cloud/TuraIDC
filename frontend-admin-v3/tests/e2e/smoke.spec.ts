@@ -171,7 +171,7 @@ interface DeliveryRuleFixture {
 async function mockTicketDeliverySettings(
   page: import('@playwright/test').Page,
   initialUploadImageEnabled = true,
-  initialRules: DeliveryRuleFixture[] = [],
+  initialRules: DeliveryRuleFixture[] | null = null,
 ) {
   let nextId = 302;
   let uploadImageEnabled = initialUploadImageEnabled;
@@ -191,7 +191,8 @@ async function mockTicketDeliverySettings(
       mask_keywords: '敏感词',
     },
   ];
-  let rules: DeliveryRuleFixture[] = initialRules.length ? initialRules : defaultRules;
+  // null 表示使用默认 1 条规则；显式传空数组表示无规则。
+  let rules: DeliveryRuleFixture[] = initialRules === null ? defaultRules : initialRules;
 
   await page.route(/\/api\/v2\/admin\/suppliers(?:\?.*)?$/, async (route) => {
     await route.fulfill({
@@ -3934,7 +3935,43 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await expect(page.locator('.t-dialog:visible').getByText('新增工单传递规则')).toBeVisible();
     await page.locator('.t-dialog:visible').getByRole('button', { name: '取消' }).click();
 
+    // 存在规则时关闭上传接口：保存被前端拦截，不发请求且提示可见。
     await uploadSwitch.click();
+    let disableRequestFired = false;
+    page.on('request', (request) => {
+      if (request.url().endsWith('/api/v2/admin/ticket-delivery-upload-guard') && request.method() === 'POST') {
+        disableRequestFired = true;
+      }
+    });
+    await page.getByRole('button', { name: '保存配置' }).click();
+    await expect(page.getByText('存在工单传递规则时不能关闭 /upload_image 接口').first()).toBeVisible();
+    expect(disableRequestFired).toBe(false);
+
+    // 因保存被拦截，接口实际仍处于启用状态，新增规则仍可正常打开
+    await page.getByRole('button', { name: '新增规则' }).click();
+    await expect(page.locator('.t-dialog:visible').getByText('新增工单传递规则')).toBeVisible();
+    await page.locator('.t-dialog:visible').getByRole('button', { name: '取消' }).click();
+  });
+
+  test('allows disabling upload_image when no delivery rules exist', async ({ page }) => {
+    await mockAdminInfo(page);
+    // 无已保存的工单传递规则，上传接口初始为开启。
+    await mockTicketDeliverySettings(page, true, []);
+    await page.addInitScript(() => {
+      window.localStorage.setItem('admin_token', 'test-token');
+      window.localStorage.setItem('admin_last_active_at', String(Date.now()));
+    });
+
+    await page.goto('/admin/ticket-delivery-rules', { waitUntil: 'domcontentloaded' });
+
+    const guardForm = page.locator('.ticket-delivery-guard-form');
+    const uploadSwitch = guardForm
+      .locator('.t-form__item')
+      .filter({ hasText: '启用 /upload_image 接口' })
+      .locator('.t-switch');
+    await uploadSwitch.click();
+
+    // 无规则时可正常关闭上传接口：发出保存请求且开关保存为关闭。
     const disableRequest = page.waitForRequest(
       (request) => request.url().endsWith('/api/v2/admin/ticket-delivery-upload-guard') && request.method() === 'POST',
     );
@@ -3943,11 +3980,6 @@ test.describe('frontend-admin-v3 shell smoke', () => {
       upload_image_enabled: false,
       block_non_whitelisted: true,
     });
-
-    // 再次关闭后点击仍只弹提示
-    await page.getByRole('button', { name: '新增规则' }).click();
-    await expect(page.getByText('请先启用 /upload_image 接口').first()).toBeVisible();
-    await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
   });
 
   test('opens ticket conversation and handles core actions', async ({ page }) => {
