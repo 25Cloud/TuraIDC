@@ -14,6 +14,7 @@ use App\Models\Product;
 use App\Models\Service;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\Finance\AgentDiscountService;
 use App\Services\Finance\CheckoutService;
 use App\Services\Finance\CouponService;
 use App\Services\Finance\InvoiceService;
@@ -61,23 +62,21 @@ class ServiceRenewService
         private SettingService $settingService,
         private NotificationService $notificationService,
         private ?PluginBindingResolver $bindingResolver = null,
+        private ?AgentDiscountService $agentDiscountService = null,
     ) {}
 
     public function previewForUser(User $user, int $serviceId, ?string $selectedBillingCycle = null, int $userCouponId = 0): array
     {
         $service = $this->findUserService($user, $serviceId);
         $service = $this->healServiceProductMapping($service);
-        $renewConfig = $this->buildRenewConfig($service);
+        $renewConfig = $this->buildRenewConfig($user, $service);
         $effectiveProduct = $this->resolveEffectiveProduct($service) ?? $service->product;
         $productPricing = Service::extractSupportedRenewPricing(
             is_array($effectiveProduct?->pricing ?? null) ? $effectiveProduct->pricing : []
         );
-        $currentCycleConfig = $service->getRenewPricingCycle((string) $service->billing_cycle, $productPricing);
-        $previewAmount = (float) (
-            $currentCycleConfig['effective_amount']
-            ?? collect($renewConfig['cycles'])->first()['amount']
-            ?? 0
-        );
+        $currentCycle = collect($renewConfig['cycles'])->firstWhere('billing_cycle', (string) $service->billing_cycle)
+            ?? collect($renewConfig['cycles'])->first();
+        $previewAmount = (float) ($currentCycle['amount'] ?? 0);
         $resolvedBillingCycle = trim((string) ($selectedBillingCycle ?: $renewConfig['default_cycle'] ?: $service->billing_cycle));
         $selectedCycleConfig = collect($renewConfig['cycles'])->firstWhere('billing_cycle', $resolvedBillingCycle);
         $selectedAmount = round((float) ($selectedCycleConfig['amount'] ?? $previewAmount), 2);
@@ -103,9 +102,9 @@ class ServiceRenewService
         $cycles = collect($renewConfig['cycles'])
             ->map(function (array $cycle) use ($effectiveProduct, $user, $userCouponId) {
                 $amount = round((float) ($cycle['amount'] ?? 0), 2);
-                $originalAmount = number_format($amount, 2, '.', '');
+                $originalAmount = (string) ($cycle['original_amount'] ?? number_format($amount, 2, '.', ''));
                 $discountAmount = '0.00';
-                $finalAmount = $originalAmount;
+                $finalAmount = number_format($amount, 2, '.', '');
 
                 if ($effectiveProduct instanceof Product && $userCouponId > 0) {
                     try {
@@ -161,7 +160,7 @@ class ServiceRenewService
     {
         $service = $this->findUserService($user, $serviceId);
         $service = $this->healServiceProductMapping($service);
-        $renewConfig = $this->buildRenewConfig($service);
+        $renewConfig = $this->buildRenewConfig($user, $service);
         $cycle = trim($billingCycle);
         $cycleOption = collect($renewConfig['cycles'])->firstWhere('billing_cycle', $cycle);
         $effectiveProduct = $this->resolveEffectiveProduct($service) ?? $service->product;
@@ -317,6 +316,14 @@ class ServiceRenewService
                     'upstream_host_id' => $renewConfig['host_id'],
                     'supports_upstream' => $renewConfig['supports_upstream'],
                     'local_renew_amount' => number_format($amount, 2, '.', ''),
+                    'original_renew_amount' => (string) ($cycleOption['original_amount'] ?? number_format($amount, 2, '.', '')),
+                    'agent_group_id' => $cycleOption['agent_group_id'] ?? null,
+                    'agent_group_name' => $cycleOption['agent_group_name'] ?? null,
+                    'product_discount_group_id' => $cycleOption['product_discount_group_id'] ?? null,
+                    'agent_discount_rate' => $cycleOption['agent_discount_rate'] ?? 100,
+                    'agent_discount_amount' => (string) ($cycleOption['agent_discount_amount'] ?? '0.00'),
+                    'cost_rate' => $cycleOption['cost_rate'] ?? 0,
+                    'cost_amount' => (string) ($cycleOption['cost_amount'] ?? '0.00'),
                     'upstream_amount' => (string) ($cycleOption['upstream_amount'] ?? ''),
                     'discount_amount' => number_format($discountAmount, 2, '.', ''),
                 ], fn ($value) => ! in_array($value, ['', null], true)),
@@ -383,7 +390,7 @@ class ServiceRenewService
     {
         $service = $this->findUserService($user, $serviceId);
         $service = $this->healServiceProductMapping($service);
-        $renewConfig = $this->buildRenewConfig($service);
+        $renewConfig = $this->buildRenewConfig($user, $service);
         $cycle = trim($billingCycle);
         $cycleOption = collect($renewConfig['cycles'])->firstWhere('billing_cycle', $cycle);
         $effectiveProduct = $this->resolveEffectiveProduct($service) ?? $service->product;
@@ -540,6 +547,14 @@ class ServiceRenewService
                     'upstream_host_id' => $renewConfig['host_id'],
                     'supports_upstream' => $renewConfig['supports_upstream'],
                     'local_renew_amount' => number_format($amount, 2, '.', ''),
+                    'original_renew_amount' => (string) ($cycleOption['original_amount'] ?? number_format($amount, 2, '.', '')),
+                    'agent_group_id' => $cycleOption['agent_group_id'] ?? null,
+                    'agent_group_name' => $cycleOption['agent_group_name'] ?? null,
+                    'product_discount_group_id' => $cycleOption['product_discount_group_id'] ?? null,
+                    'agent_discount_rate' => $cycleOption['agent_discount_rate'] ?? 100,
+                    'agent_discount_amount' => (string) ($cycleOption['agent_discount_amount'] ?? '0.00'),
+                    'cost_rate' => $cycleOption['cost_rate'] ?? 0,
+                    'cost_amount' => (string) ($cycleOption['cost_amount'] ?? '0.00'),
                     'upstream_amount' => (string) ($cycleOption['upstream_amount'] ?? ''),
                     'discount_amount' => number_format($discountAmount, 2, '.', ''),
                 ], fn ($value) => ! in_array($value, ['', null], true)),
@@ -1107,7 +1122,7 @@ class ServiceRenewService
         return $this->finalizeRenewSuccess($service, $order, $provisionData, $nextExpiresAt);
     }
 
-    private function buildRenewConfig(Service $service): array
+    private function buildRenewConfig(User $user, Service $service): array
     {
         $effectiveProduct = $this->resolveEffectiveProduct($service) ?? $service->product;
         $cycles = [];
@@ -1129,10 +1144,32 @@ class ServiceRenewService
                 continue;
             }
 
+            $agentPricing = $effectiveProduct instanceof Product
+                ? ($this->agentDiscountService ??= new AgentDiscountService)->apply($effectiveProduct, $user, $localAmount)
+                : [
+                    'original_amount' => $localAmount,
+                    'discounted_amount' => $localAmount,
+                    'discount_amount' => 0.0,
+                    'agent_group_id' => null,
+                    'agent_group_name' => null,
+                    'product_discount_group_id' => null,
+                    'discount_rate' => 100.0,
+                    'cost_rate' => 0.0,
+                    'cost_amount' => 0.0,
+                ];
+
             $cycles[] = [
                 'billing_cycle' => $cycle,
                 'billing_cycle_label' => $label,
-                'amount' => number_format($localAmount, 2, '.', ''),
+                'original_amount' => number_format((float) $agentPricing['original_amount'], 2, '.', ''),
+                'amount' => number_format((float) $agentPricing['discounted_amount'], 2, '.', ''),
+                'agent_group_id' => $agentPricing['agent_group_id'],
+                'agent_group_name' => $agentPricing['agent_group_name'],
+                'product_discount_group_id' => $agentPricing['product_discount_group_id'],
+                'agent_discount_rate' => $agentPricing['discount_rate'],
+                'agent_discount_amount' => number_format((float) $agentPricing['discount_amount'], 2, '.', ''),
+                'cost_rate' => $agentPricing['cost_rate'],
+                'cost_amount' => number_format((float) $agentPricing['cost_amount'], 2, '.', ''),
                 'upstream_amount' => '',
             ];
         }

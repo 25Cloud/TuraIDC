@@ -255,6 +255,9 @@
                 <t-form-item label="仅限首单可用" name="first_order_only">
                   <t-switch v-model="form.first_order_only" />
                 </t-form-item>
+                <t-form-item label="允许代理使用" name="allow_agent">
+                  <t-switch v-model="form.allow_agent" />
+                </t-form-item>
               </div>
             </section>
 
@@ -430,6 +433,7 @@ interface CouponForm {
   billing_cycles: string[];
   product_ids: number[];
   first_order_only: boolean;
+  allow_agent: boolean;
   user_ids: number[];
   total_usage_limit: number | null;
   per_user_limit: number | null;
@@ -527,6 +531,7 @@ function createDefaultForm(): CouponForm {
     billing_cycles: [],
     product_ids: [],
     first_order_only: false,
+    allow_agent: true,
     user_ids: [],
     total_usage_limit: null,
     per_user_limit: null,
@@ -710,6 +715,7 @@ async function openCouponDialog(row?: CouponRecord) {
     form.billing_cycles = Array.isArray(row.billing_cycles) ? [...row.billing_cycles] : [];
     form.product_ids = Array.isArray(row.product_ids) ? row.product_ids.map(Number).filter(Boolean) : [];
     form.first_order_only = Boolean(row.first_order_only);
+    form.allow_agent = row.allow_agent === undefined || row.allow_agent === null ? true : Boolean(row.allow_agent);
     form.user_ids = Array.isArray(row.user_ids) ? row.user_ids.map(Number).filter(Boolean) : [];
     form.total_usage_limit =
       row.total_usage_limit === null || row.total_usage_limit === undefined ? null : Number(row.total_usage_limit || 0);
@@ -740,6 +746,7 @@ function buildPayload(): CouponPayload {
     billing_cycles: form.billing_cycles,
     product_ids: form.product_ids.map(Number).filter((id) => id > 0),
     first_order_only: Boolean(form.first_order_only),
+    allow_agent: Boolean(form.allow_agent),
     user_ids: form.distribution_type === 'private' ? form.user_ids.map(Number).filter((id) => id > 0) : [],
     total_usage_limit: form.total_usage_limit === null ? null : Number(form.total_usage_limit || 0),
     per_user_limit: form.per_user_limit === null ? null : Number(form.per_user_limit || 0),

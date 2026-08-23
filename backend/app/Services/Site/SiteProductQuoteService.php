@@ -4,6 +4,8 @@ namespace App\Services\Site;
 
 use App\Constants\ProductType;
 use App\Models\Product;
+use App\Models\User;
+use App\Services\Finance\AgentDiscountService;
 use App\Services\Finance\CheckoutSecurityService;
 use App\Services\Finance\CheckoutService;
 use App\Services\Finance\CouponService;
@@ -15,6 +17,7 @@ class SiteProductQuoteService
         private CheckoutService $checkoutService,
         private CheckoutSecurityService $checkoutSecurityService,
         private CouponService $couponService,
+        private ?AgentDiscountService $agentDiscountService = null,
     ) {}
 
     public function resolveQuotePayload(int $productId, array $validated, array $requestContext = []): ?array
@@ -25,7 +28,11 @@ class SiteProductQuoteService
             return null;
         }
 
-        return $this->quote($product, $validated, $requestContext);
+        $user = $requestContext['user'] ?? null;
+
+        return $user instanceof User
+            ? $this->quoteForUser($product, $validated, $user, $requestContext)
+            : $this->quote($product, $validated, $requestContext);
     }
 
     public function quote(Product $product, array $validated, array $requestContext = []): array
@@ -76,6 +83,59 @@ class SiteProductQuoteService
         );
 
         return array_merge($quote, $securityPayload);
+    }
+
+    public function quoteForUser(Product $product, array $validated, ?User $user = null, array $requestContext = []): array
+    {
+        $billingCycle = (string) $validated['billing_cycle'];
+        $quantity = max((int) ($validated['quantity'] ?? 1), 1);
+        $normalizedConfig = $this->checkoutService->normalizeConfig($product, (array) ($validated['config'] ?? []));
+        $quote = $this->checkoutService->quote($product, $billingCycle, $normalizedConfig, $quantity);
+        $originalAmount = (float) ($quote['total_amount'] ?? 0);
+        $pricing = ($this->agentDiscountService ?? new AgentDiscountService)->apply($product, $user, $originalAmount);
+        $agentAmount = (float) $pricing['discounted_amount'];
+        $userId = (int) ($user?->id ?? ($requestContext['user_id'] ?? 0));
+        $coupon = $userId > 0
+            ? $this->couponService->previewOwnedCoupon(
+                isset($validated['user_coupon_id']) ? (int) $validated['user_coupon_id'] : null,
+                $userId,
+                $product,
+                $billingCycle,
+                $agentAmount,
+                'new'
+            )
+            : null;
+        $discountAmount = (float) ($coupon['discount_amount'] ?? 0);
+        $quote['original_total_amount'] = number_format($originalAmount, 2, '.', '');
+        $quote['agent_discount_rate'] = number_format((float) $pricing['discount_rate'], 2, '.', '');
+        $quote['agent_discount_amount'] = number_format((float) $pricing['discount_amount'], 2, '.', '');
+        $quote['agent_amount'] = number_format($agentAmount, 2, '.', '');
+        $quote['cost_amount'] = number_format((float) $pricing['cost_amount'], 2, '.', '');
+        $quote['agent_group_id'] = $pricing['agent_group_id'];
+        $quote['agent_group_name'] = $pricing['agent_group_name'];
+        $quote['product_discount_group_id'] = $pricing['product_discount_group_id'];
+        $quote['cost_rate'] = number_format((float) $pricing['cost_rate'], 2, '.', '');
+        $quote['subtotal_amount'] = number_format($agentAmount, 2, '.', '');
+        $quote['discount_amount'] = number_format($discountAmount, 2, '.', '');
+        $quote['total_amount'] = number_format(max($agentAmount - $discountAmount, 0), 2, '.', '');
+        $quote['coupon'] = $coupon;
+        $quote['user_coupon_id'] = (int) ($coupon['user_coupon_id'] ?? 0);
+
+        $availableCoupons = $userId > 0
+            ? $this->couponService->availableCouponsForCheckout($userId, $product, $billingCycle, $agentAmount, 'new')
+            : [];
+        $quote['available_coupons'] = $availableCoupons;
+
+        return array_merge($quote, $this->checkoutSecurityService->issueQuoteToken(
+            (int) $product->id,
+            $billingCycle,
+            $normalizedConfig,
+            $quote,
+            [
+                'request_id' => (string) ($requestContext['request_id'] ?? ''),
+                'ip_address' => (string) ($requestContext['ip_address'] ?? ''),
+            ]
+        ));
     }
 
     private function saleProductQuery(): Builder

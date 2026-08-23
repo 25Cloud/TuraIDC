@@ -1047,6 +1047,24 @@
         </div>
       </div>
     </t-dialog>
+
+    <t-dialog
+      v-model:visible="specHighlightDialogVisible"
+      header="规格描述栏"
+      :confirm-btn="{ content: '保存', loading: specHighlightSubmitting }"
+      :cancel-btn="{}"
+      width="560px"
+      @confirm="submitSpecHighlight"
+    >
+      <p class="spec-highlight-summary">当前生效摘要：{{ specHighlightSummary || '—' }}</p>
+      <p class="spec-highlight-tip">留空维度自动从商品名 / 商品卡片 / 配置项提取。</p>
+      <div class="spec-highlight-form">
+        <label v-for="dimension in specHighlightDimensions" :key="dimension.key" class="spec-highlight-field">
+          <span>{{ dimension.label }}</span>
+          <t-input v-model="specHighlightForm[dimension.key]" placeholder="留空自动提取" clearable />
+        </label>
+      </div>
+    </t-dialog>
   </div>
 </template>
 <script setup lang="ts">
@@ -1067,7 +1085,7 @@ import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import type { ProductCategoryRecord, ProductRecord, ProductTypeRecord } from '@/api/product';
+import type { ProductCategoryRecord, ProductRecord, ProductTypeRecord, SpecHighlightDimension } from '@/api/product';
 import { productApi } from '@/api/product';
 import type { ProviderTypeRecord, SupplierFormField, SupplierRecord } from '@/api/supplier';
 import { supplierApi } from '@/api/supplier';
@@ -1207,6 +1225,12 @@ const provisionHostnameForm = reactive({
   value: '',
   length: 12,
 });
+const specHighlightDialogVisible = ref(false);
+const specHighlightSubmitting = ref(false);
+const specHighlightTarget = ref<ProductRecord | null>(null);
+const specHighlightSummary = ref('');
+const specHighlightDimensions = ref<SpecHighlightDimension[]>([]);
+const specHighlightForm = reactive<Record<string, string>>({});
 interface ProductFormData {
   display_name: string;
   custom_display_name: string;
@@ -1554,6 +1578,7 @@ function productRowMenuOptions(row: ProductRecord): DropdownOption[] {
   }
   return [
     { content: '编辑', value: 'edit', theme: 'default' },
+    { content: '规格描述栏', value: 'spec-highlight', theme: 'default' },
     {
       content: Number(row.status) === 1 ? '隐藏' : '显示',
       value: 'toggle',
@@ -1570,6 +1595,9 @@ function handleProductRowMenuClick(row: ProductRecord, dropdownItem: DropdownOpt
     case 'edit':
       router.push({ name: 'AdminProductEdit', params: { id: row.id } });
       break;
+    case 'spec-highlight':
+      openSpecHighlightDialog(row);
+      break;
     case 'toggle':
       handleToggleProduct(row);
       break;
@@ -1582,6 +1610,47 @@ function handleProductRowMenuClick(row: ProductRecord, dropdownItem: DropdownOpt
     case 'force-delete':
       handleForceDeleteProduct(row);
       break;
+  }
+}
+
+async function openSpecHighlightDialog(row: ProductRecord) {
+  specHighlightTarget.value = row;
+  specHighlightSummary.value = '';
+  specHighlightDimensions.value = [];
+  specHighlightDialogVisible.value = true;
+  Object.keys(specHighlightForm).forEach((key) => delete specHighlightForm[key]);
+  try {
+    const response = await productApi.specHighlight(String(row.id));
+    specHighlightSummary.value = response.spec_highlight_text || '';
+    specHighlightDimensions.value = Array.isArray(response.dimensions) ? response.dimensions : [];
+    const overrides = response.overrides || {};
+    for (const dimension of specHighlightDimensions.value) {
+      specHighlightForm[dimension.key] = overrides[dimension.key] || '';
+    }
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '加载规格描述栏失败'));
+  }
+}
+
+async function submitSpecHighlight() {
+  const target = specHighlightTarget.value;
+  if (!target) return;
+  specHighlightSubmitting.value = true;
+  try {
+    const items: Record<string, string> = {};
+    for (const dimension of specHighlightDimensions.value) {
+      const value = String(specHighlightForm[dimension.key] || '').trim();
+      if (value !== '') {
+        items[dimension.key] = value;
+      }
+    }
+    await productApi.saveSpecHighlight(String(target.id), items);
+    MessagePlugin.success('规格描述栏已更新');
+    specHighlightDialogVisible.value = false;
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '保存规格描述栏失败'));
+  } finally {
+    specHighlightSubmitting.value = false;
   }
 }
 

@@ -69,7 +69,6 @@ class ProductDisplayNameResolver
      *     product_spec_display: string,
      *     custom_display_name: string,
      *     cpu_memory_display: string,
-     *     cpu_memory_slug_display: string,
      *     combined_display_name: string,
      *     instance_spec_text: string,
      *     cpu_display: string,
@@ -107,22 +106,21 @@ class ProductDisplayNameResolver
         $cpuMemoryDisplay = $cpuMemorySegments !== []
             ? implode(' ', $cpuMemorySegments)
             : '';
-        $cpuMemorySlugDisplay = $this->buildCpuMemorySlugDisplay($cpuDisplay, $memoryDisplay);
+        $customDisplayName = $this->resolveCustomDisplayNameText($product, $configSnapshot, [
+            $cpuMemoryDisplay,
+            $instanceSpecText,
+        ]);
+        $nameFallback = $customDisplayName !== ''
+            ? $customDisplayName
+            : $this->resolveProductNameFallbackText($product, $configSnapshot);
         $productSpecDisplay = $instanceSpecText !== ''
             ? $instanceSpecText
-            : ($cpuMemoryDisplay !== '' ? $cpuMemoryDisplay : ($legacyProductName !== '' ? $legacyProductName : '未配置规格 #'.(int) $product->id));
-        $customDisplayName = $this->resolveCustomDisplayNameText($product, $configSnapshot, [
-            $cpuMemorySlugDisplay,
-            $cpuMemoryDisplay,
-            $productSpecDisplay,
-        ]);
-        $combinedSpecDisplayName = $this->buildCombinedDisplayName($productSpecDisplay, $cpuDisplay, $memoryDisplay);
-        $productDisplayName = $customDisplayName !== ''
-            ? $this->buildCustomDisplayName($customDisplayName, $cpuMemorySlugDisplay)
-            : ($combinedSpecDisplayName !== '' ? $combinedSpecDisplayName : $productSpecDisplay);
-        $combinedDisplayName = $customDisplayName !== ''
-            ? $productDisplayName
-            : $productDisplayName;
+            : ($cpuMemoryDisplay !== '' ? $cpuMemoryDisplay : ($nameFallback !== '' ? $nameFallback : '未配置规格 #'.(int) $product->id));
+        $productSpecDisplay = $this->normalizeDisplayNameText($productSpecDisplay);
+        $productDisplayName = $this->normalizeDisplayNameText(
+            $customDisplayName !== '' ? $customDisplayName : $productSpecDisplay
+        );
+        $combinedDisplayName = $productDisplayName;
 
         return [
             'product_display_name' => $productDisplayName,
@@ -131,7 +129,6 @@ class ProductDisplayNameResolver
             'cpu_memory_display' => $cpuMemoryDisplay !== ''
                 ? $cpuMemoryDisplay
                 : ($instanceSpecText !== '' ? $instanceSpecText : '未配置规格 #'.(int) $product->id),
-            'cpu_memory_slug_display' => $cpuMemorySlugDisplay,
             'combined_display_name' => $combinedDisplayName !== ''
                 ? $combinedDisplayName
                 : ($productSpecDisplay !== '' ? $productSpecDisplay : '未配置规格 #'.(int) $product->id),
@@ -785,6 +782,55 @@ class ProductDisplayNameResolver
     }
 
     /**
+     * 展示名专用回退链：与正则干草堆（resolveLegacyProductNameText）解耦，排除 remark。
+     * remark 存的是魔方财务商品卡片 HTML，若被当作展示名会污染订单/账单快照。
+     * 取第一个非空候选，而非像干草堆那样全部拼接。
+     *
+     * @param  array<string, mixed>  $configSnapshot
+     */
+    private function resolveProductNameFallbackText(Product $product, array $configSnapshot = []): string
+    {
+        $candidates = [
+            $configSnapshot['combined_display_name'] ?? '',
+            $configSnapshot['product_spec_display'] ?? '',
+            $configSnapshot['product_display_name'] ?? '',
+            $configSnapshot['legacy_product_name'] ?? '',
+        ];
+
+        $rawAttributes = $product->getAttributes();
+        if (array_key_exists('name', $rawAttributes)) {
+            $candidates[] = $rawAttributes['name'] ?? '';
+        }
+        if (array_key_exists('supplier_product_name', $rawAttributes)) {
+            $candidates[] = $rawAttributes['supplier_product_name'] ?? '';
+        }
+
+        $candidates[] = $product->getRawOriginal('name');
+        $candidates[] = $product->getRawOriginal('supplier_product_name');
+        $candidates[] = ((array) (($product->purchase_requires ?? [])['upstream_split'] ?? []))['source_product_name'] ?? '';
+
+        foreach ($candidates as $candidate) {
+            $normalized = trim((string) $candidate);
+            if ($normalized !== '') {
+                return $normalized;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * 展示名清洗：解码 HTML 实体、去标签、压缩空白、限长 200（对齐最窄的 varchar(200)）。
+     */
+    private function normalizeDisplayNameText(string $value): string
+    {
+        $decoded = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $clean = trim((string) preg_replace('/\s+/u', ' ', strip_tags($decoded)));
+
+        return mb_strlen($clean) <= 200 ? $clean : mb_substr($clean, 0, 200);
+    }
+
+    /**
      * @param  array<string, mixed>  $configSnapshot
      * @param  array<int, string>  $defaultCandidates
      */
@@ -902,85 +948,6 @@ class ProductDisplayNameResolver
         }
 
         return rtrim(rtrim(number_format($number, 2, '.', ''), '0'), '.');
-    }
-
-    private function buildCombinedDisplayName(string $productSpecDisplay, string $cpuDisplay, string $memoryDisplay): string
-    {
-        $specText = trim($productSpecDisplay);
-        $normalizedCpu = $this->normalizeCpuSlug($cpuDisplay);
-        $normalizedMemory = $this->normalizeMemorySlug($memoryDisplay);
-
-        $segments = array_values(array_filter([
-            $specText,
-            $this->containsSlugSegment($specText, $normalizedCpu) ? '' : $normalizedCpu,
-            $this->containsSlugSegment($specText, $normalizedMemory) ? '' : $normalizedMemory,
-        ], static fn (string $segment): bool => trim($segment) !== ''));
-
-        return implode('-', $segments);
-    }
-
-    private function buildCpuMemorySlugDisplay(string $cpuDisplay, string $memoryDisplay): string
-    {
-        return implode('-', array_values(array_filter([
-            $this->normalizeCpuSlug($cpuDisplay),
-            $this->normalizeMemorySlug($memoryDisplay),
-        ], static fn (string $segment): bool => trim($segment) !== '')));
-    }
-
-    private function buildCustomDisplayName(string $customDisplayName, string $cpuMemorySlugDisplay): string
-    {
-        $baseName = trim($customDisplayName);
-        $specSlug = trim($cpuMemorySlugDisplay);
-
-        if ($baseName === '' || $specSlug === '' || $this->containsSlugSegment($baseName, $specSlug)) {
-            return $baseName;
-        }
-
-        return $baseName.'-'.$specSlug;
-    }
-
-    private function normalizeCpuSlug(string $value): string
-    {
-        $text = trim($value);
-        if ($text === '') {
-            return '';
-        }
-
-        if (preg_match('/\d+(?:\.\d+)?/', $text, $matches) !== 1) {
-            return Str::lower(str_replace(' ', '', $text));
-        }
-
-        return $this->normalizeNumericString($matches[0]).'vcpu';
-    }
-
-    private function normalizeMemorySlug(string $value): string
-    {
-        $text = trim($value);
-        if ($text === '') {
-            return '';
-        }
-
-        if (preg_match('/(\d+(?:\.\d+)?)\s*(t|tb|g|gb|m|mb)\b/i', $text, $matches) === 1) {
-            $unit = Str::lower($matches[2]);
-            $normalizedUnit = match ($unit) {
-                't', 'tb' => 'tib',
-                'g', 'gb' => 'gib',
-                'm', 'mb' => 'mib',
-                default => $unit,
-            };
-
-            return $this->normalizeNumericString($matches[1]).$normalizedUnit;
-        }
-
-        return Str::lower(str_replace(' ', '', $text));
-    }
-
-    private function containsSlugSegment(string $haystack, string $needle): bool
-    {
-        $normalizedHaystack = $this->normalizeSlugComparable($haystack);
-        $normalizedNeedle = $this->normalizeSlugComparable($needle);
-
-        return $normalizedHaystack !== '' && $normalizedNeedle !== '' && str_contains($normalizedHaystack, $normalizedNeedle);
     }
 
     /**

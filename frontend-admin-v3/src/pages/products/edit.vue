@@ -60,6 +60,22 @@
                     <span>默认通用计算控制台；选择后，关联服务下次打开控制台将按此页面进入。</span>
                   </div>
                 </t-form-item>
+                <t-form-item label="折扣分组" name="product_discount_group_id">
+                  <t-select
+                    v-model="form.product_discount_group_id"
+                    clearable
+                    filterable
+                    placeholder="请选择商品折扣分组，留空表示不参与代理折扣"
+                    :loading="discountGroupLoading"
+                  >
+                    <t-option
+                      v-for="item in discountGroupOptions"
+                      :key="item.id"
+                      :label="`${item.name || item.code || item.id}${item.min_discount_rate !== undefined ? `（最低 ${item.min_discount_rate}%）` : ''}`"
+                      :value="item.id"
+                    />
+                  </t-select>
+                </t-form-item>
               </div>
             </section>
 
@@ -293,7 +309,8 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import type { ProductCategoryRecord } from '@/api/product';
+import { adminApi } from '@/api/admin';
+import type { ProductCategoryRecord, ProductRecord } from '@/api/product';
 import { productApi } from '@/api/product';
 import type { SupplierRecord } from '@/api/supplier';
 import { supplierApi } from '@/api/supplier';
@@ -342,7 +359,31 @@ const form = reactive({
   upstream_product_id: '' as number | string,
   console_template: 'compute' as ConsoleTemplate,
   config_options: [] as ConfigOptionRecord[],
+  product_discount_group_id: null as number | null,
 });
+
+// --- Discount groups ---
+const discountGroupLoading = ref(false);
+const discountGroupOptions = ref<
+  Array<{ id: number; name?: string; code?: string; min_discount_rate?: number | string }>
+>([]);
+
+async function loadDiscountGroups() {
+  discountGroupLoading.value = true;
+  try {
+    const response = await adminApi.agentDiscount.productDiscountGroups.list();
+    discountGroupOptions.value = (Array.isArray(response) ? response : []).map((item) => ({
+      id: Number(item.id),
+      name: String(item.name || ''),
+      code: String(item.code || ''),
+      min_discount_rate: item.min_discount_rate,
+    }));
+  } catch {
+    discountGroupOptions.value = [];
+  } finally {
+    discountGroupLoading.value = false;
+  }
+}
 
 const rules: FormRules<typeof form> = {
   display_name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
@@ -442,7 +483,7 @@ const configOptionSubItemRows = ref<ConfigOptionSubItemFormRow[]>([]);
 
 // --- Lifecycle ---
 onMounted(async () => {
-  await Promise.all([loadCategories(), loadSuppliers()]);
+  await Promise.all([loadCategories(), loadSuppliers(), loadDiscountGroups()]);
   if (isEdit.value) {
     await loadProductDetail();
   }
@@ -493,6 +534,7 @@ async function loadProductDetail() {
       upstream_product_id: Number(upstreamBinding.upstream_product_id) || upstreamBinding.upstream_product_id || '',
       console_template: normalizeConsoleTemplate(detail.console_template),
       config_options: normalizeConfigOptions(detail.config_options),
+      product_discount_group_id: resolveDiscountGroupId(detail),
     });
     if (form.supplier_id) {
       loadSupplierProducts(form.supplier_id);
@@ -881,6 +923,7 @@ async function submit() {
         upstream_product_id: form.upstream_product_id || undefined,
       },
       config_options: serializeConfigOptions(form.config_options),
+      product_discount_group_id: form.product_discount_group_id || null,
     };
     if (isEdit.value) {
       await productApi.update(productId.value, payload);
@@ -895,6 +938,11 @@ async function submit() {
   } finally {
     submitting.value = false;
   }
+}
+
+function resolveDiscountGroupId(source: ProductRecord | null) {
+  const group = source?.product_discount_group as { id?: number | string } | null | undefined;
+  return Number(source?.product_discount_group_id ?? group?.id ?? 0) || null;
 }
 
 function resolveDisplayName(source?: Record<string, unknown> | null) {

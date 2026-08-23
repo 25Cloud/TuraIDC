@@ -42,6 +42,11 @@ class UserResource extends JsonResource
                 'code' => $memberLevel->code,
                 'reward_rate' => $memberLevel->reward_rate,
             ] : null,
+            'agent_group' => $this->resource->agentGroup ? [
+                'id' => (int) $this->resource->agentGroup->id,
+                'name' => (string) $this->resource->agentGroup->name,
+                'code' => (string) $this->resource->agentGroup->code,
+            ] : null,
             'cash_balance' => $this->formatMoney($this->resource->balance),
             'credit_limit' => $this->formatMoney($this->resource->credit_limit),
             'referral_frozen_balance' => $this->formatMoney($this->resource->referral_frozen_amount),

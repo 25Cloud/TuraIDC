@@ -53,6 +53,10 @@
               {{ profileForm.is_verified ? '已实名' : '未实名' }}
             </t-tag>
           </t-form-item>
+          <t-form-item label="代理组">
+            <t-tag v-if="agentGroup?.name" theme="primary" variant="light">{{ agentGroup.name }}</t-tag>
+            <span v-else class="profile-muted-text">无</span>
+          </t-form-item>
         </t-form>
         <div class="profile-footer">
           <span>保存后会立即更新当前账户资料。</span>
@@ -237,6 +241,7 @@ const {
   emailDialogVisible,
   passwordMode,
   profileForm,
+  agentGroup,
   passwordForm,
   resetForm,
   resetCountdown,
@@ -299,6 +304,11 @@ const {
 
 .profile-form {
   max-width: 46rem;
+}
+
+.profile-muted-text {
+  color: var(--td-text-color-placeholder);
+  font-size: 0.875rem;
 }
 
 .profile-id-row {

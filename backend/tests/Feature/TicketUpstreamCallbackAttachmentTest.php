@@ -11,9 +11,10 @@ use App\Models\IntegrationPlugin;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\SecondProductGroup;
-use App\Models\ThirdProductGroup;
+use App\Models\Service;
 use App\Models\Supplier;
 use App\Models\SupplierPluginBinding;
+use App\Models\ThirdProductGroup;
 use App\Models\Ticket;
 use App\Models\TicketReply;
 use App\Models\TicketUpstreamBinding;
@@ -209,7 +210,7 @@ final class TicketUpstreamCallbackAttachmentTest extends TestCase
             'sort_order' => 1,
             'auto_setup' => 0,
         ]);
-        $service = \App\Models\Service::query()->create([
+        $service = Service::query()->create([
             'user_id' => $user->id,
             'product_id' => $product->id,
             'name' => '回调测试服务 '.$suffix,

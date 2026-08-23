@@ -282,15 +282,15 @@ async function mockTicketDeliverySettings(
 
   await page.route(/\/api\/v2\/admin\/products(?:\?.*)?$/, async (route) => {
     const url = new URL(route.request().url());
-    const page = Math.max(Number(url.searchParams.get('page') || '1'), 1);
+    const pageNumber = Math.max(Number(url.searchParams.get('page') || '1'), 1);
     const pageSize = Math.max(Number(url.searchParams.get('page_size') || '100'), 1);
-    const start = (page - 1) * pageSize;
+    const start = (pageNumber - 1) * pageSize;
     const list = catalogProducts.slice(start, start + pageSize);
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
         code: 0,
-        data: { list, total: catalogProducts.length, page, page_size: pageSize },
+        data: { list, total: catalogProducts.length, page: pageNumber, page_size: pageSize },
       }),
     });
   });

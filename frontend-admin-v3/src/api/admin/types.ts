@@ -415,7 +415,6 @@ export interface ProductBindingRecord {
   product_display_name?: string;
   custom_display_name?: string;
   cpu_memory_display?: string;
-  cpu_memory_slug_display?: string;
   product_spec_display?: string;
   combined_display_name?: string;
   category_full_name?: string;
@@ -570,6 +569,7 @@ export interface CouponRecord {
   product_ids?: number[];
   product_scope_text?: string;
   first_order_only?: boolean | number;
+  allow_agent?: boolean | number;
   user_ids?: number[];
   used_count?: number | string;
   total_usage_limit?: number | string | null;
@@ -604,6 +604,7 @@ export interface CouponPayload {
   billing_cycles: string[];
   product_ids: number[];
   first_order_only: boolean;
+  allow_agent?: boolean;
   user_ids: number[];
   total_usage_limit: number | null;
   per_user_limit: number | null;
@@ -1015,4 +1016,69 @@ export interface MemberLevelPayload {
   status: number;
   sort_order: number;
   remark: string | null;
+}
+
+// ─── Agent Discount ───────────────────────────────────────────
+export interface AgentGroupRecord {
+  id: number | string;
+  name?: string;
+  code?: string;
+  status?: number | string;
+  sort_order?: number | string;
+  remark?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  [key: string]: unknown;
+}
+
+export interface AgentGroupPayload {
+  name: string;
+  code: string;
+  status?: number;
+  sort_order?: number;
+  remark?: string | null;
+}
+
+export interface ProductDiscountGroupRecord {
+  id: number | string;
+  name?: string;
+  code?: string;
+  min_discount_rate?: number | string;
+  cost_rate?: number | string;
+  status?: number | string;
+  sort_order?: number | string;
+  remark?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  [key: string]: unknown;
+}
+
+export interface ProductDiscountGroupPayload {
+  name: string;
+  code: string;
+  min_discount_rate: number;
+  cost_rate: number;
+  status?: number;
+  sort_order?: number;
+  remark?: string | null;
+}
+
+export interface AgentGroupDiscountMatrixRow {
+  id: number | string;
+  name?: string;
+  code?: string;
+  min_discount_rate?: number | string;
+  discounts?: Array<{
+    agent_group_id: number | string;
+    discount_rate: number | string | null;
+  }>;
+  [key: string]: unknown;
+}
+
+export interface AgentGroupDiscountMatrixSavePayload {
+  items: Array<{
+    agent_group_id: number | string;
+    product_discount_group_id: number | string;
+    discount_rate: number | null;
+  }>;
 }

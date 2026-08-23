@@ -170,6 +170,25 @@ type V2ProductDetailRecord = Record<string, unknown> & {
   timestamps?: Record<string, unknown>;
 };
 
+export interface SpecHighlightDimension {
+  key: string;
+  label: string;
+}
+
+export interface SpecHighlightItem {
+  key: string;
+  label: string;
+  value: string;
+}
+
+export interface ProductSpecHighlightResponse {
+  product_id: number | string;
+  spec_highlights?: SpecHighlightItem[];
+  spec_highlight_text?: string;
+  overrides?: Record<string, string>;
+  dimensions?: SpecHighlightDimension[];
+}
+
 interface V2ProductDetailResponse {
   product?: V2ProductDetailRecord;
 }
@@ -301,6 +320,15 @@ function normalizeV2ProductDetail(response: V2ProductDetailResponse): ProductRec
     auto_setup: (provisioning.auto_setup as number | string | boolean) ?? 0,
     provision_hostname: provisionHostname,
     upstream_binding: (product.upstream_binding as ProductUpstreamBindingRecord | null) || null,
+    product_discount_group:
+      (product.product_discount_group as {
+        id?: number | string;
+        name?: string;
+        code?: string;
+        min_discount_rate?: number | string;
+        cost_rate?: number | string;
+      } | null) || null,
+    product_discount_group_id: (product.product_discount_group_id as number | string | null) ?? null,
     orders_count: (statistics.orders_count as number | string) ?? 0,
     services_count: (statistics.services_count as number | string) ?? 0,
     active_services_count: (statistics.active_services_count as number | string) ?? 0,
@@ -435,6 +463,10 @@ export const productApi = {
     request.post({ url: '/v2/admin/products/traffic-package-pulls', data }),
   owners: (id: number | string, params?: Record<string, unknown>) =>
     request.get({ url: `/v2/admin/products/${id}/owners`, params }),
+  specHighlight: (id: number | string) =>
+    request.get<ProductSpecHighlightResponse>({ url: `/v2/admin/products/${id}/spec-highlight` }),
+  saveSpecHighlight: (id: number | string, items: Record<string, string>) =>
+    request.post({ url: `/v2/admin/products/${id}/spec-highlight`, data: { items } }),
   types: () => request.get<ProductTypeRecord[] | { list?: ProductTypeRecord[] }>({ url: '/v2/admin/product-types' }),
   reorderTypes: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/product-types/reorders', data }),
   createType: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/product-types', data }),

@@ -42,6 +42,7 @@ class Product extends Model
         'pricing',
         'setup_fee', 'config_options', 'purchase_requires', 'stock', 'status',
         'sort_order', 'auto_setup',
+        'product_discount_group_id',
     ];
 
     protected function casts(): array
@@ -56,6 +57,7 @@ class Product extends Model
             'sort_order' => 'integer',
             'auto_setup' => 'integer',
             'product_group_id' => 'integer',
+            'product_discount_group_id' => 'integer',
         ];
     }
 
@@ -219,6 +221,11 @@ class Product extends Model
     public function productGroup(): BelongsTo
     {
         return $this->belongsTo(ThirdProductGroup::class, 'product_group_id');
+    }
+
+    public function productDiscountGroup(): BelongsTo
+    {
+        return $this->belongsTo(ProductDiscountGroup::class, 'product_discount_group_id');
     }
 
     public function supplier(): HasOne

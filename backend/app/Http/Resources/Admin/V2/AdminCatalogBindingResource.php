@@ -22,7 +22,6 @@ class AdminCatalogBindingResource extends JsonResource
             'display_name' => (string) ($binding['display_name'] ?? ''),
             'custom_display_name' => (string) ($binding['custom_display_name'] ?? ''),
             'cpu_memory_display' => (string) ($binding['cpu_memory_display'] ?? ''),
-            'cpu_memory_slug_display' => (string) ($binding['cpu_memory_slug_display'] ?? ''),
             'product_spec_display' => (string) ($binding['product_spec_display'] ?? ''),
             'combined_display_name' => (string) ($binding['combined_display_name'] ?? ''),
             'category_full_name' => (string) ($binding['category_full_name'] ?? ''),

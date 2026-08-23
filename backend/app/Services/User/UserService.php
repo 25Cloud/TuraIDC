@@ -73,6 +73,7 @@ class UserService
                 'verification_status',
                 'is_verified',
                 'status',
+                'agent_group_id',
                 'created_at',
             ])
             ->withCount([
@@ -160,6 +161,10 @@ class UserService
         if (array_key_exists('phone', $baseUpdateData)) {
             $baseUpdateData['phone'] = AccountIdentifier::normalizeOptionalPhone((string) $baseUpdateData['phone']);
             $this->assertUniquePhone($baseUpdateData['phone'], (int) $user->id);
+        }
+
+        if (array_key_exists('agent_group_id', $baseUpdateData)) {
+            $baseUpdateData['agent_group_id'] = $this->resolveAgentGroupId($baseUpdateData['agent_group_id']);
         }
 
         $passwordChanged = ! empty($data['password']);
@@ -270,6 +275,7 @@ class UserService
         $user->loadMissing([
             'memberLevel',
             'account',
+            'agentGroup',
         ]);
         $memberLevel = $user->memberLevel;
         $countStats = User::query()
@@ -788,6 +794,25 @@ class UserService
         if ($query->exists()) {
             throw new BusinessException('手机号已被注册');
         }
+    }
+
+    /**
+     * 校验并归一化代理组 ID，返回 null 表示不设置（或清除）代理组。
+     */
+    private function resolveAgentGroupId(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $agentGroupId = (int) $value;
+        throw_unless(
+            $agentGroupId > 0 && Schema::hasTable('agent_groups')
+                && AgentGroup::query()->whereKey($agentGroupId)->exists(),
+            new BusinessException('代理组不存在')
+        );
+
+        return $agentGroupId;
     }
 
     private function reloadUserReadRelations(User $user): User

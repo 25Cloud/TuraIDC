@@ -102,6 +102,10 @@ class AdminPermissions
 
     public const MEMBER_LEVEL_LIST = 'member_level.list';
 
+    public const AGENT_DISCOUNT_MANAGE = 'agent_discount.manage';
+
+    public const AGENT_DISCOUNT_LIST = 'agent_discount.list';
+
     public const REFERRAL_WITHDRAWAL_LIST = 'referral_withdrawal.list';
 
     public const CONTENT_LIST = 'content.list';
@@ -212,6 +216,7 @@ class AdminPermissions
             self::SITE_MANAGE,
             self::REFERRAL_LIST,
             self::MEMBER_LEVEL_MANAGE,
+            self::AGENT_DISCOUNT_MANAGE,
             self::CONTENT_MANAGE,
         ])));
     }
@@ -266,6 +271,7 @@ class AdminPermissions
             self::SITE_MANAGE => [self::SITE_VIEW],
             self::LOG_MANAGE => [self::LOG_LIST],
             self::MEMBER_LEVEL_MANAGE => [self::MEMBER_LEVEL_LIST],
+            self::AGENT_DISCOUNT_MANAGE => [self::AGENT_DISCOUNT_LIST],
             self::CONTENT_MANAGE => [self::CONTENT_LIST],
             self::STAFF_MANAGE => [self::STAFF_LIST],
             self::ROLE_MANAGE => [self::ROLE_LIST, self::PERMISSION_LIST],

@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router';
 import { clientAuthApi } from '@/api/auth';
 import { useGeeTestCaptcha } from '@/composables/useGeeTestCaptcha';
 import { useUserStore } from '@/store';
-import type { ClientNotificationPreferences, ClientUserInfo } from '@/types/client';
+import type { ClientAgentGroup, ClientNotificationPreferences, ClientUserInfo } from '@/types/client';
 import { getErrorMessage } from '@/utils/error';
 import { copyText as copyShared } from '@/utils/format';
 
@@ -54,6 +54,7 @@ export function useProfile() {
     real_name: '',
     id_card_masked: '',
   });
+  const agentGroup = ref<ClientAgentGroup | null>(null);
   const passwordForm = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const passwordMode = ref<'old' | 'reset'>('old');
   const resetForm = reactive({ type: 'phone' as 'phone' | 'email', code: '', password: '', confirmPassword: '' });
@@ -434,6 +435,7 @@ export function useProfile() {
     profileForm.is_verified = Number(info.is_verified || 0);
     profileForm.real_name = String(info.real_name || '');
     profileForm.id_card_masked = String(info.id_card_masked || '');
+    agentGroup.value = info.agent_group || null;
   }
 
   async function loadProfile() {
@@ -547,6 +549,7 @@ export function useProfile() {
     emailDialogVisible,
     passwordMode,
     profileForm,
+    agentGroup,
     passwordForm,
     resetForm,
     resetCountdown,

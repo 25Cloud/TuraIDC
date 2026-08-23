@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\V2\AgentGroupController;
+use App\Http\Controllers\Admin\V2\AgentGroupDiscountController;
 use App\Http\Controllers\Admin\V2\AuthController;
 use App\Http\Controllers\Admin\V2\ContentArticleController;
 use App\Http\Controllers\Admin\V2\ContentCategoryController;
@@ -20,7 +22,9 @@ use App\Http\Controllers\Admin\V2\MediaFileController;
 use App\Http\Controllers\Admin\V2\MemberLevelController;
 use App\Http\Controllers\Admin\V2\OrderController;
 use App\Http\Controllers\Admin\V2\ProductController;
+use App\Http\Controllers\Admin\V2\ProductDiscountGroupController;
 use App\Http\Controllers\Admin\V2\ProductGroupController;
+use App\Http\Controllers\Admin\V2\ProductSpecHighlightController;
 use App\Http\Controllers\Admin\V2\ProductTypeController;
 use App\Http\Controllers\Admin\V2\ReferralController;
 use App\Http\Controllers\Admin\V2\ReferralWithdrawalController;
@@ -205,6 +209,7 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::get('/products/summary', [ProductController::class, 'summary']);
         Route::get('/products', [ProductController::class, 'index']);
         Route::get('/products/{product}/owners', [ProductController::class, 'owners']);
+        Route::get('/products/{product}/spec-highlight', [ProductSpecHighlightController::class, 'show']);
         Route::get('/products/{product}', [ProductController::class, 'show']);
         Route::get('/services', [ServiceController::class, 'index']);
     });
@@ -237,6 +242,7 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/products/category-batches', [ProductController::class, 'batchUpdateCategory']);
         Route::post('/products/provision-hostname-batches', [ProductController::class, 'batchUpdateProvisionHostname']);
         Route::patch('/products/{product}/status', [ProductController::class, 'updateStatus']);
+        Route::post('/products/{product}/spec-highlight', [ProductSpecHighlightController::class, 'update']);
         Route::patch('/coupons/{coupon}/status', [CouponController::class, 'updateStatus']);
         Route::patch('/coupon-campaigns/{couponCampaign}/status', [CouponCampaignController::class, 'updateStatus']);
         Route::post('/coupon-campaigns/{couponCampaign}/tasks', [CouponCampaignController::class, 'runTask']);
@@ -302,6 +308,22 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/member-levels', [MemberLevelController::class, 'store']);
         Route::put('/member-levels/{memberLevel}', [MemberLevelController::class, 'update']);
         Route::delete('/member-levels/{memberLevel}', [MemberLevelController::class, 'destroy']);
+    });
+
+    Route::middleware(['permission:'.AdminPermissions::AGENT_DISCOUNT_LIST])->group(function (): void {
+        Route::get('/agent-groups', [AgentGroupController::class, 'index']);
+        Route::get('/product-discount-groups', [ProductDiscountGroupController::class, 'index']);
+        Route::get('/agent-group-discounts', [AgentGroupDiscountController::class, 'index']);
+    });
+
+    Route::middleware(['permission:'.AdminPermissions::AGENT_DISCOUNT_MANAGE])->group(function (): void {
+        Route::post('/agent-groups', [AgentGroupController::class, 'store']);
+        Route::put('/agent-groups/{agentGroup}', [AgentGroupController::class, 'update']);
+        Route::delete('/agent-groups/{agentGroup}', [AgentGroupController::class, 'destroy']);
+        Route::post('/product-discount-groups', [ProductDiscountGroupController::class, 'store']);
+        Route::put('/product-discount-groups/{productDiscountGroup}', [ProductDiscountGroupController::class, 'update']);
+        Route::delete('/product-discount-groups/{productDiscountGroup}', [ProductDiscountGroupController::class, 'destroy']);
+        Route::put('/agent-group-discounts', [AgentGroupDiscountController::class, 'update']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::INTEGRATION_PLUGIN_VIEW])->group(function (): void {

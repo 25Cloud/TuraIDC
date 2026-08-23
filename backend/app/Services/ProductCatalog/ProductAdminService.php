@@ -9,6 +9,7 @@ use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
 use App\Models\FirstProductGroup;
 use App\Models\Product;
+use App\Models\ProductDiscountGroup;
 use App\Models\SecondProductGroup;
 use App\Models\Service;
 use App\Models\Supplier;
@@ -755,24 +756,24 @@ class ProductAdminService
                     $supplierId = (int) ($filters['supplier_id'] ?? 0);
                     $providerKey = trim((string) ($filters['provider_key'] ?? ''));
 
-                    // 仅匹配启用的上游绑定（绑定 status 随产品启用状态写入），
-                    // 且供应商插件绑定必须启用，与工单传递规则 ensureRuleTarget 的校验口径一致，
-                    // 避免停用的供应商绑定仍出现在「按供应商选择已绑定上游产品」的下拉中。
-                    $builder->whereHas('upstreamBindings', function (Builder $bindingQuery) use ($supplierId, $providerKey): void {
-                        $bindingQuery->where('status', 1)
-                            ->when(
-                                $providerKey !== '',
-                                fn (Builder $query): Builder => $query->where('provider_key', $providerKey)
-                            )
-                            ->when($supplierId > 0, function (Builder $query) use ($supplierId): void {
-                                $query->whereHas(
+                    // 仅匹配启用的商品与上游绑定（绑定 status 随产品启用状态写入），
+                    // 且供应商插件绑定必须启用（无论是否按 supplier_id 过滤），
+                    // 与工单传递规则 ensureRuleTarget 的校验口径一致，
+                    // 避免停用的商品/供应商绑定仍出现在「按供应商选择已绑定上游产品」的下拉中。
+                    $builder->where('products.status', 1)
+                        ->whereHas('upstreamBindings', function (Builder $bindingQuery) use ($supplierId, $providerKey): void {
+                            $bindingQuery->where('status', 1)
+                                ->when(
+                                    $providerKey !== '',
+                                    fn (Builder $query): Builder => $query->where('provider_key', $providerKey)
+                                )
+                                ->whereHas(
                                     'supplierPluginBinding',
                                     fn (Builder $supplierQuery): Builder => $supplierQuery
-                                        ->where('supplier_id', $supplierId)
                                         ->where('status', 1)
+                                        ->when($supplierId > 0, fn (Builder $query): Builder => $query->where('supplier_id', $supplierId))
                                 );
-                            });
-                    });
+                        });
                 }
             );
     }
@@ -1561,6 +1562,17 @@ class ProductAdminService
         $derivedDisplayName = $this->deriveInternalProductName($data);
         $customDisplayName = $this->resolveSubmittedCustomDisplayName($data, $derivedDisplayName);
 
+        $discountGroupId = null;
+        if (array_key_exists('product_discount_group_id', $data)) {
+            $discountGroupId = $this->normalizeNullableInt($data['product_discount_group_id'] ?? null);
+            if ($discountGroupId !== null) {
+                throw_unless(
+                    ProductDiscountGroup::query()->whereKey($discountGroupId)->exists(),
+                    new BusinessException('商品折扣分组不存在')
+                );
+            }
+        }
+
         return [
             'base' => [
                 'name' => $derivedDisplayName,
@@ -1568,6 +1580,9 @@ class ProductAdminService
                 'product_type' => $productTypeCode,
                 'console_template' => $this->normalizeConsoleTemplate($data['console_template'] ?? null),
                 ...$this->hierarchyProductPayload($targetHierarchy),
+                ...(array_key_exists('product_discount_group_id', $data)
+                    ? ['product_discount_group_id' => $discountGroupId]
+                    : []),
                 'remark' => $this->normalizeNullableString($data['remark'] ?? null),
                 'pricing' => $pricing,
                 'setup_fee' => max((float) ($data['setup_fee'] ?? 0), 0),
@@ -1609,7 +1624,6 @@ class ProductAdminService
         $resolved = $this->resolveProductDisplayNameResolver()->resolveForProduct($temporaryProduct, $upstreamDefaults);
 
         foreach ([
-            $resolved['cpu_memory_slug_display'] ?? '',
             $resolved['product_spec_display'] ?? '',
         ] as $candidate) {
             $normalized = trim((string) $candidate);
