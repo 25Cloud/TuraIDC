@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Servers\ZjmfFinance\Lib;
 
+use App\Constants\BillingCycle;
 use App\Exceptions\BusinessException;
 use App\Models\Supplier;
 use App\Services\Integrations\Support\ProviderErrorMapper;
@@ -13,12 +14,7 @@ use Illuminate\Support\Facades\Log;
 
 final class ZjmfRenewService
 {
-    private const RENEWAL_DURATION_BY_BILLING_CYCLE = [
-        'monthly' => 1,
-        'quarterly' => 3,
-        'semiannually' => 6,
-        'annually' => 12,
-    ];
+    private const RENEWAL_DURATION_BY_BILLING_CYCLE = BillingCycle::RENEWABLE_MONTHS;
 
     public function __construct(
         private readonly ZjmfFinanceTransport $transport,

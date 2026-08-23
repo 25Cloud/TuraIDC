@@ -36,6 +36,10 @@ class AdminIntegrationPluginSchemaFieldResource extends JsonResource
             'step' => $field['step'] ?? null,
             'rows' => $field['rows'] ?? null,
             'visible_when' => $field['visible_when'] ?? null,
+            // divider 用：该分组是否可折叠、初始是否收起。
+            // 高级项大多有合理默认值，收起来能避免管理员误改而配坏。
+            'collapsible' => isset($field['collapsible']) ? (bool) $field['collapsible'] : null,
+            'collapsed' => isset($field['collapsed']) ? (bool) $field['collapsed'] : null,
         ];
 
         return array_filter($payload, static fn (mixed $value): bool => $value !== null);

@@ -237,6 +237,10 @@ class ScheduleRunLogService
             'page' => $paginator->currentPage(),
             'per_page' => $paginator->perPage(),
             'last_page' => $paginator->lastPage(),
+            // 返回值必须带 summary：AdminLogV2QueryService::resolveSummary 在 summary 为空时
+            // 会再调一次 getScheduleStatus 只为拿这个 total，等于把整条列表查询和 count(*)
+            // 在 149k 行的 schedule_run_logs 上跑第二遍。paginator 这里已经算出来了。
+            'summary' => ['total' => $paginator->total()],
         ];
     }
 

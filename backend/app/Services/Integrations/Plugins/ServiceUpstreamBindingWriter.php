@@ -8,9 +8,9 @@ use App\Models\Product;
 use App\Models\Service;
 use App\Models\Supplier;
 use App\Services\Ticket\TicketUpstreamCallbackToken;
+use App\Support\DatabaseSchema;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class ServiceUpstreamBindingWriter
 {
@@ -90,6 +90,10 @@ class ServiceUpstreamBindingWriter
         $this->syncRuntimeSnapshot($serviceId, $bindingId, $pluginId, $providerKey, $provisionData, $runtimeSnapshot);
         $this->syncConnectionSnapshot($service, $serviceId, $bindingId, $pluginId, $providerKey, $provisionData, $connectionSnapshot);
 
+        // PluginBindingResolver 是 singleton 且对本服务的绑定/快照做了行级记忆化，
+        // 写完必须失效，否则长驻进程（队列 Worker、service-status-sync）后续读到的是写前投影。
+        $this->bindingResolver()->forgetService($serviceId);
+
         return $bindingId;
     }
 
@@ -155,7 +159,7 @@ class ServiceUpstreamBindingWriter
      */
     private function bindingContext(Service $service, ?Product $product, array $provisionData, ?int $bindingId): array
     {
-        if ($bindingId !== null && Schema::hasTable('service_upstream_bindings')) {
+        if ($bindingId !== null && DatabaseSchema::hasTableOrView('service_upstream_bindings')) {
             $binding = DB::table('service_upstream_bindings')->where('id', $bindingId)->first(['plugin_id', 'provider_key']);
             if ($binding !== null) {
                 return [
@@ -182,7 +186,7 @@ class ServiceUpstreamBindingWriter
         array $provisionData,
         array $runtimeSnapshot
     ): void {
-        if (! Schema::hasTable('service_runtime_snapshots')) {
+        if (! DatabaseSchema::hasTableOrView('service_runtime_snapshots')) {
             return;
         }
 
@@ -214,7 +218,7 @@ class ServiceUpstreamBindingWriter
         array $provisionData,
         array $connectionSnapshot
     ): void {
-        if (! Schema::hasTable('service_connection_snapshots')) {
+        if (! DatabaseSchema::hasTableOrView('service_connection_snapshots')) {
             return;
         }
 
@@ -293,7 +297,7 @@ class ServiceUpstreamBindingWriter
             return $bindingId;
         }
 
-        if (! Schema::hasTable('product_upstream_bindings')) {
+        if (! DatabaseSchema::hasTableOrView('product_upstream_bindings')) {
             return null;
         }
 
@@ -316,7 +320,7 @@ class ServiceUpstreamBindingWriter
         string $providerKey,
         ?int $productBindingId
     ): ?int {
-        if ($productBindingId !== null && Schema::hasTable('product_upstream_bindings')) {
+        if ($productBindingId !== null && DatabaseSchema::hasTableOrView('product_upstream_bindings')) {
             $productBinding = DB::table('product_upstream_bindings')
                 ->where('id', $productBindingId)
                 ->first(['supplier_plugin_binding_id']);
@@ -334,7 +338,7 @@ class ServiceUpstreamBindingWriter
             }
         }
 
-        if (! Schema::hasTable('supplier_plugin_bindings')) {
+        if (! DatabaseSchema::hasTableOrView('supplier_plugin_bindings')) {
             return null;
         }
 
@@ -380,7 +384,7 @@ class ServiceUpstreamBindingWriter
 
     private function pluginIdForProvider(string $providerKey): ?int
     {
-        if ($providerKey === '' || ! Schema::hasTable('integration_plugins')) {
+        if ($providerKey === '' || ! DatabaseSchema::hasTableOrView('integration_plugins')) {
             return null;
         }
 
@@ -545,7 +549,7 @@ class ServiceUpstreamBindingWriter
     private function hasTables(array $tables): bool
     {
         foreach ($tables as $table) {
-            if (! Schema::hasTable($table)) {
+            if (! DatabaseSchema::hasTableOrView($table)) {
                 return false;
             }
         }

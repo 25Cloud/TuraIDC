@@ -16,7 +16,7 @@ class AliyunSmsService
 
     public function label(): string
     {
-        return '阿里云号码认证短信';
+        return '阿里云号码认证';
     }
 
     public function execute(array $request): array

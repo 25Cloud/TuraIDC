@@ -168,23 +168,92 @@ class PluginRuntimeRegistryIntegrationTest extends TestCase
         $this->assertNotContains('notify_url', $alipayConfigKeys);
         $this->assertNotContains('api_base_url', $yipayConfigKeys);
         $this->assertNotContains('notify_url', $yipayConfigKeys);
-        $this->assertSame(['basic_notice', 'vid', 'vkey'], $vaptchaConfigKeys);
 
-        foreach ([$alipayConfigKeys, $yipayConfigKeys, $geetestConfigKeys, $vaptchaConfigKeys, $aliyunConfigKeys] as $configKeys) {
-            $this->assertNotContains('ssl_verify', $configKeys);
-            $this->assertNotContains('ca_bundle', $configKeys);
+        // captcha 域各插件共用一份「启用场景」开关声明（plugins/captcha/scene-switches.php），
+        // 它会合并进每个验证码插件的 config。这里从共享文件推导键名而不是硬编码，
+        // 避免新增场景时又要回来改测试；剥掉共享块后仍按原口径钉住插件自有字段，
+        // 保证不会悄悄多出 endpoint / ssl 一类可覆盖项。
+        $sceneSwitchKeys = array_keys(require base_path('plugins/captcha/scene-switches.php'));
+
+        $vaptchaOwnKeys = array_values(array_diff($vaptchaConfigKeys, $sceneSwitchKeys));
+        $this->assertSame(['basic_notice', 'vid', 'vkey'], $vaptchaOwnKeys);
+
+        // 场景开关必须真的接进每个验证码插件，否则开关在管理界面不可见、默认全开将无法关闭。
+        // 遍历扫描结果而不是写死 slug 列表：新增验证码插件若漏接共享声明，这条会直接失败，
+        // 不会像硬编码那样悄悄放过（corptcha / turnstile 就是这样被漏掉过的）。
+        $captchaManifests = $scanner->scan('captcha');
+        $this->assertNotEmpty($captchaManifests, 'captcha 域未扫描到任何插件');
+
+        foreach ($captchaManifests as $captchaManifest) {
+            $captchaKeys = collect($captchaManifest->configSchema)->pluck('key')->all();
+
+            foreach ($sceneSwitchKeys as $sceneKey) {
+                $this->assertContains(
+                    $sceneKey,
+                    $captchaKeys,
+                    "{$captchaManifest->slug} 缺少场景开关字段 {$sceneKey}"
+                );
+            }
         }
+
+        // 原实现只抽查 5 个插件。硬规则是「所有插件不需要 SSL 和 CA」，因此改为遍历全部插件，
+        // 新增插件也自动纳入，不会再出现「加了个插件、又把 ssl_verify 带回来」而测试放过的情况。
+        $offenders = [];
+        foreach ($scanner->scan() as $manifest) {
+            $keys = collect($manifest->configSchema)->pluck('key')->all();
+            foreach (['ssl_verify', 'ca_bundle'] as $forbidden) {
+                if (in_array($forbidden, $keys, true)) {
+                    $offenders[] = $manifest->domain.'/'.$manifest->slug.':'.$forbidden;
+                }
+            }
+        }
+
+        $this->assertSame([], $offenders, '插件不得暴露 SSL / CA 配置项：'.implode('、', $offenders));
     }
 
-    public function test_stay33_verification_plugin_exposes_ssl_configuration(): void
+    public function test_plugin_clients_do_not_disable_certificate_verification(): void
     {
-        $configKeys = collect(app(PluginScanner::class)->requireManifest('verification', 'stay33')->configSchema)
-            ->pluck('key')
-            ->all();
+        // 配置 schema 里没有字段，不代表代码里没读。这条从源码层面兜住：
+        // 插件不得读取 ssl_verify / ca_bundle，也不得把 verify 关掉或指定自定义 CA。
+        $offenders = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(base_path('plugins'), \FilesystemIterator::SKIP_DOTS)
+        );
 
-        $this->assertContains('ssl_verify', $configKeys);
-        $this->assertContains('ca_bundle', $configKeys);
+        /** @var \SplFileInfo $file */
+        foreach ($iterator as $file) {
+            if (! $file->isFile() || strtolower($file->getExtension()) !== 'php') {
+                continue;
+            }
+
+            $source = (string) file_get_contents($file->getPathname());
+            $relative = str_replace(base_path('plugins').DIRECTORY_SEPARATOR, '', $file->getPathname());
+
+            // 只看代码，注释里解释「原实现如何」的说明不算违规
+            $code = (string) preg_replace('!//.*?$|/\*.*?\*/|\#.*?$!ms', '', $source);
+
+            foreach ([
+                "config('idc.verification.ssl_verify'" => '读取实名 SSL 配置',
+                "config('idc.sms.ssl_verify'" => '读取短信 SSL 配置',
+                "config('alipay.ssl_verify'" => '读取支付宝 SSL 配置',
+                'CURLOPT_SSL_VERIFYPEER, false' => '关闭 curl 证书校验',
+                'CURLOPT_CAINFO' => '指定自定义 CA',
+                "'verify' => false" => '关闭 Guzzle 证书校验',
+            ] as $needle => $reason) {
+                if (str_contains($code, $needle)) {
+                    $offenders[] = $relative.'（'.$reason.'）';
+                }
+            }
+        }
+
+        $this->assertSame([], $offenders, "插件不得关闭证书校验或自带 CA 配置：\n".implode("\n", $offenders));
     }
+
+    // 原有的 test_stay33_verification_plugin_exposes_ssl_configuration 已删除：
+    // 它断言 stay33 必须暴露 ssl_verify / ca_bundle，把违规行为钉成了预期，
+    // 与 AGENTS.md「所有插件不需要 SSL 和 CA」直接冲突。反向断言现由
+    // test_non_verification_plugin_manifests_do_not_expose_ssl_configuration
+    // 与 test_plugin_clients_do_not_disable_certificate_verification 覆盖全部插件。
 
     public function test_baidu_face_verification_plugin_exposes_required_h5_configuration(): void
     {
@@ -212,38 +281,36 @@ class PluginRuntimeRegistryIntegrationTest extends TestCase
         ], $schema->keys()->all());
     }
 
-    public function test_stay33_client_prefers_plugin_ssl_configuration_before_legacy_config(): void
+    /**
+     * 证书校验不再可配置：插件不得关闭校验，也不得指定自定义 CA。
+     *
+     * 本测试取代原 test_stay33_client_prefers_plugin_ssl_configuration_before_legacy_config
+     * ——那条断言「插件配置优先于 idc.verification 回落」，把可配置行为钉成了预期，
+     * 与 AGENTS.md「所有插件不需要 SSL 和 CA」冲突。
+     */
+    public function test_stay33_client_always_verifies_certificates(): void
     {
-        $legacyCaBundle = tempnam(sys_get_temp_dir(), 'stay33-legacy-ca-');
-        $pluginCaBundle = tempnam(sys_get_temp_dir(), 'stay33-plugin-ca-');
-        $this->assertIsString($legacyCaBundle);
-        $this->assertIsString($pluginCaBundle);
+        $manifest = app(PluginScanner::class)->requireManifest('verification', 'stay33');
+        app(PluginFileLoader::class)->ensureLoaded($manifest);
 
-        try {
-            config([
-                'idc.verification.ssl_verify' => false,
-                'idc.verification.ca_bundle' => $legacyCaBundle,
-            ]);
+        // 即便把旧配置显式关成 false、并塞入插件级配置，客户端也不应再提供任何读取入口
+        config([
+            'idc.verification.ssl_verify' => false,
+            'idc.verification.ca_bundle' => '/tmp/should-be-ignored.pem',
+        ]);
 
-            $manifest = app(PluginScanner::class)->requireManifest('verification', 'stay33');
-            app(PluginFileLoader::class)->ensureLoaded($manifest);
+        $client = new Stay33Client(['ssl_verify' => false, 'ca_bundle' => '/tmp/also-ignored.pem']);
 
-            $pluginConfiguredClient = new Stay33Client([
-                'ssl_verify' => true,
-                'ca_bundle' => $pluginCaBundle,
-            ]);
-
-            $this->assertTrue($this->invokeStay33ClientMethod($pluginConfiguredClient, 'resolveSslVerify'));
-            $this->assertSame($pluginCaBundle, $this->invokeStay33ClientMethod($pluginConfiguredClient, 'resolveCaBundle'));
-
-            $legacyConfiguredClient = new Stay33Client([]);
-
-            $this->assertFalse($this->invokeStay33ClientMethod($legacyConfiguredClient, 'resolveSslVerify'));
-            $this->assertSame($legacyCaBundle, $this->invokeStay33ClientMethod($legacyConfiguredClient, 'resolveCaBundle'));
-        } finally {
-            @unlink($legacyCaBundle);
-            @unlink($pluginCaBundle);
+        foreach (['resolveSslVerify', 'resolveCaBundle'] as $removed) {
+            $this->assertFalse(
+                method_exists($client, $removed),
+                "Stay33Client 不应再有 {$removed}()：证书校验已固定开启，不读任何配置"
+            );
         }
+
+        $source = (string) file_get_contents(base_path('plugins/certification/stay33/logic/Stay33Client.php'));
+        $this->assertStringContainsString('CURLOPT_SSL_VERIFYPEER, true', $source);
+        $this->assertStringNotContainsString('CURLOPT_CAINFO', $source);
     }
 
     public function test_baidu_face_h5_flow_initializes_link_and_queries_success_status(): void

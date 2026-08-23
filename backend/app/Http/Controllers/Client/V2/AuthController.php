@@ -21,6 +21,7 @@ use App\Http\Requests\Client\V2\Auth\UpdatePhoneRequest;
 use App\Http\Requests\Client\V2\Auth\UpdateProfileRequest;
 use App\Models\User;
 use App\Services\Auth\AuthService;
+use App\Services\Auth\CaptchaPolicyService;
 use App\Services\Auth\GeeTestService;
 use App\Services\Auth\LoginRiskControlService;
 use App\Services\Auth\MessageRateLimitService;
@@ -37,6 +38,7 @@ class AuthController extends Controller
     public function __construct(
         private AuthService $authService,
         private GeeTestService $geeTestService,
+        private CaptchaPolicyService $captchaPolicyService,
         private LoginRiskControlService $loginRiskControlService,
         private MessageRateLimitService $messageRateLimitService,
         private NotificationService $notificationService,
@@ -54,15 +56,19 @@ class AuthController extends Controller
         $normalizedAccount = AccountIdentifier::normalizeAccount((string) $data['account']);
         $requestIp = (string) $request->ip();
 
-        // 验证码插件未启用时的兜底锁定：失败次数超阈值直接拒绝登录
-        if ($this->loginRiskControlService->isLoginLocked($normalizedAccount, $requestIp)) {
+        $captchaActive = $this->captchaPolicyService->requiresCaptcha(CaptchaPolicyService::SCENE_CLIENT_LOGIN);
+
+        // 本场景不受验证码保护时（插件未启用，或登录开关被关掉）启用兜底锁定：
+        // 失败次数超阈值直接拒绝登录，避免该入口完全裸奔。
+        if ($this->loginRiskControlService->isLoginLocked(
+            $normalizedAccount,
+            $requestIp,
+            captchaActive: $captchaActive
+        )) {
             return $this->error(42900, '登录尝试次数过多，请稍后再试');
         }
 
-        if (
-            $this->loginRiskControlService->shouldRequireCaptcha($normalizedAccount, $requestIp)
-            && ($response = $this->ensureGeeTestVerified($request, true))
-        ) {
+        if ($response = $this->ensureCaptchaVerified($request, CaptchaPolicyService::SCENE_CLIENT_LOGIN)) {
             return $response;
         }
 
@@ -104,7 +110,24 @@ class AuthController extends Controller
 
         // 验证码插件未启用时的兜底锁定：防止验证码登录通道被爆破。
         // 验证码本身就是第二因素，不连带密码通道的账号维度软锁定（避免第三方用密码通道失败锁定他人验证码登录）。
-        if ($this->loginRiskControlService->isLoginLocked($account, (string) $request->ip(), false)) {
+        // 同 resetPassword：本通道的人机验证已在发码入口完成，此处不重复要求。
+        // 因此兜底锁定是否启用，取决于「对应的发码场景」是否受人机验证保护。
+        $codeCaptchaActive = $this->captchaPolicyService->requiresCaptcha(
+            $accountType === 'phone'
+                ? CaptchaPolicyService::SCENE_PHONE_CODE
+                : CaptchaPolicyService::SCENE_EMAIL_CODE
+        );
+
+        // 计数走验证码通道自己的作用域：与密码通道分开记账。
+        // 共用的话，多 IP 刷错验证码会写进密码通道的账号计数、锁死他人的密码登录，
+        // 而验证码登录成功又会清掉密码通道的失败计数、削弱密码爆破防护。
+        if ($this->loginRiskControlService->isLoginLocked(
+            $account,
+            (string) $request->ip(),
+            false,
+            LoginRiskControlService::SCOPE_CLIENT_CODE,
+            captchaActive: $codeCaptchaActive
+        )) {
             return $this->error(42900, '登录尝试次数过多，请稍后再试');
         }
 
@@ -122,6 +145,14 @@ class AuthController extends Controller
         }
 
         if (! $verified || ! $user) {
+            // 与 resetPassword 同理：上面的 isLoginLocked 需要有人记账才可能触发。
+            // 此前本通道只查锁不记数，只能借密码登录路径写入的计数生效。
+            $this->loginRiskControlService->recordFailedAttempt(
+                $account,
+                (string) $request->ip(),
+                LoginRiskControlService::SCOPE_CLIENT_CODE
+            );
+
             return $this->error(42200, '账号或验证码错误');
         }
 
@@ -130,6 +161,12 @@ class AuthController extends Controller
             $code,
             (string) $request->ip(),
             $request->userAgent()
+        );
+
+        $this->loginRiskControlService->clearSuccessfulLogin(
+            $account,
+            (string) $request->ip(),
+            LoginRiskControlService::SCOPE_CLIENT_CODE
         );
 
         return $this->success($result, '登录成功');
@@ -144,6 +181,15 @@ class AuthController extends Controller
 
         $accountType = AccountIdentifier::detectType((string) $data['account']);
         $account = AccountIdentifier::normalizeAccount((string) $data['account']);
+
+        // 人机验证必须早于验证码核对：核对会消耗该账号的验证码尝试次数，
+        // 若放在后面，机器人用一个无效的人机验证就能把受害者的验证码次数耗光。
+        // 注册是刷号的主入口，且攻击者每次换新账号——按失败次数计数的风控在这里天然失效，
+        // 因此这一处的人机验证不可省，与「发码时已验过」并不重复。
+        if ($response = $this->ensureCaptchaVerified($request, CaptchaPolicyService::SCENE_CLIENT_REGISTER)) {
+            return $response;
+        }
+
         $verified = $accountType === 'phone'
             ? $this->codeService->verifyPhoneCode('guest', $account, (string) $data['code'])
             : $this->codeService->verifyEmailCode('guest', $account, (string) $data['code']);
@@ -164,14 +210,29 @@ class AuthController extends Controller
         return $this->success($result, '注册成功');
     }
 
+    /**
+     * 下发前端初始化人机验证组件所需的公开信息。
+     *
+     * scenes 是各场景开关（场景标识 => 是否需要验证），前端据此决定该页面提交前
+     * 是否要带上验证结果——例如注册开关关掉时，注册页就不必唤起验证组件。
+     *
+     * 这里不含任何密钥：captcha_id 本身就是要嵌进页面的公开参数，
+     * 开关状态的暴露也不构成信息泄露（攻击者试一次即可得知）。
+     */
     public function captchaConfig()
     {
         return $this->success([
             'enabled' => $this->geeTestService->isEnabled(),
             'captcha_id' => $this->geeTestService->getCaptchaId(),
-            'script_url' => $this->geeTestService->getScriptUrl(),
             'provider' => $this->geeTestService->getProvider(),
+            // popup（插件自行弹窗，如极验）/ inline（前端在按钮上方给容器，如 Turnstile）
+            'render_mode' => $this->geeTestService->getRenderMode(),
+            // 脚本缓存键：配置变更后指纹跟着变，前端不会继续用旧脚本
+            'script_version' => $this->geeTestService->getScriptVersion(),
+            'script_url' => $this->geeTestService->getScriptUrl(),
+            // 插件自定义的前端初始化参数（如 Cap 自托管服务端地址）
             'api_endpoint' => $this->geeTestService->getApiEndpoint(),
+            'scenes' => $this->captchaPolicyService->sceneMap(),
         ]);
     }
 
@@ -418,7 +479,7 @@ class AuthController extends Controller
     {
         $data = $request->validated();
 
-        if ($response = $this->ensureGeeTestVerified($request)) {
+        if ($response = $this->ensureCaptchaVerified($request, CaptchaPolicyService::SCENE_PHONE_CODE)) {
             return $response;
         }
 
@@ -507,7 +568,7 @@ class AuthController extends Controller
     {
         $data = $request->validated();
 
-        if ($response = $this->ensureGeeTestVerified($request)) {
+        if ($response = $this->ensureCaptchaVerified($request, CaptchaPolicyService::SCENE_EMAIL_CODE)) {
             return $response;
         }
 
@@ -562,6 +623,31 @@ class AuthController extends Controller
         $accountType = AccountIdentifier::detectType((string) $data['account']);
         $account = AccountIdentifier::normalizeAccount((string) $data['account']);
 
+        // 这里刻意不再做人机验证：重置密码必须先取得邮箱/短信验证码，而发码入口
+        // （sendEmailCode / sendPhoneCode）已经过了人机验证。验证码本身即持有性证明，
+        // 终态接口重复验一次只是叠加摩擦，不带来额外防护。
+        //
+        // 但「发码入口已受保护」这个前提依赖场景开关。scene_email_code / scene_phone_code
+        // 被关掉时，这条链路会同时失去人机验证与失败计数，对 6 位验证码的爆破只剩
+        // VerificationCodeService 的尝试次数在挡。因此与 login / loginByCode 同口径：
+        // 对应发码场景未受保护时启用兜底锁定。
+        $codeCaptchaActive = $this->captchaPolicyService->requiresCaptcha(
+            $accountType === 'phone'
+                ? CaptchaPolicyService::SCENE_PHONE_CODE
+                : CaptchaPolicyService::SCENE_EMAIL_CODE
+        );
+
+        // 与 loginByCode 一致地走验证码通道的作用域，避免与密码通道互相误锁
+        if ($this->loginRiskControlService->isLoginLocked(
+            $account,
+            (string) $request->ip(),
+            false,
+            LoginRiskControlService::SCOPE_CLIENT_CODE,
+            captchaActive: $codeCaptchaActive
+        )) {
+            return $this->error(42900, '尝试次数过多，请稍后再试');
+        }
+
         // 先校验验证码再解析用户，未注册与验证码错误统一文案并保持时序一致
         $verified = $accountType === 'phone'
             ? $this->codeService->verifyPhoneCode('guest', $account, (string) $data['code'])
@@ -576,8 +662,21 @@ class AuthController extends Controller
         }
 
         if (! $verified || ! $user) {
+            // 必须记账，否则上面的 isLoginLocked 永远等不到计数、兜底锁形同虚设
+            $this->loginRiskControlService->recordFailedAttempt(
+                $account,
+                (string) $request->ip(),
+                LoginRiskControlService::SCOPE_CLIENT_CODE
+            );
+
             return $this->error(42200, '账号或验证码错误');
         }
+
+        $this->loginRiskControlService->clearSuccessfulLogin(
+            $account,
+            (string) $request->ip(),
+            LoginRiskControlService::SCOPE_CLIENT_CODE
+        );
 
         $this->authService->resetClientPassword($user, (string) $data['password']);
 
@@ -631,15 +730,28 @@ class AuthController extends Controller
             && trim((string) $user->alipay_account) !== '';
     }
 
-    private function ensureGeeTestVerified(Request $request, bool $captchaRequired = false)
+    /**
+     * 按场景开关校验人机验证。
+     *
+     * 返回 null 表示放行（该场景开关未开、插件未启用，或验证已通过）；
+     * 否则返回错误响应，调用方直接 return 即可。
+     *
+     * 响应固定带 captcha_required=true：能走到错误分支说明该场景确实要求了验证，
+     * 前端可据此唤起验证组件后重试。
+     */
+    private function ensureCaptchaVerified(Request $request, string $scene)
     {
+        if (! $this->captchaPolicyService->requiresCaptcha($scene)) {
+            return null;
+        }
+
         $result = $this->geeTestService->verify($request->input('captcha'), (string) $request->ip());
 
         if (! ($result['ok'] ?? false)) {
             return $this->error(
                 42210,
                 $result['message'] ?? '行为验证未通过，请重试',
-                $captchaRequired ? ['captcha_required' => true] : null
+                ['captcha_required' => true]
             );
         }
 

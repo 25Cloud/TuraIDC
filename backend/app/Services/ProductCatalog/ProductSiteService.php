@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ProductCatalog;
 
+use App\Constants\BillingCycle;
 use App\Constants\ProductType;
 use App\Models\FirstProductGroup;
 use App\Models\Product;
@@ -824,16 +825,7 @@ class ProductSiteService
 
                 return [
                     'cycle' => (string) $cycle,
-                    'label' => match ((string) $cycle) {
-                        'monthly' => '月付',
-                        'quarterly' => '季付',
-                        'semiannually' => '半年付',
-                        'annually' => '年付',
-                        'biennially' => '两年付',
-                        'triennially' => '三年付',
-                        'one_time', 'onetime' => '一次性',
-                        default => (string) $cycle,
-                    },
+                    'label' => BillingCycle::label((string) $cycle, (string) $cycle),
                     'amount' => $normalizedAmount,
                     'setup_fee' => $setupFee,
                     'total_amount' => $this->formatAmount((float) $normalizedAmount + (float) $setupFee),

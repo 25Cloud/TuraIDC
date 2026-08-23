@@ -36,7 +36,14 @@
           <template #service="{ row }">
             <div class="service-cell">
               <div class="service-primary">
-                <strong>服务/实例 #{{ fieldValue(row.service_id || row.id) }}</strong>
+                <button
+                  type="button"
+                  class="user-link"
+                  :disabled="!Number(row.service_id || row.id || 0)"
+                  @click="goServiceDetail(row)"
+                >
+                  <strong>服务/实例 #{{ fieldValue(row.service_id || row.id) }}</strong>
+                </button>
                 <t-tag v-if="row.invoice?.id" variant="light">账单 #{{ row.invoice.id }}</t-tag>
               </div>
               <span v-if="row.invoice?.invoice_no">账单号 {{ row.invoice.invoice_no }}</span>
@@ -91,6 +98,17 @@
             <span :class="{ 'expiring-soon': isExpiringSoon(row.expires_at) }">{{ shortDate(row.expires_at) }}</span>
           </template>
           <template #created="{ row }">{{ shortDate(row.created_at) }}</template>
+          <template #operation="{ row }">
+            <t-button
+              variant="text"
+              theme="primary"
+              size="small"
+              :disabled="!Number(row.service_id || row.id || 0)"
+              @click="goServiceDetail(row)"
+            >
+              管理实例
+            </t-button>
+          </template>
         </t-table>
       </div>
 
@@ -180,6 +198,7 @@
 <script setup lang="ts">
 import './index.less';
 
+import { billingCycleLabel as billingCycleLabelOf } from '@shared/billingCycle';
 import { SERVICE_STATUS_MAP, toSelectOptions } from '@shared/statusConfig';
 import { SearchIcon } from 'tdesign-icons-vue-next';
 import type { PageInfo, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
@@ -239,6 +258,7 @@ const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'billing', title: '计费/金额', width: 130 },
   { colKey: 'expires', title: '到期时间', width: 130 },
   { colKey: 'created', title: '开通时间', width: 120 },
+  { colKey: 'operation', title: '操作', width: 110 },
 ];
 
 const hostnameColumns: PrimaryTableCol<TableRowData>[] = [
@@ -401,16 +421,8 @@ function hasHostInfo(row: ServiceRecord) {
 }
 
 function billingCycleLabel(cycle: unknown) {
-  const map: Record<string, string> = {
-    monthly: '月付',
-    quarterly: '季付',
-    biannually: '半年付',
-    annually: '年付',
-    biennially: '两年付',
-    triennially: '三年付',
-    onetime: '一次性',
-  };
-  return map[String(cycle || '')] || fieldValue(cycle);
+  // 别名（biannually 拼写错误、onetime、yearly）统一由 @shared/billingCycle 归一
+  return billingCycleLabelOf(cycle) || fieldValue(cycle);
 }
 
 function isExpiringSoon(value: unknown) {

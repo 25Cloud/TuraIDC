@@ -42,6 +42,28 @@ class ProductDisplayNameResolver
     ) {}
 
     /**
+     * 失效单个商品的进程内缓存。
+     *
+     * 本类现为容器 singleton（此前每个调用点都 new 新实例，缓存从未跨行生效）。
+     * 缓存因此变成长命的：长驻进程（队列 Worker、Octane、Artisan）在商品显示名或
+     * 规格配置被改写后，若不失效会继续返回旧值。写入侧统一在「商品目录缓存失效」
+     * 这个既有信号处调用本方法，见各 forgetSiteCatalogCache()。
+     */
+    public function forgetProduct(int $productId): void
+    {
+        unset($this->customDisplayNameCache[$productId], $this->instanceSpecTextCache[$productId]);
+    }
+
+    /**
+     * 清空全部进程内缓存（商品目录发生批量变更时使用）。
+     */
+    public function flushCaches(): void
+    {
+        $this->customDisplayNameCache = [];
+        $this->instanceSpecTextCache = [];
+    }
+
+    /**
      * @return array{
      *     product_display_name: string,
      *     product_spec_display: string,

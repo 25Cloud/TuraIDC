@@ -284,6 +284,9 @@ class CpuModelCatalogService
     {
         Cache::forget(CacheKey::siteCatalog());
         Cache::put(CacheKey::siteCatalogSplitVersion(), $this->siteCacheVersion() + 1, now()->addYear());
+
+        // 同 HandlesProductCatalogHelpers：CPU 型号变更会改变规格文案，需失效解析器的进程内缓存
+        app(ProductDisplayNameResolver::class)->flushCaches();
     }
 
     private function siteCacheVersion(): int

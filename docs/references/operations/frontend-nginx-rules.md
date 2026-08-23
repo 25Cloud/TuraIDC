@@ -17,11 +17,60 @@
 
 ## 官网：www
 
+官网公开路径（首页、产品、落地页、公告/帮助及其详情）由 API 站点（Laravel）读数据库动态渲染完整 HTML；其余路径保持 SPA 静态回退。完整伪静态：
+
 ```nginx
+# SEO 动态渲染：公开路径转发到 API 站点（Laravel 读库渲染 title/meta/正文，
+# 站名与 Logo 实时取自数据库）。将 api.example.com 换成实际 API 域名。
+location = / {
+    proxy_pass http://127.0.0.1/seo/www;
+    proxy_set_header Host              api.example.com;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location ~ ^/(robots\.txt|sitemap\.xml)$ {
+    proxy_pass http://127.0.0.1;
+    proxy_set_header Host              api.example.com;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# 落地页 / 关于 / 条款 / 隐私 / 产品列表（单段路径）
+location ~ ^/(cloud-server|hong-kong-server|us-server|high-defense-server|cloud-pc|about|terms|privacy|products)$ {
+    proxy_pass http://127.0.0.1/seo/www$request_uri;
+    proxy_set_header Host              api.example.com;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# 公告/帮助列表与详情（/notices、/notices/123、/help、/help/123）
+location ~ ^/(notices|help)(/[0-9]+)?$ {
+    proxy_pass http://127.0.0.1/seo/www$request_uri;
+    proxy_set_header Host              api.example.com;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# 产品详情（/products/123；多段购买页路径保持 SPA 静态回退）
+location ~ ^/products/[0-9]+$ {
+    proxy_pass http://127.0.0.1/seo/www$request_uri;
+    proxy_set_header Host              api.example.com;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
 location / {
     try_files $uri $uri/ /index.html;
 }
 ```
+
+> 内部转发走 `127.0.0.1:80`（HTTP）。若 API 站点开启强制 HTTPS 跳转会拦截该转发，需对 `127.0.0.1` 来源放行或改用 `https://api.example.com` 形式；后端已信任回环/私有网段代理（`bootstrap/app.php`），`X-Forwarded-Proto` 可正确传递 https。容器部署（Docker/1Panel 编排）时上述转发已内置在 `deploy/docker/frontends/nginx-default.conf`，无需重复配置。
 
 ## 用户控制台：console
 
@@ -77,6 +126,6 @@ location / {
 
 ## 缓存建议
 
-- `index.html` 和其他预渲染 HTML 使用 `Cache-Control: no-cache`。
+- `index.html` 使用 `Cache-Control: no-cache`（官方 SEO 页面 HTML 由 Laravel 动态生成，动态响应的缓存由后端 `SEO_CACHE_TTL` 控制）。
 - 带 hash 的 JS、CSS、字体和图片可长期缓存；压缩由宝塔 Nginx 的全局能力处理，不需要在伪静态中添加模块指令。
-- 不要在三个前端站点重新添加 `/api`、`/uploads`、`/media`、`/ws/vnc` 的 `proxy_pass`。
+- 不要在用户控制台、管理端站点重新添加 `/api`、`/uploads`、`/media`、`/ws/vnc` 的 `proxy_pass`（官网的 SEO 转发只针对上述公开路径）。
