@@ -59,7 +59,7 @@
 
 ```
 宝塔 Nginx
-  ├── 站点1: 官网/用户入口 -> frontend-user-v3-www/dist （静态）
+  ├── 站点1: 官网/用户入口 -> frontend-user-v3-www/dist （静态；公开 SEO 路径转发到 API 站点 PHP 动态渲染）
   ├── 站点2: 用户控制台   -> frontend-user-v4-console/dist（静态）
   ├── 站点3: 管理端       -> frontend-admin-v3/dist      （静态）
   └── 站点4: 后端 API     -> backend/public              （PHP-FPM）
@@ -73,6 +73,7 @@
 - 后端只通过 PHP-FPM 运行，不使用 `php artisan serve`
 - 没有常驻 Queue Worker，队列消费并入 `schedule:run`（每分钟）
 - 四个站点独立部署，可分配不同的域名/端口
+- **官网 SEO**：官网公开页面（首页、产品、落地页、公告/帮助及其详情）在官网站点伪静态中转发到 API 站点，由 Laravel 读数据库动态渲染完整 HTML（站名/Logo/meta/正文）；sitemap.xml / robots.txt 由 Laravel 动态生成
 
 数据库发布有两条互斥路径：
 
@@ -156,13 +157,68 @@ location / {
 
 ### 4.2 三个前端站点伪静态
 
-官网、用户控制台和管理端都是 Vue History 路由站点。在三个前端站点的“伪静态”中均填入同一段：
+用户控制台和管理端是纯 Vue History 路由站点，在“伪静态”中填入：
 
 ```nginx
 location / {
     try_files $uri $uri/ /index.html;
 }
 ```
+
+**官网**除上述回退外，还需把公开 SEO 路径转发到 API 站点（Laravel 读数据库动态渲染完整 HTML），完整伪静态为：
+
+```nginx
+# SEO 动态渲染：公开路径转发到 API 站点（Laravel 读库渲染 title/meta/正文，
+# 站名与 Logo 实时取自数据库）。将 api.你的域名.com 换成实际 API 域名。
+location = / {
+    proxy_pass http://127.0.0.1/seo/www;
+    proxy_set_header Host              api.你的域名.com;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location ~ ^/(robots\.txt|sitemap\.xml)$ {
+    proxy_pass http://127.0.0.1;
+    proxy_set_header Host              api.你的域名.com;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# 落地页 / 关于 / 条款 / 隐私 / 产品列表（单段路径）
+location ~ ^/(cloud-server|hong-kong-server|us-server|high-defense-server|cloud-pc|about|terms|privacy|products)$ {
+    proxy_pass http://127.0.0.1/seo/www$request_uri;
+    proxy_set_header Host              api.你的域名.com;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# 公告/帮助列表与详情（/notices、/notices/123、/help、/help/123）
+location ~ ^/(notices|help)(/[0-9]+)?$ {
+    proxy_pass http://127.0.0.1/seo/www$request_uri;
+    proxy_set_header Host              api.你的域名.com;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# 产品详情（/products/123；多段购买页路径保持 SPA 静态回退）
+location ~ ^/products/[0-9]+$ {
+    proxy_pass http://127.0.0.1/seo/www$request_uri;
+    proxy_set_header Host              api.你的域名.com;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location / {
+    try_files $uri $uri/ /index.html;
+}
+```
+
+> 内部转发走 `127.0.0.1:80`（HTTP）。若 API 站点在宝塔“SSL”中开启了“强制 HTTPS”，80 端口会 301 跳转并拦截内部转发，需在 API 站点 Nginx 配置中对本机来源放行（`location = /` 等规则加 `if ($remote_addr != 127.0.0.1) { return 301 ...; }` 判断），或将上述 `proxy_pass` 改为 `https://api.你的域名.com/...`（宝塔已配证书，同机回环可正常握手）。后端已信任回环/私有网段代理（`bootstrap/app.php` 的 `trustProxies`），`X-Forwarded-Proto` 可正确传递 https。
 
 不要在三个前端站点添加 `/api`、`/uploads`、`/media` 或 `/ws/vnc` 的代理。浏览器直接访问 API 域名；`/vnc/vnc.html` 是控制台的静态构建产物，会由该规则直接命中。
 
@@ -224,6 +280,20 @@ REDIS_PASSWORD=你的Redis密码
 ```
 
 `INSTALL_ADMIN_PASSWORD` 是首次初始化默认管理员所需的临时配置；生产环境不能为空、不能使用默认值且长度至少为 12 位。请通过受控渠道保存它，不要提交 `.env` 或把实际密码写入计划任务、Git 或本文档。
+
+官网 SEO 动态渲染的选填配置（源码部署建议显式填写，默认值见 `config/idc.php → idc.seo`）：
+
+```ini
+# 官网公开地址，用于 canonical / sitemap / JSON-LD；默认取 APP_URL
+SEO_SITE_URL=https://www.你的域名.com
+# 官网 index.html 模板：源码部署直接读本机前端产物文件（零网络依赖）
+SEO_FRONTEND_SHELL_URL=file:///www/wwwroot/你的项目/frontend-user-v3-www/dist/index.html
+# shell 模板 / 页面渲染结果缓存秒数（默认 600 / 300）
+SEO_SHELL_CACHE_TTL=600
+SEO_CACHE_TTL=300
+```
+
+> `file://` 为直接读文件方式，路径必须与官网站点根目录（`frontend-user-v3-www/dist`）一致；用 HTTP 方式（如 `http://127.0.0.1:端口/index.html`）亦可，但需保证该端口返回的是**原始 index.html**（而非被强制 HTTPS 跳转或回退改写的内容）。前端重新构建后，最迟在 `SEO_SHELL_CACHE_TTL` 秒后新产物生效。
 
 根目录统一构建前端时，会从 `backend/.env` 注入 `APP_URL`、`FRONTEND_URL`、`CLIENT_CONSOLE_URL`、`ADMIN_URL`，并覆盖各前端目录的同名默认值。因此应先完成上面的四个公开地址配置，再构建前端。
 

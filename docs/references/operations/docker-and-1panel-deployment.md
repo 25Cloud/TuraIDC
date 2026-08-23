@@ -21,7 +21,10 @@ deploy/docker/docker-compose.yml  (project: turaidc)
 │     └── vnc:relay (VNC WebSocket 中继, 127.0.0.1:8100)
 │     命名卷: app-storage / app-uploads / app-media
 ├── frontends (nginx:alpine, 三端口: 8081=官网 / 8082=控制台 / 8083=管理端)
+│     └── 官网公开路径转发到 app 的 /seo/www/*（SEO 动态渲染）
 ```
+
+官网 SEO：`frontends` 容器内 Nginx 将官网公开路径（首页、产品、落地页、公告/帮助及其详情）`proxy_pass` 到 `app` 容器的 `/seo/www/{path}`；Laravel 读数据库生成完整 HTML（站名/Logo/meta/正文），并以 `http://frontends:8081/index.html` 为模板（容器内部网络直连静态文件，无循环）。`/sitemap.xml`、`/robots.txt` 由 Laravel 动态生成。
 
 `DB_HOST` / `REDIS_HOST` 留空（默认）时本地 mysql / redis 容器随编排启动；填写远程地址则对应本地容器不创建、镜像也不被 `docker compose pull` 拉取，app 直连远程服务，两者互相独立可单独切换。
 
@@ -62,6 +65,9 @@ vim .env
 | `CACHE_STORE` / `QUEUE_CONNECTION` / `SESSION_DRIVER`              | 否   | 与现网口径一致：redis / database / file，一般不用改                                                                                                                 |
 | `SENTRY_LARAVEL_DSN`                                               | 否   | Sentry DSN，留空关闭                                                                                                                                                |
 | `MAIL_FROM_ADDRESS`                                                | 否   | 默认发件人；SMTP 凭据由管理端"邮件插件"配置                                                                                                                         |
+| `SEO_SITE_URL`                                                     | 否   | 官网公开地址，用于 canonical / sitemap / JSON-LD；默认取 `APP_URL`，多域名部署时建议显式填官网域名                                                                  |
+| `SEO_FRONTEND_SHELL_URL`                                           | 否   | 官网 index.html 模板地址，默认 `http://frontends:8081/index.html`（compose 内部网络，一般无需配置）                                                                 |
+| `SEO_SHELL_CACHE_TTL` / `SEO_CACHE_TTL`                            | 否   | shell 模板 / 页面渲染结果缓存秒数，默认 600 / 300；前端重新构建后最长延迟对应时长才生效                                                                             |
 
 > 约束：密码与地址值不要包含双引号 `"` 和反斜杠 `\`，避免破坏 `.env` 解析。`.env` 已被 `.dockerignore` 排除，不会进镜像、不会入库。
 >

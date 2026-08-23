@@ -70,7 +70,8 @@ pnpm run build
 - 本应用是纯官网门户，不含登录注册与用户中心；认证与控制台页面在 `frontend-user-v4-console`。
 - 官网首页与产品页可以有更强视觉表现。
 - 购买、结算、优惠券、恢复下单优先复用 `src/domains/products/*` 与现有 composables。
-- SEO、sitemap、prerender 逻辑放脚本和构建流程，不在页面里硬拼。
+- SEO 由后端 Laravel 动态渲染（`backend/app/Services/Site/SeoRenderService.php`）：公开页面 head meta、JSON-LD 与正文快照由后端读数据库生成，前端构建不再做 prerender/sitemap/robots 静态生成（`scripts/generate-sitemap.mjs`、`scripts/prerender-www.mjs` 已移除）；页面路由 meta 仍用于 SPA 运行时的 `document.title` 等前端同步。
+- 新增强公开页面时，同步在后端 `SeoRenderService::resolvePage()` 登记路径与 meta，避免前端路由与 SEO 渲染口径不一致。
 
 验证：
 

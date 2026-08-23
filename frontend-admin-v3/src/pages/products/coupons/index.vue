@@ -388,6 +388,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { billingCycleOptions as billingCycleOptionsOf } from '@shared/billingCycle';
 import { AddIcon, SearchIcon } from 'tdesign-icons-vue-next';
 import type { DropdownOption, FormInstanceFunctions, FormRule, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
@@ -440,12 +441,8 @@ interface CouponForm {
   remark: string;
 }
 
-const billingCycleOptions = [
-  { label: '月付', value: 'monthly' },
-  { label: '季付', value: 'quarterly' },
-  { label: '半年付', value: 'semiannually' },
-  { label: '年付', value: 'annually' },
-];
+// 与后端 CouponService::SUPPORTED_BILLING_CYCLE_LABELS 同源（均取自可续费周期白名单）
+const billingCycleOptions = billingCycleOptionsOf();
 
 // ── Tab 切换（优惠券 / 活动券）──
 const route = useRoute();

@@ -1,14 +1,14 @@
-export const CYCLE_MAP = {
-  monthly: '月付',
-  quarterly: '季付',
-  semiannually: '半年付',
-  annually: '年付',
-  biennially: '两年付',
-  triennially: '三年付',
-  one_time: '一次性',
-}
+import {
+  BILLING_CYCLE_LABELS,
+  BILLING_CYCLE_ORDER,
+  billingCycleLabel,
+  billingCycleSortRank,
+} from '@shared/billingCycle'
 
-export const CYCLE_ORDER = ['monthly', 'quarterly', 'semiannually', 'annually', 'biennially', 'triennially', 'one_time']
+// 保留原导出名，避免波及站点其它引用；真源已收敛到 @shared/billingCycle
+export const CYCLE_MAP = BILLING_CYCLE_LABELS
+
+export const CYCLE_ORDER = BILLING_CYCLE_ORDER
 
 export const OS_KEYS = ['os', 'operating_system']
 
@@ -220,16 +220,18 @@ export function buildPricingEntries(product) {
   if (entries.length) {
     return entries
       .filter((item) => Number(item?.amount || 0) > 0)
-      .sort((left, right) => CYCLE_ORDER.indexOf(left.cycle) - CYCLE_ORDER.indexOf(right.cycle))
+      // 原用 CYCLE_ORDER.indexOf()，未知周期得到 -1 会被排到最前；
+      // billingCycleSortRank() 把未知周期排到末尾，更符合展示预期
+      .sort((left, right) => billingCycleSortRank(left.cycle) - billingCycleSortRank(right.cycle))
   }
 
   const pricing = product?.pricing || {}
   return Object.entries(pricing)
     .filter(([, value]) => Number(value) > 0)
-    .sort((left, right) => CYCLE_ORDER.indexOf(left[0]) - CYCLE_ORDER.indexOf(right[0]))
+    .sort((left, right) => billingCycleSortRank(left[0]) - billingCycleSortRank(right[0]))
     .map(([cycle, value]) => ({
       cycle,
-      label: CYCLE_MAP[cycle] || cycle,
+      label: billingCycleLabel(cycle, cycle),
       amount: normalizeMoneyText(value),
       total_amount: normalizeMoneyText(Number(value || 0) + Number(product?.setup_fee || 0)),
     }))

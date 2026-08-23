@@ -68,6 +68,11 @@ class CapCaptchaService
                 'enabled' => $this->isConfigured($config),
                 'captcha_id' => $this->siteId($config),
                 'api_endpoint' => $this->apiEndpoint($config),
+                // Cap 是内联自绘卡片（shared/components/CapCaptchaCard.vue 挂到页面提供的容器里），
+                // 必须显式声明 inline：GeeTestService::getRenderMode() 缺该键时回退为 popup，
+                // 而前端登录/注册页的容器是 v-show="renderMode === 'inline'"，
+                // 回退成 popup 会让容器 display:none，卡片挂上去也看不见。
+                'render_mode' => 'inline',
             ],
         ];
     }

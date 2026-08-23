@@ -354,6 +354,10 @@ class PluginScanner
             'rows',
             'rules',
             'visible_when',
+            // divider 用：声明该分组可折叠，以及初始是否收起（默认收起）。
+            // 高级项大多有合理默认值，收起来能避免管理员误改而配坏。
+            'collapsible',
+            'collapsed',
         ];
 
         foreach ($definitions as $key => $definition) {

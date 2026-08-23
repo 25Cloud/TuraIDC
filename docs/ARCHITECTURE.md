@@ -112,7 +112,7 @@ API 直接重构路由口径：
 - 页面：`src/pages/website`、`src/pages/common`。注意实现主体位于 `src/views/website`，`src/pages` 下多数 `index.vue` 只是指向 `views` 的路由转发壳（例如 `pages/website/products/index.vue` 仅 154 字节）。
 - 领域逻辑：`src/domains/`（当前仅 `products`）。
 - 样式：`src/assets/styles/`。
-- 构建附带 sitemap/prerender。
+- SEO：官网公开页面（首页、产品、落地页、公告/帮助等）由后端 Laravel 动态渲染完整 HTML（读数据库站名/Logo/meta + 正文快照），前端 Nginx 将公开路径转发到后端 `/seo/www/{path}`；sitemap.xml / robots.txt 亦由后端动态生成。详见 `backend/app/Services/Site/SeoRenderService.php`。
 - 验证：`cd frontend-user-v3-www && pnpm run build`，重构时追加 `pnpm run verify:refactor`。
 
 ### 3.3 `frontend-user-v4-console`
@@ -159,6 +159,7 @@ pnpm run dev:user-v4-console
   - `frontend-admin-v3/dist`
   - `frontend-user-v3-www/dist`
   - `frontend-user-v4-console/dist`
+- 官网 SEO 渲染（容器部署下）：`frontends` 容器内 Nginx 将官网公开路径（`/`、`/products`、落地页、`/notices`、`/help` 及其详情、`/products/{id}`）转发到 `app` 容器的 `/seo/www/{path}`；Laravel 以 `http://frontends:8081/index.html`（或源码部署下 `file://` 本地路径）为模板组装完整 HTML。相关配置见 `config/idc.php → idc.seo` 与 `deploy/docker/frontends/nginx-default.conf`。
 
 ## 6. 数据库口径
 

@@ -44,8 +44,6 @@ return [
         'key' => env('VERIFICATION_KEY', ''),
         'biz_code' => env('VERIFICATION_BIZ_CODE', 'FACE'),
         'api_endpoint' => env('VERIFICATION_API_ENDPOINT', 'https://idc.stay33.cn/realname/certapi.php'),
-        'ssl_verify' => env('VERIFICATION_SSL_VERIFY', env('APP_ENV') !== 'local'),
-        'ca_bundle' => env('VERIFICATION_CA_BUNDLE', ''),
         'free_attempts' => env('VERIFICATION_FREE_ATTEMPTS', 3), // 单用户免费认证次数
         'retry_fee' => env('VERIFICATION_RETRY_FEE', 2.00), // 失败后再次认证费用（元）
     ],
@@ -66,8 +64,6 @@ return [
     // 短信配置
     'sms' => [
         'api_endpoint' => env('SMS_API_ENDPOINT', 'https://dypnsapi.aliyuncs.com/'),
-        'ssl_verify' => env('SMS_SSL_VERIFY', env('APP_ENV') !== 'local'),
-        'ca_bundle' => env('SMS_CA_BUNDLE', ''),
     ],
 
     // GeeTest 行为验证
@@ -75,8 +71,6 @@ return [
         'enabled' => env('GEETEST_ENABLED', false),
         'captcha_id' => env('GEETEST_CAPTCHA_ID', ''),
         'captcha_key' => env('GEETEST_CAPTCHA_KEY', ''),
-        'ssl_verify' => env('GEETEST_SSL_VERIFY', env('APP_ENV') !== 'local'),
-        'ca_bundle' => env('GEETEST_CA_BUNDLE', ''),
     ],
 
     'vnc_relay' => [
@@ -95,6 +89,20 @@ return [
 
     'frontend' => [
         'dist_path' => env('FRONTEND_DIST_PATH', base_path('../frontend-client/dist')),
+    ],
+
+    // 官网 SEO 动态渲染（Laravel 生成完整 HTML，解决 SPA 无 SEO 问题）
+    'seo' => [
+        // 前端构建产物 shell（index.html）地址。
+        // 容器内走 compose 内部网络直接取静态文件，不经过任何转发，无循环。
+        // 本地联调可改为 http://127.0.0.1:8081/index.html（本地 nginx/vite 均可）。
+        'frontend_shell_url' => env('SEO_FRONTEND_SHELL_URL', 'http://frontends:8081/index.html'),
+        // shell 模板缓存秒数（构建产物 hash 变化后最长延迟该时长生效）
+        'shell_cache_ttl' => (int) env('SEO_SHELL_CACHE_TTL', 600),
+        // 整页渲染结果缓存秒数（内容版本变化会自动失效，见 ContentPublishedCacheVersion）
+        'cache_ttl' => (int) env('SEO_CACHE_TTL', 300),
+        // 站点公开地址，用于 canonical / sitemap / JSON-LD
+        'site_url' => env('SEO_SITE_URL', (string) env('APP_URL', 'https://www.coyjs.cn')),
     ],
 
 ];

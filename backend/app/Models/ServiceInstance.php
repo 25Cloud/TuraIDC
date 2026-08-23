@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Constants\BillingCycle;
 use App\Models\Concerns\NormalizesTraceId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,19 +17,10 @@ class ServiceInstance extends Model
 
     private const COMPAT_META_KEY = '__legacy_service_compat';
 
-    public const SUPPORTED_RENEW_BILLING_CYCLES = [
-        'monthly' => '月付',
-        'quarterly' => '季付',
-        'semiannually' => '半年付',
-        'annually' => '年付',
-    ];
+    /** 允许下单/续费的周期，文案与月数统一取自 {@see BillingCycle}。 */
+    public const SUPPORTED_RENEW_BILLING_CYCLES = BillingCycle::RENEWABLE_LABELS;
 
-    private const SUPPORTED_RENEW_BILLING_CYCLE_MONTHS = [
-        'monthly' => 1,
-        'quarterly' => 3,
-        'semiannually' => 6,
-        'annually' => 12,
-    ];
+    private const SUPPORTED_RENEW_BILLING_CYCLE_MONTHS = BillingCycle::RENEWABLE_MONTHS;
 
     protected $table = 'service_instances';
 

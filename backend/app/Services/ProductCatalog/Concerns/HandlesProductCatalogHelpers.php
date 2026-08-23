@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\ProductCatalog\Concerns;
 
+use App\Constants\BillingCycle;
 use App\Exceptions\BusinessException;
 use App\Models\Product;
+use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Support\CacheKey;
 use Illuminate\Support\Facades\Cache;
 
@@ -43,6 +45,10 @@ trait HandlesProductCatalogHelpers
     {
         Cache::forget(self::ADMIN_SUMMARY_CACHE_KEY);
         Cache::forget(self::SITE_CATALOG_CACHE_KEY);
+
+        // ProductDisplayNameResolver 现为容器 singleton，其显示名与规格文案缓存是进程内长命的。
+        // 商品目录发生变更时必须一并失效，否则长驻进程（队列 Worker、Octane）会继续返回旧值。
+        app(ProductDisplayNameResolver::class)->flushCaches();
 
         // 清理所有 site:home 相关缓存
         if (Cache::supportsTags()) {
@@ -139,8 +145,7 @@ trait HandlesProductCatalogHelpers
             : null;
 
         if ($monthly !== null && $monthly > 0) {
-            $importPricingMonths = ['monthly' => 1, 'quarterly' => 3, 'semiannually' => 6, 'annually' => 12];
-            foreach ($importPricingMonths as $cycle => $months) {
+            foreach (BillingCycle::RENEWABLE_MONTHS as $cycle => $months) {
                 if (! array_key_exists($cycle, $normalized)) {
                     $normalized[$cycle] = number_format($monthly * $months, 2, '.', '');
                 }

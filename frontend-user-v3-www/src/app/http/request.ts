@@ -186,7 +186,14 @@ request.interceptors.response.use(
       const trustedErrors = errors
         .map((item) => toUserMessage(item, ''))
         .filter(Boolean)
-      msg = trustedErrors.length > 0 ? trustedErrors.join(', ') : '参数填写有误，请检查后重试'
+      if (trustedErrors.length > 0) {
+        msg = trustedErrors.join(', ')
+      } else {
+        // 业务异常（BusinessException）也走 422，message 里有真实原因，优先展示。
+        // 与 v4-console 的同一条流水线对齐；此前 www 端直接落到通用文案，丢失服务端真实原因。
+        const serverMsg = toUserMessage(error.response?.data?.message, '')
+        msg = serverMsg || '参数填写有误，请检查后重试'
+      }
     }
 
     if (error.response?.status === 429) {
@@ -201,12 +208,15 @@ request.interceptors.response.use(
     }
 
     const runtimeConfig = (error.config || {}) as ClientRuntimeRequestConfig
-    if (!runtimeConfig.silentError) {
+    const shownByInterceptor = !runtimeConfig.silentError
+    if (shownByInterceptor) {
       showError(msg)
     }
 
     const err = new Error(msg) as RuntimeHandledError
-    err.__handled = true
+    // silentError 的请求由调用方自行提示，这里不能谎报已处理，否则错误会被静默吞掉。
+    // 与 v4-console 对齐；此前 www 端无条件置 true，导致静默请求出错后调用方以为已提示、实际无提示。
+    err.__handled = shownByInterceptor
     err.response = error.response
     err.config = error.config
     return Promise.reject(err)

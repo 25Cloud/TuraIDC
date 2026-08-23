@@ -265,6 +265,7 @@
 <script setup lang="ts">
 import './index.less';
 
+import { billingCycleLabel as billingCycleLabelOf } from '@shared/billingCycle';
 import { SERVICE_STATUS_MAP, toLabelMap } from '@shared/statusConfig';
 import { ChevronLeftIcon } from 'tdesign-icons-vue-next';
 import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
@@ -747,19 +748,7 @@ function createLockedPricingForm(current: Row = {}) {
 }
 
 function billingCycleLabel(value: unknown) {
-  return (
-    (
-      {
-        monthly: '月付',
-        quarterly: '季付',
-        semiannually: '半年付',
-        annually: '年付',
-        biennially: '两年付',
-        triennially: '三年付',
-        one_time: '一次性',
-      } as Record<string, string>
-    )[String(value)] || fieldValue(value)
-  );
+  return billingCycleLabelOf(value) || fieldValue(value);
 }
 
 function serviceStatusLabel(status: unknown) {

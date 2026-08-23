@@ -55,6 +55,10 @@ class ListInvoicesRequest extends AdminFormRequest
             InvoiceType::RECHARGE,
             InvoiceType::UPGRADE,
             InvoiceType::DEDUCTION,
+            // 退款红字账单：UserService 早已产出该类型，且管理端筛选项由
+            // shared/statusConfig.js 的 INVOICE_TYPE_MAP 生成（本次补了 refund 映射），
+            // 校验白名单漏配会让「退款」筛选直接 422，列表不可用。
+            InvoiceType::REFUND,
             InvoiceType::REFERRAL_CREDIT,
             InvoiceType::MANUAL,
         ];
