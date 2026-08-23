@@ -32,7 +32,10 @@ class InstallController extends Controller
 
         abort_if($this->installer->isInstalled(), 404);
 
-        return view('install.index', ['install_token' => (string) $request->query('token', '')]);
+        return view('install.index', [
+            // 与 assertInstallAccess() 取值逻辑一致：header 优先，URL 参数兜底。
+            'install_token' => (string) $request->header('X-Install-Token', (string) $request->query('token', '')),
+        ]);
     }
 
     public function requirements(Request $request): JsonResponse
