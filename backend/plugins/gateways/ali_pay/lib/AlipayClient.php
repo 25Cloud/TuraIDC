@@ -33,10 +33,6 @@ class AlipayClient
 
     private bool $enabled;
 
-    private bool $sslVerify;
-
-    private string $caBundle;
-
     /**
      * @param  array<string, mixed>  $config
      */
@@ -51,14 +47,26 @@ class AlipayClient
         $this->signType = 'RSA2';
         $this->charset = 'utf-8';
         $this->enabled = $this->configBool('alipay_enabled', 'alipay_enabled', false);
-        $this->sslVerify = $this->configBool('ssl_verify', null, (bool) config('alipay.ssl_verify', true));
-        $this->caBundle = $this->configString('ca_bundle', null, config('alipay.ca_bundle', ''));
     }
 
     /**
-     * 解析支付宝异步通知回调 URL
-     * 必须指向后端 API 地址（支付宝服务器直接 POST 到此地址）
-     * 优先使用 ALIPAY_NOTIFY_URL，fallback 到 APP_URL
+     * 解析支付宝异步通知回调 URL。
+     *
+     * 必须指向**后端 API** 地址：支付宝服务器直接 POST 到这里，路由
+     * /api/v2/client/payment/alipay/notify 只存在于后端。
+     *
+     * 回退顺序：ALIPAY_NOTIFY_URL → APP_URL（后端自身基址）→ APP_FRONTEND_URL。
+     *
+     * 此前实现把 app.frontend_url 排在 app.url 之前，与本方法的注释、以及
+     * RechargeGatewayFailureTest 的两条断言都相反（那两条测试因此长期失败）。
+     * 按后端优先修正的理由：frontend_url 是控制台前端来源，本项目是前后端分离部署
+     * （见 SeparatedDeploymentRoutesTest：API 主机不提供前端 SPA 入口），前端域名不保证
+     * 反代 /api。发到前端域名的后果是**静默丢回调**——支付宝那边成功、本地永不入账；
+     * 而 app.url 若填了内网地址，describePrecreateNotifyUrl() 会判为不可用并直接不带
+     * notify_url，是可以从日志诊断出来的显式失败。两害相权取后者。
+     *
+     * frontend_url 保留为最后兜底，供确实由控制台域名统一反代 API 的部署使用。
+     * 生产环境请显式配置 ALIPAY_NOTIFY_URL，不要依赖回退。
      */
     private function resolveNotifyUrl(): string
     {
@@ -68,13 +76,13 @@ class AlipayClient
             return $notifyUrl;
         }
 
-        // fallback 到后端 APP_URL
-        $frontendUrl = trim((string) config('app.frontend_url', ''));
-        if ($frontendUrl !== '') {
-            return rtrim($frontendUrl, '/').'/api/v2/client/payment/alipay/notify';
+        // 回退到后端自身基址
+        $appUrl = trim((string) config('app.url', ''));
+        if ($appUrl !== '') {
+            return rtrim($appUrl, '/').'/api/v2/client/payment/alipay/notify';
         }
 
-        return rtrim(config('app.url', ''), '/').'/api/v2/client/payment/alipay/notify';
+        return rtrim((string) config('app.frontend_url', ''), '/').'/api/v2/client/payment/alipay/notify';
     }
 
     public function isEnabled(): bool
@@ -391,25 +399,16 @@ class AlipayClient
         return $result;
     }
 
+    /**
+     * 不设置 verify：项目硬规则要求插件不提供 SSL 与 CA 配置，统一依赖系统 CA
+     * （Guzzle 默认 verify=true）。原实现可经插件配置或 config('alipay.ssl_verify') 关闭校验，
+     * 而后者在 APP_ENV=local 时默认为 false——支付回调链路上留这条通路风险最高。
+     */
     private function buildHttpClient(): PendingRequest
     {
         return Http::asForm()
-            ->withOptions(['verify' => $this->httpVerifyOption()])
             ->timeout(15)
             ->retry(1, 200);
-    }
-
-    private function httpVerifyOption(): bool|string
-    {
-        if (! $this->sslVerify) {
-            return false;
-        }
-
-        if ($this->caBundle !== '' && is_file($this->caBundle)) {
-            return $this->caBundle;
-        }
-
-        return true;
     }
 
     /**

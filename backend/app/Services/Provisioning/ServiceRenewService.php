@@ -2,6 +2,7 @@
 
 namespace App\Services\Provisioning;
 
+use App\Constants\BillingCycle;
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
 use App\Constants\OrderType;
@@ -50,29 +51,6 @@ class ServiceRenewService
     private const RENEW_FULFILLMENT_FAILED = 'failed';
 
     private const RENEW_ATTEMPT_ACTION = 'renew';
-
-    private const CYCLE_SORT_MAP = [
-        'monthly' => 1,
-        'quarterly' => 2,
-        'semiannually' => 3,
-        'annually' => 4,
-        'biennially' => 5,
-        'triennially' => 6,
-        'one_time' => 7,
-        'onetime' => 7,
-    ];
-
-    /** 续费周期对应的自然月数，用于识别"同一续费窗口内已履约"的重复续费拦截。 */
-    private const CYCLE_MONTHS = [
-        'monthly' => 1,
-        'quarterly' => 3,
-        'semiannually' => 6,
-        'annually' => 12,
-        'biennially' => 24,
-        'triennially' => 36,
-        'one_time' => 0,
-        'onetime' => 0,
-    ];
 
     private ?ServiceUpstreamBindingWriter $serviceBindingWriter = null;
 
@@ -1196,7 +1174,7 @@ class ServiceRenewService
             ];
         }
 
-        usort($cycles, fn (array $left, array $right) => (self::CYCLE_SORT_MAP[$left['billing_cycle']] ?? 999) <=> (self::CYCLE_SORT_MAP[$right['billing_cycle']] ?? 999));
+        usort($cycles, fn (array $left, array $right) => BillingCycle::sortRank($left['billing_cycle']) <=> BillingCycle::sortRank($right['billing_cycle']));
 
         if (! collect($cycles)->contains(fn (array $item) => $item['billing_cycle'] === $defaultCycle)) {
             $defaultCycle = (string) ($cycles[0]['billing_cycle'] ?? $defaultCycle);
@@ -1222,15 +1200,7 @@ class ServiceRenewService
             ? $service->expires_at->copy()
             : now();
 
-        return match ($billingCycle) {
-            'monthly' => $base->addMonth(),
-            'quarterly' => $base->addMonths(3),
-            'semiannually' => $base->addMonths(6),
-            'annually' => $base->addYear(),
-            'biennially' => $base->addYears(2),
-            'triennially' => $base->addYears(3),
-            default => $base,
-        };
+        return BillingCycle::advance($base, $billingCycle) ?? $base;
     }
 
     /**
@@ -1338,7 +1308,8 @@ class ServiceRenewService
      */
     private function assertNoFulfilledRenewForCycle(Service $service, string $cycle): void
     {
-        $months = self::CYCLE_MONTHS[trim($cycle)] ?? 0;
+        // 续费周期对应的自然月数，用于识别「同一续费窗口内已履约」的重复续费拦截
+        $months = BillingCycle::months($cycle) ?? 0;
         if ($months <= 0) {
             return;
         }
@@ -1711,16 +1682,7 @@ class ServiceRenewService
             return $fallback;
         }
 
-        return [
-            'monthly' => '月付',
-            'quarterly' => '季付',
-            'semiannually' => '半年付',
-            'annually' => '年付',
-            'biennially' => '两年付',
-            'triennially' => '三年付',
-            'one_time' => '一次性',
-            'onetime' => '一次性',
-        ][$billingCycle] ?? $billingCycle;
+        return BillingCycle::label($billingCycle, $billingCycle);
     }
 
     private function normalizeAmount(mixed $value): ?float

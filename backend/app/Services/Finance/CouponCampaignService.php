@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Finance;
 
+use App\Constants\BillingCycle;
 use App\Constants\CouponStatus;
 use App\Exceptions\BusinessException;
 use App\Models\AutomationLog;
@@ -22,12 +23,7 @@ class CouponCampaignService
 {
     private const TASK_KEY = 'coupon-campaign-dispatch';
 
-    private const SUPPORTED_BILLING_CYCLE_LABELS = [
-        'monthly' => '月付',
-        'quarterly' => '季付',
-        'semiannually' => '半年付',
-        'annually' => '年付',
-    ];
+    private const SUPPORTED_BILLING_CYCLE_LABELS = BillingCycle::RENEWABLE_LABELS;
 
     private const WEEKDAY_LABELS = [
         0 => '周日',

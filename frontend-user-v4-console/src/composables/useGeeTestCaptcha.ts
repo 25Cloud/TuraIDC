@@ -10,11 +10,20 @@ interface GeeTestConfig {
   enabled: boolean;
   captcha_id: string;
   script_url?: string;
-  /** 验证码 provider 标识：geetest / vaptcha / cap */
+  /** 当前生效的验证码提供商（geetest / vaptcha / corptcha / cap / turnstile ...） */
   provider?: string;
+  /** popup：插件自行弹窗；inline：需页面在提交按钮上方提供容器 */
+  render_mode?: string;
+  /** 适配层脚本的配置指纹，用作脚本缓存键 */
+  script_version?: string;
   /** Cap 等自托管验证码的前端初始化端点（{server}/{siteId}/） */
   api_endpoint?: string;
+  /** 各场景开关：场景标识 => 是否需要人机验证 */
+  scenes?: Record<string, boolean>;
 }
+
+/** 后端 CaptchaPolicyService 的场景标识 */
+export type CaptchaScene = 'client_login' | 'client_register' | 'admin_login' | 'email_code' | 'phone_code';
 
 interface CaptchaInstance {
   onReady?: (callback: () => void) => void;
@@ -77,10 +86,25 @@ function normalizeCaptchaError(error: unknown, fallback = '行为验证失败，
 
 async function getCaptchaConfig() {
   if (!captchaConfigPromise) {
-    captchaConfigPromise = clientAuthApi
+    // 显式标注类型：下面的 catch 回调引用了 pending 自身（用于判断是否仍是最新一次请求），
+    // 不标注会让 TS 陷入循环推断（TS7011）。
+    const pending: Promise<GeeTestConfig> = clientAuthApi
       .captchaConfig()
       .then((response: any) => response.data || defaultConfig)
-      .catch(() => defaultConfig);
+      .catch(() => {
+        // 失败绝不能留缓存。captchaConfigPromise 是模块级单例，一旦把 defaultConfig
+        // （enabled: false）固化进去，本页此后永久不唤起验证码，而后端 requiresCaptcha
+        // 仍返回 true 并以 42210 / captcha_required 拒绝提交——用户提交必然失败，
+        // 且 reinit() 复用同一个已缓存 promise 也无法自恢复，只能整页刷新。
+        // 清掉缓存后本次调用仍降级为 defaultConfig（不阻塞 UI），但下次会重新拉取。
+        if (captchaConfigPromise === pending) {
+          captchaConfigPromise = null;
+        }
+
+        return defaultConfig;
+      });
+
+    captchaConfigPromise = pending;
   }
 
   return captchaConfigPromise;
@@ -242,10 +266,50 @@ function createCapInstance(
 
 export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
   const { t } = useI18n();
+
+  /**
+   * 本页面涉及的场景是否还需要人机验证。
+   *
+   * 一个页面可能横跨多个场景（登录页既有密码登录、又有验证码登录的发码动作），
+   * 因此只要其中任一场景仍开启，就保留验证组件——宁可多验一次，也不能出现
+   * 「前端不验、后端要求」的死循环。
+   *
+   * 后端未下发 scenes 时（旧版本）用 !== false 保持「插件启用即验证」的旧行为，
+   * 不因字段缺失而静默关掉验证。
+   */
+  const sceneRequired = (config: GeeTestConfig) => {
+    const scenes = Array.isArray(options.scenes) ? (options.scenes as string[]) : [];
+    if (scenes.length === 0) {
+      return true;
+    }
+
+    return scenes.some((scene) => config.scenes?.[scene] !== false);
+  };
+
+  // 最近一次解析到的配置。verify() 需要按「当前动作的场景」而非「本页任一场景」判定，
+  // 否则页面横跨多个场景时开关会失去独立性：只开 client_login 也会让发码要求验证。
+  let lastConfig: GeeTestConfig | null = null;
+
+  /**
+   * 单个场景当前是否要求验证。
+   *
+   * 用 !== false 而非 === true：后端未下发 scenes 时（旧版本）保持「插件启用即验证」，
+   * 不因字段缺失而静默关掉验证。
+   */
+  const sceneActive = (scene: string) => {
+    if (!scene) {
+      return true;
+    }
+
+    return lastConfig?.scenes?.[scene] !== false;
+  };
+
   const loading = ref(false);
   const ready = ref(false);
   const enabled = ref(false);
   const initialized = ref(false);
+  // popup：插件自行弹窗（极验）；inline：需页面在提交按钮上方提供容器（Turnstile）
+  const renderMode = ref<'popup' | 'inline'>('popup');
 
   /** Cap 状态文案随当前界面语言注入，避免英文界面显示中文 */
   const capLabels: CapCaptchaLabels = {
@@ -319,16 +383,31 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     rejectPending(new Error('行为验证组件版本不兼容，请刷新页面后重试'));
   };
 
-  const initCaptcha = async () => {
+  /**
+   * 只拉取配置，决定「本场景是否需要验证」与「组件渲染形态」，不加载任何验证 SDK。
+   *
+   * 页面挂载时只做到这一步：验证脚本要等用户真的点击提交才加载，
+   * 避免每次打开登录/注册页都去拉第三方 SDK。
+   */
+  // 显式标注返回类型：verify() 内 await resolveConfig().catch(() => null) 会与本函数的
+  // 推断构成循环（TS7011），标注后打断。
+  const resolveConfig = async (): Promise<GeeTestConfig | null> => {
     if (componentUnmounted) {
       return null;
     }
 
     const config = await getCaptchaConfig();
-    enabled.value = Boolean(config.enabled && config.captcha_id);
+    lastConfig = config;
+    enabled.value = Boolean(config.enabled && config.captcha_id) && sceneRequired(config);
+    renderMode.value = config.render_mode === 'inline' ? 'inline' : 'popup';
     initialized.value = true;
 
-    if (!enabled.value) {
+    return config;
+  };
+
+  const initCaptcha = async () => {
+    const config = await resolveConfig();
+    if (!config || !enabled.value) {
       return null;
     }
 
@@ -387,9 +466,20 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
       }
     }
 
-    const initGeetest4 = await loadGeeTestScript(scriptUrl, config.captcha_id);
-    const appendTarget = resolveAppendTarget((options.appendTo ?? options.container) as CaptchaAppendTarget);
-    initPromise = new Promise((resolve, reject) => {
+    // 缓存键优先用配置指纹：脚本内容随插件配置变化，仅用 captcha_id 会让改动 12 小时不生效
+    const initGeetest4 = await loadGeeTestScript(scriptUrl, config.script_version || config.captcha_id);
+    // 只有 inline 形态（Turnstile）才需要页面提供容器；
+    // popup 形态（极验等）交给插件自己弹窗，传容器反而会让它内联展开。
+    const appendTarget =
+      renderMode.value === 'inline'
+        ? resolveAppendTarget((options.appendTo ?? options.container) as CaptchaAppendTarget)
+        : undefined;
+    const currentInitPromise = new Promise<CaptchaInstance | null>((resolve, reject) => {
+      // 初始化是否已落地。验证组件的 SDK 由插件适配层内部异步加载（点击提交时才加载），
+      // 加载失败/超时只会以 onError 事件的形式抛出来。若不在这里把它转成 initPromise 的
+      // reject，调用方就会一直 await 一个永不落地的 Promise——表现为提交按钮无限转圈。
+      let initSettled = false;
+
       try {
         initGeetest4?.(
           {
@@ -402,6 +492,7 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
           (instance) => {
             captchaObj = instance;
             const markReady = () => {
+              initSettled = true;
               ready.value = true;
               resolve(instance);
             };
@@ -414,7 +505,21 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
 
             instance.onSuccess?.(() => resolveSuccess(instance));
             instance.onError?.((error) => {
-              rejectPending(normalizeCaptchaError(error));
+              const normalized = normalizeCaptchaError(error);
+
+              if (!initSettled) {
+                // 尚未就绪就报错（典型是 SDK 加载超时）：让初始化本身失败，
+                // 并丢弃缓存的实例与 promise，下次提交可以重新尝试加载。
+                initSettled = true;
+                captchaObj = null;
+                initPromise = null;
+                ready.value = false;
+                reject(normalized);
+
+                return;
+              }
+
+              rejectPending(normalized);
             });
             instance.onClose?.(() => {
               rejectPending(new Error('请先完成行为验证'));
@@ -422,14 +527,41 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
           },
         );
       } catch (error) {
+        initSettled = true;
         reject(normalizeCaptchaError(error, '行为验证初始化失败，请稍后重试'));
       }
     });
 
-    return initPromise;
+    initPromise = currentInitPromise;
+
+    try {
+      return await currentInitPromise;
+    } catch (error) {
+      // 失败的初始化不留缓存，否则后续每次提交都会拿到同一个失败的 promise
+      if (initPromise === currentInitPromise) {
+        initPromise = null;
+      }
+
+      throw error;
+    }
   };
 
-  const verify = async ({ required = false } = {}) => {
+  const verify = async ({ required = false, scene = '' } = {}) => {
+    // 先解析配置再判场景：该场景已关闭时不必加载第三方 SDK。
+    // required=true 表示后端已经以 captcha_required 明确索要验证，后端口径优先，不跳过。
+    if (scene && !required) {
+      try {
+        await resolveConfig();
+      } catch {
+        // 配置拉取失败不在这里处理：不缓存失败结果（见 getCaptchaConfig），
+        // 后续 initCaptcha 会走既有的失败路径给出可读提示。
+      }
+
+      if (!sceneActive(scene)) {
+        return null;
+      }
+    }
+
     const instance = await initCaptcha();
     if (!enabled.value) {
       if (required) {
@@ -469,7 +601,19 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     });
   };
 
-  const runWithCaptcha = async <T>(callback: (captcha: unknown) => Promise<T>, options = {}) => {
+  /**
+   * 带人机验证执行一次动作。
+   *
+   * @param callback 拿到验证结果后要执行的动作
+   * @param options 验证选项
+   * @param options.required 后端已以 captcha_required 明确索要验证，不跳过
+   * @param options.scene 本次动作对应的**单一**场景（client_login / email_code / phone_code …）。
+   *                      按该场景的开关判定，避免同页多场景互相牵连。
+   */
+  const runWithCaptcha = async <T>(
+    callback: (captcha: unknown) => Promise<T>,
+    options: { required?: boolean; scene?: string } = {},
+  ) => {
     const captcha = await verify(options);
     return callback(captcha);
   };
@@ -481,13 +625,14 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     captchaObj = null;
     initPromise = null;
     ready.value = false;
-    await initCaptcha().catch(() => {
+    await resolveConfig().catch(() => {
       initialized.value = true;
     });
   };
 
+  // 挂载时只拉配置，不加载验证 SDK——SDK 在用户点击提交时（verify）才加载
   onMounted(() => {
-    initCaptcha().catch(() => {
+    resolveConfig().catch(() => {
       initialized.value = true;
     });
   });
@@ -504,6 +649,7 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     initialized,
     loading,
     ready,
+    renderMode,
     verify,
     runWithCaptcha,
     reinit,

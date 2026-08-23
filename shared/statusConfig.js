@@ -107,11 +107,16 @@ export const ORDER_TYPE_MAP = {
 // 账单类型
 export const INVOICE_TYPE_MAP = {
   new: "新购",
+  // normal 是后端 InvoiceType::normalize() 已归一掉的历史别名，仅为读旧数据保留
   normal: "新购",
   renew: "续费",
   recharge: "充值",
   upgrade: "附加配置",
   deduction: "扣款",
+  // 后端 InvoiceType::REFUND 早已在用（UserService 产出"退款红字账单"），
+  // 此处缺项导致退款账单在管理端/用户端类型列显示裸字符串 refund，
+  // 且管理端筛选项由 Object.entries(INVOICE_TYPE_MAP) 生成，因此完全没有"退款"这一项。
+  refund: "退款",
   referral_credit: "推荐奖励账单",
   manual: "手工账单",
 };
@@ -369,6 +374,14 @@ export const FINANCE_LEDGER_EVENT_MAP = {
     direction: "in",
   },
   system_adjustment: { label: "系统调账", tagType: "info", direction: "in" },
+  // 后端 FinanceLedgerEventType::VERIFICATION_FEE 已在真实写入（VerificationService），
+  // 此处缺项会让 getStatusConfig 回落到 label:"未知"，用户在余额流水里看到一笔"未知"扣款，
+  // 且 toSelectOptions 生成的筛选项里没有"实名认证费用"。
+  verification_fee: {
+    label: "实名认证费用",
+    tagType: "danger",
+    direction: "out",
+  },
 };
 
 export const ACCOUNT_TRANSACTION_EVENT_MAP = {

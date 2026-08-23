@@ -36,6 +36,35 @@ class MoneyTest extends TestCase
         $this->assertFalse(Money::equals(19.99, 20.00));
     }
 
+    /**
+     * add() 是「先求和、再一次舍入」，不是「逐项舍入后相加」。
+     *
+     * 这个区别对小于一分的入参可见：两个 0.004 单独舍入都是 0，但求和后为 0.008，
+     * 舍入得 0.01。改动 Money 的实现时必须保住这个语义——改成逐项分位化会让
+     * 同样的输入得到 0.00，属于静默的金额语义变更。
+     */
+    public function test_add_rounds_once_after_summing(): void
+    {
+        $this->assertSame(0.01, Money::add(0.004, 0.004));
+        $this->assertSame(0.0, Money::round(0.004));
+    }
+
+    /**
+     * 常规明细数量下，末尾一次舍入足以吸收中间的浮点误差。
+     */
+    public function test_add_absorbs_float_drift_across_many_terms(): void
+    {
+        $this->assertSame(10.0, Money::add(...array_fill(0, 1000, 0.01)));
+        $this->assertSame(21.0, Money::add(...array_fill(0, 300, 0.07)));
+    }
+
+    public function test_divide_rejects_zero_divisor(): void
+    {
+        $this->expectException(\DivisionByZeroError::class);
+
+        Money::divide(10.00, 0);
+    }
+
     public function test_format_normalizes_to_two_decimals(): void
     {
         $this->assertSame('0.00', Money::format(0));

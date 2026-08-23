@@ -44,8 +44,6 @@ return [
         'key' => env('VERIFICATION_KEY', ''),
         'biz_code' => env('VERIFICATION_BIZ_CODE', 'FACE'),
         'api_endpoint' => env('VERIFICATION_API_ENDPOINT', 'https://idc.stay33.cn/realname/certapi.php'),
-        'ssl_verify' => env('VERIFICATION_SSL_VERIFY', env('APP_ENV') !== 'local'),
-        'ca_bundle' => env('VERIFICATION_CA_BUNDLE', ''),
         'free_attempts' => env('VERIFICATION_FREE_ATTEMPTS', 3), // 单用户免费认证次数
         'retry_fee' => env('VERIFICATION_RETRY_FEE', 2.00), // 失败后再次认证费用（元）
     ],
@@ -66,8 +64,6 @@ return [
     // 短信配置
     'sms' => [
         'api_endpoint' => env('SMS_API_ENDPOINT', 'https://dypnsapi.aliyuncs.com/'),
-        'ssl_verify' => env('SMS_SSL_VERIFY', env('APP_ENV') !== 'local'),
-        'ca_bundle' => env('SMS_CA_BUNDLE', ''),
     ],
 
     // GeeTest 行为验证
@@ -75,8 +71,6 @@ return [
         'enabled' => env('GEETEST_ENABLED', false),
         'captcha_id' => env('GEETEST_CAPTCHA_ID', ''),
         'captcha_key' => env('GEETEST_CAPTCHA_KEY', ''),
-        'ssl_verify' => env('GEETEST_SSL_VERIFY', env('APP_ENV') !== 'local'),
-        'ca_bundle' => env('GEETEST_CA_BUNDLE', ''),
     ],
 
     'vnc_relay' => [

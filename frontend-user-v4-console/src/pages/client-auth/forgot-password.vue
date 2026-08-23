@@ -85,9 +85,17 @@
         </div>
       </t-form-item>
 
-      <div v-show="enabled" ref="captchaContainer" class="client-auth-captcha"></div>
+      <!-- inline 形态（Turnstile）的验证组件落点：点击时就地加载，无感通过时不占位 -->
+      <div v-show="renderMode === 'inline'" ref="captchaContainer" class="client-auth-captcha"></div>
 
-      <t-button class="client-auth-submit" block size="large" theme="primary" :loading="loading" @click="submitForm">
+      <t-button
+        class="client-auth-submit"
+        block
+        size="large"
+        theme="primary"
+        :loading="loading || captchaLoading"
+        @click="submitForm"
+      >
         重置密码
       </t-button>
     </t-form>
@@ -125,14 +133,18 @@ const sendingCode = ref(false);
 const countdown = ref(0);
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
+// 验证 SDK 在点击发送验证码时才加载。渲染形态由后端下发：
+// popup（极验）自行弹窗，inline（Turnstile）渲染进按钮上方容器。
+// 重置密码本身不再要求人机验证（发码环节已验过），本页只需覆盖发码场景。
 const captchaContainer = ref<HTMLElement>();
 const {
-  enabled,
   loading: captchaLoading,
+  renderMode,
   runWithCaptcha,
 } = useGeeTestCaptcha({
   appendTo: captchaContainer,
   onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
+  scenes: ['email_code', 'phone_code'],
 });
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -208,13 +220,17 @@ async function handleSendCode() {
 
   sendingCode.value = true;
   try {
-    await runWithCaptcha(async (captcha: unknown) => {
-      if (accountPayload.accountType === 'phone') {
-        await clientAuthApi.sendPhoneCode({ phone: accountPayload.phone, purpose: 'reset_password', captcha });
-      } else {
-        await clientAuthApi.sendEmailCode({ email: accountPayload.email, captcha });
-      }
-    });
+    // 发码按账号类型取单一场景，避免邮箱与手机两个开关互相牵连
+    await runWithCaptcha(
+      async (captcha: unknown) => {
+        if (accountPayload.accountType === 'phone') {
+          await clientAuthApi.sendPhoneCode({ phone: accountPayload.phone, purpose: 'reset_password', captcha });
+        } else {
+          await clientAuthApi.sendEmailCode({ email: accountPayload.email, captcha });
+        }
+      },
+      { scene: accountPayload.accountType === 'phone' ? 'phone_code' : 'email_code' },
+    );
 
     MessagePlugin.success(`${accountPayload.accountType === 'phone' ? '短信' : '邮箱'}验证码已发送`);
     startCountdown();

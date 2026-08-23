@@ -61,20 +61,6 @@ return [
             'placeholder' => "alipay_v3\n或 alipay_v3,支付宝身份认证|tencent_sm,微信实名认证",
             'description' => '单个接口直接填写产品标识，例如 alipay_v3；多个接口按“产品标识,显示名称|产品标识,显示名称”填写，多个产品时取第一个作为默认认证产品。',
         ],
-        'ssl_verify' => [
-            'title' => 'SSL 证书校验',
-            'type' => 'switch',
-            'value' => true,
-            'description' => '开启后校验服务商 HTTPS 证书；证书链异常时可关闭或配置 CA 证书路径。',
-        ],
-        'ca_bundle' => [
-            'title' => 'CA 证书路径',
-            'type' => 'text',
-            'value' => '',
-            'required' => false,
-            'placeholder' => '例如 /etc/ssl/certs/cacert.pem',
-            'description' => '可选，填写服务器本地 CA bundle 文件路径。',
-        ],
         'billing_divider' => ['title' => '计费设置', 'type' => 'divider'],
         'charge_enabled' => [
             'title' => '插件收费',
