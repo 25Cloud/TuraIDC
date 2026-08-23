@@ -7,6 +7,7 @@ namespace App\Http\Resources\Site\V2;
 use App\Constants\BillingCycle;
 use App\Models\Product;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
+use App\Services\ProductCatalog\ProductSpecHighlightService;
 use App\Support\ProductGroupHierarchyFields;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -23,6 +24,7 @@ class SiteProductCardResource extends JsonResource
         /** @var Product $product */
         $product = $this->resource;
         $display = app(ProductDisplayNameResolver::class)->resolveForProduct($product);
+        $specHighlight = app(ProductSpecHighlightService::class);
         $hierarchy = ProductGroupHierarchyFields::fromProduct($product);
         $productType = (string) ($hierarchy['product_type'] ?? $hierarchy['service_type_code'] ?? $product->product_type ?? '');
         $pricing = $this->pricing($product);
@@ -34,7 +36,10 @@ class SiteProductCardResource extends JsonResource
             'display_name' => (string) $display['product_display_name'],
             'product_display_name' => (string) $display['product_display_name'],
             'combined_display_name' => (string) $display['combined_display_name'],
+            'product_spec_display' => (string) $display['product_spec_display'],
             'cpu_memory_display' => (string) $display['cpu_memory_display'],
+            'cpu_display' => (string) ($display['cpu_display'] ?? ''),
+            'memory_display' => (string) ($display['memory_display'] ?? ''),
             'cpu_model_name' => (string) ($product->getAttribute('cpu_model_name') ?? ''),
             'cpu_base_frequency' => (string) ($product->getAttribute('cpu_base_frequency') ?? ''),
             'cpu_turbo_frequency' => (string) ($product->getAttribute('cpu_turbo_frequency') ?? ''),
@@ -47,6 +52,8 @@ class SiteProductCardResource extends JsonResource
             'setup_fee' => number_format((float) ($product->setup_fee ?? 0), 2, '.', ''),
             'stock' => (int) ($product->stock ?? -1),
             'auto_setup' => (int) ($product->auto_setup ?? 0),
+            'spec_highlights' => $specHighlight->resolveHighlightsForProduct($product),
+            'spec_highlight_text' => $specHighlight->resolveHighlightText($product),
         ];
     }
 

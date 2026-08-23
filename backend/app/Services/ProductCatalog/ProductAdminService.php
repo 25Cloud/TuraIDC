@@ -1576,7 +1576,6 @@ class ProductAdminService
         $resolved = $this->resolveProductDisplayNameResolver()->resolveForProduct($temporaryProduct, $upstreamDefaults);
 
         foreach ([
-            $resolved['cpu_memory_slug_display'] ?? '',
             $resolved['product_spec_display'] ?? '',
         ] as $candidate) {
             $normalized = trim((string) $candidate);

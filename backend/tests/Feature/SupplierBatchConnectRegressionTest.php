@@ -174,7 +174,7 @@ class SupplierBatchConnectRegressionTest extends TestCase
         $this->assertSame('4 vCPU 4G', $display['cpu_memory_display'] ?? null);
     }
 
-    public function test_display_name_resolver_combines_custom_base_name_with_cpu_memory_slug(): void
+    public function test_display_name_resolver_keeps_custom_base_name_without_cpu_memory_slug(): void
     {
         $product = new Product([
             'id' => 999002,
@@ -191,13 +191,13 @@ class SupplierBatchConnectRegressionTest extends TestCase
 
         $display = (new ProductDisplayNameResolver)->resolveForProduct($product);
 
-        $this->assertSame('gscs-2vcpu-2gib', $display['product_display_name'] ?? null);
-        $this->assertSame('gscs-2vcpu-2gib', $display['combined_display_name'] ?? null);
+        $this->assertSame('gscs', $display['product_display_name'] ?? null);
+        $this->assertSame('gscs', $display['combined_display_name'] ?? null);
         $this->assertSame('2 vCPU 2G', $display['product_spec_display'] ?? null);
-        $this->assertSame('2vcpu-2gib', $display['cpu_memory_slug_display'] ?? null);
+        $this->assertArrayNotHasKey('cpu_memory_slug_display', $display);
     }
 
-    public function test_display_name_resolver_combines_instance_spec_base_name_with_cpu_memory_slug(): void
+    public function test_display_name_resolver_keeps_instance_spec_base_name_without_cpu_memory_slug(): void
     {
         $specCatalog = $this->createMock(InstanceSpecCatalogService::class);
         $specCatalog->method('resolveProductSpecMap')->willReturn([
@@ -217,9 +217,10 @@ class SupplierBatchConnectRegressionTest extends TestCase
 
         $display = (new ProductDisplayNameResolver($specCatalog))->resolveForProduct($product);
 
-        $this->assertSame('gscs-32vcpu-64gib', $display['product_display_name'] ?? null);
-        $this->assertSame('gscs-32vcpu-64gib', $display['combined_display_name'] ?? null);
+        $this->assertSame('gscs', $display['product_display_name'] ?? null);
+        $this->assertSame('gscs', $display['combined_display_name'] ?? null);
         $this->assertSame('gscs', $display['product_spec_display'] ?? null);
+        $this->assertArrayNotHasKey('cpu_memory_slug_display', $display);
     }
 
     public function test_display_name_resolver_does_not_duplicate_compact_cpu_memory_in_instance_spec_name(): void

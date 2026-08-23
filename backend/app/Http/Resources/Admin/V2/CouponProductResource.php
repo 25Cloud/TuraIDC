@@ -18,7 +18,6 @@ class CouponProductResource extends JsonResource
         $displayName = app(ProductDisplayNameResolver::class)->resolveForProduct($this->resource);
         $productDisplayName = $this->firstFilled([
             $displayName['custom_display_name'] ?? '',
-            $displayName['cpu_memory_slug_display'] ?? '',
             $displayName['product_spec_display'] ?? '',
             $displayName['cpu_memory_display'] ?? '',
             $displayName['product_display_name'] ?? '',
@@ -37,7 +36,6 @@ class CouponProductResource extends JsonResource
             'product_display_name' => $productDisplayName,
             'custom_display_name' => (string) ($displayName['custom_display_name'] ?? ''),
             'cpu_memory_display' => (string) ($displayName['cpu_memory_display'] ?? ''),
-            'cpu_memory_slug_display' => (string) ($displayName['cpu_memory_slug_display'] ?? ''),
             'product_spec_display' => (string) ($displayName['product_spec_display'] ?? ''),
             'combined_display_name' => (string) ($displayName['combined_display_name'] ?? ''),
             'product_type' => $productType,

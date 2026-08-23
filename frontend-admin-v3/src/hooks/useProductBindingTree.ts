@@ -121,7 +121,6 @@ function createBindingRecord(sourceValue: unknown, parent?: BindingParentContext
   const productId = Number(source.product_id || source.id || 0);
   if (productId <= 0) return null;
   const customDisplayName = String(source.custom_display_name || '').trim();
-  const cpuMemorySlugDisplay = String(source.cpu_memory_slug_display || '').trim();
   const productSpecDisplay = String(source.product_spec_display || '').trim();
   const cpuMemoryDisplay = String(source.cpu_memory_display || '').trim();
   const productDisplayName = String(source.product_display_name || '').trim();
@@ -129,7 +128,6 @@ function createBindingRecord(sourceValue: unknown, parent?: BindingParentContext
   const displayName = String(source.display_name || source.label || '').trim();
   const bindingLabel =
     customDisplayName ||
-    cpuMemorySlugDisplay ||
     productSpecDisplay ||
     cpuMemoryDisplay ||
     productDisplayName ||
@@ -152,7 +150,6 @@ function createBindingRecord(sourceValue: unknown, parent?: BindingParentContext
     product_display_name: productDisplayName || bindingLabel,
     custom_display_name: customDisplayName,
     cpu_memory_display: cpuMemoryDisplay,
-    cpu_memory_slug_display: cpuMemorySlugDisplay,
     product_spec_display: productSpecDisplay,
     combined_display_name: combinedDisplayName,
     category_full_name: categoryName,
@@ -194,7 +191,6 @@ export function normalizeProductBindings(bindings: unknown): ProductBindingRecor
       product_display_name: record.product_display_name,
       custom_display_name: record.custom_display_name,
       cpu_memory_display: record.cpu_memory_display,
-      cpu_memory_slug_display: record.cpu_memory_slug_display,
       product_spec_display: record.product_spec_display,
       combined_display_name: record.combined_display_name,
       category_full_name: record.category_full_name,
@@ -518,7 +514,6 @@ export function useProductBindingTree(
         product_display_name: String(item.product_display_name || '').trim(),
         custom_display_name: String(item.custom_display_name || '').trim(),
         cpu_memory_display: String(item.cpu_memory_display || '').trim(),
-        cpu_memory_slug_display: String(item.cpu_memory_slug_display || '').trim(),
         product_spec_display: String(item.product_spec_display || '').trim(),
         combined_display_name: String(item.combined_display_name || '').trim(),
         category_full_name: String(item.category_full_name || '').trim(),

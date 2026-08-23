@@ -8,6 +8,7 @@ use App\Services\Auth\LegacyPasswordVerifier;
 use App\Services\Automation\Heartbeat\HeartbeatTaskRegistry;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
+use App\Services\ProductCatalog\ProductSpecHighlightService;
 use App\Services\System\UploadedAssetReferenceService;
 use Carbon\CarbonInterface;
 use Illuminate\Queue\Events\JobTimedOut;
@@ -60,6 +61,7 @@ class AppServiceProvider extends ServiceProvider
         // 注册为 singleton 后缓存才真正生效；写入侧已在 ServiceUpstreamBindingWriter 内做失效。
         $this->app->singleton(PluginBindingResolver::class);
         $this->app->singleton(ProductDisplayNameResolver::class);
+        $this->app->singleton(ProductSpecHighlightService::class);
     }
 
     public function boot(): void

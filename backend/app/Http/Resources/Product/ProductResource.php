@@ -124,7 +124,6 @@ class ProductResource extends JsonResource
     private function resolveAdminProductSpecDisplayName(array $displayName): string
     {
         foreach ([
-            $displayName['cpu_memory_slug_display'] ?? '',
             $displayName['cpu_memory_display'] ?? '',
             $displayName['product_spec_display'] ?? '',
             $displayName['product_display_name'] ?? '',
@@ -147,7 +146,6 @@ class ProductResource extends JsonResource
 
         $defaultCandidates = [
             $specDisplay,
-            $displayName['cpu_memory_slug_display'] ?? '',
             $displayName['cpu_memory_display'] ?? '',
             $displayName['product_spec_display'] ?? '',
         ];

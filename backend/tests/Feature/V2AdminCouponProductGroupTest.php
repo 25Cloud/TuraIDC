@@ -389,7 +389,6 @@ class V2AdminCouponProductGroupTest extends TestCase
             'product_display_name',
             'custom_display_name',
             'cpu_memory_display',
-            'cpu_memory_slug_display',
             'product_spec_display',
             'combined_display_name',
             'product_type',

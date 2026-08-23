@@ -415,7 +415,6 @@ export interface ProductBindingRecord {
   product_display_name?: string;
   custom_display_name?: string;
   cpu_memory_display?: string;
-  cpu_memory_slug_display?: string;
   product_spec_display?: string;
   combined_display_name?: string;
   category_full_name?: string;
