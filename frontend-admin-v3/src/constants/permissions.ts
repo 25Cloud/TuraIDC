@@ -129,7 +129,7 @@ export function impliedPermissions(permission: string): string[] {
     case AdminPermissions.INVOICE_MANAGE:
       return [AdminPermissions.INVOICE_LIST, AdminPermissions.INVOICE_DETAIL];
     case AdminPermissions.TICKET_MANAGE:
-      return [AdminPermissions.TICKET_LIST, AdminPermissions.TICKET_REPLY, AdminPermissions.TICKET_DELIVERY_MANAGE];
+      return [AdminPermissions.TICKET_LIST, AdminPermissions.TICKET_REPLY];
     case AdminPermissions.PRODUCT_MANAGE:
     case AdminPermissions.PRODUCT_SYNC:
       return [AdminPermissions.PRODUCT_LIST];
