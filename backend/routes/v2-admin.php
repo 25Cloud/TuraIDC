@@ -153,12 +153,17 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/tickets/{ticket}/closures', [TicketController::class, 'close']);
         Route::post('/tickets/{ticket}/reopen', [TicketController::class, 'reopen'])->middleware('throttle:10,1,admin-ticket-reopen');
         Route::put('/tickets/{ticket}/assignment', [TicketController::class, 'assign']);
+        Route::post('/tickets/{ticket}/upstream-delivery/callback-registration', [TicketDeliveryController::class, 'registerCallback']);
+    });
+
+    // 工单传递设置：规则、上游部门与上传防护配置归入独立权限，
+    // ticket.manage 通过隐含关系（AdminPermissions::impliedPermissions）仍可访问。
+    Route::middleware(['permission:'.AdminPermissions::TICKET_DELIVERY_MANAGE])->group(function (): void {
         Route::get('/ticket-delivery-departments', [TicketDeliveryController::class, 'upstreamDepartments']);
         Route::get('/ticket-delivery-rules', [TicketDeliveryController::class, 'index']);
         Route::post('/ticket-delivery-rules', [TicketDeliveryController::class, 'store']);
         Route::put('/ticket-delivery-rules/{rule}', [TicketDeliveryController::class, 'update']);
         Route::delete('/ticket-delivery-rules/{rule}', [TicketDeliveryController::class, 'destroy']);
-        Route::post('/tickets/{ticket}/upstream-delivery/callback-registration', [TicketDeliveryController::class, 'registerCallback']);
         Route::get('/ticket-delivery-upload-guard', [TicketDeliveryController::class, 'uploadGuardConfig']);
         Route::post('/ticket-delivery-upload-guard', [TicketDeliveryController::class, 'saveUploadGuardConfig']);
     });

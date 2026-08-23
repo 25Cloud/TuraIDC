@@ -5,20 +5,27 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\AdminUser;
+use App\Models\IntegrationPlugin;
 use App\Models\Role;
 use App\Models\Setting;
+use App\Models\Supplier;
+use App\Models\SupplierPluginBinding;
 use App\Models\Ticket;
+use App\Models\TicketDeliveryRule;
 use App\Models\TicketReply;
 use App\Models\User;
 use App\Services\Ticket\TicketDeliveryService;
 use App\Services\Ticket\TicketService;
 use App\Support\AdminPermissions;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\Support\Concerns\UpstreamDeliveryWhitelist;
 use Tests\TestCase;
 
 class V2AdminTicketActionApiTest extends TestCase
 {
+    use DatabaseTransactions;
     use UpstreamDeliveryWhitelist;
 
     protected function tearDown(): void
@@ -26,9 +33,10 @@ class V2AdminTicketActionApiTest extends TestCase
         // 恢复 ticket_upstream 上传防护配置。恢复放在 tearDown 中保证任一断言失败后
         // 也会执行，避免残留配置污染同一进程内其他访问 /upload_image 的用例。
         Setting::setValues('ticket_upstream', [
+            'upload_image_enabled' => config('ticket_upstream.upload_image_enabled', false) ? '1' : '0',
             'allowed_ips' => (string) config('ticket_upstream.upload_allowed_ips', ''),
             'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
-            'block_non_whitelisted' => config('ticket_upstream.upload_block_non_whitelisted', false) ? '1' : '0',
+            'block_non_whitelisted' => config('ticket_upstream.upload_block_non_whitelisted', true) ? '1' : '0',
         ]);
 
         parent::tearDown();
@@ -281,8 +289,90 @@ class V2AdminTicketActionApiTest extends TestCase
         $this->assertSame('', (string) $reply->content);
     }
 
+    public function test_ticket_delivery_rules_require_enabled_upload_image_endpoint(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $plugin = IntegrationPlugin::query()->create([
+            'domain' => 'servers',
+            'slug' => 'ticket-rule-'.$suffix,
+            'plugin_key' => 'ticket-rule-'.$suffix,
+            'name' => '工单规则测试插件 '.$suffix,
+            'version' => '1.0.0',
+            'entry_class' => 'Tests\\FakePlugin',
+            'capabilities_json' => [],
+            'config_schema_json' => [],
+            'status' => 1,
+            'installed_at' => now(),
+        ]);
+        $supplier = Supplier::query()->create([
+            'name' => '工单规则测试供应商 '.$suffix,
+            'code' => 'ticket-rule-'.$suffix,
+            'status' => 1,
+        ]);
+        $supplierBinding = SupplierPluginBinding::query()->create([
+            'supplier_id' => (int) $supplier->id,
+            'plugin_id' => (int) $plugin->id,
+            'provider_key' => 'zjmf_finance_api',
+            'environment' => 'production',
+            'status' => 1,
+            'priority' => 1,
+            'config_json' => [],
+            'has_secret_json' => [],
+        ]);
+
+        Setting::setValues('ticket_upstream', [
+            'upload_image_enabled' => '0',
+        ]);
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
+        $ruleName = '接口关闭时不可配置 '.bin2hex(random_bytes(4));
+        $payload = [
+            'name' => $ruleName,
+            'department' => 'support',
+            'supplier_id' => $supplier->id,
+            'provider_key' => 'zjmf_finance_api',
+            'product_scope_mode' => 'all',
+            'product_ids' => [],
+            'upstream_department_id' => 'support-01',
+            'enabled' => true,
+            'sync_admin_replies' => false,
+        ];
+
+        $this->postJson('/api/v2/admin/ticket-delivery-rules', $payload)
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 42200)
+            ->assertJsonPath('data.errors.upload_image_enabled.0', '请先启用 /upload_image 接口');
+        $this->assertDatabaseMissing('ticket_delivery_rules', ['name' => $payload['name']]);
+
+        Setting::setValues('ticket_upstream', ['upload_image_enabled' => '1']);
+        $supplierBinding->update(['status' => 0]);
+        $this->postJson('/api/v2/admin/ticket-delivery-rules', array_merge($payload, [
+            'name' => $ruleName.' disabled-binding',
+        ]))
+            ->assertUnprocessable()
+            ->assertJsonPath('data.errors.supplier_id.0', '供应商必须启用并配置启用的 ZJMF 财务接口绑定');
+        $supplierBinding->update(['status' => 1]);
+        $created = $this->postJson('/api/v2/admin/ticket-delivery-rules', $payload)
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.provider_key', 'zjmf_finance_api')
+            ->assertJsonPath('data.product_scope_mode', 'all');
+        $ruleId = (int) $created->json('data.id');
+
+        Setting::setValues('ticket_upstream', ['upload_image_enabled' => '0']);
+        $this->putJson('/api/v2/admin/ticket-delivery-rules/'.$ruleId, array_merge($payload, [
+            'name' => '接口关闭时不可更新',
+        ]))
+            ->assertUnprocessable()
+            ->assertJsonPath('data.errors.upload_image_enabled.0', '请先启用 /upload_image 接口');
+        $this->assertSame($ruleName, (string) TicketDeliveryRule::query()->findOrFail($ruleId)->name);
+    }
+
     public function test_ticket_upload_guard_config_requires_manage_permission_and_roundtrips(): void
     {
+        DB::table('settings')
+            ->where('group_key', 'ticket_upstream')
+            ->whereIn('item_key', ['upload_image_enabled', 'block_non_whitelisted'])
+            ->delete();
         Setting::forgetCachedGroup('ticket_upstream');
 
         $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
@@ -306,22 +396,28 @@ class V2AdminTicketActionApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('code', 0);
 
+        $this->assertSame(false, $default->json('data.upload_image_enabled'));
+        $this->assertSame(true, $default->json('data.block_non_whitelisted'));
+        $this->assertArrayHasKey('upload_image_enabled', $default->json('data'));
         $this->assertArrayHasKey('allowed_ips', $default->json('data'));
         $this->assertArrayHasKey('rate_limit', $default->json('data'));
         $this->assertArrayHasKey('block_non_whitelisted', $default->json('data'));
 
         $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
+            'upload_image_enabled' => true,
             'allowed_ips' => "203.0.113.10\n198.51.100.0/24",
             'rate_limit' => 5,
             'block_non_whitelisted' => true,
         ])->assertOk()
             ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.upload_image_enabled', true)
             ->assertJsonPath('data.allowed_ips', "203.0.113.10\n198.51.100.0/24")
             ->assertJsonPath('data.rate_limit', 5)
             ->assertJsonPath('data.block_non_whitelisted', true);
 
         $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
             ->assertOk()
+            ->assertJsonPath('data.upload_image_enabled', true)
             ->assertJsonPath('data.allowed_ips', "203.0.113.10\n198.51.100.0/24")
             ->assertJsonPath('data.rate_limit', 5)
             ->assertJsonPath('data.block_non_whitelisted', true);
@@ -331,6 +427,7 @@ class V2AdminTicketActionApiTest extends TestCase
             'allowed_ips' => '198.51.100.0/24',
             'rate_limit' => 10,
         ])->assertOk()
+            ->assertJsonPath('data.upload_image_enabled', true)
             ->assertJsonPath('data.block_non_whitelisted', true);
 
         // 非法 IP / CIDR 被拒绝

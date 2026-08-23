@@ -354,7 +354,8 @@ php artisan test --filter=ZjmfFinanceTransportTest
 php artisan test --filter=ServiceProvisionDataTokenSanitizationTest
 ```
 
-- `UploadSecurityTest` 覆盖 `/upload_image` 凭证/白名单/限流与孤儿文件清理。测试缓存为 `array`（`phpunit.xml.dist`），限流计数不落 Redis；用例 `tearDown` 会清理固定测试 IP 的 `RateLimiter` 键，重复运行保持幂等。
+- `UploadSecurityTest` 覆盖 `/upload_image` 默认关闭、凭证/白名单/限流与孤儿文件清理。测试缓存为 `array`（`phpunit.xml.dist`），限流计数不落 Redis；用例 `tearDown` 会清理固定测试 IP 的 `RateLimiter` 键，重复运行保持幂等。
+- `V2AdminTicketActionApiTest` 覆盖上传防护配置读写、`/upload_image` 开启前置校验、白名单外上传默认拒绝及规则创建/更新保护。
 - `ZjmfFinanceTransportTest` 覆盖附件上传：复用共享 TLS 选项（`ssl_verify`/`ca_bundle`）、路径逃逸拒绝、上游失败抛业务异常。
 - `ServiceProvisionDataTokenSanitizationTest` 覆盖回调 token 不进入 `services.provision_data`、仅保留在加密 secret 快照。
 
