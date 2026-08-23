@@ -11,6 +11,7 @@ import type {
   TicketListParams,
   TicketPreReplySettingsPayload,
   TicketPreReplySettingsResponse,
+  TicketPreReplySettingsSaveResult,
   TicketRecord,
   TicketUpstreamDeliveryLogsResponse,
   TicketUpstreamUploadGuardConfig,
@@ -104,6 +105,6 @@ export const ticketsApi = {
   preReply: {
     config: () => request.get<TicketPreReplySettingsResponse>({ url: '/v2/admin/ticket-pre-reply-settings' }),
     save: (data: TicketPreReplySettingsPayload) =>
-      request.post<TicketPreReplySettingsPayload>({ url: '/v2/admin/ticket-pre-reply-settings', data }),
+      request.post<TicketPreReplySettingsSaveResult>({ url: '/v2/admin/ticket-pre-reply-settings', data }),
   },
 };

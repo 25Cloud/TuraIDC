@@ -313,6 +313,21 @@ class TicketDeliveryService
             return;
         }
 
+        // 预回复是建单时的自动应答，仅本地会话可见，任何投递路径（含
+        // deliverTicket 的历史补投）都不得推送到上游。
+        if ((int) ($reply->is_pre_reply ?? 0) === 1) {
+            $this->recordLog($ticket, [
+                'ticket_reply_id' => $reply->id,
+                'operation' => 'ticket.reply',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => 'pre_reply_skipped',
+                'message' => '工单预回复不转发上游',
+            ]);
+
+            return;
+        }
+
         $binding = $ticket->upstreamBinding()->first();
         if (! $binding instanceof TicketUpstreamBinding) {
             $this->recordLog($ticket, [

@@ -8,6 +8,7 @@ use App\Models\AdminUser;
 use App\Models\Setting;
 use App\Models\Ticket;
 use App\Models\TicketReply;
+use App\Support\AdminPermissions;
 use App\Support\TextSanitizer;
 
 class TicketPreReplyService
@@ -84,8 +85,10 @@ class TicketPreReplyService
             return null;
         }
 
+        // 与工单指派的「员工回复」名单口径一致：仅启用且可回复工单的管理员
+        // 才能作为预回复名义人，避免由不能回复工单的账号代发。
         $staff = AdminUser::query()->where('status', 1)->find($adminUserId);
-        if ($staff === null) {
+        if ($staff === null || ! $staff->hasPermission(AdminPermissions::TICKET_REPLY)) {
             return null;
         }
 
@@ -96,6 +99,7 @@ class TicketPreReplyService
             'is_staff' => 1,
             'sender_type' => 'admin',
             'sender_name' => $staff->nickname ?: $staff->username ?: '员工',
+            'is_pre_reply' => 1,
             'attachments' => [],
             'created_at' => now(),
         ]);

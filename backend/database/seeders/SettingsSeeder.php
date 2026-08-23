@@ -135,11 +135,13 @@ class SettingsSeeder extends Seeder
         ]);
 
         // 工单预回复：默认关闭，由管理端「工单预回复设置」页配置管理员账号与回复内容。
+        // 初始值取 config/ticket_pre_reply.php，使部署环境变量默认值在首次种入时生效；
+        // seedGroup 幂等不覆盖既有设置。
         static::seedGroup('ticket_pre_reply', [
-            'enabled' => '0',
-            'admin_user_id' => '0',
-            'content' => '',
-            'upstream_content' => '',
+            'enabled' => config('ticket_pre_reply.enabled', false) ? '1' : '0',
+            'admin_user_id' => (string) config('ticket_pre_reply.admin_user_id', 0),
+            'content' => (string) config('ticket_pre_reply.content', ''),
+            'upstream_content' => (string) config('ticket_pre_reply.upstream_content', ''),
         ]);
 
         // 通知模板默认数据（email 全量 + sms 验证码）：幂等种入，

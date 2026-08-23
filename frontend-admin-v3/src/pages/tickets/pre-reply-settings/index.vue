@@ -10,6 +10,7 @@
       </div>
 
       <t-form
+        ref="formRef"
         class="ticket-pre-reply-form"
         :data="form"
         :rules="formRules"
@@ -59,7 +60,7 @@
 import './index.less';
 
 import { useWindowSize } from '@vueuse/core';
-import type { FormRule } from 'tdesign-vue-next';
+import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -70,6 +71,7 @@ import { errorMessage } from '@/utils/userMessage';
 const { width } = useWindowSize();
 const isMobile = computed(() => width.value < 768);
 const saving = ref(false);
+const formRef = ref<FormInstanceFunctions>();
 const adminUsers = ref<TicketAdminUser[]>([]);
 
 const form = reactive({
@@ -82,7 +84,9 @@ const form = reactive({
 const formRules: Record<string, FormRule[]> = {
   admin_user_id: [
     {
-      validator: (value) => !form.enabled || (value !== '' && value !== null && value !== undefined),
+      // 后端未配置时返回 0，同样视为未选择。
+      validator: (value) =>
+        !form.enabled || (value !== '' && value !== null && value !== undefined && Number(value) > 0),
       message: '启用预回复时必须选择管理员账号',
       type: 'error',
     },
@@ -115,6 +119,10 @@ async function loadConfig() {
 }
 
 async function save() {
+  // 启用预回复但未选择管理员或未填写内容时，展示字段级提示并阻止提交。
+  const valid = await formRef.value?.validate?.();
+  if (valid !== true) return;
+
   saving.value = true;
   try {
     await adminApi.tickets.preReply.save({
@@ -125,6 +133,8 @@ async function save() {
       upstream_content: form.enabled ? form.upstream_content : '',
     });
     MessagePlugin.success('工单预回复设置已保存');
+    // 保存成功后重新加载，确保停用后本地表单与后端已清空的内容保持一致。
+    await loadConfig();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存工单预回复设置失败'));
   } finally {

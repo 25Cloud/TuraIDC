@@ -40,7 +40,9 @@ final class SaveTicketPreReplyRequest extends AdminFormRequest
                 $validator->errors()->add('admin_user_id', '所选管理员账号不存在');
             }
 
-            if (trim((string) ($data['content'] ?? '')) === '') {
+            // 与 payload() 使用同一 TextSanitizer::clean 转换后判断，纯标签/空白内容
+            // 清洗后为空同样视为未填写，避免校验通过却存了空内容导致预回复静默失效。
+            if (trim(TextSanitizer::clean((string) ($data['content'] ?? ''), true)) === '') {
                 $validator->errors()->add('content', '启用预回复时必须填写回复内容');
             }
         });

@@ -9,9 +9,12 @@ use App\Models\Role;
 use App\Models\Setting;
 use App\Models\Ticket;
 use App\Models\TicketReply;
+use App\Models\TicketReplyDelivery;
+use App\Models\TicketUpstreamBinding;
 use App\Models\User;
 use App\Services\Admin\Rbac\PermissionCatalogService;
 use App\Services\ClientServiceConsole\ServiceTransformService;
+use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Notification\UserNotificationService;
 use App\Services\System\NotificationService;
 use App\Services\System\UploadedAssetReferenceService;
@@ -19,6 +22,7 @@ use App\Services\Ticket\TicketDeliveryService;
 use App\Services\Ticket\TicketPreReplyService;
 use App\Services\Ticket\TicketService;
 use App\Support\AdminPermissions;
+use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -85,7 +89,7 @@ class TicketPreReplyTest extends TestCase
         $this->assertSame(TicketService::STATUS_OPEN, (int) $ticket->fresh()->status);
     }
 
-    public function test_pre_reply_is_not_created_when_admin_is_missing(): void
+    public function test_pre_reply_is_not_created_when_admin_missing(): void
     {
         $user = $this->createClientUser('pre-reply-missing');
         // 配置了启用与内容，但管理员 ID 指向不存在的账号。
@@ -100,6 +104,70 @@ class TicketPreReplyTest extends TestCase
 
         $this->assertSame(1, TicketReply::query()->where('ticket_id', (int) $ticket->id)->count());
         $this->assertSame(TicketService::STATUS_OPEN, (int) $ticket->fresh()->status);
+    }
+
+    public function test_pre_reply_is_not_created_when_admin_lacks_reply_permission(): void
+    {
+        // 管理员存在但未持有 ticket.reply（与「员工回复」可代发名单口径一致），视为不可代发。
+        $staff = $this->createStaff([]);
+        $user = $this->createClientUser('pre-reply-no-reply-perm');
+        $this->enablePreReply((int) $staff->id, '请耐心等待管理员回复。');
+
+        $ticket = $this->makeTicketService()->create((int) $user->id, [
+            'department' => 'support',
+            'subject' => 'Pre-reply no reply permission',
+            'content' => '初始消息',
+            'priority' => 2,
+        ]);
+
+        $this->assertSame(1, TicketReply::query()->where('ticket_id', (int) $ticket->id)->count());
+        $this->assertSame(TicketService::STATUS_OPEN, (int) $ticket->fresh()->status);
+    }
+
+    public function test_pre_reply_is_never_delivered_to_upstream_when_admin_reply_sync_enabled(): void
+    {
+        $staff = $this->createStaff();
+        $user = $this->createClientUser('pre-reply-no-deliver');
+        $this->enablePreReply((int) $staff->id, '请耐心等待管理员回复。');
+
+        $ticket = $this->makeTicketService()->create((int) $user->id, [
+            'department' => 'support',
+            'subject' => 'Pre-reply no deliver ticket',
+            'content' => '初始消息',
+            'priority' => 2,
+        ]);
+
+        $preReply = TicketReply::query()
+            ->where('ticket_id', (int) $ticket->id)
+            ->where('is_pre_reply', 1)
+            ->first();
+        $this->assertNotNull($preReply);
+        $this->assertSame(1, (int) $preReply->is_staff);
+
+        // 模拟工单已投递上游成功后的历史补投场景：即便规则开启管理员回复同步，
+        // 预回复也必须在 queueStaffReply 入口被跳过。
+        TicketUpstreamBinding::query()->create([
+            'ticket_id' => (int) $ticket->id,
+            'provider_key' => 'zjmf_finance_api',
+            'supplier_id' => 1,
+            'upstream_department_id' => '1',
+            'upstream_service_id' => '1',
+            'upstream_ticket_id' => '10001',
+            'status' => 'delivered',
+        ]);
+
+        $deliveryService = new TicketDeliveryService($this->createMock(PluginBindingResolver::class));
+        $deliveryService->queueStaffReply($preReply->refresh());
+
+        $this->assertSame(
+            0,
+            TicketReplyDelivery::query()->where('ticket_reply_id', (int) $preReply->id)->count()
+        );
+        $this->assertDatabaseHas('ticket_upstream_delivery_logs', [
+            'ticket_id' => (int) $ticket->id,
+            'ticket_reply_id' => (int) $preReply->id,
+            'reason_code' => 'pre_reply_skipped',
+        ]);
     }
 
     public function test_pre_reply_is_not_created_when_content_is_empty(): void
@@ -245,6 +313,16 @@ class TicketPreReplyTest extends TestCase
             ->assertJsonPath('code', 42200)
             ->assertJsonStructure(['data' => ['errors' => ['content']]]);
 
+        // 启用但内容为纯 HTML 标签/空白：清洗后为空，同样视为未填写。
+        $this->postJson('/api/v2/admin/ticket-pre-reply-settings', [
+            'enabled' => true,
+            'admin_user_id' => 1,
+            'content' => '<p> </p>',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 42200)
+            ->assertJsonStructure(['data' => ['errors' => ['content']]]);
+
         // 启用但所选管理员不存在。
         $this->postJson('/api/v2/admin/ticket-pre-reply-settings', [
             'enabled' => true,
@@ -254,6 +332,28 @@ class TicketPreReplyTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonPath('code', 42200)
             ->assertJsonStructure(['data' => ['errors' => ['admin_user_id']]]);
+    }
+
+    public function test_seeder_seeds_pre_reply_defaults_from_config(): void
+    {
+        (new SettingsSeeder())->seed();
+
+        $this->assertSame(
+            config('ticket_pre_reply.enabled', false) ? '1' : '0',
+            Setting::getValue(TicketPreReplyService::SETTINGS_GROUP, 'enabled')
+        );
+        $this->assertSame(
+            (string) config('ticket_pre_reply.admin_user_id', 0),
+            Setting::getValue(TicketPreReplyService::SETTINGS_GROUP, 'admin_user_id')
+        );
+        $this->assertSame(
+            (string) config('ticket_pre_reply.content', ''),
+            Setting::getValue(TicketPreReplyService::SETTINGS_GROUP, 'content')
+        );
+        $this->assertSame(
+            (string) config('ticket_pre_reply.upstream_content', ''),
+            Setting::getValue(TicketPreReplyService::SETTINGS_GROUP, 'upstream_content')
+        );
     }
 
     public function test_settings_allow_disabling_without_admin_and_content(): void
