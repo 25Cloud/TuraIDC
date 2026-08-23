@@ -260,11 +260,30 @@
                 return;
             }
             appendLog('安装完成', 'ok');
-            $('done-box').innerHTML =
-                '<strong>安装成功！</strong><br>' +
-                '管理员用户名：<span class="cred">' + data.data.admin_username + '</span><br>' +
-                '管理员邮箱：<span class="cred">' + data.data.admin_email + '</span><br>' +
-                '管理端地址：<a href="' + data.data.admin_url + '" target="_blank">' + data.data.admin_url + '</a>';
+            var box = $('done-box');
+            box.textContent = '';
+            var title = document.createElement('strong');
+            title.textContent = '安装成功！';
+            box.appendChild(title);
+            [['管理员用户名：', data.data.admin_username], ['管理员邮箱：', data.data.admin_email]]
+                .forEach(function (pair) {
+                    box.appendChild(document.createElement('br'));
+                    box.appendChild(document.createTextNode(pair[0]));
+                    var value = document.createElement('span');
+                    value.className = 'cred';
+                    value.textContent = pair[1];
+                    box.appendChild(value);
+                });
+            box.appendChild(document.createElement('br'));
+            box.appendChild(document.createTextNode('管理端地址：'));
+            var link = document.createElement('a');
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.textContent = data.data.admin_url;
+            if (/^https?:\/\//i.test(data.data.admin_url)) {
+                link.href = data.data.admin_url;
+            }
+            box.appendChild(link);
             goStep(4);
         }).catch(function () {
             appendLog('网络中断，安装结果未知；请勿直接重试，先检查数据库与管理员是否已创建。', 'err');
