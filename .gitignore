@@ -36,6 +36,13 @@ playwright-report/
 test-results/
 test-report.html
 
+# Lighthouse 审计产物：由 frontend-user-v3-www/scripts/lighthouse-audit.mjs
+# 按需生成（该脚本的 lighthouse 依赖本身也是 --no-save 临时安装的），
+# 属可再生成的中间物，不入库。人工撰写的审计结论文档不受影响。
+# 注意必须写全路径：含 / 的模式锚定在本文件所在目录（仓库根），
+# 只写 docs/perf-audit/lighthouse/ 匹配不到 frontend-user-v3-www 下的同名路径。
+frontend-user-v3-www/docs/perf-audit/lighthouse/
+
 # ---- 日志 ----
 *.log
 npm-debug.log*

@@ -22,8 +22,6 @@ backend/plugins/certification/smapi/
 | `app_key`      | text     | 是   | 用户中心 API 密钥 AppKey                         |
 | `secret_key`   | password | 是   | 用户中心 API 密钥 AppSecret（加密保存）          |
 | `product_code` | textarea | 是   | 产品标识；多产品按 `code,名称\|code,名称` 填写     |
-| `ssl_verify`   | switch   | 否   | 是否校验服务商 HTTPS 证书，默认开启              |
-| `ca_bundle`    | text     | 否   | 本地 CA bundle 文件路径                          |
 | `charge_enabled` | switch | 否 | 开启后用户发起认证按配置金额扣费                 |
 | `amount`       | number   | 否   | 收费金额（元）                                   |
 | `free_times`   | number   | 否   | 每个用户免费认证次数                             |

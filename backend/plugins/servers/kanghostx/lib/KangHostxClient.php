@@ -87,8 +87,10 @@ final class KangHostxClient
         $response = Http::timeout($this->timeout($supplier))
             ->connectTimeout(min($this->timeout($supplier), 10))
             ->acceptJson()
+            // 不设置 verify：项目硬规则要求插件不提供 SSL 与 CA 配置，统一依赖系统 CA。
+            // 原实现读 supplier.provider_config['ssl_verify']，而该字段并未在
+            // supplierFormSchema() 里声明，属于「读了自己 schema 里不存在的键」。
             ->withOptions([
-                'verify' => $this->sslVerify($supplier),
                 'allow_redirects' => false,
             ])
             ->get($this->apiEndpoint($supplier), $query);
@@ -233,13 +235,6 @@ final class KangHostxClient
         $config = $this->providerConfig($supplier);
 
         return max(1, min((int) (($config['timeout'] ?? 15) ?: 15), 60));
-    }
-
-    private function sslVerify(Supplier $supplier): bool
-    {
-        $config = $this->providerConfig($supplier);
-
-        return $this->truthy($config['ssl_verify'] ?? true);
     }
 
     /**

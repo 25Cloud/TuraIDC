@@ -4,18 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services\System;
 
+use App\Constants\BillingCycle;
 use App\Constants\ServiceStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 class ServiceMigrationService
 {
-    private const BILLING_CYCLE_MONTHS = [
-        'monthly' => 1,
-        'quarterly' => 3,
-        'semiannually' => 6,
-        'annually' => 12,
-    ];
+    private const BILLING_CYCLE_MONTHS = BillingCycle::RENEWABLE_MONTHS;
 
     private string $sourceConnection;
 

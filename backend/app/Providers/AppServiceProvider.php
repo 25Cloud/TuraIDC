@@ -6,6 +6,8 @@ use App\Listeners\HeartbeatTaskTimedOutListener;
 use App\Models\Setting;
 use App\Services\Auth\LegacyPasswordVerifier;
 use App\Services\Automation\Heartbeat\HeartbeatTaskRegistry;
+use App\Services\Integrations\Plugins\PluginBindingResolver;
+use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\System\UploadedAssetReferenceService;
 use Carbon\CarbonInterface;
 use Illuminate\Queue\Events\JobTimedOut;
@@ -51,6 +53,13 @@ class AppServiceProvider extends ServiceProvider
         );
         // 任务注册表跨请求/跨 Job 复用：避免每个心跳 Job 重复扫描全部 Provider（插件清单、任务类实例化、契约校验）。
         $this->app->singleton(HeartbeatTaskRegistry::class);
+
+        // 绑定投影与商品显示名解析器都自带行级记忆化，但此前每个调用点都 app()/new 出新实例，
+        // 缓存从未跨行生效。实测客户端服务列表（12 行/页）因此产生 508 次查询，
+        // 其中 service_upstream_bindings 96 次、products.custom_display_name 60 次（仅 1 个不同商品）。
+        // 注册为 singleton 后缓存才真正生效；写入侧已在 ServiceUpstreamBindingWriter 内做失效。
+        $this->app->singleton(PluginBindingResolver::class);
+        $this->app->singleton(ProductDisplayNameResolver::class);
     }
 
     public function boot(): void

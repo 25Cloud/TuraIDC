@@ -342,7 +342,8 @@ class SmapiClient
 
         if (($this->lastRequestFailure['type'] ?? '') === 'connection') {
             if ($this->isSslFailure($this->lastRequestFailure)) {
-                return '实名认证接口 SSL 证书校验失败，请检查插件 CA 证书配置';
+                // 插件已不提供 CA 配置项，证书问题只可能出在服务器的系统 CA 上，据此给出指向
+                return '实名认证接口 SSL 证书校验失败，请检查服务器系统 CA 证书是否过期';
             }
 
             return '实名认证接口请求失败，请稍后重试';
@@ -356,36 +357,10 @@ class SmapiClient
      */
     private function sslOptions(): array
     {
-        if (! $this->resolveSslVerify()) {
-            return ['verify' => false];
-        }
-
-        $caBundle = $this->resolveCaBundle();
-        if ($caBundle !== '' && is_file($caBundle)) {
-            return ['verify' => $caBundle];
-        }
-
+        // 项目硬规则：插件不需要 SSL 与 CA 配置，统一依赖系统 CA（Guzzle 默认 verify=true）。
+        // 原实现允许经插件配置或 config('idc.verification.ssl_verify') 关闭证书校验，
+        // 而后者在 APP_ENV=local 时默认为 false——等于给证书校验留了一条静默禁用通路。
         return [];
-    }
-
-    private function resolveSslVerify(): bool
-    {
-        $value = $this->config['ssl_verify'] ?? null;
-        if ($value !== null && $value !== '') {
-            return filter_var($value, FILTER_VALIDATE_BOOL);
-        }
-
-        return filter_var(config('idc.verification.ssl_verify', true), FILTER_VALIDATE_BOOL);
-    }
-
-    private function resolveCaBundle(): string
-    {
-        $value = $this->config['ca_bundle'] ?? null;
-        if ($value !== null && $value !== '') {
-            return trim((string) $value);
-        }
-
-        return trim((string) config('idc.verification.ca_bundle', ''));
     }
 
     /**

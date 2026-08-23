@@ -9,6 +9,33 @@ use Illuminate\Support\Facades\RateLimiter;
 
 class LoginRiskControlService
 {
+    /**
+     * 风控命名空间。
+     *
+     * 计数键此前只按 sha1(account) 归一，管理端与客户端共用同一份计数：
+     * 名为 cerbo 的管理员与名为 cerbo 的客户会互相累加失败次数，也会互相解锁。
+     * 加入作用域后两侧完全隔离。
+     *
+     * 注意：作用域参与 hash 计算，本次升级会使既有计数键全部失效（相当于清零一次），
+     * 这个方向只会放宽而不会误锁，属于可接受的一次性影响。
+     */
+    public const SCOPE_CLIENT = 'client';
+
+    public const SCOPE_ADMIN = 'admin';
+
+    /**
+     * 客户端「验证码通道」（验证码登录、重置密码）独立的计数作用域。
+     *
+     * 必须与密码通道（SCOPE_CLIENT）分开，否则两条通道会互相误锁：
+     * - 验证码通道的失败会写进密码通道的账号计数，攻击者多 IP 刷错验证码即可
+     *   锁死他人的密码登录，形成账号级 DoS；
+     * - 反过来，成功的验证码登录会清掉密码通道的失败计数，削弱密码爆破防护。
+     *
+     * 原先靠给密码通道的 isLoginLocked 传 includeAccountDimension=false 来缓解
+     * 「密码失败锁死验证码登录」这一个方向，但两条通道共用计数的根因没有解决。
+     */
+    public const SCOPE_CLIENT_CODE = 'client_code';
+
     private const ACCOUNT_IP_MAX_ATTEMPTS = 1;
 
     private const ACCOUNT_IP_DECAY_SECONDS = 900;
@@ -45,17 +72,30 @@ class LoginRiskControlService
      * $includeAccountDimension 为 true 时才启用账号维度（多 IP 轮换触发）；
      * 验证码登录通道应传 false——验证码本身就是第二因素，不应被密码通道的失败连带封死。
      */
-    public function isLoginLocked(string $account, ?string $ip = null, bool $includeAccountDimension = true): bool
-    {
-        if ($this->geeTestService->isEnabled()) {
+    /**
+     * @param  bool|null  $captchaActive  本场景是否真的会要求人机验证。
+     *                                    传 null 时退回旧行为（仅看插件是否启用）。
+     *                                    有了场景开关之后，「插件已启用」不再等于「本场景受验证码保护」——
+     *                                    若插件启用而该场景开关被关掉，软锁定必须继续生效，
+     *                                    否则该入口会既无验证码又无失败次数限制。
+     */
+    public function isLoginLocked(
+        string $account,
+        ?string $ip = null,
+        bool $includeAccountDimension = true,
+        string $scope = self::SCOPE_CLIENT,
+        ?bool $captchaActive = null,
+    ): bool {
+        if ($captchaActive ?? $this->geeTestService->isEnabled()) {
             return false;
         }
 
         $account = $this->normalizeAccount($account);
         $ip = $this->normalizeIp($ip);
+        $scope = $this->normalizeScope($scope);
 
         if ($account !== '' && $ip !== '' && RateLimiter::tooManyAttempts(
-            $this->accountIpKey($account, $ip),
+            $this->accountIpKey($scope, $account, $ip),
             self::SOFT_LOCK_ACCOUNT_IP_MAX_ATTEMPTS
         )) {
             return true;
@@ -63,82 +103,94 @@ class LoginRiskControlService
 
         return $includeAccountDimension
             && $account !== ''
-            && $this->distinctFailedIpCount($account) >= self::SOFT_LOCK_ACCOUNT_MIN_IPS
+            && $this->distinctFailedIpCount($scope, $account) >= self::SOFT_LOCK_ACCOUNT_MIN_IPS
             && RateLimiter::tooManyAttempts(
-                $this->accountKey($account),
+                $this->accountKey($scope, $account),
                 self::SOFT_LOCK_ACCOUNT_MAX_ATTEMPTS
             );
     }
 
-    public function shouldRequireCaptcha(string $account, ?string $ip = null): bool
-    {
+    public function shouldRequireCaptcha(
+        string $account,
+        ?string $ip = null,
+        string $scope = self::SCOPE_CLIENT,
+    ): bool {
         if (! $this->geeTestService->isEnabled()) {
             return false;
         }
 
         $account = $this->normalizeAccount($account);
         $ip = $this->normalizeIp($ip);
+        $scope = $this->normalizeScope($scope);
 
         if ($account !== '' && $ip !== '' && RateLimiter::tooManyAttempts(
-            $this->accountIpKey($account, $ip),
+            $this->accountIpKey($scope, $account, $ip),
             self::ACCOUNT_IP_MAX_ATTEMPTS
         )) {
             return true;
         }
 
         if ($account !== '' && RateLimiter::tooManyAttempts(
-            $this->accountKey($account),
+            $this->accountKey($scope, $account),
             self::ACCOUNT_MAX_ATTEMPTS
         )) {
             return true;
         }
 
         return $ip !== '' && RateLimiter::tooManyAttempts(
-            $this->ipKey($ip),
+            $this->ipKey($scope, $ip),
             self::IP_MAX_ATTEMPTS
         );
     }
 
-    public function recordFailedAttempt(string $account, ?string $ip = null): void
-    {
+    public function recordFailedAttempt(
+        string $account,
+        ?string $ip = null,
+        string $scope = self::SCOPE_CLIENT,
+    ): void {
         $account = $this->normalizeAccount($account);
         $ip = $this->normalizeIp($ip);
+        $scope = $this->normalizeScope($scope);
 
         if ($account !== '' && $ip !== '') {
-            RateLimiter::hit($this->accountIpKey($account, $ip), self::ACCOUNT_IP_DECAY_SECONDS);
-            $this->recordFailedIpForAccount($account, $ip);
+            RateLimiter::hit($this->accountIpKey($scope, $account, $ip), self::ACCOUNT_IP_DECAY_SECONDS);
+            $this->recordFailedIpForAccount($scope, $account, $ip);
         }
 
         if ($account !== '') {
-            RateLimiter::hit($this->accountKey($account), self::ACCOUNT_DECAY_SECONDS);
+            RateLimiter::hit($this->accountKey($scope, $account), self::ACCOUNT_DECAY_SECONDS);
         }
 
         if ($ip !== '') {
-            RateLimiter::hit($this->ipKey($ip), self::IP_DECAY_SECONDS);
+            RateLimiter::hit($this->ipKey($scope, $ip), self::IP_DECAY_SECONDS);
         }
     }
 
-    public function clearSuccessfulLogin(string $account, ?string $ip = null): void
-    {
+    public function clearSuccessfulLogin(
+        string $account,
+        ?string $ip = null,
+        string $scope = self::SCOPE_CLIENT,
+    ): void {
         $account = $this->normalizeAccount($account);
         $ip = $this->normalizeIp($ip);
+        $scope = $this->normalizeScope($scope);
 
         if ($account !== '' && $ip !== '') {
-            RateLimiter::clear($this->accountIpKey($account, $ip));
+            RateLimiter::clear($this->accountIpKey($scope, $account, $ip));
         }
 
         if ($account !== '') {
-            RateLimiter::clear($this->accountKey($account));
-            Cache::store('redis_volatile')->forget($this->failureAlertKey($account));
-            Cache::store('redis_volatile')->forget($this->accountFailedIpsKey($account));
+            RateLimiter::clear($this->accountKey($scope, $account));
+            Cache::store('redis_volatile')->forget($this->failureAlertKey($scope, $account));
+            Cache::store('redis_volatile')->forget($this->accountFailedIpsKey($scope, $account));
         }
 
         if ($ip !== '') {
-            RateLimiter::clear($this->ipKey($ip));
+            RateLimiter::clear($this->ipKey($scope, $ip));
         }
     }
 
-    public function acquireFailureAlertLock(string $account): bool
+    public function acquireFailureAlertLock(string $account, string $scope = self::SCOPE_CLIENT): bool
     {
         $account = $this->normalizeAccount($account);
         if ($account === '') {
@@ -146,55 +198,67 @@ class LoginRiskControlService
         }
 
         return Cache::store('redis_volatile')->add(
-            $this->failureAlertKey($account),
+            $this->failureAlertKey($this->normalizeScope($scope), $account),
             1,
             now()->addSeconds(self::FAILURE_ALERT_DECAY_SECONDS)
         );
     }
 
-    private function accountIpKey(string $account, string $ip): string
+    private function accountIpKey(string $scope, string $account, string $ip): string
     {
-        return 'login-risk:account-ip:'.sha1($account.'|'.$ip);
+        return 'login-risk:account-ip:'.sha1($scope.'|'.$account.'|'.$ip);
     }
 
-    private function accountKey(string $account): string
+    private function accountKey(string $scope, string $account): string
     {
-        return 'login-risk:account:'.sha1($account);
+        return 'login-risk:account:'.sha1($scope.'|'.$account);
     }
 
-    private function ipKey(string $ip): string
+    private function ipKey(string $scope, string $ip): string
     {
-        return 'login-risk:ip:'.sha1($ip);
+        return 'login-risk:ip:'.sha1($scope.'|'.$ip);
     }
 
-    private function failureAlertKey(string $account): string
+    private function failureAlertKey(string $scope, string $account): string
     {
-        return 'login-risk:failure-alert:'.sha1($account);
+        return 'login-risk:failure-alert:'.sha1($scope.'|'.$account);
     }
 
-    private function accountFailedIpsKey(string $account): string
+    private function accountFailedIpsKey(string $scope, string $account): string
     {
-        return 'login-risk:failed-ips:'.sha1($account);
+        return 'login-risk:failed-ips:'.sha1($scope.'|'.$account);
     }
 
-    private function recordFailedIpForAccount(string $account, string $ip): void
+    private function recordFailedIpForAccount(string $scope, string $account, string $ip): void
     {
         $store = Cache::store('redis_volatile');
-        $key = $this->accountFailedIpsKey($account);
+        $key = $this->accountFailedIpsKey($scope, $account);
         $ips = (array) $store->get($key, []);
         $ips[$ip] = true;
         $store->put($key, $ips, now()->addSeconds(self::ACCOUNT_FAILED_IPS_DECAY_SECONDS));
     }
 
-    private function distinctFailedIpCount(string $account): int
+    private function distinctFailedIpCount(string $scope, string $account): int
     {
         try {
-            $ips = (array) Cache::store('redis_volatile')->get($this->accountFailedIpsKey($account), []);
+            $ips = (array) Cache::store('redis_volatile')->get($this->accountFailedIpsKey($scope, $account), []);
         } catch (\Throwable) {
             return 0;
         }
 
         return count($ips);
+    }
+
+    /**
+     * 归一化作用域，非法值统一落到客户端作用域（不放宽任何限制）。
+     */
+    private function normalizeScope(string $scope): string
+    {
+        $normalized = mb_strtolower(trim($scope));
+
+        return in_array($normalized, [self::SCOPE_CLIENT, self::SCOPE_ADMIN, self::SCOPE_CLIENT_CODE], true)
+            ? $normalized
+            : self::SCOPE_CLIENT;
     }
 
     private function normalizeAccount(string $account): string
