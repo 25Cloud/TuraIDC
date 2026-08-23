@@ -157,7 +157,7 @@ class V2AdminTicketActionApiTest extends TestCase
 
     public function test_ticket_delivery_departments_returns_whitelisted_data(): void
     {
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE, AdminPermissions::TICKET_DELIVERY_MANAGE]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_DELIVERY_MANAGE]));
         $delivery = $this->createMock(TicketDeliveryService::class);
         $delivery->expects($this->once())
             ->method('upstreamDepartments')
@@ -179,7 +179,7 @@ class V2AdminTicketActionApiTest extends TestCase
 
     public function test_ticket_delivery_departments_require_supplier_id(): void
     {
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE, AdminPermissions::TICKET_DELIVERY_MANAGE]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_DELIVERY_MANAGE]));
 
         $this->getJson('/api/v2/admin/ticket-delivery-departments')
             ->assertUnprocessable()
@@ -298,7 +298,7 @@ class V2AdminTicketActionApiTest extends TestCase
         Setting::setValues('ticket_upstream', [
             'upload_image_enabled' => '0',
         ]);
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE, AdminPermissions::TICKET_DELIVERY_MANAGE]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_DELIVERY_MANAGE]));
         $ruleName = '接口关闭时不可配置 '.bin2hex(random_bytes(4));
         $payload = [
             'name' => $ruleName,
@@ -437,7 +437,7 @@ class V2AdminTicketActionApiTest extends TestCase
             'upload_image_enabled' => '1',
             'block_non_whitelisted' => '1',
         ]);
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE, AdminPermissions::TICKET_DELIVERY_MANAGE]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_DELIVERY_MANAGE]));
 
         $rule = TicketDeliveryRule::query()->create([
             'name' => '上传开关保护规则 '.bin2hex(random_bytes(4)),
@@ -499,7 +499,7 @@ class V2AdminTicketActionApiTest extends TestCase
             'upload_image_enabled' => '1',
             'block_non_whitelisted' => '1',
         ]);
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE, AdminPermissions::TICKET_DELIVERY_MANAGE]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_DELIVERY_MANAGE]));
 
         // 模拟另一请求正持有「上传开关与规则变更」的串行化锁：关闭请求必须快速失败，
         // 避免绕过规则存在性检查产生「保留规则但接口已关闭」的无效终态。
