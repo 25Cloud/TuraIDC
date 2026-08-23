@@ -94,6 +94,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'api/*',
             'upload_image',
+            // 安装向导运行于全新站点，session/cookie 域名与 HTTPS 可能尚未就绪，
+            // 豁免 CSRF；防重放依赖安装锁（storage/app/install.lock）与限流。
+            'install/*',
         ]);
 
         $middleware->alias([
