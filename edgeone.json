@@ -1,6 +1,6 @@
 {
-  "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter turaidc-docs-web build",
+  "installCommand": "cd docs-web && npm install",
+  "buildCommand": "cd docs-web && npm run build",
   "outputDirectory": "docs-web/.vitepress/dist",
   "nodeVersion": "22.11.0"
 }
