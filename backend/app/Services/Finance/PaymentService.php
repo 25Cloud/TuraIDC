@@ -112,7 +112,8 @@ class PaymentService
                     'paid_at' => now(),
                 ])->save();
 
-                $this->closeOtherPendingPayments($lockedInvoice, 0, 'invoice_paid_by_balance');
+                // 账单已付：预扣余额已被账单消费，不可再退。
+                $this->closeOtherPendingPayments($lockedInvoice, 0, 'invoice_paid_by_balance', false);
 
                 return $lockedInvoice;
             });
@@ -1287,6 +1288,16 @@ class PaymentService
             return false;
         }
 
+        if (! $this->paymentBelongsToGateway($payment, $gateway)) {
+            Log::warning("[{$gatewayLabel}回调] 回调网关与支付记录渠道不一致，已拒绝入账", [
+                'payment_no' => $paymentNo,
+                'callback_gateway' => PaymentGatewayCode::normalize(trim($gateway)),
+                'payment_gateway' => $payment->gatewayKey(),
+            ]);
+
+            return false;
+        }
+
         // 商户号校验（支付宝: app_id, 微信: mch_id, 易支付: pid）
         $merchantId = $params['app_id'] ?? $params['mch_id'] ?? $params['pid'] ?? '';
         if ($merchantId !== '' && ! $resolvedGateway->matchesMerchantId($merchantId)) {
@@ -1466,7 +1477,8 @@ class PaymentService
                         'paid_at' => now(),
                     ])->save();
 
-                    $this->closeOtherPendingPayments($invoice, (int) $lockedPayment->id, 'invoice_paid_by_gateway');
+                    // 账单已付：预扣余额已被账单消费，不可再退。
+                    $this->closeOtherPendingPayments($invoice, (int) $lockedPayment->id, 'invoice_paid_by_gateway', false);
                     $this->recordSuccessfulInvoicePayment($lockedPayment, $invoice);
 
                     return [
@@ -1525,6 +1537,15 @@ class PaymentService
         $payment = Payment::where('payment_no', $paymentNo)->first();
         if (! $payment) {
             Log::warning('[支付宝回调] 支付记录不存在', ['payment_no' => $paymentNo]);
+
+            return false;
+        }
+
+        if (! $this->paymentBelongsToGateway($payment, PaymentGatewayCode::ALIPAY)) {
+            Log::warning('[支付宝回调] 支付记录不属于支付宝渠道，已拒绝入账', [
+                'payment_no' => $paymentNo,
+                'payment_gateway' => $payment->gatewayKey(),
+            ]);
 
             return false;
         }
@@ -1729,7 +1750,8 @@ class PaymentService
                         'paid_at' => now(),
                     ])->save();
 
-                    $this->closeOtherPendingPayments($invoice, (int) $lockedPayment->id, 'invoice_paid_by_alipay');
+                    // 账单已付：预扣余额已被账单消费，不可再退。
+                    $this->closeOtherPendingPayments($invoice, (int) $lockedPayment->id, 'invoice_paid_by_alipay', false);
                     $this->recordSuccessfulInvoicePayment($lockedPayment, $invoice);
 
                     return [
@@ -1985,7 +2007,8 @@ class PaymentService
                         'paid_at' => now(),
                     ])->save();
 
-                    $this->closeOtherPendingPayments($invoice, (int) $lockedPayment->id, 'invoice_paid_by_alipay_query');
+                    // 账单已付：预扣余额已被账单消费，不可再退。
+                    $this->closeOtherPendingPayments($invoice, (int) $lockedPayment->id, 'invoice_paid_by_alipay_query', false);
                     $this->recordSuccessfulInvoicePayment($lockedPayment, $invoice);
 
                     return [
@@ -2822,8 +2845,33 @@ class PaymentService
         return $order;
     }
 
-    private function closeOtherPendingPayments(Invoice $invoice, int $excludePaymentId, string $reason): void
-    {
+    /**
+     * 关闭同一账单下的其他 PENDING 支付。
+     *
+     * $restoreReservedBalance 必须由调用方显式声明，因为两种语境的正确行为恰好相反：
+     *
+     * - **账单已付**（invoice_paid_by_*）传 false。组合支付预扣的余额早已计入
+     *   invoice.paid_amount 并被账单消费——账单 100 元、A 垫 30 之后只需再付 70，
+     *   那 30 元是换到了服务的。此时再退一次就是重复退款。
+     * - **账单作废**（窗口过期）传 true。账单什么都没换到，预扣的余额必须回到用户账上。
+     *
+     * 原实现在两种语境下一律只置 FAILED，于是账单作废时丢钱：账单 100 元，用户先垫 30
+     * 建 A(70)、再垫 20 建 B(50)（第 984 行的复用条件是 amount 相等，所以两笔 mix 能
+     * 并存），窗口过期后扫 B 的码付 50 —— 回调退 B 的 20、50 元转入余额、账单 CANCELLED，
+     * 而 A 在这里被直接置 FAILED，**A 垫付的 30 元凭空消失**。此后账单已是 CANCELLED，
+     * CheckoutService::cancel（只收 UNPAID/OVERDUE）与 OrderService::cancel（要求订单仍
+     * PENDING，而过期路径已把订单取消）都进不去，routes/console.php 也没有孤儿 PENDING
+     * 支付对账任务，这笔钱永久卡死。
+     *
+     * 参数刻意不给默认值：漏传会被 PHP 当场拦下；若默认成 true，将来新增的"账单已付"
+     * 调用点会静默变成可反复触发的重复退款，那是比丢钱更糟的方向。
+     */
+    private function closeOtherPendingPayments(
+        Invoice $invoice,
+        int $excludePaymentId,
+        string $reason,
+        bool $restoreReservedBalance,
+    ): void {
         $query = Payment::query()
             ->where('invoice_id', $invoice->id)
             ->where('status', PaymentStatus::PENDING);
@@ -2835,6 +2883,16 @@ class PaymentService
         $pendingPayments = $query->lockForUpdate()->get();
 
         foreach ($pendingPayments as $pendingPayment) {
+            // 与 CheckoutService::cancel / OrderService::cancel 同一套模式：恢复成功即
+            // 视为已处置（restoreReservedMixBalance 内部会把该笔置 FAILED），非组合支付
+            // 或已无预留时返回 false，落到下面的通用关闭分支。
+            if ($restoreReservedBalance && $this->restoreReservedMixBalance($pendingPayment, [
+                'closed_reason' => $reason,
+                'trace_id' => (string) ($invoice->trace_id ?? ''),
+            ])) {
+                continue;
+            }
+
             $callbackRaw = (array) ($pendingPayment->callback_raw ?? []);
             $callbackRaw['closed_reason'] = $reason;
 
@@ -2867,7 +2925,8 @@ class PaymentService
         $this->cancelLinkedPendingOrderForInvoice($invoice);
         $this->couponService->releaseInvoiceCoupon($invoice);
         $this->restoreStockForCancelledInvoice($invoice);
-        $this->closeOtherPendingPayments($invoice, (int) $payment->id, 'payment_window_expired');
+        // 账单作废：兄弟支付预扣的余额没换到任何服务，必须退回用户。
+        $this->closeOtherPendingPayments($invoice, (int) $payment->id, 'payment_window_expired', true);
     }
 
     private function cancelExpiredInvoiceAfterCapturedPayment(Invoice $invoice, Payment $payment): void
@@ -2876,7 +2935,8 @@ class PaymentService
         $this->cancelLinkedPendingOrderForInvoice($invoice);
         $this->couponService->releaseInvoiceCoupon($invoice);
         $this->restoreStockForCancelledInvoice($invoice);
-        $this->closeOtherPendingPayments($invoice, (int) $payment->id, 'payment_window_expired');
+        // 账单作废：兄弟支付预扣的余额没换到任何服务，必须退回用户。
+        $this->closeOtherPendingPayments($invoice, (int) $payment->id, 'payment_window_expired', true);
     }
 
     private function restoreConflictingMixBalancesForCapturedPayment(
@@ -3070,6 +3130,30 @@ class PaymentService
     private function resolveGateway(string $gateway): PaymentGatewayInterface
     {
         return $this->gatewayOperations()->gateway($gateway);
+    }
+
+    /**
+     * 支付记录必须属于本次回调所声明的网关。
+     *
+     * 缺这道校验时，回调处理只按 payment_no 查单，任一网关的密钥就等于"确认任意渠道
+     * 支付"的权限：站点同时启用 alipay 与 yi_pay，攻击者仅凭易支付的 MD5 商户密钥即可
+     * 向易支付回调端点提交一笔 **alipay 渠道** 的 PENDING 单号（金额匹配即可），两道
+     * 验签都用易支付的密钥、因此都会通过，账单随即被标记已付并触发开通。商户号那道
+     * 校验也挡不住——`$merchantId !== ''` 才比对，攻击者省掉 pid/app_id 字段即跳过。
+     *
+     * 两侧都过 normalize()：`payments.gateway_key` 存的是归一化值，而 PaymentGatewayCode
+     * 里保留着 alipay_f2f / ali_pay / yi_pay 三个别名映射。当前各插件的 key() 返回的都已
+     * 是归一化值（目录名 ali_pay，key() 返回 'alipay'），PaymentGatewayRegistry 又按
+     * key() 索引，所以能走到这里的 $gateway 恒等于归一化值、normalize 是幂等的；但一旦
+     * 某个插件的 key() 改回别名形态（常量 ALIPAY_F2F_PLUGIN 正是为此保留），裸比字符串
+     * 就会把该网关的全部正常回调判为不匹配而拒付。
+     */
+    private function paymentBelongsToGateway(Payment $payment, string $gateway): bool
+    {
+        $expected = PaymentGatewayCode::normalize(trim($gateway));
+        $actual = $payment->gatewayKey();
+
+        return $expected !== '' && $actual !== '' && $expected === $actual;
     }
 
     /**
