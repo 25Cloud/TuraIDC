@@ -22,7 +22,7 @@ export const ticketsRoutes: RouteRecordRaw[] = [
         zh_CN: '工单传递设置',
         en_US: 'Ticket Delivery Settings',
       },
-      permission: 'ticket.manage',
+      permission: 'ticket.delivery_manage',
     },
   },
   {

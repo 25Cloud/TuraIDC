@@ -17,6 +17,7 @@ export const AdminPermissions = {
   TICKET_LIST: 'ticket.list',
   TICKET_REPLY: 'ticket.reply',
   TICKET_MANAGE: 'ticket.manage',
+  TICKET_DELIVERY_MANAGE: 'ticket.delivery_manage',
   PRODUCT_LIST: 'product.list',
   PRODUCT_MANAGE: 'product.manage',
   PRODUCT_SYNC: 'product.sync',
@@ -104,6 +105,7 @@ export const ADMIN_DEFAULT_PERMISSION_CODES = [
   AdminPermissions.INVOICE_MANAGE,
   AdminPermissions.TICKET_REPLY,
   AdminPermissions.TICKET_MANAGE,
+  AdminPermissions.TICKET_DELIVERY_MANAGE,
   AdminPermissions.PRODUCT_MANAGE,
   AdminPermissions.PRODUCT_SYNC,
   AdminPermissions.SUPPLIER_MANAGE,
@@ -127,7 +129,7 @@ export function impliedPermissions(permission: string): string[] {
     case AdminPermissions.INVOICE_MANAGE:
       return [AdminPermissions.INVOICE_LIST, AdminPermissions.INVOICE_DETAIL];
     case AdminPermissions.TICKET_MANAGE:
-      return [AdminPermissions.TICKET_LIST, AdminPermissions.TICKET_REPLY];
+      return [AdminPermissions.TICKET_LIST, AdminPermissions.TICKET_REPLY, AdminPermissions.TICKET_DELIVERY_MANAGE];
     case AdminPermissions.PRODUCT_MANAGE:
     case AdminPermissions.PRODUCT_SYNC:
       return [AdminPermissions.PRODUCT_LIST];
