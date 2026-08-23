@@ -173,17 +173,49 @@ class UploadSecurityTest extends TestCase
             ->assertJsonPath('msg', '上传接口未启用');
     }
 
-    public function test_upload_token_required_config_normalizes_string_false(): void
+    public function test_upload_token_required_config_normalizes_string_values(): void
     {
-        $key = 'TICKET_UPSTREAM_UPLOAD_TOKEN_REQUIRED';
-        $previous = getenv($key);
-        putenv($key.'=false');
+        $this->withEnvironmentValue('TICKET_UPSTREAM_UPLOAD_TOKEN_REQUIRED', 'true', function (): void {
+            $config = require base_path('config/ticket_upstream.php');
+            $this->assertTrue($config['upload_token_required']);
+        });
 
-        try {
+        $this->withEnvironmentValue('TICKET_UPSTREAM_UPLOAD_TOKEN_REQUIRED', 'false', function (): void {
             $config = require base_path('config/ticket_upstream.php');
             $this->assertFalse($config['upload_token_required']);
+        });
+    }
+
+    private function withEnvironmentValue(string $key, string $value, callable $callback): void
+    {
+        $originalEnv = $_ENV[$key] ?? null;
+        $originalServer = $_SERVER[$key] ?? null;
+        $originalPutenv = getenv($key);
+
+        $_ENV[$key] = $value;
+        $_SERVER[$key] = $value;
+        putenv($key.'='.$value);
+
+        try {
+            $callback();
         } finally {
-            putenv($previous === false ? $key : $key.'='.$previous);
+            if ($originalEnv === null) {
+                unset($_ENV[$key]);
+            } else {
+                $_ENV[$key] = $originalEnv;
+            }
+
+            if ($originalServer === null) {
+                unset($_SERVER[$key]);
+            } else {
+                $_SERVER[$key] = $originalServer;
+            }
+
+            if ($originalPutenv === false) {
+                putenv($key);
+            } else {
+                putenv($key.'='.$originalPutenv);
+            }
         }
     }
 

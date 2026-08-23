@@ -11,6 +11,7 @@ use App\Http\Requests\Admin\V2\Ticket\UpsertTicketDeliveryRuleRequest;
 use App\Http\Resources\Admin\V2\TicketDeliveryRuleResource;
 use App\Http\Resources\Admin\V2\TicketUpstreamDeliveryLogResource;
 use App\Models\ProductUpstreamBinding;
+use App\Models\Setting;
 use App\Models\Supplier;
 use App\Models\Ticket;
 use App\Models\TicketDeliveryRule;
@@ -19,11 +20,21 @@ use App\Services\Ticket\TicketDeliveryService;
 use App\Services\Upstream\ProviderKey;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 final class TicketDeliveryController extends Controller
 {
+    /**
+     * 上传开关与工单传递规则变更共用的串行化锁。
+     *
+     * 关闭上传要求在锁内重查规则数、创建/更新规则要求在锁内重查开关状态，
+     * 两个条件必须在同一把锁内检查，否则并发请求可产生
+     * 「系统保留工单传递规则但 /upload_image 已关闭」的无效终态。
+     */
+    private const string UPLOAD_GUARD_MUTATION_LOCK = 'ticket-upstream:upload-guard-mutation';
+
     public function __construct(
         private readonly OperationLogService $operationLogService,
     ) {}
@@ -52,15 +63,18 @@ final class TicketDeliveryController extends Controller
     public function store(UpsertTicketDeliveryRuleRequest $request): JsonResponse
     {
         $data = $request->payload();
-        $this->ensureRuleTarget($data);
-        $rule = DB::transaction(function () use ($data): TicketDeliveryRule {
-            $products = $data['product_ids'] ?? [];
-            unset($data['product_ids']);
-            $data['provider_key'] = ProviderKey::ZJMF_FINANCE_API;
-            $rule = TicketDeliveryRule::create($data);
-            $rule->products()->sync($products);
+        $rule = $this->withinUploadGuardMutationLock(function () use ($data): TicketDeliveryRule {
+            $this->ensureRuleTarget($data);
 
-            return $rule->load('products:id');
+            return DB::transaction(function () use ($data): TicketDeliveryRule {
+                $products = $data['product_ids'] ?? [];
+                unset($data['product_ids']);
+                $data['provider_key'] = ProviderKey::ZJMF_FINANCE_API;
+                $rule = TicketDeliveryRule::create($data);
+                $rule->products()->sync($products);
+
+                return $rule->load('products:id');
+            });
         });
 
         return $this->success(TicketDeliveryRuleResource::make($rule)->resolve(), '工单传递规则已保存');
@@ -70,13 +84,15 @@ final class TicketDeliveryController extends Controller
     {
         $data = $request->payload();
         $data['supplier_id'] = (int) $data['supplier_id'];
-        $this->ensureRuleTarget($data, $rule);
-        $products = $data['product_ids'] ?? [];
-        unset($data['product_ids']);
-        DB::transaction(function () use ($rule, $data, $products): void {
-            $data['provider_key'] = ProviderKey::ZJMF_FINANCE_API;
-            $rule->update($data);
-            $rule->products()->sync($products);
+        $this->withinUploadGuardMutationLock(function () use ($data, $rule): void {
+            $this->ensureRuleTarget($data, $rule);
+            $products = $data['product_ids'] ?? [];
+            unset($data['product_ids']);
+            DB::transaction(function () use ($rule, $data, $products): void {
+                $data['provider_key'] = ProviderKey::ZJMF_FINANCE_API;
+                $rule->update($data);
+                $rule->products()->sync($products);
+            });
         });
 
         return $this->success(TicketDeliveryRuleResource::make($rule->fresh()->load('products:id'))->resolve(), '工单传递规则已更新');
@@ -116,12 +132,12 @@ final class TicketDeliveryController extends Controller
     {
         return $this->success([
             'upload_image_enabled' => $this->uploadImageEnabled(),
-            'allowed_ips' => (string) \App\Models\Setting::getValue(
+            'allowed_ips' => (string) Setting::getValue(
                 'ticket_upstream',
                 'allowed_ips',
                 (string) config('ticket_upstream.upload_allowed_ips', '')
             ),
-            'rate_limit' => (int) \App\Models\Setting::getValue(
+            'rate_limit' => (int) Setting::getValue(
                 'ticket_upstream',
                 'rate_limit',
                 (string) config('ticket_upstream.upload_rate_limit', 30)
@@ -138,60 +154,88 @@ final class TicketDeliveryController extends Controller
         $payload = $request->payload();
         $validated = $request->validated();
 
-        // 存在工单传递规则时不允许显式关闭 /upload_image：规则创建前置条件要求接口启用，
-        // 反向关闭会造成既有规则指向已停用的上传通道，附件将无法回传。
-        // 仅拦截「本次请求显式提交关闭」，部分更新（不带该字段）保留已保存值，不误伤。
-        if (
-            array_key_exists('upload_image_enabled', $validated)
-            && ! $payload['upload_image_enabled']
-            && TicketDeliveryRule::query()->exists()
-        ) {
+        $saved = $this->withinUploadGuardMutationLock(function () use ($request, $payload, $validated): array {
+            // 存在工单传递规则时不允许显式关闭 /upload_image：规则创建前置条件要求接口启用，
+            // 反向关闭会造成既有规则指向已停用的上传通道，附件将无法回传。
+            // 仅拦截「本次请求显式提交关闭」，部分更新（不带该字段）保留已保存值，不误伤。
+            if (
+                array_key_exists('upload_image_enabled', $validated)
+                && ! $payload['upload_image_enabled']
+                && TicketDeliveryRule::query()->exists()
+            ) {
+                throw ValidationException::withMessages([
+                    'upload_image_enabled' => '存在工单传递规则时不能关闭 /upload_image 接口',
+                ]);
+            }
+
+            // 先读取变更前的 ticket_upstream 配置值，供审计做前后对照。
+            $before = [
+                'allowed_ips' => (string) Setting::getValue(
+                    'ticket_upstream',
+                    'allowed_ips',
+                    (string) config('ticket_upstream.upload_allowed_ips', '')
+                ),
+                'rate_limit' => (int) Setting::getValue(
+                    'ticket_upstream',
+                    'rate_limit',
+                    (string) config('ticket_upstream.upload_rate_limit', 30)
+                ),
+                'upload_image_enabled' => $this->uploadImageEnabled(),
+                'block_non_whitelisted' => $this->blockNonWhitelisted(),
+            ];
+
+            Setting::setValues('ticket_upstream', $payload);
+
+            // 配置写入成功后记录管理员操作审计，便于追踪上传防护白名单/限流的变更。
+            $this->operationLogService->write(
+                userId: (int) ($request->user()?->id ?? 0),
+                userType: 'admin',
+                action: 'ticket.upload_guard.update',
+                module: 'ticket',
+                targetId: 0,
+                detail: [
+                    'title' => '工单传递上传防护配置更新',
+                    'before' => $before,
+                    'after' => $payload,
+                    'operator_name' => (string) ($request->user()?->username ?? $request->user()?->name ?? ''),
+                    'trace_id' => (string) $request->header('X-Request-Id', ''),
+                ],
+                ipAddress: (string) $request->ip(),
+            );
+
+            return $payload;
+        });
+
+        return $this->success($saved, '上传防护配置已保存');
+    }
+
+    /**
+     * 串行化上传开关与规则变更，锁内重新检查开关状态和规则数量。
+     *
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    private function withinUploadGuardMutationLock(callable $callback): mixed
+    {
+        $lock = Cache::lock(self::UPLOAD_GUARD_MUTATION_LOCK, 10);
+        if (! $lock->get()) {
             throw ValidationException::withMessages([
-                'upload_image_enabled' => '存在工单传递规则时不能关闭 /upload_image 接口',
+                'upload_image_enabled' => '上传防护配置正在变更，请稍后重试',
             ]);
         }
 
-        // 先读取变更前的 ticket_upstream 配置值，供审计做前后对照。
-        $before = [
-            'allowed_ips' => (string) \App\Models\Setting::getValue(
-                'ticket_upstream',
-                'allowed_ips',
-                (string) config('ticket_upstream.upload_allowed_ips', '')
-            ),
-            'rate_limit' => (int) \App\Models\Setting::getValue(
-                'ticket_upstream',
-                'rate_limit',
-                (string) config('ticket_upstream.upload_rate_limit', 30)
-            ),
-            'upload_image_enabled' => $this->uploadImageEnabled(),
-            'block_non_whitelisted' => $this->blockNonWhitelisted(),
-        ];
-
-        \App\Models\Setting::setValues('ticket_upstream', $payload);
-
-        // 配置写入成功后记录管理员操作审计，便于追踪上传防护白名单/限流的变更。
-        $this->operationLogService->write(
-            userId: (int) ($request->user()?->id ?? 0),
-            userType: 'admin',
-            action: 'ticket.upload_guard.update',
-            module: 'ticket',
-            targetId: 0,
-            detail: [
-                'title' => '工单传递上传防护配置更新',
-                'before' => $before,
-                'after' => $payload,
-                'operator_name' => (string) ($request->user()?->username ?? $request->user()?->name ?? ''),
-                'trace_id' => (string) $request->header('X-Request-Id', ''),
-            ],
-            ipAddress: (string) $request->ip(),
-        );
-
-        return $this->success($payload, '上传防护配置已保存');
+        try {
+            return $callback();
+        } finally {
+            $lock->release();
+        }
     }
 
     private function uploadImageEnabled(): bool
     {
-        $value = \App\Models\Setting::getValue(
+        $value = Setting::getValue(
             'ticket_upstream',
             'upload_image_enabled',
             config('ticket_upstream.upload_image_enabled', false)
@@ -202,7 +246,7 @@ final class TicketDeliveryController extends Controller
 
     private function blockNonWhitelisted(): bool
     {
-        $value = \App\Models\Setting::getValue(
+        $value = Setting::getValue(
             'ticket_upstream',
             'block_non_whitelisted',
             config('ticket_upstream.upload_block_non_whitelisted', true)
