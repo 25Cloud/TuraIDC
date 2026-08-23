@@ -742,7 +742,40 @@ class ProductAdminService
             })
             ->when(! empty($filters['third_product_group_id']), function (Builder $builder) use ($filters) {
                 $builder->inCurrentProductGroup((int) $filters['third_product_group_id']);
-            });
+            })
+            ->when(
+                ! empty($filters['supplier_id']) || ! empty($filters['provider_key']),
+                function (Builder $builder) use ($filters, $hasProductUpstreamBindings): void {
+                    if (! $hasProductUpstreamBindings) {
+                        // 绑定表缺失时不存在任何已绑定产品，返回空而非全量。
+                        $builder->whereKey(0);
+
+                        return;
+                    }
+
+                    $supplierId = (int) ($filters['supplier_id'] ?? 0);
+                    $providerKey = trim((string) ($filters['provider_key'] ?? ''));
+
+                    // 仅匹配启用的商品与上游绑定（绑定 status 随产品启用状态写入），
+                    // 且供应商插件绑定必须启用（无论是否按 supplier_id 过滤），
+                    // 与工单传递规则 ensureRuleTarget 的校验口径一致，
+                    // 避免停用的商品/供应商绑定仍出现在「按供应商选择已绑定上游产品」的下拉中。
+                    $builder->where('products.status', 1)
+                        ->whereHas('upstreamBindings', function (Builder $bindingQuery) use ($supplierId, $providerKey): void {
+                            $bindingQuery->where('status', 1)
+                                ->when(
+                                    $providerKey !== '',
+                                    fn (Builder $query): Builder => $query->where('provider_key', $providerKey)
+                                )
+                                ->whereHas(
+                                    'supplierPluginBinding',
+                                    fn (Builder $supplierQuery): Builder => $supplierQuery
+                                        ->where('status', 1)
+                                        ->when($supplierId > 0, fn (Builder $query): Builder => $query->where('supplier_id', $supplierId))
+                                );
+                        });
+                }
+            );
     }
 
     /**

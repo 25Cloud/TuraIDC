@@ -130,5 +130,48 @@
     .ticket-delivery-form-grid {
       display: block;
     }
+
+    .ticket-delivery-guard-form {
+      .t-form__item {
+        flex-wrap: wrap;
+      }
+
+      // 控制区默认 nowrap，数字输入框较宽时会把提示文字挤成窄条；改为可换行，
+      // 让提示独占一行，避免手机上竖向堆叠。
+      .t-form__controls-content {
+        flex-wrap: wrap;
+      }
+
+      .t-input-number {
+        width: 100%;
+
+        // 手机端按钮默认高度大于输入框，会向下溢出；统一为组件中号高度，
+        // 让加减号与输入框同高，避免“加减号太高”。需同时覆盖 min-height，
+        // 否则移动端按钮的 min-height(40px) 会撑住高度。
+        .t-input-number__decrease,
+        .t-input-number__increase {
+          height: var(--td-comp-size-m);
+          min-height: var(--td-comp-size-m);
+        }
+      }
+
+      .ticket-delivery-guard-hint {
+        flex: 1 0 100%;
+        width: auto;
+      }
+    }
+
+    .ticket-delivery-mobile-card__actions {
+      flex-wrap: wrap;
+    }
+  }
+}
+
+@media (width <= 359px) {
+  .ticket-delivery-page {
+    .ticket-delivery-mobile-card dl {
+      grid-template-columns: 1fr;
+      gap: 10px 0;
+    }
   }
 }

@@ -25,6 +25,7 @@ use Illuminate\Support\Str;
 class SeoRenderService
 {
     private const SHELL_CACHE_KEY = 'seo:www:shell';
+
     private const PAGE_CACHE_PREFIX = 'seo:www:page:';
 
     public function __construct(
@@ -402,7 +403,7 @@ HTML;
         $description = htmlspecialchars((string) ($page['description'] ?? ''), ENT_QUOTES, 'UTF-8');
         $keywords = htmlspecialchars((string) ($page['keywords'] ?? ''), ENT_QUOTES, 'UTF-8');
         $robots = (string) ($page['robots'] ?? '');
-        $robotsTag = $robots !== '' ? "\n  <meta name=\"robots\" content=\"".htmlspecialchars($robots, ENT_QUOTES, 'UTF-8')."\" />" : '';
+        $robotsTag = $robots !== '' ? "\n  <meta name=\"robots\" content=\"".htmlspecialchars($robots, ENT_QUOTES, 'UTF-8').'" />' : '';
 
         $head = '<title>'.htmlspecialchars($fullTitle, ENT_QUOTES, 'UTF-8')."</title>\n";
         $head .= '  <meta name="description" content="'.$description."\" />\n";
@@ -420,7 +421,7 @@ HTML;
 
         $structured = $this->structuredData($page, $config, $siteName, $siteUrl, $canonical, $logoUrl);
         if ($structured !== []) {
-            $head .= "\n".'  <script type="application/ld+json">'.json_encode($structured, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."</script>";
+            $head .= "\n".'  <script type="application/ld+json">'.json_encode($structured, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).'</script>';
         }
 
         return $head;
