@@ -9,6 +9,8 @@ import type {
   TicketDeliveryRulesResponse,
   TicketDetail,
   TicketListParams,
+  TicketPreReplySettingsPayload,
+  TicketPreReplySettingsResponse,
   TicketRecord,
   TicketUpstreamDeliveryLogsResponse,
   TicketUpstreamUploadGuardConfig,
@@ -98,5 +100,10 @@ export const ticketsApi = {
     config: () => request.get<TicketUpstreamUploadGuardConfig>({ url: '/v2/admin/ticket-delivery-upload-guard' }),
     save: (data: TicketUpstreamUploadGuardPayload) =>
       request.post<TicketUpstreamUploadGuardPayload>({ url: '/v2/admin/ticket-delivery-upload-guard', data }),
+  },
+  preReply: {
+    config: () => request.get<TicketPreReplySettingsResponse>({ url: '/v2/admin/ticket-pre-reply-settings' }),
+    save: (data: TicketPreReplySettingsPayload) =>
+      request.post<TicketPreReplySettingsPayload>({ url: '/v2/admin/ticket-pre-reply-settings', data }),
   },
 };

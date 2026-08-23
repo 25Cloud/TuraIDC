@@ -804,6 +804,25 @@ export interface TicketUpstreamUploadGuardPayload {
   block_non_whitelisted: boolean;
 }
 
+export interface TicketPreReplySettings {
+  enabled?: boolean;
+  admin_user_id?: number | string;
+  content?: string;
+  upstream_content?: string;
+}
+
+export interface TicketPreReplySettingsPayload {
+  enabled: boolean;
+  admin_user_id: number | string;
+  content: string;
+  upstream_content: string;
+}
+
+export interface TicketPreReplySettingsResponse {
+  settings?: TicketPreReplySettings;
+  admin_users?: TicketAdminUser[];
+}
+
 export interface TicketRecord {
   id: number | string;
   subject?: string;

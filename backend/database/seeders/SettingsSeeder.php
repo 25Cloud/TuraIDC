@@ -134,6 +134,14 @@ class SettingsSeeder extends Seeder
             'block_non_whitelisted' => '1',
         ]);
 
+        // 工单预回复：默认关闭，由管理端「工单预回复设置」页配置管理员账号与回复内容。
+        static::seedGroup('ticket_pre_reply', [
+            'enabled' => '0',
+            'admin_user_id' => '0',
+            'content' => '',
+            'upstream_content' => '',
+        ]);
+
         // 通知模板默认数据（email 全量 + sms 验证码）：幂等种入，
         // 修复 schema baseline 只含表结构不含模板数据的部署缺口。
         static::seedNotificationTemplates();
