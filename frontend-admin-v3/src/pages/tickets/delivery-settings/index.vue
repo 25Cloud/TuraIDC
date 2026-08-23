@@ -198,7 +198,7 @@
       </t-form>
     </t-dialog>
 
-    <t-card class="ticket-delivery-card ticket-delivery-guard-card" :bordered="false">
+    <t-card v-if="canManage" class="ticket-delivery-card ticket-delivery-guard-card" :bordered="false">
       <div class="ticket-delivery-toolbar">
         <div class="ticket-delivery-summary">
           <strong>上游附件上传防护</strong>
@@ -277,7 +277,7 @@ import { errorMessage } from '@/utils/userMessage';
 const PROVIDER_KEY = 'zjmf_finance_api';
 const { width } = useWindowSize();
 const isMobile = computed(() => width.value < 768);
-const canManage = computed(() => hasAdminPermission(AdminPermissions.TICKET_MANAGE));
+const canManage = computed(() => hasAdminPermission(AdminPermissions.TICKET_DELIVERY_MANAGE));
 const loading = ref(false);
 const saving = ref(false);
 const guardSaving = ref(false);
@@ -531,6 +531,8 @@ async function loadPage() {
 }
 
 async function loadUploadGuard() {
+  // 配置接口对无 TICKET_DELIVERY_MANAGE 权限的用户返回 403，只读用户无需加载与报错
+  if (!canManage.value) return;
   try {
     const config = await adminApi.tickets.uploadGuard.config();
     uploadGuard.upload_image_enabled = config.upload_image_enabled === true;
