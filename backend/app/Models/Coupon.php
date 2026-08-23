@@ -32,6 +32,7 @@ class Coupon extends Model
         'remark',
         'operator',
         'trace_id',
+        'allow_agent',
     ];
 
     protected function casts(): array
@@ -53,6 +54,7 @@ class Coupon extends Model
             'sort_order' => 'integer',
             'starts_at' => 'datetime',
             'expires_at' => 'datetime',
+            'allow_agent' => 'boolean',
         ];
     }
 

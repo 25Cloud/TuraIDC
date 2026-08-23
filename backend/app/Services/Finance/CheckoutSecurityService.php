@@ -54,6 +54,11 @@ class CheckoutSecurityService
             'config_amount' => $this->normalizeAmount($quotePayload['config_amount'] ?? 0),
             'setup_fee' => $this->normalizeAmount($quotePayload['setup_fee'] ?? 0),
             'discount_amount' => $this->normalizeAmount($quotePayload['discount_amount'] ?? 0),
+            'agent_group_id' => (int) ($quotePayload['agent_group_id'] ?? 0),
+            'product_discount_group_id' => (int) ($quotePayload['product_discount_group_id'] ?? 0),
+            'agent_discount_rate' => $this->normalizeAmount($quotePayload['agent_discount_rate'] ?? 100),
+            'cost_rate' => $this->normalizeAmount($quotePayload['cost_rate'] ?? 0),
+            'agent_amount' => $this->normalizeAmount($quotePayload['agent_amount'] ?? $quotePayload['total_amount'] ?? 0),
             'user_coupon_id' => (int) ($quotePayload['coupon']['user_coupon_id'] ?? $quotePayload['user_coupon_id'] ?? 0),
             'request_id' => trim((string) ($context['request_id'] ?? '')),
             'ip_address' => trim((string) ($context['ip_address'] ?? '')),
@@ -76,6 +81,7 @@ class CheckoutSecurityService
         string $originalAmount,
         string $amount,
         ?int $couponId = null,
+        array $pricing = [],
     ): array {
         $payload = $this->volatileStore()->get($this->quoteCacheKey($token));
 
@@ -103,6 +109,18 @@ class CheckoutSecurityService
             || $tokenAmount !== $this->normalizeAmount($amount),
             new BusinessException('报价已变更，请刷新页面后重试')
         );
+
+        foreach (['agent_group_id', 'product_discount_group_id'] as $key) {
+            if (array_key_exists($key, $pricing) && (int) ($payload[$key] ?? 0) !== (int) $pricing[$key]) {
+                throw new BusinessException('报价已变更，请刷新页面后重试');
+            }
+        }
+
+        foreach (['agent_discount_rate', 'cost_rate', 'agent_amount'] as $key) {
+            if (array_key_exists($key, $pricing) && $this->normalizeAmount($payload[$key] ?? 0) !== $this->normalizeAmount($pricing[$key])) {
+                throw new BusinessException('报价已变更，请刷新页面后重试');
+            }
+        }
 
         return $payload;
     }

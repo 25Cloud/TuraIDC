@@ -69,13 +69,15 @@ class ProductController extends Controller
 
     public function quote(QuoteProductRequest $request, int $product): JsonResponse
     {
+        $user = $this->resolveClientUser($request);
         $payload = $this->siteProductQuoteService->resolveQuotePayload(
             $product,
             $request->validated(),
             [
-                'user_id' => (int) ($this->resolveClientUser($request)?->id ?? 0),
+                'user_id' => (int) ($user?->id ?? 0),
                 'request_id' => (string) $request->header('X-Request-Id', ''),
                 'ip_address' => (string) $request->ip(),
+                'user' => $user,
             ]
         );
 
