@@ -174,7 +174,13 @@ return Application::configure(basePath: dirname(__DIR__))
             ];
 
             if (! in_array($currentCommand, $allowedCommands, true)) {
-                throw new RuntimeException('APP_KEY is not set. Run: php artisan key:generate');
+                // 全新部署的 Web 安装向导（/install）同样需要在 APP_KEY 未配置时放行，
+                // 由 InstallService::ensureAppKey() 在安装流程内生成密钥。
+                $requestPath = PHP_SAPI !== 'cli' ? (string) ($_SERVER['REQUEST_URI'] ?? '') : '';
+
+                if (! str_starts_with($requestPath, '/install')) {
+                    throw new RuntimeException('APP_KEY is not set. Run: php artisan key:generate');
+                }
             }
         }
 

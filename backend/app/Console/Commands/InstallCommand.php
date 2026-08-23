@@ -146,13 +146,25 @@ final class InstallCommand extends Command
             $payload['db_password'] = (string) $this->secret('数据库密码（可为空）');
         }
 
-        $test = $installer->testDatabase($payload);
+        // testDatabase/testRedis 使用无前缀的配置键（host/port/...），
+        // 与 payload 的 db_*/redis_* 前缀键不同，需在此映射（与 InstallController::test 一致）。
+        $test = $installer->testDatabase([
+            'host' => (string) $payload['db_host'],
+            'port' => (int) $payload['db_port'],
+            'database' => (string) $payload['db_database'],
+            'username' => (string) $payload['db_username'],
+            'password' => (string) $payload['db_password'],
+        ]);
         $this->line('数据库检测：'.$test['message']);
         if (! $test['ok']) {
             throw new InstallException($test['message']);
         }
 
-        $redisTest = $installer->testRedis($payload);
+        $redisTest = $installer->testRedis([
+            'host' => (string) $payload['redis_host'],
+            'port' => (int) $payload['redis_port'],
+            'password' => (string) $payload['redis_password'],
+        ]);
         $this->line('Redis 检测：'.$redisTest['message']);
         if (! $redisTest['ok']) {
             throw new InstallException($redisTest['message']);
