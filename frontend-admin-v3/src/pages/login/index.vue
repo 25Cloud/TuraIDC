@@ -68,12 +68,24 @@ const currentYear = computed(() => new Date().getFullYear());
 const captchaRequired = ref(false);
 const captchaRenderMode = ref<'popup' | 'inline'>('popup');
 const captchaContainer = ref<HTMLElement>();
-const { verify: verifyCaptcha, loading: captchaLoading } = useGeeTestCaptcha({ appendTo: captchaContainer });
+const {
+  verify: verifyCaptcha,
+  loading: captchaLoading,
+  prepare: prepareCaptcha,
+} = useGeeTestCaptcha({
+  appendTo: captchaContainer,
+  onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
+});
 
 onMounted(async () => {
   const { required, renderMode } = await resolveCaptchaRequirement('admin_login');
   captchaRequired.value = required;
   captchaRenderMode.value = renderMode;
+
+  // inline 形态：页面加载即渲染验证组件，用户可提前完成挑战并保留已验证状态
+  if (renderMode === 'inline') {
+    void prepareCaptcha();
+  }
 });
 
 // 「记住账号」只持久化账号，密码一律不落本地存储。
@@ -143,9 +155,13 @@ async function handleLogin() {
       router.push(resolveAdminHomePath(userStore.userInfo?.permissions ?? []));
     }
   } catch (error) {
+    // verify() 的 inline 分支已通过 onPrompt 提示"请先完成人机验证"，这里不再重复弹窗
+    const handled = (error as { __handled?: boolean } | null)?.__handled === true;
     const msg = error instanceof Error ? error.message : '登录失败，请检查账号密码';
     errorMessage.value = msg;
-    MessagePlugin.error(msg);
+    if (!handled) {
+      MessagePlugin.error(msg);
+    }
   } finally {
     loading.value = false;
   }
