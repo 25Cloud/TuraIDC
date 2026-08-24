@@ -1,4 +1,5 @@
 import {
+  ApiIcon,
   CatalogIcon,
   CouponIcon,
   DashboardIcon,
@@ -202,6 +203,12 @@ export default [
             name: 'ClientProfile',
             component: () => import('@/pages/client/profile/index.vue'),
             meta: { title: title('个人资料'), icon: icon(UserCircleIcon), requireAuth: true, orderNo: 20 },
+          },
+          {
+            path: '/client/api-keys',
+            name: 'ClientApiKeys',
+            component: () => import('@/pages/client/api-keys/index.vue'),
+            meta: { title: title('API 密钥', 'API Keys'), icon: icon(ApiIcon), requireAuth: true, orderNo: 30 },
           },
         ],
       },

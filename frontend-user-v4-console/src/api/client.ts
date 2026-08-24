@@ -2,6 +2,9 @@ import type { AxiosRequestConfig } from 'axios';
 
 import type {
   ApiEnvelope,
+  ApiKeyRecord,
+  ApiKeyStorePayload,
+  ApiKeyUsageLogRecord,
   BalanceLog,
   ClientFinanceListParams,
   ConsoleConnectionInfo,
@@ -422,6 +425,16 @@ const clientApi = {
     getEnvelope<Record<string, unknown>>(`/v2/client/help-articles/${id}`).then((response) =>
       withNormalizedData<ContentDetailPayload>(response, normalizeContentDetailPayload),
     ),
+
+  apiKeys: () => getEnvelope<{ list: ApiKeyRecord[] }>('/v2/client/api-keys'),
+  createApiKey: (data: Record<string, unknown>) => postEnvelope<ApiKeyStorePayload>('/v2/client/api-keys', data),
+  updateApiKey: (id: number | string, data: Record<string, unknown>) =>
+    putEnvelope<{ key: ApiKeyRecord }>(`/v2/client/api-keys/${id}`, data),
+  setApiKeyStatus: (id: number | string, status: 'enabled' | 'disabled') =>
+    putEnvelope<{ key: ApiKeyRecord }>(`/v2/client/api-keys/${id}/status`, { status }),
+  deleteApiKey: (id: number | string) => request.delete(`/v2/client/api-keys/${id}`),
+  apiKeyUsageLogs: (id: number | string) =>
+    getEnvelope<{ list: ApiKeyUsageLogRecord[] }>(`/v2/client/api-keys/${id}/usage-logs`),
 };
 
 export default clientApi;
