@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Models\Setting;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -19,17 +18,6 @@ final class TicketUpstreamUploadThrottle
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $this->uploadImageEnabled()) {
-            // 接口未启用是配置态，属预期行为；/upload_image 为匿名公开路由，
-            // 外部扫描器持续请求会放大日志量，故用 debug 级别记录，避免刷屏告警。
-            Log::debug('上游工单附件上传接口未启用', [
-                'reason' => 'upload_image_disabled',
-                'ip' => $request->ip(),
-            ]);
-
-            return response()->json(['status' => 400, 'msg' => '上传接口未启用'], 200);
-        }
-
         $ip = (string) $request->ip();
         if ($ip === '' || $ip === 'unknown') {
             return response()->json(['status' => 400, 'msg' => '上传失败'], 200);
@@ -61,17 +49,6 @@ final class TicketUpstreamUploadThrottle
         RateLimiter::hit($key, 60);
 
         return $next($request);
-    }
-
-    private function uploadImageEnabled(): bool
-    {
-        $value = Setting::getValue(
-            'ticket_upstream',
-            'upload_image_enabled',
-            config('ticket_upstream.upload_image_enabled', false)
-        );
-
-        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
     }
 
     private function isWhitelisted(string $ip): bool
@@ -125,7 +102,7 @@ final class TicketUpstreamUploadThrottle
      */
     private function allowedIps(): array
     {
-        $raw = (string) Setting::getValue(
+        $raw = (string) \App\Models\Setting::getValue(
             'ticket_upstream',
             'allowed_ips',
             (string) config('ticket_upstream.upload_allowed_ips', '')
@@ -139,7 +116,7 @@ final class TicketUpstreamUploadThrottle
 
     private function maxAttempts(): int
     {
-        $value = Setting::getValue(
+        $value = \App\Models\Setting::getValue(
             'ticket_upstream',
             'rate_limit',
             (string) config('ticket_upstream.upload_rate_limit', 30)
@@ -152,12 +129,12 @@ final class TicketUpstreamUploadThrottle
     {
         // 与 TicketDeliveryController 读取同一配置时保持一致的布尔解析规则：
         // (bool) 强转会把字符串 'false' 判为 true，导致管理员关闭后白名单外上传仍被拒绝。
-        $value = Setting::getValue(
+        $value = \App\Models\Setting::getValue(
             'ticket_upstream',
             'block_non_whitelisted',
-            config('ticket_upstream.upload_block_non_whitelisted', true)
+            config('ticket_upstream.upload_block_non_whitelisted', false)
         );
 
-        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
     }
 }

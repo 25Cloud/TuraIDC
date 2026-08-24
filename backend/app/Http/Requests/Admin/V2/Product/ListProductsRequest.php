@@ -27,8 +27,6 @@ class ListProductsRequest extends AdminFormRequest
             'first_product_group_id',
             'second_product_group_id',
             'third_product_group_id',
-            'supplier_id',
-            'provider_key',
         ];
 
         $normalized = [];
@@ -64,9 +62,6 @@ class ListProductsRequest extends AdminFormRequest
             'first_product_group_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'second_product_group_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'third_product_group_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            // 筛选出已绑定指定上游供应商的产品，用于工单传递规则等按供应商选择产品的场景。
-            'supplier_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'provider_key' => ['sometimes', 'nullable', 'string', 'max:120'],
             'page' => ['sometimes', 'integer', 'min:1'],
             'page_size' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'pageSize' => ['prohibited'],

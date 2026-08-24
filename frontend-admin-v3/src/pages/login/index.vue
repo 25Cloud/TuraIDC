@@ -48,7 +48,6 @@ import { useRouter } from 'vue-router';
 
 import { resolveCaptchaRequirement, useGeeTestCaptcha } from '@/hooks/useGeeTestCaptcha';
 import { useUserStore } from '@/store';
-import { resolveAdminHomePath } from '@/utils/route/adminHome';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -102,9 +101,7 @@ async function handleLogin() {
     if (redirect) {
       router.push(decodeURIComponent(redirect as string));
     } else {
-      // 无 redirect 时落当前角色可访问的首页：仅持非视图权限的角色（如只有 ticket.manage）
-      // 不应落到无权限的 /admin/dashboard，否则守卫会反复重定向导致页面卡死。
-      router.push(resolveAdminHomePath(userStore.userInfo?.permissions ?? []));
+      router.push('/admin/dashboard');
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : '登录失败，请检查账号密码';

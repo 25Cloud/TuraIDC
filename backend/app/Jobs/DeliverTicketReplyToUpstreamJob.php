@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Models\TicketReply;
-use App\Models\TicketReplyDelivery;
 use App\Services\Ticket\TicketDeliveryService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -55,7 +53,7 @@ final class DeliverTicketReplyToUpstreamJob implements ShouldBeUnique, ShouldQue
     public function failed(\Throwable $exception): void
     {
         try {
-            TicketReplyDelivery::query()
+            \App\Models\TicketReplyDelivery::query()
                 ->where('ticket_reply_id', $this->replyId)
                 ->where('status', 'sending')
                 ->update([
@@ -70,8 +68,8 @@ final class DeliverTicketReplyToUpstreamJob implements ShouldBeUnique, ShouldQue
             ]);
         }
 
-        $delivery = TicketReplyDelivery::query()->where('ticket_reply_id', $this->replyId)->first();
-        $reply = TicketReply::query()->with('ticket.upstreamBinding')->find($this->replyId);
+        $delivery = \App\Models\TicketReplyDelivery::query()->where('ticket_reply_id', $this->replyId)->first();
+        $reply = \App\Models\TicketReply::query()->with('ticket.upstreamBinding')->find($this->replyId);
         Log::warning('工单回复同步到上游失败', [
             'reply_id' => $this->replyId,
             'delivery_id' => $delivery?->id,

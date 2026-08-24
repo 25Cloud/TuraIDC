@@ -14,25 +14,8 @@ class AgentGroupController extends Controller
 {
     public function __construct(private readonly AdminAgentDiscountService $service) {}
 
-    public function index()
-    {
-        return $this->success(['list' => AdminAgentGroupListItemResource::collection($this->service->listAgentGroups())->resolve()]);
-    }
-
-    public function store(AgentGroupRequest $request)
-    {
-        return $this->success(AdminAgentGroupListItemResource::make($this->service->saveAgentGroup(null, $request->payload()))->resolve(), '代理组创建成功');
-    }
-
-    public function update(AgentGroupRequest $request, AgentGroup $agentGroup)
-    {
-        return $this->success(AdminAgentGroupListItemResource::make($this->service->saveAgentGroup($agentGroup, $request->payload()))->resolve(), '代理组更新成功');
-    }
-
-    public function destroy(AgentGroup $agentGroup)
-    {
-        $this->service->deleteAgentGroup($agentGroup);
-
-        return $this->success(null, '代理组删除成功');
-    }
+    public function index() { return $this->success(['list' => AdminAgentGroupListItemResource::collection($this->service->listAgentGroups())->resolve()]); }
+    public function store(AgentGroupRequest $request) { return $this->success(AdminAgentGroupListItemResource::make($this->service->saveAgentGroup(null, $request->payload()))->resolve(), '代理组创建成功'); }
+    public function update(AgentGroupRequest $request, AgentGroup $agentGroup) { return $this->success(AdminAgentGroupListItemResource::make($this->service->saveAgentGroup($agentGroup, $request->payload()))->resolve(), '代理组更新成功'); }
+    public function destroy(AgentGroup $agentGroup) { $this->service->deleteAgentGroup($agentGroup); return $this->success(null, '代理组删除成功'); }
 }

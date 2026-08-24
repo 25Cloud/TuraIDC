@@ -414,4 +414,5 @@ class LeafFaceClient
 
         return $normalized !== '' ? $normalized : 'IDENTITY_CARD';
     }
+
 }

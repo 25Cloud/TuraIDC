@@ -12,6 +12,7 @@ use App\Models\IntegrationPluginRuntimeLog;
 use App\Models\MessageLog;
 use App\Models\OperationLog;
 use App\Models\ScheduleRunLog;
+use App\Models\TicketUpstreamDeliveryLog;
 use App\Support\SensitiveDataSanitizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;

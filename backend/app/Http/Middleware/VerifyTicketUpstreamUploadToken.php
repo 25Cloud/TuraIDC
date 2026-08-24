@@ -20,13 +20,7 @@ final class VerifyTicketUpstreamUploadToken
 
         // 兼容模式：上游系统尚未同步凭证配套修改时，管理员可显式关闭强制校验。
         // 此模式重新暴露匿名上传风险，仅用于过渡，部署上游配套修改后必须恢复。
-        $tokenRequired = filter_var(
-            config('ticket_upstream.upload_token_required', true),
-            FILTER_VALIDATE_BOOLEAN,
-            FILTER_NULL_ON_FAILURE
-        ) ?? true;
-
-        if (! $tokenRequired) {
+        if (! (bool) config('ticket_upstream.upload_token_required', true)) {
             if ($id > 0 && $token !== '') {
                 return $this->verifyCredential($request, $next, $id, $token);
             }

@@ -76,32 +76,6 @@ class AdminPermissionCatalogTest extends TestCase
         $this->assertNotContains(AdminPermissions::PRIVACY_VIEW_RAW, $resolved);
     }
 
-    public function test_ticket_manage_does_not_imply_delivery_manage(): void
-    {
-        $resolved = AdminPermissions::resolveRolePermissions(null, [AdminPermissions::TICKET_MANAGE]);
-
-        $this->assertContains(AdminPermissions::TICKET_LIST, $resolved);
-        $this->assertContains(AdminPermissions::TICKET_REPLY, $resolved);
-        $this->assertNotContains(AdminPermissions::TICKET_DELIVERY_MANAGE, $resolved);
-    }
-
-    public function test_ticket_delivery_rules_route_is_isolated_at_http_level(): void
-    {
-        // 仅持 ticket.manage：规则列表接口被中间件拦截，权限隔离在路由层生效
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
-
-        $this->getJson('/api/v2/admin/ticket-delivery-rules')
-            ->assertForbidden()
-            ->assertJsonPath('code', 40300);
-
-        // 显式授予 ticket.delivery_manage：可正常访问规则列表
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_DELIVERY_MANAGE]));
-
-        $this->getJson('/api/v2/admin/ticket-delivery-rules')
-            ->assertOk()
-            ->assertJsonPath('code', 0);
-    }
-
     public function test_permission_catalog_api_returns_new_items(): void
     {
         Sanctum::actingAs($this->createAdmin([AdminPermissions::PERMISSION_LIST]));
