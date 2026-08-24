@@ -19,62 +19,64 @@
         :draggable="!routeItem.isHome"
       >
         <template #label>
-          <t-dropdown
-            trigger="context-menu"
-            :min-column-width="128"
-            :popup-props="{
-              overlayClassName: 'route-tabs-dropdown',
-              onVisibleChange: (visible: boolean, ctx: PopupVisibleChangeContext) =>
-                handleTabMenuClick(visible, ctx, routeItem.path),
-              visible: activeTabPath === routeItem.path,
-            }"
+          <div
+            class="route-tab-label"
+            :class="{ 'is-home': routeItem.isHome }"
+            @mousedown="handleTabMouseDown(routeItem, index, $event)"
+            @auxclick.prevent.stop="handleTabAuxClick(routeItem, index, $event)"
+            @contextmenu.prevent.stop="openTabMenu(routeItem.path)"
           >
-            <div
-              class="route-tab-label"
-              :class="{ 'is-home': routeItem.isHome }"
-              @auxclick.prevent.stop="handleTabAuxClick(routeItem, index, $event)"
-              @contextmenu.prevent.stop="openTabMenu(routeItem.path)"
+            <t-icon v-if="routeItem.isHome" name="home" />
+            <span v-else class="route-tab-title">{{ renderTitle(routeItem.title) }}</span>
+            <t-dropdown
+              v-if="!routeItem.isHome"
+              trigger="click"
+              placement="bottom-right"
+              :min-column-width="128"
+              :popup-props="{
+                overlayClassName: 'route-tabs-dropdown',
+                onVisibleChange: (visible: boolean, ctx: PopupVisibleChangeContext) =>
+                  handleTabMenuClick(visible, ctx, routeItem.path),
+                visible: activeTabPath === routeItem.path,
+              }"
             >
-              <t-icon v-if="routeItem.isHome" name="home" />
-              <span v-else class="route-tab-title">{{ renderTitle(routeItem.title) }}</span>
               <button
-                v-if="!routeItem.isHome"
                 type="button"
                 class="route-tab-more"
                 :aria-label="`标签操作：${renderTitle(routeItem.title)}`"
-                @click.stop="openTabMenu(routeItem.path)"
+                @click.stop
               >
                 <t-icon name="more" />
               </button>
-            </div>
-            <template #dropdown>
-              <t-dropdown-menu>
-                <t-dropdown-item @click="() => handleCloseCurrent(routeItem, index)">
-                  <t-icon name="close" />
-                  {{ t('layout.tagTabs.close') }}
-                </t-dropdown-item>
-                <t-dropdown-item @click="() => handleRefresh(routeItem, index)">
-                  <t-icon name="refresh" />
-                  {{ t('layout.tagTabs.refresh') }}
-                </t-dropdown-item>
-                <t-dropdown-item v-if="index > 1" @click="() => handleCloseAhead(routeItem.path, index)">
-                  <t-icon name="arrow-left" />
-                  {{ t('layout.tagTabs.closeLeft') }}
-                </t-dropdown-item>
-                <t-dropdown-item
-                  v-if="index < tabRouters.length - 1"
-                  @click="() => handleCloseBehind(routeItem.path, index)"
-                >
-                  <t-icon name="arrow-right" />
-                  {{ t('layout.tagTabs.closeRight') }}
-                </t-dropdown-item>
-                <t-dropdown-item v-if="tabRouters.length > 2" @click="() => handleCloseOther(routeItem.path, index)">
-                  <t-icon name="close-circle" />
-                  {{ t('layout.tagTabs.closeOther') }}
-                </t-dropdown-item>
-              </t-dropdown-menu>
-            </template>
-          </t-dropdown>
+              <template #dropdown>
+                <t-dropdown-menu>
+                  <t-dropdown-item @click="() => handleCloseCurrent(routeItem, index)">
+                    <t-icon name="close" />
+                    {{ t('layout.tagTabs.close') }}
+                  </t-dropdown-item>
+                  <t-dropdown-item @click="() => handleRefresh(routeItem, index)">
+                    <t-icon name="refresh" />
+                    {{ t('layout.tagTabs.refresh') }}
+                  </t-dropdown-item>
+                  <t-dropdown-item v-if="index > 1" @click="() => handleCloseAhead(routeItem.path, index)">
+                    <t-icon name="arrow-left" />
+                    {{ t('layout.tagTabs.closeLeft') }}
+                  </t-dropdown-item>
+                  <t-dropdown-item
+                    v-if="index < tabRouters.length - 1"
+                    @click="() => handleCloseBehind(routeItem.path, index)"
+                  >
+                    <t-icon name="arrow-right" />
+                    {{ t('layout.tagTabs.closeRight') }}
+                  </t-dropdown-item>
+                  <t-dropdown-item v-if="tabRouters.length > 2" @click="() => handleCloseOther(routeItem.path, index)">
+                    <t-icon name="close-circle" />
+                    {{ t('layout.tagTabs.closeOther') }}
+                  </t-dropdown-item>
+                </t-dropdown-menu>
+              </template>
+            </t-dropdown>
+          </div>
         </template>
       </t-tab-panel>
     </t-tabs>
@@ -190,6 +192,11 @@ const openTabMenu = (path: string) => {
 const handleTabAuxClick = (routeItem: TRouterInfo, index: number, event: MouseEvent) => {
   if (event.button !== 1) return;
   handleRemove({ value: routeItem.path, index, e: event });
+};
+
+// 中键在 mousedown 阶段 preventDefault，阻止浏览器原生滚动模式；关闭动作在 auxclick 里完成
+const handleTabMouseDown = (_routeItem: TRouterInfo, _index: number, event: MouseEvent) => {
+  if (event.button === 1) event.preventDefault();
 };
 
 const handleCloseCurrent = (routeItem: TRouterInfo, index: number) => {
