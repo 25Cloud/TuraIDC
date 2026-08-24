@@ -34,4 +34,18 @@ class OpenApiConfig
     {
         return max((int) Setting::getValue(self::GROUP, 'rate_limit', 60), 1);
     }
+
+    /**
+     * @return array<string, int>
+     */
+    public function toArray(): array
+    {
+        return [
+            'enabled' => $this->enabled() ? 1 : 0,
+            'require_phone' => $this->requirePhone() ? 1 : 0,
+            'require_verified' => $this->requireVerified() ? 1 : 0,
+            'max_keys_per_user' => $this->maxKeysPerUser(),
+            'rate_limit' => $this->rateLimitPerMinute(),
+        ];
+    }
 }

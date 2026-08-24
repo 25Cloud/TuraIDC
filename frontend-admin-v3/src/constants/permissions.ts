@@ -50,6 +50,8 @@ export const AdminPermissions = {
   MEMBER_LEVEL_MANAGE: 'member_level.manage',
   AGENT_DISCOUNT_LIST: 'agent_discount.list',
   AGENT_DISCOUNT_MANAGE: 'agent_discount.manage',
+  OPEN_API_VIEW: 'open_api.view',
+  OPEN_API_MANAGE: 'open_api.manage',
   CONTENT_LIST: 'content.list',
   CONTENT_MANAGE: 'content.manage',
   STAFF_LIST: 'staff.list',
@@ -119,6 +121,8 @@ export const ADMIN_DEFAULT_PERMISSION_CODES = [
   AdminPermissions.REFERRAL_LIST,
   AdminPermissions.MEMBER_LEVEL_MANAGE,
   AdminPermissions.AGENT_DISCOUNT_MANAGE,
+  AdminPermissions.OPEN_API_VIEW,
+  AdminPermissions.OPEN_API_MANAGE,
   AdminPermissions.CONTENT_MANAGE,
 ] as const;
 
@@ -161,6 +165,8 @@ export function impliedPermissions(permission: string): string[] {
       return [AdminPermissions.MEMBER_LEVEL_LIST];
     case AdminPermissions.AGENT_DISCOUNT_MANAGE:
       return [AdminPermissions.AGENT_DISCOUNT_LIST];
+    case AdminPermissions.OPEN_API_MANAGE:
+      return [AdminPermissions.OPEN_API_VIEW];
     case AdminPermissions.CONTENT_MANAGE:
       return [AdminPermissions.CONTENT_LIST];
     case AdminPermissions.STAFF_MANAGE:

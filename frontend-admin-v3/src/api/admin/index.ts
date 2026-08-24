@@ -6,6 +6,7 @@ import { databaseApi } from './database';
 import { financeMenuApi, invoiceApi, orderApi } from './finance';
 import { logsApi } from './logs';
 import { memberLevelsApi } from './memberLevel';
+import { openApiApi } from './openApi';
 import { pluginsApi } from './plugins';
 import { referralApi } from './referral';
 import { schedulesApi, settingsApi } from './settings';
@@ -82,4 +83,7 @@ export const adminApi = {
 
   // Integration Plugins
   plugins: pluginsApi,
+
+  // Open API
+  openApi: openApiApi,
 };
