@@ -165,6 +165,8 @@ import { useUserStore } from '@/store';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminFinanceInvoices' });
+
 const loading = ref(false);
 const invoices = ref<InvoiceRecord[]>([]);
 const total = ref(0);

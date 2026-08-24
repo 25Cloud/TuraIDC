@@ -240,6 +240,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       },
       permission: 'schedule.view',
       settingsTab: 'automation',
+      keepAliveName: 'AdminSettings',
     },
   },
   {
@@ -253,6 +254,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       },
       permission: 'settings.view',
       settingsTab: 'log_archive',
+      keepAliveName: 'AdminSettings',
     },
   },
   {
@@ -290,6 +292,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       },
       permission: 'integration_plugin.view',
       pluginDomain: 'captcha',
+      keepAliveName: 'AdminIntegrationPlugins',
     },
   },
   {
@@ -303,6 +306,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       },
       permission: 'integration_plugin.view',
       pluginDomain: 'verification',
+      keepAliveName: 'AdminIntegrationPlugins',
     },
   },
   {
@@ -316,6 +320,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       },
       permission: 'integration_plugin.view',
       pluginDomain: 'payment',
+      keepAliveName: 'AdminIntegrationPlugins',
     },
   },
   {
@@ -329,6 +334,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       },
       permission: 'integration_plugin.view',
       pluginDomain: 'mail',
+      keepAliveName: 'AdminIntegrationPlugins',
     },
   },
   {
@@ -342,6 +348,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       },
       permission: 'integration_plugin.view',
       pluginDomain: 'sms',
+      keepAliveName: 'AdminIntegrationPlugins',
     },
   },
   {
@@ -355,6 +362,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       },
       permission: 'integration_plugin.view',
       pluginDomain: 'upstream',
+      keepAliveName: 'AdminIntegrationPlugins',
     },
   },
   {
@@ -368,6 +376,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       },
       permission: 'integration_plugin.view',
       pluginDomain: 'addons',
+      keepAliveName: 'AdminIntegrationPlugins',
     },
   },
   {
@@ -381,6 +390,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       },
       permission: 'settings.view',
       settingsTab: 'referral',
+      keepAliveName: 'AdminSettings',
     },
   },
 ];

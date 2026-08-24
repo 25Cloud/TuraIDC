@@ -421,6 +421,8 @@ import { AdminPermissions } from '@/constants/permissions';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminSettings' });
+
 type SettingsTab = 'referral' | 'automation' | 'log_archive' | 'site_basic' | 'site_hero';
 type FieldType = 'input' | 'password' | 'textarea' | 'switch' | 'select' | 'number' | 'image' | 'time';
 type FieldValue = string | number | boolean | null;

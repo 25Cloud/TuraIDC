@@ -410,6 +410,8 @@ import { formatDateTime } from '@/utils/format';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminCoupons' });
+
 const CouponCampaigns = defineAsyncComponent(() => import('@/pages/products/coupon-campaigns/index.vue'));
 
 import './index.less';

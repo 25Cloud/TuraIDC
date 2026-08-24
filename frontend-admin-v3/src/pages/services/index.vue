@@ -214,6 +214,8 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { fieldValue, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminServices' });
+
 interface HostnameRow {
   service_id: number;
   service_name: string;

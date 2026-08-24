@@ -323,6 +323,8 @@ import {
   toPlainRecord,
 } from './composables/useProductShared';
 
+defineOptions({ name: 'AdminProductEdit' });
+
 // --- Router ---
 const route = useRoute();
 const router = useRouter();

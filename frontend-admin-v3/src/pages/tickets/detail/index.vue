@@ -322,6 +322,8 @@ import { adminApi } from '@/api/admin';
 import { formatDateTime } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminTicketConversation' });
+
 const MAX_TICKET_IMAGES = 9;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 

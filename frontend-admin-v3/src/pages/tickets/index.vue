@@ -81,6 +81,8 @@ import { adminApi } from '@/api/admin';
 import { formatDateTime } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminTickets' });
+
 const DEFAULT_STATUS_FILTER = 'ongoing';
 
 const router = useRouter();

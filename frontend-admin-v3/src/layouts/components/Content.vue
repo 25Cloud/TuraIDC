@@ -3,7 +3,9 @@
     <router-view v-if="!isFramePage" v-slot="{ Component }">
       <transition name="fade" mode="out-in">
         <keep-alive :include="aliveViews">
-          <component :is="Component" />
+          <!-- key 用 fullPath：同组件多路由（如商品/流量包/上游共用 products/index.vue）
+               各自独立缓存；同一路由不同 query 也各自保留状态 -->
+          <component :is="Component" :key="route.fullPath" />
         </keep-alive>
       </transition>
     </router-view>
@@ -36,13 +38,19 @@ import { useTabsRouterStore } from '@/store';
 const aliveViews = computed(() => {
   const tabsRouterStore = useTabsRouterStore();
   const { tabRouters } = tabsRouterStore;
-  return tabRouters
-    .filter((route) => {
-      const keepAliveConfig = route.meta?.keepAlive;
-      const isRouteKeepAlive = isUndefined(keepAliveConfig) || (isBoolean(keepAliveConfig) && keepAliveConfig); // 默认开启keepalive
-      return route.isAlive && isRouteKeepAlive;
-    })
-    .map((route) => route.name);
+  return (
+    tabRouters
+      .filter((route) => {
+        const keepAliveConfig = route.meta?.keepAlive;
+        const isRouteKeepAlive = isUndefined(keepAliveConfig) || (isBoolean(keepAliveConfig) && keepAliveConfig); // 默认开启keepalive
+        return route.isAlive && isRouteKeepAlive;
+      })
+      // keep-alive 的 include 匹配的是「组件自身 name」（defineOptions 或文件名推断），
+      // 不是路由 name。路由 meta 里显式声明 keepAliveName 时优先使用它，
+      // 否则回退路由 name——因此各页面组件的 defineOptions name 必须与路由 name 保持一致。
+      .map((route) => (route.meta?.keepAliveName as string | undefined) ?? route.name)
+      .filter((name): name is string => Boolean(name))
+  );
 }) as ComputedRef<string[]>;
 
 const isRefreshing = computed(() => {
