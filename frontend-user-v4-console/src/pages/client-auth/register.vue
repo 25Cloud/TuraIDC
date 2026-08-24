@@ -128,7 +128,7 @@
 import { LockOnIcon } from 'tdesign-icons-vue-next';
 import type { FormInstanceFunctions, FormRule, FormValidateMessage, SubmitContext } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, onBeforeUnmount, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { clientAuthApi } from '@/api/auth';
@@ -169,6 +169,7 @@ const {
   loading: captchaLoading,
   renderMode,
   runWithCaptcha,
+  prepare: prepareCaptcha,
 } = useGeeTestCaptcha({
   appendTo: captchaContainer,
   onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
@@ -374,6 +375,13 @@ async function runRegister() {
     loading.value = false;
   }
 }
+
+onMounted(() => {
+  // inline 形态：页面加载即渲染验证组件，用户可提前完成挑战并保留已验证状态
+  if (renderMode.value === 'inline') {
+    void prepareCaptcha();
+  }
+});
 
 onBeforeUnmount(() => {
   clearTimer();

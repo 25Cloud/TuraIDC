@@ -540,6 +540,8 @@ import { useGeeTestCaptcha } from '@/hooks/useGeeTestCaptcha';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminIntegrationPlugins' });
+
 const router = useRouter();
 const route = useRoute();
 

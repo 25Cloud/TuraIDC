@@ -199,6 +199,7 @@ const {
   renderMode,
   reinit,
   runWithCaptcha,
+  prepare: prepareCaptcha,
 } = useGeeTestCaptcha({
   appendTo: captchaContainer,
   onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
@@ -214,11 +215,12 @@ const form = reactive<LoginForm>({
 const loginMode = ref<'password' | 'code'>('password');
 
 // 切换登录方式时表单 v-if 会重建 DOM，inline 形态的容器随之失效；
-// 丢弃已初始化的实例，下次提交时重新绑定到新容器。
+// 丢弃已初始化的实例，下次提交时重新绑定到新容器，并重新渲染 inline 组件。
 watch(
   loginMode,
   () => {
     reinit();
+    void prepareCaptcha();
   },
   { flush: 'post' },
 );
@@ -473,6 +475,11 @@ async function submitCodeForm() {
 onMounted(() => {
   if (typeof route.query.account === 'string') {
     form.account = route.query.account;
+  }
+
+  // inline 形态：页面加载即渲染验证组件，用户可提前完成挑战并保留已验证状态
+  if (renderMode.value === 'inline') {
+    void prepareCaptcha();
   }
 });
 

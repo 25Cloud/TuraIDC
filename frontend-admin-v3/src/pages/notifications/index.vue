@@ -308,6 +308,8 @@ import apiCatalogData from '@/data/apiCatalog.generated.json';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminNotifications' });
+
 type NotificationTab = 'email-templates' | 'sms-templates' | 'api-directory';
 type ThemeType = NonNullable<TagProps['theme']>;
 type TemplateChannel = 'email' | 'sms';

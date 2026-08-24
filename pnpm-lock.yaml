@@ -45,6 +45,9 @@ importers:
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
+      vue:
+        specifier: ^3.5.41
+        version: 3.5.41(typescript@5.9.3)
       vue-eslint-parser:
         specifier: ^10.4.1
         version: 10.4.1(eslint@9.39.5(jiti@2.6.1))
@@ -54,9 +57,15 @@ importers:
 
   docs-web:
     devDependencies:
+      '@vue/server-renderer':
+        specifier: ^3.5.41
+        version: 3.5.41
       vitepress:
         specifier: ^1.6.4
         version: 1.6.4(@algolia/client-search@5.57.0)(@types/node@26.2.0)(async-validator@4.2.5)(axios@1.19.0)(change-case@5.4.4)(less@4.9.0)(lightningcss@1.33.0)(nprogress@0.2.0)(postcss@8.5.26)(sass@1.103.0)(search-insights@2.17.3)(sortablejs@1.15.7)(stylus@0.57.0)(typescript@7.0.2)
+      vue:
+        specifier: ^3.5.41
+        version: 3.5.41(typescript@7.0.2)
 
   frontend-admin-v3:
     dependencies:
@@ -3614,9 +3623,13 @@ packages:
     deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
+  glob@7.2.0:
+    resolution: {integrity: sha512-lmLf6gtyrPq8tTjSmrO94wBeQbFR3HbLHbuyD69wuyQkImp2hWqMGB47OX65FBkPffO641IP9jWa1z4ivqG26Q==}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+    deprecated: Glob versions prior to v9 are no longer supported
 
   global-directory@5.0.0:
     resolution: {integrity: sha512-1pgFdhK3J2LeM+dVf2Pd424yHx2ou338lC0ErNP2hPx4j8eW1Sp0XqSjNxtk6Tc4Kr5wlWtSvz8cn2yb7/SG/w==}
@@ -8819,6 +8832,16 @@ snapshots:
       package-json-from-dist: 1.0.1
       path-scurry: 1.11.1
 
+  glob@7.2.0:
+    dependencies:
+      fs.realpath: 1.0.0
+      inflight: 1.0.6
+      inherits: 2.0.4
+      minimatch: 3.1.5
+      once: 1.4.0
+      path-is-absolute: 1.0.1
+    optional: true
+
   glob@7.2.3:
     dependencies:
       fs.realpath: 1.0.0
@@ -10524,7 +10547,7 @@ snapshots:
     dependencies:
       css: 3.0.0
       debug: 4.4.3
-      glob: 7.2.3
+      glob: 7.2.0
       safer-buffer: 2.1.2
       sax: 1.2.4
       source-map: 0.7.3
@@ -11141,9 +11164,9 @@ snapshots:
 
   wrap-ansi@7.0.0:
     dependencies:
-      ansi-styles: 4.1.0
-      string-width: 4.2.3
-      strip-ansi: 6.0.1
+      ansi-styles: 4.0.0
+      string-width: 4.1.0
+      strip-ansi: 6.0.0
 
   wrap-ansi@8.1.0:
     dependencies:

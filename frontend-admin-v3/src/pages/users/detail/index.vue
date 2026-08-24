@@ -976,6 +976,8 @@ import { required } from '@/utils/formRules';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminUserDetail' });
+
 type TabName = 'basic' | 'referral' | 'services' | 'invoices' | 'balance' | 'tickets' | 'logs' | 'notices';
 type Row = Record<string, any>;
 

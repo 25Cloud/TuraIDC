@@ -140,6 +140,8 @@ import { required } from '@/utils/formRules';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminMemberLevels' });
+
 interface MemberLevelForm {
   id: number | string | null;
   name: string;

@@ -296,6 +296,8 @@ import RecordDetailPage from '@/components/record-detail-page/index.vue';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminFinanceOrderDetail' });
+
 type ThemeType = NonNullable<TagProps['theme']>;
 
 const SNAPSHOT_LABEL_MAP: Record<string, string> = {

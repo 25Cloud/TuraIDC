@@ -56,6 +56,7 @@ class CorptchaCaptchaService
                 'provider' => 'corptcha',
                 'enabled' => $this->isConfigured($config),
                 'captcha_id' => $this->siteKey($config),
+                'render_mode' => 'inline',
             ],
         ];
     }

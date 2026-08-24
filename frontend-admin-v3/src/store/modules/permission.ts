@@ -147,6 +147,11 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
         children: ['/admin/coupons', '/admin/coupon-campaigns'],
       },
       {
+        path: '/admin/menu/marketing-promotion/agent-discounts',
+        title: { zh_CN: '代理折扣', en_US: 'Agent Discounts' },
+        children: ['/admin/agent-discounts'],
+      },
+      {
         path: '/admin/menu/marketing-promotion/referral-management',
         title: { zh_CN: '推广管理', en_US: 'Referral Management' },
         children: [

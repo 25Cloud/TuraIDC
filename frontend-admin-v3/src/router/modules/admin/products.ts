@@ -12,6 +12,7 @@ export const productsRoutes: RouteRecordRaw[] = [
       },
       productTab: 'catalog',
       permission: 'product.list',
+      keepAliveName: 'AdminProducts',
     },
   },
   {
@@ -49,6 +50,7 @@ export const productsRoutes: RouteRecordRaw[] = [
       },
       permission: 'product.list',
       hidden: true,
+      keepAliveName: 'AdminProductEdit',
     },
   },
   {
@@ -62,6 +64,7 @@ export const productsRoutes: RouteRecordRaw[] = [
       },
       permission: 'product.list',
       hidden: true,
+      keepAliveName: 'AdminProductEdit',
     },
   },
   {
@@ -75,6 +78,7 @@ export const productsRoutes: RouteRecordRaw[] = [
       },
       productTab: 'traffic-packages',
       permission: 'product.list',
+      keepAliveName: 'AdminProducts',
     },
   },
   {
@@ -88,6 +92,7 @@ export const productsRoutes: RouteRecordRaw[] = [
       },
       productTab: 'suppliers',
       permission: 'supplier.list',
+      keepAliveName: 'AdminProducts',
     },
   },
 ];
