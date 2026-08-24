@@ -214,6 +214,11 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
         children: ['/admin/automation'],
       },
       {
+        path: '/admin/menu/system-settings/open-api',
+        title: { zh_CN: '开放接口', en_US: 'Open API' },
+        children: ['/admin/open-api'],
+      },
+      {
         path: '/admin/menu/system-settings/permissions',
         title: { zh_CN: '权限管理', en_US: 'Permission Management' },
         children: ['/admin/system/staff', '/admin/system/roles'],

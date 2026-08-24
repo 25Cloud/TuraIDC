@@ -102,6 +102,7 @@ class PermissionCatalogService
             AdminPermissions::CONTENT_LIST, AdminPermissions::CONTENT_MANAGE => 'content_ops',
             AdminPermissions::REFERRAL_LIST, AdminPermissions::REFERRAL_WITHDRAWAL_LIST, AdminPermissions::MEMBER_LEVEL_LIST, AdminPermissions::MEMBER_LEVEL_MANAGE, AdminPermissions::AGENT_DISCOUNT_LIST, AdminPermissions::AGENT_DISCOUNT_MANAGE => 'marketing_growth',
             AdminPermissions::SETTINGS_VIEW, AdminPermissions::SETTINGS_MANAGE, AdminPermissions::SETTINGS_SECRET_REVEAL => 'system_config',
+            AdminPermissions::OPEN_API_VIEW, AdminPermissions::OPEN_API_MANAGE => 'system_open_api',
             AdminPermissions::DATABASE_VIEW, AdminPermissions::DATABASE_MANAGE => 'system_database',
             AdminPermissions::INTEGRATION_PLUGIN_VIEW, AdminPermissions::INTEGRATION_PLUGIN_MANAGE, AdminPermissions::INTEGRATION_PLUGIN_TEST, AdminPermissions::INTEGRATION_PLUGIN_SECRET_REVEAL => 'system_integration',
             AdminPermissions::SCHEDULE_VIEW, AdminPermissions::SCHEDULE_TRIGGER, AdminPermissions::SCHEDULE_RETRY => 'system_schedule',
@@ -135,6 +136,7 @@ class PermissionCatalogService
             'finance' => '财务',
             'member_level' => '会员',
             'agent_discount' => '代理折扣',
+            'open_api' => '开放接口',
             'content' => '内容',
             'staff' => '员工',
             'role' => '角色',
@@ -165,6 +167,7 @@ class PermissionCatalogService
             'marketing_growth' => '推广会员',
             'system_database' => '数据库运维',
             'system_config' => '系统设置',
+            'system_open_api' => '开放接口',
             'system_integration' => '集成插件',
             'system_schedule' => '自动化任务',
             'site_ops' => '站点展示',
@@ -241,7 +244,7 @@ class PermissionCatalogService
             'customer_profile', 'customer_verification',
             'finance_invoice', 'finance_order', 'finance_funds', 'finance_report',
             'support_ticket', 'product_catalog', 'product_supplier', 'content_ops', 'marketing_growth',
-            'site_ops', 'system_config', 'system_database', 'system_integration', 'system_schedule', 'system_audit',
+            'site_ops', 'system_config', 'system_open_api', 'system_database', 'system_integration', 'system_schedule', 'system_audit',
         ];
 
         $index = array_search($group, $order, true);
@@ -329,6 +332,8 @@ class PermissionCatalogService
             AdminPermissions::REFERRAL_WITHDRAWAL_LIST => '查看推荐提现',
             AdminPermissions::MEMBER_LEVEL_LIST => '查看会员等级',
             AdminPermissions::MEMBER_LEVEL_MANAGE => '管理会员等级',
+            AdminPermissions::OPEN_API_VIEW => '查看开放接口',
+            AdminPermissions::OPEN_API_MANAGE => '管理开放接口',
             AdminPermissions::CONTENT_LIST => '查看内容',
             AdminPermissions::CONTENT_MANAGE => '管理内容',
             AdminPermissions::STAFF_LIST => '查看员工',

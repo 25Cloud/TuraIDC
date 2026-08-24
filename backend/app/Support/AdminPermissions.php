@@ -106,6 +106,10 @@ class AdminPermissions
 
     public const AGENT_DISCOUNT_LIST = 'agent_discount.list';
 
+    public const OPEN_API_VIEW = 'open_api.view';
+
+    public const OPEN_API_MANAGE = 'open_api.manage';
+
     public const REFERRAL_WITHDRAWAL_LIST = 'referral_withdrawal.list';
 
     public const CONTENT_LIST = 'content.list';
@@ -217,6 +221,8 @@ class AdminPermissions
             self::REFERRAL_LIST,
             self::MEMBER_LEVEL_MANAGE,
             self::AGENT_DISCOUNT_MANAGE,
+            self::OPEN_API_VIEW,
+            self::OPEN_API_MANAGE,
             self::CONTENT_MANAGE,
         ])));
     }
@@ -272,6 +278,7 @@ class AdminPermissions
             self::LOG_MANAGE => [self::LOG_LIST],
             self::MEMBER_LEVEL_MANAGE => [self::MEMBER_LEVEL_LIST],
             self::AGENT_DISCOUNT_MANAGE => [self::AGENT_DISCOUNT_LIST],
+            self::OPEN_API_MANAGE => [self::OPEN_API_VIEW],
             self::CONTENT_MANAGE => [self::CONTENT_LIST],
             self::STAFF_MANAGE => [self::STAFF_LIST],
             self::ROLE_MANAGE => [self::ROLE_LIST, self::PERMISSION_LIST],

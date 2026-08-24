@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\V2\LogController;
 use App\Http\Controllers\Admin\V2\MediaFileController;
 use App\Http\Controllers\Admin\V2\MemberLevelController;
 use App\Http\Controllers\Admin\V2\OrderController;
+use App\Http\Controllers\Admin\V2\OpenApiAdminController;
 use App\Http\Controllers\Admin\V2\ProductController;
 use App\Http\Controllers\Admin\V2\ProductDiscountGroupController;
 use App\Http\Controllers\Admin\V2\ProductGroupController;
@@ -385,11 +386,20 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
     Route::middleware(['permission:'.AdminPermissions::SETTINGS_VIEW])->group(function (): void {
         Route::get('/notification-templates', [SettingController::class, 'notificationTemplates']);
         Route::get('/settings', [SettingController::class, 'index']);
+        Route::get('/open-api/config', [OpenApiAdminController::class, 'config']);
+        Route::get('/open-api/keys', [OpenApiAdminController::class, 'keys']);
+        Route::get('/open-api/keys/{id}/usage-logs', [OpenApiAdminController::class, 'usageLogs']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::SETTINGS_MANAGE])->group(function (): void {
         Route::post('/notification-templates/test-send', [SettingController::class, 'testNotificationTemplate']);
         Route::post('/settings', [SettingController::class, 'update']);
+    });
+
+    Route::middleware(['permission:'.AdminPermissions::OPEN_API_MANAGE])->group(function (): void {
+        Route::put('/open-api/config', [OpenApiAdminController::class, 'saveConfig']);
+        Route::patch('/open-api/keys/{id}/status', [OpenApiAdminController::class, 'setStatus']);
+        Route::delete('/open-api/keys/{id}', [OpenApiAdminController::class, 'destroy']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::SETTINGS_SECRET_REVEAL])->group(function (): void {

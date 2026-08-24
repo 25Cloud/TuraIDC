@@ -393,4 +393,16 @@ export const systemRoutes: RouteRecordRaw[] = [
       keepAliveName: 'AdminSettings',
     },
   },
+  {
+    path: 'open-api',
+    name: 'AdminOpenApi',
+    component: () => import('@/pages/open-api/index.vue'),
+    meta: {
+      title: {
+        zh_CN: '开放接口',
+        en_US: 'Open API',
+      },
+      permission: 'open_api.view',
+    },
+  },
 ];
