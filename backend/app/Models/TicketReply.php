@@ -10,7 +10,7 @@ class TicketReply extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = ['ticket_id', 'user_id', 'content', 'is_staff', 'sender_type', 'sender_name', 'attachments', 'quote_reply_id', 'recalled_at', 'created_at'];
+    protected $fillable = ['ticket_id', 'user_id', 'content', 'is_staff', 'sender_type', 'sender_name', 'is_pre_reply', 'attachments', 'quote_reply_id', 'recalled_at', 'created_at'];
 
     protected function casts(): array
     {

@@ -82,6 +82,7 @@ class TicketService
         private ServiceTransformService $serviceTransformService,
         private UserNotificationService $userNotificationService,
         private TicketDeliveryService $ticketDeliveryService,
+        private TicketPreReplyService $ticketPreReplyService,
     ) {}
 
     /**
@@ -120,6 +121,10 @@ class TicketService
                 'attachments' => $attachments,
                 'created_at' => now(),
             ]);
+
+            // 工单预回复：若已配置启用，以预回复管理员账号名义自动插入一条员工回复，
+            // 与建单同事务提交，保证「建单成功即有预回复」的原子性。
+            $this->ticketPreReplyService->createAutoReply($ticket);
 
             return $ticket->fresh();
         });

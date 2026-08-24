@@ -168,6 +168,66 @@ interface DeliveryRuleFixture {
   mask_keywords: string;
 }
 
+async function mockTicketPreReplySettings(
+  page: import('@playwright/test').Page,
+  initial: { enabled?: boolean; admin_user_id?: number | string; content?: string; upstream_content?: string } = {},
+) {
+  const settings = {
+    enabled: initial.enabled ?? false,
+    admin_user_id: initial.admin_user_id ?? 0,
+    content: initial.content ?? '',
+    upstream_content: initial.upstream_content ?? '',
+  };
+  let saveRequests = 0;
+
+  await page.route(/\/api\/v2\/admin\/ticket-pre-reply-settings(?:\?.*)?$/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 0,
+          data: {
+            settings: {
+              enabled: settings.enabled,
+              admin_user_id: settings.admin_user_id,
+              content: settings.content,
+              upstream_content: settings.upstream_content,
+            },
+            admin_users: [
+              { id: 1, username: 'cerbo', nickname: '管理员甲', email: 'admin@example.com' },
+              { id: 2, username: 'tech', nickname: '技术客服', email: 'tech@example.com' },
+            ],
+          },
+        }),
+      });
+      return;
+    }
+
+    saveRequests += 1;
+    const payload = route.request().postDataJSON() || {};
+    // 与后端合并语义一致：仅更新请求中实际提交的字段，未提交的保留旧值
+    // （停用开关的请求只携带 enabled，已保存的管理员与内容不被清空）。
+    settings.enabled = payload.enabled === true;
+    if (payload.admin_user_id !== undefined) settings.admin_user_id = payload.admin_user_id;
+    if (payload.content !== undefined) settings.content = payload.content;
+    if (payload.upstream_content !== undefined) settings.upstream_content = payload.upstream_content;
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        data: {
+          enabled: settings.enabled ? '1' : '0',
+          admin_user_id: String(settings.admin_user_id),
+          content: settings.content,
+          upstream_content: settings.upstream_content,
+        },
+      }),
+    });
+  });
+
+  return { getSaveRequests: () => saveRequests };
+}
+
 async function mockTicketDeliverySettings(
   page: import('@playwright/test').Page,
   initialUploadImageEnabled = true,
@@ -3799,6 +3859,93 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await page.goto('/admin/tickets', { waitUntil: 'domcontentloaded' });
     await page.getByText('网络无法连接').click();
     await expect(page).toHaveURL(/\/admin\/ticket-conversations\/101/);
+  });
+
+  test('opens ticket pre-reply settings, validates required fields and saves', async ({ page }) => {
+    await mockAdminInfo(page);
+    const preReplyMock = await mockTicketPreReplySettings(page);
+    await page.addInitScript(() => {
+      window.localStorage.setItem('admin_token', 'test-token');
+      window.localStorage.setItem('admin_last_active_at', String(Date.now()));
+    });
+
+    await page.goto('/admin/ticket-pre-reply-settings', { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/\/admin\/ticket-pre-reply-settings/);
+    await expect(page.getByText('启用预回复')).toBeVisible();
+    await expect(page.getByText('预回复管理员')).toBeVisible();
+    await expect(page.getByText('上游工单预回复内容')).toBeVisible();
+
+    // 开启预回复但未选择管理员且内容为空：展示字段级提示，不发起保存请求。
+    await page.locator('.t-form__item').filter({ hasText: '启用预回复' }).locator('.t-switch').click();
+    await page.getByRole('button', { name: '保存设置' }).click();
+    await expect(page.getByText('启用预回复时必须选择管理员账号')).toBeVisible();
+    await expect(page.getByText('启用预回复时必须填写回复内容')).toBeVisible();
+    expect(preReplyMock.getSaveRequests()).toBe(0);
+
+    // 选择管理员并填写普通/上游内容后保存成功，请求体与后端契约一致。
+    await page.locator('.t-form__item').filter({ hasText: '预回复管理员' }).locator('.t-select').click();
+    await page.locator('.t-popup:visible .t-select-option').filter({ hasText: '管理员甲' }).click();
+    await page
+      .getByPlaceholder('例如：您的工单已收到，请耐心等待管理员回复。')
+      .fill('您的工单已收到，请耐心等待管理员回复。');
+    await page
+      .getByPlaceholder('可选。命中工单传递规则、会推送到上游的工单使用该内容；留空则使用上方回复内容。')
+      .fill('您的工单已提交给上游服务商处理。');
+
+    const saveRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && request.method() === 'POST',
+    );
+    // 保存成功后页面会 loadConfig 重新拉取，等待其落地再进入后续开关操作。
+    const saveReload = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && response.request().method() === 'GET',
+    );
+    await page.getByRole('button', { name: '保存设置' }).click();
+    await expect((await saveRequest).postDataJSON()).toMatchObject({
+      enabled: true,
+      admin_user_id: 1,
+      content: '您的工单已收到，请耐心等待管理员回复。',
+      upstream_content: '您的工单已提交给上游服务商处理。',
+    });
+    await saveReload;
+    await expect(page.getByText('工单预回复设置已保存')).toBeVisible();
+    expect(preReplyMock.getSaveRequests()).toBe(1);
+
+    // 关闭开关：请求体只携带 enabled=false，已保存的管理员与内容保留（禁用不清空配置）。
+    const disableRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && request.method() === 'POST',
+    );
+    // 保存成功后页面会 loadConfig 重新拉取，等待其落地再操作开关，避免表单状态被回卷。
+    const disableReload = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && response.request().method() === 'GET',
+    );
+    await page.locator('.t-form__item').filter({ hasText: '启用预回复' }).locator('.t-switch').click();
+    await page.getByRole('button', { name: '保存设置' }).click();
+    await expect((await disableRequest).postDataJSON()).toEqual({ enabled: false });
+    await disableReload;
+    await expect(page.getByText('工单预回复设置已保存')).toBeVisible();
+    expect(preReplyMock.getSaveRequests()).toBe(2);
+
+    // 重新启用：保留的配置回填表单，无需重新填写即可保存。
+    const reenableRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && request.method() === 'POST',
+    );
+    const reenableReload = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && response.request().method() === 'GET',
+    );
+    await page.locator('.t-form__item').filter({ hasText: '启用预回复' }).locator('.t-switch').click();
+    await page.getByRole('button', { name: '保存设置' }).click();
+    await expect((await reenableRequest).postDataJSON()).toMatchObject({
+      enabled: true,
+      admin_user_id: 1,
+      content: '您的工单已收到，请耐心等待管理员回复。',
+      upstream_content: '您的工单已提交给上游服务商处理。',
+    });
+    await reenableReload;
+    await expect(page.getByText('工单预回复设置已保存')).toBeVisible();
+    expect(preReplyMock.getSaveRequests()).toBe(3);
   });
 
   test('opens ticket delivery settings and manages rules', async ({ page }) => {

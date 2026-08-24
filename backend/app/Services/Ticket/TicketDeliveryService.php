@@ -217,6 +217,17 @@ class TicketDeliveryService
         ]);
     }
 
+    /**
+     * 工单当前是否命中启用的上游传递规则（供应商、绑定、部门、产品范围、屏蔽关键词均匹配）。
+     *
+     * 供预回复等建单流程内判断「该工单是否会传递到上游」，从而选择对应的回复内容。
+     * 与 queueTicket 使用同一判定逻辑（resolveContextDecision），不会重复写日志。
+     */
+    public function matchesDeliveryRule(Ticket $ticket): bool
+    {
+        return ($this->resolveContextDecision($ticket, true)['context'] ?? null) !== null;
+    }
+
     public function queueTicket(Ticket $ticket): void
     {
         $decision = $this->resolveContextDecision($ticket);
@@ -300,6 +311,21 @@ class TicketDeliveryService
     {
         $ticket = $reply->relationLoaded('ticket') ? $reply->ticket : $reply->load('ticket')->ticket;
         if (! $ticket instanceof Ticket) {
+            return;
+        }
+
+        // 预回复是建单时的自动应答，仅本地会话可见，任何投递路径（含
+        // deliverTicket 的历史补投）都不得推送到上游。
+        if ((int) ($reply->is_pre_reply ?? 0) === 1) {
+            $this->recordLog($ticket, [
+                'ticket_reply_id' => $reply->id,
+                'operation' => 'ticket.reply',
+                'event' => 'skipped',
+                'status' => 'skipped',
+                'reason_code' => 'pre_reply_skipped',
+                'message' => '工单预回复不转发上游',
+            ]);
+
             return;
         }
 

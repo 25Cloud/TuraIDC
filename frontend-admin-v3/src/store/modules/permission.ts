@@ -104,6 +104,7 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
           { path: '/admin/services', title: { zh_CN: '服务实例', en_US: 'Service Instances' } },
           '/admin/tickets',
           '/admin/ticket-delivery-rules',
+          '/admin/ticket-pre-reply-settings',
         ],
       },
     ],

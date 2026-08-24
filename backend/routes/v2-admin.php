@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\V2\StaffController;
 use App\Http\Controllers\Admin\V2\SupplierController;
 use App\Http\Controllers\Admin\V2\TicketController;
 use App\Http\Controllers\Admin\V2\TicketDeliveryController;
+use App\Http\Controllers\Admin\V2\TicketPreReplyController;
 use App\Http\Controllers\Admin\V2\UserController;
 use App\Http\Controllers\Admin\V2\UserServiceController;
 use App\Http\Controllers\Admin\V2\VerificationController;
@@ -171,6 +172,13 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::delete('/ticket-delivery-rules/{rule}', [TicketDeliveryController::class, 'destroy']);
         Route::get('/ticket-delivery-upload-guard', [TicketDeliveryController::class, 'uploadGuardConfig']);
         Route::post('/ticket-delivery-upload-guard', [TicketDeliveryController::class, 'saveUploadGuardConfig']);
+    });
+
+    // 工单预回复设置：独立权限 ticket.pre_reply_manage，必须显式授予，
+    // 不与 ticket.manage 隐含。存量角色由迁移 2026_08_23_130000_backfill_ticket_pre_reply_manage_permission 补勾选。
+    Route::middleware(['permission:'.AdminPermissions::TICKET_PRE_REPLY_MANAGE])->group(function (): void {
+        Route::get('/ticket-pre-reply-settings', [TicketPreReplyController::class, 'show']);
+        Route::post('/ticket-pre-reply-settings', [TicketPreReplyController::class, 'save']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::TICKET_REPLY])->group(function (): void {

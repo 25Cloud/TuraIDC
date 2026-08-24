@@ -26,6 +26,18 @@ export const ticketsRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    path: 'ticket-pre-reply-settings',
+    name: 'AdminTicketPreReplySettings',
+    component: () => import('@/pages/tickets/pre-reply-settings/index.vue'),
+    meta: {
+      title: {
+        zh_CN: '工单预回复设置',
+        en_US: 'Ticket Pre-reply Settings',
+      },
+      permission: 'ticket.pre_reply_manage',
+    },
+  },
+  {
     path: 'ticket-conversations/:id',
     name: 'AdminTicketConversation',
     component: () => import('@/pages/tickets/detail/index.vue'),
