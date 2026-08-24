@@ -57,9 +57,15 @@ importers:
 
   docs-web:
     devDependencies:
+      '@vue/server-renderer':
+        specifier: ^3.5.41
+        version: 3.5.41
       vitepress:
         specifier: ^1.6.4
         version: 1.6.4(@algolia/client-search@5.57.0)(@types/node@26.2.0)(async-validator@4.2.5)(axios@1.19.0)(change-case@5.4.4)(less@4.9.0)(lightningcss@1.33.0)(nprogress@0.2.0)(postcss@8.5.26)(sass@1.103.0)(search-insights@2.17.3)(sortablejs@1.15.7)(stylus@0.57.0)(typescript@7.0.2)
+      vue:
+        specifier: ^3.5.41
+        version: 3.5.41(typescript@7.0.2)
 
   frontend-admin-v3:
     dependencies:
