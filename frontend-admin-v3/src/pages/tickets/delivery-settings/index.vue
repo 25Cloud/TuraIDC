@@ -274,6 +274,8 @@ import { AdminPermissions } from '@/constants/permissions';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminTicketDeliveryRules' });
+
 const PROVIDER_KEY = 'zjmf_finance_api';
 const { width } = useWindowSize();
 const isMobile = computed(() => width.value < 768);

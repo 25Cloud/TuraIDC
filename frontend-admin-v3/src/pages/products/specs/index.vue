@@ -110,6 +110,8 @@ import ProductBindingTreeSelect from '@/components/product-binding-tree-select/i
 import { normalizeProductBindings } from '@/hooks/useProductBindingTree';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminSpecs' });
+
 type SpecRecord = Omit<
   InstanceSpecRecord,
   'id' | 'value' | 'text' | 'alias' | 'note' | 'status' | 'sort_order' | 'bindings' | 'binding_ids'

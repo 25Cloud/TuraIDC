@@ -149,6 +149,8 @@ import ProductBindingTreeSelect from '@/components/product-binding-tree-select/i
 import { normalizeProductBindings as normalizeBindings } from '@/hooks/useProductBindingTree';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminCpuModels' });
+
 const FREQUENCY_UNIT = 'GHz';
 
 type CpuModel = Omit<

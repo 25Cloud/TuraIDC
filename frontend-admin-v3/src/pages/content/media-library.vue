@@ -121,6 +121,8 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import type { MediaFileRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 
+defineOptions({ name: 'AdminMediaLibrary' });
+
 const PAGE_SIZE = 24;
 
 const typeOptions = [

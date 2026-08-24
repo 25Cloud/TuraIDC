@@ -12,6 +12,7 @@ export const contentRoutes: RouteRecordRaw[] = [
       },
       contentType: 'notice',
       permission: 'content.list',
+      keepAliveName: 'AdminContentNotices',
     },
   },
   {
@@ -53,6 +54,7 @@ export const contentRoutes: RouteRecordRaw[] = [
       },
       contentType: 'help',
       permission: 'content.list',
+      keepAliveName: 'AdminContentNotices',
     },
   },
   {
@@ -106,6 +108,7 @@ export const contentRoutes: RouteRecordRaw[] = [
       },
       permission: 'site.view',
       settingsTab: 'site_basic',
+      keepAliveName: 'AdminSettings',
     },
   },
   {
@@ -119,6 +122,7 @@ export const contentRoutes: RouteRecordRaw[] = [
       },
       permission: 'site.view',
       settingsTab: 'site_hero',
+      keepAliveName: 'AdminSettings',
     },
   },
   {
@@ -132,6 +136,7 @@ export const contentRoutes: RouteRecordRaw[] = [
       },
       permission: 'settings.view',
       notificationTab: 'email-templates',
+      keepAliveName: 'AdminNotifications',
     },
   },
   {
@@ -145,6 +150,7 @@ export const contentRoutes: RouteRecordRaw[] = [
       },
       permission: 'settings.view',
       notificationTab: 'sms-templates',
+      keepAliveName: 'AdminNotifications',
     },
   },
   {
@@ -158,6 +164,7 @@ export const contentRoutes: RouteRecordRaw[] = [
       },
       permission: 'settings.view',
       notificationTab: 'api-directory',
+      keepAliveName: 'AdminNotifications',
     },
   },
   {

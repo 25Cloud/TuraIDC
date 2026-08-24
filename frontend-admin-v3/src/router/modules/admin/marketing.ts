@@ -36,6 +36,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
       },
       permission: 'product.list',
       couponTab: 'coupons',
+      keepAliveName: 'AdminCoupons',
     },
   },
   {
@@ -49,6 +50,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
       },
       permission: 'product.list',
       couponTab: 'campaigns',
+      keepAliveName: 'AdminCoupons',
     },
   },
   {
@@ -62,6 +64,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
       },
       permission: 'referral.list',
       referralTab: 'overview',
+      keepAliveName: 'AdminReferral',
     },
   },
   {
@@ -75,6 +78,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
       },
       permission: 'referral.list',
       referralTab: 'rewards',
+      keepAliveName: 'AdminReferral',
     },
   },
   {
@@ -88,6 +92,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
       },
       permission: 'referral_withdrawal.list',
       referralTab: 'withdrawals',
+      keepAliveName: 'AdminReferral',
     },
   },
 ];

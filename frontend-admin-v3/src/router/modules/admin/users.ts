@@ -38,6 +38,7 @@ export const usersRoutes: RouteRecordRaw[] = [
       },
       permission: 'verification.list',
       verificationPane: 'manage',
+      keepAliveName: 'AdminUserVerification',
     },
   },
   {

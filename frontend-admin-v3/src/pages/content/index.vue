@@ -232,6 +232,8 @@ import { fieldValue, formatDateTime } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { errorMessage } from '@/utils/userMessage';
 
+defineOptions({ name: 'AdminContentNotices' });
+
 type ContentType = 'notice' | 'help';
 
 const route = useRoute();
