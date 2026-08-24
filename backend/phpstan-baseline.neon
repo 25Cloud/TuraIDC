@@ -3493,42 +3493,6 @@ parameters:
 			path: app/Services/Finance/AdminOrderNotificationService.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$cost_rate\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Finance/AgentDiscountService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$discounts\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Finance/AgentDiscountService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$min_discount_rate\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Finance/AgentDiscountService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Finance/AgentDiscountService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/Finance/AgentDiscountService.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:discounts\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Services/Finance/AgentDiscountService.php
-
-		-
 			message: '#^Ternary operator condition is always false\.$#'
 			identifier: ternary.alwaysFalse
 			count: 2
@@ -4822,12 +4786,6 @@ parameters:
 			message: '#^Cannot call method format\(\) on string\.$#'
 			identifier: method.nonObject
 			count: 2
-			path: app/Services/Order/OrderService.php
-
-		-
-			message: '#^Method App\\Services\\Order\\OrderService\:\:assertPurchaseRequires\(\) is unused\.$#'
-			identifier: method.unused
-			count: 1
 			path: app/Services/Order/OrderService.php
 
 		-
@@ -7564,12 +7522,6 @@ parameters:
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$upstream_ticket_id\.$#'
 			identifier: property.notFound
 			count: 2
-			path: app/Services/Ticket/TicketDeliveryService.php
-
-		-
-			message: '#^Class TuraIDC\\Plugins\\Servers\\ZjmfFinance\\Lib\\ZjmfFinanceTransport not found\.$#'
-			identifier: class.notFound
-			count: 1
 			path: app/Services/Ticket/TicketDeliveryService.php
 
 		-

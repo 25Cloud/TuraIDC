@@ -4,12 +4,19 @@ import { hasPermissionInList } from '@/constants/permissions';
 import adminRoutes from '@/router/modules/admin';
 
 /**
+ * 管理端首页路径的唯一真源。
+ * 标签栏首页标签、左上角 logo 跳转、登录后落地页都必须复用它，
+ * 不要再各自写字符串——历史上写死的 '/dashboard/base' 并无对应路由，会直接 404。
+ */
+export const ADMIN_HOME_PATH = '/admin/dashboard';
+
+/**
  * 解析管理端默认落地页（登录后跳转、守卫无权限回退共用）：
  * 有 dashboard.view 时固定回主页；否则按路由注册顺序返回第一个可访问的子路由；
  * 没有任何可访问页面时回退到 403 页，避免无权限角色被反复重定向回 /admin/dashboard 造成自循环卡死。
  */
 export function resolveAdminHomePath(permissions: string[]): string {
-  const home = '/admin/dashboard';
+  const home = ADMIN_HOME_PATH;
   if (hasPermissionInList(permissions, 'dashboard.view')) {
     return home;
   }
