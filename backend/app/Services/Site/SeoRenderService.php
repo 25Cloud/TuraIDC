@@ -337,7 +337,7 @@ class SeoRenderService
      */
     private function fallbackShell(): string
     {
-        $siteName = $this->siteName();
+        $siteName = e($this->siteName());
 
         return <<<HTML
 <!DOCTYPE html>
@@ -421,7 +421,13 @@ HTML;
 
         $structured = $this->structuredData($page, $config, $siteName, $siteUrl, $canonical, $logoUrl);
         if ($structured !== []) {
-            $head .= "\n".'  <script type="application/ld+json">'.json_encode($structured, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).'</script>';
+            // JSON-LD 内嵌在 <script> 里，值中的 </script> 会直接截断脚本块并让后续内容
+            // 作为 HTML 解析——站点名、文章标题摘要、商品名都是后台可编辑内容，等于给了
+            // 一条存储型 XSS 通道。JSON_UNESCAPED_SLASHES 恰好关掉了 `/` → `\/` 这层默认
+            // 保护，必须去掉；再叠加 JSON_HEX_TAG 把 `<` `>` 转成 < > 双保险。
+            $head .= "\n".'  <script type="application/ld+json">'
+                .json_encode($structured, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG)
+                .'</script>';
         }
 
         return $head;
@@ -447,7 +453,8 @@ HTML;
     {
         $siteName = $this->siteName();
         $html = '<article class="seo-content">';
-        $html .= '<header><h1>'.$siteName.' - 云服务器与 IDC 服务平台</h1>';
+        // 站点名来自 settings 表（后台可编辑且写入端不做消毒），必须转义后再拼进 HTML
+        $html .= '<header><h1>'.e($siteName).' - 云服务器与 IDC 服务平台</h1>';
         $html .= '<p>提供云服务器、独立服务器、高防服务器、云电脑等产品，覆盖香港、美国与国内多地节点。</p></header>';
 
         $groups = $data['root_groups'] ?? [];
@@ -500,7 +507,7 @@ HTML;
     {
         $html = '<article class="seo-content">';
         $html .= '<header><h1>产品与服务</h1>';
-        $html .= '<p>'.$this->siteName().'提供云服务器、独立服务器、高防服务器、云电脑等 IDC 产品方案。</p></header>';
+        $html .= '<p>'.e($this->siteName()).'提供云服务器、独立服务器、高防服务器、云电脑等 IDC 产品方案。</p></header>';
 
         $groups = $data['groups'] ?? [];
         if ($groups !== []) {
@@ -534,7 +541,8 @@ HTML;
 
         $groups = $data['groups'] ?? [];
         if ($groups !== []) {
-            $html .= '<section><h2>'.$keyword.'产品方案</h2><ul>';
+            // 同一个 $keyword 在上面 h1 里已过 e()，这里漏了；保持一致，不留特例
+            $html .= '<section><h2>'.e($keyword).'产品方案</h2><ul>';
             foreach (array_slice($groups, 0, 10) as $group) {
                 $name = (string) ($group['name'] ?? '');
                 $slogan = (string) ($group['slogan'] ?? '');

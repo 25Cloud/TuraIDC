@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
+use Throwable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -99,15 +100,24 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * 从数据库 settings 表加载管理员设置的站点名称，覆盖 config('app.name')。
-     * settings 表不存在时（首次迁移前）静默跳过。
+     *
+     * 全新部署时 .env 还没有数据库配置，Schema::hasTable() 会直接抛 QueryException，
+     * provider boot 失败 → 整个应用起不来 → /install 安装向导也就永远进不去。
+     * 因此这里必须吞掉全部异常（不只是「表不存在」），与 InstallService::isInstalled()
+     * 的处理口径保持一致：站点名读不到就退回 config 默认值，不影响应用启动。
      */
     private function loadSiteNameFromSettings(): void
     {
-        if (! Schema::hasTable('settings')) {
+        try {
+            if (! Schema::hasTable('settings')) {
+                return;
+            }
+
+            $siteName = trim((string) Setting::getValue('basic', 'site_name', ''));
+        } catch (Throwable) {
             return;
         }
 
-        $siteName = trim((string) Setting::getValue('basic', 'site_name', ''));
         if ($siteName === '') {
             return;
         }

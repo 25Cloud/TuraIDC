@@ -1772,6 +1772,27 @@
   flex-direction: column;
 }
 
+.supplier-batch-panel__search {
+  display: flex;
+  align-items: center;
+  gap: var(--td-comp-margin-s);
+  border-bottom: 1px solid var(--td-component-border);
+  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-m);
+  background: var(--td-bg-color-container);
+
+  .t-input {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.supplier-batch-panel__search-hint {
+  flex: 0 0 auto;
+  color: var(--td-text-color-placeholder);
+  font-size: var(--td-font-size-body-small);
+  white-space: nowrap;
+}
+
 .supplier-batch-panel__head {
   display: flex;
   align-items: center;

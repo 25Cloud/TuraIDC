@@ -1,0 +1,108 @@
+.agent-discounts-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.stack-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stack-cell strong {
+  overflow: hidden;
+  color: var(--td-text-color-primary);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stack-cell span {
+  overflow: hidden;
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-1, 12px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.agent-form-span {
+  grid-column: span 2;
+}
+
+.agent-form-grid .t-input-number {
+  width: 100%;
+}
+
+/* 折扣矩阵：行=商品折扣组，列=代理组，单元格填折扣率 */
+.agent-matrix {
+  overflow-x: auto;
+}
+
+.agent-matrix table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.agent-matrix th,
+.agent-matrix td {
+  border: 1px solid var(--td-component-border);
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.agent-matrix thead th {
+  background: var(--td-bg-color-secondarycontainer);
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-2, 13px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.agent-matrix tbody th {
+  min-width: 180px;
+  background: var(--td-bg-color-container);
+  font-weight: 600;
+}
+
+.agent-matrix td {
+  min-width: 140px;
+}
+
+.agent-matrix .t-input-number {
+  width: 100%;
+}
+
+.agent-matrix__empty {
+  padding: 24px 0;
+  color: var(--td-text-color-placeholder);
+  text-align: center;
+}
+
+.agent-matrix__hint {
+  margin: 0 0 12px;
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-1, 12px);
+  line-height: 1.7;
+}
+
+@media (width <= 1024px) {
+  .agent-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-form-span {
+    grid-column: span 1;
+  }
+}
