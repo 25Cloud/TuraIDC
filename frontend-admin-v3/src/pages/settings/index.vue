@@ -48,7 +48,7 @@
                 </t-select>
                 <t-input-number
                   v-else-if="field.type === 'number'"
-                  :value="form[field.key] as FieldNumberValue"
+                  :model-value="form[field.key] as FieldNumberValue"
                   theme="normal"
                   :min="field.min"
                   :max="field.max"
@@ -57,7 +57,7 @@
                 />
                 <t-textarea
                   v-else-if="field.type === 'textarea'"
-                  :value="form[field.key] as FieldStringValue"
+                  :model-value="form[field.key] as FieldStringValue"
                   :autosize="{ minRows: field.rows || 3, maxRows: Math.max(field.rows || 3, 6) }"
                   :maxlength="field.maxlength"
                   :placeholder="field.placeholder || `请输入${field.label}`"
@@ -65,7 +65,7 @@
                 />
                 <t-time-picker
                   v-else-if="field.type === 'time'"
-                  :value="form[field.key] as string"
+                  :model-value="form[field.key] as string"
                   clearable
                   format="HH:mm:ss"
                   :placeholder="field.placeholder || `请选择${field.label}`"
@@ -92,7 +92,7 @@
                 />
                 <t-input
                   v-else
-                  :value="form[field.key] as FieldStringValue"
+                  :model-value="form[field.key] as FieldStringValue"
                   :type="field.type === 'password' ? 'password' : 'text'"
                   :maxlength="field.maxlength"
                   :placeholder="field.placeholder || `请输入${field.label}`"

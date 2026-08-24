@@ -101,13 +101,14 @@
 
 ### 3.2 创建前端站点
 
-创建三个前端站点，运行目录分别指向对应 `dist` 目录：
+创建三个前端站点。**网站目录填前端应用目录，不要直接填 `dist`**（原因见 §6.1 的说明：
+宝塔会在网站目录生成不可删除的 `.user.ini`，落在 `dist` 里会导致前端构建必然失败）：
 
-| 站点          | 域名                   | 根目录                                   |
-| ------------- | ---------------------- | ---------------------------------------- |
-| 官网/用户入口 | `www.你的域名.com`     | `项目路径/frontend-user-v3-www/dist`     |
-| 用户控制台    | `console.你的域名.com` | `项目路径/frontend-user-v4-console/dist` |
-| 管理端        | `admin.你的域名.com`   | `项目路径/frontend-admin-v3/dist`        |
+| 站点          | 域名                   | 网站目录                            | 运行目录 |
+| ------------- | ---------------------- | ----------------------------------- | -------- |
+| 官网/用户入口 | `www.你的域名.com`     | `项目路径/frontend-user-v3-www`     | `/dist`  |
+| 用户控制台    | `console.你的域名.com` | `项目路径/frontend-user-v4-console` | `/dist`  |
+| 管理端        | `admin.你的域名.com`   | `项目路径/frontend-admin-v3`        | `/dist`  |
 
 ---
 
@@ -117,12 +118,12 @@
 
 在宝塔面板完成以下设置后，只编辑每个站点的“设置 → 伪静态”：
 
-| 站点       | 运行目录                        | 宝塔面板设置             |
-| ---------- | ------------------------------- | ------------------------ |
-| 官网       | `frontend-user-v3-www/dist`     | 静态站点，申请 SSL。     |
-| 用户控制台 | `frontend-user-v4-console/dist` | 静态站点，申请 SSL。     |
-| 管理端     | `frontend-admin-v3/dist`        | 静态站点，申请 SSL。     |
-| API        | `backend/public`                | 选择 PHP 8.3，申请 SSL。 |
+| 站点       | 网站目录                   | 运行目录 | 宝塔面板设置             |
+| ---------- | -------------------------- | -------- | ------------------------ |
+| 官网       | `frontend-user-v3-www`     | `/dist`  | 静态站点，申请 SSL。     |
+| 用户控制台 | `frontend-user-v4-console` | `/dist`  | 静态站点，申请 SSL。     |
+| 管理端     | `frontend-admin-v3`        | `/dist`  | 静态站点，申请 SSL。     |
+| API        | `backend/public`           | 留空     | 选择 PHP 8.3，申请 SSL。 |
 
 HTTPS 跳转和证书通过宝塔“SSL”页面配置；纯 HTTP 环境不启用强制 HTTPS，并将 `SESSION_SECURE_COOKIE=false`。四个公开地址必须使用相同协议。
 
@@ -360,14 +361,24 @@ sudo chmod -R 775 public/uploads public/media
 cd /www/wwwroot/你的项目
 
 # 先校验 backend/.env 中注入的四个公开地址和协议是否一致，不生成文件。
-pnpm run build:frontends -- --dry-run
+# 注意不要写成 `-- --dry-run`：pnpm 9+ 会把 `--` 原样透传给脚本，
+# build_frontends.mjs 会抛「不支持的参数：--」。
+pnpm run build:frontends --dry-run
 
 # --shamefully-hoist：本项目依赖根 hoist 布局（如 element-plus），避免 monorepo 依赖布局不一致导致构建失败；
 # --config.verify-deps-before-run=false：跳过 pnpm 10+ 默认的依赖预校验，适用于宝塔等先 install 再构建的部署流程。
-pnpm install --frozen-lockfile --shamefully-hoist --config.verify-deps-before-run=false
+# CI=true：无 TTY 的部署环境下，pnpm 11 清理 node_modules 前会等待交互确认并直接中止
+#（ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY），设置后自动放行。
+CI=true pnpm install --frozen-lockfile --shamefully-hoist --config.verify-deps-before-run=false
 pnpm run build:frontends
 # 产物仍分别位于三个前端目录的 dist/，不会写入 backend/public。
 ```
+
+> **宝塔站点根目录不要直接指向 `dist/`。** 宝塔的「防跨站攻击」会在站点根目录生成 `.user.ini`
+> 并加上 `chattr +i` 不可修改属性；若根目录就是 `dist/`，Vite 构建清空产物目录时会撞上这个
+> 删不掉的文件，报 `ENOTDIR: not a directory, scandir '.../dist/.user.ini'` 导致构建必然失败。
+> 正确做法与 API 站点一致：「网站目录」填应用目录（如 `项目路径/frontend-admin-v3`），
+> 「运行目录」填 `/dist`，让 `.user.ini` 落在 `dist` 之外。
 
 > 如使用独立 CDN 域名部署静态资源，在各项目 `.env` 中配置 `VITE_ADMIN_ASSET_BASE_URL` / `VITE_CONSOLE_ASSET_BASE_URL` / `VITE_WWW_ASSET_BASE_URL`。默认以根路径 `/` 发布。
 
