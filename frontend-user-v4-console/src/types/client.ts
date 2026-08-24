@@ -1351,3 +1351,34 @@ export interface TicketImageUploadPayload {
   url?: string;
   [key: string]: unknown;
 }
+
+export interface ApiKeyRecord {
+  id: number;
+  name?: string;
+  key_prefix?: string;
+  secret_last4?: string;
+  scopes?: Record<string, 'read' | 'write'>;
+  expires_at?: string | null;
+  ip_allowlist?: string[];
+  status?: 'enabled' | 'disabled';
+  last_used_at?: string | null;
+  created_at?: string;
+  [key: string]: unknown;
+}
+
+export interface ApiKeyStorePayload {
+  key?: ApiKeyRecord | null;
+  secret?: string;
+  secret_warning?: string;
+  [key: string]: unknown;
+}
+
+export interface ApiKeyUsageLogRecord {
+  method?: string;
+  path?: string;
+  status_code?: number;
+  ip?: string;
+  duration_ms?: number;
+  created_at?: string;
+  [key: string]: unknown;
+}
