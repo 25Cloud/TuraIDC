@@ -137,6 +137,12 @@
       "review_by": "2026-08-27"
     },
     {
+      "path": "execution-plans/active/ticket-pre-reply-2026-08-23.md",
+      "status": "active",
+      "summary": "工单预回复：用户建单后以配置管理员名义自动回复，管理端预回复设置页与独立权限。",
+      "review_by": "2026-09-20"
+    },
+    {
       "path": "execution-plans/active/expert-review-remediation-2026-08-12.md",
       "status": "active",
       "summary": "专家团审查结论中的换绑安全、密码策略、履约锁、升级锁、共享状态常量、回调 URL 与文档索引修复。",
