@@ -1,8 +1,22 @@
 import { readFileSync, readdirSync } from "node:fs";
+import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { defineConfig, type DefaultTheme } from "vitepress";
 
 const docsRoot = resolve(import.meta.dirname, "../../docs");
+
+// 文档源位于 vitepress 包外（../docs），SSR 编译产物会从 docs/ 目录发起
+// import "vue/server-renderer"，而该目录向上无法解析 vue。将 vue 系列
+// 显式解析到 docs-web 自身依赖，保证与 SSR external 的 @vue/server-renderer
+// 为同一副本，避免双实例。
+const require = createRequire(import.meta.url);
+const vueAlias = [
+  {
+    find: "vue/server-renderer",
+    replacement: require.resolve("vue/server-renderer"),
+  },
+  { find: "vue", replacement: require.resolve("vue") },
+];
 
 const directoryTitles: Record<string, string> = {
   "product-specs/active": "进行中",
@@ -262,6 +276,13 @@ export default defineConfig({
   srcDir: "../docs",
   vite: {
     publicDir: resolve(import.meta.dirname, "../public"),
+    resolve: {
+      alias: vueAlias,
+    },
+    ssr: {
+      // 避免 @vue/server-renderer 作为 external 在运行时 require 到另一份 vue
+      noExternal: ["@vue/server-renderer"],
+    },
   },
   cleanUrls: true,
   lastUpdated: true,
