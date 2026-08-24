@@ -42,6 +42,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->prefix('api/v2/client')
                 ->group(base_path('routes/v2-client.php'));
 
+            Route::middleware('api')
+                ->prefix('api/v2/open')
+                ->group(base_path('routes/v2-open.php'));
+
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
@@ -104,6 +108,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => CheckPermission::class,
             'ensure.admin' => EnsureAdminAuthenticated::class,
             'ensure.client' => EnsureClientAuthenticated::class,
+            'api.key' => \App\Http\Middleware\AuthenticateApiKey::class,
             'log.operation' => LogOperation::class,
             'verify.alipay.callback' => VerifyAlipayCallbackSignature::class,
             'verify.payment.callback' => VerifyPaymentCallbackSignature::class,
