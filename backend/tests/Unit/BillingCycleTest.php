@@ -133,6 +133,9 @@ class BillingCycleTest extends TestCase
         $this->assertSame(array_keys(BillingCycle::MONTHS), BillingCycle::ORDER);
     }
 
+    /**
+     * @return void
+     */
     public function test_labels_for_and_months_for_keep_the_requested_order(): void
     {
         $this->assertSame(

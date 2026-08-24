@@ -5,29 +5,20 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\AdminUser;
-use App\Models\IntegrationPlugin;
 use App\Models\Role;
 use App\Models\Setting;
-use App\Models\Supplier;
-use App\Models\SupplierPluginBinding;
 use App\Models\Ticket;
-use App\Models\TicketDeliveryRule;
 use App\Models\TicketReply;
-use App\Models\TicketUpstreamDeliveryLog;
 use App\Models\User;
 use App\Services\Ticket\TicketDeliveryService;
 use App\Services\Ticket\TicketService;
 use App\Support\AdminPermissions;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\Support\Concerns\UpstreamDeliveryWhitelist;
 use Tests\TestCase;
 
 class V2AdminTicketActionApiTest extends TestCase
 {
-    use DatabaseTransactions;
     use UpstreamDeliveryWhitelist;
 
     protected function tearDown(): void
@@ -35,10 +26,9 @@ class V2AdminTicketActionApiTest extends TestCase
         // 恢复 ticket_upstream 上传防护配置。恢复放在 tearDown 中保证任一断言失败后
         // 也会执行，避免残留配置污染同一进程内其他访问 /upload_image 的用例。
         Setting::setValues('ticket_upstream', [
-            'upload_image_enabled' => config('ticket_upstream.upload_image_enabled', false) ? '1' : '0',
             'allowed_ips' => (string) config('ticket_upstream.upload_allowed_ips', ''),
             'rate_limit' => (string) config('ticket_upstream.upload_rate_limit', 30),
-            'block_non_whitelisted' => config('ticket_upstream.upload_block_non_whitelisted', true) ? '1' : '0',
+            'block_non_whitelisted' => config('ticket_upstream.upload_block_non_whitelisted', false) ? '1' : '0',
         ]);
 
         parent::tearDown();
@@ -97,7 +87,7 @@ class V2AdminTicketActionApiTest extends TestCase
     public function test_ticket_upstream_delivery_logs_are_whitelisted_and_paginated(): void
     {
         $ticket = $this->createTicket();
-        TicketUpstreamDeliveryLog::query()->create([
+        \App\Models\TicketUpstreamDeliveryLog::query()->create([
             'ticket_id' => $ticket->id,
             'operation' => 'ticket.create',
             'event' => 'failed',
@@ -157,7 +147,7 @@ class V2AdminTicketActionApiTest extends TestCase
 
     public function test_ticket_delivery_departments_returns_whitelisted_data(): void
     {
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_DELIVERY_MANAGE]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
         $delivery = $this->createMock(TicketDeliveryService::class);
         $delivery->expects($this->once())
             ->method('upstreamDepartments')
@@ -179,7 +169,7 @@ class V2AdminTicketActionApiTest extends TestCase
 
     public function test_ticket_delivery_departments_require_supplier_id(): void
     {
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_DELIVERY_MANAGE]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
 
         $this->getJson('/api/v2/admin/ticket-delivery-departments')
             ->assertUnprocessable()
@@ -291,63 +281,8 @@ class V2AdminTicketActionApiTest extends TestCase
         $this->assertSame('', (string) $reply->content);
     }
 
-    public function test_ticket_delivery_rules_require_enabled_upload_image_endpoint(): void
-    {
-        [, $supplier, $supplierBinding] = $this->createZjmfSupplierBinding('ticket-rule');
-
-        Setting::setValues('ticket_upstream', [
-            'upload_image_enabled' => '0',
-        ]);
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_DELIVERY_MANAGE]));
-        $ruleName = '接口关闭时不可配置 '.bin2hex(random_bytes(4));
-        $payload = [
-            'name' => $ruleName,
-            'department' => 'support',
-            'supplier_id' => $supplier->id,
-            'provider_key' => 'zjmf_finance_api',
-            'product_scope_mode' => 'all',
-            'product_ids' => [],
-            'upstream_department_id' => 'support-01',
-            'enabled' => true,
-            'sync_admin_replies' => false,
-        ];
-
-        $this->postJson('/api/v2/admin/ticket-delivery-rules', $payload)
-            ->assertUnprocessable()
-            ->assertJsonPath('code', 42200)
-            ->assertJsonPath('data.errors.upload_image_enabled.0', '请先启用 /upload_image 接口');
-        $this->assertDatabaseMissing('ticket_delivery_rules', ['name' => $payload['name']]);
-
-        Setting::setValues('ticket_upstream', ['upload_image_enabled' => '1']);
-        $supplierBinding->update(['status' => 0]);
-        $this->postJson('/api/v2/admin/ticket-delivery-rules', array_merge($payload, [
-            'name' => $ruleName.' disabled-binding',
-        ]))
-            ->assertUnprocessable()
-            ->assertJsonPath('data.errors.supplier_id.0', '供应商必须启用并配置启用的 ZJMF 财务接口绑定');
-        $supplierBinding->update(['status' => 1]);
-        $created = $this->postJson('/api/v2/admin/ticket-delivery-rules', $payload)
-            ->assertOk()
-            ->assertJsonPath('code', 0)
-            ->assertJsonPath('data.provider_key', 'zjmf_finance_api')
-            ->assertJsonPath('data.product_scope_mode', 'all');
-        $ruleId = (int) $created->json('data.id');
-
-        Setting::setValues('ticket_upstream', ['upload_image_enabled' => '0']);
-        $this->putJson('/api/v2/admin/ticket-delivery-rules/'.$ruleId, array_merge($payload, [
-            'name' => '接口关闭时不可更新',
-        ]))
-            ->assertUnprocessable()
-            ->assertJsonPath('data.errors.upload_image_enabled.0', '请先启用 /upload_image 接口');
-        $this->assertSame($ruleName, (string) TicketDeliveryRule::query()->findOrFail($ruleId)->name);
-    }
-
     public function test_ticket_upload_guard_config_requires_manage_permission_and_roundtrips(): void
     {
-        DB::table('settings')
-            ->where('group_key', 'ticket_upstream')
-            ->whereIn('item_key', ['upload_image_enabled', 'block_non_whitelisted'])
-            ->delete();
         Setting::forgetCachedGroup('ticket_upstream');
 
         $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
@@ -365,41 +300,28 @@ class V2AdminTicketActionApiTest extends TestCase
         ])->assertForbidden()
             ->assertJsonPath('code', 40300);
 
-        // 权限隔离：仅持 ticket.manage（未显式授予 delivery_manage）不能访问上传防护配置。
         Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_MANAGE]));
-        $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
-            ->assertForbidden()
-            ->assertJsonPath('code', 40300);
-
-        // 权限隔离正面路径：仅持 delivery_manage（未显式授予 ticket.manage）即可访问上传防护配置。
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_DELIVERY_MANAGE]));
 
         $default = $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
             ->assertOk()
             ->assertJsonPath('code', 0);
 
-        $this->assertSame(false, $default->json('data.upload_image_enabled'));
-        $this->assertSame(true, $default->json('data.block_non_whitelisted'));
-        $this->assertArrayHasKey('upload_image_enabled', $default->json('data'));
         $this->assertArrayHasKey('allowed_ips', $default->json('data'));
         $this->assertArrayHasKey('rate_limit', $default->json('data'));
         $this->assertArrayHasKey('block_non_whitelisted', $default->json('data'));
 
         $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
-            'upload_image_enabled' => true,
             'allowed_ips' => "203.0.113.10\n198.51.100.0/24",
             'rate_limit' => 5,
             'block_non_whitelisted' => true,
         ])->assertOk()
             ->assertJsonPath('code', 0)
-            ->assertJsonPath('data.upload_image_enabled', true)
             ->assertJsonPath('data.allowed_ips', "203.0.113.10\n198.51.100.0/24")
             ->assertJsonPath('data.rate_limit', 5)
             ->assertJsonPath('data.block_non_whitelisted', true);
 
         $this->getJson('/api/v2/admin/ticket-delivery-upload-guard')
             ->assertOk()
-            ->assertJsonPath('data.upload_image_enabled', true)
             ->assertJsonPath('data.allowed_ips', "203.0.113.10\n198.51.100.0/24")
             ->assertJsonPath('data.rate_limit', 5)
             ->assertJsonPath('data.block_non_whitelisted', true);
@@ -409,7 +331,6 @@ class V2AdminTicketActionApiTest extends TestCase
             'allowed_ips' => '198.51.100.0/24',
             'rate_limit' => 10,
         ])->assertOk()
-            ->assertJsonPath('data.upload_image_enabled', true)
             ->assertJsonPath('data.block_non_whitelisted', true);
 
         // 非法 IP / CIDR 被拒绝
@@ -424,99 +345,6 @@ class V2AdminTicketActionApiTest extends TestCase
             'rate_limit' => 5,
         ])->assertUnprocessable()
             ->assertJsonStructure(['data' => ['errors' => ['allowed_ips']]]);
-    }
-
-    public function test_upload_image_cannot_be_disabled_while_delivery_rules_exist(): void
-    {
-        // 测试库可能残留历史规则数据，事务内清空保证断言可复现（回滚后不影响共享库其他测试）。
-        DB::table('ticket_delivery_rules')->delete();
-
-        [, $supplier] = $this->createZjmfSupplierBinding('guard-rule');
-
-        Setting::setValues('ticket_upstream', [
-            'upload_image_enabled' => '1',
-            'block_non_whitelisted' => '1',
-        ]);
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_DELIVERY_MANAGE]));
-
-        $rule = TicketDeliveryRule::query()->create([
-            'name' => '上传开关保护规则 '.bin2hex(random_bytes(4)),
-            'supplier_id' => (int) $supplier->id,
-            'provider_key' => 'zjmf_finance_api',
-            'department' => 'support',
-            'upstream_department_id' => 'support-01',
-            'product_scope_mode' => 'all',
-            'enabled' => true,
-            'sync_admin_replies' => true,
-        ]);
-
-        // 存在传递规则时，关闭 /upload_image 接口必须被拒绝，且配置不被改写。
-        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
-            'upload_image_enabled' => false,
-            'allowed_ips' => '203.0.113.10',
-            'rate_limit' => 5,
-            'block_non_whitelisted' => true,
-        ])->assertUnprocessable()
-            ->assertJsonPath('code', 42200)
-            ->assertJsonPath('data.errors.upload_image_enabled.0', '存在工单传递规则时不能关闭 /upload_image 接口');
-        $this->assertSame('1', (string) Setting::getValue('ticket_upstream', 'upload_image_enabled', '0'));
-
-        // 部分更新（不带 upload_image_enabled 字段）只改白名单/限流，不应被误拦。
-        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
-            'allowed_ips' => '198.51.100.0/24',
-            'rate_limit' => 10,
-        ])->assertOk()
-            ->assertJsonPath('code', 0)
-            ->assertJsonPath('data.upload_image_enabled', true);
-
-        // 构造「有规则 + 已保存关闭」的遗留状态（修复上线前可先建规则再关接口产生），
-        // 此时部分更新只改白名单/限流仍应放行，不得因回退值为 false 误拦。
-        Setting::setValues('ticket_upstream', ['upload_image_enabled' => '0']);
-        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
-            'allowed_ips' => '203.0.113.10',
-            'rate_limit' => 5,
-        ])->assertOk()
-            ->assertJsonPath('code', 0)
-            ->assertJsonPath('data.upload_image_enabled', false);
-
-        // 规则全部删除后，允许正常关闭并写入配置。
-        $rule->delete();
-        $this->assertFalse(TicketDeliveryRule::query()->exists());
-        $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
-            'upload_image_enabled' => false,
-            'allowed_ips' => '203.0.113.10',
-            'rate_limit' => 5,
-            'block_non_whitelisted' => true,
-        ])->assertOk()
-            ->assertJsonPath('code', 0)
-            ->assertJsonPath('data.upload_image_enabled', false);
-        $this->assertSame('0', (string) Setting::getValue('ticket_upstream', 'upload_image_enabled', '1'));
-    }
-
-    public function test_upload_guard_disable_is_serialized_by_shared_mutation_lock(): void
-    {
-        Setting::setValues('ticket_upstream', [
-            'upload_image_enabled' => '1',
-            'block_non_whitelisted' => '1',
-        ]);
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_DELIVERY_MANAGE]));
-
-        // 模拟另一请求正持有「上传开关与规则变更」的串行化锁：关闭请求必须快速失败，
-        // 避免绕过规则存在性检查产生「保留规则但接口已关闭」的无效终态。
-        // 键与 TicketDeliveryController::UPLOAD_GUARD_MUTATION_LOCK 保持一致。
-        $lock = Cache::lock('ticket-upstream:upload-guard-mutation', 10);
-        $this->assertTrue($lock->get());
-        try {
-            $this->postJson('/api/v2/admin/ticket-delivery-upload-guard', [
-                'upload_image_enabled' => false,
-                'rate_limit' => 5,
-            ])
-                ->assertUnprocessable()
-                ->assertJsonPath('code', 42200)
-                ->assertJsonPath('data.errors.upload_image_enabled.0', '上传防护配置正在变更，请稍后重试');
-        } finally {
-            $lock->release();
-        }
     }
 
     /**
@@ -585,45 +413,6 @@ class V2AdminTicketActionApiTest extends TestCase
             'email' => 'v2-ticket-action-admin-'.$suffix.'@example.com',
             'status' => 1,
         ]);
-    }
-
-    /**
-     * 创建 ZJMF 财务供应商绑定三元组（插件、供应商、绑定），供工单传递规则相关用例复用。
-     *
-     * @return array{0: IntegrationPlugin, 1: Supplier, 2: SupplierPluginBinding}
-     */
-    private function createZjmfSupplierBinding(string $prefix): array
-    {
-        $suffix = bin2hex(random_bytes(4));
-        $plugin = IntegrationPlugin::query()->create([
-            'domain' => 'servers',
-            'slug' => $prefix.'-'.$suffix,
-            'plugin_key' => $prefix.'-'.$suffix,
-            'name' => $prefix.' 测试插件 '.$suffix,
-            'version' => '1.0.0',
-            'entry_class' => 'Tests\\FakePlugin',
-            'capabilities_json' => [],
-            'config_schema_json' => [],
-            'status' => 1,
-            'installed_at' => now(),
-        ]);
-        $supplier = Supplier::query()->create([
-            'name' => $prefix.' 测试供应商 '.$suffix,
-            'code' => $prefix.'-'.$suffix,
-            'status' => 1,
-        ]);
-        $binding = SupplierPluginBinding::query()->create([
-            'supplier_id' => (int) $supplier->id,
-            'plugin_id' => (int) $plugin->id,
-            'provider_key' => 'zjmf_finance_api',
-            'environment' => 'production',
-            'status' => 1,
-            'priority' => 1,
-            'config_json' => [],
-            'has_secret_json' => [],
-        ]);
-
-        return [$plugin, $supplier, $binding];
     }
 
     private function assertNoSensitiveKeys(mixed $payload): void

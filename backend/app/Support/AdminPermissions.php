@@ -40,8 +40,6 @@ class AdminPermissions
 
     public const TICKET_MANAGE = 'ticket.manage';
 
-    public const TICKET_DELIVERY_MANAGE = 'ticket.delivery_manage';
-
     public const PRODUCT_LIST = 'product.list';
 
     public const PRODUCT_MANAGE = 'product.manage';
@@ -205,7 +203,6 @@ class AdminPermissions
             self::INVOICE_MANAGE,
             self::TICKET_REPLY,
             self::TICKET_MANAGE,
-            self::TICKET_DELIVERY_MANAGE,
             self::PRODUCT_MANAGE,
             self::PRODUCT_SYNC,
             self::SUPPLIER_MANAGE,

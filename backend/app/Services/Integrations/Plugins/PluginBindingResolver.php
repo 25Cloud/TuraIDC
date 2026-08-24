@@ -66,7 +66,6 @@ class PluginBindingResolver
      * 调用方应当只在确定不会发生写入的读路径上使用（例如列表逐行投影）。
      *
      * @template TReturn
-     *
      * @param  callable(): TReturn  $callback
      * @return TReturn
      */

@@ -19,7 +19,6 @@ use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Upstream\ProviderKey;
 use App\Support\PublicUrl;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator as LengthAwarePaginatorInstance;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -971,7 +970,7 @@ class TicketDeliveryService
         return $supplier;
     }
 
-    private function logsQuery(Ticket $ticket): Builder
+    private function logsQuery(Ticket $ticket): \Illuminate\Database\Eloquent\Builder
     {
         return TicketUpstreamDeliveryLog::query()
             ->with('supplier:id,name')

@@ -7,7 +7,6 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\Auth\AuthService;
 use App\Services\User\UserService;
-use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -149,7 +148,7 @@ class PasswordChangeSessionRaceTest extends TestCase
         ])->assertStatus(403)->assertJsonPath('code', 40300);
     }
 
-    private function probeConnection(): Connection
+    private function probeConnection(): \Illuminate\Database\Connection
     {
         config([
             'database.connections.'.self::PROBE_CONNECTION => config('database.connections.'.config('database.default')),

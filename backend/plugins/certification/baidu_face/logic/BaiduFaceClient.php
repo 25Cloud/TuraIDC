@@ -575,4 +575,5 @@ class BaiduFaceClient
 
         return $value;
     }
+
 }

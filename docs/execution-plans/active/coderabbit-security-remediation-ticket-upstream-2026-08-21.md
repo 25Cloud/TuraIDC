@@ -13,8 +13,7 @@ PR `#20`（feat: 增加对 zjmf_finance 的工单上游传递）收到 CodeRabbi
 ## 范围与验收
 
 - [x] 附件上传路径遍历（CWE-22）与文件句柄泄漏已修复；TLS 校验统一复用 `idc.hosting_panel_api` 的 `ssl_verify`/`ca_bundle` 口径（保持默认证书校验，不引入 `withoutVerifying()`）。
-- [x] `/upload_image` 上传凭证校验：`upload_token_required` 默认 `false`，无凭证上传放行以兼容部署中的上游，带凭证上传强制匹配；设为 `true` 时拒绝无凭证/错误凭证（fail-closed）。
-- [x] `/upload_image` 接口启用开关默认关闭；配置工单传递规则前必须先开启，且白名单外上传默认拒绝。
+- [ ] `/upload_image` 上传凭证校验：`upload_token_required` 默认 `false`，无凭证上传放行以兼容部署中的上游，带凭证上传强制匹配；设为 `true` 时拒绝无凭证/错误凭证（fail-closed）。
 - [x] legacy 回调验签在服务不存在或 token 为空时 fail-closed。
 - [x] 供应商切换非 ZJMF 提供商时强制关闭工单投递；投递规则部门取值限制为本地部门枚举。
 - [x] 日志中心嵌套事件有数量上限；状态摘要按每工单最新事件统计。
@@ -28,7 +27,7 @@ PR `#20`（feat: 增加对 zjmf_finance 的工单上游传递）收到 CodeRabbi
 - [x] 上传限流测试在 `tearDown` 中清理 `RateLimiter` 计数，保证重复运行幂等。
 - [x] ZJMF 附件上传新增 TLS 选项与失败路径单测；受信代理/XFF 契约写入运维文档。
 - [ ] 后端全量测试与前端构建收尾。
-- [ ] 文档校验（`pnpm run docs:check`）。
+- [ ] 文档校验（`npm run docs:check`）。
 
 ## 实施步骤
 
@@ -50,7 +49,7 @@ PR `#20`（feat: 增加对 zjmf_finance 的工单上游传递）收到 CodeRabbi
 - `app/openapi/controller/TicketController.php`：`createTicket()` 与 `replyTicket()` 支持 `request_id` 幂等——命中已存在 `request_id` 时直接返回既有结果，不重复创建/回复。
 - `data/upgrade_ticket_request_id.sql`：为 `ticket`、`ticket_reply` 增加 `request_id` 列与唯一索引（执行前先备份并清理潜在重复）。
 
-由于部署中的上游系统无法同步配套修改，本仓库 `/upload_image` 凭证校验默认放行无凭证上传（`upload_token_required=false`），以保证回调附件可用；带凭证的上传仍强制匹配。`/upload_image` 接口本身默认关闭（`upload_image_enabled=false`），必须在管理端开启后才能配置工单传递规则；开启后白名单外上传默认拒绝（`block_non_whitelisted=true`），生产环境应先填写可信来源 IP/CIDR。磁盘占用通过未使用上传文件清理缓解：超过保留期（`upload_unused_retention_minutes`，默认 5 分钟）仍未用于回复工单的文件由每分钟调度任务 `tickets:cleanup-unused-upstream-uploads` 删除。`request_id` 幂等在未部署上游前由上游忽略（行为与现状一致）。
+由于部署中的上游系统无法同步配套修改，本仓库 `/upload_image` 凭证校验默认放行无凭证上传（`upload_token_required=false`），以保证回调附件可用；带凭证的上传仍强制匹配。磁盘占用通过未使用上传文件清理缓解：超过保留期（`upload_unused_retention_minutes`，默认 5 分钟）仍未用于回复工单的文件由每分钟调度任务 `tickets:cleanup-unused-upstream-uploads` 删除。`request_id` 幂等在未部署上游前由上游忽略（行为与现状一致）。
 
 ## 风险与回滚
 
@@ -77,7 +76,7 @@ PR `#20`（feat: 增加对 zjmf_finance 的工单上游传递）收到 CodeRabbi
 - [x] 上传限流测试 `tearDown` 清理 `RateLimiter` 计数，测试幂等。
 - [x] 受信代理/XFF 契约写入部署与运维文档（含容器端口仅本机绑定、单层代理重置 XFF）。
 - [ ] 后端全量测试与前端构建收尾。
-- [ ] 文档校验（`pnpm run docs:check`）。
+- [ ] 文档校验（`npm run docs:check`）。
 
 ## 决策日志
 

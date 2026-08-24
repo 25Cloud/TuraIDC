@@ -6,7 +6,6 @@ namespace Tests\Feature;
 
 use App\Services\Integrations\Plugins\PluginFileLoader;
 use App\Services\Integrations\Plugins\PluginScanner;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 use TuraIDC\Plugins\Certification\AlipayCertify\Logic\AlipayCertify;
@@ -300,7 +299,7 @@ class AlipayCertifyPluginTest extends TestCase
 
     public function test_query_status_maps_connection_failure_to_network_error(): void
     {
-        Http::fake(fn () => throw new ConnectionException('timeout'));
+        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('timeout'));
 
         $this->assertSame(3, $this->queryStatus(), '网络异常必须与业务失败区分，否则会被误判为认证不通过');
     }
