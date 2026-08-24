@@ -205,10 +205,12 @@ async function mockTicketPreReplySettings(
 
     saveRequests += 1;
     const payload = route.request().postDataJSON() || {};
+    // 与后端合并语义一致：仅更新请求中实际提交的字段，未提交的保留旧值
+    // （停用开关的请求只携带 enabled，已保存的管理员与内容不被清空）。
     settings.enabled = payload.enabled === true;
-    settings.admin_user_id = payload.admin_user_id;
-    settings.content = payload.content || '';
-    settings.upstream_content = payload.upstream_content || '';
+    if (payload.admin_user_id !== undefined) settings.admin_user_id = payload.admin_user_id;
+    if (payload.content !== undefined) settings.content = payload.content;
+    if (payload.upstream_content !== undefined) settings.upstream_content = payload.upstream_content;
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
@@ -3869,7 +3871,7 @@ test.describe('frontend-admin-v3 shell smoke', () => {
 
     await page.goto('/admin/ticket-pre-reply-settings', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/\/admin\/ticket-pre-reply-settings/);
-    await expect(page.getByText('工单预回复', { exact: true })).toBeVisible();
+    await expect(page.getByText('启用预回复')).toBeVisible();
     await expect(page.getByText('预回复管理员')).toBeVisible();
     await expect(page.getByText('上游工单预回复内容')).toBeVisible();
 
@@ -3893,6 +3895,11 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     const saveRequest = page.waitForRequest(
       (request) => request.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && request.method() === 'POST',
     );
+    // 保存成功后页面会 loadConfig 重新拉取，等待其落地再进入后续开关操作。
+    const saveReload = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && response.request().method() === 'GET',
+    );
     await page.getByRole('button', { name: '保存设置' }).click();
     await expect((await saveRequest).postDataJSON()).toMatchObject({
       enabled: true,
@@ -3900,8 +3907,45 @@ test.describe('frontend-admin-v3 shell smoke', () => {
       content: '您的工单已收到，请耐心等待管理员回复。',
       upstream_content: '您的工单已提交给上游服务商处理。',
     });
+    await saveReload;
     await expect(page.getByText('工单预回复设置已保存')).toBeVisible();
     expect(preReplyMock.getSaveRequests()).toBe(1);
+
+    // 关闭开关：请求体只携带 enabled=false，已保存的管理员与内容保留（禁用不清空配置）。
+    const disableRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && request.method() === 'POST',
+    );
+    // 保存成功后页面会 loadConfig 重新拉取，等待其落地再操作开关，避免表单状态被回卷。
+    const disableReload = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && response.request().method() === 'GET',
+    );
+    await page.locator('.t-form__item').filter({ hasText: '启用预回复' }).locator('.t-switch').click();
+    await page.getByRole('button', { name: '保存设置' }).click();
+    await expect((await disableRequest).postDataJSON()).toEqual({ enabled: false });
+    await disableReload;
+    await expect(page.getByText('工单预回复设置已保存')).toBeVisible();
+    expect(preReplyMock.getSaveRequests()).toBe(2);
+
+    // 重新启用：保留的配置回填表单，无需重新填写即可保存。
+    const reenableRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && request.method() === 'POST',
+    );
+    const reenableReload = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && response.request().method() === 'GET',
+    );
+    await page.locator('.t-form__item').filter({ hasText: '启用预回复' }).locator('.t-switch').click();
+    await page.getByRole('button', { name: '保存设置' }).click();
+    await expect((await reenableRequest).postDataJSON()).toMatchObject({
+      enabled: true,
+      admin_user_id: 1,
+      content: '您的工单已收到，请耐心等待管理员回复。',
+      upstream_content: '您的工单已提交给上游服务商处理。',
+    });
+    await reenableReload;
+    await expect(page.getByText('工单预回复设置已保存')).toBeVisible();
+    expect(preReplyMock.getSaveRequests()).toBe(3);
   });
 
   test('opens ticket delivery settings and manages rules', async ({ page }) => {

@@ -260,10 +260,11 @@ class TicketPreReplyTest extends TestCase
             ->assertJsonPath('code', 0);
 
         $settings = $response->json('data.settings');
-        $this->assertFalse($settings['enabled']);
-        $this->assertSame(0, $settings['admin_user_id']);
-        $this->assertSame('', $settings['content']);
-        $this->assertSame('', $settings['upstream_content']);
+        // 默认值从 config 驱动，与 test_seeder_seeds_pre_reply_defaults_from_config 口径一致。
+        $this->assertSame((bool) config('ticket_pre_reply.enabled', false), $settings['enabled']);
+        $this->assertSame((int) config('ticket_pre_reply.admin_user_id', 0), $settings['admin_user_id']);
+        $this->assertSame((string) config('ticket_pre_reply.content', ''), $settings['content']);
+        $this->assertSame((string) config('ticket_pre_reply.upstream_content', ''), $settings['upstream_content']);
 
         // 候选人仅包含可回复工单的启用管理员。
         $ids = collect($response->json('data.admin_users'))->pluck('id')->map(fn ($id) => (int) $id);
@@ -323,6 +324,24 @@ class TicketPreReplyTest extends TestCase
             ->assertJsonPath('code', 42200)
             ->assertJsonStructure(['data' => ['errors' => ['content']]]);
 
+        // 启用但未提交 admin_user_id 字段（字段整体缺失，而非提交 0）。
+        $this->postJson('/api/v2/admin/ticket-pre-reply-settings', [
+            'enabled' => true,
+            'content' => '请耐心等待管理员回复。',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 42200)
+            ->assertJsonStructure(['data' => ['errors' => ['admin_user_id']]]);
+
+        // 启用但未提交 content 字段（字段整体缺失，而非提交空字符串）。
+        $this->postJson('/api/v2/admin/ticket-pre-reply-settings', [
+            'enabled' => true,
+            'admin_user_id' => 1,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 42200)
+            ->assertJsonStructure(['data' => ['errors' => ['content']]]);
+
         // 启用但所选管理员不存在。
         $this->postJson('/api/v2/admin/ticket-pre-reply-settings', [
             'enabled' => true,
@@ -359,7 +378,7 @@ class TicketPreReplyTest extends TestCase
 
     public function test_seeder_seeds_pre_reply_defaults_from_config(): void
     {
-        (new SettingsSeeder())->seed();
+        (new SettingsSeeder)->seed();
 
         $this->assertSame(
             config('ticket_pre_reply.enabled', false) ? '1' : '0',
@@ -383,16 +402,55 @@ class TicketPreReplyTest extends TestCase
     {
         Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_PRE_REPLY_MANAGE]));
 
+        // 仅提交关闭开关（不携带管理员与内容字段）：允许保存。
         $this->postJson('/api/v2/admin/ticket-pre-reply-settings', [
             'enabled' => false,
-            'admin_user_id' => 0,
-            'content' => '',
         ])
             ->assertOk()
             ->assertJsonPath('code', 0);
 
         $this->assertSame('0', Setting::getValue(TicketPreReplyService::SETTINGS_GROUP, 'enabled'));
-        $this->assertSame('0', Setting::getValue(TicketPreReplyService::SETTINGS_GROUP, 'admin_user_id'));
+    }
+
+    public function test_disabling_preserves_saved_configuration(): void
+    {
+        $staff = $this->createStaff();
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::TICKET_PRE_REPLY_MANAGE]));
+
+        // 先保存完整启用配置。
+        $this->postJson('/api/v2/admin/ticket-pre-reply-settings', [
+            'enabled' => true,
+            'admin_user_id' => $staff->id,
+            'content' => '请耐心等待管理员回复。',
+            'upstream_content' => '已转交上游服务商处理。',
+        ])->assertOk()->assertJsonPath('code', 0);
+
+        // 仅关闭开关：未提交的管理员与内容必须保留，避免「禁用即清空配置」。
+        $this->postJson('/api/v2/admin/ticket-pre-reply-settings', [
+            'enabled' => false,
+        ])
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.enabled', '0')
+            ->assertJsonPath('data.admin_user_id', (string) $staff->id)
+            ->assertJsonPath('data.content', '请耐心等待管理员回复。')
+            ->assertJsonPath('data.upstream_content', '已转交上游服务商处理。');
+
+        $this->assertSame('0', Setting::getValue(TicketPreReplyService::SETTINGS_GROUP, 'enabled'));
+        $this->assertSame((string) $staff->id, Setting::getValue(TicketPreReplyService::SETTINGS_GROUP, 'admin_user_id'));
+        $this->assertSame('请耐心等待管理员回复。', Setting::getValue(TicketPreReplyService::SETTINGS_GROUP, 'content'));
+        $this->assertSame('已转交上游服务商处理。', Setting::getValue(TicketPreReplyService::SETTINGS_GROUP, 'upstream_content'));
+
+        // 重新启用（前端回填保留的配置）后可用，且内容未丢失。
+        $this->postJson('/api/v2/admin/ticket-pre-reply-settings', [
+            'enabled' => true,
+            'admin_user_id' => $staff->id,
+            'content' => '请耐心等待管理员回复。',
+            'upstream_content' => '已转交上游服务商处理。',
+        ])->assertOk()->assertJsonPath('code', 0);
+
+        $this->assertSame('1', Setting::getValue(TicketPreReplyService::SETTINGS_GROUP, 'enabled'));
+        $this->assertSame('请耐心等待管理员回复。', Setting::getValue(TicketPreReplyService::SETTINGS_GROUP, 'content'));
     }
 
     public function test_settings_require_pre_reply_manage_permission(): void

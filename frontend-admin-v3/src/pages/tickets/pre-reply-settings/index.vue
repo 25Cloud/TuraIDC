@@ -2,11 +2,7 @@
   <div class="ticket-pre-reply-page">
     <t-card :bordered="false" class="ticket-pre-reply-card">
       <div class="ticket-pre-reply-toolbar">
-        <div class="ticket-pre-reply-summary">
-          <strong>工单预回复</strong>
-          <span>开启后，用户新建工单时将以所选管理员账号的名义自动回复配置内容（不会推送上游、不会发送通知）。</span>
-        </div>
-        <t-button theme="primary" :loading="saving" @click="save">保存设置</t-button>
+        <t-button v-if="canManage" theme="primary" :loading="saving" @click="save">保存设置</t-button>
       </div>
 
       <t-form
@@ -64,15 +60,27 @@ import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 
-import type { TicketAdminUser } from '@/api/admin';
+import type { TicketAdminUser, TicketPreReplySettingsPayload } from '@/api/admin';
 import { adminApi } from '@/api/admin';
+import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
+import { useUserStore } from '@/store';
 import { errorMessage } from '@/utils/userMessage';
 
+const userStore = useUserStore();
 const { width } = useWindowSize();
 const isMobile = computed(() => width.value < 768);
 const saving = ref(false);
 const formRef = ref<FormInstanceFunctions>();
 const adminUsers = ref<TicketAdminUser[]>([]);
+
+function hasPermission(permission: string) {
+  const permissions = userStore.userInfo?.permissions || [];
+  return hasPermissionInList(permissions, permission);
+}
+
+// 路由层已挂 ticket.pre_reply_manage，这里再做按钮显示与保存入口双保险，
+// 防止权限收紧后入口仍可用。
+const canManage = computed(() => hasPermission(AdminPermissions.TICKET_PRE_REPLY_MANAGE));
 
 const form = reactive({
   enabled: false,
@@ -119,21 +127,28 @@ async function loadConfig() {
 }
 
 async function save() {
+  // 无 ticket.pre_reply_manage 权限时直接拒绝调用（路由守卫之外的双保险）。
+  if (!canManage.value) {
+    MessagePlugin.error('无权限保存工单预回复设置');
+    return;
+  }
+
   // 启用预回复但未选择管理员或未填写内容时，展示字段级提示并阻止提交。
   const valid = await formRef.value?.validate?.();
   if (valid !== true) return;
 
   saving.value = true;
   try {
-    await adminApi.tickets.preReply.save({
-      enabled: form.enabled,
-      // 停用时管理员与内容一并清空，避免残留上次的选择造成误导。
-      admin_user_id: form.enabled ? form.admin_user_id : 0,
-      content: form.enabled ? form.content : '',
-      upstream_content: form.enabled ? form.upstream_content : '',
-    });
+    const payload: TicketPreReplySettingsPayload = { enabled: form.enabled };
+    if (form.enabled) {
+      // 仅启用时提交管理员与内容；停用时只提交开关，后端保留已保存的配置。
+      payload.admin_user_id = form.admin_user_id;
+      payload.content = form.content;
+      payload.upstream_content = form.upstream_content;
+    }
+    await adminApi.tickets.preReply.save(payload);
     MessagePlugin.success('工单预回复设置已保存');
-    // 保存成功后重新加载，确保停用后本地表单与后端已清空的内容保持一致。
+    // 保存成功后重新加载，确保表单与后端实际持久化的配置一致。
     await loadConfig();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存工单预回复设置失败'));

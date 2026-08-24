@@ -814,9 +814,10 @@ export interface TicketPreReplySettings {
 
 export interface TicketPreReplySettingsPayload {
   enabled: boolean;
-  admin_user_id: number | string;
-  content: string;
-  upstream_content: string;
+  // 停用开关的请求只提交 enabled；管理员与内容仅在启用时提交，缺失字段由后端保留旧值。
+  admin_user_id?: number | string;
+  content?: string;
+  upstream_content?: string;
 }
 
 // 后端 save 返回持久化后的字符串化配置（与 settings 表存储格式一致）。

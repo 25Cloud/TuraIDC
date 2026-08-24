@@ -12,7 +12,6 @@ use App\Services\System\OperationLogService;
 use App\Services\Ticket\TicketPreReplyService;
 use App\Services\Ticket\TicketService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 final class TicketPreReplyController extends Controller
 {
@@ -35,10 +34,20 @@ final class TicketPreReplyController extends Controller
     public function save(SaveTicketPreReplyRequest $request, TicketPreReplyService $preReplyService): JsonResponse
     {
         $payload = $request->payload();
-        // 写入前读取旧配置，供审计做前后对照。
+        // 写入前读取旧配置并归一化为字符串形态，供审计做前后对照。
         $before = $preReplyService->config();
+        $baseline = [
+            'enabled' => $before['enabled'] ? '1' : '0',
+            'admin_user_id' => (string) $before['admin_user_id'],
+            'content' => (string) $before['content'],
+            'upstream_content' => (string) $before['upstream_content'],
+        ];
 
-        Setting::setValues(TicketPreReplyService::SETTINGS_GROUP, $payload);
+        // 请求只更新实际提交的字段（如仅关闭开关时不携带管理员与内容），
+        // 未提交字段保留旧值，避免「禁用即清空已保存配置」。
+        $merged = array_merge($baseline, $payload);
+
+        Setting::setValues(TicketPreReplyService::SETTINGS_GROUP, $merged);
 
         $this->operationLogService->write(
             userId: (int) ($request->user()?->id ?? 0),
@@ -48,14 +57,14 @@ final class TicketPreReplyController extends Controller
             targetId: 0,
             detail: [
                 'title' => '工单预回复设置更新',
-                'before' => $before,
-                'after' => $payload,
+                'before' => $baseline,
+                'after' => $merged,
                 'operator_name' => (string) ($request->user()?->username ?? $request->user()?->name ?? ''),
                 'trace_id' => (string) $request->header('X-Request-Id', ''),
             ],
             ipAddress: (string) $request->ip(),
         );
 
-        return $this->success($payload, '工单预回复设置已保存');
+        return $this->success($merged, '工单预回复设置已保存');
     }
 }

@@ -120,8 +120,14 @@ class TicketPreReplyService
         $content = TextSanitizer::clean($config['content'], true);
         $upstreamContent = TextSanitizer::clean($config['upstream_content'], true);
 
+        // 未单独配置上游内容时无需做规则匹配：命中与否都回退普通内容，
+        // 避免在建单事务内为无意义的判定延长持有时间。
+        if ($upstreamContent === '') {
+            return $content;
+        }
+
         if ($this->ticketDeliveryService->matchesDeliveryRule($ticket)) {
-            return $upstreamContent !== '' ? $upstreamContent : $content;
+            return $upstreamContent;
         }
 
         return $content;

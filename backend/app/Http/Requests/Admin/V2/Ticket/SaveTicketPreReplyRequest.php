@@ -15,10 +15,12 @@ final class SaveTicketPreReplyRequest extends AdminFormRequest
     public function rules(): array
     {
         return [
+            // enabled 必须提交；管理员与内容仅在提交时校验（停用开关的请求可以不携带，
+            // 由控制器合并保留上次值，避免「禁用即清空已保存配置」）。
             'enabled' => ['required', 'boolean'],
-            'admin_user_id' => ['required', 'integer', 'min:0'],
-            'content' => ['nullable', 'string', 'max:5000'],
-            'upstream_content' => ['nullable', 'string', 'max:5000'],
+            'admin_user_id' => ['sometimes', 'integer', 'min:0'],
+            'content' => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'upstream_content' => ['sometimes', 'nullable', 'string', 'max:5000'],
         ];
     }
 
@@ -55,17 +57,29 @@ final class SaveTicketPreReplyRequest extends AdminFormRequest
     }
 
     /**
-     * @return array{enabled: string, admin_user_id: string, content: string, upstream_content: string}
+     * 仅返回请求中实际提交的字段（归一化后）；未提交的字段不进入结果，
+     * 由控制器与旧配置合并，避免缺失字段被归一化为清空值覆盖已保存配置。
+     *
+     * @return array<string, string>
      */
     public function payload(): array
     {
         $data = $this->validated();
+        $payload = [];
 
-        return [
-            'enabled' => filter_var($data['enabled'], FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
-            'admin_user_id' => (string) max(0, (int) ($data['admin_user_id'] ?? 0)),
-            'content' => TextSanitizer::clean((string) ($data['content'] ?? ''), true),
-            'upstream_content' => TextSanitizer::clean((string) ($data['upstream_content'] ?? ''), true),
-        ];
+        if (array_key_exists('enabled', $data)) {
+            $payload['enabled'] = filter_var($data['enabled'], FILTER_VALIDATE_BOOLEAN) ? '1' : '0';
+        }
+        if (array_key_exists('admin_user_id', $data)) {
+            $payload['admin_user_id'] = (string) max(0, (int) $data['admin_user_id']);
+        }
+        if (array_key_exists('content', $data)) {
+            $payload['content'] = TextSanitizer::clean((string) $data['content'], true);
+        }
+        if (array_key_exists('upstream_content', $data)) {
+            $payload['upstream_content'] = TextSanitizer::clean((string) $data['upstream_content'], true);
+        }
+
+        return $payload;
     }
 }
