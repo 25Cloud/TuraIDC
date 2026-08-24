@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\Open\V2\OpenProductController;
 use Illuminate\Support\Facades\Route;
 
-// 开放 API（Open API v2）路由：由 open-api 实施计划 Task 5/6 填充
+Route::middleware(['api.key:products,read'])->group(function (): void {
+    Route::get('/products', [OpenProductController::class, 'index']);
+    Route::get('/products/{product}', [OpenProductController::class, 'show']);
+    Route::get('/products/{product}/quotes', [OpenProductController::class, 'quotes']);
+});
