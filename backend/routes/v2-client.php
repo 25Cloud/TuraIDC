@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Client\V2\ActionController;
+use App\Http\Controllers\Client\V2\ApiKeyController;
 use App\Http\Controllers\Client\V2\AuthController;
 use App\Http\Controllers\Client\V2\ContentController;
 use App\Http\Controllers\Client\V2\CouponController;
@@ -56,6 +57,13 @@ Route::middleware(['auth:sanctum', 'ensure.client'])->group(function (): void {
     Route::put('/auth/notification-preferences', [AuthController::class, 'updateNotificationPreferences']);
     Route::put('/auth/phone', [AuthController::class, 'updatePhone']);
     Route::put('/auth/email', [AuthController::class, 'updateEmail']);
+
+    Route::get('/api-keys', [ApiKeyController::class, 'index']);
+    Route::post('/api-keys', [ApiKeyController::class, 'store'])->middleware('throttle:10,1,client-api-key-store');
+    Route::put('/api-keys/{id}', [ApiKeyController::class, 'update']);
+    Route::put('/api-keys/{id}/status', [ApiKeyController::class, 'setStatus']);
+    Route::delete('/api-keys/{id}', [ApiKeyController::class, 'destroy']);
+    Route::get('/api-keys/{id}/usage-logs', [ApiKeyController::class, 'usageLogs']);
 
     Route::get('/verification/fee-config', [VerificationController::class, 'feeConfig']);
     Route::post('/verification/init', [VerificationController::class, 'init']);
