@@ -1,6 +1,6 @@
 import type { CapCaptchaLabels } from '@shared/components/CapCaptchaCard.vue';
 import CapCaptchaCard from '@shared/components/CapCaptchaCard.vue';
-import { createApp, onBeforeUnmount, onMounted, ref } from 'vue';
+import { createApp, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { clientAuthApi } from '@/api/auth';
@@ -419,6 +419,10 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
       return initPromise;
     }
 
+    // 容器用 v-show 控制显隐：等 DOM 更新（display 恢复）后再渲染组件，
+    // 避免 widget 渲染进 display:none 容器导致不可见或尺寸测量为 0。
+    await nextTick();
+
     const scriptUrl = resolveApiProxyUrl(
       config.script_url || defaultConfig.script_url || '',
       import.meta.env.VITE_API_BASE_URL,
@@ -582,6 +586,17 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
       return result;
     }
 
+    // inline 形态：组件已渲染在表单容器内，用户直接点组件完成挑战。
+    // 未完成验证时只提示，不弹窗、不挂起 loading，避免提交按钮无限转圈。
+    if (renderMode.value === 'inline') {
+      if (typeof options.onPrompt === 'function') {
+        options.onPrompt();
+      }
+      const error = new Error('请先完成人机验证') as Error & { __handled?: boolean };
+      error.__handled = true;
+      throw error;
+    }
+
     loading.value = true;
 
     return new Promise((resolve, reject) => {
@@ -630,6 +645,22 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     });
   };
 
+  /**
+   * 页面加载后主动初始化并渲染验证组件（inline 形态提前展示，可提前完成挑战）。
+   * 仅启用且为 inline 时执行；初始化失败静默忽略，不阻断页面。
+   */
+  const prepare = async () => {
+    if (componentUnmounted) {
+      return;
+    }
+
+    try {
+      await initCaptcha();
+    } catch {
+      // 加载失败不打扰用户，点击提交时仍会走 verify() 的完整错误提示
+    }
+  };
+
   // 挂载时只拉配置，不加载验证 SDK——SDK 在用户点击提交时（verify）才加载
   onMounted(() => {
     resolveConfig().catch(() => {
@@ -653,5 +684,6 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     verify,
     runWithCaptcha,
     reinit,
+    prepare,
   };
 }

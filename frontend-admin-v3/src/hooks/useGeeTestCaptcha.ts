@@ -1,6 +1,6 @@
 import type { CapCaptchaLabels } from '@shared/components/CapCaptchaCard.vue';
 import CapCaptchaCard from '@shared/components/CapCaptchaCard.vue';
-import { createApp, onScopeDispose, ref } from 'vue';
+import { createApp, nextTick, onScopeDispose, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { request } from '@/utils/request';
@@ -321,6 +321,8 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
   let pendingResolver: ((value: unknown) => void) | null = null;
   let pendingRejecter: ((error: Error) => void) | null = null;
   let destroyed = false;
+  // 当前渲染形态：popup（极验弹窗）/ inline（页面容器内联组件，如 Corptcha）
+  let currentRenderMode: 'popup' | 'inline' = 'popup';
   // 内联组件在无人等待时预先完成的验证结果，一次性消费
   let verifiedResult: unknown = null;
 
@@ -375,6 +377,16 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
       throw new Error('行为验证当前不可用，请检查人机验证插件配置');
     }
 
+    // 容器用 v-show 控制显隐：等 DOM 更新（display 恢复）后再渲染组件，
+    // 避免 widget 渲染进 display:none 容器导致不可见或尺寸测量为 0。
+    await nextTick();
+
+    currentRenderMode = config.render_mode === 'inline' ? 'inline' : 'popup';
+    const appendTarget =
+      currentRenderMode === 'inline'
+        ? resolveAppendTarget((options.appendTo ?? options.container) as CaptchaAppendTarget)
+        : undefined;
+
     if (captchaObj) {
       return captchaObj;
     }
@@ -395,7 +407,7 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
       const currentInitPromise = new Promise<CaptchaInstance | null>((resolve, reject) => {
         initRejecter = reject;
         try {
-          const instance = createCapInstance(undefined, apiEndpoint, capLabels);
+          const instance = createCapInstance(appendTarget, apiEndpoint, capLabels);
           captchaObj = instance;
           instance.onReady?.(() => {
             initRejecter = null;
@@ -457,13 +469,6 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     const currentInitPromise = new Promise<CaptchaInstance | null>((resolve, reject) => {
       initRejecter = reject;
       try {
-        // 只有 inline 形态（Turnstile）才需要页面提供容器；
-        // popup 形态（极验等）交给插件自己弹窗，传容器反而会让它内联展开。
-        const appendTarget =
-          config.render_mode === 'inline'
-            ? resolveAppendTarget((options.appendTo ?? options.container) as CaptchaAppendTarget)
-            : undefined;
-
         initGeetest4?.(
           {
             captchaId: config.captcha_id,
@@ -547,6 +552,17 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
       return result;
     }
 
+    // inline 形态：组件已渲染在表单容器内，用户直接点组件完成挑战。
+    // 未完成验证时只提示，不弹窗、不挂起 loading，避免提交按钮无限转圈。
+    if (currentRenderMode === 'inline') {
+      if (typeof options.onPrompt === 'function') {
+        options.onPrompt();
+      }
+      const error = new Error('请先完成人机验证') as Error & { __handled?: boolean };
+      error.__handled = true;
+      throw error;
+    }
+
     loading.value = true;
 
     return new Promise((resolve, reject) => {
@@ -571,6 +587,22 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     });
   };
 
+  /**
+   * 页面加载后主动初始化并渲染验证组件（inline 形态提前展示，可提前完成挑战）。
+   * 仅启用且为 inline 时执行；初始化失败静默忽略，不阻断页面。
+   */
+  const prepare = async () => {
+    if (destroyed) {
+      return;
+    }
+
+    try {
+      await initCaptcha();
+    } catch {
+      // 加载失败不打扰用户，点击提交时仍会走 verify() 的完整错误提示
+    }
+  };
+
   const cleanup = () => {
     destroyed = true;
     // 组件销毁后旧 token 即失效，不能留到下次使用
@@ -590,5 +622,6 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
   return {
     loading,
     verify,
+    prepare,
   };
 }
