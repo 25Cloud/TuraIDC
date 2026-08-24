@@ -65,12 +65,16 @@
               active: isCategoryRowActive(item),
               'active-parent': isCategoryRowParentOfSelected(item),
               disabled: categorySortLoadingId,
+              'drag-over': categoryDragState?.level === level && categoryDragState?.scopeKey === categoryScopeKey(item),
             }"
             :style="{ '--category-level': level }"
             role="treeitem"
             :aria-level="level + 1"
             :aria-expanded="isCategoryExpanded(item) ? 'true' : 'false'"
             :aria-selected="isCategoryRowActive(item) ? 'true' : 'false'"
+            @dragover.prevent="handleCategoryDragOver(item, $event)"
+            @drop.prevent="handleCategoryDrop(item, $event)"
+            @contextmenu.prevent.stop="openCategoryMenu(item)"
           >
             <button
               type="button"
@@ -82,7 +86,19 @@
               "
               @click.stop="toggleCategoryExpanded(item)"
             />
-            <button type="button" class="category-drag" aria-label="排序占位" disabled>::</button>
+            <button
+              type="button"
+              class="category-drag"
+              :class="{ 'is-dragging': categoryDragState?.key === categoryIdKey(item) }"
+              draggable="true"
+              :disabled="categorySortLoadingId ? true : undefined"
+              :aria-label="`拖动排序：${categoryDisplayName(item)}`"
+              @dragstart="handleCategoryDragStart(item, $event)"
+              @dragend="handleCategoryDragEnd"
+              @click.stop
+            >
+              ::
+            </button>
             <button type="button" class="category-tree-main" @click="handleCategorySelect(item)">
               <span class="category-title-line">
                 <span class="category-level-tag" :class="`category-level-${level}`">{{
@@ -106,6 +122,10 @@
               trigger="click"
               placement="bottom-right"
               :options="categoryMenuOptions(item)"
+              :popup-props="{
+                visible: categoryMenuKey === categoryIdKey(item),
+                onVisibleChange: (visible: boolean) => handleCategoryMenuVisible(visible, item),
+              }"
               @click="handleCategoryMenuClick(item, $event as DropdownOption)"
             >
               <t-button
@@ -178,10 +198,18 @@
           <span>已选 {{ selectedProductKeys.length }} 个商品</span>
           <t-space size="small">
             <t-button variant="outline" @click="openBatchCategoryDialog"> 批量归类 </t-button>
+            <t-button variant="outline" @click="openProductBatchDialog('console-template', selectedProductRows())">
+              控制台类型
+            </t-button>
+            <t-button variant="outline" @click="openProductBatchDialog('discount-group', selectedProductRows())">
+              折扣分组
+            </t-button>
             <t-button variant="outline" :loading="splitProductPreviewLoading" @click="openSplitProductDialog">
               拆分商品
             </t-button>
             <t-button variant="outline" @click="openProvisionHostnameDialog"> 批量主机名 </t-button>
+            <t-button variant="outline" theme="danger" @click="handleBatchDeleteProducts"> 删除 </t-button>
+            <t-button variant="outline" theme="danger" @click="handleBatchForceDeleteProducts"> 强制删除 </t-button>
             <t-button variant="text" @click="clearProductSelection">清空选择</t-button>
           </t-space>
         </div>
@@ -213,9 +241,15 @@
             </template>
             <template #name="{ row }">
               <div class="product-name">
-                <strong :class="{ 'is-hidden': !isProductVisible(row) }">
+                <button
+                  type="button"
+                  class="product-name-link"
+                  :class="{ 'is-hidden': !isProductVisible(row) }"
+                  :title="productSpecDisplayName(row)"
+                  @click.stop="goProductEditPage(row)"
+                >
                   {{ productSpecDisplayName(row) }}
-                </strong>
+                </button>
                 <span>{{ productSubtitle(row) }}</span>
               </div>
             </template>
@@ -237,20 +271,27 @@
               {{ formatCount(row.active_services_count ?? row.services_count) }}
             </template>
             <template #operation="{ row }">
-              <t-dropdown
-                trigger="click"
-                placement="bottom-right"
-                :options="productRowMenuOptions(row)"
-                @click="handleProductRowMenuClick(row, $event as DropdownOption)"
-              >
-                <t-button
-                  size="small"
-                  shape="square"
-                  variant="text"
-                  :aria-label="`更多操作：${row.display_name || row.name || row.id}`"
-                  >...</t-button
+              <div class="product-row-actions" @contextmenu.prevent.stop="openProductRowMenu(row.id)">
+                <t-dropdown
+                  trigger="click"
+                  placement="bottom-right"
+                  :options="productRowMenuOptions(row)"
+                  :popup-props="{
+                    overlayClassName: 'product-row-dropdown',
+                    visible: productRowMenuKey === row.id,
+                    onVisibleChange: (visible: boolean) => handleProductRowMenuVisible(visible, row.id),
+                  }"
+                  @click="handleProductRowMenuClick(row, $event as DropdownOption)"
                 >
-              </t-dropdown>
+                  <t-button
+                    size="small"
+                    shape="square"
+                    variant="text"
+                    :aria-label="`更多操作：${row.display_name || row.name || row.id}`"
+                    >...</t-button
+                  >
+                </t-dropdown>
+              </div>
             </template>
           </t-table>
         </div>
@@ -344,12 +385,17 @@
                 active: isCategoryRowActive(item),
                 'active-parent': isCategoryRowParentOfSelected(item),
                 disabled: categorySortLoadingId,
+                'drag-over':
+                  categoryDragState?.level === level && categoryDragState?.scopeKey === categoryScopeKey(item),
               }"
               :style="{ '--category-level': level }"
               role="treeitem"
               :aria-level="level + 1"
               :aria-expanded="isCategoryExpanded(item) ? 'true' : 'false'"
               :aria-selected="isCategoryRowActive(item) ? 'true' : 'false'"
+              @dragover.prevent="handleCategoryDragOver(item, $event)"
+              @drop.prevent="handleCategoryDrop(item, $event)"
+              @contextmenu.prevent.stop="openCategoryMenu(item)"
             >
               <button
                 type="button"
@@ -361,7 +407,19 @@
                 "
                 @click.stop="toggleCategoryExpanded(item)"
               />
-              <button type="button" class="category-drag" aria-label="排序占位" disabled>::</button>
+              <button
+                type="button"
+                class="category-drag"
+                :class="{ 'is-dragging': categoryDragState?.key === categoryIdKey(item) }"
+                draggable="true"
+                :disabled="categorySortLoadingId ? true : undefined"
+                :aria-label="`拖动排序：${categoryDisplayName(item)}`"
+                @dragstart="handleCategoryDragStart(item, $event)"
+                @dragend="handleCategoryDragEnd"
+                @click.stop
+              >
+                ::
+              </button>
               <button type="button" class="category-tree-main" @click="handleMobileCategorySelect(item)">
                 <span class="category-title-line">
                   <span class="category-level-tag" :class="`category-level-${level}`">{{
@@ -385,6 +443,10 @@
                 trigger="click"
                 placement="bottom-right"
                 :options="categoryMenuOptions(item)"
+                :popup-props="{
+                  visible: categoryMenuKey === categoryIdKey(item),
+                  onVisibleChange: (visible: boolean) => handleCategoryMenuVisible(visible, item),
+                }"
                 @click="handleCategoryMenuClick(item, $event as DropdownOption)"
               >
                 <t-button
@@ -725,6 +787,46 @@
               :key="productGroupOptionKey(item)"
               :label="productGroupOptionLabel(item)"
               :value="productGroupOptionKey(item)"
+            />
+          </t-select>
+        </t-form-item>
+      </t-form>
+    </t-dialog>
+
+    <t-dialog
+      v-model:visible="productBatchDialogVisible"
+      :header="productBatchDialogTitle"
+      width="520px"
+      :confirm-btn="{ content: '确认修改', loading: productBatchSubmitting }"
+      @confirm="submitProductBatch"
+    >
+      <div class="batch-dialog-summary">
+        {{
+          productBatchTargetGroup
+            ? `将修改「${productBatchTargetGroup.name}」下全部商品的设置。`
+            : `将修改已选 ${productBatchTargetProductIds.length} 个商品的设置。`
+        }}
+      </div>
+      <t-form label-width="110px">
+        <t-form-item v-if="productBatchDialogKind === 'console-template'" label="控制台类型">
+          <t-radio-group v-model="consoleTemplateValue" variant="default-filled">
+            <t-radio-button value="compute">通用计算型</t-radio-button>
+            <t-radio-button value="port_mapping">端口映射型</t-radio-button>
+          </t-radio-group>
+          <p class="batch-dialog-tip">端口映射型控制台适用于端口转发类业务，通用计算型为默认控制台。</p>
+        </t-form-item>
+        <t-form-item v-else label="折扣分组">
+          <t-select
+            v-model="discountGroupValue"
+            clearable
+            :loading="discountGroupLoading"
+            placeholder="选择代理折扣分组，清空则不分组"
+          >
+            <t-option
+              v-for="item in discountGroupOptions"
+              :key="item.id"
+              :value="item.id"
+              :label="`${item.name || item.code || item.id}${item.min_discount_rate ? `（最低 ${item.min_discount_rate}%）` : ''}`"
             />
           </t-select>
         </t-form-item>
@@ -1085,6 +1187,8 @@ import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { productDiscountGroupsApi } from '@/api/admin/agentDiscount';
+import type { ProductDiscountGroupRecord } from '@/api/admin/types';
 import type { ProductCategoryRecord, ProductRecord, ProductTypeRecord, SpecHighlightDimension } from '@/api/product';
 import { productApi } from '@/api/product';
 import type { ProviderTypeRecord, SupplierFormField, SupplierRecord } from '@/api/supplier';
@@ -1286,6 +1390,19 @@ const creatingThirdCategoryParent = ref<ProductCategoryRecord | null>(null);
 const categoryFormRef = ref();
 const categorySubmitting = ref(false);
 const categorySortLoadingId = ref('');
+const productRowMenuKey = ref<string | number | null>(null);
+const categoryMenuKey = ref<string | null>(null);
+const categoryDragState = ref<{ key: string; level: number; scopeKey: string } | null>(null);
+const productBatchDialogVisible = ref(false);
+const productBatchDialogKind = ref<'console-template' | 'discount-group'>('console-template');
+const productBatchDialogTitle = ref('');
+const productBatchSubmitting = ref(false);
+const productBatchTargetProductIds = ref<number[]>([]);
+const productBatchTargetGroup = ref<{ id: number; level: number; name: string } | null>(null);
+const consoleTemplateValue = ref('compute');
+const discountGroupValue = ref<number | string>('');
+const discountGroupOptions = ref<ProductDiscountGroupRecord[]>([]);
+const discountGroupLoading = ref(false);
 let categoryRequestVersion = 0;
 let productRequestVersion = 0;
 interface CategoryFormData {
@@ -1579,6 +1696,8 @@ function productRowMenuOptions(row: ProductRecord): DropdownOption[] {
   return [
     { content: '编辑', value: 'edit', theme: 'default' },
     { content: '规格描述栏', value: 'spec-highlight', theme: 'default' },
+    { content: '控制台类型', value: 'console-template', theme: 'default' },
+    { content: '代理折扣分组', value: 'discount-group', theme: 'default' },
     {
       content: Number(row.status) === 1 ? '隐藏' : '显示',
       value: 'toggle',
@@ -1593,10 +1712,16 @@ function handleProductRowMenuClick(row: ProductRecord, dropdownItem: DropdownOpt
   const value = String(dropdownItem.value || '');
   switch (value) {
     case 'edit':
-      router.push({ name: 'AdminProductEdit', params: { id: row.id } });
+      goProductEditPage(row);
       break;
     case 'spec-highlight':
       openSpecHighlightDialog(row);
+      break;
+    case 'console-template':
+      openProductBatchDialog('console-template', [row]);
+      break;
+    case 'discount-group':
+      openProductBatchDialog('discount-group', [row]);
       break;
     case 'toggle':
       handleToggleProduct(row);
@@ -1925,11 +2050,13 @@ function categoryMenuOptions(row: ProductCategoryRecord): DropdownOption[] {
   if (productGroupLevel(row) === 2) {
     options.push({ content: '新增三级分类', value: 'create-child', divider: true });
   }
-  options.push({ content: '编辑', value: 'edit', divider: productGroupLevel(row) !== 2 }, {
-    content: '删除',
-    value: 'delete',
-    theme: 'error',
-  } as DropdownOption);
+  options.push({ content: '批量设置折扣分组', value: 'batch-discount', divider: true });
+  options.push({ content: '批量设置控制台类型', value: 'batch-console' });
+  options.push(
+    { content: '编辑', value: 'edit', divider: true },
+    { content: '删除', value: 'delete', theme: 'error' } as DropdownOption,
+    { content: '强制删除', value: 'force-delete', theme: 'error' } as DropdownOption,
+  );
   return options;
 }
 
@@ -1949,6 +2076,14 @@ function handleCategoryMenuClick(row: ProductCategoryRecord, option: DropdownOpt
   }
   if (action === 'delete') {
     void handleDeleteCategory(row);
+    return;
+  }
+  if (action === 'force-delete') {
+    void handleForceDeleteCategory(row);
+    return;
+  }
+  if (action === 'batch-discount' || action === 'batch-console') {
+    openProductBatchDialog(action === 'batch-console' ? 'console-template' : 'discount-group', [], row);
   }
 }
 
@@ -2184,21 +2319,25 @@ async function handleMoveCategory(row: ProductCategoryRecord, direction: 'up' | 
   const nextSiblings = [...siblings];
   const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
   [nextSiblings[currentIndex], nextSiblings[targetIndex]] = [nextSiblings[targetIndex], nextSiblings[currentIndex]];
+  await commitCategoryReorder(row, nextSiblings);
+}
+
+async function commitCategoryReorder(row: ProductCategoryRecord, orderedSiblings: ProductCategoryRecord[]) {
   const level = productGroupLevel(row);
   const payload: Record<string, unknown> = {
     effective_product_group_level: level,
   };
   if (level === 1) {
-    payload.first_product_group_ids = nextSiblings.map(productGroupEffectiveId);
+    payload.first_product_group_ids = orderedSiblings.map(productGroupEffectiveId);
   } else if (level === 2) {
     payload.first_product_group_id = row.first_product_group_id;
-    payload.second_product_group_ids = nextSiblings.map(productGroupEffectiveId);
+    payload.second_product_group_ids = orderedSiblings.map(productGroupEffectiveId);
   } else {
     payload.second_product_group_id = row.second_product_group_id;
-    payload.third_product_group_ids = nextSiblings.map(productGroupEffectiveId);
+    payload.third_product_group_ids = orderedSiblings.map(productGroupEffectiveId);
   }
 
-  categorySortLoadingId.value = `${row.id}:${direction}`;
+  categorySortLoadingId.value = `${row.id}:reorder`;
   try {
     await productApi.reorderCategory(payload);
     MessagePlugin.success('分类排序已更新');
@@ -2208,6 +2347,56 @@ async function handleMoveCategory(row: ProductCategoryRecord, direction: 'up' | 
   } finally {
     categorySortLoadingId.value = '';
   }
+}
+
+function handleCategoryDragStart(row: ProductCategoryRecord, event: DragEvent) {
+  if (categoryKeyword.value.trim() || categorySortLoadingId.value) {
+    event.preventDefault();
+    return;
+  }
+  categoryDragState.value = {
+    key: categoryIdKey(row),
+    level: productGroupLevel(row),
+    scopeKey: categoryScopeKey(row),
+  };
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(row.id));
+  }
+}
+
+function handleCategoryDragOver(targetRow: ProductCategoryRecord, event: DragEvent) {
+  const state = categoryDragState.value;
+  if (!state) return;
+  if (productGroupLevel(targetRow) !== state.level || categoryScopeKey(targetRow) !== state.scopeKey) return;
+  if (categoryIdKey(targetRow) === state.key) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+}
+
+function handleCategoryDrop(targetRow: ProductCategoryRecord, event: DragEvent) {
+  event.preventDefault();
+  const state = categoryDragState.value;
+  categoryDragState.value = null;
+  if (!state) return;
+  if (productGroupLevel(targetRow) !== state.level || categoryScopeKey(targetRow) !== state.scopeKey) return;
+  if (categoryIdKey(targetRow) === state.key) return;
+
+  const siblings = getCategorySiblings(targetRow);
+  const fromIndex = siblings.findIndex((item) => categoryIdKey(item) === state.key);
+  const toIndex = siblings.findIndex((item) => categoryIdKey(item) === categoryIdKey(targetRow));
+  if (fromIndex < 0 || toIndex < 0) return;
+
+  const nextSiblings = [...siblings];
+  const [moved] = nextSiblings.splice(fromIndex, 1);
+  nextSiblings.splice(toIndex, 0, moved);
+  if (nextSiblings.map(categoryIdKey).join(',') === siblings.map(categoryIdKey).join(',')) return;
+
+  void commitCategoryReorder(targetRow, nextSiblings);
+}
+
+function handleCategoryDragEnd() {
+  categoryDragState.value = null;
 }
 
 function shouldAutoRevealDeletedProducts(row: ProductCategoryRecord | null) {
@@ -2319,6 +2508,200 @@ function selectedProductRows() {
 
 function selectedProductIdsFromKeys(keys: Array<string | number>) {
   return keys.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0);
+}
+
+function goProductEditPage(row: ProductRecord) {
+  router.push({ name: 'AdminProductEdit', params: { id: row.id } });
+}
+
+function openProductRowMenu(id: number | string) {
+  productRowMenuKey.value = id;
+}
+
+function handleProductRowMenuVisible(visible: boolean, id: number | string) {
+  productRowMenuKey.value = visible ? id : null;
+}
+
+function openCategoryMenu(item: ProductCategoryRecord) {
+  categoryMenuKey.value = categoryIdKey(item);
+}
+
+function handleCategoryMenuVisible(visible: boolean, item: ProductCategoryRecord) {
+  categoryMenuKey.value = visible ? categoryIdKey(item) : null;
+}
+
+function openProductBatchDialog(
+  kind: 'console-template' | 'discount-group',
+  targetRows: ProductRecord[],
+  group?: ProductCategoryRecord,
+) {
+  const targetRowsIds = targetRows.map((row) => Number(row.id)).filter((id) => Number.isFinite(id) && id > 0);
+  if (!group && !targetRowsIds.length) {
+    MessagePlugin.warning('请先选择商品');
+    return;
+  }
+
+  productBatchDialogKind.value = kind;
+  productBatchDialogTitle.value = kind === 'console-template' ? '设置控制台类型' : '设置代理折扣分组';
+  productBatchTargetProductIds.value = targetRowsIds;
+  productBatchTargetGroup.value = group
+    ? { id: productGroupEffectiveId(group), level: productGroupLevel(group), name: categoryDisplayName(group) }
+    : null;
+  if (kind === 'console-template') {
+    consoleTemplateValue.value = 'compute';
+  } else {
+    discountGroupValue.value = '';
+    void loadDiscountGroups();
+  }
+  productBatchDialogVisible.value = true;
+}
+
+async function loadDiscountGroups() {
+  if (discountGroupOptions.value.length || discountGroupLoading.value) return;
+  discountGroupLoading.value = true;
+  try {
+    discountGroupOptions.value = await productDiscountGroupsApi.list();
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '加载折扣分组失败'));
+  } finally {
+    discountGroupLoading.value = false;
+  }
+}
+
+async function submitProductBatch() {
+  const payload: Record<string, unknown> = { product_ids: productBatchTargetProductIds.value };
+  if (productBatchDialogKind.value === 'console-template') {
+    payload.console_template = consoleTemplateValue.value;
+  } else {
+    payload.product_discount_group_id =
+      discountGroupValue.value === '' || discountGroupValue.value === null ? null : Number(discountGroupValue.value);
+  }
+
+  productBatchSubmitting.value = true;
+  try {
+    const response = productBatchTargetGroup.value
+      ? await productApi.batchUpdateGroupProducts(productBatchTargetGroup.value.id, {
+          effective_product_group_level: productBatchTargetGroup.value.level,
+          ...payload,
+        })
+      : await productApi.batchUpdateProducts(payload);
+    const record = toPlainRecord(response);
+    const updatedCount = Number(record.updated_count ?? 0);
+    const targetLabel = productBatchTargetGroup.value
+      ? productBatchTargetGroup.value.name
+      : `${productBatchTargetProductIds.value.length} 个商品`;
+    MessagePlugin.success(
+      updatedCount > 0 ? `已更新 ${updatedCount} 个商品（${targetLabel}）` : `所选商品无需变更（${targetLabel}）`,
+    );
+    productBatchDialogVisible.value = false;
+    await loadProducts();
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '批量更新失败'));
+  } finally {
+    productBatchSubmitting.value = false;
+  }
+}
+
+function handleBatchDeleteProducts() {
+  const rows = selectedProductRows();
+  if (!rows.length) {
+    MessagePlugin.warning('请先选择商品');
+    return;
+  }
+  const dialog = DialogPlugin.confirm({
+    header: '批量删除商品',
+    body: `确认删除选中的 ${rows.length} 个商品吗？存在服务实例的商品将自动跳过。`,
+    theme: 'warning',
+    confirmBtn: '确认删除',
+    cancelBtn: '取消',
+    async onConfirm() {
+      try {
+        const response = await productApi.batchDeleteProducts({
+          product_ids: selectedProductIdsFromKeys(selectedProductKeys.value),
+        });
+        const record = toPlainRecord(response);
+        const deletedCount = Number(record.deleted_count ?? 0);
+        const failed = Array.isArray(record.failed) ? record.failed : [];
+        MessagePlugin.success(
+          deletedCount > 0
+            ? `已删除 ${deletedCount} 个商品${failed.length ? `，跳过 ${failed.length} 个（存在实例）` : ''}`
+            : `无商品可删除${failed.length ? `，${failed.length} 个存在实例` : ''}`,
+        );
+        dialog.hide();
+        selectedProductKeys.value = [];
+        await loadProducts();
+      } catch (error) {
+        MessagePlugin.error(errorMessage(error, '批量删除失败'));
+      }
+    },
+  });
+}
+
+function handleBatchForceDeleteProducts() {
+  const rows = selectedProductRows();
+  if (!rows.length) {
+    MessagePlugin.warning('请先选择商品');
+    return;
+  }
+  const dialog = DialogPlugin.confirm({
+    header: '批量强制删除商品',
+    body: `确认彻底删除选中的 ${rows.length} 个商品吗？其下服务实例将同步删除，该操作不可恢复。`,
+    theme: 'danger',
+    confirmBtn: '确认强制删除',
+    cancelBtn: '取消',
+    async onConfirm() {
+      try {
+        const response = await productApi.batchForceDeleteProducts({
+          product_ids: selectedProductIdsFromKeys(selectedProductKeys.value),
+        });
+        const record = toPlainRecord(response);
+        const deletedCount = Number(record.deleted_count ?? 0);
+        const deletedServices = Number(record.deleted_services ?? 0);
+        MessagePlugin.success(
+          deletedCount > 0
+            ? `已强制删除 ${deletedCount} 个商品${deletedServices > 0 ? `，同步删除 ${deletedServices} 个实例` : ''}`
+            : '未删除任何商品',
+        );
+        dialog.hide();
+        selectedProductKeys.value = [];
+        await loadProducts();
+      } catch (error) {
+        MessagePlugin.error(errorMessage(error, '批量强制删除失败'));
+      }
+    },
+  });
+}
+
+function handleForceDeleteCategory(row: ProductCategoryRecord) {
+  const level = productGroupLevel(row);
+  const dialog = DialogPlugin.confirm({
+    header: '强制删除分类',
+    body: `确认强制删除「${categoryDisplayName(row)}」吗？其下所有商品与相关服务实例将同步删除，该操作不可恢复。`,
+    theme: 'danger',
+    confirmBtn: '确认强制删除',
+    cancelBtn: '取消',
+    async onConfirm() {
+      categorySubmitting.value = true;
+      try {
+        const response = await productApi.forceDeleteCategory(productGroupEffectiveId(row), {
+          effective_product_group_level: level,
+        });
+        const record = toPlainRecord(response);
+        MessagePlugin.success(
+          `已强制删除，同步删除 ${record.deleted_products || 0} 个商品、${record.deleted_services || 0} 个实例`,
+        );
+        dialog.hide();
+        if (catalogFilters.product_group_key === categoryIdKey(row)) {
+          catalogFilters.product_group_key = '';
+        }
+        await reloadCategoryScopedProducts();
+      } catch (error) {
+        MessagePlugin.error(errorMessage(error, '强制删除分类失败'));
+      } finally {
+        categorySubmitting.value = false;
+      }
+    },
+  });
 }
 
 function openBatchCategoryDialog() {
@@ -3278,10 +3661,11 @@ function formatSplitAction(action: string) {
 // --- Init ---
 async function loadCatalog() {
   await loadProductTypes();
-  await reloadCategoryScopedProducts();
+  await Promise.all([loadCategories(), loadProducts()]);
 }
 
 onMounted(() => {
   void loadCatalog();
+  void loadDiscountGroups();
 });
 </script>

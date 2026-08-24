@@ -23,6 +23,7 @@ use App\Services\System\SettingService;
 use App\Support\ProductProvisionHostname;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -68,11 +69,8 @@ class ProductAdminService
                 ])
                 ->with([
                     'productGroup.secondProductGroup.firstProductGroup',
-                    'upstreamBindings.supplierPluginBinding',
                 ])
                 ->withCount([
-                    'orders',
-                    'services as total_services_count',
                     'services as services_count',
                 ]),
             $filters
@@ -468,6 +466,158 @@ class ProductAdminService
         $this->forgetSiteCatalogCache();
 
         return $this->buildBatchCategoryResult($productIds->count(), $updatedCount, $targetHierarchy);
+    }
+
+    /**
+     * 批量更新商品字段（控制台类型 / 代理商品折扣分组）。
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function batchUpdateProducts(array $data): array
+    {
+        $productIds = $this->normalizeProductIdList($data);
+
+        $update = $this->buildProductBatchUpdatePayload($data);
+        throw_if($update === [], new BusinessException('请选择要更新的字段'));
+
+        $updatedCount = DB::transaction(function () use ($productIds, $update): int {
+            return Product::query()
+                ->whereIn('id', $productIds->all())
+                ->update([...$update, 'updated_at' => now()]);
+        });
+
+        $this->forgetSiteCatalogCache();
+
+        return [
+            'requested_count' => $productIds->count(),
+            'updated_count' => $updatedCount,
+            'fields' => array_keys($update),
+        ];
+    }
+
+    /**
+     * 批量删除商品：仅删除无服务实例的商品，存在实例的跳过并返回原因。
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function batchDeleteProducts(array $data): array
+    {
+        $productIds = $this->normalizeProductIdList($data);
+
+        $deletedCount = 0;
+        $failed = [];
+
+        DB::transaction(function () use ($productIds, &$deletedCount, &$failed): void {
+            Product::query()
+                ->whereIn('id', $productIds->all())
+                ->get()
+                ->each(function (Product $product) use (&$deletedCount, &$failed): void {
+                    if ($product->services()->count() > 0) {
+                        $failed[] = [
+                            'id' => (int) $product->id,
+                            'name' => (string) ($product->custom_display_name ?? $product->name ?? ''),
+                            'reason' => '存在服务实例',
+                        ];
+
+                        return;
+                    }
+
+                    $product->delete();
+                    $deletedCount++;
+                });
+        });
+
+        if ($deletedCount > 0) {
+            $this->forgetSiteCatalogCache();
+        }
+
+        return [
+            'requested_count' => $productIds->count(),
+            'deleted_count' => $deletedCount,
+            'failed' => $failed,
+        ];
+    }
+
+    /**
+     * 批量强制删除商品：同步软删除相关服务实例，物理删除商品与上游绑定。
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function batchForceDeleteProducts(array $data): array
+    {
+        $productIds = $this->normalizeProductIdList($data);
+
+        $result = DB::transaction(function () use ($productIds): array {
+            $products = Product::query()
+                ->withTrashed()
+                ->whereIn('id', $productIds->all())
+                ->get();
+
+            $deletedCount = 0;
+            $deletedServices = 0;
+            foreach ($products as $product) {
+                $serviceIds = Service::query()
+                    ->where('product_id', (int) $product->id)
+                    ->pluck('id')
+                    ->map(fn ($id): int => (int) $id)
+                    ->filter(fn (int $id): bool => $id > 0)
+                    ->values();
+
+                if ($serviceIds->isNotEmpty()) {
+                    if (Schema::hasTable('orders')) {
+                        DB::table('orders')->whereIn('service_id', $serviceIds->all())->update(['service_id' => null]);
+                    }
+                    if (Schema::hasTable('tickets')) {
+                        DB::table('tickets')->whereIn('service_id', $serviceIds->all())->update(['service_id' => null]);
+                    }
+                    if (Schema::hasTable('service_upstream_bindings')) {
+                        DB::table('service_upstream_bindings')->whereIn('service_id', $serviceIds->all())->delete();
+                    }
+                    Service::query()->whereIn('id', $serviceIds->all())->delete();
+                    $deletedServices += $serviceIds->count();
+                }
+
+                if (Schema::hasTable('product_upstream_bindings')) {
+                    DB::table('product_upstream_bindings')
+                        ->where('product_id', (int) $product->id)
+                        ->delete();
+                }
+
+                $product->forceDelete();
+                $deletedCount++;
+            }
+
+            return [
+                'requested_count' => $productIds->count(),
+                'deleted_count' => $deletedCount,
+                'deleted_services' => $deletedServices,
+            ];
+        });
+
+        if ($result['deleted_count'] > 0) {
+            $this->forgetSiteCatalogCache();
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function normalizeProductIdList(array $data): Collection
+    {
+        $productIds = collect((array) ($data['product_ids'] ?? []))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values();
+
+        throw_if($productIds->isEmpty(), new BusinessException('请选择商品'));
+
+        return $productIds;
     }
 
     public function splitProducts(array $data): array

@@ -457,6 +457,12 @@ export const productApi = {
   splitProducts: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/products/splits', data }),
   batchUpdateCategory: (data: Record<string, unknown>) =>
     request.post({ url: '/v2/admin/products/category-batches', data }),
+  batchUpdateProducts: (data: Record<string, unknown>) =>
+    request.post({ url: '/v2/admin/products/batch-update', data }),
+  batchDeleteProducts: (data: Record<string, unknown>) =>
+    request.post({ url: '/v2/admin/products/batch-delete', data }),
+  batchForceDeleteProducts: (data: Record<string, unknown>) =>
+    request.post({ url: '/v2/admin/products/batch-force-delete', data }),
   batchUpdateProvisionHostname: (data: Record<string, unknown>) =>
     request.post({ url: '/v2/admin/products/provision-hostname-batches', data }),
   pullTrafficPackages: (data: Record<string, unknown>) =>
@@ -498,5 +504,9 @@ export const productApi = {
     request.put({ url: `/v2/admin/product-groups/${id}`, data }),
   deleteCategory: (id: number | string, params?: Record<string, unknown>) =>
     request.delete({ url: `/v2/admin/product-groups/${id}`, params }),
+  forceDeleteCategory: (id: number | string, params?: Record<string, unknown>) =>
+    request.delete({ url: `/v2/admin/product-groups/${id}/force`, params }),
+  batchUpdateGroupProducts: (id: number | string, data: Record<string, unknown>) =>
+    request.post({ url: `/v2/admin/product-groups/${id}/batch-update-products`, data }),
   reorderCategory: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/product-groups/reorders', data }),
 };

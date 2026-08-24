@@ -175,4 +175,31 @@ trait HandlesProductCatalogHelpers
 
         return (int) $value;
     }
+
+    /**
+     * 构建商品批量更新字段（控制台类型 / 代理商品折扣分组）。
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function buildProductBatchUpdatePayload(array $data): array
+    {
+        $update = [];
+
+        if (array_key_exists('console_template', $data) && $data['console_template'] !== null && $data['console_template'] !== '') {
+            $template = strtolower(trim((string) $data['console_template']));
+            $update['console_template'] = $template === Product::CONSOLE_TEMPLATE_PORT_MAPPING
+                ? Product::CONSOLE_TEMPLATE_PORT_MAPPING
+                : Product::CONSOLE_TEMPLATE_COMPUTE;
+        }
+
+        if (array_key_exists('product_discount_group_id', $data)) {
+            $value = $data['product_discount_group_id'];
+            $update['product_discount_group_id'] = ($value === null || $value === '' || (int) $value <= 0)
+                ? null
+                : (int) $value;
+        }
+
+        return $update;
+    }
 }

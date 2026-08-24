@@ -29,12 +29,30 @@
               visible: activeTabPath === routeItem.path,
             }"
           >
-            <template v-if="!routeItem.isHome">
-              {{ renderTitle(routeItem.title) }}
-            </template>
-            <t-icon v-else name="home" />
+            <div
+              class="route-tab-label"
+              :class="{ 'is-home': routeItem.isHome }"
+              @auxclick.prevent.stop="handleTabAuxClick(routeItem, index, $event)"
+              @contextmenu.prevent.stop="openTabMenu(routeItem.path)"
+            >
+              <t-icon v-if="routeItem.isHome" name="home" />
+              <span v-else class="route-tab-title">{{ renderTitle(routeItem.title) }}</span>
+              <button
+                v-if="!routeItem.isHome"
+                type="button"
+                class="route-tab-more"
+                :aria-label="`标签操作：${renderTitle(routeItem.title)}`"
+                @click.stop="openTabMenu(routeItem.path)"
+              >
+                <t-icon name="more" />
+              </button>
+            </div>
             <template #dropdown>
               <t-dropdown-menu>
+                <t-dropdown-item @click="() => handleCloseCurrent(routeItem, index)">
+                  <t-icon name="close" />
+                  {{ t('layout.tagTabs.close') }}
+                </t-dropdown-item>
                 <t-dropdown-item @click="() => handleRefresh(routeItem, index)">
                   <t-icon name="refresh" />
                   {{ t('layout.tagTabs.refresh') }}
@@ -158,8 +176,25 @@ const handleOperationEffect = (type: 'other' | 'ahead' | 'behind', routeIndex: n
   activeTabPath.value = null;
 };
 const handleTabMenuClick = (visible: boolean, ctx: PopupVisibleChangeContext, path: string) => {
-  if (ctx.trigger === 'document') activeTabPath.value = null;
-  if (visible) activeTabPath.value = path;
+  if (!visible) {
+    activeTabPath.value = null;
+    return;
+  }
+  activeTabPath.value = path;
+};
+
+const openTabMenu = (path: string) => {
+  activeTabPath.value = path;
+};
+
+const handleTabAuxClick = (routeItem: TRouterInfo, index: number, event: MouseEvent) => {
+  if (event.button !== 1) return;
+  handleRemove({ value: routeItem.path, index, e: event });
+};
+
+const handleCloseCurrent = (routeItem: TRouterInfo, index: number) => {
+  activeTabPath.value = null;
+  handleRemove({ value: routeItem.path, index, e: new MouseEvent('click') });
 };
 
 const handleDragend = (options: { currentIndex: number; targetIndex: number }) => {

@@ -713,6 +713,37 @@
   }
 }
 
+.route-tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.route-tab-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: var(--td-radius-small, 4px);
+  padding: 0;
+  background: transparent;
+  color: var(--td-text-color-placeholder);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.t-tabs__nav-item:hover .route-tab-more,
+.route-tab-more:hover,
+.route-tab-more:focus-visible {
+  opacity: 1;
+  background: var(--td-bg-color-component);
+}
+
 .logo-container {
   cursor: pointer;
   display: inline-flex;

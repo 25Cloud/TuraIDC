@@ -66,6 +66,7 @@
       "viewAll": "View All"
     },
     "tagTabs": {
+      "close": "close",
       "closeOther": "close other",
       "closeLeft": "close left",
       "closeRight": "close right",

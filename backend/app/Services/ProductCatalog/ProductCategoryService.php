@@ -9,9 +9,11 @@ use App\Exceptions\BusinessException;
 use App\Models\FirstProductGroup;
 use App\Models\Product;
 use App\Models\SecondProductGroup;
+use App\Models\Service;
 use App\Models\ThirdProductGroup;
 use App\Services\ProductCatalog\Concerns\HandlesProductCatalogHelpers;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -228,6 +230,222 @@ class ProductCategoryService
         });
 
         $this->forgetSiteCatalogCache();
+    }
+
+    /**
+     * 强制删除分类：级联删除其下全部商品（含软删除），并同步软删除相关服务实例，
+     * 自下而上物理删除三级/二级/一级分组。
+     *
+     * @return array{deleted_groups: int, deleted_products: int, deleted_services: int}
+     */
+    public function forceDeleteCategory(int $groupId, int $level): array
+    {
+        return DB::transaction(function () use ($groupId, $level): array {
+            [$productIds, $thirdGroupIds, $secondGroupIds, $firstGroupId] = $this->collectCascadeDeleteScope($groupId, $level);
+
+            $productIds = collect($productIds)
+                ->map(fn ($id): int => (int) $id)
+                ->filter(fn (int $id): bool => $id > 0)
+                ->unique()
+                ->values();
+
+            $deletedServices = 0;
+            if ($productIds->isNotEmpty()) {
+                $deletedServices = $this->forceDeleteServicesByProducts($productIds);
+
+                if (Schema::hasTable('product_upstream_bindings')) {
+                    DB::table('product_upstream_bindings')
+                        ->whereIn('product_id', $productIds->all())
+                        ->delete();
+                }
+
+                Product::query()
+                    ->withoutGlobalScopes()
+                    ->whereIn('products.id', $productIds->all())
+                    ->forceDelete();
+            }
+
+            $deletedGroups = $this->deleteGroupHierarchy($level, $firstGroupId, $secondGroupIds, $thirdGroupIds);
+
+            return [
+                'deleted_groups' => $deletedGroups,
+                'deleted_products' => $productIds->count(),
+                'deleted_services' => $deletedServices,
+            ];
+        });
+    }
+
+    /**
+     * 分组级批量更新：修改该分组（含下级分组）下所有商品的折扣分组 / 控制台类型。
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function batchUpdateGroupProducts(int $groupId, int $level, array $data): array
+    {
+        [, , $thirdGroupIds] = $this->collectCascadeDeleteScope($groupId, $level);
+
+        $query = Product::query();
+        if ($thirdGroupIds !== []) {
+            $query->whereIn('product_group_id', $thirdGroupIds);
+        } else {
+            $query->whereRaw('1 = 0');
+        }
+
+        $productIds = (clone $query)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->values();
+
+        $update = $this->buildProductBatchUpdatePayload($data);
+        if ($update === [] || $productIds->isEmpty()) {
+            return [
+                'requested_count' => $productIds->count(),
+                'updated_count' => 0,
+                'fields' => array_keys($update),
+            ];
+        }
+
+        $updatedCount = DB::transaction(fn (): int => (int) $query->update([...$update, 'updated_at' => now()]));
+
+        $this->forgetSiteCatalogCache();
+
+        return [
+            'requested_count' => $productIds->count(),
+            'updated_count' => $updatedCount,
+            'fields' => array_keys($update),
+        ];
+    }
+
+    /**
+     * 收集级联删除范围：商品 ID（含软删除）、三级分组 ID、二级分组 ID、一级分组 ID。
+     *
+     * @return array{0: list<int>, 1: list<int>, 2: list<int>, 3: int}
+     */
+    private function collectCascadeDeleteScope(int $groupId, int $level): array
+    {
+        if ($level === 1) {
+            $firstGroup = $this->findFirstGroup($groupId);
+            $secondGroupIds = $this->secondGroupIdsByFirst((int) $firstGroup->id);
+            $thirdGroupIds = $secondGroupIds === []
+                ? []
+                : ThirdProductGroup::query()
+                    ->whereIn('second_product_group_id', $secondGroupIds)
+                    ->pluck('id')
+                    ->map(fn ($id): int => (int) $id)
+                    ->values()
+                    ->all();
+
+            return [
+                $this->productIdsUnderThirdGroups($thirdGroupIds),
+                $thirdGroupIds,
+                $secondGroupIds,
+                (int) $firstGroup->id,
+            ];
+        }
+
+        if ($level === 2) {
+            $secondGroup = $this->findSecondGroup($groupId);
+            $thirdGroupIds = $this->thirdGroupIdsBySecond((int) $secondGroup->id);
+
+            return [
+                $this->productIdsUnderThirdGroups($thirdGroupIds),
+                $thirdGroupIds,
+                [(int) $secondGroup->id],
+                (int) ($secondGroup->first_product_group_id ?? 0),
+            ];
+        }
+
+        $thirdGroup = $this->findThirdGroup($groupId);
+        $productIds = Product::query()
+            ->withTrashed()
+            ->where('product_group_id', (int) $thirdGroup->id)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+
+        return [
+            $productIds,
+            [(int) $thirdGroup->id],
+            [],
+            (int) ($thirdGroup->second_product_group_id ?? 0),
+        ];
+    }
+
+    /**
+     * @param  list<int>  $thirdGroupIds
+     * @return list<int>
+     */
+    private function productIdsUnderThirdGroups(array $thirdGroupIds): array
+    {
+        if ($thirdGroupIds === []) {
+            return [];
+        }
+
+        return Product::query()
+            ->withTrashed()
+            ->whereIn('product_group_id', $thirdGroupIds)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * 软删除商品下的服务实例：解绑订单/工单引用，清理上游绑定后软删服务记录，
+     * 保留账单等财务记录。
+     */
+    private function forceDeleteServicesByProducts(Collection $productIds): int
+    {
+        $serviceIds = Service::query()
+            ->whereIn('product_id', $productIds->all())
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($serviceIds->isEmpty()) {
+            return 0;
+        }
+
+        if (Schema::hasTable('orders')) {
+            DB::table('orders')->whereIn('service_id', $serviceIds->all())->update(['service_id' => null]);
+        }
+
+        if (Schema::hasTable('tickets')) {
+            DB::table('tickets')->whereIn('service_id', $serviceIds->all())->update(['service_id' => null]);
+        }
+
+        if (Schema::hasTable('service_upstream_bindings')) {
+            DB::table('service_upstream_bindings')->whereIn('service_id', $serviceIds->all())->delete();
+        }
+
+        Service::query()->whereIn('id', $serviceIds->all())->delete();
+
+        return $serviceIds->count();
+    }
+
+    /**
+     * @param  list<int>  $secondGroupIds
+     * @param  list<int>  $thirdGroupIds
+     */
+    private function deleteGroupHierarchy(int $level, int $firstGroupId, array $secondGroupIds, array $thirdGroupIds): int
+    {
+        $deleted = 0;
+        if ($thirdGroupIds !== []) {
+            $deleted += ThirdProductGroup::query()->whereIn('id', $thirdGroupIds)->delete();
+        }
+        if ($secondGroupIds !== []) {
+            $deleted += SecondProductGroup::query()->whereIn('id', $secondGroupIds)->delete();
+        }
+        if ($level === 1 && $firstGroupId > 0) {
+            $deleted += FirstProductGroup::query()->whereKey($firstGroupId)->delete();
+        }
+
+        return $deleted;
     }
 
     /**

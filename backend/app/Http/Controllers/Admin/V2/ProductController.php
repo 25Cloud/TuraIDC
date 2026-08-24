@@ -10,6 +10,8 @@ use App\Http\Requests\Admin\V2\Product\ListProductOwnersRequest;
 use App\Http\Requests\Admin\V2\Product\ListProductsRequest;
 use App\Http\Requests\Admin\V2\Product\ProductBatchUpdateCategoryRequest;
 use App\Http\Requests\Admin\V2\Product\ProductBatchUpdateProvisionHostnameRequest;
+use App\Http\Requests\Admin\V2\Product\ProductBatchDeleteRequest;
+use App\Http\Requests\Admin\V2\Product\ProductBatchUpdateRequest;
 use App\Http\Requests\Admin\V2\Product\ProductPullTrafficPackageCatalogRequest;
 use App\Http\Requests\Admin\V2\Product\ProductReorderRequest;
 use App\Http\Requests\Admin\V2\Product\ProductSplitPreviewRequest;
@@ -141,6 +143,30 @@ class ProductController extends Controller
         return $this->success(
             AdminProductOperationPayloadResource::make($this->actions->batchUpdateCategory($request->validated()))->resolve(),
             '商品分类已批量更新'
+        );
+    }
+
+    public function batchUpdate(ProductBatchUpdateRequest $request): JsonResponse
+    {
+        return $this->success(
+            AdminProductOperationPayloadResource::make($this->actions->batchUpdateProducts($request->validated()))->resolve(),
+            '商品已批量更新'
+        );
+    }
+
+    public function batchDelete(ProductBatchDeleteRequest $request): JsonResponse
+    {
+        return $this->success(
+            AdminProductOperationPayloadResource::make($this->actions->batchDeleteProducts($request->validated()))->resolve(),
+            '商品已批量删除'
+        );
+    }
+
+    public function batchForceDelete(ProductBatchDeleteRequest $request): JsonResponse
+    {
+        return $this->success(
+            AdminProductOperationPayloadResource::make($this->actions->batchForceDeleteProducts($request->validated()))->resolve(),
+            '商品已批量彻底删除'
         );
     }
 

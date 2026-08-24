@@ -149,6 +149,33 @@ class AdminCatalogActionV2Service
 
     /**
      * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function batchUpdateProducts(array $payload): array
+    {
+        return $this->products->batchUpdateProducts($payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function batchDeleteProducts(array $payload): array
+    {
+        return $this->products->batchDeleteProducts($payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function batchForceDeleteProducts(array $payload): array
+    {
+        return $this->products->batchForceDeleteProducts($payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $context
      * @return array<string, mixed>
      */
