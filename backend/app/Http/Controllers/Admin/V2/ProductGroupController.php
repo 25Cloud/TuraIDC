@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin\V2;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\V2\ProductGroup\BatchUpdateGroupProductsRequest;
 use App\Http\Requests\Admin\V2\ProductGroup\DeleteProductGroupRequest;
 use App\Http\Requests\Admin\V2\ProductGroup\ListProductGroupChildrenRequest;
 use App\Http\Requests\Admin\V2\ProductGroup\ListProductGroupsRequest;
@@ -96,6 +97,31 @@ class ProductGroupController extends Controller
         $this->catalog->deleteCategory($group, (int) $payload['effective_product_group_level']);
 
         return $this->success(null, '分类已删除');
+    }
+
+    public function forceDelete(DeleteProductGroupRequest $request, int $group): JsonResponse
+    {
+        $payload = $request->validated();
+
+        $result = $this->catalog->forceDeleteCategory($group, (int) $payload['effective_product_group_level']);
+
+        return $this->success(
+            AdminProductOperationPayloadResource::make($result)->resolve(),
+            '分类及其商品已强制删除'
+        );
+    }
+
+    public function batchUpdateProducts(BatchUpdateGroupProductsRequest $request, int $group): JsonResponse
+    {
+        $payload = $request->validated();
+        $level = (int) $payload['effective_product_group_level'];
+
+        return $this->success(
+            AdminProductOperationPayloadResource::make(
+                $this->catalog->batchUpdateGroupProducts($group, $level, $payload)
+            )->resolve(),
+            '分类下商品已批量更新'
+        );
     }
 
     public function reorder(ReorderProductGroupsRequest $request): JsonResponse

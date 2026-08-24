@@ -85,6 +85,16 @@ class ProductCatalogService
         $this->categoryService->deleteCategory($groupId, $level);
     }
 
+    public function forceDeleteCategory(int $groupId, int $level): array
+    {
+        return $this->categoryService->forceDeleteCategory($groupId, $level);
+    }
+
+    public function batchUpdateGroupProducts(int $groupId, int $level, array $data): array
+    {
+        return $this->categoryService->batchUpdateGroupProducts($groupId, $level, $data);
+    }
+
     public function reorderAdminGroups(int $level, ?int $parentId, array $groupIds): array
     {
         return $this->categoryService->reorderAdminCategories($level, $parentId, $groupIds);
@@ -161,6 +171,21 @@ class ProductCatalogService
     public function batchUpdateCategory(array $data): array
     {
         return $this->adminService->batchUpdateCategory($data);
+    }
+
+    public function batchUpdateProducts(array $data): array
+    {
+        return $this->adminService->batchUpdateProducts($data);
+    }
+
+    public function batchDeleteProducts(array $data): array
+    {
+        return $this->adminService->batchDeleteProducts($data);
+    }
+
+    public function batchForceDeleteProducts(array $data): array
+    {
+        return $this->adminService->batchForceDeleteProducts($data);
     }
 
     public function splitProducts(array $data): array

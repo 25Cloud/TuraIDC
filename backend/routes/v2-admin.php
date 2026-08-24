@@ -217,6 +217,8 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/product-groups', [ProductGroupController::class, 'store']);
         Route::put('/product-groups/{group}', [ProductGroupController::class, 'update']);
         Route::delete('/product-groups/{group}', [ProductGroupController::class, 'destroy']);
+        Route::delete('/product-groups/{group}/force', [ProductGroupController::class, 'forceDelete']);
+        Route::post('/product-groups/{group}/batch-update-products', [ProductGroupController::class, 'batchUpdateProducts']);
         Route::post('/coupons', [CouponController::class, 'store']);
         Route::put('/coupons/{coupon}', [CouponController::class, 'update']);
         Route::delete('/coupons/{coupon}', [CouponController::class, 'destroy']);
@@ -233,6 +235,9 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/products/splits', [ProductController::class, 'split']);
         Route::post('/products/category-batches', [ProductController::class, 'batchUpdateCategory']);
         Route::post('/products/provision-hostname-batches', [ProductController::class, 'batchUpdateProvisionHostname']);
+        Route::post('/products/batch-update', [ProductController::class, 'batchUpdate']);
+        Route::post('/products/batch-delete', [ProductController::class, 'batchDelete']);
+        Route::post('/products/batch-force-delete', [ProductController::class, 'batchForceDelete']);
         Route::patch('/products/{product}/status', [ProductController::class, 'updateStatus']);
         Route::post('/products/{product}/spec-highlight', [ProductSpecHighlightController::class, 'update']);
         Route::patch('/coupons/{coupon}/status', [CouponController::class, 'updateStatus']);
