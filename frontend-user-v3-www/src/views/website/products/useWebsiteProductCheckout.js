@@ -121,6 +121,12 @@ export function useWebsiteProductCheckout({
       rate < 100,
     );
   });
+  const agentDiscountPercent = computed(() => {
+    const rate = Number(quoteResult.value?.agent_discount_rate);
+    if (!Number.isFinite(rate) || rate <= 0) return "";
+    const value = Math.round((rate / 10) * 10) / 10;
+    return `${String(value).replace(/\.0$/, "")}折`;
+  });
   const selectedCycleLabel = computed(
     () => selectedPricingEntry.value?.label || "",
   );
@@ -756,6 +762,7 @@ export function useWebsiteProductCheckout({
     agentAmount,
     agentGroupName,
     hasAgentDiscount,
+    agentDiscountPercent,
     selectedCycleLabel,
     resolvedStock,
     stockClass,

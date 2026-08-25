@@ -985,6 +985,11 @@
 }
 
 .machine-spec-cell--price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
   color: $text-color-primary;
   font-weight: 600;
 }
@@ -1627,6 +1632,36 @@
   color: #b7bcc5;
   text-decoration: line-through;
   margin-right: 6px;
+}
+
+.discount-tag {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 6px;
+  padding: 0 6px;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  color: #fff;
+  background: #f56c6c;
+  border-radius: 4px;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+.agent-price-original {
+  color: $text-color-placeholder;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: line-through;
+  margin-right: 4px;
+}
+
+.agent-price-current {
+  color: $color-warning;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .allocation-footer-discount-text {

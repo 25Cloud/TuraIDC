@@ -64,7 +64,7 @@ class LogOperation
                         : 500);
             }
 
-            if ($exception === null && $this->shouldSkipSuccessfulPollingRequest($request, $statusCode)) {
+            if ($exception === null && $this->shouldSkipSuccessfulReadRequest($request, $statusCode)) {
                 return;
             }
 
@@ -120,15 +120,18 @@ class LogOperation
         return true;
     }
 
-    private function shouldSkipSuccessfulPollingRequest(Request $request, int $statusCode): bool
+    /**
+     * 成功的只读 GET 请求（页面加载、列表/轮询查询）不落库：
+     * 访问量最大但审计价值低，逐条双写 operation_logs + activity_logs 会让日志表持续膨胀。
+     * 失败的 GET（>=400）与非 GET 写操作仍完整记录，审计不丢失。
+     */
+    private function shouldSkipSuccessfulReadRequest(Request $request, int $statusCode): bool
     {
         if ($statusCode >= 400 || $request->method() !== 'GET') {
             return false;
         }
 
-        return $request->is('api/v2/client/verification/status')
-            || $request->is('api/v2/client/recharge/*/status')
-            || $request->is('api/v2/client/invoices/*/pay/alipay/status');
+        return true;
     }
 
     private function resolveUserType(mixed $user): string

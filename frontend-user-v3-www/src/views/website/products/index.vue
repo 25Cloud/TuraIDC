@@ -716,9 +716,22 @@
                       class="machine-spec-cell machine-spec-cell--highlight"
                       >{{ rowHighlightValue(row, column.key) }}</span
                     >
-                    <span class="machine-spec-cell machine-spec-cell--price">{{
-                      row.basePriceText
-                    }}</span>
+                    <span class="machine-spec-cell machine-spec-cell--price">
+                      <template v-if="row.agentDiscount">
+                        <span class="agent-price-original"
+                          >¥{{ row.agentOriginalPrice }}</span
+                        >
+                        <em
+                          v-if="row.agentDiscountPercent"
+                          class="discount-tag"
+                          >{{ row.agentDiscountPercent }}</em
+                        >
+                        <span class="agent-price-current"
+                          >¥{{ row.agentPrice }}</span
+                        >
+                      </template>
+                      <template v-else>{{ row.basePriceText }}</template>
+                    </span>
                   </button>
                 </div>
                 <div v-if="osConfig" class="desktop-machine-os-panel">
@@ -1123,7 +1136,10 @@
               ><span>-¥{{ appliedCoupon.discount_amount }}</span>
             </div>
             <div class="cost-item cost-item--discount" v-if="hasAgentDiscount">
-              <span>代理折扣（{{ agentGroupName }}）</span
+              <span
+                >代理折扣（{{ agentGroupName }}）<em class="discount-tag">{{
+                  agentDiscountPercent
+                }}</em></span
               ><span>-¥{{ agentDiscountAmount }}</span>
             </div>
           </div>
@@ -1190,6 +1206,9 @@
                 <span class="cost-amount cost-amount--original"
                   >¥{{ agentOriginalAmount }}</span
                 >
+                <em v-if="agentDiscountPercent" class="discount-tag">{{
+                  agentDiscountPercent
+                }}</em>
                 <span class="cost-amount">¥{{ agentAmount }}</span>
               </template>
               <template v-else>
@@ -1234,6 +1253,9 @@
                   <span class="allocation-footer-original"
                     >¥{{ agentOriginalAmount }}</span
                   >
+                  <em v-if="agentDiscountPercent" class="discount-tag">{{
+                    agentDiscountPercent
+                  }}</em>
                   <span class="allocation-footer-symbol">¥</span>
                   <span class="allocation-footer-num">{{ agentAmount }}</span>
                 </template>
@@ -1245,7 +1267,7 @@
               <span class="allocation-footer-discount-text">
                 {{
                   hasAgentDiscount
-                    ? `代理折扣（${agentGroupName}）`
+                    ? `代理折扣（${agentGroupName}）${agentDiscountPercent}`
                     : appliedCoupon
                       ? `已优惠 ¥${appliedCoupon.discount_amount}`
                       : "无折扣"
@@ -1351,7 +1373,9 @@
                 <span>配置名称</span>
                 <span>配置详情</span>
                 <span>{{
-                  appliedCoupon ? "折后价已优惠" : "折后价无折扣"
+                  hasAgentDiscount || appliedCoupon
+                    ? "折后价已优惠"
+                    : "折后价无折扣"
                 }}</span>
               </div>
               <div
@@ -1645,8 +1669,20 @@
               <span
                 v-if="formatProductListPrice(p)"
                 class="mobile-product-sheet-price"
-                >{{ formatProductListPrice(p) }}</span
               >
+                <template v-if="p?.has_agent_discount">
+                  <span class="agent-price-original"
+                    >¥{{ formatMoneyText(p.primary_price) }}</span
+                  >
+                  <em v-if="p?.agent_discount_percent" class="discount-tag">{{
+                    p.agent_discount_percent
+                  }}</em>
+                  <span class="agent-price-current"
+                    >¥{{ p.agent_primary_price }}</span
+                  >
+                </template>
+                <template v-else>{{ formatProductListPrice(p) }}</template>
+              </span>
             </button>
           </template>
         </div>
@@ -1738,6 +1774,7 @@ const {
   agentAmount,
   agentGroupName,
   hasAgentDiscount,
+  agentDiscountPercent,
   selectedCycleLabel,
   summaryItems,
   resolvedStock,
@@ -2296,6 +2333,10 @@ function resolveDesktopSpecRowBase(product) {
     baseFrequency: sourceProduct.cpu_base_frequency || "",
     turboFrequency: sourceProduct.cpu_turbo_frequency || "",
     basePriceText: formatProductListPrice(product) || "-",
+    agentDiscount: Boolean(sourceProduct.has_agent_discount),
+    agentDiscountPercent: String(sourceProduct.agent_discount_percent || ""),
+    agentOriginalPrice: formatMoneyText(sourceProduct.primary_price),
+    agentPrice: String(sourceProduct.agent_primary_price || "0.00"),
     cpuValue: parseMachineSpecNumber(resolvedCpuText),
     memoryValue: parseMachineSpecNumber(resolvedMemoryText),
     basePriceValue: resolveProductPriceNumber(product),

@@ -268,6 +268,7 @@ class ProductGroupV2QueryService
             )
             ->with([
                 'productGroup.secondProductGroup.firstProductGroup',
+                'productDiscountGroup',
             ])
             ->select([
                 'id',
@@ -284,7 +285,7 @@ class ProductGroupV2QueryService
                 'status',
                 'sort_order',
                 'auto_setup',
-                ...Product::optionalSelectColumns(['cpu_model', 'cpu_turbo']),
+                ...Product::optionalSelectColumns(['cpu_model', 'cpu_turbo', 'product_discount_group_id']),
             ])
             ->orderBy('sort_order')
             ->orderBy('id')

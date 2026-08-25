@@ -18,6 +18,9 @@
                 <t-tag :theme="isEmailBound ? 'success' : 'default'" variant="light">{{
                   isEmailBound ? '已绑邮箱' : '未绑邮箱'
                 }}</t-tag>
+                <t-tag v-if="agentGroupName" theme="warning" variant="outline" class="account-card__agent-tag">
+                  {{ agentGroupName }}
+                </t-tag>
               </div>
             </div>
           </div>
@@ -403,6 +406,9 @@ const userIdText = computed(() => String(userInfo.value.id || '--'));
 const isVerified = computed(() => Number(userInfo.value.is_verified || 0) === 1);
 const isPhoneBound = computed(() => Boolean(String(userInfo.value.phone || '').trim()));
 const isEmailBound = computed(() => Boolean(String(userInfo.value.email || '').trim()));
+const agentGroupName = computed(() =>
+  String(userInfo.value.agent_group?.name || userInfo.value.agent_group_name || ''),
+);
 const supportQr = computed(() => siteBranding.supportGroupQr || '');
 const supportGroupLink = computed(() => siteBranding.supportGroupLink || '');
 const supportPhoneText = computed(() => siteBranding.serviceQqGroup || '-');
