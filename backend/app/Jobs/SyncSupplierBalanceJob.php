@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Supplier;
+use App\Models\SupplierBalanceLog;
 use App\Services\Supplier\SupplierBalanceService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -37,8 +38,11 @@ class SyncSupplierBalanceJob implements ShouldBeUnique, ShouldQueue
 
     public array $backoff = [30, 90];
 
-    public function __construct(public int $supplierId)
-    {
+    public function __construct(
+        public int $supplierId,
+        public string $source = SupplierBalanceLog::SOURCE_PROVISION,
+        public ?int $orderId = null,
+    ) {
         $this->onQueue('provision');
         $this->afterCommit();
     }
@@ -64,7 +68,9 @@ class SyncSupplierBalanceJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $balanceService->sync($supplier);
+        // 带上来源与订单：否则开通触发的变更会被记成定时同步、order_id 为空，
+        // 事后无法把一笔余额消耗追溯到具体订单。
+        $balanceService->sync($supplier, $this->source, $this->orderId);
     }
 
     public function failed(\Throwable $exception): void

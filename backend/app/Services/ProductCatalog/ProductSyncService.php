@@ -47,6 +47,9 @@ class ProductSyncService
 
     private readonly ProductGroupHierarchyService $hierarchyService;
 
+    /** `products.stock_synced_at` 列存在性缓存，避免逐商品重复查元数据 */
+    private ?bool $hasStockSyncedAtColumn = null;
+
     public function __construct(
         private readonly ProviderResolver $providerResolver,
         ?ProductGroupHierarchyService $hierarchyService = null,
@@ -620,7 +623,7 @@ class ProductSyncService
     /**
      * 批量同步上游库存。
      *
-     * 上游库存必须逐商品查询——实测魔方 /cart/all 列表里的 stock_control 不可信
+     * 上游库存必须逐商品查询——实测某方 /cart/all 列表里的 stock_control 不可信
      * （24 个抽样中 14 个与商品详情接口不一致，2 个实际售罄却报"不限量"），
      * 所以请求数等于商品数，无法用一次列表请求代替。
      *
@@ -950,6 +953,18 @@ class ProductSyncService
     }
 
     /**
+     * `products.stock_synced_at` 是否已存在（按实例缓存）。
+     *
+     * 全量同步会对每个商品走一次该判断，而 hasColumn() 在 Laravel 12 下会真去查
+     * 列信息（getColumnListing），逐商品调用等于把元数据查询乘上商品数。
+     * 该列由本次迁移新增、进程生命周期内不会变，缓存一次即可。
+     */
+    private function hasStockSyncedAtColumn(): bool
+    {
+        return $this->hasStockSyncedAtColumn ??= Schema::hasColumn('products', 'stock_synced_at');
+    }
+
+    /**
      * 盖上库存同步时间戳。
      *
      * 直接走查询构造器而不是模型 save()：这里只关心一个时间列，不需要触发模型事件、
@@ -957,7 +972,7 @@ class ProductSyncService
      */
     private function touchStockSyncedAt(Product $product): void
     {
-        if (! Schema::hasColumn('products', 'stock_synced_at')) {
+        if (! $this->hasStockSyncedAtColumn()) {
             return;
         }
 
@@ -978,7 +993,7 @@ class ProductSyncService
      */
     private function applyStockSyncPriority(Builder $query, int $batchSize): void
     {
-        if (Schema::hasColumn('products', 'stock_synced_at')) {
+        if ($this->hasStockSyncedAtColumn()) {
             $query->orderByRaw('CASE WHEN stock_synced_at IS NULL THEN 0 ELSE 1 END')
                 ->orderByRaw('CASE WHEN stock >= 0 AND stock <= 5 THEN 0 WHEN stock >= 0 THEN 1 ELSE 2 END')
                 ->orderByRaw('CASE WHEN stock_synced_at IS NULL THEN 0 ELSE 1 END, stock_synced_at ASC');
@@ -1002,7 +1017,7 @@ class ProductSyncService
      */
     private function persistSyncedStock(Product $product, ?int $remoteStock): void
     {
-        if ($remoteStock === null || ! Schema::hasColumn('products', 'stock_synced_at')) {
+        if ($remoteStock === null || ! $this->hasStockSyncedAtColumn()) {
             return;
         }
 

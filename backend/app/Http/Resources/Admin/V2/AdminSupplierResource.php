@@ -91,7 +91,11 @@ class AdminSupplierResource extends JsonResource
             return $defaults;
         }
 
-        $record = SupplierBalance::query()->where('supplier_id', (int) $this->id)->first();
+        // 优先读预加载的关联：供应商列表逐个查会形成 N+1
+        // （AdminConfigurationV2QueryService::suppliers() 已 with('balanceRecord')）。
+        $record = $this->resource->relationLoaded('balanceRecord')
+            ? $this->resource->getRelation('balanceRecord')
+            : SupplierBalance::query()->where('supplier_id', (int) $this->id)->first();
         if (! $record instanceof SupplierBalance) {
             return $defaults;
         }

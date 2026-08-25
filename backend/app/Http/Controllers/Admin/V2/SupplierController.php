@@ -23,7 +23,6 @@ use App\Http\Resources\Admin\V2\AdminSupplierRemoteProductsResource;
 use App\Http\Resources\Admin\V2\AdminSupplierSummaryResource;
 use App\Models\Supplier;
 use App\Services\Admin\V2\AdminConfigurationV2QueryService;
-use App\Services\Supplier\SupplierBalanceService;
 use App\Services\System\OperationLogService;
 use App\Services\Upstream\ProviderRegistry;
 
@@ -57,10 +56,14 @@ class SupplierController extends Controller
 
     public function store(UpsertSupplierRequest $request)
     {
-        $result = $this->queryService->createSupplier($request->supplierPayload(), $request->upstreamBindingPayload());
-        $this->applyBalanceSettings((int) ($result['supplier']['id'] ?? 0), $request->balanceSettingsPayload());
-
-        return $this->success($result, '创建成功');
+        return $this->success(
+            $this->queryService->createSupplier(
+                $request->supplierPayload(),
+                $request->upstreamBindingPayload(),
+                $request->balanceSettingsPayload(),
+            ),
+            '创建成功'
+        );
     }
 
     public function show(ShowSupplierRequest $request, Supplier $supplier)
@@ -70,37 +73,15 @@ class SupplierController extends Controller
 
     public function update(UpsertSupplierRequest $request, Supplier $supplier)
     {
-        $result = $this->queryService->updateSupplier($supplier, $request->supplierPayload(), $request->upstreamBindingPayload());
-        $this->applyBalanceSettings((int) $supplier->id, $request->balanceSettingsPayload());
-
-        return $this->success($result, '更新成功');
-    }
-
-    /**
-     * 落地上游余额告警设置。
-     *
-     * 放在控制器而非供应商写入服务里：余额台账是独立的旁路数据，塞进
-     * createSupplier/updateSupplier 会改动它们的签名并牵动既有调用方与测试。
-     *
-     * @param  array<string, mixed>  $settings
-     */
-    private function applyBalanceSettings(int $supplierId, array $settings): void
-    {
-        if ($supplierId <= 0) {
-            return;
-        }
-
-        $supplier = Supplier::query()->find($supplierId);
-        if (! $supplier instanceof Supplier) {
-            return;
-        }
-
-        // 即便本次没提交阈值也要建台账行：这样新接入的上游立刻带着默认阈值 20
-        // 进入定时同步，不必等管理员先去编辑一次。
-        $record = app(SupplierBalanceService::class)->recordFor($supplier);
-        if ($settings !== []) {
-            $record->forceFill($settings)->save();
-        }
+        return $this->success(
+            $this->queryService->updateSupplier(
+                $supplier,
+                $request->supplierPayload(),
+                $request->upstreamBindingPayload(),
+                $request->balanceSettingsPayload(),
+            ),
+            '更新成功'
+        );
     }
 
     public function destroy(DeleteSupplierRequest $request, Supplier $supplier)

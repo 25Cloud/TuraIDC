@@ -65,6 +65,9 @@ class SupplierBalance extends Model
      *
      * 从未同步成功（balance 为 null）时返回 false：那是"未知"而不是"不足"，
      * 拿未知去触发告警会在上游接口刚接入、尚未同步时误报。
+     *
+     * 比较走整数分而非浮点：告警边界不应由二进制浮点的表示误差决定
+     * （例如 20.00 与阈值 20 在浮点下可能因累积误差出现意外的大小关系）。
      */
     public function isBelowThreshold(): bool
     {
@@ -72,6 +75,16 @@ class SupplierBalance extends Model
             return false;
         }
 
-        return (float) $this->balance < (float) $this->low_balance_threshold;
+        return self::toCents($this->balance) < self::toCents($this->low_balance_threshold);
+    }
+
+    /**
+     * 金额转整数分。
+     *
+     * decimal cast 取回的是字符串，先按两位小数定标再取整，避免直接 (int) 截断。
+     */
+    public static function toCents(mixed $amount): int
+    {
+        return (int) round(((float) $amount) * 100);
     }
 }

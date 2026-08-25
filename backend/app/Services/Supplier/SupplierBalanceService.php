@@ -12,6 +12,7 @@ use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\System\SettingService;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\ProviderResolver;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -89,6 +90,26 @@ class SupplierBalanceService
         string $source = SupplierBalanceLog::SOURCE_SCHEDULE,
         ?int $orderId = null
     ): array {
+        // 定时同步与开通后触发的队列任务可能并发跑同一个供应商：两边各自请求上游后
+        // 回写，先返回的慢请求会用旧余额盖掉新余额，还会产生方向错误的流水与告警。
+        // 按 supplier_id 取锁串行化；拿不到锁说明另一路正在同步，本次直接跳过即可。
+        $lock = Cache::lock('supplier-balance-sync:'.(int) $supplier->id, 120);
+        if (! $lock->get()) {
+            return ['status' => 'skipped', 'message' => '该供应商余额正在同步中', 'alerted' => false];
+        }
+
+        try {
+            return $this->syncLocked($supplier, $source, $orderId);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function syncLocked(Supplier $supplier, string $source, ?int $orderId): array
+    {
         $record = $this->recordFor($supplier);
         $record->forceFill(['last_attempted_at' => now()])->save();
 
@@ -196,9 +217,18 @@ class SupplierBalanceService
             $currency = $currency['code'] ?? ($currency['name'] ?? null);
         }
 
+        // 余额缺失或非数值时按"查询失败"处理，绝不降级成 0。
+        // 若默认成 0：last_sync_status 会被记成 success、isBelowThreshold() 立刻为真、
+        // 触发一封假的余额不足告警，还会写一条 delta 为大负数的流水污染对账数据。
+        // 模型层区分"未知（null）"与"不足"，取值层必须守住同一口径。
+        $rawBalance = $payload['balance'] ?? null;
+        if ($rawBalance === null || $rawBalance === '' || ! is_numeric($rawBalance)) {
+            throw new BusinessException('上游未返回可用的余额数值', 42200);
+        }
+
         return [
             'provider_key' => $this->resolveProviderKey($supplier),
-            'balance' => (float) ($payload['balance'] ?? 0),
+            'balance' => (string) $rawBalance,
             'currency' => $currency === null ? null : Str::limit((string) $currency, 20, ''),
         ];
     }
@@ -217,22 +247,25 @@ class SupplierBalanceService
         string $source,
         ?int $orderId
     ): void {
-        $current = $record->balance === null ? null : (float) $record->balance;
-        if ($current === null) {
+        if ($record->balance === null) {
             return;
         }
 
-        // 金额按两位小数比较，避免上游返回 "10.000" / "10.00" 这类等值不同串反复记录
-        if ($previousBalance !== null && abs($current - $previousBalance) < 0.005) {
+        // 金额一律换成整数分再比较与相减：浮点相减会产生 0.009999… 这类残差，
+        // 既可能让"没变化"被误判成变化而反复记流水，也会让 delta 带上噪声。
+        $currentCents = SupplierBalance::toCents($record->balance);
+        $previousCents = $previousBalance === null ? null : SupplierBalance::toCents($previousBalance);
+
+        if ($previousCents !== null && $currentCents === $previousCents) {
             return;
         }
 
         try {
             SupplierBalanceLog::query()->create([
                 'supplier_id' => (int) $supplier->id,
-                'balance' => $current,
+                'balance' => $record->balance,
                 'previous_balance' => $previousBalance,
-                'delta' => $previousBalance === null ? null : round($current - $previousBalance, 2),
+                'delta' => $previousCents === null ? null : ($currentCents - $previousCents) / 100,
                 'currency' => $record->currency,
                 'source' => $source,
                 'order_id' => $orderId,
@@ -298,6 +331,11 @@ class SupplierBalanceService
      * 重复告警间隔（分钟），取自管理端「自动化策略」，默认 24 小时。
      *
      * 配置读取失败时退回默认值：告警节流拿不到配置也不该让整轮同步崩掉。
+     */
+    /**
+     * 刻意不做实例级缓存：Setting 已有分组级缓存，真正的数据库查询只发生一次，
+     * 这里省下的只是数组组装。换来的却是配置改动在长驻进程内不生效——
+     * 那类"改了设置没反应"的问题远比这点开销难排查。
      */
     private function alertRepeatMinutes(): int
     {

@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Supplier;
+use App\Models\SupplierBalanceLog;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\Integrations\Plugins\UpstreamBindingWriter;
@@ -286,7 +287,7 @@ class ProvisionService
 
             // 开通成功后刷新该上游余额：开通才是真正扣减上游余额的动作，此刻拉取
             // 才能拿到消耗后的真实值。异步进行，不拖慢开通链路，失败也不影响开通结果。
-            $this->dispatchSupplierBalanceSync($order->product);
+            $this->dispatchSupplierBalanceSync($order->product, (int) $order->id);
 
             return $service;
         } catch (\Throwable $exception) {
@@ -1428,7 +1429,7 @@ class ProvisionService
      * 任何异常都吞掉：余额刷新是旁路动作，不能让它影响已经成功的开通结果；
      * 即便这一次没派发出去，15 分钟的定时同步也会补上。
      */
-    private function dispatchSupplierBalanceSync(mixed $product): void
+    private function dispatchSupplierBalanceSync(mixed $product, ?int $orderId = null): void
     {
         if (! $product instanceof Product) {
             return;
@@ -1437,7 +1438,7 @@ class ProvisionService
         try {
             $supplierId = $this->resolveProductSupplierId($product);
             if ($supplierId > 0) {
-                SyncSupplierBalanceJob::dispatch($supplierId);
+                SyncSupplierBalanceJob::dispatch($supplierId, SupplierBalanceLog::SOURCE_PROVISION, $orderId);
             }
         } catch (\Throwable $exception) {
             Log::warning('[上游余额同步] 开通后触发刷新失败', [
@@ -1603,7 +1604,7 @@ class ProvisionService
     }
 
     /**
-     * 魔方的购物车按上游登录账号共享，不能仅按本地 supplier_id 互斥。
+     * 某方的购物车按上游登录账号共享，不能仅按本地 supplier_id 互斥。
      * 多条供应商记录复用同一上游地址和账号时，必须落到同一个分布式锁。
      */
     private function supplierCartLockKey(Supplier $supplier): string
