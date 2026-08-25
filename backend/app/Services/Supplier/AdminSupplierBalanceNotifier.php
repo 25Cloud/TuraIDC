@@ -27,8 +27,10 @@ class AdminSupplierBalanceNotifier
 
     /**
      * 余额跌破阈值提醒。
+     *
+     * $previousBalance 传 decimal 字符串而非 float：金额从取值到展示全程不进浮点路径。
      */
-    public function notifyLowBalance(Supplier $supplier, SupplierBalance $record, ?float $previousBalance): void
+    public function notifyLowBalance(Supplier $supplier, SupplierBalance $record, ?string $previousBalance): void
     {
         $this->sendToAdmins(
             NotificationService::TEMPLATE_ADMIN_SUPPLIER_LOW_BALANCE,
@@ -152,8 +154,14 @@ class AdminSupplierBalanceNotifier
         return $nickname !== '' ? $nickname : (string) $admin->username;
     }
 
+    /**
+     * 金额格式化成两位小数字符串。
+     *
+     * 走整数分往返而不是 number_format((float) $value)：邮件里的余额、阈值都是要拿去
+     * 跟人对账的数字，(float) 转换在极端值上会改变末位，展示与库里的值就不一致了。
+     */
     private function money(mixed $value): string
     {
-        return number_format((float) $value, 2, '.', '');
+        return SupplierBalance::centsToDecimal(SupplierBalance::toCents($value));
     }
 }

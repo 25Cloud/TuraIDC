@@ -907,7 +907,11 @@ class ProductSyncService
                 // 却从不保存结果，于是 products.stock 长期停留在导入时的旧值。顺手回写
                 // 等于把用户流量变成免费的同步机会：热门商品自动保持新鲜，定时轮转
                 // 只需兜底无人问津的冷门商品。
-                $this->persistSyncedStock($product, $remoteStock);
+                // instanceof 不是多余的：groupBy 之后集合元素退化成 Model，这里与上面
+                // $firstProduct 的判断同源。
+                if ($product instanceof Product) {
+                    $this->persistSyncedStock($product, $remoteStock);
+                }
             }
         }
 

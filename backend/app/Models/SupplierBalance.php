@@ -25,8 +25,8 @@ use Illuminate\Support\Carbon;
  */
 class SupplierBalance extends Model
 {
-    /** 余额不足告警阈值的默认值 */
-    public const DEFAULT_LOW_BALANCE_THRESHOLD = 20.0;
+    /** 余额不足告警阈值的默认值（decimal 字符串，避免浮点字面量进入金额路径） */
+    public const DEFAULT_LOW_BALANCE_THRESHOLD = '20.00';
 
     protected $fillable = [
         'supplier_id',
@@ -79,12 +79,46 @@ class SupplierBalance extends Model
     }
 
     /**
-     * 金额转整数分。
+     * 金额转整数分——纯字符串解析，全程不经浮点。
      *
-     * decimal cast 取回的是字符串，先按两位小数定标再取整，避免直接 (int) 截断。
+     * decimal cast 取回的是字符串（如 "123.45"），直接按小数点切分定标即可。
+     * 不用 (float)*100：金额禁止进入浮点路径；也不用 bcmath：本仓零 bcmath 依赖，
+     * 宝塔部署的扩展清单里也没有该扩展，不能假定可用。
+     *
+     * decimal(14,2) 的整数部分最多 12 位，×100 后 14 位，远在 64 位 int 范围内。
      */
     public static function toCents(mixed $amount): int
     {
-        return (int) round(((float) $amount) * 100);
+        $raw = trim((string) $amount);
+        if ($raw === '') {
+            return 0;
+        }
+
+        // 科学计数法（"1.5e3"）按小数点切分会算出完全错误的值。正常输入到不了这里
+        // （取值层已把上游余额规整成定点字符串），但本方法是公开静态入口，挡一道更稳妥。
+        if (str_contains($raw, 'e') || str_contains($raw, 'E')) {
+            $raw = sprintf('%.2F', (float) $raw);
+        }
+
+        $negative = str_starts_with($raw, '-');
+        $raw = ltrim($raw, '+-');
+        [$integerPart, $fractionPart] = array_pad(explode('.', $raw, 2), 2, '');
+
+        // 小数位定标到两位：不足补零，超出直接截断（decimal(14,2) 本身只存两位）
+        $fractionPart = substr(str_pad($fractionPart, 2, '0'), 0, 2);
+        $cents = (int) ($integerPart === '' ? '0' : $integerPart) * 100 + (int) $fractionPart;
+
+        return $negative ? -$cents : $cents;
+    }
+
+    /**
+     * 整数分转回 decimal 字符串，用于写库与展示，同样不经浮点。
+     */
+    public static function centsToDecimal(int $cents): string
+    {
+        $sign = $cents < 0 ? '-' : '';
+        $abs = abs($cents);
+
+        return $sign.intdiv($abs, 100).'.'.str_pad((string) ($abs % 100), 2, '0', STR_PAD_LEFT);
     }
 }

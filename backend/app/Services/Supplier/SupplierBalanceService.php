@@ -35,6 +35,19 @@ class SupplierBalanceService
     /** 重复告警间隔的兜底值（小时），配置读取异常时使用 */
     public const DEFAULT_ALERT_REPEAT_HOURS = 24;
 
+    /**
+     * 单供应商同步的互斥锁租约（秒）。
+     *
+     * 必须大于一次同步的最坏耗时，否则锁会在同步途中过期、另一路进来并发写入，
+     * 慢请求随后用旧余额覆盖新值。依据：上游 HTTP 超时 30s（Http::timeout(30)），
+     * 一次余额查询最多两跳（登录 + 取余额）= 60s，再留 4 倍余量应对重试与慢库。
+     * 同时保持小于定时任务 600s 的超时，避免锁比任务活得还久。
+     */
+    public const SYNC_LOCK_SECONDS = 300;
+
+    /** 一次同步的最坏上游耗时预算（秒），用于校验锁租约留有足够余量 */
+    public const UPSTREAM_WORST_CASE_SECONDS = 60;
+
     public function __construct(
         private readonly AdminSupplierBalanceNotifier $notifier,
     ) {}
@@ -93,7 +106,7 @@ class SupplierBalanceService
         // 定时同步与开通后触发的队列任务可能并发跑同一个供应商：两边各自请求上游后
         // 回写，先返回的慢请求会用旧余额盖掉新余额，还会产生方向错误的流水与告警。
         // 按 supplier_id 取锁串行化；拿不到锁说明另一路正在同步，本次直接跳过即可。
-        $lock = Cache::lock('supplier-balance-sync:'.(int) $supplier->id, 120);
+        $lock = Cache::lock('supplier-balance-sync:'.(int) $supplier->id, self::SYNC_LOCK_SECONDS);
         if (! $lock->get()) {
             return ['status' => 'skipped', 'message' => '该供应商余额正在同步中', 'alerted' => false];
         }
@@ -134,7 +147,7 @@ class SupplierBalanceService
             return ['status' => 'failed', 'message' => $message, 'alerted' => false];
         }
 
-        $previousBalance = $record->balance === null ? null : (float) $record->balance;
+        $previousBalance = $record->balance === null ? null : (string) $record->balance;
         $record->forceFill([
             'provider_key' => $payload['provider_key'],
             'balance' => $payload['balance'],
@@ -149,7 +162,7 @@ class SupplierBalanceService
 
         return [
             'status' => 'success',
-            'balance' => (float) $record->balance,
+            'balance' => (string) $record->balance,
             'previous_balance' => $previousBalance,
             'alerted' => $alerted,
         ];
@@ -202,7 +215,7 @@ class SupplierBalanceService
     }
 
     /**
-     * @return array{provider_key: ?string, balance: float, currency: ?string}
+     * @return array{provider_key: ?string, balance: string, currency: ?string}
      */
     private function fetchBalance(Supplier $supplier): array
     {
@@ -228,9 +241,25 @@ class SupplierBalanceService
 
         return [
             'provider_key' => $this->resolveProviderKey($supplier),
-            'balance' => (string) $rawBalance,
+            'balance' => $this->normalizeBalanceString($rawBalance),
             'currency' => $currency === null ? null : Str::limit((string) $currency, 20, ''),
         ];
+    }
+
+    /**
+     * 把上游返回的余额规整成 decimal 字符串。
+     *
+     * 上游以 JSON 字符串返回时原样保留——这是唯一不损失精度的路径。
+     * 以 JSON number 返回时 json_decode 早已把它变成 float，精度在到达本方法之前
+     * 就已经丢了，这里挽回不了；但至少不能用 (string) 直接转：大额余额会被输出成
+     * "1.0E+12"，连整数位都没了，写进 decimal(14,2) 会变成完全错误的数。
+     * 定点格式化到两位小数，与列定义对齐。
+     *
+     * @param  int|float|string  $rawBalance  已通过 is_numeric 校验
+     */
+    private function normalizeBalanceString(mixed $rawBalance): string
+    {
+        return is_string($rawBalance) ? trim($rawBalance) : sprintf('%.2F', $rawBalance);
     }
 
     /**
@@ -243,7 +272,7 @@ class SupplierBalanceService
     private function recordChangeLog(
         Supplier $supplier,
         SupplierBalance $record,
-        ?float $previousBalance,
+        ?string $previousBalance,
         string $source,
         ?int $orderId
     ): void {
@@ -265,7 +294,11 @@ class SupplierBalanceService
                 'supplier_id' => (int) $supplier->id,
                 'balance' => $record->balance,
                 'previous_balance' => $previousBalance,
-                'delta' => $previousCents === null ? null : ($currentCents - $previousCents) / 100,
+                // 差值在分单位上做减法，再转回 decimal 字符串写库；
+                // 除以 100 会得到浮点值，金额不走浮点路径。
+                'delta' => $previousCents === null
+                    ? null
+                    : SupplierBalance::centsToDecimal($currentCents - $previousCents),
                 'currency' => $record->currency,
                 'source' => $source,
                 'order_id' => $orderId,
@@ -361,7 +394,7 @@ class SupplierBalanceService
      * 阈值状态机：跌破阈值时按冷却期告警，回升到阈值以上时清除告警标记，
      * 使得"再次跌破"能立刻重新提醒，而不必等冷却期结束。
      */
-    private function handleThreshold(Supplier $supplier, SupplierBalance $record, ?float $previousBalance): bool
+    private function handleThreshold(Supplier $supplier, SupplierBalance $record, ?string $previousBalance): bool
     {
         if (! $record->isBelowThreshold()) {
             if ($record->low_balance_notified_at !== null) {
