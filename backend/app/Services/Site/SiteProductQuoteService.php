@@ -164,6 +164,7 @@ class SiteProductQuoteService
                 'setup_fee',
                 'config_options',
                 'purchase_requires',
+                'product_discount_group_id',
             ])
             ->whereKey($productId)
             ->first();

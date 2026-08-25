@@ -25,6 +25,8 @@ class StoreProductRequest extends AdminFormRequest
             'second_product_group_id' => ['nullable', 'integer', 'min:1'],
             'third_product_group_id' => ['required', 'integer', 'min:1', Rule::exists((new ThirdProductGroup)->getTable(), 'id')],
             'product_discount_group_id' => ['nullable', 'integer', 'exists:product_discount_groups,id'],
+            'cpu_model' => ['nullable', 'string', 'max:120'],
+            'cpu_turbo' => ['nullable', 'string', 'max:40'],
             'remark' => ['nullable', 'string', 'max:255'],
             'pricing' => ['required', 'array'],
             'pricing.monthly' => ['nullable', 'numeric', 'min:0'],

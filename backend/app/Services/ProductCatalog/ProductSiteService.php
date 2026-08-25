@@ -257,6 +257,8 @@ class ProductSiteService
                     'custom_display_name',
                     'product_group_id',
                     'service_type_code',
+                    'cpu_model',
+                    'cpu_turbo',
                 ]),
                 'remark',
                 'purchase_requires',
@@ -375,6 +377,8 @@ class ProductSiteService
                     'custom_display_name',
                     'product_group_id',
                     'service_type_code',
+                    'cpu_model',
+                    'cpu_turbo',
                 ]),
                 'remark',
                 'pricing',
@@ -559,7 +563,7 @@ class ProductSiteService
                 'product_type',
                 'service_type_code',
                 'product_group_id',
-                ...Product::optionalSelectColumns(['custom_display_name']),
+                ...Product::optionalSelectColumns(['custom_display_name', 'cpu_model', 'cpu_turbo']),
                 'purchase_requires',
                 'config_options',
             ]);
@@ -858,10 +862,16 @@ class ProductSiteService
     {
         $productId = (int) $product->id;
         if ($productId <= 0) {
+            return $this->emptyCpuModelPayload();
+        }
+
+        // 分组批量设置的 CPU 型号/睿频直接落库到商品行，展示优先级高于「CPU 型号目录」按商品绑定
+        $inlineCpuModel = trim((string) ($product->getAttribute('cpu_model') ?? ''));
+        if ($inlineCpuModel !== '') {
             return [
-                'cpu_model_name' => '',
+                'cpu_model_name' => $inlineCpuModel,
                 'cpu_base_frequency' => '',
-                'cpu_turbo_frequency' => '',
+                'cpu_turbo_frequency' => trim((string) ($product->getAttribute('cpu_turbo') ?? '')),
             ];
         }
 
@@ -877,6 +887,14 @@ class ProductSiteService
             }
         }
 
+        return $this->emptyCpuModelPayload();
+    }
+
+    /**
+     * @return array{cpu_model_name: string, cpu_base_frequency: string, cpu_turbo_frequency: string}
+     */
+    private function emptyCpuModelPayload(): array
+    {
         return [
             'cpu_model_name' => '',
             'cpu_base_frequency' => '',

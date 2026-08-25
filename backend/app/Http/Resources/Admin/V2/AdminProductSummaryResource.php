@@ -68,6 +68,13 @@ class AdminProductSummaryResource extends JsonResource
             'total_services_count' => (int) ($product->total_services_count ?? 0),
             'active_services_count' => (int) ($product->services_count ?? 0),
             'sort_order' => (int) ($product->sort_order ?? 0),
+            'cpu_model' => (string) ($product->cpu_model ?? ''),
+            'cpu_turbo' => (string) ($product->cpu_turbo ?? ''),
+            'product_discount_group_id' => $product->product_discount_group_id !== null ? (int) $product->product_discount_group_id : null,
+            'product_discount_group_name' => (string) ($product->productDiscountGroup?->name ?? ''),
+            'product_discount_group_min_discount_rate' => $product->productDiscountGroup?->min_discount_rate !== null
+                ? (string) $product->productDiscountGroup->min_discount_rate
+                : null,
             'updated_at' => $product->updated_at?->format('Y-m-d H:i:s'),
         ];
     }

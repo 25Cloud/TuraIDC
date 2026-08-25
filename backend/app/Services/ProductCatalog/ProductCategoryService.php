@@ -284,7 +284,7 @@ class ProductCategoryService
      */
     public function batchUpdateGroupProducts(int $groupId, int $level, array $data): array
     {
-        [, , $thirdGroupIds] = $this->collectCascadeDeleteScope($groupId, $level);
+        [, $thirdGroupIds] = $this->collectCascadeDeleteScope($groupId, $level);
 
         $query = Product::query();
         if ($thirdGroupIds !== []) {
@@ -395,7 +395,7 @@ class ProductCategoryService
     }
 
     /**
-     * 软删除商品下的服务实例：解绑订单/工单引用，清理上游绑定后软删服务记录，
+     * 物理删除商品下的服务实例：解除商品/服务外键引用，清理上游绑定与运行快照表后物理删除服务记录，
      * 保留账单等财务记录。
      */
     private function forceDeleteServicesByProducts(Collection $productIds): int
@@ -412,6 +412,20 @@ class ProductCategoryService
             return 0;
         }
 
+        // 解除商品引用：products 物理删除前必须置空 RESTRICT 外键（invoices/orders 引用商品）
+        if (Schema::hasTable('invoices')) {
+            DB::table('invoices')->whereIn('product_id', $productIds->all())->update(['product_id' => null]);
+        }
+
+        if (Schema::hasTable('orders')) {
+            DB::table('orders')->whereIn('product_id', $productIds->all())->update(['product_id' => null]);
+        }
+
+        if (Schema::hasTable('referral_rewards')) {
+            DB::table('referral_rewards')->whereIn('product_id', $productIds->all())->update(['product_id' => null]);
+        }
+
+        // 解除服务引用（其余 SET NULL 外键显式置空，避免依赖数据库隐式行为）
         if (Schema::hasTable('orders')) {
             DB::table('orders')->whereIn('service_id', $serviceIds->all())->update(['service_id' => null]);
         }
@@ -420,11 +434,24 @@ class ProductCategoryService
             DB::table('tickets')->whereIn('service_id', $serviceIds->all())->update(['service_id' => null]);
         }
 
-        if (Schema::hasTable('service_upstream_bindings')) {
-            DB::table('service_upstream_bindings')->whereIn('service_id', $serviceIds->all())->delete();
+        if (Schema::hasTable('invoices')) {
+            DB::table('invoices')->whereIn('service_id', $serviceIds->all())->update(['service_id' => null]);
         }
 
-        Service::query()->whereIn('id', $serviceIds->all())->delete();
+        // 清理 4 张服务运行快照/绑定表（service_upstream_bindings 为 RESTRICT，必须先删）
+        foreach ([
+            'service_upstream_bindings',
+            'service_runtime_snapshots',
+            'service_connection_snapshots',
+            'service_provision_attempts',
+        ] as $snapshotTable) {
+            if (Schema::hasTable($snapshotTable)) {
+                DB::table($snapshotTable)->whereIn('service_id', $serviceIds->all())->delete();
+            }
+        }
+
+        // 物理删除服务实例：绑定与快照已清，其余引用均为 SET NULL/CASCADE，可安全 forceDelete
+        Service::query()->whereIn('id', $serviceIds->all())->forceDelete();
 
         return $serviceIds->count();
     }

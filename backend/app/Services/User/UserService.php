@@ -146,7 +146,7 @@ class UserService
     public function update(User $user, array $data): User
     {
         $baseUpdateData = collect($data)->only([
-            'phone', 'status', 'nickname', 'company', 'qq', 'admin_note',
+            'phone', 'status', 'nickname', 'company', 'qq', 'admin_note', 'agent_group_id',
         ])->toArray();
 
         foreach (['nickname', 'company', 'qq'] as $field) {

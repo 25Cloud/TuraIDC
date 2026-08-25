@@ -176,6 +176,15 @@ trait HandlesProductCatalogHelpers
                 : (int) $value;
         }
 
+        if (array_key_exists('cpu_model', $data)) {
+            $cpuModel = trim((string) ($data['cpu_model'] ?? ''));
+            $update['cpu_model'] = $cpuModel === '' ? null : $cpuModel;
+        }
+        // 睿频仅填写时提交；留空表示不修改该字段
+        if (array_key_exists('cpu_turbo', $data) && trim((string) ($data['cpu_turbo'] ?? '')) !== '') {
+            $update['cpu_turbo'] = trim((string) $data['cpu_turbo']);
+        }
+
         return $update;
     }
 }

@@ -284,6 +284,7 @@ class ProductGroupV2QueryService
                 'status',
                 'sort_order',
                 'auto_setup',
+                ...Product::optionalSelectColumns(['cpu_model', 'cpu_turbo']),
             ])
             ->orderBy('sort_order')
             ->orderBy('id')

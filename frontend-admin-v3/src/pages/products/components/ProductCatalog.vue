@@ -261,6 +261,18 @@
                 {{ productVisibilityLabel(row) }}
               </span>
             </template>
+            <template #cpu="{ row }">
+              <div class="product-cpu-cell">
+                <span class="product-cpu-cell__model">{{ row.cpu_model || '—' }}</span>
+                <span v-if="row.cpu_turbo" class="product-cpu-cell__turbo">睿频 {{ row.cpu_turbo }}</span>
+              </div>
+            </template>
+            <template #discountGroup="{ row }">
+              <t-tag v-if="row.product_discount_group_id" theme="primary" variant="light" size="small">
+                {{ row.product_discount_group_name || `分组#${row.product_discount_group_id}` }}
+              </t-tag>
+              <span v-else class="product-discount-group-empty">未设置</span>
+            </template>
             <template #price="{ row }">
               {{ formatMonthlyPrice(row) }}
             </template>
@@ -815,7 +827,7 @@
           </t-radio-group>
           <p class="batch-dialog-tip">端口映射型控制台适用于端口转发类业务，通用计算型为默认控制台。</p>
         </t-form-item>
-        <t-form-item v-else label="折扣分组">
+        <t-form-item v-else-if="productBatchDialogKind === 'discount-group'" label="折扣分组">
           <t-select
             v-model="discountGroupValue"
             clearable
@@ -830,6 +842,15 @@
             />
           </t-select>
         </t-form-item>
+        <template v-else-if="productBatchDialogKind === 'cpu-spec'">
+          <t-form-item label="CPU 型号">
+            <t-input v-model="cpuModelValue" placeholder="留空则清除 CPU 型号" maxlength="120" />
+          </t-form-item>
+          <t-form-item label="CPU 睿频">
+            <t-input v-model="cpuTurboValue" placeholder="如 3.8GHz；留空则保持不变" maxlength="40" />
+          </t-form-item>
+          <p class="batch-dialog-tip">CPU 型号/睿频将直接写入商品，官网展示优先级高于 CPU 型号目录绑定。</p>
+        </template>
       </t-form>
     </t-dialog>
 
@@ -1394,7 +1415,7 @@ const productRowMenuKey = ref<string | number | null>(null);
 const categoryMenuKey = ref<string | null>(null);
 const categoryDragState = ref<{ key: string; level: number; scopeKey: string } | null>(null);
 const productBatchDialogVisible = ref(false);
-const productBatchDialogKind = ref<'console-template' | 'discount-group'>('console-template');
+const productBatchDialogKind = ref<'console-template' | 'discount-group' | 'cpu-spec'>('console-template');
 const productBatchDialogTitle = ref('');
 const productBatchSubmitting = ref(false);
 const productBatchTargetProductIds = ref<number[]>([]);
@@ -1403,6 +1424,8 @@ const consoleTemplateValue = ref('compute');
 const discountGroupValue = ref<number | string>('');
 const discountGroupOptions = ref<ProductDiscountGroupRecord[]>([]);
 const discountGroupLoading = ref(false);
+const cpuModelValue = ref('');
+const cpuTurboValue = ref('');
 let categoryRequestVersion = 0;
 let productRequestVersion = 0;
 interface CategoryFormData {
@@ -1467,6 +1490,8 @@ const productColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'price', title: '月价格', width: 120 },
   { colKey: 'stock', title: '库存', width: 100 },
   { colKey: 'services_count', title: '现存', width: 100 },
+  { colKey: 'cpu', title: 'CPU 型号', width: 180 },
+  { colKey: 'discountGroup', title: '折扣分组', width: 140 },
   { colKey: 'status', title: '显示状态', width: 110 },
   { colKey: 'operation', title: '操作', width: 72, fixed: 'right' },
 ];
@@ -2052,6 +2077,7 @@ function categoryMenuOptions(row: ProductCategoryRecord): DropdownOption[] {
   }
   options.push({ content: '批量设置折扣分组', value: 'batch-discount', divider: true });
   options.push({ content: '批量设置控制台类型', value: 'batch-console' });
+  options.push({ content: 'CPU规格', value: 'batch-cpu', divider: true });
   options.push(
     { content: '编辑', value: 'edit', divider: true },
     { content: '删除', value: 'delete', theme: 'error' } as DropdownOption,
@@ -2082,8 +2108,10 @@ function handleCategoryMenuClick(row: ProductCategoryRecord, option: DropdownOpt
     void handleForceDeleteCategory(row);
     return;
   }
-  if (action === 'batch-discount' || action === 'batch-console') {
-    openProductBatchDialog(action === 'batch-console' ? 'console-template' : 'discount-group', [], row);
+  if (action === 'batch-discount' || action === 'batch-console' || action === 'batch-cpu') {
+    const kind =
+      action === 'batch-console' ? 'console-template' : action === 'batch-cpu' ? 'cpu-spec' : 'discount-group';
+    openProductBatchDialog(kind, [], row);
   }
 }
 
@@ -2531,7 +2559,7 @@ function handleCategoryMenuVisible(visible: boolean, item: ProductCategoryRecord
 }
 
 function openProductBatchDialog(
-  kind: 'console-template' | 'discount-group',
+  kind: 'console-template' | 'discount-group' | 'cpu-spec',
   targetRows: ProductRecord[],
   group?: ProductCategoryRecord,
 ) {
@@ -2542,18 +2570,56 @@ function openProductBatchDialog(
   }
 
   productBatchDialogKind.value = kind;
-  productBatchDialogTitle.value = kind === 'console-template' ? '设置控制台类型' : '设置代理折扣分组';
+  productBatchDialogTitle.value =
+    kind === 'console-template' ? '设置控制台类型' : kind === 'discount-group' ? '设置代理折扣分组' : '设置 CPU 规格';
   productBatchTargetProductIds.value = targetRowsIds;
   productBatchTargetGroup.value = group
     ? { id: productGroupEffectiveId(group), level: productGroupLevel(group), name: categoryDisplayName(group) }
     : null;
   if (kind === 'console-template') {
     consoleTemplateValue.value = 'compute';
-  } else {
+  } else if (kind === 'discount-group') {
     discountGroupValue.value = '';
     void loadDiscountGroups();
+    void prefillDiscountGroup(targetRows, group);
+  } else {
+    cpuModelValue.value = '';
+    cpuTurboValue.value = '';
+    void prefillCpuSpec(targetRows, group);
   }
   productBatchDialogVisible.value = true;
+}
+
+async function resolveBatchTargetProductRows(targetRows: ProductRecord[], group?: ProductCategoryRecord) {
+  if (targetRows.length) return targetRows;
+  if (!group) return [];
+  try {
+    const response = await productApi.list({
+      ...productGroupPayload(group),
+      lifecycle_status: 'all',
+      page: 1,
+      page_size: 100,
+    });
+    return Array.isArray(response.list) ? response.list : [];
+  } catch {
+    return [];
+  }
+}
+
+async function prefillDiscountGroup(targetRows: ProductRecord[], group?: ProductCategoryRecord) {
+  const rows = await resolveBatchTargetProductRows(targetRows, group);
+  if (!rows.length) return;
+  const groupIds = rows.map((row) => Number(row.product_discount_group_id || 0)).filter((id) => id > 0);
+  if (groupIds.length === rows.length && new Set(groupIds).size === 1) discountGroupValue.value = groupIds[0];
+}
+
+async function prefillCpuSpec(targetRows: ProductRecord[], group?: ProductCategoryRecord) {
+  const rows = await resolveBatchTargetProductRows(targetRows, group);
+  if (!rows.length) return;
+  const cpuModels = rows.map((row) => String(row.cpu_model || '').trim()).filter(Boolean);
+  const cpuTurbos = rows.map((row) => String(row.cpu_turbo || '').trim()).filter(Boolean);
+  if (cpuModels.length === rows.length && new Set(cpuModels).size === 1) cpuModelValue.value = cpuModels[0];
+  if (cpuTurbos.length === rows.length && new Set(cpuTurbos).size === 1) cpuTurboValue.value = cpuTurbos[0];
 }
 
 async function loadDiscountGroups() {
@@ -2572,9 +2638,12 @@ async function submitProductBatch() {
   const payload: Record<string, unknown> = { product_ids: productBatchTargetProductIds.value };
   if (productBatchDialogKind.value === 'console-template') {
     payload.console_template = consoleTemplateValue.value;
-  } else {
+  } else if (productBatchDialogKind.value === 'discount-group') {
     payload.product_discount_group_id =
       discountGroupValue.value === '' || discountGroupValue.value === null ? null : Number(discountGroupValue.value);
+  } else {
+    payload.cpu_model = cpuModelValue.value.trim() === '' ? null : cpuModelValue.value.trim();
+    if (cpuTurboValue.value.trim() !== '') payload.cpu_turbo = cpuTurboValue.value.trim();
   }
 
   productBatchSubmitting.value = true;

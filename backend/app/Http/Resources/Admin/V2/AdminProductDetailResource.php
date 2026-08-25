@@ -54,6 +54,8 @@ class AdminProductDetailResource extends JsonResource
             'configuration' => [
                 'console_template' => $product->console_template,
                 'config_options' => $this->removeSensitiveKeys((array) ($product->config_options ?? [])),
+                'cpu_model' => (string) ($product->cpu_model ?? ''),
+                'cpu_turbo' => (string) ($product->cpu_turbo ?? ''),
             ],
             'purchase_requirements' => [
                 'require_verification' => (bool) ($purchaseRequires['require_verification'] ?? false),
