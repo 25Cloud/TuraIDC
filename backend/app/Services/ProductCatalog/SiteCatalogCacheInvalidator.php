@@ -6,6 +6,7 @@ namespace App\Services\ProductCatalog;
 
 use App\Support\CacheKey;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * 商品目录缓存的唯一失效入口。
@@ -54,17 +55,24 @@ final class SiteCatalogCacheInvalidator
 
     /**
      * 失效全部商品目录缓存。任何改动商品、分组、CPU 型号、实例规格、规格亮点的写操作都应调用它。
+     *
+     * 整体注册为 afterCommit 回调：多数调用方（如 ProductCategoryService）在 DB::transaction()
+     * 内触发失效。若在事务提交前就 bump 版本号，并发请求会用新版本键缓存住提交前的旧目录，
+     * 提交后不再有第二次失效，旧数据要挂满整个 TTL。afterCommit 的语义（Laravel 实测）：
+     * 无事务立即执行、事务提交后执行、事务回滚则丢弃——三种场景都是想要的行为。
      */
     public function flush(): void
     {
-        Cache::forget(CacheKey::adminCatalogSummary());
-        Cache::forget(CacheKey::siteCatalog());
+        DB::afterCommit(function (): void {
+            Cache::forget(CacheKey::adminCatalogSummary());
+            Cache::forget(CacheKey::siteCatalog());
 
-        // ProductDisplayNameResolver 是容器 singleton，其显示名与规格文案缓存是进程内长命的。
-        // 不刷的话长驻进程（队列 Worker、Octane）会继续返回旧值。
-        app(ProductDisplayNameResolver::class)->flushCaches();
+            // ProductDisplayNameResolver 是容器 singleton，其显示名与规格文案缓存是进程内长命的。
+            // 不刷的话长驻进程（队列 Worker、Octane）会继续返回旧值。
+            app(ProductDisplayNameResolver::class)->flushCaches();
 
-        // 放在最后：上面几步读到的都是旧版本下的键，bump 之后新请求一律落到新键。
-        Cache::put(CacheKey::siteCatalogSplitVersion(), $this->currentVersion() + 1, now()->addYear());
+            // 放在最后：上面几步读到的都是旧版本下的键，bump 之后新请求一律落到新键。
+            Cache::put(CacheKey::siteCatalogSplitVersion(), $this->currentVersion() + 1, now()->addYear());
+        });
     }
 }
