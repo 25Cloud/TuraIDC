@@ -278,6 +278,7 @@ class User extends Authenticatable
         return $this->belongsTo(MemberLevel::class, 'member_level_id');
     }
 
+    /** @return BelongsTo<AgentGroup, $this> */
     public function agentGroup(): BelongsTo
     {
         return $this->belongsTo(AgentGroup::class, 'agent_group_id');

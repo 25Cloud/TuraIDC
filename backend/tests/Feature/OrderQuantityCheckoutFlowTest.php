@@ -449,7 +449,12 @@ class OrderQuantityCheckoutFlowTest extends TestCase
         $paymentService->handlePaidInvoice($invoice, 'trace-renew-sync-'.$suffix);
     }
 
-    public function test_checkout_service_requires_verified_user_for_new_purchase_even_without_product_flag(): void
+    /**
+     * 商品开启 require_verification 时，未实名用户在下单流程中应被拦截。
+     *
+     * 实名是按商品维度的开关，未开启的商品不拦截（覆盖见 ProductPurchaseRequiresCheckoutTest）。
+     */
+    public function test_checkout_service_requires_verified_user_for_new_purchase_when_product_flag_enabled(): void
     {
         $suffix = bin2hex(random_bytes(4));
 
@@ -469,7 +474,7 @@ class OrderQuantityCheckoutFlowTest extends TestCase
             'pricing' => ['monthly' => '66.00'],
             'setup_fee' => '0.00',
             'config_options' => [],
-            'purchase_requires' => [],
+            'purchase_requires' => ['require_verification' => true],
             'stock' => 8,
             'status' => 1,
             'sort_order' => 0,

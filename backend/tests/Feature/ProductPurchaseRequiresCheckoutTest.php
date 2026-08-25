@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Exceptions\BusinessException;
+use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\Finance\AdminOrderNotificationService;
@@ -122,11 +123,17 @@ class ProductPurchaseRequiresCheckoutTest extends TestCase
         }
     }
 
-    public function test_order_creation_requires_verified_user_even_when_product_does_not_explicitly_demand_verification(): void
+    /**
+     * 商品未开启 require_verification 时，未实名用户也应当能够下单。
+     *
+     * 实名是按商品维度的开关（管理端可配、官网据此渲染购买条件），不是平台级硬性门禁——
+     * 本系统同时存在非中国大陆主体的部署场景。面向大陆主体的部署应在商品上开启该开关。
+     */
+    public function test_order_creation_allows_unverified_user_when_product_does_not_demand_verification(): void
     {
         $suffix = bin2hex(random_bytes(4));
         $user = User::query()->create([
-            'email' => "purchase-global-verify-{$suffix}@example.com",
+            'email' => "purchase-no-verify-{$suffix}@example.com",
             'password' => 'secret123',
             'phone' => '139'.str_pad((string) random_int(0, 99999999), 8, '0', STR_PAD_LEFT),
             'status' => 1,
@@ -135,7 +142,7 @@ class ProductPurchaseRequiresCheckoutTest extends TestCase
         ]);
 
         $product = Product::query()->create([
-            'name' => '普通商品也需实名',
+            'name' => '无需实名的商品',
             'product_type' => 'server',
             'pricing' => ['monthly' => '99.00'],
             'setup_fee' => '0.00',
@@ -154,23 +161,19 @@ class ProductPurchaseRequiresCheckoutTest extends TestCase
         ]);
         $tokenData = $checkoutSecurity->issueQuoteToken($product->id, 'monthly', [], $quotePayload);
 
-        try {
-            $checkoutService->create($user->id, [
-                'product_id' => (int) $product->id,
-                'billing_cycle' => 'monthly',
-                'quantity' => 1,
-                'config' => [],
-                'quote_token' => (string) ($tokenData['quote_token'] ?? ''),
-            ], [
-                'idempotency_key' => 'purchase-global-verify-'.$suffix,
-                'trace_id' => 'trace-purchase-global-verify-'.$suffix,
-            ]);
+        $invoice = $checkoutService->create($user->id, [
+            'product_id' => (int) $product->id,
+            'billing_cycle' => 'monthly',
+            'quantity' => 1,
+            'config' => [],
+            'quote_token' => (string) ($tokenData['quote_token'] ?? ''),
+        ], [
+            'idempotency_key' => 'purchase-no-verify-'.$suffix,
+            'trace_id' => 'trace-purchase-no-verify-'.$suffix,
+        ]);
 
-            $this->fail('Expected BusinessException was not thrown.');
-        } catch (BusinessException $exception) {
-            $this->assertSame(40301, $exception->getErrorCode());
-            $this->assertStringContainsString('实名认证', $exception->getMessage());
-        }
+        $this->assertInstanceOf(Invoice::class, $invoice);
+        $this->assertSame((int) $user->id, (int) $invoice->user_id);
     }
 
     private function makeCheckoutService(Product $product, int $expectedQuantity): CheckoutService

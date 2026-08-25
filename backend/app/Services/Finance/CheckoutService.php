@@ -445,6 +445,16 @@ class CheckoutService
         return '';
     }
 
+    /**
+     * 校验商品的购买前置条件。
+     *
+     * 实名与手机号都按商品维度的 purchase_requires 开关判定：管理端 StoreProductRequest
+     * 校验该开关、AdminProductDetailResource 与 ProductResource 对外暴露它，官网也据此
+     * 渲染购买条件，因此后端必须真正读取，否则整条链路是在对管理员撒谎。
+     *
+     * 注意：中国大陆的 IDC / 云服务受实名制约束，面向大陆主体的部署应在商品上开启
+     * require_verification；本系统同时存在非大陆主体的部署场景，故不在此处硬编码强制。
+     */
     private function assertPurchaseRequires(Product $product, int $userId): void
     {
         $requires = (array) ($product->purchase_requires ?? []);
@@ -454,10 +464,12 @@ class CheckoutService
             return;
         }
 
-        throw_if(
-            ! $user->hasCompletedVerification(),
-            new BusinessException('该商品需要实名认证后才能购买，请先完成实名认证', 40301)
-        );
+        if (! empty($requires['require_verification'])) {
+            throw_if(
+                ! $user->hasCompletedVerification(),
+                new BusinessException('该商品需要实名认证后才能购买，请先完成实名认证', 40301)
+            );
+        }
 
         if (! empty($requires['require_phone'])) {
             throw_if(

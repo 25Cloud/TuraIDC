@@ -223,6 +223,12 @@ class Product extends Model
         return $this->belongsTo(ThirdProductGroup::class, 'product_group_id');
     }
 
+    /**
+     * 不带泛型时 Larastan 只能把关联推断成基类 Model，
+     * 调用方（AdminProductDetailResource）访问 id/name/code 等属性会被判为未定义属性。
+     *
+     * @return BelongsTo<ProductDiscountGroup, $this>
+     */
     public function productDiscountGroup(): BelongsTo
     {
         return $this->belongsTo(ProductDiscountGroup::class, 'product_discount_group_id');

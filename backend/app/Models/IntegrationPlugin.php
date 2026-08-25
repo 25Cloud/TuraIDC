@@ -31,6 +31,10 @@ class IntegrationPlugin extends Model
         'installed_by',
         'enabled_by',
         'source_hash',
+        // 缺了这项会让 PluginInstaller 的 updateOrCreate 批量赋值把它静默丢弃，
+        // manifest_hash 恒为 NULL，PluginScanner::assertManifestHash() 提前返回，
+        // 插件清单篡改检测永远不会触发。
+        'manifest_hash',
     ];
 
     protected $casts = [

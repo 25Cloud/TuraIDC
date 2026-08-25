@@ -14,7 +14,6 @@ use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
-use App\Models\User;
 use App\Services\Finance\CheckoutSecurityService;
 use App\Services\Finance\CouponService;
 use App\Services\Finance\PaymentService;
@@ -258,28 +257,6 @@ class OrderService
             'refund' => $this->refundByPaymentMethod($order, $payload, $context),
             default => throw new BusinessException('不支持的支付状态操作'),
         };
-    }
-
-    private function assertPurchaseRequires(Product $product, int $userId): void
-    {
-        $requires = (array) ($product->purchase_requires ?? []);
-
-        $user = User::find($userId);
-        if (! $user) {
-            return;
-        }
-
-        throw_if(
-            ! $user->hasCompletedVerification(),
-            new BusinessException('该商品需要实名认证后才能购买，请先完成实名认证', 40301)
-        );
-
-        if (! empty($requires['require_phone'])) {
-            throw_if(
-                empty(trim((string) ($user->phone ?? ''))),
-                new BusinessException('该商品需要绑定手机号后才能购买，请先添加手机号', 40302)
-            );
-        }
     }
 
     private function markPaidManually(Order $order, array $payload, array $context): Order
