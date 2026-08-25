@@ -74,7 +74,7 @@
             :aria-selected="isCategoryRowActive(item) ? 'true' : 'false'"
             @dragover.prevent="handleCategoryDragOver(item, $event)"
             @drop.prevent="handleCategoryDrop(item, $event)"
-            @contextmenu.prevent.stop="openCategoryMenu(item)"
+            @contextmenu.prevent.stop="openCategoryMenu(item, 'desktop')"
           >
             <button
               type="button"
@@ -123,8 +123,8 @@
               placement="bottom-right"
               :options="categoryMenuOptions(item)"
               :popup-props="{
-                visible: categoryMenuKey === categoryIdKey(item),
-                onVisibleChange: (visible: boolean) => handleCategoryMenuVisible(visible, item),
+                visible: categoryMenuKey === categoryMenuVisibleKey('desktop', item),
+                onVisibleChange: (visible: boolean) => handleCategoryMenuVisible(visible, item, 'desktop'),
               }"
               @click="handleCategoryMenuClick(item, $event as DropdownOption)"
             >
@@ -407,7 +407,7 @@
               :aria-selected="isCategoryRowActive(item) ? 'true' : 'false'"
               @dragover.prevent="handleCategoryDragOver(item, $event)"
               @drop.prevent="handleCategoryDrop(item, $event)"
-              @contextmenu.prevent.stop="openCategoryMenu(item)"
+              @contextmenu.prevent.stop="openCategoryMenu(item, 'mobile')"
             >
               <button
                 type="button"
@@ -456,8 +456,8 @@
                 placement="bottom-right"
                 :options="categoryMenuOptions(item)"
                 :popup-props="{
-                  visible: categoryMenuKey === categoryIdKey(item),
-                  onVisibleChange: (visible: boolean) => handleCategoryMenuVisible(visible, item),
+                  visible: categoryMenuKey === categoryMenuVisibleKey('mobile', item),
+                  onVisibleChange: (visible: boolean) => handleCategoryMenuVisible(visible, item, 'mobile'),
                 }"
                 @click="handleCategoryMenuClick(item, $event as DropdownOption)"
               >
@@ -975,6 +975,7 @@
             filterable
             placeholder="不选择则新增二级分类，选择后新增三级分类"
             :disabled="categoryParentSelectDisabled"
+            :loading="categoryParentLoading"
           >
             <t-option
               v-for="item in categoryParentCategoryOptions"
@@ -1297,6 +1298,8 @@ const productActionLoading = ref<number | string | null>(null);
 
 const productTypes = ref<ProductTypeRecord[]>([]);
 const categoryOptions = ref<ProductCategoryRecord[]>([]);
+const categoryParentOptions = ref<ProductCategoryRecord[]>([]);
+const categoryParentLoading = ref(false);
 const products = ref<ProductRecord[]>([]);
 const productTotal = ref(0);
 const productPage = ref(1);
@@ -1583,9 +1586,9 @@ const categoryParentSelectDisabled = computed(() => {
 });
 const categoryParentCategoryOptions = computed(() => {
   const editingCategoryKey = editingCategory.value ? productGroupOptionKey(editingCategory.value) : '';
-  const selectedFirstGroupCode = String(categoryForm.product_type || catalogFilters.product_type || '');
+  const selectedFirstGroupCode = String(categoryForm.product_type || catalogFilters.product_type || '').trim();
 
-  return categoryOptions.value.filter((item) => {
+  return categoryParentOptions.value.filter((item) => {
     if (editingCategoryKey && productGroupOptionKey(item) === editingCategoryKey) return false;
     if (productGroupLevel(item) !== 2) return false;
     if (
@@ -2075,8 +2078,8 @@ function categoryMenuOptions(row: ProductCategoryRecord): DropdownOption[] {
   if (productGroupLevel(row) === 2) {
     options.push({ content: '新增三级分类', value: 'create-child', divider: true });
   }
-  options.push({ content: '批量设置折扣分组', value: 'batch-discount', divider: true });
-  options.push({ content: '批量设置控制台类型', value: 'batch-console' });
+  options.push({ content: '折扣分组', value: 'batch-discount', divider: true });
+  options.push({ content: '控制台类型', value: 'batch-console' });
   options.push({ content: 'CPU规格', value: 'batch-cpu', divider: true });
   options.push(
     { content: '编辑', value: 'edit', divider: true },
@@ -2116,7 +2119,13 @@ function handleCategoryMenuClick(row: ProductCategoryRecord, option: DropdownOpt
 }
 
 function handleCategoryProductTypeChange(value: unknown) {
-  const selectedParent = categoryOptions.value.find(
+  // 编辑三级分类：一级分类变更后，父级必须重新选择，并按新一级分类加载父级选项
+  if (editingCategory.value && productGroupLevel(editingCategory.value) === 3) {
+    categoryForm.parent_id = '';
+    void loadCategoryParentOptions(String(value || ''));
+    return;
+  }
+  const selectedParent = categoryParentOptions.value.find(
     (item) => productGroupLevel(item) === 2 && String(productGroupEffectiveId(item)) === String(categoryForm.parent_id),
   );
   if (selectedParent && String(selectedParent.first_product_group_code || '') !== String(value || '')) {
@@ -2133,7 +2142,7 @@ function resolveSelectedParentCategory() {
   const parentId = String(categoryForm.parent_id || '');
   if (!parentId) return null;
   return (
-    categoryOptions.value.find(
+    categoryParentOptions.value.find(
       (item) => productGroupLevel(item) === 2 && String(productGroupEffectiveId(item)) === parentId,
     ) || null
   );
@@ -2143,6 +2152,27 @@ function categoryParentOptionLabel(item: ProductCategoryRecord) {
   return String(
     item.second_product_group_name || item.name || item.label || `二级分类 #${productGroupEffectiveId(item)}`,
   ).trim();
+}
+
+async function loadCategoryParentOptions(firstGroupCode: string) {
+  const code = String(firstGroupCode || '').trim();
+  if (!code) {
+    categoryParentOptions.value = [];
+    return;
+  }
+  categoryParentLoading.value = true;
+  try {
+    const response = await productApi.categories({ first_product_group_code: code });
+    const scopedTree = (Array.isArray(response.tree) ? response.tree : []).filter(
+      (root) => String(root.first_product_group_code || '').trim() === code,
+    );
+    categoryParentOptions.value = flattenCategories(scopedTree).filter((item) => productGroupLevel(item) === 2);
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '加载二级分类父级失败'));
+    categoryParentOptions.value = [];
+  } finally {
+    categoryParentLoading.value = false;
+  }
 }
 
 // --- Data loading ---
@@ -2550,12 +2580,22 @@ function handleProductRowMenuVisible(visible: boolean, id: number | string) {
   productRowMenuKey.value = visible ? id : null;
 }
 
-function openCategoryMenu(item: ProductCategoryRecord) {
-  categoryMenuKey.value = categoryIdKey(item);
+type CategoryMenuScope = 'desktop' | 'mobile';
+
+function categoryMenuVisibleKey(scope: CategoryMenuScope, item: ProductCategoryRecord) {
+  return `${scope}:${categoryIdKey(item)}`;
 }
 
-function handleCategoryMenuVisible(visible: boolean, item: ProductCategoryRecord) {
-  categoryMenuKey.value = visible ? categoryIdKey(item) : null;
+function openCategoryMenu(item: ProductCategoryRecord, scope: CategoryMenuScope = 'desktop') {
+  categoryMenuKey.value = categoryMenuVisibleKey(scope, item);
+}
+
+function handleCategoryMenuVisible(
+  visible: boolean,
+  item: ProductCategoryRecord,
+  scope: CategoryMenuScope = 'desktop',
+) {
+  categoryMenuKey.value = visible ? categoryMenuVisibleKey(scope, item) : null;
 }
 
 function openProductBatchDialog(
@@ -3468,6 +3508,10 @@ function openCategoryDialog(row?: ProductCategoryRecord, thirdCategoryParent?: P
     is_visible: Number(row?.is_visible ?? 1),
   });
   categoryDialogVisible.value = true;
+  if (level === 3) {
+    // 编辑三级分类：确保父级下拉按当前一级分类加载（分类树只含当前筛选的一级分类）
+    void loadCategoryParentOptions(categoryForm.product_type);
+  }
 }
 
 async function submitCategory() {
