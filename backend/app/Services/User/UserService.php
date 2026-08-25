@@ -28,6 +28,7 @@ use App\Services\Finance\FinanceLedgerQueryService;
 use App\Services\Finance\InvoiceService;
 use App\Services\Finance\PaymentService;
 use App\Services\Provisioning\ProvisionService;
+use App\Services\Provisioning\ServiceRenewService;
 use App\Services\Referral\ReferralService;
 use App\Services\System\NotificationService;
 use App\Services\System\OperationLogService;
@@ -56,6 +57,7 @@ class UserService
         private ServiceStatusSyncService $serviceStatusSyncService,
         private SettingService $settingService,
         private ?AccountService $accountService = null,
+        private ?ServiceRenewService $renewService = null,
     ) {}
 
     /**

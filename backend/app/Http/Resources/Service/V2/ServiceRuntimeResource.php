@@ -27,6 +27,25 @@ class ServiceRuntimeResource extends JsonResource
             'traffic' => $this->traffic((array) ($detail['traffic'] ?? [])),
             'actions' => $this->actions((array) ($detail['actions'] ?? [])),
             'specs' => $this->specs((array) ($detail['specs'] ?? [])),
+            '_sync' => $this->syncMarker((array) ($detail['_sync'] ?? [])),
+        ];
+    }
+
+    /**
+     * 后台异步同步完成后写入的变更标记，前端据此提示信息已更新。
+     *
+     * @param  array<string, mixed>  $marker
+     * @return array<string, mixed>|null
+     */
+    private function syncMarker(array $marker): ?array
+    {
+        if (! ($marker['changed'] ?? false)) {
+            return null;
+        }
+
+        return [
+            'changed' => true,
+            'changed_at' => (string) ($marker['changed_at'] ?? ''),
         ];
     }
 

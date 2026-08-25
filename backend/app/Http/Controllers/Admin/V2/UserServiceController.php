@@ -79,7 +79,7 @@ class UserServiceController extends Controller
 
     public function remoteStatus(ShowUserServiceRemoteStatusRequest $request, User $user, int $service): JsonResponse
     {
-        $detail = $this->users->serviceRemoteStatusPatch($user, $service, true);
+        $detail = $this->users->serviceRemoteStatusPatch($user, $service, true, true);
 
         return $this->success([
             'service' => ServiceRuntimeResource::make($detail)->resolve(),

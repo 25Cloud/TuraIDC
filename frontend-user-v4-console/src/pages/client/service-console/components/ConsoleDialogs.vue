@@ -4,6 +4,7 @@
   <nat-forwarding-dialog />
   <password-reset-dialog />
   <reinstall-dialog />
+  <rescue-dialog />
   <renew-dialog />
   <traffic-package-dialog />
   <name-dialog />
@@ -16,6 +17,7 @@ import PasswordResetDialog from './dialogs/PasswordResetDialog.vue';
 import ReinstallDialog from './dialogs/ReinstallDialog.vue';
 import RemarkDialog from './dialogs/RemarkDialog.vue';
 import RenewDialog from './dialogs/RenewDialog.vue';
+import RescueDialog from './dialogs/RescueDialog.vue';
 import SecurityGroupDialog from './dialogs/SecurityGroupDialog.vue';
 import SecurityRuleDialog from './dialogs/SecurityRuleDialog.vue';
 import TrafficPackageDialog from './dialogs/TrafficPackageDialog.vue';

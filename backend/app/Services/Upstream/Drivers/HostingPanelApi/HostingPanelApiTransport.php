@@ -257,6 +257,30 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
         return $this->get($supplier, "/v1/hosts/{$hostId}", $resolvedJwt);
     }
 
+    /**
+     * 暂停上游主机（模块功能 suspend）。
+     */
+    public function suspendHost(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        $resolvedJwt = $jwt !== null && trim($jwt) !== ''
+            ? trim($jwt)
+            : $this->login($supplier);
+
+        return $this->put($supplier, "/v1/hosts/{$hostId}/module/suspend", [], $resolvedJwt);
+    }
+
+    /**
+     * 解除暂停上游主机（模块功能 unsuspend）。
+     */
+    public function unsuspendHost(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        $resolvedJwt = $jwt !== null && trim($jwt) !== ''
+            ? trim($jwt)
+            : $this->login($supplier);
+
+        return $this->put($supplier, "/v1/hosts/{$hostId}/module/unsuspend", [], $resolvedJwt);
+    }
+
     public function getHostUpgradeConfigOptions(Supplier $supplier, int $hostId, ?string $jwt = null): array
     {
         $resolvedJwt = $jwt !== null && trim($jwt) !== ''

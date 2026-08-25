@@ -118,6 +118,91 @@ class AdminUserActionV2Service
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function suspendService(User $user, int $serviceId, array $payload, Request $request): array
+    {
+        $detail = $this->users->suspendService($user, $serviceId, $payload, $this->actorContext($request));
+
+        return $this->result($serviceId, 'completed', '实例已暂停', [
+            'type' => 'suspend',
+            'service_id' => $serviceId,
+            'operation' => $this->compactOperationDetail($detail),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function unsuspendService(User $user, int $serviceId, Request $request): array
+    {
+        $detail = $this->users->unsuspendService($user, $serviceId, $this->actorContext($request));
+
+        return $this->result($serviceId, 'completed', '实例已解除暂停', [
+            'type' => 'unsuspend',
+            'service_id' => $serviceId,
+            'operation' => $this->compactOperationDetail($detail),
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function reinstallService(User $user, int $serviceId, array $payload, Request $request): array
+    {
+        $detail = $this->users->serviceReinstall($user, $serviceId, $payload, $this->actorContext($request));
+
+        return $this->result($serviceId, 'queued', '重装系统任务已提交', [
+            'type' => 'reinstall',
+            'service_id' => $serviceId,
+            'operation' => $this->compactOperationDetail($detail),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function reinstallServiceOptions(User $user, int $serviceId, bool $forceRefresh = false): array
+    {
+        $options = $this->users->serviceReinstallOptions($user, $serviceId, $forceRefresh);
+
+        return [
+            'service_id' => $serviceId,
+            'os' => is_array($options['os'] ?? null) ? $options['os'] : [],
+            'os_groups' => is_array($options['os_groups'] ?? null) ? $options['os_groups'] : [],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function renewServicePreview(User $user, int $serviceId, ?string $billingCycle = null): array
+    {
+        $preview = $this->users->renewServicePreview($user, $serviceId, $billingCycle);
+
+        return [
+            'service_id' => $serviceId,
+            'preview' => is_array($preview) ? $preview : [],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function renewServiceOrder(User $user, int $serviceId, string $billingCycle, Request $request): array
+    {
+        $order = $this->users->renewServiceOrder($user, $serviceId, $billingCycle, $this->actorContext($request));
+
+        return $this->result($serviceId, 'completed', '续费订单已创建', [
+            'type' => 'renew',
+            'service_id' => $serviceId,
+            'order' => $order,
+        ]);
+    }
+
+    /**
      * @param  array<string, mixed>  $detail
      * @return array<string, mixed>
      */

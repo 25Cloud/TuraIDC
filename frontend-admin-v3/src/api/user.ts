@@ -252,5 +252,35 @@ export const userApi = {
       .then(normalizeV2ServicePayload),
   refundService: (id: number | string, serviceId: number | string, data: RefundPayload) =>
     request.post<{ message?: string }>({ url: `/v2/admin/users/${id}/services/${serviceId}/refunds`, data }),
+  serviceSuspend: (id: number | string, serviceId: number | string, data: { reason?: string }) =>
+    request.post<{ message?: string; detail?: Record<string, unknown> }>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/suspend`,
+      data,
+    }),
+  serviceUnsuspend: (id: number | string, serviceId: number | string) =>
+    request.post<{ message?: string; detail?: Record<string, unknown> }>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/unsuspend`,
+    }),
+  serviceReinstallOptions: (id: number | string, serviceId: number | string) =>
+    request.get<{
+      os?: { os_id: string; name: string; group_name: string }[];
+      os_groups?: { group_name: string; img: string }[];
+    }>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/reinstallations/options`,
+    }),
+  serviceReinstall: (id: number | string, serviceId: number | string, data: { os_id: string }) =>
+    request.post<{ message?: string; detail?: Record<string, unknown> }>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/reinstallations`,
+      data,
+    }),
+  serviceRenewPreview: (id: number | string, serviceId: number | string) =>
+    request.get<{ preview?: Record<string, unknown> }>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/renewals`,
+    }),
+  serviceRenewOrder: (id: number | string, serviceId: number | string, data: { billing_cycle: string }) =>
+    request.post<{ message?: string; detail?: { order?: Record<string, unknown> } }>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/renewals`,
+      data,
+    }),
   osOptions: () => request.get<{ groups?: Record<string, unknown>[] }>({ url: '/v2/admin/os-options' }),
 };

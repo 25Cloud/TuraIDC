@@ -65,9 +65,11 @@ export function emptyDetail(): ConsoleServiceDetail {
       module_status: false,
       password_reset: false,
       reinstall: false,
+      rescue: false,
       traffic_package: false,
       available: [],
     },
+    _sync: null,
   };
 }
 

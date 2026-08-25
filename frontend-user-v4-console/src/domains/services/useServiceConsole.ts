@@ -10,6 +10,7 @@ import { useConsoleDialogs } from './console/useConsoleDialogs';
 import { useConsoleAutoRenew, useConsolePower } from './console/useConsolePower';
 import { useConsoleReinstall } from './console/useConsoleReinstall';
 import { useConsoleRenew } from './console/useConsoleRenew';
+import { useConsoleRescue } from './console/useConsoleRescue';
 import { useConsoleSecurity } from './console/useConsoleSecurity';
 import { useConsoleTabs } from './console/useConsoleTabs';
 import { useConsoleTrafficPackages } from './console/useConsoleTrafficPackages';
@@ -140,6 +141,16 @@ export function useServiceConsole() {
     scheduleStatusSync,
     normalizeDetail: normalizeConsoleDetail,
     mergeDetail,
+  });
+
+  // Rescue mode dialog
+  const { rescueVisible, rescueState, openRescueDialog, submitRescue } = useConsoleRescue({
+    serviceId,
+    actionLoading,
+    setOperationStatus,
+    loadRemoteStatus,
+    clearStatusSyncTimer,
+    scheduleStatusSync,
   });
 
   // VNC
@@ -363,6 +374,8 @@ export function useServiceConsole() {
     passwordForm,
     reinstallVisible,
     reinstallState,
+    rescueVisible,
+    rescueState,
     monitorState,
     securityState,
     activeSecurityGroup,
@@ -438,6 +451,8 @@ export function useServiceConsole() {
     openReinstallDialog,
     handleReinstallGroupChange,
     submitReinstall,
+    openRescueDialog,
+    submitRescue,
     handleToggleAutoRenew,
     loadMonitor,
     loadSecurityGroups,

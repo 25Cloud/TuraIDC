@@ -170,6 +170,8 @@ Route::middleware(['auth:sanctum', 'ensure.client'])->group(function (): void {
         ->middleware('throttle:6,1,client-service-password-reset');
     Route::post('/services/{service}/reinstallations', [ActionController::class, 'reinstall'])
         ->middleware('throttle:6,1,client-service-reinstall');
+    Route::post('/services/{service}/rescues', [ActionController::class, 'rescue'])
+        ->middleware('throttle:6,1,client-service-rescue');
 
     Route::get('/tickets', [TicketWorkflowController::class, 'index']);
     Route::get('/tickets/service-options', [TicketWorkflowController::class, 'serviceOptions']);

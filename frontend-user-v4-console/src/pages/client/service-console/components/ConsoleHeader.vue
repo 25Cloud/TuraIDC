@@ -115,6 +115,7 @@ import {
   RefreshIcon,
   RotateIcon,
 } from 'tdesign-icons-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, ref } from 'vue';
 
 import { useServiceConsoleContext } from './context';
@@ -140,6 +141,7 @@ const {
   handleToggleAutoRenew,
   openPasswordDialog,
   openReinstallDialog,
+  openRescueDialog,
   copyText,
 } = useServiceConsoleContext();
 
@@ -148,9 +150,16 @@ const ipDialogVisible = ref(false);
 const moreOptions = computed(() => [
   { content: '重置密码', value: 'password', disabled: !detail.value.actions?.password_reset },
   { content: '重装系统', value: 'reinstall', disabled: !detail.value.actions?.reinstall },
+  { content: '救援模式', value: 'rescue', disabled: !detail.value.actions?.rescue },
   { content: '强制关机', value: 'hard_off', disabled: !detail.value.actions?.power },
   { content: '强制重启', value: 'hard_reboot', disabled: !detail.value.actions?.power },
+  { content: '规格升级', value: 'upgrade', disabled: !hasUpgradeEntry.value },
+  { content: '快照/备份', value: 'snapshot', disabled: true },
+  { content: 'SSH 密钥', value: 'ssh_key', disabled: true },
+  { content: '磁盘管理', value: 'disk', disabled: true },
 ]);
+
+const hasUpgradeEntry = computed(() => Boolean(detail.value.actions?.upgrade ?? false));
 
 const isInstanceRunning = computed(() => instanceStatusTheme.value === 'success');
 
@@ -167,6 +176,16 @@ function handleMoreCommand(command: string) {
 
   if (command === 'reinstall') {
     void openReinstallDialog();
+    return;
+  }
+
+  if (command === 'rescue') {
+    openRescueDialog();
+    return;
+  }
+
+  if (command === 'snapshot' || command === 'ssh_key' || command === 'disk') {
+    MessagePlugin.info('当前上游接口暂不支持该功能');
   }
 }
 

@@ -52,6 +52,7 @@ class ClientServiceConsoleService
         private readonly ServiceDetailService $detailService,
         private readonly ServiceTransformService $transformService,
         private readonly ServicePowerService $powerService,
+        private readonly ServiceSuspensionService $suspensionService,
         private readonly ServiceVncService $vncService,
         private readonly ServiceNatService $natService,
         private readonly ServiceSecurityGroupService $securityGroupService,
@@ -101,10 +102,10 @@ class ClientServiceConsoleService
         );
     }
 
-    public function getRemoteStatusPatchForUser(User $user, int $serviceId, bool $includeSensitiveConnection = true): array
+    public function getRemoteStatusPatchForUser(User $user, int $serviceId, bool $includeSensitiveConnection = true, bool $forceRefresh = false): array
     {
         return $this->sanitizeConnectionDetail(
-            $this->detailService->getRemoteStatusPatchForUser($user, $serviceId),
+            $this->detailService->getRemoteStatusPatchForUser($user, $serviceId, $forceRefresh),
             $includeSensitiveConnection
         );
     }
@@ -186,6 +187,21 @@ class ClientServiceConsoleService
     public function reinstallForUser(User $user, int $serviceId, array $data, array $context = []): array
     {
         return $this->powerService->reinstallForUser($user, $serviceId, $data, $context);
+    }
+
+    public function rescueForUser(User $user, int $serviceId, array $data, array $context = []): array
+    {
+        return $this->powerService->rescueForUser($user, $serviceId, $data, $context);
+    }
+
+    public function suspendForUser(User $user, int $serviceId, array $data = [], array $context = []): array
+    {
+        return $this->suspensionService->suspendForUser($user, $serviceId, $data, $context);
+    }
+
+    public function unsuspendForUser(User $user, int $serviceId, array $context = []): array
+    {
+        return $this->suspensionService->unsuspendForUser($user, $serviceId, $context);
     }
 
     // ══════════════════════════════════════════════════════════════════════

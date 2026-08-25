@@ -124,6 +124,12 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/users/{user}/services/{service}/power-actions', [UserController::class, 'servicePower']);
         Route::post('/users/{user}/services/{service}/password-resets', [UserController::class, 'resetServicePassword']);
         Route::post('/users/{user}/services/{service}/refunds', [UserController::class, 'refundService']);
+        Route::post('/users/{user}/services/{service}/suspend', [UserController::class, 'suspendService']);
+        Route::post('/users/{user}/services/{service}/unsuspend', [UserController::class, 'unsuspendService']);
+        Route::post('/users/{user}/services/{service}/reinstallations', [UserController::class, 'reinstallService']);
+        Route::get('/users/{user}/services/{service}/reinstallations/options', [UserController::class, 'reinstallServiceOptions']);
+        Route::get('/users/{user}/services/{service}/renewals', [UserController::class, 'renewServicePreview']);
+        Route::post('/users/{user}/services/{service}/renewals', [UserController::class, 'renewServiceOrder']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::USER_LOGIN_AS])->group(function (): void {
