@@ -457,6 +457,23 @@
         />
         <p v-if="field.description" class="supplier-field-tip">{{ field.description }}</p>
       </t-form-item>
+      <t-form-item label="余额不足提醒" name="low_balance_alert_enabled">
+        <t-switch v-model="supplierForm.low_balance_alert_enabled" />
+        <p class="supplier-field-tip">开启后，上游余额低于下方阈值时邮件提醒有供应商权限的管理员。</p>
+      </t-form-item>
+      <t-form-item label="余额告警阈值" name="low_balance_threshold">
+        <t-input-number
+          v-model="supplierForm.low_balance_threshold"
+          :min="0"
+          :max="99999999"
+          :decimal-places="2"
+          theme="column"
+          style="width: 100%"
+        />
+        <p class="supplier-field-tip">
+          余额低于该值即触发提醒，默认 20。重复提醒的间隔在「自动化策略 → 上游余额告警」中配置。
+        </p>
+      </t-form-item>
       <t-form-item label="状态" name="status"
         ><t-switch v-model="supplierForm.status" :custom-value="[1, 0]"
       /></t-form-item>
@@ -593,6 +610,8 @@ const supplierForm = reactive({
   provider_key: '',
   name: '',
   status: 1,
+  low_balance_threshold: 20 as number | null,
+  low_balance_alert_enabled: true,
 });
 const supplierCredentialValues = reactive<Record<string, string | number | boolean | null>>({});
 const supplierSecretEdited = reactive<Record<string, boolean>>({});
@@ -1567,10 +1586,18 @@ async function openSupplierDialog(row?: SupplierRecord) {
   const source = detail || row;
   const upstreamBinding = toPlainRecord(source?.upstream_binding);
   editingSupplier.value = source || null;
+  const balance = toPlainRecord(source?.balance_setting);
   Object.assign(supplierForm, {
     provider_key: upstreamBinding.provider_key || source?.provider_key || providerTypeOptions.value[0]?.value || '',
     name: source?.name || '',
     status: Number(source?.status ?? 1),
+    // 新建供应商时给出默认阈值 20；编辑时回填已保存的配置
+    low_balance_threshold:
+      balance.low_balance_threshold === undefined || balance.low_balance_threshold === null
+        ? 20
+        : Number(balance.low_balance_threshold),
+    low_balance_alert_enabled:
+      balance.low_balance_alert_enabled === undefined ? true : Boolean(balance.low_balance_alert_enabled),
   });
   resetSupplierCredentialValues(source || null);
   supplierDialogVisible.value = true;
@@ -1799,6 +1826,9 @@ function buildSupplierPayload(): SupplierUpsertPayload {
       base_url: '',
       account_name: '',
     },
+    low_balance_threshold:
+      supplierForm.low_balance_threshold === null ? undefined : Number(supplierForm.low_balance_threshold),
+    low_balance_alert_enabled: Boolean(supplierForm.low_balance_alert_enabled),
   };
 
   supplierCredentialFields.value.forEach((field) => {

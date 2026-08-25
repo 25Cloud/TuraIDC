@@ -21,6 +21,7 @@ use App\Services\Integrations\Plugins\PluginRuntimeRegistry;
 use App\Services\Integrations\Plugins\SupplierPluginCardRenderer;
 use App\Services\Integrations\Plugins\UpstreamBindingWriter;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
+use App\Services\Supplier\SupplierBalanceService;
 use App\Services\System\SettingService;
 use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
@@ -297,6 +298,10 @@ class AdminConfigurationV2QueryService
                     ->whereIn('id', $bindingIds)
                     ->delete();
             }
+
+            // 一并清掉余额台账与变更流水：留着既是永远不会被引用的孤儿数据，
+            // 也会让复用同一自增 ID 的新供应商读到上一任的余额。
+            app(SupplierBalanceService::class)->purgeSupplierData($supplierId);
 
             $lockedSupplier->delete();
 

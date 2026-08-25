@@ -6,6 +6,7 @@ use App\Constants\BillingCycle;
 use App\Constants\OrderStatus;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
+use App\Jobs\SyncSupplierBalanceJob;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Product;
@@ -15,6 +16,7 @@ use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\Integrations\Plugins\UpstreamBindingWriter;
 use App\Services\Integrations\Support\ProviderErrorMapper;
+use App\Services\Supplier\SupplierBalanceService;
 use App\Services\System\SettingService;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\ProviderResolver;
@@ -282,6 +284,10 @@ class ProvisionService
                 'service_snapshot' => $this->buildServiceSnapshot($service),
             ])->save();
 
+            // 开通成功后刷新该上游余额：开通才是真正扣减上游余额的动作，此刻拉取
+            // 才能拿到消耗后的真实值。异步进行，不拖慢开通链路，失败也不影响开通结果。
+            $this->dispatchSupplierBalanceSync($order->product);
+
             return $service;
         } catch (\Throwable $exception) {
             $message = $exception instanceof BusinessException
@@ -330,6 +336,8 @@ class ProvisionService
                 'message' => $message,
                 'exception' => $exception::class,
             ]);
+
+            $this->notifyIfUpstreamBalanceInsufficient($order, $message);
 
             if ($throwOnFailure) {
                 throw $exception instanceof BusinessException
@@ -1412,6 +1420,66 @@ class ProvisionService
     private function elapsedMilliseconds(float $startedAt): int
     {
         return (int) round((microtime(true) - $startedAt) * 1000);
+    }
+
+    /**
+     * 开通成功后异步刷新该商品所属上游的余额。
+     *
+     * 任何异常都吞掉：余额刷新是旁路动作，不能让它影响已经成功的开通结果；
+     * 即便这一次没派发出去，15 分钟的定时同步也会补上。
+     */
+    private function dispatchSupplierBalanceSync(mixed $product): void
+    {
+        if (! $product instanceof Product) {
+            return;
+        }
+
+        try {
+            $supplierId = $this->resolveProductSupplierId($product);
+            if ($supplierId > 0) {
+                SyncSupplierBalanceJob::dispatch($supplierId);
+            }
+        } catch (\Throwable $exception) {
+            Log::warning('[上游余额同步] 开通后触发刷新失败', [
+                'product_id' => (int) $product->id,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 开通失败且原因像是上游余额/额度不足时，邮件提醒管理员。
+     *
+     * 这类失败靠管理员给上游账户充值就能解决，与配置错误、参数不合法等失败的
+     * 处置方式完全不同，值得单独提醒，否则只会淹没在通用失败日志里。
+     */
+    private function notifyIfUpstreamBalanceInsufficient(Order $order, string $message): void
+    {
+        try {
+            $balanceService = app(SupplierBalanceService::class);
+            if (! $balanceService->looksLikeInsufficientBalance($message)) {
+                return;
+            }
+
+            $supplier = $order->product instanceof Product
+                ? $this->resolveProductSupplier($order->product)
+                : null;
+            if (! $supplier instanceof Supplier) {
+                return;
+            }
+
+            $balanceService->notifyProvisionFailure($supplier, [
+                'order_no' => (string) $order->order_no,
+                'product_name' => (string) ($order->product->name ?? ''),
+                'user_name' => (string) ($order->user->username ?? $order->user->email ?? ''),
+                'error_message' => $message,
+            ]);
+        } catch (\Throwable $exception) {
+            Log::warning('[上游余额通知] 开通失败提醒发送异常', [
+                'order_id' => (int) $order->id,
+                'message' => $exception->getMessage(),
+            ]);
+        }
     }
 
     private function resolveProductSupplierId(Product $product): int

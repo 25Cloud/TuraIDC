@@ -125,6 +125,11 @@
       "summary": "日志归档两阶段持久化、恢复、清理与生产切换计划；不在当前迭代排期，保留决策依据。"
     },
     {
+      "path": "execution-plans/tech-debt/upstream-catalog-stock-unreliable-2026-08-26.md",
+      "status": "tech-debt",
+      "summary": "上游目录接口库存字段不可信的实测记录（58% 与详情接口不一致）；属开源初始提交遗留，只记录未修复。"
+    },
+    {
       "path": "execution-plans/active/scheduler-refactor-2026-08-09.md",
       "status": "active",
       "summary": "ZJMF 定时任务机制与 TuraIDC 心跳、队列、台账、Hook 和人工重跑能力的差距及分阶段重构计划。",
