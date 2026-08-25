@@ -6,7 +6,7 @@
 
 - 操作系统：Linux（推荐 Ubuntu 22.04+ / Debian 12）或 Windows Server
 - PHP 8.3+（扩展：`pdo_mysql`、`redis`、`mbstring`、`openssl`、`zip`、`gd` 或 `imagick` 按需）
-- MySQL 8.0+（建议 utf8mb4）
+- MySQL 8.0+（推荐；最低兼容 5.7.8——5.7 已 EOL，仅兼容性支持。混用 8.0 的 mysqldump 客户端备份 5.7 服务端时需加 `--column-statistics=0`。**5.7 部署必须在 my.cnf 的 `[mysqld]` 段设置 `explicit_defaults_for_timestamp=ON`**：5.7 默认 OFF 时，表内首个无显式默认值的 `timestamp` 列会被隐式附加 `ON UPDATE CURRENT_TIMESTAMP`，与 8.0 行为不一致，可能悄悄改写业务时间字段）
 - Redis 6.0+（生产必需：分布式锁、缓存）
 - Composer 2.x
 - Node.js 20+（仅构建前端时需要）
@@ -128,11 +128,11 @@ npm run build:frontends
 
 该命令读取 `backend/.env` 中的四个公开地址，依次构建三端到各自 `dist/`：
 
-| 前端 | 产物目录 | 端口（开发） |
-| --- | --- | --- |
-| 官网门户 | `frontend-user-v3-www/dist/` | 5175 |
-| 用户控制台 | `frontend-user-v4-console/dist/` | 5173 |
-| 管理后台 | `frontend-admin-v3/dist/` | 5174 |
+| 前端       | 产物目录                         | 端口（开发） |
+| ---------- | -------------------------------- | ------------ |
+| 官网门户   | `frontend-user-v3-www/dist/`     | 5175         |
+| 用户控制台 | `frontend-user-v4-console/dist/` | 5173         |
+| 管理后台   | `frontend-admin-v3/dist/`        | 5174         |
 
 三端均为纯静态站点，发布时将各自 `dist/` 内容部署到对应 Nginx 站点即可。
 
@@ -218,14 +218,14 @@ user=www-data
 
 以下能力按需在 `backend/.env` 中开启（占位见 `.env.example`）：
 
-| 集成 | 环境变量 | 说明 |
-| --- | --- | --- |
-| 支付宝 | `ALIPAY_APP_ID` / `ALIPAY_PRIVATE_KEY` / `ALIPAY_PUBLIC_KEY` / `ALIPAY_NOTIFY_URL` | 在线支付 |
-| 短信（阿里云） | `SMS_API_ENDPOINT` | 验证码短信 |
-| 极验 | `GEETEST_CAPTCHA_ID` / `GEETEST_CAPTCHA_KEY` / `GEETEST_ENABLED` | 人机验证 |
-| 实名认证（IDC） | `VERIFICATION_KEY` / `VERIFICATION_API_ENDPOINT` | 实名校验 |
-| VNC Relay | `VNC_RELAY_HOST` / `VNC_RELAY_PORT` | 远程桌面 |
-| Sentry | `SENTRY_DSN` | 错误监控 |
+| 集成            | 环境变量                                                                           | 说明       |
+| --------------- | ---------------------------------------------------------------------------------- | ---------- |
+| 支付宝          | `ALIPAY_APP_ID` / `ALIPAY_PRIVATE_KEY` / `ALIPAY_PUBLIC_KEY` / `ALIPAY_NOTIFY_URL` | 在线支付   |
+| 短信（阿里云）  | `SMS_API_ENDPOINT`                                                                 | 验证码短信 |
+| 极验            | `GEETEST_CAPTCHA_ID` / `GEETEST_CAPTCHA_KEY` / `GEETEST_ENABLED`                   | 人机验证   |
+| 实名认证（IDC） | `VERIFICATION_KEY` / `VERIFICATION_API_ENDPOINT`                                   | 实名校验   |
+| VNC Relay       | `VNC_RELAY_HOST` / `VNC_RELAY_PORT`                                                | 远程桌面   |
+| Sentry          | `SENTRY_DSN`                                                                       | 错误监控   |
 
 供应商适配（如 `zjmf_finance`）通过管理后台「供应商」模块绑定配置，密钥不写入代码。
 

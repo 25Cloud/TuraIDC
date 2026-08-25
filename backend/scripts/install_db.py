@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -357,6 +358,56 @@ def run_server_sql(
     run_php_mysql_sql(db_username, db_password, db_host, db_port, db_socket, sql)
 
 
+def query_server_version_with_php(
+    db_username: str,
+    db_password: str,
+    db_host: str,
+    db_port: str,
+    db_socket: str,
+    db_database: str,
+) -> str:
+    php_code = php_pdo_bootstrap(with_database=False) + """
+echo (string) $pdo->query('SELECT VERSION()')->fetchColumn();
+"""
+    completed = run_command(
+        ["php", "-r", php_code],
+        env=php_mysql_env(db_username, db_password, db_host, db_port, db_socket, db_database),
+        capture=True,
+    )
+    assert completed is not None
+
+    return (completed.stdout or "").strip()
+
+
+def check_database_version(raw_version: str) -> None:
+    """数据库最低版本闸门。
+
+    此前没有任何版本探测：过低版本会在初始化阶段一路绿灯（基线能导入、迁移能跑），
+    直到运行期才在个别页面炸出 SQL 语法/类型错误，最难排查。下限依据（本仓实测）：
+    MySQL 5.7.8 起才有 json 类型（基线 58 个 json 列）与虚拟生成列上的唯一索引；
+    MariaDB 取 Laravel 12 官方支持矩阵的 10.3。版本串解析不出来时保守放行。
+    """
+    match = re.search(r"(\d+\.\d+(?:\.\d+)?)", raw_version)
+    if not match:
+        return
+    version = tuple(int(part) for part in match.group(1).split("."))
+
+    if "mariadb" in raw_version.lower():
+        if version < (10, 3):
+            fail(f"MariaDB 版本过低（当前 {raw_version}）：最低需要 10.3。")
+        return
+
+    if version < (5, 7, 8):
+        fail(f"MySQL 版本过低（当前 {raw_version}）：最低需要 5.7.8，推荐 8.0+。")
+    if version < (8, 0):
+        log(
+            f"MySQL {raw_version}：兼容支持档（5.7 已停止官方维护，建议尽快升级到 8.0+）。"
+            "强烈建议在 my.cnf 设置 explicit_defaults_for_timestamp=ON："
+            "5.7 默认 OFF 时首个无显式默认值的 timestamp 列会被隐式附加 "
+            "ON UPDATE CURRENT_TIMESTAMP，与 8.0 行为不一致。"
+        )
+
+
 def query_php_mysql_value(
     db_username: str,
     db_password: str,
@@ -496,6 +547,17 @@ def main() -> int:
         log(f"数据库密码：{mask_secret(db_password)}")
         if db_socket:
             log("检测到 DB_SOCKET，将优先使用 Unix Socket 连接")
+
+        if args.dry_run:
+            log("dry-run: 检查数据库服务器版本")
+        else:
+            if mysql_client_available:
+                server_version = query_mysql_value(mysql_base_args, db_password, "SELECT VERSION();")
+            else:
+                server_version = query_server_version_with_php(
+                    db_username, db_password, db_host, db_port, db_socket, db_database
+                )
+            check_database_version(server_version)
 
         if args.reset:
             drop_database_sql = f"DROP DATABASE IF EXISTS `{escaped_database_name}`;"
