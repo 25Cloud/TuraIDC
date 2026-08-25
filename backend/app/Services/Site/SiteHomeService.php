@@ -7,6 +7,7 @@ namespace App\Services\Site;
 use App\Models\ContentArticle;
 use App\Services\Content\ContentArticleService;
 use App\Services\Content\HomeHeroService;
+use App\Services\ProductCatalog\SiteCatalogCacheInvalidator;
 use App\Support\ContentPublishedCacheVersion;
 use App\Support\SiteConfigPayload;
 use App\Support\UploadUrl;
@@ -24,20 +25,37 @@ class SiteHomeService
         private readonly HomeHeroService $homeHeroService,
     ) {}
 
-    public function overview(int $groupLimit = 0, int $noticeLimit = 50, int $helpLimit = 4): array
+    /**
+     * 首页聚合缓存键。写入方与失效方共用，避免两边各拼一次 sprintf 后走形。
+     *
+     * 键里有两个版本号：
+     * - v{contentVersion}：文章发布版本，内容变更时换键；
+     * - c{catalogVersion}：商品目录拆分版本，商品/分组/CPU 型号/实例规格变更时由
+     *   SiteCatalogCacheInvalidator::flush() 递增。
+     *
+     * 加 c 段是因为这份 payload 里含商品数据（productTypes / productGroups / groupCatalogMap），
+     * 而它此前只跟着内容版本走：改完商品，首页仍旧读旧值直到 600 秒 TTL 到期。
+     * 原先 HandlesProductCatalogHelpers 里那句 Cache::tags(['site:home'])->flush()
+     * 想解决的正是这件事，但全仓没有一处用 tags 写缓存，它 flush 的是空标签集。
+     */
+    public static function overviewCacheKey(int $groupLimit, int $noticeLimit, int $helpLimit): string
     {
-        $groupLimit = max(0, $groupLimit);
-        $contentVersion = ContentPublishedCacheVersion::current();
-        $cacheKey = sprintf(
-            'site:home:%s:%d:%d:v%d',
+        return sprintf(
+            'site:home:%s:%d:%d:v%d:c%d',
             $groupLimit > 0 ? (string) $groupLimit : 'all',
             $noticeLimit,
             $helpLimit,
-            $contentVersion
+            ContentPublishedCacheVersion::current(),
+            app(SiteCatalogCacheInvalidator::class)->currentVersion(),
         );
+    }
+
+    public function overview(int $groupLimit = 0, int $noticeLimit = 50, int $helpLimit = 4): array
+    {
+        $groupLimit = max(0, $groupLimit);
 
         return Cache::remember(
-            $cacheKey,
+            self::overviewCacheKey($groupLimit, $noticeLimit, $helpLimit),
             now()->addSeconds(self::HOME_CACHE_TTL_SECONDS),
             function () use ($groupLimit, $noticeLimit, $helpLimit): array {
                 $contentOverview = $this->contentArticleService->publishedOverview($noticeLimit, $helpLimit);

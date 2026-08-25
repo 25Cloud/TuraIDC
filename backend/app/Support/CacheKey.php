@@ -62,6 +62,14 @@ final class CacheKey
     }
 
     /**
+     * 管理端目录概览缓存。
+     */
+    public static function adminCatalogSummary(): string
+    {
+        return 'catalog:admin_summary:v1';
+    }
+
+    /**
      * 站点目录拆分版本缓存。
      */
     public static function siteCatalogSplitVersion(): string

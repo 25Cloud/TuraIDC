@@ -7,16 +7,10 @@ namespace App\Services\ProductCatalog\Concerns;
 use App\Constants\BillingCycle;
 use App\Exceptions\BusinessException;
 use App\Models\Product;
-use App\Services\ProductCatalog\ProductDisplayNameResolver;
-use App\Support\CacheKey;
-use Illuminate\Support\Facades\Cache;
+use App\Services\ProductCatalog\SiteCatalogCacheInvalidator;
 
 trait HandlesProductCatalogHelpers
 {
-    private const ADMIN_SUMMARY_CACHE_KEY = 'catalog:admin_summary:v1';
-
-    private const SITE_CATALOG_CACHE_KEY = 'catalog:site:v1';
-
     private const SITE_PRODUCT_TYPES_CACHE_KEY = 'catalog:site:types';
 
     private const SITE_ROOT_GROUPS_CACHE_KEY = 'catalog:site:root_groups';
@@ -43,35 +37,17 @@ trait HandlesProductCatalogHelpers
 
     private function forgetSiteCatalogCache(): void
     {
-        Cache::forget(self::ADMIN_SUMMARY_CACHE_KEY);
-        Cache::forget(self::SITE_CATALOG_CACHE_KEY);
-
-        // ProductDisplayNameResolver 现为容器 singleton，其显示名与规格文案缓存是进程内长命的。
-        // 商品目录发生变更时必须一并失效，否则长驻进程（队列 Worker、Octane）会继续返回旧值。
-        app(ProductDisplayNameResolver::class)->flushCaches();
-
-        // 清理所有 site:home 相关缓存
-        if (Cache::supportsTags()) {
-            Cache::tags(['site:home'])->flush();
-            Cache::tags(['site:products'])->flush();
-        }
-
-        $this->bumpSiteCatalogCacheVersion();
-    }
-
-    private function bumpSiteCatalogCacheVersion(): void
-    {
-        Cache::put(CacheKey::siteCatalogSplitVersion(), $this->siteCacheVersion() + 1, now()->addYear());
+        app(SiteCatalogCacheInvalidator::class)->flush();
     }
 
     private function siteCacheVersion(): int
     {
-        return max(1, (int) Cache::get(CacheKey::siteCatalogSplitVersion(), 1));
+        return app(SiteCatalogCacheInvalidator::class)->currentVersion();
     }
 
     private function siteCacheKey(string $cacheSuffix): string
     {
-        return $cacheSuffix.':v'.$this->siteCacheVersion();
+        return app(SiteCatalogCacheInvalidator::class)->versionedKey($cacheSuffix);
     }
 
     private function resolveDisplayStock(Product $product): int

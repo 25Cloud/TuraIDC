@@ -12,6 +12,7 @@ use App\Models\SecondProductGroup;
 use App\Models\ThirdProductGroup;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\ProductCatalog\Concerns\HandlesProductCatalogHelpers;
+use App\Support\CacheKey;
 use App\Support\ProductGroupHierarchyFields;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -329,7 +330,7 @@ class ProductSiteService
         }
 
         return Cache::remember(
-            self::SITE_CATALOG_CACHE_KEY,
+            CacheKey::siteCatalog(),
             now()->addSeconds(self::SITE_CATALOG_CACHE_TTL_SECONDS),
             fn () => $this->visibleSecondProductGroupQuery()
                 ->select('second_product_groups.*')

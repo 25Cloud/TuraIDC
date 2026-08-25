@@ -5,8 +5,6 @@ namespace App\Services\ProductCatalog;
 use App\Exceptions\BusinessException;
 use App\Models\Product;
 use App\Models\Setting;
-use App\Support\CacheKey;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -281,16 +279,9 @@ class CpuModelCatalogService
 
     private function forgetSiteCatalogCache(): void
     {
-        Cache::forget(CacheKey::siteCatalog());
-        Cache::put(CacheKey::siteCatalogSplitVersion(), $this->siteCacheVersion() + 1, now()->addYear());
-
-        // 同 HandlesProductCatalogHelpers：CPU 型号变更会改变规格文案，需失效解析器的进程内缓存
-        app(ProductDisplayNameResolver::class)->flushCaches();
-    }
-
-    private function siteCacheVersion(): int
-    {
-        return max(1, (int) Cache::get(CacheKey::siteCatalogSplitVersion(), 1));
+        // 这里原本自带一份实现，漏掉了管理端目录概览（catalog:admin_summary:v1）的失效，
+        // 改完 CPU 型号后管理端概览会继续读旧值。统一走唯一入口。
+        app(SiteCatalogCacheInvalidator::class)->flush();
     }
 
     private function normalizeId(mixed $id, string $prefix, int $primaryIndex, ?int $secondaryIndex): string

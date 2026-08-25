@@ -94,7 +94,7 @@ async function getCaptchaConfig() {
       .catch(() => {
         // 失败绝不能留缓存。captchaConfigPromise 是模块级单例，一旦把 defaultConfig
         // （enabled: false）固化进去，本页此后永久不唤起验证码，而后端 requiresCaptcha
-        // 仍返回 true 并以 42210 / captcha_required 拒绝提交——用户提交必然失败，
+        // 仍返回 true 并以 42220 / captcha_required 拒绝提交——用户提交必然失败，
         // 且 reinit() 复用同一个已缓存 promise 也无法自恢复，只能整页刷新。
         // 清掉缓存后本次调用仍降级为 defaultConfig（不阻塞 UI），但下次会重新拉取。
         if (captchaConfigPromise === pending) {

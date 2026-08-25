@@ -38,6 +38,7 @@ export const AdminPermissions = {
   INTEGRATION_PLUGIN_SECRET_REVEAL: 'integration_plugin.secret_reveal',
   SCHEDULE_VIEW: 'schedule.view',
   SCHEDULE_TRIGGER: 'schedule.trigger',
+  SCHEDULE_RETRY: 'schedule.retry',
   SITE_VIEW: 'site.view',
   SITE_MANAGE: 'site.manage',
   LOG_LIST: 'log.list',
@@ -96,7 +97,10 @@ export const VISITOR_PERMISSION_CODES = [
   AdminPermissions.REFERRAL_WITHDRAWAL_LIST,
   AdminPermissions.FINANCE_REPORT,
   AdminPermissions.MEMBER_LEVEL_LIST,
-  AdminPermissions.AGENT_DISCOUNT_LIST,
+  // 这里曾多给访客一条 AGENT_DISCOUNT_LIST，后端 AdminPermissions::visitorPermissions() 没有它。
+  // 结果是访客能看到代理折扣菜单，点进去三条 GET（agent-groups / product-discount-groups /
+  // agent-group-discounts）一律 403。以后端为准删掉；普通管理员不受影响——
+  // 它的 AGENT_DISCOUNT_MANAGE 本就隐含 AGENT_DISCOUNT_LIST。
   AdminPermissions.CONTENT_LIST,
   AdminPermissions.STAFF_LIST,
   AdminPermissions.ROLE_LIST,
@@ -156,6 +160,7 @@ export function impliedPermissions(permission: string): string[] {
     case AdminPermissions.INTEGRATION_PLUGIN_TEST:
       return [AdminPermissions.INTEGRATION_PLUGIN_VIEW];
     case AdminPermissions.SCHEDULE_TRIGGER:
+    case AdminPermissions.SCHEDULE_RETRY:
       return [AdminPermissions.SCHEDULE_VIEW];
     case AdminPermissions.SITE_MANAGE:
       return [AdminPermissions.SITE_VIEW];

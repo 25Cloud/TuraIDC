@@ -33,6 +33,18 @@ use App\Services\Integrations\Plugins\PluginDomain;
  */
 final class CaptchaPolicyService
 {
+    /**
+     * 行为验证未通过的业务错误码。
+     *
+     * 曾与 ReferralService 的退款拦截码 42210 冲突：两处语义完全不同，却落在同一个码上。
+     * 当时没炸，只因为前端判断的是响应里的 captcha_required 布尔字段而不是码值；
+     * 一旦有人改成按码判断，退款被拦截时就会弹出验证码框。
+     *
+     * 让码的是验证码这一侧：42210-42212 是 ReferralService 连续且具名的退款拦截码段，
+     * 其中 42211/42212 的错误码还写进了给管理员看的文案（「错误码 42211。」），不宜变动。
+     */
+    public const VERIFY_FAILED_ERROR_CODE = 42220;
+
     public const SCENE_CLIENT_LOGIN = 'client_login';
 
     public const SCENE_CLIENT_REGISTER = 'client_register';

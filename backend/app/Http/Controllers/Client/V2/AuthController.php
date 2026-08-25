@@ -749,7 +749,7 @@ class AuthController extends Controller
 
         if (! ($result['ok'] ?? false)) {
             return $this->error(
-                42210,
+                CaptchaPolicyService::VERIFY_FAILED_ERROR_CODE,
                 $result['message'] ?? '行为验证未通过，请重试',
                 ['captcha_required' => true]
             );

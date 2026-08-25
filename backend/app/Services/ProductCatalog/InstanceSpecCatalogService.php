@@ -7,7 +7,6 @@ namespace App\Services\ProductCatalog;
 use App\Exceptions\BusinessException;
 use App\Models\Product;
 use App\Models\Setting;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -16,8 +15,6 @@ class InstanceSpecCatalogService
     public const SETTING_GROUP = 'product';
 
     public const SETTING_KEY = 'instance_spec_catalog';
-
-    private const SITE_CATALOG_CACHE_KEY = 'catalog:site:instance_spec:v1';
 
     public function __construct(
         private readonly ?ProductDisplayNameResolver $productDisplayNameResolver = null,
@@ -325,10 +322,9 @@ class InstanceSpecCatalogService
 
     private function forgetSiteCatalogCache(): void
     {
-        Cache::forget(self::SITE_CATALOG_CACHE_KEY);
-
-        // 同 HandlesProductCatalogHelpers：实例规格变更会改变规格文案，需失效解析器的进程内缓存
-        app(ProductDisplayNameResolver::class)->flushCaches();
+        // 这里原本清的是自定义常量 'catalog:site:instance_spec:v1'——全仓没有任何写入方，
+        // 且不 bump 目录拆分版本号，等于改完实例规格后官网目录页要等 600-900 秒 TTL 才更新。
+        app(SiteCatalogCacheInvalidator::class)->flush();
     }
 
     private function normalizeId(mixed $id, int $index): string
