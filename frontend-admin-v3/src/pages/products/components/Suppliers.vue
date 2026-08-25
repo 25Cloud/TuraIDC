@@ -311,12 +311,7 @@
           </div>
         </div>
         <div class="supplier-batch-panel__search">
-          <t-input
-            v-model="supplierBatchLocalKeyword"
-            size="small"
-            clearable
-            placeholder="搜索本地商品 / 分类名称"
-          >
+          <t-input v-model="supplierBatchLocalKeyword" size="small" clearable placeholder="搜索本地商品 / 分类名称">
             <template #prefix-icon><search-icon /></template>
           </t-input>
           <span v-if="supplierBatchLocalKeyword.trim()" class="supplier-batch-panel__search-hint">
@@ -472,7 +467,7 @@
 import { AddIcon, ChevronRightIcon, SearchIcon } from 'tdesign-icons-vue-next';
 import type { FormRules, PageInfo, TagProps } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 import type { ProductCategoryRecord, ProductRecord } from '@/api/product';
 import { productApi } from '@/api/product';
@@ -672,17 +667,38 @@ const supplierBatchRemoteFilteredRows = computed(() =>
 const supplierBatchLocalFilteredRows = computed(() =>
   filterSupplierBatchTreeRows(supplierBatchConnectedRows.value, supplierBatchLocalKeyword.value),
 );
-// 搜索时直接展示过滤结果：命中项若落在折叠分组里会被隐藏，等于搜了个寂寞
+// 搜索态同样按展开状态渲染：命中项的祖先会在关键字变化时自动展开（见下方 watch），
+// 既不会让命中项藏在折叠分组里，又保留了手动折叠的能力——早先搜索时直接返回过滤结果，
+// 折叠状态被完全绕过，点箭头没有任何反应，看起来就像按钮失灵。
 const supplierBatchVisibleRemoteRows = computed(() =>
-  supplierBatchRemoteKeyword.value.trim()
-    ? supplierBatchRemoteFilteredRows.value
-    : visibleSupplierBatchTreeRows(supplierBatchRemoteRows.value, supplierBatchRemoteExpandedKeySet.value),
+  visibleSupplierBatchTreeRows(
+    supplierBatchRemoteKeyword.value.trim() ? supplierBatchRemoteFilteredRows.value : supplierBatchRemoteRows.value,
+    supplierBatchRemoteExpandedKeySet.value,
+  ),
 );
 const supplierBatchVisibleConnectedRows = computed(() =>
-  supplierBatchLocalKeyword.value.trim()
-    ? supplierBatchLocalFilteredRows.value
-    : visibleSupplierBatchTreeRows(supplierBatchConnectedRows.value, supplierBatchLocalExpandedKeySet.value),
+  visibleSupplierBatchTreeRows(
+    supplierBatchLocalKeyword.value.trim() ? supplierBatchLocalFilteredRows.value : supplierBatchConnectedRows.value,
+    supplierBatchLocalExpandedKeySet.value,
+  ),
 );
+// 关键字变化时把命中项的祖先补进展开集合，保证结果默认可见；只做并集，不覆盖用户
+// 已有的展开选择，因此搜索后仍可自由折叠任意分组。
+watch(supplierBatchRemoteKeyword, () => {
+  if (!supplierBatchRemoteKeyword.value.trim()) return;
+  supplierBatchRemoteExpandedKeys.value = mergeSupplierBatchExpandedKeys(
+    supplierBatchRemoteExpandedKeys.value,
+    supplierBatchRemoteFilteredRows.value,
+  );
+});
+watch(supplierBatchLocalKeyword, () => {
+  if (!supplierBatchLocalKeyword.value.trim()) return;
+  supplierBatchLocalExpandedKeys.value = mergeSupplierBatchExpandedKeys(
+    supplierBatchLocalExpandedKeys.value,
+    supplierBatchLocalFilteredRows.value,
+  );
+});
+
 const supplierBatchRemoteMatchCount = computed(
   () => supplierBatchRemoteFilteredRows.value.filter((row) => row.node_type === 'product').length,
 );
@@ -1249,7 +1265,11 @@ function supplierBatchRowMatches(row: SupplierBatchTreeRow, keyword: string): bo
     row.localProduct ? localProductDisplayName(row.localProduct) : undefined,
   ];
 
-  return candidates.some((item) => String(item ?? '').toLowerCase().includes(keyword));
+  return candidates.some((item) =>
+    String(item ?? '')
+      .toLowerCase()
+      .includes(keyword),
+  );
 }
 
 /**
@@ -1295,6 +1315,13 @@ function isSupplierBatchTreeRowVisible(
     parentKey = rowMap.get(parentKey)?.parentKey;
   }
   return true;
+}
+
+function mergeSupplierBatchExpandedKeys(current: string[], rows: SupplierBatchTreeRow[]) {
+  const keys = new Set(current);
+  expandableSupplierBatchTreeKeys(rows).forEach((key) => keys.add(key));
+
+  return Array.from(keys);
 }
 
 function expandableSupplierBatchTreeKeys(rows: SupplierBatchTreeRow[]) {
