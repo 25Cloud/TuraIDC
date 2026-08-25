@@ -52,6 +52,13 @@ class HeartbeatScheduler
             $tickModel = $this->ticks->firstOrCreateSlot($now);
             $tick = $this->ticks->toContext($tickModel);
 
+            // 自愈：无论触发规则是否命中，每个槽位都回收所有启用任务的超租约运行记录。
+            // 否则「任务运行卡死（running 超租约）」要到下一次触发槽位（如每日 00:00）
+            // 才会被回收，期间 /api/ready 的 task_readiness 持续为 false（503）。
+            foreach ($this->registry->enabledTasks() as $task) {
+                $reclaimed += $this->taskRuns->reclaimStaleRunsForTask($task->key(), $this->taskLeaseSeconds($task));
+            }
+
             foreach ($this->registry->enabledTasks() as $task) {
                 $this->dispatchTaskForTick($task, $tickModel, $tick, $queued, $skipped, $duplicates, $reclaimed, $dispatchFailed);
             }

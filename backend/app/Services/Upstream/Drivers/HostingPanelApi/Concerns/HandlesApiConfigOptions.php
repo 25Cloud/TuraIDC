@@ -71,7 +71,7 @@ trait HandlesApiConfigOptions
         return [];
     }
 
-    public function fetchBatchProductConfigOptions(Supplier $supplier, array $productIds, int $chunkSize = 8): array
+    public function fetchBatchProductConfigOptions(Supplier $supplier, array $productIds, int $chunkSize = 8, ?float $deadline = null): array
     {
         $ids = collect($productIds)
             ->map(fn ($id) => (int) $id)
@@ -89,6 +89,12 @@ trait HandlesApiConfigOptions
         $results = [];
 
         foreach (array_chunk($ids, $chunkSize) as $chunk) {
+            // 定时同步传入整体截止时间：单个供应商拉取超过预算后立即停止，
+            // 剩余商品按空结果处理，避免「商品多 × 上游慢」拖垮整个同步任务。
+            if ($deadline !== null && microtime(true) >= $deadline) {
+                break;
+            }
+
             $responses = $this->parallelGet(
                 $supplier,
                 collect($chunk)->mapWithKeys(fn (int $productId) => [

@@ -39,6 +39,12 @@ class ProductSyncService
 
     private const REMOTE_STOCK_CACHE_TTL_SECONDS = 15;
 
+    /** 上游商品配置定时同步整体时间预算（秒），需小于任务超时 3600s。 */
+    private const UPSTREAM_SYNC_DEADLINE_SECONDS = 2700;
+
+    /** 单个供应商拉取配置的时间预算（秒），防止单个慢供应商拖垮整批。 */
+    private const UPSTREAM_SUPPLIER_BUDGET_SECONDS = 240;
+
     private readonly ProductGroupHierarchyService $hierarchyService;
 
     public function __construct(
@@ -491,6 +497,10 @@ class ProductSyncService
 
         $hasChanges = false;
 
+        // 整体时间预算：上游拉取慢时宁可部分跳过也要保证在任务超时前正常收尾，
+        // 避免运行记录被队列超时强杀后永久卡在 running（自愈兜底见 HeartbeatScheduler）。
+        $syncDeadline = microtime(true) + self::UPSTREAM_SYNC_DEADLINE_SECONDS;
+
         foreach ($products->groupBy(fn (Product $product) => (int) ($this->resolveProductSupplier($product)?->id ?? 0)) as $supplierProducts) {
             $firstProduct = $supplierProducts->first();
             $supplier = $firstProduct instanceof Product ? $this->resolveProductSupplier($firstProduct) : null;
@@ -518,18 +528,34 @@ class ProductSyncService
                 continue;
             }
 
+            if (microtime(true) >= $syncDeadline) {
+                $summary['skipped_products'] += $supplierProducts->count();
+
+                Log::info('[定时任务] 上游产品配置同步跳过：整体时间预算已耗尽', [
+                    'supplier_id' => $supplier->id,
+                    'product_ids' => $supplierProducts->pluck('id')->values()->all(),
+                ]);
+
+                continue;
+            }
+
             $summary['matched_suppliers']++;
 
             try {
                 $catalogCapability = $this->resolveCatalogCapability($supplier);
+                $supplierProductIds = $supplierProducts
+                    ->map(fn (Product $product) => $this->resolveProductUpstreamProductId($product))
+                    ->filter(fn (int $supplierProductId) => $supplierProductId > 0)
+                    ->unique()
+                    ->values()
+                    ->all();
+                // 单个供应商最多占用剩余预算（上限 240s），超时立即停止拉取，避免拖垮后续供应商。
+                $supplierDeadline = microtime(true) + min(self::UPSTREAM_SUPPLIER_BUDGET_SECONDS, max(1.0, $syncDeadline - microtime(true)));
                 $remoteConfigOptions = $catalogCapability->fetchBatchProductConfigOptions(
                     $supplier,
-                    $supplierProducts
-                        ->map(fn (Product $product) => $this->resolveProductUpstreamProductId($product))
-                        ->filter(fn (int $supplierProductId) => $supplierProductId > 0)
-                        ->unique()
-                        ->values()
-                        ->all()
+                    $supplierProductIds,
+                    8,
+                    $supplierDeadline,
                 );
             } catch (\Throwable $exception) {
                 $summary['failed_products'] += $supplierProducts->count();
