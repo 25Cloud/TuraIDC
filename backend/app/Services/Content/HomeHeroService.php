@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Content;
 
 use App\Models\Setting;
-use App\Support\ContentPublishedCacheVersion;
+use App\Services\Site\SiteHomeService;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -84,9 +84,10 @@ class HomeHeroService
         ]);
 
         Cache::forget(self::CACHE_KEY);
-        $contentVersion = ContentPublishedCacheVersion::current();
-        Cache::forget(sprintf('site:home:%s:%d:%d:v%d', 'all', 50, 4, $contentVersion));
-        Cache::forget(sprintf('site:home:%d:%d:%d:v%d', 4, 50, 4, $contentVersion));
+        // 首页聚合缓存的键由 SiteHomeService 统一构造：这里改 hero，内容版本号不会变，
+        // 必须按当前版本把实际在用的两个变体显式清掉。'site:home:4:50:4' 是遗留的无版本键。
+        Cache::forget(SiteHomeService::overviewCacheKey(0, 50, 4));
+        Cache::forget(SiteHomeService::overviewCacheKey(4, 50, 4));
         Cache::forget('site:home:4:50:4');
 
         return [

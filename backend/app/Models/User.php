@@ -247,13 +247,26 @@ class User extends Authenticatable
         return (int) $this->is_verified === 1 || (int) $this->verification_status === 2;
     }
 
+    /**
+     * 实名状态中文名。
+     *
+     * 状态 5 曾写作「已解绑」，与前端两处的「已驳回」不一致，看上去像两个业务事件，
+     * 实际只有一个：VerificationService::unbind() 是它唯一的写入点，仅管理员可调
+     * （routes/v2-admin.php 的 verifications/{id}/unbindings），前置条件是当前已认证
+     * （verification_status === 2），落库时一并写入驳回原因（缺省「管理员驳回」）。
+     *
+     * 「解绑」是这件事对数据的效果，「驳回」是管理员在界面上做的动作。取后者：
+     * 本常量只被 5 个 Admin/V2 Resource 输出，读它的是管理员，而管理端整条流程
+     * （canReject / openReject /「请输入驳回原因」）和 shared/statusConfig.js 都叫「驳回」。
+     * unbind 保留为 API 与权限标识符，不随文案改动。
+     */
     public const VERIFICATION_STATUS_LABELS = [
         0 => '未认证',
         1 => '待认证',
         2 => '已认证',
         3 => '认证失败',
         4 => '待认证',
-        5 => '已解绑',
+        5 => '已驳回',
     ];
 
     public static function verificationStatusLabel(int $status): string

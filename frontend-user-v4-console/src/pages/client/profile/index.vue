@@ -151,7 +151,7 @@
           </div>
         </t-form-item>
         <t-form-item label="新密码"
-          ><t-input v-model="resetForm.password" type="password" placeholder="至少 6 位"
+          ><t-input v-model="resetForm.password" type="password" placeholder="至少 8 位"
         /></t-form-item>
         <t-form-item label="确认密码"><t-input v-model="resetForm.confirmPassword" type="password" /></t-form-item>
         <t-button variant="text" theme="primary" class="password-forgot" @click="togglePasswordMode"
