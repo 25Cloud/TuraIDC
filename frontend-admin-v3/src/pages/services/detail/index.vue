@@ -90,7 +90,41 @@
               size="small"
               :loading="actionLoading === 'remote-status'"
               @click="handleRefreshRemoteStatus"
-              >刷新远程</t-button
+              >同步信息</t-button
+            >
+            <t-button
+              v-if="actions.reinstall"
+              theme="default"
+              size="small"
+              :loading="actionLoading === 'reinstall'"
+              @click="openReinstallDialog"
+              >重装系统</t-button
+            >
+            <t-button
+              v-if="canSuspendService"
+              theme="warning"
+              size="small"
+              :loading="actionLoading === 'suspend'"
+              @click="openSuspendDialog"
+              >暂停</t-button
+            >
+            <t-button
+              v-if="canUnsuspendService"
+              theme="success"
+              variant="outline"
+              size="small"
+              :loading="actionLoading === 'unsuspend'"
+              @click="handleUnsuspendService"
+              >解除暂停</t-button
+            >
+            <t-button
+              v-if="canRenewService"
+              theme="primary"
+              variant="outline"
+              size="small"
+              :loading="actionLoading === 'renew'"
+              @click="openRenewDialog"
+              >续费</t-button
             >
             <t-button
               theme="default"
@@ -260,6 +294,87 @@
         </t-form-item>
       </t-form>
     </t-dialog>
+
+    <t-dialog
+      v-model:visible="reinstallVisible"
+      header="重装系统"
+      width="480px"
+      :confirm-btn="{ content: '确认重装', theme: 'danger', loading: actionLoading === 'reinstall' }"
+      :cancel-btn="{ content: '取消', disabled: actionLoading === 'reinstall' }"
+      @cancel="reinstallVisible = false"
+      @confirm="handleReinstallService"
+    >
+      <t-alert
+        theme="warning"
+        message="重装系统将清空实例数据并恢复为全新系统，请提前备份重要数据。"
+        class="dialog-alert"
+      />
+      <t-form ref="reinstallFormRef" :data="reinstallForm" :rules="reinstallRules" label-align="top">
+        <t-form-item label="操作系统" name="os_id">
+          <t-select
+            v-model="reinstallForm.os_id"
+            filterable
+            :loading="reinstallOptionsLoading"
+            placeholder="请选择要安装的系统"
+          >
+            <t-option-group v-for="group in reinstallOptionGroups" :key="group.group_name" :label="group.group_name">
+              <t-option v-for="item in group.items" :key="item.os_id" :label="item.name" :value="item.os_id" />
+            </t-option-group>
+          </t-select>
+        </t-form-item>
+      </t-form>
+    </t-dialog>
+
+    <t-dialog
+      v-model:visible="suspendVisible"
+      header="暂停实例"
+      width="420px"
+      :confirm-btn="{ content: '确认暂停', theme: 'warning', loading: actionLoading === 'suspend' }"
+      @cancel="suspendVisible = false"
+      @confirm="handleSuspendService"
+    >
+      <t-alert
+        theme="warning"
+        message="暂停后实例将被上游停机，用户将无法继续使用，可在管理端随时解除暂停。"
+        class="dialog-alert"
+      />
+      <t-form label-align="top">
+        <t-form-item label="暂停原因">
+          <t-textarea v-model="suspendReason" :maxlength="255" placeholder="选填，记录暂停原因" />
+        </t-form-item>
+      </t-form>
+    </t-dialog>
+
+    <t-dialog
+      v-model:visible="renewVisible"
+      header="续费"
+      width="480px"
+      :confirm-btn="{ content: '创建续费订单', loading: actionLoading === 'renew' }"
+      :cancel-btn="{ content: '取消', disabled: actionLoading === 'renew' }"
+      @cancel="renewVisible = false"
+      @confirm="handleRenewService"
+    >
+      <t-form ref="renewFormRef" :data="renewForm" :rules="renewRules" label-align="top">
+        <t-form-item label="续费周期" name="billing_cycle">
+          <t-select
+            v-model="renewForm.billing_cycle"
+            :loading="renewPreviewLoading"
+            placeholder="请选择续费周期"
+            @change="updateRenewAmountLabel"
+          >
+            <t-option
+              v-for="cycle in renewCycles"
+              :key="cycle.billing_cycle"
+              :label="cycle.billing_cycle_label"
+              :value="cycle.billing_cycle"
+            />
+          </t-select>
+        </t-form-item>
+        <t-form-item label="续费金额">
+          <div class="renew-amount">{{ renewAmountLabel }}</div>
+        </t-form-item>
+      </t-form>
+    </t-dialog>
   </div>
 </template>
 <script setup lang="ts">
@@ -305,12 +420,22 @@ const serviceNameSubmitting = ref(false);
 const resetPasswordVisible = ref(false);
 const manualProvisionVisible = ref(false);
 const serviceRefundVisible = ref(false);
+const reinstallVisible = ref(false);
+const suspendVisible = ref(false);
+const renewVisible = ref(false);
+const reinstallOptionsLoading = ref(false);
+const renewPreviewLoading = ref(false);
+const reinstallOptions = ref<Row>({ os: [], os_groups: [] });
+const renewPreview = ref<Row>({});
+const suspendReason = ref('');
 
 const serviceUpstreamFormRef = ref<FormInstanceFunctions>();
 const servicePricingFormRef = ref<FormInstanceFunctions>();
 const resetPasswordFormRef = ref<FormInstanceFunctions>();
 const manualProvisionFormRef = ref<FormInstanceFunctions>();
 const serviceRefundFormRef = ref<FormInstanceFunctions>();
+const reinstallFormRef = ref<FormInstanceFunctions>();
+const renewFormRef = ref<FormInstanceFunctions>();
 
 const serviceUpstreamForm = reactive({
   supplier_id: undefined as number | undefined,
@@ -328,6 +453,8 @@ const serviceNameForm = reactive({ service_name: '' });
 const resetPasswordForm = reactive({ password: '' });
 const manualProvisionForm = reactive({ upstream_host_id: undefined as number | undefined });
 const serviceRefundForm = reactive({ refund_method: 'balance' as 'balance' | 'original', remark: '' });
+const reinstallForm = reactive({ os_id: '' });
+const renewForm = reactive({ billing_cycle: '' });
 
 const serviceStatusLabelMap = toLabelMap(SERVICE_STATUS_MAP);
 const serviceUpstreamOptions = ref<Array<{ id: number; label: string }>>([]);
@@ -348,6 +475,12 @@ const manualProvisionRules: Record<string, FormRule[]> = {
 const refundRules: Record<string, FormRule[]> = {
   refund_method: [required('请选择退款方式')],
   remark: [required('请填写退款原因')],
+};
+const reinstallRules: Record<string, FormRule[]> = {
+  os_id: [required('请选择操作系统')],
+};
+const renewRules: Record<string, FormRule[]> = {
+  billing_cycle: [required('请选择续费周期')],
 };
 
 const displayName = computed(() => {
@@ -382,6 +515,35 @@ const canReboot = computed(() => {
   return (
     Array.isArray(available) && available.includes('power:reboot') && detail.value.runtime?.power_state === 'running'
   );
+});
+const canSuspendService = computed(
+  () => Number(detail.value.status) === 1 && Number(detail.value.upstream?.host_id || 0) > 0,
+);
+const canUnsuspendService = computed(
+  () => Number(detail.value.status) === 2 && Number(detail.value.upstream?.host_id || 0) > 0,
+);
+const canRenewService = computed(() => ![0, 4, 5, 6].includes(Number(detail.value.status)));
+const reinstallOptionGroups = computed(() => {
+  const osList = Array.isArray(reinstallOptions.value.os) ? reinstallOptions.value.os : [];
+  const groups = new Map<string, Row[]>();
+  osList.forEach((item: Row) => {
+    const groupName = String(item.group_name || '默认分组');
+    if (!groups.has(groupName)) groups.set(groupName, []);
+    groups.get(groupName)?.push(item);
+  });
+  return Array.from(groups.entries()).map(([groupName, items]) => ({ group_name: groupName, items }));
+});
+const renewCycles = computed(() =>
+  Array.isArray(renewPreview.value.cycles) ? (renewPreview.value.cycles as Row[]) : [],
+);
+const renewAmountLabel = computed(() => {
+  const cycle = renewCycles.value.find((item) => item.billing_cycle === renewForm.billing_cycle);
+  if (cycle) {
+    const amount = Number(cycle.amount ?? cycle.final_amount ?? 0);
+    return `￥${formatMoney(amount)}`;
+  }
+  const defaultAmount = Number(renewPreview.value.renew_price || 0);
+  return defaultAmount > 0 ? `￥${formatMoney(defaultAmount)}` : '-';
 });
 const canRefundService = computed(() => {
   const status = Number(detail.value.status);
@@ -679,6 +841,148 @@ async function handleServiceRefund() {
   }
 }
 
+async function openReinstallDialog() {
+  reinstallForm.os_id = '';
+  reinstallVisible.value = true;
+  reinstallFormRef.value?.clearValidate?.();
+  await loadReinstallOptions();
+}
+
+async function loadReinstallOptions() {
+  if (Array.isArray(reinstallOptions.value.os) && reinstallOptions.value.os.length) return;
+  reinstallOptionsLoading.value = true;
+  try {
+    const response = await userApi.serviceReinstallOptions(userId.value, serviceId.value);
+    reinstallOptions.value = {
+      os: Array.isArray(response.os) ? response.os : [],
+      os_groups: Array.isArray(response.os_groups) ? response.os_groups : [],
+    };
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '加载重装系统选项失败'));
+  } finally {
+    reinstallOptionsLoading.value = false;
+  }
+}
+
+function handleReinstallService() {
+  if (!serviceId.value) return;
+  const dialog = DialogPlugin.confirm({
+    header: '重装系统确认',
+    body: '确认对该实例执行重装系统？该操作将清空实例数据且不可撤销。',
+    confirmBtn: '确认重装',
+    theme: 'danger',
+    async onConfirm() {
+      const result = await reinstallFormRef.value?.validate?.();
+      if (!isValidationPass(result)) return;
+      actionLoading.value = 'reinstall';
+      try {
+        const response = await userApi.serviceReinstall(userId.value, serviceId.value, { os_id: reinstallForm.os_id });
+        MessagePlugin.success(response.message || '重装系统任务已提交');
+        dialog.hide();
+        reinstallVisible.value = false;
+        await reloadDetail();
+      } catch (error) {
+        MessagePlugin.error(errorMessage(error, '重装系统失败'));
+      } finally {
+        actionLoading.value = '';
+      }
+    },
+  });
+}
+
+function openSuspendDialog() {
+  suspendReason.value = '';
+  suspendVisible.value = true;
+}
+
+async function handleSuspendService() {
+  if (!serviceId.value) return;
+  actionLoading.value = 'suspend';
+  try {
+    const response = await userApi.serviceSuspend(userId.value, serviceId.value, {
+      reason: suspendReason.value,
+    });
+    MessagePlugin.success(response.message || '实例已暂停');
+    suspendVisible.value = false;
+    await reloadDetail();
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '暂停实例失败'));
+  } finally {
+    actionLoading.value = '';
+  }
+}
+
+function handleUnsuspendService() {
+  if (!serviceId.value) return;
+  const dialog = DialogPlugin.confirm({
+    header: '解除暂停确认',
+    body: '确认对该实例解除暂停？解除后实例将恢复可用。',
+    confirmBtn: '确认解除',
+    theme: 'warning',
+    async onConfirm() {
+      actionLoading.value = 'unsuspend';
+      try {
+        const response = await userApi.serviceUnsuspend(userId.value, serviceId.value);
+        MessagePlugin.success(response.message || '实例已解除暂停');
+        dialog.hide();
+        await reloadDetail();
+      } catch (error) {
+        MessagePlugin.error(errorMessage(error, '解除暂停失败'));
+      } finally {
+        actionLoading.value = '';
+      }
+    },
+  });
+}
+
+async function openRenewDialog() {
+  renewForm.billing_cycle = '';
+  renewPreview.value = {};
+  renewVisible.value = true;
+  renewFormRef.value?.clearValidate?.();
+  await loadRenewPreview();
+}
+
+async function loadRenewPreview() {
+  renewPreviewLoading.value = true;
+  try {
+    const response = await userApi.serviceRenewPreview(userId.value, serviceId.value);
+    renewPreview.value = (response.preview || {}) as Row;
+    const cycles = renewCycles.value;
+    if (!renewForm.billing_cycle && cycles.length) {
+      renewForm.billing_cycle = String(renewPreview.value.default_cycle || cycles[0].billing_cycle || '');
+    }
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '获取续费预览失败'));
+  } finally {
+    renewPreviewLoading.value = false;
+  }
+}
+
+function updateRenewAmountLabel() {
+  // 续费金额随所选周期通过 computed 自动更新
+}
+
+async function handleRenewService() {
+  const result = await renewFormRef.value?.validate?.();
+  if (!isValidationPass(result) || !serviceId.value) return;
+  actionLoading.value = 'renew';
+  try {
+    const response = await userApi.serviceRenewOrder(userId.value, serviceId.value, {
+      billing_cycle: renewForm.billing_cycle,
+    });
+    const order = (response.detail?.order || {}) as Row;
+    const orderNo = String(order.order_no || '');
+    MessagePlugin.success(orderNo ? `续费订单已创建：${orderNo}` : '续费订单已创建');
+    renewVisible.value = false;
+    await reloadDetail();
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '创建续费订单失败'));
+  } finally {
+    actionLoading.value = '';
+  }
+}
+
 function normalizeServiceDetail(payload: Row = {}) {
   const empty = {
     id: 0,
@@ -697,7 +1001,13 @@ function normalizeServiceDetail(payload: Row = {}) {
     upstream: {},
     runtime: {},
     connection: {},
-    actions: { refresh: true, password_reset: false, manual_provision: false, available: [] as string[] },
+    actions: {
+      refresh: true,
+      password_reset: false,
+      manual_provision: false,
+      reinstall: false,
+      available: [] as string[],
+    },
     specs: [] as Row[],
     custom_service_name: '',
   };

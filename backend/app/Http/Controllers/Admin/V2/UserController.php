@@ -19,6 +19,12 @@ use App\Http\Requests\Admin\V2\User\RefundUserInvoiceActionRequest;
 use App\Http\Requests\Admin\V2\User\RefundUserServiceActionRequest;
 use App\Http\Requests\Admin\V2\User\ServicePasswordResetActionRequest;
 use App\Http\Requests\Admin\V2\User\ServicePowerActionRequest;
+use App\Http\Requests\Admin\V2\User\ServiceReinstallActionRequest;
+use App\Http\Requests\Admin\V2\User\ServiceReinstallOptionsRequest;
+use App\Http\Requests\Admin\V2\User\ServiceRenewalOrderRequest;
+use App\Http\Requests\Admin\V2\User\ServiceRenewalPreviewRequest;
+use App\Http\Requests\Admin\V2\User\ServiceSuspendActionRequest;
+use App\Http\Requests\Admin\V2\User\ServiceUnsuspendActionRequest;
 use App\Http\Requests\Admin\V2\User\ShowUserInvoiceRequest;
 use App\Http\Requests\Admin\V2\User\ShowUserRequest;
 use App\Http\Requests\Admin\V2\User\StoreUserRequest;
@@ -180,6 +186,46 @@ class UserController extends Controller
     public function refundService(RefundUserServiceActionRequest $request, User $user, int $service): JsonResponse
     {
         $result = $this->actions->refundService($user, $service, $request->payload(), $request);
+
+        return $this->success(AdminActionResultResource::make($result)->resolve(), (string) $result['message']);
+    }
+
+    public function suspendService(ServiceSuspendActionRequest $request, User $user, int $service): JsonResponse
+    {
+        $result = $this->actions->suspendService($user, $service, $request->payload(), $request);
+
+        return $this->success(AdminActionResultResource::make($result)->resolve(), (string) $result['message']);
+    }
+
+    public function unsuspendService(ServiceUnsuspendActionRequest $request, User $user, int $service): JsonResponse
+    {
+        $result = $this->actions->unsuspendService($user, $service, $request);
+
+        return $this->success(AdminActionResultResource::make($result)->resolve(), (string) $result['message']);
+    }
+
+    public function reinstallService(ServiceReinstallActionRequest $request, User $user, int $service): JsonResponse
+    {
+        $result = $this->actions->reinstallService($user, $service, $request->payload(), $request);
+
+        return $this->success(AdminActionResultResource::make($result)->resolve(), (string) $result['message']);
+    }
+
+    public function reinstallServiceOptions(ServiceReinstallOptionsRequest $request, User $user, int $service): JsonResponse
+    {
+        return $this->success($this->actions->reinstallServiceOptions($user, $service, $request->forceRefresh()));
+    }
+
+    public function renewServicePreview(ServiceRenewalPreviewRequest $request, User $user, int $service): JsonResponse
+    {
+        $result = $this->actions->renewServicePreview($user, $service, $request->billingCycle());
+
+        return $this->success($result);
+    }
+
+    public function renewServiceOrder(ServiceRenewalOrderRequest $request, User $user, int $service): JsonResponse
+    {
+        $result = $this->actions->renewServiceOrder($user, $service, $request->billingCycle(), $request);
 
         return $this->success(AdminActionResultResource::make($result)->resolve(), (string) $result['message']);
     }

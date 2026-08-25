@@ -7,6 +7,7 @@ namespace App\Services\ClientServiceConsole;
 use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
+use App\Jobs\ServiceConsoleSyncJob;
 use App\Models\OperationLog;
 use App\Models\Product;
 use App\Models\Service;
@@ -112,24 +113,19 @@ class ServiceDetailService
             'invoice.order:id,order_no',
         ]);
 
-        $needsRemoteRefresh = $refreshRemote
-            || $this->needsRemoteSnapshotRefresh($service)
-            || $this->needsConnectionHydration($service)
-            || $this->needsRuntimeStatusRefresh($service)
-            || $this->needsNatRemoteHydration($service);
-
-        if (! $needsRemoteRefresh) {
-            $cacheKey = $this->buildDetailResponseCacheKey($service);
+        $cacheKey = $this->buildDetailResponseCacheKey($service);
+        if (! $refreshRemote) {
             $cached = Cache::get($cacheKey);
             if (is_array($cached) && $cached !== []) {
-                return $cached;
+                return $this->syncChangedMarkerForDetail($cached, $service);
             }
         }
 
         $remote = null;
         $remoteError = '';
 
-        if ($needsRemoteRefresh && $this->transformService->canManageService($service)) {
+        if ($refreshRemote && $this->transformService->canManageService($service)) {
+            // 用户主动刷新：同步拉取远端，保证本次结果最新
             try {
                 $remote = $this->fetchRemoteState($service);
                 if (! empty($remote['host']) || ! empty($remote['runtime']) || ! empty($remote['nat'])) {
@@ -150,19 +146,22 @@ class ServiceDetailService
                 ]);
                 $remoteError = $exception->getMessage();
             }
+
+            if ($remoteError === '') {
+                $this->forgetSyncChangedMarker($service);
+            }
+        } elseif ($this->transformService->canManageService($service) && $this->needsAsyncSync($service)) {
+            // 快照优先：本次直接返回本地快照，上游同步交给异步任务，避免 30s+ 请求
+            $this->dispatchAsyncSync($service);
         }
 
         $detail = $this->transformService->transformDetail($service, $remote, $remoteError);
 
         if ($remoteError === '') {
-            Cache::put(
-                $this->buildDetailResponseCacheKey($service),
-                $detail,
-                now()->addSeconds(self::DETAIL_RESPONSE_CACHE_TTL_SECONDS)
-            );
+            Cache::put($cacheKey, $detail, now()->addSeconds(self::DETAIL_RESPONSE_CACHE_TTL_SECONDS));
         }
 
-        return $detail;
+        return $this->syncChangedMarkerForDetail($detail, $service);
     }
 
     public function getBaseDetailForUser(User $user, int $serviceId): array
@@ -189,7 +188,7 @@ class ServiceDetailService
         return $detail;
     }
 
-    public function getRemoteStatusPatchForUser(User $user, int $serviceId): array
+    public function getRemoteStatusPatchForUser(User $user, int $serviceId, bool $forceRefresh = false): array
     {
         $service = $this->findUserService($user, $serviceId, [
             'product:id,product_type,service_type_code,product_group_id,console_template,updated_at,config_options,pricing,purchase_requires',
@@ -201,15 +200,19 @@ class ServiceDetailService
         ]);
 
         $remoteStatusCacheKey = $this->buildRemoteStatusCacheKey($service);
-        $cached = Cache::get($remoteStatusCacheKey);
-        if (is_array($cached) && $cached !== []) {
-            return $cached;
+        if (! $forceRefresh) {
+            $cached = Cache::get($remoteStatusCacheKey);
+            if (is_array($cached) && $cached !== []) {
+                return $this->syncChangedMarkerForDetail($cached, $service);
+            }
         }
 
         $remote = null;
         $remoteError = '';
+        $canManage = $this->transformService->canManageService($service);
 
-        if ($this->transformService->canManageService($service)) {
+        if ($forceRefresh && $canManage) {
+            // 管理端"同步信息"等主动场景：同步拉取远端
             try {
                 $remote = $this->fetchRemoteState($service);
                 if (! empty($remote['host']) || ! empty($remote['runtime']) || ! empty($remote['nat'])) {
@@ -230,6 +233,13 @@ class ServiceDetailService
                 ]);
                 $remoteError = $exception->getMessage();
             }
+
+            if ($remoteError === '') {
+                $this->forgetSyncChangedMarker($service);
+            }
+        } elseif ($canManage && $this->needsAsyncSync($service)) {
+            // 快照优先：本次直接返回本地快照，上游同步交给异步任务
+            $this->dispatchAsyncSync($service);
         }
 
         $detail = $this->transformService->transformDetail($service, $remote, $remoteError);
@@ -255,7 +265,7 @@ class ServiceDetailService
             Cache::put($remoteStatusCacheKey, $result, now()->addSeconds(self::REMOTE_STATUS_CACHE_TTL_SECONDS));
         }
 
-        return $result;
+        return $this->syncChangedMarkerForDetail($result, $service);
     }
 
     private function buildRemoteStatusCacheKey(Service $service): string
@@ -852,6 +862,112 @@ class ServiceDetailService
         Cache::forget($this->buildDetailResponseCacheKey($service));
         Cache::forget($this->buildServiceConfigCacheKey($service));
         Cache::forget($this->buildRemoteStatusCacheKey($service));
+    }
+
+    // ── Snapshot sync helpers (async sync job) ─────────────────────────────
+
+    /**
+     * 代理：当前服务是否接入可控上游（异步同步任务复用转换服务的能力）。
+     */
+    public function canManageService(Service $service): bool
+    {
+        return $this->transformService->canManageService($service);
+    }
+
+    /**
+     * 基于本地快照关键字段计算签名，用于判断远端同步后信息是否发生变化。
+     *
+     * 注意：不含 syncServiceFromRemote 每次同步必然更新的字段
+     * （last_synced_at / connection_cached_at / nat_remote_checked_at 等），
+     * 否则同步前后签名恒不相同，变更标记将每次触发。
+     */
+    public function buildSnapshotSignature(Service $service): string
+    {
+        $provisionData = $this->serviceProvisionData($service);
+
+        $fields = [
+            'status' => (int) $service->status,
+            'name' => (string) $service->name,
+            'domain' => (string) $service->domain,
+            'expires_at' => $service->expires_at !== null ? Carbon::parse($service->expires_at)->format('Y-m-d H:i:s') : null,
+            'suspended_reason' => (string) ($service->suspended_reason ?? ''),
+            'upstream_status' => (string) ($provisionData['upstream_status'] ?? ''),
+            'runtime_status' => (string) ($provisionData['runtime_status'] ?? ''),
+            'runtime_description' => (string) ($provisionData['runtime_description'] ?? ''),
+            'dedicated_ip' => (string) ($provisionData['dedicated_ip'] ?? ''),
+            'os' => (string) ($provisionData['os'] ?? ''),
+            'host_config_option' => (array) ($provisionData['host_config_option'] ?? []),
+            'assigned_ips' => (array) ($provisionData['assigned_ips'] ?? []),
+            'bw_usage' => (string) ($provisionData['bw_usage'] ?? ''),
+            'bw_limit' => (int) ($provisionData['bw_limit'] ?? 0),
+            'nat_remote_address' => (string) ($provisionData['nat_remote_address'] ?? ''),
+            'nat_remote_host' => (string) ($provisionData['nat_remote_host'] ?? ''),
+            'nat_remote_port' => (int) ($provisionData['nat_remote_port'] ?? 0),
+        ];
+
+        return md5(serialize($fields));
+    }
+
+    /**
+     * 自上次异步同步后，上游信息是否有变化（由同步任务写入 60 秒变更标记）。
+     */
+    public function isRemoteChangedSinceSync(Service $service): bool
+    {
+        return Cache::get($this->buildSyncChangedCacheKey($service)) !== null;
+    }
+
+    /**
+     * 在详情/状态补丁响应中附加后台同步变更标记，前端据此提示并自动刷新。
+     */
+    private function syncChangedMarkerForDetail(array $detail, Service $service): array
+    {
+        $changedAt = Cache::get($this->buildSyncChangedCacheKey($service));
+        if (! is_string($changedAt) || $changedAt === '') {
+            return $detail;
+        }
+
+        return array_merge($detail, [
+            '_sync' => [
+                'changed' => true,
+                'changed_at' => $changedAt,
+            ],
+        ]);
+    }
+
+    private function buildSyncChangedCacheKey(Service $service): string
+    {
+        return 'service_console:changed:'.$service->id;
+    }
+
+    private function forgetSyncChangedMarker(Service $service): void
+    {
+        Cache::forget($this->buildSyncChangedCacheKey($service));
+    }
+
+    /**
+     * 判断本地快照是否已过期或缺失，需要派发异步同步任务。
+     */
+    private function needsAsyncSync(Service $service): bool
+    {
+        return $this->needsRemoteSnapshotRefresh($service)
+            || $this->needsConnectionHydration($service)
+            || $this->needsRuntimeStatusRefresh($service)
+            || $this->needsNatRemoteHydration($service);
+    }
+
+    /**
+     * 派发异步同步任务，并做 10 秒节流：高频访问同一实例时只入队一次，
+     * 避免对上游造成过多请求。
+     */
+    private function dispatchAsyncSync(Service $service): void
+    {
+        $dispatchKey = 'service_console:sync_pending:'.$service->id;
+        if (Cache::has($dispatchKey)) {
+            return;
+        }
+
+        Cache::put($dispatchKey, true, now()->addSeconds(10));
+        ServiceConsoleSyncJob::dispatch($service->id, $service->user_id);
     }
 
     // ── Private helpers ────────────────────────────────────────────────────

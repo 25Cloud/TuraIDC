@@ -22,6 +22,7 @@ use App\Services\ClientServiceConsole\ServiceDetailService;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\Integrations\Plugins\UpstreamBindingWriter;
+use App\Services\Provisioning\ServiceRenewService;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\ProviderResolver;
 use App\Support\ServiceHostname;
@@ -56,9 +57,9 @@ trait HandlesAdminUserServices
         return $this->clientServiceConsoleService->getBaseDetailForUser($user, $serviceId, $includeSensitiveConnection);
     }
 
-    public function serviceRemoteStatusPatch(User $user, int $serviceId, bool $includeSensitiveConnection = true): array
+    public function serviceRemoteStatusPatch(User $user, int $serviceId, bool $includeSensitiveConnection = true, bool $forceRefresh = false): array
     {
-        return $this->clientServiceConsoleService->getRemoteStatusPatchForUser($user, $serviceId, $includeSensitiveConnection);
+        return $this->clientServiceConsoleService->getRemoteStatusPatchForUser($user, $serviceId, $includeSensitiveConnection, $forceRefresh);
     }
 
     public function refreshServiceStatuses(User $user, array $serviceIds = []): array
@@ -495,6 +496,51 @@ trait HandlesAdminUserServices
     public function serviceReinstall(User $user, int $serviceId, array $data, array $context = []): array
     {
         return $this->clientServiceConsoleService->reinstallForUser($user, $serviceId, $data, $context);
+    }
+
+    /**
+     * 暂停服务（用户端/管理端）
+     */
+    public function suspendService(User $user, int $serviceId, array $data = [], array $context = []): array
+    {
+        return $this->clientServiceConsoleService->suspendForUser($user, $serviceId, $data, $context);
+    }
+
+    /**
+     * 解除暂停服务（用户端/管理端）
+     */
+    public function unsuspendService(User $user, int $serviceId, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->unsuspendForUser($user, $serviceId, $context);
+    }
+
+    /**
+     * 续费预览（管理端复用）
+     */
+    public function renewServicePreview(User $user, int $serviceId, ?string $billingCycle = null): array
+    {
+        return $this->renewService()->previewForUser($user, $serviceId, $billingCycle);
+    }
+
+    /**
+     * 创建续费订单（管理端复用）
+     */
+    public function renewServiceOrder(User $user, int $serviceId, string $billingCycle, array $context = []): array
+    {
+        $order = $this->renewService()->createRenewOrderForUser($user, $serviceId, $billingCycle, 0, $context);
+
+        return [
+            'order_id' => (int) $order->id,
+            'order_no' => (string) $order->order_no,
+            'amount' => round((float) $order->amount, 2),
+            'invoice_id' => (int) ($order->invoice?->id ?? 0),
+            'invoice_no' => (string) ($order->invoice?->invoice_no ?? ''),
+        ];
+    }
+
+    private function renewService(): ServiceRenewService
+    {
+        return $this->renewService ??= app(ServiceRenewService::class);
     }
 
     /**

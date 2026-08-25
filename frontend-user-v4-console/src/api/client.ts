@@ -250,7 +250,7 @@ function v2TicketDetail(id: number | string) {
 const clientApi = {
   services: (params?: QueryParams) => getEnvelope<PagedList<ServiceInstance>>('/v2/client/services', { params }),
   groupedOverview: () => getEnvelope<ServiceOverviewPayload>('/v2/client/services/grouped-overview'),
-  serviceDetail: (id: number | string) => v2ServiceDetail(id, { silentError: true }),
+  serviceDetail: (id: number | string, config?: RequestConfig) => v2ServiceDetail(id, { silentError: true, ...config }),
   serviceBaseDetail: (id: number | string) => v2ServiceBaseDetail(id),
   serviceRemoteStatus: (id: number | string) => v2ServiceRuntime(id),
   serviceConfig: (id: number | string) => request.get(`/v2/client/services/${id}/config`),
@@ -280,6 +280,8 @@ const clientApi = {
     postEnvelope<ServicePasswordResetPayload>(`/v2/client/services/${id}/password-resets`, data),
   serviceReinstall: (id: number | string, data: Record<string, unknown>) =>
     postEnvelope<ServiceReinstallPayload>(`/v2/client/services/${id}/reinstallations`, data),
+  serviceRescue: (id: number | string, data: Record<string, unknown>) =>
+    postEnvelope<ServicePowerActionPayload>(`/v2/client/services/${id}/rescues`, data),
   serviceOperationLogs: (id: number | string, params?: QueryParams) =>
     getEnvelope<ServiceOperationLogPayload>(`/v2/client/services/${id}/operation-logs`, { params }),
   serviceMonitor: (id: number | string, params?: QueryParams, config: Record<string, unknown> = {}) =>

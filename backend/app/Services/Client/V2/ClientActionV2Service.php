@@ -174,6 +174,29 @@ class ClientActionV2Service
     }
 
     /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function rescue(User $user, int $serviceId, array $data, Request $request): array
+    {
+        $detail = $this->executeLockedServiceAction(
+            $request,
+            $serviceId,
+            'rescue',
+            fn () => $this->clientServiceConsoleService->rescueForUser(
+                $user,
+                $serviceId,
+                $data,
+                $this->operationContext($request)
+            )
+        );
+
+        return $this->result($serviceId, 'queued', '救援模式指令已提交', [
+            'detail' => $this->compactOperationDetail($detail),
+        ]);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function recallTicketReply(User $user, int $ticketId, int $replyId): array

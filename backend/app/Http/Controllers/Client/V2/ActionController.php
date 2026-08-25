@@ -9,6 +9,7 @@ use App\Http\Requests\Client\V2\Action\ClientActionRequest;
 use App\Http\Requests\Client\V2\Service\PasswordResetActionRequest;
 use App\Http\Requests\Client\V2\Service\PowerActionRequest;
 use App\Http\Requests\Client\V2\Service\ReinstallationRequest;
+use App\Http\Requests\Client\V2\Service\RescueActionRequest;
 use App\Http\Resources\Client\V2\ClientActionResultResource;
 use App\Services\Client\V2\ClientActionV2Service;
 
@@ -67,6 +68,13 @@ class ActionController extends Controller
         return $this->success(ClientActionResultResource::make(
             $this->actionService->reinstall($request->user(), $service, $request->validated(), $request)
         )->resolve(), '重装系统任务已提交');
+    }
+
+    public function rescue(RescueActionRequest $request, int $service)
+    {
+        return $this->success(ClientActionResultResource::make(
+            $this->actionService->rescue($request->user(), $service, $request->validated(), $request)
+        )->resolve(), '救援模式指令已提交');
     }
 
     public function recallTicketReply(ClientActionRequest $request, int $ticket, int $reply)

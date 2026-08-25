@@ -19,6 +19,17 @@ export interface UseConsoleDetailOptions {
   //
 }
 
+// 已提示过的后台同步变更标记时间戳，避免同一标记重复弹提示
+let lastNotifiedChangedAt = '';
+
+function consumeSyncChangedMarker(payload: Partial<ConsoleServiceDetail>): boolean {
+  const marker = payload?._sync;
+  if (!marker?.changed || !marker.changed_at) return false;
+  if (marker.changed_at === lastNotifiedChangedAt) return false;
+  lastNotifiedChangedAt = marker.changed_at;
+  return true;
+}
+
 export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
   const route = useRoute();
 
@@ -71,12 +82,21 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
     detail.value = mergeConsoleDetail(detail.value, patch);
   }
 
-  async function loadDetailBase() {
+  async function loadDetailBase(forceRefresh = false) {
     if (!serviceId.value) return;
     detailLoading.value = true;
     try {
-      const res = await clientApi.serviceDetail(serviceId.value);
-      detail.value = normalizeConsoleDetail(res.data || {});
+      const res = await clientApi.serviceDetail(serviceId.value, forceRefresh ? { params: { refresh: 1 } } : undefined);
+      const payload = normalizeConsoleDetail(res.data || {});
+      detail.value = payload;
+      if (consumeSyncChangedMarker(payload)) {
+        // 后台同步已产生新数据：本次可能命中旧缓存，重新拉取最新快照并提示
+        if (!forceRefresh) {
+          const fresh = await clientApi.serviceDetail(serviceId.value);
+          detail.value = normalizeConsoleDetail(fresh.data || {});
+        }
+        MessagePlugin.info('实例信息已更新');
+      }
     } catch (error: unknown) {
       MessagePlugin.error(resolveErrorMessage(error, '加载实例信息失败'));
     } finally {
@@ -99,7 +119,13 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
     try {
       const res = await clientApi.serviceRemoteStatus(serviceId.value);
       detail.value = mergeConsoleDetail(detail.value, res.data || {});
-      if (!silent) MessagePlugin.success('实例状态已刷新');
+      if (consumeSyncChangedMarker(res.data || {})) {
+        // 后台有信息变动：自动重拉详情更新页面
+        void loadDetailBase();
+        if (!silent) MessagePlugin.info('实例信息已更新');
+      } else if (!silent) {
+        MessagePlugin.success('实例状态已刷新');
+      }
     } catch (error: unknown) {
       if (!silent) MessagePlugin.error(resolveErrorMessage(error, '刷新实例状态失败'));
     }
@@ -109,7 +135,7 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
     if (detail.value.actions?.module_status) {
       await clientApi.serviceModuleStatus(serviceId.value, { type: 'host' });
     }
-    await loadRemoteStatus(true);
+    await loadDetailBase(true);
   }
 
   async function bootstrap() {

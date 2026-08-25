@@ -256,9 +256,15 @@ export interface ConsoleActionFlags {
   module_status?: boolean;
   password_reset?: boolean;
   reinstall?: boolean;
+  rescue?: boolean;
   traffic_package?: boolean;
   available?: string[];
   [key: string]: unknown;
+}
+
+export interface ConsoleSyncMarker {
+  changed?: boolean;
+  changed_at?: string;
 }
 
 export interface ConsoleServiceDetail extends ServiceInstance {
@@ -272,6 +278,7 @@ export interface ConsoleServiceDetail extends ServiceInstance {
   traffic?: ConsoleTrafficInfo | null;
   connection?: ConsoleConnectionInfo | null;
   actions?: ConsoleActionFlags | null;
+  _sync?: ConsoleSyncMarker | null;
 }
 
 export interface ServiceInstance {

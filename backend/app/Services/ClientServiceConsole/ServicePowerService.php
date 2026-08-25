@@ -305,4 +305,42 @@ class ServicePowerService
             'detail' => $this->transformService->transformDetail($service),
         ];
     }
+
+    public function rescueForUser(User $user, int $serviceId, array $data, array $context = []): array
+    {
+        $service = $this->detailService->findUserService($user, $serviceId, [
+            'product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires',
+            'product.productGroup.secondProductGroup.firstProductGroup',
+            'product.supplier',
+            'order:id,order_no,status,paid_at,created_at',
+        ]);
+        throw_if(! $this->transformService->canExecuteConsoleActions($service), new BusinessException('当前实例状态不支持该操作', 42200));
+
+        $system = (string) ($data['system'] ?? '1');
+        throw_if(! in_array($system, ['1', '2'], true), new BusinessException('不支持的救援系统', 42200));
+
+        [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
+        $payload = ['system' => $system];
+        $response = is_callable([$runtime, 'rescue'])
+            ? $runtime->rescue($supplier, $hostId, $system, $jwt)
+            : $runtime->put($supplier, "/v1/hosts/{$hostId}/module/rescue", $payload, $jwt);
+        $this->detailService->assertSuccess($response, '进入救援模式');
+
+        $message = trim((string) ($response['msg'] ?? '')) ?: '救援模式指令已提交';
+        $this->operationLogService->writeServiceConsoleLog($service, 'service.console.rescue.submit', [
+            'category' => 'reinstall',
+            'summary' => '提交进入救援模式请求',
+            'host_id' => $hostId,
+            'system' => $system === '2' ? 'windows' : 'linux',
+            'system_label' => $system === '2' ? 'Windows' : 'Linux',
+            'message' => $message,
+            'second_verify_required' => $this->detailService->extractSecondVerify($response) !== [],
+        ], $context);
+
+        return [
+            'message' => $message,
+            'second_verify' => $this->detailService->extractSecondVerify($response),
+            'detail' => $this->transformService->transformDetail($service),
+        ];
+    }
 }

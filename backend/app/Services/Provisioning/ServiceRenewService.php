@@ -19,6 +19,7 @@ use App\Services\Finance\CheckoutService;
 use App\Services\Finance\CouponService;
 use App\Services\Finance\InvoiceService;
 use App\Services\Finance\PaymentService;
+use App\Services\ClientServiceConsole\ServiceSuspensionService;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\Integrations\Support\ProviderErrorMapper;
@@ -63,6 +64,7 @@ class ServiceRenewService
         private NotificationService $notificationService,
         private ?PluginBindingResolver $bindingResolver = null,
         private ?AgentDiscountService $agentDiscountService = null,
+        private ?ServiceSuspensionService $suspensionService = null,
     ) {}
 
     public function previewForUser(User $user, int $serviceId, ?string $selectedBillingCycle = null, int $userCouponId = 0): array
@@ -1105,6 +1107,11 @@ class ServiceRenewService
         ]);
         $this->sendUnsuspendNotificationIfNeeded($updatedService, $previousStatus);
 
+        // 续费后自动解除上游暂停：本地状态已恢复 ACTIVE，上游若仍暂停则主动 unsuspend
+        if (in_array($previousStatus, [ServiceStatus::EXPIRED, ServiceStatus::SUSPENDED], true)) {
+            $this->suspensionService()->tryUnsuspendUpstream($updatedService, true);
+        }
+
         return $updatedService;
     }
 
@@ -1264,6 +1271,11 @@ class ServiceRenewService
             'service_status' => (int) $updatedService->status,
         ]);
         $this->sendUnsuspendNotificationIfNeeded($updatedService, $previousStatus);
+
+        // 续费后自动解除上游暂停：本地状态已恢复 ACTIVE，上游若仍暂停则主动 unsuspend
+        if (in_array($previousStatus, [ServiceStatus::EXPIRED, ServiceStatus::SUSPENDED], true)) {
+            $this->suspensionService()->tryUnsuspendUpstream($updatedService, true);
+        }
 
         return $updatedService;
     }
@@ -1709,6 +1721,11 @@ class ServiceRenewService
     private function serviceBindingWriter(): ServiceUpstreamBindingWriter
     {
         return $this->serviceBindingWriter ??= app(ServiceUpstreamBindingWriter::class);
+    }
+
+    private function suspensionService(): ServiceSuspensionService
+    {
+        return $this->suspensionService ??= app(ServiceSuspensionService::class);
     }
 
     private function serviceProvisionData(Service $service, bool $includeSecrets = false): array
