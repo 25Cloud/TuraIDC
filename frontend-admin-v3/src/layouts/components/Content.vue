@@ -2,9 +2,12 @@
   <div v-if="!isRefreshing">
     <router-view v-if="!isFramePage" v-slot="{ Component }">
       <transition name="fade" mode="out-in">
+        <!-- key 用 fullPath：同组件多路由（如商品/流量包/上游共用 products/index.vue）
+             各自独立缓存；同一路由不同 query 也各自保留状态。
+             注释必须放在 keep-alive 外：dev 编译保留注释节点，会触发
+             「<KeepAlive> expects exactly one child component」编译错误，
+             整个管理端 dev 模式与全部 e2e 因此无法运行（生产构建剥离注释所以 build 一直是绿的）。 -->
         <keep-alive :include="aliveViews">
-          <!-- key 用 fullPath：同组件多路由（如商品/流量包/上游共用 products/index.vue）
-               各自独立缓存；同一路由不同 query 也各自保留状态 -->
           <component :is="Component" :key="route.fullPath" />
         </keep-alive>
       </transition>

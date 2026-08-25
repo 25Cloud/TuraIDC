@@ -130,6 +130,42 @@ class SiteCatalogCacheInvalidationTest extends TestCase
         $this->assertCatalogCachesInvalidated($versionBefore);
     }
 
+    public function test_flush_inside_transaction_defers_until_commit(): void
+    {
+        // ProductCategoryService 等调用方在 DB::transaction() 内触发失效。
+        // 若提交前就 bump 版本号，并发请求会用新版本键缓存住提交前的旧目录，
+        // 提交后不再有第二次失效——旧数据要挂满整个 TTL。
+        $versionBefore = $this->seedCatalogCaches();
+
+        DB::beginTransaction();
+        $this->invalidator()->flush();
+
+        $this->assertSame(
+            $versionBefore,
+            $this->invalidator()->currentVersion(),
+            '事务提交前版本号不应递增'
+        );
+        $this->assertNotNull(Cache::get(CacheKey::siteCatalog()), '事务提交前站点目录缓存不应被清除');
+
+        DB::commit();
+
+        $this->assertCatalogCachesInvalidated($versionBefore);
+    }
+
+    public function test_flush_inside_rolled_back_transaction_is_discarded(): void
+    {
+        // 回滚意味着数据没变，失效也应一并作废；否则每次失败的写操作都会白白打穿缓存。
+        $versionBefore = $this->seedCatalogCaches();
+
+        DB::beginTransaction();
+        $this->invalidator()->flush();
+        DB::rollBack();
+
+        $this->assertSame($versionBefore, $this->invalidator()->currentVersion(), '回滚后版本号不应递增');
+        $this->assertNotNull(Cache::get(CacheKey::adminCatalogSummary()), '回滚后缓存不应被清除');
+        $this->assertNotNull(Cache::get(CacheKey::siteCatalog()));
+    }
+
     public function test_home_overview_cache_key_changes_when_catalog_changes(): void
     {
         // 首页聚合 payload 里含商品数据，键上却只有文章发布版本号——
