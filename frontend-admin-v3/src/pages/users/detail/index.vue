@@ -1153,7 +1153,9 @@ const notices = reactive<PageState>({
 });
 
 const editRules: Record<string, FormRule[]> = {
-  password: [{ validator: (val) => !val || String(val).length >= 6, message: '密码至少需要 6 位', type: 'warning' }],
+  // 后端 UpdateUserRequest 是 ['nullable','string','min:8']。此前写 6 且是 warning——
+  // 既放行 6-7 位（必然 422），warning 也不阻断提交。改为与后端同口径的 error。
+  password: [{ validator: (val) => !val || String(val).length >= 8, message: '密码至少需要 8 位', type: 'error' }],
 };
 const rechargeRules: Record<string, FormRule[]> = {
   amount: [required('请输入金额')],

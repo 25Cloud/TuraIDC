@@ -210,7 +210,9 @@ const createForm = reactive({ email: '', nickname: '', phone: '', password: '' }
 const createRules: Record<string, FormRule[]> = {
   email: [required('请输入有效邮箱'), { email: true, message: '请输入有效邮箱', type: 'warning' }],
   phone: [required('请输入手机号')],
-  password: [required('请输入密码')],
+  // 后端 StoreUserRequest 是 ['required','string','min:8']；此前只判必填，
+  // 管理员输 3 位也能提交，直到 422 才知道。
+  password: [required('请输入密码'), { min: 8, message: '密码至少需要 8 位', type: 'error' }],
 };
 
 async function loadList() {

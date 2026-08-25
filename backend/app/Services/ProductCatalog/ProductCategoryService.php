@@ -12,6 +12,7 @@ use App\Models\SecondProductGroup;
 use App\Models\Service;
 use App\Models\ThirdProductGroup;
 use App\Services\ProductCatalog\Concerns\HandlesProductCatalogHelpers;
+use App\Support\CacheKey;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -35,7 +36,7 @@ class ProductCategoryService
     public function adminSummary(): array
     {
         return Cache::remember(
-            self::ADMIN_SUMMARY_CACHE_KEY,
+            CacheKey::adminCatalogSummary(),
             now()->addSeconds(self::ADMIN_SUMMARY_CACHE_TTL_SECONDS),
             fn () => [
                 'first_product_groups_total' => FirstProductGroup::query()->count(),

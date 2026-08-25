@@ -77,7 +77,7 @@
             :type="showPassword ? 'text' : 'password'"
             clearable
             autocomplete="new-password"
-            placeholder="请输入至少 6 位密码"
+            placeholder="请输入至少 8 位密码"
           >
             <template #prefix-icon><lock-on-icon /></template>
             <template #suffix-icon>
@@ -216,7 +216,8 @@ const rules: Record<keyof RegisterForm, FormRule[]> = {
   referral_code: [{ max: 24, message: '推荐码不能超过 24 个字符', type: 'error', trigger: 'blur' }],
   password: [
     { required: true, message: '请输入登录密码', type: 'error', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于 6 位', type: 'error', trigger: 'blur' },
+    // 与后端 RegisterRequest 的 min:8 对齐；写 6 会让用户输 6-7 位时前端放行、后端 422。
+    { min: 8, message: '密码长度不能少于 8 位', type: 'error', trigger: 'blur' },
   ],
   password_confirmation: [
     { required: true, message: '请再次输入密码', type: 'error', trigger: 'blur' },
@@ -327,8 +328,8 @@ function validateForm() {
   }
   if (!form.password) {
     errors.password = '请输入登录密码';
-  } else if (form.password.length < 6) {
-    errors.password = '密码长度不能少于 6 位';
+  } else if (form.password.length < 8) {
+    errors.password = '密码长度不能少于 8 位';
   }
   if (!form.password_confirmation) {
     errors.password_confirmation = '请再次输入密码';
