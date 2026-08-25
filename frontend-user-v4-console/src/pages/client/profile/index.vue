@@ -126,7 +126,9 @@
     >
       <t-form v-if="passwordMode === 'old'" label-align="top">
         <t-form-item label="原密码"><t-input v-model="passwordForm.oldPassword" type="password" /></t-form-item>
-        <t-form-item label="新密码"><t-input v-model="passwordForm.newPassword" type="password" /></t-form-item>
+        <t-form-item label="新密码"
+          ><t-input v-model="passwordForm.newPassword" type="password" placeholder="至少 8 位"
+        /></t-form-item>
         <t-form-item label="确认密码"><t-input v-model="passwordForm.confirmPassword" type="password" /></t-form-item>
         <t-button variant="text" theme="primary" class="password-forgot" @click="togglePasswordMode"
           >忘记原密码？</t-button

@@ -1155,7 +1155,15 @@ const notices = reactive<PageState>({
 const editRules: Record<string, FormRule[]> = {
   // 后端 UpdateUserRequest 是 ['nullable','string','min:8']。此前写 6 且是 warning——
   // 既放行 6-7 位（必然 422），warning 也不阻断提交。改为与后端同口径的 error。
-  password: [{ validator: (val) => !val || String(val).length >= 8, message: '密码至少需要 8 位', type: 'error' }],
+  // 按 trim 后长度校验：handleSave 提交的是 editForm.password.trim()，
+  // 若按原始长度校验，" 1234567 " 这类值会在前端放行、到后端才 422。
+  password: [
+    {
+      validator: (val) => !String(val ?? '').trim() || String(val).trim().length >= 8,
+      message: '密码至少需要 8 位',
+      type: 'error',
+    },
+  ],
 };
 const rechargeRules: Record<string, FormRule[]> = {
   amount: [required('请输入金额')],
