@@ -51,6 +51,7 @@ class ProductV2QueryService
             ->with([
                 'productGroup.secondProductGroup.firstProductGroup',
                 'upstreamBindings.supplierPluginBinding.supplier',
+                'productDiscountGroup',
             ])
             ->withCount([
                 'orders',
@@ -177,6 +178,9 @@ class ProductV2QueryService
                 'product_group_id',
                 'service_type_code',
                 'console_template',
+                'cpu_model',
+                'cpu_turbo',
+                'product_discount_group_id',
             ]),
             'created_at',
             'updated_at',
@@ -195,6 +199,8 @@ class ProductV2QueryService
                 'custom_display_name',
                 'product_group_id',
                 'service_type_code',
+                'cpu_model',
+                'cpu_turbo',
             ]),
             'pricing',
             'setup_fee',

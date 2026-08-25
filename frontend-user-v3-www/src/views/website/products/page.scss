@@ -873,8 +873,115 @@
 }
 
 .machine-spec-cell--processor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
   color: #0072c6;
   font-weight: 700;
+}
+
+.machine-spec-processor-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cpu-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  height: 20px;
+  padding: 0 6px 0 4px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    border-radius: 3px;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 14px;
+  }
+
+  &__label {
+    line-height: 1;
+  }
+
+  &--core-ultra {
+    color: #5b3df5;
+    border: 1px solid rgba(91, 61, 245, 0.35);
+    background: rgba(91, 61, 245, 0.08);
+
+    .cpu-brand-badge__icon {
+      background: #5b3df5;
+    }
+  }
+
+  &--platinum {
+    color: #475569;
+    border: 1px solid rgba(100, 116, 139, 0.4);
+    background: linear-gradient(
+      180deg,
+      rgba(203, 213, 225, 0.5),
+      rgba(148, 163, 184, 0.35)
+    );
+
+    .cpu-brand-badge__icon {
+      background: linear-gradient(180deg, #94a3b8, #64748b);
+    }
+  }
+
+  &--gold {
+    color: #a16207;
+    border: 1px solid rgba(202, 138, 4, 0.4);
+    background: rgba(250, 204, 21, 0.14);
+
+    .cpu-brand-badge__icon {
+      background: linear-gradient(180deg, #eab308, #ca8a04);
+    }
+  }
+
+  &--amd {
+    color: #c4001d;
+    border: 1px solid rgba(196, 0, 29, 0.35);
+    background: rgba(196, 0, 29, 0.07);
+
+    .cpu-brand-badge__icon {
+      background: #c4001d;
+    }
+  }
+
+  &--xeon {
+    color: #0066cc;
+    border: 1px solid rgba(0, 102, 204, 0.35);
+    background: rgba(0, 102, 204, 0.07);
+
+    .cpu-brand-badge__icon {
+      background: #0066cc;
+    }
+  }
+
+  &--intel {
+    color: #0071c5;
+    border: 1px solid rgba(0, 113, 197, 0.35);
+    background: rgba(0, 113, 197, 0.07);
+
+    .cpu-brand-badge__icon {
+      background: #0071c5;
+    }
+  }
 }
 
 .machine-spec-cell--price {

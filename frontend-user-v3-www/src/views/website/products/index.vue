@@ -683,8 +683,23 @@
                     <span
                       v-if="showProcessorColumns"
                       class="machine-spec-cell machine-spec-cell--processor"
-                      >{{ row.processorLabel }}</span
                     >
+                      <span
+                        v-if="cpuBrandBadgeOf(row)"
+                        class="cpu-brand-badge"
+                        :class="cpuBrandBadgeOf(row).className"
+                      >
+                        <span class="cpu-brand-badge__icon">{{
+                          cpuBrandBadgeOf(row).icon
+                        }}</span>
+                        <span class="cpu-brand-badge__label">{{
+                          cpuBrandBadgeOf(row).label
+                        }}</span>
+                      </span>
+                      <span class="machine-spec-processor-text">{{
+                        row.processorLabel
+                      }}</span>
+                    </span>
                     <span
                       v-if="showProcessorColumns"
                       class="machine-spec-cell"
@@ -1658,6 +1673,7 @@ import {
   Ticket,
 } from "@element-plus/icons-vue";
 import { useWebsiteProductsPage } from "@/domains/products/useWebsiteProductsPage";
+import { resolveCpuBrandBadge } from "@/domains/products/cpuBrandBadge";
 import MobileRegionPicker from "@/components/MobileRegionPicker.vue";
 import MobileOsPicker from "@/components/MobileOsPicker.vue";
 import MobileOptionPicker from "@/components/MobileOptionPicker.vue";
@@ -2109,7 +2125,7 @@ function formatFrequencyPair(baseFrequency, turboFrequency) {
     return turbo;
   }
 
-  return "-";
+  return "";
 }
 
 const cpuConfigs = computed(() => machineConfigs.value.filter(isCpuConfig));
@@ -2276,7 +2292,7 @@ function resolveDesktopSpecRowBase(product) {
     cpuText: resolvedCpuText || "-",
     memoryText: resolvedMemoryText || "-",
     processor: spec.processor,
-    processorLabel: sourceProduct.cpu_model_name || spec.processor,
+    processorLabel: sourceProduct.cpu_model_name || "",
     baseFrequency: sourceProduct.cpu_base_frequency || "",
     turboFrequency: sourceProduct.cpu_turbo_frequency || "",
     basePriceText: formatProductListPrice(product) || "-",
@@ -2429,12 +2445,13 @@ const showCpuMemoryColumns = computed(() =>
   ),
 );
 
+function cpuBrandBadgeOf(row) {
+  return resolveCpuBrandBadge(row.processorLabel);
+}
+
 const showProcessorColumns = computed(() =>
   desktopMachineSpecRows.value.some(
-    (row) =>
-      String(row.processorLabel || "").trim() !== "" ||
-      String(row.baseFrequency || "").trim() !== "" ||
-      String(row.turboFrequency || "").trim() !== "",
+    (row) => String(row.processorLabel || "").trim() !== "",
   ),
 );
 

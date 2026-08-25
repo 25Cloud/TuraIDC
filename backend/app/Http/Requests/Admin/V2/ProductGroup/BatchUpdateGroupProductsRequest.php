@@ -21,6 +21,8 @@ class BatchUpdateGroupProductsRequest extends AdminFormRequest
             'effective_product_group_level' => ['required', 'integer', Rule::in([1, 2, 3])],
             'console_template' => ['nullable', 'string', Rule::in(['compute', 'port_mapping'])],
             'product_discount_group_id' => ['nullable', 'integer', 'min:0'],
+            'cpu_model' => ['nullable', 'string', 'max:120'],
+            'cpu_turbo' => ['nullable', 'string', 'max:40'],
             'page' => ['prohibited'],
             'page_size' => ['prohibited'],
             'pageSize' => ['prohibited'],

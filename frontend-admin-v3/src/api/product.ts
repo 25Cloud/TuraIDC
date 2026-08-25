@@ -60,6 +60,11 @@ export interface ProductRecord {
   pricing?: Record<string, number | string>;
   upstream_binding?: ProductUpstreamBindingRecord | null;
   sort_order?: number | string;
+  cpu_model?: string | null;
+  cpu_turbo?: string | null;
+  product_discount_group_id?: number | string | null;
+  product_discount_group_name?: string | null;
+  product_discount_group_min_discount_rate?: number | string | null;
   [key: string]: unknown;
 }
 

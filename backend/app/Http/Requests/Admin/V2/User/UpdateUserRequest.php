@@ -40,6 +40,7 @@ class UpdateUserRequest extends AdminFormRequest
             'status' => ['nullable', 'in:0,1'],
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
             'admin_note' => ['nullable', 'string', 'max:2000'],
+            'agent_group_id' => ['nullable', 'integer', 'exists:agent_groups,id'],
         ];
 
         $rules['phone'][0] = 'sometimes';

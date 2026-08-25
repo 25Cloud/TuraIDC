@@ -64,11 +64,15 @@ class ProductAdminService
                         'custom_display_name',
                         'product_group_id',
                         'service_type_code',
+                        'cpu_model',
+                        'cpu_turbo',
+                        'product_discount_group_id',
                     ]),
                     'updated_at',
                 ])
                 ->with([
                     'productGroup.secondProductGroup.firstProductGroup',
+                    'productDiscountGroup',
                 ])
                 ->withCount([
                     'services as services_count',
@@ -1732,6 +1736,12 @@ class ProductAdminService
                 ...$this->hierarchyProductPayload($targetHierarchy),
                 ...(array_key_exists('product_discount_group_id', $data)
                     ? ['product_discount_group_id' => $discountGroupId]
+                    : []),
+                ...(array_key_exists('cpu_model', $data)
+                    ? ['cpu_model' => $this->normalizeNullableString($data['cpu_model'] ?? null)]
+                    : []),
+                ...(array_key_exists('cpu_turbo', $data)
+                    ? ['cpu_turbo' => $this->normalizeNullableString($data['cpu_turbo'] ?? null)]
                     : []),
                 'remark' => $this->normalizeNullableString($data['remark'] ?? null),
                 'pricing' => $pricing,

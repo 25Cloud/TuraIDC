@@ -64,6 +64,19 @@
           <t-tag v-if="row.agent_group?.name" theme="primary" variant="light">{{ row.agent_group.name }}</t-tag>
           <span v-else>-</span>
         </template>
+        <template #operation="{ row }">
+          <div class="users-row-actions">
+            <t-button
+              v-if="canManageUsers"
+              size="small"
+              variant="text"
+              theme="primary"
+              @click="openAgentGroupDialog(row)"
+            >
+              绑定代理
+            </t-button>
+          </div>
+        </template>
         <template #status="{ row }">
           <t-tag :theme="Number(row.status) === 1 ? 'success' : 'danger'" variant="light">
             {{ Number(row.status) === 1 ? '正常' : '禁用' }}
@@ -152,6 +165,27 @@
         </t-form-item>
       </t-form>
     </t-dialog>
+
+    <t-dialog
+      v-model:visible="agentGroupDialogVisible"
+      header="绑定代理组"
+      width="480px"
+      :confirm-btn="{ content: '保存', loading: agentGroupSubmitting }"
+      @confirm="handleAgentGroupSave"
+    >
+      <p class="users-agent-group-desc">
+        为 <strong>{{ agentGroupTargetName }}</strong> 绑定代理组后，其购买商品将按代理组折扣报价。
+      </p>
+      <t-select
+        v-model="agentGroupForm.agent_group_id"
+        :options="agentGroupOptions"
+        :loading="agentGroupLoading"
+        clearable
+        filterable
+        placeholder="选择代理组，留空表示解除绑定"
+        style="width: 100%"
+      />
+    </t-dialog>
   </div>
 </template>
 <script setup lang="ts">
@@ -163,12 +197,15 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { agentGroupsApi } from '@/api/admin/agentDiscount';
+import type { AgentGroupRecord } from '@/api/admin/types';
 import type { AdminUser } from '@/api/user';
 import { userApi } from '@/api/user';
 import { AdminPermissions } from '@/constants/permissions';
 import { formatDateTime, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { hasAdminPermission } from '@/utils/permission';
+import { errorMessage } from '@/utils/userMessage';
 
 defineOptions({
   name: 'AdminUsers',
@@ -194,6 +231,7 @@ const columns: PrimaryTableCol<TableRowData>[] = [
   { title: '代理组', colKey: 'agentGroup', width: 140 },
   { title: '状态', colKey: 'status', width: 100 },
   { title: '注册时间', colKey: 'createdAt', width: 180 },
+  { title: '操作', colKey: 'operation', width: 120, fixed: 'right' },
 ];
 
 const pagination = computed(() => ({
@@ -277,6 +315,55 @@ async function handleCreate() {
 
 function openDetail(id: number | string) {
   router.push(`/admin/users/${id}`);
+}
+
+const agentGroupDialogVisible = ref(false);
+const agentGroupSubmitting = ref(false);
+const agentGroupLoading = ref(false);
+const agentGroupOptions = ref<AgentGroupRecord[]>([]);
+const agentGroupTargetName = ref('');
+const agentGroupForm = reactive<{ agent_group_id: number | string | null }>({ agent_group_id: null });
+let agentGroupTargetUserId = 0;
+
+function openAgentGroupDialog(row: AdminUser) {
+  if (!canManageUsers.value) {
+    MessagePlugin.warning('当前账号无用户管理权限');
+    return;
+  }
+  agentGroupTargetUserId = Number(row.id);
+  agentGroupTargetName.value = row.display_name || row.nickname || `用户#${row.id}`;
+  agentGroupForm.agent_group_id = Number(row.agent_group_id || 0) || null;
+  agentGroupDialogVisible.value = true;
+  if (!agentGroupOptions.value.length) void loadAgentGroupOptions();
+}
+
+async function loadAgentGroupOptions() {
+  agentGroupLoading.value = true;
+  try {
+    agentGroupOptions.value = (await agentGroupsApi.list()) || [];
+  } catch {
+    agentGroupOptions.value = [];
+  } finally {
+    agentGroupLoading.value = false;
+  }
+}
+
+async function handleAgentGroupSave() {
+  if (!canManageUsers.value) {
+    MessagePlugin.warning('当前账号无用户管理权限');
+    return;
+  }
+  agentGroupSubmitting.value = true;
+  try {
+    await userApi.update(agentGroupTargetUserId, { agent_group_id: agentGroupForm.agent_group_id });
+    MessagePlugin.success('绑定成功');
+    agentGroupDialogVisible.value = false;
+    await loadList();
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '绑定失败'));
+  } finally {
+    agentGroupSubmitting.value = false;
+  }
 }
 
 onMounted(() => loadList());
