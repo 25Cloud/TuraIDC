@@ -21,6 +21,7 @@ use App\Support\DatabaseSchema;
 use App\Support\SensitiveDataSanitizer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -1397,19 +1398,12 @@ class AdminLogService
             return $this->buildPaginatorPayload($this->emptyPaginator($perPage));
         }
 
-        // 每工单最新事件（delivery_rank=1）视为工单当前状态，status 筛选作用于最新事件；
+        // 每工单最新事件视为工单当前状态，status 筛选作用于最新事件；
         // 嵌套历史事件不受 status 筛选影响，保证列表行与汇总使用相同的筛选顺序。
-        $latest = TicketUpstreamDeliveryLog::query()
-            ->fromSub($this->upstreamLogRankedSubQuery($base), 'ranked_delivery_logs')
-            ->where('delivery_rank', 1);
+        $latest = $this->upstreamLogLatestQuery($base);
         $this->applyUpstreamLogStatusFilter($latest, $filters);
 
-        // $latest 里的 ranked 子查询是 ROW_NUMBER() OVER (PARTITION BY ticket_id ...)，
-        // 不带 ticket 范围限制，因此每次求值都要对整表排序一遍。原实现在默认路径上要付三遍：
-        // count()、翻页取 ticket_id、以及 getUpstreamLogsSummary() 内部重建同一个子查询。
-        // 投递日志是持续追加的表，行数涨起来后每翻一页都付三倍代价。
-        //
-        // 现在只付两遍：汇总聚合本身已经算了 COUNT(*) as total，直接拿它当分页总数
+        // 汇总聚合本身已经算了 COUNT(*) as total，直接拿它当分页总数
         // （两者都是对同一个过滤后 $latest 的 COUNT，口径一致，还顺带消除了两次独立
         // 查询之间可能出现的数字不一致）；withSummary=false 时才单独 count()。
         $summary = $withSummary ? $this->upstreamLogSummaryFrom($latest) : [];
@@ -1434,14 +1428,7 @@ class AdminLogService
                 ->groupBy('ticket_id')
                 ->pluck('aggregate', 'ticket_id');
 
-            $eventsByTicket = TicketUpstreamDeliveryLog::query()
-                ->fromSub($this->upstreamLogRankedSubQuery($base, $ticketIds), 'ranked_delivery_logs')
-                ->where('delivery_rank', '<=', self::UPSTREAM_NESTED_LOG_LIMIT)
-                ->orderBy('ticket_id')
-                ->orderBy('delivery_rank')
-                ->with('supplier:id,name')
-                ->get()
-                ->groupBy('ticket_id');
+            $eventsByTicket = $this->upstreamLogRecentEventsByTicket($base, $ticketIds);
 
             foreach ($ticketIds as $ticketId) {
                 $eventRows = $eventsByTicket
@@ -1475,9 +1462,7 @@ class AdminLogService
             return ['total' => 0, 'failed' => 0, 'delivered' => 0, 'skipped' => 0, 'pending' => 0, 'sending' => 0];
         }
 
-        $latest = TicketUpstreamDeliveryLog::query()
-            ->fromSub($this->upstreamLogRankedSubQuery($base), 'ranked_delivery_logs')
-            ->where('delivery_rank', 1);
+        $latest = $this->upstreamLogLatestQuery($base);
         $this->applyUpstreamLogStatusFilter($latest, $filters);
 
         return $this->upstreamLogSummaryFrom($latest);
@@ -1494,7 +1479,10 @@ class AdminLogService
      */
     private function upstreamLogSummaryFrom(Builder $latest): array
     {
+        // select([]) 先清掉 $latest 预置的 ticket_upstream_delivery_logs.*：
+        // selectRaw 是追加语义，不清会把整行列混进纯聚合查询，ONLY_FULL_GROUP_BY 下直接报错。
         $summary = (clone $latest)
+            ->select([])
             ->selectRaw('COUNT(*) as total')
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) as failed")
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END), 0) as delivered")
@@ -1594,20 +1582,76 @@ class AdminLogService
     }
 
     /**
-     * 构建按工单最新事件排序的排名子查询；可选限定 ticket_id 集合。
+     * 「每工单最新一条事件」查询（MySQL 5.7 兼容写法）。
      *
-     * @param  array<int, int>|null  $ticketIds
+     * 语义与原 ROW_NUMBER() OVER (PARTITION BY ticket_id ORDER BY occurred_at DESC, id DESC)
+     * 取 rank=1 逐字一致：窗口函数是 MySQL 8.0-only，且不带范围限制时每次求值都要对
+     * 整表做一遍窗口排序（性能清单 E1）。现改为两层分组极值——先取每工单的
+     * MAX(occurred_at)，再在该时刻内取 MAX(id) 兜住同秒并发写入的平局；两层都能吃住
+     * (ticket_id, occurred_at) 复合索引（InnoDB 二级索引隐含主键后缀），由全表窗口排序
+     * 退化为分组扫描。
+     *
+     * 派生表只暴露改名后的列（tid / m_at / lid），避免与 $base 里未限定列名的过滤条件
+     * 产生歧义；竞争行取自同一个 $base（带全部过滤条件），「最新」是过滤后集合内的最新，
+     * 与旧实现的分区口径一致。
      */
-    private function upstreamLogRankedSubQuery(Builder $base, ?array $ticketIds = null): Builder
+    private function upstreamLogLatestQuery(Builder $base): Builder
     {
-        $sub = (clone $base)
-            ->select('ticket_upstream_delivery_logs.*')
-            ->selectRaw('ROW_NUMBER() OVER (PARTITION BY ticket_id ORDER BY occurred_at DESC, id DESC) AS delivery_rank');
-        if ($ticketIds !== null && $ticketIds !== []) {
-            $sub->whereIn('ticket_id', $ticketIds);
+        $latestAt = (clone $base)
+            ->reorder()
+            ->selectRaw('ticket_id AS tid, MAX(occurred_at) AS m_at')
+            ->groupBy('ticket_id');
+
+        $latestIds = (clone $base)
+            ->reorder()
+            ->joinSub($latestAt, 'latest_at', function (JoinClause $join): void {
+                $join->on('ticket_upstream_delivery_logs.ticket_id', '=', 'latest_at.tid')
+                    ->on('ticket_upstream_delivery_logs.occurred_at', '=', 'latest_at.m_at');
+            })
+            ->selectRaw('MAX(ticket_upstream_delivery_logs.id) AS lid')
+            ->groupBy('ticket_upstream_delivery_logs.ticket_id');
+
+        return TicketUpstreamDeliveryLog::query()
+            ->joinSub($latestIds, 'latest_ids', function (JoinClause $join): void {
+                $join->on('ticket_upstream_delivery_logs.id', '=', 'latest_ids.lid');
+            })
+            ->select('ticket_upstream_delivery_logs.*');
+    }
+
+    /**
+     * 页内各工单的最近 N 条事件（MySQL 5.7 兼容写法）。
+     *
+     * 原实现对 ranked 子查询取 delivery_rank <= N。5.7 没有窗口函数，改为
+     * 「每工单一个带 LIMIT 的括号子查询 + UNION ALL」一次取回：每个分支都直接
+     * 命中 (ticket_id, occurred_at) 索引，分支数受分页 perPage 约束。
+     * UNION 输出顺序不作保证，最终顺序在 PHP 侧排定（与旧实现的
+     * ticket_id ASC、rank ASC 口径一致）。
+     *
+     * @param  array<int, int>  $ticketIds
+     * @return Collection<int|string, mixed>
+     */
+    private function upstreamLogRecentEventsByTicket(Builder $base, array $ticketIds): Collection
+    {
+        $union = null;
+        foreach ($ticketIds as $ticketId) {
+            $branch = (clone $base)
+                ->reorder()
+                ->where('ticket_id', $ticketId)
+                ->orderByDesc('occurred_at')
+                ->orderByDesc('id')
+                ->limit(self::UPSTREAM_NESTED_LOG_LIMIT);
+            $union = $union === null ? $branch : $union->unionAll($branch);
         }
 
-        return $sub;
+        if ($union === null) {
+            return collect();
+        }
+
+        return $union
+            ->get()
+            ->sortBy([['ticket_id', 'asc'], ['occurred_at', 'desc'], ['id', 'desc']])
+            ->values()
+            ->groupBy('ticket_id');
     }
 
     /** @return array<string, mixed> */

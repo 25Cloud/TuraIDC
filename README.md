@@ -115,13 +115,13 @@ flowchart TB
 
 ## 🧩 技术栈
 
-| 端         | 技术                                            |
-| ---------- | ----------------------------------------------- |
-| 后端       | Laravel 12（PHP 8.3+）、Sanctum、MySQL 8、Redis |
-| 管理后台   | Vue 3 + TypeScript + TDesign Vue Next + Vite    |
-| 官网门户   | Vue 3 + JavaScript + Element Plus + Vite        |
-| 用户控制台 | Vue 3 + TypeScript + TDesign Vue Next + Vite    |
-| 共享包     | shared（跨端会话、HTTP、状态、组件）            |
+| 端         | 技术                                                                 |
+| ---------- | -------------------------------------------------------------------- |
+| 后端       | Laravel 12（PHP 8.3+）、Sanctum、MySQL 8.0+（最低兼容 5.7.8）、Redis |
+| 管理后台   | Vue 3 + TypeScript + TDesign Vue Next + Vite                         |
+| 官网门户   | Vue 3 + JavaScript + Element Plus + Vite                             |
+| 用户控制台 | Vue 3 + TypeScript + TDesign Vue Next + Vite                         |
+| 共享包     | shared（跨端会话、HTTP、状态、组件）                                 |
 
 ## 🤝 生态与合作伙伴
 
@@ -219,7 +219,7 @@ TuraIDC/
 ## 🔧 环境要求
 
 - PHP 8.3+（扩展：`pdo_mysql`、`redis`、`mbstring`、`openssl`、`zip` 等）
-- MySQL 8.0+
+- MySQL 8.0+（推荐；最低兼容 5.7.8，5.7 已 EOL 仅兼容性支持；5.7 部署需在 my.cnf 设置 `explicit_defaults_for_timestamp=ON`，详见 DEPLOYMENT.md）
 - Redis 6.0+（生产环境必需，分布式锁依赖 Redis）
 - Composer 2.x
 - Node.js 20+（构建前端）

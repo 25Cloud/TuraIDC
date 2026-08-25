@@ -130,6 +130,12 @@ class InstallService
             return ['ok' => false, 'message' => '数据库连接失败：'.$exception->getMessage(), 'database_exists' => false, 'database_empty' => false];
         }
 
+        try {
+            $versionNotice = $this->assertSupportedDatabaseVersion($pdo);
+        } catch (InstallException $exception) {
+            return ['ok' => false, 'message' => $exception->getMessage(), 'database_exists' => false, 'database_empty' => false];
+        }
+
         $database = trim((string) $config['database']);
         if ($database === '') {
             return ['ok' => false, 'message' => '数据库名不能为空', 'database_exists' => false, 'database_empty' => false];
@@ -143,11 +149,16 @@ class InstallService
             $tableCount = (int) $statement->fetchColumn();
         }
 
+        $message = $exists
+            ? sprintf('连接成功，库已存在（%d 张表）', $tableCount)
+            : '连接成功，库不存在（将自动创建）';
+        if ($versionNotice !== null) {
+            $message .= '；'.$versionNotice;
+        }
+
         return [
             'ok' => true,
-            'message' => $exists
-                ? sprintf('连接成功，库已存在（%d 张表）', $tableCount)
-                : '连接成功，库不存在（将自动创建）',
+            'message' => $message,
             'database_exists' => $exists,
             'database_empty' => $tableCount === 0,
         ];
@@ -262,6 +273,9 @@ class InstallService
             $adminPdo = $this->makePdo($payload['db_host'], (int) $payload['db_port'], '', $payload['db_username'], $payload['db_password']);
         } catch (Throwable $exception) {
             throw new InstallException('数据库连接失败：'.$exception->getMessage());
+        }
+        if (($versionNotice = $this->assertSupportedDatabaseVersion($adminPdo)) !== null) {
+            $logger($versionNotice);
         }
         if (! $this->databaseExists($adminPdo, $database)) {
             $logger('创建数据库 '.$database);
@@ -660,6 +674,49 @@ class InstallService
         $statement = $pdo->prepare('SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = ?');
 
         return $statement->execute([$database]) && (int) $statement->fetchColumn() > 0;
+    }
+
+    /**
+     * 数据库最低版本闸门。
+     *
+     * 达标但属兼容档（MySQL 5.7.x）时返回警示文案供安装日志展示；8.0+ / MariaDB 10.3+
+     * 返回 null；不达标直接抛 InstallException——此前没有任何版本探测，过低版本会在
+     * 安装向导一路绿灯，直到运行期才在个别页面炸出 SQL 语法错误，极难排查。
+     *
+     * 下限依据（本仓实测）：5.7.8 起才有 json 类型（基线 58 个 json 列）与虚拟生成列上的
+     * 唯一索引（ticket_delivery_rules.supplier_scope_key）；MariaDB 取 Laravel 12 官方
+     * 支持矩阵的 10.3。版本串解析不出来时保守放行，不因未知发行版误拦。
+     */
+    private function assertSupportedDatabaseVersion(PDO $pdo): ?string
+    {
+        $raw = (string) $pdo->query('SELECT VERSION()')->fetchColumn();
+        if (! preg_match('/(\d+\.\d+(?:\.\d+)?)/', $raw, $matches)) {
+            return null;
+        }
+        $version = $matches[1];
+
+        if (stripos($raw, 'mariadb') !== false) {
+            if (version_compare($version, '10.3', '<')) {
+                throw new InstallException(sprintf('MariaDB 版本过低（当前 %s）：最低需要 10.3。', $raw));
+            }
+
+            return null;
+        }
+
+        if (version_compare($version, '5.7.8', '<')) {
+            throw new InstallException(sprintf('MySQL 版本过低（当前 %s）：最低需要 5.7.8，推荐 8.0+。', $raw));
+        }
+        if (version_compare($version, '8.0.0', '<')) {
+            return sprintf(
+                'MySQL %s：兼容支持档（5.7 已停止官方维护，建议尽快升级到 8.0+）。'
+                .'强烈建议在 my.cnf 设置 explicit_defaults_for_timestamp=ON：'
+                .'5.7 默认 OFF 时首个无显式默认值的 timestamp 列会被隐式附加 '
+                .'ON UPDATE CURRENT_TIMESTAMP，与 8.0 行为不一致。',
+                $raw
+            );
+        }
+
+        return null;
     }
 
     private function makePdo(string $host, int $port, string $database, string $username, string $password): PDO
