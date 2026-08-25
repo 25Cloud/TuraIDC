@@ -242,6 +242,12 @@
       "review_by": "2026-08-21"
     },
     {
+      "path": "references/database/mysql-version-compatibility.md",
+      "status": "current",
+      "summary": "MySQL 5.7.44 / 8.x 双版本兼容基线：8.0 专属语法禁令、5.7 隐式时间戳陷阱、只增不删铁律与自检清单。",
+      "review_by": "2026-11-25"
+    },
+    {
       "path": "references/integrations/local-integration.md",
       "status": "needs-review",
       "summary": "上游本地联调说明。"

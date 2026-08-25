@@ -30,11 +30,20 @@ class ScheduleTickRepository
             // slot_started_at 悄悄改成当前时间，槽唯一键语义崩坏，下一次 tick 撞
             // global_number 唯一键（5.7 全量套件实测复现；8.0 默认 ON 无此行为）。
             // 显式赋值可覆盖隐式 ON UPDATE，两版行为一致。
+            // updated_at 显式给值：Eloquent 的 update() 本会自动补 updated_at，但那份时间戳
+            // 只落库、不会回写到当前实例。显式传入既让库内与内存取同一个值，也避免两处各自
+            // 取时间戳产生偏差（array_merge 中显式值优先于框架补的值）。
+            $updatedAt = $tick->freshTimestampString();
+
             $tick->newQuery()->whereKey($tick->id)->update([
                 'triggered_at' => $triggeredAt,
                 'slot_started_at' => $tick->slot_started_at,
+                'updated_at' => $updatedAt,
             ]);
-            $tick->forceFill(['triggered_at' => $triggeredAt])->syncOriginal();
+            $tick->forceFill([
+                'triggered_at' => $triggeredAt,
+                'updated_at' => $updatedAt,
+            ])->syncOriginal();
         }
 
         return $tick;
