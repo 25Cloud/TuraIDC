@@ -25,6 +25,14 @@ class SiteProductQuoteResource extends JsonResource
             'subtotal_amount' => $this->money($payload['subtotal_amount'] ?? $payload['total_amount'] ?? 0),
             'discount_amount' => $this->money($payload['discount_amount'] ?? 0),
             'total_amount' => $this->money($payload['total_amount'] ?? 0),
+            'original_total_amount' => $this->money($payload['original_total_amount'] ?? 0),
+            'agent_discount_rate' => $this->money($payload['agent_discount_rate'] ?? 100),
+            'agent_discount_amount' => $this->money($payload['agent_discount_amount'] ?? 0),
+            'agent_amount' => $this->money($payload['agent_amount'] ?? 0),
+            'agent_group_id' => $payload['agent_group_id'] ?? null,
+            'agent_group_name' => (string) ($payload['agent_group_name'] ?? ''),
+            'product_discount_group_id' => $payload['product_discount_group_id'] ?? null,
+            'cost_amount' => $this->money($payload['cost_amount'] ?? 0),
             'quantity' => (int) ($payload['quantity'] ?? 1),
             'coupon' => $this->coupon($payload['coupon'] ?? null),
             'user_coupon_id' => (int) ($payload['user_coupon_id'] ?? 0),
@@ -52,7 +60,9 @@ class SiteProductQuoteResource extends JsonResource
         return [
             'user_coupon_id' => (int) ($coupon['user_coupon_id'] ?? 0),
             'coupon_id' => (int) ($coupon['coupon_id'] ?? $coupon['id'] ?? 0),
+            'code' => (string) ($coupon['code'] ?? ''),
             'name' => (string) ($coupon['name'] ?? ''),
+            'discount_label' => (string) ($coupon['discount_label'] ?? ''),
             'discount_amount' => $this->money($coupon['discount_amount'] ?? 0),
         ];
     }

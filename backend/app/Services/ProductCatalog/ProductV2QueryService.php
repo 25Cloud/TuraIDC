@@ -76,6 +76,7 @@ class ProductV2QueryService
             ->select($this->siteProductListColumns())
             ->with([
                 'productGroup.secondProductGroup.firstProductGroup',
+                'productDiscountGroup',
             ])
             ->orderBy('sort_order')
             ->orderBy('id')
@@ -201,6 +202,7 @@ class ProductV2QueryService
                 'service_type_code',
                 'cpu_model',
                 'cpu_turbo',
+                'product_discount_group_id',
             ]),
             'pricing',
             'setup_fee',

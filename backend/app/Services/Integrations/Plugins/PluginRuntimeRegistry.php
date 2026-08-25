@@ -28,6 +28,22 @@ class PluginRuntimeRegistry
     /** 支付回调验签动作：未认证入口，验签失败不落 runtime log */
     private const VERIFY_NOTIFY_ACTION = 'payment.verify_notify';
 
+    /**
+     * 幂等只读探测/静态资源动作：每次页面加载或服务控制台打开都会触发，
+     * 落库只会让 integration_plugin_runtime_logs 持续膨胀，跳过不记录。
+     */
+    private const READ_ONLY_ACTIONS = [
+        'server.resolve_capability',
+        'server.supplier_form_schema',
+        'captcha.config',
+        'captcha.script',
+        'payment.query',
+        'payment.is_enabled',
+        'payment.options',
+        'payment.matches_merchant',
+        'sms.verify_code_template',
+    ];
+
     public function __construct(
         private readonly Container $container,
         private readonly PluginScanner $scanner,
@@ -206,6 +222,12 @@ class PluginRuntimeRegistry
      */
     private function shouldSkipRuntimeLog(string $action, ?array $response): bool
     {
+        // 纯配置读取/只读探测动作（如 captcha.config、server.resolve_capability）幂等无副作用，
+        // 每次页面加载都会触发，落库只会让 integration_plugin_runtime_logs 持续膨胀；跳过以控制表体积。
+        if (in_array($action, self::READ_ONLY_ACTIONS, true) || str_ends_with($action, '.config')) {
+            return true;
+        }
+
         if ($action !== self::VERIFY_NOTIFY_ACTION) {
             return false;
         }

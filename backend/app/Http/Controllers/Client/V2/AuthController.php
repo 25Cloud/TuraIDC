@@ -277,8 +277,10 @@ class AuthController extends Controller
         $user->loadMissing([
             'memberLevel',
             'account',
+            'agentGroup',
         ]);
         $memberLevel = $user->memberLevel;
+        $agentGroup = $user->agentGroup;
 
         return $this->success([
             'id' => $user->id,
@@ -301,6 +303,14 @@ class AuthController extends Controller
                 'name' => $memberLevel->name,
                 'code' => $memberLevel->code,
                 'reward_rate' => $memberLevel->reward_rate,
+            ] : null,
+            'agent_group_id' => $user->agent_group_id,
+            'agent_group_name' => (string) ($agentGroup->name ?? ''),
+            'agent_group' => $agentGroup ? [
+                'id' => $agentGroup->id,
+                'name' => $agentGroup->name,
+                'code' => $agentGroup->code,
+                'status' => $agentGroup->status,
             ] : null,
             'status' => $user->status,
             'is_verified' => $user->is_verified,

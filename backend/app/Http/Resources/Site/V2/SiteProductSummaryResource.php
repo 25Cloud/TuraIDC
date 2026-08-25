@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Site\V2;
 
+use App\Http\Resources\Site\V2\Concerns\ResolvesSiteAgentDiscount;
 use App\Models\Product;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductSpecHighlightService;
@@ -13,6 +14,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class SiteProductSummaryResource extends JsonResource
 {
+    use ResolvesSiteAgentDiscount;
+
     /**
      * @return array<string, mixed>
      */
@@ -26,6 +29,8 @@ class SiteProductSummaryResource extends JsonResource
         $productType = (string) ($hierarchy['product_type'] ?? $hierarchy['service_type_code'] ?? $product->product_type ?? '');
         $pricing = $this->pricing($product);
         $primaryCycle = $this->primaryCycle($pricing);
+        $primaryPrice = $primaryCycle !== '' ? $pricing[$primaryCycle] : '0.00';
+        $agentDiscount = $this->siteAgentDiscount($product, $request, $primaryPrice);
 
         return [
             'id' => (int) $product->id,
@@ -37,12 +42,13 @@ class SiteProductSummaryResource extends JsonResource
             'product_type' => $productType,
             ...$hierarchy,
             'primary_cycle' => $primaryCycle,
-            'primary_price' => $primaryCycle !== '' ? $pricing[$primaryCycle] : '0.00',
+            'primary_price' => $primaryPrice,
             'setup_fee' => number_format((float) ($product->setup_fee ?? 0), 2, '.', ''),
             'stock' => (int) ($product->stock ?? -1),
             'auto_setup' => (int) ($product->auto_setup ?? 0),
             'spec_highlights' => $specHighlight->resolveHighlightsForProduct($product),
             'spec_highlight_text' => $specHighlight->resolveHighlightText($product),
+            ...$agentDiscount,
         ];
     }
 

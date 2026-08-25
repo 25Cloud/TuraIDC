@@ -495,11 +495,11 @@ class ProductSyncService
             return $summary;
         }
 
-        $hasChanges = false;
-
         // 整体时间预算：上游拉取慢时宁可部分跳过也要保证在任务超时前正常收尾，
         // 避免运行记录被队列超时强杀后永久卡在 running（自愈兜底见 HeartbeatScheduler）。
         $syncDeadline = microtime(true) + self::UPSTREAM_SYNC_DEADLINE_SECONDS;
+
+        $hasChanges = false;
 
         foreach ($products->groupBy(fn (Product $product) => (int) ($this->resolveProductSupplier($product)?->id ?? 0)) as $supplierProducts) {
             $firstProduct = $supplierProducts->first();
