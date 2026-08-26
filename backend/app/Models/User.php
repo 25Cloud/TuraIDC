@@ -27,6 +27,7 @@ class User extends Authenticatable
         'nickname', 'company', 'qq', 'admin_note',
         'referral_code', 'referrer_user_id', 'referred_at', 'member_level_id', 'total_sales_amount',
         'agent_group_id',
+        'api_open', 'api_username', 'api_password',
         'is_verified', 'real_name', 'id_card', 'verification_status', 'verification_message', 'verification_certify_id', 'verified_at',
         'alipay_real_name', 'alipay_account',
         'login_email_alert', 'login_notify', 'login_location_alert', 'password_change_alert', 'phone_change_alert', 'email_change_alert', 'marketing_alert', 'last_login_ip', 'last_login_at',
@@ -35,7 +36,7 @@ class User extends Authenticatable
     // $fillable 已显式声明可填充字段，$guarded 无需重复定义
 
     // 从 JSON 序列化中隐藏密码
-    protected $hidden = ['password'];
+    protected $hidden = ['password', 'api_password'];
 
     protected function casts(): array
     {
@@ -56,6 +57,8 @@ class User extends Authenticatable
             'verification_status' => 'integer',
             'member_level_id' => 'integer',
             'agent_group_id' => 'integer',
+            'api_open' => 'boolean',
+            'api_password' => 'hashed',
             'referrer_user_id' => 'integer',
             'password' => 'hashed',
         ];

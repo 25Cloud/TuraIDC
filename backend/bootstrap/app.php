@@ -46,6 +46,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->prefix('api/v2/open')
                 ->group(base_path('routes/v2-open.php'));
 
+            Route::middleware('api')
+                ->prefix('api/v2/zjmf')
+                ->group(base_path('routes/v2-zjmf-upstream.php'));
+
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
@@ -109,6 +113,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'ensure.admin' => EnsureAdminAuthenticated::class,
             'ensure.client' => EnsureClientAuthenticated::class,
             'api.key' => \App\Http\Middleware\AuthenticateApiKey::class,
+            'zjmf.upstream' => \App\Http\Middleware\EnsureZjmfUpstreamAuthenticated::class,
             'log.operation' => LogOperation::class,
             'verify.alipay.callback' => VerifyAlipayCallbackSignature::class,
             'verify.payment.callback' => VerifyPaymentCallbackSignature::class,
