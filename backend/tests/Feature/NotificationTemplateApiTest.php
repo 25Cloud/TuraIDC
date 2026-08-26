@@ -145,11 +145,13 @@ class NotificationTemplateApiTest extends TestCase
             '管理员工单回复通知',
             '管理员登录提示',
             '产品解除停用失败通知',
+            '上游余额不足提醒',
+            '上游余额不足导致开通失败',
         ];
-        $this->assertSame(29, $emailTemplates->count());
+        $this->assertSame(31, $emailTemplates->count());
         $this->assertSame($expectedEmailNames, $emailTemplates->pluck('name')->all());
         $this->assertSame('100001', $emailTemplates->first()['code']);
-        $this->assertSame('100029', $emailTemplates->last()['code']);
+        $this->assertSame('100031', $emailTemplates->last()['code']);
         $this->assertSame('user', $emailTemplates->firstWhere('name', '验证码邮件')['audience'] ?? null);
         $this->assertSame('admin', $emailTemplates->firstWhere('name', '管理员新订单通知')['audience'] ?? null);
         $this->assertFalse($emailTemplates->pluck('name')->contains('邮箱验证码'));
@@ -179,7 +181,7 @@ class NotificationTemplateApiTest extends TestCase
     {
         $templates = collect(EmailNotificationTemplateDefaults::templates());
 
-        $this->assertSame(29, $templates->count());
+        $this->assertSame(31, $templates->count());
         $this->assertTrue($templates->every(
             fn (array $template): bool => str_contains((string) $template['content'], 'meta name="color-scheme"')
                 && str_contains((string) $template['content'], 'supported-color-schemes')
