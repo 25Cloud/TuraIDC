@@ -862,7 +862,7 @@ class ServiceTransformService
     {
         $nextDueDate = $host['nextduedate'] ?? null;
         if (is_numeric($nextDueDate) && (int) $nextDueDate > 0) {
-            return Carbon::createFromTimestamp((int) $nextDueDate);
+            return Carbon::createFromTimestamp((int) $nextDueDate, config('app.timezone'));
         }
 
         return $service->expires_at;

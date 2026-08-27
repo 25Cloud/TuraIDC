@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Models\User;
-use App\Support\UpstreamJwt;
 use App\Services\ZjmfUpstream\ZjmfUpstreamService;
+use App\Support\UpstreamJwt;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -33,7 +33,7 @@ class EnsureZjmfUpstreamAuthenticated
         $userId = (int) ($claims['uid'] ?? 0);
 
         $user = $userId > 0
-            ? User::query()->where('id', $userId)->where('api_open', 1)->first()
+            ? User::query()->where('id', $userId)->where('api_open', 1)->where('status', 1)->first()
             : null;
 
         if (! $user instanceof User) {

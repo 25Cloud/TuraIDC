@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\ZjmfUpstream;
 
 use App\Models\ZjmfUpstreamBinding;
+use App\Support\UploadedImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -70,15 +71,29 @@ class PushService
      */
     public function uploadImage(UploadedFile $file): array
     {
-        $directoryPath = 'uploads/zjmf/'.now()->format('Ym');
-        $directory = public_path(str_replace('/', DIRECTORY_SEPARATOR, $directoryPath));
+        if (! $file->isValid()) {
+            return ['status' => 400, 'msg' => '文件上传失败'];
+        }
+
+        // 按 MIME 嗅探取扩展名并走白名单（与工单附件同基线），客户端扩展名不可信。
+        try {
+            $extension = UploadedImage::extension($file);
+        } catch (\Throwable) {
+            return ['status' => 400, 'msg' => '仅支持 JPG、PNG、WEBP 图片'];
+        }
+
+        if ((int) $file->getSize() > 5 * 1024 * 1024) {
+            return ['status' => 400, 'msg' => '图片大小不能超过 5MB'];
+        }
+
+        $directoryPath = 'zjmf/'.now()->format('Ym');
+        $directory = storage_path('app/private/uploads/'.$directoryPath);
         File::ensureDirectoryExists($directory);
 
-        $extension = $file->getClientOriginalExtension() ?: 'bin';
         $filename = Str::lower(Str::random(16)).'.'.$extension;
         $file->move($directory, $filename);
 
-        $savename = $directoryPath.'/'.$filename;
+        $savename = 'uploads/'.$directoryPath.'/'.$filename;
 
         return ['status' => 200, 'msg' => '操作成功', 'savename' => $savename];
     }

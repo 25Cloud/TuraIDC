@@ -519,6 +519,16 @@ class InvoiceOrderReconciliationService
             return 1;
         }
 
+        // 账单已是退款/部分退款/取消时，资金事实已发生（已退款或已作废），
+        // 对账不得将其反转回已付状态，否则会抹掉退款记录并重置 paid_amount。
+        if (in_array((int) $pair->invoice_status, [
+            InvoiceStatus::REFUNDED,
+            InvoiceStatus::PARTIALLY_REFUNDED,
+            InvoiceStatus::CANCELLED,
+        ], true)) {
+            return 0;
+        }
+
         DB::table('invoices')
             ->where('id', (int) $pair->invoice_id)
             ->update($this->filterColumns('invoices', [

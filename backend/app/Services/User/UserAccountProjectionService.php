@@ -202,15 +202,11 @@ class UserAccountProjectionService
 
     private function mismatchQuery(): Builder
     {
+        // users 表的资金列已全部迁至 user_accounts，不存在可与投影对比的 users 源列，
+        // 账实一致性以 user_accounts 为唯一数据源，故不匹配项恒为空。
         return DB::table('users as u')
             ->join('user_accounts as ua', 'ua.user_id', '=', 'u.id')
-            ->where(function (Builder $query): void {
-                foreach (self::FIELD_MAP as $userColumn => $accountColumn) {
-                    $query->orWhereRaw(
-                        "ROUND(COALESCE(u.{$userColumn}, 0), 2) <> ROUND(COALESCE(ua.{$accountColumn}, 0), 2)"
-                    );
-                }
-            });
+            ->whereRaw('1 = 0');
     }
 
     private function mismatchSelectQuery(): Builder

@@ -14,12 +14,12 @@ use App\Models\Product;
 use App\Models\Service;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\ClientServiceConsole\ServiceSuspensionService;
 use App\Services\Finance\AgentDiscountService;
 use App\Services\Finance\CheckoutService;
 use App\Services\Finance\CouponService;
 use App\Services\Finance\InvoiceService;
 use App\Services\Finance\PaymentService;
-use App\Services\ClientServiceConsole\ServiceSuspensionService;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\Integrations\Support\ProviderErrorMapper;
@@ -162,6 +162,10 @@ class ServiceRenewService
     {
         $service = $this->findUserService($user, $serviceId);
         $service = $this->healServiceProductMapping($service);
+
+        // 已取消的服务不可续费：避免创建并支付续费账单后状态仍保持取消（收了钱不交付）。
+        throw_if((int) $service->status === ServiceStatus::CANCELLED, new BusinessException('服务已取消，无法续费'));
+
         $renewConfig = $this->buildRenewConfig($user, $service);
         $cycle = trim($billingCycle);
         $cycleOption = collect($renewConfig['cycles'])->firstWhere('billing_cycle', $cycle);
@@ -353,7 +357,7 @@ class ServiceRenewService
                 'coupon_id' => $couponPayload['coupon_id'] ?? null,
                 'user_coupon_id' => $couponPayload['user_coupon_id'] ?? null,
                 'coupon_code' => $couponPayload['code'] ?? null,
-                'amount' => $amount,
+                'amount' => $payableAmount,
                 'discount' => $discountAmount,
                 'paid_amount' => 0,
                 'billing_cycle' => $cycle,
@@ -1223,7 +1227,7 @@ class ServiceRenewService
         if (is_numeric($nextDueDate)) {
             $timestamp = (int) $nextDueDate;
 
-            return $timestamp > 0 ? Carbon::createFromTimestamp($timestamp) : null;
+            return $timestamp > 0 ? Carbon::createFromTimestamp($timestamp, config('app.timezone')) : null;
         }
 
         try {

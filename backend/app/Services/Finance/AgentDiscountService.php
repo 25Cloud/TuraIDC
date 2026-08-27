@@ -50,12 +50,15 @@ class AgentDiscountService
     {
         $pricing = $this->resolveForProduct($user, $product);
         $originalAmount = Money::round($amount);
-        $discountedAmount = Money::multiply($originalAmount, Money::divide($pricing['discount_rate'], 100));
-        $discountedAmount = Money::round($discountedAmount);
+        // 折扣率是百分比：除以 100 后再按原金额折算，除法阶段保留精度（如 87.50 -> 0.8750），
+        // 仅在最终金额处统一四舍五入到分，避免把比率提前量化成整百分点导致多收/少收。
+        $discountRate = (float) $pricing['discount_rate'] / 100;
+        $costRate = (float) $pricing['cost_rate'] / 100;
+        $discountedAmount = Money::round($originalAmount * $discountRate);
         $pricing['original_amount'] = $originalAmount;
         $pricing['discounted_amount'] = $discountedAmount;
         $pricing['discount_amount'] = Money::subtract($originalAmount, $discountedAmount);
-        $pricing['cost_amount'] = Money::multiply($originalAmount, Money::divide($pricing['cost_rate'], 100));
+        $pricing['cost_amount'] = Money::round($originalAmount * $costRate);
 
         $this->assertAboveCost($pricing);
 

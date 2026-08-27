@@ -288,6 +288,15 @@ trait HandlesOrderCalculation
 
     private function calculateRangeOptionExtraDetail(array $item, string $billingCycle, array $config, string $field): array
     {
+        // 与计价明细口径一致：配置中未提交该项时按 0 元计费，
+        // 避免账单金额按 qty_minimum 收费而明细却跳过该项导致两边对不上。
+        if (! array_key_exists($field, $config)) {
+            return [
+                'amount' => 0.0,
+                'selected_value' => (int) ($item['qty_minimum'] ?? 0),
+            ];
+        }
+
         $rangeMin = (int) ($item['qty_minimum'] ?? 0);
         $rangeStep = max((int) ($item['qty_stage'] ?? 1), 1);
         $value = max((int) ($config[$field] ?? $rangeMin), $rangeMin);

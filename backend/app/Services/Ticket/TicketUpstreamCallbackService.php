@@ -436,7 +436,7 @@ final class TicketUpstreamCallbackService
             ->sortBy(fn (\SplFileInfo $file): int => $file->getMTime())
             ->values();
         $candidateFiles = $files->filter(
-            fn (\SplFileInfo $file): bool => now()->createFromTimestamp($file->getMTime())->lte($cutoff)
+            fn (\SplFileInfo $file): bool => now()->createFromTimestamp($file->getMTime(), config('app.timezone'))->lte($cutoff)
         )->take($limit)->values();
         $candidatePaths = $candidateFiles
             ->map(static fn (\SplFileInfo $file): string => 'private/tickets/upstream/'.$file->getFilename())

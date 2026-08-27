@@ -36,11 +36,6 @@ class Setting extends Model
     ];
 
     /**
-     * @var array<string, array<string, mixed>>
-     */
-    private static array $groupValueCache = [];
-
-    /**
      * @var array<string, bool>
      */
     private static array $tableExistsCache = [];
@@ -169,10 +164,6 @@ class Setting extends Model
             return [];
         }
 
-        if (isset(self::$groupValueCache[$group])) {
-            return self::$groupValueCache[$group];
-        }
-
         $cacheKey = static::groupCacheKey($group);
 
         try {
@@ -192,9 +183,7 @@ class Setting extends Model
             return [];
         }
 
-        self::$groupValueCache[$group] = is_array($values) ? $values : [];
-
-        return self::$groupValueCache[$group];
+        return is_array($values) ? $values : [];
     }
 
     private static function settingsTableExists(): bool
@@ -233,8 +222,6 @@ class Setting extends Model
 
     private static function forgetGroupCache(string $group): void
     {
-        unset(self::$groupValueCache[$group]);
-
         Cache::forget(static::groupCacheKey($group));
     }
 
