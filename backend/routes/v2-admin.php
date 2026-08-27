@@ -20,8 +20,8 @@ use App\Http\Controllers\Admin\V2\InvoiceController;
 use App\Http\Controllers\Admin\V2\LogController;
 use App\Http\Controllers\Admin\V2\MediaFileController;
 use App\Http\Controllers\Admin\V2\MemberLevelController;
-use App\Http\Controllers\Admin\V2\OrderController;
 use App\Http\Controllers\Admin\V2\OpenApiAdminController;
+use App\Http\Controllers\Admin\V2\OrderController;
 use App\Http\Controllers\Admin\V2\ProductController;
 use App\Http\Controllers\Admin\V2\ProductDiscountGroupController;
 use App\Http\Controllers\Admin\V2\ProductGroupController;
@@ -392,6 +392,9 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
     Route::middleware(['permission:'.AdminPermissions::SETTINGS_VIEW])->group(function (): void {
         Route::get('/notification-templates', [SettingController::class, 'notificationTemplates']);
         Route::get('/settings', [SettingController::class, 'index']);
+    });
+
+    Route::middleware(['permission:'.AdminPermissions::OPEN_API_VIEW])->group(function (): void {
         Route::get('/open-api/config', [OpenApiAdminController::class, 'config']);
         Route::get('/open-api/keys', [OpenApiAdminController::class, 'keys']);
         Route::get('/open-api/keys/{id}/usage-logs', [OpenApiAdminController::class, 'usageLogs']);

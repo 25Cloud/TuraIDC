@@ -241,7 +241,7 @@ class ProductCategoryService
      */
     public function forceDeleteCategory(int $groupId, int $level): array
     {
-        return DB::transaction(function () use ($groupId, $level): array {
+        $result = DB::transaction(function () use ($groupId, $level): array {
             [$productIds, $thirdGroupIds, $secondGroupIds, $firstGroupId] = $this->collectCascadeDeleteScope($groupId, $level);
 
             $productIds = collect($productIds)
@@ -274,6 +274,11 @@ class ProductCategoryService
                 'deleted_services' => $deletedServices,
             ];
         });
+
+        // 物理删除后必须失效官网目录缓存，否则缓存期内官网仍展示已硬删的分组与商品。
+        $this->forgetSiteCatalogCache();
+
+        return $result;
     }
 
     /**

@@ -882,7 +882,7 @@ class ServiceStatusSyncService
             $timestamp = (int) $nextDueDate;
 
             if ($timestamp > 0) {
-                return Carbon::createFromTimestamp($timestamp);
+                return Carbon::createFromTimestamp($timestamp, config('app.timezone'));
             }
         } elseif (is_string($nextDueDate) && trim($nextDueDate) !== '') {
             // 兼容上游 Y-m-d / Y-m-d H:i:s 日期字符串，避免静默回退本地 expires_at 造成口径漂移。

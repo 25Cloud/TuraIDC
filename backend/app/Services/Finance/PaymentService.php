@@ -108,7 +108,9 @@ class PaymentService
 
                 $lockedInvoice->order?->forceFill([
                     'status' => OrderStatus::PAID,
-                    'paid_amount' => $amount,
+                    // 累计实付：混合支付（第三方网关先行支付）时账单已含此前已付部分，
+                    // 这里记全额而非本次余额支付额，避免推荐奖励等按 order.paid_amount 计发时少算。
+                    'paid_amount' => $lockedInvoice->amount,
                     'paid_at' => now(),
                 ])->save();
 

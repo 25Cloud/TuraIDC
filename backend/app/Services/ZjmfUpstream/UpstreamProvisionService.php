@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ZjmfUpstream;
 
+use App\Constants\InvoiceStatus;
 use App\Constants\ServiceStatus;
 use App\Models\Invoice;
 use App\Models\Order;
@@ -56,12 +57,28 @@ class UpstreamProvisionService
      */
     private function create(Service $service): array
     {
-        if ((int) $service->status === ServiceStatus::ACTIVE) {
+        $status = (int) $service->status;
+
+        if ($status === ServiceStatus::ACTIVE) {
             return ['status' => 200, 'msg' => '服务已开通'];
         }
 
+        // 仅允许「开通中」的服务被 create 指令开通。
+        // 暂停(SUSPENDED)/到期(EXPIRED)/取消(CANCELLED)的服务不可用该指令复活，避免免费续期与复活已取消服务。
+        if ($status !== ServiceStatus::PENDING) {
+            return ['status' => 400, 'msg' => '服务状态不支持开通'];
+        }
+
+        // 账单已取消/已退款时拒绝开通，防止通过该指令复活已撤销的订单。
+        $invoice = $service->invoice;
+        if ($invoice instanceof Invoice) {
+            $invoiceStatus = (int) $invoice->status;
+            if (in_array($invoiceStatus, [InvoiceStatus::CANCELLED, InvoiceStatus::REFUNDED, InvoiceStatus::PARTIALLY_REFUNDED], true)) {
+                return ['status' => 400, 'msg' => '账单已取消或已退款，无法开通'];
+            }
+        }
+
         try {
-            $invoice = $service->invoice;
             if ($invoice instanceof Invoice) {
                 $this->provisioning->processPaidInvoice($invoice);
             } elseif ($service->order instanceof Order) {
@@ -101,6 +118,10 @@ class UpstreamProvisionService
      */
     private function unsuspend(Service $service): array
     {
+        if ((int) $service->status !== ServiceStatus::SUSPENDED) {
+            return ['status' => 400, 'msg' => '服务当前状态不支持解除暂停'];
+        }
+
         $service->forceFill([
             'status' => ServiceStatus::ACTIVE,
             'suspended_reason' => null,

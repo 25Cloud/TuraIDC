@@ -47,8 +47,7 @@ class ZjmfUpstreamService
             ->where('api_open', 1)
             ->where(function ($query) use ($username) {
                 $query->where('api_username', $username)
-                    ->orWhere('email', $username)
-                    ->orWhere('username', $username);
+                    ->orWhere('email', $username);
             })
             ->first();
 
