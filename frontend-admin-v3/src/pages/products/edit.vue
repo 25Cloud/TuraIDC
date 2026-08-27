@@ -40,8 +40,8 @@
                 <t-form-item label="所属分类" name="selected_product_group_key">
                   <t-cascader
                     v-model="form.selected_product_group_key"
-                    :options="categoryTree"
-                    :keys="{ value: 'id', label: 'label', children: 'children' }"
+                    :options="categoryCascaderOptions"
+                    :keys="{ value: 'option_key', label: 'label', children: 'children' }"
                     value-mode="onlyLeaf"
                     filterable
                     clearable
@@ -317,7 +317,9 @@ import { supplierApi } from '@/api/supplier';
 
 import {
   errorMessage,
+  findProductGroupByKey,
   flattenCategories,
+  productGroupOptionKey,
   productGroupPayload,
   providerTypeFallbackLabels,
   toPlainRecord,
@@ -395,6 +397,23 @@ const rules: FormRules<typeof form> = {
 // --- Categories ---
 const categoryTree = ref<ProductCategoryRecord[]>([]);
 const categoryOptions = ref<ProductCategoryRecord[]>([]);
+
+/**
+ * 级联选项统一带上 `层级:ID` 复合键。
+ *
+ * 一/二/三级分类是三张独立自增表，裸 id 必然出现跨级重号（例如二级 53 与三级 53）。
+ * 级联组件以 value 作为节点唯一标识，重号会让父节点展不开子级；查找时按 id 命中的
+ * 也可能是同号的上级节点，进而漏掉 third_product_group_id 让保存被后端拦下。
+ */
+const categoryCascaderOptions = computed(() => decorateCascaderKeys(categoryTree.value));
+
+function decorateCascaderKeys(nodes: ProductCategoryRecord[]): ProductCategoryRecord[] {
+  return nodes.map((node) => ({
+    ...node,
+    option_key: productGroupOptionKey(node),
+    children: Array.isArray(node.children) ? decorateCascaderKeys(node.children) : [],
+  }));
+}
 
 // --- Pricing ---
 const pricingPlan = ref('standard');
@@ -522,10 +541,7 @@ async function loadProductDetail() {
     Object.assign(form, {
       display_name: resolveDisplayName(detail),
       product_spec_display: detail.product_spec_display || detail.cpu_memory_display || '',
-      selected_product_group_key: (detail.effective_product_group_id ||
-        detail.third_product_group_id ||
-        detail.second_product_group_id ||
-        null) as string | number | null,
+      selected_product_group_key: productGroupOptionKey(detail) || null,
       monthly_price: pricingValue(detail, 'monthly', detail.monthly_price),
       quarterly_price: pricingValue(detail, 'quarterly'),
       semiannually_price: pricingValue(detail, 'semiannually'),
@@ -907,7 +923,7 @@ async function submit() {
   }
   submitting.value = true;
   try {
-    const group = findProductGroupByCascaderValue(categoryOptions.value, form.selected_product_group_key);
+    const group = findProductGroupByKey(categoryOptions.value, form.selected_product_group_key);
     const payload = {
       custom_display_name: resolveCustomDisplayNamePayload(),
       ...productGroupPayload(group),
@@ -964,21 +980,6 @@ function resolveCustomDisplayNamePayload() {
   if (!value) return null;
   const defaultDisplayName = String(form.product_spec_display || '').trim();
   return defaultDisplayName && value === defaultDisplayName ? null : value;
-}
-
-function findProductGroupByCascaderValue(
-  options: ProductCategoryRecord[],
-  value: string | number | null,
-): ProductCategoryRecord | null {
-  if (value === null || value === '' || value === undefined) return null;
-  const numValue = Number(value);
-  if (!Number.isFinite(numValue) || numValue <= 0) return null;
-  return (
-    options.find((item) => {
-      const effectiveId = Number(item.effective_product_group_id || item.id || 0);
-      return effectiveId === numValue;
-    }) || null
-  );
 }
 
 function goBack() {

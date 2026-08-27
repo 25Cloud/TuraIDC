@@ -76,7 +76,10 @@ class InstallService
     public function requirements(): array
     {
         $items = [
-            ['name' => 'PHP 版本 >= 8.3', 'required' => true, 'passed' => PHP_VERSION_ID >= 80300, 'message' => '当前 '.PHP_VERSION],
+            // 用 version_compare 而非 PHP_VERSION_ID >= 80300：composer.json 已把 php 约束收到
+            // ^8.3，静态分析据此把该比较判为恒真并报错；但运行期 PHP 版本仍可能低于约束
+            // （例如用旧 vendor 直接跑），这条环境检测必须保留实际判断。
+            ['name' => 'PHP 版本 >= 8.3', 'required' => true, 'passed' => version_compare(PHP_VERSION, '8.3.0', '>='), 'message' => '当前 '.PHP_VERSION],
             ['name' => 'PHP 扩展 pdo_mysql', 'required' => true, 'passed' => extension_loaded('pdo_mysql'), 'message' => ''],
             ['name' => 'PHP 扩展 redis', 'required' => true, 'passed' => extension_loaded('redis'), 'message' => ''],
             ['name' => 'PHP 扩展 openssl', 'required' => true, 'passed' => extension_loaded('openssl'), 'message' => ''],
@@ -689,13 +692,28 @@ class InstallService
      */
     private function assertSupportedDatabaseVersion(PDO $pdo): ?string
     {
-        $raw = (string) $pdo->query('SELECT VERSION()')->fetchColumn();
-        if (! preg_match('/(\d+\.\d+(?:\.\d+)?)/', $raw, $matches)) {
+        return $this->checkDatabaseVersionString((string) $pdo->query('SELECT VERSION()')->fetchColumn());
+    }
+
+    /**
+     * 版本串判定（与 PDO 取值解耦，便于直接对各发行版版本串做单测）。
+     */
+    private function checkDatabaseVersionString(string $raw): ?string
+    {
+        $isMariaDb = stripos($raw, 'mariadb') !== false;
+
+        // MariaDB 10.x 会在握手包版本串前加 `5.5.5-` 假前缀（老客户端按字符串比大小会把
+        // 10.0 判成比 5.5 小），11.0 起取消。`SELECT VERSION()` 通常不带该前缀，但经
+        // ProxySQL/MaxScale 等代理、或改用 PDO::ATTR_SERVER_VERSION 取值时会带上；
+        // 若直接取第一个版本号会把 10.3 误读成 5.5.5 而拒绝安装，故先剥前缀再解析。
+        $candidate = $isMariaDb ? preg_replace('/^5\.5\.5-/', '', $raw) : $raw;
+
+        if (! preg_match('/(\d+\.\d+(?:\.\d+)?)/', (string) $candidate, $matches)) {
             return null;
         }
         $version = $matches[1];
 
-        if (stripos($raw, 'mariadb') !== false) {
+        if ($isMariaDb) {
             if (version_compare($version, '10.3', '<')) {
                 throw new InstallException(sprintf('MariaDB 版本过低（当前 %s）：最低需要 10.3。', $raw));
             }

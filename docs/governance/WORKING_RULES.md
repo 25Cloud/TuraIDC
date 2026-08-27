@@ -16,6 +16,8 @@
 
 - 后端控制器保持薄层；上游调用进入专用 Service、Driver 或插件，禁止 Controller 直接 `Http::*`。
 - 支付记录只改状态，不物理删除；迁移只新增，不补跑历史激进迁移。
+- 数据库绝不删表、删列、删索引：存量用户升级与魔方财务搬迁依赖表结构稳定，冗余只记录不动手。
+- 数据库与 SQL 改动必须同时兼容 MySQL 5.7.44 与 8.x：禁用窗口函数、CTE 等 8.0 专属语法；新增表首个 `timestamp` 列须给显式默认值或可空。细则与自检清单见 [MySQL 版本兼容基线](../references/database/mysql-version-compatibility.md)。
 - 插件特有逻辑、路由、调度、中间件和语言文件必须收敛在 `backend/plugins/{domain}/{slug}/`，不得污染系统级扩展点。
 - 三端 UI 框架不可混用：admin-v3 与 v4-console 用 TDesign，v3-www 用 Element Plus。
 - 管理端不加头部说明卡片；v4-console 财务页面不加指标卡片。

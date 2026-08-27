@@ -386,13 +386,20 @@ def check_database_version(raw_version: str) -> None:
     直到运行期才在个别页面炸出 SQL 语法/类型错误，最难排查。下限依据（本仓实测）：
     MySQL 5.7.8 起才有 json 类型（基线 58 个 json 列）与虚拟生成列上的唯一索引；
     MariaDB 取 Laravel 12 官方支持矩阵的 10.3。版本串解析不出来时保守放行。
+
+    MariaDB 10.x 会在握手包版本串前加 `5.5.5-` 假前缀（老客户端按字符串比大小会把 10.0
+    判成比 5.5 小），11.0 起取消。`SELECT VERSION()` 通常不带该前缀，但经 ProxySQL/MaxScale
+    等代理取值时会带上；若直接取第一个版本号会把 10.3 误读成 5.5.5 而拒绝安装，故先剥前缀。
     """
-    match = re.search(r"(\d+\.\d+(?:\.\d+)?)", raw_version)
+    is_mariadb = "mariadb" in raw_version.lower()
+    candidate = re.sub(r"^5\.5\.5-", "", raw_version) if is_mariadb else raw_version
+
+    match = re.search(r"(\d+\.\d+(?:\.\d+)?)", candidate)
     if not match:
         return
     version = tuple(int(part) for part in match.group(1).split("."))
 
-    if "mariadb" in raw_version.lower():
+    if is_mariadb:
         if version < (10, 3):
             fail(f"MariaDB 版本过低（当前 {raw_version}）：最低需要 10.3。")
         return

@@ -171,10 +171,28 @@ export function formatCount(value: unknown): string {
 
 /**
  * Extract error message from error object
+ *
+ * 校验类错误优先展示后端给的字段级明细：请求层已把 422 的 `data.errors` 挂在 error 上，
+ * 只读 message 的话用户只能看到「参数验证失败」这类笼统提示，完全无法自查是哪一项没填。
  */
 export function errorMessage(error: unknown, fallback: string): string {
+  const detail = validationErrorMessage(error);
+  if (detail) return detail;
   if (error instanceof Error && error.message) return toUserMessage(error.message, fallback);
   return fallback;
+}
+
+function validationErrorMessage(error: unknown): string {
+  const errors = (error as { errors?: unknown } | null)?.errors;
+  if (!errors || typeof errors !== 'object') return '';
+
+  const messages = Object.values(errors as Record<string, unknown>)
+    .flatMap((item) => (Array.isArray(item) ? item : [item]))
+    .map((item) => String(item ?? '').trim())
+    .filter(Boolean);
+  if (!messages.length) return '';
+
+  return messages.length > 1 ? `${messages[0]}（另有 ${messages.length - 1} 项未通过校验）` : messages[0];
 }
 
 /**

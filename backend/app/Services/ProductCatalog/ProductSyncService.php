@@ -47,6 +47,9 @@ class ProductSyncService
 
     private readonly ProductGroupHierarchyService $hierarchyService;
 
+    /** `products.stock_synced_at` 列存在性缓存，避免逐商品重复查元数据 */
+    private ?bool $hasStockSyncedAtColumn = null;
+
     public function __construct(
         private readonly ProviderResolver $providerResolver,
         ?ProductGroupHierarchyService $hierarchyService = null,
@@ -611,8 +614,32 @@ class ProductSyncService
         return $summary;
     }
 
-    public function syncUpstreamProductStocks(?string $providerKey = null): array
-    {
+    /** 定时同步时每批之间的等待毫秒数，避免持续高频请求被上游风控拦截 */
+    public const STOCK_SYNC_PACING_MS = 500;
+
+    /** 定时同步时每批并发查询的商品数 */
+    public const STOCK_SYNC_CHUNK_SIZE = 8;
+
+    /**
+     * 批量同步上游库存。
+     *
+     * 上游库存必须逐商品查询——实测某方 /cart/all 列表里的 stock_control 不可信
+     * （24 个抽样中 14 个与商品详情接口不一致，2 个实际售罄却报"不限量"），
+     * 所以请求数等于商品数，无法用一次列表请求代替。
+     *
+     * 为此在批与批之间插入固定等待，把脉冲式的并发打散成平缓的涓流：
+     * 473 个商品 ≈ 60 批，每批 8 并发约 1 秒 + 等待 0.5 秒 ≈ 88 秒跑完，
+     * 平均约 5 请求/秒，远低于会触发风控的水平。
+     *
+     * @param  int  $batchSize  单轮最多同步多少个商品，<=0 表示全量
+     * @param  int|null  $pacingMs  批间等待毫秒，null 取默认值；实时查询路径不走本方法，不受影响
+     */
+    public function syncUpstreamProductStocks(
+        ?string $providerKey = null,
+        int $batchSize = 0,
+        ?int $pacingMs = null
+    ): array {
+        $pacingMs = max(0, $pacingMs ?? self::STOCK_SYNC_PACING_MS);
         $normalizedProviderKey = trim((string) $providerKey);
         $summary = [
             'matched_products' => 0,
@@ -620,6 +647,7 @@ class ProductSyncService
             'synced_products' => 0,
             'skipped_products' => 0,
             'failed_products' => 0,
+            'batch_size' => $batchSize,
         ];
 
         $products = Product::query()
@@ -627,7 +655,7 @@ class ProductSyncService
                 $query,
                 $normalizedProviderKey !== '' ? $normalizedProviderKey : null,
             ))
-            ->orderBy('id')
+            ->tap(fn (Builder $query) => $this->applyStockSyncPriority($query, $batchSize))
             ->get();
 
         $summary['matched_products'] = $products->count();
@@ -681,7 +709,7 @@ class ProductSyncService
             $summary['matched_suppliers']++;
 
             try {
-                $remoteStocks = $this->resolveSupplierRemoteStocks($supplier, $supplierProductIds);
+                $remoteStocks = $this->fetchStocksWithPacing($supplier, $supplierProductIds, $pacingMs);
             } catch (\Throwable $exception) {
                 $summary['failed_products'] += $supplierProducts->count();
 
@@ -709,6 +737,9 @@ class ProductSyncService
                 }
 
                 if ($remoteStock === (int) ($product->stock ?? 0)) {
+                    // 值没变也要盖同步时间戳，否则该商品会永远排在轮转队首，
+                    // 把后面的商品饿死。
+                    $this->touchStockSyncedAt($product);
                     $this->recordProductStockSnapshot($product, $supplier, $supplierProductId, $remoteStock);
                     $summary['skipped_products']++;
 
@@ -718,6 +749,7 @@ class ProductSyncService
                 $this->persistProductWithStructuredSync($product, [
                     'stock' => $remoteStock,
                 ]);
+                $this->touchStockSyncedAt($product);
                 $this->recordProductStockSnapshot($product->fresh() ?? $product, $supplier, $supplierProductId, $remoteStock);
 
                 $summary['synced_products']++;
@@ -870,6 +902,16 @@ class ProductSyncService
                     $reservedCount,
                     true
                 );
+
+                // 把这次实时查到的上游库存落库。下单校验与商品详情页本来就在实时查，
+                // 却从不保存结果，于是 products.stock 长期停留在导入时的旧值。顺手回写
+                // 等于把用户流量变成免费的同步机会：热门商品自动保持新鲜，定时轮转
+                // 只需兜底无人问津的冷门商品。
+                // instanceof 不是多余的：groupBy 之后集合元素退化成 Model，这里与上面
+                // $firstProduct 的判断同源。
+                if ($product instanceof Product) {
+                    $this->persistSyncedStock($product, $remoteStock);
+                }
             }
         }
 
@@ -887,6 +929,122 @@ class ProductSyncService
         }
 
         return $products;
+    }
+
+    /**
+     * 分批拉取上游库存，批与批之间等待固定时长。
+     *
+     * 切块放在调用层而不是插件里：插件的 fetchBatchProductStocks 同时服务于下单时的
+     * 实时校验，在那里加等待会让用户下单直接卡住数秒。这里只影响定时同步。
+     *
+     * @param  int[]  $supplierProductIds
+     * @return array<int, int|null>
+     */
+    private function fetchStocksWithPacing(Supplier $supplier, array $supplierProductIds, int $pacingMs): array
+    {
+        $chunks = array_chunk($supplierProductIds, self::STOCK_SYNC_CHUNK_SIZE);
+        $remoteStocks = [];
+
+        foreach ($chunks as $index => $chunk) {
+            if ($index > 0 && $pacingMs > 0) {
+                usleep($pacingMs * 1000);
+            }
+
+            $remoteStocks += $this->resolveSupplierRemoteStocks($supplier, $chunk);
+        }
+
+        return $remoteStocks;
+    }
+
+    /**
+     * `products.stock_synced_at` 是否已存在（按实例缓存）。
+     *
+     * 全量同步会对每个商品走一次该判断，而 hasColumn() 在 Laravel 12 下会真去查
+     * 列信息（getColumnListing），逐商品调用等于把元数据查询乘上商品数。
+     * 该列由本次迁移新增、进程生命周期内不会变，缓存一次即可。
+     */
+    private function hasStockSyncedAtColumn(): bool
+    {
+        return $this->hasStockSyncedAtColumn ??= Schema::hasColumn('products', 'stock_synced_at');
+    }
+
+    /**
+     * 盖上库存同步时间戳。
+     *
+     * 直接走查询构造器而不是模型 save()：这里只关心一个时间列，不需要触发模型事件、
+     * 也不该把 updated_at 一起改掉（那会让"商品最近修改时间"被同步任务污染）。
+     */
+    private function touchStockSyncedAt(Product $product): void
+    {
+        if (! $this->hasStockSyncedAtColumn()) {
+            return;
+        }
+
+        DB::table('products')->where('id', (int) $product->id)->update(['stock_synced_at' => now()]);
+    }
+
+    /**
+     * 库存同步的取数优先级与批量限制。
+     *
+     * 实测：上游库存必须逐商品查询（列表接口的 stock_control 不可信），473 个商品
+     * 全量刷一次就是 473 个请求，容易被上游风控判成攻击。因此分批轮转，并让最需要
+     * 新鲜度的商品排在前面：
+     *   1. 从未同步过（stock_synced_at 为空）——必须先建立基线
+     *   2. 已售罄或余量吃紧（0 <= stock <= 5）——最容易卖超，必须最勤
+     *   3. 其它限量商品（stock > 5）
+     *   4. 不限量商品（stock < 0）——值永远是 -1，最不需要刷
+     * 同档内按最久未同步优先，保证轮转覆盖不会饿死任何商品。
+     */
+    private function applyStockSyncPriority(Builder $query, int $batchSize): void
+    {
+        if ($this->hasStockSyncedAtColumn()) {
+            $query->orderByRaw('CASE WHEN stock_synced_at IS NULL THEN 0 ELSE 1 END')
+                ->orderByRaw('CASE WHEN stock >= 0 AND stock <= 5 THEN 0 WHEN stock >= 0 THEN 1 ELSE 2 END')
+                ->orderByRaw('CASE WHEN stock_synced_at IS NULL THEN 0 ELSE 1 END, stock_synced_at ASC');
+        }
+
+        $query->orderBy('id');
+
+        if ($batchSize > 0) {
+            $query->limit($batchSize);
+        }
+    }
+
+    /**
+     * 回写实时查询到的上游库存。
+     *
+     * 用 afterCommit 延迟：下单校验发生在事务内且商品已 lockForUpdate，直接 UPDATE
+     * 会延长行锁持有时间、增加与库存扣减的冲突面；而在无事务的只读路径（商品详情页）
+     * 上 afterCommit 会立即执行，两种场景都安全。
+     *
+     * 只在值真变化时写，避免每次浏览都产生无谓 UPDATE。
+     */
+    private function persistSyncedStock(Product $product, ?int $remoteStock): void
+    {
+        if ($remoteStock === null || ! $this->hasStockSyncedAtColumn()) {
+            return;
+        }
+
+        $productId = (int) $product->id;
+        $currentStock = (int) ($product->stock ?? -1);
+        $changed = $currentStock !== $remoteStock;
+
+        DB::afterCommit(function () use ($productId, $remoteStock, $changed): void {
+            try {
+                $payload = ['stock_synced_at' => now()];
+                if ($changed) {
+                    $payload['stock'] = $remoteStock;
+                }
+
+                DB::table('products')->where('id', $productId)->update($payload);
+            } catch (\Throwable $exception) {
+                // 回写是旁路优化，失败不能影响下单或页面渲染
+                Log::warning('[商品库存] 回写上游库存失败', [
+                    'product_id' => $productId,
+                    'message' => $exception->getMessage(),
+                ]);
+            }
+        });
     }
 
     private function resolveSupplierRemoteStocks(Supplier $supplier, array $supplierProductIds): array

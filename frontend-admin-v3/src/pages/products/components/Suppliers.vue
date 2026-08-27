@@ -311,12 +311,7 @@
           </div>
         </div>
         <div class="supplier-batch-panel__search">
-          <t-input
-            v-model="supplierBatchLocalKeyword"
-            size="small"
-            clearable
-            placeholder="搜索本地商品 / 分类名称"
-          >
+          <t-input v-model="supplierBatchLocalKeyword" size="small" clearable placeholder="搜索本地商品 / 分类名称">
             <template #prefix-icon><search-icon /></template>
           </t-input>
           <span v-if="supplierBatchLocalKeyword.trim()" class="supplier-batch-panel__search-hint">
@@ -462,6 +457,23 @@
         />
         <p v-if="field.description" class="supplier-field-tip">{{ field.description }}</p>
       </t-form-item>
+      <t-form-item label="余额不足提醒" name="low_balance_alert_enabled">
+        <t-switch v-model="supplierForm.low_balance_alert_enabled" />
+        <p class="supplier-field-tip">开启后，上游余额低于下方阈值时邮件提醒有供应商权限的管理员。</p>
+      </t-form-item>
+      <t-form-item label="余额告警阈值" name="low_balance_threshold">
+        <t-input-number
+          v-model="supplierForm.low_balance_threshold"
+          :min="0"
+          :max="99999999"
+          :decimal-places="2"
+          theme="column"
+          style="width: 100%"
+        />
+        <p class="supplier-field-tip">
+          余额低于该值即触发提醒，默认 20。重复提醒的间隔在「自动化策略 → 上游余额告警」中配置。
+        </p>
+      </t-form-item>
       <t-form-item label="状态" name="status"
         ><t-switch v-model="supplierForm.status" :custom-value="[1, 0]"
       /></t-form-item>
@@ -472,7 +484,7 @@
 import { AddIcon, ChevronRightIcon, SearchIcon } from 'tdesign-icons-vue-next';
 import type { FormRules, PageInfo, TagProps } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 import type { ProductCategoryRecord, ProductRecord } from '@/api/product';
 import { productApi } from '@/api/product';
@@ -598,6 +610,8 @@ const supplierForm = reactive({
   provider_key: '',
   name: '',
   status: 1,
+  low_balance_threshold: 20 as number | null,
+  low_balance_alert_enabled: true,
 });
 const supplierCredentialValues = reactive<Record<string, string | number | boolean | null>>({});
 const supplierSecretEdited = reactive<Record<string, boolean>>({});
@@ -672,17 +686,38 @@ const supplierBatchRemoteFilteredRows = computed(() =>
 const supplierBatchLocalFilteredRows = computed(() =>
   filterSupplierBatchTreeRows(supplierBatchConnectedRows.value, supplierBatchLocalKeyword.value),
 );
-// 搜索时直接展示过滤结果：命中项若落在折叠分组里会被隐藏，等于搜了个寂寞
+// 搜索态同样按展开状态渲染：命中项的祖先会在关键字变化时自动展开（见下方 watch），
+// 既不会让命中项藏在折叠分组里，又保留了手动折叠的能力——早先搜索时直接返回过滤结果，
+// 折叠状态被完全绕过，点箭头没有任何反应，看起来就像按钮失灵。
 const supplierBatchVisibleRemoteRows = computed(() =>
-  supplierBatchRemoteKeyword.value.trim()
-    ? supplierBatchRemoteFilteredRows.value
-    : visibleSupplierBatchTreeRows(supplierBatchRemoteRows.value, supplierBatchRemoteExpandedKeySet.value),
+  visibleSupplierBatchTreeRows(
+    supplierBatchRemoteKeyword.value.trim() ? supplierBatchRemoteFilteredRows.value : supplierBatchRemoteRows.value,
+    supplierBatchRemoteExpandedKeySet.value,
+  ),
 );
 const supplierBatchVisibleConnectedRows = computed(() =>
-  supplierBatchLocalKeyword.value.trim()
-    ? supplierBatchLocalFilteredRows.value
-    : visibleSupplierBatchTreeRows(supplierBatchConnectedRows.value, supplierBatchLocalExpandedKeySet.value),
+  visibleSupplierBatchTreeRows(
+    supplierBatchLocalKeyword.value.trim() ? supplierBatchLocalFilteredRows.value : supplierBatchConnectedRows.value,
+    supplierBatchLocalExpandedKeySet.value,
+  ),
 );
+// 关键字变化时把命中项的祖先补进展开集合，保证结果默认可见；只做并集，不覆盖用户
+// 已有的展开选择，因此搜索后仍可自由折叠任意分组。
+watch(supplierBatchRemoteKeyword, () => {
+  if (!supplierBatchRemoteKeyword.value.trim()) return;
+  supplierBatchRemoteExpandedKeys.value = mergeSupplierBatchExpandedKeys(
+    supplierBatchRemoteExpandedKeys.value,
+    supplierBatchRemoteFilteredRows.value,
+  );
+});
+watch(supplierBatchLocalKeyword, () => {
+  if (!supplierBatchLocalKeyword.value.trim()) return;
+  supplierBatchLocalExpandedKeys.value = mergeSupplierBatchExpandedKeys(
+    supplierBatchLocalExpandedKeys.value,
+    supplierBatchLocalFilteredRows.value,
+  );
+});
+
 const supplierBatchRemoteMatchCount = computed(
   () => supplierBatchRemoteFilteredRows.value.filter((row) => row.node_type === 'product').length,
 );
@@ -1249,7 +1284,11 @@ function supplierBatchRowMatches(row: SupplierBatchTreeRow, keyword: string): bo
     row.localProduct ? localProductDisplayName(row.localProduct) : undefined,
   ];
 
-  return candidates.some((item) => String(item ?? '').toLowerCase().includes(keyword));
+  return candidates.some((item) =>
+    String(item ?? '')
+      .toLowerCase()
+      .includes(keyword),
+  );
 }
 
 /**
@@ -1295,6 +1334,13 @@ function isSupplierBatchTreeRowVisible(
     parentKey = rowMap.get(parentKey)?.parentKey;
   }
   return true;
+}
+
+function mergeSupplierBatchExpandedKeys(current: string[], rows: SupplierBatchTreeRow[]) {
+  const keys = new Set(current);
+  expandableSupplierBatchTreeKeys(rows).forEach((key) => keys.add(key));
+
+  return Array.from(keys);
 }
 
 function expandableSupplierBatchTreeKeys(rows: SupplierBatchTreeRow[]) {
@@ -1540,10 +1586,18 @@ async function openSupplierDialog(row?: SupplierRecord) {
   const source = detail || row;
   const upstreamBinding = toPlainRecord(source?.upstream_binding);
   editingSupplier.value = source || null;
+  const balance = toPlainRecord(source?.balance_setting);
   Object.assign(supplierForm, {
     provider_key: upstreamBinding.provider_key || source?.provider_key || providerTypeOptions.value[0]?.value || '',
     name: source?.name || '',
     status: Number(source?.status ?? 1),
+    // 新建供应商时给出默认阈值 20；编辑时回填已保存的配置
+    low_balance_threshold:
+      balance.low_balance_threshold === undefined || balance.low_balance_threshold === null
+        ? 20
+        : Number(balance.low_balance_threshold),
+    low_balance_alert_enabled:
+      balance.low_balance_alert_enabled === undefined ? true : Boolean(balance.low_balance_alert_enabled),
   });
   resetSupplierCredentialValues(source || null);
   supplierDialogVisible.value = true;
@@ -1772,6 +1826,9 @@ function buildSupplierPayload(): SupplierUpsertPayload {
       base_url: '',
       account_name: '',
     },
+    low_balance_threshold:
+      supplierForm.low_balance_threshold === null ? undefined : Number(supplierForm.low_balance_threshold),
+    low_balance_alert_enabled: Boolean(supplierForm.low_balance_alert_enabled),
   };
 
   supplierCredentialFields.value.forEach((field) => {

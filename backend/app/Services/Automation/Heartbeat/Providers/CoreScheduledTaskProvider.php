@@ -20,6 +20,7 @@ use App\Services\Automation\ServiceStatusSyncService;
 use App\Services\Finance\CouponCampaignService;
 use App\Services\ProductCatalog\ProductCatalogService;
 use App\Services\Referral\ReferralService;
+use App\Services\Supplier\SupplierBalanceService;
 use App\Services\System\SettingService;
 use App\Services\Ticket\TicketAutomationService;
 use App\Services\Upstream\Contracts\ProvidesScheduledAuthRefresh;
@@ -151,6 +152,38 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
                 },
                 timeout: 1200,
                 lockTtlSeconds: 1800,
+            ),
+            $this->task(
+                key: 'supplier-product-stock-sync',
+                title: '上游商品库存同步',
+                category: '商品同步',
+                description: '每个心跳槽（15 分钟）刷新一次已绑定上游商品的库存。批间等待 500ms，把并发打散成平缓请求，避免被上游风控拦截。',
+                triggers: [ScheduleRule::everyTicks(1)],
+                handler: function (): array {
+                    $summary = app(ProductCatalogService::class)->syncUpstreamProductStocks();
+                    Log::info('[定时任务] 上游商品库存同步执行完成', $summary);
+
+                    return $summary;
+                },
+                // 全量刷需要 商品数/8 批 × (约 1s + 0.5s 等待)：473 个约 88 秒，
+                // 留到 900 秒可覆盖到约 4800 个商品；再多就得考虑分批轮转。
+                timeout: 900,
+                lockTtlSeconds: 960,
+            ),
+            $this->task(
+                key: 'supplier-balance-sync',
+                title: '上游余额同步',
+                category: '上游对接',
+                description: '每个心跳槽（15 分钟）同步一次全部启用供应商的上游余额，余额低于阈值时邮件提醒管理员。',
+                triggers: [ScheduleRule::everyTicks(1)],
+                handler: function (): array {
+                    $summary = app(SupplierBalanceService::class)->syncAll();
+                    Log::info('[定时任务] 上游余额同步执行完成', $summary);
+
+                    return $summary;
+                },
+                timeout: 600,
+                lockTtlSeconds: 660,
             ),
             $this->task(
                 key: 'product-upstream-config-sync',

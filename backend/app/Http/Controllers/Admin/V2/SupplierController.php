@@ -57,7 +57,11 @@ class SupplierController extends Controller
     public function store(UpsertSupplierRequest $request)
     {
         return $this->success(
-            $this->queryService->createSupplier($request->supplierPayload(), $request->upstreamBindingPayload()),
+            $this->queryService->createSupplier(
+                $request->supplierPayload(),
+                $request->upstreamBindingPayload(),
+                $request->balanceSettingsPayload(),
+            ),
             '创建成功'
         );
     }
@@ -70,7 +74,12 @@ class SupplierController extends Controller
     public function update(UpsertSupplierRequest $request, Supplier $supplier)
     {
         return $this->success(
-            $this->queryService->updateSupplier($supplier, $request->supplierPayload(), $request->upstreamBindingPayload()),
+            $this->queryService->updateSupplier(
+                $supplier,
+                $request->supplierPayload(),
+                $request->upstreamBindingPayload(),
+                $request->balanceSettingsPayload(),
+            ),
             '更新成功'
         );
     }
