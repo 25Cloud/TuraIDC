@@ -18,7 +18,27 @@ use Illuminate\Support\Facades\Schema;
 
 class ScheduleTaskRunRepository
 {
-    public function markQueued(ScheduleTick $tick, ScheduledTask $task, TriggerRule $rule): ?ScheduleTaskRun
+    /**
+     * 表/列存在性的实例级缓存，只缓存 true。
+     *
+     * 只缓存 true 的理由：本仓「数据库只增不删」是铁律，表一旦建成不会再消失，
+     * 因此 true 是永久结论；而 false 是暂态——安装或迁移中途随时会翻转，把它缓存下来
+     * 会让同进程内后续调用永远读到过期结论（运行台账被静默停用）。
+     * 缓存挂在实例上而非静态：调度器与队列任务每次都从容器新建实例，作用域不跨请求。
+     */
+    private ?bool $tableReady = null;
+
+    private ?bool $retryLineageReady = null;
+
+    /**
+     * 登记本槽位的运行记录。
+     *
+     * 返回值携带「是否需要派发」与「同槽已有记录的状态」两件事：调用方原先在拿到 null
+     * 后还要再查一次 existingRunForTick 才能区分「本槽已终态处理」与「真正的重复投递」，
+     * 而那一行就是这里 firstOrCreate 刚读出来的同一行——(schedule_tick_id, task_key,
+     * source) 上有唯一索引，至多一行，两次查询必然同源。
+     */
+    public function markQueued(ScheduleTick $tick, ScheduledTask $task, TriggerRule $rule): QueuedRunOutcome
     {
         $run = ScheduleTaskRun::query()->firstOrCreate(
             [
@@ -36,7 +56,7 @@ class ScheduleTaskRunRepository
         );
 
         if ($run->wasRecentlyCreated) {
-            return $run;
+            return new QueuedRunOutcome($run, null);
         }
 
         // 派发阶段失败不等于任务执行失败；同一 15 分钟槽位的下一次心跳应复用该行重派。
@@ -67,23 +87,18 @@ class ScheduleTaskRunRepository
                     'updated_at' => $now,
                 ]);
 
-            return $updated === 1 ? $run->fresh() : null;
+            if ($updated === 1) {
+                return new QueuedRunOutcome($run->fresh(), ScheduleTaskRun::STATUS_DISPATCH_FAILED);
+            }
+
+            // CAS 落空说明另一路已经把这行重派走了；此时内存里的状态已过期，
+            // 必须重读一次才能给出与原实现一致的判定依据。这是罕见分支，多一次查询可接受。
+            return new QueuedRunOutcome(null, $run->fresh()?->status);
         }
 
-        return null;
-    }
-
-    /**
-     * 返回该槽位+任务已存在的运行记录（用于区分同槽位终态处理与真正的重复投递）。
-     */
-    public function existingRunForTick(ScheduleTick $tick, string $taskKey): ?ScheduleTaskRun
-    {
-        return ScheduleTaskRun::query()
-            ->where('schedule_tick_id', (int) $tick->id)
-            ->where('task_key', trim($taskKey))
-            ->where('source', 'heartbeat')
-            ->latest('id')
-            ->first();
+        // 本槽已有记录且无需重派：status 直接取自上面 firstOrCreate 读到的同一行，
+        // 无需再查库。
+        return new QueuedRunOutcome(null, $run->status);
     }
 
     /**
@@ -679,8 +694,12 @@ class ScheduleTaskRunRepository
 
     public function retryLineageReady(): bool
     {
+        if ($this->retryLineageReady === true) {
+            return true;
+        }
+
         try {
-            return $this->tableReady()
+            $ready = $this->tableReady()
                 && Schema::hasColumn('schedule_task_runs', 'parent_run_id')
                 && Schema::hasColumn('schedule_task_runs', 'attempt')
                 && Schema::hasColumn('schedule_task_runs', 'manual_retry_at')
@@ -688,14 +707,30 @@ class ScheduleTaskRunRepository
         } catch (\Throwable) {
             return false;
         }
+
+        if ($ready) {
+            $this->retryLineageReady = true;
+        }
+
+        return $ready;
     }
 
     public function tableReady(): bool
     {
+        if ($this->tableReady === true) {
+            return true;
+        }
+
         try {
-            return Schema::hasTable('schedule_task_runs');
+            $ready = Schema::hasTable('schedule_task_runs');
         } catch (\Throwable) {
             return false;
         }
+
+        if ($ready) {
+            $this->tableReady = true;
+        }
+
+        return $ready;
     }
 }
