@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\Automation\Heartbeat;
 
 use App\Jobs\RunHeartbeatTaskJob;
-use App\Models\ScheduleTaskRun;
 use App\Models\ScheduleTick;
 use App\Services\Automation\Heartbeat\Contracts\ScheduledTask;
 use App\Services\Automation\Heartbeat\Data\TickContext;
@@ -60,7 +59,7 @@ class HeartbeatScheduler
             }
 
             foreach ($this->registry->enabledTasks() as $task) {
-                $this->dispatchTaskForTick($task, $tickModel, $tick, $queued, $skipped, $duplicates, $reclaimed, $dispatchFailed);
+                $this->dispatchTaskForTick($task, $tickModel, $tick, $queued, $skipped, $duplicates, $dispatchFailed);
             }
         } finally {
             $lock->release();
@@ -83,7 +82,6 @@ class HeartbeatScheduler
         array &$queued,
         array &$skipped,
         array &$duplicates,
-        int &$reclaimed,
         int &$dispatchFailed,
     ): void {
         try {
@@ -113,21 +111,21 @@ class HeartbeatScheduler
         }
 
         try {
-            // 只有超过任务执行、队列可见性和锁安全余量的记录才回收，避免误杀仍在运行的任务。
-            $reclaimed += $this->taskRuns->reclaimStaleRunsForTask($task->key(), $this->taskLeaseSeconds($task));
-
+            // 回收已在本槽开头对全部启用任务统一做过（见 tick()），此处不再重复：
+            // 两次调用之间只隔了前几个任务的派发，而回收租约至少 60 秒，
+            // 不可能在这个窗口里冒出新的超租约记录。
             if ($this->taskRuns->activeRunForTask($task->key()) !== null) {
                 $duplicates[] = $task->key();
 
                 return;
             }
 
-            $run = $this->taskRuns->markQueued($tickModel, $task, $matched);
+            $outcome = $this->taskRuns->markQueued($tickModel, $task, $matched);
+            $run = $outcome->dispatchable;
             if ($run === null) {
                 // 同槽位已终态处理（成功/失败）不算重复，计入跳过；仅仍活跃或派发失败才视为重复，
                 // 避免任务失败后的同槽剩余心跳刷出无意义的 duplicates 告警。
-                $existingStatus = $this->taskRuns->existingRunForTick($tickModel, $task->key())?->status;
-                if (in_array($existingStatus, [ScheduleTaskRun::STATUS_SUCCESS, ScheduleTaskRun::STATUS_FAILED], true)) {
+                if ($outcome->settledInThisSlot()) {
                     $skipped[] = $task->key();
 
                     return;
