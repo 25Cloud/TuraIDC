@@ -25,6 +25,9 @@ use Tests\TestCase;
 
 class SupplierBatchConnectRegressionTest extends TestCase
 {
+    /**
+     * 加载 zjmf_finance 上游插件并激活，供供应商绑定与目录能力解析使用。
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -132,6 +135,10 @@ class SupplierBatchConnectRegressionTest extends TestCase
         $this->assertSame('2 vCPU 4G', $display['cpu_memory_display'] ?? null);
     }
 
+    /**
+     * 软删除已对接商品后，上游商品应释放为「未对接」可重新选择；
+     * 重新对接时写入端应复活并更新同一软删商品，而不是新建重复商品。
+     */
     public function test_deleted_bound_product_releases_upstream_product_for_reconnect(): void
     {
         $suffix = bin2hex(random_bytes(4));
@@ -363,6 +370,10 @@ class SupplierBatchConnectRegressionTest extends TestCase
         $this->assertSame('ecs.g9i.2c2g', $display['product_spec_display'] ?? null);
     }
 
+    /**
+     * 构造以 zjmf_finance 为 provider_key 的 ProviderResolver，内部 driver 委托给定 mock transport，
+     * 使供应商目录能力（getProductCatalog）走测试可控的返回。
+     */
     private function makeProviderResolver(HostingPanelApiTransport $transport): ProviderResolver
     {
         return new ProviderResolver(new ProviderRegistry([
@@ -399,6 +410,10 @@ class SupplierBatchConnectRegressionTest extends TestCase
         ]));
     }
 
+    /**
+     * 给供应商写一条 zjmf_finance 生产环境插件绑定（不存在则插入），
+     * 供 ProviderResolver/批量对接批量绑定写路径复用。
+     */
     private function bindSupplierToZjmf(Supplier $supplier): void
     {
         $pluginId = (int) DB::table('integration_plugins')
