@@ -783,7 +783,7 @@ class ProductDisplayNameResolver
 
     /**
      * 展示名专用回退链：与正则干草堆（resolveLegacyProductNameText）解耦，排除 remark。
-     * remark 存的是魔方财务商品卡片 HTML，若被当作展示名会污染订单/账单快照。
+     * remark 存的是某方财务商品卡片 HTML，若被当作展示名会污染订单/账单快照。
      * 取第一个非空候选，而非像干草堆那样全部拼接。
      *
      * @param  array<string, mixed>  $configSnapshot

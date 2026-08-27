@@ -13,6 +13,7 @@
 | 数据库 | [从智简魔方财务系统迁移](database/migrate-from-zjmf-finance.md)                      | current      | 智简魔方财务（ZJMF）→ TuraIDC 完整迁移教程（含生产踩坑记录）。 |
 | 数据库 | [从智简魔方财务系统迁移（实验）](database/migrate-from-zjmf-finance-experimental.md) | experimental | 魔方财务 shd\_ 前缀数据迁移实验工具（已归档，见正式指南）。    |
 | 数据库 | [日志归档与 MySQL 日志维护](database/log-archive-and-mysql-maintenance.md)           | current      | 日志保留与维护操作。                                           |
+| 数据库 | [MySQL 版本兼容基线](database/mysql-version-compatibility.md)                        | current      | 5.7.44 / 8.x 双版本兼容禁令、只增不删铁律与自检清单。          |
 | 集成   | [本地对接说明](integrations/local-integration.md)                                    | needs-review | 上游本地联调入口与边界。                                       |
 | 集成   | [插件开发](integrations/plugins/README.md)                                           | current      | 插件目录、扩展点与示例。                                       |
 | 集成   | [demo-ali-pay](integrations/plugins/demo-ali-pay.md)                                 | current      | 支付网关插件示例。                                             |

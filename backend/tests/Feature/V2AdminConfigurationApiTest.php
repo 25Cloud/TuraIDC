@@ -797,6 +797,8 @@ class V2AdminConfigurationApiTest extends TestCase
             'status',
             'sort_order',
             'notes',
+            // 上游余额告警设置（阈值 + 开关），随 AdminSupplierResource 一并返回
+            'balance_setting',
             'created_at',
             'updated_at',
             'card',

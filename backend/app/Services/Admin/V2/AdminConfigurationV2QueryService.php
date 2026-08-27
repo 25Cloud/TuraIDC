@@ -21,6 +21,7 @@ use App\Services\Integrations\Plugins\PluginRuntimeRegistry;
 use App\Services\Integrations\Plugins\SupplierPluginCardRenderer;
 use App\Services\Integrations\Plugins\UpstreamBindingWriter;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
+use App\Services\Supplier\SupplierBalanceService;
 use App\Services\System\SettingService;
 use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
@@ -186,6 +187,10 @@ class AdminConfigurationV2QueryService
         if (Schema::hasTable('supplier_plugin_bindings')) {
             $query->with('pluginBindings');
         }
+        // 预加载余额台账：资源层要投影 balance_setting，逐个查会形成 N+1
+        if (Schema::hasTable('supplier_balances')) {
+            $query->with('balanceRecord');
+        }
 
         $keyword = trim((string) ($filters['keyword'] ?? ''));
         if ($keyword !== '') {
@@ -230,37 +235,44 @@ class AdminConfigurationV2QueryService
      * @param  array<string, mixed>  $bindingPayload
      * @return array<string, mixed>
      */
-    public function createSupplier(array $supplierPayload, array $bindingPayload): array
+    public function createSupplier(array $supplierPayload, array $bindingPayload, array $balanceSettings = []): array
     {
         $supplierPayload['code'] = $this->generateSupplierInternalCode((string) ($bindingPayload['provider_key'] ?? ''));
 
-        $supplier = DB::transaction(function () use ($supplierPayload, $bindingPayload): Supplier {
+        $supplier = DB::transaction(function () use ($supplierPayload, $bindingPayload, $balanceSettings): Supplier {
             $supplier = Supplier::query()->create($supplierPayload);
             app(UpstreamBindingWriter::class)->syncSupplierBinding($supplier, $bindingPayload);
+            $this->applySupplierBalanceSettings($supplier, $balanceSettings);
 
             return $supplier;
         });
 
         return [
-            'supplier' => AdminSupplierResource::make($supplier->refresh())->resolve(),
+            'supplier' => AdminSupplierResource::make($supplier->refresh()->load('balanceRecord'))->resolve(),
         ];
     }
 
     /**
      * @param  array<string, mixed>  $supplierPayload
      * @param  array<string, mixed>  $bindingPayload
+     * @param  array<string, mixed>  $balanceSettings
      * @return array<string, mixed>
      */
-    public function updateSupplier(Supplier $supplier, array $supplierPayload, array $bindingPayload): array
-    {
+    public function updateSupplier(
+        Supplier $supplier,
+        array $supplierPayload,
+        array $bindingPayload,
+        array $balanceSettings = []
+    ): array {
         $supplierPayload['code'] = $supplier->code ?: $this->generateSupplierInternalCode(
             (string) ($bindingPayload['provider_key'] ?? ''),
             (int) $supplier->id
         );
 
-        $updated = DB::transaction(function () use ($supplier, $supplierPayload, $bindingPayload): bool {
+        $updated = DB::transaction(function () use ($supplier, $supplierPayload, $bindingPayload, $balanceSettings): bool {
             $updated = $supplier->update($supplierPayload);
             app(UpstreamBindingWriter::class)->syncSupplierBinding($supplier->refresh(), $bindingPayload);
+            $this->applySupplierBalanceSettings($supplier, $balanceSettings);
 
             return $updated;
         });
@@ -270,8 +282,31 @@ class AdminConfigurationV2QueryService
         }
 
         return [
-            'supplier' => AdminSupplierResource::make($supplier->refresh())->resolve(),
+            'supplier' => AdminSupplierResource::make($supplier->refresh()->load('balanceRecord'))->resolve(),
         ];
+    }
+
+    /**
+     * 在供应商写入的同一事务内落地余额告警设置。
+     *
+     * 放在事务内而非控制器：控制器里补写会让"供应商已创建、余额设置失败"变成
+     * 接口返回失败但主体已落库的半成品状态，重试还会造出重复供应商；返回的
+     * balance_setting 也会是写入前的旧值。
+     *
+     * @param  array<string, mixed>  $settings
+     */
+    private function applySupplierBalanceSettings(Supplier $supplier, array $settings): void
+    {
+        if (! Schema::hasTable('supplier_balances')) {
+            return;
+        }
+
+        // 即便本次没提交阈值也要建台账行：新接入的上游立刻带着默认阈值进入定时同步，
+        // 不必等管理员先去编辑一次。
+        $record = app(SupplierBalanceService::class)->recordFor($supplier);
+        if ($settings !== []) {
+            $record->forceFill($settings)->save();
+        }
     }
 
     /**
@@ -297,6 +332,10 @@ class AdminConfigurationV2QueryService
                     ->whereIn('id', $bindingIds)
                     ->delete();
             }
+
+            // 一并清掉余额台账与变更流水：留着既是永远不会被引用的孤儿数据，
+            // 也会让复用同一自增 ID 的新供应商读到上一任的余额。
+            app(SupplierBalanceService::class)->purgeSupplierData($supplierId);
 
             $lockedSupplier->delete();
 

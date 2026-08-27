@@ -46,6 +46,7 @@
 ## 关键约束入口
 
 - 后端：控制器薄层；第三方调用进入专用 Service/Driver/插件；Payment 不物理删除；迁移只新增。
+- 数据库：绝不删表/删列/删索引（存量升级与魔方财务搬迁依赖表结构稳定）；SQL 须同时兼容 MySQL 5.7.44 与 8.x，禁用窗口函数、CTE 等 8.0 专属语法。细则见 [MySQL 版本兼容基线](docs/references/database/mysql-version-compatibility.md)。
 - 插件：全部特有逻辑收敛到 `backend/plugins/{domain}/{slug}/`，不得注册系统级路由、调度或全局中间件；所有插件不需要 SSL 和 CA。
 - 前端：不混用 UI 框架；管理端不加头部说明卡片；v4-console 财务页不加指标卡片。
 - 自动生成物：修改路由或结构后运行生成脚本，绝不手工编辑 `docs/generated/`。

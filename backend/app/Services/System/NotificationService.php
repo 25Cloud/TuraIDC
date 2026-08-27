@@ -82,6 +82,10 @@ class NotificationService
 
     public const TEMPLATE_SERVICE_UNSUSPEND_FAILED = '100029';
 
+    public const TEMPLATE_ADMIN_SUPPLIER_LOW_BALANCE = '100030';
+
+    public const TEMPLATE_ADMIN_SUPPLIER_PROVISION_FAILED = '100031';
+
     public const TEMPLATE_LOGIN_FAILURE_ALERT = '100003';
 
     public const TEMPLATE_LOGIN_LOCATION_ALERT = '100003';

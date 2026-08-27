@@ -76,6 +76,9 @@ class UpsertSupplierRequest extends AdminFormRequest
             ],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:999999'],
             'notes' => ['nullable', 'string', 'max:4000'],
+            // 上游余额告警：留空表示沿用默认阈值（20），不代表关闭提醒
+            'low_balance_threshold' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            'low_balance_alert_enabled' => ['nullable', 'boolean'],
         ];
 
         foreach ($this->providerConfigFields($fields) as $field) {
@@ -148,6 +151,30 @@ class UpsertSupplierRequest extends AdminFormRequest
             'sort_order' => $payload['sort_order'],
             'notes' => $payload['notes'],
         ];
+    }
+
+    /**
+     * 上游余额告警设置。
+     *
+     * 两个键都用"未提交则不改动"的语义：编辑供应商时表单没带这两项，
+     * 不应把已配置的阈值悄悄重置回默认值。
+     *
+     * @return array<string, mixed>
+     */
+    public function balanceSettingsPayload(): array
+    {
+        $settings = [];
+
+        if ($this->has('low_balance_threshold') && $this->input('low_balance_threshold') !== null
+            && $this->input('low_balance_threshold') !== '') {
+            $settings['low_balance_threshold'] = round((float) $this->input('low_balance_threshold'), 2);
+        }
+
+        if ($this->has('low_balance_alert_enabled')) {
+            $settings['low_balance_alert_enabled'] = $this->boolean('low_balance_alert_enabled');
+        }
+
+        return $settings;
     }
 
     public function upstreamBindingPayload(): array

@@ -10,6 +10,7 @@ use App\Services\Finance\CheckoutSecurityService;
 use App\Services\Finance\CheckoutService;
 use App\Services\Finance\PaymentService;
 use App\Services\Order\OrderService;
+use App\Services\Supplier\SupplierBalanceService;
 use App\Services\System\SettingService;
 use Illuminate\Support\Facades\Log;
 
@@ -34,6 +35,7 @@ class InvoiceCleanupAutomationService
             'invoices_cancelled' => $this->cleanupPendingInvoices($config),
             'orders_cancelled' => $this->cleanupPendingOrders($config),
             'recharges_expired' => $this->cleanupPendingRecharges($config),
+            'supplier_balance_logs_purged' => $this->cleanupSupplierBalanceLogs($config),
         ];
     }
 
@@ -106,6 +108,21 @@ class InvoiceCleanupAutomationService
             'actor_name' => 'schedule:order-cleanup',
             'reason' => 'payment_window_expired',
         ]);
+    }
+
+    /**
+     * 回收过期的上游额度变更流水。
+     *
+     * 挂在既有清理任务里而不是单开一个调度槽：流水量小、清理成本低，
+     * 与待支付清理同频（每 15 分钟）已经绰绰有余。
+     *
+     * @param  array<string, mixed>  $config
+     */
+    private function cleanupSupplierBalanceLogs(array $config): int
+    {
+        $retentionDays = (int) ($config['supplier_balance_log_retention_days'] ?? 30);
+
+        return app(SupplierBalanceService::class)->purgeExpiredLogs($retentionDays);
     }
 
     private function cleanupPendingRecharges(array $config): int

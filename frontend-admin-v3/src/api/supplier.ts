@@ -114,6 +114,9 @@ export interface SupplierUpsertPayload {
     base_url?: unknown;
     account_name?: unknown;
   };
+  /** 上游余额告警阈值，留空表示沿用默认值 20 */
+  low_balance_threshold?: number;
+  low_balance_alert_enabled?: boolean;
 }
 
 export interface SupplierSummary {

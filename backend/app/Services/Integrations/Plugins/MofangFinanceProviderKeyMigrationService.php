@@ -12,7 +12,7 @@ use JsonException;
 use RuntimeException;
 
 /**
- * 在不改写历史审计数据的前提下，将仍在使用魔方 key 的实时上游路由切到 ZJMF。
+ * 在不改写历史审计数据的前提下，将仍在使用某方 key 的实时上游路由切到 ZJMF。
  *
  * 这里刻意不扫描 information_schema，也不做全文替换。历史开通尝试、运行日志、
  * 支付、队列和任何 secret_json 都不是本次切换的输入或输出。
@@ -236,14 +236,14 @@ final class MofangFinanceProviderKeyMigrationService
         $target = $plugins->where('plugin_key', self::TARGET_PROVIDER_KEY)->values();
 
         if ($legacy->count() !== 1 || $target->count() !== 1) {
-            throw new RuntimeException('必须恰好存在一条魔方上游插件记录和一条 ZJMF 上游插件记录，拒绝切换。');
+            throw new RuntimeException('必须恰好存在一条某方上游插件记录和一条 ZJMF 上游插件记录，拒绝切换。');
         }
 
         $legacyPlugin = $legacy->first();
         $targetPlugin = $target->first();
 
         if ((int) $legacyPlugin->id === (int) $targetPlugin->id) {
-            throw new RuntimeException('魔方和 ZJMF 插件记录不能指向同一主键。');
+            throw new RuntimeException('某方和 ZJMF 插件记录不能指向同一主键。');
         }
 
         return [
