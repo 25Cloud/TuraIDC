@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\FirstProductGroup;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Services\Admin\V2\AdminConfigurationV2QueryService;
 use App\Services\Integrations\Plugins\PluginFileLoader;
 use App\Services\Integrations\Plugins\PluginScanner;
 use App\Services\ProductCatalog\InstanceSpecCatalogService;
@@ -18,11 +19,15 @@ use App\Services\Upstream\Drivers\HostingPanelApi\HostingPanelApiTransport;
 use App\Services\Upstream\ProviderKey;
 use App\Services\Upstream\ProviderRegistry;
 use App\Services\Upstream\ProviderResolver;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class SupplierBatchConnectRegressionTest extends TestCase
 {
+    /**
+     * 加载 zjmf_finance 上游插件并激活，供供应商绑定与目录能力解析使用。
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -128,6 +133,123 @@ class SupplierBatchConnectRegressionTest extends TestCase
         $this->assertSame('2 vCPU 4G', $display['product_display_name'] ?? null);
         $this->assertSame('2 vCPU 4G', $display['product_spec_display'] ?? null);
         $this->assertSame('2 vCPU 4G', $display['cpu_memory_display'] ?? null);
+    }
+
+    /**
+     * 软删除已对接商品后，上游商品应释放为「未对接」可重新选择；
+     * 重新对接时写入端应复活并更新同一软删商品，而不是新建重复商品。
+     */
+    public function test_deleted_bound_product_releases_upstream_product_for_reconnect(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+
+        $supplier = Supplier::query()->create([
+            'name' => 'Reconnect Supplier '.$suffix,
+            'code' => 'reconnect-'.$suffix,
+            'interface_type' => ProviderKey::ZJMF_FINANCE_API,
+            'api_url' => 'https://supplier-'.$suffix.'.example.com',
+            'api_username' => 'demo',
+            'api_key' => 'secret',
+            'status' => 1,
+            'sort_order' => 1,
+        ]);
+        $this->bindSupplierToZjmf($supplier);
+
+        $bindingId = (int) DB::table('supplier_plugin_bindings')
+            ->where('supplier_id', (int) $supplier->id)
+            ->value('id');
+        $this->assertGreaterThan(0, $bindingId);
+
+        // 供应商商品列表入口会校验 api_url / api_username / api_key 必填，补齐绑定凭据
+        DB::table('supplier_plugin_bindings')->where('id', $bindingId)->update([
+            'base_url' => 'https://supplier-'.$suffix.'.example.com',
+            'account_name' => 'demo',
+            'secret_json' => Crypt::encryptString((string) json_encode(['api_key' => 'secret'])),
+            'has_secret_json' => json_encode(['api_key' => true]),
+            'updated_at' => now(),
+        ]);
+
+        $pluginId = (int) DB::table('integration_plugins')
+            ->where('domain', 'upstream')
+            ->where('plugin_key', ProviderKey::ZJMF_FINANCE_API)
+            ->value('id');
+        $this->assertGreaterThan(0, $pluginId);
+
+        $supplierProductId = random_int(10000, 99999);
+        $product = Product::query()->create([
+            'name' => '高质量云电脑 2核 2GB A型 '.$suffix,
+            'product_type' => 'cloud_server',
+            'pricing' => ['monthly' => '99.00'],
+            'status' => 1,
+        ]);
+        DB::table('product_upstream_bindings')->insert([
+            'product_id' => (int) $product->id,
+            'supplier_plugin_binding_id' => $bindingId,
+            'plugin_id' => $pluginId,
+            'provider_key' => ProviderKey::ZJMF_FINANCE_API,
+            'upstream_product_id' => (string) $supplierProductId,
+            'status' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $transport = $this->createMock(HostingPanelApiTransport::class);
+        $transport->method('getProductCatalog')->willReturn([
+            'groups' => [],
+            'products' => [[
+                'id' => $supplierProductId,
+                'name' => '高质量云电脑 2核 2GB A型',
+                'group_label' => '云服务器',
+                'billingcycle' => 'monthly',
+                'product_price' => '99.00',
+                'monthly_price' => '99.00',
+                'setup_fee' => '0.00',
+                'stock' => 8,
+            ]],
+        ]);
+        $this->app->instance(ProviderResolver::class, $this->makeProviderResolver($transport));
+
+        $service = app(AdminConfigurationV2QueryService::class);
+        $connected = $service->supplierProducts($supplier);
+        $this->assertSame(true, $connected['products'][0]['is_bound'] ?? null);
+        $this->assertSame((int) $product->id, $connected['products'][0]['local_product_id'] ?? null);
+
+        // 软删除本地商品后，上游商品应释放为「未对接」，允许重新导入/对接
+        $product->delete();
+        $released = $service->supplierProducts($supplier);
+        $this->assertSame(false, $released['products'][0]['is_bound'] ?? null);
+        $this->assertNull($released['products'][0]['local_product_id'] ?? null);
+
+        // 重新对接应复活并更新同一软删商品，而不是新建重复商品
+        $firstGroup = FirstProductGroup::query()->firstOrCreate(
+            ['code' => 'vps'],
+            [
+                'name' => 'VPS',
+                'slug' => 'reconnect-first-vps-'.$suffix,
+                'sort_order' => 0,
+                'is_visible' => 1,
+                'is_system' => 0,
+                'legacy_product_type' => 'vps',
+                'product_type' => 'cloud_server',
+            ]
+        );
+        $syncService = new ProductSyncService($this->makeProviderResolver($transport));
+        $reconnected = $syncService->bulkConnectSupplierProducts($supplier, [
+            'first_product_group_code' => 'vps',
+            'first_product_group_id' => (int) $firstGroup->id,
+            'second_product_group_name' => '云服务器',
+            'product_ids' => [$supplierProductId],
+            'default_status' => 1,
+            'default_auto_setup' => 1,
+            'sync_config_options' => 0,
+        ]);
+
+        $this->assertSame(0, (int) ($reconnected['created_count'] ?? -1));
+        $this->assertSame(1, (int) ($reconnected['updated_count'] ?? 0));
+        $this->assertSame(0, (int) ($reconnected['skipped_count'] ?? -1));
+        $this->assertFalse($product->refresh()->trashed());
+        $this->assertSame('cloud_server', $product->refresh()->product_type);
+        $this->assertSame('99.00', $product->refresh()->pricing['monthly'] ?? null);
     }
 
     public function test_display_name_resolver_reads_cpu_and_memory_from_default_config_items(): void
@@ -248,6 +370,10 @@ class SupplierBatchConnectRegressionTest extends TestCase
         $this->assertSame('ecs.g9i.2c2g', $display['product_spec_display'] ?? null);
     }
 
+    /**
+     * 构造以 zjmf_finance 为 provider_key 的 ProviderResolver，内部 driver 委托给定 mock transport，
+     * 使供应商目录能力（getProductCatalog）走测试可控的返回。
+     */
     private function makeProviderResolver(HostingPanelApiTransport $transport): ProviderResolver
     {
         return new ProviderResolver(new ProviderRegistry([
@@ -284,6 +410,10 @@ class SupplierBatchConnectRegressionTest extends TestCase
         ]));
     }
 
+    /**
+     * 给供应商写一条 zjmf_finance 生产环境插件绑定（不存在则插入），
+     * 供 ProviderResolver/批量对接批量绑定写路径复用。
+     */
     private function bindSupplierToZjmf(Supplier $supplier): void
     {
         $pluginId = (int) DB::table('integration_plugins')
