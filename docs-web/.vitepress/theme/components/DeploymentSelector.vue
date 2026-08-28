@@ -11,6 +11,18 @@
     </a>
     <a
       class="deployment-option"
+      href="/references/operations/bare-metal-deployment"
+    >
+      <span class="deployment-option-kicker">裸机部署</span>
+      <strong>裸机源码部署</strong>
+      <span
+        >适用于不使用面板与容器、以 nginx + PHP-FPM + systemd + cron
+        原生服务运行的服务器。</span
+      >
+      <em>查看裸机源码部署指南 →</em>
+    </a>
+    <a
+      class="deployment-option"
       href="/references/operations/docker-and-1panel-deployment"
     >
       <span class="deployment-option-kicker">容器部署</span>
