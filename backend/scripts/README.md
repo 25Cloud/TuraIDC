@@ -1,9 +1,10 @@
 # backend/scripts
 
-仓库内允许长期存在的脚本，必须满足**两条**：
+仓库内允许长期存在的脚本，必须满足**三条**：
 
-1. 有明确的调用方——`package.json` 的 script、CI、`DEPLOYMENT.md` 等文档，或本文件登记的手工运维流程；
-2. 不依赖任何开发者本机的私有配置、不硬编码某个环境的具体 ID / 路径 / dump 文件名。
+1. 有明确的调用方——`package.json` 的 script、CI、部署文档，或本文件登记的手工运维流程；
+2. 不依赖任何开发者本机的私有配置、不硬编码某个环境的具体 ID / 路径 / dump 文件名；
+3. 涉及写库的，必须做到：批量写入包在事务里、有批量大小控制（不得一次性载入或提交全表）、重复执行结果一致（幂等）；数据迁移类脚本还必须支持 `--dry-run` 预演，且目标表走显式白名单，杜绝误清空。
 
 **不要**把下面这些放进来（写完即删，或放到临时目录）：
 
@@ -26,7 +27,7 @@
 
 | 脚本 | 用途 | 调用 |
 | --- | --- | --- |
-| `backup_mysql.sh` | 每日备份 MySQL、保留 14 天 | 见 `DEPLOYMENT.md`「数据库备份」 |
+| `backup_mysql.sh` | 每日备份 MySQL、保留 14 天 | 见 `docs/references/operations/deployment.md`「数据库备份」 |
 | `install_db.py` / `install_db.sh` | 初始化项目数据库 | 见 `backend/database/README.md` |
 
 ## 质量门禁（当前未接入 `package.json`，手工执行）

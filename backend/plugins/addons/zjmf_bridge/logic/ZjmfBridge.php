@@ -157,6 +157,12 @@ class ZjmfBridge
      */
     private function login(array $payload, array $context): array
     {
+        // 必须在校验参数与真正登录之前拦：放在后面的话，参数为空时先抛 422 盖掉配置错误，
+        // 而参数正确时会先完成一次真实认证、签发再删掉内部令牌，白做一轮副作用才报错。
+        if (($misconfigured = $this->tokenSecretMisconfigured()) !== null) {
+            return $misconfigured;
+        }
+
         $body = $this->body($payload);
         $account = trim((string) ($body['account'] ?? $body['email'] ?? $body['phone'] ?? ''));
         $password = (string) ($body['password'] ?? '');
@@ -171,8 +177,6 @@ class ZjmfBridge
             (string) ($context['user_agent'] ?? '')
         );
         $this->deleteInternalToken((string) ($result['token'] ?? ''));
-
-        $this->assertTokenSecretConfigured();
 
         $user = (array) ($result['user'] ?? []);
         $userId = (int) ($user['id'] ?? 0);
@@ -199,7 +203,9 @@ class ZjmfBridge
      */
     private function apiLogin(array $payload, array $context): array
     {
-        $this->assertTokenSecretConfigured();
+        if (($misconfigured = $this->tokenSecretMisconfigured()) !== null) {
+            return $misconfigured;
+        }
 
         $body = $this->body($payload);
         $apiKey = trim((string) ($body['api_key'] ?? $body['password'] ?? $body['apikey'] ?? ''));
@@ -257,13 +263,21 @@ class ZjmfBridge
      * ZjmfTokenService::issue() 自己也会拒签（抛 RuntimeException），这里提前拦一道
      * 是为了把「配置没做完」翻译成明确的 503，而不是让运维在日志里读 500 堆栈。
      *
-     * @throws BusinessException
+     * 不走 BusinessException：execute() 的 businessError() 只读 errorCode，再由
+     * ZjmfErrorMapper 按区间归一（>= 50000 一律 500），503 会被压成 500；而给
+     * businessError() 加「透传异常声明的 httpStatus」会误伤另外 18 处只传 errorCode、
+     * httpStatus 留默认 422 的构造（例如 HostingPanelApiTransport 的 50000 会从 500 变 422）。
+     * 直接返回响应体最省事，也和同插件 ZjmfSignatureService 未配置时返回 503 的口径一致。
+     *
+     * @return array<string, mixed>|null 未配置时返回 503 响应，配置正常时返回 null
      */
-    private function assertTokenSecretConfigured(): void
+    private function tokenSecretMisconfigured(): ?array
     {
-        if (trim((string) config('zjmf_bridge.secret', '')) === '') {
-            throw new BusinessException('ZJMF Bridge 签名密钥未配置', 50300, 503);
+        if (trim((string) config('zjmf_bridge.secret', '')) !== '') {
+            return null;
         }
+
+        return $this->fail(503, 'ZJMF Bridge 签名密钥未配置', [], 503);
     }
 
     /**

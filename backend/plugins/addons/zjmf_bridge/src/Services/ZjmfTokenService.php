@@ -67,7 +67,16 @@ class ZjmfTokenService
         [$encodedHeader, $encodedPayload, $encodedSignature] = $segments;
 
         $header = json_decode($this->base64UrlDecode($encodedHeader), true);
-        if (! is_array($header) || ! hash_equals(self::ALGORITHM, (string) ($header['alg'] ?? ''))) {
+        if (! is_array($header)) {
+            return null;
+        }
+
+        // alg 必须先判类型再比对：header 完全由攻击者控制，写成 {"alg":[]} 时
+        // (string) 强转会触发 PHP 的 Array to string conversion 警告，而 Laravel 的
+        // HandleExceptions 会把警告升级成 ErrorException —— 一个畸形令牌就能把
+        // 本该干净的 401 变成 500。类型不对一律按「不是 HS256」处理。
+        $algorithm = $header['alg'] ?? null;
+        if (! is_string($algorithm) || ! hash_equals(self::ALGORITHM, $algorithm)) {
             return null;
         }
 

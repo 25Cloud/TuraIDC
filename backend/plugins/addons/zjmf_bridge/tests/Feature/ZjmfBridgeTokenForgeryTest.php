@@ -118,6 +118,72 @@ class ZjmfBridgeTokenForgeryTest extends TestCase
         $response->assertJsonPath('status', 401);
     }
 
+    /**
+     * header 完全由攻击者控制，alg 不是字符串时必须干净地拒绝。
+     *
+     * 若 verify() 直接 (string) 强转，{"alg":[]} 会触发 PHP 的
+     * Array to string conversion 警告，Laravel 的 HandleExceptions 再把它升级成
+     * ErrorException —— 一个畸形令牌就能把 401 变成 500。
+     *
+     * @return iterable<string, array{mixed}>
+     */
+    public static function malformedAlgorithmProvider(): iterable
+    {
+        yield 'alg 是空数组' => [[]];
+        yield 'alg 是数组' => [['HS256']];
+        yield 'alg 是数字' => [256];
+        yield 'alg 是布尔' => [true];
+        yield 'alg 是对象' => [['k' => 'v']];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('malformedAlgorithmProvider')]
+    public function test_non_string_algorithm_header_is_rejected_without_error(mixed $algorithm): void
+    {
+        $victim = $this->createClientUser();
+
+        $header = $this->base64UrlEncode((string) json_encode(['typ' => 'JWT', 'alg' => $algorithm]));
+        $now = time();
+        $body = $this->base64UrlEncode((string) json_encode([
+            'sub' => 'client:'.(int) $victim->id,
+            'uid' => (int) $victim->id,
+            'scope' => ['client.read'],
+            'iat' => $now,
+            'nbf' => $now,
+            'exp' => $now + 600,
+        ]));
+        $signature = $this->base64UrlEncode(
+            hash_hmac('sha256', $header.'.'.$body, self::REAL_SECRET, true)
+        );
+
+        $response = $this->withHeaders(['Authorization' => 'Bearer '.$header.'.'.$body.'.'.$signature])
+            ->getJson('/zjmf/v1/user');
+
+        // 关键是 401 而不是 500：500 说明强转触发了异常。
+        $response->assertJsonPath('status', 401);
+        $this->assertNull(
+            app(ZjmfTokenService::class)->verify($header.'.'.$body.'.'.$signature),
+            'alg 类型非法时 verify() 必须返回 null，且不得抛异常'
+        );
+    }
+
+    public function test_login_reports_missing_secret_as_service_unavailable(): void
+    {
+        config(['zjmf_bridge.secret' => '']);
+
+        // 密钥没配时两条登录入口都必须给出明确的 503，而不是 500 堆栈或伪装成
+        // 「密钥无效」的 400 —— 后者会让运维照着错误方向排查。
+        foreach (['login_api' => ['account' => 'x@example.com', 'password' => 'y'],
+            'zjmf_api_login' => ['api_key' => 'whatever']] as $path => $body) {
+            $response = $this->postJson('/zjmf/v1/'.$path, $body);
+
+            $this->assertSame(
+                503,
+                (int) $response->json('status'),
+                sprintf('%s 在密钥未配置时应返回 503，实际 %s', $path, (string) $response->json('status'))
+            );
+        }
+    }
+
     public function test_a_properly_signed_token_still_authenticates(): void
     {
         $user = $this->createClientUser();
