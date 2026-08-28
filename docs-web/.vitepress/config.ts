@@ -272,6 +272,7 @@ const sidebar: DefaultTheme.SidebarItem[] = [
 ];
 
 export default defineConfig({
+  lang: "zh-CN",
   title: "TuraIDC 文档中心",
   description: "TuraIDC 业务/财务系统官方技术文档",
   srcDir: "../docs",
@@ -294,8 +295,8 @@ export default defineConfig({
     ["link", { rel: "icon", href: "/branding/favicon.png" }],
   ],
   themeConfig: {
-    logo: "/branding/turaidc-logo.png",
-    siteTitle: "TuraIDC 文档中心",
+    // 侧栏与导航顶部仅显示站点标题文字，不渲染 logo 图片
+    siteTitle: "TuraIDC文档中心",
     nav: [
       { text: "文档首页", link: "/" },
       { text: "系统架构", link: "/ARCHITECTURE" },
@@ -324,6 +325,13 @@ export default defineConfig({
       message: "基于 AGPL-3.0-or-later 发布",
       copyright: "Copyright © TuraIDC Contributors",
     },
+    // vitepress-carbon 主题文案汉化
+    darkModeSwitchLabel: "外观",
+    lightModeSwitchTitle: "切换到浅色模式",
+    darkModeSwitchTitle: "切换到深色模式",
+    sidebarMenuLabel: "菜单",
+    returnToTopLabel: "回到顶部",
+    langMenuLabel: "切换语言",
   },
   rewrites: readmeRewrites(docsRoot),
 });

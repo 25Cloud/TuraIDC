@@ -4,16 +4,15 @@
 
 ## 目录职责
 
-| 路径                                                          | 职责                                             |
-| ------------------------------------------------------------- | ------------------------------------------------ |
-| `docs/`                                                       | 项目长期文档的唯一内容源。                       |
-| `docs-web/`                                                   | VitePress 应用、主题、首页组件与静态品牌资源。   |
-| `docs-web/.vitepress/config.ts`                               | 站点元信息、导航、侧栏、URL 重写和中文标题约束。 |
-| `docs-web/.vitepress/theme/Layout.vue`                        | 首页与默认文档布局的切换入口。                   |
-| `docs-web/.vitepress/theme/components/HomePortal.vue`         | 文档官网首页。                                   |
-| `docs-web/.vitepress/theme/components/DeploymentSelector.vue` | 快速开始页的生产部署方式选择器。                 |
-| `docs-web/.vitepress/theme/style.css`                         | 官网主题和响应式样式。                           |
-| `docs-web/public/branding/`                                   | Logo 与 favicon 等原样复制的静态资源。           |
+| 路径                                                          | 职责                                                         |
+| ------------------------------------------------------------- | ------------------------------------------------------------ |
+| `docs/`                                                       | 项目长期文档的唯一内容源。                                   |
+| `docs-web/`                                                   | VitePress 应用、主题、首页组件与静态品牌资源。               |
+| `docs-web/.vitepress/config.ts`                               | 站点元信息、导航、侧栏、URL 重写和中文标题约束。             |
+| `docs-web/.vitepress/theme/Layout.vue`                        | 首页与默认文档布局的切换入口（挂载 Nolebase 增强阅读面板）。 |
+| `docs-web/.vitepress/theme/components/HomePortal.vue`         | 文档官网首页（深浅色流光与入场动效）。                       |
+| `docs-web/.vitepress/theme/components/DeploymentSelector.vue` | 快速开始页的生产部署方式选择器。                             |
+| `docs-web/public/branding/`                                   | Logo 与 favicon 等原样复制的静态资源。                       |
 
 不要在 `docs-web/` 中复制 Markdown 正文。正文始终直接维护在 `docs/`，VitePress 通过 `srcDir: "../docs"` 读取。
 
