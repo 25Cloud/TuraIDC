@@ -23,5 +23,6 @@
 | 运维   | [部署与调度指南](operations/deployment-and-scheduling.md)                            | current      | 现网部署、调度与队列口径。                                     |
 | 运维   | [通用部署指南](operations/deployment.md)                                             | current      | 从零部署到生产环境：环境要求、后端、前端与进程守护。           |
 | 运维   | [宝塔部署项目指南](operations/bt-panel-deployment.md)                                | current      | 全新服务器部署步骤。                                           |
+| 运维   | [裸机源码部署指南](operations/bare-metal-deployment.md)                              | current      | 无面板、无容器的原生服务源码部署与实测踩坑。                   |
 | 运维   | [前端 Nginx 伪静态配置](operations/frontend-nginx-rules.md)                          | current      | 四端站点 Nginx 规则。                                          |
 | 运维   | [Docker 与 1Panel 部署指南](operations/docker-and-1panel-deployment.md)              | current      | Docker Compose 一键部署与 1Panel 托管。                        |

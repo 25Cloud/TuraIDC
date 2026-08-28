@@ -355,6 +355,12 @@
       "status": "active",
       "summary": "代理折扣体系实施计划：AgentDiscountService 与三张配置表的落地任务拆分。",
       "review_by": "2026-09-20"
+    },
+    {
+      "path": "references/operations/bare-metal-deployment.md",
+      "status": "current",
+      "summary": "无面板、无容器的裸机源码部署：nginx + PHP-FPM + systemd + cron，含实测踩坑记录。",
+      "review_by": "2027-08-28"
     }
   ]
 }

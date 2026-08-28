@@ -4,7 +4,7 @@
 
 - 描述当前生产环境真实的部署拓扑与调度模型
 - 对齐时间：`2026-07-02`
-- **全新服务器部署**先看 `docs/references/operations/bt-panel-deployment.md`
+- **全新服务器部署**先看 `docs/references/operations/bt-panel-deployment.md`（宝塔面板）或 `docs/references/operations/bare-metal-deployment.md`（无面板、无容器的原生服务部署）
 - **容器化部署（Docker Compose / 1Panel / CI 自动打包）**先看 `docs/references/operations/docker-and-1panel-deployment.md`
 - 配套文档：
   - `docs/README.md`（文档入口）
