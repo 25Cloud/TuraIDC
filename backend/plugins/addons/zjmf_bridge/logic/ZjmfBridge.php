@@ -172,6 +172,8 @@ class ZjmfBridge
         );
         $this->deleteInternalToken((string) ($result['token'] ?? ''));
 
+        $this->assertTokenSecretConfigured();
+
         $user = (array) ($result['user'] ?? []);
         $userId = (int) ($user['id'] ?? 0);
         $ttl = (int) config('zjmf_bridge.token_ttl', 7200);
@@ -197,6 +199,8 @@ class ZjmfBridge
      */
     private function apiLogin(array $payload, array $context): array
     {
+        $this->assertTokenSecretConfigured();
+
         $body = $this->body($payload);
         $apiKey = trim((string) ($body['api_key'] ?? $body['password'] ?? $body['apikey'] ?? ''));
 
@@ -245,6 +249,21 @@ class ZjmfBridge
                 ],
             ],
         ];
+    }
+
+    /**
+     * 令牌密钥未配置时，宁可让登录整条断掉，也不能签发出可被任何人伪造的令牌。
+     *
+     * ZjmfTokenService::issue() 自己也会拒签（抛 RuntimeException），这里提前拦一道
+     * 是为了把「配置没做完」翻译成明确的 503，而不是让运维在日志里读 500 堆栈。
+     *
+     * @throws BusinessException
+     */
+    private function assertTokenSecretConfigured(): void
+    {
+        if (trim((string) config('zjmf_bridge.secret', '')) === '') {
+            throw new BusinessException('ZJMF Bridge 签名密钥未配置', 50300, 503);
+        }
     }
 
     /**
