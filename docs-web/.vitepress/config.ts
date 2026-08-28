@@ -291,7 +291,7 @@ export default defineConfig({
   ignoreDeadLinks: true,
   head: [
     ["meta", { name: "theme-color", content: "#165DFF" }],
-    ["meta", { name: "apple-mobile-web-app-capable", content: "yes" }],
+    ["meta", { name: "mobile-web-app-capable", content: "yes" }],
     ["link", { rel: "icon", href: "/branding/favicon.png" }],
   ],
   themeConfig: {
