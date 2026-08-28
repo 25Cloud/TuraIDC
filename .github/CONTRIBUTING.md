@@ -4,7 +4,7 @@
 
 ## 开发环境
 
-参考 [README.md](./README.md)「快速开始」章节搭建本地开发环境：
+参考 [README.md](../README.md)「快速开始」章节搭建本地开发环境：
 
 - 后端：PHP 8.3+ / MySQL 8 / Redis / Composer
 - 前端：Node.js 20+（npm workspaces 管理三端 + 共享包）
@@ -50,4 +50,4 @@
 
 ## 许可
 
-参与贡献即表示你同意你的贡献将遵循 [GNU Affero General Public License v3.0 或更高版本（AGPL-3.0-or-later）](./LICENSE) 发布。
+参与贡献即表示你同意你的贡献将遵循 [GNU Affero General Public License v3.0 或更高版本（AGPL-3.0-or-later）](../LICENSE) 发布。

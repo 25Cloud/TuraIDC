@@ -135,6 +135,7 @@ const sidebar: DefaultTheme.SidebarItem[] = [
     text: "快速开始",
     items: [
       pageItem("quick-start.md"),
+      pageItem("references/operations/deployment.md"),
       pageItem("references/operations/bt-panel-deployment.md"),
       pageItem("references/operations/docker-and-1panel-deployment.md"),
     ],
