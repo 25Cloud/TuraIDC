@@ -150,6 +150,8 @@ npm run preview --workspace turaidc-docs-web -- --host 127.0.0.1 --port 4173
 
 静态服务器应支持无扩展名 URL。使用 Nginx 时，需要让 `/quick-start` 等请求能够命中对应 HTML 页面或按静态托管平台的 clean URL 规则处理。
 
+`docs-web/package-lock.json` 必须入库。EdgeOne Pages 等独立构建环境的构建命令应使用 `npm ci` 精确还原依赖：无锁安装曾导致线上产物缺失 chunk 引用（`framework.*.js` 404 → 页面水合报 `shallowRef` 错误）。修改 `docs-web` 依赖后需在 `docs-web/` 下重新 `npm install` 刷新该 lock 并一并提交。
+
 ## 常见问题
 
 ### 构建提示文档缺少中文一级标题
