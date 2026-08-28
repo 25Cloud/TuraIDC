@@ -300,6 +300,17 @@
       "review_by": "2026-08-21"
     },
     {
+      "path": "references/operations/deployment.md",
+      "status": "current",
+      "summary": "从零部署到生产环境的通用部署指南（环境要求、后端、前端、进程守护）。",
+      "review_by": "2026-11-28"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "current",
+      "summary": "仓库级完整变更记录，按 Keep a Changelog 规范维护。"
+    },
+    {
       "path": "generated/api/backend-api-catalog.md",
       "status": "generated",
       "summary": "由路由导出的后端 API 清单。"

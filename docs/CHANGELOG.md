@@ -49,7 +49,7 @@
   - `app:backfill-config-options` 跨库补齐配置项
   - `services:backfill-upstream-bindings` 服务实例上游绑定回填
   - `mofang_config_options_migrator.py` 配置项迁移脚本
-- 完整迁移教程：[从智简魔方财务系统迁移](docs/references/database/migrate-from-zjmf-finance.md)
+- 完整迁移教程：[从智简魔方财务系统迁移](references/database/migrate-from-zjmf-finance.md)
 
 ### 修复
 

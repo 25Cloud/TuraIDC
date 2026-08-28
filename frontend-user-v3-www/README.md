@@ -2,7 +2,7 @@
 
 官网门户前端应用，负责品牌展示与购买入口。
 
-> 完整项目文档见根目录 [README](../../README.md)，部署指南见 [DEPLOYMENT.md](../../DEPLOYMENT.md)。
+> 完整项目文档见根目录 [README](../../README.md)，部署指南见 [DEPLOYMENT.md](../../docs/references/operations/deployment.md)。
 
 - 文档性质：现行方案 / 官网与购买入口部署说明
 - 对齐时间：2026-06-28
@@ -11,6 +11,7 @@
 ## 站点基础配置
 
 用户端官网的基础展示信息由管理端维护：
+
 - 站务 -> `基础信息`：维护站点名、浏览器标题、Logo、Favicon、客服联系方式与协议链接
 - 站务 -> `首页 Banner`：维护官网首页首屏内容
 

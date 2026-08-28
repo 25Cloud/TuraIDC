@@ -2,7 +2,7 @@
 
 管理后台前端应用，负责商品、订单、用户、财务、工单、供应商等后台运营管理。
 
-> 本文档为该子项目说明。完整项目文档见根目录 [README](../../README.md)，部署指南见 [DEPLOYMENT.md](../../DEPLOYMENT.md)，变更记录见 [CHANGELOG.md](../../CHANGELOG.md)。
+> 本文档为该子项目说明。完整项目文档见根目录 [README](../../README.md)，部署指南见 [DEPLOYMENT.md](../../docs/references/operations/deployment.md)，变更记录见 [CHANGELOG.md](../../docs/CHANGELOG.md)。
 
 ## 技术栈
 

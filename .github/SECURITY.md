@@ -28,11 +28,11 @@
 
 1. **确认**：收到报告后 48 小时内确认，并评估严重程度
 2. **修复**：在私有分支修复，通过安全审查
-3. **发布**：发布修复版本并更新 [CHANGELOG.md](./CHANGELOG.md)
+3. **发布**：发布修复版本并更新 [CHANGELOG.md](../docs/CHANGELOG.md)
 4. **披露**：修复发布后，在安全公告中公开致谢（除非报告者要求匿名）
 
 ## 安全注意事项
 
 - 请始终通过 `.env` 管理生产密钥，切勿提交真实凭证
-- 部署请遵循 [DEPLOYMENT.md](./DEPLOYMENT.md) 中的生产环境检查清单
+- 部署请遵循 [DEPLOYMENT.md](../docs/references/operations/deployment.md) 中的生产环境检查清单
 - 如发现默认配置存在风险，欢迎通过上述渠道反馈

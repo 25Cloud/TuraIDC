@@ -219,7 +219,7 @@ TuraIDC/
 ## 🔧 环境要求
 
 - PHP 8.3+（扩展：`pdo_mysql`、`redis`、`mbstring`、`openssl`、`zip` 等）
-- MySQL 8.0+（推荐；最低兼容 5.7.8，5.7 已 EOL 仅兼容性支持；5.7 部署需在 my.cnf 设置 `explicit_defaults_for_timestamp=ON`，详见 DEPLOYMENT.md）
+- MySQL 8.0+（推荐；最低兼容 5.7.8，5.7 已 EOL 仅兼容性支持；5.7 部署需在 my.cnf 设置 `explicit_defaults_for_timestamp=ON`，详见 docs/references/operations/deployment.md）
 - Redis 6.0+（生产环境必需，分布式锁依赖 Redis）
 - Composer 2.x
 - Node.js 20+（构建前端）
@@ -288,7 +288,7 @@ npm run dev:admin-v3
 
 ### 3. 后台进程
 
-生产环境需常驻两个进程（详见 [DEPLOYMENT.md](./DEPLOYMENT.md)）：
+生产环境需常驻两个进程（详见 [部署指南](./docs/references/operations/deployment.md)）：
 
 ```bash
 php artisan queue:work --queue=provision,referral,notification,coupon,default --sleep=1 --tries=3 --timeout=1200
@@ -373,11 +373,11 @@ docker compose pull && docker compose up -d   # 升级到新镜像
 ## 📚 文档
 
 - [文档官网维护指南](docs/governance/docs-web-maintenance.md)
-- [部署指南 DEPLOYMENT.md](./DEPLOYMENT.md)
-- [贡献指南 CONTRIBUTING.md](./CONTRIBUTING.md)
-- [安全政策 SECURITY.md](./SECURITY.md)
-- [行为准则 CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
-- [变更记录 CHANGELOG.md](./CHANGELOG.md)
+- [部署指南](./docs/references/operations/deployment.md)
+- [贡献指南](./.github/CONTRIBUTING.md)
+- [安全政策](./.github/SECURITY.md)
+- [行为准则](./.github/CODE_OF_CONDUCT.md)
+- [变更记录](./docs/CHANGELOG.md)
 
 ## 📄 开源许可
 

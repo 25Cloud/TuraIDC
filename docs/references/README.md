@@ -21,6 +21,7 @@
 | 运维   | [本地启动指南](operations/local-development.md)                                      | current      | 本地后端与前端启动命令。                                       |
 | 运维   | [测试指南](operations/testing.md)                                                    | current      | 测试环境、命令和范围。                                         |
 | 运维   | [部署与调度指南](operations/deployment-and-scheduling.md)                            | current      | 现网部署、调度与队列口径。                                     |
+| 运维   | [通用部署指南](operations/deployment.md)                                             | current      | 从零部署到生产环境：环境要求、后端、前端与进程守护。           |
 | 运维   | [宝塔部署项目指南](operations/bt-panel-deployment.md)                                | current      | 全新服务器部署步骤。                                           |
 | 运维   | [前端 Nginx 伪静态配置](operations/frontend-nginx-rules.md)                          | current      | 四端站点 Nginx 规则。                                          |
 | 运维   | [Docker 与 1Panel 部署指南](operations/docker-and-1panel-deployment.md)              | current      | Docker Compose 一键部署与 1Panel 托管。                        |

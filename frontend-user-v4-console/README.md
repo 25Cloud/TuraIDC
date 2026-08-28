@@ -2,7 +2,7 @@
 
 用户控制台前端应用，负责用户登录、服务管理、订单、发票、财务充值、工单等自助服务。
 
-> 本文档为该子项目说明。完整项目文档见根目录 [README](../../README.md)，部署指南见 [DEPLOYMENT.md](../../DEPLOYMENT.md)，变更记录见 [CHANGELOG.md](../../CHANGELOG.md)。
+> 本文档为该子项目说明。完整项目文档见根目录 [README](../../README.md)，部署指南见 [DEPLOYMENT.md](../../docs/references/operations/deployment.md)，变更记录见 [CHANGELOG.md](../../docs/CHANGELOG.md)。
 
 ## 技术栈
 
