@@ -12,8 +12,20 @@
   "devDependencies": {
     "@nolebase/vitepress-plugin-enhanced-readabilities": "^2.18.2",
     "@nolebase/vitepress-plugin-highlight-targeted-heading": "^2.18.2",
-    "@vue/server-renderer": "^3.5.41",
+    "@vue/server-renderer": "3.5.41",
     "vitepress": "^1.6.4",
-    "vue": "^3.5.41"
+    "vue": "3.5.41"
+  },
+  "overrides": {
+    "vue": "3.5.41",
+    "@vue/runtime-core": "3.5.41",
+    "@vue/runtime-dom": "3.5.41",
+    "@vue/reactivity": "3.5.41",
+    "@vue/shared": "3.5.41",
+    "@vue/server-renderer": "3.5.41",
+    "@vue/compiler-core": "3.5.41",
+    "@vue/compiler-dom": "3.5.41",
+    "@vue/compiler-sfc": "3.5.41",
+    "@vue/compiler-ssr": "3.5.41"
   }
 }
