@@ -22,4 +22,4 @@ location / {
 }
 ```
 
-- 详细部署步骤见根目录 [DEPLOYMENT.md](../../DEPLOYMENT.md)。
+- 详细部署步骤见根目录 [DEPLOYMENT.md](../../docs/references/operations/deployment.md)。
