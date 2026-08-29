@@ -108,6 +108,32 @@ class SeparatedOriginCorsTest extends TestCase
         );
     }
 
+    public function test_preflight_max_age_zero_is_sent_as_an_explicit_zero_rather_than_omitted(): void
+    {
+        // 反向覆盖 max_age=0。注意 fruitcake/php-cors 的 configureMaxAge() 判的是 `!== null`，
+        // 0 是 int 不是 null，所以该头**照常下发、值为 "0"**（浏览器据此每次都重发预检），
+        // 并不是被省略。两者语义不同：省略会让浏览器退回自己的默认预检缓存，显式 0 才是"禁止缓存"。
+        // 把这个区别钉住，将来升级依赖若改成「0 即省略」能被立刻发现。
+        config([
+            'cors.allowed_origins' => ['http://127.0.0.1:5174'],
+            'cors.max_age' => 0,
+        ]);
+
+        $response = $this->call('OPTIONS', '/api/v2/admin/users/1', [], [], [], [
+            'HTTP_ORIGIN' => 'http://127.0.0.1:5174',
+            'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+            'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'authorization,content-type',
+        ]);
+
+        $response->assertNoContent();
+
+        $this->assertTrue(
+            $response->headers->has('Access-Control-Max-Age'),
+            'max_age=0 时该头仍会下发（值为 "0"），不会被省略'
+        );
+        $this->assertSame('0', $response->headers->get('Access-Control-Max-Age'));
+    }
+
     /**
      * @return array<string, array{string}>
      */
