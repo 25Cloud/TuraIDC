@@ -134,6 +134,31 @@
       <span class="splash-word">图拉云</span>
     </div>
     <div class="splash-bar-track"><div class="splash-bar-fill"></div></div>
+    <script>
+      /*
+       * 启动屏在 Vue 挂载、站点配置拉回来之前就渲染完了，那一刻只能显示上面写死的默认品牌。
+       * 这里用上一次访问缓存下来的站点名在首帧前覆盖，自建站就不会一直显示 "图拉云"。
+       * 首次访问（无缓存）仍显示默认值，配置拉回后写入缓存，下次起即正确。
+       *
+       * 键名必须与 shared/runtime/branding.ts 的 SPLASH_BRANDING_STORAGE_KEY 一致；
+       * 本脚本在打包产物之外、无法 import，故硬编码，由 shared/tests/branding-splash.test.mjs 校验不漂移。
+       */
+      (function () {
+        try {
+          var raw = window.localStorage.getItem('turaidc:splash-branding');
+          var name = String(raw || '').trim().slice(0, 40);
+          if (!name) return;
+          var word = document.querySelector('#app-splash .splash-word');
+          var mark = document.querySelector('#app-splash .splash-mark');
+          // 只用 textContent，绝不拼 HTML：站点名是管理员可改的外部输入。
+          if (word) word.textContent = name;
+          // 角标是 44px 见方的单字徽标，取首个字素（Array.from 可正确处理代理对）。
+          if (mark) mark.textContent = Array.from(name)[0];
+        } catch (error) {
+          /* localStorage 被禁用或不可用时保持默认品牌，不影响加载 */
+        }
+      })();
+    </script>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>
