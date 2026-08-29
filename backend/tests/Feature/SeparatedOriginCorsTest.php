@@ -83,6 +83,31 @@ class SeparatedOriginCorsTest extends TestCase
         );
     }
 
+    public function test_preflight_result_is_cacheable_to_avoid_a_round_trip_per_request(): void
+    {
+        // 三端与 API 分域，浏览器对每个跨源请求都会先发预检。max_age=0 会让预检结果
+        // 一次都不能复用——线上实测因此有 34.5% 的 API 请求是纯 OPTIONS。这里锁住"可缓存"。
+        config(['cors.allowed_origins' => ['http://127.0.0.1:5174']]);
+
+        $response = $this->call('OPTIONS', '/api/v2/admin/users/1', [], [], [], [
+            'HTTP_ORIGIN' => 'http://127.0.0.1:5174',
+            'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+            'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'authorization,content-type',
+        ]);
+
+        $response->assertNoContent();
+
+        $this->assertGreaterThan(
+            0,
+            (int) config('cors.max_age'),
+            '预检结果必须可缓存，否则每个跨源请求都要多付一趟 OPTIONS 往返'
+        );
+        $this->assertSame(
+            (int) config('cors.max_age'),
+            (int) $response->headers->get('Access-Control-Max-Age')
+        );
+    }
+
     /**
      * @return array<string, array{string}>
      */
