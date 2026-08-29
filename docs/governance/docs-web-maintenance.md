@@ -2,7 +2,7 @@
 
 本文是 `docs-web/` 文档官网的统一维护入口，说明日常维护、构建与发布方式。文档官网是独立的 VitePress 应用，读取 `docs/` 作为内容源，不复制文档，也不参与三个业务前端的构建和部署。
 
-## 目录职责
+## 1. 目录职责
 
 | 路径                                                          | 职责                                                         |
 | ------------------------------------------------------------- | ------------------------------------------------------------ |
@@ -16,7 +16,7 @@
 
 不要在 `docs-web/` 中复制 Markdown 正文。正文始终直接维护在 `docs/`，VitePress 通过 `srcDir: "../docs"` 读取。
 
-## 本地启动
+## 2. 本地启动
 
 在项目根目录安装工作区依赖：
 
@@ -32,7 +32,7 @@ npm run dev:docs -- --host 127.0.0.1 --port 5176
 
 浏览器访问 `http://127.0.0.1:5176/`。开发服务支持内容和主题热更新。
 
-## 内容维护规则
+## 3. 内容维护规则
 
 ### 中文内容与英文 URL
 
@@ -81,7 +81,7 @@ php backend/scripts/export_api_inventory.php
 
 刷新后执行文档检查和官网构建。
 
-## 导航与首页维护
+## 4. 导航与首页维护
 
 主导航和侧栏结构在 `docs-web/.vitepress/config.ts` 中维护。当前一级架构为：
 
@@ -103,7 +103,7 @@ php backend/scripts/export_api_inventory.php
 
 快速开始页的部署方式入口由 `DeploymentSelector.vue` 提供。新增部署方式时，应先在 `docs/references/operations/` 建立生产部署文档，再增加入口。
 
-## 构建与验证
+## 5. 构建与验证
 
 文档内容变更至少执行：
 
@@ -137,7 +137,7 @@ npm run preview --workspace turaidc-docs-web -- --host 127.0.0.1 --port 4173
 - Logo、favicon 和首页入口正常加载；
 - 移动端没有横向滚动或元素遮挡。
 
-## 独立构建与部署
+## 6. 独立构建与部署
 
 文档官网与业务前端独立存在：
 
@@ -152,7 +152,7 @@ npm run preview --workspace turaidc-docs-web -- --host 127.0.0.1 --port 4173
 
 `docs-web/package-lock.json` 必须入库。EdgeOne Pages 等独立构建环境的构建命令应使用 `npm ci` 精确还原依赖：无锁安装曾导致线上产物缺失 chunk 引用（`framework.*.js` 404 → 页面水合报 `shallowRef` 错误）。修改 `docs-web` 依赖后需在 `docs-web/` 下重新 `npm install` 刷新该 lock 并一并提交。
 
-## 常见问题
+## 7. 常见问题
 
 ### 构建提示文档缺少中文一级标题
 
@@ -174,7 +174,7 @@ npm run preview --workspace turaidc-docs-web -- --host 127.0.0.1 --port 4173
 
 确认发布流程执行的是 `npm run build:docs`，并部署了最新的 `docs-web/.vitepress/dist/`。`npm run build:frontends` 不会构建或发布文档官网。
 
-## 发布检查清单
+## 8. 发布检查清单
 
 1. 更新 `docs/` 正文、索引和相关路径引用。
 2. 必要时更新 VitePress 导航、目录中文映射或首页入口。

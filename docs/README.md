@@ -2,7 +2,7 @@
 
 `docs/` 是项目文档的唯一记录系统。这里保存可执行的知识、决策和计划；代码、测试、路由和数据库实况优先于文字说明。
 
-## 阅读顺序
+## 1. 阅读顺序
 
 1. 先读仓库根目录的 [AGENTS.md](../AGENTS.md)。
 2. 编辑前读 [工作规则](governance/WORKING_RULES.md) 与 [文档治理](governance/DOCUMENTATION_POLICY.md)。
@@ -21,7 +21,7 @@
 | 官方文档站维护与发布         | [文档官网维护指南](governance/docs-web-maintenance.md)                                                   |
 | 脚本生成的快照               | [自动生成文档](generated/README.md)                                                                      |
 
-## 目录边界
+## 2. 目录边界
 
 ```text
 docs/
@@ -39,7 +39,7 @@ docs/
 └── templates/             # 新工件模板
 ```
 
-## 状态语义
+## 3. 状态语义
 
 `current` 表示当前可依赖的规则或快照；`active` 表示正在执行；`completed` 表示保留结果；`tech-debt` 表示已知欠账；`needs-review` 表示不能在未对照代码前直接执行；`generated` 表示必须由对应脚本刷新；`archived` 只用于追溯。
 

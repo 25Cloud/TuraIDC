@@ -2,7 +2,7 @@
 
 本文档说明当前项目的插件目录规范、加载规则、配置规则和真实插件包。插件系统采用“ZJMF 财务风格目录 + Laravel 受控加载”方案：插件上传到固定目录后，由管理员在后台扫描、安装、配置、启用。
 
-## 目录映射
+## 1. 目录映射
 
 插件统一放在 `backend/plugins` 下，目录按能力域划分：
 
@@ -18,7 +18,7 @@
 
 `domain` 是后台 API 和数据库里使用的领域名；物理目录沿用ZJMF 财务的 `gateways/certification/mail/sms/servers` 风格，并按当前插件体系扩展了 `captcha/addons`。插件入口类不直接实现平台契约，入口类提供 `execute(array $request): array`，平台通过 `PluginRuntimeRegistry` 和领域 adapter 转换为内部契约。
 
-## 单插件结构
+## 2. 单插件结构
 
 推荐结构：
 
@@ -42,7 +42,7 @@ backend/plugins/{domain-directory}/{slug}/
 3. 加载插件根目录 PHP 文件，跳过 `config.php`。
 4. 兼容加载 `src/`，用于旧结构过渡。
 
-## config.php 规范
+## 3. config.php 规范
 
 `config.php` 同时声明插件元信息和后台配置表单：
 
@@ -92,7 +92,7 @@ return [
 | `value` / `default` | 默认值                                                   |
 | `options`           | `select` 选项                                            |
 
-## 配置组件协议
+## 4. 配置组件协议
 
 插件配置页采用 schema 驱动渲染。插件只能声明受控组件类型，由管理端统一渲染、校验、保存；插件不能注入任意 Vue、HTML、JavaScript、远程组件或 iframe。
 
@@ -294,7 +294,7 @@ return [
 
 前端保存时只提交真实配置字段；`notice`、`divider`、`readonly`、`description`、`groups` 等展示类元信息不参与提交。
 
-## 配置和密钥
+## 5. 配置和密钥
 
 插件配置保存在两张表：
 
@@ -308,7 +308,7 @@ return [
 - 空提交表示保留旧密钥。
 - 多 SMTP 的 `accounts` 字段支持脱敏预览和按索引保留密码。
 
-## 绑定表与运行日志
+## 6. 绑定表与运行日志
 
 插件安装记录只表达“系统识别到了哪个插件”，业务场景选择必须通过绑定表表达，不再通过 `settings` 中的旧 driver/provider key 反写。
 
@@ -328,7 +328,7 @@ return [
 - 插件运行日志由 `PluginRuntimeRegistry::execute()` 统一写入，插件内部不要自建业务运行日志表。
 - 敏感字段只允许进入加密列或脱敏摘要，禁止写入 runtime log 的明文字段。
 
-## 定时任务与调度 Hooks
+## 7. 定时任务与调度 Hooks
 
 插件需要定时能力时只能通过插件清单接入平台调度，不要在插件里注册 Laravel `Schedule`、系统级 Cron、全局中间件或系统级 API 路由。生产环境仍只保留宝塔每分钟执行一次 `php artisan schedule:run`；`backend/routes/console.php` 每分钟驱动心跳，具体业务任务仍由 15 分钟槽位去重，并由 `HeartbeatTaskRegistry` 和插件 provider 发现。
 
@@ -549,7 +549,7 @@ php artisan schedule:list
 
 不要用 `php artisan serve` 替代项目的 `php artisan app:serve`；需要联调时按仓库启动指南使用 `app:serve` 或 `app:serve --with-schedule`。
 
-## 生命周期
+## 8. 生命周期
 
 1. 上传插件目录到固定能力域目录。
 2. 后台“插件管理”点击扫描。
@@ -568,7 +568,7 @@ php artisan schedule:list
 
 因此后端默认拒绝仍被业务数据引用的插件卸载，并在错误信息里列出引用明细；管理端确认后带 `force=1` 再次请求才会真正执行。插件目录文件不会被删除。
 
-## 安全边界
+## 9. 安全边界
 
 - 插件不能自行注册管理端菜单、权限、迁移和任意路由。
 - 支付回调、订单履约、账务入账、服务开通仍由平台服务层控制。
@@ -576,7 +576,7 @@ php artisan schedule:list
 - 回调类可放 `controller/`，但平台路由必须统一做签名、幂等、日志和审计。
 - 插件返回值必须由平台 adapter 转换为 DTO/Result，不把第三方原始结构直接透传到业务层。
 
-## 运行时调用模型
+## 10. 运行时调用模型
 
 插件入口统一接收如下结构：
 
@@ -610,7 +610,7 @@ php artisan schedule:list
 - `PluginSmsDriver` / `PluginMailDriver`：把发送 action 转为通知结果。
 - `PluginUpstreamDriver`：把 `server.resolve_capability` 转为上游能力对象。
 
-## 当前真实插件包
+## 11. 当前真实插件包
 
 以下插件直接放在 `backend/plugins/{能力域}/`，会像普通插件一样被后台扫描到。`demo_*` 用于开发研究，不建议在生产环境启用；真实插件启用前必须完成配置、测试和回调边界确认。
 
@@ -644,14 +644,14 @@ php artisan schedule:list
 - 可选 `controller/`
 - `README.md`
 
-## 当前插件说明文档
+## 12. 当前插件说明文档
 
 - [支付宝当面付插件 demo](./demo-ali-pay.md)
 - [康乐虚拟主机插件](../../../../backend/plugins/servers/kanghostx/README.md)
 
 其他插件以各自目录内 `README.md` / `DEVELOPMENT.md` 和当前代码为准；不要在导航中保留不存在的说明文档链接。
 
-## 验证命令
+## 13. 验证命令
 
 只改插件后端逻辑：
 

@@ -1,9 +1,12 @@
+---
+status: current
+updated: 2026-07-02
+owner: backend-platform
+---
+
 # 测试指南
 
-- 文档性质：现行指南
-- 对齐时间：`2026-07-02`
-- 读者画像：测试、后端、前端、联调、交付、运维
-- 适用范围：`backend`、`frontend-admin-v3`、`frontend-user-v3-www`、`frontend-user-v4-console`、`shared` 及其联调、回归、发布前验收
+本文是现行测试指南，面向测试、后端、前端、联调、交付与运维，覆盖 `backend`、三个前端、`shared` 及其联调、回归与发布前验收。
 
 ## 1. 文档目标
 
@@ -597,3 +600,8 @@ pnpm run build
 - 服务控制台详情、VNC、NAT、安全组
 - 工单、返佣、调度任务
 - 数据库工程命令与关键 Job 注入解析
+
+## 关联文档
+
+- [启动指南](local-development.md)：本地环境与构建命令。
+- [部署与调度指南](deployment-and-scheduling.md)：生产调度与队列规则。

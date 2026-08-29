@@ -1,6 +1,8 @@
 # 启动指南
 
-## 环境要求
+本文说明本地启动后端与三个前端、数据库初始化与常用验证命令；生产部署见各部署指南。
+
+## 1. 环境要求
 
 - PHP 8.3+
 - Composer
@@ -10,7 +12,7 @@
 
 本地联调统一使用 `127.0.0.1`，不要混用 `localhost`。
 
-## 后端
+## 2. 后端
 
 ```bash
 cd backend
@@ -55,7 +57,7 @@ cd backend
 php artisan schedule:run
 ```
 
-## 前端
+## 3. 前端
 
 推荐在仓库根目录使用 pnpm workspace 脚本：
 
@@ -87,7 +89,7 @@ pnpm run dev
 - `shared`：跨端共享包。
 - `docs-web`：独立 VitePress 官方文档站，内容直接读取 `docs/`。
 
-## 构建与验证
+## 4. 构建与验证
 
 ```bash
 # 全部当前前端
@@ -113,7 +115,7 @@ php artisan test
 
 文档或配置类改动至少自检内容是否与当前目录、脚本和代码一致。
 
-## 数据库初始化与迁移
+## 5. 数据库初始化与迁移
 
 初始化新库和旧库迁移属于高影响操作，不由代理自动执行：
 
@@ -124,3 +126,9 @@ python backend/scripts/migrate_legacy_dump.py --dump "你的dump文件.sql"
 ```
 
 执行前必须确认目标库、备份和 `.env`。
+
+## 关联文档
+
+- [测试指南](testing.md)：测试环境与验证方法。
+- [部署指南](deployment.md)：生产部署全流程。
+- [架构现状说明](../../ARCHITECTURE.md)：本地与生产运行模型。

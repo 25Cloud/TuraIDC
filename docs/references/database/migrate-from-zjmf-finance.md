@@ -6,7 +6,7 @@
 
 ---
 
-## 一、迁移总览
+## 1. 迁移总览
 
 | 项       | 说明                                                                            |
 | -------- | ------------------------------------------------------------------------------- |
@@ -33,7 +33,7 @@ Step 10 服务实例上游绑定回填（恢复控制台管理能力）
 
 ---
 
-## 二、工具清单
+## 2. 工具清单
 
 ### 迁移脚本（Python，`backend/scripts/`）
 
@@ -61,7 +61,7 @@ Step 10 服务实例上游绑定回填（恢复控制台管理能力）
 
 ---
 
-## 三、Step 1：环境准备
+## 3. Step 1：环境准备
 
 - 核对 `backend/.env`：`DB_DATABASE` **必须是当前活跃库**（历史教训：重新 clone 后默认可能指向备份库，导致"配置丢失 / 分组错乱"）。
 - Redis 密码、队列 worker、crontab 按 [部署与调度指南](../operations/deployment-and-scheduling.md) 核对。
@@ -69,7 +69,7 @@ Step 10 服务实例上游绑定回填（恢复控制台管理能力）
 
 ---
 
-## 四、Step 2：产品目录三级结构重建
+## 4. Step 2：产品目录三级结构重建
 
 数据约定：
 
@@ -97,7 +97,7 @@ php artisan app:reorganize-product-groups             # 实际重建
 
 ---
 
-## 五、Step 3：产品 / 用户 / 订单迁移
+## 5. Step 3：产品 / 用户 / 订单迁移
 
 ```bash
 # dump 已用 normalize_mofang_dump.py 规范化后，执行主迁移器
@@ -122,7 +122,7 @@ python3 backend/scripts/mofang_to_turaidc_migrator.py --truncate  # 干净库实
 
 ---
 
-## 六、Step 4：配置项迁移（config_options）与 OS version 修复
+## 6. Step 4：配置项迁移（config_options）与 OS version 修复
 
 ### 1. 组装 config_options
 
@@ -163,7 +163,7 @@ php artisan app:backfill-config-options
 
 ---
 
-## 七、Step 5：service_type_code 派生
+## 7. Step 5：service_type_code 派生
 
 在 `app:reorganize-product-groups` 中完成：
 
@@ -180,7 +180,7 @@ WHERE p.service_type_code IS NULL OR p.service_type_code = '';
 
 ---
 
-## 八、Step 6：上游同步（suppliers + 绑定 + 密钥解密）
+## 8. Step 6：上游同步（suppliers + 绑定 + 密钥解密）
 
 ```bash
 php artisan app:sync-upstreams --dry-run
@@ -200,7 +200,7 @@ php artisan app:sync-upstreams --api-keys-file /tmp/keys.json   # 推荐提供�
 
 ---
 
-## 九、Step 7：实名认证迁移
+## 9. Step 7：实名认证迁移
 
 老站实名在 `shd_certifi_person`（约 584 条）与 `shd_certifi_company`（约 15 条）；`shd_certification` 空表忽略。
 
@@ -225,14 +225,14 @@ php artisan app:migrate-real-name
 
 ---
 
-## 十、Step 8：老用户密码策略
+## 10. Step 8：老用户密码策略
 
 - 老站密码 `###` + 32 位 MD5 原样保留，由 `ZjmfLegacyPasswordVerifier` 验证后升级 bcrypt。
 - 若密码迁移未做 / 失败：删除该逻辑，强制老用户走"忘记密码"流程重置（避免遗留安全隐患）。
 
 ---
 
-## 十一、Step 9：缓存预热与验证
+## 11. Step 9：缓存预热与验证
 
 ```bash
 cd backend
@@ -251,7 +251,7 @@ php artisan app:warmup-site-cache   # 改动分组 / 商品后必跑
 
 ---
 
-## 十二、Step 10：服务实例上游绑定回填
+## 12. Step 10：服务实例上游绑定回填
 
 **现象**：已售出开通的服务在控制台显示"未接入完整控制能力，只读展示基础信息"。
 
@@ -277,7 +277,7 @@ php artisan services:backfill-upstream-bindings --service-ids 1,2,3   # 可定�
 
 ---
 
-## 十三、生产部署必踩的坑
+## 13. 生产部署必踩的坑
 
 1. **两库差异**：`tura_25y`（活跃）vs `turaidc`（备份）。修复脚本要在活跃库上重跑，别切库。
 2. **`.user.ini`**：宝塔会在 `dist/` 和 `backend/public/` 生成带 immutable 属性的 `.user.ini`，前端重建前 `chattr -i` 删除，否则 vite 报 `ENOTDIR`。
@@ -296,7 +296,7 @@ php artisan services:backfill-upstream-bindings --service-ids 1,2,3   # 可定�
 
 ---
 
-## 十四、迁移后数据校验
+## 14. 迁移后数据校验
 
 ### 行数对账
 
@@ -330,7 +330,7 @@ for t, exp in expected.items():
 
 ---
 
-## 十五、常见故障排查
+## 15. 常见故障排查
 
 | 现象                                | 原因与处理                                                                      |
 | ----------------------------------- | ------------------------------------------------------------------------------- |
@@ -344,7 +344,7 @@ for t, exp in expected.items():
 
 ---
 
-## 相关文档
+## 关联文档
 
 - [本地 IDC 数据迁移流程](./local-idc-data-migration.md)
 - [宝塔部署项目指南](../operations/bt-panel-deployment.md)

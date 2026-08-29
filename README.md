@@ -165,7 +165,7 @@ flowchart TB
 <p align="center">
   <a href="https://qm.qq.com/q/Doa31p5M30" target="_blank">点击链接加入群聊【TuraIDC 业务财务系统】</a>
   <br>
-  <img src="./docs/img/qrcode_1787147945469.jpg" alt="TuraIDC 开发交流 QQ 群二维码" width="220">
+  <img src="./docs/images/qrcode_1787147945469.jpg" alt="TuraIDC 开发交流 QQ 群二维码" width="220">
 </p>
 
 ## 🗺️ Roadmap

@@ -1,8 +1,12 @@
+---
+status: current
+updated: 2026-07-02
+owner: frontend
+---
+
 # 前端项目规范
 
-- 文档性质：当前规范
-- 对齐时间：`2026-07-02`
-- 读者画像：维护当前三个前端与 `shared` 的开发者和代理
+本文是三个前端应用与 `shared` 共享包的当前规范，面向维护这些项目的开发者和代理。UI 框架不可混用：管理端与控制台用 TDesign，官网用 Element Plus。
 
 ## 1. 当前前端项目
 
@@ -154,3 +158,9 @@ pnpm run verify:frontends
 ```
 
 根 `package.json` 只保留当前真实 workspace。新增前端项目时，必须同步更新 `package.json`、`package-lock.json`、`AGENTS.md`、`docs/references/operations/local-development.md` 和本规范。
+
+## 关联文档
+
+- [视觉与交互规范](DESIGN.md)：三端视觉 token 与交互边界。
+- [架构现状说明](ARCHITECTURE.md)：前端在系统中的位置与运行方式。
+- [本地启动指南](references/operations/local-development.md)：开发与构建命令。

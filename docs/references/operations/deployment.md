@@ -2,7 +2,7 @@
 
 本文档说明如何将图拉云业务/财务系统部署到生产环境。部署拓扑：后端 API、三个前端静态站点、Redis、MySQL，另需常驻队列 Worker 与调度进程。
 
-## 一、环境要求
+## 1. 环境要求
 
 - 操作系统：Linux（推荐 Ubuntu 22.04+ / Debian 12）或 Windows Server
 - PHP 8.3+（扩展：`pdo_mysql`、`redis`、`mbstring`、`openssl`、`zip`、`gd` 或 `imagick` 按需）
@@ -12,16 +12,16 @@
 - Node.js 20+（仅构建前端时需要）
 - Nginx（或任意静态服务器 + 反代）
 
-## 二、准备代码
+## 2. 准备代码
 
 ```bash
 git clone <你的仓库地址> TuraIDC
 cd TuraIDC
 ```
 
-## 三、后端部署
+## 3. 后端部署
 
-### 1. 安装依赖与配置
+### 3.1 安装依赖与配置
 
 ```bash
 cd backend
@@ -58,7 +58,7 @@ SESSION_SECURE_COOKIE=true
 
 > 四个 URL（APP_URL / FRONTEND_URL / CLIENT_CONSOLE_URL / ADMIN_URL）必须为互不相同的 HTTPS 域名。前端构建脚本会读取这些地址注入各前端产物。
 
-### 2. 初始化数据库
+### 3.2 初始化数据库
 
 ```bash
 # 创建数据库
@@ -76,7 +76,7 @@ php artisan db:seed --class=Database\\Seeders\\SettingsSeeder
 
 > `database/schema/mysql-schema.sql` 是完整结构基线，禁止手工编辑；新功能只新增 `database/migrations/` 增量迁移。
 
-### 3. 创建管理员账号
+### 3.3 创建管理员账号
 
 ```bash
 php artisan tinker
@@ -91,7 +91,7 @@ App\Models\AdminUser::create([
 
 > `role_id` 需为超级管理员角色 id（默认 `super_admin` 角色的记录 id）。可在管理后台继续创建角色与员工账号。
 
-### 4. 配置计划任务与队列
+### 3.4 配置计划任务与队列
 
 将以下命令加入系统 crontab（每分钟执行一次 Laravel 调度器）：
 
@@ -107,7 +107,7 @@ Laravel 调度器内部会按 `routes/console.php` 定义的节奏驱动心跳�
 php artisan queue:work --queue=provision,referral,notification,coupon,default --sleep=1 --tries=3 --timeout=1200
 ```
 
-### 5. 缓存清理与资源
+### 3.5 缓存清理与资源
 
 ```bash
 php artisan config:cache
@@ -117,7 +117,7 @@ php artisan event:cache
 
 > 若 `SESSION_DRIVER` 使用 file，`storage/framework/sessions` 需可写。
 
-## 四、前端构建
+## 4. 前端构建
 
 在仓库根目录执行（需 Node.js）：
 
@@ -136,7 +136,7 @@ npm run build:frontends
 
 三端均为纯静态站点，发布时将各自 `dist/` 内容部署到对应 Nginx 站点即可。
 
-## 五、Nginx 配置示例
+## 5. Nginx 配置示例
 
 ### 后端 API（api.example.com）
 
@@ -183,7 +183,7 @@ server {
 }
 ```
 
-## 六、进程守护（supervisor）
+## 6. 进程守护（supervisor）
 
 队列 Worker 与 VNC Relay（可选）需常驻，推荐 supervisor 管理。
 
@@ -214,7 +214,7 @@ user=www-data
 
 也可使用统一入口 `php artisan app:serve --with-schedule` 同时托管 HTTP、VNC Relay、队列与调度，生产环境建议按上文拆分独立进程。
 
-## 七、可选集成配置
+## 7. 可选集成配置
 
 以下能力按需在 `backend/.env` 中开启（占位见 `.env.example`）：
 
@@ -229,7 +229,7 @@ user=www-data
 
 供应商适配（如 `zjmf_finance`）通过管理后台「供应商」模块绑定配置，密钥不写入代码。
 
-## 八、备份
+## 8. 备份
 
 参考 `backend/scripts/backup_mysql.sh`（每日凌晨备份 MySQL 并保留 14 天）：
 
@@ -243,7 +243,7 @@ bash backend/scripts/backup_mysql.sh
 - `backend/storage/app/private/`（上传文件、票据附件、日志归档）
 - `backend/.env`（应用密钥与配置）
 
-## 九、上线前检查清单
+## 9. 上线前检查清单
 
 - [ ] `.env` 中 `APP_DEBUG=false`、`APP_ENV=production`、`SESSION_SECURE_COOKIE=true`
 - [ ] 生产环境 `CACHE_STORE=redis`（分布式锁依赖）
@@ -254,3 +254,10 @@ bash backend/scripts/backup_mysql.sh
 - [ ] supervisor 已托管队列 Worker
 - [ ] 前端三端产物已部署并刷新缓存
 - [ ] `backend/public/uploads/` 与 `storage` 目录权限正确
+
+## 关联文档
+
+- [宝塔部署项目指南](bt-panel-deployment.md)：面板化部署流程。
+- [Docker / 1Panel 部署指南](docker-and-1panel-deployment.md)：容器化部署。
+- [裸机源码部署指南](bare-metal-deployment.md)：无面板、无容器部署。
+- [部署与调度指南](deployment-and-scheduling.md)：调度、队列与运维规则。

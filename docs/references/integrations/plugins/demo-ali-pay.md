@@ -1,5 +1,7 @@
 # Demo：支付宝当面付支付插件
 
+本文以支付宝当面付插件为示例，说明一个支付插件的实际目录结构、配置、回调与联调方式；通用开发规范见[插件开发指南](README.md)。
+
 当前实现路径：
 
 ```text
@@ -14,11 +16,11 @@ backend/plugins/gateways/ali_pay/
     └── AlipayService.php
 ```
 
-## 适用场景
+## 1. 适用场景
 
 支付插件用于第三方真实资金流入，例如用户充值、商品订单支付宝付款。余额支付、管理员手动开通和免费订单不创建 Payment 记录。
 
-## config.php demo
+## 2. config.php demo
 
 ```php
 <?php
@@ -63,7 +65,7 @@ return [
 - `key=alipay` 必须保持历史业务 key，不要改为 `ali_pay`，否则历史 `payments.gateway=alipay` 无法兼容。
 - 私钥、公钥必须 `secret=true`。
 
-## 入口类 demo
+## 3. 入口类 demo
 
 ```php
 <?php
@@ -79,7 +81,7 @@ class AliPayPlugin extends AlipayService {}
 
 入口类可以很薄，真实能力放在 `lib/AlipayService.php`，支付宝 SDK/签名、预下单、查询、退款细节放在 `lib/AlipayClient.php`。
 
-## 业务类 demo
+## 4. 业务类 demo
 
 ```php
 <?php
@@ -129,7 +131,7 @@ class AlipayService
 }
 ```
 
-## 支付边界
+## 5. 支付边界
 
 插件负责：
 
@@ -148,7 +150,7 @@ class AlipayService
 - 关闭其它待支付记录。
 - 审计日志和支付日志。
 
-## 测试要点
+## 6. 测试要点
 
 - 插件能被扫描、安装、启用。
 - 未配置私钥/公钥不能启用。

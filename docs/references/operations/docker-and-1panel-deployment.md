@@ -8,7 +8,7 @@
 - CI 构建推送见 `.github/workflows/docker-image.yml`
 - 🧭 **从智简魔方财务系统迁移**：部署前若需导入智简魔方财务（ZJMF）老站数据，先阅读 [从智简魔方财务系统迁移](../database/migrate-from-zjmf-finance.md)（产品/用户/订单/上游/实名全流程与踩坑记录）
 
-## 一、容器拓扑
+## 1. 容器拓扑
 
 ```
 deploy/docker/docker-compose.yml  (project: turaidc)
@@ -32,14 +32,14 @@ deploy/docker/docker-compose.yml  (project: turaidc)
 
 与宝塔生产拓扑一一对应：前端三端合一（一个容器三端口分别托管 www/console/admin 静态站点）、后端走 PHP-FPM、无常驻 `queue:work`（由每分钟 `schedule:run` 并行消费业务队列与 `automation` 队列）、VNC Relay 独立常驻。
 
-## 二、前置条件
+## 2. 前置条件
 
 - 服务器：Linux（Ubuntu 20.04+/Debian 11+/CentOS 7+），内存建议 4G+，磁盘 20G+
 - Docker Engine 24+ 与 Compose v2（`docker compose version` 可查）
 - 四个域名解析到本机（`api`、`www`、`console`、`admin`），生产环境必须同一协议（HTTPS）
 - GitHub 仓库（当前 `github.com/25Cloud/TuraIDC`），用于 CI 构建与 GHCR 镜像托管
 
-## 三、配置说明（deploy/docker/.env）
+## 3. 配置说明（deploy/docker/.env）
 
 先复制模板并编辑：
 
@@ -73,7 +73,7 @@ vim .env
 >
 > 远程数据库 / Redis 模式：`DB_HOST` 或 `REDIS_HOST` 填写远程地址后，对应本地容器不会被创建，`docker compose pull` 也不拉取其镜像。要求服务器 Compose v2.20+（依赖跳过用 `required: false`）；远程库需自行建库、对服务器 IP 授权；数据库结构与初始化仍由 app 容器 entrypoint 在启动时执行。
 
-## 四、CI 自动打包推送
+## 4. CI 自动打包推送
 
 `.github/workflows/docker-image.yml` 在以下时机触发构建：
 
@@ -115,7 +115,7 @@ ghcr.io/<owner>/turaidc-frontends
 3. 在 workflow 中把 GHCR 登录步骤换成目标仓库的用户名/密码（或云厂商的长期凭证 Secret），并给对应 `login-action` 配置。
 4. 服务器 `.env` 中同步修改 `REGISTRY` / `IMAGE_NAMESPACE`。
 
-## 五、Docker Compose 部署
+## 5. Docker Compose 部署
 
 ### 5.1 上传代码
 
@@ -148,7 +148,7 @@ curl http://127.0.0.1:8080/api/ready   # DB/Cache/Storage/Scheduler 就绪检查
 
 浏览器访问 `http://服务器IP:8081`（官网）、`:8082`（控制台）、`:8083`（管理端），用 `cerbo` + `INSTALL_ADMIN_PASSWORD` 登录管理端。
 
-## 六、1Panel 部署
+## 6. 1Panel 部署
 
 1Panel（https://1panel.cn）自带 Docker 与 Compose 编排，推荐流程：
 
@@ -205,7 +205,7 @@ docker compose up -d
 
 面板 → 防火墙只放行 `80`/`443`（与面板端口）。
 
-## 七、纯 Docker 环境的 HTTPS
+## 7. 纯 Docker 环境的 HTTPS
 
 不使用 1Panel 时，可用宿主机 Nginx/Caddy 或 Cloudflare 反代到四个端口。宿主机 Nginx 示例（每个域名一个 server）：
 
@@ -284,7 +284,7 @@ gzip_types      text/plain text/css application/javascript application/json
                 application/xml image/svg+xml;
 ```
 
-## 八、升级与回滚
+## 8. 升级与回滚
 
 ### 8.1 升级（拉取 CI 新镜像）
 
@@ -311,7 +311,7 @@ docker compose pull && docker compose up -d
 
 数据库迁移原则上不可逆；需回滚数据库时用备份还原，禁止对生产库执行 `migrate:rollback` 不可逆迁移。
 
-## 九、备份与恢复
+## 9. 备份与恢复
 
 ### 9.1 定时备份（宿主机 crontab）
 
@@ -334,7 +334,7 @@ gunzip -c backups/turaidc-xxx.sql.gz | docker compose exec -T mysql \
   sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"'
 ```
 
-## 十、运维命令速查
+## 10. 运维命令速查
 
 ```bash
 docker compose ps                        # 状态
@@ -349,7 +349,7 @@ docker compose restart app               # 重启后端
 
 后端日志文件 `storage/logs/laravel.log` 在命名卷 `app-storage` 中；健康检查：`/api/health`（存活）、`/api/ready`（就绪）。
 
-## 十一、常见问题
+## 11. 常见问题
 
 ### 11.1 首次启动后管理端登录不上
 
@@ -396,7 +396,7 @@ docker compose up -d --force-recreate app
 
 ### 11.9 VNC 控制台连不上
 
-- 检查 `/ws/vnc` 是否被反代丢弃了 Upgrade 头（见第六节）
+- 检查 `/ws/vnc` 是否被反代丢弃了 Upgrade 头（见第 6 节）
 - 容器内 `docker compose exec app supervisorctl status` 确认 `vnc-relay` 为 RUNNING
 - 直连测试：`docker compose exec app sh -c 'curl -s http://127.0.0.1:8100 || true'`（Relay 对非 WebSocket 请求返回 400 属正常）
 
@@ -413,9 +413,15 @@ docker compose down -v   # 注意：-v 会删除全部命名卷（含数据库�
 docker compose up -d
 ```
 
-## 十二、与宝塔部署的差异备忘
+## 12. 与宝塔部署的差异备忘
 
 - 相同口径：队列不常驻、`schedule:run` 每分钟驱动、`CACHE_STORE=redis`、`QUEUE_CONNECTION=database`、`SESSION_DRIVER=file`、VNC Relay 常驻 8100
 - 容器内不做 `route:cache`（路由含闭包，会失败）；只做 `config:cache`
 - 代码、PHP 扩展、Nginx 配置均随镜像发布；`storage`、`public/uploads`、`public/media` 走命名卷持久化
 - 生产 HTTPS 一律在容器外（1Panel/宿主机 Nginx/Cloudflare）终止
+
+## 关联文档
+
+- [部署指南](deployment.md)：通用部署步骤。
+- [四端 Nginx 伪静态配置](frontend-nginx-rules.md)：站点伪静态规则。
+- [部署与调度指南](deployment-and-scheduling.md)：调度与队列配置。

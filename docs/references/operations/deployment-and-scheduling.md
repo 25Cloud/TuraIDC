@@ -11,7 +11,7 @@
   - `docs/references/operations/local-development.md`（本地启动）
   - `docs/ARCHITECTURE.md`（总体架构）
 
-## 一、当前生产拓扑
+## 1. 当前生产拓扑
 
 项目跑在单台宝塔服务器上，结构如下：
 
@@ -36,7 +36,7 @@
 - **VNC Relay 独立常驻**：Relay 重启不会阻塞心跳、支付、新购或续费
 - **新购、续费支付后同步履约**：支付回调内直接调用上游开通/续费，用户付款后立即生效；同步失败才回退 `provision` 队列，由每分钟心跳 Worker 重试，不再依赖队列轮询延迟
 
-## 二、计划任务配置
+## 2. 计划任务配置
 
 ### 2.1 宝塔计划任务
 
@@ -84,7 +84,7 @@ php artisan vnc:relay
 - 上游状态同步
 - 各类日志清理
 
-## 三、部署流程
+## 3. 部署流程
 
 ### 3.1 后端部署
 
@@ -159,9 +159,10 @@ VitePress 文档官网不属于上述三端，必须通过 `pnpm run build:docs`
 >
 > 部署前确认 `.env` 中 `VITE_API_BASE_URL`、`VITE_PUBLIC_SITE_URL`、`VITE_CONSOLE_SITE_URL`、`VITE_SESSION_COOKIE_DOMAIN` 与生产一致；缺项或填错会让产物指向错误地址。
 
+```bash
 # 只预览构建目标，不实际构建
-
 pnpm run build:frontends:dry
+```
 
 ### 3.3 .env 关键项
 
@@ -203,7 +204,7 @@ Redis 当前用于缓存；不要在没有专项方案和验证的情况下把�
 
 > 容器部署注意：`deploy/docker/.env.example` 默认把 `API_PORT=8080` 暴露到所有网卡。上线前应改为仅本机绑定（`127.0.0.1:8080`），由宿主机 Nginx/1Panel 反代进入；否则私网来源可直接访问 API 并伪造 XFF。
 
-## 四、本地启动差异
+## 4. 本地启动差异
 
 本地同样使用直连 API：三个前端分别在 `127.0.0.1:5175/5173/5174`，API 在 `127.0.0.1:8000`。前端开发环境的 `VITE_API_BASE_URL` 已指向 `http://127.0.0.1:8000/api`，因此会真实验证 CORS 和 VNC WebSocket。
 
@@ -221,7 +222,7 @@ php artisan vnc:relay
 
 细节见 `docs/references/operations/local-development.md` 与 `backend/app/Console/Commands/ServeBackendStackCommand.php`。
 
-## 五、常见运维操作
+## 5. 常见运维操作
 
 ### 5.1 查看调度运行情况
 
@@ -269,7 +270,7 @@ php artisan route:cache && php artisan config:cache
 
 Composer 报 `Call to undefined function putenv()` 等错误时，优先核对宝塔 PHP 的禁用函数和 CLI / FPM 配置差异；当前仓库未保留单独修复指南。
 
-## 六、监控与告警
+## 6. 监控与告警
 
 当前已集成 Sentry SDK（需配置 `SENTRY_LARAVEL_DSN` 激活），临时监控靠：
 
@@ -286,14 +287,14 @@ Composer 报 `Call to undefined function putenv()` 等错误时，优先核对�
 - 关键任务失败告警（自动续费、支付回调、实名回调）
 - 数据库慢查询日志启用 `long_query_time=1`
 
-## 七、回滚策略
+## 7. 回滚策略
 
 - 后端：代码回退 + `composer install` + `php artisan migrate:rollback`（仅当迁移可逆）
 - 前端：按站点独立回滚，直接恢复旧 `dist`
 - 数据库：禁止在生产直接 `migrate:rollback` 不可逆迁移，走备份还原
 - 关键业务（支付、开通、返佣）回退前必须先冻结 `schedule:run`，避免边回滚边产生新异步动作
 
-## 八、文件权限（宝塔部署后）
+## 8. 文件权限（宝塔部署后）
 
 ```bash
 sudo chown -R www:www storage bootstrap/cache
@@ -303,7 +304,7 @@ sudo chmod -R 775 public/uploads public/media
 sudo chmod 600 .env
 ```
 
-## 九、数据库备份
+## 9. 数据库备份
 
 项目提供 MySQL 定时备份脚本 `backend/scripts/backup_mysql.sh`，从 `.env` 读取数据库连接信息。
 
@@ -340,7 +341,7 @@ bash scripts/backup_mysql.sh
 gunzip -c /path/to/backup.sql.gz | mysql -u用户名 -p密码 数据库名
 ```
 
-## 十、OPcache 生产配置
+## 10. OPcache 生产配置
 
 Laravel 生产环境强烈建议启用 OPcache 并优化配置。在宝塔面板 → PHP → 配置文件中添加或修改：
 
@@ -378,3 +379,9 @@ sudo systemctl restart php-fpm-82
 /vendor/phpspec/
 /vendor/phpstan/
 ```
+
+## 关联文档
+
+- [启动指南](local-development.md)：本地启动与验证。
+- [四端 Nginx 伪静态配置](frontend-nginx-rules.md)：站点伪静态规则。
+- [日志归档与 MySQL 维护](../database/log-archive-and-mysql-maintenance.md)：日志与数据库运维。

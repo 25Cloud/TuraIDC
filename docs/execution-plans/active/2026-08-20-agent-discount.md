@@ -1,4 +1,10 @@
-# 代理折扣 Implementation Plan
+---
+status: 进行中
+updated: 2026-08-29
+owner: backend-platform
+---
+
+# 代理折扣实施计划
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -7,6 +13,8 @@
 **Architecture:** 使用 `AgentDiscountService` 作为唯一代理折扣解析和金额校验入口；用 `product_discount_groups`、`agent_groups`、`agent_group_discounts` 三张表保存配置，分别扩展商品、用户和优惠券。新购报价和续费报价均由服务端重新解析当前用户与商品关系，报价令牌和账单快照保存代理折扣上下文，前端只展示服务端结果。
 
 **Tech Stack:** Laravel 11、Eloquent、MySQL、PHPUnit/Pest、Vue 3、TypeScript、TDesign、Playwright、pnpm workspace。
+
+参照真源：[代理折扣设计](../../designs/backend/2026-08-20-agent-discount-design.md)。
 
 ---
 
@@ -456,3 +464,16 @@ git commit -m "test: 增加代理折扣全链路回归"
 - 用户端购买、续费和个人中心展示对应 Task 7。
 - 账单快照、代理组变更和完整异常链路对应 Task 4、Task 5、Task 8。
 - 未使用占位符；每个代码任务包含明确文件、命令和预期结果。
+
+## 进度
+
+- [x] 数据结构与领域模型、领域服务、管理 API 与权限、新购/续费计价接入、管理端与用户端展示均已落地（以 `backend/app/Models/AgentGroup.php`、`backend/app/Services/Finance/AgentDiscountService.php`、`backend/app/Http/Requests/Admin/V2/AgentDiscount/`、`frontend-admin-v3/src/pages/agent-discounts/` 为准）。
+- [x] 单元与功能测试、管理端 E2E 已存在（`AgentDiscountSchemaTest`、`AgentDiscountServiceTest`、`AgentDiscountCheckoutTest`、`V2AdminAgentDiscountApiTest`、`V2ClientRenewAgentDiscountTest`、`agent-discounts.spec.ts`）。
+- [ ] 正文任务勾选框未随实施逐项回写；实际完成度以运行代码与测试实况为准，收尾时补齐全链路回归（Task 8）与 API 清单刷新。
+
+## 决策日志
+
+| 日期       | 决策                         | 原因                                                                    |
+| ---------- | ---------------------------- | ----------------------------------------------------------------------- |
+| 2026-08-20 | 确认代理折扣设计与实施计划   | 代理折扣独立于会员等级，矩阵折扣 + 成本价保护，优惠券兼容。             |
+| 2026-08-29 | 补齐 front matter 与治理结构 | 通过 `docs:check` 要求：执行计划必须具备 front matter、进度与决策日志。 |
