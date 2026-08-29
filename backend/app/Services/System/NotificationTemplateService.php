@@ -4,6 +4,7 @@ namespace App\Services\System;
 
 use App\Models\NotificationTemplate;
 use App\Support\EmailTemplateCatalog;
+use App\Support\NotificationTemplateContent;
 use App\Support\SmsTemplateCatalog;
 use Illuminate\Support\Facades\Schema;
 
@@ -175,7 +176,9 @@ class NotificationTemplateService
             return true;
         }
 
-        $template->{$field} = is_string($value) ? $this->sanitizeTemplateField($field, $value) : (string) $value;
+        $template->{$field} = is_string($value)
+            ? $this->sanitizeTemplateField($field, $value)
+            : (string) $value;
         $template->is_custom = true;
         $template->save();
 
@@ -226,14 +229,14 @@ class NotificationTemplateService
     }
 
     /**
-     * 对模板字段值做安全净化：移除 script/iframe/object/embed 标签和事件处理器。
+     * 模板字段入库前的净化。
+     *
+     * 口径与「正文为什么不净化、subject 为什么降为纯文本」的完整论证见
+     * NotificationTemplateContent —— 那里也记录了原黑名单实现漏掉哪些载荷、
+     * 以及它如何把 `<scr<script>ipt>` 重组成可执行标签。
      */
     private function sanitizeTemplateField(string $field, string $value): string
     {
-        if ($field !== 'content' && $field !== 'subject') {
-            return $value;
-        }
-
-        return preg_replace('/<\/?script\b[^>]*>/iu', '', $value);
+        return NotificationTemplateContent::sanitizeForStorage($field, $value);
     }
 }
