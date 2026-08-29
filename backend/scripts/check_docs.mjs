@@ -514,6 +514,20 @@ function checkCatalog(markdownFiles) {
     }
   }
 
+  // records 必须按 path 升序。
+  //
+  // 这不是洁癖：在无序（等同于「追加到末尾」）的约定下，任意两个并行 PR 新增文档都会
+  // 改到数组的同一行，git 每次都判为冲突——本仓库连续三个 PR 都因此手工解过一次。
+  // 按 path 排序后，不同目录的新增会落在相隔几十行的位置，git 能自动合并。
+  const orderedPaths = validRecords.map(({ path: recordPath }) => recordPath);
+  for (let i = 1; i < orderedPaths.length; i += 1) {
+    if (orderedPaths[i] < orderedPaths[i - 1]) {
+      errors.push(
+        `docs/catalog.json records must be sorted by path: ${orderedPaths[i]} 应排在 ${orderedPaths[i - 1]} 之前`,
+      );
+    }
+  }
+
   for (const markdownFile of markdownFiles) {
     if (isIndexMarkdown(markdownFile)) {
       continue;

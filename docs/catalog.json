@@ -2,49 +2,6 @@
   "version": 1,
   "records": [
     {
-      "path": "quick-start.md",
-      "status": "current",
-      "summary": "生产环境部署方式选择与部署后检查入口。",
-      "review_by": "2026-11-20"
-    },
-    {
-      "path": "execution-plans/completed/documentation-path-migration-2026-08-20.md",
-      "status": "completed",
-      "summary": "将 docs 中文路径迁移为英文并同步文档站 URL 与全仓引用。"
-    },
-    {
-      "path": "execution-plans/active/database-expert-review-remediation-2026-08-13.md",
-      "status": "active",
-      "summary": "数据库结构专家团审查发现的分组修复与回归计划。",
-      "review_by": "2026-08-27"
-    },
-    {
-      "path": "execution-plans/active/log-archive-reliability-refactor-2026-08-01.md",
-      "status": "active",
-      "summary": "日志写入、检索、归档、存储、运维与恢复实施计划。",
-      "review_by": "2026-08-27"
-    },
-    {
-      "path": "references/migration-records/frontend-admin-v3-final-acceptance-report.md",
-      "status": "archived",
-      "summary": "frontend-admin-v3 迁移完成后的最终验收记录。"
-    },
-    {
-      "path": "references/migration-records/frontend-admin-v3-migration-ledger.md",
-      "status": "archived",
-      "summary": "frontend-admin-v3 页面、接口与权限迁移台账。"
-    },
-    {
-      "path": "references/migration-records/frontend-user-v3-www-final-acceptance-report.md",
-      "status": "archived",
-      "summary": "frontend-user-v3-www 迁移完成后的最终验收记录。"
-    },
-    {
-      "path": "references/migration-records/frontend-user-v3-www-migration-ledger.md",
-      "status": "archived",
-      "summary": "frontend-user-v3-www 页面与公开路由迁移台账。"
-    },
-    {
       "path": "ARCHITECTURE.md",
       "status": "current",
       "summary": "运行中的系统结构与边界。",
@@ -54,6 +11,11 @@
       "path": "BACKEND.md",
       "status": "needs-review",
       "summary": "后端工程治理基线，需持续与实现核对。"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "current",
+      "summary": "仓库级完整变更记录，按 Keep a Changelog 规范维护。"
     },
     {
       "path": "DATABASE.md",
@@ -78,6 +40,18 @@
       "summary": "插件架构与扩展边界。"
     },
     {
+      "path": "designs/backend/2026-08-20-agent-discount-design.md",
+      "status": "active",
+      "summary": "代理折扣体系设计：与会员等级独立、矩阵折扣、成本价保护与优惠券兼容。",
+      "review_by": "2026-09-20"
+    },
+    {
+      "path": "designs/backend/2026-08-24-open-api-design.md",
+      "status": "active",
+      "summary": "开放 API（Open API v2）设计：API Key 认证、业务域×读写 scope、实例间对接与转售链路。",
+      "review_by": "2026-09-30"
+    },
+    {
       "path": "designs/backend/direct-api-refactor.md",
       "status": "needs-review",
       "summary": "API v2 重构方案。"
@@ -89,14 +63,14 @@
       "review_by": "2026-08-15"
     },
     {
-      "path": "designs/backend/zjmf-scheduler-analysis.md",
-      "status": "needs-review",
-      "summary": "Zjmf 定时任务系统源码深度解析。"
-    },
-    {
       "path": "designs/backend/zjmf-purchase-renewal-document-comparison.md",
       "status": "needs-review",
       "summary": "Zjmf 与 TuraIDC 新购/续费单据创建流程对比与同步创建验证。"
+    },
+    {
+      "path": "designs/backend/zjmf-scheduler-analysis.md",
+      "status": "needs-review",
+      "summary": "Zjmf 定时任务系统源码深度解析。"
     },
     {
       "path": "designs/product/product-type-and-primary-menu-refactor.md",
@@ -104,15 +78,109 @@
       "summary": "产品类型与一级菜单设计。"
     },
     {
-      "path": "product-specs/active/report-center.md",
-      "status": "needs-review",
-      "summary": "管理员报表中心产品方案。"
+      "path": "execution-plans/active/2026-08-20-agent-discount.md",
+      "status": "active",
+      "summary": "代理折扣体系实施计划：AgentDiscountService 与三张配置表的落地任务拆分。",
+      "review_by": "2026-09-20"
     },
     {
-      "path": "product-specs/active/log-search-archive-coordination-2026-08-01.md",
+      "path": "execution-plans/active/backend-expert-review-remediation-2026-08-13.md",
       "status": "active",
-      "summary": "管理端日志检索、留存与归档的验收边界。",
-      "review_by": "2026-08-15"
+      "summary": "6 功能域 × 5 视角专家团审查结论的分批修复计划，P0 资金与账号安全优先。",
+      "review_by": "2026-08-27"
+    },
+    {
+      "path": "execution-plans/active/coderabbit-security-remediation-ticket-upstream-2026-08-21.md",
+      "status": "active",
+      "summary": "按 PR #20 CodeRabbit 审查修复工单上游传递安全与一致性问题，含上游 zjmfv376 配套改动。",
+      "review_by": "2026-09-04"
+    },
+    {
+      "path": "execution-plans/active/database-expert-review-remediation-2026-08-13.md",
+      "status": "active",
+      "summary": "数据库结构专家团审查发现的分组修复与回归计划。",
+      "review_by": "2026-08-27"
+    },
+    {
+      "path": "execution-plans/active/expert-review-remediation-2026-08-12.md",
+      "status": "active",
+      "summary": "专家团审查结论中的换绑安全、密码策略、履约锁、升级锁、共享状态常量、回调 URL 与文档索引修复。",
+      "review_by": "2026-08-26"
+    },
+    {
+      "path": "execution-plans/active/log-archive-reliability-refactor-2026-08-01.md",
+      "status": "active",
+      "summary": "日志写入、检索、归档、存储、运维与恢复实施计划。",
+      "review_by": "2026-08-27"
+    },
+    {
+      "path": "execution-plans/active/open-api-2026-08-24.md",
+      "status": "active",
+      "summary": "开放 API v2 实施计划：api_keys 表、open 网关中间件、Open 控制器与三端配置管理界面。",
+      "review_by": "2026-09-30"
+    },
+    {
+      "path": "execution-plans/active/scheduler-refactor-2026-08-09.md",
+      "status": "active",
+      "summary": "ZJMF 定时任务机制与 TuraIDC 心跳、队列、台账、Hook 和人工重跑能力的差距及分阶段重构计划。",
+      "review_by": "2026-08-23"
+    },
+    {
+      "path": "execution-plans/active/scheduler-vnc-provisioning-renewal-review-2026-08-13.md",
+      "status": "active",
+      "summary": "定时任务、Hooks、VNC、上游开通、续费与插件链路的专项审查与修复，含续费幂等、同周期双扣、并发开通等资金安全项。",
+      "review_by": "2026-08-27"
+    },
+    {
+      "path": "execution-plans/active/ticket-pre-reply-2026-08-23.md",
+      "status": "active",
+      "summary": "工单预回复：用户建单后以配置管理员名义自动回复，管理端预回复设置页与独立权限。",
+      "review_by": "2026-09-20"
+    },
+    {
+      "path": "execution-plans/active/ticket-upstream-delivery-logs-and-auto-delivery-troubleshooting-2026-08-20.md",
+      "status": "active",
+      "summary": "工单上游转发事件日志、管理端状态展示与自动转发未触发原因排查。",
+      "review_by": "2026-08-27"
+    },
+    {
+      "path": "execution-plans/completed/admin-impersonation-reliability-fix-2026-08-01.md",
+      "status": "completed",
+      "summary": "管理端代登录弹窗可靠性、消息交接与 E2E 契约修复。",
+      "review_by": "2026-09-01"
+    },
+    {
+      "path": "execution-plans/completed/documentation-path-migration-2026-08-20.md",
+      "status": "completed",
+      "summary": "将 docs 中文路径迁移为英文并同步文档站 URL 与全仓引用。"
+    },
+    {
+      "path": "execution-plans/completed/financial-ledger-consistency-regression-fix-2026-08-04.md",
+      "status": "completed",
+      "summary": "账务金额、销售收入统计、单据明细投影与管理端财务回归修复。",
+      "review_by": "2026-08-18"
+    },
+    {
+      "path": "execution-plans/completed/local-idc-heterogeneous-data-migration-20260722.md",
+      "status": "completed",
+      "summary": "本地 IDC 异构表数据映射迁移的审计、执行与验收记录。"
+    },
+    {
+      "path": "execution-plans/completed/product-category-structure-fix-2026-08-01.md",
+      "status": "completed",
+      "summary": "商品三级分类实体表恢复、异常归属承接与香港 3 区商品迁移记录。",
+      "review_by": "2026-09-01"
+    },
+    {
+      "path": "execution-plans/completed/production-backup-local-restore-20260726.md",
+      "status": "completed",
+      "summary": "生产 MySQL 备份已隔离验证、映射并完整恢复至本地 idc。"
+    },
+    {
+      "path": "execution-plans/completed/vnc-and-business-scheduling-isolation-2026-08-04.md",
+      "status": "completed",
+      "summary": "VNC Relay、业务队列与定时队列隔离实施计划。",
+      "review_by": "2026-08-18"
     },
     {
       "path": "execution-plans/completed/zjmf-unified-migration.md",
@@ -130,85 +198,55 @@
       "summary": "上游目录接口库存字段不可信的实测记录（58% 与详情接口不一致）；属开源初始提交遗留，只记录未修复。"
     },
     {
-      "path": "execution-plans/active/scheduler-refactor-2026-08-09.md",
-      "status": "active",
-      "summary": "ZJMF 定时任务机制与 TuraIDC 心跳、队列、台账、Hook 和人工重跑能力的差距及分阶段重构计划。",
-      "review_by": "2026-08-23"
+      "path": "generated/api/backend-api-catalog.md",
+      "status": "generated",
+      "summary": "由路由导出的后端 API 清单。"
     },
     {
-      "path": "execution-plans/active/ticket-upstream-delivery-logs-and-auto-delivery-troubleshooting-2026-08-20.md",
-      "status": "active",
-      "summary": "工单上游转发事件日志、管理端状态展示与自动转发未触发原因排查。",
-      "review_by": "2026-08-27"
-    },
-    {
-      "path": "execution-plans/active/ticket-pre-reply-2026-08-23.md",
-      "status": "active",
-      "summary": "工单预回复：用户建单后以配置管理员名义自动回复，管理端预回复设置页与独立权限。",
-      "review_by": "2026-09-20"
-    },
-    {
-      "path": "execution-plans/active/expert-review-remediation-2026-08-12.md",
-      "status": "active",
-      "summary": "专家团审查结论中的换绑安全、密码策略、履约锁、升级锁、共享状态常量、回调 URL 与文档索引修复。",
-      "review_by": "2026-08-26"
-    },
-    {
-      "path": "execution-plans/active/backend-expert-review-remediation-2026-08-13.md",
-      "status": "active",
-      "summary": "6 功能域 × 5 视角专家团审查结论的分批修复计划，P0 资金与账号安全优先。",
-      "review_by": "2026-08-27"
-    },
-    {
-      "path": "execution-plans/active/scheduler-vnc-provisioning-renewal-review-2026-08-13.md",
-      "status": "active",
-      "summary": "定时任务、Hooks、VNC、上游开通、续费与插件链路的专项审查与修复，含续费幂等、同周期双扣、并发开通等资金安全项。",
-      "review_by": "2026-08-27"
-    },
-    {
-      "path": "execution-plans/completed/admin-impersonation-reliability-fix-2026-08-01.md",
-      "status": "completed",
-      "summary": "管理端代登录弹窗可靠性、消息交接与 E2E 契约修复。",
-      "review_by": "2026-09-01"
-    },
-    {
-      "path": "execution-plans/completed/production-backup-local-restore-20260726.md",
-      "status": "completed",
-      "summary": "生产 MySQL 备份已隔离验证、映射并完整恢复至本地 idc。"
-    },
-    {
-      "path": "execution-plans/completed/local-idc-heterogeneous-data-migration-20260722.md",
-      "status": "completed",
-      "summary": "本地 IDC 异构表数据映射迁移的审计、执行与验收记录。"
-    },
-    {
-      "path": "execution-plans/completed/product-category-structure-fix-2026-08-01.md",
-      "status": "completed",
-      "summary": "商品三级分类实体表恢复、异常归属承接与香港 3 区商品迁移记录。",
-      "review_by": "2026-09-01"
-    },
-    {
-      "path": "execution-plans/completed/financial-ledger-consistency-regression-fix-2026-08-04.md",
-      "status": "completed",
-      "summary": "账务金额、销售收入统计、单据明细投影与管理端财务回归修复。",
-      "review_by": "2026-08-18"
-    },
-    {
-      "path": "execution-plans/completed/vnc-and-business-scheduling-isolation-2026-08-04.md",
-      "status": "completed",
-      "summary": "VNC Relay、业务队列与定时队列隔离实施计划。",
-      "review_by": "2026-08-18"
-    },
-    {
-      "path": "references/api/api-format.md",
+      "path": "governance/DOCUMENTATION_POLICY.md",
       "status": "current",
-      "summary": "API 契约和工程化规范。",
-      "review_by": "2026-08-21"
+      "summary": "文档分类、生命周期和自动化规则。",
+      "review_by": "2026-10-20"
+    },
+    {
+      "path": "governance/WORKING_RULES.md",
+      "status": "current",
+      "summary": "协作、验证和安全工作规则。",
+      "review_by": "2026-10-20"
+    },
+    {
+      "path": "governance/docs-web-maintenance.md",
+      "status": "current",
+      "summary": "VitePress 官方文档站的内容、导航、构建和独立发布维护流程。",
+      "review_by": "2026-11-20"
+    },
+    {
+      "path": "product-specs/active/log-search-archive-coordination-2026-08-01.md",
+      "status": "active",
+      "summary": "管理端日志检索、留存与归档的验收边界。",
+      "review_by": "2026-08-15"
+    },
+    {
+      "path": "product-specs/active/report-center.md",
+      "status": "needs-review",
+      "summary": "管理员报表中心产品方案。"
+    },
+    {
+      "path": "quick-start.md",
+      "status": "current",
+      "summary": "生产环境部署方式选择与部署后检查入口。",
+      "review_by": "2026-11-20"
     },
     {
       "path": "references/api/api-catalog-navigation.md",
       "status": "current",
       "summary": "接口业务域导航。",
+      "review_by": "2026-08-21"
+    },
+    {
+      "path": "references/api/api-format.md",
+      "status": "current",
+      "summary": "API 契约和工程化规范。",
       "review_by": "2026-08-21"
     },
     {
@@ -229,10 +267,10 @@
       "review_by": "2026-08-21"
     },
     {
-      "path": "references/database/migrate-from-zjmf-finance.md",
+      "path": "references/database/log-archive-and-mysql-maintenance.md",
       "status": "current",
-      "summary": "智简魔方财务（ZJMF）→ TuraIDC 完整迁移教程：10 步流程、工具清单与生产踩坑记录。",
-      "review_by": "2026-09-19"
+      "summary": "日志归档与 MySQL 维护。",
+      "review_by": "2026-08-21"
     },
     {
       "path": "references/database/migrate-from-zjmf-finance-experimental.md",
@@ -241,10 +279,10 @@
       "review_by": "2026-09-19"
     },
     {
-      "path": "references/database/log-archive-and-mysql-maintenance.md",
+      "path": "references/database/migrate-from-zjmf-finance.md",
       "status": "current",
-      "summary": "日志归档与 MySQL 维护。",
-      "review_by": "2026-08-21"
+      "summary": "智简魔方财务（ZJMF）→ TuraIDC 完整迁移教程：10 步流程、工具清单与生产踩坑记录。",
+      "review_by": "2026-09-19"
     },
     {
       "path": "references/database/mysql-version-compatibility.md",
@@ -264,33 +302,35 @@
       "review_by": "2026-08-21"
     },
     {
-      "path": "references/operations/frontend-nginx-rules.md",
+      "path": "references/migration-records/frontend-admin-v3-final-acceptance-report.md",
+      "status": "archived",
+      "summary": "frontend-admin-v3 迁移完成后的最终验收记录。"
+    },
+    {
+      "path": "references/migration-records/frontend-admin-v3-migration-ledger.md",
+      "status": "archived",
+      "summary": "frontend-admin-v3 页面、接口与权限迁移台账。"
+    },
+    {
+      "path": "references/migration-records/frontend-user-v3-www-final-acceptance-report.md",
+      "status": "archived",
+      "summary": "frontend-user-v3-www 迁移完成后的最终验收记录。"
+    },
+    {
+      "path": "references/migration-records/frontend-user-v3-www-migration-ledger.md",
+      "status": "archived",
+      "summary": "frontend-user-v3-www 页面与公开路由迁移台账。"
+    },
+    {
+      "path": "references/operations/bare-metal-deployment.md",
       "status": "current",
-      "summary": "前端站点 Nginx 规则。",
-      "review_by": "2026-08-21"
+      "summary": "无面板、无容器的裸机源码部署：nginx + PHP-FPM + systemd + cron，含实测踩坑记录。",
+      "review_by": "2027-08-28"
     },
     {
       "path": "references/operations/bt-panel-deployment.md",
       "status": "current",
       "summary": "全新服务器部署流程。",
-      "review_by": "2026-08-21"
-    },
-    {
-      "path": "references/operations/docker-and-1panel-deployment.md",
-      "status": "current",
-      "summary": "Docker Compose 一键部署与 1Panel 托管指南。",
-      "review_by": "2026-08-21"
-    },
-    {
-      "path": "references/operations/local-development.md",
-      "status": "current",
-      "summary": "本地启动与构建命令。",
-      "review_by": "2026-08-21"
-    },
-    {
-      "path": "references/operations/testing.md",
-      "status": "current",
-      "summary": "测试环境和验证方法。",
       "review_by": "2026-08-21"
     },
     {
@@ -306,79 +346,39 @@
       "review_by": "2026-11-28"
     },
     {
-      "path": "CHANGELOG.md",
+      "path": "references/operations/docker-and-1panel-deployment.md",
       "status": "current",
-      "summary": "仓库级完整变更记录，按 Keep a Changelog 规范维护。"
+      "summary": "Docker Compose 一键部署与 1Panel 托管指南。",
+      "review_by": "2026-08-21"
     },
     {
-      "path": "generated/api/backend-api-catalog.md",
-      "status": "generated",
-      "summary": "由路由导出的后端 API 清单。"
-    },
-    {
-      "path": "governance/WORKING_RULES.md",
+      "path": "references/operations/frontend-nginx-rules.md",
       "status": "current",
-      "summary": "协作、验证和安全工作规则。",
-      "review_by": "2026-10-20"
+      "summary": "前端站点 Nginx 规则。",
+      "review_by": "2026-08-21"
     },
     {
-      "path": "governance/DOCUMENTATION_POLICY.md",
+      "path": "references/operations/local-development.md",
       "status": "current",
-      "summary": "文档分类、生命周期和自动化规则。",
-      "review_by": "2026-10-20"
+      "summary": "本地启动与构建命令。",
+      "review_by": "2026-08-21"
     },
     {
-      "path": "governance/docs-web-maintenance.md",
+      "path": "references/operations/testing.md",
       "status": "current",
-      "summary": "VitePress 官方文档站的内容、导航、构建和独立发布维护流程。",
-      "review_by": "2026-11-20"
-    },
-    {
-      "path": "templates/exec-plan.md",
-      "status": "template",
-      "summary": "执行计划模板。"
-    },
-    {
-      "path": "execution-plans/active/coderabbit-security-remediation-ticket-upstream-2026-08-21.md",
-      "status": "active",
-      "summary": "按 PR #20 CodeRabbit 审查修复工单上游传递安全与一致性问题，含上游 zjmfv376 配套改动。",
-      "review_by": "2026-09-04"
-    },
-    {
-      "path": "designs/backend/2026-08-20-agent-discount-design.md",
-      "status": "active",
-      "summary": "代理折扣体系设计：与会员等级独立、矩阵折扣、成本价保护与优惠券兼容。",
-      "review_by": "2026-09-20"
-    },
-    {
-      "path": "execution-plans/active/2026-08-20-agent-discount.md",
-      "status": "active",
-      "summary": "代理折扣体系实施计划：AgentDiscountService 与三张配置表的落地任务拆分。",
-      "review_by": "2026-09-20"
-    },
-    {
-      "path": "references/operations/bare-metal-deployment.md",
-      "status": "current",
-      "summary": "无面板、无容器的裸机源码部署：nginx + PHP-FPM + systemd + cron，含实测踩坑记录。",
-      "review_by": "2027-08-28"
-    },
-    {
-      "path": "designs/backend/2026-08-24-open-api-design.md",
-      "status": "active",
-      "summary": "开放 API（Open API v2）设计：API Key 认证、业务域×读写 scope、实例间对接与转售链路。",
-      "review_by": "2026-09-30"
-    },
-    {
-      "path": "execution-plans/active/open-api-2026-08-24.md",
-      "status": "active",
-      "summary": "开放 API v2 实施计划：api_keys 表、open 网关中间件、Open 控制器与三端配置管理界面。",
-      "review_by": "2026-09-30"
+      "summary": "测试环境和验证方法。",
+      "review_by": "2026-08-21"
     },
     {
       "path": "references/security/secure-development-standard.md",
       "status": "current",
       "summary": "安全分层模型、WAF 边界、密钥空值即拒绝、XSS 白名单净化与自检清单。",
       "review_by": "2026-11-28"
+    },
+    {
+      "path": "templates/exec-plan.md",
+      "status": "template",
+      "summary": "执行计划模板。"
     }
   ]
 }
