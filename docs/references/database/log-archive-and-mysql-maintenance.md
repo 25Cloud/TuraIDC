@@ -2,7 +2,7 @@
 
 本文是生产环境日志归档、MySQL 日志轮转和 Binlog 过期策略的操作真源。
 
-## 一、数据库日志归档
+## 1. 数据库日志归档
 
 ### 1.1 处理范围
 
@@ -120,7 +120,7 @@ cd /www/wwwroot/turaidc/backend
 
 生产只保留每分钟一次的 `schedule:run`。切换后必须移除原来直接执行 `db:archive-logs --execute` 的每日 02:00 Crontab，不能让两种触发方式同时运行。
 
-## 二、MySQL 错误日志与慢查询日志轮转
+## 2. MySQL 错误日志与慢查询日志轮转
 
 先确认实际日志路径：
 
@@ -157,7 +157,7 @@ sudo logrotate -d /etc/logrotate.d/turaidc-mysql
 sudo logrotate -f /etc/logrotate.d/turaidc-mysql
 ```
 
-## 三、Binlog 过期策略
+## 3. Binlog 过期策略
 
 当前实库为 MySQL 8.0，执行：
 
@@ -175,7 +175,7 @@ expire_logs_days=30
 
 也可以先在线执行 `SET GLOBAL expire_logs_days = 30`，但仍需写入 `my.cnf` 并在重启后再次验证。
 
-## 四、空间口径与上线检查
+## 4. 空间口径与上线检查
 
 物理删除会让 InnoDB 表空间内部可复用，但独立 `.ibd` 文件不保证立即缩小。本任务不自动执行 `OPTIMIZE TABLE`；确需向操作系统归还空间时，使用管理端现有的智能优化能力并安排独立维护窗口。
 
@@ -186,3 +186,8 @@ expire_logs_days=30
 3. `gateway_logs` 小表试运行后，CSV 表头、行数、数据库剩余记录和审计日志一致；
 4. 确认每分钟 `schedule:run`、默认队列消费和 `log-archive` 定时任务均正常，并观察首轮完整报告；
 5. `logrotate -d` 无错误，Binlog 过期变量为 2592000 秒。
+
+## 关联文档
+
+- [部署与调度指南](../operations/deployment-and-scheduling.md)：定时任务与队列环境。
+- [MySQL 版本兼容基线](mysql-version-compatibility.md)：SQL 兼容性约束。

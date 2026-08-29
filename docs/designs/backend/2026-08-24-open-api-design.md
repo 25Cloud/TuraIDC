@@ -1,8 +1,12 @@
+---
+status: active
+updated: 2026-08-24
+owner: backend-platform
+---
+
 # 开放 API（Open API v2）设计文档
 
-- 日期：2026-08-24
-- 状态：已确认（用户批准，授权自主执行）
-- 场景：系统间对接 / 转售（魔方 → tura1 → tura2 复合对接）
+本文定义面向系统间对接与转售场景（魔方 → tura1 → tura2 复合对接）的开放 API 设计，状态为已确认（用户批准，授权自主执行）。实施计划见 [开放 API（Open API v2）实施计划](../../execution-plans/active/open-api-2026-08-24.md)。
 
 ## 1. 目标与范围
 

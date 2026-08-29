@@ -1,3 +1,9 @@
+---
+status: needs-review
+updated: 2026-08-29
+owner: backend-platform
+---
+
 # 后端工程规范
 
 本文档定义 TuraIDC Laravel 12 后端后续人工开发、审查、重构和第三方集成治理的长期标准。目标是让后端代码可读、可测、可替换、可追踪，并降低后续人工维护成本。
@@ -275,9 +281,7 @@ php artisan test
 - 后端文档：`docs/BACKEND.md`。
 - API 格式：`docs/references/api/api-format.md`。
 - API 分组导航：`docs/references/api/api-catalog-navigation.md`。
-- TuraIDC 主技能：`C:/Users/USER125536/.agents/skills/turaidc/SKILL.md`。
-- TuraIDC 后端审查技能：`C:/Users/USER125536/.agents/skills/turaidc/code-review/SKILL.md`。
-- TuraIDC reference：`C:/Users/USER125536/.agents/skills/turaidc/references/11-backend-engineering-governance.md`。
+- 本机 `.agents/skills/turaidc/` 下的 TuraIDC 技能（`SKILL.md`、`code-review/SKILL.md` 与 `references/11-backend-engineering-governance.md`），路径因机器而异，不入库。
 
 禁止手工编辑：
 
@@ -289,3 +293,10 @@ php artisan test
 2. 文档更新必须标明新的真实约束、适用范围和不再可信的旧口径。
 3. 不确定的内容标注“需进一步验证”，不要为了补齐文档而编造规则。
 4. 对规则类文档的更新必须尽量小而准，避免把临时实现误写成长期规范。
+
+## 关联文档
+
+- [架构现状说明](ARCHITECTURE.md)：系统结构与运行模型。
+- [后端目录分类规范](references/backend/backend-directory-structure.md)：新增文件落点。
+- [API 格式规范](references/api/api-format.md)：请求与响应契约。
+- [工作规则](governance/WORKING_RULES.md)：验证与提交要求。

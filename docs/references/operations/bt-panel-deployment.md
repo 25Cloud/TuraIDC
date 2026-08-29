@@ -6,7 +6,7 @@
 
 ---
 
-## 一、前置环境
+## 1. 前置环境
 
 ### 1.1 宝塔面板安装
 
@@ -53,7 +53,7 @@
 
 ---
 
-## 二、项目部署概览
+## 2. 项目部署概览
 
 生产拓扑如下：
 
@@ -86,7 +86,7 @@
 
 ---
 
-## 三、创建宝塔站点
+## 3. 创建宝塔站点
 
 ### 3.1 创建后端 API 站点
 
@@ -112,7 +112,7 @@
 
 ---
 
-## 四、宝塔站点与伪静态配置
+## 4. 宝塔站点与伪静态配置
 
 四个站点均使用宝塔创建时生成的默认 Nginx 配置。不要在“配置文件”中替换或粘贴完整 `server {}`，以免覆盖宝塔生成的 SSL、PHP-FPM 和日志设置。
 
@@ -232,7 +232,7 @@ location / {
 
 ---
 
-## 五、后端部署
+## 5. 后端部署
 
 ### 5.1 上传代码
 
@@ -351,7 +351,7 @@ sudo chmod -R 775 public/uploads public/media
 
 ---
 
-## 六、前端部署
+## 6. 前端部署
 
 ### 6.1 构建前端
 
@@ -388,7 +388,7 @@ pnpm run build:frontends
 
 ---
 
-## 七、计划任务配置
+## 7. 计划任务配置
 
 宝塔面板 → 计划任务 → 添加：
 
@@ -417,9 +417,9 @@ php artisan vnc:relay
 
 ---
 
-## 八、导入旧库（仅数据迁移）
+## 8. 导入旧库（仅数据迁移）
 
-全新空库已由第五节的 `install_db.py` 完成初始化。以下步骤只用于有专项迁移方案的旧库数据导入，执行前必须核对目标库并建立独立备份：
+全新空库已由第 5 节的 `install_db.py` 完成初始化。以下步骤只用于有专项迁移方案的旧库数据导入，执行前必须核对目标库并建立独立备份：
 
 ```bash
 cd /www/wwwroot/你的项目/backend
@@ -432,7 +432,7 @@ python3 scripts/migrate_legacy_dump.py --dump "你的dump文件.sql"
 
 ---
 
-## 九、常见问题
+## 9. 常见问题
 
 ### 9.1 502 Bad Gateway
 
@@ -480,7 +480,7 @@ php artisan route:cache && php artisan config:cache
 
 ---
 
-## 十、运维参考
+## 10. 运维参考
 
 以下日常运维操作的详细说明在 [部署与调度指南.md](deployment-and-scheduling.md)：
 
@@ -492,7 +492,7 @@ php artisan route:cache && php artisan config:cache
 
 ---
 
-## 十一、检查清单
+## 11. 检查清单
 
 部署完成后逐项确认：
 
@@ -507,3 +507,9 @@ php artisan route:cache && php artisan config:cache
 - [ ] Redis 可连接（`redis-cli ping` 返回 PONG）
 - [ ] `storage`、`bootstrap/cache` 权限为 `www:www` 且可写
 - [ ] 数据库迁移已执行无报错
+
+## 关联文档
+
+- [部署指南](deployment.md)：通用部署步骤。
+- [四端 Nginx 伪静态配置](frontend-nginx-rules.md)：站点伪静态规则。
+- [部署与调度指南](deployment-and-scheduling.md)：调度与队列配置。

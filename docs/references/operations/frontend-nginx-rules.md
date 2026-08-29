@@ -9,13 +9,13 @@
 | 管理端     | `admin.example.com`   | `frontend-admin-v3/dist`        |
 | API        | `api.example.com`     | `backend/public`                |
 
-## 宝塔面板设置
+## 1. 宝塔面板设置
 
 先创建四个站点并按上表设置根目录。API 站点选择 PHP 8.3；三个前端站点保持静态站点。HTTPS 证书、80 到 443 跳转和域名由宝塔“SSL”页面配置，不能在伪静态框中填写 `listen`、`server_name`、`root`、`ssl_certificate` 或 PHP-FPM 配置。
 
 纯 HTTP 环境关闭宝塔强制 HTTPS，并将 `SESSION_SECURE_COOKIE=false`；HTTPS 环境则让四个站点都使用 HTTPS。无论哪种环境，四个公开地址必须统一协议。
 
-## 官网：www
+## 2. 官网：www
 
 官网公开路径（首页、产品、落地页、公告/帮助及其详情）由 API 站点（Laravel）读数据库动态渲染完整 HTML；其余路径保持 SPA 静态回退。完整伪静态：
 
@@ -72,7 +72,7 @@ location / {
 
 > 内部转发走 `127.0.0.1:80`（HTTP）。若 API 站点开启强制 HTTPS 跳转会拦截该转发，需对 `127.0.0.1` 来源放行或改用 `https://api.example.com` 形式；后端已信任回环/私有网段代理（`bootstrap/app.php`），`X-Forwarded-Proto` 可正确传递 https。容器部署（Docker/1Panel 编排）时上述转发已内置在 `deploy/docker/frontends/nginx-default.conf`，无需重复配置。
 
-## 用户控制台：console
+## 3. 用户控制台：console
 
 ```nginx
 location / {
@@ -82,7 +82,7 @@ location / {
 
 `/vnc/vnc.html` 是控制台构建产物的一部分，会被 `$uri` 直接命中。
 
-## 管理端：admin
+## 4. 管理端：admin
 
 ```nginx
 location / {
@@ -90,7 +90,7 @@ location / {
 }
 ```
 
-## API：api
+## 5. API：api
 
 在 API 站点的“伪静态”完整填入：
 
@@ -118,14 +118,19 @@ location / {
 
 > 注：API 请求路径为 PHP-FPM 直连，Laravel 以 `REMOTE_ADDR` 为准，上方 `X-Forwarded-*` 仅用于 VNC Relay。若改为反向代理 API 端口，请遵守[受信代理与来源 IP 契约](deployment-and-scheduling.md)（单层受信代理把 `X-Forwarded-For` 重置为 `$remote_addr`，应用端口仅本机监听，不得把公网代理加入 `trustProxies`）。
 
-## HTTP 与 HTTPS
+## 6. HTTP 与 HTTPS
 
 - HTTP 环境在宝塔关闭强制 HTTPS，并将 `SESSION_SECURE_COOKIE=false`。
 - HTTPS 环境在宝塔 SSL 页面开启证书和 80 到 443 跳转；前端 API 基址填写 `https://api.example.com/api`，VNC 自动使用 `wss`。
 - 同一环境四个公开域名统一使用 HTTP 或 HTTPS，避免浏览器混合内容。
 
-## 缓存建议
+## 7. 缓存建议
 
 - `index.html` 使用 `Cache-Control: no-cache`（官方 SEO 页面 HTML 由 Laravel 动态生成，动态响应的缓存由后端 `SEO_CACHE_TTL` 控制）。
 - 带 hash 的 JS、CSS、字体和图片可长期缓存；压缩由宝塔 Nginx 的全局能力处理，不需要在伪静态中添加模块指令。
 - 不要在用户控制台、管理端站点重新添加 `/api`、`/uploads`、`/media`、`/ws/vnc` 的 `proxy_pass`（官网的 SEO 转发只针对上述公开路径）。
+
+## 关联文档
+
+- [部署指南](deployment.md)：Nginx 配置的完整上下文。
+- [部署与调度指南](deployment-and-scheduling.md)：调度、队列与受信代理契约。
