@@ -646,6 +646,7 @@ php artisan schedule:list
 
 ## 12. 当前插件说明文档
 
+- [插件包规范（独立仓库分发与插件市场）](./plugin-package-spec.md)
 - [支付宝当面付插件 demo](./demo-ali-pay.md)
 - [康乐虚拟主机插件](../../../../backend/plugins/servers/kanghostx/README.md)
 
