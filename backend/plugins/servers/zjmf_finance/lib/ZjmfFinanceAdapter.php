@@ -175,6 +175,16 @@ final class ZjmfFinanceAdapter implements ProvidesConsoleAccess, ProvidesConsole
         return $this->consoleService->powerAction($supplier, $hostId, $action, $jwt);
     }
 
+    public function suspendHost(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return $this->consoleService->suspendHost($supplier, $hostId, $jwt);
+    }
+
+    public function unsuspendHost(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return $this->consoleService->unsuspendHost($supplier, $hostId, $jwt);
+    }
+
     public function getModuleStatus(Supplier $supplier, int $hostId, string $type = 'host', ?string $jwt = null): array
     {
         return $this->consoleService->getModuleStatus($supplier, $hostId, $type, $jwt);
@@ -377,6 +387,8 @@ final class ZjmfFinanceAdapter implements ProvidesConsoleAccess, ProvidesConsole
             'getHostDetail',
             'getVncUrl',
             'powerAction',
+            'suspendHost',
+            'unsuspendHost',
             'getModuleStatus',
             'getReinstallOptions',
             'resetPassword',

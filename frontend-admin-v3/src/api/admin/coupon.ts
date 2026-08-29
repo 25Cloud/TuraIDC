@@ -160,6 +160,36 @@ async function buildCouponProductTree(): Promise<{ tree?: ProductTreeNode[] }> {
 
 /** 内部实现，不缓存 */
 async function buildCouponProductTreeInternal(): Promise<{ tree?: ProductTreeNode[] }> {
+  // 快路径：后端整树接口一次返回全部分组与产品，替代递归逐层分页拉取（请求风暴根源）。
+  try {
+    const flat = await request.get<{
+      groups?: CouponProductGroupRecord[];
+      products?: Record<string, CouponProductRecord[]>;
+    }>({ url: '/v2/admin/coupon-product-groups/tree' });
+
+    if (flat && Array.isArray(flat.groups)) {
+      const allGroups: ProductTreeGroup[] = flat.groups
+        .map((group) => ({
+          group,
+          parentId: group.parent_id != null ? Number(group.parent_id) : null,
+          level: (Number(group.level) || 1) as 1 | 2 | 3,
+        }))
+        .filter((entry) => entry.level >= 1 && entry.level <= 3);
+
+      const productMap = new Map<string, CouponProductRecord[]>();
+      const productsData = flat.products && typeof flat.products === 'object' ? flat.products : {};
+      for (const [key, products] of Object.entries(productsData)) {
+        if (Array.isArray(products)) productMap.set(key, products as CouponProductRecord[]);
+      }
+
+      const roots = allGroups.filter((entry) => entry.level === 1).map((entry) => entry.group);
+
+      return assembleCouponProductTree(allGroups, productMap, roots);
+    }
+  } catch {
+    // 整树接口不可用时回退到旧递归逐层拉取
+  }
+
   const roots = await fetchAllPages<CouponProductGroupRecord>((page) =>
     couponsApi.productGroups({ page, page_size: PRODUCT_TREE_PAGE_SIZE }),
   );
@@ -253,6 +283,18 @@ async function buildCouponProductTreeInternal(): Promise<{ tree?: ProductTreeNod
   }
 
   // 第三阶段：按“层级:ID”重建每一层，避免跨表 ID 重复覆盖节点。
+  return assembleCouponProductTree(allGroups, productMap, roots);
+}
+
+/**
+ * 第三阶段：按“层级:ID”重建每一层，避免跨表 ID 重复覆盖节点。
+ * 供整树接口快路径与旧递归兜底路径共用。
+ */
+function assembleCouponProductTree(
+  allGroups: ProductTreeGroup[],
+  productMap: Map<string, CouponProductRecord[]>,
+  roots: CouponProductGroupRecord[],
+): { tree?: ProductTreeNode[] } {
   const childrenByParent = new Map<string, ProductTreeGroup[]>();
   allGroups.forEach((entry) => {
     if (entry.parentId === null) return;

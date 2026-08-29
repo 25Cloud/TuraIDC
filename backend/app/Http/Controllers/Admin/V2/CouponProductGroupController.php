@@ -13,9 +13,16 @@ use App\Http\Resources\Admin\V2\CouponProductResource;
 use App\Services\ProductCatalog\CouponProductGroupQueryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class CouponProductGroupController extends Controller
 {
+    /**
+     * 整树接口缓存键。整树体积大（三层分组 + 全量产品），
+     * 一次性序列化/展示名解析成本不低，60s 缓存吸收掉。
+     */
+    private const TREE_CACHE_KEY = 'coupon_product_group_tree_v1';
+
     public function __construct(
         private readonly CouponProductGroupQueryService $queryService,
     ) {}
@@ -30,6 +37,30 @@ class CouponProductGroupController extends Controller
             ),
             CouponProductGroupResource::class
         );
+    }
+
+    /**
+     * 一次性返回整棵树（全部分组 + 全量产品），60s 缓存。
+     * 前端用它替代「递归逐层分页拉取」，一次请求即可构建商品选择树。
+     */
+    public function tree(Request $request): JsonResponse
+    {
+        $payload = Cache::remember(self::TREE_CACHE_KEY, 60, function () use ($request): array {
+            $data = $this->queryService->fullTree();
+
+            $products = [];
+            foreach ($data['products'] as $product) {
+                $key = '3:'.(int) $product->product_group_id;
+                $products[$key][] = CouponProductResource::make($product)->resolve($request);
+            }
+
+            return [
+                'groups' => CouponProductGroupResource::collection($data['groups'])->resolve($request),
+                'products' => $products,
+            ];
+        });
+
+        return $this->success($payload);
     }
 
     public function children(ListCouponProductGroupChildrenRequest $request): JsonResponse

@@ -637,6 +637,15 @@ class ServiceStatusSyncService
         $normalizedHostStatus = strtolower(trim((string) ($host['domainstatus'] ?? '')));
         $resolvedUpstreamStatus = $this->resolveServiceStatusFromUpstream((string) ($host['domainstatus'] ?? ''));
         $resolvedServiceStatus = $this->resolveSyncedServiceStatus($service, $resolvedUpstreamStatus);
+
+        if ($resolvedServiceStatus === ServiceStatus::ACTIVE
+            && (int) $service->status === ServiceStatus::ACTIVE
+            && $resolvedUpstreamStatus === ServiceStatus::SUSPENDED) {
+            Log::warning('[状态同步] 续费保护生效：上游仍暂停但本地已开通且未到期，保留本地状态', [
+                'service_id' => $service->id,
+                'expires_at' => $service->expires_at?->toDateTimeString(),
+            ]);
+        }
         $shouldResetRuntimeSnapshot = $normalizedHostStatus !== '' && $normalizedHostStatus !== 'active';
         $mergedConnection = [
             'hostname' => ServiceHostname::resolveConnectionHostname($service, $currentProvisionData, $cachedConnection, $host),
@@ -850,6 +859,12 @@ class ServiceStatusSyncService
             return (int) $service->status;
         }
 
+        // 续费保护：本地已开通且未到期、无本地暂停原因，但上游仍显示暂停
+        // （续费后魔方未解除暂停的过渡态），保留本地状态，避免"续费成功却仍被暂停"。
+        if ($this->shouldPreserveLocalActiveState($service, $upstreamStatus)) {
+            return (int) $service->status;
+        }
+
         return $upstreamStatus;
     }
 
@@ -874,25 +889,45 @@ class ServiceStatusSyncService
             && in_array($upstreamStatus, [ServiceStatus::ACTIVE, ServiceStatus::PENDING, ServiceStatus::SUSPENDED], true);
     }
 
+    /**
+     * 续费保护：本地已开通、未到期且无本地暂停原因，而上游显示暂停时，
+     * 视为续费后上游未解除暂停的过渡态，保留本地已开通状态。
+     */
+    private function shouldPreserveLocalActiveState(Service $service, int $upstreamStatus): bool
+    {
+        return (int) $service->status === ServiceStatus::ACTIVE
+            && trim((string) ($service->suspended_reason ?? '')) === ''
+            && $service->expires_at instanceof Carbon
+            && $service->expires_at->isFuture()
+            && $upstreamStatus === ServiceStatus::SUSPENDED;
+    }
+
     private function resolveExpiry(array $host, Service $service): ?Carbon
     {
         $nextDueDate = $host['nextduedate'] ?? null;
+        $resolved = null;
 
         if (is_numeric($nextDueDate)) {
             $timestamp = (int) $nextDueDate;
 
             if ($timestamp > 0) {
-                return Carbon::createFromTimestamp($timestamp, config('app.timezone'));
+                $resolved = Carbon::createFromTimestamp($timestamp, config('app.timezone'));
             }
         } elseif (is_string($nextDueDate) && trim($nextDueDate) !== '') {
-            // 兼容上游 Y-m-d / Y-m-d H:i:s 日期字符串，避免静默回退本地 expires_at 造成口径漂移。
+            // 兼容上游 Y-m-d / Y-m-d H:i:s 日期字符串。
             try {
-                return Carbon::parse(trim($nextDueDate));
+                $resolved = Carbon::parse(trim($nextDueDate));
             } catch (\Throwable) {
-                return null;
+                $resolved = null;
             }
         }
 
-        return $service->expires_at;
+        // 续费保护：本地到期时间晚于上游解析值时保留本地（上游可能尚未同步续费结果），
+        // 防止续费后的延期被旧到期时间回退而触发到期暂停误杀。
+        if ($resolved instanceof Carbon && $service->expires_at instanceof Carbon && $service->expires_at->greaterThan($resolved)) {
+            return $service->expires_at;
+        }
+
+        return $resolved ?? $service->expires_at;
     }
 }

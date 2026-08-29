@@ -19,6 +19,7 @@ use App\Services\Upstream\Contracts\UpstreamDriver;
 use App\Services\Verification\Contracts\VerificationDriver;
 use App\Support\SensitiveDataSanitizer;
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -66,23 +67,36 @@ class PluginRuntimeRegistry
             throw new BusinessException('插件或执行动作不能为空', 42200);
         }
 
-        if (! Schema::hasTable('integration_plugins')) {
-            throw new BusinessException('插件系统尚未初始化', 42200);
-        }
-
-        $plugin = IntegrationPlugin::query()
-            ->where('domain', $resolvedDomain)
-            ->where(static function ($query) use ($resolvedIdentifier): void {
-                $query->where('slug', $resolvedIdentifier)
-                    ->orWhere('plugin_key', $resolvedIdentifier);
-            })
-            ->first();
+        $plugin = $this->resolvePluginRecord($resolvedDomain, $resolvedIdentifier);
 
         if (! $plugin instanceof IntegrationPlugin || ! $plugin->isEnabled()) {
             throw new BusinessException('插件未安装或未启用', 42200);
         }
 
         return $this->executePlugin($plugin, $resolvedAction, $payload, $context);
+    }
+
+    /**
+     * 缓存插件记录，避免每次插件调用都执行 information_schema 表检查 + 插件查询。
+     * 60 秒 TTL：管理端停用/启用插件后最多延迟一分钟生效，可接受。
+     */
+    private function resolvePluginRecord(string $domain, string $identifier): ?IntegrationPlugin
+    {
+        $cacheKey = 'plugin_record_'.$domain.'_'.md5($identifier);
+
+        return Cache::remember($cacheKey, 60, function () use ($domain, $identifier): ?IntegrationPlugin {
+            if (! Schema::hasTable('integration_plugins')) {
+                return null;
+            }
+
+            return IntegrationPlugin::query()
+                ->where('domain', $domain)
+                ->where(static function ($query) use ($identifier): void {
+                    $query->where('slug', $identifier)
+                        ->orWhere('plugin_key', $identifier);
+                })
+                ->first();
+        });
     }
 
     /**
