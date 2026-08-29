@@ -525,6 +525,10 @@ class ServiceRenewService
                 OrderType::RENEW
             );
             $discountAmount = round((float) ($couponPayload['discount_amount'] ?? 0), 2);
+            // 订单金额存「券后应付额」，与新购（CheckoutService）及另一条续费入口保持同一口径。
+            // 支付回调的 assertBusinessPaymentComposition 直接比对 order.amount 与 invoice.amount，
+            // 这里若存毛额，带券续费在回调时必然抛「订单与账单金额不一致」并整笔回滚。
+            $payableAmount = round(max($amount - $discountAmount, 0), 2);
 
             $order = Order::query()->create([
                 'order_no' => Order::generateOrderNo(),
@@ -538,7 +542,7 @@ class ServiceRenewService
                 'coupon_id' => $couponPayload['coupon_id'] ?? null,
                 'user_coupon_id' => $couponPayload['user_coupon_id'] ?? null,
                 'coupon_code' => $couponPayload['code'] ?? null,
-                'amount' => $amount,
+                'amount' => $payableAmount,
                 'discount' => $discountAmount,
                 'paid_amount' => 0,
                 'billing_cycle' => $cycle,
@@ -569,7 +573,8 @@ class ServiceRenewService
                 'trace_id' => (string) ($context['trace_id'] ?? ''),
             ]);
 
-            $invoice = $this->invoiceService->createFromOrder($order);
+            // order.amount 已是券后应付额，显式传入避免 createFromOrder 再减一次券。
+            $invoice = $this->invoiceService->createFromOrder($order, $payableAmount);
             throw_if(
                 ! empty($context['auto_renew']) && round((float) ($invoice->amount ?? 0), 2) <= 0,
                 new BusinessException('自动续费金额异常，已拦截本次续费')
