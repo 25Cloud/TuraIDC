@@ -3,7 +3,12 @@
 namespace App\Providers;
 
 use App\Listeners\HeartbeatTaskTimedOutListener;
+use App\Models\FirstProductGroup;
+use App\Models\Product;
+use App\Models\ProductDiscountGroup;
+use App\Models\SecondProductGroup;
 use App\Models\Setting;
+use App\Models\ThirdProductGroup;
 use App\Services\Auth\LegacyPasswordVerifier;
 use App\Services\Automation\Heartbeat\HeartbeatTaskRegistry;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
@@ -12,6 +17,7 @@ use App\Services\ProductCatalog\ProductSpecHighlightService;
 use App\Services\System\UploadedAssetReferenceService;
 use Carbon\CarbonInterface;
 use Illuminate\Queue\Events\JobTimedOut;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -96,6 +102,8 @@ class AppServiceProvider extends ServiceProvider
 
             return true;
         });
+
+        $this->invalidateCatalogCacheOnCatalogChanges();
     }
 
     /**
@@ -123,5 +131,36 @@ class AppServiceProvider extends ServiceProvider
         }
 
         config(['app.name' => $siteName]);
+    }
+
+    /**
+     * 商品/分组/折扣组的任何增删改都主动失效商品目录缓存：
+     * 官网商品卡（tags: site-products）与管理端整树缓存均实时刷新，不依赖 TTL 过期。
+     * 批量写入（如状态同步批量更新商品）会在 2s 内合并为一次失效，避免反复清缓存。
+     */
+    private function invalidateCatalogCacheOnCatalogChanges(): void
+    {
+        $lastFlushAt = null;
+        $flush = function () use (&$lastFlushAt): void {
+            $now = microtime(true);
+            if ($lastFlushAt !== null && $now - $lastFlushAt < 2) {
+                return;
+            }
+            $lastFlushAt = $now;
+
+            Cache::tags(['site-products'])->flush();
+            Cache::forget('coupon_product_group_tree_v1');
+        };
+
+        foreach ([
+            Product::class,
+            FirstProductGroup::class,
+            SecondProductGroup::class,
+            ThirdProductGroup::class,
+            ProductDiscountGroup::class,
+        ] as $model) {
+            $model::saved($flush);
+            $model::deleted($flush);
+        }
     }
 }

@@ -183,6 +183,69 @@ class CouponProductGroupQueryService
         return $result;
     }
 
+    /**
+     * 一次性返回商品分组整树（三层全部分组 + 全部产品）。
+     *
+     * 供优惠券/活动等「按分类选择商品」场景一次请求构建选择树，
+     * 替代前端递归逐层分页拉取（整树动辄几十个请求）造成的请求风暴。
+     * 返回的分组保持 sort_order/id 排序，与分页接口一致。
+     *
+     * @return array{
+     *     groups: \Illuminate\Support\Collection<int, FirstProductGroup|SecondProductGroup|ThirdProductGroup>,
+     *     products: \Illuminate\Support\Collection<int, Product>
+     * }
+     */
+    public function fullTree(): array
+    {
+        $firstGroups = FirstProductGroup::query()
+            ->select(['id', 'code', 'name', 'sort_order', 'is_visible'])
+            ->withCount(['secondProductGroups as children_count'])
+            ->selectSub($this->productTreeCountSubquery('first_product_groups.id', 1), 'products_count')
+            ->selectSub($this->directProductCountSubquery('first_product_groups.id', 1), 'direct_products_count')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $firstIds = $firstGroups->pluck('id')->all();
+
+        $secondGroups = SecondProductGroup::query()
+            ->select(['id', 'first_product_group_id', 'name', 'sort_order', 'is_visible'])
+            ->whereIn('first_product_group_id', $firstIds)
+            ->with(['firstProductGroup:id,code,name'])
+            ->withCount(['thirdProductGroups as children_count'])
+            ->selectSub($this->productTreeCountSubquery('second_product_groups.id', 2), 'products_count')
+            ->selectSub($this->directProductCountSubquery('second_product_groups.id', 2), 'direct_products_count')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $secondIds = $secondGroups->pluck('id')->all();
+
+        $thirdGroups = ThirdProductGroup::query()
+            ->select(['id', 'second_product_group_id', 'name', 'sort_order', 'is_visible'])
+            ->whereIn('second_product_group_id', $secondIds)
+            ->with(['secondProductGroup:id,first_product_group_id,name', 'secondProductGroup.firstProductGroup:id,code,name'])
+            ->withCount(['products as products_count', 'products as direct_products_count'])
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $thirdIds = $thirdGroups->pluck('id')->all();
+
+        $products = Product::query()
+            ->select($this->productColumns())
+            ->with(['productGroup.secondProductGroup.firstProductGroup'])
+            ->whereIn('product_group_id', $thirdIds)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        return [
+            'groups' => $firstGroups->concat($secondGroups)->concat($thirdGroups),
+            'products' => $products,
+        ];
+    }
+
     private function firstGroup(int $id): FirstProductGroup
     {
         $group = FirstProductGroup::query()->find($id);

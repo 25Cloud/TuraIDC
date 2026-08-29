@@ -38,6 +38,22 @@ final class ZjmfConsoleService
         return $this->postDefaultModuleAction($supplier, $hostId, $action, [], $jwt);
     }
 
+    /**
+     * 暂停上游主机（默认模块 func=suspend）。
+     */
+    public function suspendHost(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return $this->postDefaultModuleAction($supplier, $hostId, 'suspend', [], $jwt);
+    }
+
+    /**
+     * 解除暂停上游主机（默认模块 func=unsuspend）。
+     */
+    public function unsuspendHost(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return $this->postDefaultModuleAction($supplier, $hostId, 'unsuspend', [], $jwt);
+    }
+
     public function getModuleStatus(Supplier $supplier, int $hostId, string $type = 'host', ?string $jwt = null): array
     {
         return $this->postDefaultModuleAction($supplier, $hostId, 'status', [], $jwt);

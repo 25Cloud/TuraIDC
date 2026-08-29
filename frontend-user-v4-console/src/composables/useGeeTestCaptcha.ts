@@ -654,6 +654,22 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
       return;
     }
 
+    // 先解析配置（同步设置 renderMode），再决定是否预加载：
+    // - popup 形态：预加载就绪无 UI 副作用，安全；
+    // - inline 形态：必须由页面提供挂载容器，否则不预加载——避免适配层把
+    //   验证码渲染到页面默认位置（如个人信息页无容器时页面底部多出验证码）。
+    const config = await resolveConfig();
+    if (!config || !enabled.value) {
+      return;
+    }
+
+    if (renderMode.value === 'inline') {
+      const target = resolveAppendTarget((options.appendTo ?? options.container) as CaptchaAppendTarget);
+      if (!target) {
+        return;
+      }
+    }
+
     try {
       await initCaptcha();
     } catch {
@@ -661,11 +677,11 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     }
   };
 
-  // 挂载时只拉配置，不加载验证 SDK——SDK 在用户点击提交时（verify）才加载
+  // 页面加载后即初始化验证组件（加载 SDK 并 ready），用户点击提交时立即弹窗/校验，
+  // 避免此前「点击才加载」造成的卡顿与等待。popup 形态只就绪不弹窗，inline 形态直接渲染。
+  // 初始化失败静默忽略，点击提交时 verify() 会走完整错误提示路径。
   onMounted(() => {
-    resolveConfig().catch(() => {
-      initialized.value = true;
-    });
+    void prepare();
   });
 
   onBeforeUnmount(() => {

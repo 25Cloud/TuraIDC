@@ -8,6 +8,7 @@ use App\Exceptions\BusinessException;
 use App\Models\AdminUser;
 use App\Models\IntegrationPlugin;
 use App\Models\IntegrationPluginConfig;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -37,14 +38,20 @@ class PluginConfigRepository
 
     public function resolvedConfigByDomainAndSlug(string $domain, string $slug): array
     {
-        if (! Schema::hasTable('integration_plugins')) {
-            return [];
-        }
+        $plugin = Cache::remember(
+            'plugin_record_'.trim($domain).'_'.md5(trim($slug)),
+            60,
+            function () use ($domain, $slug): ?IntegrationPlugin {
+                if (! Schema::hasTable('integration_plugins')) {
+                    return null;
+                }
 
-        $plugin = IntegrationPlugin::query()
-            ->where('domain', trim($domain))
-            ->where('slug', trim($slug))
-            ->first();
+                return IntegrationPlugin::query()
+                    ->where('domain', trim($domain))
+                    ->where('slug', trim($slug))
+                    ->first();
+            }
+        );
 
         return $plugin instanceof IntegrationPlugin ? $this->resolvedConfig($plugin) : [];
     }

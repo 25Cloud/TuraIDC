@@ -233,7 +233,7 @@ class AuthController extends Controller
             // 插件自定义的前端初始化参数（如 Cap 自托管服务端地址）
             'api_endpoint' => $this->geeTestService->getApiEndpoint(),
             'scenes' => $this->captchaPolicyService->sceneMap(),
-        ]);
+        ])->header('Cache-Control', 'public, max-age=30');
     }
 
     public function captchaScript()

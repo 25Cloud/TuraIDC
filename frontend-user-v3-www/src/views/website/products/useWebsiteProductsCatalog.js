@@ -163,6 +163,16 @@ export function useWebsiteProductsCatalog({
       return;
     }
 
+    // 深链保护：当前 URL 是带参数的商品深链（刷新/直链进入），但本地状态尚未完整解析
+    // （分组/目录/商品请求失败或仍为空）时，不要用空状态把 URL 回退到 /products，
+    // 否则刷新后深链参数丢失、页面停摆在空目录。保持 URL，等待解析完成或用户手动切换。
+    if (
+      targetPath === "/products" &&
+      hasWebsiteProductRouteParams(readWebsiteProductRouteParams(route))
+    ) {
+      return;
+    }
+
     await router.replace({
       path: targetPath,
       query: route.query,
@@ -371,8 +381,10 @@ export function useWebsiteProductsCatalog({
     try {
       const typeValue = activeTypeValue.value || "";
       // 优先复用已加载过的类型分组，切换回已访问类型时不重复请求 productGroups
+      // 注意：空数组不缓存（如深链时 productsInit 返回不完整导致过滤后为空），
+      // 否则后续 loadRootGroups 会命中空缓存永远拿不到真实分组。
       let groups = rootGroupsByType.get(typeValue);
-      if (!groups) {
+      if (!groups || groups.length === 0) {
         const res = await siteApi.productGroups({
           first_product_group_code: typeValue || undefined,
         });
@@ -610,7 +622,14 @@ export function useWebsiteProductsCatalog({
     const hasRouteTarget = hasWebsiteProductRouteParams(routePayload);
 
     try {
-      const res = await siteApi.productsInit();
+      // 深链（URL 带类型/分组/产品）时按目标类型请求初始化数据：
+      // 后端 purchase-context 默认只返回第一个类型的根分组，若深链目标是其他类型
+      // （如 isp），不传参会导致 root_groups 缺失该类型分组，前端过滤后为空并回退 /products。
+      const res = await siteApi.productsInit(
+        hasRouteTarget
+          ? { first_product_group_code: routePayload.typeId || undefined }
+          : undefined,
+      );
       const data = res.data || {};
       productTypes.value = data.types || [];
 
@@ -641,7 +660,10 @@ export function useWebsiteProductsCatalog({
           data.catalog &&
           Number(data.catalog.effective_product_group_id || 0) > 0
         ) {
-          setCachedCatalog(data.catalog.effective_product_group_id, data.catalog);
+          setCachedCatalog(
+            data.catalog.effective_product_group_id,
+            data.catalog,
+          );
         }
 
         const linked = await applyRouteSelection();

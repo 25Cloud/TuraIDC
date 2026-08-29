@@ -199,6 +199,7 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::get('/cpu-model-catalog', [CpuModelCatalogController::class, 'index']);
 
         Route::get('/coupon-product-groups', [CouponProductGroupController::class, 'index']);
+        Route::get('/coupon-product-groups/tree', [CouponProductGroupController::class, 'tree']);
         Route::get('/coupon-product-groups/{group}/children', [CouponProductGroupController::class, 'children']);
         Route::get('/coupon-product-groups/{group}/products', [CouponProductGroupController::class, 'products']);
         Route::post('/coupon-product-groups/batch-products', [CouponProductGroupController::class, 'batchProducts']);
