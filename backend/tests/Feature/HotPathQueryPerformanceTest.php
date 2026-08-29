@@ -11,6 +11,7 @@ use App\Services\Referral\MemberLevelService;
 use App\Support\DatabaseSchema;
 use App\Support\DeferredJoinPaginator;
 use Illuminate\Database\Events\TransactionBeginning;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
@@ -23,21 +24,16 @@ use Tests\TestCase;
  */
 class HotPathQueryPerformanceTest extends TestCase
 {
+    // 本类会调用 resyncAllUserLevels()，它按设计会遍历库里**全部**存量用户。
+    // 测试库是多方共用的，因此整类包在事务里跑完即回滚，保证不残留、也不改动他人数据。
+    use DatabaseTransactions;
+
     private string $suffix = '';
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->suffix = bin2hex(random_bytes(5));
-    }
-
-    protected function tearDown(): void
-    {
-        OperationLog::query()->where('module', 'hotpath-'.$this->suffix)->forceDelete();
-        User::query()->where('email', 'like', 'hotpath-'.$this->suffix.'%')->forceDelete();
-        MemberLevel::query()->where('name', 'like', 'hotpath-'.$this->suffix.'%')->delete();
-
-        parent::tearDown();
     }
 
     /**
@@ -140,6 +136,96 @@ class HotPathQueryPerformanceTest extends TestCase
 
         $this->assertSame($expected, $collected, '逐页翻完必须与一次性排序取全量逐行相等：无重复、无遗漏');
         $this->assertCount(count(array_unique($collected)), $collected, '翻页结果不得出现重复行');
+    }
+
+    public function test_deferred_join_paginator_handles_empty_and_overflow_pages(): void
+    {
+        $this->seedLogs(30);
+        $module = 'hotpath-'.$this->suffix;
+
+        // 越界页：不得报错，返回空集但总数仍然正确
+        $overflow = DeferredJoinPaginator::paginate(
+            OperationLog::query()->where('module', $module),
+            20,
+            99
+        );
+        $this->assertSame(30, $overflow->total(), '越界页的 total 仍应是真实总数');
+        $this->assertCount(0, $overflow->items(), '越界页应返回空集而不是报错');
+
+        // 空结果集：不得因为主键集合为空而炸掉第二趟查询
+        $empty = DeferredJoinPaginator::paginate(
+            OperationLog::query()->where('module', 'no-such-module-'.$this->suffix),
+            20,
+            1
+        );
+        $this->assertSame(0, $empty->total());
+        $this->assertCount(0, $empty->items());
+    }
+
+    public function test_deferred_join_paginator_only_selects_the_key_in_the_first_pass(): void
+    {
+        $this->seedLogs(60);
+        $module = 'hotpath-'.$this->suffix;
+
+        $sqls = [];
+        DB::listen(function ($event) use (&$sqls): void {
+            $sqls[] = $event->sql;
+        });
+
+        DeferredJoinPaginator::paginate(OperationLog::query()->where('module', $module), 20, 2);
+
+        // 取主键那一趟必须只 select 主键：一旦退回 select *，MySQL 就不走覆盖索引，
+        // 整个优化失效——而结果依然正确，所以只断言结果的用例拦不住这种回退。
+        $keyOnlyPass = array_filter(
+            $sqls,
+            static fn (string $sql): bool => str_contains($sql, 'select `operation_logs`.`id`')
+                && str_contains($sql, 'offset')
+        );
+
+        $this->assertNotEmpty(
+            $keyOnlyPass,
+            '第一趟必须是「只取主键 + offset」的窄查询，否则覆盖索引失效、优化白做'
+        );
+    }
+
+    public function test_member_level_resync_does_not_reload_users_one_by_one(): void
+    {
+        if (! DatabaseSchema::hasTable('user_referrals')) {
+            $this->markTestSkipped('该 N+1 分支只在存在 user_referrals 表时生效');
+        }
+
+        $level = MemberLevel::query()->create([
+            'name' => 'hotpath-'.$this->suffix.'-n1',
+            'sort_order' => 1,
+        ]);
+
+        for ($i = 0; $i < 5; $i++) {
+            User::query()->create([
+                'email' => 'hotpath-'.$this->suffix.'-n'.$i.'@example.com',
+                'password' => 'Temp@123456',
+                'total_sales_amount' => '10.00',
+                'member_level_id' => $level->id,
+            ]);
+        }
+
+        $sqls = [];
+        DB::listen(function ($event) use (&$sqls): void {
+            $sqls[] = $event->sql;
+        });
+
+        app(MemberLevelService::class)->resyncAllUserLevels();
+
+        // N+1 的特征是「按单个主键取用户」重复出现；改成整批 whereIn 之后不该再有多条。
+        $singleUserLookups = array_filter(
+            $sqls,
+            static fn (string $sql): bool => (bool) preg_match('/select \* from `users` where `users`\.`id` = \?/', $sql)
+        );
+
+        $this->assertLessThanOrEqual(
+            1,
+            count($singleUserLookups),
+            '存量重算不得在循环里逐个 User::find()——这正是本次修掉的 N+1'
+        );
     }
 
     public function test_database_schema_has_table_is_memoized_within_the_process(): void
