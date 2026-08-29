@@ -296,4 +296,33 @@ class ApiKeyTest extends TestCase
             ->assertStatus(429)
             ->assertJsonPath('code', 42900);
     }
+
+    /**
+     * 未知权限域必须在入口被拒（422），而不是被 normalizeScopes 静默丢弃。
+     * 否则把 products 拼成 product 时请求"成功"，权限却没生效。
+     */
+    public function test_create_rejects_unknown_scope_domain(): void
+    {
+        $user = $this->createClientUser();
+        $this->actingAsClient($user);
+
+        $this->postJson('/api/v2/client/api-keys', [
+            'name' => '拼错域名',
+            'scopes' => ['product' => 'read'],
+        ])->assertStatus(422);
+    }
+
+    public function test_update_rejects_unknown_scope_domain(): void
+    {
+        $user = $this->createClientUser();
+        $this->actingAsClient($user);
+        [$key] = $this->createKey($user, ['products' => 'read']);
+
+        $this->putJson("/api/v2/client/api-keys/{$key->id}", [
+            'scopes' => ['servicess' => 'write'],
+        ])->assertStatus(422);
+
+        // 既有合法权限不受这次失败影响。
+        $this->assertSame(['products' => 'read'], $key->fresh()->scopes);
+    }
 }
