@@ -33,7 +33,15 @@ class InvoiceService
     /**
      * 根据订单创建账单
      */
-    public function createFromOrder(Order $order): Invoice
+    /**
+     * 由订单派生账单。
+     *
+     * 默认按「order.amount 是折前毛额」推导应付额（amount - discount），这是本方法的历史契约，
+     * 由 PaymentInvoiceProjectionSyncTest 钉住，管理员建单路径（discount 恒为 0）也依赖它。
+     * 但新购与续费主链路存的是「券后应付额」，那里再减一次券就会重复扣减，
+     * 因此这类调用方必须用 $payableAmountOverride 显式声明应付额。
+     */
+    public function createFromOrder(Order $order, ?float $payableAmountOverride = null): Invoice
     {
         $invoice = Invoice::create([
             'invoice_no' => Invoice::generateInvoiceNoFromOrderNo((string) $order->order_no),
@@ -47,7 +55,7 @@ class InvoiceService
             'user_coupon_id' => $order->user_coupon_id,
             'coupon_code' => $order->coupon_code,
             'type' => $order->type === OrderType::RENEW ? InvoiceType::RENEW : 'normal',
-            'amount' => $order->amount - $order->discount,
+            'amount' => $payableAmountOverride ?? ($order->amount - $order->discount),
             'discount' => $order->discount ?? 0,
             'billing_cycle' => $order->billing_cycle,
             'quantity' => $order->quantity ?? 1,

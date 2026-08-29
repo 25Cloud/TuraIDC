@@ -122,6 +122,14 @@ class UpstreamProvisionService
             return ['status' => 400, 'msg' => '服务当前状态不支持解除暂停'];
         }
 
+        // 到期欠费停机不得由下游解除：这类停机的标记正是 SUSPENDED + suspended_reason='expired'，
+        // 只判 status 挡不住它。放行会造成两重后果——服务立刻恢复可用，且 suspended_reason 被清成
+        // null 后，ServiceLifecycleAutomationService 的自动取消（按 status=SUSPENDED + 该标记筛选）
+        // 再也命中不到它，等于永久规避欠费终止。恢复只能由 TuraIDC 侧在收到续费后自行解除。
+        if ((string) $service->suspended_reason === Service::SUSPENDED_REASON_EXPIRED) {
+            return ['status' => 400, 'msg' => '服务因到期欠费停机，请续费后由系统自动恢复'];
+        }
+
         $service->forceFill([
             'status' => ServiceStatus::ACTIVE,
             'suspended_reason' => null,

@@ -18,6 +18,7 @@
 | 集成   | [插件开发](integrations/plugins/README.md)                                           | current      | 插件目录、扩展点与示例。                                       |
 | 集成   | [demo-ali-pay](integrations/plugins/demo-ali-pay.md)                                 | current      | 支付网关插件示例。                                             |
 | 集成   | [kanghostx 源码说明](../../backend/plugins/servers/kanghostx/README.md)              | current      | 服务器插件的源码旁维护说明。                                   |
+| 安全   | [安全开发规范](security/secure-development-standard.md)                              | current      | 分层模型、WAF 边界、密钥空值即拒绝、XSS 白名单净化与自检清单。 |
 | 运维   | [本地启动指南](operations/local-development.md)                                      | current      | 本地后端与前端启动命令。                                       |
 | 运维   | [测试指南](operations/testing.md)                                                    | current      | 测试环境、命令和范围。                                         |
 | 运维   | [部署与调度指南](operations/deployment-and-scheduling.md)                            | current      | 现网部署、调度与队列口径。                                     |

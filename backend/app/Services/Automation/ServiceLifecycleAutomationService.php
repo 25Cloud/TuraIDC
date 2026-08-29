@@ -73,7 +73,7 @@ class ServiceLifecycleAutomationService
 
                 $locked->forceFill([
                     'status' => ServiceStatus::SUSPENDED,
-                    'suspended_reason' => 'expired',
+                    'suspended_reason' => Service::SUSPENDED_REASON_EXPIRED,
                     'provision_data' => $provisionData,
                 ])->save();
 
@@ -108,7 +108,7 @@ class ServiceLifecycleAutomationService
         $services = Service::query()
             ->with('user:id,email,nickname')
             ->where('status', ServiceStatus::SUSPENDED)
-            ->where('suspended_reason', 'expired')
+            ->where('suspended_reason', Service::SUSPENDED_REASON_EXPIRED)
             ->whereNotNull('expires_at')
             ->get();
 
@@ -187,7 +187,7 @@ class ServiceLifecycleAutomationService
         $services = Service::query()
             ->with('user:id,email,nickname')
             ->where('status', ServiceStatus::SUSPENDED)
-            ->where('suspended_reason', 'expired')
+            ->where('suspended_reason', Service::SUSPENDED_REASON_EXPIRED)
             ->whereNotNull('expires_at')
             ->get();
 
@@ -203,7 +203,7 @@ class ServiceLifecycleAutomationService
 
                 // 写前重读校验：续费后服务已恢复 ACTIVE 或暂停原因变化时跳过，防止不可逆取消刚续费的服务
                 if ((int) $locked->status !== ServiceStatus::SUSPENDED
-                    || (string) $locked->suspended_reason !== 'expired') {
+                    || (string) $locked->suspended_reason !== Service::SUSPENDED_REASON_EXPIRED) {
                     return null;
                 }
 

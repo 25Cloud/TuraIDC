@@ -373,6 +373,12 @@
       "status": "active",
       "summary": "开放 API v2 实施计划：api_keys 表、open 网关中间件、Open 控制器与三端配置管理界面。",
       "review_by": "2026-09-30"
+    },
+    {
+      "path": "references/security/secure-development-standard.md",
+      "status": "current",
+      "summary": "安全分层模型、WAF 边界、密钥空值即拒绝、XSS 白名单净化与自检清单。",
+      "review_by": "2026-11-28"
     }
   ]
 }

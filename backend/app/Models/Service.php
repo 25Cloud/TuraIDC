@@ -31,6 +31,16 @@ class Service extends Model
     }
 
     /** 允许下单/续费的周期，文案与月数统一取自 {@see BillingCycle}。 */
+    /**
+     * 到期欠费停机的 suspended_reason 标记。
+     *
+     * 该标记既是「为什么停机」的说明，也是自动取消流程的筛选条件
+     * （ServiceLifecycleAutomationService 按 status=SUSPENDED + 该标记挑选待取消服务）。
+     * 因此任何清除它的地方都等于让服务永久逃过欠费终止，必须用常量而不是字面量，
+     * 避免改了标记而某处守卫悄悄失效。
+     */
+    public const SUSPENDED_REASON_EXPIRED = 'expired';
+
     public const SUPPORTED_RENEW_BILLING_CYCLES = BillingCycle::RENEWABLE_LABELS;
 
     private const SUPPORTED_RENEW_BILLING_CYCLE_MONTHS = BillingCycle::RENEWABLE_MONTHS;
