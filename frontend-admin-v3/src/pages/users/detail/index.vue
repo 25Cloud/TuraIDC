@@ -1516,6 +1516,8 @@ async function saveNote() {
     user.value.admin_note = noteForm.value;
     noteEditing.value = false;
     MessagePlugin.success('备注已保存');
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '备注保存失败'));
   } finally {
     noteSaving.value = false;
   }
@@ -1536,6 +1538,8 @@ async function handleSave() {
     MessagePlugin.success('用户资料已更新');
     editVisible.value = false;
     await loadDetail();
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '用户资料更新失败，请检查手机号是否已被占用或格式是否正确'));
   } finally {
     saveLoading.value = false;
   }
@@ -1560,6 +1564,10 @@ async function handleRecharge() {
     rechargeVisible.value = false;
     await loadDetail();
     if (loadedTabs.balance) await loadBalance();
+  } catch (error) {
+    MessagePlugin.error(
+      errorMessage(error, rechargeForm.type === 'decrease' ? '扣减失败，请稍后重试' : '增加余额失败，请稍后重试'),
+    );
   } finally {
     rechargeLoading.value = false;
   }

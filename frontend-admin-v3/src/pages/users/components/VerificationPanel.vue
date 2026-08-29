@@ -215,6 +215,7 @@ import { adminApi } from '@/api/admin';
 import { useUserStore } from '@/store';
 import { formatDateTime } from '@/utils/format';
 import { required } from '@/utils/formRules';
+import { errorMessage } from '@/utils/userMessage';
 
 const userStore = useUserStore();
 const route = useRoute();
@@ -459,6 +460,8 @@ async function handleReject() {
     MessagePlugin.success('操作成功');
     rejectVisible.value = false;
     await Promise.all([loadList(), loadSummary()]);
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '驳回失败，请稍后重试'));
   } finally {
     actionLoadingId.value = null;
   }
@@ -485,6 +488,8 @@ async function saveFeeSettings() {
     });
     await loadSummary();
     MessagePlugin.success('费用设置已保存');
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '费用设置保存失败，请稍后重试'));
   } finally {
     feeLoading.value = false;
   }
