@@ -226,7 +226,11 @@ class AdminLogService
 
         $this->applyDateFilter($query, $filters);
 
-        $logs = DeferredJoinPaginator::paginate(clone $query, $perPage, $page);
+        // 这里刻意**不用** DeferredJoinPaginator：本查询的首个条件是 action REGEXP 全表正则，
+        // 索引吃不下，连「只取主键」那一趟也是 type=ALL + filesort（20 万行实测 EXPLAIN 已确认），
+        // 延迟关联只会白白多打一趟查询。实测更慢：深度 100 时 1.65ms -> 170.54ms，
+        // 深度 50000 时 322.04ms -> 399.34ms。真正的病是 REGEXP 不可索引，需另行处理。
+        $logs = (clone $query)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
         $rows = $this->mapOperationLogs($logs->getCollection(), false)->map(function (array $item) {
             [$method, $path] = $this->splitHttpAction((string) ($item['action'] ?? ''));
             $detail = SensitiveDataSanitizer::sanitize(
@@ -1843,7 +1847,11 @@ class AdminLogService
             ->where('action', '<>', 'admin.login');
         $this->applyBusinessOperationActivityFilters($query, $filters);
 
-        $logs = DeferredJoinPaginator::paginate(clone $query, $perPage, $page);
+        // 这里刻意**不用** DeferredJoinPaginator：本查询的首个条件是 action REGEXP 全表正则，
+        // 索引吃不下，连「只取主键」那一趟也是 type=ALL + filesort（20 万行实测 EXPLAIN 已确认），
+        // 延迟关联只会白白多打一趟查询。实测更慢：深度 100 时 1.65ms -> 170.54ms，
+        // 深度 50000 时 322.04ms -> 399.34ms。真正的病是 REGEXP 不可索引，需另行处理。
+        $logs = (clone $query)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
         $logs->setCollection(
             $this->mapOperationLogs($logs->getCollection(), true)
                 ->map(fn (array $item) => $this->mapOperationLogToActivityRow($item))

@@ -31,7 +31,14 @@ use Illuminate\Pagination\Paginator;
  * - 实测也比游标快：同深度 100,000 时延迟关联 32.45 ms、游标 180.12 ms。
  *
  * MySQL 版本兼容：只用了 `IN (...)` 与 `ORDER BY ... LIMIT`，不含 CTE、窗口函数或
- * 行构造器比较，5.7.44 与 8.0 行为一致。
+ * 行构造器比较。5.7.44 沙箱实测第一趟同样是
+ * `type=index key=operation_logs_created_at_idx Extra=Using index`，与 8.0 一致。
+ *
+ * **什么时候不要用它**：当查询存在无法走索引的过滤条件时（本仓的典型是
+ * `action REGEXP` / `action NOT REGEXP` 全表正则），连「只取主键」那一趟也会退化成
+ * `type=ALL` + filesort，延迟关联只是白白多打一趟查询。20 万行实测反而更慢：
+ * 深度 100 时 1.65ms -> 170.54ms，深度 50000 时 322.04ms -> 399.34ms。
+ * 那种查询的瓶颈是谓词不可索引，得先解决谓词本身。
  */
 final class DeferredJoinPaginator
 {
