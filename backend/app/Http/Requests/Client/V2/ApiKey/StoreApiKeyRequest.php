@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Client\V2\ApiKey;
 
+use App\Rules\KnownApiScopeDomains;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreApiKeyRequest extends FormRequest
@@ -17,7 +18,7 @@ class StoreApiKeyRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:64'],
-            'scopes' => ['required', 'array'],
+            'scopes' => ['required', 'array', new KnownApiScopeDomains],
             'scopes.*' => ['string', 'in:read,write'],
             'expires_at' => ['nullable', 'date'],
             'ip_allowlist' => ['nullable', 'array'],

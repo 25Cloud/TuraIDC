@@ -12,13 +12,17 @@ use App\Models\ThirdProductGroup;
 use App\Services\Auth\LegacyPasswordVerifier;
 use App\Services\Automation\Heartbeat\HeartbeatTaskRegistry;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
+use App\Services\OpenApi\OpenApiConfig;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductSpecHighlightService;
 use App\Services\System\UploadedAssetReferenceService;
 use Carbon\CarbonInterface;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Queue\Events\JobTimedOut;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -74,6 +78,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadSiteNameFromSettings();
+        $this->registerOpenApiRateLimiter();
 
         // 心跳任务超时被杀时，Worker 在 SIGKILL 前同步派发 JobTimedOut；
         // 监听器把运行台账收敛为 retrying/failed，避免队列重试被状态 CAS 永久拒绝。
@@ -104,6 +109,24 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->invalidateCatalogCacheOnCatalogChanges();
+    }
+
+    /**
+     * 注册开放接口的限流器，落实后台可配的 open_api.rate_limit（默认 60/分钟）。
+     *
+     * 此前该值只在后台读写、没有任何中间件执行它 —— 等于设了限速却不生效。
+     * 按来源 IP 计数：限流跑在 api.key 认证之前，认证前拿不到密钥；而攻击面正是
+     * "任意 Bearer 头即可触发认证入口"，IP 恰是未认证攻击者唯一的可计量维度。
+     * 阈值从 OpenApiConfig 每次读取（settings 表），管理员改动即时生效。
+     * 超限统一走 bootstrap/app.php 里 ThrottleRequestsException 的中文 429 渲染。
+     */
+    private function registerOpenApiRateLimiter(): void
+    {
+        RateLimiter::for('open-api', function (Request $request) {
+            $perMinute = app(OpenApiConfig::class)->rateLimitPerMinute();
+
+            return Limit::perMinute($perMinute)->by((string) $request->ip());
+        });
     }
 
     /**
