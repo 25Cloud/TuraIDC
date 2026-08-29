@@ -122,7 +122,9 @@ export default antfu(
         ],
         'vue/multi-word-component-names': 'off',
         'vue/no-reserved-props': 'off',
-        'vue/no-v-html': 'off',
+        // v-html 是前端唯一的存储型 XSS 入口，必须逐处审阅而不是全局放行。
+      // 正当使用需就地写 eslint-disable-next-line 并说明内容经过了哪个白名单净化器。
+      'vue/no-v-html': 'error',
 
         'vue-scoped-css/no-parsing-error': 'off',
         'vue-scoped-css/no-unused-selector': 'off',

@@ -74,7 +74,10 @@ export default [
         },
       ],
       'vue/multi-word-component-names': 'off',
-      'vue/no-v-html': 'off',
+      // v-html 是前端唯一的存储型 XSS 入口，必须逐处审阅而不是全局放行。
+      // 现有两处正当使用（文章详情页）已就地标注豁免与理由；新增的一律会被拦下，
+      // 迫使作者说明内容为何可信、经过了哪个白名单净化器。
+      'vue/no-v-html': 'error',
     },
   },
 ];

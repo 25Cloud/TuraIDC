@@ -5,22 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Requests\Admin\V2\MediaFile;
 
 use App\Http\Requests\Admin\V2\Common\AdminFormRequest;
+use App\Support\MediaAssetTypes;
 use finfo;
 use Illuminate\Validation\Validator;
 
 class StoreMediaFileRequest extends AdminFormRequest
 {
-    private const ALLOWED_MIME_TYPES = [
-        'image/jpeg',
-        'image/png',
-        'image/webp',
-        'video/mp4',
-        'video/webm',
-        'video/ogg',
-        'video/quicktime',
-        'video/x-m4v',
-    ];
-
     public function rules(): array
     {
         return [
@@ -28,7 +18,7 @@ class StoreMediaFileRequest extends AdminFormRequest
             'page_size' => ['prohibited'],
             'pageSize' => ['prohibited'],
             'per_page' => ['prohibited'],
-            'file' => ['required', 'file', 'mimetypes:'.implode(',', self::ALLOWED_MIME_TYPES), 'max:102400'],
+            'file' => ['required', 'file', 'mimetypes:'.implode(',', MediaAssetTypes::allowedMimeTypes()), 'max:102400'],
             'group' => ['nullable', 'string', 'max:50', 'alpha_dash:ascii'],
         ];
     }
@@ -54,7 +44,7 @@ class StoreMediaFileRequest extends AdminFormRequest
 
                 $realMime = (new finfo(FILEINFO_MIME_TYPE))->file($realPath);
 
-                if (! in_array($realMime, self::ALLOWED_MIME_TYPES, true)) {
+                if (! in_array($realMime, MediaAssetTypes::allowedMimeTypes(), true)) {
                     $validator->errors()->add('file', '文件真实类型不被允许');
                 }
             },

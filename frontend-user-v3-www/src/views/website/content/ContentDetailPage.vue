@@ -43,11 +43,11 @@
           <template v-else-if="currentArticle">
             <el-divider />
 
-            <div
-              ref="contentRef"
-              class="reader-content"
-              v-html="articleContentHtml"
-            />
+            <!-- articleContentHtml 由 renderMarkdown() 产出，最后一步是 sanitizeRenderedHtml()
+                 （shared/htmlSanitizer.js 的 DOM 白名单：标签、属性、URL 协议三层），
+                 且渲染器重写了 validateLink 拦掉 javascript:/vbscript:/data: 协议。 -->
+            <!-- eslint-disable-next-line vue/no-v-html -- 内容已过 sanitizeRenderedHtml 白名单净化 -->
+            <div ref="contentRef" class="reader-content" v-html="articleContentHtml" />
           </template>
 
           <el-empty v-else-if="!loading" :description="config.emptyText" class="reader-empty" />
