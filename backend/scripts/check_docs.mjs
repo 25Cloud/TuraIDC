@@ -436,6 +436,42 @@ function resolveCatalogPath(recordPath, recordLabel) {
   return resolved;
 }
 
+/**
+ * records 必须按 path 字段升序排列。
+ *
+ * 这不是洁癖。在无序（实际等同于「新记录追加到数组末尾」）的约定下，任意两个并行 PR
+ * 新增文档都会改到数组的同一行，git 每次都判为冲突——本仓库连续三个 PR 都因此手工解过
+ * 一次。按 path 排序后，不同目录的新增会落在相隔几十行的位置，git 能自动合并。
+ *
+ * 两个实现细节是有意的：
+ *
+ * 1. 比较**原始 record.path 字符串**，而不是 resolveCatalogPath() 归一化后的结果。
+ *    归一化会把 './b.md' 折成 'b.md'、'zz/../c.md' 折成 'c.md'，一旦有人这样写路径，
+ *    「文件里的字面顺序」与「归一化后的顺序」就会分歧，于是出现「明明排好序了却报未排序」
+ *    这种无从下手的报错。字面顺序才是 git 看到的顺序，也是本校验真正要约束的东西。
+ * 2. 遍历**全部记录**，而不是通过了其它校验的子集。否则一条状态非法的记录被剔除后，
+ *    它前后两条会被直接相邻比较，真实乱序可能被掩盖。
+ */
+function checkCatalogOrder(records) {
+  let previous = null;
+  for (const [index, record] of records.entries()) {
+    if (!record || typeof record !== "object" || Array.isArray(record)) {
+      continue;
+    }
+    if (typeof record.path !== "string" || !record.path.trim()) {
+      continue;
+    }
+
+    const current = record.path;
+    if (previous !== null && current < previous.path) {
+      errors.push(
+        `docs/catalog.json records[${index}] 破坏 path 升序：${current} 应排在 ${previous.path} 之前`,
+      );
+    }
+    previous = { index, path: current };
+  }
+}
+
 function checkCatalog(markdownFiles) {
   const catalogPath = path.join(docsRoot, "catalog.json");
   if (!isFile(catalogPath)) {
@@ -514,19 +550,7 @@ function checkCatalog(markdownFiles) {
     }
   }
 
-  // records 必须按 path 升序。
-  //
-  // 这不是洁癖：在无序（等同于「追加到末尾」）的约定下，任意两个并行 PR 新增文档都会
-  // 改到数组的同一行，git 每次都判为冲突——本仓库连续三个 PR 都因此手工解过一次。
-  // 按 path 排序后，不同目录的新增会落在相隔几十行的位置，git 能自动合并。
-  const orderedPaths = validRecords.map(({ path: recordPath }) => recordPath);
-  for (let i = 1; i < orderedPaths.length; i += 1) {
-    if (orderedPaths[i] < orderedPaths[i - 1]) {
-      errors.push(
-        `docs/catalog.json records must be sorted by path: ${orderedPaths[i]} 应排在 ${orderedPaths[i - 1]} 之前`,
-      );
-    }
-  }
+  checkCatalogOrder(catalog.records);
 
   for (const markdownFile of markdownFiles) {
     if (isIndexMarkdown(markdownFile)) {
