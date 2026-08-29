@@ -4,14 +4,14 @@
 
 本文记录将智简魔方财务（魔方财务 / ZJMF）业务数据迁移至图拉云 `turaidc` 数据库的实验性流程。该迁移器未集成进 `install_db.py`，仅作为一次性导入工具存在；正式生产迁移仍以 `migrate_legacy_dump.py` 为准。
 
-## 适用场景
+## 1. 适用场景
 
 - 源系统：智简魔方财务（数据库表前缀 `shd_`，旧版本可能使用 `mccloud_`、`ewytemplate_` 等前缀）。
 - 目标系统：图拉云 `turaidc` 当前 schema。
 - 数据规模：约 2.4 万行业务数据（用户 1279、商品 1337、订单 3369、账单 7814、服务 2970、工单 1130）。
 - 迁移方式：从 `mysqldump` 文件流式解析 + 字段映射 + 批量写入，不要求源库在线。
 
-## 脚本与依赖
+## 2. 脚本与依赖
 
 | 脚本                                                                                    | 作用                                                        |
 | --------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
@@ -25,7 +25,7 @@
 
 依赖：`pymysql`（已在 backend 虚拟环境中安装）。
 
-## 连接配置（三种方式，按优先级合并）
+## 3. 连接配置（三种方式，按优先级合并）
 
 > 命令行参数 > 环境变量 `MOFANG_MIGRATE_<KEY>` > 配置文件。
 
@@ -56,7 +56,7 @@ MOFANG_MIGRATE_PASSWORD / MOFANG_MIGRATE_DATABASE / MOFANG_MIGRATE_DUMP
 
 **方式三：命令行参数**（优先级最高，见下方执行流程）。
 
-## 执行流程
+## 4. 执行流程
 
 ### 1. 预检：源数据评估
 
@@ -103,7 +103,7 @@ python backend\scripts\mofang_to_turaidc_migrator.py ^
 
 见下文「数据校验」一节。
 
-## 表映射规则
+## 5. 表映射规则
 
 源表 `shd_*` 剥离前缀后，按以下对应关系写入目标表：
 
@@ -126,7 +126,7 @@ python backend\scripts\mofang_to_turaidc_migrator.py ^
 | `shd_pricing`                     | (后处理写入 `products.pricing`) | 不直接入库，作为 pricing JSON 源                      |
 | `shd_product_groups`              | `third_product_groups`          | 后处理同步二级组到三级组，满足外键                    |
 
-## 关键兼容性处理
+## 6. 关键兼容性处理
 
 ### 密码：`###md5` 格式
 
@@ -163,7 +163,7 @@ python backend\scripts\mofang_to_turaidc_migrator.py ^
 
 目标库 `products.product_group_id` 外键指向 `third_product_groups.id`，源库只有两级组。迁移器在主流程结束后调用 `_sync_third_product_groups`，将 `shd_product_groups` 数据复制到 `third_product_groups`，满足外键约束。
 
-## 数据校验
+## 7. 数据校验
 
 ### 行数对账
 
@@ -193,7 +193,7 @@ for t, exp in expected.items():
 - `products.pricing` 应为非空 JSON（含 `monthly`/`annually` 等周期键）。
 - `invoices.invoice_no` 全部唯一（`GROUP BY ... HAVING COUNT(*) > 1` 应返回空）。
 
-## 已知限制
+## 8. 已知限制
 
 - **不迁移的内容**：知识库（`shd_knowledge_base`）、邮件模板、支付网关配置、上游服务器配置等非核心业务表保持空表。
 - **源数据脏数据**：源 `shd_orders` 存在 2 条重复 `ordernum`，由单行降级插入自动跳过；最终入库 3367/3369。
@@ -201,7 +201,7 @@ for t, exp in expected.items():
 - **元数据锁风险**：远程 MySQL 对 DDL（TRUNCATE）敏感，若目标库存在长事务会阻塞 TRUNCATE。迁移前应 `SHOW PROCESSLIST` 检查并 KILL 遗留空闲连接。
 - **实验性**：该迁移器未纳入 `install_db.py` 自动流程，schema 演进时需手动同步映射规则。
 
-## 故障排查
+## 9. 故障排查
 
 ### TRUNCATE 超时（元数据锁）
 
@@ -231,7 +231,7 @@ IntegrityError: (1062, "Duplicate entry '...' for key '...'")
 
 迁移器内置单行降级插入：批量失败后逐行重试，冲突行跳过并计入 `failed`。若失败行数异常高，检查 `_post_map_fix` 是否覆盖该表的无效值场景。
 
-## 相关文档
+## 10. 相关文档
 
 - [本地 IDC 数据迁移流程](local-idc-data-migration.md) — 正式迁移流程
 - [ZJMF 统一迁移方案](../../execution-plans/completed/zjmf-unified-migration.md) — ZJMF 兼容性整体方案

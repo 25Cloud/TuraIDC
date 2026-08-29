@@ -12,7 +12,7 @@
 
 ---
 
-## 一、拓扑与宝塔版的对应关系
+## 1. 拓扑与宝塔版的对应关系
 
 运行拓扑与[宝塔部署](bt-panel-deployment.md)完全一致，只是管理载体不同：
 
@@ -35,7 +35,7 @@
 | 宝塔进程守护           | systemd 服务单元 `turaidc-vnc-relay.service`               |
 | 宝塔 PHP 设置          | `/etc/php/8.4/fpm/`（发行版默认即可用）                    |
 
-## 二、前置环境
+## 2. 前置环境
 
 实测基线：Debian 13 (trixie)、2 核 / 2G 内存 / 20G 磁盘。Ubuntu 22.04+、Debian 12 同理，包名基本一致。
 
@@ -47,7 +47,7 @@
 | Redis                 | 发行版仓库               | 8.x，仅监听 127.0.0.1，默认无密码即可                                |
 | Composer              | 发行版仓库 `composer` 包 | 2.8+                                                                 |
 | python3               | 系统自带                 | `install_db.py` 依赖                                                 |
-| Node.js 20.19+ / pnpm | **仅构建机需要**         | 见第六节：小内存服务器不要原地构建前端                               |
+| Node.js 20.19+ / pnpm | **仅构建机需要**         | 见第 6 节：小内存服务器不要原地构建前端                              |
 
 内存口径：2G 可运行（PHP-FPM 用 Debian 默认小进程池即可）；若要在服务器上原地构建前端，必须另加 swap，且 LXC/VE 类容器通常 `swapon` 被内核禁止（`Operation not permitted`），此时应改为本机构建后上传 dist。
 
@@ -70,7 +70,7 @@
 - 云服务器生产环境建议统一 HTTPS：解析生效后为四个子域申请证书（如 Let's Encrypt），四个公开地址改为 `https://` 并设 `SESSION_SECURE_COOKIE=true`。
 - 配置完成后等待 TTL 生效，用 `dig` / `ping` 确认四个子域均已指向服务器。
 
-## 三、安装系统依赖
+## 3. 安装系统依赖
 
 ```bash
 export DEBIAN_FRONTEND=noninteractive
@@ -103,14 +103,14 @@ echo -e "[mysqld]\ndefault-time-zone=+08:00" > /etc/mysql/mysql.conf.d/99-turaid
 systemctl restart mysql
 ```
 
-## 四、上传代码
+## 4. 上传代码
 
 构建机（有 Node/pnpm 环境）打包，服务器只接收源码与构建产物：
 
 ```bash
 # 构建机：从干净提交打包（自动排除 .env、node_modules、dist 等未跟踪内容）
 git archive --format=tar -o code.tar HEAD
-# 前端 dist 构建完成后追加进同一个包（见第六节）
+# 前端 dist 构建完成后追加进同一个包（见第 6 节）
 tar -rf code.tar frontend-admin-v3/dist frontend-user-v3-www/dist frontend-user-v4-console/dist
 
 # 上传。scp 在部分环境下会静默失败，用 ssh 管道传输并以 md5 校验更可靠：
@@ -121,7 +121,7 @@ mkdir -p /opt/turaidc
 tar -xf /tmp/turaidc-code.tar -C /opt/turaidc
 ```
 
-## 五、后端部署
+## 5. 后端部署
 
 ### 5.1 建库授权
 
@@ -204,7 +204,7 @@ php artisan route:cache
 
 实测本仓库 `route:cache` 可以成功执行（[容器文档](docker-and-1panel-deployment.md)中"路由含闭包导致 route:cache 失败"的口径在源码部署下不成立，以此处实测为准）；若未来路由引入闭包导致失败，跳过该步不影响运行。
 
-## 六、前端构建与产物
+## 6. 前端构建与产物
 
 小内存服务器不要原地构建。在构建机（Node.js 20.19+、pnpm）上执行：
 
@@ -223,9 +223,9 @@ pnpm run build:frontends
 - 构建产物在三个前端目录各自的 `dist/`，不会写入 `backend/public`。
 - pnpm 11 在 CI/沙箱环境下可能在 `run` 前自动触发依赖重装并失败（`ERR_SQLITE_ERROR: unable to open database file`）；`npm_config_verify_deps_before_run=false` 环境变量在 pnpm 11 不生效，用 CLI 形式或包装器注入：`pnpm --config.verify_deps_before_run=false run build:frontends`（嵌套 spawn 的子 pnpm 需要通过 PATH 包装器统一注入）。
 
-构建完成后把三个 `dist` 追加进第四节的上传包（`tar -rf`），或单独打包上传，解压后落在 `/opt/turaidc/<前端目录>/dist`。
+构建完成后把三个 `dist` 追加进第 4 节的上传包（`tar -rf`），或单独打包上传，解压后落在 `/opt/turaidc/<前端目录>/dist`。
 
-## 七、Nginx 四站点
+## 7. Nginx 四站点
 
 配置文件放 `/etc/nginx/sites-available/`，软链到 `sites-enabled`，并移除发行版默认站点：
 
@@ -351,7 +351,7 @@ server {
 }
 ```
 
-## 八、调度与守护进程
+## 8. 调度与守护进程
 
 ### 8.1 每分钟调度（cron）
 
@@ -390,7 +390,7 @@ systemctl enable --now turaidc-vnc-relay
 ss -tlnp | grep 8100   # 确认 127.0.0.1:8100 已监听
 ```
 
-## 九、部署验证
+## 9. 部署验证
 
 ```bash
 curl -s -H "Host: api.tura.cloud" http://127.0.0.1/api/health   # {"status":"alive"}
@@ -407,7 +407,7 @@ curl -s -H "Host: api.tura.cloud" http://127.0.0.1/api/ready    # status: ready
 - [ ] 管理端可用 `cerbo` + `INSTALL_ADMIN_PASSWORD` 登录，登录后立即改密
 - [ ] `APP_DEBUG=false`、`.env` 600 且属主 www-data
 
-## 十、升级
+## 10. 升级
 
 ```bash
 # 构建机：新提交重新打包（含重新构建的 dist），上传并解压覆盖 /opt/turaidc
@@ -423,7 +423,7 @@ systemctl status turaidc-vnc-relay   # relay 由 systemd 自动守护，一般�
 
 升级前先备份数据库；回滚口径见[部署与调度指南](deployment-and-scheduling.md)。
 
-## 十一、实测踩坑记录（2026-08-28，Debian 13 / LXC 容器）
+## 11. 实测踩坑记录（2026-08-28，Debian 13 / LXC 容器）
 
 | 现象                                           | 原因与处理                                                                                                                                                                                 |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -434,3 +434,8 @@ systemctl status turaidc-vnc-relay   # relay 由 systemd 自动守护，一般�
 | scp 显示成功但文件未到达                       | 部分环境 scp 静默失败；改用 `cat file \| ssh 'cat > dest'` 管道并 md5 校验                                                                                                                 |
 | pnpm 自动重装依赖报 `ERR_SQLITE_ERROR`         | pnpm 11 的 `verify-deps-before-run` 在 CI/沙箱下自动触发安装且 store 不可写；`npm_config_verify_deps_before_run` 环境变量无效，需 `--config.verify_deps_before_run=false` 并覆盖嵌套 spawn |
 | `/api/ready` 的 scheduler 为 false             | cron 刚安装尚未到触发点；等 1-2 分钟自动转绿                                                                                                                                               |
+
+## 关联文档
+
+- [部署指南](deployment.md)：通用部署步骤。
+- [四端 Nginx 伪静态配置](frontend-nginx-rules.md)：站点伪静态规则。
