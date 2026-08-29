@@ -1,7 +1,31 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
-import { defineConfig, type DefaultTheme } from "vitepress";
+import { defineConfig, type DefaultTheme, type Plugin } from "vitepress";
+
+// vitepress 1.6.4 内部把运行时拆为 framework/theme 两个 chunk 并在其 output
+// 展开顺序中覆盖用户 manualChunks；theme 分组包含被入口静态引用的全局注册
+// 组件（如增强阅读面板），与 framework 形成跨 chunk 循环，水合时序下
+// framework 读取到 theme 尚未赋值的导出（undefined.shallowRef 崩溃）。
+// vite 的 mergeConfig 会跳过 undefined 值，因此用"恒返回 undefined 的
+// 函数"覆盖内部分块，让运行时全部进入单一 entry chunk，消除循环。
+function flattenManualChunks(): Plugin {
+  return {
+    name: "docs-web:flatten-manual-chunks",
+    apply: "build",
+    config() {
+      return {
+        build: {
+          rollupOptions: {
+            output: {
+              manualChunks: () => undefined,
+            },
+          },
+        },
+      };
+    },
+  };
+}
 
 const docsRoot = resolve(import.meta.dirname, "../../docs");
 
@@ -278,6 +302,7 @@ export default defineConfig({
   srcDir: "../docs",
   vite: {
     publicDir: resolve(import.meta.dirname, "../public"),
+    plugins: [flattenManualChunks()],
     resolve: {
       alias: vueAlias,
     },
