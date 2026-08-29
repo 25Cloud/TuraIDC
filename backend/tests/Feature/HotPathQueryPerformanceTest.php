@@ -196,6 +196,8 @@ class HotPathQueryPerformanceTest extends TestCase
 
         $level = MemberLevel::query()->create([
             'name' => 'hotpath-'.$this->suffix.'-n1',
+            // code 是 NOT NULL 且带唯一索引，必须显式给且各用例互不重复
+            'code' => 'hp'.substr($this->suffix, 0, 8).'n1',
             'sort_order' => 1,
         ]);
 
@@ -262,6 +264,7 @@ class HotPathQueryPerformanceTest extends TestCase
     {
         $level = MemberLevel::query()->create([
             'name' => 'hotpath-'.$this->suffix.'-lv',
+            'code' => 'hp'.substr($this->suffix, 0, 8).'lv',
             'sort_order' => 1,
         ]);
 
