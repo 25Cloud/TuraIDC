@@ -7,7 +7,6 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\Integrations\Plugins\IntegrationDriverBindingResolver;
 use App\Services\Mail\MailDriverManager;
-use App\Support\NotificationTemplateContent;
 use App\Support\PublicUrl;
 use App\Support\SiteConfigPayload;
 use App\Support\UploadUrl;
@@ -640,14 +639,12 @@ class NotificationService
         return trim((string) $rendered);
     }
 
-    /**
-     * 判据收敛到 NotificationTemplateContent：入库净化按「这段会不会当 HTML 渲染」
-     * 决定用哪个净化器，若保存侧与此处各写一份判断，就会出现「存时按纯文本放行、
-     * 渲染时按 HTML 原样输出」的缝隙，那正是存储型 XSS 的入口。
-     */
     private function looksLikeHtml(string $template): bool
     {
-        return NotificationTemplateContent::looksLikeHtml($template);
+        $normalized = ltrim(trim($template));
+
+        return preg_match('/^(<!doctype\s+html|<html\b|<body\b)/iu', $normalized) === 1
+            || preg_match('/<([a-z][a-z0-9]*)(\s|>)/iu', $normalized) === 1;
     }
 
     private function convertPlainTextToHtml(string $content): string

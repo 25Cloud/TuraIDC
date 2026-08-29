@@ -177,7 +177,7 @@ class NotificationTemplateService
         }
 
         $template->{$field} = is_string($value)
-            ? $this->sanitizeTemplateField((string) $template->channel, $field, $value)
+            ? $this->sanitizeTemplateField($field, $value)
             : (string) $value;
         $template->is_custom = true;
         $template->save();
@@ -229,18 +229,14 @@ class NotificationTemplateService
     }
 
     /**
-     * 模板字段入库前的净化，口径见 NotificationTemplateContent。
+     * 模板字段入库前的净化。
      *
-     * 原实现是 `preg_replace('/<\/?script\b[^>]*>/iu', '', $value)`，而其注释声称会移除
-     * script/iframe/object/embed 与事件处理器 —— 实际只删 script 开闭标签。本地以 9 个
-     * 常见载荷实测，放行 8 个（`<img onerror>`、`<svg onload>`、`<iframe>`、`<object>`、
-     * `<embed>`、`<body onload>`、`javascript:` 全部原样通过），且
-     * `<scr<script>ipt>alert(1)</scr</script>ipt>` 在剥掉内层后会**重组出**一个可执行的
-     * `<script>` 标签 —— 净化反而使情况变坏。这是单遍黑名单剥离的固有缺陷，
-     * 不是那条正则写得不好，故整体换成白名单方案。
+     * 口径与「正文为什么不净化、subject 为什么降为纯文本」的完整论证见
+     * NotificationTemplateContent —— 那里也记录了原黑名单实现漏掉哪些载荷、
+     * 以及它如何把 `<scr<script>ipt>` 重组成可执行标签。
      */
-    private function sanitizeTemplateField(string $channel, string $field, string $value): string
+    private function sanitizeTemplateField(string $field, string $value): string
     {
-        return NotificationTemplateContent::sanitizeForStorage($channel, $field, $value);
+        return NotificationTemplateContent::sanitizeForStorage($field, $value);
     }
 }
