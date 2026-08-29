@@ -215,6 +215,7 @@ import { adminApi } from '@/api/admin';
 import { useUserStore } from '@/store';
 import { formatDateTime } from '@/utils/format';
 import { required } from '@/utils/formRules';
+import { errorMessage } from '@/utils/userMessage';
 
 const userStore = useUserStore();
 const route = useRoute();
@@ -458,7 +459,14 @@ async function handleReject() {
     await adminApi.verifications.unbind(rejectRow.value.id, { reject_reason: reason });
     MessagePlugin.success('操作成功');
     rejectVisible.value = false;
-    await Promise.all([loadList(), loadSummary()]);
+    // 解绑已写入；刷新失败不得回退成"驳回失败"，避免管理员重复操作
+    try {
+      await Promise.all([loadList(), loadSummary()]);
+    } catch {
+      MessagePlugin.warning('操作已成功，但列表刷新失败，请手动刷新查看');
+    }
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '驳回失败，请稍后重试'));
   } finally {
     actionLoadingId.value = null;
   }
@@ -483,8 +491,12 @@ async function saveFeeSettings() {
       amount: retryFee,
       charge_enabled: retryFee > 0,
     });
-    await loadSummary();
     MessagePlugin.success('费用设置已保存');
+    // loadSummary 自身已 try/catch 吞错并降级为空态，从不抛出：保存成功不受其影响，
+    // 直接调用即可（无需再包 catch，那会是永不触发的死代码）。
+    await loadSummary();
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '费用设置保存失败，请稍后重试'));
   } finally {
     feeLoading.value = false;
   }

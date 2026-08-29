@@ -169,6 +169,7 @@ import { AdminPermissions } from '@/constants/permissions';
 import { formatDateTime, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { hasAdminPermission } from '@/utils/permission';
+import { errorMessage } from '@/utils/userMessage';
 
 defineOptions({
   name: 'AdminUsers',
@@ -270,6 +271,8 @@ async function handleCreate() {
     MessagePlugin.success('创建成功');
     createVisible.value = false;
     loadList();
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '创建失败，请检查手机号/邮箱是否已被占用或格式是否正确'));
   } finally {
     submitLoading.value = false;
   }
