@@ -10,10 +10,8 @@ use App\Models\User;
 use App\Services\Referral\MemberLevelService;
 use App\Support\DatabaseSchema;
 use App\Support\DeferredJoinPaginator;
-use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 /**
@@ -276,20 +274,25 @@ class HotPathQueryPerformanceTest extends TestCase
             ]);
         }
 
-        $begun = 0;
-        Event::listen(TransactionBeginning::class, function () use (&$begun): void {
-            $begun++;
+        // 断言的是**事务嵌套深度**，而不是事务个数。
+        // 个数不具鉴别力：无论重算是否嵌在等级事务里，分批本身都会贡献计数。
+        // 深度才能区分：
+        //   改造后 —— 等级事务开→关，随后每批各开一个，最深只到 base+1
+        //   改造前 —— 重算嵌在等级事务内，批事务成为其嵌套，会达到 base+2
+        $base = DB::transactionLevel();
+        $maxDepth = $base;
+        DB::listen(function () use (&$maxDepth): void {
+            $maxDepth = max($maxDepth, DB::transactionLevel());
         });
 
         $service = app(MemberLevelService::class);
         $service->update($level, ['name' => 'hotpath-'.$this->suffix.'-lv2']);
 
-        // 改造前：等级写入 + 全量重算共处一个事务，只会开 1 个。
-        // 改造后：等级写入 1 个 + 每批重算各 1 个，因此必然 > 1。
-        $this->assertGreaterThan(
-            1,
-            $begun,
-            '存量用户重算必须分批各自开短事务，不能和等级写入挤在同一个长事务里'
+        $this->assertSame(
+            $base + 1,
+            $maxDepth,
+            '存量重算必须在等级事务之外分批进行；一旦嵌回去，事务深度会多一层，'
+            .'意味着整段重算期间等级事务一直持锁（线上实测 2000 用户即 15.5 秒）'
         );
 
         $this->assertSame(
