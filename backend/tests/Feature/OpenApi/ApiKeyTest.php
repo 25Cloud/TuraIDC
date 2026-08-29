@@ -214,4 +214,115 @@ class ApiKeyTest extends TestCase
 
         $this->withToken($plain)->getJson('/api/v2/open/orders')->assertOk();
     }
+
+    /**
+     * N4 回归：只带 name 的部分更新，绝不能把 expires_at / ip_allowlist 静默清空。
+     *
+     * 原实现对这两项用 isset()?:null，导致 {"name":"x"} 会把密钥悄悄改成永不过期 + 不限 IP —
+     * 等于拆掉两道安全控制。这条用例走完整 HTTP 栈（FormRequest→controller→service），
+     * 因为缺陷正出在 validated() 丢弃了未提交字段这一层。
+     */
+    public function test_partial_update_preserves_expiry_and_ip_allowlist(): void
+    {
+        $user = $this->createClientUser();
+        $this->actingAsClient($user);
+        [$key] = $this->createKey($user, ['products' => 'read'], [
+            'expires_at' => now()->addYear()->toDateTimeString(),
+            'ip_allowlist' => ['203.0.113.9'],
+        ]);
+
+        $originalExpiry = $key->fresh()->expires_at?->toDateTimeString();
+        $this->assertNotNull($originalExpiry, '前置：密钥应带有过期时间');
+
+        $this->putJson("/api/v2/client/api-keys/{$key->id}", ['name' => '改个名字'])
+            ->assertOk()
+            ->assertJsonPath('data.key.name', '改个名字');
+
+        $fresh = $key->fresh();
+        $this->assertSame($originalExpiry, $fresh->expires_at?->toDateTimeString(), 'expires_at 不能被部分更新清空');
+        $this->assertSame(['203.0.113.9'], $fresh->ip_allowlist, 'ip_allowlist 不能被部分更新清空');
+    }
+
+    /**
+     * 边界：显式传 null / [] 仍应能清空——修复 N4 不能把「可清空」一起改没了。
+     */
+    public function test_explicit_values_can_still_clear_expiry_and_ip_allowlist(): void
+    {
+        $user = $this->createClientUser();
+        $this->actingAsClient($user);
+        [$key] = $this->createKey($user, ['products' => 'read'], [
+            'expires_at' => now()->addYear()->toDateTimeString(),
+            'ip_allowlist' => ['203.0.113.9'],
+        ]);
+
+        $this->putJson("/api/v2/client/api-keys/{$key->id}", ['expires_at' => null])->assertOk();
+        $afterExpiryClear = $key->fresh();
+        $this->assertNull($afterExpiryClear->expires_at, '显式 expires_at=null 应清空过期时间');
+        $this->assertSame(['203.0.113.9'], $afterExpiryClear->ip_allowlist, '这一步不应动到 ip_allowlist');
+
+        $this->putJson("/api/v2/client/api-keys/{$key->id}", ['ip_allowlist' => []])->assertOk();
+        $this->assertNull($key->fresh()->ip_allowlist, '显式 ip_allowlist=[] 应清空白名单');
+    }
+
+    /**
+     * M10：改用 secret_hash 等值命中后，多把 enabled 密钥并存时仍要解析到正确的那一把。
+     */
+    public function test_resolve_selects_correct_key_among_many_enabled(): void
+    {
+        [$k1] = $this->createKey($this->createClientUser(), ['products' => 'read']);
+        [$k2, $s2] = $this->createKey($this->createClientUser(), ['products' => 'read']);
+        [$k3] = $this->createKey($this->createClientUser(), ['products' => 'read']);
+
+        $resolved = app(ApiKeyService::class)->resolve($s2);
+
+        $this->assertSame($k2->id, $resolved->id);
+        $this->assertNotSame($k1->id, $resolved->id);
+        $this->assertNotSame($k3->id, $resolved->id);
+    }
+
+    /**
+     * M10：把已有但从未被执行的 open_api.rate_limit 接上——超过阈值应 429。
+     *
+     * 限流跑在 api.key 认证之前，故未带令牌也会计数：阈值设 1 时，第 2 个请求就该被挡下，
+     * 走 ThrottleRequestsException 的统一中文 429（code=42900），而不是继续走到 401。
+     */
+    public function test_open_api_requests_are_rate_limited(): void
+    {
+        Setting::setValues('open_api', ['enabled' => '1', 'rate_limit' => '1']);
+
+        $this->getJson('/api/v2/open/products')->assertStatus(401);
+
+        $this->getJson('/api/v2/open/products')
+            ->assertStatus(429)
+            ->assertJsonPath('code', 42900);
+    }
+
+    /**
+     * 未知权限域必须在入口被拒（422），而不是被 normalizeScopes 静默丢弃。
+     * 否则把 products 拼成 product 时请求"成功"，权限却没生效。
+     */
+    public function test_create_rejects_unknown_scope_domain(): void
+    {
+        $user = $this->createClientUser();
+        $this->actingAsClient($user);
+
+        $this->postJson('/api/v2/client/api-keys', [
+            'name' => '拼错域名',
+            'scopes' => ['product' => 'read'],
+        ])->assertStatus(422);
+    }
+
+    public function test_update_rejects_unknown_scope_domain(): void
+    {
+        $user = $this->createClientUser();
+        $this->actingAsClient($user);
+        [$key] = $this->createKey($user, ['products' => 'read']);
+
+        $this->putJson("/api/v2/client/api-keys/{$key->id}", [
+            'scopes' => ['servicess' => 'write'],
+        ])->assertStatus(422);
+
+        // 既有合法权限不受这次失败影响。
+        $this->assertSame(['products' => 'read'], $key->fresh()->scopes);
+    }
 }

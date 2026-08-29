@@ -42,7 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->prefix('api/v2/client')
                 ->group(base_path('routes/v2-client.php'));
 
-            Route::middleware('api')
+            Route::middleware(['api', 'throttle:open-api'])
                 ->prefix('api/v2/open')
                 ->group(base_path('routes/v2-open.php'));
 
