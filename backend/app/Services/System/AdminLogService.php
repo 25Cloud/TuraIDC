@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Services\System\Concerns\HandlesAdminLogCleanup;
 use App\Support\AdminPrivacy;
 use App\Support\DatabaseSchema;
+use App\Support\DeferredJoinPaginator;
 use App\Support\SensitiveDataSanitizer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -98,7 +99,7 @@ class AdminLogService
             return $this->buildPaginatorPayload($this->emptyPaginator($perPage));
         }
 
-        $logs = (clone $query)->orderByDesc('created_at')->paginate($perPage);
+        $logs = DeferredJoinPaginator::paginate(clone $query, $perPage);
         $logs->setCollection($logs->getCollection()->map(function ($log) {
             $item = $log->toArray();
             $item['params_json'] = $this->normalizeNotificationParams($item['params_json'] ?? []);
@@ -151,7 +152,7 @@ class AdminLogService
             return $this->buildPaginatorPayload($this->emptyPaginator($perPage));
         }
 
-        $logs = (clone $query)->orderByDesc('created_at')->paginate($perPage);
+        $logs = DeferredJoinPaginator::paginate(clone $query, $perPage);
         $logs->setCollection($logs->getCollection()->map(function ($log) {
             return $log->toArray();
         }));
@@ -225,7 +226,7 @@ class AdminLogService
 
         $this->applyDateFilter($query, $filters);
 
-        $logs = (clone $query)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
+        $logs = DeferredJoinPaginator::paginate(clone $query, $perPage, $page);
         $rows = $this->mapOperationLogs($logs->getCollection(), false)->map(function (array $item) {
             [$method, $path] = $this->splitHttpAction((string) ($item['action'] ?? ''));
             $detail = SensitiveDataSanitizer::sanitize(
@@ -482,7 +483,7 @@ class AdminLogService
 
         $this->applyDateFilter($query, $filters);
 
-        $logs = (clone $query)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
+        $logs = DeferredJoinPaginator::paginate(clone $query, $perPage, $page);
 
         $rows = $this->mapOperationLogs($logs->getCollection(), false)->map(function (array $item) {
             $detail = is_array($item['detail'] ?? null) ? $item['detail'] : [];
@@ -1372,7 +1373,7 @@ class AdminLogService
 
         $this->applyDateFilter($query, $filters);
 
-        $logs = (clone $query)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
+        $logs = DeferredJoinPaginator::paginate(clone $query, $perPage, $page);
 
         if (! $withSummary) {
             return $this->buildPaginatorPayload($logs);
@@ -1688,7 +1689,7 @@ class AdminLogService
         $query = ActivityLog::query();
         $this->applyActivityLogFilters($query, $filters);
 
-        $logs = (clone $query)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
+        $logs = DeferredJoinPaginator::paginate(clone $query, $perPage, $page);
 
         $privacy = AdminPrivacy::current();
         $logs->setCollection($logs->getCollection()->map(function (ActivityLog $log) use ($privacy) {
@@ -1842,7 +1843,7 @@ class AdminLogService
             ->where('action', '<>', 'admin.login');
         $this->applyBusinessOperationActivityFilters($query, $filters);
 
-        $logs = (clone $query)->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
+        $logs = DeferredJoinPaginator::paginate(clone $query, $perPage, $page);
         $logs->setCollection(
             $this->mapOperationLogs($logs->getCollection(), true)
                 ->map(fn (array $item) => $this->mapOperationLogToActivityRow($item))

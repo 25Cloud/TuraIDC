@@ -44,6 +44,33 @@ final class DatabaseSchema
         };
     }
 
+    /**
+     * 与 Schema::hasTable() 语义完全一致（**不含视图**），只是把结果按连接+库名记忆化。
+     *
+     * 存在的意义：Schema::hasTable() 每次调用都会打一条 information_schema 查询，
+     * 而本仓多处在循环里做兼容性判断（如 MemberLevelService 每个用户判一次
+     * user_referrals、ProductTypeService 单次请求判 22 次），实测这些查询能占到
+     * 接口耗时的四分之三。语义严格等价，因此可安全替换既有的 Schema::hasTable()。
+     *
+     * 注意与 hasTableOrView() 的区别：那个把视图也算存在，不能互换。
+     */
+    public static function hasTable(string $name): bool
+    {
+        $connection = DB::connection();
+        $cacheKey = implode(':', [
+            'table',
+            $connection->getName(),
+            $connection->getDatabaseName(),
+            strtolower($name),
+        ]);
+
+        if (array_key_exists($cacheKey, self::$objectExists)) {
+            return self::$objectExists[$cacheKey];
+        }
+
+        return self::$objectExists[$cacheKey] = Schema::hasTable($name);
+    }
+
     public static function hasColumn(string $object, string $column): bool
     {
         $connection = DB::connection();

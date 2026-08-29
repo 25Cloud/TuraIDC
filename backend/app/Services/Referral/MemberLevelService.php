@@ -9,10 +9,10 @@ use App\Models\MemberLevel;
 use App\Models\User;
 use App\Models\UserReferral;
 use App\Support\CacheKey;
+use App\Support\DatabaseSchema;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class MemberLevelService
@@ -51,47 +51,89 @@ class MemberLevelService
 
     public function update(MemberLevel $level, array $data): MemberLevel
     {
+        // 等级本身的写入用一个短事务；存量用户重算刻意放到事务之外，理由见 resyncAllUserLevels()。
         $updatedLevel = DB::transaction(function () use ($level, $data) {
             $payload = $this->preparePayload($data, $level);
             $level->update($payload);
 
-            if (Schema::hasTable('user_referrals')) {
-                UserReferral::query()
-                    ->whereNotNull('member_level_id')
-                    ->chunkById(200, function ($profiles) {
-                        foreach ($profiles as $profile) {
-                            $user = User::query()->find($profile->user_id);
-                            if ($user) {
-                                $this->syncUserLevel($user);
-                            }
-                        }
-                    });
-            } else {
-                User::query()
-                    ->where(function ($query) {
-                        $query
-                            ->whereNotNull('member_level_id')
-                            ->orWhere('total_sales_amount', '>', 0);
-                    })
-                    ->chunkById(200, function ($users) {
-                        foreach ($users as $user) {
-                            $this->syncUserLevel($user);
-                        }
-                    });
-            }
-
             return $level->refresh();
         });
+
+        $this->resyncAllUserLevels();
 
         $this->forgetListCaches();
 
         return $updatedLevel;
     }
 
+    /**
+     * 按等级规则重算存量用户的会员等级。
+     *
+     * 这一步原本和「等级写入」同处一个事务里，实测 2000 个用户就要 15.5 秒、14017 条 SQL，
+     * 按每用户 7 条 SQL 外推，10 万用户约 70 万条查询、约 773 秒——整段时间都持着同一个事务的锁，
+     * 期间并发注册与余额变更都会被阻塞。
+     *
+     * 现在改为：每批单独开一个短事务，把锁的持有时间限制在一批（默认 200 个用户）之内。
+     * 代价是失去了「等级写入 + 全量重算」的整体原子性：若重算中途失败，等级已经落库、
+     * 部分用户尚未重算。这个取舍是可以接受的，因为重算完全幂等——结果只由 total_sales_amount
+     * 与当前等级规则决定，重跑一次即可收敛，调用本方法即可补算。
+     *
+     * @return int 实际重算的用户数
+     */
+    public function resyncAllUserLevels(int $chunkSize = 200): int
+    {
+        $chunkSize = max(1, $chunkSize);
+        $processed = 0;
+
+        if (DatabaseSchema::hasTable('user_referrals')) {
+            UserReferral::query()
+                ->whereNotNull('member_level_id')
+                ->select(['id', 'user_id'])
+                ->chunkById($chunkSize, function (Collection $profiles) use (&$processed): void {
+                    // 原实现在循环里逐个 User::find()，是 N+1；这里整批一次取出。
+                    $users = User::query()
+                        ->whereIn('id', $profiles->pluck('user_id')->filter()->unique()->all())
+                        ->get();
+
+                    $processed += $this->syncUserLevelChunk($users);
+                });
+        } else {
+            User::query()
+                ->where(function ($query) {
+                    $query
+                        ->whereNotNull('member_level_id')
+                        ->orWhere('total_sales_amount', '>', 0);
+                })
+                ->chunkById($chunkSize, function (Collection $users) use (&$processed): void {
+                    $processed += $this->syncUserLevelChunk($users);
+                });
+        }
+
+        return $processed;
+    }
+
+    /**
+     * @param  Collection<int, User>  $users
+     */
+    private function syncUserLevelChunk(Collection $users): int
+    {
+        if ($users->isEmpty()) {
+            return 0;
+        }
+
+        return DB::transaction(function () use ($users): int {
+            foreach ($users as $user) {
+                $this->syncUserLevel($user);
+            }
+
+            return $users->count();
+        });
+    }
+
     public function delete(MemberLevel $level): void
     {
         throw_if(
-            Schema::hasTable('user_referrals')
+            DatabaseSchema::hasTable('user_referrals')
                 ? UserReferral::query()->where('member_level_id', $level->id)->exists()
                 : User::query()->where('member_level_id', $level->id)->exists(),
             new BusinessException('当前等级下仍有用户，无法删除'),
@@ -118,7 +160,7 @@ class MemberLevelService
 
     public function syncUserLevel(User $user): User
     {
-        $hasReferralProfilesTable = Schema::hasTable('user_referrals');
+        $hasReferralProfilesTable = DatabaseSchema::hasTable('user_referrals');
         $profile = $hasReferralProfilesTable ? UserReferral::query()->find($user->id) : null;
         $salesAmount = round((float) ($profile?->total_sales_amount ?? $user->total_sales_amount), 2);
         $level = $this->resolveLevelBySales($salesAmount);
@@ -178,7 +220,7 @@ class MemberLevelService
             return true;
         }
 
-        if (Schema::hasTable('user_referrals')) {
+        if (DatabaseSchema::hasTable('user_referrals')) {
             return UserReferral::query()->where('referral_code', $normalizedCode)->exists();
         }
 
