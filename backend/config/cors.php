@@ -50,6 +50,11 @@ return [
         'X-Idempotency-Key',
     ],
     'exposed_headers' => ['Content-Disposition', 'Retry-After', 'X-Request-Id'],
-    'max_age' => 0,
+    // 三端与 API 分域部署，浏览器对每个跨源 API 请求都会先发一次 OPTIONS 预检。
+    // max_age=0 表示预检结果一次都不能复用：线上实测 851 条 API 请求里有 294 条（34.5%）
+    // 是纯预检，且每个 OPTIONS 都要完整启动一次 Laravel（实测 48-67ms），跨国链路上还要多付一趟往返。
+    // 7200 是 Chrome 对预检缓存的上限，填更大也会被截断。
+    // 代价：改动上面的 allowed_methods / allowed_headers 后，浏览器可能最多沿用 2 小时的旧预检结果。
+    'max_age' => 7200,
     'supports_credentials' => true,
 ];
