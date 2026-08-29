@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Jobs\ResyncMemberLevelsJob;
 use App\Models\MemberLevel;
+use App\Models\MessageLog;
 use App\Models\OperationLog;
 use App\Models\User;
 use App\Services\Referral\MemberLevelService;
+use App\Services\System\AdminLogService;
 use App\Support\DatabaseSchema;
 use App\Support\DeferredJoinPaginator;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
@@ -258,7 +262,7 @@ class HotPathQueryPerformanceTest extends TestCase
         );
     }
 
-    public function test_member_level_update_no_longer_resyncs_users_inside_a_single_transaction(): void
+    public function test_member_level_update_dispatches_async_resync_and_does_not_scan_users_inline(): void
     {
         $level = MemberLevel::query()->create([
             'name' => 'hotpath-'.$this->suffix.'-lv',
@@ -274,26 +278,28 @@ class HotPathQueryPerformanceTest extends TestCase
             ]);
         }
 
-        // 断言的是**事务嵌套深度**，而不是事务个数。
-        // 个数不具鉴别力：无论重算是否嵌在等级事务里，分批本身都会贡献计数。
-        // 深度才能区分：
-        //   改造后 —— 等级事务开→关，随后每批各开一个，最深只到 base+1
-        //   改造前 —— 重算嵌在等级事务内，批事务成为其嵌套，会达到 base+2
-        $base = DB::transactionLevel();
-        $maxDepth = $base;
-        DB::listen(function () use (&$maxDepth): void {
-            $maxDepth = max($maxDepth, DB::transactionLevel());
+        Queue::fake();
+
+        // 同时抓两个信号：
+        // 1) 请求路径不得再触碰 users 表——重算量与用户数成正比（实测 2000 用户 15.5 秒），
+        //    留在请求里无论持不持锁都会先撞上执行/网关超时；
+        // 2) 必须派发了异步重算任务——否则等级规则变了、存量用户永远停在旧等级。
+        $userTableQueries = [];
+        DB::listen(function ($event) use (&$userTableQueries): void {
+            if (str_contains($event->sql, 'from `users`') || str_contains($event->sql, 'update `users`')) {
+                $userTableQueries[] = $event->sql;
+            }
         });
 
         $service = app(MemberLevelService::class);
         $service->update($level, ['name' => 'hotpath-'.$this->suffix.'-lv2']);
 
         $this->assertSame(
-            $base + 1,
-            $maxDepth,
-            '存量重算必须在等级事务之外分批进行；一旦嵌回去，事务深度会多一层，'
-            .'意味着整段重算期间等级事务一直持锁（线上实测 2000 用户即 15.5 秒）'
+            [],
+            $userTableQueries,
+            '等级更新的请求路径不得同步扫描/重算 users 表；重算必须交给队列任务'
         );
+        Queue::assertPushed(ResyncMemberLevelsJob::class);
 
         $this->assertSame(
             'hotpath-'.$this->suffix.'-lv2',
@@ -304,11 +310,20 @@ class HotPathQueryPerformanceTest extends TestCase
 
     public function test_resync_all_user_levels_is_idempotent_and_reports_processed_count(): void
     {
+        // 挂上真实等级：无论候选集走 users 分支还是 user_referrals 档案分支，
+        // 这 3 个用户都必然入选，断言不再依赖共用测试库里的既有数据形态。
+        $level = MemberLevel::query()->create([
+            'name' => 'hotpath-'.$this->suffix.'-idem',
+            'code' => 'hp'.substr($this->suffix, 0, 8).'id',
+            'sort_order' => 1,
+        ]);
+
         for ($i = 0; $i < 3; $i++) {
             User::query()->create([
                 'email' => 'hotpath-'.$this->suffix.'-r'.$i.'@example.com',
                 'password' => 'Temp@123456',
                 'total_sales_amount' => '1.00',
+                'member_level_id' => $level->id,
             ]);
         }
 
@@ -323,5 +338,93 @@ class HotPathQueryPerformanceTest extends TestCase
             $second,
             '重算必须幂等：连跑两次处理的用户数一致，失败后重跑即可收敛'
         );
+    }
+
+    public function test_resync_covers_users_with_sales_but_no_level_and_no_profile(): void
+    {
+        // 回归锁：候选集曾经不对称——存在 user_referrals 表时只看「档案里有等级」的用户，
+        // 漏掉「无档案、无等级、但有销售额」的用户；管理员调低门槛后这批人拿不到新等级，
+        // 返利继续按旧比例计发。统一候选集后，这类用户必须无条件入选。
+        $service = app(MemberLevelService::class);
+        $before = $service->resyncAllUserLevels();
+
+        User::query()->create([
+            'email' => 'hotpath-'.$this->suffix.'-gap@example.com',
+            'password' => 'Temp@123456',
+            'total_sales_amount' => '5.00',
+        ]);
+
+        $after = $service->resyncAllUserLevels();
+
+        $this->assertGreaterThan(
+            $before,
+            $after,
+            '有销售额但无等级、无推荐档案的用户必须进入重算候选集'
+        );
+    }
+
+    public function test_deferred_join_paginator_preserves_select_aliases(): void
+    {
+        $this->seedLogs(10);
+        $module = 'hotpath-'.$this->suffix;
+
+        $paginator = DeferredJoinPaginator::paginate(
+            OperationLog::query()
+                ->where('module', $module)
+                ->selectRaw('id, action as action_alias, created_at'),
+            5,
+            1
+        );
+
+        $this->assertNotEmpty($paginator->items(), '样本必须非空，否则本用例是空跑');
+        foreach ($paginator->items() as $row) {
+            $attributes = $row->getAttributes();
+            $this->assertArrayHasKey(
+                'action_alias',
+                $attributes,
+                '回表必须保留调用方的 select 投影：丢掉别名会让接口响应字段悄悄改名'
+            );
+            $this->assertArrayNotHasKey(
+                'module',
+                $attributes,
+                '未投影的列不应回到结果里——列裁剪也是调用方投影契约的一部分'
+            );
+        }
+    }
+
+    public function test_sms_and_email_log_lists_keep_recipient_aliases(): void
+    {
+        $suffix = $this->suffix;
+        MessageLog::query()->create([
+            'channel' => 'sms',
+            'recipient' => '13900001111',
+            'template_code' => 'hotpath-'.$suffix,
+            'content' => 'hotpath sms',
+            'provider' => 'probe',
+            'request_id' => 'hotpath-'.$suffix,
+            'status' => 'success',
+            'sent_at' => now(),
+        ]);
+        MessageLog::query()->create([
+            'channel' => 'email',
+            'recipient' => 'hotpath-'.$suffix.'@example.com',
+            'template_code' => 'hotpath-mail-'.$suffix,
+            'subject' => 'hotpath mail',
+            'content' => 'hotpath mail body',
+            'status' => 'success',
+            'sent_at' => now(),
+        ]);
+
+        $service = app(AdminLogService::class);
+
+        $sms = $service->getSmsLogs(['keyword' => 'hotpath-'.$suffix], 20);
+        $smsRows = $sms['data'] ?? [];
+        $this->assertNotEmpty($smsRows, '应能按关键字查到本用例的短信日志');
+        $this->assertArrayHasKey('phone', $smsRows[0], '短信日志接口必须保留 recipient as phone 别名');
+
+        $email = $service->getEmailLogs(['keyword' => 'hotpath-mail-'.$suffix], 20);
+        $emailRows = $email['data'] ?? [];
+        $this->assertNotEmpty($emailRows, '应能按关键字查到本用例的邮件日志');
+        $this->assertArrayHasKey('to_email', $emailRows[0], '邮件日志接口必须保留 recipient as to_email 别名');
     }
 }

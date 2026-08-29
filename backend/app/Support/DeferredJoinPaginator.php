@@ -78,12 +78,20 @@ final class DeferredJoinPaginator
 
             if ($ids !== []) {
                 // 第二步：按主键回表。此处不重复套用过滤条件——主键集合已经是过滤后的结果。
-                $items = $model->newQuery()
+                $restoreQuery = $model->newQuery()
                     ->with($query->getEagerLoads())
                     ->whereIn($qualifiedKey, $ids)
                     ->orderByDesc($qualifiedOrder)
-                    ->orderByDesc($qualifiedKey)
-                    ->get();
+                    ->orderByDesc($qualifiedKey);
+
+                // 保留调用方的 select 投影（含 selectRaw 别名，如日志查询的 `recipient as phone`）。
+                // 回表用的是 newQuery()，不带这一步会把响应字段悄悄从别名退回原列名。
+                $originalColumns = $query->getQuery()->columns;
+                if ($originalColumns !== null && $originalColumns !== []) {
+                    $restoreQuery->select($originalColumns);
+                }
+
+                $items = $restoreQuery->get();
             }
         }
 
