@@ -459,7 +459,12 @@ async function handleReject() {
     await adminApi.verifications.unbind(rejectRow.value.id, { reject_reason: reason });
     MessagePlugin.success('操作成功');
     rejectVisible.value = false;
-    await Promise.all([loadList(), loadSummary()]);
+    // 解绑已写入；刷新失败不得回退成"驳回失败"，避免管理员重复操作
+    try {
+      await Promise.all([loadList(), loadSummary()]);
+    } catch {
+      MessagePlugin.warning('操作已成功，但列表刷新失败，请手动刷新查看');
+    }
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '驳回失败，请稍后重试'));
   } finally {
@@ -486,8 +491,13 @@ async function saveFeeSettings() {
       amount: retryFee,
       charge_enabled: retryFee > 0,
     });
-    await loadSummary();
     MessagePlugin.success('费用设置已保存');
+    // 配置已写入；汇总刷新失败不得回退成"保存失败"
+    try {
+      await loadSummary();
+    } catch {
+      MessagePlugin.warning('费用设置已保存，但汇总刷新失败，请手动刷新查看');
+    }
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '费用设置保存失败，请稍后重试'));
   } finally {

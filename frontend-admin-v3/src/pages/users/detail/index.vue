@@ -1537,7 +1537,12 @@ async function handleSave() {
     });
     MessagePlugin.success('用户资料已更新');
     editVisible.value = false;
-    await loadDetail();
+    // 写入已成功；刷新失败不得回退成"更新失败"，否则管理员会误以为没保存而重复提交
+    try {
+      await loadDetail();
+    } catch {
+      MessagePlugin.warning('资料已更新，但页面刷新失败，请手动刷新查看');
+    }
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '用户资料更新失败，请检查手机号是否已被占用或格式是否正确'));
   } finally {
@@ -1562,8 +1567,14 @@ async function handleRecharge() {
     await userApi.recharge(userId.value, { amount, remark: rechargeForm.remark });
     MessagePlugin.success(rechargeForm.type === 'decrease' ? '扣减成功' : '增加成功');
     rechargeVisible.value = false;
-    await loadDetail();
-    if (loadedTabs.balance) await loadBalance();
+    // 资金已写入（余额已变、流水已建）；刷新失败绝不能回退成"失败"，
+    // 否则管理员会重试而造成重复扣款/充值。
+    try {
+      await loadDetail();
+      if (loadedTabs.balance) await loadBalance();
+    } catch {
+      MessagePlugin.warning('操作已成功，但页面刷新失败，请手动刷新查看最新余额');
+    }
   } catch (error) {
     MessagePlugin.error(
       errorMessage(error, rechargeForm.type === 'decrease' ? '扣减失败，请稍后重试' : '增加余额失败，请稍后重试'),
