@@ -1,0 +1,68 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{namespace}}\Lib;
+
+use App\Services\Automation\Heartbeat\Contracts\ScheduledTask;
+use App\Services\Automation\Heartbeat\Data\TaskContext;
+use App\Services\Automation\Heartbeat\ScheduleRule;
+
+final class {{studlySlug}}ScheduledTask implements ScheduledTask
+{
+    public function key(): string
+    {
+        return '{{slug}}.example';
+    }
+
+    public function title(): string
+    {
+        return '{{name}} 示例任务';
+    }
+
+    public function description(): string
+    {
+        return '插件骨架生成的定时任务示例，仅用于演示契约。';
+    }
+
+    public function category(): string
+    {
+        return '插件';
+    }
+
+    public function triggers(): array
+    {
+        return [ScheduleRule::everyTicks(4)];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function handle(TaskContext $context): array
+    {
+        return [
+            'success' => true,
+            'executed_at' => now()->toDateTimeString(),
+        ];
+    }
+
+    public function queue(): string
+    {
+        return (string) config('queue.turaidc_schedule_queue', 'automation');
+    }
+
+    public function timeout(): int
+    {
+        return 300;
+    }
+
+    public function lockTtlSeconds(): int
+    {
+        return 600;
+    }
+
+    public function manualTriggerable(): bool
+    {
+        return true;
+    }
+}

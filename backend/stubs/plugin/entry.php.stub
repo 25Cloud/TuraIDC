@@ -1,0 +1,49 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{namespace}};
+
+/**
+ * 插件统一执行入口。
+ *
+ * $request 结构（由 PluginRuntimeRegistry 注入）：
+ * - domain   当前插件域
+ * - slug     插件标识
+ * - key      插件 key
+ * - action   本次要执行的动作名（动作由调用方约定，见插件包规范）
+ * - payload  调用方传入的业务参数
+ * - config   管理端填写的插件配置
+ * - context  调用上下文（binding / actor / trace_id 等）
+ *
+ * 必须返回数组，统一响应结构：success / action / message / data。
+ */
+class {{studlySlug}}Plugin
+{
+    public function execute(array $request): array
+    {
+        $action = trim((string) ($request['action'] ?? ''));
+        $payload = is_array($request['payload'] ?? null) ? $request['payload'] : [];
+        $config = is_array($request['config'] ?? null) ? $request['config'] : [];
+
+        return match ($action) {
+            '{{domain}}.{{slug}}.health' => [
+                'success' => true,
+                'action' => $action,
+                'message' => '插件运行正常',
+                'data' => [
+                    'plugin' => '{{slug}}',
+                    'version' => '1.0.0',
+                    'received_payload' => $payload,
+                    'configured_keys' => array_keys($config),
+                ],
+            ],
+            default => [
+                'success' => false,
+                'action' => $action,
+                'message' => '不支持的动作',
+                'data' => [],
+            ],
+        };
+    }
+}

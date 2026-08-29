@@ -1,0 +1,32 @@
+# {{name}}
+
+`{{domain}}/{{slug}}` 插件。
+
+## 开发
+
+- 插件包规范（目录结构 / manifest 字段 / 命名空间 / 打包格式）：`docs/references/integrations/plugins/plugin-package-spec.md`
+- 本骨架由命令生成：`php artisan plugin:make {{domain}} {{slug}}`
+
+## 结构
+
+| 路径 | 说明 |
+| ---- | ---- |
+| `config.php` | 插件清单（manifest）与配置项定义 |
+| `{{studlySlug}}Plugin.php` | 统一执行入口（`execute`） |
+| `lib/` | 业务逻辑（运行时自动加载） |
+{{provider_row}}{{task_row}}
+
+## 动作
+
+| 动作 | 说明 |
+| ---- | ---- |
+| `{{domain}}.{{slug}}.health` | 健康检查（示例） |
+
+## 安装
+
+1. 将本目录放入 `backend/plugins/{{domain_dir}}/{{slug}}/`
+2. 管理端 → 插件中心 → 安装并启用
+
+## 许可
+
+插件可独立授权。若随主仓分发则遵循主仓开源协议；独立仓库分发的第三方插件请自行声明许可，并遵守插件包规范中的协议边界说明。
