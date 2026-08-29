@@ -42,9 +42,17 @@ function resolveStorage(storage?: Storage | null): Storage | null {
     return storage;
   }
 
-  return typeof window !== "undefined" && window.localStorage
-    ? window.localStorage
-    : null;
+  // 浏览器禁止存储访问时（"阻止所有 Cookie"、无 allow-same-origin 的 iframe 等），
+  // 读取 window.localStorage 这个属性本身就会抛 SecurityError，而不是返回 null。
+  // 必须在这里兜住：否则异常会穿过 hydrateSiteConfig 冒泡到 fetchSiteConfig 的
+  // .catch() 分支，让一次纯装饰性的缓存写入把整个站点配置请求判成失败。
+  try {
+    return typeof window !== "undefined" && window.localStorage
+      ? window.localStorage
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 export function persistSplashBranding(

@@ -152,8 +152,19 @@
           var mark = document.querySelector('#app-splash .splash-mark');
           // 只用 textContent，绝不拼 HTML：站点名是管理员可改的外部输入。
           if (word) word.textContent = name;
-          // 角标是 44px 见方的单字徽标，取首个字素（Array.from 可正确处理代理对）。
-          if (mark) mark.textContent = Array.from(name)[0];
+          // 角标是 44px 见方的单字徽标，只取首个「字素簇」。
+          // Array.from 按码点拆，遇到 ZWJ 组合（👨‍👩‍👧‍👦）或基字符+组合记号（e + U+0301）
+          // 会切出半个字形，所以优先用 Intl.Segmenter，不支持时回退到码点切分。
+          var first = Array.from(name)[0];
+          try {
+            if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+              first = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+                .segment(name)[Symbol.iterator]().next().value.segment;
+            }
+          } catch (segmentError) {
+            /* 保留码点切分的结果 */
+          }
+          if (mark) mark.textContent = first;
         } catch (error) {
           /* localStorage 被禁用或不可用时保持默认品牌，不影响加载 */
         }
