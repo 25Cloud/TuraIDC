@@ -22,6 +22,80 @@ export function deriveInitials(name = "") {
   return trimmed.slice(0, 2).toUpperCase();
 }
 
+/**
+ * 启动屏品牌名的缓存键。
+ *
+ * 启动屏是纯静态 HTML，在 Vue 挂载、站点配置拉回来之前就已经渲染，
+ * 那一刻只能显示构建期写死的默认品牌。这里把上一次拿到的站点名缓存下来，
+ * 供 index.html 里的内联脚本在首帧前覆盖，自建站就不会一直显示别人的品牌名。
+ *
+ * 注意：`frontend-user-v3-www/index.html` 的内联脚本无法 import 本模块（它在打包产物之外），
+ * 只能硬编码同一个字符串；`shared/tests/branding-splash.test.mjs` 会校验两者没有漂移。
+ */
+export const SPLASH_BRANDING_STORAGE_KEY = "turaidc:splash-branding";
+
+/** 缓存的品牌名长度上限：启动屏是单行居中排版，过长会撑破布局。 */
+export const SPLASH_BRANDING_MAX_LENGTH = 40;
+
+function resolveStorage(storage?: Storage | null): Storage | null {
+  if (storage) {
+    return storage;
+  }
+
+  // 浏览器禁止存储访问时（"阻止所有 Cookie"、无 allow-same-origin 的 iframe 等），
+  // 读取 window.localStorage 这个属性本身就会抛 SecurityError，而不是返回 null。
+  // 必须在这里兜住：否则异常会穿过 hydrateSiteConfig 冒泡到 fetchSiteConfig 的
+  // .catch() 分支，让一次纯装饰性的缓存写入把整个站点配置请求判成失败。
+  try {
+    return typeof window !== "undefined" && window.localStorage
+      ? window.localStorage
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function persistSplashBranding(
+  siteName: string,
+  storage?: Storage | null,
+) {
+  const target = resolveStorage(storage);
+  if (!target) {
+    return;
+  }
+
+  const normalized = String(siteName || "")
+    .trim()
+    .slice(0, SPLASH_BRANDING_MAX_LENGTH);
+
+  try {
+    if (normalized === "") {
+      // 站点名被清空时一并清掉缓存，否则启动屏会一直停在旧品牌上。
+      target.removeItem(SPLASH_BRANDING_STORAGE_KEY);
+      return;
+    }
+
+    target.setItem(SPLASH_BRANDING_STORAGE_KEY, normalized);
+  } catch {
+    // 隐私模式 / storage 被禁用 / 配额写满：保持默认品牌即可，不影响主流程。
+  }
+}
+
+export function readSplashBranding(storage?: Storage | null): string {
+  const target = resolveStorage(storage);
+  if (!target) {
+    return "";
+  }
+
+  try {
+    return String(target.getItem(SPLASH_BRANDING_STORAGE_KEY) || "")
+      .trim()
+      .slice(0, SPLASH_BRANDING_MAX_LENGTH);
+  } catch {
+    return "";
+  }
+}
+
 export function updateFavicon(href: string, fallbackHref: string) {
   if (typeof document === "undefined") {
     return;

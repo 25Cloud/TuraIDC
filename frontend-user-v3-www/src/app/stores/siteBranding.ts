@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { applyDocumentTitle, deriveInitials, syncDocumentTitle, updateFavicon } from '@turaidc/shared/runtime'
+import { applyDocumentTitle, deriveInitials, persistSplashBranding, syncDocumentTitle, updateFavicon } from '@turaidc/shared/runtime'
 import siteApi from '@/api/site'
 import { DEFAULT_SUPPORT_CONTACTS } from '@/data/supportContacts'
 import { resolveApiAssetUrl } from '@/utils/apiAssetUrl'
@@ -99,6 +99,9 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
     valueAddedLicense.value = pick(data, ['value_added_license', 'valueAddedLicense', 'value_added_telecom_license'], valueAddedLicense.value || '')
     syncDocumentTitle(browserTitle.value || siteName.value || DEFAULT_SITE_NAME, previousBaseTitle, DEFAULT_SITE_NAME)
     updateFavicon(siteFavicon.value || DEFAULT_FAVICON, DEFAULT_FAVICON)
+    // 缓存给启动屏用：它在 Vue 挂载前渲染，拿不到这里的配置，
+    // 只能靠上一次访问留下的站点名，否则会一直显示构建期写死的默认品牌。
+    persistSplashBranding(siteName.value)
   }
 
   async function fetchSiteConfig() {
