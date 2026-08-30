@@ -16,8 +16,10 @@ use App\Services\OpenApi\OpenApiConfig;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductSpecHighlightService;
 use App\Services\System\UploadedAssetReferenceService;
+use App\Support\DatabaseSchema;
 use Carbon\CarbonInterface;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Http\Request;
 use Illuminate\Queue\Events\JobTimedOut;
 use Illuminate\Support\Facades\Cache;
@@ -83,6 +85,13 @@ class AppServiceProvider extends ServiceProvider
         // 心跳任务超时被杀时，Worker 在 SIGKILL 前同步派发 JobTimedOut；
         // 监听器把运行台账收敛为 retrying/failed，避免队列重试被状态 CAS 永久拒绝。
         Event::listen(JobTimedOut::class, HeartbeatTaskTimedOutListener::class);
+
+        // DatabaseSchema 把「表/列是否存在」按进程记忆化，**连 false 也缓存**。
+        // 迁移刚建出来的表，若在同一进程里此前被判过一次「不存在」，就会一直读到过期的否定结论
+        // （常驻的 php-fpm / queue worker 尤其危险）。迁移一结束立刻清掉这份缓存。
+        Event::listen(MigrationsEnded::class, static function (): void {
+            DatabaseSchema::resetCache();
+        });
 
         Sanctum::authenticateAccessTokensUsing(function (PersonalAccessToken $accessToken, bool $isValid): bool {
             if (! $isValid) {

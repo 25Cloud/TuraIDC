@@ -31,6 +31,7 @@ use App\Services\Provisioning\ProvisionService;
 use App\Services\Provisioning\ServiceRenewService;
 use App\Services\Referral\ReferralService;
 use App\Services\User\AccountService;
+use App\Support\DatabaseSchema;
 use App\Support\VersionedJson;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -3725,7 +3726,7 @@ class PaymentService
 
     public function syncProjection(Payment $payment): Payment
     {
-        if (! Schema::hasTable('payment_callbacks')) {
+        if (! DatabaseSchema::hasTable('payment_callbacks')) {
             return $payment->fresh() ?? $payment;
         }
 
@@ -3764,7 +3765,7 @@ class PaymentService
         ?string $gatewayTradeNo = null,
         ?string $traceId = null,
     ): void {
-        if (! Schema::hasTable('payment_callbacks') || ! $payment->exists) {
+        if (! DatabaseSchema::hasTable('payment_callbacks') || ! $payment->exists) {
             return;
         }
 
@@ -3783,11 +3784,11 @@ class PaymentService
         ];
         $gatewayContext = $this->paymentGatewayBindingResolver()->contextForPayment($payment);
 
-        if (Schema::hasColumn('payment_callbacks', 'plugin_id')) {
+        if (DatabaseSchema::hasColumn('payment_callbacks', 'plugin_id')) {
             $row['plugin_id'] = $gatewayContext['plugin_id'];
         }
 
-        if (Schema::hasColumn('payment_callbacks', 'gateway_key')) {
+        if (DatabaseSchema::hasColumn('payment_callbacks', 'gateway_key')) {
             $row['gateway_key'] = $gatewayContext['gateway_key'];
         }
 
