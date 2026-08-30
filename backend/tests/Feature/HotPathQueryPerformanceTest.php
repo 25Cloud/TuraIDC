@@ -427,4 +427,83 @@ class HotPathQueryPerformanceTest extends TestCase
         $this->assertNotEmpty($emailRows, '应能按关键字查到本用例的邮件日志');
         $this->assertArrayHasKey('to_email', $emailRows[0], '邮件日志接口必须保留 recipient as to_email 别名');
     }
+
+    /**
+     * 带 join 的查询必须退回标准分页。
+     *
+     * 回表用的是 `$model->newQuery()`，它不继承原查询的 join；一旦调用方的投影引用了
+     * 关联表（这里用 `users.nickname as user_nickname` 模拟），走延迟关联就会在回表那趟
+     * 报未知列。现有调用方都没有 join，所以选择限制输入契约而不是重建 join。
+     */
+    public function test_query_with_join_falls_back_to_standard_pagination(): void
+    {
+        $this->seedLogs(6, 2);
+        $module = 'hotpath-'.$this->suffix;
+
+        // 用自连接构造「投影引用关联表」的场景：不依赖其它表的必填列，也不产生额外数据。
+        $joined = OperationLog::query()
+            ->join('operation_logs as ol2', 'ol2.id', '=', 'operation_logs.id')
+            ->where('operation_logs.module', $module)
+            ->selectRaw('operation_logs.*, ol2.module as joined_module');
+
+        $paginator = DeferredJoinPaginator::paginate(clone $joined, 4, 1);
+
+        $this->assertSame(6, $paginator->total(), '退回标准分页后总数仍应正确');
+        $this->assertCount(4, $paginator->items(), '退回标准分页后每页条数仍应正确');
+
+        $first = $paginator->items()[0];
+        $this->assertSame(
+            $module,
+            $first->getAttribute('joined_module'),
+            '退回标准分页必须保留关联表投影别名 joined_module',
+        );
+
+        // 第二页要接得上，不能重复或漏行
+        $page2 = DeferredJoinPaginator::paginate(clone $joined, 4, 2);
+        $this->assertCount(2, $page2->items(), '第二页应剩 2 条');
+        $seen = array_merge(
+            array_map(static fn ($row): int => (int) $row->id, $paginator->items()),
+            array_map(static fn ($row): int => (int) $row->id, $page2->items()),
+        );
+        $this->assertCount(6, array_unique($seen), '两页合起来应恰好覆盖 6 条不重复的记录');
+    }
+
+    /**
+     * 重算任务必须给 WithoutOverlapping 的 releaseAfter 留出重试次数。
+     *
+     * 抢不到锁时中间件走 `$job->release(60)`，而 release 不重置 attempts；
+     * Worker 判的是 `attempts() <= maxTries`，所以 tries=1 会让任务第二次出队时
+     * 在进入 handle() 之前就被判失败丢弃——等级规则变更直接丢失、一次都没重算。
+     */
+    public function test_resync_job_leaves_retry_budget_for_overlap_release(): void
+    {
+        $job = new ResyncMemberLevelsJob;
+
+        $this->assertGreaterThan(
+            1,
+            $job->tries,
+            'tries 必须大于 1：WithoutOverlapping 的 releaseAfter 会占用 attempt，tries=1 时任务撞锁后会在跑之前被丢弃',
+        );
+        $this->assertSame(
+            1,
+            $job->maxExceptions,
+            'maxExceptions 应为 1：放宽 tries 只是为了等锁，真异常仍应只失败一次，不要变成多次重试',
+        );
+
+        $middleware = $job->middleware();
+        $this->assertNotEmpty($middleware, '必须挂 WithoutOverlapping 中间件');
+        $this->assertInstanceOf(
+            \Illuminate\Queue\Middleware\WithoutOverlapping::class,
+            $middleware[0],
+        );
+
+        // releaseAfter 与 tries 是一对：留的次数要够覆盖锁自身的过期时间，否则等不到锁就死了
+        $releaseAfter = $middleware[0]->releaseAfter;
+        $this->assertNotNull($releaseAfter, '必须设置 releaseAfter，否则撞锁的任务会被直接丢弃');
+        $this->assertGreaterThanOrEqual(
+            $job->timeout,
+            $job->tries * (int) $releaseAfter,
+            'tries × releaseAfter 至少要覆盖任务 timeout，否则前一轮还没跑完、后一轮就先耗尽重试次数',
+        );
+    }
 }

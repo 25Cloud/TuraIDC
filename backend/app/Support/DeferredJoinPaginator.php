@@ -60,6 +60,18 @@ final class DeferredJoinPaginator
         $qualifiedKey = $model->getQualifiedKeyName();
         $qualifiedOrder = str_contains($orderColumn, '.') ? $orderColumn : $table.'.'.$orderColumn;
 
+        // 带 join 的查询不走延迟关联：回表用的 newQuery() 不继承 join，
+        // 一旦调用方的投影引用了关联表（如 `users.email as user_email`），
+        // 回表那趟就会因为缺少该表直接报未知列。重建 join 及其绑定不值当——
+        // 现有调用方没有这种查询，正确性优先，退回标准分页即可。
+        if (! empty($query->getQuery()->joins)) {
+            return (clone $query)
+                ->reorder()
+                ->orderByDesc($qualifiedOrder)
+                ->orderByDesc($qualifiedKey)
+                ->paginate($perPage, ['*'], $pageName, $page);
+        }
+
         $total = (clone $query)->toBase()->getCountForPagination();
 
         $items = $model->newCollection();

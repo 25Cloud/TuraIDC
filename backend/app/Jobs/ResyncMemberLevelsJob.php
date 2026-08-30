@@ -18,9 +18,8 @@ use Illuminate\Support\Facades\Log;
  * 外推 10 万用户约 773 秒），同步跑在 HTTP 请求里必然先撞上
  * max_execution_time / 网关超时——等级已落库、重算只完成一半，管理员却看到 5xx。
  *
- * 为什么 tries=1：重算完全幂等（结果只由销售额与当前等级规则决定），且任何一次
- * 等级增删改都会重新派发本任务；失败时靠下一次变更或人工重跑收敛即可，
- * 不设队列重试也就不存在「重试跨度越过 uniqueFor 导致重复并发」的预算问题。
+ * 为什么 maxExceptions=1：重算完全幂等（结果只由销售额与当前等级规则决定），且任何一次
+ * 等级增删改都会重新派发本任务；真出异常时靠下一次变更或人工重跑收敛即可，不做退避重试。
  */
 class ResyncMemberLevelsJob implements ShouldBeUnique, ShouldQueue
 {
@@ -28,7 +27,24 @@ class ResyncMemberLevelsJob implements ShouldBeUnique, ShouldQueue
     use InteractsWithQueue;
     use Queueable;
 
-    public int $tries = 1;
+    /**
+     * 这个数字必须留给 WithoutOverlapping 的 releaseAfter(60) 用，不能设成 1。
+     *
+     * 抢不到锁时中间件走的是 `$job->release(60)`（见 WithoutOverlapping::handle），
+     * 而 release 不重置 attempts；Worker::markJobAsFailedIfAlreadyExceedsMaxAttempts
+     * 判的是 `$job->attempts() <= $maxTries`，所以 tries=1 时任务第二次出队会在
+     * **进入 handle() 之前**就被判失败丢弃——重算一次都没跑，等级规则变更直接丢失。
+     *
+     * 60 次 × releaseAfter(60s) ≈ 最多等锁 60 分钟，是锁自身 expireAfter(1800s) 的两倍余量。
+     */
+    public int $tries = 60;
+
+    /**
+     * 与 tries 分开计数：Worker::markJobAsFailedIfWillExceedMaxExceptions 用独立的
+     * `job-exceptions:{uuid}` 缓存键累计真实异常。因此上面放宽 tries 只是允许反复等锁，
+     * 真抛异常仍然只失败一次就进 failed()，不会变成 60 次重试。
+     */
+    public int $maxExceptions = 1;
 
     /** 10 万用户外推约 773 秒，按翻倍余量取整 */
     public int $timeout = 1800;
