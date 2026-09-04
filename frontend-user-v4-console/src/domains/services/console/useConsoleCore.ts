@@ -1,12 +1,19 @@
 import type { Ref } from 'vue';
 
-import type { ConsoleMachineCategory, ConsoleServiceDetail, ServiceSpecItem } from '@/types/client';
+import type {
+  ConsoleMachineCategory,
+  ConsoleServiceDetail,
+  ServiceConsoleCapabilities,
+  ServiceSpecItem,
+} from '@/types/client';
 
 type ConsoleDetailPatch = Partial<ConsoleServiceDetail>;
 
 export const DEFAULT_TAB = 'overview';
 export const CLOUD_TABS = ['overview', 'monitor', 'security', 'logs', 'finance', 'vnc'];
 export const NAT_TABS = ['overview', 'monitor', 'security', 'nat', 'logs', 'finance', 'vnc'];
+/** 内置控制台 tab 展示顺序（自定义区域插入到 overview 之后） */
+export const BUILTIN_TABS_ORDER = ['overview', 'monitor', 'security', 'nat', 'logs', 'finance', 'vnc'];
 export const VNC_CREDENTIAL_STORAGE_PREFIX = 'turaidc:vnc-credentials:';
 
 export function emptyDetail(): ConsoleServiceDetail {
@@ -143,6 +150,57 @@ export function isNatConsole(detail: ConsoleServiceDetail): boolean {
     .toLowerCase();
 
   return consoleTemplate === 'port_mapping';
+}
+
+export interface ResolvedConsoleTabs {
+  keys: string[];
+  /** 自定义区域 tab 的中文名（key -> name），供侧边栏与页签标题展示 */
+  areaLabels: Record<string, string>;
+}
+
+/**
+ * 依据上游能力下发结果组装可用控制台 tab。
+ *
+ * - 上游为「智简魔方类」（supported && fetchable）时动态组装：
+ *   overview -> 自定义区域(areas) -> 内置能力 tab（monitor/nat 按能力裁剪）；
+ * - 其余场景回退到原有 NAT / 云服务器静态集合，保证非自定义产品行为不变。
+ */
+export function resolveAvailableTabs(
+  detail: ConsoleServiceDetail,
+  capabilities?: ServiceConsoleCapabilities | null,
+): ResolvedConsoleTabs {
+  const dynamicReady = Boolean(capabilities?.supported && capabilities?.fetchable);
+
+  if (!dynamicReady) {
+    const fallbackKeys = isNatConsole(detail) ? NAT_TABS : CLOUD_TABS;
+    return { keys: [...fallbackKeys], areaLabels: {} };
+  }
+
+  const keys: string[] = ['overview'];
+  const seen = new Set<string>(keys);
+  const areaLabels: Record<string, string> = {};
+
+  const areas = Array.isArray(capabilities?.areas) ? capabilities.areas : [];
+  for (const area of areas) {
+    const key = String(area?.key || '').trim();
+    const name = String(area?.name || '').trim();
+    if (!key || key === 'overview' || seen.has(key)) continue;
+    seen.add(key);
+    keys.push(key);
+    if (name && name !== key) areaLabels[key] = name;
+  }
+
+  const natSupported = capabilities?.nat_supported === true;
+
+  for (const key of BUILTIN_TABS_ORDER) {
+    if (key === 'overview' || seen.has(key)) continue;
+    // NAT 能力以动态 tab 交付；无该能力时与云服务器集合保持一致
+    if (key === 'nat' && !natSupported) continue;
+    seen.add(key);
+    keys.push(key);
+  }
+
+  return { keys, areaLabels };
 }
 
 export function findSpecValue(detail: Ref<ConsoleServiceDetail>, aliases: string[], fallback = '--'): string {

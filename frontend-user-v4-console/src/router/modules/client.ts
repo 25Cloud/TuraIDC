@@ -227,7 +227,7 @@ export default [
       {
         path: 'services/:id',
         name: 'ClientServiceDetail',
-        component: () => import('@/pages/client/service-console/entry.vue'),
+        component: () => import('@/pages/client/service-console/index.vue'),
         meta: {
           title: title('实例控制台'),
           requireAuth: true,
@@ -237,11 +237,12 @@ export default [
         },
       },
       {
+        // 兼容旧入口 /compute：同一套动态控制台，tabs 由上游能力动态下发
         path: 'services/:id/compute',
         name: 'ClientComputeConsole',
-        component: () => import('@/pages/client/service-console/compute/index.vue'),
+        component: () => import('@/pages/client/service-console/index.vue'),
         meta: {
-          title: title('云服务器控制台'),
+          title: title('实例控制台'),
           requireAuth: true,
           hidden: true,
           activeMenu: '/client/services',
@@ -249,11 +250,12 @@ export default [
         },
       },
       {
+        // 兼容旧入口 /port-mapping：NAT 能力随控制台动态 tab 一并下发
         path: 'services/:id/port-mapping',
         name: 'ClientNatConsole',
-        component: () => import('@/pages/client/service-console/nat/index.vue'),
+        component: () => import('@/pages/client/service-console/index.vue'),
         meta: {
-          title: title('端口映射控制台'),
+          title: title('实例控制台'),
           requireAuth: true,
           hidden: true,
           activeMenu: '/client/services',

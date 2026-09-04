@@ -933,7 +933,8 @@
     }
   }
 
-  .vnc-frame-shell {
+  .vnc-frame-shell,
+  .area-frame-shell {
     position: relative;
     overflow: hidden;
     min-height: 35rem;
@@ -942,7 +943,8 @@
     border-radius: var(--td-radius-default);
   }
 
-  .vnc-frame {
+  .vnc-frame,
+  .area-frame {
     display: block;
     width: 100%;
     height: 35rem;
@@ -950,7 +952,8 @@
     background: var(--td-bg-color-container);
   }
 
-  .vnc-empty {
+  .vnc-empty,
+  .area-state {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -959,14 +962,41 @@
     font-size: 0.875rem;
   }
 
+  .area-state__body {
+    display: grid;
+    gap: 1rem;
+    justify-items: center;
+
+    p {
+      margin: 0;
+      color: var(--td-text-color-secondary);
+      font-size: 0.875rem;
+      line-height: 1.7;
+      text-align: center;
+    }
+  }
+
+  .area-spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 0.125rem solid var(--td-component-stroke);
+    border-top-color: var(--td-brand-color);
+    border-radius: 50%;
+    animation: area-spin 0.9s linear infinite;
+  }
+
   @media (max-width: @screen-sm-rem) {
     .vnc-frame-shell,
     .vnc-frame,
-    .vnc-empty {
+    .vnc-empty,
+    .area-frame-shell,
+    .area-frame,
+    .area-state {
       min-height: 26.25rem;
     }
 
-    .vnc-frame {
+    .vnc-frame,
+    .area-frame {
       height: 26.25rem;
     }
   }
@@ -1331,4 +1361,10 @@
 .ip-dialog-item strong {
   font-size: 0.875rem;
   word-break: break-all;
+}
+
+@keyframes area-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

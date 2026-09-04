@@ -17,6 +17,7 @@ use App\Http\Controllers\Client\V2\PaymentController;
 use App\Http\Controllers\Client\V2\RechargeController;
 use App\Http\Controllers\Client\V2\ReferralController;
 use App\Http\Controllers\Client\V2\ServiceConsoleController;
+use App\Http\Controllers\Client\V2\ServiceConsoleAreaController;
 use App\Http\Controllers\Client\V2\ServiceController;
 use App\Http\Controllers\Client\V2\TicketController;
 use App\Http\Controllers\Client\V2\TicketUpstreamCallbackController;
@@ -43,6 +44,9 @@ Route::post('/payment/alipay/notify', [PaymentCallbackController::class, 'alipay
 Route::match(['GET', 'POST'], '/payment/notify/{gateway}', [PaymentCallbackController::class, 'notify'])
     ->middleware(['throttle:60,1,client-payment-notify', 'verify.payment.callback']);
 Route::get('/vnc-tokens/{token}', [ServiceConsoleController::class, 'vncToken'])->middleware('throttle:30,1,client-vnc-token');
+// 服务自定义功能面板（iframe 隔离渲染）：不能携带 Authorization 头，凭短时效票据访问
+Route::get('/services/{service}/console-area/content', [ServiceConsoleAreaController::class, 'content'])->middleware('throttle:120,1,client-service-area-content');
+Route::post('/services/{service}/console-area/actions', [ServiceConsoleAreaController::class, 'actions'])->middleware('throttle:30,1,client-service-area-action');
 Route::post('/tickets/upstream/replies', [TicketUpstreamCallbackController::class, 'reply'])
     ->middleware(['throttle:60,1,ticket-upstream-callback', 'verify.ticket.upstream.callback']);
 
@@ -133,6 +137,8 @@ Route::middleware(['auth:sanctum', 'ensure.client'])->group(function (): void {
 
     Route::get('/services', [ServiceConsoleController::class, 'index']);
     Route::get('/services/grouped-overview', [ServiceConsoleController::class, 'groupedOverview']);
+    Route::get('/services/{id}/console/capabilities', [ServiceConsoleAreaController::class, 'capabilities']);
+    Route::post('/services/{id}/console/tickets', [ServiceConsoleAreaController::class, 'createTicket'])->middleware('throttle:20,1,client-service-area-ticket');
     Route::get('/services/{id}/config', [ServiceConsoleController::class, 'config']);
     Route::put('/services/{id}/name', [ServiceConsoleController::class, 'updateName']);
     Route::put('/services/{id}/remark', [ServiceConsoleController::class, 'updateRemark']);

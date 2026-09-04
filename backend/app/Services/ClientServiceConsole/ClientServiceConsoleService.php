@@ -21,6 +21,7 @@ use App\Services\ClientServiceConsole\Concerns\HandlesClientServiceConsoleMonito
  *   - ServiceVncService        — VNC
  *   - ServiceNatService        — NAT 端口转发
  *   - ServiceSecurityGroupService — 安全组
+ *   - ServiceConsoleAreaService — 自定义控制台区域（自定义 HTML / 能力下发）
  *
  * Monitoring 功能通过 HandlesClientServiceConsoleMonitoring Trait 实现，
  * 该 Trait 通过 $this->xxx() 调用本类代理方法，代理方法转发至 ServiceDetailService。
@@ -56,6 +57,7 @@ class ClientServiceConsoleService
         private readonly ServiceVncService $vncService,
         private readonly ServiceNatService $natService,
         private readonly ServiceSecurityGroupService $securityGroupService,
+        private readonly ServiceConsoleAreaService $consoleAreaService,
     ) {}
 
     // ══════════════════════════════════════════════════════════════════════
@@ -113,6 +115,30 @@ class ClientServiceConsoleService
     public function sanitizeClientDetail(array $detail): array
     {
         return $this->transformService->sanitizeClientDetail($detail);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // 自定义控制台区域（能力下发 / iframe 票据 / HTML 内容 / 动作回发）
+    // ══════════════════════════════════════════════════════════════════════
+
+    public function getConsoleCapabilitiesForUser(User $user, int $serviceId): array
+    {
+        return $this->consoleAreaService->capabilitiesForUser($user, $serviceId);
+    }
+
+    public function createConsoleAreaTicketForUser(User $user, int $serviceId): array
+    {
+        return $this->consoleAreaService->areaTicketForUser($user, $serviceId);
+    }
+
+    public function getConsoleAreaContentForTicket(string $ticket, int $serviceId, string $moduleKey): array
+    {
+        return $this->consoleAreaService->areaContentForTicket($ticket, $serviceId, $moduleKey);
+    }
+
+    public function submitConsoleAreaActionForTicket(string $ticket, int $serviceId, array $data): array
+    {
+        return $this->consoleAreaService->submitAreaActionForTicket($ticket, $serviceId, $data);
     }
 
     public function getOperationLogsForUser(User $user, int $serviceId, array $filters = [], int $perPage = 10): array

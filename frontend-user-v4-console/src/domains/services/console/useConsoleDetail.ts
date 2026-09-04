@@ -1,17 +1,15 @@
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, reactive, ref, shallowRef } from 'vue';
+import { computed, reactive, ref, shallowRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import clientApi from '@/api/client';
-import type { ConsoleServiceDetail } from '@/types/client';
+import type { ConsoleServiceDetail, ServiceConsoleCapabilities } from '@/types/client';
 
 import {
-  CLOUD_TABS,
   DEFAULT_TAB,
-  isNatConsole,
   mergeConsoleDetail,
-  NAT_TABS,
   normalizeConsoleDetail,
+  resolveAvailableTabs,
   resolveErrorMessage,
 } from './useConsoleCore';
 
@@ -49,7 +47,35 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
     return Number.isFinite(id) && id > 0 ? id : 0;
   });
 
-  const availableTabs = computed(() => (isNatConsole(detail.value) ? NAT_TABS : CLOUD_TABS));
+  // 上游控制台能力（自定义区域 / NAT / 监控）。拉取失败时为 null，走静态兜底 tab。
+  const consoleCapabilities = shallowRef<ServiceConsoleCapabilities | null>(null);
+  const resolvedTabs = computed(() => resolveAvailableTabs(detail.value, consoleCapabilities.value));
+  const availableTabs = computed(() => resolvedTabs.value.keys);
+  const consoleAreaLabels = computed(() => resolvedTabs.value.areaLabels);
+
+  // 能力动态下发后，若当前 tab 已被剔除则回到总览
+  watch(
+    () => availableTabs.value.join(','),
+    (keys) => {
+      if (!keys.split(',').includes(activeTab.value)) {
+        activeTab.value = DEFAULT_TAB;
+      }
+    },
+  );
+
+  async function loadConsoleCapabilities() {
+    const id = serviceId.value;
+    if (!id) return;
+    try {
+      const res = await clientApi.serviceConsoleCapabilities(id);
+      if (serviceId.value !== id) return;
+      consoleCapabilities.value = (res.data || null) as ServiceConsoleCapabilities | null;
+    } catch {
+      // 能力接口不可用时静默回退到静态 tab 集合
+      if (serviceId.value !== id) return;
+      consoleCapabilities.value = null;
+    }
+  }
   const canManageConsole = computed(
     () => Boolean(detail.value.actions?.module_status) || Number(detail.value.upstream?.host_id || 0) > 0,
   );
@@ -142,9 +168,11 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
     if (!serviceId.value) return;
     clearOperationStatus();
     activeTab.value = DEFAULT_TAB;
+    consoleCapabilities.value = null;
     await loadDetailBase();
     void loadRemoteStatus(true);
     void fetchConnectionInfo();
+    void loadConsoleCapabilities();
   }
 
   return {
@@ -158,6 +186,7 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
     operationStatus,
     serviceId,
     availableTabs,
+    consoleAreaLabels,
     canManageConsole,
     canSyncStatus,
     clearStatusSyncTimer,

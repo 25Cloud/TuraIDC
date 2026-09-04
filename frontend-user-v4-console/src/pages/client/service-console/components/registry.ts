@@ -9,6 +9,7 @@ import {
 } from 'tdesign-icons-vue-next';
 import type { Component } from 'vue';
 
+import AreaTab from './tabs/AreaTab.vue';
 import FinanceTab from './tabs/FinanceTab.vue';
 import LogsTab from './tabs/LogsTab.vue';
 import MonitorTab from './tabs/MonitorTab.vue';
@@ -43,14 +44,20 @@ export const consoleTabComponents: Record<string, Component> = {
   vnc: VncTab,
 };
 
-export function resolveConsoleNavItems(tabKeys: string[]): ServiceConsoleNavItem[] {
+const builtinTabKeys = new Set(Object.keys(consoleTabComponents));
+
+export function resolveConsoleNavItems(
+  tabKeys: string[],
+  areaLabels: Record<string, string> = {},
+): ServiceConsoleNavItem[] {
   return tabKeys.map((key) => ({
     key,
-    label: consoleTabMeta[key]?.label || key,
+    label: areaLabels[key] || consoleTabMeta[key]?.label || key,
     icon: consoleTabMeta[key]?.icon || DashboardIcon,
   }));
 }
 
+/** 未注册的内置 key 视为上游自定义区域，走 iframe 隔离渲染 */
 export function resolveConsoleTabComponent(tabKey: string): Component {
-  return consoleTabComponents[tabKey] || OverviewTab;
+  return builtinTabKeys.has(tabKey) ? consoleTabComponents[tabKey] : AreaTab;
 }
