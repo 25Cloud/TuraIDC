@@ -340,6 +340,130 @@ class VerificationService
         ];
     }
 
+    /**
+     * 管理端人工维护用户的实名状态与实名信息。
+     *
+     * 规则：
+     * - real_name / id_card 仅做“覆盖为提交值”，留空表示沿用现有值，不支持主动清空；
+     * - 状态置为 2（已认证）时要求最终姓名与证件号均非空；
+     * - 状态未变化时不会用“审核通过/认证失败”等默认文案覆盖现有说明；
+     * - 修改了姓名/证件号，或状态从“已认证”降级时，作废旧的平台认证 certify_id。
+     *
+     * @param  array{verification_status?: int, real_name?: string, id_card?: string, verification_message?: string}  $payload
+     * @return array<string, mixed>
+     */
+    public function updateVerificationByAdmin(User $user, array $payload, ?int $adminUserId = null, ?string $adminName = null): array
+    {
+        $snapshot = $this->getVerificationSnapshot($user);
+        $currentStatus = (int) $snapshot['verification_status'];
+
+        $statusProvided = array_key_exists('verification_status', $payload);
+        $status = $statusProvided ? (int) $payload['verification_status'] : $currentStatus;
+        if ($statusProvided && ! in_array($status, [0, 2, 3, 5], true)) {
+            throw new BusinessException('不支持的实名认证状态', 42200);
+        }
+
+        $realNameInput = trim((string) ($payload['real_name'] ?? ''));
+        $idCardInput = trim((string) ($payload['id_card'] ?? ''));
+        $messageProvided = array_key_exists('verification_message', $payload);
+        $messageInput = trim((string) ($payload['verification_message'] ?? ''));
+
+        $resolvedRealName = $realNameInput !== '' ? $realNameInput : $snapshot['real_name'];
+        $resolvedIdCard = $idCardInput !== '' ? $idCardInput : $snapshot['id_card'];
+        if ($status === 2 && ($resolvedRealName === '' || $resolvedIdCard === '')) {
+            throw new BusinessException('将该用户标记为已认证需要已有或本次填写完整真实姓名与证件号码', 42200);
+        }
+
+        $userPayload = [];
+        if ($realNameInput !== '' && $realNameInput !== $snapshot['real_name']) {
+            $userPayload['real_name'] = $realNameInput;
+        }
+        if ($idCardInput !== '' && $idCardInput !== $snapshot['id_card']) {
+            $userPayload['id_card'] = $idCardInput;
+        }
+        if ($statusProvided && $status !== $currentStatus) {
+            $userPayload['verification_status'] = $status;
+            $userPayload['verified_at'] = $status === 2 ? now() : null;
+        }
+
+        // 资料被改或状态不再处于“已认证”时，旧的平台认证会话与快照即失配，一律作废。
+        // 注意 persistVerificationState 以 certify_id 作为入参 key。
+        $profileChanged = array_key_exists('real_name', $userPayload) || array_key_exists('id_card', $userPayload);
+        if ($profileChanged || ($statusProvided && $status !== 2)) {
+            $userPayload['certify_id'] = null;
+        }
+
+        // 状态迁移未显式填说明时套用默认文案；其余情况仅当显式提交说明才允许改写。
+        $resolvedMessage = null;
+        if ($statusProvided && $status !== $currentStatus) {
+            $resolvedMessage = $messageInput !== '' ? $messageInput : match ($status) {
+                2 => '审核通过（管理员人工认证）',
+                3 => '认证失败（管理员操作）',
+                5 => '管理员驳回',
+                default => '',
+            };
+        } elseif ($messageProvided) {
+            $resolvedMessage = $messageInput;
+        }
+        if ($resolvedMessage !== null && $resolvedMessage !== $snapshot['verification_message']) {
+            $userPayload['verification_message'] = $resolvedMessage;
+        }
+
+        if ($userPayload === []) {
+            throw new BusinessException('没有需要变更的实名认证信息', 42200);
+        }
+
+        $updatedUser = DB::transaction(function () use ($user, $userPayload, $resolvedRealName, $resolvedIdCard): User {
+            $updated = $this->persistVerificationState($user, $userPayload);
+
+            if ($this->canPersistVerificationHistory()) {
+                try {
+                    VerificationHistory::create([
+                        'user_id' => $updated->id,
+                        'real_name' => $resolvedRealName,
+                        'id_card' => $resolvedIdCard,
+                        'verification_status' => (int) $updated->verification_status,
+                        'verification_message' => (string) $updated->verification_message,
+                        'verification_certify_id' => $updated->verification_certify_id,
+                        'verification_biz_code' => $this->resolvedBizCode(),
+                        'verification_type' => self::VERIFICATION_TYPE_PERSONAL,
+                        'submitted_at' => now(),
+                        'completed_at' => now(),
+                    ]);
+                } catch (\Throwable $exception) {
+                    $this->handleHistoryPersistenceFailure('update-by-admin', $exception, ['user_id' => $updated->id]);
+                }
+            }
+
+            return $updated;
+        });
+
+        $finalStatus = (int) $updatedUser->verification_status;
+        $finalMessage = trim((string) $updatedUser->verification_message);
+
+        return [
+            'user_id' => $user->id,
+            'verification_status' => $finalStatus,
+            'verification_status_label' => $this->verificationStatusLabel($finalStatus),
+            'real_name' => $this->maskName(trim((string) $updatedUser->real_name)),
+            'verification_message' => $finalMessage,
+            'operator' => $adminName ?? '系统',
+            'updated_at' => now()->format('Y-m-d H:i:s'),
+        ];
+    }
+
+    private function verificationStatusLabel(int $status): string
+    {
+        return match ($status) {
+            0 => '未认证',
+            1, 4 => '待认证',
+            2 => '已认证',
+            3 => '认证失败',
+            5 => '已驳回',
+            default => '未知',
+        };
+    }
+
     public function findUserByCertifyId(string $certifyId): ?User
     {
         $certifyId = trim($certifyId);

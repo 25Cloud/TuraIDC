@@ -382,11 +382,11 @@
         <t-form-item v-if="canManageUsers" label="代理组" name="agent_group_id">
           <t-select
             v-model="editForm.agent_group_id"
-            clearable
             filterable
             :loading="agentGroupOptionsLoading"
-            placeholder="请选择代理组，留空表示不设置"
+            placeholder="请选择代理组"
           >
+            <t-option label="无代理分组" :value="0" />
             <t-option
               v-for="item in agentGroupOptions"
               :key="item.id"
@@ -1391,7 +1391,8 @@ function syncEditForm() {
   editForm.phone = String(user.value.phone || '');
   editForm.password = '';
   editForm.status = Number(user.value.status ?? 1);
-  editForm.agent_group_id = Number(user.value.agent_group_id ?? user.value.agent_group?.id ?? 0) || null;
+  // 0 表示“无代理分组”（null），作为下拉中的显式可选项。
+  editForm.agent_group_id = Number(user.value.agent_group_id ?? user.value.agent_group?.id ?? 0) || 0;
 }
 
 async function loadAgentGroupOptions() {
@@ -1531,7 +1532,12 @@ async function handleSave() {
     const payload: UserUpdatePayload = {
       nickname: editForm.nickname,
       status: editForm.status,
-      agent_group_id: canManageUsers.value ? editForm.agent_group_id : undefined,
+      // 下拉中 0 表示“无代理分组”，保存时转换为 null（后端 agent_group_id 可空）。
+      agent_group_id: canManageUsers.value
+        ? editForm.agent_group_id
+          ? Number(editForm.agent_group_id)
+          : null
+        : undefined,
     };
     // 无原始隐私查看权限时，回显的手机号是脱敏值（如 138****1234）。
     // 若原样提交，后端会剥掉 * 得到残缺号码从而校验失败或写坏数据，
