@@ -162,8 +162,14 @@ class UserService
         }
 
         if (array_key_exists('phone', $baseUpdateData)) {
-            $baseUpdateData['phone'] = AccountIdentifier::normalizeOptionalPhone((string) $baseUpdateData['phone']);
-            $this->assertUniquePhone($baseUpdateData['phone'], (int) $user->id);
+            // 无原始隐私权限的会话回显脱敏值（如 138****1234）时，任何入口
+            // 都不应把 * 剥成残缺号码再入库；脱敏值一律视为“未修改”。
+            if (str_contains((string) $baseUpdateData['phone'], '*')) {
+                unset($baseUpdateData['phone']);
+            } else {
+                $baseUpdateData['phone'] = AccountIdentifier::normalizeOptionalPhone((string) $baseUpdateData['phone']);
+                $this->assertUniquePhone($baseUpdateData['phone'], (int) $user->id);
+            }
         }
 
         if (array_key_exists('agent_group_id', $baseUpdateData)) {

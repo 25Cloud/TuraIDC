@@ -967,7 +967,7 @@ import { adminApi } from '@/api/admin';
 import type { ProductRecord } from '@/api/product';
 import { productApi } from '@/api/product';
 import { supplierApi } from '@/api/supplier';
-import type { AdminUser, PageParams } from '@/api/user';
+import type { AdminUser, PageParams, UserUpdatePayload } from '@/api/user';
 import { userApi } from '@/api/user';
 import ProductBindingTreeSelect from '@/components/product-binding-tree-select/index.vue';
 import { AdminPermissions } from '@/constants/permissions';
@@ -1528,13 +1528,21 @@ async function handleSave() {
   if (!isValidationPass(result)) return;
   saveLoading.value = true;
   try {
-    await userApi.update(userId.value, {
+    const payload: UserUpdatePayload = {
       nickname: editForm.nickname,
-      phone: editForm.phone,
       status: editForm.status,
       agent_group_id: canManageUsers.value ? editForm.agent_group_id : undefined,
-      ...(editForm.password.trim() ? { password: editForm.password.trim() } : {}),
-    });
+    };
+    // 无原始隐私查看权限时，回显的手机号是脱敏值（如 138****1234）。
+    // 若原样提交，后端会剥掉 * 得到残缺号码从而校验失败或写坏数据，
+    // 因此脱敏值一律视为“未修改”，不随表单提交（空串则用于清空手机号）。
+    const phone = String(editForm.phone || '').trim();
+    if (!phone.includes('*')) {
+      payload.phone = phone;
+    }
+    const password = editForm.password.trim();
+    if (password) payload.password = password;
+    await userApi.update(userId.value, payload);
     MessagePlugin.success('用户资料已更新');
     editVisible.value = false;
     // 写入已成功；刷新失败不得回退成"更新失败"，否则管理员会误以为没保存而重复提交
