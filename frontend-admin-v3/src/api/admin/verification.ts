@@ -20,4 +20,13 @@ export const verificationsApi = {
     }),
   unbind: (id: number | string, data: { reject_reason: string }) =>
     request.post({ url: `/v2/admin/verifications/${id}/unbindings`, data }),
+  update: (
+    id: number | string,
+    data: {
+      verification_status?: number | string;
+      real_name?: string;
+      id_card?: string;
+      verification_message?: string;
+    },
+  ) => request.put({ url: `/v2/admin/verifications/${id}`, data }),
 };

@@ -41,6 +41,9 @@
           <t-space size="small">
             <t-button variant="text" theme="primary" size="small" @click="openDetail(row)">查看</t-button>
             <t-button variant="text" theme="primary" size="small" @click="openHistory(row)">历史记录</t-button>
+            <t-button v-if="canEditVerification" variant="text" theme="primary" size="small" @click="openEdit(row)">
+              编辑
+            </t-button>
             <t-button
               v-if="canReject(row)"
               variant="text"
@@ -84,6 +87,15 @@
               <div class="verification-mobile-card__actions">
                 <t-button variant="outline" theme="primary" size="small" @click="openDetail(row)">查看</t-button>
                 <t-button variant="outline" theme="primary" size="small" @click="openHistory(row)">历史记录</t-button>
+                <t-button
+                  v-if="canEditVerification"
+                  variant="outline"
+                  theme="primary"
+                  size="small"
+                  @click="openEdit(row)"
+                >
+                  编辑
+                </t-button>
                 <t-button v-if="canReject(row)" variant="outline" theme="danger" size="small" @click="openReject(row)">
                   驳回
                 </t-button>
@@ -194,6 +206,49 @@
       <p class="verification-help">请输入驳回原因，提交后会解除当前实名认证状态。</p>
       <t-textarea v-model="rejectReason" placeholder="请输入驳回原因" :autosize="{ minRows: 3, maxRows: 6 }" />
     </t-dialog>
+
+    <t-dialog
+      v-model:visible="editVisible"
+      header="修改实名认证信息"
+      width="520px"
+      :confirm-btn="{ content: '保存修改', loading: editSubmitting }"
+      @confirm="handleEditSubmit"
+    >
+      <div class="verification-edit-subject">
+        {{ editRow?.display_name || editRow?.email || editRow?.real_name || `用户 #${editRow?.id}` }}
+      </div>
+      <t-form :data="editForm" label-align="top">
+        <t-form-item label="实名状态">
+          <t-select v-model="editForm.verification_status">
+            <t-option
+              v-for="item in verificationStatusOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </t-select>
+          <p class="verification-help">
+            标记为“已认证”时系统将同步把该用户视为已实名（is_verified=1），操作前请先确认资料真实有效。
+          </p>
+        </t-form-item>
+        <t-form-item label="真实姓名">
+          <t-input v-model="editForm.real_name" placeholder="留空则不修改" :maxlength="50" />
+          <p class="verification-help">仅用于人工修正/补录。当前值不在此回显，留空表示沿用原有姓名。</p>
+        </t-form-item>
+        <t-form-item label="证件号码">
+          <t-input v-model="editForm.id_card" placeholder="留空则不修改" :maxlength="24" />
+          <p class="verification-help">仅用于人工修正/补录。留空表示沿用原有证件号码。</p>
+        </t-form-item>
+        <t-form-item label="状态说明">
+          <t-textarea
+            v-model="editForm.verification_message"
+            placeholder="填写状态说明，可留空"
+            :autosize="{ minRows: 2, maxRows: 4 }"
+            :maxlength="255"
+          />
+        </t-form-item>
+      </t-form>
+    </t-dialog>
   </div>
 </template>
 <script setup lang="ts">
@@ -248,6 +303,23 @@ const historyList = ref<VerificationRecord[]>([]);
 const rejectVisible = ref(false);
 const rejectRow = ref<VerificationRecord | null>(null);
 const rejectReason = ref('');
+const editVisible = ref(false);
+const editSubmitting = ref(false);
+const editRow = ref<VerificationRecord | null>(null);
+const editForm = reactive({
+  verification_status: 2 as number | string,
+  real_name: '',
+  id_card: '',
+  verification_message: '',
+});
+const originalEditStatus = ref(0);
+const originalEditMessage = ref('');
+const verificationStatusOptions = [
+  { value: 2, label: '已认证' },
+  { value: 3, label: '认证失败' },
+  { value: 5, label: '已驳回' },
+  { value: 0, label: '未认证' },
+];
 const summaryConfig = reactive<Record<string, unknown>>({});
 
 const columns: PrimaryTableCol<TableRowData>[] = [
@@ -407,6 +479,11 @@ function canReject(row: VerificationRecord) {
   );
 }
 
+const canEditVerification = computed(() => {
+  const permissions = userStore.userInfo?.permissions || [];
+  return permissions.includes('*') || permissions.includes('verification.unbind');
+});
+
 async function openDetail(row: VerificationRecord) {
   detailVisible.value = true;
   detailLoading.value = true;
@@ -469,6 +546,61 @@ async function handleReject() {
     MessagePlugin.error(errorMessage(error, '驳回失败，请稍后重试'));
   } finally {
     actionLoadingId.value = null;
+  }
+}
+
+function openEdit(row: VerificationRecord) {
+  editRow.value = row;
+  originalEditStatus.value = Number(row.verification_status || 0);
+  originalEditMessage.value = String(row.verification_message || '').trim();
+  editForm.verification_status = originalEditStatus.value;
+  editForm.real_name = '';
+  editForm.id_card = '';
+  editForm.verification_message = '';
+  editVisible.value = true;
+}
+
+async function handleEditSubmit() {
+  if (!editRow.value) return;
+  const payload: {
+    verification_status?: number | string;
+    real_name?: string;
+    id_card?: string;
+    verification_message?: string;
+  } = {};
+  const realName = editForm.real_name.trim();
+  const idCard = editForm.id_card.trim();
+  const message = editForm.verification_message.trim();
+  const status = Number(editForm.verification_status);
+
+  if (realName) payload.real_name = realName;
+  if (idCard) payload.id_card = idCard;
+  if (status !== originalEditStatus.value) payload.verification_status = status;
+  // 姓名/证件号回显脱敏，不允许把脱敏值原样提交；仅当填写了新值才视为修改。
+  if ((realName || idCard) && /[*＊]/.test(`${realName}${idCard}`)) {
+    MessagePlugin.error('姓名与证件号码中不能包含脱敏符号（*），请填写完整真实资料');
+    return;
+  }
+  // 状态说明：仅在显式改动时提交（状态未变且说明相同则跳过）。
+  if (message && message !== originalEditMessage.value) {
+    payload.verification_message = message;
+  }
+
+  if (!Object.keys(payload).length) {
+    MessagePlugin.warning('没有需要变更的实名认证信息，请先修改实名状态、姓名、证件号码或状态说明');
+    return;
+  }
+
+  editSubmitting.value = true;
+  try {
+    await adminApi.verifications.update(editRow.value.id, payload);
+    MessagePlugin.success('实名认证信息已更新');
+    editVisible.value = false;
+    await Promise.all([loadList(), loadSummary()]);
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '实名认证信息保存失败'));
+  } finally {
+    editSubmitting.value = false;
   }
 }
 
@@ -653,6 +785,15 @@ onMounted(() => {
 
 .verification-mobile-pagination {
   margin-top: var(--td-comp-margin-l);
+}
+
+.verification-edit-subject {
+  margin: 0 0 var(--td-comp-margin-l);
+  padding: var(--td-comp-paddingTB-m) var(--td-comp-paddingLR-m);
+  border-radius: var(--td-radius-default, 4px);
+  background: var(--td-bg-color-container-hover);
+  color: var(--td-text-color-primary);
+  font-weight: 600;
 }
 
 .verification-drawer-actions {

@@ -149,6 +149,7 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
 
     Route::middleware(['permission:'.AdminPermissions::VERIFICATION_UNBIND])->group(function (): void {
         Route::post('/verifications/{user}/unbindings', [VerificationController::class, 'unbind']);
+        Route::put('/verifications/{user}', [VerificationController::class, 'update']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::TICKET_LIST])->group(function (): void {

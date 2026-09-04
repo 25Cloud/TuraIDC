@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\V2\Verification\ListVerificationHistoryRequest;
 use App\Http\Requests\Admin\V2\Verification\ListVerificationsRequest;
 use App\Http\Requests\Admin\V2\Verification\ShowVerificationRequest;
 use App\Http\Requests\Admin\V2\Verification\UnbindVerificationRequest;
+use App\Http\Requests\Admin\V2\Verification\UpdateVerificationRequest;
 use App\Http\Resources\Admin\V2\AdminVerificationDetailResource;
 use App\Http\Resources\Admin\V2\AdminVerificationHistoryItemResource;
 use App\Http\Resources\Admin\V2\AdminVerificationListItemResource;
@@ -107,5 +108,40 @@ class VerificationController extends Controller
             (new AdminVerificationUnbindResource($result))->resolve(),
             '驳回成功'
         );
+    }
+
+    public function update(User $user, UpdateVerificationRequest $request): JsonResponse
+    {
+        $payload = $request->payload();
+
+        $adminUser = $request->user();
+        $adminUserId = $adminUser?->id;
+        $adminName = $adminUser?->name ?? $adminUser?->username;
+
+        $result = $this->verificationService->updateVerificationByAdmin(
+            $user,
+            $payload,
+            $adminUserId,
+            $adminName
+        );
+
+        $this->operationLogService->write(
+            userId: $adminUserId,
+            userType: 'admin',
+            action: 'verification.update',
+            module: 'verification',
+            targetId: $user->id,
+            detail: [
+                'user_id' => $user->id,
+                'user_name' => $user->display_name,
+                'verification_status' => $result['verification_status'],
+                'real_name' => $result['real_name'],
+                'operator' => $result['operator'],
+                'updated_at' => $result['updated_at'],
+            ],
+            ipAddress: $request->ip(),
+        );
+
+        return $this->success($result, '实名认证信息已更新');
     }
 }
