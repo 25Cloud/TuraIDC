@@ -40,6 +40,8 @@ import type {
   ReferralWithdrawalRecord,
   SecurityGroupPayload,
   SecurityRulePayload,
+  ServiceConsoleAreaTicket,
+  ServiceConsoleCapabilities,
   ServiceInstance,
   ServiceNameUpdatePayload,
   ServiceOperationLogPayload,
@@ -59,7 +61,7 @@ import type {
   TicketReplyRecord,
   TicketServiceOption,
 } from '@/types/client';
-import request from '@/utils/request';
+import request, { apiBaseUrl } from '@/utils/request';
 
 import {
   normalizeContentDetailPayload,
@@ -321,6 +323,14 @@ const clientApi = {
   serviceVnc: (id: number | string, config: Record<string, unknown> = {}) =>
     getEnvelope<ServiceVncPayload>(`/v2/client/services/${id}/vnc`, config),
   vncToken: (token: string) => request.get(`/v2/client/vnc-tokens/${token}`),
+  serviceConsoleCapabilities: (id: number | string) =>
+    getEnvelope<ServiceConsoleCapabilities>(`/v2/client/services/${id}/console/capabilities`),
+  createServiceConsoleAreaTicket: (id: number | string) =>
+    postEnvelope<ServiceConsoleAreaTicket>(`/v2/client/services/${id}/console/tickets`),
+  serviceConsoleAreaContentUrl: (id: number | string, ticket: string, moduleKey: string) =>
+    `${apiBaseUrl}/v2/client/services/${id}/console-area/content?ticket=${encodeURIComponent(
+      ticket,
+    )}&module=${encodeURIComponent(moduleKey)}`,
 
   balanceLogs: (params?: QueryParams) => getEnvelope<PagedList<BalanceLog>>('/v2/client/balance-logs', { params }),
   balanceLogsSummary: (params?: QueryParams) => request.get('/v2/client/balance-logs/summary', { params }),

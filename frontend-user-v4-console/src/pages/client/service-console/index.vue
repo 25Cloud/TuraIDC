@@ -34,9 +34,9 @@ import { resolveConsoleNavItems, resolveConsoleTabComponent } from './components
 const serviceConsole = useServiceConsole();
 provideServiceConsoleContext(serviceConsole);
 
-const { detailLoading, activeTab, availableTabs } = serviceConsole;
+const { detailLoading, activeTab, availableTabs, consoleAreaLabels } = serviceConsole;
 
-const consoleNavItems = computed(() => resolveConsoleNavItems(availableTabs.value));
+const consoleNavItems = computed(() => resolveConsoleNavItems(availableTabs.value, consoleAreaLabels.value));
 const activeTabComponent = computed(() => resolveConsoleTabComponent(activeTab.value));
 </script>
 <style src="./components/styles.less" lang="less"></style>

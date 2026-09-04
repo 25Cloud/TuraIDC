@@ -32,6 +32,7 @@ export function useServiceConsole() {
     operationStatus,
     serviceId,
     availableTabs,
+    consoleAreaLabels,
     canManageConsole,
     canSyncStatus,
     clearStatusSyncTimer,
@@ -395,6 +396,7 @@ export function useServiceConsole() {
     // Computed
     serviceId,
     availableTabs,
+    consoleAreaLabels,
     canManageConsole,
     canSyncStatus,
     serviceRegion,

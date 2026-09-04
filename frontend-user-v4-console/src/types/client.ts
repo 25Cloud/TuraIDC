@@ -267,6 +267,28 @@ export interface ConsoleSyncMarker {
   changed_at?: string;
 }
 
+export interface ConsoleAreaDescriptor {
+  key: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+export interface ServiceConsoleCapabilities {
+  supported?: boolean;
+  error?: string;
+  areas?: ConsoleAreaDescriptor[];
+  nat_supported?: boolean;
+  monitor_supported?: boolean;
+  fetchable?: boolean;
+  [key: string]: unknown;
+}
+
+export interface ServiceConsoleAreaTicket {
+  ticket?: string;
+  expires_in?: number;
+  [key: string]: unknown;
+}
+
 export interface ConsoleServiceDetail extends ServiceInstance {
   combined_display_name?: string;
   domain?: string;

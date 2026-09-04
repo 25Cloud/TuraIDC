@@ -7,11 +7,13 @@ namespace Tests\Feature;
 use App\Models\Service;
 use App\Models\Supplier;
 use App\Services\ClientServiceConsole\ClientServiceConsoleService;
+use App\Services\ClientServiceConsole\ServiceConsoleAreaService;
 use App\Services\ClientServiceConsole\ServiceDetailService;
 use App\Services\ClientServiceConsole\ServiceNatService;
 use App\Services\ClientServiceConsole\ServiceOverviewService;
 use App\Services\ClientServiceConsole\ServicePowerService;
 use App\Services\ClientServiceConsole\ServiceSecurityGroupService;
+use App\Services\ClientServiceConsole\ServiceSuspensionService;
 use App\Services\ClientServiceConsole\ServiceTransformService;
 use App\Services\ClientServiceConsole\ServiceVncService;
 use Carbon\Carbon;
@@ -24,7 +26,12 @@ class ClientServiceMonitorCacheBehaviorTest extends TestCase
     public function it_reuses_the_same_batch_cache_key_within_one_monitor_bucket(): void
     {
         $service = $this->makeConsoleService();
-        $target = new Service;
+        // 不执行 Eloquent 构造，避免触发 Service::bootSoftDeletes 里对 Schema Facade 的探测
+        // （本类继承裸 PHPUnit TestCase，无 Laravel 应用上下文），其余方法保留真实实现。
+        $target = $this->getMockBuilder(Service::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods([])
+            ->getMock();
         $target->id = 67;
         $target->setDateFormat('Y-m-d H:i:s');
         $target->updated_at = Carbon::create(2026, 4, 13, 2, 30, 0);
@@ -94,9 +101,11 @@ class ClientServiceMonitorCacheBehaviorTest extends TestCase
             $this->createMock(ServiceDetailService::class),
             $this->createMock(ServiceTransformService::class),
             $this->createMock(ServicePowerService::class),
+            $this->createMock(ServiceSuspensionService::class),
             $this->createMock(ServiceVncService::class),
             $this->createMock(ServiceNatService::class),
             $this->createMock(ServiceSecurityGroupService::class),
+            $this->createMock(ServiceConsoleAreaService::class),
         );
     }
 

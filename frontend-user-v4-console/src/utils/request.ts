@@ -106,6 +106,9 @@ if (!apiBaseUrl) {
   throw new Error('VITE_API_BASE_URL 必须配置');
 }
 
+/** 暴露给 iframe 等无法携带 Authorization 头的场景拼接完整地址 */
+export { apiBaseUrl };
+
 const httpClient = axios.create({
   baseURL: apiBaseUrl,
   timeout: DEFAULT_TIMEOUT,
