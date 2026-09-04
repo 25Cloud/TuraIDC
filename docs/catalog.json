@@ -302,6 +302,16 @@
       "review_by": "2026-08-21"
     },
     {
+      "path": "references/integrations/plugins/plugin-package-spec.md",
+      "status": "current",
+      "summary": "插件包规范：独立仓库开发、打包、分发与插件市场对接。"
+    },
+    {
+      "path": "references/migration-records/20260904-实名编辑无代理分组与实例价格重置.md",
+      "status": "archived",
+      "summary": "20260904 增量补丁记录：管理端实名编辑、代理分组支持无代理分组与实例价格重置。"
+    },
+    {
       "path": "references/migration-records/frontend-admin-v3-final-acceptance-report.md",
       "status": "archived",
       "summary": "frontend-admin-v3 迁移完成后的最终验收记录。"
