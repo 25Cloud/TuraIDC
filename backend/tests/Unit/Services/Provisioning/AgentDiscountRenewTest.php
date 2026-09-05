@@ -17,8 +17,9 @@ use App\Services\Provisioning\ServiceRenewService;
 use App\Services\System\NotificationService;
 use App\Services\System\OperationLogService;
 use App\Services\System\SettingService;
+use App\Services\Upstream\ProviderRegistry;
 use App\Services\Upstream\ProviderResolver;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 use ReflectionMethod;
 
 class AgentDiscountRenewTest extends TestCase
@@ -56,7 +57,7 @@ class AgentDiscountRenewTest extends TestCase
 
         $renewService = new ServiceRenewService(
             $this->createMock(InvoiceService::class),
-            $this->createMock(ProviderResolver::class),
+            new ProviderResolver(new ProviderRegistry([])),
             $this->createMock(CouponService::class),
             $this->createMock(OperationLogService::class),
             $this->createMock(SettingService::class),
