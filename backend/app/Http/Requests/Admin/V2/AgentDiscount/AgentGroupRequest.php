@@ -14,6 +14,7 @@ class AgentGroupRequest extends AdminFormRequest
             'name' => ['required', 'string', 'max:50'],
             'code' => ['required', 'string', 'max:30'],
             'status' => ['nullable', 'integer', 'in:0,1'],
+            'default_discount_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'remark' => ['nullable', 'string', 'max:255'],
         ];
@@ -21,6 +22,6 @@ class AgentGroupRequest extends AdminFormRequest
 
     public function payload(): array
     {
-        return $this->safe()->only(['name', 'code', 'status', 'sort_order', 'remark']);
+        return $this->safe()->only(['name', 'code', 'status', 'default_discount_rate', 'sort_order', 'remark']);
     }
 }

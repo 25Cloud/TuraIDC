@@ -30,6 +30,7 @@ class AgentDiscountServiceTest extends TestCase
             'discounted_amount' => 0.0,
             'cost_rate' => 0.0,
             'cost_amount' => 0.0,
+            'discount_source' => null,
         ], $pricing);
     }
 

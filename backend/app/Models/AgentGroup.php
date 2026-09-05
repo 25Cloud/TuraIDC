@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class AgentGroup extends Model
 {
     protected $fillable = [
-        'name', 'code', 'status', 'sort_order', 'remark',
+        'name', 'code', 'status', 'default_discount_rate', 'sort_order', 'remark',
     ];
 
     protected function casts(): array
@@ -18,6 +18,7 @@ class AgentGroup extends Model
         return [
             'status' => 'integer',
             'sort_order' => 'integer',
+            'default_discount_rate' => 'float',
         ];
     }
 

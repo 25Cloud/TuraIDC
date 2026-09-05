@@ -1025,6 +1025,7 @@ export interface AgentGroupRecord {
   name?: string;
   code?: string;
   status?: number | string;
+  default_discount_rate?: number | string | null;
   sort_order?: number | string;
   remark?: string | null;
   created_at?: string | null;
@@ -1036,6 +1037,7 @@ export interface AgentGroupPayload {
   name: string;
   code: string;
   status?: number;
+  default_discount_rate?: number | null;
   sort_order?: number;
   remark?: string | null;
 }

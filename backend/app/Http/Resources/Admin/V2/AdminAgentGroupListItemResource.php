@@ -11,6 +11,6 @@ class AdminAgentGroupListItemResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        return ['id' => (int) $this->id, 'name' => (string) $this->name, 'code' => (string) $this->code, 'status' => (int) $this->status, 'sort_order' => (int) $this->sort_order, 'remark' => $this->remark, 'created_at' => $this->created_at?->format('Y-m-d H:i:s'), 'updated_at' => $this->updated_at?->format('Y-m-d H:i:s')];
+        return ['id' => (int) $this->id, 'name' => (string) $this->name, 'code' => (string) $this->code, 'status' => (int) $this->status, 'default_discount_rate' => $this->default_discount_rate === null ? null : number_format((float) $this->default_discount_rate, 2, '.', ''), 'sort_order' => (int) $this->sort_order, 'remark' => $this->remark, 'created_at' => $this->created_at?->format('Y-m-d H:i:s'), 'updated_at' => $this->updated_at?->format('Y-m-d H:i:s')];
     }
 }
