@@ -19,6 +19,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Refund;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\ClientServiceConsole\ServiceTrafficPackageService;
 use App\Services\ClientServiceConsole\ServiceUpgradeService;
@@ -490,9 +491,24 @@ class PaymentService
 
     private function assertVerifiedUser(User $user): void
     {
+        $enforceRechargeVerification = $this->rechargeRequiresVerification();
+
         throw_if(
-            ! $user->hasCompletedVerification(),
+            $enforceRechargeVerification && ! $user->hasCompletedVerification(),
             new BusinessException('请先完成实名认证后再继续操作', 40301)
+        );
+    }
+
+    /**
+     * 充值实名开关：管理端「账户与财务 → 充值须实名」配置（finance.recharge_requires_verification）。
+     * 默认开启以符合实名合规要求；面向非大陆主体部署可关闭，允许未实名用户充值。
+     */
+    private function rechargeRequiresVerification(): bool
+    {
+        return in_array(
+            Setting::getValue('finance', 'recharge_requires_verification', '1'),
+            [true, 1, '1', 'true', 'on'],
+            true
         );
     }
 
