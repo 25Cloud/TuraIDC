@@ -10,11 +10,14 @@ use App\Models\Supplier;
 use App\Services\Integrations\Support\ProviderErrorMapper;
 use App\Services\Upstream\ProviderKey;
 use App\Support\SensitiveDataSanitizer;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 final class ZjmfRenewService
 {
     private const RENEWAL_DURATION_BY_BILLING_CYCLE = BillingCycle::RENEWABLE_MONTHS;
+
+    private const RENEWABLE_CYCLES_CACHE_TTL_SECONDS = 300;
 
     public function __construct(
         private readonly ZjmfFinanceTransport $transport,
@@ -23,6 +26,64 @@ final class ZjmfRenewService
     public function renewHost(Supplier $supplier, int $hostId, string $billingCycle): array
     {
         return $this->submitRenewal($supplier, $hostId, $billingCycle, $this->transport->login($supplier));
+    }
+
+    /**
+     * 上游认可的该主机可续周期（/host/renewpage 的 data.cycle）。
+     *
+     * 上游不可达、响应异常或结构不符合预期时返回 null，调用方应回退本地周期集合，
+     * 保证续费预览/建单不因上游抖动而失败；上游明确返回的空列表会原样缓存并返回，
+     * 表示该主机（如金额被单独改过的主机）只允许按当前周期续费。
+     *
+     * @return list<string>|null
+     */
+    public function renewableCycles(Supplier $supplier, int $hostId): ?array
+    {
+        $cacheKey = sprintf('zjmf_finance:renewable_cycles:%d:%d', (int) $supplier->id, $hostId);
+
+        return Cache::remember(
+            $cacheKey,
+            now()->addSeconds(self::RENEWABLE_CYCLES_CACHE_TTL_SECONDS),
+            fn (): ?array => $this->fetchRenewableCycles($supplier, $hostId),
+        );
+    }
+
+    private function fetchRenewableCycles(Supplier $supplier, int $hostId): ?array
+    {
+        try {
+            $response = $this->transport->getRenewPage($supplier, $hostId, $this->transport->login($supplier));
+            $this->assertUpstreamSuccess($response, [200], '读取上游可续周期');
+        } catch (\Throwable $exception) {
+            Log::warning('[ZJMF 财务续费] 读取上游可续周期失败，续费周期回退本地集合', [
+                'supplier_id' => (int) $supplier->id,
+                'host_id' => $hostId,
+                'message' => $exception->getMessage(),
+                'exception' => $exception::class,
+            ]);
+
+            return null;
+        }
+
+        $payload = $this->extractPayload($response);
+        $cycles = $payload['cycle'] ?? $response['cycle'] ?? null;
+        if (! is_array($cycles)) {
+            Log::warning('[ZJMF 财务续费] 上游可续周期响应结构异常，续费周期回退本地集合', [
+                'supplier_id' => (int) $supplier->id,
+                'host_id' => $hostId,
+            ]);
+
+            return null;
+        }
+
+        $billingCycles = [];
+        foreach ($cycles as $cycle) {
+            $billingCycle = strtolower(trim((string) ($cycle['billingcycle'] ?? '')));
+            if ($billingCycle !== '' && ! in_array($billingCycle, $billingCycles, true)) {
+                $billingCycles[] = $billingCycle;
+            }
+        }
+
+        return $billingCycles;
     }
 
     public function renewServiceInvoice(Supplier $supplier, int $hostId, string $billingCycle): array
