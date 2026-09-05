@@ -6,6 +6,7 @@ namespace App\Services\Finance;
 
 use App\Exceptions\BusinessException;
 use App\Models\Product;
+use App\Models\ProductDiscountGroup;
 use App\Models\User;
 use App\Support\Money;
 
@@ -21,27 +22,49 @@ class AgentDiscountService
             ? $user->agentGroup
             : (! $user || ! $user->getKey() ? null : $user->agentGroup()->first());
 
-        if (! $group || ! $agentGroup || (int) $group->status !== 1 || (int) $agentGroup->status !== 1) {
+        if (! $agentGroup || (int) $agentGroup->status !== 1) {
             return $result;
         }
 
-        $discounts = $agentGroup->relationLoaded('discounts')
-            ? $agentGroup->discounts
-            : $agentGroup->discounts()->get();
-        $discount = $discounts->firstWhere('product_discount_group_id', $group->getKey());
+        $discount = null;
+        if ($group instanceof ProductDiscountGroup && (int) $group->status === 1) {
+            $discounts = $agentGroup->relationLoaded('discounts')
+                ? $agentGroup->discounts
+                : $agentGroup->discounts()->get();
+            $discount = $discounts->firstWhere('product_discount_group_id', $group->getKey());
 
-        if (! $discount) {
+            if ($discount) {
+                $rate = (float) $discount->discount_rate;
+                $this->assertDiscountRate($rate, (float) $group->min_discount_rate);
+
+                $result['agent_group_id'] = (int) $agentGroup->getKey();
+                $result['agent_group_name'] = (string) $agentGroup->name;
+                $result['product_discount_group_id'] = (int) $group->getKey();
+                $result['discount_rate'] = Money::round($rate);
+                $result['cost_rate'] = Money::round($group->cost_rate);
+                $result['discount_source'] = 'matrix';
+
+                return $result;
+            }
+        }
+
+        // 矩阵未覆盖（商品未挂折扣组、折扣组停用或矩阵无记录）时回退代理组全局默认折扣率：
+        // 站点预期代理折扣全局生效，矩阵只承载「按商品组差异化」的例外配置。
+        // 未配置默认折扣率（null）则保持仅矩阵生效的既有行为。
+        $defaultRate = $agentGroup->default_discount_rate;
+        if ($defaultRate === null) {
             return $result;
         }
 
-        $rate = (float) $discount->discount_rate;
-        $this->assertDiscountRate($rate, (float) $group->min_discount_rate);
+        $rate = (float) $defaultRate;
+        $this->assertDiscountRate($rate);
 
         $result['agent_group_id'] = (int) $agentGroup->getKey();
         $result['agent_group_name'] = (string) $agentGroup->name;
-        $result['product_discount_group_id'] = (int) $group->getKey();
+        $result['product_discount_group_id'] = null;
         $result['discount_rate'] = Money::round($rate);
-        $result['cost_rate'] = Money::round($group->cost_rate);
+        $result['cost_rate'] = 0.0;
+        $result['discount_source'] = 'default';
 
         return $result;
     }
@@ -95,6 +118,7 @@ class AgentDiscountService
             'discounted_amount' => 0.0,
             'cost_rate' => 0.0,
             'cost_amount' => 0.0,
+            'discount_source' => null,
         ];
     }
 }

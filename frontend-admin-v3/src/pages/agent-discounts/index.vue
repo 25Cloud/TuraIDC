@@ -177,6 +177,22 @@
               <t-radio :value="0">停用</t-radio>
             </t-radio-group>
           </t-form-item>
+          <t-form-item class="agent-form-span" label="全局折扣率" name="default_discount_rate">
+            <t-input-number
+              v-model="agentGroupForm.default_discount_rate"
+              theme="normal"
+              :min="0"
+              :max="100"
+              :decimal-places="2"
+              :step="1"
+              placeholder="留空则仅按折扣矩阵生效"
+            />
+            <template #help>
+              <span
+                >组内用户购买/续费所有商品时默认生效的折扣率；折扣矩阵中已配置的组按矩阵优先。留空表示不启用全局折扣。</span
+              >
+            </template>
+          </t-form-item>
           <t-form-item class="agent-form-span" label="备注" name="remark">
             <t-textarea v-model="agentGroupForm.remark" :autosize="{ minRows: 3, maxRows: 5 }" :maxlength="255" />
           </t-form-item>
@@ -267,6 +283,7 @@ interface AgentGroupForm {
   name: string;
   code: string;
   status: number;
+  default_discount_rate: number | null;
   sort_order: number;
   remark: string;
 }
@@ -338,7 +355,7 @@ const productGroupColumns: PrimaryTableCol<TableRowData>[] = [
 ];
 
 function createAgentGroupForm(): AgentGroupForm {
-  return { id: null, name: '', code: '', status: 1, sort_order: 0, remark: '' };
+  return { id: null, name: '', code: '', status: 1, default_discount_rate: null, sort_order: 0, remark: '' };
 }
 
 function createProductGroupForm(): ProductGroupForm {
@@ -419,6 +436,12 @@ function openAgentGroupDialog(row?: AgentGroupRecord) {
       name: String(row.name || ''),
       code: String(row.code || ''),
       status: Number(row.status ?? 1),
+      default_discount_rate:
+        row.default_discount_rate === null ||
+        row.default_discount_rate === undefined ||
+        row.default_discount_rate === ''
+          ? null
+          : Number(row.default_discount_rate),
       sort_order: Number(row.sort_order || 0),
       remark: String(row.remark || ''),
     });
@@ -435,6 +458,10 @@ async function submitAgentGroup() {
     name: agentGroupForm.name.trim(),
     code: agentGroupForm.code.trim(),
     status: Number(agentGroupForm.status ?? 1),
+    default_discount_rate:
+      agentGroupForm.default_discount_rate === null || agentGroupForm.default_discount_rate === undefined
+        ? null
+        : Number(agentGroupForm.default_discount_rate),
     sort_order: Number(agentGroupForm.sort_order || 0),
     remark: agentGroupForm.remark.trim() || null,
   };
