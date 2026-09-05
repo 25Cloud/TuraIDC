@@ -423,7 +423,7 @@ import { errorMessage } from '@/utils/userMessage';
 
 defineOptions({ name: 'AdminSettings' });
 
-type SettingsTab = 'referral' | 'automation' | 'log_archive' | 'site_basic' | 'site_hero';
+type SettingsTab = 'referral' | 'finance' | 'automation' | 'log_archive' | 'site_basic' | 'site_hero';
 type FieldType = 'input' | 'password' | 'textarea' | 'switch' | 'select' | 'number' | 'image' | 'time';
 type FieldValue = string | number | boolean | null;
 type FieldStringValue = string | number | null;
@@ -520,6 +520,7 @@ const tabGroups: Array<{ group: string; label: string; tabs: Array<{ label: stri
       { label: '推荐奖励', value: 'referral' },
       { label: '自动化策略', value: 'automation' },
       { label: '日志归档', value: 'log_archive' },
+      { label: '账户与财务', value: 'finance' },
     ],
   },
   {
@@ -534,6 +535,25 @@ const tabGroups: Array<{ group: string; label: string; tabs: Array<{ label: stri
 const tabOptions = tabGroups.flatMap((g) => g.tabs);
 
 const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
+  finance: {
+    group: 'finance',
+    title: '账户与财务',
+    description: '配置账户充值与实名认证之间的合规门槛。',
+    sections: [
+      {
+        title: '充值',
+        fields: [
+          {
+            key: 'recharge_requires_verification',
+            label: '充值须实名认证',
+            type: 'switch',
+            default: true,
+            help: '开启后未完成实名认证的用户无法为账户余额充值；面向非大陆主体部署可关闭。',
+          },
+        ],
+      },
+    ],
+  },
   referral: {
     group: 'referral',
     title: '推荐奖励配置',

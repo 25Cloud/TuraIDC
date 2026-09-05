@@ -58,13 +58,15 @@ class LeafFaceClient
             return ['status' => 400, 'message' => '创建 leaf实名认证任务失败，请联系管理员'];
         }
 
+        // 平台业务错误统一放在 {error:{code,message}} 子对象中，需展开后映射为中文提示。
+        $errorPayload = is_array($result['error'] ?? null) ? $result['error'] : [];
         $taskNo = trim((string) ($result['task_no'] ?? ($result['task']['task_no'] ?? '')));
-        $code = $result['code'] ?? $result['error_code'] ?? null;
+        $code = $result['code'] ?? $result['error_code'] ?? $errorPayload['code'] ?? null;
 
         if ($code !== null && $code !== 0 && $code !== '0') {
             return [
                 'status' => 400,
-                'message' => $this->createTaskFailureMessage($result),
+                'message' => $this->createTaskFailureMessage($errorPayload !== [] ? $errorPayload : $result),
                 'raw' => $result,
             ];
         }
@@ -235,7 +237,8 @@ class LeafFaceClient
      */
     private function isLookupFailure(array $result): bool
     {
-        $code = (string) ($result['code'] ?? $result['error_code'] ?? '');
+        $errorPayload = is_array($result['error'] ?? null) ? $result['error'] : [];
+        $code = (string) ($result['code'] ?? $result['error_code'] ?? $errorPayload['code'] ?? '');
 
         return in_array(strtoupper($code), ['TASK_NOT_FOUND', 'INVALID_SIGNATURE', 'REPLAY_REQUEST'], true);
     }
@@ -265,11 +268,19 @@ class LeafFaceClient
     {
         $base = rtrim($this->apiBase(), '/');
         $endpoint = $base.$path;
+        $method = strtoupper($method);
         $body = $method === 'GET' ? '' : (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $timestamp = gmdate('c');
+        // 平台签名规范（与 leaf 官方 SDK 一致）：
+        //   签名串 = METHOD\nPATH\nTIMESTAMP\nNONCE\nBODY_SHA256
+        //   算法 = HMAC-SHA256(AppSecret, 签名串)，hex 小写输出。
+        // PATH 仅取 URL 路径（不含域名与 query）；时间戳使用 ISO8601 UTC 毫秒格式（.000Z），
+        // 平台服务端用 Java Instant 风格解析，偏移量 +00:00 会被判定非法。
+        $timestamp = gmdate('Y-m-d\TH:i:s.v\Z');
         $nonce = $this->generateNonce();
         $bodySha256 = hash('sha256', $body);
-        $signature = hash_hmac('sha256', $timestamp."\n".$nonce."\n".$bodySha256, $this->appSecret());
+        $pathForSignature = (string) parse_url($endpoint, PHP_URL_PATH);
+        $signatureSource = implode("\n", [$method, $pathForSignature, $timestamp, $nonce, $bodySha256]);
+        $signature = hash_hmac('sha256', $signatureSource, $this->appSecret());
 
         try {
             $request = $this->http()->withHeaders([
