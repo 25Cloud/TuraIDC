@@ -45,6 +45,7 @@ abstract class TestCase extends BaseTestCase
     {
         $candidates = [
             'D:\\BtSoft\\mysql\\MySQL8.0\\bin',
+            'D:\\phpstudy_pro\\Extensions\\MySQL5.7.26\\bin',
             '/usr/bin',
             '/usr/local/mysql/bin',
         ];

@@ -158,6 +158,20 @@ cd backend
 php artisan test --list-tests
 ```
 
+**Windows 本机开发提速**（2026-09 实测）：`php artisan test` 在 Windows 下经 Symfony Process 包装转发输出，单个最小测试类可卡到分钟级；`vendor/bin/phpunit` 直跑同一文件仅约 0.6 秒（同一份 `phpunit.xml.dist`，`APP_ENV=testing` 与测试库配置一致生效）。本机改动后的增量回归建议：
+
+```bash
+cd backend
+# 单文件（最快，不扫描其余测试）
+php vendor/bin/phpunit tests/Feature/目标测试.php
+# 少量相关类（--filter 仍会扫描全部测试文件，文件多时明显慢于传路径）
+php vendor/bin/phpunit --filter="测试类A|测试类B"
+# 全量回归可加 opcache 降低框架编译开销（phpunit.xml 的 <ini> 对 opcache 无效，必须启动时 -d）
+php -d opcache.enable_cli=1 vendor/bin/phpunit
+```
+
+测试依赖：`idc_test` 测试库（基线 `database/schema/mysql-schema.sql` 导入后补跑 `php artisan migrate --env=testing --force`）；本机无 Redis 时 `phpunit.xml.dist` 已把 `redis_volatile` store 切为 `array`（`CACHE_VOLATILE_DRIVER`），无需真实 Redis。
+
 当前后端测试组成：
 
 - `tests/Feature/`：大量业务回归测试，覆盖登录、用户、商品、站点、支付、账单、工单、返佣、调度、服务控制台、VNC、安全、黑洞查询等

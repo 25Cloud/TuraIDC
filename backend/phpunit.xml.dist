@@ -30,6 +30,8 @@
         <env name="DB_DATABASE" value="idc_test"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="CACHE_DRIVER" value="array"/>
+        <!-- redis_volatile store 的 driver：测试环境无 Redis 时切 array（见 config/cache.php） -->
+        <env name="CACHE_VOLATILE_DRIVER" value="array"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="MAIL_MAILER" value="array"/>
