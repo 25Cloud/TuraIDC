@@ -1192,6 +1192,8 @@ class ServiceRenewService
 
         usort($cycles, fn (array $left, array $right) => BillingCycle::sortRank($left['billing_cycle']) <=> BillingCycle::sortRank($right['billing_cycle']));
 
+        $cycles = $this->filterCyclesByUpstreamRenewable($service, $effectiveProduct, $supportsUpstream, $hostId, $cycles);
+
         if (! collect($cycles)->contains(fn (array $item) => $item['billing_cycle'] === $defaultCycle)) {
             $defaultCycle = (string) ($cycles[0]['billing_cycle'] ?? $defaultCycle);
         }
@@ -1202,6 +1204,71 @@ class ServiceRenewService
             'supports_upstream' => $supportsUpstream,
             'host_id' => $hostId,
         ];
+    }
+
+    /**
+     * 有上游续费能力时，把本地可选周期收敛到上游认可的可续周期（/host/renewpage 口径）。
+     *
+     * 上游对「换周期续费」会校验商品定价，未启用该周期时返回「续费周期无效」；若不过滤，
+     * 用户可以选中上游不支持的周期并完成本地扣款，履约在上游被拒后失败，形成「扣款成功、
+     * 上游未续费」。预览、创建账单、创建订单、自动续费共用本配置，过滤在此一处收口。
+     * 上游不可达或未提供该能力时回退本地集合；交集为空时同样回退并记录日志，防止口径漂移误伤。
+     *
+     * @param  list<array<string, mixed>>  $cycles
+     * @return list<array<string, mixed>>
+     */
+    private function filterCyclesByUpstreamRenewable(
+        Service $service,
+        ?Product $effectiveProduct,
+        bool $supportsUpstream,
+        int $hostId,
+        array $cycles,
+    ): array {
+        if (! $supportsUpstream || $hostId <= 0 || $cycles === []) {
+            return $cycles;
+        }
+
+        $supplier = $this->supplierWithRuntimeCredentials(
+            $this->pluginBindingResolver()->supplierForService($service)
+                ?? ($effectiveProduct instanceof Product
+                    ? $this->pluginBindingResolver()->supplierForProduct($effectiveProduct)
+                    : null),
+        );
+        if (! $supplier instanceof Supplier) {
+            return $cycles;
+        }
+
+        try {
+            $renewal = $this->resolveRenewalCapability($service, $effectiveProduct);
+        } catch (\Throwable) {
+            return $cycles;
+        }
+
+        if (! method_exists($renewal, 'renewableCycles')) {
+            return $cycles;
+        }
+
+        $upstreamCycles = $renewal->renewableCycles($supplier, $hostId);
+        if (! is_array($upstreamCycles) || $upstreamCycles === []) {
+            return $cycles;
+        }
+
+        $filtered = array_values(array_filter(
+            $cycles,
+            fn (array $item): bool => in_array((string) $item['billing_cycle'], $upstreamCycles, true),
+        ));
+        if ($filtered === []) {
+            Log::warning('[服务续费] 上游可续周期与本地定价周期无交集，保留本地周期集合', [
+                'service_id' => (int) $service->id,
+                'host_id' => $hostId,
+                'upstream_cycles' => $upstreamCycles,
+                'local_cycles' => array_column($cycles, 'billing_cycle'),
+            ]);
+
+            return $cycles;
+        }
+
+        return $filtered;
     }
 
     private function resolveRenewedExpiry(Service $service, string $billingCycle, array $hostDetail = []): ?Carbon

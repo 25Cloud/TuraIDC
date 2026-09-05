@@ -136,6 +136,16 @@ final class ZjmfFinanceAdapter implements ProvidesConsoleAccess, ProvidesConsole
         return $this->renewService->renewHost($supplier, $hostId, $billingCycle);
     }
 
+    /**
+     * 上游认可的该主机可续周期；null 表示上游不可达，调用方应回退本地周期集合。
+     *
+     * @return list<string>|null
+     */
+    public function renewableCycles(Supplier $supplier, int $hostId): ?array
+    {
+        return $this->renewService->renewableCycles($supplier, $hostId);
+    }
+
     public function renewServiceInvoice(Supplier $supplier, int $hostId, string $billingCycle): array
     {
         return $this->renewService->renewServiceInvoice($supplier, $hostId, $billingCycle);
