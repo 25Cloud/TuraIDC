@@ -39,6 +39,16 @@ class DcimService
         return $this->safeRun(fn () => $this->power->powerActionForUser($user, $serviceId, 'reboot'), '重启失败');
     }
 
+    public function hardOff(User $user, int $serviceId): array
+    {
+        return $this->safeRun(fn () => $this->power->powerActionForUser($user, $serviceId, 'hard_off'), '硬关机失败');
+    }
+
+    public function hardReboot(User $user, int $serviceId): array
+    {
+        return $this->safeRun(fn () => $this->power->powerActionForUser($user, $serviceId, 'hard_reboot'), '硬重启失败');
+    }
+
     public function novnc(User $user, int $serviceId): array
     {
         try {
