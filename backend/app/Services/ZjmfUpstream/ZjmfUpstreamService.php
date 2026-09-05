@@ -43,7 +43,11 @@ class ZjmfUpstreamService
             return ['status' => 400, 'msg' => '鉴权失败'];
         }
 
+        // 与鉴权中间件保持同一账号条件（status=1 + api_open=1）：
+        // 登录放行但中间件拒绝会形成「登录成功 → 每次请求 405 → 魔方财务强制重登 →
+        // 再登录成功 → 再 405」的死循环，下游表现为对接持续 405。
         $user = User::query()
+            ->where('status', 1)
             ->where('api_open', 1)
             ->where(function ($query) use ($username) {
                 $query->where('api_username', $username)

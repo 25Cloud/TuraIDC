@@ -42,6 +42,7 @@ Route::middleware(['zjmf.upstream'])->group(function (): void {
     Route::post('/cart/settle', [CartController::class, 'settle']);
     Route::post('/provision/default', [ProvisionController::class, 'execute']);
     Route::post('/provision/custom/{id}', [PushController::class, 'provisionCustom']);
+    Route::post('/provision/button', [ProvisionController::class, 'button']);
 
     // P4 host
     Route::get('/host/header', [HostController::class, 'header']);

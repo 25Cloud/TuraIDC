@@ -9,6 +9,7 @@ use App\Services\ZjmfUpstream\ZjmfUpstreamService;
 use App\Support\UpstreamJwt;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -26,10 +27,14 @@ class EnsureZjmfUpstreamAuthenticated
     public function handle(Request $request, Closure $next): Response
     {
         if (! $this->service->enabled()) {
-            return $this->unauthorized('上游 API 未开放');
+            return $this->unauthorized($request, 'disabled', 0, '上游 API 未开放');
         }
 
         $claims = $this->resolveClaims($request);
+        if ($claims === []) {
+            return $this->unauthorized($request, 'jwt_invalid', 0, 'JWT 无效或已过期');
+        }
+
         $userId = (int) ($claims['uid'] ?? 0);
 
         $user = $userId > 0
@@ -37,7 +42,7 @@ class EnsureZjmfUpstreamAuthenticated
             : null;
 
         if (! $user instanceof User) {
-            return $this->unauthorized('鉴权失败或登录已过期');
+            return $this->unauthorized($request, 'account_unavailable', $userId, '对接账号不可用（未开启 API 接入或账号已停用）');
         }
 
         $request->setUserResolver(fn () => $user);
@@ -61,8 +66,18 @@ class EnsureZjmfUpstreamAuthenticated
         return is_array($claims) ? $claims : [];
     }
 
-    private function unauthorized(string $message): Response
+    /**
+     * 405 触发魔方财务强制重登；细分原因并记日志，供对接双方定位持续 405 的问题。
+     */
+    private function unauthorized(Request $request, string $reason, int $userId, string $message): Response
     {
+        Log::warning('[zjmf-upstream] 鉴权拒绝', [
+            'reason' => $reason,
+            'user_id' => $userId,
+            'method' => $request->method(),
+            'path' => $request->path(),
+        ]);
+
         return response()->json(['status' => 405, 'msg' => $message], 200);
     }
 }
