@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Ticket;
 
+use App\Support\SqlLike;
 use App\Constants\ServiceStatus;
 use App\Constants\UserNotificationType;
 use App\Exceptions\BusinessException;
@@ -422,7 +423,7 @@ class TicketService
         if (! empty($filters['keyword'])) {
             $kw = $filters['keyword'];
             $query->where(function ($q) use ($kw) {
-                $q->where('subject', 'like', "%{$kw}%")
+                $q->where('subject', 'like', SqlLike::contains($kw))
                     ->orWhere('id', $kw);
             });
         }
@@ -659,12 +660,12 @@ class TicketService
         $keyword = trim($keyword);
         if ($keyword !== '') {
             $query->where(function ($builder) use ($keyword) {
-                $builder->where('name', 'like', '%'.$keyword.'%')
-                    ->orWhere('domain', 'like', '%'.$keyword.'%')
+                $builder->where('name', 'like', SqlLike::contains($keyword))
+                    ->orWhere('domain', 'like', SqlLike::contains($keyword))
                     ->orWhere('id', $keyword);
 
                 if (self::tableExists('service_connection_snapshots')) {
-                    $likeKeyword = '%'.$keyword.'%';
+                    $likeKeyword = SqlLike::contains($keyword);
                     $builder->orWhereExists(function ($subQuery) use ($likeKeyword): void {
                         $subQuery
                             ->selectRaw('1')
@@ -681,7 +682,7 @@ class TicketService
                             });
                     });
                 } else {
-                    $builder->orWhere('provision_data->requested_host', 'like', '%'.$keyword.'%');
+                    $builder->orWhere('provision_data->requested_host', 'like', SqlLike::contains($keyword));
                 }
             });
         }

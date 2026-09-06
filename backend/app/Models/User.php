@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\SqlLike;
 use App\Casts\LegacyEncrypted;
 use App\Models\Concerns\ReleasesUniqueKeysOnDelete;
 use App\Services\User\AccountService;
@@ -403,22 +404,22 @@ class User extends Authenticatable
         return $query->where(function ($q) use ($keyword) {
             if (ctype_digit($keyword)) {
                 $q->where('id', (int) $keyword)
-                    ->orWhere('email', 'like', '%'.$keyword.'%')
-                    ->orWhere('phone', 'like', '%'.$keyword.'%')
-                    ->orWhere('nickname', 'like', '%'.$keyword.'%')
-                    ->orWhere('company', 'like', '%'.$keyword.'%')
-                    ->orWhere('qq', 'like', '%'.$keyword.'%')
-                    ->orWhere('real_name', 'like', '%'.$keyword.'%');
+                    ->orWhere('email', 'like', SqlLike::contains($keyword))
+                    ->orWhere('phone', 'like', SqlLike::contains($keyword))
+                    ->orWhere('nickname', 'like', SqlLike::contains($keyword))
+                    ->orWhere('company', 'like', SqlLike::contains($keyword))
+                    ->orWhere('qq', 'like', SqlLike::contains($keyword))
+                    ->orWhere('real_name', 'like', SqlLike::contains($keyword));
 
                 return;
             }
 
-            $q->where('email', 'like', '%'.$keyword.'%')
-                ->orWhere('phone', 'like', '%'.$keyword.'%')
-                ->orWhere('nickname', 'like', '%'.$keyword.'%')
-                ->orWhere('company', 'like', '%'.$keyword.'%')
-                ->orWhere('qq', 'like', '%'.$keyword.'%')
-                ->orWhere('real_name', 'like', '%'.$keyword.'%');
+            $q->where('email', 'like', SqlLike::contains($keyword))
+                ->orWhere('phone', 'like', SqlLike::contains($keyword))
+                ->orWhere('nickname', 'like', SqlLike::contains($keyword))
+                ->orWhere('company', 'like', SqlLike::contains($keyword))
+                ->orWhere('qq', 'like', SqlLike::contains($keyword))
+                ->orWhere('real_name', 'like', SqlLike::contains($keyword));
         });
     }
 

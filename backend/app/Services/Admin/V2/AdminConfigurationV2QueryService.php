@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Admin\V2;
 
+use App\Support\SqlLike;
 use App\Exceptions\BusinessException;
 use App\Http\Requests\Admin\V2\IntegrationPlugin\RunIntegrationPluginTaskRequest;
 use App\Http\Resources\Admin\V2\AdminIntegrationPluginDetailResource;
@@ -196,8 +197,8 @@ class AdminConfigurationV2QueryService
         if ($keyword !== '') {
             $query->where(function ($builder) use ($keyword): void {
                 $builder
-                    ->where('name', 'like', "%{$keyword}%")
-                    ->orWhere('code', 'like', "%{$keyword}%");
+                    ->where('name', 'like', SqlLike::contains($keyword))
+                    ->orWhere('code', 'like', SqlLike::contains($keyword));
             });
         }
 

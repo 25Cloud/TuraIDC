@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\System;
 
+use App\Support\SqlLike;
 use App\Constants\PaymentGatewayCode;
 use App\Models\ActivityLog;
 use App\Models\AdminUser;
@@ -201,9 +202,9 @@ class AdminLogService
         if (! empty($filters['keyword'])) {
             $keyword = trim((string) $filters['keyword']);
             $query->where(function ($builder) use ($keyword) {
-                $builder->where('action', 'like', "%{$keyword}%")
-                    ->orWhere('module', 'like', "%{$keyword}%")
-                    ->orWhere('ip_address', 'like', "%{$keyword}%")
+                $builder->where('action', 'like', SqlLike::contains($keyword))
+                    ->orWhere('module', 'like', SqlLike::contains($keyword))
+                    ->orWhere('ip_address', 'like', SqlLike::contains($keyword))
                     ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(context, '$.request_id')) like ?", ["%{$keyword}%"]);
             });
         }
@@ -213,7 +214,7 @@ class AdminLogService
         }
 
         if (! empty($filters['method'])) {
-            $query->where('action', 'like', trim((string) $filters['method']).' %');
+            $query->where('action', 'like', SqlLike::startsWith(trim((string) $filters['method'])));
         }
 
         if (! empty($filters['status'])) {
@@ -478,7 +479,7 @@ class AdminLogService
         if (! empty($filters['keyword'])) {
             $keyword = trim((string) $filters['keyword']);
             $query->where(function ($builder) use ($keyword) {
-                $builder->where('ip_address', 'like', "%{$keyword}%")
+                $builder->where('ip_address', 'like', SqlLike::contains($keyword))
                     ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(context, '$.admin_username')) like ?", ["%{$keyword}%"])
                     ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(context, '$.admin_nickname')) like ?", ["%{$keyword}%"])
                     ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(context, '$.role_name')) like ?", ["%{$keyword}%"]);
@@ -519,9 +520,9 @@ class AdminLogService
             ->when(! empty($filters['keyword']), function ($builder) use ($filters) {
                 $keyword = trim((string) $filters['keyword']);
                 $builder->where(function ($q) use ($keyword) {
-                    $q->where('username', 'like', "%{$keyword}%")
-                        ->orWhere('nickname', 'like', "%{$keyword}%")
-                        ->orWhere('last_login_ip', 'like', "%{$keyword}%");
+                    $q->where('username', 'like', SqlLike::contains($keyword))
+                        ->orWhere('nickname', 'like', SqlLike::contains($keyword))
+                        ->orWhere('last_login_ip', 'like', SqlLike::contains($keyword));
                 });
             });
 
@@ -604,8 +605,8 @@ class AdminLogService
         if (! empty($filters['keyword'])) {
             $keyword = trim((string) $filters['keyword']);
             $query->where(function ($builder) use ($keyword, $tableName) {
-                $builder->where('template_code', 'like', "%{$keyword}%")
-                    ->orWhere('request_id', 'like', "%{$keyword}%");
+                $builder->where('template_code', 'like', SqlLike::contains($keyword))
+                    ->orWhere('request_id', 'like', SqlLike::contains($keyword));
 
                 $this->applyOptionalKeywordColumns($builder, $tableName, $keyword, ['driver_key', 'trace_id']);
             });
@@ -640,9 +641,9 @@ class AdminLogService
         if (! empty($filters['keyword'])) {
             $keyword = trim((string) ($filters['keyword'] ?? ''));
             $query->where(function ($builder) use ($keyword, $tableName) {
-                $builder->where('template_code', 'like', "%{$keyword}%")
-                    ->orWhere('subject', 'like', "%{$keyword}%")
-                    ->orWhere('content', 'like', "%{$keyword}%");
+                $builder->where('template_code', 'like', SqlLike::contains($keyword))
+                    ->orWhere('subject', 'like', SqlLike::contains($keyword))
+                    ->orWhere('content', 'like', SqlLike::contains($keyword));
 
                 $this->applyOptionalKeywordColumns($builder, $tableName, $keyword, ['driver_key', 'trace_id']);
             });
@@ -680,10 +681,10 @@ class AdminLogService
             $keyword = trim((string) $filters['keyword']);
             $query->where(function ($builder) use ($channel, $hasRequestId, $keyword, $tableName) {
                 if ($channel === 'sms') {
-                    $builder->where('template_code', 'like', "%{$keyword}%");
+                    $builder->where('template_code', 'like', SqlLike::contains($keyword));
 
                     if ($hasRequestId) {
-                        $builder->orWhere('request_id', 'like', "%{$keyword}%");
+                        $builder->orWhere('request_id', 'like', SqlLike::contains($keyword));
                     }
 
                     $this->applyOptionalKeywordColumns($builder, $tableName, $keyword, ['driver_key', 'trace_id']);
@@ -691,12 +692,12 @@ class AdminLogService
                     return;
                 }
 
-                $builder->where('content', 'like', "%{$keyword}%")
-                    ->orWhere('template_code', 'like', "%{$keyword}%")
-                    ->orWhere('subject', 'like', "%{$keyword}%");
+                $builder->where('content', 'like', SqlLike::contains($keyword))
+                    ->orWhere('template_code', 'like', SqlLike::contains($keyword))
+                    ->orWhere('subject', 'like', SqlLike::contains($keyword));
 
                 if ($hasRequestId) {
-                    $builder->orWhere('request_id', 'like', "%{$keyword}%");
+                    $builder->orWhere('request_id', 'like', SqlLike::contains($keyword));
                 }
 
                 $this->applyOptionalKeywordColumns($builder, $tableName, $keyword, ['driver_key', 'trace_id']);
@@ -756,7 +757,7 @@ class AdminLogService
     {
         foreach ($columns as $column) {
             if ($this->tableHasColumn($tableName, $column)) {
-                $query->orWhere($column, 'like', "%{$keyword}%");
+                $query->orWhere($column, 'like', SqlLike::contains($keyword));
             }
         }
     }
@@ -857,8 +858,8 @@ class AdminLogService
         if (! empty($filters['keyword'])) {
             $keyword = trim((string) $filters['keyword']);
             $query->where(function ($builder) use ($keyword) {
-                $builder->where('task_name', 'like', "%{$keyword}%")
-                    ->orWhere('error_msg', 'like', "%{$keyword}%");
+                $builder->where('task_name', 'like', SqlLike::contains($keyword))
+                    ->orWhere('error_msg', 'like', SqlLike::contains($keyword));
             });
         }
 
@@ -914,7 +915,7 @@ class AdminLogService
         if (! empty($filters['task_key'])) {
             $taskKey = trim((string) $filters['task_key']);
             $query->where(function ($builder) use ($taskKey) {
-                $builder->where('description', 'like', "%{$taskKey}%")
+                $builder->where('description', 'like', SqlLike::contains($taskKey))
                     ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(context, '$.task_key')) = ?", [$taskKey]);
             });
         }
@@ -926,7 +927,7 @@ class AdminLogService
         if (! empty($filters['keyword'])) {
             $keyword = trim((string) $filters['keyword']);
             $query->where(function ($builder) use ($keyword) {
-                $builder->where('description', 'like', "%{$keyword}%")
+                $builder->where('description', 'like', SqlLike::contains($keyword))
                     ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(context, '$.task_key')) like ?", ["%{$keyword}%"])
                     ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(context, '$.error_message')) like ?", ["%{$keyword}%"]);
             });
@@ -1022,11 +1023,11 @@ class AdminLogService
         if (! empty($filters['keyword'])) {
             $keyword = trim((string) $filters['keyword']);
             $query->where(function (Builder $builder) use ($keyword): void {
-                $builder->where('plugin_key', 'like', "%{$keyword}%")
-                    ->orWhere('slug', 'like', "%{$keyword}%")
-                    ->orWhere('action', 'like', "%{$keyword}%")
-                    ->orWhere('trace_id', 'like', "%{$keyword}%")
-                    ->orWhere('error_message', 'like', "%{$keyword}%");
+                $builder->where('plugin_key', 'like', SqlLike::contains($keyword))
+                    ->orWhere('slug', 'like', SqlLike::contains($keyword))
+                    ->orWhere('action', 'like', SqlLike::contains($keyword))
+                    ->orWhere('trace_id', 'like', SqlLike::contains($keyword))
+                    ->orWhere('error_message', 'like', SqlLike::contains($keyword));
             });
         }
 
@@ -1354,10 +1355,10 @@ class AdminLogService
         if (! empty($filters['keyword'])) {
             $keyword = trim((string) $filters['keyword']);
             $query->where(function ($builder) use ($keyword) {
-                $builder->where('out_trade_no', 'like', "%{$keyword}%")
-                    ->orWhere('trade_no', 'like', "%{$keyword}%")
-                    ->orWhere('gateway', 'like', "%{$keyword}%")
-                    ->orWhere('error_msg', 'like', "%{$keyword}%");
+                $builder->where('out_trade_no', 'like', SqlLike::contains($keyword))
+                    ->orWhere('trade_no', 'like', SqlLike::contains($keyword))
+                    ->orWhere('gateway', 'like', SqlLike::contains($keyword))
+                    ->orWhere('error_msg', 'like', SqlLike::contains($keyword));
 
                 $this->applyOptionalKeywordColumns($builder, 'gateway_logs', $keyword, ['gateway_key', 'trace_id']);
             });
@@ -1554,7 +1555,7 @@ class AdminLogService
             $keyword = trim((string) $filters['keyword']);
             $query->where(function (Builder $builder) use ($keyword): void {
                 foreach (['message', 'reason_code', 'provider_key', 'operation', 'event'] as $field) {
-                    $builder->orWhere($field, 'like', "%{$keyword}%");
+                    $builder->orWhere($field, 'like', SqlLike::contains($keyword));
                 }
                 if (ctype_digit($keyword)) {
                     $builder->orWhere('ticket_id', (int) $keyword)
@@ -1789,10 +1790,10 @@ class AdminLogService
         if (! empty($filters['keyword'])) {
             $keyword = trim((string) $filters['keyword']);
             $query->where(function ($builder) use ($keyword) {
-                $builder->where('description', 'like', "%{$keyword}%")
-                    ->orWhere('actor_name', 'like', "%{$keyword}%")
-                    ->orWhere('module', 'like', "%{$keyword}%")
-                    ->orWhere('ip_address', 'like', "%{$keyword}%");
+                $builder->where('description', 'like', SqlLike::contains($keyword))
+                    ->orWhere('actor_name', 'like', SqlLike::contains($keyword))
+                    ->orWhere('module', 'like', SqlLike::contains($keyword))
+                    ->orWhere('ip_address', 'like', SqlLike::contains($keyword));
 
                 if (ctype_digit($keyword)) {
                     $builder->orWhere('actor_id', (int) $keyword)
@@ -1804,7 +1805,7 @@ class AdminLogService
         if (! empty($filters['actor_keyword'])) {
             $keyword = trim((string) $filters['actor_keyword']);
             $query->where(function ($builder) use ($keyword) {
-                $builder->where('actor_name', 'like', "%{$keyword}%");
+                $builder->where('actor_name', 'like', SqlLike::contains($keyword));
 
                 if (ctype_digit($keyword)) {
                     $builder->orWhere('actor_id', (int) $keyword);
@@ -1814,7 +1815,7 @@ class AdminLogService
 
         if (! empty($filters['description_keyword'])) {
             $keyword = trim((string) $filters['description_keyword']);
-            $query->where('description', 'like', "%{$keyword}%");
+            $query->where('description', 'like', SqlLike::contains($keyword));
         }
 
         if (! empty($filters['ip_address'])) {
@@ -1880,9 +1881,9 @@ class AdminLogService
             $actorCandidates = $this->resolveActorKeywordCandidates($keyword);
             $subjectIdColumn = $this->operationLogSubjectIdColumn();
             $query->where(function ($builder) use ($keyword, $actorCandidates, $subjectIdColumn) {
-                $builder->where('action', 'like', "%{$keyword}%")
-                    ->orWhere('module', 'like', "%{$keyword}%")
-                    ->orWhere('ip_address', 'like', "%{$keyword}%")
+                $builder->where('action', 'like', SqlLike::contains($keyword))
+                    ->orWhere('module', 'like', SqlLike::contains($keyword))
+                    ->orWhere('ip_address', 'like', SqlLike::contains($keyword))
                     ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(context, '$.title')) like ?", ["%{$keyword}%"])
                     ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(context, '$.message')) like ?", ["%{$keyword}%"])
                     ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(context, '$.content')) like ?", ["%{$keyword}%"])
@@ -1939,7 +1940,7 @@ class AdminLogService
         if (! empty($filters['description_keyword'])) {
             $keyword = trim((string) $filters['description_keyword']);
             $query->where(function ($builder) use ($keyword) {
-                $builder->where('action', 'like', "%{$keyword}%")
+                $builder->where('action', 'like', SqlLike::contains($keyword))
                     ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(context, '$.title')) like ?", ["%{$keyword}%"])
                     ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(context, '$.message')) like ?", ["%{$keyword}%"])
                     ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(context, '$.content')) like ?", ["%{$keyword}%"])
@@ -2053,9 +2054,9 @@ class AdminLogService
         if (DatabaseSchema::hasTableOrView('admin_users')) {
             $adminIds = AdminUser::query()
                 ->where(function ($query) use ($keyword) {
-                    $query->where('username', 'like', "%{$keyword}%")
-                        ->orWhere('nickname', 'like', "%{$keyword}%")
-                        ->orWhere('email', 'like', "%{$keyword}%");
+                    $query->where('username', 'like', SqlLike::contains($keyword))
+                        ->orWhere('nickname', 'like', SqlLike::contains($keyword))
+                        ->orWhere('email', 'like', SqlLike::contains($keyword));
 
                     if (ctype_digit($keyword)) {
                         $query->orWhere('id', (int) $keyword);
@@ -2070,10 +2071,10 @@ class AdminLogService
         if (DatabaseSchema::hasTableOrView('users')) {
             $clientIds = User::query()
                 ->where(function ($query) use ($keyword) {
-                    $query->where('email', 'like', "%{$keyword}%")
-                        ->orWhere('phone', 'like', "%{$keyword}%")
-                        ->orWhere('nickname', 'like', "%{$keyword}%")
-                        ->orWhere('real_name', 'like', "%{$keyword}%");
+                    $query->where('email', 'like', SqlLike::contains($keyword))
+                        ->orWhere('phone', 'like', SqlLike::contains($keyword))
+                        ->orWhere('nickname', 'like', SqlLike::contains($keyword))
+                        ->orWhere('real_name', 'like', SqlLike::contains($keyword));
 
                     if (ctype_digit($keyword)) {
                         $query->orWhere('id', (int) $keyword);

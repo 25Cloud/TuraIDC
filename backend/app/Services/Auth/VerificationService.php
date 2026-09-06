@@ -21,6 +21,7 @@ use App\Services\Verification\Data\VerificationStatusResult;
 use App\Services\Verification\VerificationDriverManager;
 use App\Support\PublicUrl;
 use App\Support\SensitiveDataSanitizer;
+use App\Support\TextSanitizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -72,6 +73,14 @@ class VerificationService
 
     public function initVerification(User $user, string $realname, string $idcard, string $certType = 'IDENTITY_CARD'): array
     {
+        // 实名姓名入口净化口径：送认证服务商、写用户状态、写认证历史三者必须用
+        // 同一净化值，否则认证记录与本地留痕对不上。净化后为空说明提交内容不含
+        // 任何有效姓名字符（纯标签/纯空白），直接拒绝而不是拿空名去请求服务商。
+        $realname = TextSanitizer::clean($realname);
+        if ($realname === '') {
+            throw new BusinessException('实名姓名不能为空', 42200);
+        }
+
         $verification = $this->getVerificationSnapshot($user);
         $previousCertifyId = $verification['certify_id'];
 
@@ -86,6 +95,7 @@ class VerificationService
 
             $updatedUser = $this->persistVerificationState($user, [
                 'verification_status' => self::RESULT_STATUS_PENDING,
+                // 净化已在方法入口完成，此处与 getCertifyId 同用一份净化值。
                 'real_name' => $realname,
                 'id_card' => $idcard,
                 'certify_id' => $certifyId,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Referral;
 
+use App\Support\SqlLike;
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
 use App\Exceptions\BusinessException;
@@ -830,7 +831,7 @@ class ReferralService
 
             $query->where(function (Builder $builder) use ($keyword, $matchedUserIds) {
                 $builder
-                    ->where('remark', 'like', "%{$keyword}%")
+                    ->where('remark', 'like', SqlLike::contains($keyword))
                     ->when($matchedUserIds !== [], fn (Builder $query) => $query->orWhereIn('user_id', $matchedUserIds));
             });
         }
@@ -856,8 +857,8 @@ class ReferralService
 
             $query->where(function (Builder $builder) use ($keyword, $matchedUserIds) {
                 $builder
-                    ->where('account_name', 'like', "%{$keyword}%")
-                    ->orWhere('account_no', 'like', "%{$keyword}%")
+                    ->where('account_name', 'like', SqlLike::contains($keyword))
+                    ->orWhere('account_no', 'like', SqlLike::contains($keyword))
                     ->when($matchedUserIds !== [], fn (Builder $query) => $query->orWhereIn('user_id', $matchedUserIds));
             });
         }
@@ -1501,8 +1502,8 @@ class ReferralService
 
         $query->where(function (Builder $builder) use ($keyword) {
             $builder
-                ->where('users.email', 'like', "%{$keyword}%")
-                ->orWhere('users.nickname', 'like', "%{$keyword}%");
+                ->where('users.email', 'like', SqlLike::contains($keyword))
+                ->orWhere('users.nickname', 'like', SqlLike::contains($keyword));
         });
 
         return $query
@@ -1524,7 +1525,7 @@ class ReferralService
         }
 
         return Order::query()
-            ->where('order_no', 'like', "%{$keyword}%")
+            ->where('order_no', 'like', SqlLike::contains($keyword))
             ->limit($limit)
             ->pluck('id')
             ->map(fn ($id) => (int) $id)

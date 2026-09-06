@@ -4,7 +4,7 @@
 
 与其他文档的分工：`AGENTS.md`「关键约束入口」给出不可违反的一句话结论，本文给出理由、边界与验证方法。冲突时以运行代码和测试为准，并回来更新本文。
 
-> **关于 WAF 层的落地状态**：第 2 节描述的入站 WAF（`backend/config/waf.php`、`App\Support\Waf\Firewall`、`WebApplicationFirewall` 中间件）由独立 PR 引入，本文发布时可能尚未合并。本文对它的**约束与边界判断**不依赖该 PR——那些结论来自“正则载荷匹配无法识别身份”这一结构性事实，WAF 未上线时同样适用（此时更不能把鉴权问题推给它）。文件路径待该 PR 合并后即可对应。
+> **关于 WAF 层的落地状态**：第 2 节描述的入站 WAF 已落地——`backend/config/waf.php`、`App\Support\Waf\Firewall`、`WebApplicationFirewall` 中间件（prepend 于 `api` 中间件组最前）。规则库与豁免名单的逐条理由写在 `config/waf.php` 内；上线初期可先开观察模式（`WAF_OBSERVE_ONLY=true`）确认无误伤后再切拦截。本文对它的**约束与边界判断**不变——那些结论来自“正则载荷匹配无法识别身份”这一结构性事实，绝不能因为 WAF 已上线就把鉴权问题推给它。
 
 ---
 

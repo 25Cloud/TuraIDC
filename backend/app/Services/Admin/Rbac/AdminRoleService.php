@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Admin\Rbac;
 
+use App\Support\SqlLike;
 use App\Exceptions\BusinessException;
 use App\Models\AdminUser;
 use App\Models\Role;
@@ -35,8 +36,8 @@ class AdminRoleService
             ->when($keyword !== '', function ($query) use ($keyword): void {
                 $query->where(function ($inner) use ($keyword): void {
                     $inner
-                        ->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('label', 'like', "%{$keyword}%");
+                        ->where('name', 'like', SqlLike::contains($keyword))
+                        ->orWhere('label', 'like', SqlLike::contains($keyword));
                 });
             })
             ->orderBy('id')

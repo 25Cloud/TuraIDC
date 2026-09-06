@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\System;
 
+use App\Support\SqlIdentifier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -740,8 +741,11 @@ class DatabaseEngineeringService
      */
     private function assertSafeIdentifier(string $name, string $label = 'identifier'): void
     {
-        if ($name === '' || strlen($name) > 64 || preg_match('/^[A-Za-z0-9_]+$/', $name) !== 1) {
-            throw new \RuntimeException("非法数据库标识符({$label}): {$name}");
+        // 校验逻辑已收口到 SqlIdentifier；此处保留本服务的异常类型与消息话术。
+        try {
+            SqlIdentifier::assertSafe($name, "数据库标识符({$label})");
+        } catch (\InvalidArgumentException $exception) {
+            throw new \RuntimeException($exception->getMessage(), previous: $exception);
         }
     }
 

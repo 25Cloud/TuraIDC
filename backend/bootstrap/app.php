@@ -13,6 +13,7 @@ use App\Http\Middleware\VerifyCallbackSignature;
 use App\Http\Middleware\VerifyPaymentCallbackSignature;
 use App\Http\Middleware\VerifyTicketUpstreamCallbackSignature;
 use App\Http\Middleware\VerifyTicketUpstreamUploadToken;
+use App\Http\Middleware\WebApplicationFirewall;
 use App\Support\ApiResponseBuilder;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -82,6 +83,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->api(
             prepend: [
+                // WAF 放在最前：可疑请求应在触及会话、认证与业务逻辑之前就被拒绝，
+                // 既减少无谓开销，也避免攻击载荷进入更深的调用栈。
+                WebApplicationFirewall::class,
                 SetJsonEncodingOptions::class,
                 EnsureFrontendRequestsAreStateful::class,
             ],

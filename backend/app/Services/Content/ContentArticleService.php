@@ -2,6 +2,7 @@
 
 namespace App\Services\Content;
 
+use App\Support\SqlLike;
 use App\Exceptions\BusinessException;
 use App\Models\ContentArticle;
 use App\Models\ContentCategory;
@@ -63,11 +64,11 @@ class ContentArticleService
             $keyword = trim((string) $filters['keyword']);
             $query->where(function ($builder) use ($keyword) {
                 $builder
-                    ->where('title', 'like', "%{$keyword}%")
-                    ->orWhere('summary', 'like', "%{$keyword}%")
-                    ->orWhere('content', 'like', "%{$keyword}%")
-                    ->orWhere('slug', 'like', "%{$keyword}%")
-                    ->orWhereHas('contentCategory', fn ($query) => $query->where('name', 'like', "%{$keyword}%"));
+                    ->where('title', 'like', SqlLike::contains($keyword))
+                    ->orWhere('summary', 'like', SqlLike::contains($keyword))
+                    ->orWhere('content', 'like', SqlLike::contains($keyword))
+                    ->orWhere('slug', 'like', SqlLike::contains($keyword))
+                    ->orWhereHas('contentCategory', fn ($query) => $query->where('name', 'like', SqlLike::contains($keyword)));
             });
         }
 
@@ -155,11 +156,11 @@ class ContentArticleService
             $keyword = trim((string) $filters['keyword']);
             $query->where(function ($builder) use ($keyword) {
                 $builder
-                    ->where('title', 'like', "%{$keyword}%")
-                    ->orWhere('summary', 'like', "%{$keyword}%")
-                    ->orWhere('content', 'like', "%{$keyword}%")
-                    ->orWhere('keywords', 'like', "%{$keyword}%")
-                    ->orWhereHas('contentCategory', fn ($query) => $query->where('name', 'like', "%{$keyword}%"));
+                    ->where('title', 'like', SqlLike::contains($keyword))
+                    ->orWhere('summary', 'like', SqlLike::contains($keyword))
+                    ->orWhere('content', 'like', SqlLike::contains($keyword))
+                    ->orWhere('keywords', 'like', SqlLike::contains($keyword))
+                    ->orWhereHas('contentCategory', fn ($query) => $query->where('name', 'like', SqlLike::contains($keyword)));
             });
         }
 

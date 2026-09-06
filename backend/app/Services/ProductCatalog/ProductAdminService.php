@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ProductCatalog;
 
+use App\Support\SqlLike;
 use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
@@ -874,8 +875,8 @@ class ProductAdminService
                                 ->whereColumn('pub.product_id', 'products.id')
                                 ->where(function ($bindingQuery) use ($keyword): void {
                                     $bindingQuery
-                                        ->where('pub.provider_key', 'like', "%{$keyword}%")
-                                        ->orWhere('pub.upstream_product_id', 'like', "%{$keyword}%");
+                                        ->where('pub.provider_key', 'like', SqlLike::contains($keyword))
+                                        ->orWhere('pub.upstream_product_id', 'like', SqlLike::contains($keyword));
                                 });
                         });
                     }

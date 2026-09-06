@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ProductCatalog;
 
+use App\Support\SqlLike;
 use App\Exceptions\BusinessException;
 use App\Models\FirstProductGroup;
 use App\Models\Product;
@@ -28,8 +29,8 @@ class CouponProductGroupQueryService
                 $keyword = $this->keyword($filters);
                 $query->where(function (Builder $builder) use ($keyword): void {
                     $builder
-                        ->where('name', 'like', '%'.$keyword.'%')
-                        ->orWhere('code', 'like', '%'.$keyword.'%');
+                        ->where('name', 'like', SqlLike::contains($keyword))
+                        ->orWhere('code', 'like', SqlLike::contains($keyword));
                 });
             })
             ->when($this->status($filters) !== null, fn (Builder $query) => $query->where('is_visible', $this->status($filters)))
@@ -57,7 +58,7 @@ class CouponProductGroupQueryService
                 ])
                 ->selectSub($this->productTreeCountSubquery('second_product_groups.id', 2), 'products_count')
                 ->selectSub($this->directProductCountSubquery('second_product_groups.id', 2), 'direct_products_count')
-                ->when($this->keyword($filters) !== '', fn (Builder $query) => $query->where('name', 'like', '%'.$this->keyword($filters).'%'))
+                ->when($this->keyword($filters) !== '', fn (Builder $query) => $query->where('name', 'like', SqlLike::contains($this->keyword($filters))))
                 ->when($this->status($filters) !== null, fn (Builder $query) => $query->where('is_visible', $this->status($filters)))
                 ->orderBy('sort_order')
                 ->orderBy('id')
@@ -75,7 +76,7 @@ class CouponProductGroupQueryService
                     'products as products_count',
                     'products as direct_products_count',
                 ])
-                ->when($this->keyword($filters) !== '', fn (Builder $query) => $query->where('name', 'like', '%'.$this->keyword($filters).'%'))
+                ->when($this->keyword($filters) !== '', fn (Builder $query) => $query->where('name', 'like', SqlLike::contains($this->keyword($filters))))
                 ->when($this->status($filters) !== null, fn (Builder $query) => $query->where('is_visible', $this->status($filters)))
                 ->orderBy('sort_order')
                 ->orderBy('id')
@@ -121,9 +122,9 @@ class CouponProductGroupQueryService
                 $keyword = $this->keyword($filters);
                 $query->where(function (Builder $builder) use ($keyword): void {
                     $builder
-                        ->where('custom_display_name', 'like', '%'.$keyword.'%')
-                        ->orWhere('product_type', 'like', '%'.$keyword.'%')
-                        ->orWhere('service_type_code', 'like', '%'.$keyword.'%');
+                        ->where('custom_display_name', 'like', SqlLike::contains($keyword))
+                        ->orWhere('product_type', 'like', SqlLike::contains($keyword))
+                        ->orWhere('service_type_code', 'like', SqlLike::contains($keyword));
                 });
             })
             ->when($this->status($filters) !== null, fn (Builder $query) => $query->where('status', $this->status($filters)))

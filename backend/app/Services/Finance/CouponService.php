@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Finance;
 
+use App\Support\SqlLike;
 use App\Constants\BillingCycle;
 use App\Constants\CouponStatus;
 use App\Constants\InvoiceStatus;
@@ -877,8 +878,8 @@ class CouponService
             ->when($keyword !== '', function ($query) use ($keyword) {
                 $query->where(function ($builder) use ($keyword) {
                     $builder
-                        ->where('name', 'like', '%'.$keyword.'%')
-                        ->orWhere('description', 'like', '%'.$keyword.'%');
+                        ->where('name', 'like', SqlLike::contains($keyword))
+                        ->orWhere('description', 'like', SqlLike::contains($keyword));
                 });
             })
             ->when($discountType !== '', fn ($query) => $query->where('discount_type', $discountType))
@@ -929,8 +930,8 @@ class CouponService
                 $query->whereHas('coupon', function ($couponQuery) use ($keyword) {
                     $couponQuery->where(function ($builder) use ($keyword) {
                         $builder
-                            ->where('name', 'like', '%'.$keyword.'%')
-                            ->orWhere('description', 'like', '%'.$keyword.'%');
+                            ->where('name', 'like', SqlLike::contains($keyword))
+                            ->orWhere('description', 'like', SqlLike::contains($keyword));
                     });
                 });
             })
@@ -985,8 +986,8 @@ class CouponService
             ->where('user_coupons.user_id', $userId)
             ->when($keyword !== '', function ($builder) use ($keyword) {
                 $builder->where(function ($query) use ($keyword) {
-                    $query->where('coupons.name', 'like', '%'.$keyword.'%')
-                        ->orWhere('coupons.description', 'like', '%'.$keyword.'%');
+                    $query->where('coupons.name', 'like', SqlLike::contains($keyword))
+                        ->orWhere('coupons.description', 'like', SqlLike::contains($keyword));
                 });
             })
             ->selectRaw('('.$this->ownedCouponUsageCountSql().') as user_used_count', [$userId, InvoiceStatus::CANCELLED]);
@@ -1036,8 +1037,8 @@ class CouponService
             ->when($keyword !== '', function ($query) use ($keyword) {
                 $query->where(function ($builder) use ($keyword) {
                     $builder
-                        ->where('name', 'like', '%'.$keyword.'%')
-                        ->orWhere('description', 'like', '%'.$keyword.'%');
+                        ->where('name', 'like', SqlLike::contains($keyword))
+                        ->orWhere('description', 'like', SqlLike::contains($keyword));
                 });
             })
             ->withCount('userCoupons')
@@ -1075,8 +1076,8 @@ class CouponService
             })
             ->when($keyword !== '', function ($builder) use ($keyword) {
                 $builder->where(function ($query) use ($keyword) {
-                    $query->where('name', 'like', '%'.$keyword.'%')
-                        ->orWhere('description', 'like', '%'.$keyword.'%');
+                    $query->where('name', 'like', SqlLike::contains($keyword))
+                        ->orWhere('description', 'like', SqlLike::contains($keyword));
                 });
             })
             ->withCount('userCoupons');

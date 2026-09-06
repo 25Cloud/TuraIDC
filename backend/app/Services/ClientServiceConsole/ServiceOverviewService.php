@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ClientServiceConsole;
 
+use App\Support\SqlLike;
 use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
 use App\Models\FirstProductGroup;
@@ -60,12 +61,12 @@ class ServiceOverviewService
         $keyword = trim((string) ($filters['keyword'] ?? ''));
         if ($keyword !== '') {
             $query->where(function ($builder) use ($keyword) {
-                $builder->where('name', 'like', '%'.$keyword.'%')
-                    ->orWhere('domain', 'like', '%'.$keyword.'%')
-                    ->orWhereHas('invoice', fn ($q) => $q->where('invoice_no', 'like', '%'.$keyword.'%'));
+                $builder->where('name', 'like', SqlLike::contains($keyword))
+                    ->orWhere('domain', 'like', SqlLike::contains($keyword))
+                    ->orWhereHas('invoice', fn ($q) => $q->where('invoice_no', 'like', SqlLike::contains($keyword)));
 
                 if ($this->hasConnectionSnapshotTable()) {
-                    $likeKeyword = '%'.$keyword.'%';
+                    $likeKeyword = SqlLike::contains($keyword);
                     $builder->orWhereExists(function ($subQuery) use ($likeKeyword): void {
                         $subQuery
                             ->selectRaw('1')
@@ -82,7 +83,7 @@ class ServiceOverviewService
                             });
                     });
                 } else {
-                    $builder->orWhere('provision_data->custom_hostname', 'like', '%'.$keyword.'%');
+                    $builder->orWhere('provision_data->custom_hostname', 'like', SqlLike::contains($keyword));
                 }
             });
         }

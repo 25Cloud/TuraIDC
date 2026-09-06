@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ClientServiceConsole;
 
+use App\Support\SqlLike;
 use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
@@ -290,13 +291,13 @@ class ServiceDetailService
         $keyword = trim((string) ($filters['keyword'] ?? ''));
         if ($keyword !== '') {
             $query->where(function (Builder $builder) use ($keyword) {
-                $builder->where('action', 'like', '%'.$keyword.'%')
-                    ->orWhere('context->summary', 'like', '%'.$keyword.'%')
-                    ->orWhere('context->actor_name', 'like', '%'.$keyword.'%')
-                    ->orWhere('context->operator_name', 'like', '%'.$keyword.'%')
-                    ->orWhere('context->service_name', 'like', '%'.$keyword.'%')
-                    ->orWhere('context->group_name', 'like', '%'.$keyword.'%')
-                    ->orWhere('context->forwarding_name', 'like', '%'.$keyword.'%');
+                $builder->where('action', 'like', SqlLike::contains($keyword))
+                    ->orWhere('context->summary', 'like', SqlLike::contains($keyword))
+                    ->orWhere('context->actor_name', 'like', SqlLike::contains($keyword))
+                    ->orWhere('context->operator_name', 'like', SqlLike::contains($keyword))
+                    ->orWhere('context->service_name', 'like', SqlLike::contains($keyword))
+                    ->orWhere('context->group_name', 'like', SqlLike::contains($keyword))
+                    ->orWhere('context->forwarding_name', 'like', SqlLike::contains($keyword));
             });
         }
 

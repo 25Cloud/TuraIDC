@@ -12,6 +12,7 @@ use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Support\DatabaseSchema;
 use App\Support\ServiceHostname;
+use App\Support\SqlLike;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -212,7 +213,7 @@ class AdminServiceListService
 
     private function applyKeywordSearch(Builder $query, string $keyword): void
     {
-        $likeKeyword = '%'.$keyword.'%';
+        $likeKeyword = SqlLike::contains($keyword);
         $numericKeyword = $this->extractNumericKeyword($keyword);
 
         $query->where(function (Builder $builder) use ($keyword, $likeKeyword, $numericKeyword) {
@@ -303,7 +304,7 @@ class AdminServiceListService
 
     private function resolveSnapshotMatchedServiceIds(string $keyword): array
     {
-        $likeKeyword = '%'.$keyword.'%';
+        $likeKeyword = SqlLike::contains($keyword);
         $ids = collect();
 
         $ids = $ids->merge(DB::table('service_upstream_bindings')

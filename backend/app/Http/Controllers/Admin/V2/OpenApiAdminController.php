@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin\V2;
 
+use App\Support\SqlLike;
 use App\Http\Controllers\Controller;
 use App\Models\ApiKey;
 use App\Models\ApiKeyUsageLog;
@@ -67,8 +68,8 @@ class OpenApiAdminController extends Controller
         $keyword = trim((string) $request->input('keyword', ''));
         if ($keyword !== '') {
             $query->where(function ($builder) use ($keyword): void {
-                $builder->where('name', 'like', "%{$keyword}%")
-                    ->orWhere('key_prefix', 'like', "%{$keyword}%");
+                $builder->where('name', 'like', SqlLike::contains($keyword))
+                    ->orWhere('key_prefix', 'like', SqlLike::contains($keyword));
             });
         }
 

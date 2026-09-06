@@ -2,6 +2,7 @@
 
 namespace App\Services\Finance;
 
+use App\Support\SqlLike;
 use App\Constants\FinanceLedgerEventType;
 use App\Constants\InvoiceStatus;
 use App\Constants\InvoiceType;
@@ -19,6 +20,7 @@ use App\Models\User;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Support\AdminPrivacy;
 use App\Support\ServiceHostname;
+use App\Support\SqlIdentifier;
 use App\Support\VersionedJson;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -330,7 +332,7 @@ class FinanceLedgerQueryService
 
         if (! empty($filters['invoice_no'])) {
             $invoiceIds = Invoice::query()
-                ->where('invoice_no', 'like', '%'.trim((string) $filters['invoice_no']).'%')
+                ->where('invoice_no', 'like', SqlLike::contains(trim((string) $filters['invoice_no'])))
                 ->pluck('id');
             $paymentIds = Payment::query()->whereIn('invoice_id', $invoiceIds)->pluck('id');
 
@@ -345,7 +347,7 @@ class FinanceLedgerQueryService
 
         if (! empty($filters['payment_no'])) {
             $paymentIds = Payment::query()
-                ->where('payment_no', 'like', '%'.trim((string) $filters['payment_no']).'%')
+                ->where('payment_no', 'like', SqlLike::contains(trim((string) $filters['payment_no'])))
                 ->pluck('id');
             $invoiceIds = Payment::query()->whereIn('id', $paymentIds)->whereNotNull('invoice_id')->pluck('invoice_id');
 
@@ -366,12 +368,12 @@ class FinanceLedgerQueryService
                 $query->where('user_id', (int) $keyword);
             } else {
                 $invoiceIds = Invoice::query()
-                    ->where('invoice_no', 'like', '%'.$keyword.'%')
+                    ->where('invoice_no', 'like', SqlLike::contains($keyword))
                     ->pluck('id');
                 $paymentIdsFromInvoice = Payment::query()->whereIn('invoice_id', $invoiceIds)->pluck('id');
 
                 $paymentIds = Payment::query()
-                    ->where('payment_no', 'like', '%'.$keyword.'%')
+                    ->where('payment_no', 'like', SqlLike::contains($keyword))
                     ->pluck('id');
                 $invoiceIdsFromPayment = Payment::query()->whereIn('id', $paymentIds)->whereNotNull('invoice_id')->pluck('invoice_id');
 
@@ -1005,6 +1007,9 @@ class FinanceLedgerQueryService
 
     private function normalizedEventTypeSql(string $column): string
     {
+        // 列名插值进 CASE 表达式无法参数绑定，过标识符白名单（调用点均为硬编码常量）。
+        SqlIdentifier::assertSafeQualified($column, '流水事件列名');
+
         return "CASE
             WHEN {$column} = 'consume' THEN ?
             WHEN {$column} = 'refund' THEN ?

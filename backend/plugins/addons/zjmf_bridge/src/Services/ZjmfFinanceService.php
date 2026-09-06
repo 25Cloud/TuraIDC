@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\ZjmfBridge\Services;
 
+use App\Support\SqlLike;
 use App\Constants\InvoiceStatus;
 use App\Constants\PaymentGatewayCode;
 use App\Constants\PaymentStatus;
@@ -34,7 +35,7 @@ class ZjmfFinanceService
             ->when(isset($filters['status']) && $filters['status'] !== '', fn ($query) => $query->where('status', (int) $filters['status']))
             ->when(trim((string) ($filters['keyword'] ?? '')) !== '', function ($query) use ($filters): void {
                 $keyword = trim((string) $filters['keyword']);
-                $query->where('invoice_no', 'like', '%'.$keyword.'%');
+                $query->where('invoice_no', 'like', SqlLike::contains($keyword));
             })
             ->orderByDesc('id')
             ->paginate($this->pageSize($filters, 20, 100), ['*'], 'page', $this->page($filters));
@@ -228,9 +229,9 @@ class ZjmfFinanceService
             ->when(trim((string) ($filters['keyword'] ?? '')) !== '', function ($query) use ($filters): void {
                 $keyword = trim((string) $filters['keyword']);
                 $query->where(function ($builder) use ($keyword): void {
-                    $builder->where('payment_no', 'like', '%'.$keyword.'%')
-                        ->orWhere('trade_no', 'like', '%'.$keyword.'%')
-                        ->orWhereHas('invoice', fn ($invoiceQuery) => $invoiceQuery->where('invoice_no', 'like', '%'.$keyword.'%'));
+                    $builder->where('payment_no', 'like', SqlLike::contains($keyword))
+                        ->orWhere('trade_no', 'like', SqlLike::contains($keyword))
+                        ->orWhereHas('invoice', fn ($invoiceQuery) => $invoiceQuery->where('invoice_no', 'like', SqlLike::contains($keyword)));
                 });
             })
             ->orderByDesc('id')

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Automation\Heartbeat;
 
+use App\Support\SqlLike;
 use App\Models\ScheduleTaskRun;
 use App\Models\ScheduleTick;
 use App\Services\Automation\Heartbeat\Contracts\ScheduledTask;
@@ -667,9 +668,9 @@ class ScheduleTaskRunRepository
         if (($keyword = trim((string) ($filters['keyword'] ?? ''))) !== '') {
             $query->where(function (Builder $nested) use ($keyword): void {
                 $nested
-                    ->where('task_key', 'like', '%'.$keyword.'%')
-                    ->orWhere('task_name', 'like', '%'.$keyword.'%')
-                    ->orWhere('error_msg', 'like', '%'.$keyword.'%');
+                    ->where('task_key', 'like', SqlLike::contains($keyword))
+                    ->orWhere('task_name', 'like', SqlLike::contains($keyword))
+                    ->orWhere('error_msg', 'like', SqlLike::contains($keyword));
             });
         }
 

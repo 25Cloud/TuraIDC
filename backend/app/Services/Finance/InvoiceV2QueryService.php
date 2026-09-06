@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Finance;
 
+use App\Support\SqlLike;
 use App\Constants\InvoiceStatus;
 use App\Constants\InvoiceType;
 use App\Models\Invoice;
@@ -92,13 +93,13 @@ class InvoiceV2QueryService
         $keyword = trim((string) ($filters['keyword'] ?? ''));
         if ($keyword !== '') {
             $query->where(function (Builder $builder) use ($keyword): void {
-                $builder->where('invoice_no', 'like', "%{$keyword}%")
+                $builder->where('invoice_no', 'like', SqlLike::contains($keyword))
                     ->orWhereHas('order', function (Builder $orderQuery) use ($keyword): void {
-                        $orderQuery->where('order_no', 'like', "%{$keyword}%");
+                        $orderQuery->where('order_no', 'like', SqlLike::contains($keyword));
                     })
                     ->orWhereHas('payments', function (Builder $paymentQuery) use ($keyword): void {
-                        $paymentQuery->where('payment_no', 'like', "%{$keyword}%")
-                            ->orWhere('trade_no', 'like', "%{$keyword}%");
+                        $paymentQuery->where('payment_no', 'like', SqlLike::contains($keyword))
+                            ->orWhere('trade_no', 'like', SqlLike::contains($keyword));
                     });
             });
         }

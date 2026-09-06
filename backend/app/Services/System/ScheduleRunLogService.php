@@ -2,6 +2,7 @@
 
 namespace App\Services\System;
 
+use App\Support\SqlLike;
 use App\Models\ScheduleRunLog;
 use App\Services\Automation\ScheduleHookService;
 use Illuminate\Support\Carbon;
@@ -224,8 +225,8 @@ class ScheduleRunLogService
         if (! empty($filters['keyword'])) {
             $keyword = $filters['keyword'];
             $query->where(function ($q) use ($keyword) {
-                $q->where('task_name', 'like', "%{$keyword}%")
-                    ->orWhere('error_msg', 'like', "%{$keyword}%");
+                $q->where('task_name', 'like', SqlLike::contains($keyword))
+                    ->orWhere('error_msg', 'like', SqlLike::contains($keyword));
             });
         }
 

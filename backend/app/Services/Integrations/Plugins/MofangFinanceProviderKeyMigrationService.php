@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Integrations\Plugins;
 
+use App\Support\SqlIdentifier;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use InvalidArgumentException;
 use JsonException;
 use RuntimeException;
 
@@ -1038,7 +1040,10 @@ final class MofangFinanceProviderKeyMigrationService
 
     private function quotedIdentifier(string $identifier): string
     {
-        if (preg_match('/^[A-Za-z0-9_]+$/', $identifier) !== 1) {
+        // 校验逻辑已收口到 SqlIdentifier；此处保留本服务的异常消息话术。
+        try {
+            SqlIdentifier::assertSafe($identifier, '数据库标识符');
+        } catch (InvalidArgumentException) {
             throw new RuntimeException('发现不安全的数据库标识符，拒绝执行 provider key 切换。');
         }
 

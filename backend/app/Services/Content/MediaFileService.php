@@ -2,6 +2,7 @@
 
 namespace App\Services\Content;
 
+use App\Support\SqlLike;
 use App\Models\MediaFile;
 use App\Support\UploadedImage;
 use App\Support\UploadUrl;
@@ -65,7 +66,7 @@ class MediaFileService
         }
 
         if (! empty($filters['keyword'])) {
-            $query->where('filename', 'like', '%'.trim($filters['keyword']).'%');
+            $query->where('filename', 'like', SqlLike::contains(trim($filters['keyword'])));
         }
 
         $type = strtolower(trim((string) ($filters['type'] ?? '')));
@@ -198,9 +199,9 @@ class MediaFileService
         // 检查 settings 表
         $settings = DB::table('settings')
             ->where(function ($query) use ($path, $url) {
-                $query->where('item_value', 'like', "%{$path}%");
+                $query->where('item_value', 'like', SqlLike::contains($path));
                 if ($url !== '') {
-                    $query->orWhere('item_value', 'like', "%{$url}%");
+                    $query->orWhere('item_value', 'like', SqlLike::contains($url));
                 }
             })
             ->get(['group_key', 'item_key']);
@@ -212,9 +213,9 @@ class MediaFileService
         // 检查内容文章封面
         $articleCount = DB::table('content_articles')
             ->where(function ($query) use ($path, $url) {
-                $query->where('cover_image', 'like', "%{$path}%");
+                $query->where('cover_image', 'like', SqlLike::contains($path));
                 if ($url !== '') {
-                    $query->orWhere('cover_image', 'like', "%{$url}%");
+                    $query->orWhere('cover_image', 'like', SqlLike::contains($url));
                 }
             })
             ->count();

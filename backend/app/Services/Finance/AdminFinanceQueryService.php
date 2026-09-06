@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Finance;
 
+use App\Support\SqlLike;
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
 use App\Constants\OrderType;
@@ -16,6 +17,7 @@ use App\Models\Product;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductFullPathResolver;
 use App\Support\AdminPrivacy;
+use App\Support\SqlIdentifier;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -83,19 +85,19 @@ class AdminFinanceQueryService
         $keyword = trim((string) ($filters['keyword'] ?? ''));
         if ($keyword !== '') {
             $query->where(function (Builder $query) use ($keyword): void {
-                $query->where('payment_no', 'like', "%{$keyword}%")
-                    ->orWhere('trade_no', 'like', "%{$keyword}%")
+                $query->where('payment_no', 'like', SqlLike::contains($keyword))
+                    ->orWhere('trade_no', 'like', SqlLike::contains($keyword))
                     ->orWhere('id', $keyword)
                     ->orWhereHas('user', function (Builder $userQuery) use ($keyword): void {
-                        $userQuery->where('email', 'like', "%{$keyword}%")
-                            ->orWhere('nickname', 'like', "%{$keyword}%")
-                            ->orWhere('phone', 'like', "%{$keyword}%");
+                        $userQuery->where('email', 'like', SqlLike::contains($keyword))
+                            ->orWhere('nickname', 'like', SqlLike::contains($keyword))
+                            ->orWhere('phone', 'like', SqlLike::contains($keyword));
                     })
                     ->orWhereHas('invoice', function (Builder $invoiceQuery) use ($keyword): void {
-                        $invoiceQuery->where('invoice_no', 'like', "%{$keyword}%");
+                        $invoiceQuery->where('invoice_no', 'like', SqlLike::contains($keyword));
                     })
                     ->orWhereHas('order', function (Builder $orderQuery) use ($keyword): void {
-                        $orderQuery->where('order_no', 'like', "%{$keyword}%");
+                        $orderQuery->where('order_no', 'like', SqlLike::contains($keyword));
                     });
             });
         }
@@ -309,6 +311,11 @@ class AdminFinanceQueryService
 
     private function countsByDay(string $table, string $column, CarbonImmutable $start, CarbonImmutable $end, array $conditions = []): array
     {
+        // 表名/列名进 SQL 文本无法参数绑定，必须过标识符白名单（当前调用点均为
+        // 硬编码常量，校验是把「靠调用者自律」变成显式防线）。
+        SqlIdentifier::assertSafe($table, '统计表名');
+        SqlIdentifier::assertSafe($column, '统计列名');
+
         $query = DB::table($table)
             ->selectRaw("DATE({$column}) as day, COUNT(*) as total")
             ->whereBetween($column, [$start, $end]);
@@ -340,20 +347,20 @@ class AdminFinanceQueryService
         }
 
         $query->where(function (Builder $query) use ($keyword): void {
-            $query->where('order_no', 'like', "%{$keyword}%")
+            $query->where('order_no', 'like', SqlLike::contains($keyword))
                 ->orWhere('id', $keyword)
-                ->orWhere('product_spec_snapshot', 'like', "%{$keyword}%")
+                ->orWhere('product_spec_snapshot', 'like', SqlLike::contains($keyword))
                 ->orWhereHas('user', function (Builder $userQuery) use ($keyword): void {
-                    $userQuery->where('email', 'like', "%{$keyword}%")
-                        ->orWhere('nickname', 'like', "%{$keyword}%")
-                        ->orWhere('phone', 'like', "%{$keyword}%");
+                    $userQuery->where('email', 'like', SqlLike::contains($keyword))
+                        ->orWhere('nickname', 'like', SqlLike::contains($keyword))
+                        ->orWhere('phone', 'like', SqlLike::contains($keyword));
                 })
                 ->orWhereHas('invoice', function (Builder $invoiceQuery) use ($keyword): void {
-                    $invoiceQuery->where('invoice_no', 'like', "%{$keyword}%");
+                    $invoiceQuery->where('invoice_no', 'like', SqlLike::contains($keyword));
                 })
                 ->orWhereHas('service', function (Builder $serviceQuery) use ($keyword): void {
-                    $serviceQuery->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('domain', 'like', "%{$keyword}%");
+                    $serviceQuery->where('name', 'like', SqlLike::contains($keyword))
+                        ->orWhere('domain', 'like', SqlLike::contains($keyword));
                 });
         });
     }

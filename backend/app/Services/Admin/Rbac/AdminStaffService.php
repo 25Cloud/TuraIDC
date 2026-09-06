@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Admin\Rbac;
 
+use App\Support\SqlLike;
 use App\Exceptions\BusinessException;
 use App\Models\AdminUser;
 use App\Models\Role;
@@ -37,9 +38,9 @@ class AdminStaffService
             ->when($keyword !== '', function ($query) use ($keyword): void {
                 $query->where(function ($inner) use ($keyword): void {
                     $inner
-                        ->where('username', 'like', "%{$keyword}%")
-                        ->orWhere('nickname', 'like', "%{$keyword}%")
-                        ->orWhere('email', 'like', "%{$keyword}%");
+                        ->where('username', 'like', SqlLike::contains($keyword))
+                        ->orWhere('nickname', 'like', SqlLike::contains($keyword))
+                        ->orWhere('email', 'like', SqlLike::contains($keyword));
                 });
             })
             ->when(isset($filters['status']) && $filters['status'] !== '', fn ($query) => $query->where('status', (int) $filters['status']))

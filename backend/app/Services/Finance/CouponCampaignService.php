@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Finance;
 
+use App\Support\SqlLike;
 use App\Constants\BillingCycle;
 use App\Constants\CouponStatus;
 use App\Exceptions\BusinessException;
@@ -300,9 +301,9 @@ class CouponCampaignService
             ->when($keyword !== '', function ($query) use ($keyword) {
                 $query->where(function ($builder) use ($keyword) {
                     $builder
-                        ->where('name', 'like', '%'.$keyword.'%')
-                        ->orWhere('description', 'like', '%'.$keyword.'%')
-                        ->orWhere('remark', 'like', '%'.$keyword.'%');
+                        ->where('name', 'like', SqlLike::contains($keyword))
+                        ->orWhere('description', 'like', SqlLike::contains($keyword))
+                        ->orWhere('remark', 'like', SqlLike::contains($keyword));
                 });
             })
             ->when($applyStatusFilter && $status !== '', fn ($query) => $query->where('status', (int) $status));

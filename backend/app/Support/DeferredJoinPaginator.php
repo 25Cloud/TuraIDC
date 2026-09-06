@@ -58,6 +58,10 @@ final class DeferredJoinPaginator
         $model = $query->getModel();
         $table = $model->getTable();
         $qualifiedKey = $model->getQualifiedKeyName();
+        // 排序列最终拼进 ORDER BY，无法参数绑定；过标识符白名单，堵住「未来把
+        // 请求参数传进 $orderColumn」时的注入面（当前调用点均为默认值）。
+        SqlIdentifier::assertSafeQualified($orderColumn, '排序列名');
+
         $qualifiedOrder = str_contains($orderColumn, '.') ? $orderColumn : $table.'.'.$orderColumn;
 
         // 带 join 的查询不走延迟关联：回表用的 newQuery() 不继承 join，

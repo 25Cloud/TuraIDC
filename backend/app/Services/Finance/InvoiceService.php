@@ -2,6 +2,7 @@
 
 namespace App\Services\Finance;
 
+use App\Support\SqlLike;
 use App\Constants\InvoiceStatus;
 use App\Constants\InvoiceType;
 use App\Constants\OrderStatus;
@@ -204,15 +205,15 @@ class InvoiceService
         if (! empty($filters['keyword'])) {
             $keyword = trim((string) $filters['keyword']);
             $query->where(function ($query) use ($keyword) {
-                $query->where('invoice_no', 'like', "%{$keyword}%")
+                $query->where('invoice_no', 'like', SqlLike::contains($keyword))
                     ->orWhere('id', $keyword)
                     ->orWhereHas('user', function ($userQuery) use ($keyword) {
-                        $userQuery->where('email', 'like', "%{$keyword}%")
-                            ->orWhere('nickname', 'like', "%{$keyword}%")
-                            ->orWhere('phone', 'like', "%{$keyword}%");
+                        $userQuery->where('email', 'like', SqlLike::contains($keyword))
+                            ->orWhere('nickname', 'like', SqlLike::contains($keyword))
+                            ->orWhere('phone', 'like', SqlLike::contains($keyword));
                     })
                     ->orWhereHas('order', function ($orderQuery) use ($keyword) {
-                        $orderQuery->where('order_no', 'like', "%{$keyword}%");
+                        $orderQuery->where('order_no', 'like', SqlLike::contains($keyword));
                     });
             });
         }
