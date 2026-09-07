@@ -12,7 +12,7 @@ use Tests\TestCase;
 /**
  * 入站 WAF 中间件在真实 HTTP 管线中的行为。
  *
- * 与 WafFirewallTest（纯引擎级）的分工：本测试关心中间件的**接线**是否正确——
+ * 与 WafPayloadScannerTest（纯引擎级）的分工：本测试关心中间件的**接线**是否正确——
  * 是否真的挂上了 api 组、豁免路径是否生效、开关与观察模式是否被尊重、拦截响应
  * 是否符合本项目的 ApiResponseBuilder 契约。
  */

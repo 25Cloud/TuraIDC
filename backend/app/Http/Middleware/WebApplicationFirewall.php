@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Support\ApiResponseBuilder;
-use App\Support\Waf\Firewall;
+use App\Support\Waf\PayloadScanner;
 use App\Support\Waf\KeySanitizer;
 use Closure;
 use Illuminate\Http\Request;
@@ -15,10 +15,9 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * 入站 WAF 中间件 —— 所有 API 请求的统一前置过滤入口。
  *
- * 参照异次元发卡（acg-faka）`App\Interceptor\Waf` 的位置与职责：在请求进入业务
- * 逻辑之前统一处理，避免防护补丁散落到各个控制器。差异在于本项目用 Laravel 中间件
- * 挂在 api 组，而非其注解式逐控制器声明——TuraIdc 的接口全部收敛在 api 组，统一
- * 挂载覆盖面更完整，也不会因为新增控制器时忘记加注解而漏防。
+ * 挂载于 api 中间件组最前：TuraIdc 的接口全部收敛在 api 组，统一挂载覆盖面
+ * 完整，防护在请求进入业务逻辑之前就生效，也不会因为新增控制器时忘记声明
+ * 而漏防——防护补丁散落到各个控制器的路线本仓库不走。
  *
  * 分两层，顺序不可颠倒：
  *
@@ -28,13 +27,13 @@ use Symfony\Component\HttpFoundation\Response;
  *     放在检测之前，避免带脏键的请求进入规则匹配消耗资源。
  *  L2 规则检测（只拒绝、不改写）：命中攻击特征即拒绝，返回 40009。
  *     超长、超深、无效编码等无法完整检查的情形由引擎按 fatal_rules 固定规则
- *     拒绝（fail-closed），详见 Firewall。
+ *     拒绝（fail-closed），详见 PayloadScanner。
  *
- * ⚠ 为什么**不**做全局的「值」净化（这是与 acg-faka 最重要的分歧）：
+ * ⚠ 为什么**不**做全局的「值」净化（这是与"入站改写一切"路线最根本的分歧）：
  *
- * acg-faka 在 `Kernel\Context\Abstract\Request::__construct()` 里对
- * $_POST/$_GET/$_REQUEST/$_SERVER/json 全部跑 xssKiller 改写。这套在 TuraIdc
- * 上会直接造成资金级事故，因为本项目有四类**绝不能被改写**的入参：
+ * "入站改写一切"路线会把 $_POST/$_GET/$_REQUEST/$_SERVER/json 全部改写一遍。
+ * 这条路线在 TuraIdc 上会直接造成资金级事故，因为本项目有四类**绝不能被改写**
+ * 的入参：
  *
  *  1. **支付回调验签**：VerifyAlipayCallbackSignature 用 `$request->all()` 参与
  *     验签，改写任意一个字节都会导致验签失败——收不到钱。
@@ -53,7 +52,7 @@ use Symfony\Component\HttpFoundation\Response;
 class WebApplicationFirewall
 {
     public function __construct(
-        private readonly Firewall $firewall,
+        private readonly PayloadScanner $scanner,
         private readonly KeySanitizer $keySanitizer,
     ) {}
 
@@ -84,7 +83,7 @@ class WebApplicationFirewall
             return ApiResponseBuilder::error(40009, '请求包含不安全的内容，已被拦截', null, 400);
         }
 
-        $hit = $this->firewall->inspect($request);
+        $hit = $this->scanner->inspect($request);
 
         if ($hit === null) {
             return $next($request);
@@ -145,6 +144,9 @@ class WebApplicationFirewall
         Log::warning('WAF 拦截到可疑请求', [
             'rule_group' => $hit['group'],
             'rule_name' => $hit['name'],
+            'rule_id' => $hit['id'] ?? null,
+            'rule_category' => $hit['category'] ?? null,
+            'rule_severity' => $hit['severity'] ?? null,
             'method' => $request->method(),
             'path' => $request->getPathInfo(),
             'ip' => $request->ip(),
