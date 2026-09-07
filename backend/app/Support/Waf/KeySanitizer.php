@@ -7,9 +7,9 @@ namespace App\Support\Waf;
 /**
  * 请求「键名」检测器 —— 识别数组键里的注入字符。
  *
- * 由来：异次元发卡（acg-faka）3.6.3 修复的一个 P0——其 WAF 历来只清洗数组的
- * **值**、不清洗**键**，攻击者遂把 PHP 代码/HTML 藏进键名，经配置写入器逃逸单引号
- * 造成配置文件 RCE，或经后台表格 innerHTML 渲染造成存储型 XSS。
+ * 由来：入站过滤的一个经典 P0——只清洗数组的**值**、不检查**键**，攻击者
+ * 遂把 PHP 代码/HTML 藏进键名，经配置写入器逃逸单引号造成配置文件 RCE，
+ * 或经后台表格 innerHTML 渲染造成存储型 XSS。
  *
  * 本类只**检测**、绝不**改写**。早期版本会把脏键删字符后放行，但删字符是
  * 不可逆折叠：`amount<` 与 `amount` 会变成同一个键，`['amount' => '100',
@@ -33,7 +33,7 @@ final class KeySanitizer
      */
     private const FORBIDDEN = '/[\x00-\x1F\x7F<>"\'\\\\]/u';
 
-    /** 递归深度上限，防御畸形深层嵌套。与 Firewall 同口径。 */
+    /** 递归深度上限，防御畸形深层嵌套。与 PayloadScanner 同口径。 */
     private const MAX_DEPTH = 12;
 
     /**

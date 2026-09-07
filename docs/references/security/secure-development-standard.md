@@ -4,7 +4,7 @@
 
 与其他文档的分工：`AGENTS.md`「关键约束入口」给出不可违反的一句话结论，本文给出理由、边界与验证方法。冲突时以运行代码和测试为准，并回来更新本文。
 
-> **关于 WAF 层的落地状态**：第 2 节描述的入站 WAF 已落地——`backend/config/waf.php`、`App\Support\Waf\Firewall`、`WebApplicationFirewall` 中间件（prepend 于 `api` 中间件组最前）。规则库与豁免名单的逐条理由写在 `config/waf.php` 内；上线初期可先开观察模式（`WAF_OBSERVE_ONLY=true`）确认无误伤后再切拦截。本文对它的**约束与边界判断**不变——那些结论来自“正则载荷匹配无法识别身份”这一结构性事实，绝不能因为 WAF 已上线就把鉴权问题推给它。
+> **关于 WAF 层的落地状态**：第 2 节描述的入站 WAF 已落地——`backend/config/waf.php`、`App\Support\Waf\PayloadScanner`、`WebApplicationFirewall` 中间件（prepend 于 `api` 中间件组最前）。规则库与豁免名单的逐条理由写在 `config/waf.php` 内；上线初期可先开观察模式（`WAF_OBSERVE_ONLY=true`）确认无误伤后再切拦截。本文对它的**约束与边界判断**不变——那些结论来自“正则载荷匹配无法识别身份”这一结构性事实，绝不能因为 WAF 已上线就把鉴权问题推给它。
 
 ---
 
@@ -14,7 +14,7 @@
 
 | 层 | 负责 | 实现位置 | 不能替代的 |
 | --- | --- | --- | --- |
-| 入站 WAF | 拦明显攻击载荷、自动化扫描 | `backend/config/waf.php`、`App\Support\Waf\Firewall`、`WebApplicationFirewall` 中间件 | 身份、权限、凭据真伪 |
+| 入站 WAF | 拦明显攻击载荷、自动化扫描 | `backend/config/waf.php`、`App\Support\Waf\PayloadScanner`、`WebApplicationFirewall` 中间件 | 身份、权限、凭据真伪 |
 | 认证 | 你是谁 | `auth:sanctum`、各协议的令牌/签名服务 | 你能做什么 |
 | 授权 | 你能做什么 | RBAC、scope 校验、Policy | 输入是否合法 |
 | 输入校验 | 参数结构与业务合法性 | `FormRequest` | 输出是否安全 |
@@ -33,7 +33,7 @@
 
 ### 不能做
 
-WAF 是**正则载荷匹配**，`Firewall::inspect()` 只看 path / query / body / cookie / UA 的字符串形态，**没有身份概念**。
+WAF 是**正则载荷匹配**，`PayloadScanner::inspect()` 只看 path / query / body / cookie / UA 的字符串形态，**没有身份概念**。
 
 这不是理论推断。2026-08-28 的审计中，`zjmf_bridge` 插件被发现可伪造任意用户 JWT（`ZjmfTokenService` 以空串作 HMAC 密钥），PoC 打 `/zjmf/v1/user` 返回 200 —— **而当时 WAF 正在这条路由上生效**（该中间件 prepend 在 `api` 组，桥接路由走 `middleware(['api', ...])`；`waf.except` 中的 `api/v2/zjmf/*` 豁免的是上游协议路径，桥接在 `zjmf/v1`，不在豁免名单）。原因很简单：伪造的 JWT 与合法 JWT 逐字节同构，没有任何正则能区分。
 

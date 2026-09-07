@@ -9,16 +9,16 @@ use Illuminate\Http\Request;
 /**
  * 入站请求规则匹配引擎。
  *
- * 参照异次元发卡（acg-faka）`Kernel\Waf\Firewall::check()` 的思路：把请求的各个
+ * 把请求的各个
  * 部位（查询串 / 路径 / 请求体 / Cookie / UA）拼成待检字符串，逐条过正则规则库，
  * 命中即返回，交由中间件决定拦截或仅记录。
  *
  * 与参照实现的三处关键差异：
  *
- * 1. **绝不二次 urldecode。** acg-faka 早期版本对已解码的输入再 `urldecode` 一次，
- *    导致用户字面输入的 `%20`/`%2B`/`%25` 被改写，卡密、查单密码等字段整体失真
- *    （其仓库 issue #833）。PHP/Laravel 在解析请求时已完成解码，这里只做
- *    `http_build_query` 重新拼接用于匹配，不再解码。
+ * 1. **绝不二次 urldecode。** 对已解码的输入再 `urldecode` 一次会把用户字面
+ *    输入的 `%20`/`%2B`/`%25` 改写，卡密、查单密码等字段会整体失真——同类
+ *    入站过滤层踩过的真实事故形态。PHP/Laravel 在解析请求时已完成解码，这里
+ *    只做 `http_build_query` 重新拼接用于匹配，不再解码。
  *
  * 2. **超长载荷分块覆盖，绝不截断丢弃。** 截断看似防住了正则回溯 DoS，实则给
  *    攻击者留了"把载荷放在截断点之后"的免检区。这里按块扫描全部字节，块间
@@ -32,7 +32,7 @@ use Illuminate\Http\Request;
  * 本类只读不改。输入净化由 RichHtmlSanitizer / TextSanitizer 在各自的语义位置
  * 负责，职责不混。
  */
-class Firewall
+class PayloadScanner
 {
     private const DEFAULT_SCAN_BLOCK_SIZE = 20000;
 
@@ -66,6 +66,12 @@ class Firewall
         ));
         $this->maxDepth = max(1, (int) ($limits['max_depth'] ?? self::DEFAULT_MAX_DEPTH));
 
+        // 类别停用：逗号分隔字符串，小写归一；未配置时为空集（全部类别生效）。
+        $this->disabledCategories = array_values(array_filter(array_map(
+            static fn (string $c): string => strtolower(trim($c)),
+            explode(',', (string) ($resolved['disabled_categories'] ?? '')),
+        )));
+
         $fatal = (array) ($resolved['fatal_rules'] ?? []);
         $this->fatalRules = [
             'depth_exceeded' => (string) ($fatal['depth_exceeded'] ?? '嵌套层级超限'),
@@ -80,7 +86,7 @@ class Firewall
      * 既无法在不启动应用的情况下单测，也无法在别处（如 CLI 校验工具）复用。
      * 容器绑定见 AppServiceProvider，中间件拿到的实例已注入 config('waf')。
      *
-     * @var array<string, list<array{name?: string, pattern?: string}>>
+     * @var array<string, list<array{name?: string, pattern?: string, id?: string, category?: string, enable?: bool}>>
      */
     private array $rules;
 
@@ -89,6 +95,9 @@ class Firewall
     private int $scanBlockOverlap;
 
     private int $maxDepth;
+
+    /** @var list<string> 被停用的规则类别（小写）；命中类别的规则整体跳过。 */
+    private array $disabledCategories = [];
 
     /** @var array<string, string> */
     private array $fatalRules;
@@ -125,7 +134,13 @@ class Firewall
 
             $hit = $this->matchChunks((array) $this->rules[$group], $subject);
             if ($hit !== null) {
-                return ['group' => $group, 'name' => $hit];
+                return [
+                    'group' => $group,
+                    'name' => (string) ($hit['name'] ?? 'unnamed'),
+                    'id' => isset($hit['id']) ? (string) $hit['id'] : null,
+                    'category' => isset($hit['category']) ? (string) $hit['category'] : null,
+                    'severity' => isset($hit['severity']) ? (string) $hit['severity'] : null,
+                ];
             }
         }
 
@@ -136,6 +151,8 @@ class Firewall
      * 组装各检测部位的待检字符串。
      *
      * 顺序即检测优先级：路径与查询串成本最低且最常命中，放在前面短路。
+     * header 是独立检测维度：攻击载荷可藏在 X-Forwarded-For、Referer 或任意
+     * 自定义头里进入日志与下游解析；cookie 与 UA 单列，不重复进 header。
      *
      * @return array<string, string>
      */
@@ -146,8 +163,22 @@ class Firewall
             'query' => $this->flatten($request->query()),
             'body' => $this->flatten($this->bodyInput($request)),
             'cookie' => $this->flatten($request->cookies->all()),
+            'header' => $this->flatten($this->headerInput($request)),
             'ua' => (string) $request->userAgent(),
         ];
+    }
+
+    /**
+     * 取参与匹配的请求头（排除已单列的 cookie 与 UA）。
+     *
+     * @return array<array-key, mixed>
+     */
+    private function headerInput(Request $request): array
+    {
+        return array_diff_key($request->headers->all(), [
+            'cookie' => true,
+            'user-agent' => true,
+        ]);
     }
 
     /**
@@ -225,9 +256,12 @@ class Firewall
     /**
      * 在一组规则内匹配，超长主体分块覆盖全部字节。
      *
-     * @param  list<array{name?: string, pattern?: string}>  $rules
+     * 单条 `enable => false` 与 `disabled_categories` 命中的规则在此过滤：
+     * 停用属于运营变更（配置里必须有据可查），引擎只按配置放行。
+     *
+     * @param  list<array{name?: string, pattern?: string, id?: string, category?: string, enable?: bool}>  $rules
      */
-    private function matchChunks(array $rules, string $subject): ?string
+    private function matchChunks(array $rules, string $subject): ?array
     {
         if (strlen($subject) <= $this->scanBlockSize) {
             return $this->matchGroup($rules, $subject);
@@ -283,13 +317,24 @@ class Firewall
     }
 
     /**
-     * 在一组规则内匹配，返回命中的规则名。
+     * 在一组规则内匹配，返回命中的规则条目（供命中结果携带 id/category）。
      *
-     * @param  list<array{name?: string, pattern?: string}>  $rules
+     * @param  list<array{name?: string, pattern?: string, id?: string, category?: string, enable?: bool}>  $rules
+     * @return array{name?: string, pattern?: string, id?: string, category?: string}|null
      */
-    private function matchGroup(array $rules, string $subject): ?string
+    private function matchGroup(array $rules, string $subject): ?array
     {
         foreach ($rules as $rule) {
+            // 单条停用与类别停用在此过滤：停用规则不参与匹配。
+            if (($rule['enable'] ?? true) === false) {
+                continue;
+            }
+
+            if ($this->disabledCategories !== []
+                && in_array(strtolower((string) ($rule['category'] ?? '')), $this->disabledCategories, true)) {
+                continue;
+            }
+
             $pattern = (string) ($rule['pattern'] ?? '');
             if ($pattern === '') {
                 continue;
@@ -300,7 +345,7 @@ class Firewall
             // preg_match 返回 false 时视为未命中并继续下一条（编码合法性
             // 已在 inspect() 层校验，这里 false 只可能来自规则本身畸形）。
             if (@preg_match('#'.$pattern.'#iu', $subject) === 1) {
-                return (string) ($rule['name'] ?? 'unnamed');
+                return $rule;
             }
         }
 

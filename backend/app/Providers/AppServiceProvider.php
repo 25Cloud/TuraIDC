@@ -17,7 +17,7 @@ use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductSpecHighlightService;
 use App\Services\System\UploadedAssetReferenceService;
 use App\Support\DatabaseSchema;
-use App\Support\Waf\Firewall;
+use App\Support\Waf\PayloadScanner;
 use Carbon\CarbonInterface;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Events\MigrationsEnded;
@@ -80,8 +80,8 @@ class AppServiceProvider extends ServiceProvider
         // WAF 引擎：规则库与限额从配置注入而非在类内读 config()，这样引擎既可
         // 单测也可在别处复用。singleton 让配置只解析一次，避免每个请求重复拷贝。
         $this->app->singleton(
-            Firewall::class,
-            static fn ($app): Firewall => new Firewall((array) $app['config']->get('waf', []))
+            PayloadScanner::class,
+            static fn ($app): PayloadScanner => new PayloadScanner((array) $app['config']->get('waf', []))
         );
     }
 
