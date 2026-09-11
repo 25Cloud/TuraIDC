@@ -199,6 +199,105 @@ class ServiceConsoleAreaService
         }
     }
 
+    /**
+     * 把下游提交的面板动作原样转发给供应商（中间层行为，回复下游）。
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>|null 供应商不可用时返回 null，由调用方回退
+     */
+    public function proxyModuleAction(Service $service, array $data): ?array
+    {
+        try {
+            if (! $this->detailService->transformService->canManageService($service)) {
+                return null;
+            }
+
+            [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
+            $rootUrl = rtrim($this->detailService->resolveSupplierRootUrl($supplier), '/');
+            $endpoint = $rootUrl.'/provision/custom/'.$hostId;
+
+            return is_callable([$runtime, 'submitCustomModuleAction'])
+                ? $runtime->submitCustomModuleAction($supplier, $endpoint, $data, $jwt)
+                : $runtime->post(
+                    $supplier,
+                    $endpoint,
+                    $data,
+                    $jwt,
+                    ['content-type: application/x-www-form-urlencoded']
+                );
+        } catch (\Throwable $exception) {
+            Log::warning('[服务控制台] 面板动作透传供应商失败', [
+                'service_id' => (int) $service->id,
+                'message' => SensitiveDataSanitizer::sanitizeText($exception->getMessage()),
+            ]);
+
+            return null;
+        }
+    }
+
+    // ── 中间层透传 ─────────────────────────────────────────────────────────
+
+    /**
+     * 把本系统供应商的 host/header 载荷透传给自己的下游（TuraIDC 作为中间层）。
+     *
+     * 行为对齐魔方财务中间层：中间层不自己实现面板，而是把最上游的
+     * module_client_area / module_client_main_area / module_button 原样下发，
+     * 下游再按 key 逐层回调取内容。供应商不可用或未接入时返回 null，
+     * 由调用方决定回退。
+     *
+     * @return array<string, mixed>|null
+     */
+    public function passthroughModulePayload(Service $service): ?array
+    {
+        try {
+            if (! $this->detailService->transformService->canManageService($service)) {
+                return null;
+            }
+
+            [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
+
+            return is_callable([$runtime, 'getHostHeaderPayload'])
+                ? $runtime->getHostHeaderPayload($supplier, $hostId, $jwt)
+                : null;
+        } catch (\Throwable $exception) {
+            Log::info('[服务控制台] 供应商面板载荷不可用', [
+                'service_id' => (int) $service->id,
+                'message' => SensitiveDataSanitizer::sanitizeText($exception->getMessage()),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 取供应商面板 HTML，并允许把下游的动作地址透传给上游用于渲染
+     * （魔方财务中间层会把下游的 api_url 继续下传）。
+     */
+    public function proxyModulePage(Service $service, string $moduleKey, string $apiUrl = ''): ?string
+    {
+        try {
+            if (! $this->detailService->transformService->canManageService($service)) {
+                return null;
+            }
+
+            [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
+
+            if (! is_callable([$runtime, 'fetchCustomModulePage'])) {
+                return null;
+            }
+
+            return (string) $runtime->fetchCustomModulePage($supplier, $hostId, $moduleKey, $jwt, $apiUrl);
+        } catch (\Throwable $exception) {
+            Log::info('[服务控制台] 供应商面板内容不可用', [
+                'service_id' => (int) $service->id,
+                'module_key' => $moduleKey,
+                'message' => SensitiveDataSanitizer::sanitizeText($exception->getMessage()),
+            ]);
+
+            return null;
+        }
+    }
+
     // ── 内部实现 ──────────────────────────────────────────────────────────
 
     /**

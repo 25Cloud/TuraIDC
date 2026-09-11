@@ -12,6 +12,12 @@ type ConsoleDetailPatch = Partial<ConsoleServiceDetail>;
 export const DEFAULT_TAB = 'overview';
 export const CLOUD_TABS = ['overview', 'monitor', 'security', 'logs', 'finance', 'vnc'];
 export const NAT_TABS = ['overview', 'monitor', 'security', 'nat', 'logs', 'finance', 'vnc'];
+/**
+ * 面板型产品（CDN / 虚拟主机）的基础 tab：控制能力全部来自上游自定义区域，
+ * 不具备云服务器的监控/安全组/VNC 等能力，因此兜底时不套用云主机集合。
+ */
+export const PANEL_TABS = ['overview', 'finance'];
+const PANEL_CATEGORY_KEYS = new Set(['cdn', 'web_hosting']);
 /** 内置控制台 tab 展示顺序（自定义区域插入到 overview 之后） */
 export const BUILTIN_TABS_ORDER = ['overview', 'monitor', 'security', 'nat', 'logs', 'finance', 'vnc'];
 export const VNC_CREDENTIAL_STORAGE_PREFIX = 'turaidc:vnc-credentials:';
@@ -158,21 +164,40 @@ export interface ResolvedConsoleTabs {
   areaLabels: Record<string, string>;
 }
 
+/** 面板型产品（CDN / 虚拟主机）：控制能力全部由上游自定义区域交付。 */
+export function isPanelConsole(detail: ConsoleServiceDetail): boolean {
+  const categoryKey = String(detail.machine_category?.key || '')
+    .trim()
+    .toLowerCase();
+  if (PANEL_CATEGORY_KEYS.has(categoryKey)) return true;
+
+  const productType = String(
+    (detail as { product_type?: string }).product_type || (detail.product as { type?: string } | undefined)?.type || '',
+  )
+    .trim()
+    .toLowerCase();
+
+  return PANEL_CATEGORY_KEYS.has(productType);
+}
+
 /**
  * 依据上游能力下发结果组装可用控制台 tab。
  *
  * - 上游为「智简魔方类」（supported && fetchable）时动态组装：
  *   overview -> 自定义区域(areas) -> 内置能力 tab（monitor/nat 按能力裁剪）；
+ * - 面板型产品（CDN / 虚拟主机）不具备云服务器的监控/安全组/VNC 能力，
+ *   动态与兜底路径都只保留 overview + finance，其余入口由自定义区域承载；
  * - 其余场景回退到原有 NAT / 云服务器静态集合，保证非自定义产品行为不变。
  */
 export function resolveAvailableTabs(
   detail: ConsoleServiceDetail,
   capabilities?: ServiceConsoleCapabilities | null,
 ): ResolvedConsoleTabs {
+  const panelConsole = isPanelConsole(detail);
   const dynamicReady = Boolean(capabilities?.supported && capabilities?.fetchable);
 
   if (!dynamicReady) {
-    const fallbackKeys = isNatConsole(detail) ? NAT_TABS : CLOUD_TABS;
+    const fallbackKeys = panelConsole ? PANEL_TABS : isNatConsole(detail) ? NAT_TABS : CLOUD_TABS;
     return { keys: [...fallbackKeys], areaLabels: {} };
   }
 
@@ -194,6 +219,8 @@ export function resolveAvailableTabs(
 
   for (const key of BUILTIN_TABS_ORDER) {
     if (key === 'overview' || seen.has(key)) continue;
+    // 面板型产品没有监控/安全组/VNC/运营日志能力，只保留账单
+    if (panelConsole && key !== 'finance') continue;
     // NAT 能力以动态 tab 交付；无该能力时与云服务器集合保持一致
     if (key === 'nat' && !natSupported) continue;
     seen.add(key);

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\ZjmfUpstream;
 
+use App\Models\Service;
+use App\Models\User;
 use App\Models\ZjmfUpstreamBinding;
+use App\Services\ClientServiceConsole\ServiceConsoleAreaService;
 use App\Support\UploadedImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -15,10 +18,49 @@ use Illuminate\Support\Str;
  * 上游推送/透传接口（被魔方财务对接）：
  *   - api/ticket_reply/sync：下游工单回复推送，用绑定表 downstream_token 验签
  *   - upload_image：multipart 上传（字段 file），返回 savename
- *   - provision/custom/{id}：自定义模块操作透传（TuraIDC 无对应能力，幂等受理）
+ *   - provision/custom/{id}：自定义面板动作，转发给供应商（无供应商时幂等受理）
  */
 class PushService
 {
+    public function __construct(
+        private readonly ?ServiceConsoleAreaService $consoleArea = null,
+    ) {}
+
+    /**
+     * 自定义面板动作：中间层转发给供应商；未接入可控供应商时幂等受理，
+     * 避免下游因单点失败卡住（对齐魔方财务中间层的降级行为）。
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function provisionCustom(User $user, int $serviceId, array $data): array
+    {
+        $service = Service::query()
+            ->where('user_id', (int) $user->id)
+            ->find($serviceId);
+
+        if (! $service instanceof Service) {
+            return ['status' => 400, 'msg' => '服务不存在'];
+        }
+
+        unset($data['id']);
+        $result = $this->consoleArea()->proxyModuleAction($service, $data);
+        if (is_array($result)) {
+            return $result;
+        }
+
+        return [
+            'status' => 200,
+            'msg' => '操作成功',
+            'data' => ['id' => $serviceId],
+        ];
+    }
+
+    private function consoleArea(): ServiceConsoleAreaService
+    {
+        return $this->consoleArea ?? app(ServiceConsoleAreaService::class);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
