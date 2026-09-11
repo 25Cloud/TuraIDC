@@ -419,13 +419,16 @@ class ServiceNatService
 
         if (! Cache::get($contentUnavailableCacheKey)) {
             try {
-                $rootUrl = $this->resolveSupplierRootUrl($supplier);
-                $contentUrl = $rootUrl.'/provision/custom/content?'.http_build_query([
-                    'id' => $hostId,
-                    'key' => $moduleKey,
-                ]);
-                $contentResponse = $runtime->getText($supplier, $contentUrl, $jwt);
-                $html = $this->normalizeModulePageBody($contentResponse);
+                // 走上游 API 协议端点取自定义面板 HTML（魔方财务用 API JWT 鉴权）；
+                // 客户区路由 GET /provision/custom/content 只认客户区登录会话。
+                $html = is_callable([$runtime, 'fetchCustomModulePage'])
+                    ? (string) $runtime->fetchCustomModulePage($supplier, $hostId, $moduleKey, $jwt)
+                    : $this->normalizeModulePageBody((string) $runtime->getText(
+                        $supplier,
+                        rtrim($this->resolveSupplierRootUrl($supplier), '/').'/zjmf_api/provision/custom/content',
+                        $jwt,
+                        ['id' => $hostId, 'key' => $moduleKey, 'now_jwt' => $jwt],
+                    ));
             } catch (\Throwable) {
                 $html = '';
             }

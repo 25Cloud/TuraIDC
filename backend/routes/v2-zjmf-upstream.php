@@ -48,6 +48,8 @@ Route::middleware(['zjmf.upstream'])->group(function (): void {
     Route::get('/host/header', [HostController::class, 'header']);
     Route::post('/host/renew', [HostController::class, 'renew']);
     Route::post('/host/cancel', [HostController::class, 'cancel']);
+    // 自定义 tab 内容（下游按 host/header 下发的 module_client_area.key 取值）
+    Route::post('/zjmf_api/provision/custom/content', [HostController::class, 'customContent']);
 
     // P5 dcim 控制
     Route::post('/dcim/on', [DcimController::class, 'on']);

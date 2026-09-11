@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Constants\ProductType;
+use App\Constants\ServiceStatus;
+use App\Models\Product;
+use App\Models\Service;
 use App\Models\User;
 use App\Services\ZjmfUpstream\DcimService;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -19,6 +26,27 @@ use Tests\TestCase;
  */
 class ZjmfUpstreamApiTest extends TestCase
 {
+    /** @var list<int> */
+    private array $productIds = [];
+
+    /** @var list<int> */
+    private array $serviceIds = [];
+
+    /** @var list<int> */
+    private array $userIds = [];
+
+    /**
+     * 共享测试库上的既有列表类断言按索引取值，残留行会污染它们。
+     */
+    protected function tearDown(): void
+    {
+        DB::connection()->table('services')->whereIn('id', $this->serviceIds)->delete();
+        DB::connection()->table('products')->whereIn('id', $this->productIds)->delete();
+        DB::connection()->table('users')->whereIn('id', $this->userIds)->delete();
+
+        parent::tearDown();
+    }
+
     #[Test]
     public function login_issues_jwt_for_enabled_api_account(): void
     {
@@ -124,6 +152,140 @@ class ZjmfUpstreamApiTest extends TestCase
             ->assertJsonPath('status', 400);
     }
 
+    #[Test]
+    public function host_header_exposes_custom_area_and_login_info_for_cdn_products(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createCdnService($user, $suffix);
+        $jwt = $this->apiJwt($suffix);
+
+        $response = $this->getJson(
+            '/api/v2/zjmf/host/header?host_id='.(int) $service->id,
+            ['Authorization' => 'Bearer '.$jwt],
+        )->assertOk()->assertJsonPath('status', 200);
+
+        // 自定义 tab：CDN 面板型产品下发「配置信息」区域，格式 [{key,name}]
+        $response->assertJsonPath('data.module_client_area.0.key', 'info')
+            ->assertJsonPath('data.module_client_area.0.name', '配置信息');
+
+        // 登录信息区：魔方财务模板按 [{name,value}] 渲染
+        $mainArea = $response->json('data.module_client_main_area');
+        $this->assertIsArray($mainArea);
+        $this->assertNotEmpty($mainArea);
+        $values = array_column($mainArea, 'value');
+        $this->assertContains('cdn-panel-'.$suffix.'.example.test', $values);
+        $this->assertContains('cdnuser'.$suffix, $values);
+    }
+
+    #[Test]
+    public function custom_content_endpoint_returns_html_for_declared_area(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createCdnService($user, $suffix);
+        $jwt = $this->apiJwt($suffix);
+
+        $response = $this->postJson(
+            '/api/v2/zjmf/zjmf_api/provision/custom/content',
+            ['id' => (int) $service->id, 'key' => 'info'],
+            ['Authorization' => 'Bearer '.$jwt],
+        )->assertOk()->assertJsonPath('status', 200);
+
+        $html = (string) $response->json('data.html');
+        $this->assertNotSame('', $html);
+        $this->assertStringContainsString('cdn-panel-'.$suffix.'.example.test', $html);
+        $this->assertStringContainsString('/api/v2/zjmf/provision/custom/'.(int) $service->id, $html);
+    }
+
+    #[Test]
+    public function custom_content_endpoint_rejects_undeclared_area(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createCdnService($user, $suffix);
+        $jwt = $this->apiJwt($suffix);
+
+        // key 必须来自 host/header 下发的 module_client_area，未声明的区域不返回内容
+        $this->postJson(
+            '/api/v2/zjmf/zjmf_api/provision/custom/content',
+            ['id' => (int) $service->id, 'key' => 'not_declared'],
+            ['Authorization' => 'Bearer '.$jwt],
+        )->assertOk()->assertJsonPath('status', 400);
+    }
+
+    #[Test]
+    public function host_header_keeps_cloud_products_without_custom_area(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createServiceWithProductType($user, $suffix, 'cloud_server');
+        $jwt = $this->apiJwt($suffix);
+
+        // 机房型产品走 /dcim/* 控制接口，不下发自定义区域，避免下游渲染空面板
+        $this->getJson(
+            '/api/v2/zjmf/host/header?host_id='.(int) $service->id,
+            ['Authorization' => 'Bearer '.$jwt],
+        )->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('data.module_client_area', [])
+            ->assertJsonPath('data.module_client_main_area', []);
+    }
+
+    private function apiJwt(string $suffix): string
+    {
+        return (string) $this->postJson('/api/v2/zjmf/zjmf_api_login', [
+            'username' => 'zjmfapi_'.$suffix,
+            'password' => 'ZjmfApi@123456',
+        ])->assertOk()->json('jwt');
+    }
+
+    private function createCdnService(User $user, string $suffix): Service
+    {
+        return $this->createServiceWithProductType($user, $suffix, ProductType::CDN);
+    }
+
+    private function createServiceWithProductType(User $user, string $suffix, string $productType): Service
+    {
+        $product = Product::query()->create([
+            'name' => 'Zjmf Upstream '.$productType.' '.$suffix,
+            'product_type' => $productType,
+            'pricing' => ['monthly' => '30.00'],
+            'setup_fee' => '0.00',
+            'config_options' => [],
+            'purchase_requires' => [],
+            'stock' => -1,
+            'status' => 1,
+            'auto_setup' => 0,
+        ]);
+        $this->productIds[] = (int) $product->id;
+
+        $service = Service::query()->create([
+            'user_id' => (int) $user->id,
+            'product_id' => (int) $product->id,
+            'name' => 'Zjmf Upstream Service '.$suffix,
+            'domain' => 'cdn-'.$suffix.'.example.com',
+            'billing_cycle' => 'monthly',
+            'amount' => '30.00',
+            'status' => ServiceStatus::ACTIVE,
+            'locked_pricing' => [],
+            'provision_data' => [
+                'connection_secret' => Crypt::encryptString((string) json_encode([
+                    'hostname' => 'cdn-panel-'.$suffix.'.example.test',
+                    'username' => 'cdnuser'.$suffix,
+                    'password' => 'CdnPass'.$suffix,
+                    'port' => 8443,
+                    'internal_ip' => '',
+                ])),
+            ],
+            'expires_at' => Carbon::parse('2026-12-20 00:00:00'),
+            'auto_renew' => 0,
+        ]);
+        $this->serviceIds[] = (int) $service->id;
+
+        return $service;
+    }
+
     /**
      * @param  array<string, mixed>  $overrides
      */
@@ -143,6 +305,7 @@ class ZjmfUpstreamApiTest extends TestCase
             'api_password' => Hash::make('ZjmfApi@123456'),
             'status' => (int) ($overrides['status'] ?? 1),
         ])->save();
+        $this->userIds[] = (int) $user->id;
 
         return $user->refresh();
     }

@@ -341,16 +341,23 @@ class ServiceConsoleAreaService
     private function rewriteModulePage(string $html, int $hostId, Supplier $supplier, string $ticket): string
     {
         $relativeActionUrl = 'actions?ticket='.rawurlencode($ticket);
-        $rootUrl = $this->detailService->resolveSupplierRootUrl($supplier);
+        $rootUrl = rtrim($this->detailService->resolveSupplierRootUrl($supplier), '/');
 
-        // 已知的完整动作地址（本供应商 rootUrl + /provision/custom/{hostId}）
-        $exactEndpoint = preg_quote(rtrim($rootUrl, '/').'/provision/custom/'.$hostId, '~');
-        $html = (string) preg_replace('~https?://'.$exactEndpoint.'~iu', $relativeActionUrl, $html);
+        // 已知的完整动作地址。上游端点有两种协议：
+        // 客户区 /provision/custom/{hostId} 与 API /zjmf_api/provision/custom/{hostId}
+        // （魔方财务 customFunc 路由），两者都要改写为本地代理地址。
+        foreach ([$rootUrl.'/provision/custom/'.$hostId, $rootUrl.'/zjmf_api/provision/custom/'.$hostId] as $endpoint) {
+            $html = (string) preg_replace(
+                '~https?://'.preg_quote($endpoint, '~').'~iu',
+                $relativeActionUrl,
+                $html
+            );
+        }
 
-        // 兜底：任意协议头/域名的 /provision/custom/{hostId} 绝对地址
+        // 兜底：任意协议头/域名的 /provision/custom/{hostId} 绝对地址（含 /zjmf_api 前缀）
         $hostIdQuoted = preg_quote((string) $hostId, '~');
         $html = (string) preg_replace(
-            '~https?://[^\s"\'\<\>\\\\]*?/provision/custom/'.$hostIdQuoted.'~iu',
+            '~https?://[^\s"\'\<\>\\\\]*?/(?:zjmf_api/)?provision/custom/'.$hostIdQuoted.'~iu',
             $relativeActionUrl,
             $html
         );

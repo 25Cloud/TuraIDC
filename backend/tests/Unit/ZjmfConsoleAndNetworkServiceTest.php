@@ -370,19 +370,21 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
     {
         $supplier = $this->makeSupplier();
         $hostingTransport = Mockery::mock(HostingPanelApiTransport::class);
+        // 自定义面板内容走上游 API 协议端点 /zjmf_api/provision/custom/content：
+        // 客户区路由 GET /provision/custom/content 只认客户区登录会话，API JWT 取不到内容。
         $hostingTransport
-            ->shouldReceive('requestText')
+            ->shouldReceive('request')
             ->once()
             ->with(
                 $supplier,
-                'GET',
-                'https://upstream.example/provision/custom/content',
-                [],
+                'POST',
+                '/zjmf_api/provision/custom/content',
+                ['id' => 123, 'key' => 'nat_acl', 'now_jwt' => 'jwt-token'],
                 'jwt-token',
-                ['Authorization: JWT jwt-token'],
-                ['id' => 123, 'key' => 'nat_acl', 'jwt' => 'jwt-token']
+                ['content-type: application/x-www-form-urlencoded', 'Authorization: Bearer jwt-token'],
+                ['jwt' => 'jwt-token']
             )
-            ->andReturn('{"status":200,"data":{"html":"<section>NAT</section>"}}');
+            ->andReturn(['status' => 200, 'data' => ['html' => '<section>NAT</section>']]);
 
         $service = new ZjmfConsoleService($this->makeTransport($hostingTransport));
 

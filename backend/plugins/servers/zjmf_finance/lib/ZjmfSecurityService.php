@@ -46,7 +46,9 @@ final class ZjmfSecurityService
 
         $path = (string) ($parsedEndpoint['path'] ?? '');
 
-        if (preg_match('#^/provision/custom/[1-9]\d*$#', $path) !== 1) {
+        // 自定义面板动作端点：客户区 /provision/custom/{id} 与 API 协议
+        // /zjmf_api/provision/custom/{id}（魔方财务 customFunc 路由）均合法。
+        if (preg_match('#^/(?:zjmf_api/)?provision/custom/[1-9]\d*$#', $path) !== 1) {
             throw new BusinessException('安全组模块未返回有效的同系统请求地址', 42200);
         }
 
