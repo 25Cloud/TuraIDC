@@ -1,8 +1,8 @@
 # 后端 API 清单
 
-- 生成时间: `2026-09-05 20:49:14`
-- API 总数: `464`
-- 分组统计: `公共 / 健康检查=1, 公共 / 其他=64, 公共 / 安全资源=1, 客户端 / VNC Token=1, 客户端 / 优惠券=5, 客户端 / 充值=3, 客户端 / 其他=6, 客户端 / 内容=8, 客户端 / 分销=6, 客户端 / 实名认证=8, 客户端 / 工单=11, 客户端 / 支付回调=2, 客户端 / 支付记录=3, 客户端 / 服务=41, 客户端 / 订单=4, 客户端 / 认证=16, 客户端 / 认证入口=3, 客户端 / 财务=6, 客户端 / 账单=9, 客户端 / 通知=5, 站点 / 产品=9, 站点 / 内容=5, 站点 / 首页=3, 管理端 / Integration Plugins=10, 管理端 / 产品=21, 管理端 / 产品分组=10, 管理端 / 产品类型=5, 管理端 / 仪表盘=3, 管理端 / 优惠券=18, 管理端 / 会员等级=4, 管理端 / 供应商=13, 管理端 / 其他=31, 管理端 / 内容=10, 管理端 / 分销=6, 管理端 / 员工=8, 管理端 / 媒体=5, 管理端 / 实名认证=6, 管理端 / 工单=14, 管理端 / 日志=5, 管理端 / 服务=3, 管理端 / 用户=34, 管理端 / 站点=2, 管理端 / 规格目录=4, 管理端 / 角色权限=7, 管理端 / 订单=2, 管理端 / 认证=5, 管理端 / 设置=5, 管理端 / 调度=2, 管理端 / 财务=8, 管理端 / 账单=3`
+- 生成时间: `2026-09-11 21:18:58`
+- API 总数: `465`
+- 分组统计: `公共 / 健康检查=1, 公共 / 其他=65, 公共 / 安全资源=1, 客户端 / VNC Token=1, 客户端 / 优惠券=5, 客户端 / 充值=3, 客户端 / 其他=6, 客户端 / 内容=8, 客户端 / 分销=6, 客户端 / 实名认证=8, 客户端 / 工单=11, 客户端 / 支付回调=2, 客户端 / 支付记录=3, 客户端 / 服务=41, 客户端 / 订单=4, 客户端 / 认证=16, 客户端 / 认证入口=3, 客户端 / 财务=6, 客户端 / 账单=9, 客户端 / 通知=5, 站点 / 产品=9, 站点 / 内容=5, 站点 / 首页=3, 管理端 / Integration Plugins=10, 管理端 / 产品=21, 管理端 / 产品分组=10, 管理端 / 产品类型=5, 管理端 / 仪表盘=3, 管理端 / 优惠券=18, 管理端 / 会员等级=4, 管理端 / 供应商=13, 管理端 / 其他=31, 管理端 / 内容=10, 管理端 / 分销=6, 管理端 / 员工=8, 管理端 / 媒体=5, 管理端 / 实名认证=6, 管理端 / 工单=14, 管理端 / 日志=5, 管理端 / 服务=3, 管理端 / 用户=34, 管理端 / 站点=2, 管理端 / 规格目录=4, 管理端 / 角色权限=7, 管理端 / 订单=2, 管理端 / 认证=5, 管理端 / 设置=5, 管理端 / 调度=2, 管理端 / 财务=8, 管理端 / 账单=3`
 
 > **自动生成**，由 `backend/scripts/export_api_inventory.php` 扫描 Laravel 路由表导出，**不要手工编辑**。
 >
@@ -75,6 +75,7 @@
 | 公共 / 其他                  | `POST`          | `/api/v2/zjmf/upgrade/upgrade_product_post`                               | `App\Http\Controllers\ZjmfUpstream\UpgradeController@productPost`                   | `public` | `api, zjmf.upstream`                                                                           |
 | 公共 / 其他                  | `POST`          | `/api/v2/zjmf/upload_image`                                               | `App\Http\Controllers\ZjmfUpstream\PushController@uploadImage`                      | `public` | `api, zjmf.upstream`                                                                           |
 | 公共 / 其他                  | `GET`           | `/api/v2/zjmf/user_info`                                                  | `App\Http\Controllers\ZjmfUpstream\CartController@userInfo`                         | `public` | `api, zjmf.upstream`                                                                           |
+| 公共 / 其他                  | `POST`          | `/api/v2/zjmf/zjmf_api/provision/custom/content`                          | `App\Http\Controllers\ZjmfUpstream\HostController@customContent`                    | `public` | `api, zjmf.upstream`                                                                           |
 | 公共 / 其他                  | `POST`          | `/api/v2/zjmf/zjmf_api_login`                                             | `App\Http\Controllers\ZjmfUpstream\AuthController@login`                            | `public` | `api, throttle:20,1`                                                                           |
 | 公共 / 安全资源              | `GET`           | `/api/secure-assets/view`                                                 | `App\Http\Controllers\SecureAssetController@show`                                   | `public` | `web, signed:relative`                                                                         |
 | 客户端 / VNC Token           | `GET`           | `/api/v2/client/vnc-tokens/{token}`                                       | `App\Http\Controllers\Client\V2\ServiceConsoleController@vncToken`                  | `public` | `api, throttle:30,1,client-vnc-token`                                                          |

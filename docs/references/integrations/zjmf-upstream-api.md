@@ -38,6 +38,16 @@ HTTP 层固定 200，业务状态放在 body 的 `status`：
 - 余额：`POST /apply_credit`（余额支付，成功返回 1001 与 `data.hostid[0]`=服务 ID）、`POST /apply_credit_limit`（暂不支持信用额，返回 400）
 - 推送：`POST /api/ticket_reply/sync`、`POST /upload_image`
 
+## 自定义 Tab（面板型产品）
+
+CDN、虚拟主机等「面板型产品」在魔方财务侧靠自定义 tab 承载控制台与登录信息，链路为：
+
+1. `GET /host/header` 返回 `module_client_area`（`[{key, name}]`）声明可用 tab，返回 `module_client_main_area`（`[{name, value}]`）供下游渲染登录信息（面板地址、用户名、密码、端口）。
+2. 下游点击 tab 时 `POST /zjmf_api/provision/custom/content`（入参 `id`=上游主机 id、`key`=tab 标识、`api_url`、`now_jwt`），取回 `{status:200, data:{html}}`。
+3. 页面内动作提交到 `POST /provision/custom/{id}` 透传执行。
+
+注意：取内容必须走上面的 API 协议端点（用 API JWT 鉴权）。魔方财务的客户区路由 `GET /provision/custom/content` 只认客户区登录会话（`client_user_login_token_` 缓存），API JWT 调它会取不到内容。云服务器等机房型产品不走自定义 tab，功能入口统一在 `/dcim/*`。
+
 ## 排查指引
 
 持续 405 时查看 TuraIDC 日志中的 `[zjmf-upstream] 鉴权拒绝` 记录，`reason` 字段：
