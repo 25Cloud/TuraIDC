@@ -15,6 +15,20 @@ final class ZjmfConsoleService
         private readonly ZjmfFinanceTransport $transport,
     ) {}
 
+    /**
+     * 上游 host/header 的原始 data 载荷（含 module_client_area /
+     * module_client_main_area / module_button / module_chart 等字段），
+     * 供中间层透传给自己的下游，行为对齐魔方财务中间层。
+     *
+     * @return array<string, mixed>
+     */
+    public function getHostHeaderPayload(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        $response = $this->getHostHeader($supplier, $hostId, $jwt);
+
+        return is_array($response['data'] ?? null) ? $response['data'] : [];
+    }
+
     public function getHostDetail(Supplier $supplier, int $hostId, ?string $jwt = null): array
     {
         return $this->transport->getHostDetail($supplier, $hostId, $this->resolveJwt($supplier, $jwt));
@@ -133,23 +147,39 @@ final class ZjmfConsoleService
         return $this->transport->parallelGet($supplier, $requests, $this->resolveJwt($supplier, $jwt));
     }
 
-    public function fetchCustomModulePage(Supplier $supplier, int $hostId, string $moduleKey, ?string $jwt = null): string
-    {
+    /**
+     * 取自定义面板 HTML。
+     *
+     * @param  string  $apiUrl  上游渲染面板时要写入表单动作地址的同系统地址
+     *                          （魔方财务中间层会下传自己的 /provision/custom/{id}）。
+     */
+    public function fetchCustomModulePage(
+        Supplier $supplier,
+        int $hostId,
+        string $moduleKey,
+        ?string $jwt = null,
+        string $apiUrl = '',
+    ): string {
         $resolvedJwt = $this->resolveJwt($supplier, $jwt);
 
         // 走魔方财务 API 协议端点（home/provision/postClientAreaContent）：
-        // 入参 post.id = 上游主机 id、post.key = 自定义 tab 标识、post.now_jwt = API JWT，
-        // 响应为 {status:200, data:{html}}。该端点用 API JWT 鉴权；
-        // 若走客户区路由 GET /provision/custom/content，它只认客户区登录会话
-        // （client_user_login_token_ 缓存），API JWT 必然取不到内容。
+        // 入参 post.id = 上游主机 id、post.key = 自定义 tab 标识、post.now_jwt = API JWT、
+        // post.api_url = 面板内表单要提交到的同系统地址，响应为 {status:200, data:{html}}。
+        // 该端点用 API JWT 鉴权；若走客户区路由 GET /provision/custom/content，
+        // 它只认客户区登录会话（client_user_login_token_ 缓存），API JWT 必然取不到内容。
+        $payloadData = [
+            'id' => $hostId,
+            'key' => $moduleKey,
+            'now_jwt' => $resolvedJwt,
+        ];
+        if (trim($apiUrl) !== '') {
+            $payloadData['api_url'] = trim($apiUrl);
+        }
+
         $response = $this->transport->post(
             $supplier,
             '/zjmf_api/provision/custom/content',
-            [
-                'id' => $hostId,
-                'key' => $moduleKey,
-                'now_jwt' => $resolvedJwt,
-            ],
+            $payloadData,
             $resolvedJwt,
             self::FORM_HEADERS,
             ['jwt' => $resolvedJwt],

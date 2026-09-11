@@ -46,7 +46,15 @@ CDN、虚拟主机等「面板型产品」在魔方财务侧靠自定义 tab 承
 2. 下游点击 tab 时 `POST /zjmf_api/provision/custom/content`（入参 `id`=上游主机 id、`key`=tab 标识、`api_url`、`now_jwt`），取回 `{status:200, data:{html}}`。
 3. 页面内动作提交到 `POST /provision/custom/{id}` 透传执行。
 
-注意：取内容必须走上面的 API 协议端点（用 API JWT 鉴权）。魔方财务的客户区路由 `GET /provision/custom/content` 只认客户区登录会话（`client_user_login_token_` 缓存），API JWT 调它会取不到内容。云服务器等机房型产品不走自定义 tab，功能入口统一在 `/dcim/*`。
+中间层（TuraIDC 自身接供应商时）的处理顺序对齐魔方财务：
+
+1. 服务接入可控供应商 → **透传**供应商的 `module_client_area` / `module_client_main_area` / `module_button`，取内容时把下游的 `api_url` 继续下传，动作原样转发；
+2. 未接入可控供应商的面板型产品 → 用本地连接凭据渲染面板（面板地址、用户名、密码、端口）；
+3. 机房型产品（云服务器/裸机）不下发自定义区域，功能入口统一在 `/dcim/*`。
+
+`host_data` 同时下发 `show_traffic_usage`（有流量配额时为 true），下游据此决定是否渲染流量用量。
+
+注意：取内容必须走上面的 API 协议端点（用 API JWT 鉴权）。魔方财务的客户区路由 `GET /provision/custom/content` 只认客户区登录会话（`client_user_login_token_` 缓存），API JWT 调它会取不到内容。
 
 ## 排查指引
 

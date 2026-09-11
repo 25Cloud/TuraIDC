@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\ZjmfUpstream;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\ZjmfUpstream\PushService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,11 +39,17 @@ class PushController extends Controller
 
     public function provisionCustom(Request $request, string $id): JsonResponse
     {
-        // 自定义模块操作透传：TuraIDC 无对应能力，幂等受理避免下游卡流程。
-        return response()->json([
-            'status' => 200,
-            'msg' => '操作成功',
-            'data' => ['id' => (int) $id],
-        ], 200);
+        $user = $this->user($request);
+
+        $result = $this->push->provisionCustom($user, (int) $id, $request->all());
+
+        return response()->json($result, 200);
+    }
+
+    private function user(Request $request): User
+    {
+        $user = $request->attributes->get('zjmf_upstream_user');
+
+        return $user instanceof User ? $user : $request->user();
     }
 }

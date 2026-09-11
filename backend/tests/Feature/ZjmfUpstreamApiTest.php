@@ -232,6 +232,44 @@ class ZjmfUpstreamApiTest extends TestCase
             ->assertJsonPath('data.module_client_main_area', []);
     }
 
+    #[Test]
+    public function host_header_reports_traffic_usage_flag_from_quota(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+
+        // 有流量配额 -> 下游展示流量用量；无配额 -> 不展示
+        $withQuota = $this->createServiceWithProductType($user, $suffix.'q', 'cloud_server', ['bw_limit' => 500]);
+        $withoutQuota = $this->createServiceWithProductType($user, $suffix.'n', 'cloud_server');
+        $jwt = $this->apiJwt($suffix);
+
+        $this->getJson(
+            '/api/v2/zjmf/host/header?host_id='.(int) $withQuota->id,
+            ['Authorization' => 'Bearer '.$jwt],
+        )->assertOk()->assertJsonPath('data.host_data.show_traffic_usage', true);
+
+        $this->getJson(
+            '/api/v2/zjmf/host/header?host_id='.(int) $withoutQuota->id,
+            ['Authorization' => 'Bearer '.$jwt],
+        )->assertOk()->assertJsonPath('data.host_data.show_traffic_usage', false);
+    }
+
+    #[Test]
+    public function provision_custom_action_is_idempotent_without_controllable_supplier(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createCdnService($user, $suffix);
+        $jwt = $this->apiJwt($suffix);
+
+        // 服务未接入可控供应商时幂等受理，避免下游因单点失败卡住
+        $this->postJson(
+            '/api/v2/zjmf/provision/custom/'.(int) $service->id,
+            ['func' => 'refresh'],
+            ['Authorization' => 'Bearer '.$jwt],
+        )->assertOk()->assertJsonPath('status', 200);
+    }
+
     private function apiJwt(string $suffix): string
     {
         return (string) $this->postJson('/api/v2/zjmf/zjmf_api_login', [
@@ -245,8 +283,15 @@ class ZjmfUpstreamApiTest extends TestCase
         return $this->createServiceWithProductType($user, $suffix, ProductType::CDN);
     }
 
-    private function createServiceWithProductType(User $user, string $suffix, string $productType): Service
-    {
+    /**
+     * @param  array<string, mixed>  $provisionOverrides
+     */
+    private function createServiceWithProductType(
+        User $user,
+        string $suffix,
+        string $productType,
+        array $provisionOverrides = [],
+    ): Service {
         $product = Product::query()->create([
             'name' => 'Zjmf Upstream '.$productType.' '.$suffix,
             'product_type' => $productType,
@@ -269,7 +314,7 @@ class ZjmfUpstreamApiTest extends TestCase
             'amount' => '30.00',
             'status' => ServiceStatus::ACTIVE,
             'locked_pricing' => [],
-            'provision_data' => [
+            'provision_data' => array_merge([
                 'connection_secret' => Crypt::encryptString((string) json_encode([
                     'hostname' => 'cdn-panel-'.$suffix.'.example.test',
                     'username' => 'cdnuser'.$suffix,
@@ -277,7 +322,7 @@ class ZjmfUpstreamApiTest extends TestCase
                     'port' => 8443,
                     'internal_ip' => '',
                 ])),
-            ],
+            ], $provisionOverrides),
             'expires_at' => Carbon::parse('2026-12-20 00:00:00'),
             'auto_renew' => 0,
         ]);

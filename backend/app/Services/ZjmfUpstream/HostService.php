@@ -9,6 +9,7 @@ use App\Constants\ServiceStatus;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\User;
+use App\Services\ClientServiceConsole\ServiceConsoleAreaService;
 use App\Services\Provisioning\ServiceRenewService;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -32,10 +33,17 @@ class HostService
 
     public function __construct(
         private readonly ServiceRenewService $renewService,
+        private readonly ?ServiceConsoleAreaService $consoleArea = null,
     ) {}
 
     /**
      * host/header：返回主机头信息，供下游同步本地 host 记录与渲染控制台。
+     *
+     * 自定义区域的处理顺序与魔方财务中间层一致：
+     *   1. 服务接入可控供应商时，透传供应商的 module_*（中间层不重复实现面板）；
+     *   2. 否则对面板型产品（CDN / 虚拟主机）下发本地凭据渲染的区域，
+     *      使下游能展示登录信息与控制入口；
+     *   3. 机房型产品（云服务器 / 裸机）不下发，功能入口统一走 /dcim/* 接口。
      *
      * @return array<string, mixed>
      */
@@ -47,32 +55,64 @@ class HostService
         }
 
         $hostData = $this->buildHostData($service);
+        $passthrough = $this->consoleArea()->passthroughModulePayload($service);
+
+        $moduleButtons = ['control' => [], 'console' => []];
+        $moduleAreas = $this->buildClientAreas($service);
+        $moduleCharts = [];
+        $mainArea = $this->buildClientMainArea($service, $hostData);
+
+        if (is_array($passthrough)) {
+            $upstreamButtons = is_array($passthrough['module_button'] ?? null) ? $passthrough['module_button'] : [];
+            $moduleButtons = [
+                'control' => is_array($upstreamButtons['control'] ?? null) ? $upstreamButtons['control'] : [],
+                'console' => is_array($upstreamButtons['console'] ?? null) ? $upstreamButtons['console'] : [],
+            ];
+            if (is_array($passthrough['module_client_area'] ?? null) && $passthrough['module_client_area'] !== []) {
+                $moduleAreas = array_values(array_filter(
+                    $passthrough['module_client_area'],
+                    fn ($item): bool => is_array($item) && trim((string) ($item['key'] ?? '')) !== '',
+                ));
+            }
+            if (is_array($passthrough['module_chart'] ?? null)) {
+                $moduleCharts = $passthrough['module_chart'];
+            }
+            if (is_array($passthrough['module_client_main_area'] ?? null) && $passthrough['module_client_main_area'] !== []) {
+                $mainArea = array_values(array_filter(
+                    $passthrough['module_client_main_area'],
+                    fn ($item): bool => is_array($item) && trim((string) ($item['name'] ?? '')) !== '',
+                ));
+            }
+        }
 
         return [
             'status' => 200,
             'msg' => '请求成功',
             'data' => [
                 'host_data' => $hostData,
-                // CDN / 虚拟主机等「面板型产品」在魔方财务侧靠自定义 tab 承载
-                // （对应插件 lecdn_ClientArea / mhbt_ClientArea 的下发格式）；
-                // 机房型产品的功能入口统一走 P5 /dcim/* 接口，不下发自定义区域。
-                'module_button' => ['control' => [], 'console' => []],
-                'module_client_area' => $this->buildClientAreas($service),
-                'module_chart' => [],
-                'module_client_main_area' => $this->buildClientMainArea($service, $hostData),
+                'module_button' => $moduleButtons,
+                'module_client_area' => $moduleAreas,
+                'module_chart' => $moduleCharts,
+                'module_client_main_area' => $mainArea,
                 'dcimcloud' => ['nat_acl' => '', 'nat_web' => ''],
                 'dcim' => ['flowpacket' => []],
-                'module_power_status' => false,
-                'reinstall_random_port' => false,
+                'module_power_status' => (bool) ($passthrough['module_power_status'] ?? false),
+                'reinstall_random_port' => (bool) ($passthrough['reinstall_random_port'] ?? false),
             ],
         ];
+    }
+
+    private function consoleArea(): ServiceConsoleAreaService
+    {
+        return $this->consoleArea ?? app(ServiceConsoleAreaService::class);
     }
 
     /**
      * 自定义 tab 内容：下游按 key 调 /zjmf_api/provision/custom/content 时返回 HTML。
      *
      * 返回结构与魔方财务 postClientAreaContent 一致：{status, data:{html}}。
-     * HTML 内的动作地址指向本系统 /provision/custom/{hostId}（下游会改写为自身代理）。
+     * 优先透传供应商的面板 HTML（并把下游的 api_url 继续下传给上游渲染动作地址，
+     * 与魔方财务中间层一致）；服务未接入可控供应商时，回退到本地凭据渲染。
      *
      * @return array<string, mixed>
      */
@@ -83,14 +123,32 @@ class HostService
             return ['status' => 400, 'msg' => '服务不存在'];
         }
 
-        $definition = $this->customAreaDefinition($service, trim($areaKey));
+        $areaKey = trim($areaKey);
+        if ($areaKey === '') {
+            return ['status' => 400, 'msg' => '功能标识不能为空'];
+        }
+
+        $actionEndpoint = trim($actionEndpoint);
+
+        // 1. 透传供应商面板（中间层行为）
+        $proxied = $this->consoleArea()->proxyModulePage($service, $areaKey, $actionEndpoint);
+        if ($proxied !== null && trim($proxied) !== '') {
+            return [
+                'status' => 200,
+                'msg' => '请求成功',
+                'data' => ['html' => $proxied],
+            ];
+        }
+
+        // 2. 回退：按本地下发的区域定义渲染
+        $definition = $this->customAreaDefinition($service, $areaKey);
         if ($definition === null) {
             return ['status' => 400, 'msg' => '不支持的功能面板'];
         }
 
-        $actionEndpoint = trim($actionEndpoint) !== ''
-            ? trim($actionEndpoint)
-            : $this->defaultActionEndpoint($serviceId);
+        if ($actionEndpoint === '') {
+            $actionEndpoint = $this->defaultActionEndpoint($serviceId);
+        }
 
         $fields = $this->customAreaRows(
             $service,
@@ -328,6 +386,8 @@ class HostService
             $expiresAt = (int) strtotime((string) $service->expires_at);
         }
 
+        $bwLimit = (int) ($provisionData['bw_limit'] ?? 0);
+
         return [
             'id' => (int) $service->id,
             'domain' => (string) ($service->domain ?? ''),
@@ -335,7 +395,7 @@ class HostService
             'assignedips' => is_array($provisionData['assigned_ips'] ?? null)
                 ? array_values($provisionData['assigned_ips'])
                 : [],
-            'bwlimit' => (int) ($provisionData['bw_limit'] ?? 0),
+            'bwlimit' => $bwLimit,
             'bwusage' => (float) ($provisionData['bw_usage'] ?? 0),
             'username' => (string) ($connection['username'] ?? ''),
             'password' => (string) ($connection['password'] ?? ''),
@@ -344,6 +404,8 @@ class HostService
             'domainstatus' => $this->domainStatus((int) $service->status),
             'amount' => (float) ($service->amount ?? 0),
             'nextduedate' => $expiresAt,
+            // 下游按此决定是否渲染流量用量（与魔方财务逻辑一致：有配额才展示）
+            'show_traffic_usage' => $bwLimit > 0,
         ];
     }
 

@@ -220,6 +220,16 @@ final class ZjmfFinanceAdapter implements ProvidesConsoleAccess, ProvidesConsole
         return $this->consoleService->getSupportedModules($supplier, $hostId, $jwt);
     }
 
+    /**
+     * 上游 host/header 的原始载荷（含 module_* 字段），供中间层透传给自己的下游。
+     *
+     * @return array<string, mixed>
+     */
+    public function getHostHeaderPayload(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return $this->consoleService->getHostHeaderPayload($supplier, $hostId, $jwt);
+    }
+
     public function getMonitorChart(Supplier $supplier, int $hostId, array $query, ?string $jwt = null): array
     {
         return $this->consoleService->getMonitorChart($supplier, $hostId, $query, $jwt);
@@ -230,9 +240,14 @@ final class ZjmfFinanceAdapter implements ProvidesConsoleAccess, ProvidesConsole
         return $this->consoleService->getMonitorCharts($supplier, $hostId, $queries, $jwt);
     }
 
-    public function fetchCustomModulePage(Supplier $supplier, int $hostId, string $moduleKey, ?string $jwt = null): string
-    {
-        return $this->consoleService->fetchCustomModulePage($supplier, $hostId, $moduleKey, $jwt);
+    public function fetchCustomModulePage(
+        Supplier $supplier,
+        int $hostId,
+        string $moduleKey,
+        ?string $jwt = null,
+        string $apiUrl = '',
+    ): string {
+        return $this->consoleService->fetchCustomModulePage($supplier, $hostId, $moduleKey, $jwt, $apiUrl);
     }
 
     public function getHostUpgradeConfigOptions(Supplier $supplier, int $hostId, ?string $jwt = null): array
@@ -407,6 +422,7 @@ final class ZjmfFinanceAdapter implements ProvidesConsoleAccess, ProvidesConsole
             'getMonitorChart',
             'getMonitorCharts',
             'fetchCustomModulePage',
+            'getHostHeaderPayload',
             'getHostUpgradeConfigOptions',
             'previewHostConfigUpgrade',
             'checkoutHostConfigUpgrade',
