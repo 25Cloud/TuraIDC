@@ -17,7 +17,7 @@ Route::middleware(['api.key:orders,read'])->group(function (): void {
     Route::get('/orders/{invoice}', [OpenOrderController::class, 'show']);
 });
 
-Route::middleware(['api.key:orders,write'])->group(function (): void {
+Route::middleware(['api.key:orders,write', 'throttle:open-api-write'])->group(function (): void {
     Route::post('/orders', [OpenOrderController::class, 'store']);
     Route::post('/orders/{invoice}/pay', [OpenOrderController::class, 'payByBalance']);
 });
@@ -26,9 +26,10 @@ Route::middleware(['api.key:services,read'])->group(function (): void {
     Route::get('/services', [OpenServiceController::class, 'index']);
     Route::get('/services/{service}', [OpenServiceController::class, 'show']);
     Route::get('/services/{service}/renewals', [OpenServiceController::class, 'renewPreview']);
+    Route::get('/services/{service}/reinstall-options', [OpenServiceController::class, 'reinstallOptions']);
 });
 
-Route::middleware(['api.key:services,write'])->group(function (): void {
+Route::middleware(['api.key:services,write', 'throttle:open-api-write'])->group(function (): void {
     Route::post('/services/{service}/power', [OpenServiceController::class, 'power']);
     Route::post('/services/{service}/renew', [OpenServiceController::class, 'renew']);
     Route::post('/services/{service}/reinstall', [OpenServiceController::class, 'reinstall']);

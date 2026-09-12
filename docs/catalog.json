@@ -177,6 +177,11 @@
       "summary": "生产 MySQL 备份已隔离验证、映射并完整恢复至本地 idc。"
     },
     {
+      "path": "execution-plans/completed/upstream-openapi-hardening-2026-09-12.md",
+      "status": "completed",
+      "summary": "开放 API 写端点与审计加固、上游能力契约分层、开通失败退款标记与下单幂等 DB 兜底。"
+    },
+    {
       "path": "execution-plans/completed/vnc-and-business-scheduling-isolation-2026-08-04.md",
       "status": "completed",
       "summary": "VNC Relay、业务队列与定时队列隔离实施计划。",

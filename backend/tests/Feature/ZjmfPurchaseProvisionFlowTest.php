@@ -17,6 +17,7 @@ use App\Services\Finance\CheckoutService;
 use App\Services\Finance\PaymentService;
 use App\Services\Integrations\Plugins\PluginFileLoader;
 use App\Services\Integrations\Plugins\PluginScanner;
+use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\Contracts\UpstreamDriver;
 use App\Services\Upstream\ProviderKey;
@@ -192,7 +193,7 @@ class ZjmfPurchaseProvisionFlowTest extends TestCase
     }
 }
 
-final class FakeZjmfProvisioningCapability implements ProvidesProvisioning
+final class FakeZjmfProvisioningCapability implements ProvidesOrderProvisioning
 {
     public int $callCount = 0;
 

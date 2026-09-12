@@ -4,15 +4,22 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Servers\ZjmfFinance\Lib;
 
+use App\Services\Upstream\Contracts\ProvidesBatchStatusSync;
 use App\Services\Upstream\Contracts\ProvidesConsoleAccess;
 use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\Contracts\ProvidesConsoleNetwork;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesConsoleSecurity;
+use App\Services\Upstream\Contracts\ProvidesContextualRenewalRecovery;
+use App\Services\Upstream\Contracts\ProvidesHostSuspension;
+use App\Services\Upstream\Contracts\ProvidesInvoiceRenewal;
+use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
+use App\Services\Upstream\Contracts\ProvidesRenewableCycleFiltering;
 use App\Services\Upstream\Contracts\ProvidesScheduledAuthRefresh;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
+use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\Contracts\ProvidesSupplierFormSchema;
 use App\Services\Upstream\Contracts\UpstreamDriver;
 use App\Services\Upstream\ProviderKey;
@@ -20,15 +27,24 @@ use App\Services\Upstream\ProviderKey;
 final class ZjmfFinanceDriver implements ProvidesSupplierFormSchema, UpstreamDriver
 {
     private const CAPABILITIES = [
+        ProvidesBatchStatusSync::class,
         ProvidesConsoleAccess::class,
         ProvidesConsoleCatalog::class,
         ProvidesConsoleNetwork::class,
         ProvidesConsoleRuntime::class,
         ProvidesConsoleSecurity::class,
+        ProvidesContextualRenewalRecovery::class,
+        ProvidesHostSuspension::class,
+        ProvidesInvoiceRenewal::class,
+        ProvidesOrderProvisioning::class,
+        // 基契约必须保留：编排层以 ProvidesProvisioning/ProvidesRenewal 作为能力门槛，
+        // 子接口虽然通过继承满足 instanceof，但 supports() 需要显式列出才会命中
         ProvidesProvisioning::class,
         ProvidesRenewal::class,
+        ProvidesRenewableCycleFiltering::class,
         ProvidesScheduledAuthRefresh::class,
         ProvidesStatusSync::class,
+        ProvidesSupplierBalance::class,
     ];
 
     public function __construct(

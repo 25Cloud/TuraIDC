@@ -29,7 +29,7 @@ class Invoice extends Model
         'product_snapshot_json', 'config_snapshot', 'config_pricing_snapshot', 'coupon_snapshot',
         'status', 'due_date', 'paid_at',
         'refunded_at', 'refund_amount', 'refund_method', 'refund_trace_id',
-        'remark', 'operator', 'trace_id',
+        'remark', 'operator', 'trace_id', 'idempotency_key',
     ];
 
     protected function casts(): array

@@ -19,6 +19,7 @@ use App\Services\Integrations\Plugins\UpstreamBindingWriter;
 use App\Services\Integrations\Support\ProviderErrorMapper;
 use App\Services\Supplier\SupplierBalanceService;
 use App\Services\System\SettingService;
+use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\ProviderResolver;
 use App\Support\ProductProvisionHostname;
@@ -454,7 +455,9 @@ class ProvisionService
         }
 
         $provisioning = $this->resolveProvisioningCapability($product);
-        if (method_exists($provisioning, 'provisionOrder')) {
+        // 契约分层：实现 ProvidesOrderProvisioning 的驱动（如 ZJMF 财务适配器）内部
+        // 完成整个开通会话；通用主机面板 transport 只会讲 REST 协议，走下方购物车流程。
+        if ($provisioning instanceof ProvidesOrderProvisioning) {
             $this->resolveProvisionHostname($order);
             $cartLockKey = $this->supplierCartLockKey($supplier);
 
@@ -1531,16 +1534,7 @@ class ProvisionService
 
     private function resolveReusableServiceUpstreamServiceId(Service $service): ?string
     {
-        $bindingHostId = $this->nonBlank($this->pluginBindingResolver()->upstreamServiceIdForService($service));
-        if ($bindingHostId !== null) {
-            return $bindingHostId;
-        }
-
-        if ((int) ($service->status ?? 0) !== ServiceStatus::ACTIVE) {
-            return null;
-        }
-
-        return null;
+        return $this->nonBlank($this->pluginBindingResolver()->upstreamServiceIdForService($service));
     }
 
     private function upstreamServiceIdPayloadValue(string $upstreamServiceId): int|string

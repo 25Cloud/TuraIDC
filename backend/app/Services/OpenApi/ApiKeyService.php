@@ -7,6 +7,7 @@ namespace App\Services\OpenApi;
 use App\Exceptions\BusinessException;
 use App\Models\ApiKey;
 use App\Models\User;
+use App\Support\IpAllowlistMatcher;
 use Illuminate\Support\Str;
 
 class ApiKeyService
@@ -106,11 +107,11 @@ class ApiKeyService
         throw new BusinessException("当前密钥缺少 {$domain}:{$level} 权限", 40300, 403);
     }
 
-    /** 校验 IP 白名单 */
+    /** 校验 IP 白名单（支持精确 IP 与 CIDR 网段，见 IpAllowlistMatcher） */
     public function assertIpAllowed(ApiKey $key, string $ip): void
     {
         $allowlist = is_array($key->ip_allowlist) ? array_values(array_filter($key->ip_allowlist)) : [];
-        if ($allowlist === [] || in_array($ip, $allowlist, true)) {
+        if ($allowlist === [] || IpAllowlistMatcher::matchesAny($ip, $allowlist)) {
             return;
         }
         throw new BusinessException('当前 IP 不在密钥白名单内', 40300, 403);

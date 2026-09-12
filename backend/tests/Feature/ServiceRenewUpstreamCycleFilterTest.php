@@ -16,6 +16,7 @@ use App\Services\Provisioning\ServiceRenewService;
 use App\Services\System\NotificationService;
 use App\Services\System\OperationLogService;
 use App\Services\System\SettingService;
+use App\Services\Upstream\Contracts\ProvidesRenewableCycleFiltering;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\Contracts\UpstreamDriver;
 use App\Services\Upstream\ProviderRegistry;
@@ -251,7 +252,7 @@ class ServiceRenewUpstreamCycleFilterTest extends TestCase
  * 模拟实现了 renewableCycles 的上游插件（如 zjmf_finance）。
  * cycles 为 null 表示上游不可达（回退本地集合）。
  */
-final class UpstreamCycleFilterCapability implements ProvidesRenewal
+final class UpstreamCycleFilterCapability implements ProvidesRenewableCycleFiltering
 {
     public function __construct(private readonly ?array $cycles) {}
 

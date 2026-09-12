@@ -32,6 +32,7 @@
 | [本地 IDC 异构数据映射迁移](completed/local-idc-heterogeneous-data-migration-20260722.md)       | completed | 异构数据中转恢复、受控 DML 导入与结构与数据验收。                              |
 | [商品分类结构修复](completed/product-category-structure-fix-2026-08-01.md)                      | completed | 恢复三层商品分类实体表、重建外键并修复异常商品归属。                           |
 | [生产备份本地恢复修复](completed/production-backup-local-restore-20260726.md)                   | completed | 生产备份已映射并完整恢复到本地 `idc`。                                         |
+| [上下游对接链路加固](completed/upstream-openapi-hardening-2026-09-12.md)                        | completed | 开放 API 写端点与审计加固、能力契约分层、开通失败退款标记、幂等 DB 兜底。      |
 | [VNC 与业务调度隔离方案](completed/vnc-and-business-scheduling-isolation-2026-08-04.md)         | completed | VNC Relay、业务队列与定时队列隔离实施计划。                                    |
 | [ZJMF 统一迁移方案](completed/zjmf-unified-migration.md)                                        | completed | ZJMF 实时绑定已切换、实例控制已验证，旧插件已卸载且历史已保留。                |
 

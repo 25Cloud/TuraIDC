@@ -7,18 +7,23 @@ namespace TuraIDC\Plugins\Servers\ZjmfFinance\Lib;
 use App\Models\Order;
 use App\Models\Service;
 use App\Models\Supplier;
+use App\Services\Upstream\Contracts\ProvidesBatchStatusSync;
 use App\Services\Upstream\Contracts\ProvidesConsoleAccess;
 use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\Contracts\ProvidesConsoleNetwork;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesConsoleSecurity;
-use App\Services\Upstream\Contracts\ProvidesProvisioning;
-use App\Services\Upstream\Contracts\ProvidesRenewal;
+use App\Services\Upstream\Contracts\ProvidesContextualRenewalRecovery;
+use App\Services\Upstream\Contracts\ProvidesHostSuspension;
+use App\Services\Upstream\Contracts\ProvidesInvoiceRenewal;
+use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
+use App\Services\Upstream\Contracts\ProvidesRenewableCycleFiltering;
 use App\Services\Upstream\Contracts\ProvidesScheduledAuthRefresh;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
+use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\Drivers\HostingPanelApi\HostingPanelApiTransport;
 
-final class ZjmfFinanceAdapter implements ProvidesConsoleAccess, ProvidesConsoleCatalog, ProvidesConsoleNetwork, ProvidesConsoleRuntime, ProvidesConsoleSecurity, ProvidesProvisioning, ProvidesRenewal, ProvidesScheduledAuthRefresh, ProvidesStatusSync
+final class ZjmfFinanceAdapter implements ProvidesBatchStatusSync, ProvidesConsoleAccess, ProvidesConsoleCatalog, ProvidesConsoleNetwork, ProvidesConsoleRuntime, ProvidesConsoleSecurity, ProvidesContextualRenewalRecovery, ProvidesHostSuspension, ProvidesInvoiceRenewal, ProvidesOrderProvisioning, ProvidesRenewableCycleFiltering, ProvidesScheduledAuthRefresh, ProvidesStatusSync, ProvidesSupplierBalance
 {
     private readonly ZjmfFinanceTransport $transport;
 

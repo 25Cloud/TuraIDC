@@ -21,6 +21,8 @@ use App\Services\Provisioning\ServiceRenewService;
 use App\Services\System\NotificationService;
 use App\Services\System\OperationLogService;
 use App\Services\System\SettingService;
+use App\Services\Upstream\Contracts\ProvidesContextualRenewalRecovery;
+use App\Services\Upstream\Contracts\ProvidesInvoiceRenewal;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\Contracts\UpstreamDriver;
 use App\Services\Upstream\Drivers\HostingPanelApi\HostingPanelApiDriver;
@@ -1314,7 +1316,7 @@ class ServiceRenewInvoiceOnlyIdempotencyTest extends TestCase
     }
 }
 
-final class FakeInvoiceRenewalCapability implements ProvidesRenewal
+final class FakeInvoiceRenewalCapability implements ProvidesContextualRenewalRecovery, ProvidesInvoiceRenewal
 {
     public int $renewServiceInvoiceCalls = 0;
 
@@ -1352,7 +1354,7 @@ final class FakeInvoiceRenewalCapability implements ProvidesRenewal
         Supplier $supplier,
         int $hostId,
         int $upstreamInvoiceId,
-        array $context,
+        array $context = [],
     ): array {
         $this->recoverCalls++;
         $this->lastRecoveredUpstreamInvoiceId = $upstreamInvoiceId;
@@ -1362,6 +1364,14 @@ final class FakeInvoiceRenewalCapability implements ProvidesRenewal
             'payment_completed' => false,
             'fund_error' => '上游续费账单仍未支付完成',
         ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function recoverRenewInvoice(Supplier $supplier, int $hostId, int $upstreamInvoiceId): ?array
+    {
+        return $this->recoverRenewInvoiceWithContext($supplier, $hostId, $upstreamInvoiceId, []);
     }
 }
 

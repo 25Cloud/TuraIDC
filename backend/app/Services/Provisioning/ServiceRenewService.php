@@ -27,6 +27,10 @@ use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\System\NotificationService;
 use App\Services\System\OperationLogService;
 use App\Services\System\SettingService;
+use App\Services\Upstream\Contracts\ProvidesContextualRenewalRecovery;
+use App\Services\Upstream\Contracts\ProvidesInvoiceRenewal;
+use App\Services\Upstream\Contracts\ProvidesRenewableCycleFiltering;
+use App\Services\Upstream\Contracts\ProvidesRenewalRecovery;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\ProviderResolver;
 use App\Support\OrderInvoiceNoGenerator;
@@ -767,7 +771,7 @@ class ServiceRenewService
                     $paymentCompleted = true;
                     $upstreamFundError = '';
 
-                    if (method_exists($renewal, 'renewServiceInvoice')) {
+                    if ($renewal instanceof ProvidesInvoiceRenewal) {
                         $renewResult = $renewal->renewServiceInvoice($supplier, $hostId, $billingCycle);
                         $upstreamInvoiceId = (int) ($renewResult['upstream_invoice_id'] ?? 0);
                         $hostDetail = is_array($renewResult['host_detail'] ?? null) ? $renewResult['host_detail'] : [];
@@ -882,17 +886,24 @@ class ServiceRenewService
                         try {
                             $renewal = $this->resolveRenewalCapability($currentService, $effectiveProduct);
 
-                            if (method_exists($renewal, 'recoverRenewInvoiceWithContext') || method_exists($renewal, 'recoverRenewInvoice')) {
-                                $recovery = method_exists($renewal, 'recoverRenewInvoiceWithContext')
-                                    ? $renewal->recoverRenewInvoiceWithContext(
-                                        $supplier,
-                                        $hostId,
-                                        $existingUpstreamInvoiceId,
-                                        is_array($currentProvisionData['renew_recovery_context'] ?? null)
-                                            ? $currentProvisionData['renew_recovery_context']
-                                            : [],
-                                    )
-                                    : $renewal->recoverRenewInvoice($supplier, $hostId, $existingUpstreamInvoiceId);
+                            // 恢复路径分两级：带上下文的驱动可做更精确的上游对账；
+                            // 只实现基础恢复的驱动退回 recoverRenewInvoice。
+                            if ($renewal instanceof ProvidesContextualRenewalRecovery) {
+                                $recovery = $renewal->recoverRenewInvoiceWithContext(
+                                    $supplier,
+                                    $hostId,
+                                    $existingUpstreamInvoiceId,
+                                    is_array($currentProvisionData['renew_recovery_context'] ?? null)
+                                        ? $currentProvisionData['renew_recovery_context']
+                                        : [],
+                                );
+                            } elseif ($renewal instanceof ProvidesRenewalRecovery) {
+                                $recovery = $renewal->recoverRenewInvoice($supplier, $hostId, $existingUpstreamInvoiceId);
+                            } else {
+                                $recovery = null;
+                            }
+
+                            if ($recovery !== null) {
                                 throw_if(! is_array($recovery), new BusinessException('上游续费账单状态尚未确认，请稍后重试'));
 
                                 $recoveryErrorMessage = trim((string) ($recovery['fund_error'] ?? ''));
@@ -1244,7 +1255,7 @@ class ServiceRenewService
             return $cycles;
         }
 
-        if (! method_exists($renewal, 'renewableCycles')) {
+        if (! $renewal instanceof ProvidesRenewableCycleFiltering) {
             return $cycles;
         }
 

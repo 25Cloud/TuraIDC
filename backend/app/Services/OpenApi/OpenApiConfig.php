@@ -36,6 +36,23 @@ class OpenApiConfig
     }
 
     /**
+     * 写操作（下单/余额支付/电源/续费/重装）的独立限流阈值。
+     *
+     * 设计文档承诺「关键写接口单独收紧」：写接口涉及真实扣费与不可逆操作，
+     * 默认阈值低于全局读阈值，管理员可通过 open_api.write_rate_limit 调整。
+     */
+    public function writeRateLimitPerMinute(): int
+    {
+        return max((int) Setting::getValue(self::GROUP, 'write_rate_limit', 30), 1);
+    }
+
+    /** 使用日志保留天数（超出部分由 open-api:prune-usage-logs 定期删除） */
+    public function usageLogRetentionDays(): int
+    {
+        return max((int) Setting::getValue(self::GROUP, 'usage_log_retention_days', 90), 1);
+    }
+
+    /**
      * @return array<string, int>
      */
     public function toArray(): array
@@ -46,6 +63,8 @@ class OpenApiConfig
             'require_verified' => $this->requireVerified() ? 1 : 0,
             'max_keys_per_user' => $this->maxKeysPerUser(),
             'rate_limit' => $this->rateLimitPerMinute(),
+            'write_rate_limit' => $this->writeRateLimitPerMinute(),
+            'usage_log_retention_days' => $this->usageLogRetentionDays(),
         ];
     }
 }

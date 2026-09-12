@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\System\OperationLogService;
+use App\Services\Upstream\Contracts\ProvidesHostSuspension;
 use App\Support\SensitiveDataSanitizer;
 
 /**
@@ -20,7 +21,8 @@ use App\Support\SensitiveDataSanitizer;
  * 暂停/解除暂停是模块级功能，约定上游路径：
  *   - suspend   → PUT /v1/hosts/{hostId}/module/suspend
  *   - unsuspend → PUT /v1/hosts/{hostId}/module/unsuspend
- * 若驱动实现了 suspendHost()/unsuspendHost() 具名方法则优先调用。
+ * 实现 ProvidesHostSuspension 的驱动优先走具名方法（suspendHost/unsuspendHost），
+ * 未实现的通用 runtime 回退到上述 REST 路径。
  */
 class ServiceSuspensionService
 {
@@ -45,7 +47,7 @@ class ServiceSuspensionService
         throw_if((int) $service->status !== ServiceStatus::ACTIVE, new BusinessException('仅已开通的实例可以暂停', 42200));
 
         [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
-        $response = is_callable([$runtime, 'suspendHost'])
+        $response = $runtime instanceof ProvidesHostSuspension
             ? $runtime->suspendHost($supplier, $hostId, $jwt)
             : $runtime->put($supplier, "/v1/hosts/{$hostId}/module/suspend", [], $jwt);
         $this->detailService->assertSuccess($response, '暂停实例');
@@ -87,7 +89,7 @@ class ServiceSuspensionService
         throw_if((int) $service->status !== ServiceStatus::SUSPENDED, new BusinessException('仅已暂停的实例可以解除暂停', 42200));
 
         [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
-        $response = is_callable([$runtime, 'unsuspendHost'])
+        $response = $runtime instanceof ProvidesHostSuspension
             ? $runtime->unsuspendHost($supplier, $hostId, $jwt)
             : $runtime->put($supplier, "/v1/hosts/{$hostId}/module/unsuspend", [], $jwt);
         $this->detailService->assertSuccess($response, '解除暂停');
@@ -137,7 +139,7 @@ class ServiceSuspensionService
             }
 
             [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
-            $response = is_callable([$runtime, 'unsuspendHost'])
+            $response = $runtime instanceof ProvidesHostSuspension
                 ? $runtime->unsuspendHost($supplier, $hostId, $jwt)
                 : $runtime->put($supplier, "/v1/hosts/{$hostId}/module/unsuspend", [], $jwt);
             $this->detailService->assertSuccess($response, '解除暂停');

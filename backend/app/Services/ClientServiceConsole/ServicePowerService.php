@@ -12,6 +12,7 @@ use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\System\OperationLogService;
 use App\Support\SensitiveDataSanitizer;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 电源/重装/密码子服务
@@ -22,6 +23,9 @@ class ServicePowerService
 {
     private const REINSTALL_OPTIONS_CACHE_TTL_SECONDS = 604800;
 
+    /** 控制台动作（电源/重装）互斥锁：同一实例同时只允许一个动作在上游执行 */
+    private const CONSOLE_ACTION_LOCK_TTL_SECONDS = 120;
+
     public function __construct(
         private readonly OperationLogService $operationLogService,
         private readonly ServiceDetailService $detailService,
@@ -29,6 +33,33 @@ class ServicePowerService
         private ?PluginBindingResolver $bindingResolver = null,
         private ?ServiceUpstreamBindingWriter $bindingWriter = null,
     ) {}
+
+    /**
+     * 控制台动作互斥锁（电源/重装共用同一把）。
+     *
+     * 电源与重装都会向上游下发改变实例状态的指令，快速连点或网络重试会造成
+     * 重复下发（例如连发两次 reboot）。fail-fast 而非排队：动作本身就是用户
+     * 主动行为，排在后面的重复动作没有意义。
+     *
+     * @template TLockResult
+     *
+     * @param  callable(): TLockResult  $callback
+     * @return TLockResult
+     */
+    private function withConsoleActionLock(int $serviceId, callable $callback)
+    {
+        $lock = Cache::lock("lock:service:console-action:{$serviceId}", self::CONSOLE_ACTION_LOCK_TTL_SECONDS);
+
+        if (! $lock->get()) {
+            throw new BusinessException('该实例的上一个控制台操作还在处理中，请稍后再试', 42200);
+        }
+
+        try {
+            return $callback();
+        } finally {
+            $lock->release();
+        }
+    }
 
     public function powerActionForUser(User $user, int $serviceId, string $action, array $context = []): array
     {
@@ -43,38 +74,49 @@ class ServicePowerService
         throw_if(! isset(ClientServiceConsoleService::POWER_ACTIONS[$action]), new BusinessException('不支持的电源动作', 42200));
         throw_if(! $this->transformService->canExecuteConsoleActions($service), new BusinessException('当前实例状态不支持该操作', 42200));
 
-        [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
-        $response = is_callable([$runtime, 'powerAction'])
-            ? $runtime->powerAction($supplier, $hostId, $action, $jwt)
-            : $runtime->put($supplier, "/v1/hosts/{$hostId}/module/{$action}", [], $jwt);
-        $this->detailService->assertSuccess($response, ClientServiceConsoleService::POWER_ACTIONS[$action]);
+        return $this->withConsoleActionLock($service->id, function () use ($service, $action, $context): array {
+            [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
+            // 契约分层：实现具名 powerAction 的驱动走具名协议，通用 REST runtime
+            // 回退 PUT /v1/hosts/{hostId}/module/{action}。
+            $response = is_callable([$runtime, 'powerAction'])
+                ? $runtime->powerAction($supplier, $hostId, $action, $jwt)
+                : $runtime->put($supplier, "/v1/hosts/{$hostId}/module/{$action}", [], $jwt);
+            $this->detailService->assertSuccess($response, ClientServiceConsoleService::POWER_ACTIONS[$action]);
 
-        $refreshError = '';
+            $refreshError = '';
 
-        try {
-            $this->applyPendingPowerSnapshot($service, $action);
-        } catch (\Throwable $exception) {
-            $refreshError = SensitiveDataSanitizer::sanitizeText($exception->getMessage());
-        }
+            try {
+                $this->applyPendingPowerSnapshot($service, $action);
+            } catch (\Throwable $exception) {
+                // 上游已受理，本地快照失败不影响操作结果，但必须留下系统级痕迹
+                $refreshError = SensitiveDataSanitizer::sanitizeText($exception->getMessage());
+                Log::warning('[控制台] 电源指令已提交但本地状态快照写入失败', [
+                    'service_id' => $service->id,
+                    'action' => $action,
+                    'message' => $refreshError,
+                    'exception' => $exception::class,
+                ]);
+            }
 
-        $actionLabel = ClientServiceConsoleService::POWER_ACTIONS[$action];
-        $message = trim((string) ($response['msg'] ?? '')) ?: ($actionLabel.'指令已发送');
-        $this->operationLogService->writeServiceConsoleLog($service, 'service.console.power.'.$action, [
-            'category' => 'power',
-            'summary' => '提交'.$actionLabel.'指令',
-            'operation' => $action,
-            'operation_label' => $actionLabel,
-            'host_id' => $hostId,
-            'message' => $message,
-            'refresh_error' => $refreshError,
-        ], $context);
+            $actionLabel = ClientServiceConsoleService::POWER_ACTIONS[$action];
+            $message = trim((string) ($response['msg'] ?? '')) ?: ($actionLabel.'指令已发送');
+            $this->operationLogService->writeServiceConsoleLog($service, 'service.console.power.'.$action, [
+                'category' => 'power',
+                'summary' => '提交'.$actionLabel.'指令',
+                'operation' => $action,
+                'operation_label' => $actionLabel,
+                'host_id' => $hostId,
+                'message' => $message,
+                'refresh_error' => $refreshError,
+            ], $context);
 
-        return [
-            'action' => $action,
-            'action_label' => $actionLabel,
-            'message' => $message,
-            'detail' => $this->transformService->transformDetail($service),
-        ];
+            return [
+                'action' => $action,
+                'action_label' => $actionLabel,
+                'message' => $message,
+                'detail' => $this->transformService->transformDetail($service),
+            ];
+        });
     }
 
     private function applyPendingPowerSnapshot(Service $service, string $action): void
@@ -271,39 +313,50 @@ class ServicePowerService
         ]);
         throw_if(! $this->transformService->canExecuteConsoleActions($service), new BusinessException('当前实例状态不支持该操作', 42200));
 
-        [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
-        $payload = ['os_id' => (string) ($data['os_id'] ?? '')];
-        $response = is_callable([$runtime, 'reinstall'])
-            ? $runtime->reinstall($supplier, $hostId, (string) $payload['os_id'], $jwt)
-            : $runtime->put($supplier, "/v1/hosts/{$hostId}/module/reinstall", $payload, $jwt);
-        $this->detailService->assertSuccess($response, '重装系统');
+        return $this->withConsoleActionLock($service->id, function () use ($service, $data, $context): array {
+            [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
+            $payload = ['os_id' => (string) ($data['os_id'] ?? '')];
+            // 契约分层：实现具名 reinstall 的驱动走具名协议，通用 REST runtime
+            // 回退 PUT /v1/hosts/{hostId}/module/reinstall。
+            $response = is_callable([$runtime, 'reinstall'])
+                ? $runtime->reinstall($supplier, $hostId, (string) $payload['os_id'], $jwt)
+                : $runtime->put($supplier, "/v1/hosts/{$hostId}/module/reinstall", $payload, $jwt);
+            $this->detailService->assertSuccess($response, '重装系统');
 
-        $taskStatus = null;
-        try {
-            $taskStatus = $this->detailService->normalizeModuleStatus(
-                $this->detailService->fetchModuleStatusPayload($supplier, $hostId, $jwt, 'reinstall'),
-                'reinstall'
-            );
-        } catch (\Throwable) {
             $taskStatus = null;
-        }
+            try {
+                $taskStatus = $this->detailService->normalizeModuleStatus(
+                    $this->detailService->fetchModuleStatusPayload($supplier, $hostId, $jwt, 'reinstall'),
+                    'reinstall'
+                );
+            } catch (\Throwable $statusException) {
+                // 重装指令上游已受理，补充状态读取失败不影响提交结果，但留下系统级痕迹
+                $taskStatus = null;
+                Log::warning('[控制台] 重装指令已提交但任务状态读取失败', [
+                    'service_id' => $service->id,
+                    'host_id' => $hostId,
+                    'message' => SensitiveDataSanitizer::sanitizeText($statusException->getMessage()),
+                    'exception' => $statusException::class,
+                ]);
+            }
 
-        $message = trim((string) ($response['msg'] ?? '')) ?: '重装系统任务已提交';
-        $this->operationLogService->writeServiceConsoleLog($service, 'service.console.reinstall.submit', [
-            'category' => 'reinstall',
-            'summary' => '提交重装系统任务',
-            'host_id' => $hostId,
-            'os_id' => (string) ($payload['os_id'] ?? ''),
-            'message' => $message,
-            'second_verify_required' => $this->detailService->extractSecondVerify($response) !== [],
-        ], $context);
+            $message = trim((string) ($response['msg'] ?? '')) ?: '重装系统任务已提交';
+            $this->operationLogService->writeServiceConsoleLog($service, 'service.console.reinstall.submit', [
+                'category' => 'reinstall',
+                'summary' => '提交重装系统任务',
+                'host_id' => $hostId,
+                'os_id' => (string) ($payload['os_id'] ?? ''),
+                'message' => $message,
+                'second_verify_required' => $this->detailService->extractSecondVerify($response) !== [],
+            ], $context);
 
-        return [
-            'message' => $message,
-            'second_verify' => $this->detailService->extractSecondVerify($response),
-            'status' => $taskStatus,
-            'detail' => $this->transformService->transformDetail($service),
-        ];
+            return [
+                'message' => $message,
+                'second_verify' => $this->detailService->extractSecondVerify($response),
+                'status' => $taskStatus,
+                'detail' => $this->transformService->transformDetail($service),
+            ];
+        });
     }
 
     public function rescueForUser(User $user, int $serviceId, array $data, array $context = []): array
