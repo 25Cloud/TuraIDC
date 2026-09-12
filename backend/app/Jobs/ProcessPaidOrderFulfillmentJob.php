@@ -59,5 +59,18 @@ class ProcessPaidOrderFulfillmentJob implements ShouldBeUnique, ShouldQueue
             'message' => $exception->getMessage(),
             'exception' => $exception::class,
         ]);
+
+        // 重试耗尽 = 自动履约已放弃：把已付未履约的账单标记 requires_refund，
+        // 避免用户资金悬挂在 PROCESSING 订单上无人认领（详见
+        // PaymentService::markOrderFulfillmentRequiresRefund）。
+        try {
+            app(PaymentService::class)->markOrderFulfillmentRequiresRefund($this->orderId);
+        } catch (\Throwable $markException) {
+            Log::error('[支付后自动开通] requires_refund 标记写入失败', [
+                'order_id' => $this->orderId,
+                'message' => $markException->getMessage(),
+                'exception' => $markException::class,
+            ]);
+        }
     }
 }

@@ -2609,6 +2609,47 @@ class PaymentService
         }
     }
 
+    /**
+     * 开通队列重试耗尽后的资金安全标记：已支付但未履约的购买订单账单打上
+     * requires_refund 标记，供人工核实退款（与续费链路 autoRefundSupersededRenewInvoice
+     * 的失败标记同口径）。只标记，不自动退款——开通失败可能需要人工先与上游核实。
+     */
+    public function markOrderFulfillmentRequiresRefund(int $orderId): void
+    {
+        if ($orderId <= 0) {
+            return;
+        }
+
+        $order = Order::query()->find($orderId);
+        $invoice = $order?->invoice;
+
+        if (! $order instanceof Order || ! $invoice instanceof Invoice) {
+            return;
+        }
+
+        // 仅限「已支付、未履约完成」的购买订单；续费/升级有自己的恢复与退款链路
+        if ($order->type !== 'new'
+            || (int) $invoice->status !== InvoiceStatus::PAID
+            || (int) $order->status === OrderStatus::COMPLETED) {
+            return;
+        }
+
+        $configSnapshot = is_array($invoice->config_snapshot ?? null) ? $invoice->config_snapshot : [];
+        if (! empty($configSnapshot['requires_refund'])) {
+            return;
+        }
+
+        $invoice->forceFill([
+            'config_snapshot' => array_merge($configSnapshot, ['requires_refund' => true]),
+        ])->save();
+
+        Log::error('[支付后自动开通] 履约重试耗尽，已付账单标记 requires_refund 待人工处理', [
+            'order_id' => $orderId,
+            'invoice_id' => (int) $invoice->id,
+            'invoice_no' => (string) ($invoice->invoice_no ?? ''),
+        ]);
+    }
+
     public function processPaidOrderFulfillmentById(int $orderId): void
     {
         if ($orderId <= 0) {

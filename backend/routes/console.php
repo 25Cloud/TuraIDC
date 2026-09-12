@@ -55,8 +55,16 @@ $cleanupUpstreamUploads = Schedule::command('tickets:cleanup-unused-upstream-upl
     ->name('tickets-cleanup-unused-upstream-uploads')
     ->runInBackground();
 
+// 开放接口使用日志防膨胀：api_key_usage_logs 只增不减，按保留期（默认 90 天，
+// open_api.usage_log_retention_days 可调）每周清理一次。
+$pruneOpenApiUsageLogs = Schedule::command('open-api:prune-usage-logs')
+    ->weekly()
+    ->name('open-api-prune-usage-logs')
+    ->runInBackground();
+
 if ($shouldUseScheduleMutex) {
     $cleanupUpstreamUploads->withoutOverlapping(2);
+    $pruneOpenApiUsageLogs->withoutOverlapping(2);
 }
 
 if ($shouldUseScheduleMutex) {

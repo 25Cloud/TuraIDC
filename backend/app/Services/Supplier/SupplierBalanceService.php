@@ -10,7 +10,7 @@ use App\Models\SupplierBalance;
 use App\Models\SupplierBalanceLog;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\System\SettingService;
-use App\Services\Upstream\Contracts\ProvidesRenewal;
+use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\ProviderResolver;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -221,8 +221,10 @@ class SupplierBalanceService
     {
         $runtimeSupplier = app(PluginBindingResolver::class)->supplierWithRuntimeCredentials($supplier);
         $provider = app(ProviderResolver::class)->resolveForSupplier($runtimeSupplier);
-        $renewal = $provider->require(ProvidesRenewal::class, '当前供应商暂不支持余额查询');
-        $result = $renewal->getBalance($runtimeSupplier);
+        // 余额查询是独立能力，不再挂在 ProvidesRenewal 下：只支持续费不支持
+        // 余额查询的驱动不该被误判为「暂不支持余额查询」。
+        $balanceProvider = $provider->require(ProvidesSupplierBalance::class, '当前供应商暂不支持余额查询');
+        $result = $balanceProvider->getBalance($runtimeSupplier);
 
         $payload = is_array($result['data'] ?? null) ? array_replace($result, $result['data']) : $result;
         $currency = $payload['currency'] ?? null;
@@ -361,11 +363,9 @@ class SupplierBalanceService
     }
 
     /**
-     * 重复告警间隔（分钟），取自管理端「自动化策略」，默认 24 小时。
+     * 重复告警间隔（小时），取自管理端「自动化策略」，默认 24 小时。
      *
      * 配置读取失败时退回默认值：告警节流拿不到配置也不该让整轮同步崩掉。
-     */
-    /**
      * 刻意不做实例级缓存：Setting 已有分组级缓存，真正的数据库查询只发生一次，
      * 这里省下的只是数组组装。换来的却是配置改动在长驻进程内不生效——
      * 那类"改了设置没反应"的问题远比这点开销难排查。

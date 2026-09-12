@@ -144,6 +144,14 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perMinute($perMinute)->by((string) $request->ip());
         });
+
+        // 写接口（下单/余额支付/电源/续费/重装）单独收紧：这些端点涉及真实扣费
+        // 与不可逆操作，默认阈值低于全局读阈值，管理员可通过 open_api.write_rate_limit 调整。
+        RateLimiter::for('open-api-write', function (Request $request) {
+            $perMinute = app(OpenApiConfig::class)->writeRateLimitPerMinute();
+
+            return Limit::perMinute($perMinute)->by((string) $request->ip());
+        });
     }
 
     /**

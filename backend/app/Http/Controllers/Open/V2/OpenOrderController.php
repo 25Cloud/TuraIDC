@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Open\V2;
 
+use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Open\V2\OpenOrderStoreRequest;
 use App\Models\Invoice;
@@ -15,6 +16,11 @@ use Illuminate\Http\Request;
 
 class OpenOrderController extends Controller
 {
+    /** 列表默认页大小（与旧 limit 行为一致），page_size 可放大但不超过上限 */
+    private const LIST_DEFAULT_PAGE_SIZE = 50;
+
+    private const LIST_MAX_PAGE_SIZE = 200;
+
     public function __construct(
         private readonly CheckoutService $checkout,
         private readonly PaymentService $payments,
@@ -53,14 +59,23 @@ class OpenOrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->attributes->get('api_key_user');
-        $items = Invoice::query()
+        $page = max((int) $request->query('page', '1'), 1);
+        $pageSize = min(max((int) $request->query('page_size', (string) self::LIST_DEFAULT_PAGE_SIZE), 1), self::LIST_MAX_PAGE_SIZE);
+
+        $query = Invoice::query()
             ->where('user_id', (int) $user->id)
-            ->orderByDesc('id')
-            ->limit(50)
+            ->orderByDesc('id');
+        $total = (int) $query->count();
+        $items = $query->forPage($page, $pageSize)
             ->get()
             ->map(fn (Invoice $invoice) => $this->presentInvoice($invoice));
 
-        return $this->success(['list' => $items]);
+        return $this->success([
+            'list' => $items,
+            'total' => $total,
+            'page' => $page,
+            'page_size' => $pageSize,
+        ]);
     }
 
     public function show(Request $request, int $invoice): JsonResponse
@@ -77,7 +92,8 @@ class OpenOrderController extends Controller
             ->find($id);
 
         if (! $invoice) {
-            abort(404);
+            // 越权/不存在统一 404，但用业务码给出明确语义，而不是裸 abort 的「接口不存在」
+            throw new BusinessException('账单不存在', 40400, 404);
         }
 
         return $invoice;

@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-24
+updated: 2026-09-12
 owner: backend-platform
 ---
 
@@ -54,7 +54,9 @@ owner: backend-platform
   - `40300` 权限不足（scope 不含该接口）、IP 不在白名单、账号被禁用
   - `42200` 参数验证失败、业务校验失败（复用 BusinessException）
   - `42900` 限流
-- 限流：open 路由统一 `throttle:60,1,open-api`（可配置），关键写接口单独收紧
+- 限流：open 路由统一 `throttle:open-api`（按 IP，`open_api.rate_limit` 可配置，默认 60/分钟）；
+  写接口（下单/余额支付/电源/续费/重装）叠加独立 `throttle:open-api-write`
+  （`open_api.write_rate_limit` 可配置，默认 30/分钟），花钱端点与读接口不同阈值
 
 ## 4. 数据模型
 
@@ -76,35 +78,41 @@ owner: backend-platform
 | created_at / updated_at | timestamp      |                                                                |
 | deleted_at              | timestamp null | 软删除                                                         |
 
-索引：`user_id`、`key_prefix`（唯一）。
+索引：`user_id`、`key_prefix`（唯一）、`secret_hash`（等值查找）。
 
-密钥格式：`tura_` + 32 位随机字符。明文仅在创建响应中返回一次，数据库只存哈希。
+密钥格式：`tura_` + 8 位小写随机（展示前缀 key_prefix，共 13 字符）+ 32 位随机 secret，
+整体长度 41 字符。明文仅在创建响应中返回一次，数据库只存哈希。
+
+IP 白名单条目支持精确 IP 与 CIDR 网段（如 `203.0.113.0/24`、`2001:db8::/32`）。
 
 ### 4.2 `api_key_usage_logs`
 
-| 字段        | 类型        | 说明 |
-| ----------- | ----------- | ---- |
-| id          | bigint PK   |      |
-| api_key_id  | bigint FK   |      |
-| user_id     | bigint      |      |
-| method      | string(8)   |      |
-| path        | string(255) |      |
-| status_code | int         |      |
-| ip          | string(45)  |      |
-| duration_ms | int         |      |
-| created_at  | timestamp   |      |
+| 字段        | 类型        | 说明                                                        |
+| ----------- | ----------- | ----------------------------------------------------------- |
+| id          | bigint PK   |                                                             |
+| api_key_id  | bigint      | 认证失败（无可用密钥）时记 0 哨兵，保证爆破尝试在审计中可见 |
+| user_id     | bigint      | 认证失败时同样记 0                                          |
+| method      | string(8)   |                                                             |
+| path        | string(255) |                                                             |
+| status_code | int         |                                                             |
+| ip          | string(45)  |                                                             |
+| duration_ms | int         |                                                             |
+| created_at  | timestamp   |                                                             |
 
-索引：`api_key_id`、`created_at`。按需归档（后续可走日志归档体系）。
+索引：`api_key_id`、`created_at`。归档：`open-api:prune-usage-logs` 每周清理
+（保留 `open_api.usage_log_retention_days` 天，默认 90；可用 `--days` 显式覆盖）。
 
 ### 4.3 配置项（`settings` 表，group = `open_api`）
 
-| key               | 类型 | 默认  | 说明                     |
-| ----------------- | ---- | ----- | ------------------------ |
-| enabled           | bool | false | 全局总开关               |
-| require_phone     | bool | false | 创建密钥必须绑定手机号   |
-| require_verified  | bool | false | 创建密钥必须通过实名认证 |
-| max_keys_per_user | int  | 10    | 每人最大密钥数           |
-| rate_limit        | int  | 60    | open API 每分钟请求上限  |
+| key                      | 类型 | 默认  | 说明                             |
+| ------------------------ | ---- | ----- | -------------------------------- |
+| enabled                  | bool | false | 全局总开关                       |
+| require_phone            | bool | false | 创建密钥必须绑定手机号           |
+| require_verified         | bool | false | 创建密钥必须通过实名认证         |
+| max_keys_per_user        | int  | 10    | 每人最大密钥数                   |
+| rate_limit               | int  | 60    | open API 每分钟请求上限（按 IP） |
+| write_rate_limit         | int  | 30    | 写接口每分钟请求上限（按 IP）    |
+| usage_log_retention_days | int  | 90    | 使用日志保留天数                 |
 
 ## 5. 权限模型（scope）
 
@@ -143,14 +151,15 @@ owner: backend-platform
 
 ### 6.3 服务（services）
 
-| 方法 | 路径                                   | scope          | 说明                                           |
-| ---- | -------------------------------------- | -------------- | ---------------------------------------------- |
-| GET  | `/api/v2/open/services`                | services:read  | 服务列表                                       |
-| GET  | `/api/v2/open/services/{id}`           | services:read  | 服务详情（含状态）                             |
-| POST | `/api/v2/open/services/{id}/power`     | services:write | 电源操作（on/off/reboot/hard_off/hard_reboot） |
-| GET  | `/api/v2/open/services/{id}/renewals`  | services:read  | 续费预览（价格与周期）                         |
-| POST | `/api/v2/open/services/{id}/renew`     | services:write | 创建续费账单并余额支付                         |
-| POST | `/api/v2/open/services/{id}/reinstall` | services:write | 重装系统                                       |
+| 方法 | 路径                                           | scope          | 说明                                                                     |
+| ---- | ---------------------------------------------- | -------------- | ------------------------------------------------------------------------ |
+| GET  | `/api/v2/open/services`                        | services:read  | 服务列表                                                                 |
+| GET  | `/api/v2/open/services/{id}`                   | services:read  | 服务详情（含状态）                                                       |
+| POST | `/api/v2/open/services/{id}/power`             | services:write | 电源操作（on/off/reboot/hard_off/hard_reboot）                           |
+| GET  | `/api/v2/open/services/{id}/renewals`          | services:read  | 续费预览（价格与周期）                                                   |
+| POST | `/api/v2/open/services/{id}/renew`             | services:write | 创建续费账单并余额支付                                                   |
+| GET  | `/api/v2/open/services/{id}/reinstall-options` | services:read  | 重装选项列表（取 `os_id` 供重装接口使用）                                |
+| POST | `/api/v2/open/services/{id}/reinstall`         | services:write | 重装系统（`os_id` 必填，string，来自重装选项接口；与用户控制台同参数名） |
 
 ### 6.4 财务（finance）
 
@@ -180,7 +189,9 @@ owner: backend-platform
 ```
 
 - 下游需先保证密钥账户余额充足（充值走用户控制台，或二期提供充值接口）
-- 幂等：`idempotency_key` 由下游生成并保存，重试不会重复建单（复用 CheckoutService 现有幂等机制）
+- 幂等：`idempotency_key` 由下游生成并保存，重试不会重复建单。缓存映射（15 分钟 TTL）
+  之外另有 DB 兜底：`invoices.idempotency_key` 带 `(user_id, idempotency_key)` 唯一索引，
+  缓存驱逐/重启后重放同一请求仍复用既有账单（站内下单该字段为 NULL，不受影响）
 - 价格：API 返回真实应付金额（含代理折扣等既有定价逻辑），加价/映射由下游自行决定
 
 ## 8. 用户端「API 密钥」页（frontend-user-v4-console）

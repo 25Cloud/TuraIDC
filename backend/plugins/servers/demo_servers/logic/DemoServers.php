@@ -7,30 +7,42 @@ namespace TuraIDC\Plugins\Servers\DemoServers\Logic;
 use App\Models\Order;
 use App\Models\Service;
 use App\Models\Supplier;
+use App\Services\Upstream\Contracts\ProvidesBatchStatusSync;
 use App\Services\Upstream\Contracts\ProvidesConsoleAccess;
 use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\Contracts\ProvidesConsoleNetwork;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesConsoleSecurity;
+use App\Services\Upstream\Contracts\ProvidesHostSuspension;
+use App\Services\Upstream\Contracts\ProvidesInvoiceRenewal;
+use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
+use App\Services\Upstream\Contracts\ProvidesRenewalRecovery;
 use App\Services\Upstream\Contracts\ProvidesScheduledAuthRefresh;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
+use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\Contracts\ProvidesSupplierFormSchema;
 use App\Services\Upstream\Contracts\UpstreamDriver;
 
-class DemoServers implements ProvidesConsoleAccess, ProvidesConsoleCatalog, ProvidesConsoleNetwork, ProvidesConsoleRuntime, ProvidesConsoleSecurity, ProvidesProvisioning, ProvidesRenewal, ProvidesScheduledAuthRefresh, ProvidesStatusSync, ProvidesSupplierFormSchema, UpstreamDriver
+class DemoServers implements ProvidesBatchStatusSync, ProvidesConsoleAccess, ProvidesConsoleCatalog, ProvidesConsoleNetwork, ProvidesConsoleRuntime, ProvidesConsoleSecurity, ProvidesHostSuspension, ProvidesInvoiceRenewal, ProvidesOrderProvisioning, ProvidesProvisioning, ProvidesRenewal, ProvidesRenewalRecovery, ProvidesScheduledAuthRefresh, ProvidesStatusSync, ProvidesSupplierBalance, ProvidesSupplierFormSchema, UpstreamDriver
 {
     private const CAPABILITIES = [
+        ProvidesBatchStatusSync::class,
         ProvidesConsoleAccess::class,
         ProvidesConsoleCatalog::class,
         ProvidesConsoleNetwork::class,
         ProvidesConsoleRuntime::class,
         ProvidesConsoleSecurity::class,
+        ProvidesHostSuspension::class,
+        ProvidesInvoiceRenewal::class,
+        ProvidesOrderProvisioning::class,
         ProvidesProvisioning::class,
         ProvidesRenewal::class,
+        ProvidesRenewalRecovery::class,
         ProvidesScheduledAuthRefresh::class,
         ProvidesStatusSync::class,
+        ProvidesSupplierBalance::class,
     ];
 
     public function key(): string
@@ -405,6 +417,28 @@ class DemoServers implements ProvidesConsoleAccess, ProvidesConsoleCatalog, Prov
                 'host_id' => $hostId,
                 'action' => trim($action),
                 'power_state' => trim($action) === 'stop' ? 'stopped' : 'running',
+            ],
+        ];
+    }
+
+    public function suspendHost(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return [
+            'status' => 200,
+            'data' => [
+                'host_id' => $hostId,
+                'domainstatus' => 'Suspended',
+            ],
+        ];
+    }
+
+    public function unsuspendHost(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return [
+            'status' => 200,
+            'data' => [
+                'host_id' => $hostId,
+                'domainstatus' => 'Active',
             ],
         ];
     }

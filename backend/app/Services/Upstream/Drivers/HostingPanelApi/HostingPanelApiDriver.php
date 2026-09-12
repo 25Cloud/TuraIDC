@@ -9,10 +9,12 @@ use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\Contracts\ProvidesConsoleNetwork;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesConsoleSecurity;
+use App\Services\Upstream\Contracts\ProvidesHostSuspension;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\Contracts\ProvidesScheduledAuthRefresh;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
+use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\Contracts\ProvidesSupplierFormSchema;
 use App\Services\Upstream\Contracts\UpstreamDriver;
 use App\Services\Upstream\ProviderKey;
@@ -25,10 +27,12 @@ final class HostingPanelApiDriver implements ProvidesSupplierFormSchema, Upstrea
         ProvidesConsoleNetwork::class,
         ProvidesConsoleRuntime::class,
         ProvidesConsoleSecurity::class,
+        ProvidesHostSuspension::class,
         ProvidesProvisioning::class,
         ProvidesRenewal::class,
         ProvidesScheduledAuthRefresh::class,
         ProvidesStatusSync::class,
+        ProvidesSupplierBalance::class,
     ];
 
     public function __construct(

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Client\V2;
 
+use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\V2\ApiKey\StoreApiKeyRequest;
 use App\Http\Requests\Client\V2\ApiKey\UpdateApiKeyRequest;
@@ -58,9 +59,10 @@ class ApiKeyController extends Controller
     {
         $data = $request->validate(['status' => ['required', 'in:enabled,disabled']]);
         $key = $this->findOwnedKey($request, $id);
-        $key->forceFill(['status' => $data['status']])->save();
+        $status = $data['status'] === 'enabled' ? ApiKey::STATUS_ENABLED : ApiKey::STATUS_DISABLED;
+        $key->forceFill(['status' => $status])->save();
 
-        return $this->success(['key' => $this->present($key)], $data['status'] === 'enabled' ? '密钥已启用' : '密钥已停用');
+        return $this->success(['key' => $this->present($key)], $status === ApiKey::STATUS_ENABLED ? '密钥已启用' : '密钥已停用');
     }
 
     public function destroy(Request $request, int $id): JsonResponse
@@ -99,7 +101,7 @@ class ApiKeyController extends Controller
             ->find($id);
 
         if (! $key) {
-            abort(404);
+            throw new BusinessException('API 密钥不存在', 40400, 404);
         }
 
         return $key;

@@ -352,6 +352,9 @@ final class ZjmfRenewAndStatusServiceTest extends TestCase
         $supplier->forceFill([
             'id' => 1001,
             'interface_type' => 'zjmf_finance_api',
+            // 登录入口对空凭据前置拒服务，夹具需提供真实形态的凭据（HTTP 层已被桩替换）
+            'api_username' => 'fixture-account',
+            'api_key' => 'fixture-secret',
         ]);
 
         return $supplier;

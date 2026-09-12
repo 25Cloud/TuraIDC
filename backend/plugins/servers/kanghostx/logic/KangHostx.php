@@ -9,16 +9,21 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Supplier;
+use App\Services\Upstream\Contracts\ProvidesBatchStatusSync;
 use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
+use App\Services\Upstream\Contracts\ProvidesInvoiceRenewal;
+use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
+use App\Services\Upstream\Contracts\ProvidesRenewalRecovery;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
+use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\Contracts\ProvidesSupplierFormSchema;
 use App\Services\Upstream\Contracts\UpstreamDriver;
 use TuraIDC\Plugins\Servers\KangHostx\Lib\KangHostxClient;
 
-class KangHostx implements ProvidesConsoleCatalog, ProvidesConsoleRuntime, ProvidesProvisioning, ProvidesRenewal, ProvidesStatusSync, ProvidesSupplierFormSchema, UpstreamDriver
+class KangHostx implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, ProvidesConsoleRuntime, ProvidesInvoiceRenewal, ProvidesOrderProvisioning, ProvidesProvisioning, ProvidesRenewal, ProvidesRenewalRecovery, ProvidesStatusSync, ProvidesSupplierBalance, ProvidesSupplierFormSchema, UpstreamDriver
 {
     private const KEY = 'kanghostx';
 
@@ -29,11 +34,16 @@ class KangHostx implements ProvidesConsoleCatalog, ProvidesConsoleRuntime, Provi
     private const TEMPLATE_PRODUCT_ID = 1;
 
     private const CAPABILITIES = [
+        ProvidesBatchStatusSync::class,
         ProvidesConsoleCatalog::class,
         ProvidesConsoleRuntime::class,
+        ProvidesInvoiceRenewal::class,
+        ProvidesOrderProvisioning::class,
         ProvidesProvisioning::class,
         ProvidesRenewal::class,
+        ProvidesRenewalRecovery::class,
         ProvidesStatusSync::class,
+        ProvidesSupplierBalance::class,
     ];
 
     private KangHostxClient $client;

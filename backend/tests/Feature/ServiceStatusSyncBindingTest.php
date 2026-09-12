@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Automation\ServiceStatusSyncService;
+use App\Services\Upstream\Contracts\ProvidesBatchStatusSync;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
 use App\Services\Upstream\Contracts\UpstreamDriver;
 use App\Services\Upstream\ProviderKey;
@@ -32,11 +33,11 @@ class ServiceStatusSyncBindingTest extends TestCase
     #[Test]
     public function it_syncs_only_services_with_normalized_upstream_bindings(): void
     {
-        $statusSync = new class implements ProvidesStatusSync
+        $statusSync = new class implements ProvidesBatchStatusSync
         {
             public array $items = [];
 
-            public function syncServiceStatuses(Supplier $supplier, array $items, int $chunkSize): array
+            public function syncServiceStatuses(Supplier $supplier, array $items, int $chunkSize = 10): array
             {
                 $this->items = array_values($items);
 
@@ -112,9 +113,9 @@ class ServiceStatusSyncBindingTest extends TestCase
     #[Test]
     public function it_records_status_sync_failures_on_the_service_binding(): void
     {
-        $statusSync = new class implements ProvidesStatusSync
+        $statusSync = new class implements ProvidesBatchStatusSync
         {
-            public function syncServiceStatuses(Supplier $supplier, array $items, int $chunkSize): array
+            public function syncServiceStatuses(Supplier $supplier, array $items, int $chunkSize = 10): array
             {
                 throw new \RuntimeException('sync exploded');
             }

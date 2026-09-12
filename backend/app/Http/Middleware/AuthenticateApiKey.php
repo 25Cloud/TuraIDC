@@ -11,9 +11,13 @@ use App\Services\OpenApi\ApiKeyService;
 use App\Services\OpenApi\ApiKeyUsageLogService;
 use App\Services\OpenApi\OpenApiConfig;
 use Closure;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class AuthenticateApiKey
 {
@@ -69,6 +73,13 @@ class AuthenticateApiKey
             $this->recordUsage($apiKey, $request, $response->getStatusCode(), $ip, $startedAt);
 
             return $response;
+        } catch (Throwable $exception) {
+            // ValidationException / 429 / 5xx 等非业务异常也要进审计：否则无效密钥爆破
+            // 与高频滥用只有限流计数兜底，usage 日志里完全不可见。记录后原样抛出，
+            // 由全局异常处理器统一渲染响应。
+            $this->recordUsage($apiKey, $request, $this->statusCodeForException($exception), $ip, $startedAt);
+
+            throw $exception;
         }
     }
 
@@ -82,23 +93,36 @@ class AuthenticateApiKey
         return '';
     }
 
-    private function recordUsage(?ApiKey $key, Request $request, int $statusCode, string $ip, float $startedAt): void
+    private function statusCodeForException(Throwable $exception): int
     {
-        if (! $key) {
-            return;
+        if ($exception instanceof ValidationException) {
+            return 422;
+        }
+        if ($exception instanceof ThrottleRequestsException) {
+            return 429;
+        }
+        if ($exception instanceof AuthenticationException) {
+            return 401;
         }
 
+        return 500;
+    }
+
+    private function recordUsage(?ApiKey $key, Request $request, int $statusCode, string $ip, float $startedAt): void
+    {
         try {
+            // 认证失败的请求没有可用密钥，用 0 哨兵落库：审计可见「谁在哪个 IP 打了哪个路径」，
+            // 这是识别无效密钥爆破的唯一依据；正常请求带真实 key 归属。
             $this->logs->record(
-                (int) $key->id,
-                (int) $key->user_id,
+                $key ? (int) $key->id : 0,
+                $key ? (int) $key->user_id : 0,
                 (string) $request->method(),
                 (string) $request->path(),
                 $statusCode,
                 $ip,
-                (int) (microtime(true) - $startedAt) * 1000,
+                (int) round((microtime(true) - $startedAt) * 1000),
             );
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Log::warning('[open-api] 审计写入失败', ['error' => $exception->getMessage()]);
         }
     }

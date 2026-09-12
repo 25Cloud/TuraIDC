@@ -95,6 +95,11 @@ final class ZjmfAuthManager
 
     public function loginResponse(Supplier $supplier): array
     {
+        // 密钥缺省即拒绝：账号或密钥为空时上游登录必然失败，直接给出可定位的中文提示
+        if (trim((string) $supplier->api_username) === '' || trim((string) $supplier->api_key) === '') {
+            throw new BusinessException('供应商接口账号或密钥未配置，请先补全供应商凭据', 42200);
+        }
+
         return $this->transport->request($supplier, 'POST', '/zjmf_api_login', [
             'username' => (string) $supplier->api_username,
             'password' => (string) $supplier->api_key,

@@ -123,6 +123,25 @@ class CheckoutService
                         }
                     }
 
+                    // DB 层幂等兜底：volatile 缓存映射只有 15 分钟 TTL，驱逐/重启后同一幂等键的
+                    // 重试仍必须复用既有账单，不能重复建单扣费。invoices 上有
+                    // (user_id, idempotency_key) 唯一索引兜住并发极端场景：后到者撞索引回滚，
+                    // 重试即命中这里。幂等键仅在开放 API 下单时非空。
+                    if ($idempotencyKey !== '') {
+                        $idempotentInvoiceId = (int) (Invoice::query()
+                            ->where('user_id', $userId)
+                            ->where('idempotency_key', $idempotencyKey)
+                            ->value('id') ?? 0);
+                        if ($idempotentInvoiceId > 0) {
+                            $idempotentInvoice = $this->freshCheckoutInvoice($idempotentInvoiceId);
+                            if ($idempotentInvoice) {
+                                $this->checkoutSecurityService->rememberCreatedInvoice($userId, $idempotencyKey, $fingerprint, $idempotentInvoiceId);
+
+                                return $idempotentInvoice;
+                            }
+                        }
+                    }
+
                     $quote = $this->quote($product, $billingCycle, $normalizedConfig, $quantity);
                     $originalAmount = (float) ($quote['total_amount'] ?? 0);
                     $agentPricing = ($this->agentDiscountService ?? new AgentDiscountService)->apply($product, $user, $originalAmount);
@@ -175,6 +194,7 @@ class CheckoutService
                         'status' => InvoiceStatus::UNPAID,
                         'due_date' => now()->addDays(7),
                         'trace_id' => (string) ($context['trace_id'] ?? ''),
+                        'idempotency_key' => $idempotencyKey !== '' ? $idempotencyKey : null,
                     ]);
                     $this->invoiceService->syncProjection($invoice);
 

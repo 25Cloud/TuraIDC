@@ -12,6 +12,7 @@ use App\Models\Supplier;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\Integrations\Support\ProviderErrorMapper;
+use App\Services\Upstream\Contracts\ProvidesBatchStatusSync;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
 use App\Services\Upstream\ProviderResolver;
 use App\Support\SensitiveDataSanitizer;
@@ -225,7 +226,7 @@ class ServiceStatusSyncService
 
         $statusSync = $provider->require(ProvidesStatusSync::class, '当前供应商不支持状态同步');
 
-        if (method_exists($statusSync, 'syncServiceStatuses')) {
+        if ($statusSync instanceof ProvidesBatchStatusSync) {
             $this->syncSupplierServicesThroughPlugin($statusSync, $supplier, $services, $supplierRequestChunkSize, $summary, $serviceProductMap);
 
             return;

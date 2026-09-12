@@ -8,7 +8,7 @@ use App\Constants\ProductType;
 use App\Exceptions\BusinessException;
 use App\Models\Supplier;
 use App\Services\ProductCatalog\ProductCatalogService;
-use App\Services\Upstream\Contracts\ProvidesRenewal;
+use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfFinanceDriver;
 
 class ZjmfFinance
@@ -170,12 +170,12 @@ class ZjmfFinance
     private function refreshSupplierCard(string $action, array $request): array
     {
         $supplier = $this->supplierFromContext($request);
-        $renewal = $this->driver->resolve(ProvidesRenewal::class);
-        if (! $renewal instanceof ProvidesRenewal || ! method_exists($renewal, 'getBalance')) {
+        $balanceProvider = $this->driver->resolve(ProvidesSupplierBalance::class);
+        if (! $balanceProvider instanceof ProvidesSupplierBalance) {
             throw new BusinessException('ZJMF 财务插件暂不支持余额同步', 42200);
         }
 
-        $result = $renewal->getBalance($supplier);
+        $result = $balanceProvider->getBalance($supplier);
         $remote = is_array($result['data'] ?? null) ? array_replace($result, (array) $result['data']) : $result;
         $checkedAt = now()->format('Y-m-d H:i:s');
         $remote['checked_at'] = $checkedAt;

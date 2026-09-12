@@ -26,6 +26,7 @@ class OpenApiAdminController extends Controller
             'require_verified' => $this->config->requireVerified() ? 1 : 0,
             'max_keys_per_user' => $this->config->maxKeysPerUser(),
             'rate_limit' => $this->config->rateLimitPerMinute(),
+            'write_rate_limit' => $this->config->writeRateLimitPerMinute(),
         ]);
     }
 
@@ -37,6 +38,7 @@ class OpenApiAdminController extends Controller
             'require_verified' => ['sometimes', 'in:0,1,true,false'],
             'max_keys_per_user' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'rate_limit' => ['sometimes', 'integer', 'min:1', 'max:3600'],
+            'write_rate_limit' => ['sometimes', 'integer', 'min:1', 'max:3600'],
         ]);
 
         $values = [];
@@ -45,7 +47,7 @@ class OpenApiAdminController extends Controller
                 $values[$booleanKey] = in_array($data[$booleanKey], [1, '1', true, 'true'], true) ? '1' : '0';
             }
         }
-        foreach (['max_keys_per_user', 'rate_limit'] as $integerKey) {
+        foreach (['max_keys_per_user', 'rate_limit', 'write_rate_limit'] as $integerKey) {
             if (array_key_exists($integerKey, $data)) {
                 $values[$integerKey] = (string) (int) $data[$integerKey];
             }

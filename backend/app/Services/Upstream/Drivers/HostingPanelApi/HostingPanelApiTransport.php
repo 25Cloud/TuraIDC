@@ -11,10 +11,12 @@ use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\Contracts\ProvidesConsoleNetwork;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesConsoleSecurity;
+use App\Services\Upstream\Contracts\ProvidesHostSuspension;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\Contracts\ProvidesScheduledAuthRefresh;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
+use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\Drivers\HostingPanelApi\Concerns\HandlesApiConfigOptions;
 use App\Services\Upstream\Drivers\HostingPanelApi\Concerns\HandlesCatalogNormalization;
 use App\Services\Upstream\ProviderKey;
@@ -30,7 +32,7 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
 
-class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsoleCatalog, ProvidesConsoleNetwork, ProvidesConsoleRuntime, ProvidesConsoleSecurity, ProvidesProvisioning, ProvidesRenewal, ProvidesScheduledAuthRefresh, ProvidesStatusSync
+class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsoleCatalog, ProvidesConsoleNetwork, ProvidesConsoleRuntime, ProvidesConsoleSecurity, ProvidesHostSuspension, ProvidesProvisioning, ProvidesRenewal, ProvidesScheduledAuthRefresh, ProvidesStatusSync, ProvidesSupplierBalance
 {
     use HandlesApiConfigOptions, HandlesCatalogNormalization;
 
@@ -191,6 +193,12 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
      */
     public function loginResponse(Supplier $supplier): array
     {
+        // 密钥缺省即拒绝：账号或密钥为空时上游登录必然失败，与其等上游返回
+        // 认证错误再转译，不如在出口处直接给出可定位的中文提示。
+        if (trim((string) $supplier->api_username) === '' || trim((string) $supplier->api_key) === '') {
+            throw new BusinessException('供应商接口账号或密钥未配置，请先补全供应商凭据', 42200);
+        }
+
         return $this->request($supplier, 'POST', '/v1/login_api', [
             'account' => (string) $supplier->api_username,
             'password' => (string) $supplier->api_key,
@@ -592,8 +600,6 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
         $requestHeaders = $this->buildHeaders($jwt, $headers);
         $body = $this->buildRequestBody($method, $payload);
 
-        $this->applyUserAgent();
-
         $startedAt = microtime(true);
         $context = stream_context_create($this->buildContextOptions($method, $requestHeaders, $body));
         error_clear_last();
@@ -675,8 +681,6 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
         );
         $requestHeaders = $this->buildHeaders($jwt, $headers);
         $body = $this->buildRequestBody($method, $payload);
-
-        $this->applyUserAgent();
 
         $startedAt = microtime(true);
         $context = stream_context_create($this->buildContextOptions($method, $requestHeaders, $body));
@@ -795,15 +799,6 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
         return substr($name, 0, 2).'***'.substr($name, -2);
     }
 
-    private function applyUserAgent(): void
-    {
-        if ($this->serviceConfig['user_agent'] === '') {
-            return;
-        }
-
-        @ini_set('user_agent', $this->serviceConfig['user_agent']);
-    }
-
     private function buildHeaders(?string $jwt, array $headers = []): array
     {
         $requestHeaders = [];
@@ -916,6 +911,12 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
             'max_redirects' => 0,
         ];
 
+        // User-Agent 走 per-request stream context，而不是 ini_set('user_agent')：
+        // 那是进程级全局状态，长驻队列 worker 并发处理多个供应商请求时会互相覆盖。
+        if (($this->serviceConfig['user_agent'] ?? '') !== '' && ! $this->hasUserAgentHeader($headers)) {
+            $httpOptions['user_agent'] = (string) $this->serviceConfig['user_agent'];
+        }
+
         if ($headers !== []) {
             $httpOptions['header'] = implode("\r\n", $headers);
         }
@@ -938,6 +939,17 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
             'http' => $httpOptions,
             'ssl' => $sslOptions,
         ];
+    }
+
+    private function hasUserAgentHeader(array $headers): bool
+    {
+        foreach ($headers as $header) {
+            if (stripos((string) $header, 'user-agent:') === 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function buildHeaderMap(array $headers): array
