@@ -147,7 +147,7 @@ IP 白名单条目支持精确 IP 与 CIDR 网段（如 `203.0.113.0/24`、`2001
 | POST | `/api/v2/open/orders`          | orders:write | 下单（复用 CheckoutService::create，必传 quote_token + idempotency_key + billing_cycle + config） |
 | POST | `/api/v2/open/orders/{id}/pay` | orders:write | 余额支付（复用 PaymentService::payByBalance）                                                     |
 | GET  | `/api/v2/open/orders`          | orders:read  | 账单列表                                                                                          |
-| GET  | `/api/v2/open/orders/{id}`     | orders:read  | 账单详情                                                                                          |
+| GET  | `/api/v2/open/orders/{id}`     | orders:read  | 账单详情（含 `service_id`：履约完成后回填，供下游把上游账单映射到服务实例）                       |
 
 ### 6.3 服务（services）
 
@@ -232,6 +232,9 @@ IP 白名单条目支持精确 IP 与 CIDR 网段（如 `203.0.113.0/24`、`2001
 - 阶段 3：用户端「API 密钥」页面（列表/创建/日志/禁用删除）
 - 阶段 4：管理端设置页 + 密钥管理页 + 权限点
 - 阶段 5：后端 Feature 测试 + 前端构建验证 + 提交推送
+- 阶段 6（2026-09-12）：对接侧闭环——`tura_open_api` 上游驱动插件把本协议封装为本地供应商能力
+  （目录/开通/续费/状态同步/余额），见 [实施计划](../../execution-plans/completed/tura-open-api-driver-2026-09-12.md)；
+  至此「无限级 TuraIDC↔TuraIDC 转售链」在纯自有协议上闭环，不再依赖 ZJMF 兼容层。
 
 ## 11. 测试策略
 
