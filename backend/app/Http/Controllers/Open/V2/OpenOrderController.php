@@ -108,6 +108,8 @@ class OpenOrderController extends Controller
             'amount' => (string) $invoice->amount,
             'paid_amount' => (string) $invoice->paid_amount,
             'status' => (int) $invoice->status,
+            // 履约完成后回填：下游据此把上游账单映射到上游服务实例（开通轮询/续费恢复）
+            'service_id' => $invoice->service_id !== null ? (int) $invoice->service_id : null,
             'paid_at' => $invoice->paid_at?->format('Y-m-d H:i:s'),
             'created_at' => $invoice->created_at?->format('Y-m-d H:i:s'),
         ];

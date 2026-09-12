@@ -11015,9 +11015,9 @@ snapshots:
 
   wrap-ansi@7.0.0:
     dependencies:
-      ansi-styles: 4.1.0
-      string-width: 4.2.3
-      strip-ansi: 6.0.1
+      ansi-styles: 4.0.0
+      string-width: 4.1.0
+      strip-ansi: 6.0.0
 
   wrap-ansi@8.1.0:
     dependencies:
