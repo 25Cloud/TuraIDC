@@ -53,7 +53,7 @@ const guides = [
   <div class="portal">
     <header class="portal-header">
       <a class="portal-brand" href="/" aria-label="TuraIDC 文档中心首页">
-        <img src="/branding/turaidc-logo.png" alt="TuraIDC" />
+        <img src="/branding/favicon.png" alt="TuraIDC" />
         <span>文档中心</span>
       </a>
       <nav class="portal-nav" aria-label="主要导航">
