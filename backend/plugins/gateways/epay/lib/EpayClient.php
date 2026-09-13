@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace TuraIDC\Plugins\Gateways\YiPay\Lib;
+namespace TuraIDC\Plugins\Gateways\Epay\Lib;
 
 use App\Constants\PaymentGatewayCode;
 use App\Exceptions\BusinessException;
@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
-class YiPayClient
+class EpayClient
 {
     private const PAYMENT_TYPE_LABELS = [
         'alipay' => '支付宝',
@@ -146,10 +146,10 @@ class YiPayClient
     {
         return collect($this->paymentTypes)
             ->map(fn (string $paymentType): array => [
-                'key' => PaymentGatewayCode::YIPAY,
+                'key' => PaymentGatewayCode::EPAY,
                 'name' => '易支付 - '.self::PAYMENT_TYPE_LABELS[$paymentType],
                 'label' => self::PAYMENT_TYPE_LABELS[$paymentType],
-                'option_key' => PaymentGatewayCode::YIPAY.':'.$paymentType,
+                'option_key' => PaymentGatewayCode::EPAY.':'.$paymentType,
                 'payment_type' => $paymentType,
             ])
             ->values()
@@ -340,7 +340,7 @@ class YiPayClient
     {
         $baseUrl = trim((string) config('app.url', ''));
 
-        return $baseUrl !== '' ? rtrim($baseUrl, '/').'/api/v2/client/payment/notify/yipay' : '';
+        return $baseUrl !== '' ? rtrim($baseUrl, '/').'/api/v2/client/payment/notify/'.PaymentGatewayCode::EPAY : '';
     }
 
     private function resolveReturnUrl(): string
@@ -587,7 +587,7 @@ class YiPayClient
         }
 
         app(GatewayLogService::class)->recordSuccess(
-            gateway: PaymentGatewayCode::YIPAY,
+            gateway: PaymentGatewayCode::EPAY,
             action: $action,
             outTradeNo: $outTradeNo,
             tradeNo: (string) ($responseData['trade_no'] ?? ''),
@@ -607,7 +607,7 @@ class YiPayClient
         }
 
         app(GatewayLogService::class)->recordFailure(
-            gateway: PaymentGatewayCode::YIPAY,
+            gateway: PaymentGatewayCode::EPAY,
             action: $action,
             errorMsg: $message,
             outTradeNo: $outTradeNo,

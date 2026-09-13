@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace TuraIDC\Plugins\Gateways\YiPay\Controller;
+namespace TuraIDC\Plugins\Gateways\Epay\Controller;
 
 class IndexController
 {

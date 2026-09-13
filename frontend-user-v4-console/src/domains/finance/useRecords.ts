@@ -24,7 +24,7 @@ export const PAYMENT_STATUS_OPTIONS = toSelectOptions(PAYMENT_STATUS_MAP, false)
 
 export const PAYMENT_GATEWAY_OPTIONS = [
   { label: '支付宝', value: 'alipay' },
-  { label: '易支付', value: 'yipay' },
+  { label: '易支付', value: 'epay' },
   { label: '微信支付', value: 'wechat' },
 ];
 

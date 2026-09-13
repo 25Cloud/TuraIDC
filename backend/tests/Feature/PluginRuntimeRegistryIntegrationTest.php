@@ -142,7 +142,7 @@ class PluginRuntimeRegistryIntegrationTest extends TestCase
         $alipayConfigKeys = collect($scanner->requireManifest('payment', 'ali_pay')->configSchema)
             ->pluck('key')
             ->all();
-        $yipayConfigKeys = collect($scanner->requireManifest('payment', 'yi_pay')->configSchema)
+        $epayConfigKeys = collect($scanner->requireManifest('payment', 'epay')->configSchema)
             ->pluck('key')
             ->all();
         $geetestConfigKeys = collect($scanner->requireManifest('captcha', 'geetest')->configSchema)
@@ -166,8 +166,8 @@ class PluginRuntimeRegistryIntegrationTest extends TestCase
 
         $this->assertNotContains('gateway', $alipayConfigKeys);
         $this->assertNotContains('notify_url', $alipayConfigKeys);
-        $this->assertNotContains('api_base_url', $yipayConfigKeys);
-        $this->assertNotContains('notify_url', $yipayConfigKeys);
+        $this->assertNotContains('api_base_url', $epayConfigKeys);
+        $this->assertNotContains('notify_url', $epayConfigKeys);
 
         // captcha 域各插件共用一份「启用场景」开关声明（plugins/captcha/scene-switches.php），
         // 它会合并进每个验证码插件的 config。这里从共享文件推导键名而不是硬编码，

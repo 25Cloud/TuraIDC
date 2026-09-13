@@ -977,7 +977,7 @@ class InvoiceService
     {
         return match ($gateway) {
             PaymentGatewayCode::ALIPAY => PaymentGatewayCode::label(PaymentGatewayCode::ALIPAY),
-            PaymentGatewayCode::YIPAY => PaymentGatewayCode::label(PaymentGatewayCode::YIPAY),
+            PaymentGatewayCode::EPAY => PaymentGatewayCode::label(PaymentGatewayCode::EPAY),
             'wechat' => '微信支付',
             'balance' => '余额支付',
             'free' => '免支付',

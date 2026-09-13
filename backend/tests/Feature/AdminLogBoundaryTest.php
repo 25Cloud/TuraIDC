@@ -41,7 +41,7 @@ class AdminLogBoundaryTest extends TestCase
 
         GatewayLog::query()->create([
             'gateway' => 'alipay',
-            'gateway_key' => 'yipay',
+            'gateway_key' => 'epay',
             'action' => 'precreate',
             'out_trade_no' => 'boundary-'.$suffix.'-precreate',
             'trade_no' => 'trade-'.$suffix.'-precreate',
@@ -86,8 +86,8 @@ class AdminLogBoundaryTest extends TestCase
             'trace_id' => 'runtime-other-'.$suffix,
             'domain' => 'payment',
             'plugin_id' => null,
-            'plugin_key' => 'yipay',
-            'slug' => 'yi_pay',
+            'plugin_key' => 'epay',
+            'slug' => 'epay',
             'action' => 'precreate',
             'status' => 'failed',
             'error_message' => 'other plugin',

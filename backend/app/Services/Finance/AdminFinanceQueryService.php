@@ -627,7 +627,7 @@ class AdminFinanceQueryService
     {
         return match ($gateway) {
             PaymentGatewayCode::ALIPAY => '支付宝',
-            PaymentGatewayCode::YIPAY => '易支付',
+            PaymentGatewayCode::EPAY => '易支付',
             default => $gateway !== '' ? $gateway : '-',
         };
     }

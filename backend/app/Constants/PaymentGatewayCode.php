@@ -11,7 +11,7 @@ final class PaymentGatewayCode
 {
     public const ALIPAY = 'alipay';
 
-    public const YIPAY = 'yipay';
+    public const EPAY = 'epay';
 
     public const BALANCE = 'balance';
 
@@ -27,14 +27,14 @@ final class PaymentGatewayCode
 
     public const THIRD_PARTY_GATEWAYS = [
         self::ALIPAY,
-        self::YIPAY,
+        self::EPAY,
         self::WECHAT,
         self::STRIPE,
     ];
 
     public const LABELS = [
         self::ALIPAY => '支付宝支付',
-        self::YIPAY => '易支付',
+        self::EPAY => '易支付',
         self::BALANCE => '余额支付',
         self::WECHAT => '微信支付',
         self::STRIPE => 'Stripe 支付',
@@ -53,7 +53,9 @@ final class PaymentGatewayCode
 
         return match ($gateway) {
             self::ALIPAY_F2F_PLUGIN, 'ali_pay' => self::ALIPAY,
-            'yi_pay' => self::YIPAY,
+            // 存量数据的网关编码（历史 payments.gateway_key / 回调 URL / 客户端筛选值），
+            // 归一到 epay 后与历史行匹配，避免改码后查不到历史订单。
+            'yipay', 'yi_pay' => self::EPAY,
             default => $gateway,
         };
     }

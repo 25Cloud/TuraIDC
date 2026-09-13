@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-use TuraIDC\Plugins\Gateways\YiPay\YiPayPlugin;
+use TuraIDC\Plugins\Gateways\Epay\EpayPlugin;
 
 return [
     'info' => [
         'domain' => 'payment',
-        'slug' => 'yi_pay',
-        'key' => 'yipay',
+        'slug' => 'epay',
+        'key' => 'epay',
         'name' => '易支付',
         'version' => '1.0.0',
-        'entry' => YiPayPlugin::class,
+        'entry' => EpayPlugin::class,
         'capabilities' => ['precreate', 'query', 'refund', 'notify_verify'],
     ],
     'config' => [
-        'yipay_notice' => [
+        'epay_notice' => [
             'title' => '配置说明',
             'type' => 'notice',
             'theme' => 'warning',

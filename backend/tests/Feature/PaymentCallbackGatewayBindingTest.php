@@ -37,7 +37,7 @@ use Tests\TestCase;
 class PaymentCallbackGatewayBindingTest extends TestCase
 {
     /**
-     * 跨网关伪造回调必须被拒绝：alipay 渠道的支付单不接受 yipay 的回调。
+     * 跨网关伪造回调必须被拒绝：alipay 渠道的支付单不接受 epay 的回调。
      */
     public function test_gateway_notify_rejects_payment_from_another_gateway(): void
     {
@@ -45,13 +45,13 @@ class PaymentCallbackGatewayBindingTest extends TestCase
         $payment = $this->createPendingPayment($user, $order, $invoice, PaymentGatewayCode::ALIPAY, '66.00');
 
         // 攻击者持有易支付密钥，因此易支付侧验签必然通过
-        $yipay = $this->makeFakePaymentGateway([
-            'key' => PaymentGatewayCode::YIPAY,
+        $epay = $this->makeFakePaymentGateway([
+            'key' => PaymentGatewayCode::EPAY,
             'verify_notify' => true,
             'matches_merchant' => true,
         ]);
 
-        $accepted = $this->makePaymentService($yipay)->handleGatewayNotify(PaymentGatewayCode::YIPAY, [
+        $accepted = $this->makePaymentService($epay)->handleGatewayNotify(PaymentGatewayCode::EPAY, [
             'out_trade_no' => (string) $payment->payment_no,
             'trade_status' => 'TRADE_SUCCESS',
             'trade_no' => 'FORGED-'.strtoupper(bin2hex(random_bytes(4))),
@@ -85,14 +85,14 @@ class PaymentCallbackGatewayBindingTest extends TestCase
         [$user, $order, $invoice] = $this->createUserOrderInvoice('nomerch', '42.00');
         $payment = $this->createPendingPayment($user, $order, $invoice, PaymentGatewayCode::ALIPAY, '42.00');
 
-        $yipay = $this->makeFakePaymentGateway([
-            'key' => PaymentGatewayCode::YIPAY,
+        $epay = $this->makeFakePaymentGateway([
+            'key' => PaymentGatewayCode::EPAY,
             'verify_notify' => true,
             // 商户号一律不匹配，证明拒绝不是由这道校验产生的
             'matches_merchant' => false,
         ]);
 
-        $accepted = $this->makePaymentService($yipay)->handleGatewayNotify(PaymentGatewayCode::YIPAY, [
+        $accepted = $this->makePaymentService($epay)->handleGatewayNotify(PaymentGatewayCode::EPAY, [
             'out_trade_no' => (string) $payment->payment_no,
             'trade_status' => 'TRADE_SUCCESS',
             'trade_no' => 'FORGED-'.strtoupper(bin2hex(random_bytes(4))),
@@ -113,7 +113,7 @@ class PaymentCallbackGatewayBindingTest extends TestCase
     public function test_alipay_notify_rejects_non_alipay_payment(): void
     {
         [$user, $order, $invoice] = $this->createUserOrderInvoice('alipaybind', '30.00');
-        $payment = $this->createPendingPayment($user, $order, $invoice, PaymentGatewayCode::YIPAY, '30.00');
+        $payment = $this->createPendingPayment($user, $order, $invoice, PaymentGatewayCode::EPAY, '30.00');
 
         $alipay = $this->makeFakePaymentGateway([
             'verify_notify' => true,
@@ -142,8 +142,8 @@ class PaymentCallbackGatewayBindingTest extends TestCase
      * 'alipay'），而 PaymentGatewayRegistry 按 key() 索引，所以能通过 resolveGateway
      * 的 $gateway 恒等于归一化值——normalize 对今天的取值是幂等的。
      *
-     * 但 `PaymentGatewayCode::normalize()` 里明确保留了 alipay_f2f / ali_pay / yi_pay
-     * 三个别名映射，`payments.gateway_key` 存的又是归一化值。一旦某个插件的 key() 改回
+     * 但 `PaymentGatewayCode::normalize()` 里明确保留了 alipay_f2f / ali_pay / yipay / yi_pay 四个别名映射
+     * （后两个是 epay 改名前的历史编码），`payments.gateway_key` 存的又是归一化值。一旦某个插件的 key() 改回
      * 别名形态（常量 ALIPAY_F2F_PLUGIN 就是为此存在的），裸比字符串会把该网关全部正常
      * 回调判为不匹配而拒付。这条用例钉住别名口径，避免后来者把 normalize 当冗余删掉。
      */
@@ -169,26 +169,26 @@ class PaymentCallbackGatewayBindingTest extends TestCase
             );
         }
 
-        $yipayPayment = $this->createPendingPayment($user, $order, $invoice, PaymentGatewayCode::YIPAY, '15.00');
+        $epayPayment = $this->createPendingPayment($user, $order, $invoice, PaymentGatewayCode::EPAY, '15.00');
         foreach (['yipay', 'yi_pay'] as $alias) {
-            $this->assertTrue($this->paymentBelongsToGateway($yipayPayment, $alias));
+            $this->assertTrue($this->paymentBelongsToGateway($epayPayment, $alias));
         }
-        $this->assertFalse($this->paymentBelongsToGateway($yipayPayment, 'alipay'));
+        $this->assertFalse($this->paymentBelongsToGateway($epayPayment, 'alipay'));
     }
 
     /** 同网关的正常回调不受影响。 */
     public function test_same_gateway_notify_is_accepted(): void
     {
         [$user, $order, $invoice] = $this->createUserOrderInvoice('samegw', '88.00');
-        $payment = $this->createPendingPayment($user, $order, $invoice, PaymentGatewayCode::YIPAY, '88.00');
+        $payment = $this->createPendingPayment($user, $order, $invoice, PaymentGatewayCode::EPAY, '88.00');
 
-        $yipay = $this->makeFakePaymentGateway([
-            'key' => PaymentGatewayCode::YIPAY,
+        $epay = $this->makeFakePaymentGateway([
+            'key' => PaymentGatewayCode::EPAY,
             'verify_notify' => true,
             'matches_merchant' => true,
         ]);
 
-        $accepted = $this->makePaymentService($yipay)->handleGatewayNotify(PaymentGatewayCode::YIPAY, [
+        $accepted = $this->makePaymentService($epay)->handleGatewayNotify(PaymentGatewayCode::EPAY, [
             'out_trade_no' => (string) $payment->payment_no,
             'trade_status' => 'TRADE_SUCCESS',
             'trade_no' => 'OK-'.strtoupper(bin2hex(random_bytes(4))),
