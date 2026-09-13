@@ -3,7 +3,7 @@
 ## 1. 文档用途
 
 - 给 `docs/generated/api/backend-api-catalog.md` 这份自动生成清单提供一份人类可读的业务导航
-- 对齐时间：`2026-07-20`
+- 对齐时间：`2026-09-13`
 - 本文手工维护，不会被导出脚本覆盖
 - 具体方法、控制器动作、中间件和鉴权仍以 `docs/generated/api/backend-api-catalog.md` 为准
 
@@ -14,6 +14,8 @@
 | 管理端            | `/api/v2/admin/*`                        | 除 `/api/v2/admin/login` 外，默认 `auth:sanctum + ensure.admin`，多数接口叠加 `permission:{code}`   |
 | 用户端            | `/api/v2/client/*`                       | 公开认证、回调、VNC Token 和实名回调混在同一前缀下；其余主体接口默认 `auth:sanctum + ensure.client` |
 | 公开站点          | `/api/v2/site/*`                         | 官网、公开产品、公开内容、报价、站点配置                                                            |
+| 开放 API          | `/api/v2/open/*`                         | API Key 认证（scope 授权 + IP 白名单）+ `throttle:open-api` 限流，供系统间对接与转售链调用          |
+| ZJMF 上游协议     | `/api/v2/zjmf/*`                         | `/zjmf_api_login` 换 JWT 后走 `zjmf.upstream` 中间件，供魔方财务作为下游对接                        |
 | 其他公开/受控接口 | `/api/health`、`/api/secure-assets/view` | 健康检查或按资源参数校验访问                                                                        |
 
 ## 3. 业务域速览
@@ -30,14 +32,16 @@
 | 服务实例       | `/api/v2/admin/services*`、`/api/v2/admin/users/{user}/services*`                                                               | 管理端实例概览与用户下实例操作                                   |
 | 供应商         | `/api/v2/admin/suppliers*`                                                                                                      | 供应商余额、商品拉取、批量对接                                   |
 | 集成插件       | `/api/v2/admin/integration-plugins*`                                                                                            | 支付、实名、短信、邮件、上游插件扫描、安装、配置、启停、健康检查 |
+| 代理折扣       | `/api/v2/admin/agent-discounts*`（折扣组/代理组/折扣矩阵）                                                                      | 代理折扣体系配置，含代理组默认折扣率                             |
+| 开放接口       | `/api/v2/admin/open-api*`                                                                                                       | 开放 API 开关、配额与密钥管理、用量审计                          |
 | 优惠券         | `/api/v2/admin/coupons*`、`/api/v2/admin/coupon-campaigns*`                                                                     | 优惠券与活动发券                                                 |
 | 推荐返佣       | `/api/v2/admin/referral*`、`/api/v2/admin/referral-withdrawals*`                                                                | 返佣概览、奖励、账变、提现审核                                   |
-| 实名认证       | `/api/v2/admin/verifications*`                                                                                                  | 实名审核、详情、历史、解绑                                       |
-| 工单           | `/api/v2/admin/tickets*`                                                                                                        | 工单列表、回复、关闭、指派、图片上传                             |
+| 实名认证       | `/api/v2/admin/verifications*`                                                                                                  | 实名审核、详情、编辑、历史、解绑                                 |
+| 工单           | `/api/v2/admin/tickets*`                                                                                                        | 工单列表、回复、关闭、指派、图片上传、上游传递规则与日志         |
 | 内容与媒体     | `/api/v2/admin/content*`、`/api/v2/admin/media-files*`                                                                          | 文章分类、文章内容、媒体库                                       |
 | 日志           | `/api/v2/admin/logs*`                                                                                                           | API、短信、邮件、任务、系统、登录日志与清理                      |
-| 设置与站点运营 | `/api/v2/admin/settings`、`/api/v2/admin/site/home-hero`                                                                        | 系统配置、站点首页 Hero                                          |
-| 调度           | `/api/v2/admin/schedules*`                                                                                                      | 调度总览与手动触发                                               |
+| 设置与站点运营 | `/api/v2/admin/settings`、`/api/v2/admin/site/home-hero`                                                                        | 系统配置（含开放 API、工单预回复等分组）、站点首页 Hero          |
+| 调度           | `/api/v2/admin/schedules*`                                                                                                      | 调度总览、运行台账与手动触发                                     |
 | 会员等级       | `/api/v2/admin/member-levels*`                                                                                                  | 等级配置                                                         |
 
 ### 用户端（client）
@@ -54,7 +58,20 @@
 | 推荐返佣 | `/api/v2/client/referral*`                                                                            | 概览、奖励、账变、提现申请                                |
 | 工单     | `/api/v2/client/tickets*`                                                                             | 列表、详情、回复、关闭、上传图片                          |
 | 内容     | `/api/v2/client/content/overview`、`/api/v2/client/notices*`、`/api/v2/client/help-articles*`         | 用户侧公告与帮助中心                                      |
+| API 密钥 | `/api/v2/client/api-keys*`                                                                            | 密钥增删改、启停与用量日志；明文仅创建时返回一次          |
 | 支付回调 | `/api/v2/client/payment/alipay/notify`                                                                | 支付宝异步通知                                            |
+
+### 开放 API（open）
+
+业务域 × 读写 scope 组合授权（`products/orders/services/finance` × `read/write`），写端点叠加 `throttle:open-api-write`：
+
+| 业务域 | 关键路径前缀                                                               | 说明                              |
+| ------ | -------------------------------------------------------------------------- | --------------------------------- |
+| 商品   | `GET /api/v2/open/products*`（列表/详情/报价）                             | 目录导入与按周期报价              |
+| 订单   | `GET/POST /api/v2/open/orders*`（下单、余额支付）                          | 下单幂等，账单投影含 `service_id` |
+| 服务   | `GET/POST /api/v2/open/services*`（详情/续费预览/重装选项/电源/续费/重装） | 供下游驱动做状态同步与控制        |
+| 财务   | `GET /api/v2/open/balance`                                                 | 供应商余额查询，供低余额预警      |
+| 密钥   | `GET /api/v2/open/keys/self`、`POST /api/v2/open/keys/self/disable`        | 密钥自助查看与停用                |
 
 ### 公开站点与其他公开接口
 

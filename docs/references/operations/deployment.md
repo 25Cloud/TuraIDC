@@ -1,6 +1,6 @@
 # 部署指南
 
-本文档说明如何将图拉云业务/财务系统部署到生产环境。部署拓扑：后端 API、三个前端静态站点、Redis、MySQL，另需常驻队列 Worker 与调度进程。
+本文档说明如何将图拉云业务/财务系统部署到生产环境。部署拓扑：后端 API、三个前端静态站点、Redis、MySQL；队列与调度由每分钟一次的 Laravel 调度器统一驱动，无需常驻队列 Worker。
 
 ## 1. 环境要求
 
@@ -99,13 +99,9 @@ App\Models\AdminUser::create([
 * * * * * cd /path/to/TuraIDC/backend && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-Laravel 调度器内部会按 `routes/console.php` 定义的节奏驱动心跳、服务生命周期、账单、工单关闭、日志归档等任务。数据库为唯一时钟源，无需单独配置多条 cron。
+Laravel 调度器内部会按 `routes/console.php` 定义的节奏驱动心跳派发（15 分钟槽位去重）、`queue:drain` 队列消费（按 `provision`、业务组、`automation` 三个队列组分别建 Worker，drain 锁保证同一队列不并发）、存活探针与周期清理。数据库为唯一时钟源，无需单独配置多条 cron。
 
-常驻队列 Worker（使用 supervisor 管理，见下文）：
-
-```bash
-php artisan queue:work --queue=provision,referral,notification,coupon,default --sleep=1 --tries=3 --timeout=1200
-```
+> **不要再配置覆盖同一队列的常驻 `queue:work`**：`schedule:run` 每分钟已经后台触发 `queue:drain` 消费全部队列组，再挂常驻 Worker 会形成双消费者；如需排查队列堆积，见[部署与调度指南](deployment-and-scheduling.md)的手动消费命令。
 
 ### 3.5 缓存清理与资源
 
@@ -119,11 +115,11 @@ php artisan event:cache
 
 ## 4. 前端构建
 
-在仓库根目录执行（需 Node.js）：
+在仓库根目录执行（需 Node.js 20+ 与 pnpm）：
 
 ```bash
-npm install
-npm run build:frontends
+pnpm install --frozen-lockfile --shamefully-hoist
+pnpm run build:frontends
 ```
 
 该命令读取 `backend/.env` 中的四个公开地址，依次构建三端到各自 `dist/`：
@@ -185,19 +181,7 @@ server {
 
 ## 6. 进程守护（supervisor）
 
-队列 Worker 与 VNC Relay（可选）需常驻，推荐 supervisor 管理。
-
-### 队列 Worker
-
-```ini
-[program:finance-queue]
-directory=/path/to/TuraIDC/backend
-command=php artisan queue:work --queue=provision,referral,notification,coupon,default --sleep=1 --tries=3 --timeout=1200
-autostart=true
-autorestart=true
-numprocs=2
-user=www-data
-```
+队列消费由调度器的 `queue:drain` 每分钟驱动，**不需要**常驻队列 Worker；需要进程守护的是 VNC Relay（可选）。
 
 ### VNC Relay（可选，控制台远程桌面）
 
@@ -212,7 +196,7 @@ autorestart=true
 user=www-data
 ```
 
-也可使用统一入口 `php artisan app:serve --with-schedule` 同时托管 HTTP、VNC Relay、队列与调度，生产环境建议按上文拆分独立进程。
+也可使用统一入口 `php artisan app:serve --with-schedule` 同时托管 HTTP、VNC Relay、队列与调度，但那是本地/联调入口，生产环境应按上文用 PHP-FPM + cron + supervisor 拆分独立进程。
 
 ## 7. 可选集成配置
 

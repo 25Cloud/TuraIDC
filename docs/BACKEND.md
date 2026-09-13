@@ -1,6 +1,6 @@
 ---
-status: needs-review
-updated: 2026-08-29
+status: current
+updated: 2026-09-13
 owner: backend-platform
 ---
 
@@ -83,10 +83,12 @@ backend/app/Contracts/Integrations/
 backend/app/Services/Integrations/
 backend/app/Services/Integrations/Payments/
 backend/app/Services/Integrations/Identity/
-backend/app/Services/Integrations/Upstream/
 backend/app/Services/Integrations/Notifications/
 backend/app/Services/Integrations/Storage/
 backend/app/Services/Integrations/Drivers/
+backend/app/Services/Upstream/            # 上游驱动独立领域
+backend/app/Services/Upstream/Contracts/  # UpstreamDriver 基接口 + Provides* 能力接口
+backend/app/Services/Upstream/Drivers/    # 应用内驱动实现（HostingPanelApi）
 backend/config/integrations.php
 backend/tests/Fakes/Integrations/
 ```
@@ -96,7 +98,7 @@ backend/tests/Fakes/Integrations/
 - `PaymentGatewayInterface`：支付创建、查询、关闭、回调验签、回调解析。
 - `RefundGatewayInterface`：退款申请、退款查询、退款回调解析。
 - `IdentityVerificationProviderInterface`：实名二要素、三要素或供应商支持的实名能力。
-- `UpstreamProviderInterface`：ZJMF 财务/ZJMF 云等上游开通、续费、暂停、重启、同步。
+- 上游驱动契约位于 `app/Services/Upstream/Contracts/`：基接口 `UpstreamDriver`（`key()`/`label()`/`capabilities()`/`supports()`/`resolve()`），开通、续费、状态同步、供应商余额、控制台、网络、安全组、账单恢复等能力按 `Provides*` 接口逐项声明（如 `ProvidesProvisioning`、`ProvidesRenewal`、`ProvidesStatusSync`、`ProvidesSupplierBalance`），驱动按需实现，不要求全能。
 - `SmsProviderInterface`：短信发送、模板校验、发送结果查询。
 - `ObjectStorageProviderInterface`：上传、下载、临时链接、删除。
 
@@ -120,8 +122,10 @@ backend/tests/Fakes/Integrations/
 - 后续新增支付方式必须新增插件或 driver，并通过插件运行时注册，不得在 `PaymentService` 或 Controller 中直接注入具体 provider。
 - 实名认证能力通过插件实名适配器接入，初始化、扫码链接、查询结果、回调验签、收费配置必须通过内部 DTO/接口表达，业务层不得依赖供应商原始数组。
 - 短信、邮件能力通过插件适配器接入，供应商英文或技术类错误必须映射为简体中文业务提示。
+- 上游供应商驱动统一经 `PluginRuntimeRegistry` 从已启用的 upstream 域插件解析，由 `ProviderRegistry` 按 `key()` 汇总输出；插件驱动统一包装为 `PluginUpstreamDriver`，运行时经 `server.resolve_capability` 取能力对象。当前 provider key：`hosting_panel_api`（`ProviderKey` 常量，应用内 transport）、`zjmf_finance_api`（ZJMF 财务插件）、`tura_open_api`（TuraIDC 开放接口插件）。
 - 上游 provider 已通过能力对象声明服务开通、续费、控制台、网络、安全组、状态同步等能力；`zjmf_finance_api` 必须继续解析到ZJMF插件 adapter，不得折叠为共享主机面板 transport。
 - ZJMF 财务/ZJMF 云和主机面板缓存 key 必须 provider-aware；是否保留旧 key 读取只能由当前已批准的执行计划明确，禁止把 `zjmf_finance_api` 归一化为 `hosting_panel_api`。
+- 开放 API（`/api/v2/open/*`）是独立网关层：`api_keys` 只存哈希（明文仅创建时返回一次），`api.key` 中间件负责密钥认证 + scope 授权 + IP 白名单 + 调用审计（`api_key_usage_logs`，每周由 `open-api:prune-usage-logs` 清理）；Open 控制器保持薄层并复用现有 Service。
 - 对象存储等尚未插件化的能力域接入前，必须先补内部 contract、DTO、错误映射、fake provider 或插件测试替身。
 
 ### 禁止做法

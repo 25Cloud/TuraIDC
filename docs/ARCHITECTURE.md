@@ -1,6 +1,6 @@
 ---
 status: current
-updated: 2026-07-22
+updated: 2026-09-13
 owner: backend-platform
 ---
 
@@ -41,7 +41,7 @@ turaidc/
 - `app/Http/Controllers/`：公共站点 API 与基类，如 `SiteHomeController`、`SiteProductController`、`SecureAssetController`。
 - `app/Http/Requests/Admin/V2|Client/V2/`：管理端和用户端 FormRequest。
 - `app/Http/Resources/Admin/V2|Client/V2/`：管理端和用户端 API Resource；其余 Resource 按公共业务域组织。
-- `app/Services/`：业务主层，已按 `Finance`、`Order`、`ProductCatalog`、`ClientServiceConsole`、`Provisioning`、`Upstream`、`Integrations`、`Notification`、`Ticket` 等领域收敛。
+- `app/Services/`：业务主层，已按 `Finance`、`Order`、`ProductCatalog`、`ClientServiceConsole`、`Provisioning`、`Upstream`、`Supplier`、`Integrations`、`OpenApi`、`ZjmfUpstream`、`Notification`、`Ticket` 等领域收敛。
 - `app/Services/Integrations/Plugins/`：插件扫描、安装、配置、运行时注册和能力适配。
 - `plugins/`：支付、实名、短信、邮件、上游服务器等插件实现目录。
 - `plugins/servers/zjmf_finance/`：承载 ZJMF 财务数据面对接，以及旧密码兼容、账单恢复等 ZJMF 专属能力；兼容实现位于其 `lib/`，由插件 Provider 注册。
@@ -50,11 +50,13 @@ turaidc/
 
 路由分工：
 
-- `routes/api.php`：公开站点 V2 API，主要是 `/api/v2/site/*` 和 `/api/health`。
+- `routes/api.php`：公开站点 V2 API，主要是 `/api/v2/site/*` 和 `/api/health`、`/api/ready`，以及工单上游回复回调 `/ticket_reply/sync`（独立签名校验）。
 - `routes/v2-admin.php`：管理端 V2 API，走 `auth:sanctum` + `ensure.admin` + `permission:{code}`。
 - `routes/v2-client.php`：用户端 V2 API，走 `auth:sanctum` + `ensure.client`，支付/实名/VNC token 等回调或公开入口有独立签名/限流。
-- `routes/console.php`：调度任务。
-- `routes/web.php`：非 API 入口与静态兼容。
+- `routes/v2-open.php`：开放 API（`/api/v2/open/*`），API Key 认证（`api.key:{domain},{action}` 中间件，scope 授权 + IP 白名单）+ `throttle:open-api` 限流，供系统间对接与转售链调用。
+- `routes/v2-zjmf-upstream.php`：ZJMF 上游协议入口（`/api/v2/zjmf/*`），供魔方财务把本系统作为上游服务商对接；`/zjmf_api_login` 换 JWT 后走 `zjmf.upstream` 中间件。
+- `routes/console.php`：调度任务（心跳、队列消费、探针与周期清理）。
+- `routes/web.php`：非 API 入口（安装向导、SEO 动态渲染、robots/sitemap）与静态兼容。
 
 API 直接重构路由口径：
 
@@ -85,8 +87,10 @@ API 直接重构路由口径：
 - 插件按能力域放在 `backend/plugins/{domain}/{slug}/`，当前包含 `addons`、`captcha`、`certification`、`gateways`、`mail`、`servers`、`sms` 等域。
 - 插件配置中的敏感字段进入加密存储，前端只展示是否已配置和脱敏预览。
 - 支付、实名、短信、邮件、上游服务器能力由平台内部接口/manager 调用，不允许业务 Controller 直接依赖插件实现类。
+- 上游供应商驱动统一走 `app/Services/Upstream/` 的 `UpstreamDriver` 契约与 `Provides*` 能力接口分层；`ProviderRegistry` 只从已启用的 upstream 域插件解析驱动。当前 provider key：`hosting_panel_api`（应用内 transport）、`zjmf_finance_api`（ZJMF 财务插件）、`tura_open_api`（TuraIDC 开放接口插件，纯自有协议转售链）。
 - ZJMF 财务上游保持独立 `zjmf_finance_api` provider key，不得折叠为 `hosting_panel_api`。
 - ZJMF 财务 adapter 必须显式声明平台可调用方法，不得恢复 `__call()` 动态转发。
+- 本系统亦可作为上游被魔方财务对接：`app/Services/ZjmfUpstream/` + 路由 `/api/v2/zjmf`，协议参考 `docs/references/integrations/zjmf-upstream-api.md`。
 
 订单、账单、充值记录职责边界：
 
@@ -156,7 +160,8 @@ pnpm run dev:user-v4-console
 ## 5. 生产运行
 
 - 后端生产入口：PHP-FPM 指向 `backend/public`。
-- 业务队列与定时队列：由宝塔每分钟 `php artisan schedule:run` 并行启动两个独立 `queue:work`，分别消费 `provision,referral,notification,coupon,default` 与 `automation`；两类 Worker 使用独立互斥锁，任一队列的长任务不阻塞另一队列的下一轮消费。
+- 调度与队列：由宝塔每分钟 `php artisan schedule:run` 驱动三个常驻入口——`scheduler:heartbeat`（唯一时钟源，按 15 分钟槽位去重派发定时任务，不内联消费队列）、`queue:drain`（后台子进程消费队列，按 `provision`、业务组 `referral,notification,coupon,default`、定时组 `automation` 三个队列组分别建 Worker，drain 锁保证同一队列不并发）、`scheduler:liveness`（心跳存活探针）。另有每分钟的工单上传文件清理与每周的开放 API 用量日志清理。
+- 队列分组由 `TURAIDC_PROVISION_QUEUES` / `TURAIDC_BUSINESS_QUEUES` / `TURAIDC_SCHEDULE_QUEUE` 配置；开通类任务 Worker 超时可达 1200 秒，错过的 15 分钟槽位默认不自动回放。
 - VNC Relay：独立运行 `php artisan vnc:relay`，由宝塔守护或进程管理器自动重启，不由心跳任务拉起。
 - 异步任务可能有 0-60 秒延迟。
 - 前端分别构建后按站点静态发布：
