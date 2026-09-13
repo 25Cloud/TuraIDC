@@ -1,6 +1,6 @@
 ---
 status: current
-updated: 2026-08-29
+updated: 2026-09-13
 owner: frontend
 ---
 
@@ -13,8 +13,8 @@ owner: frontend
 当前前端分工：
 
 - `frontend-admin-v3`：管理端，TDesign Vue Next。
-- `frontend-user-v3-www`：官网、登录注册和用户入口，Element Plus。
-- `frontend-user-v4-console`：新版用户控制台，TDesign Vue Next。
+- `frontend-user-v3-www`：官网门户（首页、产品展示与购买、公告、帮助中心），Element Plus。
+- `frontend-user-v4-console`：新版用户控制台（含登录注册与用户中心），TDesign Vue Next。
 
 ## 2. 通用视觉 Token
 
@@ -52,11 +52,11 @@ owner: frontend
 - 权限、路由、菜单、面包屑、用户菜单沿用现有 layout/store/router 模式。
 - 禁止混入 Element Plus 组件、图标和样式。
 
-## 5. 官网与用户入口 `frontend-user-v3-www`
+## 5. 官网门户 `frontend-user-v3-www`
 
 - 使用 Element Plus 与 `src/assets/styles/variables.scss`、`global.scss`、`element/index.scss`。
-- 官网首页、产品页、登录页可以有更强视觉表达，但要保持可读、真实、业务导向。
-- 用户中心、账单、服务、工单等高频业务页仍使用浅背景 + 白卡片 + 品牌蓝操作。
+- 本应用是纯官网门户，登录注册与用户中心在 `frontend-user-v4-console`。
+- 官网首页、产品页可以有更强视觉表达，但要保持可读、真实、业务导向。
 - 购买和结算流程不要改成营销页布局，优先清晰的配置、价格、优惠和确认状态。
 
 ## 6. 用户控制台 `frontend-user-v4-console`

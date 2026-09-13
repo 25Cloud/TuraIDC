@@ -1,9 +1,9 @@
 # API 格式规范
 
 - 文档性质：现行方向
-- 对齐时间：`2026-07-20`
+- 对齐时间：`2026-09-13`
 - 读者画像：后端开发、前端联调、接口测试、文档维护人员
-- 适用范围：`backend` 下所有返回 JSON 的 HTTP API，主要覆盖 `/api/v2/admin/*`、`/api/v2/client/*`、`/api/v2/site/*` 及少量独立公共接口。
+- 适用范围：`backend` 下所有返回 JSON 的 HTTP API，主要覆盖 `/api/v2/admin/*`、`/api/v2/client/*`、`/api/v2/site/*`、`/api/v2/open/*`（开放 API）、`/api/v2/zjmf/*`（ZJMF 上游协议）及少量独立公共接口。
 
 ## 1. 文档目标
 

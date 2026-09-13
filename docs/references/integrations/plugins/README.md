@@ -622,19 +622,27 @@ php artisan schedule:list
 | 实名认证      | `backend/plugins/certification/stay33`            | Stay33 实名认证插件              |
 | 实名认证      | `backend/plugins/certification/baidu_face`        | 百度人脸实名认证插件             |
 | 实名认证      | `backend/plugins/certification/smapi`             | 聚合实名认证插件（小沐实名 API） |
+| 实名认证      | `backend/plugins/certification/leaf_face`         | leaf 实名认证插件                |
+| 实名认证      | `backend/plugins/certification/alipay_certify`    | 支付宝身份认证插件               |
 | 实名认证      | `backend/plugins/certification/demo_verification` | 模拟实名插件                     |
 | 人机验证      | `backend/plugins/captcha/geetest`                 | GeeTest 验证码插件               |
 | 人机验证      | `backend/plugins/captcha/vaptcha`                 | Vaptcha 验证码插件               |
+| 人机验证      | `backend/plugins/captcha/turnstile`               | Cloudflare Turnstile 验证码插件  |
+| 人机验证      | `backend/plugins/captcha/corptcha`                | Corptcha 人机验证插件            |
+| 人机验证      | `backend/plugins/captcha/cap`                     | Cap 人机验证插件                 |
 | 邮件发送      | `backend/plugins/mail/multi_smtp_round_robin`     | 多 SMTP 轮询邮件插件             |
 | 邮件发送      | `backend/plugins/mail/smtp`                       | 单 SMTP 邮件插件                 |
 | 邮件发送      | `backend/plugins/mail/demo_mail`                  | 模拟邮件插件                     |
-| 短信发送      | `backend/plugins/sms/aliyun`                      | 阿里云短信插件                   |
+| 短信发送      | `backend/plugins/sms/aliyun_sms`                  | 阿里云短信服务插件               |
+| 短信发送      | `backend/plugins/sms/aliyun`                      | 阿里云号码认证插件               |
 | 短信发送      | `backend/plugins/sms/stay33`                      | Stay33 短信插件                  |
 | 短信发送      | `backend/plugins/sms/demo_sms`                    | 模拟短信插件                     |
 | 上游开通/控制 | `backend/plugins/servers/zjmf_finance`            | ZJMF 财务上游插件                |
+| 上游开通/控制 | `backend/plugins/servers/tura_open_api`           | TuraIDC 开放接口上游驱动插件     |
 | 上游开通/控制 | `backend/plugins/servers/kanghostx`               | 康乐虚拟主机插件                 |
 | 上游开通/控制 | `backend/plugins/servers/demo_servers`            | 模拟上游插件                     |
 | 功能扩展      | `backend/plugins/addons/demo_style`               | Addon、调度任务和 hook 示例插件  |
+| 功能扩展      | `backend/plugins/addons/zjmf_bridge`              | ZJMF Bridge 兼容接口插件         |
 
 每个 demo 包都包含：
 
@@ -649,6 +657,7 @@ php artisan schedule:list
 - [插件包规范（独立仓库分发与插件市场）](./plugin-package-spec.md)
 - [支付宝当面付插件 demo](./demo-ali-pay.md)
 - [康乐虚拟主机插件](../../../../backend/plugins/servers/kanghostx/README.md)
+- [TuraIDC 开放接口上游驱动插件](../../../../backend/plugins/servers/tura_open_api/README.md)
 
 其他插件以各自目录内 `README.md` / `DEVELOPMENT.md` 和当前代码为准；不要在导航中保留不存在的说明文档链接。
 

@@ -3,7 +3,7 @@
 ## 文档用途
 
 - 描述当前生产环境真实的部署拓扑与调度模型
-- 对齐时间：`2026-07-02`
+- 对齐时间：`2026-09-13`
 - **全新服务器部署**先看 `docs/references/operations/bt-panel-deployment.md`（宝塔面板）或 `docs/references/operations/bare-metal-deployment.md`（无面板、无容器的原生服务部署）
 - **容器化部署（Docker Compose / 1Panel / CI 自动打包）**先看 `docs/references/operations/docker-and-1panel-deployment.md`
 - 配套文档：
@@ -32,7 +32,7 @@
 
 - **四端各自独立宝塔站点**，浏览器从三个前端站点直接访问 API 域名；前端 Nginx 不反代 API
 - **后端入口走 PHP-FPM**，不使用 `php artisan serve` 或 `app:serve`
-- **没有常驻 Queue Worker**，每分钟 `schedule:run` 会并行启动业务 Worker 和 `automation` Worker；两者分别持有独立互斥锁，空闲时约 50 秒后退出，长任务不会阻塞另一队列的下一轮消费
+- **没有常驻 Queue Worker**，每分钟 `schedule:run` 驱动三个入口：`scheduler:heartbeat`（唯一时钟源，按 15 分钟槽位去重派发定时任务）、`queue:drain`（后台子进程消费队列，按 `provision`、业务组 `referral,notification,coupon,default`、定时组 `automation` 三个队列组分别建 Worker，drain 锁保证同一队列不并发，空闲时自动退出）、`scheduler:liveness`（心跳存活探针，心跳异常时仍能告警）
 - **VNC Relay 独立常驻**：Relay 重启不会阻塞心跳、支付、新购或续费
 - **新购、续费支付后同步履约**：支付回调内直接调用上游开通/续费，用户付款后立即生效；同步失败才回退 `provision` 队列，由每分钟心跳 Worker 重试，不再依赖队列轮询延迟
 
@@ -53,9 +53,10 @@ php artisan schedule:run >> /dev/null 2>&1
 
 说明：
 
-- 这条计划会同时触发系统自动化任务，并行消费两条队列：业务队列 `provision,referral,notification,coupon,default` 和定时队列 `automation`；任一队列仍在消费时，只跳过该队列的重复 Worker，另一队列继续按分钟消费
+- 这条计划每分钟同时触发：心跳派发（15 分钟槽位去重）、队列消费（`queue:drain` 后台按队列组建 Worker）与存活探针；任一队列仍在消费时，drain 锁只跳过该队列的重复 Worker，其余队列组继续按分钟消费
 - 不要再配置覆盖同一队列的常驻 `queue:work`，避免重复消费；需要低延迟时应按队列边界单独评估
 - 任务执行超时强杀（`--timeout` 与 `JobTimedOut` 收敛）依赖 Linux `pcntl`/`SIGALRM`，Windows 开发环境不生效；超时类问题必须在 Linux 环境验证，Windows 上长任务不会被自动终止
+- 错过的 15 分钟心跳槽位默认不自动回放，需依赖任务自身幂等补偿或管理端手动触发
 
 ### 2.2 VNC Relay 守护
 
@@ -78,11 +79,10 @@ php artisan vnc:relay
 
 典型任务（以代码为准）：
 
-- 自动续费检查
-- 账单逾期处理
-- 服务到期停用与终止
-- 上游状态同步
-- 各类日志清理
+- `scheduler:heartbeat` / `queue:drain` / `scheduler:liveness`：每分钟，调度与队列主干
+- `tickets:cleanup-unused-upstream-uploads`：每分钟，删除超保留期未被工单回复引用的上游上传文件
+- `open-api:prune-usage-logs`：每周，按 `open_api.usage_log_retention_days`（默认 90 天）清理 API 用量日志
+- 自动续费检查、账单逾期处理、服务到期停用与终止、上游状态同步、各类日志清理：由心跳按槽位规则派发，清单见管理端「调度总览」
 
 ## 3. 部署流程
 
@@ -181,8 +181,9 @@ pnpm run build:frontends:dry
 - `CACHE_STORE=redis`
 - `SESSION_DRIVER=file`（当前生产口径）
 - `QUEUE_CONNECTION=database`（当前生产口径）
-- `TURAIDC_BUSINESS_QUEUES=provision,referral,notification,coupon,default`
-- `TURAIDC_SCHEDULE_QUEUE=automation`
+- `TURAIDC_PROVISION_QUEUES=provision`（开通队列组，Worker 超时可达 1200 秒）
+- `TURAIDC_BUSINESS_QUEUES=referral,notification,coupon,default`（业务队列组；若存量 `.env` 仍含 `provision`，运行时会自动剔除，不会重复消费）
+- `TURAIDC_SCHEDULE_QUEUE=automation`（定时任务队列组）
 
 四个公开地址可统一使用 HTTP 或 HTTPS；HTTPS 前端不能指向 HTTP API。CORS 会从三个前端 URL 自动生成精确 allowlist，无需在前端 Nginx 增加代理。
 
@@ -213,9 +214,10 @@ Redis 当前用于缓存；不要在没有专项方案和验证的情况下把�
 ```bash
 cd backend
 php artisan app:serve
-# 等价于：HTTP + VNC Relay + 业务队列 Worker
+# 等价于：HTTP + VNC Relay + 业务队列 Worker（queue:work 消费业务队列组）
 
-# 如果本地想同时拉起调度，Relay 另行独立运行
+# 如果本地想同时拉起调度，Relay 另行独立运行；
+# 带调度时不再另起常驻 Worker，队列由每分钟 queue:drain 按队列组后台消费
 php artisan app:serve --with-schedule --without-vnc
 php artisan vnc:relay
 ```
@@ -243,7 +245,8 @@ php artisan schedule:run
 
 ```bash
 cd backend
-php artisan queue:work --once --queue=provision,referral,notification,coupon,default
+php artisan queue:work --once --queue=provision
+php artisan queue:work --once --queue=referral,notification,coupon,default
 php artisan queue:work --once --queue=automation
 ```
 

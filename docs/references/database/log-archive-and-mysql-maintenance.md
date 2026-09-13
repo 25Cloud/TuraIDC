@@ -6,7 +6,7 @@
 
 ### 1.1 处理范围
 
-`db:archive-logs` 固定处理以下 8 张 InnoDB 日志表：
+`db:archive-logs` 固定处理以下 7 张 InnoDB 日志表（清单以 `backend/config/log_archive.php` 的 `tables` 为准）：
 
 | 表                                | 内容                          |
 | --------------------------------- | ----------------------------- |
@@ -15,7 +15,6 @@
 | `message_logs`                    | 短信、邮件统一消息日志        |
 | `automation_logs`                 | 自动化业务任务日志            |
 | `schedule_run_logs`               | Laravel 调度运行日志          |
-| `schedule_task_runs`              | 平台自动任务运行日志          |
 | `integration_plugin_runtime_logs` | 插件运行日志                  |
 | `gateway_logs`                    | 支付网关交互日志              |
 

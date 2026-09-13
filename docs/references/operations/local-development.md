@@ -48,7 +48,7 @@ php artisan app:serve --with-schedule --without-vnc
 php artisan vnc:relay
 ```
 
-带调度时，`app:serve --with-schedule --without-vnc` 不再另起业务队列 Worker；每分钟心跳会并行消费业务队列与 `automation` 队列，并为两类 Worker 分别加锁。Relay 单独进程退出不会影响 HTTP 和调度入口。
+带调度时，`app:serve --with-schedule --without-vnc` 不再另起业务队列 Worker；每分钟 `schedule:run` 驱动心跳派发（15 分钟槽位去重）与 `queue:drain` 后台消费，队列按 `provision`、业务组、`automation` 三个队列组分别建 Worker，drain 锁保证同一队列不并发。Relay 单独进程退出不会影响 HTTP 和调度入口。
 
 生产环境不使用 `app:serve` 常驻，PHP-FPM 指向 `backend/public`，宝塔每分钟执行：
 

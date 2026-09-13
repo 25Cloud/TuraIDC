@@ -402,7 +402,7 @@ cd /www/wwwroot/你的项目/backend
 php artisan schedule:run >> /dev/null 2>&1
 ```
 
-> 这条计划任务每分钟触发心跳，并行消费业务队列 `provision,referral,notification,coupon,default` 与定时队列 `automation`。不要额外配置覆盖同一队列的 `queue:work`，避免重复消费。
+> 这条计划任务每分钟驱动心跳派发（15 分钟槽位去重）、`queue:drain` 后台队列消费（按 `provision`、业务组 `referral,notification,coupon,default`、定时组 `automation` 三个队列组分别建 Worker）与存活探针。不要额外配置覆盖同一队列的 `queue:work`，避免重复消费。
 
 同时在宝塔进程守护中常驻：
 
