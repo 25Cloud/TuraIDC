@@ -618,7 +618,7 @@ php artisan schedule:list
 | ------------- | ------------------------------------------------- | -------------------------------- |
 | 支付渠道      | `backend/plugins/gateways/ali_pay`                | 支付宝当面付真实支付插件         |
 | 支付渠道      | `backend/plugins/gateways/demo_pay`               | 模拟支付网关                     |
-| 支付渠道      | `backend/plugins/gateways/yi_pay`                 | 易支付插件                       |
+| 支付渠道      | `backend/plugins/gateways/epay`                   | 易支付插件                       |
 | 实名认证      | `backend/plugins/certification/stay33`            | Stay33 实名认证插件              |
 | 实名认证      | `backend/plugins/certification/baidu_face`        | 百度人脸实名认证插件             |
 | 实名认证      | `backend/plugins/certification/smapi`             | 聚合实名认证插件（小沐实名 API） |

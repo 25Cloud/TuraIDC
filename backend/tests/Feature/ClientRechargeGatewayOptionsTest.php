@@ -56,7 +56,7 @@ class ClientRechargeGatewayOptionsTest extends TestCase
             'private_key' => 'alipay-private-key',
             'alipay_public_key' => 'alipay-public-key',
         ]);
-        $this->activatePaymentPlugin('yi_pay', [
+        $this->activatePaymentPlugin('epay', [
             'enabled' => true,
             'api_endpoint' => 'https://zpayz.cn',
             'merchant_id' => 'merchant-10001',
@@ -67,19 +67,19 @@ class ClientRechargeGatewayOptionsTest extends TestCase
 
         $response = $this->getJson('/api/v2/client/recharge/gateways')
             ->assertOk()
-            ->assertJsonPath('data.list.0.key', 'yipay')
+            ->assertJsonPath('data.list.0.key', 'epay')
             ->assertJsonPath('data.list.0.name', '易支付 - 支付宝')
             ->assertJsonPath('data.list.0.label', '支付宝')
-            ->assertJsonPath('data.list.0.option_key', 'yipay:alipay')
+            ->assertJsonPath('data.list.0.option_key', 'epay:alipay')
             ->assertJsonPath('data.list.0.payment_type', 'alipay')
-            ->assertJsonPath('data.list.1.key', 'yipay')
+            ->assertJsonPath('data.list.1.key', 'epay')
             ->assertJsonPath('data.list.1.name', '易支付 - 微信支付')
             ->assertJsonPath('data.list.1.label', '微信支付')
-            ->assertJsonPath('data.list.1.option_key', 'yipay:wxpay')
+            ->assertJsonPath('data.list.1.option_key', 'epay:wxpay')
             ->assertJsonPath('data.list.1.payment_type', 'wxpay')
             ->json('data.list');
 
-        $this->assertSame(['yipay:alipay', 'yipay:wxpay'], collect($response)->pluck('option_key')->all());
+        $this->assertSame(['epay:alipay', 'epay:wxpay'], collect($response)->pluck('option_key')->all());
     }
 
     public function test_client_recharge_rejects_when_no_payment_gateway_available(): void

@@ -25,10 +25,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
-use TuraIDC\Plugins\Gateways\YiPay\Lib\YiPayClient;
-use TuraIDC\Plugins\Gateways\YiPay\YiPayPlugin;
+use TuraIDC\Plugins\Gateways\Epay\Lib\EpayClient;
+use TuraIDC\Plugins\Gateways\Epay\EpayPlugin;
 
-class YiPayGatewayPluginTest extends TestCase
+class EpayGatewayPluginTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -53,12 +53,12 @@ class YiPayGatewayPluginTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_yipay_manifest_exposes_payment_gateway_config(): void
+    public function test_epay_manifest_exposes_payment_gateway_config(): void
     {
-        $manifest = app(PluginScanner::class)->requireManifest('payment', 'yi_pay');
+        $manifest = app(PluginScanner::class)->requireManifest('payment', 'epay');
 
-        $this->assertSame(PaymentGatewayCode::YIPAY, $manifest->key);
-        $this->assertSame(YiPayPlugin::class, $manifest->entryClass);
+        $this->assertSame(PaymentGatewayCode::EPAY, $manifest->key);
+        $this->assertSame(EpayPlugin::class, $manifest->entryClass);
         $this->assertContains('precreate', $manifest->capabilities);
         $this->assertContains('notify_verify', $manifest->capabilities);
 
@@ -97,9 +97,9 @@ class YiPayGatewayPluginTest extends TestCase
         ], $schemaByKey->get('platform_public_key')['visible_when'] ?? null);
     }
 
-    public function test_yipay_precreate_signs_form_payload_and_normalizes_qrcode(): void
+    public function test_epay_precreate_signs_form_payload_and_normalizes_qrcode(): void
     {
-        $this->loadYiPayPlugin();
+        $this->loadEpayPlugin();
         $sentPayload = [];
 
         Http::fake(function ($request) use (&$sentPayload) {
@@ -114,7 +114,7 @@ class YiPayGatewayPluginTest extends TestCase
             ]);
         });
 
-        $client = new YiPayClient($this->config());
+        $client = new EpayClient($this->config());
         $result = $client->precreate('PAY202607020001', 12.3, '图拉云 测试订单');
 
         $this->assertSame('https://zpayz.cn/pay/alipay/ZPAY123/', $result['qr_code']);
@@ -123,7 +123,7 @@ class YiPayGatewayPluginTest extends TestCase
         $this->assertSame('alipay', $sentPayload['type'] ?? null);
         $this->assertSame('PAY202607020001', $sentPayload['out_trade_no'] ?? null);
         $this->assertSame('12.30', $sentPayload['money'] ?? null);
-        $this->assertSame('https://api.example.test/api/v2/client/payment/notify/yipay', $sentPayload['notify_url'] ?? null);
+        $this->assertSame('https://api.example.test/api/v2/client/payment/notify/epay', $sentPayload['notify_url'] ?? null);
         $this->assertSame('https://console.example.test/client/recharge', $sentPayload['return_url'] ?? null);
         $this->assertSame('财务测试', $sentPayload['sitename'] ?? null);
         $this->assertSame('pc', $sentPayload['device'] ?? null);
@@ -134,9 +134,9 @@ class YiPayGatewayPluginTest extends TestCase
         Http::assertSent(fn ($request): bool => $request->url() === 'https://zpayz.cn/mapi.php');
     }
 
-    public function test_yipay_precreate_uses_requested_enabled_payment_type(): void
+    public function test_epay_precreate_uses_requested_enabled_payment_type(): void
     {
-        $this->loadYiPayPlugin();
+        $this->loadEpayPlugin();
         $sentPayload = [];
 
         Http::fake(function ($request) use (&$sentPayload) {
@@ -149,7 +149,7 @@ class YiPayGatewayPluginTest extends TestCase
             ]);
         });
 
-        $client = new YiPayClient(array_merge($this->config(), [
+        $client = new EpayClient(array_merge($this->config(), [
             'payment_types' => ['alipay', 'wxpay'],
         ]));
         $result = $client->precreate('PAY202607020002', 20, '图拉云 微信测试订单', 'wxpay');
@@ -159,9 +159,9 @@ class YiPayGatewayPluginTest extends TestCase
         $this->assertSame($this->sign($sentPayload), $sentPayload['sign'] ?? null);
     }
 
-    public function test_yipay_precreate_accepts_api_success_code_200(): void
+    public function test_epay_precreate_accepts_api_success_code_200(): void
     {
-        $this->loadYiPayPlugin();
+        $this->loadEpayPlugin();
 
         Http::fake(fn () => Http::response([
             'code' => 200,
@@ -169,15 +169,15 @@ class YiPayGatewayPluginTest extends TestCase
             'payurl' => 'https://zpayz.cn/pay/alipay/ZPAY200/',
         ]));
 
-        $client = new YiPayClient($this->config());
+        $client = new EpayClient($this->config());
         $result = $client->precreate('PAY202607020200', 20, '图拉云 支付宝测试订单', 'alipay');
 
         $this->assertSame('https://zpayz.cn/pay/alipay/ZPAY200/', $result['qr_code']);
     }
 
-    public function test_yipay_rsa_precreate_signs_payload_and_resolves_custom_endpoint(): void
+    public function test_epay_rsa_precreate_signs_payload_and_resolves_custom_endpoint(): void
     {
-        $this->loadYiPayPlugin();
+        $this->loadEpayPlugin();
         $keys = $this->rsaKeyPair();
         $sentPayload = [];
         $sentUrl = '';
@@ -193,7 +193,7 @@ class YiPayGatewayPluginTest extends TestCase
             ]);
         });
 
-        $client = new YiPayClient(array_merge($this->config(), [
+        $client = new EpayClient(array_merge($this->config(), [
             'api_endpoint' => 'https://gateway.example.test/pay/mapi.php',
             'merchant_key' => '',
             'sign_type' => 'RSA',
@@ -217,11 +217,11 @@ class YiPayGatewayPluginTest extends TestCase
         ));
     }
 
-    public function test_yipay_rejects_unselected_payment_type(): void
+    public function test_epay_rejects_unselected_payment_type(): void
     {
-        $this->loadYiPayPlugin();
+        $this->loadEpayPlugin();
 
-        $client = new YiPayClient(array_merge($this->config(), [
+        $client = new EpayClient(array_merge($this->config(), [
             'payment_types' => ['wxpay'],
         ]));
 
@@ -231,17 +231,17 @@ class YiPayGatewayPluginTest extends TestCase
         $client->precreate('PAY202607020003', 20, '图拉云 支付宝测试订单', 'alipay');
     }
 
-    public function test_yipay_is_disabled_when_api_endpoint_missing(): void
+    public function test_epay_is_disabled_when_api_endpoint_missing(): void
     {
-        $this->loadYiPayPlugin();
+        $this->loadEpayPlugin();
 
-        $client = new YiPayClient(array_merge($this->config(), [
+        $client = new EpayClient(array_merge($this->config(), [
             'api_endpoint' => '',
         ]));
 
         $this->assertFalse($client->isEnabled());
 
-        $result = (new YiPayPlugin)->execute([
+        $result = (new EpayPlugin)->execute([
             'action' => 'payment.options',
             'config' => array_merge($this->config(), [
                 'api_endpoint' => '',
@@ -251,28 +251,28 @@ class YiPayGatewayPluginTest extends TestCase
         $this->assertSame([], $result['data']['list'] ?? null);
     }
 
-    public function test_yipay_payment_options_follow_enabled_payment_types(): void
+    public function test_epay_payment_options_follow_enabled_payment_types(): void
     {
-        $this->loadYiPayPlugin();
+        $this->loadEpayPlugin();
 
-        $client = new YiPayClient(array_merge($this->config(), [
+        $client = new EpayClient(array_merge($this->config(), [
             'payment_types' => ['wxpay'],
         ]));
 
         $this->assertSame([
             [
-                'key' => 'yipay',
+                'key' => 'epay',
                 'name' => '易支付 - 微信支付',
                 'label' => '微信支付',
-                'option_key' => 'yipay:wxpay',
+                'option_key' => 'epay:wxpay',
                 'payment_type' => 'wxpay',
             ],
         ], $client->paymentOptions());
     }
 
-    public function test_yipay_query_and_refund_map_provider_responses(): void
+    public function test_epay_query_and_refund_map_provider_responses(): void
     {
-        $this->loadYiPayPlugin();
+        $this->loadEpayPlugin();
         $requests = [];
 
         Http::fake(function ($request) use (&$requests) {
@@ -287,7 +287,7 @@ class YiPayGatewayPluginTest extends TestCase
                 return Http::response([
                     'code' => 1,
                     'msg' => '查询订单号成功！',
-                    'trade_no' => 'YIPAY202607020001',
+                    'trade_no' => 'EPAY202607020001',
                     'out_trade_no' => 'PAY202607020001',
                     'type' => 'alipay',
                     'pid' => 'merchant-10001',
@@ -302,37 +302,37 @@ class YiPayGatewayPluginTest extends TestCase
             ]);
         });
 
-        $client = new YiPayClient($this->config());
+        $client = new EpayClient($this->config());
         $query = $client->query('PAY202607020001');
         $refund = $client->refund(new PaymentRefundRequest(
             outTradeNo: 'PAY202607020001',
             refundAmount: 12.3,
             refundReason: '测试退款',
-            tradeNo: 'YIPAY202607020001',
+            tradeNo: 'EPAY202607020001',
             outRequestNo: 'RF202607020001',
         ));
 
         $this->assertSame('TRADE_SUCCESS', $query['trade_status']);
-        $this->assertSame('YIPAY202607020001', $query['trade_no']);
+        $this->assertSame('EPAY202607020001', $query['trade_no']);
         $this->assertSame('12.30', $query['total_amount']);
         $this->assertSame('12.30', $refund['refund_fee']);
         $this->assertSame('PAY202607020001', $refund['out_trade_no']);
         $this->assertSame('merchant-10001', $requests[0]['pid'] ?? null);
         $this->assertSame('secret-key', $requests[0]['key'] ?? null);
         $this->assertSame('refund', $requests[1]['act'] ?? null);
-        $this->assertSame('YIPAY202607020001', $requests[1]['trade_no'] ?? null);
+        $this->assertSame('EPAY202607020001', $requests[1]['trade_no'] ?? null);
     }
 
-    public function test_yipay_notify_verification_uses_md5_canonical_payload(): void
+    public function test_epay_notify_verification_uses_md5_canonical_payload(): void
     {
-        $this->loadYiPayPlugin();
-        $client = new YiPayClient($this->config());
+        $this->loadEpayPlugin();
+        $client = new EpayClient($this->config());
         $payload = [
             'pid' => 'merchant-10001',
             'name' => '图拉云 测试订单',
             'money' => '12.30',
             'out_trade_no' => 'PAY202607020001',
-            'trade_no' => 'YIPAY202607020001',
+            'trade_no' => 'EPAY202607020001',
             'param' => '',
             'trade_status' => 'TRADE_SUCCESS',
             'type' => 'alipay',
@@ -346,11 +346,11 @@ class YiPayGatewayPluginTest extends TestCase
         $this->assertFalse($client->verifyNotify($payload));
     }
 
-    public function test_yipay_notify_verification_supports_rsa_signature(): void
+    public function test_epay_notify_verification_supports_rsa_signature(): void
     {
-        $this->loadYiPayPlugin();
+        $this->loadEpayPlugin();
         $keys = $this->rsaKeyPair();
-        $client = new YiPayClient(array_merge($this->config(), [
+        $client = new EpayClient(array_merge($this->config(), [
             'merchant_key' => '',
             'sign_type' => 'RSA',
             'merchant_private_key' => $keys['private_key'],
@@ -361,7 +361,7 @@ class YiPayGatewayPluginTest extends TestCase
             'name' => '图拉云 RSA 测试订单',
             'money' => '12.30',
             'out_trade_no' => 'PAY202607020004',
-            'trade_no' => 'YIPAY202607020004',
+            'trade_no' => 'EPAY202607020004',
             'param' => '',
             'trade_status' => 'TRADE_SUCCESS',
             'type' => 'wxpay',
@@ -376,18 +376,18 @@ class YiPayGatewayPluginTest extends TestCase
         $this->assertFalse($client->verifyNotify($payload));
     }
 
-    public function test_yipay_get_notify_callback_completes_recharge_idempotently(): void
+    public function test_epay_get_notify_callback_completes_recharge_idempotently(): void
     {
-        $this->activateYiPayPlugin();
+        $this->activateEpayPlugin();
 
         $suffix = bin2hex(random_bytes(4));
-        $tradeNo = 'YIPAY'.now()->format('YmdHis').strtoupper($suffix);
+        $tradeNo = 'EPAY'.now()->format('YmdHis').strtoupper($suffix);
         $user = User::query()->create([
-            'email' => 'yipay-callback-'.$suffix.'@example.com',
+            'email' => 'epay-callback-'.$suffix.'@example.com',
             'password' => 'Temp@123456',
             'phone' => '15'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT),
             'status' => 1,
-            'nickname' => 'YiPay Callback',
+            'nickname' => 'Epay Callback',
             'real_name' => '',
             'id_card' => '',
             'verification_status' => 0,
@@ -404,10 +404,10 @@ class YiPayGatewayPluginTest extends TestCase
             'payment_no' => Payment::generatePaymentNo(),
             'user_id' => (int) $user->id,
             'invoice_id' => null,
-            'gateway' => PaymentGatewayCode::YIPAY,
+            'gateway' => PaymentGatewayCode::EPAY,
             'amount' => '12.30',
             'status' => PaymentStatus::PENDING,
-            'trace_id' => 'test-yipay-callback',
+            'trace_id' => 'test-epay-callback',
         ]);
 
         $payload = [
@@ -422,6 +422,7 @@ class YiPayGatewayPluginTest extends TestCase
             'sign_type' => 'MD5',
         ];
         $payload['sign'] = $this->sign($payload);
+        // 历史回调地址：改名前下发给网关的 notify_url 携带 yipay，必须继续可用
         $url = '/api/v2/client/payment/notify/yipay?'.http_build_query($payload);
 
         $this->get($url)
@@ -450,17 +451,17 @@ class YiPayGatewayPluginTest extends TestCase
      * 回归：易支付回调不得确认属于其他网关的支付单，
      * 否则任一验签较弱的网关都能替支付宝订单入账。
      */
-    public function test_yipay_notify_rejects_payment_belonging_to_another_gateway(): void
+    public function test_epay_notify_rejects_payment_belonging_to_another_gateway(): void
     {
-        $this->activateYiPayPlugin();
+        $this->activateEpayPlugin();
 
         $suffix = bin2hex(random_bytes(4));
         $user = User::query()->create([
-            'email' => 'yipay-cross-'.$suffix.'@example.com',
+            'email' => 'epay-cross-'.$suffix.'@example.com',
             'password' => 'Temp@123456',
             'phone' => '15'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT),
             'status' => 1,
-            'nickname' => 'YiPay Cross',
+            'nickname' => 'Epay Cross',
             'real_name' => '',
             'id_card' => '',
             'verification_status' => 0,
@@ -481,7 +482,7 @@ class YiPayGatewayPluginTest extends TestCase
             'gateway' => PaymentGatewayCode::ALIPAY,
             'amount' => '99.90',
             'status' => PaymentStatus::PENDING,
-            'trace_id' => 'test-yipay-cross-gateway',
+            'trace_id' => 'test-epay-cross-gateway',
         ]);
 
         $payload = [
@@ -489,7 +490,7 @@ class YiPayGatewayPluginTest extends TestCase
             'name' => '图拉云 跨网关测试',
             'money' => '99.90',
             'out_trade_no' => (string) $payment->payment_no,
-            'trade_no' => 'YIPAY'.now()->format('YmdHis').strtoupper($suffix),
+            'trade_no' => 'EPAY'.now()->format('YmdHis').strtoupper($suffix),
             'param' => '',
             'trade_status' => 'TRADE_SUCCESS',
             'type' => 'alipay',
@@ -498,6 +499,7 @@ class YiPayGatewayPluginTest extends TestCase
         // 签名本身是合法的，唯一的问题就是支付单不属于易支付
         $payload['sign'] = $this->sign($payload);
 
+        // 旧回调地址兼容：yipay 路径经 normalize 后归到 epay，越权拒绝行为不变
         $this->get('/api/v2/client/payment/notify/yipay?'.http_build_query($payload))
             ->assertOk()
             ->assertSeeText('fail');
@@ -527,20 +529,20 @@ class YiPayGatewayPluginTest extends TestCase
         ];
     }
 
-    private function loadYiPayPlugin(): void
+    private function loadEpayPlugin(): void
     {
-        $manifest = app(PluginScanner::class)->requireManifest('payment', 'yi_pay');
+        $manifest = app(PluginScanner::class)->requireManifest('payment', 'epay');
         app(PluginFileLoader::class)->ensureLoaded($manifest);
     }
 
-    private function activateYiPayPlugin(): IntegrationPlugin
+    private function activateEpayPlugin(): IntegrationPlugin
     {
         $scanner = app(PluginScanner::class);
         $installer = app(PluginInstaller::class);
         $configRepository = app(PluginConfigRepository::class);
 
-        $manifest = $scanner->requireManifest('payment', 'yi_pay');
-        $plugin = $installer->install('payment', 'yi_pay');
+        $manifest = $scanner->requireManifest('payment', 'epay');
+        $plugin = $installer->install('payment', 'epay');
         $configRepository->save($plugin, $manifest, $this->config());
         $plugin = $plugin->fresh('config') ?? $plugin;
 

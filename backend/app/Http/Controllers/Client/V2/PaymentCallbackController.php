@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Client\V2;
 
+use App\Constants\PaymentGatewayCode;
 use App\Http\Controllers\Controller;
 use App\Services\Finance\PaymentService;
 use App\Services\Integrations\Payments\PaymentGatewayManager;
@@ -20,7 +21,9 @@ class PaymentCallbackController extends Controller
      */
     public function notify(string $gateway, Request $request)
     {
-        $gateway = trim($gateway);
+        // 旧回调地址携带历史编码（yipay），先归一再查注册表与落库，保证
+        // 改名前后已下发给网关的 notify_url 都能走到同一网关。
+        $gateway = PaymentGatewayCode::normalize(trim($gateway));
 
         Log::info("[{$gateway}回调] 收到通知", [
             'gateway' => $gateway,

@@ -155,7 +155,7 @@ class ClientPaymentQueryService
     {
         return match ($gateway) {
             PaymentGatewayCode::ALIPAY => '支付宝',
-            PaymentGatewayCode::YIPAY => PaymentGatewayCode::label(PaymentGatewayCode::YIPAY),
+            PaymentGatewayCode::EPAY => PaymentGatewayCode::label(PaymentGatewayCode::EPAY),
             PaymentGatewayCode::WECHAT => PaymentGatewayCode::label(PaymentGatewayCode::WECHAT),
             default => $gateway,
         };

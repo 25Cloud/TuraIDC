@@ -11,7 +11,7 @@ final class ProviderErrorMapper
         $actionLabel = $this->actionLabel($action);
 
         return match (trim($provider)) {
-            'alipay', 'alipay_f2f', 'yipay' => $actionLabel.'失败，请稍后重试或联系管理员处理',
+            'alipay', 'alipay_f2f', 'epay', 'yipay' => $actionLabel.'失败，请稍后重试或联系管理员处理',
             'stay33' => $actionLabel.'失败，请稍后重新发起实名认证',
             'hosting_panel_api' => $actionLabel.'失败，主机面板接口暂时不可用',
             default => $actionLabel.'失败，请稍后重试',

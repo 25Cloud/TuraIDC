@@ -28,6 +28,7 @@
 | ----------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------ |
 | [管理员代登录可靠性修复](completed/admin-impersonation-reliability-fix-2026-08-01.md)           | completed | 管理端代登录弹窗可靠性、消息交接与 E2E 契约修复。                              |
 | [文档路径英文化迁移](completed/documentation-path-migration-2026-08-20.md)                      | completed | 将 `docs/` 下中文目录和文件名迁移为英文路径，并同步 VitePress URL 与全仓引用。 |
+| [易支付网关标识统一为 epay](completed/epay-gateway-identifier-rename-2026-09-13.md)             | completed | 易支付插件包/命名空间/网关编码全量改名 epay，存量落库值迁移与回调别名兼容。    |
 | [财务账务一致性与回归修复](completed/financial-ledger-consistency-regression-fix-2026-08-04.md) | completed | 账务金额、收入统计、单据投影与管理端财务回归修复。                             |
 | [本地 IDC 异构数据映射迁移](completed/local-idc-heterogeneous-data-migration-20260722.md)       | completed | 异构数据中转恢复、受控 DML 导入与结构与数据验收。                              |
 | [商品分类结构修复](completed/product-category-structure-fix-2026-08-01.md)                      | completed | 恢复三层商品分类实体表、重建外键并修复异常商品归属。                           |

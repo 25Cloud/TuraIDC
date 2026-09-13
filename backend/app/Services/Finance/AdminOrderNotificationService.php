@@ -490,7 +490,7 @@ class AdminOrderNotificationService
     {
         return match ($gateway) {
             'alipay' => '支付宝',
-            'yipay' => '易支付',
+            'epay' => '易支付',
             'balance' => '余额支付',
             'manual' => '手动入账',
             'wechat' => '微信支付',

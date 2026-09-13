@@ -9,6 +9,10 @@
 - **tura_open_api 上游驱动插件**：把上游 TuraIDC 实例的开放接口（`/api/v2/open`）封装为本地供应商能力，纯自有协议 TuraIDC↔TuraIDC 无限级转售链闭环——商品目录导入与按周期报价、报价→下单→余额支付→轮询开通（幂等键 `tura-open-provision-{orderId}`，队列重试不重复扣上游余额）、同步续费与账单状态恢复、批量状态同步、供应商余额与低余额预警、电源/重装透传；上游账单投影补 `service_id` 供开通轮询映射
 - **入站 WAF 层**（`backend/config/waf.php`）：正则载荷特征匹配 SQLi/命令执行/目录穿越/扫描器，作为纵深防御外层；规则库元数据化、支持类别停用开关与观察模式，新增 header 检测维度；同时收敛此前散落的 SQL/XSS 防护补丁到统一入口
 
+### 变更
+
+- **易支付网关标识统一为 epay**：插件目录 `backend/plugins/gateways/yi_pay` → `epay`、命名空间 `YiPay` → `Epay`、插件 slug/key 与业务网关编码 `yipay`/`yi_pay` → `epay`，对齐「目录名 = slug = key」的单标识约定；用户端支付记录筛选项同步。兼容处理：存量 `payments.gateway_key`/`payment_callbacks.gateway_key`/`gateway_logs.gateway_key` 由迁移改写为 `epay`（插件注册行保 id 改名，配置与绑定不丢）；`normalize()` 保留 `yipay`/`yi_pay` 别名，改名前下发给网关的回调地址 `/payment/notify/yipay` 无需网关侧改动即可继续入账
+
 ### 修复
 
 - **开放 API 写端点加固**：重装端点参数对齐控制台（`os_template_id` → `os_id`）并补 `GET /services/{id}/reinstall-options`；写端点（电源/续费/重装）补 Feature 测试；认证失败与非业务异常也进用量审计；上游能力契约分层（新增 8 个 `Provides*` 接口，编排层 `method_exists` 改 instanceof），空凭据前置拒服务

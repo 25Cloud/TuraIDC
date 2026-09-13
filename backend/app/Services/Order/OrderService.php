@@ -558,7 +558,7 @@ class OrderService
     {
         return match ($gateway) {
             'alipay' => '支付宝支付',
-            'yipay' => '易支付',
+            'epay' => '易支付',
             'wechat' => '微信支付',
             'balance' => '余额支付',
             'free' => '免支付',

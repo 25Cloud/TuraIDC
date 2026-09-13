@@ -157,6 +157,11 @@
       "summary": "将 docs 中文路径迁移为英文并同步文档站 URL 与全仓引用。"
     },
     {
+      "path": "execution-plans/completed/epay-gateway-identifier-rename-2026-09-13.md",
+      "status": "completed",
+      "summary": "易支付网关标识全量统一为 epay：插件包/命名空间/编码改名，存量落库值迁移与回调别名兼容。"
+    },
+    {
       "path": "execution-plans/completed/financial-ledger-consistency-regression-fix-2026-08-04.md",
       "status": "completed",
       "summary": "账务金额、销售收入统计、单据明细投影与管理端财务回归修复。",

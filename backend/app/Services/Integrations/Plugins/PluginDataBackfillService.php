@@ -820,11 +820,7 @@ class PluginDataBackfillService
 
     private function normalizeGatewayKey(string $gateway): string
     {
-        return match (trim($gateway)) {
-            PaymentGatewayCode::ALIPAY_F2F_PLUGIN, 'ali_pay' => PaymentGatewayCode::ALIPAY,
-            'yi_pay' => PaymentGatewayCode::YIPAY,
-            default => trim($gateway),
-        };
+        return PaymentGatewayCode::normalize(trim($gateway));
     }
 
     private function isNonThirdPartyGateway(string $gatewayKey): bool

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace TuraIDC\Plugins\Gateways\YiPay\Lib;
+namespace TuraIDC\Plugins\Gateways\Epay\Lib;
 
 use App\Services\Integrations\Payments\Data\PaymentRefundRequest;
 
-class YiPayService
+class EpayService
 {
     public function key(): string
     {
-        return 'yipay';
+        return 'epay';
     }
 
     public function name(): string
@@ -27,7 +27,7 @@ class YiPayService
         $action = trim((string) ($request['action'] ?? ''));
         $payload = is_array($request['payload'] ?? null) ? $request['payload'] : [];
         $config = is_array($request['config'] ?? null) ? $request['config'] : [];
-        $client = new YiPayClient($config);
+        $client = new EpayClient($config);
 
         return match ($action) {
             'payment.is_enabled' => $this->success($action, [

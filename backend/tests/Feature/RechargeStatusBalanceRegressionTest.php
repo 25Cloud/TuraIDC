@@ -148,11 +148,11 @@ class RechargeStatusBalanceRegressionTest extends TestCase
         $suffix = bin2hex(random_bytes(4));
 
         $user = User::query()->create([
-            'email' => 'recharge-yipay-'.$suffix.'@example.com',
+            'email' => 'recharge-epay-'.$suffix.'@example.com',
             'password' => 'Temp@123456',
             'phone' => '13'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT),
             'status' => 1,
-            'nickname' => 'Recharge YiPay',
+            'nickname' => 'Recharge Epay',
             'real_name' => '',
             'id_card' => '',
             'verification_status' => 0,
@@ -169,14 +169,14 @@ class RechargeStatusBalanceRegressionTest extends TestCase
             'payment_no' => Payment::generatePaymentNo(),
             'user_id' => (int) $user->id,
             'invoice_id' => null,
-            'gateway' => PaymentGatewayCode::YIPAY,
+            'gateway' => PaymentGatewayCode::EPAY,
             'amount' => '7.00',
             'status' => PaymentStatus::PENDING,
         ]);
 
         $tradeNo = 'YIPAY-'.strtoupper(bin2hex(random_bytes(4)));
         $gateway = $this->makeFakePaymentGateway([
-            'key' => PaymentGatewayCode::YIPAY,
+            'key' => PaymentGatewayCode::EPAY,
             'query' => function (string $outTradeNo) use ($payment, $tradeNo): array {
                 $this->assertSame((string) $payment->payment_no, $outTradeNo);
 
@@ -212,7 +212,7 @@ class RechargeStatusBalanceRegressionTest extends TestCase
         $this->assertSame($tradeNo, $result['trade_no']);
         $this->assertDatabaseHas('payments', [
             'id' => (int) $payment->id,
-            'gateway_key' => PaymentGatewayCode::YIPAY,
+            'gateway_key' => PaymentGatewayCode::EPAY,
             'status' => PaymentStatus::SUCCESS,
             'trade_no' => $tradeNo,
         ]);
@@ -232,15 +232,15 @@ class RechargeStatusBalanceRegressionTest extends TestCase
         ]);
     }
 
-    public function test_recharge_by_gateway_does_not_reuse_pending_payment_across_yipay_payment_types(): void
+    public function test_recharge_by_gateway_does_not_reuse_pending_payment_across_epay_payment_types(): void
     {
         $suffix = bin2hex(random_bytes(4));
         $user = User::query()->create([
-            'email' => 'recharge-yipay-type-'.$suffix.'@example.com',
+            'email' => 'recharge-epay-type-'.$suffix.'@example.com',
             'password' => 'Temp@123456',
             'phone' => '13'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT),
             'status' => 1,
-            'nickname' => 'Recharge YiPay Type',
+            'nickname' => 'Recharge Epay Type',
             'real_name' => '测试用户',
             'id_card' => '110101199001010010',
             'is_verified' => 1,
@@ -255,7 +255,7 @@ class RechargeStatusBalanceRegressionTest extends TestCase
 
         $precreateRequests = [];
         $gateway = $this->makeFakePaymentGateway([
-            'key' => PaymentGatewayCode::YIPAY,
+            'key' => PaymentGatewayCode::EPAY,
             'precreate' => function (PaymentPrecreateRequest $request) use (&$precreateRequests): array {
                 $paymentType = (string) ($request->context['payment_type'] ?? '');
                 $precreateRequests[] = [
@@ -282,8 +282,8 @@ class RechargeStatusBalanceRegressionTest extends TestCase
             new InvoiceService,
         );
 
-        $wxpay = $service->rechargeByGateway($user, 20.00, PaymentGatewayCode::YIPAY, ['payment_type' => 'wxpay']);
-        $alipay = $service->rechargeByGateway($user, 20.00, PaymentGatewayCode::YIPAY, ['payment_type' => 'alipay']);
+        $wxpay = $service->rechargeByGateway($user, 20.00, PaymentGatewayCode::EPAY, ['payment_type' => 'wxpay']);
+        $alipay = $service->rechargeByGateway($user, 20.00, PaymentGatewayCode::EPAY, ['payment_type' => 'alipay']);
 
         $this->assertNotSame($wxpay['payment_no'], $alipay['payment_no']);
         $this->assertSame([
@@ -293,7 +293,7 @@ class RechargeStatusBalanceRegressionTest extends TestCase
 
         $payments = Payment::query()
             ->where('user_id', (int) $user->id)
-            ->whereGatewayKey(PaymentGatewayCode::YIPAY)
+            ->whereGatewayKey(PaymentGatewayCode::EPAY)
             ->where('status', PaymentStatus::PENDING)
             ->where('amount', '20.00')
             ->orderBy('id')
@@ -330,7 +330,7 @@ class RechargeStatusBalanceRegressionTest extends TestCase
             'payment_no' => Payment::generatePaymentNo(),
             'user_id' => (int) $user->id,
             'invoice_id' => null,
-            'gateway' => PaymentGatewayCode::YIPAY,
+            'gateway' => PaymentGatewayCode::EPAY,
             'amount' => '20.00',
             'status' => PaymentStatus::PENDING,
         ]);
@@ -370,7 +370,7 @@ class RechargeStatusBalanceRegressionTest extends TestCase
             'payment_no' => Payment::generatePaymentNo(),
             'user_id' => (int) $user->id,
             'invoice_id' => null,
-            'gateway' => PaymentGatewayCode::YIPAY,
+            'gateway' => PaymentGatewayCode::EPAY,
             'amount' => '5.00',
             'status' => PaymentStatus::PENDING,
         ]);
@@ -381,7 +381,7 @@ class RechargeStatusBalanceRegressionTest extends TestCase
         ])->save();
 
         $gateway = $this->makeFakePaymentGateway([
-            'key' => PaymentGatewayCode::YIPAY,
+            'key' => PaymentGatewayCode::EPAY,
             'query' => function (string $outTradeNo) use ($payment): array {
                 $this->assertSame((string) $payment->payment_no, $outTradeNo);
 
