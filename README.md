@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <b>English</b> · <a href="docs/README.md">文档</a> · <a href="docs/DESIGN.md">设计</a> · <a href="docs/ARCHITECTURE.md">架构</a>
+  <b>English</b> · <a href="https://docs.turaidc.com/">文档</a> · <a href="https://docs.turaidc.com/DESIGN">设计</a> · <a href="https://docs.turaidc.com/ARCHITECTURE">架构</a>
 </p>
 
 ---
@@ -48,7 +48,7 @@
 
 - **对接智简魔方财务系统**：作为上游供应商接入，商品目录、库存、开通、续费、网络/安全操作等通过官方 API 完整适配。
 - **支持被智简魔方财务系统原生对接（实验）**：通过内置 ZJMF Bridge 插件，为存量智简魔方财务系统提供兼容 API 与签名校验，让旧生态无缝迁移，降低替换成本。
-- **从智简魔方财务系统迁移**：老站业务数据（产品/用户/订单/上游/实名）完整迁移教程见 [从智简魔方财务系统迁移](docs/references/database/migrate-from-zjmf-finance.md)。
+- **从智简魔方财务系统迁移**：老站业务数据（产品/用户/订单/上游/实名）完整迁移教程见 [从智简魔方财务系统迁移](https://docs.turaidc.com/references/database/migrate-from-zjmf-finance)。
 
 ## ❌ 我们没有
 
