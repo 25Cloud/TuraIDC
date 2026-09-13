@@ -469,7 +469,13 @@ git commit -m "test: 增加代理折扣全链路回归"
 
 - [x] 数据结构与领域模型、领域服务、管理 API 与权限、新购/续费计价接入、管理端与用户端展示均已落地（以 `backend/app/Models/AgentGroup.php`、`backend/app/Services/Finance/AgentDiscountService.php`、`backend/app/Http/Requests/Admin/V2/AgentDiscount/`、`frontend-admin-v3/src/pages/agent-discounts/` 为准）。
 - [x] 单元与功能测试、管理端 E2E 已存在（`AgentDiscountSchemaTest`、`AgentDiscountServiceTest`、`AgentDiscountCheckoutTest`、`V2AdminAgentDiscountApiTest`、`V2ClientRenewAgentDiscountTest`、`agent-discounts.spec.ts`）。
+- [x] 2026-09-12：`V2ClientRenewAgentDiscountTest` 此前为占位空壳，已重写为真实断言（自动续费调度端到端、手动续费账单快照、无代理身份不打折三个用例）。
+- [x] 2026-09-12：续费上游金额对账口径修正——带代理折扣的账单以 `original_renew_amount` 为对账基准（折扣差为预期不打告警），与原价仍不一致才告警；此前口径导致有折扣代理每次上游续费都误报 WARNING（`ServiceRenewUpstreamReconcileTest` 覆盖）。
 - [ ] 正文任务勾选框未随实施逐项回写；实际完成度以运行代码与测试实况为准，收尾时补齐全链路回归（Task 8）与 API 清单刷新。
+
+## 已知约束与风险提示
+
+- **默认折扣率无成本下限**：矩阵折扣受商品折扣组 `min_discount_rate` 双保险，但代理组全局默认折扣率（`agent_groups.default_discount_rate`）只校验 0-100 范围。若配置得低于某商品成本率，该代理的新购/续费建单会抛「代理折后金额不能低于成本价」直接失败（保护毛利的设计，不静默放行）。管理员配置默认折扣率时应确认不低于主力商品的成本率；是否在管理端保存时做成本交叉提示，待定。
 
 ## 决策日志
 
@@ -477,3 +483,4 @@ git commit -m "test: 增加代理折扣全链路回归"
 | ---------- | ---------------------------- | ----------------------------------------------------------------------- |
 | 2026-08-20 | 确认代理折扣设计与实施计划   | 代理折扣独立于会员等级，矩阵折扣 + 成本价保护，优惠券兼容。             |
 | 2026-08-29 | 补齐 front matter 与治理结构 | 通过 `docs:check` 要求：执行计划必须具备 front matter、进度与决策日志。 |
+| 2026-09-12 | 续费对账剔除代理折扣差       | 代理折扣是本地让利、上游按原价实扣，原口径每次上游续费都误报告警。      |
