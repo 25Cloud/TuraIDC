@@ -1565,6 +1565,15 @@ class ServiceRenewService
      * 尽力对账：本地续费应收金额与上游实扣金额不一致时记 warning 日志。
      * 上游金额字段契约不确定，提取不到则静默跳过；差异 > 0.01 元视为不一致，仅告警不阻断。
      */
+    /**
+     * 尽力对账：上游实扣金额与本地口径不一致时告警（不阻断续费）。
+     *
+     * 对账口径按账单是否带代理折扣分两种：
+     *  - 带代理折扣（config_snapshot.agent_discount_amount > 0）：代理折扣是本地让利，
+     *    上游按原价实扣供应商余额，基准应为 original_renew_amount；差异为折扣差的
+     *    情形不打告警（预期），与原价仍不一致才告警（真异常，如上游调价）。
+     *  - 无代理折扣：沿用历史口径，与本地应收（折后 + 优惠券抵扣）比对。
+     */
     private function reconcileRenewUpstreamAmount(Invoice $invoice, array $renewResult): void
     {
         $upstreamAmount = trim((string) ($renewResult['upstream_amount'] ?? ''));
@@ -1572,8 +1581,28 @@ class ServiceRenewService
             return;
         }
 
+        $snapshot = is_array($invoice->config_snapshot ?? null) ? $invoice->config_snapshot : [];
+        $agentDiscountAmount = (float) ($snapshot['agent_discount_amount'] ?? 0);
+        $originalAmount = (float) ($snapshot['original_renew_amount'] ?? 0);
         $localAmount = round((float) $invoice->amount + (float) ($invoice->discount ?? 0), 2);
         $upstream = round((float) $upstreamAmount, 2);
+
+        if ($agentDiscountAmount > 0 && $originalAmount > 0) {
+            if (abs($upstream - $originalAmount) <= 0.01) {
+                return;
+            }
+
+            Log::warning('[服务续费·对账] 上游实扣金额与本地原价不一致（已剔除代理折扣差）', [
+                'invoice_id' => (int) $invoice->id,
+                'invoice_no' => (string) ($invoice->invoice_no ?? ''),
+                'local_original_amount' => $originalAmount,
+                'local_discounted_amount' => $localAmount,
+                'agent_discount_amount' => $agentDiscountAmount,
+                'upstream_amount' => $upstream,
+            ]);
+
+            return;
+        }
 
         if (abs($upstream - $localAmount) > 0.01) {
             Log::warning('[服务续费·对账] 上游实扣金额与本地应收不一致', [
