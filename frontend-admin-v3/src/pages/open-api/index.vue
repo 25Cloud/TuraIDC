@@ -11,7 +11,7 @@
                   <strong>启用开放接口</strong>
                   <p>关闭后所有 /api/v2/open 请求直接返回 403，已生成的密钥不可用。</p>
                 </div>
-                <t-switch v-model="config.enabled" :disabled="!canManage" />
+                <t-switch v-model="config.enabled" :custom-value="[1, 0]" :disabled="!canManage" />
               </article>
 
               <article class="config-card">
@@ -19,7 +19,7 @@
                   <strong>必须绑定手机号</strong>
                   <p>开启后，未绑定手机号的用户无法创建 API 密钥。</p>
                 </div>
-                <t-switch v-model="config.require_phone" :disabled="!canManage" />
+                <t-switch v-model="config.require_phone" :custom-value="[1, 0]" :disabled="!canManage" />
               </article>
 
               <article class="config-card">
@@ -27,7 +27,7 @@
                   <strong>必须实名认证</strong>
                   <p>开启后，未完成实名认证的用户无法创建 API 密钥。</p>
                 </div>
-                <t-switch v-model="config.require_verified" :disabled="!canManage" />
+                <t-switch v-model="config.require_verified" :custom-value="[1, 0]" :disabled="!canManage" />
               </article>
 
               <article class="config-card">
