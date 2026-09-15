@@ -146,6 +146,12 @@
       "review_by": "2026-12-13"
     },
     {
+      "path": "execution-plans/active/zjmf-upstream-integration-2026-09-15.md",
+      "status": "active",
+      "summary": "上游 API 自助凭据入口、provision/default 全 func 分发、ZJMF 协议固定 200 兜底与剩余缺口清单。",
+      "review_by": "2027-01-15"
+    },
+    {
       "path": "execution-plans/completed/admin-impersonation-reliability-fix-2026-08-01.md",
       "status": "completed",
       "summary": "管理端代登录弹窗可靠性、消息交接与 E2E 契约修复。",

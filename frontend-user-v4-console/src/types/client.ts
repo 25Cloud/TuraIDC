@@ -1411,3 +1411,20 @@ export interface ApiKeyUsageLogRecord {
   created_at?: string;
   [key: string]: unknown;
 }
+
+/** 魔方财务上游 API 凭据状态（与开放接口密钥是两条独立鉴权链路） */
+export interface UpstreamApiStatus {
+  enabled: boolean;
+  username: string;
+  has_password: boolean;
+  login_url: string;
+  [key: string]: unknown;
+}
+
+/** 开启/重置后返回的凭据：明文密码仅返回一次 */
+export interface UpstreamApiCredential {
+  username: string;
+  password: string;
+  login_url: string;
+  [key: string]: unknown;
+}

@@ -21,6 +21,7 @@
 | [调度、VNC 与插件链路审查修复](active/scheduler-vnc-provisioning-renewal-review-2026-08-13.md)                         | active | 定时任务、VNC、上游开通、续费与插件链路的专项审查与修复，P0 资金与并发安全优先。          |
 | [工单预回复](active/ticket-pre-reply-2026-08-23.md)                                                                    | active | 用户建单后以配置管理员名义自动回复，管理端预回复设置页与独立权限。                        |
 | [工单上游传递日志与自动转发排查](active/ticket-upstream-delivery-logs-and-auto-delivery-troubleshooting-2026-08-20.md) | active | 工单上游转发事件日志、管理端状态展示与自动转发未触发原因排查。                            |
+| [魔方财务对接链路打通](active/zjmf-upstream-integration-2026-09-15.md)                                                 | active | 上游 API 自助凭据入口、provision/default 全 func 分发、ZJMF 协议固定 200 兜底与剩余缺口。 |
 
 ## 已完成（completed/）
 
