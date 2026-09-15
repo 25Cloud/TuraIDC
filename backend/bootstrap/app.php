@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\BusinessException;
 use App\Http\Middleware\AppendSecurityHeaders;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\EnsureAdminAuthenticated;
@@ -22,6 +23,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
@@ -129,6 +131,47 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         SentryIntegration::handles($exceptions);
+
+        // ZJMF 上游协议：HTTP 固定 200，业务状态放 body.status。
+        // 魔方财务的 commonCurl 只在 HTTP 200 时解析 JSON 并识别 status=405（触发重登）；
+        // 若这里返回 404/422/429/500，下游统一显示「请求失败,HTTP状态码:xxx」且不会重登，
+        // 上游业务错误信息全部丢失。因此该前缀下所有异常都必须转成协议内响应。
+        // 必须注册在通用 api/* 分支之前：异常回调按注册顺序匹配，先命中者生效。
+        $exceptions->render(function (\Throwable $exception, Request $request) {
+            if (! $request->is('api/v2/zjmf/*')) {
+                return null;
+            }
+
+            if ($exception instanceof AuthenticationException) {
+                return response()->json(['status' => 405, 'msg' => '未登录或登录已过期'], 200);
+            }
+
+            if ($exception instanceof ValidationException) {
+                $firstError = collect($exception->errors())->flatten()->first();
+
+                return response()->json(['status' => 400, 'msg' => (string) ($firstError ?: '参数验证失败')], 200);
+            }
+
+            if ($exception instanceof ThrottleRequestsException) {
+                return response()->json(['status' => 400, 'msg' => '请求过于频繁，请稍后再试'], 200);
+            }
+
+            if ($exception instanceof BusinessException) {
+                return response()->json(['status' => 400, 'msg' => $exception->getMessage()], 200);
+            }
+
+            if ($exception instanceof NotFoundHttpException) {
+                return response()->json(['status' => 400, 'msg' => '接口不存在'], 200);
+            }
+
+            Log::error('[zjmf-upstream] 未捕获异常', [
+                'path' => $request->path(),
+                'message' => $exception->getMessage(),
+                'exception' => $exception::class,
+            ]);
+
+            return response()->json(['status' => 400, 'msg' => '上游处理异常，请稍后重试'], 200);
+        });
 
         $exceptions->render(function (AuthenticationException $exception, Request $request) {
             if ($request->is('api/*')) {

@@ -60,6 +60,8 @@ import type {
   TicketRecord,
   TicketReplyRecord,
   TicketServiceOption,
+  UpstreamApiCredential,
+  UpstreamApiStatus,
 } from '@/types/client';
 import request, { apiBaseUrl } from '@/utils/request';
 
@@ -447,6 +449,12 @@ const clientApi = {
   deleteApiKey: (id: number | string) => request.delete(`/v2/client/api-keys/${id}`),
   apiKeyUsageLogs: (id: number | string) =>
     getEnvelope<{ list: ApiKeyUsageLogRecord[] }>(`/v2/client/api-keys/${id}/usage-logs`),
+
+  // 魔方财务上游 API 凭据（与开放接口密钥独立）
+  upstreamApiStatus: () => getEnvelope<UpstreamApiStatus>('/v2/client/upstream-api'),
+  enableUpstreamApi: () => postEnvelope<UpstreamApiCredential>('/v2/client/upstream-api/enable'),
+  disableUpstreamApi: () => request.post('/v2/client/upstream-api/disable'),
+  resetUpstreamApiPassword: () => postEnvelope<UpstreamApiCredential>('/v2/client/upstream-api/reset-password'),
 };
 
 export default clientApi;

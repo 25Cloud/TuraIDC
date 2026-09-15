@@ -10,20 +10,27 @@ use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Service;
 use App\Models\User;
+use App\Services\ClientServiceConsole\ServicePowerService;
+use App\Services\ClientServiceConsole\ServiceVncService;
 use App\Services\Provisioning\ProvisionService;
 use Illuminate\Support\Facades\Log;
 
 /**
  * 上游模块命令（被魔方财务对接）：/provision/default。
  *
- * 魔方财务通过 func 分发：create/suspend/unsuspend/terminate 等，
+ * 魔方财务通过 func 分发全部模块命令：create/suspend/unsuspend/terminate 走生命周期，
+ * on/off/reboot/hard_off/hard_reboot/vnc/status/reinstall/crack_pass/rescueSystem
+ * （参考服务端拼写为 rescue_system，两种都接受）走实例操作。
  * id 为 TuraIDC 的 Service id（魔方财务本地存为 dcimid）。
- * 下游只做状态管理，供应商侧开通走 TuraIDC 自身 ProvisionService。
+ *
+ * 未知 func 必须返回业务失败：魔方对 status=200 一律判定命令成功，
+ * 静默受理会让面板按钮"点了没反应"且无任何提示。
  */
 class UpstreamProvisionService
 {
     public function __construct(
         private readonly ProvisionService $provisioning,
+        private readonly ServicePowerService $power,
     ) {}
 
     /**
@@ -48,8 +55,196 @@ class UpstreamProvisionService
             'suspend' => $this->suspend($service, $data),
             'unsuspend' => $this->unsuspend($service),
             'terminate' => $this->terminate($service),
-            default => ['status' => 200, 'msg' => '命令已受理'],
+
+            // 电源动作：动作键与 ClientServiceConsoleService::POWER_ACTIONS 一致
+            'on', 'off', 'reboot', 'hard_off', 'hard_reboot' => $this->powerAction($service, $func),
+
+            // VNC：魔方读取 data.url
+            'vnc' => $this->vnc($user, $service),
+
+            // 电源状态：魔方读取 data.status + data.des
+            'status' => $this->status($user, $service),
+
+            // 重装：魔方传 os（上游 OS id）与可选 port/format_data_disk
+            'reinstall' => $this->reinstall($user, $service, $data),
+
+            // 改密：魔方传 password
+            'crack_pass' => $this->crackPass($user, $service, $data),
+
+            // 救援系统：客户端发 rescueSystem，参考服务端认 rescue_system
+            'rescuesystem', 'rescue_system' => $this->rescue($user, $service, $data),
+
+            default => ['status' => 400, 'msg' => '不支持的模块命令：'.$func],
         };
+    }
+
+    /**
+     * 实例操作统一异常兜底：内层服务抛出的业务异常转成协议内的 400 + 中文 msg。
+     *
+     * @param  callable(): array<string, mixed>  $callback
+     * @return array<string, mixed>
+     */
+    private function run(callable $callback, string $failMessage): array
+    {
+        try {
+            return $callback();
+        } catch (\Throwable $exception) {
+            Log::warning('[zjmf-upstream] 模块命令失败', [
+                'message' => $exception->getMessage(),
+                'exception' => $exception::class,
+            ]);
+
+            return [
+                'status' => 400,
+                'msg' => $exception->getMessage() !== '' ? $exception->getMessage() : $failMessage,
+            ];
+        }
+    }
+
+    /**
+     * @return array{status:int,msg:string}
+     */
+    private function powerAction(Service $service, string $action): array
+    {
+        $user = $service->user;
+        if (! $user instanceof User) {
+            return ['status' => 400, 'msg' => '服务所属用户不存在'];
+        }
+
+        $result = $this->run(
+            fn (): array => $this->power->powerActionForUser($user, (int) $service->id, $action),
+            '电源指令提交失败'
+        );
+
+        if ((int) ($result['status'] ?? 0) === 400) {
+            return ['status' => 400, 'msg' => (string) ($result['msg'] ?? '电源指令提交失败')];
+        }
+
+        return ['status' => 200, 'msg' => (string) ($result['message'] ?? '指令已提交')];
+    }
+
+    /**
+     * @return array{status:int,msg:string,data?:array<string,mixed>}
+     */
+    private function vnc(User $user, Service $service): array
+    {
+        $result = $this->run(
+            fn (): array => app(ServiceVncService::class)->getVncUrlForUser($user, (int) $service->id),
+            '获取VNC链接失败'
+        );
+
+        if ((int) ($result['status'] ?? 0) === 400) {
+            return ['status' => 400, 'msg' => (string) ($result['msg'] ?? '获取VNC链接失败')];
+        }
+
+        $url = trim((string) ($result['url'] ?? ''));
+        if ($url === '') {
+            return ['status' => 400, 'msg' => '上游未返回VNC链接'];
+        }
+
+        return [
+            'status' => 200,
+            'msg' => (string) ($result['message'] ?? '获取VNC链接成功'),
+            'data' => ['url' => $url],
+        ];
+    }
+
+    /**
+     * @return array{status:int,msg:string,data:array<string,mixed>}
+     */
+    private function status(User $user, Service $service): array
+    {
+        $result = $this->run(
+            fn (): array => $this->power->getModuleStatusForUser($user, (int) $service->id, 'host'),
+            '状态读取失败'
+        );
+
+        if ((int) ($result['status'] ?? 0) === 400) {
+            return [
+                'status' => 200,
+                'msg' => (string) ($result['msg'] ?? '状态读取失败'),
+                'data' => ['status' => 'unknown', 'des' => '未知'],
+            ];
+        }
+
+        $state = strtolower(trim((string) ($result['status'] ?? '')));
+        $description = trim((string) ($result['description'] ?? ''));
+
+        return [
+            'status' => 200,
+            'msg' => $description,
+            'data' => [
+                'status' => $state !== '' ? $state : 'unknown',
+                'des' => $description !== '' ? $description : '未知',
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{status:int,msg:string}
+     */
+    private function reinstall(User $user, Service $service, array $data): array
+    {
+        $osId = trim((string) ($data['os'] ?? $data['os_id'] ?? ''));
+        if ($osId === '' || $osId === '0') {
+            return ['status' => 400, 'msg' => '请选择操作系统'];
+        }
+
+        $result = $this->run(
+            fn (): array => $this->power->reinstallForUser($user, (int) $service->id, ['os_id' => $osId]),
+            '重装系统发起失败'
+        );
+
+        if ((int) ($result['status'] ?? 0) === 400) {
+            return ['status' => 400, 'msg' => (string) ($result['msg'] ?? '重装系统发起失败')];
+        }
+
+        return ['status' => 200, 'msg' => (string) ($result['message'] ?? '重装系统任务已提交')];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{status:int,msg:string}
+     */
+    private function crackPass(User $user, Service $service, array $data): array
+    {
+        $password = trim((string) ($data['password'] ?? ''));
+        if ($password === '') {
+            return ['status' => 400, 'msg' => '密码不能为空'];
+        }
+
+        $result = $this->run(
+            fn (): array => $this->power->resetPasswordForUser($user, (int) $service->id, ['password' => $password]),
+            '重置密码发起失败'
+        );
+
+        if ((int) ($result['status'] ?? 0) === 400) {
+            return ['status' => 400, 'msg' => (string) ($result['msg'] ?? '重置密码发起失败')];
+        }
+
+        return ['status' => 200, 'msg' => (string) ($result['message'] ?? '重置密码指令已提交')];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{status:int,msg:string}
+     */
+    private function rescue(User $user, Service $service, array $data): array
+    {
+        $system = trim((string) ($data['system'] ?? '1'));
+        $system = in_array($system, ['1', '2'], true) ? $system : '1';
+
+        $result = $this->run(
+            fn (): array => $this->power->rescueForUser($user, (int) $service->id, ['system' => $system]),
+            '进入救援模式失败'
+        );
+
+        if ((int) ($result['status'] ?? 0) === 400) {
+            return ['status' => 400, 'msg' => (string) ($result['msg'] ?? '进入救援模式失败')];
+        }
+
+        return ['status' => 200, 'msg' => (string) ($result['message'] ?? '救援模式指令已提交')];
     }
 
     /**

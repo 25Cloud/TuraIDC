@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Client\V2\ActionController;
 use App\Http\Controllers\Client\V2\ApiKeyController;
+use App\Http\Controllers\Client\V2\UpstreamApiController;
 use App\Http\Controllers\Client\V2\AuthController;
 use App\Http\Controllers\Client\V2\ContentController;
 use App\Http\Controllers\Client\V2\CouponController;
@@ -68,6 +69,12 @@ Route::middleware(['auth:sanctum', 'ensure.client'])->group(function (): void {
     Route::put('/api-keys/{id}/status', [ApiKeyController::class, 'setStatus']);
     Route::delete('/api-keys/{id}', [ApiKeyController::class, 'destroy']);
     Route::get('/api-keys/{id}/usage-logs', [ApiKeyController::class, 'usageLogs']);
+
+    // 魔方财务上游 API 凭据（与上面的开放接口密钥是两条独立鉴权链路）
+    Route::get('/upstream-api', [UpstreamApiController::class, 'status']);
+    Route::post('/upstream-api/enable', [UpstreamApiController::class, 'enable'])->middleware('throttle:10,1,client-upstream-api-enable');
+    Route::post('/upstream-api/disable', [UpstreamApiController::class, 'disable']);
+    Route::post('/upstream-api/reset-password', [UpstreamApiController::class, 'resetPassword'])->middleware('throttle:10,1,client-upstream-api-reset');
 
     Route::get('/verification/fee-config', [VerificationController::class, 'feeConfig']);
     Route::post('/verification/init', [VerificationController::class, 'init']);

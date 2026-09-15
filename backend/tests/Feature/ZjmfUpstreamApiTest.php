@@ -117,6 +117,138 @@ class ZjmfUpstreamApiTest extends TestCase
             ->assertJsonPath('user.id', (int) $user->id);
     }
 
+    /**
+     * 魔方财务对 zjmf_api 产品的全部实例操作都走 /provision/default + func 分发
+     * （Host.php: on/off/reboot/hard_off/hard_reboot/vnc/status/reinstall/crack_pass/rescueSystem）。
+     * 此前未知 func 一律返回 status=200 静默受理，下游判定成功但什么都没做。
+     */
+    #[Test]
+    public function provision_default_dispatches_power_actions_to_local_console(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+        $service = $this->createCdnService($user, $suffix);
+
+        $power = $this->createMock(\App\Services\ClientServiceConsole\ServicePowerService::class);
+        $power->method('powerActionForUser')->willReturn(['message' => '指令已发送']);
+        $this->swap(\App\Services\ClientServiceConsole\ServicePowerService::class, $power);
+
+        foreach (['on', 'off', 'reboot', 'hard_off', 'hard_reboot'] as $func) {
+            $this->postJson('/api/v2/zjmf/provision/default', [
+                'id' => (int) $service->id,
+                'func' => $func,
+            ], ['Authorization' => 'Bearer '.$jwt])
+                ->assertOk()
+                ->assertJsonPath('status', 200);
+        }
+    }
+
+    #[Test]
+    public function provision_default_status_returns_power_state_payload(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+        $service = $this->createCdnService($user, $suffix);
+
+        $power = $this->createMock(\App\Services\ClientServiceConsole\ServicePowerService::class);
+        $power->method('getModuleStatusForUser')->willReturn([
+            'status' => 'on',
+            'description' => '开机',
+            'is_finished' => true,
+            'is_success' => true,
+        ]);
+        $this->swap(\App\Services\ClientServiceConsole\ServicePowerService::class, $power);
+
+        // 魔方读取 data.status + data.des（Host.php status 分支）
+        $this->postJson('/api/v2/zjmf/provision/default', [
+            'id' => (int) $service->id,
+            'func' => 'status',
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('data.status', 'on')
+            ->assertJsonPath('data.des', '开机');
+    }
+
+    #[Test]
+    public function provision_default_reinstall_requires_os_parameter(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+        $service = $this->createCdnService($user, $suffix);
+
+        // 缺 os：明确失败，不再静默受理（走 HTTP 全链路验证协议返回）
+        $this->postJson('/api/v2/zjmf/provision/default', [
+            'id' => (int) $service->id,
+            'func' => 'reinstall',
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 400);
+
+        // 带 os：直接验证 service 层分发（HTTP 层依赖已由上一个请求覆盖）
+        $power = $this->createMock(\App\Services\ClientServiceConsole\ServicePowerService::class);
+        $power->expects($this->once())
+            ->method('reinstallForUser')
+            ->with($this->anything(), (int) $service->id, ['os_id' => '12'])
+            ->willReturn(['message' => '重装系统任务已提交']);
+
+        $serviceLayer = new \App\Services\ZjmfUpstream\UpstreamProvisionService(
+            $this->app->make(\App\Services\Provisioning\ProvisionService::class),
+            $power,
+        );
+
+        $result = $serviceLayer->execute($user, [
+            'id' => (int) $service->id,
+            'func' => 'reinstall',
+            'os' => '12',
+        ]);
+
+        $this->assertSame(200, (int) ($result['status'] ?? 0));
+    }
+
+    #[Test]
+    public function provision_default_rescue_accepts_both_spellings(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+        $service = $this->createCdnService($user, $suffix);
+
+        $power = $this->createMock(\App\Services\ClientServiceConsole\ServicePowerService::class);
+        $power->method('rescueForUser')->willReturn(['message' => '救援模式指令已提交']);
+        $this->swap(\App\Services\ClientServiceConsole\ServicePowerService::class, $power);
+
+        // 魔方客户端发 rescueSystem；参考服务端拼写为 rescue_system
+        foreach (['rescueSystem', 'rescue_system'] as $func) {
+            $this->postJson('/api/v2/zjmf/provision/default', [
+                'id' => (int) $service->id,
+                'func' => $func,
+                'system' => '2',
+            ], ['Authorization' => 'Bearer '.$jwt])
+                ->assertOk()
+                ->assertJsonPath('status', 200);
+        }
+    }
+
+    #[Test]
+    public function provision_default_rejects_unknown_func_instead_of_silent_success(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+        $service = $this->createCdnService($user, $suffix);
+
+        $this->postJson('/api/v2/zjmf/provision/default', [
+            'id' => (int) $service->id,
+            'func' => 'changePackage',
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 400);
+    }
+
     #[Test]
     public function provision_button_dispatches_power_actions(): void
     {
