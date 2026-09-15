@@ -53,6 +53,20 @@ class HostController extends Controller
     }
 
     /**
+     * 下游管理端手工改绑上游主机后，重新登记回推目标。
+     */
+    public function setDownstream(Request $request): JsonResponse
+    {
+        $result = $this->host->setDownstream(
+            $this->user($request),
+            (int) $request->input('id', 0),
+            $request->all(),
+        );
+
+        return response()->json($result, 200);
+    }
+
+    /**
      * 自定义 tab 内容：下游（魔方财务 / TuraIDC 自身）按 host/header 下发的
      * module_client_area.key 取面板 HTML。
      */

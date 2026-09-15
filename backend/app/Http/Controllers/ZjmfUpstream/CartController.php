@@ -56,6 +56,33 @@ class CartController extends Controller
         return response()->json($result, 200);
     }
 
+    /**
+     * 下游管理端「上游余额」面板。
+     */
+    public function credit(Request $request): JsonResponse
+    {
+        return response()->json($this->cart->credit($this->user($request)), 200);
+    }
+
+    /**
+     * 下游管理端「上游信息」面板（按 hostid 取服务信息）。
+     */
+    public function hostInfo(Request $request): JsonResponse
+    {
+        return response()->json(
+            $this->cart->hostInfo($this->user($request), (int) $request->input('hostid', 0)),
+            200
+        );
+    }
+
+    /**
+     * 下游管理端「下游汇总」面板。
+     */
+    public function summary(Request $request): JsonResponse
+    {
+        return response()->json($this->cart->summary($this->user($request)), 200);
+    }
+
     private function user(Request $request): User
     {
         $user = $request->attributes->get('zjmf_upstream_user');

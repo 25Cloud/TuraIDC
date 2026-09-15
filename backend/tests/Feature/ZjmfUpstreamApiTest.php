@@ -527,6 +527,74 @@ class ZjmfUpstreamApiTest extends TestCase
         $this->assertSame(2, (int) (($orderSnapshot['cpu'] ?? null) ?? 0), '下游选择的 CPU 配置应传导到订单');
     }
 
+    /**
+     * 下游管理端手工改绑上游主机后需要重新登记回推目标；
+     * 此前该端点为 404（且返回 {code,message} 结构，违反固定 200 约定）。
+     */
+    #[Test]
+    public function host_setdownstream_registers_push_target(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createCdnService($user, $suffix);
+        $jwt = $this->apiJwt($suffix);
+
+        $this->postJson('/api/v2/zjmf/host/setdownstream', [
+            'id' => (int) $service->id,
+            'pid' => 100,
+            'downstream_url' => 'https://downstream-'.$suffix.'.example.test',
+            'downstream_token' => str_repeat('a', 32),
+            'downstream_id' => 4567,
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+
+        $binding = DB::connection()->table('zjmf_upstream_bindings')
+            ->where('user_id', (int) $user->id)
+            ->where('service_id', (int) $service->id)
+            ->first();
+
+        $this->assertNotNull($binding, '应登记下游回推绑定');
+        $this->assertSame('https://downstream-'.$suffix.'.example.test', (string) $binding->downstream_url);
+        $this->assertSame(4567, (int) $binding->downstream_id);
+
+        // 非法协议必须拒绝，避免登记出不可用的推送目标
+        $this->postJson('/api/v2/zjmf/host/setdownstream', [
+            'id' => (int) $service->id,
+            'downstream_url' => 'ftp://bad.example.test',
+            'downstream_token' => 'x',
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 400);
+    }
+
+    /**
+     * 下游管理端三个面板端点此前均为 404，管理端「上游余额/上游信息/下游汇总」空白。
+     */
+    #[Test]
+    public function admin_panels_return_protocol_payloads(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createCdnService($user, $suffix);
+        $jwt = $this->apiJwt($suffix);
+
+        $this->getJson('/api/v2/zjmf/cart/credit', ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonStructure(['data' => ['balance', 'account' => ['balance', 'currency' => ['code', 'prefix']]]]);
+
+        $this->getJson('/api/v2/zjmf/cart/hostinfo?hostid='.(int) $service->id, ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('data.host_data.id', (int) $service->id);
+
+        $this->getJson('/api/v2/zjmf/cart/summary', ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonStructure(['data' => ['client' => ['host_count', 'active_count', 'agent_count']]]);
+    }
+
     #[Test]
     public function provision_custom_action_is_idempotent_without_controllable_supplier(): void
     {

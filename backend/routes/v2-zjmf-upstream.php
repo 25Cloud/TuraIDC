@@ -34,6 +34,10 @@ Route::middleware(['zjmf.upstream'])->group(function (): void {
     Route::get('/api/product/prodetail', [ProductController::class, 'proDetail']);
     Route::get('/cart/get_product_config', [ProductController::class, 'config']);
     Route::get('/cart/ontrialmax', [ProductController::class, 'trialLimit']);
+    // 下游管理端面板（上游余额 / 上游信息 / 下游汇总）
+    Route::get('/cart/credit', [CartController::class, 'credit']);
+    Route::get('/cart/hostinfo', [CartController::class, 'hostInfo']);
+    Route::get('/cart/summary', [CartController::class, 'summary']);
 
     // P3 购物车/下单/开通
     Route::get('/user_info', [CartController::class, 'userInfo']);
@@ -48,6 +52,8 @@ Route::middleware(['zjmf.upstream'])->group(function (): void {
     Route::get('/host/header', [HostController::class, 'header']);
     Route::post('/host/renew', [HostController::class, 'renew']);
     Route::post('/host/cancel', [HostController::class, 'cancel']);
+    // 下游管理端手工改绑上游主机后重新登记回推目标
+    Route::post('/host/setdownstream', [HostController::class, 'setDownstream']);
     // 自定义 tab 内容（下游按 host/header 下发的 module_client_area.key 取值）
     Route::post('/zjmf_api/provision/custom/content', [HostController::class, 'customContent']);
 

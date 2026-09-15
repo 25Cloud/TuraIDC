@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Services\ZjmfUpstream;
 
 use App\Constants\BillingCycle;
+use App\Constants\ServiceStatus;
 use App\Models\Product;
+use App\Models\Service;
 use App\Models\User;
 use App\Models\ZjmfUpstreamBinding;
 use App\Services\Finance\CheckoutService;
@@ -27,6 +29,7 @@ class CartService
     public function __construct(
         private readonly SiteProductQuoteService $quoteService,
         private readonly CheckoutService $checkout,
+        private ?HostService $hostService = null,
     ) {}
 
     /**
@@ -199,6 +202,83 @@ class CartService
         // 直接传原始值（如整型 2 与归一化后的字符串 '2'）会让哈希对不上，
         // 下单时报「订单配置与报价不一致」。
         return $this->checkout->normalizeConfig($product, $config);
+    }
+
+    /**
+     * cart/credit：下游管理端「上游余额」面板读取本账号在本系统的余额。
+     *
+     * 结构与魔方财务参考实现保持一致：account 里带 currency（含 prefix/code），
+     * 另给 currency_prefix 兼容其直接读取点（ZjmfFinanceApiController::upstreamCredit）。
+     *
+     * @return array<string, mixed>
+     */
+    public function credit(User $user): array
+    {
+        $balance = number_format((float) ($user->balance ?? 0), 2, '.', '');
+
+        return [
+            'status' => 200,
+            'msg' => '请求成功',
+            'data' => [
+                'balance' => $balance,
+                'currency_prefix' => '¥',
+                'account' => [
+                    'balance' => $balance,
+                    'currency' => [
+                        'code' => 'CNY',
+                        'prefix' => '¥',
+                        'suffix' => '',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * cart/hostinfo：下游管理端「上游信息」面板按 hostid 取本系统服务信息。
+     *
+     * @return array<string, mixed>
+     */
+    public function hostInfo(User $user, int $serviceId): array
+    {
+        // 复用 host/header 的主机投影，避免在下游管理端与客户端控制台之间维护两套字段口径
+        $result = $this->hostService()->header($user, $serviceId);
+        if ((int) ($result['status'] ?? 0) !== 200) {
+            return ['status' => 400, 'msg' => (string) ($result['msg'] ?? '服务不存在')];
+        }
+
+        return [
+            'status' => 200,
+            'msg' => '请求成功',
+            'data' => (array) ($result['data'] ?? []),
+        ];
+    }
+
+    /**
+     * cart/summary：下游管理端「下游汇总」面板读取本账号名下的服务规模。
+     *
+     * @return array<string, mixed>
+     */
+    public function summary(User $user): array
+    {
+        $base = Service::query()->where('user_id', (int) $user->id);
+
+        return [
+            'status' => 200,
+            'msg' => '请求成功',
+            'data' => [
+                'client' => [
+                    'host_count' => (int) (clone $base)->count(),
+                    'active_count' => (int) (clone $base)->where('status', ServiceStatus::ACTIVE)->count(),
+                    'agent_count' => (int) Product::query()->where('status', 1)->count(),
+                ],
+            ],
+        ];
+    }
+
+    private function hostService(): HostService
+    {
+        return $this->hostService ??= app(HostService::class);
     }
 
     private function recordBinding(User $user, int $invoiceId, array $cartData, array $downstream): void    {
