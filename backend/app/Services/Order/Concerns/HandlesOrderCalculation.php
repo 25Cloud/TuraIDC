@@ -163,6 +163,64 @@ trait HandlesOrderCalculation
         return $normalized;
     }
 
+    /**
+     * 把下游（魔方财务）回传的 configoption 还原成本地 config 结构。
+     *
+     * 魔方财务把本系统 get_product_config 下发的 `options[].id` / `sub[].id` 作为
+     * upstream_id 落库，下单时以 `configoption[<id>] = 值或数量` 回传（单选型回传 sub id）。
+     * 这里按本地配置项定义反查字段名；无法匹配的项直接丢弃——normalizeConfig() 会把
+     * 不合法取值归一为 null 并跳过，因此最坏情况退化为「忽略该配置项」，不会打断下单。
+     *
+     * @param  array<string|int, mixed>  $submitted
+     * @return array<string, mixed>
+     */
+    public function normalizeUpstreamConfigOptions(Product $product, array $submitted): array
+    {
+        if ($submitted === []) {
+            return [];
+        }
+
+        $submittedByKey = [];
+        foreach ($submitted as $key => $value) {
+            $submittedByKey[(string) $key] = $value;
+        }
+
+        $config = [];
+        foreach ((array) ($product->config_options ?? []) as $item) {
+            if (! is_array($item) || (int) ($item['hidden'] ?? 0) === 1) {
+                continue;
+            }
+
+            $field = $this->parseField($item);
+            if ($field === '') {
+                continue;
+            }
+
+            $optionId = (int) ($item['id'] ?? 0);
+            if ($optionId > 0 && array_key_exists((string) $optionId, $submittedByKey)) {
+                $config[$field] = $submittedByKey[(string) $optionId];
+
+                continue;
+            }
+
+            // 单选/多选型：下游回传的是所选子项的 upstream id
+            foreach ((array) ($item['sub'] ?? []) as $sub) {
+                if (! is_array($sub)) {
+                    continue;
+                }
+
+                $subId = (int) ($sub['id'] ?? 0);
+                if ($subId > 0 && array_key_exists((string) $subId, $submittedByKey)) {
+                    $config[$field] = $submittedByKey[(string) $subId];
+
+                    break;
+                }
+            }
+        }
+
+        return $config;
+    }
+
     private function calculateConfigExtra(Product $product, string $billingCycle, array $config): float
     {
         return (float) $this->buildQuoteBreakdown($product, $billingCycle, $config)['config_amount'];

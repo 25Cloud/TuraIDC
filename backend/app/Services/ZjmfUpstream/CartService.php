@@ -114,13 +114,17 @@ class CartService
             ? 'zjmf:'.(int) $user->id.':'.$downstreamId
             : 'zjmf:'.(int) $user->id.':'.sha1(json_encode($cartData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
+        // 下游在魔方下单时填的主机名与配置项必须随单进入开通环节，
+        // 否则客户选的主机名/配置会被静默丢弃，只能按本系统默认值开通。
+        $config = $this->buildUpstreamOrderConfig($product, $cartData);
+
         try {
             $quote = $this->quoteService->quoteForUser(
                 $product,
                 [
                     'billing_cycle' => $billingCycle,
                     'quantity' => $quantity,
-                    'config' => [],
+                    'config' => $config,
                 ],
                 $user,
                 [
@@ -133,7 +137,7 @@ class CartService
                 'product_id' => $productId,
                 'billing_cycle' => $billingCycle,
                 'quantity' => $quantity,
-                'config' => [],
+                'config' => $config,
                 'quote_token' => (string) ($quote['quote_token'] ?? ''),
                 'idempotency_key' => $idempotencyKey,
             ], [
@@ -164,8 +168,40 @@ class CartService
         }
     }
 
-    private function recordBinding(User $user, int $invoiceId, array $cartData, array $downstream): void
+    /**
+     * 下游 cart_data → 本地下单 config。
+     *
+     * 魔方财务在 cart/settle 的 cart_data 里回传：
+     *   host          客户填写的主机名
+     *   password      客户填写的密码（本地开通不落配置，由开通环节生成/透传，见 ProvisionService）
+     *   configoptions 配置项，键为本系统 get_product_config 下发的 options[].id / sub[].id
+     * 这里只取主机名与配置项：配置项经 normalizeUpstreamConfigOptions 反查字段名，
+     * 匹配不上的会被丢弃（与修复前「全部丢弃」相比只会更准，不会更宽）。
+     *
+     * @param  array<string, mixed>  $cartData
+     * @return array<string, mixed>
+     */
+    private function buildUpstreamOrderConfig(Product $product, array $cartData): array
     {
+        $config = [];
+
+        $hostname = trim((string) ($cartData['host'] ?? ''));
+        if ($hostname !== '') {
+            $config['hostname'] = $hostname;
+        }
+
+        $options = $cartData['configoptions'] ?? $cartData['configoption'] ?? [];
+        if (is_array($options) && $options !== []) {
+            $config = array_replace($config, $this->checkout->normalizeUpstreamConfigOptions($product, $options));
+        }
+
+        // 必须先归一化再同时用于报价与下单：报价凭证按归一化后的配置哈希，
+        // 直接传原始值（如整型 2 与归一化后的字符串 '2'）会让哈希对不上，
+        // 下单时报「订单配置与报价不一致」。
+        return $this->checkout->normalizeConfig($product, $config);
+    }
+
+    private function recordBinding(User $user, int $invoiceId, array $cartData, array $downstream): void    {
         $url = trim((string) ($downstream['downstream_url'] ?? ''));
         if ($url === '') {
             return;

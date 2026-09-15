@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace App\Services\ZjmfUpstream;
 
+use App\Constants\BillingCycle;
+use App\Constants\PaymentGatewayCode;
+use App\Constants\PaymentStatus;
 use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
+use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\User;
 use App\Services\ClientServiceConsole\ServiceConsoleAreaService;
+use App\Services\ClientServiceConsole\ServiceTransformService;
 use App\Services\Provisioning\ServiceRenewService;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -95,7 +101,14 @@ class HostService
                 'module_chart' => $moduleCharts,
                 'module_client_main_area' => $mainArea,
                 'dcimcloud' => ['nat_acl' => '', 'nat_web' => ''],
-                'dcim' => ['flowpacket' => []],
+                'dcim' => [
+                    'flowpacket' => [],
+                    'flow_packet_use_list' => [],
+                    // 下游按 auth 决定渲染哪些控制按钮；未声明的动作一律不显示
+                    'auth' => $this->buildDcimAuth($service),
+                    'svg' => '',
+                ],
+                'reinstall_format_data_disk' => false,
                 'module_power_status' => (bool) ($passthrough['module_power_status'] ?? false),
                 'reinstall_random_port' => (bool) ($passthrough['reinstall_random_port'] ?? false),
             ],
@@ -368,6 +381,7 @@ class HostService
     private function findUserService(User $user, int $serviceId): ?Service
     {
         return Service::query()
+            ->with(['order.invoice', 'product.productGroup'])
             ->where('user_id', (int) $user->id)
             ->find($serviceId);
     }
@@ -388,6 +402,15 @@ class HostService
 
         $bwLimit = (int) ($provisionData['bw_limit'] ?? 0);
 
+        $order = $service->order;
+        $product = $service->product;
+        $amount = (float) ($service->amount ?? 0);
+        // 首付金额取订单实付，缺失时退回服务金额（两者在无优惠场景下相同）
+        $firstPaymentAmount = (float) ($order->paid_amount ?? $amount);
+        $billingCycle = (string) ($service->billing_cycle ?? '');
+        $regdate = $service->created_at?->format('Y-m-d') ?? '';
+        $payment = $this->resolvePaymentGateway($order);
+
         return [
             'id' => (int) $service->id,
             'domain' => (string) ($service->domain ?? ''),
@@ -402,10 +425,93 @@ class HostService
             'port' => (int) (($connection['port'] ?? 0) ?: 0),
             'os' => (string) ($provisionData['os'] ?? ''),
             'domainstatus' => $this->domainStatus((int) $service->status),
-            'amount' => (float) ($service->amount ?? 0),
+            'amount' => $amount,
             'nextduedate' => $expiresAt,
             // 下游按此决定是否渲染流量用量（与魔方财务逻辑一致：有配额才展示）
             'show_traffic_usage' => $bwLimit > 0,
+
+            // ── 魔方财务管理端「上游信息」直接读取以下字段（无空值兜底），
+            //    缺失会导致面板空白并产生 PHP 未定义索引告警 ──
+            'regdate' => $regdate,
+            'ocreate_time' => $order?->created_at?->format('Y-m-d') ?? $regdate,
+            'domainstatus_desc' => $this->domainStatusLabel((int) $service->status),
+            'firstpaymentamount' => $firstPaymentAmount,
+            'firstpaymentamount_desc' => number_format($firstPaymentAmount, 2, '.', ''),
+            'amount_desc' => number_format($amount, 2, '.', ''),
+            'promo_code' => (string) ($order->coupon_code ?? ''),
+            'payment' => $payment,
+            'payment_zh' => $payment !== '' ? PaymentGatewayCode::label($payment) : '',
+            'billingcycle' => $billingCycle,
+            'billingcycle_desc' => $billingCycle !== ''
+                ? (BillingCycle::LABELS[$billingCycle] ?? $billingCycle)
+                : '',
+            'group' => (string) ($product?->productGroup?->name ?? ''),
+        ];
+    }
+
+    /**
+     * 订单对应账单的实付网关；查不到时返回空串（面板显示为空，不报错）。
+     */
+    private function resolvePaymentGateway(?Order $order): string
+    {
+        $invoiceId = (int) ($order?->invoice?->id ?? 0);
+        if ($invoiceId <= 0) {
+            return '';
+        }
+
+        $payment = Payment::query()
+            ->where('invoice_id', $invoiceId)
+            ->where('status', PaymentStatus::PAID)
+            ->orderByDesc('id')
+            ->first();
+
+        return trim((string) ($payment?->gateway ?? ''));
+    }
+
+    /**
+     * 服务状态的中文描述（魔方财务管理端展示）。
+     */
+    private function domainStatusLabel(int $status): string
+    {
+        return match ($status) {
+            ServiceStatus::PENDING => '待开通',
+            ServiceStatus::ACTIVE => '正常',
+            ServiceStatus::SUSPENDED => '暂停',
+            ServiceStatus::EXPIRED => '已到期',
+            ServiceStatus::CANCELLED => '已删除',
+            default => '未知',
+        };
+    }
+
+    /**
+     * DCIM 控制按钮可用性（魔方按 auth 的 on/off 决定渲染哪些按钮）。
+     *
+     * 只声明本系统真正实现的能力：电源四态、VNC、重装、救援、改密；
+     * KVM/iKVM/BMC/流量图走供应商协议未覆盖的路径（对应端点固定返回 400），
+     * 因此标记 off，避免下游渲染出点了必失败的按钮。
+     *
+     * @return array<string, string>
+     */
+    private function buildDcimAuth(Service $service): array
+    {
+        $transform = app(ServiceTransformService::class);
+        $canOperate = $transform->canExecuteConsoleActions($service);
+        $canResetPassword = $transform->canResetPassword($service);
+
+        $flag = static fn (bool $enabled): string => $enabled ? 'on' : 'off';
+
+        return [
+            'on' => $flag($canOperate),
+            'off' => $flag($canOperate),
+            'reboot' => $flag($canOperate),
+            'novnc' => $flag($canOperate),
+            'reinstall' => $flag($canOperate),
+            'rescue' => $flag($canOperate),
+            'crack_pass' => $flag($canResetPassword),
+            'kvm' => 'off',
+            'ikvm' => 'off',
+            'bmc' => 'off',
+            'traffic' => 'off',
         ];
     }
 
