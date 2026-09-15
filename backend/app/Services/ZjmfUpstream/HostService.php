@@ -14,6 +14,7 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\User;
+use App\Models\ZjmfUpstreamBinding;
 use App\Services\ClientServiceConsole\ServiceConsoleAreaService;
 use App\Services\ClientServiceConsole\ServiceTransformService;
 use App\Services\Provisioning\ServiceRenewService;
@@ -354,6 +355,61 @@ class HostService
 
             return ['status' => 400, 'msg' => $exception->getMessage()];
         }
+    }
+
+    /**
+     * host/setdownstream：下游在管理端手工改绑上游主机后，重新登记回推目标。
+     *
+     * 魔方财务在「服务管理」里填写/修改 dcimid 时调用（ClientsServicesController），
+     * 入参：id=本系统 Service id、downstream_url/downstream_token/downstream_id=下游回推地址与凭据。
+     * 该地址是后续 host/sync 推送目标，因此必须校验协议与非空，避免登记出不可用的目标。
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function setDownstream(User $user, int $serviceId, array $data): array
+    {
+        $service = $this->findUserService($user, $serviceId);
+        if (! $service instanceof Service) {
+            return ['status' => 400, 'msg' => '服务不存在'];
+        }
+
+        $url = trim((string) ($data['downstream_url'] ?? ''));
+        $token = trim((string) ($data['downstream_token'] ?? ''));
+        $downstreamId = (int) ($data['downstream_id'] ?? 0);
+
+        if ($url === '') {
+            return ['status' => 400, 'msg' => '下游回推地址不能为空'];
+        }
+
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        if (! in_array($scheme, ['http', 'https'], true)) {
+            return ['status' => 400, 'msg' => '下游回推地址必须是 http(s) 地址'];
+        }
+
+        try {
+            ZjmfUpstreamBinding::query()->updateOrCreate(
+                [
+                    'user_id' => (int) $user->id,
+                    'service_id' => (int) $service->id,
+                ],
+                [
+                    'downstream_url' => rtrim($url, '/'),
+                    'downstream_token' => $token,
+                    'downstream_id' => $downstreamId,
+                    'domain' => (string) ($service->domain ?? ''),
+                ]
+            );
+        } catch (\Throwable $exception) {
+            Log::warning('[zjmf-upstream] 下游回推绑定写入失败', [
+                'service_id' => (int) $service->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return ['status' => 400, 'msg' => '下游回推绑定保存失败'];
+        }
+
+        return ['status' => 200, 'msg' => '保存成功'];
     }
 
     /**

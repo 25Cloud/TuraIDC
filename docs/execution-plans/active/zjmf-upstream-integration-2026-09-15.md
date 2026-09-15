@@ -25,8 +25,8 @@ owner: backend-platform
       DCIM 依据字段已下发：`dcim.auth`（按 `canExecuteConsoleActions` / `canResetPassword` 计算 on/off，KVM/iKVM/BMC/流量图固定 off——这几个端点本就返回 400，避免下游渲染出点了必失败的按钮）、`dcim.svg`、`dcim.flow_packet_use_list`、`reinstall_format_data_disk`。
 - [x] **P0-2：开通参数传递**。`/cart/settle` 此前把 `host`（客户填的主机名）与 `configoptions`（选项）全部丢弃（写死 `'config' => []`），客户在魔方选的主机名与配置被静默忽略。
       修复：新增 `HandlesOrderCalculation::normalizeUpstreamConfigOptions()` 按本地配置项定义反查字段名（下游回传的是本系统 `get_product_config` 下发的 `options[].id` / `sub[].id`），与主机名一并**先归一化再同时用于报价与下单**——不归一化会因「整型 2 vs 字符串 '2'」让报价凭证哈希对不上，下单直接报「订单配置与报价不一致」（实测踩坑）。匹配不上的配置项被丢弃，最坏情况退化为修复前行为。
-- [ ] **P0-3：上游→下游推送没有发送方**。魔方下游侧已实现接收 `/api/host/sync`，TuraIDC 绑定表注释也写明「上游开通/状态变更后回推下游回调地址」，但全仓没有任何 `host/sync` 发送调用——上游暂停/到期/删除与工单回复无法主动同步。
-- [ ] **P1-8：管理端缺端点** `/host/setdownstream`、`cart/hostinfo|summary|credit`（ZJMF 管理端「上游信息/下游汇总/上游余额」会调）。
+- [x] **P1-8：管理端缺端点已补齐**。新增 `POST /host/setdownstream`（下游管理端手工改绑上游主机后重新登记回推目标，校验 http(s) 协议，落 `zjmf_upstream_bindings.service_id`）与 `GET /cart/credit|hostinfo|summary`（下游管理端「上游余额/上游信息/下游汇总」面板——此前均为 404 且返回 `{code,message}` 结构，违反固定 200 约定）。
+- [ ] **P0-3：上游→下游推送没有发送方**。魔方下游侧已实现接收 `/api/host/sync`，TuraIDC 绑定表注释也写明「上游开通/状态变更后回推下游回调地址」，但全仓没有任何 `host/sync` 发送调用——上游暂停/到期/删除与工单回复无法主动同步。推送目标现在已可通过 `/host/setdownstream` 与结算绑定登记，缺的是发送方与触发点。
 
 ## 决策日志
 
