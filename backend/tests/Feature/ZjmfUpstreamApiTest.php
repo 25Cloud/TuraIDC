@@ -37,9 +37,17 @@ class ZjmfUpstreamApiTest extends TestCase
 
     /**
      * 共享测试库上的既有列表类断言按索引取值，残留行会污染它们。
+     *
+     * 删除顺序按外键依赖：结算类用例会生成账单与订单（invoice 引用 product/order），
+     * 必须先清账单与订单，否则 products 删除会被外键阻塞。
      */
     protected function tearDown(): void
     {
+        if ($this->userIds !== []) {
+            DB::connection()->table('invoices')->whereIn('user_id', $this->userIds)->delete();
+            DB::connection()->table('orders')->whereIn('user_id', $this->userIds)->delete();
+        }
+
         DB::connection()->table('services')->whereIn('id', $this->serviceIds)->delete();
         DB::connection()->table('products')->whereIn('id', $this->productIds)->delete();
         DB::connection()->table('users')->whereIn('id', $this->userIds)->delete();
@@ -384,6 +392,139 @@ class ZjmfUpstreamApiTest extends TestCase
             '/api/v2/zjmf/host/header?host_id='.(int) $withoutQuota->id,
             ['Authorization' => 'Bearer '.$jwt],
         )->assertOk()->assertJsonPath('data.host_data.show_traffic_usage', false);
+    }
+
+    /**
+     * 魔方财务管理端「上游信息」直接读取这些字段且没有空值兜底，
+     * 缺失会显示空白并产生 PHP 未定义索引告警。
+     */
+    #[Test]
+    public function host_header_provides_upstream_admin_panel_fields(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createCdnService($user, $suffix);
+        $jwt = $this->apiJwt($suffix);
+
+        $response = $this->getJson(
+            '/api/v2/zjmf/host/header?host_id='.(int) $service->id,
+            ['Authorization' => 'Bearer '.$jwt],
+        )->assertOk()->assertJsonPath('status', 200);
+
+        // ClientsServicesController 读取的字段必须全部存在（无 ?? 兜底）
+        foreach ([
+            'regdate', 'domainstatus_desc', 'firstpaymentamount', 'firstpaymentamount_desc',
+            'amount_desc', 'promo_code', 'payment', 'payment_zh',
+            'billingcycle', 'billingcycle_desc', 'group', 'ocreate_time',
+        ] as $key) {
+            $this->assertArrayHasKey(
+                $key,
+                (array) $response->json('data.host_data'),
+                "host_data 缺少下游管理端读取的字段：{$key}"
+            );
+        }
+
+        $response->assertJsonPath('data.host_data.domainstatus', 'Active')
+            ->assertJsonPath('data.host_data.domainstatus_desc', '正常')
+            ->assertJsonPath('data.host_data.billingcycle', 'monthly')
+            ->assertJsonPath('data.host_data.billingcycle_desc', '月付')
+            ->assertJsonPath('data.host_data.amount_desc', '30.00');
+    }
+
+    /**
+     * DCIM 按钮可用性：只声明真正实现的能力，未覆盖的（KVM/iKVM/BMC/流量图）标 off，
+     * 避免下游渲染出点了必失败的按钮。
+     */
+    #[Test]
+    public function host_header_declares_dcim_auth_capabilities(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createServiceWithProductType($user, $suffix, 'cloud_server');
+        $jwt = $this->apiJwt($suffix);
+
+        $response = $this->getJson(
+            '/api/v2/zjmf/host/header?host_id='.(int) $service->id,
+            ['Authorization' => 'Bearer '.$jwt],
+        )->assertOk()->assertJsonPath('status', 200);
+
+        $auth = (array) $response->json('data.dcim.auth');
+        $this->assertNotEmpty($auth, 'dcim.auth 必须下发，否则下游按全 off 处理');
+        foreach (['on', 'off', 'reboot', 'novnc', 'reinstall', 'rescue', 'crack_pass', 'kvm', 'ikvm', 'bmc', 'traffic'] as $action) {
+            $this->assertArrayHasKey($action, $auth, "dcim.auth 缺少动作：{$action}");
+        }
+
+        // 供应商协议未覆盖的动作必须 off
+        $this->assertSame('off', $auth['kvm']);
+        $this->assertSame('off', $auth['ikvm']);
+        $this->assertSame('off', $auth['bmc']);
+        $this->assertSame('off', $auth['traffic']);
+
+        // 重装磁盘格式化开关存在（下游按它决定是否展示该选项）
+        $this->assertArrayHasKey('reinstall_format_data_disk', (array) $response->json('data'));
+        $this->assertArrayHasKey('flow_packet_use_list', (array) $response->json('data.dcim'));
+    }
+
+    /**
+     * 下游在魔方下单时填的主机名与配置项必须随 settle 进入本地下单，
+     * 否则客户选择被静默丢弃、只能按默认值开通。
+     */
+    #[Test]
+    public function cart_settle_passes_downstream_hostname_and_config_options(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+
+        $product = Product::query()->create([
+            'name' => 'Zjmf Settle Configurable '.$suffix,
+            'product_type' => 'server',
+            'pricing' => ['monthly' => '30.00'],
+            'setup_fee' => '0.00',
+            'config_options' => [
+                [
+                    'field' => 'cpu',
+                    'option_type' => 6,
+                    'sub' => [
+                        ['id' => '2', 'option_name_first' => '2', 'option_name' => '2核', 'hidden' => 0],
+                    ],
+                ],
+            ],
+            'purchase_requires' => [],
+            'stock' => -1,
+            'status' => 1,
+            'auto_setup' => 0,
+        ]);
+        $this->productIds[] = (int) $product->id;
+
+        $response = $this->postJson('/api/v2/zjmf/cart/settle', [
+            'cart_data' => [
+                'pid' => (int) $product->id,
+                'billingcycle' => 'monthly',
+                'qty' => 1,
+                'host' => 'downstream-chosen-'.$suffix,
+                'password' => 'DownstreamPass123',
+                // 键为配置项子项 id（本系统下发的 upstream_id）
+                'configoptions' => ['2' => 2],
+            ],
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+
+        $invoiceId = (int) $response->json('data.invoiceid');
+        $this->assertGreaterThan(0, $invoiceId);
+
+        $invoice = \App\Models\Invoice::query()->findOrFail($invoiceId);
+
+        // 主机名归一化后（点转横杠）落进订单配置快照
+        $snapshot = (array) $invoice->config_snapshot;
+        $this->assertSame('downstream-chosen-'.$suffix, (string) ($snapshot['hostname'] ?? ''));
+
+        // 配置项按 sub id 反查到字段名 cpu 并保留取值
+        $order = \App\Models\Order::query()->findOrFail((int) $invoice->order_id);
+        $orderSnapshot = (array) $order->config_snapshot;
+        $this->assertSame('downstream-chosen-'.$suffix, (string) ($orderSnapshot['hostname'] ?? ''));
+        $this->assertSame(2, (int) (($orderSnapshot['cpu'] ?? null) ?? 0), '下游选择的 CPU 配置应传导到订单');
     }
 
     #[Test]
