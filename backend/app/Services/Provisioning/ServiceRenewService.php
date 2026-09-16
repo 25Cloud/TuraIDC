@@ -8,6 +8,7 @@ use App\Constants\OrderStatus;
 use App\Constants\OrderType;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
+use App\Jobs\PushServiceToZjmfDownstreamJob;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Product;
@@ -26,6 +27,7 @@ use App\Services\Integrations\Support\ProviderErrorMapper;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\System\NotificationService;
 use App\Services\System\OperationLogService;
+use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
 use App\Services\System\SettingService;
 use App\Services\Upstream\Contracts\ProvidesContextualRenewalRecovery;
 use App\Services\Upstream\Contracts\ProvidesInvoiceRenewal;
@@ -1127,6 +1129,12 @@ class ServiceRenewService
         ]);
         $this->sendUnsuspendNotificationIfNeeded($updatedService, $previousStatus);
 
+        // 旁路通知魔方财务下游续费结果（未登记回推目标时自动跳过）
+        PushServiceToZjmfDownstreamJob::dispatch(
+            (int) $updatedService->id,
+            ZjmfDownstreamPushService::TYPE_RENEW
+        );
+
         // 续费后自动解除上游暂停：本地状态已恢复 ACTIVE，上游若仍暂停则主动 unsuspend
         if (in_array($previousStatus, [ServiceStatus::EXPIRED, ServiceStatus::SUSPENDED], true)) {
             $this->suspensionService()->tryUnsuspendUpstream($updatedService, true);
@@ -1358,6 +1366,12 @@ class ServiceRenewService
             'service_status' => (int) $updatedService->status,
         ]);
         $this->sendUnsuspendNotificationIfNeeded($updatedService, $previousStatus);
+
+        // 旁路通知魔方财务下游续费结果（未登记回推目标时自动跳过）
+        PushServiceToZjmfDownstreamJob::dispatch(
+            (int) $updatedService->id,
+            ZjmfDownstreamPushService::TYPE_RENEW
+        );
 
         // 续费后自动解除上游暂停：本地状态已恢复 ACTIVE，上游若仍暂停则主动 unsuspend
         if (in_array($previousStatus, [ServiceStatus::EXPIRED, ServiceStatus::SUSPENDED], true)) {

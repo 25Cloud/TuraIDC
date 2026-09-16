@@ -26,7 +26,9 @@ owner: backend-platform
 - [x] **P0-2：开通参数传递**。`/cart/settle` 此前把 `host`（客户填的主机名）与 `configoptions`（选项）全部丢弃（写死 `'config' => []`），客户在魔方选的主机名与配置被静默忽略。
       修复：新增 `HandlesOrderCalculation::normalizeUpstreamConfigOptions()` 按本地配置项定义反查字段名（下游回传的是本系统 `get_product_config` 下发的 `options[].id` / `sub[].id`），与主机名一并**先归一化再同时用于报价与下单**——不归一化会因「整型 2 vs 字符串 '2'」让报价凭证哈希对不上，下单直接报「订单配置与报价不一致」（实测踩坑）。匹配不上的配置项被丢弃，最坏情况退化为修复前行为。
 - [x] **P1-8：管理端缺端点已补齐**。新增 `POST /host/setdownstream`（下游管理端手工改绑上游主机后重新登记回推目标，校验 http(s) 协议，落 `zjmf_upstream_bindings.service_id`）与 `GET /cart/credit|hostinfo|summary`（下游管理端「上游余额/上游信息/下游汇总」面板——此前均为 404 且返回 `{code,message}` 结构，违反固定 200 约定）。
-- [ ] **P0-3：上游→下游推送没有发送方**。魔方下游侧已实现接收 `/api/host/sync`，TuraIDC 绑定表注释也写明「上游开通/状态变更后回推下游回调地址」，但全仓没有任何 `host/sync` 发送调用——上游暂停/到期/删除与工单回复无法主动同步。推送目标现在已可通过 `/host/setdownstream` 与结算绑定登记，缺的是发送方与触发点。
+- [x] **P0-3：上游→下游推送发送方已落地**。新增 `ZjmfDownstreamPushService`（对齐魔方 `pushHostInfo` + `createSign`：`id` 放下游 host id、本系统服务 id 放 `host_id`，签名为 `strtoupper(md5(json_encode(ksort(['id','token','rand_str'], SORT_STRING))))`）与 `PushServiceToZjmfDownstreamJob`（队列旁路，`tries=2`，失败只记日志）。
+      触发点：开通成功（`type=create`）、暂停/解除暂停（`suspend`/`unsuspend`）、续费收尾两条路径（`renew`）。下游 token 为空时拒签（密钥缺省即拒绝），未登记回推目标时静默跳过；推送失败不影响主流程——下游仍可用 `host/header` 主动同步兜底。
+      附带修复：`host/cancel` 与 `provision/default` 的 `terminate` 只改本地状态，故终止态的推送由后续拓展（当前 `type=terminate` 常量已定义、无触发点）。
 
 ## 决策日志
 
@@ -36,3 +38,8 @@ owner: backend-platform
 - 2026-09-15：`zjmf376` 参考副本仅含 `nokvm` 插件，CDN(lecdn)/虚拟主机(mhbt) 的插件侧差异无法在本仓库验证；本协议下两者对 `api_type=zjmf_api` 产品无分支差异，仅产品 `type` 映射不同。
 - 2026-09-15：**下单配置必须先归一化再签报价凭证**。报价服务内部会对 config 做 `normalizeConfig`，若调用方传入未归一化的原始值（下游 JSON 里的整型 `2`），与下单时归一化后的 `'2'` 哈希不同，直接报「订单配置与报价不一致」。收口方式：`CartService` 构造 config 后先归一化，同一份结果同时用于 `quoteForUser` 与 `create`。
 - 2026-09-15：**DCIM 未实现的动作声明为 off 而不是省略**。下游按 `auth` 的 on/off 渲染按钮；省略会让下游回退成全 off（按钮消失且无解释），声明 off 语义一致且后续补齐能力时只需改这一处。
+
+## 剩余项（未做）
+
+- `type=terminate` 的推送触发点：`host/cancel`（下游删单）与 `provision/default` 的 `terminate` 目前只改本地状态，未回推下游删除；常量已定义。
+- 工单回复推送（`/api/ticket_reply/sync` 出站方向）：目前只有入站接收与验签。

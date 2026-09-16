@@ -8,10 +8,12 @@ use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
 use App\Models\Service;
 use App\Models\User;
+use App\Jobs\PushServiceToZjmfDownstreamJob;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\System\OperationLogService;
 use App\Services\Upstream\Contracts\ProvidesHostSuspension;
+use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
 use App\Support\SensitiveDataSanitizer;
 
 /**
@@ -59,6 +61,12 @@ class ServiceSuspensionService
         ])->save();
         $service->refresh();
 
+        // 旁路通知魔方财务下游（未登记回推目标时自动跳过）
+        PushServiceToZjmfDownstreamJob::dispatch(
+            (int) $service->id,
+            ZjmfDownstreamPushService::TYPE_SUSPEND
+        );
+
         $message = trim((string) ($response['msg'] ?? '')) ?: '实例已暂停';
         $this->operationLogService->writeServiceConsoleLog($service, 'service.console.suspend', [
             'category' => 'suspend',
@@ -99,6 +107,12 @@ class ServiceSuspensionService
             'suspended_reason' => null,
         ])->save();
         $service->refresh();
+
+        // 旁路通知魔方财务下游（未登记回推目标时自动跳过）
+        PushServiceToZjmfDownstreamJob::dispatch(
+            (int) $service->id,
+            ZjmfDownstreamPushService::TYPE_UNSUSPEND
+        );
 
         $message = trim((string) ($response['msg'] ?? '')) ?: '实例已解除暂停';
         $this->operationLogService->writeServiceConsoleLog($service, 'service.console.unsuspend', [
@@ -150,6 +164,11 @@ class ServiceSuspensionService
                     'suspended_reason' => null,
                 ])->save();
                 $service->refresh();
+
+                PushServiceToZjmfDownstreamJob::dispatch(
+                    (int) $service->id,
+                    ZjmfDownstreamPushService::TYPE_UNSUSPEND
+                );
             }
 
             $this->operationLogService->writeServiceConsoleLog($service, 'service.console.unsuspend.after_renew', [
