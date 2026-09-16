@@ -7,13 +7,15 @@ namespace App\Services\Integrations\Plugins;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Supplier;
+use App\Services\Integrations\Plugins\Concerns\PersistsBindingRowsOnChange;
 use App\Services\Ticket\TicketUpstreamCallbackToken;
 use App\Support\DatabaseSchema;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 
 class ServiceUpstreamBindingWriter
 {
+    use PersistsBindingRowsOnChange;
+
     private ?PluginBindingResolver $bindingResolver = null;
 
     private ?UpstreamBindingWriter $upstreamBindingWriter = null;
@@ -51,42 +53,41 @@ class ServiceUpstreamBindingWriter
         $runtimeSnapshot = $this->runtimeSnapshotPayload($provisionData, $providerKey);
         $connectionSnapshot = $this->connectionPayload($service, $provisionData);
         $now = now();
+        $identity = [
+            'service_id' => $serviceId,
+            'plugin_id' => $pluginId,
+            'upstream_service_id' => $this->limit($upstreamServiceId, 120),
+        ];
+        $existingRow = $this->findBindingRow('service_upstream_bindings', $identity);
 
-        DB::table('service_upstream_bindings')->updateOrInsert(
-            [
-                'service_id' => $serviceId,
-                'plugin_id' => $pluginId,
-                'upstream_service_id' => $this->limit($upstreamServiceId, 120),
-            ],
-            [
-                'product_upstream_binding_id' => $productBindingId,
-                'supplier_plugin_binding_id' => $supplierBindingId,
-                'provider_key' => $providerKey,
-                'upstream_account_id' => $this->nullableString($provisionData['upstream_account_id'] ?? null, 120),
-                'runtime_snapshot_json' => $this->encodeJson($runtimeSnapshot),
-                'connection_snapshot_json' => $this->encodeJson($connectionSnapshot),
-                'status_snapshot' => $this->nullableString(
-                    $provisionData['runtime_status'] ?? ($provisionData['upstream_status'] ?? null),
-                    60
-                ),
-                'last_synced_at' => $now,
-                'last_sync_error' => $this->nullableString($provisionData['status_sync_error'] ?? null, 500),
-                'updated_at' => $now,
-                'created_at' => $now,
-            ]
-        );
+        $payload = [
+            'product_upstream_binding_id' => $productBindingId,
+            'supplier_plugin_binding_id' => $supplierBindingId,
+            'provider_key' => $providerKey,
+            'upstream_account_id' => $this->nullableString($provisionData['upstream_account_id'] ?? null, 120),
+            'runtime_snapshot_json' => $this->encodeJson($runtimeSnapshot),
+            'connection_snapshot_json' => $this->encodeJson($connectionSnapshot),
+            'status_snapshot' => $this->nullableString(
+                $provisionData['runtime_status'] ?? ($provisionData['upstream_status'] ?? null),
+                60
+            ),
+            'last_synced_at' => $now,
+            'last_sync_error' => $this->nullableString($provisionData['status_sync_error'] ?? null, 500),
+            'updated_at' => $now,
+        ];
 
-        $binding = DB::table('service_upstream_bindings')
-            ->where('service_id', $serviceId)
-            ->where('plugin_id', $pluginId)
-            ->where('upstream_service_id', $this->limit($upstreamServiceId, 120))
-            ->first(['id']);
-
-        if ($binding === null) {
-            return null;
+        if ($existingRow === null) {
+            $bindingId = (int) DB::table('service_upstream_bindings')
+                ->insertGetId(array_merge($identity, $payload, ['created_at' => $now]));
+            if ($bindingId <= 0) {
+                return null;
+            }
+        } else {
+            // 服务详情每次访问、状态同步每轮都会走到这里；数据没变就跳过 UPDATE。
+            $this->updateBindingRowOnChange('service_upstream_bindings', $existingRow, $payload);
+            $bindingId = (int) $existingRow->id;
         }
 
-        $bindingId = (int) $binding->id;
         $this->syncRuntimeSnapshot($serviceId, $bindingId, $pluginId, $providerKey, $provisionData, $runtimeSnapshot);
         $this->syncConnectionSnapshot($service, $serviceId, $bindingId, $pluginId, $providerKey, $provisionData, $connectionSnapshot);
 
@@ -191,22 +192,30 @@ class ServiceUpstreamBindingWriter
         }
 
         $now = now();
-        DB::table('service_runtime_snapshots')->updateOrInsert(
-            ['service_id' => $serviceId],
-            [
-                'service_upstream_binding_id' => $bindingId,
-                'plugin_id' => $pluginId,
-                'provider_key' => $providerKey,
-                'status_key' => $this->nullableString($provisionData['runtime_status'] ?? ($provisionData['upstream_status'] ?? null), 60),
-                'status_text' => $this->nullableString($provisionData['runtime_description'] ?? null, 120),
-                'resource_json' => $this->encodeJson($this->resourcePayload($provisionData)),
-                'metrics_json' => $this->encodeJson($this->metricsPayload($provisionData)),
-                'snapshot_json' => $this->encodeJson($runtimeSnapshot),
-                'synced_at' => $now,
-                'updated_at' => $now,
-                'created_at' => $now,
-            ]
-        );
+        $identity = ['service_id' => $serviceId];
+        $existingRow = $this->findBindingRow('service_runtime_snapshots', $identity);
+
+        $payload = [
+            'service_upstream_binding_id' => $bindingId,
+            'plugin_id' => $pluginId,
+            'provider_key' => $providerKey,
+            'status_key' => $this->nullableString($provisionData['runtime_status'] ?? ($provisionData['upstream_status'] ?? null), 60),
+            'status_text' => $this->nullableString($provisionData['runtime_description'] ?? null, 120),
+            'resource_json' => $this->encodeJson($this->resourcePayload($provisionData)),
+            'metrics_json' => $this->encodeJson($this->metricsPayload($provisionData)),
+            'snapshot_json' => $this->encodeJson($runtimeSnapshot),
+            'synced_at' => $now,
+            'updated_at' => $now,
+        ];
+
+        if ($existingRow === null) {
+            DB::table('service_runtime_snapshots')
+                ->insert(array_merge($identity, $payload, ['created_at' => $now]));
+
+            return;
+        }
+
+        $this->updateBindingRowOnChange('service_runtime_snapshots', $existingRow, $payload);
     }
 
     private function syncConnectionSnapshot(
@@ -223,33 +232,41 @@ class ServiceUpstreamBindingWriter
         }
 
         $now = now();
-        DB::table('service_connection_snapshots')->updateOrInsert(
-            ['service_id' => $serviceId, 'connection_type' => 'default'],
-            [
-                'service_upstream_binding_id' => $bindingId,
-                'plugin_id' => $pluginId,
-                'provider_key' => $providerKey,
-                'hostname' => $this->nullableString($connectionSnapshot['hostname'] ?? null, 255),
-                'ip_address' => $this->nullableString($connectionSnapshot['ip_address'] ?? null, 120),
-                'port' => is_numeric($connectionSnapshot['port'] ?? null) ? (int) $connectionSnapshot['port'] : null,
-                'connection_json' => $this->encodeJson($connectionSnapshot),
-                'secret_json' => $this->encryptSecrets([
-                    'connection_secret' => $provisionData['connection_secret'] ?? null,
-                    'password' => $provisionData['password'] ?? null,
-                    'downstream_token' => $this->callbackTokenForService($service, $provisionData),
-                    'ticket_callback_token' => $provisionData['ticket_callback_token'] ?? null,
-                ]),
-                'has_secret_json' => $this->encodeJson($this->hasSecretMap([
-                    'connection_secret' => $provisionData['connection_secret'] ?? null,
-                    'password' => $provisionData['password'] ?? null,
-                    'downstream_token' => $this->callbackTokenForService($service, $provisionData),
-                    'ticket_callback_token' => $provisionData['ticket_callback_token'] ?? null,
-                ])),
-                'checked_at' => $now,
-                'updated_at' => $now,
-                'created_at' => $now,
-            ]
-        );
+        $secrets = [
+            'connection_secret' => $provisionData['connection_secret'] ?? null,
+            'password' => $provisionData['password'] ?? null,
+            'downstream_token' => $this->callbackTokenForService($service, $provisionData),
+            'ticket_callback_token' => $provisionData['ticket_callback_token'] ?? null,
+        ];
+        $identity = ['service_id' => $serviceId, 'connection_type' => 'default'];
+        $existingRow = $this->findBindingRow('service_connection_snapshots', $identity);
+
+        $payload = [
+            'service_upstream_binding_id' => $bindingId,
+            'plugin_id' => $pluginId,
+            'provider_key' => $providerKey,
+            'hostname' => $this->nullableString($connectionSnapshot['hostname'] ?? null, 255),
+            'ip_address' => $this->nullableString($connectionSnapshot['ip_address'] ?? null, 120),
+            'port' => is_numeric($connectionSnapshot['port'] ?? null) ? (int) $connectionSnapshot['port'] : null,
+            'connection_json' => $this->encodeJson($connectionSnapshot),
+            'secret_json' => $this->stableEncryptedSecrets(
+                $existingRow->secret_json ?? null,
+                $secrets,
+                $this->decryptBindingSecrets($existingRow->secret_json ?? null)
+            ),
+            'has_secret_json' => $this->encodeJson($this->hasSecretMap($secrets)),
+            'checked_at' => $now,
+            'updated_at' => $now,
+        ];
+
+        if ($existingRow === null) {
+            DB::table('service_connection_snapshots')
+                ->insert(array_merge($identity, $payload, ['created_at' => $now]));
+
+            return;
+        }
+
+        $this->updateBindingRowOnChange('service_connection_snapshots', $existingRow, $payload);
     }
 
     private function resolveProduct(Service $service, ?Product $product): ?Product
@@ -512,19 +529,6 @@ class ServiceUpstreamBindingWriter
         }
 
         return json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    }
-
-    /**
-     * @param  array<string, mixed>  $secrets
-     */
-    private function encryptSecrets(array $secrets): ?string
-    {
-        $filtered = array_filter($secrets, static fn (mixed $value): bool => $value !== null && $value !== '' && $value !== []);
-        if ($filtered === []) {
-            return null;
-        }
-
-        return Crypt::encryptString((string) json_encode($filtered, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 
     /**

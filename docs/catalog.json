@@ -92,6 +92,12 @@
       "review_by": "2026-12-13"
     },
     {
+      "path": "execution-plans/active/binding-table-write-amplification-2026-09-16.md",
+      "status": "active",
+      "summary": "绑定表与快照表的无变化重写治理：改为变更感知写入，收敛生产 binlog 写入放大。",
+      "review_by": "2026-12-16"
+    },
+    {
       "path": "execution-plans/active/coderabbit-security-remediation-ticket-upstream-2026-08-21.md",
       "status": "active",
       "summary": "按 PR #20 CodeRabbit 审查修复工单上游传递安全与一致性问题，含上游 zjmfv376 配套改动。",
