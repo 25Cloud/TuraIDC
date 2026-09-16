@@ -6,6 +6,7 @@ use App\Constants\BillingCycle;
 use App\Constants\OrderStatus;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
+use App\Jobs\PushServiceToZjmfDownstreamJob;
 use App\Jobs\SyncSupplierBalanceJob;
 use App\Models\Invoice;
 use App\Models\Order;
@@ -26,6 +27,7 @@ use App\Support\ProductProvisionHostname;
 use App\Support\SensitiveDataSanitizer;
 use App\Support\ServiceHostname;
 use Carbon\Carbon;
+use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -289,6 +291,13 @@ class ProvisionService
             // 开通成功后刷新该上游余额：开通才是真正扣减上游余额的动作，此刻拉取
             // 才能拿到消耗后的真实值。异步进行，不拖慢开通链路，失败也不影响开通结果。
             $this->dispatchSupplierBalanceSync($order->product, (int) $order->id);
+
+            // 同步状态给魔方财务下游（若该服务登记过回推目标）。同样异步旁路：
+            // 下游仍可主动 host/header 兜底，推送失败不得影响开通结果。
+            PushServiceToZjmfDownstreamJob::dispatch(
+                (int) $service->id,
+                ZjmfDownstreamPushService::TYPE_CREATE
+            );
 
             return $service;
         } catch (\Throwable $exception) {
