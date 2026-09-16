@@ -6,15 +6,17 @@ namespace App\Services\Integrations\Plugins;
 
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Services\Integrations\Plugins\Concerns\PersistsBindingRowsOnChange;
 use App\Services\Upstream\ProviderKey;
 use App\Services\Upstream\ProviderRegistry;
 use App\Services\Upstream\Support\WebSessionCookieParser;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class UpstreamBindingWriter
 {
+    use PersistsBindingRowsOnChange;
+
     /**
      * @param  array<string, mixed>|null  $bindingPayload
      */
@@ -32,7 +34,18 @@ class UpstreamBindingWriter
             return null;
         }
 
-        $existingSecrets = $this->existingSupplierSecrets((int) $supplier->id, $pluginId);
+        $environment = $this->nullableString(
+            $bindingPayload['environment'] ?? $existingBinding?->environment ?? null,
+            60
+        ) ?? 'production';
+        $identity = [
+            'supplier_id' => (int) $supplier->id,
+            'plugin_id' => $pluginId,
+            'environment' => $environment,
+        ];
+        $existingRow = $this->findBindingRow('supplier_plugin_bindings', $identity);
+
+        $existingSecrets = $this->existingSupplierSecrets((int) $supplier->id, $pluginId, $environment);
         $providerConfig = is_array($bindingPayload['provider_config'] ?? null)
             ? (array) $bindingPayload['provider_config']
             : (is_array($existingSecrets['provider_config'] ?? null) ? (array) $existingSecrets['provider_config'] : []);
@@ -64,7 +77,7 @@ class UpstreamBindingWriter
             'supplier_id' => (int) $supplier->id,
             'plugin_id' => $pluginId,
             'provider_key' => $providerKey,
-            'environment' => $this->nullableString($bindingPayload['environment'] ?? $existingBinding?->environment ?? null, 60) ?? 'production',
+            'environment' => $environment,
             'status' => (int) ($bindingPayload['status'] ?? $existingBinding?->status ?? $supplier->status ?? 0),
             'ticket_delivery_enabled' => $providerKey === ProviderKey::ZJMF_FINANCE_API
                 ? (int) ($bindingPayload['ticket_delivery_enabled'] ?? $existingBinding?->ticket_delivery_enabled ?? 0)
@@ -77,27 +90,27 @@ class UpstreamBindingWriter
                 'provider_config_present' => $providerConfig !== [],
                 'source' => 'supplier_upsert',
             ]),
-            'secret_json' => $this->encryptSecrets($secretPayload),
+            'secret_json' => $this->stableEncryptedSecrets(
+                $existingRow->secret_json ?? null,
+                $secretPayload,
+                $existingSecrets
+            ),
             'has_secret_json' => $this->encodeJson($this->supplierSecretMap($providerKey, $secretPayload)),
             'updated_at' => $now,
         ];
 
-        DB::table('supplier_plugin_bindings')->updateOrInsert(
-            [
-                'supplier_id' => (int) $supplier->id,
-                'plugin_id' => $pluginId,
-                'environment' => $payload['environment'],
-            ],
-            array_merge($payload, ['created_at' => $now])
-        );
+        if ($existingRow === null) {
+            $bindingId = (int) DB::table('supplier_plugin_bindings')
+                ->insertGetId(array_merge($payload, ['created_at' => $now]));
 
-        $binding = DB::table('supplier_plugin_bindings')
-            ->where('supplier_id', (int) $supplier->id)
-            ->where('plugin_id', $pluginId)
-            ->where('environment', $payload['environment'])
-            ->first(['id']);
+            return $bindingId > 0 ? $bindingId : null;
+        }
 
-        return $binding === null ? null : (int) $binding->id;
+        // 定时同步与「确保绑定存在」路径会反复调用本方法，数据没变就不落 UPDATE：
+        // 无条件重写会为每行产生完整的前后镜像 binlog，是绑定表写入放大的直接来源。
+        $this->updateBindingRowOnChange('supplier_plugin_bindings', $existingRow, $payload);
+
+        return (int) $existingRow->id;
     }
 
     /**
@@ -137,6 +150,13 @@ class UpstreamBindingWriter
         }
 
         $now = now();
+        $identity = [
+            'product_id' => (int) $product->id,
+            'supplier_plugin_binding_id' => $supplierBindingId,
+            'upstream_product_id' => $resolvedUpstreamProductId,
+        ];
+        $existingRow = $this->findBindingRow('product_upstream_bindings', $identity);
+
         $payload = [
             'product_id' => (int) $product->id,
             'supplier_plugin_binding_id' => $supplierBindingId,
@@ -158,22 +178,19 @@ class UpstreamBindingWriter
             'updated_at' => $now,
         ];
 
-        DB::table('product_upstream_bindings')->updateOrInsert(
-            [
-                'product_id' => (int) $product->id,
-                'supplier_plugin_binding_id' => $supplierBindingId,
-                'upstream_product_id' => $resolvedUpstreamProductId,
-            ],
-            array_merge($payload, ['created_at' => $now])
-        );
+        if ($existingRow === null) {
+            $bindingId = (int) DB::table('product_upstream_bindings')
+                ->insertGetId(array_merge($payload, ['created_at' => $now]));
 
-        $binding = DB::table('product_upstream_bindings')
-            ->where('product_id', (int) $product->id)
-            ->where('supplier_plugin_binding_id', $supplierBindingId)
-            ->where('upstream_product_id', $resolvedUpstreamProductId)
-            ->first(['id']);
+            return $bindingId > 0 ? $bindingId : null;
+        }
 
-        return $binding === null ? null : (int) $binding->id;
+        // 库存同步每个槽位都会为全部已绑定商品回写快照，服务详情每次访问也会调到这里；
+        // 快照里的 synced_at 与 last_synced_at 属易变字段，不参与比对，
+        // 否则「数据没变」也会被判定成有变化，等于没有收敛写入。
+        $this->updateBindingRowOnChange('product_upstream_bindings', $existingRow, $payload);
+
+        return (int) $existingRow->id;
     }
 
     private function pluginIdForProvider(string $providerKey): ?int
@@ -234,7 +251,7 @@ class UpstreamBindingWriter
     /**
      * @return array<string, mixed>
      */
-    private function existingSupplierSecrets(int $supplierId, int $pluginId): array
+    private function existingSupplierSecrets(int $supplierId, int $pluginId, string $environment = 'production'): array
     {
         if ($supplierId <= 0 || $pluginId <= 0) {
             return [];
@@ -243,21 +260,10 @@ class UpstreamBindingWriter
         $encrypted = DB::table('supplier_plugin_bindings')
             ->where('supplier_id', $supplierId)
             ->where('plugin_id', $pluginId)
-            ->where('environment', 'production')
+            ->where('environment', $environment)
             ->value('secret_json');
 
-        $encrypted = trim((string) ($encrypted ?? ''));
-        if ($encrypted === '') {
-            return [];
-        }
-
-        try {
-            $decoded = json_decode(Crypt::decryptString($encrypted), true);
-        } catch (\Throwable) {
-            return [];
-        }
-
-        return is_array($decoded) ? $decoded : [];
+        return $this->decryptBindingSecrets(is_string($encrypted) ? $encrypted : null);
     }
 
     /**
@@ -284,19 +290,6 @@ class UpstreamBindingWriter
         }
 
         return json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    }
-
-    /**
-     * @param  array<string, mixed>  $secrets
-     */
-    private function encryptSecrets(array $secrets): ?string
-    {
-        $filtered = array_filter($secrets, static fn (mixed $value): bool => $value !== null && $value !== '' && $value !== []);
-        if ($filtered === []) {
-            return null;
-        }
-
-        return Crypt::encryptString((string) json_encode($filtered, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 
     /**

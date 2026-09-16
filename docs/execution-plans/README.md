@@ -12,6 +12,7 @@
 | ---------------------------------------------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------- |
 | [代理折扣实施计划](active/2026-08-20-agent-discount.md)                                                                | active | 代理折扣体系落地：AgentDiscountService 与三张配置表、新购续费计价与三端展示。             |
 | [后端专家团审查修复计划](active/backend-expert-review-remediation-2026-08-13.md)                                       | active | 6 功能域 × 5 视角专家团审查结论的分批修复计划，P0 资金与账号安全优先。                    |
+| [绑定表写入放大治理](active/binding-table-write-amplification-2026-09-16.md)                                           | active | 绑定表与快照表的无变化重写治理：改为变更感知写入，收敛生产 binlog 写入放大。              |
 | [工单上游 CodeRabbit 安全修复](active/coderabbit-security-remediation-ticket-upstream-2026-08-21.md)                   | active | 按 PR #20 CodeRabbit 审查修复工单上游传递安全与一致性问题，含上游 zjmfv376 配套改动。     |
 | [数据库专家团审查修复计划](active/database-expert-review-remediation-2026-08-13.md)                                    | active | 数据库结构专家团审查发现的分组修复与回归计划。                                            |
 | [专家团审查修复计划](active/expert-review-remediation-2026-08-12.md)                                                   | active | 换绑安全、密码策略、履约锁、升级锁、共享状态常量、回调 URL 与文档索引修复。               |
