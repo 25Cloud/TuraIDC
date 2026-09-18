@@ -29,6 +29,7 @@ class User extends Authenticatable
         'referral_code', 'referrer_user_id', 'referred_at', 'member_level_id', 'total_sales_amount',
         'agent_group_id',
         'api_open', 'api_username', 'api_password',
+        'api_ip_allowlist', 'api_expires_at', 'api_last_used_at',
         'is_verified', 'real_name', 'id_card', 'verification_status', 'verification_message', 'verification_certify_id', 'verified_at',
         'alipay_real_name', 'alipay_account',
         'login_email_alert', 'login_notify', 'login_location_alert', 'password_change_alert', 'phone_change_alert', 'email_change_alert', 'marketing_alert', 'last_login_ip', 'last_login_at',
@@ -60,6 +61,9 @@ class User extends Authenticatable
             'agent_group_id' => 'integer',
             'api_open' => 'boolean',
             'api_password' => 'hashed',
+            'api_ip_allowlist' => 'array',
+            'api_expires_at' => 'datetime',
+            'api_last_used_at' => 'datetime',
             'referrer_user_id' => 'integer',
             'password' => 'hashed',
         ];

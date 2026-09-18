@@ -1,13 +1,13 @@
 # 当前数据库结构说明
 
 - 文档性质：参考资料 / 实库结构快照
-- 生成时间：`2026-09-13 10:33:39 +08:00`
+- 生成时间：`2026-09-18 16:30:39 +08:00`
 - 数据来源：Laravel 默认连接 `mysql` 直连 MySQL `information_schema` 与业务库 `idc_test`
 - 数据库：`idc_test`
 - MySQL 版本：`5.7.26`
 - 当前表数量：`75`
-- 字段数量：`1047`
-- 索引数量：`358`
+- 字段数量：`1051`
+- 索引数量：`359`
 - 外键约束数量：`103`
 - CHECK 约束数量：`0`
 - 说明：
@@ -24,15 +24,15 @@
 
 | 表名                              | 类型       | 引擎   | 估算行数 | 数据大小 | 索引大小 |    自增值 | 排序规则           | 表注释                                                                       |
 | --------------------------------- | ---------- | ------ | -------: | -------: | -------: | --------: | ------------------ | ---------------------------------------------------------------------------- |
-| `account_transactions`            | BASE TABLE | InnoDB |        9 |    16 KB |    96 KB |     1,759 | utf8mb4_unicode_ci | 账户流水表，记录现金账户、授信账户、推荐奖励账户的每一次余额变化             |
-| `activity_logs`                   | BASE TABLE | InnoDB |      375 |   208 KB |    96 KB | 1,036,400 | utf8mb4_unicode_ci | —                                                                            |
+| `account_transactions`            | BASE TABLE | InnoDB |        8 |    16 KB |    96 KB |     1,758 | utf8mb4_unicode_ci | 账户流水表，记录现金账户、授信账户、推荐奖励账户的每一次余额变化             |
+| `activity_logs`                   | BASE TABLE | InnoDB |      416 |   240 KB |    96 KB | 1,036,441 | utf8mb4_unicode_ci | —                                                                            |
 | `admin_users`                     | BASE TABLE | InnoDB |      210 |    80 KB |    48 KB |       588 | utf8mb4_unicode_ci | —                                                                            |
 | `admin_user_roles`                | BASE TABLE | InnoDB |        1 |    16 KB |    32 KB |       210 | utf8mb4_unicode_ci | —                                                                            |
 | `agent_applications`              | BASE TABLE | InnoDB |        0 |    16 KB |    32 KB |         1 | utf8mb4_unicode_ci | —                                                                            |
 | `agent_groups`                    | BASE TABLE | InnoDB |        1 |    16 KB |    16 KB |         6 | utf8mb4_unicode_ci | —                                                                            |
 | `agent_group_discounts`           | BASE TABLE | InnoDB |        1 |    16 KB |    32 KB |         5 | utf8mb4_unicode_ci | —                                                                            |
-| `api_keys`                        | BASE TABLE | InnoDB |        0 |    16 KB |    48 KB |         1 | utf8mb4_unicode_ci | —                                                                            |
-| `api_key_usage_logs`              | BASE TABLE | InnoDB |        0 |    16 KB |    32 KB |         1 | utf8mb4_unicode_ci | —                                                                            |
+| `api_keys`                        | BASE TABLE | InnoDB |        0 |    16 KB |    48 KB |         2 | utf8mb4_unicode_ci | —                                                                            |
+| `api_key_usage_logs`              | BASE TABLE | InnoDB |       25 |    16 KB |    48 KB |        32 | utf8mb4_unicode_ci | —                                                                            |
 | `archive_audit_logs`              | BASE TABLE | InnoDB |        0 |    16 KB |    32 KB |         2 | utf8mb4_unicode_ci | —                                                                            |
 | `automation_logs`                 | BASE TABLE | InnoDB |        0 |    16 KB |    48 KB |     1,290 | utf8mb4_unicode_ci | —                                                                            |
 | `content_articles`                | BASE TABLE | InnoDB |        8 |    16 KB |    96 KB |        45 | utf8mb4_unicode_ci | —                                                                            |
@@ -41,30 +41,30 @@
 | `coupon_campaigns`                | BASE TABLE | InnoDB |        3 |    16 KB |    48 KB |        19 | utf8mb4_unicode_ci | —                                                                            |
 | `failed_jobs`                     | BASE TABLE | InnoDB |        0 |    16 KB |    16 KB |       277 | utf8mb4_unicode_ci | —                                                                            |
 | `first_product_groups`            | BASE TABLE | InnoDB |       36 |    16 KB |    32 KB |       110 | utf8mb4_unicode_ci | —                                                                            |
-| `gateway_logs`                    | BASE TABLE | InnoDB |        5 |    16 KB |   112 KB | 1,000,083 | utf8mb4_unicode_ci | —                                                                            |
-| `integration_plugins`             | BASE TABLE | InnoDB |        1 |    16 KB |    48 KB |        38 | utf8mb4_unicode_ci | —                                                                            |
+| `gateway_logs`                    | BASE TABLE | InnoDB |        0 |    16 KB |   112 KB | 1,000,078 | utf8mb4_unicode_ci | —                                                                            |
+| `integration_plugins`             | BASE TABLE | InnoDB |        6 |    16 KB |    48 KB |        57 | utf8mb4_unicode_ci | —                                                                            |
 | `integration_plugin_bindings`     | BASE TABLE | InnoDB |        1 |    16 KB |    80 KB |         3 | utf8mb4_unicode_ci | —                                                                            |
-| `integration_plugin_configs`      | BASE TABLE | InnoDB |        0 |    16 KB |    16 KB |        37 | utf8mb4_unicode_ci | —                                                                            |
-| `integration_plugin_runtime_logs` | BASE TABLE | InnoDB |        8 |    16 KB |    80 KB | 1,014,097 | utf8mb4_unicode_ci | —                                                                            |
-| `invoices`                        | BASE TABLE | InnoDB |       45 |    16 KB |   208 KB |     3,068 | utf8mb4_unicode_ci | 账单主表，所有购买、续费、充值、扣款和退款流程以账单为财务入口               |
-| `invoice_items`                   | BASE TABLE | InnoDB |        2 |    16 KB |    16 KB |     2,799 | utf8mb4_unicode_ci | 账单明细表，记录账单内每个收费项目和快照信息                                 |
+| `integration_plugin_configs`      | BASE TABLE | InnoDB |        1 |    16 KB |    16 KB |        39 | utf8mb4_unicode_ci | —                                                                            |
+| `integration_plugin_runtime_logs` | BASE TABLE | InnoDB |        2 |    16 KB |    80 KB | 1,014,091 | utf8mb4_unicode_ci | —                                                                            |
+| `invoices`                        | BASE TABLE | InnoDB |       44 |    16 KB |   208 KB |     3,068 | utf8mb4_unicode_ci | 账单主表，所有购买、续费、充值、扣款和退款流程以账单为财务入口               |
+| `invoice_items`                   | BASE TABLE | InnoDB |        1 |    16 KB |    16 KB |     2,799 | utf8mb4_unicode_ci | 账单明细表，记录账单内每个收费项目和快照信息                                 |
 | `jobs`                            | BASE TABLE | InnoDB |        0 |    16 KB |    16 KB |     4,002 | utf8mb4_unicode_ci | —                                                                            |
 | `media_files`                     | BASE TABLE | InnoDB |        0 |    16 KB |    48 KB |        68 | utf8mb4_unicode_ci | —                                                                            |
 | `member_levels`                   | BASE TABLE | InnoDB |        0 |    16 KB |    48 KB |        12 | utf8mb4_unicode_ci | —                                                                            |
 | `message_logs`                    | BASE TABLE | InnoDB |        2 |    16 KB |   112 KB |     2,616 | utf8mb4_unicode_ci | —                                                                            |
-| `migrations`                      | BASE TABLE | InnoDB |      206 |    48 KB |      0 B |       209 | utf8mb4_unicode_ci | —                                                                            |
+| `migrations`                      | BASE TABLE | InnoDB |      209 |    48 KB |      0 B |       212 | utf8mb4_unicode_ci | —                                                                            |
 | `notice_reads`                    | BASE TABLE | InnoDB |        2 |    16 KB |    32 KB |       175 | utf8mb4_unicode_ci | —                                                                            |
 | `notification_templates`          | BASE TABLE | InnoDB |        0 |    16 KB |    32 KB |     1,013 | utf8mb4_unicode_ci | —                                                                            |
-| `operation_logs`                  | BASE TABLE | InnoDB |      373 |   192 KB |    80 KB |   166,161 | utf8mb4_unicode_ci | —                                                                            |
-| `orders`                          | BASE TABLE | InnoDB |       26 |    16 KB |   176 KB |     3,113 | utf8mb4_unicode_ci | —                                                                            |
+| `operation_logs`                  | BASE TABLE | InnoDB |      414 |   208 KB |    80 KB |   166,202 | utf8mb4_unicode_ci | —                                                                            |
+| `orders`                          | BASE TABLE | InnoDB |       26 |    16 KB |   176 KB |     3,114 | utf8mb4_unicode_ci | —                                                                            |
 | `password_reset_tokens`           | BASE TABLE | InnoDB |        0 |    16 KB |      0 B |         — | utf8mb4_unicode_ci | —                                                                            |
-| `payments`                        | BASE TABLE | InnoDB |       21 |    16 KB |   160 KB |       389 | utf8mb4_unicode_ci | 第三方支付记录表，仅记录真实外部资金流入和退款状态，不记录余额/免费/手工开服 |
-| `payment_callbacks`               | BASE TABLE | InnoDB |        3 |    16 KB |    96 KB |       491 | utf8mb4_unicode_ci | 支付回调审计表，保存第三方通知、查询、退款等回调验签结果                     |
+| `payments`                        | BASE TABLE | InnoDB |       19 |    16 KB |   160 KB |       387 | utf8mb4_unicode_ci | 第三方支付记录表，仅记录真实外部资金流入和退款状态，不记录余额/免费/手工开服 |
+| `payment_callbacks`               | BASE TABLE | InnoDB |        2 |    16 KB |    96 KB |       490 | utf8mb4_unicode_ci | 支付回调审计表，保存第三方通知、查询、退款等回调验签结果                     |
 | `personal_access_tokens`          | BASE TABLE | InnoDB |        1 |    16 KB |    48 KB |       176 | utf8mb4_unicode_ci | —                                                                            |
-| `products`                        | BASE TABLE | InnoDB |      210 |    80 KB |    48 KB |       623 | utf8mb4_unicode_ci | 商品表，记录可售卖产品的分类、定价、库存、上游绑定和开通策略                 |
+| `products`                        | BASE TABLE | InnoDB |      210 |    80 KB |    48 KB |       636 | utf8mb4_unicode_ci | 商品表，记录可售卖产品的分类、定价、库存、上游绑定和开通策略                 |
 | `product_discount_groups`         | BASE TABLE | InnoDB |        1 |    16 KB |    16 KB |         4 | utf8mb4_unicode_ci | —                                                                            |
 | `product_upstream_bindings`       | BASE TABLE | InnoDB |        3 |    16 KB |    96 KB |       284 | utf8mb4_unicode_ci | —                                                                            |
-| `recharge_records`                | BASE TABLE | InnoDB |        0 |    16 KB |   144 KB |         2 | utf8mb4_unicode_ci | —                                                                            |
+| `recharge_records`                | BASE TABLE | InnoDB |        0 |    16 KB |   144 KB |         1 | utf8mb4_unicode_ci | —                                                                            |
 | `referral_account_logs`           | BASE TABLE | InnoDB |        0 |    16 KB |    64 KB |         7 | utf8mb4_unicode_ci | —                                                                            |
 | `referral_rewards`                | BASE TABLE | InnoDB |        0 |    16 KB |    96 KB |        13 | utf8mb4_unicode_ci | —                                                                            |
 | `referral_withdrawals`            | BASE TABLE | InnoDB |        3 |    16 KB |    48 KB |         9 | utf8mb4_unicode_ci | —                                                                            |
@@ -74,13 +74,13 @@
 | `schedule_task_runs`              | BASE TABLE | InnoDB |        0 |    16 KB |    96 KB |     3,359 | utf8mb4_unicode_ci | —                                                                            |
 | `schedule_ticks`                  | BASE TABLE | InnoDB |        0 |    16 KB |    64 KB |       281 | utf8mb4_unicode_ci | —                                                                            |
 | `second_product_groups`           | BASE TABLE | InnoDB |      117 |    16 KB |    32 KB |       206 | utf8mb4_unicode_ci | —                                                                            |
-| `services`                        | BASE TABLE | InnoDB |       42 |    48 KB |   128 KB |       362 | utf8mb4_unicode_ci | 服务实例表，记录用户已购买产品的生命周期、计费、上游和续费状态               |
+| `services`                        | BASE TABLE | InnoDB |       42 |    48 KB |   128 KB |       374 | utf8mb4_unicode_ci | 服务实例表，记录用户已购买产品的生命周期、计费、上游和续费状态               |
 | `service_connection_snapshots`    | BASE TABLE | InnoDB |        1 |    16 KB |    80 KB |       198 | utf8mb4_unicode_ci | —                                                                            |
-| `service_provision_attempts`      | BASE TABLE | InnoDB |        1 |    16 KB |    80 KB |       431 | utf8mb4_unicode_ci | —                                                                            |
-| `service_runtime_snapshots`       | BASE TABLE | InnoDB |        0 |    16 KB |    80 KB |       198 | utf8mb4_unicode_ci | —                                                                            |
+| `service_provision_attempts`      | BASE TABLE | InnoDB |        0 |    16 KB |    80 KB |       431 | utf8mb4_unicode_ci | —                                                                            |
+| `service_runtime_snapshots`       | BASE TABLE | InnoDB |        1 |    16 KB |    80 KB |       198 | utf8mb4_unicode_ci | —                                                                            |
 | `service_upstream_bindings`       | BASE TABLE | InnoDB |        1 |    16 KB |   112 KB |       288 | utf8mb4_unicode_ci | —                                                                            |
 | `sessions`                        | BASE TABLE | InnoDB |        0 |    16 KB |    32 KB |         — | utf8mb4_unicode_ci | —                                                                            |
-| `settings`                        | BASE TABLE | InnoDB |       13 |    16 KB |    16 KB |       534 | utf8mb4_unicode_ci | —                                                                            |
+| `settings`                        | BASE TABLE | InnoDB |       14 |    16 KB |    16 KB |       535 | utf8mb4_unicode_ci | —                                                                            |
 | `suppliers`                       | BASE TABLE | InnoDB |       15 |    16 KB |    32 KB |       132 | utf8mb4_unicode_ci | —                                                                            |
 | `supplier_balances`               | BASE TABLE | MyISAM |        5 |    456 B |     4 KB |        13 | utf8mb4_unicode_ci | —                                                                            |
 | `supplier_balance_logs`           | BASE TABLE | MyISAM |        0 |      0 B |     1 KB |         1 | utf8mb4_unicode_ci | —                                                                            |
@@ -93,12 +93,12 @@
 | `ticket_reply_deliveries`         | BASE TABLE | InnoDB |        3 |    16 KB |    48 KB |         4 | utf8mb4_unicode_ci | —                                                                            |
 | `ticket_upstream_bindings`        | BASE TABLE | InnoDB |        3 |    16 KB |    48 KB |         6 | utf8mb4_unicode_ci | —                                                                            |
 | `ticket_upstream_delivery_logs`   | BASE TABLE | InnoDB |        7 |    16 KB |    80 KB |        12 | utf8mb4_unicode_ci | —                                                                            |
-| `users`                           | BASE TABLE | InnoDB |      121 |    64 KB |   176 KB |   988,233 | utf8mb4_unicode_ci | —                                                                            |
-| `user_accounts`                   | BASE TABLE | InnoDB |       11 |    16 KB |      0 B |         — | utf8mb4_unicode_ci | 用户账户余额源表，集中承载现金余额、授信和推荐奖励余额                       |
+| `users`                           | BASE TABLE | InnoDB |      119 |    64 KB |   176 KB |   988,257 | utf8mb4_unicode_ci | —                                                                            |
+| `user_accounts`                   | BASE TABLE | InnoDB |        9 |    16 KB |      0 B |         — | utf8mb4_unicode_ci | 用户账户余额源表，集中承载现金余额、授信和推荐奖励余额                       |
 | `user_coupons`                    | BASE TABLE | InnoDB |       10 |    16 KB |    64 KB |       100 | utf8mb4_unicode_ci | —                                                                            |
-| `user_notifications`              | BASE TABLE | InnoDB |       10 |    16 KB |    48 KB |       138 | utf8mb4_unicode_ci | —                                                                            |
+| `user_notifications`              | BASE TABLE | InnoDB |       11 |    16 KB |    48 KB |       138 | utf8mb4_unicode_ci | —                                                                            |
 | `verification_histories`          | BASE TABLE | InnoDB |       10 |    16 KB |    48 KB |       109 | utf8mb4_unicode_ci | —                                                                            |
-| `zjmf_upstream_bindings`          | BASE TABLE | MyISAM |        0 |      0 B |     1 KB |         1 | utf8mb4_unicode_ci | —                                                                            |
+| `zjmf_upstream_bindings`          | BASE TABLE | MyISAM |        1 |    148 B |     5 KB |         5 | utf8mb4_unicode_ci | —                                                                            |
 
 ### 1.2 字段类型分布
 
@@ -109,14 +109,14 @@
 | `date`       |      1 |
 | `decimal`    |     51 |
 | `int`        |     45 |
-| `json`       |     59 |
+| `json`       |     60 |
 | `longtext`   |     10 |
 | `mediumtext` |      1 |
 | `smallint`   |      3 |
 | `text`       |     20 |
-| `timestamp`  |    205 |
+| `timestamp`  |    207 |
 | `tinyint`    |     60 |
-| `varchar`    |    368 |
+| `varchar`    |    369 |
 
 ### 1.3 JSON 字段
 
@@ -177,6 +177,7 @@
 - `supplier_plugin_bindings.config_json`
 - `supplier_plugin_bindings.has_secret_json`
 - `ticket_replies.attachments`
+- `users.api_ip_allowlist`
 - `user_notifications.data`
 - `zjmf_upstream_bindings.payload`
 
@@ -186,10 +187,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`9`
+- 估算行数：`8`
 - 数据大小：`16 KB`
 - 索引大小：`96 KB`
-- 自增值：`1759`
+- 自增值：`1758`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：账户流水表，记录现金账户、授信账户、推荐奖励账户的每一次余额变化
 
@@ -218,13 +219,13 @@
 
 | 索引名                                          | 唯一 | 类型    | 字段                                          | 基数 | 注释 |
 | ----------------------------------------------- | ---- | ------- | --------------------------------------------- | ---: | ---- |
-| `account_transactions_created_at_idx`           | 否   | `BTREE` | `created_at`                                  |    6 | —    |
-| `account_transactions_origin_idx`               | 否   | `BTREE` | `origin_type`, `origin_id`                    |    9 | —    |
-| `account_transactions_source_idx`               | 否   | `BTREE` | `source_type`, `source_id`                    |    9 | —    |
-| `account_transactions_trace_id_idx`             | 否   | `BTREE` | `trace_id`                                    |    8 | —    |
-| `account_transactions_user_account_created_idx` | 否   | `BTREE` | `user_id`, `account_type`, `created_at`, `id` |    9 | —    |
-| `account_transactions_user_event_created_idx`   | 否   | `BTREE` | `user_id`, `event_type`, `created_at`         |    9 | —    |
-| `PRIMARY`                                       | 是   | `BTREE` | `id`                                          |    9 | —    |
+| `account_transactions_created_at_idx`           | 否   | `BTREE` | `created_at`                                  |    4 | —    |
+| `account_transactions_origin_idx`               | 否   | `BTREE` | `origin_type`, `origin_id`                    |    8 | —    |
+| `account_transactions_source_idx`               | 否   | `BTREE` | `source_type`, `source_id`                    |    8 | —    |
+| `account_transactions_trace_id_idx`             | 否   | `BTREE` | `trace_id`                                    |    7 | —    |
+| `account_transactions_user_account_created_idx` | 否   | `BTREE` | `user_id`, `account_type`, `created_at`, `id` |    8 | —    |
+| `account_transactions_user_event_created_idx`   | 否   | `BTREE` | `user_id`, `event_type`, `created_at`         |    8 | —    |
+| `PRIMARY`                                       | 是   | `BTREE` | `id`                                          |    8 | —    |
 
 #### 外键约束
 
@@ -236,10 +237,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`375`
-- 数据大小：`208 KB`
+- 估算行数：`416`
+- 数据大小：`240 KB`
 - 索引大小：`96 KB`
-- 自增值：`1036400`
+- 自增值：`1036441`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -265,11 +266,11 @@
 
 | 索引名                                        | 唯一 | 类型    | 字段                         | 基数 | 注释 |
 | --------------------------------------------- | ---- | ------- | ---------------------------- | ---: | ---- |
-| `activity_logs_actor_id_index`                | 否   | `BTREE` | `actor_id`                   |  195 | —    |
-| `activity_logs_created_at_index`              | 否   | `BTREE` | `created_at`                 |   95 | —    |
-| `activity_logs_module_action_index`           | 否   | `BTREE` | `module`, `action`           |  193 | —    |
-| `activity_logs_subject_type_subject_id_index` | 否   | `BTREE` | `subject_type`, `subject_id` |   59 | —    |
-| `PRIMARY`                                     | 是   | `BTREE` | `id`                         |  375 | —    |
+| `activity_logs_actor_id_index`                | 否   | `BTREE` | `actor_id`                   |  206 | —    |
+| `activity_logs_created_at_index`              | 否   | `BTREE` | `created_at`                 |   93 | —    |
+| `activity_logs_module_action_index`           | 否   | `BTREE` | `module`, `action`           |  196 | —    |
+| `activity_logs_subject_type_subject_id_index` | 否   | `BTREE` | `subject_type`, `subject_id` |   60 | —    |
+| `PRIMARY`                                     | 是   | `BTREE` | `id`                         |  406 | —    |
 
 #### 外键约束
 
@@ -473,7 +474,7 @@
 - 估算行数：`0`
 - 数据大小：`16 KB`
 - 索引大小：`48 KB`
-- 自增值：`1`
+- 自增值：`2`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -513,10 +514,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`0`
+- 估算行数：`25`
 - 数据大小：`16 KB`
-- 索引大小：`32 KB`
-- 自增值：`1`
+- 索引大小：`48 KB`
+- 自增值：`32`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -526,21 +527,23 @@
 | ---: | ------------- | ---------------------- | ---- | ------------------- | --- | --------------------------- | ------- | ------------------ | ---- |
 |    1 | `id`          | `bigint(20) unsigned`  | 否   | —                   | PRI | auto_increment              | —       | —                  | —    |
 |    2 | `api_key_id`  | `bigint(20) unsigned`  | 否   | —                   | MUL | —                           | —       | —                  | —    |
-|    3 | `user_id`     | `bigint(20) unsigned`  | 否   | —                   | —   | —                           | —       | —                  | —    |
-|    4 | `method`      | `varchar(8)`           | 否   | 空字符串            | —   | —                           | utf8mb4 | utf8mb4_unicode_ci | —    |
-|    5 | `path`        | `varchar(255)`         | 否   | 空字符串            | —   | —                           | utf8mb4 | utf8mb4_unicode_ci | —    |
-|    6 | `status_code` | `smallint(5) unsigned` | 否   | `0`                 | —   | —                           | —       | —                  | —    |
-|    7 | `ip`          | `varchar(45)`          | 否   | 空字符串            | —   | —                           | utf8mb4 | utf8mb4_unicode_ci | —    |
-|    8 | `duration_ms` | `int(10) unsigned`     | 否   | `0`                 | —   | —                           | —       | —                  | —    |
-|    9 | `created_at`  | `timestamp`            | 否   | `CURRENT_TIMESTAMP` | MUL | on update CURRENT_TIMESTAMP | —       | —                  | —    |
+|    3 | `user_id`     | `bigint(20) unsigned`  | 否   | —                   | MUL | —                           | —       | —                  | —    |
+|    4 | `channel`     | `varchar(20)`          | 否   | `open_api`          | —   | —                           | utf8mb4 | utf8mb4_unicode_ci | —    |
+|    5 | `method`      | `varchar(8)`           | 否   | 空字符串            | —   | —                           | utf8mb4 | utf8mb4_unicode_ci | —    |
+|    6 | `path`        | `varchar(255)`         | 否   | 空字符串            | —   | —                           | utf8mb4 | utf8mb4_unicode_ci | —    |
+|    7 | `status_code` | `smallint(5) unsigned` | 否   | `0`                 | —   | —                           | —       | —                  | —    |
+|    8 | `ip`          | `varchar(45)`          | 否   | 空字符串            | —   | —                           | utf8mb4 | utf8mb4_unicode_ci | —    |
+|    9 | `duration_ms` | `int(10) unsigned`     | 否   | `0`                 | —   | —                           | —       | —                  | —    |
+|   10 | `created_at`  | `timestamp`            | 否   | `CURRENT_TIMESTAMP` | MUL | on update CURRENT_TIMESTAMP | —       | —                  | —    |
 
 #### 索引
 
-| 索引名                                | 唯一 | 类型    | 字段         | 基数 | 注释 |
-| ------------------------------------- | ---- | ------- | ------------ | ---: | ---- |
-| `api_key_usage_logs_api_key_id_index` | 否   | `BTREE` | `api_key_id` |    0 | —    |
-| `api_key_usage_logs_created_at_index` | 否   | `BTREE` | `created_at` |    0 | —    |
-| `PRIMARY`                             | 是   | `BTREE` | `id`         |    0 | —    |
+| 索引名                                | 唯一 | 类型    | 字段                               | 基数 | 注释 |
+| ------------------------------------- | ---- | ------- | ---------------------------------- | ---: | ---- |
+| `api_key_usage_logs_api_key_id_index` | 否   | `BTREE` | `api_key_id`                       |    1 | —    |
+| `api_key_usage_logs_created_at_index` | 否   | `BTREE` | `created_at`                       |   16 | —    |
+| `api_key_usage_logs_user_channel_idx` | 否   | `BTREE` | `user_id`, `channel`, `created_at` |   25 | —    |
+| `PRIMARY`                             | 是   | `BTREE` | `id`                               |   25 | —    |
 
 #### 外键约束
 
@@ -919,10 +922,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`5`
+- 估算行数：`0`
 - 数据大小：`16 KB`
 - 索引大小：`112 KB`
-- 自增值：`1000083`
+- 自增值：`1000078`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -951,14 +954,14 @@
 
 | 索引名                              | 唯一 | 类型    | 字段                        | 基数 | 注释 |
 | ----------------------------------- | ---- | ------- | --------------------------- | ---: | ---- |
-| `gateway_logs_created_at_index`     | 否   | `BTREE` | `created_at`                |    2 | —    |
-| `gateway_logs_gateway_action_index` | 否   | `BTREE` | `gateway`, `action`         |    2 | —    |
-| `gateway_logs_gateway_key_idx`      | 否   | `BTREE` | `gateway_key`, `created_at` |    2 | —    |
-| `gateway_logs_invoice_id_index`     | 否   | `BTREE` | `invoice_id`                |    1 | —    |
-| `gateway_logs_out_trade_no_index`   | 否   | `BTREE` | `out_trade_no`              |    4 | —    |
-| `gateway_logs_plugin_created_idx`   | 否   | `BTREE` | `plugin_id`, `created_at`   |    2 | —    |
-| `gateway_logs_trace_idx`            | 否   | `BTREE` | `trace_id`                  |    1 | —    |
-| `PRIMARY`                           | 是   | `BTREE` | `id`                        |    5 | —    |
+| `gateway_logs_created_at_index`     | 否   | `BTREE` | `created_at`                |    0 | —    |
+| `gateway_logs_gateway_action_index` | 否   | `BTREE` | `gateway`, `action`         |    0 | —    |
+| `gateway_logs_gateway_key_idx`      | 否   | `BTREE` | `gateway_key`, `created_at` |    0 | —    |
+| `gateway_logs_invoice_id_index`     | 否   | `BTREE` | `invoice_id`                |    0 | —    |
+| `gateway_logs_out_trade_no_index`   | 否   | `BTREE` | `out_trade_no`              |    0 | —    |
+| `gateway_logs_plugin_created_idx`   | 否   | `BTREE` | `plugin_id`, `created_at`   |    0 | —    |
+| `gateway_logs_trace_idx`            | 否   | `BTREE` | `trace_id`                  |    0 | —    |
+| `PRIMARY`                           | 是   | `BTREE` | `id`                        |    0 | —    |
 
 #### 外键约束
 
@@ -971,10 +974,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`1`
+- 估算行数：`6`
 - 数据大小：`16 KB`
 - 索引大小：`48 KB`
-- 自增值：`38`
+- 自增值：`57`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -1007,10 +1010,10 @@
 
 | 索引名                                    | 唯一 | 类型    | 字段                   | 基数 | 注释 |
 | ----------------------------------------- | ---- | ------- | ---------------------- | ---: | ---- |
-| `integration_plugins_domain_key_unique`   | 是   | `BTREE` | `domain`, `plugin_key` |    1 | —    |
-| `integration_plugins_domain_slug_unique`  | 是   | `BTREE` | `domain`, `slug`       |    1 | —    |
-| `integration_plugins_domain_status_index` | 否   | `BTREE` | `domain`, `status`     |    1 | —    |
-| `PRIMARY`                                 | 是   | `BTREE` | `id`                   |    1 | —    |
+| `integration_plugins_domain_key_unique`   | 是   | `BTREE` | `domain`, `plugin_key` |    6 | —    |
+| `integration_plugins_domain_slug_unique`  | 是   | `BTREE` | `domain`, `slug`       |    6 | —    |
+| `integration_plugins_domain_status_index` | 否   | `BTREE` | `domain`, `status`     |    2 | —    |
+| `PRIMARY`                                 | 是   | `BTREE` | `id`                   |    6 | —    |
 
 #### 外键约束
 
@@ -1072,10 +1075,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`0`
+- 估算行数：`1`
 - 数据大小：`16 KB`
 - 索引大小：`16 KB`
-- 自增值：`37`
+- 自增值：`39`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -1096,8 +1099,8 @@
 
 | 索引名                                     | 唯一 | 类型    | 字段        | 基数 | 注释 |
 | ------------------------------------------ | ---- | ------- | ----------- | ---: | ---- |
-| `integration_plugin_configs_plugin_unique` | 是   | `BTREE` | `plugin_id` |    0 | —    |
-| `PRIMARY`                                  | 是   | `BTREE` | `id`        |    0 | —    |
+| `integration_plugin_configs_plugin_unique` | 是   | `BTREE` | `plugin_id` |    1 | —    |
+| `PRIMARY`                                  | 是   | `BTREE` | `id`        |    1 | —    |
 
 #### 外键约束
 
@@ -1109,10 +1112,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`8`
+- 估算行数：`2`
 - 数据大小：`16 KB`
 - 索引大小：`80 KB`
-- 自增值：`1014097`
+- 自增值：`1014091`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -1144,12 +1147,12 @@
 
 | 索引名                                     | 唯一 | 类型    | 字段                                         | 基数 | 注释 |
 | ------------------------------------------ | ---- | ------- | -------------------------------------------- | ---: | ---- |
-| `plugin_runtime_bindable_idx`              | 否   | `BTREE` | `bindable_type`, `bindable_id`, `created_at` |    3 | —    |
-| `plugin_runtime_domain_action_created_idx` | 否   | `BTREE` | `domain`, `action`, `created_at`             |    4 | —    |
-| `plugin_runtime_plugin_created_idx`        | 否   | `BTREE` | `plugin_id`, `created_at`                    |    3 | —    |
-| `plugin_runtime_status_created_idx`        | 否   | `BTREE` | `status`, `created_at`                       |    3 | —    |
-| `plugin_runtime_trace_idx`                 | 否   | `BTREE` | `trace_id`                                   |    8 | —    |
-| `PRIMARY`                                  | 是   | `BTREE` | `id`                                         |    8 | —    |
+| `plugin_runtime_bindable_idx`              | 否   | `BTREE` | `bindable_type`, `bindable_id`, `created_at` |    1 | —    |
+| `plugin_runtime_domain_action_created_idx` | 否   | `BTREE` | `domain`, `action`, `created_at`             |    2 | —    |
+| `plugin_runtime_plugin_created_idx`        | 否   | `BTREE` | `plugin_id`, `created_at`                    |    1 | —    |
+| `plugin_runtime_status_created_idx`        | 否   | `BTREE` | `status`, `created_at`                       |    1 | —    |
+| `plugin_runtime_trace_idx`                 | 否   | `BTREE` | `trace_id`                                   |    2 | —    |
+| `PRIMARY`                                  | 是   | `BTREE` | `id`                                         |    2 | —    |
 
 #### 外键约束
 
@@ -1161,7 +1164,7 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`45`
+- 估算行数：`44`
 - 数据大小：`16 KB`
 - 索引大小：`208 KB`
 - 自增值：`3068`
@@ -1215,18 +1218,18 @@
 | -------------------------------------- | ---- | ------- | --------------------------------- | ---: | ---- |
 | `fk_invoices_user_coupon_id`           | 否   | `BTREE` | `user_coupon_id`                  |    6 | —    |
 | `idx_stage2_invoices_coupon_id`        | 否   | `BTREE` | `coupon_id`                       |    6 | —    |
-| `invoices_invoice_no_unique`           | 是   | `BTREE` | `invoice_no`                      |   45 | —    |
+| `invoices_invoice_no_unique`           | 是   | `BTREE` | `invoice_no`                      |   44 | —    |
 | `invoices_order_id_idx`                | 否   | `BTREE` | `order_id`                        |   24 | —    |
 | `invoices_origin_invoice_id_foreign`   | 否   | `BTREE` | `origin_invoice_id`               |    1 | —    |
 | `invoices_product_id_idx`              | 否   | `BTREE` | `product_id`                      |   22 | —    |
 | `invoices_service_id_idx`              | 否   | `BTREE` | `service_id`                      |    8 | —    |
 | `invoices_status_due_date_index`       | 否   | `BTREE` | `status`, `due_date`              |    6 | —    |
-| `invoices_status_paid_at_idx`          | 否   | `BTREE` | `status`, `paid_at`               |   27 | —    |
-| `invoices_trace_id_idx`                | 否   | `BTREE` | `trace_id`                        |   45 | —    |
-| `invoices_user_idempotency_key_unique` | 是   | `BTREE` | `user_id`, `idempotency_key`      |   38 | —    |
-| `invoices_user_status_created_idx`     | 否   | `BTREE` | `user_id`, `status`, `created_at` |   40 | —    |
-| `invoices_user_status_id_idx`          | 否   | `BTREE` | `user_id`, `status`, `id`         |   45 | —    |
-| `PRIMARY`                              | 是   | `BTREE` | `id`                              |   45 | —    |
+| `invoices_status_paid_at_idx`          | 否   | `BTREE` | `status`, `paid_at`               |   23 | —    |
+| `invoices_trace_id_idx`                | 否   | `BTREE` | `trace_id`                        |   44 | —    |
+| `invoices_user_idempotency_key_unique` | 是   | `BTREE` | `user_id`, `idempotency_key`      |   37 | —    |
+| `invoices_user_status_created_idx`     | 否   | `BTREE` | `user_id`, `status`, `created_at` |   39 | —    |
+| `invoices_user_status_id_idx`          | 否   | `BTREE` | `user_id`, `status`, `id`         |   44 | —    |
+| `PRIMARY`                              | 是   | `BTREE` | `id`                              |   44 | —    |
 
 #### 外键约束
 
@@ -1244,7 +1247,7 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`2`
+- 估算行数：`1`
 - 数据大小：`16 KB`
 - 索引大小：`16 KB`
 - 自增值：`2799`
@@ -1271,8 +1274,8 @@
 
 | 索引名                           | 唯一 | 类型    | 字段         | 基数 | 注释 |
 | -------------------------------- | ---- | ------- | ------------ | ---: | ---- |
-| `invoice_items_invoice_id_index` | 否   | `BTREE` | `invoice_id` |    2 | —    |
-| `PRIMARY`                        | 是   | `BTREE` | `id`         |    2 | —    |
+| `invoice_items_invoice_id_index` | 否   | `BTREE` | `invoice_id` |    1 | —    |
+| `PRIMARY`                        | 是   | `BTREE` | `id`         |    1 | —    |
 
 #### 外键约束
 
@@ -1453,10 +1456,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`206`
+- 估算行数：`209`
 - 数据大小：`48 KB`
 - 索引大小：`0 B`
-- 自增值：`209`
+- 自增值：`212`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -1472,7 +1475,7 @@
 
 | 索引名    | 唯一 | 类型    | 字段 | 基数 | 注释 |
 | --------- | ---- | ------- | ---- | ---: | ---- |
-| `PRIMARY` | 是   | `BTREE` | `id` |  206 | —    |
+| `PRIMARY` | 是   | `BTREE` | `id` |  209 | —    |
 
 #### 外键约束
 
@@ -1562,10 +1565,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`373`
-- 数据大小：`192 KB`
+- 估算行数：`414`
+- 数据大小：`208 KB`
 - 索引大小：`80 KB`
-- 自增值：`166161`
+- 自增值：`166202`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -1587,12 +1590,12 @@
 
 | 索引名                                      | 唯一 | 类型    | 字段                                       | 基数 | 注释 |
 | ------------------------------------------- | ---- | ------- | ------------------------------------------ | ---: | ---- |
-| `operation_logs_created_at_idx`             | 否   | `BTREE` | `created_at`                               |   95 | —    |
-| `operation_logs_module_created_at_index`    | 否   | `BTREE` | `module`, `created_at`                     |  139 | —    |
-| `operation_logs_module_subject_created_idx` | 否   | `BTREE` | `module`, `subject_id`, `created_at`, `id` |  373 | —    |
-| `operation_logs_user_created_at_idx`        | 否   | `BTREE` | `user_id`, `created_at`                    |  220 | —    |
-| `operation_logs_user_type_created_at_idx`   | 否   | `BTREE` | `user_id`, `user_type`, `created_at`       |  220 | —    |
-| `PRIMARY`                                   | 是   | `BTREE` | `id`                                       |  373 | —    |
+| `operation_logs_created_at_idx`             | 否   | `BTREE` | `created_at`                               |   98 | —    |
+| `operation_logs_module_created_at_index`    | 否   | `BTREE` | `module`, `created_at`                     |  149 | —    |
+| `operation_logs_module_subject_created_idx` | 否   | `BTREE` | `module`, `subject_id`, `created_at`, `id` |  414 | —    |
+| `operation_logs_user_created_at_idx`        | 否   | `BTREE` | `user_id`, `created_at`                    |  240 | —    |
+| `operation_logs_user_type_created_at_idx`   | 否   | `BTREE` | `user_id`, `user_type`, `created_at`       |  240 | —    |
+| `PRIMARY`                                   | 是   | `BTREE` | `id`                                       |  414 | —    |
 
 #### 外键约束
 
@@ -1605,7 +1608,7 @@
 - 估算行数：`26`
 - 数据大小：`16 KB`
 - 索引大小：`176 KB`
-- 自增值：`3113`
+- 自增值：`3114`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -1649,7 +1652,7 @@
 | 索引名                              | 唯一 | 类型    | 字段                                 | 基数 | 注释 |
 | ----------------------------------- | ---- | ------- | ------------------------------------ | ---: | ---- |
 | `orders_coupon_id_idx`              | 否   | `BTREE` | `coupon_id`                          |    1 | —    |
-| `orders_created_at_idx`             | 否   | `BTREE` | `created_at`                         |   18 | —    |
+| `orders_created_at_idx`             | 否   | `BTREE` | `created_at`                         |   15 | —    |
 | `orders_order_no_unique`            | 是   | `BTREE` | `order_no`                           |   26 | —    |
 | `orders_product_id_idx`             | 否   | `BTREE` | `product_id`                         |   23 | —    |
 | `orders_projection_type_idx`        | 否   | `BTREE` | `projection_type`                    |    1 | —    |
@@ -1704,10 +1707,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`21`
+- 估算行数：`19`
 - 数据大小：`16 KB`
 - 索引大小：`160 KB`
-- 自增值：`389`
+- 自增值：`387`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：第三方支付记录表，仅记录真实外部资金流入和退款状态，不记录余额/免费/手工开服
 
@@ -1739,17 +1742,17 @@
 
 | 索引名                                   | 唯一 | 类型    | 字段                                       | 基数 | 注释 |
 | ---------------------------------------- | ---- | ------- | ------------------------------------------ | ---: | ---- |
-| `payments_invoice_gateway_status_id_idx` | 否   | `BTREE` | `invoice_id`, `status`, `id`               |   21 | —    |
-| `payments_invoice_status_created_at_idx` | 否   | `BTREE` | `invoice_id`, `status`, `created_at`, `id` |   21 | —    |
-| `payments_order_status_idx`              | 否   | `BTREE` | `order_id`, `status`                       |   17 | —    |
-| `payments_payment_no_unique`             | 是   | `BTREE` | `payment_no`                               |   21 | —    |
-| `payments_plugin_status_paid_idx`        | 否   | `BTREE` | `plugin_id`, `status`, `paid_at`           |   12 | —    |
-| `payments_plugin_trade_unique`           | 是   | `BTREE` | `plugin_id`, `gateway_key`, `trade_no`     |   21 | —    |
-| `payments_status_paid_at_idx`            | 否   | `BTREE` | `status`, `paid_at`                        |   12 | —    |
-| `payments_trace_id_idx`                  | 否   | `BTREE` | `trace_id`                                 |   21 | —    |
-| `payments_trade_no_index`                | 否   | `BTREE` | `trade_no`                                 |   21 | —    |
-| `payments_user_status_created_idx`       | 否   | `BTREE` | `user_id`, `status`, `created_at`          |   21 | —    |
-| `PRIMARY`                                | 是   | `BTREE` | `id`                                       |   21 | —    |
+| `payments_invoice_gateway_status_id_idx` | 否   | `BTREE` | `invoice_id`, `status`, `id`               |   19 | —    |
+| `payments_invoice_status_created_at_idx` | 否   | `BTREE` | `invoice_id`, `status`, `created_at`, `id` |   19 | —    |
+| `payments_order_status_idx`              | 否   | `BTREE` | `order_id`, `status`                       |   16 | —    |
+| `payments_payment_no_unique`             | 是   | `BTREE` | `payment_no`                               |   19 | —    |
+| `payments_plugin_status_paid_idx`        | 否   | `BTREE` | `plugin_id`, `status`, `paid_at`           |    9 | —    |
+| `payments_plugin_trade_unique`           | 是   | `BTREE` | `plugin_id`, `gateway_key`, `trade_no`     |   19 | —    |
+| `payments_status_paid_at_idx`            | 否   | `BTREE` | `status`, `paid_at`                        |    9 | —    |
+| `payments_trace_id_idx`                  | 否   | `BTREE` | `trace_id`                                 |   19 | —    |
+| `payments_trade_no_index`                | 否   | `BTREE` | `trade_no`                                 |   19 | —    |
+| `payments_user_status_created_idx`       | 否   | `BTREE` | `user_id`, `status`, `created_at`          |   19 | —    |
+| `PRIMARY`                                | 是   | `BTREE` | `id`                                       |   19 | —    |
 
 #### 外键约束
 
@@ -1764,10 +1767,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`3`
+- 估算行数：`2`
 - 数据大小：`16 KB`
 - 索引大小：`96 KB`
-- 自增值：`491`
+- 自增值：`490`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：支付回调审计表，保存第三方通知、查询、退款等回调验签结果
 
@@ -1794,13 +1797,13 @@
 
 | 索引名                                    | 唯一 | 类型    | 字段                          | 基数 | 注释 |
 | ----------------------------------------- | ---- | ------- | ----------------------------- | ---: | ---- |
-| `payment_callbacks_gateway_key_idx`       | 否   | `BTREE` | `gateway_key`, `received_at`  |    3 | —    |
-| `payment_callbacks_gateway_trade_no_idx`  | 否   | `BTREE` | `gateway_trade_no`            |    3 | —    |
-| `payment_callbacks_payment_type_unique`   | 是   | `BTREE` | `payment_id`, `callback_type` |    3 | —    |
-| `payment_callbacks_plugin_received_idx`   | 否   | `BTREE` | `plugin_id`, `received_at`    |    3 | —    |
-| `payment_callbacks_trace_id_idx`          | 否   | `BTREE` | `trace_id`                    |    3 | —    |
-| `payment_callbacks_verified_received_idx` | 否   | `BTREE` | `is_verified`, `received_at`  |    3 | —    |
-| `PRIMARY`                                 | 是   | `BTREE` | `id`                          |    3 | —    |
+| `payment_callbacks_gateway_key_idx`       | 否   | `BTREE` | `gateway_key`, `received_at`  |    2 | —    |
+| `payment_callbacks_gateway_trade_no_idx`  | 否   | `BTREE` | `gateway_trade_no`            |    2 | —    |
+| `payment_callbacks_payment_type_unique`   | 是   | `BTREE` | `payment_id`, `callback_type` |    2 | —    |
+| `payment_callbacks_plugin_received_idx`   | 否   | `BTREE` | `plugin_id`, `received_at`    |    2 | —    |
+| `payment_callbacks_trace_id_idx`          | 否   | `BTREE` | `trace_id`                    |    2 | —    |
+| `payment_callbacks_verified_received_idx` | 否   | `BTREE` | `is_verified`, `received_at`  |    2 | —    |
+| `PRIMARY`                                 | 是   | `BTREE` | `id`                          |    2 | —    |
 
 #### 外键约束
 
@@ -1855,7 +1858,7 @@
 - 估算行数：`210`
 - 数据大小：`80 KB`
 - 索引大小：`48 KB`
-- 自增值：`623`
+- 自增值：`636`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：商品表，记录可售卖产品的分类、定价、库存、上游绑定和开通策略
 
@@ -1997,7 +2000,7 @@
 - 估算行数：`0`
 - 数据大小：`16 KB`
 - 索引大小：`144 KB`
-- 自增值：`2`
+- 自增值：`1`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -2468,7 +2471,7 @@
 - 估算行数：`42`
 - 数据大小：`48 KB`
 - 索引大小：`128 KB`
-- 自增值：`362`
+- 自增值：`374`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：服务实例表，记录用户已购买产品的生命周期、计费、上游和续费状态
 
@@ -2503,7 +2506,7 @@
 | 索引名                              | 唯一 | 类型    | 字段                         | 基数 | 注释 |
 | ----------------------------------- | ---- | ------- | ---------------------------- | ---: | ---- |
 | `PRIMARY`                           | 是   | `BTREE` | `id`                         |   39 | —    |
-| `services_expires_at_index`         | 否   | `BTREE` | `expires_at`                 |   30 | —    |
+| `services_expires_at_index`         | 否   | `BTREE` | `expires_at`                 |   26 | —    |
 | `services_invoice_id_idx`           | 否   | `BTREE` | `invoice_id`                 |   24 | —    |
 | `services_order_id_idx`             | 否   | `BTREE` | `order_id`                   |   20 | —    |
 | `services_product_id_idx`           | 否   | `BTREE` | `product_id`                 |   39 | —    |
@@ -2576,7 +2579,7 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`1`
+- 估算行数：`0`
 - 数据大小：`16 KB`
 - 索引大小：`80 KB`
 - 自增值：`431`
@@ -2608,12 +2611,12 @@
 
 | 索引名                                                           | 唯一 | 类型    | 字段                                          | 基数 | 注释 |
 | ---------------------------------------------------------------- | ---- | ------- | --------------------------------------------- | ---: | ---- |
-| `PRIMARY`                                                        | 是   | `BTREE` | `id`                                          |    1 | —    |
-| `service_attempt_backfill_batch_idx`                             | 否   | `BTREE` | `backfill_batch_id`                           |    1 | —    |
-| `service_attempt_plugin_status_idx`                              | 否   | `BTREE` | `plugin_id`, `attempt_status`, `attempted_at` |    1 | —    |
-| `service_attempt_service_action_idx`                             | 否   | `BTREE` | `service_id`, `action`, `attempted_at`        |    1 | —    |
-| `service_attempt_trace_idx`                                      | 否   | `BTREE` | `trace_id`                                    |    1 | —    |
-| `service_provision_attempts_service_upstream_binding_id_foreign` | 否   | `BTREE` | `service_upstream_binding_id`                 |    1 | —    |
+| `PRIMARY`                                                        | 是   | `BTREE` | `id`                                          |    0 | —    |
+| `service_attempt_backfill_batch_idx`                             | 否   | `BTREE` | `backfill_batch_id`                           |    0 | —    |
+| `service_attempt_plugin_status_idx`                              | 否   | `BTREE` | `plugin_id`, `attempt_status`, `attempted_at` |    0 | —    |
+| `service_attempt_service_action_idx`                             | 否   | `BTREE` | `service_id`, `action`, `attempted_at`        |    0 | —    |
+| `service_attempt_trace_idx`                                      | 否   | `BTREE` | `trace_id`                                    |    0 | —    |
+| `service_provision_attempts_service_upstream_binding_id_foreign` | 否   | `BTREE` | `service_upstream_binding_id`                 |    0 | —    |
 
 #### 外键约束
 
@@ -2627,7 +2630,7 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`0`
+- 估算行数：`1`
 - 数据大小：`16 KB`
 - 索引大小：`80 KB`
 - 自增值：`198`
@@ -2657,12 +2660,12 @@
 
 | 索引名                                                          | 唯一 | 类型    | 字段                          | 基数 | 注释 |
 | --------------------------------------------------------------- | ---- | ------- | ----------------------------- | ---: | ---- |
-| `PRIMARY`                                                       | 是   | `BTREE` | `id`                          |    0 | —    |
-| `service_runtime_backfill_batch_idx`                            | 否   | `BTREE` | `backfill_batch_id`           |    0 | —    |
-| `service_runtime_plugin_synced_idx`                             | 否   | `BTREE` | `plugin_id`, `synced_at`      |    0 | —    |
-| `service_runtime_provider_status_idx`                           | 否   | `BTREE` | `provider_key`, `status_key`  |    0 | —    |
-| `service_runtime_service_unique`                                | 是   | `BTREE` | `service_id`                  |    0 | —    |
-| `service_runtime_snapshots_service_upstream_binding_id_foreign` | 否   | `BTREE` | `service_upstream_binding_id` |    0 | —    |
+| `PRIMARY`                                                       | 是   | `BTREE` | `id`                          |    1 | —    |
+| `service_runtime_backfill_batch_idx`                            | 否   | `BTREE` | `backfill_batch_id`           |    1 | —    |
+| `service_runtime_plugin_synced_idx`                             | 否   | `BTREE` | `plugin_id`, `synced_at`      |    1 | —    |
+| `service_runtime_provider_status_idx`                           | 否   | `BTREE` | `provider_key`, `status_key`  |    1 | —    |
+| `service_runtime_service_unique`                                | 是   | `BTREE` | `service_id`                  |    1 | —    |
+| `service_runtime_snapshots_service_upstream_binding_id_foreign` | 否   | `BTREE` | `service_upstream_binding_id` |    1 | —    |
 
 #### 外键约束
 
@@ -2766,10 +2769,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`13`
+- 估算行数：`14`
 - 数据大小：`16 KB`
 - 索引大小：`16 KB`
-- 自增值：`534`
+- 自增值：`535`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -3042,7 +3045,7 @@
 | `idx_stage2_tickets_assignee_id`     | 否   | `BTREE` | `assignee_id`                     |    2 | —    |
 | `PRIMARY`                            | 是   | `BTREE` | `id`                              |   29 | —    |
 | `tickets_service_id_idx`             | 否   | `BTREE` | `service_id`                      |   14 | —    |
-| `tickets_status_updated_at_idx`      | 否   | `BTREE` | `status`, `updated_at`            |   23 | —    |
+| `tickets_status_updated_at_idx`      | 否   | `BTREE` | `status`, `updated_at`            |   22 | —    |
 | `tickets_user_status_updated_at_idx` | 否   | `BTREE` | `user_id`, `status`, `updated_at` |   29 | —    |
 | `tickets_user_updated_at_idx`        | 否   | `BTREE` | `user_id`, `updated_at`, `id`     |   29 | —    |
 
@@ -3325,10 +3328,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`121`
+- 估算行数：`119`
 - 数据大小：`64 KB`
 - 索引大小：`176 KB`
-- 自增值：`988233`
+- 自增值：`988257`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -3375,23 +3378,26 @@
 |   37 | `api_open`                | `tinyint(1)`          | 否   | `0`      | —   | —              | —       | —                  | —                                     |
 |   38 | `api_username`            | `varchar(64)`         | 是   | `NULL`   | UNI | —              | utf8mb4 | utf8mb4_unicode_ci | —                                     |
 |   39 | `api_password`            | `varchar(255)`        | 是   | `NULL`   | —   | —              | utf8mb4 | utf8mb4_unicode_ci | —                                     |
+|   40 | `api_ip_allowlist`        | `json`                | 是   | `NULL`   | —   | —              | —       | —                  | —                                     |
+|   41 | `api_expires_at`          | `timestamp`           | 是   | `NULL`   | —   | —              | —       | —                  | —                                     |
+|   42 | `api_last_used_at`        | `timestamp`           | 是   | `NULL`   | —   | —              | —       | —                  | —                                     |
 
 #### 索引
 
 | 索引名                              | 唯一 | 类型    | 字段                                       | 基数 | 注释 |
 | ----------------------------------- | ---- | ------- | ------------------------------------------ | ---: | ---- |
-| `PRIMARY`                           | 是   | `BTREE` | `id`                                       |  121 | —    |
+| `PRIMARY`                           | 是   | `BTREE` | `id`                                       |  119 | —    |
 | `users_api_username_unique`         | 是   | `BTREE` | `api_username`                             |    1 | —    |
-| `users_created_at_idx`              | 否   | `BTREE` | `created_at`                               |   66 | —    |
-| `users_email_unique`                | 是   | `BTREE` | `email`                                    |  121 | —    |
+| `users_created_at_idx`              | 否   | `BTREE` | `created_at`                               |   55 | —    |
+| `users_email_unique`                | 是   | `BTREE` | `email`                                    |  119 | —    |
 | `users_member_level_id_index`       | 否   | `BTREE` | `member_level_id`                          |    1 | —    |
-| `users_phone_unique`                | 是   | `BTREE` | `phone`                                    |  121 | —    |
+| `users_phone_unique`                | 是   | `BTREE` | `phone`                                    |  119 | —    |
 | `users_referral_code_unique`        | 是   | `BTREE` | `referral_code`                            |    5 | —    |
 | `users_referrer_user_id_index`      | 否   | `BTREE` | `referrer_user_id`                         |    1 | —    |
-| `users_status_id_idx`               | 否   | `BTREE` | `status`, `id`                             |  121 | —    |
+| `users_status_id_idx`               | 否   | `BTREE` | `status`, `id`                             |  119 | —    |
 | `users_verification_certify_id_idx` | 否   | `BTREE` | `verification_certify_id`                  |   10 | —    |
-| `users_verification_mix_idx`        | 否   | `BTREE` | `is_verified`, `verification_status`, `id` |  121 | —    |
-| `users_verification_status_id_idx`  | 否   | `BTREE` | `verification_status`, `id`                |  121 | —    |
+| `users_verification_mix_idx`        | 否   | `BTREE` | `is_verified`, `verification_status`, `id` |  119 | —    |
+| `users_verification_status_id_idx`  | 否   | `BTREE` | `verification_status`, `id`                |  119 | —    |
 
 #### 外键约束
 
@@ -3404,7 +3410,7 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`11`
+- 估算行数：`9`
 - 数据大小：`16 KB`
 - 索引大小：`0 B`
 - 自增值：—
@@ -3430,7 +3436,7 @@
 
 | 索引名    | 唯一 | 类型    | 字段      | 基数 | 注释 |
 | --------- | ---- | ------- | --------- | ---: | ---- |
-| `PRIMARY` | 是   | `BTREE` | `user_id` |   11 | —    |
+| `PRIMARY` | 是   | `BTREE` | `user_id` |    9 | —    |
 
 #### 外键约束
 
@@ -3492,7 +3498,7 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`InnoDB`
-- 估算行数：`10`
+- 估算行数：`11`
 - 数据大小：`16 KB`
 - 索引大小：`48 KB`
 - 自增值：`138`
@@ -3518,10 +3524,10 @@
 
 | 索引名                                        | 唯一 | 类型    | 字段                    | 基数 | 注释 |
 | --------------------------------------------- | ---- | ------- | ----------------------- | ---: | ---- |
-| `PRIMARY`                                     | 是   | `BTREE` | `id`                    |   10 | —    |
+| `PRIMARY`                                     | 是   | `BTREE` | `id`                    |   11 | —    |
 | `user_notifications_type_index`               | 否   | `BTREE` | `type`                  |    5 | —    |
-| `user_notifications_user_id_created_at_index` | 否   | `BTREE` | `user_id`, `created_at` |   10 | —    |
-| `user_notifications_user_id_read_at_index`    | 否   | `BTREE` | `user_id`, `read_at`    |   10 | —    |
+| `user_notifications_user_id_created_at_index` | 否   | `BTREE` | `user_id`, `created_at` |   11 | —    |
+| `user_notifications_user_id_read_at_index`    | 否   | `BTREE` | `user_id`, `read_at`    |   11 | —    |
 
 #### 外键约束
 
@@ -3577,10 +3583,10 @@
 
 - 类型：`BASE TABLE`
 - 引擎：`MyISAM`
-- 估算行数：`0`
-- 数据大小：`0 B`
-- 索引大小：`1 KB`
-- 自增值：`1`
+- 估算行数：`1`
+- 数据大小：`148 B`
+- 索引大小：`5 KB`
+- 自增值：`5`
 - 排序规则：`utf8mb4_unicode_ci`
 - 表注释：—
 
@@ -3604,7 +3610,7 @@
 
 | 索引名                                    | 唯一 | 类型    | 字段         | 基数 | 注释 |
 | ----------------------------------------- | ---- | ------- | ------------ | ---: | ---- |
-| `PRIMARY`                                 | 是   | `BTREE` | `id`         |    0 | —    |
+| `PRIMARY`                                 | 是   | `BTREE` | `id`         |    1 | —    |
 | `zjmf_upstream_bindings_invoice_id_index` | 否   | `BTREE` | `invoice_id` |    0 | —    |
 | `zjmf_upstream_bindings_service_id_index` | 否   | `BTREE` | `service_id` |    0 | —    |
 | `zjmf_upstream_bindings_user_id_index`    | 否   | `BTREE` | `user_id`    |    0 | —    |

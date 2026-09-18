@@ -3,104 +3,121 @@
     <t-card class="record-card api-key-hero" :bordered="false">
       <div class="api-key-hero__body">
         <div>
-          <h3 class="api-key-hero__title">API 密钥</h3>
+          <h3 class="api-key-hero__title">API 凭据</h3>
           <p class="api-key-hero__desc">
-            通过密钥调用开放接口（/api/v2/open）实现系统间对接，可精确控制每个密钥的访问范围与读写权限。
+            本页管理对接本系统的两套凭据：开放接口密钥用于系统间调用（/api/v2/open），魔方财务对接凭据供魔方财务在「上游」中配置（/api/v2/zjmf）。两套凭据都支持
+            IP 白名单、有效期与调用审计。
           </p>
         </div>
-        <t-button theme="primary" @click="openCreateDialog">创建密钥</t-button>
+        <t-button v-if="activeTab === 'keys'" theme="primary" @click="openCreateDialog">创建密钥</t-button>
       </div>
     </t-card>
 
-    <section class="record-list-card">
-      <data-state :loading="loading" :empty="!list.length" :description="listError || '暂无 API 密钥，点击右上角创建'">
-        <t-table class="record-table" row-key="id" :data="list" :columns="columns" :pagination="null" hover>
-          <template #key_name="{ row }">
-            <div class="stack-cell">
-              <strong>{{ row.name || '未命名' }}</strong>
-              <span>{{ row.key_prefix }}••••{{ row.secret_last4 }}</span>
-            </div>
-          </template>
-          <template #scopes="{ row }">
-            <div class="scope-tags">
-              <t-tag
-                v-for="item in scopesDisplay(row.scopes)"
-                :key="item.key"
-                size="small"
-                :theme="resolveScopeTheme(item.level)"
-                variant="light"
+    <t-card class="record-card" :bordered="false">
+      <t-tabs v-model="activeTab">
+        <t-tab-panel value="keys" label="开放接口密钥">
+          <div class="api-key-panel">
+            <section class="record-list-card">
+              <data-state
+                :loading="loading"
+                :empty="!list.length"
+                :description="listError || '暂无 API 密钥，点击右上角创建'"
               >
-                {{ item.label }} · {{ resolveScopeLevelLabel(item.level) }}
-              </t-tag>
-            </div>
-          </template>
-          <template #status="{ row }">
-            <t-tag :theme="row.status === 'enabled' ? 'success' : 'default'" variant="light">
-              {{ row.status === 'enabled' ? '已启用' : '已停用' }}
-            </t-tag>
-          </template>
-          <template #expires_at="{ row }">{{ row.expires_at || '永不过期' }}</template>
-          <template #last_used_at="{ row }">{{ row.last_used_at || '从未使用' }}</template>
-          <template #operation="{ row }">
-            <t-space size="0">
-              <t-button size="small" theme="primary" variant="text" @click="openEditDialog(row)">编辑</t-button>
-              <t-button size="small" theme="primary" variant="text" @click="openUsageLogs(row)">日志</t-button>
-              <t-button
-                size="small"
-                variant="text"
-                :theme="row.status === 'enabled' ? 'warning' : 'success'"
-                @click="toggleStatus(row)"
-              >
-                {{ row.status === 'enabled' ? '停用' : '启用' }}
-              </t-button>
-              <t-button size="small" theme="danger" variant="text" @click="confirmRemove(row)">删除</t-button>
-            </t-space>
-          </template>
-        </t-table>
+                <t-table class="record-table" row-key="id" :data="list" :columns="columns" :pagination="null" hover>
+                  <template #key_name="{ row }">
+                    <div class="stack-cell">
+                      <strong>{{ row.name || '未命名' }}</strong>
+                      <span>{{ row.key_prefix }}••••{{ row.secret_last4 }}</span>
+                    </div>
+                  </template>
+                  <template #scopes="{ row }">
+                    <div class="scope-tags">
+                      <t-tag
+                        v-for="item in scopesDisplay(row.scopes)"
+                        :key="item.key"
+                        size="small"
+                        :theme="resolveScopeTheme(item.level)"
+                        variant="light"
+                      >
+                        {{ item.label }} · {{ resolveScopeLevelLabel(item.level) }}
+                      </t-tag>
+                    </div>
+                  </template>
+                  <template #status="{ row }">
+                    <t-tag :theme="row.status === 'enabled' ? 'success' : 'default'" variant="light">
+                      {{ row.status === 'enabled' ? '已启用' : '已停用' }}
+                    </t-tag>
+                  </template>
+                  <template #expires_at="{ row }">{{ row.expires_at || '永不过期' }}</template>
+                  <template #last_used_at="{ row }">{{ row.last_used_at || '从未使用' }}</template>
+                  <template #operation="{ row }">
+                    <t-space size="0">
+                      <t-button size="small" theme="primary" variant="text" @click="openEditDialog(row)">编辑</t-button>
+                      <t-button size="small" theme="primary" variant="text" @click="openUsageLogs(row)">日志</t-button>
+                      <t-button
+                        size="small"
+                        variant="text"
+                        :theme="row.status === 'enabled' ? 'warning' : 'success'"
+                        @click="toggleStatus(row)"
+                      >
+                        {{ row.status === 'enabled' ? '停用' : '启用' }}
+                      </t-button>
+                      <t-button size="small" theme="danger" variant="text" @click="confirmRemove(row)">删除</t-button>
+                    </t-space>
+                  </template>
+                </t-table>
 
-        <div class="record-mobile-list">
-          <article v-for="row in list" :key="row.id" class="record-mobile-card">
-            <div class="record-mobile-card__head">
-              <div class="stack-cell">
-                <strong>{{ row.name || '未命名' }}</strong>
-                <span>{{ row.key_prefix }}••••{{ row.secret_last4 }}</span>
-              </div>
-              <t-tag :theme="row.status === 'enabled' ? 'success' : 'default'" variant="light" size="small">
-                {{ row.status === 'enabled' ? '已启用' : '已停用' }}
-              </t-tag>
-            </div>
-            <div class="scope-tags">
-              <t-tag
-                v-for="item in scopesDisplay(row.scopes)"
-                :key="item.key"
-                size="small"
-                :theme="resolveScopeTheme(item.level)"
-                variant="light"
-              >
-                {{ item.label }} · {{ resolveScopeLevelLabel(item.level) }}
-              </t-tag>
-            </div>
-            <div class="record-mobile-card__meta">
-              <span>到期：{{ row.expires_at || '永不过期' }}</span>
-              <span>最近使用：{{ row.last_used_at || '从未使用' }}</span>
-            </div>
-            <div class="record-mobile-card__actions">
-              <t-button size="small" theme="primary" variant="text" @click="openEditDialog(row)">编辑</t-button>
-              <t-button size="small" theme="primary" variant="text" @click="openUsageLogs(row)">日志</t-button>
-              <t-button
-                size="small"
-                variant="text"
-                :theme="row.status === 'enabled' ? 'warning' : 'success'"
-                @click="toggleStatus(row)"
-              >
-                {{ row.status === 'enabled' ? '停用' : '启用' }}
-              </t-button>
-              <t-button size="small" theme="danger" variant="text" @click="confirmRemove(row)">删除</t-button>
-            </div>
-          </article>
-        </div>
-      </data-state>
-    </section>
+                <div class="record-mobile-list">
+                  <article v-for="row in list" :key="row.id" class="record-mobile-card">
+                    <div class="record-mobile-card__head">
+                      <div class="stack-cell">
+                        <strong>{{ row.name || '未命名' }}</strong>
+                        <span>{{ row.key_prefix }}••••{{ row.secret_last4 }}</span>
+                      </div>
+                      <t-tag :theme="row.status === 'enabled' ? 'success' : 'default'" variant="light" size="small">
+                        {{ row.status === 'enabled' ? '已启用' : '已停用' }}
+                      </t-tag>
+                    </div>
+                    <div class="scope-tags">
+                      <t-tag
+                        v-for="item in scopesDisplay(row.scopes)"
+                        :key="item.key"
+                        size="small"
+                        :theme="resolveScopeTheme(item.level)"
+                        variant="light"
+                      >
+                        {{ item.label }} · {{ resolveScopeLevelLabel(item.level) }}
+                      </t-tag>
+                    </div>
+                    <div class="record-mobile-card__meta">
+                      <span>到期：{{ row.expires_at || '永不过期' }}</span>
+                      <span>最近使用：{{ row.last_used_at || '从未使用' }}</span>
+                    </div>
+                    <div class="record-mobile-card__actions">
+                      <t-button size="small" theme="primary" variant="text" @click="openEditDialog(row)">编辑</t-button>
+                      <t-button size="small" theme="primary" variant="text" @click="openUsageLogs(row)">日志</t-button>
+                      <t-button
+                        size="small"
+                        variant="text"
+                        :theme="row.status === 'enabled' ? 'warning' : 'success'"
+                        @click="toggleStatus(row)"
+                      >
+                        {{ row.status === 'enabled' ? '停用' : '启用' }}
+                      </t-button>
+                      <t-button size="small" theme="danger" variant="text" @click="confirmRemove(row)">删除</t-button>
+                    </div>
+                  </article>
+                </div>
+              </data-state>
+            </section>
+          </div>
+        </t-tab-panel>
+
+        <t-tab-panel value="upstream" label="魔方财务对接">
+          <upstream-api-panel v-if="upstreamReady" />
+        </t-tab-panel>
+      </t-tabs>
+    </t-card>
 
     <t-dialog
       v-model:visible="dialogVisible"
@@ -175,6 +192,8 @@
 import DataState from '@shared/user-v3/components/DataState.vue';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { DialogPlugin } from 'tdesign-vue-next';
+import { ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 import {
   resolveScopeLevelLabel,
@@ -184,6 +203,33 @@ import {
   useApiKeys,
 } from '@/domains/developer/useApiKeys';
 import type { ApiKeyRecord } from '@/types/client';
+
+import UpstreamApiPanel from './components/UpstreamApiPanel.vue';
+
+type CredentialTab = 'keys' | 'upstream';
+
+const route = useRoute();
+const router = useRouter();
+
+/**
+ * 两套凭据合并到同一页，用页内标签区分。
+ *
+ * 支持 ?tab=upstream 直达魔方财务对接分区：旧的 /client/upstream-api 路由
+ * 跳转过来时靠它落到正确分区。
+ */
+const activeTab = ref<CredentialTab>(route.query.tab === 'upstream' ? 'upstream' : 'keys');
+
+watch(activeTab, (tab) => {
+  const query = tab === 'upstream' ? { tab } : {};
+  void router.replace({ path: '/client/api-keys', query });
+});
+
+// 魔方财务对接分区挂载即自行加载状态；首次切到该标签才渲染，避免多余的接口请求
+const upstreamReady = ref(activeTab.value === 'upstream');
+
+watch(activeTab, (tab) => {
+  if (tab === 'upstream') upstreamReady.value = true;
+});
 
 const {
   loading,
@@ -263,6 +309,10 @@ const logColumns: PrimaryTableCol[] = [
   color: var(--td-text-color-secondary);
   font: var(--td-font-body-small);
   max-width: 42rem;
+}
+
+.api-key-panel {
+  padding-top: var(--td-comp-margin-l);
 }
 
 .scope-tags {

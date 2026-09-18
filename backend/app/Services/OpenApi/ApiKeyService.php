@@ -15,6 +15,9 @@ class ApiKeyService
     /** 业务域 => 支持级别（write 蕴含 read） */
     public const SCOPE_DOMAINS = ['products', 'orders', 'services', 'finance'];
 
+    /** last_used_at 回写节流窗口（分钟）：该字段仅用于控制台展示，无需逐请求精度 */
+    public const LAST_USED_THROTTLE_MINUTES = 5;
+
     public function __construct(
         private readonly OpenApiConfig $config,
     ) {}
@@ -117,8 +120,21 @@ class ApiKeyService
         throw new BusinessException('当前 IP 不在密钥白名单内', 40300, 403);
     }
 
+    /**
+     * 记录最近一次使用时间。
+     *
+     * 节流：同一密钥在窗口期内只回写一次。原先每个请求都 UPDATE 一次 api_keys 行，
+     * 高频调用下是稳定的写放大来源（行格式 binlog 下每次 UPDATE 都记整行前后镜像）；
+     * 而 last_used_at 只用于控制台展示，分钟级精度已经足够。
+     */
     public function touchLastUsed(ApiKey $key): void
     {
+        $threshold = now()->subMinutes(self::LAST_USED_THROTTLE_MINUTES);
+
+        if ($key->last_used_at !== null && $key->last_used_at->greaterThan($threshold)) {
+            return;
+        }
+
         $key->forceFill(['last_used_at' => now()])->saveQuietly();
     }
 
