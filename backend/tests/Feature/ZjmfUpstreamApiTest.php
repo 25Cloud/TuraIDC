@@ -126,6 +126,64 @@ class ZjmfUpstreamApiTest extends TestCase
     }
 
     /**
+     * JWT 有效期内策略被收紧时，业务请求必须立刻被拒。
+     *
+     * JWT 生命周期约 2 小时，若只在登录时判定策略，那么「关闭对接 / 凭据过期 /
+     * IP 白名单收紧」之后旧 JWT 仍能继续调用上游 —— 关停等于没关。
+     */
+    #[Test]
+    public function policy_change_invalidates_an_already_issued_jwt(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+
+        $jwt = $this->apiJwt($suffix);
+        $this->getJson('/api/v2/zjmf/user_info', ['Authorization' => 'Bearer '.$jwt])
+            ->assertJsonPath('status', 200);
+
+        // 关闭对接后，先前签发的 JWT 立即失效
+        $user->forceFill(['api_open' => 0])->save();
+        $this->getJson('/api/v2/zjmf/user_info', ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 405);
+    }
+
+    #[Test]
+    public function expired_credentials_reject_an_already_issued_jwt(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+
+        $jwt = $this->apiJwt($suffix);
+
+        $user->forceFill(['api_expires_at' => now()->subMinute()])->save();
+        $this->getJson('/api/v2/zjmf/user_info', ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 405);
+    }
+
+    #[Test]
+    public function ip_allowlist_rejects_an_already_issued_jwt_from_unlisted_address(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+
+        $jwt = $this->apiJwt($suffix);
+
+        // 测试请求来自 127.0.0.1，白名单只放行 203.0.113.0/24 → 必须拒绝
+        $user->forceFill(['api_ip_allowlist' => ['203.0.113.0/24']])->save();
+        $this->getJson('/api/v2/zjmf/user_info', ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 405);
+
+        // 白名单清空后同一 JWT 恢复可用（证明拒绝原因确实是白名单）
+        $user->forceFill(['api_ip_allowlist' => null])->save();
+        $this->getJson('/api/v2/zjmf/user_info', ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+    }
+
+    /**
      * 魔方财务对 zjmf_api 产品的全部实例操作都走 /provision/default + func 分发
      * （Host.php: on/off/reboot/hard_off/hard_reboot/vnc/status/reinstall/crack_pass/rescueSystem）。
      * 此前未知 func 一律返回 status=200 静默受理，下游判定成功但什么都没做。

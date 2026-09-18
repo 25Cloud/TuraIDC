@@ -61,6 +61,7 @@ import type {
   TicketReplyRecord,
   TicketServiceOption,
   UpstreamApiCredential,
+  UpstreamApiPolicyPayload,
   UpstreamApiStatus,
 } from '@/types/client';
 import request, { apiBaseUrl } from '@/utils/request';
@@ -452,9 +453,13 @@ const clientApi = {
 
   // 魔方财务上游 API 凭据（与开放接口密钥独立）
   upstreamApiStatus: () => getEnvelope<UpstreamApiStatus>('/v2/client/upstream-api'),
-  enableUpstreamApi: () => postEnvelope<UpstreamApiCredential>('/v2/client/upstream-api/enable'),
+  enableUpstreamApi: (data?: UpstreamApiPolicyPayload) =>
+    postEnvelope<UpstreamApiCredential>('/v2/client/upstream-api/enable', data ?? {}),
   disableUpstreamApi: () => request.post('/v2/client/upstream-api/disable'),
   resetUpstreamApiPassword: () => postEnvelope<UpstreamApiCredential>('/v2/client/upstream-api/reset-password'),
+  updateUpstreamApiPolicy: (data: UpstreamApiPolicyPayload) =>
+    putEnvelope<UpstreamApiStatus>('/v2/client/upstream-api/policy', data),
+  upstreamApiUsageLogs: () => getEnvelope<{ list: ApiKeyUsageLogRecord[] }>('/v2/client/upstream-api/usage-logs'),
 };
 
 export default clientApi;

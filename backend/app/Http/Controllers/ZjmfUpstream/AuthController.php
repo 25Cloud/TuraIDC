@@ -23,6 +23,7 @@ class AuthController extends Controller
         return response()->json($this->service->login(
             (string) $request->input('username', ''),
             (string) $request->input('password', ''),
+            (string) $request->ip(),
         ), 200);
     }
 }

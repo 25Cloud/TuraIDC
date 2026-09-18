@@ -1,7 +1,7 @@
 {
     "meta": {
-        "generatedAt": "2026-09-13 10:45:00",
-        "total": 399,
+        "generatedAt": "2026-09-18 16:33:35",
+        "total": 405,
         "baseURL": "/api/v2",
         "dataSource": "php artisan route:list --json v2-only",
         "scopeLabels": {
@@ -22,14 +22,14 @@
         },
         "scopeCounts": {
             "admin": 244,
-            "client": 137,
+            "client": 143,
             "site": 17,
             "system": 1
         },
         "accessCounts": {
-            "public": 399
+            "public": 405
         },
-        "moduleCount": 83
+        "moduleCount": 84
     },
     "items": [
         {
@@ -8585,6 +8585,144 @@
             "throttle": "",
             "guards": [],
             "handler": "App\\Http\\Controllers\\Client\\V2\\ActionController@recallTicketReply",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/client/upstream-api",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "upstream-api",
+            "moduleLabel": "Upstream Api",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/client/upstream-api",
+            "backendPath": "/api/v2/client/upstream-api",
+            "normalizedPath": "/client/upstream-api",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\UpstreamApiController@status",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/client/upstream-api/disable",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "upstream-api",
+            "moduleLabel": "Upstream Api",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/client/upstream-api/disable",
+            "backendPath": "/api/v2/client/upstream-api/disable",
+            "normalizedPath": "/client/upstream-api/disable",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\UpstreamApiController@disable",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/client/upstream-api/enable",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "upstream-api",
+            "moduleLabel": "Upstream Api",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/client/upstream-api/enable",
+            "backendPath": "/api/v2/client/upstream-api/enable",
+            "normalizedPath": "/client/upstream-api/enable",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\UpstreamApiController@enable",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "PUT:/api/v2/client/upstream-api/policy",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "upstream-api",
+            "moduleLabel": "Upstream Api",
+            "method": "PUT",
+            "methods": [
+                "PUT"
+            ],
+            "callPath": "/client/upstream-api/policy",
+            "backendPath": "/api/v2/client/upstream-api/policy",
+            "normalizedPath": "/client/upstream-api/policy",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\UpstreamApiController@updatePolicy",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/client/upstream-api/reset-password",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "upstream-api",
+            "moduleLabel": "Upstream Api",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/client/upstream-api/reset-password",
+            "backendPath": "/api/v2/client/upstream-api/reset-password",
+            "normalizedPath": "/client/upstream-api/reset-password",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\UpstreamApiController@resetPassword",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/client/upstream-api/usage-logs",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "upstream-api",
+            "moduleLabel": "Upstream Api",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/client/upstream-api/usage-logs",
+            "backendPath": "/api/v2/client/upstream-api/usage-logs",
+            "normalizedPath": "/client/upstream-api/usage-logs",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\UpstreamApiController@usageLogs",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []

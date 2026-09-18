@@ -75,6 +75,8 @@ Route::middleware(['auth:sanctum', 'ensure.client'])->group(function (): void {
     Route::post('/upstream-api/enable', [UpstreamApiController::class, 'enable'])->middleware('throttle:10,1,client-upstream-api-enable');
     Route::post('/upstream-api/disable', [UpstreamApiController::class, 'disable']);
     Route::post('/upstream-api/reset-password', [UpstreamApiController::class, 'resetPassword'])->middleware('throttle:10,1,client-upstream-api-reset');
+    Route::put('/upstream-api/policy', [UpstreamApiController::class, 'updatePolicy']);
+    Route::get('/upstream-api/usage-logs', [UpstreamApiController::class, 'usageLogs']);
 
     Route::get('/verification/fee-config', [VerificationController::class, 'feeConfig']);
     Route::post('/verification/init', [VerificationController::class, 'init']);

@@ -1418,6 +1418,13 @@ export interface UpstreamApiStatus {
   username: string;
   has_password: boolean;
   login_url: string;
+  /** IP 白名单，空数组表示不限制 */
+  ip_allowlist?: string[];
+  /** 到期时间，null 表示永不过期 */
+  expires_at?: string | null;
+  is_expired?: boolean;
+  /** 最近一次成功换取 JWT 的时间 */
+  last_used_at?: string | null;
   [key: string]: unknown;
 }
 
@@ -1426,5 +1433,12 @@ export interface UpstreamApiCredential {
   username: string;
   password: string;
   login_url: string;
+  [key: string]: unknown;
+}
+
+/** 魔方链路安全策略（IP 白名单 / 有效期），字段缺失表示保留原值 */
+export interface UpstreamApiPolicyPayload {
+  ip_allowlist?: string[];
+  expires_at?: string | null;
   [key: string]: unknown;
 }

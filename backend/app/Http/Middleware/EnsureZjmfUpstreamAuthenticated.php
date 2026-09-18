@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Services\ZjmfUpstream\UpstreamCredentialPolicy;
 use App\Services\ZjmfUpstream\ZjmfUpstreamService;
 use App\Support\UpstreamJwt;
 use Closure;
@@ -17,11 +18,16 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * 响应遵循魔方财务 commonCurl 约定：HTTP 层固定 200，业务状态放 body.status。
  * 401/403 语义不适用于本协议——jwt 失效返回 status=405 触发魔方财务强制重登。
+ *
+ * 逐请求的准入判定（账号状态 / 开关 / 有效期 / IP 白名单）委托给
+ * UpstreamCredentialPolicy，与登录端点共用同一份判定。两边条件一旦不一致，
+ * 就会出现「登录成功 → 业务请求 405 → 强制重登 → 再登录成功 → 再 405」的死循环。
  */
 class EnsureZjmfUpstreamAuthenticated
 {
     public function __construct(
         private readonly ZjmfUpstreamService $service,
+        private readonly UpstreamCredentialPolicy $policy,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -36,13 +42,17 @@ class EnsureZjmfUpstreamAuthenticated
         }
 
         $userId = (int) ($claims['uid'] ?? 0);
-
-        $user = $userId > 0
-            ? User::query()->where('id', $userId)->where('api_open', 1)->where('status', 1)->first()
-            : null;
+        $user = $userId > 0 ? User::query()->find($userId) : null;
 
         if (! $user instanceof User) {
-            return $this->unauthorized($request, 'account_unavailable', $userId, '对接账号不可用（未开启 API 接入或账号已停用）');
+            return $this->unauthorized($request, 'account_unavailable', $userId, '对接账号不可用');
+        }
+
+        // JWT 有效期（约 2 小时）内策略可能被改动：关闭对接、凭据过期、IP 白名单收紧。
+        // 因此每个请求都要重新判定，不能只在登录时判一次。
+        $reason = $this->policy->rejectionReason($user, (string) $request->ip());
+        if ($reason !== '') {
+            return $this->unauthorized($request, 'policy_rejected', $userId, $reason);
         }
 
         $request->setUserResolver(fn () => $user);
@@ -74,6 +84,7 @@ class EnsureZjmfUpstreamAuthenticated
         Log::warning('[zjmf-upstream] 鉴权拒绝', [
             'reason' => $reason,
             'user_id' => $userId,
+            'ip' => (string) $request->ip(),
             'method' => $request->method(),
             'path' => $request->path(),
         ]);

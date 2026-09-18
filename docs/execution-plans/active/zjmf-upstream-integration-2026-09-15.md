@@ -1,6 +1,6 @@
 ---
 status: 进行中
-updated: 2026-09-15
+updated: 2026-09-16
 owner: backend-platform
 ---
 
@@ -13,8 +13,8 @@ owner: backend-platform
 ## 进度
 
 - [x] **鉴权入口缺口（本次用户报告的阻断问题）**：`users.api_open` / `api_username` / `api_password` 三个字段此前**没有任何设置入口**（不在管理端用户编辑、不在用户控制台、无前端页面），而 `/zjmf_api_login` 强制要求 `api_open=1`，导致魔方对接第一步必然失败。
-      修复：新增用户控制台「上游 API 对接」自助页（`/client/upstream-api` + `/api/v2/client/upstream-api/*`），开启时生成独立 `api_username` 与一次性明文 `api_password`（bcrypt 落库），支持重置密码与即时关停。
-      口径确认：与「API 密钥」页（`/api/v2/open` 自有开放接口）是**两套独立鉴权**，互不影响；魔方财务只走 `/api/v2/zjmf`。
+      修复：新增用户控制台自助入口（接口 `/api/v2/client/upstream-api/*`），开启时生成独立 `api_username` 与一次性明文 `api_password`（bcrypt 落库），支持重置密码与即时关停。
+      口径确认：与开放接口（`/api/v2/open`）是**两套独立鉴权**，互不影响；魔方财务只走 `/api/v2/zjmf`。
 - [x] **P0：`/provision/default` 的 func 覆盖极不完整**。魔方对 zjmf_api 产品的开机/关机/重启/硬关机/硬重启/VNC/重装/改密/救援/电源状态**全部**走该端点（`zjmf376/app/common/logic/Host.php` 各调用点），TuraIDC 此前只处理 create/suspend/unsuspend/terminate，其余命中 `default => status=200` **静默受理**——下游判定成功但什么都没做（面板按钮"点了没反应"）。
       修复：分发全部 func 到本地 `ServicePowerService` / `ServiceVncService`；`status` 返回 `data.status + data.des`、`vnc` 返回 `data.url`（对齐魔方读取点）；救援同时接受 `rescueSystem`（客户端拼写）与 `rescue_system`（参考服务端拼写）；**未知 func 返回 400 明确失败**，不再静默成功。
 - [x] **P1：ZJMF 前缀下的固定 HTTP 200 破口**。协议要求 HTTP 固定 200、业务状态放 `body.status`，但 404/422/429/500 会走通用 `api/*` 渲染，魔方 `commonCurl` 对非 200 统一转成 `code=500`，下游只显示「请求失败,HTTP状态码:xxx」且不会重登，上游业务错误信息全部丢失。
@@ -30,8 +30,18 @@ owner: backend-platform
       触发点：开通成功（`type=create`）、暂停/解除暂停（`suspend`/`unsuspend`）、续费收尾两条路径（`renew`）。下游 token 为空时拒签（密钥缺省即拒绝），未登记回推目标时静默跳过；推送失败不影响主流程——下游仍可用 `host/header` 主动同步兜底。
       附带修复：`host/cancel` 与 `provision/default` 的 `terminate` 只改本地状态，故终止态的推送由后续拓展（当前 `type=terminate` 常量已定义、无触发点）。
 
+- [x] **凭据治理对齐 + 控制台合并（2026-09-16）**。用户反馈「API 密钥有两个开启入口、是否冗余」。
+      核查结论：**协议层无法合并**——魔方财务只会向 `/zjmf_api_login` 提交用户名 + 密码换 JWT，从不发送 Bearer API 密钥（`zjmf376/app/zjmf.php` 与其中间层管理表单均可证），因此「一把 API Key 同时工作于 `/api/v2/open` 与 `/api/v2/zjmf`」在协议上不成立。
+      真正的问题是治理不对等：开放接口密钥有作用域、IP 白名单、有效期与审计，魔方凭据则四项全无。故按用户确认的两条口径收敛：1. **补齐并合并到一张凭据页**：控制台 `/client/api-keys` 改为「API 凭据」页，页内两个分区（开放接口密钥 / 魔方财务对接）；魔方链路补齐 IP 白名单、有效期、调用审计，字段口径与开放接口密钥一致。旧路径 `/client/upstream-api` 保留为跳转到 `?tab=upstream`（深链可用），已开启的存量对接不受影响（只增能力，不改凭据字段）。2. **联动失效**：关闭魔方财务对接时，同账号下所有开放接口密钥一并停用，避免遗留被遗忘的全权凭据。反向不成立。
+      实现要点：抽出 `UpstreamCredentialPolicy`，让登录端点与鉴权中间件**共用同一份准入判定**，并且中间件**逐请求**重新判定（原实现只在登录时判一次，JWT 有效期约 2 小时内策略改动不生效）。拒绝原因细分为 `policy_rejected`（附具体原因）并记 IP，登录成功/被拒均写入 `api_key_usage_logs`（新增 `channel` 列区分 `open_api` / `zjmf_upstream`）。
+      顺带修复写放大：`last_used_at` 回写加 5 分钟节流窗口（两条链路同口径）——该字段仅用于控制台展示，逐请求精度没有意义，而 `binlog_row_image=FULL` 下每次 UPDATE 的 binlog 开销与真实变更等量。
+      验证：`UpstreamApiCredentialTest` 5 → 10 例、`ZjmfUpstreamApiTest` 21 → 26 例（新增用例覆盖白名单/有效期拒绝登录、策略改动令已签发 JWT 立即失效、IP 白名单拒绝已签发 JWT、联动失效、审计落库）；前端 `tests/e2e/api-credentials.spec.ts` 4 例通过（分区切换、`?tab=upstream` 深链、旧路径跳转、策略提交体）。
+
 ## 决策日志
 
+- 2026-09-16：**两套凭据在协议层无法统一，治理层必须对齐**。魔方财务只发用户名+密码，不接受 Bearer 密钥，所以「一个 API Key 通吃」不可实现；但两套凭据的治理能力（白名单/有效期/审计）与开关语义应对齐，否则弱的那条链路就是后门。
+- 2026-09-16：**准入判定必须逐请求执行，且登录与鉴权共用一份实现**。只在登录时判一次会让策略改动在 JWT 的 2 小时有效期内不生效；两处各写一份则会出现「登录成功 → 每次请求 405 → 强制重登 → 再登录成功 → 再 405」的死循环。
+- 2026-09-16：**联动失效只做单向**（关魔方 → 停开放密钥），不做反向。理由：关闭魔方对接意味着「不再对接」，此时账号上任何全权凭据都应立即失效；而停用某把开放接口密钥是日常操作，不应连带打断已上线的魔方对接。
 - 2026-09-15：**上游 API 凭据采用「用户控制台自助 + 独立 API 密码」**（用户确认）。理由：不把上游对接能力绑死在管理员操作上，与魔方自身语义一致（凭据独立于登录密码，改密不影响对接）；开关与重置在用户侧，风险可控且可即时失效。
 - 2026-09-15：**未知 func 必须返回业务失败而非静默成功**。魔方对 `status=200` 一律判定命令成功，静默受理是最难排查的一类缺陷（按钮无反应、无报错、日志无痕）。
 - 2026-09-15：**ZJMF 异常渲染必须注册在通用 `api/*` 分支之前**。Laravel 异常回调按注册顺序匹配、先命中者生效，顺序颠倒会被通用分支截走，协议兜底失效。
