@@ -10,17 +10,28 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AppendSecurityHeaders
 {
+    /**
+     * 控制器用来声明「本响应允许被 iframe 嵌入」的内部标记头，不会被回传给浏览器。
+     *
+     * 服务自定义功能面板要在控制台域名下渲染，必须由控制器按受信来源白名单
+     * 自行下发 CSP frame-ancestors；带此标记时中间件不再覆盖点击劫持相关头部。
+     */
+    public const EMBEDDABLE_HEADER = 'X-Frame-Embeddable';
+
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
+
+        $embeddable = $response->headers->has(self::EMBEDDABLE_HEADER);
+        $response->headers->remove(self::EMBEDDABLE_HEADER);
 
         // 防止 MIME 类型嗅探
         if (! $response->headers->has('X-Content-Type-Options')) {
             $response->headers->set('X-Content-Type-Options', 'nosniff');
         }
 
-        // 防止点击劫持
-        if (! $response->headers->has('X-Frame-Options')) {
+        // 防止点击劫持；可嵌入响应由控制器决定（否则面板会被浏览器判为拒绝连接）
+        if (! $embeddable && ! $response->headers->has('X-Frame-Options')) {
             $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         }
 

@@ -962,6 +962,17 @@
     font-size: 0.875rem;
   }
 
+  /* 面板内容就绪前覆盖在 iframe 之上的加载态，避免「闪一下就没、留下一片空白」 */
+  .area-loading {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--td-bg-color-page);
+  }
+
   .area-state__body {
     display: grid;
     gap: 1rem;

@@ -535,7 +535,9 @@ trait HandlesClientServiceConsoleMonitoring
 
     private const MONITOR_MAX_POINTS_LONG = 72;
 
-    private const MONITOR_CACHE_SCHEMA_VERSION = 'v4';
+    // v5：监控响应里 options[].label / charts[].label 改为透传上游指标名
+    // （CPU使用量/硬盘IO/内存用量/网卡），旧缓存存的是塌缩后的标签，需换版本号失效。
+    private const MONITOR_CACHE_SCHEMA_VERSION = 'v5';
 
     private const MONITOR_CHART_CACHE_TTL_SECONDS = 600;
 
@@ -1311,7 +1313,8 @@ trait HandlesClientServiceConsoleMonitoring
 
             if (is_array($option)) {
                 $value = trim((string) ($option['value'] ?? $option['key'] ?? $option['type'] ?? $option['id'] ?? (is_string($key) ? $key : '')));
-                $label = trim((string) ($option['label'] ?? $option['name'] ?? $option['title'] ?? $option['text'] ?? $option['value'] ?? $value));
+                // 只认上游给的显示名，不拿 value 兜底，否则下面按类型取名永远轮不到
+                $label = trim((string) ($option['label'] ?? $option['name'] ?? $option['title'] ?? $option['text'] ?? ''));
             } else {
                 $optionText = trim((string) $option);
                 if (is_string($key) && ! is_numeric($key)) {
@@ -1327,9 +1330,12 @@ trait HandlesClientServiceConsoleMonitoring
                 continue;
             }
 
+            // 选项名直接采用上游给的显示名（module_chart 的 title，如「CPU使用量」「网卡」），
+            // 不能用 normalizeMonitorDisplayLabel 归一——那是给「读取/写入」这类曲线名用的，
+            // 会把上游标题塌缩成 cpu/宽带，丢失信息。
             $normalized[$value] = [
                 'value' => $value,
-                'label' => $this->normalizeMonitorDisplayLabel($label !== '' ? $label : $value),
+                'label' => $label !== '' ? $label : $this->monitorTypeDisplayLabel($value),
             ];
         }
 
@@ -1345,13 +1351,30 @@ trait HandlesClientServiceConsoleMonitoring
         $label = '';
         if (is_array($match) && trim((string) ($match['label'] ?? '')) !== '') {
             $label = (string) $match['label'];
-        } elseif ($fallback !== '') {
+        } elseif (trim($fallback) !== '') {
             $label = $fallback;
-        } else {
+        } elseif ($selectedType !== '') {
             $label = $selectedType;
         }
 
-        return $this->normalizeMonitorDisplayLabel($label);
+        // monitorTypeDisplayLabel 只认 cpu/disk/memory/flow 这类类型值，其余原样返回，
+        // 因此上游指标名（CPU使用量 / 网卡）不会被改动。
+        return $this->monitorTypeDisplayLabel($label);
+    }
+
+    /**
+     * 监控指标类型 → 兜底显示名，只在选项没有 label 时使用。
+     * 上游 module_chart 实际用的 type 是 cpu / disk / memory / flow。
+     */
+    private function monitorTypeDisplayLabel(string $type): string
+    {
+        return match (mb_strtolower(trim($type))) {
+            'cpu' => 'CPU',
+            'bw', 'flow' => '带宽',
+            'disk', 'disk_io', 'io' => '磁盘 I/O',
+            'memory', 'mem', 'ram' => '内存',
+            default => trim($type),
+        };
     }
 
     private function buildMonitorResponseCacheKey(Service $service, array $payload): string

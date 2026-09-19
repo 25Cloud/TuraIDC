@@ -366,7 +366,7 @@ final class ZjmfConsoleService
                 ? trim((string) ($item['value'] ?? $item['type'] ?? $item['key'] ?? ''))
                 : trim((string) (is_string($key) ? $key : $item));
             $label = is_array($item)
-                ? trim((string) ($item['label'] ?? $item['name'] ?? ''))
+                ? trim((string) ($item['label'] ?? $item['name'] ?? $item['title'] ?? ''))
                 : '';
             $value = $this->normalizeMonitorType($value);
 
@@ -423,13 +423,18 @@ final class ZjmfConsoleService
         return max($timestamp, 0);
     }
 
+    /**
+     * 上游 module_chart 的 type 取值（cpu / disk / memory / flow），
+     * 用于上游未给 title 时的兜底显示名。
+     */
     private function monitorTypeLabel(string $type): string
     {
         return match ($type) {
-            'bw' => '带宽',
-            'disk_io' => '磁盘 I/O',
+            'cpu' => 'CPU',
+            'bw', 'flow' => '带宽',
+            'disk', 'disk_io' => '磁盘 I/O',
             'memory' => '内存',
-            default => 'CPU',
+            default => $type,
         };
     }
 

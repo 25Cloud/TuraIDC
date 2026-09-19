@@ -848,7 +848,9 @@ class ServiceDetailService
 
     public function buildMonitorModuleCacheKey(Supplier $supplier, int $hostId): string
     {
-        return 'upstream:'.$this->providerKeyForSupplier($supplier).":host_modules:v2:{$supplier->id}:{$hostId}";
+        // v3：chart 模块选项名改读上游 module_chart.title（原先误读 label/name，标签退化），
+        // 旧缓存里存的是退化后的标签，必须换版本号让它自然失效。
+        return 'upstream:'.$this->providerKeyForSupplier($supplier).":host_modules:v3:{$supplier->id}:{$hostId}";
     }
 
     private function providerKeyForSupplier(Supplier $supplier): string
