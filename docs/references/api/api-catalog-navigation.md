@@ -3,7 +3,7 @@
 ## 1. 文档用途
 
 - 给 `docs/generated/api/backend-api-catalog.md` 这份自动生成清单提供一份人类可读的业务导航
-- 对齐时间：`2026-09-13`
+- 对齐时间：`2026-09-19`
 - 本文手工维护，不会被导出脚本覆盖
 - 具体方法、控制器动作、中间件和鉴权仍以 `docs/generated/api/backend-api-catalog.md` 为准
 
@@ -46,20 +46,20 @@
 
 ### 用户端（client）
 
-| 业务域   | 关键路径前缀                                                                                          | 说明                                                      |
-| -------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| 认证     | `/api/v2/client/login`、`/api/v2/client/register`、`/api/v2/client/auth/*`、`/api/v2/client/password` | 登录、注册、找回密码、资料、通知偏好、支付宝账号          |
-| 实名认证 | `/api/v2/client/verification*`                                                                        | 状态、初始化、二维码、重试、回调、扫码                    |
-| 账单     | `/api/v2/client/invoices*`                                                                            | 当前用户侧下单与支付主实体是发票                          |
-| 充值     | `/api/v2/client/recharge*`                                                                            | 充值下单与状态轮询                                        |
-| 服务实例 | `/api/v2/client/services*`、`/api/v2/client/vnc-tokens/*`                                             | 实例详情、监控、续费、重装、VNC、NAT、安全组、流量包      |
-| 余额     | `/api/v2/client/balance-logs*`                                                                        | 余额流水和汇总                                            |
-| 优惠券   | `/api/v2/client/coupons*`                                                                             | 优惠券、汇总、领取；其中 `coupons/public*` 仍需客户端鉴权 |
-| 推荐返佣 | `/api/v2/client/referral*`                                                                            | 概览、奖励、账变、提现申请                                |
-| 工单     | `/api/v2/client/tickets*`                                                                             | 列表、详情、回复、关闭、上传图片                          |
-| 内容     | `/api/v2/client/content/overview`、`/api/v2/client/notices*`、`/api/v2/client/help-articles*`         | 用户侧公告与帮助中心                                      |
-| API 密钥 | `/api/v2/client/api-keys*`                                                                            | 密钥增删改、启停与用量日志；明文仅创建时返回一次          |
-| 支付回调 | `/api/v2/client/payment/alipay/notify`                                                                | 支付宝异步通知                                            |
+| 业务域   | 关键路径前缀                                                                                          | 说明                                                                               |
+| -------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 认证     | `/api/v2/client/login`、`/api/v2/client/register`、`/api/v2/client/auth/*`、`/api/v2/client/password` | 登录、注册、找回密码、资料、通知偏好、支付宝账号                                   |
+| 实名认证 | `/api/v2/client/verification*`                                                                        | 状态、初始化、二维码、重试、回调、扫码                                             |
+| 账单     | `/api/v2/client/invoices*`                                                                            | 当前用户侧下单与支付主实体是发票                                                   |
+| 充值     | `/api/v2/client/recharge*`                                                                            | 充值下单与状态轮询                                                                 |
+| 服务实例 | `/api/v2/client/services*`、`/api/v2/client/vnc-tokens/*`                                             | 实例详情、监控、续费、重装、VNC、NAT、安全组、流量包、自定义面板区域与上游资源反代 |
+| 余额     | `/api/v2/client/balance-logs*`                                                                        | 余额流水和汇总                                                                     |
+| 优惠券   | `/api/v2/client/coupons*`                                                                             | 优惠券、汇总、领取；其中 `coupons/public*` 仍需客户端鉴权                          |
+| 推荐返佣 | `/api/v2/client/referral*`                                                                            | 概览、奖励、账变、提现申请                                                         |
+| 工单     | `/api/v2/client/tickets*`                                                                             | 列表、详情、回复、关闭、上传图片                                                   |
+| 内容     | `/api/v2/client/content/overview`、`/api/v2/client/notices*`、`/api/v2/client/help-articles*`         | 用户侧公告与帮助中心                                                               |
+| API 密钥 | `/api/v2/client/api-keys*`                                                                            | 密钥增删改、启停与用量日志；明文仅创建时返回一次                                   |
+| 支付回调 | `/api/v2/client/payment/alipay/notify`                                                                | 支付宝异步通知                                                                     |
 
 ### 开放 API（open）
 
@@ -114,6 +114,18 @@
 | 查看流量包列表 | `GET /api/v2/client/services/{id}/traffic-packages`        |
 | 获取加购报价   | `POST /api/v2/client/services/{id}/traffic-packages/quote` |
 | 创建加购单     | `POST /api/v2/client/services/{id}/traffic-packages/order` |
+
+### 自定义面板区域（上游模块页）
+
+上游（如魔方财务）为面板型产品下发的自定义 tab，经本系统以 iframe 隔离渲染；内容与动作走同一套短时效票据，浏览器不再持有上游凭据，上游域名与静态资源也经本系统反代：
+
+| 步骤                   | 接口                                                                      |
+| ---------------------- | ------------------------------------------------------------------------- |
+| 查询可用 tab / 能力    | `GET /api/v2/client/services/{id}/console/capabilities`                   |
+| 换取短时效票据         | `POST /api/v2/client/services/{id}/console/tickets`                       |
+| 取模块页 HTML          | `GET /api/v2/client/services/{id}/console-area/content?ticket=…&module=…` |
+| 反代上游静态资源与图片 | `GET /api/v2/client/services/{id}/console-area/asset?ticket=…&path=…`     |
+| 回发模块动作           | `POST /api/v2/client/services/{id}/console-area/actions?ticket=…`         |
 
 ### 实名认证
 
