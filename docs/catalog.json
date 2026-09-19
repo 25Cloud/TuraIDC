@@ -348,6 +348,11 @@
       "summary": "20260904 增量补丁记录：管理端实名编辑、代理分组支持无代理分组与实例价格重置。"
     },
     {
+      "path": "references/migration-records/20260919-控制台面板运行时与监控标签修复.md",
+      "status": "archived",
+      "summary": "20260919 增量补丁记录：魔方财务自定义面板运行时与凭据/上游地址治理、控制台 tab 派生、监控图表标签修复。"
+    },
+    {
       "path": "references/migration-records/frontend-admin-v3-final-acceptance-report.md",
       "status": "archived",
       "summary": "frontend-admin-v3 迁移完成后的最终验收记录。"
