@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Client\V2;
 
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\AppendSecurityHeaders;
 use App\Services\ClientServiceConsole\ClientServiceConsoleService;
 use App\Support\SensitiveDataSanitizer;
 use Illuminate\Http\Request;
@@ -51,20 +52,14 @@ class ServiceConsoleAreaController extends Controller
                 throw new BusinessException('该功能页暂无可展示内容', 42200);
             }
 
-            return response($html, 200, [
-                'Content-Type' => 'text/html; charset=UTF-8',
-                'Cache-Control' => 'no-store',
-            ]);
+            return response($html, 200, $this->panelResponseHeaders());
         } catch (\Throwable $exception) {
             Log::warning('[服务控制台] 自定义区域内容加载失败', [
                 'service_id' => (int) $service,
                 'message' => SensitiveDataSanitizer::sanitizeText($exception->getMessage()),
             ]);
 
-            return response($this->errorPage($exception->getMessage()), 200, [
-                'Content-Type' => 'text/html; charset=UTF-8',
-                'Cache-Control' => 'no-store',
-            ]);
+            return response($this->errorPage($exception->getMessage()), 200, $this->panelResponseHeaders());
         }
     }
 
@@ -89,6 +84,74 @@ class ServiceConsoleAreaController extends Controller
         }
 
         return response()->json($result);
+    }
+
+    /**
+     * 面板内引用的上游静态资源（CSS/JS/图片），经本系统反代 + 缓存后下发。
+     *
+     * 面板片段里的资源原本写的是上游绝对地址，直接下发会让终端用户看到上游域名；
+     * 这里统一改走本端点——目标主机由服务绑定的供应商推导，调用方只能给「路径」，
+     * 因此不可能被当成任意 URL 的开放反代。
+     */
+    public function asset(Request $request, int $service)
+    {
+        $ticket = $request->query('ticket');
+        $path = $request->query('path');
+
+        try {
+            $asset = $this->clientServiceConsoleService->getConsoleAreaAssetForTicket(
+                is_string($ticket) ? $ticket : '',
+                (int) $service,
+                is_string($path) ? $path : ''
+            );
+
+            return response($asset['body'], 200, [
+                'Content-Type' => $asset['content_type'],
+                'Cache-Control' => 'public, max-age=86400',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
+        } catch (\Throwable $exception) {
+            Log::warning('[服务控制台] 面板静态资源代理失败', [
+                'service_id' => (int) $service,
+                'path' => is_string($path) ? $path : '',
+                'message' => SensitiveDataSanitizer::sanitizeText($exception->getMessage()),
+            ]);
+
+            return response('', 404, ['Cache-Control' => 'no-store']);
+        }
+    }
+
+    /**
+     * 自定义功能面板响应头。
+     *
+     * 面板是上游渲染的 HTML，需在控制台域名下以 iframe 展示，因此：
+     *   - 带 EMBEDDABLE_HEADER 标记，让 AppendSecurityHeaders 不再下发
+     *     X-Frame-Options: SAMEORIGIN 与 frame-ancestors 'none'，否则浏览器直接
+     *     判为「拒绝连接」，面板根本无法渲染；
+     *   - frame-ancestors 只放行受信前端来源（与 CORS 同一份白名单配置）；
+     *   - 面板的样式与脚本来自供应商域名且含内联脚本，资源来源必须放开，否则会被
+     *     全部拦截，面板退化成无样式、按钮失效的静态页。
+     *
+     * @return array<string, string>
+     */
+    private function panelResponseHeaders(): array
+    {
+        $ancestors = ["'self'"];
+
+        foreach ((array) config('cors.allowed_origins', []) as $origin) {
+            $origin = trim((string) $origin);
+            if ($origin !== '') {
+                $ancestors[] = $origin;
+            }
+        }
+
+        return [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Cache-Control' => 'no-store',
+            AppendSecurityHeaders::EMBEDDABLE_HEADER => '1',
+            'Content-Security-Policy' => "default-src 'self' https: http: data: blob: 'unsafe-inline' 'unsafe-eval'; "
+                .'frame-ancestors '.implode(' ', array_unique($ancestors)),
+        ];
     }
 
     private function errorPage(string $message): string

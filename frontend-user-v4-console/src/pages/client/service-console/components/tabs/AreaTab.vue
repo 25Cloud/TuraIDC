@@ -16,7 +16,7 @@
 
       <div class="area-frame-shell">
         <iframe
-          v-if="frameSrc"
+          v-if="frameSrc && !errorText"
           :key="frameSrc"
           class="area-frame"
           :src="frameSrc"
@@ -30,10 +30,14 @@
             <t-button size="small" variant="outline" @click="reloadArea">重新加载</t-button>
           </div>
         </div>
-        <div v-else class="area-state">
+
+        <!-- 面板内容真正渲染出来之前一直压着加载态：
+             iframe 的 load 事件要等其子资源（CSS/JS）也加载完才触发，用它作为「内容已出来」的信号，
+             避免像以前那样加载态一闪就没、留下一片空白。 -->
+        <div v-if="!errorText && !frameLoaded" class="area-loading" role="status" aria-live="polite">
           <div class="area-state__body">
             <span class="area-spinner" aria-hidden="true" />
-            <p>正在加载功能面板</p>
+            <p>{{ frameSrc ? '正在加载功能面板' : '正在准备功能面板' }}</p>
           </div>
         </div>
       </div>
@@ -67,6 +71,8 @@ const loading = ref(false);
 const errorText = ref('');
 const ticket = ref('');
 const loadingToken = ref(0);
+// 面板内容是否已真正渲染出来（iframe load：含其子资源加载完成）
+const frameLoaded = ref(false);
 
 const moduleKey = computed(() => String(activeTab.value || '').trim());
 const panelTitle = computed(() =>
@@ -129,6 +135,7 @@ function reloadArea() {
 
 function handleFrameLoaded() {
   loading.value = false;
+  frameLoaded.value = true;
 }
 
 function openInNewWindow() {
@@ -152,5 +159,13 @@ watch(
 watch(moduleKey, () => {
   errorText.value = '';
   loading.value = false;
+});
+
+// 面板地址变了说明要重新加载：先把加载态压回去，等 iframe 真正 load 再撤掉。
+// （地址没变时 iframe 不会重载，保持已加载状态，不会卡住转圈）
+watch(frameSrc, (next, previous) => {
+  if (next && next !== previous) {
+    frameLoaded.value = false;
+  }
 });
 </script>

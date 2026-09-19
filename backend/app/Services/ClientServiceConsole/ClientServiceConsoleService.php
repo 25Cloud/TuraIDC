@@ -136,6 +136,16 @@ class ClientServiceConsoleService
         return $this->consoleAreaService->areaContentForTicket($ticket, $serviceId, $moduleKey);
     }
 
+    /**
+     * 面板内引用的上游静态资源，经本系统反代后下发（避免暴露上游地址）。
+     *
+     * @return array{body: string, content_type: string}
+     */
+    public function getConsoleAreaAssetForTicket(string $ticket, int $serviceId, string $path): array
+    {
+        return $this->consoleAreaService->areaAssetForTicket($ticket, $serviceId, $path);
+    }
+
     public function submitConsoleAreaActionForTicket(string $ticket, int $serviceId, array $data): array
     {
         return $this->consoleAreaService->submitAreaActionForTicket($ticket, $serviceId, $data);

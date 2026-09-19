@@ -47,6 +47,8 @@ Route::match(['GET', 'POST'], '/payment/notify/{gateway}', [PaymentCallbackContr
 Route::get('/vnc-tokens/{token}', [ServiceConsoleController::class, 'vncToken'])->middleware('throttle:30,1,client-vnc-token');
 // 服务自定义功能面板（iframe 隔离渲染）：不能携带 Authorization 头，凭短时效票据访问
 Route::get('/services/{service}/console-area/content', [ServiceConsoleAreaController::class, 'content'])->middleware('throttle:120,1,client-service-area-content');
+// 面板内引用的上游静态资源：反代 + 缓存，避免把上游域名暴露给终端用户
+Route::get('/services/{service}/console-area/asset', [ServiceConsoleAreaController::class, 'asset'])->middleware('throttle:600,1,client-service-area-asset');
 Route::post('/services/{service}/console-area/actions', [ServiceConsoleAreaController::class, 'actions'])->middleware('throttle:30,1,client-service-area-action');
 Route::post('/tickets/upstream/replies', [TicketUpstreamCallbackController::class, 'reply'])
     ->middleware(['throttle:60,1,ticket-upstream-callback', 'verify.ticket.upstream.callback']);

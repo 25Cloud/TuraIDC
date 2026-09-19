@@ -1,5 +1,5 @@
 :root,
-:root[theme-mode='light'] {
+:root[theme-mode="light"] {
   --td-brand-color-1: #d5e7ff;
   --td-brand-color-2: #aacfff;
   --td-brand-color-3: #7fb7ff;
@@ -115,15 +115,21 @@
   --td-component-stroke: var(--td-gray-color-2);
   --td-border-level-2-color: var(--td-gray-color-3);
   --td-component-border: var(--td-gray-color-3);
-  --td-shadow-1: 0 1px 10px rgba(0, 0, 0, 0.05), 0 4px 5px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.12);
-  --td-shadow-2: 0 3px 14px 2px rgba(0, 0, 0, 0.05), 0 8px 10px 1px rgba(0, 0, 0, 0.06), 0 5px 5px -3px rgba(0, 0, 0, 0.1);
-  --td-shadow-3: 0 6px 30px 5px rgba(0, 0, 0, 0.05), 0 16px 24px 2px rgba(0, 0, 0, 0.04), 0 8px 10px -5px rgba(0, 0, 0, 0.08);
+  --td-shadow-1:
+    0 1px 10px rgba(0, 0, 0, 0.05), 0 4px 5px rgba(0, 0, 0, 0.08),
+    0 2px 4px -1px rgba(0, 0, 0, 0.12);
+  --td-shadow-2:
+    0 3px 14px 2px rgba(0, 0, 0, 0.05), 0 8px 10px 1px rgba(0, 0, 0, 0.06),
+    0 5px 5px -3px rgba(0, 0, 0, 0.1);
+  --td-shadow-3:
+    0 6px 30px 5px rgba(0, 0, 0, 0.05), 0 16px 24px 2px rgba(0, 0, 0, 0.04),
+    0 8px 10px -5px rgba(0, 0, 0, 0.08);
   --td-scrollbar-color: rgba(0, 0, 0, 0.1);
   --td-scrollbar-hover-color: rgba(0, 0, 0, 0.3);
   --td-scroll-track-color: #d3b3b3;
 }
 
-:root[theme-mode='dark'] {
+:root[theme-mode="dark"] {
   --td-brand-color-1: #001b92;
   --td-brand-color-2: #0935ad;
   --td-brand-color-3: #134fc8;
@@ -218,10 +224,26 @@
   --td-scroll-track-color: #333;
   /* 暗色下 -light 系列用「品牌主色半透明」叠深色容器，避免继承浅色设定的亮底导致卡片 hover 泛白；
      dark 模式品牌色阶会被 insertThemeStylesheet 反转（-1/-2 为亮色），故不能引用 -color-N，必须脱离色阶 */
-  --td-brand-color-light: color-mix(in srgb, var(--td-brand-color) 24%, transparent);
-  --td-warning-color-light: color-mix(in srgb, var(--td-warning-color) 24%, transparent);
-  --td-error-color-light: color-mix(in srgb, var(--td-error-color) 24%, transparent);
-  --td-success-color-light: color-mix(in srgb, var(--td-success-color) 24%, transparent);
+  --td-brand-color-light: color-mix(
+    in srgb,
+    var(--td-brand-color) 24%,
+    transparent
+  );
+  --td-warning-color-light: color-mix(
+    in srgb,
+    var(--td-warning-color) 24%,
+    transparent
+  );
+  --td-error-color-light: color-mix(
+    in srgb,
+    var(--td-error-color) 24%,
+    transparent
+  );
+  --td-success-color-light: color-mix(
+    in srgb,
+    var(--td-success-color) 24%,
+    transparent
+  );
 }
 
 :root {
@@ -345,6 +367,12 @@
   mask: radial-gradient(transparent calc(50% - 0.5px), #fff 50%);
 }
 
+/* 兼容性面板（服务自定义功能面板）的加载圈同样是 border 画的圆环，
+   被上面「全局直角」归零后只剩一条直角边（看着像一根直线），这里恢复圆形。 */
+#app .service-console .area-spinner {
+  border-radius: 50% !important;
+}
+
 @keyframes tura-button-loading-spin {
   to {
     transform: rotate(360deg);
@@ -450,8 +478,14 @@
 
 /* 深色侧边栏下 logo 用浅色文字，避免深底黑字不可见 */
 #app .t-default-menu.t-menu--dark .tdesign-starter-side-nav-logo-wrapper,
-#app .t-default-menu.t-menu--dark .tdesign-starter-side-nav-logo-wrapper .tdesign-starter-side-nav-logo-tdesign-logo,
-#app .t-default-menu.t-menu--dark .tdesign-starter-side-nav-logo-wrapper .tdesign-starter-side-nav-logo-t-logo {
+#app
+  .t-default-menu.t-menu--dark
+  .tdesign-starter-side-nav-logo-wrapper
+  .tdesign-starter-side-nav-logo-tdesign-logo,
+#app
+  .t-default-menu.t-menu--dark
+  .tdesign-starter-side-nav-logo-wrapper
+  .tdesign-starter-side-nav-logo-t-logo {
   color: var(--td-font-white-1);
 }
 
@@ -546,7 +580,7 @@
 }
 
 #app .t-default-menu .t-menu__sub .t-menu__sub .t-menu__item::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 68px;
   top: 50%;
@@ -774,7 +808,9 @@
   }
 
   #app .tdesign-starter-sidebar-mobile .tdesign-starter-side-nav-placeholder,
-  #app .tdesign-starter-sidebar-mobile .tdesign-starter-side-nav-placeholder-hidden {
+  #app
+    .tdesign-starter-sidebar-mobile
+    .tdesign-starter-side-nav-placeholder-hidden {
     display: none;
   }
 
@@ -916,18 +952,18 @@
   }
 }
 
-#app [class*='-page'],
-#app [class*='-panel'],
-#app [class*='-card'],
-#app [class*='-filter'],
-#app [class*='-preview'],
-#app [class*='-section'] {
+#app [class*="-page"],
+#app [class*="-panel"],
+#app [class*="-card"],
+#app [class*="-filter"],
+#app [class*="-preview"],
+#app [class*="-section"] {
   border-radius: 0 !important;
 }
 
-#app [class*='-card'],
-#app [class*='-panel'],
-#app [class*='-preview'] {
+#app [class*="-card"],
+#app [class*="-panel"],
+#app [class*="-preview"] {
   box-shadow: none !important;
 }
 
@@ -954,8 +990,8 @@
     padding: 12px;
   }
 
-  #app .tdesign-starter-content-layout > div > [class^='client-'],
-  #app .tdesign-starter-content-layout > div > [class*=' client-'],
+  #app .tdesign-starter-content-layout > div > [class^="client-"],
+  #app .tdesign-starter-content-layout > div > [class*=" client-"],
   #app .tdesign-starter-content-layout > div > .record-page {
     padding: 0;
   }
