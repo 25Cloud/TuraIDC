@@ -824,7 +824,7 @@ onMounted(() => {
   height: 100%;
   background: var(--td-bg-color-container);
   border: thin solid var(--td-border-color);
-  border-radius: var(--td-radius-medium);
+  border-radius: var(--td-radius-large);
   box-shadow: var(--td-shadow-1);
 }
 

@@ -1,10 +1,6 @@
 <template>
   <section ref="heroSectionRef" class="hero-section">
     <div class="hero-bg" aria-hidden="true">
-      <div class="hero-bg__cloud hero-bg__cloud--a"></div>
-      <div class="hero-bg__cloud hero-bg__cloud--b"></div>
-      <div class="hero-bg__cloud hero-bg__cloud--c"></div>
-
       <div class="hero-bg__video-wrap">
         <video
           v-if="heroVideoEnabled"
@@ -369,7 +365,10 @@ function normalizeSlide(raw, index = 0) {
     video: pickString(source.video, ""),
     // 视频首帧静态封面：管理端可配置，前端据此为 <video> 补 poster，
     // 使 LCP 锚定在快速绘制的占位图上，而非等视频下载+解码。
-    poster: pickString(source.video_poster ?? source.videoPoster ?? source.poster, ""),
+    poster: pickString(
+      source.video_poster ?? source.videoPoster ?? source.poster,
+      "",
+    ),
     ribbon: pickString(source.ribbon, ""),
     ribbonType: ALLOWED_RIBBON_TYPES.has(ribbonType) ? ribbonType : "new",
   };
@@ -932,7 +931,7 @@ onBeforeUnmount(() => {
 .hero-section {
   position: relative;
   padding: 28px 0 44px;
-  background: #f3f5f8;
+  background: $bg-color;
   isolation: isolate;
 }
 
@@ -974,7 +973,7 @@ onBeforeUnmount(() => {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.8s ease;
 }
 
 @media (min-width: 769px) {
@@ -1000,53 +999,6 @@ onBeforeUnmount(() => {
     rgba(255, 255, 255, 0.38) 52%,
     rgba(255, 255, 255, 0.18) 100%
   );
-}
-
-.hero-bg__cloud {
-  position: absolute;
-  z-index: 1;
-  border-radius: 50%;
-  filter: blur(60px);
-  opacity: 0.46;
-  mix-blend-mode: screen;
-}
-
-.hero-bg__cloud--a {
-  top: -140px;
-  left: -180px;
-  width: 640px;
-  height: 640px;
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.86),
-    rgba(255, 255, 255, 0) 68%
-  );
-}
-
-.hero-bg__cloud--b {
-  top: 28%;
-  left: 38%;
-  width: 520px;
-  height: 520px;
-  background: radial-gradient(
-    circle,
-    rgba(236, 240, 245, 0.92),
-    rgba(236, 240, 245, 0) 70%
-  );
-  opacity: 0.28;
-}
-
-.hero-bg__cloud--c {
-  bottom: -260px;
-  right: -220px;
-  width: 780px;
-  height: 780px;
-  background: radial-gradient(
-    circle,
-    rgba(221, 227, 234, 0.72),
-    rgba(221, 227, 234, 0) 68%
-  );
-  opacity: 0.24;
 }
 
 .hero-stage {
@@ -1077,7 +1029,7 @@ onBeforeUnmount(() => {
   min-height: 52px;
   padding: 14px 20px;
   border: none;
-  border-radius: 12px;
+  border-radius: 9px;
   background: rgba(255, 255, 255, 0.36);
   color: #2c3654;
   font-size: 16px;
@@ -1085,32 +1037,25 @@ onBeforeUnmount(() => {
   text-align: left;
   cursor: pointer;
   transition:
-    background 0.24s cubic-bezier(0.22, 1, 0.36, 1),
-    color 0.24s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.24s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .hero-rail__item:hover {
   background: rgba(255, 255, 255, 0.7);
   color: #111a34;
-  transform: translateX(2px);
 }
 
 .hero-rail__item:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(47, 94, 243, 0.22);
+  box-shadow: 0 0 0 3px rgba($color-primary, 0.22);
 }
 
 .hero-rail__item.is-active {
-  background: #2f5ef3;
+  background: $color-primary;
   color: #ffffff;
-  box-shadow: 0 14px 28px rgba(47, 94, 243, 0.28);
-  transform: none;
-}
-
-.hero-rail__item.is-active:hover {
-  transform: translateX(0);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
 }
 
 .hero-rail__item.is-active .hero-rail__label {
@@ -1144,8 +1089,8 @@ onBeforeUnmount(() => {
 }
 
 .hero-rail__ribbon--new {
-  background: #2f5ef3;
-  box-shadow: 0 3px 8px rgba(47, 94, 243, 0.22);
+  background: $color-primary;
+  box-shadow: 0 3px 8px rgba($color-primary, 0.22);
 }
 
 .hero-rail__item.is-active .hero-rail__ribbon {
@@ -1164,16 +1109,12 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   font-size: 12px;
   opacity: 0;
-  transform: translateX(-4px);
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 .hero-rail__item.is-active .hero-rail__arrow,
 .hero-rail__item:hover .hero-rail__arrow {
   opacity: 1;
-  transform: translateX(0);
 }
 
 .hero-dots {
@@ -1195,9 +1136,8 @@ onBeforeUnmount(() => {
   background: rgba(44, 54, 84, 0.22);
   cursor: pointer;
   transition:
-    background 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-    width 0.36s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+    background 0.2s ease,
+    width 0.2s ease;
 }
 
 .hero-dots__item:hover {
@@ -1206,16 +1146,16 @@ onBeforeUnmount(() => {
 
 .hero-dots__item:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(47, 94, 243, 0.22);
+  box-shadow: 0 0 0 3px rgba($color-primary, 0.22);
 }
 
 .hero-dots__item.is-active {
   width: 44px;
-  background: #2f5ef3;
+  background: $color-primary;
 }
 
 .hero-dots__item.is-active:hover {
-  background: #2754e3;
+  background: $color-primary-hover;
 }
 
 .hero-body {
@@ -1235,7 +1175,6 @@ onBeforeUnmount(() => {
   line-height: 1.14;
   letter-spacing: -0.02em;
   text-wrap: pretty;
-  animation: hero-body-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hero-desc {
@@ -1245,7 +1184,6 @@ onBeforeUnmount(() => {
   font-size: 15px;
   line-height: 1.7;
   text-wrap: pretty;
-  animation: hero-body-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hero-actions {
@@ -1263,68 +1201,47 @@ onBeforeUnmount(() => {
   height: 48px;
   padding: 0 28px;
   border: none;
-  border-radius: 6px;
+  border-radius: 3px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition:
-    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    background 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .hero-cta:focus-visible {
   outline: none;
-  box-shadow:
-    0 14px 30px rgba(47, 94, 243, 0.34),
-    0 0 0 3px rgba(47, 94, 243, 0.32);
-}
-
-.hero-cta:active {
-  transform: translateY(0) scale(0.98);
+  box-shadow: 0 0 0 3px rgba($color-primary, 0.32);
 }
 
 .hero-cta--primary {
-  background: #2f5ef3;
+  background: $color-primary;
   color: #ffffff;
-  box-shadow: 0 14px 30px rgba(47, 94, 243, 0.34);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
 }
 
 .hero-cta--primary:hover {
-  transform: translateY(-2px);
-  background: #2754e3;
-  box-shadow: 0 20px 40px rgba(47, 94, 243, 0.45);
+  background: $color-primary-hover;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
 }
 
 .hero-cta--secondary {
   background: #ffffff;
-  color: #2f5ef3;
-  box-shadow: 0 10px 24px rgba(47, 94, 243, 0.12);
-  border: 1px solid rgba(47, 94, 243, 0.24);
+  color: $color-primary;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba($color-primary, 0.24);
 }
 
 .hero-cta--secondary:hover {
-  transform: translateY(-2px);
   background: #f5f8ff;
-  border-color: rgba(47, 94, 243, 0.44);
-  box-shadow: 0 16px 30px rgba(47, 94, 243, 0.22);
+  border-color: rgba($color-primary, 0.44);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
 }
 
 .hero-mobile-nav {
   display: none;
-}
-
-@keyframes hero-body-rise {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 14px, 0);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
 }
 
 .hero-feature-strip {
@@ -1333,40 +1250,20 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   margin-top: 32px;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(22, 93, 255, 0.1);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  border-radius: 12px;
-  box-shadow: 0 12px 30px rgba(47, 94, 243, 0.08);
+  background: #ffffff;
+  border: 1px solid $border-color;
+  border-radius: 9px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
 }
 
 .hero-feature {
   position: relative;
   padding: 20px 22px;
-  border-left: 1px solid rgba(22, 93, 255, 0.08);
+  border-left: 1px solid rgba($color-primary, 0.08);
   cursor: pointer;
   transition:
-    background 0.24s cubic-bezier(0.22, 1, 0.36, 1),
-    color 0.24s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.hero-feature::before {
-  content: "";
-  position: absolute;
-  left: 22px;
-  right: 22px;
-  bottom: 6px;
-  height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    rgba(47, 94, 243, 0.6),
-    rgba(122, 155, 255, 0)
-  );
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .hero-feature:first-child {
@@ -1374,21 +1271,17 @@ onBeforeUnmount(() => {
 }
 
 .hero-feature:hover {
-  background: rgba(255, 255, 255, 0.82);
+  background: #f5f7fa;
 }
 
 .hero-feature:hover .hero-feature__title {
   color: $color-primary;
 }
 
-.hero-feature:hover::before {
-  transform: scaleX(1);
-}
-
 .hero-feature:focus-visible {
   outline: none;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: inset 0 0 0 2px rgba(47, 94, 243, 0.34);
+  background: #f5f7fa;
+  box-shadow: inset 0 0 0 2px rgba($color-primary, 0.34);
 }
 
 .hero-feature__kicker {
@@ -1461,11 +1354,11 @@ onBeforeUnmount(() => {
   .hero-feature:nth-child(4),
   .hero-feature:nth-child(5) {
     border-left: none;
-    border-top: 1px solid rgba(22, 93, 255, 0.08);
+    border-top: 1px solid rgba($color-primary, 0.08);
   }
 
   .hero-feature:nth-child(5) {
-    border-left: 1px solid rgba(22, 93, 255, 0.08);
+    border-left: 1px solid rgba($color-primary, 0.08);
   }
 }
 
@@ -1507,7 +1400,7 @@ onBeforeUnmount(() => {
   }
 
   .hero-rail__item.is-active {
-    background: #2f5ef3;
+    background: $color-primary;
   }
 
   .hero-rail__arrow {
@@ -1540,7 +1433,7 @@ onBeforeUnmount(() => {
   .hero-feature {
     padding: 16px 18px;
     border-left: none !important;
-    border-top: 1px solid rgba(22, 93, 255, 0.08);
+    border-top: 1px solid rgba($color-primary, 0.08);
   }
 
   .hero-feature:nth-child(-n + 2) {
@@ -1548,7 +1441,7 @@ onBeforeUnmount(() => {
   }
 
   .hero-feature:nth-child(odd) {
-    border-right: 1px solid rgba(22, 93, 255, 0.08);
+    border-right: 1px solid rgba($color-primary, 0.08);
   }
 
   .hero-feature:last-child:nth-child(odd) {
@@ -1588,15 +1481,12 @@ onBeforeUnmount(() => {
     height: 42px;
     padding: 0 14px;
     font-size: 14px;
-    border-radius: 8px;
+    border-radius: 3px;
   }
 
-  .hero-cta--primary {
-    box-shadow: 0 8px 20px rgba(47, 94, 243, 0.22);
-  }
-
+  .hero-cta--primary,
   .hero-cta--secondary {
-    box-shadow: 0 6px 16px rgba(47, 94, 243, 0.08);
+    box-shadow: none;
   }
 
   .hero-mobile-nav {
@@ -1621,28 +1511,25 @@ onBeforeUnmount(() => {
     border-radius: 50%;
     background: rgba(44, 54, 84, 0.22);
     cursor: pointer;
-    transition:
-      background 0.22s ease,
-      width 0.22s ease,
-      border-radius 0.22s ease;
+    transition: background 0.2s ease;
   }
 
   .hero-mobile-nav__dot.is-active {
     width: 20px;
     border-radius: 999px;
-    background: #2f5ef3;
+    background: $color-primary;
   }
 
   .hero-feature-strip {
     grid-template-columns: 1fr;
     margin-top: 18px;
-    border-radius: 12px;
+    border-radius: 9px;
   }
 
   .hero-feature {
     padding: 16px 18px;
     border: none !important;
-    border-top: 1px solid rgba(22, 93, 255, 0.08) !important;
+    border-top: 1px solid rgba($color-primary, 0.08) !important;
   }
 
   .hero-feature:first-child {
@@ -1686,34 +1573,12 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-title,
-  .hero-desc {
-    animation: none !important;
-  }
-
   .hero-rail__item,
   .hero-dots__item,
   .hero-cta,
   .hero-feature,
-  .hero-feature::before,
   .hero-rail__arrow {
     transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-  }
-
-  .hero-rail__item:hover,
-  .hero-cta:hover,
-  .hero-cta:active {
-    transform: none !important;
-  }
-}
-
-// 首帧渲染（LCP）禁用 hero 标题/描述的入场动画：instantBodyReveal 初始为 true，
-// onMounted + nextTick 后置 false，此后轮播切换恢复 hero-body-rise 淡入。
-.hero-body--instant {
-  .hero-title,
-  .hero-desc {
-    animation: none;
   }
 }
 </style>

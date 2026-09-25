@@ -62,7 +62,7 @@ export const MONITOR_CHART_TOP = 14;
 export const MONITOR_CHART_BOTTOM = 116;
 export const MONITOR_AXIS_SEGMENTS = 3;
 
-const monitorPalette = ['#0052d9', '#00a870', '#e37318', '#7b61ff'];
+const monitorPalette = ['#165dff', '#00a870', '#e37318', '#7b61ff'];
 
 export function useConsoleMonitor(monitorState: { charts: MonitorChartRecord[] }) {
   const monitorChartViews = computed(() =>

@@ -1152,7 +1152,7 @@ onBeforeUnmount(() => {
   color: #fff;
   font-size: 14px;
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: 3px;
   white-space: nowrap;
 }
 
@@ -1476,7 +1476,7 @@ onBeforeUnmount(() => {
   padding: 6px;
   background: $bg-color-card;
   border: 1px solid $border-color;
-  border-radius: 12px;
+  border-radius: 9px;
   box-shadow: $shadow-lg;
 }
 
@@ -1487,7 +1487,7 @@ onBeforeUnmount(() => {
   width: 100%;
   padding: 9px 12px;
   border: none;
-  border-radius: 8px;
+  border-radius: 3px;
   background: transparent;
   color: $text-color-primary;
   font-size: 14px;
@@ -1620,7 +1620,7 @@ onBeforeUnmount(() => {
   padding: 0 22px;
   margin-left: 4px;
   border: none;
-  border-radius: 8px;
+  border-radius: 3px;
   background: #165dff;
   color: #ffffff;
   font-size: 13px;
@@ -1884,7 +1884,7 @@ onBeforeUnmount(() => {
 .mobile-third-level-list {
   padding: 4px 0 8px 12px;
   background: #f9fafb;
-  border-radius: 6px;
+  border-radius: 9px;
   margin: 4px 0 8px;
 }
 
@@ -1950,7 +1950,7 @@ onBeforeUnmount(() => {
   font-weight: 500;
   color: #ffffff;
   background: $color-primary;
-  border-radius: 6px;
+  border-radius: 3px;
   text-decoration: none;
   transition: opacity 0.15s ease;
 }
@@ -2020,7 +2020,7 @@ onBeforeUnmount(() => {
   color: #fff;
   font-size: 16px;
   font-weight: 600;
-  border-radius: 8px;
+  border-radius: 3px;
   white-space: nowrap;
 }
 
