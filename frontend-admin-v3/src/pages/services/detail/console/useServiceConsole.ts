@@ -1,0 +1,536 @@
+import { getStatusLabel, getStatusTagType, SERVICE_STATUS_MAP } from '@shared/statusConfig';
+import { MessagePlugin } from 'tdesign-vue-next';
+import { computed, onUnmounted, ref, watch } from 'vue';
+
+import { formatMoney } from '@/utils/format';
+
+import { createServiceConsoleApi } from './composables/adminServiceApi';
+import {
+  copyText,
+  DEFAULT_TAB,
+  findSpecValue,
+  isNatConsole,
+  normalizeConsoleDetail,
+} from './composables/useConsoleCore';
+import { useConsoleDetail } from './composables/useConsoleDetail';
+import { useConsoleDialogs } from './composables/useConsoleDialogs';
+import { useConsoleAutoRenew, useConsolePower } from './composables/useConsolePower';
+import { useConsoleReinstall } from './composables/useConsoleReinstall';
+import { useConsoleRenew } from './composables/useConsoleRenew';
+import { useConsoleRescue } from './composables/useConsoleRescue';
+import { useConsoleSecurity } from './composables/useConsoleSecurity';
+import { useConsoleTabs } from './composables/useConsoleTabs';
+import { useConsoleTrafficPackages } from './composables/useConsoleTrafficPackages';
+import { useConsoleVnc } from './composables/useConsoleVnc';
+import type { ConsoleServiceDetail } from './types';
+
+/** TDesign t-tag theme 取值（收敛字符串返回值，避免模板类型不匹配） */
+export type ConsoleTagTheme = 'default' | 'success' | 'warning' | 'primary' | 'danger';
+
+/** 与用户端 useServiceCenter 对齐的状态辅助（管理端基于 shared/statusConfig 实现） */
+export function resolveServiceStatusLabel(status?: number | string): string {
+  return getStatusLabel(SERVICE_STATUS_MAP, (status ?? '') as string);
+}
+
+export function resolveTdesignStatusTheme(detail: ConsoleServiceDetail): ConsoleTagTheme {
+  return getStatusTagType(SERVICE_STATUS_MAP, (detail.status ?? '') as string) as ConsoleTagTheme;
+}
+
+/**
+ * 管理端实例控制台总编排：与用户端同名 composable 返回结构保持一致，
+ * 差异在于所有请求经 createServiceConsoleApi 注入所属用户 ID。
+ */
+export function useServiceConsole(userId: number | string) {
+  const showPassword = ref(true);
+  const consoleApi = createServiceConsoleApi(userId);
+
+  // Core detail state
+  const detailComposable = useConsoleDetail({ userId });
+  const {
+    detail,
+    detailLoading,
+    statusSyncing,
+    actionLoading,
+    autoRenewLoading,
+    activeTab,
+    operationStatus,
+    serviceId,
+    availableTabs,
+    consoleAreaLabels,
+    canManageConsole,
+    canSyncStatus,
+    clearStatusSyncTimer,
+    scheduleStatusSync,
+    setOperationStatus,
+    clearOperationStatus,
+    mergeDetail,
+    loadDetailBase,
+    loadRemoteStatus,
+    refreshHostStatus,
+    bootstrap,
+  } = detailComposable;
+  const route = detailComposable.route;
+
+  // Power management
+  const { handlePowerAction } = useConsolePower({
+    userId,
+    serviceId,
+    detail,
+    actionLoading,
+    setOperationStatus,
+    clearOperationStatus,
+    loadRemoteStatus,
+    clearStatusSyncTimer,
+    scheduleStatusSync,
+  });
+
+  // Auto-renew toggle
+  const { handleToggleAutoRenew } = useConsoleAutoRenew({
+    userId,
+    serviceId,
+    detail,
+    autoRenewLoading,
+    mergeDetail,
+  });
+
+  // Renew dialog
+  const {
+    renewVisible,
+    renewLoading,
+    renewSubmitting,
+    renewData,
+    renewForm,
+    renewAmount,
+    renewOriginalAmount,
+    renewAgentDiscountRate,
+    renewAgentGroupName,
+    renewHasAgentDiscount,
+    renewCoupons,
+    openRenewDialog,
+    handleRenewCycleChange,
+    handleRenewCouponChange,
+    submitRenew,
+  } = useConsoleRenew({ userId, serviceId });
+
+  const {
+    trafficVisible,
+    trafficLoading,
+    trafficQuoting,
+    trafficSubmitting,
+    trafficData,
+    trafficQuote,
+    trafficForm,
+    trafficPackages,
+    selectedTrafficPackage,
+    trafficPayableAmount,
+    openTrafficPackageDialog,
+    handleTrafficPackageChange,
+    submitTrafficPackageOrder,
+  } = useConsoleTrafficPackages({ userId, serviceId });
+
+  // Security groups
+  const {
+    securityState,
+    activeSecurityGroup,
+    groupVisible,
+    groupForm,
+    ruleVisible,
+    ruleForm,
+    isPortDisabled,
+    isAllPortProtocol,
+    onProtocolChange,
+    loadSecurityGroups,
+    loadSecurityGroupRules,
+    selectSecurityGroup,
+    openSecurityGroupDialog,
+    openSecurityRuleDialog,
+    submitSecurityGroup,
+    applySecurityGroup,
+    deleteSecurityGroup,
+    submitSecurityRule,
+    deleteSecurityRule,
+  } = useConsoleSecurity({ userId, serviceId });
+
+  // Reinstall dialog
+  const {
+    reinstallVisible,
+    reinstallState,
+    reinstallGroupedOptions,
+    currentReinstallOptions,
+    openReinstallDialog,
+    handleReinstallGroupChange,
+    submitReinstall,
+  } = useConsoleReinstall({
+    userId,
+    serviceId,
+    actionLoading,
+    setOperationStatus,
+    loadRemoteStatus,
+    clearStatusSyncTimer,
+    scheduleStatusSync,
+    normalizeDetail: normalizeConsoleDetail,
+    mergeDetail,
+  });
+
+  // Rescue mode dialog
+  const { rescueVisible, rescueState, openRescueDialog, submitRescue } = useConsoleRescue({
+    userId,
+    serviceId,
+    actionLoading,
+    setOperationStatus,
+    loadRemoteStatus,
+    clearStatusSyncTimer,
+    scheduleStatusSync,
+  });
+
+  // VNC
+  const { vncUrl, handleOpenVnc } = useConsoleVnc({
+    userId,
+    serviceId,
+    actionLoading,
+    activeTab,
+  });
+
+  // Simple dialogs (name, remark, password)
+  const {
+    nameVisible,
+    nameSubmitting,
+    nameForm,
+    openNameDialog,
+    submitName,
+    remarkVisible,
+    remarkSubmitting,
+    remarkForm,
+    openRemarkDialog,
+    submitRemark,
+    passwordVisible,
+    passwordForm,
+    openPasswordDialog,
+    generateStrongPassword,
+    submitResetPassword,
+  } = useConsoleDialogs({
+    userId,
+    serviceId,
+    detail,
+    actionLoading,
+    setOperationStatus,
+    loadRemoteStatus,
+    clearStatusSyncTimer,
+    scheduleStatusSync,
+    mergeDetail,
+  });
+
+  // Tab-specific data loaders
+  const {
+    monitorState,
+    natState,
+    logsState,
+    financeState,
+    loadedTabs,
+    resetLazyTabs,
+    loadMonitor,
+    loadNatForwardings,
+    natVisible,
+    natForm,
+    openNatForwardingDialog,
+    submitNatForwarding,
+    deleteNatForwarding,
+    loadLogs,
+    loadFinanceLogs,
+  } = useConsoleTabs({ userId, serviceId });
+
+  // Sync status handler
+  async function handleSyncStatus() {
+    statusSyncing.value = true;
+    try {
+      await refreshHostStatus();
+      MessagePlugin.success(detail.value.actions?.module_status ? '实例状态已同步' : '实例状态已刷新');
+    } catch (error: unknown) {
+      const runtimeError = error as { message?: string };
+      MessagePlugin.error(String(runtimeError?.message || '').trim() || '同步实例状态失败');
+    } finally {
+      statusSyncing.value = false;
+    }
+  }
+
+  // Detail derivatives
+  const serviceRegion = computed(
+    () =>
+      String(detail.value.machine_category?.label || '').trim() ||
+      findSpecValue(detail, ['区域', '地区', '机房', 'region'], '--'),
+  );
+  const serviceOs = computed(
+    () => String(detail.value.upstream?.os || '').trim() || findSpecValue(detail, ['操作系统', 'os'], '--'),
+  );
+  const primaryConnectionLabel = computed(() => (isNatConsole(detail.value) ? '远程地址' : '公网 IP'));
+  const publicIpValues = computed(() => {
+    const connection = detail.value.connection || {};
+
+    return normalizeConnectionValues([
+      connection.dedicated_ip,
+      detail.value.upstream?.dedicated_ip,
+      connection.assigned_ips,
+    ]);
+  });
+  const primaryConnectionValues = computed(() => {
+    const connection = detail.value.connection || {};
+
+    if (isNatConsole(detail.value)) {
+      return normalizeConnectionValues([connection.nat_remote_address || connection.nat_remote_host]);
+    }
+
+    return publicIpValues.value;
+  });
+  const primaryConnectionText = computed(() =>
+    primaryConnectionValues.value.length ? primaryConnectionValues.value.join(' / ') : '--',
+  );
+  const connectionEndpointText = computed(
+    () => String(detail.value.connection?.hostname || detail.value.domain || '').trim() || '--',
+  );
+  const connectionPortText = computed(() => {
+    const port = Number(detail.value.connection?.nat_remote_port || detail.value.connection?.port || 0);
+    return Number.isFinite(port) && port > 0 ? String(port) : '--';
+  });
+  const instanceStatusText = computed(() => {
+    const operationLabel = String(operationStatus.label || '').trim();
+    if (operationLabel) return operationLabel;
+    const runtimeLabel = String(detail.value.runtime?.power_label || '').trim();
+    if (runtimeLabel) return runtimeLabel;
+    const runtimeDescription = String(detail.value.runtime?.description || '').trim();
+    if (runtimeDescription) return runtimeDescription;
+    return resolveServiceStatusLabel(detail.value.status);
+  });
+  const instanceStatusTheme = computed<ConsoleTagTheme>(() => {
+    const text = instanceStatusText.value;
+    if (/运行中|运行|正常|已开通|开机|成功|完成/.test(text)) return 'success';
+    if (/创建中|开机中|关机中|重启中|启动中|重置密码中|重装系统中|处理中|同步中|执行中/.test(text)) return 'warning';
+    if (/失败|错误|异常|超时|欠费|锁定/.test(text)) return 'danger';
+    if (/已关机|关机|已停止|停止|已暂停|暂停|未开通|待开通/.test(text)) return 'default';
+    return resolveTdesignStatusTheme(detail.value);
+  });
+  const serviceIpCount = computed(() => {
+    if (publicIpValues.value.length) return `${publicIpValues.value.length} 个`;
+    return findSpecValue(detail, ['IP数量', 'IP 数量', 'ip'], primaryConnectionText.value !== '--' ? '1 个' : '--');
+  });
+  const bandwidthText = computed(() => findSpecValue(detail, ['带宽', '宽带', 'bandwidth'], '--'));
+  const renewPriceText = computed(() => formatMoney(detail.value.amount));
+  const autoRenewLabel = computed(() => (Number(detail.value.auto_renew) === 1 ? '已开启' : '未开启'));
+  const resolvedPassword = computed(() => {
+    const password = String(detail.value.connection?.password || '').trim();
+
+    if (password !== '') {
+      return showPassword.value ? password : '••••••••';
+    }
+
+    return detail.value.connection?.has_password ? '已设置' : '--';
+  });
+
+  // Copy helper with toast
+  async function copyTextWithToast(value: unknown) {
+    await copyText(value, {
+      successMsg: '内容已复制',
+      errorMsg: '当前浏览器不支持自动复制，请手动复制',
+    });
+  }
+
+  // Route watchers
+  watch(
+    () => route.params.id,
+    () => {
+      resetLazyTabs();
+      void bootstrap();
+    },
+    { immediate: true },
+  );
+
+  watch(activeTab, async (tab) => {
+    if (!availableTabs.value.includes(tab)) {
+      activeTab.value = DEFAULT_TAB;
+      return;
+    }
+    if (tab === 'monitor' && !loadedTabs.monitor) {
+      loadedTabs.monitor = true;
+      await loadMonitor();
+    }
+    if (tab === 'security' && !loadedTabs.security) {
+      loadedTabs.security = true;
+      await loadSecurityGroups();
+    }
+    if (tab === 'nat' && !loadedTabs.nat) {
+      loadedTabs.nat = true;
+      await loadNatForwardings();
+    }
+    if (tab === 'logs' && !loadedTabs.logs) {
+      loadedTabs.logs = true;
+      await loadLogs();
+    }
+    if (tab === 'finance' && !loadedTabs.finance) {
+      loadedTabs.finance = true;
+      await loadFinanceLogs();
+    }
+  });
+
+  onUnmounted(() => {
+    clearStatusSyncTimer();
+  });
+
+  return {
+    // State refs
+    detail,
+    detailLoading,
+    statusSyncing,
+    actionLoading,
+    autoRenewLoading,
+    showPassword,
+    activeTab,
+    vncUrl,
+    renewVisible,
+    renewLoading,
+    renewSubmitting,
+    renewData,
+    renewForm,
+    trafficVisible,
+    trafficLoading,
+    trafficQuoting,
+    trafficSubmitting,
+    trafficData,
+    trafficQuote,
+    trafficForm,
+    nameVisible,
+    nameSubmitting,
+    nameForm,
+    remarkVisible,
+    remarkSubmitting,
+    remarkForm,
+    passwordVisible,
+    passwordForm,
+    reinstallVisible,
+    reinstallState,
+    rescueVisible,
+    rescueState,
+    monitorState,
+    securityState,
+    activeSecurityGroup,
+    groupVisible,
+    groupForm,
+    ruleVisible,
+    ruleForm,
+    isPortDisabled,
+    isAllPortProtocol,
+    onProtocolChange,
+    natState,
+    natVisible,
+    natForm,
+    logsState,
+    financeState,
+
+    // Computed
+    consoleApi,
+    serviceId,
+    availableTabs,
+    consoleAreaLabels,
+    canManageConsole,
+    canSyncStatus,
+    serviceRegion,
+    serviceOs,
+    primaryConnectionLabel,
+    primaryConnectionValues,
+    primaryConnectionText,
+    connectionEndpointText,
+    connectionPortText,
+    instanceStatusText,
+    instanceStatusTheme,
+    serviceIpCount,
+    bandwidthText,
+    renewPriceText,
+    autoRenewLabel,
+    resolvedPassword,
+    renewAmount,
+    renewOriginalAmount,
+    renewAgentDiscountRate,
+    renewAgentGroupName,
+    renewHasAgentDiscount,
+    renewCoupons,
+    trafficPackages,
+    selectedTrafficPackage,
+    trafficPayableAmount,
+    reinstallGroupedOptions,
+    currentReinstallOptions,
+
+    // Helper functions
+    findSpecValue: (aliases: string[], fallback = '--') => findSpecValue(detail, aliases, fallback),
+    resolveServiceStatusLabel,
+    resolveTdesignStatusTheme,
+    formatMoney,
+    copyText: copyTextWithToast,
+
+    // Action handlers
+    handleSyncStatus,
+    handlePowerAction,
+    openRenewDialog,
+    handleRenewCycleChange,
+    handleRenewCouponChange,
+    submitRenew,
+    openTrafficPackageDialog,
+    handleTrafficPackageChange,
+    submitTrafficPackageOrder,
+    openNameDialog,
+    submitName,
+    openRemarkDialog,
+    submitRemark,
+    openPasswordDialog,
+    generateStrongPassword,
+    submitResetPassword,
+    openReinstallDialog,
+    handleReinstallGroupChange,
+    submitReinstall,
+    openRescueDialog,
+    submitRescue,
+    handleToggleAutoRenew,
+    loadMonitor,
+    loadSecurityGroups,
+    loadSecurityGroupRules,
+    selectSecurityGroup,
+    openSecurityGroupDialog,
+    openSecurityRuleDialog,
+    submitSecurityGroup,
+    applySecurityGroup,
+    deleteSecurityGroup,
+    submitSecurityRule,
+    deleteSecurityRule,
+    loadNatForwardings,
+    openNatForwardingDialog,
+    submitNatForwarding,
+    deleteNatForwarding,
+    loadLogs,
+    loadFinanceLogs,
+    handleOpenVnc,
+
+    // Detail loaders（供入口页面挂载管理端专属操作后刷新）
+    loadDetailBase,
+    loadRemoteStatus,
+    bootstrap,
+  };
+}
+
+// Re-export utilities for external use
+export { mergeConsoleDetail, normalizeConsoleDetail } from './composables/useConsoleCore';
+
+function normalizeConnectionValues(values: unknown[]): string[] {
+  const normalized: string[] = [];
+
+  for (const value of values) {
+    const items = Array.isArray(value) ? value : [value];
+    for (const item of items) {
+      const candidates = String(item || '').split(/[\s,，;；、]+/);
+      for (const candidate of candidates) {
+        const text = candidate.trim();
+        if (text !== '' && text !== '--' && !normalized.includes(text)) {
+          normalized.push(text);
+        }
+      }
+    }
+  }
+
+  return normalized;
+}

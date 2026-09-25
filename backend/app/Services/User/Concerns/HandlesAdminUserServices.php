@@ -544,6 +544,222 @@ trait HandlesAdminUserServices
     }
 
     /**
+     * 服务救援模式（管理端复用用户端控制台能力）
+     */
+    public function serviceRescue(User $user, int $serviceId, array $data, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->rescueForUser($user, $serviceId, $data, $context);
+    }
+
+    /**
+     * 服务监控（单图）
+     */
+    public function serviceMonitor(User $user, int $serviceId, array $filters = []): array
+    {
+        return $this->clientServiceConsoleService->getMonitorForUser($user, $serviceId, $filters);
+    }
+
+    /**
+     * 服务监控（批量）
+     */
+    public function serviceMonitorBatch(User $user, int $serviceId, array $filters = []): array
+    {
+        return $this->clientServiceConsoleService->getMonitorBatchForUser($user, $serviceId, $filters);
+    }
+
+    /**
+     * 服务操作日志
+     */
+    public function serviceOperationLogs(User $user, int $serviceId, array $filters = [], int $perPage = 10): array
+    {
+        return $this->clientServiceConsoleService->getOperationLogsForUser($user, $serviceId, $filters, $perPage);
+    }
+
+    /**
+     * 服务配置模板
+     */
+    public function serviceConsoleConfig(User $user, int $serviceId): array
+    {
+        return $this->clientServiceConsoleService->getServiceConfigForUser($user, $serviceId);
+    }
+
+    /**
+     * 更新服务备注
+     */
+    public function updateServiceRemark(User $user, int $serviceId, ?string $remark, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->updateRemarkForUser($user, $serviceId, $remark, $context);
+    }
+
+    /**
+     * 更新服务名称
+     */
+    public function updateServiceName(User $user, int $serviceId, ?string $name, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->updateServiceNameForUser($user, $serviceId, $name, $context);
+    }
+
+    /**
+     * 控制台能力下发（自定义区域 / NAT / 监控）
+     */
+    public function serviceConsoleCapabilities(User $user, int $serviceId): array
+    {
+        return $this->clientServiceConsoleService->getConsoleCapabilitiesForUser($user, $serviceId);
+    }
+
+    /**
+     * 创建控制台自定义区域访问票据
+     */
+    public function createServiceConsoleAreaTicket(User $user, int $serviceId): array
+    {
+        return $this->clientServiceConsoleService->createConsoleAreaTicketForUser($user, $serviceId);
+    }
+
+    /**
+     * 流量包预览
+     */
+    public function serviceTrafficPackages(User $user, int $serviceId): array
+    {
+        return $this->clientServiceConsoleService->getTrafficPackagePreviewForUser($user, $serviceId);
+    }
+
+    /**
+     * 流量包询价
+     */
+    public function quoteServiceTrafficPackage(User $user, int $serviceId, array $data): array
+    {
+        return $this->clientServiceConsoleService->quoteTrafficPackageForUser($user, $serviceId, $data);
+    }
+
+    /**
+     * 创建流量包账单
+     */
+    public function createServiceTrafficPackageOrder(User $user, int $serviceId, array $data, array $context = []): Invoice
+    {
+        return $this->clientServiceConsoleService->createTrafficPackageInvoiceForUser($user, $serviceId, $data, $context);
+    }
+
+    /**
+     * 规格升降级预览
+     */
+    public function serviceUpgradePreview(User $user, int $serviceId): array
+    {
+        return $this->clientServiceConsoleService->getHostUpgradePreviewForUser($user, $serviceId);
+    }
+
+    /**
+     * 规格升降级询价
+     */
+    public function quoteServiceHostUpgrade(User $user, int $serviceId, array $data): array
+    {
+        return $this->clientServiceConsoleService->quoteHostUpgradeForUser($user, $serviceId, $data);
+    }
+
+    /**
+     * 创建规格升降级账单
+     */
+    public function createServiceHostUpgradeOrder(User $user, int $serviceId, array $data, array $context = []): Invoice
+    {
+        return $this->clientServiceConsoleService->createHostUpgradeInvoiceForUser($user, $serviceId, $data, $context);
+    }
+
+    /**
+     * 更新自动续费开关（管理端复用）
+     */
+    public function updateServiceAutoRenew(User $user, int $serviceId, int $enabled, array $context = []): array
+    {
+        return $this->renewService()->updateAutoRenewForUser($user, $serviceId, $enabled, $context);
+    }
+
+    /**
+     * NAT 端口转发列表
+     */
+    public function serviceNatForwardings(User $user, int $serviceId): array
+    {
+        return $this->clientServiceConsoleService->getNatForwardingsForUser($user, $serviceId);
+    }
+
+    /**
+     * 创建 NAT 端口转发
+     */
+    public function createServiceNatForwarding(User $user, int $serviceId, array $data, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->createNatForwardingForUser($user, $serviceId, $data, $context);
+    }
+
+    /**
+     * 删除 NAT 端口转发
+     */
+    public function deleteServiceNatForwarding(User $user, int $serviceId, int $forwardingId, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->deleteNatForwardingForUser($user, $serviceId, $forwardingId, $context);
+    }
+
+    /**
+     * 安全组列表
+     */
+    public function serviceSecurityGroups(User $user, int $serviceId, bool $fresh = false): array
+    {
+        return $this->clientServiceConsoleService->getSecurityGroupsForUser($user, $serviceId, $fresh);
+    }
+
+    /**
+     * 安全组规则列表
+     */
+    public function serviceSecurityGroupRules(User $user, int $serviceId, int $groupId): array
+    {
+        return $this->clientServiceConsoleService->getSecurityGroupRulesForUser($user, $serviceId, $groupId);
+    }
+
+    /**
+     * 创建安全组
+     */
+    public function createServiceSecurityGroup(User $user, int $serviceId, array $data, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->createSecurityGroupForUser($user, $serviceId, $data, $context);
+    }
+
+    /**
+     * 应用安全组
+     */
+    public function applyServiceSecurityGroup(User $user, int $serviceId, int $groupId, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->applySecurityGroupForUser($user, $serviceId, $groupId, $context);
+    }
+
+    /**
+     * 删除安全组
+     */
+    public function deleteServiceSecurityGroup(User $user, int $serviceId, int $groupId, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->deleteSecurityGroupForUser($user, $serviceId, $groupId, $context);
+    }
+
+    /**
+     * 创建安全组规则
+     */
+    public function createServiceSecurityRule(User $user, int $serviceId, int $groupId, array $data, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->createSecurityRuleForUser($user, $serviceId, $groupId, $data, $context);
+    }
+
+    /**
+     * 删除安全组规则
+     */
+    public function deleteServiceSecurityRule(User $user, int $serviceId, int $groupId, int $ruleId, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->deleteSecurityRuleForUser($user, $serviceId, $groupId, $ruleId, $context);
+    }
+
+    /**
+     * 获取 VNC 控制台链接（管理端复用）
+     */
+    public function serviceVnc(User $user, int $serviceId, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->getVncUrlForUser($user, $serviceId, $context);
+    }
+
+    /**
      * 管理员手动新增服务
      */
     public function createManualService(User $user, array $data, array $context = []): array

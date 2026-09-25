@@ -282,5 +282,147 @@ export const userApi = {
       url: `/v2/admin/users/${id}/services/${serviceId}/renewals`,
       data,
     }),
+  serviceConfig: (id: number | string, serviceId: number | string) =>
+    request.get<Record<string, unknown>>({ url: `/v2/admin/users/${id}/services/${serviceId}/config` }),
+  serviceConsoleCapabilities: (id: number | string, serviceId: number | string) =>
+    request.get<Record<string, unknown>>({ url: `/v2/admin/users/${id}/services/${serviceId}/console/capabilities` }),
+  createConsoleAreaTicket: (id: number | string, serviceId: number | string) =>
+    request.post<{ ticket?: string; expires_at?: string }>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/console/tickets`,
+    }),
+  serviceConsoleAreaContentUrl: (
+    id: number | string,
+    serviceId: number | string,
+    ticket: string,
+    moduleKey: string,
+  ) => {
+    const apiBase = String(import.meta.env.VITE_API_BASE_URL || '')
+      .trim()
+      .replace(/\/+$/, '');
+    return `${apiBase}/v2/client/services/${serviceId}/console-area/content?ticket=${encodeURIComponent(
+      ticket,
+    )}&module=${encodeURIComponent(moduleKey)}`;
+  },
+  serviceModuleStatus: (id: number | string, serviceId: number | string, params?: PageParams) =>
+    request.get<Record<string, unknown>>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/module-status`,
+      params,
+    }),
+  serviceOperationLogs: (id: number | string, serviceId: number | string, params: PageParams) =>
+    request.get<{ list?: Record<string, unknown>[]; total?: number; page?: number; page_size?: number }>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/operation-logs`,
+      params,
+    }),
+  serviceMonitor: (id: number | string, serviceId: number | string, params?: PageParams) =>
+    request.get<Record<string, unknown>>({ url: `/v2/admin/users/${id}/services/${serviceId}/monitor`, params }),
+  serviceMonitorBatch: (id: number | string, serviceId: number | string, params?: PageParams) =>
+    request.get<Record<string, unknown>>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/monitor/batch`,
+      params,
+    }),
+  serviceTrafficPackages: (id: number | string, serviceId: number | string) =>
+    request.get<Record<string, unknown>>({ url: `/v2/admin/users/${id}/services/${serviceId}/traffic-packages` }),
+  quoteTrafficPackage: (id: number | string, serviceId: number | string, data: Record<string, unknown>) =>
+    request.post<Record<string, unknown>>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/traffic-packages/quote`,
+      data,
+    }),
+  createTrafficPackageOrder: (id: number | string, serviceId: number | string, data: Record<string, unknown>) =>
+    request.post<{ id?: number; invoice_no?: string; service_id?: number; message?: string }>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/traffic-packages/orders`,
+      data,
+    }),
+  serviceUpgradePreview: (id: number | string, serviceId: number | string) =>
+    request.get<Record<string, unknown>>({ url: `/v2/admin/users/${id}/services/${serviceId}/upgrades` }),
+  quoteHostUpgrade: (id: number | string, serviceId: number | string, data: Record<string, unknown>) =>
+    request.post<Record<string, unknown>>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/upgrades/quotes`,
+      data,
+    }),
+  createHostUpgradeOrder: (id: number | string, serviceId: number | string, data: Record<string, unknown>) =>
+    request.post<{ id?: number; invoice_no?: string; service_id?: number; message?: string }>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/upgrades/orders`,
+      data,
+    }),
+  updateAutoRenew: (id: number | string, serviceId: number | string, data: { auto_renew: number }) =>
+    request
+      .put<UserServiceV2DetailPayload | Record<string, unknown>>({
+        url: `/v2/admin/users/${id}/services/${serviceId}/renewals/auto`,
+        data,
+      })
+      .then(normalizeV2ServicePayload),
+  updateServiceName: (id: number | string, serviceId: number | string, data: { name: string | null }) =>
+    request
+      .put<UserServiceV2DetailPayload>({ url: `/v2/admin/users/${id}/services/${serviceId}/name`, data })
+      .then(normalizeV2ServicePayload),
+  updateServiceRemark: (id: number | string, serviceId: number | string, data: { remark: string | null }) =>
+    request
+      .put<UserServiceV2DetailPayload>({ url: `/v2/admin/users/${id}/services/${serviceId}/remark`, data })
+      .then(normalizeV2ServicePayload),
+  serviceRescue: (id: number | string, serviceId: number | string, data: Record<string, unknown>) =>
+    request.post<{
+      message?: string;
+      second_verify?: boolean;
+      detail?: Record<string, unknown>;
+      task_id?: string;
+      status?: string;
+    }>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/rescue`,
+      data,
+    }),
+  serviceVnc: (id: number | string, serviceId: number | string) =>
+    request.get<Record<string, unknown>>({ url: `/v2/admin/users/${id}/services/${serviceId}/vnc` }),
+  serviceNatForwardings: (id: number | string, serviceId: number | string) =>
+    request.get<Record<string, unknown>>({ url: `/v2/admin/users/${id}/services/${serviceId}/nat-forwardings` }),
+  createNatForwarding: (id: number | string, serviceId: number | string, data: Record<string, unknown>) =>
+    request.post<Record<string, unknown>>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/nat-forwardings`,
+      data,
+    }),
+  deleteNatForwarding: (id: number | string, serviceId: number | string, forwardingId: number | string) =>
+    request.delete<Record<string, unknown>>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/nat-forwardings/${forwardingId}`,
+    }),
+  serviceSecurityGroups: (id: number | string, serviceId: number | string, params?: PageParams) =>
+    request.get<Record<string, unknown>>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/security-groups`,
+      params,
+    }),
+  serviceSecurityGroupRules: (id: number | string, serviceId: number | string, groupId: number | string) =>
+    request.get<Record<string, unknown>>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/security-groups/${groupId}/rules`,
+    }),
+  createSecurityGroup: (id: number | string, serviceId: number | string, data: Record<string, unknown>) =>
+    request.post<Record<string, unknown>>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/security-groups`,
+      data,
+    }),
+  applySecurityGroup: (id: number | string, serviceId: number | string, groupId: number | string) =>
+    request.post<Record<string, unknown>>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/security-groups/${groupId}/apply`,
+    }),
+  deleteSecurityGroup: (id: number | string, serviceId: number | string, groupId: number | string) =>
+    request.delete<Record<string, unknown>>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/security-groups/${groupId}`,
+    }),
+  createSecurityRule: (
+    id: number | string,
+    serviceId: number | string,
+    groupId: number | string,
+    data: Record<string, unknown>,
+  ) =>
+    request.post<Record<string, unknown>>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/security-groups/${groupId}/rules`,
+      data,
+    }),
+  deleteSecurityRule: (
+    id: number | string,
+    serviceId: number | string,
+    groupId: number | string,
+    ruleId: number | string,
+  ) =>
+    request.delete<Record<string, unknown>>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/security-groups/${groupId}/rules/${ruleId}`,
+    }),
   osOptions: () => request.get<{ groups?: Record<string, unknown>[] }>({ url: '/v2/admin/os-options' }),
 };

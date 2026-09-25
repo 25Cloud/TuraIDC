@@ -1,3 +1,5 @@
+import { MessagePlugin } from 'tdesign-vue-next';
+
 /**
  * 通用格式化工具。所有业务页面应从本模块导入，禁止本地重写。
  */
@@ -22,4 +24,30 @@ export function formatMoney(value?: unknown): string {
 export function fieldValue(value?: unknown): string {
   if (value === '' || value === undefined || value === null) return '-';
   return String(value);
+}
+
+export interface CopyTextOptions {
+  /** 复制成功提示文案；为空则不弹提示 */
+  successMsg?: string;
+  /** 复制失败提示文案 */
+  errorMsg?: string;
+}
+
+/**
+ * 统一的剪贴板复制能力。空值/占位符 `--` 直接跳过；可选地弹出成功/失败提示。
+ *
+ * @returns 是否复制成功
+ */
+export async function copyText(value: unknown, options: CopyTextOptions = {}): Promise<boolean> {
+  const text = String(value ?? '').trim();
+  if (!text || text === '--') return false;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    if (options.successMsg) MessagePlugin.success(options.successMsg);
+    return true;
+  } catch {
+    MessagePlugin.warning(options.errorMsg ?? '复制失败，请手动复制');
+    return false;
+  }
 }
