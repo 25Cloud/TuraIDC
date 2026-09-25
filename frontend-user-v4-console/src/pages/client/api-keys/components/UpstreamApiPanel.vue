@@ -2,16 +2,17 @@
   <data-state :loading="loading" :empty="false" :description="loadError || ''">
     <div class="upstream-panel">
       <t-form label-align="top" class="upstream-form">
-        <t-form-item label="登录接口地址">
+        <t-form-item label="上游接入地址">
           <div class="upstream-field">
-            <t-input :value="status?.login_url || ''" readonly />
-            <t-button v-if="status?.login_url" size="small" variant="outline" @click="copyText(status.login_url)">
+            <t-input :value="accessEndpoint" readonly />
+            <t-button v-if="accessEndpoint" size="small" variant="outline" @click="copyText(accessEndpoint)">
               复制
             </t-button>
           </div>
           <p class="upstream-tip">
-            魔方财务「上游地址」请填到 <code>/api/v2/zjmf</code> 为止（不含
-            <code>/zjmf_api_login</code>），对方会自动拼接。
+            登录接口为
+            <code>{{ accessEndpoint }}/zjmf_api_login</code
+            >。魔方财务「上游地址」直接填上面的接入地址即可，无需拼接登录路径。
           </p>
         </t-form-item>
 
@@ -97,7 +98,7 @@
           </div>
           <p class="credential-box__hint">
             在魔方财务后台「上游」新增 API 账号：上游地址填
-            <code>{{ loginHost }}</code
+            <code>{{ accessEndpoint }}</code
             >，用户名与密码填上面两项。
           </p>
           <t-button block theme="primary" @click="closeCredential">我已保存</t-button>
@@ -141,8 +142,8 @@ const {
   closeCredential,
 } = useUpstreamApi();
 
-// 展示给用户填进魔方财务的「上游地址」：登录地址去掉登录路径段
-const loginHost = computed(() => {
+// 展示给用户填进魔方财务的「上游地址」：登录地址去掉登录路径段，方便直接复制接入
+const accessEndpoint = computed(() => {
   const url = status.value?.login_url || '';
   return url.replace(/\/zjmf_api_login$/, '');
 });
@@ -170,11 +171,11 @@ function confirmDisable() {
 </script>
 <style scoped>
 .upstream-panel {
-  padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-l);
+  padding-top: var(--td-comp-margin-l);
 }
 
 .upstream-form {
-  max-width: 44rem;
+  max-width: 48rem;
 }
 
 .upstream-field {
@@ -190,8 +191,18 @@ function confirmDisable() {
 
 .upstream-tip {
   margin: var(--td-comp-margin-xs) 0 0;
+  line-height: 1.7;
   color: var(--td-text-color-placeholder);
   font: var(--td-font-body-small);
+}
+
+.upstream-tip code,
+.credential-box__hint code {
+  padding: 0.0625rem 0.25rem;
+  border-radius: var(--td-radius-small);
+  background: var(--td-bg-color-secondarycontainer);
+  overflow-wrap: anywhere;
+  color: var(--td-text-color-primary);
 }
 
 .upstream-password-state {

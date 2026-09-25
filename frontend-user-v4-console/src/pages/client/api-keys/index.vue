@@ -306,9 +306,10 @@ const logColumns: PrimaryTableCol[] = [
 
 .api-key-hero__desc {
   margin: 0;
+  line-height: 1.7;
   color: var(--td-text-color-secondary);
   font: var(--td-font-body-small);
-  max-width: 42rem;
+  max-width: 52rem;
 }
 
 .api-key-panel {
