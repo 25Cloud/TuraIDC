@@ -66,7 +66,7 @@ class CreditService
         // 幂等：账单已支付时直接返回已开通的服务
         if ((int) $invoice->status === InvoiceStatus::PAID) {
             $this->persistConfigUpgrade($invoice);
-            $serviceId = $this->resolveServiceId($invoice);
+            $serviceId = $this->resolveServiceIdWithFulfillment($invoice);
 
             return [
                 'status' => 1001,
@@ -87,7 +87,7 @@ class CreditService
 
             $invoice->refresh();
             $this->persistConfigUpgrade($invoice);
-            $serviceId = $this->resolveServiceId($invoice);
+            $serviceId = $this->resolveServiceIdWithFulfillment($invoice);
             if ($serviceId > 0) {
                 $this->cart->bindService($invoiceId, $serviceId);
             }
@@ -199,6 +199,42 @@ class CreditService
         return (int) ZjmfUpstreamBinding::query()
             ->where('invoice_id', (int) $invoice->id)
             ->value('service_id');
+    }
+
+    /**
+     * 解析服务 id；解析不到且账单已付时补一次同步履约再重查。
+     *
+     * 魔方财务用本响应的 data.hostid[0] 回填本地 dcimid，之后暂停/续费/控制
+     * 全部以该 id 调用。若履约走了异步队列（或同步开通失败被队列兜底），
+     * 支付完成时服务还没创建，返回空 hostid 会让下游 dcimid 永远是 0，
+     * 表现为「暂停失败 / 服务不存在」。履约内部有订单级锁与状态幂等，
+     * 重复触发安全。
+     */
+    private function resolveServiceIdWithFulfillment(Invoice $invoice): int
+    {
+        $serviceId = $this->resolveServiceId($invoice);
+        if ($serviceId > 0) {
+            return $serviceId;
+        }
+
+        $orderId = (int) ($invoice->order?->id ?? 0);
+        if ($orderId <= 0) {
+            return 0;
+        }
+
+        try {
+            \App\Jobs\ProcessPaidOrderFulfillmentJob::dispatchSync($orderId);
+        } catch (\Throwable $exception) {
+            Log::warning('[zjmf-upstream] 补偿履约失败', [
+                'invoice_id' => (int) $invoice->id,
+                'order_id' => $orderId,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return 0;
+        }
+
+        return $this->resolveServiceId($invoice->refresh());
     }
 
     /**

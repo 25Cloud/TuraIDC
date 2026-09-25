@@ -143,6 +143,13 @@ class ProductService
     /**
      * cart/get_product_config：单个商品完整配置。
      *
+     * 结构对齐魔方财务读取点（ProductModel::syncProduct / ClientsServicesController /
+     * Cron::syncUpstreamProductInfo）：
+     *   data.products         商品本体（下游读 data.products.name 渲染产品名）
+     *   data.product_pricings 价格行（按币种写入 pricing 表）
+     *   data.flag             上游分成标记
+     *   data.config_groups    配置项（options[].id / sub[].id 作为下游 upstream_id 落库）
+     *
      * @return array{status:int,msg:string,data?:array}
      */
     public function config(int $pid): array
@@ -156,7 +163,15 @@ class ProductService
         return [
             'status' => 200,
             'msg' => '请求成功',
-            'data' => $this->productDetail($product),
+            'data' => [
+                'products' => $this->toProduct($product),
+                'product_pricings' => [$this->toPricing($product)],
+                'flag' => 0,
+                'config_groups' => $this->configGroups($product),
+                'config_links' => [],
+                'customfields' => [],
+                'advanced' => [],
+            ],
         ];
     }
 
@@ -328,7 +343,10 @@ class ProductService
             return $supplier;
         }
 
-        return '商品 #'.$product->id;
+        // name 访问器回退到规格展示名（如 "2 vCPU 4G"），下游无自定义名时仍可读
+        $name = trim((string) $product->name);
+
+        return $name !== '' ? $name : '商品 #'.$product->id;
     }
 
     private function versionOf(Product $product): int
@@ -402,7 +420,7 @@ class ProductService
 
         foreach ((array) ($product->config_options ?? []) as $item) {
             $item = (array) $item;
-            if (! $this->isUpgradeableConfigItem($item)) {
+            if (! $this->isSyncableConfigItem($item)) {
                 continue;
             }
 
@@ -410,6 +428,8 @@ class ProductService
             if ($optionId <= 0) {
                 continue;
             }
+
+            $isOs = $this->isOsConfigItem($item);
 
             $subs = [];
             $subSort = 0;
@@ -424,12 +444,18 @@ class ProductService
                 }
                 $pricings = $this->subPricings($sub);
                 if ($pricings === []) {
-                    continue;
+                    // OS 子项免费下发 0 价行：下游购物车结算按
+                    // pricing 表 join 校验子项，无价格行会直接 400；
+                    // 非 OS 子项无价则不参与同步（保持商务语义）。
+                    if (! $isOs) {
+                        continue;
+                    }
+                    $pricings = $this->zeroPricings();
                 }
                 $subs[] = [
                     'id' => $subId,
                     'config_id' => $optionId,
-                    'option_name' => $this->subOptionName($sub),
+                    'option_name' => $this->subOptionName($sub, $isOs),
                     'sort_order' => $subSort++,
                     'hidden' => 0,
                     'pricings' => $pricings,
@@ -472,11 +498,14 @@ class ProductService
     }
 
     /**
-     * 可同步配置项过滤：跳过隐藏项、OS 类型与缺失 id 的项。
+     * 可同步配置项过滤：跳过隐藏项与缺失 id 的项。
+     *
+     * OS 项（option_type=5 / field=os）必须下发：下游购物车的系统选择、
+     * 服务详情「当前 OS」、重装列表全部读取该选项（judgeOs）。
      *
      * @param  array<string, mixed>  $item
      */
-    private function isUpgradeableConfigItem(array $item): bool
+    private function isSyncableConfigItem(array $item): bool
     {
         if ((int) ($item['hidden'] ?? 0) === 1) {
             return false;
@@ -484,21 +513,32 @@ class ProductService
         if ((int) ($item['id'] ?? 0) <= 0) {
             return false;
         }
-        if ((int) ($item['option_type'] ?? -1) === 5 || trim((string) ($item['field'] ?? '')) === 'os') {
-            return false;
-        }
 
         return true;
     }
 
     /**
-     * TuraIDC 配置项类型 -> 魔方财务 option_type（4=quantity 数量型，1=dropdown 选择型）。
+     * @param  array<string, mixed>  $item
+     */
+    private function isOsConfigItem(array $item): bool
+    {
+        return (int) ($item['option_type'] ?? -1) === 5
+            || trim((string) ($item['field'] ?? '')) === 'os';
+    }
+
+    /**
+     * TuraIDC 配置项类型 -> 魔方财务 option_type
+     * （5=OS（judgeOs），4=quantity 数量型，1=dropdown 选择型）。
      * 范围型（RANGE_TYPES 或 option_mode=range）按数量型同步，升级时魔方财务传 qty。
      *
      * @param  array<string, mixed>  $item
      */
     private function mapConfigOptionType(array $item): int
     {
+        if ($this->isOsConfigItem($item)) {
+            return 5;
+        }
+
         $type = (int) ($item['option_type'] ?? -1);
         $isRange = in_array($type, [4, 7, 9, 11, 14, 15, 16, 17, 18, 19], true)
             || trim((string) ($item['option_mode'] ?? '')) === 'range';
@@ -537,19 +577,50 @@ class ProductService
     }
 
     /**
+     * OS 子项零价行（全部周期 0 元）：满足下游购物车按 pricing 行 join 校验子项的硬约束。
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function zeroPricings(): array
+    {
+        $row = [
+            'code' => self::CURRENCY,
+            'type' => 'configoptions',
+            'currency' => 1,
+            'relid' => 0,
+        ];
+        foreach (self::PRICING_SETUP_MAP as $cycle => $setupColumn) {
+            $row[$cycle] = 0;
+            $row[$setupColumn] = 0;
+        }
+
+        return [$row];
+    }
+
+    /**
      * 子项名称：魔方财务用 "值|名称" 分隔展示。
+     *
+     * OS 子项强制两段式：下游重装按 explode('|', option_name) 取
+     * [0]=值（回传 mos 校验）、[1]=显示名，缺段会触发未定义索引。
      *
      * @param  array<string, mixed>  $sub
      */
-    private function subOptionName(array $sub): string
+    private function subOptionName(array $sub, bool $isOs = false): string
     {
         $label = trim((string) ($sub['option_name'] ?? ''));
         $value = trim((string) ($sub['option_name_first'] ?? $sub['value'] ?? $sub['id'] ?? ''));
 
+        $name = '';
         if ($value !== '' && $label !== '' && $value !== $label) {
-            return $value.'|'.$label;
+            $name = $value.'|'.$label;
+        } elseif ($label !== '' || $value !== '') {
+            $name = $label !== '' ? $label : $value;
         }
 
-        return $label !== '' ? $label : $value;
+        if ($isOs && $name !== '' && ! str_contains($name, '|')) {
+            $name = $name.'|'.$name;
+        }
+
+        return $name;
     }
 }

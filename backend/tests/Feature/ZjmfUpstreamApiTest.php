@@ -46,6 +46,8 @@ class ZjmfUpstreamApiTest extends TestCase
         if ($this->userIds !== []) {
             DB::connection()->table('invoices')->whereIn('user_id', $this->userIds)->delete();
             DB::connection()->table('orders')->whereIn('user_id', $this->userIds)->delete();
+            DB::connection()->table('ticket_replies')->whereIn('user_id', $this->userIds)->delete();
+            DB::connection()->table('tickets')->whereIn('user_id', $this->userIds)->delete();
         }
 
         DB::connection()->table('services')->whereIn('id', $this->serviceIds)->delete();
@@ -524,6 +526,46 @@ class ZjmfUpstreamApiTest extends TestCase
     }
 
     /**
+     * 魔方下游管理端展示产品名读取 data.products.name（ClientsServicesController），
+     * 同步商品消费 data.products / data.product_pricings / data.flag / data.config_groups。
+     * 缺少 products 包装会让下游拿到 undefined 索引，表现为「获取不到产品名」。
+     */
+    #[Test]
+    public function get_product_config_wraps_product_for_downstream(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+
+        $product = Product::query()->create([
+            'custom_display_name' => 'Zjmf Product Name '.$suffix,
+            'product_type' => 'server',
+            'pricing' => ['monthly' => '30.00'],
+            'setup_fee' => '0.00',
+            'config_options' => [],
+            'purchase_requires' => [],
+            'stock' => -1,
+            'status' => 1,
+            'auto_setup' => 0,
+        ]);
+        $this->productIds[] = (int) $product->id;
+
+        $this->getJson('/api/v2/zjmf/cart/get_product_config?pid='.(int) $product->id, ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('data.products.id', (int) $product->id)
+            ->assertJsonPath('data.products.name', 'Zjmf Product Name '.$suffix)
+            ->assertJsonStructure([
+                'data' => [
+                    'products',
+                    'product_pricings',
+                    'flag',
+                    'config_groups',
+                ],
+            ]);
+    }
+
+    /**
      * 下游在魔方下单时填的主机名与配置项必须随 settle 进入本地下单，
      * 否则客户选择被静默丢弃、只能按默认值开通。
      */
@@ -667,6 +709,358 @@ class ZjmfUpstreamApiTest extends TestCase
             ['func' => 'refresh'],
             ['Authorization' => 'Bearer '.$jwt],
         )->assertOk()->assertJsonPath('status', 200);
+    }
+
+    /**
+     * 魔方下游暂停走 func=suspend：reason 需透传落库，但 'expired' 是本系统
+     * 到期欠费停机的保留标记（写入后会锁死 unsuspend 与自动取消链路），必须转义；
+     * 重复暂停（下游重试）幂等成功。
+     */
+    #[Test]
+    public function provision_default_suspend_is_idempotent_and_never_writes_expired_marker(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createCdnService($user, $suffix);
+        $jwt = $this->apiJwt($suffix);
+
+        // 正常 reason 透传
+        $this->postJson('/api/v2/zjmf/provision/default', [
+            'id' => (int) $service->id,
+            'func' => 'suspend',
+            'reason' => '用户要求暂停',
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+
+        $service->refresh();
+        $this->assertSame(ServiceStatus::SUSPENDED, (int) $service->status);
+        $this->assertSame('用户要求暂停', (string) $service->suspended_reason);
+
+        // 重复暂停（下游重试）幂等成功
+        $this->postJson('/api/v2/zjmf/provision/default', [
+            'id' => (int) $service->id,
+            'func' => 'suspend',
+            'reason' => 'again',
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+
+        // 保留字 reason 转义，不得写入 'expired'
+        $second = $this->createCdnService($user, $suffix);
+        $this->postJson('/api/v2/zjmf/provision/default', [
+            'id' => (int) $second->id,
+            'func' => 'suspend',
+            'reason' => 'expired',
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+
+        $second->refresh();
+        $this->assertSame(ServiceStatus::SUSPENDED, (int) $second->status);
+        $this->assertNotSame(Service::SUSPENDED_REASON_EXPIRED, (string) $second->suspended_reason);
+
+        // 转义后下游仍可解除暂停（不会被到期欠费保护拦截）
+        $this->postJson('/api/v2/zjmf/provision/default', [
+            'id' => (int) $second->id,
+            'func' => 'unsuspend',
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+        $this->assertSame(ServiceStatus::ACTIVE, (int) $second->refresh()->status);
+    }
+
+    /**
+     * 已到期/已取消的服务不可由下游暂停：魔方对到期服务走 suspend 会静默改写状态，
+     * 破坏本系统的到期生命周期（EXPIRED → 自动取消链路）。
+     */
+    #[Test]
+    public function provision_default_suspend_rejects_non_active_service(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createCdnService($user, $suffix);
+        $service->forceFill(['status' => ServiceStatus::EXPIRED])->save();
+        $jwt = $this->apiJwt($suffix);
+
+        $this->postJson('/api/v2/zjmf/provision/default', [
+            'id' => (int) $service->id,
+            'func' => 'suspend',
+            'reason' => 'downstream',
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 400);
+
+        $this->assertSame(ServiceStatus::EXPIRED, (int) $service->refresh()->status);
+    }
+
+    /**
+     * OS 配置项必须随 get_product_config 下发：下游购物车的系统选择、
+     * 重装列表全部读取该选项（judgeOs / Dcim.php mos）。OS 子项无价时
+     * 补 0 价 pricing 行（下游结算按 pricing 行 join 校验子项，缺行 400），
+     * 子项名必须两段式 "值|显示名"（下游重装按 explode('|') 取段，缺段报错）。
+     */
+    #[Test]
+    public function get_product_config_syncs_os_options_with_zero_pricings(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+
+        $product = Product::query()->create([
+            'name' => 'Zjmf Os Options '.$suffix,
+            'product_type' => 'server',
+            'pricing' => ['monthly' => '30.00'],
+            'setup_fee' => '0.00',
+            'config_options' => [
+                [
+                    'id' => 11,
+                    'field' => 'os',
+                    'option_type' => 5,
+                    'option_name' => '操作系统',
+                    'sub' => [
+                        ['id' => 21, 'option_name_first' => 'debian-12', 'option_name' => 'Debian 12', 'hidden' => 0],
+                    ],
+                ],
+            ],
+            'purchase_requires' => [],
+            'stock' => -1,
+            'status' => 1,
+            'auto_setup' => 0,
+        ]);
+        $this->productIds[] = (int) $product->id;
+
+        $response = $this->getJson('/api/v2/zjmf/cart/get_product_config?pid='.(int) $product->id, ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+
+        $options = (array) $response->json('data.config_groups.0.options');
+        $this->assertCount(1, $options, 'OS 配置项必须下发，不得被过滤');
+        $this->assertSame(5, (int) ($options[0]['option_type'] ?? 0), 'OS 配置项 option_type 必须为 5（judgeOs）');
+
+        $sub = (array) $options[0]['sub'][0];
+        $this->assertSame('debian-12|Debian 12', (string) ($sub['option_name'] ?? ''), 'OS 子项名必须两段式 值|显示名');
+
+        $pricing = (array) $sub['pricings'][0];
+        $this->assertSame('configoptions', (string) ($pricing['type'] ?? ''));
+        $this->assertSame(0, (int) ($pricing['monthly'] ?? -1), '无价 OS 子项必须补 0 价行，否则下游结算 400');
+    }
+
+    /**
+     * 魔方结算回传 configoption[option_id]=sub_id（Host.php:104-111），
+     * 单选型子项 id 是本系统内部标识，必须反查为子项真实值落订单配置，
+     * 否则开通后 config 里存的是 901 这类内部 id，控制台/供应商拿到无效取值。
+     */
+    #[Test]
+    public function cart_settle_resolves_select_sub_id_to_real_value(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+
+        $product = Product::query()->create([
+            'name' => 'Zjmf Settle Sub Resolve '.$suffix,
+            'product_type' => 'server',
+            'pricing' => ['monthly' => '30.00'],
+            'setup_fee' => '0.00',
+            'config_options' => [
+                [
+                    'id' => 12,
+                    'field' => 'bandwidth',
+                    'option_type' => 1,
+                    'sub' => [
+                        ['id' => 901, 'option_name_first' => '200M', 'option_name' => '200M带宽', 'hidden' => 0],
+                    ],
+                ],
+            ],
+            'purchase_requires' => [],
+            'stock' => -1,
+            'status' => 1,
+            'auto_setup' => 0,
+        ]);
+        $this->productIds[] = (int) $product->id;
+
+        $response = $this->postJson('/api/v2/zjmf/cart/settle', [
+            'cart_data' => [
+                'pid' => (int) $product->id,
+                'billingcycle' => 'monthly',
+                'qty' => 1,
+                'host' => 'sub-resolve-'.$suffix,
+                'password' => 'DownstreamPass123',
+                'configoptions' => ['901' => 901],
+            ],
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+
+        $order = \App\Models\Order::query()->findOrFail((int) \App\Models\Invoice::query()->findOrFail((int) $response->json('data.invoiceid'))->order_id);
+        $snapshot = (array) $order->config_snapshot;
+        $this->assertSame('200M', (string) ($snapshot['bandwidth'] ?? ''), '单选型 sub id 必须反查为子项真实值，不得落内部 id 901');
+        $this->assertNotSame('901', (string) ($snapshot['bandwidth'] ?? ''));
+    }
+
+    /**
+     * 魔方工单投递（ticketDeliver/ticketReplyDeliver）依赖
+     * /ticket/create（期望 200 + data.tid）与 /ticket/reply（期望 200）。
+     * hostid 即本系统 Service id，tid 即 Ticket id；跨用户越权与已关闭工单必须拒绝。
+     */
+    #[Test]
+    public function ticket_create_and_reply_from_downstream(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createCdnService($user, $suffix);
+        $jwt = $this->apiJwt($suffix);
+
+        $created = $this->postJson('/api/v2/zjmf/ticket/create', [
+            'dptid' => 1,
+            'hostid' => (int) $service->id,
+            'title' => '下游工单 '.$suffix,
+            'content' => '实例无法开机，请协助排查',
+            'priority' => 3,
+            'is_api' => 1,
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+
+        $tid = (int) $created->json('data.tid');
+        $this->assertGreaterThan(0, $tid);
+
+        $ticket = \App\Models\Ticket::query()->findOrFail($tid);
+        $this->assertSame((int) $user->id, (int) $ticket->user_id);
+        $this->assertSame((int) $service->id, (int) $ticket->service_id);
+        $this->assertSame('下游工单 '.$suffix, (string) $ticket->subject);
+        $this->assertSame(3, (int) $ticket->priority);
+        $this->assertSame(0, (int) $ticket->status);
+
+        $this->postJson('/api/v2/zjmf/ticket/reply', [
+            'tid' => $tid,
+            'content' => '补充：重启后依旧失败',
+            'is_api' => 1,
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+        $this->assertSame(1, (int) $ticket->refresh()->status, '下游回复后工单应进入客户回复状态');
+
+        // 已关闭工单拒绝下游回复
+        $ticket->forceFill(['status' => 3])->save();
+        $this->postJson('/api/v2/zjmf/ticket/reply', [
+            'tid' => $tid,
+            'content' => '已关闭仍回复',
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 400);
+
+        // 其他 API 账号不能操作他人服务与工单
+        $otherSuffix = bin2hex(random_bytes(4));
+        $other = $this->createApiUser($otherSuffix, ['status' => 1, 'api_open' => 1]);
+        $otherJwt = $this->apiJwt($otherSuffix);
+
+        $this->postJson('/api/v2/zjmf/ticket/create', [
+            'hostid' => (int) $service->id,
+            'title' => '越权工单',
+            'content' => '不属于我的服务',
+        ], ['Authorization' => 'Bearer '.$otherJwt])
+            ->assertOk()
+            ->assertJsonPath('status', 400);
+
+        $this->postJson('/api/v2/zjmf/ticket/reply', [
+            'tid' => $tid,
+            'content' => '越权回复',
+        ], ['Authorization' => 'Bearer '.$otherJwt])
+            ->assertOk()
+            ->assertJsonPath('status', 400);
+    }
+
+    /**
+     * 中间层透传：本服务接入可控供应商时，host/header 必须原样下发供应商的
+     * module_button / module_client_area / module_chart / module_client_main_area
+     * （对齐魔方财务中间层），下游才能展示最上游的自定义 tab 与按钮。
+     */
+    #[Test]
+    public function host_header_passthroughs_upstream_module_payload(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createCdnService($user, $suffix);
+        $jwt = $this->apiJwt($suffix);
+
+        $areas = $this->createMock(\App\Services\ClientServiceConsole\ServiceConsoleAreaService::class);
+        $areas->method('passthroughModulePayload')->willReturn([
+            'module_button' => ['control' => [['name' => 'restart', 'key' => 'reboot']], 'console' => []],
+            'module_client_area' => [['key' => 'custom1', 'name' => '自定义面板']],
+            'module_chart' => [['type' => 'charts']],
+            'module_client_main_area' => [['name' => '配置信息', 'value' => '透传值']],
+            'module_power_status' => true,
+            'reinstall_random_port' => true,
+        ]);
+        $this->swap(\App\Services\ClientServiceConsole\ServiceConsoleAreaService::class, $areas);
+
+        $this->getJson('/api/v2/zjmf/host/header?host_id='.(int) $service->id, ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('data.module_client_area.0.key', 'custom1')
+            ->assertJsonPath('data.module_client_area.0.name', '自定义面板')
+            ->assertJsonPath('data.module_button.control.0.name', 'restart')
+            ->assertJsonPath('data.module_client_main_area.0.value', '透传值')
+            ->assertJsonPath('data.module_power_status', true)
+            ->assertJsonPath('data.reinstall_random_port', true);
+    }
+
+    /**
+     * 中间层透传：下游按 module_client_area.key 调 /zjmf_api/provision/custom/content
+     * 时必须取回供应商面板 HTML（并把下游 api_url 继续下传上游渲染动作地址），
+     * 而不是回退到本地 info 区（非 info key 本地渲染会 400）。
+     */
+    #[Test]
+    public function custom_content_passthroughs_upstream_html(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createCdnService($user, $suffix);
+        $jwt = $this->apiJwt($suffix);
+
+        $capturedKey = '';
+        $areas = $this->createMock(\App\Services\ClientServiceConsole\ServiceConsoleAreaService::class);
+        $areas->method('proxyModulePage')->willReturnCallback(
+            function (Service $argService, string $areaKey, string $apiUrl) use ($service, &$capturedKey): string {
+                $this->assertSame((int) $service->id, (int) $argService->id);
+                $capturedKey = $areaKey;
+
+                return '<div data-api-url="'.e($apiUrl).'">upstream panel</div>';
+            },
+        );
+        $this->swap(\App\Services\ClientServiceConsole\ServiceConsoleAreaService::class, $areas);
+
+        $downstreamActionUrl = 'https://downstream.example.test/api/v2/zjmf/provision/custom/'.(int) $service->id;
+        $this->postJson('/api/v2/zjmf/zjmf_api/provision/custom/content', [
+            'id' => (int) $service->id,
+            'key' => 'custom1',
+            'api_url' => $downstreamActionUrl,
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('data.html', '<div data-api-url="'.e($downstreamActionUrl).'">upstream panel</div>');
+
+        $this->assertSame('custom1', $capturedKey);
+    }
+
+    /**
+     * 图表端点（魔方 GET /provision/chart/{id}）：服务未接入可控供应商时返回
+     * 空列表而非报错，下游按 data.data.list 渲染空图表。
+     */
+    #[Test]
+    public function provision_chart_returns_empty_list_without_controllable_supplier(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $service = $this->createCdnService($user, $suffix);
+        $jwt = $this->apiJwt($suffix);
+
+        $this->getJson('/api/v2/zjmf/provision/chart/'.(int) $service->id.'?start=1700000000000&end=1700086400000', ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('data.list', []);
     }
 
     private function apiJwt(string $suffix): string

@@ -46,6 +46,13 @@ class PushController extends Controller
         return response()->json($result, 200);
     }
 
+    public function chart(Request $request, string $id): JsonResponse
+    {
+        $user = $this->user($request);
+
+        return response()->json($this->push->chart($user, (int) $id, $request->query()), 200);
+    }
+
     private function user(Request $request): User
     {
         $user = $request->attributes->get('zjmf_upstream_user');

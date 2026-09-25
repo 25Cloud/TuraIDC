@@ -167,9 +167,12 @@ trait HandlesOrderCalculation
      * 把下游（魔方财务）回传的 configoption 还原成本地 config 结构。
      *
      * 魔方财务把本系统 get_product_config 下发的 `options[].id` / `sub[].id` 作为
-     * upstream_id 落库，下单时以 `configoption[<id>] = 值或数量` 回传（单选型回传 sub id）。
-     * 这里按本地配置项定义反查字段名；无法匹配的项直接丢弃——normalizeConfig() 会把
-     * 不合法取值归一为 null 并跳过，因此最坏情况退化为「忽略该配置项」，不会打断下单。
+     * upstream_id 落库，下单时以 `configoption[<option id>] = 值或数量` 回传：
+     * 数量型回传数量，单选型回传所选子项的 sub id。单选型这里把 sub id
+     * 反查回子项真实值（option_name_first 优先），保证 config 落的是业务值
+     * 而非内部 id；反查不到时保留原值（与直接提交值的行为一致）。
+     * 无法匹配的项直接丢弃——normalizeConfig() 会把不合法取值归一为 null
+     * 并跳过，因此最坏情况退化为「忽略该配置项」，不会打断下单。
      *
      * @param  array<string|int, mixed>  $submitted
      * @return array<string, mixed>
@@ -199,26 +202,68 @@ trait HandlesOrderCalculation
             $optionId = (int) ($item['id'] ?? 0);
             if ($optionId > 0 && array_key_exists((string) $optionId, $submittedByKey)) {
                 $config[$field] = $submittedByKey[(string) $optionId];
+            } else {
+                // 单选/多选型：下游也可能直接以子项 upstream id 作为键回传
+                $matched = false;
+                foreach ((array) ($item['sub'] ?? []) as $sub) {
+                    if (! is_array($sub)) {
+                        continue;
+                    }
 
-                continue;
-            }
+                    $subId = (int) ($sub['id'] ?? 0);
+                    if ($subId > 0 && array_key_exists((string) $subId, $submittedByKey)) {
+                        $config[$field] = $submittedByKey[(string) $subId];
+                        $matched = true;
 
-            // 单选/多选型：下游回传的是所选子项的 upstream id
-            foreach ((array) ($item['sub'] ?? []) as $sub) {
-                if (! is_array($sub)) {
+                        break;
+                    }
+                }
+
+                if (! $matched) {
                     continue;
                 }
+            }
 
-                $subId = (int) ($sub['id'] ?? 0);
-                if ($subId > 0 && array_key_exists((string) $subId, $submittedByKey)) {
-                    $config[$field] = $submittedByKey[(string) $subId];
-
-                    break;
-                }
+            $type = (int) ($item['option_type'] ?? -1);
+            $isRange = in_array($type, self::RANGE_TYPES, true)
+                || trim((string) ($item['option_mode'] ?? '')) === 'range';
+            if (! $isRange) {
+                $config[$field] = $this->resolveSubValue($item, $config[$field]);
             }
         }
 
         return $config;
+    }
+
+    /**
+     * 单选型取值还原：下游回传的是 sub id 时反查子项真实值
+     * （option_name_first 优先，回退 option_name / id）。
+     */
+    private function resolveSubValue(array $item, mixed $value): mixed
+    {
+        $candidate = trim((string) $value);
+        if ($candidate === '' || ! preg_match('/^\d+$/', $candidate)) {
+            return $value;
+        }
+
+        foreach ((array) ($item['sub'] ?? []) as $sub) {
+            if (! is_array($sub)) {
+                continue;
+            }
+
+            if ((int) ($sub['id'] ?? 0) !== (int) $candidate) {
+                continue;
+            }
+
+            $resolved = trim((string) ($sub['option_name_first'] ?? ''));
+            if ($resolved === '') {
+                $resolved = trim((string) ($sub['option_name'] ?? ''));
+            }
+
+            return $resolved !== '' ? $resolved : $value;
+        }
+
+        return $value;
     }
 
     private function calculateConfigExtra(Product $product, string $billingCycle, array $config): float

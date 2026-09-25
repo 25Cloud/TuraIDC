@@ -25,7 +25,9 @@ final class VerifyTicketUpstreamCallbackSignature
             return $this->verifyModern($request, $next);
         }
 
-        if (! $request->is('api/ticket_reply/sync')) {
+        $isTicketReply = $request->is('api/ticket_reply/sync');
+        $isHostSync = $request->is('api/host/sync');
+        if (! $isTicketReply && ! $isHostSync) {
             return $next($request);
         }
 
@@ -34,12 +36,8 @@ final class VerifyTicketUpstreamCallbackSignature
         $rand = trim((string) ($payload['rand_str'] ?? ''));
         $signature = strtoupper(trim((string) ($payload['signature'] ?? '')));
         if ($id <= 0 || $rand === '' || $signature === '') {
-            $this->delivery->recordInboundCallbackFailure(
-                (string) $request->input('tid', ''),
-                'missing_legacy_signature_fields',
-                '上游工单回调缺少 legacy 签名字段'
-            );
-            Log::warning('上游工单回调参数缺失', [
+            $this->recordLegacyFailure($isTicketReply, $request, 'missing_legacy_signature_fields', '上游回调缺少 legacy 签名字段');
+            Log::warning('上游回调参数缺失', [
                 'callback_path' => $request->path(),
                 'service_id' => $id > 0 ? $id : null,
                 'reason' => 'missing_legacy_signature_fields',
@@ -52,18 +50,14 @@ final class VerifyTicketUpstreamCallbackSignature
             $service = Service::query()->find($id);
             $token = $this->legacyToken($service);
         } catch (\Throwable $exception) {
-            Log::warning('上游工单回调 token 生成失败', ['service_id' => $id, 'message' => $exception->getMessage()]);
+            Log::warning('上游回调 token 生成失败', ['service_id' => $id, 'message' => $exception->getMessage()]);
 
             return response()->json(['status' => 400, 'msg' => '签名错误'], 200);
         }
 
         if ($token === '') {
-            $this->delivery->recordInboundCallbackFailure(
-                (string) $request->input('tid', ''),
-                'legacy_token_missing',
-                '上游工单回调 token 未配置或服务不存在'
-            );
-            Log::warning('上游工单回调 token 为空', [
+            $this->recordLegacyFailure($isTicketReply, $request, 'legacy_token_missing', '上游回调 token 未配置或服务不存在');
+            Log::warning('上游回调 token 为空', [
                 'callback_path' => $request->path(),
                 'service_id' => $id,
                 'reason' => 'legacy_token_missing',
@@ -72,16 +66,9 @@ final class VerifyTicketUpstreamCallbackSignature
             return response()->json(['status' => 400, 'msg' => '签名验证失败'], 200);
         }
 
-        $signed = ['id' => (string) $id, 'token' => $token, 'rand_str' => $rand];
-        ksort($signed, SORT_STRING);
-        $expected = strtoupper(md5((string) json_encode($signed)));
-        if (! hash_equals($expected, $signature)) {
-            $this->delivery->recordInboundCallbackFailure(
-                (string) $request->input('tid', ''),
-                'legacy_signature_mismatch',
-                '上游工单 legacy 签名验证失败'
-            );
-            Log::warning('上游工单回调签名验证失败', [
+        if (! $this->legacySignatureMatches($id, $token, $rand, $signature)) {
+            $this->recordLegacyFailure($isTicketReply, $request, 'legacy_signature_mismatch', '上游回调 legacy 签名验证失败');
+            Log::warning('上游回调签名验证失败', [
                 'callback_path' => $request->path(),
                 'service_id' => $id,
                 'reason' => 'legacy_signature_mismatch',
@@ -91,6 +78,40 @@ final class VerifyTicketUpstreamCallbackSignature
         }
 
         return $next($request);
+    }
+
+    /**
+     * 对齐魔方财务 createSign：strtoupper(md5(json_encode(ksort(['id','token','rand_str']))))。
+     * 兼容 id 的 int/string 两种 json 形式（魔方 createSign 传 int，本系统历史实现传 string）。
+     */
+    private function legacySignatureMatches(int $id, string $token, string $rand, string $signature): bool
+    {
+        $candidates = [
+            ['id' => $id, 'token' => $token, 'rand_str' => $rand],
+            ['id' => (string) $id, 'token' => $token, 'rand_str' => $rand],
+        ];
+
+        foreach ($candidates as $signed) {
+            ksort($signed, SORT_STRING);
+            if (hash_equals(strtoupper(md5((string) json_encode($signed))), $signature)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function recordLegacyFailure(bool $isTicketReply, Request $request, string $reason, string $message): void
+    {
+        if (! $isTicketReply) {
+            return;
+        }
+
+        $this->delivery->recordInboundCallbackFailure(
+            (string) $request->input('tid', ''),
+            $reason,
+            $message
+        );
     }
 
     private function verifyModern(Request $request, Closure $next): Response

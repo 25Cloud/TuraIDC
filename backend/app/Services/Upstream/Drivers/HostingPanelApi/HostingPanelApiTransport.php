@@ -983,6 +983,74 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
         return $this->buildHttpClientOptions();
     }
 
+    /**
+     * 读取上游 host/header 载荷（中间层透传 module_button/module_client_area 等）。
+     *
+     * 上游魔方财务 GET /host/header 的 data 内含 module_* 与 host_data，
+     * 这里原样上交 data，由调用方按键取用、缺失键自行回退本地。
+     */
+    public function getHostHeaderPayload(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        $response = $this->get($supplier, $this->resolveSupplierRootUrl($supplier).'/host/header', $jwt, ['host_id' => $hostId]);
+
+        return is_array($response['data'] ?? null) ? $response['data'] : [];
+    }
+
+    /**
+     * 读取上游自定义面板 HTML（中间层透传自定义 tab 内容）。
+     *
+     * 魔方财务 POST /zjmf_api/provision/custom/content（表单 id/key/api_url/now_jwt），
+     * 返回 {status, data:{html}}；api_url 是下游动作地址，上游渲染进 HTML 保持
+     * 动作直达下游代理（多层透传链）。失败返回空串由调用方回退本地渲染。
+     */
+    public function fetchCustomModulePage(Supplier $supplier, int $hostId, string $moduleKey, ?string $jwt = null, string $apiUrl = ''): string
+    {
+        $response = $this->post(
+            $supplier,
+            $this->resolveSupplierRootUrl($supplier).'/zjmf_api/provision/custom/content',
+            [
+                'id' => $hostId,
+                'key' => $moduleKey,
+                'api_url' => $apiUrl,
+                'now_jwt' => (string) $jwt,
+            ],
+            $jwt,
+        );
+
+        if ((int) ($response['status'] ?? 0) !== 200) {
+            return '';
+        }
+
+        return trim((string) ($response['data']['html'] ?? ''));
+    }
+
+    /**
+     * 把下游提交的面板动作表单转发给上游（魔方财务 POST /provision/custom/{hostId}）。
+     */
+    public function submitCustomModuleAction(Supplier $supplier, string $endpoint, array $data, ?string $jwt = null): array
+    {
+        return $this->post($supplier, $endpoint, $data, $jwt);
+    }
+
+    /**
+     * 供应商站点根地址（scheme://host[:port]），供魔方财务老协议端点（/host/header、
+     * /provision/custom/*）拼接；api_url 中的路径前缀仅属于 v10 API。
+     */
+    private function resolveSupplierRootUrl(Supplier $supplier): string
+    {
+        $parts = parse_url(trim((string) $supplier->api_url));
+        if (! is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
+            return rtrim(trim((string) $supplier->api_url), '/');
+        }
+
+        $rootUrl = $parts['scheme'].'://'.$parts['host'];
+        if (isset($parts['port'])) {
+            $rootUrl .= ':'.$parts['port'];
+        }
+
+        return $rootUrl;
+    }
+
     private function buildHttpClientOptions(): array
     {
         $verify = $this->serviceConfig['ssl_verify'];

@@ -12,6 +12,7 @@ use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesConsoleSecurity;
 use App\Services\Upstream\Contracts\ProvidesContextualRenewalRecovery;
 use App\Services\Upstream\Contracts\ProvidesHostSuspension;
+use App\Services\Upstream\Contracts\ProvidesHostTermination;
 use App\Services\Upstream\Contracts\ProvidesInvoiceRenewal;
 use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
@@ -35,6 +36,7 @@ final class ZjmfFinanceDriver implements ProvidesSupplierFormSchema, UpstreamDri
         ProvidesConsoleSecurity::class,
         ProvidesContextualRenewalRecovery::class,
         ProvidesHostSuspension::class,
+        ProvidesHostTermination::class,
         ProvidesInvoiceRenewal::class,
         ProvidesOrderProvisioning::class,
         // 基契约必须保留：编排层以 ProvidesProvisioning/ProvidesRenewal 作为能力门槛，

@@ -8,6 +8,8 @@ use App\Models\Service;
 use App\Models\User;
 use App\Models\ZjmfUpstreamBinding;
 use App\Services\ClientServiceConsole\ServiceConsoleAreaService;
+use App\Services\ClientServiceConsole\ServiceDetailService;
+use App\Services\ClientServiceConsole\ServiceTransformService;
 use App\Support\UploadedImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -54,6 +56,58 @@ class PushService
             'msg' => '操作成功',
             'data' => ['id' => $serviceId],
         ];
+    }
+
+    /**
+     * 图表数据（魔方财务 GET /provision/chart/{id}，中间层转发供应商）。
+     *
+     * 魔方前端按 data.status==200 且 data.data.list 渲染；服务未接入可控
+     * 供应商或上游失败时返回空列表，下游渲染空图表而不是报错卡死。
+     *
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function chart(User $user, int $serviceId, array $query): array
+    {
+        $service = Service::query()
+            ->where('user_id', (int) $user->id)
+            ->find($serviceId);
+
+        if (! $service instanceof Service) {
+            return ['status' => 400, 'msg' => '服务不存在'];
+        }
+
+        $empty = ['status' => 200, 'msg' => '请求成功', 'data' => ['list' => []]];
+
+        try {
+            if (! app(ServiceTransformService::class)->canExecuteConsoleActions($service)) {
+                return $empty;
+            }
+
+            $detail = app(ServiceDetailService::class);
+            [$runtime, $supplier, $hostId, $jwt] = $detail->resolveUpstreamContext($service);
+            $rootUrl = rtrim($detail->resolveSupplierRootUrl($supplier), '/');
+            $response = $runtime->get($supplier, $rootUrl.'/provision/chart/'.$hostId, $jwt, $query);
+
+            if ((int) ($response['status'] ?? 0) !== 200) {
+                return $empty;
+            }
+
+            $data = is_array($response['data'] ?? null) ? $response['data'] : [];
+
+            return [
+                'status' => 200,
+                'msg' => '请求成功',
+                'data' => ['list' => is_array($data['list'] ?? null) ? array_values($data['list']) : []],
+            ];
+        } catch (\Throwable $exception) {
+            Log::info('[zjmf-upstream] 图表数据透传失败，返回空列表', [
+                'service_id' => $serviceId,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return $empty;
+        }
     }
 
     private function consoleArea(): ServiceConsoleAreaService

@@ -13,6 +13,7 @@ use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\System\OperationLogService;
 use App\Services\Upstream\Contracts\ProvidesHostSuspension;
+use App\Services\Upstream\Contracts\ProvidesHostTermination;
 use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
 use App\Support\SensitiveDataSanitizer;
 
@@ -128,6 +129,46 @@ class ServiceSuspensionService
             'message' => $message,
             'detail' => $this->transformService->transformDetail($service),
         ];
+    }
+
+    /**
+     * 销毁上游实例（到期自动终止等场景），对齐魔方下游 Host::terminate 协议。
+     *
+     * 语义：
+     * - 服务未接入可控上游或驱动不支持终止 → true（无需销毁，放行本地取消）
+     * - 上游已不存在（幂等）或销毁成功 → true
+     * - 上游调用失败 → false（调用方保持现状，下一轮重试）；本方法绝不抛出
+     */
+    public function tryTerminateUpstream(Service $service, string $reason = ''): bool
+    {
+        try {
+            if (! $this->transformService->canManageService($service)) {
+                return true;
+            }
+
+            [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
+
+            if (! $runtime instanceof ProvidesHostTermination) {
+                return true;
+            }
+
+            $response = $runtime->terminateHost($supplier, $hostId, $reason !== '' ? $reason : '到期自动终止', $jwt);
+
+            logger()->info('[服务终止] 上游实例销毁完成', [
+                'service_id' => (int) $service->id,
+                'host_id' => $hostId,
+                'already_terminated' => (bool) ($response['already_terminated'] ?? false),
+            ]);
+
+            return true;
+        } catch (\Throwable $exception) {
+            logger()->warning('[服务终止] 上游实例销毁失败', [
+                'service_id' => (int) $service->id,
+                'message' => SensitiveDataSanitizer::sanitizeText($exception->getMessage()),
+            ]);
+
+            return false;
+        }
     }
 
     private function bindingResolver(): PluginBindingResolver
