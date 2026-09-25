@@ -106,6 +106,18 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::get('/users/{user}/email-logs', [UserController::class, 'emailLogs']);
         Route::get('/users/{user}/services/{service}/connection', [UserServiceController::class, 'connection']);
         Route::get('/users/{user}/services/{service}/remote-status', [UserServiceController::class, 'remoteStatus']);
+        Route::get('/users/{user}/services/{service}/config', [UserServiceController::class, 'config']);
+        Route::get('/users/{user}/services/{service}/console/capabilities', [UserServiceController::class, 'capabilities']);
+        Route::get('/users/{user}/services/{service}/module-status', [UserServiceController::class, 'moduleStatus']);
+        Route::get('/users/{user}/services/{service}/operation-logs', [UserServiceController::class, 'operationLogs']);
+        Route::get('/users/{user}/services/{service}/monitor/batch', [UserServiceController::class, 'monitorBatch']);
+        Route::get('/users/{user}/services/{service}/monitor', [UserServiceController::class, 'monitor']);
+        Route::get('/users/{user}/services/{service}/traffic-packages', [UserServiceController::class, 'trafficPackages']);
+        Route::get('/users/{user}/services/{service}/upgrades', [UserServiceController::class, 'upgradePreview']);
+        Route::get('/users/{user}/services/{service}/nat-forwardings', [UserServiceController::class, 'natForwardings']);
+        Route::get('/users/{user}/services/{service}/security-groups/{group}/rules', [UserServiceController::class, 'securityGroupRules']);
+        Route::get('/users/{user}/services/{service}/security-groups', [UserServiceController::class, 'securityGroups']);
+        Route::get('/users/{user}/services/{service}/vnc', [UserServiceController::class, 'vnc']);
         Route::get('/users/{user}/services/{service}', [UserServiceController::class, 'show']);
     });
 
@@ -130,6 +142,22 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::get('/users/{user}/services/{service}/reinstallations/options', [UserController::class, 'reinstallServiceOptions']);
         Route::get('/users/{user}/services/{service}/renewals', [UserController::class, 'renewServicePreview']);
         Route::post('/users/{user}/services/{service}/renewals', [UserController::class, 'renewServiceOrder']);
+        Route::put('/users/{user}/services/{service}/renewals/auto', [UserServiceController::class, 'updateAutoRenew'])->middleware('throttle:6,1,admin-service-renew-auto');
+        Route::put('/users/{user}/services/{service}/name', [UserServiceController::class, 'updateName'])->middleware('throttle:10,1,admin-service-meta');
+        Route::put('/users/{user}/services/{service}/remark', [UserServiceController::class, 'updateRemark'])->middleware('throttle:10,1,admin-service-meta');
+        Route::post('/users/{user}/services/{service}/rescue', [UserServiceController::class, 'rescue'])->middleware('throttle:6,1,admin-service-rescue');
+        Route::post('/users/{user}/services/{service}/console/tickets', [UserServiceController::class, 'createAreaTicket'])->middleware('throttle:20,1,admin-service-area-ticket');
+        Route::post('/users/{user}/services/{service}/traffic-packages/quote', [UserServiceController::class, 'quoteTrafficPackage'])->middleware('throttle:12,1,admin-service-traffic-package-quote');
+        Route::post('/users/{user}/services/{service}/traffic-packages/orders', [UserServiceController::class, 'createTrafficPackageOrder'])->middleware('throttle:6,1,admin-service-traffic-package-order');
+        Route::post('/users/{user}/services/{service}/upgrades/quotes', [UserServiceController::class, 'quoteHostUpgrade'])->middleware('throttle:12,1,admin-service-host-upgrade-quote');
+        Route::post('/users/{user}/services/{service}/upgrades/orders', [UserServiceController::class, 'createHostUpgradeOrder'])->middleware('throttle:6,1,admin-service-host-upgrade-order');
+        Route::post('/users/{user}/services/{service}/nat-forwardings', [UserServiceController::class, 'createNatForwarding'])->middleware('throttle:10,1,admin-service-nat-create');
+        Route::delete('/users/{user}/services/{service}/nat-forwardings/{forwarding}', [UserServiceController::class, 'deleteNatForwarding'])->middleware('throttle:10,1,admin-service-nat-delete');
+        Route::post('/users/{user}/services/{service}/security-groups/{group}/apply', [UserServiceController::class, 'applySecurityGroup'])->middleware('throttle:10,1,admin-service-security-group-apply');
+        Route::post('/users/{user}/services/{service}/security-groups/{group}/rules', [UserServiceController::class, 'createSecurityRule'])->middleware('throttle:10,1,admin-service-security-rule-create');
+        Route::delete('/users/{user}/services/{service}/security-groups/{group}/rules/{rule}', [UserServiceController::class, 'deleteSecurityRule'])->middleware('throttle:10,1,admin-service-security-rule-delete');
+        Route::delete('/users/{user}/services/{service}/security-groups/{group}', [UserServiceController::class, 'deleteSecurityGroup'])->middleware('throttle:10,1,admin-service-security-group-delete');
+        Route::post('/users/{user}/services/{service}/security-groups', [UserServiceController::class, 'createSecurityGroup'])->middleware('throttle:10,1,admin-service-security-group-create');
     });
 
     Route::middleware(['permission:'.AdminPermissions::USER_LOGIN_AS])->group(function (): void {

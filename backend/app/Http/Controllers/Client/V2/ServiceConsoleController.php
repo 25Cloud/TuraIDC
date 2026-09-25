@@ -485,7 +485,7 @@ class ServiceConsoleController extends Controller
     }
 
     /**
-     * VNC 兑换端点 Origin 纵深校验：请求带 Origin 且不在本站白名单（console/api 域）时拒绝。
+     * VNC 兑换端点 Origin 纵深校验：请求带 Origin 且不在本站白名单（console/api/admin 域）时拒绝。
      * 同源请求或非浏览器客户端不带 Origin 时放行，避免误伤。
      */
     private function assertVncTokenOriginAllowed(Request $request): void
@@ -498,6 +498,7 @@ class ServiceConsoleController extends Controller
         $allowed = array_values(array_filter([
             PublicUrl::console(),
             PublicUrl::api(),
+            PublicUrl::admin(),
         ]));
 
         foreach ($allowed as $allowedOrigin) {
