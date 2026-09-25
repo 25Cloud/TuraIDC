@@ -36,13 +36,27 @@
           </div>
           <div class="news-feature__body">
             <div class="news-feature__date">
-              <strong>{{ formatNoticeDay(featuredNotice.publish_at || featuredNotice.updated_at) }}</strong>
-              <span>{{ formatNoticeMonthYear(featuredNotice.publish_at || featuredNotice.updated_at) }}</span>
+              <strong>{{
+                formatNoticeDay(
+                  featuredNotice.publish_at || featuredNotice.updated_at,
+                )
+              }}</strong>
+              <span>{{
+                formatNoticeMonthYear(
+                  featuredNotice.publish_at || featuredNotice.updated_at,
+                )
+              }}</span>
             </div>
             <div class="news-feature__meta">
-              <strong class="news-feature__title">{{ featuredNotice.title }}</strong>
+              <strong class="news-feature__title">{{
+                featuredNotice.title
+              }}</strong>
               <p class="news-feature__summary">
-                {{ featuredNotice.summary || featuredNotice.excerpt || '资讯动态主焦点卡片展示区域，点击查看完整内容。' }}
+                {{
+                  featuredNotice.summary ||
+                  featuredNotice.excerpt ||
+                  "资讯动态主焦点卡片展示区域，点击查看完整内容。"
+                }}
               </p>
             </div>
           </div>
@@ -59,7 +73,9 @@
             <strong class="news-list__title">{{ item.title }}</strong>
             <div class="news-list__meta">
               <el-icon><Calendar /></el-icon>
-              <span>{{ formatNoticeDate(item.publish_at || item.updated_at) }}</span>
+              <span>{{
+                formatNoticeDate(item.publish_at || item.updated_at)
+              }}</span>
             </div>
           </button>
         </div>
@@ -78,7 +94,7 @@
           <div class="news-promo__body">
             <strong class="news-promo__title">{{ promo.title }}</strong>
             <p class="news-promo__desc">
-              {{ promo.summary || promo.excerpt || '点击查看详细内容。' }}
+              {{ promo.summary || promo.excerpt || "点击查看详细内容。" }}
             </p>
           </div>
           <span class="news-promo__arrow" aria-hidden="true">
@@ -91,76 +107,78 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElIcon } from 'element-plus/es/components/icon/index.mjs'
-import { ArrowRight, Calendar } from '@element-plus/icons-vue'
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { ElIcon } from "element-plus/es/components/icon/index.mjs";
+import { ArrowRight, Calendar } from "@element-plus/icons-vue";
 
 const props = defineProps({
   notices: {
     type: Array,
     default: () => [],
   },
-})
+});
 
-const router = useRouter()
+const router = useRouter();
 
 const featuredNotice = computed(() => {
-  return props.notices.find((n) => n.is_pinned === 1) || props.notices[0] || null
-})
+  return (
+    props.notices.find((n) => n.is_pinned === 1) || props.notices[0] || null
+  );
+});
 
 const promoEntries = computed(() => {
   return props.notices
     .filter((n) => n.is_recommended === 1 && n.is_pinned !== 1)
-    .slice(0, 4)
-})
+    .slice(0, 4);
+});
 
 const newsListEntries = computed(() => {
   const usedIds = new Set([
     featuredNotice.value?.id,
     ...promoEntries.value.map((n) => n.id),
-  ])
+  ]);
   return props.notices
     .filter((n) => !usedIds.has(n.id))
     .sort((a, b) => {
-      const da = a.publish_at || a.updated_at || ''
-      const db = b.publish_at || b.updated_at || ''
-      return da < db ? 1 : da > db ? -1 : 0 // Descending order for news list
+      const da = a.publish_at || a.updated_at || "";
+      const db = b.publish_at || b.updated_at || "";
+      return da < db ? 1 : da > db ? -1 : 0; // Descending order for news list
     })
-    .slice(0, 6)
-})
+    .slice(0, 6);
+});
 
 function formatNoticeDate(value) {
-  if (!value) return '--'
-  const date = new Date(value)
+  if (!value) return "--";
+  const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return String(value).split(' ')[0] || String(value)
+    return String(value).split(" ")[0] || String(value);
   }
-  const pad = (number) => String(number).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+  const pad = (number) => String(number).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 function formatNoticeDay(value) {
-  if (!value) return '--'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '--'
-  return String(date.getDate()).padStart(2, '0')
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+  return String(date.getDate()).padStart(2, "0");
 }
 
 function formatNoticeMonthYear(value) {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  const pad = (number) => String(number).padStart(2, '0')
-  return `${date.getFullYear()}.${pad(date.getMonth() + 1)}`
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (number) => String(number).padStart(2, "0");
+  return `${date.getFullYear()}.${pad(date.getMonth() + 1)}`;
 }
 
 function openNotice(item) {
   if (!item?.id) {
-    router.push('/notices')
-    return
+    router.push("/notices");
+    return;
   }
-  router.push(`/notices/${item.id}`)
+  router.push(`/notices/${item.id}`);
 }
 </script>
 
@@ -206,14 +224,14 @@ function openNotice(item) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #2f5ef3;
+  color: $color-primary;
   font-weight: 500;
   text-decoration: none;
-  transition: color 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: color 0.2s ease;
 }
 
 .news-section__more:hover {
-  color: #2754e3;
+  color: $color-primary-hover;
 }
 
 .news-section__more .el-icon {
@@ -231,7 +249,7 @@ function openNotice(item) {
   display: flex;
   flex-direction: column;
   border: 1px solid #e5eaf3;
-  border-radius: 12px;
+  border-radius: 9px;
   background: #ffffff;
   text-align: left;
   cursor: pointer;
@@ -239,15 +257,13 @@ function openNotice(item) {
   appearance: none;
   padding: 0;
   transition:
-    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .news-feature:hover {
-  transform: translateY(-2px);
-  border-color: rgba(22, 93, 255, 0.24);
-  box-shadow: 0 18px 36px rgba(22, 93, 255, 0.1);
+  border-color: rgba($color-primary, 0.24);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
 }
 
 .news-feature__cover {
@@ -256,9 +272,7 @@ function openNotice(item) {
   align-items: center;
   justify-content: center;
   height: 200px;
-  background:
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.18), transparent 55%),
-    #1e49cf;
+  background: $color-primary-hover;
   overflow: hidden;
 }
 
@@ -379,22 +393,20 @@ function openNotice(item) {
   gap: 14px;
   padding: 18px 20px;
   border: 1px solid #e5eaf3;
-  border-radius: 8px;
+  border-radius: 9px;
   background: #ffffff;
   text-align: left;
   cursor: pointer;
   appearance: none;
   transition:
-    background 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .news-list__item:hover {
-  border-color: rgba(22, 93, 255, 0.3);
-  transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(22, 93, 255, 0.08);
+  border-color: rgba($color-primary, 0.3);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
 }
 
 .news-list__title {
@@ -434,33 +446,18 @@ function openNotice(item) {
   gap: 12px;
   padding: 20px 22px;
   border: none;
-  border-radius: 10px;
+  border-radius: 9px;
   background: linear-gradient(135deg, #f0f5ff, #e0eaff);
   text-align: left;
   cursor: pointer;
   appearance: none;
   overflow: hidden;
   isolation: isolate;
-  transition:
-    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.24s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.news-promo::before {
-  content: "";
-  position: absolute;
-  inset: auto -30% -60% auto;
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(22, 93, 255, 0.18), rgba(22, 93, 255, 0) 70%);
-  pointer-events: none;
-  z-index: -1;
+  transition: box-shadow 0.2s ease;
 }
 
 .news-promo:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 28px rgba(22, 93, 255, 0.16);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
 }
 
 .news-promo__badge {
@@ -472,8 +469,8 @@ function openNotice(item) {
   min-height: 22px;
   padding: 0 10px;
   border-radius: 4px;
-  background: rgba(22, 93, 255, 0.12);
-  color: #2f5ef3;
+  background: rgba($color-primary, 0.12);
+  color: $color-primary;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -515,18 +512,17 @@ function openNotice(item) {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: rgba(22, 93, 255, 0.1);
-  color: #2f5ef3;
+  background: rgba($color-primary, 0.1);
+  color: $color-primary;
   font-size: 12px;
   transition:
-    background 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .news-promo:hover .news-promo__arrow {
-  background: #2f5ef3;
+  background: $color-primary;
   color: #ffffff;
-  transform: translateX(2px);
 }
 
 @media (max-width: 1180px) {

@@ -13,9 +13,9 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRouter } from "vue-router";
 
-const router = useRouter()
+const router = useRouter();
 </script>
 
 <style scoped lang="scss">
@@ -30,15 +30,15 @@ const router = useRouter()
   width: min(520px, 100%);
   padding: 40px 32px;
   border: 1px solid #e5eaf3;
-  border-radius: 20px;
+  border-radius: 9px;
   background: #fff;
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
   text-align: center;
 }
 
 .not-found-code {
   margin: 0 0 12px;
-  color: #2f5ef3;
+  color: $color-primary;
   font-size: 56px;
   font-weight: 700;
   line-height: 1;

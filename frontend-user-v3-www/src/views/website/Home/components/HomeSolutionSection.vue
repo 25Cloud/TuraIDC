@@ -25,7 +25,11 @@
 
       <div class="container solution-stage__inner">
         <div class="solution-panel">
-          <aside class="solution-panel__rail" role="tablist" aria-label="行业解决方案">
+          <aside
+            class="solution-panel__rail"
+            role="tablist"
+            aria-label="行业解决方案"
+          >
             <button
               v-for="item in industrySolutions"
               :key="item.key"
@@ -42,8 +46,12 @@
           </aside>
 
           <div class="solution-panel__content">
-            <h3 class="solution-panel__title">{{ activeIndustrySolution.title }}</h3>
-            <p class="solution-panel__summary">{{ activeIndustrySolution.description }}</p>
+            <h3 class="solution-panel__title">
+              {{ activeIndustrySolution.title }}
+            </h3>
+            <p class="solution-panel__summary">
+              {{ activeIndustrySolution.description }}
+            </p>
 
             <div class="solution-panel__section-title">解决方案</div>
             <ul class="solution-panel__feature-list">
@@ -84,18 +92,20 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElIcon } from 'element-plus/es/components/icon/index.mjs'
-import { Select } from '@element-plus/icons-vue'
-import { industrySolutions } from '@/data/homeSolutions'
+import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
+import { ElIcon } from "element-plus/es/components/icon/index.mjs";
+import { Select } from "@element-plus/icons-vue";
+import { industrySolutions } from "@/data/homeSolutions";
 
-const router = useRouter()
-const activeSolutionKey = ref(industrySolutions[0].key)
+const router = useRouter();
+const activeSolutionKey = ref(industrySolutions[0].key);
 
-const activeIndustrySolution = computed(() => (
-  industrySolutions.find((item) => item.key === activeSolutionKey.value) || industrySolutions[0]
-))
+const activeIndustrySolution = computed(
+  () =>
+    industrySolutions.find((item) => item.key === activeSolutionKey.value) ||
+    industrySolutions[0],
+);
 </script>
 
 <style scoped lang="scss">
@@ -157,9 +167,13 @@ const activeIndustrySolution = computed(() => (
 .solution-stage__overlay {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(180deg, rgba(246, 248, 252, 0.9) 0%, rgba(246, 248, 252, 0.55) 28%, rgba(233, 240, 250, 0.65) 70%, rgba(220, 230, 245, 0.82) 100%),
-    radial-gradient(circle at 70% 30%, rgba(22, 93, 255, 0.1), transparent 48%);
+  background: linear-gradient(
+    180deg,
+    rgba(246, 248, 252, 0.9) 0%,
+    rgba(246, 248, 252, 0.55) 28%,
+    rgba(233, 240, 250, 0.65) 70%,
+    rgba(220, 230, 245, 0.82) 100%
+  );
 
   /* 9.1 Visual Mode: Grain Texture for stage */
   &::before {
@@ -184,8 +198,8 @@ const activeIndustrySolution = computed(() => (
   width: min(960px, 100%);
   margin-left: auto;
   background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+  border-radius: 9px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
   overflow: hidden;
 }
 
@@ -210,17 +224,19 @@ const activeIndustrySolution = computed(() => (
   font-weight: 500;
   text-align: left;
   cursor: pointer;
-  transition: color 0.22s cubic-bezier(0.22, 1, 0.36, 1), background 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
 }
 
 .solution-panel__rail-item:hover {
-  color: #2f5ef3;
-  background: rgba(22, 93, 255, 0.04);
+  color: $color-primary;
+  background: rgba($color-primary, 0.04);
 }
 
 .solution-panel__rail-item.is-active {
   color: #ffffff;
-  background: #2f5ef3;
+  background: $color-primary;
   font-weight: 600;
 }
 
@@ -286,8 +302,8 @@ const activeIndustrySolution = computed(() => (
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: rgba(22, 93, 255, 0.12);
-  color: #2f5ef3;
+  background: rgba($color-primary, 0.12);
+  color: $color-primary;
   font-size: 10px;
   flex-shrink: 0;
 }
@@ -314,33 +330,31 @@ const activeIndustrySolution = computed(() => (
   font-weight: 500;
   cursor: pointer;
   transition:
-    border-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    background 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .solution-panel__action:hover {
-  border-color: rgba(22, 93, 255, 0.48);
-  color: #2f5ef3;
+  border-color: rgba($color-primary, 0.48);
+  color: $color-primary;
 }
 
 .solution-panel__action--primary {
-  border-color: #2f5ef3;
-  background: #2f5ef3;
+  border-color: $color-primary;
+  background: $color-primary;
   color: #ffffff;
-  box-shadow: 0 8px 18px rgba(22, 93, 255, 0.22);
 }
 
 .solution-panel__action--primary:hover {
-  border-color: #2754e3;
-  background: #2754e3;
+  border-color: $color-primary-hover;
+  background: $color-primary-hover;
   color: #ffffff;
 }
 
 .solution-image-enter-active,
 .solution-image-leave-active {
-  transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.2s ease;
 }
 
 .solution-image-enter-from,

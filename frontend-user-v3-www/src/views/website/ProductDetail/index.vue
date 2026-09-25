@@ -1164,12 +1164,17 @@ function syncProductMeta(nextProduct) {
       nextProduct.group?.parent_slogan ||
       "图拉云产品详情与实时购买报价",
   );
-  const canonical = typeof window !== "undefined" ? new URL(route.path, window.location.origin).toString() : "";
+  const canonical =
+    typeof window !== "undefined"
+      ? new URL(route.path, window.location.origin).toString()
+      : "";
 
   updatePageMeta({
     title: `${title} - 云产品`,
     description,
-    keywords: [title, nextProduct.type_label, nextProduct.group?.full_name].filter(Boolean).join(","),
+    keywords: [title, nextProduct.type_label, nextProduct.group?.full_name]
+      .filter(Boolean)
+      .join(","),
     canonical,
     structuredData: {
       "@context": "https://schema.org",
@@ -1841,7 +1846,7 @@ onBeforeUnmount(() => {
     content: "";
     position: absolute;
     inset: -4px -6px;
-    border-radius: 8px;
+    border-radius: 9px;
     background: linear-gradient(
       90deg,
       rgba(#fff, 0) 0%,
@@ -2088,7 +2093,7 @@ onBeforeUnmount(() => {
   gap: 12px;
   padding: 10px 12px;
   border: 1px solid #e8e8e8;
-  border-radius: 14px;
+  border-radius: 9px;
   background: rgba(255, 255, 255, 0.98);
   box-shadow: 0 10px 28px rgba(29, 33, 41, 0.12);
 }
@@ -2147,7 +2152,7 @@ onBeforeUnmount(() => {
   width: 112px;
   height: 44px;
   border: none;
-  border-radius: 10px;
+  border-radius: 3px;
   background: #165dff;
   color: #fff;
   font-size: 15px;

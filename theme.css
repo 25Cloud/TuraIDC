@@ -247,11 +247,6 @@
 }
 
 :root {
-  --td-radius-small: 0px;
-  --td-radius-default: 0px;
-  --td-radius-medium: 0px;
-  --td-radius-large: 0px;
-  --td-radius-extraLarge: 0px;
   --td-radius-round: 999px;
   --td-radius-circle: 50%;
   --td-font-family: PingFang SC, Microsoft YaHei, Arial, sans-serif;
@@ -295,12 +290,6 @@
 #app .t-default-menu .t-submenu__title .t-icon {
   flex-shrink: 0;
   color: currentcolor;
-}
-
-#app *,
-#app *::before,
-#app *::after {
-  border-radius: 0 !important;
 }
 
 #app .t-layout,
@@ -355,8 +344,7 @@
   display: none;
 }
 
-/* 全局/独立 t-loading 加载图标：TDesign 默认 gradient 元素因全局 border-radius 归零变成方形转圈，
-   这里恢复为标准圆形环，与按钮 loading 风格一致。 */
+/* 全局/独立 t-loading 加载图标：统一为标准圆形环，与按钮 loading 风格一致。 */
 #app .t-loading .t-loading__gradient,
 #app .t-loading .t-loading__gradient-conic {
   border-radius: 50% !important;
@@ -367,8 +355,7 @@
   mask: radial-gradient(transparent calc(50% - 0.5px), #fff 50%);
 }
 
-/* 兼容性面板（服务自定义功能面板）的加载圈同样是 border 画的圆环，
-   被上面「全局直角」归零后只剩一条直角边（看着像一根直线），这里恢复圆形。 */
+/* 兼容性面板（服务自定义功能面板）的加载圈是 border 画的圆环，保持圆形。 */
 #app .service-console .area-spinner {
   border-radius: 50% !important;
 }
@@ -950,15 +937,6 @@
   #app .t-drawer .t-textarea {
     width: 100%;
   }
-}
-
-#app [class*="-page"],
-#app [class*="-panel"],
-#app [class*="-card"],
-#app [class*="-filter"],
-#app [class*="-preview"],
-#app [class*="-section"] {
-  border-radius: 0 !important;
 }
 
 #app [class*="-card"],

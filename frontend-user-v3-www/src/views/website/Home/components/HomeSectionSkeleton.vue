@@ -1,5 +1,9 @@
 <template>
-  <section class="home-section-skeleton" :class="`home-section-skeleton--${type}`" aria-hidden="true">
+  <section
+    class="home-section-skeleton"
+    :class="`home-section-skeleton--${type}`"
+    aria-hidden="true"
+  >
     <div class="container">
       <div v-if="type === 'hero'" class="home-section-skeleton__hero">
         <div class="home-section-skeleton__hero-rail">
@@ -11,12 +15,22 @@
         </div>
 
         <div class="home-section-skeleton__hero-body">
-          <span class="home-section-skeleton__line home-section-skeleton__line--hero-title"></span>
-          <span class="home-section-skeleton__line home-section-skeleton__line--hero-desc"></span>
-          <span class="home-section-skeleton__line home-section-skeleton__line--hero-desc short"></span>
+          <span
+            class="home-section-skeleton__line home-section-skeleton__line--hero-title"
+          ></span>
+          <span
+            class="home-section-skeleton__line home-section-skeleton__line--hero-desc"
+          ></span>
+          <span
+            class="home-section-skeleton__line home-section-skeleton__line--hero-desc short"
+          ></span>
           <div class="home-section-skeleton__actions">
-            <span class="home-section-skeleton__pill home-section-skeleton__pill--button"></span>
-            <span class="home-section-skeleton__pill home-section-skeleton__pill--button ghost"></span>
+            <span
+              class="home-section-skeleton__pill home-section-skeleton__pill--button"
+            ></span>
+            <span
+              class="home-section-skeleton__pill home-section-skeleton__pill--button ghost"
+            ></span>
           </div>
         </div>
 
@@ -31,8 +45,12 @@
 
       <div v-else-if="type === 'products'" class="home-section-skeleton__stack">
         <div class="home-section-skeleton__heading">
-          <span class="home-section-skeleton__line home-section-skeleton__line--title"></span>
-          <span class="home-section-skeleton__line home-section-skeleton__line--desc"></span>
+          <span
+            class="home-section-skeleton__line home-section-skeleton__line--title"
+          ></span>
+          <span
+            class="home-section-skeleton__line home-section-skeleton__line--desc"
+          ></span>
         </div>
 
         <div class="home-section-skeleton__tabs">
@@ -43,24 +61,41 @@
           ></span>
         </div>
 
-        <div class="home-section-skeleton__grid home-section-skeleton__grid--products">
+        <div
+          class="home-section-skeleton__grid home-section-skeleton__grid--products"
+        >
           <div
             v-for="item in 4"
             :key="`product-card-${item}`"
             class="home-section-skeleton__card"
           >
-            <span class="home-section-skeleton__line home-section-skeleton__line--card-title"></span>
-            <span class="home-section-skeleton__line home-section-skeleton__line--card-desc"></span>
-            <span class="home-section-skeleton__line home-section-skeleton__line--card-desc short"></span>
-            <span class="home-section-skeleton__line home-section-skeleton__line--cta"></span>
+            <span
+              class="home-section-skeleton__line home-section-skeleton__line--card-title"
+            ></span>
+            <span
+              class="home-section-skeleton__line home-section-skeleton__line--card-desc"
+            ></span>
+            <span
+              class="home-section-skeleton__line home-section-skeleton__line--card-desc short"
+            ></span>
+            <span
+              class="home-section-skeleton__line home-section-skeleton__line--cta"
+            ></span>
           </div>
         </div>
       </div>
 
-      <div v-else-if="type === 'solutions'" class="home-section-skeleton__stack">
+      <div
+        v-else-if="type === 'solutions'"
+        class="home-section-skeleton__stack"
+      >
         <div class="home-section-skeleton__heading">
-          <span class="home-section-skeleton__line home-section-skeleton__line--title"></span>
-          <span class="home-section-skeleton__line home-section-skeleton__line--desc"></span>
+          <span
+            class="home-section-skeleton__line home-section-skeleton__line--title"
+          ></span>
+          <span
+            class="home-section-skeleton__line home-section-skeleton__line--desc"
+          ></span>
         </div>
 
         <div class="home-section-skeleton__panel">
@@ -72,9 +107,15 @@
             ></span>
           </div>
           <div class="home-section-skeleton__panel-body">
-            <span class="home-section-skeleton__line home-section-skeleton__line--panel-title"></span>
-            <span class="home-section-skeleton__line home-section-skeleton__line--panel-desc"></span>
-            <span class="home-section-skeleton__line home-section-skeleton__line--panel-desc short"></span>
+            <span
+              class="home-section-skeleton__line home-section-skeleton__line--panel-title"
+            ></span>
+            <span
+              class="home-section-skeleton__line home-section-skeleton__line--panel-desc"
+            ></span>
+            <span
+              class="home-section-skeleton__line home-section-skeleton__line--panel-desc short"
+            ></span>
             <div class="home-section-skeleton__panel-points">
               <span
                 v-for="item in 4"
@@ -83,8 +124,12 @@
               ></span>
             </div>
             <div class="home-section-skeleton__actions">
-              <span class="home-section-skeleton__pill home-section-skeleton__pill--button"></span>
-              <span class="home-section-skeleton__pill home-section-skeleton__pill--button ghost"></span>
+              <span
+                class="home-section-skeleton__pill home-section-skeleton__pill--button"
+              ></span>
+              <span
+                class="home-section-skeleton__pill home-section-skeleton__pill--button ghost"
+              ></span>
             </div>
           </div>
         </div>
@@ -92,17 +137,29 @@
 
       <div v-else-if="type === 'news'" class="home-section-skeleton__stack">
         <div class="home-section-skeleton__heading">
-          <span class="home-section-skeleton__line home-section-skeleton__line--title"></span>
-          <span class="home-section-skeleton__line home-section-skeleton__line--desc"></span>
+          <span
+            class="home-section-skeleton__line home-section-skeleton__line--title"
+          ></span>
+          <span
+            class="home-section-skeleton__line home-section-skeleton__line--desc"
+          ></span>
         </div>
 
-        <div class="home-section-skeleton__grid home-section-skeleton__grid--news">
+        <div
+          class="home-section-skeleton__grid home-section-skeleton__grid--news"
+        >
           <div class="home-section-skeleton__feature-card">
             <span class="home-section-skeleton__media"></span>
             <div class="home-section-skeleton__feature-copy">
-              <span class="home-section-skeleton__line home-section-skeleton__line--panel-title"></span>
-              <span class="home-section-skeleton__line home-section-skeleton__line--panel-desc"></span>
-              <span class="home-section-skeleton__line home-section-skeleton__line--panel-desc short"></span>
+              <span
+                class="home-section-skeleton__line home-section-skeleton__line--panel-title"
+              ></span>
+              <span
+                class="home-section-skeleton__line home-section-skeleton__line--panel-desc"
+              ></span>
+              <span
+                class="home-section-skeleton__line home-section-skeleton__line--panel-desc short"
+              ></span>
             </div>
           </div>
 
@@ -124,10 +181,17 @@
         </div>
       </div>
 
-      <div v-else-if="type === 'partner'" class="home-section-skeleton__partner">
+      <div
+        v-else-if="type === 'partner'"
+        class="home-section-skeleton__partner"
+      >
         <div class="home-section-skeleton__heading">
-          <span class="home-section-skeleton__line home-section-skeleton__line--title"></span>
-          <span class="home-section-skeleton__line home-section-skeleton__line--desc"></span>
+          <span
+            class="home-section-skeleton__line home-section-skeleton__line--title"
+          ></span>
+          <span
+            class="home-section-skeleton__line home-section-skeleton__line--desc"
+          ></span>
         </div>
         <div class="home-section-skeleton__partner-rows">
           <span
@@ -139,8 +203,12 @@
       </div>
 
       <div v-else class="home-section-skeleton__register">
-        <span class="home-section-skeleton__line home-section-skeleton__line--register-title"></span>
-        <span class="home-section-skeleton__pill home-section-skeleton__pill--button"></span>
+        <span
+          class="home-section-skeleton__line home-section-skeleton__line--register-title"
+        ></span>
+        <span
+          class="home-section-skeleton__pill home-section-skeleton__pill--button"
+        ></span>
       </div>
     </div>
   </section>
@@ -150,9 +218,9 @@
 defineProps({
   type: {
     type: String,
-    default: 'products',
+    default: "products",
   },
-})
+});
 </script>
 
 <style scoped lang="scss">
@@ -246,9 +314,9 @@ defineProps({
   position: relative;
   overflow: hidden;
   border: 1px solid #e5eaf3;
-  border-radius: 14px;
+  border-radius: 9px;
   background: #ffffff;
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
 }
 
 .home-section-skeleton__card,
@@ -291,7 +359,7 @@ defineProps({
   display: block;
   width: 100%;
   height: 208px;
-  border-radius: 10px;
+  border-radius: 9px;
   background: linear-gradient(135deg, #dfe9fb 0%, #f1f5fb 100%);
 }
 
@@ -306,7 +374,7 @@ defineProps({
   display: block;
   height: 76px;
   border: 1px solid #e5eaf3;
-  border-radius: 12px;
+  border-radius: 9px;
   background: #ffffff;
 }
 
@@ -322,9 +390,8 @@ defineProps({
   justify-content: space-between;
   gap: 24px;
   padding: 28px 40px;
-  background: #1e49cf;
+  background: $color-primary-hover;
   border: none;
-  box-shadow: 0 24px 48px rgba(27, 58, 166, 0.18);
 }
 
 .home-section-skeleton__line,
@@ -335,7 +402,12 @@ defineProps({
 .home-section-skeleton__promo {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(90deg, rgba(222, 230, 242, 0.92) 0%, rgba(245, 248, 252, 0.98) 50%, rgba(222, 230, 242, 0.92) 100%);
+  background: linear-gradient(
+    90deg,
+    rgba(222, 230, 242, 0.92) 0%,
+    rgba(245, 248, 252, 0.98) 50%,
+    rgba(222, 230, 242, 0.92) 100%
+  );
   background-size: 200% 100%;
   animation: home-section-skeleton-shimmer 1.4s ease-out infinite;
 }
@@ -425,7 +497,7 @@ defineProps({
 .home-section-skeleton__feature {
   display: block;
   min-height: 108px;
-  border-radius: 14px;
+  border-radius: 9px;
 }
 
 .home-section-skeleton__pill--button {
@@ -436,11 +508,21 @@ defineProps({
   width: 108px;
 }
 
-.home-section-skeleton__tabs .home-section-skeleton__pill:nth-child(1) { width: 88px; }
-.home-section-skeleton__tabs .home-section-skeleton__pill:nth-child(2) { width: 104px; }
-.home-section-skeleton__tabs .home-section-skeleton__pill:nth-child(3) { width: 96px; }
-.home-section-skeleton__tabs .home-section-skeleton__pill:nth-child(4) { width: 118px; }
-.home-section-skeleton__tabs .home-section-skeleton__pill:nth-child(5) { width: 90px; }
+.home-section-skeleton__tabs .home-section-skeleton__pill:nth-child(1) {
+  width: 88px;
+}
+.home-section-skeleton__tabs .home-section-skeleton__pill:nth-child(2) {
+  width: 104px;
+}
+.home-section-skeleton__tabs .home-section-skeleton__pill:nth-child(3) {
+  width: 96px;
+}
+.home-section-skeleton__tabs .home-section-skeleton__pill:nth-child(4) {
+  width: 118px;
+}
+.home-section-skeleton__tabs .home-section-skeleton__pill:nth-child(5) {
+  width: 90px;
+}
 
 @keyframes home-section-skeleton-shimmer {
   0% {
@@ -525,11 +607,16 @@ defineProps({
 .home-section-skeleton__partner-strip {
   display: block;
   height: 80px;
-  border-radius: 8px;
+  border-radius: 9px;
 
   position: relative;
   overflow: hidden;
-  background: linear-gradient(90deg, rgba(222, 230, 242, 0.92) 0%, rgba(245, 248, 252, 0.98) 50%, rgba(222, 230, 242, 0.92) 100%);
+  background: linear-gradient(
+    90deg,
+    rgba(222, 230, 242, 0.92) 0%,
+    rgba(245, 248, 252, 0.98) 50%,
+    rgba(222, 230, 242, 0.92) 100%
+  );
   background-size: 200% 100%;
   animation: home-section-skeleton-shimmer 1.4s ease-out infinite;
 }
