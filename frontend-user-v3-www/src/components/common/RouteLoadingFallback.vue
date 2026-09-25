@@ -1,17 +1,33 @@
 <template>
-  <div class="route-loading-shell" role="status" aria-live="polite" aria-busy="true">
+  <div
+    class="route-loading-shell"
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+  >
     <div class="route-loading-shell__hero">
       <span class="route-loading-shell__pill"></span>
       <span class="route-loading-shell__headline"></span>
-      <span class="route-loading-shell__subline route-loading-shell__subline--wide"></span>
+      <span
+        class="route-loading-shell__subline route-loading-shell__subline--wide"
+      ></span>
       <span class="route-loading-shell__subline"></span>
     </div>
 
     <div class="route-loading-shell__grid">
-      <div v-for="index in 3" :key="index" class="route-loading-shell__card" :style="{ animationDelay: `${index * 60}ms` }">
-        <span class="route-loading-shell__line route-loading-shell__line--title"></span>
+      <div
+        v-for="index in 3"
+        :key="index"
+        class="route-loading-shell__card"
+        :style="{ animationDelay: `${index * 60}ms` }"
+      >
+        <span
+          class="route-loading-shell__line route-loading-shell__line--title"
+        ></span>
         <span class="route-loading-shell__line"></span>
-        <span class="route-loading-shell__line route-loading-shell__line--short"></span>
+        <span
+          class="route-loading-shell__line route-loading-shell__line--short"
+        ></span>
       </div>
     </div>
   </div>
@@ -22,8 +38,16 @@
   min-height: min(68vh, 720px);
   padding: 24px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.82)),
-    radial-gradient(circle at top right, rgba($color-primary, 0.08), transparent 28%);
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.95),
+      rgba(248, 250, 252, 0.82)
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba($color-primary, 0.08),
+      transparent 28%
+    );
   animation: route-loading-appear 0.3s ease-out both;
   animation-delay: 120ms; /* 延迟出现，避免快速加载时闪烁 */
 }
@@ -33,7 +57,7 @@
   border: 1px solid rgba($color-primary, 0.08);
   border-radius: $lg-border-radius;
   background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
 }
 
 .route-loading-shell__hero {
@@ -76,7 +100,7 @@
 .route-loading-shell__headline::after,
 .route-loading-shell__subline::after,
 .route-loading-shell__line::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   transform: translateX(-100%);

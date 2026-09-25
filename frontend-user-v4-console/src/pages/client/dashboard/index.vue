@@ -1053,7 +1053,7 @@ onMounted(() => {
   width: 68%;
   min-height: 0;
   background: var(--td-brand-color);
-  border-radius: 0.1875rem 0.1875rem 0 0;
+  border-radius: 3px 3px 0 0;
 }
 
 .bar-chart__label {

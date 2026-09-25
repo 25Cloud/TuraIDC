@@ -14,8 +14,8 @@
 .mobile-stage-card {
   background: #fff;
   border: 1px solid $divider-color;
-  border-radius: 4px;
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04);
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
 }
 
 .mobile-stage-card--intro {
@@ -58,7 +58,7 @@
 
   &:hover {
     border-color: rgba($color-primary, 0.45);
-    box-shadow: 0 14px 28px rgba(22, 93, 255, 0.08);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
     transform: translateY(-1px);
   }
 
@@ -251,7 +251,7 @@
   min-width: 22px;
   height: 18px;
   padding: 0 5px;
-  border-radius: 9px;
+  border-radius: 6px;
   background: $bg-color-soft;
   color: $text-color-secondary;
   font-size: 11px;
@@ -1340,7 +1340,7 @@
     content: "";
     position: absolute;
     inset: -4px -6px;
-    border-radius: 9px;
+    border-radius: 6px;
     background: linear-gradient(
       90deg,
       rgba(#fff, 0) 0%,

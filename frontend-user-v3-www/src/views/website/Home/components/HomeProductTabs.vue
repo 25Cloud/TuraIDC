@@ -4,9 +4,7 @@
       <header class="product-tabs__head">
         <h2 class="product-tabs__title">安全、稳定、可信赖的产品与服务</h2>
         <p class="product-tabs__desc">
-          {{
-            appStore.siteName
-          }}
+          {{ appStore.siteName }}
           的技术积淀与交付实践，助力企业上云与产业互联网。
           <router-link to="/products" class="product-tabs__more">
             查看全部产品
@@ -403,7 +401,7 @@ watch(
   min-height: 100px;
   padding: 14px 20px 12px;
   border: 1px solid #e5eaf3;
-  border-radius: 9px;
+  border-radius: 6px;
   background: #ffffff;
   text-align: left;
   cursor: pointer;

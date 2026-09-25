@@ -314,7 +314,7 @@ defineProps({
   position: relative;
   overflow: hidden;
   border: 1px solid #e5eaf3;
-  border-radius: 9px;
+  border-radius: 6px;
   background: #ffffff;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
 }
@@ -359,7 +359,7 @@ defineProps({
   display: block;
   width: 100%;
   height: 208px;
-  border-radius: 9px;
+  border-radius: 6px;
   background: linear-gradient(135deg, #dfe9fb 0%, #f1f5fb 100%);
 }
 
@@ -374,7 +374,7 @@ defineProps({
   display: block;
   height: 76px;
   border: 1px solid #e5eaf3;
-  border-radius: 9px;
+  border-radius: 6px;
   background: #ffffff;
 }
 
@@ -497,7 +497,7 @@ defineProps({
 .home-section-skeleton__feature {
   display: block;
   min-height: 108px;
-  border-radius: 9px;
+  border-radius: 6px;
 }
 
 .home-section-skeleton__pill--button {
@@ -607,7 +607,7 @@ defineProps({
 .home-section-skeleton__partner-strip {
   display: block;
   height: 80px;
-  border-radius: 9px;
+  border-radius: 6px;
 
   position: relative;
   overflow: hidden;

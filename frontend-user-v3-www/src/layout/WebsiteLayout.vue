@@ -1227,7 +1227,7 @@ onBeforeUnmount(() => {
   z-index: 90;
   background: #ffffff;
   border-bottom: 1px solid $divider-color;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
   max-height: calc(100vh - 80px);
   overflow-y: auto;
 }
@@ -1476,7 +1476,7 @@ onBeforeUnmount(() => {
   padding: 6px;
   background: $bg-color-card;
   border: 1px solid $border-color;
-  border-radius: 9px;
+  border-radius: 6px;
   box-shadow: $shadow-lg;
 }
 
@@ -1884,7 +1884,7 @@ onBeforeUnmount(() => {
 .mobile-third-level-list {
   padding: 4px 0 8px 12px;
   background: #f9fafb;
-  border-radius: 9px;
+  border-radius: 6px;
   margin: 4px 0 8px;
 }
 

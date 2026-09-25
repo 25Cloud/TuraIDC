@@ -331,7 +331,7 @@ onMounted(() => {
   right: 0;
   bottom: 0;
   height: 1.5rem;
-  border-radius: 1rem;
+  border-radius: 6px;
   background: rgb(239 243 248 / 72%);
   box-shadow: 0 1rem 1.5rem rgb(123 138 165 / 10%);
 }
@@ -339,7 +339,7 @@ onMounted(() => {
 .auth-shell__cluster-block {
   position: absolute;
   bottom: 1.125rem;
-  border-radius: 0.875rem 0.875rem 0.625rem 0.625rem;
+  border-radius: 6px 6px 6px 6px;
   border: 1px solid rgb(224 231 241 / 72%);
   background: rgb(248 250 253 / 90%);
   box-shadow:
@@ -375,7 +375,7 @@ onMounted(() => {
   bottom: 5.75rem;
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: 0.5rem;
+  border-radius: 6px;
   background: rgb(90 133 255 / 72%);
   box-shadow: 0 0.5rem 0.875rem rgb(65 100 214 / 18%);
 }
@@ -412,7 +412,7 @@ onMounted(() => {
   font-size: 0.875rem;
   cursor: pointer;
   transition: color 0.2s;
-  border-radius: 0.375rem;
+  border-radius: 6px;
 
   &:hover {
     color: var(--td-text-color-primary);
@@ -444,7 +444,7 @@ onMounted(() => {
   flex-shrink: 0;
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 0.75rem;
+  border-radius: 6px;
   background: var(--td-brand-color);
   box-shadow: 0 0.875rem 1.75rem rgb(22 93 255 / 20%);
   color: #fff;
@@ -493,7 +493,7 @@ onMounted(() => {
   width: 100%;
   padding: 2rem 2rem 1.875rem;
   border: 1px solid var(--auth-card-border);
-  border-radius: 1rem;
+  border-radius: 6px;
   background: var(--auth-card-bg);
   box-shadow: var(--auth-card-shadow);
   backdrop-filter: blur(10px);
@@ -581,7 +581,7 @@ onMounted(() => {
   margin-top: 2rem;
   padding: 0 1.375rem;
   border: 1px solid var(--auth-guide-cta-border);
-  border-radius: 0.5rem;
+  border-radius: 6px;
   background: var(--auth-guide-cta-bg);
   box-shadow: var(--auth-guide-cta-shadow);
   color: var(--td-brand-color);
@@ -693,7 +693,7 @@ onMounted(() => {
   .auth-brand__mark {
     width: 2.25rem;
     height: 2.25rem;
-    border-radius: 0.6875rem;
+    border-radius: 6px;
     font-size: 0.9375rem;
   }
 
@@ -703,7 +703,7 @@ onMounted(() => {
 
   .auth-card {
     padding: 1.625rem 1.25rem 1.375rem;
-    border-radius: 1.125rem;
+    border-radius: 6px;
   }
 
   .auth-card__head {

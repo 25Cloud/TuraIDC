@@ -1,4 +1,4 @@
-@use 'variables' as *;
+@use "variables" as *;
 
 // 记录列表页公共样式（账单/充值统一）
 .record-page {
@@ -51,11 +51,13 @@
   gap: 10px;
   padding: 14px 16px;
   border: 1px solid $border-color;
-  border-radius: 12px;
+  border-radius: $base-border-radius;
   background: $bg-color-card;
   box-shadow: $shadow-sm;
   cursor: pointer;
-  transition: transform 0.15s ease, background-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease;
 
   &:active {
     transform: scale(0.99);

@@ -249,7 +249,7 @@ function openNotice(item) {
   display: flex;
   flex-direction: column;
   border: 1px solid #e5eaf3;
-  border-radius: 9px;
+  border-radius: 6px;
   background: #ffffff;
   text-align: left;
   cursor: pointer;
@@ -393,7 +393,7 @@ function openNotice(item) {
   gap: 14px;
   padding: 18px 20px;
   border: 1px solid #e5eaf3;
-  border-radius: 9px;
+  border-radius: 6px;
   background: #ffffff;
   text-align: left;
   cursor: pointer;
@@ -446,7 +446,7 @@ function openNotice(item) {
   gap: 12px;
   padding: 20px 22px;
   border: none;
-  border-radius: 9px;
+  border-radius: 6px;
   background: linear-gradient(135deg, #f0f5ff, #e0eaff);
   text-align: left;
   cursor: pointer;

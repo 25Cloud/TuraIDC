@@ -1029,7 +1029,7 @@ onBeforeUnmount(() => {
   min-height: 52px;
   padding: 14px 20px;
   border: none;
-  border-radius: 9px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.36);
   color: #2c3654;
   font-size: 16px;
@@ -1252,7 +1252,7 @@ onBeforeUnmount(() => {
   margin-top: 32px;
   background: #ffffff;
   border: 1px solid $border-color;
-  border-radius: 9px;
+  border-radius: 6px;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
 }
 
@@ -1523,7 +1523,7 @@ onBeforeUnmount(() => {
   .hero-feature-strip {
     grid-template-columns: 1fr;
     margin-top: 18px;
-    border-radius: 9px;
+    border-radius: 6px;
   }
 
   .hero-feature {

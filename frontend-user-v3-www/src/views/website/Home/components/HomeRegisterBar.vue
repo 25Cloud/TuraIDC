@@ -35,7 +35,7 @@ function goRegister() {
 .register-bar {
   position: relative;
   overflow: hidden;
-  border-radius: 9px;
+  border-radius: 6px;
   width: min(1200px, calc(100% - 48px));
   margin: 0 auto;
   background: $color-primary-hover;

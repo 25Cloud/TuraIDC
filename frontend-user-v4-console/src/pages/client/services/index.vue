@@ -555,7 +555,7 @@ function actionOptions(item: Record<string, any>) {
   width: 3rem;
   min-width: 3rem;
   height: 3rem;
-  border-radius: 0.75rem;
+  border-radius: 6px;
   overflow: hidden;
 }
 
@@ -704,7 +704,7 @@ function actionOptions(item: Record<string, any>) {
   justify-content: center;
   width: 1.125rem;
   height: 1.125rem;
-  border-radius: 0.5rem;
+  border-radius: 3px;
   color: var(--td-text-color-secondary);
   font-size: 0.8125rem;
   transition:
@@ -737,7 +737,7 @@ function actionOptions(item: Record<string, any>) {
   font-weight: 600;
   padding: 0 0.6875rem;
   height: 1.875rem;
-  border-radius: 0.625rem;
+  border-radius: 3px;
 }
 
 .service-action-more {
@@ -749,7 +749,7 @@ function actionOptions(item: Record<string, any>) {
   min-width: 3.25rem;
   height: 1.875rem;
   padding: 0 0.6875rem;
-  border-radius: 0.625rem;
+  border-radius: 3px;
 }
 
 .service-spec-line {
@@ -839,7 +839,7 @@ function actionOptions(item: Record<string, any>) {
     width: 2.5rem;
     min-width: 2.5rem;
     height: 2.5rem;
-    border-radius: 0.625rem;
+    border-radius: 6px;
   }
 
   .service-system-icon__fallback {
@@ -987,7 +987,7 @@ function actionOptions(item: Record<string, any>) {
     width: 2.5rem;
     min-width: 2.5rem;
     height: 2.5rem;
-    border-radius: 0.625rem;
+    border-radius: 6px;
   }
 
   .service-row-head {

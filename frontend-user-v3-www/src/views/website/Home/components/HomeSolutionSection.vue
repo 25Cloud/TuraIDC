@@ -198,7 +198,7 @@ const activeIndustrySolution = computed(
   width: min(960px, 100%);
   margin-left: auto;
   background: #ffffff;
-  border-radius: 9px;
+  border-radius: 6px;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
   overflow: hidden;
 }
