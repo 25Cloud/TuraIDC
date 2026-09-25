@@ -82,8 +82,8 @@ test.describe('API 凭据页（开放接口密钥 + 魔方财务对接合并）'
 
     const panel = page.locator('.upstream-panel');
     await expect(panel).toBeVisible();
-    // 登录地址、用户名与白名单/有效期策略都要在同一分区可见
-    await expect(panel.locator('input[readonly]').first()).toHaveValue(UPSTREAM_STATUS.login_url);
+    // 接入地址（去掉 /zjmf_api_login 的 endpoint）、用户名与白名单/有效期策略都要在同一分区可见
+    await expect(panel.locator('input[readonly]').first()).toHaveValue('https://console.example.test/api/v2/zjmf');
     await expect(panel.locator('input[readonly]').nth(1)).toHaveValue(UPSTREAM_STATUS.username);
     await expect(panel.locator('.t-form__item', { hasText: 'IP 白名单' }).locator('input')).toHaveValue(
       '203.0.113.0/24',
