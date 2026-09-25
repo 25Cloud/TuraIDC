@@ -247,6 +247,11 @@
 }
 
 :root {
+  --td-radius-small: 3px;
+  --td-radius-default: 3px;
+  --td-radius-medium: 6px;
+  --td-radius-large: 6px;
+  --td-radius-extraLarge: 6px;
   --td-radius-round: 999px;
   --td-radius-circle: 50%;
   --td-font-family: PingFang SC, Microsoft YaHei, Arial, sans-serif;
@@ -627,7 +632,7 @@
 #app .referral-page .t-table {
   background: transparent;
   border: 0;
-  border-radius: 0;
+  border-radius: 6px;
   box-shadow: none;
 }
 
@@ -938,15 +943,6 @@
   #app .t-drawer .t-textarea {
     width: 100%;
   }
-}
-
-#app [class*="-page"],
-#app [class*="-panel"],
-#app [class*="-card"],
-#app [class*="-filter"],
-#app [class*="-preview"],
-#app [class*="-section"] {
-  border-radius: 0 !important;
 }
 
 #app [class*="-card"],

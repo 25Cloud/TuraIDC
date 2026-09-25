@@ -292,7 +292,7 @@ watch(
     left: 0;
     width: 0.1875rem;
     background: var(--td-brand-color);
-    border-radius: 0.125rem;
+    border-radius: 3px;
     content: '';
   }
 }

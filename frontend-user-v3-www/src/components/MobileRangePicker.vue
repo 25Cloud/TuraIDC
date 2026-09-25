@@ -3,12 +3,36 @@
     <div class="mrange-head">
       <span class="mrange-label">{{ label }}</span>
       <div class="mrange-stepper">
-        <button type="button" class="mrange-btn" :disabled="isFixed || modelValue <= min" @click="step(-1)">
-          <svg viewBox="0 0 12 12" fill="none" width="12" height="12"><path d="M2.5 6h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+        <button
+          type="button"
+          class="mrange-btn"
+          :disabled="isFixed || modelValue <= min"
+          @click="step(-1)"
+        >
+          <svg viewBox="0 0 12 12" fill="none" width="12" height="12">
+            <path
+              d="M2.5 6h7"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
         </button>
         <span class="mrange-value">{{ modelValue }}</span>
-        <button type="button" class="mrange-btn" :disabled="isFixed || modelValue >= max" @click="step(1)">
-          <svg viewBox="0 0 12 12" fill="none" width="12" height="12"><path d="M6 2.5v7M2.5 6h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+        <button
+          type="button"
+          class="mrange-btn"
+          :disabled="isFixed || modelValue >= max"
+          @click="step(1)"
+        >
+          <svg viewBox="0 0 12 12" fill="none" width="12" height="12">
+            <path
+              d="M6 2.5v7M2.5 6h7"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
         </button>
       </div>
     </div>
@@ -33,26 +57,26 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed } from "vue";
 
 const props = defineProps({
   modelValue: { type: Number, default: 1 },
-  label: { type: String, default: '' },
+  label: { type: String, default: "" },
   min: { type: Number, default: 1 },
   max: { type: Number, default: 9999 },
   stepSize: { type: Number, default: 1 },
-})
+});
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(["update:modelValue"]);
 
-const isFixed = computed(() => props.min === props.max)
-const sliderMin = computed(() => props.min)
-const sliderMax = computed(() => isFixed.value ? props.min + 1 : props.max)
+const isFixed = computed(() => props.min === props.max);
+const sliderMin = computed(() => props.min);
+const sliderMax = computed(() => (isFixed.value ? props.min + 1 : props.max));
 
 function step(delta) {
-  const next = props.modelValue + delta * props.stepSize
-  const clamped = Math.max(props.min, Math.min(props.max, next))
-  emit('update:modelValue', clamped)
+  const next = props.modelValue + delta * props.stepSize;
+  const clamped = Math.max(props.min, Math.min(props.max, next));
+  emit("update:modelValue", clamped);
 }
 </script>
 
@@ -81,7 +105,7 @@ function step(delta) {
   display: flex;
   align-items: center;
   border: 1px solid $color-primary-border;
-  border-radius: 8px;
+  border-radius: $base-border-radius;
   overflow: hidden;
   background: #fff;
 }
@@ -96,7 +120,9 @@ function step(delta) {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 
   &:hover:not(:disabled) {
     background: $color-primary-soft;

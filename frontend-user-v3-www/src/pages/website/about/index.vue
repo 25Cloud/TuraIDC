@@ -94,7 +94,7 @@ h1 {
 .about-card {
   padding: 28px;
   border: 1px solid #e5eaf3;
-  border-radius: 9px;
+  border-radius: 6px;
   background: #fff;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
 }

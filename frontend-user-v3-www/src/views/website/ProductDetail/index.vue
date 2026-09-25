@@ -1846,7 +1846,7 @@ onBeforeUnmount(() => {
     content: "";
     position: absolute;
     inset: -4px -6px;
-    border-radius: 9px;
+    border-radius: 6px;
     background: linear-gradient(
       90deg,
       rgba(#fff, 0) 0%,
@@ -2093,9 +2093,9 @@ onBeforeUnmount(() => {
   gap: 12px;
   padding: 10px 12px;
   border: 1px solid #e8e8e8;
-  border-radius: 9px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 10px 28px rgba(29, 33, 41, 0.12);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
 }
 
 .allocation-footer-main {

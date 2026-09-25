@@ -30,7 +30,7 @@ const router = useRouter();
   width: min(520px, 100%);
   padding: 40px 32px;
   border: 1px solid #e5eaf3;
-  border-radius: 9px;
+  border-radius: 6px;
   background: #fff;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
   text-align: center;

@@ -5,7 +5,11 @@
         <span class="seo-hero__line seo-hero__line--one"></span>
         <span class="seo-hero__line seo-hero__line--two"></span>
         <span class="seo-hero__line seo-hero__line--three"></span>
-        <img class="seo-hero__asset" :src="page.visual.src" :alt="page.visual.alt" />
+        <img
+          class="seo-hero__asset"
+          :src="page.visual.src"
+          :alt="page.visual.alt"
+        />
       </div>
 
       <div class="seo-container seo-hero__inner">
@@ -29,7 +33,10 @@
           <p class="seo-hero__summary">{{ page.description }}</p>
 
           <div class="seo-actions">
-            <router-link class="seo-action seo-action--primary" :to="page.cta.primaryTo">
+            <router-link
+              class="seo-action seo-action--primary"
+              :to="page.cta.primaryTo"
+            >
               <span>{{ page.cta.primaryText }}</span>
               <el-icon><ArrowRight /></el-icon>
             </router-link>
@@ -47,7 +54,9 @@
           v-for="(item, index) in featureStripItems"
           :key="item.title"
           class="seo-strip-card"
-          :class="{ 'seo-strip-card--cta': index === featureStripItems.length - 1 }"
+          :class="{
+            'seo-strip-card--cta': index === featureStripItems.length - 1,
+          }"
         >
           <span class="seo-strip-card__icon" aria-hidden="true"></span>
           <div>
@@ -69,7 +78,9 @@
       <div class="seo-container">
         <div class="seo-section__heading seo-section__heading--center">
           <h2>安全、稳定、可信赖的{{ page.keyword }}服务</h2>
-          <p>围绕真实业务选型整理产品能力、适用场景和开通入口，让搜索进入的用户能直接完成判断。</p>
+          <p>
+            围绕真实业务选型整理产品能力、适用场景和开通入口，让搜索进入的用户能直接完成判断。
+          </p>
           <router-link to="/products">查看全部产品 &gt;</router-link>
         </div>
 
@@ -94,16 +105,21 @@
           >
             <div class="seo-product-card__head">
               <h3>{{ index === 0 ? page.keyword : feature.title }}</h3>
-              <span>{{ index === 0 ? '推荐' : '能力' }}</span>
+              <span>{{ index === 0 ? "推荐" : "能力" }}</span>
             </div>
             <p>{{ feature.description }}</p>
             <div class="seo-product-card__tags">
-              <span v-for="tag in productTags(index)" :key="`${feature.title}-${tag}`">
+              <span
+                v-for="tag in productTags(index)"
+                :key="`${feature.title}-${tag}`"
+              >
                 {{ tag }}
               </span>
             </div>
             <div class="seo-product-card__actions">
-              <router-link class="is-primary" :to="page.cta.primaryTo">立即选购</router-link>
+              <router-link class="is-primary" :to="page.cta.primaryTo"
+                >立即选购</router-link
+              >
               <router-link to="/help">产品详情</router-link>
             </div>
           </article>
@@ -115,7 +131,9 @@
       <div class="seo-container">
         <div class="seo-section__heading seo-section__heading--center">
           <h2>为不同业务场景提供{{ page.keyword }}方案</h2>
-          <p>从访问区域、系统环境、带宽需求和售后协同出发，先明确场景，再选择资源。</p>
+          <p>
+            从访问区域、系统环境、带宽需求和售后协同出发，先明确场景，再选择资源。
+          </p>
         </div>
 
         <div class="seo-solution-panel">
@@ -143,7 +161,11 @@
             </ul>
             <div class="seo-solution-content__related">
               <strong>相关产品：</strong>
-              <router-link v-for="link in page.relatedLinks" :key="link.to" :to="link.to">
+              <router-link
+                v-for="link in page.relatedLinks"
+                :key="link.to"
+                :to="link.to"
+              >
                 {{ link.label }}
               </router-link>
             </div>
@@ -156,11 +178,17 @@
       <div class="seo-container">
         <div class="seo-section__heading seo-section__heading--center">
           <h2>从搜索了解，到开通{{ page.keyword }}</h2>
-          <p>把官网内容、产品列表、注册入口和工单咨询连起来，减少用户在多个页面之间反复寻找。</p>
+          <p>
+            把官网内容、产品列表、注册入口和工单咨询连起来，减少用户在多个页面之间反复寻找。
+          </p>
         </div>
 
         <div class="seo-process">
-          <article v-for="step in processSteps" :key="step.title" class="seo-process__item">
+          <article
+            v-for="step in processSteps"
+            :key="step.title"
+            class="seo-process__item"
+          >
             <span>{{ step.index }}</span>
             <h3>{{ step.title }}</h3>
             <p>{{ step.description }}</p>
@@ -173,7 +201,10 @@
       <div class="seo-container">
         <div class="seo-section__heading seo-section__heading--center">
           <h2>选择{{ page.keyword }}前的常见问题</h2>
-          <p>FAQ 使用真实搜索问题组织，避免堆砌关键词，让页面正文更容易被理解和收录。</p>
+          <p>
+            FAQ
+            使用真实搜索问题组织，避免堆砌关键词，让页面正文更容易被理解和收录。
+          </p>
         </div>
 
         <div class="seo-faq-list">
@@ -193,10 +224,15 @@
         <div>
           <p>{{ page.keyword }}咨询与开通</p>
           <h2>{{ page.cta.title }}</h2>
-          <span class="seo-register__description">{{ page.cta.description }}</span>
+          <span class="seo-register__description">{{
+            page.cta.description
+          }}</span>
         </div>
         <div class="seo-register__actions">
-          <router-link class="seo-action seo-action--white" :to="page.cta.primaryTo">
+          <router-link
+            class="seo-action seo-action--white"
+            :to="page.cta.primaryTo"
+          >
             {{ page.cta.primaryText }}
           </router-link>
           <a class="seo-action seo-action--outline" :href="secondaryCtaHref">
@@ -210,24 +246,33 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { ArrowRight, Check, QuestionFilled } from '@element-plus/icons-vue'
-import { buildConsoleUrl } from '@/utils/consoleUrl'
-import { getSeoLandingPageByPath, seoLandingPages } from '@/data/seoLandingPages'
+import { computed, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import { ArrowRight, Check, QuestionFilled } from "@element-plus/icons-vue";
+import { buildConsoleUrl } from "@/utils/consoleUrl";
+import {
+  getSeoLandingPageByPath,
+  seoLandingPages,
+} from "@/data/seoLandingPages";
 
-const route = useRoute()
-const activeScenarioIndex = ref(0)
+const route = useRoute();
+const activeScenarioIndex = ref(0);
 
-const page = computed(() => (
-  getSeoLandingPageByPath(route.meta?.seoLandingPath || route.path) || seoLandingPages[0]
-))
+const page = computed(
+  () =>
+    getSeoLandingPageByPath(route.meta?.seoLandingPath || route.path) ||
+    seoLandingPages[0],
+);
 
-const heroNavItems = computed(() => [
-  `${page.value.hero.eyebrow} · ${page.value.hero.points[0]}`,
-  ...page.value.hero.points.slice(1).map((point) => `${point} · ${page.value.keyword}`),
-  page.value.hero.stats[0]?.label || '稳定服务',
-].slice(0, 4))
+const heroNavItems = computed(() =>
+  [
+    `${page.value.hero.eyebrow} · ${page.value.hero.points[0]}`,
+    ...page.value.hero.points
+      .slice(1)
+      .map((point) => `${point} · ${page.value.keyword}`),
+    page.value.hero.stats[0]?.label || "稳定服务",
+  ].slice(0, 4),
+);
 
 const featureStripItems = computed(() => [
   ...page.value.features.slice(0, 3).map((feature) => ({
@@ -240,34 +285,56 @@ const featureStripItems = computed(() => [
     linkText: page.value.cta.primaryText,
     to: page.value.cta.primaryTo,
   },
-])
+]);
 
-const activeScenario = computed(() => (
-  page.value.scenarios[activeScenarioIndex.value] || page.value.scenarios[0]
-))
+const activeScenario = computed(
+  () =>
+    page.value.scenarios[activeScenarioIndex.value] || page.value.scenarios[0],
+);
 
-const secondaryCtaHref = computed(() => buildConsoleUrl(page.value.cta.secondaryConsolePath))
+const secondaryCtaHref = computed(() =>
+  buildConsoleUrl(page.value.cta.secondaryConsolePath),
+);
 
-const productTabs = ['推荐', '计算', '安全', '网络', '运维']
+const productTabs = ["推荐", "计算", "安全", "网络", "运维"];
 const defaultTags = [
-  ['弹性配置', '稳定可靠', '快速交付'],
-  ['标准部署', '可扩展', '工单支持'],
-  ['集中管理', '持续维护', '按需选择'],
-]
+  ["弹性配置", "稳定可靠", "快速交付"],
+  ["标准部署", "可扩展", "工单支持"],
+  ["集中管理", "持续维护", "按需选择"],
+];
 const processSteps = [
-  { index: '01', title: '明确场景', description: '确认业务访问区域、系统环境、带宽需求和预算范围。' },
-  { index: '02', title: '查看配置', description: '在产品列表中筛选合适的规格、节点和服务周期。' },
-  { index: '03', title: '注册开通', description: '进入控制台完成账号注册、下单、支付和服务管理。' },
-  { index: '04', title: '持续维护', description: '通过公告、帮助中心和工单体系跟踪使用与售后问题。' },
-]
+  {
+    index: "01",
+    title: "明确场景",
+    description: "确认业务访问区域、系统环境、带宽需求和预算范围。",
+  },
+  {
+    index: "02",
+    title: "查看配置",
+    description: "在产品列表中筛选合适的规格、节点和服务周期。",
+  },
+  {
+    index: "03",
+    title: "注册开通",
+    description: "进入控制台完成账号注册、下单、支付和服务管理。",
+  },
+  {
+    index: "04",
+    title: "持续维护",
+    description: "通过公告、帮助中心和工单体系跟踪使用与售后问题。",
+  },
+];
 
 function productTags(index) {
-  return defaultTags[index] || defaultTags[0]
+  return defaultTags[index] || defaultTags[0];
 }
 
-watch(() => route.path, () => {
-  activeScenarioIndex.value = 0
-})
+watch(
+  () => route.path,
+  () => {
+    activeScenarioIndex.value = 0;
+  },
+);
 </script>
 
 <style scoped lang="scss">
@@ -288,8 +355,17 @@ watch(() => route.path, () => {
   min-height: 520px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 82% 10%, rgba(255, 255, 255, 0.86), transparent 24%),
-    linear-gradient(110deg, rgba(247, 251, 255, 0.98) 0%, rgba(230, 239, 255, 0.92) 44%, rgba(196, 218, 255, 0.88) 100%);
+    radial-gradient(
+      circle at 82% 10%,
+      rgba(255, 255, 255, 0.86),
+      transparent 24%
+    ),
+    linear-gradient(
+      110deg,
+      rgba(247, 251, 255, 0.98) 0%,
+      rgba(230, 239, 255, 0.92) 44%,
+      rgba(196, 218, 255, 0.88) 100%
+    );
 }
 
 .seo-hero::before {
@@ -300,8 +376,13 @@ watch(() => route.path, () => {
     linear-gradient(90deg, rgba(22, 93, 255, 0.08) 1px, transparent 1px),
     linear-gradient(180deg, rgba(22, 93, 255, 0.06) 1px, transparent 1px);
   background-size: 64px 64px;
-  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0.84) 100%);
-  content: '';
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.6) 50%,
+    rgba(0, 0, 0, 0.84) 100%
+  );
+  content: "";
 }
 
 .seo-hero__ambient {
@@ -319,10 +400,14 @@ watch(() => route.path, () => {
   height: 56%;
   border-radius: 50% 50% 0 0;
   background:
-    repeating-linear-gradient(92deg, rgba(255, 255, 255, 0.78) 0 2px, transparent 2px 26px),
+    repeating-linear-gradient(
+      92deg,
+      rgba(255, 255, 255, 0.78) 0 2px,
+      transparent 2px 26px
+    ),
     linear-gradient(180deg, rgba(94, 147, 255, 0.2), rgba(55, 115, 255, 0.06));
   transform: rotate(-8deg);
-  content: '';
+  content: "";
 }
 
 .seo-hero__line {
@@ -390,8 +475,13 @@ watch(() => route.path, () => {
   right: -34px;
   bottom: 0;
   width: 1px;
-  background: linear-gradient(180deg, transparent, rgba(22, 93, 255, 0.22), transparent);
-  content: '';
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(22, 93, 255, 0.22),
+    transparent
+  );
+  content: "";
 }
 
 .seo-hero__nav a {
@@ -417,7 +507,7 @@ watch(() => route.path, () => {
   height: 42px;
   border-radius: 999px;
   background: #165dff;
-  content: '';
+  content: "";
 }
 
 .seo-hero__content {
@@ -500,10 +590,10 @@ watch(() => route.path, () => {
 }
 
 .seo-action--primary {
-  border: 1px solid #165dff;
-  background: #165dff;
+  border: 1px solid $color-primary;
+  background: $color-primary;
   color: #fff;
-  box-shadow: 0 12px 24px rgba(22, 93, 255, 0.2);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
 }
 
 .seo-action--primary:hover {
@@ -717,7 +807,7 @@ watch(() => route.path, () => {
 .seo-product-card--featured {
   border-color: #e2e8f3;
   background: #fff;
-  box-shadow: 0 14px 30px rgba(20, 38, 74, 0.07);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
   transform: translateY(-2px);
 }
 
