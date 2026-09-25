@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Servers\ZjmfFinance\Lib;
 
 use App\Exceptions\BusinessException;
+use App\Models\Setting;
 use App\Models\Supplier;
 
 final class ZjmfSecurityService
@@ -61,6 +62,12 @@ final class ZjmfSecurityService
             return $path;
         }
 
+        // 上游为二次对接时，面板片段下发的绝对地址常指向再上游域名：
+        // 关闭「同源检测」后放行该绝对地址（路径仍已被上面约束为同系统动作路由）。
+        if (! $this->originCheckEnabled()) {
+            return $endpoint;
+        }
+
         $configuredEndpoint = parse_url(trim((string) $supplier->api_url));
         if (! is_array($configuredEndpoint)
             || ! isset($parsedEndpoint['scheme'], $parsedEndpoint['host'])
@@ -69,6 +76,18 @@ final class ZjmfSecurityService
         }
 
         return $endpoint;
+    }
+
+    /**
+     * 系统设置 system.console_module_origin_check_enabled 控制是否强制同源比对，默认开启。
+     */
+    private function originCheckEnabled(): bool
+    {
+        return in_array(
+            Setting::getValue('system', 'console_module_origin_check_enabled', '1'),
+            [true, 1, '1', 'true', 'on'],
+            true
+        );
     }
 
     private function normalizedOrigin(array $endpoint): string

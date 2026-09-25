@@ -19,14 +19,13 @@ use Tests\TestCase;
 
 class ServiceVncTokenSecurityTest extends TestCase
 {
-    public function test_public_vnc_token_payload_exchanges_once_without_password(): void
+    public function test_public_vnc_token_payload_exchanges_without_password(): void
     {
         Cache::store('redis_volatile')->put('vnc_token:test-token', [
             'service_id' => 12,
             'password' => 'secret-password',
             'username' => 'root',
             'target' => '10.0.0.8:5900',
-            'single_use' => true,
             'token_scope' => 'public',
         ], now()->addMinutes(5));
 
@@ -38,49 +37,53 @@ class ServiceVncTokenSecurityTest extends TestCase
         $this->assertSame(12, $payload['service_id']);
         $this->assertSame('/ws/vnc', $payload['relay_path']);
         $this->assertArrayNotHasKey('password', $payload);
-        $this->assertFalse(Cache::store('redis_volatile')->has('vnc_token:test-token'));
         $this->assertTrue(Cache::store('redis_volatile')->has('vnc_token:'.$payload['token']));
 
         $relayParams = $service->resolveVncToken((string) $payload['token']);
         // relay 建连仅需 host/port/path，不落明文 VNC 密码到 Redis。
         $this->assertArrayNotHasKey('password', $relayParams);
-
-        $this->expectException(BusinessException::class);
-        $this->expectExceptionMessage('VNC 链接已过期或无效，请重新获取');
-        $service->resolvePublicVncTokenPayload('test-token');
     }
 
-    public function test_single_use_vnc_token_is_consumed_when_relay_resolves_it(): void
+    public function test_public_vnc_token_stays_exchangeable_within_ttl(): void
     {
-        Cache::store('redis_volatile')->put('vnc_token:test-token', [
+        // 兑换必须幂等：noVNC 页面刷新、重连、多设备打开都会重复兑换同一个公开 token。
+        // 若首次兑换即销毁缓存的 token，后续请求全部 404，页面表现为「打开就灰屏」。
+        Cache::store('redis_volatile')->put('vnc_token:reusable-token', [
             'service_id' => 12,
             'password' => 'secret-password',
             'username' => 'root',
             'target' => '10.0.0.8:5900',
-            'single_use' => true,
+            'token_scope' => 'public',
         ], now()->addMinutes(5));
 
         $service = $this->makeVncService();
 
-        $params = $service->resolveVncToken('test-token');
+        $first = $service->resolveVncToken('reusable-token');
+        $second = $service->resolveVncToken('reusable-token');
 
-        $this->assertSame('secret-password', $params['password']);
-        $this->assertFalse(Cache::store('redis_volatile')->has('vnc_token:test-token'));
+        $this->assertSame('secret-password', $first['password']);
+        $this->assertSame('secret-password', $second['password']);
+        $this->assertTrue(Cache::store('redis_volatile')->has('vnc_token:reusable-token'));
+    }
+
+    public function test_expired_public_vnc_token_is_rejected(): void
+    {
+        // token 过期后（TTL 到点被 Redis 淘汰）必须拒绝，这是唯一的有效期边界。
+        $service = $this->makeVncService();
 
         $this->expectException(BusinessException::class);
         $this->expectExceptionMessage('VNC 链接已过期或无效，请重新获取');
 
-        $service->resolveVncToken('test-token');
+        $service->resolveVncToken('never-issued-token');
     }
 
-    public function test_admin_public_vnc_token_is_consumed_but_relay_token_is_reusable(): void
+    public function test_admin_public_vnc_token_is_exchangeable_but_relay_token_is_reusable(): void
     {
         Cache::store('redis_volatile')->put('vnc_token:admin-token', [
             'service_id' => 34,
             'password' => 'admin-secret',
             'username' => 'administrator',
             'target' => '10.0.0.9:5900',
-            'single_use' => false,
             'token_scope' => 'public',
         ], now()->addMinutes(5));
 
@@ -93,7 +96,6 @@ class ServiceVncTokenSecurityTest extends TestCase
         $this->assertSame(34, $payload['service_id']);
         $this->assertSame('/ws/vnc', $payload['relay_path']);
         $this->assertArrayNotHasKey('password', $payload);
-        $this->assertFalse(Cache::store('redis_volatile')->has('vnc_token:admin-token'));
         // relay token 复用重连时同样不含明文 VNC 密码。
         $this->assertArrayNotHasKey('password', $firstParams);
         $this->assertArrayNotHasKey('password', $secondParams);
@@ -116,7 +118,6 @@ class ServiceVncTokenSecurityTest extends TestCase
         Cache::store('redis_volatile')->put('vnc_token:log-token', [
             'service_id' => 78,
             'password' => 'log-secret-password',
-            'single_use' => true,
             'token_scope' => 'public',
         ], now()->addMinutes(5));
 
@@ -144,7 +145,6 @@ class ServiceVncTokenSecurityTest extends TestCase
             'password' => 'relay-secret',
             'username' => 'administrator',
             'target' => '10.0.0.10:5900',
-            'single_use' => false,
         ], now()->addMinutes(5));
 
         $service = $this->makeVncService();

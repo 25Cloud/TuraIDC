@@ -204,7 +204,12 @@ class ServiceNatService
         $html = is_callable([$runtime, 'fetchCustomModulePage'])
             ? $runtime->fetchCustomModulePage($supplier, $hostId, $moduleKey, $jwt)
             : $this->fetchCustomModulePage($runtime, $supplier, $hostId, $jwt, $moduleKey);
-        $page = $this->parseNatAclPage($html);
+        // 动作地址优先取本系统同源路由（供应商根地址 + 本系统主机 ID）：
+        // 面板片段里的 url 可能是中间层再上游的绝对地址，既跨域也带对方主机 ID，不能直接回发。
+        $actionEndpoint = is_callable([$runtime, 'getCustomModuleActionEndpoint'])
+            ? $runtime->getCustomModuleActionEndpoint($supplier, $hostId)
+            : null;
+        $page = $this->parseNatAclPage($html, $actionEndpoint);
 
         throw_if(trim((string) ($page['endpoint'] ?? '')) === '', new BusinessException('未解析到 NAT 转发请求地址', 50000));
 
@@ -254,12 +259,16 @@ class ServiceNatService
 
     // ── NAT ACL HTML parsing ───────────────────────────────────────────────
 
-    private function parseNatAclPage(string $html): array
+    private function parseNatAclPage(string $html, ?string $actionEndpoint = null): array
     {
         $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $endpoint = trim((string) $actionEndpoint);
+        if ($endpoint === '') {
+            $endpoint = $this->extractSecurityGroupEndpoint($html);
+        }
 
         return [
-            'endpoint' => $this->extractSecurityGroupEndpoint($html),
+            'endpoint' => $endpoint,
             'can_create' => $this->canCreateNatAcl($html),
             'protocols' => $this->extractNatAclProtocolOptions($html),
             'list' => $this->extractNatAclRows($html),

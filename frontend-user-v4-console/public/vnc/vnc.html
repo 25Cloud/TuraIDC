@@ -2,14 +2,20 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>VNC 控制台</title>
+  <!-- 先声明 rel="icon"（同 console 首页），后端站点 favicon 会在运行期覆盖它 -->
+  <link rel="icon" href="/favicon.ico" />
   <style>
     :root {
       --bar-bg: rgb(110, 132, 163);
       --bar-dark: rgb(83, 99, 122);
       --bar-darker: rgb(60, 75, 95);
       --container-bg: #313131;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
     }
 
     *, *::before, *::after { box-sizing: border-box; }
@@ -21,6 +27,8 @@
       background: var(--container-bg);
       font-family: sans-serif;
       overflow: hidden;
+      overscroll-behavior: none;
+      -webkit-text-size-adjust: 100%;
     }
 
     /* ---- 主容器 ---- */
@@ -29,6 +37,32 @@
       height: 100%;
       background: var(--container-bg);
       position: relative;
+      touch-action: none;
+    }
+    #noVNC_container canvas {
+      display: block;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* 软键盘输入代理：承载系统输入法，本身必须留在视口内且不可见。
+       不能用 display:none / visibility:hidden，否则移动端不会唤起软键盘。 */
+    #noVNC_kbd_proxy {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      border: 0;
+      outline: none;
+      opacity: 0;
+      z-index: 1;
+      resize: none;
+      font-size: 16px; /* 小于 16px 时 iOS Safari 会自动放大页面 */
+      -webkit-user-select: text;
+      user-select: text;
     }
 
     /* ---- 状态条（顶部滑入） ---- */
@@ -38,7 +72,7 @@
       left: 0;
       width: 100%;
       z-index: 100;
-      padding: 6px 12px;
+      padding: calc(6px + var(--safe-top)) calc(12px + var(--safe-right)) 6px calc(12px + var(--safe-left));
       display: flex;
       align-items: center;
       gap: 8px;
@@ -72,13 +106,14 @@
     /* ---- 控制栏主体 ---- */
     #noVNC_control_bar {
       position: relative;
-      left: -100%;
+      left: calc(-100% - var(--safe-left));
       transition: left 0.4s ease, box-shadow 0.4s ease;
       background: var(--bar-bg);
       border-radius: 0 12px 12px 0;
       padding: 10px 8px;
       pointer-events: auto;
       user-select: none;
+      -webkit-user-select: none;
     }
     #noVNC_control_bar.open {
       left: 0;
@@ -148,6 +183,8 @@
       justify-content: center;
       width: 40px;
       height: 40px;
+      min-width: 40px;
+      min-height: 40px;
       background: transparent;
       border: 1px solid rgba(255,255,255,0.2);
       border-radius: 6px;
@@ -156,6 +193,8 @@
       font-size: 16px;
       transition: background 0.15s;
       padding: 0;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
     .noVNC_button:hover  { background: rgba(255,255,255,0.15); }
     .noVNC_button:active { background: rgba(0,0,0,0.3); }
@@ -198,8 +237,9 @@
       padding: 16px;
       min-width: 220px;
       max-width: calc(100vw - 120px);
-      max-height: calc(100vh - 40px);
+      max-height: calc(100vh - 40px - var(--safe-top) - var(--safe-bottom));
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
     .noVNC_panel.open {
       transform: translateX(70px);
@@ -220,7 +260,7 @@
       height: 140px;
       resize: both;
       font-family: monospace;
-      font-size: 13px;
+      font-size: 16px; /* 避免 iOS 聚焦输入框时自动放大页面 */
     }
 
     /* ---- 过渡遮罩（连接中） ---- */
@@ -263,6 +303,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: calc(16px + var(--safe-top)) calc(16px + var(--safe-right))
+               calc(16px + var(--safe-bottom)) calc(16px + var(--safe-left));
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.4s, visibility 0.4s;
@@ -272,6 +316,7 @@
       background: #fff;
       border-radius: 12px;
       padding: 28px 32px;
+      width: 100%;
       max-width: 460px;
       text-align: center;
       box-shadow: 6px 6px 0 rgba(0,0,0,0.4);
@@ -301,52 +346,158 @@
     }
     #noVNC_error button:hover { background: #e2e8f0; }
 
-    @media (max-width: 767px) {
+    /* ------------------------------------------------------------------
+       移动端自适应
+       竖屏 / 触屏窄屏：控制栏由「左侧竖条」改为「底部横条」，
+       避免遮挡远程桌面，并留出软键盘与安全区空间。
+       ------------------------------------------------------------------ */
+    @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
       #noVNC_status {
-        padding: 8px 10px;
+        padding: calc(8px + var(--safe-top)) calc(10px + var(--safe-right)) 8px calc(10px + var(--safe-left));
         font-size: 13px;
       }
 
+      /* 锚点横跨整个底部，控制栏由左侧滑入改为底部滑入 */
+      #noVNC_control_bar_anchor {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: auto;
+        align-items: flex-end;
+        justify-content: center;
+      }
+
       #noVNC_control_bar {
-        padding: 8px 6px;
-        border-radius: 0 10px 10px 0;
+        left: 0;
+        top: auto;
+        width: 100%;
+        padding: 6px calc(8px + var(--safe-left)) calc(6px + var(--safe-bottom)) calc(8px + var(--safe-right));
+        border-radius: 12px 12px 0 0;
+        transition: top 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+        transform: translateY(calc(100% + 24px));
+      }
+      #noVNC_control_bar.open {
+        left: 0;
+        transform: translateY(0);
+        box-shadow: 0 -6px 0 rgba(0,0,0,0.5);
       }
 
+      /* 拉手贴控制栏上沿、水平居中 */
       #noVNC_control_bar_handle {
-        right: -22px;
-        width: 22px;
-        height: 46px;
+        right: auto;
+        left: 50%;
+        top: -24px;
+        transform: translateX(-50%);
+        width: 56px;
+        height: 24px;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 -3px 0 rgba(0,0,0,0.5);
+      }
+      #noVNC_control_bar_handle::after {
+        width: 10px;
+        height: 6px;
+        border-left: none;
+        border-right: none;
+        border-top: 2px solid #fff;
+        border-bottom: 2px solid #fff;
+      }
+      #noVNC_control_bar.open #noVNC_control_bar_handle::after {
+        transform: scaleY(-1);
       }
 
+      /* 按钮横向排列并允许换行 */
+      .noVNC_scroll {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+      }
+      .noVNC_scroll hr {
+        width: 1px;
+        height: 26px;
+        margin: 0 2px;
+        border-top: none;
+        border-left: 1px solid rgba(255,255,255,0.2);
+      }
+      .noVNC_logo { display: none; }
+
+      /* 触屏下加大点击面积 */
       .noVNC_button {
-        width: 34px;
-        height: 34px;
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        min-height: 46px;
       }
-
       .noVNC_button svg {
-        width: 18px;
-        height: 18px;
+        width: 22px;
+        height: 22px;
       }
 
+      /* 面板从底部弹出，宽度铺满 */
+      .panel_wrap {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: auto;
+        align-items: flex-end;
+        justify-content: center;
+      }
+      .noVNC_panel,
+      .noVNC_panel.open {
+        transform: translateY(100%);
+      }
+      .noVNC_panel.open {
+        transform: translateY(calc(-1 * (var(--safe-bottom) + 72px)));
+      }
       .noVNC_panel {
         min-width: 0;
-        width: calc(100vw - 74px);
-        max-width: calc(100vw - 74px);
-        padding: 12px;
+        width: calc(100vw - 16px);
+        max-width: calc(100vw - 16px);
+        padding: 14px;
+        border-radius: 12px;
+        margin-bottom: 0;
       }
-
-      .noVNC_panel.open {
-        transform: translateX(58px);
-      }
-
       .noVNC_panel textarea {
         width: 100%;
-        min-height: 120px;
+        min-height: 110px;
       }
 
       #noVNC_error_box {
-        width: calc(100vw - 32px);
+        width: 100%;
         padding: 24px 20px;
+      }
+    }
+
+    /* 超小屏：进一步压缩间距，保证一排按钮不折行 */
+    @media (max-width: 380px) {
+      .noVNC_button {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        min-height: 42px;
+      }
+      .noVNC_button svg {
+        width: 20px;
+        height: 20px;
+      }
+      .noVNC_scroll { gap: 5px; }
+    }
+
+    /* 横屏小高度：底部控制栏不再让出竖向空间，改为半透明紧凑条 */
+    @media (orientation: landscape) and (max-height: 480px) {
+      #noVNC_control_bar {
+        flex-direction: row;
+      }
+      .noVNC_scroll {
+        flex-wrap: nowrap;
+      }
+      .noVNC_button {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
       }
     }
   </style>
@@ -372,6 +523,11 @@
       <!-- Ctrl+Alt+Del -->
       <button class="noVNC_button" id="btn_cad" title="发送 Ctrl+Alt+Del" disabled>
         <svg viewBox="0 0 24 24"><rect x="2" y="6" width="5" height="12" rx="1"/><rect x="9" y="6" width="5" height="12" rx="1"/><rect x="16" y="6" width="6" height="12" rx="1"/></svg>
+      </button>
+
+      <!-- 键盘（移动端唤起系统软键盘，桌面端聚焦远程桌面接收物理键盘） -->
+      <button class="noVNC_button" id="btn_keyboard" title="键盘" aria-label="键盘">
+        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
       </button>
 
       <!-- 剪贴板 -->
@@ -413,11 +569,14 @@
 <div id="noVNC_error">
   <div id="noVNC_error_box">
     <div id="noVNC_error_icon">✕</div>
-    <div id="noVNC_error_title">VNC 连接失败</div>
+    <div id="noVNC_error_title" onclick="window.close()">VNC 连接失败</div>
     <div id="noVNC_error_message">未知错误</div>
     <button id="btn_retry">重新尝试</button>
   </div>
 </div>
+
+<!-- 软键盘输入代理 -->
+<textarea id="noVNC_kbd_proxy" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-hidden="true" tabindex="-1"></textarea>
 
 <script type="module">
   import RFB from './core/rfb.js'
@@ -431,6 +590,8 @@
   const errorMsgEl     = document.getElementById('noVNC_error_message')
   const controlBar     = document.getElementById('noVNC_control_bar')
   const barHandle      = document.getElementById('noVNC_control_bar_handle')
+  const btnKeyboard    = document.getElementById('btn_keyboard')
+  const keyboardProxy  = document.getElementById('noVNC_kbd_proxy')
   const btnCad         = document.getElementById('btn_cad')
   const btnClipboard   = document.getElementById('btn_clipboard')
   const btnFullscreen  = document.getElementById('btn_fullscreen')
@@ -441,6 +602,83 @@
 
   let rfb = null
   let statusTimer = null
+
+  // ---- 移动端键盘支持 ----
+  const isTouchDevice = (() => {
+    try {
+      return window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window
+    } catch {
+      return 'ontouchstart' in window
+    }
+  })()
+
+  // 桌面端点击「键盘」等同于聚焦远程桌面，物理键盘由 noVNC 直接接管。
+  function focusDesktop() {
+    try {
+      rfb?.focus?.()
+      return
+    } catch {}
+    container.querySelector('canvas')?.focus?.()
+  }
+
+  // 移动端没有物理键盘，必须借助一个真实可聚焦的输入框唤起系统软键盘。
+  // 代理框始终处于清空状态，只负责捕获输入法提交的字符并转发到远程桌面。
+  function openSoftKeyboard() {
+    keyboardProxy.value = ''
+    keyboardProxy.focus({ preventScroll: true })
+  }
+
+  function closeSoftKeyboard() {
+    keyboardProxy.blur()
+    focusDesktop()
+  }
+
+  btnKeyboard.addEventListener('click', (e) => {
+    e.stopPropagation()
+    if (!isTouchDevice) {
+      focusDesktop()
+      return
+    }
+    if (document.activeElement === keyboardProxy) {
+      closeSoftKeyboard()
+    } else {
+      openSoftKeyboard()
+    }
+  })
+
+  keyboardProxy.addEventListener('input', () => {
+    const text = keyboardProxy.value
+    keyboardProxy.value = ''
+    if (rfb && text) rfb.clipboardPasteFrom(text)
+  })
+
+  // 输入法组合结束（回车上屏、候选词上屏等）同样以粘贴方式注入，
+  // 既不依赖 keysym 映射，也天然支持中文等非 ASCII 字符。
+  keyboardProxy.addEventListener('compositionend', () => {
+    const text = keyboardProxy.value
+    keyboardProxy.value = ''
+    if (rfb && text) rfb.clipboardPasteFrom(text)
+  })
+
+  keyboardProxy.addEventListener('keydown', (e) => {
+    // 代理框已占位时按回车提交；其余按键交给 noVNC 的按键映射，不在此处拦截。
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (rfb) rfb.clipboardPasteFrom('\n')
+    } else if (e.key === 'Escape') {
+      keyboardProxy.blur()
+      focusDesktop()
+    }
+  })
+
+  keyboardProxy.addEventListener('blur', () => focusDesktop())
+
+  // 移动端软键盘弹出时浏览器会压缩可视高度，重新触发 noVNC 的画面缩放计算。
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      window.dispatchEvent(new Event('resize'))
+    })
+  }
 
   // ---- 状态条 ----
   function showStatus(text, type = 'normal', autohide = 3000) {
@@ -508,6 +746,57 @@
 
   function hideError() {
     errorEl.classList.remove('show')
+  }
+
+  // ---- 站点图标同步 ----
+  // vnc.html 是独立静态页，拿不到控制台的 Pinia store，
+  // 因此直接读公开的站点配置接口，让 favicon 跟随后台「站点 Favicon」设置。
+  function applyFavicon(href) {
+    const value = String(href || '').trim()
+    if (!value) return
+
+    const resolved = resolveBrandAsset(value)
+    if (!resolved) return
+
+    let link = document.querySelector("link[rel~='icon']")
+    if (!link) {
+      link = document.createElement('link')
+      link.rel = 'icon'
+      document.head.appendChild(link)
+    }
+    link.href = resolved
+    link.removeAttribute('type')
+  }
+
+  // 后端返回的站点图标可能是相对路径：/uploads、/media 由 API 域托管，
+  // 其余相对路径（如默认 /branding/logo1.svg）属于 console 域，需要按来源分别解析。
+  function resolveBrandAsset(value) {
+    if (/^(?:https?:)?\/\//i.test(value) || value.startsWith('data:')) return value
+
+    const normalized = value.replace(/\\/g, '/')
+    const path = normalized.startsWith('/') ? normalized : `/${normalized}`
+
+    try {
+      const resolved = new URL(path, location.origin)
+      if (/(?:^|\/)(?:uploads|media)\//i.test(path)) {
+        const apiBase = String(q('api_base', '') || '').trim()
+        if (/^https?:\/\//i.test(apiBase)) {
+          return new URL(path, `${apiBase.replace(/\/+$/, '')}/`).toString()
+        }
+      }
+      return resolved.toString()
+    } catch {
+      return path
+    }
+  }
+
+  async function syncSiteFavicon() {
+    try {
+      const data = await readJson('/api/v2/site/config', {}, '站点图标获取失败')
+      applyFavicon(data?.site_favicon)
+    } catch {
+      // 图标属于非关键路径，接口失败时保留 <head> 中原有的默认 favicon
+    }
   }
 
   // ---- URL 参数工具 ----
@@ -819,7 +1108,8 @@
         if (e.detail?.clean) {
           showStatus('已断开连接', 'normal', 4000)
         } else {
-          showError('VNC 连接已中断，请重新尝试\n\n目标地址：' + url)
+          // 上游网关有并发槽位限制，链接失效由 relay 侧自动重取（见 VncRelayCommand）。
+          showError('VNC 连接已中断，请点击「重新尝试」重新连接。')
         }
       })
 
@@ -850,6 +1140,8 @@
 
   window.addEventListener('beforeunload', () => { try { rfb?.disconnect() } catch (_) {} })
 
+  // 图标同步与 VNC 建连互不依赖，并行发起，避免拖慢控制台出现时间。
+  syncSiteFavicon()
   connectVnc()
 </script>
 </body>

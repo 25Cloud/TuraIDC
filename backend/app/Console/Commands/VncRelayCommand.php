@@ -367,7 +367,7 @@ class VncRelayCommand extends Command
                 return;
             }
 
-            [$upstream, $upstreamExtra] = $this->connectUpstream($params);
+            [$upstream, $upstreamExtra] = $this->connectUpstreamWithRetry($consoleService, $params);
         } catch (Throwable $e) {
             Log::warning('[VNC Relay] 上游连接失败', [
                 'token' => $this->maskToken($token),
@@ -450,9 +450,35 @@ class VncRelayCommand extends Command
     }
 
     /**
+     * 上游 VNC 网关对同一主机有并发/会话槽位限制，且槽位释放存在延迟，
+     * 复用旧上游链接会被直接拒绝。这里在首次握手被拒时，
+     * 由服务端重新申请一条上游链接并重试一次，避免用户侧「怎么点都连不上」。
+     *
      * @param  array<string, mixed>  $params
      * @return array{0: resource, 1: string}
      */
+    private function connectUpstreamWithRetry(ClientServiceConsoleService $consoleService, array $params): array
+    {
+        try {
+            return $this->connectUpstream($params);
+        } catch (Throwable $firstError) {
+            $freshParams = $consoleService->refreshUpstreamVncParams($params);
+
+            // 上游链接没有变化时重试没有意义，直接抛出原始错误。
+            if (($freshParams['path'] ?? '') === ($params['path'] ?? '')
+                && ($freshParams['host'] ?? '') === ($params['host'] ?? '')) {
+                throw $firstError;
+            }
+
+            Log::info('[VNC Relay] 上游被拒，已重新获取链接并重试', [
+                'service_id' => (int) ($params['service_id'] ?? 0),
+                'host' => $freshParams['host'] ?? '',
+            ]);
+
+            return $this->connectUpstream($freshParams);
+        }
+    }
+
     private function connectUpstream(array $params): array
     {
         $host = trim((string) ($params['host'] ?? ''));
@@ -727,7 +753,7 @@ class VncRelayCommand extends Command
     }
 
     /**
-     * 先预览 token 并校验 Origin，避免跨域请求消费一次性 VNC 启动链接。
+     * 先预览 token 并校验 Origin，避免未授权来源读取 relay 建连参数。
      *
      * @return array<string, mixed>|null
      */

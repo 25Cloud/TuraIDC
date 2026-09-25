@@ -259,6 +259,17 @@ class ClientServiceConsoleService
         return $this->vncService->resolveVncToken($token);
     }
 
+    /**
+     * relay 上游被拒时重新申请上游 VNC 链接（见 ServiceVncService::refreshUpstreamVncParams）。
+     *
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    public function refreshUpstreamVncParams(array $params): array
+    {
+        return $this->vncService->refreshUpstreamVncParams($params);
+    }
+
     public function resolvePublicVncTokenPayload(string $token): array
     {
         return $this->vncService->resolvePublicVncTokenPayload($token);
