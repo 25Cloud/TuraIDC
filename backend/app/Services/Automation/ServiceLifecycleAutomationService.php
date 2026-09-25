@@ -7,6 +7,7 @@ use App\Constants\UserNotificationType;
 use App\Models\AutomationLog;
 use App\Models\Service;
 use App\Services\Notification\UserNotificationService;
+use App\Services\ClientServiceConsole\ServiceSuspensionService;
 use App\Services\System\NotificationService;
 use App\Services\System\SettingService;
 use Carbon\Carbon;
@@ -21,7 +22,13 @@ class ServiceLifecycleAutomationService
         private SettingService $settingService,
         private NotificationService $notificationService,
         private UserNotificationService $userNotificationService,
+        private ?ServiceSuspensionService $suspensionService = null,
     ) {}
+
+    private function suspensionService(): ServiceSuspensionService
+    {
+        return $this->suspensionService ??= app(ServiceSuspensionService::class);
+    }
 
     public function handle(): array
     {
@@ -194,14 +201,14 @@ class ServiceLifecycleAutomationService
         $count = 0;
 
         foreach ($services as $service) {
-            $suspendedAt = DB::transaction(function () use ($service, $graceDays, $config) {
+            // 第一步：锁定预检（不改状态），确认该服务确实到达终止时间点
+            $dueService = DB::transaction(function () use ($service, $graceDays, $config) {
                 $locked = Service::query()->lockForUpdate()->find((int) $service->id);
 
                 if (! $locked instanceof Service) {
                     return null;
                 }
 
-                // 写前重读校验：续费后服务已恢复 ACTIVE 或暂停原因变化时跳过，防止不可逆取消刚续费的服务
                 if ((int) $locked->status !== ServiceStatus::SUSPENDED
                     || (string) $locked->suspended_reason !== Service::SUSPENDED_REASON_EXPIRED) {
                     return null;
@@ -221,6 +228,45 @@ class ServiceLifecycleAutomationService
                     return null;
                 }
 
+                return $locked;
+            });
+
+            if (! $dueService instanceof Service) {
+                continue;
+            }
+
+            // 第二步：销毁上游实例（对齐魔方下游 Host::terminate 协议）。
+            // 无上游/驱动不支持终止时直接放行；销毁失败保持 SUSPENDED，下一轮重试。
+            if (! $this->suspensionService()->tryTerminateUpstream($dueService, '到期自动终止')) {
+                Log::warning('[定时任务] 上游实例销毁失败，服务保留暂停状态待下轮重试', [
+                    'service_id' => $dueService->id,
+                    'service_name' => $dueService->name,
+                ]);
+                continue;
+            }
+
+            // 第三步：写前重读置 CANCELLED。若上游销毁期间被续费恢复则跳过本地取消并告警人工核实
+            $suspendedAt = DB::transaction(function () use ($dueService, $config) {
+                $locked = Service::query()->lockForUpdate()->find((int) $dueService->id);
+
+                if (! $locked instanceof Service) {
+                    return null;
+                }
+
+                if ((int) $locked->status !== ServiceStatus::SUSPENDED
+                    || (string) $locked->suspended_reason !== Service::SUSPENDED_REASON_EXPIRED) {
+                    return null;
+                }
+
+                $resolvedSuspendedAt = $this->resolveExpiredSuspendedAt(
+                    $locked,
+                    (int) ($config['expire_suspend_after_days'] ?? 0)
+                );
+
+                if (! $resolvedSuspendedAt instanceof Carbon) {
+                    return null;
+                }
+
                 $provisionData = is_array($locked->provision_data ?? null) ? $locked->provision_data : [];
                 unset($provisionData[self::EXPIRED_SUSPENDED_AT_KEY]);
 
@@ -234,6 +280,10 @@ class ServiceLifecycleAutomationService
             });
 
             if (! $suspendedAt instanceof Carbon) {
+                Log::warning('[定时任务] 上游实例已销毁但本地服务状态已被并发变更，请人工核实', [
+                    'service_id' => $dueService->id,
+                    'service_name' => $dueService->name,
+                ]);
                 continue;
             }
 

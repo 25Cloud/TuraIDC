@@ -107,6 +107,28 @@ final class ZjmfNetworkService
         return $pageResponse;
     }
 
+    /**
+     * 终止（销毁）上游主机，对齐魔方下游 Host::terminate 协议：
+     * POST /host/cancel {id, type: 'Immediate', reason}。
+     * 上游返回主机不存在时视为已删除（幂等成功，标记 already_terminated）。
+     */
+    public function terminateHost(Supplier $supplier, int $hostId, string $reason = '', ?string $jwt = null): array
+    {
+        $response = $this->transport->post($supplier, '/host/cancel', [
+            'id' => $hostId,
+            'type' => 'Immediate',
+            'reason' => trim($reason) !== '' ? trim($reason) : '立即删除',
+        ], $this->resolveJwt($supplier, $jwt));
+
+        if ($this->isHostMissingResponse($response)) {
+            return [...$response, 'already_terminated' => true];
+        }
+
+        $this->assertUpstreamSuccess($response, [200, 1000, 1001], '删除上游实例');
+
+        return $response;
+    }
+
     public function fundInvoice(Supplier $supplier, int $invoiceId, ?string $jwt = null, string $action = '支付上游账单'): array
     {
         $response = $this->transport->post($supplier, "/v1/invoices/{$invoiceId}/fund", [], $this->resolveJwt($supplier, $jwt));
@@ -175,6 +197,25 @@ final class ZjmfNetworkService
             'upstream_invoice_id' => $invoiceId,
             'host_detail' => $this->readConfirmedHostDetail($supplier, $hostId, $resolvedJwt, '读取产品升降级结果'),
         ];
+    }
+
+    /**
+     * 上游主机不存在 / 已删除的幂等判定（对齐魔方错误文案与 ZjmfStatusService 关键词）。
+     */
+    private function isHostMissingResponse(array $response): bool
+    {
+        $message = mb_strtolower(trim((string) ($response['msg'] ?? $response['message'] ?? '')));
+        if ($message === '') {
+            return false;
+        }
+
+        foreach (['主机不存在', 'host not found', '已删除', '已被删除'] as $keyword) {
+            if (str_contains($message, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function normalizeUpgradeConfigOptions(array $response): array

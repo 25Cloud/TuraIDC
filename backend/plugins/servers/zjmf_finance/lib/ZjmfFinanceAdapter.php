@@ -15,6 +15,7 @@ use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesConsoleSecurity;
 use App\Services\Upstream\Contracts\ProvidesContextualRenewalRecovery;
 use App\Services\Upstream\Contracts\ProvidesHostSuspension;
+use App\Services\Upstream\Contracts\ProvidesHostTermination;
 use App\Services\Upstream\Contracts\ProvidesInvoiceRenewal;
 use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesRenewableCycleFiltering;
@@ -23,7 +24,7 @@ use App\Services\Upstream\Contracts\ProvidesStatusSync;
 use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\Drivers\HostingPanelApi\HostingPanelApiTransport;
 
-final class ZjmfFinanceAdapter implements ProvidesBatchStatusSync, ProvidesConsoleAccess, ProvidesConsoleCatalog, ProvidesConsoleNetwork, ProvidesConsoleRuntime, ProvidesConsoleSecurity, ProvidesContextualRenewalRecovery, ProvidesHostSuspension, ProvidesInvoiceRenewal, ProvidesOrderProvisioning, ProvidesRenewableCycleFiltering, ProvidesScheduledAuthRefresh, ProvidesStatusSync, ProvidesSupplierBalance
+final class ZjmfFinanceAdapter implements ProvidesBatchStatusSync, ProvidesConsoleAccess, ProvidesConsoleCatalog, ProvidesConsoleNetwork, ProvidesConsoleRuntime, ProvidesConsoleSecurity, ProvidesContextualRenewalRecovery, ProvidesHostSuspension, ProvidesHostTermination, ProvidesInvoiceRenewal, ProvidesOrderProvisioning, ProvidesRenewableCycleFiltering, ProvidesScheduledAuthRefresh, ProvidesStatusSync, ProvidesSupplierBalance
 {
     private readonly ZjmfFinanceTransport $transport;
 
@@ -198,6 +199,11 @@ final class ZjmfFinanceAdapter implements ProvidesBatchStatusSync, ProvidesConso
     public function unsuspendHost(Supplier $supplier, int $hostId, ?string $jwt = null): array
     {
         return $this->consoleService->unsuspendHost($supplier, $hostId, $jwt);
+    }
+
+    public function terminateHost(Supplier $supplier, int $hostId, string $reason = '', ?string $jwt = null): array
+    {
+        return $this->networkService->terminateHost($supplier, $hostId, $reason, $jwt);
     }
 
     public function getModuleStatus(Supplier $supplier, int $hostId, string $type = 'host', ?string $jwt = null): array

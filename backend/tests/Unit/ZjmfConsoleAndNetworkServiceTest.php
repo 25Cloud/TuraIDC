@@ -555,6 +555,66 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
         $networkService->purchaseHostUpgrade($supplier, 77, 88, 'monthly', '', 'jwt-token');
     }
 
+    public function test_network_service_terminates_host_via_legacy_cancel_endpoint(): void
+    {
+        $supplier = $this->makeSupplier();
+        $hostingTransport = Mockery::mock(HostingPanelApiTransport::class);
+        $hostingTransport
+            ->shouldReceive('request')
+            ->once()
+            ->with($supplier, 'POST', '/host/cancel', ['id' => 77, 'type' => 'Immediate', 'reason' => '到期自动终止'], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
+            ->andReturn(['status' => 200, 'msg' => '删除成功']);
+
+        $networkService = new ZjmfNetworkService(
+            $this->makeTransport($hostingTransport),
+            new ZjmfConsoleService($this->makeTransport($hostingTransport))
+        );
+
+        $response = $networkService->terminateHost($supplier, 77, '到期自动终止', 'jwt-token');
+
+        $this->assertSame(200, (int) ($response['status'] ?? 0));
+        $this->assertArrayNotHasKey('already_terminated', $response);
+    }
+
+    public function test_network_service_treats_missing_host_as_already_terminated(): void
+    {
+        $supplier = $this->makeSupplier();
+        $hostingTransport = Mockery::mock(HostingPanelApiTransport::class);
+        $hostingTransport
+            ->shouldReceive('request')
+            ->once()
+            ->with($supplier, 'POST', '/host/cancel', ['id' => 77, 'type' => 'Immediate', 'reason' => '到期自动终止'], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
+            ->andReturn(['status' => 406, 'msg' => '主机不存在']);
+
+        $networkService = new ZjmfNetworkService(
+            $this->makeTransport($hostingTransport),
+            new ZjmfConsoleService($this->makeTransport($hostingTransport))
+        );
+
+        $response = $networkService->terminateHost($supplier, 77, '到期自动终止', 'jwt-token');
+
+        $this->assertTrue((bool) ($response['already_terminated'] ?? false));
+    }
+
+    public function test_network_service_terminate_host_fails_on_upstream_error(): void
+    {
+        $supplier = $this->makeSupplier();
+        $hostingTransport = Mockery::mock(HostingPanelApiTransport::class);
+        $hostingTransport
+            ->shouldReceive('request')
+            ->once()
+            ->with($supplier, 'POST', '/host/cancel', ['id' => 77, 'type' => 'Immediate', 'reason' => '立即删除'], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
+            ->andReturn(['status' => 400, 'msg' => '删除失败']);
+
+        $networkService = new ZjmfNetworkService(
+            $this->makeTransport($hostingTransport),
+            new ZjmfConsoleService($this->makeTransport($hostingTransport))
+        );
+
+        $this->expectException(BusinessException::class);
+        $networkService->terminateHost($supplier, 77, '', 'jwt-token');
+    }
+
     private function makeTransport(HostingPanelApiTransport $hostingTransport): ZjmfFinanceTransport
     {
         return new ZjmfFinanceTransport($hostingTransport, new ZjmfAuthManager($hostingTransport));

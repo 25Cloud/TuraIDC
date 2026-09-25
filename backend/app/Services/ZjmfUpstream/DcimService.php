@@ -99,9 +99,62 @@ class DcimService
         }
 
         return $this->safeRun(
-            fn () => $this->power->reinstallForUser($user, $serviceId, ['os_id' => $osId]),
+            fn () => $this->power->reinstallForUser($user, $serviceId, ['os_id' => $this->resolveOsId($user, $serviceId, trim($osId))]),
             '重装系统发起失败'
         );
+    }
+
+    /**
+     * 重装 OS 参数适配：下游（魔方财务）重装时传的是商品配置 OS 子项 id
+     * （get_product_config 下发的 sub[].id），而控制台链路的 os_id 是供应商
+     * 重装列表返回的标识。这里依次尝试：
+     *   1. 商品 OS 子项 id -> 子项值（option_name_first），再对齐供应商列表 name；
+     *   2. 入参直接命中供应商列表 os_id / name；
+     *   3. 均未命中时原样透传（由供应商给出明确错误）。
+     */
+    private function resolveOsId(User $user, int $serviceId, string $osId): string
+    {
+        try {
+            $service = Service::query()->with('product')->find($serviceId);
+            $product = $service?->product;
+            $osValue = '';
+            if ($product instanceof \App\Models\Product) {
+                foreach ((array) ($product->config_options ?? []) as $item) {
+                    $item = is_array($item) ? $item : [];
+                    $isOs = (int) ($item['option_type'] ?? -1) === 5
+                        || trim((string) ($item['field'] ?? '')) === 'os';
+                    if (! $isOs) {
+                        continue;
+                    }
+                    foreach ((array) ($item['sub'] ?? []) as $sub) {
+                        $sub = is_array($sub) ? $sub : [];
+                        if ((string) ($sub['id'] ?? '') !== $osId) {
+                            continue;
+                        }
+                        $osValue = trim((string) ($sub['option_name_first'] ?? $sub['option_name'] ?? ''));
+                        break 2;
+                    }
+                }
+            }
+
+            $options = $this->power->getReinstallOptionsForUser($user, $serviceId);
+            foreach ((array) ($options['os'] ?? []) as $os) {
+                $os = is_array($os) ? $os : [];
+                $remoteId = (string) ($os['os_id'] ?? '');
+                $remoteName = trim((string) ($os['name'] ?? ''));
+                if ($remoteId !== '' && ($remoteId === $osId || ($osValue !== '' && $remoteName === $osValue))) {
+                    return $remoteId;
+                }
+            }
+        } catch (\Throwable $exception) {
+            Log::warning('[zjmf-upstream] 重装 OS 参数解析失败，按原值透传', [
+                'service_id' => $serviceId,
+                'os' => $osId,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+
+        return $osValue !== '' ? $osValue : $osId;
     }
 
     /**

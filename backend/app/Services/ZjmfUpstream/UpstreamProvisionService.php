@@ -6,6 +6,7 @@ namespace App\Services\ZjmfUpstream;
 
 use App\Constants\InvoiceStatus;
 use App\Constants\ServiceStatus;
+use App\Jobs\PushServiceToZjmfDownstreamJob;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Service;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Services\ClientServiceConsole\ServicePowerService;
 use App\Services\ClientServiceConsole\ServiceVncService;
 use App\Services\Provisioning\ProvisionService;
+use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -299,11 +301,36 @@ class UpstreamProvisionService
      */
     private function suspend(Service $service, array $data): array
     {
+        $status = (int) $service->status;
+
+        // 已暂停重复受理（下游重试）幂等返回成功；开通中/已到期/已取消不可暂停
+        if ($status === ServiceStatus::SUSPENDED) {
+            return ['status' => 200, 'msg' => '暂停成功'];
+        }
+
+        if ($status !== ServiceStatus::ACTIVE) {
+            return ['status' => 400, 'msg' => '服务当前状态不支持暂停'];
+        }
+
         $reason = trim((string) ($data['reason'] ?? ''));
+
+        // 'expired' 是本系统到期欠费停机的保留标记：写入后会同时锁死 unsuspend
+        // （provision unsuspend 分支按它拒绝）与自动取消链路（按 SUSPENDED+该标记筛选），
+        // 下游传来的同名词必须转义存储
+        if ($reason !== '' && $reason === Service::SUSPENDED_REASON_EXPIRED) {
+            $reason = 'downstream_expired';
+        }
+
         $service->forceFill([
             'status' => ServiceStatus::SUSPENDED,
             'suspended_reason' => $reason !== '' ? $reason : null,
         ])->save();
+
+        // 旁路通知下游（未登记回推目标时自动跳过）
+        PushServiceToZjmfDownstreamJob::dispatch(
+            (int) $service->id,
+            ZjmfDownstreamPushService::TYPE_SUSPEND
+        );
 
         return ['status' => 200, 'msg' => '暂停成功'];
     }
@@ -330,6 +357,11 @@ class UpstreamProvisionService
             'suspended_reason' => null,
         ])->save();
 
+        PushServiceToZjmfDownstreamJob::dispatch(
+            (int) $service->id,
+            ZjmfDownstreamPushService::TYPE_UNSUSPEND
+        );
+
         return ['status' => 200, 'msg' => '解除暂停成功'];
     }
 
@@ -339,6 +371,13 @@ class UpstreamProvisionService
     private function terminate(Service $service): array
     {
         $service->forceFill(['status' => ServiceStatus::CANCELLED])->save();
+
+        // 删除必须回推：下游删单依赖该推送把本地 host 置 Deleted 并清空凭据
+        //（对齐魔方 Host::terminate 成功后的 pushHostInfo），否则下游残留 Active 记录。
+        PushServiceToZjmfDownstreamJob::dispatch(
+            (int) $service->id,
+            ZjmfDownstreamPushService::TYPE_TERMINATE
+        );
 
         return ['status' => 200, 'msg' => '已删除'];
     }

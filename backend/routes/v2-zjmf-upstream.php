@@ -10,6 +10,7 @@ use App\Http\Controllers\ZjmfUpstream\HostController;
 use App\Http\Controllers\ZjmfUpstream\ProductController;
 use App\Http\Controllers\ZjmfUpstream\ProvisionController;
 use App\Http\Controllers\ZjmfUpstream\PushController;
+use App\Http\Controllers\ZjmfUpstream\TicketController;
 use App\Http\Controllers\ZjmfUpstream\UpgradeController;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +47,7 @@ Route::middleware(['zjmf.upstream'])->group(function (): void {
     Route::post('/cart/settle', [CartController::class, 'settle']);
     Route::post('/provision/default', [ProvisionController::class, 'execute']);
     Route::post('/provision/custom/{id}', [PushController::class, 'provisionCustom']);
+    Route::get('/provision/chart/{id}', [PushController::class, 'chart']);
     Route::post('/provision/button', [ProvisionController::class, 'button']);
 
     // P4 host
@@ -88,6 +90,9 @@ Route::middleware(['zjmf.upstream'])->group(function (): void {
     Route::post('/upgrade/checkout_upgrade_product', [UpgradeController::class, 'checkoutProduct']);
     Route::post('/apply_credit', [CreditController::class, 'applyCredit']);
     Route::post('/apply_credit_limit', [CreditController::class, 'applyCreditLimit']);
+    // 下游工单投递（ticketDeliver / ticketReplyDeliver）
+    Route::post('/ticket/create', [TicketController::class, 'create']);
+    Route::post('/ticket/reply', [TicketController::class, 'reply']);
     Route::post('/api/ticket_reply/sync', [PushController::class, 'ticketReplySync']);
     Route::post('/upload_image', [PushController::class, 'uploadImage']);
 });

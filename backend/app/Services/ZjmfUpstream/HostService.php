@@ -9,6 +9,7 @@ use App\Constants\PaymentGatewayCode;
 use App\Constants\PaymentStatus;
 use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
+use App\Jobs\PushServiceToZjmfDownstreamJob;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
@@ -18,6 +19,7 @@ use App\Models\ZjmfUpstreamBinding;
 use App\Services\ClientServiceConsole\ServiceConsoleAreaService;
 use App\Services\ClientServiceConsole\ServiceTransformService;
 use App\Services\Provisioning\ServiceRenewService;
+use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 
@@ -63,6 +65,7 @@ class HostService
 
         $hostData = $this->buildHostData($service);
         $passthrough = $this->consoleArea()->passthroughModulePayload($service);
+        $canOperate = app(ServiceTransformService::class)->canExecuteConsoleActions($service);
 
         $moduleButtons = ['control' => [], 'console' => []];
         $moduleAreas = $this->buildClientAreas($service);
@@ -110,7 +113,9 @@ class HostService
                     'svg' => '',
                 ],
                 'reinstall_format_data_disk' => false,
-                'module_power_status' => (bool) ($passthrough['module_power_status'] ?? false),
+                // 下游管理端按此渲染电源按钮区：透传时用上游声明，否则按本系统
+                // 实际电源能力（机房型产品接入可控供应商后为 true）
+                'module_power_status' => (bool) ($passthrough['module_power_status'] ?? $canOperate),
                 'reinstall_random_port' => (bool) ($passthrough['reinstall_random_port'] ?? false),
             ],
         ];
@@ -430,6 +435,12 @@ class HostService
             'status' => ServiceStatus::CANCELLED,
             'suspended_reason' => $reason !== '' ? $reason : null,
         ])->save();
+
+        // 下游删单后同步本地 host 为 Deleted（对齐魔方 Host::terminate 成功后的 pushHostInfo）
+        PushServiceToZjmfDownstreamJob::dispatch(
+            (int) $service->id,
+            ZjmfDownstreamPushService::TYPE_TERMINATE
+        );
 
         return ['status' => 200, 'msg' => '删除成功'];
     }
