@@ -153,7 +153,8 @@ class ServiceConsolePayloadSnapshotTest extends TestCase
         $this->assertSame(88001, (int) $natHostId);
         $this->assertSame('snapshot-jwt', $natJwt);
         $this->assertSame('nat_acl', $natContext['module_key']);
-        $this->assertSame('/provision/custom/nat', $natContext['endpoint']);
+        // NAT 动作地址走本系统同源路由，不采用面板片段里可能指向再上游的 url。
+        $this->assertSame('https://upstream.example/provision/custom/88001', $natContext['endpoint']);
 
         $this->assertSame((int) $fixture['supplier']->id, (int) $securityContext['supplier_id']);
         $this->assertSame(88001, (int) $securityContext['host_id']);

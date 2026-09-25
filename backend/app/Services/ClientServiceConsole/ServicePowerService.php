@@ -6,6 +6,7 @@ namespace App\Services\ClientServiceConsole;
 
 use App\Exceptions\BusinessException;
 use App\Models\Service;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
@@ -21,7 +22,15 @@ use Illuminate\Support\Facades\Log;
  */
 class ServicePowerService
 {
-    private const REINSTALL_OPTIONS_CACHE_TTL_SECONDS = 604800;
+    /**
+     * 重装系统选项缓存时长（秒）。
+     *
+     * 上游 /host/header 返回的 cloud_os[].id 是随节点状态动态轮换的临时 ID，
+     * 实测同一实例在数小时内会整体变化（如 19001650 → 19059152），
+     * 因此选项缓存必须短于该轮换周期，否则用户提交的 os_id 已被上游作废，
+     * 上游会返回 406「操作系统错误」。此处取 5 分钟。
+     */
+    private const REINSTALL_OPTIONS_CACHE_TTL_SECONDS = 300;
 
     /** 控制台动作（电源/重装）互斥锁：同一实例同时只允许一个动作在上游执行 */
     private const CONSOLE_ACTION_LOCK_TTL_SECONDS = 120;
@@ -315,13 +324,30 @@ class ServicePowerService
 
         return $this->withConsoleActionLock($service->id, function () use ($service, $data, $context): array {
             [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
-            $payload = ['os_id' => (string) ($data['os_id'] ?? '')];
+            $osId = (string) ($data['os_id'] ?? '');
+
             // 契约分层：实现具名 reinstall 的驱动走具名协议，通用 REST runtime
             // 回退 PUT /v1/hosts/{hostId}/module/reinstall。
-            $response = is_callable([$runtime, 'reinstall'])
-                ? $runtime->reinstall($supplier, $hostId, (string) $payload['os_id'], $jwt)
-                : $runtime->put($supplier, "/v1/hosts/{$hostId}/module/reinstall", $payload, $jwt);
+            $submit = fn (string $submitOsId): array => is_callable([$runtime, 'reinstall'])
+                ? $runtime->reinstall($supplier, $hostId, $submitOsId, $jwt)
+                : $runtime->put($supplier, "/v1/hosts/{$hostId}/module/reinstall", ['os_id' => $submitOsId], $jwt);
+
+            $response = $submit($osId);
+
+            // 上游 cloud_os[].id 会随节点状态轮换，客户端持有的 os_id 可能已作废，
+            // 上游据此返回「操作系统错误」。此时强制刷新选项、按系统名把请求重映射到
+            // 当前有效的 os_id 后重试一次，避免用户看到无法自愈的失败。
+            if ($this->isStaleReinstallOsResponse($response)) {
+                $remapped = $this->remapStaleReinstallOsId($supplier, $hostId, $runtime, $jwt, $osId);
+                if ($remapped !== null && $remapped !== $osId) {
+                    $response = $submit($remapped);
+                    $osId = $remapped;
+                }
+            }
+
             $this->detailService->assertSuccess($response, '重装系统');
+
+            $payload = ['os_id' => $osId];
 
             $taskStatus = null;
             try {
@@ -357,6 +383,81 @@ class ServicePowerService
                 'detail' => $this->transformService->transformDetail($service),
             ];
         });
+    }
+
+    /**
+     * 当重装提交因 os_id 失效（上游「操作系统错误」类）失败时，刷新重装选项并把
+     * 请求中的 os_id 重映射到当前列表里的有效 ID（按系统名匹配）。返回 null 表示
+     * 不满足重试条件或无法映射。
+     */
+    private function remapStaleReinstallOsId(
+        Supplier $supplier,
+        int $hostId,
+        object $runtime,
+        ?string $jwt,
+        string $staleOsId,
+    ): ?string {
+        if ($staleOsId === '') {
+            return null;
+        }
+
+        $cacheKey = $this->detailService->buildReinstallOptionsCacheKey($supplier, $hostId);
+        $stale = Cache::get($cacheKey);
+        $staleOs = collect(is_array($stale) ? ($stale['os'] ?? []) : [])
+            ->firstWhere('os_id', $staleOsId);
+
+        try {
+            // 强制绕过缓存重取选项：os_id 轮换后旧缓存已不可用。
+            $response = is_callable([$runtime, 'getReinstallOptions'])
+                ? $runtime->getReinstallOptions($supplier, $hostId, $jwt)
+                : $runtime->get($supplier, "/v1/hosts/{$hostId}/module/reinstall", $jwt);
+            $this->detailService->assertSuccess($response, '读取重装系统');
+            $payload = $this->detailService->extractPayload($response);
+        } catch (\Throwable $refreshException) {
+            Log::warning('[控制台] 重装 os_id 失效后刷新系统列表失败', [
+                'host_id' => $hostId,
+                'os_id' => $staleOsId,
+                'message' => SensitiveDataSanitizer::sanitizeText($refreshException->getMessage()),
+                'exception' => $refreshException::class,
+            ]);
+
+            return null;
+        }
+
+        $freshOs = collect($payload['os'] ?? [])->filter(fn ($item) => is_array($item))->values();
+        if ($freshOs->isEmpty()) {
+            return null;
+        }
+
+        // 旧缓存中的 os_id 已失效，清掉以免后续请求继续命中。
+        Cache::forget($cacheKey);
+
+        if (is_array($staleOs) && trim((string) ($staleOs['name'] ?? '')) !== '') {
+            $matched = $freshOs->firstWhere('name', (string) $staleOs['name']);
+            if (is_array($matched) && trim((string) ($matched['os_id'] ?? '')) !== '') {
+                return (string) $matched['os_id'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 判定上游重装响应是否属于「客户端 os_id 已作废」这一类可重试错误。
+     */
+    private function isStaleReinstallOsResponse(array $response): bool
+    {
+        $status = (int) ($response['status'] ?? $response['code'] ?? 0);
+        if (in_array($status, [200, 1001], true)) {
+            return false;
+        }
+
+        $message = trim((string) ($response['msg'] ?? $response['message'] ?? ''));
+
+        return $message !== '' && (
+            str_contains($message, '操作系统错误')
+            || str_contains($message, '系统错误')
+        );
     }
 
     public function rescueForUser(User $user, int $serviceId, array $data, array $context = []): array

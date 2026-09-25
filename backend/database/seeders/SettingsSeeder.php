@@ -30,6 +30,9 @@ class SettingsSeeder extends Seeder
             'provision_hostname_prefix' => 'srv',
             'provision_hostname_charsets' => 'number',
             'provision_hostname_length' => '12',
+            // 上游为二次对接时，面板片段里的动作地址常指向再上游域名；
+            // 默认开启同源检测，置 0 可放宽（仅跳过域名同源比对，路径仍须是同系统动作路由）。
+            'console_module_origin_check_enabled' => '1',
         ]);
 
         static::seedGroup('basic', [

@@ -943,6 +943,14 @@
     border-radius: var(--td-radius-default);
   }
 
+  /* 窄屏下外壳只负责包边，高度完全交给 iframe，避免 min-height 撑出空白 */
+  @media (max-width: @screen-sm-rem) {
+    .vnc-frame-shell {
+      min-height: 0;
+      border: 0;
+    }
+  }
+
   .vnc-frame,
   .area-frame {
     display: block;
@@ -950,6 +958,14 @@
     height: 35rem;
     border: 0;
     background: var(--td-bg-color-container);
+  }
+
+  /* 手机上按视口比例给足高度，VNC 画面才不会被压成一条 */
+  @media (max-width: @screen-sm-rem) {
+    .vnc-frame {
+      height: 70vh;
+      min-height: 22rem;
+    }
   }
 
   .vnc-empty,
@@ -997,8 +1013,6 @@
   }
 
   @media (max-width: @screen-sm-rem) {
-    .vnc-frame-shell,
-    .vnc-frame,
     .vnc-empty,
     .area-frame-shell,
     .area-frame,
@@ -1006,7 +1020,6 @@
       min-height: 26.25rem;
     }
 
-    .vnc-frame,
     .area-frame {
       height: 26.25rem;
     }

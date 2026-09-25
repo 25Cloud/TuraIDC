@@ -93,7 +93,6 @@ class ServiceVncService
                 Cache::store('redis_volatile')->put(CacheKey::vncToken($token), array_merge($tokenPayload, [
                     'service_id' => $serviceId,
                     'allowed_origin' => $this->resolveAllowedVncOrigin(),
-                    'single_use' => ($context['actor_type'] ?? 'client') !== 'admin',
                     'token_scope' => 'public',
                 ]), now()->addSeconds(self::VNC_TOKEN_TTL_SECONDS));
 
@@ -142,12 +141,75 @@ class ServiceVncService
 
     public function previewVncToken(string $token): array
     {
-        return $this->loadVncTokenParams($token, false);
+        return $this->loadVncTokenParams($token);
     }
 
     public function resolveVncToken(string $token): array
     {
-        return $this->loadVncTokenParams($token, true);
+        return $this->loadVncTokenParams($token);
+    }
+
+    /**
+     * relay 上游被拒时重新向供应商申请一条上游 VNC 链接，并原地刷新 relay token 载荷。
+     *
+     * 上游 VNC 网关对同一主机存在并发/会话槽位限制，槽位释放有延迟；
+     * 用户重连时若复用旧上游链接会被直接拒绝。这里由服务端（持有用户态之外的
+     * 供应商上下文）重新取链接，避免依赖浏览器侧无法访问的鉴权接口。
+     *
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    public function refreshUpstreamVncParams(array $params): array
+    {
+        $serviceId = (int) ($params['service_id'] ?? 0);
+        if ($serviceId <= 0) {
+            return $params;
+        }
+
+        $service = $this->detailService->findServiceById($serviceId, [
+            'product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires',
+            'product.productGroup.secondProductGroup.firstProductGroup',
+            'product.supplier',
+            'order:id,order_no,status,paid_at,created_at',
+        ]);
+
+        if ($service === null) {
+            return $params;
+        }
+
+        try {
+            [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
+            $response = $this->requestUpstreamVncUrl($runtime, $supplier, $hostId, $jwt);
+            $this->assertVncSuccess($response);
+
+            $payload = $this->detailService->extractPayload($response);
+            $upstreamVncUrl = trim((string) ($payload['url'] ?? $payload['vnc'] ?? $payload['link'] ?? ''));
+            if ($upstreamVncUrl === '') {
+                return $params;
+            }
+
+            $fresh = $this->extractVncParams($upstreamVncUrl);
+            if (empty($fresh)) {
+                return $params;
+            }
+
+            // 保留既有凭据（relay 载荷本身不含密码，密码只在浏览器侧本地保存）。
+            $fresh = $this->withCachedVncCredentials($service, $fresh);
+
+            $this->safeLog('info', '[VNC] relay 重新获取上游链接', [
+                'service_id' => $serviceId,
+                'host' => $fresh['host'] ?? '',
+            ]);
+
+            return array_merge($params, $fresh);
+        } catch (\Throwable $e) {
+            $this->safeLog('warning', '[VNC] relay 重新获取上游链接失败', [
+                'service_id' => $serviceId,
+                'message' => $e->getMessage(),
+            ]);
+
+            return $params;
+        }
     }
 
     private function assertVncSuccess(array $response): void
@@ -246,7 +308,6 @@ class ServiceVncService
         unset($relayPayload['password']);
         Cache::store('redis_volatile')->put(CacheKey::vncToken($relayToken), array_merge($relayPayload, [
             'token_scope' => 'relay',
-            'single_use' => false,
             'public_token_hash' => hash('sha256', $token),
         ]), now()->addSeconds(self::VNC_RELAY_TOKEN_TTL_SECONDS));
 
@@ -323,7 +384,7 @@ class ServiceVncService
         }
     }
 
-    private function loadVncTokenParams(string $token, bool $consumeSingleUse): array
+    private function loadVncTokenParams(string $token): array
     {
         $cacheKey = CacheKey::vncToken($token);
         $params = Cache::store('redis_volatile')->get($cacheKey);
@@ -332,16 +393,10 @@ class ServiceVncService
             throw new BusinessException('VNC 链接已过期或无效，请重新获取', 40400, 404);
         }
 
-        throw_if(! is_array($params) || empty($params), new BusinessException('VNC 链接已过期或无效，请重新获取', 40400, 404));
-
-        if ($consumeSingleUse && (bool) ($params['single_use'] ?? true)) {
-            $params = Cache::store('redis_volatile')->pull(CacheKey::vncToken($token));
-            if (! is_array($params) || empty($params)) {
-                throw new BusinessException('VNC 链接已过期或无效，请重新获取', 40400, 404);
-            }
-            throw_if(! is_array($params) || empty($params), new BusinessException('VNC 链接已过期或无效，请重新获取', 40400, 404));
-        }
-
+        // 兑换接口必须是幂等的：noVNC 页面在刷新、重连、多页签/多设备打开时都会
+        // 再次兑换同一个公开 token。此前这里把缓存 pull 掉，第一个请求之后的连接全部 404，
+        // 表现为「打开就灰屏」。改由 VNC_TOKEN_TTL_SECONDS 的短有效期兜底，
+        // Origin 白名单与 relay token 的独立短 TTL 继续承担安全边界。
         return $params;
     }
 
@@ -356,11 +411,8 @@ class ServiceVncService
             throw new BusinessException('VNC 链接已过期或无效，请重新获取', 40400, 404);
         }
 
-        $params = Cache::store('redis_volatile')->pull(CacheKey::vncToken($token));
-        if (! is_array($params) || empty($params)) {
-            throw new BusinessException('VNC 链接已过期或无效，请重新获取', 40400, 404);
-        }
-
+        // 与 loadVncTokenParams 同理：兑换必须幂等，否则页面刷新/重连时
+        // 第一个请求之后的兑换全部 404，表现为「打开就灰屏」。
         return $params;
     }
 

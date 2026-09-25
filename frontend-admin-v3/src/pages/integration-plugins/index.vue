@@ -1,5 +1,23 @@
 <template>
   <div class="integration-plugins-page">
+    <t-card v-if="activeDomain === 'upstream'" :bordered="false" class="upstream-origin-check-card">
+      <div class="upstream-origin-check">
+        <div class="upstream-origin-check__text">
+          <strong>上游面板同源检测</strong>
+          <span>
+            开启后仅接受与本系统供应商接口同源的实例面板请求地址；上游为二次对接（面板片段指向再上游域名）时可关闭，
+            关闭仅放宽域名比对，请求地址仍须是同系统动作路由。
+          </span>
+        </div>
+        <t-switch
+          v-model="originCheckEnabled"
+          :loading="originCheckLoading || originCheckSaving"
+          :disabled="!canManageSettings"
+          @change="saveOriginCheck"
+        />
+      </div>
+    </t-card>
+
     <t-card :bordered="false">
       <div class="plugins-toolbar">
         <t-space>
@@ -534,6 +552,7 @@ import type {
   IntegrationPluginTestResultData,
 } from '@/api/admin/plugins';
 import { pluginsApi } from '@/api/admin/plugins';
+import { settingsApi } from '@/api/admin/settings';
 import SecretInput from '@/components/secret-input/index.vue';
 import { AdminPermissions } from '@/constants/permissions';
 import { useGeeTestCaptcha } from '@/hooks/useGeeTestCaptcha';
@@ -666,6 +685,11 @@ const emailTestErrors = reactive<Record<'to', string>>({
   to: '',
 });
 const canManagePlugins = computed(() => hasAdminPermission(AdminPermissions.INTEGRATION_PLUGIN_MANAGE));
+const canManageSettings = computed(() => hasAdminPermission(AdminPermissions.SETTINGS_MANAGE));
+// 上游面板同源检测开关：设置项 system.console_module_origin_check_enabled
+const originCheckEnabled = ref(true);
+const originCheckLoading = ref(false);
+const originCheckSaving = ref(false);
 const canTestPlugins = computed(() => hasAdminPermission(AdminPermissions.INTEGRATION_PLUGIN_TEST));
 const canRevealPluginSecrets = computed(() => hasAdminPermission(AdminPermissions.INTEGRATION_PLUGIN_SECRET_REVEAL));
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
@@ -689,7 +713,10 @@ const loadedSecretValues = reactive<Record<string, string>>({});
 const editedSecretKeys = reactive<Record<string, boolean>>({});
 const loadingSecretKeys = reactive<Record<string, boolean>>({});
 
-onMounted(loadPlugins);
+onMounted(() => {
+  loadPlugins();
+  loadOriginCheck();
+});
 
 function normalizeDomain(value: unknown): IntegrationPluginDomain | null {
   const domain = Array.isArray(value) ? value[0] : value;
@@ -707,6 +734,7 @@ watch(
     if (nextDomain === activeDomain.value) return;
     activeDomain.value = nextDomain;
     loadPlugins();
+    loadOriginCheck();
   },
 );
 
@@ -725,6 +753,48 @@ async function loadPlugins() {
     MessagePlugin.error(errorMessage(error, '加载插件列表失败'));
   } finally {
     loading.value = false;
+  }
+}
+
+async function loadOriginCheck() {
+  if (activeDomain.value !== 'upstream') return;
+
+  originCheckLoading.value = true;
+  try {
+    const response = await settingsApi.list({ group: 'system', page_size: 100 });
+    const item = (response.list || []).find((entry) => entry.key === 'console_module_origin_check_enabled');
+    const raw = item ? item.value : null;
+    originCheckEnabled.value = raw === null || raw === '' ? true : isTruthySetting(raw);
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '加载同源检测设置失败'));
+  } finally {
+    originCheckLoading.value = false;
+  }
+}
+
+function isTruthySetting(value: unknown): boolean {
+  return [true, 1, '1', 'true', 'on'].includes(value as string | number | boolean);
+}
+
+async function saveOriginCheck(value: string | number | boolean) {
+  if (!canManageSettings.value) {
+    MessagePlugin.warning('当前账号无系统设置权限');
+    originCheckEnabled.value = !value;
+    return;
+  }
+
+  originCheckSaving.value = true;
+  try {
+    await settingsApi.save({
+      group: 'system',
+      settings: { console_module_origin_check_enabled: value ? 1 : 0 },
+    });
+    MessagePlugin.success(value ? '已开启上游面板同源检测' : '已关闭上游面板同源检测');
+  } catch (error) {
+    originCheckEnabled.value = !value;
+    MessagePlugin.error(errorMessage(error, '保存同源检测设置失败'));
+  } finally {
+    originCheckSaving.value = false;
   }
 }
 

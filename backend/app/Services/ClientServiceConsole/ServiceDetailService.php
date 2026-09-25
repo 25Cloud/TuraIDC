@@ -717,6 +717,17 @@ class ServiceDetailService
         return $service;
     }
 
+    /**
+     * relay 重取上游链接场景：入参只有 service_id（来自已校验过的 relay token 载荷），
+     * 没有用户上下文，因此按 id 直接取实例。
+     */
+    public function findServiceById(int $serviceId, array $relations = []): ?Service
+    {
+        return Service::query()
+            ->with($relations)
+            ->find($serviceId);
+    }
+
     protected function findSupplierById(int $supplierId): ?Supplier
     {
         $supplier = Supplier::query()->find($supplierId);
