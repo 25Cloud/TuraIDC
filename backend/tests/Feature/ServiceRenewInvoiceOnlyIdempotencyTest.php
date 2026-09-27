@@ -615,6 +615,64 @@ class ServiceRenewInvoiceOnlyIdempotencyTest extends TestCase
     }
 
     #[Test]
+    public function create_renew_invoice_allows_next_cycle_when_last_cycle_is_already_reflected_in_expiry(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        ['service' => $service, 'invoice' => $lastCycleInvoice] = $this->createUpstreamRenewFixture($suffix);
+
+        // 上月续费已履约且已完整体现为续费后的有效期：支付于 24 天前，
+        // 到期日即该笔续费覆盖到的下一周期（复刻线上 ser677108569190 的真实形态）。
+        $paidAt = now()->subDays(24);
+        $lastCycleInvoice->forceFill(['paid_at' => $paidAt])->save();
+        $service->forceFill([
+            'expires_at' => $paidAt->copy()->addMonthsNoOverflow(1)->addDay(),
+            'provision_data' => [
+                'last_renew_invoice_id' => (int) $lastCycleInvoice->id,
+                'last_renew_invoice_no' => (string) $lastCycleInvoice->invoice_no,
+            ],
+        ])->save();
+
+        $couponService = $this->createMock(CouponService::class);
+        $couponService->method('reserveOwnedCouponForInvoice')->willReturn([]);
+
+        $renewService = new ServiceRenewService(
+            new InvoiceService,
+            new ProviderResolver(
+                new ProviderRegistry([
+                    new HostingPanelApiDriver($this->createMock(HostingPanelApiTransport::class)),
+                ])
+            ),
+            $couponService,
+            $this->createMock(OperationLogService::class),
+            new class extends SettingService
+            {
+                public function getAutomationConfig(): array
+                {
+                    return array_merge(parent::defaultAutomationConfig(), [
+                        'expire_unsuspend_notify_enabled' => false,
+                    ]);
+                }
+            },
+            $this->createMock(NotificationService::class),
+        );
+
+        $result = $renewService->createRenewInvoiceForUser($service->user, (int) $service->id, 'monthly', 0, [
+            'trace_id' => 'renew-next-cycle-'.$suffix,
+        ]);
+
+        $this->assertNotSame((int) $lastCycleInvoice->id, (int) $result->id);
+        $this->assertSame(InvoiceStatus::UNPAID, (int) $result->status);
+        $this->assertSame(
+            1,
+            Invoice::query()
+                ->where('service_id', (int) $service->id)
+                ->where('type', 'renew')
+                ->where('status', InvoiceStatus::UNPAID)
+                ->count()
+        );
+    }
+
+    #[Test]
     public function create_renew_invoice_reuses_paid_unfulfilled_invoice_instead_of_creating_another_charge_target(): void
     {
         $suffix = bin2hex(random_bytes(4));
