@@ -353,6 +353,16 @@
       "summary": "20260919 增量补丁记录：魔方财务自定义面板运行时与凭据/上游地址治理、控制台 tab 派生、监控图表标签修复。"
     },
     {
+      "path": "references/migration-records/20260925-VNC手机端适配与灰屏修复.md",
+      "status": "archived",
+      "summary": "20260925 增量补丁记录：VNC 手机端底部控制栏与软键盘、favicon 同步、公开 token 幂等兑换修复灰屏、relay 上游重取与 NAT 同源路由。"
+    },
+    {
+      "path": "references/migration-records/20260927-月付续费误拦截修复.md",
+      "status": "archived",
+      "summary": "20260927 增量补丁记录：续费重复拦截判据改为按已履约账单覆盖到期点判定，消除月付合法续费被误拒。"
+    },
+    {
       "path": "references/migration-records/frontend-admin-v3-final-acceptance-report.md",
       "status": "archived",
       "summary": "frontend-admin-v3 迁移完成后的最终验收记录。"
