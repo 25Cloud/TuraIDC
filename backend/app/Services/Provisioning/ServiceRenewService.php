@@ -1414,20 +1414,25 @@ class ServiceRenewService
     }
 
     /**
-     * 拦截"同一续费窗口内已履约"的重复续费，防止自动续费与手动续费同周期重叠造成双扣。
+     * 拦截"同一续费周期已被已履约账单覆盖"的重复续费，防止自动续费与手动续费对同一周期双扣。
      *
-     * 仅在服务未过期、且最近一次已履约的同周期续费发生在一个周期自然月内时拦截；
-     * 服务已过期（续费属于恢复动作）或跨周期续费不受影响。
+     * 判定口径：以最近一次已履约的同周期续费账单的支付时间推算其覆盖到期点，
+     * 只有当该覆盖到期点**晚于服务当前到期时间**时才拦截——即这笔已收款尚未
+     * 反映到 `expires_at` 上（自动续费已扣款但履约in-flight，此时用户再手动续费
+     * 就是对同一周期二次收费）。
+     *
+     * 覆盖到期点已落在当前到期时间之内，说明该笔续费已完整体现为续费后的有效期，
+     * 用户此时续费买的是下一周期（含提前续多期），属合法续费不得拦截。
+     * 服务已过期（续费属于恢复动作）同样不受影响。
      */
     private function assertNoFulfilledRenewForCycle(Service $service, string $cycle): void
     {
-        // 续费周期对应的自然月数，用于识别「同一续费窗口内已履约」的重复续费拦截
-        $months = BillingCycle::months($cycle) ?? 0;
-        if ($months <= 0) {
+        // 未知周期与不产生续期的周期（一次性/免费）不参与拦截
+        if ((BillingCycle::months($cycle) ?? 0) <= 0) {
             return;
         }
 
-        if ($service->expires_at !== null && ! Carbon::parse($service->expires_at)->isFuture()) {
+        if ($service->expires_at === null || ! Carbon::parse($service->expires_at)->isFuture()) {
             return;
         }
 
@@ -1444,7 +1449,14 @@ class ServiceRenewService
         }
 
         $fulfilledAt = $latestPaid->paid_at ?? $latestPaid->updated_at;
-        if ($fulfilledAt !== null && Carbon::parse($fulfilledAt)->gte(now()->subMonths($months))) {
+        if ($fulfilledAt === null) {
+            return;
+        }
+
+        // 已履约续费账单的覆盖到期点：按同一周期从支付时间推进，与服务续费后的
+        // expires_at 口径一致（BillingCycle::advance）。
+        $coveredUntil = BillingCycle::advance(Carbon::parse($fulfilledAt), $cycle);
+        if ($coveredUntil instanceof Carbon && $coveredUntil->gt(Carbon::parse($service->expires_at))) {
             throw new BusinessException('当前续费周期已完成，请勿重复续费');
         }
     }
