@@ -156,6 +156,45 @@ class Service extends Model
     }
 
     /**
+     * 解析「续费基础价」（续费原价）。
+     *
+     * 服务金额与 locked_pricing 的基础价必须保存**未打折原价**：续费计价会在这个基础上
+     * 再叠加代理折扣与优惠券（见 ServiceRenewService::buildRenewConfig）。若把折后实付额
+     * 当成原价写回服务，代理用户每续费一轮都会在折后价上再打一次折扣，金额逐轮复利衰减
+     * （线上实测 11.90 → 8.92 → 6.69）。
+     *
+     * 取值优先级：
+     *  1. 续费账单/订单快照里的 original_renew_amount（本次续费的基准原价）；
+     *  2. 新购定价快照的合计金额（下单时的未打折原价）；
+     *  3. 兜底：实付额加回优惠券抵扣额（老数据没有定价快照时维持原有口径）。
+     *
+     * @param  array<string, mixed>  $pricingSnapshot  新购 config_pricing_snapshot
+     * @param  array<string, mixed>  $renewSnapshot  续费 config_snapshot
+     */
+    public static function resolveRenewBaseAmount(
+        mixed $paidAmount,
+        mixed $couponDiscount = 0,
+        array $pricingSnapshot = [],
+        array $renewSnapshot = [],
+    ): float {
+        $originalRenewAmount = self::normalizeRenewPricingAmount($renewSnapshot['original_renew_amount'] ?? null);
+        if ($originalRenewAmount !== null && $originalRenewAmount > 0) {
+            return $originalRenewAmount;
+        }
+
+        foreach (['total_amount', 'unit_total_amount', 'base_amount'] as $key) {
+            $snapshotAmount = self::normalizeRenewPricingAmount($pricingSnapshot[$key] ?? null);
+            if ($snapshotAmount !== null && $snapshotAmount > 0) {
+                return $snapshotAmount;
+            }
+        }
+
+        $restored = round((float) $paidAmount + (float) $couponDiscount, 2);
+
+        return $restored > 0 ? $restored : round((float) $paidAmount, 2);
+    }
+
+    /**
      * 解析服务续费配置，兼容旧版纯金额结构。
      */
     public function resolveRenewPricingConfig(array $fallbackPricing = []): array
