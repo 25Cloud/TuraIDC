@@ -1091,13 +1091,22 @@ class ServiceRenewService
         unset($provisionData[self::EXPIRED_SUSPENDED_AT_KEY]);
         unset($provisionData['renew_inflight']);
 
-        DB::transaction(function () use ($service, $invoice, $provisionData, $nextExpiresAt, $resolvedStatus, $previousStatus) {
+        // 写回服务金额的是本次续费基准原价，不是折后应付额：把折后价当原价，
+        // 下一轮续费会在折后价上再打一次代理折扣（优惠仅作用于本次账单）。
+        $renewBaseAmount = Service::resolveRenewBaseAmount(
+            $invoice->amount,
+            $invoice->discount ?? 0,
+            [],
+            is_array($invoice->config_snapshot ?? null) ? $invoice->config_snapshot : []
+        );
+
+        DB::transaction(function () use ($service, $invoice, $provisionData, $nextExpiresAt, $resolvedStatus, $previousStatus, $renewBaseAmount) {
             $service->forceFill([
                 'product_id' => (int) ($invoice->product_id ?: $service->product_id),
                 'invoice_id' => (int) $invoice->id,
                 'billing_cycle' => (string) ($invoice->billing_cycle ?? $service->billing_cycle),
                 // 服务金额记录续费原价，优惠仅作用于本次账单，不能改变后续续费定价。
-                'amount' => round((float) $invoice->amount + (float) ($invoice->discount ?? 0), 2),
+                'amount' => $renewBaseAmount,
                 'expires_at' => $nextExpiresAt,
                 'status' => $resolvedStatus,
                 'provision_data' => $provisionData,
@@ -1341,12 +1350,20 @@ class ServiceRenewService
         $resolvedStatus = $this->resolveRenewedStatus($previousStatus);
         unset($provisionData[self::EXPIRED_SUSPENDED_AT_KEY]);
 
-        DB::transaction(function () use ($service, $order, $provisionData, $nextExpiresAt, $resolvedStatus, $previousStatus) {
+        // 同 finalizeRenewInvoiceSuccess：服务金额写回续费原价，避免下一轮被二次叠加折扣。
+        $renewBaseAmount = Service::resolveRenewBaseAmount(
+            $order->amount,
+            $order->discount ?? 0,
+            [],
+            is_array($order->config_snapshot ?? null) ? $order->config_snapshot : []
+        );
+
+        DB::transaction(function () use ($service, $order, $provisionData, $nextExpiresAt, $resolvedStatus, $previousStatus, $renewBaseAmount) {
             $service->forceFill([
                 'product_id' => (int) ($order->product_id ?: $service->product_id),
                 'order_id' => (int) $order->id,
                 'billing_cycle' => (string) $order->billing_cycle,
-                'amount' => (float) $order->amount,
+                'amount' => $renewBaseAmount,
                 'expires_at' => $nextExpiresAt,
                 'status' => $resolvedStatus,
                 'provision_data' => $provisionData,

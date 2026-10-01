@@ -14,6 +14,7 @@ use App\Models\Product;
 use App\Models\Service;
 use App\Models\User;
 use App\Services\Automation\AutoRenewService;
+use App\Services\Provisioning\ProvisionService;
 use App\Services\Provisioning\ServiceRenewService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
@@ -103,6 +104,73 @@ class V2ClientRenewAgentDiscountTest extends TestCase
         // 计价时折算：商品定价与初始金额不被修改
         $this->assertSame('99.00', (string) $stack['product']->fresh()->pricing['monthly']);
         $this->assertSame('99.00', (string) $service->fresh()->amount);
+    }
+
+    public function test代理用户新购开通按原价写入服务金额且续费只叠加一次折扣(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+
+        $agentGroup = AgentGroup::query()->create([
+            'name' => 'Purchase Discount Agent '.$suffix,
+            'code' => 'pa-'.$suffix,
+            'status' => 1,
+            'default_discount_rate' => 85.0,
+        ]);
+
+        $user = User::query()->create([
+            'email' => "purchase-discount-{$suffix}@example.test",
+            'password' => 'Temp@123456',
+            'phone' => '13'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT),
+            'status' => 1,
+            'agent_group_id' => (int) $agentGroup->id,
+        ]);
+
+        $product = Product::query()->create([
+            'name' => 'Purchase Discount Product '.$suffix,
+            'product_type' => 'server',
+            'pricing' => ['monthly' => '99.00'],
+            'setup_fee' => '0.00',
+            'config_options' => [],
+            'purchase_requires' => [],
+            'stock' => -1,
+            'status' => 1,
+            'auto_setup' => 0,
+        ]);
+
+        // 复刻代理用户新购：下单实付 84.15（99.00 × 85%），定价快照留存未打折原价 99.00
+        $order = Order::query()->create([
+            'order_no' => 'dd'.now()->format('YmdHis').$suffix,
+            'projection_type' => Order::PROJECTION_TYPE_PROVISIONING,
+            'user_id' => (int) $user->id,
+            'product_id' => (int) $product->id,
+            'type' => 'new',
+            'amount' => 84.15,
+            'discount' => 0,
+            'paid_amount' => 84.15,
+            'billing_cycle' => 'monthly',
+            'quantity' => 1,
+            'config_snapshot' => [],
+            'config_pricing_snapshot' => [
+                'quantity' => 1,
+                'base_amount' => '99.00',
+                'config_amount' => '0.00',
+                'setup_fee' => '0.00',
+                'total_amount' => '99.00',
+            ],
+            'status' => OrderStatus::PENDING,
+        ]);
+
+        $service = app(ProvisionService::class)->processPaidOrder($order);
+        $this->assertNotNull($service);
+        $this->assertSame('99.00', (string) $service->fresh()->amount, '服务金额必须记录未打折的续费原价');
+
+        // 续费只叠加一次代理折扣（84.15）；若把折后实付额当原价，这里会二次叠加成 71.53
+        $invoice = app(ServiceRenewService::class)->createRenewInvoiceForUser(
+            $user, (int) $service->id, 'monthly', 0, ['trace_id' => 'purchase-renew-'.$suffix]
+        );
+
+        $this->assertSame('84.15', (string) $invoice->amount);
+        $this->assertSame('99.00', (string) ((array) $invoice->config_snapshot)['original_renew_amount']);
     }
 
     public function test无代理身份的续费不产生折扣(): void

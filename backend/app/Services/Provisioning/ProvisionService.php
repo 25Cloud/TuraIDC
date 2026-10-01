@@ -134,17 +134,25 @@ class ProvisionService
             'product_id' => $product->id,
         ]);
 
+        // 服务金额记录续费原价（未打代理折扣、未减优惠券）：续费计价会在此之上再叠加
+        // 代理折扣与优惠券，写入实付额会导致代理用户每轮续费被二次叠加折扣。
+        $renewBaseAmount = Service::resolveRenewBaseAmount(
+            $invoice->amount,
+            $invoice->discount ?? 0,
+            is_array($invoice->config_pricing_snapshot ?? null) ? $invoice->config_pricing_snapshot : []
+        );
+
         $service = Service::create([
             'user_id' => $invoice->user_id,
             'product_id' => $invoice->product_id,
             'name' => $invoice->display_product_name ?: '未命名服务',
             'domain' => '',
             'billing_cycle' => (string) ($invoice->billing_cycle ?? ''),
-            'amount' => (float) $invoice->amount,
+            'amount' => $renewBaseAmount,
             'locked_pricing' => Service::buildDefaultRenewPricing(
                 is_array($product->pricing ?? null) ? $product->pricing : [],
                 (string) ($invoice->billing_cycle ?? ''),
-                $invoice->amount
+                $renewBaseAmount
             ),
             'status' => ServiceStatus::PENDING,
             'auto_renew' => 0,
@@ -376,6 +384,14 @@ class ProvisionService
             trim((string) ($order->product_spec_snapshot ?? $order->display_product_name ?? $order->product?->name ?? ''))
         );
 
+        // 服务金额记录续费原价（未打代理折扣、未减优惠券）：续费计价会在此之上再叠加
+        // 代理折扣与优惠券，写入实付额会导致代理用户每轮续费被二次叠加折扣。
+        $renewBaseAmount = Service::resolveRenewBaseAmount(
+            $order->amount,
+            $order->discount ?? 0,
+            is_array($order->config_pricing_snapshot ?? null) ? $order->config_pricing_snapshot : []
+        );
+
         $service = Service::create([
             'user_id' => $order->user_id,
             'product_id' => (int) ($order->product?->id ?? $order->product_id),
@@ -383,12 +399,12 @@ class ProvisionService
             'name' => $instanceName !== '' ? $instanceName : '未命名服务',
             'domain' => $hostname,
             'billing_cycle' => (string) $order->billing_cycle,
-            'amount' => (float) $order->amount,
+            'amount' => $renewBaseAmount,
             // 开通时快照标准续费周期价格，默认按购买时价格续费。
             'locked_pricing' => Service::buildDefaultRenewPricing(
                 is_array($order->product?->pricing ?? null) ? $order->product->pricing : [],
                 (string) $order->billing_cycle,
-                $order->amount
+                $renewBaseAmount
             ),
             'status' => ServiceStatus::PENDING,
             'auto_renew' => 0,
