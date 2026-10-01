@@ -363,6 +363,11 @@
       "summary": "20260927 增量补丁记录：续费重复拦截判据改为按已履约账单覆盖到期点判定，消除月付合法续费被误拒。"
     },
     {
+      "path": "references/migration-records/20260930-代理折扣续费二次叠加修复.md",
+      "status": "archived",
+      "summary": "20260930 增量补丁记录：服务金额改为写回续费基准原价，消除代理用户续费逐轮复利叠加折扣，含存量数据修正 SQL。"
+    },
+    {
       "path": "references/migration-records/frontend-admin-v3-final-acceptance-report.md",
       "status": "archived",
       "summary": "frontend-admin-v3 迁移完成后的最终验收记录。"
