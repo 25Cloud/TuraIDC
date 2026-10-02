@@ -124,7 +124,14 @@ export function applyRouteMeta(to, baseConfig = {}) {
   const robots = typeof meta.robots === "string" ? meta.robots : "";
   const structuredData =
     typeof meta.structuredData === "function"
-      ? meta.structuredData({ siteUrl, route: to })
+      ? meta.structuredData({
+          siteUrl,
+          route: to,
+          siteBrand: {
+            siteName: baseConfig.siteName || "",
+            siteLogo: baseConfig.siteLogo || "",
+          },
+        })
       : meta.structuredData;
 
   // 仅当标题未包含站点名时追加后缀，避免静态页（已含完整标题）与详情页（短标题）重复拼接；

@@ -83,7 +83,7 @@ const description = computed(() => {
   if (status.value === 'empty') {
     return '请从产品页重新选择规格并创建账单。';
   }
-  return '图拉云正在恢复你刚才的购买信息，请不要关闭页面。';
+  return '正在恢复你刚才的购买信息，请不要关闭页面。';
 });
 
 const payloadRows = computed(() => {

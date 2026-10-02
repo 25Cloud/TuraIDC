@@ -1,8 +1,10 @@
 <template>
   <section class="partner-section">
     <div class="container partner-section__head">
-      <h2 class="partner-section__title">优质合作伙伴 共建图拉云计算生态</h2>
-      <p class="partner-section__desc">以优质资源与服务领航开拓，助力更多企业高效上云</p>
+      <h2 class="partner-section__title">优质合作伙伴 共建云计算生态</h2>
+      <p class="partner-section__desc">
+        以优质资源与服务领航开拓，助力更多企业高效上云
+      </p>
     </div>
 
     <div class="partner-section__marquee-wrap">
@@ -10,7 +12,10 @@
         v-for="strip in partnerStrips"
         :key="strip.id"
         class="partner-section__marquee-row"
-        :class="{ 'partner-section__marquee-row--reverse': strip.direction === 'reverse' }"
+        :class="{
+          'partner-section__marquee-row--reverse':
+            strip.direction === 'reverse',
+        }"
       >
         <div
           class="partner-section__marquee-track"
@@ -38,11 +43,11 @@
 </template>
 
 <script setup lang="ts">
-import { partnerStrips } from '@/data/homePartners'
+import { partnerStrips } from "@/data/homePartners";
 </script>
 
 <style scoped lang="scss">
-@use '@/assets/styles/variables' as *;
+@use "@/assets/styles/variables" as *;
 
 .partner-section {
   background: #fff;
@@ -100,8 +105,12 @@ import { partnerStrips } from '@/data/homePartners'
 }
 
 @keyframes partner-marquee-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 @media (max-width: 640px) {
