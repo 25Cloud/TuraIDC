@@ -6,7 +6,11 @@ import siteApi from '@/api/site';
 import { DEFAULT_SUPPORT_CONTACTS } from '@/data/supportContacts';
 import { resolveApiManagedAssetUrl } from '@/utils/apiOrigin';
 
-const DEFAULT_SITE_NAME = import.meta.env.VITE_APP_TITLE || '图拉云';
+// 接口不可用时的兜底：只认构建期环境变量，不写死任何默认品牌，
+// 否则自建站在配置接口失败时会漏出别人的站点名。
+const CONFIGURED_SITE_NAME = String(import.meta.env.VITE_APP_TITLE || '').trim();
+// 环境变量也没配时用中性描述，避免标题/页头出现空白
+const DEFAULT_SITE_NAME = CONFIGURED_SITE_NAME || '用户控制台';
 const DEFAULT_SITE_LOGO = '/branding/logo.png';
 const DEFAULT_FAVICON = '/favicon.ico';
 const DEFAULT_CLIENT_CONSOLE_ICON = DEFAULT_FAVICON;

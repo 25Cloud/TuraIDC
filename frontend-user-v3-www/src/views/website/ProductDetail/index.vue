@@ -1162,7 +1162,7 @@ function syncProductMeta(nextProduct) {
     nextProduct.description ||
       nextProduct.group?.slogan ||
       nextProduct.group?.parent_slogan ||
-      "图拉云产品详情与实时购买报价",
+      "云产品详情与实时购买报价",
   );
   const canonical =
     typeof window !== "undefined"

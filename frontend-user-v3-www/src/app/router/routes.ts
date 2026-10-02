@@ -29,7 +29,7 @@ export const clientRoutes: RouteRecordRaw[] = [
           // 首页标题由站点配置的 browser_title 动态提供，不硬编码品牌名
           title: "",
           description:
-            "图拉云提供云服务器、独立服务器、云电脑与 IDC 服务，覆盖香港、美国与国内多地节点。",
+            "提供云服务器、独立服务器、云电脑与 IDC 服务，覆盖香港、美国与国内多地节点。",
           canonical: "/",
         },
       },
@@ -41,8 +41,7 @@ export const clientRoutes: RouteRecordRaw[] = [
         ),
         meta: {
           title: "产品与服务",
-          description:
-            "浏览图拉云云服务器、独立服务器、云电脑与 IDC 产品方案。",
+          description: "浏览云服务器、独立服务器、云电脑与 IDC 产品方案。",
           canonical: "/products",
         },
       },
@@ -87,7 +86,7 @@ export const clientRoutes: RouteRecordRaw[] = [
         ),
         meta: {
           title: "关于我们",
-          description: "了解图拉云的 IDC 服务能力、节点覆盖和平台优势。",
+          description: "了解 IDC 服务能力、节点覆盖和平台优势。",
           canonical: "/about",
         },
       },
@@ -99,7 +98,7 @@ export const clientRoutes: RouteRecordRaw[] = [
         ),
         meta: {
           title: "服务条款",
-          description: "查看图拉云服务条款。",
+          description: "查看服务条款。",
           canonical: "/terms",
           documentKey: "terms",
         },
@@ -112,7 +111,7 @@ export const clientRoutes: RouteRecordRaw[] = [
         ),
         meta: {
           title: "隐私政策",
-          description: "查看图拉云隐私政策。",
+          description: "查看隐私政策。",
           canonical: "/privacy",
           documentKey: "privacy",
         },
@@ -125,7 +124,7 @@ export const clientRoutes: RouteRecordRaw[] = [
         ),
         meta: {
           title: "官方公告",
-          description: "查看图拉云平台公告和服务通知。",
+          description: "查看平台公告和服务通知。",
           canonical: "/notices",
         },
       },
@@ -145,7 +144,7 @@ export const clientRoutes: RouteRecordRaw[] = [
         ),
         meta: {
           title: "帮助中心",
-          description: "查看图拉云产品购买、账单支付和服务管理帮助。",
+          description: "查看产品购买、账单支付和服务管理帮助。",
           canonical: "/help",
         },
       },

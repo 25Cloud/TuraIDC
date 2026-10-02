@@ -110,11 +110,11 @@ class SeoRenderService
         return match ($first) {
             '' => $this->homePage(),
             'products' => count($segments) > 2 ? null : $this->productsPage($segments),
-            'about' => $this->staticPage('about', '关于我们', '了解图拉云的 IDC 服务能力、节点覆盖和平台优势。'),
-            'terms' => $this->staticPage('terms', '服务条款', '查看图拉云服务条款。'),
-            'privacy' => $this->staticPage('privacy', '隐私政策', '查看图拉云隐私政策。'),
-            'notices' => $this->articleListPage('notices', '官方公告', '查看图拉云平台公告和服务通知。', ContentArticle::TYPE_NOTICE, $segments),
-            'help' => $this->articleListPage('help', '帮助中心', '查看图拉云产品购买、账单支付和服务管理帮助。', ContentArticle::TYPE_HELP, $segments),
+            'about' => $this->staticPage('about', '关于我们', '了解 IDC 服务能力、节点覆盖和平台优势。'),
+            'terms' => $this->staticPage('terms', '服务条款', '查看服务条款。'),
+            'privacy' => $this->staticPage('privacy', '隐私政策', '查看隐私政策。'),
+            'notices' => $this->articleListPage('notices', '官方公告', '查看平台公告和服务通知。', ContentArticle::TYPE_NOTICE, $segments),
+            'help' => $this->articleListPage('help', '帮助中心', '查看产品购买、账单支付和服务管理帮助。', ContentArticle::TYPE_HELP, $segments),
             default => $this->landingPage($first),
         };
     }
@@ -139,7 +139,7 @@ class SeoRenderService
             'type' => 'home',
             'title' => '',
             'description' => $description,
-            'keywords' => '云服务器,独立服务器,高防服务器,云电脑,IDC 服务,'.$siteName,
+            'keywords' => '云服务器,独立服务器,高防服务器,云电脑,IDC 服务',
             'canonical' => '/',
             'robots' => '',
             'data' => $overview,
@@ -148,7 +148,6 @@ class SeoRenderService
 
     private function productsPage(array $segments): array
     {
-        $siteName = $this->siteName();
         $productId = isset($segments[1]) && ctype_digit($segments[1]) ? (int) $segments[1] : 0;
 
         if ($productId > 0) {
@@ -158,8 +157,8 @@ class SeoRenderService
                 return [
                     'type' => 'products',
                     'title' => '产品与服务',
-                    'description' => '浏览'.$siteName.'云服务器、独立服务器、云电脑与 IDC 产品方案。',
-                    'keywords' => '产品,云服务器,独立服务器,'.$siteName,
+                    'description' => '浏览云服务器、独立服务器、云电脑与 IDC 产品方案。',
+                    'keywords' => '产品,云服务器,独立服务器',
                     'canonical' => '/products',
                     'robots' => 'noindex,nofollow',
                     'data' => null,
@@ -171,14 +170,13 @@ class SeoRenderService
             $spec = (string) ($product['instance_spec_text'] ?? '');
             $price = (string) ($product['primary_price'] ?? '');
             $cycle = (string) ($product['primary_cycle'] ?? '');
-            $description = trim("{$groupName} {$productName}".($spec !== '' ? "，{$spec}" : '').'。'
-                .($price !== '' ? "{$siteName}提供在线购买、部署与工单支持。" : $siteName.'提供在线购买、部署与工单支持。'));
+            $description = trim("{$groupName} {$productName}".($spec !== '' ? "，{$spec}" : '').'。提供在线购买、部署与工单支持。');
 
             return [
                 'type' => 'product_detail',
                 'title' => $productName !== '' ? $productName : '产品详情',
                 'description' => $description,
-                'keywords' => "{$productName},云服务器,独立服务器,{$siteName}",
+                'keywords' => "{$productName},云服务器,独立服务器",
                 'canonical' => "/products/{$productId}",
                 'robots' => '',
                 'data' => [
@@ -196,8 +194,8 @@ class SeoRenderService
         return [
             'type' => 'products',
             'title' => '产品与服务',
-            'description' => '浏览'.$siteName.'云服务器、独立服务器、云电脑与 IDC 产品方案。',
-            'keywords' => '产品,云服务器,独立服务器,高防服务器,云电脑,'.$siteName,
+            'description' => '浏览云服务器、独立服务器、云电脑与 IDC 产品方案。',
+            'keywords' => '产品,云服务器,独立服务器,高防服务器,云电脑',
             'canonical' => '/products',
             'robots' => '',
             'data' => [
@@ -237,7 +235,7 @@ class SeoRenderService
             'type' => $type,
             'title' => $title,
             'description' => $description,
-            'keywords' => $type === 'about' ? '关于我们,IDC 服务,'.$this->siteName() : $title.','.$this->siteName(),
+            'keywords' => $type === 'about' ? '关于我们,IDC 服务' : $title,
             'canonical' => '/'.$type,
             'robots' => '',
             'data' => null,
@@ -258,7 +256,7 @@ class SeoRenderService
             'type' => $type,
             'title' => $title,
             'description' => $description,
-            'keywords' => $title.','.$this->siteName(),
+            'keywords' => $title,
             'canonical' => '/'.$type,
             'robots' => '',
             'data' => [
@@ -287,7 +285,7 @@ class SeoRenderService
             'type' => $type === 'notice_detail' ? 'notice_detail' : 'help_detail',
             'title' => $articleTitle,
             'description' => $excerpt,
-            'keywords' => $articleTitle.','.$this->siteName(),
+            'keywords' => $articleTitle,
             'canonical' => '/'.$type.'/'.$articleId,
             'robots' => '',
             'data' => [
@@ -372,6 +370,40 @@ HTML;
             $shell,
             1
         );
+
+        // 站点配置注入：把 site_name / site_logo / site_favicon 挂到 window，
+        // 前端 store 与结构化数据在首帧就能拿到真实品牌，不会闪默认值。
+        // 数据来自 settings 表，必须 JSON 编码后再内联，防止字符串里的
+        // </script> 或引号破坏 HTML 结构。
+        $siteConfig = SiteConfigPayload::payload();
+        $siteUrl = $this->siteUrl();
+        $bootstrap = json_encode(
+            [
+                'site_name' => $this->siteName($siteConfig),
+                'site_logo' => $this->absoluteAssetUrl($siteUrl, (string) ($siteConfig['site_logo'] ?? '')),
+                'site_favicon' => $this->absoluteAssetUrl($siteUrl, (string) ($siteConfig['site_favicon'] ?? '')),
+            ],
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP
+        );
+
+        $bootstrapScript = '<script>window.__CW_SITE_CONFIG__='.$bootstrap.';</script>';
+
+        $shell = preg_replace_callback(
+            '/<script type="module"/i',
+            static fn (array $matches): string => $bootstrapScript."\n".$matches[0],
+            $shell,
+            1
+        );
+
+        if (! str_contains($shell, $bootstrapScript)) {
+            // shell 模型里没有 module script（回退模板），直接追加到 head 末尾
+            $shell = preg_replace_callback(
+                '/<\/head>/i',
+                static fn (array $matches): string => $bootstrapScript."\n</head>",
+                $shell,
+                1
+            );
+        }
 
         // 在 <div id="app"> 内填充正文快照；Vue 挂载时自动替换
         $shell = preg_replace_callback(

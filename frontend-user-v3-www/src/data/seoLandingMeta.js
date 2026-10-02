@@ -9,10 +9,10 @@ export const seoLandingMetaPages = [
     path: "/cloud-server",
     routeName: "WwwSeoCloudServer",
     keyword: "云服务器",
-    title: "云服务器 - 稳定弹性计算与 IDC 云主机 - 图拉云",
+    title: "云服务器 - 稳定弹性计算与 IDC 云主机",
     description:
-      "图拉云云服务器面向企业网站、业务系统和开发测试场景，提供稳定弹性计算、灵活配置和 IDC 运维支持。",
-    keywords: "云服务器,云主机,弹性云服务器,IDC 云服务器,图拉云",
+      "云服务器面向企业网站、业务系统和开发测试场景，提供稳定弹性计算、灵活配置和 IDC 运维支持。",
+    keywords: "云服务器,云主机,弹性云服务器,IDC 云服务器",
     changefreq: "weekly",
     priority: "0.9",
     heroTitle: "稳定易用的云服务器",
@@ -26,8 +26,8 @@ export const seoLandingMetaPages = [
     keyword: "香港服务器",
     title: "香港服务器 - 面向出海与跨境访问的云服务器",
     description:
-      "图拉云香港服务器适合跨境网站、外贸业务和亚太访问场景，提供云服务器配置选择与工单支持。",
-    keywords: "香港服务器,香港云服务器,香港云主机,跨境服务器,图拉云",
+      "香港服务器适合跨境网站、外贸业务和亚太访问场景，提供云服务器配置选择与工单支持。",
+    keywords: "香港服务器,香港云服务器,香港云主机,跨境服务器",
     changefreq: "weekly",
     priority: "0.8",
     heroTitle: "面向亚太业务的香港服务器",
@@ -41,8 +41,8 @@ export const seoLandingMetaPages = [
     keyword: "美国服务器",
     title: "美国服务器 - 海外业务部署与网站托管",
     description:
-      "图拉云美国服务器面向海外网站、跨境业务和开发测试场景，提供云服务器配置选择、系统部署和售后支持。",
-    keywords: "美国服务器,美国云服务器,海外服务器,海外云主机,图拉云",
+      "美国服务器面向海外网站、跨境业务和开发测试场景，提供云服务器配置选择、系统部署和售后支持。",
+    keywords: "美国服务器,美国云服务器,海外服务器,海外云主机",
     changefreq: "weekly",
     priority: "0.8",
     heroTitle: "适合海外部署的美国服务器",
@@ -54,10 +54,10 @@ export const seoLandingMetaPages = [
     path: "/high-defense-server",
     routeName: "WwwSeoHighDefenseServer",
     keyword: "高防服务器",
-    title: "高防服务器 - 面向攻击防护场景的云服务器 - 图拉云",
+    title: "高防服务器 - 面向攻击防护场景的云服务器",
     description:
-      "图拉云高防服务器适合游戏、业务接口和高风险网站等防护需求场景，提供配置选择与运维支持。",
-    keywords: "高防服务器,高防云服务器,防护服务器,游戏服务器防护,图拉云",
+      "高防服务器适合游戏、业务接口和高风险网站等防护需求场景，提供配置选择与运维支持。",
+    keywords: "高防服务器,高防云服务器,防护服务器,游戏服务器防护",
     changefreq: "weekly",
     priority: "0.8",
     heroTitle: "面向防护需求的高防服务器",
@@ -71,8 +71,8 @@ export const seoLandingMetaPages = [
     keyword: "云电脑",
     title: "云电脑 - 远程办公与轻量桌面云方案",
     description:
-      "图拉云云电脑适合远程办公、轻量桌面、软件测试和临时工作环境，提供云端资源选择与账号管理能力。",
-    keywords: "云电脑,云桌面,远程办公云电脑,桌面云,图拉云",
+      "云电脑适合远程办公、轻量桌面、软件测试和临时工作环境，提供云端资源选择与账号管理能力。",
+    keywords: "云电脑,云桌面,远程办公云电脑,桌面云",
     changefreq: "weekly",
     priority: "0.7",
     heroTitle: "灵活可用的云电脑",
@@ -86,9 +86,29 @@ export const seoLandingFooterLinks = seoLandingMetaPages.map((page) => ({
   label: page.keyword,
 }));
 
-const DEFAULT_SITE_URL = "https://www.coyjs.cn";
-const SITE_NAME = "图拉云";
+const DEFAULT_SITE_URL = "https://www.example.com";
 const SITE_LANGUAGE = "zh-CN";
+
+/**
+ * 结构化数据里的站点名与 logo 来自运行时站点配置（后台可编辑），
+ * 由调用方（路由 meta 的 structuredData 工厂）传入，未传时回落到
+ * SEO 动态渲染注入的 window.__CW_SITE_CONFIG__，避免写死品牌。
+ */
+function resolveSiteBrand(siteBrand = {}) {
+  const bootstrapped =
+    (typeof window !== "undefined" && window.__CW_SITE_CONFIG__) || {};
+  const siteName = String(
+    siteBrand.siteName || bootstrapped.site_name || "",
+  ).trim();
+  const siteLogo = String(
+    siteBrand.siteLogo || bootstrapped.site_logo || "",
+  ).trim();
+
+  return {
+    siteName,
+    siteLogo,
+  };
+}
 
 function normalizePath(path) {
   const value = String(path || "").trim();
@@ -119,8 +139,10 @@ export function getSeoLandingMetaByPath(path) {
 export function buildSeoLandingStructuredData(
   page,
   siteUrl = DEFAULT_SITE_URL,
+  siteBrand = {},
 ) {
   const normalizedSiteUrl = normalizeSiteUrl(siteUrl);
+  const { siteName, siteLogo } = resolveSiteBrand(siteBrand);
   const homeUrl = `${normalizedSiteUrl}/`;
   const productsUrl = absoluteUrl(normalizedSiteUrl, "/products");
   const pageUrl = absoluteUrl(normalizedSiteUrl, page.path);
@@ -128,73 +150,80 @@ export function buildSeoLandingStructuredData(
   const websiteId = `${normalizedSiteUrl}/#website`;
   const webpageId = `${pageUrl}#webpage`;
 
-  return [
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
+  const organization = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": organizationId,
+    name: siteName,
+    url: homeUrl,
+  };
+  if (siteLogo) {
+    organization.logo = siteLogo;
+  }
+
+  const website = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": websiteId,
+    name: siteName,
+    url: homeUrl,
+    inLanguage: SITE_LANGUAGE,
+    publisher: {
       "@id": organizationId,
-      name: SITE_NAME,
-      url: homeUrl,
-      logo: absoluteUrl(normalizedSiteUrl, "/branding/logo.png"),
     },
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
+  };
+
+  const structured = siteName ? [organization, website] : [];
+
+  structured.push({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": webpageId,
+    url: pageUrl,
+    name: siteName ? `${siteName} - ${page.title}` : page.title,
+    headline: page.heroTitle,
+    description: page.description,
+    keywords: page.keywords,
+    inLanguage: SITE_LANGUAGE,
+    isPartOf: {
       "@id": websiteId,
-      name: SITE_NAME,
-      url: homeUrl,
-      inLanguage: SITE_LANGUAGE,
-      publisher: {
+    },
+    about: {
+      "@type": "Service",
+      name: page.keyword,
+      description: page.heroSummary,
+      provider: {
         "@id": organizationId,
       },
     },
-    {
-      "@context": "https://schema.org",
-      "@type": "WebPage",
-      "@id": webpageId,
-      url: pageUrl,
-      name: page.title,
-      headline: page.heroTitle,
-      description: page.description,
-      keywords: page.keywords,
-      inLanguage: SITE_LANGUAGE,
-      isPartOf: {
-        "@id": websiteId,
+  });
+
+  structured.push({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "首页",
+        item: homeUrl,
       },
-      about: {
-        "@type": "Service",
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "产品与服务",
+        item: productsUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
         name: page.keyword,
-        description: page.heroSummary,
-        provider: {
-          "@id": organizationId,
-        },
+        item: pageUrl,
       },
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          position: 1,
-          name: "首页",
-          item: homeUrl,
-        },
-        {
-          "@type": "ListItem",
-          position: 2,
-          name: "产品与服务",
-          item: productsUrl,
-        },
-        {
-          "@type": "ListItem",
-          position: 3,
-          name: page.keyword,
-          item: pageUrl,
-        },
-      ],
-    },
-  ];
+    ],
+  });
+
+  return structured;
 }
 
 export function buildSeoLandingRouteMeta(page) {
@@ -205,8 +234,8 @@ export function buildSeoLandingRouteMeta(page) {
     canonical: page.path,
     seoLandingPath: page.path,
     seoLanding: true,
-    structuredData: ({ siteUrl } = {}) =>
-      buildSeoLandingStructuredData(page, siteUrl),
+    structuredData: ({ siteUrl, siteBrand } = {}) =>
+      buildSeoLandingStructuredData(page, siteUrl, siteBrand),
   };
 }
 
@@ -218,6 +247,7 @@ export function listSeoLandingSitemapRoutes() {
     keywords: page.keywords,
     changefreq: page.changefreq,
     priority: page.priority,
-    structuredData: (siteUrl) => buildSeoLandingStructuredData(page, siteUrl),
+    structuredData: (siteUrl, siteBrand) =>
+      buildSeoLandingStructuredData(page, siteUrl, siteBrand),
   }));
 }

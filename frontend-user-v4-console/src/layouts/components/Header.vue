@@ -208,7 +208,7 @@ const breadcrumbs = computed(() => {
     [],
   );
 });
-const accountName = computed(() => user.userInfo.name || '图拉云用户');
+const accountName = computed(() => user.userInfo.name || '用户');
 const userInitials = computed(() => {
   const name = accountName.value.trim();
   return name.slice(0, 1) || siteBranding.brandInitials || '图';
