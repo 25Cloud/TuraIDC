@@ -89,6 +89,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->loadSiteNameFromSettings();
         $this->registerOpenApiRateLimiter();
+        $this->registerZjmfUpstreamRateLimiter();
 
         // 心跳任务超时被杀时，Worker 在 SIGKILL 前同步派发 JobTimedOut；
         // 监听器把运行台账收敛为 retrying/failed，避免队列重试被状态 CAS 永久拒绝。
@@ -151,6 +152,36 @@ class AppServiceProvider extends ServiceProvider
             $perMinute = app(OpenApiConfig::class)->writeRateLimitPerMinute();
 
             return Limit::perMinute($perMinute)->by((string) $request->ip());
+        });
+    }
+
+    /**
+     * 注册魔方财务上游链路（/api/v2/zjmf）业务接口的限流器。
+     *
+     * 此前只有登录端点 throttle:20,1，zjmf.upstream 分组内的业务接口（cart/settle、
+     * host/renew、dcim/crack_pass、apply_credit 等扣费与不可逆写操作）完全无限流，
+     * 与开放接口「全局 + 写接口」两级限流的设计不对称。
+     *
+     * 计数维度用「登录账号 + 来源 IP」：业务请求已通过 JWT 解析出对接账号，
+     * 按账号计数可避免同一出口 IP 后的多账号互相挤占配额，也能精确限制单个
+     * 魔方财务站点的高频异常调用；IP 作为附加维度兜底账号维度防不住的场景。
+     * 阈值直接取 open_api.rate_limit / write_rate_limit（同一份后台配置），
+     * 不再为上游链路单独开一套设置项。
+     */
+    private function registerZjmfUpstreamRateLimiter(): void
+    {
+        RateLimiter::for('zjmf-upstream-api', function (Request $request) {
+            $perMinute = app(OpenApiConfig::class)->rateLimitPerMinute();
+            $accountId = (int) $request->attributes->get('zjmf_upstream_user')?->id;
+
+            return Limit::perMinute($perMinute)->by('zjmf:'.$accountId.':'.$request->ip());
+        });
+
+        RateLimiter::for('zjmf-upstream-write', function (Request $request) {
+            $perMinute = app(OpenApiConfig::class)->writeRateLimitPerMinute();
+            $accountId = (int) $request->attributes->get('zjmf_upstream_user')?->id;
+
+            return Limit::perMinute($perMinute)->by('zjmf-write:'.$accountId.':'.$request->ip());
         });
     }
 

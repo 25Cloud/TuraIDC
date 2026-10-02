@@ -20,14 +20,9 @@ class OpenApiAdminController extends Controller
 
     public function config(): JsonResponse
     {
-        return $this->success([
-            'enabled' => $this->config->enabled() ? 1 : 0,
-            'require_phone' => $this->config->requirePhone() ? 1 : 0,
-            'require_verified' => $this->config->requireVerified() ? 1 : 0,
-            'max_keys_per_user' => $this->config->maxKeysPerUser(),
-            'rate_limit' => $this->config->rateLimitPerMinute(),
-            'write_rate_limit' => $this->config->writeRateLimitPerMinute(),
-        ]);
+        // 统一走 toArray()：原先手写返回比 toArray() 少 usage_log_retention_days，
+        // 导致读（GET config）与写（saveConfig 返回）拿到的 payload 形状不一致。
+        return $this->success($this->config->toArray());
     }
 
     public function saveConfig(Request $request): JsonResponse
@@ -39,6 +34,7 @@ class OpenApiAdminController extends Controller
             'max_keys_per_user' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'rate_limit' => ['sometimes', 'integer', 'min:1', 'max:3600'],
             'write_rate_limit' => ['sometimes', 'integer', 'min:1', 'max:3600'],
+            'usage_log_retention_days' => ['sometimes', 'integer', 'min:1', 'max:3650'],
         ]);
 
         $values = [];
@@ -47,7 +43,7 @@ class OpenApiAdminController extends Controller
                 $values[$booleanKey] = in_array($data[$booleanKey], [1, '1', true, 'true'], true) ? '1' : '0';
             }
         }
-        foreach (['max_keys_per_user', 'rate_limit', 'write_rate_limit'] as $integerKey) {
+        foreach (['max_keys_per_user', 'rate_limit', 'write_rate_limit', 'usage_log_retention_days'] as $integerKey) {
             if (array_key_exists($integerKey, $data)) {
                 $values[$integerKey] = (string) (int) $data[$integerKey];
             }
@@ -123,6 +119,54 @@ class OpenApiAdminController extends Controller
             ->paginate($pageSize, ['*'], 'page', $page);
 
         $items = collect($paginator->items())->map(fn (ApiKeyUsageLog $log) => [
+            'method' => (string) $log->method,
+            'path' => (string) $log->path,
+            'status_code' => (int) $log->status_code,
+            'ip' => (string) $log->ip,
+            'duration_ms' => (int) $log->duration_ms,
+            'created_at' => $log->created_at?->format('Y-m-d H:i:s'),
+        ]);
+
+        return $this->success([
+            'list' => $items,
+            'total' => (int) $paginator->total(),
+            'page' => $page,
+            'page_size' => $pageSize,
+        ]);
+    }
+
+    /**
+     * 魔方财务上游链路（channel=zjmf_upstream）的调用审计。
+     *
+     * 该链路的日志 api_key_id 固定写 0 哨兵（凭据不在 api_keys 表），
+     * 走 usageLogs() 会被 findKey(0) 挡下，此前管理端没有任何入口能看到
+     * 这条链路的审计，只能查用户控制台侧。
+     *
+     * 支持按 user_id 与状态码过滤，分页口径与 usageLogs() 一致。
+     */
+    public function upstreamUsageLogs(Request $request): JsonResponse
+    {
+        $data = $this->validate($request, [
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'page_size' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'user_id' => ['sometimes', 'integer', 'min:1'],
+            'status_code' => ['sometimes', 'integer', 'min:100', 'max:599'],
+        ]);
+
+        $page = max((int) ($data['page'] ?? 1), 1);
+        $pageSize = min(max((int) ($data['page_size'] ?? 20), 1), 100);
+
+        $query = ApiKeyUsageLog::query()
+            ->where('channel', ApiKeyUsageLog::CHANNEL_ZJMF_UPSTREAM)
+            ->when(isset($data['user_id']), fn ($builder) => $builder->where('user_id', (int) $data['user_id']))
+            ->when(isset($data['status_code']), fn ($builder) => $builder->where('status_code', (int) $data['status_code']))
+            ->orderByDesc('created_at');
+
+        $paginator = $query->paginate($pageSize, ['*'], 'page', $page);
+
+        $items = collect($paginator->items())->map(fn (ApiKeyUsageLog $log) => [
+            'id' => (int) $log->id,
+            'user_id' => (int) $log->user_id,
             'method' => (string) $log->method,
             'path' => (string) $log->path,
             'status_code' => (int) $log->status_code,

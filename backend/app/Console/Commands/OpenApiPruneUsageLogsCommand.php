@@ -34,6 +34,10 @@ final class OpenApiPruneUsageLogsCommand extends Command
 
         do {
             $deleted = ApiKeyUsageLog::query()
+                // 只清理开放接口（channel=open_api）的日志：魔方上游链路
+                // （channel=zjmf_upstream）共用同一张表，且不受 open_api 保留期配置
+                // 约束，按时间一刀切会把上游链路的审计连带删除。
+                ->where('channel', ApiKeyUsageLog::CHANNEL_OPEN_API)
                 ->where('created_at', '<', $cutoff->toDateTimeString())
                 ->limit(self::CHUNK_SIZE)
                 ->delete();

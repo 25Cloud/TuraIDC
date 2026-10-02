@@ -8,6 +8,10 @@
             本页管理对接本系统的两套凭据：开放接口密钥用于系统间调用（/api/v2/open），魔方财务对接凭据供魔方财务在「上游」中配置（/api/v2/zjmf）。两套凭据都支持
             IP 白名单、有效期与调用审计。
           </p>
+          <p class="api-key-hero__linkage">
+            两套凭据的联动是单向的：在「魔方财务对接」中关闭上游会一并停用本账号全部开放接口密钥；
+            反过来，停用或删除单个密钥不影响魔方财务对接。
+          </p>
         </div>
         <t-button v-if="activeTab === 'keys'" theme="primary" @click="openCreateDialog">创建密钥</t-button>
       </div>
@@ -58,7 +62,7 @@
                         size="small"
                         variant="text"
                         :theme="row.status === 'enabled' ? 'warning' : 'success'"
-                        @click="toggleStatus(row)"
+                        @click="confirmToggleStatus(row)"
                       >
                         {{ row.status === 'enabled' ? '停用' : '启用' }}
                       </t-button>
@@ -100,7 +104,7 @@
                         size="small"
                         variant="text"
                         :theme="row.status === 'enabled' ? 'warning' : 'success'"
-                        @click="toggleStatus(row)"
+                        @click="confirmToggleStatus(row)"
                       >
                         {{ row.status === 'enabled' ? '停用' : '启用' }}
                       </t-button>
@@ -259,11 +263,30 @@ const {
 function confirmRemove(row: ApiKeyRecord) {
   const dialog = DialogPlugin.confirm({
     header: '删除 API 密钥',
-    body: `确定删除密钥「${row.name || '未命名'}」吗？删除后使用该密钥的对接将立即失效。`,
+    body: `确定删除密钥「${row.name || '未命名'}」吗？删除后使用该密钥的对接将立即失效。此操作不影响魔方财务对接凭据。`,
     theme: 'warning',
     confirmBtn: { content: '删除', theme: 'danger' },
     onConfirm: async () => {
       await removeKey(row);
+      dialog.destroy();
+    },
+  });
+}
+
+function confirmToggleStatus(row: ApiKeyRecord) {
+  if (row.status !== 'enabled') {
+    // 启用是无风险操作，直接执行
+    void toggleStatus(row);
+    return;
+  }
+
+  const dialog = DialogPlugin.confirm({
+    header: '停用 API 密钥',
+    body: `停用「${row.name || '未命名'}」后，使用该密钥的对接将立即失效，直至重新启用。此操作不影响魔方财务对接凭据。`,
+    theme: 'warning',
+    confirmBtn: { content: '停用', theme: 'warning' },
+    onConfirm: async () => {
+      await toggleStatus(row);
       dialog.destroy();
     },
   });
@@ -309,6 +332,16 @@ const logColumns: PrimaryTableCol[] = [
   line-height: 1.7;
   color: var(--td-text-color-secondary);
   font: var(--td-font-body-small);
+  max-width: 52rem;
+}
+
+/* 联动说明：与描述同层级但用提示色，强调两套凭据的影响范围。
+   line-height 必须放在 font 简写之后，否则会被 font 里的行高覆盖。 */
+.api-key-hero__linkage {
+  margin: var(--td-comp-margin-xs) 0 0;
+  color: var(--td-text-color-placeholder);
+  font: var(--td-font-body-small);
+  line-height: 1.7;
   max-width: 52rem;
 }
 

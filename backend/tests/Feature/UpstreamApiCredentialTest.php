@@ -261,8 +261,30 @@ class UpstreamApiCredentialTest extends TestCase
             ->postJson('/api/v2/client/upstream-api/disable')
             ->assertOk();
 
-        // 只关一边会留下一个没有界面入口的全权凭据，因此两条链路的凭据一起失效
+        // 上游凭据是总开关：关闭即代表「本账号不再对外提供接入」，故一并停用全部密钥
         $this->assertSame(0, ApiKey::query()->where('user_id', (int) $user->id)->where('status', ApiKey::STATUS_ENABLED)->count());
+    }
+
+    /**
+     * 反向不联动是有意的设计（见 UpstreamApiCredentialService::disable 注释）：
+     * 密钥是逐个创建的细粒度资源，增删单个密钥不应打断正在运行的魔方财务对接。
+     */
+    #[Test]
+    public function disabling_one_api_key_does_not_touch_upstream_credentials(): void
+    {
+        Setting::setValues('open_api', ['enabled' => '1']);
+
+        $user = $this->makeUser();
+        $credential = app(ApiKeyService::class)->createForUser($user, '反向联动测试', ['products' => 'read'])[0];
+        app(UpstreamApiCredentialService::class)->enable($user->refresh());
+
+        $this->actingAs($user->refresh())
+            ->deleteJson('/api/v2/client/api-keys/'.$credential->id)
+            ->assertOk();
+
+        $user->refresh();
+        $this->assertSame(1, (int) $user->api_open, '删除密钥不应关闭上游凭据');
+        $this->assertNotNull($user->api_username, '删除密钥不应清空上游用户名');
     }
 
     #[Test]
