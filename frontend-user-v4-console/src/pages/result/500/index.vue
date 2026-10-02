@@ -10,7 +10,6 @@
     </t-result>
   </div>
 </template>
-
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 
@@ -28,7 +27,6 @@ function reload() {
   window.location.reload();
 }
 </script>
-
 <style lang="less" scoped>
 .result-500 {
   display: flex;
