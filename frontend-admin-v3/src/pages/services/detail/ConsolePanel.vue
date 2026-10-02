@@ -129,7 +129,7 @@
     <console-alerts />
 
     <t-tabs v-model="activeTabModel" theme="normal" class="console-tabs">
-      <t-tab-panel v-for="nav in consoleNavItems" :key="nav.key" :value="nav.key" :tab="nav.label">
+      <t-tab-panel v-for="nav in consoleNavItems" :key="nav.key" :value="nav.key" :label="nav.label">
         <component :is="resolveConsoleTabComponent(nav.key)" />
       </t-tab-panel>
     </t-tabs>
