@@ -104,11 +104,8 @@
         "menuAutoCollapsed": "菜单自动折叠"
       },
       "tips": "请复制后手动修改配置文件: /src/config/style.ts",
-      "copy": {
-        "title": "复制配置项",
-        "success": "复制成功",
-        "fail": "复制失败"
-      }
+      "reset": "重置为默认",
+      "resetSuccess": "已恢复默认设置"
     }
   },
   "constants": {
