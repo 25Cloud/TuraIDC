@@ -428,6 +428,9 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::get('/open-api/config', [OpenApiAdminController::class, 'config']);
         Route::get('/open-api/keys', [OpenApiAdminController::class, 'keys']);
         Route::get('/open-api/keys/{id}/usage-logs', [OpenApiAdminController::class, 'usageLogs']);
+        // 魔方财务上游链路审计（channel=zjmf_upstream，api_key_id=0 哨兵，
+        // 走上面的 usageLogs() 会被 findKey(0) 挡下）
+        Route::get('/open-api/upstream-usage-logs', [OpenApiAdminController::class, 'upstreamUsageLogs']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::SETTINGS_MANAGE])->group(function (): void {

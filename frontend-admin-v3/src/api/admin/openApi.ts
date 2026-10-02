@@ -6,6 +6,8 @@ export interface OpenApiConfigPayload {
   require_verified?: number;
   max_keys_per_user?: number;
   rate_limit?: number;
+  write_rate_limit?: number;
+  usage_log_retention_days?: number;
 }
 
 export interface OpenApiKeyUser {
@@ -31,6 +33,8 @@ export interface OpenApiKeyRecord {
 }
 
 export interface OpenApiUsageLogRecord {
+  id?: number;
+  user_id?: number;
   method?: string;
   path?: string;
   status_code?: number;
@@ -75,6 +79,20 @@ export const openApiApi = {
   usageLogs: async (id: number | string, params?: Record<string, unknown>) => {
     const response = await request.get<OpenApiUsageLogListResponse>({
       url: `/v2/admin/open-api/keys/${id}/usage-logs`,
+      params,
+    });
+    return {
+      list: response.list || [],
+      total: Number(response.total || 0),
+      page: Number(response.page || 1),
+      page_size: Number(response.page_size || 20),
+    };
+  },
+  // 魔方财务上游链路审计（channel=zjmf_upstream）：该链路日志 api_key_id=0 哨兵，
+  // 无法用上面按密钥 id 的接口取到
+  upstreamUsageLogs: async (params?: Record<string, unknown>) => {
+    const response = await request.get<OpenApiUsageLogListResponse>({
+      url: '/v2/admin/open-api/upstream-usage-logs',
       params,
     });
     return {

@@ -18,7 +18,9 @@ use Illuminate\Http\Request;
  * 本端点服务魔方财务上游协议（/api/v2/zjmf）的账号凭据。
  *
  * 协议无法合并，但凭据治理与开放接口对齐：同样支持 IP 白名单、有效期，
- * 同样有调用审计（channel=zjmf_upstream），关闭时也会一并停用开放接口密钥。
+ * 同样有调用审计（channel=zjmf_upstream）。关闭时会一并停用开放接口密钥
+ * （上游凭据是总开关，见 UpstreamApiCredentialService::disable），
+ * 但反过来增删密钥不影响上游凭据。
  */
 class UpstreamApiController extends Controller
 {

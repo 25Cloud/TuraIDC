@@ -41,9 +41,25 @@
               <article class="config-card">
                 <div class="config-card__info">
                   <strong>接口限流（次/分钟）</strong>
-                  <p>同一密钥每分钟最大请求数，超出返回 429。</p>
+                  <p>同一来源 IP 每分钟最大请求数，超出返回 429。</p>
                 </div>
                 <t-input-number v-model="config.rate_limit" :min="1" :max="3600" :disabled="!canManage" />
+              </article>
+
+              <article class="config-card">
+                <div class="config-card__info">
+                  <strong>写接口限流（次/分钟）</strong>
+                  <p>下单、余额支付、电源操作、续费、重装等写接口单独收紧的限流阈值。</p>
+                </div>
+                <t-input-number v-model="config.write_rate_limit" :min="1" :max="3600" :disabled="!canManage" />
+              </article>
+
+              <article class="config-card">
+                <div class="config-card__info">
+                  <strong>调用日志保留天数</strong>
+                  <p>开放接口调用日志的保留期，超期日志由定时任务清理；魔方上游链路日志不受此配置影响。</p>
+                </div>
+                <t-input-number v-model="config.usage_log_retention_days" :min="1" :max="3650" :disabled="!canManage" />
               </article>
             </div>
 
@@ -138,6 +154,61 @@
             </template>
           </t-table>
         </t-tab-panel>
+
+        <t-tab-panel value="upstream" label="上游链路审计">
+          <div class="upstream-notice">
+            魔方财务上游链路（/api/v2/zjmf）的登录与业务调用审计，按渠道 channel=zjmf_upstream
+            单独归集；开放接口密钥的日志见「密钥管理」。
+          </div>
+          <div class="keys-toolbar upstream-toolbar">
+            <t-input
+              v-model="upstreamFilters.user_id"
+              clearable
+              type="number"
+              :min="1"
+              placeholder="按用户 ID 过滤"
+              @enter="handleUpstreamSearch"
+              @clear="handleUpstreamSearch"
+            />
+            <t-select
+              v-model="upstreamFilters.status_code"
+              clearable
+              placeholder="全部状态码"
+              @change="handleUpstreamSearch"
+            >
+              <t-option label="200 成功" :value="200" />
+              <t-option label="400 业务失败" :value="400" />
+              <t-option label="405 JWT 失效" :value="405" />
+              <t-option label="403 拒绝" :value="403" />
+            </t-select>
+          </div>
+
+          <t-table
+            class="keys-table"
+            row-key="id"
+            :data="upstreamLogs"
+            :columns="upstreamLogColumns"
+            :loading="upstreamLogsLoading"
+            :pagination="{
+              total: upstreamLogsTotal,
+              current: upstreamFilters.page,
+              pageSize: upstreamFilters.page_size,
+              showJumper: true,
+              onChange: (pageInfo: { current: number; pageSize: number }) => handleUpstreamPageChange(pageInfo),
+            }"
+            hover
+          >
+            <template #user_id="{ row }">#{{ row.user_id ?? '--' }}</template>
+            <template #status_code="{ row }">
+              <t-tag
+                :theme="row.status_code === 200 ? 'success' : row.status_code === 405 ? 'warning' : 'danger'"
+                variant="light"
+              >
+                {{ row.status_code }}
+              </t-tag>
+            </template>
+          </t-table>
+        </t-tab-panel>
       </t-tabs>
     </t-card>
 
@@ -181,6 +252,8 @@ const config = reactive<OpenApiConfigPayload>({
   require_verified: 0,
   max_keys_per_user: 10,
   rate_limit: 60,
+  write_rate_limit: 30,
+  usage_log_retention_days: 90,
 });
 const configLoading = ref(false);
 const configSaving = ref(false);
@@ -194,6 +267,16 @@ const logVisible = ref(false);
 const logLoading = ref(false);
 const logKey = ref<OpenApiKeyRecord | null>(null);
 const logs = ref<OpenApiUsageLogRecord[]>([]);
+
+const upstreamFilters = reactive<{ user_id: string; status_code: number | ''; page: number; page_size: number }>({
+  user_id: '',
+  status_code: '',
+  page: 1,
+  page_size: 20,
+});
+const upstreamLogs = ref<OpenApiUsageLogRecord[]>([]);
+const upstreamLogsLoading = ref(false);
+const upstreamLogsTotal = ref(0);
 
 function scopesDisplay(scopes: OpenApiKeyRecord['scopes']) {
   if (!scopes || typeof scopes !== 'object') return [];
@@ -320,9 +403,50 @@ const logColumns: PrimaryTableCol[] = [
   { colKey: 'duration_ms', title: '耗时', width: '6rem' },
 ];
 
+const upstreamLogColumns: PrimaryTableCol[] = [
+  { colKey: 'created_at', title: '时间', minWidth: '10rem' },
+  { colKey: 'user_id', title: '账号', width: '5rem' },
+  { colKey: 'method', title: '方法', width: '5rem' },
+  { colKey: 'path', title: '接口路径', minWidth: '14rem' },
+  { colKey: 'status_code', title: '状态', width: '5rem' },
+  { colKey: 'ip', title: 'IP', minWidth: '8rem' },
+  { colKey: 'duration_ms', title: '耗时', width: '6rem' },
+];
+
+async function loadUpstreamLogs() {
+  upstreamLogsLoading.value = true;
+  try {
+    const userId = Number(upstreamFilters.user_id);
+    const result = await adminApi.openApi.upstreamUsageLogs({
+      page: upstreamFilters.page,
+      page_size: upstreamFilters.page_size,
+      user_id: Number.isInteger(userId) && userId > 0 ? userId : undefined,
+      status_code: upstreamFilters.status_code === '' ? undefined : upstreamFilters.status_code,
+    });
+    upstreamLogs.value = result.list;
+    upstreamLogsTotal.value = result.total;
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '上游链路审计加载失败'));
+  } finally {
+    upstreamLogsLoading.value = false;
+  }
+}
+
+function handleUpstreamSearch() {
+  upstreamFilters.page = 1;
+  void loadUpstreamLogs();
+}
+
+function handleUpstreamPageChange(pageInfo: { current: number; pageSize: number }) {
+  upstreamFilters.page = pageInfo.current;
+  upstreamFilters.page_size = pageInfo.pageSize;
+  void loadUpstreamLogs();
+}
+
 onMounted(() => {
   void loadConfig();
   void loadKeys();
+  void loadUpstreamLogs();
 });
 </script>
 <style scoped lang="less">
@@ -424,5 +548,20 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: var(--td-comp-margin-xxs);
+}
+
+.upstream-notice {
+  margin-bottom: var(--td-comp-margin-m);
+  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-m);
+  border: thin solid var(--td-component-border);
+  border-radius: var(--td-radius-medium);
+  background: var(--td-bg-color-secondarycontainer);
+  color: var(--td-text-color-secondary);
+  font: var(--td-font-body-small);
+}
+
+/* 两个过滤控件并排，沿用 keys-toolbar 的两列网格 */
+.upstream-toolbar {
+  grid-template-columns: minmax(14rem, 1fr) 12rem;
 }
 </style>
