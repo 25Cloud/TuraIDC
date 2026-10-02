@@ -74,6 +74,17 @@
               </t-button>
             </t-badge>
           </t-popup>
+          <t-tooltip placement="bottom" :content="t('layout.header.setting')">
+            <t-button
+              theme="default"
+              shape="square"
+              variant="text"
+              :aria-label="t('layout.header.setting')"
+              @click="toggleSettingPanel"
+            >
+              <setting-icon />
+            </t-button>
+          </t-tooltip>
           <t-dropdown :min-column-width="160" trigger="click">
             <template #dropdown>
               <t-dropdown-item class="operations-dropdown-container-item" @click="handleNav('/client/profile')">
@@ -101,7 +112,14 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ChevronDownIcon, NotificationIcon, PoweroffIcon, UserCircleIcon, WalletIcon } from 'tdesign-icons-vue-next';
+import {
+  ChevronDownIcon,
+  NotificationIcon,
+  PoweroffIcon,
+  SettingIcon,
+  UserCircleIcon,
+  WalletIcon,
+} from 'tdesign-icons-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import type { PropType } from 'vue';
 import { computed, onMounted, ref } from 'vue';
@@ -114,6 +132,7 @@ import { prefix } from '@/config/global';
 import type { InboxItem } from '@/domains/content/useInbox';
 import { useInbox } from '@/domains/content/useInbox';
 import type { LocalizedTitle } from '@/locales';
+import { t } from '@/locales';
 import { useLocale } from '@/locales/useLocale';
 import { getActive } from '@/router';
 import { useSettingStore, useUserStore } from '@/store';
@@ -234,6 +253,10 @@ const changeCollapsed = () => {
 const handleNav = (url: string) => {
   inboxVisible.value = false;
   router.push(url);
+};
+
+const toggleSettingPanel = () => {
+  settingStore.updateConfig({ showSettingPanel: true });
 };
 
 const inboxVisible = ref(false);

@@ -104,11 +104,8 @@
         "menuAutoCollapsed": "Menu Auto Collapsed"
       },
       "tips": "Please copy and manually modify the configuration file: /src/config/style.ts",
-      "copy": {
-        "title": "Copy",
-        "success": "copied",
-        "fail": "fail to copy"
-      }
+      "reset": "Reset to Default",
+      "resetSuccess": "Settings have been reset to default"
     }
   },
   "constants": {

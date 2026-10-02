@@ -61,10 +61,11 @@
           </div>
         </t-radio-group>
 
-        <t-form-item v-show="formData.layout === 'mix'" :label="t('layout.setting.splitMenu')" name="splitMenu">
-          <t-switch v-model="formData.splitMenu" />
-        </t-form-item>
-        <t-form-item v-show="formData.layout === 'mix'" :label="t('layout.setting.fixedSidebar')" name="isSidebarFixed">
+        <t-form-item
+          v-show="formData.layout === 'side'"
+          :label="t('layout.setting.fixedSidebar')"
+          name="isSidebarFixed"
+        >
           <t-switch v-model="formData.isSidebarFixed" />
         </t-form-item>
 
@@ -85,9 +86,6 @@
         <t-form-item :label="t('layout.setting.displaySwitch.showBreadcrumb')" name="showBreadcrumb">
           <t-switch v-model="formData.showBreadcrumb" />
         </t-form-item>
-        <t-form-item :label="t('layout.setting.displaySwitch.showFooter')" name="showFooter">
-          <t-switch v-model="formData.showFooter" />
-        </t-form-item>
         <t-form-item :label="t('layout.setting.displaySwitch.useTagTabs')" name="isUseTabsRouter">
           <t-switch v-model="formData.isUseTabsRouter"></t-switch>
         </t-form-item>
@@ -96,16 +94,16 @@
         </t-form-item>
       </t-form>
       <div class="setting-info">
-        <p>{{ t('layout.setting.tips') }}</p>
-        <t-button theme="primary" variant="text" @click="handleCopy">
-          {{ t('layout.setting.copy.title') }}
+        <t-button theme="default" variant="outline" @click="handleReset">
+          <template #icon><refresh-icon /></template>
+          {{ t('layout.setting.reset') }}
         </t-button>
       </div>
     </div>
   </t-drawer>
 </template>
 <script setup lang="ts">
-import { useClipboard } from '@vueuse/core';
+import { RefreshIcon } from 'tdesign-icons-vue-next';
 import type { PopupVisibleChangeContext } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue';
@@ -122,7 +120,7 @@ import { useSettingStore } from '@/store';
 
 const settingStore = useSettingStore();
 
-const LAYOUT_OPTION = ['side', 'top', 'mix'];
+const LAYOUT_OPTION = ['side', 'top'];
 const LAYOUT_THUMBNAILS = Object.fromEntries(LAYOUT_OPTION.map((item) => [item, createLayoutThumbnail(item)]));
 
 const MODE_OPTIONS = computed(() => [
@@ -200,18 +198,12 @@ const onPopupVisibleChange = (visible: boolean, context: PopupVisibleChangeConte
   }
 };
 
-const handleCopy = () => {
-  const sourceText = JSON.stringify(formData.value, null, 4);
-  const { copy } = useClipboard({ source: sourceText });
-  copy()
-    .then(() => {
-      MessagePlugin.closeAll();
-      MessagePlugin.success(t('components.copySuccess'));
-    })
-    .catch(() => {
-      MessagePlugin.closeAll();
-      MessagePlugin.error(t('components.copyFail'));
-    });
+// 重置为默认：用 STYLE_CONFIG 覆盖表单，watchEffect 面板打开时会写回 store。
+// 面板必定处于打开状态（入口是 Header 齿轮按钮），会触发 changeMode/changeBrandTheme。
+const handleReset = () => {
+  formData.value = { ...STYLE_CONFIG };
+  isColoPickerDisplay.value = false;
+  MessagePlugin.success(t('layout.setting.resetSuccess'));
 };
 const getModeIcon = (mode: string) => {
   if (mode === 'light') {
