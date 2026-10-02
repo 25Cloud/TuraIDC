@@ -306,12 +306,13 @@ class CouponService
                 ->map(function (Product $product) use ($fullName) {
                     $displayPayload = $this->resolveProductDisplayNameResolver()->resolveForProduct($product);
                     $customDisplayName = trim((string) ($displayPayload['custom_display_name'] ?? ''));
+                    $cpuMemorySlugDisplay = trim((string) ($displayPayload['cpu_memory_slug_display'] ?? ''));
                     $productSpecDisplay = trim((string) ($displayPayload['product_spec_display'] ?? ''));
                     $cpuMemoryDisplay = trim((string) ($displayPayload['cpu_memory_display'] ?? ''));
                     $combinedDisplayName = trim((string) ($displayPayload['combined_display_name'] ?? ''));
                     $defaultDisplayName = '未配置规格 #'.(int) $product->id;
                     $displayName = $customDisplayName
-                        ?: ($productSpecDisplay ?: ($cpuMemoryDisplay ?: ($combinedDisplayName ?: $defaultDisplayName)));
+                        ?: ($cpuMemorySlugDisplay ?: ($productSpecDisplay ?: ($cpuMemoryDisplay ?: ($combinedDisplayName ?: $defaultDisplayName))));
 
                     return [
                         'id' => (int) $product->id,
@@ -324,6 +325,7 @@ class CouponService
                         'product_display_name' => $displayName,
                         'custom_display_name' => $customDisplayName,
                         'cpu_memory_display' => $cpuMemoryDisplay,
+                        'cpu_memory_slug_display' => $cpuMemorySlugDisplay,
                         'product_spec_display' => $productSpecDisplay,
                         'combined_display_name' => $combinedDisplayName,
                         'effective_product_group_full_name' => $fullName,
