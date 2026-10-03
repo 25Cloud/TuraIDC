@@ -94,6 +94,50 @@ final class TuraOpenApiClient
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
+    /**
+     * 上游站点公开目录的 POST 接口（无需 API 密钥）。
+     *
+     * 用于实时报价：POST /api/v2/site/products/{id}/quote。与 getPublic 一样不携带
+     * 密钥——站点目录对官网访客开放，带密钥反而可能被网关当成无效凭据拒绝。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function postPublic(Supplier $supplier, string $uri, array $payload = []): array
+    {
+        $baseUrl = $this->resolveBaseUrl($supplier);
+
+        try {
+            $response = Http::baseUrl($baseUrl)
+                ->acceptJson()
+                ->connectTimeout(self::DEFAULT_CONNECT_TIMEOUT_SECONDS)
+                ->timeout(self::DEFAULT_TIMEOUT_SECONDS)
+                ->post($uri, $payload);
+        } catch (\Throwable $exception) {
+            $this->logFailure($supplier, 'POST', $uri, $exception->getMessage());
+
+            throw new BusinessException('上游站点接口连接失败', 42200);
+        }
+
+        $decoded = $response->json();
+
+        if (! is_array($decoded)) {
+            $this->logFailure($supplier, 'POST', $uri, 'http '.$response->status().' 非 JSON 响应');
+
+            throw new BusinessException('上游站点接口返回异常', 42200);
+        }
+
+        if ((int) ($decoded['code'] ?? -1) !== 0) {
+            $message = trim((string) ($decoded['message'] ?? '')) ?: '上游站点接口请求失败';
+
+            throw new BusinessException($message, 42200);
+        }
+
+        $data = $decoded['data'] ?? [];
+
+        return is_array($data) ? $data : [];
+    }
+
     public function request(Supplier $supplier, string $method, string $uri, array $query = [], array $payload = []): array
     {
         $baseUrl = $this->resolveBaseUrl($supplier);

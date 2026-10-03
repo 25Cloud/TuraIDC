@@ -9,6 +9,10 @@ use App\Exceptions\BusinessException;
 use App\Models\Product;
 use App\Support\Money;
 use Illuminate\Support\Str;
+use App\Models\Supplier;
+use App\Services\Upstream\Contracts\ProvidesUpstreamQuoting;
+use App\Services\Upstream\ProviderResolver;
+use Illuminate\Support\Facades\DB;
 
 trait HandlesOrderCalculation
 {
@@ -51,6 +55,13 @@ trait HandlesOrderCalculation
         }
 
         $quote = $this->buildQuoteBreakdown($product, $billingCycle, $config);
+
+        $upstreamQuote = $this->resolveUpstreamConfigQuote($product, $config, $billingCycle);
+        if ($upstreamQuote !== null) {
+            $quote['config_amount'] = (float) ($upstreamQuote['config_amount'] ?? 0);
+            $quote['items'] = $this->mapUpstreamQuoteItems((array) ($upstreamQuote['items'] ?? []));
+        }
+
         $setupFee = (float) $product->setup_fee;
 
         return Money::add($baseAmount, $quote['config_amount'] ?? 0, $setupFee);
@@ -65,6 +76,11 @@ trait HandlesOrderCalculation
         throw_if($baseAmount <= 0, new BusinessException('无效的计费周期'));
 
         $quote = $this->buildQuoteBreakdown($product, $billingCycle, $config);
+        $upstreamQuote = $this->resolveUpstreamConfigQuote($product, $config, $billingCycle);
+        if ($upstreamQuote !== null) {
+            $quote['config_amount'] = (float) ($upstreamQuote['config_amount'] ?? 0);
+            $quote['items'] = $this->mapUpstreamQuoteItems((array) ($upstreamQuote['items'] ?? []));
+        }
         $setupFee = (float) $product->setup_fee;
         $unitTotalAmount = Money::add($baseAmount, $quote['config_amount'] ?? 0, $setupFee);
         $scaledBaseAmount = Money::multiply($baseAmount, $quantity);
@@ -102,6 +118,11 @@ trait HandlesOrderCalculation
         $config = $this->normalizeConfig($product, $config);
         $baseAmount = (float) $product->getPriceByBillingCycle($billingCycle);
         $quote = $this->buildConfigPricingBreakdown($product, $billingCycle, $config);
+        $upstreamQuote = $this->resolveUpstreamConfigQuote($product, $config, $billingCycle);
+        if ($upstreamQuote !== null) {
+            $quote['config_amount'] = (float) ($upstreamQuote['config_amount'] ?? 0);
+            $quote['items'] = $this->mapUpstreamQuoteItems((array) ($upstreamQuote['items'] ?? []));
+        }
         $setupFee = (float) $product->setup_fee;
         $quantity = max($quantity, 1);
         $unitTotalAmount = Money::add($baseAmount, $quote['config_amount'] ?? 0, $setupFee);
@@ -325,6 +346,103 @@ trait HandlesOrderCalculation
             'config_amount' => round($extraAmount, 2),
             'items' => $items,
         ];
+    }
+
+    /**
+     * 商品来自上游且插件支持实时报价时，用上游 /quote 的计算结果覆盖本地配置加价。
+     *
+     * 转售商品本地 config_options 通常没有单价（上游不通过目录接口暴露），本地
+     * buildQuoteBreakdown 算出来是 0；上游 /quote 才是真实价格来源（如数据盘 1 元/GB）。
+     * 这里只覆盖 config_amount 与 items，base 仍用商家在 product.pricing 设的转售价，
+     * 既保留商家加价、又让加价项显示真实价格。按 quantity=1 取单价，交给上层按数量缩放。
+     */
+    private function resolveUpstreamConfigQuote(Product $product, array $config, string $billingCycle): ?array
+    {
+        if ($config === []) {
+            return null;
+        }
+
+        $binding = DB::table('product_upstream_bindings')
+            ->where('product_id', (int) $product->id)
+            ->first();
+
+        if ($binding === null || (int) ($binding->upstream_product_id ?? 0) <= 0) {
+            return null;
+        }
+
+        try {
+            $provider = app(ProviderResolver::class)->resolveForProduct($product);
+        } catch (\Throwable $exception) {
+            return null;
+        }
+
+        if (! $provider->supports(ProvidesUpstreamQuoting::class)) {
+            return null;
+        }
+
+        $capability = $provider->maybe(ProvidesUpstreamQuoting::class);
+
+        if ($capability === null) {
+            return null;
+        }
+
+        // product_upstream_bindings 只持 supplier_plugin_binding_id，需再连 supplier_plugin_bindings 取 supplier_id
+        $pluginBinding = DB::table('supplier_plugin_bindings')
+            ->where('id', (int) ($binding->supplier_plugin_binding_id ?? 0))
+            ->first();
+
+        if ($pluginBinding === null) {
+            return null;
+        }
+
+        $rawSupplier = Supplier::find((int) ($pluginBinding->supplier_id ?? 0));
+
+        if ($rawSupplier === null) {
+            return null;
+        }
+
+        // 供应商主表无 api_url/api_key 列，开放接口地址与密钥存于 supplier_plugin_bindings；
+        // 须经绑定解析器注入运行时凭证（base_url -> api_url），否则 quoteUpstreamProduct 读到空地址。
+        $supplier = app(\App\Services\Integrations\Plugins\PluginBindingResolver::class)
+            ->supplierWithRuntimeCredentials($rawSupplier);
+
+        try {
+            $data = $capability->quoteUpstreamProduct($supplier, (int) $binding->upstream_product_id, $config, $billingCycle, 1);
+        } catch (\Throwable $exception) {
+            return null;
+        }
+
+
+        return is_array($data) && $data !== [] ? $data : null;
+    }
+
+    /**
+     * @param  array<int, mixed>  $items
+     * @return array<int, array{field: string, label: string, amount: string}>
+     */
+    private function mapUpstreamQuoteItems(array $items): array
+    {
+        $mapped = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $field = (string) ($item['field'] ?? '');
+
+            if ($field === '') {
+                continue;
+            }
+
+            $mapped[] = [
+                'field' => $field,
+                'label' => (string) ($item['label'] ?? $field),
+                'amount' => (string) ($item['amount'] ?? '0.00'),
+            ];
+        }
+
+        return $mapped;
     }
 
     private function buildQuoteBreakdown(Product $product, string $billingCycle, array $config): array

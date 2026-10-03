@@ -25,6 +25,7 @@ use App\Services\Upstream\Contracts\ProvidesRenewalRecovery;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
 use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\Contracts\ProvidesSupplierFormSchema;
+use App\Services\Upstream\Contracts\ProvidesUpstreamQuoting;
 use App\Services\Upstream\Contracts\UpstreamDriver;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -38,7 +39,7 @@ use TuraIDC\Plugins\Servers\TuraOpenApi\Lib\TuraOpenApiClient;
  * 复用同一键命中上游幂等兜底，不重复扣上游余额）并余额支付，然后轮询上游账单/
  * 服务状态直到 Active。轮询超时直接抛出，由开通队列按 tries 重试继续轮询。
  */
-class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, ProvidesConsoleRuntime, ProvidesInvoiceRenewal, ProvidesOrderProvisioning, ProvidesProvisioning, ProvidesRenewableCycleFiltering, ProvidesRenewal, ProvidesRenewalRecovery, ProvidesStatusSync, ProvidesSupplierBalance, ProvidesSupplierFormSchema, UpstreamDriver
+class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, ProvidesConsoleRuntime, ProvidesInvoiceRenewal, ProvidesOrderProvisioning, ProvidesProvisioning, ProvidesRenewableCycleFiltering, ProvidesRenewal, ProvidesRenewalRecovery, ProvidesStatusSync, ProvidesSupplierBalance, ProvidesSupplierFormSchema, ProvidesUpstreamQuoting, UpstreamDriver
 {
     public const KEY = 'tura_open_api';
 
@@ -61,6 +62,8 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
     /** 站点分组缓存时长（秒）：货架不常变，但补全要遍历 30+ 次请求 */
     private const SITE_GROUP_CACHE_TTL = 21600;
+    /** 上游实时报价缓存：价格分钟级不变，缓冲前台频繁的价格预览请求 */
+    private const QUOTE_CACHE_TTL = 60;
 
     /** 区间型配置项 option_type（与系统商品配置项的语义一致）：这些项按数量区间取值而非下拉 */
     private const SITE_RANGE_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19];
@@ -86,6 +89,7 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         ProvidesRenewalRecovery::class,
         ProvidesStatusSync::class,
         ProvidesSupplierBalance::class,
+        ProvidesUpstreamQuoting::class,
     ];
 
     /** 目录导入/续费探测用的标准周期序（与 hydrateSelectedPricing 保持一致） */
@@ -1733,6 +1737,51 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
      * 上游服务状态（本地 ServiceStatus 常量）→ 通用主机 domainstatus 文本，
      * 与状态同步的 resolveServiceStatusFromUpstream 语义对齐。
      */
+    /**
+     * 实时上游报价（前台/管理端价格预览用）。
+     *
+     * 转售商品本地没有配置项单价（开放接口与站点目录的 config_options 都不含价格），
+     * 真实价格全靠上游自己的实时报价接口 POST /api/v2/site/products/{id}/quote 计算。
+     * 该接口面向官网访客、无需密钥，直接走公开客户端。返回的 data 含 base_amount /
+     * config_amount / items / total_amount 等，调用方按需取用（报价逻辑只覆盖 config 加价）。
+     *
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>  上游解包后的 data；失败返回空数组
+     */
+    public function quoteUpstreamProduct(Supplier $supplier, int $upstreamProductId, array $config, string $billingCycle, int $quantity): array
+    {
+        $quantity = max((int) $quantity, 1);
+        $configBody = $config === [] ? new \stdClass() : $config;
+        $cacheKey = 'tura_open_api:quote:'
+            . $this->supplierFingerprint($supplier) . ':'
+            . $upstreamProductId . ':' . $billingCycle . ':' . $quantity . ':'
+            . md5(json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+        return Cache::remember($cacheKey, self::QUOTE_CACHE_TTL, function () use ($supplier, $upstreamProductId, $configBody, $billingCycle, $quantity): array {
+            try {
+                $data = $this->client()->postPublic(
+                    $supplier,
+                    '/api/v2/site/products/' . $upstreamProductId . '/quote',
+                    [
+                        'config' => $configBody,
+                        'billing_cycle' => $billingCycle,
+                        'quantity' => $quantity,
+                    ]
+                );
+            } catch (\Throwable $exception) {
+                Log::warning('[tura_open_api] 上游实时报价失败', [
+                    'product' => $upstreamProductId,
+                    'billing_cycle' => $billingCycle,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                return [];
+            }
+
+            return is_array($data) ? $data : [];
+        });
+    }
+
     private function domainStatusFromServiceStatus(int $status): string
     {
         return match ($status) {
