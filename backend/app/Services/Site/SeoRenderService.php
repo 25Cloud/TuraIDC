@@ -45,7 +45,13 @@ class SeoRenderService
             abort(404);
         }
 
-        $cacheKey = self::PAGE_CACHE_PREFIX.$path.':v'.ContentPublishedCacheVersion::current();
+        // 缓存键除内容版本外还要并入 shell 指纹：页面 HTML 里内联了前端构建产物的
+        // 资源引用，文件名带内容哈希。前端一旦重新构建，旧缓存就会继续返回引用
+        // 已删除文件的 HTML，而静态资源缺失时 nginx 会回退成 index.html（200 + text/html），
+        // 浏览器把 HTML 当 JS 执行，页面只剩服务端预渲染的老结构、交互全部失效。
+        $cacheKey = self::PAGE_CACHE_PREFIX.$path
+            .':v'.ContentPublishedCacheVersion::current()
+            .':s'.substr(sha1($this->fetchShellTemplate()), 0, 12);
 
         return Cache::remember(
             $cacheKey,
@@ -304,16 +310,22 @@ class SeoRenderService
      */
     private function fetchShellTemplate(): string
     {
+        $url = (string) config('idc.seo.frontend_shell_url', 'http://frontends:8081/index.html');
+        // 源码部署时 shell 就是同机文件，把 mtime 并入缓存键：前端重新构建后立刻生效，
+        // 不必再等 shell_cache_ttl（默认 600 秒）自然过期——否则新构建的资源名最长要
+        // 延迟 10 分钟才对外可见，期间页面会引用到已被删除的旧 chunk。
+        $localPath = str_starts_with($url, 'file://') ? substr($url, 7) : null;
+        $shellVersion = $localPath !== null && is_file($localPath) ? (string) filemtime($localPath) : 'remote';
+
         return Cache::remember(
-            self::SHELL_CACHE_KEY,
+            self::SHELL_CACHE_KEY.':'.$shellVersion,
             now()->addSeconds((int) config('idc.seo.shell_cache_ttl', 600)),
-            function (): string {
-                $url = (string) config('idc.seo.frontend_shell_url', 'http://frontends:8081/index.html');
+            function () use ($url, $localPath): string {
                 $html = '';
 
-                if (str_starts_with($url, 'file://')) {
+                if ($localPath !== null) {
                     // 源码部署：直接读同机前端构建产物
-                    $html = @file_get_contents(substr($url, 7));
+                    $html = @file_get_contents($localPath);
                 } else {
                     $response = Http::timeout(5)->get($url);
                     $html = $response->ok() ? $response->body() : '';

@@ -1054,183 +1054,189 @@
 
         <!-- 右侧费用摘要 -->
         <aside class="shop-cost" v-if="selectedProduct">
-          <div class="cost-header">
-            <span class="cost-title">配置费用</span>
-            <span class="stock-badge" :class="stockClass">{{
-              stockLabel
-            }}</span>
-          </div>
-
-          <div class="stock-info" v-if="selectedProduct">
-            <div
-              v-if="resolvedStock !== null && resolvedStock !== -1"
-              class="stock-main"
-            >
-              当前库存&nbsp;&nbsp;
-              <strong>剩余 {{ resolvedStock }} 台</strong>
-            </div>
-            <div v-else-if="productStockLoading" class="stock-main">
-              当前库存&nbsp;&nbsp;<strong>同步中...</strong>
-            </div>
-            <div v-else-if="productStockError" class="stock-main">
-              当前库存&nbsp;&nbsp;<strong>同步失败</strong>
-            </div>
-            <div class="stock-hint">{{ stockHint }}</div>
-          </div>
-
-          <el-alert
-            v-if="purchaseRequirementList.length"
-            type="warning"
-            :closable="false"
-            show-icon
-            class="purchase-requirements-alert"
-          >
-            <template #title
-              >购买要求：{{ purchaseRequirementSummary }}</template
-            >
-          </el-alert>
-
-          <div class="cost-divider"></div>
-
-          <div
-            class="cost-detail"
-            :class="{ 'cost-detail--loading': quoteLoading }"
-          >
-            <div class="cost-item">
-              <span>产品</span
-              ><span>{{
-                selectedProductSummaryName || selectedProductDisplayName
+          <!-- 明细区：面板内唯一的滚动容器，内容再长也不会挤压下方结算栏 -->
+          <div class="cost-scroll">
+            <div class="cost-header">
+              <span class="cost-title">配置费用</span>
+              <span class="stock-badge" :class="stockClass">{{
+                stockLabel
               }}</span>
             </div>
-            <div class="cost-item" v-for="item in summaryItems" :key="item.key">
-              <span>{{ item.label }}</span
-              ><span>{{ item.value }}</span>
-            </div>
-            <div class="cost-item" v-if="selectedCycleLabel">
-              <span>周期</span><span>{{ selectedCycleLabel }}</span>
-            </div>
-          </div>
 
-          <div class="cost-divider"></div>
-
-          <div
-            class="cost-breakdown"
-            :class="{ 'cost-breakdown--loading': quoteLoading }"
-          >
-            <div class="cost-item">
-              <span>基础价格</span><span>¥{{ baseAmount }}</span>
-            </div>
-            <div class="cost-item" v-if="Number(setupFee) > 0">
-              <span>开通费</span><span>¥{{ setupFee }}</span>
-            </div>
-            <div
-              class="cost-item cost-item--extra"
-              v-for="item in quoteItems"
-              :key="item.field"
-            >
-              <span>+ {{ item.label }}</span
-              ><span>¥{{ item.amount }}</span>
-            </div>
-            <div class="cost-item cost-item--discount" v-if="appliedCoupon">
-              <span>优惠券 {{ appliedCoupon.code }}</span
-              ><span>-¥{{ appliedCoupon.discount_amount }}</span>
-            </div>
-            <div class="cost-item cost-item--discount" v-if="hasAgentDiscount">
-              <span
-                >代理折扣（{{ agentGroupName }}）<em class="discount-tag">{{
-                  agentDiscountPercent
-                }}</em></span
-              ><span>-¥{{ agentDiscountAmount }}</span>
-            </div>
-          </div>
-
-          <div class="cost-divider"></div>
-
-          <div class="coupon-panel">
-            <div class="coupon-panel-head">
-              <span class="coupon-panel-title">优惠券</span>
-              <button
-                v-if="appliedCoupon"
-                type="button"
-                class="coupon-clear-btn"
-                @click="clearCoupon"
+            <div class="stock-info" v-if="selectedProduct">
+              <div
+                v-if="resolvedStock !== null && resolvedStock !== -1"
+                class="stock-main"
               >
-                移除
-              </button>
+                当前库存&nbsp;&nbsp;
+                <strong>剩余 {{ resolvedStock }} 台</strong>
+              </div>
+              <div v-else-if="productStockLoading" class="stock-main">
+                当前库存&nbsp;&nbsp;<strong>同步中...</strong>
+              </div>
+              <div v-else-if="productStockError" class="stock-main">
+                当前库存&nbsp;&nbsp;<strong>同步失败</strong>
+              </div>
+              <div class="stock-hint">{{ stockHint }}</div>
             </div>
-            <div class="coupon-panel-form">
-              <el-select
-                :model-value="selectedCouponId || undefined"
-                clearable
-                placeholder="请选择优惠券"
-                @change="handleCouponChange"
-              >
-                <el-option
-                  v-for="item in availableCoupons"
-                  :key="item.id"
-                  :label="`${item.name} · ${item.discount_label}`"
-                  :value="item.id"
-                />
-              </el-select>
-            </div>
-            <div v-if="appliedCoupon" class="coupon-panel-tip">
-              {{ appliedCoupon.name }}，{{
-                appliedCoupon.discount_label
-              }}，本次已减免 ¥{{ appliedCoupon.discount_amount }}
-            </div>
-            <div
-              v-else-if="!availableCoupons.length"
-              class="coupon-panel-tip coupon-panel-tip--muted"
+
+            <el-alert
+              v-if="purchaseRequirementList.length"
+              type="warning"
+              :closable="false"
+              show-icon
+              class="purchase-requirements-alert"
             >
-              {{
-                selectedProduct
-                  ? "当前暂无可用优惠券，登录后如有优惠券会自动展示在这里。"
-                  : "请选择商品后查看可用优惠券。"
-              }}
+              <template #title
+                >购买要求：{{ purchaseRequirementSummary }}</template
+              >
+            </el-alert>
+
+            <div class="cost-divider"></div>
+
+            <div
+              class="cost-detail"
+              :class="{ 'cost-detail--loading': quoteLoading }"
+            >
+              <div class="cost-item">
+                <span>产品</span
+                ><span>{{
+                  selectedProductSummaryName || selectedProductDisplayName
+                }}</span>
+              </div>
+              <div class="cost-item" v-for="item in summaryItems" :key="item.key">
+                <span>{{ item.label }}</span
+                ><span>{{ item.value }}</span>
+              </div>
+              <div class="cost-item" v-if="selectedCycleLabel">
+                <span>周期</span><span>{{ selectedCycleLabel }}</span>
+              </div>
             </div>
-          </div>
 
-          <div class="cost-divider"></div>
+            <div class="cost-divider"></div>
 
-          <div
-            class="cost-total"
-            :class="{ 'cost-total--loading': quoteLoading }"
-          >
-            <span class="cost-total-label">合计费用</span>
-            <div class="cost-price-wrap">
-              <template v-if="quoteLoading">
-                <span class="cost-currency">¥</span>
-                <span class="cost-amount cost-amount--loading">计算中</span>
-              </template>
-              <template v-else-if="hasAgentDiscount">
-                <span class="cost-amount cost-amount--original"
-                  >¥{{ agentOriginalAmount }}</span
+            <div
+              class="cost-breakdown"
+              :class="{ 'cost-breakdown--loading': quoteLoading }"
+            >
+              <div class="cost-item">
+                <span>基础价格</span><span>¥{{ baseAmount }}</span>
+              </div>
+              <div class="cost-item" v-if="Number(setupFee) > 0">
+                <span>开通费</span><span>¥{{ setupFee }}</span>
+              </div>
+              <div
+                class="cost-item cost-item--extra"
+                v-for="item in quoteItems"
+                :key="item.field"
+              >
+                <span>+ {{ item.label }}</span
+                ><span>¥{{ item.amount }}</span>
+              </div>
+              <div class="cost-item cost-item--discount" v-if="appliedCoupon">
+                <span>优惠券 {{ appliedCoupon.code }}</span
+                ><span>-¥{{ appliedCoupon.discount_amount }}</span>
+              </div>
+              <div class="cost-item cost-item--discount" v-if="hasAgentDiscount">
+                <span
+                  >代理折扣（{{ agentGroupName }}）<em class="discount-tag">{{
+                    agentDiscountPercent
+                  }}</em></span
+                ><span>-¥{{ agentDiscountAmount }}</span>
+              </div>
+            </div>
+
+            <div class="cost-divider"></div>
+
+            <div class="coupon-panel">
+              <div class="coupon-panel-head">
+                <span class="coupon-panel-title">优惠券</span>
+                <button
+                  v-if="appliedCoupon"
+                  type="button"
+                  class="coupon-clear-btn"
+                  @click="clearCoupon"
                 >
-                <em v-if="agentDiscountPercent" class="discount-tag">{{
-                  agentDiscountPercent
-                }}</em>
-                <span class="cost-amount">¥{{ agentAmount }}</span>
-              </template>
-              <template v-else>
-                <span class="cost-currency">¥</span>
-                <span class="cost-amount">{{ totalPrice }}</span>
-              </template>
-              <span class="cost-cycle"
-                >/{{ selectedCycleLabel || "月付" }}</span
+                  移除
+                </button>
+              </div>
+              <div class="coupon-panel-form">
+                <el-select
+                  :model-value="selectedCouponId || undefined"
+                  clearable
+                  placeholder="请选择优惠券"
+                  @change="handleCouponChange"
+                >
+                  <el-option
+                    v-for="item in availableCoupons"
+                    :key="item.id"
+                    :label="`${item.name} · ${item.discount_label}`"
+                    :value="item.id"
+                  />
+                </el-select>
+              </div>
+              <div v-if="appliedCoupon" class="coupon-panel-tip">
+                {{ appliedCoupon.name }}，{{
+                  appliedCoupon.discount_label
+                }}，本次已减免 ¥{{ appliedCoupon.discount_amount }}
+              </div>
+              <div
+                v-else-if="!availableCoupons.length"
+                class="coupon-panel-tip coupon-panel-tip--muted"
               >
+                {{
+                  selectedProduct
+                    ? "当前暂无可用优惠券，登录后如有优惠券会自动展示在这里。"
+                    : "请选择商品后查看可用优惠券。"
+                }}
+              </div>
             </div>
-          </div>
 
-          <button
-            class="buy-btn"
-            :disabled="!canSubmit || submitting || quoteLoading"
-            :class="{ loading: submitting, 'is-sold-out': soldOut }"
-            @click="handleSubmit"
-          >
-            <span>{{
-              soldOut ? "已售罄" : submitting ? "提交中..." : "立即购买"
-            }}</span>
-          </button>
+            <div class="cost-divider"></div>
+
+            <div
+              class="cost-total"
+              :class="{ 'cost-total--loading': quoteLoading }"
+            >
+              <span class="cost-total-label">合计费用</span>
+              <div class="cost-price-wrap">
+                <template v-if="quoteLoading">
+                  <span class="cost-currency">¥</span>
+                  <span class="cost-amount cost-amount--loading">计算中</span>
+                </template>
+                <template v-else-if="hasAgentDiscount">
+                  <span class="cost-amount cost-amount--original"
+                    >¥{{ agentOriginalAmount }}</span
+                  >
+                  <em v-if="agentDiscountPercent" class="discount-tag">{{
+                    agentDiscountPercent
+                  }}</em>
+                  <span class="cost-amount">¥{{ agentAmount }}</span>
+                </template>
+                <template v-else>
+                  <span class="cost-currency">¥</span>
+                  <span class="cost-amount">{{ totalPrice }}</span>
+                </template>
+                <span class="cost-cycle"
+                  >/{{ selectedCycleLabel || "月付" }}</span
+                >
+              </div>
+            </div>
+
+          </div>
+          <!-- 结算栏：按钮常驻面板底部，不会盖住上方明细 -->
+          <div class="cost-footer">
+            <button
+              class="buy-btn"
+              :disabled="!canSubmit || submitting || quoteLoading"
+              :class="{ loading: submitting, 'is-sold-out': soldOut }"
+              @click="handleSubmit"
+            >
+              <span>{{
+                soldOut ? "已售罄" : submitting ? "提交中..." : "立即购买"
+              }}</span>
+            </button>
+          </div>
         </aside>
       </div>
 
