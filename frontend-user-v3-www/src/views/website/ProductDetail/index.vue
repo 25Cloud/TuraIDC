@@ -1299,6 +1299,7 @@ onBeforeUnmount(() => {
 
 /* 统一内容容器：限制最大宽度并水平居中（左右留出安全间距） */
 .pd-topbar,
+.pd-name-bar,
 .pd-hero,
 .pd-body {
   width: calc(100% - 2 * var(--pd-content-gutter));
@@ -1382,7 +1383,8 @@ onBeforeUnmount(() => {
 
 /* ===== 产品名称栏 ===== */
 .pd-name-bar {
-  padding: 10px 16px 0;
+  /* 纵向间距保留，横向交由上面的统一容器规则控制 */
+  padding: 10px 0 0;
 }
 
 .pd-hero {

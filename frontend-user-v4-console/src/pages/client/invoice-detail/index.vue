@@ -573,8 +573,9 @@ function machineSpecs(row: InvoiceRecord | null | undefined) {
     const cleanLabel = label.trim();
     const cleanValue = value.trim();
     if (!cleanLabel || !cleanValue || cleanValue === '--') return;
+    // 展示层面同一标签只保留首次出现的一条，避免区域/网络类型等重复罗列
+    if (seenLabels.has(cleanLabel)) return;
     if (cleanField && seenFields.has(cleanField)) return;
-    if (!cleanField && seenLabels.has(cleanLabel)) return;
     if (cleanField) seenFields.add(cleanField);
     seenLabels.add(cleanLabel);
     result.push({ label: cleanLabel, value: cleanValue });

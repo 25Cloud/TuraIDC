@@ -188,6 +188,11 @@ if (options.dryRun) {
   console.log(`WWW: ${websiteUrl.public} (base ${websiteUrl.base})`);
   console.log(`Console: ${consoleUrl.public} (base ${consoleUrl.base})`);
   console.log(`Admin: ${adminUrl.public} (base ${adminUrl.base})`);
+  if (apiUrl.origin === websiteUrl.origin) {
+    console.log(
+      `注意：API 与官网同源，请确保 ${apiUrl.origin}/api 已反代到后端服务（否则前端请求会落到官网静态目录）。`,
+    );
+  }
   console.log(`构建目标: ${selectedApplications.map(([name]) => name).join(', ')}`);
   process.exit(0);
 }

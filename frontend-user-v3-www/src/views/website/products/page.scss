@@ -2168,6 +2168,8 @@
     align-items: stretch;
     border-radius: 4px 4px 0 0;
     overflow: hidden;
+    /* 单列布局下不需要右侧安全间距，否则会在边缘留出不均匀的灰边 */
+    padding-right: 0;
   }
 
   .shop-main {
