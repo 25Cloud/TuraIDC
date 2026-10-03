@@ -1,3 +1,41 @@
 @import './font-family.less';
 @import './reset.less';
 @import '../../../theme.css';
+
+/* ===== 全局细滚动条 =====
+   Windows 下 Chromium 默认滚动条约 15px，宽且对比度强，在内容区里非常抢眼。
+   Chromium 走 ::-webkit-scrollbar 精确收窄到 6px，颜色跟随 TDesign 的
+   --td-scrollbar-color，亮色/暗色主题都能自适应。
+   标准属性 scrollbar-width/scrollbar-color 只喂给不支持该伪元素的浏览器（Firefox）——
+   二者同时声明时 Chromium 会放弃 ::-webkit-scrollbar 的取值，故用 @supports 隔离。
+   已有自定义滚动条的容器（layout.less 里的 content-layout 等）选择器优先级更高，
+   其 width: 8px 与 ::-webkit-scrollbar { display: none } 不受影响。 */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--td-scrollbar-color, rgba(0, 0, 0, 0.2)) transparent;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--td-scrollbar-color, rgba(0, 0, 0, 0.2));
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--td-scrollbar-color, rgba(0, 0, 0, 0.4));
+  opacity: 0.9;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
