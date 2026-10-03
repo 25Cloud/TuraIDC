@@ -5,18 +5,21 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Servers\TuraOpenApi\Logic;
 
 use App\Constants\InvoiceStatus;
+use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Supplier;
+use App\Services\ProductCatalog\ProductCatalogService;
 use App\Services\Upstream\Contracts\ProvidesBatchStatusSync;
 use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesInvoiceRenewal;
 use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
+use App\Services\Upstream\Contracts\ProvidesRenewableCycleFiltering;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\Contracts\ProvidesRenewalRecovery;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
@@ -34,7 +37,7 @@ use TuraIDC\Plugins\Servers\TuraOpenApi\Lib\TuraOpenApiClient;
  * 复用同一键命中上游幂等兜底，不重复扣上游余额）并余额支付，然后轮询上游账单/
  * 服务状态直到 Active。轮询超时直接抛出，由开通队列按 tries 重试继续轮询。
  */
-class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, ProvidesConsoleRuntime, ProvidesInvoiceRenewal, ProvidesOrderProvisioning, ProvidesProvisioning, ProvidesRenewal, ProvidesRenewalRecovery, ProvidesStatusSync, ProvidesSupplierBalance, ProvidesSupplierFormSchema, UpstreamDriver
+class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, ProvidesConsoleRuntime, ProvidesInvoiceRenewal, ProvidesOrderProvisioning, ProvidesProvisioning, ProvidesRenewableCycleFiltering, ProvidesRenewal, ProvidesRenewalRecovery, ProvidesStatusSync, ProvidesSupplierBalance, ProvidesSupplierFormSchema, UpstreamDriver
 {
     public const KEY = 'tura_open_api';
 
@@ -59,11 +62,17 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         // 基契约必须保留：编排层以 ProvidesProvisioning/ProvidesRenewal/ProvidesStatusSync
         // 作为能力门槛，子接口通过继承满足 instanceof，但 supports() 需要显式列出
         ProvidesProvisioning::class,
+        // 续费周期过滤：上游可续周期由 /services/{id}/renewals 真实返回，避免本地
+        // 放出上游并不支持的周期。
+        ProvidesRenewableCycleFiltering::class,
         ProvidesRenewal::class,
         ProvidesRenewalRecovery::class,
         ProvidesStatusSync::class,
         ProvidesSupplierBalance::class,
     ];
+
+    /** 目录导入/续费探测用的标准周期序（与 hydrateSelectedPricing 保持一致） */
+    private const STANDARD_BILLING_CYCLES = ['monthly', 'quarterly', 'semiannually', 'annually'];
 
     public function __construct(
         private readonly ?TuraOpenApiClient $client = null,
@@ -164,12 +173,12 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
             'server.health_check' => [
                 'success' => true,
                 'action' => $action,
-                'data' => [
-                    'healthy' => true,
-                    'provider_key' => $this->key(),
-                    'message' => 'TuraIDC 开放接口插件加载正常',
-                ],
+                'data' => $this->healthCheck(),
             ],
+            // 供应商卡片上的两个动作：与 ZJMF / 康乐插件使用同一动作名与返回结构，
+            // 管理端据此刷新卡片与批量导入上游商品。
+            'server.supplier.refresh_card' => $this->refreshSupplierCard($action, $request),
+            'server.supplier.bulk_connect' => $this->bulkConnectSupplierProducts($action, $request, $payload),
             default => [
                 'success' => false,
                 'action' => $action,
@@ -177,6 +186,148 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
                 'data' => [],
             ],
         };
+    }
+
+    /**
+     * 插件自检（PluginRuntimeRegistry::healthCheck 以无参方式调用）。
+     *
+     * @return array<string, mixed>
+     */
+    public function healthCheck(): array
+    {
+        return [
+            'healthy' => true,
+            'provider_key' => $this->key(),
+            'message' => 'TuraIDC 开放接口插件加载正常',
+            'details' => [
+                'capabilities' => count(self::CAPABILITIES),
+                'account_fields' => ['api_url', 'api_key'],
+            ],
+        ];
+    }
+
+    /**
+     * 供应商卡片：与其它上游插件共用同一卡片契约（title/subtitle/status/fields/actions），
+     * 由管理端统一渲染。
+     *
+     * @param  array<string, mixed>  $context
+     * @return array<string, mixed>
+     */
+    public function renderCard(Supplier $supplier, array $context = []): array
+    {
+        $binding = is_array($context['binding'] ?? null) ? (array) $context['binding'] : [];
+        $remote = is_array($context['remote'] ?? null) ? (array) $context['remote'] : [];
+        $client = is_array($remote['client'] ?? null) ? (array) $remote['client'] : [];
+
+        $balance = array_key_exists('balance', $remote)
+            ? '¥ '.$this->moneyText($remote['balance'])
+            : '-';
+        $lastUpdated = $this->formatCardDateTime(
+            $context['checked_at']
+                ?? $remote['checked_at']
+                ?? $binding['last_checked_at']
+                ?? $supplier->updated_at
+                ?? null
+        );
+        // 开放接口没有「账号」概念，用上游站点 + 密钥前缀标识这次对接
+        $site = $this->upstreamSiteLabel($supplier, $binding);
+        $keyLabel = $this->firstFilled([
+            $client['key_prefix'] ?? null,
+            $binding['account_name'] ?? null,
+        ]);
+        $hasCredentials = $this->hasSupplierCredentials($supplier, $binding);
+        $enabled = (int) ($supplier->status ?? 0) === 1;
+
+        return [
+            'title' => trim((string) ($supplier->name ?? '')) ?: $this->label(),
+            'subtitle' => $this->label(),
+            'status' => [
+                'label' => $enabled ? '启用中' : '已停用',
+                'theme' => $enabled ? 'success' : 'default',
+                'variant' => 'light',
+            ],
+            'fields' => [
+                [
+                    'key' => 'upstream_site',
+                    'label' => '上游站点',
+                    'value' => $site !== '' ? $site : '-',
+                ],
+                [
+                    // 开放接口没有账号概念，用密钥前缀标识这次对接用的是哪把密钥
+                    'key' => 'upstream_key',
+                    'label' => '接口密钥',
+                    'value' => $keyLabel !== '' ? $keyLabel : '-',
+                ],
+                [
+                    'key' => 'upstream_balance',
+                    'label' => '上游余额',
+                    'value' => $balance,
+                ],
+                [
+                    'key' => 'updated_at',
+                    'label' => '最近更新时间',
+                    'value' => $lastUpdated,
+                ],
+            ],
+            'actions' => [
+                [
+                    'key' => 'refresh_card',
+                    'label' => '同步余额',
+                    'action' => 'supplier.remote_metric.refresh',
+                    'request_action' => 'server.supplier.refresh_card',
+                    'theme' => 'primary',
+                    'variant' => 'text',
+                    'disabled' => ! $hasCredentials,
+                    'disabled_reason' => '接口配置不完整，暂时无法同步余额',
+                ],
+                [
+                    'key' => 'bulk_connect',
+                    'label' => '批量导入/对接',
+                    'action' => 'supplier.batch_connect',
+                    'request_action' => 'server.supplier.bulk_connect',
+                    'variant' => 'text',
+                    'disabled' => ! $hasCredentials,
+                    'disabled_reason' => '接口配置不完整，暂时无法批量对接商品',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 上游可续周期：直接取续费预览返回的周期集合，上游不可达时返回 null，
+     * 由调用方回退本地周期（约定见 ProvidesRenewableCycleFiltering）。
+     *
+     * @return list<string>|null
+     */
+    public function renewableCycles(Supplier $supplier, int $hostId): ?array
+    {
+        try {
+            $preview = $this->client()->get($supplier, "/api/v2/open/services/{$hostId}/renewals");
+        } catch (BusinessException $exception) {
+            Log::warning('[TuraIDC 开放接口] 续费周期探测失败，回退本地周期集合', [
+                'supplier_id' => (int) $supplier->id,
+                'host_id' => $hostId,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        $cycles = [];
+        foreach ((array) ($preview['cycles'] ?? []) as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $cycle = trim((string) ($item['billing_cycle'] ?? ''));
+            if ($cycle !== '') {
+                $cycles[] = $cycle;
+            }
+        }
+
+        $cycles = array_values(array_unique($cycles));
+
+        return $cycles !== [] ? $cycles : null;
     }
 
     /* ---------------------------------- 目录 ---------------------------------- */
@@ -211,7 +362,7 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
             return $products;
         }
 
-        $cycles = ['monthly', 'quarterly', 'semiannually', 'annually'];
+        $cycles = self::STANDARD_BILLING_CYCLES;
 
         return collect($products)->map(function (array $product) use ($supplier, $selected, $cycles): array {
             $productId = (int) ($product['id'] ?? 0);
@@ -493,6 +644,10 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
     /* ---------------------------------- 余额 ---------------------------------- */
 
+    /**
+     * 余额查询同时承担「连接检测」：能取到余额即视为上游可达，
+     * 管理端据此把供应商标记为连接成功并刷新卡片。
+     */
     public function getBalance(Supplier $supplier): array
     {
         $data = $this->client()->get($supplier, '/api/v2/open/balance');
@@ -500,7 +655,39 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         return [
             'balance' => (string) ($data['balance'] ?? ''),
             'currency' => (string) ($data['currency'] ?? 'CNY'),
+            'connection_status' => 'connected',
+            'connection_message' => '连接正常',
+            'client' => $this->upstreamClientInfo($supplier),
         ];
+    }
+
+    /**
+     * 上游密钥自述信息（GET /api/v2/open/keys/self）：只取密钥前缀与权限范围，
+     * 用于卡片上人工核对是哪把密钥。取不到不影响余额同步，故失败仅降级返回空。
+     *
+     * @return array<string, mixed>
+     */
+    private function upstreamClientInfo(Supplier $supplier): array
+    {
+        $info = ['provider_key' => self::KEY];
+
+        try {
+            $self = $this->client()->get($supplier, '/api/v2/open/keys/self');
+        } catch (BusinessException $exception) {
+            Log::warning('[TuraIDC 开放接口] 读取上游密钥自述信息失败', [
+                'supplier_id' => (int) $supplier->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return $info;
+        }
+
+        $info['key_prefix'] = trim((string) ($self['key_prefix'] ?? ''));
+        $info['scopes'] = is_array($self['scopes'] ?? null) ? array_values($self['scopes']) : [];
+        $info['expires_at'] = trim((string) ($self['expires_at'] ?? ''));
+        $info['last_used_at'] = trim((string) ($self['last_used_at'] ?? ''));
+
+        return $info;
     }
 
     /* -------------------------------- 控制台运行时 ------------------------------ */
@@ -604,6 +791,198 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
     }
 
     /* --------------------------------- 内部辅助 -------------------------------- */
+
+    /**
+     * 「同步余额」：拉取上游余额并回填卡片；同时把连接结论回传管理端落库。
+     *
+     * @param  array<string, mixed>  $request
+     * @return array<string, mixed>
+     */
+    private function refreshSupplierCard(string $action, array $request): array
+    {
+        $supplier = $this->supplierFromContext($request);
+        $remote = $this->getBalance($supplier);
+        $checkedAt = now()->format('Y-m-d H:i:s');
+        $remote['checked_at'] = $checkedAt;
+
+        return [
+            'success' => true,
+            'action' => $action,
+            'message' => '余额同步成功',
+            'data' => [
+                'remote' => $remote,
+                'card' => $this->renderCard($supplier, [
+                    'binding' => $this->bindingFromContext($request),
+                    'remote' => $remote,
+                    'checked_at' => $checkedAt,
+                ]),
+            ],
+        ];
+    }
+
+    /**
+     * 「批量导入/对接」：按货架层级把选中的上游商品导入本地商品库。
+     * 商品目录与价格由本插件的 getProductCatalog / hydrateSelectedPricing 提供。
+     *
+     * @param  array<string, mixed>  $request
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function bulkConnectSupplierProducts(string $action, array $request, array $payload): array
+    {
+        $supplier = $this->supplierFromContext($request);
+        $result = app(ProductCatalogService::class)->bulkConnectSupplierProducts(
+            $supplier,
+            $this->validateBulkConnectPayload($payload)
+        );
+
+        return [
+            'success' => true,
+            'action' => $action,
+            'message' => '批量对接完成',
+            'data' => $result,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $request
+     */
+    private function supplierFromContext(array $request): Supplier
+    {
+        $supplier = $request['context']['supplier'] ?? null;
+        if (! $supplier instanceof Supplier) {
+            throw new BusinessException('供应商上下文缺失，无法执行插件动作', 42200);
+        }
+
+        return $supplier;
+    }
+
+    /**
+     * @param  array<string, mixed>  $request
+     * @return array<string, mixed>
+     */
+    private function bindingFromContext(array $request): array
+    {
+        return is_array($request['context']['binding'] ?? null) ? (array) $request['context']['binding'] : [];
+    }
+
+    /**
+     * 与 ZJMF / 康乐插件保持一致的批量对接入参校验（层级 + 商品 ID 去重）。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function validateBulkConnectPayload(array $payload): array
+    {
+        $firstGroupCode = trim((string) ($payload['first_product_group_code'] ?? ''));
+        if ($firstGroupCode === '' || ! in_array($firstGroupCode, ProductType::allowedValues(), true)) {
+            throw new BusinessException('请选择有效的商品种类', 42200);
+        }
+
+        $productIds = collect($payload['product_ids'] ?? [])
+            ->map(fn (mixed $id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($productIds === []) {
+            throw new BusinessException('请选择至少一个上游商品', 42200);
+        }
+
+        return [
+            'first_product_group_code' => $firstGroupCode,
+            'first_product_group_id' => $this->positiveInt($payload['first_product_group_id'] ?? null),
+            'second_product_group_id' => $this->positiveInt($payload['second_product_group_id'] ?? null),
+            'third_product_group_id' => $this->positiveInt($payload['third_product_group_id'] ?? null),
+            'second_product_group_name' => trim((string) ($payload['second_product_group_name'] ?? '')),
+            'third_product_group_name' => trim((string) ($payload['third_product_group_name'] ?? '')),
+            'product_ids' => $productIds,
+            'default_status' => (int) ($payload['default_status'] ?? 1) === 1 ? 1 : 0,
+            'default_auto_setup' => (int) ($payload['default_auto_setup'] ?? 1) === 1 ? 1 : 0,
+            'sync_config_options' => (int) ($payload['sync_config_options'] ?? 0) === 1 ? 1 : 0,
+        ];
+    }
+
+    private function positiveInt(mixed $value): int
+    {
+        $int = (int) $value;
+
+        return $int > 0 ? $int : 0;
+    }
+
+    /**
+     * @param  array<int, mixed>  $values
+     */
+    private function firstFilled(array $values): string
+    {
+        foreach ($values as $value) {
+            $string = trim((string) ($value ?? ''));
+            if ($string !== '') {
+                return $string;
+            }
+        }
+
+        return '';
+    }
+
+    private function formatCardDateTime(mixed $value): string
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d H:i:s');
+        }
+
+        $string = trim((string) ($value ?? ''));
+
+        return $string !== '' ? $string : '-';
+    }
+
+    private function moneyText(mixed $value): string
+    {
+        $string = trim((string) ($value ?? ''));
+        if ($string === '') {
+            return '0.00';
+        }
+
+        return is_numeric($string) ? number_format((float) $string, 2, '.', '') : $string;
+    }
+
+    /**
+     * 卡片上的上游站点：优先绑定的 base_url，回退供应商表里的接口地址。
+     *
+     * @param  array<string, mixed>  $binding
+     */
+    private function upstreamSiteLabel(Supplier $supplier, array $binding): string
+    {
+        $url = $this->firstFilled([
+            $binding['base_url'] ?? null,
+            $supplier->api_url ?? null,
+        ]);
+        if ($url === '') {
+            return '';
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return is_string($host) && $host !== '' ? $host : $url;
+    }
+
+    /**
+     * 本插件供应商表单只有接口地址与密钥，没有账号字段，故不校验用户名。
+     *
+     * @param  array<string, mixed>  $binding
+     */
+    private function hasSupplierCredentials(Supplier $supplier, array $binding): bool
+    {
+        $secretValues = is_array($binding['has_secret_values'] ?? null) ? (array) $binding['has_secret_values'] : [];
+        $hasBaseUrl = trim((string) ($binding['base_url'] ?? $supplier->api_url ?? '')) !== ''
+            || (bool) ($binding['has_base_url'] ?? false);
+        $hasApiKey = (bool) ($binding['has_api_key'] ?? false)
+            || (bool) ($secretValues['api_key'] ?? false)
+            || trim((string) ($supplier->api_key ?? '')) !== '';
+
+        return $hasBaseUrl && $hasApiKey;
+    }
 
     private function client(): TuraOpenApiClient
     {
