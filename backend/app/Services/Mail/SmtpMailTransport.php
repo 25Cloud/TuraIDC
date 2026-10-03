@@ -19,6 +19,11 @@ class SmtpMailTransport
         $username = trim((string) ($account['username'] ?? ''));
         $password = (string) ($account['password'] ?? '');
         $fromName = str_replace(["\r", "\n"], '', trim((string) ($account['from_name'] ?? config('app.name', '图拉云'))));
+        // 发件人地址允许与 SMTP 账号不同：未配置（留空）时回退使用账号，保持老配置行为不变。
+        $fromAddress = trim((string) ($account['from_address'] ?? ''));
+        if ($fromAddress === '') {
+            $fromAddress = $username;
+        }
 
         if ($host === '' || $port <= 0 || $username === '' || $password === '') {
             throw new \RuntimeException('邮件接口配置不完整');
@@ -36,13 +41,13 @@ class SmtpMailTransport
         Config::set('mail.mailers.smtp.timeout', $this->resolveTimeoutSeconds(
             isset($account['timeout_seconds']) ? (int) $account['timeout_seconds'] : null
         ));
-        Config::set('mail.from.address', $username);
+        Config::set('mail.from.address', $fromAddress);
         Config::set('mail.from.name', $fromName);
 
         app('mail.manager')->forgetMailers();
 
-        Mail::html($html, function ($message) use ($to, $subject, $username, $fromName): void {
-            $message->to($to)->subject($subject)->from($username, $fromName);
+        Mail::html($html, function ($message) use ($to, $subject, $fromAddress, $fromName): void {
+            $message->to($to)->subject($subject)->from($fromAddress, $fromName);
         });
     }
 

@@ -82,6 +82,19 @@
                 </div>
               </div>
 
+              <!-- 机器基础信息：CPU / 内存 / 磁盘 / 带宽 / 网络等 -->
+              <div v-if="machineSpecItems.length" class="order-pricing-block">
+                <section class="order-section">
+                  <h4>机器基础信息</h4>
+                  <div class="spec-grid">
+                    <div v-for="item in machineSpecItems" :key="`spec-${item.label}`" class="spec-item">
+                      <span class="spec-item__label">{{ item.label }}</span>
+                      <strong class="spec-item__value">{{ item.value }}</strong>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
               <div v-if="pricingItemsView.length" class="order-pricing-block">
                 <section class="order-section">
                   <h4>配置定价</h4>
@@ -186,10 +199,8 @@
 
             <t-card v-if="showPayActions && hasPayMethods" class="pay-work-card" :bordered="false">
               <div class="pay-work-head">
-                <div>
-                  <h2>选择支付方式</h2>
-                  <p>确认渠道后继续完成当前账单支付</p>
-                </div>
+                <h2>选择支付方式</h2>
+                <p>确认渠道后继续完成当前账单支付</p>
               </div>
 
               <div class="pay-method-list">
@@ -202,7 +213,6 @@
                   :disabled="!canPay || paying"
                   :aria-pressed="selectedPayMethod === paymentOptionKey(method)"
                   :aria-label="method.name"
-                  :title="method.name"
                   @click="selectPayMethod(paymentOptionKey(method))"
                 >
                   <span class="pay-method-card__icon">
@@ -214,7 +224,7 @@
                   </span>
                   <span class="pay-method-card__check">
                     <check-circle-icon v-if="selectedPayMethod === paymentOptionKey(method)" />
-                    <span v-else />
+                    <span v-else class="pay-method-card__dot" />
                   </span>
                 </button>
               </div>
@@ -237,8 +247,10 @@
               <div class="pay-actions">
                 <t-button
                   v-if="selectedPayMethod === 'balance'"
+                  class="pay-actions__primary"
                   theme="primary"
                   size="large"
+                  block
                   :loading="paying"
                   :disabled="!canPay"
                   @click="handlePayByBalance"
@@ -247,8 +259,10 @@
                 </t-button>
                 <t-button
                   v-else-if="selectedPayMethod && selectedPayMethod !== 'free'"
+                  class="pay-actions__primary"
                   theme="primary"
                   size="large"
+                  block
                   :loading="paying"
                   :disabled="!canPay"
                   @click="handlePayByAlipay"
@@ -259,12 +273,12 @@
                       : `生成${selectedPayMethodName}二维码`
                   }}
                 </t-button>
-                <t-button v-else-if="selectedPayMethod === 'free'" theme="primary" size="large" disabled>
+                <t-button v-else-if="selectedPayMethod === 'free'" theme="primary" size="large" block disabled>
                   零元账单无需操作
                 </t-button>
-                <t-button variant="outline" size="large" :disabled="paying || loading" @click="loadDetail"
-                  >刷新</t-button
-                >
+                <t-button class="pay-actions__secondary" variant="outline" size="large" block :disabled="paying || loading" @click="loadDetail">
+                  刷新状态
+                </t-button>
               </div>
 
               <t-alert v-if="payTip" theme="info" :message="payTip" />
@@ -366,6 +380,8 @@ const isRenewInvoiceView = computed(() => isRenewInvoice(detail.value));
 const renewInfoItemsView = computed(() => renewInfoItems(detail.value));
 const pricingItemsView = computed(() => pricingItems(detail.value));
 const productPathView = computed(() => productPath(detail.value));
+// 机器基础信息：优先取定价快照，缺失时回退 config_snapshot（含 cpu/memory/bw/磁盘/网络等原始键值）
+const machineSpecItems = computed(() => machineSpecs(detail.value));
 const formattedSessionExpiresAt = computed(() =>
   formatSessionExpiresAt(sessionExpiresTime.value, sessionExpiresAt.value),
 );
@@ -476,6 +492,116 @@ function renewInfoItems(row: InvoiceRecord | null | undefined) {
 
 function pricingItems(row: InvoiceRecord | null | undefined) {
   return flattenSnapshot(row?.config_pricing_snapshot);
+}
+
+// 机器基础信息：直接读原始快照（不经过 flattenSnapshot，避免丢 field 字段、避免拼接「金额 ¥0.00」尾巴）
+const MACHINE_SPEC_FIELD_ORDER = [
+  'area',
+  'cpu',
+  'memory',
+  'system_disk_size',
+  'data_disk_size',
+  'bw',
+  'bandwidth',
+  'network_type',
+  'ip_num',
+  'os',
+  'traffic',
+];
+
+const MACHINE_SPEC_FALLBACK_LABELS: Record<string, string> = {
+  area: '区域',
+  cpu: 'CPU',
+  memory: '内存',
+  system_disk_size: '系统盘',
+  data_disk_size: '数据盘',
+  bw: '带宽',
+  bandwidth: '带宽',
+  network_type: '网络类型',
+  ip_num: '独立 IP',
+  os: '操作系统',
+  traffic: '流量',
+};
+
+// 金额汇总类字段不属于「机器基础信息」
+const MACHINE_SPEC_AMOUNT_FIELDS = new Set([
+  'quantity',
+  'setup_fee',
+  'base_amount',
+  'total_amount',
+  'config_amount',
+  'unit_setup_fee',
+  'unit_base_amount',
+  'unit_total_amount',
+  'unit_config_amount',
+]);
+
+function toRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+// 原始值兜底格式化：内存按 MB 转 G，带宽补 Mbps，IP 数补量词
+function formatSpecValue(field: string, value: string) {
+  const text = String(value ?? '').trim();
+  if (!text) return '';
+
+  if (/^\d+$/.test(text)) {
+    const num = Number(text);
+    if (field === 'memory' && num >= 1024) {
+      const gb = num / 1024;
+      return `${Number.isInteger(gb) ? gb : gb.toFixed(1)}G`;
+    }
+    if (field === 'bw' || field === 'bandwidth') return `${num}Mbps`;
+    if (field === 'ip_num') return `${num} 个`;
+  }
+
+  return text;
+}
+
+/**
+ * 机器基础信息取值优先级：
+ * 1. config_pricing_snapshot.items —— 带 label + value_label，展示最友好
+ * 2. config_snapshot —— 原始键值（cpu=4 / memory=4000），带单位兜底格式化
+ */
+function machineSpecs(row: InvoiceRecord | null | undefined) {
+  const result: Array<{ label: string; value: string }> = [];
+  const seenFields = new Set<string>();
+  const seenLabels = new Set<string>();
+
+  const push = (field: string, label: string, value: string) => {
+    const cleanField = field.trim();
+    const cleanLabel = label.trim();
+    const cleanValue = value.trim();
+    if (!cleanLabel || !cleanValue || cleanValue === '--') return;
+    if (cleanField && seenFields.has(cleanField)) return;
+    if (!cleanField && seenLabels.has(cleanLabel)) return;
+    if (cleanField) seenFields.add(cleanField);
+    seenLabels.add(cleanLabel);
+    result.push({ label: cleanLabel, value: cleanValue });
+  };
+
+  // 1. 定价快照的 items
+  const pricing = toRecord(row?.config_pricing_snapshot);
+  const pricingItemsRaw = Array.isArray(pricing.items) ? pricing.items : [];
+  pricingItemsRaw.forEach((raw) => {
+    const item = toRecord(raw);
+    const field = String(item.field ?? '').trim();
+    if (MACHINE_SPEC_AMOUNT_FIELDS.has(field)) return;
+    const label = String(item.label ?? '').trim() || MACHINE_SPEC_FALLBACK_LABELS[field] || field;
+    const value = String(item.value_label ?? item.value ?? '').trim();
+    push(field, label, value);
+  });
+
+  // 2. 原始配置快照兜底（补齐定价快照未覆盖的字段）
+  const rawSnapshot = toRecord(row?.config_snapshot);
+  MACHINE_SPEC_FIELD_ORDER.forEach((field) => {
+    if (seenFields.has(field)) return;
+    const label = MACHINE_SPEC_FALLBACK_LABELS[field];
+    if (!label) return;
+    push(field, label, formatSpecValue(field, String(rawSnapshot[field] ?? '')));
+  });
+
+  return result;
 }
 
 function parseSessionExpiresTime(value: string) {
@@ -724,7 +850,7 @@ onBeforeUnmount(() => {
 
 .pay-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(20rem, 23rem);
+  grid-template-columns: minmax(0, 1fr) minmax(21rem, 24rem);
   gap: var(--td-comp-margin-l);
   align-items: start;
 }
@@ -816,7 +942,7 @@ onBeforeUnmount(() => {
 
 .pay-method-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: var(--td-comp-margin-s);
 }
 
@@ -826,7 +952,8 @@ onBeforeUnmount(() => {
   gap: var(--td-comp-margin-s);
   align-items: center;
   justify-content: flex-start;
-  min-height: 4.25rem;
+  min-width: 0;
+  min-height: 4.5rem;
   padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-m);
   color: var(--td-text-color-primary);
   cursor: pointer;
@@ -865,6 +992,7 @@ onBeforeUnmount(() => {
 
 .pay-method-card__icon {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   width: 2.5rem;
@@ -881,15 +1009,21 @@ onBeforeUnmount(() => {
 
 .pay-method-card__text {
   display: grid;
+  flex: 1 1 auto;
+  gap: 0.125rem;
   min-width: 0;
+  padding-right: 1.25rem;
   text-align: left;
 
   strong,
   small {
+    display: -webkit-box;
     min-width: 0;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow-wrap: anywhere;
   }
 
   strong {
@@ -899,7 +1033,8 @@ onBeforeUnmount(() => {
   }
 
   small {
-    margin-top: 0.125rem;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
     color: var(--td-text-color-secondary);
     font: var(--td-font-body-small);
   }
@@ -907,30 +1042,24 @@ onBeforeUnmount(() => {
 
 .pay-method-card__check {
   position: absolute;
-  right: var(--td-comp-paddingLR-s);
-  bottom: var(--td-comp-paddingTB-s);
+  top: var(--td-comp-margin-s);
+  right: var(--td-comp-margin-s);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--td-brand-color);
-
-  > span {
-    width: 0.625rem;
-    height: 0.625rem;
-    border: thin solid var(--td-border-color);
-    border-radius: 50%;
-  }
-
-  svg {
-    width: 1rem;
-    height: 1rem;
-  }
 }
 
-.pay-method-card.is-active .pay-method-card__check > span {
-  background: var(--td-brand-color);
-  border-color: var(--td-brand-color);
-  box-shadow: inset 0 0 0 0.1875rem var(--td-bg-color-container);
+.pay-method-card__dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 1px solid var(--td-border-level-2-color);
+  border-radius: 50%;
+}
+
+.pay-method-card__check svg {
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 .deduction-panel {
@@ -974,13 +1103,59 @@ onBeforeUnmount(() => {
 }
 
 .pay-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: var(--td-comp-margin-s);
   margin-top: var(--td-comp-margin-l);
 
   :deep(.t-button) {
-    min-width: 8rem;
+    width: 100%;
+    min-width: 0;
+    height: 2.75rem;
+    margin-left: 0;
+    font-weight: 600;
+    border-radius: var(--td-radius-medium);
+  }
+}
+
+.pay-actions__primary {
+  box-shadow: 0 0.125rem 0.5rem rgb(0 82 217 / 18%);
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 0.25rem 0.75rem rgb(0 82 217 / 24%);
+  }
+}
+
+.pay-actions__secondary {
+  color: var(--td-text-color-secondary);
+}
+
+/* 机器基础信息网格 */
+.spec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: var(--td-comp-margin-s);
+}
+
+.spec-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-m);
+  background: var(--td-bg-color-secondarycontainer);
+  border: thin solid var(--td-border-color);
+  border-radius: var(--td-radius-medium);
+
+  .spec-item__label {
+    color: var(--td-text-color-secondary);
+    font: var(--td-font-body-small);
+  }
+
+  .spec-item__value {
+    color: var(--td-text-color-primary);
+    font: var(--td-font-title-small);
+    font-weight: 600;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -1377,19 +1552,23 @@ onBeforeUnmount(() => {
   gap: var(--td-comp-margin-s);
 
   div {
-    display: grid;
-    grid-template-columns: 5rem minmax(0, 1fr);
-    gap: var(--td-comp-margin-m);
+    display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: var(--td-comp-margin-m);
+    min-width: 0;
     min-height: 2rem;
   }
 
   span {
+    flex: 0 0 auto;
     color: var(--td-text-color-secondary);
     font: var(--td-font-body-small);
   }
 
   strong {
+    flex: 1 1 auto;
+    min-width: 0;
     color: var(--td-text-color-primary);
     font: var(--td-font-body-medium);
     font-weight: 500;
@@ -1400,12 +1579,13 @@ onBeforeUnmount(() => {
 
 .summary-status-tag {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  justify-self: end;
   width: fit-content;
   min-width: 4rem;
   height: 1.5rem;
+  margin-left: auto;
   padding: 0 0.625rem;
   font-weight: 600;
   line-height: 1;
@@ -1492,21 +1672,25 @@ onBeforeUnmount(() => {
   }
 
   .summary-list div {
-    grid-template-columns: 1fr;
-    gap: var(--td-comp-margin-xxs);
+    display: flex;
+    gap: var(--td-comp-margin-s);
 
     strong {
-      text-align: left;
+      text-align: right;
     }
   }
 
   .summary-status-tag {
-    justify-self: start;
+    margin-left: auto;
   }
 
   .snapshot-line-item {
     grid-template-columns: 1fr;
     gap: var(--td-comp-margin-xxs);
+  }
+
+  .spec-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

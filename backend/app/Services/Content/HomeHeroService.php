@@ -7,6 +7,8 @@ namespace App\Services\Content;
 use App\Models\Setting;
 use App\Services\Site\SiteHomeService;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 
 /**
  * 官网首页 Hero 轮播内容服务。
@@ -27,6 +29,10 @@ class HomeHeroService
     public const KEY_FEATURES = 'features';
 
     private const CACHE_KEY = 'site:home:hero';
+
+    // 首页聚合缓存（SiteHomeService::overviewCacheKey）的统一前缀，
+    // 保存 hero 后必须按前缀整体清除，否则 group/notice/help 组合不同的变体残留。
+    private const HOME_OVERVIEW_PREFIX = 'site:home:';
 
     private const CACHE_TTL_SECONDS = 300; // 5分钟：首页内容不频繁变化
 
@@ -83,17 +89,76 @@ class HomeHeroService
             self::KEY_FEATURES => $this->encodeJson($normalizedFeatures),
         ]);
 
-        Cache::forget(self::CACHE_KEY);
-        // 首页聚合缓存的键由 SiteHomeService 统一构造：这里改 hero，内容版本号不会变，
-        // 必须按当前版本把实际在用的两个变体显式清掉。'site:home:4:50:4' 是遗留的无版本键。
-        Cache::forget(SiteHomeService::overviewCacheKey(0, 50, 4));
-        Cache::forget(SiteHomeService::overviewCacheKey(4, 50, 4));
-        Cache::forget('site:home:4:50:4');
+        $this->forgetHomeOverviewCache();
 
         return [
             'slides' => $normalizedSlides,
             'features' => $normalizedFeatures,
         ];
+    }
+
+    /**
+     * 清除 hero 自身缓存与全部首页聚合缓存变体，保证「保存即生效」。
+     *
+     * SiteHomeService::overview() 的键为 `site:home:{group}:{notice}:{help}:v{v}:c{c}`，
+     * 不同调用方参数组合会产生多个键；旧实现只显式 forget 了 (0,50,4)/(4,50,4) 等变体，
+     * 未覆盖前台默认参数 (8,6,4)，导致官网首页最长延迟 HOME_CACHE_TTL_SECONDS(600s) 才更新。
+     * 这里改用 Redis SCAN 按前缀清理（不用 KEYS，避免阻塞），非 Redis 驱动时回退到逐个 forget。
+     */
+    private function forgetHomeOverviewCache(): void
+    {
+        Cache::forget(self::CACHE_KEY);
+
+        $store = Cache::getStore();
+        if (! ($store instanceof \Illuminate\Cache\RedisStore)) {
+            foreach ([[0, 50, 4], [4, 50, 4], [8, 6, 4], [4, 4, 4], [8, 4, 4]] as $args) {
+                Cache::forget(SiteHomeService::overviewCacheKey(...$args));
+            }
+            Cache::forget('site:home:4:50:4');
+
+            return;
+        }
+
+        $match = Cache::getPrefix() . self::HOME_OVERVIEW_PREFIX . '*';
+        $redis = $store->connection();
+        $deleted = 0;
+        $deletedKeys = [];
+
+        // 说明：该连接上 scan() 返回 Redis 原生结构 [cursor, keys]，且游标必须以变量引用传入
+        // （传 0/字面量会直接返回 false）。不使用 KEYS，避免一次性遍历阻塞 Redis。
+        $iterator = null;
+
+        do {
+            $result = $redis->scan($iterator, $match, 500);
+            if (! is_array($result) || $result === []) {
+                break;
+            }
+
+            if (count($result) === 2 && is_array($result[1])) {
+                [$cursor, $keys] = $result;
+            } else {
+                $cursor = null;
+                $keys = $result;
+            }
+
+            foreach ((array) $keys as $key) {
+                if (! is_string($key)) {
+                    continue;
+                }
+                $redis->del($key);
+                $deletedKeys[] = $key;
+                $deleted++;
+            }
+
+            $hasMore = is_numeric($cursor) && (int) $cursor !== 0;
+            $iterator = $hasMore ? (int) $cursor : null;
+        } while ($hasMore);
+
+        Log::debug('[HomeHero] 首页聚合缓存按前缀清理完成', [
+            'match' => $match,
+            'deleted' => $deleted,
+            'keys' => $deletedKeys,
+        ]);
     }
 
     /**

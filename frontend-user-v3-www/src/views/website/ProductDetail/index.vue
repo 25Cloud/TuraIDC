@@ -1288,9 +1288,24 @@ onBeforeUnmount(() => {
   background: #f7f8fa;
   padding-bottom: 40px;
 
+  /* 大屏下内容居中约束，避免右侧摘要栏贴到视口边缘 */
+  --pd-content-max: 1280px;
+  --pd-content-gutter: 16px;
+
   @media (max-width: 768px) {
     padding-bottom: 108px;
   }
+}
+
+/* 统一内容容器：限制最大宽度并水平居中（左右留出安全间距） */
+.pd-topbar,
+.pd-hero,
+.pd-body {
+  width: calc(100% - 2 * var(--pd-content-gutter));
+  max-width: calc(var(--pd-content-max) - 2 * var(--pd-content-gutter));
+  margin-right: auto;
+  margin-left: auto;
+  box-sizing: border-box;
 }
 
 /* ===== 顶部工具栏 ===== */
@@ -1298,7 +1313,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 16px 0;
+  padding: 12px 0 0;
   overflow: hidden;
 }
 
@@ -1375,7 +1390,7 @@ onBeforeUnmount(() => {
   align-items: flex-end;
   justify-content: space-between;
   gap: 20px;
-  margin: 12px 16px 0;
+  margin-top: 12px;
   padding: 18px 20px;
   border: 1px solid #e8e8e8;
   border-radius: 4px;
@@ -1472,7 +1487,7 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 268px;
   gap: 12px;
-  padding: 12px 16px 0;
+  padding: 12px 0 0;
   align-items: start;
 
   @media (max-width: 768px) {

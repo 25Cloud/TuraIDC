@@ -222,6 +222,7 @@ function handleMenuChange() {
 .client-side-brand {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
   min-width: 0;
   width: auto;
 
@@ -244,5 +245,22 @@ function handleMenuChange() {
     width: 64px;
     justify-content: center;
   }
+}
+
+/* Logo 容器对齐：与侧边栏菜单项左内边距对齐（菜单项 padding-left: 20px）
+   需 !important 覆盖 TDesign 默认的 logo-wrapper 样式 */
+:deep(.tdesign-starter-side-nav-logo-wrapper) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  padding-left: 20px !important;
+  box-sizing: border-box !important;
+}
+
+/* 折叠态：居中显示 */
+.tdesign-starter-sidebar-compact .tdesign-starter-side-nav-logo-wrapper {
+  padding-left: 0 !important;
+  justify-content: center !important;
 }
 </style>

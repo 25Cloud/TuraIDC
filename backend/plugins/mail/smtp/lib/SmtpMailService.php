@@ -36,6 +36,7 @@ class SmtpMailService
             'port' => $this->configValue($config, 'port', 465),
             'username' => $this->configValue($config, 'username'),
             'password' => $this->configValue($config, 'password'),
+            'from_address' => $this->configValue($config, 'from_address', ''),
             'from_name' => $this->configValue($config, 'from_name', config('app.name', 'TuraIDC')),
             'encryption' => $this->configValue($config, 'encryption', null),
             'timeout_seconds' => $this->configValue($config, 'timeout_seconds', 8),

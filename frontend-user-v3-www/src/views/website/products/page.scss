@@ -268,6 +268,8 @@
   min-width: 0;
   display: flex;
   align-items: flex-start;
+  /* 大屏下右侧留出安全间距，避免费用摘要栏贴住视口右边缘 */
+  padding-right: clamp(0px, 2vw, 32px);
 }
 
 /* ===== 中间主配置区 ===== */

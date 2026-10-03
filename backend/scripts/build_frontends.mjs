@@ -3,6 +3,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// 【本地补丁】支持单域名子路径部署（/console、/admin），原版的"四个无路径不同 origin"限制已放宽为"四个地址互不相同"。
+// 上游 git pull 前注意此文件有本地修改。
+
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(scriptDirectory, '..', '..');
 const backendEnvPath = path.join(repositoryRoot, 'backend', '.env');
@@ -12,14 +15,17 @@ const applications = {
   admin: {
     workspace: 'turaidc-admin-v3',
     assetVariable: 'VITE_ADMIN_ASSET_BASE_URL',
+    urlLabel: 'ADMIN_URL',
   },
   www: {
     workspace: 'turaidc-user-v3-www',
     assetVariable: 'VITE_WWW_ASSET_BASE_URL',
+    urlLabel: 'FRONTEND_URL',
   },
   console: {
     workspace: 'turaidc-user-v4-console',
     assetVariable: 'VITE_CONSOLE_ASSET_BASE_URL',
+    urlLabel: 'CLIENT_CONSOLE_URL',
   },
 };
 
@@ -84,25 +90,35 @@ function parseArguments(argv) {
   return options;
 }
 
-function normalizeOrigin(label, rawValue) {
+// 允许无路径根地址或干净的子路径地址（如 https://example.com/console）
+// 返回 { origin, base, public }：base 带首尾斜杠供 Vite base 使用；public 无尾斜杠供链接拼接使用。
+function normalizePublicUrl(label, rawValue) {
   let url;
   try {
     url = new URL(String(rawValue || '').trim());
   } catch {
-    throw new Error(`${label} 必须是 HTTP(S) 根地址。`);
+    throw new Error(`${label} 必须是 HTTP(S) 地址。`);
   }
 
   if (!['http:', 'https:'].includes(url.protocol)
     || !url.hostname
     || url.username
     || url.password
-    || url.pathname !== '/'
     || url.search
     || url.hash) {
-    throw new Error(`${label} 必须是无路径、无账号信息的 HTTP(S) 根地址。`);
+    throw new Error(`${label} 必须是无账号信息、无查询串的 HTTP(S) 地址。`);
   }
 
-  return url.origin;
+  const trimmedPath = url.pathname.replace(/\/+$/, '');
+  if (trimmedPath !== '' && !/^\/[A-Za-z0-9\-_]+(\/[A-Za-z0-9\-_]+)*$/.test(trimmedPath)) {
+    throw new Error(`${label} 路径只允许字母、数字、中划线、下划线。`);
+  }
+
+  return {
+    origin: url.origin,
+    base: `${trimmedPath}/`,
+    public: url.origin + trimmedPath,
+  };
 }
 
 function runNpm(args, env) {
@@ -134,49 +150,57 @@ const options = parseArguments(process.argv.slice(2));
 const backendEnv = readEnvFile(backendEnvPath);
 const value = (key) => String(process.env[key] || backendEnv[key] || '').trim();
 
-const apiOrigin = normalizeOrigin('APP_URL', value('APP_URL'));
-const websiteOrigin = normalizeOrigin('FRONTEND_URL', value('FRONTEND_URL'));
-const consoleOrigin = normalizeOrigin('CLIENT_CONSOLE_URL', value('CLIENT_CONSOLE_URL'));
-const adminOrigin = normalizeOrigin('ADMIN_URL', value('ADMIN_URL'));
-const origins = [apiOrigin, websiteOrigin, consoleOrigin, adminOrigin];
+const apiUrl = normalizePublicUrl('APP_URL', value('APP_URL'));
+const websiteUrl = normalizePublicUrl('FRONTEND_URL', value('FRONTEND_URL'));
+const consoleUrl = normalizePublicUrl('CLIENT_CONSOLE_URL', value('CLIENT_CONSOLE_URL'));
+const adminUrl = normalizePublicUrl('ADMIN_URL', value('ADMIN_URL'));
+// 唯一性只约束三个前端地址；APP_URL 允许与官网同源（API 以 /api 路径区分）
+const publicUrls = [websiteUrl.public, consoleUrl.public, adminUrl.public];
 
-if (new Set(origins).size !== origins.length) {
-  throw new Error('APP_URL、FRONTEND_URL、CLIENT_CONSOLE_URL、ADMIN_URL 必须为四个不同的 origin。');
+if (new Set(publicUrls).size !== publicUrls.length) {
+  throw new Error('FRONTEND_URL、CLIENT_CONSOLE_URL、ADMIN_URL 必须为互不相同的地址。');
 }
 
-if (new Set(origins.map((origin) => new URL(origin).protocol)).size !== 1) {
+if (new Set(publicUrls.map((item) => new URL(item).protocol)).size !== 1) {
   throw new Error('四个公开地址必须使用同一协议；请统一使用 HTTP 或 HTTPS，避免浏览器混合内容。');
 }
+
+const baseByApplication = {
+  admin: adminUrl.base,
+  www: websiteUrl.base,
+  console: consoleUrl.base,
+};
 
 const selectedApplications = options.target === 'all'
   ? Object.entries(applications)
   : [[options.target, applications[options.target]]];
 const baseBuildEnvironment = {
   ...process.env,
-  VITE_BASE_URL: '/',
-  VITE_API_BASE_URL: `${apiOrigin}/api`,
-  VITE_PUBLIC_SITE_URL: websiteOrigin,
-  VITE_CONSOLE_SITE_URL: consoleOrigin,
+  VITE_API_BASE_URL: `${apiUrl.public}/api`,
+  VITE_PUBLIC_SITE_URL: websiteUrl.public,
+  VITE_CONSOLE_SITE_URL: consoleUrl.public,
   VITE_SESSION_COOKIE_DOMAIN: value('CLIENT_SESSION_COOKIE_DOMAIN'),
 };
 
 if (options.dryRun) {
-  console.log(`API: ${apiOrigin}`);
+  console.log(`API: ${apiUrl.public}`);
   console.log(`API base: ${baseBuildEnvironment.VITE_API_BASE_URL}`);
-  console.log(`WWW: ${websiteOrigin}`);
-  console.log(`Console: ${consoleOrigin}`);
-  console.log(`Admin: ${adminOrigin}`);
+  console.log(`WWW: ${websiteUrl.public} (base ${websiteUrl.base})`);
+  console.log(`Console: ${consoleUrl.public} (base ${consoleUrl.base})`);
+  console.log(`Admin: ${adminUrl.public} (base ${adminUrl.base})`);
   console.log(`构建目标: ${selectedApplications.map(([name]) => name).join(', ')}`);
   process.exit(0);
 }
 
 for (const [name, application] of selectedApplications) {
-  console.log(`构建 ${name} (${application.workspace})...`);
+  const appBase = baseByApplication[name];
+  console.log(`构建 ${name} (${application.workspace})，base=${appBase} ...`);
   await runNpm(
     ['--filter', application.workspace, 'run', 'build'],
     {
       ...baseBuildEnvironment,
-      [application.assetVariable]: '/',
+      VITE_BASE_URL: appBase,
+      [application.assetVariable]: appBase,
     },
   );
 }
