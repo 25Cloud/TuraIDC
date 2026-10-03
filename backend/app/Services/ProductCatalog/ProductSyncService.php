@@ -580,11 +580,22 @@ class ProductSyncService
 
             // 早期导入的商品、以及上游把公告项也标成 CPU 类型导致派生名退化成
             // 「未配置规格 #ID」的商品，这里用上游商品名补一次展示名。
-            $displayNames = $this->resolveUpstreamProductDisplayNames(
-                $catalogCapability,
-                $supplier,
-                $supplierProductIds
-            );
+            // 只有真的缺名字才去拉目录——目录冷启动要 30s+（约 35 次上游请求），
+            // 无条件拉会在缓存刚被清掉时把进程池白白占满。
+            $missingNameProductIds = $supplierProducts
+                ->filter(fn (Product $product) => trim((string) ($product->custom_display_name ?? '')) === '')
+                ->map(fn (Product $product) => $this->resolveProductUpstreamProductId($product))
+                ->filter(fn (int $supplierProductId) => $supplierProductId > 0)
+                ->values()
+                ->all();
+
+            $displayNames = $missingNameProductIds === []
+                ? []
+                : $this->resolveUpstreamProductDisplayNames(
+                    $catalogCapability,
+                    $supplier,
+                    $missingNameProductIds
+                );
 
             foreach ($supplierProducts as $product) {
                 $supplierProductId = $this->resolveProductUpstreamProductId($product);
