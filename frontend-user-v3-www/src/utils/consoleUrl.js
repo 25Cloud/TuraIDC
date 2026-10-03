@@ -76,7 +76,7 @@ export function buildConsoleUrl(path = '/client/dashboard', query = {}) {
   }
 
   try {
-    return appendQuery(new URL(consolePath, `${consoleOrigin}/`).toString(), query)
+    return appendQuery(new URL(`${consoleOrigin}${consolePath}`).toString(), query)
   } catch {
     return appendQuery(consolePath, query)
   }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Content;
 
 use App\Models\Setting;
-use App\Services\Site\SiteHomeService;
+use App\Support\ContentPublishedCacheVersion;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -83,17 +83,27 @@ class HomeHeroService
             self::KEY_FEATURES => $this->encodeJson($normalizedFeatures),
         ]);
 
-        Cache::forget(self::CACHE_KEY);
-        // 首页聚合缓存的键由 SiteHomeService 统一构造：这里改 hero，内容版本号不会变，
-        // 必须按当前版本把实际在用的两个变体显式清掉。'site:home:4:50:4' 是遗留的无版本键。
-        Cache::forget(SiteHomeService::overviewCacheKey(0, 50, 4));
-        Cache::forget(SiteHomeService::overviewCacheKey(4, 50, 4));
-        Cache::forget('site:home:4:50:4');
+        $this->forgetHomeOverviewCache();
 
         return [
             'slides' => $normalizedSlides,
             'features' => $normalizedFeatures,
         ];
+    }
+
+    /**
+     * 清除 hero 自身缓存与全部首页聚合缓存变体，保证「保存即生效」。
+     *
+     * SiteHomeService::overviewCacheKey() 生成的键形如
+     * `site:home:{group}:{notice}:{help}:v{v}:c{c}`，其中 v 段取自
+     * ContentPublishedCacheVersion。不同调用方参数组合会产生多个键，逐个 forget
+     * 容易漏掉前台实际使用的组合（例如默认的 8/6/4）。递增内容发布版本即可让
+     * 所有变体一次性失效，与文章/分类发布时的做法保持一致，也无需扫描 Redis。
+     */
+    private function forgetHomeOverviewCache(): void
+    {
+        Cache::forget(self::CACHE_KEY);
+        ContentPublishedCacheVersion::bump();
     }
 
     /**
