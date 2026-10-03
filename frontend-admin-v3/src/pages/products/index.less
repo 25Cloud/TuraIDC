@@ -1719,7 +1719,7 @@
 
 .supplier-card dl div {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   min-width: 0;
   padding: 3px 0;
@@ -1734,6 +1734,9 @@
   color: var(--td-text-color-placeholder);
   font-size: var(--td-font-size-size-1, 12px);
   line-height: 20px;
+  /* 标签列原先固定 64px，「最近更新时间」这类 6 字标签会被折成两行；
+     改为按内容撑开并禁止折行，值列仍靠右对齐、超长省略。 */
+  white-space: nowrap;
 }
 
 .supplier-card dd {

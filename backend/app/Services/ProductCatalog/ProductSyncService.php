@@ -313,6 +313,10 @@ class ProductSyncService
             $localProduct = $existingProducts->get($supplierProductId);
             if ($localProduct instanceof Product) {
                 $payload['sort_order'] = (int) ($localProduct->sort_order ?? 0);
+                // 已经人工设过展示名的商品，重复对接时保留人工值。
+                if (trim((string) ($localProduct->custom_display_name ?? '')) !== '') {
+                    unset($payload['custom_display_name']);
+                }
                 $localProduct = DB::transaction(
                     fn () => $this->persistProductWithStructuredSync($localProduct, $payload)
                 );
@@ -574,33 +578,57 @@ class ProductSyncService
                 continue;
             }
 
+            // 早期导入的商品、以及上游把公告项也标成 CPU 类型导致派生名退化成
+            // 「未配置规格 #ID」的商品，这里用上游商品名补一次展示名。
+            // 只有真的缺名字才去拉目录——目录冷启动要 30s+（约 35 次上游请求），
+            // 无条件拉会在缓存刚被清掉时把进程池白白占满。
+            $missingNameProductIds = $supplierProducts
+                ->filter(fn (Product $product) => trim((string) ($product->custom_display_name ?? '')) === '')
+                ->map(fn (Product $product) => $this->resolveProductUpstreamProductId($product))
+                ->filter(fn (int $supplierProductId) => $supplierProductId > 0)
+                ->values()
+                ->all();
+
+            $displayNames = $missingNameProductIds === []
+                ? []
+                : $this->resolveUpstreamProductDisplayNames(
+                    $catalogCapability,
+                    $supplier,
+                    $missingNameProductIds
+                );
+
             foreach ($supplierProducts as $product) {
                 $supplierProductId = $this->resolveProductUpstreamProductId($product);
+                $payload = [];
+
                 $normalizedRemoteConfigOptions = $this->normalizeImportedConfigOptions(
                     $remoteConfigOptions[$supplierProductId] ?? []
                 );
 
-                if ($normalizedRemoteConfigOptions === []) {
+                if ($normalizedRemoteConfigOptions !== []) {
+                    $localConfigOptions = is_array($product->config_options) ? $product->config_options : [];
+                    $mergedConfigOptions = $this->mergeConfigOptionsPreservingPricing(
+                        $localConfigOptions,
+                        $normalizedRemoteConfigOptions
+                    );
+
+                    if ($mergedConfigOptions !== $localConfigOptions) {
+                        $payload['config_options'] = $mergedConfigOptions;
+                    }
+                }
+
+                $displayName = (string) ($displayNames[$supplierProductId] ?? '');
+                if ($displayName !== '' && trim((string) ($product->custom_display_name ?? '')) === '') {
+                    $payload['custom_display_name'] = $displayName;
+                }
+
+                if ($payload === []) {
                     $summary['skipped_products']++;
 
                     continue;
                 }
 
-                $localConfigOptions = is_array($product->config_options) ? $product->config_options : [];
-                $mergedConfigOptions = $this->mergeConfigOptionsPreservingPricing(
-                    $localConfigOptions,
-                    $normalizedRemoteConfigOptions
-                );
-
-                if ($mergedConfigOptions === $localConfigOptions) {
-                    $summary['skipped_products']++;
-
-                    continue;
-                }
-
-                $this->persistProductWithStructuredSync($product, [
-                    'config_options' => $mergedConfigOptions,
-                ]);
+                $this->persistProductWithStructuredSync($product, $payload);
 
                 $summary['synced_products']++;
                 $hasChanges = true;
@@ -612,6 +640,64 @@ class ProductSyncService
         }
 
         return $summary;
+    }
+
+    /**
+     * 从上游商品目录取「上游商品 ID => 商品名」，用于回填本地缺失的展示名。
+     *
+     * 只在确实有商品缺展示名时才被用到；目录本身有缓存（插件侧 6h），
+     * 拿不到时返回空数组，不影响同批次的配置项同步。
+     *
+     * @param  array<int, int>  $supplierProductIds
+     * @return array<int, string>
+     */
+    private function resolveUpstreamProductDisplayNames(
+        object $catalogCapability,
+        Supplier $supplier,
+        array $supplierProductIds
+    ): array {
+        $wanted = [];
+        foreach ($supplierProductIds as $supplierProductId) {
+            $supplierProductId = (int) $supplierProductId;
+            if ($supplierProductId > 0) {
+                $wanted[$supplierProductId] = true;
+            }
+        }
+
+        if ($wanted === []) {
+            return [];
+        }
+
+        try {
+            $catalog = $catalogCapability->getProductCatalog($supplier);
+        } catch (\Throwable $exception) {
+            Log::warning('[定时任务] 上游商品目录拉取失败，跳过展示名回填', [
+                'supplier_id' => (int) $supplier->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return [];
+        }
+
+        $names = [];
+
+        foreach ((array) ($catalog['products'] ?? []) as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $supplierProductId = (int) ($item['id'] ?? 0);
+            if (! isset($wanted[$supplierProductId])) {
+                continue;
+            }
+
+            $name = trim((string) ($item['name'] ?? ''));
+            if ($name !== '' && $name !== '未命名商品') {
+                $names[$supplierProductId] = $name;
+            }
+        }
+
+        return $names;
     }
 
     /** 定时同步时每批之间的等待毫秒数，避免持续高频请求被上游风控拦截 */
@@ -1264,8 +1350,10 @@ class ProductSyncService
             $localConfigOptions = $this->normalizeConfigOptions($product->config_options);
 
             if ($normalizedRemoteConfigOptions !== []) {
+                // 即使选择「同步上游定价」，也要把商家的 markup 加价策略带回来：
+                // 该字段是本地后台配置的经营策略，上游目录不提供，覆盖会静默清空商家定价。
                 $mergedConfigOptions = $syncConfigPricing
-                    ? $normalizedRemoteConfigOptions
+                    ? $this->carryOverLocalMarkup($localConfigOptions, $normalizedRemoteConfigOptions)
                     : $this->mergeConfigOptionsPreservingPricing($localConfigOptions, $normalizedRemoteConfigOptions);
 
                 if ($mergedConfigOptions !== $localConfigOptions) {
@@ -1325,6 +1413,37 @@ class ProductSyncService
         ];
     }
 
+    /**
+     * 「同步上游定价」路径下搬运本地 markup。
+     *
+     * 该路径按语义会用远端配置整体替换本地定价（含 pricing），但 markup 是商家
+     * 在后台手工配置的加价策略、与上游定价无关，必须保留，否则同步一次就清空。
+     *
+     * @param  array<int, array<string, mixed>>  $localConfigOptions
+     * @param  array<int, array<string, mixed>>  $remoteConfigOptions
+     * @return array<int, array<string, mixed>>
+     */
+    private function carryOverLocalMarkup(array $localConfigOptions, array $remoteConfigOptions): array
+    {
+        $localMap = collect($localConfigOptions)
+            ->filter(fn ($item) => is_array($item))
+            ->keyBy(fn (array $item, int $index) => $this->resolveConfigOptionKey($item, $index));
+
+        return collect($remoteConfigOptions)
+            ->filter(fn ($item) => is_array($item))
+            ->map(function (array $remoteOption, int $index) use ($localMap) {
+                $localOption = $localMap->get($this->resolveConfigOptionKey($remoteOption, $index));
+
+                if (is_array($localOption) && array_key_exists('markup', $localOption)) {
+                    $remoteOption['markup'] = $localOption['markup'];
+                }
+
+                return $remoteOption;
+            })
+            ->values()
+            ->all();
+    }
+
     private function mergeConfigOptionsPreservingPricing(array $localConfigOptions, array $remoteConfigOptions): array
     {
         $localMap = collect($localConfigOptions)
@@ -1349,6 +1468,12 @@ class ProductSyncService
 
                 if (array_key_exists('default_value', $localOption)) {
                     $mergedOption['default_value'] = $localOption['default_value'];
+                }
+
+                // markup 是商家在本地后台配置的加价策略，上游目录不提供，
+                // 不同步就会被远端配置覆盖清空，导致商家加价静默失效。
+                if (array_key_exists('markup', $localOption)) {
+                    $mergedOption['markup'] = $localOption['markup'];
                 }
 
                 $localSubMap = collect($localOption['sub'] ?? [])
@@ -1788,7 +1913,10 @@ class ProductSyncService
         mixed $fallbackConfigOptions
     ): array {
         $fallback = $this->normalizeConfigOptions($fallbackConfigOptions);
-        if (! $syncConfigOptions) {
+        // 本地还没有任何配置项时，即使没勾「同步配置项」也尽力拉一次：
+        // 空壳商品在后台/控制台会退化成「未配置规格 #ID」，等同于上游数据没下来。
+        // 已手工配过配置项的仍尊重开关，避免覆盖本地定价。
+        if (! $syncConfigOptions && $fallback !== []) {
             return $fallback;
         }
 
@@ -1813,6 +1941,10 @@ class ProductSyncService
 
         return [
             'name' => $name,
+            // products 表没有 name 列，Product::setNameAttribute() 会把 name 原样丢掉。
+            // 不同步到 custom_display_name 的话，导入出来的商品在列表里只会显示
+            // 「未配置规格 #ID」（ProductDisplayNameResolver 派生不出 CPU/内存时的兜底文案）。
+            'custom_display_name' => $name,
             'product_type' => ProductType::normalizeBusinessValue($productType),
             'service_type_code' => (string) $targetHierarchy['service_type_code'],
             'product_group_id' => (int) $targetHierarchy['product_group_id'],
