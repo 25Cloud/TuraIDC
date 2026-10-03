@@ -403,6 +403,40 @@ class ProductCategoryService
      * 物理删除商品下的服务实例：解除商品/服务外键引用，清理上游绑定与运行快照表后物理删除服务记录，
      * 保留账单等财务记录。
      */
+    /**
+     * 解除财务表对商品的 RESTRICT 外键引用。
+     *
+     * invoices/orders/referral_rewards 的 product_id 是 ON DELETE RESTRICT，
+     * 物理删除商品前必须置空，否则数据库直接拒绝。置空只解除引用、不删除
+     * 账单记录本身，保证财务流水与对账口径不受影响。
+     *
+     * @param  Collection<int, int>  $productIds
+     */
+    private function detachProductFinancialReferences(Collection $productIds): void
+    {
+        if ($productIds->isEmpty()) {
+            return;
+        }
+
+        $ids = $productIds->all();
+
+        if (Schema::hasTable('invoices')) {
+            DB::table('invoices')->whereIn('product_id', $ids)->update(['product_id' => null]);
+        }
+
+        if (Schema::hasTable('orders')) {
+            DB::table('orders')->whereIn('product_id', $ids)->update(['product_id' => null]);
+        }
+
+        if (Schema::hasTable('referral_rewards')) {
+            DB::table('referral_rewards')->whereIn('product_id', $ids)->update(['product_id' => null]);
+        }
+    }
+
+    /**
+     * 物理删除商品下的服务实例：解除商品/服务外键引用，清理上游绑定与运行快照表后物理删除服务记录，
+     * 保留账单等财务记录。
+     */
     private function forceDeleteServicesByProducts(Collection $productIds): int
     {
         $serviceIds = Service::query()
@@ -413,21 +447,12 @@ class ProductCategoryService
             ->unique()
             ->values();
 
+        // 即使没有服务实例，也要解除商品被财务表引用的 RESTRICT 外键，
+        // 否则下面物理删除 products 会因 invoices/orders 引用而失败。
+        $this->detachProductFinancialReferences($productIds);
+
         if ($serviceIds->isEmpty()) {
             return 0;
-        }
-
-        // 解除商品引用：products 物理删除前必须置空 RESTRICT 外键（invoices/orders 引用商品）
-        if (Schema::hasTable('invoices')) {
-            DB::table('invoices')->whereIn('product_id', $productIds->all())->update(['product_id' => null]);
-        }
-
-        if (Schema::hasTable('orders')) {
-            DB::table('orders')->whereIn('product_id', $productIds->all())->update(['product_id' => null]);
-        }
-
-        if (Schema::hasTable('referral_rewards')) {
-            DB::table('referral_rewards')->whereIn('product_id', $productIds->all())->update(['product_id' => null]);
         }
 
         // 解除服务引用（其余 SET NULL 外键显式置空，避免依赖数据库隐式行为）
@@ -512,22 +537,26 @@ class ProductCategoryService
             ->pluck('products.id')
             ->map(fn ($id) => (int) $id)
             ->filter(fn (int $id): bool => $id > 0)
-            ->values()
-            ->all();
+            ->values();
 
-        if ($trashedProductIds === []) {
+        if ($trashedProductIds->isEmpty()) {
             return;
         }
 
         if (Schema::hasTable('product_upstream_bindings')) {
             DB::table('product_upstream_bindings')
-                ->whereIn('product_id', $trashedProductIds)
+                ->whereIn('product_id', $trashedProductIds->all())
                 ->delete();
         }
 
+        // 服务实例持有指向商品的 RESTRICT 外键，必须先处理。
+        // 该方法内部会把 invoices/orders/referral_rewards 的 product_id 置空
+        // （保留财务记录、只解除外键），再物理删除服务记录。
+        $this->forceDeleteServicesByProducts($trashedProductIds);
+
         Product::query()
             ->withoutGlobalScopes()
-            ->whereIn('products.id', $trashedProductIds)
+            ->whereIn('products.id', $trashedProductIds->all())
             ->forceDelete();
     }
 
