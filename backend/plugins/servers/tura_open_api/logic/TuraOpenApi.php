@@ -62,6 +62,9 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
     /** 站点分组缓存时长（秒）：货架不常变，但补全要遍历 30+ 次请求 */
     private const SITE_GROUP_CACHE_TTL = 21600;
+
+    /** 站点分组接口异常时的空结果缓存时长（秒），避免反复重试整轮遍历 */
+    private const SITE_GROUP_FAILURE_CACHE_TTL = 60;
     /** 上游实时报价缓存：价格分钟级不变，缓冲前台频繁的价格预览请求 */
     private const QUOTE_CACHE_TTL = 60;
 
@@ -118,6 +121,20 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         'hard_shutdown' => 'hard_off',
         'force_restart' => 'hard_reboot',
         'hard_restart' => 'hard_reboot',
+    ];
+
+    /** config_snapshot 中属于本地元数据、不应提交给上游的键 */
+    private const NON_UPSTREAM_CONFIG_KEYS = [
+        'product_full_path',
+        'product_path_segments',
+        'first_product_group_name',
+        'second_product_group_name',
+        'third_product_group_name',
+    ];
+
+    /** 目录里用于屏蔽上游选项的展示项（如「明确禁止」），不作为真实配置提交 */
+    private const NON_SELECTABLE_CONFIG_FIELDS = [
+        'cpu_forbidden',
     ];
 
     public function __construct(
@@ -429,6 +446,11 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
                 'supplier_id' => (int) $supplier->id,
                 'reason' => $exception->getMessage(),
             ]);
+
+            // 失败结果短暂缓存：一次遍历要 30+ 次请求，接口异常时若不缓存，
+            // 每次刷新商品都会重试整轮遍历，把上游拖垮。短 TTL 让站点恢复后
+            // 能较快自愈，不必等满正常缓存时长。
+            Cache::put($cacheKey, [], self::SITE_GROUP_FAILURE_CACHE_TTL);
 
             return [];
         }
@@ -915,6 +937,51 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
     /* ---------------------------------- 开通 ---------------------------------- */
 
+    /**
+     * 从订单快照取出可提交给上游的完整配置。
+     *
+     * config_snapshot 里混有本地元数据（商品路径、分类名、schema 版本等），
+     * 这些上游并不认识，直接透传会让上游校验失败；同时剔除空值与「明确禁止」
+     * 之类的展示项，避免把无意义的配置发过去。
+     *
+     * @return array<string, mixed>
+     */
+    private function buildUpstreamProvisionConfig(Order $order, string $hostname): array
+    {
+        $snapshot = data_get($order->config_snapshot, []);
+
+        if (! is_array($snapshot)) {
+            $snapshot = [];
+        }
+
+        $config = [];
+
+        foreach ($snapshot as $key => $value) {
+            $key = trim((string) $key);
+
+            if ($key === '' || str_starts_with($key, '_') || in_array($key, self::NON_UPSTREAM_CONFIG_KEYS, true)) {
+                continue;
+            }
+
+            if ($value === null || $value === '' || $value === []) {
+                continue;
+            }
+
+            // 「明确禁止」是本地目录用来屏蔽上游选项的展示项，不应作为配置提交
+            if (in_array($key, self::NON_SELECTABLE_CONFIG_FIELDS, true)) {
+                continue;
+            }
+
+            $config[$key] = $value;
+        }
+
+        if ($hostname !== '' && ! array_key_exists('hostname', $config)) {
+            $config['hostname'] = $hostname;
+        }
+
+        return $config;
+    }
+
     public function provisionOrder(Order $order, Supplier $supplier, ?Service $existingService = null): array
     {
         $productId = $this->resolveUpstreamProductId($order);
@@ -922,13 +989,17 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         $hostname = trim((string) data_get($order->config_snapshot, 'hostname', ''));
         throw_if($billingCycle === '', new BusinessException('本地订单缺少计费周期，无法在上游开通', 42200));
 
+        // 上游开通必须收到完整配置：只传 hostname 会让上游按默认规格发货，
+        // 买家付费购买的内存/磁盘/带宽等规格被静默忽略。
+        $upstreamConfig = $this->buildUpstreamProvisionConfig($order, $hostname);
+
         $idempotencyKey = 'tura-open-provision-'.$order->id;
 
         // 1) 报价换取 quote_token（金额由上游服务端计价，下游不可篡改）
         $quote = $this->client()->get($supplier, "/api/v2/open/products/{$productId}/quotes", [
             'billing_cycle' => $billingCycle,
             'quantity' => 1,
-            'config' => $hostname !== '' ? ['hostname' => $hostname] : [],
+            'config' => $upstreamConfig,
         ]);
         $quoteToken = trim((string) ($quote['quote_token'] ?? ''));
         throw_if($quoteToken === '', new BusinessException('上游未返回报价凭证，无法下单', 42200));
@@ -938,7 +1009,7 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
             'product_id' => $productId,
             'billing_cycle' => $billingCycle,
             'quantity' => 1,
-            'config' => $hostname !== '' ? ['hostname' => $hostname] : [],
+            'config' => $upstreamConfig,
             'quote_token' => $quoteToken,
             'idempotency_key' => $idempotencyKey,
         ];

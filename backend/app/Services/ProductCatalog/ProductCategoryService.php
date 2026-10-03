@@ -439,7 +439,10 @@ class ProductCategoryService
      */
     private function forceDeleteServicesByProducts(Collection $productIds): int
     {
+        // Service 模型手动挂了 SoftDeletingScope，不去掉的话软删除服务查不出来，
+        // 其 product_id 外键（ON DELETE RESTRICT）仍指向商品，导致商品物理删除失败。
         $serviceIds = Service::query()
+            ->withoutGlobalScopes()
             ->whereIn('product_id', $productIds->all())
             ->pluck('id')
             ->map(fn ($id): int => (int) $id)
@@ -481,7 +484,7 @@ class ProductCategoryService
         }
 
         // 物理删除服务实例：绑定与快照已清，其余引用均为 SET NULL/CASCADE，可安全 forceDelete
-        Service::query()->whereIn('id', $serviceIds->all())->forceDelete();
+        Service::query()->withoutGlobalScopes()->whereIn('id', $serviceIds->all())->forceDelete();
 
         return $serviceIds->count();
     }

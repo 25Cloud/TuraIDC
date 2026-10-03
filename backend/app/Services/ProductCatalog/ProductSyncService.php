@@ -1350,8 +1350,10 @@ class ProductSyncService
             $localConfigOptions = $this->normalizeConfigOptions($product->config_options);
 
             if ($normalizedRemoteConfigOptions !== []) {
+                // 即使选择「同步上游定价」，也要把商家的 markup 加价策略带回来：
+                // 该字段是本地后台配置的经营策略，上游目录不提供，覆盖会静默清空商家定价。
                 $mergedConfigOptions = $syncConfigPricing
-                    ? $normalizedRemoteConfigOptions
+                    ? $this->carryOverLocalMarkup($localConfigOptions, $normalizedRemoteConfigOptions)
                     : $this->mergeConfigOptionsPreservingPricing($localConfigOptions, $normalizedRemoteConfigOptions);
 
                 if ($mergedConfigOptions !== $localConfigOptions) {
@@ -1411,6 +1413,37 @@ class ProductSyncService
         ];
     }
 
+    /**
+     * 「同步上游定价」路径下搬运本地 markup。
+     *
+     * 该路径按语义会用远端配置整体替换本地定价（含 pricing），但 markup 是商家
+     * 在后台手工配置的加价策略、与上游定价无关，必须保留，否则同步一次就清空。
+     *
+     * @param  array<int, array<string, mixed>>  $localConfigOptions
+     * @param  array<int, array<string, mixed>>  $remoteConfigOptions
+     * @return array<int, array<string, mixed>>
+     */
+    private function carryOverLocalMarkup(array $localConfigOptions, array $remoteConfigOptions): array
+    {
+        $localMap = collect($localConfigOptions)
+            ->filter(fn ($item) => is_array($item))
+            ->keyBy(fn (array $item, int $index) => $this->resolveConfigOptionKey($item, $index));
+
+        return collect($remoteConfigOptions)
+            ->filter(fn ($item) => is_array($item))
+            ->map(function (array $remoteOption, int $index) use ($localMap) {
+                $localOption = $localMap->get($this->resolveConfigOptionKey($remoteOption, $index));
+
+                if (is_array($localOption) && array_key_exists('markup', $localOption)) {
+                    $remoteOption['markup'] = $localOption['markup'];
+                }
+
+                return $remoteOption;
+            })
+            ->values()
+            ->all();
+    }
+
     private function mergeConfigOptionsPreservingPricing(array $localConfigOptions, array $remoteConfigOptions): array
     {
         $localMap = collect($localConfigOptions)
@@ -1435,6 +1468,12 @@ class ProductSyncService
 
                 if (array_key_exists('default_value', $localOption)) {
                     $mergedOption['default_value'] = $localOption['default_value'];
+                }
+
+                // markup 是商家在本地后台配置的加价策略，上游目录不提供，
+                // 不同步就会被远端配置覆盖清空，导致商家加价静默失效。
+                if (array_key_exists('markup', $localOption)) {
+                    $mergedOption['markup'] = $localOption['markup'];
                 }
 
                 $localSubMap = collect($localOption['sub'] ?? [])

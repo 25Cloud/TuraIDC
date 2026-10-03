@@ -462,6 +462,10 @@ trait HandlesOrderCalculation
         $markupByField = [];
 
         foreach ((array) ($product->config_options ?? []) as $option) {
+            if ((int) ($option['hidden'] ?? 0) === 1) {
+                continue;
+            }
+
             $field = $this->parseField($option);
 
             if ($field === '') {
@@ -490,7 +494,8 @@ trait HandlesOrderCalculation
             }
 
             $seenFields[$field] = true;
-            $amount = round((float) ($item['amount'] ?? 0), 2);
+            // 上游若返回负数金额，钳制为 0，避免污染合计
+            $amount = Money::round(max((float) ($item['amount'] ?? 0), 0));
             $entry = $markupByField[$field] ?? null;
 
             if ($entry !== null) {
@@ -498,7 +503,7 @@ trait HandlesOrderCalculation
                 $amount = $this->applyMarkupToAmount($amount, $markup, $config, $field, $entry['option'], $billingCycle);
             }
 
-            $configAmount += $amount;
+            $configAmount = Money::add($configAmount, $amount);
 
             $items[] = [
                 'field' => $field,
@@ -511,6 +516,11 @@ trait HandlesOrderCalculation
         // 保证「自定义单价」不依赖上游是否把该字段计入报价。
         foreach ($markupByField as $field => $entry) {
             if (isset($seenFields[$field])) {
+                continue;
+            }
+
+            // 用户未选中该字段、或配置项已隐藏时不补项
+            if (! $this->isConfigOptionChargeable($entry['option'], $config, (string) $field)) {
                 continue;
             }
 
@@ -530,7 +540,7 @@ trait HandlesOrderCalculation
                 continue;
             }
 
-            $configAmount += $amount;
+            $configAmount = Money::add($configAmount, $amount);
 
             $items[] = [
                 'field' => (string) $field,
@@ -552,37 +562,110 @@ trait HandlesOrderCalculation
     /**
      * 按加价配置计算某一项的最终金额。
      *
-     * 统一公式：最终加价 = 基础价 × 倍率 + 每单附加费
-     *   基础价 = 商家自定义单价 × 数量（填了 unit_price 时）否则 上游报价
-     * 因此：
-     *   - inherit   : 倍率 1、无单价、无附加费 → 等于上游价
-     *   - multiplier: 无单价 → 上游价 × 倍率（+ 附加费）
-     *   - fixed     : 有单价、倍率 1 → 自定义单价 × 数量（+ 附加费），不依赖上游
-     *   - both      : 单价 × 倍率 + 附加费，全部生效
+     * 各模式只读取自己语义内的字段，互不影响：
+     *   - inherit   : 不加价，原样返回上游价
+     *   - multiplier: 上游价 × 倍率 + 附加费（忽略残留的 unit_price）
+     *   - fixed     : 自定义单价 × 数量 + 附加费（忽略残留的 multiplier）
+     *   - both      : 自定义单价 × 数量 × 倍率 + 附加费
+     *
+     * 必须按 mode 显式分支，不能只看「字段是否 > 0」：后台切换模式时只是隐藏
+     * 对应输入框，已存值不会被清空，按字段判断会把上一个模式的残留值算进去。
      *
      * @param  array<string, mixed>  $config
      * @param  array<string, mixed>  $option
      */
     private function applyMarkupToAmount(float $upstreamAmount, array $markup, array $config, string $field, array $option, string $billingCycle): float
     {
-        if (! $markup['enabled']) {
-            return $upstreamAmount;
+        if (! $markup['enabled'] || $markup['mode'] === 'inherit') {
+            return Money::round(max($upstreamAmount, 0));
         }
 
-        $multiplier = $markup['multiplier'] > 0 ? $markup['multiplier'] : 1;
-        $unitPrice = $markup['unit_price'];
+        $mode = $markup['mode'];
         $extra = $markup['extra_amount'];
 
-        // 填了自定义单价则以它为基准（商家完全自己定价），否则沿用上游成本
-        $base = $upstreamAmount;
+        // fixed / both：商家自定义单价为基准，完全自己定价
+        if ($mode === 'fixed' || $mode === 'both') {
+            $unitPrice = $markup['unit_price'];
 
-        if ($unitPrice > 0) {
-            $selected = $this->resolveSelectedConfigValue($config, $field, (array) $option);
-            $steps = $this->resolveRangeStepsForPricing($selected, (array) $option);
-            $base = $unitPrice * $steps;
+            if ($unitPrice <= 0) {
+                // 未填单价时退化为上游成本，避免出现 0 元加价
+                return Money::round(max(Money::add(max($upstreamAmount, 0), $extra), 0));
+            }
+
+            $quantity = $this->resolveMarkupChargeQuantity($config, $field, (array) $option);
+            $base = Money::multiply($unitPrice, $quantity);
+
+            if ($mode === 'both') {
+                $multiplier = $markup['multiplier'] > 0 ? $markup['multiplier'] : 1;
+                $base = Money::multiply($base, $multiplier);
+            }
+
+            return Money::round(max(Money::add($base, $extra), 0));
         }
 
-        return round($base * $multiplier + $extra, 2);
+        // multiplier：以上游价为基准
+        $multiplier = $markup['multiplier'] > 0 ? $markup['multiplier'] : 1;
+
+        return Money::round(max(Money::add(Money::multiply(max($upstreamAmount, 0), $multiplier), $extra), 0));
+    }
+
+    /**
+     * 计算自定义单价的计费数量。
+     *
+     * range 型配置项按数量计费，口径与 calculateRangeChargeSteps 一致；
+     * select 型选中值是选项 ID（如 "13632459"）而非数量，计费数量固定为 1，
+     * 否则把 ID 当整数会算出天文数字般的金额。
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $option
+     */
+    private function resolveMarkupChargeQuantity(array $config, string $field, array $option): int
+    {
+        if (! $this->isRangeConfigOption($option)) {
+            return 1;
+        }
+
+        return $this->resolveRangeStepsForPricing(
+            $this->resolveSelectedConfigValue($config, $field, $option),
+            $option
+        );
+    }
+
+    /**
+     * 判断配置项是否为数量范围型。
+     *
+     * @param  array<string, mixed>  $option
+     */
+    private function isRangeConfigOption(array $option): bool
+    {
+        $mode = trim((string) ($option['option_mode'] ?? ''));
+
+        if ($mode !== '') {
+            return $mode === 'range';
+        }
+
+        return in_array((int) ($option['option_type'] ?? -1), self::RANGE_TYPES, true);
+    }
+
+    /**
+     * 配置项是否应对本次报价生效：未隐藏，且本次提交确实选中了该字段。
+     *
+     * 隐藏项与未选中项都不应产生加价，否则会出现「用户没选却付费」。
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $option
+     */
+    private function isConfigOptionChargeable(array $option, array $config, string $field): bool
+    {
+        if ((int) ($option['hidden'] ?? 0) === 1) {
+            return false;
+        }
+
+        if (array_key_exists('hidden', $option) && (bool) $option['hidden'] === true) {
+            return false;
+        }
+
+        return array_key_exists($field, $config);
     }
 
     /**
@@ -636,9 +719,18 @@ trait HandlesOrderCalculation
         $configAmount = 0.0;
 
         foreach ((array) ($product->config_options ?? []) as $option) {
+            if ((int) ($option['hidden'] ?? 0) === 1) {
+                continue;
+            }
+
             $field = $this->parseField($option);
 
             if ($field === '') {
+                continue;
+            }
+
+            // 用户未选中该字段时不应计费
+            if (! array_key_exists($field, $config)) {
                 continue;
             }
 
@@ -658,7 +750,7 @@ trait HandlesOrderCalculation
                 continue;
             }
 
-            $configAmount += $amount;
+            $configAmount = Money::add($configAmount, $amount);
             $items[] = [
                 'field' => $field,
                 'label' => (string) ($option['name'] ?? $field),
