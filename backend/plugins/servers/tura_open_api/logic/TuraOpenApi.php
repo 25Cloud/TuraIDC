@@ -5,24 +5,29 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Servers\TuraOpenApi\Logic;
 
 use App\Constants\InvoiceStatus;
+use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Supplier;
+use App\Services\ProductCatalog\ProductCatalogService;
 use App\Services\Upstream\Contracts\ProvidesBatchStatusSync;
 use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesInvoiceRenewal;
 use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
+use App\Services\Upstream\Contracts\ProvidesRenewableCycleFiltering;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\Contracts\ProvidesRenewalRecovery;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
 use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\Contracts\ProvidesSupplierFormSchema;
+use App\Services\Upstream\Contracts\ProvidesUpstreamQuoting;
 use App\Services\Upstream\Contracts\UpstreamDriver;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use TuraIDC\Plugins\Servers\TuraOpenApi\Lib\TuraOpenApiClient;
 
@@ -34,7 +39,7 @@ use TuraIDC\Plugins\Servers\TuraOpenApi\Lib\TuraOpenApiClient;
  * 复用同一键命中上游幂等兜底，不重复扣上游余额）并余额支付，然后轮询上游账单/
  * 服务状态直到 Active。轮询超时直接抛出，由开通队列按 tries 重试继续轮询。
  */
-class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, ProvidesConsoleRuntime, ProvidesInvoiceRenewal, ProvidesOrderProvisioning, ProvidesProvisioning, ProvidesRenewal, ProvidesRenewalRecovery, ProvidesStatusSync, ProvidesSupplierBalance, ProvidesSupplierFormSchema, UpstreamDriver
+class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, ProvidesConsoleRuntime, ProvidesInvoiceRenewal, ProvidesOrderProvisioning, ProvidesProvisioning, ProvidesRenewableCycleFiltering, ProvidesRenewal, ProvidesRenewalRecovery, ProvidesStatusSync, ProvidesSupplierBalance, ProvidesSupplierFormSchema, ProvidesUpstreamQuoting, UpstreamDriver
 {
     public const KEY = 'tura_open_api';
 
@@ -44,6 +49,27 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
     private const LIST_PAGE_SIZE = 200;
 
     private const LIST_MAX_PAGES = 25;
+
+    /** 站点公开目录分页大小：上游校验上限是 50，传 100 会被拒（422 page_size） */
+    private const SITE_PAGE_SIZE = 50;
+
+    private const SITE_MAX_PAGES = 10;
+
+    /** 站点目录补全的兜底预算：分组数与请求数任一超限时停止，用已拿到的部分 */
+    private const SITE_MAX_GROUPS = 80;
+
+    private const SITE_MAX_REQUESTS = 240;
+
+    /** 站点分组缓存时长（秒）：货架不常变，但补全要遍历 30+ 次请求 */
+    private const SITE_GROUP_CACHE_TTL = 21600;
+
+    /** 站点分组接口异常时的空结果缓存时长（秒），避免反复重试整轮遍历 */
+    private const SITE_GROUP_FAILURE_CACHE_TTL = 60;
+    /** 上游实时报价缓存：价格分钟级不变，缓冲前台频繁的价格预览请求 */
+    private const QUOTE_CACHE_TTL = 60;
+
+    /** 区间型配置项 option_type（与系统商品配置项的语义一致）：这些项按数量区间取值而非下拉 */
+    private const SITE_RANGE_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19];
 
     /** 开通轮询：上游账单映射 + 服务开通，单轮预算约 150s，超出交给队列重试 */
     private const PROVISION_POLL_ATTEMPTS = 50;
@@ -59,10 +85,56 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         // 基契约必须保留：编排层以 ProvidesProvisioning/ProvidesRenewal/ProvidesStatusSync
         // 作为能力门槛，子接口通过继承满足 instanceof，但 supports() 需要显式列出
         ProvidesProvisioning::class,
+        // 续费周期过滤：上游可续周期由 /services/{id}/renewals 真实返回，避免本地
+        // 放出上游并不支持的周期。
+        ProvidesRenewableCycleFiltering::class,
         ProvidesRenewal::class,
         ProvidesRenewalRecovery::class,
         ProvidesStatusSync::class,
         ProvidesSupplierBalance::class,
+        ProvidesUpstreamQuoting::class,
+    ];
+
+    /** 目录导入/续费探测用的标准周期序（与 hydrateSelectedPricing 保持一致） */
+    private const STANDARD_BILLING_CYCLES = ['monthly', 'quarterly', 'semiannually', 'annually'];
+
+    /** 上游电源动作白名单：与上游 /services/{id}/power 的服务端校验保持一致 */
+    private const POWER_ACTIONS = ['on', 'off', 'reboot', 'hard_off', 'hard_reboot'];
+
+    /**
+     * 本地常见电源动作别名 → 上游标准动作。
+     * 开放接口只接受白名单内的动作，别名在下游归一后再上行，避免把上游 422 原样抛给用户。
+     *
+     * @var array<string, string>
+     */
+    private const POWER_ACTION_ALIASES = [
+        'start' => 'on',
+        'boot' => 'on',
+        'power_on' => 'on',
+        'poweron' => 'on',
+        'stop' => 'off',
+        'shutdown' => 'off',
+        'power_off' => 'off',
+        'poweroff' => 'off',
+        'restart' => 'reboot',
+        'force_off' => 'hard_off',
+        'hard_shutdown' => 'hard_off',
+        'force_restart' => 'hard_reboot',
+        'hard_restart' => 'hard_reboot',
+    ];
+
+    /** config_snapshot 中属于本地元数据、不应提交给上游的键 */
+    private const NON_UPSTREAM_CONFIG_KEYS = [
+        'product_full_path',
+        'product_path_segments',
+        'first_product_group_name',
+        'second_product_group_name',
+        'third_product_group_name',
+    ];
+
+    /** 目录里用于屏蔽上游选项的展示项（如「明确禁止」），不作为真实配置提交 */
+    private const NON_SELECTABLE_CONFIG_FIELDS = [
+        'cpu_forbidden',
     ];
 
     public function __construct(
@@ -164,12 +236,12 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
             'server.health_check' => [
                 'success' => true,
                 'action' => $action,
-                'data' => [
-                    'healthy' => true,
-                    'provider_key' => $this->key(),
-                    'message' => 'TuraIDC 开放接口插件加载正常',
-                ],
+                'data' => $this->healthCheck(),
             ],
+            // 供应商卡片上的两个动作：与 ZJMF / 康乐插件使用同一动作名与返回结构，
+            // 管理端据此刷新卡片与批量导入上游商品。
+            'server.supplier.refresh_card' => $this->refreshSupplierCard($action, $request),
+            'server.supplier.bulk_connect' => $this->bulkConnectSupplierProducts($action, $request, $payload),
             default => [
                 'success' => false,
                 'action' => $action,
@@ -179,21 +251,364 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         };
     }
 
+    /**
+     * 插件自检（PluginRuntimeRegistry::healthCheck 以无参方式调用）。
+     *
+     * @return array<string, mixed>
+     */
+    public function healthCheck(): array
+    {
+        return [
+            'healthy' => true,
+            'provider_key' => $this->key(),
+            'message' => 'TuraIDC 开放接口插件加载正常',
+            'details' => [
+                'capabilities' => count(self::CAPABILITIES),
+                'account_fields' => ['api_url', 'api_key'],
+            ],
+        ];
+    }
+
+    /**
+     * 供应商卡片：与其它上游插件共用同一卡片契约（title/subtitle/status/fields/actions），
+     * 由管理端统一渲染。
+     *
+     * @param  array<string, mixed>  $context
+     * @return array<string, mixed>
+     */
+    public function renderCard(Supplier $supplier, array $context = []): array
+    {
+        $binding = is_array($context['binding'] ?? null) ? (array) $context['binding'] : [];
+        $remote = is_array($context['remote'] ?? null) ? (array) $context['remote'] : [];
+
+        $balance = array_key_exists('balance', $remote)
+            ? '¥ '.$this->moneyText($remote['balance'])
+            : '-';
+        $lastUpdated = $this->formatCardDateTime(
+            $context['checked_at']
+                ?? $remote['checked_at']
+                ?? $binding['last_checked_at']
+                ?? $supplier->updated_at
+                ?? null
+        );
+        // 开放接口没有「账号」概念：卡片只暴露上游站点，密钥属于敏感凭据，
+        // 一旦在列表里明文展示就等于把上游账户权限摊在页面上，故不再输出。
+        $site = $this->upstreamSiteLabel($supplier, $binding);
+        $hasCredentials = $this->hasSupplierCredentials($supplier, $binding);
+        $enabled = (int) ($supplier->status ?? 0) === 1;
+
+        return [
+            'title' => trim((string) ($supplier->name ?? '')) ?: $this->label(),
+            'subtitle' => $this->label(),
+            'status' => [
+                'label' => $enabled ? '启用中' : '已停用',
+                'theme' => $enabled ? 'success' : 'default',
+                'variant' => 'light',
+            ],
+            'fields' => [
+                [
+                    'key' => 'upstream_site',
+                    'label' => '上游站点',
+                    'value' => $site !== '' ? $site : '-',
+                ],
+                [
+                    'key' => 'upstream_balance',
+                    'label' => '上游余额',
+                    'value' => $balance,
+                ],
+                [
+                    'key' => 'updated_at',
+                    'label' => '最近更新时间',
+                    'value' => $lastUpdated,
+                ],
+            ],
+            'actions' => [
+                [
+                    'key' => 'refresh_card',
+                    'label' => '同步余额',
+                    'action' => 'supplier.remote_metric.refresh',
+                    'request_action' => 'server.supplier.refresh_card',
+                    'theme' => 'primary',
+                    'variant' => 'text',
+                    'disabled' => ! $hasCredentials,
+                    'disabled_reason' => '接口配置不完整，暂时无法同步余额',
+                ],
+                [
+                    'key' => 'bulk_connect',
+                    'label' => '批量导入/对接',
+                    'action' => 'supplier.batch_connect',
+                    'request_action' => 'server.supplier.bulk_connect',
+                    'variant' => 'text',
+                    'disabled' => ! $hasCredentials,
+                    'disabled_reason' => '接口配置不完整，暂时无法批量对接商品',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 上游可续周期：直接取续费预览返回的周期集合，上游不可达时返回 null，
+     * 由调用方回退本地周期（约定见 ProvidesRenewableCycleFiltering）。
+     *
+     * @return list<string>|null
+     */
+    public function renewableCycles(Supplier $supplier, int $hostId): ?array
+    {
+        try {
+            $preview = $this->client()->get($supplier, "/api/v2/open/services/{$hostId}/renewals");
+        } catch (BusinessException $exception) {
+            Log::warning('[TuraIDC 开放接口] 续费周期探测失败，回退本地周期集合', [
+                'supplier_id' => (int) $supplier->id,
+                'host_id' => $hostId,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        $cycles = [];
+        foreach ((array) ($preview['cycles'] ?? []) as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $cycle = trim((string) ($item['billing_cycle'] ?? ''));
+            if ($cycle !== '') {
+                $cycles[] = $cycle;
+            }
+        }
+
+        $cycles = array_values(array_unique($cycles));
+
+        return $cycles !== [] ? $cycles : null;
+    }
+
     /* ---------------------------------- 目录 ---------------------------------- */
 
+    /**
+     * 商品目录 = 开放接口的商品清单 + 站点公开目录的货架分组。
+     *
+     * 开放接口（/api/v2/open/products）是下单用的真源，但它只投影
+     * id/name/product_type/stock 四个字段——实测 /products/{id} 详情同样只有这四个，
+     * /product-groups 直接 404，货架分组根本不在开放协议里。
+     *
+     * 上游站点自己那套公开目录接口（/api/v2/site/product-groups/*）却带完整的
+     * 一/二/三级分组，且商品 ID 与开放接口是同一套（实测 808 个站点商品 100% 落在
+     * 开放接口的 1095 个里）。所以这里以开放接口为准、用站点目录补分组：
+     *  - 命中站点目录的商品 → 真实三级路径（云电脑 / 华中 / 湖北襄阳 电信）；
+     *  - 未命中的（前台未上架，实测 287 个）→ 从商品名推导机房/系列兜底。
+     */
     public function getProductCatalog(Supplier $supplier): array
     {
         $list = $this->fetchServiceProductList($supplier);
+        $sitePaths = $this->siteGroupPaths($supplier);
 
         $products = [];
+        $grouped = [];
+
         foreach ($list as $item) {
-            $products[] = $this->catalogProduct($item);
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $product = $this->catalogProduct($item, $sitePaths[(int) ($item['id'] ?? 0)] ?? null);
+            if ((int) ($product['id'] ?? 0) <= 0) {
+                continue;
+            }
+
+            $products[] = $product;
+            // 有真实层级时按完整路径聚合，UI 上是「一级 / 二级 / 三级」的嵌套树
+            $grouped[$product['group_label']][] = $product;
         }
 
         return [
-            'groups' => [],
+            'groups' => $this->catalogGroups($grouped),
             'products' => $products,
         ];
+    }
+
+    /**
+     * 上游站点公开目录里的「商品 ID → 分组路径」，拿不到时返回空数组（静默降级）。
+     *
+     * 遍历一遍要 30+ 次请求，故按供应商缓存；站点接口报错/超时同样只返回空数组，
+     * 让目录退化为名称推导，绝不让「刷新商品」因为补全分组而整体失败。
+     *
+     * @return array<int, array<int, string>>
+     */
+    private function siteGroupPaths(Supplier $supplier): array
+    {
+        $cacheKey = sprintf('tura_open_api:site_groups:%d', (int) $supplier->id);
+
+        try {
+            $paths = Cache::remember($cacheKey, self::SITE_GROUP_CACHE_TTL, fn (): array => $this->fetchSiteGroupPaths($supplier));
+        } catch (\Throwable $exception) {
+            Log::warning('[TuraIDC 开放接口] 站点分组补全失败，目录退化为名称推导', [
+                'supplier_id' => (int) $supplier->id,
+                'reason' => $exception->getMessage(),
+            ]);
+
+            // 失败结果短暂缓存：一次遍历要 30+ 次请求，接口异常时若不缓存，
+            // 每次刷新商品都会重试整轮遍历，把上游拖垮。短 TTL 让站点恢复后
+            // 能较快自愈，不必等满正常缓存时长。
+            Cache::put($cacheKey, [], self::SITE_GROUP_FAILURE_CACHE_TTL);
+
+            return [];
+        }
+
+        return is_array($paths) ? $paths : [];
+    }
+
+    /**
+     * 遍历站点目录取分组路径。
+     *
+     * 只取二级分组的 products（level=2）即可覆盖全部商品：上游返回的每个商品都自带
+     * first/second/third_product_group_name，实测只拉二级与递归到三级结果完全一致
+     * （808 个商品、全部带三级路径），请求数却从 ~160 降到 35。
+     *
+     * @return array<int, array<int, string>>
+     */
+    private function fetchSiteGroupPaths(Supplier $supplier): array
+    {
+        $paths = [];
+        $requests = 0;
+
+        foreach ($this->fetchSiteGroupIds($supplier) as $groupId) {
+            for ($page = 1; $page <= self::SITE_MAX_PAGES; $page++) {
+                if ($requests >= self::SITE_MAX_REQUESTS) {
+                    return $paths;
+                }
+
+                $payload = $this->client()->getPublic(
+                    $supplier,
+                    sprintf('/api/v2/site/product-groups/%d/products', $groupId),
+                    ['level' => 2, 'page' => $page, 'page_size' => self::SITE_PAGE_SIZE]
+                );
+                $requests++;
+
+                $list = is_array($payload['list'] ?? null) ? $payload['list'] : [];
+
+                foreach ($list as $item) {
+                    if (! is_array($item)) {
+                        continue;
+                    }
+
+                    $productId = (int) ($item['id'] ?? 0);
+                    if ($productId <= 0) {
+                        continue;
+                    }
+
+                    $paths[$productId] = $this->siteGroupPath($item);
+                }
+
+                if (count($list) < self::SITE_PAGE_SIZE) {
+                    break;
+                }
+            }
+        }
+
+        return $paths;
+    }
+
+    /**
+     * 站点目录里的二级分组 ID 列表。
+     *
+     * @return array<int, int>
+     */
+    private function fetchSiteGroupIds(Supplier $supplier): array
+    {
+        $ids = [];
+
+        for ($page = 1; $page <= self::SITE_MAX_PAGES; $page++) {
+            $payload = $this->client()->getPublic($supplier, '/api/v2/site/product-groups', [
+                'page' => $page,
+                'page_size' => self::SITE_PAGE_SIZE,
+            ]);
+
+            $list = is_array($payload['list'] ?? null) ? $payload['list'] : [];
+
+            foreach ($list as $group) {
+                if (! is_array($group)) {
+                    continue;
+                }
+
+                $groupId = (int) ($group['id'] ?? 0);
+                if ($groupId > 0) {
+                    $ids[] = $groupId;
+                }
+            }
+
+            if (count($list) < self::SITE_PAGE_SIZE || count($ids) >= self::SITE_MAX_GROUPS) {
+                break;
+            }
+        }
+
+        return array_slice($ids, 0, self::SITE_MAX_GROUPS);
+    }
+
+    /**
+     * 站点商品载荷 → 分组路径（一/二/三级名，去重去空）。
+     *
+     * @param  array<string, mixed>  $item
+     * @return array<int, string>
+     */
+    private function siteGroupPath(array $item): array
+    {
+        $path = [];
+
+        foreach (['first_product_group_name', 'second_product_group_name', 'third_product_group_name'] as $key) {
+            $name = trim((string) ($item[$key] ?? ''));
+
+            if ($name !== '' && ! in_array($name, $path, true)) {
+                $path[] = $name;
+            }
+        }
+
+        return $path;
+    }
+
+    /**
+     * 与 ZJMF 目录插件保持同一 groups 契约（key/label/items），管理端批量对接弹窗、
+     * 以及任何按 groups 兜底构建商品树的调用方都能直接复用。
+     *
+     * @param  array<string, array<int, array<string, mixed>>>  $grouped
+     * @return array<int, array<string, mixed>>
+     */
+    private function catalogGroups(array $grouped): array
+    {
+        $groups = [];
+
+        foreach ($grouped as $label => $items) {
+            if ($label === '' || $items === []) {
+                continue;
+            }
+
+            $key = 'group-'.md5((string) $label);
+
+            $groups[] = [
+                'key' => $key,
+                'label' => $label,
+                'count' => count($items),
+                // items 只带建树需要的字段：完整商品在顶层 products 里已有一份，
+                // 全量再嵌一遍会让千级商品的响应体翻倍（实测 1.1MB+）。
+                'items' => array_values(array_map(
+                    fn (array $product): array => [
+                        'id' => $product['id'],
+                        'name' => $product['name'],
+                        'type' => $product['type'],
+                        'type_label' => $product['type_label'],
+                        'group_name' => $product['group_name'],
+                        'remote_group_name' => $product['remote_group_name'],
+                        'remote_group_path' => $product['remote_group_path'],
+                        'stock' => $product['stock'],
+                    ],
+                    $items
+                )),
+            ];
+        }
+
+        usort($groups, fn (array $left, array $right): int => strcmp((string) $left['label'], (string) $right['label']));
+
+        return $groups;
     }
 
     /**
@@ -211,7 +626,7 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
             return $products;
         }
 
-        $cycles = ['monthly', 'quarterly', 'semiannually', 'annually'];
+        $cycles = self::STANDARD_BILLING_CYCLES;
 
         return collect($products)->map(function (array $product) use ($supplier, $selected, $cycles): array {
             $productId = (int) ($product['id'] ?? 0);
@@ -253,17 +668,71 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         })->values()->all();
     }
 
+    /**
+     * 单个商品的可配置项。
+     *
+     * 此前这里直接返回空数组（原注释「开放 API 不暴露上游配置项」），后果是：
+     * 导入出来的商品 config_options 恒为 0 项 → 展示名派生不出 CPU/内存 →
+     * 后台与控制台一律显示「未配置规格 #ID」，看上去就像上游数据没下来。
+     * 开放接口确实不返回配置项，但站点公开目录 /api/v2/site/products/{id} 带完整
+     * config_options，且与本地字段语义一致，这里改为走站点目录。
+     *
+     * 返回值是「配置项列表」本身（与 ZJMF / 主控驱动一致），调用方会直接当
+     * config_options 用，不要再包一层 ['product_id' => …, 'config_options' => …]。
+     *
+     * @return array<int, array<string, mixed>>
+     */
     public function fetchRealConfigOptions(Supplier $supplier, int $productId): array
     {
-        // 开放 API 不暴露上游配置项，导入商品不带自定义配置
-        return ['product_id' => $productId, 'config_options' => []];
+        $detail = $this->siteProductDetail($supplier, $productId);
+
+        return $detail === null
+            ? []
+            : $this->normalizeSiteConfigOptions(
+                is_array($detail['config_options'] ?? null) ? $detail['config_options'] : []
+            );
     }
 
-    public function fetchBatchProductConfigOptions(Supplier $supplier, array $productIds, int $chunkSize = 8): array
-    {
+    /**
+     * 批量拉取商品配置项（定时同步 / 批量固化的入口）。
+     *
+     * 原实现是逐商品返回空数组的占位，定时同步因此永远「拉取到 0 项」而静默跳过
+     * （见 ProductSyncService::syncUpstreamProductConfigOptions() 的 `=== []` 分支），
+     * 已导入商品的空配置项永远补不上。改为真实拉取，并尊重 $deadline：
+     * 上游慢时宁可少拉几个，也要在任务时间预算内收尾。
+     *
+     * @param  array<int, mixed>  $productIds
+     * @return array<int, array<string, mixed>>
+     */
+    public function fetchBatchProductConfigOptions(
+        Supplier $supplier,
+        array $productIds,
+        int $chunkSize = 8,
+        ?float $deadline = null
+    ): array {
+        $chunkSize = $chunkSize > 0 ? $chunkSize : 8;
         $items = [];
-        foreach ($productIds as $productId) {
-            $items[(int) $productId] = ['product_id' => (int) $productId, 'config_options' => []];
+
+        foreach (array_chunk(array_values($productIds), $chunkSize) as $chunk) {
+            if ($deadline !== null && $items !== [] && microtime(true) >= $deadline) {
+                break;
+            }
+
+            foreach ($chunk as $productId) {
+                $productId = (int) $productId;
+                if ($productId <= 0) {
+                    continue;
+                }
+
+                // 每个商品请求前都判一次 deadline：上游单请求可能很慢，
+                // 只在 chunk 边界检查会让首个 chunk（以及命中边界前的那一个）
+                // 整批跑完，超出任务时间预算。
+                if ($deadline !== null && $items !== [] && microtime(true) >= $deadline) {
+                    break 2;
+                }
+
+                $items[$productId] = $this->fetchRealConfigOptions($supplier, $productId);
+            }
         }
 
         return $items;
@@ -289,12 +758,176 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         return $items;
     }
 
+    /**
+     * 商品配置项模板（管理端「编辑商品 → 产品配置 → 拉取模板」）。
+     *
+     * 开放接口不返回配置项，但上游站点公开目录的 GET /api/v2/site/products/{id}
+     * 带完整的 config_options（数据中心 / 操作系统 / CPU / 内存 / 带宽 / 磁盘…），
+     * 且上游同样是 TuraIDC，字段语义与本地一致，可直接规范化后回填。
+     *
+     * 拿不到时返回空配置而不是抛错：拉取模板是「尽力而为」的辅助动作，上游没开放
+     * 目录接口的老实例应保持可编辑，由管理员手工补配置项。
+     */
     public function getProductConfigTemplate(Supplier $supplier, int $productId): array
     {
+        $detail = $this->siteProductDetail($supplier, $productId);
+
+        if ($detail === null) {
+            return [
+                'product' => [],
+                'config_options' => [],
+                'auto_filled_fields' => [],
+            ];
+        }
+
+        $configOptions = $this->normalizeSiteConfigOptions(
+            is_array($detail['config_options'] ?? null) ? $detail['config_options'] : []
+        );
+
         return [
-            'product_id' => $productId,
-            'config_options' => [],
+            'product' => $detail,
+            'config_options' => $configOptions,
+            'auto_filled_fields' => array_values(array_filter(array_map(
+                fn (array $item): string => trim((string) ($item['field'] ?? '')),
+                $configOptions
+            ))),
         ];
+    }
+
+    /**
+     * 上游站点公开目录的商品详情（带 config_options / pricing），失败返回 null。
+     *
+     * @return array<string, mixed>|null
+     */
+    private function siteProductDetail(Supplier $supplier, int $productId): ?array
+    {
+        if ($productId <= 0) {
+            return null;
+        }
+
+        $cacheKey = sprintf('tura_open_api:site_product:%d:%d', (int) $supplier->id, $productId);
+
+        try {
+            $detail = Cache::remember($cacheKey, self::SITE_GROUP_CACHE_TTL, function () use ($supplier, $productId): array {
+                $payload = $this->client()->getPublic(
+                    $supplier,
+                    sprintf('/api/v2/site/products/%d', $productId)
+                );
+
+                return is_array($payload['product'] ?? null) ? (array) $payload['product'] : [];
+            });
+        } catch (\Throwable $exception) {
+            Log::warning('[TuraIDC 开放接口] 拉取商品配置项失败', [
+                'supplier_id' => (int) $supplier->id,
+                'product_id' => $productId,
+                'reason' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        return is_array($detail) && $detail !== [] ? $detail : null;
+    }
+
+    /**
+     * 规范化上游 config_options，补齐本地配置项编辑所需的字段。
+     *
+     * 上游字段（field / option_type / parameter / sub）语义与本地一致，故保留原值透传，
+     * 只补 option_mode（空 → 按是否区间型推导）、config_id、order、sub_items 等前端要用的键。
+     *
+     * @param  array<int, mixed>  $options
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeSiteConfigOptions(array $options): array
+    {
+        $normalized = [];
+
+        foreach (array_values($options) as $index => $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $optionId = (int) ($item['id'] ?? 0);
+            $type = (int) ($item['option_type'] ?? 0);
+            $field = trim((string) ($item['field'] ?? ''));
+            $name = trim((string) ($item['name'] ?? ''));
+            $sortOrder = (int) ($item['sort_order'] ?? $item['order'] ?? ($index + 1));
+            $isRange = in_array($type, self::SITE_RANGE_OPTION_TYPES, true);
+            $subOptions = $this->normalizeSiteConfigSubOptions($item['sub'] ?? []);
+            $displayName = $name !== '' ? $name : ($field !== '' ? $field : '配置项 '.($index + 1));
+
+            $normalized[] = array_merge($item, [
+                'id' => $optionId,
+                'config_id' => $optionId,
+                'field' => $field !== '' ? $field : 'option_'.($index + 1),
+                'name' => $displayName,
+                'option_name' => $displayName,
+                'option_mode' => trim((string) ($item['option_mode'] ?? '')) !== ''
+                    ? (string) $item['option_mode']
+                    : ($isRange ? 'range' : 'select'),
+                'required' => (int) ($item['required'] ?? 0),
+                'hidden' => (int) ($item['hidden'] ?? 0),
+                'order' => $sortOrder,
+                'sort_order' => $sortOrder,
+                'allow_upgrade' => (int) ($item['allow_upgrade'] ?? $item['upgrade'] ?? 0),
+                'allow_promo_code' => (int) ($item['allow_promo_code'] ?? 1),
+                'qty_minimum' => $isRange ? (int) ($item['qty_minimum'] ?? 0) : 0,
+                'qty_maximum' => $isRange ? (int) ($item['qty_maximum'] ?? 0) : 0,
+                'qty_stage' => max(1, (int) ($item['qty_stage'] ?? 1)),
+                'unit' => trim((string) ($item['unit'] ?? $item['suffix_text'] ?? '')),
+                'parameter' => trim((string) ($item['parameter'] ?? '')),
+                'sub' => $subOptions,
+                'sub_items' => $subOptions,
+            ]);
+        }
+
+        usort($normalized, fn (array $left, array $right): int => ((int) $left['sort_order']) <=> ((int) $right['sort_order']));
+
+        return $normalized;
+    }
+
+    /**
+     * 规范化配置项的子选项。
+     *
+     * 上游子选项已带 option_name / version / hidden / qty_*，这里只补前端渲染与提交
+     * 会用到的 config_id / option_name_first / sort_order，不重写 option_name：
+     * 上游可能是「父^子」形式（CentOS^CentOS-7.6.1810-x64），改写反而会丢信息。
+     *
+     * @param  mixed  $subOptions
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeSiteConfigSubOptions(mixed $subOptions): array
+    {
+        if (! is_array($subOptions)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach (array_values($subOptions) as $index => $sub) {
+            if (! is_array($sub)) {
+                continue;
+            }
+
+            $subId = (int) ($sub['id'] ?? 0);
+            $optionName = trim((string) ($sub['option_name'] ?? $sub['version'] ?? ''));
+
+            $normalized[] = array_merge($sub, [
+                'id' => $subId,
+                'config_id' => (int) ($sub['config_id'] ?? 0),
+                'option_name' => $optionName,
+                'option_name_first' => trim((string) ($sub['option_name_first'] ?? '')) !== ''
+                    ? (string) $sub['option_name_first']
+                    : (string) $subId,
+                'version' => trim((string) ($sub['version'] ?? '')) !== '' ? (string) $sub['version'] : $optionName,
+                'hidden' => (int) ($sub['hidden'] ?? 0),
+                'sort_order' => (int) ($sub['sort_order'] ?? $sub['order'] ?? $index),
+                'qty_minimum' => (int) ($sub['qty_minimum'] ?? 0),
+                'qty_maximum' => (int) ($sub['qty_maximum'] ?? 0),
+            ]);
+        }
+
+        return $normalized;
     }
 
     public function getProductProvisionConfig(Supplier $supplier, int $productId): array
@@ -311,6 +944,51 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
     /* ---------------------------------- 开通 ---------------------------------- */
 
+    /**
+     * 从订单快照取出可提交给上游的完整配置。
+     *
+     * config_snapshot 里混有本地元数据（商品路径、分类名、schema 版本等），
+     * 这些上游并不认识，直接透传会让上游校验失败；同时剔除空值与「明确禁止」
+     * 之类的展示项，避免把无意义的配置发过去。
+     *
+     * @return array<string, mixed>
+     */
+    private function buildUpstreamProvisionConfig(Order $order, string $hostname): array
+    {
+        $snapshot = data_get($order->config_snapshot, []);
+
+        if (! is_array($snapshot)) {
+            $snapshot = [];
+        }
+
+        $config = [];
+
+        foreach ($snapshot as $key => $value) {
+            $key = trim((string) $key);
+
+            if ($key === '' || str_starts_with($key, '_') || in_array($key, self::NON_UPSTREAM_CONFIG_KEYS, true)) {
+                continue;
+            }
+
+            if ($value === null || $value === '' || $value === []) {
+                continue;
+            }
+
+            // 「明确禁止」是本地目录用来屏蔽上游选项的展示项，不应作为配置提交
+            if (in_array($key, self::NON_SELECTABLE_CONFIG_FIELDS, true)) {
+                continue;
+            }
+
+            $config[$key] = $value;
+        }
+
+        if ($hostname !== '' && ! array_key_exists('hostname', $config)) {
+            $config['hostname'] = $hostname;
+        }
+
+        return $config;
+    }
+
     public function provisionOrder(Order $order, Supplier $supplier, ?Service $existingService = null): array
     {
         $productId = $this->resolveUpstreamProductId($order);
@@ -318,13 +996,17 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         $hostname = trim((string) data_get($order->config_snapshot, 'hostname', ''));
         throw_if($billingCycle === '', new BusinessException('本地订单缺少计费周期，无法在上游开通', 42200));
 
+        // 上游开通必须收到完整配置：只传 hostname 会让上游按默认规格发货，
+        // 买家付费购买的内存/磁盘/带宽等规格被静默忽略。
+        $upstreamConfig = $this->buildUpstreamProvisionConfig($order, $hostname);
+
         $idempotencyKey = 'tura-open-provision-'.$order->id;
 
         // 1) 报价换取 quote_token（金额由上游服务端计价，下游不可篡改）
         $quote = $this->client()->get($supplier, "/api/v2/open/products/{$productId}/quotes", [
             'billing_cycle' => $billingCycle,
             'quantity' => 1,
-            'config' => $hostname !== '' ? ['hostname' => $hostname] : [],
+            'config' => $upstreamConfig,
         ]);
         $quoteToken = trim((string) ($quote['quote_token'] ?? ''));
         throw_if($quoteToken === '', new BusinessException('上游未返回报价凭证，无法下单', 42200));
@@ -334,7 +1016,7 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
             'product_id' => $productId,
             'billing_cycle' => $billingCycle,
             'quantity' => 1,
-            'config' => $hostname !== '' ? ['hostname' => $hostname] : [],
+            'config' => $upstreamConfig,
             'quote_token' => $quoteToken,
             'idempotency_key' => $idempotencyKey,
         ];
@@ -383,6 +1065,7 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         return [
             'requested_host' => $hostname,
             'upstream_invoice_id' => $invoiceId,
+            'upstream_invoice_no' => trim((string) ($invoice['invoice_no'] ?? '')),
             'upstream_host_ids' => [$serviceId],
             'upstream_host_id' => $serviceId,
             'host_detail' => $this->hostDetailFromService($serviceDetail),
@@ -403,6 +1086,7 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
         return [
             'upstream_invoice_id' => $invoiceId,
+            'upstream_invoice_no' => trim((string) ($response['invoice_no'] ?? '')),
             'upstream_amount' => (string) ($response['amount'] ?? ''),
             'payment_completed' => true,
             'host_detail' => $this->hostDetailFromService(
@@ -493,6 +1177,10 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
     /* ---------------------------------- 余额 ---------------------------------- */
 
+    /**
+     * 余额查询同时承担「连接检测」：能取到余额即视为上游可达，
+     * 管理端据此把供应商标记为连接成功并刷新卡片。
+     */
     public function getBalance(Supplier $supplier): array
     {
         $data = $this->client()->get($supplier, '/api/v2/open/balance');
@@ -500,7 +1188,39 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         return [
             'balance' => (string) ($data['balance'] ?? ''),
             'currency' => (string) ($data['currency'] ?? 'CNY'),
+            'connection_status' => 'connected',
+            'connection_message' => '连接正常',
+            'client' => $this->upstreamClientInfo($supplier),
         ];
+    }
+
+    /**
+     * 上游密钥自述信息（GET /api/v2/open/keys/self）：只取密钥前缀与权限范围，
+     * 用于卡片上人工核对是哪把密钥。取不到不影响余额同步，故失败仅降级返回空。
+     *
+     * @return array<string, mixed>
+     */
+    private function upstreamClientInfo(Supplier $supplier): array
+    {
+        $info = ['provider_key' => self::KEY];
+
+        try {
+            $self = $this->client()->get($supplier, '/api/v2/open/keys/self');
+        } catch (BusinessException $exception) {
+            Log::warning('[TuraIDC 开放接口] 读取上游密钥自述信息失败', [
+                'supplier_id' => (int) $supplier->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return $info;
+        }
+
+        $info['key_prefix'] = trim((string) ($self['key_prefix'] ?? ''));
+        $info['scopes'] = is_array($self['scopes'] ?? null) ? array_values($self['scopes']) : [];
+        $info['expires_at'] = trim((string) ($self['expires_at'] ?? ''));
+        $info['last_used_at'] = trim((string) ($self['last_used_at'] ?? ''));
+
+        return $info;
     }
 
     /* -------------------------------- 控制台运行时 ------------------------------ */
@@ -534,13 +1254,16 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
     public function powerAction(Supplier $supplier, int $hostId, string $action, ?string $jwt = null): array
     {
+        $normalized = $this->normalizePowerAction($action);
+
         $this->client()->post($supplier, "/api/v2/open/services/{$hostId}/power", [
-            'action' => trim($action),
+            'action' => $normalized,
         ]);
 
         return [
             'status' => 200,
             'msg' => '电源指令已提交上游',
+            'data' => ['action' => $normalized],
         ];
     }
 
@@ -604,6 +1327,198 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
     }
 
     /* --------------------------------- 内部辅助 -------------------------------- */
+
+    /**
+     * 「同步余额」：拉取上游余额并回填卡片；同时把连接结论回传管理端落库。
+     *
+     * @param  array<string, mixed>  $request
+     * @return array<string, mixed>
+     */
+    private function refreshSupplierCard(string $action, array $request): array
+    {
+        $supplier = $this->supplierFromContext($request);
+        $remote = $this->getBalance($supplier);
+        $checkedAt = now()->format('Y-m-d H:i:s');
+        $remote['checked_at'] = $checkedAt;
+
+        return [
+            'success' => true,
+            'action' => $action,
+            'message' => '余额同步成功',
+            'data' => [
+                'remote' => $remote,
+                'card' => $this->renderCard($supplier, [
+                    'binding' => $this->bindingFromContext($request),
+                    'remote' => $remote,
+                    'checked_at' => $checkedAt,
+                ]),
+            ],
+        ];
+    }
+
+    /**
+     * 「批量导入/对接」：按货架层级把选中的上游商品导入本地商品库。
+     * 商品目录与价格由本插件的 getProductCatalog / hydrateSelectedPricing 提供。
+     *
+     * @param  array<string, mixed>  $request
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function bulkConnectSupplierProducts(string $action, array $request, array $payload): array
+    {
+        $supplier = $this->supplierFromContext($request);
+        $result = app(ProductCatalogService::class)->bulkConnectSupplierProducts(
+            $supplier,
+            $this->validateBulkConnectPayload($payload)
+        );
+
+        return [
+            'success' => true,
+            'action' => $action,
+            'message' => '批量对接完成',
+            'data' => $result,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $request
+     */
+    private function supplierFromContext(array $request): Supplier
+    {
+        $supplier = $request['context']['supplier'] ?? null;
+        if (! $supplier instanceof Supplier) {
+            throw new BusinessException('供应商上下文缺失，无法执行插件动作', 42200);
+        }
+
+        return $supplier;
+    }
+
+    /**
+     * @param  array<string, mixed>  $request
+     * @return array<string, mixed>
+     */
+    private function bindingFromContext(array $request): array
+    {
+        return is_array($request['context']['binding'] ?? null) ? (array) $request['context']['binding'] : [];
+    }
+
+    /**
+     * 与 ZJMF / 康乐插件保持一致的批量对接入参校验（层级 + 商品 ID 去重）。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function validateBulkConnectPayload(array $payload): array
+    {
+        $firstGroupCode = trim((string) ($payload['first_product_group_code'] ?? ''));
+        if ($firstGroupCode === '' || ! in_array($firstGroupCode, ProductType::allowedValues(), true)) {
+            throw new BusinessException('请选择有效的商品种类', 42200);
+        }
+
+        $productIds = collect($payload['product_ids'] ?? [])
+            ->map(fn (mixed $id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($productIds === []) {
+            throw new BusinessException('请选择至少一个上游商品', 42200);
+        }
+
+        return [
+            'first_product_group_code' => $firstGroupCode,
+            'first_product_group_id' => $this->positiveInt($payload['first_product_group_id'] ?? null),
+            'second_product_group_id' => $this->positiveInt($payload['second_product_group_id'] ?? null),
+            'third_product_group_id' => $this->positiveInt($payload['third_product_group_id'] ?? null),
+            'second_product_group_name' => trim((string) ($payload['second_product_group_name'] ?? '')),
+            'third_product_group_name' => trim((string) ($payload['third_product_group_name'] ?? '')),
+            'product_ids' => $productIds,
+            'default_status' => (int) ($payload['default_status'] ?? 1) === 1 ? 1 : 0,
+            'default_auto_setup' => (int) ($payload['default_auto_setup'] ?? 1) === 1 ? 1 : 0,
+            'sync_config_options' => (int) ($payload['sync_config_options'] ?? 0) === 1 ? 1 : 0,
+        ];
+    }
+
+    private function positiveInt(mixed $value): int
+    {
+        $int = (int) $value;
+
+        return $int > 0 ? $int : 0;
+    }
+
+    /**
+     * @param  array<int, mixed>  $values
+     */
+    private function firstFilled(array $values): string
+    {
+        foreach ($values as $value) {
+            $string = trim((string) ($value ?? ''));
+            if ($string !== '') {
+                return $string;
+            }
+        }
+
+        return '';
+    }
+
+    private function formatCardDateTime(mixed $value): string
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d H:i:s');
+        }
+
+        $string = trim((string) ($value ?? ''));
+
+        return $string !== '' ? $string : '-';
+    }
+
+    private function moneyText(mixed $value): string
+    {
+        $string = trim((string) ($value ?? ''));
+        if ($string === '') {
+            return '0.00';
+        }
+
+        return is_numeric($string) ? number_format((float) $string, 2, '.', '') : $string;
+    }
+
+    /**
+     * 卡片上的上游站点：优先绑定的 base_url，回退供应商表里的接口地址。
+     *
+     * @param  array<string, mixed>  $binding
+     */
+    private function upstreamSiteLabel(Supplier $supplier, array $binding): string
+    {
+        $url = $this->firstFilled([
+            $binding['base_url'] ?? null,
+            $supplier->api_url ?? null,
+        ]);
+        if ($url === '') {
+            return '';
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return is_string($host) && $host !== '' ? $host : $url;
+    }
+
+    /**
+     * 本插件供应商表单只有接口地址与密钥，没有账号字段，故不校验用户名。
+     *
+     * @param  array<string, mixed>  $binding
+     */
+    private function hasSupplierCredentials(Supplier $supplier, array $binding): bool
+    {
+        $secretValues = is_array($binding['has_secret_values'] ?? null) ? (array) $binding['has_secret_values'] : [];
+        $hasBaseUrl = trim((string) ($binding['base_url'] ?? $supplier->api_url ?? '')) !== ''
+            || (bool) ($binding['has_base_url'] ?? false);
+        $hasApiKey = (bool) ($binding['has_api_key'] ?? false)
+            || (bool) ($secretValues['api_key'] ?? false)
+            || trim((string) ($supplier->api_key ?? '')) !== '';
+
+        return $hasBaseUrl && $hasApiKey;
+    }
 
     private function client(): TuraOpenApiClient
     {
@@ -682,18 +1597,30 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
     /**
      * @param  array<string, mixed>  $item
+     * @param  array<int, string>|null  $remotePath  站点目录给的真实分组路径，为空则按名称推导
      * @return array<string, mixed>
      */
-    private function catalogProduct(array $item): array
+    private function catalogProduct(array $item, ?array $remotePath = null): array
     {
         $stock = (int) ($item['stock'] ?? -1);
+        $name = $this->normalizeCatalogName((string) ($item['name'] ?? ''));
+        $type = trim((string) ($item['product_type'] ?? ''));
+        $typeLabel = $this->productTypeLabel($type);
+        // 站点目录没覆盖到（前台未上架）时退化为名称推导；
+        // 推不出机房语义再退化为业务类型，保证每个商品都有归属。
+        $series = $this->catalogSeries($name);
+        $remotePath = ($remotePath === null || $remotePath === []) ? null : array_values($remotePath);
+        $groupPath = $remotePath ?? [$series !== '' ? $series : $typeLabel];
+        $groupName = (string) end($groupPath);
 
         return [
             'id' => (int) ($item['id'] ?? 0),
-            'name' => trim((string) ($item['name'] ?? '')),
-            'type' => trim((string) ($item['product_type'] ?? 'server')),
-            'type_label' => 'TuraIDC 转售商品',
-            'description' => '来自上游 TuraIDC 开放接口的转售商品。',
+            'name' => $name !== '' ? $name : '未命名商品',
+            'type' => $type !== '' ? $type : ProductType::OTHER,
+            'type_label' => $typeLabel,
+            // 上游不返回商品描述，用「分组路径 · 类型」拼一句可读的摘要，
+            // 比写死「来自上游 TuraIDC 开放接口的转售商品」更有信息量。
+            'description' => implode(' / ', $groupPath).' · '.$typeLabel,
             'billingcycle' => 'monthly',
             'product_price' => null,
             'monthly_price' => null,
@@ -702,9 +1629,111 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
             'stock_control' => $stock >= 0 ? 1 : 0,
             'qty' => $stock,
             'stock' => $stock,
-            'first_group_name' => '',
-            'group_name' => 'TuraIDC 转售',
+            'group_name' => $groupName,
+            'group_label' => implode(' / ', $groupPath),
+            'remote_group_name' => $groupName,
+            // 批量对接弹窗按 remote_group_path 建树（见 Suppliers.vue）：
+            // 命中站点目录的是真实的一/二/三级路径，没命中的是推导出的单级兜底。
+            'remote_group_path' => $groupPath,
         ];
+    }
+
+    /**
+     * 清洗上游商品名：去掉零宽/格式字符、折叠空白、还原被双重转义的 HTML 实体。
+     *
+     * 上游存在「​西安电信 …」这类带零宽空格、以及「成都内存&amp;amp;硬盘型NAT」
+     * 这类双重转义的名称，不清洗的话同一个机房会被拆成好几个分组，页面上也会直接
+     * 把实体当文本显示出来。
+     */
+    private function normalizeCatalogName(string $name): string
+    {
+        $name = preg_replace('/[\p{Cf}]/u', '', $name) ?? $name;
+        $name = preg_replace('/[\p{Cc}\s]+/u', ' ', $name) ?? $name;
+
+        // 解两次：&amp;amp; → &amp; → &
+        for ($i = 0; $i < 2; $i++) {
+            $decoded = html_entity_decode($name, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if ($decoded === $name) {
+                break;
+            }
+
+            $name = $decoded;
+        }
+
+        return trim($name);
+    }
+
+    /**
+     * 上游 product_type → 本地业务类型文案，与系统商品类型保持一致。
+     */
+    private function productTypeLabel(string $type): string
+    {
+        if ($type === '') {
+            return ProductType::$labels[ProductType::OTHER] ?? '其他';
+        }
+
+        return ProductType::$labels[$type] ?? $type;
+    }
+
+    /**
+     * 从商品名里提取机房/系列前缀，用来替代开放协议缺失的货架分组。
+     *
+     * 上游命名大致三种写法：
+     *  1. 「德国9929 16核32G1Gbps」——空格分隔，首段即机房；
+     *  2. 「高频2区|华东三线|24C32G」——竖线分隔，取首个竖线段里的首段；
+     *  3. 「镇江BGP-E5-64G-500M」——连字符连写，要切到首个规格段之前。
+     *
+     * 只按 | 与空白切分会把第 3 类整串当成机房名，实测 1095 个商品碎成 257 个分组、
+     * 其中 126 个只有一件商品；补上连字符处理（再去掉汉字后的尾随规格数字）后
+     * 收敛到 161 组 / 23 个单元素组。以纯规格开头的（「4 vCPU 8G」）没有机房语义，
+     * 返回空串交由调用方退化为业务类型分组。
+     */
+    private function catalogSeries(string $name): string
+    {
+        $name = $this->normalizeCatalogName($name);
+        if ($name === '') {
+            return '';
+        }
+
+        // 竖线分段优先于空白：「高频2区|华东三线|24C32G」的机房是「高频2区」
+        $head = str_contains($name, '|') ? (string) strstr($name, '|', true) : $name;
+        $segments = preg_split('/\s+/u', trim($head)) ?: [];
+        $series = trim((string) ($segments[0] ?? ''));
+
+        if ($series === '') {
+            return '';
+        }
+
+        // 连字符连写：只取首个规格段之前的部分
+        // （镇江BGP-E5-64G-500M → 镇江BGP，国内加速高防CDN-企业版 → 国内加速高防CDN）
+        if (str_contains($series, '-')) {
+            $series = trim((string) explode('-', $series)[0]);
+
+            // 汉字后的尾随数字属于规格（西安云电脑2区16 → 西安云电脑2区）；
+            // 紧跟字母的不动，那是型号的一部分（宿迁E5 的 5）。
+            // 只在切过连字符时才削：否则「德国9929」里的型号会被当成规格削成「德国」。
+            $series = preg_replace('/(?<=[\x{4e00}-\x{9fff}])\d+$/u', '', $series) ?? $series;
+        }
+
+        if ($series === '' || mb_strlen($series) > 24) {
+            return '';
+        }
+
+        // 纯数字、或「数字 + 单位」的规格片段（4 / 2 vCPU / 16C）不是机房名
+        if (preg_match('/^\d+(?:\.\d+)?$/u', $series) === 1) {
+            return '';
+        }
+
+        if (preg_match('/^\d+\s*(?:vCPU|cpu|c|core|核|H|G|M|GB|TB|Mbps|Gbps)$/iu', $series) === 1) {
+            return '';
+        }
+
+        // 以 CPU 型号开头的（R9-9950X-A1 切完是 R9）同样没有机房语义
+        if (preg_match('/^(?:[EIeiRrXx]\d|AMD|Intel|Xeon|EPYC|金牌|铂金|银牌|至强)/u', $series) === 1) {
+            return '';
+        }
+
+        return $series;
     }
 
     /**
@@ -715,11 +1744,41 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
      */
     private function hostDetailFromService(array $detail): array
     {
+        // 服务详情与主机载荷同源（都是 GET /services/{id} 的控制台投影），
+        // 统一走 hostPayloadFromDetail，避免两处各写一份字段解析后逐渐漂移。
+        return $this->hostPayloadFromDetail($detail);
+    }
+
+    /**
+     * 上游服务详情（GET /services/{id}，返回的是控制台投影）→ 主机载荷。
+     *
+     * 列表项（GET /services）的字段是详情的子集，故列表项直接复用本方法。
+     *
+     * @param  array<string, mixed>  $detail
+     * @return array<string, mixed>
+     */
+    private function hostPayloadFromDetail(array $detail): array
+    {
+        $product = is_array($detail['product'] ?? null) ? $detail['product'] : [];
+
         return [
-            'domain' => trim((string) ($detail['domain'] ?? ($detail['hostname'] ?? ''))),
+            'id' => (int) ($detail['id'] ?? 0),
+            'name' => trim((string) ($detail['name'] ?? '')),
+            'domain' => $this->firstFilled([
+                $detail['domain'] ?? null,
+                $detail['hostname'] ?? null,
+                $detail['name'] ?? null,
+            ]),
             'domainstatus' => $this->domainStatusFromServiceStatus((int) ($detail['status'] ?? 0)),
+            'product_name' => $this->firstFilled([
+                $product['name'] ?? null,
+                $detail['product_display_name'] ?? null,
+                $detail['product_name'] ?? null,
+            ]),
             'nextduedate' => trim((string) ($detail['expires_at'] ?? '')),
-            'product_name' => trim((string) ($detail['display_name'] ?? '')),
+            'created_at' => trim((string) ($detail['created_at'] ?? '')),
+            'dedicatedip' => trim((string) ($detail['dedicatedip'] ?? '')),
+            'assignedips' => is_array($detail['assignedips'] ?? null) ? array_values($detail['assignedips']) : [],
             'connection' => is_array($detail['connection'] ?? null) ? $detail['connection'] : [],
         ];
     }
@@ -732,18 +1791,75 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
      */
     private function hostPayloadFromListItem(array $item): array
     {
-        return [
-            'domainstatus' => $this->domainStatusFromServiceStatus((int) ($item['status'] ?? 0)),
-            'domain' => trim((string) ($item['name'] ?? '')),
-            'product_name' => trim((string) ($item['product_name'] ?? '')),
-            'nextduedate' => trim((string) ($item['expires_at'] ?? '')),
-        ];
+        return $this->hostPayloadFromDetail($item);
+    }
+
+    /**
+     * 电源动作归一：别名映射 + 白名单校验，非法动作在本地就给出可读提示。
+     */
+    private function normalizePowerAction(string $action): string
+    {
+        $raw = trim($action);
+        $key = strtolower($raw);
+        $normalized = self::POWER_ACTION_ALIASES[$key] ?? $key;
+
+        throw_if(
+            ! in_array($normalized, self::POWER_ACTIONS, true),
+            new BusinessException('上游开放接口不支持该电源操作：'.$raw, 42200)
+        );
+
+        return $normalized;
     }
 
     /**
      * 上游服务状态（本地 ServiceStatus 常量）→ 通用主机 domainstatus 文本，
      * 与状态同步的 resolveServiceStatusFromUpstream 语义对齐。
      */
+    /**
+     * 实时上游报价（前台/管理端价格预览用）。
+     *
+     * 转售商品本地没有配置项单价（开放接口与站点目录的 config_options 都不含价格），
+     * 真实价格全靠上游自己的实时报价接口 POST /api/v2/site/products/{id}/quote 计算。
+     * 该接口面向官网访客、无需密钥，直接走公开客户端。返回的 data 含 base_amount /
+     * config_amount / items / total_amount 等，调用方按需取用（报价逻辑只覆盖 config 加价）。
+     *
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>  上游解包后的 data；失败返回空数组
+     */
+    public function quoteUpstreamProduct(Supplier $supplier, int $upstreamProductId, array $config, string $billingCycle, int $quantity): array
+    {
+        $quantity = max((int) $quantity, 1);
+        $configBody = $config === [] ? new \stdClass() : $config;
+        $cacheKey = 'tura_open_api:quote:'
+            . $this->supplierFingerprint($supplier) . ':'
+            . $upstreamProductId . ':' . $billingCycle . ':' . $quantity . ':'
+            . md5(json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+        return Cache::remember($cacheKey, self::QUOTE_CACHE_TTL, function () use ($supplier, $upstreamProductId, $configBody, $billingCycle, $quantity): array {
+            try {
+                $data = $this->client()->postPublic(
+                    $supplier,
+                    '/api/v2/site/products/' . $upstreamProductId . '/quote',
+                    [
+                        'config' => $configBody,
+                        'billing_cycle' => $billingCycle,
+                        'quantity' => $quantity,
+                    ]
+                );
+            } catch (\Throwable $exception) {
+                Log::warning('[tura_open_api] 上游实时报价失败', [
+                    'product' => $upstreamProductId,
+                    'billing_cycle' => $billingCycle,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                return [];
+            }
+
+            return is_array($data) ? $data : [];
+        });
+    }
+
     private function domainStatusFromServiceStatus(int $status): string
     {
         return match ($status) {

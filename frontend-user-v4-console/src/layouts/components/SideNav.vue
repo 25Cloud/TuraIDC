@@ -247,20 +247,29 @@ function handleMenuChange() {
   }
 }
 
-/* Logo 容器对齐：与侧边栏菜单项左内边距对齐（菜单项 padding-left: 20px）
-   需 !important 覆盖 TDesign 默认的 logo-wrapper 样式 */
+/* Logo 容器：在侧边栏内水平居中。
+   菜单文本从 44px 处开始，左对齐会让 logo 整体偏左，看起来像"偏轴"。
+   同时清掉 TDesign 自带的 hover 灰底圆角块，让 logo 与白色侧边栏融为一体。
+   需 !important 覆盖 layout.less 与主题里的 logo-wrapper 规则（含 #app 前缀的那条）。 */
 :deep(.tdesign-starter-side-nav-logo-wrapper) {
   display: flex !important;
   align-items: center !important;
-  justify-content: flex-start !important;
+  justify-content: center !important;
   width: 100% !important;
-  padding-left: 20px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background-color: transparent !important;
   box-sizing: border-box !important;
 }
 
-/* 折叠态：居中显示 */
+:deep(.tdesign-starter-side-nav-logo-wrapper:hover) {
+  background-color: transparent !important;
+}
+
+/* 折叠态：同样保持居中 */
 .tdesign-starter-sidebar-compact .tdesign-starter-side-nav-logo-wrapper {
-  padding-left: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
   justify-content: center !important;
 }
 </style>

@@ -9,6 +9,10 @@ use App\Exceptions\BusinessException;
 use App\Models\Product;
 use App\Support\Money;
 use Illuminate\Support\Str;
+use App\Models\Supplier;
+use App\Services\Upstream\Contracts\ProvidesUpstreamQuoting;
+use App\Services\Upstream\ProviderResolver;
+use Illuminate\Support\Facades\DB;
 
 trait HandlesOrderCalculation
 {
@@ -51,6 +55,13 @@ trait HandlesOrderCalculation
         }
 
         $quote = $this->buildQuoteBreakdown($product, $billingCycle, $config);
+
+        $upstreamQuote = $this->resolveUpstreamConfigQuote($product, $config, $billingCycle);
+        if ($upstreamQuote !== null) {
+            $quote['config_amount'] = (float) ($upstreamQuote['config_amount'] ?? 0);
+            $quote['items'] = $this->mapUpstreamQuoteItems((array) ($upstreamQuote['items'] ?? []));
+        }
+
         $setupFee = (float) $product->setup_fee;
 
         return Money::add($baseAmount, $quote['config_amount'] ?? 0, $setupFee);
@@ -65,6 +76,11 @@ trait HandlesOrderCalculation
         throw_if($baseAmount <= 0, new BusinessException('无效的计费周期'));
 
         $quote = $this->buildQuoteBreakdown($product, $billingCycle, $config);
+        $upstreamQuote = $this->resolveUpstreamConfigQuote($product, $config, $billingCycle);
+        if ($upstreamQuote !== null) {
+            $quote['config_amount'] = (float) ($upstreamQuote['config_amount'] ?? 0);
+            $quote['items'] = $this->mapUpstreamQuoteItems((array) ($upstreamQuote['items'] ?? []));
+        }
         $setupFee = (float) $product->setup_fee;
         $unitTotalAmount = Money::add($baseAmount, $quote['config_amount'] ?? 0, $setupFee);
         $scaledBaseAmount = Money::multiply($baseAmount, $quantity);
@@ -102,6 +118,11 @@ trait HandlesOrderCalculation
         $config = $this->normalizeConfig($product, $config);
         $baseAmount = (float) $product->getPriceByBillingCycle($billingCycle);
         $quote = $this->buildConfigPricingBreakdown($product, $billingCycle, $config);
+        $upstreamQuote = $this->resolveUpstreamConfigQuote($product, $config, $billingCycle);
+        if ($upstreamQuote !== null) {
+            $quote['config_amount'] = (float) ($upstreamQuote['config_amount'] ?? 0);
+            $quote['items'] = $this->mapUpstreamQuoteItems((array) ($upstreamQuote['items'] ?? []));
+        }
         $setupFee = (float) $product->setup_fee;
         $quantity = max($quantity, 1);
         $unitTotalAmount = Money::add($baseAmount, $quote['config_amount'] ?? 0, $setupFee);
@@ -325,6 +346,464 @@ trait HandlesOrderCalculation
             'config_amount' => round($extraAmount, 2),
             'items' => $items,
         ];
+    }
+
+    /**
+     * 商品来自上游且插件支持实时报价时，用上游 /quote 的计算结果覆盖本地配置加价。
+     *
+     * 转售商品本地 config_options 通常没有单价（上游不通过目录接口暴露），本地
+     * buildQuoteBreakdown 算出来是 0；上游 /quote 才是真实价格来源（如数据盘 1 元/GB）。
+     * 这里只覆盖 config_amount 与 items，base 仍用商家在 product.pricing 设的转售价，
+     * 既保留商家加价、又让加价项显示真实价格。按 quantity=1 取单价，交给上层按数量缩放。
+     */
+    private function resolveUpstreamConfigQuote(Product $product, array $config, string $billingCycle): ?array
+    {
+        if ($config === []) {
+            return null;
+        }
+
+        $binding = DB::table('product_upstream_bindings')
+            ->where('product_id', (int) $product->id)
+            ->first();
+
+        if ($binding === null || (int) ($binding->upstream_product_id ?? 0) <= 0) {
+            return null;
+        }
+
+        try {
+            $provider = app(ProviderResolver::class)->resolveForProduct($product);
+        } catch (\Throwable $exception) {
+            return null;
+        }
+
+        if (! $provider->supports(ProvidesUpstreamQuoting::class)) {
+            return null;
+        }
+
+        $capability = $provider->maybe(ProvidesUpstreamQuoting::class);
+
+        if ($capability === null) {
+            return null;
+        }
+
+        // product_upstream_bindings 只持 supplier_plugin_binding_id，需再连 supplier_plugin_bindings 取 supplier_id
+        $pluginBinding = DB::table('supplier_plugin_bindings')
+            ->where('id', (int) ($binding->supplier_plugin_binding_id ?? 0))
+            ->first();
+
+        if ($pluginBinding === null) {
+            return null;
+        }
+
+        $rawSupplier = Supplier::find((int) ($pluginBinding->supplier_id ?? 0));
+
+        if ($rawSupplier === null) {
+            return null;
+        }
+
+        // 供应商主表无 api_url/api_key 列，开放接口地址与密钥存于 supplier_plugin_bindings；
+        // 须经绑定解析器注入运行时凭证（base_url -> api_url），否则 quoteUpstreamProduct 读到空地址。
+        // 解析过程涉及查库与解密，异常时降级到后台定价兜底，不让整个报价流程失败。
+        try {
+            $supplier = app(\App\Services\Integrations\Plugins\PluginBindingResolver::class)
+                ->supplierWithRuntimeCredentials($rawSupplier);
+        } catch (\Throwable $exception) {
+            return $this->buildFallbackConfigQuote($product, $config, $billingCycle);
+        }
+
+        try {
+            $data = $capability->quoteUpstreamProduct($supplier, (int) $binding->upstream_product_id, $config, $billingCycle, 1);
+        } catch (\Throwable $exception) {
+            $data = null;
+        }
+
+        $data = is_array($data) ? $data : [];
+
+        // 上游有返回：按配置项 markup 套加价倍率/固定价
+        if ($data !== []) {
+            return $this->applyConfigOptionMarkup($product, $data, $config, $billingCycle);
+        }
+
+        // 上游异常/空返回：若后台为配置项设了固定定价则用后台定价兜底，避免前台显示 0 元
+        return $this->buildFallbackConfigQuote($product, $config, $billingCycle);
+    }
+
+    /**
+     * 读取配置项上的加价配置 markup。
+     *
+     * 商家可在后台为每个配置项设置加价方式，实现「上游成本 + 商家利润」：
+     *   - 跟随上游（未配置 markup / enabled=false）：原样使用上游报价
+     *   - multiplier：上游价 × 倍率，上游调价自动跟随
+     *   - fixed：直接用商家填的单价（每 GB / 每步）定价，不依赖上游返回值
+     *   - both：上游价 × 倍率 + 固定附加费
+     *
+     * @return array{enabled: bool, mode: string, multiplier: float, unit_price: float, extra_amount: float}
+     */
+    private function resolveConfigOptionMarkup(array $item): array
+    {
+        $markup = is_array($item['markup'] ?? null) ? $item['markup'] : [];
+        $enabled = (bool) ($markup['enabled'] ?? false);
+        $mode = (string) ($markup['mode'] ?? 'inherit');
+
+        return [
+            'enabled' => $enabled,
+            'mode' => $mode,
+            'multiplier' => round((float) ($markup['multiplier'] ?? 1), 4),
+            'unit_price' => round((float) ($markup['unit_price'] ?? 0), 2),
+            'extra_amount' => round((float) ($markup['extra_amount'] ?? 0), 2),
+        ];
+    }
+
+    /**
+     * 对上游报价的每个 item 套用对应配置项的加价配置。
+     * 未配置 markup 的项原样保留；fixed 模式用商家单价重算该项金额。
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    private function applyConfigOptionMarkup(Product $product, array $data, array $config, string $billingCycle): array
+    {
+        $markupByField = [];
+
+        foreach ((array) ($product->config_options ?? []) as $option) {
+            if ((int) ($option['hidden'] ?? 0) === 1) {
+                continue;
+            }
+
+            $field = $this->parseField($option);
+
+            if ($field === '') {
+                continue;
+            }
+
+            $markupByField[$field] = [
+                'option' => $option,
+                'markup' => $this->resolveConfigOptionMarkup((array) $option),
+            ];
+        }
+
+        $items = [];
+        $configAmount = 0.0;
+        $seenFields = [];
+
+        foreach ((array) ($data['items'] ?? []) as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $field = (string) ($item['field'] ?? '');
+
+            if ($field === '') {
+                continue;
+            }
+
+            $seenFields[$field] = true;
+            // 上游若返回负数金额，钳制为 0，避免污染合计
+            $amount = Money::round(max((float) ($item['amount'] ?? 0), 0));
+            $entry = $markupByField[$field] ?? null;
+
+            if ($entry !== null) {
+                $markup = $entry['markup'];
+                $amount = $this->applyMarkupToAmount($amount, $markup, $config, $field, $entry['option'], $billingCycle);
+            }
+
+            $configAmount = Money::add($configAmount, $amount);
+
+            $items[] = [
+                'field' => $field,
+                'label' => (string) ($item['label'] ?? $field),
+                'amount' => (string) $amount,
+            ];
+        }
+
+        // 上游未返回的字段：若商家显式配置了 fixed 单价，则补上该项，
+        // 保证「自定义单价」不依赖上游是否把该字段计入报价。
+        foreach ($markupByField as $field => $entry) {
+            if (isset($seenFields[$field])) {
+                continue;
+            }
+
+            // 用户未选中该字段、或配置项已隐藏时不补项
+            if (! $this->isConfigOptionChargeable($entry['option'], $config, (string) $field)) {
+                continue;
+            }
+
+            $markup = $entry['markup'];
+
+            if (! $markup['enabled'] || $markup['unit_price'] <= 0) {
+                continue;
+            }
+
+            if (! in_array($markup['mode'], ['fixed', 'both'], true)) {
+                continue;
+            }
+
+            $amount = $this->applyMarkupToAmount(0.0, $markup, $config, (string) $field, $entry['option'], $billingCycle);
+
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $configAmount = Money::add($configAmount, $amount);
+
+            $items[] = [
+                'field' => (string) $field,
+                'label' => (string) ($entry['option']['name'] ?? $field),
+                'amount' => (string) $amount,
+            ];
+        }
+
+        $data['items'] = $items;
+
+        if ($items !== []) {
+            // 有可计费项：用重算后的合计覆盖上游原值
+            $data['config_amount'] = Money::round($configAmount);
+        } else {
+            // 上游没给任何可计费项：原值直接透传，若为负数则钳制为 0，
+            // 避免负数加价进入总价
+            $data['config_amount'] = Money::round(max((float) ($data['config_amount'] ?? 0), 0));
+        }
+
+        return $data;
+    }
+
+    /**
+     * 按加价配置计算某一项的最终金额。
+     *
+     * 各模式只读取自己语义内的字段，互不影响：
+     *   - inherit   : 不加价，原样返回上游价
+     *   - multiplier: 上游价 × 倍率 + 附加费（忽略残留的 unit_price）
+     *   - fixed     : 自定义单价 × 数量 + 附加费（忽略残留的 multiplier）
+     *   - both      : 自定义单价 × 数量 × 倍率 + 附加费
+     *
+     * 必须按 mode 显式分支，不能只看「字段是否 > 0」：后台切换模式时只是隐藏
+     * 对应输入框，已存值不会被清空，按字段判断会把上一个模式的残留值算进去。
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $option
+     */
+    private function applyMarkupToAmount(float $upstreamAmount, array $markup, array $config, string $field, array $option, string $billingCycle): float
+    {
+        if (! $markup['enabled'] || $markup['mode'] === 'inherit') {
+            return Money::round(max($upstreamAmount, 0));
+        }
+
+        $mode = $markup['mode'];
+        $extra = $markup['extra_amount'];
+
+        // fixed / both：商家自定义单价为基准，完全自己定价
+        if ($mode === 'fixed' || $mode === 'both') {
+            $unitPrice = $markup['unit_price'];
+
+            if ($unitPrice <= 0) {
+                // 未填单价时退化为上游成本，避免出现 0 元加价
+                return Money::round(max(Money::add(max($upstreamAmount, 0), $extra), 0));
+            }
+
+            $quantity = $this->resolveMarkupChargeQuantity($config, $field, (array) $option);
+            $base = Money::multiply($unitPrice, $quantity);
+
+            if ($mode === 'both') {
+                $multiplier = $markup['multiplier'] > 0 ? $markup['multiplier'] : 1;
+                $base = Money::multiply($base, $multiplier);
+            }
+
+            return Money::round(max(Money::add($base, $extra), 0));
+        }
+
+        // multiplier：以上游价为基准
+        $multiplier = $markup['multiplier'] > 0 ? $markup['multiplier'] : 1;
+
+        return Money::round(max(Money::add(Money::multiply(max($upstreamAmount, 0), $multiplier), $extra), 0));
+    }
+
+    /**
+     * 计算自定义单价的计费数量。
+     *
+     * range 型配置项按数量计费，口径与 calculateRangeChargeSteps 一致；
+     * select 型选中值是选项 ID（如 "13632459"）而非数量，计费数量固定为 1，
+     * 否则把 ID 当整数会算出天文数字般的金额。
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $option
+     */
+    private function resolveMarkupChargeQuantity(array $config, string $field, array $option): int
+    {
+        if (! $this->isRangeConfigOption($option)) {
+            return 1;
+        }
+
+        return $this->resolveRangeStepsForPricing(
+            $this->resolveSelectedConfigValue($config, $field, $option),
+            $option
+        );
+    }
+
+    /**
+     * 判断配置项是否为数量范围型。
+     *
+     * @param  array<string, mixed>  $option
+     */
+    private function isRangeConfigOption(array $option): bool
+    {
+        $mode = trim((string) ($option['option_mode'] ?? ''));
+
+        if ($mode !== '') {
+            return $mode === 'range';
+        }
+
+        return in_array((int) ($option['option_type'] ?? -1), self::RANGE_TYPES, true);
+    }
+
+    /**
+     * 配置项是否应对本次报价生效：未隐藏，且本次提交确实选中了该字段。
+     *
+     * 隐藏项与未选中项都不应产生加价，否则会出现「用户没选却付费」。
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $option
+     */
+    private function isConfigOptionChargeable(array $option, array $config, string $field): bool
+    {
+        if ((int) ($option['hidden'] ?? 0) === 1) {
+            return false;
+        }
+
+        if (array_key_exists('hidden', $option) && (bool) $option['hidden'] === true) {
+            return false;
+        }
+
+        return array_key_exists($field, $config);
+    }
+
+    /**
+     * 取配置项当前选中值（range 取数量，select 取原值）。
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $option
+     */
+    private function resolveSelectedConfigValue(array $config, string $field, array $option): int
+    {
+        $raw = $config[$field] ?? null;
+
+        if ($raw === null || $raw === '') {
+            return (int) ($option['qty_minimum'] ?? 0);
+        }
+
+        return max((int) $raw, 0);
+    }
+
+    /**
+     * 计算 range 型配置项的计费步数（与 calculateRangeChargeSteps 口径一致）。
+     *
+     * @param  array<string, mixed>  $option
+     */
+    private function resolveRangeStepsForPricing(int $value, array $option): int
+    {
+        $rangeMin = (int) ($option['qty_minimum'] ?? 0);
+        $rangeStep = max((int) ($option['qty_stage'] ?? 1), 1);
+
+        if ($value <= 0) {
+            return 0;
+        }
+
+        if ($rangeMin <= 0) {
+            return (int) ceil($value / $rangeStep);
+        }
+
+        return (int) floor(max($value - $rangeMin, 0) / $rangeStep) + 1;
+    }
+
+    /**
+     * 上游报价不可用时的兜底：用后台为配置项设置的固定定价合成 config_amount / items。
+     * 仅对显式配置了 fixed/both 且填了单价的项生效，其余项不出现（保持 0 元）。
+     *
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>|null
+     */
+    private function buildFallbackConfigQuote(Product $product, array $config, string $billingCycle): ?array
+    {
+        $items = [];
+        $configAmount = 0.0;
+
+        foreach ((array) ($product->config_options ?? []) as $option) {
+            if ((int) ($option['hidden'] ?? 0) === 1) {
+                continue;
+            }
+
+            $field = $this->parseField($option);
+
+            if ($field === '') {
+                continue;
+            }
+
+            // 用户未选中该字段时不应计费
+            if (! array_key_exists($field, $config)) {
+                continue;
+            }
+
+            $markup = $this->resolveConfigOptionMarkup((array) $option);
+
+            if (! $markup['enabled'] || $markup['unit_price'] <= 0) {
+                continue;
+            }
+
+            if (! in_array($markup['mode'], ['fixed', 'both'], true)) {
+                continue;
+            }
+
+            $amount = $this->applyMarkupToAmount(0.0, $markup, $config, $field, (array) $option, $billingCycle);
+
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $configAmount = Money::add($configAmount, $amount);
+            $items[] = [
+                'field' => $field,
+                'label' => (string) ($option['name'] ?? $field),
+                'amount' => (string) $amount,
+            ];
+        }
+
+        if ($items === []) {
+            return null;
+        }
+
+        return [
+            'config_amount' => round($configAmount, 2),
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * @param  array<int, mixed>  $items
+     * @return array<int, array{field: string, label: string, amount: string}>
+     */
+    private function mapUpstreamQuoteItems(array $items): array
+    {
+        $mapped = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $field = (string) ($item['field'] ?? '');
+
+            if ($field === '') {
+                continue;
+            }
+
+            $mapped[] = [
+                'field' => $field,
+                'label' => (string) ($item['label'] ?? $field),
+                'amount' => (string) ($item['amount'] ?? '0.00'),
+            ];
+        }
+
+        return $mapped;
     }
 
     private function buildQuoteBreakdown(Product $product, string $billingCycle, array $config): array

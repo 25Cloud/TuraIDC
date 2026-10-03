@@ -113,8 +113,9 @@
     <div class="split-dialog-intro">
       <strong>左右穿梭对接商品</strong>
       <p>
-        左侧选择 ZJMF 财务未对接商品，右侧选择当前系统分类作为导入位置，执行后会创建或更新本地商品并绑定当前提供商商品
-        ID。
+        左侧选择
+        {{ supplierBatchPluginLabel }}
+        未对接商品，右侧选择当前系统分类作为导入位置，执行后会创建或更新本地商品并绑定当前提供商商品 ID。
       </p>
     </div>
 
@@ -165,7 +166,7 @@
         <div class="supplier-batch-panel__head">
           <div class="supplier-batch-panel__title">
             <strong>未对接</strong>
-            <span>ZJMF 财务商品结构（含已对接）</span>
+            <span>{{ supplierBatchPluginLabel }}商品结构（含已对接）</span>
           </div>
           <div class="supplier-batch-panel__actions">
             <t-tag variant="light" theme="warning"
@@ -587,6 +588,10 @@ const supplierBatchDialogVisible = ref(false);
 const supplierBatchLoading = ref(false);
 const supplierBatchSubmitting = ref(false);
 const supplierBatchSupplier = ref<SupplierRecord | null>(null);
+// 弹窗文案曾写死「ZJMF 财务」，换成任意上游插件后说明与事实不符，改为按当前供应商的插件名渲染
+const supplierBatchPluginLabel = computed(
+  () => String(supplierBatchSupplier.value?.provider_label || '').trim() || '上游',
+);
 const supplierBatchAction = ref<SupplierCardAction | null>(null);
 const supplierBatchProducts = ref<SupplierBatchProduct[]>([]);
 const supplierBatchLocalProducts = ref<ProductRecord[]>([]);

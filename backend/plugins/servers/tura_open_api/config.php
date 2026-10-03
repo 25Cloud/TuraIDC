@@ -12,6 +12,8 @@ use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\Contracts\ProvidesRenewalRecovery;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
 use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
+use App\Services\Upstream\Contracts\ProvidesUpstreamQuoting;
+use App\Services\Upstream\Contracts\ProvidesRenewableCycleFiltering;
 use TuraIDC\Plugins\Servers\TuraOpenApi\TuraOpenApiPlugin;
 
 return [
@@ -35,6 +37,8 @@ return [
             ProvidesRenewalRecovery::class,
             ProvidesStatusSync::class,
             ProvidesSupplierBalance::class,
+            ProvidesUpstreamQuoting::class,
+            ProvidesRenewableCycleFiltering::class,
         ],
     ],
     'config' => [

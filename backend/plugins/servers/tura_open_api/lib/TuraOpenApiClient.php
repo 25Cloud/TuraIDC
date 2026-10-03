@@ -45,10 +45,99 @@ final class TuraOpenApiClient
     }
 
     /**
+     * 访问上游站点的公开目录接口（/api/v2/site/*）。
+     *
+     * 该系列接口面向官网访客，不需要、也不应该带 API 密钥——带上反而可能被网关
+     * 当成无效凭据处理。开放接口 /api/v2/open/products 只投影 id/name/product_type/stock，
+     * 而站点目录带完整的一/二/三级货架分组，故用它来补全商品分组（见 TuraOpenApi）。
+     *
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function getPublic(Supplier $supplier, string $uri, array $query = []): array
+    {
+        $baseUrl = $this->resolveBaseUrl($supplier);
+
+        try {
+            $response = Http::baseUrl($baseUrl)
+                ->acceptJson()
+                ->connectTimeout(self::DEFAULT_CONNECT_TIMEOUT_SECONDS)
+                ->timeout(self::DEFAULT_TIMEOUT_SECONDS)
+                ->get($uri, $query);
+        } catch (\Throwable $exception) {
+            $this->logFailure($supplier, 'GET', $uri, $exception->getMessage());
+
+            throw new BusinessException('上游站点目录接口连接失败', 42200);
+        }
+
+        $decoded = $response->json();
+
+        if (! is_array($decoded)) {
+            $this->logFailure($supplier, 'GET', $uri, 'http '.$response->status().' 非 JSON 响应');
+
+            throw new BusinessException('上游站点目录接口返回异常', 42200);
+        }
+
+        if ((int) ($decoded['code'] ?? -1) !== 0) {
+            $message = trim((string) ($decoded['message'] ?? '')) ?: '上游站点目录接口请求失败';
+
+            throw new BusinessException($message, 42200);
+        }
+
+        $data = $decoded['data'] ?? [];
+
+        return is_array($data) ? $data : [];
+    }
+
+    /**
      * @param  array<string, mixed>  $query
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
+    /**
+     * 上游站点公开目录的 POST 接口（无需 API 密钥）。
+     *
+     * 用于实时报价：POST /api/v2/site/products/{id}/quote。与 getPublic 一样不携带
+     * 密钥——站点目录对官网访客开放，带密钥反而可能被网关当成无效凭据拒绝。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function postPublic(Supplier $supplier, string $uri, array $payload = []): array
+    {
+        $baseUrl = $this->resolveBaseUrl($supplier);
+
+        try {
+            $response = Http::baseUrl($baseUrl)
+                ->acceptJson()
+                ->connectTimeout(self::DEFAULT_CONNECT_TIMEOUT_SECONDS)
+                ->timeout(self::DEFAULT_TIMEOUT_SECONDS)
+                ->post($uri, $payload);
+        } catch (\Throwable $exception) {
+            $this->logFailure($supplier, 'POST', $uri, $exception->getMessage());
+
+            throw new BusinessException('上游站点接口连接失败', 42200);
+        }
+
+        $decoded = $response->json();
+
+        if (! is_array($decoded)) {
+            $this->logFailure($supplier, 'POST', $uri, 'http '.$response->status().' 非 JSON 响应');
+
+            throw new BusinessException('上游站点接口返回异常', 42200);
+        }
+
+        if ((int) ($decoded['code'] ?? -1) !== 0) {
+            $message = trim((string) ($decoded['message'] ?? '')) ?: '上游站点接口请求失败';
+
+            throw new BusinessException($message, 42200);
+        }
+
+        $data = $decoded['data'] ?? [];
+
+        return is_array($data) ? $data : [];
+    }
+
     public function request(Supplier $supplier, string $method, string $uri, array $query = [], array $payload = []): array
     {
         $baseUrl = $this->resolveBaseUrl($supplier);
