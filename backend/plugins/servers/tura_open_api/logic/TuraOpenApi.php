@@ -642,17 +642,64 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         })->values()->all();
     }
 
+    /**
+     * 单个商品的可配置项。
+     *
+     * 此前这里直接返回空数组（原注释「开放 API 不暴露上游配置项」），后果是：
+     * 导入出来的商品 config_options 恒为 0 项 → 展示名派生不出 CPU/内存 →
+     * 后台与控制台一律显示「未配置规格 #ID」，看上去就像上游数据没下来。
+     * 开放接口确实不返回配置项，但站点公开目录 /api/v2/site/products/{id} 带完整
+     * config_options，且与本地字段语义一致，这里改为走站点目录。
+     *
+     * 返回值是「配置项列表」本身（与 ZJMF / 主控驱动一致），调用方会直接当
+     * config_options 用，不要再包一层 ['product_id' => …, 'config_options' => …]。
+     *
+     * @return array<int, array<string, mixed>>
+     */
     public function fetchRealConfigOptions(Supplier $supplier, int $productId): array
     {
-        // 开放 API 不暴露上游配置项，导入商品不带自定义配置
-        return ['product_id' => $productId, 'config_options' => []];
+        $detail = $this->siteProductDetail($supplier, $productId);
+
+        return $detail === null
+            ? []
+            : $this->normalizeSiteConfigOptions(
+                is_array($detail['config_options'] ?? null) ? $detail['config_options'] : []
+            );
     }
 
-    public function fetchBatchProductConfigOptions(Supplier $supplier, array $productIds, int $chunkSize = 8): array
-    {
+    /**
+     * 批量拉取商品配置项（定时同步 / 批量固化的入口）。
+     *
+     * 原实现是逐商品返回空数组的占位，定时同步因此永远「拉取到 0 项」而静默跳过
+     * （见 ProductSyncService::syncUpstreamProductConfigOptions() 的 `=== []` 分支），
+     * 已导入商品的空配置项永远补不上。改为真实拉取，并尊重 $deadline：
+     * 上游慢时宁可少拉几个，也要在任务时间预算内收尾。
+     *
+     * @param  array<int, mixed>  $productIds
+     * @return array<int, array<string, mixed>>
+     */
+    public function fetchBatchProductConfigOptions(
+        Supplier $supplier,
+        array $productIds,
+        int $chunkSize = 8,
+        ?float $deadline = null
+    ): array {
+        $chunkSize = $chunkSize > 0 ? $chunkSize : 8;
         $items = [];
-        foreach ($productIds as $productId) {
-            $items[(int) $productId] = ['product_id' => (int) $productId, 'config_options' => []];
+
+        foreach (array_chunk(array_values($productIds), $chunkSize) as $chunk) {
+            if ($deadline !== null && $items !== [] && microtime(true) >= $deadline) {
+                break;
+            }
+
+            foreach ($chunk as $productId) {
+                $productId = (int) $productId;
+                if ($productId <= 0) {
+                    continue;
+                }
+
+                $items[$productId] = $this->fetchRealConfigOptions($supplier, $productId);
+            }
         }
 
         return $items;

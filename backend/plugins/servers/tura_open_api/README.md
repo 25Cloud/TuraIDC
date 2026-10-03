@@ -43,6 +43,20 @@
 - 无采购环检测：互为上下游的配置错误靠上游余额耗尽自然终止，配置时注意
 - 层级越深资金预沉淀越多（每层都要在上游预存余额），开通延迟逐层叠加
 
+## 商品名与展示名
+
+`products` 表**没有 `name` 列**，`Product::setNameAttribute()` 会把传进来的 `name`
+直接丢掉；`Product::getNameAttribute()` 依次退化为 `custom_display_name` →
+`ProductDisplayNameResolver`（由配置项派生 CPU/内存） → 「未配置规格 #ID」。
+
+所以上游商品名必须在导入时显式写进 `custom_display_name`，否则商品列表里只有占位文案。
+下游 `ProductSyncService` 这边对应三处：
+
+- `buildBulkConnectProductPayload()` 把上游商品名同时写进 `custom_display_name`；
+- 重复对接时，已经人工设过展示名的商品不覆盖；
+- 定时同步发现展示名为空时，用上游目录里的商品名回填一次
+  （`resolveUpstreamProductDisplayNames()`）。
+
 ## 商品分组与配置项是怎么来的
 
 开放协议把货架分组和配置项都漏掉了：`/api/v2/open/products` 只投影
@@ -78,5 +92,18 @@
 是否区间型推导）、`config_id`、`order`、`sub_items` 等前端要用的键——特别是不重写
 `option_name`，上游的「CentOS^CentOS-7.6.1810-x64」这类「父^子」形式改写反而丢信息。
 
-按需拉取（一次一个商品，缓存 6 小时），不会拖慢批量对接；上游没有站点目录接口的老实例
-返回空配置，管理员手工补即可，不会报错阻断编辑。
+按需拉取（一次一个商品，缓存 6 小时）；上游没有站点目录接口的老实例返回空配置，
+管理员手工补即可，不会报错阻断编辑。
+
+`fetchRealConfigOptions()` / `fetchBatchProductConfigOptions()` 也已接到同一条路上。
+这两个方法此前是「返回空数组」的占位实现，后果很隐蔽：
+
+- `fetchBatchProductConfigOptions()` 是定时任务
+  （`ProductSyncService::syncUpstreamProductConfigOptions()`）的唯一数据源，
+  它恒返回空 → 定时同步每轮都在 `$normalizedRemoteConfigOptions === []` 处静默跳过
+  （统计里只体现在 `skipped_products`），已导入商品的空配置项因此**永远补不上**。
+- 配置项为空 → `ProductDisplayNameResolver` 派生不出 CPU/内存 → 商品在后台和
+  控制台一律显示「未配置规格 #ID」，看起来就像上游数据根本没下来。
+
+批量方法现按 `$chunkSize` 分批真实拉取，并接受 `$deadline`：上游慢时宁可少拉几个，
+也要在定时任务的整体时间预算内收尾（调用方按 `min(240s, 剩余预算)` 传入）。

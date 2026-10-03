@@ -313,6 +313,10 @@ class ProductSyncService
             $localProduct = $existingProducts->get($supplierProductId);
             if ($localProduct instanceof Product) {
                 $payload['sort_order'] = (int) ($localProduct->sort_order ?? 0);
+                // 已经人工设过展示名的商品，重复对接时保留人工值。
+                if (trim((string) ($localProduct->custom_display_name ?? '')) !== '') {
+                    unset($payload['custom_display_name']);
+                }
                 $localProduct = DB::transaction(
                     fn () => $this->persistProductWithStructuredSync($localProduct, $payload)
                 );
@@ -574,33 +578,46 @@ class ProductSyncService
                 continue;
             }
 
+            // 早期导入的商品、以及上游把公告项也标成 CPU 类型导致派生名退化成
+            // 「未配置规格 #ID」的商品，这里用上游商品名补一次展示名。
+            $displayNames = $this->resolveUpstreamProductDisplayNames(
+                $catalogCapability,
+                $supplier,
+                $supplierProductIds
+            );
+
             foreach ($supplierProducts as $product) {
                 $supplierProductId = $this->resolveProductUpstreamProductId($product);
+                $payload = [];
+
                 $normalizedRemoteConfigOptions = $this->normalizeImportedConfigOptions(
                     $remoteConfigOptions[$supplierProductId] ?? []
                 );
 
-                if ($normalizedRemoteConfigOptions === []) {
+                if ($normalizedRemoteConfigOptions !== []) {
+                    $localConfigOptions = is_array($product->config_options) ? $product->config_options : [];
+                    $mergedConfigOptions = $this->mergeConfigOptionsPreservingPricing(
+                        $localConfigOptions,
+                        $normalizedRemoteConfigOptions
+                    );
+
+                    if ($mergedConfigOptions !== $localConfigOptions) {
+                        $payload['config_options'] = $mergedConfigOptions;
+                    }
+                }
+
+                $displayName = (string) ($displayNames[$supplierProductId] ?? '');
+                if ($displayName !== '' && trim((string) ($product->custom_display_name ?? '')) === '') {
+                    $payload['custom_display_name'] = $displayName;
+                }
+
+                if ($payload === []) {
                     $summary['skipped_products']++;
 
                     continue;
                 }
 
-                $localConfigOptions = is_array($product->config_options) ? $product->config_options : [];
-                $mergedConfigOptions = $this->mergeConfigOptionsPreservingPricing(
-                    $localConfigOptions,
-                    $normalizedRemoteConfigOptions
-                );
-
-                if ($mergedConfigOptions === $localConfigOptions) {
-                    $summary['skipped_products']++;
-
-                    continue;
-                }
-
-                $this->persistProductWithStructuredSync($product, [
-                    'config_options' => $mergedConfigOptions,
-                ]);
+                $this->persistProductWithStructuredSync($product, $payload);
 
                 $summary['synced_products']++;
                 $hasChanges = true;
@@ -612,6 +629,64 @@ class ProductSyncService
         }
 
         return $summary;
+    }
+
+    /**
+     * 从上游商品目录取「上游商品 ID => 商品名」，用于回填本地缺失的展示名。
+     *
+     * 只在确实有商品缺展示名时才被用到；目录本身有缓存（插件侧 6h），
+     * 拿不到时返回空数组，不影响同批次的配置项同步。
+     *
+     * @param  array<int, int>  $supplierProductIds
+     * @return array<int, string>
+     */
+    private function resolveUpstreamProductDisplayNames(
+        object $catalogCapability,
+        Supplier $supplier,
+        array $supplierProductIds
+    ): array {
+        $wanted = [];
+        foreach ($supplierProductIds as $supplierProductId) {
+            $supplierProductId = (int) $supplierProductId;
+            if ($supplierProductId > 0) {
+                $wanted[$supplierProductId] = true;
+            }
+        }
+
+        if ($wanted === []) {
+            return [];
+        }
+
+        try {
+            $catalog = $catalogCapability->getProductCatalog($supplier);
+        } catch (\Throwable $exception) {
+            Log::warning('[定时任务] 上游商品目录拉取失败，跳过展示名回填', [
+                'supplier_id' => (int) $supplier->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return [];
+        }
+
+        $names = [];
+
+        foreach ((array) ($catalog['products'] ?? []) as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $supplierProductId = (int) ($item['id'] ?? 0);
+            if (! isset($wanted[$supplierProductId])) {
+                continue;
+            }
+
+            $name = trim((string) ($item['name'] ?? ''));
+            if ($name !== '' && $name !== '未命名商品') {
+                $names[$supplierProductId] = $name;
+            }
+        }
+
+        return $names;
     }
 
     /** 定时同步时每批之间的等待毫秒数，避免持续高频请求被上游风控拦截 */
@@ -1788,7 +1863,10 @@ class ProductSyncService
         mixed $fallbackConfigOptions
     ): array {
         $fallback = $this->normalizeConfigOptions($fallbackConfigOptions);
-        if (! $syncConfigOptions) {
+        // 本地还没有任何配置项时，即使没勾「同步配置项」也尽力拉一次：
+        // 空壳商品在后台/控制台会退化成「未配置规格 #ID」，等同于上游数据没下来。
+        // 已手工配过配置项的仍尊重开关，避免覆盖本地定价。
+        if (! $syncConfigOptions && $fallback !== []) {
             return $fallback;
         }
 
@@ -1813,6 +1891,10 @@ class ProductSyncService
 
         return [
             'name' => $name,
+            // products 表没有 name 列，Product::setNameAttribute() 会把 name 原样丢掉。
+            // 不同步到 custom_display_name 的话，导入出来的商品在列表里只会显示
+            // 「未配置规格 #ID」（ProductDisplayNameResolver 派生不出 CPU/内存时的兜底文案）。
+            'custom_display_name' => $name,
             'product_type' => ProductType::normalizeBusinessValue($productType),
             'service_type_code' => (string) $targetHierarchy['service_type_code'],
             'product_group_id' => (int) $targetHierarchy['product_group_id'],
