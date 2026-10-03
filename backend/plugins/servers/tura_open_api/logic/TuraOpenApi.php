@@ -724,6 +724,13 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
                     continue;
                 }
 
+                // 每个商品请求前都判一次 deadline：上游单请求可能很慢，
+                // 只在 chunk 边界检查会让首个 chunk（以及命中边界前的那一个）
+                // 整批跑完，超出任务时间预算。
+                if ($deadline !== null && $items !== [] && microtime(true) >= $deadline) {
+                    break 2;
+                }
+
                 $items[$productId] = $this->fetchRealConfigOptions($supplier, $productId);
             }
         }

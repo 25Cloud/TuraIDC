@@ -403,8 +403,13 @@ trait HandlesOrderCalculation
 
         // 供应商主表无 api_url/api_key 列，开放接口地址与密钥存于 supplier_plugin_bindings；
         // 须经绑定解析器注入运行时凭证（base_url -> api_url），否则 quoteUpstreamProduct 读到空地址。
-        $supplier = app(\App\Services\Integrations\Plugins\PluginBindingResolver::class)
-            ->supplierWithRuntimeCredentials($rawSupplier);
+        // 解析过程涉及查库与解密，异常时降级到后台定价兜底，不让整个报价流程失败。
+        try {
+            $supplier = app(\App\Services\Integrations\Plugins\PluginBindingResolver::class)
+                ->supplierWithRuntimeCredentials($rawSupplier);
+        } catch (\Throwable $exception) {
+            return $this->buildFallbackConfigQuote($product, $config, $billingCycle);
+        }
 
         try {
             $data = $capability->quoteUpstreamProduct($supplier, (int) $binding->upstream_product_id, $config, $billingCycle, 1);
@@ -551,9 +556,13 @@ trait HandlesOrderCalculation
 
         $data['items'] = $items;
 
-        // 仅当存在被套加价的项时，才用重算后的 config_amount 覆盖上游原值
         if ($items !== []) {
-            $data['config_amount'] = round($configAmount, 2);
+            // 有可计费项：用重算后的合计覆盖上游原值
+            $data['config_amount'] = Money::round($configAmount);
+        } else {
+            // 上游没给任何可计费项：原值直接透传，若为负数则钳制为 0，
+            // 避免负数加价进入总价
+            $data['config_amount'] = Money::round(max((float) ($data['config_amount'] ?? 0), 0));
         }
 
         return $data;
