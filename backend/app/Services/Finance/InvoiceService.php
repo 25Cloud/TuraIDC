@@ -473,6 +473,9 @@ class InvoiceService
             ])->values()->all(),
             'items' => $this->buildInvoiceItems($invoice, $scene),
             'logs' => $this->buildInvoiceLogs($invoice, $scene),
+            'config_snapshot' => (array) ($invoice->config_snapshot ?? []),
+            'config_pricing_snapshot' => (array) ($invoice->config_pricing_snapshot ?? []),
+            'coupon_snapshot' => (array) ($invoice->coupon_snapshot ?? []),
         ];
     }
 

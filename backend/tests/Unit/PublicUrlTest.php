@@ -39,14 +39,20 @@ class PublicUrlTest extends TestCase
         $this->assertSame('https://console.example.test:8443/client/tickets', PublicUrl::console('/client/tickets'));
     }
 
-    public function test_rejects_public_url_with_a_path(): void
+    public function test_keeps_path_prefix_configured_for_public_url(): void
     {
-        config(['app.client_console_url' => 'https://console.example.test/client']);
+        config(['app.client_console_url' => 'https://www.example.test/console']);
 
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('CLIENT_CONSOLE_URL');
+        // 允许带路径前缀：单域名部署下三端靠子路径区分，前缀需原样保留，
+        // 页面路径追加在前缀之后而不是覆盖它。
+        $this->assertSame('https://www.example.test/console', PublicUrl::console());
+        $this->assertSame('https://www.example.test/console/client/tickets', PublicUrl::console('/client/tickets'));
 
-        PublicUrl::console();
+        // 配置多写了结尾斜杠时同样归一
+        config(['app.client_console_url' => 'https://www.example.test/console/']);
+
+        $this->assertSame('https://www.example.test/console', PublicUrl::console());
+        $this->assertSame('https://www.example.test/console/client/tickets', PublicUrl::console('/client/tickets'));
     }
 
     public function test_rejects_non_http_public_url(): void

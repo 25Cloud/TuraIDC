@@ -54,11 +54,12 @@ final class PublicUrl
             || isset($parts['user'])
             || isset($parts['pass'])
             || isset($parts['query'])
-            || isset($parts['fragment'])
-            || (isset($parts['path']) && $parts['path'] !== '' && $parts['path'] !== '/')) {
-            throw new LogicException(sprintf('%s 必须是无路径、无账号信息的 HTTP(S) 根地址。', $environmentKey));
+            || isset($parts['fragment'])) {
+            throw new LogicException(sprintf('%s 必须是无账号信息、无查询串的 HTTP(S) 地址。', $environmentKey));
         }
 
+        // 允许带路径前缀：单域名部署下三端靠 /console、/admin 等子路径区分，
+        // join() 会在该前缀之后继续追加具体页面路径。
         return $value;
     }
 }

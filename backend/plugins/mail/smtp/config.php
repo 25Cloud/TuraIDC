@@ -31,6 +31,14 @@ return [
         'port' => ['title' => 'SMTP 端口', 'type' => 'number', 'value' => 465, 'required' => false, 'min' => 1, 'step' => 1],
         'username' => ['title' => 'SMTP 账号', 'type' => 'text', 'value' => '', 'required' => false, 'placeholder' => 'no-reply@example.com'],
         'password' => ['title' => 'SMTP 密码', 'type' => 'password', 'value' => '', 'required' => false, 'secret' => true, 'placeholder' => '请输入 SMTP 密码'],
+        'from_address' => [
+            'title' => '发件人地址',
+            'type' => 'text',
+            'value' => '',
+            'required' => false,
+            'placeholder' => 'no-reply@example.com',
+            'description' => '留空则使用 SMTP 账号作为发件人地址',
+        ],
         'from_name' => ['title' => '发件名称', 'type' => 'text', 'value' => '图拉云', 'required' => false],
         'encryption' => [
             'title' => '加密方式',
