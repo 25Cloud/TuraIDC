@@ -409,11 +409,271 @@ trait HandlesOrderCalculation
         try {
             $data = $capability->quoteUpstreamProduct($supplier, (int) $binding->upstream_product_id, $config, $billingCycle, 1);
         } catch (\Throwable $exception) {
+            $data = null;
+        }
+
+        $data = is_array($data) ? $data : [];
+
+        // 上游有返回：按配置项 markup 套加价倍率/固定价
+        if ($data !== []) {
+            return $this->applyConfigOptionMarkup($product, $data, $config, $billingCycle);
+        }
+
+        // 上游异常/空返回：若后台为配置项设了固定定价则用后台定价兜底，避免前台显示 0 元
+        return $this->buildFallbackConfigQuote($product, $config, $billingCycle);
+    }
+
+    /**
+     * 读取配置项上的加价配置 markup。
+     *
+     * 商家可在后台为每个配置项设置加价方式，实现「上游成本 + 商家利润」：
+     *   - 跟随上游（未配置 markup / enabled=false）：原样使用上游报价
+     *   - multiplier：上游价 × 倍率，上游调价自动跟随
+     *   - fixed：直接用商家填的单价（每 GB / 每步）定价，不依赖上游返回值
+     *   - both：上游价 × 倍率 + 固定附加费
+     *
+     * @return array{enabled: bool, mode: string, multiplier: float, unit_price: float, extra_amount: float}
+     */
+    private function resolveConfigOptionMarkup(array $item): array
+    {
+        $markup = is_array($item['markup'] ?? null) ? $item['markup'] : [];
+        $enabled = (bool) ($markup['enabled'] ?? false);
+        $mode = (string) ($markup['mode'] ?? 'inherit');
+
+        return [
+            'enabled' => $enabled,
+            'mode' => $mode,
+            'multiplier' => round((float) ($markup['multiplier'] ?? 1), 4),
+            'unit_price' => round((float) ($markup['unit_price'] ?? 0), 2),
+            'extra_amount' => round((float) ($markup['extra_amount'] ?? 0), 2),
+        ];
+    }
+
+    /**
+     * 对上游报价的每个 item 套用对应配置项的加价配置。
+     * 未配置 markup 的项原样保留；fixed 模式用商家单价重算该项金额。
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    private function applyConfigOptionMarkup(Product $product, array $data, array $config, string $billingCycle): array
+    {
+        $markupByField = [];
+
+        foreach ((array) ($product->config_options ?? []) as $option) {
+            $field = $this->parseField($option);
+
+            if ($field === '') {
+                continue;
+            }
+
+            $markupByField[$field] = [
+                'option' => $option,
+                'markup' => $this->resolveConfigOptionMarkup((array) $option),
+            ];
+        }
+
+        $items = [];
+        $configAmount = 0.0;
+        $seenFields = [];
+
+        foreach ((array) ($data['items'] ?? []) as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $field = (string) ($item['field'] ?? '');
+
+            if ($field === '') {
+                continue;
+            }
+
+            $seenFields[$field] = true;
+            $amount = round((float) ($item['amount'] ?? 0), 2);
+            $entry = $markupByField[$field] ?? null;
+
+            if ($entry !== null) {
+                $markup = $entry['markup'];
+                $amount = $this->applyMarkupToAmount($amount, $markup, $config, $field, $entry['option'], $billingCycle);
+            }
+
+            $configAmount += $amount;
+
+            $items[] = [
+                'field' => $field,
+                'label' => (string) ($item['label'] ?? $field),
+                'amount' => (string) $amount,
+            ];
+        }
+
+        // 上游未返回的字段：若商家显式配置了 fixed 单价，则补上该项，
+        // 保证「自定义单价」不依赖上游是否把该字段计入报价。
+        foreach ($markupByField as $field => $entry) {
+            if (isset($seenFields[$field])) {
+                continue;
+            }
+
+            $markup = $entry['markup'];
+
+            if (! $markup['enabled'] || $markup['unit_price'] <= 0) {
+                continue;
+            }
+
+            if (! in_array($markup['mode'], ['fixed', 'both'], true)) {
+                continue;
+            }
+
+            $amount = $this->applyMarkupToAmount(0.0, $markup, $config, (string) $field, $entry['option'], $billingCycle);
+
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $configAmount += $amount;
+
+            $items[] = [
+                'field' => (string) $field,
+                'label' => (string) ($entry['option']['name'] ?? $field),
+                'amount' => (string) $amount,
+            ];
+        }
+
+        $data['items'] = $items;
+
+        // 仅当存在被套加价的项时，才用重算后的 config_amount 覆盖上游原值
+        if ($items !== []) {
+            $data['config_amount'] = round($configAmount, 2);
+        }
+
+        return $data;
+    }
+
+    /**
+     * 按加价配置计算某一项的最终金额。
+     *
+     * 统一公式：最终加价 = 基础价 × 倍率 + 每单附加费
+     *   基础价 = 商家自定义单价 × 数量（填了 unit_price 时）否则 上游报价
+     * 因此：
+     *   - inherit   : 倍率 1、无单价、无附加费 → 等于上游价
+     *   - multiplier: 无单价 → 上游价 × 倍率（+ 附加费）
+     *   - fixed     : 有单价、倍率 1 → 自定义单价 × 数量（+ 附加费），不依赖上游
+     *   - both      : 单价 × 倍率 + 附加费，全部生效
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $option
+     */
+    private function applyMarkupToAmount(float $upstreamAmount, array $markup, array $config, string $field, array $option, string $billingCycle): float
+    {
+        if (! $markup['enabled']) {
+            return $upstreamAmount;
+        }
+
+        $multiplier = $markup['multiplier'] > 0 ? $markup['multiplier'] : 1;
+        $unitPrice = $markup['unit_price'];
+        $extra = $markup['extra_amount'];
+
+        // 填了自定义单价则以它为基准（商家完全自己定价），否则沿用上游成本
+        $base = $upstreamAmount;
+
+        if ($unitPrice > 0) {
+            $selected = $this->resolveSelectedConfigValue($config, $field, (array) $option);
+            $steps = $this->resolveRangeStepsForPricing($selected, (array) $option);
+            $base = $unitPrice * $steps;
+        }
+
+        return round($base * $multiplier + $extra, 2);
+    }
+
+    /**
+     * 取配置项当前选中值（range 取数量，select 取原值）。
+     *
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $option
+     */
+    private function resolveSelectedConfigValue(array $config, string $field, array $option): int
+    {
+        $raw = $config[$field] ?? null;
+
+        if ($raw === null || $raw === '') {
+            return (int) ($option['qty_minimum'] ?? 0);
+        }
+
+        return max((int) $raw, 0);
+    }
+
+    /**
+     * 计算 range 型配置项的计费步数（与 calculateRangeChargeSteps 口径一致）。
+     *
+     * @param  array<string, mixed>  $option
+     */
+    private function resolveRangeStepsForPricing(int $value, array $option): int
+    {
+        $rangeMin = (int) ($option['qty_minimum'] ?? 0);
+        $rangeStep = max((int) ($option['qty_stage'] ?? 1), 1);
+
+        if ($value <= 0) {
+            return 0;
+        }
+
+        if ($rangeMin <= 0) {
+            return (int) ceil($value / $rangeStep);
+        }
+
+        return (int) floor(max($value - $rangeMin, 0) / $rangeStep) + 1;
+    }
+
+    /**
+     * 上游报价不可用时的兜底：用后台为配置项设置的固定定价合成 config_amount / items。
+     * 仅对显式配置了 fixed/both 且填了单价的项生效，其余项不出现（保持 0 元）。
+     *
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>|null
+     */
+    private function buildFallbackConfigQuote(Product $product, array $config, string $billingCycle): ?array
+    {
+        $items = [];
+        $configAmount = 0.0;
+
+        foreach ((array) ($product->config_options ?? []) as $option) {
+            $field = $this->parseField($option);
+
+            if ($field === '') {
+                continue;
+            }
+
+            $markup = $this->resolveConfigOptionMarkup((array) $option);
+
+            if (! $markup['enabled'] || $markup['unit_price'] <= 0) {
+                continue;
+            }
+
+            if (! in_array($markup['mode'], ['fixed', 'both'], true)) {
+                continue;
+            }
+
+            $amount = $this->applyMarkupToAmount(0.0, $markup, $config, $field, (array) $option, $billingCycle);
+
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $configAmount += $amount;
+            $items[] = [
+                'field' => $field,
+                'label' => (string) ($option['name'] ?? $field),
+                'amount' => (string) $amount,
+            ];
+        }
+
+        if ($items === []) {
             return null;
         }
 
-
-        return is_array($data) && $data !== [] ? $data : null;
+        return [
+            'config_amount' => round($configAmount, 2),
+            'items' => $items,
+        ];
     }
 
     /**

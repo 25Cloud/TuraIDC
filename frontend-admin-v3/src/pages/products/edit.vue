@@ -287,6 +287,77 @@
             </t-button>
           </div>
         </div>
+        <div class="config-option-markup-panel">
+          <div class="config-option-markup-head">
+            <div>
+              <strong>加价设置</strong>
+              <span class="config-option-markup-hint">
+                转售商品的配置项成本来自上游，可在此设置加价方式实现盈利
+              </span>
+            </div>
+            <t-switch v-model="configOptionForm.markup_enabled" />
+          </div>
+          <div v-if="configOptionForm.markup_enabled" class="config-option-markup-body">
+            <t-radio-group v-model="configOptionForm.markup_mode" variant="default-filled">
+              <t-radio-button value="inherit">跟随上游</t-radio-button>
+              <t-radio-button value="multiplier">倍率加价</t-radio-button>
+              <t-radio-button value="fixed">自定义单价</t-radio-button>
+              <t-radio-button value="both">单价 + 倍率 + 附加费</t-radio-button>
+            </t-radio-group>
+
+            <div class="config-option-markup-tip">
+              <template v-if="configOptionForm.markup_mode === 'inherit'">
+                不加价，配置项金额直接使用上游报价（上游调价自动跟随）。
+              </template>
+              <template v-else-if="configOptionForm.markup_mode === 'multiplier'">
+                最终加价 = 上游价 × 倍率。上游涨价时自动按同比例调整，适合赚差价。
+              </template>
+              <template v-else-if="configOptionForm.markup_mode === 'fixed'">
+                最终加价 = 自定义单价 × 数量。完全由你定价，不受上游成本影响；上游接口异常时也用此价格兜底。
+              </template>
+              <template v-else>最终加价 = 自定义单价 × 数量 × 倍率 + 每单附加费，三项全部生效。</template>
+            </div>
+
+            <div class="config-option-markup-grid">
+              <t-form-item
+                v-if="configOptionForm.markup_mode === 'fixed' || configOptionForm.markup_mode === 'both'"
+                :label="configOptionForm.option_mode === 'range' ? '自定义单价（元/GB）' : '自定义单价（元）'"
+              >
+                <t-input-number
+                  v-model="configOptionForm.markup_unit_price"
+                  :min="0"
+                  :step="0.5"
+                  :decimal-places="2"
+                  theme="column"
+                />
+              </t-form-item>
+              <t-form-item
+                v-if="configOptionForm.markup_mode === 'multiplier' || configOptionForm.markup_mode === 'both'"
+                label="加价倍率"
+              >
+                <t-input-number
+                  v-model="configOptionForm.markup_multiplier"
+                  :min="0"
+                  :step="0.1"
+                  :decimal-places="2"
+                  theme="column"
+                />
+              </t-form-item>
+              <t-form-item
+                v-if="configOptionForm.markup_mode === 'both'"
+                label="每单固定附加费（元）"
+              >
+                <t-input-number
+                  v-model="configOptionForm.markup_extra_amount"
+                  :min="0"
+                  :step="1"
+                  :decimal-places="2"
+                  theme="column"
+                />
+              </t-form-item>
+            </div>
+          </div>
+        </div>
         <div class="config-option-footer-row">
           <t-form-item label="排序" name="sort_order">
             <t-input-number v-model="configOptionForm.sort_order" :min="0" />
@@ -467,10 +538,22 @@ interface ConfigOptionRecord {
   parameter?: string;
   sub?: Array<Record<string, unknown>>;
   sub_items?: Array<Record<string, unknown>>;
+  markup?: ConfigOptionMarkup | null;
   required?: boolean;
   hidden?: boolean;
   sort_order?: number;
   [key: string]: unknown;
+}
+
+/** 加价方式：inherit 跟随上游价 / multiplier 上游价×倍率 / fixed 商家自定义单价 / both 组合 */
+type MarkupMode = 'inherit' | 'multiplier' | 'fixed' | 'both';
+
+interface ConfigOptionMarkup {
+  enabled: boolean;
+  mode: MarkupMode;
+  multiplier: number;
+  unit_price: number;
+  extra_amount: number;
 }
 
 type ConsoleTemplate = 'compute' | 'port_mapping';
@@ -499,6 +582,12 @@ const configOptionForm = reactive({
   required: true,
   hidden: false,
   sort_order: 0,
+  // 加价设置：默认 inherit（跟随上游价），与后端 resolveConfigOptionMarkup 口径一致
+  markup_enabled: false,
+  markup_mode: 'inherit' as MarkupMode,
+  markup_multiplier: 1,
+  markup_unit_price: 0,
+  markup_extra_amount: 0,
 });
 const configOptionSubItemRows = ref<ConfigOptionSubItemFormRow[]>([]);
 
@@ -694,6 +783,7 @@ function normalizeConfigOptions(value: unknown): ConfigOptionRecord[] {
         : Array.isArray(item.sub)
           ? (item.sub as Array<Record<string, unknown>>)
           : [],
+      markup: item.markup ? normalizeMarkup(item.markup) : null,
       required: Boolean(item.required ?? true),
       hidden: Boolean(item.hidden ?? false),
       sort_order: Number(item.sort_order || index + 1),
@@ -702,17 +792,53 @@ function normalizeConfigOptions(value: unknown): ConfigOptionRecord[] {
 }
 
 function serializeConfigOptions(options: ConfigOptionRecord[]) {
-  return options.map((item, index) => ({
-    ...item,
-    name: String(item.name || item.option_name || item.field || '').trim(),
-    option_name: String(item.option_name || item.name || item.field || '').trim(),
-    field: String(item.field || '').trim(),
-    option_mode: String(item.option_mode || 'select'),
-    parameter: String(item.parameter || '').trim(),
-    required: Boolean(item.required),
-    hidden: Boolean(item.hidden),
-    sort_order: Number(item.sort_order || index + 1),
-  }));
+  return options.map((item, index) => {
+    const markup = item.markup ? normalizeMarkup(item.markup) : null;
+    const base = {
+      ...item,
+      name: String(item.name || item.option_name || item.field || '').trim(),
+      option_name: String(item.option_name || item.name || item.field || '').trim(),
+      field: String(item.field || '').trim(),
+      option_mode: String(item.option_mode || 'select'),
+      parameter: String(item.parameter || '').trim(),
+      required: Boolean(item.required),
+      hidden: Boolean(item.hidden),
+      sort_order: Number(item.sort_order || index + 1),
+    };
+    // 未启用加价时不写入 markup 键，避免污染商品配置
+    if (markup && markup.enabled) {
+      return { ...base, markup };
+    }
+    const { markup: _omit, ...rest } = base as ConfigOptionRecord & { markup?: unknown };
+    return rest;
+  });
+}
+
+function normalizeMarkup(raw: unknown): ConfigOptionMarkup {
+  const source = toPlainRecord(raw);
+  const mode = String(source.mode || 'inherit') as MarkupMode;
+  const validMode: MarkupMode[] = ['inherit', 'multiplier', 'fixed', 'both'];
+  return {
+    enabled: Boolean(source.enabled ?? false),
+    mode: validMode.includes(mode) ? mode : 'inherit',
+    multiplier: Number(source.multiplier ?? 1) || 1,
+    unit_price: Number(source.unit_price ?? 0) || 0,
+    extra_amount: Number(source.extra_amount ?? 0) || 0,
+  };
+}
+
+function buildMarkupPayload(): ConfigOptionMarkup | null {
+  // inherit 等同未启用，不写入 markup，保持数据库干净
+  if (!configOptionForm.markup_enabled || configOptionForm.markup_mode === 'inherit') {
+    return null;
+  }
+  return {
+    enabled: true,
+    mode: configOptionForm.markup_mode,
+    multiplier: Number(configOptionForm.markup_multiplier) || 1,
+    unit_price: Number(configOptionForm.markup_unit_price) || 0,
+    extra_amount: Number(configOptionForm.markup_extra_amount) || 0,
+  };
 }
 
 function resetConfigOptionForm() {
@@ -728,6 +854,11 @@ function resetConfigOptionForm() {
     required: true,
     hidden: false,
     sort_order: form.config_options.length + 1,
+    markup_enabled: false,
+    markup_mode: 'inherit',
+    markup_multiplier: 1,
+    markup_unit_price: 0,
+    markup_extra_amount: 0,
   });
   configOptionSubItemRows.value = [createConfigSubItemRow({}, 0)];
 }
@@ -764,6 +895,7 @@ function handleConfigOptionModeChange(value: SelectValue) {
 function openConfigOptionDialog(row?: ConfigOptionRecord, index = -1) {
   configOptionEditingIndex.value = index;
   if (row) {
+    const markup = normalizeMarkup(row.markup);
     Object.assign(configOptionForm, {
       name: row.name || row.option_name || '',
       field: row.field || '',
@@ -776,6 +908,11 @@ function openConfigOptionDialog(row?: ConfigOptionRecord, index = -1) {
       required: Boolean(row.required ?? true),
       hidden: Boolean(row.hidden ?? false),
       sort_order: Number(row.sort_order || index + 1),
+      markup_enabled: markup.enabled,
+      markup_mode: markup.mode,
+      markup_multiplier: markup.multiplier,
+      markup_unit_price: markup.unit_price,
+      markup_extra_amount: markup.extra_amount,
     });
     const sourceSubItems =
       Array.isArray(row.sub_items) && row.sub_items.length ? row.sub_items : Array.isArray(row.sub) ? row.sub : [];
@@ -872,6 +1009,7 @@ function submitConfigOption() {
     sub: subItems,
     sub_items: subItems,
     range_pricing: [],
+    markup: buildMarkupPayload(),
     description: configOptionForm.description.trim(),
     suffix_text: configOptionForm.suffix_text.trim(),
     advanced: Boolean(configOptionForm.advanced),
@@ -1359,6 +1497,48 @@ function goBack() {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--td-component-border);
+}
+
+.config-option-markup-panel {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--td-component-border);
+  border-radius: 6px;
+  background: var(--td-component-bg);
+}
+
+.config-option-markup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  strong {
+    margin-right: 8px;
+  }
+}
+
+.config-option-markup-hint {
+  font-size: 12px;
+  color: var(--td-text-color-placeholder);
+}
+
+.config-option-markup-body {
+  margin-top: 12px;
+}
+
+.config-option-markup-tip {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--td-text-color-secondary);
+}
+
+.config-option-markup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0 16px;
+  margin-top: 8px;
 }
 
 @media (width <= 1024px) {
