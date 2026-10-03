@@ -26,6 +26,7 @@ use App\Services\Upstream\Contracts\ProvidesStatusSync;
 use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\Contracts\ProvidesSupplierFormSchema;
 use App\Services\Upstream\Contracts\UpstreamDriver;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use TuraIDC\Plugins\Servers\TuraOpenApi\Lib\TuraOpenApiClient;
 
@@ -47,6 +48,19 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
     private const LIST_PAGE_SIZE = 200;
 
     private const LIST_MAX_PAGES = 25;
+
+    /** 站点公开目录分页大小：上游校验上限是 50，传 100 会被拒（422 page_size） */
+    private const SITE_PAGE_SIZE = 50;
+
+    private const SITE_MAX_PAGES = 10;
+
+    /** 站点目录补全的兜底预算：分组数与请求数任一超限时停止，用已拿到的部分 */
+    private const SITE_MAX_GROUPS = 80;
+
+    private const SITE_MAX_REQUESTS = 240;
+
+    /** 站点分组缓存时长（秒）：货架不常变，但补全要遍历 30+ 次请求 */
+    private const SITE_GROUP_CACHE_TTL = 21600;
 
     /** 开通轮询：上游账单映射 + 服务开通，单轮预算约 150s，超出交给队列重试 */
     private const PROVISION_POLL_ATTEMPTS = 50;
@@ -348,20 +362,22 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
     /* ---------------------------------- 目录 ---------------------------------- */
 
     /**
-     * 开放接口只有 GET /products 一个商品端点，且只投影 id/name/product_type/stock
-     * 四个字段——实测 /products/{id} 详情同样只有这四个字段，/product-groups 直接 404，
-     * 上游的货架构（一级/二级/三级分组）根本不在开放协议里。
+     * 商品目录 = 开放接口的商品清单 + 站点公开目录的货架分组。
      *
-     * 因此这里按 ZJMF 目录插件同样的 groups 契约自行重建分组，取商品名里的机房/系列
-     * 前缀（德国9929、枣庄铂金、高频2区…）；名称里没有机房语义时退化为业务类型
-     * （云服务器 / CDN / 云电脑 …），保证每个商品都有归属而不是掉进「未分组」大杂烩。
+     * 开放接口（/api/v2/open/products）是下单用的真源，但它只投影
+     * id/name/product_type/stock 四个字段——实测 /products/{id} 详情同样只有这四个，
+     * /product-groups 直接 404，货架分组根本不在开放协议里。
      *
-     * 分组只做一级：上游 product_type 有九成以上是 other，再多切一层类型只会把
-     * 同一个机房的商品打散（实测 257 组 → 161 组，单元素组 126 → 23）。
+     * 上游站点自己那套公开目录接口（/api/v2/site/product-groups/*）却带完整的
+     * 一/二/三级分组，且商品 ID 与开放接口是同一套（实测 808 个站点商品 100% 落在
+     * 开放接口的 1095 个里）。所以这里以开放接口为准、用站点目录补分组：
+     *  - 命中站点目录的商品 → 真实三级路径（云电脑 / 华中 / 湖北襄阳 电信）；
+     *  - 未命中的（前台未上架，实测 287 个）→ 从商品名推导机房/系列兜底。
      */
     public function getProductCatalog(Supplier $supplier): array
     {
         $list = $this->fetchServiceProductList($supplier);
+        $sitePaths = $this->siteGroupPaths($supplier);
 
         $products = [];
         $grouped = [];
@@ -371,19 +387,154 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
                 continue;
             }
 
-            $product = $this->catalogProduct($item);
+            $product = $this->catalogProduct($item, $sitePaths[(int) ($item['id'] ?? 0)] ?? null);
             if ((int) ($product['id'] ?? 0) <= 0) {
                 continue;
             }
 
             $products[] = $product;
-            $grouped[(string) $product['group_name']][] = $product;
+            // 有真实层级时按完整路径聚合，UI 上是「一级 / 二级 / 三级」的嵌套树
+            $grouped[$product['group_label']][] = $product;
         }
 
         return [
             'groups' => $this->catalogGroups($grouped),
             'products' => $products,
         ];
+    }
+
+    /**
+     * 上游站点公开目录里的「商品 ID → 分组路径」，拿不到时返回空数组（静默降级）。
+     *
+     * 遍历一遍要 30+ 次请求，故按供应商缓存；站点接口报错/超时同样只返回空数组，
+     * 让目录退化为名称推导，绝不让「刷新商品」因为补全分组而整体失败。
+     *
+     * @return array<int, array<int, string>>
+     */
+    private function siteGroupPaths(Supplier $supplier): array
+    {
+        $cacheKey = sprintf('tura_open_api:site_groups:%d', (int) $supplier->id);
+
+        try {
+            $paths = Cache::remember($cacheKey, self::SITE_GROUP_CACHE_TTL, fn (): array => $this->fetchSiteGroupPaths($supplier));
+        } catch (\Throwable $exception) {
+            Log::warning('[TuraIDC 开放接口] 站点分组补全失败，目录退化为名称推导', [
+                'supplier_id' => (int) $supplier->id,
+                'reason' => $exception->getMessage(),
+            ]);
+
+            return [];
+        }
+
+        return is_array($paths) ? $paths : [];
+    }
+
+    /**
+     * 遍历站点目录取分组路径。
+     *
+     * 只取二级分组的 products（level=2）即可覆盖全部商品：上游返回的每个商品都自带
+     * first/second/third_product_group_name，实测只拉二级与递归到三级结果完全一致
+     * （808 个商品、全部带三级路径），请求数却从 ~160 降到 35。
+     *
+     * @return array<int, array<int, string>>
+     */
+    private function fetchSiteGroupPaths(Supplier $supplier): array
+    {
+        $paths = [];
+        $requests = 0;
+
+        foreach ($this->fetchSiteGroupIds($supplier) as $groupId) {
+            for ($page = 1; $page <= self::SITE_MAX_PAGES; $page++) {
+                if ($requests >= self::SITE_MAX_REQUESTS) {
+                    return $paths;
+                }
+
+                $payload = $this->client()->getPublic(
+                    $supplier,
+                    sprintf('/api/v2/site/product-groups/%d/products', $groupId),
+                    ['level' => 2, 'page' => $page, 'page_size' => self::SITE_PAGE_SIZE]
+                );
+                $requests++;
+
+                $list = is_array($payload['list'] ?? null) ? $payload['list'] : [];
+
+                foreach ($list as $item) {
+                    if (! is_array($item)) {
+                        continue;
+                    }
+
+                    $productId = (int) ($item['id'] ?? 0);
+                    if ($productId <= 0) {
+                        continue;
+                    }
+
+                    $paths[$productId] = $this->siteGroupPath($item);
+                }
+
+                if (count($list) < self::SITE_PAGE_SIZE) {
+                    break;
+                }
+            }
+        }
+
+        return $paths;
+    }
+
+    /**
+     * 站点目录里的二级分组 ID 列表。
+     *
+     * @return array<int, int>
+     */
+    private function fetchSiteGroupIds(Supplier $supplier): array
+    {
+        $ids = [];
+
+        for ($page = 1; $page <= self::SITE_MAX_PAGES; $page++) {
+            $payload = $this->client()->getPublic($supplier, '/api/v2/site/product-groups', [
+                'page' => $page,
+                'page_size' => self::SITE_PAGE_SIZE,
+            ]);
+
+            $list = is_array($payload['list'] ?? null) ? $payload['list'] : [];
+
+            foreach ($list as $group) {
+                if (! is_array($group)) {
+                    continue;
+                }
+
+                $groupId = (int) ($group['id'] ?? 0);
+                if ($groupId > 0) {
+                    $ids[] = $groupId;
+                }
+            }
+
+            if (count($list) < self::SITE_PAGE_SIZE || count($ids) >= self::SITE_MAX_GROUPS) {
+                break;
+            }
+        }
+
+        return array_slice($ids, 0, self::SITE_MAX_GROUPS);
+    }
+
+    /**
+     * 站点商品载荷 → 分组路径（一/二/三级名，去重去空）。
+     *
+     * @param  array<string, mixed>  $item
+     * @return array<int, string>
+     */
+    private function siteGroupPath(array $item): array
+    {
+        $path = [];
+
+        foreach (['first_product_group_name', 'second_product_group_name', 'third_product_group_name'] as $key) {
+            $name = trim((string) ($item[$key] ?? ''));
+
+            if ($name !== '' && ! in_array($name, $path, true)) {
+                $path[] = $name;
+            }
+        }
+
+        return $path;
     }
 
     /**
@@ -1150,26 +1301,30 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
     /**
      * @param  array<string, mixed>  $item
+     * @param  array<int, string>|null  $remotePath  站点目录给的真实分组路径，为空则按名称推导
      * @return array<string, mixed>
      */
-    private function catalogProduct(array $item): array
+    private function catalogProduct(array $item, ?array $remotePath = null): array
     {
         $stock = (int) ($item['stock'] ?? -1);
         $name = $this->normalizeCatalogName((string) ($item['name'] ?? ''));
         $type = trim((string) ($item['product_type'] ?? ''));
         $typeLabel = $this->productTypeLabel($type);
-        // 分组只能从商品名推导；推不出机房语义时退化为业务类型，保证每个商品都有归属。
+        // 站点目录没覆盖到（前台未上架）时退化为名称推导；
+        // 推不出机房语义再退化为业务类型，保证每个商品都有归属。
         $series = $this->catalogSeries($name);
-        $groupName = $series !== '' ? $series : $typeLabel;
+        $remotePath = ($remotePath === null || $remotePath === []) ? null : array_values($remotePath);
+        $groupPath = $remotePath ?? [$series !== '' ? $series : $typeLabel];
+        $groupName = (string) end($groupPath);
 
         return [
             'id' => (int) ($item['id'] ?? 0),
             'name' => $name !== '' ? $name : '未命名商品',
             'type' => $type !== '' ? $type : ProductType::OTHER,
             'type_label' => $typeLabel,
-            // 上游不返回商品描述，用「机房/系列 · 类型」拼一句可读的摘要，
+            // 上游不返回商品描述，用「分组路径 · 类型」拼一句可读的摘要，
             // 比写死「来自上游 TuraIDC 开放接口的转售商品」更有信息量。
-            'description' => $series !== '' ? $series.' · '.$typeLabel : $typeLabel,
+            'description' => implode(' / ', $groupPath).' · '.$typeLabel,
             'billingcycle' => 'monthly',
             'product_price' => null,
             'monthly_price' => null,
@@ -1179,10 +1334,11 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
             'qty' => $stock,
             'stock' => $stock,
             'group_name' => $groupName,
-            'group_label' => $groupName,
+            'group_label' => implode(' / ', $groupPath),
             'remote_group_name' => $groupName,
-            // 批量对接弹窗按 remote_group_path 建树（见 Suppliers.vue），保持一级。
-            'remote_group_path' => [$groupName],
+            // 批量对接弹窗按 remote_group_path 建树（见 Suppliers.vue）：
+            // 命中站点目录的是真实的一/二/三级路径，没命中的是推导出的单级兜底。
+            'remote_group_path' => $groupPath,
         ];
     }
 
