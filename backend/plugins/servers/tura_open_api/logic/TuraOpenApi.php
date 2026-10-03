@@ -62,6 +62,9 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
     /** 站点分组缓存时长（秒）：货架不常变，但补全要遍历 30+ 次请求 */
     private const SITE_GROUP_CACHE_TTL = 21600;
 
+    /** 区间型配置项 option_type（与系统商品配置项的语义一致）：这些项按数量区间取值而非下拉 */
+    private const SITE_RANGE_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19];
+
     /** 开通轮询：上游账单映射 + 服务开通，单轮预算约 150s，超出交给队列重试 */
     private const PROVISION_POLL_ATTEMPTS = 50;
 
@@ -675,12 +678,176 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         return $items;
     }
 
+    /**
+     * 商品配置项模板（管理端「编辑商品 → 产品配置 → 拉取模板」）。
+     *
+     * 开放接口不返回配置项，但上游站点公开目录的 GET /api/v2/site/products/{id}
+     * 带完整的 config_options（数据中心 / 操作系统 / CPU / 内存 / 带宽 / 磁盘…），
+     * 且上游同样是 TuraIDC，字段语义与本地一致，可直接规范化后回填。
+     *
+     * 拿不到时返回空配置而不是抛错：拉取模板是「尽力而为」的辅助动作，上游没开放
+     * 目录接口的老实例应保持可编辑，由管理员手工补配置项。
+     */
     public function getProductConfigTemplate(Supplier $supplier, int $productId): array
     {
+        $detail = $this->siteProductDetail($supplier, $productId);
+
+        if ($detail === null) {
+            return [
+                'product' => [],
+                'config_options' => [],
+                'auto_filled_fields' => [],
+            ];
+        }
+
+        $configOptions = $this->normalizeSiteConfigOptions(
+            is_array($detail['config_options'] ?? null) ? $detail['config_options'] : []
+        );
+
         return [
-            'product_id' => $productId,
-            'config_options' => [],
+            'product' => $detail,
+            'config_options' => $configOptions,
+            'auto_filled_fields' => array_values(array_filter(array_map(
+                fn (array $item): string => trim((string) ($item['field'] ?? '')),
+                $configOptions
+            ))),
         ];
+    }
+
+    /**
+     * 上游站点公开目录的商品详情（带 config_options / pricing），失败返回 null。
+     *
+     * @return array<string, mixed>|null
+     */
+    private function siteProductDetail(Supplier $supplier, int $productId): ?array
+    {
+        if ($productId <= 0) {
+            return null;
+        }
+
+        $cacheKey = sprintf('tura_open_api:site_product:%d:%d', (int) $supplier->id, $productId);
+
+        try {
+            $detail = Cache::remember($cacheKey, self::SITE_GROUP_CACHE_TTL, function () use ($supplier, $productId): array {
+                $payload = $this->client()->getPublic(
+                    $supplier,
+                    sprintf('/api/v2/site/products/%d', $productId)
+                );
+
+                return is_array($payload['product'] ?? null) ? (array) $payload['product'] : [];
+            });
+        } catch (\Throwable $exception) {
+            Log::warning('[TuraIDC 开放接口] 拉取商品配置项失败', [
+                'supplier_id' => (int) $supplier->id,
+                'product_id' => $productId,
+                'reason' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        return is_array($detail) && $detail !== [] ? $detail : null;
+    }
+
+    /**
+     * 规范化上游 config_options，补齐本地配置项编辑所需的字段。
+     *
+     * 上游字段（field / option_type / parameter / sub）语义与本地一致，故保留原值透传，
+     * 只补 option_mode（空 → 按是否区间型推导）、config_id、order、sub_items 等前端要用的键。
+     *
+     * @param  array<int, mixed>  $options
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeSiteConfigOptions(array $options): array
+    {
+        $normalized = [];
+
+        foreach (array_values($options) as $index => $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $optionId = (int) ($item['id'] ?? 0);
+            $type = (int) ($item['option_type'] ?? 0);
+            $field = trim((string) ($item['field'] ?? ''));
+            $name = trim((string) ($item['name'] ?? ''));
+            $sortOrder = (int) ($item['sort_order'] ?? $item['order'] ?? ($index + 1));
+            $isRange = in_array($type, self::SITE_RANGE_OPTION_TYPES, true);
+            $subOptions = $this->normalizeSiteConfigSubOptions($item['sub'] ?? []);
+            $displayName = $name !== '' ? $name : ($field !== '' ? $field : '配置项 '.($index + 1));
+
+            $normalized[] = array_merge($item, [
+                'id' => $optionId,
+                'config_id' => $optionId,
+                'field' => $field !== '' ? $field : 'option_'.($index + 1),
+                'name' => $displayName,
+                'option_name' => $displayName,
+                'option_mode' => trim((string) ($item['option_mode'] ?? '')) !== ''
+                    ? (string) $item['option_mode']
+                    : ($isRange ? 'range' : 'select'),
+                'required' => (int) ($item['required'] ?? 0),
+                'hidden' => (int) ($item['hidden'] ?? 0),
+                'order' => $sortOrder,
+                'sort_order' => $sortOrder,
+                'allow_upgrade' => (int) ($item['allow_upgrade'] ?? $item['upgrade'] ?? 0),
+                'allow_promo_code' => (int) ($item['allow_promo_code'] ?? 1),
+                'qty_minimum' => $isRange ? (int) ($item['qty_minimum'] ?? 0) : 0,
+                'qty_maximum' => $isRange ? (int) ($item['qty_maximum'] ?? 0) : 0,
+                'qty_stage' => max(1, (int) ($item['qty_stage'] ?? 1)),
+                'unit' => trim((string) ($item['unit'] ?? $item['suffix_text'] ?? '')),
+                'parameter' => trim((string) ($item['parameter'] ?? '')),
+                'sub' => $subOptions,
+                'sub_items' => $subOptions,
+            ]);
+        }
+
+        usort($normalized, fn (array $left, array $right): int => ((int) $left['sort_order']) <=> ((int) $right['sort_order']));
+
+        return $normalized;
+    }
+
+    /**
+     * 规范化配置项的子选项。
+     *
+     * 上游子选项已带 option_name / version / hidden / qty_*，这里只补前端渲染与提交
+     * 会用到的 config_id / option_name_first / sort_order，不重写 option_name：
+     * 上游可能是「父^子」形式（CentOS^CentOS-7.6.1810-x64），改写反而会丢信息。
+     *
+     * @param  mixed  $subOptions
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeSiteConfigSubOptions(mixed $subOptions): array
+    {
+        if (! is_array($subOptions)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach (array_values($subOptions) as $index => $sub) {
+            if (! is_array($sub)) {
+                continue;
+            }
+
+            $subId = (int) ($sub['id'] ?? 0);
+            $optionName = trim((string) ($sub['option_name'] ?? $sub['version'] ?? ''));
+
+            $normalized[] = array_merge($sub, [
+                'id' => $subId,
+                'config_id' => (int) ($sub['config_id'] ?? 0),
+                'option_name' => $optionName,
+                'option_name_first' => trim((string) ($sub['option_name_first'] ?? '')) !== ''
+                    ? (string) $sub['option_name_first']
+                    : (string) $subId,
+                'version' => trim((string) ($sub['version'] ?? '')) !== '' ? (string) $sub['version'] : $optionName,
+                'hidden' => (int) ($sub['hidden'] ?? 0),
+                'sort_order' => (int) ($sub['sort_order'] ?? $sub['order'] ?? $index),
+                'qty_minimum' => (int) ($sub['qty_minimum'] ?? 0),
+                'qty_maximum' => (int) ($sub['qty_maximum'] ?? 0),
+            ]);
+        }
+
+        return $normalized;
     }
 
     public function getProductProvisionConfig(Supplier $supplier, int $productId): array
