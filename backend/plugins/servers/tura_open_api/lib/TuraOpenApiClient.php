@@ -35,6 +35,67 @@ final class TuraOpenApiClient
     }
 
     /**
+     * 并发执行多个公开 GET 请求（不携带 API 密钥）。
+     *
+     * 站点目录对官网访客开放，带密钥反而可能被网关当成无效凭据拒绝，
+     * 因此站点侧接口必须走本方法而非 getMany()。
+     *
+     * 单个请求失败不影响其他请求，失败项不返回结果，由调用方串行重试。
+     *
+     * @param  array<int|string, string>  $requests  alias => uri
+     * @param  array<int|string, array<string, mixed>>  $queryByAlias
+     * @return array<int|string, array<string, mixed>>  alias => data（仅成功项）
+     */
+    public function getPublicMany(Supplier $supplier, array $requests, array $queryByAlias = []): array
+    {
+        if ($requests === []) {
+            return [];
+        }
+
+        $baseUrl = $this->resolveBaseUrl($supplier);
+
+        try {
+            $responses = Http::pool(static function ($pool) use ($baseUrl, $requests, $queryByAlias): void {
+                foreach ($requests as $alias => $uri) {
+                    $pool->as((string) $alias)
+                        ->baseUrl($baseUrl)
+                        ->acceptJson()
+                        ->connectTimeout(self::DEFAULT_CONNECT_TIMEOUT_SECONDS)
+                        ->timeout(self::DEFAULT_TIMEOUT_SECONDS)
+                        ->get($uri, (array) ($queryByAlias[$alias] ?? []));
+                }
+            });
+        } catch (\Throwable $exception) {
+            $this->logFailure($supplier, 'GET', 'pool(' . count($requests) . ')', $exception->getMessage());
+
+            return [];
+        }
+
+        $results = [];
+
+        // Http::pool 返回的数组元素本身就是 Response 实例
+        foreach ($responses as $alias => $response) {
+            if (! $response instanceof Response) {
+                continue;
+            }
+
+            $decoded = $response->json();
+
+            if (! is_array($decoded) || (int) ($decoded['code'] ?? -1) !== 0) {
+                continue;
+            }
+
+            $data = $decoded['data'] ?? [];
+
+            if (is_array($data)) {
+                $results[$alias] = $data;
+            }
+        }
+
+        return $results;
+    }
+
+    /**
      * 发起 POST 请求（JSON 体），成功时返回响应信封 data 部分。
      *
      * @param  array<string, mixed>  $payload

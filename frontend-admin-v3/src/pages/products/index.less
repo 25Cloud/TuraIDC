@@ -1502,6 +1502,19 @@
   opacity: 0.75;
 }
 
+.product-sort-keys {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0;
+  opacity: 0;
+}
+
+.product-name:hover .product-sort-keys,
+.product-sort-keys:focus-within {
+  opacity: 1;
+}
+
 // 拖拽经过时的落点提示
 .product-name.is-drop-target {
   background: var(--td-brand-color-light);

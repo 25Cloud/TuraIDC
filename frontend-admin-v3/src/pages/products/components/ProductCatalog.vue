@@ -247,6 +247,7 @@
                 @drop="handleProductDrop(row, $event)"
               >
                 <button
+                  v-if="canSortProducts"
                   type="button"
                   class="product-drag"
                   :class="{ 'is-dragging': productDragState?.id === row.id }"
@@ -259,6 +260,29 @@
                 >
                   ::
                 </button>
+                <!-- 键盘可达的排序入口：拖拽对键盘用户不可用 -->
+                <span v-if="canSortProducts" class="product-sort-keys">
+                  <t-button
+                    theme="default"
+                    variant="text"
+                    size="small"
+                    :disabled="productSortLoading || !canMoveProduct(row, 'up')"
+                    aria-label="上移"
+                    @click.stop="moveProduct(row, 'up')"
+                  >
+                    <template #icon><chevron-up-icon /></template>
+                  </t-button>
+                  <t-button
+                    theme="default"
+                    variant="text"
+                    size="small"
+                    :disabled="productSortLoading || !canMoveProduct(row, 'down')"
+                    aria-label="下移"
+                    @click.stop="moveProduct(row, 'down')"
+                  >
+                    <template #icon><chevron-down-icon /></template>
+                  </t-button>
+                </span>
                 <div class="product-name-main">
                   <button
                     type="button"
@@ -1232,6 +1256,8 @@ import { useRouter } from 'vue-router';
 import { productDiscountGroupsApi } from '@/api/admin/agentDiscount';
 import type { ProductDiscountGroupRecord } from '@/api/admin/types';
 import type { ProductCategoryRecord, ProductRecord, ProductTypeRecord, SpecHighlightDimension } from '@/api/product';
+import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
+import { useUserStore } from '@/store';
 import { productApi } from '@/api/product';
 import type { ProviderTypeRecord, SupplierFormField, SupplierRecord } from '@/api/supplier';
 import { supplierApi } from '@/api/supplier';
@@ -2487,6 +2513,13 @@ interface ProductDragState {
 const productDragState = ref<ProductDragState | null>(null);
 const productSortLoading = ref(false);
 
+// 拖拽排序会改写商品顺序，属于 product.manage 权限范围；
+// 无权限用户不应看到排序控件（后端仍会独立校验）。
+const userStore = useUserStore();
+const canSortProducts = computed(
+  () => hasPermissionInList(userStore.userInfo?.permissions || [], AdminPermissions.PRODUCT_MANAGE),
+);
+
 function handleProductDragStart(row: TableRowData, event: DragEvent) {
   if (productSortLoading.value) {
     event.preventDefault();
@@ -2529,6 +2562,30 @@ function handleProductDrop(targetRow: TableRowData, event: DragEvent) {
 
 function handleProductDragEnd() {
   productDragState.value = null;
+}
+
+function canMoveProduct(row: TableRowData, direction: 'up' | 'down') {
+  const index = products.value.findIndex((item) => Number(item.id) === Number(row.id));
+  if (index < 0) return false;
+  const target = direction === 'up' ? index - 1 : index + 1;
+  return target >= 0 && target < products.value.length;
+}
+
+/** 键盘可达的上移/下移，复用拖拽相同的提交逻辑 */
+function moveProduct(row: TableRowData, direction: 'up' | 'down') {
+  if (productSortLoading.value || !canMoveProduct(row, direction)) return;
+
+  const list = [...products.value];
+  const fromIndex = list.findIndex((item) => Number(item.id) === Number(row.id));
+  const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
+  if (fromIndex < 0 || toIndex < 0 || toIndex >= list.length) return;
+
+  const [moved] = list.splice(fromIndex, 1);
+  list.splice(toIndex, 0, moved);
+  const nextIds = list.map((item) => Number(item.id));
+  if (nextIds.join(',') === products.value.map((item) => Number(item.id)).join(',')) return;
+
+  void commitProductSort(nextIds);
 }
 
 async function commitProductSort(orderedIds: number[]) {

@@ -30,18 +30,6 @@
           新增{{ articleLabel }}
         </t-button>
       </div>
-
-      <!-- 分类筛选：与「全部分类/全部状态」等筛选器同风格的下拉，不再单独造胶囊条 -->
-      <div class="category-filter">
-        <t-select
-          v-model="filters.category_id"
-          class="category-filter-select"
-          :options="categoryFilterOptions"
-          placeholder="全部分类"
-          clearable
-          @change="reloadArticlesForFilter"
-        />
-      </div>
     </t-card>
 
     <t-card :bordered="false" :loading="loading">
@@ -190,7 +178,7 @@
       <template #header>
         <div class="category-list-head">
           <span>分类列表</span>
-          <t-button theme="primary" size="small" @click="openCategoryCreator">
+          <t-button v-if="canManageCategories" theme="primary" size="small" @click="openCategoryCreator">
             <template #icon><add-icon /></template>
             新增分类
           </t-button>
@@ -212,8 +200,12 @@
         </template>
         <template #actions="{ row }">
           <t-space size="small">
-            <t-button theme="primary" variant="text" @click="openCategoryEditor(row)">编辑</t-button>
-            <t-button theme="danger" variant="text" @click="handleDeleteCategory(row)">删除</t-button>
+            <t-button v-if="canManageCategories" theme="primary" variant="text" @click="openCategoryEditor(row)">
+              编辑
+            </t-button>
+            <t-button v-if="canManageCategories" theme="danger" variant="text" @click="handleDeleteCategory(row)">
+              删除
+            </t-button>
           </t-space>
         </template>
       </t-table>
@@ -231,6 +223,8 @@ import { useRoute, useRouter } from 'vue-router';
 
 import type { ContentArticleRecord, ContentCategoryPayload, ContentCategoryRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
+import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
+import { useUserStore } from '@/store';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { fieldValue, formatDateTime } from '@/utils/format';
 import { required } from '@/utils/formRules';
@@ -245,6 +239,13 @@ const router = useRouter();
 const loading = ref(false);
 const categoryLoading = ref(false);
 const categorySaving = ref(false);
+// 分类的新增/编辑/删除均由 content.manage 约束（本项目未拆分独立删除权限码），
+// 无权限用户不显示对应入口；后端仍会独立校验。
+const userStore = useUserStore();
+const canManageCategories = computed(() =>
+  hasPermissionInList(userStore.userInfo?.permissions || [], AdminPermissions.CONTENT_MANAGE),
+);
+
 const categoryDialogVisible = ref(false);
 const categoryListDialogVisible = ref(false);
 const categoryFormRef = ref<FormInstanceFunctions>();
@@ -270,15 +271,6 @@ const categoryForm = reactive({
   status: 1,
   sort_order: 0,
 });
-
-/** 分类筛选项：与页面其他筛选器（如状态）保持同一种下拉形态 */
-const categoryFilterOptions = computed(() => [
-  { label: '全部分类', value: '' },
-  ...categories.value.map((item) => ({
-    label: `${item.name}（${item.articles_count || 0}）`,
-    value: String(item.id),
-  })),
-]);
 
 const statusOptions = [
   { label: '草稿', value: 0 },
@@ -345,15 +337,10 @@ function handleSearch() {
   loadArticles();
 }
 
-/** t-select 的 @change：v-model 已写入 filters.category_id，这里只重载列表 */
-function reloadArticlesForFilter() {
-  pagination.page = 1;
-  loadArticles();
-}
-
 function applyCategoryFilter(value: string | number) {
   filters.category_id = value;
-  reloadArticlesForFilter();
+  pagination.page = 1;
+  loadArticles();
 }
 
 function handlePageChange(data: { current: number; pageSize: number }) {

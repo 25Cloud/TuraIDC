@@ -814,20 +814,34 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
                 $requests[(string) $productId] = "/api/v2/site/products/{$productId}";
             }
 
-            $responses = $this->client()->getMany($supplier, $requests);
+            // 站点目录是公开接口（无需 API 密钥），必须走 getPublicMany；
+            // 且响应需解包 data['product']，与单条 getPublic 的处理保持一致。
+            $responses = $this->client()->getPublicMany($supplier, $requests);
 
             foreach ($chunk as $productId) {
                 if ($deadline !== null && $items !== [] && microtime(true) >= $deadline) {
                     break 2;
                 }
 
-                $siteData = $responses[(string) $productId] ?? null;
+                $items[$productId] = $this->normalizeFetchedSiteProductConfig(
+                    $responses[(string) $productId] ?? null
+                );
+            }
 
-                $items[$productId] = is_array($siteData)
-                    ? $this->normalizeSiteConfigOptions(
-                        is_array($siteData['config_options'] ?? null) ? $siteData['config_options'] : []
-                    )
-                    : [];
+            // 并发未覆盖的项串行重试；确认上游确实无配置项后才记为空，
+            // 避免把「请求失败」误当成「该商品没有配置项」而静默丢失数据。
+            foreach ($chunk as $productId) {
+                if (array_key_exists($productId, $items)) {
+                    continue;
+                }
+
+                if ($deadline !== null && $items !== [] && microtime(true) >= $deadline) {
+                    break 2;
+                }
+
+                $items[$productId] = $this->normalizeFetchedSiteProductConfig(
+                    $this->fetchSiteProductDetailForConfig($supplier, $productId)
+                );
             }
         }
 
@@ -923,6 +937,34 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         }
 
         return is_array($detail) && $detail !== [] ? $detail : null;
+    }
+
+    /**
+     * 串行补拉单个商品的站点详情（并发未覆盖时的兜底）。
+     *
+     * 复用 siteProductDetail 的缓存与 data['product'] 解包逻辑；
+     * 返回 null 表示请求失败，调用方不得把它当成「无配置项」。
+     */
+    private function fetchSiteProductDetailForConfig(Supplier $supplier, int $productId): ?array
+    {
+        return $this->siteProductDetail($supplier, $productId);
+    }
+
+    /**
+     * 把站点商品详情归一化为 config_options 列表。
+     *
+     * @param  array<string, mixed>|null  $siteProduct  data['product']；null 表示未取到
+     * @return array<int, mixed>
+     */
+    private function normalizeFetchedSiteProductConfig(?array $siteProduct): array
+    {
+        if ($siteProduct === null) {
+            return [];
+        }
+
+        return $this->normalizeSiteConfigOptions(
+            is_array($siteProduct['config_options'] ?? null) ? $siteProduct['config_options'] : []
+        );
     }
 
     /**
@@ -1506,19 +1548,12 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
      */
     private function validateBulkConnectPayload(array $payload): array
     {
-        // 允许白名单枚举与历史遗留 code（如 vps/domain/other）两种形态：
-        // 归一化值（cloud_server 等）与原始 code 互为映射，校验前先尝试归一化，
-        // 归一化后不在白名单则回退用原始值比对，避免把合法分类误判为非法。
-        $rawGroupCode = trim((string) ($payload['first_product_group_code'] ?? ''));
-        $firstGroupCode = in_array($rawGroupCode, ProductType::allowedValues(), true)
-            ? $rawGroupCode
-            : ProductType::normalizeBusinessValueFromMenuCode($rawGroupCode);
+        // 允许白名单枚举与历史遗留 code（如 vps/domain/other）两种形态。
+        // 必须用 strictBusinessValue()：normalizeBusinessValue() 对未知值一律兜底
+        // 为 OTHER，任意乱码都会被「归一化」成 other 而通过校验。
+        $firstGroupCode = ProductType::strictBusinessValue($payload['first_product_group_code'] ?? '');
 
-        if (
-            $firstGroupCode === ''
-            || (! in_array($firstGroupCode, ProductType::allowedValues(), true)
-                && ! in_array(ProductType::normalizeBusinessValue($firstGroupCode), ProductType::allowedValues(), true))
-        ) {
+        if ($firstGroupCode === null) {
             throw new BusinessException('请选择有效的商品种类', 42200);
         }
 
