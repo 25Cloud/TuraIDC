@@ -182,12 +182,12 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
                 ],
                 [
                     'key' => 'api_key',
-                    'label' => 'API 密钥（tura_ 开头完整密钥）',
+                    'label' => 'API 密钥',
                     'type' => 'password',
                     'required' => true,
                     'secret' => true,
                     'placeholder' => '编辑时留空则保持原密钥',
-                    'description' => '需具备 products/orders/services/finance 读写权限，且上游账户余额充足。',
+                    'description' => '在上游「API 密钥」页创建后复制 secret 部分（页面展示为 tura_ 前缀 + 随机标识，需填其下方的完整密钥串）。需具备 products/orders/services/finance 读写权限，且上游账户余额充足。',
                 ],
             ],
         ];
