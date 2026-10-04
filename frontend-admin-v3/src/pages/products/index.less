@@ -1407,11 +1407,11 @@
   font-size: var(--td-font-size-size-2, 13px);
 }
 
-/* 表单已改为 label-align="top"（标签在上、输入框在下），
-   不再需要配合固定 label-width 的 110px 缩进。
-   视觉规格与 .supplier-field-tip 保持一致，避免同一表单里两种说明文字风格。 */
+/* 插件说明紧跟「接口名称」输入框。t-form-item 自带
+   margin-bottom: var(--td-comp-margin-xxl)，用负 margin 抵消后只保留
+   一个小间距，避免与本元素自身的 margin-bottom 叠加出约 40px 空档。 */
 .supplier-form-help {
-  margin: 0 0 var(--td-comp-margin-m);
+  margin: calc(var(--td-comp-margin-xxl) * -1) 0 var(--td-comp-margin-s);
   color: var(--td-text-color-placeholder);
   font-size: var(--td-font-size-size-1, 12px);
   line-height: 18px;
