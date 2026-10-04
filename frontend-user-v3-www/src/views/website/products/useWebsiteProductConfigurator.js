@@ -34,11 +34,25 @@ const REGION_FLAGS = {
 }
 const QTY_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19]
 
+// 上游把「明确禁止」这类购买须知做成了普通单选配置项，后端归一化后
+// option_mode 会是 text。这类项只展示文案，不能进选配控件、不能计价、不能提交。
+const TEXT_OPTION_MODE = 'text'
+
 export function useWebsiteProductConfigurator(productDetail) {
   const configForm = reactive({})
 
   function isNumberField(item) {
-    if (QTY_OPTION_TYPES.includes(Number(item.option_type))) {
+    // 提示型项即使 option_type 落在区间型里也按数量算，会得到 0~0 的滑块，
+    // 这里直接排除，由 noticeConfigs 单独渲染文案。
+    if (String(item.option_mode || '') === TEXT_OPTION_MODE) {
+      return false
+    }
+
+    // 区间型判定。历史上后台把 range 项的 option_type 存成字符串 'quantity'，
+    // 而 Number('quantity') 是 NaN、落在集合外 —— 不兼容的话这类存量配置项
+    // 会被当成无子项单选（options 为空），购买页根本选不出数量。
+    const rawType = String(item.option_type ?? '').trim().toLowerCase()
+    if (rawType === 'quantity' || QTY_OPTION_TYPES.includes(Number(item.option_type))) {
       return true
     }
 
@@ -59,9 +73,11 @@ export function useWebsiteProductConfigurator(productDetail) {
         const version = String(subItem.version || subItem.option_name || subItem.option_name_first || '')
         const parts = version.split('^')
         const label = parts[parts.length - 1] || version || String(subItem.id)
+        // value 是上游 parameter 里的真实传参值；option_name_first 在旧数据里
+        // 等于 sub 的自增 id，优先用 value，避免把 id 提交给上游。
         const value = String(
-          subItem.option_name_first
-          || subItem.value
+          subItem.value
+          || subItem.option_name_first
           || subItem.qty_minimum
           || label
           || subItem.id
@@ -78,6 +94,23 @@ export function useWebsiteProductConfigurator(productDetail) {
     return parseParamOptions(item.parameter)
   }
 
+  function resolveTextContent(item) {
+    const explicit = String(item.text_content || '').trim()
+    if (explicit) {
+      return explicit
+    }
+
+    const subs = Array.isArray(item.sub) ? item.sub.filter((subItem) => !subItem.hidden) : []
+    if (subs.length === 1) {
+      const only = String(subs[0].option_name || subs[0].label || '').trim()
+      if (only) {
+        return only
+      }
+    }
+
+    return String(item.description || '').trim()
+  }
+
   function parseConfigItem(item) {
     const { key, label } = parseField(item)
     const isNum = isNumberField(item)
@@ -92,6 +125,8 @@ export function useWebsiteProductConfigurator(productDetail) {
       hidden: item.hidden === 1,
       sortOrder: Number(item.sort_order || 0),
       isNumber: isNum,
+      isTextNotice: String(item.option_mode || '') === TEXT_OPTION_MODE,
+      textContent: resolveTextContent(item),
       defaultNum,
       min: isNum ? bounds.min : undefined,
       max: isNum ? bounds.max : undefined,
@@ -119,9 +154,20 @@ export function useWebsiteProductConfigurator(productDetail) {
       .sort((left, right) => left.sortOrder - right.sortOrder)
   })
 
-  const machineConfigs = computed(() => allParsedConfigs.value.filter(isMachine))
-  const networkConfigs = computed(() => allParsedConfigs.value.filter((cfg) => !isMachine(cfg) && isNetwork(cfg)))
-  const otherConfigs = computed(() => allParsedConfigs.value.filter((cfg) => !isMachine(cfg) && !isNetwork(cfg)))
+  // 提示型配置项（如「明确禁止」）不参与选配：单独收集为购买须知展示
+  const noticeConfigs = computed(() =>
+    allParsedConfigs.value.filter((cfg) => cfg.isTextNotice),
+  )
+
+  const machineConfigs = computed(() =>
+    allParsedConfigs.value.filter((cfg) => !cfg.isTextNotice && isMachine(cfg)),
+  )
+  const networkConfigs = computed(() =>
+    allParsedConfigs.value.filter((cfg) => !cfg.isTextNotice && !isMachine(cfg) && isNetwork(cfg)),
+  )
+  const otherConfigs = computed(() =>
+    allParsedConfigs.value.filter((cfg) => !cfg.isTextNotice && !isMachine(cfg) && !isNetwork(cfg)),
+  )
 
   const regionOptions = computed(() => {
     const raw = productDetail.value?.config_options || []
@@ -301,10 +347,22 @@ export function useWebsiteProductConfigurator(productDetail) {
         continue
       }
 
-      const value = configForm[cfg.key]
-      if (value !== undefined && value !== null && value !== '') {
-        payload[cfg.key] = value
+      // configForm[cfg.key] 存的是被选中项的 id —— 那是 UI 的选中标记，
+      // 不是上游认的传参值。直接提交 id 等于把库里的自增 id 发给上游，
+      // 与 parseSubOptions 里「优先用 value，避免把 id 提交给上游」的约定相反。
+      // 这里按 id 回查选项并提交它的 value；查不到时才退回 id 本身
+      // （parseParamOptions 兜底解析出的项没有 value，其 id 就是真实传参值）。
+      const selectedId = configForm[cfg.key]
+      if (selectedId === undefined || selectedId === null || selectedId === '') {
+        continue
       }
+
+      const matched = cfg.options.find((opt) => String(opt.id) === String(selectedId))
+      const submitValue = matched && matched.value !== undefined && matched.value !== ''
+        ? matched.value
+        : selectedId
+
+      payload[cfg.key] = submitValue
     }
 
     return payload
@@ -318,6 +376,10 @@ export function useWebsiteProductConfigurator(productDetail) {
     }
 
     allParsedConfigs.value.forEach((cfg) => {
+      // 提示型配置项（如「明确禁止」）只用于展示购买须知，
+      // 写进configForm 会覆盖同 key 真实规格的默认值。
+      if (cfg.isTextNotice) return
+
       if (cfg.isNumber) {
         configForm[cfg.key + '_num'] = cfg.defaultNum
       } else if (cfg.options.length) {
@@ -347,6 +409,7 @@ export function useWebsiteProductConfigurator(productDetail) {
     currentOsVersionLabel,
     selectedMachineSpec,
     summaryItems,
+    noticeConfigs,
     machineConfigs,
     networkConfigs,
     otherConfigs,

@@ -235,6 +235,23 @@ export interface ServiceTrafficPackageOrderPayload {
   [key: string]: unknown;
 }
 
+/**
+ * 面板访问信息（CDN / 虚拟主机等面板型产品）
+ *
+ * 各家上游摆放面板信息的位置差异很大（配置项键值对、host_data 字段、自定义区域 HTML），
+ * 后端统一归一到这五个键；三个字段全空时后端直接不下发该结构。
+ */
+export interface ConsolePanelAccess {
+  /** 面板地址（可能带一次性 token，用完即失效） */
+  panel_url?: string;
+  panel_username?: string;
+  panel_password?: string;
+  /** 面板类型标识，如 cpanel / btpanel / 厂商自有控制台 */
+  panel_type?: string;
+  /** 面板信息来源，便于排查「为什么抽不到」 */
+  panel_source?: string;
+}
+
 export interface ConsoleConnectionInfo {
   hostname?: string;
   username?: string;
@@ -299,6 +316,8 @@ export interface ConsoleServiceDetail extends ServiceInstance {
   runtime?: ConsoleRuntimeInfo | null;
   traffic?: ConsoleTrafficInfo | null;
   connection?: ConsoleConnectionInfo | null;
+  /** 面板访问信息（CDN / 虚拟主机等面板型产品）。后端抽不到时整体不下发 */
+  panel?: ConsolePanelAccess | null;
   actions?: ConsoleActionFlags | null;
   _sync?: ConsoleSyncMarker | null;
 }

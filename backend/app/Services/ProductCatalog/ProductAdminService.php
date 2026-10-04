@@ -1790,9 +1790,7 @@ class ProductAdminService
 
     private function normalizeConsoleTemplate(mixed $value): string
     {
-        return $this->normalizeNullableString($value) === Product::CONSOLE_TEMPLATE_PORT_MAPPING
-            ? Product::CONSOLE_TEMPLATE_PORT_MAPPING
-            : Product::CONSOLE_TEMPLATE_COMPUTE;
+        return Product::normalizeConsoleTemplate($value);
     }
 
     private function deriveInternalProductName(array $data): string

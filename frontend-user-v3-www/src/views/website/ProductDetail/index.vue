@@ -249,6 +249,17 @@
             </div>
           </div>
 
+          <!-- 购买须知：上游以普通配置项下发的文字提示（如「明确禁止」），只展示不参与选配 -->
+          <div class="cfg-group cfg-group--notice" v-if="noticeConfigs.length">
+            <div class="cfg-group-head">购买须知</div>
+            <div class="cfg-group-body">
+              <div class="notice-item" v-for="cfg in noticeConfigs" :key="cfg.key">
+                <div class="notice-label" v-if="cfg.label">{{ cfg.label }}</div>
+                <div class="notice-text">{{ cfg.textContent }}</div>
+              </div>
+            </div>
+          </div>
+
           <!-- 基础设置 -->
           <div class="cfg-group">
             <div class="cfg-group-head">基础设置</div>
@@ -646,6 +657,9 @@ const netConfigs = computed(() =>
     ...configurator.otherConfigs.value,
   ].filter((cfg) => isNetConfig(cfg.key, cfg.label)),
 );
+
+// 购买须知：仅展示，不参与选配与计价
+const noticeConfigs = computed(() => configurator.noticeConfigs.value || []);
 
 function isSpecSummaryConfig(cfg) {
   return (
@@ -1598,6 +1612,34 @@ onBeforeUnmount(() => {
 .spec-ctrl {
   flex: 1;
   min-width: 0;
+}
+
+/* ===== 购买须知 ===== */
+.notice-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #f2f3f5;
+
+  &:first-child {
+    padding-top: 0;
+  }
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
+.notice-label {
+  font-size: 13px;
+  color: #86909c;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.notice-text {
+  font-size: 13px;
+  color: #c45656;
+  line-height: 1.7;
+  word-break: break-word;
 }
 
 /* ===== 步进器 ===== */

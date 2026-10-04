@@ -1281,6 +1281,41 @@
   background: var(--td-bg-color-container);
 }
 
+// 数量范围（滑块）面板
+.config-range-panel {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--td-component-border);
+  border-radius: var(--td-radius-large, 8px);
+  background: var(--td-bg-color-container);
+}
+
+.config-range-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--td-comp-margin-s);
+  margin-bottom: 12px;
+}
+
+.config-range-head strong {
+  color: var(--td-text-color-primary);
+}
+
+.config-range-hint {
+  font-size: 12px;
+  color: var(--td-text-color-placeholder);
+}
+
+.config-range-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 24px;
+}
+
+.config-option-mode-tip {
+  margin-top: var(--td-comp-margin-s);
+}
+
 .config-subitem-head {
   display: flex;
   align-items: center;
@@ -1532,25 +1567,20 @@
   cursor: grabbing;
 }
 
+/* 键盘可达：Tab 聚焦到抓手时保持可见并给出焦点环 */
+.product-drag:focus-visible {
+  opacity: 0.75;
+  outline: 2px solid var(--td-brand-color);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
 .product-drag.is-dragging {
   opacity: 0.3;
 }
 
 .product-name:hover .product-drag {
   opacity: 0.75;
-}
-
-.product-sort-keys {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0;
-  opacity: 0;
-}
-
-.product-name:hover .product-sort-keys,
-.product-sort-keys:focus-within {
-  opacity: 1;
 }
 
 // 拖拽经过时的落点提示
@@ -2651,7 +2681,8 @@ button.supplier-tree-node__content {
   }
 
   .config-option-basic-grid,
-  .config-option-footer-row {
+  .config-option-footer-row,
+  .config-range-grid {
     grid-template-columns: 1fr;
   }
 

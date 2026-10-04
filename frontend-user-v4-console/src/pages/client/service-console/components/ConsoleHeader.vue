@@ -1,5 +1,5 @@
 <template>
-  <t-card class="console-header-card" :bordered="false">
+  <t-card class="console-header-card" :class="{ 'is-compact': compact }" :bordered="false">
     <div class="console-header-main">
       <div class="console-title-line">
         <h1>{{ detail.name || `服务 #${serviceId}` }}</h1>
@@ -12,8 +12,11 @@
 
       <div class="console-meta-grid">
         <span class="meta-item meta-id">实例 ID：{{ detail.id || '--' }}</span>
-        <span class="meta-item meta-region">地址：{{ serviceRegion }}</span>
-        <span class="meta-item meta-ip">{{ primaryConnectionLabel }}：{{ primaryConnectionValues[0] || '--' }}</span>
+        <span v-if="!compact" class="meta-item meta-region">地址：{{ serviceRegion }}</span>
+        <span v-if="!compact" class="meta-item meta-ip"
+          >{{ primaryConnectionLabel }}：{{ primaryConnectionValues[0] || '--' }}</span
+        >
+        <span v-if="compact" class="meta-item meta-region">加速区域：{{ serviceRegion }}</span>
         <div class="console-auto-renew-line">
           <span>自动续费</span>
           <t-switch
@@ -39,47 +42,65 @@
     </div>
 
     <div class="console-header-actions">
-      <t-button
-        v-if="isInstanceRunning"
-        variant="outline"
-        :disabled="!detail.actions?.power || actionLoading"
-        @click="handlePowerAction('off')"
-      >
-        <template #icon><pause-circle-filled-icon /></template>
-        关机
-      </t-button>
-      <t-button
-        v-else
-        theme="primary"
-        :disabled="!detail.actions?.power || actionLoading"
-        @click="handlePowerAction('on')"
-      >
-        <template #icon><play-circle-filled-icon /></template>
-        开机
-      </t-button>
-      <t-button
-        variant="outline"
-        :disabled="!detail.actions?.power || actionLoading"
-        @click="handlePowerAction('reboot')"
-      >
-        <template #icon><rotate-icon /></template>
-        重启
-      </t-button>
-      <t-button
-        variant="outline"
-        :loading="statusSyncing"
-        :disabled="!canSyncStatus || actionLoading"
-        @click="handleSyncStatus"
-      >
-        <template #icon><refresh-icon /></template>
-        状态同步
-      </t-button>
-      <t-dropdown trigger="click" :options="moreOptions" @click="handleMoreClick">
-        <t-button variant="outline">
-          <template #icon><ellipsis-icon /></template>
-          更多
+      <!-- CDN 没有开关机/重装/救援这些云主机语义，只保留状态同步与账单相关入口 -->
+      <template v-if="compact">
+        <t-button
+          variant="outline"
+          :loading="statusSyncing"
+          :disabled="!canSyncStatus || actionLoading"
+          @click="handleSyncStatus"
+        >
+          <template #icon><refresh-icon /></template>
+          状态同步
         </t-button>
-      </t-dropdown>
+        <t-button v-if="!isTrialMachine" variant="outline" @click="openRenewDialog">
+          <template #icon><money-icon /></template>
+          续费
+        </t-button>
+      </template>
+      <template v-else>
+        <t-button
+          v-if="isInstanceRunning"
+          variant="outline"
+          :disabled="!detail.actions?.power || actionLoading"
+          @click="handlePowerAction('off')"
+        >
+          <template #icon><pause-circle-filled-icon /></template>
+          关机
+        </t-button>
+        <t-button
+          v-else
+          theme="primary"
+          :disabled="!detail.actions?.power || actionLoading"
+          @click="handlePowerAction('on')"
+        >
+          <template #icon><play-circle-filled-icon /></template>
+          开机
+        </t-button>
+        <t-button
+          variant="outline"
+          :disabled="!detail.actions?.power || actionLoading"
+          @click="handlePowerAction('reboot')"
+        >
+          <template #icon><rotate-icon /></template>
+          重启
+        </t-button>
+        <t-button
+          variant="outline"
+          :loading="statusSyncing"
+          :disabled="!canSyncStatus || actionLoading"
+          @click="handleSyncStatus"
+        >
+          <template #icon><refresh-icon /></template>
+          状态同步
+        </t-button>
+        <t-dropdown trigger="click" :options="moreOptions" @click="handleMoreClick">
+          <t-button variant="outline">
+            <template #icon><ellipsis-icon /></template>
+            更多
+          </t-button>
+        </t-dropdown>
+      </template>
     </div>
   </t-card>
 
@@ -113,12 +134,20 @@ import {
   PauseCircleFilledIcon,
   PlayCircleFilledIcon,
   RefreshIcon,
+  MoneyIcon,
   RotateIcon,
 } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, ref } from 'vue';
 
 import { useServiceConsoleContext } from './context';
+
+/**
+ * compact：CDN 专用模式。
+ * 头部剔除云主机语义（公网/内网 IP、开关机、重启、重装系统、重置密码、救援模式），
+ * 只留状态同步与续费。
+ */
+defineProps<{ compact?: boolean }>();
 
 const {
   detail,
@@ -139,6 +168,7 @@ const {
   handleSyncStatus,
   handlePowerAction,
   handleToggleAutoRenew,
+  openRenewDialog,
   openPasswordDialog,
   openReinstallDialog,
   openRescueDialog,
@@ -160,6 +190,16 @@ const moreOptions = computed(() => [
 ]);
 
 const hasUpgradeEntry = computed(() => Boolean(detail.value.actions?.upgrade ?? false));
+
+/**
+ * 试用机（上游下发 ontrial）不支持续费，隐藏续费入口。
+ * 与 CDN 总览「付费信息」卡的判断保持一致，避免头部能点却弹不出。
+ */
+const isTrialMachine = computed(() =>
+  String(detail.value.billing_cycle || '')
+    .trim()
+    .toLowerCase() === 'ontrial',
+);
 
 const isInstanceRunning = computed(() => instanceStatusTheme.value === 'success');
 

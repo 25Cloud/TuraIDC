@@ -569,7 +569,68 @@ class ServiceDetailService
             'runtime' => is_array($statusPayload) ? $statusPayload : [],
             'nat' => $natPayload,
             'jwt' => $resolvedJwt,
+            'area_html' => $this->fetchAreaHtmlFragments($runtime, $supplier, $hostId, $resolvedJwt),
         ];
+    }
+
+    /**
+     * 抓取上游自定义区域（module_client_area）的 HTML 片段。
+     *
+     * 面板型产品的面板账号密码往往只写在这类自定义区域里，
+     * host_data 与 config_options 都取不到（天理云 CDN 即如此）。
+     * 抓不到不影响详情主体，静默降级为空数组。
+     *
+     * @return array<int, string>
+     */
+    private function fetchAreaHtmlFragments(object $runtime, Supplier $supplier, int $hostId, string $jwt): array
+    {
+        if ($jwt === '' || ! is_callable([$runtime, 'fetchCustomModulePage'])) {
+            return [];
+        }
+
+        $keys = [];
+
+        if (is_callable([$runtime, 'getHostHeaderPayload'])) {
+            try {
+                $header = $runtime->getHostHeaderPayload($supplier, $hostId, $jwt);
+
+                foreach ((array) ($header['module_client_area'] ?? []) as $area) {
+                    $key = is_array($area) ? trim((string) ($area['key'] ?? '')) : trim((string) $area);
+                    if ($key !== '' && $key !== 'overview') {
+                        $keys[$key] = true;
+                    }
+                }
+            } catch (\Throwable $exception) {
+                Log::info('[实例详情] 读取自定义区域清单失败', [
+                    'host_id' => $hostId,
+                    'message' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        if ($keys === []) {
+            return [];
+        }
+
+        $fragments = [];
+
+        foreach (array_keys($keys) as $key) {
+            try {
+                $html = trim((string) $runtime->fetchCustomModulePage($supplier, $hostId, (string) $key, $jwt));
+
+                if ($html !== '') {
+                    $fragments[] = $html;
+                }
+            } catch (\Throwable $exception) {
+                Log::info('[实例详情] 读取自定义区域内容失败', [
+                    'host_id' => $hostId,
+                    'module_key' => $key,
+                    'message' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return $fragments;
     }
 
     private function fetchWebServiceDetailPayload(ProvidesConsoleRuntime $runtime, Supplier $supplier, int $hostId): array

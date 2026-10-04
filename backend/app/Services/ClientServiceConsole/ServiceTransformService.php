@@ -17,6 +17,7 @@ use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\System\SettingService;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\ProviderResolver;
+use App\Support\PanelAccessExtractor;
 use App\Support\ServiceHostname;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -34,6 +35,12 @@ class ServiceTransformService
 
     // 上游面板 config_options 中属于"范围/滑块"类型的 option_type，这些类型不从 sub_options 推断规格值
     private const SPEC_RANGE_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19];
+
+    /**
+     * 面板型产品：没有开关机 / 重装 / 救援 / VNC 等云主机语义，
+     * 控制能力全部来自上游自定义区域（AreaTab 承载）。
+     */
+    private const PANEL_PRODUCT_TYPES = ['cdn', 'web_hosting'];
 
     private const POWER_ACTIONS = [
         'on' => '开机',
@@ -159,7 +166,7 @@ class ServiceTransformService
                 'host_id' => (int) (($this->bindingResolver()->upstreamServiceIdForService($service) ?? 0) ?: 0),
                 'status' => (string) ($provisionData['upstream_status'] ?? ''),
                 'status_label' => $this->resolveUpstreamStatusLabel((string) ($provisionData['upstream_status'] ?? '')),
-                'dedicated_ip' => (string) ($provisionData['dedicated_ip'] ?? ''),
+                'dedicated_ip' => $this->sanitizeIpValue((string) ($provisionData['dedicated_ip'] ?? '')),
                 'os' => (string) ($provisionData['os'] ?? ''),
             ],
             'remark' => (string) ($provisionData['client_remark'] ?? ''),
@@ -190,10 +197,15 @@ class ServiceTransformService
 
         $displayDomain = ServiceHostname::resolveDisplayDomain($service, $provisionData, $host);
         $serviceStatus = trim((string) ($host['domainstatus'] ?? ($provisionData['upstream_status'] ?? '')));
-        $dedicatedIp = trim((string) ($host['dedicatedip'] ?? ($provisionData['dedicated_ip'] ?? '')));
-        $assignedIps = is_array($host['assignedips'] ?? null)
-            ? $host['assignedips']
-            : (is_array($provisionData['assigned_ips'] ?? null) ? $provisionData['assigned_ips'] : []);
+        $dedicatedIp = $this->sanitizeIpValue(
+            (string) ($host['dedicatedip'] ?? ($provisionData['dedicated_ip'] ?? ''))
+        );
+        $assignedIps = array_values(array_filter(array_map(
+            fn ($ip) => $this->sanitizeIpValue((string) $ip),
+            is_array($host['assignedips'] ?? null)
+                ? $host['assignedips']
+                : (is_array($provisionData['assigned_ips'] ?? null) ? $provisionData['assigned_ips'] : [])
+        )));
         $runtimeState = trim((string) ($runtime['status'] ?? ''));
         $specConfigOptions = $this->resolveSpecConfigOptions($service, $host, $provisionData);
         $canExecuteConsoleActions = $this->canExecuteConsoleActions($service, $serviceStatus, $runtimeState);
@@ -208,6 +220,12 @@ class ServiceTransformService
         $trafficPackageEnabled = $this->canExposeTrafficPackage($service, $trafficPayload);
         $productDisplayName = $this->resolveProductDisplayName($service);
         $instanceName = ServiceHostname::resolveInstanceName($service, $provisionData, $host);
+        $panel = $this->resolvePanelAccess(
+            $host,
+            $provisionData,
+            $specConfigOptions,
+            is_array($remoteState['area_html'] ?? null) ? $remoteState['area_html'] : []
+        );
 
         return [
             'id' => $service->id,
@@ -237,6 +255,7 @@ class ServiceTransformService
             'console_template' => $service->product?->console_template,
             'console_mode' => $consoleMode,
             'is_nat_console' => $consoleMode === self::CONSOLE_MODE_NAT,
+            'machine_category' => $this->resolveMachineCategory($service, $catalogProductType, $consoleMode),
             'product' => [
                 'id' => $service->product_id,
                 'name' => $service->product?->name ?? '',
@@ -289,19 +308,84 @@ class ServiceTransformService
                 'nat_remote_checked_at' => $natRemote['checked_at'],
             ],
             'specs' => $this->buildSpecs($host, $provisionData, $specConfigOptions),
+            'panel' => $panel,
             'traffic' => $trafficPayload,
-            'actions' => [
-                'refresh' => true,
-                'power' => $canExecuteConsoleActions,
-                'module_status' => $this->canManageService($service),
-                'manual_provision' => $this->canManualProvisionService($service),
-                'password_reset' => $this->canResetPassword($service, $serviceStatus),
-                'reinstall' => $canExecuteConsoleActions,
-                'rescue' => $canExecuteConsoleActions,
-                'traffic_package' => $this->canManageService($service) && $trafficPackageEnabled,
-                'available' => array_keys(self::POWER_ACTIONS),
-            ],
+            'actions' => $this->buildConsoleActions(
+                $service,
+                $canExecuteConsoleActions,
+                $serviceStatus,
+                $trafficPackageEnabled
+            ),
         ];
+    }
+
+    /**
+     * 组装控制台动作能力。
+     *
+     * 面板型产品（CDN / 虚拟主机）没有开关机、重装、救援、VNC 这些云主机语义，
+     * 上游也未提供对应接口。若照常下发 available，前端会渲染出点了必然失败的按钮。
+     * 这里对面板型产品只保留刷新（本地可完成），其余能力一律关闭；
+     * 待上游补齐 CDN / 虚拟主机控制台接口后，再按能力逐项放开。
+     *
+     * @return array<string, mixed>
+     */
+    private function buildConsoleActions(
+        Service $service,
+        bool $canExecuteConsoleActions,
+        string $serviceStatus,
+        bool $trafficPackageEnabled
+    ): array {
+        $canManageService = $this->canManageService($service);
+
+        $actions = [
+            'refresh' => true,
+            'power' => $canExecuteConsoleActions,
+            'module_status' => $canManageService,
+            'manual_provision' => $this->canManualProvisionService($service),
+            'password_reset' => $this->canResetPassword($service, $serviceStatus),
+            'reinstall' => $canExecuteConsoleActions,
+            'rescue' => $canExecuteConsoleActions,
+            'traffic_package' => $canManageService && $trafficPackageEnabled,
+            'available' => array_keys(self::POWER_ACTIONS),
+        ];
+
+        if (! $this->isPanelProduct($service)) {
+            return $actions;
+        }
+
+        $actions['power'] = false;
+        $actions['reinstall'] = false;
+        $actions['rescue'] = false;
+        $actions['password_reset'] = false;
+        $actions['traffic_package'] = false;
+        $actions['available'] = [];
+
+        return $actions;
+    }
+
+    /**
+     * 是否面板型产品（CDN / 虚拟主机）。
+     *
+     * 以商品 product_type 为准：面板型产品的开关机 / 重装等动作在上游无对应实现，
+     * 控制台能力改由自定义区域承载。
+     */
+    private function isPanelProduct(Service $service): bool
+    {
+        return in_array(trim((string) ($service->product?->product_type ?? '')), self::PANEL_PRODUCT_TYPES, true);
+    }
+
+    /**
+     * 过滤非法 IP 值。
+     *
+     * 面板型产品（CDN / 虚拟主机）没有独立 IP，上游会把实例号（如 ser792229940589）
+     * 放进 dedicated_ip。若原样下发，前端「网络信息」会把实例号当 IP 展示。
+     * 这里只放行真正的 IPv4 / IPv6，其余一律视为未分配。
+     */
+    private function sanitizeIpValue(string $value): string
+    {
+        $ip = trim($value);
+
+        return filter_var($ip, FILTER_VALIDATE_IP) !== false ? $ip : '';
     }
 
     /**
@@ -1304,6 +1388,38 @@ class ServiceTransformService
         return in_array($field, ['hostname', 'password', 'os_group', 'os_sub_id', 'data_disk', 'network_type'], true);
     }
 
+    /**
+     * 面板型产品（CDN / 虚拟主机）上游 host_config_option 的 key 直接是中文展示名，
+     * 与商品 config_options 的英文 field 无法按 key 对齐。这里按中文名做显式映射，
+     * 使同一项配置在两侧收敛到同一个 field，既避免 specs 重复，
+     * 也让英文定义能取到 host_config_option 里的真实购买值而非子项默认值。
+     */
+    private const PANEL_SPEC_FIELD_LABELS = [
+        // CDN
+        '套餐选择' => 'plan',
+        'cdn系统' => 'cdn_system',
+        '防御级别' => 'defense_level',
+        'cdn节点带宽' => 'bw',
+        '月流量' => 'flow_limit',
+        '并发限制' => 'concurrency',
+        '站点限制' => 'sites',
+        '子域名限制' => 'domains',
+        'websocket' => 'websocket',
+        '自定义端口' => 'custom_port',
+        'waf自定义功能' => 'waf_custom',
+        'waf安全模块功能' => 'waf_security',
+        '四层转发' => 'l4_forward',
+        'nginx四层转发' => 'l4_forward',
+        'go四层转发' => 'l4_forward',
+        'cc防御策略' => 'cc_defense',
+        // 虚拟主机
+        '绑定域名数' => 'domains',
+        '流量限制' => 'flow_limit',
+        '带宽' => 'bw',
+        '数据库空间' => 'database_space',
+        'web空间' => 'web_space',
+    ];
+
     private function normalizeSpecField(string $field, string $label = ''): string
     {
         $normalizedField = mb_strtolower(trim($field));
@@ -1311,12 +1427,27 @@ class ServiceTransformService
         $normalizedField = preg_replace('/_+/u', '_', $normalizedField) ?? $normalizedField;
         $normalizedLabel = mb_strtolower(trim($label));
 
-        if ($normalizedField !== '') {
+        // 中文 key（面板型产品）先查显式映射表，再退回语义归一。
+        // 少了这一步，中文 key 会与商品英文 field 并存产出重复 specs，
+        // 且英文定义取不到真实购买值，只能回落到子项默认值。
+        if ($this->containsHan($normalizedField)) {
+            $mapped = self::PANEL_SPEC_FIELD_LABELS[$normalizedField] ?? null;
+            if ($mapped !== null) {
+                return $mapped;
+            }
+
+            $label = trim($label) !== '' ? $label : $field;
+        }
+
+        if ($normalizedField !== '' && ! $this->containsHan($normalizedField)) {
             return match ($normalizedField) {
                 'region' => 'area',
                 'ip', 'ipv4', 'ipv4_num' => 'ip_num',
                 'bandwidth' => 'bw',
                 'flow', 'traffic' => 'flow_limit',
+                // 上游偶发用通用 key「product」表示套餐项，与商品 field=plan 指向同一项，
+                // 不合并会产出两条内容相同的 specs。
+                'product', 'package', 'plan_name' => 'plan',
                 default => $normalizedField,
             };
         }
@@ -1414,6 +1545,12 @@ class ServiceTransformService
     private function normalizeSpecToken(string $value): string
     {
         return mb_strtolower(trim($value));
+    }
+
+    /** 是否含中日韩统一表意文字（用于区分「英文语义 key」与「中文展示名充当 key」） */
+    private function containsHan(string $value): bool
+    {
+        return preg_match('/\p{Han}/u', $value) === 1;
     }
 
     // ── Connection/password helpers ────────────────────────────────────────
@@ -1630,5 +1767,46 @@ class ServiceTransformService
         }
 
         return '';
+    }
+
+    /**
+     * 汇总面板入口信息。
+     *
+     * CDN / 虚拟主机这类面板型产品没有云主机的开关机、重装、VNC，
+     * 用户真正关心的是「去哪登录、账号密码是多少」。
+     * 各家商家摆放面板信息的位置差异很大（配置项键值对、host_data 字段、
+     * 自定义区域 HTML），统一交给 PanelAccessExtractor 归一，
+     * 抽不到就返回空数组，前端退化为空状态即可。
+     *
+     * @param  array<string, mixed>  $host
+     * @param  array<string, mixed>  $provisionData
+     * @param  array<int, mixed>  $configOptions
+     * @param  array<int, string>  $areaHtml  上游自定义区域的 HTML 片段
+     * @return array<string, string>
+     */
+    private function resolvePanelAccess(
+        array $host,
+        array $provisionData,
+        array $configOptions,
+        array $areaHtml = []
+    ): array {
+        $hostConfigOptions = is_array($provisionData['host_config_option'] ?? null)
+            ? $provisionData['host_config_option']
+            : [];
+
+        $panel = PanelAccessExtractor::extract($configOptions, $host, $hostConfigOptions);
+
+        // host_data 里没有面板信息时（如天理云 CDN），面板账号密码只存在于
+        // 上游自定义区域的 HTML 中，areas 通道能拿到它
+        if ($areaHtml !== []) {
+            $panel = PanelAccessExtractor::mergeHtmlSources($panel, $areaHtml);
+        }
+
+        // 全部字段为空说明这家上游压根没给面板信息，不下发空壳结构
+        return ($panel['panel_url'] ?? '') === ''
+            && ($panel['panel_username'] ?? '') === ''
+            && ($panel['panel_password'] ?? '') === ''
+            ? []
+            : $panel;
     }
 }
