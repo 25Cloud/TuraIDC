@@ -1410,8 +1410,19 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
      */
     private function validateBulkConnectPayload(array $payload): array
     {
-        $firstGroupCode = trim((string) ($payload['first_product_group_code'] ?? ''));
-        if ($firstGroupCode === '' || ! in_array($firstGroupCode, ProductType::allowedValues(), true)) {
+        // 允许白名单枚举与历史遗留 code（如 vps/domain/other）两种形态：
+        // 归一化值（cloud_server 等）与原始 code 互为映射，校验前先尝试归一化，
+        // 归一化后不在白名单则回退用原始值比对，避免把合法分类误判为非法。
+        $rawGroupCode = trim((string) ($payload['first_product_group_code'] ?? ''));
+        $firstGroupCode = in_array($rawGroupCode, ProductType::allowedValues(), true)
+            ? $rawGroupCode
+            : ProductType::normalizeBusinessValueFromMenuCode($rawGroupCode);
+
+        if (
+            $firstGroupCode === ''
+            || (! in_array($firstGroupCode, ProductType::allowedValues(), true)
+                && ! in_array(ProductType::normalizeBusinessValue($firstGroupCode), ProductType::allowedValues(), true))
+        ) {
             throw new BusinessException('请选择有效的商品种类', 42200);
         }
 

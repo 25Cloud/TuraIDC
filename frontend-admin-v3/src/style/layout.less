@@ -42,7 +42,10 @@
 .t-layout.t-layout--with-sider {
   > .t-layout {
     flex: 1;
-    min-width: 760px;
+    // 不设固定 min-width：该值会把顶栏/内容区撑到 760px 宽，
+    // 窄屏下多出的部分被祖先 overflow 裁掉，表现为「顶栏飞出去一节且看不见」。
+    // 交给 flex 自身收缩即可，桌面端布局不受影响。
+    min-width: 0;
   }
 }
 

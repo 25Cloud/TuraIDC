@@ -1845,6 +1845,10 @@
   display: flex;
   overflow: hidden;
   min-height: 420px;
+  // 弹窗内「说明 + 表单 + 穿梭面板 + 底部按钮」叠加后常超出视口，
+  // 只给 min-height 会把整页撑高、必须上下滚动才能看到「执行对接」按钮。
+  // 改为视口相对高度并让面板内部滚动，弹窗外框不再溢出。
+  max-height: min(56vh, 560px);
   border: 1px solid var(--td-component-border);
   border-radius: var(--td-radius-medium);
   background: var(--td-bg-color-container);
@@ -2585,6 +2589,7 @@ button.supplier-tree-node__content {
   .supplier-batch-panel {
     min-height: 0;
     height: auto;
+    max-height: none;
   }
 
   .supplier-tree {
