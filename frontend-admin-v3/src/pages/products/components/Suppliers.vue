@@ -379,16 +379,19 @@
 
   <t-dialog
     v-model:visible="supplierDialogVisible"
+    class="supplier-form-dialog"
     :header="editingSupplier ? '编辑提供商' : '新增提供商'"
     width="620px"
     :confirm-btn="canManageSuppliers ? { content: '保存', loading: supplierSubmitting } : null"
     @confirm="submitSupplier"
   >
+    <!-- 标签在上、输入框在下：字段说明较长（如密钥的 scope 提示），
+         左右两列会把可用宽度压掉一半导致换行错位 -->
     <t-form
       ref="supplierFormRef"
       :data="supplierForm"
       :rules="supplierRules"
-      label-width="110px"
+      label-align="top"
       :disabled="!canManageSuppliers"
     >
       <t-form-item label="插件提供商" name="provider_key">
