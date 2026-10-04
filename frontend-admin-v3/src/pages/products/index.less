@@ -1418,7 +1418,9 @@
 
 .supplier-field-tip {
   /* TDesign 的 .t-form__controls-content 是 display:flex，说明文字与输入框
-     是兄弟节点；不给 flex-basis:100% 就会并排显示在输入框右侧 */
+     是兄弟节点。只给说明文字设 flex-basis:100% 让它换行到下一行；
+     不要给输入框也设 basis:100% —— 两者 basis 都为 100% 时，
+     flex-shrink:0 的说明文字会把可缩的输入框压到接近 0 宽。 */
   flex: 0 0 100%;
   width: 100%;
   margin: var(--td-comp-margin-xs) 0 0;
@@ -1427,14 +1429,19 @@
   line-height: 18px;
 }
 
-/* 输入框占满整行，把说明文字挤到下一行 */
+/* 输入控件：占满整行且允许收缩，避免被上面的说明文字挤压 */
 .supplier-form-dialog .t-form__controls-content > .t-input,
 .supplier-form-dialog .t-form__controls-content > .t-select,
 .supplier-form-dialog .t-form__controls-content > .t-textarea,
-.supplier-form-dialog .t-form__controls-content > .t-switch,
-.supplier-form-dialog .t-form__controls-content > .t-input-number {
-  flex: 1 1 100%;
+.supplier-form-dialog .t-form__controls-content > .t-input-number,
+.supplier-form-dialog .t-form__controls-content > .secret-input {
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+/* 开关保持自身尺寸，不参与整行拉伸 */
+.supplier-form-dialog .t-form__controls-content > .t-switch {
+  flex: 0 0 auto;
 }
 
 .split-product-meta {
