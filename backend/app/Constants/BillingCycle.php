@@ -34,6 +34,14 @@ final class BillingCycle
     public const FREE = 'free';
 
     /**
+     * 试用（上游试用机）。
+     *
+     * 部分上游（如天理云 CDN）下发实例时 billing_cycle 直接给 'ontrial'，
+     * 属于上游协议值而非本站下单枚举，因此不进 RENEWABLE。
+     */
+    public const ON_TRIAL = 'ontrial';
+
+    /**
      * 历史别名 → 规范值。
      *
      * biannually 是早期前端的拼写错误（正确拼写为 semiannually），已落到部分历史数据里，
@@ -46,6 +54,8 @@ final class BillingCycle
         'one-time' => self::ONE_TIME,
         'yearly' => self::ANNUALLY,
         'biannually' => self::SEMIANNUALLY,
+        'on_trial' => self::ON_TRIAL,
+        'trial' => self::ON_TRIAL,
     ];
 
     /** @var array<string, string> */
@@ -58,6 +68,7 @@ final class BillingCycle
         self::TRIENNIALLY => '三年付',
         self::ONE_TIME => '一次性',
         self::FREE => '免费',
+        self::ON_TRIAL => '试用机',
     ];
 
     /**
@@ -74,6 +85,7 @@ final class BillingCycle
         self::TRIENNIALLY => 36,
         self::ONE_TIME => 0,
         self::FREE => 0,
+        self::ON_TRIAL => 0,
     ];
 
     /**
@@ -90,6 +102,7 @@ final class BillingCycle
         self::TRIENNIALLY,
         self::ONE_TIME,
         self::FREE,
+        self::ON_TRIAL,
     ];
 
     /**

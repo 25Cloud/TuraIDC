@@ -164,6 +164,19 @@ export interface ConsoleAreaDescriptor {
   [key: string]: unknown;
 }
 
+/**
+ * 面板入口信息（CDN / 虚拟主机等面板型产品）。
+ * 由后端 PanelAccessExtractor 从上游各种形态归一而来，抽不到的字段为空串。
+ */
+export interface ConsolePanelAccess {
+  panel_url?: string;
+  panel_username?: string;
+  panel_password?: string;
+  panel_type?: string;
+  panel_source?: string;
+  [key: string]: unknown;
+}
+
 export interface ServiceConsoleCapabilities {
   supported?: boolean;
   error?: string;
@@ -207,12 +220,14 @@ export interface ConsoleServiceDetail extends ServiceInstance {
   combined_display_name?: string;
   domain?: string;
   can_manage?: boolean;
+  /** 产品配置的「控制台面板」：compute / port_mapping / cdn */
   console_template?: string;
   console_mode?: string;
   machine_category?: ConsoleMachineCategory | null;
   runtime?: ConsoleRuntimeInfo | null;
   traffic?: ConsoleTrafficInfo | null;
   connection?: ConsoleConnectionInfo | null;
+  panel?: ConsolePanelAccess | null;
   actions?: ConsoleActionFlags | null;
   _sync?: ConsoleSyncMarker | null;
 }

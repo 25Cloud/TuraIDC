@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Admin\V2\ProductGroup;
 
 use App\Http\Requests\Admin\V2\Common\AdminFormRequest;
+use App\Models\Product;
 use Illuminate\Validation\Rule;
 
 class BatchUpdateGroupProductsRequest extends AdminFormRequest
@@ -19,7 +20,7 @@ class BatchUpdateGroupProductsRequest extends AdminFormRequest
         return [
             'group' => ['required', 'integer', 'min:1'],
             'effective_product_group_level' => ['required', 'integer', Rule::in([1, 2, 3])],
-            'console_template' => ['nullable', 'string', Rule::in(['compute', 'port_mapping'])],
+            'console_template' => ['nullable', 'string', Rule::in(Product::CONSOLE_TEMPLATES)],
             'product_discount_group_id' => ['nullable', 'integer', 'min:0'],
             'cpu_model' => ['nullable', 'string', 'max:120'],
             'cpu_turbo' => ['nullable', 'string', 'max:40'],

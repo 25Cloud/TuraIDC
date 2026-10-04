@@ -55,7 +55,12 @@
       <data-state :loading="loading" :empty="!list.length" description="当前还没有任何服务实例">
         <template #default>
           <div v-if="viewMode === 'grid'" class="service-card-grid">
-            <article v-for="item in list" :key="item.id" class="service-row-card">
+            <article
+              v-for="item in list"
+              :key="item.id"
+              class="service-row-card"
+              :class="{ 'is-solo': !actionOptions(item).length }"
+            >
               <div class="service-row-actions service-row-actions--corner">
                 <button
                   type="button"
@@ -66,6 +71,7 @@
                   控制台
                 </button>
                 <t-dropdown
+                  v-if="actionOptions(item).length"
                   trigger="click"
                   :options="actionOptions(item)"
                   @click="(option) => handleDropdownAction(option, item)"
@@ -85,6 +91,7 @@
                     <span class="service-system-loader__ring"></span>
                     <span class="service-system-loader__core"></span>
                   </span>
+                  <cloud-icon v-else-if="isCdnCard(item)" class="service-system-icon__cloud" />
                   <img
                     v-else-if="shouldShowServiceOsIcon(item)"
                     :src="resolveServiceOsIcon(item)"
@@ -126,13 +133,28 @@
                       </div>
                     </div>
 
-                    <div class="service-spec-line">
+                    <div v-if="isCdnCard(item)" class="service-spec-line">
+                      <span v-if="resolveCdnSpec(item).nodes">节点数 {{ resolveCdnSpec(item).nodes }}</span>
+                      <span v-if="resolveCdnSpec(item).region">
+                        节点区域 {{ resolveCdnSpec(item).region }}
+                      </span>
+                      <span v-if="!hasCdnSpec(item)" class="service-spec-empty">CDN 加速实例</span>
+                    </div>
+                    <div v-else class="service-spec-line">
                       <span>CPU {{ findListSpecValue(item, ['CPU', '核心']) }}</span>
                       <span>内存 {{ findListSpecValue(item, ['内存', 'RAM']) }}</span>
                       <span>带宽 {{ resolveListBandwidthText(item) }}</span>
                     </div>
 
-                    <div class="service-expire-line" :class="{ warning: isExpiringSoon(item.expires_at) }">
+                    <div
+                      v-if="isCdnCard(item)"
+                      class="service-expire-line is-cdn"
+                      :class="{ warning: isExpiringSoon(item.expires_at) }"
+                    >
+                      <span>计费方式：{{ item.billing_cycle_label || '试用机' }}</span>
+                      <span v-if="item.expires_at">到期 {{ item.expires_at }}</span>
+                    </div>
+                    <div v-else class="service-expire-line" :class="{ warning: isExpiringSoon(item.expires_at) }">
                       到期时间：{{ item.expires_at || '长期有效' }}
                     </div>
                   </div>
@@ -142,7 +164,14 @@
                       {{ resolveRuntimeStatusLabel(item) }}
                     </t-tag>
 
-                    <div class="service-ip-line">
+                    <div v-if="isCdnCard(item)" class="service-ip-line">
+                      <span class="service-ip-label">流量</span>
+                      <span class="service-ip-button is-static">
+                        {{ resolveListTrafficText(item) || '--' }}
+                      </span>
+                    </div>
+
+                    <div v-else class="service-ip-line">
                       <span class="service-ip-label">公网 IP</span>
                       <button
                         type="button"
@@ -169,8 +198,9 @@
               <template #service="{ row }">
                 <div class="service-table-service">
                   <div class="service-system-icon">
+                    <cloud-icon v-if="isCdnCard(row)" class="service-system-icon__cloud" />
                     <img
-                      v-if="shouldShowServiceOsIcon(row)"
+                      v-else-if="shouldShowServiceOsIcon(row)"
                       :src="resolveServiceOsIcon(row)"
                       :alt="String(resolveServiceOsText(row) || resolveServiceName(row))"
                       class="service-system-icon__image"
@@ -198,7 +228,12 @@
                 </div>
               </template>
               <template #specs="{ row }">
-                <div class="service-table-specs">
+                <div v-if="isCdnCard(row)" class="service-table-specs">
+                  <span v-if="resolveCdnSpec(row).nodes">节点数 {{ resolveCdnSpec(row).nodes }}</span>
+                  <span v-if="resolveCdnSpec(row).region">节点区域 {{ resolveCdnSpec(row).region }}</span>
+                  <span v-if="!hasCdnSpec(row)" class="service-spec-empty">CDN 加速实例</span>
+                </div>
+                <div v-else class="service-table-specs">
                   <span>CPU {{ findListSpecValue(row, ['CPU', '核心']) }}</span>
                   <span>内存 {{ findListSpecValue(row, ['内存', 'RAM']) }}</span>
                   <span>带宽 {{ resolveListBandwidthText(row) }}</span>
@@ -215,7 +250,11 @@
                 }}</t-tag>
               </template>
               <template #ip="{ row }">
+                <span v-if="isCdnCard(row)" class="service-table-traffic">
+                  {{ resolveListTrafficText(row) || '--' }}
+                </span>
                 <t-button
+                  v-else
                   variant="text"
                   size="small"
                   :disabled="!(row.upstream?.dedicated_ip && row.upstream.dedicated_ip !== '--')"
@@ -228,6 +267,7 @@
                 <t-space>
                   <t-button size="small" theme="primary" variant="outline" @click="openDetail(row.id)">控制台</t-button>
                   <t-dropdown
+                    v-if="actionOptions(row).length"
                     trigger="click"
                     :options="actionOptions(row)"
                     @click="(option) => handleDropdownAction(option, row)"
@@ -337,16 +377,19 @@
 <script setup lang="ts">
 import DataState from '@shared/user-v3/components/DataState.vue';
 import LoadingState from '@shared/user-v3/components/LoadingState.vue';
-import { CatalogIcon, DashboardIcon, EditIcon, SearchIcon } from 'tdesign-icons-vue-next';
+import { CatalogIcon, CloudIcon, DashboardIcon, EditIcon, SearchIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { shallowRef, triggerRef } from 'vue';
 
 import {
   findListSpecValue,
   formatMoney,
+  isCdnListItem,
   isExpiringSoon,
   isProvisioningService,
   resolveListBandwidthText,
+  resolveListCdnSpecText,
+  resolveListTrafficText,
   resolveRuntimeStatusLabel,
   resolveServiceMark,
   resolveServiceName,
@@ -396,7 +439,23 @@ function resolveServiceIconKey(item: Record<string, any>) {
   return `${item?.id || ''}:${resolveServiceOsText(item)}`;
 }
 
+/** CDN 卡片：摘要行与底部流量都走CDN 语义，不展示 CPU / 内存 / 公网 IP */
+function isCdnCard(item: Record<string, any>) {
+  return isCdnListItem(item);
+}
+
+function resolveCdnSpec(item: Record<string, any>) {
+  return resolveListCdnSpecText(item);
+}
+
+function hasCdnSpec(item: Record<string, any>) {
+  const spec = resolveListCdnSpecText(item);
+  return Boolean(spec.nodes || spec.region);
+}
+
 function shouldShowServiceOsIcon(item: Record<string, any>) {
+  // CDN 没有操作系统概念，上游可能回填宿主OS，一律不显示 OS 图标
+  if (isCdnListItem(item)) return false;
   return Boolean(resolveServiceOsIcon(item)) && !failedServiceOsIconKeys.value.has(resolveServiceIconKey(item));
 }
 
@@ -411,7 +470,7 @@ const columns: PrimaryTableCol[] = [
   { colKey: 'specs', title: '配置摘要', minWidth: '14rem' },
   { colKey: 'expires', title: '到期时间', minWidth: '10rem' },
   { colKey: 'status', title: '状态', width: '8rem' },
-  { colKey: 'ip', title: '公网 IP', minWidth: '10rem' },
+  { colKey: 'ip', title: 'IP / 流量', minWidth: '10rem' },
   { colKey: 'operation', title: '操作', width: '13rem', fixed: 'right', align: 'right' },
 ];
 
@@ -427,12 +486,28 @@ function handleDropdownAction(option: unknown, target: Parameters<typeof handleS
   return handleServiceAction(resolveDropdownValue(option), target);
 }
 
+/**
+ * 单条服务的操作菜单。
+ *
+ * 试用机（ontrial）不可续费、无账单时返回空数组 —— 模板侧据此隐藏「更多」，
+ * 不渲染一个点开什么都没有的空下拉。
+ */
 function actionOptions(item: Record<string, any>) {
-  const options = [{ content: '立即续费', value: 'renew' }];
+  const options: { content: string; value: string }[] = [];
+  if (resolveBillingCycleValue(item) !== 'ontrial') {
+    options.push({ content: '立即续费', value: 'renew' });
+  }
   if (item.invoice?.id) {
     options.push({ content: '账单详情', value: 'invoice' });
   }
   return options;
+}
+
+/** 取归一后的计费周期原始值（不取 label，label 已被本地化成中文） */
+function resolveBillingCycleValue(item: Record<string, any>) {
+  return String(item?.billing_cycle || '')
+    .trim()
+    .toLowerCase();
 }
 </script>
 <style scoped lang="less">
@@ -472,22 +547,34 @@ function actionOptions(item: Record<string, any>) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(24rem, 1fr));
   justify-content: stretch;
+  align-items: start; // 卡片高度按内容自适应，不再强行等高，避免底部留白
   gap: var(--td-comp-margin-m);
 }
 
 .service-row-card {
   position: relative;
   width: 100%;
-  aspect-ratio: 389 / 187;
+  // 不用 aspect-ratio 锁死宽高比：卡片内容高度随产品类型变化
+  // （CDN 的加速区域列表可能换行两行、还多一行计费方式），
+  // 固定比例 + overflow:hidden 会把底部状态标签与流量直接裁掉。
+  min-height: 11.6875rem; // = 187/16，与原 aspect-ratio 的等效高度
   padding: 1rem 1.125rem 0.875rem;
   border: 0.0625rem solid var(--td-component-stroke);
   border-radius: var(--td-radius-large);
   background: var(--td-bg-color-container);
   box-shadow: var(--td-shadow-1);
   overflow: hidden;
+  // 标题行要给右上角绝对定位的按钮让位，默认「控制台 + 更多」两个按钮的宽度；
+  // 只有一个按钮时由卡片的 is-solo 修饰类收窄。
+  --service-corner-width: 7.25rem;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
+
+  /* 无「更多」菜单时（试用机既不能续费也没有账单）只留「控制台」，少让一截 */
+  &.is-solo {
+    --service-corner-width: 4.25rem;
+  }
 
   &:hover {
     border-color: var(--td-brand-color-focus);
@@ -565,6 +652,13 @@ function actionOptions(item: Record<string, any>) {
   object-fit: cover;
 }
 
+/* CDN 用云朵图标，跟后台一级分类的「云服务」保持同一视觉 */
+.service-system-icon__cloud {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--td-brand-color);
+}
+
 .service-system-icon__fallback {
   color: var(--td-brand-color);
   font-size: 1.125rem;
@@ -621,6 +715,10 @@ function actionOptions(item: Record<string, any>) {
 .service-row-topline {
   align-items: flex-start;
   gap: 0.75rem;
+  // 「控制台 / 更多」绝对定位在卡片右上角，只有标题行需要让出这条宽度。
+  // 让位放在 .service-row-head 上会把整个正文区（含摘要行、到期行）一起压窄，
+  // 导致「节点区域」这类长文本被挤成逐字换行的窄柱。
+  padding-right: var(--service-corner-width, 7.25rem);
 }
 
 .service-row-titleblock {
@@ -632,7 +730,8 @@ function actionOptions(item: Record<string, any>) {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  // 不换行：标题压缩后与 ID 徽标始终同一行，标题过长时省略号截断
+  flex-wrap: nowrap;
   min-width: 0;
 }
 
@@ -651,6 +750,11 @@ function actionOptions(item: Record<string, any>) {
 .service-name-button {
   display: block;
   max-width: 100%;
+  // 允许在flex 行内被压缩，配合 ellipsis 截断；
+  // 缺 min-width:0 时 flex 子项不会缩到内容宽度以下，文字会溢出压到「控制台」按钮上
+  min-width: 0;
+  // 占满剩余宽度，把 ID 徽标顶到右侧；窄卡片下先压缩标题而不是挤掉 ID
+  flex: 1 1 auto;
   color: var(--td-text-color-primary);
   font-size: 0.875rem;
   font-weight: 700;
@@ -664,6 +768,7 @@ function actionOptions(item: Record<string, any>) {
 .service-row-id {
   display: inline-flex;
   align-items: center;
+  flex: none; // ID 徽标不参与压缩，压缩交给标题文字
   min-height: 1.25rem;
   padding: 0 0.4375rem;
   border-radius: 62.4375rem;
@@ -764,6 +869,9 @@ function actionOptions(item: Record<string, any>) {
     font-size: 0.75rem;
     font-weight: 600;
   }
+
+  /* CDN 摘要保持流式换行：节点地区是一串很长的列表，
+     强行分两列会把它压成逐字换行的窄柱。 */
 }
 
 .service-expire-line {
@@ -774,6 +882,19 @@ function actionOptions(item: Record<string, any>) {
   &.warning {
     color: var(--td-warning-color);
     font-weight: 600;
+  }
+
+  /* CDN 到期行拆成「计费方式 / 到期时间」两项，跟随内容左对齐排列 */
+  &.is-cdn {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.875rem;
+
+    span:first-child {
+      flex: none;
+      font-weight: 600;
+    }
   }
 }
 
@@ -820,6 +941,23 @@ function actionOptions(item: Record<string, any>) {
     color: var(--td-text-color-placeholder);
     cursor: default;
   }
+
+  /* CDN 卡片底部展示流量，不是可复制按钮 */
+  &.is-static {
+    cursor: default;
+    color: var(--td-text-color-primary);
+  }
+}
+
+/* CDN 摘要行：规格取不到时的兜底文案 */
+.service-spec-empty {
+  color: var(--td-text-color-placeholder);
+}
+
+.service-table-traffic {
+  color: var(--td-text-color-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .service-table-card {
@@ -994,6 +1132,11 @@ function actionOptions(item: Record<string, any>) {
     gap: 0.625rem;
   }
 
+  .service-system-icon__cloud {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
   .service-row-topline {
     gap: 0.5rem;
   }
@@ -1008,6 +1151,15 @@ function actionOptions(item: Record<string, any>) {
     height: 1.75rem;
     padding: 0 0.5625rem;
     font-size: 0.6875rem;
+  }
+
+  // 移动端按钮更窄，标题行的让位宽度同步收窄
+  .service-row-card {
+    --service-corner-width: 6.5rem;
+
+    &.is-solo {
+      --service-corner-width: 4rem;
+    }
   }
 
   .service-spec-line {

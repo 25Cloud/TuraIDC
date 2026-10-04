@@ -7,6 +7,19 @@
             <template #icon><refresh-icon /></template>
             刷新
           </t-button>
+          <!-- 面板型产品的跳转按钮在 iframe 内，上游脚本用 window.open 打开第三方面板。
+               跨域 iframe 里的 window.open 常被浏览器当作无用户手势直接拦掉，
+               表现为「点了没反应」。这里由父页面直接代开，绕开 iframe 的弹窗限制。 -->
+          <t-button
+            v-if="panelEntryUrl"
+            variant="outline"
+            size="small"
+            theme="primary"
+            @click="openPanelEntry"
+          >
+            <template #icon><jump-icon /></template>
+            进入面板
+          </t-button>
           <t-button variant="outline" size="small" @click="openInNewWindow">
             <template #icon><jump-icon /></template>
             新窗口打开
@@ -18,6 +31,7 @@
         <iframe
           v-if="frameSrc && !errorText"
           :key="frameSrc"
+          ref="frameRef"
           class="area-frame"
           :src="frameSrc"
           :title="panelTitle"
@@ -46,7 +60,7 @@
 </template>
 <script setup lang="ts">
 import { JumpIcon, RefreshIcon } from 'tdesign-icons-vue-next';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 import { resolveErrorMessage } from '../composables/useConsoleCore';
 import { useServiceConsoleContext } from '../context';
@@ -63,7 +77,7 @@ interface TicketEntry {
 // 票据按服务缓存（内容接口本身不区分模块），多个自定义 tab 切换时可复用，避免频繁签发触发限流
 const ticketCache = new Map<number, TicketEntry>();
 
-const { serviceId, activeTab, consoleAreaLabels, consoleApi } = useServiceConsoleContext();
+const { serviceId, activeTab, consoleAreaLabels, consoleApi, detail } = useServiceConsoleContext();
 
 const loading = ref(false);
 const errorText = ref('');
@@ -71,6 +85,21 @@ const ticket = ref('');
 const loadingToken = ref(0);
 // 面板内容是否已真正渲染出来（iframe load：含其子资源加载完成）
 const frameLoaded = ref(false);
+// 用于校验 postMessage 来源，避免任意窗口借桥接打开外部地址
+const frameRef = ref<HTMLIFrameElement | null>(null);
+
+/**
+ * 面板入口地址（面板型产品）。
+ * 后端 PanelAccessExtractor 从上游自定义区域解析而来，
+ * 这里的 iframe 之外再给一个父页面级入口，规避 iframe 内 window.open 被拦。
+ */
+const panelEntryUrl = computed(() => String(detail.value?.panel?.panel_url || '').trim());
+
+function openPanelEntry() {
+  if (panelEntryUrl.value) {
+    window.open(panelEntryUrl.value, '_blank', 'noopener,noreferrer');
+  }
+}
 
 const moduleKey = computed(() => String(activeTab.value || '').trim());
 const panelTitle = computed(() =>
@@ -142,6 +171,50 @@ function openInNewWindow() {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 }
+
+/**
+ * 接住 iframe 内 window.open 的桥接请求。
+ *
+ * iframe 与控制台不同源，跨源弹窗会被浏览器静默拦掉（面板里「跳转到面板」
+ * 点了没反应就是这个原因）。后端在注入运行时里包装了 window.open，
+ * 把地址 postMessage 过来，这里以父页面的用户手势代开并回执。
+ * 只放行 http/https 绝对地址。
+ */
+const POPUP_BRIDGE_EVENT = 'tura:open-url';
+
+function handleBridgeMessage(event: MessageEvent) {
+  // 只接受本组件 iframe 发来的消息：监听器挂在 window 上，
+  // 同页任意窗口（包括被面板打开的第三方页面）都能发 postMessage，
+  // 不校验来源等于把「代开任意网址」的能力交给了任何页面。
+  const frame = frameRef.value;
+  if (!frame || event.source !== frame.contentWindow) return;
+
+  const data = event.data as { type?: string; id?: string; url?: string } | null;
+  if (!data || data.type !== POPUP_BRIDGE_EVENT || !data.url) return;
+
+  let href = '';
+  try {
+    const parsed = new URL(String(data.url));
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return;
+    href = parsed.href;
+  } catch {
+    return;
+  }
+
+  window.open(href, '_blank', 'noopener,noreferrer');
+
+  if (data.id) {
+    try {
+      // iframe 内容与本站同源（走本地代理下发），但运行时无法静态确认，保留 '*' 并只回传 id
+      (event.source as Window | null)?.postMessage({ type: `${POPUP_BRIDGE_EVENT}:ack`, id: data.id }, '*');
+    } catch {
+      // 回执失败不处理：iframe 侧有 1.2s 兜底会自行打开
+    }
+  }
+}
+
+onMounted(() => window.addEventListener('message', handleBridgeMessage));
+onUnmounted(() => window.removeEventListener('message', handleBridgeMessage));
 
 watch(
   () => serviceId.value,

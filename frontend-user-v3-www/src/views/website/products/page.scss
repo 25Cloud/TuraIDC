@@ -1032,6 +1032,20 @@
   color: $text-color-secondary;
 }
 
+/* 购买须知：文字提示型配置项，只展示不参与选配 */
+.notice-row {
+  align-items: flex-start;
+}
+
+.notice-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #c45656;
+  word-break: break-word;
+}
+
 .spec-fixed {
   display: inline-flex;
   align-items: center;

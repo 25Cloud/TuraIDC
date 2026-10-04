@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductSiteService;
 use App\Services\ProductCatalog\ProductSpecHighlightService;
+use App\Support\ProductConfigOptionPresenter;
 use App\Support\ProductGroupHierarchyFields;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -163,6 +164,10 @@ class SiteProductDetailResource extends JsonResource
             return [];
         }
 
+        // 历史商品的 config_options 仍是旧结构（缺 option_mode/text_content/qty_step），
+        // 读取时补齐，避免要求用户逐个商品重新拉一次模板。
+        $configOptions = ProductConfigOptionPresenter::present($configOptions);
+
         return collect($configOptions)
             ->filter(fn (mixed $item): bool => is_array($item))
             ->map(function (array $item, int $index): array {
@@ -184,7 +189,11 @@ class SiteProductDetailResource extends JsonResource
                     'qty_maximum' => $clean['qty_maximum'] ?? null,
                     'qty_step' => $clean['qty_step'] ?? null,
                     'qty_stage' => $clean['qty_stage'] ?? null,
+                    'unit' => trim((string) ($clean['unit'] ?? '')),
                     'suffix_text' => trim((string) ($clean['suffix_text'] ?? '')),
+                    // 提示型配置项（option_mode=text）的展示文案，供前台渲染购买须知
+                    'text_content' => trim((string) ($clean['text_content'] ?? '')),
+                    'submit_field' => trim((string) ($clean['submit_field'] ?? $clean['field'] ?? '')),
                     'sub' => $this->trimSubOptions($clean['sub'] ?? []),
                 ];
             })
@@ -208,6 +217,10 @@ class SiteProductDetailResource extends JsonResource
                     'label' => trim((string) ($clean['label'] ?? '')),
                     'version' => trim((string) ($clean['version'] ?? '')),
                     'option_name' => trim((string) ($clean['option_name'] ?? '')),
+                    // 真实传参值：上游 parameter 里的值，提交给上游用；
+                    // 不能只给 sub 的自增 id，否则前台会把 id 当参数提交。
+                    'value' => trim((string) ($clean['value'] ?? $clean['option_name_first'] ?? '')),
+                    'option_name_first' => trim((string) ($clean['option_name_first'] ?? '')),
                     'hidden' => (int) ($clean['hidden'] ?? 0),
                     'sort_order' => (int) ($clean['sort_order'] ?? $clean['order'] ?? $index),
                     'qty_minimum' => $clean['qty_minimum'] ?? null,

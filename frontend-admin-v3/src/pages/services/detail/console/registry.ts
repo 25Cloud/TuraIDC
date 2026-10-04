@@ -6,6 +6,7 @@ import {
   DesktopIcon,
   ForwardIcon,
   LockOnIcon,
+  ServerIcon,
 } from 'tdesign-icons-vue-next';
 import type { Component } from 'vue';
 
@@ -15,6 +16,7 @@ import LogsTab from './tabs/LogsTab.vue';
 import MonitorTab from './tabs/MonitorTab.vue';
 import NatTab from './tabs/NatTab.vue';
 import OverviewTab from './tabs/OverviewTab.vue';
+import PanelTab from './tabs/PanelTab.vue';
 import SecurityTab from './tabs/SecurityTab.vue';
 import VncTab from './tabs/VncTab.vue';
 
@@ -26,6 +28,7 @@ export interface ServiceConsoleNavItem {
 
 const consoleTabMeta: Record<string, Omit<ServiceConsoleNavItem, 'key'>> = {
   overview: { label: '控制台总览', icon: DashboardIcon },
+  panel: { label: '产品配置', icon: ServerIcon },
   monitor: { label: '监控信息', icon: ChartLineDataIcon },
   security: { label: '安全组', icon: LockOnIcon },
   nat: { label: '端口转发', icon: ForwardIcon },
@@ -36,6 +39,7 @@ const consoleTabMeta: Record<string, Omit<ServiceConsoleNavItem, 'key'>> = {
 
 export const consoleTabComponents: Record<string, Component> = {
   overview: OverviewTab,
+  panel: PanelTab,
   monitor: MonitorTab,
   security: SecurityTab,
   nat: NatTab,

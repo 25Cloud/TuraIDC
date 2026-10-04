@@ -262,7 +262,9 @@ const canEditCurrentRole = computed(() => canManage.value && !currentRoleLocked.
 const selectedPermissionCount = computed(() =>
   hasAllPermissionSelected.value ? permissions.value.length : form.permissions.length,
 );
-const dialogConfirmBtn = computed(() => (canEditCurrentRole.value ? { content: '保存', theme: 'primary' } : null));
+const dialogConfirmBtn = computed(() =>
+  canEditCurrentRole.value ? { content: '保存', theme: 'primary' as const } : null,
+);
 const permissionMap = computed(() => new Map(permissions.value.map((item) => [item.key, item])));
 const filteredPermissions = computed(() => {
   const keywordValue = permissionKeyword.value.trim().toLowerCase();

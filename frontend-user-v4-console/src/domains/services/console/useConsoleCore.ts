@@ -158,6 +158,33 @@ export function isNatConsole(detail: ConsoleServiceDetail): boolean {
   return consoleTemplate === 'port_mapping';
 }
 
+/**
+ * CDN 专属控制台判定。
+ *
+ * 优先读产品上配置的「控制台面板」（console_template），这是运营在后台手动选的；
+ * 没配时才按机器分类 / 产品类型兜底，避免历史数据（console_template 为空）切不到 CDN 控制台。
+ */
+export function isCdnConsole(detail: ConsoleServiceDetail): boolean {
+  const consoleTemplate = String(detail.console_template || detail.product?.console_template || '')
+    .trim()
+    .toLowerCase();
+  if (consoleTemplate === 'cdn') return true;
+  if (consoleTemplate === 'compute' || consoleTemplate === 'port_mapping') return false;
+
+  const categoryKey = String(detail.machine_category?.key || '')
+    .trim()
+    .toLowerCase();
+  if (categoryKey === 'cdn') return true;
+
+  const productType = String(
+    (detail as { product_type?: string }).product_type || (detail.product as { type?: string } | undefined)?.type || '',
+  )
+    .trim()
+    .toLowerCase();
+
+  return productType === 'cdn';
+}
+
 export interface ResolvedConsoleTabs {
   keys: string[];
   /** 自定义区域 tab 的中文名（key -> name），供侧边栏与页签标题展示 */
@@ -166,6 +193,9 @@ export interface ResolvedConsoleTabs {
 
 /** 面板型产品（CDN / 虚拟主机）：控制能力全部由上游自定义区域交付。 */
 export function isPanelConsole(detail: ConsoleServiceDetail): boolean {
+  // CDN 控制台同样按面板型裁剪：没有监控/安全组/VNC，操作入口全在自定义区域
+  if (isCdnConsole(detail)) return true;
+
   const categoryKey = String(detail.machine_category?.key || '')
     .trim()
     .toLowerCase();
@@ -236,7 +266,9 @@ export function findSpecValue(detail: Ref<ConsoleServiceDetail>, aliases: string
     const token = normalizeToken(alias);
     const matched = specs.find((spec) => {
       const keys = [spec.key, spec.label].map(normalizeToken);
-      return keys.some((item) => item.includes(token) || token.includes(item));
+      // 空白 key / label 要先剔除：token.includes('') 恒为 true，
+      // 不剔除会让没有 key 的规格被当成命中第一个别名的项。
+      return keys.some((item) => item !== '' && (item.includes(token) || token.includes(item)));
     });
     const value = String(matched?.value || '').trim();
     if (value) return value;

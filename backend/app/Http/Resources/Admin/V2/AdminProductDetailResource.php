@@ -10,6 +10,7 @@ use App\Models\ProductUpstreamBinding;
 use App\Models\Supplier;
 use App\Models\SupplierPluginBinding;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
+use App\Support\ProductConfigOptionPresenter;
 use App\Support\ProductGroupHierarchyFields;
 use App\Support\ProductProvisionHostname;
 use Illuminate\Http\Request;
@@ -53,7 +54,11 @@ class AdminProductDetailResource extends JsonResource
             ],
             'configuration' => [
                 'console_template' => $product->console_template,
-                'config_options' => $this->removeSensitiveKeys((array) ($product->config_options ?? [])),
+                // 历史商品的 config_options 仍是旧结构（缺 option_mode/text_content/qty_step），
+                // 后台「编辑商品」读取时补齐，弹窗里才能正确显示类型、滑块范围与提示文案。
+                'config_options' => $this->removeSensitiveKeys(
+                    ProductConfigOptionPresenter::present((array) ($product->config_options ?? []))
+                ),
                 'cpu_model' => (string) ($product->cpu_model ?? ''),
                 'cpu_turbo' => (string) ($product->cpu_turbo ?? ''),
             ],

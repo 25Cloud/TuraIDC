@@ -998,6 +998,21 @@
               </div>
             </div>
 
+            <!-- 购买须知：上游以普通配置项下发的文字提示（如「明确禁止」），只展示不参与选配 -->
+            <div class="config-block" v-if="noticeConfigs.length">
+              <div class="config-block-title">购买须知</div>
+              <div class="spec-list">
+                <div
+                  class="spec-row notice-row"
+                  v-for="cfg in noticeConfigs"
+                  :key="cfg.key"
+                >
+                  <span class="spec-label" v-if="cfg.label">{{ cfg.label }}</span>
+                  <div class="notice-text">{{ cfg.textContent }}</div>
+                </div>
+              </div>
+            </div>
+
             <!-- 基础设置 -->
             <div class="config-block">
               <div class="config-block-title">基础设置</div>
@@ -1768,6 +1783,7 @@ const {
   machineConfigs,
   networkConfigs,
   otherConfigs,
+  noticeConfigs,
   pricingEntries,
   baseAmount,
   setupFee,
