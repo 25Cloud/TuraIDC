@@ -83,6 +83,11 @@ class ServiceConsoleAreaService
             $modules = $this->detailService->fetchSupportedModules($supplier, $hostId, $jwt);
 
             $capabilities = $this->deriveModuleCapabilities($modules, $hostId);
+
+            // 部分上游（如天理云 CDN）只在 host/header 的 module_client_area 里声明自定义区域，
+            // supported_modules 端点并不包含它。不补这一刀，商家给的页面就永远不会被渲染出来。
+            $this->mergeHeaderClientAreas($capabilities, $runtime, $supplier, $hostId, $jwt);
+
             $capabilities['supported'] = true;
             $capabilities['fetchable'] = is_callable([$runtime, 'fetchCustomModulePage']);
 
@@ -415,9 +420,60 @@ class ServiceConsoleAreaService
         ];
     }
 
+    /**
+     * 把 host/header 的 module_client_area 补进能力列表。
+     *
+     * 为什么要补：部分上游（天理云 CDN 实测）只在 host/header 的 module_client_area
+     * 里声明自定义区域，fetchSupportedModules() 走的另一个端点并不包含它。
+     * 不补这一刀，商家提供的页面就永远不会被渲染出来。
+     *
+     * 已在 areas 里的 key 会跳过，两处数据同时存在时以模块列表为准（它带 select 归一信息）。
+     *
+     * @param  array<string, mixed>  $capabilities
+     */
+    private function mergeHeaderClientAreas(
+        array &$capabilities,
+        object $runtime,
+        Supplier $supplier,
+        int $hostId,
+        string $jwt
+    ): void {
+        if (! is_callable([$runtime, 'getHostHeaderPayload'])) {
+            return;
+        }
+
+        $header = $runtime->getHostHeaderPayload($supplier, $hostId, $jwt);
+        $areas = is_array($header['module_client_area'] ?? null) ? $header['module_client_area'] : [];
+
+        if ($areas === []) {
+            return;
+        }
+
+        $existing = [];
+        foreach ((array) ($capabilities['areas'] ?? []) as $area) {
+            if (is_array($area) && trim((string) ($area['key'] ?? '')) !== '') {
+                $existing[trim((string) $area['key'])] = true;
+            }
+        }
+
+        foreach ($areas as $area) {
+            $key = is_array($area) ? trim((string) ($area['key'] ?? '')) : trim((string) $area);
+            $name = is_array($area) ? trim((string) ($area['name'] ?? '')) : '';
+
+            if ($key === '' || $key === 'overview' || isset($existing[$key])) {
+                continue;
+            }
+
+            $existing[$key] = true;
+            $capabilities['areas'][] = [
+                'key' => $key,
+                'name' => $name !== '' ? $name : $key,
+            ];
+        }
+    }
+
     private function matchesNatModule(string $function, string $name, string $type): bool
-    {
-        $text = $this->normalizeKeywordText(implode(' ', array_filter([$function, $name])));
+    {        $text = $this->normalizeKeywordText(implode(' ', array_filter([$function, $name])));
 
         if ($text === '') {
             return false;

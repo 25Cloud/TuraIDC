@@ -17,6 +17,7 @@ use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\System\SettingService;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\ProviderResolver;
+use App\Support\PanelAccessExtractor;
 use App\Support\ServiceHostname;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -219,6 +220,7 @@ class ServiceTransformService
         $trafficPackageEnabled = $this->canExposeTrafficPackage($service, $trafficPayload);
         $productDisplayName = $this->resolveProductDisplayName($service);
         $instanceName = ServiceHostname::resolveInstanceName($service, $provisionData, $host);
+        $panel = $this->resolvePanelAccess($host, $provisionData, $specConfigOptions);
 
         return [
             'id' => $service->id,
@@ -301,6 +303,7 @@ class ServiceTransformService
                 'nat_remote_checked_at' => $natRemote['checked_at'],
             ],
             'specs' => $this->buildSpecs($host, $provisionData, $specConfigOptions),
+            'panel' => $panel,
             'traffic' => $trafficPayload,
             'actions' => $this->buildConsoleActions(
                 $service,
@@ -1759,5 +1762,35 @@ class ServiceTransformService
         }
 
         return '';
+    }
+
+    /**
+     * 汇总面板入口信息。
+     *
+     * CDN / 虚拟主机这类面板型产品没有云主机的开关机、重装、VNC，
+     * 用户真正关心的是「去哪登录、账号密码是多少」。
+     * 各家商家摆放面板信息的位置差异很大（配置项键值对、host_data 字段、
+     * 内嵌 HTML 片段），统一交给 PanelAccessExtractor 归一，
+     * 抽不到就返回空数组，前端退化为空状态即可。
+     *
+     * @param  array<string, mixed>  $host
+     * @param  array<string, mixed>  $provisionData
+     * @param  array<int, mixed>  $configOptions
+     * @return array<string, string>
+     */
+    private function resolvePanelAccess(array $host, array $provisionData, array $configOptions): array
+    {
+        $hostConfigOptions = is_array($provisionData['host_config_option'] ?? null)
+            ? $provisionData['host_config_option']
+            : [];
+
+        $panel = PanelAccessExtractor::extract($configOptions, $host, $hostConfigOptions);
+
+        // 四个字段全空说明这家上游压根没给面板信息，不下发空壳结构
+        return $panel === [] || ($panel['panel_url'] === ''
+            && $panel['panel_username'] === ''
+            && $panel['panel_password'] === '')
+            ? []
+            : $panel;
     }
 }

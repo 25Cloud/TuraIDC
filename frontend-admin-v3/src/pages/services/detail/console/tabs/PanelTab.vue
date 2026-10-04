@@ -31,7 +31,7 @@
           v-if="trafficPercent !== null"
           class="panel-traffic-progress"
           :percentage="trafficPercent"
-          :theme="progressTheme"
+          :color="isTrafficOverWarning ? 'warning' : 'primary'"
           :label="false"
         />
       </t-card>
@@ -65,7 +65,57 @@
         </div>
       </t-card>
 
-      <!-- 能力开关：CDN 的 WAF / 四层转发 / Websocket 等，值本身就是支持与否 -->
+      <!-- 面板入口：面板型产品没有开关机/重装，用户真正要的是「去哪登录、账号密码是多少」 -->
+      <t-card v-if="panelVisible" class="console-panel" title="面板入口" :bordered="false">
+        <p class="panel-group-hint">{{ panelHint }}</p>
+        <div class="detail-grid detail-grid--info">
+          <info-cell
+            v-if="panelUrl"
+            label="面板地址"
+            :value="panelUrl"
+            copyable
+            @copy="copyText"
+          />
+          <info-cell
+            v-if="panelUsername"
+            label="面板账号"
+            :value="panelUsername"
+            copyable
+            @copy="copyText"
+          />
+          <info-cell
+            v-if="panelPassword"
+            label="面板密码"
+            :value="revealedPassword ? panelPassword : maskPassword(panelPassword)"
+            copyable
+            @copy="copyText"
+          />
+        </div>
+        <template v-if="panelUrl" #actions>
+          <t-button
+            v-if="revealedPassword"
+            variant="outline"
+            size="small"
+            @click="revealedPassword = false"
+          >
+            隐藏密码
+          </t-button>
+          <t-button
+            v-else-if="panelPassword"
+            variant="outline"
+            size="small"
+            @click="revealedPassword = true"
+          >
+            显示密码
+          </t-button>
+          <t-button theme="primary" size="small" @click="openPanel">
+            <template #icon><jump-icon /></template>
+            进入面板
+          </t-button>
+        </template>
+      </t-card>
+
+      <!-- 功能支持：CDN 的 WAF / 四层转发 / Websocket 等，值本身就是支持与否 -->
       <t-card v-if="capabilities.length" class="console-panel" title="功能支持" :bordered="false">
         <div class="panel-capability-grid">
           <div v-for="item in capabilities" :key="item.key" class="panel-capability-item">
@@ -98,7 +148,7 @@
       </t-card>
 
       <t-alert
-        v-if="!groups.length && !capabilities.length"
+        v-if="!groups.length && !capabilities.length && !panelVisible"
         theme="info"
         title="暂无配置数据"
         description="该实例的上游尚未回传配置项，配置详情以上游面板为准。"
@@ -108,8 +158,9 @@
 </template>
 
 <script setup lang="ts">
+import { JumpIcon } from 'tdesign-icons-vue-next';
 import DataState from '@shared/user-v3/components/DataState.vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 import { InfoCell } from '../InfoCell';
 import { useServiceConsoleContext } from '../context';
@@ -117,6 +168,40 @@ import { splitPanelSpecs } from './panelSpecs';
 import type { PanelCapabilityState } from './panelSpecs';
 
 const { detail, detailLoading, serviceId, copyText } = useServiceConsoleContext();
+
+const panel = computed(() => detail.value.panel || {});
+const panelUrl = computed(() => String(panel.value.panel_url || '').trim());
+const panelUsername = computed(() => String(panel.value.panel_username || '').trim());
+const panelPassword = computed(() => String(panel.value.panel_password || '').trim());
+const panelVisible = computed(() => Boolean(panelUrl.value || panelUsername.value || panelPassword.value));
+
+/** 密码默认打码，避免进屏时被旁人看到，也防止截图外泄 */
+const revealedPassword = ref(false);
+
+const PANEL_TYPE_LABELS: Record<string, string> = {
+  cdn: 'CDN 节点调度面板',
+  panel: '主机管理面板',
+  cpanel: 'cPanel 面板',
+  directadmin: 'DirectAdmin 面板',
+  ftp: 'FTP 服务',
+};
+
+const panelHint = computed(() => {
+  const type = String(panel.value.panel_type || '').trim();
+  return type && PANEL_TYPE_LABELS[type] ? PANEL_TYPE_LABELS[type] : '上游厂商提供的独立管理入口';
+});
+
+/** 保留首尾各 2 位，中间固定长度打码，长度不足时全打码 */
+function maskPassword(value: string): string {
+  if (value.length <= 4) return '*'.repeat(value.length);
+  return `${value.slice(0, 2)}${'*'.repeat(Math.max(value.length - 4, 6))}${value.slice(-2)}`;
+}
+
+function openPanel() {
+  if (panelUrl.value) {
+    window.open(panelUrl.value, '_blank', 'noopener,noreferrer');
+  }
+}
 
 /** 面板型产品没有操作系统概念，主机名位置改展示实例业务标识 */
 const primaryHostnameLabel = computed(() => {
@@ -133,7 +218,9 @@ const primaryHostnameValue = computed(() => {
   );
 });
 
-const { capabilities, groups } = computed(() => splitPanelSpecs(detail.value.specs || []));
+const panelSpecs = computed(() => splitPanelSpecs(detail.value.specs || []));
+const capabilities = computed(() => panelSpecs.value.capabilities);
+const groups = computed(() => panelSpecs.value.groups);
 
 const trafficPercent = computed(() => {
   const percent = detail.value.traffic?.usage_percent;
