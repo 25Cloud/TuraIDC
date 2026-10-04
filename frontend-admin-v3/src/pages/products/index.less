@@ -1462,9 +1462,50 @@
 
 .product-name {
   display: flex;
+  // 行向布局：左侧拖拽手柄 + 右侧名称/副标题两行
+  align-items: center;
+  gap: var(--td-comp-margin-s);
+  min-width: 0;
+}
+
+.product-name-main {
+  display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+}
+
+.product-drag {
+  flex: 0 0 auto;
+  width: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--td-text-color-placeholder);
+  font: inherit;
+  font-size: var(--td-font-size-size-3, 14px);
+  letter-spacing: 1px;
+  line-height: 1;
+  opacity: 0;
+  cursor: grab;
+}
+
+.product-drag:active {
+  cursor: grabbing;
+}
+
+.product-drag.is-dragging {
+  opacity: 0.3;
+}
+
+.product-name:hover .product-drag {
+  opacity: 0.75;
+}
+
+// 拖拽经过时的落点提示
+.product-name.is-drop-target {
+  background: var(--td-brand-color-light);
+  border-radius: var(--td-radius-small, 3px);
 }
 
 .product-name strong {

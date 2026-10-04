@@ -458,6 +458,8 @@ export const productApi = {
   toggleStatus: (id: number | string, enabled: boolean) =>
     request.patch({ url: `/v2/admin/products/${id}/status`, data: { enabled } }),
   reorderProduct: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/products/reorders', data }),
+  /** 商品列表拖拽排序：按当前页 id 顺序重排 */
+  sortOrder: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/products/sort-order', data }),
   splitPreview: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/products/split-previews', data }),
   splitProducts: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/products/splits', data }),
   batchUpdateCategory: (data: Record<string, unknown>) =>

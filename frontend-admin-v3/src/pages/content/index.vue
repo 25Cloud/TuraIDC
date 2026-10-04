@@ -160,59 +160,57 @@
       </div>
     </t-card>
 
-    <t-dialog v-model:visible="categoryDialogVisible" header="分类管理" width="880px" :footer="false">
-      <div class="category-dialog">
-        <t-card :bordered="false">
-          <template #title>{{ categoryForm.id ? '编辑分类' : '新增分类' }}</template>
-          <t-form ref="categoryFormRef" :data="categoryForm" :rules="categoryRules" label-align="top">
-            <div class="category-form-grid">
-              <t-form-item label="分类名称" name="name">
-                <t-input v-model="categoryForm.name" placeholder="请输入分类名称" />
-              </t-form-item>
-              <t-form-item label="别名" name="slug">
-                <t-input v-model="categoryForm.slug" placeholder="留空自动生成" />
-              </t-form-item>
-              <t-form-item label="排序值" name="sort_order">
-                <t-input-number v-model="categoryForm.sort_order" :min="0" :max="999999" />
-              </t-form-item>
-              <t-form-item label="状态" name="status">
-                <t-switch v-model="categoryForm.status" :custom-value="[1, 0]" :label="['启用', '停用']" />
-              </t-form-item>
-              <t-form-item class="category-form-span" label="分类说明" name="description">
-                <t-textarea
-                  v-model="categoryForm.description"
-                  :autosize="{ minRows: 3, maxRows: 5 }"
-                  :maxlength="255"
-                />
-              </t-form-item>
-            </div>
-          </t-form>
-          <div class="category-actions">
-            <t-button v-if="categoryForm.id" variant="outline" @click="resetCategoryForm">取消编辑</t-button>
-            <t-button theme="primary" :loading="categorySaving" @click="submitCategory">
-              {{ categoryForm.id ? '保存分类' : '新增分类' }}
-            </t-button>
-            <t-button variant="outline" @click="categoryDialogVisible = false">关闭</t-button>
-          </div>
-        </t-card>
+    <!-- 分类管理：与系统其他管理弹窗保持一致 —— 裸 t-form + 默认 footer，不做左右分栏卡片 -->
+    <t-dialog
+      v-model:visible="categoryDialogVisible"
+      :header="categoryForm.id ? '编辑分类' : '新增分类'"
+      width="520px"
+      :confirm-btn="{ content: categoryForm.id ? '保存' : '新增', loading: categorySaving }"
+      :cancel-btn="{ content: '关闭' }"
+      @confirm="submitCategory"
+      @close="resetCategoryForm"
+    >
+      <t-form ref="categoryFormRef" :data="categoryForm" :rules="categoryRules" label-align="top">
+        <t-form-item label="分类名称" name="name">
+          <t-input v-model="categoryForm.name" placeholder="请输入分类名称" />
+        </t-form-item>
+        <t-form-item label="别名" name="slug">
+          <t-input v-model="categoryForm.slug" placeholder="留空自动生成" />
+        </t-form-item>
+        <t-form-item label="排序值" name="sort_order">
+          <t-input-number v-model="categoryForm.sort_order" :min="0" :max="999999" style="width: 100%" />
+        </t-form-item>
+        <t-form-item label="状态" name="status">
+          <t-switch v-model="categoryForm.status" :custom-value="[1, 0]" :label="['启用', '停用']" />
+        </t-form-item>
+        <t-form-item label="分类说明" name="description">
+          <t-textarea v-model="categoryForm.description" :autosize="{ minRows: 3, maxRows: 5 }" :maxlength="255" />
+        </t-form-item>
+      </t-form>
+    </t-dialog>
 
-        <t-card :bordered="false" :loading="categoryLoading">
-          <template #title>分类列表</template>
-          <t-table row-key="id" :data="categories" :columns="categoryColumns" hover table-layout="fixed">
-            <template #status="{ row }">
-              <t-tag :theme="Number(row.status) === 1 ? 'success' : 'default'" variant="light">
-                {{ Number(row.status) === 1 ? '启用' : '停用' }}
-              </t-tag>
-            </template>
-            <template #actions="{ row }">
-              <t-space size="small">
-                <t-button theme="primary" variant="text" @click="fillCategoryForm(row)">编辑</t-button>
-                <t-button theme="danger" variant="text" @click="handleDeleteCategory(row)">删除</t-button>
-              </t-space>
-            </template>
-          </t-table>
-        </t-card>
-      </div>
+    <!-- 分类列表：独立弹窗，表格列宽收敛避免横向滚动 -->
+    <t-dialog v-model:visible="categoryListDialogVisible" header="分类列表" width="720px" :footer="false">
+      <t-table
+        row-key="id"
+        :data="categories"
+        :columns="categoryColumns"
+        :loading="categoryLoading"
+        hover
+        table-layout="fixed"
+      >
+        <template #status="{ row }">
+          <t-tag :theme="Number(row.status) === 1 ? 'success' : 'default'" variant="light">
+            {{ Number(row.status) === 1 ? '启用' : '停用' }}
+          </t-tag>
+        </template>
+        <template #actions="{ row }">
+          <t-space size="small">
+            <t-button theme="primary" variant="text" @click="openCategoryEditor(row)">编辑</t-button>
+            <t-button theme="danger" variant="text" @click="handleDeleteCategory(row)">删除</t-button>
+          </t-space>
+        </template>
+      </t-table>
     </t-dialog>
   </div>
 </template>
@@ -242,6 +240,7 @@ const loading = ref(false);
 const categoryLoading = ref(false);
 const categorySaving = ref(false);
 const categoryDialogVisible = ref(false);
+const categoryListDialogVisible = ref(false);
 const categoryFormRef = ref<FormInstanceFunctions>();
 const articles = ref<ContentArticleRecord[]>([]);
 const categories = ref<ContentCategoryRecord[]>([]);
@@ -291,12 +290,12 @@ const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'actions', title: '操作', fixed: 'right', width: 130 },
 ];
 const categoryColumns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'name', title: '分类名称', minWidth: 150 },
-  { colKey: 'slug', title: '别名', minWidth: 130 },
-  { colKey: 'status', title: '状态', width: 100 },
-  { colKey: 'sort_order', title: '排序', width: 90 },
-  { colKey: 'articles_count', title: '文章数', width: 90 },
-  { colKey: 'actions', title: '操作', fixed: 'right', width: 130 },
+  { colKey: 'name', title: '分类名称', minWidth: 130 },
+  { colKey: 'slug', title: '别名', minWidth: 120 },
+  { colKey: 'status', title: '状态', width: 80 },
+  { colKey: 'sort_order', title: '排序', width: 70 },
+  { colKey: 'articles_count', title: '文章数', width: 80 },
+  { colKey: 'actions', title: '操作', width: 120 },
 ];
 
 function getBasePath() {
@@ -403,7 +402,14 @@ async function loadAll() {
 }
 
 function openCategoryDialog() {
-  resetCategoryForm();
+  categoryListDialogVisible.value = true;
+  loadCategories();
+}
+
+/** 从分类列表点「编辑」：关闭列表、打开表单并回填 */
+function openCategoryEditor(row: ContentCategoryRecord) {
+  fillCategoryForm(row);
+  categoryListDialogVisible.value = false;
   categoryDialogVisible.value = true;
 }
 
@@ -439,6 +445,7 @@ async function submitCategory() {
       MessagePlugin.success('分类已创建');
     }
     resetCategoryForm();
+    categoryDialogVisible.value = false;
     await Promise.allSettled([loadCategories(), loadArticles()]);
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存分类失败'));
