@@ -1407,18 +1407,34 @@
   font-size: var(--td-font-size-size-2, 13px);
 }
 
+/* 表单已改为 label-align="top"（标签在上、输入框在下），
+   不再需要配合固定 label-width 的 110px 缩进 */
 .supplier-form-help {
-  margin: 0 0 var(--td-comp-margin-s) 110px;
+  margin: 0 0 var(--td-comp-margin-m);
   color: var(--td-text-color-secondary);
   font-size: var(--td-font-size-size-2, 13px);
   line-height: 20px;
 }
 
 .supplier-field-tip {
+  /* TDesign 的 .t-form__controls-content 是 display:flex，说明文字与输入框
+     是兄弟节点；不给 flex-basis:100% 就会并排显示在输入框右侧 */
+  flex: 0 0 100%;
+  width: 100%;
   margin: var(--td-comp-margin-xs) 0 0;
   color: var(--td-text-color-placeholder);
   font-size: var(--td-font-size-size-1, 12px);
   line-height: 18px;
+}
+
+/* 输入框占满整行，把说明文字挤到下一行 */
+.supplier-form-dialog .t-form__controls-content > .t-input,
+.supplier-form-dialog .t-form__controls-content > .t-select,
+.supplier-form-dialog .t-form__controls-content > .t-textarea,
+.supplier-form-dialog .t-form__controls-content > .t-switch,
+.supplier-form-dialog .t-form__controls-content > .t-input-number {
+  flex: 1 1 100%;
+  min-width: 0;
 }
 
 .split-product-meta {
