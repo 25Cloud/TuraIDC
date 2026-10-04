@@ -346,6 +346,17 @@
   max-width: calc(100vw - 32px);
 }
 
+// 新增/编辑供应商弹窗：字段由插件 schema 动态下发，条数不可控，
+// 不限高会顶出视口、下半部分（含「执行对接」等按钮）被遮盖且无法滚动到。
+.supplier-form-dialog .t-dialog {
+  max-width: calc(100vw - 32px);
+}
+
+.supplier-form-dialog .t-dialog__body {
+  max-height: min(72vh, 680px);
+  overflow-y: auto;
+}
+
 .type-manager-dialog .t-dialog__body {
   max-height: min(78vh, 720px);
   overflow: hidden;
@@ -1396,18 +1407,45 @@
   font-size: var(--td-font-size-size-2, 13px);
 }
 
+/* 插件说明紧跟「接口名称」输入框。t-form-item 自带
+   margin-bottom: var(--td-comp-margin-xxl)，用负 margin 抵消后只保留
+   一个小间距，避免与本元素自身的 margin-bottom 叠加出约 40px 空档。 */
 .supplier-form-help {
-  margin: 0 0 var(--td-comp-margin-s) 110px;
-  color: var(--td-text-color-secondary);
-  font-size: var(--td-font-size-size-2, 13px);
-  line-height: 20px;
+  margin: calc(var(--td-comp-margin-xxl) * -1) 0 var(--td-comp-margin-s);
+  color: var(--td-text-color-placeholder);
+  font-size: var(--td-font-size-size-1, 12px);
+  line-height: 18px;
 }
 
 .supplier-field-tip {
+  /* 说明文字独占一行。控件区是 flex 容器，宽度 100% 不足以换行，
+     真正决定换行的是 flex-wrap + flex-basis。 */
+  flex: 0 0 100%;
+  width: 100%;
   margin: var(--td-comp-margin-xs) 0 0;
   color: var(--td-text-color-placeholder);
   font-size: var(--td-font-size-size-1, 12px);
   line-height: 18px;
+}
+
+/* 控件区允许换行，说明文字才能落到下一行 */
+.supplier-form-dialog .t-form__controls-content {
+  flex-wrap: wrap;
+}
+
+/* 输入类控件铺满整行；t-input 组件根元素自身即 .t-input，
+   密钥字段用的 SecretInput 单行分支渲染的也是 t-input */
+.supplier-form-dialog .t-form__controls-content > .t-input,
+.supplier-form-dialog .t-form__controls-content > .t-select,
+.supplier-form-dialog .t-form__controls-content > .t-textarea,
+.supplier-form-dialog .t-form__controls-content > .t-input-number {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+/* 开关保持自身尺寸 */
+.supplier-form-dialog .t-form__controls-content > .t-switch {
+  flex: 0 0 auto;
 }
 
 .split-product-meta {

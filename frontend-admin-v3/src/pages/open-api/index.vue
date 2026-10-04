@@ -107,7 +107,11 @@
             <template #key_name="{ row }">
               <div class="stack-cell">
                 <strong>{{ row.name || '未命名' }}</strong>
-                <span>{{ row.key_prefix }}••••{{ row.secret_last4 }}</span>
+                <!-- key_prefix 是密钥的公开标识（tura_ 前缀），并非密钥本体；
+                     实际凭据是创建时展示一次的 secret，此处仅作识别用。 -->
+                <span :title="`密钥标识 ${row.key_prefix}，实际凭据为创建时展示的完整密钥串`">
+                  {{ row.key_prefix }}••••{{ row.secret_last4 }}
+                </span>
               </div>
             </template>
             <template #owner="{ row }">
