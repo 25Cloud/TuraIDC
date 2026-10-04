@@ -1532,25 +1532,20 @@
   cursor: grabbing;
 }
 
+/* 键盘可达：Tab 聚焦到抓手时保持可见并给出焦点环 */
+.product-drag:focus-visible {
+  opacity: 0.75;
+  outline: 2px solid var(--td-brand-color);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
 .product-drag.is-dragging {
   opacity: 0.3;
 }
 
 .product-name:hover .product-drag {
   opacity: 0.75;
-}
-
-.product-sort-keys {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0;
-  opacity: 0;
-}
-
-.product-name:hover .product-sort-keys,
-.product-sort-keys:focus-within {
-  opacity: 1;
 }
 
 // 拖拽经过时的落点提示

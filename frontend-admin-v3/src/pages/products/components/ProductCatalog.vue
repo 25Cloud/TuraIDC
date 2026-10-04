@@ -252,37 +252,17 @@
                   class="product-drag"
                   :class="{ 'is-dragging': productDragState?.id === row.id }"
                   :disabled="productSortLoading ? true : undefined"
-                  :aria-label="`拖动排序：${productSpecDisplayName(row)}`"
+                  :aria-label="`拖动排序：${productSpecDisplayName(row)}。聚焦后按上下方向键调整顺序`"
                   draggable="true"
                   @dragstart="handleProductDragStart(row, $event)"
                   @dragend="handleProductDragEnd"
+                  @keydown.up.prevent="moveProduct(row, 'up')"
+                  @keydown.down.prevent="moveProduct(row, 'down')"
                   @click.stop
                 >
                   ::
                 </button>
                 <!-- 键盘可达的排序入口：拖拽对键盘用户不可用 -->
-                <span v-if="canSortProducts" class="product-sort-keys">
-                  <t-button
-                    theme="default"
-                    variant="text"
-                    size="small"
-                    :disabled="productSortLoading || !canMoveProduct(row, 'up')"
-                    aria-label="上移"
-                    @click.stop="moveProduct(row, 'up')"
-                  >
-                    <template #icon><arrow-up-icon /></template>
-                  </t-button>
-                  <t-button
-                    theme="default"
-                    variant="text"
-                    size="small"
-                    :disabled="productSortLoading || !canMoveProduct(row, 'down')"
-                    aria-label="下移"
-                    @click.stop="moveProduct(row, 'down')"
-                  >
-                    <template #icon><arrow-down-icon /></template>
-                  </t-button>
-                </span>
                 <div class="product-name-main">
                   <button
                     type="button"
@@ -1534,7 +1514,7 @@ const productDrawerSections = [
 const productColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'row-select', type: 'multiple', width: 54, fixed: 'left' },
   { colKey: 'id', title: 'ID', width: 80 },
-  { colKey: 'name', title: '商品', minWidth: 220 },
+  { colKey: 'name', title: '商品', minWidth: 260 },
   { colKey: 'effective_product_group_full_name', title: '分类', width: 180 },
   { colKey: 'price', title: '月价格', width: 120 },
   { colKey: 'stock', title: '库存', width: 100 },
