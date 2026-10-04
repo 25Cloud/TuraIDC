@@ -34,10 +34,20 @@ const REGION_FLAGS = {
 }
 const QTY_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19]
 
+// 上游把「明确禁止」这类购买须知做成了普通单选配置项，后端归一化后
+// option_mode 会是 text。这类项只展示文案，不能进选配控件、不能计价、不能提交。
+const TEXT_OPTION_MODE = 'text'
+
 export function useWebsiteProductConfigurator(productDetail) {
   const configForm = reactive({})
 
   function isNumberField(item) {
+    // 提示型项即使 option_type 落在区间型里也按数量算，会得到 0~0 的滑块，
+    // 这里直接排除，由 noticeConfigs 单独渲染文案。
+    if (String(item.option_mode || '') === TEXT_OPTION_MODE) {
+      return false
+    }
+
     if (QTY_OPTION_TYPES.includes(Number(item.option_type))) {
       return true
     }
@@ -59,9 +69,11 @@ export function useWebsiteProductConfigurator(productDetail) {
         const version = String(subItem.version || subItem.option_name || subItem.option_name_first || '')
         const parts = version.split('^')
         const label = parts[parts.length - 1] || version || String(subItem.id)
+        // value 是上游 parameter 里的真实传参值；option_name_first 在旧数据里
+        // 等于 sub 的自增 id，优先用 value，避免把 id 提交给上游。
         const value = String(
-          subItem.option_name_first
-          || subItem.value
+          subItem.value
+          || subItem.option_name_first
           || subItem.qty_minimum
           || label
           || subItem.id
@@ -78,6 +90,23 @@ export function useWebsiteProductConfigurator(productDetail) {
     return parseParamOptions(item.parameter)
   }
 
+  function resolveTextContent(item) {
+    const explicit = String(item.text_content || '').trim()
+    if (explicit) {
+      return explicit
+    }
+
+    const subs = Array.isArray(item.sub) ? item.sub.filter((subItem) => !subItem.hidden) : []
+    if (subs.length === 1) {
+      const only = String(subs[0].option_name || subs[0].label || '').trim()
+      if (only) {
+        return only
+      }
+    }
+
+    return String(item.description || '').trim()
+  }
+
   function parseConfigItem(item) {
     const { key, label } = parseField(item)
     const isNum = isNumberField(item)
@@ -92,6 +121,8 @@ export function useWebsiteProductConfigurator(productDetail) {
       hidden: item.hidden === 1,
       sortOrder: Number(item.sort_order || 0),
       isNumber: isNum,
+      isTextNotice: String(item.option_mode || '') === TEXT_OPTION_MODE,
+      textContent: resolveTextContent(item),
       defaultNum,
       min: isNum ? bounds.min : undefined,
       max: isNum ? bounds.max : undefined,
@@ -119,9 +150,20 @@ export function useWebsiteProductConfigurator(productDetail) {
       .sort((left, right) => left.sortOrder - right.sortOrder)
   })
 
-  const machineConfigs = computed(() => allParsedConfigs.value.filter(isMachine))
-  const networkConfigs = computed(() => allParsedConfigs.value.filter((cfg) => !isMachine(cfg) && isNetwork(cfg)))
-  const otherConfigs = computed(() => allParsedConfigs.value.filter((cfg) => !isMachine(cfg) && !isNetwork(cfg)))
+  // 提示型配置项（如「明确禁止」）不参与选配：单独收集为购买须知展示
+  const noticeConfigs = computed(() =>
+    allParsedConfigs.value.filter((cfg) => cfg.isTextNotice),
+  )
+
+  const machineConfigs = computed(() =>
+    allParsedConfigs.value.filter((cfg) => !cfg.isTextNotice && isMachine(cfg)),
+  )
+  const networkConfigs = computed(() =>
+    allParsedConfigs.value.filter((cfg) => !cfg.isTextNotice && !isMachine(cfg) && isNetwork(cfg)),
+  )
+  const otherConfigs = computed(() =>
+    allParsedConfigs.value.filter((cfg) => !cfg.isTextNotice && !isMachine(cfg) && !isNetwork(cfg)),
+  )
 
   const regionOptions = computed(() => {
     const raw = productDetail.value?.config_options || []
@@ -347,6 +389,7 @@ export function useWebsiteProductConfigurator(productDetail) {
     currentOsVersionLabel,
     selectedMachineSpec,
     summaryItems,
+    noticeConfigs,
     machineConfigs,
     networkConfigs,
     otherConfigs,

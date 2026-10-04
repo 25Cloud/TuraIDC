@@ -199,7 +199,7 @@
                   <article v-for="(item, index) in form.config_options" :key="item.uid || item.field || index">
                     <div>
                       <strong>{{ item.name || item.option_name || item.field }}</strong>
-                      <span>{{ item.field || '-' }} · {{ item.option_mode || 'select' }}</span>
+                      <span>{{ item.field || '-' }} · {{ configOptionModeLabel(item) }}</span>
                     </div>
                     <t-space size="small">
                       <t-button size="small" variant="text" theme="primary" @click="openConfigOptionDialog(item, index)"
@@ -241,7 +241,8 @@
           <t-form-item label="配置项类型" name="option_mode" required-mark>
             <t-select v-model="configOptionForm.option_mode" @change="handleConfigOptionModeChange">
               <t-option label="单选（固定选项）" value="select" />
-              <t-option label="数量范围" value="range" />
+              <t-option label="数量范围（滑块）" value="range" />
+              <t-option label="文字提示（仅展示）" value="text" />
             </t-select>
           </t-form-item>
           <t-form-item label="高级设置">
@@ -257,9 +258,49 @@
             <t-input v-model="configOptionForm.suffix_text" placeholder="请输入选项尾部文字" />
           </t-form-item>
         </div>
-        <t-form-item v-if="configOptionForm.option_mode !== 'select'" label="参数值" name="parameter">
-          <t-input v-model="configOptionForm.parameter" placeholder="例如 1-16 / 1|1核,2|2核" />
+
+        <!-- 文字提示：只展示购买须知，不计价也不提交上游 -->
+        <t-form-item v-if="configOptionForm.option_mode === 'text'" label="提示内容" name="text_content">
+          <t-textarea
+            v-model="configOptionForm.text_content"
+            placeholder="例如 禁止搭建任何形式的流量中转、流量转发、代理用途，发现一律清退甚至封机不退款！"
+          />
         </t-form-item>
+        <t-alert
+          v-if="configOptionForm.option_mode === 'text'"
+          class="config-option-mode-tip"
+          theme="info"
+          :message="configOptionTextTip"
+        />
+
+        <!-- 数量范围：数据范围即滑块上下限，需明确回传字段 -->
+        <div v-else-if="configOptionForm.option_mode === 'range'" class="config-range-panel">
+          <div class="config-range-head">
+            <strong>数据范围</strong>
+            <span class="config-range-hint">用户按滑块在此范围内选择，提交时回传数量</span>
+          </div>
+          <div class="config-range-grid">
+            <t-form-item label="最小值">
+              <t-input-number v-model="configOptionForm.qty_minimum" :min="0" />
+            </t-form-item>
+            <t-form-item label="最大值">
+              <t-input-number v-model="configOptionForm.qty_maximum" :min="0" />
+            </t-form-item>
+            <t-form-item label="步长">
+              <t-input-number v-model="configOptionForm.qty_step" :min="1" />
+            </t-form-item>
+            <t-form-item label="单位">
+              <t-input v-model="configOptionForm.unit" placeholder="例如 GB" />
+            </t-form-item>
+            <t-form-item label="默认值">
+              <t-input-number v-model="configOptionForm.default_value" :min="0" />
+            </t-form-item>
+            <t-form-item label="回传参数名">
+              <t-input v-model="configOptionForm.submit_field" placeholder="例如 data_disk_size" />
+            </t-form-item>
+          </div>
+        </div>
+
         <div v-else class="config-subitem-table">
           <div class="config-subitem-head">
             <strong>子项列表</strong>
@@ -558,6 +599,9 @@ interface ConfigOptionMarkup {
 
 type ConsoleTemplate = 'compute' | 'port_mapping';
 
+/** 配置项在后台可编辑的呈现类型 */
+type ConfigOptionEditMode = 'select' | 'range' | 'text';
+
 interface ConfigOptionSubItemFormRow {
   uid: string;
   name: string;
@@ -578,6 +622,15 @@ const configOptionForm = reactive({
   sub_items_text: '',
   description: '',
   suffix_text: '',
+  // 数量范围（滑块）字段
+  qty_minimum: 0,
+  qty_maximum: 0,
+  qty_step: 1,
+  unit: '',
+  default_value: 0,
+  submit_field: '',
+  // 文字提示（仅展示）字段
+  text_content: '',
   advanced: true,
   required: true,
   hidden: false,
@@ -590,6 +643,14 @@ const configOptionForm = reactive({
   markup_extra_amount: 0,
 });
 const configOptionSubItemRows = ref<ConfigOptionSubItemFormRow[]>([]);
+
+/** 文字提示类型的固定说明：避免管理员把它当真实规格配置使用 */
+const configOptionTextTip = computed(() => {
+  const field = configOptionForm.field.trim();
+  return field
+    ? `该内容会在购买页作为文字提示展示，不参与计价，也不会作为配置提交给上游（回传字段「${field}」已被排除）。`
+    : '该内容会在购买页作为文字提示展示，不参与计价，也不会作为配置提交给上游。';
+});
 
 // --- Lifecycle ---
 onMounted(async () => {
@@ -775,7 +836,7 @@ function normalizeConfigOptions(value: unknown): ConfigOptionRecord[] {
       field,
       name,
       option_name: name,
-      option_mode: String(item.option_mode || (item.option_type === 'quantity' ? 'range' : 'select')),
+      option_mode: normalizeConfigOptionMode({ ...item, field, name } as ConfigOptionRecord),
       parameter: String(item.parameter || ''),
       sub: Array.isArray(item.sub) ? (item.sub as Array<Record<string, unknown>>) : [],
       sub_items: Array.isArray(item.sub_items)
@@ -794,19 +855,28 @@ function normalizeConfigOptions(value: unknown): ConfigOptionRecord[] {
 function serializeConfigOptions(options: ConfigOptionRecord[]) {
   return options.map((item, index) => {
     const markup = item.markup ? normalizeMarkup(item.markup) : null;
+    const mode = normalizeConfigOptionMode(item);
     const base = {
       ...item,
       name: String(item.name || item.option_name || item.field || '').trim(),
       option_name: String(item.option_name || item.name || item.field || '').trim(),
       field: String(item.field || '').trim(),
-      option_mode: String(item.option_mode || 'select'),
+      option_mode: mode,
+      // 范围型与提示型字段必须原样回传：range 丢了 qty_maximum 会退化成
+      // 0~9999 的滑块，text 丢了 text_content 购买页就没有提示文案。
+      qty_minimum: mode === 'range' ? toNumber(item.qty_minimum) : 0,
+      qty_maximum: mode === 'range' ? toNumber(item.qty_maximum) : 0,
+      qty_step: mode === 'range' ? Math.max(1, toNumber(item.qty_step, 1)) : 1,
+      unit: mode === 'range' ? String(item.unit || '').trim() : '',
+      submit_field: String(item.submit_field || item.field || '').trim(),
+      text_content: mode === 'text' ? String(item.text_content || '').trim() : '',
       parameter: String(item.parameter || '').trim(),
-      required: Boolean(item.required),
+      required: mode === 'text' ? false : Boolean(item.required),
       hidden: Boolean(item.hidden),
       sort_order: Number(item.sort_order || index + 1),
     };
-    // 未启用加价时不写入 markup 键，避免污染商品配置
-    if (markup && markup.enabled) {
+    // 未启用加价时不写入 markup 键，避免污染商品配置；提示项永不参与计价
+    if (markup && markup.enabled && mode !== 'text') {
       return { ...base, markup };
     }
     const { markup: _omit, ...rest } = base as ConfigOptionRecord & { markup?: unknown };
@@ -850,6 +920,13 @@ function resetConfigOptionForm() {
     sub_items_text: '',
     description: '',
     suffix_text: '',
+    qty_minimum: 0,
+    qty_maximum: 0,
+    qty_step: 1,
+    unit: '',
+    default_value: 0,
+    submit_field: '',
+    text_content: '',
     advanced: true,
     required: true,
     hidden: false,
@@ -869,7 +946,10 @@ function createConfigSubItemRow(item: Record<string, unknown> = {}, index = 0): 
   return {
     uid: String(item.uid || `config-subitem-${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`),
     name: String(item.label || item.option_name || item.name || '').trim(),
-    value: String(item.value || item.option_name_first || '').trim(),
+    // 传参值取上游真实提交值（value），其次才是 option_name_first。
+    // 上游 sub 只有自增 id，option_name_first 在旧数据里等于 id；
+    // 若优先取它，本地一保存就会把 sub id 当参数写回 parameter，上游无法识别。
+    value: String(item.value ?? item.option_name_first ?? '').trim(),
     monthly_price:
       monthlyPrice === '' || monthlyPrice === undefined || monthlyPrice === null ? '0.00' : String(monthlyPrice),
     sort_order: Number(item.sort_order || index + 1),
@@ -886,24 +966,37 @@ function removeConfigSubItemRow(index: number) {
 }
 
 function handleConfigOptionModeChange(value: SelectValue) {
-  configOptionForm.option_mode = String(value || 'select');
+  const mode = String(value || 'select');
+  configOptionForm.option_mode = normalizeModeValue(mode);
   if (configOptionForm.option_mode === 'select' && configOptionSubItemRows.value.length === 0) {
     configOptionSubItemRows.value = [createConfigSubItemRow({}, 0)];
   }
+}
+
+function normalizeModeValue(mode: string): ConfigOptionEditMode {
+  return mode === 'range' || mode === 'text' ? mode : 'select';
 }
 
 function openConfigOptionDialog(row?: ConfigOptionRecord, index = -1) {
   configOptionEditingIndex.value = index;
   if (row) {
     const markup = normalizeMarkup(row.markup);
+    const mode = normalizeConfigOptionMode(row);
     Object.assign(configOptionForm, {
       name: row.name || row.option_name || '',
       field: row.field || '',
-      option_mode: row.option_mode || 'select',
+      option_mode: mode,
       parameter: row.parameter || '',
       sub_items_text: '',
       description: String(row.description || '').trim(),
       suffix_text: String(row.suffix_text || '').trim(),
+      qty_minimum: toNumber(row.qty_minimum),
+      qty_maximum: toNumber(row.qty_maximum),
+      qty_step: Math.max(1, toNumber(row.qty_step ?? row.qty_stage, 1)),
+      unit: String(row.unit || row.suffix_text || '').trim(),
+      default_value: toNumber(row.default_value),
+      submit_field: String(row.submit_field || row.field || '').trim(),
+      text_content: String(row.text_content || '').trim(),
       advanced: Boolean(row.advanced ?? true),
       required: Boolean(row.required ?? true),
       hidden: Boolean(row.hidden ?? false),
@@ -914,6 +1007,11 @@ function openConfigOptionDialog(row?: ConfigOptionRecord, index = -1) {
       markup_unit_price: markup.unit_price,
       markup_extra_amount: markup.extra_amount,
     });
+    // 文字提示项的文案可能只存在于 parameter / 子项里，载入时兜底回填，
+    // 否则打开弹窗是一片空白，管理员不知道上游同步下来的提示是什么。
+    if (configOptionForm.option_mode === 'text' && !configOptionForm.text_content) {
+      configOptionForm.text_content = resolveTextContentFallback(row);
+    }
     const sourceSubItems =
       Array.isArray(row.sub_items) && row.sub_items.length ? row.sub_items : Array.isArray(row.sub) ? row.sub : [];
     const rowSubItems = sourceSubItems.length
@@ -926,6 +1024,41 @@ function openConfigOptionDialog(row?: ConfigOptionRecord, index = -1) {
     resetConfigOptionForm();
   }
   configOptionDialogVisible.value = true;
+}
+
+/**
+ * 配置项呈现类型归一化。
+ *
+ * 上游同步的 range 项带 option_mode='range'，而历史的 quantity 写法只体现在
+ * option_type 上；两者都要识别成 range，否则数据范围会被当成单选子项编辑。
+ * 提示项（text）优先级最高：它常与真实规格项共用 field，不能被类型推断覆盖。
+ */
+function normalizeConfigOptionMode(row: ConfigOptionRecord): ConfigOptionEditMode {
+  const mode = String(row.option_mode || '').trim();
+  if (mode === 'text' || mode === 'range' || mode === 'select') {
+    return mode;
+  }
+  if (row.text_content) {
+    return 'text';
+  }
+  return row.option_type === 'quantity' || toNumber(row.qty_maximum) > 0 ? 'range' : 'select';
+}
+
+function resolveTextContentFallback(row: ConfigOptionRecord): string {
+  const sourceSubItems = Array.isArray(row.sub_items) && row.sub_items.length ? row.sub_items : row.sub;
+  const firstSub = Array.isArray(sourceSubItems) ? toPlainRecord(sourceSubItems[0]) : {};
+  const fromSub = String(firstSub.option_name || firstSub.label || firstSub.version || '').trim();
+  if (fromSub) {
+    return fromSub;
+  }
+  const firstPair = String(row.parameter || '').split(',')[0] || '';
+  const parts = firstPair.split('|');
+  return String(parts[1] ?? parts[0] ?? '').trim();
+}
+
+function toNumber(value: unknown, fallback = 0): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function parseConfigSubItems(rawValue: string) {
@@ -977,13 +1110,14 @@ function buildConfigSubItemsFromRows() {
 function submitConfigOption() {
   const name = configOptionForm.name.trim();
   const field = configOptionForm.field.trim();
+  const mode = normalizeModeValue(configOptionForm.option_mode);
   if (!name || !field) {
     MessagePlugin.warning('请填写配置名称和字段名');
     return;
   }
   let subItems: ReturnType<typeof buildConfigSubItemsFromRows> = [];
   try {
-    subItems = configOptionForm.option_mode === 'select' ? buildConfigSubItemsFromRows() : [];
+    subItems = mode === 'select' ? buildConfigSubItemsFromRows() : [];
   } catch (error) {
     MessagePlugin.warning(errorMessage(error, '请检查子项配置'));
     return;
@@ -991,29 +1125,49 @@ function submitConfigOption() {
   const parameter = subItems.length
     ? subItems.map((item) => `${item.value}|${item.label}`).join(',')
     : configOptionForm.parameter.trim();
-  if (configOptionForm.option_mode === 'select' && !parameter) {
+  if (mode === 'select' && !parameter) {
     MessagePlugin.warning('请填写参数值或子项');
+    return;
+  }
+  if (mode === 'text' && !configOptionForm.text_content.trim()) {
+    MessagePlugin.warning('请填写提示内容');
+    return;
+  }
+  if (mode === 'range' && toNumber(configOptionForm.qty_maximum) <= 0) {
+    MessagePlugin.warning('数量范围需要填写大于 0 的最大值');
     return;
   }
 
   configOptionSubmitting.value = true;
+
+  const qtyStep = Math.max(1, toNumber(configOptionForm.qty_step, 1));
   const payload: ConfigOptionRecord = {
     uid: `${field}-${Date.now()}`,
     source: 'manual',
     field,
     name,
     option_name: name,
-    option_mode: configOptionForm.option_mode,
-    option_type: configOptionForm.option_mode === 'range' ? 'quantity' : 'select',
+    option_mode: mode,
+    // option_type 保留上游原始语义：计价层靠它判定是否按数量计费，
+    // 统一成其他字符串会让同步与计费的类型口径不一致。
+    option_type: mode === 'range' ? 'quantity' : mode === 'text' ? 'text' : 'select',
     parameter,
     sub: subItems,
     sub_items: subItems,
     range_pricing: [],
-    markup: buildMarkupPayload(),
+    markup: mode === 'text' ? null : buildMarkupPayload(),
     description: configOptionForm.description.trim(),
     suffix_text: configOptionForm.suffix_text.trim(),
+    qty_minimum: mode === 'range' ? toNumber(configOptionForm.qty_minimum) : 0,
+    qty_maximum: mode === 'range' ? toNumber(configOptionForm.qty_maximum) : 0,
+    qty_step: mode === 'range' ? qtyStep : 1,
+    qty_stage: mode === 'range' ? qtyStep : 1,
+    unit: mode === 'range' ? configOptionForm.unit.trim() : '',
+    default_value: mode === 'range' ? toNumber(configOptionForm.default_value) : '',
+    submit_field: configOptionForm.submit_field.trim() || field,
+    text_content: mode === 'text' ? configOptionForm.text_content.trim() : '',
     advanced: Boolean(configOptionForm.advanced),
-    required: Boolean(configOptionForm.required),
+    required: mode === 'text' ? false : Boolean(configOptionForm.required),
     hidden: Boolean(configOptionForm.hidden),
     sort_order: Number(configOptionForm.sort_order || form.config_options.length + 1),
   };
@@ -1028,6 +1182,27 @@ function submitConfigOption() {
 
 function removeConfigOption(index: number) {
   form.config_options.splice(index, 1);
+}
+
+/**
+ * 配置项列表的类型标签。
+ *
+ * 直接显示 option_mode 会出现「select」这种内部值，且 range 项看不出滑块范围，
+ * 提示项也看不出是段购买须知文案，这里翻译成人能读懂的说明。
+ */
+function configOptionModeLabel(item: ConfigOptionRecord): string {
+  const mode = normalizeConfigOptionMode(item);
+  if (mode === 'text') {
+    return '文字提示';
+  }
+  if (mode === 'range') {
+    const min = toNumber(item.qty_minimum);
+    const max = toNumber(item.qty_maximum);
+    const unit = String(item.unit || '').trim();
+    const range = max > 0 ? `${min}~${max}${unit}` : '范围待填写';
+    return `数量范围 ${range}`;
+  }
+  return '单选';
 }
 
 async function pullConfigTemplate() {
@@ -1468,6 +1643,37 @@ function goBack() {
   margin-top: 16px;
 }
 
+// 数量范围（滑块）面板
+.config-range-panel {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--td-component-border);
+  border-radius: 6px;
+  background: var(--td-component-bg);
+}
+
+.config-range-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--td-comp-margin-s);
+  margin-bottom: 12px;
+}
+
+.config-range-hint {
+  font-size: 12px;
+  color: var(--td-text-color-placeholder);
+}
+
+.config-range-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 24px;
+}
+
+.config-option-mode-tip {
+  margin-top: var(--td-comp-margin-s);
+}
+
 .config-subitem-head {
   display: flex;
   align-items: center;
@@ -1633,7 +1839,8 @@ function goBack() {
   }
 
   .config-option-basic-grid,
-  .config-option-footer-row {
+  .config-option-footer-row,
+  .config-range-grid {
     grid-template-columns: 1fr;
   }
 

@@ -27,6 +27,7 @@ use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\Contracts\ProvidesSupplierFormSchema;
 use App\Services\Upstream\Contracts\ProvidesUpstreamQuoting;
 use App\Services\Upstream\Contracts\UpstreamDriver;
+use App\Support\ProductConfigOptionPresenter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use TuraIDC\Plugins\Servers\TuraOpenApi\Lib\TuraOpenApiClient;
@@ -70,6 +71,33 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
     /** 区间型配置项 option_type（与系统商品配置项的语义一致）：这些项按数量区间取值而非下拉 */
     private const SITE_RANGE_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19];
+
+    /**
+     * 文字提示型配置项的 option_mode。
+     *
+     * 上游把「明确禁止」这类购买须知做成了普通单选配置项（field=cpu、option_type=6、
+     * 唯一子项的 option_name 就是整句禁令），本地若按 select 渲染会变成一个叫
+     * 「明确禁止」的下拉框，既看不出是提示文字，还会把这段文案当 cpu 的取值提交上游、
+     * 覆盖真实 CPU 配置。此类项统一归为 text：只展示、不计价、不回传。
+     */
+    public const OPTION_MODE_TEXT = 'text';
+
+    /**
+     * 名称命中即判定为购买提示的关键词。
+     *
+     * 配合 {@see isTextNoticeOption()} 的结构判据（单子项 + 长句文案）一起使用，
+     * 只靠名称会把正常的「CPU」这类短名称配置项误判成提示。
+     */
+    private const TEXT_NOTICE_NAME_KEYWORDS = [
+        '明确禁止',
+        '禁止',
+        '须知',
+        '提示',
+        '说明',
+        '警告',
+        '声明',
+        '温馨',
+    ];
 
     /** 开通轮询：上游账单映射 + 服务开通，单轮预算约 150s，超出交给队列重试 */
     private const PROVISION_POLL_ATTEMPTS = 50;
@@ -130,11 +158,6 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         'first_product_group_name',
         'second_product_group_name',
         'third_product_group_name',
-    ];
-
-    /** 目录里用于屏蔽上游选项的展示项（如「明确禁止」），不作为真实配置提交 */
-    private const NON_SELECTABLE_CONFIG_FIELDS = [
-        'cpu_forbidden',
     ];
 
     public function __construct(
@@ -991,8 +1014,15 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
             $name = trim((string) ($item['name'] ?? ''));
             $sortOrder = (int) ($item['sort_order'] ?? $item['order'] ?? ($index + 1));
             $isRange = in_array($type, self::SITE_RANGE_OPTION_TYPES, true);
-            $subOptions = $this->normalizeSiteConfigSubOptions($item['sub'] ?? []);
+            $parameter = trim((string) ($item['parameter'] ?? ''));
+            $subOptions = $this->normalizeSiteConfigSubOptions($item['sub'] ?? [], $parameter);
             $displayName = $name !== '' ? $name : ($field !== '' ? $field : '配置项 '.($index + 1));
+            $isTextNotice = $this->isTextNoticeOption($displayName, $subOptions);
+
+            // 区间型（滑块）的范围既可能挂在父项上，也可能只挂在唯一子项上
+            // （上游「数据盘」就是父项 qty_minimum/qty_maximum 为 0、子项带 0~500）。
+            // 父项缺失时回退到子项，否则后台编辑弹窗的「数据范围」会是空的。
+            [$rangeMin, $rangeMax] = $this->resolveSiteRangeBounds($item, $subOptions, $isRange);
 
             $normalized[] = array_merge($item, [
                 'id' => $optionId,
@@ -1000,20 +1030,24 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
                 'field' => $field !== '' ? $field : 'option_'.($index + 1),
                 'name' => $displayName,
                 'option_name' => $displayName,
-                'option_mode' => trim((string) ($item['option_mode'] ?? '')) !== ''
-                    ? (string) $item['option_mode']
-                    : ($isRange ? 'range' : 'select'),
+                'option_mode' => $this->resolveSiteOptionMode($item, $isRange, $isTextNotice),
                 'required' => (int) ($item['required'] ?? 0),
                 'hidden' => (int) ($item['hidden'] ?? 0),
                 'order' => $sortOrder,
                 'sort_order' => $sortOrder,
                 'allow_upgrade' => (int) ($item['allow_upgrade'] ?? $item['upgrade'] ?? 0),
                 'allow_promo_code' => (int) ($item['allow_promo_code'] ?? 1),
-                'qty_minimum' => $isRange ? (int) ($item['qty_minimum'] ?? 0) : 0,
-                'qty_maximum' => $isRange ? (int) ($item['qty_maximum'] ?? 0) : 0,
+                'qty_minimum' => $rangeMin,
+                'qty_maximum' => $rangeMax,
+                'qty_step' => $this->resolveSiteRangeStep($item, $subOptions, $isRange),
                 'qty_stage' => max(1, (int) ($item['qty_stage'] ?? 1)),
                 'unit' => trim((string) ($item['unit'] ?? $item['suffix_text'] ?? '')),
-                'parameter' => trim((string) ($item['parameter'] ?? '')),
+                'parameter' => $parameter,
+                // 回传字段名：本地订购页按 field 提交，滑块提交数量、单选提交子项传参值。
+                'submit_field' => $field !== '' ? $field : 'option_'.($index + 1),
+                'text_content' => $isTextNotice
+                    ? $this->resolveTextNoticeContent($subOptions, $parameter)
+                    : trim((string) ($item['description'] ?? '')),
                 'sub' => $subOptions,
                 'sub_items' => $subOptions,
             ]);
@@ -1025,21 +1059,167 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
     }
 
     /**
+     * 区间型配置项的取值模式。
+     *
+     * 提示项优先于区间判定：上游可能给提示项也带上区间型 option_type，
+     * 但它本质是文字，不能当滑块渲染。
+     */
+    private function resolveSiteOptionMode(array $item, bool $isRange, bool $isTextNotice): string
+    {
+        $mode = trim((string) ($item['option_mode'] ?? ''));
+
+        if ($mode === self::OPTION_MODE_TEXT || $isTextNotice) {
+            return self::OPTION_MODE_TEXT;
+        }
+
+        if ($mode !== '') {
+            return $mode;
+        }
+
+        return $isRange ? 'range' : 'select';
+    }
+
+    /**
+     * 判定配置项是否实为「购买提示文字」。
+     *
+     * 上游没有专门的提示类型，只能从结构反推：命中提示关键词，
+     * 或整个配置项只有一条子项且子项文案是一句长句（正常规格值都是
+     * 「16核」「500G」这类短值，不会用整句中文）。两者取或，避免把
+     * 名称含「说明」但取值是真实规格的项误判。
+     *
+     * @param  array<int, array<string, mixed>>  $subOptions
+     */
+    private function isTextNoticeOption(string $name, array $subOptions): bool
+    {
+        foreach (self::TEXT_NOTICE_NAME_KEYWORDS as $keyword) {
+            if (str_contains($name, $keyword)) {
+                return true;
+            }
+        }
+
+        if (count($subOptions) !== 1) {
+            return false;
+        }
+
+        $onlySubName = trim((string) ($subOptions[0]['option_name'] ?? ''));
+
+        // 整句中文提示：长度够长且含中文标点/汉字，短规格值不会命中
+        return mb_strlen($onlySubName) >= 12
+            && preg_match('/[\x{4e00}-\x{9fa5}]/u', $onlySubName) === 1;
+    }
+
+    /**
+     * 取提示项要展示的文案：优先唯一子项文案，其次 parameter 的 label 段。
+     *
+     * @param  array<int, array<string, mixed>>  $subOptions
+     */
+    private function resolveTextNoticeContent(array $subOptions, string $parameter): string
+    {
+        $onlySubName = trim((string) ($subOptions[0]['option_name'] ?? ''));
+        if ($onlySubName !== '') {
+            return $onlySubName;
+        }
+
+        if ($parameter === '') {
+            return '';
+        }
+
+        $firstPair = trim((string) (explode(',', $parameter)[0] ?? ''));
+        $parts = explode('|', $firstPair, 2);
+
+        return trim((string) ($parts[1] ?? $parts[0] ?? ''));
+    }
+
+    /**
+     * 解析滑块范围 [最小值, 最大值]。
+     *
+     * 父项优先；父项未给出有效范围时回退到子项（上游「数据盘」的范围只挂在子项上）。
+     *
+     * @param  array<string, mixed>  $item
+     * @param  array<int, array<string, mixed>>  $subOptions
+     * @return array{0: int, 1: int}
+     */
+    private function resolveSiteRangeBounds(array $item, array $subOptions, bool $isRange): array
+    {
+        if (! $isRange) {
+            return [0, 0];
+        }
+
+        $min = (int) ($item['qty_minimum'] ?? 0);
+        $max = (int) ($item['qty_maximum'] ?? 0);
+
+        if ($max > 0) {
+            return [max(0, $min), $max];
+        }
+
+        $subMin = 0;
+        $subMax = 0;
+        foreach ($subOptions as $sub) {
+            $subMin = $subMin === 0 ? (int) ($sub['qty_minimum'] ?? 0) : min($subMin, (int) ($sub['qty_minimum'] ?? 0));
+            $subMax = max($subMax, (int) ($sub['qty_maximum'] ?? 0));
+        }
+
+        if ($subMax <= 0) {
+            return [max(0, $min), 0];
+        }
+
+        return [max(0, $min > 0 ? $min : $subMin), $subMax];
+    }
+
+    /**
+     * 解析滑块步长：qty_step 优先，回退 qty_stage，再回退子项，最后 1。
+     *
+     * @param  array<string, mixed>  $item
+     * @param  array<int, array<string, mixed>>  $subOptions
+     */
+    private function resolveSiteRangeStep(array $item, array $subOptions, bool $isRange): int
+    {
+        if (! $isRange) {
+            return 1;
+        }
+
+        $candidates = [
+            $item['qty_step'] ?? null,
+            $item['qty_stage'] ?? null,
+            $subOptions[0]['qty_step'] ?? null,
+            $subOptions[0]['qty_stage'] ?? null,
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($candidate === null || $candidate === '' || ! is_numeric($candidate)) {
+                continue;
+            }
+
+            $step = (int) $candidate;
+            if ($step > 0) {
+                return $step;
+            }
+        }
+
+        return 1;
+    }
+
+    /**
      * 规范化配置项的子选项。
      *
      * 上游子选项已带 option_name / version / hidden / qty_*，这里只补前端渲染与提交
      * 会用到的 config_id / option_name_first / sort_order，不重写 option_name：
      * 上游可能是「父^子」形式（CentOS^CentOS-7.6.1810-x64），改写反而会丢信息。
      *
+     * 关键补充：真实传参值在父项的 parameter 里（`12|CentOS^CentOS-7.6`），
+     * 而上游 sub 只有自增 id。缺了这层映射，后台选配表格显示的就是 sub id
+     * 而不是提交给上游的参数，本地一编辑还会把 id 当参数写回 parameter。
+     *
      * @param  mixed  $subOptions
      * @return array<int, array<string, mixed>>
      */
-    private function normalizeSiteConfigSubOptions(mixed $subOptions): array
+    private function normalizeSiteConfigSubOptions(mixed $subOptions, string $parameter = ''): array
     {
         if (! is_array($subOptions)) {
             return [];
         }
 
+        $parameterMap = $this->parseParameterPairs($parameter);
         $normalized = [];
 
         foreach (array_values($subOptions) as $index => $sub) {
@@ -1050,22 +1230,64 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
             $subId = (int) ($sub['id'] ?? 0);
             $optionName = trim((string) ($sub['option_name'] ?? $sub['version'] ?? ''));
 
+            // 按子项文案回查 parameter 拿到真实传参值；查不到时保留上游原值。
+            $submitValue = trim((string) ($parameterMap[$optionName] ?? ''));
+            if ($submitValue === '') {
+                $submitValue = trim((string) ($sub['option_name_first'] ?? ''));
+            }
+
             $normalized[] = array_merge($sub, [
                 'id' => $subId,
                 'config_id' => (int) ($sub['config_id'] ?? 0),
                 'option_name' => $optionName,
-                'option_name_first' => trim((string) ($sub['option_name_first'] ?? '')) !== ''
-                    ? (string) $sub['option_name_first']
-                    : (string) $subId,
+                'option_name_first' => $submitValue !== '' ? $submitValue : (string) $subId,
                 'version' => trim((string) ($sub['version'] ?? '')) !== '' ? (string) $sub['version'] : $optionName,
                 'hidden' => (int) ($sub['hidden'] ?? 0),
                 'sort_order' => (int) ($sub['sort_order'] ?? $sub['order'] ?? $index),
                 'qty_minimum' => (int) ($sub['qty_minimum'] ?? 0),
                 'qty_maximum' => (int) ($sub['qty_maximum'] ?? 0),
+                'value' => $submitValue,
+                'label' => $optionName,
             ]);
         }
 
         return $normalized;
+    }
+
+    /**
+     * 解析 parameter（`12|CentOS^CentOS-7.6,62|Ubuntu^Ubuntu-24.04`）为
+     * 「子项文案 => 传参值」映射，供子项回查真实提交值。
+     *
+     * @return array<string, string>
+     */
+    private function parseParameterPairs(string $parameter): array
+    {
+        if (trim($parameter) === '') {
+            return [];
+        }
+
+        $pairs = [];
+
+        foreach (explode(',', $parameter) as $chunk) {
+            $chunk = trim($chunk);
+            if ($chunk === '') {
+                continue;
+            }
+
+            $parts = explode('|', $chunk, 2);
+            $value = trim((string) $parts[0]);
+            $label = trim((string) ($parts[1] ?? ''));
+
+            if ($label === '') {
+                $label = $value;
+            }
+
+            if ($label !== '' && $value !== '') {
+                $pairs[$label] = $value;
+            }
+        }
+
+        return $pairs;
     }
 
     public function getProductProvisionConfig(Supplier $supplier, int $productId): array
@@ -1099,6 +1321,7 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
             $snapshot = [];
         }
 
+        $textOnlyFields = $this->resolveTextOnlyConfigFields($order);
         $config = [];
 
         foreach ($snapshot as $key => $value) {
@@ -1112,8 +1335,10 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
                 continue;
             }
 
-            // 「明确禁止」是本地目录用来屏蔽上游选项的展示项，不应作为配置提交
-            if (in_array($key, self::NON_SELECTABLE_CONFIG_FIELDS, true)) {
+            // 提示型配置项（如「明确禁止」）只用于前台展示购买须知，不作为配置提交。
+            // 不能按字段名硬过滤：这类项的 field 常与真实规格项重名（上游的
+            // 「明确禁止」field 就是 cpu），按名字过滤会连带删掉真实 CPU 配置。
+            if (in_array($key, $textOnlyFields, true)) {
                 continue;
             }
 
@@ -1125,6 +1350,52 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         }
 
         return $config;
+    }
+
+    /**
+     * 找出商品上只用于展示的提示型配置项字段。
+     *
+     * 快照里只有 field => value，拿不到 option_mode，只能回查商品自身的
+     * config_options 来判断。商品未加载时退化为空数组（不过滤），
+     * 与历史行为一致，避免因关联缺失导致整单配置被清空。
+     *
+     * @return array<int, string>
+     */
+    private function resolveTextOnlyConfigFields(Order $order): array
+    {
+        $product = $order->relationLoaded('product') ? $order->product : $order->product()->first();
+
+        if ($product === null) {
+            return [];
+        }
+
+        // 提示项的 field 常与真实规格项重名（上游「明确禁止」的 field 就是 cpu）。
+        // 因此先按 field 汇总：只有该 field 下**全部**配置项都是提示项时，
+        // 才把这个 field 认定为纯展示字段；只要还存在一个真实规格项，就不过滤。
+        //
+        // 存量商品的 config_options 里提示项仍标成 select，需先补齐呈现类型，
+        // 否则这里一个字段都识别不出来，提示文案会被当配置提交上游。
+        $textFields = [];
+        $realFields = [];
+
+        foreach (ProductConfigOptionPresenter::present((array) ($product->config_options ?? [])) as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $field = trim((string) ($item['field'] ?? ''));
+            if ($field === '') {
+                continue;
+            }
+
+            if (trim((string) ($item['option_mode'] ?? '')) === self::OPTION_MODE_TEXT) {
+                $textFields[$field] = true;
+            } else {
+                $realFields[$field] = true;
+            }
+        }
+
+        return array_values(array_diff(array_keys($textFields), array_keys($realFields)));
     }
 
     public function provisionOrder(Order $order, Supplier $supplier, ?Service $existingService = null): array

@@ -13,6 +13,7 @@ use App\Models\ThirdProductGroup;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\ProductCatalog\Concerns\HandlesProductCatalogHelpers;
 use App\Support\CacheKey;
+use App\Support\ProductConfigOptionPresenter;
 use App\Support\ProductGroupHierarchyFields;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -766,6 +767,10 @@ class ProductSiteService
             return [];
         }
 
+        // 历史商品的 config_options 仍是旧结构（缺 option_mode/text_content/qty_step），
+        // 读取时补齐，避免要求用户逐个商品重新拉一次模板。
+        $configOptions = ProductConfigOptionPresenter::present($configOptions);
+
         return collect($configOptions)
             ->filter(fn ($item) => is_array($item))
             ->map(function (array $item, int $index) {
@@ -785,7 +790,11 @@ class ProductSiteService
                     'qty_maximum' => $item['qty_maximum'] ?? null,
                     'qty_step' => $item['qty_step'] ?? null,
                     'qty_stage' => $item['qty_stage'] ?? null,
+                    'unit' => trim((string) ($item['unit'] ?? '')),
                     'suffix_text' => trim((string) ($item['suffix_text'] ?? '')),
+                    // 提示型配置项（option_mode=text）的展示文案，供前台渲染购买须知
+                    'text_content' => trim((string) ($item['text_content'] ?? '')),
+                    'submit_field' => trim((string) ($item['submit_field'] ?? $item['field'] ?? '')),
                     'sub' => $this->trimSiteProductConfigSubOptions($item['sub'] ?? []),
                 ];
             })
@@ -807,6 +816,10 @@ class ProductSiteService
                     'label' => trim((string) ($item['label'] ?? '')),
                     'version' => trim((string) ($item['version'] ?? '')),
                     'option_name' => trim((string) ($item['option_name'] ?? '')),
+                    // 真实传参值：上游 parameter 里的值，提交给上游用；
+                    // 不能只给 sub 的自增 id，否则前台会把 id 当参数提交。
+                    'value' => trim((string) ($item['value'] ?? $item['option_name_first'] ?? '')),
+                    'option_name_first' => trim((string) ($item['option_name_first'] ?? '')),
                     'hidden' => (int) ($item['hidden'] ?? 0),
                     'sort_order' => (int) ($item['sort_order'] ?? $item['order'] ?? $index),
                     'qty_minimum' => $item['qty_minimum'] ?? null,

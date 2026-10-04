@@ -8,6 +8,7 @@ use App\Constants\BillingCycle;
 use App\Exceptions\BusinessException;
 use App\Models\Product;
 use App\Support\Money;
+use App\Support\ProductConfigOptionPresenter;
 use Illuminate\Support\Str;
 use App\Models\Supplier;
 use App\Services\Upstream\Contracts\ProvidesUpstreamQuoting;
@@ -154,8 +155,17 @@ trait HandlesOrderCalculation
     {
         $normalized = [];
 
-        foreach ((array) ($product->config_options ?? []) as $item) {
+        // 存量商品的 config_options 缺 option_mode（提示项仍标成 select），
+        // 直接按库值判断会让「明确禁止」这类提示项被当真实规格写进快照，
+        // 覆盖同名的真实配置。读取时先补齐呈现类型。
+        foreach (ProductConfigOptionPresenter::present((array) ($product->config_options ?? [])) as $item) {
             if ((int) ($item['hidden'] ?? 0) === 1) {
+                continue;
+            }
+
+            // 提示型配置项（如「明确禁止」）只用于前台展示购买须知，
+            // 不参与计价、也不写入快照，否则会覆盖同名的真实规格配置。
+            if ($this->isTextOnlyConfigOption($item)) {
                 continue;
             }
 
@@ -210,8 +220,14 @@ trait HandlesOrderCalculation
         }
 
         $config = [];
-        foreach ((array) ($product->config_options ?? []) as $item) {
-            if (! is_array($item) || (int) ($item['hidden'] ?? 0) === 1) {
+
+        // 同 normalizeConfig：存量数据需先补齐呈现类型，提示项才不会被当规格回传。
+        foreach (ProductConfigOptionPresenter::present((array) ($product->config_options ?? [])) as $item) {
+            if ((int) ($item['hidden'] ?? 0) === 1) {
+                continue;
+            }
+
+            if ($this->isTextOnlyConfigOption($item)) {
                 continue;
             }
 
@@ -975,6 +991,19 @@ trait HandlesOrderCalculation
         $parts = explode('|', $source);
 
         return trim((string) ($parts[0] ?? ''));
+    }
+
+    /**
+     * 提示型配置项（option_mode=text）：仅用于展示购买须知这类文字。
+     *
+     * 这类项常与真实规格项共用同一个 field（上游「明确禁止」的 field 就是 cpu），
+     * 因此不能按 field 过滤，只能按配置项自身的呈现类型判断。
+     *
+     * @param  array<string, mixed>  $item
+     */
+    private function isTextOnlyConfigOption(array $item): bool
+    {
+        return trim((string) ($item['option_mode'] ?? '')) === 'text';
     }
 
     private function normalizeConfigValue(array $item, mixed $value): string|int|null
