@@ -37,6 +37,8 @@ const QTY_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19]
 // 上游把「明确禁止」这类购买须知做成了普通单选配置项，后端归一化后
 // option_mode 会是 text。这类项只展示文案，不能进选配控件、不能计价、不能提交。
 const TEXT_OPTION_MODE = 'text'
+// 区间型（滑块/数量）的呈现模式，由后端 Presenter 归一化下发
+const RANGE_OPTION_MODE = 'range'
 
 export function useWebsiteProductConfigurator(productDetail) {
   const configForm = reactive({})
@@ -48,9 +50,15 @@ export function useWebsiteProductConfigurator(productDetail) {
       return false
     }
 
-    // 区间型判定。历史上后台把 range 项的 option_type 存成字符串 'quantity'，
-    // 而 Number('quantity') 是 NaN、落在集合外 —— 不兼容的话这类存量配置项
-    // 会被当成无子项单选（options 为空），购买页根本选不出数量。
+    // option_mode 是后端判区间的权威口径（isRangeConfigOption：mode 非空时
+    // 直接以 mode === 'range' 为准）。只认 option_type 会漏 —— 历史数据把区间项
+    // 存成字符串 'quantity'，经接口 (int) 转换后到这里已经是 0，判不出区间型。
+    if (String(item.option_mode || '') === RANGE_OPTION_MODE) {
+      return true
+    }
+
+    // 兜底仍是 option_type：兼容未下发 option_mode 的老数据。
+    // 'quantity' 是历史字符串写法，Number('quantity') 是 NaN、落在集合外。
     const rawType = String(item.option_type ?? '').trim().toLowerCase()
     if (rawType === 'quantity' || QTY_OPTION_TYPES.includes(Number(item.option_type))) {
       return true

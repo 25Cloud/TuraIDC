@@ -27,6 +27,15 @@ final class ProductConfigOptionPresenter
     /** 区间型（滑块）配置项 option_type */
     public const RANGE_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19];
 
+    /**
+     * 归一化时采用的区间型取值（4=quantity，取自 ZProductService 官方映射）。
+     *
+     * 历史数据把区间项存成了字符串 'quantity'，而下游（SiteProductDetailResource
+     * 等）普遍按 (int) 取值，'quantity' 会被转成 0 —— 购买页因此判不出区间型，
+     * 把滑块渲染成「没有子项的选择项」。
+     */
+    public const CANONICAL_RANGE_TYPE = 4;
+
     /** 文字提示型配置项的呈现类型 */
     public const MODE_TEXT = 'text';
 
@@ -91,6 +100,20 @@ final class ProductConfigOptionPresenter
         [$rangeMin, $rangeMax] = self::resolveRangeBounds($item, $subOptions, $isRange);
 
         $item['option_mode'] = self::resolveMode($item, $isRange, $isTextNotice);
+
+        // option_type 一并归一化，否则区间语义会在下游丢失。
+        //
+        // 下游（SiteProductDetailResource 等）普遍按 (int) 读 option_type，
+        // 而历史数据里区间项存的是字符串 'quantity'，(int) 后为 0：
+        // 购买页的 QTY_OPTION_TYPES 判定落空，滑块被渲染成没有子项的选择项。
+        // 这里统一成一个真实的区间型数值，让所有下游都不必各自兼容历史写法。
+        if ($isRange) {
+            $rawType = (int) ($item['option_type'] ?? 0);
+            $item['option_type'] = in_array($rawType, self::RANGE_OPTION_TYPES, true)
+                ? $rawType
+                : self::CANONICAL_RANGE_TYPE;
+        }
+
         $item['qty_minimum'] = $rangeMin;
         $item['qty_maximum'] = $rangeMax;
         $item['qty_step'] = self::resolveRangeStep($item, $subOptions, $isRange);
