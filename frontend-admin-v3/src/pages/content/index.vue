@@ -182,11 +182,11 @@
     <!-- 分类列表：独立弹窗，表格列宽收敛避免横向滚动 -->
     <t-dialog
       v-model:visible="categoryListDialogVisible"
-      header="分类列表"
       width="720px"
       :footer="false"
       @close="resetCategoryForm"
     >
+      <!-- 只用 #header 插槽：若同时写 header 属性，TDesign 以属性为准，插槽不渲染 -->
       <template #header>
         <div class="category-list-head">
           <span>分类列表</span>
