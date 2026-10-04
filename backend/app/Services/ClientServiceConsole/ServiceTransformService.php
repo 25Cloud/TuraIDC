@@ -220,7 +220,12 @@ class ServiceTransformService
         $trafficPackageEnabled = $this->canExposeTrafficPackage($service, $trafficPayload);
         $productDisplayName = $this->resolveProductDisplayName($service);
         $instanceName = ServiceHostname::resolveInstanceName($service, $provisionData, $host);
-        $panel = $this->resolvePanelAccess($host, $provisionData, $specConfigOptions);
+        $panel = $this->resolvePanelAccess(
+            $host,
+            $provisionData,
+            $specConfigOptions,
+            is_array($remoteState['area_html'] ?? null) ? $remoteState['area_html'] : []
+        );
 
         return [
             'id' => $service->id,
@@ -1770,26 +1775,37 @@ class ServiceTransformService
      * CDN / 虚拟主机这类面板型产品没有云主机的开关机、重装、VNC，
      * 用户真正关心的是「去哪登录、账号密码是多少」。
      * 各家商家摆放面板信息的位置差异很大（配置项键值对、host_data 字段、
-     * 内嵌 HTML 片段），统一交给 PanelAccessExtractor 归一，
+     * 自定义区域 HTML），统一交给 PanelAccessExtractor 归一，
      * 抽不到就返回空数组，前端退化为空状态即可。
      *
      * @param  array<string, mixed>  $host
      * @param  array<string, mixed>  $provisionData
      * @param  array<int, mixed>  $configOptions
+     * @param  array<int, string>  $areaHtml  上游自定义区域的 HTML 片段
      * @return array<string, string>
      */
-    private function resolvePanelAccess(array $host, array $provisionData, array $configOptions): array
-    {
+    private function resolvePanelAccess(
+        array $host,
+        array $provisionData,
+        array $configOptions,
+        array $areaHtml = []
+    ): array {
         $hostConfigOptions = is_array($provisionData['host_config_option'] ?? null)
             ? $provisionData['host_config_option']
             : [];
 
         $panel = PanelAccessExtractor::extract($configOptions, $host, $hostConfigOptions);
 
-        // 四个字段全空说明这家上游压根没给面板信息，不下发空壳结构
-        return $panel === [] || ($panel['panel_url'] === ''
-            && $panel['panel_username'] === ''
-            && $panel['panel_password'] === '')
+        // host_data 里没有面板信息时（如天理云 CDN），面板账号密码只存在于
+        // 上游自定义区域的 HTML 中，areas 通道能拿到它
+        if ($areaHtml !== []) {
+            $panel = PanelAccessExtractor::mergeHtmlSources($panel, $areaHtml);
+        }
+
+        // 全部字段为空说明这家上游压根没给面板信息，不下发空壳结构
+        return ($panel['panel_url'] ?? '') === ''
+            && ($panel['panel_username'] ?? '') === ''
+            && ($panel['panel_password'] ?? '') === ''
             ? []
             : $panel;
     }

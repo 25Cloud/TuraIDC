@@ -252,6 +252,56 @@ final class PanelAccessExtractor
     }
 
     /**
+     * 用额外的 HTML 片段补齐面板信息。
+     *
+     * 面板型产品的面板账号密码常常只写在自定义区域里，host_data 完全没有——
+     * 天理云 CDN 就是如此：host_data.username 是控制台 uid（16118），
+     * 真正的面板账号（ser862441826426）在 module_client_area 的 HTML 中。
+     *
+     * 因此这里允许覆盖「泛化字段兜底」这类弱来源（panel_source 以 _fallback 结尾），
+     * 但不会覆盖商家明确给出的字段。
+     *
+     * @param  array<string, string>  $panel  extract() 的结果
+     * @param  array<int, string>  $htmlFragments
+     * @return array<string, string>
+     */
+    public static function mergeHtmlSources(array $panel, array $htmlFragments): array
+    {
+        if ($panel === []) {
+            $panel = self::emptyResult();
+        }
+
+        $weak = ! isset($panel['panel_source'])
+            || $panel['panel_source'] === ''
+            || str_ends_with((string) $panel['panel_source'], '_fallback');
+
+        foreach ($htmlFragments as $html) {
+            if (! is_string($html) || trim($html) === '') {
+                continue;
+            }
+
+            foreach (self::fromHtml($html) as $key => $value) {
+                if ($key === 'panel_type' || $value === '') {
+                    continue;
+                }
+
+                // 已有强来源的值不被覆盖；弱来源（泛化字段兜底）允许被HTML 里的准确值替换
+                if (($panel[$key] ?? '') !== '' && ! $weak) {
+                    continue;
+                }
+
+                $panel[$key] = $value;
+                $panel['panel_source'] = $weak ? 'area_html' : (string) ($panel['panel_source'] ?: 'area_html');
+                $weak = true;
+            }
+        }
+
+        $panel['panel_type'] = self::resolvePanelType($panel);
+
+        return $panel;
+    }
+
+    /**
      * 从 HTML 片段中提取面板信息。
      *
      * 覆盖三种常见形态：
