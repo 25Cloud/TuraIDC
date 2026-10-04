@@ -15,11 +15,13 @@ export const NAT_TABS = ['overview', 'monitor', 'security', 'nat', 'logs', 'fina
 /**
  * 面板型产品（CDN / 虚拟主机）的基础 tab：控制能力全部来自上游自定义区域，
  * 不具备云服务器的监控/安全组/VNC 等能力，因此兜底时不套用云主机集合。
+ * product 承载该品类的真实配置（套餐 / 流量 / 空间 / 防护能力），
+ * 替代云主机的 CPU / 内存 / 系统盘规格表。
  */
-export const PANEL_TABS = ['overview', 'finance'];
+export const PANEL_TABS = ['overview', 'panel', 'finance'];
 const PANEL_CATEGORY_KEYS = new Set(['cdn', 'web_hosting']);
 /** 内置控制台 tab 展示顺序（自定义区域插入到 overview 之后） */
-export const BUILTIN_TABS_ORDER = ['overview', 'monitor', 'security', 'nat', 'logs', 'finance', 'vnc'];
+export const BUILTIN_TABS_ORDER = ['overview', 'panel', 'monitor', 'security', 'nat', 'logs', 'finance', 'vnc'];
 export const VNC_CREDENTIAL_STORAGE_PREFIX = 'turaidc:vnc-credentials:';
 
 export function emptyDetail(): ConsoleServiceDetail {
@@ -219,8 +221,8 @@ export function resolveAvailableTabs(
 
   for (const key of BUILTIN_TABS_ORDER) {
     if (key === 'overview' || seen.has(key)) continue;
-    // 面板型产品没有监控/安全组/VNC/运营日志能力，只保留账单
-    if (panelConsole && key !== 'finance') continue;
+    // 面板型产品没有监控/安全组/VNC/运营日志能力，只保留产品配置与账单
+    if (panelConsole && key !== 'panel' && key !== 'finance') continue;
     // NAT 能力以动态 tab 交付；无该能力时与云服务器集合保持一致
     if (key === 'nat' && !natSupported) continue;
     seen.add(key);
