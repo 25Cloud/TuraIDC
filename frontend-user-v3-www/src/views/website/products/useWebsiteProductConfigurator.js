@@ -48,7 +48,11 @@ export function useWebsiteProductConfigurator(productDetail) {
       return false
     }
 
-    if (QTY_OPTION_TYPES.includes(Number(item.option_type))) {
+    // 区间型判定。历史上后台把 range 项的 option_type 存成字符串 'quantity'，
+    // 而 Number('quantity') 是 NaN、落在集合外 —— 不兼容的话这类存量配置项
+    // 会被当成无子项单选（options 为空），购买页根本选不出数量。
+    const rawType = String(item.option_type ?? '').trim().toLowerCase()
+    if (rawType === 'quantity' || QTY_OPTION_TYPES.includes(Number(item.option_type))) {
       return true
     }
 
@@ -343,10 +347,22 @@ export function useWebsiteProductConfigurator(productDetail) {
         continue
       }
 
-      const value = configForm[cfg.key]
-      if (value !== undefined && value !== null && value !== '') {
-        payload[cfg.key] = value
+      // configForm[cfg.key] 存的是被选中项的 id —— 那是 UI 的选中标记，
+      // 不是上游认的传参值。直接提交 id 等于把库里的自增 id 发给上游，
+      // 与 parseSubOptions 里「优先用 value，避免把 id 提交给上游」的约定相反。
+      // 这里按 id 回查选项并提交它的 value；查不到时才退回 id 本身
+      // （parseParamOptions 兜底解析出的项没有 value，其 id 就是真实传参值）。
+      const selectedId = configForm[cfg.key]
+      if (selectedId === undefined || selectedId === null || selectedId === '') {
+        continue
       }
+
+      const matched = cfg.options.find((opt) => String(opt.id) === String(selectedId))
+      const submitValue = matched && matched.value !== undefined && matched.value !== ''
+        ? matched.value
+        : selectedId
+
+      payload[cfg.key] = submitValue
     }
 
     return payload

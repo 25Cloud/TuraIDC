@@ -1355,6 +1355,14 @@ interface ConfigOptionSubItemFormRow {
 
 type ProductLifecycleStatus = 'active' | 'deleted' | 'all';
 
+/**
+ * 区间型（滑块/数量）配置项的 option_type 数值集合。
+ *
+ * 与后端 ProductConfigOptionPresenter::RANGE_OPTION_TYPES、
+ * HandlesOrderCalculation::RANGE_TYPES、购买页 QTY_OPTION_TYPES 保持一致。
+ */
+const RANGE_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19];
+
 // --- State ---
 const router = useRouter();
 const typeLoading = ref(false);
@@ -3586,9 +3594,14 @@ function submitConfigOption() {
     name,
     option_name: name,
     option_mode: mode,
-    // 保留上游原始 option_type 语义：range 项靠它判定是否按数量计价，
-    // 统一成其它字符串会让同步与计价的类型判断口径不一致。
-    option_type: mode === 'range' ? 'quantity' : mode === 'text' ? 'text' : 'select',
+    // option_type 必须存下游真正认的类型值，不能自造字符串。
+    // 计价层、展示层、购买页都按 (int) 比对 [4,7,9,11,14,15,16,17,18,19]，
+    // 而 (int)'quantity' 是 0：新建的数量范围项在购买页会被判成非数量项、
+    // 渲染成没有子项的单选，用户根本选不了数量。
+    // 取值沿用官方映射（ZProductService::mapConfigOptionType）：
+    // 4=quantity 数量型、1=dropdown 选择型；text 存 0（靠 option_mode 判定，
+    // 填 5 会被上游 isOsConfigItem() 误认成操作系统项）。
+    option_type: mode === 'range' ? 4 : mode === 'text' ? 0 : 1,
     parameter,
     sub: subItems,
     sub_items: subItems,
@@ -3622,10 +3635,24 @@ function removeConfigOption(index: number) {
 }
 
 /**
+ * 判定配置项是否区间型（滑块/数量）。
+ *
+ * 数值集合对齐后端与购买页；额外兼容 option_type='quantity' 这种历史字符串写法
+ * （Number('quantity') 是 NaN，落在集合外），避免存量数据被降级成单选。
+ */
+function isRangeOptionType(value: unknown): boolean {
+  if (String(value ?? '').trim().toLowerCase() === 'quantity') {
+    return true;
+  }
+  return RANGE_OPTION_TYPES.includes(Number(value));
+}
+
+/**
  * 配置项呈现类型归一化。
  *
- * 上游同步的 range 项带 option_mode='range'，而历史的 quantity 写法只体现在
- * option_type 上；两者都要识别成 range，否则数据范围会被当成单选子项编辑。
+ * 上游同步的 range 项带 option_mode='range'，option_type 落在区间型数值集合
+ * [4,7,9,11,14,15,16,17,18,19] 里；历史数据里还存在 option_type='quantity'
+ * 这种字符串写法。两者都要识别成 range，否则数据范围会被当成单选子项编辑。
  * 提示项（text）优先级最高：它常与真实规格项共用 field，不能被类型推断覆盖。
  */
 function normalizeConfigOptionMode(row: ProductConfigOptionRecord): ConfigOptionEditMode {
@@ -3636,7 +3663,10 @@ function normalizeConfigOptionMode(row: ProductConfigOptionRecord): ConfigOption
   if (row.text_content) {
     return 'text';
   }
-  return row.option_type === 'quantity' || toNumber(row.qty_maximum) > 0 ? 'range' : 'select';
+  if (isRangeOptionType(row.option_type) || toNumber(row.qty_maximum) > 0) {
+    return 'range';
+  }
+  return 'select';
 }
 
 function resolveTextContentFallback(row: ProductConfigOptionRecord): string {

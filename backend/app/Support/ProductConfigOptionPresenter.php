@@ -58,6 +58,23 @@ final class ProductConfigOptionPresenter
     }
 
     /**
+     * 判定配置项是否区间型（滑块/数量）。
+     *
+     * 正常值是 RANGE_OPTION_TYPES 里的数值。额外兼容 option_type='quantity'：
+     * 后台编辑页历史上把 range 项存成这个字符串，而 (int)'quantity' 是 0，
+     * 直接比对会被判成非区间型 —— 数量范围退化成 0~0 的滑块。
+     * 新写入的数据已改用数值 4，这条只用于读存量。
+     */
+    public static function isRangeOptionType(mixed $optionType): bool
+    {
+        if (strtolower(trim((string) $optionType)) === 'quantity') {
+            return true;
+        }
+
+        return in_array((int) $optionType, self::RANGE_OPTION_TYPES, true);
+    }
+
+    /**
      * 补齐单个配置项。
      *
      * @param  array<string, mixed>  $item
@@ -65,8 +82,7 @@ final class ProductConfigOptionPresenter
      */
     public static function presentOne(array $item): array
     {
-        $type = (int) ($item['option_type'] ?? 0);
-        $isRange = in_array($type, self::RANGE_OPTION_TYPES, true);
+        $isRange = self::isRangeOptionType($item['option_type'] ?? 0);
         $parameter = trim((string) ($item['parameter'] ?? ''));
         $subOptions = self::presentSubOptions($item['sub'] ?? $item['sub_items'] ?? [], $parameter);
         $name = trim((string) ($item['name'] ?? $item['option_name'] ?? ''));

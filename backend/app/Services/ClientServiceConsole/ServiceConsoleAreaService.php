@@ -721,18 +721,25 @@ class ServiceConsoleAreaService
 
         $runtimeHead = '<link rel="stylesheet" href="'.$runtimeBase.'/bootstrap.min.css">'."\n";
 
-        // 完整文档若自带 jQuery，就不再注入我们这份，避免二次加载把前一份的插件注册冲掉。
-        // 但「自带」只认 runtimeBase 这条可用路径：上游片段里写死的 /vendor/... 是坏路径，
-        // 留着它就会走进「以为有 jQuery 其实没有」的坑。
-        $hasUsableJquery = preg_match('~<!doctype\s+html|<html[\s>]~i', $html) === 1
-            && stripos($html, $runtimeBase.'/jquery.min.js') !== false;
-        $skipScripts = $hasUsableJquery;
-
         // 上游片段里写死的 /vendor/... 一律改写成可用路径，否则它引入的 jQuery
         // 会因 404/串站 HTML 而让后续所有 $(...) 绑定直接抛错。
+        //
+        // 改写必须排在下面的 jQuery 检测之前：检测口径是「文档里有没有
+        // runtimeBase 这条可用路径下的 jQuery」，而坏路径只有改写后才变成可用路径。
+        // 顺序颠倒的话，一份只引用 /vendor/... 的完整文档会被判为「没带 jQuery」，
+        // 于是我们再注入一份 —— 同一页面加载两次 jQuery，后一份会把前一份注册的
+        // 插件冲掉，症状同样是按钮静默失效。
         if ($legacyRuntimeBase !== $runtimeBase) {
             $html = str_replace($legacyRuntimeBase, $runtimeBase, $html);
         }
+
+        // 完整文档若自带 jQuery，就不再注入我们这份，避免二次加载把前一份的插件注册冲掉。
+        // 但「自带」只认 runtimeBase 这条可用路径：上游片段里写死的 /vendor/... 是坏路径，
+        // 留着它就会走进「以为有 jQuery 其实没有」的坑。
+        $isFullDocument = preg_match('~<!doctype\s+html|<html[\s>]~i', $html) === 1;
+        $hasUsableJquery = $isFullDocument
+            && stripos($html, $runtimeBase.'/jquery.min.js') !== false;
+        $skipScripts = $hasUsableJquery;
 
         if (! $skipScripts) {
             $runtimeHead = $runtimeHead
@@ -750,7 +757,7 @@ class ServiceConsoleAreaService
         $runtimeHead .= $headAssets !== '' ? $headAssets."\n" : '';
 
         // 已是完整文档：不能套壳（会破坏结构），改为把运行时插进它自己的 <head>
-        if (preg_match('~<!doctype\s+html|<html[\s>]~i', $html) === 1) {
+        if ($isFullDocument) {
             return $this->injectRuntimeHead($html, $runtimeHead);
         }
 
