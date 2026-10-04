@@ -627,26 +627,25 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         }
 
         $cycles = self::STANDARD_BILLING_CYCLES;
+        $selectedProducts = collect($products)
+            ->map(fn (array $product): array => $product)
+            ->filter(fn (array $product): bool => $selected->has((int) ($product['id'] ?? 0)))
+            ->values();
 
-        return collect($products)->map(function (array $product) use ($supplier, $selected, $cycles): array {
+        // 询价请求数 = 商品数 × 计费周期数，串行时 RTT 线性累加
+        // （选 5 个商品 × 4 周期 = 20 次串行 ≈ 10s，表现为前端「批量对接超时」）。
+        // 先整体并发询价，仅对并发未覆盖的项串行兜底。
+        $quoteMap = $this->fetchQuotesForProducts($supplier, $selectedProducts->all(), $cycles);
+
+        return collect($products)->map(function (array $product) use ($quoteMap, $cycles): array {
             $productId = (int) ($product['id'] ?? 0);
-            if ($productId <= 0 || ! $selected->has($productId)) {
+            if ($productId <= 0 || ! isset($quoteMap[$productId])) {
                 return $product;
             }
 
             $amounts = [];
             foreach ($cycles as $cycle) {
-                try {
-                    $quote = $this->client()->get($supplier, "/api/v2/open/products/{$productId}/quotes", [
-                        'billing_cycle' => $cycle,
-                        'quantity' => 1,
-                    ]);
-                } catch (BusinessException) {
-                    // 该周期不可售（如仅一次性商品），跳过
-                    continue;
-                }
-
-                $amount = trim((string) ($quote['total_amount'] ?? ''));
+                $amount = trim((string) ($quoteMap[$productId][$cycle] ?? ''));
                 if ($amount !== '' && is_numeric($amount)) {
                     $amounts[$cycle] = $amount;
                 }
@@ -666,6 +665,89 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
                 'setup_fee' => '0.00',
             ]);
         })->values()->all();
+    }
+
+    /**
+     * 批量拉取多个商品在多个计费周期下的报价。
+     *
+     * 优先整批并发（Http::pool）；并发不可用或部分失败时，
+     * 对缺失项逐个串行重试，保证个别上游错误不会让整批询价作废。
+     *
+     * @param  array<int, array<string, mixed>>  $products
+     * @param  array<int, string>  $cycles
+     * @return array<int, array<string, string>>  productId => cycle => amount
+     */
+    private function fetchQuotesForProducts(Supplier $supplier, array $products, array $cycles): array
+    {
+        $requests = [];
+        $queryByAlias = [];
+
+        foreach ($products as $product) {
+            $productId = (int) ($product['id'] ?? 0);
+            if ($productId <= 0) {
+                continue;
+            }
+
+            foreach ($cycles as $cycle) {
+                $alias = $productId.'@'.$cycle;
+                $requests[$alias] = "/api/v2/open/products/{$productId}/quotes";
+                $queryByAlias[$alias] = ['billing_cycle' => $cycle, 'quantity' => 1];
+            }
+        }
+
+        if ($requests === []) {
+            return [];
+        }
+
+        $quoteMap = [];
+
+        // 分批并发，避免一次性打爆上游；每批 12 个请求
+        foreach (array_chunk($requests, 12, true) as $requestChunk) {
+            $queryChunk = array_intersect_key($queryByAlias, $requestChunk);
+            $responses = $this->client()->getMany($supplier, $requestChunk, $queryChunk);
+
+            foreach ($requestChunk as $alias => $uri) {
+                $amount = trim((string) ($responses[$alias]['total_amount'] ?? ''));
+                if ($amount !== '' && is_numeric($amount)) {
+                    [$productId, $cycle] = $this->parseQuoteAlias((string) $alias);
+                    $quoteMap[$productId][$cycle] = $amount;
+                }
+            }
+        }
+
+        // 并发未覆盖的项串行兜底（并发整体失败时走这里）
+        foreach ($requests as $alias => $uri) {
+            [$productId, $cycle] = $this->parseQuoteAlias((string) $alias);
+            if (isset($quoteMap[$productId][$cycle])) {
+                continue;
+            }
+
+            try {
+                $quote = $this->client()->get($supplier, $uri, (array) ($queryByAlias[$alias] ?? []));
+            } catch (BusinessException) {
+                // 该周期不可售（如仅一次性商品），跳过
+                continue;
+            }
+
+            $amount = trim((string) ($quote['total_amount'] ?? ''));
+            if ($amount !== '' && is_numeric($amount)) {
+                $quoteMap[$productId][$cycle] = $amount;
+            }
+        }
+
+        return $quoteMap;
+    }
+
+    /**
+     * 解析 "productId@cycle" 别名。
+     *
+     * @return array{0: int, 1: string}
+     */
+    private function parseQuoteAlias(string $alias): array
+    {
+        $parts = explode('@', $alias);
+
+        return [(int) ($parts[0] ?? 0), (string) ($parts[1] ?? '')];
     }
 
     /**
@@ -711,27 +793,41 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         ?float $deadline = null
     ): array {
         $chunkSize = $chunkSize > 0 ? $chunkSize : 8;
+        $ids = collect($productIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
         $items = [];
 
-        foreach (array_chunk(array_values($productIds), $chunkSize) as $chunk) {
+        foreach (array_chunk($ids, $chunkSize) as $chunk) {
             if ($deadline !== null && $items !== [] && microtime(true) >= $deadline) {
                 break;
             }
 
+            // 站点目录接口逐商品串行时，选 N 个商品即 N 个 RTT 累加，
+            // 与询价同理改为分批并发；未取到或已过 deadline 的项再串行兜底。
+            $requests = [];
             foreach ($chunk as $productId) {
-                $productId = (int) $productId;
-                if ($productId <= 0) {
-                    continue;
-                }
+                $requests[(string) $productId] = "/api/v2/site/products/{$productId}";
+            }
 
-                // 每个商品请求前都判一次 deadline：上游单请求可能很慢，
-                // 只在 chunk 边界检查会让首个 chunk（以及命中边界前的那一个）
-                // 整批跑完，超出任务时间预算。
+            $responses = $this->client()->getMany($supplier, $requests);
+
+            foreach ($chunk as $productId) {
                 if ($deadline !== null && $items !== [] && microtime(true) >= $deadline) {
                     break 2;
                 }
 
-                $items[$productId] = $this->fetchRealConfigOptions($supplier, $productId);
+                $siteData = $responses[(string) $productId] ?? null;
+
+                $items[$productId] = is_array($siteData)
+                    ? $this->normalizeSiteConfigOptions(
+                        is_array($siteData['config_options'] ?? null) ? $siteData['config_options'] : []
+                    )
+                    : [];
             }
         }
 

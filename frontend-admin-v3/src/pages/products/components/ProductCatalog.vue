@@ -2534,11 +2534,21 @@ function handleProductDragEnd() {
 async function commitProductSort(orderedIds: number[]) {
   productSortLoading.value = true;
   try {
+    // 筛选条件必须与 loadProducts 保持一致：后端按筛选后的全量列表切页，
+    // 若直接传含 product_group_key 的 catalogFilters（后端不识别该键），
+    // 服务端会按未过滤列表算本页位置，导致「当前页没有可排序的商品」。
+    const selectedGroup = findProductGroupByKey(categoryOptions.value, catalogFilters.product_group_key);
     await productApi.sortOrder({
       product_ids: orderedIds,
       page: Number(productPage.value || 1),
       page_size: Number(productPageSize.value || 20),
-      filters: catalogFilters,
+      filters: {
+        keyword: catalogFilters.keyword,
+        first_product_group_code: String(catalogFilters.product_type || '').trim(),
+        status: catalogFilters.status,
+        lifecycle_status: catalogFilters.lifecycle_status,
+        ...productGroupPayload(selectedGroup),
+      },
     });
     MessagePlugin.success('商品排序已更新');
     await loadProducts();

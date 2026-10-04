@@ -31,26 +31,16 @@
         </t-button>
       </div>
 
-      <div class="category-strip">
-        <button
-          type="button"
-          class="category-chip"
-          :class="{ active: filters.category_id === '' }"
-          @click="applyCategoryFilter('')"
-        >
-          全部分类
-        </button>
-        <button
-          v-for="item in categories"
-          :key="item.id"
-          type="button"
-          class="category-chip"
-          :class="{ active: String(filters.category_id) === String(item.id) }"
-          @click="applyCategoryFilter(item.id)"
-        >
-          <span>{{ item.name }}</span>
-          <small>{{ item.articles_count || 0 }}</small>
-        </button>
+      <!-- 分类筛选：与「全部分类/全部状态」等筛选器同风格的下拉，不再单独造胶囊条 -->
+      <div class="category-filter">
+        <t-select
+          v-model="filters.category_id"
+          class="category-filter-select"
+          :options="categoryFilterOptions"
+          placeholder="全部分类"
+          clearable
+          @change="reloadArticlesForFilter"
+        />
       </div>
     </t-card>
 
@@ -190,7 +180,23 @@
     </t-dialog>
 
     <!-- 分类列表：独立弹窗，表格列宽收敛避免横向滚动 -->
-    <t-dialog v-model:visible="categoryListDialogVisible" header="分类列表" width="720px" :footer="false">
+    <t-dialog
+      v-model:visible="categoryListDialogVisible"
+      header="分类列表"
+      width="720px"
+      :footer="false"
+      @close="resetCategoryForm"
+    >
+      <template #header>
+        <div class="category-list-head">
+          <span>分类列表</span>
+          <t-button theme="primary" size="small" @click="openCategoryCreator">
+            <template #icon><add-icon /></template>
+            新增分类
+          </t-button>
+        </div>
+      </template>
+
       <t-table
         row-key="id"
         :data="categories"
@@ -265,6 +271,15 @@ const categoryForm = reactive({
   sort_order: 0,
 });
 
+/** 分类筛选项：与页面其他筛选器（如状态）保持同一种下拉形态 */
+const categoryFilterOptions = computed(() => [
+  { label: '全部分类', value: '' },
+  ...categories.value.map((item) => ({
+    label: `${item.name}（${item.articles_count || 0}）`,
+    value: String(item.id),
+  })),
+]);
+
 const statusOptions = [
   { label: '草稿', value: 0 },
   { label: '已发布', value: 1 },
@@ -330,10 +345,15 @@ function handleSearch() {
   loadArticles();
 }
 
-function applyCategoryFilter(value: string | number) {
-  filters.category_id = value;
+/** t-select 的 @change：v-model 已写入 filters.category_id，这里只重载列表 */
+function reloadArticlesForFilter() {
   pagination.page = 1;
   loadArticles();
+}
+
+function applyCategoryFilter(value: string | number) {
+  filters.category_id = value;
+  reloadArticlesForFilter();
 }
 
 function handlePageChange(data: { current: number; pageSize: number }) {
@@ -407,6 +427,13 @@ function openCategoryDialog() {
 }
 
 /** 从分类列表点「编辑」：关闭列表、打开表单并回填 */
+/** 从分类列表点「新增分类」：关闭列表、打开空白表单 */
+function openCategoryCreator() {
+  resetCategoryForm();
+  categoryListDialogVisible.value = false;
+  categoryDialogVisible.value = true;
+}
+
 function openCategoryEditor(row: ContentCategoryRecord) {
   fillCategoryForm(row);
   categoryListDialogVisible.value = false;

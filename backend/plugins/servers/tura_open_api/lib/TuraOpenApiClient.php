@@ -6,6 +6,7 @@ namespace TuraIDC\Plugins\Servers\TuraOpenApi\Lib;
 
 use App\Exceptions\BusinessException;
 use App\Models\Supplier;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -136,6 +137,87 @@ final class TuraOpenApiClient
         $data = $decoded['data'] ?? [];
 
         return is_array($data) ? $data : [];
+    }
+
+    /**
+     * 并发执行多个 GET 请求。
+     *
+     * 批量导入需要对每个商品逐个询价，串行时 RTT 线性累加
+     * （N 个商品 × 4 个计费周期，选 5 个即 20 次串行 ≈ 10s），
+     * 走 Http::pool 并发可把墙钟时间压回单次 RTT 量级。
+     *
+     * 鉴权与超时口径与 request() 完全一致；单个请求失败不影响其他请求，
+     * 失败项不返回结果，由调用方决定是否走串行兜底。
+     *
+     * @param  array<int|string, string>  $requests  alias => uri（query 通过 $queryByAlias 传入）
+     * @param  array<int|string, array<string, mixed>>  $queryByAlias
+     * @return array<int|string, array<string, mixed>>  alias => data（仅成功项）
+     */
+    public function getMany(Supplier $supplier, array $requests, array $queryByAlias = []): array
+    {
+        if ($requests === []) {
+            return [];
+        }
+
+        $baseUrl = $this->resolveBaseUrl($supplier);
+        $apiKey = trim((string) $supplier->getAttribute('api_key'));
+
+        if ($apiKey === '') {
+            throw new BusinessException('上游开放接口 API 密钥未配置，请先补全供应商凭据', 42200);
+        }
+
+        try {
+            $responses = Http::pool(static function ($pool) use ($baseUrl, $apiKey, $requests, $queryByAlias): void {
+                foreach ($requests as $alias => $uri) {
+                    $pool->as((string) $alias)
+                        ->baseUrl($baseUrl)
+                        ->acceptJson()
+                        ->withToken($apiKey)
+                        ->connectTimeout(self::DEFAULT_CONNECT_TIMEOUT_SECONDS)
+                        ->timeout(self::DEFAULT_TIMEOUT_SECONDS)
+                        ->get($uri, (array) ($queryByAlias[$alias] ?? []));
+                }
+            });
+        } catch (\Throwable $exception) {
+            $this->logFailure($supplier, 'GET', 'pool(' . count($requests) . ')', $exception->getMessage());
+
+            return [];
+        }
+
+        $results = [];
+
+        // Http::pool 返回的数组元素本身就是 Response 实例
+        foreach ($responses as $alias => $response) {
+            if (! $response instanceof Response) {
+                continue;
+            }
+
+            $decoded = $response->json();
+
+            if (! is_array($decoded)) {
+                continue;
+            }
+
+            if ($response->status() === 401 || (int) ($decoded['code'] ?? -1) === 40100) {
+                $this->logFailure($supplier, 'GET', (string) $alias, '认证失败');
+
+                continue;
+            }
+
+            if ((int) ($decoded['code'] ?? -1) !== 0) {
+                $this->logFailure($supplier, 'GET', (string) $alias, (string) ($decoded['message'] ?? '上游返回失败'));
+
+                continue;
+            }
+
+            $data = $decoded['data'] ?? [];
+
+            if (is_array($data)) {
+                $results[$alias] = $data;
+            }
+        }
+
+        return $results;
     }
 
     public function request(Supplier $supplier, string $method, string $uri, array $query = [], array $payload = []): array
