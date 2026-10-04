@@ -86,6 +86,28 @@
     }
   }
 
+  /* CDN 紧凑头部：元素只有实例 ID / 加速区域 / 自动续费 / 备注四项，
+     固定三列网格会空出第三格。改用 flex 自然排布，按内容宽度依次排列。 */
+  .console-header-card.is-compact {
+    .console-meta-grid {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 1.5rem;
+
+      .console-auto-renew-line,
+      .console-remark-line {
+        grid-column: auto;
+      }
+
+      /* 备注是长文本，单独占满整行末尾，不与前面的短标签抢空间 */
+      .console-remark-line {
+        flex: 1 1 12rem;
+        min-width: 0;
+      }
+    }
+  }
+
   .console-auto-renew-line {
     display: flex;
     align-items: center;
@@ -217,6 +239,17 @@
 
   .console-panel-wide {
     grid-column: 1 / -1;
+  }
+
+  /* CDN 总览只有两张并排窄卡（实例档案 / 加速与防护），沿用三列网格会空出第三格。
+     改两列正好填满，wide 卡仍走 grid-column: 1 / -1 整行。 */
+  .console-overview-grid.is-cdn {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* ---- CDN 流量进度条 ---- */
+  .cdn-traffic-progress {
+    margin-top: 1rem;
   }
 
   /* ---- 详情格 ---- */
@@ -426,6 +459,29 @@
     .t-card__actions .t-radio-group {
       flex-wrap: nowrap;
     }
+  }
+
+  /*
+   * 预热态：面板已在后台渲染完成，但用户还没切到这个 tab。
+   *
+   * 这里必须用「移出视口 + 不可见」而不是 display:none ——
+   * display:none 的子树浏览器不会布局也不会渲染，iframe 里的面板等于没加载；
+   * 移出视口则保留真实的布局与渲染，切 tab 时是直接显示画好的内容。
+   */
+  .console-panel-section.is-offstage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    width: 100%;
+    visibility: hidden;
+    pointer-events: none;
+    // 移出视口但不占据文档流，避免在总览页下方留出一块空白
+    transform: translateY(-150%);
+  }
+
+  .console-content {
+    position: relative;
   }
 
   .monitor-grid {
@@ -1256,6 +1312,7 @@
     }
 
     .console-overview-grid,
+    .console-overview-grid.is-cdn,
     .detail-grid,
     .credential-grid,
     .monitor-grid {
@@ -1300,6 +1357,26 @@
       .console-auto-renew-line {
         grid-column: 1 / span 2;
         grid-row: 3;
+      }
+    }
+
+    /* 紧凑头部走 flex，上面那套按序号硬定位的行列全部失效，必须清掉，
+       否则加速区域会被钉到第二行第一格，与自动续费错位。 */
+    .console-header-card.is-compact .console-meta-grid {
+      display: flex;
+      gap: 0.375rem 0.75rem;
+
+      > :nth-child(1),
+      > :nth-child(2),
+      > :nth-child(3),
+      .console-remark-line,
+      .console-auto-renew-line {
+        grid-column: auto;
+        grid-row: auto;
+      }
+
+      .console-remark-line {
+        flex: 1 1 100%;
       }
     }
 

@@ -163,10 +163,7 @@ trait HandlesProductCatalogHelpers
         $update = [];
 
         if (array_key_exists('console_template', $data) && $data['console_template'] !== null && $data['console_template'] !== '') {
-            $template = strtolower(trim((string) $data['console_template']));
-            $update['console_template'] = $template === Product::CONSOLE_TEMPLATE_PORT_MAPPING
-                ? Product::CONSOLE_TEMPLATE_PORT_MAPPING
-                : Product::CONSOLE_TEMPLATE_COMPUTE;
+            $update['console_template'] = Product::normalizeConsoleTemplate($data['console_template']);
         }
 
         if (array_key_exists('product_discount_group_id', $data)) {

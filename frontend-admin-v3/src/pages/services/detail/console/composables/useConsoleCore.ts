@@ -160,14 +160,48 @@ export function isNatConsole(detail: ConsoleServiceDetail): boolean {
   return consoleTemplate === 'port_mapping';
 }
 
+/**
+ * 是否走 CDN 专用控制台。
+ *
+ * 由产品配置的「控制台面板」= cdn 决定（运营在产品编辑页切换）；
+ * 未配置（历史数据）时按产品类型兜底，避免漏配又落回一屏云主机字段。
+ */
+export function isCdnConsole(detail: ConsoleServiceDetail): boolean {
+  const consoleTemplate = String(detail.console_template || detail.product?.console_template || '')
+    .trim()
+    .toLowerCase();
+  if (consoleTemplate === 'cdn') return true;
+  if (consoleTemplate === 'compute' || consoleTemplate === 'port_mapping') return false;
+
+  const categoryKey = String(detail.machine_category?.key || '')
+    .trim()
+    .toLowerCase();
+  if (categoryKey === 'cdn') return true;
+
+  const productType = String(
+    (detail as { product_type?: string }).product_type || (detail.product as { type?: string } | undefined)?.type || '',
+  )
+    .trim()
+    .toLowerCase();
+
+  return productType === 'cdn';
+}
+
 export interface ResolvedConsoleTabs {
   keys: string[];
   /** 自定义区域 tab 的中文名（key -> name），供侧边栏与页签标题展示 */
   areaLabels: Record<string, string>;
 }
 
-/** 面板型产品（CDN / 虚拟主机）：控制能力全部由上游自定义区域交付。 */
+/**
+ * 面板型产品（CDN / 虚拟主机）：控制能力全部由上游自定义区域交付。
+ *
+ * CDN 控制台（console_template=cdn）天然属于这一类：
+ * 同样没有监控/安全组/VNC，同样只保留产品配置与账单。
+ */
 export function isPanelConsole(detail: ConsoleServiceDetail): boolean {
+  if (isCdnConsole(detail)) return true;
+
   const categoryKey = String(detail.machine_category?.key || '')
     .trim()
     .toLowerCase();

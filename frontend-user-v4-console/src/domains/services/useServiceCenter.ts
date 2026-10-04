@@ -133,12 +133,64 @@ export function findListSpecValue(item: ServiceLike, aliases: string[] = [], fal
 
 export function resolveListBandwidthText(item: ServiceLike) {
   const direct = findListSpecValue(item, ['带宽', '宽带'], '');
+
   if (direct !== '') return direct;
 
   const inbound = findListSpecValue(item, ['下行带宽'], '');
   const outbound = findListSpecValue(item, ['上行带宽'], '');
   if (inbound && outbound) return `${outbound} / ${inbound}`;
   return inbound || outbound || '--';
+}
+
+/**
+ * 列表项是否CDN。
+ *
+ * 与控制台里的 isCdnConsole() 同款判定，但吃的是列表项（ServiceInstance）而非详情，
+ * 所以不读 machine_category —— 列表接口不下发该字段。console_template 由
+ * ServiceTransformService 从 product透出，缺失时再按 product_type 兜底。
+ */
+export function isCdnListItem(item: ServiceLike) {
+  const template = String(item?.console_template || item?.product?.console_template || '')
+    .trim()
+    .toLowerCase();
+  if (template === 'cdn') return true;
+  if (template === 'compute' || template === 'port_mapping') return false;
+
+  const productType = String(item?.product_type || item?.product?.type || '')
+    .trim()
+    .toLowerCase();
+  return productType === 'cdn';
+}
+
+/**
+ * CDN 卡片摘要行：节点数 / 节点区域，替代云主机的 CPU / 内存 / 带宽。
+ *
+ * 匹配要覆盖上游实际下发的 label：节点数、节点区域（不是「加速区域」），
+ * CDN 总览那边用的是 ['加速区域','区域','地区','线路']，两处label 不同，
+ * 所以这里按节点/区域双关键词兜。
+ */
+export function resolveListCdnSpecText(item: ServiceLike) {
+  return {
+    nodes: findListSpecValue(item, ['节点数', '节点数量'], ''),
+    region: findListSpecValue(item, ['节点区域', '加速区域', '区域', '地区'], ''),
+  };
+}
+
+/**
+ * CDN 卡片右下角的流量文案。
+ *
+ * 列表接口不下发 traffic（那是详情页实时向上游取的，逐行取会变成 N+1 请求），
+ * 所以这里退到 specs 里的流量上限；只有在接口将来补上 traffic 时才显示「已用 / 上限」。
+ */
+export function resolveListTrafficText(item: ServiceLike) {
+  const traffic = (item as { traffic?: Record<string, unknown> } | null)?.traffic;
+  if (traffic && typeof traffic === 'object') {
+    const used = String(traffic.usage_label || '').trim();
+    const limit = String(traffic.limit_label || '').trim();
+    if (used) return limit ? `${used} / ${limit}` : used;
+  }
+
+  return findListSpecValue(item, ['流量'], '');
 }
 
 export function resolveRuntimeStatusLabel(item: ServiceLike) {

@@ -698,12 +698,30 @@ class ServiceConsoleAreaService
      */
     private function wrapInRuntimeDocument(string $html, string $headAssets = ''): string
     {
-        $runtimeBase = '/vendor/console-panel';
+        // 运行时资源前缀。
+        //
+        // 不能用 /vendor/console-panel：站点是单域名多路径前缀架构，nginx 把根路径
+        // 交给官网（frontend-user-v3-www/dist），/vendor/... 会被官网的 SPA 兜底吞掉、
+        // 返回一段 HTML。浏览器拿到的不是 jQuery，`$` 未定义 → 上游面板里
+        // `$('#xxx').click(...)` 全部静默失效，表现就是「面板能显示但按钮点了没反应」。
+        // /media/ 是 nginx 显式 alias 到 backend/public/media 的路径，归属明确、可控。
+        $runtimeBase = '/media/console-panel';
+        $legacyRuntimeBase = '/vendor/console-panel';
 
         $runtimeHead = '<link rel="stylesheet" href="'.$runtimeBase.'/bootstrap.min.css">'."\n";
 
-        // 完整文档若自带 jQuery，就不再注入我们这份，避免二次加载把前一份的插件注册冲掉
-        $skipScripts = preg_match('~<!doctype\s+html|<html[\s>]~i', $html) === 1 && stripos($html, 'jquery') !== false;
+        // 完整文档若自带 jQuery，就不再注入我们这份，避免二次加载把前一份的插件注册冲掉。
+        // 但「自带」只认 runtimeBase 这条可用路径：上游片段里写死的 /vendor/... 是坏路径，
+        // 留着它就会走进「以为有 jQuery 其实没有」的坑。
+        $hasUsableJquery = preg_match('~<!doctype\s+html|<html[\s>]~i', $html) === 1
+            && stripos($html, $runtimeBase.'/jquery.min.js') !== false;
+        $skipScripts = $hasUsableJquery;
+
+        // 上游片段里写死的 /vendor/... 一律改写成可用路径，否则它引入的 jQuery
+        // 会因 404/串站 HTML 而让后续所有 $(...) 绑定直接抛错。
+        if ($legacyRuntimeBase !== $runtimeBase) {
+            $html = str_replace($legacyRuntimeBase, $runtimeBase, $html);
+        }
 
         if (! $skipScripts) {
             $runtimeHead = $runtimeHead
@@ -712,6 +730,11 @@ class ServiceConsoleAreaService
                 .'<script src="'.$runtimeBase.'/sweetalert2.all.min.js"></script>'."\n"
                 .'<script>'.$this->sweetalertCompatShim().'</script>'."\n";
         }
+
+        // 弹窗桥接必须无条件注入：上游面板（CDN 的「跳转到面板」）用 window.open 打第三方面板，
+        // 而 iframe 内属于跨域上下文，浏览器会把它判为无用户手势的跨源弹窗直接拦掉，
+        // 表现就是「点了没反应」。这里改为把地址交给父页面代开。
+        $runtimeHead .= '<script>'.$this->popupBridgeScript().'</script>'."\n";
 
         $runtimeHead .= $headAssets !== '' ? $headAssets."\n" : '';
 
@@ -774,6 +797,82 @@ class ServiceConsoleAreaService
               delete args[0].type;
             }
             return raw.apply(null, args);
+          };
+        })();
+        JS;
+    }
+
+    /**
+     * 弹窗桥接：把 iframe 内被拦截的 window.open 转交父页面执行。
+     *
+     * 背景：面板片段跑在 iframe 里，而 iframe 文档的源与控制台页面不同源。
+     * 跨源 iframe 调 window.open 打开第三方地址时，Chrome / Edge 会按
+     * 「无用户手势的跨源弹窗」处理，直接静默拦掉 —— 页面上表现为按钮点了没反应。
+     * 这里在注入运行时里提前包装 window.open：
+     *   - 同源父页面存在 → postMessage 把地址交给父页面开（父页面有真实用户手势，可正常弹出）；
+     *   - 父页面未监听或超时未回执 → 回退到原生 window.open，保证不彻底失效。
+     *
+     * 只放行 http/https 绝对地址，data: / blob: / javascript: 一律拒绝。
+     */
+    private function popupBridgeScript(): string
+    {
+        return <<<'JS'
+        (function () {
+          if (window.__turaPopupBridge) { return; }
+          window.__turaPopupBridge = true;
+
+          var EVENT = 'tura:open-url';
+          var nativeOpen = window.open.bind(window);
+          var seq = 0;
+
+          function isHttpUrl(value) {
+            try {
+              var protocol = new URL(String(value), window.location.href).protocol;
+              return protocol === 'http:' || protocol === 'https:';
+            } catch (e) {
+              return false;
+            }
+          }
+
+          window.open = function (url, target, features) {
+            var href = String(url == null ? '' : url);
+            // 不接管空地址（约等于新开空白页）与非 http(s) 协议
+            if (!href || !isHttpUrl(href)) {
+              return nativeOpen(url, target, features);
+            }
+            // 已经在顶层窗口里（如 _top / _parent）说明脚本本身就想替换当前页
+            if (target === '_top' || target === '_parent' || target === 'top' || target === 'parent') {
+              return nativeOpen(url, target, features);
+            }
+
+            try {
+              if (window.parent && window.parent !== window) {
+                seq += 1;
+                var id = 'tura-open-' + seq;
+                var acked = false;
+
+                // 父页面若在 1.2s 内没回执（未监听该消息），退回原生打开
+                var timer = window.setTimeout(function () {
+                  if (!acked) { nativeOpen(href, '_blank', 'noopener,noreferrer'); }
+                }, 1200);
+
+                window.addEventListener('message', function handler(event) {
+                  if (acked || !event.data || event.data.type !== EVENT + ':ack' || event.data.id !== id) {
+                    return;
+                  }
+                  acked = true;
+                  window.clearTimeout(timer);
+                  window.removeEventListener('message', handler);
+                });
+
+                window.parent.postMessage({ type: EVENT, id: id, url: href }, '*');
+                return null;
+              }
+            } catch (e) {
+              // postMessage 失败（如被 CSP 限制）时走下面的原生兜底
+            }
+
+            return nativeOpen(url, target, features);
           };
         })();
         JS;

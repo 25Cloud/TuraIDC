@@ -220,6 +220,7 @@ export interface ConsoleServiceDetail extends ServiceInstance {
   combined_display_name?: string;
   domain?: string;
   can_manage?: boolean;
+  /** 产品配置的「控制台面板」：compute / port_mapping / cdn */
   console_template?: string;
   console_mode?: string;
   machine_category?: ConsoleMachineCategory | null;

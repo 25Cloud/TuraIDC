@@ -24,6 +24,21 @@ class Product extends Model
 
     public const CONSOLE_TEMPLATE_PORT_MAPPING = 'port_mapping';
 
+    /** CDN 专用控制台：流量 / 加速区域 / 防护能力 / 面板入口，不含云主机语义 */
+    public const CONSOLE_TEMPLATE_CDN = 'cdn';
+
+    /**
+     * 全部合法的控制台模板值。
+     *
+     * 归一化统一走这里，避免各处硬编码 if/else 漏掉某个模板
+     * （历史上 port_mapping 就是在各处重复判断才容易漏）。
+     */
+    public const CONSOLE_TEMPLATES = [
+        self::CONSOLE_TEMPLATE_COMPUTE,
+        self::CONSOLE_TEMPLATE_PORT_MAPPING,
+        self::CONSOLE_TEMPLATE_CDN,
+    ];
+
     /**
      * products 表列清单缓存，按连接名分组，避免重复 getColumnListing 调用。
      *
@@ -100,10 +115,21 @@ class Product extends Model
 
     public function getConsoleTemplateAttribute(mixed $value): string
     {
+        return self::normalizeConsoleTemplate($value);
+    }
+
+    /**
+     * 归一化控制台模板取值：合法值原样保留，其余一律回落 compute。
+     *
+     * 读属性、写属性、批量更新、目录入库都走这里，
+     * 保证「新增一个模板」只需改 CONSOLE_TEMPLATES 一处。
+     */
+    public static function normalizeConsoleTemplate(mixed $value): string
+    {
         $normalized = strtolower(trim((string) $value));
 
-        return $normalized === self::CONSOLE_TEMPLATE_PORT_MAPPING
-            ? self::CONSOLE_TEMPLATE_PORT_MAPPING
+        return in_array($normalized, self::CONSOLE_TEMPLATES, true)
+            ? $normalized
             : self::CONSOLE_TEMPLATE_COMPUTE;
     }
 
@@ -166,10 +192,7 @@ class Product extends Model
 
     public function setConsoleTemplateAttribute(mixed $value): void
     {
-        $normalized = strtolower(trim((string) $value));
-        $this->attributes['console_template'] = $normalized === self::CONSOLE_TEMPLATE_PORT_MAPPING
-            ? self::CONSOLE_TEMPLATE_PORT_MAPPING
-            : self::CONSOLE_TEMPLATE_COMPUTE;
+        $this->attributes['console_template'] = self::normalizeConsoleTemplate($value);
     }
 
     public function getFirstProductGroupIdAttribute(): ?int

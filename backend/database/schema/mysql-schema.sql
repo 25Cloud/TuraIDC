@@ -1042,7 +1042,7 @@ CREATE TABLE `products` (
   `product_group_id` bigint unsigned DEFAULT NULL COMMENT '当前所属商品分组ID',
   `service_type_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '服务类型代码，用于前后端能力分流',
   `product_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '商品类型：vps/dedicated/hosting/domain/other',
-  `console_template` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'compute' COMMENT '用户控制台模板：compute 或 port_mapping',
+  `console_template` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'compute' COMMENT '用户控制台模板：compute / port_mapping / cdn',
   `custom_display_name` varchar(190) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '自定义展示名称',
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '商品备注',
   `pricing` json NOT NULL COMMENT '周期价格 JSON，如 monthly/quarterly/annually',

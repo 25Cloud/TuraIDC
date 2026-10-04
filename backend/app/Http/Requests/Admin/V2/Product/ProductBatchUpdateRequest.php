@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Admin\V2\Product;
 
 use App\Http\Requests\Admin\V2\Common\AdminFormRequest;
+use App\Models\Product;
 use Illuminate\Validation\Rule;
 
 class ProductBatchUpdateRequest extends AdminFormRequest
@@ -14,7 +15,7 @@ class ProductBatchUpdateRequest extends AdminFormRequest
         return [
             'product_ids' => ['required', 'array', 'min:1'],
             'product_ids.*' => ['required', 'integer', 'min:1'],
-            'console_template' => ['nullable', 'string', Rule::in(['compute', 'port_mapping'])],
+            'console_template' => ['nullable', 'string', Rule::in(Product::CONSOLE_TEMPLATES)],
             'product_discount_group_id' => ['nullable', 'integer', 'min:0'],
             'page' => ['prohibited'],
             'page_size' => ['prohibited'],

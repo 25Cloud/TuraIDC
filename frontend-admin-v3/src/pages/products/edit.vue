@@ -56,6 +56,7 @@
                     <t-select v-model="form.console_template">
                       <t-option label="通用计算控制台" value="compute" />
                       <t-option label="端口映射控制台" value="port_mapping" />
+                      <t-option label="CDN 控制台" value="cdn" />
                     </t-select>
                     <span>默认通用计算控制台；选择后，关联服务下次打开控制台将按此页面进入。</span>
                   </div>

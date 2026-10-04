@@ -17,10 +17,7 @@ class StoreProductRequest extends AdminFormRequest
             'custom_display_name' => ['nullable', 'string', 'max:255'],
             'product_type' => ['nullable', 'string', 'max:50'],
             'service_type_code' => ['nullable', 'string', 'max:50'],
-            'console_template' => ['nullable', 'string', Rule::in([
-                Product::CONSOLE_TEMPLATE_COMPUTE,
-                Product::CONSOLE_TEMPLATE_PORT_MAPPING,
-            ])],
+            'console_template' => ['nullable', 'string', Rule::in(Product::CONSOLE_TEMPLATES)],
             'first_product_group_id' => ['nullable', 'integer', 'min:1'],
             'second_product_group_id' => ['nullable', 'integer', 'min:1'],
             'third_product_group_id' => ['required', 'integer', 'min:1', Rule::exists((new ThirdProductGroup)->getTable(), 'id')],
