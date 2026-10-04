@@ -270,7 +270,7 @@
                     aria-label="上移"
                     @click.stop="moveProduct(row, 'up')"
                   >
-                    <template #icon><chevron-up-icon /></template>
+                    <template #icon><arrow-up-icon /></template>
                   </t-button>
                   <t-button
                     theme="default"
@@ -280,7 +280,7 @@
                     aria-label="下移"
                     @click.stop="moveProduct(row, 'down')"
                   >
-                    <template #icon><chevron-down-icon /></template>
+                    <template #icon><arrow-down-icon /></template>
                   </t-button>
                 </span>
                 <div class="product-name-main">

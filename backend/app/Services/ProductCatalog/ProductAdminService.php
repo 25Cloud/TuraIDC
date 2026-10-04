@@ -123,10 +123,11 @@ class ProductAdminService
         // 只写 sort_order 真正发生变化的商品：$reorderedIds 覆盖全部筛选结果，
         // 若一并 UPDATE，未参与本次拖动的商品也会被改写 sort_order 与 updated_at，
         // 既无谓放大写入量，也会让「最近更新」时间失真。
-        $previousSortMap = [];
-        foreach ($sortedIds as $index => $productId) {
-            $previousSortMap[(int) $productId] = $index + 1;
-        }
+        $previousSortMap = $this->applyAdminProductFilters(Product::query(), $filters)
+            ->whereIn('id', $sortedIds)
+            ->pluck('products.sort_order', 'products.id')
+            ->map(fn ($value): int => (int) $value)
+            ->all();
 
         $sortMap = [];
         foreach ($reorderedIds as $index => $productId) {
