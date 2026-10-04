@@ -53,7 +53,7 @@
           <template #icon><refresh-icon /></template>
           状态同步
         </t-button>
-        <t-button variant="outline" @click="openRenewDialog">
+        <t-button v-if="!isTrialMachine" variant="outline" @click="openRenewDialog">
           <template #icon><money-icon /></template>
           续费
         </t-button>
@@ -190,6 +190,16 @@ const moreOptions = computed(() => [
 ]);
 
 const hasUpgradeEntry = computed(() => Boolean(detail.value.actions?.upgrade ?? false));
+
+/**
+ * 试用机（上游下发 ontrial）不支持续费，隐藏续费入口。
+ * 与 CDN 总览「付费信息」卡的判断保持一致，避免头部能点却弹不出。
+ */
+const isTrialMachine = computed(() =>
+  String(detail.value.billing_cycle || '')
+    .trim()
+    .toLowerCase() === 'ontrial',
+);
 
 const isInstanceRunning = computed(() => instanceStatusTheme.value === 'success');
 

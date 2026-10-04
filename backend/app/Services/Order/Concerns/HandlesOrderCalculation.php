@@ -157,18 +157,8 @@ trait HandlesOrderCalculation
 
         // 存量商品的 config_options 缺 option_mode（提示项仍标成 select），
         // 直接按库值判断会让「明确禁止」这类提示项被当真实规格写进快照，
-        // 覆盖同名的真实配置。读取时先补齐呈现类型。
-        foreach (ProductConfigOptionPresenter::present((array) ($product->config_options ?? [])) as $item) {
-            if ((int) ($item['hidden'] ?? 0) === 1) {
-                continue;
-            }
-
-            // 提示型配置项（如「明确禁止」）只用于前台展示购买须知，
-            // 不参与计价、也不写入快照，否则会覆盖同名的真实规格配置。
-            if ($this->isTextOnlyConfigOption($item)) {
-                continue;
-            }
-
+        // 覆盖同名的真实配置。chargeableConfigOptions() 已统一处理归一与过滤。
+        foreach ($this->chargeableConfigOptions($product) as $item) {
             $field = $this->parseField($item);
             if ($field === '' || ! array_key_exists($field, $config)) {
                 continue;
@@ -313,11 +303,7 @@ trait HandlesOrderCalculation
         $extraAmount = 0.0;
         $items = [];
 
-        foreach ((array) ($product->config_options ?? []) as $item) {
-            if ((int) ($item['hidden'] ?? 0) === 1) {
-                continue;
-            }
-
+        foreach ($this->chargeableConfigOptions($product) as $item) {
             $field = $this->parseField($item);
             if ($field === '' || ! array_key_exists($field, $config)) {
                 continue;
@@ -482,7 +468,7 @@ trait HandlesOrderCalculation
     {
         $markupByField = [];
 
-        foreach ((array) ($product->config_options ?? []) as $option) {
+        foreach ($this->chargeableConfigOptions($product) as $option) {
             if ((int) ($option['hidden'] ?? 0) === 1) {
                 continue;
             }
@@ -743,7 +729,7 @@ trait HandlesOrderCalculation
         $items = [];
         $configAmount = 0.0;
 
-        foreach ((array) ($product->config_options ?? []) as $option) {
+        foreach ($this->chargeableConfigOptions($product) as $option) {
             if ((int) ($option['hidden'] ?? 0) === 1) {
                 continue;
             }
@@ -827,7 +813,7 @@ trait HandlesOrderCalculation
         $extraAmount = 0.0;
         $items = [];
 
-        foreach ((array) ($product->config_options ?? []) as $item) {
+        foreach ($this->chargeableConfigOptions($product) as $item) {
             if ((int) ($item['hidden'] ?? 0) === 1) {
                 continue;
             }
@@ -1001,6 +987,32 @@ trait HandlesOrderCalculation
      *
      * @param  array<string, mixed>  $item
      */
+    /**
+     * 迭代「可计价」的配置项。
+     *
+     * 存量商品的 config_options 缺 option_mode（提示项仍标成 select），
+     * 直接遍历库值会让「明确禁止」这类提示项参与计价、并写进配置快照，
+     * 覆盖同 field 的真实规格。统一先经 Presenter 归一呈现类型再取。
+     *
+     * @return iterable<int, array<string, mixed>>
+     */
+    private function chargeableConfigOptions(Product $product): iterable
+    {
+        foreach (ProductConfigOptionPresenter::present((array) ($product->config_options ?? [])) as $item) {
+            if ((int) ($item['hidden'] ?? 0) === 1) {
+                continue;
+            }
+
+            // 提示型配置项（如「明确禁止」）只用于前台展示购买须知，
+            // 不参与计价、也不写入快照。
+            if ($this->isTextOnlyConfigOption($item)) {
+                continue;
+            }
+
+            yield $item;
+        }
+    }
+
     private function isTextOnlyConfigOption(array $item): bool
     {
         return trim((string) ($item['option_mode'] ?? '')) === 'text';

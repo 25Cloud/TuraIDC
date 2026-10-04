@@ -86,7 +86,18 @@ class ServiceConsoleAreaService
 
             // 部分上游（如天理云 CDN）只在 host/header 的 module_client_area 里声明自定义区域，
             // supported_modules 端点并不包含它。不补这一刀，商家给的页面就永远不会被渲染出来。
-            $this->mergeHeaderClientAreas($capabilities, $runtime, $supplier, $hostId, $jwt);
+            //
+            // 这里是补充数据源，失败不该让已成功取到的 supported_modules 能力作废：
+            // 不隔离的话异常会落进外层 catch，把 capabilities 整体标记为不支持并缓存，
+            // 一个补充源的抖动会让整个面板消失几分钟。
+            try {
+                $this->mergeHeaderClientAreas($capabilities, $runtime, $supplier, $hostId, $jwt);
+            } catch (\Throwable $exception) {
+                Log::warning('[服务控制台] 补充 host 自定义区域失败，沿用已取到的能力', [
+                    'service_id' => (int) $service->id,
+                    'message' => SensitiveDataSanitizer::sanitizeText($exception->getMessage()),
+                ]);
+            }
 
             $capabilities['supported'] = true;
             $capabilities['fetchable'] = is_callable([$runtime, 'fetchCustomModulePage']);

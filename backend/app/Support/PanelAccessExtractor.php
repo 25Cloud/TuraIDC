@@ -164,6 +164,9 @@ final class PanelAccessExtractor
             if ($value !== '') {
                 $result['panel_password'] = $value;
                 $result['panel_source'] = $result['panel_source'] ?: 'host_field';
+                // 与用户名一致：HOST_FIELD_PASSWORD 是按优先级排列的，
+                // 取第一个非空即最高优先级，不该被后面的字段覆盖。
+                break;
             }
         }
 
@@ -271,9 +274,14 @@ final class PanelAccessExtractor
             $panel = self::emptyResult();
         }
 
+        // $weak 只描述「进入 HTML 合并前」的来源强度，不随赋值改变：
+        // 一旦在循环里被置 true，后续每个字段都会覆盖已有值，
+        // 商家明确配置的面板地址/账号会被 HTML 里的兜底值顶掉。
         $weak = ! isset($panel['panel_source'])
             || $panel['panel_source'] === ''
             || str_ends_with((string) $panel['panel_source'], '_fallback');
+
+        $htmlSource = $weak ? 'area_html' : (string) ($panel['panel_source'] ?: 'area_html');
 
         foreach ($htmlFragments as $html) {
             if (! is_string($html) || trim($html) === '') {
@@ -285,14 +293,13 @@ final class PanelAccessExtractor
                     continue;
                 }
 
-                // 已有强来源的值不被覆盖；弱来源（泛化字段兜底）允许被HTML 里的准确值替换
+                // 已有强来源的值不被覆盖；弱来源（泛化字段兜底）允许被 HTML 里的准确值替换
                 if (($panel[$key] ?? '') !== '' && ! $weak) {
                     continue;
                 }
 
                 $panel[$key] = $value;
-                $panel['panel_source'] = $weak ? 'area_html' : (string) ($panel['panel_source'] ?: 'area_html');
-                $weak = true;
+                $panel['panel_source'] = $htmlSource;
             }
         }
 

@@ -360,6 +360,10 @@ export function useWebsiteProductConfigurator(productDetail) {
     }
 
     allParsedConfigs.value.forEach((cfg) => {
+      // 提示型配置项（如「明确禁止」）只用于展示购买须知，
+      // 写进configForm 会覆盖同 key 真实规格的默认值。
+      if (cfg.isTextNotice) return
+
       if (cfg.isNumber) {
         configForm[cfg.key + '_num'] = cfg.defaultNum
       } else if (cfg.options.length) {

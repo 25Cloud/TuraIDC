@@ -598,7 +598,7 @@ interface ConfigOptionMarkup {
   extra_amount: number;
 }
 
-type ConsoleTemplate = 'compute' | 'port_mapping';
+type ConsoleTemplate = 'compute' | 'port_mapping' | 'cdn';
 
 /** 配置项在后台可编辑的呈现类型 */
 type ConfigOptionEditMode = 'select' | 'range' | 'text';
@@ -822,7 +822,11 @@ function hasPositivePrice() {
 
 // --- Config option helpers ---
 function normalizeConsoleTemplate(value: unknown): ConsoleTemplate {
-  return value === 'port_mapping' ? value : 'compute';
+  const text = String(value ?? '').trim();
+  // cdn 必须原样保留：归一成 compute 会让 CDN 商品打开控制台时
+  // 走进通用计算控制台，前端刚加的 CDN 专属控制台分支永远不会命中。
+  if (text === 'cdn' || text === 'port_mapping') return text;
+  return 'compute';
 }
 
 function normalizeConfigOptions(value: unknown): ConfigOptionRecord[] {

@@ -31,6 +31,7 @@
         <iframe
           v-if="frameSrc && !errorText"
           :key="frameSrc"
+          ref="frameRef"
           class="area-frame"
           :src="frameSrc"
           :title="panelTitle"
@@ -84,6 +85,8 @@ const ticket = ref('');
 const loadingToken = ref(0);
 // 面板内容是否已真正渲染出来（iframe load：含其子资源加载完成）
 const frameLoaded = ref(false);
+// 用于校验 postMessage 来源，避免任意窗口借桥接打开外部地址
+const frameRef = ref<HTMLIFrameElement | null>(null);
 
 /**
  * 面板入口地址（面板型产品）。
@@ -180,6 +183,12 @@ function openInNewWindow() {
 const POPUP_BRIDGE_EVENT = 'tura:open-url';
 
 function handleBridgeMessage(event: MessageEvent) {
+  // 只接受本组件 iframe 发来的消息：监听器挂在 window 上，
+  // 同页任意窗口（包括被面板打开的第三方页面）都能发 postMessage，
+  // 不校验来源等于把「代开任意网址」的能力交给了任何页面。
+  const frame = frameRef.value;
+  if (!frame || event.source !== frame.contentWindow) return;
+
   const data = event.data as { type?: string; id?: string; url?: string } | null;
   if (!data || data.type !== POPUP_BRIDGE_EVENT || !data.url) return;
 

@@ -266,7 +266,9 @@ export function findSpecValue(detail: Ref<ConsoleServiceDetail>, aliases: string
     const token = normalizeToken(alias);
     const matched = specs.find((spec) => {
       const keys = [spec.key, spec.label].map(normalizeToken);
-      return keys.some((item) => item.includes(token) || token.includes(item));
+      // 空白 key / label 要先剔除：token.includes('') 恒为 true，
+      // 不剔除会让没有 key 的规格被当成命中第一个别名的项。
+      return keys.some((item) => item !== '' && (item.includes(token) || token.includes(item)));
     });
     const value = String(matched?.value || '').trim();
     if (value) return value;

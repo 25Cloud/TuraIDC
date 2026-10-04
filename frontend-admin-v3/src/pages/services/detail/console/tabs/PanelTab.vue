@@ -88,10 +88,10 @@
             label="面板密码"
             :value="revealedPassword ? panelPassword : maskPassword(panelPassword)"
             copyable
-            @copy="copyText"
+            @copy="copyPanelPassword"
           />
         </div>
-        <template v-if="panelUrl" #actions>
+        <template v-if="panelUrl || panelPassword" #actions>
           <t-button
             v-if="revealedPassword"
             variant="outline"
@@ -108,7 +108,7 @@
           >
             显示密码
           </t-button>
-          <t-button theme="primary" size="small" @click="openPanel">
+          <t-button v-if="panelUrl" theme="primary" size="small" @click="openPanel">
             <template #icon><jump-icon /></template>
             进入面板
           </t-button>
@@ -195,6 +195,16 @@ const panelHint = computed(() => {
 function maskPassword(value: string): string {
   if (value.length <= 4) return '*'.repeat(value.length);
   return `${value.slice(0, 2)}${'*'.repeat(Math.max(value.length - 4, 6))}${value.slice(-2)}`;
+}
+
+/**
+ * 复制面板密码。
+ *
+ * InfoCell 抛出的是显示值（未展开时是打码后的字符串），直接交给copyText
+ * 复制到的是 `ab****yz`。这里忽略事件参数、始终复制真实密码。
+ */
+function copyPanelPassword() {
+  void copyText(panelPassword.value);
 }
 
 function openPanel() {

@@ -148,7 +148,9 @@ const regionText = computed(() => {
     const token = alias.replace(/\s/g, '');
     const hit = specs.find((spec: { key?: string; label?: string; value?: unknown }) => {
       const keys = [spec.key, spec.label].map((v) => String(v || '').replace(/\s/g, ''));
-      return keys.some((k) => k.includes(token) || token.includes(k));
+      // 空白key / label 必须先剔除：token.includes('') 恒为 true，
+      // 不剔除会让没有 key 的规格被当成命中第一个别名的区域。
+      return keys.some((k) => k !== '' && (k.includes(token) || token.includes(k)));
     });
     const value = String(hit?.value || '').trim();
     if (value) return value;

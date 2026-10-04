@@ -65,9 +65,11 @@ async function resolveConsoleKind() {
   if (!hasUser.value || serviceId.value <= 0) return;
   const token = ++kindToken;
   try {
-    const detail = (await userApi.serviceDetail(userId.value, serviceId.value)) || {};
+    // config 响应已带 console_template / product_type / machine_category，
+    // 足够判定 CDN；不必拉完整的 detail（会连带触发 connection 等请求）。
+    const config = (await userApi.serviceConfig(userId.value, serviceId.value)) || {};
     if (token !== kindToken) return;
-    consoleKind.value = isCdnConsole(detail as ConsoleServiceDetail) ? 'cdn' : 'generic';
+    consoleKind.value = isCdnConsole(config as ConsoleServiceDetail) ? 'cdn' : 'generic';
   } catch {
     // 判定失败退回通用控制台：它对 CDN 也能展示（只是 tab 更宽），不会白屏
     if (token === kindToken) consoleKind.value = 'generic';

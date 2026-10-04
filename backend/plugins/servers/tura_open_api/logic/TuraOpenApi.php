@@ -82,23 +82,7 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
      */
     public const OPTION_MODE_TEXT = 'text';
 
-    /**
-     * 名称命中即判定为购买提示的关键词。
-     *
-     * 配合 {@see isTextNoticeOption()} 的结构判据（单子项 + 长句文案）一起使用，
-     * 只靠名称会把正常的「CPU」这类短名称配置项误判成提示。
-     */
-    private const TEXT_NOTICE_NAME_KEYWORDS = [
-        '明确禁止',
-        '禁止',
-        '须知',
-        '提示',
-        '说明',
-        '警告',
-        '声明',
-        '温馨',
-    ];
-
+    
     /** 开通轮询：上游账单映射 + 服务开通，单轮预算约 150s，超出交给队列重试 */
     private const PROVISION_POLL_ATTEMPTS = 50;
 
@@ -1066,46 +1050,27 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
      */
     private function resolveSiteOptionMode(array $item, bool $isRange, bool $isTextNotice): string
     {
+        // 上游已明确给了模式就以此为准；提示项靠结构反推，不该反过来覆盖显式配置。
         $mode = trim((string) ($item['option_mode'] ?? ''));
-
-        if ($mode === self::OPTION_MODE_TEXT || $isTextNotice) {
-            return self::OPTION_MODE_TEXT;
-        }
 
         if ($mode !== '') {
             return $mode;
         }
 
-        return $isRange ? 'range' : 'select';
+        return $isTextNotice ? self::OPTION_MODE_TEXT : ($isRange ? 'range' : 'select');
     }
 
     /**
      * 判定配置项是否实为「购买提示文字」。
      *
-     * 上游没有专门的提示类型，只能从结构反推：命中提示关键词，
-     * 或整个配置项只有一条子项且子项文案是一句长句（正常规格值都是
-     * 「16核」「500G」这类短值，不会用整句中文）。两者取或，避免把
-     * 名称含「说明」但取值是真实规格的项误判。
+     * 与 ProductConfigOptionPresenter::isTextNotice() 同款判据（单子项 +
+     * 整句中文），避免两条下发路径对同一配置项给出不同的呈现类型。
      *
      * @param  array<int, array<string, mixed>>  $subOptions
      */
     private function isTextNoticeOption(string $name, array $subOptions): bool
     {
-        foreach (self::TEXT_NOTICE_NAME_KEYWORDS as $keyword) {
-            if (str_contains($name, $keyword)) {
-                return true;
-            }
-        }
-
-        if (count($subOptions) !== 1) {
-            return false;
-        }
-
-        $onlySubName = trim((string) ($subOptions[0]['option_name'] ?? ''));
-
-        // 整句中文提示：长度够长且含中文标点/汉字，短规格值不会命中
-        return mb_strlen($onlySubName) >= 12
-            && preg_match('/[\x{4e00}-\x{9fa5}]/u', $onlySubName) === 1;
+        return ProductConfigOptionPresenter::isTextNotice($name, $subOptions);
     }
 
     /**

@@ -96,27 +96,36 @@ final class ProductConfigOptionPresenter
      * 判定配置项是否实为「购买提示文字」。
      *
      * 上游没有专门的提示类型，只能从结构反推：命中提示关键词，
-     * 或整个配置项只有一条子项且子项文案是一句长句（正常规格值都是
+     * 且整个配置项只有一条子项、子项文案是一句长句（正常规格值都是
      * 「16核」「500G」这类短值，不会用整句中文）。
+     *
+     * 关键词命中也要求满足上述结构判据：有些真实规格的名称里带
+     * 「说明」「备注」等词（如「带宽说明」），只看关键词会把它误判成提示项，
+     * 导致真实规格不参与计价。
      *
      * @param  array<int, array<string, mixed>>  $subOptions
      */
     public static function isTextNotice(string $name, array $subOptions): bool
     {
+        if (count($subOptions) !== 1) {
+            return false;
+        }
+
+        $onlySubName = trim((string) ($subOptions[0]['option_name'] ?? ''));
+        // 结构判据：单子项 + 整句中文提示文案
+        if (mb_strlen($onlySubName) < 12
+            || preg_match('/[\x{4e00}-\x{9fa5}]/u', $onlySubName) !== 1) {
+            return false;
+        }
+
         foreach (self::TEXT_NOTICE_NAME_KEYWORDS as $keyword) {
             if (str_contains($name, $keyword)) {
                 return true;
             }
         }
 
-        if (count($subOptions) !== 1) {
-            return false;
-        }
-
-        $onlySubName = trim((string) ($subOptions[0]['option_name'] ?? ''));
-
-        return mb_strlen($onlySubName) >= 12
-            && preg_match('/[\x{4e00}-\x{9fa5}]/u', $onlySubName) === 1;
+        // 单子项且取值是整句中文，本身就是提示文案，不要求名称命中关键词
+        return true;
     }
 
     /**
@@ -127,17 +136,14 @@ final class ProductConfigOptionPresenter
      */
     private static function resolveMode(array $item, bool $isRange, bool $isTextNotice): string
     {
+        // 上游已明确给了模式就以此为准。提示项靠结构反推，反推可能误伤
+        // 真实规格（如名称含「说明」的单子项规格），不该反过来覆盖上游的显式配置。
         $mode = trim((string) ($item['option_mode'] ?? ''));
-
-        if ($mode === self::MODE_TEXT || $isTextNotice) {
-            return self::MODE_TEXT;
-        }
-
         if ($mode !== '') {
             return $mode;
         }
 
-        return $isRange ? 'range' : 'select';
+        return $isTextNotice ? self::MODE_TEXT : ($isRange ? 'range' : 'select');
     }
 
     /**
