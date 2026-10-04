@@ -1844,11 +1844,11 @@
 .supplier-batch-panel {
   display: flex;
   overflow: hidden;
-  min-height: 420px;
-  // 弹窗内「说明 + 表单 + 穿梭面板 + 底部按钮」叠加后常超出视口，
-  // 只给 min-height 会把整页撑高、必须上下滚动才能看到「执行对接」按钮。
-  // 改为视口相对高度并让面板内部滚动，弹窗外框不再溢出。
-  max-height: min(56vh, 560px);
+  // 上下双限：min 保证内容少时不塌陷，max 保证内容多时内部滚动而非撑高整页。
+  // 56vh 是关键——弹窗内还要放头部、说明、表单、工具栏与底部按钮，
+  // 面板本身必须让出这部分高度，否则「执行对接」按钮会被顶出视口。
+  min-height: 300px;
+  max-height: min(52vh, 520px);
   border: 1px solid var(--td-component-border);
   border-radius: var(--td-radius-medium);
   background: var(--td-bg-color-container);
@@ -1921,7 +1921,10 @@
 
 .supplier-tree {
   overflow: auto;
-  height: 420px;
+  // 不再写死 420px：改为 flex 撑满父面板剩余高度，
+  // 高度上限由 .supplier-batch-panel 的 max-height 统一控制
+  flex: 1 1 auto;
+  min-height: 0;
   padding: var(--td-comp-paddingTB-xs) 0;
 
   &.is-loading {

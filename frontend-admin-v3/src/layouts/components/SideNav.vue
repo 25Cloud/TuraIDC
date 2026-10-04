@@ -5,7 +5,7 @@
       :class="`${prefix}-side-nav-mask`"
       @click="closeMobileSidebar"
     ></div>
-    <nav ref="navRef" :class="sideNavCls" :aria-label="t('common.appName')">
+    <nav :class="sideNavCls" :aria-label="t('common.appName')">
       <t-menu
         :class="menuCls"
         :theme="theme"
@@ -187,12 +187,10 @@ onMounted(() => {
   autoCollapsed();
 
   window.addEventListener('resize', autoCollapsed);
-  document.addEventListener('mousedown', handleDocumentPointerDown);
 });
 
 onUnmounted(() => {
   window.removeEventListener('resize', autoCollapsed);
-  document.removeEventListener('mousedown', handleDocumentPointerDown);
 });
 
 const goHome = () => {
@@ -300,27 +298,6 @@ function closeMobileSidebar() {
   settingStore.updateConfig({
     isMobileSidebarVisible: false,
   });
-}
-
-const navRef = ref<HTMLElement | null>(null);
-
-/**
- * 桌面端点击侧栏外部收起。
- *
- * 桌面端侧栏是常驻的「折叠/展开」而非抽屉：展开后点空白处没有任何反应，
- * 必须先选中一个菜单项才会因路由变化而看起来「关闭了」。
- *
- * 这里用文档级监听而非遮罩：全屏蒙层会挡住内容区交互，正常工作流反而受阻。
- */
-function handleDocumentPointerDown(event: MouseEvent) {
-  // 移动端走遮罩关闭，不参与这里的收起逻辑
-  if (isMobile.value) return;
-  // 已折叠时无需再收起
-  if (collapsed.value) return;
-  // 折叠按钮等位于 nav 内部的控件不触发
-  if (!navRef.value || navRef.value.contains(event.target as Node)) return;
-
-  settingStore.updateConfig({ isSidebarCompact: true });
 }
 
 function handleMenuChange() {

@@ -380,13 +380,6 @@ const handleLogout = async () => {
     display: none;
   }
 
-  // 顶栏宽度紧张，用户名（.header-user-account）不限制宽度会把右侧
-  // 「设置」「仪表盘」按钮挤出屏幕，只剩半个图标。手机端只保留头像，
-  // 用户名改到下拉菜单里展示。
-  .header-user-account {
-    display: none;
-  }
-
   // 操作区禁止收缩，并给按钮留出稳定尺寸，避免被内容挤走
   .operations-container {
     flex: 0 0 auto;

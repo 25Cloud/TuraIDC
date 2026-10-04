@@ -113,7 +113,9 @@
   .@{starter-prefix}-side-nav-mask {
     position: fixed;
     inset: 0;
-    z-index: 1998;
+    // 必须高于顶栏（z-index: 1001）与内容区，否则抽屉打开时点顶栏/内容区
+    // 命中的是顶栏而非遮罩，「点空白关闭」在手机端完全失效。
+    z-index: 2998;
     background: rgb(0 0 0 / 42%);
   }
 
@@ -122,7 +124,8 @@
     top: 0;
     bottom: 0;
     left: 0;
-    z-index: 1999;
+    // 略高于遮罩，保证侧栏本身可点
+    z-index: 2999;
     width: min(84vw, 288px);
     max-width: 288px;
     transform: translateX(-100%);
@@ -164,8 +167,15 @@
     padding-left: 8px;
   }
 
+  // 手机端保留用户名但限制宽度并省略：完全隐藏会让用户看不到当前登录账号，
+  // 而不限制宽度又会把右侧「设置」「仪表盘」按钮挤出屏幕。
   .header-user-account {
-    display: none;
+    display: inline-block;
+    max-width: 88px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
   }
 
   .operations-container .t-button {
