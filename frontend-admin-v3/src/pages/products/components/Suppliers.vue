@@ -471,7 +471,6 @@
           :min="0"
           :max="99999999"
           :decimal-places="2"
-          theme="column"
           style="width: 100%"
         />
         <p class="supplier-field-tip">
