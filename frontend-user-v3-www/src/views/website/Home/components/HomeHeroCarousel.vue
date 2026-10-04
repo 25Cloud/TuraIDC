@@ -1,6 +1,19 @@
 <template>
   <section ref="heroSectionRef" class="hero-section">
     <div class="hero-bg" aria-hidden="true">
+      <div class="hero-bg__image-wrap">
+        <img
+          v-if="activeImage"
+          :key="activeImage"
+          class="hero-bg__image"
+          :class="{ 'hero-bg__image--active': imageLoaded }"
+          :src="resolvedImageSrc(activeImage)"
+          alt=""
+          decoding="async"
+          @load="onImageLoad"
+          @error="onImageError"
+        />
+      </div>
       <div class="hero-bg__video-wrap">
         <video
           v-if="heroVideoEnabled"
@@ -44,8 +57,11 @@
           @playing="onVideoPlaying('b')"
           @pause="onVideoPaused('b')"
         ></video>
-        <div class="hero-bg__video-overlay"></div>
       </div>
+      <div
+        class="hero-bg__scrim"
+        :class="{ 'hero-bg__scrim--frosted': Boolean(activeImage) }"
+      ></div>
     </div>
 
     <div
@@ -189,12 +205,18 @@ const heroVideoEnabled = ref(false);
 const activeVideoSlot = ref("a");
 const videoSlotA = ref("");
 const videoSlotB = ref("");
+// 背景图加载完成前先不淡入，避免先闪一下未铺满的图
+const imageLoaded = ref(false);
 const videoDurations = new Map();
 const activeIndex = ref(0);
 const heroSlides = shallowRef(Object.freeze([]));
 const heroFeatures = shallowRef(Object.freeze([]));
 
 function resolvedVideoSrc(url) {
+  return resolveApiAssetUrl(url, apiBaseUrl);
+}
+
+function resolvedImageSrc(url) {
   return resolveApiAssetUrl(url, apiBaseUrl);
 }
 
@@ -221,6 +243,7 @@ const DEFAULT_SLIDES = freezeConfigList([
     secondaryPath: "/about",
     shape: "computer",
     video: "",
+    image: "",
     ribbon: "",
     ribbonType: "new",
   },
@@ -235,6 +258,7 @@ const DEFAULT_SLIDES = freezeConfigList([
     secondaryPath: "/help",
     shape: "connection",
     video: "",
+    image: "",
     ribbon: "",
     ribbonType: "new",
   },
@@ -249,6 +273,7 @@ const DEFAULT_SLIDES = freezeConfigList([
     secondaryPath: "/help",
     shape: "security",
     video: "",
+    image: "",
     ribbon: "",
     ribbonType: "new",
   },
@@ -263,6 +288,7 @@ const DEFAULT_SLIDES = freezeConfigList([
     secondaryPath: "/products",
     shape: "value",
     video: "",
+    image: "",
     ribbon: "",
     ribbonType: "warm",
   },
@@ -277,6 +303,7 @@ const DEFAULT_SLIDES = freezeConfigList([
     secondaryPath: "/about",
     shape: "support",
     video: "",
+    image: "",
     ribbon: "",
     ribbonType: "new",
   },
@@ -363,6 +390,8 @@ function normalizeSlide(raw, index = 0) {
     ),
     shape: ALLOWED_SHAPES.has(shape) ? shape : "computer",
     video: pickString(source.video, ""),
+    // 轮播背景图。与视频并存时视频铺在上层，图片充当封面与移动端/弱网兜底。
+    image: pickString(source.image, ""),
     // 视频首帧静态封面：管理端可配置，前端据此为 <video> 补 poster，
     // 使 LCP 锚定在快速绘制的占位图上，而非等视频下载+解码。
     poster: pickString(
@@ -448,6 +477,9 @@ const activeSlide = computed(
 
 // 当前 slide 的视频首帧封面：为空时不设 poster，由 video 默认行为兜底
 const activePoster = computed(() => String(activeSlide.value?.poster || ""));
+
+// 当前 slide 的背景图：为空时不渲染图片层，遮罩退回原来的视频渐变样式
+const activeImage = computed(() => String(activeSlide.value?.image || ""));
 
 const MIN_ROTATION_INTERVAL = 6000;
 const MAX_ROTATION_INTERVAL = 15000;
@@ -783,6 +815,16 @@ function activateSlide(index) {
   startRotation();
 }
 
+function onImageLoad() {
+  imageLoaded.value = true;
+}
+
+// 图片加载失败也要结束「未加载」态：否则遮罩停在无磨砂的初始样式，
+// 而背景是空的，文字直接压在纯背景色上，可读性反而更差。
+function onImageError() {
+  imageLoaded.value = false;
+}
+
 function onVideoACanPlay() {
   markVideoReady("a");
 }
@@ -834,6 +876,9 @@ function onVideoMetadata(event, slot) {
 }
 
 watch(activeSlide, (slide) => {
+  // 换图时先收回淡入态，等新图 load 完成再淡入，避免沿用上一张的已加载状态
+  imageLoaded.value = false;
+
   if (!heroVideoEnabled.value) return;
   if (!slide?.video) return;
   const currentSlotSrc =
@@ -960,10 +1005,12 @@ onBeforeUnmount(() => {
   z-index: 0;
 }
 
+// 视频铺在图片之上：两者都配置时以视频为准，
+// 图片充当视频加载中与移动端/弱网（视频被禁用）时的兜底视觉。
 .hero-bg__video-wrap {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: 1;
 }
 
 .hero-bg__video {
@@ -990,14 +1037,67 @@ onBeforeUnmount(() => {
   transition: none;
 }
 
-.hero-bg__video-overlay {
+.hero-bg__image-wrap {
   position: absolute;
   inset: 0;
+  z-index: 0;
+}
+
+.hero-bg__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  // 靠右展示：图片视觉重心放在没有文字的一侧
+  object-position: right center;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.hero-bg__image--active {
+  opacity: 1;
+}
+
+/*
+ * 半遮罩。
+ *
+ * 有文字的一侧（左侧：导航 + 标题 + 按钮）铺半透明白色磨砂，保证可读性；
+ * 没有文字的一侧（右侧约 340~420px 的空列）渐变到全透明，让背景图透出来。
+ *
+ * 磨砂与白色都渐变淡出，靠的是 mask-image 把整个元素（含 backdrop-filter
+ * 的效果）一起裁掉 —— 只给 backdrop-filter 做渐变它是做不到的，模糊强度
+ * 无法沿轴向变化。不支持 backdrop-filter 的浏览器仍保留白色遮罩，只是不模糊。
+ */
+.hero-bg__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   background: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.68) 0%,
     rgba(255, 255, 255, 0.38) 52%,
     rgba(255, 255, 255, 0.18) 100%
+  );
+}
+
+.hero-bg__scrim--frosted {
+  background: rgba(255, 255, 255, 0.74);
+  backdrop-filter: blur(22px) saturate(1.08);
+  -webkit-backdrop-filter: blur(22px) saturate(1.08);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 40%,
+    rgba(0, 0, 0, 0.72) 58%,
+    rgba(0, 0, 0, 0) 80%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 40%,
+    rgba(0, 0, 0, 0.72) 58%,
+    rgba(0, 0, 0, 0) 80%
   );
 }
 
@@ -1313,6 +1413,25 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1180px) {
+  // 右侧空列在 1180px 以下消失，正文铺满剩余宽度，
+  // 遮罩相应右移淡出点，避免文字右半段压在没磨砂的图上。
+  .hero-bg__scrim--frosted {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      #000 0%,
+      #000 62%,
+      rgba(0, 0, 0, 0.62) 84%,
+      rgba(0, 0, 0, 0.22) 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      #000 0%,
+      #000 62%,
+      rgba(0, 0, 0, 0.62) 84%,
+      rgba(0, 0, 0, 0.22) 100%
+    );
+  }
+
   .hero-stage {
     grid-template-columns: 220px minmax(0, 1fr);
     grid-template-rows: auto auto auto;
@@ -1363,6 +1482,24 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 960px) {
+  // 单列布局：文字横向铺满，没有「无字的一侧」了。
+  // 改为纵向渐变 —— 主体仍磨砂，底部渐透让图片露出来。
+  .hero-bg__scrim--frosted {
+    background: rgba(255, 255, 255, 0.78);
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      #000 0%,
+      #000 58%,
+      rgba(0, 0, 0, 0.55) 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      #000 0%,
+      #000 58%,
+      rgba(0, 0, 0, 0.55) 100%
+    );
+  }
+
   .hero-section {
     padding: 20px 0 28px;
   }
