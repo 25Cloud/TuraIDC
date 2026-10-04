@@ -21,6 +21,7 @@ class SiteHomeHeroResource extends JsonResource
         'secondary_path',
         'shape',
         'video',
+        'image',
         'ribbon',
         'ribbon_type',
     ];
@@ -62,6 +63,11 @@ class SiteHomeHeroResource extends JsonResource
 
                 if (array_key_exists('video', $projected)) {
                     $projected['video'] = UploadUrl::resolve($projected['video']) ?? '';
+                }
+
+                // 与 video 一致：库里存的是站内路径，这里解析成可直接访问的地址
+                if (array_key_exists('image', $projected)) {
+                    $projected['image'] = UploadUrl::resolve($projected['image']) ?? '';
                 }
 
                 return $projected;
