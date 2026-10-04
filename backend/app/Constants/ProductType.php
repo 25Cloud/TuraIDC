@@ -131,6 +131,33 @@ class ProductType
         return self::normalizeBusinessValue($normalizedValue);
     }
 
+    /**
+     * 严格解析：把原始 code 解析为合法商品种类，非法值返回 null。
+     *
+     * 与 normalizeBusinessValue() 的区别在于不做 OTHER 兜底 ——
+     * 那里的 `?? self::OTHER` 会让任意未知值都「归一化」成 other，
+     * 使其无法用于「校验用户输入是否合法」的场景。
+     *
+     * @return string|null 合法枚举值；无法识别时返回 null
+     */
+    public static function strictBusinessValue(mixed $value): ?string
+    {
+        $normalizedValue = trim((string) $value);
+
+        if ($normalizedValue === '') {
+            return null;
+        }
+
+        if (in_array($normalizedValue, self::allowedValues(), true)) {
+            return $normalizedValue;
+        }
+
+        // 仅接受明确登记的历史映射，未知值不兜底
+        $mapped = self::LEGACY_BUSINESS_TYPE_MAP[$normalizedValue] ?? null;
+
+        return $mapped !== null && in_array($mapped, self::allowedValues(), true) ? $mapped : null;
+    }
+
     public static function businessValueForFirstGroup(?FirstProductGroup $group, mixed $fallback = null): string
     {
         if ($group instanceof FirstProductGroup) {

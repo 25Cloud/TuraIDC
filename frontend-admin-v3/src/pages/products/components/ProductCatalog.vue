@@ -240,17 +240,61 @@
               />
             </template>
             <template #name="{ row }">
-              <div class="product-name">
+              <div
+                class="product-name"
+                :class="{ 'is-drop-target': productDragState && productDragState.id !== row.id }"
+                @dragover="handleProductDragOver(row, $event)"
+                @drop="handleProductDrop(row, $event)"
+              >
                 <button
+                  v-if="canSortProducts"
                   type="button"
-                  class="product-name-link"
-                  :class="{ 'is-hidden': !isProductVisible(row) }"
-                  :title="productSpecDisplayName(row)"
-                  @click.stop="goProductEditPage(row)"
+                  class="product-drag"
+                  :class="{ 'is-dragging': productDragState?.id === row.id }"
+                  :disabled="productSortLoading ? true : undefined"
+                  :aria-label="`拖动排序：${productSpecDisplayName(row)}`"
+                  draggable="true"
+                  @dragstart="handleProductDragStart(row, $event)"
+                  @dragend="handleProductDragEnd"
+                  @click.stop
                 >
-                  {{ productSpecDisplayName(row) }}
+                  ::
                 </button>
-                <span>{{ productSubtitle(row) }}</span>
+                <!-- 键盘可达的排序入口：拖拽对键盘用户不可用 -->
+                <span v-if="canSortProducts" class="product-sort-keys">
+                  <t-button
+                    theme="default"
+                    variant="text"
+                    size="small"
+                    :disabled="productSortLoading || !canMoveProduct(row, 'up')"
+                    aria-label="上移"
+                    @click.stop="moveProduct(row, 'up')"
+                  >
+                    <template #icon><arrow-up-icon /></template>
+                  </t-button>
+                  <t-button
+                    theme="default"
+                    variant="text"
+                    size="small"
+                    :disabled="productSortLoading || !canMoveProduct(row, 'down')"
+                    aria-label="下移"
+                    @click.stop="moveProduct(row, 'down')"
+                  >
+                    <template #icon><arrow-down-icon /></template>
+                  </t-button>
+                </span>
+                <div class="product-name-main">
+                  <button
+                    type="button"
+                    class="product-name-link"
+                    :class="{ 'is-hidden': !isProductVisible(row) }"
+                    :title="productSpecDisplayName(row)"
+                    @click.stop="goProductEditPage(row)"
+                  >
+                    {{ productSpecDisplayName(row) }}
+                  </button>
+                  <span>{{ productSubtitle(row) }}</span>
+                </div>
               </div>
             </template>
             <template #status="{ row }">
@@ -1212,6 +1256,8 @@ import { useRouter } from 'vue-router';
 import { productDiscountGroupsApi } from '@/api/admin/agentDiscount';
 import type { ProductDiscountGroupRecord } from '@/api/admin/types';
 import type { ProductCategoryRecord, ProductRecord, ProductTypeRecord, SpecHighlightDimension } from '@/api/product';
+import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
+import { useUserStore } from '@/store';
 import { productApi } from '@/api/product';
 import type { ProviderTypeRecord, SupplierFormField, SupplierRecord } from '@/api/supplier';
 import { supplierApi } from '@/api/supplier';
@@ -1495,6 +1541,7 @@ const productColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'services_count', title: '现存', width: 100 },
   { colKey: 'cpu', title: 'CPU 型号', width: 180 },
   { colKey: 'discountGroup', title: '折扣分组', width: 140 },
+  { colKey: 'sort_order', title: '排序', width: 76 },
   { colKey: 'status', title: '显示状态', width: 110 },
   { colKey: 'operation', title: '操作', width: 72, fixed: 'right' },
 ];
@@ -2455,6 +2502,119 @@ function handleCategoryDrop(targetRow: ProductCategoryRecord, event: DragEvent) 
 
 function handleCategoryDragEnd() {
   categoryDragState.value = null;
+}
+
+// ---------- 商品拖拽排序 ----------
+
+interface ProductDragState {
+  id: number;
+}
+
+const productDragState = ref<ProductDragState | null>(null);
+const productSortLoading = ref(false);
+
+// 拖拽排序会改写商品顺序，属于 product.manage 权限范围；
+// 无权限用户不应看到排序控件（后端仍会独立校验）。
+const userStore = useUserStore();
+const canSortProducts = computed(
+  () => hasPermissionInList(userStore.userInfo?.permissions || [], AdminPermissions.PRODUCT_MANAGE),
+);
+
+function handleProductDragStart(row: TableRowData, event: DragEvent) {
+  if (productSortLoading.value) {
+    event.preventDefault();
+    return;
+  }
+  productDragState.value = { id: Number(row.id) };
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(row.id));
+  }
+}
+
+function handleProductDragOver(targetRow: TableRowData, event: DragEvent) {
+  const state = productDragState.value;
+  if (!state) return;
+  if (Number(targetRow.id) === state.id) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+}
+
+function handleProductDrop(targetRow: TableRowData, event: DragEvent) {
+  event.preventDefault();
+  const state = productDragState.value;
+  productDragState.value = null;
+  if (!state) return;
+  if (Number(targetRow.id) === state.id) return;
+
+  const list = [...products.value];
+  const fromIndex = list.findIndex((item) => Number(item.id) === state.id);
+  const toIndex = list.findIndex((item) => Number(item.id) === Number(targetRow.id));
+  if (fromIndex < 0 || toIndex < 0) return;
+
+  const [moved] = list.splice(fromIndex, 1);
+  list.splice(toIndex, 0, moved);
+  const nextIds = list.map((item) => Number(item.id));
+  if (nextIds.join(',') === products.value.map((item) => Number(item.id)).join(',')) return;
+
+  void commitProductSort(nextIds);
+}
+
+function handleProductDragEnd() {
+  productDragState.value = null;
+}
+
+function canMoveProduct(row: TableRowData, direction: 'up' | 'down') {
+  const index = products.value.findIndex((item) => Number(item.id) === Number(row.id));
+  if (index < 0) return false;
+  const target = direction === 'up' ? index - 1 : index + 1;
+  return target >= 0 && target < products.value.length;
+}
+
+/** 键盘可达的上移/下移，复用拖拽相同的提交逻辑 */
+function moveProduct(row: TableRowData, direction: 'up' | 'down') {
+  if (productSortLoading.value || !canMoveProduct(row, direction)) return;
+
+  const list = [...products.value];
+  const fromIndex = list.findIndex((item) => Number(item.id) === Number(row.id));
+  const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
+  if (fromIndex < 0 || toIndex < 0 || toIndex >= list.length) return;
+
+  const [moved] = list.splice(fromIndex, 1);
+  list.splice(toIndex, 0, moved);
+  const nextIds = list.map((item) => Number(item.id));
+  if (nextIds.join(',') === products.value.map((item) => Number(item.id)).join(',')) return;
+
+  void commitProductSort(nextIds);
+}
+
+async function commitProductSort(orderedIds: number[]) {
+  productSortLoading.value = true;
+  try {
+    // 筛选条件必须与 loadProducts 保持一致：后端按筛选后的全量列表切页，
+    // 若直接传含 product_group_key 的 catalogFilters（后端不识别该键），
+    // 服务端会按未过滤列表算本页位置，导致「当前页没有可排序的商品」。
+    const selectedGroup = findProductGroupByKey(categoryOptions.value, catalogFilters.product_group_key);
+    await productApi.sortOrder({
+      product_ids: orderedIds,
+      page: Number(productPage.value || 1),
+      page_size: Number(productPageSize.value || 20),
+      filters: {
+        keyword: catalogFilters.keyword,
+        first_product_group_code: String(catalogFilters.product_type || '').trim(),
+        status: catalogFilters.status,
+        lifecycle_status: catalogFilters.lifecycle_status,
+        ...productGroupPayload(selectedGroup),
+      },
+    });
+    MessagePlugin.success('商品排序已更新');
+    await loadProducts();
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, '更新商品排序失败'));
+    await loadProducts();
+  } finally {
+    productSortLoading.value = false;
+  }
 }
 
 function shouldAutoRevealDeletedProducts(row: ProductCategoryRecord | null) {

@@ -270,7 +270,7 @@ class ProductSiteService
                 'sort_order',
             ])
             ->orderBy('sort_order')
-            ->orderBy('id')
+            ->orderByDesc('id')
             ->get()
             ->groupBy(fn (Product $product) => (int) $product->product_group_id);
 
@@ -343,12 +343,12 @@ class ProductSiteService
                         ->with(['products' => fn ($productQuery) => $productQuery
                             ->where('status', 1)
                             ->orderBy('sort_order')
-                            ->orderBy('id')])
+                            ->orderByDesc('id')])
                         ->orderBy('sort_order')
-                        ->orderBy('id'),
+                        ->orderByDesc('id'),
                 ])
                 ->orderBy('sort_order')
-                ->orderBy('id')
+                ->orderByDesc('id')
                 ->get()
         );
     }
@@ -557,7 +557,7 @@ class ProductSiteService
             ->onSale()
             ->inCurrentProductGroup((int) ($product->product_group_id ?? 0))
             ->orderBy('sort_order')
-            ->orderBy('id')
+            ->orderByDesc('id')
             ->get([
                 'id',
                 'product_type',

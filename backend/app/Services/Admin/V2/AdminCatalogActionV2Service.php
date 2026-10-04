@@ -157,6 +157,22 @@ class AdminCatalogActionV2Service
     }
 
     /**
+     * 按前端提交的 id 顺序重排商品（拖拽排序）。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function sortProducts(array $payload): array
+    {
+        return $this->products->reorderAdminProducts(
+            (array) ($payload['filters'] ?? []),
+            (int) ($payload['page'] ?? 1),
+            (int) ($payload['page_size'] ?? 20),
+            (array) ($payload['product_ids'] ?? [])
+        );
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */

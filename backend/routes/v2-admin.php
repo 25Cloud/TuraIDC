@@ -282,6 +282,7 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/products/provision-hostname-batches', [ProductController::class, 'batchUpdateProvisionHostname']);
         Route::post('/products/batch-update', [ProductController::class, 'batchUpdate']);
         Route::post('/products/batch-delete', [ProductController::class, 'batchDelete']);
+        Route::post('/products/sort-order', [ProductController::class, 'sortOrder']);
         Route::post('/products/batch-force-delete', [ProductController::class, 'batchForceDelete']);
         Route::patch('/products/{product}/status', [ProductController::class, 'updateStatus']);
         Route::post('/products/{product}/spec-highlight', [ProductSpecHighlightController::class, 'update']);
