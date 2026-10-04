@@ -120,9 +120,34 @@ class ProductAdminService
         $reorderedIds = $sortedIds;
         array_splice($reorderedIds, $sliceOffset, count($currentPageIds), $orderedProductIds->all());
 
+        // 只写 sort_order 真正发生变化的商品：$reorderedIds 覆盖全部筛选结果，
+        // 若一并 UPDATE，未参与本次拖动的商品也会被改写 sort_order 与 updated_at，
+        // 既无谓放大写入量，也会让「最近更新」时间失真。
+        $previousSortMap = $this->applyAdminProductFilters(Product::query(), $filters)
+            ->whereIn('id', $sortedIds)
+            ->pluck('products.sort_order', 'products.id')
+            ->map(fn ($value): int => (int) $value)
+            ->all();
+
         $sortMap = [];
         foreach ($reorderedIds as $index => $productId) {
-            $sortMap[(int) $productId] = $index + 1;
+            $productId = (int) $productId;
+            $newSortOrder = $index + 1;
+
+            if (($previousSortMap[$productId] ?? null) === $newSortOrder) {
+                continue;
+            }
+
+            $sortMap[$productId] = $newSortOrder;
+        }
+
+        if ($sortMap === []) {
+            // 顺序与现状一致，无需写入
+            return [
+                'updated_count' => 0,
+                'page' => $page,
+                'page_size' => $pageSize,
+            ];
         }
 
         DB::transaction(function () use ($sortMap) {

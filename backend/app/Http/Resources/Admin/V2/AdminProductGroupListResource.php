@@ -22,6 +22,8 @@ class AdminProductGroupListResource extends JsonResource
         $firstGroup = $this->firstGroup();
         $secondGroup = $this->secondGroup();
         $thirdGroup = $this->thirdGroup();
+        // 对外输出原始 code：批量对接等接口按 ProductType::allowedValues() 校验，
+        // 而白名单正是这些原始 code（vps/domain/other/type_xxx），输出归一化值会被判非法。
         $firstGroupCode = (string) ($firstGroup?->code ?? '');
         $productType = ProductType::businessValueForFirstGroup($firstGroup, $firstGroupCode);
         $name = (string) ($this->resource->name ?? '');

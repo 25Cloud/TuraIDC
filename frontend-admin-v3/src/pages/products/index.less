@@ -1462,9 +1462,63 @@
 
 .product-name {
   display: flex;
+  // 行向布局：左侧拖拽手柄 + 右侧名称/副标题两行
+  align-items: center;
+  gap: var(--td-comp-margin-s);
+  min-width: 0;
+}
+
+.product-name-main {
+  display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+}
+
+.product-drag {
+  flex: 0 0 auto;
+  width: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--td-text-color-placeholder);
+  font: inherit;
+  font-size: var(--td-font-size-size-3, 14px);
+  letter-spacing: 1px;
+  line-height: 1;
+  opacity: 0;
+  cursor: grab;
+}
+
+.product-drag:active {
+  cursor: grabbing;
+}
+
+.product-drag.is-dragging {
+  opacity: 0.3;
+}
+
+.product-name:hover .product-drag {
+  opacity: 0.75;
+}
+
+.product-sort-keys {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0;
+  opacity: 0;
+}
+
+.product-name:hover .product-sort-keys,
+.product-sort-keys:focus-within {
+  opacity: 1;
+}
+
+// 拖拽经过时的落点提示
+.product-name.is-drop-target {
+  background: var(--td-brand-color-light);
+  border-radius: var(--td-radius-small, 3px);
 }
 
 .product-name strong {
@@ -1844,7 +1898,11 @@
 .supplier-batch-panel {
   display: flex;
   overflow: hidden;
-  min-height: 420px;
+  // 上下双限：min 保证内容少时不塌陷，max 保证内容多时内部滚动而非撑高整页。
+  // 56vh 是关键——弹窗内还要放头部、说明、表单、工具栏与底部按钮，
+  // 面板本身必须让出这部分高度，否则「执行对接」按钮会被顶出视口。
+  min-height: 300px;
+  max-height: min(52vh, 520px);
   border: 1px solid var(--td-component-border);
   border-radius: var(--td-radius-medium);
   background: var(--td-bg-color-container);
@@ -1917,7 +1975,10 @@
 
 .supplier-tree {
   overflow: auto;
-  height: 420px;
+  // 不再写死 420px：改为 flex 撑满父面板剩余高度，
+  // 高度上限由 .supplier-batch-panel 的 max-height 统一控制
+  flex: 1 1 auto;
+  min-height: 0;
   padding: var(--td-comp-paddingTB-xs) 0;
 
   &.is-loading {
@@ -2585,6 +2646,7 @@ button.supplier-tree-node__content {
   .supplier-batch-panel {
     min-height: 0;
     height: auto;
+    max-height: none;
   }
 
   .supplier-tree {

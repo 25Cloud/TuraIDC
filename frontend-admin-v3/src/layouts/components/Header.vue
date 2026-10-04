@@ -28,7 +28,8 @@
           <t-dropdown :min-column-width="120" trigger="click">
             <template #dropdown>
               <t-dropdown-item class="operations-dropdown-container-item" @click="handleNav('/user/index')">
-                <user-circle-icon />{{ t('layout.header.user') }}
+                <user-circle-icon />
+                <span class="operations-dropdown-user-name">{{ user.userInfo.name || t('layout.header.user') }}</span>
               </t-dropdown-item>
               <t-dropdown-item class="operations-dropdown-container-item" @click="openPasswordDialog">
                 <setting-icon />修改密码
@@ -378,6 +379,17 @@ const handleLogout = async () => {
   .header-mobile-logo {
     display: none;
   }
+
+  // 操作区禁止收缩，并给按钮留出稳定尺寸，避免被内容挤走
+  .operations-container {
+    flex: 0 0 auto;
+    margin-left: auto;
+
+    .t-button {
+      margin-left: var(--td-comp-margin-xs);
+      padding: var(--td-comp-paddingLR-xs);
+    }
+  }
 }
 
 .t-menu--light {
@@ -425,6 +437,28 @@ const handleLogout = async () => {
 </style>
 <!-- eslint-disable-next-line vue-scoped-css/enforce-style-type -->
 <style lang="less">
+// 下拉菜单内容由 t-dropdown teleport 到 body，不在组件 DOM 内，
+// scoped 属性选择器匹配不到，必须放在非 scoped 样式块中。
+.operations-dropdown-user-name {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 手机端顶栏：操作区按内容宽度占位且不收缩，
+// 避免「设置」「仪表盘」被用户名挤出屏幕。
+// 类名取自 tdesign-vue-next 的 HeadMenu：menu__operations / head-menu__inner。
+@media (width <= 768px) {
+  .t-head-menu__inner {
+    min-width: 0;
+  }
+
+  .t-head-menu .menu__operations {
+    flex: 0 0 auto;
+  }
+}
+
 .operations-dropdown-container-item {
   .t-dropdown__item-text {
     display: flex;
