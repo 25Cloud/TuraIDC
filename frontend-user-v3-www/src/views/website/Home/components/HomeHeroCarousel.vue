@@ -973,9 +973,22 @@ onBeforeUnmount(() => {
   }
 }
 
+// 站点头部高度（与 WebsiteLayout 的 .site-header 一致）。
+// Hero 需要上移这一段，让背景图铺到头部底下。
+$site-header-height: 64px;
+
 .hero-section {
   position: relative;
-  padding: 28px 0 44px;
+  /*
+   * 上移一个头部高度，让背景图一直铺到页面顶部、垫在头部下面。
+   *
+   * 头部是 sticky 且不透明，如果 Hero 从头部下沿才开始，图片顶部会被横切出
+   * 一条硬边，两块内容看着是拼接的。上移后头部才能以磨砂浮层叠在图上，
+   * 与 Hero 自身的遮罩连成一片。
+   * padding-top 同步加上同样的高度，抵消位移，内容位置不变。
+   */
+  margin-top: -$site-header-height;
+  padding: (28px + $site-header-height) 0 44px;
   background: $bg-color;
   isolation: isolate;
 }
@@ -1501,7 +1514,8 @@ onBeforeUnmount(() => {
   }
 
   .hero-section {
-    padding: 20px 0 28px;
+    // 顶部同样要加上头部高度，位移与桌面端一致
+    padding: (20px + $site-header-height) 0 28px;
   }
 
   .hero-stage {
@@ -1589,7 +1603,8 @@ onBeforeUnmount(() => {
 
 @media (max-width: 640px) {
   .hero-section {
-    padding: 16px 0 24px;
+    // 同上：位移恒定为一个头部高度
+    padding: (16px + $site-header-height) 0 24px;
   }
 
   .hero-rail {

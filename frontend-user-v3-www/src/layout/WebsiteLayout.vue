@@ -1,7 +1,7 @@
 <template>
   <div class="website-layout">
     <a class="skip-to-content" href="#main-content">跳到主内容</a>
-    <header class="site-header" :class="{ scrolled: headerScrolled }">
+    <header class="site-header" :class="{ scrolled: headerScrolled, 'is-overlay': headerOverlay }">
       <div class="container header-bar">
         <router-link to="/" class="logo" :aria-label="appStore.siteName">
           <img
@@ -763,6 +763,12 @@ const route = useRoute();
 const appStore = useAppStore();
 const userStore = useUserStore();
 
+// 首页判定：仅首页的 Hero 会与头部拼接，其他页面保持常规白底头部。
+// 首页是 "/" 下的子路由（name=WwwHome，path=""），fullPath 即 "/"。
+const isHomeRoute = computed(
+  () => route.path === "/" || String(route.name || "") === "WwwHome",
+);
+
 // 登录态恢复放到 onMounted，避免 setup 顶层产生路由跳转副作用
 // 跨端口登录传递仍走 query _token（与控制台 v4-console 约定保持一致），收到后立即持久化并从 URL 剥离
 onMounted(() => {
@@ -804,6 +810,17 @@ const mobileNavVisible = ref(false);
 const mobileActiveFirstLevel = ref("products");
 const mobileExpandedType = ref("");
 const headerScrolled = ref(false);
+/**
+ * 首页未滚动时，头部改为「融入 Hero」的浮层态。
+ *
+ * 首页 Hero 有背景图 + 左磨砂右透出的遮罩，而头部是不透明白底、又正好紧贴
+ * Hero 上沿，会在图片顶部横切出一条硬边，看上去像两块拼起来的。
+ * 这里让头部在首页顶部改用与 Hero 一致的磨砂渐变，滚动离开后再恢复白底
+ * （滚动后内容会顶上来，必须靠实底保证可读）。
+ */
+const headerOverlay = computed(
+  () => isHomeRoute.value && !headerScrolled.value,
+);
 const isMobile = ref(
   typeof window === "undefined" ? false : window.innerWidth <= 960,
 );
@@ -1115,6 +1132,93 @@ onBeforeUnmount(() => {
 .site-header.scrolled {
   border-bottom-color: $divider-color;
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
+/*
+ * 首页未滚动：头部与 Hero 的磨砂遮罩无缝衔接。
+ *
+ * 背景铺在 ::before 上而不是 header 自身 —— 磨砂要从左向右渐变淡出，
+ * 只能靠 mask-image 裁切；若直接给 header 加 mask，logo、菜单、登录按钮
+ * 会连同背景一起被裁掉（mask 作用于整个元素子树）。伪元素不含内容，
+ * 拿它当背景层即可只裁背景。
+ * 渐变参数与 HomeHeroCarousel 的 .hero-bg__scrim--frosted 保持一致，
+ * 两段在垂直方向才能接得上。
+ */
+.site-header.is-overlay {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom-color: transparent;
+  box-shadow: none;
+}
+
+.site-header.is-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(255, 255, 255, 0.74);
+  backdrop-filter: blur(22px) saturate(1.08);
+  -webkit-backdrop-filter: blur(22px) saturate(1.08);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 40%,
+    rgba(0, 0, 0, 0.72) 58%,
+    rgba(0, 0, 0, 0) 80%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 40%,
+    rgba(0, 0, 0, 0.72) 58%,
+    rgba(0, 0, 0, 0) 80%
+  );
+  pointer-events: none;
+}
+
+// z-index: -1 需要 header 建立层叠上下文，否则伪元素会掉到页面背景之后
+.site-header.is-overlay {
+  isolation: isolate;
+}
+
+@media (max-width: 1180px) {
+  // 与 Hero 遮罩同步：右侧空列消失后淡出点右移
+  .site-header.is-overlay::before {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      #000 0%,
+      #000 62%,
+      rgba(0, 0, 0, 0.62) 84%,
+      rgba(0, 0, 0, 0.22) 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      #000 0%,
+      #000 62%,
+      rgba(0, 0, 0, 0.62) 84%,
+      rgba(0, 0, 0, 0.22) 100%
+    );
+  }
+}
+
+@media (max-width: 960px) {
+  // 与 Hero 遮罩同步：单列布局改用纵向渐变
+  .site-header.is-overlay::before {
+    background: rgba(255, 255, 255, 0.78);
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      #000 0%,
+      #000 70%,
+      rgba(0, 0, 0, 0.7) 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      #000 0%,
+      #000 70%,
+      rgba(0, 0, 0, 0.7) 100%
+    );
+  }
 }
 
 .header-bar {

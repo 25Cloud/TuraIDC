@@ -1169,16 +1169,27 @@ function clearSlideImage(slideIndex: number) {
 }
 
 /**
- * 后台存的是站内相对路径（如 /media/xx.jpg），而媒体库列表返回的是绝对地址，
- * 预览缩略图必须补上 API 基址才加载得出来。
+ * 把站内相对路径（如 /media/xx.jpg）解析成可访问地址。
+ *
+ * 不能拿 VITE_API_BASE_URL 去拼：那个值是 `.../api`，而 /media 是静态资源目录、
+ * 不归 API 前缀管，拼出来会变成 `.../api/media/xx.jpg` —— 一个打不开的地址。
+ * 三端同域部署，直接用当前页的 origin 就是站点根，与后端 UploadUrl::resolve
+ * 的口径一致（后端下发的绝对地址同样不带 /api）。
  */
 function resolveAssetUrl(raw: unknown): string {
   const path = String(raw || '').trim();
   if (!path) return '';
   if (/^(https?:)?\/\//.test(path)) return path;
-  const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '').trim();
-  if (!apiBaseUrl) return path;
-  return `${apiBaseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/${path.replace(/^\/+/, '')}`;
+  }
+
+  // SSR / 非浏览器环境兜底：由 API 基址回推站点根（去掉 /api 尾巴）
+  const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+  const siteRoot = apiBaseUrl.replace(/\/api$/i, '');
+  if (!siteRoot) return path;
+  return `${siteRoot}/${path.replace(/^\/+/, '')}`;
 }
 
 /** 媒体抽屉当前回写目标的值（设置项字段 or 轮播项背景图） */
