@@ -1812,10 +1812,9 @@ function closeLoginAsPopup(popup: Window) {
 /**
  * 在后端下发的控制台地址后接上代登录页路径。
  *
- * 后端返回的 target_url 已经带上控制台的 base path（单域名部署形如
- * https://example.com/console）。这里必须在原有 pathname 后追加，
- * 直接赋值会把 /console 覆盖掉，代登录窗口就会落到官网页面上，
- * 控制台的 login-as 页面永远加载不出来，表现为「已打开登录页但没有登录态」。
+ * 后端返回的 target_url 已经是完整的代登录页地址（形如
+ * https://example.com/console/client/login-as）。这里只需清空
+ * query 与 hash，保留原有 pathname 不变。
  */
 function resolveLoginAsTarget(targetUrl: string | undefined) {
   const rawTarget = String(targetUrl || '').trim();
@@ -1826,8 +1825,8 @@ function resolveLoginAsTarget(targetUrl: string | undefined) {
     if (!['http:', 'https:'].includes(target.protocol)) {
       return '';
     }
-    const basePath = target.pathname.replace(/\/+$/, '');
-    target.pathname = `${basePath}/client/login-as`;
+    // 后端已返回完整的代登录页地址（含 /client/login-as），
+    // 仅需清空 query 与 hash，保持 pathname 不变。
     target.search = '';
     target.hash = '';
     return target.toString();

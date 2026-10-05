@@ -178,6 +178,14 @@ function assertConsoleUrlResolves(env) {
     throw new Error(`VITE_CONSOLE_SITE_URL 不是合法地址：${consoleSiteUrl}`)
   }
 
+  // 禁止带 query 或 hash：构建产物的 SPA 路由由框架处理，外部链接不应带参数
+  if (publicUrl.search || publicUrl.hash) {
+    throw new Error(`VITE_PUBLIC_SITE_URL 不应包含 query 或 hash：${publicSiteUrl}`)
+  }
+  if (consoleUrl.search || consoleUrl.hash) {
+    throw new Error(`VITE_CONSOLE_SITE_URL 不应包含 query 或 hash：${consoleSiteUrl}`)
+  }
+
   if (!publicUrl || publicUrl.origin !== consoleUrl.origin) {
     return
   }

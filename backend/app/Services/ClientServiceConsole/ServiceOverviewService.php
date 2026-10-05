@@ -205,8 +205,11 @@ class ServiceOverviewService
         $menuCodes = $menuGroups
             ->map(fn (FirstProductGroup $group): string => (string) $group->code)
             ->all();
+        // 只有当某商品类型恰好对应一个可见一级菜单时，才按该类型归属；
+        // 多个一级菜单共用同一类型时，相关服务全部归入「其他服务」，避免误归。
         $codeByBusinessType = $menuGroups
             ->groupBy(fn (FirstProductGroup $group): string => ProductType::businessValueForFirstGroup($group, $group->code))
+            ->filter(fn ($group) => $group->count() === 1)
             ->map(fn ($group): string => (string) ($group->first()?->code ?? ''));
 
         $groupedByMenu = $services->groupBy(

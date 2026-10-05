@@ -92,8 +92,13 @@ final class SiteProductGroupQuery
             return [$normalizedCode];
         }
 
+        if ($normalizedCode !== '') {
+            // 显式传了 code 但不在可见列表中，直接返回空，不再回退到业务类型过滤
+            return [];
+        }
+
         if ($normalizedType === '') {
-            return $normalizedCode !== '' ? [$normalizedCode] : $visibleValues;
+            return $visibleValues;
         }
 
         $businessValue = ProductType::normalizeBusinessValue($normalizedType);
@@ -101,8 +106,7 @@ final class SiteProductGroupQuery
         return FirstProductGroup::query()
             ->whereIn('code', $visibleValues)
             ->get(['code', 'product_type'])
-            ->filter(fn (FirstProductGroup $group): bool => $group->code !== $normalizedCode
-                && ProductType::businessValueForFirstGroup($group, $group->code) === $businessValue)
+            ->filter(fn (FirstProductGroup $group): bool => ProductType::businessValueForFirstGroup($group, $group->code) === $businessValue)
             ->pluck('code')
             ->map(fn ($code): string => (string) $code)
             ->values()

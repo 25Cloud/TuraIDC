@@ -359,7 +359,7 @@ watch(
   position: absolute;
   left: 0;
   right: 0;
-  top: 50%;
+  top: calc(50% + 11px);
   z-index: 20;
   height: 34px;
   transform: translateY(-50%);

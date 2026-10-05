@@ -161,6 +161,13 @@ VitePress 文档官网不属于上述三端，必须通过 `pnpm run build:docs`
 >
 > 站点地址的真源是 `backend/.env` 的四个公开地址：`backend/scripts/build_frontends.mjs` 会把它们解析成 `VITE_*` 注入构建，`--print-env` 可单独打印这套变量供其他构建入口复用。这样各前端目录下的 `.env` 只是本地便利，不会与线上配置漂移。
 
+**构建配置来源的区别：**
+
+- **直接执行前端构建**（`pnpm run build`）：各前端目录读取自身目录下的 `.env`（或 `.env.production`），仅用该目录内的配置。
+- **通过 `pnpm run build:frontends` 统一构建**：由 `backend/scripts/build_frontends.mjs` 读取 `backend/.env` 中的四个公开地址，解析后作为 `VITE_*` 环境变量注入到各前端构建中。这样各前端目录下的 `.env` 只是本地便利，不会与线上配置漂移。
+
+`backend/scripts/build_frontends.mjs --print-env` 可单独打印这套变量，供其他构建入口（如 `deploy/deploy-www.sh` 的 `inject_backend_site_env`）复用，保证所有构建入口读到同一份站点地址真源，避免与实际入口行为矛盾。
+
 ```bash
 # 只预览构建目标，不实际构建
 pnpm run build:frontends:dry
