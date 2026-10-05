@@ -212,6 +212,34 @@
               </div>
 
               <div class="slide-row">
+                <label class="slide-label">图片</label>
+                <div class="slide-image-field">
+                  <div class="slide-image-preview">
+                    <img v-if="slide.image" :src="resolveAssetUrl(slide.image)" :alt="slide.rail_title || '轮播背景图'" />
+                    <span v-else class="slide-image-preview__empty">未设置</span>
+                  </div>
+                  <div class="slide-image-selector" @click="openHeroImageDrawer(index)">
+                    <image-icon />
+                    <span v-if="slide.image" class="slide-video-selector__name">{{ slide.image.split('/').pop() }}</span>
+                    <span v-else class="slide-video-selector__placeholder">点击选择背景图片</span>
+                    <chevron-right-icon />
+                  </div>
+                  <t-button
+                    v-if="slide.image"
+                    variant="text"
+                    size="small"
+                    theme="danger"
+                    @click="clearSlideImage(index)"
+                  >
+                    清除
+                  </t-button>
+                </div>
+                <p class="slide-row__hint">
+                  有文字的一侧会加半透明白色磨砂，无文字的一侧渐变透出图片。
+                </p>
+              </div>
+
+              <div class="slide-row">
                 <label class="slide-label">视频</label>
                 <div class="slide-video-selector" @click="openVideoDrawer(index)">
                   <video-icon />
@@ -219,6 +247,7 @@
                   <span v-else class="slide-video-selector__placeholder">点击选择背景视频</span>
                   <chevron-right-icon />
                 </div>
+                <p class="slide-row__hint">同时配置图片与视频时，视频铺在上层，图片作为加载中与移动端的兜底。</p>
               </div>
             </div>
           </article>
@@ -315,7 +344,7 @@
           v-for="item in mediaDrawerList"
           :key="item.url"
           class="cover-drawer-card"
-          :class="{ 'is-selected': pendingImageField && String(form[pendingImageField.key]) === item.url }"
+          :class="{ 'is-selected': currentMediaValue() === item.url }"
           @click="selectMediaFromDrawer(item)"
         >
           <video
@@ -329,7 +358,7 @@
           <img v-else class="cover-drawer-card__img" :src="item.url" :alt="item.filename" loading="lazy" />
           <div class="cover-drawer-card__label">
             <check-circle-filled-icon
-              v-if="pendingImageField && String(form[pendingImageField.key]) === item.url"
+              v-if="currentMediaValue() === item.url"
               class="cover-drawer-card__check"
             />
             <span>{{ item.filename }}</span>
@@ -481,6 +510,8 @@ const settingsMetaCache = reactive<Record<string, Record<string, SettingItem>>>(
 const settingsSecretEdited = reactive<Record<string, boolean>>({});
 const fileInputRef = ref<HTMLInputElement>();
 const pendingImageField = ref<SettingField | null>(null);
+// 媒体抽屉的第二个落点：首页轮播项的背景图。-1 表示当前目标是设置项字段。
+const pendingHeroImageIndex = ref(-1);
 const mediaDrawerVisible = ref(false);
 const mediaDrawerLoading = ref(false);
 const mediaDrawerList = ref<Array<{ url: string; filename: string; isVideo: boolean }>>([]);
@@ -1114,7 +1145,71 @@ function isFieldRequired(field: SettingField) {
 
 function selectImage(field: SettingField) {
   pendingImageField.value = field;
+  pendingHeroImageIndex.value = -1;
   openMediaDrawer();
+}
+
+/**
+ * 打开媒体抽屉为某个轮播项选背景图。
+ *
+ * 复用设置项那套媒体库（上传/筛选/选择），只是回写目标换成
+ * heroForm.slides[index].image，避免为轮播再实现一遍文件管理。
+ */
+function openHeroImageDrawer(slideIndex: number) {
+  pendingImageField.value = null;
+  pendingHeroImageIndex.value = slideIndex;
+  mediaDrawerVisible.value = true;
+  mediaDrawerType.value = 'image';
+  loadMediaDrawerList();
+}
+
+function clearSlideImage(slideIndex: number) {
+  const slide = heroForm.slides[slideIndex];
+  if (slide) slide.image = '';
+}
+
+/**
+ * 把站内相对路径（如 /media/xx.jpg）解析成可访问地址。
+ *
+ * 不能拿 VITE_API_BASE_URL 去拼：那个值是 `.../api`，而 /media 是静态资源目录、
+ * 不归 API 前缀管，拼出来会变成 `.../api/media/xx.jpg` —— 一个打不开的地址。
+ * 三端同域部署，直接用当前页的 origin 就是站点根，与后端 UploadUrl::resolve
+ * 的口径一致（后端下发的绝对地址同样不带 /api）。
+ */
+function resolveAssetUrl(raw: unknown): string {
+  const path = String(raw || '').trim();
+  if (!path) return '';
+  if (/^(https?:)?\/\//.test(path)) return path;
+
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/${path.replace(/^\/+/, '')}`;
+  }
+
+  // SSR / 非浏览器环境兜底：由 API 基址回推站点根（去掉 /api 尾巴）
+  const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+  const siteRoot = apiBaseUrl.replace(/\/api$/i, '');
+  if (!siteRoot) return path;
+  return `${siteRoot}/${path.replace(/^\/+/, '')}`;
+}
+
+/** 媒体抽屉当前回写目标的值（设置项字段 or 轮播项背景图） */
+function currentMediaValue(): string {
+  if (pendingHeroImageIndex.value >= 0) {
+    return String(heroForm.slides[pendingHeroImageIndex.value]?.image || '');
+  }
+  const field = pendingImageField.value;
+  return field ? String(form[field.key] ?? '') : '';
+}
+
+/** 把选中的媒体写回当前目标 */
+function applyMediaToTarget(url: string) {
+  if (pendingHeroImageIndex.value >= 0) {
+    const slide = heroForm.slides[pendingHeroImageIndex.value];
+    if (slide) slide.image = url;
+    return;
+  }
+  const field = pendingImageField.value;
+  if (field) form[field.key] = url;
 }
 
 function openMediaDrawer() {
@@ -1160,9 +1255,8 @@ function isMediaDrawerVideo(row: MediaFileRecord): boolean {
 }
 
 function selectMediaFromDrawer(item: { url: string; filename: string; isVideo: boolean }) {
-  const field = pendingImageField.value;
-  if (!field) return;
-  form[field.key] = item.url;
+  if (pendingHeroImageIndex.value < 0 && !pendingImageField.value) return;
+  applyMediaToTarget(item.url);
   MessagePlugin.success('已选择');
   closeMediaDrawer();
 }
@@ -1194,8 +1288,9 @@ async function handleMediaDrawerUpload(event: Event) {
       });
     }
     // Also set as the selected image
-    const field = pendingImageField.value;
-    if (field) form[field.key] = url;
+    if (pendingHeroImageIndex.value >= 0 || pendingImageField.value) {
+      applyMediaToTarget(url);
+    }
     MessagePlugin.success('上传成功');
   } catch (error) {
     const record = error as Record<string, unknown>;

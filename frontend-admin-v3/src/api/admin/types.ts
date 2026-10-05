@@ -382,6 +382,8 @@ export interface HomeHeroSlide {
   secondary_text?: string;
   secondary_path?: string;
   video?: string;
+  /** 轮播背景图。有文字的一侧加半透明白色磨砂，无文字的一侧渐变透出 */
+  image?: string;
   [key: string]: unknown;
 }
 

@@ -1,6 +1,18 @@
 <template>
   <section ref="heroSectionRef" class="hero-section">
     <div class="hero-bg" aria-hidden="true">
+      <div class="hero-bg__image-wrap">
+        <Transition :name="bgSlideName">
+          <img
+            v-if="activeImage"
+            :key="activeImage"
+            class="hero-bg__image"
+            :src="resolvedImageSrc(activeImage)"
+            alt=""
+            decoding="async"
+          />
+        </Transition>
+      </div>
       <div class="hero-bg__video-wrap">
         <video
           v-if="heroVideoEnabled"
@@ -44,8 +56,11 @@
           @playing="onVideoPlaying('b')"
           @pause="onVideoPaused('b')"
         ></video>
-        <div class="hero-bg__video-overlay"></div>
       </div>
+      <div
+        class="hero-bg__scrim"
+        :class="{ 'hero-bg__scrim--frosted': Boolean(activeImage) }"
+      ></div>
     </div>
 
     <div
@@ -78,31 +93,51 @@
         </button>
       </aside>
 
-      <div
-        class="hero-body"
-        :class="{ 'hero-body--instant': instantBodyReveal }"
-      >
-        <h1 :key="activeSlide.key" class="hero-title">
-          {{ activeSlide.title }}
-        </h1>
-        <p :key="`hero-desc-${activeSlide.key}`" class="hero-desc">
-          {{ activeSlide.desc }}
-        </p>
-        <div class="hero-actions">
-          <button
-            type="button"
-            class="hero-cta hero-cta--primary"
-            @click="router.push(activeSlide.primaryPath)"
+      <div ref="bodyRef" class="hero-body">
+        <Transition :name="bodySlideName">
+          <div :key="activeSlide.key" class="hero-body__panel">
+            <h1 class="hero-title">{{ activeSlide.title }}</h1>
+            <p class="hero-desc">{{ activeSlide.desc }}</p>
+            <div class="hero-actions">
+              <button
+                type="button"
+                class="hero-cta hero-cta--primary"
+                @click="router.push(activeSlide.primaryPath)"
+              >
+                {{ activeSlide.primaryText }}
+              </button>
+              <button
+                type="button"
+                class="hero-cta hero-cta--secondary"
+                @click="router.push(activeSlide.secondaryPath)"
+              >
+                {{ activeSlide.secondaryText }}
+              </button>
+            </div>
+          </div>
+        </Transition>
+        <!--
+          离屏测量层：把所有 slide 的面板各渲染一份（不可见、不占布局），
+          量出最高的一块，锁进 .hero-body 的 min-height。
+          见 reserveTallestPanel()。
+        -->
+        <div class="hero-body__measure" aria-hidden="true">
+          <div
+            v-for="slide in heroSlides"
+            :key="`measure-${slide.key}`"
+            class="hero-body__panel"
           >
-            {{ activeSlide.primaryText }}
-          </button>
-          <button
-            type="button"
-            class="hero-cta hero-cta--secondary"
-            @click="router.push(activeSlide.secondaryPath)"
-          >
-            {{ activeSlide.secondaryText }}
-          </button>
+            <h1 class="hero-title">{{ slide.title }}</h1>
+            <p class="hero-desc">{{ slide.desc }}</p>
+            <div class="hero-actions">
+              <span class="hero-cta hero-cta--primary">{{
+                slide.primaryText
+              }}</span>
+              <span class="hero-cta hero-cta--secondary">{{
+                slide.secondaryText
+              }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -183,18 +218,22 @@ const videoBRef = ref(null);
 const videoReady = ref(false);
 // 首次显示视频时跳过 0.8s 淡入，避免 LCP 首帧再叠加过渡延迟
 const instantVideoReveal = ref(true);
-// 首帧渲染禁用 hero 标题/描述的入场动画（LCP 文字立即绘制），首帧完成后恢复轮播切换淡入
-const instantBodyReveal = ref(true);
 const heroVideoEnabled = ref(false);
 const activeVideoSlot = ref("a");
 const videoSlotA = ref("");
 const videoSlotB = ref("");
 const videoDurations = new Map();
 const activeIndex = ref(0);
+// 轮播水平切换方向：>=0 表示切换到后一张（内容向左滑出），<0 表示前一张
+const slideDirection = ref(1);
 const heroSlides = shallowRef(Object.freeze([]));
 const heroFeatures = shallowRef(Object.freeze([]));
 
 function resolvedVideoSrc(url) {
+  return resolveApiAssetUrl(url, apiBaseUrl);
+}
+
+function resolvedImageSrc(url) {
   return resolveApiAssetUrl(url, apiBaseUrl);
 }
 
@@ -221,6 +260,7 @@ const DEFAULT_SLIDES = freezeConfigList([
     secondaryPath: "/about",
     shape: "computer",
     video: "",
+    image: "",
     ribbon: "",
     ribbonType: "new",
   },
@@ -235,6 +275,7 @@ const DEFAULT_SLIDES = freezeConfigList([
     secondaryPath: "/help",
     shape: "connection",
     video: "",
+    image: "",
     ribbon: "",
     ribbonType: "new",
   },
@@ -249,6 +290,7 @@ const DEFAULT_SLIDES = freezeConfigList([
     secondaryPath: "/help",
     shape: "security",
     video: "",
+    image: "",
     ribbon: "",
     ribbonType: "new",
   },
@@ -263,6 +305,7 @@ const DEFAULT_SLIDES = freezeConfigList([
     secondaryPath: "/products",
     shape: "value",
     video: "",
+    image: "",
     ribbon: "",
     ribbonType: "warm",
   },
@@ -277,6 +320,7 @@ const DEFAULT_SLIDES = freezeConfigList([
     secondaryPath: "/about",
     shape: "support",
     video: "",
+    image: "",
     ribbon: "",
     ribbonType: "new",
   },
@@ -363,6 +407,8 @@ function normalizeSlide(raw, index = 0) {
     ),
     shape: ALLOWED_SHAPES.has(shape) ? shape : "computer",
     video: pickString(source.video, ""),
+    // 轮播背景图。与视频并存时视频铺在上层，图片充当封面与移动端/弱网兜底。
+    image: pickString(source.image, ""),
     // 视频首帧静态封面：管理端可配置，前端据此为 <video> 补 poster，
     // 使 LCP 锚定在快速绘制的占位图上，而非等视频下载+解码。
     poster: pickString(
@@ -435,6 +481,9 @@ watch(
     if (activeIndex.value >= nextSlides.length) {
       activeIndex.value = 0;
     }
+
+    // 字体就位后量高度，否则会量到 fallback 字形的尺寸
+    nextTick(reserveTallestPanel);
   },
   { immediate: true },
 );
@@ -448,6 +497,71 @@ const activeSlide = computed(
 
 // 当前 slide 的视频首帧封面：为空时不设 poster，由 video 默认行为兜底
 const activePoster = computed(() => String(activeSlide.value?.poster || ""));
+
+// 当前 slide 的背景图：为空时不渲染图片层，遮罩退回原来的视频渐变样式
+const activeImage = computed(() => String(activeSlide.value?.image || ""));
+
+// 轮播切换方向：决定正文面板与背景图是「向左」还是「向右」滑动。
+// 环形轮播下取最短方向，避免 0 → 最后一张时整圈回退。
+watch(activeIndex, (next, prev) => {
+  if (prev === undefined || next === prev) return;
+  const count = heroSlides.value.length || 1;
+  const forward = (next - prev + count) % count;
+  slideDirection.value = forward === 0 ? 1 : forward <= count / 2 ? 1 : -1;
+});
+
+const bodySlideName = computed(() =>
+  slideDirection.value >= 0 ? "hero-h-next" : "hero-h-prev",
+);
+const bgSlideName = computed(() =>
+  slideDirection.value >= 0 ? "hero-bg-h-next" : "hero-bg-h-prev",
+);
+
+/*
+ * 锁定 .hero-body 的高度，避免切换时整块内容上下跳。
+ *
+ * 之前切出面板是 position:absolute，容器高度只由切入面板决定：
+ * 遇到更长的文案，切入瞬间容器变高 → .hero-stage 是 align-items:center，
+ * 正文块会整体上移几十像素，视觉上就是「抽一下」。
+ *
+ * 这里把每张 slide 的面板都渲染到离屏测量层，取最高的一块写进 min-height，
+ * 容器高度在整个轮播周期内保持恒定，切换只发生水平位移。
+ */
+const bodyRef = ref(null);
+const bodyMinHeight = ref("");
+let measureRafId = 0;
+
+function reserveTallestPanel() {
+  if (typeof window === "undefined") return;
+  if (measureRafId) {
+    window.cancelAnimationFrame(measureRafId);
+  }
+  measureRafId = window.requestAnimationFrame(() => {
+    measureRafId = 0;
+    const host = bodyRef.value;
+    if (!host) return;
+    const panels = host.querySelectorAll(".hero-body__measure > *");
+    let tallest = 0;
+    panels.forEach((el) => {
+      const h = el.getBoundingClientRect().height;
+      if (h > tallest) tallest = h;
+    });
+    bodyMinHeight.value = tallest > 0 ? `${Math.ceil(tallest)}px` : "";
+  });
+}
+
+function watchBodyWidth() {
+  if (typeof window === "undefined") return;
+  const host = bodyRef.value;
+  if (!host || typeof ResizeObserver === "undefined") return;
+  const observer = new ResizeObserver(() => {
+    reserveTallestPanel();
+  });
+  observer.observe(host);
+  return observer;
+}
+
+let bodyResizeObserver = null;
 
 const MIN_ROTATION_INTERVAL = 6000;
 const MAX_ROTATION_INTERVAL = 15000;
@@ -863,10 +977,12 @@ function handleVisibilityChange() {
 
 onMounted(() => {
   startRotation();
-  // 首帧渲染完成后关闭 instantBodyReveal，让后续轮播切换恢复 hero-body-rise 淡入动画
-  if (instantBodyReveal.value) {
-    nextTick(() => {
-      instantBodyReveal.value = false;
+  bodyResizeObserver = watchBodyWidth() || null;
+  // 字体异步就位后必须重量一次：首帧量到的是 fallback 字形高度，
+  // 比真实中文字形矮几个像素，锁出来的 min-height 偏小，切到长文案那帧仍会跳一下。
+  if (typeof document !== "undefined" && document.fonts?.ready) {
+    document.fonts.ready.then(() => {
+      reserveTallestPanel();
     });
   }
   // 首屏视频是 LCP 元素：不等 idle 回调，立即启动加载，避免把 ~1.2s 的空等计入 LCP。
@@ -904,6 +1020,14 @@ onBeforeUnmount(() => {
     heroVisibilityObserver.disconnect();
     heroVisibilityObserver = null;
   }
+  if (bodyResizeObserver) {
+    bodyResizeObserver.disconnect();
+    bodyResizeObserver = null;
+  }
+  if (measureRafId && typeof window !== "undefined") {
+    window.cancelAnimationFrame(measureRafId);
+    measureRafId = 0;
+  }
   if (typeof document !== "undefined") {
     document.removeEventListener("visibilitychange", handleVisibilityChange);
   }
@@ -928,9 +1052,22 @@ onBeforeUnmount(() => {
   }
 }
 
+// 站点头部高度（与 WebsiteLayout 的 .site-header 一致）。
+// Hero 需要上移这一段，让背景图铺到头部底下。
+$site-header-height: 64px;
+
 .hero-section {
   position: relative;
-  padding: 28px 0 44px;
+  /*
+   * 上移一个头部高度，让背景图一直铺到页面顶部、垫在头部下面。
+   *
+   * 头部是 sticky 且不透明，如果 Hero 从头部下沿才开始，图片顶部会被横切出
+   * 一条硬边，两块内容看着是拼接的。上移后头部才能以磨砂浮层叠在图上，
+   * 与 Hero 自身的遮罩连成一片。
+   * padding-top 同步加上同样的高度，抵消位移，内容位置不变。
+   */
+  margin-top: -$site-header-height;
+  padding: (28px + $site-header-height) 0 44px;
   background: $bg-color;
   isolation: isolate;
 }
@@ -960,10 +1097,12 @@ onBeforeUnmount(() => {
   z-index: 0;
 }
 
+// 视频铺在图片之上：两者都配置时以视频为准，
+// 图片充当视频加载中与移动端/弱网（视频被禁用）时的兜底视觉。
 .hero-bg__video-wrap {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: 1;
 }
 
 .hero-bg__video {
@@ -990,14 +1129,89 @@ onBeforeUnmount(() => {
   transition: none;
 }
 
-.hero-bg__video-overlay {
+.hero-bg__image-wrap {
   position: absolute;
   inset: 0;
+  z-index: 0;
+}
+
+.hero-bg__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  // 靠右展示：图片视觉重心放在没有文字的一侧
+  object-position: right center;
+}
+
+/*
+ * 背景图水平切换（推挤）：旧图向左滑出、新图自右滑入（反向相反）。
+ * 两层都是 absolute inset:0、各占满容器宽度，位移取 ±100%，
+ * 中途恰好并排、既不重叠也不留缝；外层 .hero-bg 的 overflow:hidden 负责裁边。
+ */
+.hero-bg-h-next-enter-from {
+  transform: translateX(100%);
+}
+
+.hero-bg-h-next-leave-to {
+  transform: translateX(-100%);
+}
+
+.hero-bg-h-prev-enter-from {
+  transform: translateX(-100%);
+}
+
+.hero-bg-h-prev-leave-to {
+  transform: translateX(100%);
+}
+
+.hero-bg-h-next-enter-active,
+.hero-bg-h-next-leave-active,
+.hero-bg-h-prev-enter-active,
+.hero-bg-h-prev-leave-active {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/*
+ * 半遮罩。
+ *
+ * 有文字的一侧（左侧：导航 + 标题 + 按钮）铺半透明白色磨砂，保证可读性；
+ * 没有文字的一侧（右侧约 340~420px 的空列）渐变到全透明，让背景图透出来。
+ *
+ * 磨砂与白色都渐变淡出，靠的是 mask-image 把整个元素（含 backdrop-filter
+ * 的效果）一起裁掉 —— 只给 backdrop-filter 做渐变它是做不到的，模糊强度
+ * 无法沿轴向变化。不支持 backdrop-filter 的浏览器仍保留白色遮罩，只是不模糊。
+ */
+.hero-bg__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   background: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.68) 0%,
     rgba(255, 255, 255, 0.38) 52%,
     rgba(255, 255, 255, 0.18) 100%
+  );
+}
+
+.hero-bg__scrim--frosted {
+  background: rgba(255, 255, 255, 0.74);
+  backdrop-filter: blur(22px) saturate(1.08);
+  -webkit-backdrop-filter: blur(22px) saturate(1.08);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 40%,
+    rgba(0, 0, 0, 0.72) 58%,
+    rgba(0, 0, 0, 0) 80%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 40%,
+    rgba(0, 0, 0, 0.72) 58%,
+    rgba(0, 0, 0, 0) 80%
   );
 }
 
@@ -1165,6 +1379,79 @@ onBeforeUnmount(() => {
   justify-content: center;
   min-width: 0;
   padding: 8px 0 0;
+  // 高度由 reserveTallestPanel() 锁定为最高一块面板，切换时不跳
+  min-height: v-bind(bodyMinHeight);
+  // 水平切换时裁掉滑出画面的面板，避免溢出到相邻列
+  overflow: hidden;
+}
+
+.hero-body__panel {
+  position: relative;
+}
+
+// 离屏测量层：量高用。visibility:hidden 保留布局计算，pointer-events:none 防误触。
+// 绝对定位 + 零尺寸，避免它自身参与 .hero-body 的高度计算。
+.hero-body__measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/*
+ * 正文水平切换（推挤）：旧面板向左滑出、新面板自右滑入（反向相反）。
+ * 切出面板改为 absolute 脱离文档流，容器高度交给切入面板撑起，避免高度跳动；
+ * 两者宽度都占满容器、位移取 ±100%，中途并排经过，视觉上就是被「推」出去。
+ */
+.hero-h-next-enter-from {
+  transform: translateX(100%);
+}
+
+.hero-h-prev-enter-from {
+  transform: translateX(-100%);
+}
+
+/*
+ * 切出面板：绝对定位铺满 .hero-body 整块。
+ *
+ * 关键点：脱离文档流必须写在 -leave-active 上，不能只写在 -leave-to。
+ * Vue 的 leave 流程是「先挂 -leave-active，下一帧才挂 -leave-to」，
+ * 中间那一帧切出面板仍在文档流里，容器高度 = 两块面板相加，
+ * Hero 会先长高一截再缩回 —— 这就是点击后「抽一下」的来源。
+ * 挂到 -leave-active 上则从第一帧就离流，容器高度全程恒定。
+ */
+.hero-h-next-leave-active,
+.hero-h-prev-leave-active {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+
+.hero-h-next-leave-to {
+  transform: translateX(-100%);
+}
+
+.hero-h-prev-leave-to {
+  transform: translateX(100%);
+}
+
+.hero-h-next-enter-active,
+.hero-h-next-leave-active,
+.hero-h-prev-enter-active,
+.hero-h-prev-leave-active {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// 切出面板离流后不参与布局，容器只剩切入面板在撑高度；
+// min-height 已锁定为最高面板，两者等高，切换过程高度零变化。
+.hero-h-next-leave-to,
+.hero-h-prev-leave-to {
+  pointer-events: none;
 }
 
 .hero-title {
@@ -1313,6 +1600,25 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1180px) {
+  // 右侧空列在 1180px 以下消失，正文铺满剩余宽度，
+  // 遮罩相应右移淡出点，避免文字右半段压在没磨砂的图上。
+  .hero-bg__scrim--frosted {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      #000 0%,
+      #000 62%,
+      rgba(0, 0, 0, 0.62) 84%,
+      rgba(0, 0, 0, 0.22) 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      #000 0%,
+      #000 62%,
+      rgba(0, 0, 0, 0.62) 84%,
+      rgba(0, 0, 0, 0.22) 100%
+    );
+  }
+
   .hero-stage {
     grid-template-columns: 220px minmax(0, 1fr);
     grid-template-rows: auto auto auto;
@@ -1363,8 +1669,27 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 960px) {
+  // 单列布局：文字横向铺满，没有「无字的一侧」了。
+  // 改为纵向渐变 —— 主体仍磨砂，底部渐透让图片露出来。
+  .hero-bg__scrim--frosted {
+    background: rgba(255, 255, 255, 0.78);
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      #000 0%,
+      #000 58%,
+      rgba(0, 0, 0, 0.55) 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      #000 0%,
+      #000 58%,
+      rgba(0, 0, 0, 0.55) 100%
+    );
+  }
+
   .hero-section {
-    padding: 20px 0 28px;
+    // 顶部同样要加上头部高度，位移与桌面端一致
+    padding: (20px + $site-header-height) 0 28px;
   }
 
   .hero-stage {
@@ -1452,7 +1777,8 @@ onBeforeUnmount(() => {
 
 @media (max-width: 640px) {
   .hero-section {
-    padding: 16px 0 24px;
+    // 同上：位移恒定为一个头部高度
+    padding: (16px + $site-header-height) 0 24px;
   }
 
   .hero-rail {
@@ -1578,6 +1904,18 @@ onBeforeUnmount(() => {
   .hero-cta,
   .hero-feature,
   .hero-rail__arrow {
+    transition-duration: 0.01ms !important;
+  }
+
+  // 减弱动效：轮播水平切换改为瞬时，不做位移动画
+  .hero-h-next-enter-active,
+  .hero-h-next-leave-active,
+  .hero-h-prev-enter-active,
+  .hero-h-prev-leave-active,
+  .hero-bg-h-next-enter-active,
+  .hero-bg-h-next-leave-active,
+  .hero-bg-h-prev-enter-active,
+  .hero-bg-h-prev-leave-active {
     transition-duration: 0.01ms !important;
   }
 }

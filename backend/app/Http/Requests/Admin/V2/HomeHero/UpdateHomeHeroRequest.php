@@ -25,6 +25,7 @@ class UpdateHomeHeroRequest extends AdminFormRequest
             // 以下视觉向字段后端按索引自动填充，管理端不再暴露
             'slides.*.shape' => ['nullable', Rule::in(HomeHeroService::SHAPE_OPTIONS)],
             'slides.*.video' => ['nullable', 'string', 'max:255'],
+            'slides.*.image' => ['nullable', 'string', 'max:255'],
             'slides.*.ribbon' => ['nullable', 'string', 'max:10'],
             'slides.*.ribbon_type' => ['nullable', Rule::in(HomeHeroService::RIBBON_TYPE_OPTIONS)],
 

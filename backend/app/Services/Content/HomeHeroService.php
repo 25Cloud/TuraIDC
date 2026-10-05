@@ -123,6 +123,7 @@ class HomeHeroService
                 'secondary_path' => '/about',
                 'shape' => 'computer',
                 'video' => $this->defaultHeroVideoPath('hero-1.mp4'),
+                'image' => '',
                 'ribbon' => '',
                 'ribbon_type' => 'new',
             ],
@@ -137,6 +138,7 @@ class HomeHeroService
                 'secondary_path' => '/help',
                 'shape' => 'connection',
                 'video' => $this->defaultHeroVideoPath('hero-2.mp4'),
+                'image' => '',
                 'ribbon' => '',
                 'ribbon_type' => 'new',
             ],
@@ -151,6 +153,7 @@ class HomeHeroService
                 'secondary_path' => '/help',
                 'shape' => 'security',
                 'video' => $this->defaultHeroVideoPath('hero-3.mp4'),
+                'image' => '',
                 'ribbon' => '',
                 'ribbon_type' => 'new',
             ],
@@ -165,6 +168,7 @@ class HomeHeroService
                 'secondary_path' => '/products',
                 'shape' => 'value',
                 'video' => $this->defaultHeroVideoPath('hero-4.mp4'),
+                'image' => '',
                 'ribbon' => '',
                 'ribbon_type' => 'warm',
             ],
@@ -179,6 +183,7 @@ class HomeHeroService
                 'secondary_path' => '/about',
                 'shape' => 'support',
                 'video' => $this->defaultHeroVideoPath('hero-5.mp4'),
+                'image' => '',
                 'ribbon' => '',
                 'ribbon_type' => 'new',
             ],
@@ -301,6 +306,7 @@ class HomeHeroService
             'secondary_path' => mb_substr(trim((string) ($slide['secondary_path'] ?? $slide['secondaryPath'] ?? '')), 0, 255),
             'shape' => $shape,
             'video' => $this->normalizeVideoPath($slide['video'] ?? ''),
+            'image' => $this->normalizeImagePath($slide['image'] ?? ''),
             'ribbon' => mb_substr(trim((string) ($slide['ribbon'] ?? '')), 0, 10),
             'ribbon_type' => $ribbonType,
         ];
@@ -325,6 +331,40 @@ class HomeHeroService
             'desc' => mb_substr(trim((string) ($feature['desc'] ?? '')), 0, 120),
             'path' => mb_substr(trim((string) ($feature['path'] ?? '')), 0, 255),
         ];
+    }
+
+    /**
+     * 归一化轮播背景图路径。
+     *
+     * 与视频不同，图片来源更散（媒体库 /uploads/...、扁平 /media/...、
+     * 站点自带的 /assets/...），按前缀白名单校验会误拒合法上传，
+     * 因此这里只约束「必须是站内路径 + 必须是图片扩展名」。
+     */
+    private function normalizeImagePath(mixed $value): string
+    {
+        $path = trim((string) $value);
+        if ($path === '') {
+            return '';
+        }
+
+        // 外链统一取其路径部分：前台资源解析只认站内相对路径，
+        // 直接存绝对地址会绕过站点的资源域名与缓存策略。
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            $path = (string) (parse_url($path, PHP_URL_PATH) ?: '');
+        }
+
+        $path = '/'.ltrim(str_replace('\\', '/', $path), '/');
+
+        // 拒绝向上穿越的路径，避免把任意本地文件暴露成背景图
+        if ($path === '' || str_contains($path, '..')) {
+            return '';
+        }
+
+        if (preg_match('/\.(jpe?g|png|webp|gif|avif)$/i', basename($path)) !== 1) {
+            return '';
+        }
+
+        return $path;
     }
 
     private function normalizeVideoPath(mixed $value): string

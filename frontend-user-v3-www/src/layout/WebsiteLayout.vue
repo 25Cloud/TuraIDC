@@ -1,7 +1,7 @@
 <template>
   <div class="website-layout">
     <a class="skip-to-content" href="#main-content">跳到主内容</a>
-    <header class="site-header" :class="{ scrolled: headerScrolled }">
+    <header class="site-header" :class="{ scrolled: headerScrolled, 'is-overlay': headerOverlay }">
       <div class="container header-bar">
         <router-link to="/" class="logo" :aria-label="appStore.siteName">
           <img
@@ -763,6 +763,12 @@ const route = useRoute();
 const appStore = useAppStore();
 const userStore = useUserStore();
 
+// 首页判定：仅首页的 Hero 会与头部拼接，其他页面保持常规白底头部。
+// 首页是 "/" 下的子路由（name=WwwHome，path=""），fullPath 即 "/"。
+const isHomeRoute = computed(
+  () => route.path === "/" || String(route.name || "") === "WwwHome",
+);
+
 // 登录态恢复放到 onMounted，避免 setup 顶层产生路由跳转副作用
 // 跨端口登录传递仍走 query _token（与控制台 v4-console 约定保持一致），收到后立即持久化并从 URL 剥离
 onMounted(() => {
@@ -804,6 +810,17 @@ const mobileNavVisible = ref(false);
 const mobileActiveFirstLevel = ref("products");
 const mobileExpandedType = ref("");
 const headerScrolled = ref(false);
+/**
+ * 首页未滚动时，头部改为「融入 Hero」的浮层态。
+ *
+ * 首页 Hero 有背景图 + 左磨砂右透出的遮罩，而头部是不透明白底、又正好紧贴
+ * Hero 上沿，会在图片顶部横切出一条硬边，看上去像两块拼起来的。
+ * 这里让头部在首页顶部改用与 Hero 一致的磨砂渐变，滚动离开后再恢复白底
+ * （滚动后内容会顶上来，必须靠实底保证可读）。
+ */
+const headerOverlay = computed(
+  () => isHomeRoute.value && !headerScrolled.value,
+);
 const isMobile = ref(
   typeof window === "undefined" ? false : window.innerWidth <= 960,
 );
@@ -1115,6 +1132,29 @@ onBeforeUnmount(() => {
 .site-header.scrolled {
   border-bottom-color: $divider-color;
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
+/*
+ * 首页未滚动：头部以「透明浮层」叠在 Hero 之上，不再单独加磨砂。
+ *
+ * 之前头部用一个 ::before 伪元素叠了一层白 0.74 + blur(22px)，而 Hero 自己的
+ * 遮罩（.hero-bg__scrim--frosted）同样是一层白 0.74 + blur(22px)——Hero 通过
+ * margin-top:-64px 把背景铺到了头部底下，于是这两层在顶部 64px 里叠在一起，
+ * 顶部导航条比下方 Hero 明显更白更糊，横切出一条亮带，就是「看着怪」的来源。
+ *
+ * 现在头部只负责透明 + 不拦截事件，磨砂完全交给 Hero 遮罩：它（连同其渐变
+ * mask）天然覆盖了整个头部区域，上下只有一层磨砂，横竖都连续，不再有亮带
+ * 和断层。滚动离开首页（headerOverlay=false）后，头部恢复 .site-header 的
+ * 实底白底，与下方内容正常分隔。
+ */
+.site-header.is-overlay {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom-color: transparent;
+  box-shadow: none;
+  // 建立层叠上下文，确保透明头部之上的导航内容正确叠在 Hero 遮罩之上
+  isolation: isolate;
 }
 
 .header-bar {

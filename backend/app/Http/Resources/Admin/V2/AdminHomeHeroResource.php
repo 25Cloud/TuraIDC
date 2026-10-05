@@ -22,6 +22,8 @@ class AdminHomeHeroResource extends JsonResource
         'secondary_path',
         'shape',
         'video',
+        // 缺了它，保存响应里就没有 image，前端拿响应回填会把刚选的图抹掉
+        'image',
         'ribbon',
         'ribbon_type',
     ];
