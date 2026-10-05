@@ -93,7 +93,7 @@
         </button>
       </aside>
 
-      <div class="hero-body">
+      <div ref="bodyRef" class="hero-body">
         <Transition :name="bodySlideName">
           <div :key="activeSlide.key" class="hero-body__panel">
             <h1 class="hero-title">{{ activeSlide.title }}</h1>
@@ -116,6 +116,29 @@
             </div>
           </div>
         </Transition>
+        <!--
+          离屏测量层：把所有 slide 的面板各渲染一份（不可见、不占布局），
+          量出最高的一块，锁进 .hero-body 的 min-height。
+          见 reserveTallestPanel()。
+        -->
+        <div class="hero-body__measure" aria-hidden="true">
+          <div
+            v-for="slide in heroSlides"
+            :key="`measure-${slide.key}`"
+            class="hero-body__panel"
+          >
+            <h1 class="hero-title">{{ slide.title }}</h1>
+            <p class="hero-desc">{{ slide.desc }}</p>
+            <div class="hero-actions">
+              <span class="hero-cta hero-cta--primary">{{
+                slide.primaryText
+              }}</span>
+              <span class="hero-cta hero-cta--secondary">{{
+                slide.secondaryText
+              }}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="hero-dots" role="tablist" aria-label="轮播指示">
@@ -458,6 +481,9 @@ watch(
     if (activeIndex.value >= nextSlides.length) {
       activeIndex.value = 0;
     }
+
+    // 字体就位后量高度，否则会量到 fallback 字形的尺寸
+    nextTick(reserveTallestPanel);
   },
   { immediate: true },
 );
@@ -490,6 +516,52 @@ const bodySlideName = computed(() =>
 const bgSlideName = computed(() =>
   slideDirection.value >= 0 ? "hero-bg-h-next" : "hero-bg-h-prev",
 );
+
+/*
+ * 锁定 .hero-body 的高度，避免切换时整块内容上下跳。
+ *
+ * 之前切出面板是 position:absolute，容器高度只由切入面板决定：
+ * 遇到更长的文案，切入瞬间容器变高 → .hero-stage 是 align-items:center，
+ * 正文块会整体上移几十像素，视觉上就是「抽一下」。
+ *
+ * 这里把每张 slide 的面板都渲染到离屏测量层，取最高的一块写进 min-height，
+ * 容器高度在整个轮播周期内保持恒定，切换只发生水平位移。
+ */
+const bodyRef = ref(null);
+const bodyMinHeight = ref("");
+let measureRafId = 0;
+
+function reserveTallestPanel() {
+  if (typeof window === "undefined") return;
+  if (measureRafId) {
+    window.cancelAnimationFrame(measureRafId);
+  }
+  measureRafId = window.requestAnimationFrame(() => {
+    measureRafId = 0;
+    const host = bodyRef.value;
+    if (!host) return;
+    const panels = host.querySelectorAll(".hero-body__measure > *");
+    let tallest = 0;
+    panels.forEach((el) => {
+      const h = el.getBoundingClientRect().height;
+      if (h > tallest) tallest = h;
+    });
+    bodyMinHeight.value = tallest > 0 ? `${Math.ceil(tallest)}px` : "";
+  });
+}
+
+function watchBodyWidth() {
+  if (typeof window === "undefined") return;
+  const host = bodyRef.value;
+  if (!host || typeof ResizeObserver === "undefined") return;
+  const observer = new ResizeObserver(() => {
+    reserveTallestPanel();
+  });
+  observer.observe(host);
+  return observer;
+}
+
+let bodyResizeObserver = null;
 
 const MIN_ROTATION_INTERVAL = 6000;
 const MAX_ROTATION_INTERVAL = 15000;
@@ -905,6 +977,14 @@ function handleVisibilityChange() {
 
 onMounted(() => {
   startRotation();
+  bodyResizeObserver = watchBodyWidth() || null;
+  // 字体异步就位后必须重量一次：首帧量到的是 fallback 字形高度，
+  // 比真实中文字形矮几个像素，锁出来的 min-height 偏小，切到长文案那帧仍会跳一下。
+  if (typeof document !== "undefined" && document.fonts?.ready) {
+    document.fonts.ready.then(() => {
+      reserveTallestPanel();
+    });
+  }
   // 首屏视频是 LCP 元素：不等 idle 回调，立即启动加载，避免把 ~1.2s 的空等计入 LCP。
   // 慢网络/移动端/减弱动效场景由 shouldEnableHeroVideo() 在内部拦截。
   enableHeroVideo();
@@ -939,6 +1019,14 @@ onBeforeUnmount(() => {
   if (heroVisibilityObserver) {
     heroVisibilityObserver.disconnect();
     heroVisibilityObserver = null;
+  }
+  if (bodyResizeObserver) {
+    bodyResizeObserver.disconnect();
+    bodyResizeObserver = null;
+  }
+  if (measureRafId && typeof window !== "undefined") {
+    window.cancelAnimationFrame(measureRafId);
+    measureRafId = 0;
   }
   if (typeof document !== "undefined") {
     document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -1291,12 +1379,28 @@ $site-header-height: 64px;
   justify-content: center;
   min-width: 0;
   padding: 8px 0 0;
+  // 高度由 reserveTallestPanel() 锁定为最高一块面板，切换时不跳
+  min-height: v-bind(bodyMinHeight);
   // 水平切换时裁掉滑出画面的面板，避免溢出到相邻列
   overflow: hidden;
 }
 
 .hero-body__panel {
   position: relative;
+}
+
+// 离屏测量层：量高用。visibility:hidden 保留布局计算，pointer-events:none 防误触。
+// 绝对定位 + 零尺寸，避免它自身参与 .hero-body 的高度计算。
+.hero-body__measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
 }
 
 /*
