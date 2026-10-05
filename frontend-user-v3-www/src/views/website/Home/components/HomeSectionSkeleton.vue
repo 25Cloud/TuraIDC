@@ -236,7 +236,11 @@ defineProps({
 
 .home-section-skeleton--hero {
   min-height: 640px;
-  padding: 120px 0 32px;
+  // 与真实 Hero 对齐：上移一个头部高度，让顶部 frosted 渐变铺到头部底下，
+  // 避免数据就绪时整体向下跳 64px；同时顶部 64px 透出的是这片浅色渐变（而非
+  // 透明后露出页面底色），与滚动前首页的磨砂观感衔接。
+  margin-top: -64px;
+  padding: 92px 0 32px;
   background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 52%, #ffffff 100%);
 }
 

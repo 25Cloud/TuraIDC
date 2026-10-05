@@ -1135,14 +1135,17 @@ onBeforeUnmount(() => {
 }
 
 /*
- * 首页未滚动：头部与 Hero 的磨砂遮罩无缝衔接。
+ * 首页未滚动：头部以「透明浮层」叠在 Hero 之上，不再单独加磨砂。
  *
- * 背景铺在 ::before 上而不是 header 自身 —— 磨砂要从左向右渐变淡出，
- * 只能靠 mask-image 裁切；若直接给 header 加 mask，logo、菜单、登录按钮
- * 会连同背景一起被裁掉（mask 作用于整个元素子树）。伪元素不含内容，
- * 拿它当背景层即可只裁背景。
- * 渐变参数与 HomeHeroCarousel 的 .hero-bg__scrim--frosted 保持一致，
- * 两段在垂直方向才能接得上。
+ * 之前头部用一个 ::before 伪元素叠了一层白 0.74 + blur(22px)，而 Hero 自己的
+ * 遮罩（.hero-bg__scrim--frosted）同样是一层白 0.74 + blur(22px)——Hero 通过
+ * margin-top:-64px 把背景铺到了头部底下，于是这两层在顶部 64px 里叠在一起，
+ * 顶部导航条比下方 Hero 明显更白更糊，横切出一条亮带，就是「看着怪」的来源。
+ *
+ * 现在头部只负责透明 + 不拦截事件，磨砂完全交给 Hero 遮罩：它（连同其渐变
+ * mask）天然覆盖了整个头部区域，上下只有一层磨砂，横竖都连续，不再有亮带
+ * 和断层。滚动离开首页（headerOverlay=false）后，头部恢复 .site-header 的
+ * 实底白底，与下方内容正常分隔。
  */
 .site-header.is-overlay {
   background: transparent;
@@ -1150,75 +1153,8 @@ onBeforeUnmount(() => {
   -webkit-backdrop-filter: none;
   border-bottom-color: transparent;
   box-shadow: none;
-}
-
-.site-header.is-overlay::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: rgba(255, 255, 255, 0.74);
-  backdrop-filter: blur(22px) saturate(1.08);
-  -webkit-backdrop-filter: blur(22px) saturate(1.08);
-  -webkit-mask-image: linear-gradient(
-    90deg,
-    #000 0%,
-    #000 40%,
-    rgba(0, 0, 0, 0.72) 58%,
-    rgba(0, 0, 0, 0) 80%
-  );
-  mask-image: linear-gradient(
-    90deg,
-    #000 0%,
-    #000 40%,
-    rgba(0, 0, 0, 0.72) 58%,
-    rgba(0, 0, 0, 0) 80%
-  );
-  pointer-events: none;
-}
-
-// z-index: -1 需要 header 建立层叠上下文，否则伪元素会掉到页面背景之后
-.site-header.is-overlay {
+  // 建立层叠上下文，确保透明头部之上的导航内容正确叠在 Hero 遮罩之上
   isolation: isolate;
-}
-
-@media (max-width: 1180px) {
-  // 与 Hero 遮罩同步：右侧空列消失后淡出点右移
-  .site-header.is-overlay::before {
-    -webkit-mask-image: linear-gradient(
-      90deg,
-      #000 0%,
-      #000 62%,
-      rgba(0, 0, 0, 0.62) 84%,
-      rgba(0, 0, 0, 0.22) 100%
-    );
-    mask-image: linear-gradient(
-      90deg,
-      #000 0%,
-      #000 62%,
-      rgba(0, 0, 0, 0.62) 84%,
-      rgba(0, 0, 0, 0.22) 100%
-    );
-  }
-}
-
-@media (max-width: 960px) {
-  // 与 Hero 遮罩同步：单列布局改用纵向渐变
-  .site-header.is-overlay::before {
-    background: rgba(255, 255, 255, 0.78);
-    -webkit-mask-image: linear-gradient(
-      180deg,
-      #000 0%,
-      #000 70%,
-      rgba(0, 0, 0, 0.7) 100%
-    );
-    mask-image: linear-gradient(
-      180deg,
-      #000 0%,
-      #000 70%,
-      rgba(0, 0, 0, 0.7) 100%
-    );
-  }
 }
 
 .header-bar {
