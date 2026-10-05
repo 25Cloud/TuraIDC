@@ -2,7 +2,7 @@
   <MobileSheet
     :visible="visible"
     size="282px"
-    title="选择地区及可用区"
+    title="选择地区与可用区"
     cancel-text="取消"
     confirm-text="确定"
     :close-on-press-modal="false"
@@ -13,6 +13,11 @@
   >
     <div class="mrp-picker">
       <div class="mrp-frame" aria-hidden="true"></div>
+
+      <div class="mrp-col-head">
+        <span class="mrp-col-head__item">地区</span>
+        <span class="mrp-col-head__item">可用区</span>
+      </div>
 
       <div ref="regionCol" class="mrp-col" aria-label="地区">
         <div class="mrp-spacer" :style="{ height: spacerH + 'px' }"></div>
@@ -332,7 +337,22 @@ watch(
   height: 242px;
   display: grid;
   grid-template-columns: 55% 45%;
+  grid-template-rows: 22px 1fr;
   overflow: hidden;
+}
+
+.mrp-col-head {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 55% 45%;
+  font-size: 12px;
+  line-height: 22px;
+  color: $text-color-secondary;
+  border-bottom: 1px solid $divider-color;
+}
+
+.mrp-col-head__item {
+  text-align: center;
 }
 
 .mrp-frame {

@@ -33,6 +33,7 @@
         <div class="category-panel-head">
           <div class="category-panel-title">
             <strong>商品分类</strong>
+            <span class="category-panel-scope">一级菜单：{{ selectedProductTypeLabel }} · 下方为二级 / 三级分类</span>
           </div>
           <t-space size="small">
             <t-button
@@ -59,7 +60,7 @@
         <div v-if="categoryTreeRows.length" class="category-tree" role="tree" aria-label="商品分类树">
           <div
             v-for="{ node: item, level, childCount } in categoryTreeRows"
-            :key="String(item.id)"
+            :key="categoryIdKey(item)"
             class="category-tree-row"
             :class="{
               active: isCategoryRowActive(item),
@@ -101,8 +102,8 @@
             </button>
             <button type="button" class="category-tree-main" @click="handleCategorySelect(item)">
               <span class="category-title-line">
-                <span class="category-level-tag" :class="`category-level-${level}`">{{
-                  level === 0 ? '一级' : '二级'
+                <span class="category-level-tag" :class="categoryLevelTagClass(item)">{{
+                  categoryLevelLabel(item)
                 }}</span>
                 <span class="category-name" :class="{ 'is-hidden': !isCategoryVisible(item) }">
                   {{ categoryDisplayName(item) }}
@@ -390,6 +391,7 @@
           <div class="category-panel-head">
             <div class="category-panel-title">
               <strong>商品分类</strong>
+              <span class="category-panel-scope">一级菜单：{{ selectedProductTypeLabel }} · 下方为二级 / 三级分类</span>
             </div>
             <t-space size="small">
               <t-button shape="square" variant="text" :loading="categoryLoading" @click="loadCategories">
@@ -415,7 +417,7 @@
           >
             <div
               v-for="{ node: item, level, childCount } in categoryTreeRows"
-              :key="String(item.id)"
+              :key="categoryIdKey(item)"
               class="category-tree-row"
               :class="{
                 active: isCategoryRowActive(item),
@@ -458,8 +460,8 @@
               </button>
               <button type="button" class="category-tree-main" @click="handleMobileCategorySelect(item)">
                 <span class="category-title-line">
-                  <span class="category-level-tag" :class="`category-level-${level}`">{{
-                    level === 0 ? '一级' : '二级'
+                  <span class="category-level-tag" :class="categoryLevelTagClass(item)">{{
+                    categoryLevelLabel(item)
                   }}</span>
                   <span class="category-name" :class="{ 'is-hidden': !isCategoryVisible(item) }">
                     {{ categoryDisplayName(item) }}
@@ -1649,8 +1651,8 @@ const categoryProductTypeOptions = computed(() => {
     : [];
 });
 const categoryTree = computed(() => buildCategoryTree(categoryOptions.value));
-// 顶部 type-strip 已展示一级分类（L1，例如"云服务器"），分类树里跳过该层，
-// 将 L2（例如"襄阳"）作为树根展示，L3（例如"高宽"）作为其子节点，形成一级 + 二级菜单。
+// 顶部 type-strip 就是一级菜单（L1，代码里叫 product_type，实际存的是菜单 code），
+// 分类接口也按它过滤，所以展示树从 L2 起，节点层级标签按真实层级给，不再按树深度给。
 const displayCategoryTree = computed(() => toDisplayCategoryTree(categoryTree.value));
 const filteredCategoryTree = computed(() =>
   filterCategoryTree(displayCategoryTree.value, categoryKeyword.value.trim().toLowerCase()),
@@ -1764,6 +1766,21 @@ const supplierProductCascaderOptions = computed(() => {
 // --- Category tree helpers ---
 function categoryIdKey(row: ProductCategoryRecord) {
   return productGroupOptionKey(row);
+}
+
+// 树里的层级标签必须按真实层级给，而不是按「在树中的第几层」给：
+// 顶部一级菜单条已经选定了 L1，树根是 L2、子节点是 L3，
+// 之前按深度标成「一级 / 二级」，和上面的 L1 撞车，看起来就像两套一级分类。
+function categoryLevelLabel(row: ProductCategoryRecord) {
+  const level = productGroupLevel(row);
+  if (level === 1) return '一级分类';
+  if (level === 2) return '二级分类';
+  if (level === 3) return '三级分类';
+  return '分类';
+}
+
+function categoryLevelTagClass(row: ProductCategoryRecord) {
+  return `category-level-${productGroupLevel(row) || 0}`;
 }
 
 function categoryDisplayName(row: ProductCategoryRecord) {

@@ -198,22 +198,32 @@ class ClientServiceConsoleCategoryTitleFallbackTest extends TestCase
                 ->assertJsonPath('code', 0)
                 ->assertJsonPath('data.total', 3);
 
-            $cloudServerCatalogType = collect($overviewResponse->json('data.catalog_types'))
-                ->firstWhere('value', ProductType::VPS);
-            $this->assertSame('云服务器', $cloudServerCatalogType['label'] ?? null);
-            $this->assertSame(3, (int) ($cloudServerCatalogType['count'] ?? 0));
+            $catalogTypes = collect($overviewResponse->json('data.catalog_types'));
+            $this->assertTrue($catalogTypes->isNotEmpty());
+            // 概览目录按一级菜单列出，每个入口的计数之和必须等于服务总数。
+            $this->assertSame(3, (int) $catalogTypes->sum('count'));
 
-            // 验证分组结构能正确返回 children
+            // 同一批服务只能落在一张卡里（按一级菜单分组，不按商品类型并项）。
             $list = $overviewResponse->json('data.list');
             $this->assertIsArray($list);
-            $nonEmptyTypeCard = collect($list)->firstWhere('count', '>', 0);
-            $this->assertIsArray($nonEmptyTypeCard);
-            $this->assertSame(ProductType::VPS, $nonEmptyTypeCard['key'] ?? null);
+            $nonEmptyCards = collect($list)
+                ->filter(fn ($card) => (int) ($card['count'] ?? 0) > 0)
+                ->values();
+            $this->assertCount(1, $nonEmptyCards);
+            $nonEmptyTypeCard = $nonEmptyCards[0];
             $this->assertSame(3, (int) ($nonEmptyTypeCard['count'] ?? 0));
+            $this->assertSame('一级分类', $nonEmptyTypeCard['group_level_label'] ?? '');
             $this->assertIsArray($nonEmptyTypeCard['children'] ?? null);
             $firstChild = $nonEmptyTypeCard['children'][0] ?? null;
             $this->assertIsArray($firstChild);
             $this->assertSame('Leaf Group '.$suffix, $firstChild['name'] ?? '');
+            // 子卡 key 必须带层级，否则不同父下的同名 slug 会撞成同一张卡。
+            $this->assertSame('3:'.$thirdGroupId, $firstChild['key'] ?? '');
+            $this->assertSame('三级分类', $firstChild['group_level_label'] ?? '');
+            $this->assertSame(
+                'Root Group '.$suffix.' / Child Group '.$suffix.' / Leaf Group '.$suffix,
+                $firstChild['group_path_text'] ?? ''
+            );
             $this->assertSame('当前分类已开通 3 个服务，可快速进入控制台处理业务。', $firstChild['description'] ?? '');
         } finally {
             if ($suspendedServiceId !== null) {

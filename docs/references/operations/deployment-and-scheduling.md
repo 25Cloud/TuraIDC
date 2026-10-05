@@ -158,11 +158,39 @@ VitePress 文档官网不属于上述三端，必须通过 `pnpm run build:docs`
 > - `.env`：构建地址（生产域名），部署打包前填写真实域名
 >
 > 部署前确认 `.env` 中 `VITE_API_BASE_URL`、`VITE_PUBLIC_SITE_URL`、`VITE_CONSOLE_SITE_URL`、`VITE_SESSION_COOKIE_DOMAIN` 与生产一致；缺项或填错会让产物指向错误地址。
+>
+> 站点地址的真源是 `backend/.env` 的四个公开地址：`backend/scripts/build_frontends.mjs` 会把它们解析成 `VITE_*` 注入构建，`--print-env` 可单独打印这套变量供其他构建入口复用。这样各前端目录下的 `.env` 只是本地便利，不会与线上配置漂移。
 
 ```bash
 # 只预览构建目标，不实际构建
 pnpm run build:frontends:dry
+
+# 只打印从 backend/.env 解析出的 VITE_* 站点地址（供部署脚本复用）
+node backend/scripts/build_frontends.mjs --print-env
 ```
+
+### 3.2.1 单域名子路径部署下的控制台地址
+
+现网把官网、控制台、管理端、API 合并到同一个域名，用子路径区分：
+
+| 端      | 访问路径                | 对应 `backend/.env`               |
+| ------- | ----------------------- | -------------------------------- |
+| 官网    | `/`                     | `FRONTEND_URL=https://你的域名`   |
+| 控制台  | `/console/`             | `CLIENT_CONSOLE_URL=https://你的域名/console` |
+| 管理端  | `/admin/`               | `ADMIN_URL=https://你的域名/admin` |
+| API     | `/api`                  | `APP_URL=https://你的域名`        |
+
+单域名部署时 `VITE_CONSOLE_SITE_URL` **必须带 `/console` 子路径**。控制台的 router base 就是 `/console/`，写成不带子路径的裸域名会让官网的「登录 / 免费注册」跳到 `https://你的域名/client/login`——那条路径落在官网 SPA 上，永远到不了控制台登录页。
+
+为此 `frontend-user-v3-www/vite.config.js` 加了构建守卫：`VITE_CONSOLE_SITE_URL` 留空，或与 `VITE_PUBLIC_SITE_URL` 同源却没有子路径时，`pnpm build` 直接失败。控制台地址配错会在构建期暴露，不会带着坏链接发版。
+
+单域名部署时 `CLIENT_SESSION_COOKIE_DOMAIN` 建议留空（登录态本来就在同源）；需要跨子域共享登录态时才填父域。
+
+> **`CLIENT_CONSOLE_URL` 必须带 `/console`**：后端 `AuthService::normalizeConfiguredUrl()`
+> 允许地址带路径（单域名部署的前提），管理员代登录链接就是在该地址后追加
+> `/client/login-as`。如果把它写成不带子路径的裸域名，官网的登录/注册会跳到
+> `https://你的域名/client/login`（官网 SPA），代登录也会落到官网页面上。
+> 管理端会把后端下发的地址再拼一次 `/client/login-as`，两边都按「base path 保留」处理。
 
 ### 3.3 .env 关键项
 
@@ -171,9 +199,9 @@ pnpm run build:frontends:dry
 - `APP_ENV=production`
 - `APP_DEBUG=false`
 - `APP_URL=https://api.你的域名`（API、`/media/*`、`/uploads/*`、VNC WebSocket）
-- `FRONTEND_URL=https://www.你的域名`
-- `CLIENT_CONSOLE_URL=https://console.你的域名`
-- `ADMIN_URL=https://admin.你的域名`
+- `FRONTEND_URL=https://www.你的域名`（单域名子路径部署写 `https://你的域名`，见 3.2.1）
+- `CLIENT_CONSOLE_URL=https://console.你的域名`（单域名子路径部署写 `https://你的域名/console`）
+- `ADMIN_URL=https://admin.你的域名`（单域名子路径部署写 `https://你的域名/admin`）
 - `CLIENT_SESSION_COOKIE_DOMAIN=.你的域名`（官网和控制台需要跨子域共享登录态时设置；本地留空）
 - `SESSION_SECURE_COOKIE=true`（HTTP 环境改为 `false`）
 - `DB_*`：MySQL 8 连接

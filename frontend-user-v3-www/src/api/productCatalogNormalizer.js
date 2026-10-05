@@ -39,6 +39,30 @@ export function normalizeProductType(item = {}, index = 0) {
   }
 }
 
+const PRODUCT_GROUP_LEVEL_LABELS = {
+  1: '一级分类',
+  2: '二级分类',
+  3: '三级分类',
+}
+
+function normalizeGroupPath(item = {}) {
+  return Array.isArray(item.group_path)
+    ? item.group_path
+      .filter((node) => node && typeof node === 'object')
+      .map((node, index) => {
+        const level = toNumber(node.level, index + 1)
+        return {
+          level,
+          level_label: toText(pickFirst(node.level_label, PRODUCT_GROUP_LEVEL_LABELS[level])),
+          id: toNumber(node.id, 0),
+          code: toText(node.code),
+          name: toText(node.name),
+        }
+      })
+      .filter((node) => node.name !== '' || node.id > 0)
+    : []
+}
+
 export function normalizeProductGroup(item = {}, index = 0) {
   const secondProductGroupId = toNumber(item.second_product_group_id, 0)
   const thirdProductGroupId = toNumber(item.third_product_group_id, 0)
@@ -56,6 +80,7 @@ export function normalizeProductGroup(item = {}, index = 0) {
     pickFirst(item.effective_product_group_level, thirdProductGroupId > 0 ? 3 : secondProductGroupId > 0 ? 2 : item.level),
     0,
   )
+  const groupPath = normalizeGroupPath(item)
 
   return {
     ...item,
@@ -73,6 +98,16 @@ export function normalizeProductGroup(item = {}, index = 0) {
     third_product_group_name: toText(pickFirst(item.third_product_group_name, level === 3 ? item.name : '')) || null,
     effective_product_group_id: effectiveProductGroupId || null,
     effective_product_group_level: level || null,
+    group_level_label: toText(
+      pickFirst(item.group_level_label, PRODUCT_GROUP_LEVEL_LABELS[level]),
+    ),
+    group_path: groupPath,
+    group_path_text:
+      toText(item.group_path_text) ||
+      groupPath
+        .map((node) => node.name)
+        .filter((name) => name !== '')
+        .join(' / '),
     name: toText(item.name),
     slogan: toText(item.slogan),
     slug: toText(item.slug),
@@ -106,6 +141,13 @@ export function normalizeProduct(item = {}) {
     third_product_group_id: toNumber(item.third_product_group_id, 0) || null,
     effective_product_group_id: toNumber(item.effective_product_group_id, 0) || null,
     effective_product_group_level: toNumber(item.effective_product_group_level, 0) || null,
+    group_path: normalizeGroupPath(item),
+    group_path_text:
+      toText(item.group_path_text) ||
+      normalizeGroupPath(item)
+        .map((node) => node.name)
+        .filter((name) => name !== '')
+        .join(' / '),
     group,
   }
 }
