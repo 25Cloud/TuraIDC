@@ -45,6 +45,7 @@
             <div class="mega-menu__inner container">
               <template v-if="activeMenuId === 'products'">
                 <div class="mega-menu__types">
+                  <span class="mega-menu__col-title">产品目录</span>
                   <button
                     v-for="type in navProductTypes"
                     :key="type.value"
@@ -60,6 +61,9 @@
                   </button>
                 </div>
                 <div class="mega-menu__groups">
+                  <span class="mega-menu__col-title">
+                    地区 · {{ navActiveTypeLabel || "全部" }}
+                  </span>
                   <router-link
                     v-for="group in navActiveGroups"
                     :key="group.id"
@@ -780,6 +784,7 @@ const navProductMenu = useNavProductMenu();
 const {
   productTypes: navProductTypes,
   activeTypeValue: navActiveTypeValue,
+  activeTypeLabel: navActiveTypeLabel,
   activeGroups: navActiveGroups,
   getGroupsForType: navGetGroupsForType,
   loading: navLoading,
@@ -1286,6 +1291,25 @@ onBeforeUnmount(() => {
   background: #f8fafc;
 }
 
+/* 分栏标题：让「产品目录 / 地区」在同一屏里直接可辨 */
+.mega-menu__col-title {
+  display: block;
+  padding: 0 20px 8px;
+  color: $text-color-disabled;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.mega-menu__types .mega-menu__col-title {
+  margin-bottom: 4px;
+}
+
+.mega-menu__groups .mega-menu__col-title {
+  grid-column: 1 / -1;
+  padding: 8px 20px 4px;
+}
+
 .mega-type-btn {
   display: flex;
   align-items: center;
@@ -1446,13 +1470,16 @@ onBeforeUnmount(() => {
     background 0.16s ease;
 }
 
+// 登录后的用户胶囊。头部浮在首页 Hero 之上时整条 header 没有底色，
+// 胶囊原本是透明底 + 深灰文字，深色画面上完全看不见。
+// 因此常驻半透明白底 —— 浅色 header 上只是一层很淡的底，深色 Hero 上则把文字托起来。
 .header-user-trigger {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 4px 12px 4px 4px;
   border: none;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.72);
   border-radius: 999px;
   cursor: pointer;
   transition: background 0.16s ease;
@@ -1484,7 +1511,7 @@ onBeforeUnmount(() => {
   }
 
   &:hover {
-    background: rgba(22, 93, 255, 0.06);
+    background: rgba(255, 255, 255, 0.92);
   }
 
   .header-user-arrow {
@@ -1631,24 +1658,40 @@ onBeforeUnmount(() => {
   letter-spacing: 0;
 }
 
+// 头部浮在首页 Hero 之上时整条 header 没有任何底色，
+// 按钮必须自己带底色才读得出来。
+// 登录用白色实底 + 主色文字，注册保持主色实底 + 白字，
+// 两者在浅色 header 与深色 Hero 上都清晰，也符合「次要 / 主要」的操作层级。
 .header-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   height: 34px;
-  padding: 0 14px;
-  color: #374151;
+  padding: 0 22px;
+  margin-left: 4px;
+  border: 1px solid rgba(22, 93, 255, 0.32);
+  border-radius: 3px;
+  background: #ffffff;
+  color: #165dff;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
-  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(22, 93, 255, 0.12);
   transition:
-    color 0.16s ease,
-    background 0.16s ease;
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
 }
 
 .header-link:hover {
-  color: $color-primary;
-  background: rgba(22, 93, 255, 0.06);
+  transform: translateY(-1px);
+  border-color: rgba(22, 93, 255, 0.6);
+  background: #f5f8ff;
+  color: #0e4fcc;
+  box-shadow: 0 8px 20px rgba(22, 93, 255, 0.2);
 }
 
 .header-register,
@@ -2178,8 +2221,11 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1180px) {
-  .header-link {
-    display: none;
+  // 之前这里直接把登录隐藏了，笔记本窄视口下头部只剩「免费注册」，
+  // 用户根本找不到登录入口；改成保留按钮、只压缩内边距。
+  .header-link,
+  .header-register {
+    padding: 0 14px;
   }
 
   .main-nav__link {

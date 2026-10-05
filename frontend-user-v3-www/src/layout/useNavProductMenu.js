@@ -17,6 +17,8 @@ export function useNavProductMenu() {
     productTypes.value.find((t) => t.value === activeTypeValue.value) || null,
   )
 
+  const activeTypeLabel = computed(() => activeType.value?.label || '')
+
   const activeGroups = computed(() => {
     const key = activeTypeValue.value
     return groupsByType.value[key] || []
@@ -120,6 +122,7 @@ export function useNavProductMenu() {
     productTypes,
     activeTypeValue,
     activeType,
+    activeTypeLabel,
     activeGroups,
     getGroupsForType,
     loading,

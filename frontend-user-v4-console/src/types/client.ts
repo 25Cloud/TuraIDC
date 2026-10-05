@@ -354,6 +354,10 @@ export interface ServiceCatalogTypeOption {
 export interface ServiceOverviewGroup {
   key?: string;
   id?: number | null;
+  group_level?: number;
+  group_level_label?: string;
+  first_product_group_code?: string;
+  first_product_group_name?: string;
   product_type?: string;
   product_type_label?: string;
   icon?: string;
@@ -372,9 +376,22 @@ export interface ServiceOverviewGroup {
   [key: string]: unknown;
 }
 
+export interface ServiceOverviewGroupPathNode {
+  level?: number;
+  level_label?: string;
+  id?: number;
+  code?: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
 export interface ServiceOverviewCategoryCard {
   key?: string;
   id?: number | null;
+  group_level?: number;
+  group_level_label?: string;
+  group_path?: ServiceOverviewGroupPathNode[];
+  group_path_text?: string;
   name?: string;
   title?: string;
   description?: string;
@@ -397,6 +414,8 @@ export interface ServiceOverviewServiceItem {
   product_name?: string;
   group_name?: string;
   root_group_name?: string;
+  group_path?: ServiceOverviewGroupPathNode[];
+  group_path_text?: string;
   status?: number | string;
   status_label?: string;
   status_tone?: string;

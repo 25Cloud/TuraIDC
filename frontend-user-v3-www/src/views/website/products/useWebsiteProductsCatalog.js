@@ -19,6 +19,19 @@ const catalogPendingMap = new Map();
 // 已访问类型的根分组缓存：切换类型时本地过滤，避免重复请求 productGroups
 const rootGroupsByType = new Map();
 
+// 二级与三级分组的自增 ID 各自独立，会出现「二级 #57」与「三级 #57」并存的情况，
+// 所以目录内的 key 必须带层级前缀，用裸 ID 做 key 会互相覆盖成别的分类的商品。
+function catalogGroupKey(group) {
+  const id = Number(group?.effective_product_group_id || group?.id || 0);
+  const level = Number(group?.effective_product_group_level || 0);
+
+  if (id <= 0) {
+    return "";
+  }
+
+  return level > 0 ? `${level}:${id}` : `2:${id}`;
+}
+
 function groupMatchesType(group, typeValue) {
   if (!typeValue) {
     return true;
@@ -92,15 +105,14 @@ export function useWebsiteProductsCatalog({
       childGroups.value.find((g) => g.id === activeChildId.value)?.name || ""
     );
   });
-  const activeCatalogCategoryId = computed(() => {
+  const activeCatalogCategoryKey = computed(() => {
     if (activeChildId.value > 0) {
-      return Number(
-        childGroups.value.find((group) => group.id === activeChildId.value)
-          ?.effective_product_group_id || 0,
+      return catalogGroupKey(
+        childGroups.value.find((group) => group.id === activeChildId.value),
       );
     }
 
-    return Number(activeGroup.value?.effective_product_group_id || 0);
+    return catalogGroupKey(activeGroup.value);
   });
   const showMobileTypePicker = computed(
     () =>
@@ -113,14 +125,13 @@ export function useWebsiteProductsCatalog({
     () => getPendingWebsiteCouponId() <= 0,
   );
   const visibleProducts = computed(() => {
-    const categoryId = activeCatalogCategoryId.value;
-    return productsByGroup.value[categoryId] || [];
+    const categoryKey = activeCatalogCategoryKey.value;
+    return categoryKey ? productsByGroup.value[categoryKey] || [] : [];
   });
 
-  function getChildCategoryId(childId) {
-    return Number(
-      childGroups.value.find((group) => group.id === childId)
-        ?.effective_product_group_id || 0,
+  function getChildCategoryKey(childId) {
+    return catalogGroupKey(
+      childGroups.value.find((group) => group.id === childId),
     );
   }
 
@@ -355,7 +366,8 @@ export function useWebsiteProductsCatalog({
     resetSelectedProduct({ syncRoute: false });
     mobileProductDrawer.value = false;
 
-    const products = productsByGroup.value[getChildCategoryId(id)] || [];
+    const childKey = getChildCategoryKey(id);
+    const products = childKey ? productsByGroup.value[childKey] || [] : [];
     syncDefaultProduct(products, options);
   }
 
@@ -480,9 +492,9 @@ export function useWebsiteProductsCatalog({
 
     const map = {};
     (data.items_by_group || []).forEach((item) => {
-      const groupId = Number(item.effective_product_group_id || 0);
-      if (groupId > 0) {
-        map[groupId] = item.products || [];
+      const groupKey = catalogGroupKey(item);
+      if (groupKey) {
+        map[groupKey] = item.products || [];
       }
     });
     productsByGroup.value = map;
@@ -490,23 +502,20 @@ export function useWebsiteProductsCatalog({
     if (children.length) {
       const targetChildId = Number(options.targetChildId || 0);
       const matchedChild = children.find((item) => item.id === targetChildId);
-      const nextChildId = matchedChild?.id || children[0].id;
-      activeChildId.value = nextChildId;
-      const activeChildCategoryId = Number(
-        matchedChild?.effective_product_group_id ||
-          children[0]?.effective_product_group_id ||
-          0,
-      );
-      const products = map[activeChildCategoryId] || [];
+      const nextChild = matchedChild || children[0];
+      activeChildId.value = nextChild.id;
+      const activeChildKey = catalogGroupKey(nextChild);
+      const products = activeChildKey ? map[activeChildKey] || [] : [];
       syncDefaultProduct(products, options);
     } else {
       activeChildId.value = 0;
-      const rootCategoryId = Number(
-        data.effective_product_group_id ||
-          activeGroup.value?.effective_product_group_id ||
-          0,
-      );
-      const products = map[rootCategoryId] || [];
+      const rootKey = catalogGroupKey({
+        effective_product_group_id: Number(data.effective_product_group_id || 0),
+        effective_product_group_level: Number(
+          data.effective_product_group_level || 2,
+        ),
+      });
+      const products = rootKey ? map[rootKey] || [] : [];
       syncDefaultProduct(products, options);
     }
   }

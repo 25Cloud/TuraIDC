@@ -73,7 +73,7 @@
                 </span>
                 <span class="product-tile__content">
                   <strong>{{ item.title }}</strong>
-                  <span>{{ item.countText }}</span>
+                  <span>{{ item.levelLabel }} · {{ item.countText }}</span>
                 </span>
               </router-link>
             </div>
@@ -295,6 +295,7 @@ import { formatMoney, formatShortDateTime as formatDate } from '@/utils/format';
 interface ProductCard {
   key: string;
   title: string;
+  levelLabel: string;
   countText: string;
   count: number;
   path: string;
@@ -382,15 +383,23 @@ function resolvePagedList<T>(payload: { list?: T[] } | T[] | null | undefined): 
 }
 
 function resolveProductMeta(item: ServiceOverviewGroup, key: string) {
+  // 概览现在按一级菜单分组，item.key 是一级菜单 code（可能是 type_xxx），
+  // 商品类型另存在 product_type 上，所以两边都要参与匹配，否则图标会全部退化成默认样式。
+  const productType = String(item.product_type || '').toLowerCase();
   const title = String(item.title || item.name || item.product_type_label || '').toLowerCase();
-  if (key === 'cloud_server' || title.includes('云服务器')) return { icon: ServerIcon, tone: 'is-brand' };
-  if (key === 'physical_machine' || key === 'bare_metal' || title.includes('物理机') || title.includes('裸金属')) {
+  const matches = (businessType: string) =>
+    key === businessType || productType === businessType || title.includes(businessType);
+
+  if (matches('cloud_server') || title.includes('云服务器') || title.includes('云服')) {
+    return { icon: ServerIcon, tone: 'is-brand' };
+  }
+  if (matches('physical_machine') || matches('bare_metal') || title.includes('物理机') || title.includes('裸金属')) {
     return { icon: DashboardIcon, tone: 'is-success' };
   }
-  if (key === 'game_cloud' || title.includes('游戏云')) return { icon: DashboardIcon, tone: 'is-info' };
-  if (key === 'cloud_desktop' || title.includes('云电脑')) return { icon: HelpCircleIcon, tone: 'is-info' };
-  if (key === 'web_hosting' || title.includes('虚拟主机')) return { icon: ServiceIcon, tone: 'is-warning' };
-  if (key === 'cdn' || title.includes('CDN')) return { icon: ServiceIcon, tone: 'is-warning' };
+  if (matches('game_cloud') || title.includes('游戏云')) return { icon: DashboardIcon, tone: 'is-info' };
+  if (matches('cloud_desktop') || title.includes('云电脑')) return { icon: HelpCircleIcon, tone: 'is-info' };
+  if (matches('web_hosting') || title.includes('虚拟主机')) return { icon: ServiceIcon, tone: 'is-warning' };
+  if (matches('cdn') || title.includes('cdn')) return { icon: ServiceIcon, tone: 'is-warning' };
   return { icon: ServerIcon, tone: 'is-muted' };
 }
 
@@ -474,6 +483,7 @@ const productCards = computed<ProductCard[]>(() => {
       return {
         key,
         title: String(item.title || item.name || item.product_type_label || '云产品'),
+        levelLabel: String(item.group_level_label || '一级分类'),
         countText: `${Number(item.active_count || 0)} 个`,
         count: Number(item.active_count || 0),
         path: '/client/services',
@@ -488,6 +498,7 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'cloud_server',
       title: '云服务器',
+      levelLabel: '一级分类',
       countText: '0 个',
       count: 0,
       path: '/client/services',
@@ -498,6 +509,7 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'game_cloud',
       title: '游戏云',
+      levelLabel: '一级分类',
       countText: '0 个',
       count: 0,
       path: '/client/services',
@@ -508,6 +520,7 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'cloud_desktop',
       title: '云电脑',
+      levelLabel: '一级分类',
       countText: '0 个',
       count: 0,
       path: '/client/services',
@@ -518,6 +531,7 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'bare_metal',
       title: '裸金属',
+      levelLabel: '一级分类',
       countText: '0 个',
       count: 0,
       path: '/client/services',
@@ -528,6 +542,7 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'cdn',
       title: 'CDN',
+      levelLabel: '一级分类',
       countText: '0 个',
       count: 0,
       path: '/client/services',
@@ -538,6 +553,7 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'web_hosting',
       title: '虚拟主机',
+      levelLabel: '一级分类',
       countText: '0 个',
       count: 0,
       path: '/client/services',

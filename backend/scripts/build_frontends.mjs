@@ -60,12 +60,17 @@ function readEnvFile(filePath) {
 }
 
 function parseArguments(argv) {
-  const options = { dryRun: false, target: 'all' };
+  const options = { dryRun: false, target: 'all', printEnv: false };
+  const rest = [];
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === '--dry-run') {
       options.dryRun = true;
+      continue;
+    }
+    if (argument === '--print-env') {
+      options.printEnv = true;
       continue;
     }
 
@@ -80,7 +85,11 @@ function parseArguments(argv) {
       continue;
     }
 
-    throw new Error(`不支持的参数：${argument}`);
+    rest.push(argument);
+  }
+
+  if (rest.length > 0) {
+    throw new Error(`不支持的参数：${rest[0]}`);
   }
 
   if (options.target !== 'all' && !Object.hasOwn(applications, options.target)) {
@@ -181,6 +190,21 @@ const baseBuildEnvironment = {
   VITE_CONSOLE_SITE_URL: consoleUrl.public,
   VITE_SESSION_COOKIE_DOMAIN: value('CLIENT_SESSION_COOKIE_DOMAIN'),
 };
+
+// 站点地址的真源只有 backend/.env 这一份。单独部署、CI 等其他构建入口
+// 也走这里取同一套变量，避免各处各读一份 env 再各填一次 —— 历史上正是两边漂移
+// （前端漏了控制台的 /console 子路径）导致官网登录/注册点不进去。
+if (options.printEnv) {
+  for (const key of [
+    'VITE_API_BASE_URL',
+    'VITE_PUBLIC_SITE_URL',
+    'VITE_CONSOLE_SITE_URL',
+    'VITE_SESSION_COOKIE_DOMAIN',
+  ]) {
+    console.log(`${key}=${baseBuildEnvironment[key] ?? ''}`);
+  }
+  process.exit(0);
+}
 
 if (options.dryRun) {
   console.log(`API: ${apiUrl.public}`);

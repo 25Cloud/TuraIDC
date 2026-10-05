@@ -769,12 +769,24 @@ class AuthService
         }
 
         if ($adminUrl !== '' && $this->sameUrlOrigin($consoleUrl, $adminUrl)) {
-            throw new BusinessException('CLIENT_CONSOLE_URL 不能与 ADMIN_URL 相同，无法生成客户端代登录链接', 50000, 500);
+            throw new BusinessException('CLIENT_CONSOLE_URL 不能与 ADMIN_URL 指向同一个地址，无法生成客户端代登录链接', 50000, 500);
         }
 
+        // $consoleUrl 已去掉结尾斜杠，base path（单域名部署时为 /console）会保留，
+        // 这里追加后得到形如 https://example.com/console/client/login-as 的地址。
         return $consoleUrl.'/client/login-as';
     }
 
+     /**
+      * 规范化对外暴露的应用地址。
+      *
+      * 允许带路径：多域名部署写 https://console.example.com，
+      * 单域名子路径部署写 https://example.com/console，两种都要能解析。
+      * 早前这里把「带路径」一律判为非法，于是单域名部署下
+      * CLIENT_CONSOLE_URL 被当成未配置，代登录链路直接报 500。
+      *
+      * 只拒绝真正无法定位应用的情形：非 http(s)、缺 host、带 user/pass/query/fragment。
+     */
     private function normalizeConfiguredUrl(string $url): string
     {
         $normalized = trim($url);
@@ -788,26 +800,48 @@ class AuthService
         }
 
         $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        $path = (string) ($parts['path'] ?? '');
         if (! in_array($scheme, ['http', 'https'], true)
             || trim((string) ($parts['host'] ?? '')) === ''
             || isset($parts['user'])
             || isset($parts['pass'])
             || isset($parts['query'])
-            || isset($parts['fragment'])
-            || ($path !== '' && $path !== '/')) {
+            || isset($parts['fragment'])) {
             return '';
         }
 
-        return rtrim($normalized, '/');
+        // 端口必须保留：本地开发与内网非标准端口部署（https://example.com:8443/console）
+        // 丢掉端口会把代登录链接指到默认端口，登录页打不开。
+        $port = isset($parts['port']) ? ':'.(int) $parts['port'] : '';
+        $path = rtrim((string) ($parts['path'] ?? ''), '/');
+
+        return $scheme.'://'.strtolower((string) $parts['host']).$port.$path;
     }
 
+    /**
+     * 判断两个地址是否指向同一个应用。
+     *
+     * 同源不代表同一个应用：单域名部署下控制台（/console）与管理端（/admin）
+     * 本来就同源，靠 base path 区分，postMessage 的 event.origin 因此完全相同，
+     * 前端靠 document.referrer 与事件来源窗口做二次校验。
+     * 所以这里比 origin + base path，而不是只比 origin。
+     */
     private function sameUrlOrigin(string $left, string $right): bool
     {
         $leftOrigin = $this->urlOrigin($left);
         $rightOrigin = $this->urlOrigin($right);
 
-        return $leftOrigin !== '' && $leftOrigin === $rightOrigin;
+        if ($leftOrigin === '' || $leftOrigin !== $rightOrigin) {
+            return false;
+        }
+
+        return $this->urlBasePath($left) === $this->urlBasePath($right);
+    }
+
+    private function urlBasePath(string $url): string
+    {
+        $path = rtrim((string) (parse_url($url, PHP_URL_PATH) ?: ''), '/');
+
+        return $path;
     }
 
     private function urlOrigin(string $url): string

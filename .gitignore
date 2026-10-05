@@ -26,6 +26,8 @@ node_modules/
 
 # 构建产物
 dist/
+# 部署时单独输出、用于上传的构建产物目录
+dist-deploy/
 es/
 typings/
 coverage/

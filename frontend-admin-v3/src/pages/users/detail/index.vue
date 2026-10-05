@@ -1809,6 +1809,13 @@ function closeLoginAsPopup(popup: Window) {
   }
 }
 
+/**
+ * 在后端下发的控制台地址后接上代登录页路径。
+ *
+ * 后端返回的 target_url 已经是完整的代登录页地址（形如
+ * https://example.com/console/client/login-as）。这里只需清空
+ * query 与 hash，保留原有 pathname 不变。
+ */
 function resolveLoginAsTarget(targetUrl: string | undefined) {
   const rawTarget = String(targetUrl || '').trim();
   if (!rawTarget) return '';
@@ -1818,7 +1825,8 @@ function resolveLoginAsTarget(targetUrl: string | undefined) {
     if (!['http:', 'https:'].includes(target.protocol)) {
       return '';
     }
-    target.pathname = '/client/login-as';
+    // 后端已返回完整的代登录页地址（含 /client/login-as），
+    // 仅需清空 query 与 hash，保持 pathname 不变。
     target.search = '';
     target.hash = '';
     return target.toString();

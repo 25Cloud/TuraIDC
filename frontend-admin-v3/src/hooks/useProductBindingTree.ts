@@ -242,11 +242,11 @@ function isBindingTreeNodeCheckDisabled(node: { data?: Record<string, unknown> }
 
 function ensureBindingTreeTypeNode(
   nodes: Map<string, BindingTreeNode>,
-  productType: string,
+  groupKey: string,
   label: string,
   mode: BindingTreeMode = 'multiple',
 ) {
-  const key = `type:${productType}`;
+  const key = `type:${groupKey}`;
   const existing = nodes.get(key);
   if (existing) return existing;
 
@@ -263,10 +263,6 @@ function ensureBindingTreeTypeNode(
   return node;
 }
 
-function normalizedTreeLabel(value: unknown): string {
-  return String(value || '').trim();
-}
-
 function normalizeTreeValue(value: unknown): string {
   return String(value || '').trim();
 }
@@ -281,14 +277,6 @@ function productTreeValue(nodeKey: string, productId: string): string {
 
 function categoryTreeValue(nodeKey: string, rawValue: string): string {
   return `category:${nodeKey}:${rawValue}`;
-}
-
-function shouldHoistDuplicateTypeNode(categoryNode: BindingTreeNode, typeLabel: string) {
-  return (
-    normalizedTreeLabel(categoryNode.label) === normalizedTreeLabel(typeLabel) &&
-    Array.isArray(categoryNode.children) &&
-    categoryNode.children.length > 0
-  );
 }
 
 function buildBindingCategoryTreeNode(
@@ -353,23 +341,36 @@ export function buildBindingTreeOptions(
   nodes.forEach((nodeValue, index) => {
     const node = toPlainRecord(nodeValue);
     const productType = String(node.product_type || 'other').trim() || 'other';
-    const typeLabel = String(
-      node.product_type_label || node.service_type_label || PRODUCT_TYPE_LABELS[productType] || productType,
-    ).trim();
-    const typeNode = ensureBindingTreeTypeNode(typeNodes, productType, typeLabel, mode);
-    const categoryNode = buildBindingCategoryTreeNode(node, `${_parentKey}-${productType}-${index}`, mode, {
+    // 分组必须按一级菜单身份（code）来分，不能按商品类型（product_type）分：
+    // 多个一级菜单可以共用同一个商品类型（例如大陆云服与轻量服务器都是 cloud_server），
+    // 按类型归并会把两条产品线的分类塞进同一个节点，管理员再也分不清商品挂在哪条线下。
+    // 只有拿不到一级菜单 code 的历史数据才退回按商品类型分组。
+    const firstGroupCode = String(node.first_product_group_code || '').trim();
+    const firstGroupId = Number(node.first_product_group_id || 0);
+    const groupKey = firstGroupCode || productType;
+    const typeLabel = firstGroupCode
+      ? String(
+          node.first_product_group_name || node.label || node.name || PRODUCT_TYPE_LABELS[productType] || productType,
+        ).trim()
+      : String(
+          node.product_type_label || node.service_type_label || PRODUCT_TYPE_LABELS[productType] || productType,
+        ).trim();
+    const typeNode = ensureBindingTreeTypeNode(typeNodes, groupKey, typeLabel, mode);
+    const categoryNode = buildBindingCategoryTreeNode(node, `${_parentKey}-${groupKey}-${index}`, mode, {
       product_type: productType,
-      first_product_group_id: Number(node.first_product_group_id || 0) || null,
-      first_product_group_code: String(node.first_product_group_code || '').trim() || null,
+      first_product_group_id: firstGroupId || null,
+      first_product_group_code: firstGroupCode || null,
       first_product_group_name: String(node.first_product_group_name || '').trim() || null,
-      effective_product_group_id: Number(node.first_product_group_id || 0) || undefined,
+      effective_product_group_id: firstGroupId || undefined,
       effective_product_group_level: 1,
       effective_product_group_full_name: String(node.label || node.name || '').trim() || undefined,
     });
     if (categoryNode) {
-      const nextNodes = shouldHoistDuplicateTypeNode(categoryNode, typeLabel)
-        ? categoryNode.children || []
-        : [categoryNode];
+      // 分组节点就是一级菜单本身时不再重复一层，直接挂它的下级分类。
+      const nextNodes =
+        Number(node.level || node.effective_product_group_level || 0) === 1
+          ? categoryNode.children || []
+          : [categoryNode];
       typeNode.children = [...(typeNode.children || []), ...nextNodes];
     }
   });

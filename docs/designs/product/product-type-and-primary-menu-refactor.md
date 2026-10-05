@@ -1,6 +1,6 @@
 ---
 status: needs-review
-updated: 2026-08-29
+updated: 2026-10-05
 owner: backend-platform
 ---
 
@@ -477,6 +477,24 @@ ProvidesProductStatusMapping
 | 前端继续用中文名/code 猜模板      | 页面错配               | 后端返回 `purchase_template`、`console_template`、capabilities                          |
 | 历史订单/账单被批量改坏           | 财务追溯风险           | 迁移只改 `product_type_snapshot` 的旧枚举值，不改金额、状态、支付流水；异常值保留并记录 |
 | 插件绕过平台状态机                | 审计和财务风险         | 插件只提供 schema/actions，平台统一执行订单、账单、服务状态                             |
+
+### 13.1 已落地：一级菜单隔离规则
+
+「多个一级菜单绑定同一个产品类型」这条目标已经在代码里强制执行。
+只要有两条一级菜单共用 `product_type`（现网「大陆云服」与「轻量服务器」都是 `cloud_server`），
+任何按 `product_type` 兜底的分组都会把它们的分类并成一份，用户与运营都分不清挂在哪条产品线下。
+
+规则：
+
+- 站点可见分组查询只有一条入口 `App\Support\SiteProductGroupQuery`。
+- 传入 `first_product_group_code`（一级菜单 code）时**必须**精确命中 code，
+  不得用 `product_type` 兜底；显式传 `product_type` 时才展开成该类型下的全部一级菜单 code 集合，
+  并且逐条返回各自的 `first_product_group_code`，仍然不合并。
+- 控制台「我的产品」概览按一级菜单分组，不按 `product_type`。
+- 目录内的商品索引、概览子卡 key 统一用「层级:ID」，避免二级与三级 ID 相同互相覆盖。
+
+回归测试：`backend/tests/Feature/SiteProductGroupIsolationTest.php`。
+实施与验证记录见[商品分类层级与登录注册导向修复](../../execution-plans/active/product-category-hierarchy-and-console-routing-fix-2026-10-05.md)。
 
 ## 14. 最终验收清单
 

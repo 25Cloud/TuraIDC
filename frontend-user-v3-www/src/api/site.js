@@ -155,6 +155,7 @@ async function fetchV2SiteProductGroupCatalog(groupId, config = {}) {
   const itemsByGroup = [
     {
       effective_product_group_id: Number(groupId),
+      effective_product_group_level: 2,
       products: rootProducts,
     },
   ];
@@ -172,6 +173,7 @@ async function fetchV2SiteProductGroupCatalog(groupId, config = {}) {
 
       return {
         effective_product_group_id: childGroupId,
+        effective_product_group_level: childLevel,
         products: await fetchAllV2SiteProducts(
           childGroupId,
           childLevel,

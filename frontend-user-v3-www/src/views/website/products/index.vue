@@ -6,9 +6,9 @@
       v-loading="pageLoading"
     >
       <section class="mobile-stage-card mobile-stage-card--intro">
-        <h1 class="mobile-stage-title">产品中心 · 选择一级菜单</h1>
+        <h1 class="mobile-stage-title">产品中心 · 选择产品目录</h1>
         <p class="mobile-stage-desc">
-          请先选择你要购买的产品大类，进入对应目录后再继续选择分类、商品和具体配置。
+          先选产品目录（产品大类），进入后再依次选择地区、可用区和具体商品。
         </p>
       </section>
 
@@ -95,7 +95,7 @@
         <div class="shop-main" v-loading="pageLoading">
           <div v-if="isMobile" class="mobile-picker-row mobile-picker-row--duo">
             <div class="mobile-picker-col">
-              <div class="config-block-title">地区</div>
+              <div class="config-block-title">地区 / 可用区</div>
               <button
                 type="button"
                 class="mobile-picker-trigger"
@@ -103,7 +103,7 @@
               >
                 <span
                   >{{ activeGroupName || "请选择地区"
-                  }}{{ activeChildName ? ` · ${activeChildName}` : "" }}</span
+                  }}{{ activeChildName ? ` › ${activeChildName}` : "" }}</span
                 >
                 <svg
                   viewBox="0 0 12 12"
@@ -149,7 +149,7 @@
             </div>
           </div>
 
-          <!-- 产品分类（二级，一级 Tab） -->
+          <!-- 地区（产品目录下的一层） -->
           <div class="filter-block" v-if="rootGroups.length && !isMobile">
             <span class="filter-label">地区</span>
             <el-tabs
@@ -166,7 +166,7 @@
             </el-tabs>
           </div>
 
-          <!-- 二级分类（三级，二级 Tab） -->
+          <!-- 可用区（地区下的一层） -->
           <div class="filter-block" v-if="childGroups.length && !isMobile">
             <span class="filter-label">可用区</span>
             <el-tabs
@@ -1563,7 +1563,7 @@
             <div>
               <div class="mobile-drawer-title">地区</div>
               <p class="mobile-drawer-desc">
-                {{ activeTypeLabel || "当前一级菜单" }}
+                产品目录：{{ activeTypeLabel || "未选择" }}
               </p>
             </div>
             <button
@@ -1571,7 +1571,7 @@
               class="mobile-drawer-switch"
               @click="returnToMobileTypePicker"
             >
-              切换一级菜单
+              切换产品目录
             </button>
           </div>
 
