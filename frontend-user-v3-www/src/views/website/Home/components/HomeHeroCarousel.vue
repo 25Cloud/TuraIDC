@@ -1412,23 +1412,31 @@ $site-header-height: 64px;
   transform: translateX(100%);
 }
 
-.hero-h-next-leave-to {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  transform: translateX(-100%);
-}
-
 .hero-h-prev-enter-from {
   transform: translateX(-100%);
 }
 
-.hero-h-prev-leave-to {
+/*
+ * 切出面板：绝对定位铺满 .hero-body 整块。
+ *
+ * 关键点：脱离文档流必须写在 -leave-active 上，不能只写在 -leave-to。
+ * Vue 的 leave 流程是「先挂 -leave-active，下一帧才挂 -leave-to」，
+ * 中间那一帧切出面板仍在文档流里，容器高度 = 两块面板相加，
+ * Hero 会先长高一截再缩回 —— 这就是点击后「抽一下」的来源。
+ * 挂到 -leave-active 上则从第一帧就离流，容器高度全程恒定。
+ */
+.hero-h-next-leave-active,
+.hero-h-prev-leave-active {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
+  inset: 0;
+  height: 100%;
+}
+
+.hero-h-next-leave-to {
+  transform: translateX(-100%);
+}
+
+.hero-h-prev-leave-to {
   transform: translateX(100%);
 }
 
@@ -1437,6 +1445,13 @@ $site-header-height: 64px;
 .hero-h-prev-enter-active,
 .hero-h-prev-leave-active {
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// 切出面板离流后不参与布局，容器只剩切入面板在撑高度；
+// min-height 已锁定为最高面板，两者等高，切换过程高度零变化。
+.hero-h-next-leave-to,
+.hero-h-prev-leave-to {
+  pointer-events: none;
 }
 
 .hero-title {
