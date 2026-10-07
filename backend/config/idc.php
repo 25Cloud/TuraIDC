@@ -101,8 +101,11 @@ return [
         'shell_cache_ttl' => (int) env('SEO_SHELL_CACHE_TTL', 600),
         // 整页渲染结果缓存秒数（内容版本变化会自动失效，见 ContentPublishedCacheVersion）
         'cache_ttl' => (int) env('SEO_CACHE_TTL', 300),
-        // 站点公开地址，用于 canonical / sitemap / JSON-LD
-        'site_url' => env('SEO_SITE_URL', (string) env('APP_URL', 'https://www.coyjs.cn')),
+        // 站点公开地址，用于 canonical / sitemap / JSON-LD。
+        // 回退链 SEO_SITE_URL → FRONTEND_URL → APP_URL：双域名部署下 APP_URL 是 API 域名，
+        // 把全站规范化到 API 域名是错的，因此优先取官网域名 FRONTEND_URL；两者都未配置时留空，
+        // 由部署方显式设置 SEO_SITE_URL（留空会让 sitemap/canonical 退化为相对路径，必须配置）。
+        'site_url' => env('SEO_SITE_URL', (string) (env('FRONTEND_URL', env('APP_URL', '')))),
     ],
 
 ];

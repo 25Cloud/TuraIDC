@@ -38,8 +38,8 @@ location ~ ^/(robots\.txt|sitemap\.xml)$ {
     proxy_set_header X-Forwarded-Proto $scheme;
 }
 
-# 落地页 / 关于 / 条款 / 隐私 / 产品列表（单段路径）
-location ~ ^/(cloud-server|hong-kong-server|us-server|high-defense-server|cloud-pc|about|terms|privacy|products)$ {
+# 落地页 / 关于 / 条款 / 隐私 / 产品列表（单段路径，含尾斜杠变体）
+location ~ ^/(cloud-server|hong-kong-server|us-server|high-defense-server|cloud-pc|about|terms|privacy|products)/?$ {
     proxy_pass http://127.0.0.1/seo/www$request_uri;
     proxy_set_header Host              api.example.com;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -47,8 +47,8 @@ location ~ ^/(cloud-server|hong-kong-server|us-server|high-defense-server|cloud-
     proxy_set_header X-Forwarded-Proto $scheme;
 }
 
-# 公告/帮助列表与详情（/notices、/notices/123、/help、/help/123）
-location ~ ^/(notices|help)(/[0-9]+)?$ {
+# 公告/帮助列表与详情（/notices、/notices/123、/help、/help/123，含尾斜杠）
+location ~ ^/(notices|help)(/[0-9]+)?/?$ {
     proxy_pass http://127.0.0.1/seo/www$request_uri;
     proxy_set_header Host              api.example.com;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -57,7 +57,17 @@ location ~ ^/(notices|help)(/[0-9]+)?$ {
 }
 
 # 产品详情（/products/123；多段购买页路径保持 SPA 静态回退）
-location ~ ^/products/[0-9]+$ {
+location ~ ^/products/[0-9]+/?$ {
+    proxy_pass http://127.0.0.1/seo/www$request_uri;
+    proxy_set_header Host              api.example.com;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# 其余单段路径（无扩展名）转发后端：未登记的路径由 SEO 渲染返回品牌 404 壳 +
+# HTTP 404 状态码，避免爬虫把 SPA 裸壳 200 当可索引页面。静态资源与多段路径不受影响。
+location ~ ^/[^./]+/?$ {
     proxy_pass http://127.0.0.1/seo/www$request_uri;
     proxy_set_header Host              api.example.com;
     proxy_set_header X-Real-IP         $remote_addr;

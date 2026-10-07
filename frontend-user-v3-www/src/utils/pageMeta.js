@@ -93,14 +93,32 @@ export function updatePageMeta(options = {}) {
     document.title = title;
   }
 
-  writeMetaBySelector(META_SELECTORS.description, description || "");
-  writeMetaBySelector(META_SELECTORS.keywords, keywords || "");
-  writeMetaBySelector(META_SELECTORS.ogTitle, ogTitle || "");
-  writeMetaBySelector(META_SELECTORS.ogDescription, ogDescription || "");
-  writeMetaBySelector(META_SELECTORS.ogUrl, ogUrl || "");
-  writeMetaBySelector(META_SELECTORS.robots, robots || "");
-  writeMetaBySelector(CANONICAL_SELECTOR, canonical || "");
-  writeStructuredData(structuredData || null);
+  // 仅处理调用方显式传入的字段（in 判断），未传的字段不动 DOM——
+  // 否则会把后端 SEO 渲染注入的 description/canonical 清掉，直到数据返回才恢复。
+  if ("description" in options) {
+    writeMetaBySelector(META_SELECTORS.description, description || "");
+  }
+  if ("keywords" in options) {
+    writeMetaBySelector(META_SELECTORS.keywords, keywords || "");
+  }
+  if ("ogTitle" in options || "title" in options) {
+    writeMetaBySelector(META_SELECTORS.ogTitle, ogTitle || "");
+  }
+  if ("ogDescription" in options || "description" in options) {
+    writeMetaBySelector(META_SELECTORS.ogDescription, ogDescription || "");
+  }
+  if ("ogUrl" in options || "canonical" in options) {
+    writeMetaBySelector(META_SELECTORS.ogUrl, ogUrl || "");
+  }
+  if ("robots" in options) {
+    writeMetaBySelector(META_SELECTORS.robots, robots || "");
+  }
+  if ("canonical" in options) {
+    writeMetaBySelector(CANONICAL_SELECTOR, canonical || "");
+  }
+  if ("structuredData" in options) {
+    writeStructuredData(structuredData || null);
+  }
 }
 
 /**
@@ -142,15 +160,26 @@ export function applyRouteMeta(to, baseConfig = {}) {
       : pageTitle
     : siteName;
 
-  updatePageMeta({
-    title: fullTitle,
-    description,
-    keywords,
-    canonical,
-    ogTitle: fullTitle,
-    ogDescription: description,
-    ogUrl: canonical,
-    robots,
-    structuredData,
-  });
+  // 路由 meta 未声明的字段不传给 updatePageMeta（保留后端 SEO 渲染注入的值，
+  // 等详情页数据返回后由 syncProductMeta/syncArticleMeta 覆写）。
+  const payload = { title: fullTitle, ogTitle: fullTitle };
+  if (meta.description !== undefined) {
+    payload.description = description;
+    payload.ogDescription = description;
+  }
+  if (meta.keywords !== undefined) {
+    payload.keywords = keywords;
+  }
+  if (meta.canonical !== undefined) {
+    payload.canonical = canonical;
+    payload.ogUrl = canonical;
+  }
+  if (meta.robots !== undefined) {
+    payload.robots = robots;
+  }
+  if (meta.structuredData !== undefined) {
+    payload.structuredData = structuredData;
+  }
+
+  updatePageMeta(payload);
 }

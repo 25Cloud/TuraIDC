@@ -36,13 +36,17 @@ class SeoRenderService
 
     /**
      * 渲染指定公开路径的完整 HTML 文档。
+     *
+     * 未知路径返回品牌一致的 noindex 404 壳（HTTP 404），避免裸壳 200 造成软 404。
+     *
+     * @return array{html: string, status: int}
      */
-    public function render(string $path): string
+    public function render(string $path): array
     {
         $page = $this->resolvePage($path);
 
         if ($page === null) {
-            abort(404);
+            return ['html' => $this->renderNotFoundShell(), 'status' => 404];
         }
 
         // 缓存键除内容版本外还要并入 shell 指纹：页面 HTML 里内联了前端构建产物的
@@ -53,17 +57,32 @@ class SeoRenderService
             .':v'.ContentPublishedCacheVersion::current()
             .':s'.substr(sha1($this->fetchShellTemplate()), 0, 12);
 
-        return Cache::remember(
-            $cacheKey,
-            now()->addSeconds((int) config('idc.seo.cache_ttl', 300)),
-            function () use ($page): string {
-                $shell = $this->fetchShellTemplate();
-                $head = $this->renderHead($page);
-                $body = $this->renderBody($page);
+        return [
+            'html' => Cache::remember(
+                $cacheKey,
+                now()->addSeconds((int) config('idc.seo.cache_ttl', 300)),
+                function () use ($page): string {
+                    $shell = $this->fetchShellTemplate();
+                    $head = $this->renderHead($page);
+                    $body = $this->renderBody($page);
 
-                return $this->assembleDocument($shell, $head, $body);
-            }
-        );
+                    return $this->assembleDocument($shell, $head, $body);
+                }
+            ),
+            'status' => 200,
+        ];
+    }
+
+    /**
+     * 生成品牌一致的 404 页面壳：注入 noindex 与错误标题，正文留空由前端 SPA 接管渲染。
+     */
+    private function renderNotFoundShell(): string
+    {
+        $siteName = e($this->siteName());
+        $head = '<title>页面不存在 - '.$siteName."</title>\n"
+            .'  <meta name="robots" content="noindex,nofollow" />';
+
+        return $this->assembleDocument($this->fetchShellTemplate(), $head, '');
     }
 
     /**
@@ -78,6 +97,7 @@ class SeoRenderService
             'Allow: /',
             'Disallow: /api',
             'Disallow: /seo',
+            'Disallow: /install',
             'Disallow: /console',
             'Disallow: /admin',
             'Disallow: /client',
@@ -369,10 +389,10 @@ HTML;
      */
     private function assembleDocument(string $shell, string $headBlock, string $bodyBlock): string
     {
-        // 移除 shell 中原有的 title / 动态 meta / canonical，避免与注入的 head 冲突
+        // 移除 shell 中原有的 title / 动态 meta / canonical / twitter 卡片，避免与注入的 head 冲突
         $shell = preg_replace('/<title>.*?<\/title>/is', '', $shell);
-        $shell = preg_replace('/\s*<meta\s+name="(?:description|keywords|author|robots)"[^>]*\/?>\s*/i', '', $shell);
-        $shell = preg_replace('/\s*<meta\s+property="og:[^"]*"[^>]*\/?>\s*/i', '', $shell);
+        $shell = preg_replace('/\s*<meta\s+name="(?:description|keywords|author|robots|twitter:[^"]*)"[^>]*\/?>\s*/i', '', $shell);
+        $shell = preg_replace('/\s*<meta\s+property="(?:og|twitter):[^"]*"[^>]*\/?>\s*/i', '', $shell);
         $shell = preg_replace('/\s*<link\s+rel="canonical"[^>]*\/?>\s*/i', '', $shell);
 
         // 在 </head> 前注入动态 head 块（使用回调避免 head 内容中的 $ 被替换解析）
@@ -454,12 +474,22 @@ HTML;
         $head .= '  <meta name="keywords" content="'.$keywords."\" />\n";
         $head .= '  <meta name="author" content="'.htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8')."\" />\n";
         $head .= '  <link rel="canonical" href="'.$canonical."\" />\n";
-        $head .= '  <meta property="og:type" content="website" />'."\n";
+        // 文章详情给 og:type=article，其余页面保持 website
+        $ogType = in_array($page['type'], ['notice_detail', 'help_detail'], true) ? 'article' : 'website';
+        $head .= '  <meta property="og:type" content="'.$ogType."\" />\n";
+        $head .= '  <meta property="og:site_name" content="'.htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8')."\" />\n";
+        $head .= '  <meta property="og:locale" content="zh_CN" />'."\n";
         $head .= '  <meta property="og:title" content="'.htmlspecialchars($fullTitle, ENT_QUOTES, 'UTF-8')."\" />\n";
         $head .= '  <meta property="og:description" content="'.$description."\" />\n";
         $head .= '  <meta property="og:url" content="'.$canonical."\" />\n";
         if ($logoUrl !== '') {
             $head .= '  <meta property="og:image" content="'.$logoUrl."\" />\n";
+        }
+        $head .= '  <meta name="twitter:card" content="summary_large_image" />'."\n";
+        $head .= '  <meta name="twitter:title" content="'.htmlspecialchars($fullTitle, ENT_QUOTES, 'UTF-8')."\" />\n";
+        $head .= '  <meta name="twitter:description" content="'.$description."\" />\n";
+        if ($logoUrl !== '') {
+            $head .= '  <meta name="twitter:image" content="'.$logoUrl."\" />\n";
         }
         $head .= $robotsTag;
 
@@ -742,6 +772,7 @@ HTML;
 
         if ($page['type'] === 'product_detail') {
             $product = $page['data'] ?? [];
+            $price = trim((string) ($product['price'] ?? ''));
             $webpage = [
                 '@context' => 'https://schema.org',
                 '@type' => 'Product',
@@ -750,14 +781,17 @@ HTML;
                 'name' => (string) ($product['name'] ?? ''),
                 'description' => (string) ($page['description'] ?? ''),
                 'brand' => ['@type' => 'Brand', 'name' => $siteName],
-                'offers' => [
+            ];
+            // 价格缺失时省略 offers：无效的空价 Offer 会被结构化数据校验判错
+            if ($price !== '') {
+                $webpage['offers'] = [
                     '@type' => 'Offer',
                     'url' => $canonical,
-                    'price' => (string) ($product['price'] ?? '0'),
+                    'price' => $price,
                     'priceCurrency' => 'CNY',
                     'availability' => 'https://schema.org/InStock',
-                ],
-            ];
+                ];
+            }
         }
 
         $structured[] = $webpage;
@@ -880,7 +914,9 @@ HTML;
     {
         $config ??= SiteConfigPayload::payload();
 
-        return (string) ($config['browser_title'] ?? $config['site_name'] ?? SiteConfigPayload::DEFAULT_SITE_NAME);
+        // 站点名（品牌）优先于浏览器标题：后台改站点名必须立即反映到 og:title /
+        // og:description / 分享卡片上；browser_title 只是标签页标题的个性化字段。
+        return (string) ($config['site_name'] ?? $config['browser_title'] ?? SiteConfigPayload::DEFAULT_SITE_NAME);
     }
 
     private function siteUrl(): string

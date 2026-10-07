@@ -12,7 +12,9 @@
       >
         {{ currentCategoryName }}
       </router-link>
-      <span v-else class="reader-breadcrumb__text">{{ currentCategoryName }}</span>
+      <span v-else class="reader-breadcrumb__text">{{
+        currentCategoryName
+      }}</span>
       <el-icon><ArrowRight /></el-icon>
       <span class="reader-breadcrumb__current">
         {{ currentArticle?.title || config.detailTitle }}
@@ -47,10 +49,18 @@
                  （shared/htmlSanitizer.js 的 DOM 白名单：标签、属性、URL 协议三层），
                  且渲染器重写了 validateLink 拦掉 javascript:/vbscript:/data: 协议。 -->
             <!-- eslint-disable-next-line vue/no-v-html -- 内容已过 sanitizeRenderedHtml 白名单净化 -->
-            <div ref="contentRef" class="reader-content" v-html="articleContentHtml" />
+            <div
+              ref="contentRef"
+              class="reader-content"
+              v-html="articleContentHtml"
+            />
           </template>
 
-          <el-empty v-else-if="!loading" :description="config.emptyText" class="reader-empty" />
+          <el-empty
+            v-else-if="!loading"
+            :description="config.emptyText"
+            class="reader-empty"
+          />
         </article>
       </section>
 
@@ -69,7 +79,9 @@
               @click="goCategoryList(item.id)"
             >
               <span class="category-item__name">{{ item.name }}</span>
-              <span class="category-item__count">{{ item.articles_count || 0 }}</span>
+              <span class="category-item__count">{{
+                item.articles_count || 0
+              }}</span>
             </button>
           </div>
         </section>
@@ -96,39 +108,39 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ArrowRight } from '@element-plus/icons-vue'
-import siteApi from '@/api/site'
-import { renderMarkdown } from '@/utils/markdown'
-import { updatePageMeta } from '@/utils/pageMeta'
-import { rewriteApiAssetUrlsInHtml } from '@/utils/apiAssetUrl'
-import { getContentConfig } from './contentConfig'
+import { computed, nextTick, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { ArrowRight } from "@element-plus/icons-vue";
+import siteApi from "@/api/site";
+import { renderMarkdown } from "@/utils/markdown";
+import { updatePageMeta } from "@/utils/pageMeta";
+import { rewriteApiAssetUrlsInHtml } from "@/utils/apiAssetUrl";
+import { getContentConfig } from "./contentConfig";
 
 // ---- 模块级分类缓存 ----
-const overviewCache = new Map()
-const OVERVIEW_CACHE_TTL = 5 * 60 * 1000 // 5 分钟
+const overviewCache = new Map();
+const OVERVIEW_CACHE_TTL = 5 * 60 * 1000; // 5 分钟
 
 function getCachedOverview(cacheKey) {
-  const entry = overviewCache.get(cacheKey)
+  const entry = overviewCache.get(cacheKey);
   if (entry && Date.now() - entry.ts < OVERVIEW_CACHE_TTL) {
-    return entry.data
+    return entry.data;
   }
-  overviewCache.delete(cacheKey)
-  return null
+  overviewCache.delete(cacheKey);
+  return null;
 }
 
 function setCachedOverview(cacheKey, data) {
-  overviewCache.set(cacheKey, { data, ts: Date.now() })
+  overviewCache.set(cacheKey, { data, ts: Date.now() });
 }
 
 // ---- 工具函数 ----
 
 function sanitizeMarkdownSource(content) {
-  if (!content) return ''
+  if (!content) return "";
   return String(content)
-    .replace(/\*\*\s*(<[^>]+>)/g, '$1')
-    .replace(/(<\/[^>]+>)\s*\*\*/g, '$1')
+    .replace(/\*\*\s*(<[^>]+>)/g, "$1")
+    .replace(/(<\/[^>]+>)\s*\*\*/g, "$1");
 }
 
 const props = defineProps({
@@ -138,149 +150,165 @@ const props = defineProps({
   },
   scope: {
     type: String,
-    default: 'client',
+    default: "client",
   },
-})
+});
 
-const route = useRoute()
-const router = useRouter()
-const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '')
-const api = computed(() => siteApi)
-const config = computed(() => getContentConfig(props.contentType, props.scope))
+const route = useRoute();
+const router = useRouter();
+const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "");
+const api = computed(() => siteApi);
+const config = computed(() => getContentConfig(props.contentType, props.scope));
 
-const loading = ref(false)
-const errorText = ref('')
-const categories = ref([])
-const currentArticle = ref(null)
-const currentCategoryId = ref(null)
-const tocItems = ref([{ id: 'article-top', label: '全文', level: 1 }])
-const contentRef = ref(null)
+const loading = ref(false);
+const errorText = ref("");
+const categories = ref([]);
+const currentArticle = ref(null);
+const currentCategoryId = ref(null);
+const tocItems = ref([{ id: "article-top", label: "全文", level: 1 }]);
+const contentRef = ref(null);
 
 const backToListRoute = computed(() => {
-  const query = {}
-  if (route.query.category) query.category = route.query.category
-  if (route.query.keyword) query.keyword = route.query.keyword
-  if (route.query.page) query.page = route.query.page
+  const query = {};
+  if (route.query.category) query.category = route.query.category;
+  if (route.query.keyword) query.keyword = route.query.keyword;
+  if (route.query.page) query.page = route.query.page;
   return {
     path: config.value.routeBasePath,
     query: Object.keys(query).length ? query : undefined,
-  }
-})
+  };
+});
 
 const categoryListRoute = computed(() => {
-  if (!currentCategoryId.value) return backToListRoute.value
+  if (!currentCategoryId.value) return backToListRoute.value;
   return {
     path: config.value.routeBasePath,
     query: { category: currentCategoryId.value },
-  }
-})
+  };
+});
 
-const timeLabel = computed(() => (
-  props.contentType === 'help' ? '更新时间' : '发布时间'
-))
+const timeLabel = computed(() =>
+  props.contentType === "help" ? "更新时间" : "发布时间",
+);
 
 const currentCategoryName = computed(() => {
-  const matched = categories.value.find((item) => item.id === currentCategoryId.value)
-  return matched?.name || currentArticle.value?.category_name || '未分类'
-})
+  const matched = categories.value.find(
+    (item) => item.id === currentCategoryId.value,
+  );
+  return matched?.name || currentArticle.value?.category_name || "未分类";
+});
 
-const currentPublisher = computed(() => (
-  currentArticle.value?.creator?.nickname
-  || currentArticle.value?.creator?.username
-  || currentArticle.value?.operator
-  || '官方客服'
-))
+const currentPublisher = computed(
+  () =>
+    currentArticle.value?.creator?.nickname ||
+    currentArticle.value?.creator?.username ||
+    currentArticle.value?.operator ||
+    "官方客服",
+);
 
-const currentPublishTime = computed(() => (
-  currentArticle.value?.updated_at
-  || currentArticle.value?.last_published_at
-  || currentArticle.value?.publish_at
-  || currentArticle.value?.created_at
-  || '--'
-))
+const currentPublishTime = computed(
+  () =>
+    currentArticle.value?.updated_at ||
+    currentArticle.value?.last_published_at ||
+    currentArticle.value?.publish_at ||
+    currentArticle.value?.created_at ||
+    "--",
+);
 
 const articleContentHtml = computed(() => {
-  const source = sanitizeMarkdownSource(currentArticle.value?.content || '')
+  const source = sanitizeMarkdownSource(currentArticle.value?.content || "");
   const rendered = renderMarkdown(source, {
-    imageAltFallback: currentArticle.value?.title || config.value.detailTitle || '相关配图',
-  })
-  return rewriteApiAssetUrlsInHtml(rendered, apiBaseUrl)
-})
+    imageAltFallback:
+      currentArticle.value?.title || config.value.detailTitle || "相关配图",
+  });
+  return rewriteApiAssetUrlsInHtml(rendered, apiBaseUrl);
+});
 
 function plainTextSummary(value, maxLength = 160) {
-  return String(value || '')
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`[^`]*`/g, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/[>#*_\-[\]()!]/g, ' ')
-    .replace(/\s+/g, ' ')
+  return String(value || "")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/[>#*_\-[\]()!]/g, " ")
+    .replace(/\s+/g, " ")
     .trim()
-    .slice(0, maxLength)
+    .slice(0, maxLength);
 }
 
 function currentCanonicalUrl() {
-  if (typeof window === 'undefined') return ''
-  return new URL(route.path, window.location.origin).toString()
+  if (typeof window === "undefined") return "";
+  // 与后端 SEO 渲染同源：优先用配置的公开站点域名，双域名部署下 canonical 不漂移
+  return new URL(
+    route.path,
+    String(import.meta.env.VITE_PUBLIC_SITE_URL || window.location.origin),
+  ).toString();
 }
 
 function syncArticleMeta(article) {
-  if (!article) return
-  const title = String(article.title || config.value.detailTitle || '').trim()
-  const description = plainTextSummary(article.summary || article.excerpt || article.content || config.value.description)
+  if (!article) return;
+  const title = String(article.title || config.value.detailTitle || "").trim();
+  const description = plainTextSummary(
+    article.summary ||
+      article.excerpt ||
+      article.content ||
+      config.value.description,
+  );
   updatePageMeta({
     title: `${title} - ${config.value.pageTitle}`,
     description,
-    keywords: [article.category_name, title, config.value.pageTitle].filter(Boolean).join(','),
+    keywords: [article.category_name, title, config.value.pageTitle]
+      .filter(Boolean)
+      .join(","),
     canonical: currentCanonicalUrl(),
     structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'Article',
+      "@context": "https://schema.org",
+      "@type": "Article",
       headline: title,
       description,
       datePublished: article.publish_at || article.created_at || undefined,
       dateModified: article.updated_at || undefined,
     },
-  })
+  });
 }
 
 async function loadOverview() {
-  const cacheKey = config.value.overviewCategoryKey
-  const cached = getCachedOverview(cacheKey)
+  const cacheKey = config.value.overviewCategoryKey;
+  const cached = getCachedOverview(cacheKey);
   if (cached) {
-    categories.value = cached
-    return
+    categories.value = cached;
+    return;
   }
-  const res = await api.value.contentOverview()
-  const data = res.data?.[cacheKey] || []
-  categories.value = data
-  setCachedOverview(cacheKey, data)
+  const res = await api.value.contentOverview();
+  const data = res.data?.[cacheKey] || [];
+  categories.value = data;
+  setCachedOverview(cacheKey, data);
 }
 
 async function loadArticleDetail(articleId) {
-  const res = await api.value[config.value.apiDetailMethod](articleId)
-  currentArticle.value = res.data || null
-  currentCategoryId.value = Number(res.data?.category_id || 0) || null
-  syncArticleMeta(currentArticle.value)
+  const res = await api.value[config.value.apiDetailMethod](articleId);
+  currentArticle.value = res.data || null;
+  currentCategoryId.value = Number(res.data?.category_id || 0) || null;
+  syncArticleMeta(currentArticle.value);
 }
 
 async function syncPage() {
-  loading.value = true
-  errorText.value = ''
-  currentArticle.value = null
-  currentCategoryId.value = null
-  tocItems.value = [{ id: 'article-top', label: '全文', level: 1 }]
+  loading.value = true;
+  errorText.value = "";
+  currentArticle.value = null;
+  currentCategoryId.value = null;
+  tocItems.value = [{ id: "article-top", label: "全文", level: 1 }];
 
   try {
-    await Promise.all([
-      loadOverview(),
-      loadArticleDetail(route.params.id),
-    ])
+    await Promise.all([loadOverview(), loadArticleDetail(route.params.id)]);
   } catch (error) {
-    currentArticle.value = null
-    currentCategoryId.value = null
-    errorText.value = error?.response?.data?.message || error?.message || `${config.value.detailTitle}加载失败，请稍后重试`
+    currentArticle.value = null;
+    currentCategoryId.value = null;
+    errorText.value =
+      error?.response?.data?.message ||
+      error?.message ||
+      `${config.value.detailTitle}加载失败，请稍后重试`;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -290,66 +318,65 @@ function goCategoryList(categoryId) {
     query: {
       category: categoryId,
     },
-  })
+  });
 }
 
 function scrollToAnchor(anchorId) {
-  if (typeof document === 'undefined') {
-    return
+  if (typeof document === "undefined") {
+    return;
   }
 
   document.getElementById(anchorId)?.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start',
-  })
+    behavior: "smooth",
+    block: "start",
+  });
 }
 
 function buildToc() {
-  const container = contentRef.value
+  const container = contentRef.value;
 
   if (!container) {
-    tocItems.value = [{ id: 'article-top', label: '全文', level: 1 }]
-    return
+    tocItems.value = [{ id: "article-top", label: "全文", level: 1 }];
+    return;
   }
 
-  const headings = [...container.querySelectorAll('h1, h2, h3, h4')]
-  const items = [{ id: 'article-top', label: '全文', level: 1 }]
+  const headings = [...container.querySelectorAll("h1, h2, h3, h4")];
+  const items = [{ id: "article-top", label: "全文", level: 1 }];
 
   headings.forEach((heading, index) => {
-    const text = heading.textContent?.trim()
+    const text = heading.textContent?.trim();
 
     if (!text) {
-      return
+      return;
     }
 
-    const id = `${props.contentType}-heading-${currentArticle.value?.id || 'current'}-${index + 1}`
-    heading.id = id
+    const id = `${props.contentType}-heading-${currentArticle.value?.id || "current"}-${index + 1}`;
+    heading.id = id;
     items.push({
       id,
       label: text,
       level: Number.parseInt(heading.tagName.slice(1), 10) || 2,
-    })
-  })
+    });
+  });
 
-  tocItems.value = items
+  tocItems.value = items;
 }
 
 watch(
   () => route.params.id,
   () => {
-    syncPage()
+    syncPage();
   },
   { immediate: true },
-)
+);
 
 watch(
   () => articleContentHtml.value,
   async () => {
-    await nextTick()
-    buildToc()
+    await nextTick();
+    buildToc();
   },
-)
-
+);
 </script>
 
 <style scoped lang="scss">

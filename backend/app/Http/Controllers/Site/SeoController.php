@@ -21,9 +21,9 @@ class SeoController extends Controller
 
     public function render(string $path = ''): Response
     {
-        $html = $this->seoRenderService->render($path);
+        $rendered = $this->seoRenderService->render($path);
 
-        return response($html, 200, [
+        return response($rendered['html'], $rendered['status'], [
             'Content-Type' => 'text/html; charset=UTF-8',
             'X-Content-Type-Options' => 'nosniff',
         ]);

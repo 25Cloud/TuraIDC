@@ -253,7 +253,11 @@
           <div class="cfg-group cfg-group--notice" v-if="noticeConfigs.length">
             <div class="cfg-group-head">购买须知</div>
             <div class="cfg-group-body">
-              <div class="notice-item" v-for="cfg in noticeConfigs" :key="cfg.key">
+              <div
+                class="notice-item"
+                v-for="cfg in noticeConfigs"
+                :key="cfg.key"
+              >
                 <div class="notice-label" v-if="cfg.label">{{ cfg.label }}</div>
                 <div class="notice-text">{{ cfg.textContent }}</div>
               </div>
@@ -1178,9 +1182,16 @@ function syncProductMeta(nextProduct) {
       nextProduct.group?.parent_slogan ||
       "云产品详情与实时购买报价",
   );
+  // canonical 基址用配置的公开站点域名，与后端 SEO 渲染的 canonical 同源，
+  // 避免双域名部署下 SSR 与客户端各写一个不同域名的 canonical
   const canonical =
     typeof window !== "undefined"
-      ? new URL(route.path, window.location.origin).toString()
+      ? new URL(
+          route.path,
+          String(
+            import.meta.env.VITE_PUBLIC_SITE_URL || window.location.origin,
+          ),
+        ).toString()
       : "";
 
   updatePageMeta({

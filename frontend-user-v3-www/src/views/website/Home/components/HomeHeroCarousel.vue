@@ -119,6 +119,7 @@
         <!--
           离屏测量层：把所有 slide 的面板各渲染一份（不可见、不占布局），
           量出最高的一块，锁进 .hero-body 的 min-height。
+          标题用 span 而非 h1：这里只是测量副本，不应产生 N 个额外 H1。
           见 reserveTallestPanel()。
         -->
         <div class="hero-body__measure" aria-hidden="true">
@@ -127,7 +128,7 @@
             :key="`measure-${slide.key}`"
             class="hero-body__panel"
           >
-            <h1 class="hero-title">{{ slide.title }}</h1>
+            <span class="hero-title">{{ slide.title }}</span>
             <p class="hero-desc">{{ slide.desc }}</p>
             <div class="hero-actions">
               <span class="hero-cta hero-cta--primary">{{
@@ -1455,6 +1456,7 @@ $site-header-height: 64px;
 }
 
 .hero-title {
+  display: block;
   margin: 0;
   color: #111a34;
   font-size: clamp(34px, 4.2vw, 52px);

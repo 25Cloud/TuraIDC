@@ -15,9 +15,11 @@ class SiteConfigPayload
 
     public const DEFAULT_SITE_NAME = '图拉云';
 
-    public const DEFAULT_SITE_LOGO = '/branding/logo.svg';
+    // 默认品牌资源必须指向 public/branding 下实际存在的文件（该目录只有 PNG）；
+    // 历史默认值 logo.svg / logo1.svg 并不存在，og:image 与 favicon 会 404。
+    public const DEFAULT_SITE_LOGO = '/branding/logo.png';
 
-    public const DEFAULT_SITE_FAVICON = '/branding/logo1.svg';
+    public const DEFAULT_SITE_FAVICON = '/branding/favicon-32.png';
 
     public const DEFAULT_SERVICE_QQ_GROUP = '待补充群号';
 
