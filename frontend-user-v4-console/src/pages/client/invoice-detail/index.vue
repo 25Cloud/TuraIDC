@@ -215,7 +215,7 @@
                   :aria-label="method.name"
                   @click="selectPayMethod(paymentOptionKey(method))"
                 >
-                  <span class="pay-method-card__icon">
+                  <span class="pay-method-card__icon" :class="payMethodToneClass(method)">
                     <component :is="paymentMethodIcon(method)" />
                   </span>
                   <span class="pay-method-card__text">
@@ -276,7 +276,14 @@
                 <t-button v-else-if="selectedPayMethod === 'free'" theme="primary" size="large" block disabled>
                   零元账单无需操作
                 </t-button>
-                <t-button class="pay-actions__secondary" variant="outline" size="large" block :disabled="paying || loading" @click="loadDetail">
+                <t-button
+                  class="pay-actions__secondary"
+                  variant="outline"
+                  size="large"
+                  block
+                  :disabled="paying || loading"
+                  @click="loadDetail"
+                >
                   刷新状态
                 </t-button>
               </div>
@@ -315,6 +322,7 @@
 import {
   CheckCircleIcon,
   CreditcardIcon,
+  DiscountIcon,
   LogoAlipayFilledIcon,
   LogoWechatpayFilledIcon,
   RefreshIcon,
@@ -420,7 +428,17 @@ function paymentMethodIcon(method: InvoicePaymentMethod) {
   if (key === 'balance') return WalletIcon;
   if (key === 'alipay' || paymentType === 'alipay') return LogoAlipayFilledIcon;
   if (key === 'wechat' || paymentType === 'wxpay') return LogoWechatpayFilledIcon;
+  if (key === 'free' || paymentType === 'free') return DiscountIcon;
   return CreditcardIcon;
+}
+
+// 支付宝/微信品牌图标用官方品牌色区分渠道
+function payMethodToneClass(method: InvoicePaymentMethod) {
+  const key = String(method.key || '').trim();
+  const paymentType = String(method.payment_type || '').trim();
+  if (key === 'alipay' || paymentType === 'alipay') return 'pay-channel-tone--alipay';
+  if (key === 'wechat' || paymentType === 'wxpay') return 'pay-channel-tone--wechat';
+  return '';
 }
 
 function serviceRecord(row: InvoiceRecord | null | undefined) {
@@ -1006,6 +1024,15 @@ onBeforeUnmount(() => {
     width: 1.25rem;
     height: 1.25rem;
   }
+}
+
+// 渠道品牌色（支付宝蓝 / 微信绿），与充值页口径一致
+.pay-method-card__icon.pay-channel-tone--alipay {
+  color: #1677ff;
+}
+
+.pay-method-card__icon.pay-channel-tone--wechat {
+  color: #07c160;
 }
 
 .pay-method-card__text {

@@ -70,7 +70,7 @@
                   :aria-pressed="selectedGateway === paymentOptionKey(method)"
                   @click="selectPaymentGateway(paymentOptionKey(method))"
                 >
-                  <span class="pay-method-card__icon">
+                  <span class="pay-method-card__icon" :class="payMethodToneClass(method)">
                     <component :is="paymentMethodIcon(method)" />
                   </span>
                   <span class="pay-method-card__text">
@@ -181,7 +181,9 @@
                   :disabled="submitting || paymentGatewaysLoading"
                   @click="handleGatewayCreate(method)"
                 >
-                  <template #icon><component :is="paymentMethodIcon(method)" /></template>
+                  <template #icon
+                    ><component :is="paymentMethodIcon(method)" :class="payMethodToneClass(method)"
+                  /></template>
                   {{
                     selectedGateway === paymentOptionKey(method)
                       ? paymentButtonText
@@ -331,6 +333,13 @@ function paymentMethodIcon(method: RechargeGatewayOption) {
   if (method.key === 'alipay' || method.payment_type === 'alipay') return LogoAlipayFilledIcon;
   if (method.key === 'wechat' || method.payment_type === 'wxpay') return LogoWechatpayFilledIcon;
   return CreditcardIcon;
+}
+
+// 支付宝/微信品牌图标用官方品牌色区分渠道；选中主色按钮内回退继承色
+function payMethodToneClass(method: RechargeGatewayOption) {
+  if (method.key === 'alipay' || method.payment_type === 'alipay') return 'pay-channel-tone--alipay';
+  if (method.key === 'wechat' || method.payment_type === 'wxpay') return 'pay-channel-tone--wechat';
+  return '';
 }
 
 async function handleGatewayCreate(method: RechargeGatewayOption) {
@@ -609,6 +618,22 @@ onMounted(() => {
   svg {
     width: 1.375rem;
     height: 1.375rem;
+  }
+}
+
+// 渠道品牌色（支付宝蓝 / 微信绿）；选中主色按钮内回退继承色保证可读性
+.pay-channel-tone--alipay {
+  color: #1677ff;
+}
+
+.pay-channel-tone--wechat {
+  color: #07c160;
+}
+
+.pay-method.t-button--theme-primary {
+  .pay-channel-tone--alipay,
+  .pay-channel-tone--wechat {
+    color: inherit;
   }
 }
 
