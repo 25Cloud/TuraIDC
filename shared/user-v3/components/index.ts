@@ -6,5 +6,4 @@ export { default as DetailScaffold } from './DetailScaffold.vue';
 export { default as MotionWrapper } from './MotionWrapper.vue';
 export { default as PageScaffold } from './PageScaffold.vue';
 export { default as ResponsiveActionBar } from './ResponsiveActionBar.vue';
-export { default as SideNavShell } from './SideNavShell.vue';
 export { default as StatusTag } from './StatusTag.vue';

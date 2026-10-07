@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\SystemSetting;
 use App\Models\ThirdProductGroup;
 use App\Support\AutomationScheduleExpression;
+use App\Support\ContentPublishedCacheVersion;
 use Illuminate\Support\Collection;
 
 class SettingService
@@ -185,7 +186,14 @@ class SettingService
             $this->deleteStoredSettings($group, array_values(array_diff($templateSettingKeys, array_map('strval', array_keys($prepared)))));
         }
 
+        $isBasicGroup = trim($group) === 'basic';
         Setting::setValues($group, $this->filterPluginSettings($group, $prepared));
+
+        // 基础设置（站点名/logo 等）直接进入 SEO 渲染结果：bump 内容版本让
+        // seo:www:page:* 与 sitemap 缓存立即失效，改名/换 logo 不用等 TTL 过期。
+        if ($isBasicGroup) {
+            ContentPublishedCacheVersion::bump();
+        }
     }
 
     public function revealSensitiveSetting(string $group, string $key): array

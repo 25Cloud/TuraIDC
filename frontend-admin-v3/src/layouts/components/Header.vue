@@ -3,7 +3,7 @@
     <t-head-menu :class="menuCls" :theme="menuTheme" expand-type="popup" :value="active">
       <template #logo>
         <span v-if="showLogo" class="header-logo-container" @click="handleNav(ADMIN_HOME_PATH)">
-          <img class="t-logo" :src="logoPng" alt="TuraIDC" />
+          <img class="t-logo" :src="logoPng" alt="管理后台" />
         </span>
         <div v-else-if="!isMobileSideHeader" class="header-operate-left">
           <t-button theme="default" shape="square" variant="text" aria-label="折叠侧边栏" @click="changeCollapsed">
@@ -16,7 +16,7 @@
             <t-icon name="view-list" />
           </t-button>
           <span class="header-mobile-logo" @click="handleNav(ADMIN_HOME_PATH)">
-            <img class="t-logo" :src="logoPng" alt="TuraIDC" />
+            <img class="t-logo" :src="logoPng" alt="管理后台" />
           </span>
         </div>
       </template>

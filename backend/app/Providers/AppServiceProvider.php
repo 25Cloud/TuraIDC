@@ -209,7 +209,10 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
-        config(['app.name' => $siteName]);
+        // 同时覆盖 app.name 与 idc.site_name：工单/账单/订单通知等服务的站点名
+        // 读的是 idc.site_name（config 默认值恒存在，fallback 参数永远不会生效），
+        // 只覆盖 app.name 会让它们永远显示 env 里的默认品牌，后台改名对它们无效。
+        config(['app.name' => $siteName, 'idc.site_name' => $siteName]);
     }
 
     /**

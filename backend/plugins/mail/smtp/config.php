@@ -39,7 +39,9 @@ return [
             'placeholder' => 'no-reply@example.com',
             'description' => '留空则使用 SMTP 账号作为发件人地址',
         ],
-        'from_name' => ['title' => '发件名称', 'type' => 'text', 'value' => '图拉云', 'required' => false],
+        // 发件名称默认留空：SmtpMailTransport 会回退到当前站点名，
+        // 固定默认值会让第三方部署的邮件发件人永远显示默认品牌。
+        'from_name' => ['title' => '发件名称', 'type' => 'text', 'value' => '', 'required' => false],
         'encryption' => [
             'title' => '加密方式',
             'type' => 'select',

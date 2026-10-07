@@ -38,7 +38,7 @@
         </t-form-item>
       </t-form>
       <div class="login-footer">
-        <span>© {{ currentYear }} 图拉云 管理后台</span>
+        <span>© {{ currentYear }} 管理后台</span>
       </div>
     </div>
   </div>

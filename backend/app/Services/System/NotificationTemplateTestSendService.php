@@ -126,7 +126,8 @@ class NotificationTemplateTestSendService
     private function sampleValue(string $key): string
     {
         return match ($key) {
-            'site_name' => '图拉云',
+            // 样例值跟随后台当前配置的站点名，避免改名后测试邮件预览仍显示默认品牌
+            'site_name' => trim((string) config('app.name', '')) ?: '示例站点',
             'site_logo' => '/branding/logo.svg',
             'display_name' => '张三',
             'username' => 'zhangsan',

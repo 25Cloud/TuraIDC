@@ -37,7 +37,10 @@ class SettingsSeeder extends Seeder
 
         static::seedGroup('basic', [
             'site_name' => '图拉云',
-            'browser_title' => '图拉云 - 云计算服务平台',
+            // browser_title 留空：SiteConfigPayload 会回退 site_name。
+            // 若种入品牌长标题，管理员改名后旧的浏览器标题会一直残留在
+            // 分享卡片（og:title/og:description）里，看起来像改名没生效。
+            'browser_title' => '',
             'site_logo' => '',
             'site_favicon' => '',
             'client_console_icon' => '',

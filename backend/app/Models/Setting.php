@@ -20,10 +20,9 @@ class Setting extends Model
 
     private const CACHE_TTL_SECONDS = 600;
 
-    private const BRAND_REPLACEMENTS = [
-        'IDC Finance 平台' => '图拉云平台',
-        'IDC Finance' => '图拉云',
-    ];
+    // 魔方财务搬迁的历史模板里残留的品牌占位（IDC Finance），
+    // 展示时统一替换为后台配置的当前站点名（app.name 在启动时被 settings.site_name 覆盖）。
+    private const BRAND_PLACEHOLDER_PREFIX = 'IDC Finance';
 
     private const SENSITIVE_KEYS = [
         'verification_key',
@@ -148,9 +147,14 @@ class Setting extends Model
             return $value;
         }
 
+        $siteName = trim((string) config('app.name', ''));
+        if ($siteName === '') {
+            return $value;
+        }
+
         return str_replace(
-            array_keys(self::BRAND_REPLACEMENTS),
-            array_values(self::BRAND_REPLACEMENTS),
+            [self::BRAND_PLACEHOLDER_PREFIX.' 平台', self::BRAND_PLACEHOLDER_PREFIX],
+            [$siteName.'平台', $siteName],
             $value
         );
     }

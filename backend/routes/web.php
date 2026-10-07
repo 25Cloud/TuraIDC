@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::get('/', function () {
-    return ['message' => '图拉云 API'];
+    return ['message' => config('app.name', 'API').' API'];
 });
 
 // ---- 安装向导（已安装后所有入口 404，见 InstallController） ----
