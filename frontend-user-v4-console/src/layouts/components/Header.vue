@@ -109,6 +109,32 @@
         </div>
       </template>
     </t-head-menu>
+    <t-dialog
+      v-model:visible="inboxDetailVisible"
+      :header="inboxDetailItem?.title || '消息详情'"
+      :footer="inboxDetailItem?.link ? undefined : false"
+      width="560px"
+    >
+      <div class="inbox-detail">
+        <div class="inbox-detail__meta">
+          <t-tag size="small" variant="light" :theme="resolveTagTheme(inboxDetailItem?.type || '')">{{
+            inboxDetailItem?.type_label
+          }}</t-tag>
+          <span>{{ inboxDetailItem?.created_at }}</span>
+        </div>
+        <t-loading :loading="inboxDetailLoading" size="small">
+          <!-- inboxDetailHtml 由 renderMarkdown() 产出（shared 白名单净化），公告正文专用 -->
+          <!-- eslint-disable-next-line vue/no-v-html -- 内容已过 sanitizeRenderedHtml 白名单净化 -->
+          <div v-if="inboxDetailHtml" class="inbox-detail__content" v-html="inboxDetailHtml"></div>
+          <div v-else class="inbox-detail__content inbox-detail__content--text">
+            {{ inboxDetailItem?.summary || '暂无正文内容' }}
+          </div>
+        </t-loading>
+      </div>
+      <template v-if="inboxDetailItem?.link" #footer>
+        <t-button theme="primary" @click="handleInboxDetailLink">查看详情</t-button>
+      </template>
+    </t-dialog>
   </div>
 </template>
 <script setup lang="ts">
@@ -126,6 +152,7 @@ import { computed, onMounted, ref } from 'vue';
 import type { RouteLocationRaw } from 'vue-router';
 import { useRoute, useRouter } from 'vue-router';
 
+import clientApi from '@/api/client';
 import { useSiteBrandingStore } from '@/app/stores/siteBranding';
 import { useDeviceLayout } from '@/composables/useDeviceLayout';
 import { prefix } from '@/config/global';
@@ -137,6 +164,7 @@ import { useLocale } from '@/locales/useLocale';
 import { getActive } from '@/router';
 import { useSettingStore, useUserStore } from '@/store';
 import type { MenuRoute, ModeType } from '@/types/interface';
+import { renderMarkdown } from '@/utils/markdown';
 
 import MenuContent from './MenuContent.vue';
 
@@ -270,9 +298,39 @@ const handleInboxVisible = (visible: boolean) => {
 const handleInboxItemClick = (item: InboxItem) => {
   markRead(item);
   inboxVisible.value = false;
-  if (item.link) {
-    router.push(item.link);
+  openInboxDetail(item);
+};
+
+const inboxDetailVisible = ref(false);
+const inboxDetailItem = ref<InboxItem | null>(null);
+const inboxDetailLoading = ref(false);
+const inboxDetailHtml = ref('');
+
+// 点击消息统一弹窗展示全文：个性化消息全文在 summary（纯文本）；
+// 公告只有摘要，需另调详情接口取 markdown 全文渲染。
+const openInboxDetail = async (item: InboxItem) => {
+  inboxDetailItem.value = item;
+  inboxDetailHtml.value = '';
+  inboxDetailVisible.value = true;
+  if (item.source !== 'notice') return;
+  inboxDetailLoading.value = true;
+  try {
+    const noticeId = item.id.replace('notice-', '');
+    const response = await clientApi.noticeDetail(noticeId);
+    const content = (response.data as { content?: string } | undefined)?.content || '';
+    inboxDetailHtml.value = renderMarkdown(content, { imageAltFallback: item.title || '公告配图' });
+  } catch {
+    // 加载失败时退回列表摘要展示，并给出提示
+    MessagePlugin.error('公告内容加载失败');
+  } finally {
+    inboxDetailLoading.value = false;
   }
+};
+
+const handleInboxDetailLink = () => {
+  inboxDetailVisible.value = false;
+  const link = inboxDetailItem.value?.link;
+  if (link) router.push(link);
 };
 
 const handleMarkAllRead = async () => {
@@ -588,6 +646,69 @@ onMounted(() => {
 
     &:hover {
       background: var(--td-bg-color-container-hover);
+    }
+  }
+}
+
+.inbox-detail {
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--td-comp-margin-s);
+    margin-bottom: var(--td-comp-margin-m);
+    color: var(--td-text-color-placeholder);
+    font: var(--td-font-body-small);
+  }
+
+  &__content {
+    max-height: 55vh;
+    min-height: 48px;
+    overflow-y: auto;
+    color: var(--td-text-color-primary);
+    font: var(--td-font-body-medium);
+    line-height: var(--td-line-height-body-large);
+    overflow-wrap: break-word;
+
+    :deep(h1),
+    :deep(h2),
+    :deep(h3),
+    :deep(h4) {
+      margin: var(--td-comp-margin-l) 0 var(--td-comp-margin-s);
+      font-weight: 600;
+    }
+
+    :deep(p),
+    :deep(ul),
+    :deep(ol),
+    :deep(pre),
+    :deep(blockquote),
+    :deep(table) {
+      margin: 0 0 var(--td-comp-margin-m);
+    }
+
+    :deep(a) {
+      color: var(--td-brand-color);
+    }
+
+    :deep(img) {
+      max-width: 100%;
+      height: auto;
+    }
+
+    :deep(pre) {
+      padding: var(--td-comp-paddingTB-m) var(--td-comp-paddingLR-m);
+      overflow-x: auto;
+      background: var(--td-bg-color-component);
+    }
+
+    :deep(blockquote) {
+      padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-m);
+      border-left: var(--td-comp-size-xxxs) solid var(--td-brand-color);
+      background: var(--td-bg-color-component);
+    }
+
+    &--text {
+      white-space: pre-line;
     }
   }
 }
