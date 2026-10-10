@@ -227,11 +227,12 @@
               @click="toggleUserMenu"
             >
               <img
-                v-if="userAvatarUrl"
+                v-if="userAvatarUrl && !userAvatarLoadFailed"
                 :src="userAvatarUrl"
                 class="user-avatar-img"
                 alt=""
                 referrerpolicy="no-referrer"
+                @error="userAvatarLoadFailed = true"
               />
               <span v-else class="user-avatar-initial">{{ userAvatarInitial }}</span>
               <span class="header-user-name">{{ userDisplayName }}</span>
@@ -305,11 +306,12 @@
             @click="toggleMobileUserMenu"
           >
             <img
-              v-if="userAvatarUrl"
+              v-if="userAvatarUrl && !userAvatarLoadFailed"
               :src="userAvatarUrl"
               class="user-avatar-img"
               alt=""
               referrerpolicy="no-referrer"
+              @error="userAvatarLoadFailed = true"
             />
             <span v-else class="user-avatar-initial">{{ userAvatarInitial }}</span>
           </button>
@@ -845,6 +847,8 @@ const isMobile = ref(
 );
 const logoLoadFailed = ref(false);
 const footerLogoLoadFailed = ref(false);
+// 头像加载失败时置位，回退显示首字母头像
+const userAvatarLoadFailed = ref(false);
 
 const userAvatarInitial = computed(() => {
   if (!userStore.isLoggedIn) return "";
@@ -858,10 +862,22 @@ const userAvatarInitial = computed(() => {
   return name ? name.charAt(0).toUpperCase() : "U";
 });
 
+/**
+ * 头像地址来自用户资料，只接受 https 或站内相对路径。
+ * 其余（http 明文、data:、javascript: 等）一律丢弃，避免混合内容与非法协议。
+ */
+function isSafeAvatarUrl(url) {
+  if (!url) return false;
+  if (url.startsWith("//")) return false; // 协议相对地址可能指向任意域名
+  if (url.startsWith("/")) return true; // 站内相对路径
+  return /^https:\/\//i.test(url);
+}
+
 const userAvatarUrl = computed(() => {
   if (!userStore.isLoggedIn) return "";
   const info = userStore.info;
-  return (info?.avatar || "").trim();
+  const url = (info?.avatar || "").trim();
+  return isSafeAvatarUrl(url) ? url : "";
 });
 
 const userDisplayName = computed(() => {

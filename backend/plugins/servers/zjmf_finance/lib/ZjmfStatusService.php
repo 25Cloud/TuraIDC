@@ -20,8 +20,16 @@ final class ZjmfStatusService
         '无法执行该操作',
         '该操作无法执行',
         '当前状态不允许执行该操作',
-        // 虚拟主机等非云主机产品没有电源/开关机语义，上游对 func=status
-        // 直接回 406「不支持的方法」，属于「该能力不适用」而非同步故障
+    ];
+
+    /**
+     * 上游对「该能力不适用」的响应：虚拟主机调 func=status 会被回 406「不支持的方法」。
+     *
+     * 只有在主机确认不具备电源状态能力时才能算「运行状态不可用」并降级为仅同步详情。
+     * 普通云主机出现同样的响应属于接口/配置故障，必须保留错误并更新 last_sync_error，
+     * 否则同步会把故障当成成功。
+     */
+    private const RUNTIME_CAPABILITY_UNSUPPORTED_KEYWORDS = [
         '不支持的方法',
         '不支持该方法',
         'method not supported',
@@ -189,8 +197,12 @@ final class ZjmfStatusService
      * 调/provision/default?func=status 会被上游回 406「不支持的方法」。
      * 这类主机直接返回空运行态：既省掉一次注定失败的上游请求，
      * 也不会把「能力不适用」写成同步失败（last_sync_error）。
+     *
+     * $jwt 按引用传入：fetchRuntimeStatus() 遇到 401 会内部刷新 JWT，刷新后的新 token
+     * 需要回传给 syncServiceStatuses()，供同一批次后续主机复用，否则后续主机会继续
+     * 拿已失效的 token 请求。
      */
-    private function resolveHostRuntimePayload(Supplier $supplier, int $hostId, string $jwt, array $host): array
+    private function resolveHostRuntimePayload(Supplier $supplier, int $hostId, string &$jwt, array $host): array
     {
         if ($this->isHostingHost($host)) {
             return [];
@@ -282,6 +294,21 @@ final class ZjmfStatusService
             return [
                 'upstream_status' => $upstreamStatus,
                 'reason' => 'operation_not_allowed',
+                'message' => $message,
+                'http_status' => $httpStatus,
+                'business_status' => $businessStatus,
+            ];
+        }
+
+        // 「不支持的方法」这类响应只在主机本身没有电源状态能力时才视为不可用。
+        // 普通云主机拿到同样响应是故障，交给下面的正常错误分支处理（写 last_sync_error）。
+        if (
+            $this->isHostingHost($host)
+            && $this->messageContainsAny($message, self::RUNTIME_CAPABILITY_UNSUPPORTED_KEYWORDS)
+        ) {
+            return [
+                'upstream_status' => $upstreamStatus,
+                'reason' => 'power_capability_unsupported',
                 'message' => $message,
                 'http_status' => $httpStatus,
                 'business_status' => $businessStatus,

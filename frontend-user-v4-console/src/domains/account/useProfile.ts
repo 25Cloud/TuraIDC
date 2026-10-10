@@ -9,6 +9,7 @@ import {
   isProfileDataLoaded,
   notificationList,
   profileForm,
+  resetProfileState,
   setProfileDataLoaded,
 } from '@/domains/account/profileState';
 import { useUserStore } from '@/store';
@@ -502,12 +503,24 @@ export function useProfile() {
     // 已有数据才复用。若共享数据为空（例如会话被清理过），照常重新拉取，
     // 避免页面停在空状态；复用时只用内存里的用户信息同步展示字段，
     // 不发网络请求，也不会覆盖消息提醒里尚未保存的开关改动。
-    if (isProfileDataLoaded() && profileForm.id) {
+    // profileForm 是跨组件共享状态，必须确认已加载的资料属于当前登录账号：
+    // 否则切换账号后会把上一个账号的资料当成当前账号展示。
+    const currentUserId = userStore.info?.id != null ? String(userStore.info.id) : '';
+    const loadedUserId = profileForm.id != null ? String(profileForm.id) : '';
+    const isSameAccount = currentUserId !== '' && loadedUserId !== '' && currentUserId === loadedUserId;
+
+    if (isProfileDataLoaded() && loadedUserId !== '' && isSameAccount) {
       if (userStore.info) {
         hydrateProfile(userStore.info as ClientUserInfo);
       }
       return;
     }
+
+    // 账号不一致（或共享状态无归属）：清掉旧账号残留，避免被当作当前账号资料
+    if (loadedUserId !== '' && !isSameAccount) {
+      resetProfileState();
+    }
+
     setProfileDataLoaded(true);
     void Promise.all([loadProfile(), loadNotificationPreferences()]).catch(() => {
       // 拉取失败时复位标记，下次进入页面会自动重试，不会停在空状态

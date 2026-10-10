@@ -4,7 +4,13 @@
       <div class="summary-grid">
         <t-card class="account-card dashboard-card" :bordered="false">
           <div class="account-card__user">
-            <t-avatar class="account-card__avatar" :image="avatarUrl || undefined" size="large">{{ avatarText }}</t-avatar>
+            <t-avatar
+              class="account-card__avatar"
+              :image="avatarImage"
+              size="large"
+              @error="avatarLoadFailed = true"
+              >{{ avatarText }}</t-avatar
+            >
             <div class="account-card__main">
               <h2>{{ greetingText }}，{{ displayName }}</h2>
               <p>{{ todayDateText }}</p>
@@ -411,6 +417,11 @@ const displayName = computed(() =>
 );
 const avatarText = computed(() => displayName.value.slice(0, 1) || '客');
 const avatarUrl = computed(() => String(userInfo.value.avatar || '').trim());
+// 头像加载失败时清空地址，让 t-avatar 回退显示首字母内容
+const avatarLoadFailed = ref(false);
+const avatarImage = computed(() =>
+  avatarLoadFailed.value ? undefined : avatarUrl.value || undefined,
+);
 const userIdText = computed(() => String(userInfo.value.id || '--'));
 const isVerified = computed(() => Number(userInfo.value.is_verified || 0) === 1);
 const isPhoneBound = computed(() => Boolean(String(userInfo.value.phone || '').trim()));

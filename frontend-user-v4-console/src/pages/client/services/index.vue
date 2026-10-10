@@ -150,7 +150,7 @@
                       <span v-if="resolveVirtualHostSpec(item).traffic">
                         月流量 {{ resolveVirtualHostSpec(item).traffic }}
                       </span>
-                      <span v-if="!hasVirtualHostSpec(item)" class="service-spec-empty">虚拟主机实例</span>
+                      <span v-if="!hasVirtualHostCardSpec(item)" class="service-spec-empty">虚拟主机实例</span>
                     </div>
                     <div v-else class="service-spec-line">
                       <span>CPU {{ findListSpecValue(item, ['CPU', '核心']) }}</span>
@@ -265,7 +265,7 @@
                   <span v-if="resolveVirtualHostSpec(row).traffic">
                     月流量 {{ resolveVirtualHostSpec(row).traffic }}
                   </span>
-                  <span v-if="!hasVirtualHostSpec(row)" class="service-spec-empty">虚拟主机实例</span>
+                  <span v-if="!hasVirtualHostTableSpec(row)" class="service-spec-empty">虚拟主机实例</span>
                 </div>
                 <div v-else class="service-table-specs">
                   <span>CPU {{ findListSpecValue(row, ['CPU', '核心']) }}</span>
@@ -512,9 +512,21 @@ function resolveVirtualHostSpec(item: Record<string, any>) {
   return resolveListVirtualHostSpecText(item);
 }
 
-function hasVirtualHostSpec(item: Record<string, any>) {
+/**
+ * 卡片区展示「网页空间 / 数据库 / 月流量」，空态只按这三个字段判断。
+ * domains 不在卡片展示，不能单独撑起「有规格」，否则会出现既无内容也无占位的留白。
+ */
+function hasVirtualHostCardSpec(item: Record<string, any>) {
   const spec = resolveListVirtualHostSpecText(item);
-  return Boolean(spec.webSpace || spec.dbSpace || spec.traffic || spec.domains);
+  return Boolean(spec.webSpace || spec.dbSpace || spec.traffic);
+}
+
+/**
+ * 表格区只展示「网页空间 / 月流量」，因此 dbSpace 与 domains 都不参与空态判断。
+ */
+function hasVirtualHostTableSpec(item: Record<string, any>) {
+  const spec = resolveListVirtualHostSpecText(item);
+  return Boolean(spec.webSpace || spec.traffic);
 }
 
 function markServiceOsIconFailed(item: Record<string, any>) {

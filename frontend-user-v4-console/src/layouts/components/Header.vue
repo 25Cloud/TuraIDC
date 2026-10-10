@@ -99,7 +99,13 @@
             </template>
             <t-button class="header-user-btn" theme="default" variant="text">
               <template #icon>
-                <t-avatar class="header-user-avatar" size="small" :image="userAvatarUrl || undefined">{{ userInitials }}</t-avatar>
+                <t-avatar
+                  class="header-user-avatar"
+                  size="small"
+                  :image="userAvatarImage"
+                  @error="userAvatarLoadFailed = true"
+                  >{{ userInitials }}</t-avatar
+                >
               </template>
               <span class="header-user-account">{{ accountName }}</span>
               <span class="header-user-balance">余额 {{ formattedBalance }}</span>
@@ -242,6 +248,11 @@ const userInitials = computed(() => {
   return name.slice(0, 1) || siteBranding.brandInitials || '图';
 });
 const userAvatarUrl = computed(() => String(user.userInfo.avatar || '').trim());
+// 头像加载失败时清空地址，让 t-avatar 回退显示首字母内容，而不是一直转圈/破图
+const userAvatarLoadFailed = ref(false);
+const userAvatarImage = computed(() =>
+  userAvatarLoadFailed.value ? undefined : userAvatarUrl.value || undefined,
+);
 const formattedBalance = computed(() => {
   const value = user.userInfo.cash_balance;
   const amount = Number(value);

@@ -430,13 +430,24 @@ class AuthService
         $normalizedNickname = $nickname !== '' ? $nickname : null;
         $qq = isset($data['qq']) ? TextSanitizer::clean((string) $data['qq']) : null;
         $normalizedQq = $qq !== '' ? $qq : null;
+        // 请求未携带 qq 时不能写库：否则 update 会把已保存的 QQ 号清空。
+        // 只有显式传值才更新该字段（传空串仍然表示清除）。
+        $hasQq = array_key_exists('qq', $data);
 
-        return DB::transaction(function () use ($user, $normalizedNickname, $normalizedQq, $context) {
+        return DB::transaction(function () use ($user, $normalizedNickname, $normalizedQq, $hasQq, $context) {
             $lockedUser = User::query()->lockForUpdate()->findOrFail((int) $user->id);
-            $lockedUser->update([
-                'nickname' => $normalizedNickname,
-                'qq' => $normalizedQq,
-            ]);
+
+            $update = ['nickname' => $normalizedNickname];
+            if ($hasQq) {
+                $update['qq'] = $normalizedQq;
+            }
+            $lockedUser->update($update);
+
+            $detail = ['nickname' => $normalizedNickname ?? ''];
+            if ($hasQq) {
+                // QQ 属于个人信息，操作日志只记录脱敏后的号码，避免原文落库
+                $detail['qq'] = $this->maskQq($normalizedQq);
+            }
 
             $this->operationLogService->write(
                 userId: (int) $lockedUser->id,
@@ -444,15 +455,28 @@ class AuthService
                 action: 'profile.nickname.update',
                 module: 'auth',
                 targetId: (int) $lockedUser->id,
-                detail: $this->buildClientAuthLogDetail([
-                    'nickname' => $normalizedNickname ?? '',
-                    'qq' => $normalizedQq ?? '',
-                ], $context),
+                detail: $this->buildClientAuthLogDetail($detail, $context),
                 ipAddress: $this->resolveContextIpAddress($context),
             );
 
             return $this->refreshClientUser($lockedUser);
         });
+    }
+
+    /** QQ 号脱敏：保留前 2 位与末 1 位，其余打码，仅用于日志展示 */
+    private function maskQq(?string $qq): string
+    {
+        $value = trim((string) $qq);
+        if ($value === '') {
+            return '';
+        }
+
+        $length = mb_strlen($value);
+        if ($length <= 3) {
+            return mb_substr($value, 0, 1).str_repeat('*', max($length - 1, 0));
+        }
+
+        return mb_substr($value, 0, 2).str_repeat('*', $length - 3).mb_substr($value, -1);
     }
 
     public function updateClientAlipayAccount(User $user, array $data, array $context = []): User
