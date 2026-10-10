@@ -1830,7 +1830,7 @@ DROP TABLE IF EXISTS `user_coupons`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `user_coupons` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `uid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `coupon_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `coupon_id` bigint unsigned NOT NULL,
   `user_id` bigint unsigned NOT NULL,
   `receive_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'claim',
@@ -1848,7 +1848,7 @@ CREATE TABLE `user_coupons` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_coupons_coupon_user_unique` (`coupon_id`,`user_id`),
-  UNIQUE KEY `user_coupons_uid_unique` (`uid`),
+  UNIQUE KEY `user_coupons_coupon_code_unique` (`coupon_code`),
   KEY `user_coupons_user_status_idx` (`user_id`,`status`),
   KEY `user_coupons_coupon_status_idx` (`coupon_id`,`status`),
   CONSTRAINT `fk_stage2_user_coupons_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,

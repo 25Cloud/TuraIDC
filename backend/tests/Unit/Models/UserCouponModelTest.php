@@ -13,7 +13,7 @@ use Tests\TestCase;
 
 class UserCouponModelTest extends TestCase
 {
-    public function test_it_generates_uid_and_default_owned_status_when_created(): void
+    public function test_it_generates_coupon_code_and_default_owned_status_when_created(): void
     {
         $suffix = bin2hex(random_bytes(4));
         $user = $this->createUser($suffix);
@@ -24,7 +24,7 @@ class UserCouponModelTest extends TestCase
             'user_id' => (int) $user->id,
         ]);
 
-        $this->assertMatchesRegularExpression('/^uc_[0-9a-f]{12}$/', (string) $userCoupon->uid);
+        $this->assertMatchesRegularExpression('/^uc_[0-9a-f]{12}$/', (string) $userCoupon->coupon_code);
         $this->assertSame(UserCouponStatus::OWNED, (int) $userCoupon->status);
     }
 

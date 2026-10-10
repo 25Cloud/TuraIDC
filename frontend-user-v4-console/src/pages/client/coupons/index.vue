@@ -139,7 +139,7 @@
       destroy-on-close
     >
       <div v-if="selectedCoupon" class="coupon-detail">
-        <section v-if="selectedCoupon.uid" class="coupon-detail-section">
+        <section v-if="selectedCoupon.coupon_code" class="coupon-detail-section">
           <div class="coupon-detail-section__head">
             <h3>券实例编号</h3>
             <span>{{ selectedCoupon.status_label || '--' }}</span>
@@ -147,7 +147,7 @@
           <div class="coupon-detail-section__body">
             <div class="coupon-product-empty-grid">
               <span>实例编号</span>
-              <strong>{{ selectedCoupon.uid }}</strong>
+              <strong>{{ selectedCoupon.coupon_code }}</strong>
             </div>
           </div>
         </section>

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class UserCoupon extends Model
 {
     protected $fillable = [
-        'uid',
+        'coupon_code',
         'coupon_id',
         'user_id',
         'receive_type',
@@ -43,7 +43,7 @@ class UserCoupon extends Model
     protected static function booted(): void
     {
         static::creating(function (UserCoupon $userCoupon): void {
-            $userCoupon->uid ??= 'uc_'.bin2hex(random_bytes(6));
+            $userCoupon->coupon_code ??= 'uc_'.bin2hex(random_bytes(6));
             $userCoupon->status ??= UserCouponStatus::OWNED;
         });
     }

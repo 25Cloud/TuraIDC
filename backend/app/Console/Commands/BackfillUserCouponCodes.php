@@ -9,27 +9,27 @@ use App\Models\UserCoupon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
-class BackfillUserCouponUid extends Command
+class BackfillUserCouponCodes extends Command
 {
-    protected $signature = 'coupons:backfill-uid';
+    protected $signature = 'coupons:backfill-codes';
 
-    protected $description = 'Backfill user coupon uid and historical used status.';
+    protected $description = 'Backfill user coupon codes and historical used status.';
 
     public function handle(): int
     {
-        $uidCount = 0;
+        $backfilledCount = 0;
 
         UserCoupon::query()
-            ->whereNull('uid')
+            ->whereNull('coupon_code')
             ->lazyById(500)
-            ->each(function (UserCoupon $userCoupon) use (&$uidCount): void {
+            ->each(function (UserCoupon $userCoupon) use (&$backfilledCount): void {
                 UserCoupon::withoutTimestamps(function () use ($userCoupon): void {
                     $userCoupon->forceFill([
-                        'uid' => $this->generateUid(),
+                        'coupon_code' => $this->generateCouponCode(),
                     ])->save();
                 });
 
-                $uidCount++;
+                $backfilledCount++;
             });
 
         $usedCount = UserCoupon::query()
@@ -40,18 +40,18 @@ class BackfillUserCouponUid extends Command
                 'used_at' => DB::raw('last_used_at'),
             ]);
 
-        $this->info("uid backfilled: {$uidCount}");
+        $this->info("coupon codes backfilled: {$backfilledCount}");
         $this->info("used status backfilled: {$usedCount}");
 
         return self::SUCCESS;
     }
 
-    private function generateUid(): string
+    private function generateCouponCode(): string
     {
         do {
-            $uid = 'uc_'.bin2hex(random_bytes(6));
-        } while (UserCoupon::query()->where('uid', $uid)->exists());
+            $code = 'uc_'.bin2hex(random_bytes(6));
+        } while (UserCoupon::query()->where('coupon_code', $code)->exists());
 
-        return $uid;
+        return $code;
     }
 }

@@ -55,9 +55,9 @@ class CouponControllerTest extends TestCase
         $usedItem = $items->firstWhere('id', (int) $usedUserCoupon->id);
         $revokedItem = $items->firstWhere('id', (int) $revokedUserCoupon->id);
 
-        $this->assertSame((string) $usedUserCoupon->uid, $usedItem['uid'] ?? null);
+        $this->assertSame((string) $usedUserCoupon->coupon_code, $usedItem['coupon_code'] ?? null);
         $this->assertNotEmpty($usedItem['used_at'] ?? null);
-        $this->assertSame((string) $revokedUserCoupon->uid, $revokedItem['uid'] ?? null);
+        $this->assertSame((string) $revokedUserCoupon->coupon_code, $revokedItem['coupon_code'] ?? null);
         $this->assertNotEmpty($revokedItem['revoked_at'] ?? null);
     }
 

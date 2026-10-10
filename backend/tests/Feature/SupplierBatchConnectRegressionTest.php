@@ -130,7 +130,9 @@ class SupplierBatchConnectRegressionTest extends TestCase
         $this->assertSame('香港云服务器 / CN2', $product->productGroup?->secondProductGroup?->name);
 
         $display = (new ProductDisplayNameResolver)->resolveForProduct($product);
-        $this->assertSame('2 vCPU 4G', $display['product_display_name'] ?? null);
+        // 批量建品会把上游商品名写入 custom_display_name（products 表无 name 列，
+        // 不同步则列表退化成「未配置规格 #ID」），解析器优先返回自定义名。
+        $this->assertSame('香港 CN2 2C4G '.$suffix, $display['product_display_name'] ?? null);
         $this->assertSame('2 vCPU 4G', $display['product_spec_display'] ?? null);
         $this->assertSame('2 vCPU 4G', $display['cpu_memory_display'] ?? null);
     }

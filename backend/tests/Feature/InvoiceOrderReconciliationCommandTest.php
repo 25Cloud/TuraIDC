@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
+use App\Support\OrderInvoiceNoGenerator;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -271,7 +272,7 @@ class InvoiceOrderReconciliationCommandTest extends BaseTestCase
     private function insertOrder(array $overrides = []): int
     {
         return (int) DB::table('orders')->insertGetId(array_merge([
-            'order_no' => 'dd'.now()->format('YmdHis').random_int(1000, 9999),
+            'order_no' => OrderInvoiceNoGenerator::buildOrderNo(),
             'user_id' => 1,
             'type' => 'new',
             'amount' => '100.00',
@@ -289,7 +290,7 @@ class InvoiceOrderReconciliationCommandTest extends BaseTestCase
     private function insertInvoice(array $overrides = []): int
     {
         return (int) DB::table('invoices')->insertGetId(array_merge([
-            'invoice_no' => 'zd'.now()->format('YmdHis').random_int(1000, 9999),
+            'invoice_no' => OrderInvoiceNoGenerator::buildInvoiceNo(),
             'user_id' => 1,
             'order_id' => null,
             'type' => 'normal',

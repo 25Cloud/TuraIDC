@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Finance;
 
-use App\Support\SqlLike;
 use App\Constants\BillingCycle;
 use App\Constants\CouponStatus;
 use App\Constants\InvoiceStatus;
@@ -23,11 +22,11 @@ use App\Models\UserCoupon;
 use App\Services\ProductCatalog\InstanceSpecCatalogService;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Support\ProductGroupHierarchyFields;
+use App\Support\SqlLike;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 
 class CouponService
 {
@@ -306,13 +305,12 @@ class CouponService
                 ->map(function (Product $product) use ($fullName) {
                     $displayPayload = $this->resolveProductDisplayNameResolver()->resolveForProduct($product);
                     $customDisplayName = trim((string) ($displayPayload['custom_display_name'] ?? ''));
-                    $cpuMemorySlugDisplay = trim((string) ($displayPayload['cpu_memory_slug_display'] ?? ''));
                     $productSpecDisplay = trim((string) ($displayPayload['product_spec_display'] ?? ''));
                     $cpuMemoryDisplay = trim((string) ($displayPayload['cpu_memory_display'] ?? ''));
                     $combinedDisplayName = trim((string) ($displayPayload['combined_display_name'] ?? ''));
                     $defaultDisplayName = '未配置规格 #'.(int) $product->id;
                     $displayName = $customDisplayName
-                        ?: ($cpuMemorySlugDisplay ?: ($productSpecDisplay ?: ($cpuMemoryDisplay ?: ($combinedDisplayName ?: $defaultDisplayName))));
+                        ?: ($productSpecDisplay ?: ($cpuMemoryDisplay ?: ($combinedDisplayName ?: $defaultDisplayName)));
 
                     return [
                         'id' => (int) $product->id,
@@ -325,7 +323,6 @@ class CouponService
                         'product_display_name' => $displayName,
                         'custom_display_name' => $customDisplayName,
                         'cpu_memory_display' => $cpuMemoryDisplay,
-                        'cpu_memory_slug_display' => $cpuMemorySlugDisplay,
                         'product_spec_display' => $productSpecDisplay,
                         'combined_display_name' => $combinedDisplayName,
                         'effective_product_group_full_name' => $fullName,
@@ -1505,7 +1502,7 @@ class CouponService
         if (! $coupon instanceof Coupon) {
             return [
                 'id' => (int) $userCoupon->id,
-                'uid' => (string) ($userCoupon->uid ?? ''),
+                'coupon_code' => (string) ($userCoupon->coupon_code ?? ''),
                 'coupon_id' => (int) ($userCoupon->coupon_id ?? 0),
                 'name' => '已失效优惠券',
                 'description' => '关联优惠券记录不存在，已自动忽略展示',
@@ -1554,7 +1551,7 @@ class CouponService
 
         return [
             'id' => (int) $userCoupon->id,
-            'uid' => (string) ($userCoupon->uid ?? ''),
+            'coupon_code' => (string) ($userCoupon->coupon_code ?? ''),
             'coupon_id' => (int) $coupon->id,
             'name' => (string) $coupon->name,
             'description' => (string) ($coupon->description ?? ''),
@@ -2453,8 +2450,15 @@ class CouponService
 
     private function generateInternalCouponCode(): string
     {
+        $alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+
         do {
-            $code = 'CPN'.Str::upper(Str::random(10));
+            $body = '';
+            for ($i = 0; $i < 10; $i++) {
+                $body .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+            }
+
+            $code = 'CPN'.$body;
         } while (Coupon::query()->where('code', $code)->exists());
 
         return $code;

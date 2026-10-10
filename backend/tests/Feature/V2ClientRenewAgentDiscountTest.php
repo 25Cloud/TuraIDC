@@ -139,7 +139,7 @@ class V2ClientRenewAgentDiscountTest extends TestCase
 
         // 复刻代理用户新购：下单实付 84.15（99.00 × 85%），定价快照留存未打折原价 99.00
         $order = Order::query()->create([
-            'order_no' => 'dd'.now()->format('YmdHis').$suffix,
+            'order_no' => Order::generateOrderNo(),
             'projection_type' => Order::PROJECTION_TYPE_PROVISIONING,
             'user_id' => (int) $user->id,
             'product_id' => (int) $product->id,

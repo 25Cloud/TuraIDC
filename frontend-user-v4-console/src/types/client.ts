@@ -474,7 +474,7 @@ export interface CouponProductScopeItem {
 
 export interface CouponRecord {
   id: number;
-  uid?: string;
+  coupon_code?: string;
   coupon_id?: number;
   name?: string;
   description?: string;

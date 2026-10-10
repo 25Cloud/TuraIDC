@@ -301,6 +301,7 @@ class V2AdminCouponManagementApiTest extends TestCase
             'product_names',
             'product_scope_text',
             'first_order_only',
+            'allow_agent',
             'total_usage_limit',
             'per_user_limit',
             'used_count',

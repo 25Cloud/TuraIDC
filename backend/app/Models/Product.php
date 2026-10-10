@@ -241,6 +241,10 @@ class Product extends Model
         }
     }
 
+    /**
+     * 商品所属分组。product_group_id 物理指向三级分组表 third_product_groups.id
+     * （一级/二级表仅作分类导航层），列名沿用历史约定以保持 API 与数据兼容。
+     */
     public function productGroup(): BelongsTo
     {
         return $this->belongsTo(ThirdProductGroup::class, 'product_group_id');
