@@ -4,7 +4,7 @@
       <div class="summary-grid">
         <t-card class="account-card dashboard-card" :bordered="false">
           <div class="account-card__user">
-            <t-avatar style="margin-top: 5px" :image="avatarUrl || undefined" size="large">{{ avatarText }}</t-avatar>
+            <t-avatar class="account-card__avatar" :image="avatarUrl || undefined" size="large">{{ avatarText }}</t-avatar>
             <div class="account-card__main">
               <h2>{{ greetingText }}，{{ displayName }}</h2>
               <p>{{ todayDateText }}</p>
@@ -410,7 +410,7 @@ const displayName = computed(() =>
   ),
 );
 const avatarText = computed(() => displayName.value.slice(0, 1) || '客');
-const avatarUrl = computed(() => '');
+const avatarUrl = computed(() => String(userInfo.value.avatar || '').trim());
 const userIdText = computed(() => String(userInfo.value.id || '--'));
 const isVerified = computed(() => Number(userInfo.value.is_verified || 0) === 1);
 const isPhoneBound = computed(() => Boolean(String(userInfo.value.phone || '').trim()));
@@ -846,8 +846,23 @@ onMounted(() => {
 
 .account-card__user {
   display: flex;
-  gap: var(--td-comp-margin-m);
+  gap: var(--td-comp-margin-l);
   align-items: flex-start;
+}
+
+.account-card__avatar {
+  flex-shrink: 0;
+  /* 与右侧标题文字做视觉对齐，同时保证头像完整显示不被裁切 */
+  margin-top: 2px;
+  background: var(--td-brand-color-light);
+  color: var(--td-brand-color);
+  overflow: hidden;
+
+  :deep(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 .account-card__main {
@@ -1348,6 +1363,34 @@ onMounted(() => {
 
   .chart-card__actions {
     justify-content: flex-start;
+  }
+
+  // 图表在手机端沿用桌面高度会显得很空（一根柱子配大片留白），
+  // 这里按手机视口收窄高度
+  .bar-chart {
+    height: 9rem;
+    padding-bottom: var(--td-comp-paddingTB-l);
+  }
+
+  .bar-chart--daily {
+    height: 9rem;
+  }
+
+  .bar-chart--monthly {
+    height: 10rem;
+    padding-top: var(--td-comp-paddingTB-s);
+  }
+
+  // 月份标签在窄格子里会折成两行并撑出图表，改为单行不换行
+  .bar-chart__label {
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  // 格子变窄后适当加宽柱子，避免细成一根线
+  .bar-chart--monthly .bar-chart__col {
+    width: 72%;
   }
 
   .quick-grid {

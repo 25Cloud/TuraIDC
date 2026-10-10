@@ -4,22 +4,22 @@ import { useRouter } from 'vue-router';
 
 import { clientAuthApi } from '@/api/auth';
 import { useGeeTestCaptcha } from '@/composables/useGeeTestCaptcha';
+import {
+  agentGroup,
+  isProfileDataLoaded,
+  notificationList,
+  profileForm,
+  setProfileDataLoaded,
+} from '@/domains/account/profileState';
 import { useUserStore } from '@/store';
-import type { ClientAgentGroup, ClientNotificationPreferences, ClientUserInfo } from '@/types/client';
+import type { ClientNotificationPreferences, ClientUserInfo } from '@/types/client';
 import { getErrorMessage } from '@/utils/error';
 import { copyText as copyShared } from '@/utils/format';
 
 type TagTheme = 'default' | 'success' | 'warning' | 'primary' | 'danger';
-type ProfileTab = 'profile' | 'security' | 'agent' | 'notification' | 'display';
-type NotificationKey = keyof ClientNotificationPreferences;
-interface NotificationItem {
-  key: NotificationKey;
-  name: string;
-  desc: string;
-  enabled: boolean;
-}
+type ProfileTab = 'profile' | 'security' | 'agent' | 'notification';
 
-const PROFILE_TABS = new Set<ProfileTab>(['profile', 'security', 'agent', 'notification', 'display']);
+const PROFILE_TABS = new Set<ProfileTab>(['profile', 'security', 'agent', 'notification']);
 
 export function useProfile() {
   const router = useRouter();
@@ -43,56 +43,11 @@ export function useProfile() {
   let emailTimer: ReturnType<typeof setInterval> | null = null;
   let phoneOldTimer: ReturnType<typeof setInterval> | null = null;
   let emailOldTimer: ReturnType<typeof setInterval> | null = null;
-  const profileForm = reactive({
-    id: '',
-    email: '',
-    nickname: '',
-    phone: '',
-    cash_balance: '0.00',
-    createdAt: '',
-    is_verified: 0,
-    real_name: '',
-    id_card_masked: '',
-  });
-  const agentGroup = ref<ClientAgentGroup | null>(null);
   const passwordForm = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const passwordMode = ref<'old' | 'reset'>('old');
   const resetForm = reactive({ type: 'phone' as 'phone' | 'email', code: '', password: '', confirmPassword: '' });
   const resetCountdown = ref(0);
   let resetTimer: ReturnType<typeof setInterval> | null = null;
-  const notificationList = reactive<NotificationItem[]>([
-    {
-      key: 'login_notify',
-      name: '账号登录提醒',
-      desc: '每次账户成功登录后，向绑定邮箱发送登录安全提醒。',
-      enabled: false,
-    },
-    {
-      key: 'login_location_alert',
-      name: '异地登录提醒',
-      desc: '检测到新的登录 IP 环境时，额外发送一次异地登录风险提醒。',
-      enabled: false,
-    },
-    {
-      key: 'password_change_alert',
-      name: '更改密码提醒',
-      desc: '账户密码修改成功后，立即发送安全提醒邮件。',
-      enabled: false,
-    },
-    {
-      key: 'phone_change_alert',
-      name: '更改手机号提醒',
-      desc: '安全手机号发生变更时，及时发送变更提醒。',
-      enabled: false,
-    },
-    {
-      key: 'email_change_alert',
-      name: '更改邮箱提醒',
-      desc: '安全邮箱发生变更时，向原邮箱和新邮箱发送提醒。',
-      enabled: false,
-    },
-    { key: 'marketing_alert', name: '营销提醒接收', desc: '接收产品更新、活动优惠和运营消息。', enabled: false },
-  ]);
 
   const balanceText = computed(() => `¥${profileForm.cash_balance || '0.00'}`);
   const enabledNotificationCount = computed(() => notificationList.filter((item) => item.enabled).length);
@@ -435,6 +390,7 @@ export function useProfile() {
     profileForm.email = String(info.email || '');
     profileForm.nickname = String(info.nickname || info.name || '');
     profileForm.phone = String(info.phone || '');
+    profileForm.qq = String(info.qq || '');
     profileForm.cash_balance = String(info.cash_balance || '0.00');
     profileForm.createdAt = String(info.created_at || '');
     profileForm.is_verified = Number(info.is_verified || 0);
@@ -468,11 +424,16 @@ export function useProfile() {
       MessagePlugin.warning('用户名最多 50 个字符');
       return;
     }
+    const trimmedQq = (profileForm.qq || '').trim();
+    if (trimmedQq && !/^\d{5,20}$/.test(trimmedQq)) {
+      MessagePlugin.warning('QQ 号需为 5-20 位数字');
+      return;
+    }
     profileLoading.value = true;
     try {
-      await clientAuthApi.updateProfile({ nickname: trimmed });
+      await clientAuthApi.updateProfile({ nickname: trimmed, qq: trimmedQq });
       await loadProfile();
-      MessagePlugin.success('用户名修改成功');
+      MessagePlugin.success('资料修改成功');
     } catch (error: unknown) {
       MessagePlugin.error(getErrorMessage(error, '资料保存失败'));
     } finally {
@@ -538,7 +499,20 @@ export function useProfile() {
   }
 
   onMounted(() => {
-    void Promise.all([loadProfile(), loadNotificationPreferences()]);
+    // 已有数据才复用。若共享数据为空（例如会话被清理过），照常重新拉取，
+    // 避免页面停在空状态；复用时只用内存里的用户信息同步展示字段，
+    // 不发网络请求，也不会覆盖消息提醒里尚未保存的开关改动。
+    if (isProfileDataLoaded() && profileForm.id) {
+      if (userStore.info) {
+        hydrateProfile(userStore.info as ClientUserInfo);
+      }
+      return;
+    }
+    setProfileDataLoaded(true);
+    void Promise.all([loadProfile(), loadNotificationPreferences()]).catch(() => {
+      // 拉取失败时复位标记，下次进入页面会自动重试，不会停在空状态
+      setProfileDataLoaded(false);
+    });
   });
 
   onBeforeUnmount(() => {

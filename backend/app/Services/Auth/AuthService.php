@@ -428,11 +428,14 @@ class AuthService
     {
         $nickname = TextSanitizer::clean((string) ($data['nickname'] ?? ''));
         $normalizedNickname = $nickname !== '' ? $nickname : null;
+        $qq = isset($data['qq']) ? TextSanitizer::clean((string) $data['qq']) : null;
+        $normalizedQq = $qq !== '' ? $qq : null;
 
-        return DB::transaction(function () use ($user, $normalizedNickname, $context) {
+        return DB::transaction(function () use ($user, $normalizedNickname, $normalizedQq, $context) {
             $lockedUser = User::query()->lockForUpdate()->findOrFail((int) $user->id);
             $lockedUser->update([
                 'nickname' => $normalizedNickname,
+                'qq' => $normalizedQq,
             ]);
 
             $this->operationLogService->write(
@@ -443,6 +446,7 @@ class AuthService
                 targetId: (int) $lockedUser->id,
                 detail: $this->buildClientAuthLogDetail([
                     'nickname' => $normalizedNickname ?? '',
+                    'qq' => $normalizedQq ?? '',
                 ], $context),
                 ipAddress: $this->resolveContextIpAddress($context),
             );

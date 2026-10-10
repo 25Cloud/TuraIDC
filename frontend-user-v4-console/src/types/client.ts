@@ -85,6 +85,8 @@ export interface ClientUserInfo {
   last_login_ip?: string;
   verified_at?: string;
   created_at?: string;
+  qq?: string;
+  avatar?: string;
   roles?: string[];
   [key: string]: unknown;
 }

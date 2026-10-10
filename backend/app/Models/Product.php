@@ -28,6 +28,13 @@ class Product extends Model
     public const CONSOLE_TEMPLATE_CDN = 'cdn';
 
     /**
+     * 虚拟主机专用控制台：主机档案 / 空间与站点 / 面板登录 / 账单。
+     * 与 CDN 同为面板型产品 —— 没有 CPU / 内存，也没有电源、开关机、重装、
+     * 安全组、VNC 这些云主机语义，操作入口全部由上游自定义区域承载。
+     */
+    public const CONSOLE_TEMPLATE_VIRTUALHOST = 'virtualhost';
+
+    /**
      * 全部合法的控制台模板值。
      *
      * 归一化统一走这里，避免各处硬编码 if/else 漏掉某个模板
@@ -37,6 +44,7 @@ class Product extends Model
         self::CONSOLE_TEMPLATE_COMPUTE,
         self::CONSOLE_TEMPLATE_PORT_MAPPING,
         self::CONSOLE_TEMPLATE_CDN,
+        self::CONSOLE_TEMPLATE_VIRTUALHOST,
     ];
 
     /**

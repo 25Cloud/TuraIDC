@@ -737,10 +737,33 @@
 
 .desktop-machine-table {
   width: 100%;
+  /* 允许横向滚动，避免窄屏（尤其手机/平板）下右侧列被裁切且无横向滑动 */
+  min-width: 0;
   border: 1px solid $divider-color;
   border-bottom: 0;
   background: #fff;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+
+  /* 电脑端横向滚动条常驻可见，提示右侧还有内容可滑动查看 */
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba($color-primary, 0.06);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba($color-primary, 0.35);
+    border-radius: 4px;
+
+    &:hover {
+      background: rgba($color-primary, 0.55);
+    }
+  }
 }
 
 .desktop-machine-table-head,
@@ -752,6 +775,7 @@
       minmax(180px, 1.1fr)
   );
   align-items: center;
+  /* 表头与各行共用同一最小宽度，保证列对齐；超出容器时由外层横向滚动查看 */
   min-width: var(--machine-spec-min-width, 900px);
 }
 
@@ -884,10 +908,10 @@
 }
 
 .machine-spec-processor-text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* 处理器型号不换行、不截断，列宽按内容自适应，超出时整表横向滑动 */
   white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .cpu-brand-badge {
@@ -1640,6 +1664,7 @@
 .allocation-footer-summary {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: 4px;
   min-width: 0;
 }
@@ -1714,7 +1739,12 @@
   font-size: 12px;
   color: #b7bcc5;
   line-height: 1.2;
-  white-space: nowrap;
+  /* 代理折扣文案可能较长（如「代理折扣（顶级代理）7.5折」），窄屏一行放不下。
+     之前是 nowrap，作为 min-width:0 的 flex 项会直接溢出被裁掉；
+     改为可换行，overflow-wrap 保证长代理组名也能断开，不会顶出容器。 */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .allocation-footer-meta {

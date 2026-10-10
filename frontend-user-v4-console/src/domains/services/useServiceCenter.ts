@@ -176,6 +176,53 @@ export function resolveListCdnSpecText(item: ServiceLike) {
   };
 }
 
+/** 虚拟主机（web_hosting）在列表接口里的判定口径，与控制台的 isVirtualHostConsole 对齐 */
+const VIRTUAL_HOST_TYPES = new Set(['virtualhost', 'virtual_host', 'web_hosting', 'hosting']);
+
+/**
+ * 列表项是否虚拟主机。
+ *
+ * 与控制台里的 isVirtualHostConsole() 同款判定，但吃的是列表项（ServiceInstance）而非详情，
+ * 所以不读 machine_category —— 列表接口不下发该字段。
+ */
+export function isVirtualHostListItem(item: ServiceLike) {
+  const template = String(item?.console_template || item?.product?.console_template || '')
+    .trim()
+    .toLowerCase();
+  if (VIRTUAL_HOST_TYPES.has(template)) return true;
+  if (template === 'cdn' || template === 'compute' || template === 'port_mapping') return false;
+
+  const productType = String(item?.product_type || item?.product?.type || '')
+    .trim()
+    .toLowerCase();
+  return VIRTUAL_HOST_TYPES.has(productType);
+}
+
+/**
+ * 虚拟主机卡片摘要行：网页空间 / 数据库 / 月流量 / 绑定域名，
+ * 替代云主机的 CPU / 内存 / 带宽 —— 虚拟主机没有 CPU 与内存的概念。
+ */
+export function resolveListVirtualHostSpecText(item: ServiceLike) {
+  return {
+    webSpace: findListSpecValue(item, ['WEB空间', '网页空间', '网站空间', '磁盘'], ''),
+    dbSpace: findListSpecValue(item, ['数据库空间', '数据库', 'MySQL'], ''),
+    traffic: findListSpecValue(item, ['流量限制', '月流量', '流量'], ''),
+    domains: findListSpecValue(item, ['绑定域名数', '域名数', '域名绑定'], ''),
+  };
+}
+
+/**
+ * 虚拟主机卡片右下角的主机账号。
+ *
+ * 虚拟主机没有独立公网 IP（虚拟主机交付的是主机名/面板账号），
+ * 所以这里展示可点击复制的账号，而不是云主机的公网 IP。
+ */
+export function resolveListHostAccountText(item: ServiceLike) {
+  const connection = (item as { connection?: { hostname?: unknown } } | null)?.connection;
+  const account = String(item?.domain || connection?.hostname || item?.name || '').trim();
+  return account || '--';
+}
+
 /**
  * CDN 卡片右下角的流量文案。
  *

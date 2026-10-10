@@ -179,9 +179,17 @@ function updateScales(col) {
 }
 
 function setActive(col, item) {
-  getCachedItems(col).forEach((el) =>
-    el.classList.toggle("is-active", el === item),
-  );
+  if (!item) return;
+  // 单一数据源：只更新响应式状态，高亮交给模板的 :class 统一渲染。
+  // 之前这里同时手动 classList.toggle("is-active")，会和 Vue 的 class 绑定
+  // 互相覆盖：init 回退选中首项时未同步 tempXxxId —— 一旦 Vue 重渲染就把
+  // 高亮抹掉（表现为"可用区没选中"），而手动加的 class 又会残留在别的项上。
+  const id = Number(item.dataset.id);
+  if (col === regionCol.value) {
+    tempGroupId.value = id;
+  } else if (col === zoneCol.value) {
+    tempZoneId.value = id;
+  }
   centerItem(item);
 }
 
@@ -235,18 +243,12 @@ function handleConfirm() {
     const regionItem = regionCol.value ? findClosest(regionCol.value) : null;
     if (regionItem) {
       tempGroupId.value = Number(regionItem.dataset.id);
-      cachedRegionItems.forEach((el) =>
-        el.classList.toggle("is-active", el === regionItem),
-      );
       updateScales(regionCol.value);
     }
 
     const zoneItem = zoneCol.value ? findClosest(zoneCol.value) : null;
     if (zoneItem) {
       tempZoneId.value = Number(zoneItem.dataset.id);
-      cachedZoneItems.forEach((el) =>
-        el.classList.toggle("is-active", el === zoneItem),
-      );
       updateScales(zoneCol.value);
     }
   }
@@ -378,6 +380,11 @@ watch(
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
+  /* 必须定位：否则 mrp-item 的 offsetParent 会变成 .mrp-picker，
+     offsetTop 里会多算 22px 的表头高度，导致 centerItem/updateScales
+     的滚动目标整体偏下 22px，scroll-snap 再吸附到下一项 —— 选中项
+     就会上移一行"飞出"中间选择框。定位后 offsetTop 才是列内容坐标。 */
+  position: relative;
 }
 
 .mrp-col::-webkit-scrollbar {

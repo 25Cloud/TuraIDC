@@ -335,7 +335,24 @@ class AuthController extends Controller
             'last_login_ip' => (string) ($user->last_login_ip ?? ''),
             'verified_at' => $user->verified_at?->format('Y-m-d H:i:s'),
             'created_at' => $user->created_at?->format('Y-m-d H:i:s'),
+            'qq' => (string) ($user->qq ?? ''),
+            'avatar' => $this->resolveQqAvatar((string) ($user->qq ?? '')),
         ]);
+    }
+
+    /**
+     * 根据 QQ 号拼接 QQ 官方公开头像接口地址（无需鉴权，浏览器直接加载）。
+     * 未填写 QQ 时返回空串，前端据此回退到首字母占位头像。
+     * 接口文档参考：https://q1.qlogo.cn/g?b=qq&nk=<QQ>&s=100 （s 为尺寸档位 100/640 等）
+     */
+    private function resolveQqAvatar(string $qq): string
+    {
+        $qq = trim($qq);
+        if ($qq === '' || !ctype_digit($qq)) {
+            return '';
+        }
+
+        return 'https://q1.qlogo.cn/g?b=qq&nk=' . $qq . '&s=100';
     }
 
     /**
@@ -361,6 +378,7 @@ class AuthController extends Controller
         return $this->success([
             'nickname' => $freshUser?->nickname,
             'display_name' => $freshUser?->display_name,
+            'qq' => (string) ($freshUser?->qq ?? ''),
         ], '资料更新成功');
     }
 
