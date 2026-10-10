@@ -48,7 +48,9 @@ router.beforeEach(async (to, _from, next) => {
   const permissionStore = getPermissionStore();
   await permissionStore.initRoutes();
 
-  const token = getClientToken();
+  // 优先读取持久化 Cookie；同一次 SPA 会话内刚登录成功时 Cookie 可能尚未就绪，
+  // 兼顾客服端内存里的 token，避免软跳转被误弹回登录页。硬刷新时内存 token 丢失，回退到 Cookie。
+  const token = getClientToken() || useUserStore().token;
   const allowGuestWithToken = to.name === 'ClientLoginAs';
 
   if (to.meta.guest) {

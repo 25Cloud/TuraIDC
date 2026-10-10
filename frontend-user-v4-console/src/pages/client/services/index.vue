@@ -140,6 +140,18 @@
                       </span>
                       <span v-if="!hasCdnSpec(item)" class="service-spec-empty">CDN 加速实例</span>
                     </div>
+                    <div v-else-if="isVirtualHostCard(item)" class="service-spec-line">
+                      <span v-if="resolveVirtualHostSpec(item).webSpace">
+                        网页空间 {{ resolveVirtualHostSpec(item).webSpace }}
+                      </span>
+                      <span v-if="resolveVirtualHostSpec(item).dbSpace">
+                        数据库 {{ resolveVirtualHostSpec(item).dbSpace }}
+                      </span>
+                      <span v-if="resolveVirtualHostSpec(item).traffic">
+                        月流量 {{ resolveVirtualHostSpec(item).traffic }}
+                      </span>
+                      <span v-if="!hasVirtualHostSpec(item)" class="service-spec-empty">虚拟主机实例</span>
+                    </div>
                     <div v-else class="service-spec-line">
                       <span>CPU {{ findListSpecValue(item, ['CPU', '核心']) }}</span>
                       <span>内存 {{ findListSpecValue(item, ['内存', 'RAM']) }}</span>
@@ -169,6 +181,19 @@
                       <span class="service-ip-button is-static">
                         {{ resolveListTrafficText(item) || '--' }}
                       </span>
+                    </div>
+
+                    <!-- 虚拟主机没有独立公网 IP，右下角展示可复制的主机账号 -->
+                    <div v-else-if="isVirtualHostCard(item)" class="service-ip-line">
+                      <span class="service-ip-label">主机账号</span>
+                      <button
+                        type="button"
+                        class="service-ip-button"
+                        :title="`点击复制 ${resolveListHostAccountText(item)}`"
+                        @click="copyText(resolveListHostAccountText(item))"
+                      >
+                        {{ resolveListHostAccountText(item) }}
+                      </button>
                     </div>
 
                     <div v-else class="service-ip-line">
@@ -233,6 +258,15 @@
                   <span v-if="resolveCdnSpec(row).region">节点区域 {{ resolveCdnSpec(row).region }}</span>
                   <span v-if="!hasCdnSpec(row)" class="service-spec-empty">CDN 加速实例</span>
                 </div>
+                <div v-else-if="isVirtualHostCard(row)" class="service-table-specs">
+                  <span v-if="resolveVirtualHostSpec(row).webSpace">
+                    网页空间 {{ resolveVirtualHostSpec(row).webSpace }}
+                  </span>
+                  <span v-if="resolveVirtualHostSpec(row).traffic">
+                    月流量 {{ resolveVirtualHostSpec(row).traffic }}
+                  </span>
+                  <span v-if="!hasVirtualHostSpec(row)" class="service-spec-empty">虚拟主机实例</span>
+                </div>
                 <div v-else class="service-table-specs">
                   <span>CPU {{ findListSpecValue(row, ['CPU', '核心']) }}</span>
                   <span>内存 {{ findListSpecValue(row, ['内存', 'RAM']) }}</span>
@@ -253,6 +287,14 @@
                 <span v-if="isCdnCard(row)" class="service-table-traffic">
                   {{ resolveListTrafficText(row) || '--' }}
                 </span>
+                <t-button
+                  v-else-if="isVirtualHostCard(row)"
+                  variant="text"
+                  size="small"
+                  @click="copyText(resolveListHostAccountText(row))"
+                >
+                  {{ resolveListHostAccountText(row) }}
+                </t-button>
                 <t-button
                   v-else
                   variant="text"
@@ -387,9 +429,12 @@ import {
   isCdnListItem,
   isExpiringSoon,
   isProvisioningService,
+  isVirtualHostListItem,
   resolveListBandwidthText,
   resolveListCdnSpecText,
+  resolveListHostAccountText,
   resolveListTrafficText,
+  resolveListVirtualHostSpecText,
   resolveRuntimeStatusLabel,
   resolveServiceMark,
   resolveServiceName,
@@ -454,9 +499,22 @@ function hasCdnSpec(item: Record<string, any>) {
 }
 
 function shouldShowServiceOsIcon(item: Record<string, any>) {
-  // CDN 没有操作系统概念，上游可能回填宿主OS，一律不显示 OS 图标
-  if (isCdnListItem(item)) return false;
+  // CDN / 虚拟主机没有操作系统概念，上游可能回填宿主OS，一律不显示 OS 图标
+  if (isCdnListItem(item) || isVirtualHostListItem(item)) return false;
   return Boolean(resolveServiceOsIcon(item)) && !failedServiceOsIconKeys.value.has(resolveServiceIconKey(item));
+}
+
+function isVirtualHostCard(item: Record<string, any>) {
+  return isVirtualHostListItem(item);
+}
+
+function resolveVirtualHostSpec(item: Record<string, any>) {
+  return resolveListVirtualHostSpecText(item);
+}
+
+function hasVirtualHostSpec(item: Record<string, any>) {
+  const spec = resolveListVirtualHostSpecText(item);
+  return Boolean(spec.webSpace || spec.dbSpace || spec.traffic || spec.domains);
 }
 
 function markServiceOsIconFailed(item: Record<string, any>) {

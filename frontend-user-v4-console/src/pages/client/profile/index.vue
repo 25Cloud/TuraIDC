@@ -1,51 +1,34 @@
 <template>
   <section class="profile-page">
     <header class="client-page-heading">
-      <h1>个人资料</h1>
+      <h1>{{ pageTitle }}</h1>
     </header>
-
-    <nav class="profile-tabs-mobile" aria-label="账户中心">
-      <button
-        v-for="tab in profileTabs"
-        :key="tab.value"
-        type="button"
-        class="profile-tabs-mobile__item"
-        :class="{ 'is-active': activeTab === tab.value }"
-        @click="handleProfileTabChange(tab.value)"
-      >
-        {{ tab.label }}
-      </button>
-    </nav>
-
-    <aside class="profile-nav">
-      <t-card class="profile-card" :bordered="false">
-        <template #title>账户中心</template>
-        <t-menu :value="activeTab" theme="light" @change="handleProfileTabChange">
-          <t-menu-item value="profile">个人资料</t-menu-item>
-          <t-menu-item value="security">账户安全</t-menu-item>
-          <t-menu-item value="notification">消息提醒</t-menu-item>
-          <t-menu-item value="display">显示设置</t-menu-item>
-        </t-menu>
-      </t-card>
-    </aside>
 
     <main class="profile-main">
       <t-card v-if="activeTab === 'profile'" class="profile-card" :bordered="false">
-        <template #title>个人资料</template>
         <template #actions><t-tag variant="light">基础信息</t-tag></template>
         <t-form label-align="left" label-width="6rem" class="profile-form">
           <t-form-item label="账户ID">
             <div class="profile-id-row">
               <t-input :value="profileForm.id" readonly />
-              <t-button variant="outline" shape="square" @click="copyText(profileForm.id)">
+              <button
+                type="button"
+                class="profile-copy-btn"
+                title="复制账户ID"
+                aria-label="复制账户ID"
+                @click="copyText(profileForm.id)"
+              >
                 <copy-icon />
-              </t-button>
+              </button>
             </div>
           </t-form-item>
           <t-form-item label="注册时间"><t-input :value="profileForm.createdAt || '--'" readonly /></t-form-item>
           <t-form-item label="用户名"
             ><t-input v-model="profileForm.nickname" maxlength="50" placeholder="请输入用户名"
           /></t-form-item>
+          <t-form-item label="QQ 号">
+            <t-input v-model="profileForm.qq" maxlength="20" placeholder="填写后将以 QQ 头像作为账户头像" />
+          </t-form-item>
           <t-form-item label="账户余额"><t-input :value="balanceText" readonly /></t-form-item>
           <t-form-item label="登录邮箱"><t-input :value="profileForm.email || '--'" readonly /></t-form-item>
           <t-form-item label="账户状态">
@@ -65,7 +48,6 @@
       </t-card>
 
       <t-card v-else-if="activeTab === 'security'" class="profile-card" :bordered="false">
-        <template #title>账户安全</template>
         <div class="security-list">
           <article v-for="item in securityItems" :key="item.key" class="security-item">
             <div>
@@ -81,7 +63,6 @@
       </t-card>
 
       <t-card v-else-if="activeTab === 'notification'" class="profile-card" :bordered="false">
-        <template #title>消息提醒</template>
         <template #actions
           ><t-tag variant="light">已开启 {{ enabledNotificationCount }}</t-tag></template
         >
@@ -99,22 +80,6 @@
           <t-button theme="primary" :loading="notificationLoading" @click="saveNotificationPreferences"
             >保存设置</t-button
           >
-        </div>
-      </t-card>
-
-      <t-card v-else-if="activeTab === 'display'" class="profile-card" :bordered="false">
-        <template #title>显示设置</template>
-        <template #actions><t-tag variant="light">主题外观</t-tag></template>
-        <div class="display-options">
-          <div class="display-option-head">
-            <strong>主题模式</strong>
-            <p>选择明亮、深色或跟随系统的外观主题；选择会保存在本机。</p>
-          </div>
-          <t-radio-group v-model="themeMode" variant="default-filled" @change="handleThemeModeChange">
-            <t-radio-button value="light">明亮</t-radio-button>
-            <t-radio-button value="dark">深色</t-radio-button>
-            <t-radio-button value="auto">跟随系统</t-radio-button>
-          </t-radio-group>
         </div>
       </t-card>
     </main>
@@ -208,31 +173,23 @@
 </template>
 <script setup lang="ts">
 import { CopyIcon } from 'tdesign-icons-vue-next';
-import { ref } from 'vue';
+import { computed, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
 import { useProfile } from '@/domains/account/useProfile';
-import { getSettingStore, useSettingStore } from '@/store';
 
-const settingStore = useSettingStore();
-const themeMode = ref<'light' | 'dark' | 'auto'>(
-  settingStore.mode === 'auto' ? 'auto' : (settingStore.mode as 'light' | 'dark') || 'light',
-);
-
-const handleThemeModeChange = (mode: unknown) => {
-  const next = (mode === 'auto' ? 'auto' : mode === 'dark' ? 'dark' : 'light') as 'light' | 'dark' | 'auto';
-  const s = getSettingStore();
-  if (s.mode !== next) {
-    s.mode = next;
-  }
-  s.changeMode(next);
+// 三个路由共用本组件，按路由决定展示哪个分区
+const SECTION_BY_ROUTE: Record<string, 'profile' | 'security' | 'notification'> = {
+  ClientProfile: 'profile',
+  ClientSecurity: 'security',
+  ClientNotification: 'notification',
 };
 
-const profileTabs = [
-  { value: 'profile', label: '个人资料' },
-  { value: 'security', label: '账户安全' },
-  { value: 'notification', label: '消息提醒' },
-  { value: 'display', label: '显示设置' },
-] as const;
+const SECTION_TITLE: Record<string, string> = {
+  profile: '个人资料',
+  security: '账户安全',
+  notification: '消息提醒',
+};
 
 const {
   activeTab,
@@ -268,11 +225,28 @@ const {
   saveNotificationPreferences,
   handleProfileTabChange,
 } = useProfile();
+
+const route = useRoute();
+
+// 三个路由复用同一组件实例，路由变化时同步当前分区
+watch(
+  () => route.name,
+  (name) => {
+    const section = SECTION_BY_ROUTE[String(name)];
+    if (section) {
+      handleProfileTabChange(section);
+    }
+  },
+  { immediate: true },
+);
+
+const pageTitle = computed(() => SECTION_TITLE[activeTab.value] || '账户设置');
 </script>
 <style scoped lang="less">
 .profile-page {
   display: grid;
-  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+  // 分区已拆分为左侧「账户设置」菜单项，页内不再需要二级导航
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--td-comp-margin-m);
   // padding 由 Starter 布局层统一提供
 }
@@ -294,12 +268,6 @@ const {
   box-shadow: var(--td-shadow-1);
 }
 
-.profile-nav {
-  position: sticky;
-  top: var(--td-comp-margin-m);
-  align-self: start;
-}
-
 .profile-main {
   min-width: 0;
 }
@@ -318,6 +286,49 @@ const {
   gap: var(--td-comp-margin-s);
   align-items: center;
   width: 100%;
+
+  :deep(.t-input) {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// 复制账户ID：原生button，尺寸完全由本样式控制。
+// 六个尺寸属性全部锁成 32px（= 左侧输入框 .t-input 的高度），结构上就是正方形；
+// 必须写全 min-/max-，因为 style/reset.less 在移动端(width<=768px)会给所有
+// button 强制 min-height/min-width:40px 的触控区，这里要压住它。
+.profile-copy-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0;
+  color: var(--td-text-color-primary);
+  cursor: pointer;
+  background: var(--td-bg-color-specialcomponent);
+  border: thin solid var(--td-border-level-2-color);
+  border-radius: var(--td-radius-default);
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background-color 0.2s;
+
+  &:hover {
+    color: var(--td-brand-color);
+    border-color: var(--td-brand-color);
+  }
+
+  &:active {
+    color: var(--td-brand-color);
+    background: var(--td-brand-color-light);
+  }
 }
 
 .bind-code-row {
@@ -348,30 +359,6 @@ const {
   margin-bottom: var(--td-comp-margin-s);
   font-size: 0.8125rem;
   color: var(--td-text-color-secondary);
-}
-
-.profile-tabs-mobile {
-  display: none;
-}
-
-.display-options {
-  max-width: 46rem;
-
-  .display-option-head {
-    margin-bottom: var(--td-comp-margin-m);
-
-    strong {
-      color: var(--td-text-color-primary);
-      font: var(--td-font-title-small);
-    }
-
-    p {
-      margin: var(--td-comp-margin-xs) 0 0;
-      color: var(--td-text-color-secondary);
-      font-size: 0.8125rem;
-      line-height: 1.6;
-    }
-  }
 }
 
 .profile-footer {
@@ -444,48 +431,6 @@ const {
     }
   }
 
-  // 手机端隐藏桌面侧栏，使用顶部横向标签
-  .profile-nav {
-    display: none;
-  }
-
-  .profile-tabs-mobile {
-    display: flex;
-    gap: var(--td-comp-margin-xxs);
-    padding: var(--td-comp-paddingTB-xxs) var(--td-comp-paddingLR-xxs);
-    background: var(--td-bg-color-container);
-    border: thin solid var(--td-border-color);
-    border-radius: var(--td-radius-medium);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
-
-    &__item {
-      flex: 1 0 auto;
-      padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-m);
-      color: var(--td-text-color-primary);
-      background: transparent;
-      border: none;
-      border-radius: var(--td-radius-default);
-      font: var(--td-font-body-medium);
-      white-space: nowrap;
-      cursor: pointer;
-      transition:
-        background 0.2s,
-        color 0.2s;
-
-      &.is-active {
-        color: var(--td-brand-color);
-        background: var(--td-brand-color-light);
-        font-weight: 600;
-      }
-    }
-  }
-
   // 表单标签顶部对齐，输入框占满整行
   .profile-form {
     :deep(.t-form__label) {
@@ -501,27 +446,35 @@ const {
     }
   }
 
-  .profile-id-row {
+  // 账户安全 / 消息提醒在手机端保持左右分栏，操作按钮不再掉到下一行
+  .security-item,
+  .notification-item {
     flex-direction: row;
-    align-items: stretch;
-    gap: var(--td-comp-margin-xs);
+    align-items: center;
+    gap: var(--td-comp-margin-s);
 
-    :deep(.t-input) {
+    > :first-child {
       flex: 1;
       min-width: 0;
     }
 
-    :deep(.t-button) {
+    :deep(.t-button),
+    :deep(.t-switch) {
       flex-shrink: 0;
-      padding: 0 var(--td-comp-paddingLR-s);
     }
   }
 
-  .profile-footer,
-  .security-item,
-  .notification-item {
-    align-items: flex-start;
+  // 底部操作区：说明文字在上，按钮整行铺满，并留出手机安全区避免被Home 条裁切
+  .profile-footer {
     flex-direction: column;
+    align-items: stretch;
+    gap: var(--td-comp-margin-s);
+    padding-bottom: calc(env(safe-area-inset-bottom) + var(--td-comp-margin-xs));
+
+    :deep(.t-button) {
+      width: 100%;
+      min-width: 0;
+    }
   }
 
   .profile-footer {

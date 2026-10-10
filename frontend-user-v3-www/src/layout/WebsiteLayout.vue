@@ -226,7 +226,14 @@
               :aria-expanded="userMenuOpen"
               @click="toggleUserMenu"
             >
-              <span class="user-avatar-initial">{{ userAvatarInitial }}</span>
+              <img
+                v-if="userAvatarUrl"
+                :src="userAvatarUrl"
+                class="user-avatar-img"
+                alt=""
+                referrerpolicy="no-referrer"
+              />
+              <span v-else class="user-avatar-initial">{{ userAvatarInitial }}</span>
               <span class="header-user-name">{{ userDisplayName }}</span>
               <el-icon class="header-user-arrow"><ArrowDown /></el-icon>
             </button>
@@ -297,7 +304,14 @@
             :aria-expanded="mobileUserMenuOpen"
             @click="toggleMobileUserMenu"
           >
-            <span class="user-avatar-initial">{{ userAvatarInitial }}</span>
+            <img
+              v-if="userAvatarUrl"
+              :src="userAvatarUrl"
+              class="user-avatar-img"
+              alt=""
+              referrerpolicy="no-referrer"
+            />
+            <span v-else class="user-avatar-initial">{{ userAvatarInitial }}</span>
           </button>
           <transition name="user-menu-fade">
             <div v-if="mobileUserMenuOpen" class="user-menu-panel" role="menu">
@@ -842,6 +856,12 @@ const userAvatarInitial = computed(() => {
     ""
   ).trim();
   return name ? name.charAt(0).toUpperCase() : "U";
+});
+
+const userAvatarUrl = computed(() => {
+  if (!userStore.isLoggedIn) return "";
+  const info = userStore.info;
+  return (info?.avatar || "").trim();
 });
 
 const userDisplayName = computed(() => {
@@ -1500,6 +1520,14 @@ onBeforeUnmount(() => {
     line-height: 1;
   }
 
+  .user-avatar-img {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+  }
+
   .header-user-name {
     font-size: 13px;
     font-weight: 500;
@@ -1656,6 +1684,14 @@ onBeforeUnmount(() => {
   font-weight: 600;
   line-height: 1;
   letter-spacing: 0;
+}
+
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
 }
 
 // 头部浮在首页 Hero 之上时整条 header 没有任何底色，

@@ -16,7 +16,7 @@
         <span v-if="!compact" class="meta-item meta-ip"
           >{{ primaryConnectionLabel }}：{{ primaryConnectionValues[0] || '--' }}</span
         >
-        <span v-if="compact" class="meta-item meta-region">加速区域：{{ serviceRegion }}</span>
+        <span v-if="compact" class="meta-item meta-region">{{ compactRegionLabel }}：{{ serviceRegion }}</span>
         <div class="console-auto-renew-line">
           <span>自动续费</span>
           <t-switch
@@ -143,11 +143,16 @@ import { computed, ref } from 'vue';
 import { useServiceConsoleContext } from './context';
 
 /**
- * compact：CDN 专用模式。
+ * compact：面板型控制台模式（CDN / 虚拟主机共用）。
  * 头部剔除云主机语义（公网/内网 IP、开关机、重启、重装系统、重置密码、救援模式），
  * 只留状态同步与续费。
+ *
+ * compactRegionLabel：紧凑模式下的区域字段名。CDN 说「加速区域」，
+ * 虚拟主机说「机房区域」，由调用方按控制台类别传入。
  */
-defineProps<{ compact?: boolean }>();
+withDefaults(defineProps<{ compact?: boolean; compactRegionLabel?: string }>(), {
+  compactRegionLabel: '加速区域',
+});
 
 const {
   detail,

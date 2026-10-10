@@ -10,6 +10,7 @@ class UpdateProfileRequest extends ClientFormRequest
     {
         return [
             'nickname' => 'nullable|string|max:50',
+            'qq' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+$/'],
         ];
     }
 }

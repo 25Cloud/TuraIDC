@@ -3,7 +3,11 @@
     <console-breadcrumb />
 
     <loading-state :loading="detailLoading" text="正在加载实例控制台">
-      <console-header :compact="isCdn" />
+      <!-- 面板型控制台（CDN / 虚拟主机）没有电源/重装等操作按钮，头部用紧凑版 -->
+      <console-header
+        :compact="consoleKind !== 'generic'"
+        :compact-region-label="consoleKind === 'virtualhost' ? '机房区域' : '加速区域'"
+      />
       <console-alerts />
 
       <div class="console-workbench">
@@ -30,7 +34,10 @@
 import LoadingState from '@shared/user-v3/components/LoadingState.vue';
 import { computed } from 'vue';
 
-import { isCdnConsole } from '@/domains/services/console/useConsoleCore';
+import {
+  isCdnConsole,
+  isVirtualHostConsole,
+} from '@/domains/services/console/useConsoleCore';
 import { useServiceConsole } from '@/domains/services/useServiceConsole';
 
 import ConsoleAlerts from './components/ConsoleAlerts.vue';
@@ -42,29 +49,53 @@ import AreaTab from './components/tabs/AreaTab.vue';
 import { resolveCdnNavItems, resolveCdnTabComponent } from './components/cdn/registry';
 import { provideServiceConsoleContext } from './components/context';
 import { resolveConsoleNavItems, resolveConsoleTabComponent } from './components/registry';
+import {
+  resolveVirtualHostNavItems,
+  resolveVirtualHostTabComponent,
+} from './components/virtualhost/registry';
 
 const serviceConsole = useServiceConsole();
 provideServiceConsoleContext(serviceConsole);
 
 const { detail, detailLoading, activeTab, availableTabs, consoleAreaLabels } = serviceConsole;
 
-/** 产品在后台把「控制台面板」选成 CDN 时走专属控制台，其余保持通用控制台 */
-const isCdn = computed(() => isCdnConsole(detail.value));
+/**
+ * 控制台类别：CDN 与虚拟主机各有专属控制台，其余保持通用控制台。
+ * 判定顺序：CDN 优先，避免历史数据同时命中两类。
+ */
+const consoleKind = computed<'cdn' | 'virtualhost' | 'generic'>(() => {
+  const current = detail.value;
+  if (isCdnConsole(current)) return 'cdn';
+  if (isVirtualHostConsole(current)) return 'virtualhost';
+  return 'generic';
+});
 
 const consoleNavItems = computed(() =>
   resolveConsoleNavItems(availableTabs.value, consoleAreaLabels.value),
 );
 const cdnNavItems = computed(() => resolveCdnNavItems(availableTabs.value, consoleAreaLabels.value));
+const virtualHostNavItems = computed(() =>
+  resolveVirtualHostNavItems(availableTabs.value, consoleAreaLabels.value),
+);
 
-const navItems = computed(() => (isCdn.value ? cdnNavItems.value : consoleNavItems.value));
+const navItems = computed(() => {
+  if (consoleKind.value === 'cdn') return cdnNavItems.value;
+  if (consoleKind.value === 'virtualhost') return virtualHostNavItems.value;
+  return consoleNavItems.value;
+});
 
 function resolveTabComponent(tabKey: string) {
-  return isCdn.value ? resolveCdnTabComponent(tabKey) : resolveConsoleTabComponent(tabKey);
+  if (consoleKind.value === 'cdn') return resolveCdnTabComponent(tabKey);
+  if (consoleKind.value === 'virtualhost') return resolveVirtualHostTabComponent(tabKey);
+  return resolveConsoleTabComponent(tabKey);
 }
 
 const activeTabComponent = computed(() => resolveTabComponent(activeTab.value));
 
-/** 当前 tab 是否落在走 iframe 的自定义区域上（CDN 的「套餐与面板」也在这里面） */
+/**
+ * 当前 tab 是否落在走 iframe 的自定义区域上
+ * （CDN 的「套餐与面板」、虚拟主机的「主机与面板」都在这里面）
+ */
 const isAreaTab = computed(() => activeTabComponent.value === AreaTab);
 
 /**

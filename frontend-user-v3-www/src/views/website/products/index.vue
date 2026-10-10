@@ -2518,19 +2518,55 @@ const showProcessorColumns = computed(() =>
   ),
 );
 
+// 估算文本像素宽度：用于按最长 CPU 型号算出统一的处理器列宽，
+// 保证表头与各行列宽一致（不错位）且能完整展示型号
+function measureTextWidth(text, font = '13px -apple-system, "Segoe UI", sans-serif') {
+  const value = String(text || '');
+  if (!value) return 0;
+  if (typeof document === 'undefined') return value.length * 7;
+  if (!measureTextWidth.ctx) {
+    measureTextWidth.ctx = document.createElement('canvas').getContext('2d');
+  }
+  const ctx = measureTextWidth.ctx;
+  if (!ctx) return value.length * 7;
+  ctx.font = font;
+  return ctx.measureText(value).width;
+}
+
 const machineSpecGridStyle = computed(() => {
+  // 处理器列使用统一固定宽度（px），由最长 CPU 型号决定：
+  // 表头与所有行共用同一列宽不会错位，型号完整不截断，超出容器时整表横向滑动查看
+  let processorColPx = 0;
+  if (showProcessorColumns.value) {
+    let maxTextWidth = 0;
+    for (const row of desktopMachineSpecRows.value) {
+      const label = String(row.processorLabel || '').trim();
+      if (label) {
+        maxTextWidth = Math.max(maxTextWidth, measureTextWidth(label));
+      }
+    }
+    // 预留品牌徽标宽度、列间距(gap)与单元格左右内边距
+    processorColPx = Math.max(220, Math.ceil(maxTextWidth) + 100);
+  }
+
   const columns = ["minmax(180px, 1.6fr)"];
+  let minWidth = 180;
   if (showCpuMemoryColumns.value) {
     columns.push("minmax(88px, 1fr)", "minmax(88px, 1fr)");
+    minWidth += 176;
   }
   if (showProcessorColumns.value) {
-    columns.push("minmax(120px, 1fr)", "minmax(120px, 1fr)");
+    // minmax 保证列宽至少能放下最长 CPU 型号（不截断），1.2fr 让它在宽屏下照常伸缩
+    columns.push(`minmax(${processorColPx}px, 1.2fr)`, "minmax(120px, 1fr)");
+    minWidth += processorColPx + 120;
   }
   for (let index = 0; index < specHighlightColumns.value.length; index++) {
     columns.push("minmax(92px, 1fr)");
+    minWidth += 92;
   }
   columns.push("minmax(150px, 1.1fr)");
-  const minWidth = 180 + (columns.length - 2) * 110 + 150;
+  minWidth += 150;
+
   return {
     "--machine-spec-cols": columns.join(" "),
     "--machine-spec-min-width": `${Math.max(minWidth, 700)}px`,

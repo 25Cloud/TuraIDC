@@ -6,11 +6,12 @@ import {
   FileIcon,
   GiftIcon,
   HelpCircleIcon,
+  LockOnIcon,
   NotificationIcon,
   ServerIcon,
   ServiceIcon,
   UserCircleIcon,
-  UserSafetyIcon,
+  VerifiedIcon,
   WalletIcon,
 } from 'tdesign-icons-vue-next';
 import { shallowRef } from 'vue';
@@ -20,6 +21,10 @@ import Layout from '@/layouts/index.vue';
 
 const title = (zhCN: string, enUS = zhCN) => ({ zh_CN: zhCN, en_US: enUS });
 const icon = (component: unknown) => shallowRef(component);
+
+// 「账户设置」整组页面共用一个动态 import，打包器会合并成同一个 chunk，
+// 组内切换只加载一次。详见 pages/client/account/index.ts 的说明。
+const loadAccountPage = () => import('@/pages/client/account');
 
 export default [
   {
@@ -189,26 +194,52 @@ export default [
       },
       {
         path: '/client/account',
-        redirect: '/client/verification',
+        redirect: '/client/profile',
         meta: { title: title('账户设置', 'Settings'), icon: icon(UserCircleIcon), requireAuth: true, orderNo: 100 },
         children: [
           {
-            path: '/client/verification',
-            name: 'ClientVerification',
-            component: () => import('@/pages/client/verification/index.vue'),
-            meta: { title: title('实名认证'), icon: icon(UserSafetyIcon), requireAuth: true, orderNo: 10 },
-          },
-          {
             path: '/client/profile',
             name: 'ClientProfile',
-            component: () => import('@/pages/client/profile/index.vue'),
-            meta: { title: title('个人资料'), icon: icon(UserCircleIcon), requireAuth: true, orderNo: 20 },
+            component: () => loadAccountPage().then((m) => m.ProfilePage),
+            meta: { title: title('个人资料'), icon: icon(UserCircleIcon), requireAuth: true, orderNo: 10 },
+          },
+          {
+            // 与个人资料平级，不用 /client/profile/... 前缀：
+            // 侧边栏高亮是按路径前缀匹配的，若作为个人资料的子路径，
+            // 选中时两个菜单项会拿到同一个 value 而一起点亮
+            path: '/client/security',
+            name: 'ClientSecurity',
+            component: () => loadAccountPage().then((m) => m.ProfilePage),
+            meta: { title: title('账户安全'), icon: icon(LockOnIcon), requireAuth: true, orderNo: 20 },
+          },
+          {
+            path: '/client/notification',
+            name: 'ClientNotification',
+            component: () => loadAccountPage().then((m) => m.ProfilePage),
+            meta: { title: title('消息提醒'), icon: icon(NotificationIcon), requireAuth: true, orderNo: 30 },
+          },
+          {
+            // 兼容旧的嵌套路径
+            path: '/client/profile/security',
+            redirect: { path: '/client/security' },
+            meta: { requireAuth: true, hidden: true },
+          },
+          {
+            path: '/client/profile/notification',
+            redirect: { path: '/client/notification' },
+            meta: { requireAuth: true, hidden: true },
+          },
+          {
+            path: '/client/verification',
+            name: 'ClientVerification',
+            component: () => loadAccountPage().then((m) => m.VerificationPage),
+            meta: { title: title('实名认证'), icon: icon(VerifiedIcon), requireAuth: true, orderNo: 40 },
           },
           {
             path: '/client/api-keys',
             name: 'ClientApiKeys',
-            component: () => import('@/pages/client/api-keys/index.vue'),
-            meta: { title: title('API 凭据', 'API Credentials'), icon: icon(ApiIcon), requireAuth: true, orderNo: 30 },
+            component: () => loadAccountPage().then((m) => m.ApiKeysPage),
+            meta: { title: title('API 凭据', 'API Credentials'), icon: icon(ApiIcon), requireAuth: true, orderNo: 50 },
           },
           {
             // 两套凭据已合并到「API 凭据」页的页内标签；旧路径保留跳转到魔方财务对接分区

@@ -20,6 +20,20 @@ final class ZjmfStatusService
         '无法执行该操作',
         '该操作无法执行',
         '当前状态不允许执行该操作',
+        // 虚拟主机等非云主机产品没有电源/开关机语义，上游对 func=status
+        // 直接回 406「不支持的方法」，属于「该能力不适用」而非同步故障
+        '不支持的方法',
+        '不支持该方法',
+        'method not supported',
+    ];
+
+    /** 虚拟主机类产品的上游 type：没有电源状态，不应发起 runtime 读取 */
+    private const HOSTING_HOST_TYPES = [
+        'hostingaccount',
+        'hosting',
+        'web_hosting',
+        'webhosting',
+        'virtualhost',
     ];
 
     private const RUNTIME_HOST_MISSING_KEYWORDS = [
@@ -57,8 +71,7 @@ final class ZjmfStatusService
 
                 try {
                     $host = $this->extractHostPayload($responses['detail_'.$serviceId] ?? []);
-                    $runtimeResponse = $this->fetchRuntimeStatus($supplier, $hostId, $jwt);
-                    $runtime = $this->extractRuntimePayload($runtimeResponse, $host);
+                    $runtime = $this->resolveHostRuntimePayload($supplier, $hostId, $jwt, $host);
 
                     $results[$serviceId] = [
                         'host' => $this->normalizeHost($host),
@@ -167,6 +180,31 @@ final class ZjmfStatusService
         }
 
         return $host;
+    }
+
+    /**
+     * 读取某台主机的运行状态（电源/开关机）。
+     *
+     * 虚拟主机类产品的上游 type 是hostingaccount，没有电源语义，
+     * 调/provision/default?func=status 会被上游回 406「不支持的方法」。
+     * 这类主机直接返回空运行态：既省掉一次注定失败的上游请求，
+     * 也不会把「能力不适用」写成同步失败（last_sync_error）。
+     */
+    private function resolveHostRuntimePayload(Supplier $supplier, int $hostId, string $jwt, array $host): array
+    {
+        if ($this->isHostingHost($host)) {
+            return [];
+        }
+
+        return $this->extractRuntimePayload($this->fetchRuntimeStatus($supplier, $hostId, $jwt), $host);
+    }
+
+    /** 上游 host_data.type 是否属于虚拟主机类（无电源状态语义） */
+    private function isHostingHost(array $host): bool
+    {
+        $type = strtolower(trim((string) ($host['type'] ?? $host['product_type'] ?? '')));
+
+        return in_array($type, self::HOSTING_HOST_TYPES, true);
     }
 
     private function extractRuntimePayload(array $response, array $host): array

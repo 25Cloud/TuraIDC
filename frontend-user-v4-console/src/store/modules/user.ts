@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 
 import { clientAuthApi } from '@/api/auth';
 import { getClientToken, removeClientToken, setClientToken } from '@/app/runtime/session';
+import { resetProfileState } from '@/domains/account/profileState';
 import { store } from '@/store';
 import type { ClientAuthSessionPayload, ClientUserInfo } from '@/types/client';
 
@@ -45,6 +46,9 @@ export const useUserStore = defineStore('user', {
       this.token = '';
       this.profileHydrated = false;
       this.userInfo = { ...initUserInfo };
+      // 退出登录 / 会话失效时一并清空账户设置的共享资料，
+      // 避免下一个登录的人看到上一个账号的昵称、实名信息等
+      resetProfileState();
     },
     async clientLogin(loginData: Record<string, unknown>) {
       const res = await clientAuthApi.login(loginData);
