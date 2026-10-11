@@ -2136,6 +2136,24 @@ class PaymentService
                 $refundableAmount = $this->remainingRefundableAmount($invoice, $payment);
                 $refundAmount = round((float) ($payload['amount'] ?? $refundableAmount), 2);
                 throw_if($refundAmount <= 0, new BusinessException('退款金额不正确'));
+
+                // 该支付单款项已转入用户余额（重复支付场景：账单已被余额付清，
+                // 支付宝那笔后到款只能入账不能入账单）：钱已在余额里，再原路退一次
+                // 等于同一笔钱既退网关又留余额，必须拒绝。
+                $creditedToBalance = (bool) data_get((array) ($payment->callback_raw ?? []), 'credited_to_balance', false);
+                throw_if(
+                    $creditedToBalance,
+                    new BusinessException('该账单款项已通过重复支付转入余额，无需再退款')
+                );
+
+                // 原路退款只能退「该支付单实际收到的钱」。账单可退总额含余额支付成分时
+                // （如混付：余额 20 + 支付宝 30，账单 50），按总额原路退会把从未走
+                // 该网关的 20 元也退给支付宝，等于凭空多退；余额部分必须走「退回余额」。
+                $gatewayReceived = round((float) ($payment->amount ?? 0), 2);
+                throw_if(
+                    $refundableAmount > $gatewayReceived + 0.00001,
+                    new BusinessException('该账单包含余额支付，无法全额原路退款，请使用「退回余额」')
+                );
                 throw_if(abs($refundAmount - $refundableAmount) > 0.00001, new BusinessException('当前仅支持按原支付金额全额退款'));
 
                 $refundReason = trim((string) ($payload['remark'] ?? ''));
@@ -2299,6 +2317,13 @@ class PaymentService
                 throw_if(
                     ! in_array((int) $lockedInvoice->status, [InvoiceStatus::PAID, InvoiceStatus::PARTIALLY_REFUNDED], true),
                     new BusinessException('当前账单状态不支持退款')
+                );
+
+                // 重复支付转入余额的款项不在账单里（账单已被余额付清），退回余额等于凭空多退；
+                // 原路退款侧同样拒绝，两条通道都不能动这笔已入余额的钱。
+                throw_if(
+                    $this->invoiceHasCreditedToBalancePayment($lockedInvoice),
+                    new BusinessException('该账单款项已通过重复支付转入余额，无需再退款')
                 );
 
                 $order = $lockedInvoice->order;
@@ -3454,6 +3479,32 @@ class PaymentService
             ?? $payments->first(fn (Payment $payment) => in_array((int) $payment->status, [PaymentStatus::SUCCESS, PaymentStatus::REFUNDED], true));
     }
 
+    /**
+     * 该账单是否已有款项通过「重复支付转入余额」入账。
+     *
+     * 场景：账单已被余额付清，用户随后又扫了同一张支付宝二维码，支付宝那笔实收只能
+     * 转入用户余额（credited_to_balance）而不能核销账单。此时这笔钱既不在账单里、也
+     * 不在网关侧，两条退款通道都不能再动它。
+     *
+     * callback_raw 是带版本前缀的编码载荷（见 VersionedJson），不能直接用 SQL JSON
+     * 操作符匹配，这里一律按已解码的支付单集合判断，跨库一致。
+     *
+     * @param  \Illuminate\Support\Collection<int, Payment>|null  $payments
+     */
+    private function invoiceHasCreditedToBalancePayment(Invoice $invoice, ?\Illuminate\Support\Collection $payments = null): bool
+    {
+        $payments ??= $invoice->relationLoaded('payments')
+            ? $invoice->payments
+            : Payment::query()->where('invoice_id', (int) $invoice->id)->get();
+
+        return $payments->contains(function (Payment $payment): bool {
+            $callbackRaw = (array) ($payment->callback_raw ?? []);
+
+            return (bool) data_get($callbackRaw, 'credited_to_balance', false)
+                || (bool) data_get($callbackRaw, 'duplicate_paid', false);
+        });
+    }
+
     public function restoreReservedMixBalance(Payment $payment, array $context = []): bool
     {
         return DB::transaction(function () use ($payment, $context) {
@@ -3626,9 +3677,24 @@ class PaymentService
     private function detectPrimaryPaymentGateway(Order $order): string
     {
         $order->loadMissing(['invoice.payments']);
-        $payment = $order->invoice instanceof Invoice
-            ? $this->resolvePrimaryRefundablePayment($order->invoice)
+        $invoice = $order->invoice;
+        $payment = $invoice instanceof Invoice
+            ? $this->resolvePrimaryRefundablePayment($invoice)
             : null;
+
+        // 原路退款只能退「真正经网关收到的钱」。纯余额支付单、以及账单已结清后
+        // 又重复支付而转入余额的单（credited_to_balance），都不构成原路退款标的：
+        // 前者钱本来就在余额里，后者钱已进余额，两条通道退款都等于凭空多退。
+        if ($payment instanceof Payment) {
+            $callbackRaw = (array) ($payment->callback_raw ?? []);
+            if (
+                $payment->gatewayKey() === PaymentGatewayCode::BALANCE
+                || (bool) data_get($callbackRaw, 'credited_to_balance', false)
+                || (bool) data_get($callbackRaw, 'duplicate_paid', false)
+            ) {
+                return '';
+            }
+        }
 
         return $payment?->gatewayKey() ?? '';
     }
