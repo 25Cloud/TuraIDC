@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Constants\BillingCycle;
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
 use App\Constants\ServiceStatus;
@@ -611,6 +612,96 @@ class ServiceRenewInvoiceOnlyIdempotencyTest extends TestCase
                 ->where('type', 'renew')
                 ->where('status', InvoiceStatus::UNPAID)
                 ->count()
+        );
+    }
+
+    #[Test]
+    public function create_renew_invoice_allows_retry_when_last_fulfillment_failed(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        ['service' => $service, 'invoice' => $failedInvoice] = $this->createUpstreamRenewFixture($suffix);
+
+        // 用户付了款但上游续费履约失败：服务没续上，到期时间也没推进。
+        // 此时把该账单当「周期已完成」拦截，用户将永远无法再次续费。
+        $service->forceFill([
+            'expires_at' => now()->addDays(20),
+            'provision_data' => [
+                'last_renew_invoice_id' => (int) $failedInvoice->id,
+                'renew_invoice_id' => (int) $failedInvoice->id,
+                'renew_fulfillment_status' => 'failed',
+            ],
+        ])->save();
+
+        $renewService = $this->makeFailingUpstreamRenewService();
+
+        // 关键不变量：履约失败后再次续费不再被「当前续费周期已完成」拦死。
+        // 走到复用已付账单（防双扣）还是新建都属于合法，取决于履约补偿是否已接管；
+        // 这里只断言不再抛业务异常、且账单确实归属该服务。
+        $invoice = $renewService->createRenewInvoiceForUser($service->user, (int) $service->id, 'monthly', 0, [
+            'trace_id' => 'renew-retry-after-failed-'.$suffix,
+        ]);
+
+        $this->assertSame((int) $service->id, (int) $invoice->refresh()->service_id);
+        $this->assertContains(
+            (int) $invoice->status,
+            [InvoiceStatus::UNPAID, InvoiceStatus::PAID],
+            '履约失败后应允许再次发起续费（复用已付账单或新建），不得被当作周期已完成拦截'
+        );
+    }
+
+    #[Test]
+    public function create_renew_invoice_repairs_expiry_drift_instead_of_blocking_forever(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        ['service' => $service, 'invoice' => $fulfilledInvoice] = $this->createUpstreamRenewFixture($suffix);
+
+        // 履约已成功（上游确实已续），但 expires_at 因历史数据漂移仍短于该笔覆盖期：
+        // 用户已经付过款，这段有效期本就该生效，正确做法是补齐到期时间后放行，
+        // 而不是拦死且无自愈入口。
+        $service->forceFill([
+            'expires_at' => now()->addDays(3),
+            'provision_data' => [
+                'last_renew_invoice_id' => (int) $fulfilledInvoice->id,
+                'renew_invoice_id' => (int) $fulfilledInvoice->id,
+                'renew_fulfillment_status' => 'succeeded',
+            ],
+        ])->save();
+
+        $coveredUntil = BillingCycle::advance(Carbon::parse($fulfilledInvoice->paid_at), 'monthly');
+
+        $renewService = $this->makeFailingUpstreamRenewService();
+
+        $renewService->createRenewInvoiceForUser($service->user, (int) $service->id, 'monthly', 0, [
+            'trace_id' => 'renew-expiry-drift-'.$suffix,
+        ]);
+
+        $this->assertTrue(
+            Carbon::parse($service->refresh()->expires_at)->gte($coveredUntil),
+            '已履约续费造成的到期时间漂移应被自动补齐到覆盖期，而不是拦死续费'
+        );
+    }
+
+    private function makeFailingUpstreamRenewService(): ServiceRenewService
+    {
+        return new ServiceRenewService(
+            new InvoiceService,
+            new ProviderResolver(
+                new ProviderRegistry([
+                    new HostingPanelApiDriver($this->createMock(HostingPanelApiTransport::class)),
+                ])
+            ),
+            $this->createMock(CouponService::class),
+            $this->createMock(OperationLogService::class),
+            new class extends SettingService
+            {
+                public function getAutomationConfig(): array
+                {
+                    return array_merge(parent::defaultAutomationConfig(), [
+                        'expire_unsuspend_notify_enabled' => false,
+                    ]);
+                }
+            },
+            $this->createMock(NotificationService::class),
         );
     }
 

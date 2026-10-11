@@ -1453,14 +1453,23 @@ class ServiceRenewService
         }
 
         $provisionData = $this->serviceProvisionData($service);
+        $configSnapshot = is_array($invoice->config_snapshot ?? null) ? $invoice->config_snapshot : [];
+        $fulfillmentStatus = (string) ($provisionData[self::RENEW_FULFILLMENT_STATUS_KEY]
+            ?? $configSnapshot[self::RENEW_FULFILLMENT_STATUS_KEY]
+            ?? '');
+
+        // 履约明确失败的续费不算「已完成」：用户付了钱但服务没续上，
+        // 此时若按已完成拦截续费，用户就永久无法再续。
+        if ($fulfillmentStatus === self::RENEW_FULFILLMENT_FAILED) {
+            return false;
+        }
+
         if ((int) ($provisionData['last_renew_invoice_id'] ?? 0) === (int) $invoice->id) {
             return true;
         }
 
-        $configSnapshot = is_array($invoice->config_snapshot ?? null) ? $invoice->config_snapshot : [];
-
         return (int) ($provisionData['renew_invoice_id'] ?? 0) === (int) $invoice->id
-            && (string) ($provisionData[self::RENEW_FULFILLMENT_STATUS_KEY] ?? $configSnapshot[self::RENEW_FULFILLMENT_STATUS_KEY] ?? '') === self::RENEW_FULFILLMENT_SUCCEEDED;
+            && $fulfillmentStatus === self::RENEW_FULFILLMENT_SUCCEEDED;
     }
 
     /**
@@ -1474,6 +1483,10 @@ class ServiceRenewService
      * 覆盖到期点已落在当前到期时间之内，说明该笔续费已完整体现为续费后的有效期，
      * 用户此时续费买的是下一周期（含提前续多期），属合法续费不得拦截。
      * 服务已过期（续费属于恢复动作）同样不受影响。
+     *
+     * 履约已成功但 `expires_at` 仍短于覆盖到期点时，视为数据漂移而非"正在续费"：
+     * 用户已经付过款、这笔覆盖期本就该生效，此时拦住不放会让用户永久无法续费
+     * （无任何自愈入口）。因此先把到期时间补齐到覆盖点再放行，并留日志便于追查漂移来源。
      */
     private function assertNoFulfilledRenewForCycle(Service $service, string $cycle): void
     {
@@ -1506,9 +1519,44 @@ class ServiceRenewService
         // 已履约续费账单的覆盖到期点：按同一周期从支付时间推进，与服务续费后的
         // expires_at 口径一致（BillingCycle::advance）。
         $coveredUntil = BillingCycle::advance(Carbon::parse($fulfilledAt), $cycle);
-        if ($coveredUntil instanceof Carbon && $coveredUntil->gt(Carbon::parse($service->expires_at))) {
-            throw new BusinessException('当前续费周期已完成，请勿重复续费');
+        if (! $coveredUntil instanceof Carbon || ! $coveredUntil->gt(Carbon::parse($service->expires_at))) {
+            return;
         }
+
+        $provisionData = $this->serviceProvisionData($service);
+        $configSnapshot = is_array($latestPaid->config_snapshot ?? null) ? $latestPaid->config_snapshot : [];
+        $fulfillmentStatus = (string) ($provisionData[self::RENEW_FULFILLMENT_STATUS_KEY]
+            ?? $configSnapshot[self::RENEW_FULFILLMENT_STATUS_KEY]
+            ?? '');
+
+        // 履约已确认成功：到期时间没跟上是漂移，补齐后放行，避免用户被永久拦死
+        if ($fulfillmentStatus === self::RENEW_FULFILLMENT_SUCCEEDED) {
+            $service->forceFill(['expires_at' => $coveredUntil])->save();
+
+            Log::warning('[服务续费] 已履约续费的到期时间落后于覆盖期，已自动补齐', [
+                'service_id' => $service->id,
+                'invoice_id' => $latestPaid->id,
+                'invoice_no' => $latestPaid->invoice_no ?? '',
+                'billing_cycle' => $cycle,
+                'expires_at_before' => (string) $service->getOriginal('expires_at'),
+                'expires_at_after' => $coveredUntil->toDateTimeString(),
+            ]);
+
+            return;
+        }
+
+        Log::warning('[服务续费] 拦截同周期重复续费：已有已收款未完整体现到期的账单', [
+            'service_id' => $service->id,
+            'invoice_id' => $latestPaid->id,
+            'invoice_no' => $latestPaid->invoice_no ?? '',
+            'billing_cycle' => $cycle,
+            'fulfillment_status' => $fulfillmentStatus,
+            'covered_until' => $coveredUntil->toDateTimeString(),
+            'expires_at' => (string) $service->expires_at,
+        ]);
+
+        // 诊断信息只进日志：用户侧文案保持简洁，前端按原文案提示即可
+        throw new BusinessException('当前续费周期已完成，请勿重复续费');
     }
 
     private function findBlockingPaidRenewInvoice(User $user, Service $service, string $cycle): ?Invoice
