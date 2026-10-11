@@ -8,7 +8,7 @@
 - 空库时优先导入由真实库导出的 schema baseline
 - 清理 Laravel 缓存
 - 执行数据库迁移
-- 自动创建默认管理员 cerbo / Temp@123456
+- 自动创建默认管理员 cerbo（密码由 INSTALL_ADMIN_PASSWORD 指定，未配置时随机生成并打印一次）
 
 schema baseline 更新方式：
     php backend/scripts/export_schema_baseline.php
@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import secrets
 import shlex
 import shutil
 import subprocess
@@ -43,7 +44,6 @@ ARTISAN_FILE = BACKEND_DIR / "artisan"
 SCHEMA_FILE = BACKEND_DIR / "database" / "schema" / "mysql-schema.sql"
 SCHEMA_EXPORT_SCRIPT = SCRIPT_DIR / "export_schema_baseline.php"
 ADMIN_PASSWORD_ENV_KEY = "INSTALL_ADMIN_PASSWORD"
-DEFAULT_ADMIN_PASSWORD = "Temp@123456"
 
 ADMIN_BOOTSTRAP_CODE = r"""use App\Models\AdminUser;
 use App\Models\Role;
@@ -65,7 +65,11 @@ $admin->forceFill([
 ]);
 
 if ($isNewAdmin) {
-    $adminPassword = getenv('INSTALL_ADMIN_PASSWORD') ?: 'Temp@123456';
+    $adminPassword = (string) getenv('INSTALL_ADMIN_PASSWORD');
+    if ($adminPassword === '') {
+        fwrite(STDERR, "INSTALL_ADMIN_PASSWORD 未设置，无法初始化管理员密码\n");
+        exit(1);
+    }
     $admin->password = $adminPassword;
 }
 
@@ -151,18 +155,31 @@ def mask_secret(value: str) -> str:
 
 def resolve_admin_password(app_env: str) -> str:
     configured = read_env_value(ADMIN_PASSWORD_ENV_KEY) or os.environ.get(ADMIN_PASSWORD_ENV_KEY, "")
-    password = configured or DEFAULT_ADMIN_PASSWORD
     normalized_env = app_env.strip().lower()
 
     if normalized_env == "production":
         if not configured:
             fail(f"生产环境必须在 .env 或环境变量中设置 {ADMIN_PASSWORD_ENV_KEY}")
-        if password == DEFAULT_ADMIN_PASSWORD:
-            fail(f"生产环境禁止使用默认管理员密码，请修改 {ADMIN_PASSWORD_ENV_KEY}")
-        if len(password) < 12:
+        if configured in {"password", "123456789012", "Temp@123456"}:
+            fail(f"生产环境禁止使用弱口令，请修改 {ADMIN_PASSWORD_ENV_KEY}")
+        if len(configured) < 12:
             fail(f"生产环境 {ADMIN_PASSWORD_ENV_KEY} 长度不能少于 12 位")
 
-    return password
+        return configured
+
+    if configured:
+        return configured
+
+    # 未配置时随机生成强口令，仅本次运行打印一次，杜绝固定默认密码入库。
+    # 注意：仅当管理员账号为新创建时才会使用该密码；重复安装不会重置已有密码。
+    generated = secrets.token_urlsafe(18)
+    print(
+        f"[install-db] 未配置 {ADMIN_PASSWORD_ENV_KEY}，已生成一次性管理员密码（仅新建管理员时生效）：{generated}",
+        file=sys.stderr,
+    )
+    print("[install-db] 请立即记录该密码，脚本不会重复显示。", file=sys.stderr)
+
+    return generated
 
 
 def ensure_file(path: Path, message: str) -> None:

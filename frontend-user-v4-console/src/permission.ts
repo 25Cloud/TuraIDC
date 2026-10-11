@@ -17,7 +17,8 @@ NProgress.configure({ showSpinner: false });
 
 function resolveRedirectPath(raw: unknown, fallback = '/client/dashboard') {
   const redirect = typeof raw === 'string' ? redirectURIComponentSafe(raw) : '';
-  return redirect.startsWith('/') ? redirect : fallback;
+  // 拒绝 // 开头的协议相对形态（//evil.com 会被浏览器按外站解析）
+  return redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : fallback;
 }
 
 function redirectURIComponentSafe(value: string) {

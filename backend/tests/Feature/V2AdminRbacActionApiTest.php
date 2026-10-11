@@ -94,7 +94,8 @@ class V2AdminRbacActionApiTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath('code', 40300);
 
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::ROLE_MANAGE]));
+        // 复制操作者必须已持有被复制角色的全部权限（非超管仅能授予自身权限子集）
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::ROLE_MANAGE, AdminPermissions::STAFF_LIST]));
 
         $this->postJson('/api/v2/admin/roles/'.$role->id.'/copies', ['per_page' => 20])
             ->assertUnprocessable()

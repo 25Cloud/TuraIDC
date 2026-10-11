@@ -69,9 +69,9 @@ class AdminRbacActionV2Service
     /**
      * @return array<string, mixed>
      */
-    public function copyRole(Role $role): array
+    public function copyRole(Role $role, AdminUser $operator): array
     {
-        $newRole = $this->roleService->copy($role);
+        $newRole = $this->roleService->copy($role, $operator);
 
         return [
             'id' => (int) $newRole->id,

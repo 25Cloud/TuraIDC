@@ -31,7 +31,15 @@ class V2AdminRoleWriteApiTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath('code', 40300);
 
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::ROLE_MANAGE], 'role-write-allowed'));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::ROLE_MANAGE], 'role-grant-deny'));
+
+        // 非超管只能授予自身已持有的权限子集：仅持 role.manage 时授予 user.list 必须被拒
+        $this->postJson('/api/v2/admin/roles', $createPayload)
+            ->assertForbidden()
+            ->assertJsonPath('code', 40300)
+            ->assertJsonPath('message', '不能授予自身未持有的权限：'.AdminPermissions::USER_LIST);
+
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::ROLE_MANAGE, AdminPermissions::USER_LIST, AdminPermissions::TICKET_LIST], 'role-write-allowed'));
 
         $this->postJson('/api/v2/admin/roles', $createPayload + ['per_page' => 20])
             ->assertUnprocessable()

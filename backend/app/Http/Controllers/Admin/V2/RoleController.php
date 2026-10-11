@@ -71,7 +71,7 @@ class RoleController extends Controller
 
     public function copy(CopyRoleRequest $request, Role $role)
     {
-        $result = $this->actions->copyRole($role);
+        $result = $this->actions->copyRole($role, $request->user());
 
         return $this->success(AdminActionResultResource::make($result)->resolve(), (string) $result['message']);
     }

@@ -102,11 +102,12 @@ class AdminRoleService
         });
     }
 
-    public function copy(Role $role): Role
+    public function copy(Role $role, ?AdminUser $operator = null): Role
     {
         $baseName = $this->normalizeName($role->name.'_copy');
         $name = $this->uniqueRoleName($baseName);
         $permissions = $role->resolvedPermissions();
+        $this->assertPermissionsGrantable($permissions, $operator);
 
         return DB::transaction(function () use ($role, $name, $permissions): Role {
             $newRole = Role::query()->create([
@@ -163,11 +164,37 @@ class AdminRoleService
             throw new BusinessException('只有超级管理员可以授予全部权限', 40300, 403);
         }
 
+        $this->assertPermissionsGrantable($normalized, $operator);
+
         if (in_array(AdminPermissions::ALL, $normalized, true)) {
             return [AdminPermissions::ALL];
         }
 
         return $normalized;
+    }
+
+    /**
+     * 非超管操作者只能授予自身已持有的权限子集，堵住持 role.manage 者逐步增补
+     * 敏感权限的自我扩权路径。operator 为 null 时视为系统内部调用不做限制。
+     *
+     * @param  string[]  $normalized
+     */
+    private function assertPermissionsGrantable(array $normalized, ?AdminUser $operator): void
+    {
+        if ($operator === null) {
+            return;
+        }
+
+        $operatorPermissions = $operator->resolvedPermissions();
+
+        if (in_array(AdminPermissions::ALL, $operatorPermissions, true)) {
+            return;
+        }
+
+        $excessive = array_values(array_diff($normalized, $operatorPermissions));
+        if ($excessive !== []) {
+            throw new BusinessException('不能授予自身未持有的权限：'.implode(', ', $excessive), 40300, 403);
+        }
     }
 
     private function normalizeName(mixed $value): string

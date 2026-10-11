@@ -8,7 +8,6 @@ ENV_FILE="${BACKEND_DIR}/.env"
 ARTISAN_FILE="${BACKEND_DIR}/artisan"
 SCHEMA_FILE="${BACKEND_DIR}/database/schema/mysql-schema.sql"
 ADMIN_PASSWORD_ENV_KEY="INSTALL_ADMIN_PASSWORD"
-DEFAULT_ADMIN_PASSWORD="Temp@123456"
 
 DRY_RUN=0
 
@@ -33,7 +32,7 @@ usage() {
   4. 空库时优先导入基础 schema
   5. 清理 Laravel 缓存
   6. 执行数据库迁移
-  7. 自动创建默认管理员 cerbo / Temp@123456
+  7. 自动创建默认管理员 cerbo（口令由 INSTALL_ADMIN_PASSWORD 指定，未配置时随机生成并打印一次）
 
 参数：
   --dry-run   只打印将要执行的步骤，不真正写入数据库
@@ -94,24 +93,40 @@ mask_secret() {
   printf '******'
 }
 
+generate_admin_password() {
+  # 24 位十六进制随机口令，仅 /dev/urandom + POSIX 工具，避免依赖 openssl
+  local candidate="$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+  printf '%s' "${candidate:0:24}"
+}
+
 resolve_admin_password() {
   local configured="${INSTALL_ADMIN_PASSWORD:-}"
-  local password=""
   local normalized_env="${APP_ENV_VALUE,,}"
 
   if [[ -z "${configured}" ]]; then
     configured="$(read_env_value "${ADMIN_PASSWORD_ENV_KEY}")"
   fi
 
-  password="${configured:-${DEFAULT_ADMIN_PASSWORD}}"
-
   if [[ "${normalized_env}" == "production" ]]; then
     [[ -n "${configured}" ]] || fail "生产环境必须在 .env 或环境变量中设置 ${ADMIN_PASSWORD_ENV_KEY}"
-    [[ "${password}" != "${DEFAULT_ADMIN_PASSWORD}" ]] || fail "生产环境禁止使用默认管理员密码，请修改 ${ADMIN_PASSWORD_ENV_KEY}"
-    [[ "${#password}" -ge 12 ]] || fail "生产环境 ${ADMIN_PASSWORD_ENV_KEY} 长度不能少于 12 位"
+    [[ "${configured}" != "password" && "${configured}" != "123456789012" && "${configured}" != "Temp@123456" ]] || fail "生产环境禁止使用弱口令，请修改 ${ADMIN_PASSWORD_ENV_KEY}"
+    [[ "${#configured}" -ge 12 ]] || fail "生产环境 ${ADMIN_PASSWORD_ENV_KEY} 长度不能少于 12 位"
+    printf '%s' "${configured}"
+    return 0
   fi
 
-  printf '%s' "${password}"
+  if [[ -n "${configured}" ]]; then
+    printf '%s' "${configured}"
+    return 0
+  fi
+
+  # 未配置时随机生成强口令，仅本次运行打印一次（stderr，避免混入命令替换捕获），杜绝固定默认口令入库。
+  # 注意：仅当管理员账号为新创建时才会使用该口令；重复安装不会重置已有口令。
+  local generated_pwd
+  generated_pwd="$(generate_admin_password)"
+  printf '[install-db] 未配置 %s，已生成一次性管理员口令（仅新建管理员时生效）：%s\n' "${ADMIN_PASSWORD_ENV_KEY}" "${generated_pwd}" >&2
+  printf '[install-db] 请立即记录该口令，脚本不会重复显示。\n' >&2
+  printf '%s' "${generated_pwd}"
 }
 
 run_cmd() {
@@ -294,7 +309,11 @@ $admin->forceFill([
 ]);
 
 if ($isNewAdmin) {
-  $adminPassword = getenv('INSTALL_ADMIN_PASSWORD') ?: 'Temp@123456';
+  $adminPassword = (string) getenv('INSTALL_ADMIN_PASSWORD');
+  if ($adminPassword === '') {
+    fwrite(STDERR, "INSTALL_ADMIN_PASSWORD 未设置，无法初始化管理员口令\n");
+    exit(1);
+  }
   $admin->password = $adminPassword;
 }
 

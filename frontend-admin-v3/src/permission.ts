@@ -46,7 +46,10 @@ router.beforeEach(async (to, from, next) => {
           next({ path: to.fullPath, replace: true, query: to.query });
         } else {
           const redirect = decodeURIComponent((from.query.redirect || to.path) as string);
-          next(to.path === redirect ? { ...to, replace: true } : { path: redirect, query: to.query });
+          // 站内校验：redirect 必须以 / 开头且不能是 // 开头的协议相对形态（//evil.com 会被浏览器按外站解析）
+          const safeRedirect =
+            redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : resolveAdminHomePath([]);
+          next(to.path === safeRedirect ? { ...to, replace: true } : { path: safeRedirect, query: to.query });
         }
         return;
       }

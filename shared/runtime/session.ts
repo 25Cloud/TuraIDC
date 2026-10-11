@@ -23,7 +23,9 @@ export interface SessionDriver {
   readStorageItem: (_key: string) => string
 }
 
-const COOKIE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
+// 与后端 sanctum 令牌有效期（expiration=1440 分钟）对齐：Cookie 长于令牌只会在
+// 过期后留下永远无效的登录态，不会有任何功能收益，反而扩大令牌泄露窗口。
+const COOKIE_MAX_AGE_SECONDS = 24 * 60 * 60
 
 function readCookie(name: string) {
   if (typeof document === 'undefined') {
