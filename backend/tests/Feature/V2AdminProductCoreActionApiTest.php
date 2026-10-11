@@ -385,6 +385,8 @@ class V2AdminProductCoreActionApiTest extends TestCase
             'purchase_requirements',
             'provisioning',
             'upstream_binding',
+            // 代理折扣组归属面板
+            'product_discount_group',
             'statistics',
             'lifecycle',
             'timestamps',

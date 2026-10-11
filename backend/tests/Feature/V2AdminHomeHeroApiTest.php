@@ -277,6 +277,7 @@ class V2AdminHomeHeroApiTest extends TestCase
             'secondary_path',
             'shape',
             'video',
+            'image',
             'ribbon',
             'ribbon_type',
         ];

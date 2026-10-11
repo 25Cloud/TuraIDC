@@ -25,7 +25,12 @@ class AdminDefaultRoleTest extends TestCase
         $this->assertCount(3, $roles);
         $this->assertSame([AdminPermissions::ALL], $roles['super_admin']->resolvedPermissions());
         $this->assertEqualsCanonicalizing(AdminPermissions::visitorPermissions(), $roles['visitor']->resolvedPermissions());
-        $this->assertEqualsCanonicalizing(AdminPermissions::adminDefaultPermissions(), $roles['admin']->resolvedPermissions());
+        // resolvedPermissions 会按 impliedPermissions 展开（AGENT_DISCOUNT_MANAGE 隐含 agent_discount.list），
+        // 期望集按同一口径展开后再比对，否则会把展开出的隐含权限误判为漂移
+        $this->assertEqualsCanonicalizing(
+            AdminPermissions::resolveRolePermissions('admin', AdminPermissions::adminDefaultPermissions()),
+            $roles['admin']->resolvedPermissions()
+        );
 
         $this->assertNotContains(AdminPermissions::PRIVACY_VIEW_RAW, $roles['visitor']->resolvedPermissions());
         $this->assertNotContains(AdminPermissions::SETTINGS_SECRET_REVEAL, $roles['admin']->resolvedPermissions());

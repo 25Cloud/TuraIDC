@@ -341,10 +341,12 @@ class DatabaseOptimizationRegressionTest extends TestCase
             ->values()
             ->all();
 
+        // 2026_08_13 冗余索引清理迁移已按 EXPLAIN 结论删除 products.status 单列索引
+        // （status 基数 2，查询走 (product_type,status) 等左前缀复合索引）
         $this->assertSame(
-            ['idx_product_status_groups'],
+            [],
             $indexes,
-            'products.status 只能保留一个单列索引，避免重复索引造成额外写放大'
+            'products.status 不应保留单列索引：状态基数 2，查询均由左前缀复合索引覆盖'
         );
     }
 

@@ -20,6 +20,7 @@ use App\Services\System\OperationLogService;
 use App\Services\System\SettingService;
 use App\Support\AdminPermissions;
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
@@ -29,6 +30,9 @@ use Tests\TestCase;
 
 class V2AdminConfigurationApiTest extends TestCase
 {
+    // 安装动作会写插件/绑定行：共享测试库无回滚会把绑定残留给后续卸载用例
+    use DatabaseTransactions;
+
     public function test_admin_integration_plugins_are_paginated_and_schema_is_split_from_list_detail(): void
     {
         $plugin = $this->createConfiguredPlugin();
@@ -816,6 +820,8 @@ class V2AdminConfigurationApiTest extends TestCase
             'provider_key',
             'environment',
             'status',
+            // 工单上游投递开关（工单投递功能引入）
+            'ticket_delivery_enabled',
             'priority',
             'base_url',
             'base_url_configured',

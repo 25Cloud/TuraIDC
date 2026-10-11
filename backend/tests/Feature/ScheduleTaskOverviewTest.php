@@ -101,10 +101,10 @@ class ScheduleTaskOverviewTest extends TestCase
         $environment = (array) ($overview['environment'] ?? []);
         $commands = collect($overview['commands'] ?? []);
 
-        $this->assertSame('provision,referral,notification,coupon,default', $environment['business_queue'] ?? null);
+        $this->assertSame('referral,notification,coupon,default', $environment['business_queue'] ?? null);
         $this->assertSame('automation', $environment['automation_queue'] ?? null);
         $this->assertStringContainsString('--with-schedule --without-vnc', (string) $commands->firstWhere('key', 'app_serve_schedule_without_vnc')['command']);
-        $this->assertStringContainsString('--queue=provision,referral,notification,coupon,default', (string) $commands->firstWhere('key', 'queue_work_business')['command']);
+        $this->assertStringContainsString('--queue=referral,notification,coupon,default', (string) $commands->firstWhere('key', 'queue_work_business')['command']);
         $this->assertStringContainsString('--queue=automation', (string) $commands->firstWhere('key', 'queue_work_automation')['command']);
         $vncCommand = $commands->firstWhere('key', 'vnc_relay');
         $this->assertIsArray($vncCommand);
