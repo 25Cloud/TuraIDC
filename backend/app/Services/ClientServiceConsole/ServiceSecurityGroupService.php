@@ -311,6 +311,9 @@ class ServiceSecurityGroupService
         ]);
 
         $securityGroupContext = $this->assertSecurityGroupVisibleToCurrentHost($service, $groupId);
+        // 服务端断言规则归属：ruleId 必须真的属于该 groupId，
+        // 防止用自有 groupId + 他人组的 ruleId 借同主机上游删除他人规则。
+        $this->assertSecurityRuleBelongsToGroup($service, $securityGroupContext, $groupId, $ruleId);
 
         $result = $this->callSecurityGroupAction(
             $service,
@@ -343,16 +346,19 @@ class ServiceSecurityGroupService
     public function resolveSecurityGroupContext(Service $service, bool $fresh = false): array
     {
         [$supplier, $hostId] = $this->detailService->resolveManagedSupplierAndHost($service);
-        $cacheKey = $this->buildSecurityGroupContextCacheKey($service);
+        $cacheKey = $this->buildSecurityGroupContextCacheKey($service, (int) $supplier->id, (int) $hostId);
         $runtime = $this->detailService->resolveRuntimeCapabilityForSupplier($supplier);
         $mode = is_callable([$runtime, 'getSecurityGroups']) ? 'native' : 'custom';
 
         if (! $fresh && ($cached = Cache::get($cacheKey)) && is_array($cached)) {
             $cached['supplier'] = $supplier;
-            if (
-                trim((string) ($cached['jwt'] ?? '')) !== ''
-                && (($cached['mode'] ?? 'custom') === $mode)
-            ) {
+            if (($cached['mode'] ?? 'custom') === $mode) {
+                // 缓存不落 JWT：命中后按需重新登录补齐凭据，
+                // 避免上游会话凭据驻留缓存，被读取即等于拿到上游会话。
+                if (trim((string) ($cached['jwt'] ?? '')) === '') {
+                    $cached['jwt'] = $runtime->login($supplier);
+                }
+
                 return $cached;
             }
         }
@@ -396,7 +402,7 @@ class ServiceSecurityGroupService
 
             Cache::put(
                 $cacheKey,
-                collect($context)->except('supplier')->all(),
+                $this->buildSecurityGroupContextCachePayload($context),
                 now()->addSeconds(self::SECURITY_GROUP_CONTEXT_CACHE_TTL_SECONDS)
             );
 
@@ -438,7 +444,7 @@ class ServiceSecurityGroupService
 
         Cache::put(
             $cacheKey,
-            collect($context)->except('supplier')->all(),
+            $this->buildSecurityGroupContextCachePayload($context),
             now()->addSeconds(self::SECURITY_GROUP_CONTEXT_CACHE_TTL_SECONDS)
         );
 
@@ -451,7 +457,15 @@ class ServiceSecurityGroupService
             return;
         }
 
-        Cache::forget($this->buildSecurityGroupContextCacheKey($service));
+        // 缓存键携带 supplier/host 维度，需重新解析绑定才能定位；
+        // 解析失败说明绑定已不可用，交给 TTL 自然过期兜底。
+        try {
+            [$supplier, $hostId] = $this->detailService->resolveManagedSupplierAndHost($service);
+        } catch (\Throwable) {
+            return;
+        }
+
+        Cache::forget($this->buildSecurityGroupContextCacheKey($service, (int) $supplier->id, (int) $hostId));
     }
 
     // ── Private helpers ────────────────────────────────────────────────────
@@ -711,6 +725,28 @@ class ServiceSecurityGroupService
         );
 
         return $context;
+    }
+
+    /**
+     * 删除规则前的归属断言：ruleId 必须属于目标 groupId。
+     * 通过上游 showSecurityRules 拉取该组规则并确认 ruleId 存在；
+     * 不在列表内时按 404 拒绝，避免用自有组 ID 借上游删掉同主机他人组的规则。
+     */
+    private function assertSecurityRuleBelongsToGroup(Service $service, array $context, int $groupId, int $ruleId): void
+    {
+        // callSecurityGroupAction 自带 native 上下文守卫（仅支持列表与应用操作），此处只处理 custom 模式。
+        $result = $this->callSecurityGroupAction($service, 'showSecurityRules', ['id' => $groupId], '读取安全组规则', $context);
+        $payload = $this->detailService->extractPayload($result['response']);
+        $raw = $payload['list'] ?? [];
+        $list = is_array($raw)
+            ? (is_array($raw['preview'] ?? null) ? $raw['preview'] : array_values(array_filter($raw, 'is_array')))
+            : [];
+
+        $owned = collect($list)
+            ->filter(fn ($item) => is_array($item))
+            ->contains(fn (array $item) => (int) ($item['id'] ?? 0) === $ruleId);
+
+        throw_if(! $owned, new BusinessException('安全组规则不存在或不属于当前安全组', 40400, 404));
     }
 
     private function isSecurityGroupBoundToBindings(array $bindings, int $groupId, array $availableGroups = []): bool
@@ -986,6 +1022,11 @@ class ServiceSecurityGroupService
                 'service.console.security_group.delete',
             ])
             ->where('context->host_id', $hostId)
+            // 归属判定必须限定在「当前服务」自身的操作日志上（写入侧
+            // OperationLogService::writeServiceConsoleLog 的 detail 固定携带 service_id）。
+            // 同一上游主机可能被多个本地服务（不同用户）绑定，若只按 host_id 反推，
+            // 其他用户创建的安全组会进入本服务的 owned 集合，造成跨用户删除/应用。
+            ->where('context->service_id', (int) $service->id)
             ->orderBy('created_at')
             ->orderBy('id')
             ->get(['action', 'context']);
@@ -1193,9 +1234,27 @@ class ServiceSecurityGroupService
         return trim((string) ($group['name'] ?? ''));
     }
 
-    private function buildSecurityGroupContextCacheKey(Service $service): string
+    /**
+     * 上下文缓存键携带供应商与上游主机维度：
+     * 服务换绑供应商或更换上游主机后不再命中旧上下文（旧 endpoint/旧 JWT）。
+     */
+    private function buildSecurityGroupContextCacheKey(Service $service, int $supplierId, int $hostId): string
     {
-        return 'sg_ctx:service:'.(int) $service->id;
+        return 'sg_ctx:service:'.(int) $service->id
+            .':supplier:'.max($supplierId, 0)
+            .':host:'.max($hostId, 0);
+    }
+
+    /**
+     * 缓存载荷剔除 supplier 模型与 JWT/整页 HTML：
+     * JWT 不落缓存，命中后按需重新登录；HTML 无消费方，只保留解析结果。
+     *
+     * @param  array<string, mixed>  $context
+     * @return array<string, mixed>
+     */
+    private function buildSecurityGroupContextCachePayload(array $context): array
+    {
+        return collect($context)->except(['supplier', 'jwt', 'html'])->all();
     }
 
     private function createHtmlXPath(string $html): ?\DOMXPath

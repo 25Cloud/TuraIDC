@@ -36,7 +36,16 @@ class ServiceSecurityGroupNameAvailabilityTest extends TestCase
         $this->expectException(BusinessException::class);
         $this->expectExceptionMessage('安全组名称已存在，请换一个名称');
 
-        $this->invokePrivateMethod($service, 'assertSecurityGroupNameAvailable', [new Service, '123']);
+        $this->invokePrivateMethod($service, 'assertSecurityGroupNameAvailable', [$this->unbootedService(), '123']);
+    }
+
+    /**
+     * 免启动 Service 实例：bootSoftDeletes 会触发 Schema facade，纯单测进程不可用，
+     * 且首个 new Service 的启动顺序会让本组测试互相依赖（顺带修掉既有顺序性失败）。
+     */
+    private function unbootedService(): Service
+    {
+        return (new \ReflectionClass(Service::class))->newInstanceWithoutConstructor();
     }
 
     private function invokePrivateMethod(object $target, string $method, array $arguments = []): mixed

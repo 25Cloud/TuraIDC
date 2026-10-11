@@ -224,7 +224,7 @@ HTML;
         $this->expectException(BusinessException::class);
         $this->expectExceptionMessage('安全组不存在或不允许当前服务操作');
 
-        $this->invokePrivateMethod($service, 'assertSecurityGroupVisibleToCurrentHost', [new Service, 1001]);
+        $this->invokePrivateMethod($service, 'assertSecurityGroupVisibleToCurrentHost', [$this->unbootedService(), 1001]);
     }
 
     #[Test]
@@ -246,9 +246,18 @@ HTML;
             }
         };
 
-        $context = $this->invokePrivateMethod($service, 'assertSecurityGroupVisibleToCurrentHost', [new Service, 976]);
+        $context = $this->invokePrivateMethod($service, 'assertSecurityGroupVisibleToCurrentHost', [$this->unbootedService(), 976]);
 
         $this->assertSame([['id' => 976, 'name' => '1']], $context['groups']);
+    }
+
+    /**
+     * 免启动 Service 实例：bootSoftDeletes 会触发 Schema facade，纯单测进程不可用，
+     * 且首个 new Service 的启动顺序会让本组测试互相依赖（顺带修掉既有顺序性失败）。
+     */
+    private function unbootedService(): Service
+    {
+        return (new \ReflectionClass(Service::class))->newInstanceWithoutConstructor();
     }
 
     private function invokePrivateMethod(object $target, string $method, array $arguments = []): mixed
