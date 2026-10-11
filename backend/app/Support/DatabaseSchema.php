@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -17,31 +18,19 @@ final class DatabaseSchema
     public static function hasTableOrView(string $name): bool
     {
         $connection = DB::connection();
-        $cacheKey = implode(':', [
-            $connection->getName(),
-            $connection->getDatabaseName(),
-            strtolower($name),
-        ]);
+        $cacheKey = self::cacheKey($connection, $name);
 
-        if (array_key_exists($cacheKey, self::$objectExists)) {
+        if ($cacheKey !== null && array_key_exists($cacheKey, self::$objectExists)) {
             return self::$objectExists[$cacheKey];
         }
 
-        if (Schema::hasTable($name)) {
-            return self::$objectExists[$cacheKey] = true;
+        $result = self::resolveTableOrView($connection, $name);
+
+        if ($cacheKey !== null) {
+            self::$objectExists[$cacheKey] = $result;
         }
 
-        return self::$objectExists[$cacheKey] = match ($connection->getDriverName()) {
-            'mysql', 'mariadb' => (bool) $connection->selectOne(
-                'SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1',
-                [$name]
-            ),
-            'sqlite' => (bool) $connection->selectOne(
-                "SELECT 1 FROM sqlite_master WHERE name = ? AND type IN ('table', 'view') LIMIT 1",
-                [$name]
-            ),
-            default => false,
-        };
+        return $result;
     }
 
     /**
@@ -57,39 +46,93 @@ final class DatabaseSchema
     public static function hasTable(string $name): bool
     {
         $connection = DB::connection();
-        $cacheKey = implode(':', [
-            'table',
-            $connection->getName(),
-            $connection->getDatabaseName(),
-            strtolower($name),
-        ]);
+        $cacheKey = self::cacheKey($connection, 'table:'.$name);
 
-        if (array_key_exists($cacheKey, self::$objectExists)) {
+        if ($cacheKey !== null && array_key_exists($cacheKey, self::$objectExists)) {
             return self::$objectExists[$cacheKey];
         }
 
-        return self::$objectExists[$cacheKey] = Schema::hasTable($name);
+        $result = Schema::hasTable($name);
+
+        if ($cacheKey !== null) {
+            self::$objectExists[$cacheKey] = $result;
+        }
+
+        return $result;
     }
 
     public static function hasColumn(string $object, string $column): bool
     {
         $connection = DB::connection();
-        $cacheKey = implode(':', [
-            $connection->getName(),
-            $connection->getDatabaseName(),
-            strtolower($object),
-            strtolower($column),
-        ]);
+        $cacheKey = self::cacheKey($connection, $object.':'.$column);
 
-        if (array_key_exists($cacheKey, self::$objectExists)) {
+        if ($cacheKey !== null && array_key_exists($cacheKey, self::$objectExists)) {
             return self::$objectExists[$cacheKey];
         }
 
-        if (Schema::hasColumn($object, $column)) {
-            return self::$objectExists[$cacheKey] = true;
+        $result = self::resolveColumn($connection, $object, $column);
+
+        if ($cacheKey !== null) {
+            self::$objectExists[$cacheKey] = $result;
         }
 
-        return self::$objectExists[$cacheKey] = match ($connection->getDriverName()) {
+        return $result;
+    }
+
+    public static function resetCache(): void
+    {
+        self::$objectExists = [];
+    }
+
+    /**
+     * 记忆化键；内存库返回 null 表示不记忆化。
+     *
+     * SQLite 的 `:memory:`（以及 MySQL 的 MEMORY 引擎）库每条连接都是一个全新库，
+     * 库名在重连前后完全相同。记忆化会让先前的探测结果泄漏到新库上——
+     * 测试里表现为「单跑绿、全量红」的随机失败，生产上则表现为运行时切换连接后误判表存在。
+     * 这类库本身没有 information_schema 查询开销，记忆化只带来串味风险，没有收益。
+     */
+    private static function cacheKey(Connection $connection, string $suffix): ?string
+    {
+        $database = (string) $connection->getDatabaseName();
+
+        if ($database === ':memory:' || $database === '') {
+            return null;
+        }
+
+        return implode(':', [
+            $connection->getName(),
+            $database,
+            strtolower($suffix),
+        ]);
+    }
+
+    private static function resolveTableOrView(Connection $connection, string $name): bool
+    {
+        if (Schema::hasTable($name)) {
+            return true;
+        }
+
+        return match ($connection->getDriverName()) {
+            'mysql', 'mariadb' => (bool) $connection->selectOne(
+                'SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1',
+                [$name]
+            ),
+            'sqlite' => (bool) $connection->selectOne(
+                "SELECT 1 FROM sqlite_master WHERE name = ? AND type IN ('table', 'view') LIMIT 1",
+                [$name]
+            ),
+            default => false,
+        };
+    }
+
+    private static function resolveColumn(Connection $connection, string $object, string $column): bool
+    {
+        if (Schema::hasColumn($object, $column)) {
+            return true;
+        }
+
+        return match ($connection->getDriverName()) {
             'mysql', 'mariadb' => (bool) $connection->selectOne(
                 'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1',
                 [$object, $column]
@@ -100,10 +143,5 @@ final class DatabaseSchema
             ),
             default => false,
         };
-    }
-
-    public static function resetCache(): void
-    {
-        self::$objectExists = [];
     }
 }
