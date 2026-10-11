@@ -10,6 +10,7 @@ use App\Constants\InvoiceType;
 use App\Constants\OrderStatus;
 use App\Constants\PaymentGatewayCode;
 use App\Constants\PaymentStatus;
+use App\Constants\ServiceStatus;
 use App\Constants\UserNotificationType;
 use App\Contracts\Integrations\Payments\PaymentGatewayInterface;
 use App\Exceptions\BusinessException;
@@ -527,6 +528,26 @@ class PaymentService
         $result = $this->queryGatewayPayment($gateway, $payment->payment_no);
 
         if (in_array($result['trade_status'], ['TRADE_SUCCESS', 'TRADE_FINISHED', 'SUCCESS'], true)) {
+            // 与订单侧主动查询同口径做金额校验：网关实收与支付单金额不符（或缺失）时拒绝入账。
+            // 少校验的后果是同一笔网关流水可以给充值单反复入账，用户余额与账实不符。
+            $queryAmount = round((float) ($result['total_amount'] ?? 0), 2);
+            $expectedAmount = round((float) $payment->amount, 2);
+            if ($queryAmount <= 0 || abs($queryAmount - $expectedAmount) > 0.0001) {
+                Log::warning('[充值主动查询] 金额校验失败，拒绝入账', [
+                    'payment_no' => $payment->payment_no,
+                    'gateway' => $gateway,
+                    'expected' => $expectedAmount,
+                    'query' => $queryAmount,
+                ]);
+
+                return [
+                    'paid' => false,
+                    'trade_no' => $result['trade_no'],
+                    'trade_status' => $result['trade_status'],
+                    'message' => '支付金额与充值金额不一致，请核对后重试',
+                ];
+            }
+
             $this->completeRechargePayment($payment, $result['trade_no'], $result['raw']);
 
             return ['paid' => true, 'trade_no' => $result['trade_no']];
@@ -2823,6 +2844,14 @@ class PaymentService
 
             if ((int) $order->status !== OrderStatus::COMPLETED) {
                 $provisionData = is_array($service->provision_data ?? null) ? $service->provision_data : [];
+
+                // 待人工开通：服务停在 PENDING 且带人工原因，没有任何自动流程会把它推进到 COMPLETED。
+                // 这类状态没有 provision_error，但同样不构成「已履约」——若放行会清掉
+                // fulfillment_pending，管理员看不到「待开通」线索，用户也无法自助重试。
+                if ((int) $service->status === ServiceStatus::PENDING
+                    && trim((string) ($service->suspended_reason ?? '')) !== '') {
+                    return false;
+                }
 
                 return empty($provisionData['provision_error']);
             }
