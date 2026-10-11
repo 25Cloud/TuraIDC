@@ -181,6 +181,13 @@ class PaymentInvoiceProjectionSyncTest extends TestCase
                 return $table === 'payment_callbacks' ? false : $actualSchema->hasTable($table);
             });
 
+        // 投影行构造按列探测可选字段（trace_id/operator/remark 等）：
+        // 「投影表缺失」场景同样按不存在放行，否则 Mockery 会因未预期调用报 BadMethodCall
+        Schema::shouldReceive('hasColumn')
+            ->andReturnUsing(static function (string $table, string $column) use ($actualSchema): bool {
+                return $table === 'payment_callbacks' ? false : $actualSchema->hasColumn($table, $column);
+            });
+
         $synced = app(PaymentService::class)->syncProjection($payment);
 
         $this->assertInstanceOf(Payment::class, $synced);

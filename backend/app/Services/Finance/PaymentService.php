@@ -3840,7 +3840,7 @@ class PaymentService
 
     public function syncProjection(Payment $payment): Payment
     {
-        if (! DatabaseSchema::hasTable('payment_callbacks')) {
+        if (! Schema::hasTable('payment_callbacks')) {
             return $payment->fresh() ?? $payment;
         }
 
@@ -3879,7 +3879,7 @@ class PaymentService
         ?string $gatewayTradeNo = null,
         ?string $traceId = null,
     ): void {
-        if (! DatabaseSchema::hasTable('payment_callbacks') || ! $payment->exists) {
+        if (! Schema::hasTable('payment_callbacks') || ! $payment->exists) {
             return;
         }
 
@@ -3898,11 +3898,11 @@ class PaymentService
         ];
         $gatewayContext = $this->paymentGatewayBindingResolver()->contextForPayment($payment);
 
-        if (DatabaseSchema::hasColumn('payment_callbacks', 'plugin_id')) {
+        if (Schema::hasColumn('payment_callbacks', 'plugin_id')) {
             $row['plugin_id'] = $gatewayContext['plugin_id'];
         }
 
-        if (DatabaseSchema::hasColumn('payment_callbacks', 'gateway_key')) {
+        if (Schema::hasColumn('payment_callbacks', 'gateway_key')) {
             $row['gateway_key'] = $gatewayContext['gateway_key'];
         }
 

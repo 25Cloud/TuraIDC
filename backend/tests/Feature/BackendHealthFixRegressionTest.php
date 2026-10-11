@@ -142,7 +142,7 @@ class BackendHealthFixRegressionTest extends TestCase
             app(ServiceTransformService::class)->buildProductConfigOptionsCacheKey($supplier, 123)
         );
         $this->assertSame(
-            "upstream:zjmf_finance_api:host_modules:v2:{$supplierId}:456",
+            "upstream:zjmf_finance_api:host_modules:v3:{$supplierId}:456",
             app(ServiceDetailService::class)->buildMonitorModuleCacheKey($supplier, 456)
         );
         $this->assertSame(

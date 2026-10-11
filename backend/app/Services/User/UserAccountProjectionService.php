@@ -72,17 +72,10 @@ class UserAccountProjectionService
                 'u.email',
                 'u.verification_status',
             ])
-            ->selectRaw('COALESCE(ua.cash_balance, u.balance, 0) as resolved_cash_balance')
-            ->selectRaw('COALESCE(ua.credit_limit, u.credit_limit, 0) as resolved_credit_limit')
-            ->selectRaw(
-                'CASE
-                    WHEN ua.user_id IS NULL THEN COALESCE(u.referral_available_amount, 0)
-                    WHEN ROUND(COALESCE(ua.referral_available_balance, 0), 2) = 0
-                        AND ROUND(COALESCE(u.referral_available_amount, 0), 2) <> 0
-                    THEN u.referral_available_amount
-                    ELSE COALESCE(ua.referral_available_balance, 0)
-                END as resolved_referral_available_balance'
-            )
+            // user_accounts 是资金列唯一真源：账户缺失按 0 兜底，不再回落到已删除的 users 资金列
+            ->selectRaw('COALESCE(ua.cash_balance, 0) as resolved_cash_balance')
+            ->selectRaw('COALESCE(ua.credit_limit, 0) as resolved_credit_limit')
+            ->selectRaw('COALESCE(ua.referral_available_balance, 0) as resolved_referral_available_balance')
             ->first();
 
         if ($row === null) {
@@ -186,17 +179,13 @@ class UserAccountProjectionService
 
     private function missingUsersQuery(): Builder
     {
+        // users 表的资金列已全部迁至 user_accounts（mismatchQuery 同款口径）：
+        // 这里只取 id，缺失账户按默认 0 回填，选中已删除的 u.balance 会在新库上直接报错
         return DB::table('users as u')
             ->leftJoin('user_accounts as ua', 'ua.user_id', '=', 'u.id')
             ->whereNull('ua.user_id')
             ->select([
                 'u.id',
-                'u.balance',
-                'u.credit_limit',
-                'u.referral_frozen_amount',
-                'u.referral_available_amount',
-                'u.referral_withdrawing_amount',
-                'u.referral_withdrawn_amount',
             ]);
     }
 
@@ -211,12 +200,12 @@ class UserAccountProjectionService
 
     private function mismatchSelectQuery(): Builder
     {
+        // users 资金列已删除（mismatchQuery 恒空），样本只取账户侧列：
+        // 继续 select u.balance 等列会在新库上直接报错
         $query = $this->mismatchQuery()->select('u.id as user_id');
 
-        foreach (self::FIELD_MAP as $userColumn => $accountColumn) {
-            $query
-                ->selectRaw("u.{$userColumn} as users_{$userColumn}")
-                ->selectRaw("ua.{$accountColumn} as account_{$accountColumn}");
+        foreach (array_values(self::FIELD_MAP) as $accountColumn) {
+            $query->selectRaw("ua.{$accountColumn} as account_{$accountColumn}");
         }
 
         return $query;

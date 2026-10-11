@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Service;
 use App\Models\Supplier;
-use App\Services\ClientServiceConsole\ClientServiceConsoleService;
+use App\Services\ClientServiceConsole\ServiceDetailService;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -20,7 +20,7 @@ class SyncUpstreamServicesCommand extends Command
 
     protected $description = '批量从上游拉取服务最新状态（IP、运行状态等）并同步到本地';
 
-    public function handle(ClientServiceConsoleService $consoleService, PluginBindingResolver $bindingResolver): int
+    public function handle(ServiceDetailService $detailService, PluginBindingResolver $bindingResolver): int
     {
         $dryRun = (bool) $this->option('dry-run');
         $delayMs = max(0, (int) $this->option('delay'));
@@ -102,18 +102,12 @@ class SyncUpstreamServicesCommand extends Command
             $this->line("  同步 服务 #{$service->id}（{$service->name}）upstream_host_id={$hostId} ...");
 
             try {
-                // 借助反射调用私有方法
-                $ref = new \ReflectionClass($consoleService);
-
-                $fetchMethod = $ref->getMethod('fetchRemoteState');
-                $fetchMethod->setAccessible(true);
-                $remote = $fetchMethod->invoke($consoleService, $service);
+                // fetchRemoteState / syncServiceFromRemote 只定义在 ServiceDetailService 上，
+                // 直接注入子服务调用；对 ClientServiceConsoleService 门面反射必然失败。
+                $remote = $detailService->fetchRemoteState($service);
 
                 if (! empty($remote['host']) || ! empty($remote['runtime']) || ! empty($remote['nat'])) {
-                    $syncMethod = $ref->getMethod('syncServiceFromRemote');
-                    $syncMethod->setAccessible(true);
-                    $syncMethod->invoke(
-                        $consoleService,
+                    $detailService->syncServiceFromRemote(
                         $service,
                         $remote['host'] ?? [],
                         $remote['runtime'] ?? [],
