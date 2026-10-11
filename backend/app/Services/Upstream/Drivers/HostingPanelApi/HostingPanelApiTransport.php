@@ -1035,8 +1035,13 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
     /**
      * 供应商站点根地址（scheme://host[:port]），供魔方财务老协议端点（/host/header、
      * /provision/custom/*）拼接；api_url 中的路径前缀仅属于 v10 API。
+     *
+     * 必须是 public：上游插件（zjmf_finance 的 ZjmfFinanceTransport）以「组合」方式
+     * 持有本类实例并转发调用，不是继承，拿不到 protected 权限。声明为 private 时，
+     * 插件批量对接会在跨类作用域直接抛 `Error: Call to private method`，
+     * 被插件运行时兜底成「插件执行失败」——现象是点「执行对接」必然报错。
      */
-    private function resolveSupplierRootUrl(Supplier $supplier): string
+    public function resolveSupplierRootUrl(Supplier $supplier): string
     {
         $parts = parse_url(trim((string) $supplier->api_url));
         if (! is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
