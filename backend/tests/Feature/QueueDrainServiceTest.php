@@ -27,6 +27,9 @@ class QueueDrainServiceTest extends TestCase
 
         $automationLock = Cache::lock('scheduler:queue-drain:automation', 60);
         $this->assertTrue($automationLock->get());
+        // 残锁自愈：锁被占且存活心跳缺失/过期时，drain 会判为上一次崩溃留下的残锁并强制释放。
+        // 本用例模拟的是「活着的 worker 正在排空」，因此补写心跳键使其不被误回收。
+        Cache::put('scheduler:queue-drain:automation:heartbeat', time(), 300);
 
         $service = new class extends QueueDrainService
         {
@@ -61,7 +64,10 @@ class QueueDrainServiceTest extends TestCase
         $this->assertSame(['automation'], $summary['busy_workers']);
         $this->assertSame('completed', $summary['workers']['business']['status']);
         $this->assertSame('in_progress', $summary['workers']['automation']['status']);
-        $this->assertArrayHasKey('provision,referral,notification,coupon,default', $service->processes);
+        // provision 已从 business 组拆出独立成组：drain 会分别拉起 provision 与
+        // referral,notification,coupon,default 两个 worker，而不是合并成一个
+        $this->assertArrayHasKey('provision', $service->processes);
+        $this->assertArrayHasKey('referral,notification,coupon,default', $service->processes);
     }
 
     public function test_parallel_workers_wait_for_automation_after_business_worker_fails(): void
@@ -121,7 +127,14 @@ class QueueDrainServiceTest extends TestCase
         config()->set('cache.default', 'array');
         $this->ensureJobsTable();
 
+        $provisionLock = new RecordingQueueDrainLock;
         $businessLock = new RecordingQueueDrainLock;
+        // provision 队列已从 business 组拆出独立成组，drain 会依次请求三把锁：
+        // provision / business / automation。漏桩 provision 会因 Mockery 拒绝未预期调用而报错。
+        Cache::shouldReceive('lock')
+            ->once()
+            ->with('scheduler:queue-drain:provision', \Mockery::type('int'))
+            ->andReturn($provisionLock);
         Cache::shouldReceive('lock')
             ->once()
             ->with('scheduler:queue-drain:business', \Mockery::type('int'))
@@ -160,6 +173,8 @@ class QueueDrainServiceTest extends TestCase
         $this->assertSame(['automation'], $summary['busy_workers']);
         $this->assertSame('completed', $summary['workers']['business']['status']);
         $this->assertSame('in_progress', $summary['workers']['automation']['status']);
+        // provision 与 business 各持一把锁、各自释放一次：automation 抛异常不影响其余队列正常排空
+        $this->assertSame(1, $provisionLock->releaseCount);
         $this->assertSame(1, $businessLock->releaseCount);
     }
 

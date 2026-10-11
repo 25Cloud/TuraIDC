@@ -318,7 +318,9 @@ class ClientRecordResponsibilityBoundaryTest extends TestCase
             ->assertJsonPath('data.invoice.id', (int) $invoice->id)
             ->assertJsonPath('data.invoice.basic.invoice_no', (string) $invoice->invoice_no)
             ->assertJsonPath('data.invoice.payment_chain.payments.0.payment_no', (string) $payment->payment_no)
-            ->assertJsonPath('data.invoice.payment_chain.payments.0.trade_no', (string) $payment->trade_no);
+            // 客户端不下发第三方交易号：trade_no 是上游凭证，钓鱼/社工可伪造对账，
+            // 客户端只需自己的支付单号即可对账（ClientInvoiceDetailResource::isSensitiveKey 已剥离）
+            ->assertJsonMissingPath('data.invoice.payment_chain.payments.0.trade_no');
     }
 
     private function createClientUser(string $seed): User

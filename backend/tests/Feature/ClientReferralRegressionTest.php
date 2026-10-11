@@ -9,12 +9,17 @@ use App\Models\MemberLevel;
 use App\Models\Order;
 use App\Models\ReferralReward;
 use App\Models\User;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class ClientReferralRegressionTest extends TestCase
 {
+    // 本类用 firstOrCreate 建默认等级：共享测试库不回滚时这行会永久留存，
+    // 其销售额区间 [0,300] 会与其它用例新建的等级重叠，让等级更新的重叠校验随机报错
+    use DatabaseTransactions;
+
     public function test_referral_endpoints_work_without_user_accounts_and_account_transactions_tables(): void
     {
         MemberLevel::query()->firstOrCreate(

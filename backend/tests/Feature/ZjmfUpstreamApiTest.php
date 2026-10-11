@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\ZjmfUpstream\DcimService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
@@ -26,6 +27,9 @@ use Tests\TestCase;
  */
 class ZjmfUpstreamApiTest extends TestCase
 {
+    // 上游绑定行会被外键审计断言「候选外键无孤儿」，共享测试库不回滚会污染后续运行
+    use DatabaseTransactions;
+
     /** @var list<int> */
     private array $productIds = [];
 

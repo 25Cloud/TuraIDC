@@ -110,7 +110,17 @@ class ApiSmokeTest extends TestCase
 
     private function isExpectedReadinessFailure(string $uri, int $statusCode, string $content): bool
     {
-        if ($uri !== '/api/ready' || $statusCode !== 503) {
+        if ($statusCode !== 503) {
+            return false;
+        }
+
+        // 人机验证脚本：上游 GeeTest 不可用时端点有意返回 503 + 降级脚本
+        // （脚本内含 __TURA_GEETEST_FALLBACK__ 标记），属设计内降级而非服务端故障
+        if ($uri === '/api/v2/client/auth/captcha-script') {
+            return str_contains($content, '__TURA_GEETEST_FALLBACK__');
+        }
+
+        if ($uri !== '/api/ready') {
             return false;
         }
 
