@@ -39,6 +39,15 @@ class CouponService
         InvoiceStatus::PAID,
     ];
 
+    /**
+     * 使持有券不可再次使用的账单状态：待支付=结算占用（挂账）；已支付=已核销，
+     * 或已核销但异步同步尚未完成。列表排除、分组归属、展示状态、占用拦截四处共用。
+     */
+    private const COUPON_BLOCKING_INVOICE_STATUSES = [
+        InvoiceStatus::UNPAID,
+        InvoiceStatus::PAID,
+    ];
+
     private const USED_ORDER_STATUSES = [
         OrderStatus::PAID,
         OrderStatus::PROCESSING,
@@ -189,13 +198,25 @@ class CouponService
     {
         $this->assertCouponsTableAvailable();
 
-        $coupon->forceFill([
-            'status' => (int) $coupon->status === CouponStatus::ACTIVE
-                ? CouponStatus::DISABLED
-                : CouponStatus::ACTIVE,
-            'operator' => (string) ($context['operator'] ?? $coupon->operator ?? ''),
-            'trace_id' => (string) ($context['trace_id'] ?? $coupon->trace_id ?? ''),
-        ])->save();
+        // 行锁内读-判-写：并发双击启用/停用时后写者基于翻转后的最新状态再翻转，
+        // 避免两个请求都读到旧状态把最终状态翻回目标反面
+        DB::transaction(function () use ($coupon, $context): void {
+            $locked = Coupon::query()
+                ->whereKey($coupon->id)
+                ->lockForUpdate()
+                ->first();
+            throw_if(! $locked, new BusinessException('优惠券不存在或已删除'));
+
+            $locked->forceFill([
+                'status' => (int) $locked->status === CouponStatus::ACTIVE
+                    ? CouponStatus::DISABLED
+                    : CouponStatus::ACTIVE,
+                'operator' => (string) ($context['operator'] ?? $locked->operator ?? ''),
+                'trace_id' => (string) ($context['trace_id'] ?? $locked->trace_id ?? ''),
+            ])->save();
+
+            $coupon->setRawAttributes($locked->getAttributes());
+        });
 
         return $this->transformCouponForAdmin($coupon->fresh(), $this->resolveProductNameMapFromCoupons(collect([$coupon])));
     }
@@ -607,7 +628,12 @@ class CouponService
             ->with('coupon')
             ->where('user_id', $userId)
             ->whereHas('coupon')
-            ->where('status', 1)
+            ->where('status', UserCouponStatus::OWNED)
+            // 排除预留中的券：预留窗口内占用必被拒，不提前过滤会造成「可选但结账必败」
+            ->where(function ($query): void {
+                $query->whereNull('reserved_until')
+                    ->orWhere('reserved_until', '<', now());
+            })
             ->orderByDesc('id')
             ->get();
 
@@ -698,6 +724,17 @@ class CouponService
                 ->whereIn('status', self::USED_INVOICE_STATUSES)
                 ->exists(),
             new BusinessException('优惠券已使用')
+        );
+
+        // 防双花事前拦截：同券已有一张待支付账单（含预留已过期场景）时拒绝再占用，
+        // 否则会建立并存可支付账单，两张都支付即同一张券双重抵扣
+        throw_if(
+            Invoice::query()
+                ->where('user_id', $userId)
+                ->where('user_coupon_id', $resolvedUserCouponId)
+                ->where('status', InvoiceStatus::UNPAID)
+                ->exists(),
+            new BusinessException('该优惠券已有待支付账单，请先完成支付或取消后再使用')
         );
 
         $payload = $this->buildOwnedCouponPayload($userCoupon, $product, $billingCycle, $amount, $userId, $orderType);
@@ -797,7 +834,7 @@ class CouponService
             return;
         }
 
-        DB::transaction(function () use ($couponId, $userCouponId) {
+        DB::transaction(function () use ($couponId, $userCouponId, $invoice) {
             if ($couponId > 0) {
                 $coupon = Coupon::query()
                     ->whereKey($couponId)
@@ -853,11 +890,19 @@ class CouponService
                         return;
                     }
 
+                    // 回落 OWNED 时若同券还有其他待支付账单（并发窗口内新账单刚写入的预留），
+                    // 保留 reserved_until，避免本次释放把活跃预留清掉、重开双花窗口
+                    $keepsReservation = Invoice::query()
+                        ->where('user_coupon_id', $userCouponId)
+                        ->where('id', '!=', (int) $invoice->id)
+                        ->where('status', InvoiceStatus::UNPAID)
+                        ->exists();
+
                     $userCoupon->forceFill([
                         'status' => UserCouponStatus::OWNED,
                         'used_at' => null,
                         'last_used_at' => null,
-                        'reserved_until' => null,
+                        'reserved_until' => $keepsReservation ? $userCoupon->reserved_until : null,
                     ])->save();
                 }
             }
@@ -1104,28 +1149,85 @@ class CouponService
         $now = now();
 
         if ($statusFilter === 'expired') {
+            // 已使用（status=2）属于「已用完」分组；过期分组只收已回收（status=3）
+            // 与自身失效（停用/未开始/已过期/私发被移除）的持有券
             $query->where(function ($builder) use ($now) {
-                $builder->where('user_coupons.status', '!=', 1)
-                    ->orWhere('coupons.status', '!=', CouponStatus::ACTIVE)
-                    ->orWhere(function ($subQuery) {
-                        $subQuery->where('coupons.distribution_type', 'private')
-                            ->where(function ($receiveTypeQuery) {
-                                $receiveTypeQuery->whereNull('user_coupons.receive_type')
-                                    ->orWhere('user_coupons.receive_type', '!=', 'grant');
+                $builder->where('user_coupons.status', UserCouponStatus::REVOKED)
+                    ->orWhere(function ($ownedQuery) use ($now) {
+                        $ownedQuery->where('user_coupons.status', UserCouponStatus::OWNED)
+                            ->where(function ($invalidQuery) use ($now) {
+                                $invalidQuery->where('coupons.status', '!=', CouponStatus::ACTIVE)
+                                    ->orWhere(function ($receiveTypeQuery) {
+                                        $receiveTypeQuery->where('coupons.distribution_type', 'private')
+                                            ->where(function ($innerQuery) {
+                                                $innerQuery->whereNull('user_coupons.receive_type')
+                                                    ->orWhere('user_coupons.receive_type', '!=', 'grant');
+                                            });
+                                    })
+                                    ->orWhere(function ($subQuery) use ($now) {
+                                        $subQuery->whereNotNull('coupons.starts_at')->where('coupons.starts_at', '>', $now);
+                                    })
+                                    ->orWhere(function ($subQuery) use ($now) {
+                                        $subQuery->whereNotNull('coupons.expires_at')->where('coupons.expires_at', '<', $now);
+                                    });
                             });
-                    })
-                    ->orWhere(function ($subQuery) use ($now) {
-                        $subQuery->whereNotNull('coupons.starts_at')->where('coupons.starts_at', '>', $now);
-                    })
-                    ->orWhere(function ($subQuery) use ($now) {
-                        $subQuery->whereNotNull('coupons.expires_at')->where('coupons.expires_at', '<', $now);
                     });
             });
 
             return;
         }
 
-        $query->where('user_coupons.status', 1)
+        if ($statusFilter === 'used_up') {
+            // 已核销（status=2）无条件归「已用完」（不受券自身停用/过期限制，与展示层
+            // resolveOwnedCouponStatus 对 USED 最先判 used_up 的顺序一致，保证三分组
+            // 与 total 完备不重不漏）；持有中但资格不可用（首单已用/达限/已占用）的一并归入。
+            // 「已占用」= 预留仍在窗口内或同券存在待支付/已支付账单，与展示层同一判定，
+            // 否则预留/挂账期间该券会掉出全部三个分组（分组之和 < total）。
+            $firstOrderBlocked = $hasPlacedOrder || $this->hasPendingFirstOrderCouponUsage($userId);
+            $query->where(function ($builder) use ($now, $firstOrderBlocked, $userId) {
+                $builder->where('user_coupons.status', UserCouponStatus::USED)
+                    ->orWhere(function ($ownedQuery) use ($now, $firstOrderBlocked, $userId) {
+                        $ownedQuery->where('user_coupons.status', UserCouponStatus::OWNED)
+                            ->where('coupons.status', CouponStatus::ACTIVE)
+                            ->where(function ($windowQuery) use ($now) {
+                                $windowQuery->whereNull('coupons.starts_at')->orWhere('coupons.starts_at', '<=', $now);
+                            })
+                            ->where(function ($windowQuery) use ($now) {
+                                $windowQuery->whereNull('coupons.expires_at')->orWhere('coupons.expires_at', '>=', $now);
+                            })
+                            ->where(function ($grantQuery) {
+                                $grantQuery->where('coupons.distribution_type', '!=', 'private')
+                                    ->orWhere('user_coupons.receive_type', 'grant');
+                            })
+                            ->where(function ($blockedQuery) use ($now, $firstOrderBlocked, $userId) {
+                                if ($firstOrderBlocked) {
+                                    $blockedQuery->where('coupons.first_order_only', 1);
+                                }
+
+                                $blockedQuery->orWhere(function ($subQuery) use ($userId) {
+                                    $subQuery->where('coupons.per_user_limit', '>', 0)
+                                        ->whereRaw('('.$this->ownedCouponUsageCountSql().') >= coupons.per_user_limit', [$userId, InvoiceStatus::CANCELLED]);
+                                });
+
+                                $blockedQuery->orWhere(function ($subQuery) use ($now) {
+                                    $subQuery->whereNotNull('user_coupons.reserved_until')
+                                        ->where('user_coupons.reserved_until', '>=', $now);
+                                });
+
+                                $blockedQuery->orWhereExists(function ($subQuery) {
+                                    $subQuery->selectRaw('1')
+                                        ->from('invoices')
+                                        ->whereColumn('invoices.user_coupon_id', 'user_coupons.id')
+                                        ->whereIn('invoices.status', self::COUPON_BLOCKING_INVOICE_STATUSES);
+                                });
+                            });
+                    });
+            });
+
+            return;
+        }
+
+        $query->where('user_coupons.status', UserCouponStatus::OWNED)
             ->where('coupons.status', CouponStatus::ACTIVE)
             ->where(function ($builder) use ($now) {
                 $builder->whereNull('coupons.starts_at')->orWhere('coupons.starts_at', '<=', $now);
@@ -1136,24 +1238,20 @@ class CouponService
             ->where(function ($builder) {
                 $builder->where('coupons.distribution_type', '!=', 'private')
                     ->orWhere('user_coupons.receive_type', 'grant');
+            })
+            // 与结账可用券列表同口径：预留中、或同券已有待支付/已支付账单的券不可立即结账，不归入可用分组
+            ->where(function ($builder) {
+                $builder->whereNull('user_coupons.reserved_until')
+                    ->orWhere('user_coupons.reserved_until', '<', now());
+            })
+            ->whereNotExists(function ($builder) {
+                $builder->selectRaw('1')
+                    ->from('invoices')
+                    ->whereColumn('invoices.user_coupon_id', 'user_coupons.id')
+                    ->whereIn('invoices.status', self::COUPON_BLOCKING_INVOICE_STATUSES);
             });
 
-        if ($statusFilter === 'used_up') {
-            $query->where(function ($builder) use ($hasPlacedOrder, $userId) {
-                if ($hasPlacedOrder) {
-                    $builder->where('coupons.first_order_only', 1);
-                }
-
-                $builder->orWhere(function ($subQuery) use ($userId) {
-                    $subQuery->where('coupons.per_user_limit', '>', 0)
-                        ->whereRaw('('.$this->ownedCouponUsageCountSql().') >= coupons.per_user_limit', [$userId, InvoiceStatus::CANCELLED]);
-                });
-            });
-
-            return;
-        }
-
-        if ($hasPlacedOrder) {
+        if ($hasPlacedOrder || $this->hasPendingFirstOrderCouponUsage($userId)) {
             $query->where('coupons.first_order_only', 0);
         }
 
@@ -2132,6 +2230,29 @@ class CouponService
         return Invoice::query()
             ->where('user_id', $userId)
             ->where('status', '!=', InvoiceStatus::CANCELLED)
+            ->exists();
+    }
+
+    /**
+     * 用户存在使用「仅限首单」优惠券创建的未支付账单：该用户的首单资格已被挂账占用。
+     * 与展示层/分组层共用，避免挂账期间首单券同时出现在「可用」与「已用完」之外。
+     */
+    private function hasPendingFirstOrderCouponUsage(int $userId): bool
+    {
+        if ($userId <= 0) {
+            return false;
+        }
+
+        return Invoice::query()
+            ->where('user_id', $userId)
+            ->where('status', InvoiceStatus::UNPAID)
+            ->whereNotNull('coupon_id')
+            ->whereExists(function ($query): void {
+                $query->selectRaw('1')
+                    ->from('coupons')
+                    ->whereColumn('coupons.id', 'invoices.coupon_id')
+                    ->where('coupons.first_order_only', 1);
+            })
             ->exists();
     }
 
