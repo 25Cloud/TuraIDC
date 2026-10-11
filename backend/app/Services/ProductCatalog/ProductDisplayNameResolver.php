@@ -113,9 +113,16 @@ class ProductDisplayNameResolver
         $nameFallback = $customDisplayName !== ''
             ? $customDisplayName
             : $this->resolveProductNameFallbackText($product, $configSnapshot);
+        // 回退顺序：实例规格文本 → CPU/内存展示 → 自定义名 → 商品名/remark（legacy 链）。
+        // legacyProductName 由 resolveLegacyProductNameText 产出（唯一会读 remark 的路径），
+        // 必须接进最后兜底：商品既无规格绑定、配置里也没有 cpu/memory 时，此前它被丢弃、
+        // 直接落到「未配置规格 #ID」，而 remark 里往往就是运营写好的商品全称。
+        $lastResort = $nameFallback !== ''
+            ? $nameFallback
+            : ($legacyProductName !== '' ? $legacyProductName : '未配置规格 #'.(int) $product->id);
         $productSpecDisplay = $instanceSpecText !== ''
             ? $instanceSpecText
-            : ($cpuMemoryDisplay !== '' ? $cpuMemoryDisplay : ($nameFallback !== '' ? $nameFallback : '未配置规格 #'.(int) $product->id));
+            : ($cpuMemoryDisplay !== '' ? $cpuMemoryDisplay : $lastResort);
         $productSpecDisplay = $this->normalizeDisplayNameText($productSpecDisplay);
         $productDisplayName = $this->normalizeDisplayNameText(
             $customDisplayName !== '' ? $customDisplayName : $productSpecDisplay
@@ -128,7 +135,7 @@ class ProductDisplayNameResolver
             'custom_display_name' => $customDisplayName,
             'cpu_memory_display' => $cpuMemoryDisplay !== ''
                 ? $cpuMemoryDisplay
-                : ($instanceSpecText !== '' ? $instanceSpecText : '未配置规格 #'.(int) $product->id),
+                : ($instanceSpecText !== '' ? $instanceSpecText : $lastResort),
             'combined_display_name' => $combinedDisplayName !== ''
                 ? $combinedDisplayName
                 : ($productSpecDisplay !== '' ? $productSpecDisplay : '未配置规格 #'.(int) $product->id),
