@@ -32,7 +32,9 @@ class PluginBoundaryTest extends TestCase
         $bootstrap = file_get_contents($backendPath.'/bootstrap/app.php');
 
         $this->assertIsString($bootstrap);
-        $this->assertStringNotContainsString('zjmf.', $bootstrap);
+        // 魔方「上游协议」是平台核心功能（routes/v2-zjmf-upstream.php 与
+        // EnsureZjmfUpstreamAuthenticated 中间件），允许存在于主应用；
+        // 本边界测试针对的是 zjmf_bridge 附加插件的运行时不得漏进主应用。
         $this->assertStringNotContainsString('zjmf_bridge', $bootstrap);
     }
 }

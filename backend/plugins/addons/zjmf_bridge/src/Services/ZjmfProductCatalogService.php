@@ -536,12 +536,18 @@ class ZjmfProductCatalogService
             ->onSale()
             ->whereNotNull('product_group_id')
             ->with([
-                'productGroup.parent.parent',
+                'productGroup.secondProductGroup.firstProductGroup',
             ])
             ->withVisibleProductGroupPath(ProductType::visibleValues())
             ->when($productType !== null, fn (Builder $query) => $query->underRootProductGroup(null, $productType))
-            ->when($firstGroupId !== null, fn (Builder $query) => $query->inProductGroupTree($firstGroupId))
-            ->when($secondGroupId !== null, fn (Builder $query) => $query->inProductGroupTree($secondGroupId))
+            // 一级组过滤必须走树内 scope：商品挂在二级/三级组上，
+            // inProductGroupTree/inCurrentProductGroup 是按 product_group_id 精确匹配，永远为空
+            ->when($firstGroupId !== null, fn (Builder $query) => $query->inFirstProductGroup($firstGroupId))
+            // 二级组过滤 = 该二级组直挂商品 ∪ 其三级组直挂商品
+            ->when($secondGroupId !== null, fn (Builder $query) => $query->where(
+                fn (Builder $inner) => $inner->inSecondProductGroup($secondGroupId)
+                    ->orWhere('product_group_id', $secondGroupId)
+            ))
             ->when($thirdGroupId !== null, fn (Builder $query) => $query->inCurrentProductGroup($thirdGroupId))
             ->when($effectiveGroupId !== null, function (Builder $query) use ($effectiveGroupId): void {
                 $query->inCurrentProductGroup($effectiveGroupId);

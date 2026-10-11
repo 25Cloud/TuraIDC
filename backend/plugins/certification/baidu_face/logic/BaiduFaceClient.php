@@ -417,10 +417,8 @@ class BaiduFaceClient
      */
     private function isVerificationPassed(array $result): bool
     {
-        if (($result['success'] ?? null) === true) {
-            return true;
-        }
-
+        // 顶层 success 只代表接口调用成功，结论必须取自 result 内的状态字段：
+        // 否则接口通但未出结论/审核中的响应会被误判为实名通过（资金与合规风险）。
         if (! $this->isBaiduSuccess($result)) {
             return false;
         }
@@ -432,7 +430,19 @@ class BaiduFaceClient
             ['status'],
         ]));
 
-        return in_array($status, ['success', 'passed', 'pass', '1', 'true'], true);
+        if (in_array($status, ['success', 'passed', 'pass', '0', 'true'], true)) {
+            return true;
+        }
+
+        // H5 结果详情接口：仅认证完成且通过时才返回 verify_result 明细与证件确认信息，
+        // 两者齐备且无显式失败状态字段即可判定通过（审核中/未出结论不会有该结构）。
+        $verifyResult = $result['result']['verify_result'] ?? null;
+        $idcardConfirm = $result['result']['idcard_confirm'] ?? null;
+        if (is_array($verifyResult) && $verifyResult !== [] && is_array($idcardConfirm) && $idcardConfirm !== []) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -444,10 +454,9 @@ class BaiduFaceClient
             return false;
         }
 
-        $verifyStatus = (int) ($result['result']['verify_status'] ?? 0);
-        $score = (float) ($result['result']['score'] ?? 0);
-
-        return $verifyStatus === 0 && $score >= $this->scoreThreshold();
+        // 百度服务端已按其阈值给出 verify_status（0=通过，缺失视为未通过）：
+        // 本地不再叠加 score 门槛，避免「上游判定通过、本地拒绝」的口径背离。
+        return (int) ($result['result']['verify_status'] ?? -1) === 0;
     }
 
     /**
@@ -458,6 +467,25 @@ class BaiduFaceClient
         $code = (string) ($result['error_code'] ?? $result['code'] ?? '');
         if (in_array($code, ['18', '216402', '216403'], true)) {
             return true;
+        }
+
+        // 接口调用成功但 result 内没有任何结论字段（尚未出结果）：按处理中处理，
+        // 不能落到「未通过」分支把审核中的认证误判为失败。
+        $status = trim((string) $this->stringFromPaths($result, [
+            ['result', 'status'],
+            ['result', 'verify_status'],
+            ['result', 'auth_status'],
+            ['status'],
+        ]));
+        if (($result['success'] ?? null) === true && $status === '') {
+            return true;
+        }
+
+        $normalizedStatus = strtolower($status);
+        foreach (['audit', 'processing', 'pending', 'running'] as $keyword) {
+            if (str_contains($normalizedStatus, $keyword)) {
+                return true;
+            }
         }
 
         $message = strtolower((string) ($result['error_msg'] ?? $result['message'] ?? $result['msg'] ?? ''));
@@ -479,7 +507,13 @@ class BaiduFaceClient
             return true;
         }
 
-        $code = $result['error_code'] ?? $result['code'] ?? 0;
+        // 缺少任何成功标记（success/error_code/code 均缺失）的畸形响应不可信，
+        // 严格拒绝，避免把空响应当作上游成功
+        if (! array_key_exists('error_code', $result) && ! array_key_exists('code', $result)) {
+            return false;
+        }
+
+        $code = $result['error_code'] ?? $result['code'];
         $message = strtoupper(trim((string) ($result['error_msg'] ?? $result['message'] ?? '')));
 
         return ((string) $code === '0' || $code === 0) && ! in_array($message, ['FAILED', 'FAIL'], true);
@@ -490,7 +524,8 @@ class BaiduFaceClient
      */
     private function safeProviderMessage(array $payload, string $fallback): string
     {
-        $text = trim((string) ($payload['error_msg'] ?? $payload['message'] ?? $payload['msg'] ?? ''));
+        // H5 结果详情接口的人读结论放在 result.verify_user_msg（如「认证失败」）
+        $text = trim((string) ($payload['error_msg'] ?? $payload['message'] ?? $payload['msg'] ?? $payload['result']['verify_user_msg'] ?? ''));
         if ($text === '') {
             return $fallback;
         }

@@ -734,11 +734,12 @@ class ServiceConsoleAreaService
         }
 
         // 完整文档若自带 jQuery，就不再注入我们这份，避免二次加载把前一份的插件注册冲掉。
-        // 但「自带」只认 runtimeBase 这条可用路径：上游片段里写死的 /vendor/... 是坏路径，
-        // 留着它就会走进「以为有 jQuery 其实没有」的坑。
+        // 检测排在 legacy 路径改写之后：改写前写死 /vendor/... 的引用是坏路径，改写后已是
+        // 可用的 /media/...；外链 CDN jQuery 同样算「自带」——只认自家路径会把外部 jQuery
+        // 的文档误判为「没带」，造成同页双份 jQuery。
         $isFullDocument = preg_match('~<!doctype\s+html|<html[\s>]~i', $html) === 1;
         $hasUsableJquery = $isFullDocument
-            && stripos($html, $runtimeBase.'/jquery.min.js') !== false;
+            && preg_match('~<script[^>]+src\s*=\s*["\'][^"\']*jquery[^"\']*["\']~i', $html) === 1;
         $skipScripts = $hasUsableJquery;
 
         if (! $skipScripts) {

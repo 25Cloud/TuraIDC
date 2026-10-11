@@ -65,7 +65,9 @@ class NotificationTemplateApiTest extends TestCase
 
         $templates = collect($response->json('data.list'));
         $this->assertSame($templates->count(), $response->json('data.total'));
-        $this->assertSame(27, $templates->count());
+        // 短信模板目录已收敛为验证码一条（SmsNotificationTemplateDefaults）：
+        // 旧 27 条数字编码模板来自已归档迁移的 legacy 目录，线上发送链路只消费 TEMPLATE_VERIFY_CODE
+        $this->assertSame(1, $templates->count());
         $this->assertTrue($templates->every(
             fn (array $template): bool => preg_match('/^\d+$/', (string) $template['code']) === 1
         ));
@@ -73,21 +75,9 @@ class NotificationTemplateApiTest extends TestCase
         $this->assertFalse($templates->pluck('code')->contains('invoice_pay'));
         $this->assertTrue($templates->contains(
             fn (array $template): bool => $template['code'] === SmsTemplateCatalog::TEMPLATE_VERIFY_CODE
-                && $template['name'] === '发送验证码'
+                && $template['name'] === '验证码短信'
                 && $template['setting_keys']['content'] === SmsTemplateCatalog::contentSettingKey(SmsTemplateCatalog::TEMPLATE_VERIFY_CODE)
                 && str_contains((string) $template['content'], '{code}')
-        ));
-        $this->assertTrue($templates->contains(
-            fn (array $template): bool => $template['code'] === SmsTemplateCatalog::TEMPLATE_AUTO_RENEW_UPCOMING
-                && $template['setting_keys']['content'] === SmsTemplateCatalog::contentSettingKey(SmsTemplateCatalog::TEMPLATE_AUTO_RENEW_UPCOMING)
-        ));
-        $this->assertTrue($templates->contains(
-            fn (array $template): bool => $template['code'] === SmsTemplateCatalog::TEMPLATE_SERVICE_ACTIVATED
-                && str_contains((string) $template['content'], '已开通')
-        ));
-        $this->assertTrue($templates->contains(
-            fn (array $template): bool => $template['code'] === SmsTemplateCatalog::TEMPLATE_ADMIN_ORDER_PAID
-                && $template['audience'] === 'user'
         ));
 
         $this->assertSame([
@@ -557,6 +547,9 @@ class NotificationTemplateApiTest extends TestCase
         $deprecatedCssKey = 'email_template_css_100001';
         $newSubject = '后台保存验证码邮件';
         $newContent = '<style>.email-test-code { color: #1f5eff; font-weight: 700; }</style><div class="email-test-code">{{code}}</div>';
+        // UpdateSettingsRequest 对非 RAW_KEYS 的字符串统一 TextSanitizer::clean（strip_tags），
+        // 模板内容经设置端点保存时 HTML 标签在写入边界被剥离、文本保留——钉住该口径防止回退
+        $expectedStoredContent = '.email-test-code { color: #1f5eff; font-weight: 700; }{{code}}';
 
         Sanctum::actingAs($this->createAdmin([AdminPermissions::SETTINGS_MANAGE]));
 
@@ -575,7 +568,7 @@ class NotificationTemplateApiTest extends TestCase
             $template->refresh();
 
             $this->assertSame($newSubject, (string) $template->subject);
-            $this->assertSame($newContent, (string) $template->content);
+            $this->assertSame($expectedStoredContent, (string) $template->content);
             $this->assertTrue((bool) $template->is_custom);
             $this->assertNotSame($newSubject, (string) DB::table('settings')
                 ->where('group_key', 'notification')

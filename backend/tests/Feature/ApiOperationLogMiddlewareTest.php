@@ -16,6 +16,8 @@ class ApiOperationLogMiddlewareTest extends TestCase
     public function test_it_logs_get_api_requests_for_guest_users(): void
     {
         $operationLogService = $this->createMock(OperationLogService::class);
+        // 成功的只读 GET 已有意跳过落库（shouldSkipSuccessfulReadRequest），
+        // 访客 GET 的完整审计元数据改在失败（>=400）请求上验证
         $operationLogService->expects($this->once())
             ->method('write')
             ->with(
@@ -26,7 +28,7 @@ class ApiOperationLogMiddlewareTest extends TestCase
                 null,
                 $this->callback(function (array $detail): bool {
                     $this->assertSame(['scene' => 'home'], $detail['params'] ?? []);
-                    $this->assertSame(200, $detail['status'] ?? null);
+                    $this->assertSame(500, $detail['status'] ?? null);
                     $this->assertSame('trace-get-001', $detail['request_id'] ?? null);
                     $this->assertSame('GET', $detail['method'] ?? null);
                     $this->assertSame('api/v2/site/config', $detail['path'] ?? null);
@@ -47,9 +49,9 @@ class ApiOperationLogMiddlewareTest extends TestCase
         $request->headers->set('User-Agent', 'CodexTest/1.0');
         $request->server->set('REMOTE_ADDR', '127.0.0.1');
 
-        $response = $middleware->handle($request, static fn () => new JsonResponse(['code' => 0], 200));
+        $response = $middleware->handle($request, static fn () => new JsonResponse(['code' => 50000], 500));
 
-        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame(500, $response->getStatusCode());
         $this->assertSame('trace-get-001', $response->headers->get('X-Request-Id'));
     }
 

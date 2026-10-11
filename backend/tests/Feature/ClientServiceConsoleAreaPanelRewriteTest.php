@@ -105,7 +105,7 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
             'sweetalert2.all.min.js',
         ] as $asset) {
             $this->assertStringContainsString(
-                '/vendor/console-panel/'.$asset,
+                '/media/console-panel/'.$asset,
                 $out,
                 '面板必须自带本地运行时：'.$asset
             );
@@ -237,12 +237,12 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
     {
         $out = $this->rewrite($this->fullDocumentFragment());
 
-        $this->assertStringContainsString('/vendor/console-panel/bootstrap.min.css', $out, 'CDN 这类完整文档同样需要 Bootstrap 样式');
-        $this->assertStringContainsString('/vendor/console-panel/jquery.min.js', $out);
+        $this->assertStringContainsString('/media/console-panel/bootstrap.min.css', $out, 'CDN 这类完整文档同样需要 Bootstrap 样式');
+        $this->assertStringContainsString('/media/console-panel/jquery.min.js', $out);
 
         // 插在 charset 之后、</head> 之前，且不把文档套壳成两份
         $charsetAt = strpos($out, 'charset="UTF-8"');
-        $cssAt = strpos($out, 'vendor/console-panel/bootstrap.min.css');
+        $cssAt = strpos($out, '/media/console-panel/bootstrap.min.css');
         $this->assertGreaterThan($charsetAt, $cssAt, '运行时不能插在 charset 之前');
         $this->assertLessThan(strpos($out, '</head>'), $cssAt);
         $this->assertSame(1, substr_count($out, '<!DOCTYPE html>'), '完整文档不能被二次套壳');
@@ -261,11 +261,11 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
         ));
 
         $this->assertStringNotContainsString(
-            '/vendor/console-panel/jquery.min.js',
+            '/media/console-panel/jquery.min.js',
             $out,
             '片段自带 jQuery 时不能再注入一份，否则会冲掉前一份的插件注册'
         );
-        $this->assertStringContainsString('/vendor/console-panel/bootstrap.min.css', $out, '样式仍然要补');
+        $this->assertStringContainsString('/media/console-panel/bootstrap.min.css', $out, '样式仍然要补');
     }
 
     /** 直接驱动反代服务的路径校验（私有实现，不发起任何网络请求）。 */

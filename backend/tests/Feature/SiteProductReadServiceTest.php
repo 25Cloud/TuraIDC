@@ -496,6 +496,7 @@ class SiteProductReadServiceTest extends TestCase
                         && (int) ($quote['user_coupon_id'] ?? 0) === 9;
                 }),
                 [
+                    'user_id' => 88,
                     'request_id' => 'req-site-001',
                     'ip_address' => '127.0.0.1',
                 ]
@@ -693,6 +694,7 @@ class SiteProductReadServiceTest extends TestCase
         Schema::connection('sqlite')->create('products', function (Blueprint $table): void {
             $table->id();
             $table->unsignedBigInteger('product_group_id')->nullable();
+            $table->unsignedBigInteger('product_discount_group_id')->nullable();
             $table->string('service_type_code', 50)->nullable();
             $table->string('name', 190)->nullable();
             $table->string('product_type', 50)->nullable();
@@ -711,6 +713,35 @@ class SiteProductReadServiceTest extends TestCase
             $table->unsignedBigInteger('supplier_product_id')->nullable();
             $table->string('supplier_product_name', 190)->nullable();
             $table->timestamp('deleted_at')->nullable();
+            $table->timestamps();
+        });
+
+        // 站点资源层会经 AgentDiscountService 触碰代理折扣三表（游客路径只查商品折扣组归属）
+        Schema::connection('sqlite')->create('product_discount_groups', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name', 100);
+            $table->string('code', 50)->nullable();
+            $table->decimal('min_discount_rate', 5, 2)->nullable();
+            $table->decimal('cost_rate', 5, 2)->nullable();
+            $table->unsignedTinyInteger('status')->default(1);
+            $table->integer('sort_order')->default(0);
+            $table->string('remark', 255)->nullable();
+            $table->timestamps();
+        });
+
+        Schema::connection('sqlite')->create('agent_groups', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name', 100);
+            $table->unsignedTinyInteger('status')->default(1);
+            $table->decimal('default_discount_rate', 5, 2)->nullable();
+            $table->timestamps();
+        });
+
+        Schema::connection('sqlite')->create('agent_group_discounts', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('agent_group_id');
+            $table->unsignedBigInteger('product_discount_group_id');
+            $table->decimal('discount_rate', 5, 2);
             $table->timestamps();
         });
 
@@ -762,7 +793,8 @@ class SiteProductReadServiceTest extends TestCase
     {
         Cache::flush();
         ProductType::resetCache();
-        $this->resetStaticProperty(Setting::class, 'groupValueCache', []);
+        // Setting 模型现以 tableExistsCache 静态缓存表存在性判定；组值缓存走 Cache 门面，flush 已覆盖
+        $this->resetStaticProperty(Setting::class, 'tableExistsCache', []);
     }
 
     private function createSiteRootGroup(string $productType, string $name, string $slug): SecondProductGroup

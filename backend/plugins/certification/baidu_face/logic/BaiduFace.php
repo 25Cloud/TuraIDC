@@ -92,11 +92,13 @@ class BaiduFace
         $certifyId = trim((string) ($payload['certify_id'] ?? $payload['token'] ?? ''));
 
         if ($certifyId === '') {
+            // H5 回跳不承载可信签名，空参数同属前端引导场景：
+            // 放行到结果页，由后验结果查询（queryStatus）给出真实结论。
             return [
-                'passed' => false,
-                'message' => '签名验证失败',
-                'code' => 40001,
-                'http_status' => 401,
+                'passed' => true,
+                'message' => '回跳参数缺失，请在前端页面重新查询认证结果',
+                'code' => 0,
+                'http_status' => 200,
             ];
         }
 

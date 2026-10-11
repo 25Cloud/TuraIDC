@@ -148,9 +148,11 @@ final class ZjmfAuthManager
     {
         $hostingConfig = config('idc.hosting_panel_api', []);
 
+        // 显式配置优先；未配置时回退全局 cache.default（生产为 redis，测试环境为 array），
+        // 不再硬编码 redis——无 Redis 的环境直接连 redis 会致命报错。
         return trim((string) (
             (is_array($hostingConfig) ? ($hostingConfig['jwt_cache_store'] ?? null) : null)
-            ?? 'redis'
+            ?? config('cache.default', 'redis')
         )) ?: 'redis';
     }
 

@@ -51,7 +51,13 @@ class MessageRateLimitServiceTest extends TestCase
             $this->assertFalse($blocked['ok']);
             $this->assertSame('当前 IP 每分钟发送次数已达上限，请稍后再试', $blocked['message']);
 
-            $this->assertTrue($service->check('email', 'first@example.com', '203.0.113.11')['ok']);
+            // IP 维度隔离：换 IP 且换新目标（first/second 已触发 target-minute 默认 1 条的拦截）应放行
+            $this->assertTrue($service->check('email', 'fresh@example.com', '203.0.113.11')['ok']);
+
+            // target-minute 默认 1 条/分钟：同一目标换 IP 依旧被拦截（与 IP 维度相互独立）
+            $sameTarget = $service->check('email', 'first@example.com', '203.0.113.11');
+            $this->assertFalse($sameTarget['ok']);
+            $this->assertSame('验证码发送过于频繁，请稍后再试', $sameTarget['message']);
         } finally {
             Cache::flush();
             $this->deleteCreatedPlugins($createdPluginIds);
@@ -120,6 +126,9 @@ class MessageRateLimitServiceTest extends TestCase
             $plugin = $this->createPlugin('sms', 'rate_limit_target_sms', 'rate_limit_target_sms', [
                 'rate_limit_enabled' => true,
                 'ip_minute_limit' => 2,
+                // 关闭分钟级目标限流：本用例验证的是 target-hour 维度对轮换 IP 的拦截，
+                // 不关掉默认 1 条/分钟的话第一次 hit 后就会被 target-minute 提前拦下
+                'target_minute_limit' => 0,
                 'target_hour_limit' => 3,
                 'target_day_limit' => 10,
             ]);
