@@ -95,7 +95,13 @@ class AlipayClient
         $expected = trim($this->appId);
         $actual = trim((string) $appId);
 
-        return $expected === '' || ($actual !== '' && hash_equals($expected, $actual));
+        // 商户号未配置时一律拒绝：避免公钥误配/换绑窗口内，第三方商户携带自身合法
+        // 签名的回调因缺少 app_id 比对而被放行
+        if ($expected === '') {
+            return false;
+        }
+
+        return $actual !== '' && hash_equals($expected, $actual);
     }
 
     /**

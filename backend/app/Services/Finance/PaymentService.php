@@ -707,6 +707,7 @@ class PaymentService
                 $payment = Payment::query()
                     ->where('invoice_id', $lockedInvoice->id)
                     ->whereGatewayKey(PaymentGatewayCode::ALIPAY)
+                    ->where('amount', number_format($amount, 2, '.', ''))
                     ->where('status', PaymentStatus::PENDING)
                     ->latest('id')
                     ->first();
@@ -787,9 +788,11 @@ class PaymentService
                 $amount = round((float) $lockedInvoice->amount - (float) ($lockedInvoice->paid_amount ?? 0), 2);
                 throw_if($amount <= 0, new BusinessException('无需支付'));
 
+                // 复用旧待支付单前必须校验金额一致：账单金额/已付额变化后复用旧单会按错价预下单
                 $payment = Payment::query()
                     ->where('invoice_id', $lockedInvoice->id)
                     ->whereGatewayKey($gateway)
+                    ->where('amount', number_format($amount, 2, '.', ''))
                     ->where('status', PaymentStatus::PENDING)
                     ->latest('id')
                     ->first();
@@ -875,6 +878,7 @@ class PaymentService
                 $payment = Payment::query()
                     ->where('order_id', $lockedOrder->id)
                     ->whereGatewayKey($gateway)
+                    ->where('amount', number_format($amount, 2, '.', ''))
                     ->where('status', PaymentStatus::PENDING)
                     ->latest('id')
                     ->first();
@@ -1228,6 +1232,7 @@ class PaymentService
                 $payment = Payment::query()
                     ->where('order_id', $lockedOrder->id)
                     ->whereGatewayKey(PaymentGatewayCode::ALIPAY)
+                    ->where('amount', number_format($amount, 2, '.', ''))
                     ->where('status', PaymentStatus::PENDING)
                     ->latest('id')
                     ->first();
@@ -2085,7 +2090,12 @@ class PaymentService
      */
     public function refundOrderByAlipay(Order $order, array $payload = [], array $context = []): array
     {
-        $lockKey = "lock:refund:alipay:order:{$order->id}";
+        // 与「退回余额」路径共用账单级锁：两把不同的锁挡不住同一账单同时走
+        // 原路退款与余额退款的叠加超额退款。
+        $invoiceIdForKey = (int) (Invoice::query()->where('order_id', (int) $order->id)->orderByDesc('id')->value('id') ?? 0);
+        $lockKey = $invoiceIdForKey > 0
+            ? "lock:refund:invoice:{$invoiceIdForKey}"
+            : "lock:refund:alipay:order:{$order->id}";
 
         return $this->withLock($lockKey, 40, function () use ($order, $payload, $context) {
             $snapshot = DB::transaction(function () use ($order, $payload) {
@@ -2122,7 +2132,8 @@ class PaymentService
                     ];
                 }
 
-                $refundableAmount = $this->resolveBalanceRefundableAmount($invoice, $payment);
+                // 原路退款与「退回余额」同口径：扣除已完成退款，防止两条退款通道叠加超额退款
+                $refundableAmount = $this->remainingRefundableAmount($invoice, $payment);
                 $refundAmount = round((float) ($payload['amount'] ?? $refundableAmount), 2);
                 throw_if($refundAmount <= 0, new BusinessException('退款金额不正确'));
                 throw_if(abs($refundAmount - $refundableAmount) > 0.00001, new BusinessException('当前仅支持按原支付金额全额退款'));
@@ -2164,6 +2175,26 @@ class PaymentService
                 $payment = Payment::query()
                     ->lockForUpdate()
                     ->findOrFail((int) $snapshot['payment_id']);
+
+                if ($lockedOrder->invoice instanceof Invoice && (int) $payment->status !== PaymentStatus::REFUNDED) {
+                    // 落地终检：快照校验后、网关退款期间若发生并发退款，剩余可退额可能已不足。
+                    // 此时网关侧退款已执行，throw 回滚前必须写日志留痕，否则账实不符且无对账线索。
+                    $remainingRefundable = $this->remainingRefundableAmount($lockedOrder->invoice, $payment);
+                    if ((float) $snapshot['refund_amount'] - $remainingRefundable > 0.00001) {
+                        Log::error('[支付宝退款] 网关退款已执行但账单剩余可退金额不足，本次落地已回滚，请人工对账', [
+                            'order_id' => (int) $lockedOrder->id,
+                            'invoice_id' => (int) $lockedOrder->invoice->id,
+                            'payment_id' => (int) $payment->id,
+                            'payment_no' => (string) $payment->payment_no,
+                            'trade_no' => (string) ($payment->trade_no ?? ''),
+                            'out_request_no' => (string) $snapshot['out_request_no'],
+                            'gateway_refund_amount' => (float) $snapshot['refund_amount'],
+                            'remaining_refundable' => $remainingRefundable,
+                        ]);
+
+                        throw new BusinessException('账单剩余可退金额已不足，请刷新后重新发起退款');
+                    }
+                }
 
                 if ((int) $lockedOrder->status === OrderStatus::REFUNDED || (int) $payment->status === PaymentStatus::REFUNDED) {
                     $refund = (array) data_get((array) ($payment->callback_raw ?? []), 'refund', []);
@@ -2251,7 +2282,8 @@ class PaymentService
      */
     public function refundInvoiceToBalance(User $user, Invoice $invoice, array $payload = [], array $context = []): array
     {
-        $lockKey = "lock:refund:balance:invoice:{$invoice->id}";
+        // 与「支付宝原路退款」路径共用账单级锁，防止两条退款通道叠加超额退款
+        $lockKey = "lock:refund:invoice:{$invoice->id}";
 
         return $this->withLock($lockKey, 40, function () use ($user, $invoice, $payload, $context) {
             return DB::transaction(function () use ($user, $invoice, $payload, $context) {
@@ -3041,6 +3073,11 @@ class PaymentService
         array $raw,
         string $reason,
     ): void {
+        // 幂等闸：该支付单已转入余额过则跳过，防止重复回调/并发轮询把同一笔网关款重复入账。
+        if ((bool) data_get((array) ($payment->callback_raw ?? []), 'credited_to_balance', false)) {
+            return;
+        }
+
         $payment->refresh();
         $amount = round((float) $payment->amount, 2);
         if ($amount <= 0) {
@@ -3152,10 +3189,13 @@ class PaymentService
 
     private function resolveOrderPayableAmount(Order $order): float
     {
+        // 订单金额即应付价口径（建单时 amount 已是「目录价 − 折扣」的实付额，discount 列单独存减免额）：
+        // 再按 discount 扣减会把券减两次，带券订单余额/网关支付少收钱。invoice 在侧时以账单为真源，二者金额一致。
+        $amount = (float) ($order->invoice?->amount ?? $order->amount ?? 0);
+
         return round(
             max(
-                (float) ($order->amount ?? 0)
-                - (float) ($order->discount ?? 0)
+                $amount
                 - (float) ($order->paid_amount ?? 0),
                 0
             ),
@@ -3271,7 +3311,7 @@ class PaymentService
 
         $remainingSeconds = $this->paymentDeadline($payment)->diffInSeconds(CarbonImmutable::now(), true);
 
-        return max(1, (int) ceil($remainingSeconds / 60)).'m';
+        return $this->formatGatewayTimeoutExpress($remainingSeconds);
     }
 
     private function isPaymentWindowExpired(Payment $payment): bool
@@ -3298,7 +3338,7 @@ class PaymentService
 
         $remainingSeconds = $this->orderPaymentDeadline($order)->diffInSeconds(CarbonImmutable::now(), true);
 
-        return max(1, (int) ceil($remainingSeconds / 60)).'m';
+        return $this->formatGatewayTimeoutExpress($remainingSeconds);
     }
 
     private function orderPaymentDeadline(Order $order): CarbonImmutable
@@ -3317,7 +3357,17 @@ class PaymentService
 
         throw_if($this->invoicePaymentWindowExpired($invoice), new BusinessException('账单支付时间已过期，请重新创建账单'));
 
-        return max(1, (int) ceil($remainingSeconds / 60)).'m';
+        return $this->formatGatewayTimeoutExpress($remainingSeconds);
+    }
+
+    /**
+     * 支付宝 timeout_express 允许 1m~15d，钳制到网关上限避免预下单被拒。
+     */
+    private function formatGatewayTimeoutExpress(float $remainingSeconds): string
+    {
+        $minutes = (int) ceil($remainingSeconds / 60);
+
+        return max(1, min($minutes, 21600)).'m';
     }
 
     private function invoicePaymentWindowExpired(Invoice $invoice): bool
@@ -3412,6 +3462,12 @@ class PaymentService
                 ->find((int) $payment->id);
 
             if (! $lockedPayment instanceof Payment) {
+                return false;
+            }
+
+            // 幂等闸：该支付单已退回过余额则跳过。mark_payment_failed=false 的调用方
+            // （异常处置、恢复支付会话）不改变支付单状态，仅靠 PENDING 判断挡不住二次退回。
+            if ((bool) data_get((array) ($lockedPayment->callback_raw ?? []), 'balance_restored', false)) {
                 return false;
             }
 

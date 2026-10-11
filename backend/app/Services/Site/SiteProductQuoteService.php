@@ -77,6 +77,7 @@ class SiteProductQuoteService
             $normalizedConfig,
             $quote,
             [
+                'user_id' => $userId,
                 'request_id' => (string) ($requestContext['request_id'] ?? ''),
                 'ip_address' => (string) ($requestContext['ip_address'] ?? ''),
             ]
@@ -132,6 +133,7 @@ class SiteProductQuoteService
             $normalizedConfig,
             $quote,
             [
+                'user_id' => $userId,
                 'request_id' => (string) ($requestContext['request_id'] ?? ''),
                 'ip_address' => (string) ($requestContext['ip_address'] ?? ''),
             ]

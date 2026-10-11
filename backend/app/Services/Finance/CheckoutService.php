@@ -171,7 +171,8 @@ class CheckoutService
                         $quoteToken, $product->id, $billingCycle, $quantity, $normalizedConfig,
                         $this->formatAmount($amount), $this->formatAmount($payableAmount),
                         $couponPayload['user_coupon_id'] ?? $userCouponId,
-                        $agentPricing
+                        $agentPricing,
+                        $userId
                     );
 
                     $invoice = Invoice::query()->create([

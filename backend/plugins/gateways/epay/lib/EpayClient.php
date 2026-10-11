@@ -89,7 +89,12 @@ class EpayClient
     {
         $actual = trim((string) $merchantId);
 
-        return $this->merchantId === '' || ($actual !== '' && hash_equals($this->merchantId, $actual));
+        // 商户号未配置时一律拒绝，与 ali_pay 保持同口径，避免空配置下任意来源回调被放行
+        if ($this->merchantId === '') {
+            return false;
+        }
+
+        return $actual !== '' && hash_equals($this->merchantId, $actual);
     }
 
     /**

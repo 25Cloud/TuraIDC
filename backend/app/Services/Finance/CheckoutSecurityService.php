@@ -60,6 +60,8 @@ class CheckoutSecurityService
             'cost_rate' => $this->normalizeAmount($quotePayload['cost_rate'] ?? 0),
             'agent_amount' => $this->normalizeAmount($quotePayload['agent_amount'] ?? $quotePayload['total_amount'] ?? 0),
             'user_coupon_id' => (int) ($quotePayload['coupon']['user_coupon_id'] ?? $quotePayload['user_coupon_id'] ?? 0),
+            // 报价令牌绑定签发用户：登录态签发的令牌不可跨用户复用；游客报价（user_id=0）仍受金额与配置绑定约束
+            'user_id' => max((int) ($context['user_id'] ?? 0), 0),
             'request_id' => trim((string) ($context['request_id'] ?? '')),
             'ip_address' => trim((string) ($context['ip_address'] ?? '')),
             'issued_at' => $now->toIso8601String(),
@@ -82,10 +84,18 @@ class CheckoutSecurityService
         string $amount,
         ?int $couponId = null,
         array $pricing = [],
+        int $userId = 0,
     ): array {
         $payload = $this->volatileStore()->get($this->quoteCacheKey($token));
 
         throw_if(! is_array($payload), new BusinessException('报价凭证已失效，请刷新配置后重试'));
+
+        // 报价令牌绑定签发用户：登录态签发的令牌不可跨用户复用；游客报价（user_id=0）不受此约束
+        $tokenUserId = (int) ($payload['user_id'] ?? 0);
+        throw_if(
+            $tokenUserId > 0 && $tokenUserId !== $userId,
+            new BusinessException('报价凭证与当前用户不一致，请重新获取报价')
+        );
 
         $tokenProductId = (int) ($payload['product_id'] ?? 0);
         $tokenBillingCycle = (string) ($payload['billing_cycle'] ?? '');

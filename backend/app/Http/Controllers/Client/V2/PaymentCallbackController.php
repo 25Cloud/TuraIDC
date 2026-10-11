@@ -41,8 +41,19 @@ class PaymentCallbackController extends Controller
             $success = false;
         }
 
-        return $this->paymentGatewayManager->gateway($gateway)
-            ->buildNotifyResponse($success);
+        try {
+            return $this->paymentGatewayManager->gateway($gateway)
+                ->buildNotifyResponse($success);
+        } catch (\Throwable $exception) {
+            // 未注册网关等异常时按网关约定返回常量 fail 文本，保证该公开端点不产生 500
+            Log::warning("[{$gateway}回调] 构建回调响应失败，已按 fail 响应", [
+                'gateway' => $gateway,
+                'message' => $exception->getMessage(),
+                'exception' => $exception::class,
+            ]);
+
+            return response('fail', 200)->header('Content-Type', 'text/plain');
+        }
     }
 
     /**
