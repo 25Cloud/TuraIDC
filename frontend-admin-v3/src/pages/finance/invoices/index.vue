@@ -149,6 +149,7 @@
 import './index.less';
 
 import { INVOICE_STATUS_MAP, INVOICE_TYPE_MAP, toLabelMap, toTagTypeMap } from '@shared/statusConfig';
+import { SearchIcon } from 'tdesign-icons-vue-next';
 import type { DropdownOption, PrimaryTableCol } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';

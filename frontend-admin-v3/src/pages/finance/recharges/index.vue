@@ -120,6 +120,7 @@
 import './index.less';
 
 import { PAYMENT_STATUS_MAP, toLabelMap, toTagTypeMap } from '@shared/statusConfig';
+import { SearchIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol, TableRowData, TagProps } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';

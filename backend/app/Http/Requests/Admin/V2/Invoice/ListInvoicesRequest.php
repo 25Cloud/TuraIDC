@@ -22,14 +22,15 @@ class ListInvoicesRequest extends AdminFormRequest
     public function rules(): array
     {
         return [
-            'keyword' => ['sometimes', 'string', 'max:80'],
-            'invoice_no' => ['sometimes', 'string', 'max:80'],
-            'user_id' => ['sometimes', 'integer', 'min:1'],
-            'status' => ['sometimes', 'integer'],
-            'type' => ['sometimes', 'string', Rule::in($this->allowedTypes())],
-            'product_id' => ['sometimes', 'integer', 'min:1'],
-            'start_date' => ['sometimes', 'date_format:Y-m-d'],
-            'end_date' => ['sometimes', 'date_format:Y-m-d'],
+            // 筛选字段改 nullable：前端清空筛选项会显式传 null，sometimes 遇 null 仍执行 string/integer 规则直接 422
+            'keyword' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'invoice_no' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'user_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'status' => ['sometimes', 'nullable', 'integer'],
+            'type' => ['sometimes', 'nullable', 'string', Rule::in($this->allowedTypes())],
+            'product_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'start_date' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
+            'end_date' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'date_range' => ['prohibited'],
             'page' => ['sometimes', 'integer', 'min:1'],
             'page_size' => ['sometimes', 'integer', 'min:1', 'max:100'],

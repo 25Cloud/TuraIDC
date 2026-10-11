@@ -144,6 +144,7 @@
 import './index.less';
 
 import { ORDER_STATUS_MAP, ORDER_TYPE_MAP, toSelectOptions } from '@shared/statusConfig';
+import { SearchIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
