@@ -250,11 +250,22 @@ class MemberLevelService
         }
         throw_if($code === '', new BusinessException('等级编码不能为空'));
 
-        $salesMin = round((float) ($data['sales_amount_min'] ?? 0), 2);
-        $salesMax = ($data['sales_amount_max'] ?? null) !== null && $data['sales_amount_max'] !== ''
-            ? round((float) $data['sales_amount_max'], 2)
-            : null;
-        $rewardRate = round((float) ($data['reward_rate'] ?? 0), 2);
+        // 未显式传入的字段沿用等级现值，而不是归零：
+        // 只改名称的更新过去会把 sales_amount_min / reward_rate 一并清零，
+        // 既可能撞上区间重叠校验报错，也会静默改掉等级的销售门槛与返利比例。
+        $salesMin = array_key_exists('sales_amount_min', $data)
+            ? round((float) $data['sales_amount_min'], 2)
+            : round((float) ($level?->sales_amount_min ?? 0), 2);
+        $salesMax = array_key_exists('sales_amount_max', $data)
+            ? ($data['sales_amount_max'] !== null && $data['sales_amount_max'] !== ''
+                ? round((float) $data['sales_amount_max'], 2)
+                : null)
+            : ($level?->sales_amount_max !== null
+                ? round((float) $level->sales_amount_max, 2)
+                : null);
+        $rewardRate = array_key_exists('reward_rate', $data)
+            ? round((float) $data['reward_rate'], 2)
+            : round((float) ($level?->reward_rate ?? 0), 2);
 
         throw_if($salesMin < 0, new BusinessException('销售金额门槛不能小于 0'));
         throw_if($salesMax !== null && $salesMax < $salesMin, new BusinessException('销售金额上限不能小于下限'));
