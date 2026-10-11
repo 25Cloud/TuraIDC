@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\ZjmfUpstreamBinding;
 use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
@@ -24,6 +25,10 @@ use Tests\TestCase;
  */
 class ZjmfDownstreamPushTest extends TestCase
 {
+    // 共享测试库无回滚时，本类产生的用量日志/供应商余额/上游绑定会变成孤儿行，
+    // 让外键审计类断言在后续全量运行中随机变红
+    use DatabaseTransactions;
+
     /** @var list<int> */
     private array $userIds = [];
 

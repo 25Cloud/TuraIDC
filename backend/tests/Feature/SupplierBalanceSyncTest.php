@@ -11,6 +11,7 @@ use App\Services\Supplier\AdminSupplierBalanceNotifier;
 use App\Services\Supplier\SupplierBalanceService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Mockery;
 use Tests\TestCase;
@@ -25,6 +26,10 @@ use Tests\TestCase;
  */
 class SupplierBalanceSyncTest extends TestCase
 {
+    // 共享测试库无回滚时，本类产生的用量日志/供应商余额/上游绑定会变成孤儿行，
+    // 让外键审计类断言在后续全量运行中随机变红
+    use DatabaseTransactions;
+
     private const SUPPLIER_CODE = 'balance-test-supplier';
 
     protected function setUp(): void

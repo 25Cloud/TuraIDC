@@ -130,6 +130,11 @@ class QueueDrainServiceTest extends TestCase
             ->once()
             ->with('scheduler:queue-drain:automation', \Mockery::type('int'))
             ->andThrow(new RuntimeException('automation lock backend unavailable'));
+        // 残锁判活心跳（put/get/forget）在同一 mock 上：未桩时会被 Mockery 抛错，
+        // 转成「写入/读取心跳失败」告警，导致下方 warning 期望不匹配
+        Cache::shouldReceive('put')->andReturn(true);
+        Cache::shouldReceive('get')->andReturn(null);
+        Cache::shouldReceive('forget')->andReturn(true);
         Log::shouldReceive('warning')
             ->once()
             ->with('[调度] 获取队列 Worker 互斥锁失败，已跳过该队列', \Mockery::on(

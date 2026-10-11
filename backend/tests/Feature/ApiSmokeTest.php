@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Models\AdminUser;
 use App\Models\Role;
 use App\Models\User;
@@ -14,6 +15,10 @@ use Tests\TestCase;
 
 class ApiSmokeTest extends TestCase
 {
+    // 冒烟会遍历全部路由并真实调用开放接口，产生 API 密钥/用量日志等业务行；
+    // 共享测试库不回滚会让外键审计断言在后续运行中随机变红
+    use DatabaseTransactions;
+
     private AdminUser $adminUser;
 
     private User $clientUser;

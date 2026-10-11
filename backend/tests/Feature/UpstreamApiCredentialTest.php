@@ -10,6 +10,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\OpenApi\ApiKeyService;
 use App\Services\ZjmfUpstream\UpstreamApiCredentialService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -24,6 +25,10 @@ use Tests\TestCase;
  */
 class UpstreamApiCredentialTest extends TestCase
 {
+    // 共享测试库无回滚时，本类产生的用量日志/供应商余额/上游绑定会变成孤儿行，
+    // 让外键审计类断言在后续全量运行中随机变红
+    use DatabaseTransactions;
+
     /** @var list<int> */
     private array $userIds = [];
 
