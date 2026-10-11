@@ -553,7 +553,9 @@ class InvoiceOrderReconciliationService
             $invoiceNo = Invoice::generateInvoiceNo();
         }
 
-        $invoiceAmount = max(0, (float) $order->amount - (float) ($order->discount ?? 0));
+        // 订单金额即应付价口径（目录价 − 折扣后的实付额）：再减一次 discount 会把券减两次，
+        // 重建出的账单金额会低于实付，破坏 assertBusinessPaymentComposition 的一致性断言。
+        $invoiceAmount = max(0, (float) $order->amount);
         $status = $this->invoiceStatusForOrder((int) $order->order_status);
         $paidAmount = $status === InvoiceStatus::PAID
             ? ($this->positiveDecimal($order->paid_amount ?? null) ?? number_format($invoiceAmount, 2, '.', ''))

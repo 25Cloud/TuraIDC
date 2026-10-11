@@ -102,8 +102,7 @@ class AutoRenewService
                             $reusedPaidOrder = $this->serviceRenewService->findPaidUnfulfilledRenewOrder(
                                 $service->user,
                                 $service,
-                                $resolvedCycle,
-                                0
+                                $resolvedCycle
                             );
                             if ($reusedPaidOrder instanceof Order) {
                                 AutomationLog::markExecuted(

@@ -554,8 +554,13 @@ class KangHostx implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Prov
     {
         $renewResponse = $this->renewHost($supplier, $hostId, $billingCycle);
 
+        // 康乐 WHM 的续费动作即「恢复访问」（renewHost 内部已 assertSuccess，失败会抛异常），
+        // 上游不产生账单号。显式声明 renew_completed_without_invoice，
+        // 让平台把本次结果识别为「上游续费已完成的无账单型续费」，跳过 upstream_invoice_id
+        // 硬校验，本地正常顺延到期时间，不再把已成功的续费记为失败。
         return [
             'upstream_invoice_id' => 0,
+            'renew_completed_without_invoice' => true,
             'renew_response' => $renewResponse,
             'fund_response' => [
                 'status' => 200,

@@ -164,7 +164,8 @@ class ServiceConsoleController extends Controller
                 $id,
                 (string) $data['billing_cycle'],
                 (int) ($data['user_coupon_id'] ?? 0),
-                $this->buildOperationContext($request)
+                $this->buildOperationContext($request),
+                true
             )
         );
         $invoice->loadMissing(['product:id,product_type,product_group_id,service_type_code,config_options,purchase_requires', 'service']);
