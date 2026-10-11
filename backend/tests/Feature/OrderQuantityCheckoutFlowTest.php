@@ -230,8 +230,12 @@ class OrderQuantityCheckoutFlowTest extends TestCase
 
         $invoice->refresh()->load('order');
 
-        $this->assertSame('通用NAT-2vcpu-1gib', (string) $invoice->product_spec_snapshot);
-        $this->assertSame('通用NAT-2vcpu-1gib', (string) $invoice->order?->product_spec_snapshot);
+        // 选购页规格亮点上线后（79cac9d「商品名移除规格 slug 后缀」），商品名不再拼接
+        // 「-2vcpu-1gib」这类规格 slug：规格由 instance_spec_catalog 文本承载，商品名只回
+        // 实例规格文本，避免同一页出现两种规格口径
+        $this->assertSame('通用NAT', (string) $invoice->product_spec_snapshot);
+        $this->assertSame('通用NAT', (string) $invoice->order?->product_spec_snapshot);
+        $this->assertStringNotContainsString('-2vcpu', (string) $invoice->product_spec_snapshot);
     }
 
     public function test_quote_token_and_fingerprint_include_quantity(): void
