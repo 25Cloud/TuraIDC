@@ -77,6 +77,10 @@ class ProductAdminService
                 ])
                 ->withCount([
                     'services as services_count',
+                    // 摘要资源契约引用 total/active 两个计数字段（详情查询同口径），
+                    // 列表查询漏带会让 total_services_count 恒为 0
+                    'services as total_services_count',
+                    'services as active_services_count' => fn (Builder $query) => $query->where('status', 1),
                 ]),
             $filters
         );

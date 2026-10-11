@@ -68,12 +68,12 @@ class V2AdminUserWriteApiTest extends TestCase
             ->assertJsonPath('code', 42200)
             ->assertJsonStructure(['data' => ['errors' => ['pageSize']]]);
 
+        // 手机号校验已改为 nullable：空值表示清空手机号，合法放行
         $this->putJson('/api/v2/admin/users/'.$userId, [
             'phone' => '',
         ])
-            ->assertUnprocessable()
-            ->assertJsonPath('code', 42200)
-            ->assertJsonStructure(['data' => ['errors' => ['phone']]]);
+            ->assertOk()
+            ->assertJsonPath('code', 0);
 
         $updatedPhone = '15'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT);
         $updateResponse = $this->putJson('/api/v2/admin/users/'.$userId, [
@@ -291,6 +291,8 @@ class V2AdminUserWriteApiTest extends TestCase
             'referral_withdrawn_balance',
             'status',
             'is_verified',
+            // 代理分组归属（agent 折扣体系）
+            'agent_group',
             'opened_product_count',
             'created_at',
         ];

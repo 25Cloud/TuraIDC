@@ -503,6 +503,8 @@ class V2AdminUserSubresourceApiTest extends TestCase
             'traffic',
             'actions',
             'specs',
+            // 远端同步元数据
+            '_sync',
         ];
     }
 

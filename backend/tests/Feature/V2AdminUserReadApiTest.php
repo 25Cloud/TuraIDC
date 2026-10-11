@@ -169,6 +169,8 @@ class V2AdminUserReadApiTest extends TestCase
             'referral_withdrawn_balance',
             'status',
             'is_verified',
+            // 代理分组归属（agent 折扣体系）
+            'agent_group',
             'opened_product_count',
             'created_at',
         ];
@@ -193,6 +195,8 @@ class V2AdminUserReadApiTest extends TestCase
             'member_level_id',
             'total_sales_amount',
             'member_level',
+            // 代理分组归属（agent 折扣体系）
+            'agent_group',
             'cash_balance',
             'credit_limit',
             'referral_frozen_balance',

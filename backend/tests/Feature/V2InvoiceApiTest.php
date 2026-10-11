@@ -391,6 +391,8 @@ class V2InvoiceApiTest extends TestCase
             'product_display_name',
             'combined_display_name',
             'product_full_path',
+            // 关联服务摘要对象
+            'service',
             'type',
             'type_label',
             'amount',

@@ -13,11 +13,14 @@ use App\Models\SecondProductGroup;
 use App\Models\Setting;
 use App\Models\ThirdProductGroup;
 use App\Support\AdminPermissions;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class V2ProductGroupCatalogTest extends TestCase
 {
+    use DatabaseTransactions;
+
     public function test_admin_product_groups_require_login_and_permission(): void
     {
         $this->getJson('/api/v2/admin/product-groups')
@@ -220,7 +223,8 @@ class V2ProductGroupCatalogTest extends TestCase
             ->assertOk()
             ->assertJsonCount(50, 'data.list');
 
-        $this->assertLessThan(60 * 1024, strlen((string) $childrenResponse->getContent()));
+        // 分组路径展示字段（group_path 等）上线后每个子项增大约 30 字节，60KB 阈值按 50 项重算放宽到 70KB
+        $this->assertLessThan(70 * 1024, strlen((string) $childrenResponse->getContent()));
 
         $productsResponse = $this->getJson('/api/v2/site/product-groups/'.$secondGroup->id.'/products?'.http_build_query([
             'level' => 2,
@@ -230,7 +234,9 @@ class V2ProductGroupCatalogTest extends TestCase
             ->assertOk()
             ->assertJsonCount(50, 'data.list');
 
-        $this->assertLessThan(100 * 1024, strlen((string) $productsResponse->getContent()));
+        // 共享根分组（code='vps' 系统行）携带基线在售商品，50 项自建商品之外还有若干基线行，
+        // 叠加代理折扣/规格亮点字段后单响应 ~120KB，100KB 阈值放宽到 130KB
+        $this->assertLessThan(130 * 1024, strlen((string) $productsResponse->getContent()));
         $this->assertNoSensitiveKeys($productsResponse->json());
     }
 
@@ -424,6 +430,10 @@ class V2ProductGroupCatalogTest extends TestCase
             'third_product_group_name',
             'effective_product_group_id',
             'effective_product_group_level',
+            // 三级层级显式分层（56d5198）新增的分组路径展示字段
+            'group_level_label',
+            'group_path',
+            'group_path_text',
             'service_type_code',
             'name',
             'slogan',
@@ -445,7 +455,10 @@ class V2ProductGroupCatalogTest extends TestCase
             'display_name',
             'product_display_name',
             'combined_display_name',
+            'product_spec_display',
             'cpu_memory_display',
+            'cpu_display',
+            'memory_display',
             'cpu_model_name',
             'cpu_base_frequency',
             'cpu_turbo_frequency',
@@ -463,6 +476,9 @@ class V2ProductGroupCatalogTest extends TestCase
             'third_product_group_description',
             'effective_product_group_id',
             'effective_product_group_level',
+            'group_level_label',
+            'group_path',
+            'group_path_text',
             'product_type_label',
             'service_type_code',
             'pricing',
@@ -472,6 +488,14 @@ class V2ProductGroupCatalogTest extends TestCase
             'setup_fee',
             'stock',
             'auto_setup',
+            'spec_highlights',
+            'spec_highlight_text',
+            'has_agent_discount',
+            'agent_group_name',
+            'agent_discount_rate',
+            'agent_discount_percent',
+            'agent_primary_price',
+            'agent_primary_discount_amount',
         ];
     }
 

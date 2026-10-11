@@ -649,6 +649,15 @@ class V2ProductApiTest extends TestCase
             'subtotal_amount',
             'discount_amount',
             'total_amount',
+            // 代理折扣报价字段（agent 折扣体系接入报价链路）
+            'original_total_amount',
+            'agent_discount_rate',
+            'agent_discount_amount',
+            'agent_amount',
+            'agent_group_id',
+            'agent_group_name',
+            'product_discount_group_id',
+            'cost_amount',
             'quantity',
             'coupon',
             'user_coupon_id',
@@ -907,6 +916,12 @@ class V2ProductApiTest extends TestCase
             'total_services_count',
             'active_services_count',
             'sort_order',
+            // CPU 型号目录（c89d48e）与代理折扣组归属（agent 折扣体系）引入的归属字段
+            'cpu_model',
+            'cpu_turbo',
+            'product_discount_group_id',
+            'product_discount_group_name',
+            'product_discount_group_min_discount_rate',
             'updated_at',
         ];
     }
@@ -925,6 +940,8 @@ class V2ProductApiTest extends TestCase
             'purchase_requirements',
             'provisioning',
             'upstream_binding',
+            // 代理折扣组归属面板
+            'product_discount_group',
             'statistics',
             'lifecycle',
             'timestamps',
@@ -957,6 +974,10 @@ class V2ProductApiTest extends TestCase
             'third_product_group_description',
             'effective_product_group_id',
             'effective_product_group_level',
+            // 三级层级显式分层（56d5198）新增的分组路径展示字段
+            'group_level_label',
+            'group_path',
+            'group_path_text',
             'product_type_label',
             'service_type_code',
             'primary_cycle',
@@ -964,6 +985,15 @@ class V2ProductApiTest extends TestCase
             'setup_fee',
             'stock',
             'auto_setup',
+            // 站点规格亮点与代理折扣展示字段
+            'spec_highlights',
+            'spec_highlight_text',
+            'has_agent_discount',
+            'agent_group_name',
+            'agent_discount_rate',
+            'agent_discount_percent',
+            'agent_primary_price',
+            'agent_primary_discount_amount',
         ];
     }
 
@@ -1001,6 +1031,10 @@ class V2ProductApiTest extends TestCase
             'third_product_group_description',
             'effective_product_group_id',
             'effective_product_group_level',
+            // 三级层级显式分层（56d5198）新增的分组路径展示字段
+            'group_level_label',
+            'group_path',
+            'group_path_text',
             'product_type_label',
             'service_type_code',
             'pricing',
@@ -1010,9 +1044,18 @@ class V2ProductApiTest extends TestCase
             'setup_fee',
             'stock',
             'auto_setup',
+            // 站点规格亮点与代理折扣展示字段
+            'has_agent_discount',
+            'agent_group_name',
+            'agent_discount_rate',
+            'agent_discount_percent',
+            'agent_primary_price',
+            'agent_primary_discount_amount',
             'group',
             'config_options',
             'siblings',
+            'spec_highlights',
+            'spec_highlight_text',
         ];
     }
 

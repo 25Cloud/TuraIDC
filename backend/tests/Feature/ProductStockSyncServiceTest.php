@@ -142,6 +142,8 @@ class ProductStockSyncServiceTest extends TestCase
             $table->string('provider_key', 120);
             $table->string('environment', 30)->default('production');
             $table->unsignedTinyInteger('status')->default(1);
+            // 绑定写入方会落工单投递开关（工单上游投递功能引入），缺列会使同步更新失败
+            $table->unsignedTinyInteger('ticket_delivery_enabled')->default(0);
             $table->integer('priority')->default(0);
             $table->string('base_url', 255)->nullable();
             $table->string('account_name', 120)->nullable();
@@ -270,6 +272,21 @@ final class RecordingStockCatalog implements ProvidesConsoleCatalog
         return collect($productIds)
             ->mapWithKeys(fn (int $productId): array => [
                 $productId => ['stock' => $this->stocks[$productId] ?? null],
+            ])
+            ->all();
+    }
+
+    /**
+     * 缺价自动补价链路会在库存同步前拉取上游配置项；
+     * 本用例只关心库存，返回空表即可（同步器对空结果按「无缺价」处理）。
+     */
+    public function fetchBatchProductConfigOptions(Supplier $supplier, array $productIds, int $chunkSize = 8, ?float $deadline = null): array
+    {
+        unset($supplier, $chunkSize, $deadline);
+
+        return collect($productIds)
+            ->mapWithKeys(fn (int $productId): array => [
+                $productId => [],
             ])
             ->all();
     }

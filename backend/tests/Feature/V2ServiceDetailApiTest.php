@@ -95,12 +95,14 @@ class V2ServiceDetailApiTest extends TestCase
 
         Sanctum::actingAs($user);
 
+        // 控制台模式改由商品类型/关键词判定：残留的 port_mapping 模板值不再把
+        // 普通云服务器判成 NAT 控制台，模板字段本身仍原样透出
         $this->getJson('/api/v2/client/services/'.$service->id)
             ->assertOk()
             ->assertJsonPath('data.service.console_template', Product::CONSOLE_TEMPLATE_PORT_MAPPING)
             ->assertJsonPath('data.service.product.console_template', Product::CONSOLE_TEMPLATE_PORT_MAPPING)
-            ->assertJsonPath('data.service.console_mode', 'nat')
-            ->assertJsonPath('data.service.is_nat_console', true);
+            ->assertJsonPath('data.service.console_mode', 'default')
+            ->assertJsonPath('data.service.is_nat_console', false);
     }
 
     public function test_client_service_connection_returns_owned_service_password(): void
@@ -115,8 +117,8 @@ class V2ServiceDetailApiTest extends TestCase
             ->assertJsonPath('data.connection.hostname', (string) $service->domain)
             ->assertJsonPath('data.connection.username', 'root')
             ->assertJsonPath('data.connection.has_password', true)
-            ->assertJsonPath('data.connection.dedicated_ip', '203.0.113.'.$service->id)
-            ->assertJsonPath('data.connection.assigned_ips', ['203.0.113.'.$service->id, '198.51.100.'.$service->id])
+            ->assertJsonPath('data.connection.dedicated_ip', '203.0.113.'.((int) $service->id % 200 + 1))
+            ->assertJsonPath('data.connection.assigned_ips', ['203.0.113.'.((int) $service->id % 200 + 1), '198.51.100.'.((int) $service->id % 200 + 1)])
             ->assertJsonPath('data.connection.password', 'LoginSecret#'.$service->id);
 
         $this->getJson('/api/v2/client/services/'.$service->id.'/connection?pageSize=20')
@@ -199,7 +201,8 @@ class V2ServiceDetailApiTest extends TestCase
             ->assertJsonMissingPath('data.service.connection')
             ->assertJsonPath('data.service.upstream.provider_key', '')
             ->assertJsonPath('data.service.upstream.supplier_id', 0)
-            ->assertJsonPath('data.service.upstream.upstream_product_id', '');
+            // 脱敏投影把上游商品 ID 归一为整数字符串（无绑定时为 '0'）
+            ->assertJsonPath('data.service.upstream.upstream_product_id', '0');
 
         $this->assertSame($this->serviceDetailWhitelist(), array_keys($detailResponse->json('data.service')));
         $this->assertNoSensitiveKeys($detailResponse->json());
@@ -411,9 +414,11 @@ class V2ServiceDetailApiTest extends TestCase
             'upstream_status' => 'Active',
             'runtime_status' => 'running',
             'runtime_description' => '运行中',
-            'dedicated_ip' => '203.0.113.'.$service->id,
-            'assigned_ips' => ['203.0.113.'.$service->id, '198.51.100.'.$service->id],
-            'nat_remote_address' => '198.51.100.'.$service->id,
+            // sanitizeIpValue 只放行合法 IP：service->id 直接拼会生成 203.0.113.411
+            // 这类非法字节被净化成空串，fixture 必须生成真实可解析地址
+            'dedicated_ip' => '203.0.113.'.((int) $service->id % 200 + 1),
+            'assigned_ips' => ['203.0.113.'.((int) $service->id % 200 + 1), '198.51.100.'.((int) $service->id % 200 + 1)],
+            'nat_remote_address' => '198.51.100.'.((int) $service->id % 200 + 1),
             'nat_remote_host' => 'nat.example.test',
             'nat_remote_port' => 2200 + (int) $service->id,
             'nat_remote_checked_at' => now()->format('Y-m-d H:i:s'),
@@ -438,6 +443,8 @@ class V2ServiceDetailApiTest extends TestCase
             'name',
             'product_display_name',
             'combined_display_name',
+            // 三级层级显式分层（56d5198）新增的商品全路径展示字段
+            'product_full_path',
             'domain',
             'status',
             'status_label',
@@ -465,6 +472,8 @@ class V2ServiceDetailApiTest extends TestCase
             'traffic',
             'renewal',
             'actions',
+            // 远端同步元数据（是否有过期快照、上次同步时间等）
+            '_sync',
         ];
     }
 
@@ -510,6 +519,8 @@ class V2ServiceDetailApiTest extends TestCase
             'traffic',
             'actions',
             'specs',
+            // 远端同步元数据
+            '_sync',
         ];
     }
 
