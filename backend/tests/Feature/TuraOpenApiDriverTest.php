@@ -44,12 +44,27 @@ class TuraOpenApiDriverTest extends TestCase
 
     private const UPSTREAM_SERVICE_ID = 52001;
 
+    /** @var list<int> 本类夹具创建的供应商，供 tearDown 清理余额台账 */
+    private array $supplierIds = [];
+
     protected function setUp(): void
     {
         parent::setUp();
 
         Config::set('queue.default', 'sync');
         $this->activateIntegrationPluginForTest('upstream', 'tura_open_api');
+    }
+
+    protected function tearDown(): void
+    {
+        // 开通链路会写 supplier_balances，而 suppliers 侧的夹具随用例结束被清掉，
+        // 余额台账不随之级联删除，于是留下一条 supplier_id 指向空供应商的孤儿行，
+        // 被 db:audit-foreign-keys --strict 判为 candidate_fk 孤儿。显式清一次。
+        if ($this->supplierIds !== []) {
+            DB::table('supplier_balances')->whereIn('supplier_id', $this->supplierIds)->delete();
+        }
+
+        parent::tearDown();
     }
 
     public function test_purchase_by_balance_provisions_through_upstream_open_api(): void
@@ -363,6 +378,7 @@ class TuraOpenApiDriverTest extends TestCase
             'status' => 1,
             'sort_order' => 1,
         ]);
+        $this->supplierIds[] = (int) $supplier->id;
 
         $product = Product::query()->create([
             'name' => 'Tura Open Product '.$unique,

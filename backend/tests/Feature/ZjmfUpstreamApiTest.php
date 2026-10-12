@@ -47,6 +47,18 @@ class ZjmfUpstreamApiTest extends TestCase
      */
     protected function tearDown(): void
     {
+        // 绑定行必须显式删：本类的父级数据（user/service/product）已在这里硬删，
+        // 而 zjmf_upstream_bindings 没有随父级级联删除。漏删会留下一条引用已不存在
+        // user/service 的孤儿行，被 DatabaseEngineeringCommandTest 的
+        // db:audit-foreign-keys --strict 判为 candidate_fk 孤儿——而该测试按文件名字母序
+        // 排在本类之前，于是表现为「上一轮全绿、下一轮必红」的顺序性失败。
+        if ($this->serviceIds !== [] || $this->userIds !== []) {
+            DB::connection()->table('zjmf_upstream_bindings')
+                ->whereIn('service_id', $this->serviceIds)
+                ->orWhereIn('user_id', $this->userIds)
+                ->delete();
+        }
+
         if ($this->userIds !== []) {
             DB::connection()->table('invoices')->whereIn('user_id', $this->userIds)->delete();
             DB::connection()->table('orders')->whereIn('user_id', $this->userIds)->delete();
