@@ -476,6 +476,12 @@ class InvoiceService
             'config_snapshot' => (array) ($invoice->config_snapshot ?? []),
             'config_pricing_snapshot' => (array) ($invoice->config_pricing_snapshot ?? []),
             'coupon_snapshot' => (array) ($invoice->coupon_snapshot ?? []),
+            // 券码取自账单自身列：configuration.coupon 是订单侧的券快照，
+            // 用券的充值/手工账单未必有订单，券码仍是用户核对优惠的唯一凭据。
+            'coupon_code' => (string) ($invoice->coupon_code ?? ''),
+            'coupon' => is_array($invoice->coupon_snapshot) && $invoice->coupon_snapshot !== []
+                ? (array) $invoice->coupon_snapshot
+                : null,
         ];
     }
 
@@ -571,6 +577,11 @@ class InvoiceService
             return $invoice->items->map(fn ($item) => [
                 'id' => (int) $item->id,
                 'description' => (string) ($item->description ?? $item->item_name ?? ''),
+                // 数量 / 单价 / 行优惠由 syncInvoiceItemProjection() 投影落库，
+                // 只透出金额会让用户看到一行总价却不知道买了几个、单价多少。
+                'quantity' => (int) ($item->quantity ?? 0),
+                'unit_price' => number_format((float) ($item->unit_price ?? 0), 2, '.', ''),
+                'discount_amount' => number_format((float) ($item->discount_amount ?? 0), 2, '.', ''),
                 'amount' => number_format((float) ($item->amount ?? $item->line_amount ?? 0), 2, '.', ''),
             ])->values()->all();
         }

@@ -1166,6 +1166,18 @@ export interface InvoiceRecord {
   summary?: InvoiceSummaryInfo | null;
   config_snapshot?: Record<string, unknown> | null;
   config_pricing_snapshot?: Record<string, unknown> | null;
+  items?: InvoiceItemInfo[];
+  coupon?: OrderCouponInfo | null;
+  [key: string]: unknown;
+}
+
+export interface InvoiceItemInfo {
+  id?: number;
+  description?: string;
+  quantity?: number | string;
+  unit_price?: number | string;
+  discount_amount?: number | string;
+  amount?: number | string;
   [key: string]: unknown;
 }
 

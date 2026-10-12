@@ -48,6 +48,10 @@
                   <span>账单金额</span>
                   <strong>¥{{ formatMoney(detail.amount) }}</strong>
                 </div>
+                <div v-if="Number(detail.discount || 0) > 0" class="detail-kv-item">
+                  <span>优惠金额</span>
+                  <strong class="detail-kv-discount">-¥{{ formatMoney(detail.discount) }}</strong>
+                </div>
                 <div class="detail-kv-item">
                   <span>已付金额</span>
                   <strong>¥{{ formatMoney(detail.paid_amount) }}</strong>
@@ -104,15 +108,44 @@
               <div v-else class="related-empty">暂无关联订单</div>
 
               <!-- 优惠券 -->
-              <section v-if="detail.coupon_code" class="related-section">
+              <section v-if="detail.coupon_code || detail.coupon" class="related-section">
                 <h4>使用优惠券</h4>
                 <div class="detail-kv-grid">
-                  <div class="detail-kv-item">
+                  <div v-if="detail.coupon_code" class="detail-kv-item">
                     <span>优惠券码</span>
                     <strong>{{ detail.coupon_code }}</strong>
                   </div>
+                  <div v-if="couponName" class="detail-kv-item">
+                    <span>优惠券</span>
+                    <strong>{{ couponName }}</strong>
+                  </div>
+                  <div v-if="couponDiscountLabel" class="detail-kv-item">
+                    <span>优惠额度</span>
+                    <strong>{{ couponDiscountLabel }}</strong>
+                  </div>
                 </div>
               </section>
+            </t-tab-panel>
+
+            <t-tab-panel value="items" label="账单明细">
+              <t-table
+                v-if="invoiceItems.length"
+                :data="invoiceItems"
+                :columns="itemColumns"
+                :pagination="null"
+                row-key="id"
+                size="small"
+                hover
+              >
+                <template #description="{ row }">{{ row.description || '--' }}</template>
+                <template #quantity="{ row }">{{ formatQuantity(row.quantity) }}</template>
+                <template #unitPrice="{ row }">¥{{ formatMoney(row.unit_price) }}</template>
+                <template #discountAmount="{ row }">
+                  {{ Number(row.discount_amount || 0) > 0 ? `-¥${formatMoney(row.discount_amount)}` : '--' }}
+                </template>
+                <template #amount="{ row }">¥{{ formatMoney(row.amount) }}</template>
+              </t-table>
+              <div v-else class="related-empty">暂无账单明细</div>
             </t-tab-panel>
 
             <t-tab-panel value="payments" label="关联支付">
@@ -155,7 +188,7 @@ import { useRoute, useRouter } from 'vue-router';
 import clientApi from '@/api/client';
 import { formatMoney, isPayableInvoice } from '@/domains/finance/useInvoices';
 import { formatBillingCycle } from '@/domains/finance/useRecords';
-import type { InvoiceRecord } from '@/types/client';
+import type { InvoiceItemInfo, InvoiceRecord } from '@/types/client';
 
 const route = useRoute();
 const router = useRouter();
@@ -192,6 +225,45 @@ const paymentRecords = computed(() => {
   if (!Array.isArray(payments)) return [];
   return payments;
 });
+
+// 明细行由后端 InvoiceService::buildInvoiceItems 透出，
+// 含数量 / 单价 / 行优惠；此前只在后端落库、前端从不展示。
+const invoiceItems = computed<InvoiceItemInfo[]>(() => {
+  const items = detail.value?.items;
+  if (!Array.isArray(items)) return [];
+  return items;
+});
+
+const couponName = computed(() => {
+  const coupon = detail.value?.coupon;
+  if (!coupon || typeof coupon !== 'object') return '';
+  return String((coupon as Record<string, unknown>).name || '');
+});
+
+const couponDiscountLabel = computed(() => {
+  const coupon = detail.value?.coupon;
+  if (!coupon || typeof coupon !== 'object') return '';
+  const record = coupon as Record<string, unknown>;
+  const label = String(record.discount_label || '').trim();
+  if (label) return label;
+  const type = String(record.discount_type || '');
+  const value = String(record.discount_value ?? record.discount_amount ?? '').trim();
+  if (!type || !value) return '';
+  return type === 'percent' ? `${value}%` : `¥${value}`;
+});
+
+function formatQuantity(value: unknown) {
+  const num = Number(value || 0);
+  return Number.isInteger(num) ? String(num) : num.toFixed(2);
+}
+
+const itemColumns: PrimaryTableCol[] = [
+  { colKey: 'description', title: '项目', minWidth: '14rem' },
+  { colKey: 'quantity', title: '数量', width: '7rem' },
+  { colKey: 'unitPrice', title: '单价', width: '8rem' },
+  { colKey: 'discountAmount', title: '优惠', width: '8rem' },
+  { colKey: 'amount', title: '小计', width: '8rem' },
+];
 
 function paymentGatewayDisplay(row: Record<string, unknown>) {
   return String(row.gateway_label || row.gateway_key || row.gateway || '--');
@@ -295,6 +367,11 @@ watch(
     color: var(--td-text-color-primary);
     word-break: break-all;
   }
+}
+
+// 优惠金额用危险色，与账单金额的常规主色区分，避免用户把折后价当实付价。
+.detail-kv-discount {
+  color: var(--td-error-color) !important;
 }
 
 .related-section {

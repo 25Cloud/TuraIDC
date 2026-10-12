@@ -51,6 +51,7 @@ class ClientInvoiceDetailResource extends AdminInvoiceSummaryResource
                 'config_snapshot' => $this->stripSensitiveKeys((array) ($invoice['config_snapshot'] ?? [])),
                 'config_pricing_snapshot' => $this->stripSensitiveKeys((array) ($invoice['config_pricing_snapshot'] ?? [])),
                 'coupon' => is_array($invoice['coupon'] ?? null) ? $this->stripSensitiveKeys($invoice['coupon']) : null,
+                'coupon_code' => (string) ($invoice['coupon_code'] ?? ''),
             ],
             'payment_chain' => [
                 'payment_summary' => is_array($invoice['payment_summary'] ?? null)

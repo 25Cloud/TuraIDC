@@ -171,7 +171,9 @@ function normalizeV2InvoiceDetail(payload: V2InvoiceDetailPayload | null | undef
     scene: invoice.scene,
     config_snapshot: configuration.config_snapshot as Record<string, unknown> | null,
     config_pricing_snapshot: configuration.config_pricing_snapshot as Record<string, unknown> | null,
-    coupon: configuration.coupon,
+    coupon: (configuration.coupon as InvoiceRecord['coupon']) || null,
+    // 券码：后端从账单自身列透出，模板按此判断是否展示优惠区块。
+    coupon_code: String(configuration.coupon_code || ''),
     payment_summary: paymentChain.payment_summary as InvoiceRecord['payment_summary'],
     payments: Array.isArray(paymentChain.payments) ? (paymentChain.payments as PaymentRecord[]) : [],
     pay_methods: Array.isArray(paymentOptions.pay_methods)

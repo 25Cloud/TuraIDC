@@ -213,6 +213,10 @@ const items = computed(() => {
 
 const summaryMetrics = computed<RecordDetailMetric[]>(() => [
   { label: '账单金额', value: formatMoney(invoice.value.amount), primary: true },
+  // 优惠金额只在该账单确实用券时占位，避免无券账单多一行空指标。
+  ...(Number(invoice.value.discount || 0) > 0
+    ? [{ label: '优惠金额', value: `-${formatMoney(invoice.value.discount)}` }]
+    : []),
   { label: '已付金额', value: formatMoney(invoice.value.paid_amount) },
   { label: '创建时间', value: formatDateTime(invoice.value.created_at) },
 ]);
