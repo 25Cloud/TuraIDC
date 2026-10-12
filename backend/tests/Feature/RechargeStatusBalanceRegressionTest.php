@@ -484,7 +484,7 @@ class RechargeStatusBalanceRegressionTest extends TestCase
 
         $invoiceService = new class extends InvoiceService
         {
-            public function createForRecharge(User $user, float $amount, ?Payment $payment = null, ?string $remark = null, ?string $traceId = null): Invoice
+            public function createForRecharge(User $user, float $amount, ?Payment $payment = null, ?string $remark = null, ?string $traceId = null, ?string $idempotencyKey = null): Invoice
             {
                 throw new \RuntimeException('invoice create failed');
             }
