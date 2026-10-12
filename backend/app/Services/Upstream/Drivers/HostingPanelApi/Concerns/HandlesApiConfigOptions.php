@@ -414,7 +414,10 @@ trait HandlesApiConfigOptions
 
     private function resolveConfigOptionField(array $item, ?string $mappedField, string $nameField, string $displayName): string
     {
-        $explicitField = trim($nameField);
+        // 魔方 option_name 形如 "key|中文名"，key 即上游 configoption 的键。
+        // 上游可能返回大写 key（如 cPanel 模板的 "CPU|处理器核心"），
+        // 而下游取值一律用小写 cpu/memory，不归一会静默失配。
+        $explicitField = Str::lower(trim($nameField));
         if ($explicitField !== '') {
             return $explicitField;
         }
@@ -450,8 +453,15 @@ trait HandlesApiConfigOptions
             return trim($mappedField);
         }
 
-        $slug = Str::slug($normalizedDisplayName, '_');
+        // 中文显示名不能 slug：Str::slug 对中文逐字转拼音，
+        // "处理器核心" 会变成 "_chu_l_i_he_xin"，与 field==='cpu' 的取值失配，
+        // 表现为自选 CPU / 内存对接不过来。改为按已知同义词匹配。
+        foreach (self::CONFIG_OPTION_FIELD_ALIASES as $keyword => $field) {
+            if ($keyword !== '' && str_contains($lowerDisplayName, (string) $keyword)) {
+                return $field;
+            }
+        }
 
-        return $slug !== '' ? $slug : $normalizedDisplayName;
+        return $normalizedDisplayName;
     }
 }

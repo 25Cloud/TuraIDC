@@ -26,15 +26,54 @@ final class ZjmfCatalogService
         12 => 'area',
         13 => 'system_disk_size',
         14 => 'system_disk_size',
-        15 => null,
+        // 15 是 QuantityStage（数量-阶段计费），属于区间型，不能当无意义项：
+        // 映成 null 会让它掉进中文 slug 兜底，产出取不到值的 field。
+        15 => 'quantity',
         16 => 'cpu',
         17 => 'memory',
         18 => 'bw',
         19 => 'system_disk_size',
+        // 20 是 RadioLevelLinkAge（单选框-层级联动），值为 sub 的 ID。
+        // 不给默认值，交给 option_name 的 key / 别名表判定具体字段。
         20 => null,
     ];
 
+    // 区间型判定与魔方 app/common.php:3771 的 judgeQuantity() 保持一致。
+    // 单选型传 sub 的整数 ID，区间型传数量数字本身。
     private const RANGE_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19];
+
+    /**
+     * option_type 无法区分同义字段时的显示名兜底别名（键为小写关键词）。
+     *
+     * 魔方的 option_type 1/2/3 是通用下拉/单选/是非，CPU、内存等字段同样可能
+     * 用这些通用编号建项，只能靠 option_name 的 key 或显示名判定。命中顺序按
+     * 定义顺序，先具体后宽泛，避免「上行带宽」被「带宽」抢先匹配。
+     *
+     * 数据来源：zjmf376 app/common/logic/DcimCloud.php 的 configoptions 实际取值。
+     */
+    private const CONFIG_OPTION_FIELD_ALIASES = [
+        '处理器' => 'cpu',
+        '核心' => 'cpu',
+        'cpu' => 'cpu',
+        '内存' => 'memory',
+        'ram' => 'memory',
+        'memory' => 'memory',
+        '上行' => 'out_bw',
+        '下行' => 'in_bw',
+        '带宽' => 'bw',
+        '流量' => 'flow_limit',
+        '系统盘' => 'system_disk_size',
+        '数据盘' => 'data_disk_size',
+        '硬盘' => 'system_disk_size',
+        '存储' => 'system_disk_size',
+        '数据中心' => 'area',
+        '机房' => 'area',
+        '操作系统' => 'os',
+        '系统' => 'os',
+        'ip数量' => 'ip_num',
+        'ip个数' => 'ip_num',
+        'ip' => 'ip_num',
+    ];
 
     private const CONFIG_PRICING_CYCLE_MAP = [
         'hour' => 'hour',
@@ -681,7 +720,11 @@ final class ZjmfCatalogService
 
     private function resolveConfigOptionField(array $item, ?string $mappedField, string $nameField, string $displayName): string
     {
-        $explicitField = trim($nameField);
+        // 魔方 option_name 形如 "key|中文名"，key 就是上游 configoption 的键
+        // （见 zjmf376 app/common/model/HostModel.php）。上游可能返回大写
+        // key（如 cPanel 模板的 "CPU|处理器核心"），而本系统下游取值一律用
+        // 小写 cpu/memory，不归一会静默失配。
+        $explicitField = Str::lower(trim($nameField));
         if ($explicitField !== '') {
             return $explicitField;
         }
@@ -717,9 +760,17 @@ final class ZjmfCatalogService
             return trim($mappedField);
         }
 
-        $slug = Str::slug($normalizedDisplayName, '_');
+        // 中文显示名不能 slug：Str::slug 对中文会逐字转拼音，
+        // "处理器核心" 变成 "_chu_l_i_he_xin"，与任何 field==='cpu' 的取值失配，
+        // 表现为「自选 CPU 和内存对接不过来」。改成按已知字段同义词匹配，
+        // 匹配不到时保留原样交给上游语义，不再产出拼音垃圾值。
+        foreach (self::CONFIG_OPTION_FIELD_ALIASES as $keyword => $field) {
+            if ($keyword !== '' && str_contains($lowerDisplayName, (string) $keyword)) {
+                return $field;
+            }
+        }
 
-        return $slug !== '' ? $slug : $normalizedDisplayName;
+        return $normalizedDisplayName;
     }
 
     private function resolveCatalogMonthlyPrice(array $product): ?string

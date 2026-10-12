@@ -61,15 +61,48 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
         12 => 'area',
         13 => 'system_disk_size',
         14 => 'system_disk_size',
-        15 => null,
+        // 15 是 QuantityStage（数量-阶段计费），属于区间型，不能当无意义项。
+        15 => 'quantity',
         16 => 'cpu',
         17 => 'memory',
         18 => 'bw',
         19 => 'system_disk_size',
+        // 20 是 RadioLevelLinkAge（单选框-层级联动），交给 option_name 判定具体字段。
         20 => null,
     ];
 
     private const RANGE_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19];
+
+    /**
+     * option_type 无法区分同义字段时的显示名兜底别名（键为小写关键词）。
+     *
+     * option_type 1/2/3 是通用下拉/单选/是非，CPU、内存等字段同样可能用这些
+     * 通用编号建项，只能靠 option_name 的 key 或显示名判定。命中顺序按定义
+     * 顺序，先具体后宽泛，避免「上行带宽」被「带宽」抢先匹配。
+     */
+    private const CONFIG_OPTION_FIELD_ALIASES = [
+        '处理器' => 'cpu',
+        '核心' => 'cpu',
+        'cpu' => 'cpu',
+        '内存' => 'memory',
+        'ram' => 'memory',
+        'memory' => 'memory',
+        '上行' => 'out_bw',
+        '下行' => 'in_bw',
+        '带宽' => 'bw',
+        '流量' => 'flow_limit',
+        '系统盘' => 'system_disk_size',
+        '数据盘' => 'data_disk_size',
+        '硬盘' => 'system_disk_size',
+        '存储' => 'system_disk_size',
+        '数据中心' => 'area',
+        '机房' => 'area',
+        '操作系统' => 'os',
+        '系统' => 'os',
+        'ip数量' => 'ip_num',
+        'ip个数' => 'ip_num',
+        'ip' => 'ip_num',
+    ];
 
     private const CONFIG_PRICING_CYCLE_MAP = [
         'hour' => 'hour',
