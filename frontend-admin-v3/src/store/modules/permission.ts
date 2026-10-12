@@ -226,7 +226,7 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
       {
         path: '/admin/menu/system-settings/database',
         title: { zh_CN: '数据库状态', en_US: 'Database Status' },
-        children: ['/admin/system/database'],
+        children: ['/admin/system/database', '/admin/system/redis'],
       },
     ],
   },

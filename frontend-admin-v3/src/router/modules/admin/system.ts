@@ -230,6 +230,19 @@ export const systemRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    path: 'system/redis',
+    name: 'AdminRedisStatus',
+    component: () => import('@/pages/admin/system/redis/index.vue'),
+    meta: {
+      title: {
+        zh_CN: '缓存状态',
+        en_US: 'Cache Status',
+      },
+      permission: 'database.view',
+      keepAlive: false,
+    },
+  },
+  {
     path: 'automation',
     name: 'AdminAutomation',
     component: () => import('@/pages/settings/index.vue'),

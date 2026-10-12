@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\V2\ProductDiscountGroupController;
 use App\Http\Controllers\Admin\V2\ProductGroupController;
 use App\Http\Controllers\Admin\V2\ProductSpecHighlightController;
 use App\Http\Controllers\Admin\V2\ProductTypeController;
+use App\Http\Controllers\Admin\V2\RedisStatusController;
 use App\Http\Controllers\Admin\V2\ReferralController;
 use App\Http\Controllers\Admin\V2\ReferralWithdrawalController;
 use App\Http\Controllers\Admin\V2\RoleController;
@@ -451,11 +452,13 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
 
     Route::middleware(['permission:'.AdminPermissions::DATABASE_VIEW])->group(function (): void {
         Route::get('/database/status', [DatabaseStatusController::class, 'status']);
+        Route::get('/redis/status', [RedisStatusController::class, 'status']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::DATABASE_MANAGE])->group(function (): void {
         Route::post('/database/optimizations', [DatabaseStatusController::class, 'optimize']);
         Route::post('/database/backups', [DatabaseStatusController::class, 'exportBackup']);
+        Route::post('/redis/cache/flush', [RedisStatusController::class, 'flushCache']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::STAFF_LIST])->group(function (): void {
