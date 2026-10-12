@@ -40,11 +40,7 @@ class SupplierController extends Controller
 
     public function summary(ShowSupplierSummaryRequest $request)
     {
-        return $this->success(AdminSupplierSummaryResource::make([
-            'total' => Supplier::query()->count(),
-            'active' => Supplier::query()->where('status', 1)->count(),
-            'inactive' => Supplier::query()->where('status', 0)->count(),
-        ])->resolve());
+        return $this->success(AdminSupplierSummaryResource::make($this->queryService->supplierStatusSummary())->resolve());
     }
 
     public function providerTypes(ListSupplierProviderTypesRequest $request, ProviderRegistry $providerRegistry)

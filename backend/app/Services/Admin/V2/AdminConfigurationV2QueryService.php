@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Admin\V2;
 
-use App\Support\SqlLike;
 use App\Exceptions\BusinessException;
 use App\Http\Requests\Admin\V2\IntegrationPlugin\RunIntegrationPluginTaskRequest;
 use App\Http\Resources\Admin\V2\AdminIntegrationPluginDetailResource;
@@ -29,6 +28,7 @@ use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\ProviderRegistry;
 use App\Services\Upstream\ProviderResolver;
 use App\Support\AdminPermissions;
+use App\Support\SqlLike;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -218,6 +218,29 @@ class AdminConfigurationV2QueryService
             'total' => $paginator->total(),
             'page' => $paginator->currentPage(),
             'page_size' => $paginator->perPage(),
+        ];
+    }
+
+    /**
+     * 供应商状态汇总：列表页顶部的三个计数。
+     *
+     * 单次聚合查询出两个状态计数，total 由两者相加得到——比三条独立 count()
+     * 少两次往返，且不会因为并发增删导致 total 与分项对不上。
+     *
+     * @return array<string, int>
+     */
+    public function supplierStatusSummary(): array
+    {
+        $counts = Supplier::query()
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as active')
+            ->selectRaw('SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as inactive')
+            ->first();
+
+        return [
+            'total' => (int) ($counts->total ?? 0),
+            'active' => (int) ($counts->active ?? 0),
+            'inactive' => (int) ($counts->inactive ?? 0),
         ];
     }
 
