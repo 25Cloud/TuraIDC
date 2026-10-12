@@ -145,6 +145,27 @@ class RedisStatusService
     }
 
     /**
+     * 执行 INFO <section>。
+     *
+     * Laravel 的 Connection::command() 第二个参数必须是数组：PhpRedisConnection
+     * 会把它展开成 $arguments，PredisConnection 则原样透传。传字符串会在
+     * phpredis 下抛 TypeError，曾被下面的 catch 吞掉，导致版本、内存、命中率
+     * 等指标在生产上全部静默为空。
+     *
+     * @return array<string, mixed>
+     */
+    private function info(Connection $connection, string $section): array
+    {
+        try {
+            $info = $connection->command('info', [$section]);
+        } catch (Throwable) {
+            return [];
+        }
+
+        return is_array($info) ? $info : [];
+    }
+
+    /**
      * @return array<string, string>
      */
     private function serverInfo(): array
@@ -155,17 +176,7 @@ class RedisStatusService
             return [];
         }
 
-        try {
-            $info = $connection->command('info', 'server');
-        } catch (Throwable) {
-            return [];
-        }
-
-        if (! is_array($info)) {
-            return [];
-        }
-
-        return collect($info)
+        return collect($this->info($connection, 'server'))
             ->filter(static fn (mixed $value): bool => is_scalar($value))
             ->map(static fn (mixed $value): string => (string) $value)
             ->all();
@@ -182,15 +193,7 @@ class RedisStatusService
             return [];
         }
 
-        try {
-            $raw = $connection->command('info', 'keyspace');
-        } catch (Throwable) {
-            return [];
-        }
-
-        if (! is_array($raw)) {
-            return [];
-        }
+        $raw = $this->info($connection, 'keyspace');
 
         $rows = [];
 
@@ -237,15 +240,7 @@ class RedisStatusService
             return [];
         }
 
-        try {
-            $raw = $connection->command('info', 'memory');
-        } catch (Throwable) {
-            return [];
-        }
-
-        if (! is_array($raw)) {
-            return [];
-        }
+        $raw = $this->info($connection, 'memory');
 
         return [
             'used_memory_human' => (string) ($raw['used_memory_human'] ?? ''),
@@ -266,15 +261,7 @@ class RedisStatusService
             return [];
         }
 
-        try {
-            $raw = $connection->command('info', 'stats');
-        } catch (Throwable) {
-            return [];
-        }
-
-        if (! is_array($raw)) {
-            return [];
-        }
+        $raw = $this->info($connection, 'stats');
 
         $hits = (float) ($raw['keyspace_hits'] ?? 0);
         $misses = (float) ($raw['keyspace_misses'] ?? 0);

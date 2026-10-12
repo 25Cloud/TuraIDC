@@ -120,6 +120,52 @@ class V2AdminRedisStatusApiTest extends TestCase
     }
 
     /**
+     * 生产验证发现：Laravel Connection::command() 第二个参数必须是数组。
+     * 传字符串会在 phpredis 驱动下抛 TypeError，并被 catch 静默吞掉，
+     * 导致版本、内存、键空间、命中率在页面上全部为空且没有任何报错。
+     */
+    public function test_it_passes_info_section_as_array_so_phpredis_driver_returns_metrics(): void
+    {
+        $connection = \Mockery::mock(\Illuminate\Redis\Connections\PhpRedisConnection::class);
+        $connection->shouldReceive('command')->with('ping')->andReturn(true);
+        $connection->shouldReceive('command')
+            ->with('info', ['server'])
+            ->once()
+            ->andReturn(['redis_version' => '7.2.5', 'os' => 'Linux']);
+        $connection->shouldReceive('command')
+            ->with('info', ['keyspace'])
+            ->once()
+            ->andReturn(['db0' => 'keys=12,expires=3,avg_ttl=0']);
+        $connection->shouldReceive('command')
+            ->with('info', ['memory'])
+            ->once()
+            ->andReturn(['used_memory_human' => '12.5M', 'mem_fragmentation_ratio' => '1.02']);
+        $connection->shouldReceive('command')
+            ->with('info', ['stats'])
+            ->once()
+            ->andReturn([
+                'uptime_in_days' => '3',
+                'connected_clients' => '5',
+                'keyspace_hits' => '95',
+                'keyspace_misses' => '5',
+            ]);
+
+        \Illuminate\Support\Facades\Redis::shouldReceive('connection')->andReturn($connection);
+
+        $status = app(RedisStatusService::class)->status();
+
+        $this->assertSame('7.2.5', $status['server']['redis_version'] ?? null);
+        $this->assertSame('12.5M', $status['memory']['used_memory_human'] ?? null);
+        $this->assertSame(0.95, $status['stats']['hit_rate'] ?? null);
+        $this->assertSame([[
+            'database' => '0',
+            'keys' => 12,
+            'expires' => 3,
+            'avg_ttl' => 0,
+        ]], $status['keyspace']);
+    }
+
+    /**
      * @param  list<string>  $permissions
      */
     private function createAdmin(array $permissions): AdminUser
