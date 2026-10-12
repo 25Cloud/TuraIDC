@@ -39,6 +39,13 @@ class ProductSyncService
 
     private const REMOTE_STOCK_CACHE_TTL_SECONDS = 15;
 
+    /**
+     * 上游售罄覆盖窗口：开通/升级被上游以「库存不足」拒绝后写入，
+     * 期间该上游商品的库存读取一律按 0 处理。上游补货无法被主动感知
+     * （qty 是展示口径、不可信），依赖 TTL 自然过期恢复与真实库存的一致窗口。
+     */
+    private const UPSTREAM_STOCK_SHORTAGE_TTL_SECONDS = 86400;
+
     /** 上游商品配置定时同步整体时间预算（秒），需小于任务超时 3600s。 */
     private const UPSTREAM_SYNC_DEADLINE_SECONDS = 2700;
 
@@ -850,6 +857,106 @@ class ProductSyncService
         return $summary;
     }
 
+    /**
+     * 上游以「库存不足」拒绝开通/升级后的本地库存校准。
+     *
+     * 上游的加购与结算是唯一的真实库存闸门，返回的 qty 只是展示口径。
+     * 被拒绝说明本地快照已经虚高，因此做三件事：
+     * 1) 写售罄覆盖标记，TTL 内该上游商品的库存读取按 0 处理，
+     *    阻断浏览回写把展示口径的假 qty 重新写回快照；
+     * 2) 把本地快照归零，让结账闸门立即生效；
+     * 3) 清前台库存缓存，售罄立即可见。
+     *
+     * 校准本身是 best-effort：调用方在失败分支之后还有 provision_error 等留痕逻辑，
+     * 校准失败不得中断留痕。覆盖缺失的窗口内用户可能再被收一次款后开不出来，
+     * 下次上游再拒绝时会重新触发校准。
+     */
+    public function markUpstreamStockShortage(int $productId): void
+    {
+        try {
+            $this->doMarkUpstreamStockShortage($productId);
+        } catch (\Throwable $exception) {
+            Log::warning('[商品库存] 上游售罄校准执行失败', [
+                'product_id' => $productId,
+                'message' => $exception->getMessage(),
+                'exception' => $exception::class,
+            ]);
+        }
+    }
+
+    private function doMarkUpstreamStockShortage(int $productId): void
+    {
+        $product = Product::query()->find($productId);
+
+        if (! $product instanceof Product) {
+            return;
+        }
+
+        $supplier = $this->resolveProductSupplier($product);
+        $supplierProductId = $this->resolveProductUpstreamProductId($product);
+        $supplierId = $supplier instanceof Supplier ? (int) $supplier->id : 0;
+
+        $store = Cache::store('redis_volatile');
+
+        if ($supplierId > 0 && $supplierProductId > 0) {
+            $store->put(
+                $this->upstreamStockShortageCacheKey($supplierId, $supplierProductId),
+                true,
+                now()->addSeconds(self::UPSTREAM_STOCK_SHORTAGE_TTL_SECONDS)
+            );
+        }
+
+        // 与定时同步同款落库口径：products.stock 是结账闸门读的值，
+        // 绑定快照是给控制台与排障看的，两者都要归零。
+        // 快照已是 0 时跳过，避免无谓的写放大。
+        if ((int) ($product->stock ?? 0) !== 0) {
+            $this->persistProductWithStructuredSync($product, ['stock' => 0]);
+
+            if ($supplier instanceof Supplier && $supplierProductId > 0) {
+                $this->recordProductStockSnapshot($product->fresh() ?? $product, $supplier, $supplierProductId, 0);
+            }
+        }
+
+        $cacheKey = 'site_product_stock:'.$productId;
+        $store->forget($cacheKey);
+        $store->forget($cacheKey.':stale');
+
+        Log::info('[商品库存] 上游拒绝库存不足/已下架，本地快照已归零并写售罄覆盖', [
+            'product_id' => $productId,
+            'supplier_id' => $supplierId,
+            'upstream_product_id' => $supplierProductId,
+            'override_ttl_seconds' => self::UPSTREAM_STOCK_SHORTAGE_TTL_SECONDS,
+        ]);
+    }
+
+    /**
+     * 上游售罄覆盖：命中标记的上游商品，其库存读取一律按 0 处理。
+     *
+     * 覆盖只作用于读取出口，缓存里存的仍是上游原始值，因此上游补货后
+     * 随覆盖标记过期自然恢复，不需要额外的失效动作。
+     */
+    private function applyUpstreamStockShortageOverrides(int $supplierId, array $remoteStocks): array
+    {
+        if ($remoteStocks === []) {
+            return $remoteStocks;
+        }
+
+        $store = Cache::store('redis_volatile');
+
+        foreach (array_keys($remoteStocks) as $supplierProductId) {
+            if ($store->get($this->upstreamStockShortageCacheKey($supplierId, (int) $supplierProductId)) !== null) {
+                $remoteStocks[$supplierProductId] = 0;
+            }
+        }
+
+        return $remoteStocks;
+    }
+
+    private function upstreamStockShortageCacheKey(int $supplierId, int $supplierProductId): string
+    {
+        return 'upstream_stock_shortage:'.$supplierId.':'.$supplierProductId;
+    }
+
     public function siteProductStock(int $productId): ?array
     {
         $cacheKey = 'site_product_stock:'.$productId;
@@ -1190,7 +1297,8 @@ class ProductSyncService
         return '暂时无法获取上游库存，请稍后重试';
     }
 
-    private function resolveSupplierRemoteStocks(Supplier $supplier, array $supplierProductIds): array    {
+    private function resolveSupplierRemoteStocks(Supplier $supplier, array $supplierProductIds): array
+    {
         $normalizedSupplierProductIds = collect($supplierProductIds)
             ->map(fn ($id) => (int) $id)
             ->filter(fn (int $supplierProductId) => $supplierProductId > 0)
@@ -1207,14 +1315,17 @@ class ProductSyncService
         $cached = Cache::store('redis_volatile')->get($cacheKey);
 
         if (is_array($cached)) {
-            return $cached;
+            $remoteStocks = $cached;
+        } else {
+            $remoteStocks = $this->fetchSupplierRemoteStocks($supplier, $normalizedSupplierProductIds);
+
+            Cache::store('redis_volatile')->put($cacheKey, $remoteStocks, now()->addSeconds(self::REMOTE_STOCK_CACHE_TTL_SECONDS));
         }
 
-        $remoteStocks = $this->fetchSupplierRemoteStocks($supplier, $normalizedSupplierProductIds);
-
-        Cache::store('redis_volatile')->put($cacheKey, $remoteStocks, now()->addSeconds(self::REMOTE_STOCK_CACHE_TTL_SECONDS));
-
-        return $remoteStocks;
+        // 售罄覆盖必须套在缓存之外：缓存里是上游原始值，覆盖按 TTL 自然过期，
+        // 若写进缓存则上游补货后要等缓存过期才恢复，且缓存键按商品集合分片，
+        // 单个商品售罄会连累同批其它商品的缓存条目。
+        return $this->applyUpstreamStockShortageOverrides((int) $supplier->id, $remoteStocks);
     }
 
     private function fetchSupplierRemoteStocks(Supplier $supplier, array $supplierProductIds): array

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Servers\ZjmfFinance\Lib;
 
 use App\Exceptions\BusinessException;
+use App\Exceptions\UpstreamStockShortageException;
 use App\Models\Supplier;
 use App\Services\Integrations\Support\ProviderErrorMapper;
 use App\Services\Upstream\ProviderKey;
@@ -312,7 +313,13 @@ final class ZjmfNetworkService
             'message' => SensitiveDataSanitizer::sanitizeText($message),
         ]);
 
-        throw new BusinessException(app(ProviderErrorMapper::class)->toUserMessage(ProviderKey::ZJMF_FINANCE_API, $action, $message), 42200);
+        $userMessage = app(ProviderErrorMapper::class)->toUserMessage(ProviderKey::ZJMF_FINANCE_API, $action, $message);
+
+        // 升级换品被上游以「库存不足/已下架」拒绝时用分类异常上抛，
+        // 编排层据此校准目标商品的本地库存快照。用户文案与既有链路一致。
+        throw UpstreamStockShortageException::matches($message)
+            ? new UpstreamStockShortageException($userMessage, 42200)
+            : new BusinessException($userMessage, 42200);
     }
 
     private function resolveJwt(Supplier $supplier, ?string $jwt): string

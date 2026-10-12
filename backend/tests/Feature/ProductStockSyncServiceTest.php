@@ -19,6 +19,13 @@ use Tests\TestCase;
 
 class ProductStockSyncServiceTest extends TestCase
 {
+    /** 同一用例内多个商品共用一套供应商与绑定，才能验证覆盖是按上游商品精确生效的 */
+    private ?int $supplierId = null;
+
+    private ?int $pluginId = null;
+
+    private ?int $supplierBindingId = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -81,6 +88,99 @@ class ProductStockSyncServiceTest extends TestCase
 
         $this->assertSame(9, (int) ($decoded['stock'] ?? -1));
         $this->assertSame('scheduled_stock_sync', $decoded['source'] ?? null);
+    }
+
+    /**
+     * 上游加购/结算是唯一的真实库存闸门，返回的 qty 只是展示口径。
+     * 被「库存不足」拒绝后必须立刻校准，否则用户会继续按虚高的陈旧快照付款，
+     * 付完才发现开不出来。
+     */
+    public function test_upstream_stock_shortage_zeroes_snapshot_and_overrides_upstream_reads(): void
+    {
+        $service = $this->serviceWithUpstreamStocks([1001 => 9]);
+        $productId = $this->bindZjmfProduct(1001, 9);
+
+        $service->syncUpstreamProductStocks(ProviderKey::ZJMF_FINANCE_API);
+        $this->assertSame(9, (int) Product::query()->findOrFail($productId)->stock, '前置：上游展示口径为 9');
+
+        $service->markUpstreamStockShortage($productId);
+
+        $this->assertSame(0, (int) Product::query()->findOrFail($productId)->stock, '快照必须归零');
+
+        $snapshot = DB::table('product_upstream_bindings')
+            ->where('product_id', $productId)
+            ->value('upstream_product_snapshot_json');
+        $decoded = json_decode((string) $snapshot, true);
+        $this->assertSame(0, (int) ($decoded['stock'] ?? -1), '绑定快照中的库存也必须归零');
+
+        // 模拟浏览回写把上游展示口径的陈旧 qty 又写回快照（覆盖窗口内这完全可能发生）。
+        // 覆盖的意义正在于此：下一轮同步读到的上游值仍是 9，落库也必须是 0。
+        DB::table('products')->where('id', $productId)->update(['stock' => 9]);
+        $service->syncUpstreamProductStocks(ProviderKey::ZJMF_FINANCE_API);
+
+        $this->assertSame(
+            0,
+            (int) Product::query()->findOrFail($productId)->stock,
+            '售罄覆盖期内，上游有货也必须被压成 0'
+        );
+    }
+
+    /**
+     * 覆盖按「供应商 + 上游商品」精确生效：同供应商的其它在售商品不能被连累归零，
+     * 否则一次售罄会把整条商品线误伤成不可售。
+     */
+    public function test_stock_shortage_override_only_affects_the_rejected_upstream_product(): void
+    {
+        $service = $this->serviceWithUpstreamStocks([1001 => 9, 1002 => 4]);
+        $soldOutProductId = $this->bindZjmfProduct(1001, 9);
+        $healthyProductId = $this->bindZjmfProduct(1002, 4);
+
+        $service->markUpstreamStockShortage($soldOutProductId);
+        $service->syncUpstreamProductStocks(ProviderKey::ZJMF_FINANCE_API);
+
+        $this->assertSame(0, (int) Product::query()->findOrFail($soldOutProductId)->stock);
+        $this->assertSame(
+            4,
+            (int) Product::query()->findOrFail($healthyProductId)->stock,
+            '同供应商其它在售商品不得被连累归零'
+        );
+    }
+
+    /**
+     * 校准必须 best-effort：调用方在失败分支之后还有留痕逻辑，
+     * 校准自身抛异常不得中断留痕，也不得把原始异常换成别的。
+     */
+    public function test_stock_shortage_calibration_never_breaks_the_caller(): void
+    {
+        $service = $this->serviceWithUpstreamStocks([1001 => 9]);
+
+        // 商品不存在：不应抛异常
+        $service->markUpstreamStockShortage(999999);
+
+        $this->assertTrue(true, '校准失败必须被吞掉并记录日志，不得向上抛出');
+    }
+
+    private function serviceWithUpstreamStocks(array $stocks): ProductSyncService
+    {
+        $providerRegistry = new ProviderRegistry([
+            new FakeStockCatalogDriver(new RecordingStockCatalog($stocks)),
+        ]);
+        app()->instance(ProviderRegistry::class, $providerRegistry);
+
+        return new ProductSyncService(new ProviderResolver($providerRegistry));
+    }
+
+    private function bindZjmfProduct(int $upstreamProductId, int $stock): int
+    {
+        // 多个用例需要把商品挂到同一供应商下，才能验证覆盖是按上游商品精确生效的
+        $this->supplierId ??= $this->insertSupplier('Zjmf Supplier');
+        $this->pluginId ??= $this->insertPlugin('zjmf_finance', ProviderKey::ZJMF_FINANCE_API);
+        $this->supplierBindingId ??= $this->insertSupplierBinding($this->supplierId, $this->pluginId, ProviderKey::ZJMF_FINANCE_API);
+
+        $productId = $this->insertProduct($stock);
+        $this->insertProductBinding($productId, $this->supplierBindingId, $this->pluginId, ProviderKey::ZJMF_FINANCE_API, (string) $upstreamProductId);
+
+        return $productId;
     }
 
     private function useSqliteInMemoryDatabase(): void

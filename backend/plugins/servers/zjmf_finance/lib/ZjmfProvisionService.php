@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Servers\ZjmfFinance\Lib;
 
 use App\Exceptions\BusinessException;
+use App\Exceptions\UpstreamStockShortageException;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Service;
@@ -744,7 +745,14 @@ final class ZjmfProvisionService
             'message' => SensitiveDataSanitizer::sanitizeText($message),
         ]);
 
-        throw new BusinessException(app(ProviderErrorMapper::class)->toUserMessage(ProviderKey::ZJMF_FINANCE_API, $action, $message));
+        $userMessage = app(ProviderErrorMapper::class)->toUserMessage(ProviderKey::ZJMF_FINANCE_API, $action, $message);
+
+        // 上游加购/结算是唯一的真实库存闸门：命中「库存不足」类文案时用分类异常上抛，
+        // 编排层据此校准本地库存快照（上游 qty 只是展示口径）。
+        // 用户文案与既有链路完全一致，只是异常类型不同。
+        throw UpstreamStockShortageException::matches($message)
+            ? new UpstreamStockShortageException($userMessage)
+            : new BusinessException($userMessage);
     }
 
     private function extractResponseStatus(array $response): int

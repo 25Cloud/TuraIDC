@@ -8,6 +8,7 @@ use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
 use App\Constants\OrderType;
 use App\Exceptions\BusinessException;
+use App\Exceptions\UpstreamStockShortageException;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Product;
@@ -18,6 +19,7 @@ use App\Services\Finance\InvoiceService;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
+use App\Services\ProductCatalog\ProductSyncService;
 use App\Services\System\OperationLogService;
 use App\Support\OrderInvoiceNoGenerator;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -438,6 +440,8 @@ class ServiceUpgradeService
 
             return $service->fresh(['product.supplier', 'order']) ?? $service;
         } catch (\Throwable $exception) {
+            $this->calibrateTargetStockForUpgrade($order, $exception);
+
             $provisionData = DB::transaction(function () use ($service, $order, $exception): array {
                 $provisionData = $this->serviceProvisionData($service);
                 $provisionData['upgrade_error'] = $exception instanceof BusinessException ? $exception->getMessage() : '产品升降级失败，请联系管理员处理';
@@ -474,6 +478,31 @@ class ServiceUpgradeService
 
             return $service->fresh(['product.supplier', 'order']) ?? $service;
         }
+    }
+
+    /**
+     * 升级被上游以「库存不足/已下架」类文案拒绝后的库存校准，与开通链路同款：
+     * 快照归零 + 售罄覆盖，阻断假快照继续招单、用户付款后卡升级。
+     *
+     * 必须校准「目标商品」而不是订单上的商品：升级单的 product_id 是服务当前的
+     * 旧商品（账单从当前服务复制而来），目标商品只存在于
+     * config_pricing_snapshot.meta.product_id。归零错商品会错杀仍在售的旧商品库存。
+     */
+    private function calibrateTargetStockForUpgrade(Order $order, \Throwable $exception): void
+    {
+        if (! $exception instanceof UpstreamStockShortageException) {
+            return;
+        }
+
+        $targetProductId = (int) data_get($order->config_pricing_snapshot ?? [], 'meta.product_id', 0);
+
+        // meta 缺失时静默跳过：能进入上游购买路径的履约请求已由前置校验保证 meta 有效，
+        // 这里的守卫只是防止老数据把无关商品误归零。
+        if ($targetProductId <= 0) {
+            return;
+        }
+
+        app(ProductSyncService::class)->markUpstreamStockShortage($targetProductId);
     }
 
     private function serviceBindingWriter(): ServiceUpstreamBindingWriter

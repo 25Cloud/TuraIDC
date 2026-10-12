@@ -6,6 +6,7 @@ use App\Constants\BillingCycle;
 use App\Constants\OrderStatus;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
+use App\Exceptions\UpstreamStockShortageException;
 use App\Jobs\PushServiceToZjmfDownstreamJob;
 use App\Jobs\SyncSupplierBalanceJob;
 use App\Models\Invoice;
@@ -18,16 +19,17 @@ use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\Integrations\Plugins\UpstreamBindingWriter;
 use App\Services\Integrations\Support\ProviderErrorMapper;
+use App\Services\ProductCatalog\ProductSyncService;
 use App\Services\Supplier\SupplierBalanceService;
 use App\Services\System\SettingService;
 use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\ProviderResolver;
+use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
 use App\Support\ProductProvisionHostname;
 use App\Support\SensitiveDataSanitizer;
 use App\Support\ServiceHostname;
 use Carbon\Carbon;
-use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -62,6 +64,7 @@ class ProvisionService
         private ProviderResolver $providerResolver,
         private SettingService $settingService,
         private ?PluginBindingResolver $bindingResolver = null,
+        private ?ProductSyncService $productSyncService = null,
     ) {}
 
     public function processPaidOrder(Order $order): ?Service
@@ -486,17 +489,27 @@ class ProvisionService
             $this->resolveProvisionHostname($order);
             $cartLockKey = $this->supplierCartLockKey($supplier);
 
-            return Cache::lock($cartLockKey, $this->supplierCartLockTtl())->block(10, function () use ($order, $supplier, $provisioning, $service) {
-                // 锁内基于 DB 最新状态复查幂等：并发"队列履约 + 管理员手动重试"时，
-                // 另一路径可能已 checkout 并提交 checkpoint（upstream_invoice_id/upstream_host_id 已落库）。
-                // 必须用 fresh 数据做幂等回查，避免基于旧内存值重复走购物车流程造成上游二次开通。
-                $freshService = ($service ?? $order->service)?->fresh();
-                if ($freshService instanceof Service) {
-                    $this->assertNoUnresolvedUpstreamProvisionInvoice($freshService);
-                }
+            try {
+                return Cache::lock($cartLockKey, $this->supplierCartLockTtl())->block(10, function () use ($order, $supplier, $provisioning, $service) {
+                    // 锁内基于 DB 最新状态复查幂等：并发"队列履约 + 管理员手动重试"时，
+                    // 另一路径可能已 checkout 并提交 checkpoint（upstream_invoice_id/upstream_host_id 已落库）。
+                    // 必须用 fresh 数据做幂等回查，避免基于旧内存值重复走购物车流程造成上游二次开通。
+                    $freshService = ($service ?? $order->service)?->fresh();
+                    if ($freshService instanceof Service) {
+                        $this->assertNoUnresolvedUpstreamProvisionInvoice($freshService);
+                    }
 
-                return $provisioning->provisionOrder($order, $supplier, $freshService ?? $service ?? $order->service);
-            });
+                    return $provisioning->provisionOrder($order, $supplier, $freshService ?? $service ?? $order->service);
+                });
+            } catch (UpstreamStockShortageException $exception) {
+                // 上游的加购/结算是唯一的真实库存闸门，被「库存不足」拒绝说明本地快照
+                // （上游 qty 只是展示口径）已经虚高。立即校准归零并写售罄覆盖，
+                // 否则后续用户会继续按陈旧快照付款，付完才发现开不出来。
+                // 异常原样上抛：重试与退款链路保持既有语义不变。
+                $this->productSyncService()->markUpstreamStockShortage((int) $order->product_id);
+
+                throw $exception;
+            }
         }
 
         // 幂等键回查：如果 service 已有 upstream_host_id，先查上游确认 host 存在且 Active，
@@ -1771,6 +1784,15 @@ class ProvisionService
     private function serviceBindingWriter(): ServiceUpstreamBindingWriter
     {
         return $this->serviceBindingWriter ??= app(ServiceUpstreamBindingWriter::class);
+    }
+
+    /**
+     * 用 app() 惰性解析：本服务在部分测试中以 new 直接实例化，
+     * 构造签名保持可选依赖，避免为库存校准新增硬依赖。
+     */
+    private function productSyncService(): ProductSyncService
+    {
+        return $this->productSyncService ??= app(ProductSyncService::class);
     }
 
     private function buildServiceSnapshot(Service $service): array
