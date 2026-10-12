@@ -2037,8 +2037,12 @@ onBeforeUnmount(() => {
 
 .cost-total {
   display: flex;
+  /* 空间不足时让价格块整体换行，而不是把「合计费用」「/月付」拆成两行 */
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
   padding: 8px 0 16px;
   border-top: 1px solid #f2f3f5;
   margin-top: 8px;
@@ -2047,25 +2051,36 @@ onBeforeUnmount(() => {
 .cost-total-label {
   font-size: 13px;
   color: #86909c;
+  /* 标签不参与压缩，避免「合计/费用」断行 */
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .cost-price-wrap {
   display: flex;
+  /* 价格内部任何情况下都不拆行 */
+  flex-wrap: nowrap;
   align-items: baseline;
+  justify-content: flex-end;
   gap: 1px;
+  /* 单行时靠右；换到第二行时同样靠右 */
+  margin-left: auto;
 }
 
 .cost-currency {
   font-size: 14px;
   color: #165dff;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 .cost-amount {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 700;
   color: #165dff;
   line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .cost-amount--loading {
@@ -2095,6 +2110,9 @@ onBeforeUnmount(() => {
   font-size: 12px;
   color: #86909c;
   margin-left: 2px;
+  /* 「/月付」不能被拆成「/月」「付」两行 */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
