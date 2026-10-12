@@ -939,19 +939,28 @@ class ProductSyncService
             try {
                 $remoteStocks = $this->resolveSupplierRemoteStocks($supplier, $supplierProductIds);
             } catch (\Throwable $exception) {
-                if ($strict) {
-                    throw new BusinessException('暂时无法获取上游库存，请稍后重试');
-                }
-
+                // 无论是否 strict 都要落日志：strict 是前台下单路径，此前直接抛出
+                // 且不记录，导致一次前台失败在日志里完全看不到痕迹，只能靠猜。
+                // 远程库存失败时不写缓存（TTL 15 秒），异常期会反复进入这里，
+                // 因此按供应商维度做 60 秒节流。
                 $throttleKey = 'stock_log:detail_fail:'.$supplier->id;
                 if (! Cache::store('redis_volatile')->has($throttleKey)) {
                     Cache::store('redis_volatile')->put($throttleKey, true, now()->addSeconds(60));
                     Log::warning('[商品库存] 拉取上游明细库存失败', [
                         'supplier_id' => $supplier->id,
                         'supplier_name' => $supplier->name,
+                        'strict' => $strict,
                         'message' => $exception->getMessage(),
                         'exception' => $exception::class,
                     ]);
+                }
+
+                if ($strict) {
+                    throw new BusinessException(
+                        $this->buildUpstreamStockFailureMessage($exception),
+                        50300,
+                        503,
+                    );
                 }
 
                 $remoteStocks = [];
@@ -964,18 +973,23 @@ class ProductSyncService
                     : null;
 
                 if ($remoteStock === null) {
-                    if ($strict) {
-                        throw new BusinessException('未找到上游库存信息，请稍后重试');
-                    }
-
+                    // 与拉取失败同理：strict 是前台路径，必须留痕。
+                    // 远程库存失败时不会写入缓存（TTL 15 秒），高频商品会反复命中此处，
+                    // 因此沿用按商品维度的 60 秒节流，避免异常期把日志刷爆。
                     $notFoundThrottleKey = 'stock_log:not_found:'.$product->id;
                     if (! Cache::store('redis_volatile')->has($notFoundThrottleKey)) {
                         Cache::store('redis_volatile')->put($notFoundThrottleKey, true, now()->addSeconds(60));
                         Log::warning('[商品库存] 未找到对应上游商品库存', [
                             'product_id' => (int) $product->id,
                             'supplier_id' => (int) $supplier->id,
+                            'supplier_name' => $supplier->name,
                             'upstream_product_id' => $supplierProductId,
+                            'strict' => $strict,
                         ]);
+                    }
+
+                    if ($strict) {
+                        throw new BusinessException('未找到上游库存信息，请稍后重试', 50301, 503);
                     }
 
                     continue;
@@ -1133,8 +1147,50 @@ class ProductSyncService
         });
     }
 
-    private function resolveSupplierRemoteStocks(Supplier $supplier, array $supplierProductIds): array
+    /**
+     * 把上游拉取失败归类成可安全展示给终端用户的文案。
+     *
+     * 固定文案「暂时无法获取上游库存」让用户和运维都看不出到底是上游挂了、
+     * 超时还是认证失效，只能 SSH 翻日志。但也不能直接把上游异常原文透出：
+     * 其中可能带上游地址、内网 IP、密钥片段，属于信息泄露。
+     * 因此这里只按可判别的特征归类，真实细节仍只进日志。
+     */
+    private function buildUpstreamStockFailureMessage(\Throwable $exception): string
     {
+        $message = $exception->getMessage();
+
+        if (str_contains($message, '接口地址未配置') || str_contains($message, '未配置')) {
+            return '商品的上游供应商尚未完成配置，暂时无法查询库存，请联系管理员';
+        }
+
+        if (str_contains($message, 'HTTP 401') || str_contains($message, 'HTTP 403')
+            || str_contains($message, '未授权') || str_contains($message, '登录')) {
+            return '商品的上游供应商认证失败，暂时无法查询库存，请联系管理员';
+        }
+
+        if (str_contains($message, 'HTTP 404')) {
+            return '商品的上游接口暂时不可用，请稍后重试';
+        }
+
+        if (str_contains($message, 'HTTP 429')) {
+            return '商品的上游供应商请求过于频繁，请稍后重试';
+        }
+
+        if (str_contains($message, 'Connection timed out') || str_contains($message, 'timed out')
+            || str_contains($message, 'HTTP 504') || str_contains($message, 'HTTP 502')
+            || str_contains($message, 'HTTP 522')) {
+            return '商品的上游供应商响应超时，请稍后重试';
+        }
+
+        if (str_contains($message, 'cURL error') || str_contains($message, 'Could not resolve')
+            || str_contains($message, 'Failed to connect')) {
+            return '暂时无法连接商品的上游供应商，请稍后重试';
+        }
+
+        return '暂时无法获取上游库存，请稍后重试';
+    }
+
+    private function resolveSupplierRemoteStocks(Supplier $supplier, array $supplierProductIds): array    {
         $normalizedSupplierProductIds = collect($supplierProductIds)
             ->map(fn ($id) => (int) $id)
             ->filter(fn (int $supplierProductId) => $supplierProductId > 0)
