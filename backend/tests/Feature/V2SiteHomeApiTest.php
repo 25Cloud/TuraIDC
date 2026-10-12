@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Setting;
 use App\Services\Content\ContentArticleService;
 use App\Services\Content\HomeHeroService;
 use App\Services\Site\SiteHomeService;
@@ -41,9 +42,24 @@ class V2SiteHomeApiTest extends TestCase
             'support_group_link',
             'terms_url',
             'privacy_url',
+            'icp_record',
+            'value_added_license',
         ], array_keys($response->json('data')));
         $this->assertNoSensitiveKeys($response->json());
         $this->assertLessThan(50 * 1024, strlen((string) $response->getContent()));
+    }
+
+    public function test_site_config_exposes_icp_record_and_value_added_license(): void
+    {
+        Setting::setValue('basic', 'icp_record', '京ICP备00000000号-1');
+        Setting::setValue('basic', 'value_added_license', '京B2-20000000');
+
+        $response = $this->getJson('/api/v2/site/config')
+            ->assertOk()
+            ->assertJsonPath('code', 0);
+
+        $this->assertSame('京ICP备00000000号-1', $response->json('data.icp_record'));
+        $this->assertSame('京B2-20000000', $response->json('data.value_added_license'));
     }
 
     public function test_site_home_uses_limited_v2_projection(): void

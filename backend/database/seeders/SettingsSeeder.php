@@ -47,8 +47,10 @@ class SettingsSeeder extends Seeder
             'service_phone' => '',
             'service_email' => '',
             'service_hours' => '',
-            'icp_number' => '',
-            'icp_license_number' => '',
+            // 备案号与增值电信业务经营许可证：官网页脚与用户控制台读取，
+            // 键名与前端 siteBranding store 一致。
+            'icp_record' => '',
+            'value_added_license' => '',
             'terms_url' => '',
             'privacy_url' => '',
         ]);

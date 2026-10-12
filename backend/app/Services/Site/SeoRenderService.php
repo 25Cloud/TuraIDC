@@ -414,6 +414,8 @@ HTML;
                 'site_name' => $this->siteName($siteConfig),
                 'site_logo' => $this->absoluteAssetUrl($siteUrl, (string) ($siteConfig['site_logo'] ?? '')),
                 'site_favicon' => $this->absoluteAssetUrl($siteUrl, (string) ($siteConfig['site_favicon'] ?? '')),
+                'icp_record' => (string) ($siteConfig['icp_record'] ?? ''),
+                'value_added_license' => (string) ($siteConfig['value_added_license'] ?? ''),
             ],
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP
         );

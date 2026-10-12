@@ -61,6 +61,8 @@ class SiteConfigPayload
             'support_group_link' => self::read(self::SETTING_GROUP_BASIC, 'support_group_link', self::DEFAULT_SUPPORT_GROUP_LINK),
             'terms_url' => self::read(self::SETTING_GROUP_BASIC, 'terms_url', ''),
             'privacy_url' => self::read(self::SETTING_GROUP_BASIC, 'privacy_url', ''),
+            'icp_record' => self::read(self::SETTING_GROUP_BASIC, 'icp_record', ''),
+            'value_added_license' => self::read(self::SETTING_GROUP_BASIC, 'value_added_license', ''),
             'frontend_url' => (string) config('app.frontend_url', ''),
         ];
     }

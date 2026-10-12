@@ -215,12 +215,18 @@
                 <label class="slide-label">图片</label>
                 <div class="slide-image-field">
                   <div class="slide-image-preview">
-                    <img v-if="slide.image" :src="resolveAssetUrl(slide.image)" :alt="slide.rail_title || '轮播背景图'" />
+                    <img
+                      v-if="slide.image"
+                      :src="resolveAssetUrl(slide.image)"
+                      :alt="slide.rail_title || '轮播背景图'"
+                    />
                     <span v-else class="slide-image-preview__empty">未设置</span>
                   </div>
                   <div class="slide-image-selector" @click="openHeroImageDrawer(index)">
                     <image-icon />
-                    <span v-if="slide.image" class="slide-video-selector__name">{{ slide.image.split('/').pop() }}</span>
+                    <span v-if="slide.image" class="slide-video-selector__name">{{
+                      slide.image.split('/').pop()
+                    }}</span>
                     <span v-else class="slide-video-selector__placeholder">点击选择背景图片</span>
                     <chevron-right-icon />
                   </div>
@@ -234,9 +240,7 @@
                     清除
                   </t-button>
                 </div>
-                <p class="slide-row__hint">
-                  有文字的一侧会加半透明白色磨砂，无文字的一侧渐变透出图片。
-                </p>
+                <p class="slide-row__hint">有文字的一侧会加半透明白色磨砂，无文字的一侧渐变透出图片。</p>
               </div>
 
               <div class="slide-row">
@@ -357,10 +361,7 @@
           ></video>
           <img v-else class="cover-drawer-card__img" :src="item.url" :alt="item.filename" loading="lazy" />
           <div class="cover-drawer-card__label">
-            <check-circle-filled-icon
-              v-if="currentMediaValue() === item.url"
-              class="cover-drawer-card__check"
-            />
+            <check-circle-filled-icon v-if="currentMediaValue() === item.url" class="cover-drawer-card__check" />
             <span>{{ item.filename }}</span>
           </div>
         </div>
@@ -872,6 +873,24 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
           },
           { key: 'support_group_qr', label: '官方群聊二维码', type: 'image', default: '', maxlength: 255 },
           { key: 'support_group_link', label: '入群链接', type: 'input', default: '', maxlength: 255 },
+          {
+            key: 'icp_record',
+            label: 'ICP 备案号',
+            type: 'input',
+            default: '',
+            maxlength: 60,
+            placeholder: '例如：京ICP备00000000号-1',
+            help: '展示在官网页脚，留空则该行不显示。',
+          },
+          {
+            key: 'value_added_license',
+            label: '增值电信业务经营许可证',
+            type: 'input',
+            default: '',
+            maxlength: 80,
+            placeholder: '例如：京B2-20000000',
+            help: '展示在官网页脚，留空则该行不显示。',
+          },
           { key: 'terms_url', label: '服务条款链接', type: 'input', default: '', maxlength: 255 },
           { key: 'privacy_url', label: '隐私政策链接', type: 'input', default: '', maxlength: 255 },
         ],
@@ -1179,14 +1198,17 @@ function clearSlideImage(slideIndex: number) {
 function resolveAssetUrl(raw: unknown): string {
   const path = String(raw || '').trim();
   if (!path) return '';
-  if (/^(https?:)?\/\//.test(path)) return path;
+  // 非捕获组：这里只需要判断协议前缀，不需要取出协议文本本身。
+  if (/^(?:https?:)?\/\//.test(path)) return path;
 
   if (typeof window !== 'undefined' && window.location?.origin) {
     return `${window.location.origin}/${path.replace(/^\/+/, '')}`;
   }
 
   // SSR / 非浏览器环境兜底：由 API 基址回推站点根（去掉 /api 尾巴）
-  const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+  const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '')
+    .trim()
+    .replace(/\/+$/, '');
   const siteRoot = apiBaseUrl.replace(/\/api$/i, '');
   if (!siteRoot) return path;
   return `${siteRoot}/${path.replace(/^\/+/, '')}`;

@@ -25,6 +25,8 @@ class SiteConfigResource extends JsonResource
         'support_group_link',
         'terms_url',
         'privacy_url',
+        'icp_record',
+        'value_added_license',
     ];
 
     /**
