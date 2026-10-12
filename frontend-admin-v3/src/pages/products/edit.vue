@@ -57,8 +57,11 @@
                       <t-option label="通用计算控制台" value="compute" />
                       <t-option label="端口映射控制台" value="port_mapping" />
                       <t-option label="CDN 控制台" value="cdn" />
+                      <t-option label="虚拟主机控制台" value="virtualhost" />
                     </t-select>
-                    <span>默认通用计算控制台；选择后，关联服务下次打开控制台将按此页面进入。</span>
+                    <span
+                      >默认通用计算控制台；CDN 与虚拟主机属面板型（无云主机语义）。选择后，关联服务下次打开控制台将按此页面进入。</span
+                    >
                   </div>
                 </t-form-item>
                 <t-form-item label="折扣分组" name="product_discount_group_id">
@@ -607,7 +610,7 @@ interface ConfigOptionMarkup {
   extra_amount: number;
 }
 
-type ConsoleTemplate = 'compute' | 'port_mapping' | 'cdn';
+type ConsoleTemplate = 'compute' | 'port_mapping' | 'cdn' | 'virtualhost';
 
 /** 配置项在后台可编辑的呈现类型 */
 type ConfigOptionEditMode = 'select' | 'range' | 'text';
@@ -831,10 +834,11 @@ function hasPositivePrice() {
 
 // --- Config option helpers ---
 function normalizeConsoleTemplate(value: unknown): ConsoleTemplate {
-  const text = String(value ?? '').trim();
-  // cdn 必须原样保留：归一成 compute 会让 CDN 商品打开控制台时
-  // 走进通用计算控制台，前端刚加的 CDN 专属控制台分支永远不会命中。
-  if (text === 'cdn' || text === 'port_mapping') return text;
+  const text = String(value ?? '').trim().toLowerCase();
+  // cdn / virtualhost 必须原样保留：归一成 compute 会让这类商品打开控制台时
+  // 走进通用计算控制台，前端专属的 CDN / 虚拟主机控制台分支永远不会命中，
+  // 而且运营一保存就把库里的值覆盖回 compute。
+  if (text === 'cdn' || text === 'port_mapping' || text === 'virtualhost') return text;
   return 'compute';
 }
 

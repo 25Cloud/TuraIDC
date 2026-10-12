@@ -889,8 +889,12 @@
           <t-radio-group v-model="consoleTemplateValue" variant="default-filled">
             <t-radio-button value="compute">通用计算型</t-radio-button>
             <t-radio-button value="port_mapping">端口映射型</t-radio-button>
+            <t-radio-button value="cdn">CDN 型</t-radio-button>
+            <t-radio-button value="virtualhost">虚拟主机型</t-radio-button>
           </t-radio-group>
-          <p class="batch-dialog-tip">端口映射型控制台适用于端口转发类业务，通用计算型为默认控制台。</p>
+          <p class="batch-dialog-tip">
+            端口映射型适用于端口转发类业务；CDN 型与虚拟主机型属面板型（无云主机语义）；通用计算型为默认控制台。
+          </p>
         </t-form-item>
         <t-form-item v-else-if="productBatchDialogKind === 'discount-group'" label="折扣分组">
           <t-select

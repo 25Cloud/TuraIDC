@@ -20,6 +20,8 @@ export const NAT_TABS = ['overview', 'monitor', 'security', 'nat', 'logs', 'fina
  */
 export const PANEL_TABS = ['overview', 'panel', 'finance'];
 const PANEL_CATEGORY_KEYS = new Set(['cdn', 'web_hosting']);
+/** 虚拟主机：后台「控制台面板」可选值与兜底识别的机器分类 / 产品类型 */
+const VIRTUAL_HOST_TEMPLATE_KEYS = new Set(['virtualhost', 'virtual_host', 'web_hosting', 'hosting']);
 /** 内置控制台 tab 展示顺序（自定义区域插入到 overview 之后） */
 export const BUILTIN_TABS_ORDER = ['overview', 'panel', 'monitor', 'security', 'nat', 'logs', 'finance', 'vnc'];
 export const VNC_CREDENTIAL_STORAGE_PREFIX = 'turaidc:vnc-credentials:';
@@ -171,7 +173,14 @@ export function isCdnConsole(detail: ConsoleServiceDetail): boolean {
     .trim()
     .toLowerCase();
   if (consoleTemplate === 'cdn') return true;
-  if (consoleTemplate === 'compute' || consoleTemplate === 'port_mapping') return false;
+  // 虚拟主机已明确不是 CDN，直接短路，避免再按分类/类型兜底时误判成 CDN
+  if (
+    consoleTemplate === 'compute' ||
+    consoleTemplate === 'port_mapping' ||
+    VIRTUAL_HOST_TEMPLATE_KEYS.has(consoleTemplate)
+  ) {
+    return false;
+  }
 
   const categoryKey = String(detail.machine_category?.key || '')
     .trim()
@@ -185,6 +194,36 @@ export function isCdnConsole(detail: ConsoleServiceDetail): boolean {
     .toLowerCase();
 
   return productType === 'cdn';
+}
+
+/**
+ * 是否走虚拟主机专用控制台。
+ *
+ * 由产品配置的「控制台面板」= virtualhost 决定（运营在产品编辑页切换）；
+ * 未配置（历史数据）时按机器分类 / 产品类型兜底。
+ * 判定口径与用户控制台的 isVirtualHostConsole 保持一致。
+ */
+export function isVirtualHostConsole(detail: ConsoleServiceDetail): boolean {
+  const consoleTemplate = String(detail.console_template || detail.product?.console_template || '')
+    .trim()
+    .toLowerCase();
+  if (VIRTUAL_HOST_TEMPLATE_KEYS.has(consoleTemplate)) return true;
+  if (consoleTemplate === 'cdn' || consoleTemplate === 'compute' || consoleTemplate === 'port_mapping') {
+    return false;
+  }
+
+  const categoryKey = String(detail.machine_category?.key || '')
+    .trim()
+    .toLowerCase();
+  if (VIRTUAL_HOST_TEMPLATE_KEYS.has(categoryKey)) return true;
+
+  const productType = String(
+    (detail as { product_type?: string }).product_type || (detail.product as { type?: string } | undefined)?.type || '',
+  )
+    .trim()
+    .toLowerCase();
+
+  return VIRTUAL_HOST_TEMPLATE_KEYS.has(productType);
 }
 
 export interface ResolvedConsoleTabs {
@@ -201,6 +240,10 @@ export interface ResolvedConsoleTabs {
  */
 export function isPanelConsole(detail: ConsoleServiceDetail): boolean {
   if (isCdnConsole(detail)) return true;
+  // 虚拟主机同理：没有 CPU / 内存，也没有电源、开关机、重装、安全组、VNC。
+  // 判定放在兜底之前，因为后台商品可能仍带着云主机的 product_type / machine_category，
+  // 但 console_template=virtualhost 已经是运营明确选择的控制台类别。
+  if (isVirtualHostConsole(detail)) return true;
 
   const categoryKey = String(detail.machine_category?.key || '')
     .trim()
