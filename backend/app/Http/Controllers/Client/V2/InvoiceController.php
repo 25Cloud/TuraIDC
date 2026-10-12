@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Client\V2;
 
+use App\Constants\InvoiceStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\V2\Invoice\ListInvoicesRequest;
 use App\Http\Requests\Client\V2\Invoice\ShowInvoiceRequest;
@@ -12,8 +13,8 @@ use App\Http\Resources\Client\V2\ClientInvoiceSummaryResource;
 use App\Models\Invoice;
 use App\Services\Finance\CheckoutSecurityService;
 use App\Services\Finance\CheckoutService;
+use App\Services\Finance\ClientInvoicePaymentWorkflowService;
 use App\Services\Finance\InvoiceV2QueryService;
-use App\Services\Integrations\Payments\PaymentGatewayManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,7 +24,7 @@ class InvoiceController extends Controller
         private readonly InvoiceV2QueryService $invoices,
         private readonly CheckoutService $checkoutService,
         private readonly CheckoutSecurityService $checkoutSecurityService,
-        private readonly PaymentGatewayManager $paymentGatewayManager,
+        private readonly ClientInvoicePaymentWorkflowService $invoicePayments,
     ) {}
 
     public function index(ListInvoicesRequest $request): JsonResponse
@@ -64,10 +65,13 @@ class InvoiceController extends Controller
     {
         $payableAmount = (float) ($payload['payable_amount'] ?? max((float) $invoice->amount - (float) ($invoice->paid_amount ?? 0), 0));
         $security = $this->checkoutSecurityService->issueInvoicePaymentSession($invoice, (int) $invoice->user_id);
-        $canCancel = in_array((int) $invoice->status, [0, 3], true);
+        // 未付与逾期都仍可取消：逾期账单用户侧需要自助放弃，否则只能等客服处理
+        $canCancel = in_array((int) $invoice->status, [InvoiceStatus::UNPAID, InvoiceStatus::OVERDUE], true);
 
         return array_merge($payload, [
-            'pay_methods' => $this->availableInvoicePayMethods($payableAmount),
+            // 与支付流同源：支付方式只有一个组装点，新增/下架网关自动跟随，
+            // 不会出现「详情页列得出、发起支付却报错」的两套口径。
+            'pay_methods' => $this->invoicePayments->availablePaymentMethods($payableAmount),
             'payment_security' => [
                 'can_pay' => $canCancel && (bool) ($security['session_token'] ?? false),
                 'session_token' => (string) ($security['session_token'] ?? ''),
@@ -75,21 +79,6 @@ class InvoiceController extends Controller
             ],
             'can_cancel' => $canCancel,
         ]);
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function availableInvoicePayMethods(float $payableAmount): array
-    {
-        if ($payableAmount <= 0) {
-            return [['key' => 'free', 'name' => '确认支付', 'label' => '零元账单', 'option_key' => 'free']];
-        }
-
-        return [
-            ['key' => 'balance', 'name' => '余额支付', 'label' => '账户余额', 'option_key' => 'balance'],
-            ...$this->paymentGatewayManager->availableThirdPartyGatewayOptions(),
-        ];
     }
 
     /**
