@@ -58,8 +58,12 @@ class SiteProductQuoteResource extends JsonResource
         }
 
         return [
-            'user_coupon_id' => (int) ($coupon['user_coupon_id'] ?? 0),
-            'coupon_id' => (int) ($coupon['coupon_id'] ?? $coupon['id'] ?? 0),
+            // 前端 el-option 绑定 item.id 作为 value 与 key，缺 id 会让每项
+            // value 变成 undefined，选不中任何券（续费路径不经本 Resource，
+            // 直吐 Service 原始数组，所以只有新购报价受影响）。
+            'id' => (int) ($coupon['id'] ?? $coupon['user_coupon_id'] ?? 0),
+            'user_coupon_id' => (int) ($coupon['user_coupon_id'] ?? $coupon['id'] ?? 0),
+            'coupon_id' => (int) ($coupon['coupon_id'] ?? 0),
             'code' => (string) ($coupon['code'] ?? ''),
             'name' => (string) ($coupon['name'] ?? ''),
             'discount_label' => (string) ($coupon['discount_label'] ?? ''),

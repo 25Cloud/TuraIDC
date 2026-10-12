@@ -666,6 +666,21 @@ class V2ProductApiTest extends TestCase
             'quote_expires_at',
             'items',
         ], array_keys($quoteResponse->json('data')));
+
+        // available_coupons / coupon 内部结构也要锁：官网 el-option 绑定 item.id
+        // 作为 value 与 key，Resource 一旦丢掉 id，选项 value 全变 undefined、
+        // 选不中任何券，而只断言顶层 key 列表是抓不到这个回归的。
+        $this->assertSame(
+            ['id', 'user_coupon_id', 'coupon_id', 'code', 'name', 'discount_label', 'discount_amount'],
+            array_keys($quoteResponse->json('data.available_coupons.0')),
+        );
+        $this->assertSame(3, $quoteResponse->json('data.available_coupons.0.id'));
+        $this->assertSame(3, $quoteResponse->json('data.available_coupons.0.user_coupon_id'));
+        // coupon 节点 mock 只给了 user_coupon_id，id 应回退到同一标识，
+        // 两者都指向用户持券 id，前端 :value 拿哪个都能选中原券。
+        $this->assertSame(9, $quoteResponse->json('data.coupon.user_coupon_id'));
+        $this->assertSame(9, $quoteResponse->json('data.coupon.id'));
+
         $this->assertNoSensitiveKeys($typesResponse->json());
         $this->assertNoSensitiveKeys($stockResponse->json());
         $this->assertNoSensitiveKeys($quoteResponse->json());
