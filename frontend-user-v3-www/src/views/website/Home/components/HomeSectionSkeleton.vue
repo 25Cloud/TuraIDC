@@ -195,7 +195,7 @@
         </div>
         <div class="home-section-skeleton__partner-rows">
           <span
-            v-for="item in 6"
+            v-for="item in 5"
             :key="`partner-row-${item}`"
             class="home-section-skeleton__partner-strip"
           ></span>
@@ -599,18 +599,20 @@ defineProps({
 
 .home-section-skeleton__partner {
   display: grid;
-  gap: 28px;
+  gap: 36px;
 }
 
 .home-section-skeleton__partner-rows {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
+// 行数与高度需与 HomePartnerSection 的 partner-marquee 保持一致，
+// 否则真实内容替换骨架时会因高度变化产生布局偏移。
 .home-section-skeleton__partner-strip {
   display: block;
-  height: 80px;
+  height: 76px;
   border-radius: 6px;
 
   position: relative;
@@ -630,7 +632,7 @@ defineProps({
     height: 56px;
   }
   .home-section-skeleton__partner-rows {
-    gap: 6px;
+    gap: 8px;
   }
 }
 </style>
