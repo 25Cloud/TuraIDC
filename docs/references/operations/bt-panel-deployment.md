@@ -38,6 +38,9 @@
 - `proc_open`
 - `symlink`
 
+改完重启 PHP 后执行 `php artisan app:doctor` 复核，必需扩展与禁用函数的真源是
+`backend/app/Support/EnvironmentRequirements.php`，本清单只是它在该环境下的手工预配。
+
 **PHP CLI 版本**：确保宝塔命令行使用的 PHP 与站点一致（宝塔 → 网站 → PHP 命令行版本）。
 
 ### 1.3 Node.js 配置

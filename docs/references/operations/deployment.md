@@ -5,12 +5,30 @@
 ## 1. 环境要求
 
 - 操作系统：Linux（推荐 Ubuntu 22.04+ / Debian 12）或 Windows Server
-- PHP 8.3+（扩展：`pdo_mysql`、`redis`、`mbstring`、`openssl`、`zip`、`gd` 或 `imagick` 按需）
+- PHP 8.3+
 - MySQL 8.0+（推荐；最低兼容 5.7.8——5.7 已 EOL，仅兼容性支持。混用 8.0 的 mysqldump 客户端备份 5.7 服务端时需加 `--column-statistics=0`。**5.7 部署必须在 my.cnf 的 `[mysqld]` 段设置 `explicit_defaults_for_timestamp=ON`**：5.7 默认 OFF 时，表内首个无显式默认值的 `timestamp` 列会被隐式附加 `ON UPDATE CURRENT_TIMESTAMP`，与 8.0 行为不一致，可能悄悄改写业务时间字段）
 - Redis 6.0+（生产必需：分布式锁、缓存）
 - Composer 2.x
 - Node.js 20+（仅构建前端时需要）
 - Nginx（或任意静态服务器 + 反代）
+
+### 1.1 扩展与禁用函数以代码为准
+
+PHP 版本、必需扩展与禁用函数清单的唯一真源是 `backend/app/Support/EnvironmentRequirements.php`，
+本文档不重复维护清单，避免与代码漂移。装完依赖后随时可自查：
+
+```bash
+cd backend
+php artisan app:doctor          # 必选项：版本、必需扩展、禁用函数
+php artisan app:doctor --all    # 附带列出建议安装但不阻断的扩展
+```
+
+**禁用函数是最高频的部署故障**：宝塔面板默认禁用 `putenv`、`proc_open`、`symlink`，
+会直接导致 `.env` 读取与进程调用失败。解除方式：宝塔 → 软件商店 → PHP → 禁用函数，
+删除这三个函数后重启 PHP，再用 `php artisan app:doctor` 复核。
+
+`app:doctor` 在安装前后都能执行：安装向导的环境检测同样调用这份清单，
+但站点装完之后向导会 404 消失，升级 PHP 或改动 php.ini 后只能靠这个命令复核。
 
 ## 2. 准备代码
 

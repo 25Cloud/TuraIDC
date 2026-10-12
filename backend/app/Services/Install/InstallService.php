@@ -7,6 +7,7 @@ namespace App\Services\Install;
 use App\Models\AdminUser;
 use App\Models\Role;
 use App\Services\Admin\Rbac\BuiltinAdminRoleService;
+use App\Support\EnvironmentRequirements;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -75,23 +76,47 @@ class InstallService
      */
     public function requirements(): array
     {
-        $items = [
-            // 用 version_compare 而非 PHP_VERSION_ID >= 80300：composer.json 已把 php 约束收到
-            // ^8.3，静态分析据此把该比较判为恒真并报错；但运行期 PHP 版本仍可能低于约束
-            // （例如用旧 vendor 直接跑），这条环境检测必须保留实际判断。
-            ['name' => 'PHP 版本 >= 8.3', 'required' => true, 'passed' => version_compare(PHP_VERSION, '8.3.0', '>='), 'message' => '当前 '.PHP_VERSION],
-            ['name' => 'PHP 扩展 pdo_mysql', 'required' => true, 'passed' => extension_loaded('pdo_mysql'), 'message' => ''],
-            ['name' => 'PHP 扩展 redis', 'required' => true, 'passed' => extension_loaded('redis'), 'message' => ''],
-            ['name' => 'PHP 扩展 openssl', 'required' => true, 'passed' => extension_loaded('openssl'), 'message' => ''],
-            ['name' => 'PHP 扩展 mbstring', 'required' => true, 'passed' => extension_loaded('mbstring'), 'message' => ''],
-            ['name' => 'PHP 扩展 fileinfo', 'required' => true, 'passed' => extension_loaded('fileinfo'), 'message' => ''],
-            ['name' => 'PHP 扩展 json', 'required' => true, 'passed' => extension_loaded('json'), 'message' => ''],
-            ['name' => 'Composer 依赖已安装（vendor/）', 'required' => true, 'passed' => is_file(base_path('vendor/autoload.php')), 'message' => ''],
-            ['name' => 'schema baseline 存在', 'required' => true, 'passed' => is_file($this->schemaPath()), 'message' => ''],
-            ['name' => '.env 模板存在', 'required' => true, 'passed' => is_file(base_path(self::ENV_TEMPLATE)), 'message' => ''],
-            ['name' => 'storage/ 目录可写', 'required' => true, 'passed' => is_writable(storage_path()), 'message' => ''],
-            ['name' => 'bootstrap/cache/ 目录可写', 'required' => true, 'passed' => is_writable(base_path('bootstrap/cache')), 'message' => ''],
-            ['name' => '.env 可写（不存在或可写入）', 'required' => true, 'passed' => $this->envFileWritable(), 'message' => ''],
+        // 环境要求由 EnvironmentRequirements 统一定义，安装向导与 app:doctor
+        // 共用同一份清单，避免两处漂移。版本与扩展检测用 version_compare 而非
+        // PHP_VERSION_ID >= X：composer.json 已把 php 约束固定，静态分析会判该
+        // 比较恒真，但运行期 PHP 版本仍可能低于约束，这条检测必须保留实际判断。
+        $items = EnvironmentRequirements::inspect();
+
+        $items[] = [
+            'name' => 'Composer 依赖已安装（vendor/）',
+            'required' => true,
+            'passed' => is_file(base_path('vendor/autoload.php')),
+            'message' => '',
+        ];
+        $items[] = [
+            'name' => 'schema baseline 存在',
+            'required' => true,
+            'passed' => is_file($this->schemaPath()),
+            'message' => '',
+        ];
+        $items[] = [
+            'name' => '.env 模板存在',
+            'required' => true,
+            'passed' => is_file(base_path(self::ENV_TEMPLATE)),
+            'message' => '',
+        ];
+        $items[] = [
+            'name' => 'storage/ 目录可写',
+            'required' => true,
+            'passed' => is_writable(storage_path()),
+            'message' => '',
+        ];
+        $items[] = [
+            'name' => 'bootstrap/cache/ 目录可写',
+            'required' => true,
+            'passed' => is_writable(base_path('bootstrap/cache')),
+            'message' => '',
+        ];
+        $items[] = [
+            'name' => '.env 可写（不存在或可写入）',
+            'required' => true,
+            'passed' => $this->envFileWritable(),
+            'message' => '',
         ];
 
         foreach ($items as &$item) {
