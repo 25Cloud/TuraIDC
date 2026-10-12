@@ -176,6 +176,12 @@ async function handleMarkAllRead() {
   box-shadow: var(--td-shadow-1);
 }
 
+// 分类按钮组统一收敛宽度：「全部分类」与各分类名长度差异很大，
+// 不设下限时会随文字参差不齐。宽度基准与管理端商品页的分类按钮组一致。
+.category-card .t-button {
+  min-width: 96px;
+}
+
 .content-intro {
   display: flex;
   flex-direction: column;

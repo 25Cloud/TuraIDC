@@ -522,6 +522,9 @@ onBeforeUnmount(() => {
 .category-tab {
   position: relative;
   min-height: 50px;
+  // 与控制台端分类按钮组一致收敛宽度，避免「全部分类」与长短不一的
+  // 分类名各自撑出不同宽度，形成参差的按钮排布。
+  min-width: 96px;
   padding: 0 10px;
   border: none;
   background: transparent;
