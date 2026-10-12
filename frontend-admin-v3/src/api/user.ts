@@ -55,6 +55,8 @@ export interface UserCreatePayload {
 export interface UserRechargePayload {
   amount: number;
   remark: string;
+  /** 幂等标识：同一次调账的重复提交（含双击、网络重试）只会实际执行一次 */
+  idempotency_key: string;
 }
 
 export interface UserUpdatePayload {

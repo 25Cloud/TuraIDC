@@ -97,6 +97,7 @@ class FinanceDocumentGenerationTest extends TestCase
             'operator_id' => 7,
             'operator_name' => 'finance-admin',
             'trace_id' => 'test-admin-credit',
+            'idempotency_key' => 'test-admin-credit-key',
         ]);
 
         $this->assertSame('100.00', $creditResult['invoice']->amount);
@@ -114,6 +115,7 @@ class FinanceDocumentGenerationTest extends TestCase
             'operator_id' => 7,
             'operator_name' => 'finance-admin',
             'trace_id' => 'test-admin-debit',
+            'idempotency_key' => 'test-admin-debit-key',
         ]);
 
         $this->assertSame('deduction', $debitResult['invoice']->type);

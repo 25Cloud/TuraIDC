@@ -119,6 +119,7 @@ class UserController extends Controller
                 'operator_id' => (int) ($request->user()?->id ?? 0),
                 'operator_name' => (string) ($request->user()?->username ?? $request->user()?->name ?? $request->user()?->email ?? 'admin'),
                 'trace_id' => (string) $request->header('X-Request-Id', ''),
+                'idempotency_key' => trim((string) ($payload['idempotency_key'] ?? '')),
             ],
         );
 

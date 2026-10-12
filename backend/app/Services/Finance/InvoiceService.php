@@ -2,7 +2,6 @@
 
 namespace App\Services\Finance;
 
-use App\Support\SqlLike;
 use App\Constants\InvoiceStatus;
 use App\Constants\InvoiceType;
 use App\Constants\OrderStatus;
@@ -20,6 +19,7 @@ use App\Models\User;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\System\OperationLogService;
 use App\Support\AdminPrivacy;
+use App\Support\SqlLike;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -104,8 +104,11 @@ class InvoiceService
 
     /**
      * 充值到账 -> 创建充值类型账单
+     *
+     * $idempotencyKey 仅管理员手动调账传入：与 (user_id, idempotency_key) 唯一索引配合，
+     * 让同一笔调账的重试/并发只落一张账单，不重复动账。
      */
-    public function createForRecharge(User $user, float $amount, ?Payment $payment = null, ?string $remark = null, ?string $traceId = null): Invoice
+    public function createForRecharge(User $user, float $amount, ?Payment $payment = null, ?string $remark = null, ?string $traceId = null, ?string $idempotencyKey = null): Invoice
     {
         if ($payment instanceof Payment && (int) ($payment->invoice_id ?? 0) > 0) {
             $existing = Invoice::query()
@@ -117,7 +120,7 @@ class InvoiceService
             }
         }
 
-        return DB::transaction(function () use ($user, $amount, $payment, $remark, $traceId): Invoice {
+        return DB::transaction(function () use ($user, $amount, $payment, $remark, $traceId, $idempotencyKey): Invoice {
             $invoice = Invoice::create([
                 'invoice_no' => Invoice::generateInvoiceNo(),
                 'user_id' => $user->id,
@@ -132,6 +135,7 @@ class InvoiceService
                     'payment_no' => $payment?->payment_no,
                 ], static fn ($value) => $value !== null && $value !== ''),
                 'trace_id' => $traceId ?: $payment?->trace_id,
+                'idempotency_key' => $idempotencyKey !== null && $idempotencyKey !== '' ? $idempotencyKey : null,
             ]);
 
             if ($payment) {
@@ -165,8 +169,10 @@ class InvoiceService
 
     /**
      * 扣款 -> 创建扣款类型账单
+     *
+     * $idempotencyKey 语义同 createForRecharge()。
      */
-    public function createForDeduction(User $user, float $amount, ?string $remark = null, ?string $traceId = null): Invoice
+    public function createForDeduction(User $user, float $amount, ?string $remark = null, ?string $traceId = null, ?string $idempotencyKey = null): Invoice
     {
         $invoice = Invoice::create([
             'invoice_no' => Invoice::generateInvoiceNo(),
@@ -179,6 +185,7 @@ class InvoiceService
             'due_date' => null,  // 扣款账单已立即扣清，截止日期无意义
             'config_snapshot' => $remark ? ['remark' => $remark] : null,
             'trace_id' => $traceId,
+            'idempotency_key' => $idempotencyKey !== null && $idempotencyKey !== '' ? $idempotencyKey : null,
         ]);
 
         return $this->syncProjection($invoice);

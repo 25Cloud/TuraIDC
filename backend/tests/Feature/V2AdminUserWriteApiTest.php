@@ -115,7 +115,9 @@ class V2AdminUserWriteApiTest extends TestCase
                 ->withArgs(fn (User $actualUser, float $amount, string $remark, array $context): bool => (int) $actualUser->id === (int) $user->id
                     && $amount === 25.5
                     && $remark === '测试调整'
-                    && ($context['operator_name'] ?? '') !== '')
+                    && ($context['operator_name'] ?? '') !== ''
+                    // 幂等标识必须透传到服务层，否则重复提交无法防重
+                    && ($context['idempotency_key'] ?? '') === 'admin-adjust-ok')
                 ->andReturn([
                     'invoice' => (object) ['id' => 101],
                     'transaction' => (object) ['id' => 202],
@@ -147,6 +149,7 @@ class V2AdminUserWriteApiTest extends TestCase
         $this->postJson('/api/v2/admin/users/'.$user->id.'/recharges', [
             'amount' => 25.5,
             'remark' => '测试调整',
+            'idempotency_key' => 'admin-adjust-forbidden',
         ])
             ->assertForbidden()
             ->assertJsonPath('code', 40300);
@@ -173,6 +176,7 @@ class V2AdminUserWriteApiTest extends TestCase
         $this->postJson('/api/v2/admin/users/'.$user->id.'/recharges', [
             'amount' => 25.5,
             'remark' => '测试调整',
+            'idempotency_key' => 'admin-adjust-invalid-page',
             'per_page' => 20,
         ])
             ->assertUnprocessable()
@@ -182,6 +186,7 @@ class V2AdminUserWriteApiTest extends TestCase
         $rechargeResponse = $this->postJson('/api/v2/admin/users/'.$user->id.'/recharges', [
             'amount' => 25.5,
             'remark' => '测试调整',
+            'idempotency_key' => 'admin-adjust-ok',
         ])
             ->assertOk()
             ->assertJsonPath('code', 0)

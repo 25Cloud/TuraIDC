@@ -973,6 +973,7 @@ import ProductBindingTreeSelect from '@/components/product-binding-tree-select/i
 import { AdminPermissions } from '@/constants/permissions';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
+import { buildIdempotencyKey } from '@/utils/idempotency';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
 
@@ -1059,6 +1060,8 @@ const noteEditing = ref(false);
 const noteSaving = ref(false);
 const noteForm = ref('');
 const rechargeForm = reactive({ email: '', type: 'increase', amount: 0, remark: '' });
+/** 本次调账的幂等标识，拦截按钮连点与网络重试导致的重复加/扣余额 */
+const rechargeIdempotencyKey = ref(buildIdempotencyKey('admin-balance-adjust'));
 const addServiceForm = reactive({
   product_id: undefined as number | undefined,
   billing_cycle: '',
@@ -1569,6 +1572,9 @@ function openRechargeDialog() {
   rechargeForm.type = 'increase';
   rechargeForm.amount = 0;
   rechargeForm.remark = '';
+  // 每次打开表单都是一次独立的调账意图，换新幂等标识：
+  // 上一次已提交的标识若被复用，改金额再提交会被服务端判为「同键不同额」而拒绝。
+  rechargeIdempotencyKey.value = buildIdempotencyKey('admin-balance-adjust');
   rechargeVisible.value = true;
 }
 
@@ -1578,7 +1584,11 @@ async function handleRecharge() {
   rechargeLoading.value = true;
   try {
     const amount = rechargeForm.type === 'decrease' ? -rechargeForm.amount : rechargeForm.amount;
-    await userApi.recharge(userId.value, { amount, remark: rechargeForm.remark });
+    await userApi.recharge(userId.value, {
+      amount,
+      remark: rechargeForm.remark,
+      idempotency_key: rechargeIdempotencyKey.value,
+    });
     MessagePlugin.success(rechargeForm.type === 'decrease' ? '扣减成功' : '增加成功');
     rechargeVisible.value = false;
     // 资金已写入（余额已变、流水已建）；刷新失败绝不能回退成"失败"，
