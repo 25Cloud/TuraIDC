@@ -1007,7 +1007,9 @@
                   v-for="cfg in noticeConfigs"
                   :key="cfg.key"
                 >
-                  <span class="spec-label" v-if="cfg.label">{{ cfg.label }}</span>
+                  <span class="spec-label" v-if="cfg.label">{{
+                    cfg.label
+                  }}</span>
                   <div class="notice-text">{{ cfg.textContent }}</div>
                 </div>
               </div>
@@ -1119,7 +1121,11 @@
                   selectedProductSummaryName || selectedProductDisplayName
                 }}</span>
               </div>
-              <div class="cost-item" v-for="item in summaryItems" :key="item.key">
+              <div
+                class="cost-item"
+                v-for="item in summaryItems"
+                :key="item.key"
+              >
                 <span>{{ item.label }}</span
                 ><span>{{ item.value }}</span>
               </div>
@@ -1152,7 +1158,10 @@
                 <span>优惠券 {{ appliedCoupon.code }}</span
                 ><span>-¥{{ appliedCoupon.discount_amount }}</span>
               </div>
-              <div class="cost-item cost-item--discount" v-if="hasAgentDiscount">
+              <div
+                class="cost-item cost-item--discount"
+                v-if="hasAgentDiscount"
+              >
                 <span
                   >代理折扣（{{ agentGroupName }}）<em class="discount-tag">{{
                     agentDiscountPercent
@@ -1196,6 +1205,12 @@
                 }}，本次已减免 ¥{{ appliedCoupon.discount_amount }}
               </div>
               <div
+                v-else-if="quoteLoading"
+                class="coupon-panel-tip coupon-panel-tip--muted"
+              >
+                正在获取可用优惠券…
+              </div>
+              <div
                 v-else-if="!availableCoupons.length"
                 class="coupon-panel-tip coupon-panel-tip--muted"
               >
@@ -1237,7 +1252,6 @@
                 >
               </div>
             </div>
-
           </div>
           <!-- 结算栏：按钮常驻面板底部，不会盖住上方明细 -->
           <div class="cost-footer">
@@ -1456,6 +1470,12 @@
               {{ appliedCoupon.name }}，{{
                 appliedCoupon.discount_label
               }}，本次已减免 ¥{{ appliedCoupon.discount_amount }}
+            </div>
+            <div
+              v-else-if="quoteLoading"
+              class="coupon-panel-tip coupon-panel-tip--muted"
+            >
+              正在获取可用优惠券…
             </div>
             <div
               v-else-if="!availableCoupons.length"
@@ -2520,12 +2540,15 @@ const showProcessorColumns = computed(() =>
 
 // 估算文本像素宽度：用于按最长 CPU 型号算出统一的处理器列宽，
 // 保证表头与各行列宽一致（不错位）且能完整展示型号
-function measureTextWidth(text, font = '13px -apple-system, "Segoe UI", sans-serif') {
-  const value = String(text || '');
+function measureTextWidth(
+  text,
+  font = '13px -apple-system, "Segoe UI", sans-serif',
+) {
+  const value = String(text || "");
   if (!value) return 0;
-  if (typeof document === 'undefined') return value.length * 7;
+  if (typeof document === "undefined") return value.length * 7;
   if (!measureTextWidth.ctx) {
-    measureTextWidth.ctx = document.createElement('canvas').getContext('2d');
+    measureTextWidth.ctx = document.createElement("canvas").getContext("2d");
   }
   const ctx = measureTextWidth.ctx;
   if (!ctx) return value.length * 7;
@@ -2540,7 +2563,7 @@ const machineSpecGridStyle = computed(() => {
   if (showProcessorColumns.value) {
     let maxTextWidth = 0;
     for (const row of desktopMachineSpecRows.value) {
-      const label = String(row.processorLabel || '').trim();
+      const label = String(row.processorLabel || "").trim();
       if (label) {
         maxTextWidth = Math.max(maxTextWidth, measureTextWidth(label));
       }

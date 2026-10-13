@@ -1,7 +1,13 @@
 <template>
   <div class="website-layout">
     <a class="skip-to-content" href="#main-content">跳到主内容</a>
-    <header class="site-header" :class="{ scrolled: headerScrolled, 'is-overlay': headerOverlay }">
+    <header
+      ref="headerRef"
+      class="site-header"
+      :class="{ scrolled: headerScrolled, 'is-overlay': headerOverlay }"
+      @focusin="keepMegaMenu()"
+      @focusout="handleHeaderFocusOut"
+    >
       <div class="container header-bar">
         <router-link to="/" class="logo" :aria-label="appStore.siteName">
           <img
@@ -24,14 +30,26 @@
             v-for="item in navigationItems"
             :key="item.to"
             :to="item.to"
-            class="main-nav__link"
-            :class="{ 'is-active': isNavActive(item) }"
-            @mouseenter="handleNavHover(item)"
+            custom
+            v-slot="{ href, navigate }"
           >
-            <span>{{ item.label }}</span>
-            <el-icon v-if="item.menuId" class="main-nav__arrow"
-              ><ArrowDown
-            /></el-icon>
+            <a
+              :href="href"
+              class="main-nav__link"
+              :class="{ 'is-active': isNavActive(item) }"
+              :aria-expanded="
+                item.menuId ? activeMenuId === item.menuId : undefined
+              "
+              :aria-haspopup="item.menuId ? 'true' : undefined"
+              @mouseenter="handleNavHover(item)"
+              @focus="handleNavFocus(item)"
+              @click="onNavItemClick(item, $event, navigate)"
+            >
+              <span>{{ item.label }}</span>
+              <el-icon v-if="item.menuId" class="main-nav__arrow"
+                ><ArrowDown
+              /></el-icon>
+            </a>
           </router-link>
         </nav>
 
@@ -59,33 +77,72 @@
                       type.product_count
                     }}</span>
                   </button>
+                  <MegaMenuSkeleton
+                    v-if="!navProductTypes.length && navLoading"
+                    variant="row"
+                    :count="4"
+                  />
+                  <div
+                    v-else-if="!navProductTypes.length"
+                    class="mega-menu__col-empty"
+                  >
+                    暂无产品目录
+                  </div>
+                  <!-- 点击顶栏「产品」只开关本面板，一级入口统一放这里，
+                       与公告/帮助面板的「查看全部」保持同一种模式。 -->
+                  <router-link to="/products" class="mega-type-more"
+                    >全部产品 →</router-link
+                  >
                 </div>
-                <div class="mega-menu__groups">
+                <div class="mega-menu__groups" :aria-busy="navGroupsPending">
                   <span class="mega-menu__col-title">
                     地区 · {{ navActiveTypeLabel || "全部" }}
                   </span>
-                  <router-link
-                    v-for="group in navActiveGroups"
-                    :key="group.id"
-                    :to="resolveGroupPath(group)"
-                    class="mega-group-card"
-                  >
-                    <span class="mega-group-card__name">{{ group.name }}</span>
-                    <span class="mega-group-card__desc">{{
-                      group.slogan || `${group.product_count} 款产品`
-                    }}</span>
-                  </router-link>
+                  <!-- 取数中先占位：既不闪「暂无产品分类」，也不会让面板高度塌下去 -->
+                  <MegaMenuSkeleton
+                    v-if="navGroupsPending && !navActiveGroups.length"
+                    :count="6"
+                  />
                   <div
-                    v-if="!navActiveGroups.length && !navLoading"
+                    v-else-if="navGroupsError && !navActiveGroups.length"
                     class="mega-menu__empty"
                   >
-                    暂无产品分类
+                    <p class="mega-menu__empty-text">分类加载失败</p>
+                    <button
+                      type="button"
+                      class="mega-menu__retry"
+                      @click="navReloadGroups"
+                    >
+                      重新加载
+                    </button>
                   </div>
+                  <template v-else>
+                    <router-link
+                      v-for="group in navActiveGroups"
+                      :key="group.id"
+                      :to="resolveGroupPath(group)"
+                      class="mega-group-card"
+                    >
+                      <span class="mega-group-card__name">{{
+                        group.name
+                      }}</span>
+                      <span class="mega-group-card__desc">{{
+                        group.slogan || `${group.product_count} 款产品`
+                      }}</span>
+                    </router-link>
+                    <div
+                      v-if="!navActiveGroups.length"
+                      class="mega-menu__empty"
+                    >
+                      暂无产品分类
+                    </div>
+                  </template>
                 </div>
               </template>
 
               <template v-else-if="activeMenuId === 'notices'">
                 <div class="mega-menu__types">
+                  <span class="mega-menu__col-title">公告分类</span>
                   <button
                     type="button"
                     class="mega-type-btn"
@@ -108,33 +165,60 @@
                     <span class="mega-type-btn__label">{{ cat.label }}</span>
                     <span class="mega-type-btn__count">{{ cat.count }}</span>
                   </button>
+                  <MegaMenuSkeleton
+                    v-if="navNoticesLoading && !navNoticesItems.length"
+                    variant="row"
+                    :count="3"
+                  />
                   <router-link to="/notices" class="mega-type-more"
                     >查看全部 →</router-link
                   >
                 </div>
-                <div class="mega-menu__groups">
-                  <router-link
-                    v-for="item in navNoticesFiltered"
-                    :key="item.id"
-                    :to="`/notices/${item.id}`"
-                    class="mega-group-card"
-                  >
-                    <span class="mega-group-card__name">{{ item.title }}</span>
-                    <span class="mega-group-card__desc">{{
-                      item.summary || formatDate(item.publish_at)
-                    }}</span>
-                  </router-link>
+                <div class="mega-menu__groups" :aria-busy="navNoticesLoading">
+                  <MegaMenuSkeleton
+                    v-if="navNoticesLoading && !navNoticesFiltered.length"
+                    :count="6"
+                  />
                   <div
-                    v-if="!navNoticesFiltered.length && !navNoticesLoading"
+                    v-else-if="navNoticesError && !navNoticesFiltered.length"
                     class="mega-menu__empty"
                   >
-                    暂无公告
+                    <p class="mega-menu__empty-text">公告加载失败</p>
+                    <button
+                      type="button"
+                      class="mega-menu__retry"
+                      @click="navReloadNotices"
+                    >
+                      重新加载
+                    </button>
                   </div>
+                  <template v-else>
+                    <router-link
+                      v-for="item in navNoticesFiltered"
+                      :key="item.id"
+                      :to="`/notices/${item.id}`"
+                      class="mega-group-card"
+                    >
+                      <span class="mega-group-card__name">{{
+                        item.title
+                      }}</span>
+                      <span class="mega-group-card__desc">{{
+                        item.summary || formatDate(item.publish_at)
+                      }}</span>
+                    </router-link>
+                    <div
+                      v-if="!navNoticesFiltered.length"
+                      class="mega-menu__empty"
+                    >
+                      暂无公告
+                    </div>
+                  </template>
                 </div>
               </template>
 
               <template v-else-if="activeMenuId === 'help'">
                 <div class="mega-menu__types">
+                  <span class="mega-menu__col-title">文档分类</span>
                   <button
                     type="button"
                     class="mega-type-btn"
@@ -157,35 +241,61 @@
                     <span class="mega-type-btn__label">{{ cat.label }}</span>
                     <span class="mega-type-btn__count">{{ cat.count }}</span>
                   </button>
+                  <MegaMenuSkeleton
+                    v-if="navHelpLoading && !navHelpItems.length"
+                    variant="row"
+                    :count="3"
+                  />
                   <router-link to="/help" class="mega-type-more"
                     >查看全部 →</router-link
                   >
                 </div>
-                <div class="mega-menu__groups">
-                  <router-link
-                    v-for="item in navHelpFiltered"
-                    :key="item.id"
-                    :to="`/help/${item.id}`"
-                    class="mega-group-card"
-                  >
-                    <span class="mega-group-card__name">{{ item.title }}</span>
-                    <span class="mega-group-card__desc">{{
-                      item.summary || "查看详情"
-                    }}</span>
-                  </router-link>
+                <div class="mega-menu__groups" :aria-busy="navHelpLoading">
+                  <MegaMenuSkeleton
+                    v-if="navHelpLoading && !navHelpFiltered.length"
+                    :count="6"
+                  />
                   <div
-                    v-if="!navHelpFiltered.length && !navHelpLoading"
+                    v-else-if="navHelpError && !navHelpFiltered.length"
                     class="mega-menu__empty"
                   >
-                    暂无文档
+                    <p class="mega-menu__empty-text">文档加载失败</p>
+                    <button
+                      type="button"
+                      class="mega-menu__retry"
+                      @click="navReloadHelp"
+                    >
+                      重新加载
+                    </button>
                   </div>
+                  <template v-else>
+                    <router-link
+                      v-for="item in navHelpFiltered"
+                      :key="item.id"
+                      :to="`/help/${item.id}`"
+                      class="mega-group-card"
+                    >
+                      <span class="mega-group-card__name">{{
+                        item.title
+                      }}</span>
+                      <span class="mega-group-card__desc">{{
+                        item.summary || "查看详情"
+                      }}</span>
+                    </router-link>
+                    <div
+                      v-if="!navHelpFiltered.length"
+                      class="mega-menu__empty"
+                    >
+                      暂无文档
+                    </div>
+                  </template>
                 </div>
               </template>
 
               <template v-else-if="activeMenuId === 'about'">
                 <div class="mega-menu__types">
-                  <div class="mega-type-heading">帮助中心</div>
-                  <div class="mega-type-desc">快速获取联系方式与常用入口</div>
+                  <span class="mega-menu__col-title">其他入口</span>
+                  <div class="mega-type-desc">关于、帮助与常用入口</div>
                 </div>
                 <div class="mega-menu__groups">
                   <template v-for="link in aboutQuickLinks" :key="link.to">
@@ -234,7 +344,9 @@
                 referrerpolicy="no-referrer"
                 @error="userAvatarLoadFailed = true"
               />
-              <span v-else class="user-avatar-initial">{{ userAvatarInitial }}</span>
+              <span v-else class="user-avatar-initial">{{
+                userAvatarInitial
+              }}</span>
               <span class="header-user-name">{{ userDisplayName }}</span>
               <el-icon class="header-user-arrow"><ArrowDown /></el-icon>
             </button>
@@ -313,7 +425,9 @@
               referrerpolicy="no-referrer"
               @error="userAvatarLoadFailed = true"
             />
-            <span v-else class="user-avatar-initial">{{ userAvatarInitial }}</span>
+            <span v-else class="user-avatar-initial">{{
+              userAvatarInitial
+            }}</span>
           </button>
           <transition name="user-menu-fade">
             <div v-if="mobileUserMenuOpen" class="user-menu-panel" role="menu">
@@ -778,6 +892,7 @@ import { seoLandingFooterLinks } from "@/data/seoLandingMeta";
 import { buildConsoleUrl, isConsolePath } from "@/utils/consoleUrl";
 import { useNavProductMenu } from "./useNavProductMenu";
 import { useNavContentMenu } from "./useNavContentMenu";
+import MegaMenuSkeleton from "./MegaMenuSkeleton.vue";
 
 const route = useRoute();
 const appStore = useAppStore();
@@ -804,6 +919,9 @@ const {
   activeGroups: navActiveGroups,
   getGroupsForType: navGetGroupsForType,
   loading: navLoading,
+  groupsPending: navGroupsPending,
+  groupsError: navGroupsError,
+  reloadGroups: navReloadGroups,
   activateType: navActivateType,
   loadGroupsForType: navLoadGroupsForType,
   init: navProductInit,
@@ -812,6 +930,8 @@ const navNoticesMenu = useNavContentMenu("notice");
 const {
   items: navNoticesItems,
   loading: navNoticesLoading,
+  error: navNoticesError,
+  reload: navReloadNotices,
   categories: navNoticesCategories,
   activeCategory: navNoticesActiveCategory,
   filteredItems: navNoticesFiltered,
@@ -821,6 +941,8 @@ const navHelpMenu = useNavContentMenu("help");
 const {
   items: navHelpItems,
   loading: navHelpLoading,
+  error: navHelpError,
+  reload: navReloadHelp,
   categories: navHelpCategories,
   activeCategory: navHelpActiveCategory,
   filteredItems: navHelpFiltered,
@@ -934,15 +1056,26 @@ function closeUserMenusOnEscape(event) {
   }
 }
 
+// Esc 同时关掉顶栏下拉与用户菜单，两个浮层不该各挂一个全局监听
+function handleDocumentKeydown(event) {
+  closeUserMenusOnEscape(event);
+  handleHeaderEscape(event);
+}
+
 const activeMenuId = ref(null);
+// 面板是被悬停展开的还是被点击展开的：鼠标用户本来就是先悬停再点导航项，
+// 这时点击不该把面板关掉；只有本来就是点开的，再次点击才算收起。
+const megaMenuOpenSource = ref(null);
+const headerRef = ref(null);
 let megaMenuCloseTimer = null;
 let megaMenuOpenTimer = null;
 const MEGA_MENU_OPEN_DELAY = 120;
 
-function openMegaMenu(menuId) {
+function openMegaMenu(menuId, source = "hover") {
   clearTimeout(megaMenuCloseTimer);
   clearTimeout(megaMenuOpenTimer);
   activeMenuId.value = menuId;
+  megaMenuOpenSource.value = source;
   if (menuId === "products") {
     navProductInit();
   } else if (menuId === "notices") {
@@ -952,21 +1085,73 @@ function openMegaMenu(menuId) {
   }
 }
 
+/**
+ * 悬停一律开面板，包括当前页所属的那一项。
+ *
+ * 之前这里对「已激活项」做了反向处理：人在 /products 时悬停「产品」会主动收起，
+ * 于是「进了产品页就再也拉不开产品下拉」——而这恰恰是用户最想横向换目录的时刻。
+ */
 function handleNavHover(item) {
-  if (item.menuId) {
-    const suppressOnActive = item.menuId !== "about";
-    if (suppressOnActive && isNavActive(item)) {
-      scheduleCloseMegaMenu();
-      return;
-    }
-    // 延迟打开，避免鼠标快速滑过导航时触发菜单与接口拉取
-    clearTimeout(megaMenuOpenTimer);
-    megaMenuOpenTimer = setTimeout(() => {
-      openMegaMenu(item.menuId);
-    }, MEGA_MENU_OPEN_DELAY);
-  } else {
+  if (!item.menuId) {
     scheduleCloseMegaMenu();
+    return;
   }
+
+  // 延迟打开，避免鼠标快速滑过导航时触发菜单与接口拉取
+  clearTimeout(megaMenuOpenTimer);
+  megaMenuOpenTimer = setTimeout(() => {
+    openMegaMenu(item.menuId);
+  }, MEGA_MENU_OPEN_DELAY);
+}
+
+// 键盘 Tab 进导航时同样展开，否则下拉只有鼠标能打开
+function handleNavFocus(item) {
+  if (item.menuId) {
+    openMegaMenu(item.menuId, "focus");
+  }
+}
+
+/**
+ * 点击带下拉的导航项只开关面板，不直接跳页。
+ *
+ * 悬停路径下菜单早就展开了，点导航项本就不该跳走；而触屏与键盘几乎没有 hover，
+ * 让点击直接跳页就等于这套下拉完全不可达。一级入口统一放在面板里的
+ * 「全部产品 / 查看全部」上，三个面板同一种模式。
+ *
+ * 这里用 router-link 的 custom 渲染自己接管导航：默认写法下 router-link
+ * 内部先跳页、我们后 preventDefault，点击就会一边跳走一边开关，面板刚开就没了。
+ */
+function onNavItemClick(item, event, navigate) {
+  if (!item.menuId) {
+    navigate(event);
+    return;
+  }
+
+  event.preventDefault();
+  if (
+    activeMenuId.value === item.menuId &&
+    megaMenuOpenSource.value === "click"
+  ) {
+    scheduleCloseMegaMenu();
+    return;
+  }
+  openMegaMenu(item.menuId, "click");
+}
+
+// 焦点离开整个头部（含下拉面板）才收起，在面板内部移动焦点不算离开
+function handleHeaderFocusOut(event) {
+  const nextTarget = event.relatedTarget;
+  if (nextTarget && headerRef.value?.contains(nextTarget)) {
+    return;
+  }
+  scheduleCloseMegaMenu();
+}
+
+function handleHeaderEscape(event) {
+  if (event.key !== "Escape") {
+    return;
+  }
+  closeMegaMenu();
 }
 
 function keepMegaMenu() {
@@ -974,12 +1159,17 @@ function keepMegaMenu() {
   clearTimeout(megaMenuOpenTimer);
 }
 
+function closeMegaMenu() {
+  clearTimeout(megaMenuCloseTimer);
+  clearTimeout(megaMenuOpenTimer);
+  activeMenuId.value = null;
+  megaMenuOpenSource.value = null;
+}
+
 function scheduleCloseMegaMenu() {
   clearTimeout(megaMenuCloseTimer);
   clearTimeout(megaMenuOpenTimer);
-  megaMenuCloseTimer = setTimeout(() => {
-    activeMenuId.value = null;
-  }, 180);
+  megaMenuCloseTimer = setTimeout(closeMegaMenu, 180);
 }
 
 function resolveGroupPath(group) {
@@ -1104,7 +1294,7 @@ watch(
   () => route.fullPath,
   () => {
     closeMobileMenu();
-    activeMenuId.value = null;
+    closeMegaMenu();
     mobileExpandedType.value = "";
   },
 );
@@ -1127,14 +1317,14 @@ onMounted(() => {
   window.addEventListener("scroll", handleScroll, { passive: true });
   window.addEventListener("resize", handleResize, { passive: true });
   document.addEventListener("pointerdown", closeUserMenusOnOutside);
-  document.addEventListener("keydown", closeUserMenusOnEscape);
+  document.addEventListener("keydown", handleDocumentKeydown);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("scroll", handleScroll);
   window.removeEventListener("resize", handleResize);
   document.removeEventListener("pointerdown", closeUserMenusOnOutside);
-  document.removeEventListener("keydown", closeUserMenusOnEscape);
+  document.removeEventListener("keydown", handleDocumentKeydown);
   if (scrollRaf) cancelAnimationFrame(scrollRaf);
   scrollRaf = null;
   document.body.style.overflow = "";
@@ -1300,6 +1490,18 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 
+// 下拉现在也能用键盘打开，焦点圈必须自己画，不能只靠浏览器默认轮廓
+.main-nav__link:focus-visible,
+.mega-type-btn:focus-visible,
+.mega-type-more:focus-visible,
+.mega-group-card:focus-visible,
+.mega-menu__retry:focus-visible,
+.header-user-trigger:focus-visible {
+  outline: 2px solid $color-primary;
+  outline-offset: 2px;
+  border-radius: $sm-border-radius;
+}
+
 .mega-menu {
   position: fixed;
   top: 64px;
@@ -1401,14 +1603,6 @@ onBeforeUnmount(() => {
   color: #0e4fcc;
 }
 
-.mega-type-heading {
-  padding: 16px 20px 4px;
-  font-size: 15px;
-  font-weight: 600;
-  color: $text-color-primary;
-  line-height: 1.4;
-}
-
 .mega-type-desc {
   padding: 0 20px 12px;
   font-size: 12px;
@@ -1418,7 +1612,9 @@ onBeforeUnmount(() => {
 
 .mega-menu__groups {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  // 用 minmax(0, 1fr) 而不是 1fr：1fr 的下限是 auto，公告摘要这类长文本
+  // （含不可断的片段）会把轨道撑得比容器还宽，面板横向溢出到屏幕外。
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
   padding: 8px 0;
   align-content: start;
@@ -1428,6 +1624,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
   padding: 14px 20px;
   text-decoration: none;
   transition: background 0.14s ease;
@@ -1458,12 +1655,51 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
+.mega-menu__col-empty {
+  padding: 12px 20px;
+  color: $text-color-placeholder;
+  font-size: 13px;
+}
+
 .mega-menu__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   grid-column: 1 / -1;
   padding: 40px 20px;
   color: $text-color-placeholder;
   font-size: 13px;
   text-align: center;
+}
+
+.mega-menu__empty-text {
+  margin: 0;
+  color: $text-color-placeholder;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+// 失败态要给得起重试，否则一次抖动就变成死路
+.mega-menu__retry {
+  padding: 0 14px;
+  height: 30px;
+  border: 1px solid $border-color;
+  border-radius: $sm-border-radius;
+  background: $bg-color-card;
+  color: $color-primary;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color $motion-fast ease,
+    background $motion-fast ease;
+
+  &:hover {
+    border-color: $color-primary;
+    background: $bg-color-hover;
+  }
 }
 
 .mega-menu-enter-active {

@@ -192,8 +192,12 @@ pnpm run test
 ```bash
 cd frontend-user-v3-www
 pnpm run build
-pnpm run test
+pnpm run test:e2e
 ```
+
+`test:e2e` 是 Playwright 套件（`tests/e2e/`），用例自行 `page.route` 拦截站点只读接口，
+不依赖后端与数据库；`playwright.config.ts` 会自行拉起 5176 端口的 Vite。
+覆盖顶栏下拉的展开条件、取数占位、失败重试与键盘可达性。
 
 结构性重构或大改页面时追加：
 
@@ -427,7 +431,7 @@ pnpm run test
 ```bash
 cd frontend-user-v3-www
 pnpm run build
-pnpm run test
+pnpm run test:e2e
 ```
 
 结构性改动追加：
@@ -543,7 +547,7 @@ pnpm run verify:refactor
 ## 16. 当前已知限制
 
 - `frontend-admin-v3` 当前没有完整单元测试体系，主要依赖构建和少量脚本验证。
-- `frontend-user-v3-www` 与 `frontend-user-v4-console` 自动化测试覆盖仍偏轻，更多依赖构建、脚本和人工联调。
+- `frontend-user-v3-www` 已接入 Playwright（`pnpm run test:e2e`），但目前只覆盖顶栏下拉一条链路；商品购买、内容页与其余官网区块仍靠构建、脚本和人工联调。`frontend-user-v4-console` 自动化测试覆盖同样偏轻。
 - 第三方真实能力如短信、邮件、支付宝、上游服务商接口，若无隔离测试环境，只能验证本地降级与模拟行为。
 - 调度与异步链路受当前 `schedule:run` 模式影响，验证时需考虑 0 到 60 秒延迟窗口。
 
@@ -563,7 +567,7 @@ pnpm run test
 
 cd ../frontend-user-v3-www
 pnpm run build
-pnpm run test
+pnpm run test:e2e
 ```
 
 记录模板：
@@ -597,7 +601,7 @@ pnpm run test
 # 4. 官网与购买入口
 cd ../frontend-user-v3-www
 pnpm run build
-pnpm run test
+pnpm run test:e2e
 pnpm run verify:refactor
 
 # 5. 用户控制台

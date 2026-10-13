@@ -82,10 +82,11 @@ pnpm run build
 ```bash
 cd frontend-user-v3-www
 pnpm run build
+pnpm run test:e2e
 pnpm run verify:refactor
 ```
 
-只做小改时至少执行 `pnpm run build`；涉及重构或共享逻辑时追加 `verify:refactor`。
+只做小改时至少执行 `pnpm run build`；涉及重构或共享逻辑时追加 `verify:refactor`；改动顶栏下拉、加载态、键盘交互等可回归行为时追加 `test:e2e`（Playwright，用例自带接口拦截，不依赖后端与数据库）。
 
 ## 5. `frontend-user-v4-console`
 
