@@ -134,8 +134,24 @@
       </template>
     </t-dialog>
 
-    <t-dialog v-model:visible="phoneDialogVisible" header="更换绑定手机" width="min(30rem, calc(100vw - 2rem))">
+    <t-dialog
+      v-model:visible="phoneDialogVisible"
+      :header="profileForm.phone ? '更换绑定手机' : '绑定手机号'"
+      width="min(30rem, calc(100vw - 2rem))"
+    >
       <t-form label-align="top">
+        <!-- 已绑定手机号时后端要求 old_code，必须先给出原号码的取证入口 -->
+        <template v-if="profileForm.phone">
+          <t-form-item label="原手机号"><t-input :value="profileForm.phone" readonly /></t-form-item>
+          <t-form-item label="原手机号验证码">
+            <div class="bind-code-row">
+              <t-input v-model="phoneForm.oldCode" placeholder="请输入原手机号收到的验证码" maxlength="6" />
+              <t-button variant="outline" :disabled="phoneOldCountdown > 0" @click="sendPhoneOldVerificationCode">
+                {{ phoneOldCountdown > 0 ? `${phoneOldCountdown}s` : '发送验证码' }}
+              </t-button>
+            </div>
+          </t-form-item>
+        </template>
         <t-form-item label="新手机号"><t-input v-model="phoneForm.phone" placeholder="请输入新手机号" /></t-form-item>
         <t-form-item label="验证码">
           <div class="bind-code-row">
@@ -152,8 +168,24 @@
       </template>
     </t-dialog>
 
-    <t-dialog v-model:visible="emailDialogVisible" header="更换绑定邮箱" width="min(30rem, calc(100vw - 2rem))">
+    <t-dialog
+      v-model:visible="emailDialogVisible"
+      :header="profileForm.email ? '更换绑定邮箱' : '绑定邮箱'"
+      width="min(30rem, calc(100vw - 2rem))"
+    >
       <t-form label-align="top">
+        <!-- 已绑定邮箱时后端要求 old_code，必须先给出原邮箱的取证入口 -->
+        <template v-if="profileForm.email">
+          <t-form-item label="原邮箱"><t-input :value="profileForm.email" readonly /></t-form-item>
+          <t-form-item label="原邮箱验证码">
+            <div class="bind-code-row">
+              <t-input v-model="emailForm.oldCode" placeholder="请输入原邮箱收到的验证码" maxlength="6" />
+              <t-button variant="outline" :disabled="emailOldCountdown > 0" @click="sendEmailOldVerificationCode">
+                {{ emailOldCountdown > 0 ? `${emailOldCountdown}s` : '发送验证码' }}
+              </t-button>
+            </div>
+          </t-form-item>
+        </template>
         <t-form-item label="新邮箱"><t-input v-model="emailForm.email" placeholder="请输入新邮箱" /></t-form-item>
         <t-form-item label="验证码">
           <div class="bind-code-row">
@@ -208,6 +240,8 @@ const {
   emailForm,
   phoneCountdown,
   emailCountdown,
+  phoneOldCountdown,
+  emailOldCountdown,
   notificationList,
   balanceText,
   enabledNotificationCount,
@@ -220,6 +254,8 @@ const {
   submitResetPassword,
   sendPhoneVerificationCode,
   sendEmailVerificationCode,
+  sendPhoneOldVerificationCode,
+  sendEmailOldVerificationCode,
   submitPhoneChange,
   submitEmailChange,
   saveNotificationPreferences,
