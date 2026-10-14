@@ -1280,34 +1280,41 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
      */
     private function buildUpstreamProvisionConfig(Order $order, string $hostname): array
     {
+        $product = $order->relationLoaded('product') ? $order->product : $order->product()->first();
         $snapshot = data_get($order->config_snapshot, []);
+        $snapshot = is_array($snapshot) ? $snapshot : [];
 
-        if (! is_array($snapshot)) {
-            $snapshot = [];
-        }
+        // 按「配置项 id => 子项 id（单选）或数量（区间）」提交。
+        //
+        // 口径对齐魔方 zjmf376 app/common/logic/Host.php:104-109：
+        //   $post_data["configoption"][$config_upstream] = $sub->upstream_id;
+        //   $post_data["configoption"][$config_upstream] = $qty;
+        // 这也正是对端 TuraIDC HandlesOrderCalculation::normalizeConfig 唯一
+        // 认的键形态（键是 field 会被整段丢弃），且本地配置项的 id 就是上游
+        // 实例的配置项 id —— 同步时由上游响应原样落库。
+        //
+        // 上游复用 field（虚拟主机与 CDN 的全部配置项都是 cpu）在这里不再是问题：
+        // 键本就不取 field。
+        $config = $product !== null
+            ? ProductConfigOptionPresenter::submitConfigByOptionId($product->config_options, $snapshot)
+            : [];
 
-        $textOnlyFields = $this->resolveTextOnlyConfigFields($order);
-        $config = [];
+        if ($product === null) {
+            // 商品缺失时无法反查配置项，退回按键原样提交。宁可让对端丢弃，
+            // 也不能因为关联缺失把整单配置清空。
+            foreach ($snapshot as $key => $value) {
+                $key = trim((string) $key);
 
-        foreach ($snapshot as $key => $value) {
-            $key = trim((string) $key);
+                if ($key === '' || str_starts_with($key, '_') || in_array($key, self::NON_UPSTREAM_CONFIG_KEYS, true)) {
+                    continue;
+                }
 
-            if ($key === '' || str_starts_with($key, '_') || in_array($key, self::NON_UPSTREAM_CONFIG_KEYS, true)) {
-                continue;
+                if ($value === null || $value === '' || $value === []) {
+                    continue;
+                }
+
+                $config[$key] = $value;
             }
-
-            if ($value === null || $value === '' || $value === []) {
-                continue;
-            }
-
-            // 提示型配置项（如「明确禁止」）只用于前台展示购买须知，不作为配置提交。
-            // 不能按字段名硬过滤：这类项的 field 常与真实规格项重名（上游的
-            // 「明确禁止」field 就是 cpu），按名字过滤会连带删掉真实 CPU 配置。
-            if (in_array($key, $textOnlyFields, true)) {
-                continue;
-            }
-
-            $config[$key] = $value;
         }
 
         if ($hostname !== '' && ! array_key_exists('hostname', $config)) {
@@ -1315,52 +1322,6 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         }
 
         return $config;
-    }
-
-    /**
-     * 找出商品上只用于展示的提示型配置项字段。
-     *
-     * 快照里只有 field => value，拿不到 option_mode，只能回查商品自身的
-     * config_options 来判断。商品未加载时退化为空数组（不过滤），
-     * 与历史行为一致，避免因关联缺失导致整单配置被清空。
-     *
-     * @return array<int, string>
-     */
-    private function resolveTextOnlyConfigFields(Order $order): array
-    {
-        $product = $order->relationLoaded('product') ? $order->product : $order->product()->first();
-
-        if ($product === null) {
-            return [];
-        }
-
-        // 提示项的 field 常与真实规格项重名（上游「明确禁止」的 field 就是 cpu）。
-        // 因此先按 field 汇总：只有该 field 下**全部**配置项都是提示项时，
-        // 才把这个 field 认定为纯展示字段；只要还存在一个真实规格项，就不过滤。
-        //
-        // 存量商品的 config_options 里提示项仍标成 select，需先补齐呈现类型，
-        // 否则这里一个字段都识别不出来，提示文案会被当配置提交上游。
-        $textFields = [];
-        $realFields = [];
-
-        foreach (ProductConfigOptionPresenter::present((array) ($product->config_options ?? [])) as $item) {
-            if (! is_array($item)) {
-                continue;
-            }
-
-            $field = trim((string) ($item['field'] ?? ''));
-            if ($field === '') {
-                continue;
-            }
-
-            if (trim((string) ($item['option_mode'] ?? '')) === self::OPTION_MODE_TEXT) {
-                $textFields[$field] = true;
-            } else {
-                $realFields[$field] = true;
-            }
-        }
-
-        return array_values(array_diff(array_keys($textFields), array_keys($realFields)));
     }
 
     public function provisionOrder(Order $order, Supplier $supplier, ?Service $existingService = null): array

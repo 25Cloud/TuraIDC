@@ -13,6 +13,7 @@ use App\Models\Supplier;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Support\ProviderErrorMapper;
 use App\Services\Upstream\ProviderKey;
+use App\Support\ProductConfigOptionPresenter;
 use App\Support\SensitiveDataSanitizer;
 use Illuminate\Support\Facades\Log;
 
@@ -415,8 +416,9 @@ final class ZjmfProvisionService
     {
         $result = [];
 
-        foreach ((array) ($product->config_options ?? []) as $item) {
-            $item = (array) $item;
+        // present() 补出商品内唯一的 form_key：官网按它提交，config_snapshot
+        // 里的键也是它，这里必须同一口径才能取到值。
+        foreach (ProductConfigOptionPresenter::present($product->config_options) as $item) {
             $optionId = $this->resolveOptionId($item);
             $field = $this->parseField($item);
             $type = (int) ($item['option_type'] ?? -1);
@@ -502,6 +504,13 @@ final class ZjmfProvisionService
 
     private function parseField(array $item): string
     {
+        // 商品内唯一的 form_key 优先。上游 field 会被复用到规格无关的项上
+        // （虚拟主机与 CDN 的全部配置项都是 cpu），用 field 会与官网提交的口径不一致。
+        $formKey = trim((string) ($item['form_key'] ?? ''));
+        if ($formKey !== '') {
+            return $formKey;
+        }
+
         $field = trim((string) ($item['field'] ?? ''));
         if ($field !== '') {
             return $field;

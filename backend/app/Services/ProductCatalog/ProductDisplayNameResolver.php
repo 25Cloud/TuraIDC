@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\ProductCatalog;
 
 use App\Models\Product;
+use App\Support\ProductConfigOptionPresenter;
 use Illuminate\Support\Str;
 
 class ProductDisplayNameResolver
@@ -247,8 +248,8 @@ class ProductDisplayNameResolver
                 continue;
             }
 
-            $field = $this->parseField($option);
-            if (! in_array($field, ['cpu', 'memory'], true) || isset($defaults[$field])) {
+            $field = $this->resolveProcessorField($option);
+            if ($field === '' || isset($defaults[$field])) {
                 continue;
             }
 
@@ -298,7 +299,7 @@ class ProductDisplayNameResolver
     private function resolveFirstVisibleOptionValue(Product $product, string $field): string
     {
         foreach ((array) ($product->config_options ?? []) as $option) {
-            if (! is_array($option) || $this->parseField($option) !== $field) {
+            if (! is_array($option) || $this->resolveProcessorField($option) !== $field) {
                 continue;
             }
 
@@ -383,8 +384,8 @@ class ProductDisplayNameResolver
                 continue;
             }
 
-            $field = $this->parseField($option);
-            if (! in_array($field, ['cpu', 'memory'], true)) {
+            $field = $this->resolveProcessorField($option);
+            if ($field === '') {
                 continue;
             }
 
@@ -543,7 +544,7 @@ class ProductDisplayNameResolver
         }
 
         foreach ((array) ($product->config_options ?? []) as $option) {
-            if (! is_array($option) || $this->parseField($option) !== $field) {
+            if (! is_array($option) || $this->resolveProcessorField($option) !== $field) {
                 continue;
             }
 
@@ -905,6 +906,38 @@ class ProductDisplayNameResolver
         }
 
         return new InstanceSpecCatalogService;
+    }
+
+    /**
+     * 该配置项对应的处理器规格维度（cpu / memory），不是处理器规格时返回空串。
+     *
+     * 魔方允许 field 复用——虚拟主机与 CDN 的全部配置项 field 都是 cpu，
+     * 而它们的 option_type 又都是 6，经 TYPE_FIELD_MAP 同样映射成 cpu。只凭
+     * field 判定会把「绑定域名数」「WEB空间」当成处理器规格写进商品名（虚拟主机
+     * 「12T高防主机」就是这样被标成「内存 12T」的），所以名称必须同时命中。
+     */
+    private function resolveProcessorField(array $option): string
+    {
+        $field = $this->parseField($option);
+        $name = (string) ($option['name'] ?? $option['option_name'] ?? '');
+
+        if (ProductConfigOptionPresenter::isProcessorSpecField(
+            $field,
+            $name,
+            ProductConfigOptionPresenter::CPU_KEYWORDS
+        )) {
+            return 'cpu';
+        }
+
+        if (ProductConfigOptionPresenter::isProcessorSpecField(
+            $field,
+            $name,
+            ProductConfigOptionPresenter::MEMORY_KEYWORDS
+        )) {
+            return 'memory';
+        }
+
+        return '';
     }
 
     private function parseField(array $item): string

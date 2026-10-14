@@ -19,7 +19,7 @@ interface ProvidesUpstreamQuoting
     /**
      * 向上游拉取某商品的实时报价（解包后的 data）。
      *
-     * @param  array<string, mixed>  $config   归一化后的配置（field => 业务值，range 型为数字）
+     * @param  array<int, mixed>  $config   按「配置项 id => 子项 id（单选）或数量（区间）」组织的配置
      * @return array<string, mixed>            上游返回的 data（含 base_amount / config_amount / items / total_amount 等）
      */
     public function quoteUpstreamProduct(Supplier $supplier, int $upstreamProductId, array $config, string $billingCycle, int $quantity): array;

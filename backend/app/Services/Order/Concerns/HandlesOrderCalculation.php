@@ -414,7 +414,16 @@ trait HandlesOrderCalculation
         }
 
         try {
-            $data = $capability->quoteUpstreamProduct($supplier, (int) $binding->upstream_product_id, $config, $billingCycle, 1);
+            // 提交给上游的配置按「配置项 id => 子项 id（单选）/ 数量（区间）」组织，
+            // 对齐魔方 zjmf376 app/common/logic/Host.php:104-109 与对端
+            // normalizeConfig 的契约。直接透传本地 form_key / field 会被对端整段丢弃，
+            // 报价将与实际开通的规格对不上。
+            $upstreamConfig = ProductConfigOptionPresenter::submitConfigByOptionId(
+                $product->config_options,
+                $config
+            );
+
+            $data = $capability->quoteUpstreamProduct($supplier, (int) $binding->upstream_product_id, $upstreamConfig, $billingCycle, 1);
         } catch (\Throwable $exception) {
             $data = null;
         }
@@ -963,6 +972,14 @@ trait HandlesOrderCalculation
 
     private function parseField(array $item): string
     {
+        // 商品内唯一的表单键优先。上游 field 会被复用到与规格无关的项上：
+        // 虚拟主机与 CDN 的全部配置项 field 都是 cpu，直接拿 field 当键会互相
+        // 覆盖，计价取到的是最后一项的价格。前台按 form_key 提交，这里必须同一口径。
+        $formKey = trim((string) ($item['form_key'] ?? ''));
+        if ($formKey !== '') {
+            return $formKey;
+        }
+
         $field = trim((string) ($item['field'] ?? ''));
         if ($field !== '') {
             return $field;

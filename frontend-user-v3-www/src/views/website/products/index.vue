@@ -184,7 +184,7 @@
           </div>
 
           <div
-            v-if="selectedProduct && productIntroText && !isMobile"
+            v-if="selectedProduct && productIntroText"
             class="product-intro-card"
           >
             <div class="config-block-title">商品介绍</div>
@@ -2147,9 +2147,30 @@ const mobileCostRows = computed(() => {
 const selectedProductGroup = computed(
   () => selectedProduct.value?.group || null,
 );
-const productIntroText = computed(() =>
-  String(selectedProductGroup.value?.slogan || "").trim(),
-);
+const productIntroText = computed(() => {
+  const remark = String(selectedProduct.value?.remark || "").trim();
+  if (remark) {
+    return remark;
+  }
+
+  const slogan = String(selectedProductGroup.value?.slogan || "").trim();
+  if (slogan) {
+    return slogan;
+  }
+
+  // 描述全空时用真实配置项拼一段规格摘要，而不是整块留白。生产上全部分组
+  // description 都是空的，虚拟主机与 CDN 尤其明显，没有这段用户只能看到价格。
+  return summaryItems.value
+    .filter(
+      (item) =>
+        !["region", "os", "cpu_model_name", "cpu_spec", "memory_spec"].includes(
+          item.key,
+        ),
+    )
+    .map((item) => `${item.label} ${item.value}`.trim())
+    .filter(Boolean)
+    .join(" · ");
+});
 const soldOut = computed(
   () =>
     resolvedStock.value !== null &&

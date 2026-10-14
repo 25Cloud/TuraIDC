@@ -625,6 +625,9 @@ class ProductSiteService
                 'full_name' => $this->resolveHierarchyFullName($hierarchyFields),
             ],
             'config_options' => $this->trimSiteProductConfigOptions($product->config_options),
+            // 商品自身描述。生产上分组 description 基本都是空的，选购页若只取
+            // 分组描述就整块留白，这里把商品自己的描述一并下发供前台兜底。
+            'remark' => trim((string) ($product->remark ?? '')),
             'provider_key' => $this->providerKeyForProduct($product),
             'siblings' => $siblings
                 ->map(function (Product $item) use ($siblingsSpecMap) {
@@ -767,6 +770,9 @@ class ProductSiteService
                     // 提示型配置项（option_mode=text）的展示文案，供前台渲染购买须知
                     'text_content' => trim((string) ($item['text_content'] ?? '')),
                     'submit_field' => trim((string) ($item['submit_field'] ?? $item['field'] ?? '')),
+                    // 商品内唯一的表单键：上游 field 被复用时（虚拟主机/CDN 全部配置项
+                    // 都是 cpu）前台用它区分各项，提交给上游仍映射回 field。
+                    'form_key' => trim((string) ($item['form_key'] ?? $item['field'] ?? '')),
                     'sub' => $this->trimSiteProductConfigSubOptions($item['sub'] ?? []),
                 ];
             })

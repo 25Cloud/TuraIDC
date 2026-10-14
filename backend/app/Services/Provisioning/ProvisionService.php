@@ -26,6 +26,7 @@ use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\ProviderResolver;
 use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
+use App\Support\ProductConfigOptionPresenter;
 use App\Support\ProductProvisionHostname;
 use App\Support\SensitiveDataSanitizer;
 use App\Support\ServiceHostname;
@@ -772,8 +773,10 @@ class ProvisionService
     {
         $result = [];
 
-        foreach ((array) ($product->config_options ?? []) as $item) {
-            $optionId = $this->resolveOptionId((array) $item);
+        // present() 补出商品内唯一的 form_key：官网按它提交，快照里的键也是它，
+        // 这里必须同一口径，否则虚拟主机/CDN 这类 field 被复用的商品取不到值。
+        foreach (ProductConfigOptionPresenter::present($product->config_options) as $item) {
+            $optionId = $this->resolveOptionId($item);
             $field = $this->parseField($item);
             $type = (int) ($item['option_type'] ?? -1);
 
@@ -858,6 +861,14 @@ class ProvisionService
 
     private function parseField(array $item): string
     {
+        // 商品内唯一的 form_key 优先。上游 field 会被复用到规格无关的项上
+        // （虚拟主机与 CDN 的全部配置项都是 cpu），而 config_snapshot 的键
+        // 来自官网表单，用 field 匹配取不到值。
+        $formKey = trim((string) ($item['form_key'] ?? ''));
+        if ($formKey !== '') {
+            return $formKey;
+        }
+
         $field = trim((string) ($item['field'] ?? ''));
         if ($field !== '') {
             return $field;

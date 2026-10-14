@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /**
  * 商品配置项呈现补齐器（只读）。
@@ -17,13 +18,25 @@ use Illuminate\Support\Collection;
  *   - 识别「明确禁止」这类购买提示，归为 text 并取出提示文案；
  *   - 区间型父项缺范围时回退到唯一子项的 qty_minimum/qty_maximum；
  *   - 区间型缺步长时按 qty_step → qty_stage → 子项 → 1 依次回退；
- *   - 子项缺真实传参值时，从父项 parameter（值|文案,值|文案）反查。
+ *   - 子项缺真实传参值时，从父项 parameter（值|文案,值|文案）反查；
+ *   - 分配商品内唯一的 form_key（field 被上游复用时按 config_id 补位）。
+ *
+ * 关于 field：魔方（智简魔方财务）里 field 只是一个可读标签、允许重复——
+ * 虚拟主机与 CDN 的全部配置项 field 都是 cpu。商品↔配置项的关联靠
+ * shd_product_config_links 的配置项 id，下单也按 configoption 的配置项 id
+ * 传值，field 从来不是标识。凡是拿 field 当唯一标识或当 CPU/内存语义用的地方，
+ * 都会把「绑定域名数」「WEB空间」误当成处理器规格（参见 isProcessorSpecOption）。
  *
  * 全部为读取时计算，不写库。判据与 TuraOpenApi 的同步归一化保持一致，
  * 同步后写入的新结构本身就是完整的，这里的补齐对其为无操作。
  */
 final class ProductConfigOptionPresenter
 {
+    /** 处理器规格关键词。与官网前端 machineSpecResolver 的 CPU_KEYWORDS 同口径。 */
+    public const CPU_KEYWORDS = ['cpu', 'core', '处理器', '核'];
+
+    /** 内存规格关键词。与官网前端 machineSpecResolver 的 MEMORY_KEYWORDS 同口径。 */
+    public const MEMORY_KEYWORDS = ['memory', 'ram', '内存'];
     /** 区间型（滑块）配置项 option_type */
     public const RANGE_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19];
 
@@ -59,11 +72,68 @@ final class ProductConfigOptionPresenter
             return [];
         }
 
-        return Collection::make($configOptions)
+        $items = Collection::make($configOptions)
             ->filter(fn (mixed $item): bool => is_array($item))
             ->map(fn (array $item): array => self::presentOne($item))
             ->values()
             ->all();
+
+        return self::assignFormKeys($items);
+    }
+
+    /**
+     * 分配商品内唯一的表单键 form_key。
+     *
+     * field 是上游的传参键，会被复用到与规格无关的项上：虚拟主机与 CDN 的
+     * 全部配置项（绑定域名数、WEB空间、带宽、流量、连接数…）field 都是 cpu。
+     * 本系统各处（官网表单、订单计价、上游提交）历来直接拿 field 当键，
+     * 于是这些项互相覆盖 —— 官网只渲染第一个、其余项消失，订单只记一个值、
+     * 计价取到的是最后一项的价格。
+     *
+     * 这里给出稳定的唯一键：field 本身唯一时原样返回（云主机等存量商品
+     * 行为不变），重复时用上游配置项 ID（config_id，其次自增 id）补位。
+     * 上游提交仍在 buildUpstreamProvisionConfig 里映射回 field，不依赖本键。
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private static function assignFormKeys(array $items): array
+    {
+        $counts = [];
+        foreach ($items as $item) {
+            $field = trim((string) ($item['field'] ?? ''));
+            if ($field !== '') {
+                $counts[$field] = ($counts[$field] ?? 0) + 1;
+            }
+        }
+
+        $used = [];
+        foreach ($items as $index => $item) {
+            $field = trim((string) ($item['field'] ?? ''));
+
+            if ($field === '') {
+                $items[$index]['form_key'] = '';
+                continue;
+            }
+
+            $formKey = $field;
+            if (($counts[$field] ?? 0) > 1) {
+                $identity = trim((string) ($item['config_id'] ?? ''))
+                    ?: trim((string) ($item['id'] ?? ''))
+                    ?: (string) ($index + 1);
+                $formKey = $field.'#'.$identity;
+            }
+
+            $unique = $formKey;
+            for ($suffix = 2; isset($used[$unique]); $suffix++) {
+                $unique = $formKey.'-'.$suffix;
+            }
+
+            $used[$unique] = true;
+            $items[$index]['form_key'] = $unique;
+        }
+
+        return $items;
     }
 
     /**
@@ -74,6 +144,177 @@ final class ProductConfigOptionPresenter
      * 直接比对会被判成非区间型 —— 数量范围退化成 0~0 的滑块。
      * 新写入的数据已改用数值 4，这条只用于读存量。
      */
+    /**
+     * 配置项是否真的是处理器／内存规格。
+     *
+     * 魔方的 field 只是可读标签、允许复用（虚拟主机与 CDN 的全部配置项
+     * field 都是 cpu），不能当标识用。只凭 field 判定会把「绑定域名数」
+     * 「WEB空间」当成处理器规格，进而写进商品名和规格亮点——虚拟主机
+     * 「12T高防主机」就是这样被标成「内存 12T」的。
+     *
+     * 因此名称必须同时命中；名称为空时没有第二判据，退回只看 field。
+     *
+     * @param  list<string>  $keywords
+     */
+    /**
+     * 按「配置项 id => 值」组装提交给上游的配置。
+     *
+     * 口径对齐魔方（zjmf376 app/common/logic/Host.php:104-109）：
+     *   $post_data["configoption"][$config_upstream] = $sub->upstream_id;  // 单选
+     *   $post_data["configoption"][$config_upstream] = $qty;               // 区间
+     * 键是配置项的上游 id、值是子项 id 或数量；field 只在本系统内用于取回提交值。
+     *
+     * 对端 TuraIDC 的 HandlesOrderCalculation::normalizeConfig 同样只按配置项 id
+     * 与子项 id 匹配提交键（键是 field 会被整段丢弃），所以这里必须用 id。
+     * 本地配置项的 id 就是上游实例的配置项 id —— 同步时由上游响应原样落库。
+     *
+     * @param  array<string, mixed>  $submitted  以 form_key / field 为键的提交值
+     * @return array<int, mixed>  配置项 id => 子项 id 或数量
+     */
+    public static function submitConfigByOptionId(mixed $configOptions, array $submitted): array
+    {
+        $payload = [];
+
+        foreach (self::present($configOptions) as $item) {
+            $optionId = (int) ($item['id'] ?? 0);
+            if ($optionId <= 0) {
+                continue;
+            }
+
+            $value = self::pickSubmittedValue($item, $submitted);
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            // 提示型配置项（如「明确禁止」）只用于前台展示购买须知，不参与提交。
+            // 这里按配置项逐项判断即可：上游复用 field 之后，原先那种「按 field
+            // 聚合、该 field 下全是提示项才过滤」的做法已经区分不出真实规格项了。
+            if (trim((string) ($item['option_mode'] ?? '')) === self::MODE_TEXT) {
+                continue;
+            }
+
+            $isRange = self::isRangeOptionType($item['option_type'] ?? 0)
+                || trim((string) ($item['option_mode'] ?? '')) === 'range';
+
+            if ($isRange) {
+                // 区间型传数量本身
+                if (is_numeric($value) && (float) $value > 0) {
+                    $payload[$optionId] = (int) $value;
+                }
+
+                continue;
+            }
+
+            // 单选型传子项 id
+            $subId = self::resolveSubIdByValue($item, (string) $value);
+            if ($subId > 0) {
+                $payload[$optionId] = $subId;
+            }
+        }
+
+        return $payload;
+    }
+
+    /**
+     * 取提交值：优先按商品内唯一的 form_key，再退回 field（存量快照两种都有）。
+     *
+     * @param  array<string, mixed>  $submitted
+     */
+    private static function pickSubmittedValue(array $item, array $submitted): mixed
+    {
+        foreach ([$item['form_key'] ?? '', $item['field'] ?? ''] as $candidate) {
+            $candidate = trim((string) $candidate);
+            if ($candidate !== '' && array_key_exists($candidate, $submitted)) {
+                return $submitted[$candidate];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 把提交值反查成子项 id。提交值通常是 option_name_first 这类文案
+     * （官网提交的就是它），上游协议要的却是子项 id。
+     *
+     * @param  array<string, mixed>  $item
+     */
+    private static function resolveSubIdByValue(array $item, string $value): int
+    {
+        $candidate = trim($value);
+        if ($candidate === '') {
+            return 0;
+        }
+
+        foreach ((array) ($item['sub'] ?? []) as $sub) {
+            if (! is_array($sub)) {
+                continue;
+            }
+
+            foreach (['value', 'option_name_first', 'option_name', 'version', 'label'] as $field) {
+                if (trim((string) ($sub[$field] ?? '')) !== $candidate) {
+                    continue;
+                }
+
+                $subId = (int) ($sub['id'] ?? 0);
+                if ($subId > 0) {
+                    return $subId;
+                }
+            }
+        }
+
+        // 提交值本身就是子项 id
+        return ctype_digit($candidate) ? (int) $candidate : 0;
+    }
+
+    public static function isProcessorSpecOption(array $item, array $keywords): bool
+    {
+        return self::isProcessorSpecField(
+            (string) ($item['field'] ?? ''),
+            (string) ($item['name'] ?? $item['option_name'] ?? ''),
+            $keywords
+        );
+    }
+
+    /**
+     * isProcessorSpecOption 的显式字段版。
+     *
+     * 传入的 field 可以是解析后的结果（调用方可能先用 option_type 兜底推出过
+     * field），名称判据照旧生效——虚拟主机的配置项 option_type 是 6，经
+     * TYPE_FIELD_MAP 映射同样是 cpu，只校验原始 field 拦不住。
+     *
+     * @param  list<string>  $keywords
+     */
+    public static function isProcessorSpecField(?string $field, string $name, array $keywords): bool
+    {
+        if (! self::containsAnyKeyword((string) $field, $keywords)) {
+            return false;
+        }
+
+        $name = trim($name);
+
+        return $name === '' || self::containsAnyKeyword($name, $keywords);
+    }
+
+    /**
+     * @param  list<string>  $keywords
+     */
+    private static function containsAnyKeyword(string $text, array $keywords): bool
+    {
+        $value = Str::lower(trim($text));
+        if ($value === '') {
+            return false;
+        }
+
+        foreach ($keywords as $keyword) {
+            $needle = Str::lower(trim((string) $keyword));
+            if ($needle !== '' && str_contains($value, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function isRangeOptionType(mixed $optionType): bool
     {
         if (strtolower(trim((string) $optionType)) === 'quantity') {

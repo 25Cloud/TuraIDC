@@ -50,10 +50,16 @@ export function normalizeMoneyText(value) {
 export function parseField(item = {}) {
   const raw = String(item.field || item.spec_key || '').trim()
   const parts = raw.split('|')
-  const key = parts[0]?.trim() || ''
-  const label = (parts.length > 1 ? parts.slice(1).join('|').trim() : '') || String(item.name || '').trim() || key
+  const field = parts[0]?.trim() || ''
+  const label = (parts.length > 1 ? parts.slice(1).join('|').trim() : '') || String(item.name || '').trim() || field
 
-  return { key, label }
+  // 表单键取后端算好的商品内唯一键（form_key）。上游 field 会被复用到规格无关
+  // 的项上——虚拟主机与 CDN 的全部配置项 field 都是 cpu——直接拿它当键会让
+  // 这些项互相覆盖：只有最后选的那项留得住，其余项的选中值和提交值一起丢失。
+  // 提交给上游时后端会把 form_key 映射回 field，上游契约不受影响。
+  const key = String(item.form_key || '').trim() || field
+
+  return { key, field, label }
 }
 
 export function parseParamOptions(raw) {

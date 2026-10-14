@@ -14,6 +14,7 @@ use App\Services\ClientServiceConsole\ServiceDetailService;
 use App\Services\Finance\CheckoutService;
 use App\Services\Finance\InvoiceService;
 use App\Services\Site\SiteProductQuoteService;
+use App\Support\ProductConfigOptionPresenter;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -216,7 +217,9 @@ class UpgradeService
     private function buildConfigFromConfigOption(Product $product, array $configOption): ?array
     {
         $config = [];
-        $items = (array) ($product->config_options ?? []);
+        // present() 补出商品内唯一的 form_key：本方法产出的 config 会被
+        // HandlesOrderCalculation 按 form_key 匹配，两边必须同一口径。
+        $items = ProductConfigOptionPresenter::present($product->config_options);
 
         foreach ($configOption as $configId => $value) {
             $configId = (int) $configId;
@@ -386,6 +389,13 @@ class UpgradeService
      */
     private function parseField(array $item): string
     {
+        // 商品内唯一的 form_key 优先。上游 field 会被复用到规格无关的项上
+        // （虚拟主机与 CDN 的全部配置项都是 cpu），用 field 会与官网提交的口径不一致。
+        $formKey = trim((string) ($item['form_key'] ?? ''));
+        if ($formKey !== '') {
+            return $formKey;
+        }
+
         $field = trim((string) ($item['field'] ?? ''));
         if ($field !== '') {
             return $field;

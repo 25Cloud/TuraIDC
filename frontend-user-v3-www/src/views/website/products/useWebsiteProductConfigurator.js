@@ -144,14 +144,24 @@ export function useWebsiteProductConfigurator(productDetail) {
     }
   }
 
+  // field 是上游传参键，会被复用到与规格无关的项上：虚拟主机与 CDN 的全部
+  // 配置项（绑定域名数、WEB空间、带宽、流量、连接数…）field 都是 cpu。只看 key
+  // 会把这些项误分到机器规格区，连 bandwidth/traffic 也进不了网络区，整组配置
+  // 消失。名称必须同时命中；名称为空时没有第二判据，退回只看 key。
+  function matchesConfigKeywords(cfg, keywords) {
+    const hit = (text) =>
+      keywords.some((keyword) => String(text).toLowerCase().includes(keyword.toLowerCase()))
+    const label = String(cfg.label || '').trim()
+
+    return hit(cfg.key) && (!label || hit(label))
+  }
+
   function isMachine(cfg) {
-    const text = (cfg.key + cfg.label).toLowerCase()
-    return MACHINE_KEYS.some((keyword) => text.includes(keyword.toLowerCase()))
+    return matchesConfigKeywords(cfg, MACHINE_KEYS)
   }
 
   function isNetwork(cfg) {
-    const text = (cfg.key + cfg.label).toLowerCase()
-    return NETWORK_KEYS.some((keyword) => text.includes(keyword.toLowerCase()))
+    return matchesConfigKeywords(cfg, NETWORK_KEYS)
   }
 
   const allParsedConfigs = computed(() => {

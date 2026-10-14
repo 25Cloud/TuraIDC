@@ -231,14 +231,19 @@ class ProductSpecHighlightService
 
         $dimensions = [];
 
-        if (preg_match('/(\d+(?:\.\d+)?)\s*(?:核|v?cpu|cores?|core)(?![a-z])/iu', $name, $match) === 1) {
-            $dimensions['cpu'] = $this->normalizeNumeric($match[1]).'核';
-        }
+        // 面板型商品（虚拟主机 / CDN）没有 CPU / 内存语义：商品名里的「12T」是
+        // WEB 空间、「100M」是数据库空间。按云主机规则推断会得到「12T高防主机 =
+        // 内存 12T」这种假规格，因此这里只对计算型商品做 CPU/内存推断。
+        if (! $this->isPanelProduct($product)) {
+            if (preg_match('/(\d+(?:\.\d+)?)\s*(?:核|v?cpu|cores?|core)(?![a-z])/iu', $name, $match) === 1) {
+                $dimensions['cpu'] = $this->normalizeNumeric($match[1]).'核';
+            }
 
-        if (preg_match('/(\d+(?:\.\d+)?)\s*(?:gb|g)(?![a-z])(?!\s*(?:防御|防护))/iu', $name, $match) === 1) {
-            $dimensions['memory'] = $this->normalizeNumeric($match[1]).'G';
-        } elseif (preg_match('/(\d+(?:\.\d+)?)\s*(?:tb|t)(?![a-z])(?!\s*(?:流量))/iu', $name, $match) === 1) {
-            $dimensions['memory'] = $this->normalizeNumeric($match[1]).'T';
+            if (preg_match('/(\d+(?:\.\d+)?)\s*(?:gb|g)(?![a-z])(?!\s*(?:防御|防护))/iu', $name, $match) === 1) {
+                $dimensions['memory'] = $this->normalizeNumeric($match[1]).'G';
+            } elseif (preg_match('/(\d+(?:\.\d+)?)\s*(?:tb|t)(?![a-z])(?!\s*(?:流量))/iu', $name, $match) === 1) {
+                $dimensions['memory'] = $this->normalizeNumeric($match[1]).'T';
+            }
         }
 
         if (preg_match('/(\d+(?:\.\d+)?)\s*m\b(?!\s*(?:流量))/iu', $name, $match) === 1) {
@@ -320,7 +325,7 @@ class ProductSpecHighlightService
                 continue;
             }
 
-            $key = $this->matchDimension((string) ($option['field'] ?? $option['spec_key'] ?? $option['option_name'] ?? $option['name'] ?? ''));
+            $key = $this->matchDimension($this->resolveDimensionSource($option));
             if ($key === null) {
                 continue;
             }
@@ -334,6 +339,33 @@ class ProductSpecHighlightService
         }
 
         return $dimensions;
+    }
+
+    /**
+ * 维度匹配取值的来源：名称优先，field 仅作兜底。
+     *
+     * 魔方允许 field 复用——虚拟主机与 CDN 的全部配置项 field 都是 cpu。
+     * 先读 field 会把「绑定域名数」「WEB空间」「流量限制」统统算成 CPU 亮点，
+     * 名称才是规格语义。
+     */
+    /**
+     * 面板型商品：虚拟主机与 CDN。
+     *
+     * 它们没有 CPU / 内存语义，操作入口全部由上游自定义区域承载，
+     * 商品名里的容量数字是空间和带宽，不能按计算型商品解读。
+     */
+    private function isPanelProduct(Product $product): bool
+    {
+        return in_array(
+            strtolower(trim((string) $product->product_type)),
+            ['web_hosting', 'hostingaccount', 'hosting', 'cdn'],
+            true
+        );
+    }
+
+    private function resolveDimensionSource(array $option): string
+    {
+        return (string) ($option['name'] ?? $option['option_name'] ?? $option['spec_key'] ?? $option['field'] ?? '');
     }
 
     private function resolveConfigOptionValue(array $option): string

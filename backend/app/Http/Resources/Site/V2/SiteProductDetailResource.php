@@ -194,6 +194,9 @@ class SiteProductDetailResource extends JsonResource
                     // 提示型配置项（option_mode=text）的展示文案，供前台渲染购买须知
                     'text_content' => trim((string) ($clean['text_content'] ?? '')),
                     'submit_field' => trim((string) ($clean['submit_field'] ?? $clean['field'] ?? '')),
+                    // 商品内唯一的表单键：上游 field 被复用时（虚拟主机/CDN 全部配置项
+                    // 都是 cpu）前台用它区分各项，提交给上游仍映射回 field。
+                    'form_key' => trim((string) ($clean['form_key'] ?? $clean['field'] ?? '')),
                     'sub' => $this->trimSubOptions($clean['sub'] ?? []),
                 ];
             })

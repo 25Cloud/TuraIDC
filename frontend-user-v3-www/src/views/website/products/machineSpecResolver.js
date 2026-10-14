@@ -8,16 +8,38 @@ export const CPU_KEYWORDS = ["cpu", "core", "处理器", "核"];
 export const MEMORY_KEYWORDS = ["memory", "ram", "内存"];
 
 export function isCpuConfigKey(key = "", label = "") {
-  const text = `${key}${label}`.toLowerCase();
-  return CPU_KEYWORDS.some((keyword) =>
-    text.includes(String(keyword).toLowerCase()),
-  );
+  return isProcessorSpecKey(key, label, CPU_KEYWORDS);
 }
 
 export function isMemoryConfigKey(key = "", label = "") {
-  const text = `${key}${label}`.toLowerCase();
-  return MEMORY_KEYWORDS.some((keyword) =>
-    text.includes(String(keyword).toLowerCase()),
+  return isProcessorSpecKey(key, label, MEMORY_KEYWORDS);
+}
+
+/**
+ * 判定配置项是否真的是处理器／内存规格。
+ *
+ * 上游智简魔方的 field 是传参键，会被复用到与规格无关的项上：虚拟主机与
+ * CDN 的全部配置项（绑定域名数、WEB空间、带宽、流量、连接数…）field 都是 cpu。
+ * 只要 key 命中就算 CPU，这些项会被吸进 CPU 专用选择器 —— 官网只渲染第一个，
+ * 其余项直接不显示；「100M」「100Mbps峰值共享」还会被当核数解析。
+ *
+ * 所以名称必须同时命中；名称为空时没有第二判据，退回只看 key。
+ */
+function isProcessorSpecKey(key, label, keywords) {
+  const normalizedLabel = String(label || "").trim();
+
+  if (normalizedLabel === "") {
+    return includesKeyword(key, keywords);
+  }
+
+  return includesKeyword(key, keywords) && includesKeyword(normalizedLabel, keywords);
+}
+
+function includesKeyword(text, keywords) {
+  const value = String(text || "").toLowerCase();
+
+  return keywords.some((keyword) =>
+    value.includes(String(keyword).toLowerCase()),
   );
 }
 
