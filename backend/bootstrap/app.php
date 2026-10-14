@@ -215,8 +215,48 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return null;
         });
+        // 接住「意料之外」的异常。放在各具体处理器之后：它们对已知异常都已给出
+        // 中文提示，这里只兜住剩下的。
+        //
+        // 不加这段时 Laravel 默认返回英文 {"message":"Server Error"}，而前端
+        // errorMessage() 只信任含中文的消息，会把它掩码成「保存员工失败」这类通用
+        // 文案——管理员既看不到原因，也拿不到排查线索。请求编号与响应头 X-Request-Id
+        // 一致（由 LogOperation 中间件注入），可直接拿它去日志里定位。
+        $exceptions->render(function (\Throwable $exception, Request $request) {
+            if (! $request->is('api/*') || config('app.debug')) {
+                // 调试模式保留 Laravel 默认的完整堆栈，不做遮蔽
+                return null;
+            }
+
+            // 业务异常本身带可读中文（如「只有超级管理员可以指派超级管理员角色」、
+            // 「不能停用最后一个超级管理员」），框架默认渲染会把 message 原样透出；
+            // 这里必须放行，否则通用兜底会把这些具体提示覆盖掉。
+            // Symfony 的 HTTP 异常同理：交回框架保持原有状态码，别把 403 变成 500。
+            if ($exception instanceof BusinessException
+                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                return null;
+            }
+
+            $requestId = trim((string) ($request->attributes->get('request_id')
+                ?: $request->header('X-Request-Id', '')));
+
+            Log::error('[api] 未处理异常', [
+                'request_id' => $requestId,
+                'method' => $request->method(),
+                'path' => $request->path(),
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+
+            $message = $requestId !== ''
+                ? "服务器内部错误，请联系管理员并提供请求编号：{$requestId}"
+                : '服务器内部错误，请联系管理员';
+
+            return ApiResponseBuilder::error(50000, $message, null, 500);
+        });
 
         // 首次部署时允许执行生成密钥和 Composer 发现命令，其余场景仍强制要求 APP_KEY 已配置。
+
         if (empty(config('app.key'))) {
             $currentCommand = PHP_SAPI === 'cli'
                 ? trim((string) ($_SERVER['argv'][1] ?? ''))

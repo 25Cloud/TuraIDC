@@ -19,15 +19,25 @@ class OperationLogService
         ?string $ipAddress = null,
     ): void {
         // 写 operation_logs（当前主源，保留至 activity_logs 完成验收后停用）
-        OperationLog::query()->create([
-            'user_id' => $userId,
-            'user_type' => $userType,
-            'action' => $action,
-            'module' => $module,
-            'target_id' => $targetId,
-            'detail' => $detail,
-            'ip_address' => $ipAddress,
-        ]);
+        // 主源写入失败不阻断主流程：调用方（如员工创建）已在此之前完成事务提交，
+        // 日志报错会把一次成功的业务动作变成 500。双写侧本来就有兜底，主源补齐同款。
+        try {
+            OperationLog::query()->create([
+                'user_id' => $userId,
+                'user_type' => $userType,
+                'action' => $action,
+                'module' => $module,
+                'target_id' => $targetId,
+                'detail' => $detail,
+                'ip_address' => $ipAddress,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('operation log write failed', [
+                'error' => $e->getMessage(),
+                'action' => $action,
+                'module' => $module,
+            ]);
+        }
 
         // L4 过渡期双写：同步写入 activity_logs（新日志真源）
         // 待 activity_logs 数据经过一个完整账期验收后，移除上方 OperationLog 写入
