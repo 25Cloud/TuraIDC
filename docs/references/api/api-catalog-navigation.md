@@ -127,6 +127,8 @@
 | 反代上游静态资源与图片 | `GET /api/v2/client/services/{id}/console-area/asset?ticket=…&path=…`     |
 | 回发模块动作           | `POST /api/v2/client/services/{id}/console-area/actions?ticket=…`         |
 
+`asset` 端点只接受以 `/` 开头的路径，目标主机由服务绑定的供应商推导，因此不能被当成任意 URL 的开放反代。该端点返回 CSS 时，会把文件内部的相对 `url()` 改写成同一端点的根相对地址：跨源反代换掉了相对引用的解析基准（浏览器按反代后的 URL 解析），原样透传会让 CSS 里的图片请求到本站一个不存在的路径。改写只作用于 CSS —— JS 里的相对路径没有可静态解析的形态。
+
 ### 实名认证
 
 | 步骤         | 接口                                                                                    |

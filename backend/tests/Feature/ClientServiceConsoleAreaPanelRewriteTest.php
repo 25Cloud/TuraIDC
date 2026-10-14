@@ -127,6 +127,36 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
         $this->assertStringContainsString("args[0].icon = args[0].type", $out);
     }
 
+    /**
+     * 运行时基路径下的 4 个静态资产必须真实存在于磁盘。
+     *
+     * 事故背景：基路径从 /vendor/console-panel 迁到 /media/console-panel 时，只改了注入
+     * HTML 的前缀，资产本身还留在 vendor 目录下。生产上 4 个文件全部 404，面板里每一处
+     * $(...) 都抛 "$ is not defined" —— 而本文件其余断言只检查生成的 HTML 字符串，
+     * 对「资产到底有没有入库」完全无感，所以测试全绿、线上照挂。
+     *
+     * 基路径从常量派生而不是写死，改了常量忘了搬文件时这条会立刻红。
+     */
+    #[Test]
+    public function runtime_assets_really_exist_under_the_runtime_base_path(): void
+    {
+        $assetDir = dirname(__DIR__, 2).'/public'.ServiceConsoleAreaService::RUNTIME_ASSET_BASE;
+
+        $this->assertDirectoryExists($assetDir, '面板运行时资源目录必须随基路径一起迁移：'.$assetDir);
+
+        foreach ([
+            'bootstrap.min.css',
+            'jquery.min.js',
+            'bootstrap.bundle.min.js',
+            'sweetalert2.all.min.js',
+        ] as $asset) {
+            $path = $assetDir.'/'.$asset;
+
+            $this->assertFileExists($path, '面板运行时资产缺失，浏览器会直接拿到 404：'.$path);
+            $this->assertGreaterThan(0, (int) @filesize($path), '面板运行时资产不能是空文件：'.$path);
+        }
+    }
+
     #[Test]
     public function upstream_asset_urls_are_replaced_by_the_local_proxy(): void
     {
@@ -266,6 +296,149 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
             '片段自带 jQuery 时不能再注入一份，否则会冲掉前一份的插件注册'
         );
         $this->assertStringContainsString('/media/console-panel/bootstrap.min.css', $out, '样式仍然要补');
+    }
+
+    /**
+     * 上游 CSS 里的相对 url() 必须重新指向本站反代。
+     *
+     * 事故背景：跨源反代换掉了相对引用的解析基准。上游
+     *   /vendor/dcimcloud/css/selectFilter.css 里写的是 url(../img/icon_arrow_down.png)，
+     *   本应解析成 /vendor/dcimcloud/img/icon_arrow_down.png；经 ?path= 形式的反代 URL 加载后，
+     *   基准目录变成反代端点所在目录，最终请求到本站 /api/v2/client/services/{id}/img/... → 404，
+     *   下拉框箭头空白。根因是反代把上游资源原样透传，没有处理资源内部的相对引用。
+     */
+    #[Test]
+    public function css_relative_urls_are_repointed_to_the_local_proxy(): void
+    {
+        $out = $this->rewriteCss(
+            '.sel-arrow { background-image: url(../img/icon_arrow_down.png); }',
+            '/vendor/dcimcloud/css/selectFilter.css'
+        );
+
+        $this->assertStringContainsString(
+            'url('.$this->assetProxyUrl(3915, 'TESTTICKET', '/vendor/dcimcloud/img/icon_arrow_down.png').')',
+            $out,
+            'CSS 内的相对 url() 必须改写成本站反代地址'
+        );
+    }
+
+    /** 根相对 url() 按 CSS 自身所在目录解析（CSS 规范如此），查询串要跟着路径一起走。 */
+    #[Test]
+    public function css_root_relative_and_queried_urls_follow_the_stylesheet_directory(): void
+    {
+        $out = $this->rewriteCss(
+            'a{background:url(/img/x.png)} b{background:url(../img/y.png?v=3)}',
+            '/vendor/dcimcloud/css/selectFilter.css'
+        );
+
+        $this->assertStringContainsString(
+            'url('.$this->assetProxyUrl(3915, 'TESTTICKET', '/vendor/dcimcloud/css/img/x.png').')',
+            $out,
+            '根相对 url() 相对样式表目录解析'
+        );
+        $this->assertStringContainsString(
+            'url('.$this->assetProxyUrl(3915, 'TESTTICKET', '/vendor/dcimcloud/img/y.png?v=3').')',
+            $out,
+            '查询串必须跟在路径后面一起编码，不能被当作路径段'
+        );
+    }
+
+    #[Test]
+    public function css_non_relative_and_escaping_urls_are_left_untouched(): void
+    {
+        $css = 'a{background:url(data:image/gif;base64,R0lGOD)}'
+            .'b{background:url(https://cdn.example.com/x.png)}'
+            .'c{background:url(//cdn.example.com/y.png)}'
+            .'d{mask:url(#icon)}'
+            .'e{background:url("../../../../../../etc/passwd")}';
+
+        $out = $this->rewriteCss($css, '/vendor/dcimcloud/css/a.css');
+
+        foreach ([
+            'url(data:image/gif;base64,R0lGOD)',
+            'url(https://cdn.example.com/x.png)',
+            'url(//cdn.example.com/y.png)',
+            'url(#icon)',
+            'url("../../../../../../etc/passwd")',
+        ] as $kept) {
+            $this->assertStringContainsString($kept, $out, '非相对引用（或越出站点根）必须原样保留：'.$kept);
+        }
+    }
+
+    /**
+     * JS 里的相对路径没有可枚举的可靠形态（字符串拼接、new Image().src 等），
+     * 因此只改写 CSS；这里锁住「JS 原样透传」这个边界，防止有人日后用正则去改 JS。
+     */
+    #[Test]
+    public function non_stylesheet_assets_are_passed_through_verbatim(): void
+    {
+        $js = 'var icon = "../img/icon_arrow_down.png"; new Image().src = "../img/a.png";';
+
+        $method = new ReflectionMethod(ServiceConsoleAssetService::class, 'prepareResponse');
+        $method->setAccessible(true);
+
+        $out = $method->invoke(
+            new ServiceConsoleAssetService,
+            ['body' => $js, 'content_type' => 'application/javascript; charset=UTF-8'],
+            '/vendor/dcimcloud/js/selectFilter.js',
+            fn (string $p): string => $this->assetProxyUrl(3915, 'TESTTICKET', $p)
+        );
+
+        $this->assertSame($js, $out['body'], '非样式表资源不得改写内容');
+    }
+
+    /**
+     * 反代端点前缀与 routes/v2-client.php 的 console-area/asset 路由必须一致。
+     * 路由未具名，这里手写了前缀，用本用例锁住两边不漂移。
+     */
+    #[Test]
+    public function asset_proxy_url_matches_the_client_route(): void
+    {
+        $url = $this->assetProxyUrl(3915, 'TICKET+1', '/vendor/dcimcloud/img/icon_arrow_down.png');
+
+        $this->assertStringStartsWith(
+            '/api/v2/client/services/3915/console-area/asset?',
+            $url,
+            '反代地址前缀必须与 routes/v2-client.php 的 console-area/asset 路由一致'
+        );
+        $this->assertStringContainsString('ticket=TICKET%2B1', $url, '票据必须编码，不能拼出额外参数');
+        $this->assertStringContainsString(
+            'path='.rawurlencode('/vendor/dcimcloud/img/icon_arrow_down.png'),
+            $url
+        );
+    }
+
+    /** 直接驱动反代服务的 CSS 改写（私有实现，不发起任何网络请求）。 */
+    private function rewriteCss(string $css, string $resourcePath): string
+    {
+        $method = new ReflectionMethod(ServiceConsoleAssetService::class, 'rewriteCssRelativeUrls');
+        $method->setAccessible(true);
+
+        return (string) $method->invoke(
+            new ServiceConsoleAssetService,
+            $css,
+            $resourcePath,
+            fn (string $p): string => $this->assetProxyUrl(3915, 'TESTTICKET', $p)
+        );
+    }
+
+    /** 直接驱动本站反代地址的拼装（私有实现）。 */
+    private function assetProxyUrl(int $serviceId, string $ticket, string $upstreamPath): string
+    {
+        $detailService = $this->getMockBuilder(ServiceDetailService::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['resolveSupplierRootUrl'])
+            ->getMock();
+
+        $method = new ReflectionMethod(ServiceConsoleAreaService::class, 'assetProxyUrl');
+        $method->setAccessible(true);
+
+        return (string) $method->invoke(
+            new ServiceConsoleAreaService($detailService, new ServiceConsoleAssetService),
+            $serviceId,
+            $ticket,
+            $upstreamPath
+        );
     }
 
     /** 直接驱动反代服务的路径校验（私有实现，不发起任何网络请求）。 */

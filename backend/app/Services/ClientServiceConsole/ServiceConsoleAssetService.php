@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Log;
  *
  *   - 目标地址由「服务绑定的供应商根域名 + 校验过的路径」拼出，路径不接受协议头、
  *     主机或 `..`，因此不可能被当成任意 URL 代理（防 SSRF / 开放反代）；
+ *   - CSS 内部的相对 url() 会被改写成本站地址：跨源反代换掉了相对引用的解析基准，
+ *     原样透传会让 CSS 里的图片解析到本站一个不存在的路径（详见 rewriteCssRelativeUrls）；
  *   - 命中缓存直接返回，不重复回源上游；
  *   - 回传的 Content-Type 做白名单收敛，避免把可执行内容当同源资源下发。
  */
@@ -53,9 +55,12 @@ final class ServiceConsoleAssetService
     /**
      * 取上游静态资源（带缓存）。
      *
+     * @param  callable(string):string  $proxyUrlFactory  把「上游站点内的绝对路径」包装成本站可取到的地址。
+     *                                                   用于修 CSS 内部的相对引用，见 rewriteCssRelativeUrls()。
+     *
      * @return array{body: string, content_type: string}
      */
-    public function fetch(Supplier $supplier, string $rootUrl, string $path): array
+    public function fetch(Supplier $supplier, string $rootUrl, string $path, callable $proxyUrlFactory): array
     {
         $path = $this->assertSafePath($path);
         $url = $this->buildUpstreamUrl($rootUrl, $path);
@@ -68,10 +73,7 @@ final class ServiceConsoleAssetService
             }
 
             if (is_string($cached['body'] ?? null)) {
-                return [
-                    'body' => $cached['body'],
-                    'content_type' => (string) ($cached['content_type'] ?? 'text/plain; charset=UTF-8'),
-                ];
+                return $this->prepareResponse($cached, $path, $proxyUrlFactory);
             }
         }
 
@@ -84,7 +86,106 @@ final class ServiceConsoleAssetService
 
         Cache::put($cacheKey, $asset, now()->addSeconds(self::CACHE_TTL_SECONDS));
 
-        return $asset;
+        // 改写放在这里、而不是 download() 里：缓存里留上游原文（与票据无关，可跨用户复用），
+        // 改写结果依赖当前票据，必须每次返回时重新施加，否则票据过期后改写出的地址会失效。
+        return $this->prepareResponse($asset, $path, $proxyUrlFactory);
+    }
+
+    /**
+     * @param  array{body?: mixed, content_type?: mixed}  $asset
+     * @param  callable(string):string  $proxyUrlFactory
+     * @return array{body: string, content_type: string}
+     */
+    private function prepareResponse(array $asset, string $path, callable $proxyUrlFactory): array
+    {
+        $body = (string) ($asset['body'] ?? '');
+        $contentType = (string) ($asset['content_type'] ?? 'text/plain; charset=UTF-8');
+
+        return [
+            'body' => $this->isStylesheet($contentType)
+                ? $this->rewriteCssRelativeUrls($body, $path, $proxyUrlFactory)
+                : $body,
+            'content_type' => $contentType,
+        ];
+    }
+
+    private function isStylesheet(string $contentType): bool
+    {
+        return str_starts_with(strtolower(trim(explode(';', $contentType)[0])), 'text/css');
+    }
+
+    /**
+     * 把 CSS 里相对「上游原始路径」写的 url() 改写成本站可取到的地址。
+     *
+     * 跨源反代会换掉相对引用的解析基准：浏览器是按**反代后的 URL** 解析 CSS 内的 url() 的，
+     * 而上游写的是相对它自己原始 URL 的。例如上游
+     *   /vendor/dcimcloud/css/selectFilter.css  →  url(../img/icon_arrow_down.png)
+     * 本应解析成 /vendor/dcimcloud/img/icon_arrow_down.png；经 ?path= 形式的反代 URL 加载后，
+     * 基准目录变成了反代端点所在目录，最终落到本站一个不存在的路径 → 404，图标空白。
+     *
+     * 只处理 url()：CSS 里相对引用的声明式写法只有这一种，能静态可靠解析。
+     * JS 里的相对路径（字符串拼接、new Image().src 等）没有可枚举的可靠形态，不在这里猜。
+     */
+    private function rewriteCssRelativeUrls(string $css, string $resourcePath, callable $proxyUrlFactory): string
+    {
+        // dirname('/a/b/c.css') = '/a'；根下文件退化成 '/'，下面统一归一成空串
+        $baseDir = rtrim(dirname($resourcePath), '/');
+
+        return (string) preg_replace_callback(
+            '~url\(\s*(?<quote>["\']?)(?<url>[^"\'\)\s]*)\k<quote>\s*\)~i',
+            function (array $matches) use ($baseDir, $proxyUrlFactory): string {
+                $quote = (string) $matches['quote'];
+                $url = (string) $matches['url'];
+
+                // 绝对地址、协议相对、data:、片段引用都不是相对引用，保持原样
+                if ($url === '' || preg_match('~^(?:[a-z][a-z0-9+.\-]*:|//|\#)~i', $url) === 1) {
+                    return 'url('.$quote.$url.$quote.')';
+                }
+
+                // 先摘出查询串与片段，否则 ? 会被当成路径的一段，rawurlencode 后上游收不到
+                $suffix = '';
+                if (preg_match('~^(?<path>[^?\#]*)(?<suffix>[?\#].*)?$~', $url, $parts) === 1) {
+                    $url = $parts['path'];
+                    $suffix = (string) ($parts['suffix'] ?? '');
+                }
+
+                $absolute = $this->resolveRelativePath($baseDir, $url);
+                if ($absolute === '') {
+                    return 'url('.$quote.$url.$quote.')';
+                }
+
+                return 'url('.$quote.$proxyUrlFactory($absolute.$suffix).$quote.')';
+            },
+            $css
+        );
+    }
+
+    /**
+     * 把 ./ 与 ../ 逐段解析成站点内绝对路径；越出站点根目录（或本身没有路径段）返回空串。
+     */
+    private function resolveRelativePath(string $baseDir, string $relative): string
+    {
+        $segments = $baseDir === '' ? [] : explode('/', trim($baseDir, '/'));
+
+        foreach (explode('/', $relative) as $segment) {
+            if ($segment === '' || $segment === '.') {
+                continue;
+            }
+
+            if ($segment === '..') {
+                if ($segments === []) {
+                    return '';
+                }
+
+                array_pop($segments);
+
+                continue;
+            }
+
+            $segments[] = $segment;
+        }
+
+        return $segments === [] ? '' : '/'.implode('/', $segments);
     }
 
     /**

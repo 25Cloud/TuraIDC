@@ -47,6 +47,25 @@ class ServiceConsoleAreaService
         '安全组', '安全', 'securitygroup', 'security_group', 'security-group', 'secgroup', 'firewall', 'acl',
     ];
 
+    /**
+     * 面板运行时（jQuery / Bootstrap / SweetAlert2）静态资源的基路径，
+     * 其下的 4 个文件必须真实存在于 backend/public/media/console-panel/。
+     *
+     * 为什么不能用 /vendor/console-panel：站点是单域名多路径前缀架构，根路径交给官网
+     * （frontend-user-v3-www/dist），/vendor/... 会被官网的 SPA 兜底吞掉、返回一段 HTML。
+     * 浏览器拿到的不是 jQuery，`$` 未定义 → 上游面板里 `$('#xxx').click(...)` 全部静默失效，
+     * 表现就是「面板能显示但按钮点了没反应」。
+     *
+     * /media/ 则落在 API 站点 nginx 的 root（backend/public）下，由该站点直接提供静态文件，
+     * 归属明确、可控，不经过官网的 SPA 兜底。
+     *
+     * 公开为常量：测试据此校验磁盘上确实有这些资产，避免基路径与资产实际位置再次脱节。
+     */
+    public const RUNTIME_ASSET_BASE = '/media/console-panel';
+
+    /** 上游片段里写死的旧前缀，统一改写成 RUNTIME_ASSET_BASE。 */
+    private const LEGACY_RUNTIME_ASSET_BASE = '/vendor/console-panel';
+
     public function __construct(
         private readonly ServiceDetailService $detailService,
         private readonly ServiceConsoleAssetService $assetService,
@@ -237,8 +256,26 @@ class ServiceConsoleAreaService
         return $this->assetService->fetch(
             $supplier,
             $this->detailService->resolveSupplierRootUrl($supplier),
-            $path
+            $path,
+            fn (string $upstreamPath): string => $this->assetProxyUrl($serviceId, $ticket, $upstreamPath)
         );
+    }
+
+    /**
+     * 把上游站点内的绝对路径包装成本站的资源反代地址。
+     *
+     * 供 CSS 内部的相对引用改写使用：CSS 里的 url() 是相对 **CSS 自身 URL** 解析的，
+     * 必须写成根相对；写成 HTML 里那种相对地址（asset?ticket=…&path=…）会被解析到
+     * 反代端点所在目录下，反而更错。
+     *
+     * 路径前缀与 routes/v2-client.php 的 console-area/asset 路由一致。该路由未具名，
+     * 这里手写前缀；改路由时必须同步，由 ClientServiceConsoleAreaPanelRewriteTest 锁定。
+     */
+    private function assetProxyUrl(int $serviceId, string $ticket, string $upstreamPath): string
+    {
+        return '/api/v2/client/services/'.$serviceId
+            .'/console-area/asset?ticket='.rawurlencode($ticket)
+            .'&path='.rawurlencode($upstreamPath);
     }
 
     /**
@@ -709,15 +746,9 @@ class ServiceConsoleAreaService
      */
     private function wrapInRuntimeDocument(string $html, string $headAssets = ''): string
     {
-        // 运行时资源前缀。
-        //
-        // 不能用 /vendor/console-panel：站点是单域名多路径前缀架构，nginx 把根路径
-        // 交给官网（frontend-user-v3-www/dist），/vendor/... 会被官网的 SPA 兜底吞掉、
-        // 返回一段 HTML。浏览器拿到的不是 jQuery，`$` 未定义 → 上游面板里
-        // `$('#xxx').click(...)` 全部静默失效，表现就是「面板能显示但按钮点了没反应」。
-        // /media/ 是 nginx 显式 alias 到 backend/public/media 的路径，归属明确、可控。
-        $runtimeBase = '/media/console-panel';
-        $legacyRuntimeBase = '/vendor/console-panel';
+        // 运行时资源前缀的取值理由见 RUNTIME_ASSET_BASE。
+        $runtimeBase = self::RUNTIME_ASSET_BASE;
+        $legacyRuntimeBase = self::LEGACY_RUNTIME_ASSET_BASE;
 
         $runtimeHead = '<link rel="stylesheet" href="'.$runtimeBase.'/bootstrap.min.css">'."\n";
 
