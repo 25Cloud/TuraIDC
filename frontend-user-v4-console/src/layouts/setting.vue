@@ -52,6 +52,12 @@
             </t-popup>
           </div>
         </t-radio-group>
+        <p v-if="brandThemeOverridden" class="setting-theme-follow">
+          {{ t('layout.setting.theme.followSiteHint') }}
+          <t-link theme="primary" hover="color" @click="resetBrandThemeToSite">
+            {{ t('layout.setting.theme.followSite') }}
+          </t-link>
+        </p>
         <div class="setting-group-title">{{ t('layout.setting.navigationLayout') }}</div>
         <t-radio-group v-model="formData.layout">
           <div v-for="(item, index) in LAYOUT_OPTION" :key="index" class="setting-layout-drawer">
@@ -146,6 +152,15 @@ const dynamicColor = computed(() => {
 });
 const formData = ref({ ...initStyleConfig() });
 const isColoPickerDisplay = ref(false);
+
+// 用户手动改过品牌色才显示「恢复站点色」入口；没改过时界面本身就是站点色
+const brandThemeOverridden = computed(() => settingStore.brandThemeOverridden === true);
+
+function resetBrandThemeToSite() {
+  settingStore.resetBrandThemeToSite();
+  // 同步抽屉内的表单快照，否则下面的 watchEffect 会把改色前的旧值又写回 store
+  formData.value.brandTheme = settingStore.brandTheme;
+}
 
 // 打开设置抽屉前从 store 刷新表单快照：用户在个人设置等处改了主题后，
 // 若沿用初始化时的旧 formData，watchEffect 会在打开抽屉时把旧值写回 store，撤销用户的选择。
@@ -309,6 +324,14 @@ watchEffect(() => {
   font-style: normal;
   font-weight: 500;
   color: var(--td-text-color-primary);
+}
+
+.setting-theme-follow {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: left;
+  color: var(--td-text-color-secondary);
 }
 
 .setting-link {

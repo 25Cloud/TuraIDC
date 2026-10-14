@@ -27,6 +27,10 @@ class SiteConfigResource extends JsonResource
         'privacy_url',
         'icp_record',
         'value_added_license',
+        // 品牌主色与圆角：前端据此覆盖 TDesign / Element Plus 的 CSS 变量，
+        // 值已在 SiteConfigPayload 做过严格格式校验，这里只做透传。
+        'brand_primary_color',
+        'brand_radius',
     ];
 
     /**

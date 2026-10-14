@@ -85,6 +85,8 @@
       "theme": {
         "mode": "Theme Mode",
         "color": "Theme Color",
+        "followSite": "Follow Site Brand",
+        "followSiteHint": "Using a personal color. Click to restore the brand color configured in the admin panel.",
         "options": {
           "light": "Light",
           "dark": "Dark ",

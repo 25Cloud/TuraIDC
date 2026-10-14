@@ -71,6 +71,43 @@
                   :placeholder="field.placeholder || `请选择${field.label}`"
                   @update:model-value="(value: string) => (form[field.key] = value)"
                 />
+                <t-color-picker
+                  v-else-if="field.type === 'color'"
+                  :model-value="String(form[field.key] ?? '') || undefined"
+                  :show-add-color="false"
+                  format="HEX"
+                  :clearable="true"
+                  @update:model-value="
+                    (value: unknown) => (form[field.key] = value === null ? '' : String(value ?? ''))
+                  "
+                />
+                <t-space v-else-if="field.type === 'radius'">
+                  <t-select
+                    :model-value="radiusPresetOf(form[field.key])"
+                    style="width: 180px"
+                    @update:model-value="(value: unknown) => applyRadiusPreset(field, value)"
+                  >
+                    <t-option
+                      v-for="option in RADIUS_PRESETS"
+                      :key="String(option.value)"
+                      :label="option.label"
+                      :value="option.value"
+                    />
+                    <t-option :label="RADIUS_CUSTOM_LABEL" :value="RADIUS_CUSTOM" />
+                  </t-select>
+                  <t-input-number
+                    v-if="radiusPresetOf(form[field.key]) === RADIUS_CUSTOM"
+                    style="width: 140px"
+                    :model-value="form[field.key] as FieldNumberValue"
+                    theme="normal"
+                    :min="0"
+                    :max="24"
+                    :placeholder="`请输入${field.label}（px）`"
+                    @update:model-value="
+                      (value: unknown) => (form[field.key] = value as FieldNumberValue)
+                    "
+                  />
+                </t-space>
                 <div v-else-if="field.type === 'image'" class="cover-image-selector" @click="selectImage(field)">
                   <image-icon />
                   <span v-if="form[field.key]" class="cover-image-selector__name">{{
@@ -454,7 +491,18 @@ import { errorMessage } from '@/utils/userMessage';
 defineOptions({ name: 'AdminSettings' });
 
 type SettingsTab = 'referral' | 'finance' | 'automation' | 'log_archive' | 'site_basic' | 'site_hero';
-type FieldType = 'input' | 'password' | 'textarea' | 'switch' | 'select' | 'number' | 'image' | 'time';
+type FieldType =
+  | 'input'
+  | 'password'
+  | 'textarea'
+  | 'switch'
+  | 'select'
+  | 'number'
+  | 'image'
+  | 'time'
+  // 品牌主色取色器；radius 为「预设档位 + 自定义像素」联动，两者都是无级联的下拉替代品
+  | 'color'
+  | 'radius';
 type FieldValue = string | number | boolean | null;
 type FieldStringValue = string | number | null;
 type FieldNumberValue = number | null;
@@ -462,6 +510,44 @@ type FieldNumberValue = number | null;
 interface FieldOption {
   label: string;
   value: string | number | boolean;
+}
+
+/**
+ * 圆角预设档位。
+ *
+ * 档位值取自项目既有规范（控件 3px / 容器 6px），商家选档位即可覆盖全站三端；
+ * 选「自定义」则直接填像素值，后端会校验 0–24 后再下发。
+ */
+const RADIUS_PRESETS: FieldOption[] = [
+  { label: '直角（0px）', value: 0 },
+  { label: '紧凑（3px）', value: 3 },
+  { label: '标准（6px）', value: 6 },
+  { label: '柔和（12px）', value: 12 },
+];
+const RADIUS_CUSTOM = 'custom';
+const RADIUS_CUSTOM_LABEL = '自定义…';
+
+/** 当前值命中哪个预设；命中不到就按自定义处理，这样手填的值不会被下拉悄悄改掉 */
+function radiusPresetOf(value: FieldValue): string | number {
+  const numeric = Number(value);
+  // 预设值全是数字，用 Number 收窄类型的同时也避免把 boolean 带进 t-select 的 value
+  const matched = RADIUS_PRESETS.find((option) => Number(option.value) === numeric);
+
+  return matched ? Number(matched.value) : RADIUS_CUSTOM;
+}
+
+function applyRadiusPreset(field: SettingField, value: unknown) {
+  if (value === RADIUS_CUSTOM) {
+    // 切到自定义时保留原有数值；若原本就没有合法值，给一个居中的默认值
+    const current = Number(form[field.key]);
+    if (!Number.isFinite(current) || current < 0) {
+      form[field.key] = 8;
+    }
+
+    return;
+  }
+
+  form[field.key] = Number(value);
 }
 
 interface SettingField {
@@ -852,6 +938,25 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             placeholder: '/branding/logo.png',
             help: '用于用户控制台侧边栏与登录页 Logo，留空则使用站点 Favicon。',
           },
+          {
+            key: 'brand_primary_color',
+            label: '品牌主色',
+            type: 'color',
+            default: '#165DFF',
+            maxlength: 7,
+            pattern: /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/,
+            patternMessage: '品牌主色必须是 #RRGGBG 或 #RGB 格式',
+            help: '按钮、链接、选中态等强调色。官网、用户控制台、管理端三端统一生效；控制台用户仍可在自己设置里临时改色。',
+          },
+          {
+            key: 'brand_radius',
+            label: '界面圆角',
+            type: 'radius',
+            default: 6,
+            min: 0,
+            max: 24,
+            help: '控件取该值的一半、容器取该值。档位与项目既有规范一致（控件 3px / 容器 6px），选「自定义」可直接填像素。',
+          },
           { key: 'service_phone', label: '官方QQ群', type: 'input', default: '', maxlength: 40 },
           {
             key: 'service_email',
@@ -1052,7 +1157,7 @@ function validateSettings() {
       MessagePlugin.warning(`请填写${field.label}`);
       return false;
     }
-    if (field.type === 'number') {
+    if (field.type === 'number' || field.type === 'radius') {
       const num = Number(value);
       if (!Number.isFinite(num)) {
         MessagePlugin.warning(`${field.label}必须是数字`);
@@ -1151,7 +1256,7 @@ async function revealSettingSecret(field: SettingField) {
 function parseFieldValue(field: SettingField, raw: unknown): FieldValue {
   if (raw === undefined || raw === null || raw === '') return field.default ?? (field.type === 'switch' ? false : '');
   if (field.type === 'switch') return raw === true || raw === 1 || raw === '1' || raw === 'true';
-  if (field.type === 'number') {
+  if (field.type === 'number' || field.type === 'radius') {
     const parsed = Number(raw);
     return Number.isFinite(parsed) ? parsed : Number(field.default || 0);
   }

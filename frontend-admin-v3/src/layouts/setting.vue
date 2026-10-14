@@ -23,36 +23,7 @@
         </t-radio-group>
 
         <div class="setting-group-title">{{ t('layout.setting.theme.color') }}</div>
-        <t-radio-group v-model="formData.brandTheme">
-          <div v-for="(item, index) in DEFAULT_COLOR_OPTIONS" :key="index" class="setting-layout-drawer">
-            <t-radio-button :key="index" :value="item" class="setting-layout-color-group">
-              <color-container :value="item" />
-            </t-radio-button>
-          </div>
-          <div class="setting-layout-drawer">
-            <t-popup
-              destroy-on-close
-              expand-animation
-              placement="bottom-right"
-              trigger="click"
-              :visible="isColorPickerDisplay"
-              :overlay-style="{ padding: 0 }"
-              @visible-change="onPopupVisibleChange"
-            >
-              <template #content>
-                <t-color-picker-panel
-                  :on-change="changeColor"
-                  :color-modes="['monochrome']"
-                  format="HEX"
-                  :swatch-colors="[]"
-                />
-              </template>
-              <t-radio-button :value="dynamicColor" class="setting-layout-color-group dynamic-color-btn">
-                <color-container :value="dynamicColor" />
-              </t-radio-button>
-            </t-popup>
-          </div>
-        </t-radio-group>
+        <p class="setting-theme-readonly">{{ t('layout.setting.theme.siteManaged') }}</p>
 
         <div class="setting-group-title">{{ t('layout.setting.navigationLayout') }}</div>
         <t-radio-group v-model="formData.layout" :disabled="isMobile">
@@ -95,12 +66,9 @@
   </t-drawer>
 </template>
 <script setup lang="ts">
-import type { PopupVisibleChangeContext } from 'tdesign-vue-next';
 import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue';
 
-import ColorContainer from '@/components/color/index.vue';
 import Thumbnail from '@/components/thumbnail/index.vue';
-import { DEFAULT_COLOR_OPTIONS } from '@/config/color';
 import STYLE_CONFIG from '@/config/style';
 import { t } from '@/locales';
 import { useSettingStore } from '@/store';
@@ -139,22 +107,6 @@ const initStyleConfig = () => {
 };
 
 const formData = ref({ ...initStyleConfig() });
-const isColorPickerDisplay = ref(false);
-
-const dynamicColor = computed(() => {
-  const isDynamic = DEFAULT_COLOR_OPTIONS.includes(formData.value.brandTheme);
-  return isDynamic ? formData.value.brandTheme : '';
-});
-
-const changeColor = (hex: string) => {
-  formData.value.brandTheme = hex;
-};
-
-const onPopupVisibleChange = (visible: boolean, context: PopupVisibleChangeContext) => {
-  if (!visible && context.trigger === 'document') {
-    isColorPickerDisplay.value = visible;
-  }
-};
 
 // 手机端强制锁定为第一个布局（side），并禁用切换
 watchEffect(() => {
@@ -212,6 +164,14 @@ watchEffect(() => {
 <!-- teleport导致drawer 内 scoped样式问题无法生效 先规避下 -->
 <!-- eslint-disable-next-line vue-scoped-css/enforce-style-type -->
 <style lang="less">
+.setting-theme-readonly {
+  margin: 0;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: left;
+  color: var(--td-text-color-secondary);
+}
+
 .tdesign-setting {
   z-index: 100;
   position: fixed;

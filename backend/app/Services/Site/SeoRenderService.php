@@ -6,6 +6,7 @@ namespace App\Services\Site;
 
 use App\Models\ContentArticle;
 use App\Services\Content\ContentArticleService;
+use App\Support\BrandThemeTokens;
 use App\Support\ContentPublishedCacheVersion;
 use App\Support\RichHtmlSanitizer;
 use App\Support\Seo\SeoLandingPages;
@@ -416,11 +417,21 @@ HTML;
                 'site_favicon' => $this->absoluteAssetUrl($siteUrl, (string) ($siteConfig['site_favicon'] ?? '')),
                 'icp_record' => (string) ($siteConfig['icp_record'] ?? ''),
                 'value_added_license' => (string) ($siteConfig['value_added_license'] ?? ''),
+                'brand_primary_color' => (string) $siteConfig['brand_primary_color'],
+                'brand_radius' => (string) $siteConfig['brand_radius'],
             ],
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP
         );
 
-        $bootstrapScript = '<script>window.__CW_SITE_CONFIG__='.$bootstrap.';</script>';
+        // 品牌 CSS 变量必须和站点配置一起、进到 head 里最靠前的位置：
+        // 它是 :root 覆盖，与框架样式表的先后无关，插在任何脚本之前即可生效，
+        // 从而保证首屏就是品牌色，不会先闪一下编译期默认色。
+        $brandStyle = BrandThemeTokens::styleTag(
+            (string) $siteConfig['brand_primary_color'],
+            (int) $siteConfig['brand_radius'],
+        );
+
+        $bootstrapScript = $brandStyle."\n".'<script>window.__CW_SITE_CONFIG__='.$bootstrap.';</script>';
 
         $shell = preg_replace_callback(
             '/<script type="module"/i',

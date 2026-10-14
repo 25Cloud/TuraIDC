@@ -6,7 +6,12 @@ import { DARK_CHART_COLORS, LIGHT_CHART_COLORS } from '@/config/color';
 import STYLE_CONFIG from '@/config/style';
 import { store } from '@/store';
 import type { ModeType } from '@/types/interface';
-import { generateColorMap, insertThemeStylesheet } from '@/utils/color';
+import {
+  generateColorMap,
+  insertRadiusVariables,
+  insertThemeStylesheet,
+  normalizeHexColor,
+} from '@/utils/color';
 
 const state: Record<string, any> = {
   ...STYLE_CONFIG,
@@ -14,6 +19,16 @@ const state: Record<string, any> = {
   isMobileSidebarVisible: false,
   colorList: {} as TColorSeries,
   chartColors: LIGHT_CHART_COLORS,
+  /**
+   * 后台「站点基础设置」下发的品牌主色与圆角（system.brand_* → basic.brand_*）。
+   *
+   * 与 brandTheme 的关系：brandTheme 是「实际生效值」，用户手动改过就以它为准；
+   * 没改过时跟随站点色。本字段只保存来源，供「跟随站点」重置使用。
+   */
+  siteBrandColor: '',
+  siteBrandRadius: '',
+  /** 用户是否手动改过品牌色；为 false 时站点色变化会实时生效 */
+  brandThemeOverridden: false,
 };
 
 export type TState = typeof state;
@@ -102,6 +117,37 @@ export const useSettingStore = defineStore('setting', {
       insertThemeStylesheet(brandTheme, colorMap, mode);
       document.documentElement.setAttribute('theme-color', brandTheme);
     },
+    /**
+     * 应用后台下发的站点品牌色与圆角。
+     *
+     * 品牌色：用户手动改过（brandThemeOverridden）时不覆盖，保留个性化；
+     * 未改过则跟随站点，换了后台配置刷新即生效。圆角没有用户覆盖入口，直接跟随站点。
+     */
+    applySiteBrandTokens(tokens: { color?: string; radius?: string }) {
+      const color = normalizeHexColor(tokens.color);
+      if (color) {
+        this.siteBrandColor = color;
+        if (!this.brandThemeOverridden) {
+          this.brandTheme = color;
+          this.changeBrandTheme(color);
+        }
+      }
+
+      const radius = Number.parseInt(tokens.radius || '', 10);
+      if (Number.isFinite(radius) && radius >= 0 && radius <= 24) {
+        this.siteBrandRadius = String(radius);
+        insertRadiusVariables(radius);
+      }
+    },
+
+    /** 设置面板里的「跟随站点」：丢掉用户改色，回到后台下发的品牌色 */
+    resetBrandThemeToSite() {
+      this.brandThemeOverridden = false;
+      if (!this.siteBrandColor) return;
+      this.brandTheme = this.siteBrandColor;
+      this.changeBrandTheme(this.siteBrandColor);
+    },
+
     updateConfig(payload: Partial<TState>) {
       for (const key in payload) {
         if (payload[key as TStateKey] !== undefined) {
@@ -114,13 +160,15 @@ export const useSettingStore = defineStore('setting', {
           this.changeSideMode(payload[key] as ModeType);
         }
         if (key === 'brandTheme') {
+          // 用户主动改色即视为个性化选择，此后不再被后台站点色覆盖
+          this.brandThemeOverridden = true;
           this.changeBrandTheme(payload[key]);
         }
       }
     },
   },
   persist: {
-    pick: [...Object.keys(STYLE_CONFIG), 'colorList', 'chartColors'],
+    pick: [...Object.keys(STYLE_CONFIG), 'colorList', 'chartColors', 'siteBrandColor', 'siteBrandRadius', 'brandThemeOverridden'],
   },
 });
 

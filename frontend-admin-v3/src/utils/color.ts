@@ -108,3 +108,41 @@ export function insertThemeStylesheet(theme: string, colorMap: TColorToken, mode
 
   document.head.appendChild(styleSheet);
 }
+
+/**
+ * 规范化后台下发的品牌色：只接受严格十六进制，三位展开成六位并统一小写。
+ *
+ * 与后端 SiteConfigPayload::normalizeColor 口径一致——该值会被写进
+ * :root[theme-color='...'] 选择器，放行宽松格式等于放开 CSS 选择器注入。
+ */
+export function normalizeHexColor(value?: string): string {
+  const raw = (value || '').trim();
+
+  if (/^#([0-9a-fA-F]{3})$/.test(raw)) {
+    const hex = raw.slice(1);
+    return `#${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`.toLowerCase();
+  }
+
+  if (/^#([0-9a-fA-F]{6})$/.test(raw)) {
+    return raw.toLowerCase();
+  }
+
+  return '';
+}
+
+/**
+ * 把圆角基数写进 :root 的行内样式。
+ *
+ * 用行内样式而不是再插一个 <style>：圆角没有浅深两套，也不参与色阶缓存，
+ * 行内属性天然幂等，重复设置不会像 insertThemeStylesheet 那样不断堆 style 元素。
+ */
+export function insertRadiusVariables(radius: number) {
+  const small = Math.round(radius / 2);
+  const large = Math.round(radius * 1.5);
+  const root = document.documentElement;
+
+  root.style.setProperty('--td-radius-small', `${small}px`);
+  root.style.setProperty('--td-radius-default', `${small}px`);
+  root.style.setProperty('--td-radius-medium', `${radius}px`);
+  root.style.setProperty('--td-radius-large', `${large}px`);
+}

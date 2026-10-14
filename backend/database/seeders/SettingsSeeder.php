@@ -58,6 +58,11 @@ class SettingsSeeder extends Seeder
             'value_added_license' => '',
             'terms_url' => '',
             'privacy_url' => '',
+            // 品牌主色与圆角：一处配置下发到官网 / 用户控制台 / 管理端三端共用。
+            // 主色默认 TDesign 品牌蓝；圆角默认 6px（项目规范：容器 6px、控件 3px）。
+            // 两者都会被内联进首屏 HTML 的 CSS 变量，消费侧只接受校验过的值。
+            'brand_primary_color' => '#165DFF',
+            'brand_radius' => '6',
         ]);
 
         $notificationDefaults = [

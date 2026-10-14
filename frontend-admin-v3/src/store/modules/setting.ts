@@ -7,7 +7,12 @@ import { DARK_CHART_COLORS, LIGHT_CHART_COLORS } from '@/config/color';
 import STYLE_CONFIG from '@/config/style';
 import { store } from '@/store';
 import type { ModeType } from '@/types/interface';
-import { generateColorMap, insertThemeStylesheet } from '@/utils/color';
+import {
+  generateColorMap,
+  insertRadiusVariables,
+  insertThemeStylesheet,
+  normalizeHexColor,
+} from '@/utils/color';
 
 const state: Record<string, any> = {
   ...STYLE_CONFIG,
@@ -102,6 +107,24 @@ export const useSettingStore = defineStore('setting', {
       // TODO 需要解决不停切换时有反复插入 style 的问题
       insertThemeStylesheet(brandTheme, colorMap, mode);
       document.documentElement.setAttribute('theme-color', brandTheme);
+    },
+    /**
+     * 应用后台「站点基础设置」下发的品牌主色与圆角。
+     *
+     * 管理端固定跟随站点色、不提供个人改色入口，因此这里直接覆盖 brandTheme，
+     * 不同于用户控制台要区分「用户是否手动改过」。
+     */
+    applySiteBrandTokens(tokens: { color?: string; radius?: string }) {
+      const color = normalizeHexColor(tokens.color);
+      if (color) {
+        this.brandTheme = color;
+        this.changeBrandTheme(color);
+      }
+
+      const radius = Number.parseInt(tokens.radius || '', 10);
+      if (Number.isFinite(radius) && radius >= 0 && radius <= 24) {
+        insertRadiusVariables(radius);
+      }
     },
     updateConfig(payload: Partial<TState>) {
       for (const key in payload) {

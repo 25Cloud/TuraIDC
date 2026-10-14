@@ -85,6 +85,8 @@
       "theme": {
         "mode": "主题模式",
         "color": "主题色",
+        "followSite": "跟随站点品牌色",
+        "followSiteHint": "当前使用个人配色，点击可恢复后台配置的品牌色",
         "options": {
           "light": "明亮",
           "dark": "深色",

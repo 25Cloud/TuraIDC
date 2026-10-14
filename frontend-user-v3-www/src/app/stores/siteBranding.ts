@@ -11,6 +11,7 @@ import {
 import siteApi from "@/api/site";
 import { DEFAULT_SUPPORT_CONTACTS } from "@/data/supportContacts";
 import { resolveApiAssetUrl } from "@/utils/apiAssetUrl";
+import { applyBrandTokens } from "@/utils/brandTheme";
 import { normalizeExternalLink } from "@/utils/externalLink";
 
 // 接口不可用时的兜底：只认构建期环境变量，不写死任何默认品牌，
@@ -249,6 +250,13 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
       DEFAULT_SITE_NAME,
     );
     updateFavicon(siteFavicon.value || DEFAULT_FAVICON, DEFAULT_FAVICON);
+
+    // 品牌主色与圆角：SSR 页面由后端内联 style 注入（首屏无闪烁），
+    // SPA 直达路由没有那段注入，这里补上，否则会停在 sass 编译期的默认色。
+    applyBrandTokens(
+      pick(data, ["brand_primary_color", "brandPrimaryColor"], ""),
+      pick(data, ["brand_radius", "brandRadius"], ""),
+    );
     // 缓存给下一次首帧用：index.html 的注入脚本在 Vue 挂载前就渲染完了，
     // 拿不到这里的配置，只能靠上一次访问留下的站点名 / logo / favicon。
     persistSplashBranding({

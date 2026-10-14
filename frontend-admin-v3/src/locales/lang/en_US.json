@@ -81,6 +81,7 @@
       "theme": {
         "mode": "Theme Mode",
         "color": "Theme Color",
+        "siteManaged": "The theme color is managed centrally under System Settings → Site Basics, so it stays consistent with the public site and cannot be changed here.",
         "options": {
           "light": "Light",
           "dark": "Dark ",

@@ -5,6 +5,7 @@ import { computed, ref } from 'vue';
 import siteApi from '@/api/site';
 import { DEFAULT_SUPPORT_CONTACTS } from '@/data/supportContacts';
 import { resolveApiManagedAssetUrl } from '@/utils/apiOrigin';
+import { getSettingStore } from '@/store/modules/setting';
 
 // 接口不可用时的兜底：只认构建期环境变量，不写死任何默认品牌，
 // 否则自建站在配置接口失败时会漏出别人的站点名。
@@ -147,6 +148,18 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
     frontendUrl.value = pick(data, ['frontend_url'], frontendUrl.value || '');
     syncDocumentTitle(browserTitle.value || siteName.value || DEFAULT_SITE_NAME, previousBaseTitle, DEFAULT_SITE_NAME);
     updateFavicon(siteFavicon.value || DEFAULT_FAVICON, DEFAULT_FAVICON);
+
+    // 品牌主色与圆角：控制台默认跟随站点配置，用户手动改过色则保留其个性化选择。
+    // 接在这里而不是 fetchSiteConfig 的回调里：预取、强刷、SSR 兜底三条取数路径
+    // 最终都汇到 hydrateSiteConfig 一处，行为才不会分叉。
+    try {
+      getSettingStore().applySiteBrandTokens({
+        color: pick(data, ['brand_primary_color', 'brandPrimaryColor'], ''),
+        radius: pick(data, ['brand_radius', 'brandRadius'], ''),
+      });
+    } catch {
+      // 主题应用失败不该连累站点名 / logo 等基础品牌信息的渲染，静默降级即可
+    }
   }
 
   async function fetchSiteConfig(options: { force?: boolean } = {}) {
