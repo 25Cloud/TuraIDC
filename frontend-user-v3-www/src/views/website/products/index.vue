@@ -797,7 +797,10 @@
                   </div>
                 </div>
                 <div
-                  v-if="desktopMachineExtraConfigs.length"
+                  v-if="
+                    desktopMachineCoreConfigs.length ||
+                    desktopMachineExtraConfigs.length
+                  "
                   class="desktop-machine-extra-list"
                 >
                   <!-- CPU / 内存 同样是配置项时必须照常渲染：这个分支只取
@@ -805,7 +808,12 @@
                        vCPU / 内存 列只是展示当前选中值、不是选择控件。
                        否则 CPU/内存 由配置项下发的商品（如「弹性游戏云」，
                        上游可选 2/4/6/8/16 核、4~32G）在桌面端根本选不了，
-                       只能吃商品默认规格。移动端一直是渲染的，这里补齐对齐。 -->
+                       只能吃商品默认规格。移动端一直是渲染的，这里补齐对齐。
+
+                       判断条件必须带上 desktopMachineCoreConfigs：下面那个
+                       v-else 是机型表（desktopMachineSpecRows）的 else，不是
+                       本分支的，所以「只有 CPU/内存、没有其它机型附加项」的商品
+                       一旦有机型表，两个分支都不会命中，选择控件会整个消失。 -->
                   <template
                     v-for="cfg in desktopMachineCoreConfigs"
                     :key="cfg.key"
@@ -868,6 +876,9 @@
                   </template>
                 </div>
               </div>
+              <!-- 注意：这个 v-else 属于上面 desktopMachineSpecRows 的 v-if
+                   （没有机型表时兜底渲染全部机型配置），不是
+                   desktop-machine-extra-list 的 else。 -->
               <div v-else class="spec-list">
                 <template v-for="cfg in machineConfigs" :key="cfg.key">
                   <MobileRangePicker
