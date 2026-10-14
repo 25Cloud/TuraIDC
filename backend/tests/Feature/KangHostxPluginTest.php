@@ -17,6 +17,7 @@ use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
+use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\ProviderRegistry;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Client\Request;
@@ -167,10 +168,14 @@ class KangHostxPluginTest extends TestCase
         $supplier = $this->makeSupplier();
         $this->assertSame('kanghostx:88', $runtime->login($supplier));
 
-        $balance = $renewal->getBalance($supplier);
-        $this->assertSame('0.00', $balance['balance'] ?? null);
-        $this->assertSame('connected', $balance['connection_status'] ?? null);
-        $this->assertSame('连接正常', $balance['connection_message'] ?? null);
+        // 康乐上游没有余额查询接口：不再声明余额能力，也不再伪造 balance，
+        // 否则余额同步会拿到 0 并发「上游余额不足」的假告警。
+        $this->assertFalse($driver?->supports(ProvidesSupplierBalance::class));
+
+        $connection = $renewal->getBalance($supplier);
+        $this->assertArrayNotHasKey('balance', $connection);
+        $this->assertSame('connected', $connection['connection_status'] ?? null);
+        $this->assertSame('连接正常', $connection['connection_message'] ?? null);
 
         $detail = $runtime->getHostDetail($supplier, 456);
         $this->assertSame('Suspended', $detail['data']['host']['domainstatus'] ?? null);
