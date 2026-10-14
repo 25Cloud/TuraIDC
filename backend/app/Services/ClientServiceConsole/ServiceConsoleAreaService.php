@@ -6,6 +6,7 @@ namespace App\Services\ClientServiceConsole;
 
 use App\Exceptions\BusinessException;
 use App\Models\Service;
+use App\Models\Setting;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Support\SensitiveDataSanitizer;
@@ -88,13 +89,13 @@ class ServiceConsoleAreaService
         ]);
 
         if (! $this->detailService->canManageService($service)) {
-            return $this->capabilityPayload(false, '');
+            return $this->withPreloadPolicy($this->capabilityPayload(false, ''));
         }
 
         $cacheKey = $this->buildCapabilitiesCacheKey($service);
         $cached = Cache::get($cacheKey);
         if (is_array($cached)) {
-            return $cached;
+            return $this->withPreloadPolicy($cached);
         }
 
         try {
@@ -123,7 +124,7 @@ class ServiceConsoleAreaService
 
             Cache::put($cacheKey, $capabilities, now()->addSeconds(self::CAPABILITIES_CACHE_TTL_SECONDS));
 
-            return $capabilities;
+            return $this->withPreloadPolicy($capabilities);
         } catch (\Throwable $exception) {
             Log::warning('[服务控制台] 读取自定义区域能力失败', [
                 'service_id' => (int) $service->id,
@@ -133,8 +134,64 @@ class ServiceConsoleAreaService
             $payload = $this->capabilityPayload(false, '读取上游功能面板失败，请稍后重试');
             Cache::put($cacheKey, $payload, now()->addSeconds(self::CAPABILITIES_CACHE_TTL_SECONDS));
 
-            return $payload;
+            return $this->withPreloadPolicy($payload);
         }
+    }
+
+    /**
+     * 附上「面板区域是否全量预热」这一策略位。
+     *
+     * 这个字段刻意不写进 capabilities 缓存：那份缓存 300 秒，而 settings 分组缓存会在
+     * 管理员保存时主动失效。挂在返回路径上，管理员改完开关立即生效，不必等能力缓存过期。
+     *
+     * @param  array<string, mixed>  $capabilities
+     * @return array<string, mixed>
+     */
+    private function withPreloadPolicy(array $capabilities): array
+    {
+        $capabilities['area_preload_all'] = $this->areaPreloadAllEnabled();
+
+        return $capabilities;
+    }
+
+    /**
+     * 后台「集成插件 → 上游面板预热」开关（system.console_area_preload_all_enabled）。
+     *
+     * 缺省为开启：默认拿「切换零等待」，要退回「只预热第一个区域」的管理员再显式关掉。
+     * 读不到设置时同样按开启处理，避免 settings 表异常导致全站面板突然变慢。
+     */
+    private function areaPreloadAllEnabled(): bool
+    {
+        try {
+            $value = Setting::getValue('system', 'console_area_preload_all_enabled', '1');
+        } catch (\Throwable) {
+            // capabilitiesForUser 的契约是「上游挂了也降级返回、不抛错」，设置读取同理：
+            // settings 表故障不该把整个控制台能力接口变成 500。降级为默认开启。
+            return true;
+        }
+
+        return $this->interpretPreloadSetting($value);
+    }
+
+    /**
+     * 设置表里的取值一律是字符串，统一在这里解释成布尔。
+     * 抽成纯函数是为了能脱离数据库单测取值口径。
+     */
+    private function interpretPreloadSetting(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        $normalized = strtolower(trim((string) $value));
+
+        // 空值等同于「未配置」：按开启处理。设置项被清空或 settings 表缺失时不该让
+        // 全站面板静默退回单区域预热。口径与管理端 integration-plugins 的开关一致。
+        if ($normalized === '') {
+            return true;
+        }
+
+        return in_array($normalized, ['1', 'true', 'on', 'yes'], true);
     }
 
     // ── iframe 访问票据 ───────────────────────────────────────────────────

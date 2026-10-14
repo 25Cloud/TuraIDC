@@ -189,6 +189,40 @@ class ClientServiceConsoleAreaTabDerivationTest extends TestCase
     }
 
     /**
+     * 预热开关（system.console_area_preload_all_enabled）的取值口径。
+     *
+     * 默认开启是产品决定：进入控制台就把所有自定义区域 iframe 拉起来，切换零等待；
+     * 想要「只预热第一个」的管理员再显式关掉。空值同样按开启处理 —— 设置项被清空或
+     * settings 表读不到时，不该让全站面板静默退回单区域预热。
+     */
+    #[Test]
+    public function area_preload_switch_defaults_to_on(): void
+    {
+        foreach ([null, '', '1', 1, 'true', 'TRUE', ' on ', 'yes', true] as $value) {
+            $this->assertTrue(
+                $this->interpretPreload($value),
+                '该取值应解释为开启预热：'.var_export($value, true)
+            );
+        }
+
+        foreach (['0', 0, 'false', 'off', 'no', false] as $value) {
+            $this->assertFalse(
+                $this->interpretPreload($value),
+                '该取值应解释为关闭预热：'.var_export($value, true)
+            );
+        }
+    }
+
+    private function interpretPreload(mixed $value): bool
+    {
+        $service = (new ReflectionClass(ServiceConsoleAreaService::class))->newInstanceWithoutConstructor();
+        $method = new ReflectionMethod(ServiceConsoleAreaService::class, 'interpretPreloadSetting');
+        $method->setAccessible(true);
+
+        return (bool) $method->invoke($service, $value);
+    }
+
+    /**
      * @param  array<string, mixed>  $capabilities
      * @param  array<string, mixed>  $header
      * @return array<string, mixed>

@@ -11,9 +11,27 @@
         </div>
         <t-switch
           v-model="originCheckEnabled"
-          :loading="originCheckLoading || originCheckSaving"
+          :loading="panelSettingsLoading || originCheckSaving"
           :disabled="!canManageSettings"
           @change="saveOriginCheck"
+        />
+      </div>
+    </t-card>
+
+    <t-card v-if="activeDomain === 'upstream'" :bordered="false" class="upstream-origin-check-card">
+      <div class="upstream-origin-check">
+        <div class="upstream-origin-check__text">
+          <strong>面板区域首屏预热</strong>
+          <span>
+            开启后进入控制台就把所有自定义面板（魔方兼容 tab）一起加载好，切换 tab 无需等待；
+            关闭后只加载第一个面板，其余切到时才加载，可避免多个面板同时加载占用首屏带宽。
+          </span>
+        </div>
+        <t-switch
+          v-model="areaPreloadAllEnabled"
+          :loading="panelSettingsLoading || areaPreloadAllSaving"
+          :disabled="!canManageSettings"
+          @change="saveAreaPreloadAll"
         />
       </div>
     </t-card>
@@ -688,8 +706,12 @@ const canManagePlugins = computed(() => hasAdminPermission(AdminPermissions.INTE
 const canManageSettings = computed(() => hasAdminPermission(AdminPermissions.SETTINGS_MANAGE));
 // 上游面板同源检测开关：设置项 system.console_module_origin_check_enabled
 const originCheckEnabled = ref(true);
-const originCheckLoading = ref(false);
 const originCheckSaving = ref(false);
+// 面板区域首屏预热开关：设置项 system.console_area_preload_all_enabled，缺省开启
+const areaPreloadAllEnabled = ref(true);
+const areaPreloadAllSaving = ref(false);
+// 两个开关都读 system 分组，一次请求一起取回，不必各打一遍
+const panelSettingsLoading = ref(false);
 const canTestPlugins = computed(() => hasAdminPermission(AdminPermissions.INTEGRATION_PLUGIN_TEST));
 const canRevealPluginSecrets = computed(() => hasAdminPermission(AdminPermissions.INTEGRATION_PLUGIN_SECRET_REVEAL));
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
@@ -715,7 +737,7 @@ const loadingSecretKeys = reactive<Record<string, boolean>>({});
 
 onMounted(() => {
   loadPlugins();
-  loadOriginCheck();
+  loadUpstreamPanelSettings();
 });
 
 function normalizeDomain(value: unknown): IntegrationPluginDomain | null {
@@ -734,7 +756,7 @@ watch(
     if (nextDomain === activeDomain.value) return;
     activeDomain.value = nextDomain;
     loadPlugins();
-    loadOriginCheck();
+    loadUpstreamPanelSettings();
   },
 );
 
@@ -756,19 +778,34 @@ async function loadPlugins() {
   }
 }
 
-async function loadOriginCheck() {
+/**
+ * 「上游」域的两个面板开关一次取回：都在 system 分组里，
+ * 分开请求会把同一个分组重复打一遍。
+ */
+async function loadUpstreamPanelSettings() {
   if (activeDomain.value !== 'upstream') return;
 
-  originCheckLoading.value = true;
+  panelSettingsLoading.value = true;
   try {
     const response = await settingsApi.list({ group: 'system', page_size: 100 });
-    const item = (response.list || []).find((entry) => entry.key === 'console_module_origin_check_enabled');
-    const raw = item ? item.value : null;
-    originCheckEnabled.value = raw === null || raw === '' ? true : isTruthySetting(raw);
+    const list = response.list || [];
+    // 空值等同「未配置」：返回 null 表示不覆盖，保持各自的默认值
+    const read = (key: string): boolean | null => {
+      const item = list.find((entry) => entry.key === key);
+      const raw = item ? item.value : null;
+
+      return raw === null || raw === '' ? null : isTruthySetting(raw);
+    };
+
+    const originCheck = read('console_module_origin_check_enabled');
+    if (originCheck !== null) originCheckEnabled.value = originCheck;
+
+    const preloadAll = read('console_area_preload_all_enabled');
+    if (preloadAll !== null) areaPreloadAllEnabled.value = preloadAll;
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载同源检测设置失败'));
+    MessagePlugin.error(errorMessage(error, '加载上游面板设置失败'));
   } finally {
-    originCheckLoading.value = false;
+    panelSettingsLoading.value = false;
   }
 }
 
@@ -795,6 +832,28 @@ async function saveOriginCheck(value: string | number | boolean) {
     MessagePlugin.error(errorMessage(error, '保存同源检测设置失败'));
   } finally {
     originCheckSaving.value = false;
+  }
+}
+
+async function saveAreaPreloadAll(value: string | number | boolean) {
+  if (!canManageSettings.value) {
+    MessagePlugin.warning('当前账号无系统设置权限');
+    areaPreloadAllEnabled.value = !value;
+    return;
+  }
+
+  areaPreloadAllSaving.value = true;
+  try {
+    await settingsApi.save({
+      group: 'system',
+      settings: { console_area_preload_all_enabled: value ? 1 : 0 },
+    });
+    MessagePlugin.success(value ? '已开启面板区域首屏预热' : '已关闭面板区域首屏预热');
+  } catch (error) {
+    areaPreloadAllEnabled.value = !value;
+    MessagePlugin.error(errorMessage(error, '保存面板预热设置失败'));
+  } finally {
+    areaPreloadAllSaving.value = false;
   }
 }
 

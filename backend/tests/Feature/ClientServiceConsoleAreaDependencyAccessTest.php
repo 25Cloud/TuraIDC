@@ -85,6 +85,10 @@ class ClientServiceConsoleAreaDependencyAccessTest extends TestCase
             'nat_supported' => false,
             'monitor_supported' => false,
             'fetchable' => false,
+            // 本用例没有应用容器，Setting::getValue 会抛 BindingResolutionException。
+            // areaPreloadAllEnabled 必须降级为默认开启 —— capabilitiesForUser 的契约是
+            // 「上游挂了也降级返回、不抛错」，settings 表故障同理，不该把能力接口变成 500。
+            'area_preload_all' => true,
         ], $payload);
     }
 

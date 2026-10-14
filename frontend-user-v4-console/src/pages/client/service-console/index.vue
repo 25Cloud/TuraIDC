@@ -15,12 +15,17 @@
         <main class="console-content">
           <!-- 面板信息（自定义区域）常驻挂载：进入控制台就后台把 iframe 加载好，
                切 tab 时只是显示已渲染好的同一个实例，不再等上游往返 + 静态资源加载。
-               面板内容接口是 no-store，浏览器缓存复用不了，只能靠「iframe 不销毁」来预热。 -->
+               面板内容接口是 no-store，浏览器缓存复用不了，只能靠「iframe 不销毁」来预热。
+
+               后台开关 system.console_area_preload_all_enabled 打开时（默认），所有自定义区域
+               各挂一个实例并在首屏全部预热：切换零等待，来回切换也不再重复回源上游。
+               关闭时只挂第一个，其余按需加载，规避多个 iframe 同时回源对首屏带宽的占用。 -->
           <area-tab
-            v-if="areaModuleKey"
-            :module-key="areaModuleKey"
-            :preloading="!isAreaTab"
-            :class="{ 'is-offstage': !isAreaTab }"
+            v-for="key in areaModuleKeys"
+            :key="key"
+            :module-key="key"
+            :preloading="activeTab !== key"
+            :class="{ 'is-offstage': activeTab !== key }"
           />
           <component v-if="!isAreaTab" :is="activeTabComponent" />
         </main>
@@ -57,7 +62,7 @@ import {
 const serviceConsole = useServiceConsole();
 provideServiceConsoleContext(serviceConsole);
 
-const { detail, detailLoading, activeTab, availableTabs, consoleAreaLabels } = serviceConsole;
+const { detail, detailLoading, activeTab, availableTabs, consoleAreaLabels, areaPreloadAll } = serviceConsole;
 
 /**
  * 控制台类别：CDN 与虚拟主机各有专属控制台，其余保持通用控制台。
@@ -99,17 +104,21 @@ const activeTabComponent = computed(() => resolveTabComponent(activeTab.value));
 const isAreaTab = computed(() => activeTabComponent.value === AreaTab);
 
 /**
- * 常驻面板实例当前该加载哪个区域 key。
- * 用户在看别的 tab 时取第一个面板区域 key 预热；切到面板 tab 时用它自己的 key，
- * 两者一致，所以 iframe 不会重新加载。
+ * 需要常驻挂载的面板区域 key 列表，每个 key 对应一个独立的 iframe 实例。
+ *
+ * 开关打开（默认）：所有走 iframe 的自定义区域都在首屏预热，切换 tab 只做显隐，
+ * 不再重建 iframe —— 内容接口是 no-store，浏览器缓存复用不了，重建就等于重新回源上游。
+ * 开关关闭：只留第一个，其余按需加载，规避多个 iframe 同时回源对首屏带宽的占用。
  */
-const areaModuleKey = computed(() => {
-  const current = String(activeTab.value || '').trim();
-  if (current && resolveTabComponent(current) === AreaTab) {
-    return current;
-  }
+const areaModuleKeys = computed(() => {
+  const keys = availableTabs.value.filter((key) => resolveTabComponent(key) === AreaTab);
 
-  return availableTabs.value.find((key) => resolveTabComponent(key) === AreaTab) ?? '';
+  if (keys.length === 0) return [];
+  if (areaPreloadAll.value) return keys;
+
+  const [first] = keys;
+
+  return first === undefined ? [] : [first];
 });
 </script>
 <style src="./components/styles.less" lang="less"></style>

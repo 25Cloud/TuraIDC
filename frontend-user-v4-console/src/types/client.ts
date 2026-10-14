@@ -299,6 +299,14 @@ export interface ServiceConsoleCapabilities {
   nat_supported?: boolean;
   monitor_supported?: boolean;
   fetchable?: boolean;
+  /**
+   * 是否首屏全量预热面板区域（魔方兼容 tab）。缺省按开启处理。
+   *
+   * 后台开关 system.console_area_preload_all_enabled 控制：开启时进入控制台就把所有
+   * 自定义区域的 iframe 拉起来，切换 tab 零等待；关闭时只预热第一个，其余按需加载，
+   * 用来规避多个 iframe 同时回源上游对首屏带宽的占用。
+   */
+  area_preload_all?: boolean;
   [key: string]: unknown;
 }
 

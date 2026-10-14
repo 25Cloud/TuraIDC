@@ -53,6 +53,15 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
   const availableTabs = computed(() => resolvedTabs.value.keys);
   const consoleAreaLabels = computed(() => resolvedTabs.value.areaLabels);
 
+  /**
+   * 面板区域（魔方兼容 tab）是否首屏全量预热。
+   *
+   * 只有显式 false 才关闭：能力请求失败、字段缺失、后端读不到设置时都按开启处理，
+   * 与后端 interpretPreloadSetting 对空值的口径一致。关掉后只预热第一个区域，
+   * 其余按需加载，用来规避多个 iframe 同时回源上游对首屏带宽的占用。
+   */
+  const areaPreloadAll = computed(() => consoleCapabilities.value?.area_preload_all !== false);
+
   // 能力动态下发后，若当前 tab 已被剔除则回到总览
   watch(
     () => availableTabs.value.join(','),
@@ -187,6 +196,7 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
     serviceId,
     availableTabs,
     consoleAreaLabels,
+    areaPreloadAll,
     canManageConsole,
     canSyncStatus,
     clearStatusSyncTimer,
