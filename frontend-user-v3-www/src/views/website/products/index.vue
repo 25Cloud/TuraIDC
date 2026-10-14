@@ -797,9 +797,53 @@
                   </div>
                 </div>
                 <div
-                  v-if="desktopMachineExtraConfigs.length"
+                  v-if="
+                    desktopMachineCoreConfigs.length ||
+                    desktopMachineExtraConfigs.length
+                  "
                   class="desktop-machine-extra-list"
                 >
+                  <!-- CPU / 内存 同样是配置项时必须照常渲染：这个分支只取
+                       otherMachineConfigs（已排除 CPU/内存），而机型配置表里的
+                       vCPU / 内存 列只是展示当前选中值、不是选择控件。
+                       否则 CPU/内存 由配置项下发的商品（如「弹性游戏云」，
+                       上游可选 2/4/6/8/16 核、4~32G）在桌面端根本选不了，
+                       只能吃商品默认规格。移动端一直是渲染的，这里补齐对齐。
+
+                       判断条件必须带上 desktopMachineCoreConfigs：下面那个
+                       v-else 是机型表（desktopMachineSpecRows）的 else，不是
+                       本分支的，所以「只有 CPU/内存、没有其它机型附加项」的商品
+                       一旦有机型表，两个分支都不会命中，选择控件会整个消失。 -->
+                  <template
+                    v-for="cfg in desktopMachineCoreConfigs"
+                    :key="cfg.key"
+                  >
+                    <MobileRangePicker
+                      v-if="cfg.isNumber"
+                      v-model="configForm[cfg.key + '_num']"
+                      :label="cfg.label"
+                      :min="cfg.min ?? 1"
+                      :max="cfg.max ?? 9999"
+                    />
+                    <div v-else class="spec-row spec-row--desktop-extra">
+                      <span class="spec-label">{{ cfg.label }}</span>
+                      <div class="opt-row" v-if="cfg.options.length > 1">
+                        <button
+                          v-for="opt in cfg.options"
+                          :key="opt.id"
+                          type="button"
+                          class="opt-btn"
+                          :class="{ active: configForm[cfg.key] === opt.id }"
+                          @click="configForm[cfg.key] = opt.id"
+                        >
+                          {{ opt.label }}
+                        </button>
+                      </div>
+                      <span v-else class="spec-fixed">{{
+                        cfg.options[0]?.label
+                      }}</span>
+                    </div>
+                  </template>
                   <template
                     v-for="cfg in desktopMachineExtraConfigs"
                     :key="cfg.key"
@@ -832,6 +876,9 @@
                   </template>
                 </div>
               </div>
+              <!-- 注意：这个 v-else 属于上面 desktopMachineSpecRows 的 v-if
+                   （没有机型表时兜底渲染全部机型配置），不是
+                   desktop-machine-extra-list 的 else。 -->
               <div v-else class="spec-list">
                 <template v-for="cfg in machineConfigs" :key="cfg.key">
                   <MobileRangePicker
@@ -2236,6 +2283,11 @@ const otherMachineConfigs = computed(() =>
   machineConfigs.value.filter((cfg) => !isCpuConfig(cfg) && !isMemConfig(cfg)),
 );
 const desktopMachineExtraConfigs = computed(() => otherMachineConfigs.value);
+// 桌面「机型附加项」分支里 CPU / 内存 也要渲染（顺序与移动端一致：先 CPU/内存，再附加项）。
+// 机型配置表的 vCPU / 内存 列只是展示当前选中值，不能替代选择控件。
+const desktopMachineCoreConfigs = computed(() =>
+  [cpuConfig.value, memConfig.value].filter(Boolean),
+);
 const machineSpecSort = ref({
   key: "",
   direction: "",

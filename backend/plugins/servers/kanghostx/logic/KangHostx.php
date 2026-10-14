@@ -18,12 +18,11 @@ use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
 use App\Services\Upstream\Contracts\ProvidesRenewalRecovery;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
-use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\Contracts\ProvidesSupplierFormSchema;
 use App\Services\Upstream\Contracts\UpstreamDriver;
 use TuraIDC\Plugins\Servers\KangHostx\Lib\KangHostxClient;
 
-class KangHostx implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, ProvidesConsoleRuntime, ProvidesInvoiceRenewal, ProvidesOrderProvisioning, ProvidesProvisioning, ProvidesRenewal, ProvidesRenewalRecovery, ProvidesStatusSync, ProvidesSupplierBalance, ProvidesSupplierFormSchema, UpstreamDriver
+class KangHostx implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, ProvidesConsoleRuntime, ProvidesInvoiceRenewal, ProvidesOrderProvisioning, ProvidesProvisioning, ProvidesRenewal, ProvidesRenewalRecovery, ProvidesStatusSync, ProvidesSupplierFormSchema, UpstreamDriver
 {
     private const KEY = 'kanghostx';
 
@@ -43,7 +42,6 @@ class KangHostx implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Prov
         ProvidesRenewal::class,
         ProvidesRenewalRecovery::class,
         ProvidesStatusSync::class,
-        ProvidesSupplierBalance::class,
     ];
 
     private KangHostxClient $client;
@@ -469,14 +467,23 @@ class KangHostx implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Prov
         ];
     }
 
+    /**
+     * 康乐上游没有余额查询接口，这里只做连接检测。
+     *
+     * 早期实现把 balance 硬编码成 '0.00'：SupplierBalanceService 同步后拿到 0 余额，
+     * 立刻低于告警阈值，于是给管理员发「上游余额不足」的假告警 —— 而康乐根本不存在
+     * 余额概念，管理员按提示去充值也无处可充。
+     * 因此本类不再声明 ProvidesSupplierBalance 能力，余额同步不会再走到这里；
+     * 返回值也不再伪造 balance / currency，只回连接检测结果。
+     *
+     * @return array<string, mixed>
+     */
     public function getBalance(Supplier $supplier): array
     {
         $response = $this->client->info($supplier);
         $this->client->assertSuccess($response, '康乐连接检测');
 
         return [
-            'balance' => '0.00',
-            'currency' => 'CNY',
             'connection_status' => 'connected',
             'connection_message' => '连接正常',
             'client' => [
