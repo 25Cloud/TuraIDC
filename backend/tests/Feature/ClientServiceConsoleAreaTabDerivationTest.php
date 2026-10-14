@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Supplier;
 use App\Services\ClientServiceConsole\ServiceConsoleAreaService;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -108,6 +109,107 @@ class ClientServiceConsoleAreaTabDerivationTest extends TestCase
             ['key' => 'snapshot', 'name' => '快照'],
             ['key' => 'traffic_package', 'name' => 'traffic_package'],
         ], $capabilities['areas'], '非内置能力仍应成为 tab，且同名模块只保留一个，缺名时回退 key');
+    }
+
+    /**
+     * 真实上游（智简魔方 3.x）host/header 的 module_client_area。
+     * 三个 key 全部同时出现在 supported_modules 里，两处数据源高度重叠。
+     *
+     * @return array<int, array{key: string, name: string}>
+     */
+    private function realHeaderClientAreas(): array
+    {
+        return [
+            ['name' => '安全组', 'key' => 'security_groups'],
+            ['name' => '设置', 'key' => 'setting'],
+            ['name' => 'NAT转发', 'key' => 'nat_acl'],
+        ];
+    }
+
+    /**
+     * 回归：module_client_area 补刀时必须与 deriveModuleCapabilities 同一口径分流。
+     *
+     * 线上现象：NAT 产品明明已有内置「端口转发」tab，侧栏却还多出一个功能完全相同的
+     * 「NAT转发」——因为补刀只跳过「已在 areas 里的 key」，而被 derive 分流掉的
+     * security_groups / nat_acl 并不在 areas 里，于是 header 把它们又加了回来。
+     * 「安全组」同样重复（前端 BUILTIN_TABS_ORDER 固定下发内置 security tab）。
+     */
+    #[Test]
+    public function header_client_areas_do_not_duplicate_the_builtin_tabs(): void
+    {
+        $capabilities = $this->merge(
+            [
+                'areas' => [['key' => 'setting', 'name' => '设置']],
+                'nat_supported' => true,
+                'monitor_supported' => true,
+            ],
+            ['module_client_area' => $this->realHeaderClientAreas()]
+        );
+
+        $this->assertSame(
+            [['key' => 'setting', 'name' => '设置']],
+            $capabilities['areas'],
+            '内置 tab 已承载的 NAT/安全组不能被 header 重复下发，否则同一功能出现两个入口'
+        );
+    }
+
+    /**
+     * 反向边界：nat_supported 为 false 时 header 里的 NAT 区域是唯一入口，必须保留。
+     * 无条件按关键字跳过会让 NAT 功能整个消失（supported_modules 没有 NAT 的上游）。
+     */
+    #[Test]
+    public function header_nat_area_survives_when_no_builtin_nat_tab_exists(): void
+    {
+        $capabilities = $this->merge(
+            ['areas' => [], 'nat_supported' => false, 'monitor_supported' => false],
+            ['module_client_area' => [['name' => 'NAT转发', 'key' => 'nat_acl']]]
+        );
+
+        $this->assertSame(
+            [['key' => 'nat_acl', 'name' => 'NAT转发']],
+            $capabilities['areas'],
+            '内置「端口转发」tab 不存在时，header 里的 NAT 区域不能被分流掉'
+        );
+    }
+
+    /** header 独有的自定义区域仍必须补进来——这正是补这一刀的初衷（天理云 CDN）。 */
+    #[Test]
+    public function header_only_custom_areas_are_still_merged(): void
+    {
+        $capabilities = $this->merge(
+            ['areas' => [], 'nat_supported' => false, 'monitor_supported' => false],
+            ['module_client_area' => [['name' => '管理面板', 'key' => 'panel_manage']]]
+        );
+
+        $this->assertSame(
+            [['key' => 'panel_manage', 'name' => '管理面板']],
+            $capabilities['areas'],
+            '只在上游 header 里声明的自定义区域仍要补进来'
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $capabilities
+     * @param  array<string, mixed>  $header
+     * @return array<string, mixed>
+     */
+    private function merge(array $capabilities, array $header): array
+    {
+        $service = (new ReflectionClass(ServiceConsoleAreaService::class))->newInstanceWithoutConstructor();
+        $method = new ReflectionMethod(ServiceConsoleAreaService::class, 'mergeHeaderClientAreas');
+        $method->setAccessible(true);
+
+        $runtime = new class($header)
+        {
+            public function __construct(private readonly array $header) {}
+
+            public function getHostHeaderPayload($supplier, int $hostId, string $jwt): array
+            {
+                return $this->header;
+            }
+        };
+
+        return (array) $method->invoke($service, $capabilities, $runtime, new Supplier, 68873, 'JWT');
     }
 
     /**

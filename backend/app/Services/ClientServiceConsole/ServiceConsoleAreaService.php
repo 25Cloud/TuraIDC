@@ -110,7 +110,7 @@ class ServiceConsoleAreaService
             // 不隔离的话异常会落进外层 catch，把 capabilities 整体标记为不支持并缓存，
             // 一个补充源的抖动会让整个面板消失几分钟。
             try {
-                $this->mergeHeaderClientAreas($capabilities, $runtime, $supplier, $hostId, $jwt);
+                $capabilities = $this->mergeHeaderClientAreas($capabilities, $runtime, $supplier, $hostId, $jwt);
             } catch (\Throwable $exception) {
                 Log::warning('[服务控制台] 补充 host 自定义区域失败，沿用已取到的能力', [
                     'service_id' => (int) $service->id,
@@ -475,26 +475,30 @@ class ServiceConsoleAreaService
      * 里声明自定义区域，fetchSupportedModules() 走的另一个端点并不包含它。
      * 不补这一刀，商家提供的页面就永远不会被渲染出来。
      *
-     * 已在 areas 里的 key 会跳过，两处数据同时存在时以模块列表为准（它带 select 归一信息）。
+     * 但补进来的是同一份 module_client_area，与模块列表高度重叠，绝不能把内置 tab
+     * 已经承载的功能再下发一次 —— 前端会把 areas 里的每一项都渲染成 tab（useConsoleCore
+     * 的 resolveConsoleTabs），于是同一个功能出现两个入口。实测 NAT 产品就是这样多出
+     * 一个与「端口转发」功能完全相同的「NAT转发」。
      *
      * @param  array<string, mixed>  $capabilities
+     * @return array<string, mixed>
      */
     private function mergeHeaderClientAreas(
-        array &$capabilities,
+        array $capabilities,
         object $runtime,
         Supplier $supplier,
         int $hostId,
         string $jwt
-    ): void {
+    ): array {
         if (! is_callable([$runtime, 'getHostHeaderPayload'])) {
-            return;
+            return $capabilities;
         }
 
         $header = $runtime->getHostHeaderPayload($supplier, $hostId, $jwt);
         $areas = is_array($header['module_client_area'] ?? null) ? $header['module_client_area'] : [];
 
         if ($areas === []) {
-            return;
+            return $capabilities;
         }
 
         $existing = [];
@@ -512,12 +516,37 @@ class ServiceConsoleAreaService
                 continue;
             }
 
+            // header 数据没有 type 字段，按空传即可让关键字生效（matchesNatModule 允许空 type）
+            $isNatModule = $this->matchesNatModule($key, $name, '');
+
+            // NAT 转发：内置「端口转发」tab 已经承载（nat_supported）时，header 这一项
+            // 就是第二个入口。
+            //
+            // 这里必须以 nat_supported 为前提，不能只看关键字：nat_supported 为 false 说明
+            // supported_modules 里根本没有 NAT 模块，header 这一项就是唯一入口，跳掉会让
+            // NAT 功能整个消失。
+            if ($isNatModule && ($capabilities['nat_supported'] ?? false) === true) {
+                continue;
+            }
+
+            // 安全组：由内置「安全组」tab 承载（BUILTIN_TABS_ORDER 固定下发），口径与
+            // deriveModuleCapabilities 一致 —— 那里是无条件跳过的，这里跟着无条件跳过。
+            //
+            // 必须排除 NAT 模块：安全组关键字表里有 'acl'，会连 nat_acl 一起吃掉。
+            // deriveModuleCapabilities 里 NAT 分流排在安全组分流之前正是为了避开这一点，
+            // 这里保持同样的顺序语义，否则 nat_supported 为 false 时 NAT 区域会被误杀。
+            if (! $isNatModule && $this->matchesSecurityGroupModule($key, $name)) {
+                continue;
+            }
+
             $existing[$key] = true;
             $capabilities['areas'][] = [
                 'key' => $key,
                 'name' => $name !== '' ? $name : $key,
             ];
         }
+
+        return $capabilities;
     }
 
     private function matchesNatModule(string $function, string $name, string $type): bool
