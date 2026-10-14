@@ -326,6 +326,12 @@
       "review_by": "2026-11-25"
     },
     {
+      "path": "references/engineering/pitfalls.md",
+      "status": "current",
+      "summary": "领域建模、批量替换、验证与提交环节的实测坑。",
+      "review_by": "2027-10-14"
+    },
+    {
       "path": "references/integrations/local-integration.md",
       "status": "needs-review",
       "summary": "上游本地联调说明。"

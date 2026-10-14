@@ -42,6 +42,7 @@
 | 产品范围与验收               | [产品规格索引](docs/product-specs/README.md)                                                                                                                                          |
 | 跨模块、迁移、上线或回滚风险 | [执行计划索引](docs/execution-plans/README.md)；先建或更新计划                                                                                                                        |
 | 部署、本地启动、测试         | [本地启动](docs/references/operations/local-development.md)、[部署与调度](docs/references/operations/deployment-and-scheduling.md)、[测试指南](docs/references/operations/testing.md) |
+| 改代码、改文案、跑测试、提交、增量部署 | [工程踩坑记录](docs/references/engineering/pitfalls.md)：这些环节的实测坑，动之前先看 |
 
 ## 关键约束入口
 

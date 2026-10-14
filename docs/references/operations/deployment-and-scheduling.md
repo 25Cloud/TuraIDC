@@ -240,6 +240,108 @@ Redis 当前用于缓存；不要在没有专项方案和验证的情况下把�
 
 > 容器部署注意：`deploy/docker/.env.example` 默认把 `API_PORT=8080` 暴露到所有网卡。上线前应改为仅本机绑定（`127.0.0.1:8080`），由宿主机 Nginx/1Panel 反代进入；否则私网来源可直接访问 API 并伪造 XFF。
 
+### 3.5 增量更新的实测坑
+
+以下是现网增量更新（`git pull` + 重建 dist）时真实踩过的问题。
+
+#### 3.5.1 前端必须走 `pnpm run build:frontends`，不能逐个 `pnpm run build`
+
+逐个构建读的是**各前端目录自己的** `.env` / `.env.production`，而项目真源是
+`backend/.env` 的四个公开地址（由 `build_frontends.mjs` 注入）。两处一旦不同步，产物里
+canonical、`og:url`、结算回跳地址就会全部写成前端目录里的旧值。
+
+实测过：官网 `.env.production` 是 `idc.25y.cn`，而 `backend/.env` 的 `FRONTEND_URL` 是
+`next2.25y.cn`。逐个构建后产物里 `idc.25y.cn` 出现 4 处、`next2.25y.cn` 0 处——
+**站点 HTTP 全 200，但 SEO 与回跳地址全是错的**。改用标准脚本重建后归零。
+
+部署后按真源核对，不要只看能不能访问：
+
+```bash
+grep -ro "$FRONTEND_HOST" frontend-user-v3-www/dist/ | wc -l   # 应 > 0
+grep -ro "<其他域名>"   frontend-user-v3-www/dist/ | wc -l       # 应为 0
+```
+
+#### 3.5.2 生产机没有 `pnpm`，标准脚本会 ENOENT
+
+`build_frontends.mjs` 内部 `spawn pnpm`。若生产 PATH 里只有 node 与 corepack
+（`packageManager` 指定了 pnpm 版本、corepack 缓存里也有，但没 `enable` 过），
+`pnpm run build:frontends` 会以 `ENOENT: spawn pnpm` 失败。
+
+一次性修复：
+
+```bash
+corepack enable pnpm   # 生成 /usr/bin/pnpm shim
+pnpm -v                # 确认版本与 packageManager 一致
+```
+
+在 `corepack enable` 之前只能用 `corepack pnpm run build` 逐个构建，**但那正是 3.5.1 说的
+会绕过地址注入的方式**，不要当成常态。
+
+#### 3.5.3 `git pull` 会被 untracked 文件阻塞
+
+为紧急止血手工放进 `backend/public/media/console-panel/` 的静态资产，与后续提交里的同名路径
+冲突，pull 直接拒绝：
+
+```
+error: Untracked working tree files ... Please move or remove them before you merge.
+```
+
+先比对内容再删工作区副本，让 git 接管（内容一致才可删）：
+
+```bash
+sha1sum backend/public/media/console-panel/jquery.min.js
+git show origin/main:backend/public/media/console-panel/jquery.min.js | sha1sum   # 两行一致才继续
+rm -rf backend/public/media/console-panel && git pull --ff-only origin main
+```
+
+#### 3.5.4 不要用 `git checkout origin/main -- <file>` 精确同步
+
+那条命令只改工作区文件内容、**不推进 HEAD**。用它"热修"几个文件后，生产 HEAD 会长期停在
+很早的提交；等后来要做一次完整 pull 时，会一次性把中间所有他人的提交（虚拟主机面板、
+换绑手机、官网结算栏等）全量带进生产，部署范围失控。
+
+**对策**：要么全量 `git pull --ff-only`；要么坚持精确同步，但必须清楚自己欠了多少提交，
+并在部署前把「这次会连带上线哪些别人的提交」讲清楚，让人来决定。
+
+#### 3.5.5 构建前先备份 dist
+
+```bash
+TS=$(date +%Y%m%d-%H%M%S)
+tar -czf /tmp/backup/www-dist-$TS.tar.gz frontend-user-v3-www/dist
+```
+
+保留位置 `/tmp/backup/`，回滚时解包覆盖即可。
+
+#### 3.5.6 PHP 改动不需要重启 PHP-FPM
+
+本机 opcache 为 `validate_timestamps=On`、`revalidate_freq=2`，同步 PHP 文件后最多 2 秒自动生效。
+确认方式：`php -i | grep -i opcache`。只有改了 `php.ini`、扩展或 `bootstrap/cache` 才需要重启。
+
+#### 3.5.7 多台服务器时，先确认当前 SSH 连接指向哪台
+
+有多个已连接的资源时，远程命令会打到「当前活动连接」，可能不是生产机。表现为
+`cd /www/wwwroot/TuraIDC: No such file or directory`。每轮操作前先 `ssh_list` 确认当前连接，
+或用 `ssh_connect_profile` 显式指定。
+
+#### 3.5.8 长任务用 nohup 后台 + 轮询
+
+远程命令有超时上限（默认 30 秒），构建几十秒就会被中断。正确姿势：
+
+```bash
+nohup bash -c 'cd /www/wwwroot/TuraIDC && CI=true pnpm run build:frontends > /tmp/build.log 2>&1; echo "exit=$?" >> /tmp/build.log' > /dev/null 2>&1 &
+sleep 100 && tail -10 /tmp/build.log     # 轮询直到出现 exit=
+```
+
+#### 3.5.9 部署后必须 grep 产物验证
+
+HTTP 200 只说明站点能开，不代表内容正确（3.5.1 就是 200 全绿但地址错）。收尾至少核对三项：
+产物含本次改动的新关键字、新改动前的旧关键字为 0、硬编码域名与 `backend/.env` 真源一致。
+
+#### 3.5.10 带 TTL 的缓存会让「改了没生效」
+
+`console/capabilities` 等响应缓存 300 秒、settings 分组缓存 600 秒，管理员改完设置不会立刻生效，
+旧值也不会因为重新部署而消失。验证前先手动清对应缓存键。
+
 ## 4. 本地启动差异
 
 本地同样使用直连 API：三个前端分别在 `127.0.0.1:5175/5173/5174`，API 在 `127.0.0.1:8000`。前端开发环境的 `VITE_API_BASE_URL` 已指向 `http://127.0.0.1:8000/api`，因此会真实验证 CORS 和 VNC WebSocket。
@@ -423,3 +525,4 @@ sudo systemctl restart php-fpm-82
 - [启动指南](local-development.md)：本地启动与验证。
 - [四端 Nginx 伪静态配置](frontend-nginx-rules.md)：站点伪静态规则。
 - [日志归档与 MySQL 维护](../database/log-archive-and-mysql-maintenance.md)：日志与数据库运维。
+- [工程踩坑记录](../engineering/pitfalls.md)：开发、验证与提交环节的实测坑。
