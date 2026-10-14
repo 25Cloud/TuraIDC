@@ -116,7 +116,7 @@ const activeEnterpriseCards = computed(() =>
 
     return {
       key: String(groupId || index + 1),
-      title: group?.name || `二级分类 ${index + 1}`,
+      title: group?.name || `二级分组 ${index + 1}`,
       desc: resolveEnterpriseCategoryDesc(group, summary, primaryProduct),
       path: resolveEnterpriseCategoryPath(group, primaryProduct),
     };
@@ -130,7 +130,7 @@ const activeEnterpriseService = computed(() => {
         {
           key: "catalog",
           title: `${activeEnterpriseType.value?.label || "当前分类"}目录`,
-          desc: "当前分类暂无可展示的二级分类，点击后可进入产品目录查看更多内容。",
+          desc: "当前分类暂无可展示的二级分组，点击后可进入产品目录查看更多内容。",
           path: "/products",
         },
       ];

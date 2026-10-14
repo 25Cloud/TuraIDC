@@ -214,7 +214,7 @@ class ProductSyncService
     public function bulkConnectSupplierProducts(Supplier $supplier, array $data): array
     {
         $firstGroupCode = trim((string) ($data['first_product_group_code'] ?? ''));
-        throw_if($firstGroupCode === '', new BusinessException('请选择所属一级菜单'));
+        throw_if($firstGroupCode === '', new BusinessException('请选择所属一级分组'));
 
         $supplierProductIds = collect($data['product_ids'] ?? [])
             ->map(fn ($id) => (int) $id)
@@ -2005,10 +2005,10 @@ class ProductSyncService
             ? $query->whereKey($firstProductGroupId)->first()
             : $query->where('code', $productType)->first();
 
-        throw_if(! $group instanceof FirstProductGroup, new BusinessException('目标一级菜单不存在'));
+        throw_if(! $group instanceof FirstProductGroup, new BusinessException('目标一级分组不存在'));
         throw_if(
             trim((string) $group->code) !== $productType,
-            new BusinessException('目标一级菜单与商品类型不匹配')
+            new BusinessException('目标一级分组与商品类型不匹配')
         );
 
         return $group;
@@ -2021,10 +2021,10 @@ class ProductSyncService
     ): SecondProductGroup {
         if ($secondProductGroupId > 0) {
             $group = SecondProductGroup::query()->whereKey($secondProductGroupId)->first();
-            throw_if(! $group instanceof SecondProductGroup, new BusinessException('目标二级分类不存在'));
+            throw_if(! $group instanceof SecondProductGroup, new BusinessException('目标二级分组不存在'));
             throw_if(
                 (int) $group->first_product_group_id !== (int) $firstGroup->id,
-                new BusinessException('目标二级分类不属于所选一级菜单')
+                new BusinessException('目标二级分组不属于所选一级分组')
             );
 
             return $group;
@@ -2042,10 +2042,10 @@ class ProductSyncService
     ): ?ThirdProductGroup {
         if ($thirdProductGroupId > 0) {
             $group = ThirdProductGroup::query()->whereKey($thirdProductGroupId)->first();
-            throw_if(! $group instanceof ThirdProductGroup, new BusinessException('目标三级分类不存在'));
+            throw_if(! $group instanceof ThirdProductGroup, new BusinessException('目标三级分组不存在'));
             throw_if(
                 (int) $group->second_product_group_id !== (int) $secondGroup->id,
-                new BusinessException('目标三级分类不属于所选二级分类')
+                new BusinessException('目标三级分组不属于所选二级分组')
             );
 
             return $group;

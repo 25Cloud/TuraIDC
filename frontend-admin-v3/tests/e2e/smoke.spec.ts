@@ -4253,12 +4253,12 @@ test.describe('frontend-admin-v3 shell smoke', () => {
       provision_hostname: { mode: 'prefix', value: 'hk', length: 12 },
     });
 
-    await page.getByRole('button', { name: '管理一级分类' }).click();
+    await page.getByRole('button', { name: '管理一级分组' }).click();
     const typeDialog = page.locator('.t-dialog:visible');
-    await expect(typeDialog.getByText('管理一级分类')).toBeVisible();
+    await expect(typeDialog.getByText('管理一级分组')).toBeVisible();
     await typeDialog
       .locator('.type-form .t-form__item')
-      .filter({ hasText: '一级分类名称' })
+      .filter({ hasText: '一级分组名称' })
       .locator('input')
       .fill('存储服务器');
     await typeDialog
@@ -4269,7 +4269,7 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     const createTypeRequest = page.waitForRequest(
       (request) => request.url().includes('/api/v2/admin/product-types') && request.method() === 'POST',
     );
-    await typeDialog.getByRole('button', { name: '新增一级分类' }).click();
+    await typeDialog.getByRole('button', { name: '新增一级分组' }).click();
     await expect((await createTypeRequest).postDataJSON()).toMatchObject({ label: '存储服务器', icon: 'ServerIcon' });
 
     await typeDialog
@@ -4279,13 +4279,13 @@ test.describe('frontend-admin-v3 shell smoke', () => {
       .click();
     await typeDialog
       .locator('.type-form .t-form__item')
-      .filter({ hasText: '一级分类名称' })
+      .filter({ hasText: '一级分组名称' })
       .locator('input')
       .fill('云服务器编辑');
     const updateTypeRequest = page.waitForRequest(
       (request) => request.url().includes('/api/v2/admin/product-types/cloud_server') && request.method() === 'PUT',
     );
-    await typeDialog.getByRole('button', { name: '保存一级分类' }).click();
+    await typeDialog.getByRole('button', { name: '保存一级分组' }).click();
     await expect((await updateTypeRequest).postDataJSON()).toMatchObject({ label: '云服务器编辑' });
 
     const reorderTypeRequest = page.waitForRequest('**/api/v2/admin/product-types/reorders');
@@ -4322,7 +4322,7 @@ test.describe('frontend-admin-v3 shell smoke', () => {
 
     await page.getByRole('button', { name: '新增二级' }).click();
     const categoryCreateDialog = page.locator('.t-dialog:visible');
-    await expect(categoryCreateDialog.getByText('新增二级分类')).toBeVisible();
+    await expect(categoryCreateDialog.getByText('新增二级分组')).toBeVisible();
     await categoryCreateDialog.locator('.t-form__item').filter({ hasText: '分类名称' }).locator('input').fill('存储型');
     const createCategoryRequest = page.waitForRequest(
       (request) => request.url().includes('/api/v2/admin/product-groups') && request.method() === 'POST',
@@ -4336,9 +4336,9 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     });
 
     await page.locator('.category-tree-row').filter({ hasText: '通用型' }).locator('.category-menu-trigger').click();
-    await page.locator('.t-popup:visible .t-dropdown__item').filter({ hasText: '新增三级分类' }).click();
+    await page.locator('.t-popup:visible .t-dropdown__item').filter({ hasText: '新增三级分组' }).click();
     const thirdCategoryCreateDialog = page.locator('.t-dialog:visible');
-    await expect(thirdCategoryCreateDialog.getByText('新增三级分类')).toBeVisible();
+    await expect(thirdCategoryCreateDialog.getByText('新增三级分组')).toBeVisible();
     await thirdCategoryCreateDialog
       .locator('.t-form__item')
       .filter({ hasText: '分类名称' })

@@ -27,7 +27,7 @@
  * 因此和真实条目用同一套栅格与内边距，出数据时不会跳动。
  */
 defineProps({
-  // card：右栏三列的地区 / 公告 / 文档卡片；row：左栏的目录按钮
+  // card：右栏三列的一级分组 / 公告 / 文档卡片；row：左栏的目录按钮
   variant: {
     type: String,
     default: "card",

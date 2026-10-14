@@ -722,7 +722,7 @@ function resolveBillingCycleValue(item: Record<string, any>) {
   object-fit: cover;
 }
 
-/* CDN 用云朵图标，跟后台一级分类的「云服务」保持同一视觉 */
+/* CDN 用云朵图标，跟后台一级分组的「云服务」保持同一视觉 */
 .service-system-icon__cloud {
   width: 1.5rem;
   height: 1.5rem;

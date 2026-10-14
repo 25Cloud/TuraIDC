@@ -1854,24 +1854,24 @@ class ProductAdminService
             $thirdGroup = ThirdProductGroup::query()
                 ->with(['secondProductGroup.firstProductGroup'])
                 ->find($thirdId);
-            throw_if(! $thirdGroup, new BusinessException('三级分类不存在'));
+            throw_if(! $thirdGroup, new BusinessException('三级分组不存在'));
 
             $resolvedSecond = $thirdGroup->secondProductGroup;
-            throw_if(! $resolvedSecond instanceof SecondProductGroup, new BusinessException('三级分类缺少二级归属'));
+            throw_if(! $resolvedSecond instanceof SecondProductGroup, new BusinessException('三级分组缺少二级归属'));
             throw_if(
                 $secondId !== null && $secondId !== (int) $resolvedSecond->id,
-                new BusinessException('二级分类与三级分类不匹配')
+                new BusinessException('二级分组与三级分组不匹配')
             );
             $secondGroup = $resolvedSecond;
         } else {
-            throw new BusinessException('商品必须挂载到三级分类下');
+            throw new BusinessException('商品必须挂载到三级分组下');
         }
 
         $firstGroup = $secondGroup->firstProductGroup;
-        throw_if(! $firstGroup instanceof FirstProductGroup, new BusinessException('二级分类缺少一级归属'));
+        throw_if(! $firstGroup instanceof FirstProductGroup, new BusinessException('二级分组缺少一级归属'));
         throw_if(
             $firstId !== null && $firstId !== (int) $firstGroup->id,
-            new BusinessException('一级分类与二级分类不匹配')
+            new BusinessException('一级分组与二级分组不匹配')
         );
 
         $serviceTypeCode = ProductType::businessValueForFirstGroup(

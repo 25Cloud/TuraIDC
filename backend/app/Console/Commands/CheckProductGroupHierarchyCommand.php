@@ -11,7 +11,7 @@ class CheckProductGroupHierarchyCommand extends Command
 {
     protected $signature = 'product-catalog:check-product-group-hierarchy {--json : 以 JSON 输出结果}';
 
-    protected $description = '巡检三层商品分类表及商品三级分类挂载字段';
+    protected $description = '巡检三层商品分类表及商品三级分组挂载字段';
 
     public function handle(ProductGroupHierarchyService $service): int
     {

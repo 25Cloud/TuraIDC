@@ -341,10 +341,10 @@ export function buildBindingTreeOptions(
   nodes.forEach((nodeValue, index) => {
     const node = toPlainRecord(nodeValue);
     const productType = String(node.product_type || 'other').trim() || 'other';
-    // 分组必须按一级菜单身份（code）来分，不能按商品类型（product_type）分：
-    // 多个一级菜单可以共用同一个商品类型（例如大陆云服与轻量服务器都是 cloud_server），
+    // 分组必须按一级分组身份（code）来分，不能按商品类型（product_type）分：
+    // 多个一级分组可以共用同一个商品类型（例如大陆云服与轻量服务器都是 cloud_server），
     // 按类型归并会把两条产品线的分类塞进同一个节点，管理员再也分不清商品挂在哪条线下。
-    // 只有拿不到一级菜单 code 的历史数据才退回按商品类型分组。
+    // 只有拿不到一级分组 code 的历史数据才退回按商品类型分组。
     const firstGroupCode = String(node.first_product_group_code || '').trim();
     const firstGroupId = Number(node.first_product_group_id || 0);
     const groupKey = firstGroupCode || productType;
@@ -366,7 +366,7 @@ export function buildBindingTreeOptions(
       effective_product_group_full_name: String(node.label || node.name || '').trim() || undefined,
     });
     if (categoryNode) {
-      // 分组节点就是一级菜单本身时不再重复一层，直接挂它的下级分类。
+      // 分组节点就是一级分组本身时不再重复一层，直接挂它的下级分组。
       const nextNodes =
         Number(node.level || node.effective_product_group_level || 0) === 1
           ? categoryNode.children || []

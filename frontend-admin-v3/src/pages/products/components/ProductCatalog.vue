@@ -14,12 +14,12 @@
           {{ item.label }}
           <span class="type-count">{{ item.usage_count || 0 }}</span>
         </t-button>
-        <t-tooltip content="管理一级分类">
+        <t-tooltip content="管理一级分组">
           <t-button
             class="type-manage-button"
             shape="square"
             variant="outline"
-            aria-label="管理一级分类"
+            aria-label="管理一级分组"
             @click="openTypeManagerDialog()"
           >
             <template #icon><setting-icon /></template>
@@ -33,7 +33,7 @@
         <div class="category-panel-head">
           <div class="category-panel-title">
             <strong>商品分类</strong>
-            <span class="category-panel-scope">一级菜单：{{ selectedProductTypeLabel }} · 下方为二级 / 三级分类</span>
+            <span class="category-panel-scope">一级分组：{{ selectedProductTypeLabel }} · 下方为二级分组 / 三级分组</span>
           </div>
           <t-space size="small">
             <t-button
@@ -45,7 +45,7 @@
             >
               <template #icon><refresh-icon /></template>
             </t-button>
-            <t-button theme="primary" size="small" aria-label="新增二级分类" @click="openSecondCategoryDialog()">
+            <t-button theme="primary" size="small" aria-label="新增二级分组" @click="openSecondCategoryDialog()">
               <template #icon><add-icon /></template>
               新增二级
             </t-button>
@@ -379,8 +379,8 @@
           <button
             type="button"
             class="mobile-type-tool mobile-type-tool--icon"
-            aria-label="管理一级分类"
-            title="管理一级分类"
+            aria-label="管理一级分组"
+            title="管理一级分组"
             @click="openTypeManagerDialog()"
           >
             <setting-icon />
@@ -391,7 +391,7 @@
           <div class="category-panel-head">
             <div class="category-panel-title">
               <strong>商品分类</strong>
-              <span class="category-panel-scope">一级菜单：{{ selectedProductTypeLabel }} · 下方为二级 / 三级分类</span>
+              <span class="category-panel-scope">一级分组：{{ selectedProductTypeLabel }} · 下方为二级分组 / 三级分组</span>
             </div>
             <t-space size="small">
               <t-button shape="square" variant="text" :loading="categoryLoading" @click="loadCategories">
@@ -1021,11 +1021,11 @@
     >
       <t-form ref="categoryFormRef" :data="categoryForm" :rules="categoryRules" label-width="110px">
         <t-form-item label="分类名称" name="name"><t-input v-model="categoryForm.name" /></t-form-item>
-        <t-form-item label="一级分类" name="product_type">
+        <t-form-item label="一级分组" name="product_type">
           <t-select
             v-model="categoryForm.product_type"
             filterable
-            placeholder="请选择一级分类"
+            placeholder="请选择一级分组"
             :disabled="categoryProductTypeDisabled"
             @change="handleCategoryProductTypeChange"
           >
@@ -1037,12 +1037,12 @@
             />
           </t-select>
         </t-form-item>
-        <t-form-item v-if="categoryParentFieldVisible" label="二级分类父级" name="parent_id">
+        <t-form-item v-if="categoryParentFieldVisible" label="二级分组父级" name="parent_id">
           <t-select
             v-model="categoryForm.parent_id"
             clearable
             filterable
-            placeholder="不选择则新增二级分类，选择后新增三级分类"
+            placeholder="不选择则新增二级分组，选择后新增三级分组"
             :disabled="categoryParentSelectDisabled"
             :loading="categoryParentLoading"
           >
@@ -1067,7 +1067,7 @@
     <t-dialog
       v-model:visible="typeManagerDialogVisible"
       class="type-manager-dialog"
-      header="管理一级分类"
+      header="管理一级分组"
       width="880px"
       :footer="false"
     >
@@ -1075,21 +1075,21 @@
         <section class="type-manager-editor" :class="{ 'is-editing': editingTypeValue }">
           <div class="type-manager-editor__head">
             <div>
-              <strong>{{ editingTypeValue ? '编辑一级分类' : '新增一级分类' }}</strong>
+              <strong>{{ editingTypeValue ? '编辑一级分组' : '新增一级分组' }}</strong>
               <span v-if="editingTypeValue">{{ normalizeBusinessProductType(typeForm.product_type) }}</span>
             </div>
           </div>
 
           <t-form :data="typeForm" label-align="top" class="type-form">
             <div class="type-form-grid">
-              <t-form-item label="一级分类名称" name="label" required-mark>
+              <t-form-item label="一级分组名称" name="label" required-mark>
                 <t-input v-model="typeForm.label" maxlength="40" placeholder="如 云服务器" />
               </t-form-item>
               <t-form-item label="产品类型" name="product_type" required-mark>
                 <t-select v-model="typeForm.product_type" :options="businessProductTypeOptions" />
               </t-form-item>
               <t-form-item label="图标" name="icon" class="type-icon-form-item">
-                <div class="type-icon-picker" role="radiogroup" aria-label="选择一级分类图标">
+                <div class="type-icon-picker" role="radiogroup" aria-label="选择一级分组图标">
                   <button
                     v-for="item in productTypeIconOptions"
                     :key="item.value"
@@ -1123,7 +1123,7 @@
             <div>
               <strong>分类列表</strong>
               <span
-                >{{ productTypes.length }} 个分类 · {{ typeManagerProductCount }} 个商品 ·
+                >{{ productTypes.length }} 个一级分组 · {{ typeManagerProductCount }} 个商品 ·
                 {{ typeManagerHiddenCount }} 个隐藏</span
               >
             </div>
@@ -1172,7 +1172,7 @@
                       size="small"
                       shape="square"
                       variant="outline"
-                      aria-label="上移一级分类"
+                      aria-label="上移一级分组"
                       :disabled="index === 0 || typeSubmitting"
                       @click="moveType(item.value, -1)"
                     >
@@ -1184,7 +1184,7 @@
                       size="small"
                       shape="square"
                       variant="outline"
-                      aria-label="下移一级分类"
+                      aria-label="下移一级分组"
                       :disabled="index === productTypes.length - 1 || typeSubmitting"
                       @click="moveType(item.value, 1)"
                     >
@@ -1198,7 +1198,7 @@
                     shape="square"
                     variant="text"
                     theme="primary"
-                    aria-label="编辑一级分类"
+                    aria-label="编辑一级分组"
                     :disabled="typeSubmitting"
                     @click="editType(item)"
                   >
@@ -1210,7 +1210,7 @@
                     size="small"
                     shape="square"
                     variant="text"
-                    aria-label="切换一级分类显示状态"
+                    aria-label="切换一级分组显示状态"
                     :disabled="typeSubmitting"
                     @click="toggleTypeHidden(item)"
                   >
@@ -1223,7 +1223,7 @@
                     shape="square"
                     variant="text"
                     theme="danger"
-                    aria-label="删除一级分类"
+                    aria-label="删除一级分组"
                     :disabled="typeSubmitting"
                     @click="deleteType(item)"
                   >
@@ -1233,7 +1233,7 @@
               </div>
             </article>
           </div>
-          <t-empty v-if="productTypes.length === 0" description="暂无一级分类" />
+          <t-empty v-if="productTypes.length === 0" description="暂无一级分组" />
         </div>
         <div class="type-manager-footer">
           <t-button variant="outline" @click="typeManagerDialogVisible = false">关闭</t-button>
@@ -1605,7 +1605,7 @@ const productRules: FormRules<ProductFormData> = {
 };
 const categoryRules: FormRules<CategoryFormData> = {
   name: [{ required: true, message: '请输入分类名称', trigger: 'blur' }],
-  product_type: [{ required: true, message: '请选择一级分类', trigger: 'change' }],
+  product_type: [{ required: true, message: '请选择一级分组', trigger: 'change' }],
 };
 
 // --- Computeds ---
@@ -1655,7 +1655,7 @@ const categoryProductTypeOptions = computed(() => {
     : [];
 });
 const categoryTree = computed(() => buildCategoryTree(categoryOptions.value));
-// 顶部 type-strip 就是一级菜单（L1，代码里叫 product_type，实际存的是菜单 code），
+// 顶部 type-strip 就是一级分组（L1，代码里叫 product_type，实际存的是菜单 code），
 // 分类接口也按它过滤，所以展示树从 L2 起，节点层级标签按真实层级给，不再按树深度给。
 const displayCategoryTree = computed(() => toDisplayCategoryTree(categoryTree.value));
 const filteredCategoryTree = computed(() =>
@@ -1673,7 +1673,7 @@ const editingCategoryHasChildren = computed(() => {
 });
 const categoryDialogHeader = computed(() => {
   if (editingCategory.value) return '编辑分类';
-  return creatingThirdCategoryParent.value ? '新增三级分类' : '新增二级分类';
+  return creatingThirdCategoryParent.value ? '新增三级分组' : '新增二级分组';
 });
 const categoryParentFieldVisible = computed(() => {
   if (creatingThirdCategoryParent.value) return true;
@@ -1773,13 +1773,13 @@ function categoryIdKey(row: ProductCategoryRecord) {
 }
 
 // 树里的层级标签必须按真实层级给，而不是按「在树中的第几层」给：
-// 顶部一级菜单条已经选定了 L1，树根是 L2、子节点是 L3，
-// 之前按深度标成「一级 / 二级」，和上面的 L1 撞车，看起来就像两套一级分类。
+// 顶部一级分组条已经选定了 L1，树根是 L2、子节点是 L3，
+// 之前按深度标成「一级 / 二级」，和上面的 L1 撞车，看起来就像两套一级分组。
 function categoryLevelLabel(row: ProductCategoryRecord) {
   const level = productGroupLevel(row);
-  if (level === 1) return '一级分类';
-  if (level === 2) return '二级分类';
-  if (level === 3) return '三级分类';
+  if (level === 1) return '一级分组';
+  if (level === 2) return '二级分组';
+  if (level === 3) return '三级分组';
   return '分类';
 }
 
@@ -2191,7 +2191,7 @@ function categoryMenuOptions(row: ProductCategoryRecord): DropdownOption[] {
     { content: '下移', value: 'down', disabled: !canMoveCategory(row, 'down') },
   ];
   if (productGroupLevel(row) === 2) {
-    options.push({ content: '新增三级分类', value: 'create-child', divider: true });
+    options.push({ content: '新增三级分组', value: 'create-child', divider: true });
   }
   options.push({ content: '折扣分组', value: 'batch-discount', divider: true });
   options.push({ content: '控制台类型', value: 'batch-console' });
@@ -2234,7 +2234,7 @@ function handleCategoryMenuClick(row: ProductCategoryRecord, option: DropdownOpt
 }
 
 function handleCategoryProductTypeChange(value: unknown) {
-  // 编辑三级分类：一级分类变更后，父级必须重新选择，并按新一级分类加载父级选项
+  // 编辑三级分组：一级分组变更后，父级必须重新选择，并按新一级分组加载父级选项
   if (editingCategory.value && productGroupLevel(editingCategory.value) === 3) {
     categoryForm.parent_id = '';
     void loadCategoryParentOptions(String(value || ''));
@@ -2265,7 +2265,7 @@ function resolveSelectedParentCategory() {
 
 function categoryParentOptionLabel(item: ProductCategoryRecord) {
   return String(
-    item.second_product_group_name || item.name || item.label || `二级分类 #${productGroupEffectiveId(item)}`,
+    item.second_product_group_name || item.name || item.label || `二级分组 #${productGroupEffectiveId(item)}`,
   ).trim();
 }
 
@@ -2283,7 +2283,7 @@ async function loadCategoryParentOptions(firstGroupCode: string) {
     );
     categoryParentOptions.value = flattenCategories(scopedTree).filter((item) => productGroupLevel(item) === 2);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载二级分类父级失败'));
+    MessagePlugin.error(errorMessage(error, '加载二级分组父级失败'));
     categoryParentOptions.value = [];
   } finally {
     categoryParentLoading.value = false;
@@ -2300,7 +2300,7 @@ async function loadProductTypes() {
       catalogFilters.product_type = productTypes.value[0].value;
     }
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载一级分类失败'));
+    MessagePlugin.error(errorMessage(error, '加载一级分组失败'));
   } finally {
     typeLoading.value = false;
   }
@@ -2361,7 +2361,7 @@ function editType(type: ProductTypeRecord) {
 async function submitType() {
   const label = typeForm.label.trim();
   if (!label) {
-    MessagePlugin.warning('请输入一级分类名称');
+    MessagePlugin.warning('请输入一级分组名称');
     return;
   }
 
@@ -2371,15 +2371,15 @@ async function submitType() {
     const productType = normalizeBusinessProductType(typeForm.product_type);
     if (editingTypeValue.value) {
       await productApi.updateType(editingTypeValue.value, { label, product_type: productType, icon });
-      MessagePlugin.success('一级分类已更新');
+      MessagePlugin.success('一级分组已更新');
     } else {
       await productApi.createType({ label, product_type: productType, icon });
-      MessagePlugin.success('一级分类已创建');
+      MessagePlugin.success('一级分组已创建');
     }
     resetTypeForm();
     await refreshTypeCatalog();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存一级分类失败'));
+    MessagePlugin.error(errorMessage(error, '保存一级分组失败'));
   } finally {
     typeSubmitting.value = false;
   }
@@ -2394,10 +2394,10 @@ async function toggleTypeHidden(type: ProductTypeRecord) {
       icon: type.icon || '',
       is_hidden: !type.is_hidden,
     });
-    MessagePlugin.success(type.is_hidden ? '一级分类已显示' : '一级分类已隐藏');
+    MessagePlugin.success(type.is_hidden ? '一级分组已显示' : '一级分组已隐藏');
     await refreshTypeCatalog();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新一级分类失败'));
+    MessagePlugin.error(errorMessage(error, '更新一级分组失败'));
   } finally {
     typeSubmitting.value = false;
   }
@@ -2415,9 +2415,9 @@ async function moveType(value: string, direction: -1 | 1) {
   try {
     await productApi.reorderTypes({ values: nextTypes.map((item) => item.value) });
     productTypes.value = nextTypes;
-    MessagePlugin.success('一级分类排序已更新');
+    MessagePlugin.success('一级分组排序已更新');
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新一级分类排序失败'));
+    MessagePlugin.error(errorMessage(error, '更新一级分组排序失败'));
     await loadProductTypes();
   } finally {
     typeSubmitting.value = false;
@@ -2426,7 +2426,7 @@ async function moveType(value: string, direction: -1 | 1) {
 
 function deleteType(type: ProductTypeRecord) {
   const dialog = DialogPlugin.confirm({
-    header: '删除一级分类',
+    header: '删除一级分组',
     body: `确认删除「${type.label || type.value}」吗？`,
     theme: 'warning',
     confirmBtn: '确认删除',
@@ -2435,7 +2435,7 @@ function deleteType(type: ProductTypeRecord) {
       typeSubmitting.value = true;
       try {
         await productApi.deleteType(type.value);
-        MessagePlugin.success('一级分类已删除');
+        MessagePlugin.success('一级分组已删除');
         if (false && catalogFilters.lifecycle_status === 'all') {
           MessagePlugin.info('当前筛选为“全部商品”，已删除商品仍会显示在列表中');
         }
@@ -2447,7 +2447,7 @@ function deleteType(type: ProductTypeRecord) {
         resetTypeForm();
         await refreshTypeCatalog();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除一级分类失败'));
+        MessagePlugin.error(errorMessage(error, '删除一级分组失败'));
       } finally {
         typeSubmitting.value = false;
       }
@@ -3873,7 +3873,7 @@ function openCategoryDialog(row?: ProductCategoryRecord, thirdCategoryParent?: P
   });
   categoryDialogVisible.value = true;
   if (level === 3) {
-    // 编辑三级分类：确保父级下拉按当前一级分类加载（分类树只含当前筛选的一级分类）
+    // 编辑三级分组：确保父级下拉按当前一级分组加载（分类树只含当前筛选的一级分组）
     void loadCategoryParentOptions(categoryForm.product_type);
   }
 }
@@ -3896,11 +3896,11 @@ async function submitCategory() {
       firstProductGroupId = resolveFirstProductGroupId(firstGroupCode);
     }
     if (targetLevel === 2 && !firstProductGroupId) {
-      MessagePlugin.warning('一级分类数据未同步，请刷新一级分类后重试');
+      MessagePlugin.warning('一级分组数据未同步，请刷新一级分组后重试');
       return;
     }
     if (targetLevel === 3 && !selectedParent) {
-      MessagePlugin.warning('请选择二级分类父级');
+      MessagePlugin.warning('请选择二级分组父级');
       return;
     }
     const payload: Record<string, unknown> = {

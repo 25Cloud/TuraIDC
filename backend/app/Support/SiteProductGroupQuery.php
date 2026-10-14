@@ -13,13 +13,13 @@ use Illuminate\Database\Eloquent\Builder;
 /**
  * 站点可见商品分组（二级/三级）的统一查询入口。
  *
- * 站点侧的分层语义是「一级菜单 = first_product_groups.code」，
- * 二级、三级都是各自一级菜单下的子节点。因此：
- * - 传入一级菜单 code 时必须严格按 code 命中，绝不能用 product_type 兜底。
- *   多个一级菜单可以共用同一个商品类型（product_type），
+ * 站点侧的分层语义是「一级分组 = first_product_groups.code」，
+ * 二级、三级都是各自一级分组下的子节点。因此：
+ * - 传入一级分组 code 时必须严格按 code 命中，绝不能用 product_type 兜底。
+ *   多个一级分组可以共用同一个商品类型（product_type），
  *   一旦用 product_type 兜底，大陆云服与轻量服务器这种同类型菜单会被并进同一份列表，
- *   前端再也分不清某个二级分类到底挂在哪个一级菜单下。
- * - 只有显式传入 product_type 时，才展开成该业务类型下的全部一级菜单 code，
+ *   前端再也分不清某个二级分组到底挂在哪个一级分组下。
+ * - 只有显式传入 product_type 时，才展开成该业务类型下的全部一级分组 code，
  *   仍然逐条返回各自的 first_product_group_code，不做合并。
  */
 final class SiteProductGroupQuery
@@ -27,8 +27,8 @@ final class SiteProductGroupQuery
     /**
      * 站点可见的二级分组。
      *
-     * @param  string|null  $firstGroupCode  一级菜单 code（精确匹配）
-     * @param  string|null  $businessType  业务商品类型（展开为该类型下的一级菜单 code 集合）
+     * @param  string|null  $firstGroupCode  一级分组 code（精确匹配）
+     * @param  string|null  $businessType  业务商品类型（展开为该类型下的一级分组 code 集合）
      */
     public static function visibleSecondGroups(
         ?string $firstGroupCode = null,

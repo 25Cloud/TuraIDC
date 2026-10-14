@@ -6,9 +6,9 @@
       v-loading="pageLoading"
     >
       <section class="mobile-stage-card mobile-stage-card--intro">
-        <h1 class="mobile-stage-title">产品中心 · 选择产品目录</h1>
+        <h1 class="mobile-stage-title">产品中心 · 选择一级分组</h1>
         <p class="mobile-stage-desc">
-          先选产品目录（产品大类），进入后再依次选择地区、可用区和具体商品。
+          先选一级分组，进入后再依次选择二级分组、三级分组和具体商品。
         </p>
       </section>
 
@@ -33,7 +33,7 @@
           <p class="mobile-type-desc">
             {{
               type.description ||
-              `进入 ${type.label} 子目录后可继续选择分类、商品和具体配置。`
+              `进入 ${type.label} 后可继续选择下级分组、商品和具体配置。`
             }}
           </p>
           <div class="mobile-type-foot">
@@ -45,7 +45,7 @@
     </div>
 
     <template v-else>
-      <!-- 左侧产品目录侧边栏 -->
+      <!-- 左侧一级分组侧边栏 -->
       <aside
         v-if="!isMobile"
         class="shop-sidebar"
@@ -53,7 +53,7 @@
       >
         <div class="sidebar-head">
           <span class="sidebar-head-text" v-show="!sidebarCollapsed"
-            >产品目录</span
+            >一级分组</span
           >
           <button
             class="sidebar-toggle"
@@ -95,14 +95,14 @@
         <div class="shop-main" v-loading="pageLoading">
           <div v-if="isMobile" class="mobile-picker-row mobile-picker-row--duo">
             <div class="mobile-picker-col">
-              <div class="config-block-title">地区 / 可用区</div>
+              <div class="config-block-title">一级分组 / 二级分组</div>
               <button
                 type="button"
                 class="mobile-picker-trigger"
                 @click="openMobileRegionDrawer"
               >
                 <span
-                  >{{ activeGroupName || "请选择地区"
+                  >{{ activeGroupName || "请选择一级分组"
                   }}{{ activeChildName ? ` › ${activeChildName}` : "" }}</span
                 >
                 <svg
@@ -149,9 +149,9 @@
             </div>
           </div>
 
-          <!-- 地区（产品目录下的一层） -->
+          <!-- 一级分组 -->
           <div class="filter-block" v-if="rootGroups.length && !isMobile">
-            <span class="filter-label">地区</span>
+            <span class="filter-label">一级分组</span>
             <el-tabs
               class="catalog-tabs"
               :model-value="activeGroupId"
@@ -166,9 +166,9 @@
             </el-tabs>
           </div>
 
-          <!-- 可用区（地区下的一层） -->
+          <!-- 二级分组 -->
           <div class="filter-block" v-if="childGroups.length && !isMobile">
-            <span class="filter-label">可用区</span>
+            <span class="filter-label">二级分组</span>
             <el-tabs
               class="catalog-tabs catalog-tabs--child"
               :model-value="activeChildId"
@@ -1581,9 +1581,9 @@
         <div class="mobile-drawer-sheet">
           <div class="mobile-drawer-head">
             <div>
-              <div class="mobile-drawer-title">地区</div>
+              <div class="mobile-drawer-title">一级分组</div>
               <p class="mobile-drawer-desc">
-                产品目录：{{ activeTypeLabel || "未选择" }}
+                一级分组：{{ activeTypeLabel || "未选择" }}
               </p>
             </div>
             <button
@@ -1591,7 +1591,7 @@
               class="mobile-drawer-switch"
               @click="returnToMobileTypePicker"
             >
-              切换产品目录
+              切换一级分组
             </button>
           </div>
 

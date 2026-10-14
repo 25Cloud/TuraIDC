@@ -200,10 +200,10 @@ class ClientServiceConsoleCategoryTitleFallbackTest extends TestCase
 
             $catalogTypes = collect($overviewResponse->json('data.catalog_types'));
             $this->assertTrue($catalogTypes->isNotEmpty());
-            // 概览目录按一级菜单列出，每个入口的计数之和必须等于服务总数。
+            // 概览目录按一级分组列出，每个入口的计数之和必须等于服务总数。
             $this->assertSame(3, (int) $catalogTypes->sum('count'));
 
-            // 同一批服务只能落在一张卡里（按一级菜单分组，不按商品类型并项）。
+            // 同一批服务只能落在一张卡里（按一级分组分组，不按商品类型并项）。
             $list = $overviewResponse->json('data.list');
             $this->assertIsArray($list);
             $nonEmptyCards = collect($list)
@@ -212,14 +212,14 @@ class ClientServiceConsoleCategoryTitleFallbackTest extends TestCase
             $this->assertCount(1, $nonEmptyCards);
             $nonEmptyTypeCard = $nonEmptyCards[0];
             $this->assertSame(3, (int) ($nonEmptyTypeCard['count'] ?? 0));
-            $this->assertSame('一级分类', $nonEmptyTypeCard['group_level_label'] ?? '');
+            $this->assertSame('一级分组', $nonEmptyTypeCard['group_level_label'] ?? '');
             $this->assertIsArray($nonEmptyTypeCard['children'] ?? null);
             $firstChild = $nonEmptyTypeCard['children'][0] ?? null;
             $this->assertIsArray($firstChild);
             $this->assertSame('Leaf Group '.$suffix, $firstChild['name'] ?? '');
             // 子卡 key 必须带层级，否则不同父下的同名 slug 会撞成同一张卡。
             $this->assertSame('3:'.$thirdGroupId, $firstChild['key'] ?? '');
-            $this->assertSame('三级分类', $firstChild['group_level_label'] ?? '');
+            $this->assertSame('三级分组', $firstChild['group_level_label'] ?? '');
             $this->assertSame(
                 'Root Group '.$suffix.' / Child Group '.$suffix.' / Leaf Group '.$suffix,
                 $firstChild['group_path_text'] ?? ''

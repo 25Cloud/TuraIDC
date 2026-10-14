@@ -389,7 +389,7 @@ function resolvePagedList<T>(payload: { list?: T[] } | T[] | null | undefined): 
 }
 
 function resolveProductMeta(item: ServiceOverviewGroup, key: string) {
-  // 概览现在按一级菜单分组，item.key 是一级菜单 code（可能是 type_xxx），
+  // 概览现在按一级分组分组，item.key 是一级分组 code（可能是 type_xxx），
   // 商品类型另存在 product_type 上，所以两边都要参与匹配，否则图标会全部退化成默认样式。
   const productType = String(item.product_type || '').toLowerCase();
   const title = String(item.title || item.name || item.product_type_label || '').toLowerCase();
@@ -494,7 +494,7 @@ const productCards = computed<ProductCard[]>(() => {
       return {
         key,
         title: String(item.title || item.name || item.product_type_label || '云产品'),
-        levelLabel: String(item.group_level_label || '一级分类'),
+        levelLabel: String(item.group_level_label || '一级分组'),
         countText: `${Number(item.active_count || 0)} 个`,
         count: Number(item.active_count || 0),
         path: '/client/services',
@@ -509,7 +509,7 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'cloud_server',
       title: '云服务器',
-      levelLabel: '一级分类',
+      levelLabel: '一级分组',
       countText: '0 个',
       count: 0,
       path: '/client/services',
@@ -520,7 +520,7 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'game_cloud',
       title: '游戏云',
-      levelLabel: '一级分类',
+      levelLabel: '一级分组',
       countText: '0 个',
       count: 0,
       path: '/client/services',
@@ -531,7 +531,7 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'cloud_desktop',
       title: '云电脑',
-      levelLabel: '一级分类',
+      levelLabel: '一级分组',
       countText: '0 个',
       count: 0,
       path: '/client/services',
@@ -542,7 +542,7 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'bare_metal',
       title: '裸金属',
-      levelLabel: '一级分类',
+      levelLabel: '一级分组',
       countText: '0 个',
       count: 0,
       path: '/client/services',
@@ -553,7 +553,7 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'cdn',
       title: 'CDN',
-      levelLabel: '一级分类',
+      levelLabel: '一级分组',
       countText: '0 个',
       count: 0,
       path: '/client/services',
@@ -564,7 +564,7 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'web_hosting',
       title: '虚拟主机',
-      levelLabel: '一级分类',
+      levelLabel: '一级分组',
       countText: '0 个',
       count: 0,
       path: '/client/services',

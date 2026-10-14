@@ -103,7 +103,7 @@ class ProductCategoryService
 
             if ($level === 1) {
                 $code = trim((string) ($data['first_product_group_code'] ?? $data['code'] ?? ''));
-                throw_if($code === '', new BusinessException('请输入一级分类编码'));
+                throw_if($code === '', new BusinessException('请输入一级分组编码'));
 
                 $group = FirstProductGroup::query()->create([
                     ...$payload,
@@ -162,7 +162,7 @@ class ProductCategoryService
                 $group = $this->findFirstGroup($groupId);
                 if (array_key_exists('first_product_group_code', $data) || array_key_exists('code', $data)) {
                     $code = trim((string) ($data['first_product_group_code'] ?? $data['code'] ?? ''));
-                    throw_if($code === '', new BusinessException('一级分类编码不能为空'));
+                    throw_if($code === '', new BusinessException('一级分组编码不能为空'));
                     $payload['code'] = $code;
                 }
                 if (array_key_exists('product_type', $data)) {
@@ -212,13 +212,13 @@ class ProductCategoryService
         DB::transaction(function () use ($groupId, $level): void {
             if ($level === 1) {
                 $group = $this->findFirstGroup($groupId);
-                throw_if($group->secondProductGroups()->exists(), new BusinessException('请先删除下级分类'));
+                throw_if($group->secondProductGroups()->exists(), new BusinessException('请先删除下级分组'));
                 $this->assertNoActiveProductsInGroup($groupId, fn (Builder $query) => $query->inFirstProductGroup($groupId));
                 $this->forceDeleteSoftDeletedProductsInGroup($groupId, fn (Builder $query) => $query->inFirstProductGroup($groupId));
                 $group->delete();
             } elseif ($level === 2) {
                 $group = $this->findSecondGroup($groupId);
-                throw_if($group->thirdProductGroups()->exists(), new BusinessException('请先删除下级分类'));
+                throw_if($group->thirdProductGroups()->exists(), new BusinessException('请先删除下级分组'));
                 $this->assertNoActiveProductsInGroup($groupId, fn (Builder $query) => $query->inSecondProductGroup($groupId));
                 $this->forceDeleteSoftDeletedProductsInGroup($groupId, fn (Builder $query) => $query->inSecondProductGroup($groupId));
                 $group->delete();
@@ -571,7 +571,7 @@ class ProductCategoryService
             ->unique()
             ->values();
 
-        throw_if($orderedIds->count() < 2, new BusinessException('至少需要两个分类才能拖动排序'));
+        throw_if($orderedIds->count() < 2, new BusinessException('至少需要两个一级分组才能拖动排序'));
 
         $scopeQuery = match ($level) {
             1 => FirstProductGroup::query(),
@@ -621,7 +621,7 @@ class ProductCategoryService
         string $position = 'append',
     ): array {
         throw_if(! in_array($position, ['before', 'after', 'append'], true), new BusinessException('拖动位置参数不正确'));
-        throw_if(! in_array($level, [2, 3], true), new BusinessException('只支持移动二级或三级分类'));
+        throw_if(! in_array($level, [2, 3], true), new BusinessException('只支持移动二级或三级分组'));
 
         return DB::transaction(function () use ($level, $groupId, $targetParentId, $referenceGroupId, $position): array {
             if ($level === 2) {
@@ -883,13 +883,13 @@ class ProductCategoryService
             }
         }
 
-        throw new BusinessException('一级分类不存在');
+        throw new BusinessException('一级分组不存在');
     }
 
     private function findFirstGroup(int $id): FirstProductGroup
     {
         $group = FirstProductGroup::query()->find($id);
-        throw_if(! $group, new BusinessException('一级分类不存在'));
+        throw_if(! $group, new BusinessException('一级分组不存在'));
 
         return $group;
     }
@@ -897,7 +897,7 @@ class ProductCategoryService
     private function findSecondGroup(int $id): SecondProductGroup
     {
         $group = SecondProductGroup::query()->find($id);
-        throw_if(! $group, new BusinessException('二级分类不存在'));
+        throw_if(! $group, new BusinessException('二级分组不存在'));
 
         return $group;
     }
@@ -905,7 +905,7 @@ class ProductCategoryService
     private function findThirdGroup(int $id): ThirdProductGroup
     {
         $group = ThirdProductGroup::query()->find($id);
-        throw_if(! $group, new BusinessException('三级分类不存在'));
+        throw_if(! $group, new BusinessException('三级分组不存在'));
 
         return $group;
     }

@@ -36,7 +36,7 @@ class ValidationAttributeNameTest extends TestCase
             $message,
             '提示语不得泄漏原始字段名'
         );
-        $this->assertStringContainsString('一级分类', $message);
+        $this->assertStringContainsString('一级分组', $message);
     }
 
     public function test_wildcard_and_nested_attribute_names_are_resolved(): void

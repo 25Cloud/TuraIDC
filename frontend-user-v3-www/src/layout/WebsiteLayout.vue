@@ -96,7 +96,7 @@
                 </div>
                 <div class="mega-menu__groups" :aria-busy="navGroupsPending">
                   <span class="mega-menu__col-title">
-                    地区 · {{ navActiveTypeLabel || "全部" }}
+                    一级分组 · {{ navActiveTypeLabel || "全部" }}
                   </span>
                   <!-- 取数中先占位：既不闪「暂无产品分类」，也不会让面板高度塌下去 -->
                   <MegaMenuSkeleton
@@ -1529,7 +1529,7 @@ onBeforeUnmount(() => {
   background: #f8fafc;
 }
 
-/* 分栏标题：让「产品目录 / 地区」在同一屏里直接可辨 */
+/* 分栏标题：让「产品目录 / 一级分组」在同一屏里直接可辨 */
 .mega-menu__col-title {
   display: block;
   padding: 0 20px 8px;

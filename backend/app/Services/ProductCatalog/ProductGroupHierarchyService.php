@@ -101,10 +101,10 @@ class ProductGroupHierarchyService
         }
 
         foreach ([
-            $orphanSecondCount => "存在 {$orphanSecondCount} 个二级分类找不到一级归属",
-            $orphanThirdCount => "存在 {$orphanThirdCount} 个三级分类找不到二级归属",
+            $orphanSecondCount => "存在 {$orphanSecondCount} 个二级分组找不到一级归属",
+            $orphanThirdCount => "存在 {$orphanThirdCount} 个三级分组找不到二级归属",
             $missingProductHierarchyCount => "存在 {$missingProductHierarchyCount} 个商品缺少 product_group_id 挂载字段",
-            $orphanProductGroupCount => "存在 {$orphanProductGroupCount} 个商品引用了不存在的三级分类",
+            $orphanProductGroupCount => "存在 {$orphanProductGroupCount} 个商品引用了不存在的三级分组",
         ] as $count => $message) {
             if ($count > 0) {
                 $blockingErrors[] = $message;

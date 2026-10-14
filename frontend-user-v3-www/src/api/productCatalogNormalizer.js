@@ -40,9 +40,9 @@ export function normalizeProductType(item = {}, index = 0) {
 }
 
 const PRODUCT_GROUP_LEVEL_LABELS = {
-  1: '一级分类',
-  2: '二级分类',
-  3: '三级分类',
+  1: '一级分组',
+  2: '二级分组',
+  3: '三级分组',
 }
 
 function normalizeGroupPath(item = {}) {

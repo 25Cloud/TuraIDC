@@ -100,7 +100,7 @@
           mode="batch"
           compact
           :popup-max-height="340"
-          placeholder="按产品类型 / 地区 / 可用区选择流量包适用商品"
+          placeholder="按一级分组 / 二级分组 / 三级分组选择流量包适用商品"
           @change="handleTrafficBindingsChange"
         />
       </t-form-item>
@@ -250,7 +250,7 @@ function resolveTrafficGroupCategory(bindings: ProductBindingRecord[]): ProductB
   if (firstEffectiveId > 0) {
     const sameCategory = bindings.filter((b) => Number(b.effective_product_group_id || 0) === firstEffectiveId);
     if (sameCategory.length < bindings.length) {
-      MessagePlugin.warning('流量包分组仅支持同一分类下的配置，已自动仅保留首个分类的商品');
+      MessagePlugin.warning('流量包分组仅支持同一一级分组下的配置，已自动仅保留首个一级分组的商品');
       return sameCategory;
     }
     return bindings;

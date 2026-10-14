@@ -2,7 +2,7 @@
   <MobileSheet
     :visible="visible"
     size="282px"
-    title="选择地区与可用区"
+    title="选择一级分组与二级分组"
     cancel-text="取消"
     confirm-text="确定"
     :close-on-press-modal="false"
@@ -15,11 +15,11 @@
       <div class="mrp-frame" aria-hidden="true"></div>
 
       <div class="mrp-col-head">
-        <span class="mrp-col-head__item">地区</span>
-        <span class="mrp-col-head__item">可用区</span>
+        <span class="mrp-col-head__item">一级分组</span>
+        <span class="mrp-col-head__item">二级分组</span>
       </div>
 
-      <div ref="regionCol" class="mrp-col" aria-label="地区">
+      <div ref="regionCol" class="mrp-col" aria-label="一级分组">
         <div class="mrp-spacer" :style="{ height: spacerH + 'px' }"></div>
         <button
           v-for="g in regions"
@@ -35,7 +35,7 @@
         <div class="mrp-spacer" :style="{ height: spacerH + 'px' }"></div>
       </div>
 
-      <div ref="zoneCol" class="mrp-col" aria-label="可用区">
+      <div ref="zoneCol" class="mrp-col" aria-label="二级分组">
         <div class="mrp-spacer" :style="{ height: spacerH + 'px' }"></div>
         <button
           v-for="z in zoneMap"
@@ -183,7 +183,7 @@ function setActive(col, item) {
   // 单一数据源：只更新响应式状态，高亮交给模板的 :class 统一渲染。
   // 之前这里同时手动 classList.toggle("is-active")，会和 Vue 的 class 绑定
   // 互相覆盖：init 回退选中首项时未同步 tempXxxId —— 一旦 Vue 重渲染就把
-  // 高亮抹掉（表现为"可用区没选中"），而手动加的 class 又会残留在别的项上。
+  // 高亮抹掉（表现为"二级分组没选中"），而手动加的 class 又会残留在别的项上。
   const id = Number(item.dataset.id);
   if (col === regionCol.value) {
     tempGroupId.value = id;

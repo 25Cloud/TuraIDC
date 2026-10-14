@@ -6,7 +6,7 @@ let cachedProductTypes = null;
 let cachedTimestamp = 0;
 let pendingRequest = null;
 
-// 地区分组按目录单独缓存：下拉里反复划过同一个目录不再重复打接口，
+// 一级分组按目录单独缓存：下拉里反复划过同一个目录不再重复打接口，
 // 同一目录的并发请求也合并成一个，避免快速划过时把同一个请求打出去多次。
 const groupCache = new Map();
 const groupPending = new Map();
@@ -30,7 +30,7 @@ export function useNavProductMenu() {
   const groupsByType = shallowRef({});
   // 产品目录列表的加载态
   const loading = ref(false);
-  // 当前目录下地区分组的加载态，与上面的 loading 分开，
+  // 当前目录下一级分组的加载态，与上面的 loading 分开，
   // 否则目录先回来、分组还在飞的那一段会被当成「已加载完且为空」，
   // 下拉面板就会先闪一句「暂无产品分类」再被内容顶掉。
   const groupsLoading = ref(false);
@@ -50,7 +50,7 @@ export function useNavProductMenu() {
     return groupsByType.value[key] || [];
   });
 
-  // 下拉面板「还在取数」的统一口径：目录列表或地区分组任一在飞都算 pending。
+  // 下拉面板「还在取数」的统一口径：目录列表或一级分组任一在飞都算 pending。
   const groupsPending = computed(() => loading.value || groupsLoading.value);
 
   function getGroupsForType(typeValue) {

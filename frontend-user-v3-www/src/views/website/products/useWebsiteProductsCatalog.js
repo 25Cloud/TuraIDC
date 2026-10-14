@@ -256,6 +256,20 @@ export function useWebsiteProductsCatalog({
     mobileTypeEntered.value = false;
     mobileCategoryDrawer.value = false;
     mobileProductDrawer.value = false;
+
+    // 必须把地址上的选购参数一并清掉，否则这个按钮没有任何可见效果：
+    // showMobileTypePicker 的条件里带着 !hasWebsiteProductRouteParams(route)，
+    // 而进入时 enterMobileType() → switchType(..., { syncRoute: true }) 已经把参数
+    // 写进地址。只翻 mobileTypeEntered 这个状态，一级分组界面永远不会回来，
+    // 用户看到的就是「切换一级分组」只把抽屉关掉。
+    //
+    // 这里不复用 syncSelectionRoute()：它的「深链保护」正是为了阻止地址回退到
+    // /products（防止深链刷新时状态未解析完就把参数抹掉）。这里是用户主动返回，
+    // 本地分组与商品状态都已加载完毕，不该被那条保护拦住。
+    void router.replace({
+      path: "/products",
+      query: route.query,
+    });
   }
 
   function openMobileCategoryDrawer() {

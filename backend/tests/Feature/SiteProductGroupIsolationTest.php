@@ -16,9 +16,9 @@ use Tests\TestCase;
 /**
  * 站点分类层级回归测试。
  *
- * 真实站点里「大陆云服」和「轻量服务器」两个一级菜单共用同一个商品类型
+ * 真实站点里「大陆云服」和「轻量服务器」两个一级分组共用同一个商品类型
  * （product_type = cloud_server）。如果查询按商品类型兜底，
- * 两个一级菜单下的二级分类会被并进同一份列表，前端再也分不清分类挂在哪条产品线下。
+ * 两个一级分组下的二级分组会被并进同一份列表，前端再也分不清分类挂在哪条产品线下。
  */
 class SiteProductGroupIsolationTest extends TestCase
 {
@@ -64,7 +64,7 @@ class SiteProductGroupIsolationTest extends TestCase
             $this->createProduct($thirdA, $suffix, $created);
             $this->createProduct($thirdB, $suffix, $created);
 
-            // 按一级菜单 code 过滤时只能看到该菜单自己的二级分类
+            // 按一级分组 code 过滤时只能看到该菜单自己的二级分组
             $listA = $this->siteGroupNames('first_product_group_code', $menuACode);
             $this->assertSame(['华东'], $listA);
             $this->assertSame([$menuACode], $this->siteGroupMenuCodes('first_product_group_code', $menuACode));
@@ -81,17 +81,17 @@ class SiteProductGroupIsolationTest extends TestCase
             sort($menuCodesByType);
             $this->assertSame([$menuACode, $menuBCode], $menuCodesByType);
 
-            // 层级字段：二级分组必须带完整路径，标签固定为「二级分类」
+            // 层级字段：二级分组必须带完整路径，标签固定为「二级分组」
             $payload = $this->getJson('/api/v2/site/product-groups?first_product_group_code='.$menuACode.'&page_size=50')
                 ->assertOk()
                 ->assertJsonPath('code', 0)
                 ->json('data.list.0');
             $this->assertIsArray($payload);
-            $this->assertSame('二级分类', $payload['group_level_label'] ?? '');
+            $this->assertSame('二级分组', $payload['group_level_label'] ?? '');
             $this->assertSame('测试菜单甲 / 华东', $payload['group_path_text'] ?? '');
             $this->assertSame(2, $payload['effective_product_group_level'] ?? 0);
             $this->assertSame(
-                ['一级分类', '二级分类'],
+                ['一级分组', '二级分组'],
                 collect($payload['group_path'] ?? [])->pluck('level_label')->all()
             );
 
@@ -101,7 +101,7 @@ class SiteProductGroupIsolationTest extends TestCase
                 ->assertJsonPath('code', 0)
                 ->json('data.list');
             $this->assertIsArray($children);
-            $this->assertSame('三级分类', $children[0]['group_level_label'] ?? '');
+            $this->assertSame('三级分组', $children[0]['group_level_label'] ?? '');
             $this->assertSame('测试菜单甲 / 华东 / 宁波', $children[0]['group_path_text'] ?? '');
         } finally {
             foreach (array_reverse($created['products']) as $id) {

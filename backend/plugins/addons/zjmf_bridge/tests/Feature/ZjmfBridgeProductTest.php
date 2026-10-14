@@ -251,7 +251,7 @@ class ZjmfBridgeProductTest extends TestCase
             [
                 'name' => 'ZJMF 云菜单 '.$suffix,
                 'slug' => 'zjmf-menu-'.$suffix,
-                'description' => 'ZJMF 一级菜单',
+                'description' => 'ZJMF 一级分组',
                 'sort_order' => 1,
                 'is_visible' => 1,
                 'is_system' => 0,

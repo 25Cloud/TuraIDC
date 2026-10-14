@@ -28,7 +28,7 @@ class ServiceOverviewService
 
     private const SUMMARY_CACHE_TTL_SECONDS = 120; // 2分钟：与概览保持一致
 
-    /** 未能归入任何可见一级菜单的服务的兜底分组值。 */
+    /** 未能归入任何可见一级分组的服务的兜底分组值。 */
     private const OTHER_MENU_CODE = 'other_services';
 
     private const STATUS_SCOPE_ACTIVE_PENDING = 'active_pending';
@@ -198,15 +198,15 @@ class ServiceOverviewService
             ->get();
 
         $expiringDeadline = now()->addDays(7);
-        // 概览按「一级菜单」分组，而不是按商品类型（product_type）分组：
-        // 多个一级菜单可以共用同一个商品类型（例如大陆云服与轻量服务器都是 cloud_server），
+        // 概览按「一级分组」分组，而不是按商品类型（product_type）分组：
+        // 多个一级分组可以共用同一个商品类型（例如大陆云服与轻量服务器都是 cloud_server），
         // 按类型分组会把它们并成一张卡，用户再也分不清自己的机器挂在哪条产品线下。
         $menuGroups = $this->visibleFirstProductGroups();
         $menuCodes = $menuGroups
             ->map(fn (FirstProductGroup $group): string => (string) $group->code)
             ->all();
-        // 只有当某商品类型恰好对应一个可见一级菜单时，才按该类型归属；
-        // 多个一级菜单共用同一类型时，相关服务全部归入「其他服务」，避免误归。
+        // 只有当某商品类型恰好对应一个可见一级分组时，才按该类型归属；
+        // 多个一级分组共用同一类型时，相关服务全部归入「其他服务」，避免误归。
         $codeByBusinessType = $menuGroups
             ->groupBy(fn (FirstProductGroup $group): string => ProductType::businessValueForFirstGroup($group, $group->code))
             ->filter(fn ($group) => $group->count() === 1)
@@ -281,7 +281,7 @@ class ServiceOverviewService
     }
 
     /**
-     * 前台可见的一级菜单，按后台排序输出。
+     * 前台可见的一级分组，按后台排序输出。
      *
      * @return \Illuminate\Support\Collection<int, FirstProductGroup>
      */
@@ -398,8 +398,8 @@ class ServiceOverviewService
             'name' => $typeLabel,
             'title' => $typeLabel,
             'description' => $isSyntheticOther
-                ? '用于承载未归入任何一级菜单的服务，或暂未归类的业务实例。'
-                : ('一级分类「'.$menuLabel.'」，当前已开通 '.$count.' 个服务，覆盖 '.$groupCount.' 个下级分类。'),
+                ? '用于承载未归入任何一级分组的服务，或暂未归类的业务实例。'
+                : ('一级分组「'.$menuLabel.'」，当前已开通 '.$count.' 个服务，覆盖 '.$groupCount.' 个下级分组。'),
             'count' => $count,
             'active_count' => $activeCount,
             'pending_count' => $pendingCount,

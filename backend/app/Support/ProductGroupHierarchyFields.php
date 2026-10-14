@@ -14,14 +14,18 @@ class ProductGroupHierarchyFields
 {
     /**
      * 层级的中文名，站点与管理端共用一套，避免各端自己造词导致层级又对不上。
+     *
+     * 统一叫「一级/二级/三级分组」：系统只有三层分组，而 API 里的 product_type
+     * 指的就是一级分组（见 ProductTypeService 实际查的是 FirstProductGroup），
+     * 历史上界面把它写成「一级分组」「一级分组」会让人以为另有一层。
      */
     public static function levelLabel(int $level): string
     {
         return match ($level) {
-            1 => '一级分类',
-            2 => '二级分类',
-            3 => '三级分类',
-            default => '未分类',
+            1 => '一级分组',
+            2 => '二级分组',
+            3 => '三级分组',
+            default => '未分组',
         };
     }
 
