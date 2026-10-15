@@ -1471,7 +1471,8 @@
       "host": "主机",
       "cycle": "周期",
       "expires": "到期",
-      "provisioned": "开通"
+      "provisioned": "开通",
+      "viewUser": "查看用户"
     },
     "cdn": {
       "accelerationRegion": "加速区域",
@@ -1561,7 +1562,11 @@
       "viewAll": "查看全部",
       "emptyRecentInvoices": "暂无最近账单",
       "emptyRecentInvoicesDesc": "有新购、续费或充值账单后会显示在这里。",
-      "goToInvoiceList": "进入账单列表"
+      "goToInvoiceList": "进入账单列表",
+      "todayRevenue": "今日营业额",
+      "monthRevenue": "本月营业额",
+      "openTickets": "未处理工单",
+      "newUsersToday": "今日新增用户"
     }
   },
   "finance": {
@@ -2377,7 +2382,25 @@
       "toggleSelectSuffix": "，点击切换选择",
       "unconnected": "未对接",
       "unconnectedCount": "未对接 {pending}/{total}",
-      "view": "查看"
+      "view": "查看",
+      "providerRequired": "请选择插件提供商",
+      "interfaceNameRequired": "请输入接口名称",
+      "apiUrlLabel": "接口地址",
+      "apiAccountLabel": "接口账号",
+      "apiSecretLabel": "接口密钥",
+      "apiSecretPlaceholder": "编辑时留空则保持原密钥",
+      "pluginActionNoEntry": "插件动作未配置执行入口",
+      "pluginActionForbidden": "当前账号无权执行该供应商插件动作",
+      "batchConnectForbidden": "当前账号无权执行批量商品对接",
+      "pluginBatchNoEntry": "插件未提供批量对接执行入口",
+      "selectTargetCategory": "请选择右侧当前系统分类",
+      "selectRemoteProduct": "请选择上游商品",
+      "batchConnectDone": "批量对接完成",
+      "noPermission": "当前账号无供应商管理权限",
+      "providerUpdated": "提供商已更新",
+      "providerCreated": "提供商已创建",
+      "statusUpdated": "状态已更新",
+      "providerDeleted": "提供商已删除"
     },
     "trafficPackages": {
       "addGroup": "新增分组",
@@ -2752,7 +2775,12 @@
       "suggestOptimizeUnit": "张",
       "tableCountLabel": "表数量：",
       "totalRowsLabel": "总行数：",
-      "totalSizeLabel": "总大小："
+      "totalSizeLabel": "总大小：",
+      "columnName": "表名",
+      "columnRows": "行数",
+      "columnSize": "大小",
+      "columnUpdatedAt": "更新时间",
+      "backupExportStarted": "备份导出已开始下载"
     }
   },
   "tickets": {
@@ -2804,7 +2832,28 @@
       "upstreamDepartment": "上游部门",
       "upstreamDepartmentPlaceholder": "选择上游部门",
       "view": "查看",
-      "zjmfFinance": "ZJMF 财务"
+      "zjmfFinance": "ZJMF 财务",
+      "departmentSales": "销售",
+      "departmentSupport": "技术支持",
+      "departmentBilling": "财务",
+      "departmentAbuse": "投诉",
+      "columnRule": "规则",
+      "ruleNameRequired": "请输入规则名称",
+      "ruleNameTooLong": "规则名称不能超过 120 个字符",
+      "selectDepartment": "请选择工单部门",
+      "selectSupplier": "请选择供应商",
+      "selectUpstreamDepartment": "请选择上游部门",
+      "selectProductScope": "请选择产品范围",
+      "selectProductRequired": "指定产品模式至少选择一个产品",
+      "maskKeywordsTooLong": "屏蔽关键词不能超过 10000 个字符",
+      "upstreamDepartmentGone": "上游已不再返回此部门",
+      "departmentListFailed": "当前已配置：${configuredId}",
+      "uploadImageLockedByRules": "存在工单传递规则时不能关闭 /upload_image 接口",
+      "uploadGuardSaved": "上传防护配置已保存",
+      "enableUploadImageFirst": "请先启用 /upload_image 接口",
+      "ruleUpdated": "工单传递规则已更新",
+      "ruleCreated": "工单传递规则已创建",
+      "ruleDeleted": "工单传递规则已删除"
     },
     "preReplySettings": {
       "enablePreReply": "启用预回复",
@@ -3032,7 +3081,12 @@
     "passwordPlaceholder": "请输入密码",
     "rememberAccount": "记住账号",
     "submit": "登录",
-    "subtitle": "请登录您的管理员账号"
+    "subtitle": "请登录您的管理员账号",
+    "captchaRequired": "请先完成人机验证",
+    "accountRequired": "请输入账号",
+    "passwordRequired": "请输入密码",
+    "loginSuccess": "登录成功",
+    "loginFailed": "登录失败，请检查账号密码"
   },
   "orders": {
     "index": {
@@ -3333,6 +3387,32 @@
       "bindingGroupHint": "可绑定域名数量与机房线路",
       "extraGroup": "其他配置",
       "extraGroupHint": "该套餐包含的附加配置项"
+    },
+    "security": {
+      "direction": "方向",
+      "protocol": "协议",
+      "port": "端口",
+      "source": "来源",
+      "description": "说明"
+    },
+    "nat": {
+      "nameLabel": "名称",
+      "publicAddress": "公网地址",
+      "internalPortLabel": "内网端口"
+    },
+    "tables": {
+      "logActionTime": "操作时间",
+      "logSummary": "操作详情",
+      "logOperator": "操作人",
+      "logIpAddress": "IP 地址",
+      "financeOccurredAt": "发生时间",
+      "financeEventType": "账单类型",
+      "financeAmount": "金额",
+      "financeDescription": "说明",
+      "financeInvoiceNo": "关联账单"
     }
+  },
+  "permission": {
+    "noAccess": "您没有访问该页面的权限"
   }
 }

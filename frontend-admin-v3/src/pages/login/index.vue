@@ -50,6 +50,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { resolveCaptchaRequirement, useGeeTestCaptcha } from '@/hooks/useGeeTestCaptcha';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { resolveAdminHomePath } from '@/utils/route/adminHome';
 
@@ -74,7 +75,7 @@ const {
   prepare: prepareCaptcha,
 } = useGeeTestCaptcha({
   appendTo: captchaContainer,
-  onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
+  onPrompt: () => MessagePlugin.warning(t('login.captchaRequired')),
 });
 
 onMounted(async () => {
@@ -126,8 +127,8 @@ function persistRememberedAccount(account: string) {
 }
 
 const formRules: Record<string, FormRule[]> = {
-  account: [{ required: true, message: '请输入账号', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  account: [{ required: true, message: t('login.accountRequired'), trigger: 'blur' }],
+  password: [{ required: true, message: t('login.passwordRequired'), trigger: 'blur' }],
 };
 
 async function handleLogin() {
@@ -145,7 +146,7 @@ async function handleLogin() {
       ...(captcha ? { captcha } : {}),
     });
     persistRememberedAccount(formData.value.account);
-    MessagePlugin.success('登录成功');
+    MessagePlugin.success(t('login.loginSuccess'));
     const redirect = router.currentRoute.value.query.redirect;
     if (redirect) {
       router.push(decodeURIComponent(redirect as string));
@@ -157,7 +158,7 @@ async function handleLogin() {
   } catch (error) {
     // verify() 的 inline 分支已通过 onPrompt 提示"请先完成人机验证"，这里不再重复弹窗
     const handled = (error as { __handled?: boolean } | null)?.__handled === true;
-    const msg = error instanceof Error ? error.message : '登录失败，请检查账号密码';
+    const msg = error instanceof Error ? error.message : t('login.loginFailed');
     errorMessage.value = msg;
     if (!handled) {
       MessagePlugin.error(msg);

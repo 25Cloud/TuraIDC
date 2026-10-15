@@ -167,7 +167,9 @@
       "viewAllProducts": "全部產品 →",
       "moreLinks": "其他入口",
       "moreLinksDesc": "關於、幫助與常用入口",
-      "productsAndServices": "產品與服務"
+      "productsAndServices": "產品與服務",
+      "home": "首頁",
+      "help": "幫助"
     },
     "navProductMenu": {
       "categoryFallback": "分類 ${index + 1}"
@@ -215,7 +217,10 @@
     "footer": {
       "support": "支援",
       "siteAnnouncements": "站點公告",
-      "ticketSystem": "工單系統"
+      "ticketSystem": "工單系統",
+      "ticketSupport": "工單支援",
+      "helpDocs": "幫助文件",
+      "noticeUpdates": "公告動態"
     },
     "navContent": {
       "uncategorized": "未分類"

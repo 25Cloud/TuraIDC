@@ -1,3 +1,4 @@
+import { t } from '@/locales'
 // SEO 落地页的轻量 meta 数据与路由工具。
 // 仅包含路由注册与结构化数据所需的字段（约 1KB），
 // 全量正文文案（hero/features/scenarios 等）保留在 seoLandingPages.js，
@@ -9,7 +10,7 @@ export const seoLandingMetaPages = [
     path: "/cloud-server",
     routeName: "WwwSeoCloudServer",
     keyword: "云服务器",
-    title: "云服务器 - 稳定弹性计算与 IDC 云主机",
+    title: t('seoLanding.cloudServer.title'),
     description:
       "云服务器面向企业网站、业务系统和开发测试场景，提供稳定弹性计算、灵活配置和 IDC 运维支持。",
     keywords: "云服务器,云主机,弹性云服务器,IDC 云服务器",
@@ -24,7 +25,7 @@ export const seoLandingMetaPages = [
     path: "/hong-kong-server",
     routeName: "WwwSeoHongKongServer",
     keyword: "香港服务器",
-    title: "香港服务器 - 面向出海与跨境访问的云服务器",
+    title: t('seoLanding.hongKongServer.title'),
     description:
       "香港服务器适合跨境网站、外贸业务和亚太访问场景，提供云服务器配置选择与工单支持。",
     keywords: "香港服务器,香港云服务器,香港云主机,跨境服务器",
@@ -39,7 +40,7 @@ export const seoLandingMetaPages = [
     path: "/us-server",
     routeName: "WwwSeoUsServer",
     keyword: "美国服务器",
-    title: "美国服务器 - 海外业务部署与网站托管",
+    title: t('seoLanding.meta.usServer.title'),
     description:
       "美国服务器面向海外网站、跨境业务和开发测试场景，提供云服务器配置选择、系统部署和售后支持。",
     keywords: "美国服务器,美国云服务器,海外服务器,海外云主机",
@@ -54,7 +55,7 @@ export const seoLandingMetaPages = [
     path: "/high-defense-server",
     routeName: "WwwSeoHighDefenseServer",
     keyword: "高防服务器",
-    title: "高防服务器 - 面向攻击防护场景的云服务器",
+    title: t('seoLanding.meta.highDefenseServer.title'),
     description:
       "高防服务器适合游戏、业务接口和高风险网站等防护需求场景，提供配置选择与运维支持。",
     keywords: "高防服务器,高防云服务器,防护服务器,游戏服务器防护",
@@ -69,7 +70,7 @@ export const seoLandingMetaPages = [
     path: "/cloud-pc",
     routeName: "WwwSeoCloudPc",
     keyword: "云电脑",
-    title: "云电脑 - 远程办公与轻量桌面云方案",
+    title: t('seoLanding.meta.cloudPc.title'),
     description:
       "云电脑适合远程办公、轻量桌面、软件测试和临时工作环境，提供云端资源选择与账号管理能力。",
     keywords: "云电脑,云桌面,远程办公云电脑,桌面云",
@@ -205,13 +206,13 @@ export function buildSeoLandingStructuredData(
       {
         "@type": "ListItem",
         position: 1,
-        name: "首页",
+        name: t('layout.nav.home'),
         item: homeUrl,
       },
       {
         "@type": "ListItem",
         position: 2,
-        name: "产品与服务",
+        name: t('layout.nav.productsAndServices'),
         item: productsUrl,
       },
       {

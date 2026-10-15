@@ -4,6 +4,7 @@ import { computed, onMounted, reactive, ref, shallowRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type {
   CouponOption,
   ServiceCatalogTypeOption,
@@ -42,7 +43,7 @@ const DEFAULT_SERVICE_STATUS_SCOPE = 'active_pending';
 const DEFAULT_SERVICE_STATUS = DEFAULT_SERVICE_STATUS_SCOPE;
 const MOBILE_VIEW_MODE_QUERY = '(max-width: 48rem)';
 const DEFAULT_SERVICE_STATUS_OPTION = {
-  label: '默认分类（已开通 / 开通中）',
+  label: t('client.services.defaultCategory'),
   value: DEFAULT_SERVICE_STATUS_SCOPE,
 };
 
@@ -311,8 +312,8 @@ export function useServiceCenter() {
       : [],
   );
   const viewModeOptions = [
-    { label: '卡片', value: 'grid' },
-    { label: '列表', value: 'list' },
+    { label: t('client.services.cardView'), value: 'grid' },
+    { label: t('client.services.listView'), value: 'list' },
   ];
 
   const metricCards = computed(() => {
@@ -333,25 +334,25 @@ export function useServiceCenter() {
     return [
       {
         key: 'total',
-        label: '实例总数',
+        label: t('client.services.metricTotal'),
         value: Number(overview.value.total || 0),
         copy: `覆盖 ${Number(overview.value.category_total || 0)} 个业务分类`,
       },
       {
         key: 'active',
-        label: '正常运行',
+        label: t('client.services.metricActive'),
         value: activeCount,
         copy: '可直接进入控制台操作',
       },
       {
         key: 'pending',
-        label: '待处理实例',
+        label: t('client.services.metricPending'),
         value: pendingCount,
         copy: '开通中、暂停等需要关注的实例',
       },
       {
         key: 'expiring',
-        label: '即将到期',
+        label: t('client.services.metricExpiring'),
         value: expiringCount,
         copy: '建议提前续费避免业务中断',
       },
@@ -520,7 +521,7 @@ export function useServiceCenter() {
       });
       const invoiceId = Number(res.data?.id || 0);
       renewVisible.value = false;
-      MessagePlugin.success('续费账单已创建，正在跳转支付');
+      MessagePlugin.success(t('serviceConsole.renew.invoiceCreated'));
       router.push(invoiceId > 0 ? `/client/invoices/${invoiceId}/pay` : '/client/invoices');
     } catch (error: unknown) {
       MessagePlugin.error(getErrorMessage(error, '续费账单创建失败'));
@@ -548,7 +549,7 @@ export function useServiceCenter() {
         list.value = nextList;
       }
       remarkVisible.value = false;
-      MessagePlugin.success('备注已保存');
+      MessagePlugin.success(t('serviceConsole.remarkSaved'));
     } catch (error: unknown) {
       MessagePlugin.error(getErrorMessage(error, '备注保存失败'));
     } finally {

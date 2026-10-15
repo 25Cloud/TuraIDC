@@ -167,7 +167,9 @@
       "viewAllProducts": "All Products →",
       "moreLinks": "More Links",
       "moreLinksDesc": "About, help, and other frequently used links",
-      "productsAndServices": "Products & Services"
+      "productsAndServices": "Products & Services",
+      "home": "Home",
+      "help": "Help"
     },
     "navProductMenu": {
       "categoryFallback": "Category ${index + 1}"
@@ -215,7 +217,10 @@
     "footer": {
       "support": "Support",
       "siteAnnouncements": "Site Announcements",
-      "ticketSystem": "Ticket System"
+      "ticketSystem": "Ticket System",
+      "ticketSupport": "Ticket Support",
+      "helpDocs": "Help Docs",
+      "noticeUpdates": "Product & service updates"
     },
     "navContent": {
       "uncategorized": "Uncategorized"

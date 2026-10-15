@@ -1471,7 +1471,8 @@
       "host": "Host",
       "cycle": "Cycle",
       "expires": "Expires",
-      "provisioned": "Provisioned"
+      "provisioned": "Provisioned",
+      "viewUser": "View user"
     },
     "cdn": {
       "accelerationRegion": "Acceleration region",
@@ -1561,7 +1562,11 @@
       "viewAll": "View all",
       "emptyRecentInvoices": "No recent invoices",
       "emptyRecentInvoicesDesc": "Purchase, renewal or recharge invoices will appear here.",
-      "goToInvoiceList": "Go to invoice list"
+      "goToInvoiceList": "Go to invoice list",
+      "todayRevenue": "Today's revenue",
+      "monthRevenue": "This month's revenue",
+      "openTickets": "Open tickets",
+      "newUsersToday": "New users today"
     }
   },
   "finance": {
@@ -2377,7 +2382,25 @@
       "toggleSelectSuffix": ", click to toggle selection",
       "unconnected": "Unconnected",
       "unconnectedCount": "Unconnected {pending}/{total}",
-      "view": "View"
+      "view": "View",
+      "providerRequired": "Select a plugin provider",
+      "interfaceNameRequired": "Enter the interface name",
+      "apiUrlLabel": "API URL",
+      "apiAccountLabel": "API account",
+      "apiSecretLabel": "API secret",
+      "apiSecretPlaceholder": "Leave blank to keep the current secret",
+      "pluginActionNoEntry": "No entry point is configured for this plugin action",
+      "pluginActionForbidden": "This account is not allowed to run this supplier plugin action",
+      "batchConnectForbidden": "This account is not allowed to run batch product connect",
+      "pluginBatchNoEntry": "The plugin provides no entry point for batch connect",
+      "selectTargetCategory": "Select the target category on the right",
+      "selectRemoteProduct": "Select an upstream product",
+      "batchConnectDone": "Batch connect completed",
+      "noPermission": "This account has no permission to manage suppliers",
+      "providerUpdated": "Provider updated",
+      "providerCreated": "Provider created",
+      "statusUpdated": "Status updated",
+      "providerDeleted": "Provider deleted"
     },
     "trafficPackages": {
       "addGroup": "Add group",
@@ -2752,7 +2775,12 @@
       "suggestOptimizeUnit": "tables",
       "tableCountLabel": "Tables: ",
       "totalRowsLabel": "Total rows: ",
-      "totalSizeLabel": "Total size: "
+      "totalSizeLabel": "Total size: ",
+      "columnName": "Table name",
+      "columnRows": "Rows",
+      "columnSize": "Size",
+      "columnUpdatedAt": "Updated at",
+      "backupExportStarted": "Backup export download started"
     }
   },
   "tickets": {
@@ -2804,7 +2832,28 @@
       "upstreamDepartment": "Upstream department",
       "upstreamDepartmentPlaceholder": "Select an upstream department",
       "view": "View",
-      "zjmfFinance": "ZJMF Finance"
+      "zjmfFinance": "ZJMF Finance",
+      "departmentSales": "Sales",
+      "departmentSupport": "Technical support",
+      "departmentBilling": "Billing",
+      "departmentAbuse": "Abuse",
+      "columnRule": "Rule",
+      "ruleNameRequired": "Enter the rule name",
+      "ruleNameTooLong": "The rule name cannot exceed 120 characters",
+      "selectDepartment": "Select a ticket department",
+      "selectSupplier": "Select a supplier",
+      "selectUpstreamDepartment": "Select an upstream department",
+      "selectProductScope": "Select a product scope",
+      "selectProductRequired": "Select at least one product when a product scope is specified",
+      "maskKeywordsTooLong": "Blocked keywords cannot exceed 10000 characters",
+      "upstreamDepartmentGone": "The upstream no longer returns this department",
+      "departmentListFailed": "Currently configured: ${configuredId}",
+      "uploadImageLockedByRules": "The /upload_image endpoint cannot be disabled while ticket delivery rules exist",
+      "uploadGuardSaved": "Upload guard settings saved",
+      "enableUploadImageFirst": "Enable the /upload_image endpoint first",
+      "ruleUpdated": "Ticket delivery rule updated",
+      "ruleCreated": "Ticket delivery rule created",
+      "ruleDeleted": "Ticket delivery rule deleted"
     },
     "preReplySettings": {
       "enablePreReply": "Enable auto-reply",
@@ -3032,7 +3081,12 @@
     "passwordPlaceholder": "Enter the password",
     "rememberAccount": "Remember account",
     "submit": "Log in",
-    "subtitle": "Please sign in with your administrator account"
+    "subtitle": "Please sign in with your administrator account",
+    "captchaRequired": "Complete the captcha first",
+    "accountRequired": "Enter the account",
+    "passwordRequired": "Enter the password",
+    "loginSuccess": "Signed in successfully",
+    "loginFailed": "Login failed. Please check your account and password"
   },
   "orders": {
     "index": {
@@ -3333,6 +3387,32 @@
       "bindingGroupHint": "Number of bindable domains and data centre lines",
       "extraGroup": "Other settings",
       "extraGroupHint": "Add-on options included in this plan"
+    },
+    "security": {
+      "direction": "Direction",
+      "protocol": "Protocol",
+      "port": "Port",
+      "source": "Source",
+      "description": "Description"
+    },
+    "nat": {
+      "nameLabel": "Name",
+      "publicAddress": "Public address",
+      "internalPortLabel": "Internal port"
+    },
+    "tables": {
+      "logActionTime": "Action time",
+      "logSummary": "Action details",
+      "logOperator": "Operator",
+      "logIpAddress": "IP address",
+      "financeOccurredAt": "Occurred at",
+      "financeEventType": "Invoice type",
+      "financeAmount": "Amount",
+      "financeDescription": "Description",
+      "financeInvoiceNo": "Related invoice"
     }
+  },
+  "permission": {
+    "noAccess": "You do not have permission to access this page"
   }
 }

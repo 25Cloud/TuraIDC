@@ -256,6 +256,7 @@ import { DialogPlugin } from 'tdesign-vue-next';
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
 
 import { formatMoney, RECHARGE_PRESET_AMOUNTS, useRecharge } from '@/domains/finance/useRecharge';
+import { t } from '@/locales';
 import type { RechargeGatewayOption } from '@/types/client';
 
 const QrcodeVue = defineAsyncComponent(() => import('qrcode.vue'));
@@ -348,8 +349,8 @@ async function handleGatewayCreate(method: RechargeGatewayOption) {
     const dialog = DialogPlugin.confirm({
       header: '确认充值',
       body: `确认通过 ${method.name || method.label || '支付'} 充值 ¥${amountText.value}？`,
-      confirmBtn: '确认支付',
-      cancelBtn: '再想想',
+      confirmBtn: t('finance.invoice.confirmPay'),
+      cancelBtn: t('finance.invoice.notNow'),
       onConfirm: () => {
         dialog.destroy();
         resolve(true);

@@ -2,6 +2,7 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { onMounted, reactive, ref } from 'vue';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type {
   ApiKeyUsageLogRecord,
   UpstreamApiCredential,
@@ -88,7 +89,7 @@ export function useUpstreamApi() {
         credentialVisible.value = true;
       }
       await loadStatus();
-      MessagePlugin.success('上游 API 已开启');
+      MessagePlugin.success(t('apiKeys.upstream.enabled'));
     } catch (error) {
       MessagePlugin.error(getErrorMessage(error, '开启失败'));
     } finally {
@@ -101,7 +102,7 @@ export function useUpstreamApi() {
     try {
       await clientApi.disableUpstreamApi();
       await loadStatus();
-      MessagePlugin.success('上游 API 已关闭，同账号的开放接口密钥也已停用');
+      MessagePlugin.success(t('apiKeys.upstream.disabled'));
     } catch (error) {
       MessagePlugin.error(getErrorMessage(error, '关闭失败'));
     } finally {
@@ -120,7 +121,7 @@ export function useUpstreamApi() {
         credentialVisible.value = true;
       }
       await loadStatus();
-      MessagePlugin.success('密码已重置');
+      MessagePlugin.success(t('apiKeys.upstream.passwordReset'));
     } catch (error) {
       MessagePlugin.error(getErrorMessage(error, '重置失败'));
     } finally {
@@ -133,7 +134,7 @@ export function useUpstreamApi() {
     try {
       await clientApi.updateUpstreamApiPolicy(collectPolicyPayload());
       await loadStatus();
-      MessagePlugin.success('安全策略已更新');
+      MessagePlugin.success(t('apiKeys.upstream.policySaved'));
     } catch (error) {
       MessagePlugin.error(getErrorMessage(error, '策略更新失败'));
     } finally {
@@ -158,9 +159,9 @@ export function useUpstreamApi() {
   async function copyText(value: string) {
     try {
       await navigator.clipboard.writeText(value);
-      MessagePlugin.success('已复制');
+      MessagePlugin.success(t('common.copied'));
     } catch {
-      MessagePlugin.warning('复制失败，请手动选择复制');
+      MessagePlugin.warning(t('common.copyFailedManual'));
     }
   }
 

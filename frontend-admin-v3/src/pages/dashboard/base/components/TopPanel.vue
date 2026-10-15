@@ -17,6 +17,7 @@
 import { computed } from 'vue';
 
 import type { DashboardStats } from '@/api/admin';
+import { t } from '@/locales';
 
 defineOptions({ name: 'DashboardTopPanel' });
 
@@ -35,7 +36,7 @@ function formatCurrency(value: unknown): string {
 const cards = computed(() => [
   {
     key: 'today_income',
-    label: '今日营业额',
+    label: t('dashboard.base.todayRevenue'),
     value: formatCurrency(props.stats?.today?.income),
     icon: 'money',
     iconBg: 'var(--td-brand-color-light)',
@@ -43,7 +44,7 @@ const cards = computed(() => [
   },
   {
     key: 'month_income',
-    label: '本月营业额',
+    label: t('dashboard.base.monthRevenue'),
     value: formatCurrency(props.stats?.month?.income),
     icon: 'chart',
     iconBg: 'var(--td-success-color-light, #EAFBF3)',
@@ -51,7 +52,7 @@ const cards = computed(() => [
   },
   {
     key: 'open_tickets',
-    label: '未处理工单',
+    label: t('dashboard.base.openTickets'),
     value: String(props.stats?.counts?.open_tickets ?? 0),
     icon: 'chat',
     iconBg: 'var(--td-warning-color-light, #FFF6E5)',
@@ -59,7 +60,7 @@ const cards = computed(() => [
   },
   {
     key: 'today_new_users',
-    label: '今日新增用户',
+    label: t('dashboard.base.newUsersToday'),
     value: String(props.stats?.today?.new_users ?? 0),
     icon: 'user',
     iconBg: 'var(--td-brand-color-light, #ECF2FE)',

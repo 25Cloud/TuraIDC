@@ -181,6 +181,7 @@ import {
   TICKET_STATUS_OPTIONS,
   useTicketList,
 } from '@/domains/support/useTickets';
+import { t } from '@/locales';
 
 const {
   loading,
@@ -209,11 +210,11 @@ const {
 } = useTicketList();
 
 const columns: PrimaryTableCol[] = [
-  { colKey: 'subject', title: '标题', minWidth: '18rem' },
-  { colKey: 'status', title: '状态', width: '8rem' },
-  { colKey: 'priority', title: '优先级', width: '8rem' },
-  { colKey: 'updated_at', title: '更新时间', minWidth: '12rem' },
-  { colKey: 'operation', title: '操作', width: '8rem', align: 'right' },
+  { colKey: 'subject', title: t('tickets.columnSubject'), minWidth: '18rem' },
+  { colKey: 'status', title: t('common.status'), width: '8rem' },
+  { colKey: 'priority', title: t('tickets.columnPriority'), width: '8rem' },
+  { colKey: 'updated_at', title: t('tickets.columnUpdatedAt'), minWidth: '12rem' },
+  { colKey: 'operation', title: t('common.action'), width: '8rem', align: 'right' },
 ];
 
 async function handleCreateUpload(event: Event) {

@@ -284,6 +284,7 @@ import { productApi } from '@/api/product';
 import type { SupplierRecord } from '@/api/supplier';
 import { supplierApi } from '@/api/supplier';
 import { AdminPermissions } from '@/constants/permissions';
+import { t } from '@/locales';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
 
@@ -321,10 +322,10 @@ const uploadGuard = reactive({
 const savedUploadImageEnabled = ref(false);
 
 const departmentOptions = [
-  { label: '销售', value: 'sales' },
-  { label: '技术支持', value: 'support' },
-  { label: '财务', value: 'billing' },
-  { label: '投诉', value: 'abuse' },
+  { label: t('tickets.deliverySettings.departmentSales'), value: 'sales' },
+  { label: t('tickets.deliverySettings.departmentSupport'), value: 'support' },
+  { label: t('tickets.deliverySettings.departmentBilling'), value: 'billing' },
+  { label: t('tickets.deliverySettings.departmentAbuse'), value: 'abuse' },
 ];
 
 const form = reactive({
@@ -340,32 +341,32 @@ const form = reactive({
 });
 
 const columns: PrimaryTableCol[] = [
-  { title: '规则', colKey: 'name', minWidth: 220 },
-  { title: '供应商', colKey: 'supplier', minWidth: 150 },
-  { title: '产品范围', colKey: 'scope', minWidth: 140 },
-  { title: '上游部门', colKey: 'upstreamDepartment', width: 130 },
-  { title: '状态', colKey: 'status', width: 90 },
-  { title: '管理员回复', colKey: 'sync', width: 110 },
-  { title: '操作', colKey: 'actions', fixed: 'right', width: 220 },
+  { title: t('tickets.deliverySettings.columnRule'), colKey: 'name', minWidth: 220 },
+  { title: t('tickets.deliverySettings.supplier'), colKey: 'supplier', minWidth: 150 },
+  { title: t('tickets.deliverySettings.productScope'), colKey: 'scope', minWidth: 140 },
+  { title: t('tickets.deliverySettings.upstreamDepartment'), colKey: 'upstreamDepartment', width: 130 },
+  { title: t('common.status'), colKey: 'status', width: 90 },
+  { title: t('tickets.deliverySettings.adminReply'), colKey: 'sync', width: 110 },
+  { title: t('common.action'), colKey: 'actions', fixed: 'right', width: 220 },
 ];
 
 const formRules: Record<string, FormRule[]> = {
   name: [
-    { required: true, message: '请输入规则名称', type: 'error' },
-    { max: 120, message: '规则名称不能超过 120 个字符', type: 'error' },
+    { required: true, message: t('tickets.deliverySettings.ruleNameRequired'), type: 'error' },
+    { max: 120, message: t('tickets.deliverySettings.ruleNameTooLong'), type: 'error' },
   ],
-  department: [{ required: true, message: '请选择工单部门', type: 'error' }],
-  supplier_id: [{ required: true, message: '请选择供应商', type: 'error' }],
-  upstream_department_id: [{ required: true, message: '请选择上游部门', type: 'error' }],
-  product_scope_mode: [{ required: true, message: '请选择产品范围', type: 'error' }],
+  department: [{ required: true, message: t('tickets.deliverySettings.selectDepartment'), type: 'error' }],
+  supplier_id: [{ required: true, message: t('tickets.deliverySettings.selectSupplier'), type: 'error' }],
+  upstream_department_id: [{ required: true, message: t('tickets.deliverySettings.selectUpstreamDepartment'), type: 'error' }],
+  product_scope_mode: [{ required: true, message: t('tickets.deliverySettings.selectProductScope'), type: 'error' }],
   product_ids: [
     {
       validator: (value) => form.product_scope_mode !== 'selected' || (Array.isArray(value) && value.length > 0),
-      message: '指定产品模式至少选择一个产品',
+      message: t('tickets.deliverySettings.selectProductRequired'),
       type: 'error',
     },
   ],
-  mask_keywords: [{ max: 10000, message: '屏蔽关键词不能超过 10000 个字符', type: 'error' }],
+  mask_keywords: [{ max: 10000, message: t('tickets.deliverySettings.maskKeywordsTooLong'), type: 'error' }],
 };
 
 const filteredProducts = computed(() => {
@@ -409,14 +410,14 @@ async function loadUpstreamDepartments(supplierId: number | string, configuredId
       departments.unshift({
         id: String(configuredId),
         name: `当前已配置：${configuredId}`,
-        description: '上游已不再返回此部门',
+        description: t('tickets.deliverySettings.upstreamDepartmentGone'),
       });
     }
     upstreamDepartments.value = departments;
   } catch (error) {
     if (requestId !== departmentsRequestId) return;
     upstreamDepartments.value = configuredId
-      ? [{ id: String(configuredId), name: `当前已配置：${configuredId}`, description: '部门列表加载失败' }]
+      ? [{ id: String(configuredId), name: `当前已配置：${configuredId}`, description: t('tickets.deliverySettings.departmentListFailed') }]
       : [];
     MessagePlugin.error(errorMessage(error, '加载上游部门失败'));
   } finally {
@@ -564,7 +565,7 @@ async function loadUploadGuard() {
 async function saveUploadGuard() {
   if (!canManage.value) return;
   if (!uploadGuard.upload_image_enabled && rules.value.length > 0) {
-    MessagePlugin.warning('存在工单传递规则时不能关闭 /upload_image 接口');
+    MessagePlugin.warning(t('tickets.deliverySettings.uploadImageLockedByRules'));
     return;
   }
   guardSaving.value = true;
@@ -580,7 +581,7 @@ async function saveUploadGuard() {
     uploadGuard.allowed_ips = saved.allowed_ips ?? '';
     uploadGuard.rate_limit = Number(saved.rate_limit ?? 0);
     uploadGuard.block_non_whitelisted = saved.block_non_whitelisted !== false;
-    MessagePlugin.success('上传防护配置已保存');
+    MessagePlugin.success(t('tickets.deliverySettings.uploadGuardSaved'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存上传防护配置失败'));
   } finally {
@@ -590,7 +591,7 @@ async function saveUploadGuard() {
 
 function openCreateDialog() {
   if (!canManage.value || !savedUploadImageEnabled.value) {
-    if (canManage.value) MessagePlugin.warning('请先启用 /upload_image 接口');
+    if (canManage.value) MessagePlugin.warning(t('tickets.deliverySettings.enableUploadImageFirst'));
     return;
   }
   editingId.value = null;
@@ -601,7 +602,7 @@ function openCreateDialog() {
 function openEditDialog(row: TicketDeliveryRuleRecord) {
   // 与新建流程一致：管理员在 /upload_image 未启用时禁止编辑（非管理员仅查看不受限）
   if (canManage.value && !savedUploadImageEnabled.value) {
-    MessagePlugin.warning('请先启用 /upload_image 接口');
+    MessagePlugin.warning(t('tickets.deliverySettings.enableUploadImageFirst'));
     return;
   }
   editingId.value = row.id;
@@ -642,7 +643,7 @@ function buildPayload(): TicketDeliveryRulePayload {
 async function submitForm() {
   if (!canManage.value) return;
   if (!savedUploadImageEnabled.value) {
-    MessagePlugin.warning('请先启用 /upload_image 接口');
+    MessagePlugin.warning(t('tickets.deliverySettings.enableUploadImageFirst'));
     return;
   }
   const result = await formRef.value?.validate();
@@ -652,10 +653,10 @@ async function submitForm() {
     const payload = buildPayload();
     if (editingId.value) {
       await adminApi.tickets.deliveryRules.update(editingId.value, payload);
-      MessagePlugin.success('工单传递规则已更新');
+      MessagePlugin.success(t('tickets.deliverySettings.ruleUpdated'));
     } else {
       await adminApi.tickets.deliveryRules.create(payload);
-      MessagePlugin.success('工单传递规则已创建');
+      MessagePlugin.success(t('tickets.deliverySettings.ruleCreated'));
     }
     dialogVisible.value = false;
     await loadRules();
@@ -669,7 +670,7 @@ async function submitForm() {
 async function toggleRule(row: TicketDeliveryRuleRecord) {
   if (!canManage.value) return;
   if (!savedUploadImageEnabled.value) {
-    MessagePlugin.warning('请先启用 /upload_image 接口');
+    MessagePlugin.warning(t('tickets.deliverySettings.enableUploadImageFirst'));
     return;
   }
   try {
@@ -698,11 +699,11 @@ function confirmDelete(row: TicketDeliveryRuleRecord) {
     header: '删除工单传递规则',
     body: `确认删除规则「${row.name || row.id}」？删除后无法恢复。`,
     confirmBtn: { content: '删除', theme: 'danger' },
-    cancelBtn: '取消',
+    cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       try {
         await adminApi.tickets.deliveryRules.delete(row.id);
-        MessagePlugin.success('工单传递规则已删除');
+        MessagePlugin.success(t('tickets.deliverySettings.ruleDeleted'));
         await loadRules();
         dialog.destroy();
       } catch (error) {

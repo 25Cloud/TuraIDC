@@ -1,3 +1,4 @@
+import { t } from '@/locales'
 <template>
   <div class="website-layout">
     <a class="skip-to-content" href="#main-content">{{ $t('layout.a11y.skipToMainContent') }}</a>
@@ -1212,7 +1213,7 @@ const navigationItems = [
   { to: "/", label: "首页", match: ["WwwHome"] },
   {
     to: "/products",
-    label: "产品",
+    label: t('layout.nav.products'),
     match: [
       "WwwProducts",
       "WwwProductsPurchase",
@@ -1223,28 +1224,28 @@ const navigationItems = [
   },
   {
     to: "/notices",
-    label: "公告",
+    label: t('layout.nav.notices'),
     match: ["WwwNotices", "WwwNoticeDetail"],
     menuId: "notices",
   },
   {
     to: "/help",
-    label: "帮助",
+    label: t('layout.nav.help'),
     match: ["WwwHelp", "WwwHelpDetail"],
     menuId: "help",
   },
-  { to: "/about", label: "其他", match: ["WwwAbout"], menuId: "about" },
+  { to: "/about", label: t('layout.nav.moreLinks'), match: ["WwwAbout"], menuId: "about" },
 ];
 
 const aboutQuickLinks = [
-  { to: "/about", title: "关于我们", desc: "企业简介、发展愿景与服务承诺" },
+  { to: "/about", title: t('layout.nav.aboutUs'), desc: "企业简介、发展愿景与服务承诺" },
   {
     to: "/client/tickets",
-    title: "工单支持",
+    title: t('layout.footer.ticketSupport'),
     desc: "提交售后工单，获得 1v1 响应",
   },
-  { to: "/help", title: "帮助文档", desc: "常见问题与使用指南" },
-  { to: "/notices", title: "公告动态", desc: "产品更新、活动与维护通知" },
+  { to: "/help", title: t('layout.footer.helpDocs'), desc: "常见问题与使用指南" },
+  { to: "/notices", title: t('layout.footer.noticeUpdates'), desc: "产品更新、活动与维护通知" },
 ];
 
 const logoSrc = computed(() => appStore.siteLogo || "/branding/logo.png");

@@ -1,6 +1,7 @@
 import { MessagePlugin } from 'tdesign-vue-next';
 import { reactive, ref } from 'vue';
 
+import { t } from '@/locales';
 import clientApi from '@/api/client';
 import type { ConsoleServiceDetail } from '@/types/client';
 
@@ -48,7 +49,7 @@ export function useConsoleDialogs(options: UseConsoleDialogsOptions) {
         custom_service_name: payload.custom_service_name || nameForm.name,
       });
       nameVisible.value = false;
-      MessagePlugin.success('实例名称已保存');
+      MessagePlugin.success(t('serviceConsole.instanceNameSaved'));
     } catch (error: unknown) {
       MessagePlugin.error(resolveErrorMessage(error, '实例名称保存失败'));
     } finally {
@@ -71,7 +72,7 @@ export function useConsoleDialogs(options: UseConsoleDialogsOptions) {
       const res = await clientApi.updateServiceRemark(serviceId.value, { remark: remarkForm.remark });
       mergeDetail({ remark: String(res.data?.remark || remarkForm.remark).trim() });
       remarkVisible.value = false;
-      MessagePlugin.success('备注已保存');
+      MessagePlugin.success(t('serviceConsole.remarkSaved'));
     } catch (error: unknown) {
       MessagePlugin.error(resolveErrorMessage(error, '备注保存失败'));
     } finally {
@@ -120,11 +121,11 @@ export function useConsoleDialogs(options: UseConsoleDialogsOptions) {
 
   async function submitResetPassword() {
     if (!passwordForm.password || passwordForm.password.length < 8) {
-      MessagePlugin.warning('新密码至少需要 8 位');
+      MessagePlugin.warning(t('serviceConsole.passwordTooShort'));
       return;
     }
     if (passwordForm.password !== passwordForm.password_confirmation) {
-      MessagePlugin.warning('两次输入的密码不一致');
+      MessagePlugin.warning(t('serviceConsole.passwordMismatch'));
       return;
     }
     actionLoading.value = true;

@@ -72,6 +72,7 @@ import { computed, onMounted, ref } from 'vue';
 import type { DatabaseOptimizationCandidate, DatabaseStatus, DatabaseTableItem } from '@/api/admin/database';
 import { databaseApi } from '@/api/admin/database';
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { errorMessage } from '@/utils/userMessage';
 
@@ -101,10 +102,10 @@ const filteredList = computed(() => status.value.list);
 const optimizationCoolingDown = computed(() => status.value.optimization.cooldown_remaining_seconds > 0);
 
 const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
-  { title: '表名', colKey: 'name', minWidth: 220 },
-  { title: '行数', colKey: 'rows', width: 140 },
-  { title: '大小', colKey: 'size', width: 140 },
-  { title: '更新时间', colKey: 'updateTime', minWidth: 180 },
+  { title: t('system.database.columnName'), colKey: 'name', minWidth: 220 },
+  { title: t('system.database.columnRows'), colKey: 'rows', width: 140 },
+  { title: t('system.database.columnSize'), colKey: 'size', width: 140 },
+  { title: t('system.database.columnUpdatedAt'), colKey: 'updateTime', minWidth: 180 },
 ]);
 
 onMounted(() => {
@@ -154,7 +155,7 @@ function handleOptimizeTables(tables: string[]) {
       ? `确认检查${label}？仅对可回收空间达到阈值的表执行 OPTIMIZE TABLE；该操作可能短暂锁表，请避开高峰期。`
       : `确认对${label}执行 OPTIMIZE TABLE？该操作可能短暂锁表，请避开高峰期。`,
     confirmBtn: { content: '确认优化', theme: 'warning' },
-    cancelBtn: '取消',
+    cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       optimizing.value = true;
       try {
@@ -180,12 +181,12 @@ function handleExportBackup() {
     header: '导出数据库备份',
     body: '确认导出当前数据库完整 SQL 备份？文件可能较大，导出期间请勿重复点击。',
     confirmBtn: { content: '确认导出', theme: 'primary' },
-    cancelBtn: '取消',
+    cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       exporting.value = true;
       try {
         await databaseApi.exportBackup();
-        MessagePlugin.success('备份导出已开始下载');
+        MessagePlugin.success(t('system.database.backupExportStarted'));
         dialog.destroy();
       } catch (error) {
         MessagePlugin.error(errorMessage(error, '导出数据库备份失败'));

@@ -541,6 +541,7 @@ import type {
 import { supplierApi } from '@/api/supplier';
 import SecretInput from '@/components/secret-input/index.vue';
 import { AdminPermissions } from '@/constants/permissions';
+import { t } from '@/locales';
 import { hasAdminPermission } from '@/utils/permission';
 
 import {
@@ -665,31 +666,31 @@ const canBulkConnectSupplierProducts = computed(() => hasAdminPermission(AdminPe
 const canRevealSupplierSecrets = computed(() => hasAdminPermission(AdminPermissions.SUPPLIER_SECRET_REVEAL));
 
 const supplierRules: FormRules<typeof supplierForm> = {
-  provider_key: [{ required: true, message: '请选择插件提供商', trigger: 'change' }],
-  name: [{ required: true, message: '请输入接口名称', trigger: 'blur' }],
+  provider_key: [{ required: true, message: t('products.suppliers.providerRequired'), trigger: 'change' }],
+  name: [{ required: true, message: t('products.suppliers.interfaceNameRequired'), trigger: 'blur' }],
 };
 
 const fallbackSupplierCredentialFields: SupplierFormField[] = [
   {
     key: 'api_url',
-    label: '接口地址',
+    label: t('products.suppliers.apiUrlLabel'),
     type: 'url',
     required: true,
     placeholder: 'https://panel.example.com',
   },
   {
     key: 'api_username',
-    label: '接口账号',
+    label: t('products.suppliers.apiAccountLabel'),
     type: 'text',
     required: true,
   },
   {
     key: 'api_key',
-    label: '接口密钥',
+    label: t('products.suppliers.apiSecretLabel'),
     type: 'password',
     required: true,
     secret: true,
-    placeholder: '编辑时留空则保持原密钥',
+    placeholder: t('products.suppliers.apiSecretPlaceholder'),
   },
 ];
 
@@ -936,7 +937,7 @@ async function loadSuppliers() {
 async function executeSupplierCardAction(row: SupplierRecord, action: SupplierCardAction) {
   const requestAction = String(action.request_action || '').trim();
   if (!requestAction) {
-    MessagePlugin.warning('插件动作未配置执行入口');
+    MessagePlugin.warning(t('products.suppliers.pluginActionNoEntry'));
     return;
   }
 
@@ -970,7 +971,7 @@ function patchSupplierCard(supplierId: SupplierRecord['id'], card: unknown) {
 
 function handleSupplierCardAction(row: SupplierRecord, action: SupplierCardAction) {
   if (!canRunSupplierCardAction(action)) {
-    MessagePlugin.warning('当前账号无权执行该供应商插件动作');
+    MessagePlugin.warning(t('products.suppliers.pluginActionForbidden'));
     return;
   }
 
@@ -1515,7 +1516,7 @@ async function loadSupplierBatchProducts() {
 
 async function openSupplierBatchDialog(row: SupplierRecord, action: SupplierCardAction) {
   if (!canRunSupplierCardAction(action)) {
-    MessagePlugin.warning('当前账号无权执行批量商品对接');
+    MessagePlugin.warning(t('products.suppliers.batchConnectForbidden'));
     return;
   }
 
@@ -1576,22 +1577,22 @@ function resolveSupplierBatchTargetFirstGroupCode() {
 
 async function submitSupplierBatchConnect() {
   if (!canRunSupplierCardAction(supplierBatchAction.value || ({} as SupplierCardAction))) {
-    MessagePlugin.warning('当前账号无权执行批量商品对接');
+    MessagePlugin.warning(t('products.suppliers.batchConnectForbidden'));
     return;
   }
   if (!supplierBatchSupplier.value?.id) return;
   const requestAction = String(supplierBatchAction.value?.request_action || '').trim();
   if (!requestAction) {
-    MessagePlugin.warning('插件未提供批量对接执行入口');
+    MessagePlugin.warning(t('products.suppliers.pluginBatchNoEntry'));
     return;
   }
   const firstGroupCode = resolveSupplierBatchTargetFirstGroupCode();
   if (!supplierBatchTargetGroup.value || !firstGroupCode) {
-    MessagePlugin.warning('请选择右侧当前系统分类');
+    MessagePlugin.warning(t('products.suppliers.selectTargetCategory'));
     return;
   }
   if (!supplierBatchSelectedKeys.value.length) {
-    MessagePlugin.warning('请选择上游商品');
+    MessagePlugin.warning(t('products.suppliers.selectRemoteProduct'));
     return;
   }
 
@@ -1606,7 +1607,7 @@ async function submitSupplierBatchConnect() {
       sync_config_options: Number(supplierBatchForm.sync_config_options || 0),
     });
     supplierBatchResult.value = toPlainRecord(response);
-    MessagePlugin.success('批量对接完成');
+    MessagePlugin.success(t('products.suppliers.batchConnectDone'));
     await Promise.all([loadSupplierBatchProducts(), loadSupplierBatchLocalProducts(), loadSuppliers()]);
     setAllSupplierBatchRemoteExpanded(true);
     setAllSupplierBatchLocalExpanded(true);
@@ -1657,7 +1658,7 @@ async function loadSupplierDetail(row: SupplierRecord) {
 
 async function submitSupplier() {
   if (!canManageSuppliers.value) {
-    MessagePlugin.warning('当前账号无供应商管理权限');
+    MessagePlugin.warning(t('products.suppliers.noPermission'));
     return;
   }
 
@@ -1674,10 +1675,10 @@ async function submitSupplier() {
     const payload = buildSupplierPayload();
     if (editingSupplier.value?.id) {
       await supplierApi.update(editingSupplier.value.id, payload);
-      MessagePlugin.success('提供商已更新');
+      MessagePlugin.success(t('products.suppliers.providerUpdated'));
     } else {
       await supplierApi.create(payload);
-      MessagePlugin.success('提供商已创建');
+      MessagePlugin.success(t('products.suppliers.providerCreated'));
     }
     supplierDialogVisible.value = false;
     await loadSuppliers();
@@ -1694,7 +1695,7 @@ async function handleToggleSupplier(row: SupplierRecord) {
   supplierActionLoading.value = row.id;
   try {
     await supplierApi.toggleStatus(row.id, Number(row.status) !== 1);
-    MessagePlugin.success('状态已更新');
+    MessagePlugin.success(t('products.suppliers.statusUpdated'));
     await loadSuppliers();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '更新状态失败'));
@@ -1710,13 +1711,13 @@ function handleDeleteSupplier(row: SupplierRecord) {
     header: '删除提供商',
     body: `确认删除「${row.name || row.id}」吗？`,
     theme: 'warning',
-    confirmBtn: '确认删除',
-    cancelBtn: '取消',
+    confirmBtn: t('common.confirmDelete'),
+    cancelBtn: t('common.cancel'),
     async onConfirm() {
       supplierActionLoading.value = row.id;
       try {
         await supplierApi.delete(row.id);
-        MessagePlugin.success('提供商已删除');
+        MessagePlugin.success(t('products.suppliers.providerDeleted'));
         dialog.hide();
         await loadSuppliers();
       } catch (error) {

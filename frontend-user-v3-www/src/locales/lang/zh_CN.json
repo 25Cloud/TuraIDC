@@ -167,7 +167,9 @@
       "viewAllProducts": "全部产品 →",
       "moreLinks": "其他入口",
       "moreLinksDesc": "关于、帮助与常用入口",
-      "productsAndServices": "产品与服务"
+      "productsAndServices": "产品与服务",
+      "home": "首页",
+      "help": "帮助"
     },
     "navProductMenu": {
       "categoryFallback": "分类 ${index + 1}"
@@ -215,7 +217,10 @@
     "footer": {
       "support": "支持",
       "siteAnnouncements": "站点公告",
-      "ticketSystem": "工单系统"
+      "ticketSystem": "工单系统",
+      "ticketSupport": "工单支持",
+      "helpDocs": "帮助文档",
+      "noticeUpdates": "公告动态"
     },
     "navContent": {
       "uncategorized": "未分类"

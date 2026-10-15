@@ -14,7 +14,8 @@
     "method": "Method",
     "status": "Status",
     "createdAt": "Created at",
-    "action": "Action"
+    "action": "Action",
+    "copied": "Copied"
   },
   "components": {
     "isSetup": {
@@ -801,7 +802,11 @@
       "usageLogs": "Call Logs",
       "usageLogsTitle": "Call Logs · Magic Cube Integration",
       "username": "Username",
-      "logPath": "Endpoint path"
+      "logPath": "Endpoint path",
+      "enabled": "The upstream API is enabled",
+      "disabled": "The upstream API is disabled. Open API keys under the same account have also been disabled.",
+      "passwordReset": "Password reset",
+      "policySaved": "Security policy updated"
     },
     "title": "API Credentials",
     "create": "Create Key",
@@ -812,7 +817,12 @@
     "scopeFinance": "Balance and finance",
     "nameRequired": "Enter the key name",
     "updated": "Credential updated",
-    "deleted": "Credential deleted"
+    "deleted": "Credential deleted",
+    "columnName": "Name",
+    "columnScopes": "Scopes",
+    "columnExpiresAt": "Expiry",
+    "columnLastUsedAt": "Last used",
+    "columnDuration": "Duration"
   },
   "client": {
     "catalog": {
@@ -1068,7 +1078,12 @@
       "service": "Service",
       "specSummary": "Spec summary",
       "expiresAt": "Expiry date",
-      "ipTraffic": "IP / Traffic"
+      "ipTraffic": "IP / Traffic",
+      "defaultCategory": "Default category (active / provisioning)",
+      "metricTotal": "Total instances",
+      "metricActive": "Running",
+      "metricPending": "Pending",
+      "metricExpiring": "Expiring soon"
     },
     "ticketDetail": {
       "adminRole": "Admin",
@@ -1427,7 +1442,11 @@
       "financeAmount": "Amount",
       "financeDescription": "Description",
       "financeInvoiceNo": "Related invoice"
-    }
+    },
+    "instanceNameSaved": "Instance name saved",
+    "remarkSaved": "Remark saved",
+    "passwordTooShort": "The new password must be at least 8 characters",
+    "passwordMismatch": "The two passwords do not match"
   },
   "recharge": {
     "title": "Top-up",
@@ -1604,7 +1623,10 @@
   },
   "tickets": {
     "searchPlaceholder": "Search ticket title",
-    "allStatus": "All Statuses"
+    "allStatus": "All Statuses",
+    "columnSubject": "Title",
+    "columnPriority": "Priority",
+    "columnUpdatedAt": "Updated at"
   },
   "auth": {
     "accountLabel": "Phone / Email",

@@ -380,7 +380,7 @@ function goServiceDetail(row: ServiceRecord) {
 function mobileActionOptions(row: ServiceRecord) {
   return [
     { content: '管理实例', value: 'service', disabled: !Number(row.service_id || row.id || 0) },
-    { content: '查看用户', value: 'user', disabled: !row.user?.id },
+    { content: t('services.index.viewUser'), value: 'user', disabled: !row.user?.id },
   ];
 }
 
@@ -391,7 +391,7 @@ function handleMobileAction(value: unknown, row: ServiceRecord) {
 
 function serviceMobileRows(row: ServiceRecord) {
   return [
-    { label: '用户', value: userName(row.user) },
+    { label: t('services.index.user'), value: userName(row.user) },
     { label: t('services.index.host'), value: hostSummary(row) },
     { label: t('services.index.cycle'), value: billingCycleLabel(row.billing_cycle) },
     { label: t('services.index.expires'), value: shortDate(row.expires_at), strong: isExpiringSoon(row.expires_at) },

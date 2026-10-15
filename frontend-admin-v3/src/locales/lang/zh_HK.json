@@ -1471,7 +1471,8 @@
       "host": "主機",
       "cycle": "週期",
       "expires": "到期",
-      "provisioned": "開通"
+      "provisioned": "開通",
+      "viewUser": "查看用戶"
     },
     "cdn": {
       "accelerationRegion": "加速區域",
@@ -1561,7 +1562,11 @@
       "viewAll": "查看全部",
       "emptyRecentInvoices": "暫無最近賬單",
       "emptyRecentInvoicesDesc": "有新購、續費或充值賬單後會顯示在這裡。",
-      "goToInvoiceList": "進入賬單列表"
+      "goToInvoiceList": "進入賬單列表",
+      "todayRevenue": "今日營業額",
+      "monthRevenue": "本月營業額",
+      "openTickets": "未處理工單",
+      "newUsersToday": "今日新增用戶"
     }
   },
   "finance": {
@@ -2377,7 +2382,25 @@
       "toggleSelectSuffix": "，點擊切換選擇",
       "unconnected": "未對接",
       "unconnectedCount": "未對接 {pending}/{total}",
-      "view": "查看"
+      "view": "查看",
+      "providerRequired": "請選擇插件提供商",
+      "interfaceNameRequired": "請輸入接口名稱",
+      "apiUrlLabel": "接口地址",
+      "apiAccountLabel": "接口賬號",
+      "apiSecretLabel": "接口密鑰",
+      "apiSecretPlaceholder": "編輯時留空則保持原密鑰",
+      "pluginActionNoEntry": "插件動作未配置執行入口",
+      "pluginActionForbidden": "當前賬號無權執行該供應商插件動作",
+      "batchConnectForbidden": "當前賬號無權執行批量商品對接",
+      "pluginBatchNoEntry": "插件未提供批量對接執行入口",
+      "selectTargetCategory": "請選擇右側當前系統分類",
+      "selectRemoteProduct": "請選擇上游商品",
+      "batchConnectDone": "批量對接完成",
+      "noPermission": "當前賬號無供應商管理權限",
+      "providerUpdated": "提供商已更新",
+      "providerCreated": "提供商已創建",
+      "statusUpdated": "狀態已更新",
+      "providerDeleted": "提供商已刪除"
     },
     "trafficPackages": {
       "addGroup": "新增分組",
@@ -2752,7 +2775,12 @@
       "suggestOptimizeUnit": "張",
       "tableCountLabel": "表數量：",
       "totalRowsLabel": "總行數：",
-      "totalSizeLabel": "總大小："
+      "totalSizeLabel": "總大小：",
+      "columnName": "表名",
+      "columnRows": "行數",
+      "columnSize": "大小",
+      "columnUpdatedAt": "更新時間",
+      "backupExportStarted": "備份導出已開始下載"
     }
   },
   "tickets": {
@@ -2804,7 +2832,28 @@
       "upstreamDepartment": "上游部門",
       "upstreamDepartmentPlaceholder": "選擇上游部門",
       "view": "查看",
-      "zjmfFinance": "ZJMF 財務"
+      "zjmfFinance": "ZJMF 財務",
+      "departmentSales": "銷售",
+      "departmentSupport": "技術支持",
+      "departmentBilling": "財務",
+      "departmentAbuse": "投訴",
+      "columnRule": "規則",
+      "ruleNameRequired": "請輸入規則名稱",
+      "ruleNameTooLong": "規則名稱不能超過 120 個字符",
+      "selectDepartment": "請選擇工單部門",
+      "selectSupplier": "請選擇供應商",
+      "selectUpstreamDepartment": "請選擇上游部門",
+      "selectProductScope": "請選擇產品範圍",
+      "selectProductRequired": "指定產品模式至少選擇一個產品",
+      "maskKeywordsTooLong": "屏蔽關鍵詞不能超過 10000 個字符",
+      "upstreamDepartmentGone": "上游已不再返回此部門",
+      "departmentListFailed": "當前已配置：${configuredId}",
+      "uploadImageLockedByRules": "存在工單傳遞規則時不能關閉 /upload_image 接口",
+      "uploadGuardSaved": "上傳防護配置已保存",
+      "enableUploadImageFirst": "請先啟用 /upload_image 接口",
+      "ruleUpdated": "工單傳遞規則已更新",
+      "ruleCreated": "工單傳遞規則已創建",
+      "ruleDeleted": "工單傳遞規則已刪除"
     },
     "preReplySettings": {
       "enablePreReply": "啟用預回覆",
@@ -3032,7 +3081,12 @@
     "passwordPlaceholder": "請輸入密碼",
     "rememberAccount": "記住賬號",
     "submit": "登錄",
-    "subtitle": "請登錄您的管理員賬號"
+    "subtitle": "請登錄您的管理員賬號",
+    "captchaRequired": "請先完成人機驗證",
+    "accountRequired": "請輸入賬號",
+    "passwordRequired": "請輸入密碼",
+    "loginSuccess": "登錄成功",
+    "loginFailed": "登錄失敗，請檢查賬號密碼"
   },
   "orders": {
     "index": {
@@ -3333,6 +3387,32 @@
       "bindingGroupHint": "可綁定域名數量與機房線路",
       "extraGroup": "其他配置",
       "extraGroupHint": "該套餐包含的附加配置項"
+    },
+    "security": {
+      "direction": "方向",
+      "protocol": "協議",
+      "port": "端口",
+      "source": "來源",
+      "description": "説明"
+    },
+    "nat": {
+      "nameLabel": "名稱",
+      "publicAddress": "公網地址",
+      "internalPortLabel": "內網端口"
+    },
+    "tables": {
+      "logActionTime": "操作時間",
+      "logSummary": "操作詳情",
+      "logOperator": "操作人",
+      "logIpAddress": "IP 地址",
+      "financeOccurredAt": "發生時間",
+      "financeEventType": "賬單類型",
+      "financeAmount": "金額",
+      "financeDescription": "説明",
+      "financeInvoiceNo": "關聯賬單"
     }
+  },
+  "permission": {
+    "noAccess": "您沒有訪問該頁面的權限"
   }
 }

@@ -14,7 +14,8 @@
     "method": "方法",
     "status": "狀態",
     "createdAt": "創建時間",
-    "action": "操作"
+    "action": "操作",
+    "copied": "已複製"
   },
   "components": {
     "isSetup": {
@@ -801,7 +802,11 @@
       "usageLogs": "調用日誌",
       "usageLogsTitle": "調用日誌 · 魔方財務對接",
       "username": "用戶名",
-      "logPath": "接口路徑"
+      "logPath": "接口路徑",
+      "enabled": "上游 API 已開啟",
+      "disabled": "上游 API 已關閉，同賬號的開放接口密鑰也已停用",
+      "passwordReset": "密碼已重置",
+      "policySaved": "安全策略已更新"
     },
     "title": "API 憑據",
     "create": "創建密鑰",
@@ -812,7 +817,12 @@
     "scopeFinance": "餘額與財務",
     "nameRequired": "請輸入密鑰名稱",
     "updated": "密鑰已更新",
-    "deleted": "密鑰已刪除"
+    "deleted": "密鑰已刪除",
+    "columnName": "名稱",
+    "columnScopes": "權限範圍",
+    "columnExpiresAt": "到期時間",
+    "columnLastUsedAt": "最近使用",
+    "columnDuration": "耗時"
   },
   "client": {
     "catalog": {
@@ -1068,7 +1078,12 @@
       "service": "服務信息",
       "specSummary": "配置摘要",
       "expiresAt": "到期時間",
-      "ipTraffic": "IP / 流量"
+      "ipTraffic": "IP / 流量",
+      "defaultCategory": "默認分類（已開通 / 開通中）",
+      "metricTotal": "實例總數",
+      "metricActive": "正常運行",
+      "metricPending": "待處理實例",
+      "metricExpiring": "即將到期"
     },
     "ticketDetail": {
       "adminRole": "管理員",
@@ -1427,7 +1442,11 @@
       "financeAmount": "金額",
       "financeDescription": "説明",
       "financeInvoiceNo": "關聯賬單"
-    }
+    },
+    "instanceNameSaved": "實例名稱已保存",
+    "remarkSaved": "備註已保存",
+    "passwordTooShort": "新密碼至少需要 8 位",
+    "passwordMismatch": "兩次輸入的密碼不一致"
   },
   "recharge": {
     "title": "在線充值",
@@ -1604,7 +1623,10 @@
   },
   "tickets": {
     "searchPlaceholder": "搜尋工單標題",
-    "allStatus": "全部狀態"
+    "allStatus": "全部狀態",
+    "columnSubject": "標題",
+    "columnPriority": "優先級",
+    "columnUpdatedAt": "更新時間"
   },
   "auth": {
     "accountLabel": "手機號 / 電郵",

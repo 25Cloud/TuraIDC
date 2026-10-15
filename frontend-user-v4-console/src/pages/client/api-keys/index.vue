@@ -206,6 +206,7 @@ import {
   scopesDisplay,
   useApiKeys,
 } from '@/domains/developer/useApiKeys';
+import { t } from '@/locales';
 import type { ApiKeyRecord } from '@/types/client';
 
 import UpstreamApiPanel from './components/UpstreamApiPanel.vue';
@@ -293,21 +294,21 @@ function confirmToggleStatus(row: ApiKeyRecord) {
 }
 
 const columns: PrimaryTableCol[] = [
-  { colKey: 'key_name', title: '名称', minWidth: '12rem' },
-  { colKey: 'scopes', title: '权限范围', minWidth: '16rem' },
-  { colKey: 'status', title: '状态', width: '6rem' },
-  { colKey: 'expires_at', title: '到期时间', minWidth: '10rem' },
-  { colKey: 'last_used_at', title: '最近使用', minWidth: '10rem' },
-  { colKey: 'operation', title: '操作', width: '16rem', fixed: 'right', align: 'right' },
+  { colKey: 'key_name', title: t('apiKeys.columnName'), minWidth: '12rem' },
+  { colKey: 'scopes', title: t('apiKeys.columnScopes'), minWidth: '16rem' },
+  { colKey: 'status', title: t('common.status'), width: '6rem' },
+  { colKey: 'expires_at', title: t('apiKeys.columnExpiresAt'), minWidth: '10rem' },
+  { colKey: 'last_used_at', title: t('apiKeys.columnLastUsedAt'), minWidth: '10rem' },
+  { colKey: 'operation', title: t('common.action'), width: '16rem', fixed: 'right', align: 'right' },
 ];
 
 const logColumns: PrimaryTableCol[] = [
-  { colKey: 'created_at', title: '时间', minWidth: '10rem' },
-  { colKey: 'method', title: '方法', width: '5rem' },
-  { colKey: 'path', title: '接口路径', minWidth: '14rem' },
-  { colKey: 'status_code', title: '状态', width: '5rem' },
+  { colKey: 'created_at', title: t('common.time'), minWidth: '10rem' },
+  { colKey: 'method', title: t('common.method'), width: '5rem' },
+  { colKey: 'path', title: t('apiKeys.upstream.logPath'), minWidth: '14rem' },
+  { colKey: 'status_code', title: t('common.status'), width: '5rem' },
   { colKey: 'ip', title: 'IP', minWidth: '8rem' },
-  { colKey: 'duration_ms', title: '耗时', width: '6rem' },
+  { colKey: 'duration_ms', title: t('apiKeys.columnDuration'), width: '6rem' },
 ];
 </script>
 <style scoped lang="less">
