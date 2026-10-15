@@ -42,34 +42,34 @@ export const notificationList = reactive<NotificationItem[]>([
   {
     key: 'login_notify',
     name: t('profile.notifications.loginAlert'),
-    desc: '每次账户成功登录后，向绑定邮箱发送登录安全提醒。',
+    desc: t('account.securityNotify.login'),
     enabled: false,
   },
   {
     key: 'login_location_alert',
     name: t('profile.notifications.unusualLoginAlert'),
-    desc: '检测到新的登录 IP 环境时，额外发送一次异地登录风险提醒。',
+    desc: t('account.securityNotify.newIp'),
     enabled: false,
   },
   {
     key: 'password_change_alert',
     name: t('profile.notifications.passwordAlert'),
-    desc: '账户密码修改成功后，立即发送安全提醒邮件。',
+    desc: t('account.securityNotify.passwordChanged'),
     enabled: false,
   },
   {
     key: 'phone_change_alert',
     name: t('profile.notifications.phoneAlert'),
-    desc: '安全手机号发生变更时，及时发送变更提醒。',
+    desc: t('account.securityNotify.phoneChanged'),
     enabled: false,
   },
   {
     key: 'email_change_alert',
     name: t('profile.notifications.emailAlert'),
-    desc: '安全邮箱发生变更时，向原邮箱和新邮箱发送提醒。',
+    desc: t('account.securityNotify.emailChanged'),
     enabled: false,
   },
-  { key: 'marketing_alert', name: t('profile.notifications.marketingAlert'), desc: '接收产品更新、活动优惠和运营消息。', enabled: false },
+  { key: 'marketing_alert', name: t('profile.notifications.marketingAlert'), desc: t('account.notifySubscriptions.desc'), enabled: false },
 ]);
 
 /** 是否已经拉取过数据：只首次进入时请求接口，之后路由来回切换直接复用 */

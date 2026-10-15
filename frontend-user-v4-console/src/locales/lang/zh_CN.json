@@ -1728,5 +1728,29 @@
     "event": "事件",
     "changeAmount": "变动金额",
     "remark": "说明"
+  },
+  "account": {
+    "securityNotify": {
+      "login": "每次账户成功登录后，向绑定邮箱发送登录安全提醒。",
+      "newIp": "检测到新的登录 IP 环境时，额外发送一次异地登录风险提醒。",
+      "passwordChanged": "账户密码修改成功后，立即发送安全提醒邮件。",
+      "phoneChanged": "安全手机号发生变更时，及时发送变更提醒。",
+      "emailChanged": "安全邮箱发生变更时，向原邮箱和新邮箱发送提醒。"
+    },
+    "notifySubscriptions": {
+      "desc": "接收产品更新、活动优惠和运营消息。"
+    },
+    "password": {
+      "tips": "建议定期更新密码，并避免与其他平台共用同一组凭证"
+    }
+  },
+  "service": {
+    "center": {
+      "metrics": {
+        "console": "可直接进入控制台操作",
+        "attention": "开通中、暂停等需要关注的实例",
+        "renew": "建议提前续费避免业务中断"
+      }
+    }
   }
 }

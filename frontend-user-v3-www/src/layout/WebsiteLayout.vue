@@ -1210,7 +1210,7 @@ const hideFooter = computed(() => {
 });
 
 const navigationItems = [
-  { to: "/", label: "首页", match: ["WwwHome"] },
+  { to: "/", label: t('layout.nav.home'), match: ["WwwHome"] },
   {
     to: "/products",
     label: t('layout.nav.products'),
@@ -1238,14 +1238,14 @@ const navigationItems = [
 ];
 
 const aboutQuickLinks = [
-  { to: "/about", title: t('layout.nav.aboutUs'), desc: "企业简介、发展愿景与服务承诺" },
+  { to: "/about", title: t('layout.nav.aboutUs'), desc: t('layout.footer.aboutIntro') },
   {
     to: "/client/tickets",
     title: t('layout.footer.ticketSupport'),
-    desc: "提交售后工单，获得 1v1 响应",
+    desc: t('layout.footer.supportTicket'),
   },
-  { to: "/help", title: t('layout.footer.helpDocs'), desc: "常见问题与使用指南" },
-  { to: "/notices", title: t('layout.footer.noticeUpdates'), desc: "产品更新、活动与维护通知" },
+  { to: "/help", title: t('layout.footer.helpDocs'), desc: t('layout.footer.helpGuide') },
+  { to: "/notices", title: t('layout.footer.noticeUpdates'), desc: t('layout.footer.noticeUpdates') },
 ];
 
 const logoSrc = computed(() => appStore.siteLogo || "/branding/logo.png");

@@ -1728,5 +1728,29 @@
     "event": "Event",
     "changeAmount": "Amount change",
     "remark": "Remark"
+  },
+  "account": {
+    "securityNotify": {
+      "login": "A login security notice is sent to your bound email after every successful sign-in.",
+      "newIp": "An extra sign-in risk notice is sent when a new IP location is detected.",
+      "passwordChanged": "A security notice is emailed as soon as your account password changes.",
+      "phoneChanged": "A change notice is sent when your security phone number changes.",
+      "emailChanged": "When your security email changes, notices go to both the old and new addresses."
+    },
+    "notifySubscriptions": {
+      "desc": "Receive product updates, promotions and operational messages."
+    },
+    "password": {
+      "tips": "Change your password regularly and avoid reusing the same credentials on other platforms"
+    }
+  },
+  "service": {
+    "center": {
+      "metrics": {
+        "console": "Open the console to manage it directly",
+        "attention": "Instances that need attention, such as provisioning or suspended",
+        "renew": "Renew in advance to avoid service interruption"
+      }
+    }
   }
 }

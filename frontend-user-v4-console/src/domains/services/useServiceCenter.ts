@@ -342,19 +342,19 @@ export function useServiceCenter() {
         key: 'active',
         label: t('client.services.metricActive'),
         value: activeCount,
-        copy: '可直接进入控制台操作',
+        copy: t('service.center.metrics.console'),
       },
       {
         key: 'pending',
         label: t('client.services.metricPending'),
         value: pendingCount,
-        copy: '开通中、暂停等需要关注的实例',
+        copy: t('service.center.metrics.attention'),
       },
       {
         key: 'expiring',
         label: t('client.services.metricExpiring'),
         value: expiringCount,
-        copy: '建议提前续费避免业务中断',
+        copy: t('service.center.metrics.renew'),
       },
     ];
   });

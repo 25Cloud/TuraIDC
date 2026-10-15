@@ -1,3 +1,4 @@
+import { t } from '@/locales'
 <template>
   <section class="product-tabs-section" :aria-busy="loading ? 'true' : 'false'">
     <div class="container">
@@ -130,7 +131,7 @@ const activeEnterpriseService = computed(() => {
         {
           key: "catalog",
           title: `${activeEnterpriseType.value?.label || "当前分类"}目录`,
-          desc: "当前分类暂无可展示的二级分组，点击后可进入产品目录查看更多内容。",
+          desc: t('home.products.emptyCategory'),
           path: "/products",
         },
       ];

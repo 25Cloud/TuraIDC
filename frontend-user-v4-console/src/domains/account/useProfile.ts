@@ -86,7 +86,7 @@ export function useProfile() {
     {
       key: 'password',
       name: t('profile.loginPassword'),
-      desc: '建议定期更新密码，并避免与其他平台共用同一组凭证',
+      desc: t('account.password.tips'),
       theme: 'success' as TagTheme,
       tag: '已设置',
       actionLabel: '修改密码',

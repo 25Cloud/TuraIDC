@@ -1728,5 +1728,29 @@
     "event": "事件",
     "changeAmount": "變動金額",
     "remark": "說明"
+  },
+  "account": {
+    "securityNotify": {
+      "login": "每次賬戶成功登入後，向繫結電子郵件傳送登入安全提醒。",
+      "newIp": "檢測到新的登入 IP 環境時，額外發送一次異地登入風險提醒。",
+      "passwordChanged": "賬戶密碼修改成功後，立即傳送安全提醒郵件。",
+      "phoneChanged": "安全手機號發生變更時，及時傳送變更提醒。",
+      "emailChanged": "安全電子郵件發生變更時，向原電子郵件和新電子郵件傳送提醒。"
+    },
+    "notifySubscriptions": {
+      "desc": "接收產品更新、活動優惠和運營訊息。"
+    },
+    "password": {
+      "tips": "建議定期更新密碼，並避免與其他平臺共用同一組憑證"
+    }
+  },
+  "service": {
+    "center": {
+      "metrics": {
+        "console": "可直接進入控制台操作",
+        "attention": "開通中、暫停等需要關注的例項",
+        "renew": "建議提前續費避免業務中斷"
+      }
+    }
   }
 }

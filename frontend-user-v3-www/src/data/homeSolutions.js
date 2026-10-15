@@ -5,7 +5,7 @@ const rawIndustrySolutions = [
     key: 'ecommerce',
     label: t('home.solutions.ecommerce.label'),
     title: t('home.solutions.ecommerce.title'),
-    subtitle: '业务运营、数据分析、安全防护',
+    subtitle: t('home.solutions.ecommerce.features'),
     description: t('home.solutions.ecommerce.description'),
     points: [
       '业务运营优化',
@@ -23,7 +23,7 @@ const rawIndustrySolutions = [
     key: 'game',
     label: t('home.solutions.game.label'),
     title: t('home.solutions.game.title'),
-    subtitle: '高并发接入、弹性扩容、稳定防护',
+    subtitle: t('home.solutions.gaming.features'),
     description: t('home.solutions.game.description'),
     points: [
       '弹性资源调度',
@@ -41,7 +41,7 @@ const rawIndustrySolutions = [
     key: 'security',
     label: t('home.solutions.security.label'),
     title: t('home.solutions.security.title'),
-    subtitle: '访问控制、日志审计、资产防护',
+    subtitle: t('home.solutions.security.features'),
     description: t('home.solutions.security.description'),
     points: [
       '身份认证与权限隔离',
@@ -59,7 +59,7 @@ const rawIndustrySolutions = [
     key: 'website',
     label: t('home.solutions.website.label'),
     title: t('home.solutions.website.title'),
-    subtitle: '快速部署、稳定托管、持续运维',
+    subtitle: t('home.solutions.finance.features'),
     description: t('home.solutions.website.description'),
     points: [
       '建站资源快速开通',
@@ -77,7 +77,7 @@ const rawIndustrySolutions = [
     key: 'finance',
     label: t('home.solutions.finance.label'),
     title: t('home.solutions.finance.title'),
-    subtitle: '稳定交付、审计留痕、合规支撑',
+    subtitle: t('home.solutions.overseas.features'),
     description: t('home.solutions.finance.description'),
     points: [
       '账单与计费链路清晰',
@@ -95,7 +95,7 @@ const rawIndustrySolutions = [
     key: 'go-global',
     label: t('home.solutions.goGlobal.label'),
     title: t('home.solutions.goGlobal.title'),
-    subtitle: '全球节点、链路优化、服务协同',
+    subtitle: t('home.solutions.global.features'),
     description: t('home.solutions.goGlobal.description'),
     points: [
       '全球节点接入',
@@ -113,7 +113,7 @@ const rawIndustrySolutions = [
     key: 'government',
     label: t('home.solutions.government'),
     title: t('home.solutions.governmentEnterpriseCloud'),
-    subtitle: '资源统筹、权限管理、长期运维',
+    subtitle: t('home.solutions.resource.features'),
     description: t('home.solutions.governmentSolutionDescription'),
     points: [
       '资源统一规划与交付',

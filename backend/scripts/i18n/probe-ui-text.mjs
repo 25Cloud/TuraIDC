@@ -31,6 +31,10 @@ const UI_KEYS = [
   'title', 'label', 'placeholder', 'description', 'emptyText', 'empty-text',
   'confirmBtn', 'cancelBtn', 'okBtn', 'tip', 'hint', 'message', 'text',
   'confirmText', 'cancelText', 'subTitle', 'subTitleText', 'help', 'name',
+  // 卡片副标题、说明文案、按钮文案等同样是用户可见的，补齐以免漏扫。
+  // 刻意不含 unit / sub / code 这类易与技术语义混淆的键。
+  'copy', 'desc', 'subtitle', 'summary', 'okText', 'tips', 'caption',
+  'btnText', 'confirmLabel', 'cancelLabel', 'statusText', 'errorText',
 ]
 const KEY_RE = new RegExp(
   `\\b(${UI_KEYS.join('|')})\\s*:\\s*(['"])((?:\\\\.|(?!\\2)[^\\\\])*?)\\2`,

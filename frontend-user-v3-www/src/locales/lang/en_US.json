@@ -220,7 +220,10 @@
       "ticketSystem": "Ticket System",
       "ticketSupport": "Ticket Support",
       "helpDocs": "Help Docs",
-      "noticeUpdates": "Product & service updates"
+      "noticeUpdates": "Product updates, promotions and maintenance notices",
+      "aboutIntro": "Company profile, vision and service commitments",
+      "helpGuide": "FAQ and usage guides",
+      "supportTicket": "Submit a support ticket for one-on-one response"
     },
     "navContent": {
       "uncategorized": "Uncategorized"
@@ -737,7 +740,17 @@
         "new": {
           "title": "Shiyan DDoS-Protected Dedicated Servers"
         }
-      }
+      },
+      "entry": "Product catalog, purchase and payment, auto-provisioning, billing and service support are unified. The home page doubles as the console entry, so resource procurement and day-to-day management stay on one path.",
+      "tier": "T3+ data centers, multi-line BGP access and 100G DDoS protection. Identity verification, tiered permissions and audit trails keep accounts secure for long-running and compliance-sensitive workloads.",
+      "support": "24/7 tickets, an official QQ group and one-on-one business support covering selection, deployment, migration, operations and billing, with corporate settlement, bulk purchase, sub-account collaboration and unified reconciliation.",
+      "firstOrder": "New customers get a 2-core 2G cloud server from 39 CNY per year, and lightweight cloud desktops are ready on monthly subscription. Coupons stack flexibly, configurations scale with your workload, and pay-as-you-go keeps spending under control.",
+      "global": "Premium nodes across Hong Kong, the United States and mainland China, with CN2/BGP optimized routing back to the mainland. Cross-region networking and instant cross-border responses suit websites, proxies, cross-border e-commerce and overseas SaaS.",
+      "cn2": "CN2 GIA optimized routing back to the mainland keeps cross-border traffic low-latency and stable.",
+      "cloud2c2g": "2H2G cloud servers cover website hosting, proxy services and lightweight workloads alike.",
+      "billing": "Unified billing, multi-sub-account collaboration and corporate settlement are now available.",
+      "xian": "Low-latency Xi'an nodes support remote work, outsourcing collaboration and training.",
+      "ddos": "100G DDoS protection with multi-line BGP, built for long-running stable workloads."
     },
     "news": {
       "title": "News & Updates",
@@ -745,7 +758,8 @@
       "recommended": "Recommended"
     },
     "products": {
-      "title": "Secure, Stable and Trustworthy Products and Services"
+      "title": "Secure, Stable and Trustworthy Products and Services",
+      "emptyCategory": "This category has no subcategories to show. Open the product catalog to browse more."
     },
     "solutions": {
       "title": "Comprehensive Solutions for Every Industry",
@@ -761,7 +775,8 @@
           "dataAnalyticsAndMining": "Data Analytics and Mining",
           "paymentLinkCoordination": "Payment Link Coordination"
         },
-        "label": "E-Commerce"
+        "label": "E-Commerce",
+        "features": "Business operations, data analytics, security protection"
       },
       "game": {
         "label": "Gaming",
@@ -785,7 +800,8 @@
           "logAuditingAndTracing": "Log Auditing and Tracing",
           "securityPolicyOrchestration": "Security Policy Orchestration",
           "anomalousAccessProtection": "Anomalous Access Protection"
-        }
+        },
+        "features": "Access control, audit logging and asset protection"
       },
       "website": {
         "label": "Website",
@@ -809,7 +825,8 @@
           "coreResourceHighAvailabilityDeployment": "Core Resource High-Availability Deployment",
           "criticalActionAuditTrail": "Critical Action Audit Trail",
           "complianceScenarioSupport": "Compliance Scenario Support"
-        }
+        },
+        "features": "Rapid deployment, stable hosting, continuous operations"
       },
       "goGlobal": {
         "label": "Global Expansion",
@@ -828,7 +845,19 @@
       "unifiedPlanningAndDelivery": "Unified resource planning and delivery",
       "tieredPermissionsAndProcessControl": "Tiered permissions and process control",
       "documentedDeliveryManagement": "Documented delivery management",
-      "longTermOperationsAndSupport": "Long-term operations and service assurance"
+      "longTermOperationsAndSupport": "Long-term operations and service assurance",
+      "gaming": {
+        "features": "High-concurrency access, elastic scaling, stable protection"
+      },
+      "overseas": {
+        "features": "Stable delivery, audit trails, compliance support"
+      },
+      "global": {
+        "features": "Global nodes, optimized routing, service coordination"
+      },
+      "resource": {
+        "features": "Resource orchestration, permission management, long-term operations"
+      }
     }
   },
   "help": {

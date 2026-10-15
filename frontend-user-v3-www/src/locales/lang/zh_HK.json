@@ -220,7 +220,10 @@
       "ticketSystem": "工單系統",
       "ticketSupport": "工單支持",
       "helpDocs": "幫助文檔",
-      "noticeUpdates": "公告動態"
+      "noticeUpdates": "公告動態",
+      "aboutIntro": "企業簡介、發展願景與服務承諾",
+      "helpGuide": "常見問題與使用指南",
+      "supportTicket": "提交售後工單，獲得 1v1 響應"
     },
     "navContent": {
       "uncategorized": "未分類"
@@ -737,7 +740,17 @@
         "new": {
           "title": "十堰高防獨立伺服器"
         }
-      }
+      },
+      "entry": "產品目錄、購買支付、自動開通、賬單結算與服務支持統一打通；首頁即是控制台入口，讓資源採購和後續管理始終在同一條鏈路裡完成。",
+      "tier": "T3+ 數據中心 + BGP 多線接入 + 100G 抗 DDoS 防護；實名認證、權限分級與操作留痕保障賬戶安全，長期業務和合規場景穩定承載。",
+      "support": "7×24 小時工單、官方QQ羣與一對一商務對接，覆蓋選型、部署、遷移、運維與結算；支持對公結算、批量採購、子賬號協作與統一對賬。",
+      "firstOrder": "新客首單 2 核 2G 雲伺服器 39 元/年起，輕量雲電腦按月訂閲即開即用；優惠券、折扣券靈活疊加，配置隨業務彈性升級，先用後付更省心。",
+      "global": "覆蓋香港、美國與國內多地優質節點，三網 CN2 / BGP 線路優化回國；跨區域組網、跨境業務秒級響應，適合建站、代理、跨境電商與出海 SaaS。",
+      "cn2": "三網 CN2 GIA 優化回國，跨境業務低時延穩定承載。",
+      "cloud2c2g": "2H2G 雲伺服器覆蓋建站、代理、輕量業務全場景。",
+      "billing": "統一賬單、多子賬號協作與對公結算能力同步上線。",
+      "xian": "西安節點低延遲，支持遠程辦公、外包協作、教學實訓。",
+      "ddos": "100G 抗 DDoS + BGP 多線，面向長期穩定業務承載。"
     },
     "news": {
       "title": "資訊動態",
@@ -745,7 +758,8 @@
       "recommended": "推薦"
     },
     "products": {
-      "title": "安全、穩定、可信賴的產品與服務"
+      "title": "安全、穩定、可信賴的產品與服務",
+      "emptyCategory": "當前分類暫無可展示的二級分組，點擊後可進入產品目錄查看更多內容。"
     },
     "solutions": {
       "title": "為千行百業提供全面的解決方案",
@@ -761,7 +775,8 @@
           "dataAnalyticsAndMining": "數據分析與挖掘",
           "paymentLinkCoordination": "支付鏈路協同"
         },
-        "label": "電商"
+        "label": "電商",
+        "features": "業務運營、數據分析、安全防護"
       },
       "game": {
         "label": "遊戲",
@@ -785,7 +800,8 @@
           "logAuditingAndTracing": "日誌審計與追蹤",
           "securityPolicyOrchestration": "安全策略編排",
           "anomalousAccessProtection": "異常訪問防護"
-        }
+        },
+        "features": "訪問控制、日誌審計、資產防護"
       },
       "website": {
         "label": "網站",
@@ -809,7 +825,8 @@
           "coreResourceHighAvailabilityDeployment": "核心資源高可用部署",
           "criticalActionAuditTrail": "關鍵操作審計留痕",
           "complianceScenarioSupport": "合規場景支撐"
-        }
+        },
+        "features": "快速部署、穩定託管、持續運維"
       },
       "goGlobal": {
         "label": "出海",
@@ -828,7 +845,19 @@
       "unifiedPlanningAndDelivery": "資源統一規劃與交付",
       "tieredPermissionsAndProcessControl": "權限分級與流程控制",
       "documentedDeliveryManagement": "文檔化交付管理",
-      "longTermOperationsAndSupport": "長期運維與服務保障"
+      "longTermOperationsAndSupport": "長期運維與服務保障",
+      "gaming": {
+        "features": "高併發接入、彈性擴容、穩定防護"
+      },
+      "overseas": {
+        "features": "穩定交付、審計留痕、合規支撐"
+      },
+      "global": {
+        "features": "全球節點、鏈路優化、服務協同"
+      },
+      "resource": {
+        "features": "資源統籌、權限管理、長期運維"
+      }
     }
   },
   "help": {
