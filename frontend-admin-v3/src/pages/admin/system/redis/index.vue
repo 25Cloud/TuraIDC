@@ -2,7 +2,9 @@
   <div class="admin-redis-page">
     <t-card class="redis-card" :bordered="false">
       <div class="redis-toolbar">
-        <t-button theme="default" variant="outline" :loading="loading" @click="loadStatus"> 刷新 </t-button>
+        <t-button theme="default" variant="outline" :loading="loading" @click="loadStatus">
+          {{ $t('redis.index.refresh') }}
+        </t-button>
         <t-button
           v-if="canManage"
           theme="warning"
@@ -11,33 +13,28 @@
           :disabled="!status.available"
           @click="handleFlushCache"
         >
-          清理缓存
+          {{ $t('redis.index.flushCache') }}
         </t-button>
       </div>
 
       <t-alert v-if="!status.available" class="redis-alert" theme="error" :message="unavailableMessage" />
 
-      <t-alert
-        v-else
-        class="redis-alert"
-        theme="info"
-        message="Redis 连接参数由 .env 决定（REDIS_HOST / REDIS_PORT / REDIS_PASSWORD 等），修改后需重启 PHP 并执行 config:clear 才会生效，因此本页只做只读监控。"
-      />
+      <t-alert v-else class="redis-alert" theme="info" :message="$t('redis.index.readonlyNotice')" />
 
       <div class="redis-summary">
-        <span>客户端：{{ status.client || '-' }}</span>
-        <span>缓存驱动：{{ status.cache_store || '-' }}</span>
-        <span>键前缀：{{ status.prefix || '（无）' }}</span>
-        <span>版本：{{ serverValue('redis_version') || '-' }}</span>
-        <span>运行时长：{{ formatUptime(status.stats.uptime_in_days) }}</span>
-        <span>在线客户端：{{ status.stats.connected_clients ?? 0 }}</span>
-        <span>内存占用：{{ status.memory.used_memory_human || '-' }}</span>
-        <span>峰值内存：{{ status.memory.used_memory_peak_human || '-' }}</span>
-        <span>内存碎片率：{{ formatRatio(status.memory.mem_fragmentation_ratio) }}</span>
-        <span>缓存命中率：{{ formatRatio(status.stats.hit_rate) }}</span>
+        <span>{{ $t('redis.index.client') }}{{ status.client || '-' }}</span>
+        <span>{{ $t('redis.index.cacheStore') }}{{ status.cache_store || '-' }}</span>
+        <span>{{ $t('redis.index.keyPrefix') }}{{ status.prefix || $t('redis.index.none') }}</span>
+        <span>{{ $t('redis.index.version') }}{{ serverValue('redis_version') || '-' }}</span>
+        <span>{{ $t('redis.index.uptime') }}{{ formatUptime(status.stats.uptime_in_days) }}</span>
+        <span>{{ $t('redis.index.connectedClients') }}{{ status.stats.connected_clients ?? 0 }}</span>
+        <span>{{ $t('redis.index.memoryUsed') }}{{ status.memory.used_memory_human || '-' }}</span>
+        <span>{{ $t('redis.index.memoryPeak') }}{{ status.memory.used_memory_peak_human || '-' }}</span>
+        <span>{{ $t('redis.index.fragmentationRatio') }}{{ formatRatio(status.memory.mem_fragmentation_ratio) }}</span>
+        <span>{{ $t('redis.index.hitRate') }}{{ formatRatio(status.stats.hit_rate) }}</span>
       </div>
 
-      <div class="redis-section-title">连接状态</div>
+      <div class="redis-section-title">{{ $t('redis.index.connectionStatus') }}</div>
       <t-table
         row-key="name"
         :data="status.connections"
@@ -48,14 +45,14 @@
       >
         <template #connected="{ row }">
           <t-tag :theme="row.connected ? 'success' : 'danger'" variant="light">
-            {{ row.connected ? '正常' : '异常' }}
+            {{ row.connected ? $t('redis.index.normal') : $t('redis.index.abnormal') }}
           </t-tag>
         </template>
         <template #message="{ row }">{{ row.message || '-' }}</template>
       </t-table>
 
       <template v-if="status.keyspace.length">
-        <div class="redis-section-title">键空间</div>
+        <div class="redis-section-title">{{ $t('redis.index.keyspace') }}</div>
         <t-table
           row-key="database"
           :data="status.keyspace"

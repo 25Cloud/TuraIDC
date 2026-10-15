@@ -1,7 +1,7 @@
 <template>
   <section class="coupon-page">
     <header class="client-page-heading">
-      <h1>优惠券中心</h1>
+      <h1>{{ $t('client.coupons.title') }}</h1>
     </header>
 
     <t-card class="coupon-card-shell" :bordered="false">
@@ -9,31 +9,44 @@
         <t-input
           v-model="currentState.keyword"
           clearable
-          :placeholder="activeTab === 'plaza' ? '搜索可领取的优惠券' : '搜索优惠券名称'"
+          :placeholder="
+            activeTab === 'plaza'
+              ? $t('client.coupons.searchClaimablePlaceholder')
+              : $t('client.coupons.searchNamePlaceholder')
+          "
           @enter="handleSearch(activeTab)"
           @clear="handleSearch(activeTab)"
         >
           <template #suffixIcon><search-icon /></template>
         </t-input>
-        <t-select v-model="currentState.status" clearable placeholder="全部状态" @change="handleSearch(activeTab)">
+        <t-select
+          v-model="currentState.status"
+          clearable
+          :placeholder="$t('client.coupons.allStatusPlaceholder')"
+          @change="handleSearch(activeTab)"
+        >
           <t-option v-for="item in currentStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
       </div>
     </t-card>
 
-    <div class="coupon-tabs" role="tablist" aria-label="优惠券分类">
+    <div class="coupon-tabs" role="tablist" :aria-label="$t('client.coupons.categoryAriaLabel')">
       <t-button :theme="activeTab === 'owned' ? 'primary' : 'default'" @click="switchTab('owned')"
-        >我拥有的优惠券</t-button
+        >{{ $t('client.coupons.ownedTab') }}</t-button
       >
-      <t-button :theme="activeTab === 'plaza' ? 'primary' : 'default'" @click="switchTab('plaza')">优惠券广场</t-button>
+      <t-button :theme="activeTab === 'plaza' ? 'primary' : 'default'" @click="switchTab('plaza')">{{ $t('client.coupons.plazaTab') }}</t-button>
     </div>
 
     <template v-if="activeTab === 'owned'">
       <div class="coupon-list-shell">
-        <data-state :loading="ownedState.loading" :empty="!ownedState.list.length" description="你还没有优惠券">
+        <data-state
+          :loading="ownedState.loading"
+          :empty="!ownedState.list.length"
+          :description="$t('client.coupons.emptyOwned')"
+        >
           <div class="coupon-grid">
             <article v-for="item in ownedState.list" :key="item.id" class="coupon-item">
-              <button class="coupon-item__detail" type="button" @click="openCouponDetail(item)">详情</button>
+              <button class="coupon-item__detail" type="button" @click="openCouponDetail(item)">{{ $t('client.coupons.detail') }}</button>
               <div class="coupon-item__head">
                 <div class="coupon-item__value">
                   <span>{{ resolveDiscountTypeLabel(item.discount_type) }}</span>
@@ -44,16 +57,16 @@
                 </t-tag>
               </div>
               <div class="coupon-item__body">
-                <strong>{{ item.name || '优惠券' }}</strong>
-                <p>{{ item.description || item.status_reason || '满足条件后可在结算时直接抵扣' }}</p>
+                <strong>{{ item.name || $t('client.coupons.couponNameFallback') }}</strong>
+                <p>{{ item.description || item.status_reason || $t('client.coupons.ownedDescriptionFallback') }}</p>
                 <div class="coupon-item__chips">
                   <span>{{ resolveThresholdText(item) }}</span>
                   <span>{{ resolveDiscountAmountText(item) }}</span>
-                  <span v-if="item.first_order_only">限首单</span>
+                  <span v-if="item.first_order_only">{{ $t('client.coupons.firstOrderOnly') }}</span>
                   <span v-if="item.per_user_limit"
-                    >可使用 {{ item.remaining_times ?? 0 }}/{{ item.per_user_limit }} 次</span
+                    >{{ $t('client.coupons.usableTimes', { used: item.remaining_times ?? 0, total: item.per_user_limit }) }}</span
                   >
-                  <span v-else>不限次</span>
+                  <span v-else>{{ $t('client.coupons.unlimitedTimes') }}</span>
                 </div>
               </div>
               <div class="coupon-item__foot">
@@ -78,10 +91,14 @@
 
     <template v-else>
       <div class="coupon-list-shell">
-        <data-state :loading="plazaState.loading" :empty="!plazaState.list.length" description="当前暂无可领取的优惠券">
+        <data-state
+          :loading="plazaState.loading"
+          :empty="!plazaState.list.length"
+          :description="$t('client.coupons.emptyPlaza')"
+        >
           <div class="coupon-grid">
             <article v-for="item in plazaState.list" :key="item.id" class="coupon-item">
-              <button class="coupon-item__detail" type="button" @click="openCouponDetail(item)">详情</button>
+              <button class="coupon-item__detail" type="button" @click="openCouponDetail(item)">{{ $t('client.coupons.detail') }}</button>
               <div class="coupon-item__head">
                 <div class="coupon-item__value">
                   <span>{{ resolveDiscountTypeLabel(item.discount_type) }}</span>
@@ -92,14 +109,14 @@
                 </t-tag>
               </div>
               <div class="coupon-item__body">
-                <strong>{{ item.name || '优惠券' }}</strong>
-                <p>{{ item.description || item.status_reason || '领取后可在结算时使用' }}</p>
+                <strong>{{ item.name || $t('client.coupons.couponNameFallback') }}</strong>
+                <p>{{ item.description || item.status_reason || $t('client.coupons.plazaDescriptionFallback') }}</p>
                 <div class="coupon-item__chips">
                   <span>{{ resolveThresholdText(item) }}</span>
                   <span>{{ resolveDiscountAmountText(item) }}</span>
-                  <span v-if="item.first_order_only">限首单</span>
+                  <span v-if="item.first_order_only">{{ $t('client.coupons.firstOrderOnly') }}</span>
                   <span v-if="item.total_usage_limit"
-                    >剩余 {{ item.remaining_stock }}/{{ item.total_usage_limit }} 张</span
+                    >{{ $t('client.coupons.remainingStock', { remaining: item.remaining_stock, total: item.total_usage_limit }) }}</span
                   >
                 </div>
               </div>
@@ -112,7 +129,7 @@
                   :loading="claimingId === item.id"
                   @click="claimCoupon(item.id)"
                 >
-                  {{ item.can_claim ? '领取' : item.status_label || '不可领' }}
+                  {{ item.can_claim ? $t('client.coupons.claim') : item.status_label || $t('client.coupons.notClaimable') }}
                 </t-button>
               </div>
             </article>
@@ -134,26 +151,26 @@
 
     <t-drawer
       v-model:visible="detailVisible"
-      header="优惠券详情"
+      :header="$t('client.coupons.detailTitle')"
       size="min(42rem, calc(100vw - 2rem))"
       destroy-on-close
     >
       <div v-if="selectedCoupon" class="coupon-detail">
         <section v-if="selectedCoupon.coupon_code" class="coupon-detail-section">
           <div class="coupon-detail-section__head">
-            <h3>券实例编号</h3>
+            <h3>{{ $t('client.coupons.instanceCodeTitle') }}</h3>
             <span>{{ selectedCoupon.status_label || '--' }}</span>
           </div>
           <div class="coupon-detail-section__body">
             <div class="coupon-product-empty-grid">
-              <span>实例编号</span>
+              <span>{{ $t('client.coupons.instanceCode') }}</span>
               <strong>{{ selectedCoupon.coupon_code }}</strong>
             </div>
           </div>
         </section>
         <section class="coupon-detail-section">
           <div class="coupon-detail-section__head">
-            <h3>适用产品</h3>
+            <h3>{{ $t('client.coupons.applicableProductsTitle') }}</h3>
           </div>
           <div class="coupon-detail-section__body">
             <div v-if="mergedCouponProductHierarchy.length" class="coupon-hierarchy-sheet">
@@ -169,8 +186,8 @@
               </table>
             </div>
             <div v-else class="coupon-product-empty-grid">
-              <span>适用产品</span>
-              <strong>{{ selectedCoupon.product_scope_text || '全场通用' }}</strong>
+              <span>{{ $t('client.coupons.applicableProducts') }}</span>
+              <strong>{{ selectedCoupon.product_scope_text || $t('client.coupons.allProducts') }}</strong>
             </div>
           </div>
         </section>

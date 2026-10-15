@@ -4,17 +4,17 @@
       <top-panel :stats="dashboardStats" />
 
       <section class="chart-grid">
-        <t-card :bordered="false" title="商品收入占比" :subtitle="monthLabel || '本月'">
+        <t-card :bordered="false" :title="$t('dashboard.base.productRevenueShare')" :subtitle="monthLabel || $t('dashboard.base.thisMonth')">
           <div ref="productChartRef" class="chart-box" />
         </t-card>
-        <t-card :bordered="false" title="每日收入趋势" :subtitle="monthLabel || '本月'">
+        <t-card :bordered="false" :title="$t('dashboard.base.dailyRevenueTrend')" :subtitle="monthLabel || $t('dashboard.base.thisMonth')">
           <div ref="dailyChartRef" class="chart-box" />
         </t-card>
       </section>
 
-      <t-card :bordered="false" title="最近账单" subtitle="展示最近业务流水" class="recent-invoices-card">
+      <t-card :bordered="false" :title="$t('dashboard.base.recentInvoices')" :subtitle="$t('dashboard.base.recentInvoicesSubtitle')" class="recent-invoices-card">
         <template #actions>
-          <t-button theme="primary" variant="text" @click="router.push('/admin/finance/invoices')">查看全部</t-button>
+          <t-button theme="primary" variant="text" @click="router.push('/admin/finance/invoices')">{{ $t('dashboard.base.viewAll') }}</t-button>
         </template>
         <t-table
           v-if="recentInvoices.length"
@@ -37,9 +37,9 @@
             <span class="muted">{{ formatDateTime(row.created_at) }}</span>
           </template>
         </t-table>
-        <t-empty v-else title="暂无最近账单" description="有新购、续费或充值账单后会显示在这里。">
+        <t-empty v-else :title="$t('dashboard.base.emptyRecentInvoices')" :description="$t('dashboard.base.emptyRecentInvoicesDesc')">
           <t-button theme="primary" variant="outline" @click="router.push('/admin/finance/invoices')"
-            >进入账单列表</t-button
+            >{{ $t('dashboard.base.goToInvoiceList') }}</t-button
           >
         </t-empty>
       </t-card>

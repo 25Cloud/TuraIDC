@@ -2,23 +2,23 @@
   <div class="services-page">
     <t-card :bordered="false">
       <div class="service-filter">
-        <t-select v-model="filters.status" clearable placeholder="主机状态" @change="handleSearch">
+        <t-select v-model="filters.status" clearable :placeholder="$t('services.index.hostStatus')" @change="handleSearch">
           <t-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
         <t-input
           v-model="filters.keyword"
           clearable
-          placeholder="搜索主机ID / 主机IP / 实例ID / 用户名 / 账单号"
+          :placeholder="$t('services.index.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
         <t-button v-if="!isMobile" variant="outline" :disabled="!selectedRowKeys.length" @click="openHostnameDialog">
-          批量主机名<span v-if="selectedRowKeys.length">({{ selectedRowKeys.length }})</span>
+          {{ $t('services.index.batchHostname') }}<span v-if="selectedRowKeys.length">({{ selectedRowKeys.length }})</span>
         </t-button>
         <t-button v-if="!isMobile" variant="text" :disabled="!selectedRowKeys.length" @click="clearSelection"
-          >清空选择</t-button
+          >{{ $t('services.index.clearSelection') }}</t-button
         >
       </div>
 
@@ -42,21 +42,21 @@
                   :disabled="!Number(row.service_id || row.id || 0)"
                   @click="goServiceDetail(row)"
                 >
-                  <strong>服务/实例 #{{ fieldValue(row.service_id || row.id) }}</strong>
+                  <strong>{{ $t('services.index.serviceInstanceLabel') }} #{{ fieldValue(row.service_id || row.id) }}</strong>
                 </button>
-                <t-tag v-if="row.invoice?.id" variant="light">账单 #{{ row.invoice.id }}</t-tag>
+                <t-tag v-if="row.invoice?.id" variant="light">{{ $t('services.index.invoiceLabel') }} #{{ row.invoice.id }}</t-tag>
               </div>
-              <span v-if="row.invoice?.invoice_no">账单号 {{ row.invoice.invoice_no }}</span>
+              <span v-if="row.invoice?.invoice_no">{{ $t('services.index.invoiceNoLabel') }} {{ row.invoice.invoice_no }}</span>
             </div>
           </template>
           <template #host="{ row }">
             <div class="host-cell">
               <span v-if="row.upstream_host_id_text || row.upstream_host_id">
-                <em>上游</em>{{ row.upstream_host_id_text || row.upstream_host_id }}
+                <em>{{ $t('services.index.upstream') }}</em>{{ row.upstream_host_id_text || row.upstream_host_id }}
               </span>
               <span v-if="row.host_ips?.length"><em>IP</em>{{ row.host_ips.join(' / ') }}</span>
               <span v-if="row.host_username || row.connection?.username">
-                <em>登录</em>{{ row.host_username || row.connection?.username }}
+                <em>{{ $t('services.index.login') }}</em>{{ row.host_username || row.connection?.username }}
               </span>
               <span v-if="!hasHostInfo(row)" class="muted">-</span>
             </div>
@@ -79,7 +79,7 @@
                   row.product_full_path ||
                     row.product_display_name ||
                     row.product?.display_name ||
-                    (row.product_id ? `未配置规格 #${row.product_id}` : ''),
+                    (row.product_id ? $t('services.index.noSpecAssigned', { id: row.product_id }) : ''),
                 )
               }}</strong>
               <span>{{ fieldValue(row.domain) }}</span>
@@ -106,7 +106,7 @@
               :disabled="!Number(row.service_id || row.id || 0)"
               @click="goServiceDetail(row)"
             >
-              管理实例
+              {{ $t('services.index.manageInstance') }}
             </t-button>
           </template>
         </t-table>
@@ -119,20 +119,20 @@
               v-for="row in services"
               :key="row.id"
               :title="serviceTitle(row)"
-              eyebrow="服务列表"
+              :eyebrow="$t('services.index.serviceListEyebrow')"
               linkable
               :link-disabled="!Number(row.service_id || row.id || 0)"
               :subtitle="
                 fieldValue(
                   row.invoice?.invoice_no
-                    ? `账单 ${row.invoice.invoice_no}`
+                    ? $t('services.index.invoiceWithNo', { no: row.invoice.invoice_no })
                     : row.upstream_host_id_text || row.upstream_host_id,
                 )
               "
               :description="
                 fieldValue(row.product_full_path || row.product_display_name || row.product?.display_name || row.domain)
               "
-              highlight-label="服务金额"
+              :highlight-label="$t('services.index.serviceAmountLabel')"
               :highlight-value="formatMoney(row.amount)"
               :status-map="SERVICE_STATUS_MAP"
               :status="row.status"
@@ -142,7 +142,7 @@
               @action="(value) => handleMobileAction(value, row)"
             />
           </div>
-          <t-empty v-else description="暂无服务" />
+          <t-empty v-else :description="$t('services.index.emptyServices')" />
         </t-loading>
       </div>
 
@@ -160,12 +160,12 @@
 
     <t-dialog
       v-model:visible="hostnameDialogVisible"
-      :header="hostnameRows.length > 1 ? '批量设置自定义主机名' : '设置自定义主机名'"
+      :header="hostnameRows.length > 1 ? $t('services.index.batchSetHostnameTitle') : $t('services.index.setHostnameTitle')"
       width="920px"
-      :confirm-btn="{ content: '保存', loading: hostnameSubmitting }"
+      :confirm-btn="{ content: $t('services.index.save'), loading: hostnameSubmitting }"
       @confirm="submitHostnames"
     >
-      <t-alert theme="info" message="留空目标主机名会清空对应服务的自定义主机名。" />
+      <t-alert theme="info" :message="$t('services.index.emptyHostnameHint')" />
       <div class="hostname-table">
         <t-table
           row-key="service_id"
@@ -184,11 +184,11 @@
           <template #current="{ row }">
             <div class="hostname-current">
               <span>{{ fieldValue(row.current_domain) }}</span>
-              <small v-if="row.current_custom_hostname">当前自定义：{{ row.current_custom_hostname }}</small>
+              <small v-if="row.current_custom_hostname">{{ $t('services.index.currentCustomHostname') }}{{ row.current_custom_hostname }}</small>
             </div>
           </template>
           <template #hostname="{ row }">
-            <t-input v-model="row.hostname" clearable maxlength="200" placeholder="留空则清空自定义主机名" />
+            <t-input v-model="row.hostname" clearable maxlength="200" :placeholder="$t('services.index.emptyHostnamePlaceholder')" />
           </template>
         </t-table>
       </div>

@@ -1,0 +1,1368 @@
+{
+  "lang": "繁體中文（香港）",
+  "common": {
+    "appName": "TDesign Starter",
+    "copyright": "Copyright @ 2021-2025 Tencent. All Rights Reserved",
+    "conjunction": "和",
+    "admin": "admin",
+    "cancel": "取消"
+  },
+  "components": {
+    "isSetup": {
+      "on": "已啟用",
+      "off": "已停用"
+    },
+    "manage": "管理",
+    "delete": "刪除",
+    "deleteSuccess": "刪除成功",
+    "copySuccess": "複製成功",
+    "copyFail": "複製失敗",
+    "submitSuccess": "提交成功",
+    "commonTable": {
+      "contractName": "合同名稱",
+      "contractNamePlaceholder": "請輸入合同名稱",
+      "contractStatus": "合同狀態",
+      "contractStatusPlaceholder": "請輸入合同狀態",
+      "contractNum": "合同編號",
+      "contractNumPlaceholder": "請輸入合同編號",
+      "contractType": "合同類型",
+      "contractTypePlaceholder": "請選擇合同類型",
+      "contractPayType": "合同支付類型",
+      "contractAmount": "合同金額",
+      "operation": "操作",
+      "detail": "詳情",
+      "delete": "刪除",
+      "placeholder": "請輸入內容搜尋",
+      "contractStatusEnum": {
+        "fail": "審核失敗",
+        "audit": "待審核",
+        "executing": "履行中",
+        "pending": "待履行",
+        "finish": "已完成"
+      },
+      "contractTypeEnum": {
+        "main": "主合同",
+        "sub": "子合同",
+        "supplement": "補充合同"
+      },
+      "reset": "重置",
+      "query": "查詢"
+    },
+    "captcha": {
+      "clickToVerify": "點擊驗證",
+      "verifying": "驗證中",
+      "solved": "驗證通過",
+      "failed": "驗證失敗"
+    }
+  },
+  "layout": {
+    "header": {
+      "code": "代碼倉庫",
+      "help": "幫助文檔",
+      "user": "個人中心",
+      "signOut": "登出",
+      "setting": "系統設置"
+    },
+    "notice": {
+      "title": "通知中心",
+      "clear": "清空",
+      "setRead": "設為已讀",
+      "empty": "空",
+      "emptyNotice": "暫無通知",
+      "viewAll": "查看全部"
+    },
+    "searchPlaceholder": "請輸入搜尋內容",
+    "search": {
+      "placeholder": "輸入要搜尋內容"
+    },
+    "tagTabs": {
+      "closeOther": "關閉其他",
+      "closeLeft": "關閉左側",
+      "closeRight": "關閉右側",
+      "refresh": "刷新"
+    },
+    "setting": {
+      "title": "頁面配置",
+      "theme": {
+        "mode": "主題模式",
+        "color": "主題色",
+        "followSite": "跟隨站點品牌色",
+        "followSiteHint": "當前使用個人配色，點擊可恢復後台配置的品牌色",
+        "options": {
+          "light": "明亮",
+          "dark": "深色",
+          "auto": "跟隨系統"
+        }
+      },
+      "navigationLayout": "導航佈局",
+      "sideMode": "側邊欄模式",
+      "splitMenu": "分割菜單（混合模式下有效）",
+      "fixedSidebar": "固定側邊欄",
+      "displaySwitch": {
+        "title": "顯示開關",
+        "showHeader": "顯示頂欄",
+        "showBreadcrumb": "顯示麪包屑",
+        "showFooter": "顯示頁腳",
+        "useTagTabs": "展示多標籤Tab頁",
+        "menuAutoCollapsed": "菜單自動摺疊"
+      },
+      "tips": "請複製後手動修改配置文件: /src/config/style.ts",
+      "reset": "重置為默認",
+      "resetSuccess": "已恢復默認設置",
+      "language": "語言"
+    },
+    "skipToContent": "跳到主內容"
+  },
+  "constants": {
+    "contract": {
+      "name": "合同名稱",
+      "status": "合同狀態",
+      "num": "合同編號",
+      "type": "合同類型",
+      "typePlaceholder": "請輸入類型",
+      "payType": "合同收支類型",
+      "amount": "合同金額",
+      "amountPlaceholder": "請輸入金額",
+      "signDate": "合同簽訂日期",
+      "effectiveDate": "合同生效日期",
+      "endDate": "合同結束日期",
+      "createDate": "合同創建時間",
+      "company": "甲方",
+      "employee": "乙方",
+      "pay": "付款",
+      "receive": "收款",
+      "remark": "備註",
+      "attachment": "附件",
+      "statusOptions": {
+        "fail": "審核失敗",
+        "auditPending": "待審核",
+        "execPending": "待履行",
+        "executing": "審核成功",
+        "finish": "已完成"
+      },
+      "typeOptions": {
+        "main": "主合同",
+        "sub": "子合同",
+        "supplement": "補充合同"
+      }
+    }
+  },
+  "pages": {
+    "dashboardBase": {
+      "title": "概覽儀表盤",
+      "outputOverview": {
+        "title": "出入庫概覽",
+        "subtitle": "(件)",
+        "export": "導出數據",
+        "month": {
+          "input": "本月入庫總計（件）",
+          "output": "本月出庫總計（件）"
+        },
+        "since": "自從上週以來"
+      },
+      "rankList": {
+        "title": "銷售賬單排名",
+        "week": "本週",
+        "month": "近三月",
+        "info": "詳情"
+      },
+      "topPanel": {
+        "card1": "總收入",
+        "card2": "總退款",
+        "card3": "活躍用戶（個）",
+        "card4": "創建賬單（個）",
+        "cardTips": "自從上週以來",
+        "analysis": {
+          "title": "統計數據",
+          "unit": "萬元",
+          "series1": "本月",
+          "series2": "上月",
+          "channels": "銷售渠道",
+          "channel1": "線上",
+          "channel2": "門店",
+          "channelTips": "銷售佔比"
+        }
+      },
+      "saleColumns": {
+        "index": "排名",
+        "productName": "客戶名稱",
+        "growUp": "較上週",
+        "count": "賬單量",
+        "operation": "操作"
+      },
+      "buyColumns": {
+        "index": "排名",
+        "productName": "供應商名稱",
+        "growUp": "較上週",
+        "count": "賬單量",
+        "operation": "操作"
+      },
+      "saleTend": {
+        "item1": "國家電網有限公司",
+        "item2": "深圳燃氣集團股份有限公司",
+        "item3": "國家煙草專賣局",
+        "item4": "中國電信集團有限公司",
+        "item5": "中國移動通信集團有限公司",
+        "item6": "新余市辦公用戶採購項目"
+      },
+      "buyTend": {
+        "item1": "騰訊科技（深圳）有限公司",
+        "item2": "大潤發有限公司",
+        "item3": "四川海底撈股份有限公司",
+        "item4": "索尼（中國）有限公司",
+        "item5": "松下電器（中國）有限公司",
+        "item6": "新余市辦公用戶採購項目"
+      },
+      "chart": {
+        "week1": "週一",
+        "week2": "週二",
+        "week3": "週三",
+        "week4": "週四",
+        "week5": "週五",
+        "week6": "週六",
+        "week7": "週日",
+        "max": "最大值",
+        "min": "最小值",
+        "thisMonth": "本月",
+        "lastMonth": "上月"
+      }
+    },
+    "dashboardDetail": {
+      "topPanel": {
+        "title": "本月採購申請情況",
+        "quarter": "環比",
+        "paneList": {
+          "totalRequest": "總申請數（次）",
+          "suppliers": "供應商數量（個）",
+          "productCategory": "採購商品品類（類）",
+          "applicant": "申請人數量（人）",
+          "completionRate": "申請完成率（%）",
+          "arrivalRate": "到貨及時率（%）"
+        }
+      },
+      "procurement": {
+        "title": "採購商品申請趨勢",
+        "goods": {
+          "cup": "杯子",
+          "tea": "茶葉",
+          "honey": "蜂蜜",
+          "flour": "麪粉",
+          "coffeeMachine": "咖啡機",
+          "massageMachine": "按摩儀"
+        }
+      },
+      "ssl": "SSL證書",
+      "sslDescription": "SSL證書又叫伺服器證書，騰訊云為您提供證書的一站式服務，包括免費、付費證書的申請、管理及部署",
+      "satisfaction": {
+        "title": "採購商品滿意度分佈",
+        "export": "導出數據"
+      },
+      "chart": {
+        "week1": "週一",
+        "week2": "週二",
+        "week3": "週三",
+        "week4": "週四",
+        "week5": "週五",
+        "week6": "週六",
+        "week7": "週日",
+        "max": "最大值",
+        "min": "最小值",
+        "thisMonth": "本月",
+        "lastMonth": "上月"
+      }
+    },
+    "detailBase": {
+      "baseInfo": {
+        "title": "基本信息"
+      },
+      "sampleData": {
+        "contractName": "總部辦公用品採購項目",
+        "status": "履行中",
+        "company": "騰訊科技（深圳）有限公司",
+        "employee": "歐尚",
+        "fileName": "總部辦公用品採購項目合同.pdf"
+      },
+      "changelog": {
+        "title": "變更記錄",
+        "step1": {
+          "title": "上傳合同附件",
+          "subtitle": "這裡是提示文字"
+        },
+        "step2": {
+          "title": "修改合同金額",
+          "subtitle": "這裡是提示文字"
+        },
+        "step3": {
+          "title": "新建合同",
+          "desc": "管理員-李川操作"
+        }
+      }
+    },
+    "detailCard": {
+      "baseInfo": {
+        "title": "基本信息"
+      },
+      "invoice": {
+        "title": "發票進度",
+        "step1": {
+          "title": "申請提交",
+          "content": "已於12月21日提交"
+        },
+        "step2": {
+          "title": "電子發票",
+          "content": "預計1～3個工作日"
+        },
+        "step3": {
+          "title": "發票已郵寄",
+          "content": "電子發票開出後7個工作日聯繫"
+        },
+        "step4": {
+          "title": "完成"
+        }
+      },
+      "product": {
+        "title": "購買產品",
+        "add": "新增產品",
+        "month": "月份",
+        "quarter": "季度"
+      },
+      "detail": {
+        "title": "產品採購明細",
+        "budgetExceeded": "超預算",
+        "form": {
+          "applyNo": "申請號",
+          "product": "產品名稱",
+          "productNo": "產品編號",
+          "operation": "操作",
+          "department": "申請部門",
+          "num": "採購數量",
+          "createTime": "創建時間",
+          "manage": "管理",
+          "delete": "刪除"
+        }
+      },
+      "products": {
+        "product1": {
+          "name": "MacBook Pro 2021",
+          "company": "蘋果公司（Apple Inc. ）",
+          "size": "13.3 英寸",
+          "cpu": "Apple M1",
+          "memory": "RAM 16GB",
+          "info": "最高可選配 16GB 記憶體 · 最高可選配 2TB 存儲設備 電池續航最長達 18 小時"
+        },
+        "product2": {
+          "name": "Surface Laptop Go",
+          "company": "微軟（Microsoft Corporation）",
+          "size": "12.4 英寸",
+          "cpu": "Core i7",
+          "memory": "RAM 16GB",
+          "info": "常規使用 Surface，續航時間最長可達13小時 隨時伴您工作"
+        }
+      }
+    },
+    "detailDeploy": {
+      "deployTrend": {
+        "title": "部署趨勢",
+        "warning": "告警情況",
+        "thisMonth": "本月",
+        "thisWeek": "本週",
+        "lastMonth": "上月",
+        "thisYear": "今年",
+        "lastYear": "去年",
+        "week1": "週一",
+        "week2": "週二",
+        "week3": "週三",
+        "week4": "週四",
+        "week5": "週五",
+        "week6": "週六",
+        "week7": "週日"
+      },
+      "projectList": {
+        "title": "項目列表",
+        "dialog": {
+          "title": "基本信息"
+        },
+        "table": {
+          "name": "名稱",
+          "admin": "管理員",
+          "createTime": "創建時間",
+          "operation": "操作",
+          "manage": "管理",
+          "delete": "刪除"
+        }
+      },
+      "baseInfo": {
+        "clusterName": "集羣名",
+        "clusterId": "集羣ID",
+        "status": "狀態",
+        "running": "運行中",
+        "k8sVersion": "K8S版本",
+        "config": "配置",
+        "region": "所在地域",
+        "guangzhou": "廣州",
+        "project": "新增資源所屬項目",
+        "defaultProject": "默認項目",
+        "nodeCount": "節點數量",
+        "nodeNetwork": "節點網絡",
+        "containerNetwork": "容器網絡",
+        "clusterCredential": "集羣憑證",
+        "showCredential": "顯示憑證",
+        "createUpdate": "創建/更新",
+        "description": "描述"
+      }
+    },
+    "detailSecondary": {
+      "read": "已讀通知",
+      "unread": "未讀通知",
+      "all": "全部通知",
+      "setRead": "設為已讀",
+      "setUnread": "設為未讀",
+      "delete": "刪除通知",
+      "deleteConfirm": "刪除通知",
+      "deleteTip": "確認刪除通知：{content}嗎？",
+      "empty": "暫無通知"
+    },
+    "notification": {
+      "contract": "合同動態",
+      "invoice": "票務動態",
+      "meeting": "會議通知",
+      "msg1": "騰訊大廈一樓改造施工項目 已通過審核！",
+      "msg2": "三季度生產原材料採購項目 開票成功！",
+      "msg3": "2021-01-01 10:00的【國家電網線下籤約】會議即將開始，請提前10分鐘前往 會議室1 進行簽到！",
+      "msg4": "一季度生產原材料採購項目 開票成功！"
+    },
+    "formBase": {
+      "title": "合同信息",
+      "contractName": "合同名稱",
+      "contractNamePlaceholder": "請輸入合同名稱",
+      "contractStatus": "合同狀態",
+      "contractNum": "合同編號",
+      "contractType": "合同類型",
+      "contractTypePlaceholder": "請輸入類型",
+      "contractPayType": "合同收支類型",
+      "contractAmount": "合同金額",
+      "contractAmountPlaceholder": "請輸入金額",
+      "contractSignDate": "合同簽訂日期",
+      "contractEffectiveDate": "合同生效日期",
+      "contractEndDate": "合同結束日期",
+      "company": "甲方",
+      "employee": "乙方",
+      "pay": "付款",
+      "receive": "收款",
+      "upload": "上傳文件",
+      "uploadFile": "上傳合同",
+      "uploadTips": "請上傳pdf文件，大小在60M以內",
+      "otherInfo": "其他信息",
+      "remark": "備註",
+      "remarkPlaceholder": "請輸入備註",
+      "notaryPublic": "公證人",
+      "fileSizeExceed": "上傳文件不能大於60M",
+      "uploadFail": "上傳失敗",
+      "confirm": "確認提交",
+      "cancel": "取消",
+      "validation": {
+        "name": "請輸入合同名稱",
+        "type": "請選擇合同類型",
+        "payment": "請選擇合同收付類型",
+        "amount": "請輸入合同金額",
+        "partyA": "請選擇甲方",
+        "partyB": "請選擇乙方",
+        "signDate": "請選擇日期",
+        "startDate": "請選擇日期",
+        "endDate": "請選擇日期"
+      },
+      "typeOptions": {
+        "typeA": "類型A",
+        "typeB": "類型B",
+        "typeC": "類型C"
+      },
+      "partyOptions": {
+        "companyA": "甲方公司",
+        "companyB": "乙方公司",
+        "companyC": "丙方公司"
+      }
+    },
+    "formStep": {
+      "validation": {
+        "name": "請選擇合同名稱",
+        "type": "請選擇類型",
+        "title": "請輸入發票抬頭",
+        "taxNum": "請輸入納稅人識別號",
+        "consignee": "請輸入收貨人",
+        "mobileNum": "請輸入手機號碼",
+        "deliveryAddress": "請選擇收貨地址",
+        "fullAddress": "請輸入詳細地址"
+      },
+      "options": {
+        "nameA": "合同A",
+        "nameB": "合同B",
+        "nameC": "合同C",
+        "typeA": "類型A",
+        "typeB": "類型B",
+        "typeC": "類型C",
+        "address1": "廣東省深圳市南山區",
+        "address2": "北京市海淀區",
+        "address3": "上海市徐匯區",
+        "address4": "四川省成都市高新區",
+        "address5": "廣東省廣州市天河區",
+        "address6": "陝西省西安市高新區"
+      },
+      "step1": {
+        "title": "提交申請",
+        "subtitle": "已於12月21日提交",
+        "rules": "發票開具規則",
+        "rule1": "1、申請開票後，電子發票在1～3個工作日內開具；增值稅專用發票（紙質）如資質審核通過，將在電子發票開具後10個工作日內為您寄出；",
+        "rule2": "2、開票金額為您實際支付金額；",
+        "rule3": "3、如有疑問請直接聯繫：13300001111。",
+        "contractName": "合同名稱",
+        "contractTips": "請選擇合同名稱",
+        "invoiceType": "發票類型",
+        "amount": "開票金額",
+        "submit": "提交申請"
+      },
+      "step2": {
+        "title": "電子信息",
+        "subtitle": "如有疑問聯繫客服",
+        "invoiceTitle": "發票抬頭",
+        "taxNum": "納稅人識別號",
+        "address": "地址",
+        "bank": "開戶行",
+        "bankAccount": "銀行賬號",
+        "email": "電郵",
+        "tel": "手機號",
+        "titlePlaceholder": "請輸入電子信息",
+        "subtitlePlaceholder": "請輸入如有疑問聯繫客服",
+        "invoiceTitlePlaceholder": "請輸入發票抬頭",
+        "taxNumPlaceholder": "請輸入納稅人識別號",
+        "addressPlaceholder": "請輸入地址",
+        "bankPlaceholder": "請輸入開戶行",
+        "bankAccountPlaceholder": "請輸入銀行賬號",
+        "emailPlaceholder": "請輸入電郵",
+        "telPlaceholder": "請輸入手機號"
+      },
+      "step3": {
+        "title": "發票已郵寄",
+        "subtitle": "電子發票開出後聯繫",
+        "consignee": "收貨人",
+        "mobileNum": "手機號碼",
+        "deliveryAddress": "收貨地址",
+        "fullAddress": "詳細地址"
+      },
+      "step4": {
+        "title": "完成申請",
+        "subtitle": "如有疑問聯繫客服",
+        "finishTitle": "完成開票申請",
+        "finishTips": "預計1～3個工作日會將電子發票發至電郵，發票郵寄請耐心等待",
+        "reapply": "再次申請",
+        "check": "查看進度"
+      },
+      "preStep": "上一步",
+      "nextStep": "下一步"
+    },
+    "listBase": {
+      "export": "導出合同",
+      "create": "新建合同",
+      "select": "已選",
+      "items": "項",
+      "contractName": "合同名稱",
+      "contractStatus": "合同狀態",
+      "contractNum": "合同編號",
+      "contractType": "合同類型",
+      "contractPayType": "合同收支類型",
+      "contractAmount": "合同金額",
+      "operation": "操作",
+      "detail": "詳情",
+      "delete": "刪除",
+      "pay": "付款",
+      "receive": "收款",
+      "placeholder": "請輸入內容搜尋",
+      "deleteConfirm": "確認刪除當前所選合同？",
+      "deleteTip": "刪除後，{name}的所有合同信息將被清空，且無法恢復",
+      "contractStatusEnum": {
+        "fail": "審核失敗",
+        "audit": "待審核",
+        "executing": "履行中",
+        "pending": "待履行",
+        "finish": "已完成"
+      }
+    },
+    "listCard": {
+      "create": "新建產品",
+      "placeholder": "請輸入內容搜尋",
+      "loading": "加載數據中...",
+      "deleteConfirm": "確認刪除所選產品？",
+      "deleteSuccess": "刪除成功",
+      "deleteTip": "確認刪除後{name}的所有產品信息將被清空, 且無法恢復",
+      "productName": "產品名稱",
+      "productStatus": "產品狀態",
+      "productDescription": "產品描述",
+      "productType": "產品類型",
+      "productRemark": "備註",
+      "productStatusEnum": {
+        "off": "停用",
+        "on": "啟用"
+      },
+      "dialogForm": {
+        "productNamePlaceholder": "請輸入產品名稱",
+        "cancel": "取消",
+        "confirm": "確定",
+        "typeGateway": "網關",
+        "typeAI": "人工智能",
+        "typeCVM": "CVM",
+        "validation": {
+          "productName": "請輸入產品名稱"
+        }
+      }
+    },
+    "listFilter": {},
+    "listTree": {
+      "placeholder": "請輸入內容進行搜尋",
+      "treeData": {
+        "shenzhen": "深圳總部",
+        "beijing": "北京總部",
+        "shanghai": "上海總部",
+        "hunan": "湖南",
+        "hubei": "湖北",
+        "generalOffice": "總辦",
+        "marketing": "市場部",
+        "technology": "技術部",
+        "finance": "財務部",
+        "purchase1": "採購1組",
+        "purchase2": "採購2組",
+        "finance1": "財務1組",
+        "finance2": "財務2組"
+      }
+    },
+    "login": {
+      "loginTitle": "登錄到",
+      "noAccount": "沒有賬號嗎?",
+      "existAccount": "已有賬號?",
+      "createAccount": "註冊新賬號",
+      "remember": "記住賬號",
+      "forget": "忘記賬號",
+      "signIn": "登錄",
+      "register": {
+        "phonePlaceholder": "請輸入您的手機號",
+        "emailPlaceholder": "請輸入您的電郵",
+        "passwordPlaceholder": "請輸入登錄密碼",
+        "verifyCodePlaceholder": "請輸入驗證碼",
+        "sendVerifyCode": "發送驗證碼",
+        "resendCountdown": "{count}秒後可重發",
+        "agreeTerms": "我已閲讀並同意",
+        "serviceTerms": "TDesign服務協議",
+        "privacyStatement": "TDesign 隱私聲明",
+        "registerBtn": "註冊",
+        "useEmailRegister": "使用電郵註冊",
+        "usePhoneRegister": "使用手機號註冊",
+        "validation": {
+          "phone": "手機號必填",
+          "email": "電郵必填",
+          "emailFormat": "請輸入正確的電郵",
+          "password": "密碼必填",
+          "verifyCode": "驗證碼必填",
+          "agreeTerms": "請同意TDesign服務協議和TDesign 隱私聲明"
+        },
+        "messages": {
+          "registerSuccess": "註冊成功"
+        }
+      },
+      "refresh": "刷新",
+      "wechatLogin": "使用微信掃一掃登錄",
+      "accountLogin": "使用賬號登錄",
+      "phoneLogin": "使用手機號登錄",
+      "loginSuccess": "登錄成功",
+      "countdown": "{count}秒後可重發",
+      "input": {
+        "account": "請輸入賬號",
+        "password": "請輸入登錄密碼",
+        "phone": "請輸入手機號",
+        "verification": "請輸入驗證碼"
+      },
+      "required": {
+        "account": "賬號必填",
+        "phone": "手機號必填",
+        "password": "密碼必填",
+        "verification": "驗證碼必填"
+      },
+      "sendVerification": "發送驗證碼"
+    },
+    "result": {
+      "403": {
+        "tips": "抱歉，您無權限訪問此頁面，企業微信聯繫創建者",
+        "back": "返回首頁"
+      },
+      "404": {
+        "subtitle": "抱歉，您訪問的頁面不存在",
+        "back": "返回首頁"
+      },
+      "500": {
+        "subtitle": "抱歉，伺服器出錯啦",
+        "back": "返回首頁"
+      },
+      "fail": {
+        "title": "創建失敗",
+        "subtitle": "抱歉，您的項目創建失敗，企業微信聯繫檢查創建者權限，或返回修改。",
+        "back": "回到首頁",
+        "modify": "返回修改"
+      },
+      "success": {
+        "title": "項目已創建成功",
+        "subtitle": "可以聯繫負責人分發應用",
+        "back": "回到首頁",
+        "progress": "查看進度"
+      },
+      "maintenance": {
+        "title": "系統維護中",
+        "subtitle": "系統維護中，請稍後再試",
+        "back": "回到首頁"
+      },
+      "browserIncompatible": {
+        "title": "瀏覽器不兼容",
+        "subtitle": "抱歉，您正在使用的瀏覽器版本過低，無法打開當前網頁。",
+        "back": "回到首頁",
+        "recommend": "TDesign Starter 推薦以下主流瀏覽器"
+      },
+      "networkError": {
+        "title": "網絡異常",
+        "subtitle": "網絡異常, 請稍後重試",
+        "back": "回到首頁",
+        "reload": "重新加載"
+      }
+    },
+    "user": {
+      "markDay": "下午好，今天是你加入鵝廠的第 100 天",
+      "greeting": "Hi，Image",
+      "unit": "（次）",
+      "account": "My Account",
+      "organization": "騰訊/騰訊公司/某事業羣/某產品部/某運營中心/商戶服務組",
+      "personalInfo": {
+        "title": "個人信息",
+        "position": "港澳業務拓展組員工 直客銷售 ",
+        "desc": {
+          "phone": "座機",
+          "mobile": "手機",
+          "seat": "座位",
+          "email": "電郵",
+          "position": "職位",
+          "leader": "上級",
+          "entity": "主體",
+          "joinDay": "入職時間",
+          "group": "所屬團隊"
+        },
+        "tencentGroup": "騰訊集團",
+        "seniorDesigner": "高級 UI 設計師"
+      },
+      "visitData": "首頁訪問數據",
+      "contentList": "內容列表",
+      "teamMember": "團隊成員",
+      "serviceProduction": "服務產品"
+    }
+  },
+  "apiKeys": {
+    "upstream": {
+      "apiPassword": "API 密碼",
+      "apiUsername": "API 用戶名",
+      "copy": "複製",
+      "credentialHintPrefix": "在魔方財務後台「上游」新增 API 賬號：上游地址填",
+      "credentialHintSuffix": "，用戶名與密碼填上面兩項。",
+      "credentialWarning": "密碼僅顯示這一次，關閉後無法再次查看，請立即保存。",
+      "disable": "關閉上游 API",
+      "enable": "開啟上游 API",
+      "endpointLabel": "上游接入地址",
+      "expiredWarning": "該憑據已過期，魔方財務側無法再換取 JWT，請更新有效期。",
+      "expiresAtHint": "留空表示永不過期；到期後該憑據無法再換取 JWT。",
+      "expiresAtLabel": "有效期（可選）",
+      "ipAllowlistHint": "留空表示不限制來源 IP；填了之後只有白名單內的 IP 能換取 JWT。",
+      "ipAllowlistLabel": "IP 白名單（可選，多個用英文逗號分隔）",
+      "ipAllowlistPlaceholder": "例如：203.0.113.9, 198.51.100.0/24",
+      "lastUsedAt": "最近調用：",
+      "loginEndpointPrefix": "登錄接口為",
+      "loginEndpointSuffix": "。魔方財務「上游地址」直接填上面的接入地址即可，無需拼接登錄路徑。",
+      "noUsageLogs": "暫無調用記錄",
+      "notGenerated": "未生成",
+      "password": "密碼",
+      "passwordSet": "已設置（出於安全不顯示，可重置）",
+      "passwordUnset": "未設置",
+      "resetPassword": "重置密碼",
+      "savePolicy": "保存安全策略",
+      "saved": "我已保存",
+      "usageLogs": "調用日誌",
+      "usageLogsTitle": "調用日誌 · 魔方財務對接",
+      "username": "用戶名"
+    },
+    "title": "API 憑據",
+    "create": "創建密鑰",
+    "openApiLabel": "開放接口密鑰"
+  },
+  "client": {
+    "catalog": {
+      "description": "統一使用官網產品目錄",
+      "hint": "購買、報價和配置流程已經收口到官網產品目錄，客戶端這裡保留為穩定入口。",
+      "openCatalog": "打開產品目錄"
+    },
+    "coupons": {
+      "allProducts": "全場通用",
+      "allStatusPlaceholder": "全部狀態",
+      "applicableProducts": "適用產品",
+      "applicableProductsTitle": "適用產品",
+      "categoryAriaLabel": "優惠券分類",
+      "claim": "領取",
+      "couponNameFallback": "優惠券",
+      "detail": "詳情",
+      "detailTitle": "優惠券詳情",
+      "emptyOwned": "你還沒有優惠券",
+      "emptyPlaza": "當前暫無可領取的優惠券",
+      "firstOrderOnly": "限首單",
+      "instanceCode": "實例編號",
+      "instanceCodeTitle": "券實例編號",
+      "notClaimable": "不可領",
+      "ownedDescriptionFallback": "滿足條件後可在結算時直接抵扣",
+      "ownedTab": "我擁有的優惠券",
+      "plazaDescriptionFallback": "領取後可在結算時使用",
+      "plazaTab": "優惠券廣場",
+      "remainingStock": "剩餘 {remaining}/{total} 張",
+      "searchClaimablePlaceholder": "搜尋可領取的優惠券",
+      "searchNamePlaceholder": "搜尋優惠券名稱",
+      "title": "優惠券中心",
+      "unlimitedTimes": "不限次",
+      "usableTimes": "可使用 {used}/{total} 次"
+    },
+    "invoiceDetail": {
+      "backToInvoices": "返回賬單列表",
+      "backToList": "返回列表",
+      "basicTab": "基礎信息",
+      "billingCycle": "計費週期",
+      "coupon": "優惠券",
+      "couponCode": "優惠券碼",
+      "couponDiscount": "優惠額度",
+      "couponUsage": "使用優惠券",
+      "createdAt": "創建時間",
+      "discountAmount": "優惠金額",
+      "dueDate": "截止時間",
+      "financeCenter": "財務中心",
+      "goPay": "去支付",
+      "invoiceAmount": "賬單金額",
+      "invoiceDetail": "賬單詳情",
+      "invoiceNo": "賬單號",
+      "invoiceRecords": "賬單記錄",
+      "invoiceStatus": "賬單狀態",
+      "invoiceType": "賬單類型",
+      "itemsTab": "賬單明細",
+      "loading": "正在加載賬單詳情",
+      "noItems": "暫無賬單明細",
+      "noPayments": "暫無支付記錄",
+      "noRelatedOrder": "暫無關聯訂單",
+      "orderNo": "訂單號",
+      "orderStatus": "訂單狀態",
+      "orderType": "訂單類型",
+      "paidAmount": "已付金額",
+      "paidAt": "支付時間",
+      "payableAmount": "待付金額",
+      "paymentsTab": "關聯支付",
+      "refresh": "刷新",
+      "relatedOrderTab": "關聯訂單",
+      "relatedOrderTitle": "關聯訂單"
+    },
+    "invoices": {
+      "allStatusPlaceholder": "全部狀態",
+      "allTypePlaceholder": "全部類型",
+      "amountLabel": "賬單金額：",
+      "empty": "暫無賬單記錄",
+      "goPay": "去支付",
+      "orderLabel": "訂單",
+      "orderPrefix": "訂單：",
+      "paidLabel": "已付金額：",
+      "rechargeLabel": "充值",
+      "rechargePrefix": "充值：",
+      "searchPlaceholder": "搜尋賬單號、關聯訂單號或充值單號",
+      "view": "查看"
+    },
+    "orderDetail": {
+      "backToList": "返回列表",
+      "backToOrders": "返回訂單列表",
+      "basicTab": "基礎信息",
+      "billingCycle": "計費週期",
+      "cancelOrder": "取消訂單",
+      "configPricing": "配置定價",
+      "configSnapshot": "配置快照",
+      "configTab": "產品配置",
+      "coupon": "優惠券",
+      "couponCode": "優惠券碼",
+      "couponName": "優惠券名稱",
+      "couponUsage": "使用優惠券",
+      "createdAt": "創建時間",
+      "discountAmount": "優惠金額",
+      "financeCenter": "財務中心",
+      "goPay": "去支付",
+      "hostname": "主機名",
+      "instanceId": "實例ID",
+      "invoiceNo": "賬單號",
+      "invoiceStatus": "賬單狀態",
+      "loading": "正在加載訂單詳情",
+      "noConfigSnapshot": "暫無配置快照",
+      "noRelatedInvoice": "暫無關聯賬單",
+      "noRelatedService": "暫無關聯服務",
+      "orderAmount": "訂單金額",
+      "orderDetail": "訂單詳情",
+      "orderNo": "訂單號",
+      "orderRecords": "訂單記錄",
+      "orderStatus": "訂單狀態",
+      "orderType": "訂單類型",
+      "paidAmount": "已付金額",
+      "paidAt": "支付時間",
+      "productName": "開通商品",
+      "quantity": "數量",
+      "refresh": "刷新",
+      "relatedInvoice": "關聯賬單",
+      "relatedService": "關聯服務",
+      "relatedTab": "關聯信息",
+      "remark": "備註"
+    },
+    "payments": {
+      "allGatewayPlaceholder": "全部渠道",
+      "allStatusPlaceholder": "全部狀態",
+      "empty": "暫無第三方支付記錄",
+      "merchantLabel": "商家：",
+      "searchPlaceholder": "搜尋商家訂單號或第三方訂單號",
+      "thirdPartyLabel": "第三方：",
+      "view": "查看",
+      "waitingCallback": "等待渠道回調"
+    },
+    "referral": {
+      "accountLogsTab": "賬戶流水",
+      "alipay": "支付寶",
+      "alipayBindTip": "提現前需要先綁定支付寶，並完成該手機號的短信驗證，無需上傳支付寶圖片。",
+      "alipayBound": "已綁定",
+      "alipayPhone": "支付寶手機號",
+      "alipayPhonePlaceholder": "請輸入支付寶綁定手機號",
+      "alipayTitle": "提現支付寶",
+      "alipayUnbound": "提現前需先綁定",
+      "bindDialogTip": "請填寫實名、支付寶綁定手機號、短信驗證碼與登錄密碼，用於提現打款。",
+      "bindDialogTitle": "綁定提現支付寶",
+      "bindNow": "立即綁定",
+      "cancel": "取消",
+      "commissionRate": "佣金比例",
+      "copyLink": "複製鏈接",
+      "description": "好友通過此鏈接註冊並消費，您可獲得 {rate} 佣金，凍結 {days} 天后自動釋放。最低提現金額 ¥{min}。",
+      "inviteesTab": "被邀請人列表",
+      "linkTitle": "我的推薦鏈接",
+      "loading": "正在加載推薦獎勵",
+      "loginPassword": "登錄密碼",
+      "loginPasswordPlaceholder": "請輸入登錄密碼確認",
+      "payeeAccount": "收款賬戶",
+      "realName": "真實姓名",
+      "realNamePlaceholder": "請輸入支付寶實名姓名",
+      "rewardsTab": "獎勵明細",
+      "saveBind": "保存綁定",
+      "smsCode": "短信驗證碼",
+      "smsCodePlaceholder": "請輸入短信驗證碼",
+      "submitWithdraw": "提交提現",
+      "title": "推薦獎勵",
+      "toBalance": "轉餘額",
+      "withdrawAmount": "提現金額",
+      "withdrawAmountPlaceholder": "請輸入提現金額",
+      "withdrawalsTab": "提現記錄"
+    },
+    "services": {
+      "addRemark": "添加備註",
+      "all": "全部",
+      "allCategories": "全部分類",
+      "autoRenew": "自動續費",
+      "autoRenewBadge": "自",
+      "autoRenewOff": "未開啟自動續費",
+      "autoRenewPlaceholder": "續費方式",
+      "bandwidth": "帶寬",
+      "billingCycleLabel": "計費方式：",
+      "cardView": "卡片",
+      "catalogTypePlaceholder": "服務分類",
+      "cdnInstance": "CDN 加速實例",
+      "cloudService": "雲服務",
+      "console": "控制台",
+      "copyTitle": "點擊複製",
+      "database": "數據庫",
+      "disabled": "未開啟",
+      "editRemark": "編輯備註",
+      "empty": "當前還沒有任何服務實例",
+      "enabled": "已開啟",
+      "expiresAtLabel": "到期時間：",
+      "expiresAtPrefix": "到期",
+      "goShopping": "去選購產品",
+      "hostAccount": "主機賬號",
+      "listView": "列表",
+      "longTermValid": "長期有效",
+      "memory": "記憶體",
+      "monthlyTraffic": "月流量",
+      "more": "更多",
+      "moreActionsAria": "更多操作",
+      "noPublicIp": "暫無公網 IP",
+      "noRemark": "未添加備註",
+      "noRenewCycle": "未獲取到可續費週期",
+      "nodeCount": "節點數 {count}",
+      "nodeRegion": "節點區域",
+      "publicIp": "公網 IP",
+      "remarkCancel": "取消",
+      "remarkPlaceholder": "填寫服務備註，便於快速識別",
+      "remarkTitle": "編輯備註",
+      "renewAutoRenewLabel": "自動續費",
+      "renewCancel": "取消",
+      "renewCouponLabel": "續費優惠",
+      "renewCouponPlaceholder": "選擇優惠券",
+      "renewCreateInvoice": "創建續費賬單",
+      "renewCurrentExpiresLabel": "當前到期",
+      "renewLoading": "正在加載續費信息",
+      "renewServiceLabel": "服務實例",
+      "renewTitle": "服務續費",
+      "renewTotalLabel": "本次應付",
+      "saveRemark": "保存備註",
+      "searchPlaceholder": "搜尋服務名稱、域名、賬單號",
+      "statusPlaceholder": "狀態分類",
+      "traffic": "流量",
+      "trialMachine": "試用機",
+      "virtualHostInstance": "虛擬主機實例",
+      "webSpace": "網頁空間"
+    },
+    "ticketDetail": {
+      "adminRole": "管理員",
+      "assignee": "處理人",
+      "attachmentAlt": "附件",
+      "backToList": "返回工單列表",
+      "category": "工單分類",
+      "chatTab": "交流",
+      "closeReason": "關閉原因",
+      "closeTicket": "關閉工單",
+      "closedNotice": "此工單已關閉",
+      "createdAt": "創建時間",
+      "detailTab": "詳情",
+      "loading": "正在加載工單詳情",
+      "me": "我",
+      "noContent": "無文字內容",
+      "notFound": "工單不存在",
+      "previewAlt": "附件預覽",
+      "previewTitle": "附件預覽",
+      "priority": "優先級",
+      "recall": "撤回",
+      "recalled": "消息已撤回",
+      "relatedService": "關聯服務",
+      "remove": "移除",
+      "replyPlaceholder": "輸入回覆內容...",
+      "send": "發送",
+      "status": "狀態",
+      "supportAgent": "客服",
+      "title": "工單詳情",
+      "updatedAt": "更新時間",
+      "user": "用戶",
+      "userRole": "用戶"
+    }
+  },
+  "clientAuth": {
+    "register": {
+      "accountLabel": "手機號 / 電郵",
+      "accountPlaceholder": "請輸入手機號或電郵",
+      "codeLabel": "驗證碼",
+      "codePlaceholder": "請輸入驗證碼",
+      "confirmPasswordLabel": "確認密碼",
+      "confirmPasswordPlaceholder": "請再次輸入密碼",
+      "hasAccount": "已經有賬戶？",
+      "heroDescription": "完成開戶註冊後，可以繼續創建賬單、管理服務，並處理實名認證與賬戶安全設置。",
+      "heroTitle": "註冊後即可進入控制台開始購買",
+      "nicknameLabel": "用戶名",
+      "nicknamePlaceholder": "選填，最多 50 個字符",
+      "passwordLabel": "登錄密碼",
+      "passwordPlaceholder": "請輸入至少 8 位密碼",
+      "referralLabel": "推薦碼",
+      "referralPlaceholder": "選填，如有邀請推薦可填寫",
+      "sendCode": "發送驗證碼",
+      "signInNow": "立即登錄",
+      "submit": "註冊並進入控制台",
+      "title": "免費註冊",
+      "viewCatalog": "查看產品目錄"
+    }
+  },
+  "result": {
+    "serverError": {
+      "backHome": "返回首頁",
+      "description": "服務暫時不可用，請稍後重試；若持續出現請聯繫客服。",
+      "reload": "重新加載",
+      "title": "伺服器異常"
+    }
+  },
+  "serviceConsole": {
+    "alerts": {
+      "expiringSoon": "實例將於 {time} 到期，建議提前續費避免服務中斷。",
+      "readOnlyNotice": "當前實例未接入完整控制能力，頁面將以只讀模式展示基礎信息。",
+      "renewNow": "立即續費"
+    },
+    "logs": {
+      "latestAt": "最近 {time}",
+      "refresh": "刷新",
+      "title": "操作日誌",
+      "todayCount": "今日 {count} 條",
+      "totalCount": "共 {count} 條"
+    },
+    "nameDialog": {
+      "cancel": "取消",
+      "namePlaceholder": "填寫便於識別的實例名稱",
+      "saveName": "保存名稱",
+      "title": "修改實例名稱"
+    },
+    "passwordReset": {
+      "cancel": "取消",
+      "confirmPassword": "確認密碼",
+      "confirmPasswordPlaceholder": "再次輸入新密碼",
+      "generateAriaLabel": "隨機生成強密碼",
+      "generateTip": "隨機生成強密碼",
+      "newPassword": "新密碼",
+      "passwordPlaceholder": "至少 8 位",
+      "submit": "提交",
+      "title": "重置實例密碼"
+    },
+    "reinstall": {
+      "cancel": "取消",
+      "loading": "正在加載系統列表",
+      "osGroup": "系統分組",
+      "osGroupPlaceholder": "請選擇系統分組",
+      "osVersion": "系統版本",
+      "osVersionPlaceholder": "請選擇系統版本",
+      "submit": "提交重裝",
+      "title": "重裝系統"
+    },
+    "renewDialog": {
+      "agentDiscount": "代理折扣",
+      "cancel": "取消",
+      "couponDiscount": "續費優惠",
+      "couponPlaceholder": "選擇優惠券",
+      "createInvoice": "創建續費賬單",
+      "discountSuffix": "折",
+      "loading": "正在加載續費信息",
+      "noRenewCycle": "未獲取到可續費週期",
+      "originalPrice": "原價",
+      "title": "服務續費",
+      "totalDue": "本次應付"
+    },
+    "security": {
+      "addRule": "新增規則",
+      "applied": "已應用",
+      "apply": "應用",
+      "createGroup": "新建安全組",
+      "delete": "刪除",
+      "description": "説明",
+      "direction": "方向",
+      "emptyCanCreate": "當前沒有安全組，可先創建後再添加規則",
+      "emptyNotCreatable": "當前沒有可應用的安全組",
+      "groupName": "安全組",
+      "noDescription": "暫無備註説明",
+      "notApplied": "未應用",
+      "port": "端口",
+      "protocol": "協議",
+      "refresh": "刷新",
+      "ruleCount": "{count} 條規則",
+      "ruleLabel": "規則",
+      "source": "來源",
+      "title": "安全組",
+      "unsupported": "當前實例暫不支持安全組",
+      "view": "查看"
+    },
+    "securityGroup": {
+      "cancel": "取消",
+      "create": "創建規則",
+      "description": "描述",
+      "descriptionPlaceholder": "選填",
+      "name": "名稱",
+      "namePlaceholder": "請輸入安全組名稱",
+      "title": "新增安全組",
+      "direction": "方向",
+      "protocol": "協議",
+      "port": "端口",
+      "ipRange": "IP 範圍",
+      "remark": "備註",
+      "directionPlaceholder": "請選擇方向",
+      "protocolPlaceholder": "請選擇協議",
+      "ipPlaceholder": "例如 0.0.0.0/0",
+      "remarkPlaceholder": "選填"
+    },
+    "traffic": {
+      "cancel": "取消",
+      "createInvoice": "創建賬單",
+      "currentUsage": "當前流量",
+      "loading": "正在加載流量包",
+      "noPackages": "暫無可購買流量包",
+      "quoting": "報價中",
+      "remainingUsage": "剩餘流量",
+      "selectedTier": "已選檔位",
+      "title": "購買流量包",
+      "unlimited": "不限"
+    },
+    "virtualHost": {
+      "bandwidth": "帶寬",
+      "billingCycle": "計費方式",
+      "billingInfo": "付費信息",
+      "bindableDomains": "可綁域名",
+      "createdAt": "開通時間",
+      "databaseSpace": "數據庫空間",
+      "expiresAt": "到期時間",
+      "hostAccount": "主機賬號",
+      "hostName": "主機名稱",
+      "idcRegion": "機房區域",
+      "instanceId": "實例 ID",
+      "longTermValid": "長期有效",
+      "monthlyTraffic": "月流量",
+      "noPlanSpecs": "上游未下發額外的套餐參數。",
+      "orderNo": "訂單號",
+      "panelAccount": "面板賬號",
+      "panelLogin": "面板登錄信息",
+      "panelPassword": "面板密碼",
+      "panelUrl": "面板地址",
+      "panelUrlHint": "面板地址可能帶一次性登錄態，建議在新標籤頁打開；打不開可回到「主機與面板」重新進入。",
+      "planSpecs": "套餐參數",
+      "profile": "主機檔案",
+      "renewManage": "續費管理",
+      "renewPrice": "續費價格",
+      "runStatus": "運行狀態",
+      "spaceAndSites": "空間與站點",
+      "webSpace": "網頁空間"
+    },
+    "vnc": {
+      "connect": "連接 VNC",
+      "connectTip": "點擊連接後將向後端申請一次性 VNC 地址。",
+      "loadedTip": "VNC 控制台已在當前頁面載入。",
+      "openInWindow": "新窗口打開",
+      "title": "VNC 控制台",
+      "waiting": "等待連接"
+    },
+    "cdn": {
+      "trafficUsage": "流量用量"
+    },
+    "breadcrumb": {
+      "userCenter": "用戶中心"
+    },
+    "rename": "修改名稱",
+    "autoRenew": "自動續費",
+    "remarkLabel": "備註：",
+    "refresh": "刷新",
+    "financeLog": "財務日誌",
+    "range3h": "3 小時",
+    "range24h": "24 小時",
+    "range7d": "7 天",
+    "range30d": "30 天",
+    "monitorInfo": "監控信息",
+    "nat": {
+      "addForward": "添加端口轉發",
+      "title": "端口轉發",
+      "nameLabel": "名稱",
+      "publicPortLabel": "公網端口",
+      "internalPortLabel": "內網端口",
+      "protocolLabel": "協議",
+      "namePlaceholder": "例如：Web 服務",
+      "internalPlaceholder": "留空由上游分配",
+      "portPlaceholder": "例如：80",
+      "protocolPlaceholder": "請選擇協議"
+    },
+    "remark": {
+      "save": "保存備註",
+      "placeholder": "填寫實例備註，便於識別"
+    },
+    "rescue": {
+      "title": "救援系統",
+      "confirm": "確認進入",
+      "placeholder": "請選擇救援系統",
+      "linux": "Linux 救援系統",
+      "windows": "Windows 救援系統"
+    },
+    "instanceStatus": "實例狀態",
+    "basicInfo": "基本信息",
+    "configInfo": "配置信息",
+    "instanceName": "實例名稱",
+    "instanceSpec": "實例規格",
+    "instanceId": "實例 ID",
+    "os": "作業系統",
+    "createdAt": "創建時間"
+  },
+  "recharge": {
+    "title": "在線充值",
+    "currentBalance": "當前餘額",
+    "amountLabel": "充值金額",
+    "customAmount": "自定義",
+    "actualAmount": "實付金額",
+    "method": "支付方式",
+    "agreed": "我已瞭解充值説明",
+    "help": "幫助中心",
+    "payStatus": "支付狀態",
+    "merchantOrderNo": "商家訂單號",
+    "payableAmount": "應付金額",
+    "copyLink": "複製支付鏈接"
+  },
+  "services": {
+    "console": {}
+  },
+  "verification": {
+    "currentStatus": "當前狀態",
+    "name": "認證姓名",
+    "idCard": "身份證號",
+    "loginEmail": "登錄電郵",
+    "boundPhone": "綁定手機",
+    "flow": "認證流程",
+    "step1": "填寫真實姓名與身份證號。",
+    "step2": "使用手機掃碼打開認證頁面並完成人臉校驗。",
+    "step3": "認證成功後自動刷新賬戶狀態。",
+    "notice": "溫馨提示",
+    "tip1": "請確保姓名與身份證號真實有效。",
+    "tip2": "認證失敗後可重新獲取二維碼再次提交。",
+    "tip3": "如實名信息已存在，可在當前頁面查看。",
+    "scanHint": "請使用手機掃描二維碼完成認證",
+    "refreshQrcode": "刷新二維碼",
+    "checkStatus": "查詢認證狀態",
+    "closeSession": "關閉會話",
+    "verifiedTag": "已認證",
+    "realName": "實名信息",
+    "realNamePlaceholder": "請輸入真實姓名",
+    "idCardPlaceholder": "請輸入身份證號",
+    "realNameLabel": "真實姓名",
+    "idCardLabel": "身份證號"
+  },
+  "checkoutResume": {
+    "browse": "去選購產品",
+    "toFinance": "前往資金中心"
+  },
+  "content": {
+    "hotSearchLabel": "熱門搜尋:"
+  },
+  "invoiceDetail": {
+    "back": "返回賬單"
+  },
+  "orderCreate": {
+    "title": "購買鏈路",
+    "redirected": "購買入口已重定向到統一購買鏈路",
+    "description": "新的購買、登錄續接與賬單創建均在官網產品目錄與 /client/checkout-resume 中完成。",
+    "open": "打開購買頁"
+  },
+  "orders": {
+    "searchPlaceholder": "搜尋訂單號"
+  },
+  "paymentDetail": {
+    "title": "財務中心",
+    "records": "充值記錄",
+    "recordDetail": "充值詳情",
+    "back": "返回列表"
+  },
+  "profile": {
+    "basicInfo": "基礎信息"
+  },
+  "tickets": {
+    "searchPlaceholder": "搜尋工單標題",
+    "allStatus": "全部狀態"
+  },
+  "auth": {
+    "accountLabel": "手機號 / 電郵",
+    "codeLabel": "驗證碼",
+    "newPassword": "新密碼",
+    "forgotPassword": "找回密碼",
+    "accountPlaceholder": "請輸入註冊手機號或電郵",
+    "codePlaceholder": "請輸入驗證碼",
+    "newPasswordPlaceholder": "請輸入至少 8 位新密碼",
+    "loginAsInProgress": "代理登入中",
+    "loginTitle": "賬號登錄",
+    "loginAccountPlaceholder": "請輸入手機號或電郵",
+    "byPassword": "密碼登錄",
+    "byCode": "驗證碼登錄"
+  }
+}

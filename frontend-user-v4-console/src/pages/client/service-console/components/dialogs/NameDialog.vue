@@ -1,9 +1,18 @@
 <template>
-  <t-dialog v-model:visible="nameVisible" header="修改实例名称" width="min(28rem, calc(100vw - 2rem))" destroy-on-close>
-    <t-input v-model="nameForm.name" :maxlength="120" placeholder="填写便于识别的实例名称" />
+  <t-dialog
+      v-model:visible="nameVisible"
+      :header="$t('serviceConsole.nameDialog.title')"
+      width="min(28rem, calc(100vw - 2rem))"
+      destroy-on-close
+    >
+    <t-input
+      v-model="nameForm.name"
+      :maxlength="120"
+      :placeholder="$t('serviceConsole.nameDialog.namePlaceholder')"
+    />
     <template #footer>
-      <t-button variant="outline" @click="nameVisible = false">取消</t-button>
-      <t-button theme="primary" :loading="nameSubmitting" @click="submitName">保存名称</t-button>
+      <t-button variant="outline" @click="nameVisible = false">{{ $t('serviceConsole.nameDialog.cancel') }}</t-button>
+      <t-button theme="primary" :loading="nameSubmitting" @click="submitName">{{ $t('serviceConsole.nameDialog.saveName') }}</t-button>
     </template>
   </t-dialog>
 </template>

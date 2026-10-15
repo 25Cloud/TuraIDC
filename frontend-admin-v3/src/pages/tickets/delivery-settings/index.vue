@@ -3,12 +3,12 @@
     <t-card class="ticket-delivery-card" :bordered="false">
       <div class="ticket-delivery-toolbar">
         <div class="ticket-delivery-summary">
-          <strong>工单传递规则</strong>
-          <span>按部门、供应商和产品范围决定工单是否同步到上游。</span>
+          <strong>{{ $t('tickets.deliverySettings.title') }}</strong>
+          <span>{{ $t('tickets.deliverySettings.titleTip') }}</span>
         </div>
         <t-button v-if="canManage" theme="primary" @click="openCreateDialog">
           <template #icon><add-icon /></template>
-          新增规则
+          {{ $t('tickets.deliverySettings.addRule') }}
         </t-button>
       </div>
 
@@ -24,7 +24,7 @@
         <template #name="{ row }">
           <div class="rule-name-cell">
             <strong>{{ row.name || '-' }}</strong>
-            <span>{{ row.department || '-' }} · ZJMF 财务</span>
+            <span>{{ row.department || '-' }} · {{ $t('tickets.deliverySettings.zjmfFinance') }}</span>
           </div>
         </template>
         <template #supplier="{ row }">{{ supplierName(row.supplier_id) }}</template>
@@ -34,18 +34,18 @@
         <template #upstreamDepartment="{ row }">{{ row.upstream_department_id || '-' }}</template>
         <template #status="{ row }">
           <t-tag :theme="isEnabled(row) ? 'success' : 'default'" variant="light">
-            {{ isEnabled(row) ? '启用' : '停用' }}
+            {{ isEnabled(row) ? $t('tickets.deliverySettings.enabled') : $t('tickets.deliverySettings.disabled') }}
           </t-tag>
         </template>
-        <template #sync="{ row }">{{ isEnabledValue(row.sync_admin_replies) ? '同步' : '不同步' }}</template>
+        <template #sync="{ row }">{{ isEnabledValue(row.sync_admin_replies) ? $t('tickets.deliverySettings.sync') : $t('tickets.deliverySettings.notSync') }}</template>
         <template #actions="{ row }">
           <t-space size="small">
-            <t-button v-if="canManage" theme="primary" variant="text" @click="openEditDialog(row)">编辑</t-button>
+            <t-button v-if="canManage" theme="primary" variant="text" @click="openEditDialog(row)">{{ $t('tickets.deliverySettings.edit') }}</t-button>
             <t-button v-if="canManage" variant="text" @click="toggleRule(row)">
-              {{ isEnabled(row) ? '停用' : '启用' }}
+              {{ isEnabled(row) ? $t('tickets.deliverySettings.disabled') : $t('tickets.deliverySettings.enabled') }}
             </t-button>
-            <t-button v-if="canManage" theme="danger" variant="text" @click="confirmDelete(row)">删除</t-button>
-            <t-button v-if="!canManage" variant="text" @click="openEditDialog(row)">查看</t-button>
+            <t-button v-if="canManage" theme="danger" variant="text" @click="confirmDelete(row)">{{ $t('tickets.deliverySettings.delete') }}</t-button>
+            <t-button v-if="!canManage" variant="text" @click="openEditDialog(row)">{{ $t('tickets.deliverySettings.view') }}</t-button>
           </t-space>
         </template>
       </t-table>
@@ -60,63 +60,75 @@
                   <span>{{ row.department || '-' }}</span>
                 </div>
                 <t-tag :theme="isEnabled(row) ? 'success' : 'default'" variant="light">
-                  {{ isEnabled(row) ? '启用' : '停用' }}
+                  {{ isEnabled(row) ? $t('tickets.deliverySettings.enabled') : $t('tickets.deliverySettings.disabled') }}
                 </t-tag>
               </div>
               <dl>
                 <div>
-                  <dt>供应商</dt>
+                  <dt>{{ $t('tickets.deliverySettings.supplier') }}</dt>
                   <dd>{{ supplierName(row.supplier_id) }}</dd>
                 </div>
                 <div>
-                  <dt>产品范围</dt>
+                  <dt>{{ $t('tickets.deliverySettings.productScope') }}</dt>
                   <dd>{{ scopeLabel(row) }}</dd>
                 </div>
                 <div>
-                  <dt>上游部门</dt>
+                  <dt>{{ $t('tickets.deliverySettings.upstreamDepartment') }}</dt>
                   <dd>{{ row.upstream_department_id || '-' }}</dd>
                 </div>
                 <div>
-                  <dt>管理员回复</dt>
-                  <dd>{{ isEnabledValue(row.sync_admin_replies) ? '同步' : '不同步' }}</dd>
+                  <dt>{{ $t('tickets.deliverySettings.adminReply') }}</dt>
+                  <dd>{{ isEnabledValue(row.sync_admin_replies) ? $t('tickets.deliverySettings.sync') : $t('tickets.deliverySettings.notSync') }}</dd>
                 </div>
               </dl>
               <div class="ticket-delivery-mobile-card__actions">
                 <t-button size="small" variant="text" @click="openEditDialog(row)">{{
-                  canManage ? '编辑' : '查看'
+                  canManage ? $t('tickets.deliverySettings.edit') : $t('tickets.deliverySettings.view')
                 }}</t-button>
                 <t-button v-if="canManage" size="small" variant="text" @click="toggleRule(row)">
-                  {{ isEnabled(row) ? '停用' : '启用' }}
+                  {{ isEnabled(row) ? $t('tickets.deliverySettings.disabled') : $t('tickets.deliverySettings.enabled') }}
                 </t-button>
                 <t-button v-if="canManage" size="small" theme="danger" variant="text" @click="confirmDelete(row)"
-                  >删除</t-button
+                  >{{ $t('tickets.deliverySettings.delete') }}</t-button
                 >
               </div>
             </article>
           </div>
-          <t-empty v-else description="暂无工单传递规则" />
+          <t-empty v-else :description="$t('tickets.deliverySettings.empty')" />
         </t-loading>
       </div>
 
-      <t-empty v-if="!isMobile && !loading && rules.length === 0" description="暂无工单传递规则" />
+      <t-empty
+        v-if="!isMobile && !loading && rules.length === 0"
+        :description="$t('tickets.deliverySettings.empty')"
+      />
     </t-card>
 
     <t-dialog
       v-model:visible="dialogVisible"
-      :header="editingId ? '编辑工单传递规则' : '新增工单传递规则'"
-      :confirm-btn="canManage ? { content: '保存', loading: saving } : null"
-      :cancel-btn="canManage ? '取消' : '关闭'"
+      :header="editingId ? $t('tickets.deliverySettings.editRuleTitle') : $t('tickets.deliverySettings.addRuleTitle')"
+      :confirm-btn="canManage ? { content: $t('tickets.deliverySettings.save'), loading: saving } : null"
+      :cancel-btn="canManage ? $t('tickets.deliverySettings.cancel') : $t('tickets.deliverySettings.close')"
       placement="center"
       :width="isMobile ? '94vw' : '720px'"
       @confirm="submitForm"
     >
       <t-form ref="formRef" :data="form" :rules="formRules" label-align="top">
         <div class="ticket-delivery-form-grid">
-          <t-form-item label="规则名称" name="name">
-            <t-input v-model="form.name" :disabled="!canManage" maxlength="120" placeholder="例如：技术支持工单同步" />
+          <t-form-item :label="$t('tickets.deliverySettings.ruleName')" name="name">
+            <t-input
+              v-model="form.name"
+              :disabled="!canManage"
+              maxlength="120"
+              :placeholder="$t('tickets.deliverySettings.ruleNamePlaceholder')"
+            />
           </t-form-item>
-          <t-form-item label="工单部门" name="department">
-            <t-select v-model="form.department" :disabled="!canManage" placeholder="选择工单部门">
+          <t-form-item :label="$t('tickets.deliverySettings.ticketDepartment')" name="department">
+            <t-select
+              v-model="form.department"
+              :disabled="!canManage"
+              :placeholder="$t('tickets.deliverySettings.ticketDepartmentPlaceholder')"
+            >
               <t-option
                 v-for="option in departmentOptions"
                 :key="option.value"
@@ -125,12 +137,12 @@
               />
             </t-select>
           </t-form-item>
-          <t-form-item label="供应商" name="supplier_id">
+          <t-form-item :label="$t('tickets.deliverySettings.supplier')" name="supplier_id">
             <t-select
               v-model="form.supplier_id"
               :disabled="!canManage || Boolean(editingId)"
               filterable
-              placeholder="选择启用的 ZJMF 供应商"
+              :placeholder="$t('tickets.deliverySettings.supplierPlaceholder')"
               @change="handleSupplierChange"
             >
               <t-option
@@ -141,13 +153,13 @@
               />
             </t-select>
           </t-form-item>
-          <t-form-item label="上游部门" name="upstream_department_id">
+          <t-form-item :label="$t('tickets.deliverySettings.upstreamDepartment')" name="upstream_department_id">
             <t-select
               v-model="form.upstream_department_id"
               :disabled="!canManage || !form.supplier_id || departmentsLoading"
               :loading="departmentsLoading"
               filterable
-              placeholder="选择上游部门"
+              :placeholder="$t('tickets.deliverySettings.upstreamDepartmentPlaceholder')"
             >
               <t-option
                 v-for="department in upstreamDepartments"
@@ -157,19 +169,23 @@
               />
             </t-select>
           </t-form-item>
-          <t-form-item label="产品范围" name="product_scope_mode">
+          <t-form-item :label="$t('tickets.deliverySettings.productScope')" name="product_scope_mode">
             <t-radio-group v-model="form.product_scope_mode" :disabled="!canManage">
-              <t-radio value="all">全部产品</t-radio>
-              <t-radio value="selected">指定产品</t-radio>
+              <t-radio value="all">{{ $t('tickets.deliverySettings.allProducts') }}</t-radio>
+              <t-radio value="selected">{{ $t('tickets.deliverySettings.selectedProducts') }}</t-radio>
             </t-radio-group>
           </t-form-item>
-          <t-form-item v-if="form.product_scope_mode === 'selected'" label="指定产品" name="product_ids">
+          <t-form-item
+            v-if="form.product_scope_mode === 'selected'"
+            :label="$t('tickets.deliverySettings.selectedProducts')"
+            name="product_ids"
+          >
             <t-select
               v-model="form.product_ids"
               :disabled="!canManage || !form.supplier_id"
               filterable
               multiple
-              placeholder="选择已绑定上游产品"
+              :placeholder="$t('tickets.deliverySettings.boundProductsPlaceholder')"
             >
               <t-option
                 v-for="product in filteredProducts"
@@ -180,19 +196,19 @@
             </t-select>
           </t-form-item>
         </div>
-        <t-form-item label="规则选项">
+        <t-form-item :label="$t('tickets.deliverySettings.ruleOptions')">
           <t-space direction="vertical" size="small">
-            <t-checkbox v-model="form.enabled" :disabled="!canManage">启用规则</t-checkbox>
-            <t-checkbox v-model="form.sync_admin_replies" :disabled="!canManage">同步管理员回复</t-checkbox>
+            <t-checkbox v-model="form.enabled" :disabled="!canManage">{{ $t('tickets.deliverySettings.enableRule') }}</t-checkbox>
+            <t-checkbox v-model="form.sync_admin_replies" :disabled="!canManage">{{ $t('tickets.deliverySettings.syncAdminReplies') }}</t-checkbox>
           </t-space>
         </t-form-item>
-        <t-form-item label="屏蔽关键词" name="mask_keywords">
+        <t-form-item :label="$t('tickets.deliverySettings.maskKeywords')" name="mask_keywords">
           <t-textarea
             v-model="form.mask_keywords"
             :disabled="!canManage"
             :autosize="{ minRows: 3, maxRows: 6 }"
             maxlength="10000"
-            placeholder="每行一个关键词，命中标题或首条回复时不传递"
+            :placeholder="$t('tickets.deliverySettings.maskKeywordsPlaceholder')"
           />
         </t-form-item>
       </t-form>
@@ -201,14 +217,11 @@
     <t-card v-if="canManage" class="ticket-delivery-card ticket-delivery-guard-card" :bordered="false">
       <div class="ticket-delivery-toolbar">
         <div class="ticket-delivery-summary">
-          <strong>上游附件上传防护</strong>
-          <span
-            >默认关闭
-            /upload_image；开启后白名单外上传默认拒绝。上传后超过保留期仍未用于回复工单的文件会自动删除。</span
-          >
+          <strong>{{ $t('tickets.deliverySettings.uploadGuardTitle') }}</strong>
+          <span>{{ $t('tickets.deliverySettings.uploadGuardTip') }}</span>
         </div>
         <t-button v-if="canManage" theme="primary" variant="outline" :loading="guardSaving" @click="saveUploadGuard">
-          保存配置
+          {{ $t('tickets.deliverySettings.saveGuardConfig') }}
         </t-button>
       </div>
 
@@ -217,34 +230,34 @@
         :label-align="isMobile ? 'top' : 'right'"
         :label-width="isMobile ? undefined : '170px'"
       >
-        <t-form-item label="启用 /upload_image 接口">
+        <t-form-item :label="$t('tickets.deliverySettings.enableUploadImage')">
           <t-switch v-model="uploadGuard.upload_image_enabled" :disabled="!canManage" />
-          <span class="ticket-delivery-guard-hint">配置工单传递规则前必须先开启</span>
+          <span class="ticket-delivery-guard-hint">{{ $t('tickets.deliverySettings.enableUploadImageTip') }}</span>
         </t-form-item>
-        <t-form-item label="白名单 IP / CIDR">
+        <t-form-item :label="$t('tickets.deliverySettings.allowedIps')">
           <t-textarea
             v-model="uploadGuard.allowed_ips"
             :disabled="!canManage"
             :autosize="{ minRows: 2, maxRows: 5 }"
             maxlength="2000"
-            placeholder="每行或逗号分隔一个 IP 或 CIDR，例如 203.0.113.10、10.0.0.0/8"
+            :placeholder="$t('tickets.deliverySettings.allowedIpsPlaceholder')"
           />
         </t-form-item>
-        <t-form-item label="非白名单速率（次/分钟）">
+        <t-form-item :label="$t('tickets.deliverySettings.rateLimit')">
           <t-input-number
             v-model="uploadGuard.rate_limit"
             :disabled="!canManage || uploadGuard.block_non_whitelisted"
             :min="0"
             :max="10000"
           />
-          <span class="ticket-delivery-guard-hint">0 表示不限速（不推荐）</span>
+          <span class="ticket-delivery-guard-hint">{{ $t('tickets.deliverySettings.rateLimitTip') }}</span>
         </t-form-item>
-        <t-form-item label="拒绝白名单外上传">
+        <t-form-item :label="$t('tickets.deliverySettings.blockNonWhitelisted')">
           <t-switch v-model="uploadGuard.block_non_whitelisted" :disabled="!canManage" />
-          <span class="ticket-delivery-guard-hint">开启后仅白名单 IP/CIDR 可上传，其余来源直接拒绝</span>
+          <span class="ticket-delivery-guard-hint">{{ $t('tickets.deliverySettings.blockNonWhitelistedTip') }}</span>
         </t-form-item>
-        <t-form-item label="未使用文件保留期">
-          <span>{{ uploadGuard.unused_retention_minutes }} 分钟（每分钟自动清理一次）</span>
+        <t-form-item :label="$t('tickets.deliverySettings.unusedRetention')">
+          <span>{{ uploadGuard.unused_retention_minutes }} {{ $t('tickets.deliverySettings.unusedRetentionUnit') }}</span>
         </t-form-item>
       </t-form>
     </t-card>

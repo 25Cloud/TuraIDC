@@ -19,7 +19,7 @@
         <t-input
           v-model="filters.keyword"
           clearable
-          placeholder="搜索账单号、关联订单号或充值单号"
+          :placeholder="$t('client.invoices.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >
@@ -28,7 +28,7 @@
           </template>
         </t-input>
 
-        <t-select v-model="filters.status" clearable placeholder="全部状态" @change="handleSearch">
+        <t-select v-model="filters.status" clearable :placeholder="$t('client.invoices.allStatusPlaceholder')" @change="handleSearch">
           <t-option v-for="item in INVOICE_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
 
@@ -36,7 +36,7 @@
           v-if="showTypeSelector"
           v-model="filters.type"
           clearable
-          placeholder="全部类型"
+          :placeholder="$t('client.invoices.allTypePlaceholder')"
           @change="handleSearch"
         >
           <t-option v-for="item in INVOICE_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
@@ -45,7 +45,7 @@
     </t-card>
 
     <section class="record-list-card">
-      <data-state :loading="loading" :empty="!list.length" :description="listError || '暂无账单记录'">
+      <data-state :loading="loading" :empty="!list.length" :description="listError || $t('client.invoices.empty')">
         <t-table class="record-table" row-key="id" :data="list" :columns="columns" :pagination="null" hover>
           <template #invoice="{ row }">
             <div class="stack-cell">
@@ -62,7 +62,7 @@
           <template #related_refs="{ row }">
             <div class="stack-cell">
               <div class="related-ref-line">
-                <span class="related-ref-label">订单</span>
+                <span class="related-ref-label">{{ $t('client.invoices.orderLabel') }}</span>
                 <t-button v-if="row.order" variant="text" theme="primary" size="small" @click="goToOrder(row)">
                   {{ invoiceOrderNo(row) }}
                 </t-button>
@@ -75,7 +75,7 @@
                 />
               </div>
               <div class="related-ref-line">
-                <span class="related-ref-label">充值</span>
+                <span class="related-ref-label">{{ $t('client.invoices.rechargeLabel') }}</span>
                 <t-button
                   v-if="isRechargeInvoice(row) && row.payment_summary?.id"
                   variant="text"
@@ -100,7 +100,7 @@
           </template>
           <template #operation="{ row }">
             <t-space>
-              <t-button size="small" theme="primary" variant="text" @click="goToDetail(row)">查看</t-button>
+              <t-button size="small" theme="primary" variant="text" @click="goToDetail(row)">{{ $t('client.invoices.view') }}</t-button>
               <t-button
                 v-if="isPayableInvoice(row)"
                 size="small"
@@ -108,7 +108,7 @@
                 variant="outline"
                 @click="goToPay(row)"
               >
-                去支付
+                {{ $t('client.invoices.goPay') }}
               </t-button>
             </t-space>
           </template>
@@ -123,18 +123,18 @@
 
             <div class="stack-cell">
               <strong>{{ row.type_label || '--' }}</strong>
-              <span>账单金额：¥{{ formatMoney(row.amount) }}</span>
-              <span>已付金额：¥{{ formatMoney(row.paid_amount) }}</span>
+              <span>{{ $t('client.invoices.amountLabel') }}¥{{ formatMoney(row.amount) }}</span>
+              <span>{{ $t('client.invoices.paidLabel') }}¥{{ formatMoney(row.paid_amount) }}</span>
             </div>
 
             <div class="record-mobile-card__meta">
-              <span>订单：{{ invoiceOrderNo(row) }}</span>
-              <span>充值：{{ rechargePaymentNo(row) }}</span>
+              <span>{{ $t('client.invoices.orderPrefix') }}{{ invoiceOrderNo(row) }}</span>
+              <span>{{ $t('client.invoices.rechargePrefix') }}{{ rechargePaymentNo(row) }}</span>
               <span>{{ row.created_at || '--' }}</span>
             </div>
 
             <div class="record-mobile-card__actions">
-              <t-button size="small" theme="primary" variant="text" @click="goToDetail(row)">查看</t-button>
+              <t-button size="small" theme="primary" variant="text" @click="goToDetail(row)">{{ $t('client.invoices.view') }}</t-button>
               <t-button
                 v-if="isPayableInvoice(row)"
                 size="small"
@@ -142,7 +142,7 @@
                 variant="outline"
                 @click="goToPay(row)"
               >
-                去支付
+                {{ $t('client.invoices.goPay') }}
               </t-button>
             </div>
           </article>

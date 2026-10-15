@@ -1,16 +1,18 @@
 <template>
   <div class="cpu-models-page">
     <div class="page-inline-actions">
-      <t-button theme="primary" :loading="saving" @click="handleSave">保存目录</t-button>
+      <t-button theme="primary" :loading="saving" @click="handleSave">
+        {{ $t('products.cpuModels.saveCatalog') }}
+      </t-button>
     </div>
 
     <div class="cpu-layout">
       <t-card :bordered="false">
         <div class="group-head">
-          <strong>CPU 分组</strong>
+          <strong>{{ $t('products.cpuModels.groupTitle') }}</strong>
           <t-button theme="primary" variant="outline" @click="openGroupDialog()">
             <template #icon><add-icon /></template>
-            新增分组
+            {{ $t('products.cpuModels.addGroup') }}
           </t-button>
         </div>
 
@@ -23,17 +25,25 @@
           >
             <button type="button" @click="activeGroupId = group.id">
               <strong>{{ group.name || '-' }}</strong>
-              <span>{{ group.model_count || group.models.length }} 个型号</span>
+              <span>{{
+                $t('products.cpuModels.modelCount', { count: group.model_count || group.models.length })
+              }}</span>
             </button>
             <t-space size="small">
-              <t-button size="small" variant="text" theme="primary" @click="openGroupDialog(group)">编辑</t-button>
-              <t-button size="small" variant="text" theme="danger" @click="handleDeleteGroup(group)">删除</t-button>
+              <t-button size="small" variant="text" theme="primary" @click="openGroupDialog(group)">
+                {{ $t('products.cpuModels.edit') }}
+              </t-button>
+              <t-button size="small" variant="text" theme="danger" @click="handleDeleteGroup(group)">
+                {{ $t('products.cpuModels.delete') }}
+              </t-button>
             </t-space>
           </article>
         </div>
-        <t-empty v-else description="还没有 CPU 分组">
+        <t-empty v-else :description="$t('products.cpuModels.emptyGroups')">
           <template #action>
-            <t-button theme="primary" @click="openGroupDialog()">新增第一个分组</t-button>
+            <t-button theme="primary" @click="openGroupDialog()">
+              {{ $t('products.cpuModels.addFirstGroup') }}
+            </t-button>
           </template>
         </t-empty>
       </t-card>
@@ -41,12 +51,18 @@
       <t-card :bordered="false">
         <div class="model-head">
           <div>
-            <h2>CPU 型号</h2>
-            <p>{{ currentGroup ? `当前分组：${currentGroup.name}` : '请先选择左侧 CPU 分组' }}</p>
+            <h2>{{ $t('products.cpuModels.modelTitle') }}</h2>
+            <p>
+              {{
+                currentGroup
+                  ? $t('products.cpuModels.currentGroup', { name: currentGroup.name })
+                  : $t('products.cpuModels.selectGroupFirst')
+              }}
+            </p>
           </div>
           <t-button theme="primary" variant="outline" :disabled="!currentGroup" @click="openModelDialog()">
             <template #icon><add-icon /></template>
-            新增型号
+            {{ $t('products.cpuModels.addModel') }}
           </t-button>
         </div>
 
@@ -62,8 +78,8 @@
             >
               <template #frequency="{ row }">
                 <div class="frequency-summary">
-                  <span>主频 {{ displayFrequency(row.base_frequency) }}</span>
-                  <span>睿频 {{ displayFrequency(row.turbo_frequency) }}</span>
+                  <span>{{ $t('products.cpuModels.baseFrequency') }}{{ displayFrequency(row.base_frequency) }}</span>
+                  <span>{{ $t('products.cpuModels.turboFrequency') }}{{ displayFrequency(row.turbo_frequency) }}</span>
                 </div>
               </template>
               <template #bindings="{ row }">
@@ -76,58 +92,84 @@
               </template>
               <template #operation="{ row }">
                 <t-space size="small">
-                  <t-button size="small" variant="text" theme="primary" @click="openModelDialog(row)">编辑</t-button>
-                  <t-button size="small" variant="text" theme="danger" @click="handleDeleteModel(row)">删除</t-button>
+                  <t-button size="small" variant="text" theme="primary" @click="openModelDialog(row)">
+                    {{ $t('products.cpuModels.edit') }}
+                  </t-button>
+                  <t-button size="small" variant="text" theme="danger" @click="handleDeleteModel(row)">
+                    {{ $t('products.cpuModels.delete') }}
+                  </t-button>
                 </t-space>
               </template>
             </t-table>
           </div>
-          <p class="cpu-footer">
-            共 {{ currentGroup.models.length }} 个 CPU 型号。当前页面保存的是目录配置，不会自动改动商品现有配置项。
-          </p>
+          <p class="cpu-footer">{{ $t('products.cpuModels.footer', { count: currentGroup.models.length }) }}</p>
         </template>
-        <t-empty v-else description="请选择左侧 CPU 分组" />
+        <t-empty v-else :description="$t('products.cpuModels.selectGroupFirst')" />
       </t-card>
     </div>
 
     <t-dialog
       v-model:visible="groupDialogVisible"
-      :header="editingGroupId ? '编辑 CPU 分组' : '新增 CPU 分组'"
+      :header="editingGroupId ? $t('products.cpuModels.editGroupTitle') : $t('products.cpuModels.addGroupTitle')"
       width="520px"
-      :confirm-btn="{ content: '确认', loading: groupSubmitting }"
+      :confirm-btn="{ content: $t('products.cpuModels.confirm'), loading: groupSubmitting }"
       @confirm="handleSubmitGroup"
     >
       <t-form ref="groupFormRef" :data="groupForm" :rules="groupRules" label-align="top">
-        <t-form-item label="分组名称" name="name">
-          <t-input v-model="groupForm.name" maxlength="80" placeholder="例如：Intel Xeon E5 / AMD EPYC" />
+        <t-form-item :label="$t('products.cpuModels.groupName')" name="name">
+          <t-input
+            v-model="groupForm.name"
+            maxlength="80"
+            :placeholder="$t('products.cpuModels.groupNamePlaceholder')"
+          />
         </t-form-item>
-        <t-form-item label="内部标识" name="value">
-          <t-input v-model="groupForm.value" maxlength="60" placeholder="可选，留空将自动生成" />
+        <t-form-item :label="$t('products.cpuModels.internalKey')" name="value">
+          <t-input
+            v-model="groupForm.value"
+            maxlength="60"
+            :placeholder="$t('products.cpuModels.internalKeyPlaceholder')"
+          />
         </t-form-item>
       </t-form>
     </t-dialog>
 
     <t-dialog
       v-model:visible="modelDialogVisible"
-      :header="editingModelId ? '编辑 CPU 型号' : '新增 CPU 型号'"
+      :header="editingModelId ? $t('products.cpuModels.editModelTitle') : $t('products.cpuModels.addModelTitle')"
       width="520px"
-      :confirm-btn="{ content: '确认', loading: modelSubmitting }"
+      :confirm-btn="{ content: $t('products.cpuModels.confirm'), loading: modelSubmitting }"
       @confirm="handleSubmitModel"
     >
       <t-form ref="modelFormRef" :data="modelForm" :rules="modelRules" label-align="top">
-        <t-form-item label="型号名称" name="name">
-          <t-input v-model="modelForm.name" maxlength="80" placeholder="例如：Intel Xeon Gold 6133" />
+        <t-form-item :label="$t('products.cpuModels.modelName')" name="name">
+          <t-input
+            v-model="modelForm.name"
+            maxlength="80"
+            :placeholder="$t('products.cpuModels.modelNamePlaceholder')"
+          />
         </t-form-item>
-        <t-form-item label="内部标识" name="value">
-          <t-input v-model="modelForm.value" maxlength="60" placeholder="可选，留空将自动生成" />
+        <t-form-item :label="$t('products.cpuModels.internalKey')" name="value">
+          <t-input
+            v-model="modelForm.value"
+            maxlength="60"
+            :placeholder="$t('products.cpuModels.internalKeyPlaceholder')"
+          />
         </t-form-item>
-        <t-form-item label="主频" name="base_frequency">
-          <t-input v-model="modelForm.base_frequency" maxlength="40" placeholder="例如：2.50">
+        <t-form-item :label="$t('products.cpuModels.baseFrequency')" name="base_frequency">
+          <t-input
+            v-model="modelForm.base_frequency"
+            maxlength="40"
+            :placeholder="$t('products.cpuModels.frequencyPlaceholder')"
+          >
             <template #suffix>{{ FREQUENCY_UNIT }}</template>
           </t-input>
         </t-form-item>
-        <t-form-item label="睿频" name="turbo_frequency">
-          <t-input v-model="modelForm.turbo_frequency" maxlength="40" placeholder="例如：3.20">
+        <t-form-item :label="$t('products.cpuModels.turboFrequency')" name="turbo_frequency">
+          <t-input
+            v-model="modelForm.turbo_frequency"
+            maxlength="40"
+            :placeholder="$t('products.cpuModels.frequencyPlaceholder')"
+          >
             <template #suffix>{{ FREQUENCY_UNIT }}</template>
           </t-input>
         </t-form-item>

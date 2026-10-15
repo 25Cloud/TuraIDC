@@ -8,6 +8,7 @@ export const productsRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '商品目录',
+        zh_TW: '商品目錄',
         en_US: 'Product Catalog',
       },
       productTab: 'catalog',
@@ -22,6 +23,7 @@ export const productsRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '规格管理',
+        zh_TW: '規格管理',
         en_US: 'Specs',
       },
       permission: 'product.list',
@@ -34,6 +36,7 @@ export const productsRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: 'CPU型号管理',
+        zh_TW: 'CPU型號管理',
         en_US: 'CPU Models',
       },
       permission: 'product.list',
@@ -46,6 +49,7 @@ export const productsRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '新增商品',
+        zh_TW: '新增商品',
         en_US: 'Create Product',
       },
       permission: 'product.list',
@@ -60,6 +64,7 @@ export const productsRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '编辑商品',
+        zh_TW: '編輯商品',
         en_US: 'Edit Product',
       },
       permission: 'product.list',
@@ -74,6 +79,7 @@ export const productsRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '流量包管理',
+        zh_TW: '流量包管理',
         en_US: 'Traffic Packages',
       },
       productTab: 'traffic-packages',
@@ -88,6 +94,7 @@ export const productsRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '上游提供商',
+        zh_TW: '上游提供商',
         en_US: 'Suppliers',
       },
       productTab: 'suppliers',

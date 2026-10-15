@@ -1,6 +1,6 @@
 <template>
   <div class="website-layout">
-    <a class="skip-to-content" href="#main-content">跳到主内容</a>
+    <a class="skip-to-content" href="#main-content">{{ $t('layout.a11y.skipToMainContent') }}</a>
     <header
       ref="headerRef"
       class="site-header"
@@ -24,7 +24,7 @@
         <nav
           class="main-nav"
           @mouseleave="scheduleCloseMegaMenu()"
-          aria-label="主导航"
+          :aria-label="$t('layout.a11y.mainNavigation')"
         >
           <router-link
             v-for="item in navigationItems"
@@ -63,7 +63,7 @@
             <div class="mega-menu__inner container">
               <template v-if="activeMenuId === 'products'">
                 <div class="mega-menu__types">
-                  <span class="mega-menu__col-title">产品目录</span>
+                  <span class="mega-menu__col-title">{{ $t('layout.nav.productCatalog') }}</span>
                   <button
                     v-for="type in navProductTypes"
                     :key="type.value"
@@ -91,7 +91,7 @@
                   <!-- 点击顶栏「产品」只开关本面板，一级入口统一放这里，
                        与公告/帮助面板的「查看全部」保持同一种模式。 -->
                   <router-link to="/products" class="mega-type-more"
-                    >全部产品 →</router-link
+                    >{{ $t('layout.nav.viewAllProducts') }}</router-link
                   >
                 </div>
                 <div class="mega-menu__groups" :aria-busy="navGroupsPending">
@@ -107,7 +107,7 @@
                     v-else-if="navGroupsError && !navActiveGroups.length"
                     class="mega-menu__empty"
                   >
-                    <p class="mega-menu__empty-text">分类加载失败</p>
+                    <p class="mega-menu__empty-text">{{ $t('layout.notice.categoryLoadFailed') }}</p>
                     <button
                       type="button"
                       class="mega-menu__retry"
@@ -852,6 +852,18 @@
         </div>
 
         <div class="footer-bottom">
+          <div class="footer-lang" role="group" aria-label="Language">
+            <button
+              v-for="item in languageList"
+              :key="String(item.value)"
+              type="button"
+              class="footer-lang__item"
+              :class="{ 'is-active': locale === item.value }"
+              @click="changeLocale(String(item.value))"
+            >
+              {{ item.content }}
+            </button>
+          </div>
           <p>
             &copy; {{ new Date().getFullYear() }} {{ appStore.siteName }}. All
             rights reserved.
@@ -889,6 +901,8 @@ import { useAppStore } from "@/stores/app";
 import { useUserStore } from "@/stores/user";
 import { buildSupportContacts } from "@/data/supportContacts";
 import { seoLandingFooterLinks } from "@/data/seoLandingMeta";
+import { languageList } from "@/locales";
+import { useLocale } from "@/locales/useLocale";
 import { buildConsoleUrl, isConsolePath } from "@/utils/consoleUrl";
 import { useNavProductMenu } from "./useNavProductMenu";
 import { useNavContentMenu } from "./useNavContentMenu";
@@ -1188,6 +1202,7 @@ function formatDate(value) {
 }
 
 // 产品选购页隐藏页脚，避免干扰购买流程
+const { changeLocale, locale } = useLocale();
 const hideFooter = computed(() => {
   const path = route.path;
   return path === "/products" || path.startsWith("/products/");
@@ -2474,6 +2489,28 @@ onBeforeUnmount(() => {
   border-top: 1px solid $divider-color;
   color: $text-color-placeholder;
   font-size: 12px;
+}
+
+.footer-lang {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.footer-lang__item {
+  padding: 4px 10px;
+  border: 1px solid var(--td-border-color, rgba(255, 255, 255, 0.28));
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.footer-lang__item.is-active {
+  border-color: currentColor;
+  font-weight: 600;
 }
 
 .footer-bottom p {

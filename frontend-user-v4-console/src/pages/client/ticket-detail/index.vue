@@ -1,14 +1,14 @@
 <template>
   <section class="ticket-detail-page">
     <div class="ticket-detail-toolbar">
-      <t-button variant="text" @click="goBack">返回工单列表</t-button>
-      <h1>工单详情</h1>
+      <t-button variant="text" @click="goBack">{{ $t('client.ticketDetail.backToList') }}</t-button>
+      <h1>{{ $t('client.ticketDetail.title') }}</h1>
       <t-button v-if="detail && !isClosed" theme="danger" variant="outline" :loading="closing" @click="closeTicket">
-        关闭工单
+        {{ $t('client.ticketDetail.closeTicket') }}
       </t-button>
     </div>
 
-    <loading-state :loading="loading" text="正在加载工单详情">
+    <loading-state :loading="loading" :text="$t('client.ticketDetail.loading')">
       <template v-if="detail">
         <div class="ticket-detail-shell">
           <aside class="ticket-meta-card">
@@ -19,28 +19,28 @@
               </t-tag>
             </div>
             <t-descriptions :column="1" bordered>
-              <t-descriptions-item label="用户">
+              <t-descriptions-item :label="$t('client.ticketDetail.user')">
                 {{ userName }}
                 <span class="meta-id">id: {{ detail.user?.id || detail.user_id || '--' }}</span>
               </t-descriptions-item>
-              <t-descriptions-item label="工单分类">{{
+              <t-descriptions-item :label="$t('client.ticketDetail.category')">{{
                 resolveDepartmentLabel(detail.department)
               }}</t-descriptions-item>
-              <t-descriptions-item label="优先级">
+              <t-descriptions-item :label="$t('client.ticketDetail.priority')">
                 <t-tag :theme="resolvePriorityTheme(detail.priority)" variant="light">
                   {{ resolvePriorityLabel(detail.priority) }}
                 </t-tag>
               </t-descriptions-item>
-              <t-descriptions-item label="处理人">{{ assigneeName }}</t-descriptions-item>
-              <t-descriptions-item label="关联服务">
+              <t-descriptions-item :label="$t('client.ticketDetail.assignee')">{{ assigneeName }}</t-descriptions-item>
+              <t-descriptions-item :label="$t('client.ticketDetail.relatedService')">
                 {{ detail.service?.id || detail.service_id || '--' }}
                 <template v-if="detail.service?.display_name || detail.service?.product_name">
                   （{{ detail.service?.display_name || detail.service?.product_name }}）
                 </template>
               </t-descriptions-item>
-              <t-descriptions-item label="创建时间">{{ formatTicketTime(detail.created_at) }}</t-descriptions-item>
-              <t-descriptions-item label="更新时间">{{ formatTicketTime(detail.updated_at) }}</t-descriptions-item>
-              <t-descriptions-item v-if="detail.close_reason_label" label="关闭原因">
+              <t-descriptions-item :label="$t('client.ticketDetail.createdAt')">{{ formatTicketTime(detail.created_at) }}</t-descriptions-item>
+              <t-descriptions-item :label="$t('client.ticketDetail.updatedAt')">{{ formatTicketTime(detail.updated_at) }}</t-descriptions-item>
+              <t-descriptions-item v-if="detail.close_reason_label" :label="$t('client.ticketDetail.closeReason')">
                 {{ detail.close_reason_label }}
               </t-descriptions-item>
             </t-descriptions>
@@ -48,19 +48,19 @@
 
           <section class="ticket-conversation-card">
             <t-tabs v-model="activeMobileTab" class="mobile-ticket-tabs">
-              <t-tab-panel value="chat" label="交流" />
-              <t-tab-panel value="detail" label="详情" />
+              <t-tab-panel value="chat" :label="$t('client.ticketDetail.chatTab')" />
+              <t-tab-panel value="detail" :label="$t('client.ticketDetail.detailTab')" />
             </t-tabs>
 
             <div class="mobile-detail-card">
               <t-descriptions :column="1" bordered>
-                <t-descriptions-item label="工单分类">{{
+                <t-descriptions-item :label="$t('client.ticketDetail.category')">{{
                   resolveDepartmentLabel(detail.department)
                 }}</t-descriptions-item>
-                <t-descriptions-item label="优先级">{{ resolvePriorityLabel(detail.priority) }}</t-descriptions-item>
-                <t-descriptions-item label="状态">{{ resolveTicketStatusLabel(detail.status) }}</t-descriptions-item>
-                <t-descriptions-item label="处理人">{{ assigneeName }}</t-descriptions-item>
-                <t-descriptions-item label="关联服务">
+                <t-descriptions-item :label="$t('client.ticketDetail.priority')">{{ resolvePriorityLabel(detail.priority) }}</t-descriptions-item>
+                <t-descriptions-item :label="$t('client.ticketDetail.status')">{{ resolveTicketStatusLabel(detail.status) }}</t-descriptions-item>
+                <t-descriptions-item :label="$t('client.ticketDetail.assignee')">{{ assigneeName }}</t-descriptions-item>
+                <t-descriptions-item :label="$t('client.ticketDetail.relatedService')">
                   <template v-if="detail.service?.id || detail.service_id">
                     {{ detail.service?.id || detail.service_id }}
                     <template v-if="detail.service?.display_name || detail.service?.name">
@@ -69,12 +69,12 @@
                   </template>
                   <template v-else>--</template>
                 </t-descriptions-item>
-                <t-descriptions-item v-if="detail.close_reason_label" label="关闭原因">
+                <t-descriptions-item v-if="detail.close_reason_label" :label="$t('client.ticketDetail.closeReason')">
                   {{ detail.close_reason_label }}
                 </t-descriptions-item>
               </t-descriptions>
               <t-button v-if="!isClosed" theme="danger" variant="outline" block :loading="closing" @click="closeTicket">
-                关闭工单
+                {{ $t('client.ticketDetail.closeTicket') }}
               </t-button>
             </div>
 
@@ -82,7 +82,7 @@
               <div class="message-list">
                 <article v-if="detail.content" class="message-item message-item--user">
                   <div class="message-meta">
-                    <span>{{ detail.user?.display_name || '我' }}</span>
+                    <span>{{ detail.user?.display_name || $t('client.ticketDetail.me') }}</span>
                     <span>{{ formatTicketTime(detail.created_at) }}</span>
                   </div>
                   <div class="message-bubble">
@@ -95,7 +95,7 @@
                         class="message-attachment"
                         @click="previewAttachment(attachment)"
                       >
-                        <img :src="attachment.url" alt="附件" />
+                        <img :src="attachment.url" :alt="$t('client.ticketDetail.attachmentAlt')" />
                       </button>
                     </div>
                   </div>
@@ -108,19 +108,19 @@
                   :class="reply.is_staff ? 'message-item--staff' : 'message-item--user'"
                 >
                   <div class="message-meta">
-                    <span>{{ reply.sender_name || (reply.is_staff ? '客服' : '我') }}</span>
+                    <span>{{ reply.sender_name || (reply.is_staff ? $t('client.ticketDetail.supportAgent') : $t('client.ticketDetail.me')) }}</span>
                     <t-tag size="small" :theme="reply.is_staff ? 'primary' : 'success'" variant="light">
-                      {{ reply.is_staff ? '管理员' : '用户' }} #{{ reply.user_id }}
+                      {{ reply.is_staff ? $t('client.ticketDetail.adminRole') : $t('client.ticketDetail.userRole') }} #{{ reply.user_id }}
                     </t-tag>
                     <span>{{ formatTicketTime(reply.created_at) }}</span>
                   </div>
                   <div class="message-bubble">
-                    <p v-if="reply.recalled" class="message-recalled">消息已撤回</p>
+                    <p v-if="reply.recalled" class="message-recalled">{{ $t('client.ticketDetail.recalled') }}</p>
                     <template v-else>
                       <blockquote v-if="reply.quote">
-                        {{ reply.quote.sender_name }}：{{ reply.quote.recalled ? '消息已撤回' : reply.quote.content }}
+                        {{ reply.quote.sender_name }}：{{ reply.quote.recalled ? $t('client.ticketDetail.recalled') : reply.quote.content }}
                       </blockquote>
-                      <p>{{ reply.content || '无文字内容' }}</p>
+                      <p>{{ reply.content || $t('client.ticketDetail.noContent') }}</p>
                       <div v-if="parseAttachments(reply).length" class="message-attachments">
                         <button
                           v-for="attachment in parseAttachments(reply)"
@@ -129,7 +129,7 @@
                           class="message-attachment"
                           @click="previewAttachment(attachment)"
                         >
-                          <img :src="attachment.url" alt="附件" />
+                          <img :src="attachment.url" :alt="$t('client.ticketDetail.attachmentAlt')" />
                         </button>
                       </div>
                     </template>
@@ -143,7 +143,7 @@
                       :loading="recalling"
                       @click="recallReply(reply)"
                     >
-                      撤回
+                      {{ $t('client.ticketDetail.recall') }}
                     </t-button>
                   </div>
                 </article>
@@ -158,8 +158,8 @@
                     class="reply-attachment"
                     @click="previewAttachment(file)"
                   >
-                    <img :src="file.url || file.path" alt="附件" />
-                    <span @click.stop="removeReplyAttachment(index)">移除</span>
+                    <img :src="file.url || file.path" :alt="$t('client.ticketDetail.attachmentAlt')" />
+                    <span @click.stop="removeReplyAttachment(index)">{{ $t('client.ticketDetail.remove') }}</span>
                   </button>
                 </div>
                 <div class="reply-composer__bar">
@@ -172,7 +172,7 @@
                     class="reply-textarea"
                     :autosize="{ minRows: 1, maxRows: 4 }"
                     maxlength="5000"
-                    placeholder="输入回复内容..."
+                    :placeholder="$t('client.ticketDetail.replyPlaceholder')"
                     @enter="submitReply"
                   />
                   <t-button
@@ -181,25 +181,25 @@
                     :disabled="!canSubmitReply || replyUploading"
                     @click="submitReply"
                   >
-                    发送
+                    {{ $t('client.ticketDetail.send') }}
                   </t-button>
                 </div>
               </section>
 
-              <div v-else class="ticket-closed-notice">此工单已关闭</div>
+              <div v-else class="ticket-closed-notice">{{ $t('client.ticketDetail.closedNotice') }}</div>
             </div>
           </section>
         </div>
       </template>
-      <t-empty v-else description="工单不存在" />
+      <t-empty v-else :description="$t('client.ticketDetail.notFound')" />
     </loading-state>
 
     <t-dialog
       v-model:visible="previewVisible"
-      header="附件预览"
+      :header="$t('client.ticketDetail.previewTitle')"
       width="min(45rem, calc(100vw - var(--td-comp-margin-xl)))"
     >
-      <img v-if="previewUrl" :src="previewUrl" class="preview-image" alt="附件预览" />
+      <img v-if="previewUrl" :src="previewUrl" class="preview-image" :alt="$t('client.ticketDetail.previewAlt')" />
     </t-dialog>
   </section>
 </template>

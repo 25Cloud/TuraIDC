@@ -8,6 +8,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '系统公告',
+        zh_TW: '系統公告',
         en_US: 'Notices',
       },
       contentType: 'notice',
@@ -22,6 +23,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '新增公告',
+        zh_TW: '新增公告',
         en_US: 'Create Notice',
       },
       contentType: 'notice',
@@ -36,6 +38,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '编辑公告',
+        zh_TW: '編輯公告',
         en_US: 'Edit Notice',
       },
       contentType: 'notice',
@@ -50,6 +53,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '帮助中心',
+        zh_TW: '幫助中心',
         en_US: 'Help Center',
       },
       contentType: 'help',
@@ -64,6 +68,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '新增帮助文章',
+        zh_TW: '新增幫助文章',
         en_US: 'Create Help Article',
       },
       contentType: 'help',
@@ -78,6 +83,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '编辑帮助文章',
+        zh_TW: '編輯幫助文章',
         en_US: 'Edit Help Article',
       },
       contentType: 'help',
@@ -92,6 +98,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '媒体库',
+        zh_TW: '媒體庫',
         en_US: 'Media Library',
       },
       permission: 'content.list',
@@ -104,6 +111,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '站点信息',
+        zh_TW: '站點資訊',
         en_US: 'Site Info',
       },
       permission: 'site.view',
@@ -118,6 +126,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '首页装修',
+        zh_TW: '首頁裝修',
         en_US: 'Site Hero',
       },
       permission: 'site.view',
@@ -132,6 +141,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '邮件模板',
+        zh_TW: '郵件模板',
         en_US: 'Email Templates',
       },
       permission: 'settings.view',
@@ -146,6 +156,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '短信模板',
+        zh_TW: '簡訊模板',
         en_US: 'SMS Templates',
       },
       permission: 'settings.view',
@@ -160,6 +171,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: 'API 接口',
+        zh_TW: 'API 介面',
         en_US: 'API Directory',
       },
       permission: 'settings.view',
@@ -174,6 +186,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '邮件模板详情',
+        zh_TW: '郵件模板詳情',
         en_US: 'Email Template Detail',
       },
       permission: 'settings.view',
@@ -187,6 +200,7 @@ export const contentRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '短信模板详情',
+        zh_TW: '簡訊模板詳情',
         en_US: 'SMS Template Detail',
       },
       permission: 'settings.view',

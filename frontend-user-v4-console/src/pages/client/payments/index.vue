@@ -18,28 +18,28 @@
         <t-input
           v-model="filters.keyword"
           clearable
-          placeholder="搜索商家订单号或第三方订单号"
+          :placeholder="$t('client.payments.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >
           <template #suffixIcon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.status" clearable placeholder="全部状态" @change="handleSearch">
+        <t-select v-model="filters.status" clearable :placeholder="$t('client.payments.allStatusPlaceholder')" @change="handleSearch">
           <t-option v-for="item in PAYMENT_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
-        <t-select v-model="filters.type" clearable placeholder="全部渠道" @change="handleSearch">
+        <t-select v-model="filters.type" clearable :placeholder="$t('client.payments.allGatewayPlaceholder')" @change="handleSearch">
           <t-option v-for="item in PAYMENT_GATEWAY_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
       </div>
     </t-card>
 
     <section class="record-list-card">
-      <data-state :loading="loading" :empty="!hasRows" description="暂无第三方支付记录">
+      <data-state :loading="loading" :empty="!hasRows" :description="$t('client.payments.empty')">
         <t-table class="record-table" row-key="id" :data="list" :columns="columns" :pagination="null" hover>
           <template #payment="{ row }">
             <div class="stack-cell">
-              <strong>商家：{{ row.payment_no || '--' }}</strong>
-              <span>第三方：{{ row.trade_no || '--' }}</span>
+              <strong>{{ $t('client.payments.merchantLabel') }}{{ row.payment_no || '--' }}</strong>
+              <span>{{ $t('client.payments.thirdPartyLabel') }}{{ row.trade_no || '--' }}</span>
             </div>
           </template>
           <template #gateway="{ row }">{{ gatewayDisplay(row) }}</template>
@@ -49,14 +49,14 @@
           </template>
           <template #time="{ row }">{{ row.paid_at || row.created_at || '--' }}</template>
           <template #operation="{ row }">
-            <t-button size="small" theme="primary" variant="text" @click="goToDetail(row)">查看</t-button>
+            <t-button size="small" theme="primary" variant="text" @click="goToDetail(row)">{{ $t('client.payments.view') }}</t-button>
           </template>
         </t-table>
 
         <div class="record-mobile-list">
           <article v-for="row in list" :key="row.id" class="record-mobile-card" @click="goToDetail(row)">
             <div class="record-mobile-card__head">
-              <strong>商家：{{ row.payment_no || '--' }}</strong>
+              <strong>{{ $t('client.payments.merchantLabel') }}{{ row.payment_no || '--' }}</strong>
               <status-tag :status-map="PAYMENT_STATUS_MAP" :status="Number(row.status)" />
             </div>
             <div class="stack-cell">
@@ -64,7 +64,7 @@
               <span>{{ gatewayDisplay(row) }}</span>
             </div>
             <div class="record-mobile-card__meta">
-              <span>第三方：{{ row.trade_no || '等待渠道回调' }}</span>
+              <span>{{ $t('client.payments.thirdPartyLabel') }}{{ row.trade_no || $t('client.payments.waitingCallback') }}</span>
               <span>{{ row.paid_at || row.created_at || '--' }}</span>
             </div>
           </article>

@@ -5,7 +5,7 @@
         v-model="supplierFilters.keyword"
         class="supplier-filter-keyword"
         clearable
-        placeholder="搜索接口名称 / 用户名"
+        :placeholder="$t('products.suppliers.searchPlaceholder')"
         @enter="handleSupplierSearch"
         @clear="handleSupplierSearch"
       >
@@ -15,16 +15,16 @@
         v-model="supplierFilters.status"
         class="supplier-filter-status"
         clearable
-        placeholder="接口状态"
+        :placeholder="$t('products.suppliers.statusPlaceholder')"
         @change="handleSupplierSearch"
       >
-        <t-option :value="1" label="启用中" />
-        <t-option :value="0" label="已停用" />
+        <t-option :value="1" :label="$t('products.suppliers.enabled')" />
+        <t-option :value="0" :label="$t('products.suppliers.disabled')" />
       </t-select>
       <div class="supplier-filter-actions">
         <t-button v-if="canManageSuppliers" theme="primary" @click="openSupplierDialog()">
           <template #icon><add-icon /></template>
-          新增提供商
+          {{ $t('products.suppliers.addProvider') }}
         </t-button>
       </div>
     </div>
@@ -55,7 +55,7 @@
         </dl>
         <div class="supplier-card__actions">
           <t-button size="small" variant="text" theme="primary" @click="openSupplierDialog(row)">{{
-            canManageSuppliers ? '编辑' : '查看'
+            canManageSuppliers ? $t('products.suppliers.edit') : $t('products.suppliers.view')
           }}</t-button>
           <t-button
             v-for="action in supplierCardActions(row)"
@@ -76,7 +76,7 @@
             :loading="supplierActionLoading === row.id"
             @click="handleToggleSupplier(row)"
           >
-            {{ Number(row.status) === 1 ? '停用' : '启用' }}
+            {{ Number(row.status) === 1 ? $t('products.suppliers.disable') : $t('products.suppliers.enable') }}
           </t-button>
           <t-button
             v-if="canManageSuppliers"
@@ -84,11 +84,11 @@
             variant="text"
             theme="danger"
             @click="handleDeleteSupplier(row)"
-            >删除</t-button
+            >{{ $t('products.suppliers.delete') }}</t-button
           >
         </div>
       </article>
-      <t-empty v-if="!supplierLoading && suppliers.length === 0" description="暂无提供商" />
+      <t-empty v-if="!supplierLoading && suppliers.length === 0" :description="$t('products.suppliers.empty')" />
     </div>
 
     <div v-if="supplierTotal > 0" class="pagination-row">
@@ -105,29 +105,31 @@
 
   <t-dialog
     v-model:visible="supplierBatchDialogVisible"
-    :header="supplierBatchSupplier?.name ? `批量对接 · ${supplierBatchSupplier.name}` : '批量对接'"
+    :header="
+      supplierBatchSupplier?.name
+        ? `${$t('products.suppliers.batchConnect')} · ${supplierBatchSupplier.name}`
+        : $t('products.suppliers.batchConnect')
+    "
     width="1080px"
-    :confirm-btn="canSyncSuppliers ? { content: '执行对接', loading: supplierBatchSubmitting } : null"
+    :confirm-btn="
+      canSyncSuppliers ? { content: $t('products.suppliers.runConnect'), loading: supplierBatchSubmitting } : null
+    "
     @confirm="submitSupplierBatchConnect"
   >
     <div class="split-dialog-intro">
-      <strong>左右穿梭对接商品</strong>
-      <p>
-        左侧选择
-        {{ supplierBatchPluginLabel }}
-        未对接商品，右侧选择当前系统分类作为导入位置，执行后会创建或更新本地商品并绑定当前提供商商品 ID。
-      </p>
+      <strong>{{ $t('products.suppliers.batchTransferTitle') }}</strong>
+      <p>{{ $t('products.suppliers.batchTransferIntro', { plugin: supplierBatchPluginLabel }) }}</p>
     </div>
 
     <t-form class="supplier-batch-form" :data="supplierBatchForm" label-width="90px">
       <div class="supplier-batch-settings">
-        <t-form-item label="默认上架">
+        <t-form-item :label="$t('products.suppliers.defaultListed')">
           <t-switch v-model="supplierBatchForm.default_status" :custom-value="[1, 0]" />
         </t-form-item>
-        <t-form-item label="自动开通">
+        <t-form-item :label="$t('products.suppliers.autoProvision')">
           <t-switch v-model="supplierBatchForm.default_auto_setup" :custom-value="[1, 0]" />
         </t-form-item>
-        <t-form-item label="同步配置项">
+        <t-form-item :label="$t('products.suppliers.syncConfigOptions')">
           <t-switch v-model="supplierBatchForm.sync_config_options" :custom-value="[1, 0]" />
         </t-form-item>
       </div>
@@ -135,20 +137,27 @@
 
     <div class="supplier-batch-toolbar">
       <span>
-        已选 {{ supplierBatchSelectedKeys.length }} / {{ supplierBatchPendingProducts.length }} 个未对接商品
-        <template v-if="supplierBatchTargetGroupLabel">，对接到：{{ supplierBatchTargetGroupLabel }}</template>
+        {{
+          $t('products.suppliers.selectedUnconnected', {
+            selected: supplierBatchSelectedKeys.length,
+            total: supplierBatchPendingProducts.length,
+          })
+        }}
+        <template v-if="supplierBatchTargetGroupLabel">
+          {{ $t('products.suppliers.connectTo', { group: supplierBatchTargetGroupLabel }) }}
+        </template>
       </span>
       <t-space size="small">
-        <t-button size="small" variant="outline" :loading="supplierBatchLoading" @click="reloadSupplierBatchProducts"
-          >刷新商品</t-button
-        >
+        <t-button size="small" variant="outline" :loading="supplierBatchLoading" @click="reloadSupplierBatchProducts">{{
+          $t('products.suppliers.refreshProducts')
+        }}</t-button>
         <t-button
           size="small"
           variant="text"
           :disabled="!supplierBatchPendingProducts.length"
           @click="selectPendingSupplierBatchProducts"
         >
-          选择未对接
+          {{ $t('products.suppliers.selectUnconnected') }}
         </t-button>
         <t-button
           size="small"
@@ -156,7 +165,7 @@
           :disabled="!supplierBatchSelectedKeys.length"
           @click="supplierBatchSelectedKeys = []"
         >
-          清空
+          {{ $t('products.suppliers.clear') }}
         </t-button>
       </t-space>
     </div>
@@ -165,20 +174,23 @@
       <section class="supplier-batch-panel">
         <div class="supplier-batch-panel__head">
           <div class="supplier-batch-panel__title">
-            <strong>未对接</strong>
-            <span>{{ supplierBatchPluginLabel }}商品结构（含已对接）</span>
+            <strong>{{ $t('products.suppliers.unconnected') }}</strong>
+            <span>{{ supplierBatchPluginLabel }}{{ $t('products.suppliers.productStructure') }}</span>
           </div>
           <div class="supplier-batch-panel__actions">
-            <t-tag variant="light" theme="warning"
-              >未对接 {{ supplierBatchPendingProducts.length }}/{{ supplierBatchProducts.length }}</t-tag
-            >
+            <t-tag variant="light" theme="warning">{{
+              $t('products.suppliers.unconnectedCount', {
+                pending: supplierBatchPendingProducts.length,
+                total: supplierBatchProducts.length,
+              })
+            }}</t-tag>
             <t-button
               size="small"
               variant="text"
               :disabled="!supplierBatchRemoteRows.length"
               @click="setAllSupplierBatchRemoteExpanded(true)"
             >
-              展开
+              {{ $t('products.suppliers.expand') }}
             </t-button>
             <t-button
               size="small"
@@ -186,7 +198,7 @@
               :disabled="!supplierBatchRemoteRows.length"
               @click="setAllSupplierBatchRemoteExpanded(false)"
             >
-              收起
+              {{ $t('products.suppliers.collapse') }}
             </t-button>
           </div>
         </div>
@@ -195,12 +207,12 @@
             v-model="supplierBatchRemoteKeyword"
             size="small"
             clearable
-            placeholder="搜索上游商品名称 / 类型 / 分组 / ID"
+            :placeholder="$t('products.suppliers.remoteSearchPlaceholder')"
           >
             <template #prefix-icon><search-icon /></template>
           </t-input>
           <span v-if="supplierBatchRemoteKeyword.trim()" class="supplier-batch-panel__search-hint">
-            命中 {{ supplierBatchRemoteMatchCount }} 个商品
+            {{ $t('products.suppliers.matchCount', { count: supplierBatchRemoteMatchCount }) }}
           </span>
         </div>
         <div class="supplier-tree" :class="{ 'is-loading': supplierBatchLoading }">
@@ -221,7 +233,11 @@
                 type="button"
                 class="supplier-tree-toggle"
                 :class="{ 'is-expanded': row.isExpanded }"
-                :aria-label="row.isExpanded ? `收起${row.label}` : `展开${row.label}`"
+                :aria-label="
+                  row.isExpanded
+                    ? $t('products.suppliers.collapseWith') + row.label
+                    : $t('products.suppliers.expandWith') + row.label
+                "
                 @click="toggleSupplierBatchRemoteGroup(row.key)"
               >
                 <chevron-right-icon />
@@ -252,7 +268,7 @@
                   <t-checkbox
                     :checked="supplierBatchSelectedKeySet.has(row.productId || 0)"
                     :disabled="row.product?.is_connected"
-                    :aria-label="`${row.product?.name || '商品'}，点击切换选择`"
+                    :aria-label="`${row.product?.name || $t('products.suppliers.productFallback')}${$t('products.suppliers.toggleSelectSuffix')}`"
                     @click.stop
                     @change="
                       (checked: boolean) =>
@@ -263,14 +279,21 @@
                     <strong>{{ row.product?.name || '-' }}</strong>
                     <span>
                       {{ row.product?.type_label || row.product?.remote_group_name || '-' }}
-                      <template v-if="row.product?.is_connected"> · 已对接</template>
+                      <template v-if="row.product?.is_connected"> · {{ $t('products.suppliers.connected') }}</template>
                     </span>
                   </div>
                 </div>
               </template>
             </div>
           </template>
-          <t-empty v-else :description="supplierBatchLoading ? '正在加载上游商品' : '暂无上游商品'" />
+          <t-empty
+            v-else
+            :description="
+              supplierBatchLoading
+                ? $t('products.suppliers.loadingRemoteProducts')
+                : $t('products.suppliers.emptyRemoteProducts')
+            "
+          />
         </div>
       </section>
 
@@ -281,15 +304,15 @@
           :loading="supplierBatchSubmitting"
           @click="submitSupplierBatchConnect"
         >
-          对接
+          {{ $t('products.suppliers.connect') }}
         </t-button>
       </div>
 
       <section class="supplier-batch-panel">
         <div class="supplier-batch-panel__head">
           <div class="supplier-batch-panel__title">
-            <strong>已对接</strong>
-            <span>当前系统全部商品结构</span>
+            <strong>{{ $t('products.suppliers.connected') }}</strong>
+            <span>{{ $t('products.suppliers.localProductStructure') }}</span>
           </div>
           <div class="supplier-batch-panel__actions">
             <t-tag variant="light" theme="success">{{ supplierBatchLocalProducts.length }}</t-tag>
@@ -299,7 +322,7 @@
               :disabled="!supplierBatchConnectedRows.length"
               @click="setAllSupplierBatchLocalExpanded(true)"
             >
-              展开
+              {{ $t('products.suppliers.expand') }}
             </t-button>
             <t-button
               size="small"
@@ -307,16 +330,21 @@
               :disabled="!supplierBatchConnectedRows.length"
               @click="setAllSupplierBatchLocalExpanded(false)"
             >
-              收起
+              {{ $t('products.suppliers.collapse') }}
             </t-button>
           </div>
         </div>
         <div class="supplier-batch-panel__search">
-          <t-input v-model="supplierBatchLocalKeyword" size="small" clearable placeholder="搜索本地商品 / 分类名称">
+          <t-input
+            v-model="supplierBatchLocalKeyword"
+            size="small"
+            clearable
+            :placeholder="$t('products.suppliers.localSearchPlaceholder')"
+          >
             <template #prefix-icon><search-icon /></template>
           </t-input>
           <span v-if="supplierBatchLocalKeyword.trim()" class="supplier-batch-panel__search-hint">
-            命中 {{ supplierBatchLocalMatchCount }} 个商品
+            {{ $t('products.suppliers.matchCount', { count: supplierBatchLocalMatchCount }) }}
           </span>
         </div>
         <div class="supplier-tree supplier-tree--target">
@@ -333,7 +361,11 @@
                 type="button"
                 class="supplier-tree-toggle"
                 :class="{ 'is-expanded': row.isExpanded }"
-                :aria-label="row.isExpanded ? `收起${row.label}` : `展开${row.label}`"
+                :aria-label="
+                  row.isExpanded
+                    ? $t('products.suppliers.collapseWith') + row.label
+                    : $t('products.suppliers.expandWith') + row.label
+                "
                 @click="toggleSupplierBatchLocalGroup(row.key)"
               >
                 <chevron-right-icon />
@@ -366,23 +398,28 @@
               </template>
             </div>
           </template>
-          <t-empty v-else description="暂无系统商品分类" />
+          <t-empty v-else :description="$t('products.suppliers.emptyLocalCategories')" />
         </div>
       </section>
     </div>
 
     <div v-if="supplierBatchResult" class="supplier-batch-result">
-      新增 {{ supplierBatchResult.created_count || 0 }}，更新 {{ supplierBatchResult.updated_count || 0 }}，跳过
-      {{ supplierBatchResult.skipped_count || 0 }}
+      {{
+        $t('products.suppliers.resultSummary', {
+          created: supplierBatchResult.created_count || 0,
+          updated: supplierBatchResult.updated_count || 0,
+          skipped: supplierBatchResult.skipped_count || 0,
+        })
+      }}
     </div>
   </t-dialog>
 
   <t-dialog
     v-model:visible="supplierDialogVisible"
     class="supplier-form-dialog"
-    :header="editingSupplier ? '编辑提供商' : '新增提供商'"
+    :header="editingSupplier ? $t('products.suppliers.editProvider') : $t('products.suppliers.addProviderTitle')"
     width="620px"
-    :confirm-btn="canManageSuppliers ? { content: '保存', loading: supplierSubmitting } : null"
+    :confirm-btn="canManageSuppliers ? { content: $t('products.suppliers.save'), loading: supplierSubmitting } : null"
     @confirm="submitSupplier"
   >
     <!-- 标签在上、输入框在下：字段说明较长（如密钥的 scope 提示），
@@ -394,18 +431,20 @@
       label-align="top"
       :disabled="!canManageSuppliers"
     >
-      <t-form-item label="插件提供商" name="provider_key">
+      <t-form-item :label="$t('products.suppliers.pluginProvider')" name="provider_key">
         <t-select v-model="supplierForm.provider_key" filterable @change="handleSupplierProviderChange">
           <t-option v-for="item in providerTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
       </t-form-item>
-      <t-form-item label="接口名称" name="name"><t-input v-model="supplierForm.name" /></t-form-item>
+      <t-form-item :label="$t('products.suppliers.interfaceName')" name="name"
+        ><t-input v-model="supplierForm.name"
+      /></t-form-item>
       <div v-if="selectedSupplierFormHelp" class="supplier-form-help">{{ selectedSupplierFormHelp }}</div>
       <t-form-item v-for="field in supplierCredentialFields" :key="field.key" :label="field.label" :name="field.key">
         <t-select
           v-if="field.type === 'select'"
           v-model="supplierCredentialValues[field.key]"
-          :placeholder="field.placeholder || `请选择${field.label}`"
+          :placeholder="field.placeholder || $t('products.suppliers.selectFieldPrefix') + field.label"
           clearable
           filterable
         >
@@ -424,7 +463,7 @@
         <t-input-number
           v-else-if="field.type === 'number'"
           :model-value="supplierCredentialValues[field.key] as number | null"
-          :placeholder="field.placeholder || `请输入${field.label}`"
+          :placeholder="field.placeholder || $t('products.suppliers.inputFieldPrefix') + field.label"
           style="width: 100%"
           @update:model-value="(value: unknown) => (supplierCredentialValues[field.key] = value as number | null)"
         />
@@ -432,7 +471,7 @@
           v-else-if="field.type === 'textarea'"
           :model-value="supplierCredentialValues[field.key] as string | number | null"
           :autosize="{ minRows: 3, maxRows: 6 }"
-          :placeholder="field.placeholder || `请输入${field.label}`"
+          :placeholder="field.placeholder || $t('products.suppliers.inputFieldPrefix') + field.label"
           @update:model-value="
             (value: unknown) => (supplierCredentialValues[field.key] = value as string | number | null)
           "
@@ -461,11 +500,11 @@
         />
         <p v-if="field.description" class="supplier-field-tip">{{ field.description }}</p>
       </t-form-item>
-      <t-form-item label="余额不足提醒" name="low_balance_alert_enabled">
+      <t-form-item :label="$t('products.suppliers.lowBalanceAlert')" name="low_balance_alert_enabled">
         <t-switch v-model="supplierForm.low_balance_alert_enabled" />
-        <p class="supplier-field-tip">开启后，上游余额低于下方阈值时邮件提醒有供应商权限的管理员。</p>
+        <p class="supplier-field-tip">{{ $t('products.suppliers.lowBalanceAlertHint') }}</p>
       </t-form-item>
-      <t-form-item label="余额告警阈值" name="low_balance_threshold">
+      <t-form-item :label="$t('products.suppliers.lowBalanceThreshold')" name="low_balance_threshold">
         <t-input-number
           v-model="supplierForm.low_balance_threshold"
           :min="0"
@@ -473,11 +512,9 @@
           :decimal-places="2"
           style="width: 100%"
         />
-        <p class="supplier-field-tip">
-          余额低于该值即触发提醒，默认 20。重复提醒的间隔在「自动化策略 → 上游余额告警」中配置。
-        </p>
+        <p class="supplier-field-tip">{{ $t('products.suppliers.lowBalanceThresholdHint') }}</p>
       </t-form-item>
-      <t-form-item label="状态" name="status"
+      <t-form-item :label="$t('products.suppliers.status')" name="status"
         ><t-switch v-model="supplierForm.status" :custom-value="[1, 0]"
       /></t-form-item>
     </t-form>

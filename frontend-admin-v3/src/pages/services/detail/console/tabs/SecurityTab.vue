@@ -1,15 +1,15 @@
 <template>
   <section class="console-panel-section">
-    <t-card title="安全组" :bordered="false">
+    <t-card :title="$t('services.console.securityGroups')" :bordered="false">
       <template #actions>
         <t-space>
-          <t-button :loading="securityState.loading" @click="loadSecurityGroups(true)">刷新</t-button>
+          <t-button :loading="securityState.loading" @click="loadSecurityGroups(true)">{{ $t('services.console.refresh') }}</t-button>
           <t-button
             v-if="securityState.canCreate"
             theme="primary"
             :disabled="securityState.supported === false"
             @click="openSecurityGroupDialog"
-            >新建安全组</t-button
+            >{{ $t('services.console.createSecurityGroup') }}</t-button
           >
         </t-space>
       </template>
@@ -19,7 +19,7 @@
       }}</t-alert>
       <t-empty
         v-else-if="securityState.supported === false"
-        :description="securityState.message || '当前实例暂不支持安全组'"
+        :description="securityState.message || $t('services.console.securityGroupUnsupported')"
       />
       <template v-else>
         <div v-if="securityState.groups.length" class="security-group-list">
@@ -32,12 +32,12 @@
           >
             <div class="security-group-card__main">
               <div class="security-row__name">
-                <strong>{{ group.name || `安全组 #${group.id}` }}</strong>
+                <strong>{{ group.name || `${$t('services.console.securityGroupLabel')} #${group.id}` }}</strong>
                 <t-tag size="small" variant="outline">ID {{ group.id }}</t-tag>
-                <t-tag v-if="group.is_applied" size="small" theme="success" variant="light">已应用</t-tag>
-                <t-tag v-else size="small" variant="light">未应用</t-tag>
+                <t-tag v-if="group.is_applied" size="small" theme="success" variant="light">{{ $t('services.console.applied') }}</t-tag>
+                <t-tag v-else size="small" variant="light">{{ $t('services.console.notApplied') }}</t-tag>
               </div>
-              <p>{{ group.description || '暂无备注说明' }}</p>
+              <p>{{ group.description || $t('services.console.noRemarkTip') }}</p>
             </div>
             <div class="security-group-card__actions">
               <t-button
@@ -46,7 +46,7 @@
                 variant="outline"
                 :disabled="securityState.submitting"
                 @click.stop="selectSecurityGroup(group)"
-                >查看</t-button
+                >{{ $t('services.console.view') }}</t-button
               >
               <t-button
                 v-if="!group.is_applied"
@@ -56,7 +56,7 @@
                 :disabled="!group.can_apply || group.apply_disabled || securityState.submitting"
                 @click.stop="applySecurityGroup(group)"
               >
-                应用
+                {{ $t('services.console.apply') }}
               </t-button>
               <t-button
                 v-if="group.can_delete !== false"
@@ -66,27 +66,34 @@
                 :disabled="!group.can_delete || group.delete_disabled || securityState.submitting"
                 @click.stop="deleteSecurityGroup(group)"
               >
-                删除
+                {{ $t('services.console.delete') }}
               </t-button>
             </div>
           </article>
         </div>
         <t-empty
           v-else
-          :description="securityState.canCreate ? '当前没有安全组，可先创建后再添加规则' : '当前没有可应用的安全组'"
+          :description="
+          securityState.canCreate
+            ? $t('services.console.noSecurityGroupCreatable')
+            : $t('services.console.noSecurityGroupAppliable')
+        "
         />
 
         <div v-if="activeSecurityGroup" class="security-rules-panel">
           <div class="security-rules-panel__head">
             <div>
-              <strong>{{ activeSecurityGroup.name || `安全组 #${activeSecurityGroup.id}` }} 规则</strong>
-              <span>{{ securityState.rules.length }} 条规则</span>
+              <strong
+                >{{ activeSecurityGroup.name || `${$t('services.console.securityGroupLabel')} #${activeSecurityGroup.id}` }}
+                {{ $t('services.console.rulesSuffix') }}</strong
+              >
+              <span>{{ securityState.rules.length }} {{ $t('services.console.rulesUnit') }}</span>
             </div>
             <t-button
               theme="primary"
               :disabled="!activeSecurityGroup.can_add_rule || securityState.submitting"
               @click="openSecurityRuleDialog"
-              >新增规则</t-button
+              >{{ $t('services.console.addRule') }}</t-button
             >
           </div>
 
@@ -105,7 +112,7 @@
                 variant="text"
                 :disabled="securityState.submitting"
                 @click="deleteSecurityRule(row)"
-                >删除</t-button
+                >{{ $t('services.console.delete') }}</t-button
               >
             </template>
           </t-table>
@@ -113,23 +120,23 @@
           <div class="security-rules-cards">
             <div v-for="rule in securityState.rules" :key="rule.id" class="security-rule-card">
               <div class="security-rule-card__row">
-                <span class="security-rule-card__label">方向</span>
+                <span class="security-rule-card__label">{{ $t('services.console.direction') }}</span>
                 <span class="security-rule-card__value">{{ rule.direction_label }}</span>
               </div>
               <div class="security-rule-card__row">
-                <span class="security-rule-card__label">协议</span>
+                <span class="security-rule-card__label">{{ $t('services.console.protocol') }}</span>
                 <span class="security-rule-card__value">{{ rule.protocol_label || rule.protocol || '--' }}</span>
               </div>
               <div class="security-rule-card__row">
-                <span class="security-rule-card__label">端口</span>
+                <span class="security-rule-card__label">{{ $t('services.console.port') }}</span>
                 <span class="security-rule-card__value">{{ rule.port }}</span>
               </div>
               <div class="security-rule-card__row">
-                <span class="security-rule-card__label">来源</span>
+                <span class="security-rule-card__label">{{ $t('services.console.source') }}</span>
                 <span class="security-rule-card__value">{{ rule.ip }}</span>
               </div>
               <div v-if="rule.description" class="security-rule-card__row">
-                <span class="security-rule-card__label">说明</span>
+                <span class="security-rule-card__label">{{ $t('services.console.description') }}</span>
                 <span class="security-rule-card__value">{{ rule.description }}</span>
               </div>
               <div class="security-rule-card__actions">
@@ -139,7 +146,7 @@
                   size="small"
                   :disabled="securityState.submitting"
                   @click="deleteSecurityRule(rule)"
-                  >删除</t-button
+                  >{{ $t('services.console.delete') }}</t-button
                 >
               </div>
             </div>

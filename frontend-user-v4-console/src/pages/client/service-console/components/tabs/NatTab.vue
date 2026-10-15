@@ -1,15 +1,15 @@
 <template>
   <section class="console-panel-section">
-    <t-card title="端口转发" :bordered="false">
+    <t-card :title="$t('serviceConsole.nat.title')" :bordered="false">
       <template #actions>
         <t-space>
-          <t-button :loading="natState.loading" @click="loadNatForwardings">刷新</t-button>
+          <t-button :loading="natState.loading" @click="loadNatForwardings">{{ $t('serviceConsole.refresh') }}</t-button>
           <t-button
             v-if="natState.can_create"
             theme="primary"
             :disabled="natState.supported === false"
             @click="openNatForwardingDialog"
-            >添加端口转发</t-button
+            >{{ $t('serviceConsole.nat.addForward') }}</t-button
           >
         </t-space>
       </template>

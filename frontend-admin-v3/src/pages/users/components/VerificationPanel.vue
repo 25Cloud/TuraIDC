@@ -5,17 +5,17 @@
         <t-input
           v-model="filters.keyword"
           clearable
-          placeholder="输入关键字"
+          :placeholder="$t('verification.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="quickStatus" placeholder="状态筛选" @change="handleQuickStatusChange">
-          <t-option label="全部" value="all" />
-          <t-option label="待认证" value="pending" />
-          <t-option label="成功" value="success" />
-          <t-option label="失败" value="failed" />
+        <t-select v-model="quickStatus" :placeholder="$t('verification.statusFilter')" @change="handleQuickStatusChange">
+          <t-option :label="$t('verification.statusAll')" value="all" />
+          <t-option :label="$t('verification.statusPending')" value="pending" />
+          <t-option :label="$t('verification.statusSuccess')" value="success" />
+          <t-option :label="$t('verification.statusFailed')" value="failed" />
         </t-select>
       </div>
 
@@ -39,10 +39,10 @@
         <template #createdAt="{ row }">{{ formatDateTime(row.created_at) }}</template>
         <template #operation="{ row }">
           <t-space size="small">
-            <t-button variant="text" theme="primary" size="small" @click="openDetail(row)">查看</t-button>
-            <t-button variant="text" theme="primary" size="small" @click="openHistory(row)">历史记录</t-button>
+            <t-button variant="text" theme="primary" size="small" @click="openDetail(row)">{{ $t('verification.view') }}</t-button>
+            <t-button variant="text" theme="primary" size="small" @click="openHistory(row)">{{ $t('verification.history') }}</t-button>
             <t-button v-if="canEditVerification" variant="text" theme="primary" size="small" @click="openEdit(row)">
-              编辑
+              {{ $t('verification.edit') }}
             </t-button>
             <t-button
               v-if="canReject(row)"
@@ -52,7 +52,7 @@
               :loading="actionLoadingId === row.id"
               @click="openReject(row)"
             >
-              驳回
+              {{ $t('verification.reject') }}
             </t-button>
           </t-space>
         </template>
@@ -68,25 +68,25 @@
               </div>
               <dl class="verification-mobile-card__meta">
                 <div>
-                  <dt>实名名称</dt>
+                  <dt>{{ $t('verification.realNameField') }}</dt>
                   <dd>{{ row.real_name || '-' }}</dd>
                 </div>
                 <div>
-                  <dt>身份证号码</dt>
+                  <dt>{{ $t('verification.idCardField') }}</dt>
                   <dd>{{ row.id_card_masked || '-' }}</dd>
                 </div>
                 <div>
-                  <dt>认证方式</dt>
+                  <dt>{{ $t('verification.methodField') }}</dt>
                   <dd>{{ verificationMethodLabel(row) }}</dd>
                 </div>
                 <div>
-                  <dt>提交时间</dt>
+                  <dt>{{ $t('verification.submittedAtField') }}</dt>
                   <dd>{{ formatDateTime(row.created_at) }}</dd>
                 </div>
               </dl>
               <div class="verification-mobile-card__actions">
-                <t-button variant="outline" theme="primary" size="small" @click="openDetail(row)">查看</t-button>
-                <t-button variant="outline" theme="primary" size="small" @click="openHistory(row)">历史记录</t-button>
+                <t-button variant="outline" theme="primary" size="small" @click="openDetail(row)">{{ $t('verification.view') }}</t-button>
+                <t-button variant="outline" theme="primary" size="small" @click="openHistory(row)">{{ $t('verification.history') }}</t-button>
                 <t-button
                   v-if="canEditVerification"
                   variant="outline"
@@ -94,10 +94,10 @@
                   size="small"
                   @click="openEdit(row)"
                 >
-                  编辑
+                  {{ $t('verification.edit') }}
                 </t-button>
                 <t-button v-if="canReject(row)" variant="outline" theme="danger" size="small" @click="openReject(row)">
-                  驳回
+                  {{ $t('verification.reject') }}
                 </t-button>
               </div>
             </article>
@@ -117,16 +117,16 @@
 
     <section v-else-if="activePane === 'manage'" class="verification-section verification-form-section">
       <t-form ref="feeFormRef" :data="feeForm" :rules="feeRules" label-align="top">
-        <t-form-item label="免费认证次数" name="free_attempts">
+        <t-form-item :label="$t('verification.freeAttemptsLabel')" name="free_attempts">
           <t-input-number v-model="feeForm.free_attempts" :min="0" :max="10" />
-          <p class="verification-help">每个用户可免费进行实名认证的次数。</p>
+          <p class="verification-help">{{ $t('verification.freeAttemptsHelp') }}</p>
         </t-form-item>
-        <t-form-item label="失败后再次认证费用" name="retry_fee">
+        <t-form-item :label="$t('verification.retryFeeLabel')" name="retry_fee">
           <t-input-number v-model="feeForm.retry_fee" :min="0" :decimal-places="2" :step="0.5" />
-          <p class="verification-help">超过免费次数后，每次再次认证收取的费用。</p>
+          <p class="verification-help">{{ $t('verification.retryFeeHelp') }}</p>
         </t-form-item>
         <t-form-item>
-          <t-button theme="primary" :loading="feeLoading" @click="saveFeeSettings">保存费用设置</t-button>
+          <t-button theme="primary" :loading="feeLoading" @click="saveFeeSettings">{{ $t('verification.saveFeeSettings') }}</t-button>
         </t-form-item>
       </t-form>
     </section>
@@ -134,40 +134,40 @@
     <t-drawer
       v-model:visible="detailVisible"
       size="560px"
-      header="实名认证详情"
+      :header="$t('verification.detailTitle')"
       :footer="false"
       @close="closeVerificationDetail"
     >
       <t-loading :loading="detailLoading" size="small">
         <t-descriptions :column="1" bordered>
-          <t-descriptions-item label="用户名称">{{ formatDetailValue(detail.display_name) }}</t-descriptions-item>
-          <t-descriptions-item label="真实姓名">{{ formatDetailValue(detail.real_name) }}</t-descriptions-item>
-          <t-descriptions-item label="认证方式">{{
+          <t-descriptions-item :label="$t('verification.userNameField')">{{ formatDetailValue(detail.display_name) }}</t-descriptions-item>
+          <t-descriptions-item :label="$t('verification.realNameFieldLabel')">{{ formatDetailValue(detail.real_name) }}</t-descriptions-item>
+          <t-descriptions-item :label="$t('verification.methodFieldLabel')">{{
             formatDetailValue(detail.verification_method_label)
           }}</t-descriptions-item>
-          <t-descriptions-item label="认证类型">{{
+          <t-descriptions-item :label="$t('verification.verificationTypeField')">{{
             formatDetailValue(detail.verification_type_label)
           }}</t-descriptions-item>
-          <t-descriptions-item label="证件类型">{{
+          <t-descriptions-item :label="$t('verification.documentTypeField')">{{
             formatDetailValue(detail.document_type_label)
           }}</t-descriptions-item>
-          <t-descriptions-item label="身份地区">{{
+          <t-descriptions-item :label="$t('verification.identityRegionField')">{{
             formatDetailValue(detail.identity_region_label)
           }}</t-descriptions-item>
-          <t-descriptions-item label="证件号码">{{
+          <t-descriptions-item :label="$t('verification.documentNumberField')">{{
             formatDetailValue(detail.id_card || detail.id_card_masked)
           }}</t-descriptions-item>
-          <t-descriptions-item label="接口单号">{{
+          <t-descriptions-item :label="$t('verification.certifyIdField')">{{
             formatDetailValue(detail.verification_certify_id)
           }}</t-descriptions-item>
-          <t-descriptions-item label="状态说明">{{
+          <t-descriptions-item :label="$t('verification.statusMessageField')">{{
             formatDetailValue(detail.verification_message)
           }}</t-descriptions-item>
         </t-descriptions>
         <div class="verification-drawer-actions">
           <t-button variant="outline" @click="closeVerificationDetail">
             <template #icon><chevron-left-icon /></template>
-            返回
+            {{ $t('verification.back') }}
           </t-button>
         </div>
       </t-loading>
@@ -190,7 +190,7 @@
         <div class="verification-drawer-actions">
           <t-button variant="outline" @click="closeVerificationHistory">
             <template #icon><chevron-left-icon /></template>
-            返回
+            {{ $t('verification.back') }}
           </t-button>
         </div>
       </t-loading>
@@ -198,27 +198,27 @@
 
     <t-dialog
       v-model:visible="rejectVisible"
-      header="驳回实名"
+      :header="$t('verification.rejectTitle')"
       width="460px"
-      :confirm-btn="{ content: '确认驳回', loading: Boolean(actionLoadingId) }"
+      :confirm-btn="{ content: $t('verification.confirmReject'), loading: Boolean(actionLoadingId) }"
       @confirm="handleReject"
     >
-      <p class="verification-help">请输入驳回原因，提交后会解除当前实名认证状态。</p>
-      <t-textarea v-model="rejectReason" placeholder="请输入驳回原因" :autosize="{ minRows: 3, maxRows: 6 }" />
+      <p class="verification-help">{{ $t('verification.rejectHelp') }}</p>
+      <t-textarea v-model="rejectReason" :placeholder="$t('verification.rejectReasonPlaceholder')" :autosize="{ minRows: 3, maxRows: 6 }" />
     </t-dialog>
 
     <t-dialog
       v-model:visible="editVisible"
-      header="修改实名认证信息"
+      :header="$t('verification.editTitle')"
       width="520px"
-      :confirm-btn="{ content: '保存修改', loading: editSubmitting }"
+      :confirm-btn="{ content: $t('verification.confirmSave'), loading: editSubmitting }"
       @confirm="handleEditSubmit"
     >
       <div class="verification-edit-subject">
-        {{ editRow?.display_name || editRow?.email || editRow?.real_name || `用户 #${editRow?.id}` }}
+        {{ editRow?.display_name || editRow?.email || editRow?.real_name || $t('verification.userFallback', { id: editRow?.id }) }}
       </div>
       <t-form :data="editForm" label-align="top">
-        <t-form-item label="实名状态">
+        <t-form-item :label="$t('verification.realNameStatusLabel')">
           <t-select v-model="editForm.verification_status">
             <t-option
               v-for="item in verificationStatusOptions"
@@ -228,21 +228,21 @@
             />
           </t-select>
           <p class="verification-help">
-            标记为“已认证”时系统将同步把该用户视为已实名（is_verified=1），操作前请先确认资料真实有效。
+            {{ $t('verification.verifiedHint') }}
           </p>
         </t-form-item>
-        <t-form-item label="真实姓名">
-          <t-input v-model="editForm.real_name" placeholder="留空则不修改" :maxlength="50" />
-          <p class="verification-help">仅用于人工修正/补录。当前值不在此回显，留空表示沿用原有姓名。</p>
+        <t-form-item :label="$t('verification.realNameFieldLabel')">
+          <t-input v-model="editForm.real_name" :placeholder="$t('verification.leaveBlankToKeep')" :maxlength="50" />
+          <p class="verification-help">{{ $t('verification.realNameHelp') }}</p>
         </t-form-item>
-        <t-form-item label="证件号码">
-          <t-input v-model="editForm.id_card" placeholder="留空则不修改" :maxlength="24" />
-          <p class="verification-help">仅用于人工修正/补录。留空表示沿用原有证件号码。</p>
+        <t-form-item :label="$t('verification.documentNumberField')">
+          <t-input v-model="editForm.id_card" :placeholder="$t('verification.leaveBlankToKeep')" :maxlength="24" />
+          <p class="verification-help">{{ $t('verification.documentHelp') }}</p>
         </t-form-item>
-        <t-form-item label="状态说明">
+        <t-form-item :label="$t('verification.statusMessageField')">
           <t-textarea
             v-model="editForm.verification_message"
-            placeholder="填写状态说明，可留空"
+            :placeholder="$t('verification.statusMessagePlaceholder')"
             :autosize="{ minRows: 2, maxRows: 4 }"
             :maxlength="255"
           />

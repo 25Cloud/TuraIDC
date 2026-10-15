@@ -7,15 +7,20 @@
             <div class="console-title-line">
               <h3 class="console-title">{{ displayName }}</h3>
               <t-tag :theme="instanceStatusTheme" variant="light">{{ instanceStatusText }}</t-tag>
-              <t-tag v-if="isServiceRefunded" theme="danger" variant="light">已退款</t-tag>
+              <t-tag v-if="isServiceRefunded" theme="danger" variant="light">
+                {{ $t('services.cdnConsole.refunded') }}
+              </t-tag>
               <t-tag variant="outline">CDN</t-tag>
             </div>
             <div class="console-meta-line">
-              <span>产品：{{ fieldValue(productText) }}</span>
-              <span>计费：{{ fieldValue(detail.billing_cycle_label) }}</span>
-              <span>续费价：{{ renewPriceText }}</span>
-              <span>到期：{{ detail.expires_at || '长期有效' }}</span>
-              <span>自动续费：{{ autoRenewLabel }}</span>
+              <span>{{ $t('services.cdnConsole.product') }}{{ fieldValue(productText) }}</span>
+              <span>{{ $t('services.cdnConsole.billing') }}{{ fieldValue(detail.billing_cycle_label) }}</span>
+              <span>{{ $t('services.cdnConsole.renewPrice') }}{{ renewPriceText }}</span>
+              <span>
+                {{ $t('services.cdnConsole.expiresAt')
+                }}{{ detail.expires_at || $t('services.cdnConsole.neverExpires') }}
+              </span>
+              <span>{{ $t('services.cdnConsole.autoRenew') }}{{ autoRenewLabel }}</span>
             </div>
             <t-alert
               v-if="detail.upstream?.remote_error"
@@ -37,7 +42,7 @@
                 :disabled="!canSyncStatus"
                 :loading="statusSyncing"
                 @click="handleSyncStatus"
-                >同步信息</t-button
+                >{{ $t('services.cdnConsole.syncInfo') }}</t-button
               >
               <t-button
                 v-if="canRenewService"
@@ -45,7 +50,7 @@
                 variant="outline"
                 size="small"
                 @click="openRenewDialog"
-                >续费</t-button
+                >{{ $t('services.cdnConsole.renew') }}</t-button
               >
               <t-button
                 v-if="canSuspendService"
@@ -53,7 +58,7 @@
                 size="small"
                 :loading="adminActionLoading === 'suspend'"
                 @click="openSuspendDialog"
-                >暂停</t-button
+                >{{ $t('services.cdnConsole.suspend') }}</t-button
               >
               <t-button
                 v-if="canUnsuspendService"
@@ -62,18 +67,24 @@
                 size="small"
                 :loading="adminActionLoading === 'suspend'"
                 @click="handleUnsuspendService"
-                >解除暂停</t-button
+                >{{ $t('services.cdnConsole.unsuspend') }}</t-button
               >
-              <t-button theme="default" size="small" @click="openServiceUpstreamDialog">上游绑定</t-button>
-              <t-button theme="default" size="small" @click="openServicePricingDialog">调价</t-button>
-              <t-button theme="default" size="small" @click="openNameDialog">改名称</t-button>
+              <t-button theme="default" size="small" @click="openServiceUpstreamDialog">
+                {{ $t('services.cdnConsole.upstreamBinding') }}
+              </t-button>
+              <t-button theme="default" size="small" @click="openServicePricingDialog">
+                {{ $t('services.cdnConsole.adjustPrice') }}
+              </t-button>
+              <t-button theme="default" size="small" @click="openNameDialog">
+                {{ $t('services.cdnConsole.renameService') }}
+              </t-button>
               <t-button
                 theme="default"
                 size="small"
                 :disabled="!detail.actions?.manual_provision"
                 :loading="adminActionLoading === 'manual-provision'"
                 @click="openManualProvisionDialog"
-                >手动开通</t-button
+                >{{ $t('services.cdnConsole.manualProvision') }}</t-button
               >
               <t-button
                 v-if="canRefundService"
@@ -81,7 +92,7 @@
                 size="small"
                 :loading="adminActionLoading === 'refund'"
                 @click="openServiceRefundDialog"
-                >退款</t-button
+                >{{ $t('services.cdnConsole.refund') }}</t-button
               >
             </div>
           </div>
@@ -101,14 +112,17 @@
 
     <t-dialog
       v-model:visible="manualProvisionVisible"
-      header="手动开通 / 关联上游"
+      :header="$t('services.cdnConsole.manualProvisionTitle')"
       width="420px"
-      :confirm-btn="{ content: '确认关联', loading: adminActionLoading === 'manual-provision' }"
+      :confirm-btn="{
+        content: $t('services.cdnConsole.confirmLink'),
+        loading: adminActionLoading === 'manual-provision',
+      }"
       @cancel="manualProvisionVisible = false"
       @confirm="handleManualProvision"
     >
       <t-form ref="manualProvisionFormRef" :data="manualProvisionForm" :rules="manualProvisionRules" label-align="top">
-        <t-form-item label="上游实例 ID" name="upstream_host_id">
+        <t-form-item :label="$t('services.cdnConsole.upstreamInstanceId')" name="upstream_host_id">
           <t-input-number v-model="manualProvisionForm.upstream_host_id" :min="1" style="width: 100%" />
         </t-form-item>
       </t-form>
@@ -116,25 +130,25 @@
 
     <t-dialog
       v-model:visible="serviceUpstreamVisible"
-      header="上游绑定"
+      :header="$t('services.cdnConsole.upstreamBinding')"
       width="520px"
-      :confirm-btn="{ content: '保存', loading: serviceUpstreamSubmitting }"
+      :confirm-btn="{ content: $t('services.cdnConsole.save'), loading: serviceUpstreamSubmitting }"
       @cancel="serviceUpstreamVisible = false"
       @confirm="submitServiceUpstream"
     >
       <t-form ref="serviceUpstreamFormRef" :data="serviceUpstreamForm" :rules="serviceUpstreamRules" label-align="top">
-        <t-form-item label="上游接口" name="supplier_id">
+        <t-form-item :label="$t('services.cdnConsole.upstreamInterface')" name="supplier_id">
           <t-select
             v-model="serviceUpstreamForm.supplier_id"
             clearable
             filterable
             :loading="serviceUpstreamLoading"
-            placeholder="请选择上游接口"
+            :placeholder="$t('services.cdnConsole.selectUpstreamInterface')"
           >
             <t-option v-for="item in serviceUpstreamOptions" :key="item.id" :label="item.label" :value="item.id" />
           </t-select>
         </t-form-item>
-        <t-form-item label="上游实例 ID" name="upstream_host_id">
+        <t-form-item :label="$t('services.cdnConsole.upstreamInstanceId')" name="upstream_host_id">
           <t-input-number v-model="serviceUpstreamForm.upstream_host_id" :min="1" style="width: 100%" />
         </t-form-item>
       </t-form>
@@ -142,44 +156,53 @@
 
     <t-dialog
       v-model:visible="servicePricingVisible"
-      header="调整价格"
+      :header="$t('services.cdnConsole.adjustPriceTitle')"
       width="620px"
-      :confirm-btn="{ content: '保存', loading: servicePricingSubmitting }"
+      :confirm-btn="{ content: $t('services.cdnConsole.save'), loading: servicePricingSubmitting }"
       @cancel="servicePricingVisible = false"
       @confirm="submitServicePricing"
     >
       <t-form ref="servicePricingFormRef" :data="servicePricingForm" :rules="servicePricingRules" label-align="top">
-        <t-form-item label="购买价格" name="amount">
+        <t-form-item :label="$t('services.cdnConsole.purchasePrice')" name="amount">
           <t-input-number v-model="servicePricingForm.amount" :min="0" :decimal-places="2" style="width: 100%" />
         </t-form-item>
         <div v-if="servicePricingEntries.length" class="pricing-list">
           <div v-for="item in servicePricingEntries" :key="item.cycle" class="pricing-row">
             <div>
               <strong>{{ item.label }}</strong>
-              <span>基础价 {{ item.base_amount ? formatMoney(item.base_amount) : '未配置' }}</span>
+              <span>
+                {{ $t('services.cdnConsole.basePrice')
+                }}{{ item.base_amount ? formatMoney(item.base_amount) : $t('services.cdnConsole.notConfigured') }}
+              </span>
             </div>
             <t-switch v-model="servicePricingForm.locked_pricing[item.cycle].enabled" />
             <t-input-number
               v-model="servicePricingForm.locked_pricing[item.cycle].manual_amount"
               :min="0"
               :decimal-places="2"
-              placeholder="手动价"
+              :placeholder="$t('services.cdnConsole.manualPrice')"
             />
           </div>
         </div>
-        <t-checkbox v-model="servicePricingForm.clear_locked_pricing">恢复默认续费价格</t-checkbox>
+        <t-checkbox v-model="servicePricingForm.clear_locked_pricing">
+          {{ $t('services.cdnConsole.restoreDefaultRenewPrice') }}
+        </t-checkbox>
       </t-form>
     </t-dialog>
 
     <t-dialog
       v-model:visible="serviceRefundVisible"
-      header="服务退款"
+      :header="$t('services.cdnConsole.refundTitle')"
       width="500px"
-      :confirm-btn="{ content: '确认退款', theme: 'danger', loading: adminActionLoading === 'refund' }"
+      :confirm-btn="{
+        content: $t('services.cdnConsole.confirmRefund'),
+        theme: 'danger',
+        loading: adminActionLoading === 'refund',
+      }"
       @cancel="serviceRefundVisible = false"
       @confirm="handleServiceRefund"
     >
-      <t-alert theme="warning" message="退款将把对应账单标记为已退款，并关闭该实例的计费流程，当前仅支持全额退款。" />
+      <t-alert theme="warning" :message="$t('services.cdnConsole.refundWarning')" />
       <t-form
         ref="serviceRefundFormRef"
         :data="serviceRefundForm"
@@ -187,43 +210,52 @@
         label-align="top"
         class="dialog-form"
       >
-        <t-form-item label="退款金额">
+        <t-form-item :label="$t('services.cdnConsole.refundAmount')">
           <t-input :value="formatMoney(serviceRefundAmount)" disabled />
         </t-form-item>
-        <t-form-item label="退款方式" name="refund_method">
+        <t-form-item :label="$t('services.cdnConsole.refundMethod')" name="refund_method">
           <t-radio-group v-model="serviceRefundForm.refund_method">
-            <t-radio value="balance">退回余额</t-radio>
-            <t-radio value="original" :disabled="!canOriginalServiceRefund">原路退款</t-radio>
+            <t-radio value="balance">{{ $t('services.cdnConsole.refundToBalance') }}</t-radio>
+            <t-radio value="original" :disabled="!canOriginalServiceRefund">
+              {{ $t('services.cdnConsole.refundToOriginal') }}
+            </t-radio>
           </t-radio-group>
         </t-form-item>
-        <t-form-item label="退款原因" name="remark">
-          <t-textarea v-model="serviceRefundForm.remark" :maxlength="200" placeholder="请输入退款原因" />
+        <t-form-item :label="$t('services.cdnConsole.refundReason')" name="remark">
+          <t-textarea
+            v-model="serviceRefundForm.remark"
+            :maxlength="200"
+            :placeholder="$t('services.cdnConsole.refundReasonPlaceholder')"
+          />
         </t-form-item>
       </t-form>
     </t-dialog>
 
     <t-dialog
       v-model:visible="suspendVisible"
-      header="暂停实例"
+      :header="$t('services.cdnConsole.suspendTitle')"
       width="420px"
-      :confirm-btn="{ content: '确认暂停', theme: 'warning', loading: adminActionLoading === 'suspend' }"
+      :confirm-btn="{
+        content: $t('services.cdnConsole.confirmSuspend'),
+        theme: 'warning',
+        loading: adminActionLoading === 'suspend',
+      }"
       @cancel="suspendVisible = false"
       @confirm="handleSuspendService"
     >
-      <t-alert
-        theme="warning"
-        message="暂停后实例将被上游停机，用户将无法继续使用，可在管理端随时解除暂停。"
-        class="dialog-alert"
-      />
+      <t-alert theme="warning" :message="$t('services.cdnConsole.suspendWarning')" class="dialog-alert" />
       <t-form label-align="top">
-        <t-form-item label="暂停原因">
-          <t-textarea v-model="suspendReason" :maxlength="255" placeholder="选填，记录暂停原因" />
+        <t-form-item :label="$t('services.cdnConsole.suspendReason')">
+          <t-textarea
+            v-model="suspendReason"
+            :maxlength="255"
+            :placeholder="$t('services.cdnConsole.suspendReasonPlaceholder')"
+          />
         </t-form-item>
       </t-form>
     </t-dialog>
   </div>
 </template>
-
 <script setup lang="ts">
 import '../console/styles.less';
 
@@ -298,12 +330,10 @@ const productText = computed(
 );
 /** 只保留 3 条以内的速览：节点数 / 流量上限 / 加速区域，其余进「套餐与面板」 */
 const specChips = computed(() =>
-  (Array.isArray(detail.value.specs) ? detail.value.specs : [])
-    .slice(0, 4)
-    .map((item) => ({
-      label: String(item.label || item.name || '-'),
-      value: String(item.value ?? '-'),
-    })),
+  (Array.isArray(detail.value.specs) ? detail.value.specs : []).slice(0, 4).map((item) => ({
+    label: String(item.label || item.name || '-'),
+    value: String(item.value ?? '-'),
+  })),
 );
 const canSuspendService = computed(
   () => Number(detail.value.status) === 1 && Number(detail.value.upstream?.host_id || 0) > 0,

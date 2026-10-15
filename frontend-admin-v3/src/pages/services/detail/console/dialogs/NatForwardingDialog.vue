@@ -1,23 +1,35 @@
 <template>
   <t-dialog
     v-model:visible="natVisible"
-    header="添加端口转发"
-    confirm-btn="创建"
+    :header="$t('services.console.natDialog.title')"
+    :confirm-btn="$t('services.console.natDialog.create')"
     :confirm-loading="natState.submitting"
     @confirm="submitNatForwarding"
   >
     <t-form label-align="right" :label-width="96">
-      <t-form-item label="名称" required-mark>
-        <t-input v-model="natForm.name" placeholder="例如：Web 服务" :maxlength="255" />
+      <t-form-item :label="$t('services.console.natDialog.name')" required-mark>
+        <t-input
+          v-model="natForm.name"
+          :placeholder="$t('services.console.natDialog.namePlaceholder')"
+          :maxlength="255"
+        />
       </t-form-item>
-      <t-form-item label="公网端口">
-        <t-input v-model="natForm.ext_port" placeholder="留空由上游分配" :maxlength="5" />
+      <t-form-item :label="$t('services.console.natDialog.publicPort')">
+        <t-input
+          v-model="natForm.ext_port"
+          :placeholder="$t('services.console.natDialog.publicPortPlaceholder')"
+          :maxlength="5"
+        />
       </t-form-item>
-      <t-form-item label="内网端口" required-mark>
-        <t-input v-model="natForm.int_port" placeholder="例如：80" :maxlength="5" />
+      <t-form-item :label="$t('services.console.natDialog.internalPort')" required-mark>
+        <t-input
+          v-model="natForm.int_port"
+          :placeholder="$t('services.console.natDialog.internalPortPlaceholder')"
+          :maxlength="5"
+        />
       </t-form-item>
-      <t-form-item label="协议" required-mark>
-        <t-select v-model="natForm.protocol" placeholder="请选择协议">
+      <t-form-item :label="$t('services.console.natDialog.protocol')" required-mark>
+        <t-select v-model="natForm.protocol" :placeholder="$t('services.console.natDialog.protocolPlaceholder')">
           <t-option
             v-for="protocol in natState.protocols"
             :key="String(protocol.value)"

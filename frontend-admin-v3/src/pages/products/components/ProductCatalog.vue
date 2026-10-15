@@ -7,19 +7,21 @@
           :key="item.value"
           :theme="catalogFilters.product_type === item.value ? 'primary' : 'default'"
           :variant="catalogFilters.product_type === item.value ? 'base' : 'outline'"
-          :aria-label="`${item.label}，共${item.usage_count || 0}个商品`"
+          :aria-label="
+            `${item.label}${$t('products.catalog.typeCountLabel', { count: item.usage_count || 0 })}`
+          "
           :aria-pressed="catalogFilters.product_type === item.value ? 'true' : 'false'"
           @click="handleProductTypeChange(item.value)"
         >
           {{ item.label }}
           <span class="type-count">{{ item.usage_count || 0 }}</span>
         </t-button>
-        <t-tooltip content="管理一级分组">
+        <t-tooltip :content="$t('products.catalog.manageProductType')">
           <t-button
             class="type-manage-button"
             shape="square"
             variant="outline"
-            aria-label="管理一级分组"
+            :aria-label="$t('products.catalog.manageProductType')"
             @click="openTypeManagerDialog()"
           >
             <template #icon><setting-icon /></template>
@@ -32,32 +34,40 @@
       <t-card :bordered="false" class="category-panel">
         <div class="category-panel-head">
           <div class="category-panel-title">
-            <strong>商品分类</strong>
-            <span class="category-panel-scope">一级分组：{{ selectedProductTypeLabel }} · 下方为二级分组 / 三级分组</span>
+            <strong>{{ $t('products.catalog.productCategories') }}</strong>
+            <span class="category-panel-scope"
+              >{{ $t('products.catalog.typeScopePrefix') }}{{ selectedProductTypeLabel }} ·
+              {{ $t('products.catalog.subCategoryScopeSuffix') }}</span
+            >
           </div>
           <t-space size="small">
             <t-button
               shape="square"
               variant="text"
               :loading="categoryLoading"
-              aria-label="刷新分类列表"
+              :aria-label="$t('products.catalog.refreshCategories')"
               @click="loadCategories"
             >
               <template #icon><refresh-icon /></template>
             </t-button>
-            <t-button theme="primary" size="small" aria-label="新增二级分组" @click="openSecondCategoryDialog()">
+            <t-button
+              theme="primary"
+              size="small"
+              :aria-label="$t('products.catalog.addSecondCategory')"
+              @click="openSecondCategoryDialog()"
+            >
               <template #icon><add-icon /></template>
-              新增二级
+              {{ $t('products.catalog.addSecondCategory') }}
             </t-button>
           </t-space>
         </div>
         <div class="category-toolbar">
-          <t-input v-model="categoryKeyword" clearable placeholder="搜索分类或子菜单">
+          <t-input v-model="categoryKeyword" clearable :placeholder="$t('products.catalog.categorySearchPlaceholder')">
             <template #prefix-icon><search-icon /></template>
           </t-input>
         </div>
 
-        <div v-if="categoryTreeRows.length" class="category-tree" role="tree" aria-label="商品分类树">
+        <div v-if="categoryTreeRows.length" class="category-tree" role="tree" :aria-label="$t('products.catalog.categoryTree')">
           <div
             v-for="{ node: item, level, childCount } in categoryTreeRows"
             :key="categoryIdKey(item)"
@@ -83,7 +93,9 @@
               :class="{ visible: childCount > 0, expanded: isCategoryExpanded(item) }"
               :disabled="childCount <= 0"
               :aria-label="
-                isCategoryExpanded(item) ? `折叠${categoryDisplayName(item)}` : `展开${categoryDisplayName(item)}`
+                isCategoryExpanded(item)
+                  ? `${$t('products.catalog.collapse')}${categoryDisplayName(item)}`
+                  : `${$t('products.catalog.expand')}${categoryDisplayName(item)}`
               "
               @click.stop="toggleCategoryExpanded(item)"
             />
@@ -93,7 +105,7 @@
               :class="{ 'is-dragging': categoryDragState?.key === categoryIdKey(item) }"
               draggable="true"
               :disabled="categorySortLoadingId ? true : undefined"
-              :aria-label="`拖动排序：${categoryDisplayName(item)}`"
+              :aria-label="`${$t('products.catalog.dragSortPrefix')}${categoryDisplayName(item)}`"
               @dragstart="handleCategoryDragStart(item, $event)"
               @dragend="handleCategoryDragEnd"
               @click.stop
@@ -114,7 +126,7 @@
                   variant="light"
                   size="small"
                   style="margin-left: 4px"
-                  >隐藏</t-tag
+                  >{{ $t('products.catalog.hidden') }}</t-tag
                 >
               </span>
             </button>
@@ -134,19 +146,19 @@
                 size="small"
                 shape="square"
                 variant="text"
-                :aria-label="`更多操作：${categoryDisplayName(item)}`"
+                :aria-label="`${$t('products.catalog.moreActionsPrefix')}${categoryDisplayName(item)}`"
                 >...</t-button
               >
             </t-dropdown>
           </div>
         </div>
-        <t-empty v-else-if="categoryOptions.length" description="无匹配分类" />
-        <t-empty v-else description="暂无分类" />
+        <t-empty v-else-if="categoryOptions.length" :description="$t('products.catalog.noMatchingCategory')" />
+        <t-empty v-else :description="$t('products.catalog.emptyCategory')" />
       </t-card>
 
       <t-card :bordered="false" class="product-table-card">
         <button type="button" class="mobile-catalog-sidebar-entry" @click="mobileCatalogDrawerVisible = true">
-          <span>筛选分类</span>
+          <span>{{ $t('products.catalog.filterCategory') }}</span>
           <strong>{{ selectedProductTypeLabel }} / {{ selectedCategoryLabel }}</strong>
         </button>
 
@@ -155,8 +167,8 @@
             v-model="catalogFilters.keyword"
             class="catalog-filter-keyword"
             clearable
-            placeholder="搜索商品名称"
-            aria-label="搜索商品名称"
+            :placeholder="$t('products.catalog.productSearchPlaceholder')"
+            :aria-label="$t('products.catalog.productSearchPlaceholder')"
             @enter="handleCatalogSearch"
             @clear="handleCatalogSearch"
           >
@@ -166,18 +178,18 @@
             v-model="catalogFilters.status"
             class="catalog-filter-status"
             clearable
-            placeholder="显示状态"
-            aria-label="筛选显示状态"
+            :placeholder="$t('products.catalog.visibilityPlaceholder')"
+            :aria-label="$t('products.catalog.filterVisibilityAria')"
             @change="handleCatalogSearch"
           >
-            <t-option :value="1" label="显示中" />
-            <t-option :value="0" label="已隐藏" />
+            <t-option :value="1" :label="$t('products.catalog.visibilityShown')" />
+            <t-option :value="0" :label="$t('products.catalog.visibilityHidden')" />
           </t-select>
           <t-select
             v-model="catalogFilters.lifecycle_status"
             class="catalog-filter-status"
-            placeholder="商品范围"
-            aria-label="筛选商品范围"
+            :placeholder="$t('products.catalog.lifecyclePlaceholder')"
+            :aria-label="$t('products.catalog.filterLifecycleAria')"
             @change="handleCatalogSearch"
           >
             <t-option
@@ -190,28 +202,39 @@
           <div class="catalog-filter-actions">
             <t-button theme="primary" @click="router.push({ name: 'AdminProductCreate' })">
               <template #icon><add-icon /></template>
-              新增商品
+              {{ $t('products.catalog.addProduct') }}
             </t-button>
           </div>
         </div>
 
         <div v-if="selectedProductKeys.length" class="product-batch-bar" aria-live="polite">
-          <span>已选 {{ selectedProductKeys.length }} 个商品</span>
+          <span
+            >{{ $t('products.catalog.selectedPrefix') }} {{ selectedProductKeys.length }}
+            {{ $t('products.catalog.selectedSuffix') }}</span
+          >
           <t-space size="small">
-            <t-button variant="outline" @click="openBatchCategoryDialog"> 批量归类 </t-button>
+            <t-button variant="outline" @click="openBatchCategoryDialog">
+              {{ $t('products.catalog.batchCategorize') }}
+            </t-button>
             <t-button variant="outline" @click="openProductBatchDialog('console-template', selectedProductRows())">
-              控制台类型
+              {{ $t('products.catalog.consoleType') }}
             </t-button>
             <t-button variant="outline" @click="openProductBatchDialog('discount-group', selectedProductRows())">
-              折扣分组
+              {{ $t('products.catalog.discountGroup') }}
             </t-button>
             <t-button variant="outline" :loading="splitProductPreviewLoading" @click="openSplitProductDialog">
-              拆分商品
+              {{ $t('products.catalog.splitProduct') }}
             </t-button>
-            <t-button variant="outline" @click="openProvisionHostnameDialog"> 批量主机名 </t-button>
-            <t-button variant="outline" theme="danger" @click="handleBatchDeleteProducts"> 删除 </t-button>
-            <t-button variant="outline" theme="danger" @click="handleBatchForceDeleteProducts"> 强制删除 </t-button>
-            <t-button variant="text" @click="clearProductSelection">清空选择</t-button>
+            <t-button variant="outline" @click="openProvisionHostnameDialog">
+              {{ $t('products.catalog.batchHostname') }}
+            </t-button>
+            <t-button variant="outline" theme="danger" @click="handleBatchDeleteProducts">
+              {{ $t('products.catalog.delete') }}
+            </t-button>
+            <t-button variant="outline" theme="danger" @click="handleBatchForceDeleteProducts">
+              {{ $t('products.catalog.forceDelete') }}
+            </t-button>
+            <t-button variant="text" @click="clearProductSelection">{{ $t('products.catalog.clearSelection') }}</t-button>
           </t-space>
         </div>
 
@@ -224,19 +247,19 @@
             :selected-row-keys="selectedProductKeys"
             hover
             table-layout="fixed"
-            aria-label="商品列表"
+            :aria-label="$t('products.catalog.productListAria')"
             @select-change="handleProductSelectChange"
           >
             <template #empty>
               <t-empty
                 :description="
                   productLoading
-                    ? '正在加载...'
+                    ? $t('products.catalog.loading')
                     : catalogFilters.keyword ||
                         catalogFilters.status !== '' ||
                         catalogFilters.lifecycle_status !== 'active'
-                      ? '筛选无匹配商品'
-                      : '暂无商品'
+                      ? $t('products.catalog.noMatchingProduct')
+                      : $t('products.catalog.emptyProduct')
                 "
               />
             </template>
@@ -253,7 +276,11 @@
                   class="product-drag"
                   :class="{ 'is-dragging': productDragState?.id === row.id }"
                   :disabled="productSortLoading ? true : undefined"
-                  :aria-label="`拖动排序：${productSpecDisplayName(row)}。聚焦后按上下方向键调整顺序`"
+                  :aria-label="
+                    `${$t('products.catalog.dragSortPrefix')}${productSpecDisplayName(row)}${$t(
+                      'products.catalog.dragSortKeyboardSuffix',
+                    )}`
+                  "
                   draggable="true"
                   @dragstart="handleProductDragStart(row, $event)"
                   @dragend="handleProductDragEnd"
@@ -289,14 +316,14 @@
             <template #cpu="{ row }">
               <div class="product-cpu-cell">
                 <span class="product-cpu-cell__model">{{ row.cpu_model || '—' }}</span>
-                <span v-if="row.cpu_turbo" class="product-cpu-cell__turbo">睿频 {{ row.cpu_turbo }}</span>
+                <span v-if="row.cpu_turbo" class="product-cpu-cell__turbo">{{ $t('products.catalog.turboPrefix') }} {{ row.cpu_turbo }}</span>
               </div>
             </template>
             <template #discountGroup="{ row }">
               <t-tag v-if="row.product_discount_group_id" theme="primary" variant="light" size="small">
-                {{ row.product_discount_group_name || `分组#${row.product_discount_group_id}` }}
+                {{ row.product_discount_group_name || `${$t('products.catalog.groupPrefix')}#${row.product_discount_group_id}` }}
               </t-tag>
-              <span v-else class="product-discount-group-empty">未设置</span>
+              <span v-else class="product-discount-group-empty">{{ $t('products.catalog.notSet') }}</span>
             </template>
             <template #price="{ row }">
               {{ formatMonthlyPrice(row) }}
@@ -324,7 +351,7 @@
                     size="small"
                     shape="square"
                     variant="text"
-                    :aria-label="`更多操作：${row.display_name || row.name || row.id}`"
+                    :aria-label="`${$t('products.catalog.moreActionsPrefix')}${row.display_name || row.name || row.id}`"
                     >...</t-button
                   >
                 </t-dropdown>
@@ -355,9 +382,9 @@
     >
       <template #header>
         <div class="mobile-catalog-header">
-          <button type="button" class="mobile-catalog-back" @click="mobileCatalogDrawerVisible = false">返回</button>
+          <button type="button" class="mobile-catalog-back" @click="mobileCatalogDrawerVisible = false">{{ $t('products.catalog.back') }}</button>
           <div class="mobile-catalog-title">
-            <strong>筛选商品</strong>
+            <strong>{{ $t('products.catalog.filterProduct') }}</strong>
             <span>{{ selectedProductTypeLabel }} / {{ selectedCategoryLabel }}</span>
           </div>
         </div>
@@ -379,8 +406,8 @@
           <button
             type="button"
             class="mobile-type-tool mobile-type-tool--icon"
-            aria-label="管理一级分组"
-            title="管理一级分组"
+            :aria-label="$t('products.catalog.manageProductType')"
+            :title="$t('products.catalog.manageProductType')"
             @click="openTypeManagerDialog()"
           >
             <setting-icon />
@@ -390,8 +417,11 @@
         <section class="mobile-category-sidebar">
           <div class="category-panel-head">
             <div class="category-panel-title">
-              <strong>商品分类</strong>
-              <span class="category-panel-scope">一级分组：{{ selectedProductTypeLabel }} · 下方为二级分组 / 三级分组</span>
+              <strong>{{ $t('products.catalog.productCategories') }}</strong>
+              <span class="category-panel-scope"
+                >{{ $t('products.catalog.typeScopePrefix') }}{{ selectedProductTypeLabel }} ·
+                {{ $t('products.catalog.subCategoryScopeSuffix') }}</span
+              >
             </div>
             <t-space size="small">
               <t-button shape="square" variant="text" :loading="categoryLoading" @click="loadCategories">
@@ -399,12 +429,12 @@
               </t-button>
               <t-button theme="primary" size="small" @click="openSecondCategoryDialog()">
                 <template #icon><add-icon /></template>
-                新增二级
+                {{ $t('products.catalog.addSecondCategory') }}
               </t-button>
             </t-space>
           </div>
           <div class="category-toolbar">
-            <t-input v-model="categoryKeyword" clearable placeholder="搜索分类或子菜单">
+            <t-input v-model="categoryKeyword" clearable :placeholder="$t('products.catalog.categorySearchPlaceholder')">
               <template #prefix-icon><search-icon /></template>
             </t-input>
           </div>
@@ -413,7 +443,7 @@
             v-if="categoryTreeRows.length"
             class="category-tree mobile-category-tree"
             role="tree"
-            aria-label="商品分类树"
+            aria-label="$t('products.catalog.categoryTree')"
           >
             <div
               v-for="{ node: item, level, childCount } in categoryTreeRows"
@@ -441,7 +471,9 @@
                 :class="{ visible: childCount > 0, expanded: isCategoryExpanded(item) }"
                 :disabled="childCount <= 0"
                 :aria-label="
-                  isCategoryExpanded(item) ? `折叠${categoryDisplayName(item)}` : `展开${categoryDisplayName(item)}`
+                  isCategoryExpanded(item)
+                    ? `${$t('products.catalog.collapse')}${categoryDisplayName(item)}`
+                    : `${$t('products.catalog.expand')}${categoryDisplayName(item)}`
                 "
                 @click.stop="toggleCategoryExpanded(item)"
               />
@@ -451,7 +483,7 @@
                 :class="{ 'is-dragging': categoryDragState?.key === categoryIdKey(item) }"
                 draggable="true"
                 :disabled="categorySortLoadingId ? true : undefined"
-                :aria-label="`拖动排序：${categoryDisplayName(item)}`"
+                :aria-label="`${$t('products.catalog.dragSortPrefix')}${categoryDisplayName(item)}`"
                 @dragstart="handleCategoryDragStart(item, $event)"
                 @dragend="handleCategoryDragEnd"
                 @click.stop
@@ -472,7 +504,7 @@
                     variant="light"
                     size="small"
                     style="margin-left: 4px"
-                    >隐藏</t-tag
+                    >{{ $t('products.catalog.hidden') }}</t-tag
                   >
                 </span>
               </button>
@@ -492,21 +524,21 @@
                   size="small"
                   shape="square"
                   variant="text"
-                  :aria-label="`更多操作：${categoryDisplayName(item)}`"
+                  :aria-label="`${$t('products.catalog.moreActionsPrefix')}${categoryDisplayName(item)}`"
                   >...</t-button
                 >
               </t-dropdown>
             </div>
           </div>
-          <t-empty v-else-if="categoryOptions.length" description="无匹配分类" />
-          <t-empty v-else description="暂无分类" />
+          <t-empty v-else-if="categoryOptions.length" :description="$t('products.catalog.noMatchingCategory')" />
+          <t-empty v-else :description="$t('products.catalog.emptyCategory')" />
         </section>
       </div>
     </t-drawer>
 
     <t-drawer
       v-model:visible="productDialogVisible"
-      :header="editingProduct ? '编辑商品' : '新增商品'"
+      :header="editingProduct ? $t('products.catalog.editProduct') : $t('products.catalog.addProduct')"
       size="860px"
       class="product-edit-drawer"
       :close-on-overlay-click="false"
@@ -530,7 +562,7 @@
                 }}<span
                   v-if="activeProductDrawerSection !== section.key && productDrawerSectionValid(section.key)"
                   class="nav-dot nav-dot--done"
-                  aria-label="已完成"
+                  aria-label="$t('products.catalog.completedAria')"
                   >●</span
                 ></strong
               >
@@ -546,12 +578,12 @@
               :rules="productRules"
               label-width="120px"
             >
-              <section v-show="activeProductDrawerSection === 'basic'" class="product-drawer-section" data-title="详情">
+              <section v-show="activeProductDrawerSection === 'basic'" class="product-drawer-section" :data-title="$t('products.catalog.sectionDetails')">
                 <div class="product-drawer-grid">
-                  <t-form-item label="商品名称" name="display_name">
+                  <t-form-item :label="$t('products.catalog.productName')" name="display_name">
                     <t-input v-model="productForm.display_name" />
                   </t-form-item>
-                  <t-form-item label="所属分类" name="selected_product_group_key">
+                  <t-form-item :label="$t('products.catalog.belongingCategory')" name="selected_product_group_key">
                     <t-select v-model="productForm.selected_product_group_key" filterable clearable>
                       <t-option
                         v-for="item in selectableProductGroupOptions"
@@ -561,7 +593,7 @@
                       />
                     </t-select>
                   </t-form-item>
-                  <t-form-item label="状态" name="status"
+                  <t-form-item :label="$t('products.catalog.status')" name="status"
                     ><t-switch v-model="productForm.status" :custom-value="[1, 0]"
                   /></t-form-item>
                 </div>
@@ -570,10 +602,10 @@
               <section
                 v-show="activeProductDrawerSection === 'pricing'"
                 class="product-drawer-section"
-                data-title="定价"
+                :data-title="$t('products.catalog.sectionPricing')"
               >
                 <div class="product-pricing-actions">
-                  <span class="pricing-hint">输入月付价格后，选择方案并自动计算其他周期</span>
+                  <span class="pricing-hint">{{ $t('products.catalog.pricingHint') }}</span>
                   <t-select
                     v-model="productPricingPlan"
                     size="small"
@@ -589,16 +621,16 @@
                   </t-select>
                 </div>
                 <div class="product-drawer-grid">
-                  <t-form-item label="月付价格" name="monthly_price">
+                  <t-form-item :label="$t('products.catalog.monthlyPrice')" name="monthly_price">
                     <t-input-number v-model="productForm.monthly_price" :min="0" style="width: 100%" />
                   </t-form-item>
-                  <t-form-item label="季付价格" name="quarterly_price">
+                  <t-form-item :label="$t('products.catalog.quarterlyPrice')" name="quarterly_price">
                     <t-input-number v-model="productForm.quarterly_price" :min="0" style="width: 100%" />
                   </t-form-item>
-                  <t-form-item label="半年付价格" name="semiannually_price">
+                  <t-form-item :label="$t('products.catalog.semiannualPrice')" name="semiannually_price">
                     <t-input-number v-model="productForm.semiannually_price" :min="0" style="width: 100%" />
                   </t-form-item>
-                  <t-form-item label="年付价格" name="annually_price">
+                  <t-form-item :label="$t('products.catalog.annualPrice')" name="annually_price">
                     <t-input-number v-model="productForm.annually_price" :min="0" style="width: 100%" />
                   </t-form-item>
                 </div>
@@ -607,16 +639,16 @@
               <section
                 v-show="activeProductDrawerSection === 'interface'"
                 class="product-drawer-section product-interface-section"
-                data-title="自动开通"
+                :data-title="$t('products.catalog.sectionAutoSetup')"
               >
-                <div class="product-interface-tip">配置开通模块、支付方式和上架状态。</div>
+                <div class="product-interface-tip">{{ $t('products.catalog.interfaceTip') }}</div>
                 <div class="product-interface-panel">
-                  <t-form-item label="提供商" name="supplier_id">
+                  <t-form-item :label="$t('products.catalog.provider')" name="supplier_id">
                     <t-select
                       v-model="productForm.supplier_id"
                       filterable
                       clearable
-                      placeholder="请选择提供商接口"
+                      :placeholder="$t('products.catalog.selectProviderPlaceholder')"
                       :loading="productSupplierLoading"
                       @change="handleProductSupplierChange"
                     >
@@ -633,14 +665,14 @@
                       </t-option>
                     </t-select>
                   </t-form-item>
-                  <t-form-item label="提供商商品" name="upstream_product_id">
+                  <t-form-item :label="$t('products.catalog.providerProduct')" name="upstream_product_id">
                     <div class="supplier-product-row">
                       <t-cascader
                         v-model="productForm.upstream_product_id"
                         :options="supplierProductCascaderOptions"
                         filterable
                         clearable
-                        placeholder="请选择提供商商品"
+                        :placeholder="$t('products.catalog.selectProviderProductPlaceholder')"
                         :loading="supplierProductLoading"
                         :disabled="!productForm.supplier_id"
                         value-mode="onlyLeaf"
@@ -652,16 +684,16 @@
                         :disabled="!productForm.supplier_id"
                         @click="loadProductSupplierProducts(productForm.supplier_id, true)"
                       >
-                        同步数据
+                        {{ $t('products.catalog.syncData') }}
                       </t-button>
                     </div>
                   </t-form-item>
                   <div class="product-interface-grid">
-                    <t-form-item label="自动开通" name="auto_setup">
+                    <t-form-item :label="$t('products.catalog.autoSetup')" name="auto_setup">
                       <div class="product-switch-line">
-                        <span>手动</span>
+                        <span>{{ $t('products.catalog.manual') }}</span>
                         <t-switch v-model="productForm.auto_setup" :custom-value="[1, 0]" />
-                        <span>自动</span>
+                        <span>{{ $t('products.catalog.automatic') }}</span>
                       </div>
                     </t-form-item>
                   </div>
@@ -671,7 +703,7 @@
               <section
                 v-show="activeProductDrawerSection === 'config'"
                 class="product-drawer-section"
-                data-title="产品配置"
+                :data-title="$t('products.catalog.sectionProductConfig')"
               >
                 <div class="product-config-actions">
                   <t-button
@@ -680,15 +712,15 @@
                     :loading="configTemplateLoading"
                     @click="pullProductConfigTemplate"
                   >
-                    拉取模板
+                    {{ $t('products.catalog.pullTemplate') }}
                   </t-button>
                   <t-button size="small" theme="primary" variant="outline" @click="openConfigOptionDialog()"
-                    >新增配置</t-button
+                    >{{ $t('products.catalog.addConfig') }}</t-button
                   >
                 </div>
                 <div class="config-option-panel">
                   <div class="config-option-count">
-                    {{ productForm.config_options.length }} 项配置，保存商品后生效。
+                    {{ productForm.config_options.length }} {{ $t('products.catalog.configCountSuffix') }}
                   </div>
                   <div v-if="productForm.config_options.length" class="config-option-list">
                     <article v-for="(item, index) in productForm.config_options" :key="item.uid || item.field || index">
@@ -702,15 +734,15 @@
                           variant="text"
                           theme="primary"
                           @click="openConfigOptionDialog(item, index)"
-                          >编辑</t-button
+                          >{{ $t('products.catalog.edit') }}</t-button
                         >
                         <t-button size="small" variant="text" theme="danger" @click="removeConfigOption(index)"
-                          >删除</t-button
+                          >{{ $t('products.catalog.delete') }}</t-button
                         >
                       </t-space>
                     </article>
                   </div>
-                  <t-empty v-else description="暂无配置项" />
+                  <t-empty v-else :description="$t('products.catalog.emptyConfigOption')" />
                 </div>
               </section>
             </t-form>
@@ -718,8 +750,8 @@
         </div>
 
         <div class="product-drawer-footer">
-          <t-button variant="outline" @click="closeProductDrawer">取消</t-button>
-          <t-button theme="primary" :loading="productSubmitting" @click="submitProduct">保存更改</t-button>
+          <t-button variant="outline" @click="closeProductDrawer">{{ $t('products.catalog.cancel') }}</t-button>
+          <t-button theme="primary" :loading="productSubmitting" @click="submitProduct">{{ $t('products.catalog.saveChanges') }}</t-button>
         </div>
       </div>
     </t-drawer>
@@ -727,43 +759,54 @@
     <t-dialog
       v-model:visible="configOptionDialogVisible"
       class="config-option-edit-dialog"
-      :header="configOptionEditingIndex >= 0 ? '编辑配置项' : '新增配置项'"
+      :header="
+          configOptionEditingIndex >= 0
+            ? $t('products.catalog.editConfigOption')
+            : $t('products.catalog.addConfigOption')
+        "
       width="760px"
-      :confirm-btn="{ content: '保存配置', loading: configOptionSubmitting }"
+      :confirm-btn="{ content: $t('products.catalog.saveConfig'), loading: configOptionSubmitting }"
       @confirm="submitConfigOption"
     >
       <t-form class="config-option-edit-form" :data="configOptionForm" label-align="top">
         <div class="config-option-basic-grid">
-          <t-form-item label="配置项名称" name="name" required-mark>
-            <t-input v-model="configOptionForm.name" placeholder="例如 CPU、内存" />
+          <t-form-item :label="$t('products.catalog.configOptionName')" name="name" required-mark>
+            <t-input v-model="configOptionForm.name" :placeholder="$t('products.catalog.configOptionNamePlaceholder')" />
           </t-form-item>
-          <t-form-item label="配置项类型" name="option_mode" required-mark>
+          <t-form-item :label="$t('products.catalog.configOptionType')" name="option_mode" required-mark>
             <t-select v-model="configOptionForm.option_mode" @change="handleConfigOptionModeChange">
-              <t-option label="单选（固定选项）" value="select" />
-              <t-option label="数量范围（滑块）" value="range" />
-              <t-option label="文字提示（仅展示）" value="text" />
+              <t-option value="select" :label="$t('products.catalog.optionModeSelect')" />
+              <t-option value="range" :label="$t('products.catalog.optionModeRange')" />
+              <t-option value="text" :label="$t('products.catalog.optionModeText')" />
             </t-select>
           </t-form-item>
-          <t-form-item label="高级设置">
+          <t-form-item :label="$t('products.catalog.advancedSettings')">
             <t-checkbox v-model="configOptionForm.advanced" />
           </t-form-item>
 
-          <t-form-item label="配置标识" name="field" required-mark>
-            <t-input v-model="configOptionForm.field" placeholder="例如 cpu、memory、os" />
+          <t-form-item :label="$t('products.catalog.configField')" name="field" required-mark>
+            <t-input v-model="configOptionForm.field" :placeholder="$t('products.catalog.configFieldPlaceholder')" />
           </t-form-item>
-          <t-form-item label="选项说明">
-            <t-input v-model="configOptionForm.description" placeholder="例如 镜像管理中的操作系统 ID。" />
+          <t-form-item :label="$t('products.catalog.optionDescription')">
+            <t-input
+              v-model="configOptionForm.description"
+              :placeholder="$t('products.catalog.optionDescriptionPlaceholder')"
+            />
           </t-form-item>
-          <t-form-item label="选项尾部文字">
-            <t-input v-model="configOptionForm.suffix_text" placeholder="请输入选项尾部文字" />
+          <t-form-item :label="$t('products.catalog.suffixText')">
+            <t-input v-model="configOptionForm.suffix_text" :placeholder="$t('products.catalog.suffixTextPlaceholder')" />
           </t-form-item>
         </div>
 
         <!-- 文字提示：只展示购买须知，不计价也不提交上游 -->
-        <t-form-item v-if="configOptionForm.option_mode === 'text'" label="提示内容" name="text_content">
+        <t-form-item
+          v-if="configOptionForm.option_mode === 'text'"
+          :label="$t('products.catalog.tipContent')"
+          name="text_content"
+        >
           <t-textarea
             v-model="configOptionForm.text_content"
-            placeholder="例如 禁止搭建任何形式的流量中转、流量转发、代理用途，发现一律清退甚至封机不退款！"
+            :placeholder="$t('products.catalog.tipContentPlaceholder')"
           />
         </t-form-item>
         <t-alert
@@ -776,46 +819,49 @@
         <!-- 数量范围：数据范围即滑块上下限，需明确回传字段 -->
         <div v-else-if="configOptionForm.option_mode === 'range'" class="config-range-panel">
           <div class="config-range-head">
-            <strong>数据范围</strong>
-            <span class="config-range-hint">用户按滑块在此范围内选择，提交时回传数量</span>
+            <strong>{{ $t('products.catalog.dataRange') }}</strong>
+            <span class="config-range-hint">{{ $t('products.catalog.dataRangeHint') }}</span>
           </div>
           <div class="config-range-grid">
-            <t-form-item label="最小值">
+            <t-form-item :label="$t('products.catalog.minValue')">
               <t-input-number v-model="configOptionForm.qty_minimum" :min="0" />
             </t-form-item>
-            <t-form-item label="最大值">
+            <t-form-item :label="$t('products.catalog.maxValue')">
               <t-input-number v-model="configOptionForm.qty_maximum" :min="0" />
             </t-form-item>
-            <t-form-item label="步长">
+            <t-form-item :label="$t('products.catalog.step')">
               <t-input-number v-model="configOptionForm.qty_step" :min="1" />
             </t-form-item>
-            <t-form-item label="单位">
-              <t-input v-model="configOptionForm.unit" placeholder="例如 GB" />
+            <t-form-item :label="$t('products.catalog.unit')">
+              <t-input v-model="configOptionForm.unit" :placeholder="$t('products.catalog.unitPlaceholder')" />
             </t-form-item>
-            <t-form-item label="默认值">
+            <t-form-item :label="$t('products.catalog.defaultValue')">
               <t-input-number v-model="configOptionForm.default_value" :min="0" />
             </t-form-item>
-            <t-form-item label="回传参数名">
-              <t-input v-model="configOptionForm.submit_field" placeholder="例如 data_disk_size" />
+            <t-form-item :label="$t('products.catalog.submitFieldName')">
+              <t-input
+                v-model="configOptionForm.submit_field"
+                :placeholder="$t('products.catalog.submitFieldNamePlaceholder')"
+              />
             </t-form-item>
           </div>
         </div>
 
         <div v-else class="config-subitem-table">
           <div class="config-subitem-head">
-            <strong>子项列表</strong>
-            <t-button size="small" variant="outline" @click="addConfigSubItemRow">新增子项</t-button>
+            <strong>{{ $t('products.catalog.subItemList') }}</strong>
+            <t-button size="small" variant="outline" @click="addConfigSubItemRow">{{ $t('products.catalog.addSubItem') }}</t-button>
           </div>
           <div class="config-subitem-grid config-subitem-grid--header">
-            <span>子项名称</span>
-            <span>传参值</span>
-            <span>月付价格</span>
-            <span>排序</span>
-            <span>操作</span>
+            <span>{{ $t('products.catalog.subItemName') }}</span>
+            <span>{{ $t('products.catalog.subItemParamValue') }}</span>
+            <span>{{ $t('products.catalog.subItemMonthlyPrice') }}</span>
+            <span>{{ $t('products.catalog.subItemSort') }}</span>
+            <span>{{ $t('products.catalog.subItemOperation') }}</span>
           </div>
           <div v-for="(row, index) in configOptionSubItemRows" :key="row.uid" class="config-subitem-grid">
-            <t-input v-model="row.name" placeholder="例如 CentOS^CentOS-7.6" />
-            <t-input v-model="row.value" placeholder="例如 27" />
+            <t-input v-model="row.name" :placeholder="$t('products.catalog.subItemNamePlaceholder')" />
+            <t-input v-model="row.value" :placeholder="$t('products.catalog.subItemValuePlaceholder')" />
             <t-input v-model="row.monthly_price" placeholder="0.00" />
             <t-input-number v-model="row.sort_order" :min="0" theme="column" />
             <t-button
@@ -830,13 +876,13 @@
         </div>
 
         <div class="config-option-footer-row">
-          <t-form-item label="排序" name="sort_order">
+          <t-form-item :label="$t('products.catalog.sortOrder')" name="sort_order">
             <t-input-number v-model="configOptionForm.sort_order" :min="0" />
           </t-form-item>
-          <t-form-item label="开关">
+          <t-form-item :label="$t('products.catalog.switches')">
             <t-space>
-              <t-checkbox v-model="configOptionForm.required">必选</t-checkbox>
-              <t-checkbox v-model="configOptionForm.hidden">隐藏</t-checkbox>
+              <t-checkbox v-model="configOptionForm.required">{{ $t('products.catalog.required') }}</t-checkbox>
+              <t-checkbox v-model="configOptionForm.hidden">{{ $t('products.catalog.hidden') }}</t-checkbox>
             </t-space>
           </t-form-item>
         </div>
@@ -845,19 +891,21 @@
 
     <t-dialog
       v-model:visible="batchCategoryDialogVisible"
-      header="批量归类"
+      :header="$t('products.catalog.batchCategorize')"
       width="520px"
-      :confirm-btn="{ content: '确认归类', loading: batchCategorySubmitting }"
+      :confirm-btn="{ content: $t('products.catalog.confirmCategorize'), loading: batchCategorySubmitting }"
       @confirm="submitBatchCategory"
     >
-      <div class="batch-dialog-summary">将 {{ batchCategoryTargetKeys.length }} 个商品移动到目标分类。</div>
+      <div class="batch-dialog-summary">
+        {{ $t('products.catalog.moveProductsSummary', { count: batchCategoryTargetKeys.length }) }}
+      </div>
       <t-form :data="batchCategoryForm" label-width="110px">
-        <t-form-item label="目标分类" name="target_product_group_key">
+        <t-form-item :label="$t('products.catalog.targetCategory')" name="target_product_group_key">
           <t-select
             v-model="batchCategoryForm.target_product_group_key"
             filterable
             clearable
-            placeholder="请选择目标分类"
+            :placeholder="$t('products.catalog.selectTargetCategoryPlaceholder')"
           >
             <t-option
               v-for="item in selectableProductGroupOptions"
@@ -874,75 +922,96 @@
       v-model:visible="productBatchDialogVisible"
       :header="productBatchDialogTitle"
       width="520px"
-      :confirm-btn="{ content: '确认修改', loading: productBatchSubmitting }"
+      :confirm-btn="{ content: $t('products.catalog.confirmModify'), loading: productBatchSubmitting }"
       @confirm="submitProductBatch"
     >
       <div class="batch-dialog-summary">
         {{
           productBatchTargetGroup
-            ? `将修改「${productBatchTargetGroup.name}」下全部商品的设置。`
-            : `将修改已选 ${productBatchTargetProductIds.length} 个商品的设置。`
+            ? $t('products.catalog.batchModifyGroupSummary', { name: productBatchTargetGroup.name })
+            : $t('products.catalog.batchModifySelectedSummary', { count: productBatchTargetProductIds.length })
         }}
       </div>
       <t-form label-width="110px">
-        <t-form-item v-if="productBatchDialogKind === 'console-template'" label="控制台类型">
+        <t-form-item
+          v-if="productBatchDialogKind === 'console-template'"
+          :label="$t('products.catalog.consoleType')"
+        >
           <t-radio-group v-model="consoleTemplateValue" variant="default-filled">
-            <t-radio-button value="compute">通用计算型</t-radio-button>
-            <t-radio-button value="port_mapping">端口映射型</t-radio-button>
-            <t-radio-button value="cdn">CDN 型</t-radio-button>
-            <t-radio-button value="virtualhost">虚拟主机型</t-radio-button>
+            <t-radio-button value="compute">{{ $t('products.catalog.consoleCompute') }}</t-radio-button>
+            <t-radio-button value="port_mapping">{{ $t('products.catalog.consolePortMapping') }}</t-radio-button>
+            <t-radio-button value="cdn">{{ $t('products.catalog.consoleCdn') }}</t-radio-button>
+            <t-radio-button value="virtualhost">{{ $t('products.catalog.consoleVirtualHost') }}</t-radio-button>
           </t-radio-group>
-          <p class="batch-dialog-tip">
-            端口映射型适用于端口转发类业务；CDN 型与虚拟主机型属面板型（无云主机语义）；通用计算型为默认控制台。
-          </p>
+          <p class="batch-dialog-tip">{{ $t('products.catalog.consoleTypeTip') }}</p>
         </t-form-item>
-        <t-form-item v-else-if="productBatchDialogKind === 'discount-group'" label="折扣分组">
+        <t-form-item
+          v-else-if="productBatchDialogKind === 'discount-group'"
+          :label="$t('products.catalog.discountGroup')"
+        >
           <t-select
             v-model="discountGroupValue"
             clearable
             :loading="discountGroupLoading"
-            placeholder="选择代理折扣分组，清空则不分组"
+            :placeholder="$t('products.catalog.selectDiscountGroupPlaceholder')"
           >
             <t-option
               v-for="item in discountGroupOptions"
               :key="item.id"
               :value="item.id"
-              :label="`${item.name || item.code || item.id}${item.min_discount_rate ? `（最低 ${item.min_discount_rate}%）` : ''}`"
+              :label="`${item.name || item.code || item.id}${item.min_discount_rate ? $t('products.catalog.minDiscountRateSuffix', { rate: item.min_discount_rate }) : ''}`"
             />
           </t-select>
         </t-form-item>
         <template v-else-if="productBatchDialogKind === 'cpu-spec'">
-          <t-form-item label="CPU 型号">
-            <t-input v-model="cpuModelValue" placeholder="留空则清除 CPU 型号" maxlength="120" />
+          <t-form-item :label="$t('products.catalog.cpuModel')">
+            <t-input
+              v-model="cpuModelValue"
+              :placeholder="$t('products.catalog.cpuModelPlaceholder')"
+              maxlength="120"
+            />
           </t-form-item>
-          <t-form-item label="CPU 睿频">
-            <t-input v-model="cpuTurboValue" placeholder="如 3.8GHz；留空则保持不变" maxlength="40" />
+          <t-form-item :label="$t('products.catalog.cpuTurbo')">
+            <t-input
+              v-model="cpuTurboValue"
+              :placeholder="$t('products.catalog.cpuTurboPlaceholder')"
+              maxlength="40"
+            />
           </t-form-item>
-          <p class="batch-dialog-tip">CPU 型号/睿频将直接写入商品，官网展示优先级高于 CPU 型号目录绑定。</p>
+          <p class="batch-dialog-tip">{{ $t('products.catalog.cpuSpecTip') }}</p>
         </template>
       </t-form>
     </t-dialog>
 
     <t-dialog
       v-model:visible="splitProductDialogVisible"
-      header="拆分商品"
+      :header="$t('products.catalog.splitProduct')"
       width="680px"
       :confirm-btn="{
-        content: '确认拆分',
+        content: $t('products.catalog.confirmSplit'),
         loading: splitProductSubmitting,
         disabled: splitProductPreviewLoading || !splitProductPreviewRows.length,
       }"
       @confirm="submitSplitProducts"
     >
       <div class="split-dialog-intro">
-        <strong>按 CPU 与内存子选项生成独立商品</strong>
-        <p>系统会读取已选商品的 CPU、内存配置子项，基础规格更新原商品，其余规格生成独立商品。</p>
+        <strong>{{ $t('products.catalog.splitIntroTitle') }}</strong>
+        <p>{{ $t('products.catalog.splitIntroTip') }}</p>
       </div>
 
       <div class="split-product-meta">
-        <span>已选商品 {{ splitProductTargetKeys.length }} 个</span>
-        <span v-if="splitProductPreviewCount">预计处理 {{ splitProductPreviewCount }} 个规格</span>
-        <span v-if="splitProductSkippedCount">跳过 {{ splitProductSkippedCount }} 个</span>
+        <span
+          >{{ $t('products.catalog.selectedProductsPrefix') }} {{ splitProductTargetKeys.length }}
+          {{ $t('products.catalog.itemUnit') }}</span
+        >
+        <span v-if="splitProductPreviewCount">
+          {{ $t('products.catalog.expectedSpecPrefix') }} {{ splitProductPreviewCount }}
+          {{ $t('products.catalog.specUnit') }}
+        </span>
+        <span v-if="splitProductSkippedCount">
+          {{ $t('products.catalog.skippedPrefix') }} {{ splitProductSkippedCount }}
+          {{ $t('products.catalog.itemUnit') }}
+        </span>
       </div>
 
       <t-loading :loading="splitProductPreviewLoading">
@@ -958,52 +1027,67 @@
               </t-tag>
             </article>
           </template>
-          <t-empty v-else description="未找到可拆分的 CPU 或内存子选项" />
+          <t-empty v-else :description="$t('products.catalog.noSplittableSpec')" />
         </div>
       </t-loading>
 
-      <t-alert theme="warning" message="基础规格沿用原商品；同名拆分商品会更新，不会重复创建。" />
+      <t-alert theme="warning" :message="$t('products.catalog.splitAlert')" />
     </t-dialog>
 
     <t-dialog
       v-model:visible="provisionHostnameDialogVisible"
-      header="批量主机名规则"
+      :header="$t('products.catalog.batchHostnameRuleTitle')"
       width="620px"
-      :confirm-btn="{ content: '保存规则', loading: provisionHostnameSubmitting }"
+      :confirm-btn="{ content: $t('products.catalog.saveRule'), loading: provisionHostnameSubmitting }"
       @confirm="submitProvisionHostname"
     >
       <div class="split-dialog-intro">
-        <strong>设置商品开通主机名</strong>
-        <p>该配置会在自动开通时优先用于上游 host 参数，保存后会覆盖所选商品的现有规则。</p>
+        <strong>{{ $t('products.catalog.setProvisionHostnameTitle') }}</strong>
+        <p>{{ $t('products.catalog.setProvisionHostnameTip') }}</p>
       </div>
 
       <div class="split-product-meta">
-        <span>已选商品 {{ provisionHostnameTargetKeys.length }} 个</span>
-        <span v-if="provisionHostnameHasMixedRules">当前包含多种主机名规则</span>
+        <span
+          >{{ $t('products.catalog.selectedProductsPrefix') }} {{ provisionHostnameTargetKeys.length }}
+          {{ $t('products.catalog.itemUnit') }}</span
+        >
+        <span v-if="provisionHostnameHasMixedRules">{{ $t('products.catalog.mixedRulesTip') }}</span>
       </div>
 
       <t-alert
         v-if="provisionHostnameHasMixedRules"
         theme="warning"
-        message="当前选中的商品存在不同规则，保存后会统一覆盖为当前设置。"
+        :message="$t('products.catalog.mixedRulesAlert')"
       />
 
       <t-form class="hostname-rule-form" :data="provisionHostnameForm" label-width="120px">
-        <t-form-item label="开通策略" name="mode">
+        <t-form-item :label="$t('products.catalog.provisionStrategy')" name="mode">
           <t-radio-group v-model="provisionHostnameForm.mode" variant="default-filled">
-            <t-radio-button value="system">跟随上游</t-radio-button>
-            <t-radio-button value="fixed">固定主机名</t-radio-button>
-            <t-radio-button value="prefix">指定前缀</t-radio-button>
+            <t-radio-button value="system">{{ $t('products.catalog.followUpstream') }}</t-radio-button>
+            <t-radio-button value="fixed">{{ $t('products.catalog.fixedHostname') }}</t-radio-button>
+            <t-radio-button value="prefix">{{ $t('products.catalog.customPrefix') }}</t-radio-button>
           </t-radio-group>
         </t-form-item>
-        <t-form-item v-if="provisionHostnameForm.mode === 'fixed'" label="固定主机名" name="value">
-          <t-input v-model="provisionHostnameForm.value" maxlength="200" placeholder="例如 hk-vps-core" />
+        <t-form-item
+          v-if="provisionHostnameForm.mode === 'fixed'"
+          :label="$t('products.catalog.fixedHostname')"
+          name="value"
+        >
+          <t-input
+            v-model="provisionHostnameForm.value"
+            maxlength="200"
+            :placeholder="$t('products.catalog.fixedHostnamePlaceholder')"
+          />
         </t-form-item>
         <template v-if="provisionHostnameForm.mode === 'prefix'">
-          <t-form-item label="主机名前缀" name="value">
-            <t-input v-model="provisionHostnameForm.value" maxlength="20" placeholder="例如 hk / sg / us" />
+          <t-form-item :label="$t('products.catalog.hostnamePrefix')" name="value">
+            <t-input
+              v-model="provisionHostnameForm.value"
+              maxlength="20"
+              :placeholder="$t('products.catalog.hostnamePrefixPlaceholder')"
+            />
           </t-form-item>
-          <t-form-item label="主机名总长度" name="length">
+          <t-form-item :label="$t('products.catalog.hostnameTotalLength')" name="length">
             <t-input-number v-model="provisionHostnameForm.length" :min="4" :max="63" />
           </t-form-item>
         </template>
@@ -1016,16 +1100,16 @@
       v-model:visible="categoryDialogVisible"
       :header="categoryDialogHeader"
       width="560px"
-      :confirm-btn="{ content: '保存', loading: categorySubmitting }"
+      :confirm-btn="{ content: $t('products.catalog.save'), loading: categorySubmitting }"
       @confirm="submitCategory"
     >
       <t-form ref="categoryFormRef" :data="categoryForm" :rules="categoryRules" label-width="110px">
-        <t-form-item label="分类名称" name="name"><t-input v-model="categoryForm.name" /></t-form-item>
-        <t-form-item label="一级分组" name="product_type">
+        <t-form-item :label="$t('products.catalog.categoryName')" name="name"><t-input v-model="categoryForm.name" /></t-form-item>
+        <t-form-item :label="$t('products.catalog.productType')" name="product_type">
           <t-select
             v-model="categoryForm.product_type"
             filterable
-            placeholder="请选择一级分组"
+            :placeholder="$t('products.catalog.selectProductTypePlaceholder')"
             :disabled="categoryProductTypeDisabled"
             @change="handleCategoryProductTypeChange"
           >
@@ -1037,12 +1121,16 @@
             />
           </t-select>
         </t-form-item>
-        <t-form-item v-if="categoryParentFieldVisible" label="二级分组父级" name="parent_id">
+        <t-form-item
+          v-if="categoryParentFieldVisible"
+          :label="$t('products.catalog.secondCategoryParent')"
+          name="parent_id"
+        >
           <t-select
             v-model="categoryForm.parent_id"
             clearable
             filterable
-            placeholder="不选择则新增二级分组，选择后新增三级分组"
+            :placeholder="$t('products.catalog.secondCategoryParentPlaceholder')"
             :disabled="categoryParentSelectDisabled"
             :loading="categoryParentLoading"
           >
@@ -1054,11 +1142,11 @@
             />
           </t-select>
         </t-form-item>
-        <t-form-item label="一句话说明" name="slogan"><t-input v-model="categoryForm.slogan" /></t-form-item>
-        <t-form-item label="排序" name="sort_order"
+        <t-form-item :label="$t('products.catalog.slogan')" name="slogan"><t-input v-model="categoryForm.slogan" /></t-form-item>
+        <t-form-item :label="$t('products.catalog.sortOrder')" name="sort_order"
           ><t-input-number v-model="categoryForm.sort_order" :min="0"
         /></t-form-item>
-        <t-form-item label="前台可见" name="is_visible"
+        <t-form-item :label="$t('products.catalog.frontendVisible')" name="is_visible"
           ><t-switch v-model="categoryForm.is_visible" :custom-value="[1, 0]"
         /></t-form-item>
       </t-form>
@@ -1067,7 +1155,7 @@
     <t-dialog
       v-model:visible="typeManagerDialogVisible"
       class="type-manager-dialog"
-      header="管理一级分组"
+      :header="$t('products.catalog.manageProductType')"
       width="880px"
       :footer="false"
     >
@@ -1075,21 +1163,23 @@
         <section class="type-manager-editor" :class="{ 'is-editing': editingTypeValue }">
           <div class="type-manager-editor__head">
             <div>
-              <strong>{{ editingTypeValue ? '编辑一级分组' : '新增一级分组' }}</strong>
+              <strong>{{
+                editingTypeValue ? $t('products.catalog.editProductType') : $t('products.catalog.addProductType')
+              }}</strong>
               <span v-if="editingTypeValue">{{ normalizeBusinessProductType(typeForm.product_type) }}</span>
             </div>
           </div>
 
           <t-form :data="typeForm" label-align="top" class="type-form">
             <div class="type-form-grid">
-              <t-form-item label="一级分组名称" name="label" required-mark>
-                <t-input v-model="typeForm.label" maxlength="40" placeholder="如 云服务器" />
+              <t-form-item :label="$t('products.catalog.productTypeName')" name="label" required-mark>
+                <t-input v-model="typeForm.label" maxlength="40" :placeholder="$t('products.catalog.productTypeNamePlaceholder')" />
               </t-form-item>
-              <t-form-item label="产品类型" name="product_type" required-mark>
+              <t-form-item :label="$t('products.catalog.productType')" name="product_type" required-mark>
                 <t-select v-model="typeForm.product_type" :options="businessProductTypeOptions" />
               </t-form-item>
-              <t-form-item label="图标" name="icon" class="type-icon-form-item">
-                <div class="type-icon-picker" role="radiogroup" aria-label="选择一级分组图标">
+              <t-form-item :label="$t('products.catalog.icon')" name="icon" class="type-icon-form-item">
+                <div class="type-icon-picker" role="radiogroup" :aria-label="$t('products.catalog.selectProductTypeIconAria')">
                   <button
                     v-for="item in productTypeIconOptions"
                     :key="item.value"
@@ -1108,10 +1198,10 @@
               <t-form-item class="type-form-actions">
                 <t-button theme="primary" :loading="typeSubmitting" @click="submitType">
                   <template #icon><add-icon v-if="!editingTypeValue" /><edit-icon v-else /></template>
-                  {{ editingTypeValue ? '保存' : '新增' }}
+                  {{ editingTypeValue ? $t('products.catalog.save') : $t('products.catalog.add') }}
                 </t-button>
                 <t-button variant="outline" @click="resetTypeForm">{{
-                  editingTypeValue ? '取消编辑' : '重置'
+                  editingTypeValue ? $t('products.catalog.cancelEdit') : $t('products.catalog.reset')
                 }}</t-button>
               </t-form-item>
             </div>
@@ -1121,15 +1211,16 @@
         <div class="type-manager-list">
           <div class="type-manager-list-head">
             <div>
-              <strong>分类列表</strong>
+              <strong>{{ $t('products.catalog.categoryList') }}</strong>
               <span
-                >{{ productTypes.length }} 个一级分组 · {{ typeManagerProductCount }} 个商品 ·
-                {{ typeManagerHiddenCount }} 个隐藏</span
+                >{{ productTypes.length }} {{ $t('products.catalog.productTypeUnit') }} ·
+                {{ typeManagerProductCount }} {{ $t('products.catalog.productUnit') }} ·
+                {{ typeManagerHiddenCount }} {{ $t('products.catalog.hiddenUnit') }}</span
               >
             </div>
             <t-button size="small" variant="outline" :loading="typeLoading" @click="loadProductTypes">
               <template #icon><refresh-icon /></template>
-              刷新
+              {{ $t('products.catalog.refresh') }}
             </t-button>
           </div>
 
@@ -1144,8 +1235,8 @@
               <div class="type-manager-item__main">
                 <div class="type-manager-item__title">
                   <strong>{{ item.label }}</strong>
-                  <t-tag v-if="item.is_hidden" theme="warning" variant="light">隐藏</t-tag>
-                  <t-tag v-if="editingTypeValue === item.value" theme="primary" variant="light">编辑中</t-tag>
+                  <t-tag v-if="item.is_hidden" theme="warning" variant="light">{{ $t('products.catalog.hidden') }}</t-tag>
+                  <t-tag v-if="editingTypeValue === item.value" theme="primary" variant="light">{{ $t('products.catalog.editing') }}</t-tag>
                 </div>
                 <div class="type-manager-item__meta">
                   <span>{{ normalizeBusinessProductType(item.product_type) }}</span>
@@ -1157,34 +1248,34 @@
               </div>
               <dl class="type-manager-item__stats">
                 <div>
-                  <dt>商品</dt>
+                  <dt>{{ $t('products.catalog.product') }}</dt>
                   <dd>{{ item.usage_count || 0 }}</dd>
                 </div>
                 <div>
-                  <dt>分组</dt>
+                  <dt>{{ $t('products.catalog.group') }}</dt>
                   <dd>{{ item.group_count || 0 }}</dd>
                 </div>
               </dl>
               <div class="type-manager-actions">
                 <div class="type-manager-order-actions">
-                  <t-tooltip content="上移">
+                  <t-tooltip :content="$t('products.catalog.moveUp')">
                     <t-button
                       size="small"
                       shape="square"
                       variant="outline"
-                      aria-label="上移一级分组"
+                      :aria-label="$t('products.catalog.moveUpProductTypeAria')"
                       :disabled="index === 0 || typeSubmitting"
                       @click="moveType(item.value, -1)"
                     >
                       <template #icon><arrow-up-icon /></template>
                     </t-button>
                   </t-tooltip>
-                  <t-tooltip content="下移">
+                  <t-tooltip :content="$t('products.catalog.moveDown')">
                     <t-button
                       size="small"
                       shape="square"
                       variant="outline"
-                      aria-label="下移一级分组"
+                      :aria-label="$t('products.catalog.moveDownProductTypeAria')"
                       :disabled="index === productTypes.length - 1 || typeSubmitting"
                       @click="moveType(item.value, 1)"
                     >
@@ -1192,38 +1283,38 @@
                     </t-button>
                   </t-tooltip>
                 </div>
-                <t-tooltip content="编辑">
+                <t-tooltip :content="$t('products.catalog.edit')">
                   <t-button
                     size="small"
                     shape="square"
                     variant="text"
                     theme="primary"
-                    aria-label="编辑一级分组"
+                    :aria-label="$t('products.catalog.editProductTypeAria')"
                     :disabled="typeSubmitting"
                     @click="editType(item)"
                   >
                     <template #icon><edit-icon /></template>
                   </t-button>
                 </t-tooltip>
-                <t-tooltip :content="item.is_hidden ? '显示' : '隐藏'">
+                <t-tooltip :content="item.is_hidden ? $t('products.catalog.show') : $t('products.catalog.hidden')">
                   <t-button
                     size="small"
                     shape="square"
                     variant="text"
-                    aria-label="切换一级分组显示状态"
+                    :aria-label="$t('products.catalog.toggleProductTypeVisibilityAria')"
                     :disabled="typeSubmitting"
                     @click="toggleTypeHidden(item)"
                   >
                     <template #icon><browse-icon v-if="item.is_hidden" /><browse-off-icon v-else /></template>
                   </t-button>
                 </t-tooltip>
-                <t-tooltip content="删除">
+                <t-tooltip :content="$t('products.catalog.delete')">
                   <t-button
                     size="small"
                     shape="square"
                     variant="text"
                     theme="danger"
-                    aria-label="删除一级分组"
+                    :aria-label="$t('products.catalog.deleteProductTypeAria')"
                     :disabled="typeSubmitting"
                     @click="deleteType(item)"
                   >
@@ -1233,28 +1324,30 @@
               </div>
             </article>
           </div>
-          <t-empty v-if="productTypes.length === 0" description="暂无一级分组" />
+          <t-empty v-if="productTypes.length === 0" :description="$t('products.catalog.emptyProductType')" />
         </div>
         <div class="type-manager-footer">
-          <t-button variant="outline" @click="typeManagerDialogVisible = false">关闭</t-button>
+          <t-button variant="outline" @click="typeManagerDialogVisible = false">{{ $t('products.catalog.close') }}</t-button>
         </div>
       </div>
     </t-dialog>
 
     <t-dialog
       v-model:visible="specHighlightDialogVisible"
-      header="规格描述栏"
-      :confirm-btn="{ content: '保存', loading: specHighlightSubmitting }"
+      :header="$t('products.catalog.specHighlightTitle')"
+      :confirm-btn="{ content: $t('products.catalog.save'), loading: specHighlightSubmitting }"
       :cancel-btn="{}"
       width="560px"
       @confirm="submitSpecHighlight"
     >
-      <p class="spec-highlight-summary">当前生效摘要：{{ specHighlightSummary || '—' }}</p>
-      <p class="spec-highlight-tip">留空维度自动从商品名 / 商品卡片 / 配置项提取。</p>
+      <p class="spec-highlight-summary">
+        {{ $t('products.catalog.currentSummaryPrefix') }} {{ specHighlightSummary || '—' }}
+      </p>
+      <p class="spec-highlight-tip">{{ $t('products.catalog.specHighlightTip') }}</p>
       <div class="spec-highlight-form">
         <label v-for="dimension in specHighlightDimensions" :key="dimension.key" class="spec-highlight-field">
           <span>{{ dimension.label }}</span>
-          <t-input v-model="specHighlightForm[dimension.key]" placeholder="留空自动提取" clearable />
+          <t-input v-model="specHighlightForm[dimension.key]" :placeholder="$t('products.catalog.autoExtractPlaceholder')" clearable />
         </label>
       </div>
     </t-dialog>

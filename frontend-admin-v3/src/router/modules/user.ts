@@ -16,6 +16,7 @@ export const userRoutes: RouteRecordRaw[] = [
         meta: {
           title: {
             zh_CN: '个人中心',
+            zh_TW: '個人中心',
             en_US: 'User Center',
           },
         },

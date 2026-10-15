@@ -6,11 +6,11 @@
           v-model="filters.keyword"
           class="ticket-filter-bar__search"
           clearable
-          placeholder="搜索工单标题"
+          :placeholder="$t('tickets.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         />
-        <t-select v-model="filters.status" clearable placeholder="全部状态" @change="handleSearch">
+        <t-select v-model="filters.status" clearable :placeholder="$t('tickets.allStatus')" @change="handleSearch">
           <t-option v-for="item in TICKET_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
         <div class="ticket-filter-actions">

@@ -7,7 +7,7 @@
             v-if="showFilter('level')"
             v-model="filters.level"
             clearable
-            placeholder="日志级别"
+            :placeholder="$t('logs.index.filterLevel')"
             @change="handleLogSearch"
           >
             <t-option v-for="item in logLevelOptions" :key="item" :label="item" :value="item" />
@@ -16,7 +16,7 @@
             v-if="showFilter('task_key')"
             v-model="filters.task_key"
             clearable
-            placeholder="任务名称"
+            :placeholder="$t('logs.index.filterTaskName')"
             @change="handleLogSearch"
           >
             <t-option v-for="item in taskLogOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -25,7 +25,7 @@
             v-if="showFilter('method')"
             v-model="filters.method"
             clearable
-            placeholder="请求方法"
+            :placeholder="$t('logs.index.filterRequestMethod')"
             @change="handleLogSearch"
           >
             <t-option v-for="item in methodOptions" :key="item" :label="item" :value="item" />
@@ -34,7 +34,7 @@
             v-if="showFilter('actor_keyword')"
             v-model="filters.actor_keyword"
             clearable
-            placeholder="操作人"
+            :placeholder="$t('logs.index.filterActor')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -42,7 +42,7 @@
             v-if="showFilter('description_keyword')"
             v-model="filters.description_keyword"
             clearable
-            placeholder="描述关键词"
+            :placeholder="$t('logs.index.filterDescriptionKeyword')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -50,7 +50,7 @@
             v-if="showFilter('ip_address')"
             v-model="filters.ip_address"
             clearable
-            placeholder="IP 地址"
+            :placeholder="$t('logs.index.filterIpAddress')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -58,7 +58,7 @@
             v-if="showFilter('module')"
             v-model="filters.module"
             clearable
-            placeholder="模块，例如 auth / order"
+            :placeholder="$t('logs.index.filterModule')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -66,7 +66,7 @@
             v-if="showFilter('ticket_id')"
             v-model="filters.ticket_id"
             clearable
-            placeholder="工单 ID"
+            :placeholder="$t('logs.index.filterTicketId')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -74,7 +74,7 @@
             v-if="showFilter('ticket_reply_id')"
             v-model="filters.ticket_reply_id"
             clearable
-            placeholder="回复 ID"
+            :placeholder="$t('logs.index.filterTicketReplyId')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -82,7 +82,7 @@
             v-if="showFilter('operation')"
             v-model="filters.operation"
             clearable
-            placeholder="操作，例如 ticket.create"
+            :placeholder="$t('logs.index.filterOperation')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -90,7 +90,7 @@
             v-if="showFilter('event')"
             v-model="filters.event"
             clearable
-            placeholder="事件，例如 failed"
+            :placeholder="$t('logs.index.filterEvent')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -98,7 +98,7 @@
             v-if="showFilter('reason_code')"
             v-model="filters.reason_code"
             clearable
-            placeholder="原因码"
+            :placeholder="$t('logs.index.filterReasonCode')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -114,7 +114,7 @@
             v-if="showFilter('supplier_id')"
             v-model="filters.supplier_id"
             clearable
-            placeholder="供应商 ID"
+            :placeholder="$t('logs.index.filterSupplierId')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -122,12 +122,12 @@
             v-if="showFilter('user_type')"
             v-model="filters.user_type"
             clearable
-            placeholder="调用端"
+            :placeholder="$t('logs.index.filterCaller')"
             @change="handleLogSearch"
           >
-            <t-option label="管理员" value="admin" />
-            <t-option label="客户" value="client" />
-            <t-option label="访客" value="guest" />
+            <t-option :label="$t('logs.index.actorAdmin')" value="admin" />
+            <t-option :label="$t('logs.index.actorCustomer')" value="client" />
+            <t-option :label="$t('logs.index.actorGuest')" value="guest" />
           </t-select>
           <t-select
             v-if="showFilter('status')"
@@ -142,7 +142,7 @@
             v-if="showFilter('phone')"
             v-model="filters.phone"
             clearable
-            placeholder="输入接收手机号"
+            :placeholder="$t('logs.index.filterPhone')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -150,7 +150,7 @@
             v-if="showFilter('email')"
             v-model="filters.email"
             clearable
-            placeholder="输入收件邮箱"
+            :placeholder="$t('logs.index.filterEmail')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -158,7 +158,7 @@
             v-if="showFilter('gateway')"
             v-model="filters.gateway"
             clearable
-            placeholder="支付网关"
+            :placeholder="$t('logs.index.filterGateway')"
             @change="handleLogSearch"
           >
             <t-option v-for="item in gatewayOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -167,7 +167,7 @@
             v-if="showFilter('plugin_id')"
             v-model="filters.plugin_id"
             clearable
-            placeholder="插件 ID"
+            :placeholder="$t('logs.index.filterPluginId')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -175,7 +175,7 @@
             v-if="showFilter('gateway_key')"
             v-model="filters.gateway_key"
             clearable
-            placeholder="业务网关 key"
+            :placeholder="$t('logs.index.filterGatewayKey')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -183,7 +183,7 @@
             v-if="showFilter('driver_key')"
             v-model="filters.driver_key"
             clearable
-            placeholder="驱动 key"
+            :placeholder="$t('logs.index.filterDriverKey')"
             @enter="handleLogSearch"
             @clear="handleLogSearch"
           />
@@ -199,7 +199,7 @@
             v-if="showFilter('action')"
             v-model="filters.action"
             clearable
-            placeholder="网关操作"
+            :placeholder="$t('logs.index.filterGatewayAction')"
             @change="handleLogSearch"
           >
             <t-option v-for="item in gatewayActionOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -208,7 +208,7 @@
             v-if="showFilter('result_status')"
             v-model="filters.result_status"
             clearable
-            placeholder="结果状态"
+            :placeholder="$t('logs.index.filterResultStatus')"
             @change="handleLogSearch"
           >
             <t-option
@@ -222,18 +222,18 @@
             v-if="showFilter('actor_type')"
             v-model="filters.actor_type"
             clearable
-            placeholder="操作人类型"
+            :placeholder="$t('logs.index.filterActorType')"
             @change="handleLogSearch"
           >
-            <t-option label="管理员" value="admin" />
-            <t-option label="客户" value="client" />
-            <t-option label="系统" value="system" />
+            <t-option :label="$t('logs.index.actorAdmin')" value="admin" />
+            <t-option :label="$t('logs.index.actorCustomer')" value="client" />
+            <t-option :label="$t('logs.index.actorSystem')" value="system" />
           </t-select>
           <t-select
             v-if="showFilter('subject_type')"
             v-model="filters.subject_type"
             clearable
-            placeholder="关联类型"
+            :placeholder="$t('logs.index.filterSubjectType')"
             @change="handleLogSearch"
           >
             <t-option
@@ -260,7 +260,7 @@
             mode="date"
             format="YYYY-MM-DD"
             value-type="YYYY-MM-DD"
-            placeholder="开始日期"
+            :placeholder="$t('logs.index.filterStartDate')"
             @change="handleLogSearch"
           />
           <t-date-picker
@@ -270,7 +270,7 @@
             mode="date"
             format="YYYY-MM-DD"
             value-type="YYYY-MM-DD"
-            placeholder="结束日期"
+            :placeholder="$t('logs.index.filterEndDate')"
             @change="handleLogSearch"
           />
         </div>
@@ -303,7 +303,7 @@
                   <t-tag variant="light">{{ fieldValue(row.method) }}</t-tag>
                   <strong>{{ fieldValue(row.path) }}</strong>
                 </div>
-                <span>{{ fieldValue(row.request_id || '无请求号') }}</span>
+                <span>{{ fieldValue(row.request_id || $t('logs.index.noRequestId')) }}</span>
               </div>
             </template>
             <template #level="{ row }">
@@ -314,8 +314,8 @@
             </template>
             <template #ticket_id="{ row }">
               <div class="stack-cell">
-                <strong>工单 #{{ fieldValue(row.ticket_id) }}</strong>
-                <span>{{ row.log_count || 1 }} 条推送记录</span>
+                <strong>{{ $t('logs.index.ticketLabel') }} #{{ fieldValue(row.ticket_id) }}</strong>
+                <span>{{ $t('logs.index.pushRecordCount', { count: row.log_count || 1 }) }}</span>
               </div>
             </template>
             <template #httpStatus="{ row }">
@@ -358,11 +358,11 @@
               }}</t-tag>
             </template>
             <template #actions="{ row }">
-              <t-button theme="primary" variant="text" @click="openDetail(row)">详情</t-button>
+              <t-button theme="primary" variant="text" @click="openDetail(row)">{{ $t('logs.index.detail') }}</t-button>
             </template>
             <template #expandedRow="{ row }">
               <div v-if="isUpstreamLogTab" class="upstream-log-group">
-                <div class="upstream-log-group__title">共 {{ row.log_count || 0 }} 条推送记录</div>
+                <div class="upstream-log-group__title">{{ $t('logs.index.totalPushRecords', { count: row.log_count || 0 }) }}</div>
                 <div v-for="log in upstreamGroupLogs(row)" :key="String(log.id)" class="upstream-log-group__item">
                   <div class="upstream-log-group__meta">
                     <t-tag :theme="statusTheme(log.status)" variant="light" size="small">{{
@@ -373,7 +373,7 @@
                     <time>{{ formatDate(log.occurred_at) }}</time>
                   </div>
                   <div class="upstream-log-group__message">{{ fieldValue(log.message || log.reason_code) }}</div>
-                  <t-button theme="primary" variant="text" size="small" @click="openDetail(log)">详情</t-button>
+                  <t-button theme="primary" variant="text" size="small" @click="openDetail(log)">{{ $t('logs.index.detail') }}</t-button>
                 </div>
               </div>
             </template>
@@ -415,10 +415,10 @@
                 <div class="log-mobile-card__meta">
                   <t-tag v-if="row.method" variant="outline" size="small">{{ fieldValue(row.method) }}</t-tag>
                   <span v-if="row.path" class="muted-text">{{ fieldValue(row.path) }}</span>
-                  <span v-if="row.gateway" class="muted-text">网关: {{ gatewayLabel(row.gateway) }}</span>
-                  <span v-if="row.gateway_key" class="muted-text">业务 key: {{ fieldValue(row.gateway_key) }}</span>
-                  <span v-if="row.driver_key" class="muted-text">驱动 key: {{ fieldValue(row.driver_key) }}</span>
-                  <span v-if="row.plugin_key" class="muted-text">插件: {{ fieldValue(row.plugin_key) }}</span>
+                  <span v-if="row.gateway" class="muted-text">{{ $t('logs.index.gatewayLabel') }}: {{ gatewayLabel(row.gateway) }}</span>
+                  <span v-if="row.gateway_key" class="muted-text">{{ $t('logs.index.gatewayKeyLabel') }}: {{ fieldValue(row.gateway_key) }}</span>
+                  <span v-if="row.driver_key" class="muted-text">{{ $t('logs.index.driverKeyLabel') }}: {{ fieldValue(row.driver_key) }}</span>
+                  <span v-if="row.plugin_key" class="muted-text">{{ $t('logs.index.pluginLabel') }}: {{ fieldValue(row.plugin_key) }}</span>
                   <span v-if="row.trace_id" class="muted-text">Trace: {{ fieldValue(row.trace_id) }}</span>
                   <span v-if="row.status" class="muted-text">HTTP {{ fieldValue(row.status) }}</span>
                 </div>
@@ -430,9 +430,9 @@
                     size="small"
                     @click="toggleLogGroup(row)"
                   >
-                    {{ isLogGroupExpanded(row) ? '收起日志' : `查看 ${row.log_count || 0} 条日志` }}
+                    {{ isLogGroupExpanded(row) ? $t('logs.index.collapseLogs') : $t('logs.index.viewLogs', { count: row.log_count || 0 }) }}
                   </t-button>
-                  <t-button theme="primary" variant="text" size="small" @click="openDetail(row)">详情</t-button>
+                  <t-button theme="primary" variant="text" size="small" @click="openDetail(row)">{{ $t('logs.index.detail') }}</t-button>
                 </div>
                 <div
                   v-if="isUpstreamLogTab && isLogGroupExpanded(row)"
@@ -448,12 +448,12 @@
                       <time>{{ formatDate(log.occurred_at) }}</time>
                     </div>
                     <div class="upstream-log-group__message">{{ fieldValue(log.message || log.reason_code) }}</div>
-                    <t-button theme="primary" variant="text" size="small" @click="openDetail(log)">详情</t-button>
+                    <t-button theme="primary" variant="text" size="small" @click="openDetail(log)">{{ $t('logs.index.detail') }}</t-button>
                   </div>
                 </div>
               </article>
             </div>
-            <t-empty v-else description="暂无日志" />
+            <t-empty v-else :description="$t('logs.index.emptyLogs')" />
           </t-loading>
         </div>
 
@@ -472,7 +472,7 @@
 
     <template v-else-if="activeTab === 'schedules'">
       <t-card v-if="!canViewSchedules" :bordered="false">
-        <t-alert theme="warning" message="当前账号缺少 schedule.view 权限，无法查看定时任务。" />
+        <t-alert theme="warning" :message="$t('logs.index.scheduleNoPermission')" />
       </t-card>
       <template v-else>
         <t-card v-if="scheduleEnvAlerts.length > 0" :bordered="false" class="schedule-env-card">
@@ -493,21 +493,21 @@
         </t-card>
 
         <t-card :bordered="false" :loading="scheduleLoading">
-          <template #title>已注册任务</template>
-          <template #subtitle>共 {{ scheduleTasks.length }} 个任务</template>
+          <template #title>{{ $t('logs.index.registeredTasks') }}</template>
+          <template #subtitle>{{ $t('logs.index.taskCount', { count: scheduleTasks.length }) }}</template>
           <t-alert
             theme="info"
-            message="自动化任务通常需要 1 分钟左右执行完成，提交后请稍候查看状态。"
+            :message="$t('logs.index.scheduleExecutionTip')"
             class="schedule-execution-tip"
           />
           <div class="schedule-task-toolbar">
-            <div class="schedule-task-stats" aria-label="任务来源统计">
+            <div class="schedule-task-stats" :aria-label="$t('logs.index.taskSourceStats')">
               <div class="schedule-task-stat">
-                <span>系统任务</span>
+                <span>{{ $t('logs.index.systemTasks') }}</span>
                 <strong>{{ scheduleSystemTasks.length }}</strong>
               </div>
               <div class="schedule-task-stat schedule-task-stat--third-party">
-                <span>第三方任务</span>
+                <span>{{ $t('logs.index.thirdPartyTasks') }}</span>
                 <strong>{{ scheduleThirdPartyTasks.length }}</strong>
               </div>
             </div>
@@ -524,7 +524,7 @@
                   <h3>{{ group.title }}</h3>
                   <p>{{ group.description }}</p>
                 </div>
-                <t-tag :theme="group.theme" variant="light">{{ group.tasks.length }} 个任务</t-tag>
+                <t-tag :theme="group.theme" variant="light">{{ $t('logs.index.groupTaskCount', { count: group.tasks.length }) }}</t-tag>
               </div>
               <div v-if="group.tasks.length" class="table-scroll">
                 <t-table row-key="key" :data="group.tasks" :columns="scheduleColumns" hover table-layout="fixed">
@@ -548,7 +548,7 @@
                   <template #last="{ row }">{{ fieldValue(row.last_run_at || toRecord(row.last_log).time) }}</template>
                   <template #level="{ row }">
                     <t-tag :theme="levelTheme(toRecord(row.last_log).level)" variant="light">
-                      {{ fieldValue(toRecord(row.last_log).level || '待执行') }}
+                      {{ fieldValue(toRecord(row.last_log).level || $t('logs.index.pendingRun')) }}
                     </t-tag>
                   </template>
                   <template #next="{ row }">{{ fieldValue(row.next_run_at) }}</template>
@@ -562,13 +562,13 @@
                       :disabled="!canTriggerSchedules"
                       @click="triggerTask(row)"
                     >
-                      立即执行
+                      {{ $t('logs.index.runNow') }}
                     </t-button>
-                    <span v-else class="muted-text">自动</span>
+                    <span v-else class="muted-text">{{ $t('logs.index.automatic') }}</span>
                   </template>
                 </t-table>
               </div>
-              <t-empty v-else :description="`暂无${group.title}`" />
+              <t-empty v-else :description="$t('logs.index.emptyGroup', { name: group.title })" />
             </section>
           </div>
         </t-card>
@@ -577,17 +577,17 @@
 
     <template v-else>
       <t-card :bordered="false" :loading="cleanupLoading">
-        <t-alert theme="warning" message="日志清理为不可逆操作，请确认保留天数、清理类型和确认文本。" />
+        <t-alert theme="warning" :message="$t('logs.index.cleanupIrreversible')" />
         <t-alert
           v-if="!canManageLogCleanup"
           theme="warning"
-          message="当前账号缺少 log.manage 权限，只能查看清理概览，不能执行清理。"
+          :message="$t('logs.index.cleanupNoPermission')"
         />
 
         <section class="cleanup-section">
           <div class="section-title">
-            <h2>数据库日志概览</h2>
-            <p>当前可清理的数据库日志记录总览。</p>
+            <h2>{{ $t('logs.index.databaseLogOverview') }}</h2>
+            <p>{{ $t('logs.index.databaseLogOverviewDesc') }}</p>
           </div>
           <div class="cleanup-card-grid">
             <article v-for="item in databaseCards" :key="item.key">
@@ -599,8 +599,8 @@
 
         <section class="cleanup-section">
           <div class="section-title">
-            <h2>文件日志概览</h2>
-            <p>当前 laravel.log 的基础信息与日志条目数量。</p>
+            <h2>{{ $t('logs.index.fileLogOverview') }}</h2>
+            <p>{{ $t('logs.index.fileLogOverviewDesc') }}</p>
           </div>
           <div class="cleanup-card-grid">
             <article v-for="item in fileCards" :key="item.key">
@@ -610,11 +610,11 @@
           </div>
           <div class="file-meta-grid">
             <article>
-              <span>文件路径</span>
+              <span>{{ $t('logs.index.filePath') }}</span>
               <strong>{{ fieldValue(toRecord(cleanupOverview.file).path) }}</strong>
             </article>
             <article>
-              <span>最后更新时间</span>
+              <span>{{ $t('logs.index.lastUpdated') }}</span>
               <strong>{{ formatDate(toRecord(cleanupOverview.file).updated_at) }}</strong>
             </article>
           </div>
@@ -622,12 +622,12 @@
 
         <section class="cleanup-section">
           <div class="section-title">
-            <h2>执行清理</h2>
-            <p>请输入确认文本后执行清理。</p>
+            <h2>{{ $t('logs.index.runCleanup') }}</h2>
+            <p>{{ $t('logs.index.runCleanupDesc') }}</p>
           </div>
           <t-form :data="cleanupForm" label-align="top" class="cleanup-form">
-            <t-form-item label="清理类型" name="type">
-              <t-select v-model="cleanupForm.type" placeholder="请选择清理类型">
+            <t-form-item :label="$t('logs.index.cleanupType')" name="type">
+              <t-select v-model="cleanupForm.type" :placeholder="$t('logs.index.selectCleanupType')">
                 <t-option
                   v-for="item in cleanupTypes"
                   :key="String(item.value)"
@@ -636,11 +636,11 @@
                 />
               </t-select>
             </t-form-item>
-            <t-form-item label="保留天数" name="keep_days">
+            <t-form-item :label="$t('logs.index.keepDays')" name="keep_days">
               <t-input-number v-model="cleanupForm.keep_days" :min="1" :max="3650" theme="normal" />
             </t-form-item>
-            <t-form-item label="确认文本" name="confirm_text">
-              <t-input v-model="cleanupForm.confirm_text" clearable placeholder="请输入 立即清理" />
+            <t-form-item :label="$t('logs.index.confirmText')" name="confirm_text">
+              <t-input v-model="cleanupForm.confirm_text" clearable :placeholder="$t('logs.index.confirmCleanupPlaceholder')" />
             </t-form-item>
             <div class="cleanup-actions">
               <t-button
@@ -648,33 +648,33 @@
                 :loading="cleanupSubmitting"
                 :disabled="cleanupSubmitDisabled"
                 @click="handleCleanup"
-                >立即清理</t-button
+                >{{ $t('logs.index.cleanupNow') }}</t-button
               >
-              <t-button variant="outline" @click="cleanupForm.confirm_text = ''">清空确认</t-button>
+              <t-button variant="outline" @click="cleanupForm.confirm_text = ''">{{ $t('logs.index.clearConfirm') }}</t-button>
             </div>
           </t-form>
         </section>
 
         <section v-if="lastCleanupResult" class="cleanup-section">
           <div class="section-title">
-            <h2>最近一次清理结果</h2>
-            <p>显示本次清理范围、截止时间和影响条数。</p>
+            <h2>{{ $t('logs.index.lastCleanupResult') }}</h2>
+            <p>{{ $t('logs.index.lastCleanupResultDesc') }}</p>
           </div>
           <div class="file-meta-grid">
             <article>
-              <span>清理类型</span>
+              <span>{{ $t('logs.index.cleanupType') }}</span>
               <strong>{{ fieldValue(lastCleanupResult.type) }}</strong>
             </article>
             <article>
-              <span>保留天数</span>
-              <strong>{{ fieldValue(lastCleanupResult.keep_days) }} 天</strong>
+              <span>{{ $t('logs.index.keepDays') }}</span>
+              <strong>{{ fieldValue(lastCleanupResult.keep_days) }} {{ $t('logs.index.unitDay') }}</strong>
             </article>
             <article>
-              <span>截止时间</span>
+              <span>{{ $t('logs.index.cutoffTime') }}</span>
               <strong>{{ formatDate(lastCleanupResult.cutoff_at) }}</strong>
             </article>
             <article>
-              <span>影响条数</span>
+              <span>{{ $t('logs.index.affectedCount') }}</span>
               <strong>{{ affectedCountText }}</strong>
             </article>
           </div>

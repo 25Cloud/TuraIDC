@@ -4,7 +4,8 @@
     "appName": "TDesign Starter",
     "copyright": "Copyright @ 2021-2025 Tencent. All Rights Reserved",
     "conjunction": "and",
-    "admin": "admin"
+    "admin": "admin",
+    "cancel": "Cancel"
   },
   "components": {
     "isSetup": {
@@ -89,7 +90,7 @@
         "followSiteHint": "Using a personal color. Click to restore the brand color configured in the admin panel.",
         "options": {
           "light": "Light",
-          "dark": "Dark ",
+          "dark": "Dark",
           "auto": "Follow System"
         }
       },
@@ -107,8 +108,10 @@
       },
       "tips": "Please copy and manually modify the configuration file: /src/config/style.ts",
       "reset": "Reset to Default",
-      "resetSuccess": "Settings have been reset to default"
-    }
+      "resetSuccess": "Settings have been reset to default",
+      "language": "Language"
+    },
+    "skipToContent": "Skip to main content"
   },
   "constants": {
     "contract": {
@@ -177,7 +180,7 @@
           "channels": "Sales Channels",
           "channel1": "online",
           "channel2": "shop",
-          "channelTips": " sales ratio"
+          "channelTips": "sales ratio"
         }
       },
       "saleColumns": {
@@ -251,7 +254,7 @@
       "ssl": "SSL certificate",
       "sslDescription": "SSL certificate, also known as a server certificate, is a digital certificate that authenticates the identity of a website and encrypts information sent to the server using SSL technology. Tencent Cloud provides you with a one-stop service for SSL certificates, including application, management, and deployment of both free and paid certificates.",
       "satisfaction": {
-        "title": "distribution of satisfaction levels for purchased goods",
+        "title": "Distribution of satisfaction levels for purchased goods",
         "export": "export data"
       },
       "chart": {
@@ -283,15 +286,15 @@
         "title": "Changelog",
         "step1": {
           "title": "upload file",
-          "subtitle": "subtitle"
+          "subtitle": "This is a hint text"
         },
         "step2": {
           "title": "modify contract amount",
-          "subtitle": "subtitle"
+          "subtitle": "This is a hint text"
         },
         "step3": {
           "title": "create contract",
-          "desc": "administrator"
+          "desc": "Performed by Li Chuan (Admin)"
         }
       }
     },
@@ -310,7 +313,7 @@
           "content": "expected to be processed within 1-3 business days."
         },
         "step3": {
-          "title": "Invoice is send",
+          "title": "Invoice Mailed",
           "content": "we will contact you within 7 business days."
         },
         "step4": {
@@ -319,7 +322,7 @@
       },
       "product": {
         "title": "Buy Products",
-        "add": "add production",
+        "add": "Add Product",
         "month": "month",
         "quarter": "quarter"
       },
@@ -533,7 +536,9 @@
         "bankPlaceholder": "please enter bank",
         "bankAccountPlaceholder": "please enter bank account",
         "emailPlaceholder": "please enter email",
-        "telPlaceholder": "please enter tel"
+        "telPlaceholder": "please enter tel",
+        "subtitlePlaceholder": "Contact support if you have any questions",
+        "titlePlaceholder": "Enter your email address"
       },
       "step3": {
         "title": "Invoice Mailed",
@@ -629,7 +634,7 @@
       }
     },
     "login": {
-      "loginTitle": "Login in",
+      "loginTitle": "Log in",
       "noAccount": "No Account?",
       "createAccount": "Create Account",
       "remember": "Remember Account",
@@ -666,7 +671,7 @@
       "accountLogin": "Login with Account",
       "phoneLogin": "Login with Mobile Phone",
       "loginSuccess": "Login successful",
-      "countdown": "Resend after {count} seconds",
+      "countdown": "Resend in {count} seconds",
       "input": {
         "account": "please enter account",
         "password": "please enter password",
@@ -677,13 +682,13 @@
         "account": "account is required",
         "phone": "phone is required",
         "password": "password is required",
-        "verification": "verification code is require"
+        "verification": "verification code is required"
       },
       "sendVerification": "send"
     },
     "result": {
       "403": {
-        "tips": "sorry, you don not have permission to access this page. Please contact the creator through WeCom",
+        "tips": "Sorry, you do not have permission to access this page. Please contact the creator through WeCom",
         "back": "Back to homepage"
       },
       "404": {
@@ -691,11 +696,11 @@
         "back": "Back to homepage"
       },
       "500": {
-        "subtitle": "Sorry, the server is error",
+        "subtitle": "Sorry, the server encountered an error",
         "back": "Back to homepage"
       },
       "fail": {
-        "title": "Create fail",
+        "title": "Creation Failed",
         "subtitle": "Sorry, your project creation has failed",
         "back": "Back to homepage",
         "modify": "Back to modify"
@@ -712,8 +717,8 @@
         "back": "Back to homepage"
       },
       "browserIncompatible": {
-        "title": "browser is incompatible",
-        "subtitle": "the browser version you are using is too outdated to open the current webpage.",
+        "title": "Browser Incompatible",
+        "subtitle": "The browser version you are using is too outdated to open the current page.",
         "back": "Back to homepage",
         "recommend": "TDesign Starter recommend the following browser"
       },
@@ -752,5 +757,612 @@
       "teamMember": "Team Member",
       "serviceProduction": "Service Product"
     }
+  },
+  "apiKeys": {
+    "upstream": {
+      "apiPassword": "API Password",
+      "apiUsername": "API Username",
+      "copy": "Copy",
+      "credentialHintPrefix": "Add an API account under \"Upstream\" in the Magic Cube admin: set the upstream address to ",
+      "credentialHintSuffix": ", and enter the username and password shown above.",
+      "credentialWarning": "The password is shown only once and cannot be viewed again after closing. Save it now.",
+      "disable": "Disable Upstream API",
+      "enable": "Enable Upstream API",
+      "endpointLabel": "Upstream Endpoint",
+      "expiredWarning": "This credential has expired and can no longer obtain a JWT. Please update the expiry date.",
+      "expiresAtHint": "Leave empty to never expire; after expiry this credential can no longer obtain a JWT.",
+      "expiresAtLabel": "Expiry (optional)",
+      "ipAllowlistHint": "Leave empty to allow any source IP; once set, only allowlisted IPs can obtain a JWT.",
+      "ipAllowlistLabel": "IP Allowlist (optional, comma-separated)",
+      "ipAllowlistPlaceholder": "e.g. 203.0.113.9, 198.51.100.0/24",
+      "lastUsedAt": "Last Used: ",
+      "loginEndpointPrefix": "The login endpoint is ",
+      "loginEndpointSuffix": ". In Magic Cube, paste the endpoint above into \"Upstream Address\"; no login path needs to be appended.",
+      "noUsageLogs": "No call records yet",
+      "notGenerated": "Not Generated",
+      "password": "Password",
+      "passwordSet": "Set (hidden for security; can be reset)",
+      "passwordUnset": "Not Set",
+      "resetPassword": "Reset Password",
+      "savePolicy": "Save Security Policy",
+      "saved": "I Have Saved It",
+      "usageLogs": "Call Logs",
+      "usageLogsTitle": "Call Logs · Magic Cube Integration",
+      "username": "Username"
+    },
+    "title": "API Credentials",
+    "create": "Create Key",
+    "openApiLabel": "Open API Key"
+  },
+  "client": {
+    "catalog": {
+      "description": "Use the public product catalog",
+      "hint": "Ordering, quoting and configuration now live in the public product catalog; this console page is kept as a stable entry point.",
+      "openCatalog": "Open Product Catalog"
+    },
+    "coupons": {
+      "allProducts": "Applies to All Products",
+      "allStatusPlaceholder": "All Statuses",
+      "applicableProducts": "Applicable Products",
+      "applicableProductsTitle": "Applicable Products",
+      "categoryAriaLabel": "Coupon Categories",
+      "claim": "Claim",
+      "couponNameFallback": "Coupon",
+      "detail": "Details",
+      "detailTitle": "Coupon Details",
+      "emptyOwned": "You have no coupons yet",
+      "emptyPlaza": "No claimable coupons available right now",
+      "firstOrderOnly": "First Order Only",
+      "instanceCode": "Instance No.",
+      "instanceCodeTitle": "Coupon Instance No.",
+      "notClaimable": "Not Claimable",
+      "ownedDescriptionFallback": "Meets the conditions and can be applied directly at checkout",
+      "ownedTab": "My Coupons",
+      "plazaDescriptionFallback": "Claim it to use it at checkout",
+      "plazaTab": "Coupon Plaza",
+      "remainingStock": "{remaining}/{total} left",
+      "searchClaimablePlaceholder": "Search claimable coupons",
+      "searchNamePlaceholder": "Search coupon names",
+      "title": "Coupon Center",
+      "unlimitedTimes": "Unlimited Uses",
+      "usableTimes": "{used}/{total} uses left"
+    },
+    "invoiceDetail": {
+      "backToInvoices": "Back to Invoice List",
+      "backToList": "Back to List",
+      "basicTab": "Basic Info",
+      "billingCycle": "Billing Cycle",
+      "coupon": "Coupon",
+      "couponCode": "Coupon Code",
+      "couponDiscount": "Coupon Discount",
+      "couponUsage": "Coupon Applied",
+      "createdAt": "Created At",
+      "discountAmount": "Discount Amount",
+      "dueDate": "Due Date",
+      "financeCenter": "Billing Center",
+      "goPay": "Pay Now",
+      "invoiceAmount": "Invoice Amount",
+      "invoiceDetail": "Invoice Details",
+      "invoiceNo": "Invoice No.",
+      "invoiceRecords": "Invoice Records",
+      "invoiceStatus": "Invoice Status",
+      "invoiceType": "Invoice Type",
+      "itemsTab": "Invoice Items",
+      "loading": "Loading invoice details",
+      "noItems": "No invoice items",
+      "noPayments": "No payment records",
+      "noRelatedOrder": "No related orders",
+      "orderNo": "Order No.",
+      "orderStatus": "Order Status",
+      "orderType": "Order Type",
+      "paidAmount": "Paid Amount",
+      "paidAt": "Paid At",
+      "payableAmount": "Payable Amount",
+      "paymentsTab": "Related Payments",
+      "refresh": "Refresh",
+      "relatedOrderTab": "Related Orders",
+      "relatedOrderTitle": "Related Orders"
+    },
+    "invoices": {
+      "allStatusPlaceholder": "All Statuses",
+      "allTypePlaceholder": "All Types",
+      "amountLabel": "Amount: ",
+      "empty": "No invoice records",
+      "goPay": "Pay Now",
+      "orderLabel": "Order",
+      "orderPrefix": "Order: ",
+      "paidLabel": "Paid: ",
+      "rechargeLabel": "Recharge",
+      "rechargePrefix": "Recharge: ",
+      "searchPlaceholder": "Search by invoice no., order no. or recharge no.",
+      "view": "View"
+    },
+    "orderDetail": {
+      "backToList": "Back to List",
+      "backToOrders": "Back to Order List",
+      "basicTab": "Basic Info",
+      "billingCycle": "Billing Cycle",
+      "cancelOrder": "Cancel Order",
+      "configPricing": "Configuration Pricing",
+      "configSnapshot": "Configuration Snapshot",
+      "configTab": "Product Configuration",
+      "coupon": "Coupon",
+      "couponCode": "Coupon Code",
+      "couponName": "Coupon Name",
+      "couponUsage": "Coupon Applied",
+      "createdAt": "Created At",
+      "discountAmount": "Discount Amount",
+      "financeCenter": "Billing Center",
+      "goPay": "Pay Now",
+      "hostname": "Hostname",
+      "instanceId": "Instance ID",
+      "invoiceNo": "Invoice No.",
+      "invoiceStatus": "Invoice Status",
+      "loading": "Loading order details",
+      "noConfigSnapshot": "No configuration snapshot",
+      "noRelatedInvoice": "No related invoices",
+      "noRelatedService": "No related services",
+      "orderAmount": "Order Amount",
+      "orderDetail": "Order Details",
+      "orderNo": "Order No.",
+      "orderRecords": "Order Records",
+      "orderStatus": "Order Status",
+      "orderType": "Order Type",
+      "paidAmount": "Paid Amount",
+      "paidAt": "Paid At",
+      "productName": "Product",
+      "quantity": "Quantity",
+      "refresh": "Refresh",
+      "relatedInvoice": "Related Invoice",
+      "relatedService": "Related Service",
+      "relatedTab": "Related Info",
+      "remark": "Remark"
+    },
+    "payments": {
+      "allGatewayPlaceholder": "All Gateways",
+      "allStatusPlaceholder": "All Statuses",
+      "empty": "No third-party payment records",
+      "merchantLabel": "Merchant: ",
+      "searchPlaceholder": "Search by merchant order no. or third-party order no.",
+      "thirdPartyLabel": "Third Party: ",
+      "view": "View",
+      "waitingCallback": "Waiting for the gateway callback"
+    },
+    "referral": {
+      "accountLogsTab": "Account Activity",
+      "alipay": "Alipay",
+      "alipayBindTip": "Before withdrawing you must bind Alipay and verify that phone number by SMS; no Alipay screenshot is needed.",
+      "alipayBound": "Bound",
+      "alipayPhone": "Alipay Phone",
+      "alipayPhonePlaceholder": "Enter the phone number bound to Alipay",
+      "alipayTitle": "Withdraw to Alipay",
+      "alipayUnbound": "Bind Alipay before withdrawing",
+      "bindDialogTip": "Enter your real name, the Alipay-bound phone number, the SMS code and your login password for payout.",
+      "bindDialogTitle": "Bind Withdrawal Alipay",
+      "bindNow": "Bind Now",
+      "cancel": "Cancel",
+      "commissionRate": "Commission Rate",
+      "copyLink": "Copy Link",
+      "description": "When a friend registers and spends through this link you earn {rate} commission, released automatically after {days} days. Minimum withdrawal is ¥{min}.",
+      "inviteesTab": "Invited Users",
+      "linkTitle": "My Referral Link",
+      "loading": "Loading referral rewards",
+      "loginPassword": "Login Password",
+      "loginPasswordPlaceholder": "Enter your login password to confirm",
+      "payeeAccount": "Payee Account",
+      "realName": "Real Name",
+      "realNamePlaceholder": "Enter the Alipay real name",
+      "rewardsTab": "Reward Details",
+      "saveBind": "Save Binding",
+      "smsCode": "SMS Code",
+      "smsCodePlaceholder": "Enter the SMS code",
+      "submitWithdraw": "Submit Withdrawal",
+      "title": "Referral Rewards",
+      "toBalance": "To Balance",
+      "withdrawAmount": "Withdrawal Amount",
+      "withdrawAmountPlaceholder": "Enter the withdrawal amount",
+      "withdrawalsTab": "Withdrawal History"
+    },
+    "services": {
+      "addRemark": "Add a remark",
+      "all": "All",
+      "allCategories": "All Categories",
+      "autoRenew": "Auto Renew",
+      "autoRenewBadge": "A",
+      "autoRenewOff": "Auto Renew Off",
+      "autoRenewPlaceholder": "Renewal Mode",
+      "bandwidth": "Bandwidth",
+      "billingCycleLabel": "Billing Cycle: ",
+      "cardView": "Cards",
+      "catalogTypePlaceholder": "Service Category",
+      "cdnInstance": "CDN Instance",
+      "cloudService": "Cloud Service",
+      "console": "Console",
+      "copyTitle": "Click to copy",
+      "database": "Database",
+      "disabled": "Disabled",
+      "editRemark": "Edit remark",
+      "empty": "You have no service instances yet",
+      "enabled": "Enabled",
+      "expiresAtLabel": "Expires: ",
+      "expiresAtPrefix": "Expires",
+      "goShopping": "Browse Products",
+      "hostAccount": "Host Account",
+      "listView": "List",
+      "longTermValid": "No Expiry",
+      "memory": "Memory",
+      "monthlyTraffic": "Monthly Traffic",
+      "more": "More",
+      "moreActionsAria": "more actions",
+      "noPublicIp": "No public IP",
+      "noRemark": "No remark",
+      "noRenewCycle": "No renewable billing cycle available",
+      "nodeCount": "{count} nodes",
+      "nodeRegion": "Node Region",
+      "publicIp": "Public IP",
+      "remarkCancel": "Cancel",
+      "remarkPlaceholder": "Add a remark so this service is easy to identify",
+      "remarkTitle": "Edit Remark",
+      "renewAutoRenewLabel": "Auto Renew",
+      "renewCancel": "Cancel",
+      "renewCouponLabel": "Renewal Discount",
+      "renewCouponPlaceholder": "Select a coupon",
+      "renewCreateInvoice": "Create Renewal Invoice",
+      "renewCurrentExpiresLabel": "Current Expiry",
+      "renewLoading": "Loading renewal information",
+      "renewServiceLabel": "Service Instance",
+      "renewTitle": "Service Renewal",
+      "renewTotalLabel": "Total Due",
+      "saveRemark": "Save Remark",
+      "searchPlaceholder": "Search by service name, domain or invoice no.",
+      "statusPlaceholder": "Status Category",
+      "traffic": "Traffic",
+      "trialMachine": "Trial Machine",
+      "virtualHostInstance": "Web Hosting Instance",
+      "webSpace": "Web Space"
+    },
+    "ticketDetail": {
+      "adminRole": "Admin",
+      "assignee": "Assignee",
+      "attachmentAlt": "Attachment",
+      "backToList": "Back to Ticket List",
+      "category": "Category",
+      "chatTab": "Conversation",
+      "closeReason": "Close Reason",
+      "closeTicket": "Close Ticket",
+      "closedNotice": "This ticket is closed",
+      "createdAt": "Created At",
+      "detailTab": "Details",
+      "loading": "Loading ticket details",
+      "me": "Me",
+      "noContent": "No text content",
+      "notFound": "Ticket not found",
+      "previewAlt": "Attachment preview",
+      "previewTitle": "Attachment Preview",
+      "priority": "Priority",
+      "recall": "Recall",
+      "recalled": "Message recalled",
+      "relatedService": "Related Service",
+      "remove": "Remove",
+      "replyPlaceholder": "Type your reply...",
+      "send": "Send",
+      "status": "Status",
+      "supportAgent": "Support",
+      "title": "Ticket Details",
+      "updatedAt": "Updated At",
+      "user": "User",
+      "userRole": "User"
+    }
+  },
+  "clientAuth": {
+    "register": {
+      "accountLabel": "Phone / Email",
+      "accountPlaceholder": "Enter your phone number or email",
+      "codeLabel": "Verification Code",
+      "codePlaceholder": "Enter the verification code",
+      "confirmPasswordLabel": "Confirm Password",
+      "confirmPasswordPlaceholder": "Re-enter the password",
+      "hasAccount": "Already have an account?",
+      "heroDescription": "After completing registration you can create invoices, manage services, and handle identity verification and account security settings.",
+      "heroTitle": "Sign up to enter the console and start purchasing",
+      "nicknameLabel": "Username",
+      "nicknamePlaceholder": "Optional, up to 50 characters",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter a password of at least 8 characters",
+      "referralLabel": "Referral Code",
+      "referralPlaceholder": "Optional, add one if you were referred",
+      "sendCode": "Send Code",
+      "signInNow": "Sign In Now",
+      "submit": "Sign Up and Enter Console",
+      "title": "Free Sign Up",
+      "viewCatalog": "Browse Product Catalog"
+    }
+  },
+  "result": {
+    "serverError": {
+      "backHome": "Back to Home",
+      "description": "The service is temporarily unavailable. Please try again later; contact support if it persists.",
+      "reload": "Reload",
+      "title": "Server Error"
+    }
+  },
+  "serviceConsole": {
+    "alerts": {
+      "expiringSoon": "The instance expires on {time}. Renew in advance to avoid interruption.",
+      "readOnlyNotice": "This instance does not support full console control; basic information is shown read-only.",
+      "renewNow": "Renew Now"
+    },
+    "logs": {
+      "latestAt": "Latest at {time}",
+      "refresh": "Refresh",
+      "title": "Operation Logs",
+      "todayCount": "{count} today",
+      "totalCount": "{count} in total"
+    },
+    "nameDialog": {
+      "cancel": "Cancel",
+      "namePlaceholder": "Enter a recognizable instance name",
+      "saveName": "Save Name",
+      "title": "Rename Instance"
+    },
+    "passwordReset": {
+      "cancel": "Cancel",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Re-enter the new password",
+      "generateAriaLabel": "Generate a strong random password",
+      "generateTip": "Generate a strong random password",
+      "newPassword": "New Password",
+      "passwordPlaceholder": "At least 8 characters",
+      "submit": "Submit",
+      "title": "Reset Instance Password"
+    },
+    "reinstall": {
+      "cancel": "Cancel",
+      "loading": "Loading the OS list",
+      "osGroup": "OS Group",
+      "osGroupPlaceholder": "Select an OS group",
+      "osVersion": "OS Version",
+      "osVersionPlaceholder": "Select an OS version",
+      "submit": "Submit Reinstall",
+      "title": "Reinstall OS"
+    },
+    "renewDialog": {
+      "agentDiscount": "Agent Discount",
+      "cancel": "Cancel",
+      "couponDiscount": "Renewal Discount",
+      "couponPlaceholder": "Select a coupon",
+      "createInvoice": "Create Renewal Invoice",
+      "discountSuffix": " off",
+      "loading": "Loading renewal information",
+      "noRenewCycle": "No renewable billing cycle available",
+      "originalPrice": "Original Price",
+      "title": "Service Renewal",
+      "totalDue": "Total Due"
+    },
+    "security": {
+      "addRule": "Add Rule",
+      "applied": "Applied",
+      "apply": "Apply",
+      "createGroup": "New Security Group",
+      "delete": "Delete",
+      "description": "Description",
+      "direction": "Direction",
+      "emptyCanCreate": "No security groups yet; create one before adding rules",
+      "emptyNotCreatable": "No security group available to apply",
+      "groupName": "Security Group",
+      "noDescription": "No description",
+      "notApplied": "Not Applied",
+      "port": "Port",
+      "protocol": "Protocol",
+      "refresh": "Refresh",
+      "ruleCount": "{count} rules",
+      "ruleLabel": "Rules",
+      "source": "Source",
+      "title": "Security Groups",
+      "unsupported": "Security groups are not supported for this instance",
+      "view": "View"
+    },
+    "securityGroup": {
+      "cancel": "Cancel",
+      "create": "Create Rule",
+      "description": "Description",
+      "descriptionPlaceholder": "Optional",
+      "name": "Name",
+      "namePlaceholder": "Enter a security group name",
+      "title": "Add Security Group",
+      "direction": "Direction",
+      "protocol": "Protocol",
+      "port": "Port",
+      "ipRange": "IP Range",
+      "remark": "Remark",
+      "directionPlaceholder": "Select a direction",
+      "protocolPlaceholder": "Select a protocol",
+      "ipPlaceholder": "e.g. 0.0.0.0/0",
+      "remarkPlaceholder": "Optional"
+    },
+    "traffic": {
+      "cancel": "Cancel",
+      "createInvoice": "Create Invoice",
+      "currentUsage": "Current Traffic",
+      "loading": "Loading traffic packages",
+      "noPackages": "No traffic packages available",
+      "quoting": "Quoting",
+      "remainingUsage": "Remaining Traffic",
+      "selectedTier": "Selected Tier",
+      "title": "Buy Traffic Package",
+      "unlimited": "Unlimited"
+    },
+    "virtualHost": {
+      "bandwidth": "Bandwidth",
+      "billingCycle": "Billing Cycle",
+      "billingInfo": "Billing",
+      "bindableDomains": "Bindable Domains",
+      "createdAt": "Provisioned At",
+      "databaseSpace": "Database Space",
+      "expiresAt": "Expires At",
+      "hostAccount": "Host Account",
+      "hostName": "Host Name",
+      "idcRegion": "Data Center Region",
+      "instanceId": "Instance ID",
+      "longTermValid": "No Expiry",
+      "monthlyTraffic": "Monthly Traffic",
+      "noPlanSpecs": "The upstream returned no extra plan parameters.",
+      "orderNo": "Order No.",
+      "panelAccount": "Panel Account",
+      "panelLogin": "Panel Login",
+      "panelPassword": "Panel Password",
+      "panelUrl": "Panel URL",
+      "panelUrlHint": "The panel URL may carry a one-time login state; open it in a new tab. If it fails, go back to \"Host and Panel\" and re-enter.",
+      "planSpecs": "Plan Parameters",
+      "profile": "Host Profile",
+      "renewManage": "Renewal Management",
+      "renewPrice": "Renewal Price",
+      "runStatus": "Running Status",
+      "spaceAndSites": "Storage and Sites",
+      "webSpace": "Web Space"
+    },
+    "vnc": {
+      "connect": "Connect VNC",
+      "connectTip": "Click Connect to request a one-time VNC address from the backend.",
+      "loadedTip": "The VNC console has loaded on this page.",
+      "openInWindow": "Open in New Window",
+      "title": "VNC Console",
+      "waiting": "Waiting for connection"
+    },
+    "cdn": {
+      "trafficUsage": "Traffic Usage"
+    },
+    "breadcrumb": {
+      "userCenter": "User Center"
+    },
+    "rename": "Rename",
+    "autoRenew": "Auto Renew",
+    "remarkLabel": "Remark:",
+    "refresh": "Refresh",
+    "financeLog": "Billing Logs",
+    "range3h": "3 Hours",
+    "range24h": "24 Hours",
+    "range7d": "7 Days",
+    "range30d": "30 Days",
+    "monitorInfo": "Monitoring",
+    "nat": {
+      "addForward": "Add Port Forward",
+      "title": "Port Forwarding",
+      "nameLabel": "Name",
+      "publicPortLabel": "Public Port",
+      "internalPortLabel": "Internal Port",
+      "protocolLabel": "Protocol",
+      "namePlaceholder": "e.g. Web Service",
+      "internalPlaceholder": "Leave blank to let upstream assign",
+      "portPlaceholder": "e.g. 80",
+      "protocolPlaceholder": "Select a protocol"
+    },
+    "remark": {
+      "save": "Save Remark",
+      "placeholder": "Add a remark to help identify this instance"
+    },
+    "rescue": {
+      "title": "Rescue System",
+      "confirm": "Enter",
+      "placeholder": "Select a rescue system",
+      "linux": "Linux Rescue",
+      "windows": "Windows Rescue"
+    },
+    "instanceStatus": "Instance Status",
+    "basicInfo": "Basic Information",
+    "configInfo": "Configuration",
+    "instanceName": "Instance Name",
+    "instanceSpec": "Instance Type",
+    "instanceId": "Instance ID",
+    "os": "Operating System",
+    "createdAt": "Created At"
+  },
+  "recharge": {
+    "title": "Top-up",
+    "currentBalance": "Current Balance",
+    "amountLabel": "Amount",
+    "customAmount": "Custom",
+    "actualAmount": "Actual Amount",
+    "method": "Payment Method",
+    "agreed": "I have read the top-up instructions",
+    "help": "Help Center",
+    "payStatus": "Payment Status",
+    "merchantOrderNo": "Merchant Order No.",
+    "payableAmount": "Payable Amount",
+    "copyLink": "Copy Payment Link"
+  },
+  "services": {
+    "console": {}
+  },
+  "verification": {
+    "currentStatus": "Current Status",
+    "name": "Verified Name",
+    "idCard": "ID Card Number",
+    "loginEmail": "Login Email",
+    "boundPhone": "Bound Phone",
+    "flow": "Verification Flow",
+    "step1": "Enter your real name and ID card number.",
+    "step2": "Scan the QR code with your phone to open the verification page and complete the face check.",
+    "step3": "Account status refreshes automatically once verification succeeds.",
+    "notice": "Notice",
+    "tip1": "Make sure the name and ID card number are real and valid.",
+    "tip2": "You can refresh the QR code and submit again if verification fails.",
+    "tip3": "If verified information already exists, you can view it on this page.",
+    "scanHint": "Scan the QR code with your phone to complete verification",
+    "refreshQrcode": "Refresh QR Code",
+    "checkStatus": "Check Status",
+    "closeSession": "Close Session",
+    "verifiedTag": "Verified",
+    "realName": "Identity Information",
+    "realNamePlaceholder": "Enter your real name",
+    "idCardPlaceholder": "Enter your ID card number",
+    "realNameLabel": "Real Name",
+    "idCardLabel": "ID Card Number"
+  },
+  "checkoutResume": {
+    "browse": "Browse Products",
+    "toFinance": "Go to Billing Center"
+  },
+  "content": {
+    "hotSearchLabel": "Hot Searches:"
+  },
+  "invoiceDetail": {
+    "back": "Back to Invoices"
+  },
+  "orderCreate": {
+    "title": "Purchase Flow",
+    "redirected": "The purchase entry has been redirected to the unified purchase flow.",
+    "description": "New purchases, login resume and invoice creation are handled in the website product catalog and /client/checkout-resume.",
+    "open": "Open Purchase Page"
+  },
+  "orders": {
+    "searchPlaceholder": "Search order number"
+  },
+  "paymentDetail": {
+    "title": "Billing Center",
+    "records": "Top-up Records",
+    "recordDetail": "Top-up Detail",
+    "back": "Back to List"
+  },
+  "profile": {
+    "basicInfo": "Basic Information"
+  },
+  "tickets": {
+    "searchPlaceholder": "Search ticket title",
+    "allStatus": "All Statuses"
+  },
+  "auth": {
+    "accountLabel": "Phone / Email",
+    "codeLabel": "Verification Code",
+    "newPassword": "New Password",
+    "forgotPassword": "Forgot Password",
+    "accountPlaceholder": "Enter your registered phone or email",
+    "codePlaceholder": "Enter the verification code",
+    "newPasswordPlaceholder": "Enter a new password of at least 8 characters",
+    "loginAsInProgress": "Logging in as...",
+    "loginTitle": "Account Login",
+    "loginAccountPlaceholder": "Enter your phone or email",
+    "byPassword": "Password Login",
+    "byCode": "Code Login"
   }
 }

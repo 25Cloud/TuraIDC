@@ -4,7 +4,7 @@
       <t-card class="verification-status-card" :bordered="false">
         <div class="verification-status-card__main">
           <div>
-            <span class="verification-status-card__label">当前状态</span>
+            <span class="verification-status-card__label">{{ $t('verification.currentStatus') }}</span>
             <h1>{{ statusTitle }}</h1>
             <p>{{ statusDescription }}</p>
           </div>
@@ -18,19 +18,19 @@
 
         <div class="verification-meta-grid">
           <article class="verification-meta-item">
-            <span>认证姓名</span>
+            <span>{{ $t('verification.name') }}</span>
             <strong>{{ form.real_name || '--' }}</strong>
           </article>
           <article class="verification-meta-item">
-            <span>身份证号</span>
+            <span>{{ $t('verification.idCard') }}</span>
             <strong>{{ form.id_card_masked || '--' }}</strong>
           </article>
           <article class="verification-meta-item">
-            <span>登录邮箱</span>
+            <span>{{ $t('verification.loginEmail') }}</span>
             <strong>{{ form.email || '--' }}</strong>
           </article>
           <article class="verification-meta-item">
-            <span>绑定手机</span>
+            <span>{{ $t('verification.boundPhone') }}</span>
             <strong>{{ form.phone || '--' }}</strong>
           </article>
         </div>
@@ -38,19 +38,19 @@
 
       <div class="verification-guide-grid">
         <t-card class="verification-guide-card" :bordered="false">
-          <h2>认证流程</h2>
+          <h2>{{ $t('verification.flow') }}</h2>
           <ol>
-            <li>填写真实姓名与身份证号。</li>
-            <li>使用手机扫码打开认证页面并完成人脸校验。</li>
-            <li>认证成功后自动刷新账户状态。</li>
+            <li>{{ $t('verification.step1') }}</li>
+            <li>{{ $t('verification.step2') }}</li>
+            <li>{{ $t('verification.step3') }}</li>
           </ol>
         </t-card>
         <t-card class="verification-guide-card" :bordered="false">
-          <h2>温馨提示</h2>
+          <h2>{{ $t('verification.notice') }}</h2>
           <ul>
-            <li>请确保姓名与身份证号真实有效。</li>
-            <li>认证失败后可重新获取二维码再次提交。</li>
-            <li>如实名信息已存在，可在当前页面查看。</li>
+            <li>{{ $t('verification.tip1') }}</li>
+            <li>{{ $t('verification.tip2') }}</li>
+            <li>{{ $t('verification.tip3') }}</li>
           </ul>
         </t-card>
       </div>
@@ -72,30 +72,30 @@
         {{ verificationMessage }}
       </p>
       <t-form v-if="!verificationUrl" label-align="top" class="verification-form">
-        <t-form-item label="真实姓名" required-mark>
-          <t-input v-model="verificationForm.realName" placeholder="请输入真实姓名" />
+        <t-form-item :label="$t('verification.realNameLabel')" required-mark>
+          <t-input v-model="verificationForm.realName" :placeholder="$t('verification.realNamePlaceholder')" />
         </t-form-item>
-        <t-form-item label="身份证号" required-mark>
-          <t-input v-model="verificationForm.idCard" maxlength="18" placeholder="请输入身份证号" />
+        <t-form-item :label="$t('verification.idCardLabel')" required-mark>
+          <t-input v-model="verificationForm.idCard" maxlength="18" :placeholder="$t('verification.idCardPlaceholder')" />
         </t-form-item>
       </t-form>
 
       <div v-else class="verification-qrcode-panel">
         <qrcode-vue :value="verificationUrl" :size="260" level="H" render-as="svg" />
-        <p>请使用手机扫描二维码完成认证</p>
+        <p>{{ $t('verification.scanHint') }}</p>
         <p class="verification-countdown" :class="{ expired: isVerificationQrExpired }">
           {{ isVerificationQrExpired ? '二维码已失效' : `二维码 ${verificationCountdownText} 后失效` }}
         </p>
         <p v-if="verificationMessage" class="verification-message">{{ verificationMessage }}</p>
         <div class="verification-link-actions">
           <t-button variant="outline" :loading="verificationLoading" @click="refreshVerificationLink"
-            >刷新二维码</t-button
+            >{{ $t('verification.refreshQrcode') }}</t-button
           >
           <t-button theme="primary" :loading="checkingStatus" @click="checkVerificationStatus(false)"
-            >查询认证状态</t-button
+            >{{ $t('verification.checkStatus') }}</t-button
           >
           <t-button variant="outline" :loading="closingSession" @click="closeVerificationSession(false)"
-            >关闭会话</t-button
+            >{{ $t('verification.closeSession') }}</t-button
           >
           <t-button
             v-if="canRestartVerification"
@@ -118,8 +118,8 @@
       :confirm-btn="null"
     >
       <div class="verified-info-dialog">
-        <t-tag theme="success" variant="light">已认证</t-tag>
-        <h2>实名信息</h2>
+        <t-tag theme="success" variant="light">{{ $t('verification.verifiedTag') }}</t-tag>
+        <h2>{{ $t('verification.realName') }}</h2>
         <p>姓名：{{ form.real_name || '--' }}</p>
         <p>身份证号：{{ form.id_card_masked || '--' }}</p>
       </div>

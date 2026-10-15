@@ -14,6 +14,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElButton: typeof import('element-plus/es')['ElButton']
+    ElConfigProvider: typeof import('element-plus/es')['ElConfigProvider']
     ElDivider: typeof import('element-plus/es')['ElDivider']
     ElDrawer: typeof import('element-plus/es')['ElDrawer']
     ElEmpty: typeof import('element-plus/es')['ElEmpty']
@@ -45,6 +46,7 @@ declare module 'vue' {
 declare global {
   const ElAlert: typeof import('element-plus/es')['ElAlert']
   const ElButton: typeof import('element-plus/es')['ElButton']
+  const ElConfigProvider: typeof import('element-plus/es')['ElConfigProvider']
   const ElDivider: typeof import('element-plus/es')['ElDivider']
   const ElDrawer: typeof import('element-plus/es')['ElDrawer']
   const ElEmpty: typeof import('element-plus/es')['ElEmpty']

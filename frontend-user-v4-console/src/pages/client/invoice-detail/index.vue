@@ -1,7 +1,7 @@
 <template>
   <section class="invoice-pay-page">
     <div class="pay-toolbar">
-      <t-button variant="outline" @click="router.push('/client/invoices')">返回账单</t-button>
+      <t-button variant="outline" @click="router.push('/client/invoices')">{{ $t('invoiceDetail.back') }}</t-button>
       <div class="pay-toolbar__actions">
         <t-button variant="outline" :loading="loading" @click="loadDetail">
           <template #icon><refresh-icon /></template>

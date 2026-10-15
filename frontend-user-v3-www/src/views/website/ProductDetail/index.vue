@@ -46,7 +46,7 @@
               stroke-width="1.5"
             />
           </svg>
-          <span>分类</span>
+          <span>{{ $t('product.detail.category') }}</span>
         </button>
 
         <!-- 产品线 Tab（同一产品组下的同级） -->
@@ -103,7 +103,7 @@
         <div class="pd-config">
           <!-- 区域 -->
           <div class="cfg-group" v-if="regionOptions.length">
-            <div class="cfg-group-head">区域</div>
+            <div class="cfg-group-head">{{ $t('product.detail.region') }}</div>
             <div class="cfg-group-body">
               <div class="opt-wrap">
                 <button
@@ -125,14 +125,14 @@
 
           <!-- 操作系统 -->
           <div class="cfg-group" v-if="osConfig">
-            <div class="cfg-group-head">操作系统</div>
+            <div class="cfg-group-head">{{ $t('product.detail.operatingSystem') }}</div>
             <div class="cfg-group-body">
               <div class="os-row">
                 <div class="os-col">
-                  <div class="os-col-label">系统</div>
+                  <div class="os-col-label">{{ $t('product.osPicker.system') }}</div>
                   <el-select
                     v-model="configForm.os_group"
-                    placeholder="请选择系统"
+                    :placeholder="$t('product.detail.selectOs')"
                     @change="handleOsGroupChange"
                   >
                     <el-option
@@ -144,10 +144,10 @@
                   </el-select>
                 </div>
                 <div class="os-col">
-                  <div class="os-col-label">版本</div>
+                  <div class="os-col-label">{{ $t('product.osPicker.version') }}</div>
                   <el-select
                     v-model="configForm.os"
-                    placeholder="请选择版本"
+                    :placeholder="$t('product.detail.selectVersion')"
                     :disabled="!currentOsGroup?.versions?.length"
                     @change="fetchQuote"
                   >
@@ -165,7 +165,7 @@
 
           <!-- 机型配置 -->
           <div class="cfg-group" v-if="specConfigs.length">
-            <div class="cfg-group-head">机型配置</div>
+            <div class="cfg-group-head">{{ $t('product.detail.serverSpecs') }}</div>
             <div class="cfg-group-body">
               <div class="spec-row" v-for="cfg in specConfigs" :key="cfg.key">
                 <div class="spec-label">{{ cfg.label }}</div>

@@ -13,7 +13,7 @@
       </div>
 
       <div class="seo-container seo-hero__inner">
-        <nav class="seo-hero__nav" aria-label="核心卖点">
+        <nav class="seo-hero__nav" :aria-label="$t('seoLanding.coreSellingPoints')">
           <a
             v-for="(item, index) in heroNavItems"
             :key="item"
@@ -48,7 +48,7 @@
       </div>
     </section>
 
-    <section class="seo-feature-strip" aria-label="服务能力摘要">
+    <section class="seo-feature-strip" :aria-label="$t('seoLanding.serviceCapabilitySummary')">
       <div class="seo-container seo-feature-strip__inner">
         <article
           v-for="(item, index) in featureStripItems"
@@ -81,10 +81,10 @@
           <p>
             围绕真实业务选型整理产品能力、适用场景和开通入口，让搜索进入的用户能直接完成判断。
           </p>
-          <router-link to="/products">查看全部产品 &gt;</router-link>
+          <router-link to="/products">{{ $t('seoLanding.viewAllProducts') }}</router-link>
         </div>
 
-        <div class="seo-category-tabs" aria-label="产品分类">
+        <div class="seo-category-tabs" :aria-label="$t('seoLanding.productCategories')">
           <button
             v-for="tab in productTabs"
             :key="tab"
@@ -118,9 +118,9 @@
             </div>
             <div class="seo-product-card__actions">
               <router-link class="is-primary" :to="page.cta.primaryTo"
-                >立即选购</router-link
+                >{{ $t('seoLanding.buyNow') }}</router-link
               >
-              <router-link to="/help">产品详情</router-link>
+              <router-link to="/help">{{ $t('seoLanding.productDetails') }}</router-link>
             </div>
           </article>
         </div>
@@ -137,7 +137,7 @@
         </div>
 
         <div class="seo-solution-panel">
-          <nav class="seo-solution-tabs" aria-label="场景列表">
+          <nav class="seo-solution-tabs" :aria-label="$t('seoLanding.scenarioList')">
             <button
               v-for="(scenario, index) in page.scenarios"
               :key="scenario.title"
@@ -150,7 +150,7 @@
           </nav>
 
           <div class="seo-solution-content">
-            <p class="seo-eyebrow">解决方案</p>
+            <p class="seo-eyebrow">{{ $t('layout.nav.solutions') }}</p>
             <h3>{{ activeScenario.title }}</h3>
             <p>{{ activeScenario.description }}</p>
             <ul>
@@ -160,7 +160,7 @@
               </li>
             </ul>
             <div class="seo-solution-content__related">
-              <strong>相关产品：</strong>
+              <strong>{{ $t('seoLanding.relatedProducts') }}</strong>
               <router-link
                 v-for="link in page.relatedLinks"
                 :key="link.to"

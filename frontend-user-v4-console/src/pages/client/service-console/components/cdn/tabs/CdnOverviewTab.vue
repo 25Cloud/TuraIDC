@@ -1,6 +1,6 @@
 <template>
   <section class="console-overview-grid is-cdn">
-    <t-card class="console-panel console-panel-wide" title="流量用量" :bordered="false">
+    <t-card class="console-panel console-panel-wide" :title="$t('serviceConsole.cdn.trafficUsage')" :bordered="false">
       <template #actions>
         <t-button
           v-if="canBuyTrafficPackage"

@@ -8,7 +8,7 @@
           mode="date"
           format="YYYY-MM-DD"
           value-type="YYYY-MM-DD"
-          placeholder="开始日期"
+          :placeholder="$t('finance.newCustomers.startDate')"
           @change="loadData"
         />
         <t-date-picker
@@ -17,12 +17,12 @@
           mode="date"
           format="YYYY-MM-DD"
           value-type="YYYY-MM-DD"
-          placeholder="结束日期"
+          :placeholder="$t('finance.newCustomers.endDate')"
           @change="loadData"
         />
         <t-button class="filter-month" variant="outline" size="small" @click="resetCurrentMonth">
           <template #icon><refresh-icon /></template>
-          本月
+          {{ $t('finance.newCustomers.thisMonth') }}
         </t-button>
       </div>
     </t-card>

@@ -1,30 +1,34 @@
 <template>
   <div class="specs-page">
-    <t-alert
-      theme="info"
-      message="这里管理的是实例规格文本本身。绑定配置后只保存关联关系，不会自动改动原始商品数据。"
-    />
+    <t-alert theme="info" :message="$t('products.specs.notice')" />
 
     <t-card :bordered="false">
       <div class="specs-filter">
         <t-input
           v-model="filters.keyword"
           clearable
-          placeholder="搜索规格文本 / 别名 / 说明 / 绑定配置"
+          :placeholder="$t('products.specs.searchPlaceholder')"
           @enter="loadCatalog"
           @clear="loadCatalog"
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.binding_status" clearable placeholder="绑定状态" @change="loadCatalog">
-          <t-option value="bound" label="已绑定" />
-          <t-option value="unbound" label="未绑定" />
+        <t-select
+          v-model="filters.binding_status"
+          clearable
+          :placeholder="$t('products.specs.bindingStatusPlaceholder')"
+          @change="loadCatalog"
+        >
+          <t-option value="bound" :label="$t('products.specs.bound')" />
+          <t-option value="unbound" :label="$t('products.specs.unbound')" />
         </t-select>
         <t-button theme="primary" variant="outline" @click="openSpecDialog()">
           <template #icon><add-icon /></template>
-          新增规格
+          {{ $t('products.specs.addSpec') }}
         </t-button>
-        <t-button theme="primary" :loading="saving" @click="handleSave">保存目录</t-button>
+        <t-button theme="primary" :loading="saving" @click="handleSave">
+          {{ $t('products.specs.saveCatalog') }}
+        </t-button>
       </div>
 
       <div class="table-scroll">
@@ -32,7 +36,7 @@
           <template #spec="{ row }">
             <div class="spec-cell">
               <strong>{{ row.text || '-' }}</strong>
-              <span>{{ row.alias || '未填写别名' }}</span>
+              <span>{{ row.alias || $t('products.specs.noAlias') }}</span>
             </div>
           </template>
           <template #note="{ row }">
@@ -53,40 +57,44 @@
           </template>
           <template #operation="{ row }">
             <t-space size="small">
-              <t-button size="small" variant="text" theme="primary" @click="openSpecDialog(row)">编辑</t-button>
-              <t-button size="small" variant="text" theme="danger" @click="handleDeleteSpec(row)">删除</t-button>
+              <t-button size="small" variant="text" theme="primary" @click="openSpecDialog(row)">
+                {{ $t('products.specs.edit') }}
+              </t-button>
+              <t-button size="small" variant="text" theme="danger" @click="handleDeleteSpec(row)">
+                {{ $t('products.specs.delete') }}
+              </t-button>
             </t-space>
           </template>
         </t-table>
       </div>
 
-      <p class="specs-footer">规格目录会统一保存到后台设置中，绑定配置仅保存关联信息。</p>
+      <p class="specs-footer">{{ $t('products.specs.footer') }}</p>
     </t-card>
 
     <t-dialog
       v-model:visible="specDialogVisible"
-      :header="editingSpecId ? '编辑实例规格' : '新增实例规格'"
+      :header="editingSpecId ? $t('products.specs.editSpecTitle') : $t('products.specs.addSpecTitle')"
       width="540px"
-      :confirm-btn="{ content: '确认', loading: dialogSubmitting }"
+      :confirm-btn="{ content: $t('products.specs.confirm'), loading: dialogSubmitting }"
       @confirm="handleSubmitSpec"
       @closed="handleDialogClosed"
     >
       <t-form ref="specFormRef" :data="specForm" :rules="specRules" label-align="top">
-        <t-form-item label="实例规格文本" name="text">
-          <t-input v-model="specForm.text" maxlength="80" placeholder="例如：ecs.g9i.2c2g" />
+        <t-form-item :label="$t('products.specs.specText')" name="text">
+          <t-input v-model="specForm.text" maxlength="80" :placeholder="$t('products.specs.specTextPlaceholder')" />
         </t-form-item>
-        <t-form-item label="别名" name="alias">
-          <t-input v-model="specForm.alias" maxlength="80" placeholder="例如：2 核 2G" />
+        <t-form-item :label="$t('products.specs.alias')" name="alias">
+          <t-input v-model="specForm.alias" maxlength="80" :placeholder="$t('products.specs.aliasPlaceholder')" />
         </t-form-item>
-        <t-form-item label="说明" name="note">
+        <t-form-item :label="$t('products.specs.note')" name="note">
           <t-textarea
             v-model="specForm.note"
             :autosize="{ minRows: 3, maxRows: 5 }"
             maxlength="255"
-            placeholder="例如：入门款实例规格"
+            :placeholder="$t('products.specs.notePlaceholder')"
           />
         </t-form-item>
-        <t-form-item label="状态" name="status">
+        <t-form-item :label="$t('products.specs.status')" name="status">
           <t-select v-model="specForm.status">
             <t-option value="展示中" label="展示中" />
             <t-option value="隐藏" label="隐藏" />

@@ -19,7 +19,11 @@ import type { RouteRecordRaw } from 'vue-router';
 
 import Layout from '@/layouts/index.vue';
 
-const title = (zhCN: string, enUS = zhCN) => ({ zh_CN: zhCN, en_US: enUS });
+const title = (zhCN: string, enUS = zhCN, zhTW = zhCN) => ({
+  zh_CN: zhCN,
+  zh_TW: zhTW,
+  en_US: enUS,
+});
 const icon = (component: unknown) => shallowRef(component);
 
 // 「账户设置」整组页面共用一个动态 import，打包器会合并成同一个 chunk，
@@ -35,32 +39,32 @@ export default [
     path: '/client/login',
     name: 'ClientLogin',
     component: () => import('@/pages/client-auth/login.vue'),
-    meta: { title: title('用户登录', 'Login'), guest: true, robots: 'noindex,nofollow' },
+    meta: { title: title('用户登录', 'Login', '使用者登入'), guest: true, robots: 'noindex,nofollow' },
   },
   {
     path: '/client/login-as',
     name: 'ClientLoginAs',
     component: () => import('@/pages/client-auth/login-as.vue'),
-    meta: { title: title('代登录', 'Login As'), guest: true, robots: 'noindex,nofollow' },
+    meta: { title: title('代登录', 'Login As', '代理登入'), guest: true, robots: 'noindex,nofollow' },
   },
   {
     path: '/client/register',
     name: 'ClientRegister',
     component: () => import('@/pages/client-auth/register.vue'),
-    meta: { title: title('用户注册', 'Register'), guest: true, robots: 'noindex,nofollow' },
+    meta: { title: title('用户注册', 'Register', '使用者註冊'), guest: true, robots: 'noindex,nofollow' },
   },
   {
     path: '/client/forgot-password',
     name: 'ClientForgotPassword',
     component: () => import('@/pages/client-auth/forgot-password.vue'),
-    meta: { title: title('找回密码', 'Forgot Password'), guest: true, robots: 'noindex,nofollow' },
+    meta: { title: title('找回密码', 'Forgot Password', '找回密碼'), guest: true, robots: 'noindex,nofollow' },
   },
   {
     path: '/client',
     component: Layout,
     redirect: '/client/dashboard',
     meta: {
-      title: title('用户控制台', 'Client Console'),
+      title: title('用户控制台', 'Client Console', '使用者控制台'),
       requireAuth: true,
       role: 'client',
       robots: 'noindex,nofollow',
@@ -69,14 +73,14 @@ export default [
       {
         path: '/client/overview',
         redirect: '/client/dashboard',
-        meta: { title: title('首页', 'Home'), icon: icon(DashboardIcon), requireAuth: true, orderNo: 10 },
+        meta: { title: title('首页', 'Home', '首頁'), icon: icon(DashboardIcon), requireAuth: true, orderNo: 10 },
         children: [
           {
             path: '/client/dashboard',
             name: 'ClientDashboard',
             component: () => import('@/pages/client/dashboard/index.vue'),
             meta: {
-              title: title('控制台', 'Console'),
+              title: title('控制台', 'Console', '控制台'),
               icon: icon(DashboardIcon),
               requireAuth: true,
               robots: 'noindex,nofollow',
@@ -88,52 +92,52 @@ export default [
       {
         path: '/client/products',
         redirect: '/client/services',
-        meta: { title: title('产品与服务', 'Products'), icon: icon(ServerIcon), requireAuth: true, orderNo: 20 },
+        meta: { title: title('产品与服务', 'Products', '產品與服務'), icon: icon(ServerIcon), requireAuth: true, orderNo: 20 },
         children: [
           {
             path: '/client/services',
             name: 'ClientServices',
             component: () => import('@/pages/client/services/index.vue'),
-            meta: { title: title('我的服务'), icon: icon(ServerIcon), requireAuth: true, orderNo: 10 },
+            meta: { title: title('我的服务', '我的服务', '我的服務'), icon: icon(ServerIcon), requireAuth: true, orderNo: 10 },
           },
           {
             path: '/client/catalog',
             name: 'ClientCatalog',
             component: () => import('@/pages/client/catalog/index.vue'),
-            meta: { title: title('购买产品', 'Buy Products'), icon: icon(CatalogIcon), requireAuth: true, orderNo: 20 },
+            meta: { title: title('购买产品', 'Buy Products', '購買產品'), icon: icon(CatalogIcon), requireAuth: true, orderNo: 20 },
           },
         ],
       },
       {
         path: '/client/trade',
         redirect: '/client/orders',
-        meta: { title: title('交易记录', 'Trade'), icon: icon(FileIcon), requireAuth: true, orderNo: 30 },
+        meta: { title: title('交易记录', 'Trade', '交易記錄'), icon: icon(FileIcon), requireAuth: true, orderNo: 30 },
         children: [
           {
             path: '/client/orders',
             name: 'ClientOrders',
             component: () => import('@/pages/client/orders/index.vue'),
-            meta: { title: title('订单记录'), icon: icon(FileIcon), requireAuth: true, orderNo: 10 },
+            meta: { title: title('订单记录', '订单记录', '訂單記錄'), icon: icon(FileIcon), requireAuth: true, orderNo: 10 },
           },
           {
             path: '/client/invoices',
             name: 'ClientInvoices',
             component: () => import('@/pages/client/invoices/index.vue'),
-            meta: { title: title('账单记录'), icon: icon(FileIcon), requireAuth: true, orderNo: 20 },
+            meta: { title: title('账单记录', '账单记录', '賬單記錄'), icon: icon(FileIcon), requireAuth: true, orderNo: 20 },
           },
         ],
       },
       {
         path: '/client/wallet',
         redirect: '/client/recharge',
-        meta: { title: title('钱包与充值', 'Wallet'), icon: icon(WalletIcon), requireAuth: true, orderNo: 40 },
+        meta: { title: title('钱包与充值', 'Wallet', '錢包與充值'), icon: icon(WalletIcon), requireAuth: true, orderNo: 40 },
         children: [
           {
             path: '/client/recharge',
             name: 'ClientRecharge',
             component: () => import('@/pages/client/recharge/index.vue'),
             meta: {
-              title: title('账户充值'),
+              title: title('账户充值', '账户充值', '賬戶充值'),
               icon: icon(WalletIcon),
               requireAuth: true,
               orderNo: 10,
@@ -144,64 +148,64 @@ export default [
             path: '/client/payments',
             name: 'ClientPayments',
             component: () => import('@/pages/client/payments/index.vue'),
-            meta: { title: title('充值记录'), icon: icon(WalletIcon), requireAuth: true, orderNo: 20 },
+            meta: { title: title('充值记录', '充值记录', '充值記錄'), icon: icon(WalletIcon), requireAuth: true, orderNo: 20 },
           },
         ],
       },
       {
         path: '/client/promo',
         redirect: '/client/coupons',
-        meta: { title: title('优惠与活动', 'Promotions'), icon: icon(CouponIcon), requireAuth: true, orderNo: 50 },
+        meta: { title: title('优惠与活动', 'Promotions', '優惠與活動'), icon: icon(CouponIcon), requireAuth: true, orderNo: 50 },
         children: [
           {
             path: '/client/coupons',
             name: 'ClientCoupons',
             component: () => import('@/pages/client/coupons/index.vue'),
-            meta: { title: title('优惠券中心'), icon: icon(CouponIcon), requireAuth: true, orderNo: 10 },
+            meta: { title: title('优惠券中心', '优惠券中心', '優惠券中心'), icon: icon(CouponIcon), requireAuth: true, orderNo: 10 },
           },
           {
             path: '/client/referral',
             name: 'ClientReferral',
             component: () => import('@/pages/client/referral/index.vue'),
-            meta: { title: title('推荐奖励'), icon: icon(GiftIcon), requireAuth: true, orderNo: 20 },
+            meta: { title: title('推荐奖励', '推荐奖励', '推薦獎勵'), icon: icon(GiftIcon), requireAuth: true, orderNo: 20 },
           },
         ],
       },
       {
         path: '/client/support',
         redirect: '/client/tickets',
-        meta: { title: title('帮助与支持', 'Help & Support'), icon: icon(ServiceIcon), requireAuth: true, orderNo: 90 },
+        meta: { title: title('帮助与支持', 'Help & Support', '幫助與支援'), icon: icon(ServiceIcon), requireAuth: true, orderNo: 90 },
         children: [
           {
             path: '/client/tickets',
             name: 'ClientTickets',
             component: () => import('@/pages/client/tickets/index.vue'),
-            meta: { title: title('工单支持'), icon: icon(ServiceIcon), requireAuth: true, orderNo: 10 },
+            meta: { title: title('工单支持', '工单支持', '工單支援'), icon: icon(ServiceIcon), requireAuth: true, orderNo: 10 },
           },
           {
             path: '/client/notices',
             name: 'ClientNotices',
             component: () => import('@/pages/client/notices/index.vue'),
-            meta: { title: title('系统公告'), icon: icon(NotificationIcon), requireAuth: true, orderNo: 20 },
+            meta: { title: title('系统公告', '系统公告', '系統公告'), icon: icon(NotificationIcon), requireAuth: true, orderNo: 20 },
           },
           {
             path: '/client/help',
             name: 'ClientHelp',
             component: () => import('@/pages/client/help/index.vue'),
-            meta: { title: title('帮助中心'), icon: icon(HelpCircleIcon), requireAuth: true, orderNo: 30 },
+            meta: { title: title('帮助中心', '帮助中心', '幫助中心'), icon: icon(HelpCircleIcon), requireAuth: true, orderNo: 30 },
           },
         ],
       },
       {
         path: '/client/account',
         redirect: '/client/profile',
-        meta: { title: title('账户设置', 'Settings'), icon: icon(UserCircleIcon), requireAuth: true, orderNo: 100 },
+        meta: { title: title('账户设置', 'Settings', '賬戶設定'), icon: icon(UserCircleIcon), requireAuth: true, orderNo: 100 },
         children: [
           {
             path: '/client/profile',
             name: 'ClientProfile',
             component: () => loadAccountPage().then((m) => m.ProfilePage),
-            meta: { title: title('个人资料'), icon: icon(UserCircleIcon), requireAuth: true, orderNo: 10 },
+            meta: { title: title('个人资料', '个人资料', '個人資料'), icon: icon(UserCircleIcon), requireAuth: true, orderNo: 10 },
           },
           {
             // 与个人资料平级，不用 /client/profile/... 前缀：
@@ -210,13 +214,13 @@ export default [
             path: '/client/security',
             name: 'ClientSecurity',
             component: () => loadAccountPage().then((m) => m.ProfilePage),
-            meta: { title: title('账户安全'), icon: icon(LockOnIcon), requireAuth: true, orderNo: 20 },
+            meta: { title: title('账户安全', '账户安全', '賬戶安全'), icon: icon(LockOnIcon), requireAuth: true, orderNo: 20 },
           },
           {
             path: '/client/notification',
             name: 'ClientNotification',
             component: () => loadAccountPage().then((m) => m.ProfilePage),
-            meta: { title: title('消息提醒'), icon: icon(NotificationIcon), requireAuth: true, orderNo: 30 },
+            meta: { title: title('消息提醒', '消息提醒', '訊息提醒'), icon: icon(NotificationIcon), requireAuth: true, orderNo: 30 },
           },
           {
             // 兼容旧的嵌套路径
@@ -233,19 +237,19 @@ export default [
             path: '/client/verification',
             name: 'ClientVerification',
             component: () => loadAccountPage().then((m) => m.VerificationPage),
-            meta: { title: title('实名认证'), icon: icon(VerifiedIcon), requireAuth: true, orderNo: 40 },
+            meta: { title: title('实名认证', '实名认证', '實名認證'), icon: icon(VerifiedIcon), requireAuth: true, orderNo: 40 },
           },
           {
             path: '/client/api-keys',
             name: 'ClientApiKeys',
             component: () => loadAccountPage().then((m) => m.ApiKeysPage),
-            meta: { title: title('API 凭据', 'API Credentials'), icon: icon(ApiIcon), requireAuth: true, orderNo: 50 },
+            meta: { title: title('API 凭据', 'API Credentials', 'API 憑據'), icon: icon(ApiIcon), requireAuth: true, orderNo: 50 },
           },
           {
             // 两套凭据已合并到「API 凭据」页的页内标签；旧路径保留跳转到魔方财务对接分区
             path: '/client/upstream-api',
             redirect: { path: '/client/api-keys', query: { tab: 'upstream' } },
-            meta: { title: title('API 凭据'), requireAuth: true, hidden: true },
+            meta: { title: title('API 凭据', 'API 凭据', 'API 憑據'), requireAuth: true, hidden: true },
           },
         ],
       },
@@ -253,20 +257,20 @@ export default [
         path: 'order/create',
         name: 'ClientOrderCreate',
         component: () => import('@/pages/client/order-create/index.vue'),
-        meta: { title: title('确认购买'), requireAuth: true, hidden: true, activeMenu: '/client/catalog' },
+        meta: { title: title('确认购买', '确认购买', '確認購買'), requireAuth: true, hidden: true, activeMenu: '/client/catalog' },
       },
       {
         path: 'checkout-resume',
         name: 'ClientCheckoutResume',
         component: () => import('@/pages/client/checkout-resume/index.vue'),
-        meta: { title: title('创建账单中'), requireAuth: true, hidden: true, activeMenu: '/client/invoices' },
+        meta: { title: title('创建账单中', '创建账单中', '建立賬單中'), requireAuth: true, hidden: true, activeMenu: '/client/invoices' },
       },
       {
         path: 'services/:id',
         name: 'ClientServiceDetail',
         component: () => import('@/pages/client/service-console/index.vue'),
         meta: {
-          title: title('实例控制台'),
+          title: title('实例控制台', '实例控制台', '例項控制台'),
           requireAuth: true,
           hidden: true,
           activeMenu: '/client/services',
@@ -279,7 +283,7 @@ export default [
         name: 'ClientComputeConsole',
         component: () => import('@/pages/client/service-console/index.vue'),
         meta: {
-          title: title('实例控制台'),
+          title: title('实例控制台', '实例控制台', '例項控制台'),
           requireAuth: true,
           hidden: true,
           activeMenu: '/client/services',
@@ -292,7 +296,7 @@ export default [
         name: 'ClientNatConsole',
         component: () => import('@/pages/client/service-console/index.vue'),
         meta: {
-          title: title('实例控制台'),
+          title: title('实例控制台', '实例控制台', '例項控制台'),
           requireAuth: true,
           hidden: true,
           activeMenu: '/client/services',
@@ -304,7 +308,7 @@ export default [
         name: 'ClientInvoicePay',
         component: () => import('@/pages/client/invoice-detail/index.vue'),
         meta: {
-          title: title('账单支付'),
+          title: title('账单支付', '账单支付', '賬單支付'),
           requireAuth: true,
           hidden: true,
           activeMenu: '/client/invoices',
@@ -315,49 +319,49 @@ export default [
         path: 'invoices/:id',
         name: 'ClientInvoiceDetail',
         component: () => import('@/pages/client/invoice-detail-view/index.vue'),
-        meta: { title: title('账单详情'), requireAuth: true, hidden: true, activeMenu: '/client/invoices' },
+        meta: { title: title('账单详情', '账单详情', '賬單詳情'), requireAuth: true, hidden: true, activeMenu: '/client/invoices' },
       },
       {
         path: 'orders/:id',
         name: 'ClientOrderDetail',
         component: () => import('@/pages/client/order-detail/index.vue'),
-        meta: { title: title('订单详情'), requireAuth: true, hidden: true, activeMenu: '/client/orders' },
+        meta: { title: title('订单详情', '订单详情', '訂單詳情'), requireAuth: true, hidden: true, activeMenu: '/client/orders' },
       },
       {
         path: 'payments/:id',
         name: 'ClientPaymentDetail',
         component: () => import('@/pages/client/payment-detail/index.vue'),
-        meta: { title: title('充值详情'), requireAuth: true, hidden: true, activeMenu: '/client/payments' },
+        meta: { title: title('充值详情', '充值详情', '充值詳情'), requireAuth: true, hidden: true, activeMenu: '/client/payments' },
       },
       {
         path: 'balance-logs',
         name: 'ClientBalanceLogsDeprecated',
         redirect: '/result/404',
-        meta: { title: title('余额流水'), requireAuth: true, hidden: true },
+        meta: { title: title('余额流水', '余额流水', '餘額流水'), requireAuth: true, hidden: true },
       },
       {
         path: 'tickets/:id',
         name: 'ClientTicketDetail',
         component: () => import('@/pages/client/ticket-detail/index.vue'),
-        meta: { title: title('工单详情'), requireAuth: true, hidden: true, activeMenu: '/client/tickets' },
+        meta: { title: title('工单详情', '工单详情', '工單詳情'), requireAuth: true, hidden: true, activeMenu: '/client/tickets' },
       },
       {
         path: 'ticket-conversations/:id',
         name: 'ClientTicketConversation',
         component: () => import('@/pages/client/ticket-detail/index.vue'),
-        meta: { title: title('工单交流'), requireAuth: true, hidden: true, activeMenu: '/client/tickets' },
+        meta: { title: title('工单交流', '工单交流', '工單交流'), requireAuth: true, hidden: true, activeMenu: '/client/tickets' },
       },
       {
         path: 'notices/:id',
         name: 'ClientNoticeDetail',
         component: () => import('@/pages/client/notice-detail/index.vue'),
-        meta: { title: title('公告详情'), requireAuth: true, hidden: true, activeMenu: '/client/notices' },
+        meta: { title: title('公告详情', '公告详情', '公告詳情'), requireAuth: true, hidden: true, activeMenu: '/client/notices' },
       },
       {
         path: 'help/:id',
         name: 'ClientHelpDetail',
         component: () => import('@/pages/client/help-detail/index.vue'),
-        meta: { title: title('帮助详情'), requireAuth: true, hidden: true, activeMenu: '/client/help' },
+        meta: { title: title('帮助详情', '帮助详情', '幫助詳情'), requireAuth: true, hidden: true, activeMenu: '/client/help' },
       },
     ],
   },

@@ -6,7 +6,7 @@
           v-model="filters.keyword"
           clearable
           class="service-filter-bar__search"
-          placeholder="搜索服务名称、域名、账单号"
+          :placeholder="$t('client.services.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >
@@ -15,8 +15,13 @@
           </template>
         </t-input>
 
-        <t-select v-model="filters.catalog_type" clearable placeholder="服务分类" @change="handleSearch">
-          <t-option label="全部分类" value="" />
+        <t-select
+          v-model="filters.catalog_type"
+          clearable
+          :placeholder="$t('client.services.catalogTypePlaceholder')"
+          @change="handleSearch"
+        >
+          <t-option :label="$t('client.services.allCategories')" value="" />
           <t-option
             v-for="item in catalogTypeOptions"
             :key="item.value"
@@ -25,14 +30,19 @@
           />
         </t-select>
 
-        <t-select v-model="filters.status" clearable placeholder="状态分类" @change="handleSearch">
+        <t-select v-model="filters.status" clearable :placeholder="$t('client.services.statusPlaceholder')" @change="handleSearch">
           <t-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
 
-        <t-select v-model="filters.auto_renew" clearable placeholder="续费方式" @change="handleSearch">
-          <t-option label="全部" value="" />
-          <t-option label="自动续费" value="1" />
-          <t-option label="未开启自动续费" value="0" />
+        <t-select
+          v-model="filters.auto_renew"
+          clearable
+          :placeholder="$t('client.services.autoRenewPlaceholder')"
+          @change="handleSearch"
+        >
+          <t-option :label="$t('client.services.all')" value="" />
+          <t-option :label="$t('client.services.autoRenew')" value="1" />
+          <t-option :label="$t('client.services.autoRenewOff')" value="0" />
         </t-select>
 
         <div class="service-filter-actions">
@@ -45,14 +55,14 @@
               <catalog-icon v-if="viewMode === 'grid'" />
               <dashboard-icon v-else />
             </template>
-            {{ viewMode === 'grid' ? '列表' : '卡片' }}
+            {{ viewMode === 'grid' ? $t('client.services.listView') : $t('client.services.cardView') }}
           </t-button>
         </div>
       </div>
     </t-card>
 
     <section class="service-list-section">
-      <data-state :loading="loading" :empty="!list.length" description="当前还没有任何服务实例">
+      <data-state :loading="loading" :empty="!list.length" :description="$t('client.services.empty')">
         <template #default>
           <div v-if="viewMode === 'grid'" class="service-card-grid">
             <article
@@ -65,10 +75,10 @@
                 <button
                   type="button"
                   class="service-action-console"
-                  :aria-label="`${resolveServiceName(item)} 控制台`"
+                  :aria-label="`${resolveServiceName(item)} ${$t('client.services.console')}`"
                   @click="openDetail(item.id)"
                 >
-                  控制台
+                  {{ $t('client.services.console') }}
                 </button>
                 <t-dropdown
                   v-if="actionOptions(item).length"
@@ -79,9 +89,9 @@
                   <button
                     type="button"
                     class="service-action-more"
-                    :aria-label="`${resolveServiceName(item)} 更多操作`"
+                    :aria-label="`${resolveServiceName(item)} ${$t('client.services.moreActionsAria')}`"
                   >
-                    更多
+                    {{ $t('client.services.more') }}
                   </button>
                 </t-dropdown>
               </div>
@@ -117,14 +127,14 @@
                           <span
                             class="service-remark-text"
                             :class="{ empty: !item.remark }"
-                            :title="item.remark || '添加备注'"
+                            :title="item.remark || $t('client.services.addRemark')"
                           >
-                            {{ item.remark || '添加备注' }}
+                            {{ item.remark || $t('client.services.addRemark') }}
                           </span>
                           <button
                             type="button"
                             class="service-remark-trigger"
-                            :aria-label="item.remark ? '编辑备注' : '添加备注'"
+                            :aria-label="item.remark ? $t('client.services.editRemark') : $t('client.services.addRemark')"
                             @click="openRemark(item)"
                           >
                             <edit-icon />
@@ -134,28 +144,28 @@
                     </div>
 
                     <div v-if="isCdnCard(item)" class="service-spec-line">
-                      <span v-if="resolveCdnSpec(item).nodes">节点数 {{ resolveCdnSpec(item).nodes }}</span>
+                      <span v-if="resolveCdnSpec(item).nodes">$t('client.services.nodeCount', { count: resolveCdnSpec(item).nodes })</span>
                       <span v-if="resolveCdnSpec(item).region">
-                        节点区域 {{ resolveCdnSpec(item).region }}
+                        {{ $t('client.services.nodeRegion') }} {{ resolveCdnSpec(item).region }}
                       </span>
-                      <span v-if="!hasCdnSpec(item)" class="service-spec-empty">CDN 加速实例</span>
+                      <span v-if="!hasCdnSpec(item)" class="service-spec-empty">{{ $t('client.services.cdnInstance') }}</span>
                     </div>
                     <div v-else-if="isVirtualHostCard(item)" class="service-spec-line">
                       <span v-if="resolveVirtualHostSpec(item).webSpace">
-                        网页空间 {{ resolveVirtualHostSpec(item).webSpace }}
+                        {{ $t('client.services.webSpace') }} {{ resolveVirtualHostSpec(item).webSpace }}
                       </span>
                       <span v-if="resolveVirtualHostSpec(item).dbSpace">
-                        数据库 {{ resolveVirtualHostSpec(item).dbSpace }}
+                        {{ $t('client.services.database') }} {{ resolveVirtualHostSpec(item).dbSpace }}
                       </span>
                       <span v-if="resolveVirtualHostSpec(item).traffic">
-                        月流量 {{ resolveVirtualHostSpec(item).traffic }}
+                        {{ $t('client.services.monthlyTraffic') }} {{ resolveVirtualHostSpec(item).traffic }}
                       </span>
-                      <span v-if="!hasVirtualHostCardSpec(item)" class="service-spec-empty">虚拟主机实例</span>
+                      <span v-if="!hasVirtualHostCardSpec(item)" class="service-spec-empty">{{ $t('client.services.virtualHostInstance') }}</span>
                     </div>
                     <div v-else class="service-spec-line">
                       <span>CPU {{ findListSpecValue(item, ['CPU', '核心']) }}</span>
-                      <span>内存 {{ findListSpecValue(item, ['内存', 'RAM']) }}</span>
-                      <span>带宽 {{ resolveListBandwidthText(item) }}</span>
+                      <span>{{ $t('client.services.memory') }} {{ findListSpecValue(item, ['内存', 'RAM']) }}</span>
+                      <span>{{ $t('client.services.bandwidth') }} {{ resolveListBandwidthText(item) }}</span>
                     </div>
 
                     <div
@@ -163,11 +173,11 @@
                       class="service-expire-line is-cdn"
                       :class="{ warning: isExpiringSoon(item.expires_at) }"
                     >
-                      <span>计费方式：{{ item.billing_cycle_label || '试用机' }}</span>
-                      <span v-if="item.expires_at">到期 {{ item.expires_at }}</span>
+                      <span>{{ $t('client.services.billingCycleLabel') }}{{ item.billing_cycle_label || $t('client.services.trialMachine') }}</span>
+                      <span v-if="item.expires_at">{{ $t('client.services.expiresAtPrefix') }} {{ item.expires_at }}</span>
                     </div>
                     <div v-else class="service-expire-line" :class="{ warning: isExpiringSoon(item.expires_at) }">
-                      到期时间：{{ item.expires_at || '长期有效' }}
+                      {{ $t('client.services.expiresAtLabel') }}{{ item.expires_at || $t('client.services.longTermValid') }}
                     </div>
                   </div>
 
@@ -177,7 +187,7 @@
                     </t-tag>
 
                     <div v-if="isCdnCard(item)" class="service-ip-line">
-                      <span class="service-ip-label">流量</span>
+                      <span class="service-ip-label">{{ $t('client.services.traffic') }}</span>
                       <span class="service-ip-button is-static">
                         {{ resolveListTrafficText(item) || '--' }}
                       </span>
@@ -185,11 +195,11 @@
 
                     <!-- 虚拟主机没有独立公网 IP，右下角展示可复制的主机账号 -->
                     <div v-else-if="isVirtualHostCard(item)" class="service-ip-line">
-                      <span class="service-ip-label">主机账号</span>
+                      <span class="service-ip-label">{{ $t('client.services.hostAccount') }}</span>
                       <button
                         type="button"
                         class="service-ip-button"
-                        :title="`点击复制 ${resolveListHostAccountText(item)}`"
+                        :title="`${$t('client.services.copyTitle')} ${resolveListHostAccountText(item)}`"
                         @click="copyText(resolveListHostAccountText(item))"
                       >
                         {{ resolveListHostAccountText(item) }}
@@ -197,13 +207,17 @@
                     </div>
 
                     <div v-else class="service-ip-line">
-                      <span class="service-ip-label">公网 IP</span>
+                      <span class="service-ip-label">{{ $t('client.services.publicIp') }}</span>
                       <button
                         type="button"
                         class="service-ip-button"
                         :class="{ disabled: !(item.upstream?.dedicated_ip && item.upstream.dedicated_ip !== '--') }"
                         :disabled="!(item.upstream?.dedicated_ip && item.upstream.dedicated_ip !== '--')"
-                        :title="item.upstream?.dedicated_ip ? `点击复制 ${item.upstream.dedicated_ip}` : '暂无公网 IP'"
+                        :title="
+                          item.upstream?.dedicated_ip
+                            ? `${$t('client.services.copyTitle')} ${item.upstream.dedicated_ip}`
+                            : $t('client.services.noPublicIp')
+                        "
                         @click="copyText(item.upstream?.dedicated_ip || '')"
                       >
                         {{ item.upstream?.dedicated_ip || '--' }}
@@ -213,7 +227,7 @@
                 </div>
               </div>
               <div v-if="Number(item.auto_renew) === 1" class="service-auto-renew-badge">
-                <span class="service-auto-renew-badge__text">自</span>
+                <span class="service-auto-renew-badge__text">{{ $t('client.services.autoRenewBadge') }}</span>
               </div>
             </article>
           </div>
@@ -238,13 +252,13 @@
                       <t-button theme="primary" variant="text" class="service-name-button" @click="openDetail(row.id)">
                         {{ resolveServiceName(row) }}
                       </t-button>
-                      <span v-if="Number(row.auto_renew) === 1" class="service-table-auto-renew">自</span>
+                      <span v-if="Number(row.auto_renew) === 1" class="service-table-auto-renew">{{ $t('client.services.autoRenewBadge') }}</span>
                       <span class="service-row-id">ID {{ row.id }}</span>
                     </div>
                     <div class="service-table-meta">
-                      <span>{{ row.product?.group_name || row.product?.type_label || '云服务' }}</span>
+                      <span>{{ row.product?.group_name || row.product?.type_label || $t('client.services.cloudService') }}</span>
                       <span class="service-table-meta__dot"></span>
-                      <span :class="{ empty: !row.remark }">{{ row.remark || '未添加备注' }}</span>
+                      <span :class="{ empty: !row.remark }">{{ row.remark || $t('client.services.noRemark') }}</span>
                       <t-button shape="square" variant="text" size="small" @click="openRemark(row)">
                         <template #icon><edit-icon /></template>
                       </t-button>
@@ -254,28 +268,28 @@
               </template>
               <template #specs="{ row }">
                 <div v-if="isCdnCard(row)" class="service-table-specs">
-                  <span v-if="resolveCdnSpec(row).nodes">节点数 {{ resolveCdnSpec(row).nodes }}</span>
-                  <span v-if="resolveCdnSpec(row).region">节点区域 {{ resolveCdnSpec(row).region }}</span>
-                  <span v-if="!hasCdnSpec(row)" class="service-spec-empty">CDN 加速实例</span>
+                  <span v-if="resolveCdnSpec(row).nodes">$t('client.services.nodeCount', { count: resolveCdnSpec(row).nodes })</span>
+                  <span v-if="resolveCdnSpec(row).region">{{ $t('client.services.nodeRegion') }} {{ resolveCdnSpec(row).region }}</span>
+                  <span v-if="!hasCdnSpec(row)" class="service-spec-empty">{{ $t('client.services.cdnInstance') }}</span>
                 </div>
                 <div v-else-if="isVirtualHostCard(row)" class="service-table-specs">
                   <span v-if="resolveVirtualHostSpec(row).webSpace">
-                    网页空间 {{ resolveVirtualHostSpec(row).webSpace }}
+                    {{ $t('client.services.webSpace') }} {{ resolveVirtualHostSpec(row).webSpace }}
                   </span>
                   <span v-if="resolveVirtualHostSpec(row).traffic">
-                    月流量 {{ resolveVirtualHostSpec(row).traffic }}
+                    {{ $t('client.services.monthlyTraffic') }} {{ resolveVirtualHostSpec(row).traffic }}
                   </span>
-                  <span v-if="!hasVirtualHostTableSpec(row)" class="service-spec-empty">虚拟主机实例</span>
+                  <span v-if="!hasVirtualHostTableSpec(row)" class="service-spec-empty">{{ $t('client.services.virtualHostInstance') }}</span>
                 </div>
                 <div v-else class="service-table-specs">
                   <span>CPU {{ findListSpecValue(row, ['CPU', '核心']) }}</span>
-                  <span>内存 {{ findListSpecValue(row, ['内存', 'RAM']) }}</span>
-                  <span>带宽 {{ resolveListBandwidthText(row) }}</span>
+                  <span>{{ $t('client.services.memory') }} {{ findListSpecValue(row, ['内存', 'RAM']) }}</span>
+                  <span>{{ $t('client.services.bandwidth') }} {{ resolveListBandwidthText(row) }}</span>
                 </div>
               </template>
               <template #expires="{ row }">
                 <span class="service-expire-line" :class="{ warning: isExpiringSoon(row.expires_at) }">
-                  {{ row.expires_at || '长期有效' }}
+                  {{ row.expires_at || $t('client.services.longTermValid') }}
                 </span>
               </template>
               <template #status="{ row }">
@@ -307,14 +321,14 @@
               </template>
               <template #operation="{ row }">
                 <t-space>
-                  <t-button size="small" theme="primary" variant="outline" @click="openDetail(row.id)">控制台</t-button>
+                  <t-button size="small" theme="primary" variant="outline" @click="openDetail(row.id)">{{ $t('client.services.console') }}</t-button>
                   <t-dropdown
                     v-if="actionOptions(row).length"
                     trigger="click"
                     :options="actionOptions(row)"
                     @click="(option) => handleDropdownAction(option, row)"
                   >
-                    <t-button size="small" variant="outline">更多</t-button>
+                    <t-button size="small" variant="outline">{{ $t('client.services.more') }}</t-button>
                   </t-dropdown>
                 </t-space>
               </template>
@@ -324,7 +338,7 @@
       </data-state>
 
       <div v-if="!loading && !list.length" class="service-empty-action">
-        <t-button theme="primary" @click="openPublicProducts">去选购产品</t-button>
+        <t-button theme="primary" @click="openPublicProducts">{{ $t('client.services.goShopping') }}</t-button>
       </div>
     </section>
 
@@ -340,21 +354,26 @@
       />
     </div>
 
-    <t-dialog v-model:visible="renewVisible" header="服务续费" width="min(34rem, calc(100vw - 2rem))" destroy-on-close>
-      <loading-state :loading="renewPreviewLoading" text="正在加载续费信息" compact>
+    <t-dialog
+      v-model:visible="renewVisible"
+      :header="$t('client.services.renewTitle')"
+      width="min(34rem, calc(100vw - 2rem))"
+      destroy-on-close
+    >
+      <loading-state :loading="renewPreviewLoading" :text="$t('client.services.renewLoading')" compact>
         <template v-if="renewData">
           <div class="renew-summary-card">
             <div class="renew-summary-row">
-              <span>服务实例</span>
+              <span>{{ $t('client.services.renewServiceLabel') }}</span>
               <strong>{{ resolveServiceName(renewTarget) }}</strong>
             </div>
             <div class="renew-summary-row">
-              <span>当前到期</span>
+              <span>{{ $t('client.services.renewCurrentExpiresLabel') }}</span>
               <strong>{{ renewData.expires_at || '--' }}</strong>
             </div>
             <div class="renew-summary-row">
-              <span>自动续费</span>
-              <strong>{{ Number(renewData.auto_renew) === 1 ? '已开启' : '未开启' }}</strong>
+              <span>{{ $t('client.services.renewAutoRenewLabel') }}</span>
+              <strong>{{ Number(renewData.auto_renew) === 1 ? $t('client.services.enabled') : $t('client.services.disabled') }}</strong>
             </div>
           </div>
 
@@ -369,11 +388,11 @@
           </t-radio-group>
 
           <div v-if="availableRenewCoupons.length" class="renew-coupon-row">
-            <span>续费优惠</span>
+            <span>{{ $t('client.services.renewCouponLabel') }}</span>
             <t-select
               :model-value="renewForm.user_coupon_id || undefined"
               clearable
-              placeholder="选择优惠券"
+              :placeholder="$t('client.services.renewCouponPlaceholder')"
               @change="handleRenewCouponChange"
             >
               <t-option
@@ -386,32 +405,37 @@
           </div>
 
           <div class="renew-total-line">
-            <span>本次应付</span>
+            <span>{{ $t('client.services.renewTotalLabel') }}</span>
             <strong>￥{{ selectedRenewAmount }}</strong>
           </div>
         </template>
 
-        <t-empty v-else description="未获取到可续费周期" />
+        <t-empty v-else :description="$t('client.services.noRenewCycle')" />
       </loading-state>
 
       <template #footer>
-        <t-button variant="outline" @click="renewVisible = false">取消</t-button>
+        <t-button variant="outline" @click="renewVisible = false">{{ $t('client.services.renewCancel') }}</t-button>
         <t-button theme="primary" :loading="renewSubmitting" :disabled="!renewForm.billing_cycle" @click="submitRenew">
-          创建续费账单
+          {{ $t('client.services.renewCreateInvoice') }}
         </t-button>
       </template>
     </t-dialog>
 
-    <t-dialog v-model:visible="remarkVisible" header="编辑备注" width="min(28rem, calc(100vw - 2rem))" destroy-on-close>
+    <t-dialog
+      v-model:visible="remarkVisible"
+      :header="$t('client.services.remarkTitle')"
+      width="min(28rem, calc(100vw - 2rem))"
+      destroy-on-close
+    >
       <t-textarea
         v-model="remarkForm.remark"
         :autosize="{ minRows: 4, maxRows: 6 }"
         :maxlength="120"
-        placeholder="填写服务备注，便于快速识别"
+        :placeholder="$t('client.services.remarkPlaceholder')"
       />
       <template #footer>
-        <t-button variant="outline" @click="remarkVisible = false">取消</t-button>
-        <t-button theme="primary" :loading="remarkSubmitting" @click="submitRemark">保存备注</t-button>
+        <t-button variant="outline" @click="remarkVisible = false">{{ $t('client.services.remarkCancel') }}</t-button>
+        <t-button theme="primary" :loading="remarkSubmitting" @click="submitRemark">{{ $t('client.services.saveRemark') }}</t-button>
       </template>
     </t-dialog>
   </section>

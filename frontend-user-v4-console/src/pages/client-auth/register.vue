@@ -1,41 +1,41 @@
 <template>
   <auth-shell
-    title="免费注册"
-    nav-text="已经有账户？"
-    nav-link-text="立即登录"
+    :title="$t('clientAuth.register.title')"
+    :nav-text="$t('clientAuth.register.hasAccount')"
+    :nav-link-text="$t('clientAuth.register.signInNow')"
     :nav-to="loginLink"
-    cta-text="查看产品目录"
+    :cta-text="$t('clientAuth.register.viewCatalog')"
     cta-to="/products"
-    hero-title="注册后即可进入控制台开始购买"
-    hero-description="完成开户注册后，可以继续创建账单、管理服务，并处理实名认证与账户安全设置。"
+    :hero-title="$t('clientAuth.register.heroTitle')"
+    :hero-description="$t('clientAuth.register.heroDescription')"
   >
     <t-form ref="formRef" class="client-auth-form" :data="form" :rules="rules" label-width="0" @submit="handleRegister">
       <t-form-item name="account">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required" for="register-account">手机号 / 邮箱</label>
+          <label class="client-auth-label is-required" for="register-account">{{ $t('clientAuth.register.accountLabel') }}</label>
           <t-input
             id="register-account"
             v-model="form.account"
             size="large"
             clearable
             autocomplete="username"
-            placeholder="请输入手机号或邮箱"
+            :placeholder="$t('clientAuth.register.accountPlaceholder')"
           />
         </div>
       </t-form-item>
 
       <t-form-item name="code">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required" for="register-code">验证码</label>
+          <label class="client-auth-label is-required" for="register-code">{{ $t('clientAuth.register.codeLabel') }}</label>
           <div class="client-auth-code-row">
-            <t-input id="register-code" v-model="form.code" size="large" maxlength="6" placeholder="请输入验证码" />
+            <t-input id="register-code" v-model="form.code" size="large" maxlength="6" :placeholder="$t('clientAuth.register.codePlaceholder')" />
             <t-button
               variant="outline"
               :disabled="countdown > 0"
               :loading="sendingCode || captchaLoading"
               @click="handleSendCode"
             >
-              {{ countdown > 0 ? `${countdown}s` : '发送验证码' }}
+              {{ countdown > 0 ? `${countdown}s` : $t('clientAuth.register.sendCode') }}
             </t-button>
           </div>
         </div>
@@ -43,33 +43,33 @@
 
       <t-form-item name="nickname">
         <div class="client-auth-field">
-          <label class="client-auth-label" for="register-nickname">用户名</label>
+          <label class="client-auth-label" for="register-nickname">{{ $t('clientAuth.register.nicknameLabel') }}</label>
           <t-input
             id="register-nickname"
             v-model="form.nickname"
             size="large"
             maxlength="50"
-            placeholder="选填，最多 50 个字符"
+            :placeholder="$t('clientAuth.register.nicknamePlaceholder')"
           />
         </div>
       </t-form-item>
 
       <t-form-item name="referral_code">
         <div class="client-auth-field">
-          <label class="client-auth-label" for="register-referral">推荐码</label>
+          <label class="client-auth-label" for="register-referral">{{ $t('clientAuth.register.referralLabel') }}</label>
           <t-input
             id="register-referral"
             v-model="form.referral_code"
             size="large"
             maxlength="24"
-            placeholder="选填，如有邀请推荐可填写"
+            :placeholder="$t('clientAuth.register.referralPlaceholder')"
           />
         </div>
       </t-form-item>
 
       <t-form-item name="password">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required" for="register-password">登录密码</label>
+          <label class="client-auth-label is-required" for="register-password">{{ $t('clientAuth.register.passwordLabel') }}</label>
           <t-input
             id="register-password"
             v-model="form.password"
@@ -77,7 +77,7 @@
             :type="showPassword ? 'text' : 'password'"
             clearable
             autocomplete="new-password"
-            placeholder="请输入至少 8 位密码"
+            :placeholder="$t('clientAuth.register.passwordPlaceholder')"
           >
             <template #prefix-icon><lock-on-icon /></template>
             <template #suffix-icon>
@@ -89,7 +89,7 @@
 
       <t-form-item name="password_confirmation">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required" for="register-confirm-password">确认密码</label>
+          <label class="client-auth-label is-required" for="register-confirm-password">{{ $t('clientAuth.register.confirmPasswordLabel') }}</label>
           <t-input
             id="register-confirm-password"
             v-model="form.password_confirmation"
@@ -97,7 +97,7 @@
             :type="showConfirmPassword ? 'text' : 'password'"
             clearable
             autocomplete="new-password"
-            placeholder="请再次输入密码"
+            :placeholder="$t('clientAuth.register.confirmPasswordPlaceholder')"
             @enter="submitForm"
           >
             <template #prefix-icon><lock-on-icon /></template>
@@ -119,7 +119,7 @@
         :loading="loading || captchaLoading"
         @click="submitForm"
       >
-        注册并进入控制台
+        {{ $t('clientAuth.register.submit') }}
       </t-button>
     </t-form>
   </auth-shell>

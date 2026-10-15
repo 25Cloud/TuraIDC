@@ -2,7 +2,7 @@
   <div class="ticket-pre-reply-page">
     <t-card :bordered="false" class="ticket-pre-reply-card">
       <div class="ticket-pre-reply-toolbar">
-        <t-button v-if="canManage" theme="primary" :loading="saving" @click="save">保存设置</t-button>
+        <t-button v-if="canManage" theme="primary" :loading="saving" @click="save">{{ $t('tickets.preReplySettings.saveSettings') }}</t-button>
       </div>
 
       <t-form
@@ -13,40 +13,40 @@
         :label-align="isMobile ? 'top' : 'right'"
         :label-width="isMobile ? undefined : '150px'"
       >
-        <t-form-item label="启用预回复" name="enabled">
+        <t-form-item :label="$t('tickets.preReplySettings.enablePreReply')" name="enabled">
           <t-switch v-model="form.enabled" />
-          <span class="ticket-pre-reply-hint">关闭时新建工单不自动回复</span>
+          <span class="ticket-pre-reply-hint">{{ $t('tickets.preReplySettings.enablePreReplyTip') }}</span>
         </t-form-item>
-        <t-form-item label="预回复管理员" name="admin_user_id">
+        <t-form-item :label="$t('tickets.preReplySettings.replyAdmin')" name="admin_user_id">
           <t-select
             v-model="form.admin_user_id"
             :disabled="!form.enabled"
             filterable
             clearable
-            placeholder="选择以谁的名义回复"
+            :placeholder="$t('tickets.preReplySettings.replyAsPlaceholder')"
           >
             <t-option v-for="admin in adminUsers" :key="admin.id" :label="adminLabel(admin)" :value="admin.id" />
           </t-select>
-          <span class="ticket-pre-reply-hint">仅显示可回复工单的启用管理员</span>
+          <span class="ticket-pre-reply-hint">{{ $t('tickets.preReplySettings.replyAdminTip') }}</span>
         </t-form-item>
-        <t-form-item label="回复内容" name="content">
+        <t-form-item :label="$t('tickets.preReplySettings.replyContent')" name="content">
           <t-textarea
             v-model="form.content"
             :disabled="!form.enabled"
             :autosize="{ minRows: 4, maxRows: 8 }"
             maxlength="5000"
-            placeholder="例如：您的工单已收到，请耐心等待管理员回复。"
+            :placeholder="$t('tickets.preReplySettings.replyContentPlaceholder')"
           />
         </t-form-item>
-        <t-form-item label="上游工单预回复内容" name="upstream_content">
+        <t-form-item :label="$t('tickets.preReplySettings.upstreamReplyContent')" name="upstream_content">
           <t-textarea
             v-model="form.upstream_content"
             :disabled="!form.enabled"
             :autosize="{ minRows: 4, maxRows: 8 }"
             maxlength="5000"
-            placeholder="可选。命中工单传递规则、会推送到上游的工单使用该内容；留空则使用上方回复内容。"
+            :placeholder="$t('tickets.preReplySettings.upstreamContentPlaceholder')"
           />
-          <span class="ticket-pre-reply-hint">仅对会传递到上游的工单生效，留空则回退上方内容</span>
+          <span class="ticket-pre-reply-hint">{{ $t('tickets.preReplySettings.upstreamContentTip') }}</span>
         </t-form-item>
       </t-form>
     </t-card>

@@ -8,6 +8,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '会员等级',
+        zh_TW: '會員等級',
         en_US: 'Member Levels',
       },
       permission: 'member_level.list',
@@ -20,6 +21,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '代理折扣',
+        zh_TW: '代理折扣',
         en_US: 'Agent Discounts',
       },
       permission: 'agent_discount.list',
@@ -32,6 +34,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '优惠券列表',
+        zh_TW: '優惠券列表',
         en_US: 'Coupons',
       },
       permission: 'product.list',
@@ -46,6 +49,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '活动券管理',
+        zh_TW: '活動券管理',
         en_US: 'Coupon Campaigns',
       },
       permission: 'product.list',
@@ -60,6 +64,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '推广概览',
+        zh_TW: '推廣概覽',
         en_US: 'Referral Overview',
       },
       permission: 'referral.list',
@@ -74,6 +79,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '奖励记录',
+        zh_TW: '獎勵記錄',
         en_US: 'Referral Rewards',
       },
       permission: 'referral.list',
@@ -88,6 +94,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '提现审核',
+        zh_TW: '提現稽核',
         en_US: 'Referral Withdrawals',
       },
       permission: 'referral_withdrawal.list',

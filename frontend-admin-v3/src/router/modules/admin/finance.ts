@@ -8,6 +8,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '旧订单入口',
+        zh_TW: '舊訂單入口',
         en_US: 'Orders Redirect',
       },
       permission: 'invoice.list',
@@ -21,6 +22,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '全部订单',
+        zh_TW: '全部訂單',
         en_US: 'All Orders',
       },
       permission: 'order.list',
@@ -35,6 +37,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '普通订单',
+        zh_TW: '普通訂單',
         en_US: 'Normal Orders',
       },
       permission: 'order.list',
@@ -49,6 +52,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '续费订单',
+        zh_TW: '續費訂單',
         en_US: 'Renewal Orders',
       },
       permission: 'order.list',
@@ -63,6 +67,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '附加配置',
+        zh_TW: '附加配置',
         en_US: 'Upgrade Orders',
       },
       permission: 'order.list',
@@ -77,6 +82,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '订单详情',
+        zh_TW: '訂單詳情',
         en_US: 'Order Detail',
       },
       permission: 'order.detail',
@@ -90,6 +96,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '账单管理',
+        zh_TW: '賬單管理',
         en_US: 'Invoices',
       },
       permission: 'invoice.list',
@@ -102,6 +109,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '充值管理',
+        zh_TW: '充值管理',
         en_US: 'Recharges',
       },
       permission: 'invoice.list',
@@ -115,6 +123,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '新客户',
+        zh_TW: '新客戶',
         en_US: 'New Customers',
       },
       permission: 'finance.report',
@@ -128,6 +137,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '商品收入',
+        zh_TW: '商品收入',
         en_US: 'Product Income Redirect',
       },
       permission: 'finance.report',
@@ -141,6 +151,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '续费订单',
+        zh_TW: '續費訂單',
         en_US: 'Renewal Orders',
       },
       permission: 'invoice.list',
@@ -154,6 +165,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '附加配置订单',
+        zh_TW: '附加配置訂單',
         en_US: 'Upgrade Orders',
       },
       permission: 'invoice.list',
@@ -167,6 +179,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '服务列表',
+        zh_TW: '服務列表',
         en_US: 'Services',
       },
       permission: 'product.list',
@@ -179,6 +192,7 @@ export const financeRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '服务实例管理',
+        zh_TW: '服務例項管理',
         en_US: 'Service Detail',
       },
       permission: 'product.list',

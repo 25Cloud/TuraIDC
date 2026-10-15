@@ -1,12 +1,12 @@
 <template>
   <section class="console-panel-section">
-    <t-card title="VNC 控制台" :bordered="false">
+    <t-card :title="$t('serviceConsole.vnc.title')" :bordered="false">
       <div class="vnc-panel">
         <div class="vnc-toolbar">
-          <p>{{ vncUrl ? 'VNC 控制台已在当前页面载入。' : '点击连接后将向后端申请一次性 VNC 地址。' }}</p>
+          <p>{{ vncUrl ? $t('serviceConsole.vnc.loadedTip') : $t('serviceConsole.vnc.connectTip') }}</p>
           <t-space>
-            <t-button theme="primary" :loading="actionLoading" @click="handleOpenVnc()">连接 VNC</t-button>
-            <t-button variant="outline" :loading="actionLoading" @click="handleOpenVnc('window')">新窗口打开</t-button>
+            <t-button theme="primary" :loading="actionLoading" @click="handleOpenVnc()">{{ $t('serviceConsole.vnc.connect') }}</t-button>
+            <t-button variant="outline" :loading="actionLoading" @click="handleOpenVnc('window')">{{ $t('serviceConsole.vnc.openInWindow') }}</t-button>
           </t-space>
         </div>
 
@@ -16,11 +16,11 @@
             :key="vncUrl"
             class="vnc-frame"
             :src="vncUrl"
-            title="VNC 控制台"
+            :title="$t('serviceConsole.vnc.title')"
             allow="clipboard-read; clipboard-write; fullscreen"
             referrerpolicy="no-referrer"
           />
-          <div v-else class="vnc-empty">等待连接</div>
+          <div v-else class="vnc-empty">{{ $t('serviceConsole.vnc.waiting') }}</div>
         </div>
       </div>
     </t-card>

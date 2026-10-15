@@ -22,6 +22,22 @@
           <t-radio-button value="auto">{{ t('layout.setting.theme.options.auto') }}</t-radio-button>
         </t-radio-group>
 
+        <div class="setting-group-title">{{ t('layout.setting.language') }}</div>
+        <t-radio-group
+          :value="locale"
+          class="setting-language-radio"
+          variant="default-filled"
+          @change="(val: unknown) => changeLocale(String(val))"
+        >
+          <t-radio-button
+            v-for="item in languageList"
+            :key="String(item.value)"
+            :value="String(item.value)"
+          >
+            {{ item.content }}
+          </t-radio-button>
+        </t-radio-group>
+
         <div class="setting-group-title">{{ t('layout.setting.theme.color') }}</div>
         <p class="setting-theme-readonly">{{ t('layout.setting.theme.siteManaged') }}</p>
 
@@ -70,11 +86,13 @@ import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue';
 
 import Thumbnail from '@/components/thumbnail/index.vue';
 import STYLE_CONFIG from '@/config/style';
-import { t } from '@/locales';
+import { languageList, t } from '@/locales';
+import { useLocale } from '@/locales/useLocale';
 import { useSettingStore } from '@/store';
 import type { ModeType } from '@/types/interface';
 
 const settingStore = useSettingStore();
+const { changeLocale, locale } = useLocale();
 
 const LAYOUT_OPTION = ['side', 'top'];
 const LAYOUT_THUMBNAILS = Object.fromEntries(LAYOUT_OPTION.map((item) => [item, createLayoutThumbnail(item)]));

@@ -107,7 +107,7 @@ const handleRemove = (options: TTabRemoveOptions) => {
 
 const renderTitle = (title?: LocalizedTitle) => {
   if (!title) return '';
-  return title[locale.value as keyof LocalizedTitle] || '';
+  return (title[locale.value as keyof LocalizedTitle] || title.zh_CN) || '';
 };
 const handleRefresh = (route: TRouterInfo, routeIdx: number) => {
   tabsRouterStore.toggleTabRouterAlive(routeIdx);

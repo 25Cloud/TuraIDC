@@ -22,6 +22,7 @@ const adminRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '仪表盘',
+        zh_TW: '儀表盤',
         en_US: 'Dashboard',
       },
       icon: shallowRef(DashboardIcon),

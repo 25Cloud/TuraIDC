@@ -7,7 +7,7 @@
             <h1>{{ config.pageTitle }}</h1>
             <p>{{ config.heroDescription }}</p>
             <div class="hero-keywords">
-              <span>热门搜索:</span>
+              <span>{{ $t('content.hotSearchLabel') }}</span>
               <t-button
                 v-for="item in heroKeywords"
                 :key="item"

@@ -3,10 +3,16 @@
     <t-head-menu :class="menuCls" :theme="menuTheme" expand-type="popup" :value="active">
       <template #logo>
         <span v-if="showLogo" class="header-logo-container" @click="handleNav(ADMIN_HOME_PATH)">
-          <img class="t-logo" :src="logoPng" alt="管理后台" />
+          <img class="t-logo" :src="logoPng" :alt="$t('layout.header.adminConsole')" />
         </span>
         <div v-else-if="!isMobileSideHeader" class="header-operate-left">
-          <t-button theme="default" shape="square" variant="text" aria-label="折叠侧边栏" @click="changeCollapsed">
+          <t-button
+            theme="default"
+            shape="square"
+            variant="text"
+            :aria-label="$t('layout.header.collapseSidebar')"
+            @click="changeCollapsed"
+          >
             <t-icon class="collapsed-icon" name="view-list" />
           </t-button>
         </div>
@@ -16,7 +22,7 @@
             <t-icon name="view-list" />
           </t-button>
           <span class="header-mobile-logo" @click="handleNav(ADMIN_HOME_PATH)">
-            <img class="t-logo" :src="logoPng" alt="管理后台" />
+            <img class="t-logo" :src="logoPng" :alt="$t('layout.header.adminConsole')" />
           </span>
         </div>
       </template>
@@ -32,7 +38,7 @@
                 <span class="operations-dropdown-user-name">{{ user.userInfo.name || t('layout.header.user') }}</span>
               </t-dropdown-item>
               <t-dropdown-item class="operations-dropdown-container-item" @click="openPasswordDialog">
-                <setting-icon />修改密码
+                <setting-icon />{{ $t('layout.header.changePassword') }}
               </t-dropdown-item>
               <t-dropdown-item class="operations-dropdown-container-item" @click="handleLogout">
                 <poweroff-icon />{{ t('layout.header.signOut') }}
@@ -47,16 +53,22 @@
             </t-button>
           </t-dropdown>
           <t-tooltip placement="bottom" :content="t('layout.header.setting')">
-            <t-button theme="default" shape="square" variant="text" aria-label="设置" @click="toggleSettingPanel">
-              <setting-icon />
-            </t-button>
-          </t-tooltip>
-          <t-tooltip placement="bottom" content="仪表盘">
             <t-button
               theme="default"
               shape="square"
               variant="text"
-              aria-label="仪表盘"
+              :aria-label="$t('layout.header.setting')"
+              @click="toggleSettingPanel"
+            >
+              <setting-icon />
+            </t-button>
+          </t-tooltip>
+          <t-tooltip placement="bottom" :content="$t('layout.header.dashboard')">
+            <t-button
+              theme="default"
+              shape="square"
+              variant="text"
+              :aria-label="$t('layout.header.dashboard')"
               @click="handleNav('/admin/dashboard')"
             >
               <home-icon />
@@ -68,20 +80,20 @@
 
     <t-dialog
       v-model:visible="passwordVisible"
-      header="修改密码"
+      :header="$t('layout.header.changePassword')"
       width="520px"
-      :confirm-btn="{ content: '保存', theme: 'primary' }"
+      :confirm-btn="{ content: $t('layout.header.save'), theme: 'primary' }"
       :confirm-loading="passwordSaving"
       @confirm="submitPassword"
     >
       <t-form ref="passwordFormRef" :data="passwordForm" :rules="passwordRules" label-align="top">
-        <t-form-item label="当前密码" name="current_password">
+        <t-form-item :label="$t('layout.header.currentPassword')" name="current_password">
           <t-input v-model="passwordForm.current_password" type="password" autocomplete="current-password" />
         </t-form-item>
-        <t-form-item label="新密码" name="password">
+        <t-form-item :label="$t('layout.header.newPassword')" name="password">
           <t-input v-model="passwordForm.password" type="password" autocomplete="new-password" />
         </t-form-item>
-        <t-form-item label="确认新密码" name="password_confirmation">
+        <t-form-item :label="$t('layout.header.confirmNewPassword')" name="password_confirmation">
           <t-input v-model="passwordForm.password_confirmation" type="password" autocomplete="new-password" />
         </t-form-item>
       </t-form>

@@ -3,7 +3,7 @@
     <div class="console-header-main">
       <div class="console-title-line">
         <h1>{{ detail.name || `服务 #${serviceId}` }}</h1>
-        <t-button theme="primary" variant="text" @click="openNameDialog">修改名称</t-button>
+        <t-button theme="primary" variant="text" @click="openNameDialog">{{ $t('serviceConsole.rename') }}</t-button>
         <t-tag :theme="resolveTdesignStatusTheme(detail)" variant="light">{{
           resolveServiceStatusLabel(detail.status)
         }}</t-tag>
@@ -18,7 +18,7 @@
         >
         <span v-if="compact" class="meta-item meta-region">{{ compactRegionLabel }}：{{ serviceRegion }}</span>
         <div class="console-auto-renew-line">
-          <span>自动续费</span>
+          <span>{{ $t('serviceConsole.autoRenew') }}</span>
           <t-switch
             :value="Number(detail.auto_renew) === 1"
             :loading="autoRenewLoading"
@@ -26,7 +26,7 @@
           />
         </div>
         <div class="console-remark-line">
-          <span>备注：</span>
+          <span>{{ $t('serviceConsole.remarkLabel') }}</span>
           <strong :class="{ 'is-empty': !detail.remark }">{{ detail.remark || '点击添加备注' }}</strong>
           <t-button
             shape="square"

@@ -7,8 +7,8 @@
   >
     <div class="dialog-form">
       <label>
-        <span>方向</span>
-        <t-select v-model="ruleForm.direction" placeholder="请选择方向">
+        <span>{{ $t('serviceConsole.securityGroup.direction') }}</span>
+        <t-select v-model="ruleForm.direction" :placeholder="$t('serviceConsole.securityGroup.directionPlaceholder')">
           <t-option
             v-for="item in securityState.directions"
             :key="item.value"
@@ -18,13 +18,13 @@
         </t-select>
       </label>
       <label>
-        <span>协议</span>
-        <t-select v-model="ruleForm.protocol" placeholder="请选择协议" @change="onProtocolChange">
+        <span>{{ $t('serviceConsole.securityGroup.protocol') }}</span>
+        <t-select v-model="ruleForm.protocol" :placeholder="$t('serviceConsole.securityGroup.protocolPlaceholder')" @change="onProtocolChange">
           <t-option v-for="item in securityState.protocols" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
       </label>
       <label>
-        <span>端口</span>
+        <span>{{ $t('serviceConsole.securityGroup.port') }}</span>
         <t-input
           v-model="ruleForm.port"
           :placeholder="
@@ -38,22 +38,22 @@
         />
       </label>
       <label>
-        <span>IP 范围</span>
-        <t-input v-model="ruleForm.ip" placeholder="例如 0.0.0.0/0" />
+        <span>{{ $t('serviceConsole.securityGroup.ipRange') }}</span>
+        <t-input v-model="ruleForm.ip" :placeholder="$t('serviceConsole.securityGroup.ipPlaceholder')" />
       </label>
       <label>
-        <span>备注</span>
+        <span>{{ $t('serviceConsole.securityGroup.remark') }}</span>
         <t-textarea
           v-model="ruleForm.description"
           :autosize="{ minRows: 3, maxRows: 5 }"
           :maxlength="200"
-          placeholder="选填"
+          :placeholder="$t('serviceConsole.securityGroup.remarkPlaceholder')"
         />
       </label>
     </div>
     <template #footer>
-      <t-button variant="outline" @click="ruleVisible = false">取消</t-button>
-      <t-button theme="primary" :loading="securityState.submitting" @click="submitSecurityRule">创建规则</t-button>
+      <t-button variant="outline" @click="ruleVisible = false">{{ $t('common.cancel') }}</t-button>
+      <t-button theme="primary" :loading="securityState.submitting" @click="submitSecurityRule">{{ $t('serviceConsole.securityGroup.create') }}</t-button>
     </template>
   </t-dialog>
 </template>

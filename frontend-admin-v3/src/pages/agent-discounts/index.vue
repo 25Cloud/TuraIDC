@@ -2,14 +2,17 @@
   <div class="agent-discounts-page">
     <t-tabs v-model="activeTab">
       <!-- 代理组 -->
-      <t-tab-panel value="agent-groups" label="代理组">
+      <t-tab-panel value="agent-groups" :label="$t('agentDiscounts.index.agentGroups')">
         <t-card :bordered="false" :loading="loadingAgentGroups">
-          <template #title>代理组</template>
-          <template #subtitle>共 {{ agentGroups.length }} 个分组</template>
+          <template #title>{{ $t('agentDiscounts.index.agentGroups') }}</template>
+          <template #subtitle
+            >{{ $t('agentDiscounts.index.totalGroupsPrefix') }} {{ agentGroups.length }}
+            {{ $t('agentDiscounts.index.groupUnit') }}</template
+          >
           <template #actions>
             <t-button v-if="canManage" theme="primary" @click="openAgentGroupDialog()">
               <template #icon><add-icon /></template>
-              新增代理组
+              {{ $t('agentDiscounts.index.addAgentGroup') }}
             </t-button>
           </template>
 
@@ -30,15 +33,15 @@
               </template>
               <template #status="{ row }">
                 <t-tag :theme="Number(row.status) === 1 ? 'success' : 'default'" variant="light">
-                  {{ Number(row.status) === 1 ? '启用' : '停用' }}
+                  {{ Number(row.status) === 1 ? $t('agentDiscounts.index.enabled') : $t('agentDiscounts.index.disabled') }}
                 </t-tag>
               </template>
               <template #remark="{ row }">{{ fieldValue(row.remark) }}</template>
               <template #updatedAt="{ row }">{{ formatDateTime(row.updated_at) }}</template>
               <template #actions="{ row }">
                 <t-space v-if="canManage" size="small">
-                  <t-button theme="primary" variant="text" @click="openAgentGroupDialog(row)">编辑</t-button>
-                  <t-button theme="danger" variant="text" @click="removeAgentGroup(row)">删除</t-button>
+                  <t-button theme="primary" variant="text" @click="openAgentGroupDialog(row)">{{ $t('agentDiscounts.index.edit') }}</t-button>
+                  <t-button theme="danger" variant="text" @click="removeAgentGroup(row)">{{ $t('agentDiscounts.index.delete') }}</t-button>
                 </t-space>
                 <span v-else>-</span>
               </template>
@@ -48,14 +51,17 @@
       </t-tab-panel>
 
       <!-- 商品折扣组 -->
-      <t-tab-panel value="product-groups" label="商品折扣组">
+      <t-tab-panel value="product-groups" :label="$t('agentDiscounts.index.productDiscountGroups')">
         <t-card :bordered="false" :loading="loadingProductGroups">
-          <template #title>商品折扣组</template>
-          <template #subtitle>共 {{ productGroups.length }} 个分组</template>
+          <template #title>{{ $t('agentDiscounts.index.productDiscountGroups') }}</template>
+          <template #subtitle
+            >{{ $t('agentDiscounts.index.totalGroupsPrefix') }} {{ productGroups.length }}
+            {{ $t('agentDiscounts.index.groupUnit') }}</template
+          >
           <template #actions>
             <t-button v-if="canManage" theme="primary" @click="openProductGroupDialog()">
               <template #icon><add-icon /></template>
-              新增折扣组
+              {{ $t('agentDiscounts.index.addDiscountGroup') }}
             </t-button>
           </template>
 
@@ -82,14 +88,14 @@
               </template>
               <template #status="{ row }">
                 <t-tag :theme="Number(row.status) === 1 ? 'success' : 'default'" variant="light">
-                  {{ Number(row.status) === 1 ? '启用' : '停用' }}
+                  {{ Number(row.status) === 1 ? $t('agentDiscounts.index.enabled') : $t('agentDiscounts.index.disabled') }}
                 </t-tag>
               </template>
               <template #remark="{ row }">{{ fieldValue(row.remark) }}</template>
               <template #actions="{ row }">
                 <t-space v-if="canManage" size="small">
-                  <t-button theme="primary" variant="text" @click="openProductGroupDialog(row)">编辑</t-button>
-                  <t-button theme="danger" variant="text" @click="removeProductGroup(row)">删除</t-button>
+                  <t-button theme="primary" variant="text" @click="openProductGroupDialog(row)">{{ $t('agentDiscounts.index.edit') }}</t-button>
+                  <t-button theme="danger" variant="text" @click="removeProductGroup(row)">{{ $t('agentDiscounts.index.delete') }}</t-button>
                 </t-space>
                 <span v-else>-</span>
               </template>
@@ -99,27 +105,24 @@
       </t-tab-panel>
 
       <!-- 折扣矩阵 -->
-      <t-tab-panel value="matrix" label="折扣矩阵">
+      <t-tab-panel value="matrix" :label="$t('agentDiscounts.index.discountMatrix')">
         <t-card :bordered="false" :loading="loadingMatrix">
-          <template #title>折扣矩阵</template>
-          <template #subtitle>行为商品折扣组，列为代理组</template>
+          <template #title>{{ $t('agentDiscounts.index.discountMatrix') }}</template>
+          <template #subtitle>{{ $t('agentDiscounts.index.discountMatrixSubtitle') }}</template>
           <template #actions>
             <t-space size="small">
-              <t-button variant="outline" @click="loadMatrix">重新加载</t-button>
-              <t-button v-if="canManage" theme="primary" :loading="savingMatrix" @click="saveMatrix">保存矩阵</t-button>
+              <t-button variant="outline" @click="loadMatrix">{{ $t('agentDiscounts.index.reload') }}</t-button>
+              <t-button v-if="canManage" theme="primary" :loading="savingMatrix" @click="saveMatrix">{{ $t('agentDiscounts.index.saveMatrix') }}</t-button>
             </t-space>
           </template>
 
-          <p class="agent-matrix__hint">
-            折扣率单位为百分比（100 表示原价、90 表示九折），不得低于所属商品折扣组的最低折扣率。
-            留空的格子不会提交，已保存的折扣不受影响；要取消某组合的折扣请填 100（按原价计费）。
-          </p>
+          <p class="agent-matrix__hint">{{ $t('agentDiscounts.index.matrixHint') }}</p>
 
           <div v-if="matrixRows.length && agentGroups.length" class="agent-matrix">
             <table>
               <thead>
                 <tr>
-                  <th>商品折扣组</th>
+                  <th>{{ $t('agentDiscounts.index.productDiscountGroups') }}</th>
                   <th v-for="group in agentGroups" :key="group.id">{{ fieldValue(group.name) }}</th>
                 </tr>
               </thead>
@@ -128,7 +131,7 @@
                   <th>
                     <div class="stack-cell">
                       <strong>{{ fieldValue(row.name) }}</strong>
-                      <span>最低 {{ formatPercent(row.min_discount_rate) }}</span>
+                      <span>{{ $t('agentDiscounts.index.minimum') }} {{ formatPercent(row.min_discount_rate) }}</span>
                     </div>
                   </th>
                   <td v-for="group in agentGroups" :key="`${row.id}-${group.id}`">
@@ -140,14 +143,14 @@
                       :step="1"
                       :decimal-places="2"
                       :disabled="!canManage"
-                      placeholder="不设折扣"
+                      :placeholder="$t('agentDiscounts.index.noDiscount')"
                     />
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <div v-else class="agent-matrix__empty">请先创建代理组与商品折扣组，再来配置折扣矩阵。</div>
+          <div v-else class="agent-matrix__empty">{{ $t('agentDiscounts.index.matrixEmpty') }}</div>
         </t-card>
       </t-tab-panel>
     </t-tabs>
@@ -155,29 +158,33 @@
     <!-- 代理组表单 -->
     <t-dialog
       v-model:visible="agentGroupDialogVisible"
-      :header="agentGroupForm.id ? '编辑代理组' : '新增代理组'"
-      :confirm-btn="{ content: '保存', loading: savingAgentGroup }"
+      :header="agentGroupForm.id ? $t('agentDiscounts.index.editAgentGroup') : $t('agentDiscounts.index.addAgentGroup')"
+      :confirm-btn="{ content: $t('agentDiscounts.index.save'), loading: savingAgentGroup }"
       width="560px"
       @confirm="submitAgentGroup"
     >
       <t-form ref="agentGroupFormRef" :data="agentGroupForm" :rules="agentGroupRules" label-width="110px">
         <div class="agent-form-grid">
-          <t-form-item label="名称" name="name">
-            <t-input v-model="agentGroupForm.name" :maxlength="50" placeholder="如：金牌代理" />
+          <t-form-item :label="$t('agentDiscounts.index.name')" name="name">
+            <t-input v-model="agentGroupForm.name" :maxlength="50" :placeholder="$t('agentDiscounts.index.namePlaceholderAgent')" />
           </t-form-item>
-          <t-form-item label="标识" name="code">
-            <t-input v-model="agentGroupForm.code" :maxlength="50" placeholder="唯一标识，如 gold" />
+          <t-form-item :label="$t('agentDiscounts.index.code')" name="code">
+            <t-input v-model="agentGroupForm.code" :maxlength="50" :placeholder="$t('agentDiscounts.index.codePlaceholderGold')" />
           </t-form-item>
-          <t-form-item label="排序" name="sort_order">
+          <t-form-item :label="$t('agentDiscounts.index.sortOrder')" name="sort_order">
             <t-input-number v-model="agentGroupForm.sort_order" theme="normal" :min="0" />
           </t-form-item>
-          <t-form-item label="状态" name="status">
+          <t-form-item :label="$t('agentDiscounts.index.status')" name="status">
             <t-radio-group v-model="agentGroupForm.status">
-              <t-radio :value="1">启用</t-radio>
-              <t-radio :value="0">停用</t-radio>
+              <t-radio :value="1">{{ $t('agentDiscounts.index.enabled') }}</t-radio>
+              <t-radio :value="0">{{ $t('agentDiscounts.index.disabled') }}</t-radio>
             </t-radio-group>
           </t-form-item>
-          <t-form-item class="agent-form-span" label="全局折扣率" name="default_discount_rate">
+          <t-form-item
+            class="agent-form-span"
+            :label="$t('agentDiscounts.index.globalDiscountRate')"
+            name="default_discount_rate"
+          >
             <t-input-number
               v-model="agentGroupForm.default_discount_rate"
               theme="normal"
@@ -185,15 +192,13 @@
               :max="100"
               :decimal-places="2"
               :step="1"
-              placeholder="留空则仅按折扣矩阵生效"
+              :placeholder="$t('agentDiscounts.index.globalRatePlaceholder')"
             />
             <template #help>
-              <span
-                >组内用户购买/续费所有商品时默认生效的折扣率；折扣矩阵中已配置的组按矩阵优先。留空表示不启用全局折扣。</span
-              >
+              <span>{{ $t('agentDiscounts.index.globalRateHelp') }}</span>
             </template>
           </t-form-item>
-          <t-form-item class="agent-form-span" label="备注" name="remark">
+          <t-form-item class="agent-form-span" :label="$t('agentDiscounts.index.remark')" name="remark">
             <t-textarea v-model="agentGroupForm.remark" :autosize="{ minRows: 3, maxRows: 5 }" :maxlength="255" />
           </t-form-item>
         </div>
@@ -203,20 +208,24 @@
     <!-- 商品折扣组表单 -->
     <t-dialog
       v-model:visible="productGroupDialogVisible"
-      :header="productGroupForm.id ? '编辑商品折扣组' : '新增商品折扣组'"
-      :confirm-btn="{ content: '保存', loading: savingProductGroup }"
+      :header="
+        productGroupForm.id
+          ? $t('agentDiscounts.index.editDiscountGroup')
+          : $t('agentDiscounts.index.addDiscountGroup')
+      "
+      :confirm-btn="{ content: $t('agentDiscounts.index.save'), loading: savingProductGroup }"
       width="560px"
       @confirm="submitProductGroup"
     >
       <t-form ref="productGroupFormRef" :data="productGroupForm" :rules="productGroupRules" label-width="130px">
         <div class="agent-form-grid">
-          <t-form-item label="名称" name="name">
-            <t-input v-model="productGroupForm.name" :maxlength="50" placeholder="如：云服务器" />
+          <t-form-item :label="$t('agentDiscounts.index.name')" name="name">
+            <t-input v-model="productGroupForm.name" :maxlength="50" :placeholder="$t('agentDiscounts.index.namePlaceholderCloud')" />
           </t-form-item>
-          <t-form-item label="标识" name="code">
-            <t-input v-model="productGroupForm.code" :maxlength="50" placeholder="唯一标识，如 cloud" />
+          <t-form-item :label="$t('agentDiscounts.index.code')" name="code">
+            <t-input v-model="productGroupForm.code" :maxlength="50" :placeholder="$t('agentDiscounts.index.codePlaceholderCloud')" />
           </t-form-item>
-          <t-form-item label="最低折扣率(%)" name="min_discount_rate">
+          <t-form-item :label="$t('agentDiscounts.index.minDiscountRate')" name="min_discount_rate">
             <t-input-number
               v-model="productGroupForm.min_discount_rate"
               theme="normal"
@@ -225,7 +234,7 @@
               :decimal-places="2"
             />
           </t-form-item>
-          <t-form-item label="成本占比(%)" name="cost_rate">
+          <t-form-item :label="$t('agentDiscounts.index.costRate')" name="cost_rate">
             <t-input-number
               v-model="productGroupForm.cost_rate"
               theme="normal"
@@ -234,16 +243,16 @@
               :decimal-places="2"
             />
           </t-form-item>
-          <t-form-item label="排序" name="sort_order">
+          <t-form-item :label="$t('agentDiscounts.index.sortOrder')" name="sort_order">
             <t-input-number v-model="productGroupForm.sort_order" theme="normal" :min="0" />
           </t-form-item>
-          <t-form-item label="状态" name="status">
+          <t-form-item :label="$t('agentDiscounts.index.status')" name="status">
             <t-radio-group v-model="productGroupForm.status">
-              <t-radio :value="1">启用</t-radio>
-              <t-radio :value="0">停用</t-radio>
+              <t-radio :value="1">{{ $t('agentDiscounts.index.enabled') }}</t-radio>
+              <t-radio :value="0">{{ $t('agentDiscounts.index.disabled') }}</t-radio>
             </t-radio-group>
           </t-form-item>
-          <t-form-item class="agent-form-span" label="备注" name="remark">
+          <t-form-item class="agent-form-span" :label="$t('agentDiscounts.index.remark')" name="remark">
             <t-textarea v-model="productGroupForm.remark" :autosize="{ minRows: 3, maxRows: 5 }" :maxlength="255" />
           </t-form-item>
         </div>

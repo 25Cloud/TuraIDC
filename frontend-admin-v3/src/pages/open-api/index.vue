@@ -2,62 +2,62 @@
   <div class="open-api-page">
     <t-card :bordered="false" class="open-api-tabs-card">
       <t-tabs v-model="activeTab">
-        <t-tab-panel value="config" label="配置">
-          <div v-if="configLoading" class="state-placeholder">加载中...</div>
+        <t-tab-panel value="config" :label="$t('openApi.index.tabConfig')">
+          <div v-if="configLoading" class="state-placeholder">{{ $t('openApi.index.loading') }}</div>
           <template v-else>
             <div class="config-grid">
               <article class="config-card">
                 <div class="config-card__info">
-                  <strong>启用开放接口</strong>
-                  <p>关闭后所有 /api/v2/open 请求直接返回 403，已生成的密钥不可用。</p>
+                  <strong>{{ $t('openApi.index.enableOpenApi') }}</strong>
+                  <p>{{ $t('openApi.index.enableOpenApiDesc') }}</p>
                 </div>
                 <t-switch v-model="config.enabled" :custom-value="[1, 0]" :disabled="!canManage" />
               </article>
 
               <article class="config-card">
                 <div class="config-card__info">
-                  <strong>必须绑定手机号</strong>
-                  <p>开启后，未绑定手机号的用户无法创建 API 密钥。</p>
+                  <strong>{{ $t('openApi.index.requirePhone') }}</strong>
+                  <p>{{ $t('openApi.index.requirePhoneDesc') }}</p>
                 </div>
                 <t-switch v-model="config.require_phone" :custom-value="[1, 0]" :disabled="!canManage" />
               </article>
 
               <article class="config-card">
                 <div class="config-card__info">
-                  <strong>必须实名认证</strong>
-                  <p>开启后，未完成实名认证的用户无法创建 API 密钥。</p>
+                  <strong>{{ $t('openApi.index.requireVerified') }}</strong>
+                  <p>{{ $t('openApi.index.requireVerifiedDesc') }}</p>
                 </div>
                 <t-switch v-model="config.require_verified" :custom-value="[1, 0]" :disabled="!canManage" />
               </article>
 
               <article class="config-card">
                 <div class="config-card__info">
-                  <strong>每用户密钥上限</strong>
-                  <p>单个用户最多可创建的密钥数量。</p>
+                  <strong>{{ $t('openApi.index.maxKeysPerUser') }}</strong>
+                  <p>{{ $t('openApi.index.maxKeysPerUserDesc') }}</p>
                 </div>
                 <t-input-number v-model="config.max_keys_per_user" :min="1" :max="100" :disabled="!canManage" />
               </article>
 
               <article class="config-card">
                 <div class="config-card__info">
-                  <strong>接口限流（次/分钟）</strong>
-                  <p>同一来源 IP 每分钟最大请求数，超出返回 429。</p>
+                  <strong>{{ $t('openApi.index.rateLimit') }}</strong>
+                  <p>{{ $t('openApi.index.rateLimitDesc') }}</p>
                 </div>
                 <t-input-number v-model="config.rate_limit" :min="1" :max="3600" :disabled="!canManage" />
               </article>
 
               <article class="config-card">
                 <div class="config-card__info">
-                  <strong>写接口限流（次/分钟）</strong>
-                  <p>下单、余额支付、电源操作、续费、重装等写接口单独收紧的限流阈值。</p>
+                  <strong>{{ $t('openApi.index.writeRateLimit') }}</strong>
+                  <p>{{ $t('openApi.index.writeRateLimitDesc') }}</p>
                 </div>
                 <t-input-number v-model="config.write_rate_limit" :min="1" :max="3600" :disabled="!canManage" />
               </article>
 
               <article class="config-card">
                 <div class="config-card__info">
-                  <strong>调用日志保留天数</strong>
-                  <p>开放接口调用日志的保留期，超期日志由定时任务清理；魔方上游链路日志不受此配置影响。</p>
+                  <strong>{{ $t('openApi.index.usageLogRetentionDays') }}</strong>
+                  <p>{{ $t('openApi.index.usageLogRetentionDesc') }}</p>
                 </div>
                 <t-input-number v-model="config.usage_log_retention_days" :min="1" :max="3650" :disabled="!canManage" />
               </article>
@@ -66,26 +66,26 @@
             <div class="config-actions">
               <t-button theme="primary" :loading="configSaving" :disabled="!canManage" @click="saveConfig">
                 <template #icon><check-icon /></template>
-                保存配置
+                {{ $t('openApi.index.saveConfig') }}
               </t-button>
             </div>
           </template>
         </t-tab-panel>
 
-        <t-tab-panel value="keys" label="密钥管理">
+        <t-tab-panel value="keys" :label="$t('openApi.index.tabKeys')">
           <div class="keys-toolbar">
             <t-input
               v-model="filters.keyword"
               clearable
-              placeholder="搜索密钥名称 / 前缀"
+              :placeholder="$t('openApi.index.searchKeyPlaceholder')"
               @enter="handleSearch"
               @clear="handleSearch"
             >
               <template #suffixIcon><search-icon /></template>
             </t-input>
-            <t-select v-model="filters.status" clearable placeholder="全部状态" @change="handleSearch">
-              <t-option label="已启用" value="enabled" />
-              <t-option label="已停用" value="disabled" />
+            <t-select v-model="filters.status" clearable :placeholder="$t('openApi.index.allStatuses')" @change="handleSearch">
+              <t-option :label="$t('openApi.index.statusEnabled')" value="enabled" />
+              <t-option :label="$t('openApi.index.statusDisabled')" value="disabled" />
             </t-select>
           </div>
 
@@ -106,10 +106,10 @@
           >
             <template #key_name="{ row }">
               <div class="stack-cell">
-                <strong>{{ row.name || '未命名' }}</strong>
+                <strong>{{ row.name || $t('openApi.index.untitled') }}</strong>
                 <!-- key_prefix 是密钥的公开标识（tura_ 前缀），并非密钥本体；
                      实际凭据是创建时展示一次的 secret，此处仅作识别用。 -->
-                <span :title="`密钥标识 ${row.key_prefix}，实际凭据为创建时展示的完整密钥串`">
+                <span :title="$t('openApi.index.keyIdentifierTip', { prefix: row.key_prefix })">
                   {{ row.key_prefix }}••••{{ row.secret_last4 }}
                 </span>
               </div>
@@ -129,19 +129,19 @@
                   :theme="item.level === 'write' ? 'primary' : 'success'"
                   variant="light"
                 >
-                  {{ item.label }} · {{ item.level === 'write' ? '读写' : '只读' }}
+                  {{ item.label }} · {{ item.level === 'write' ? $t('openApi.index.scopeReadWrite') : $t('openApi.index.scopeReadOnly') }}
                 </t-tag>
               </div>
             </template>
             <template #status="{ row }">
               <t-tag :theme="row.status === 'enabled' ? 'success' : 'default'" variant="light">
-                {{ row.status === 'enabled' ? '已启用' : '已停用' }}
+                {{ row.status === 'enabled' ? $t('openApi.index.statusEnabled') : $t('openApi.index.statusDisabled') }}
               </t-tag>
             </template>
-            <template #expires_at="{ row }">{{ row.expires_at || '永不过期' }}</template>
+            <template #expires_at="{ row }">{{ row.expires_at || $t('openApi.index.neverExpires') }}</template>
             <template #operation="{ row }">
               <t-space size="0">
-                <t-button size="small" variant="text" :disabled="!canManage" @click="openUsageLogs(row)">日志</t-button>
+                <t-button size="small" variant="text" :disabled="!canManage" @click="openUsageLogs(row)">{{ $t('openApi.index.viewLogs') }}</t-button>
                 <t-button
                   size="small"
                   variant="text"
@@ -149,20 +149,19 @@
                   :disabled="!canManage"
                   @click="toggleStatus(row)"
                 >
-                  {{ row.status === 'enabled' ? '停用' : '启用' }}
+                  {{ row.status === 'enabled' ? $t('openApi.index.disable') : $t('openApi.index.enable') }}
                 </t-button>
                 <t-button size="small" theme="danger" variant="text" :disabled="!canManage" @click="confirmRemove(row)">
-                  删除
+                  {{ $t('openApi.index.remove') }}
                 </t-button>
               </t-space>
             </template>
           </t-table>
         </t-tab-panel>
 
-        <t-tab-panel value="upstream" label="上游链路审计">
+        <t-tab-panel value="upstream" :label="$t('openApi.index.tabUpstream')">
           <div class="upstream-notice">
-            魔方财务上游链路（/api/v2/zjmf）的登录与业务调用审计，按渠道 channel=zjmf_upstream
-            单独归集；开放接口密钥的日志见「密钥管理」。
+            {{ $t('openApi.index.upstreamAuditNotice') }}
           </div>
           <div class="keys-toolbar upstream-toolbar">
             <t-input
@@ -170,20 +169,20 @@
               clearable
               type="number"
               :min="1"
-              placeholder="按用户 ID 过滤"
+              :placeholder="$t('openApi.index.filterByUserId')"
               @enter="handleUpstreamSearch"
               @clear="handleUpstreamSearch"
             />
             <t-select
               v-model="upstreamFilters.status_code"
               clearable
-              placeholder="全部状态码"
+              :placeholder="$t('openApi.index.allStatusCodes')"
               @change="handleUpstreamSearch"
             >
-              <t-option label="200 成功" :value="200" />
-              <t-option label="400 业务失败" :value="400" />
-              <t-option label="405 JWT 失效" :value="405" />
-              <t-option label="403 拒绝" :value="403" />
+              <t-option :label="$t('openApi.index.code200')" :value="200" />
+              <t-option :label="$t('openApi.index.code400')" :value="400" />
+              <t-option :label="$t('openApi.index.code405')" :value="405" />
+              <t-option :label="$t('openApi.index.code403')" :value="403" />
             </t-select>
           </div>
 
@@ -218,7 +217,7 @@
 
     <t-drawer
       v-model:visible="logVisible"
-      :header="`调用日志 · ${logKey?.name || '密钥'}`"
+      :header="$t('openApi.index.usageLogHeader', { name: logKey?.name || $t('openApi.index.keyFallback') })"
       size="560px"
       :footer="false"
     >

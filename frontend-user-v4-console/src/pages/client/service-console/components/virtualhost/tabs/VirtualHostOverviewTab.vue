@@ -1,26 +1,36 @@
 <template>
   <section class="console-overview-grid is-virtual-host">
-    <t-card class="console-panel console-panel-wide" title="主机档案" :bordered="false">
+    <t-card class="console-panel console-panel-wide" :title="$t('serviceConsole.virtualHost.profile')" :bordered="false">
       <div class="detail-grid detail-grid--stack">
-        <info-cell label="主机名称" :value="hostNameText" strong />
-        <info-cell label="实例 ID" :value="String(detail.id || '--')" copyable @copy="copyText" />
-        <info-cell label="主机账号" :value="hostAccountText" copyable @copy="copyText" />
+        <info-cell :label="$t('serviceConsole.virtualHost.hostName')" :value="hostNameText" strong />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.instanceId')"
+          :value="String(detail.id || '--')"
+          copyable
+          @copy="copyText"
+        />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.hostAccount')"
+          :value="hostAccountText"
+          copyable
+          @copy="copyText"
+        />
         <div class="detail-cell">
-          <span>运行状态</span>
+          <span>{{ $t('serviceConsole.virtualHost.runStatus') }}</span>
           <t-tag :theme="instanceStatusTheme" variant="light">{{ instanceStatusText }}</t-tag>
         </div>
-        <info-cell label="机房区域" :value="regionText" strong />
-        <info-cell label="开通时间" :value="detail.created_at || '--'" strong />
+        <info-cell :label="$t('serviceConsole.virtualHost.idcRegion')" :value="regionText" strong />
+        <info-cell :label="$t('serviceConsole.virtualHost.createdAt')" :value="detail.created_at || '--'" strong />
       </div>
     </t-card>
 
-    <t-card class="console-panel console-panel-wide" title="空间与站点" :bordered="false">
+    <t-card class="console-panel console-panel-wide" :title="$t('serviceConsole.virtualHost.spaceAndSites')" :bordered="false">
       <div class="detail-grid detail-grid--stack">
-        <info-cell label="网页空间" :value="findSpecValue(['WEB空间', '网页空间', '网站空间', '磁盘'])" strong />
-        <info-cell label="数据库空间" :value="findSpecValue(['数据库空间', '数据库', 'MySQL'])" strong />
-        <info-cell label="月流量" :value="findSpecValue(['流量限制', '月流量', '流量'])" strong />
-        <info-cell label="带宽" :value="findSpecValue(['带宽', '宽带'])" strong />
-        <info-cell label="可绑域名" :value="findSpecValue(['绑定域名数', '域名数', '域名绑定'])" strong />
+        <info-cell :label="$t('serviceConsole.virtualHost.webSpace')" :value="findSpecValue(['WEB空间', '网页空间', '网站空间', '磁盘'])" strong />
+        <info-cell :label="$t('serviceConsole.virtualHost.databaseSpace')" :value="findSpecValue(['数据库空间', '数据库', 'MySQL'])" strong />
+        <info-cell :label="$t('serviceConsole.virtualHost.monthlyTraffic')" :value="findSpecValue(['流量限制', '月流量', '流量'])" strong />
+        <info-cell :label="$t('serviceConsole.virtualHost.bandwidth')" :value="findSpecValue(['带宽', '宽带'])" strong />
+        <info-cell :label="$t('serviceConsole.virtualHost.bindableDomains')" :value="findSpecValue(['绑定域名数', '域名数', '域名绑定'])" strong />
       </div>
     </t-card>
 
@@ -29,17 +39,17 @@
     <t-card
       v-if="hasPanelAccess"
       class="console-panel console-panel-wide"
-      title="面板登录信息"
+      :title="$t('serviceConsole.virtualHost.panelLogin')"
       :bordered="false"
     >
       <template #actions>
         <t-tag v-if="panelTypeName" variant="light" theme="primary">{{ panelTypeName }}</t-tag>
       </template>
       <div class="detail-grid detail-grid--stack">
-        <info-cell label="面板地址" :value="panelUrlText" copyable @copy="copyText" />
-        <info-cell label="面板账号" :value="panelUsernameText" copyable @copy="copyText" />
+        <info-cell :label="$t('serviceConsole.virtualHost.panelUrl')" :value="panelUrlText" copyable @copy="copyText" />
+        <info-cell :label="$t('serviceConsole.virtualHost.panelAccount')" :value="panelUsernameText" copyable @copy="copyText" />
         <info-cell
-          label="面板密码"
+          :label="$t('serviceConsole.virtualHost.panelPassword')"
           :value="panelPasswordText"
           copyable
           warning
@@ -47,11 +57,11 @@
         />
       </div>
       <p v-if="panelUrlText !== '--'" class="vh-panel-hint">
-        面板地址可能带一次性登录态，建议在新标签页打开；打不开可回到「主机与面板」重新进入。
+        {{ $t('serviceConsole.virtualHost.panelUrlHint') }}
       </p>
     </t-card>
 
-    <t-card class="console-panel console-panel-wide" title="套餐参数" :bordered="false">
+    <t-card class="console-panel console-panel-wide" :title="$t('serviceConsole.virtualHost.planSpecs')" :bordered="false">
       <div class="detail-grid detail-grid--config">
         <info-cell
           v-for="spec in displaySpecs"
@@ -61,20 +71,25 @@
           strong
         />
       </div>
-      <p v-if="!displaySpecs.length" class="vh-panel-hint">上游未下发额外的套餐参数。</p>
+      <p v-if="!displaySpecs.length" class="vh-panel-hint">{{ $t('serviceConsole.virtualHost.noPlanSpecs') }}</p>
     </t-card>
 
-    <t-card class="console-panel console-panel-wide" title="付费信息" :bordered="false">
+    <t-card class="console-panel console-panel-wide" :title="$t('serviceConsole.virtualHost.billingInfo')" :bordered="false">
       <template #actions>
         <t-button v-if="!isTrialMachine" variant="text" theme="primary" @click="openRenewDialog">
-          续费管理
+          {{ $t('serviceConsole.virtualHost.renewManage') }}
         </t-button>
       </template>
       <div class="detail-grid">
-        <info-cell label="计费方式" :value="detail.billing_cycle_label || '--'" strong />
-        <info-cell label="续费价格" :value="renewPriceText" strong />
-        <info-cell label="到期时间" :value="detail.expires_at || '长期有效'" strong warning />
-        <info-cell label="订单号" :value="detail.invoice?.order_no || '--'" copyable @copy="copyText" />
+        <info-cell :label="$t('serviceConsole.virtualHost.billingCycle')" :value="detail.billing_cycle_label || '--'" strong />
+        <info-cell :label="$t('serviceConsole.virtualHost.renewPrice')" :value="renewPriceText" strong />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.expiresAt')"
+          :value="detail.expires_at || $t('serviceConsole.virtualHost.longTermValid')"
+          strong
+          warning
+        />
+        <info-cell :label="$t('serviceConsole.virtualHost.orderNo')" :value="detail.invoice?.order_no || '--'" copyable @copy="copyText" />
       </div>
     </t-card>
   </section>

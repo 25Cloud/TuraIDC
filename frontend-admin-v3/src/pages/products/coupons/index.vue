@@ -5,7 +5,7 @@
       <t-alert
         v-if="!couponFeatureEnabled"
         theme="warning"
-        message="当前环境未启用优惠券功能，新增、编辑、启停和删除操作已禁用。"
+        :message="$t('products.coupons.featureDisabledTip')"
       />
 
       <t-card :bordered="false">
@@ -13,33 +13,57 @@
           <t-input
             v-model="filters.keyword"
             clearable
-            placeholder="搜索优惠券名称 / 描述"
+            :placeholder="$t('products.coupons.searchPlaceholder')"
             @enter="handleSearch"
             @clear="handleSearch"
           >
             <template #suffix-icon><search-icon /></template>
           </t-input>
-          <t-select v-model="filters.status" clearable placeholder="状态" @change="handleSearch">
-            <t-option value="1" label="生效中" />
-            <t-option value="0" label="已停用" />
-            <t-option value="expired" label="已过期" />
+          <t-select
+            v-model="filters.status"
+            clearable
+            :placeholder="$t('products.coupons.statusPlaceholder')"
+            @change="handleSearch"
+          >
+            <t-option value="1" :label="$t('products.coupons.statusActive')" />
+            <t-option value="0" :label="$t('products.coupons.statusDisabled')" />
+            <t-option value="expired" :label="$t('products.coupons.statusExpired')" />
           </t-select>
-          <t-select v-model="filters.discount_type" clearable placeholder="类型" @change="handleSearch">
-            <t-option value="fixed" label="满减券" />
-            <t-option value="percentage" label="折扣券" />
+          <t-select
+            v-model="filters.discount_type"
+            clearable
+            :placeholder="$t('products.coupons.typePlaceholder')"
+            @change="handleSearch"
+          >
+            <t-option value="fixed" :label="$t('products.coupons.typeFixed')" />
+            <t-option value="percentage" :label="$t('products.coupons.typePercentage')" />
           </t-select>
-          <t-select v-model="filters.discount_scope" clearable placeholder="优惠阶段" @change="handleSearch">
-            <t-option value="first_month" label="首月优惠" />
-            <t-option value="recurring" label="持续优惠" />
-            <t-option value="renew" label="续费优惠" />
+          <t-select
+            v-model="filters.discount_scope"
+            clearable
+            :placeholder="$t('products.coupons.scopePlaceholder')"
+            @change="handleSearch"
+          >
+            <t-option value="first_month" :label="$t('products.coupons.scopeFirstMonth')" />
+            <t-option value="recurring" :label="$t('products.coupons.scopeRecurring')" />
+            <t-option value="renew" :label="$t('products.coupons.scopeRenew')" />
           </t-select>
-          <t-select v-model="filters.distribution_type" clearable placeholder="发放方式" @change="handleSearch">
-            <t-option value="public" label="公开优惠券" />
-            <t-option value="private" label="私有优惠券" />
+          <t-select
+            v-model="filters.distribution_type"
+            clearable
+            :placeholder="$t('products.coupons.distributionPlaceholder')"
+            @change="handleSearch"
+          >
+            <t-option value="public" :label="$t('products.coupons.distributionPublic')" />
+            <t-option value="private" :label="$t('products.coupons.distributionPrivate')" />
           </t-select>
-          <t-button theme="primary" :disabled="!couponFeatureEnabled || !canManage" @click="openCouponDialog()">
+          <t-button
+            theme="primary"
+            :disabled="!couponFeatureEnabled || !canManage"
+            @click="openCouponDialog()"
+          >
             <template #icon><add-icon /></template>
-            新增优惠券
+            {{ $t('products.coupons.addCoupon') }}
           </t-button>
         </div>
 
@@ -53,11 +77,11 @@
                     row.distribution_type_label || distributionLabel(row.distribution_type)
                   }}</t-tag>
                   <t-tag v-if="row.coupon_campaign_name" size="small" theme="warning" variant="light">
-                    活动：{{ row.coupon_campaign_name }}
+                    {{ $t('products.coupons.campaignPrefix') }}{{ row.coupon_campaign_name }}
                   </t-tag>
-                  <t-tag v-if="couponHasLockedFields(row)" size="small" theme="default" variant="light">部分锁定</t-tag>
+                  <t-tag v-if="couponHasLockedFields(row)" size="small" theme="default" variant="light">{{ $t('products.coupons.partiallyLocked') }}</t-tag>
                 </div>
-                <span>{{ row.description || '暂无描述' }}</span>
+                <span>{{ row.description || $t('products.coupons.noDescription') }}</span>
               </div>
             </template>
 
@@ -72,16 +96,16 @@
                   </t-tag>
                 </div>
                 <strong>{{ row.discount_label || formatDiscount(row) }}</strong>
-                <span>最低消费：{{ moneyText(row.min_amount) }}</span>
-                <span v-if="row.max_discount_amount">最高优惠：{{ moneyText(row.max_discount_amount) }}</span>
+                <span>{{ $t('products.coupons.minSpendPrefix') }}{{ moneyText(row.min_amount) }}</span>
+                <span v-if="row.max_discount_amount">{{ $t('products.coupons.maxDiscountPrefix') }}{{ moneyText(row.max_discount_amount) }}</span>
               </div>
             </template>
 
             <template #usage="{ row }">
               <div class="coupon-meta">
-                <span>已使用 {{ row.used_count || 0 }} 次</span>
-                <span>{{ formatLimitText(row.total_usage_limit, row.remaining_stock, '总量') }}</span>
-                <span>{{ formatLimitText(row.per_user_limit, null, '每人') }}</span>
+                <span>{{ $t('products.coupons.usedPrefix') }} {{ row.used_count || 0 }} {{ $t('products.coupons.timesUnit') }}</span>
+                <span>{{ formatLimitText(row.total_usage_limit, row.remaining_stock, $t('products.coupons.totalQuota')) }}</span>
+                <span>{{ formatLimitText(row.per_user_limit, null, $t('products.coupons.perUserQuota')) }}</span>
               </div>
             </template>
 
@@ -109,7 +133,7 @@
                   :disabled="couponEditDisabled(row)"
                   @click="openCouponDialog(row)"
                 >
-                  编辑
+                  {{ $t('products.coupons.edit') }}
                 </t-button>
                 <t-button
                   size="small"
@@ -118,7 +142,7 @@
                   :disabled="!couponFeatureEnabled || !canManage"
                   @click="handleToggleStatus(row)"
                 >
-                  {{ Number(row.status) === 1 ? '停用' : '启用' }}
+                  {{ Number(row.status) === 1 ? $t('products.coupons.disable') : $t('products.coupons.enable') }}
                 </t-button>
                 <t-button
                   size="small"
@@ -127,11 +151,11 @@
                   :disabled="couponDeleteDisabled(row)"
                   @click="handleDelete(row)"
                 >
-                  删除
+                  {{ $t('products.coupons.delete') }}
                 </t-button>
               </t-space>
               <t-dropdown v-else :options="mobileActionOptions(row)" @click="handleMobileActionHandler(row)">
-                <t-button size="small" variant="text">更多</t-button>
+                <t-button size="small" variant="text">{{ $t('products.coupons.more') }}</t-button>
               </t-dropdown>
             </template>
           </t-table>
@@ -153,7 +177,7 @@
                 @action="handleCouponCardAction(row, $event)"
               />
             </div>
-            <t-empty v-else-if="!loading" description="暂无优惠券" />
+            <t-empty v-else-if="!loading" :description="$t('products.coupons.empty')" />
           </t-loading>
         </div>
 
@@ -171,7 +195,7 @@
 
       <t-drawer
         v-model:visible="dialogVisible"
-        :header="form.id ? '编辑优惠券' : '新增优惠券'"
+        :header="form.id ? $t('products.coupons.editCoupon') : $t('products.coupons.addCoupon')"
         size="820px"
         class="coupon-edit-drawer"
         :close-on-overlay-click="false"
@@ -182,41 +206,45 @@
           <t-alert
             v-if="lockedFields.length"
             theme="warning"
-            :message="`${lockReason}，部分关键字段不允许修改`"
+            :message="`${lockReason}${$t('products.coupons.lockedFieldsTip')}`"
             style="margin-bottom: 16px"
           />
           <t-form ref="formRef" class="coupon-drawer-form" :data="form" :rules="formRules" label-align="top">
-            <section class="coupon-drawer-section" data-title="基础信息">
+            <section class="coupon-drawer-section" :data-title="$t('products.coupons.sectionBasic')">
               <div class="coupon-form-grid">
-                <t-form-item label="优惠券名称" name="name">
-                  <t-input v-model="form.name" maxlength="120" placeholder="例如：新客首单立减券" />
+                <t-form-item :label="$t('products.coupons.couponName')" name="name">
+                  <t-input v-model="form.name" maxlength="120" :placeholder="$t('products.coupons.couponNamePlaceholder')" />
                 </t-form-item>
-                <t-form-item label="发放方式" name="distribution_type">
+                <t-form-item :label="$t('products.coupons.distributionType')" name="distribution_type">
                   <t-select v-model="form.distribution_type" :disabled="isFieldLocked('distribution_type')">
-                    <t-option value="public" label="公开优惠券" />
-                    <t-option value="private" label="私有优惠券" />
+                    <t-option value="public" :label="$t('products.coupons.distributionPublic')" />
+                    <t-option value="private" :label="$t('products.coupons.distributionPrivate')" />
                   </t-select>
                 </t-form-item>
-                <t-form-item label="优惠类型" name="discount_type">
+                <t-form-item :label="$t('products.coupons.discountType')" name="discount_type">
                   <t-select v-model="form.discount_type" :disabled="isFieldLocked('discount_type')">
-                    <t-option value="fixed" label="满减券" />
-                    <t-option value="percentage" label="折扣券" />
+                    <t-option value="fixed" :label="$t('products.coupons.typeFixed')" />
+                    <t-option value="percentage" :label="$t('products.coupons.typePercentage')" />
                   </t-select>
                 </t-form-item>
-                <t-form-item label="优惠阶段" name="discount_scope">
+                <t-form-item :label="$t('products.coupons.discountScope')" name="discount_scope">
                   <t-select v-model="form.discount_scope" :disabled="isFieldLocked('discount_scope')">
-                    <t-option value="first_month" label="首月优惠" />
-                    <t-option value="recurring" label="持续优惠" />
-                    <t-option value="renew" label="续费优惠" />
+                    <t-option value="first_month" :label="$t('products.coupons.scopeFirstMonth')" />
+                    <t-option value="recurring" :label="$t('products.coupons.scopeRecurring')" />
+                    <t-option value="renew" :label="$t('products.coupons.scopeRenew')" />
                   </t-select>
                 </t-form-item>
               </div>
             </section>
 
-            <section class="coupon-drawer-section" data-title="优惠规则">
+            <section class="coupon-drawer-section" :data-title="$t('products.coupons.sectionRules')">
               <div class="coupon-form-grid">
                 <t-form-item
-                  :label="form.discount_type === 'percentage' ? '优惠值（百分比）' : '优惠金额'"
+                  :label="
+                    form.discount_type === 'percentage'
+                      ? $t('products.coupons.discountValuePercent')
+                      : $t('products.coupons.discountValueAmount')
+                  "
                   name="discount_value"
                 >
                   <t-input-number
@@ -225,45 +253,53 @@
                     :max="form.discount_type === 'percentage' ? 100 : 999999999"
                   />
                 </t-form-item>
-                <t-form-item label="最低消费金额" name="min_amount">
+                <t-form-item :label="$t('products.coupons.minSpendAmount')" name="min_amount">
                   <t-input-number v-model="form.min_amount" :min="0" :decimal-places="2" />
                 </t-form-item>
-                <t-form-item label="最高优惠金额" name="max_discount_amount">
+                <t-form-item :label="$t('products.coupons.maxDiscountAmount')" name="max_discount_amount">
                   <t-input-number
                     v-model="form.max_discount_amount"
                     :min="0"
                     :decimal-places="2"
-                    placeholder="留空表示不限制"
+                    :placeholder="$t('products.coupons.unlimitedPlaceholder')"
                   />
                 </t-form-item>
-                <t-form-item label="总发放次数上限" name="total_usage_limit">
-                  <t-input-number v-model="form.total_usage_limit" :min="0" placeholder="留空表示不限" />
+                <t-form-item :label="$t('products.coupons.totalUsageLimit')" name="total_usage_limit">
+                  <t-input-number
+                    v-model="form.total_usage_limit"
+                    :min="0"
+                    :placeholder="$t('products.coupons.emptyNoLimit')"
+                  />
                 </t-form-item>
-                <t-form-item label="每人可用次数" name="per_user_limit">
-                  <t-input-number v-model="form.per_user_limit" :min="0" placeholder="留空表示不限" />
+                <t-form-item :label="$t('products.coupons.perUserLimit')" name="per_user_limit">
+                  <t-input-number
+                    v-model="form.per_user_limit"
+                    :min="0"
+                    :placeholder="$t('products.coupons.emptyNoLimit')"
+                  />
                 </t-form-item>
-                <t-form-item label="排序值" name="sort_order">
+                <t-form-item :label="$t('products.coupons.sortOrder')" name="sort_order">
                   <t-input-number v-model="form.sort_order" :min="0" />
                 </t-form-item>
-                <t-form-item label="状态" name="status">
+                <t-form-item :label="$t('products.coupons.status')" name="status">
                   <div class="coupon-switch-line">
-                    <span>停用</span>
+                    <span>{{ $t('products.coupons.disable') }}</span>
                     <t-switch v-model="form.status" :custom-value="[1, 0]" />
-                    <span>启用</span>
+                    <span>{{ $t('products.coupons.enable') }}</span>
                   </div>
                 </t-form-item>
-                <t-form-item label="仅限首单可用" name="first_order_only">
+                <t-form-item :label="$t('products.coupons.firstOrderOnly')" name="first_order_only">
                   <t-switch v-model="form.first_order_only" />
                 </t-form-item>
-                <t-form-item label="允许代理使用" name="allow_agent">
+                <t-form-item :label="$t('products.coupons.allowAgent')" name="allow_agent">
                   <t-switch v-model="form.allow_agent" />
                 </t-form-item>
               </div>
             </section>
 
-            <section class="coupon-drawer-section" data-title="时间与范围">
+            <section class="coupon-drawer-section" :data-title="$t('products.coupons.sectionSchedule')">
               <div class="coupon-form-grid">
-                <t-form-item label="开始时间" name="starts_at">
+                <t-form-item :label="$t('products.coupons.startsAt')" name="starts_at">
                   <t-date-picker
                     v-model="form.starts_at"
                     clearable
@@ -271,10 +307,10 @@
                     mode="date"
                     format="YYYY-MM-DD HH:mm:ss"
                     value-type="YYYY-MM-DD HH:mm:ss"
-                    placeholder="请选择开始时间，留空立即生效"
+                    :placeholder="$t('products.coupons.startsAtPlaceholder')"
                   />
                 </t-form-item>
-                <t-form-item label="结束时间" name="expires_at">
+                <t-form-item :label="$t('products.coupons.expiresAt')" name="expires_at">
                   <t-date-picker
                     v-model="form.expires_at"
                     clearable
@@ -282,11 +318,20 @@
                     mode="date"
                     format="YYYY-MM-DD HH:mm:ss"
                     value-type="YYYY-MM-DD HH:mm:ss"
-                    placeholder="请选择结束时间，留空长期有效"
+                    :placeholder="$t('products.coupons.expiresAtPlaceholder')"
                   />
                 </t-form-item>
-                <t-form-item label="适用计费周期" name="billing_cycles" class="form-span-2">
-                  <t-select v-model="form.billing_cycles" multiple clearable placeholder="留空表示全部周期可用">
+                <t-form-item
+                  :label="$t('products.coupons.billingCycles')"
+                  name="billing_cycles"
+                  class="form-span-2"
+                >
+                  <t-select
+                    v-model="form.billing_cycles"
+                    multiple
+                    clearable
+                    :placeholder="$t('products.coupons.billingCyclesPlaceholder')"
+                  >
                     <t-option
                       v-for="item in billingCycleOptions"
                       :key="item.value"
@@ -295,22 +340,24 @@
                     />
                   </t-select>
                 </t-form-item>
-                <t-form-item label="适用商品" name="product_ids" class="form-span-2">
+                <t-form-item :label="$t('products.coupons.applicableProducts')" name="product_ids" class="form-span-2">
                   <product-binding-tree-select
                     v-model="form.product_ids"
                     mode="batch"
-                    placeholder="按分类批量选择适用商品，留空表示全站商品可用"
+                    :placeholder="$t('products.coupons.applicableProductsPlaceholder')"
                   />
                 </t-form-item>
               </div>
             </section>
 
-            <section class="coupon-drawer-section" data-title="发放用户">
+            <section class="coupon-drawer-section" :data-title="$t('products.coupons.sectionUsers')">
               <div class="user-picker-head">
                 <div>
-                  <strong>发放用户</strong>
+                  <strong>{{ $t('products.coupons.recipientUsers') }}</strong>
                   <span>{{
-                    form.distribution_type === 'private' ? '私有优惠券至少选择一个用户' : '公开优惠券无需指定客户'
+                    form.distribution_type === 'private'
+                      ? $t('products.coupons.privateTip')
+                      : $t('products.coupons.publicTip')
                   }}</span>
                 </div>
                 <t-tag :theme="form.distribution_type === 'private' ? 'primary' : 'default'" variant="light">
@@ -323,14 +370,17 @@
                     v-model="userSearchKeyword"
                     clearable
                     :loading="userOptionsLoading"
-                    placeholder="搜索用户 ID / 邮箱 / 手机号 / 昵称"
+                    :placeholder="$t('products.coupons.userSearchPlaceholder')"
                     @enter="searchUsers"
                     @clear="searchUsers"
                   />
                 </div>
                 <div class="user-picker-grid">
                   <div>
-                    <div class="user-picker-title">搜索结果 {{ userSearchResults.length }} 条</div>
+                    <div class="user-picker-title">
+                      {{ $t('products.coupons.searchResultPrefix') }} {{ userSearchResults.length }}
+                      {{ $t('products.coupons.resultUnit') }}
+                    </div>
                     <div class="user-list">
                       <button
                         v-for="item in userSearchResults"
@@ -340,13 +390,16 @@
                       >
                         <strong>{{ item.title }}</strong>
                         <span>{{ item.meta }}</span>
-                        <em>{{ form.user_ids.includes(item.value) ? '已选' : '添加' }}</em>
+                        <em>{{ form.user_ids.includes(item.value) ? $t('products.coupons.selected') : $t('products.coupons.add') }}</em>
                       </button>
-                      <t-empty v-if="!userSearchResults.length" description="暂无搜索结果" />
+                      <t-empty v-if="!userSearchResults.length" :description="$t('products.coupons.noSearchResult')" />
                     </div>
                   </div>
                   <div>
-                    <div class="user-picker-title">已选用户 {{ selectedUsers.length }} 人</div>
+                    <div class="user-picker-title">
+                      {{ $t('products.coupons.selectedUsersPrefix') }} {{ selectedUsers.length }}
+                      {{ $t('products.coupons.userUnit') }}
+                    </div>
                     <div class="user-list">
                       <button
                         v-for="item in selectedUsers"
@@ -356,22 +409,22 @@
                       >
                         <strong>{{ item.title }}</strong>
                         <span>{{ item.meta }}</span>
-                        <em>移除</em>
+                        <em>{{ $t('products.coupons.remove') }}</em>
                       </button>
-                      <t-empty v-if="!selectedUsers.length" description="还没有选择发放用户" />
+                      <t-empty v-if="!selectedUsers.length" :description="$t('products.coupons.noSelectedUsers')" />
                     </div>
                   </div>
                 </div>
               </div>
-              <t-alert v-else theme="info" message="公开优惠券会在客户端公开列表展示，用户领取后再使用。" />
+              <t-alert v-else theme="info" :message="$t('products.coupons.publicCouponTip')" />
             </section>
 
-            <section class="coupon-drawer-section" data-title="备注">
+            <section class="coupon-drawer-section" :data-title="$t('products.coupons.sectionRemark')">
               <div class="coupon-form-grid">
-                <t-form-item label="描述" name="description" class="form-span-2">
+                <t-form-item :label="$t('products.coupons.description')" name="description" class="form-span-2">
                   <t-textarea v-model="form.description" :autosize="{ minRows: 3, maxRows: 5 }" maxlength="255" />
                 </t-form-item>
-                <t-form-item label="后台备注" name="remark" class="form-span-2">
+                <t-form-item :label="$t('products.coupons.adminRemark')" name="remark" class="form-span-2">
                   <t-textarea v-model="form.remark" :autosize="{ minRows: 3, maxRows: 5 }" maxlength="255" />
                 </t-form-item>
               </div>
@@ -379,8 +432,8 @@
           </t-form>
 
           <div class="coupon-drawer-footer">
-            <t-button variant="outline" @click="closeCouponDrawer">取消</t-button>
-            <t-button theme="primary" :loading="saving" @click="submitForm">保存更改</t-button>
+            <t-button variant="outline" @click="closeCouponDrawer">{{ $t('products.coupons.cancel') }}</t-button>
+            <t-button theme="primary" :loading="saving" @click="submitForm">{{ $t('products.coupons.saveChanges') }}</t-button>
           </div>
         </div>
       </t-drawer>

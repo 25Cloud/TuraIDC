@@ -6,14 +6,14 @@
 
       <div class="legal-actions">
         <el-button v-if="targetUrl" type="primary" @click="openDocument"
-          >打开原文</el-button
+          >{{ $t('content.legal.openOriginal') }}</el-button
         >
-        <el-button @click="router.push('/')">返回首页</el-button>
+        <el-button @click="router.push('/')">{{ $t('common.notFound.backHome') }}</el-button>
       </div>
 
       <el-empty
         v-if="!targetUrl"
-        description="站点暂未配置该文档地址"
+        :description="$t('content.legal.documentUrlMissing')"
         :image-size="72"
       />
     </div>

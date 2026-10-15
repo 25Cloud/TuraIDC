@@ -2,7 +2,7 @@
   <t-drawer
     :visible="visible"
     :size="drawerSize"
-    header="账单详情"
+    :header="$t('finance.invoiceDetail.title')"
     :footer="false"
     @update:visible="(value: boolean) => emit('update:visible', value)"
     @close="emit('close')"
@@ -10,8 +10,8 @@
     <record-detail-page
       :loading="loading"
       :ready="Boolean(invoice.id || invoice.invoice_no)"
-      back-text="关闭详情"
-      eyebrow="账单详情"
+      :back-text="$t('finance.invoiceDetail.closeDetail')"
+      :eyebrow="$t('finance.invoiceDetail.eyebrow')"
       :title="fieldValue(invoice.invoice_no || invoice.id)"
       :description="invoiceTitle(invoice)"
       :status-label="fieldValue(statusLabel)"
@@ -19,20 +19,20 @@
       :metrics="summaryMetrics"
       :tabs="tabs"
       :active-tab="activeTab"
-      empty-text="账单不存在"
+      :empty-text="$t('finance.invoiceDetail.notFound')"
       @back="emit('close')"
       @refresh="emit('refresh')"
       @update:active-tab="(value) => (activeTab = value)"
     >
       <template #toolbar-actions>
         <t-button v-if="cancelable" theme="danger" variant="outline" :loading="cancelLoading" @click="emit('cancel')">
-          取消账单
+          {{ $t('finance.invoiceDetail.cancelInvoice') }}
         </t-button>
       </template>
 
       <template #relations>
         <t-button v-if="linkedServiceId" variant="outline" size="small" @click="emit('view-service', linkedServiceId)">
-          查看服务
+          {{ $t('finance.invoiceDetail.viewService') }}
         </t-button>
         <t-button
           v-if="invoice.order?.id || invoice.order_id"
@@ -40,7 +40,7 @@
           size="small"
           @click="emit('view-order', invoice.order?.id || invoice.order_id)"
         >
-          查看订单
+          {{ $t('finance.invoiceDetail.viewOrder') }}
         </t-button>
         <t-button
           v-if="invoice.user?.id || invoice.user_id"
@@ -48,51 +48,51 @@
           size="small"
           @click="emit('view-user', invoice.user?.id || invoice.user_id)"
         >
-          查看用户
+          {{ $t('finance.invoiceDetail.viewUser') }}
         </t-button>
       </template>
 
       <template #tab-basic>
         <section class="finance-detail-section">
-          <h4>基础信息</h4>
+          <h4>{{ $t('finance.invoiceDetail.basicInfo') }}</h4>
           <div class="finance-detail-grid">
             <div>
-              <span>账单类型</span>
+              <span>{{ $t('finance.invoiceDetail.invoiceType') }}</span>
               <strong>{{ fieldValue(invoice.type_label || invoiceTypeLabel(invoice.type)) }}</strong>
             </div>
             <div>
-              <span>用户</span>
+              <span>{{ $t('finance.invoiceDetail.user') }}</span>
               <strong>{{ userName(invoice.user) }}</strong>
             </div>
             <div>
-              <span>订单号</span>
+              <span>{{ $t('finance.invoiceDetail.orderNo') }}</span>
               <strong>{{ fieldValue(invoice.order?.order_no || invoice.order_no) }}</strong>
             </div>
             <div>
-              <span>到期日</span>
+              <span>{{ $t('finance.invoiceDetail.dueDate') }}</span>
               <strong>{{ fieldValue(invoice.due_date) }}</strong>
             </div>
             <div>
-              <span>创建时间</span>
+              <span>{{ $t('finance.invoiceDetail.createdAt') }}</span>
               <strong>{{ formatDateTime(invoice.created_at) }}</strong>
             </div>
             <div>
-              <span>支付时间</span>
+              <span>{{ $t('finance.invoiceDetail.paidAt') }}</span>
               <strong>{{ formatDateTime(invoice.paid_at) }}</strong>
             </div>
             <div>
-              <span>链路追踪</span>
+              <span>{{ $t('finance.invoiceDetail.traceLabel') }}</span>
               <strong>{{ fieldValue(invoice.trace_id) }}</strong>
             </div>
             <div v-if="invoice.refund_trace_id">
-              <span>退款追踪</span>
+              <span>{{ $t('finance.invoiceDetail.refundTraceLabel') }}</span>
               <strong>{{ fieldValue(invoice.refund_trace_id) }}</strong>
             </div>
           </div>
         </section>
 
         <section v-if="items.length" class="finance-detail-section">
-          <h4>账单项目</h4>
+          <h4>{{ $t('finance.invoiceDetail.items') }}</h4>
           <div class="finance-line-list">
             <div
               v-for="item in items"
@@ -108,7 +108,7 @@
 
       <template #tab-payments>
         <section class="finance-detail-section">
-          <h4>支付记录</h4>
+          <h4>{{ $t('finance.invoiceDetail.payments') }}</h4>
           <div class="finance-line-list">
             <div
               v-for="payment in payments"
@@ -119,8 +119,8 @@
                 <strong>{{ fieldValue(payment.payment_no) }}</strong>
                 <t-tag :theme="paymentStatusTheme(payment)" variant="light">{{ paymentStatusLabel(payment) }}</t-tag>
               </div>
-              <span>第三方单号：{{ fieldValue(payment.trade_no) }}</span>
-              <span>链路追踪：{{ fieldValue(payment.trace_id) }}</span>
+              <span>{{ $t('finance.invoiceDetail.thirdPartyNo') }}{{ fieldValue(payment.trade_no) }}</span>
+              <span>{{ $t('finance.invoiceDetail.traceLabel') }}{{ fieldValue(payment.trace_id) }}</span>
               <span>{{ fieldValue(payment.gateway) }} / {{ formatMoney(payment.amount) }}</span>
               <span>{{ formatDateTime(payment.paid_at || payment.created_at) }}</span>
             </div>
@@ -130,7 +130,7 @@
 
       <template #tab-logs>
         <section class="finance-detail-section">
-          <h4>操作日志</h4>
+          <h4>{{ $t('finance.invoiceDetail.operationLogs') }}</h4>
           <div class="finance-line-list">
             <div
               v-for="log in logs"

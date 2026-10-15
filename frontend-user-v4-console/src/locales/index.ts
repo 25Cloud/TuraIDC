@@ -1,6 +1,7 @@
 import type { DropdownOption } from 'tdesign-vue-next';
 import en_US from 'tdesign-vue-next/es/locale/en_US';
 import zh_CN from 'tdesign-vue-next/es/locale/zh_CN';
+import zh_TW from 'tdesign-vue-next/es/locale/zh_TW';
 import { computed } from 'vue';
 import type { I18nOptions } from 'vue-i18n';
 import { createI18n } from 'vue-i18n';
@@ -8,13 +9,14 @@ import { createI18n } from 'vue-i18n';
 export const localeConfigKey = 'tdesign-starter-locale';
 
 // 定义支持的语言列表，添加新语言时只需在此处添加
-export const supportedLocales = ['zh_CN', 'en_US'] as const;
+export const supportedLocales = ['zh_CN', 'zh_TW', 'zh_HK', 'en_US'] as const;
 export type SupportedLocale = (typeof supportedLocales)[number];
 
 // 多语言标题类型，用于路由 meta.title 等场景
-export type LocalizedTitle = Record<SupportedLocale, string>;
+export type LocalizedTitle = Partial<Record<SupportedLocale, string>>;
 
-const tdesignLocaleMap: Record<SupportedLocale, typeof zh_CN | typeof en_US> = { zh_CN, en_US };
+// TDesign 没有独立的香港语言包（只有 zh_TW），香港版复用它。
+const tdesignLocaleMap = { zh_CN, zh_TW, zh_HK: zh_TW, en_US };
 
 const langModules = import.meta.glob<{ default: Record<string, unknown> }>('./lang/*.json', { eager: true });
 

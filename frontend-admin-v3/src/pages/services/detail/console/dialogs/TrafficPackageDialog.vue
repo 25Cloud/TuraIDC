@@ -1,23 +1,23 @@
 <template>
   <t-dialog
     v-model:visible="trafficVisible"
-    header="购买流量包"
+    :header="$t('services.console.trafficPackageTitle')"
     width="min(36rem, calc(100vw - 2rem))"
     destroy-on-close
   >
-    <loading-state :loading="trafficLoading" text="正在加载流量包" compact>
+    <loading-state :loading="trafficLoading" :text="$t('services.console.loadingTrafficPackages')" compact>
       <template v-if="trafficData?.supported !== false && trafficPackages.length">
         <div class="traffic-summary">
           <div>
-            <span>当前流量</span>
+            <span>{{ $t('services.console.currentTraffic') }}</span>
             <strong
               >{{ trafficData?.traffic?.usage_label || detail.traffic?.usage_label || '0G' }} /
-              {{ trafficData?.traffic?.limit_label || detail.traffic?.limit_label || '不限' }}</strong
+              {{ trafficData?.traffic?.limit_label || detail.traffic?.limit_label || $t('services.console.unlimited') }}</strong
             >
           </div>
           <div>
-            <span>剩余流量</span>
-            <strong>{{ trafficData?.traffic?.remaining_label || detail.traffic?.remaining_label || '不限' }}</strong>
+            <span>{{ $t('services.console.remainingTraffic') }}</span>
+            <strong>{{ trafficData?.traffic?.remaining_label || detail.traffic?.remaining_label || $t('services.console.unlimited') }}</strong>
           </div>
         </div>
         <t-radio-group
@@ -37,21 +37,21 @@
           </t-radio-button>
         </t-radio-group>
         <div class="traffic-total-line">
-          <span>{{ selectedTrafficPackage?.target_label || selectedTrafficPackage?.label || '已选档位' }}</span>
-          <strong>{{ trafficQuoting ? '报价中' : `¥${trafficPayableAmount}` }}</strong>
+          <span>{{ selectedTrafficPackage?.target_label || selectedTrafficPackage?.label || $t('services.console.selectedTier') }}</span>
+          <strong>{{ trafficQuoting ? $t('services.console.quoting') : `¥${trafficPayableAmount}` }}</strong>
         </div>
       </template>
-      <t-empty v-else-if="!trafficLoading" :description="trafficData?.message || '暂无可购买流量包'" />
+      <t-empty v-else-if="!trafficLoading" :description="trafficData?.message || $t('services.console.noTrafficPackage')" />
     </loading-state>
     <template #footer>
-      <t-button variant="outline" @click="trafficVisible = false">取消</t-button>
+      <t-button variant="outline" @click="trafficVisible = false">{{ $t('services.console.cancel') }}</t-button>
       <t-button
         theme="primary"
         :loading="trafficSubmitting"
         :disabled="trafficLoading || trafficQuoting || !trafficForm.target_value || !trafficPackages.length"
         @click="submitTrafficPackageOrder"
       >
-        创建账单
+        {{ $t('services.console.createBill') }}
       </t-button>
     </template>
   </t-dialog>

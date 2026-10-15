@@ -1,19 +1,23 @@
 <template>
   <section class="console-panel-section">
-    <t-card title="财务日志" :bordered="false">
+    <t-card :title="$t('services.console.financeLogs')" :bordered="false">
       <template #actions>
-        <t-button :loading="financeState.loading" @click="loadFinanceLogs">刷新</t-button>
+        <t-button :loading="financeState.loading" @click="loadFinanceLogs">{{ $t('services.console.refresh') }}</t-button>
       </template>
       <div class="log-summary finance-summary">
-        <span>共 {{ financeState.summary.total_count || financeState.total || 0 }} 条</span>
-        <span>收入 ¥{{ formatMoney(financeState.summary.total_in || 0) }}</span>
-        <span>支出 ¥{{ formatMoney(financeState.summary.total_out || 0) }}</span>
-        <span>退款 ¥{{ formatMoney(financeState.summary.refund_in || 0) }}</span>
+        <span
+          >{{ $t('services.console.totalCount') }}
+          {{ financeState.summary.total_count || financeState.total || 0 }}
+          {{ $t('services.console.recordsUnit') }}</span
+        >
+        <span>{{ $t('services.console.income') }} ¥{{ formatMoney(financeState.summary.total_in || 0) }}</span>
+        <span>{{ $t('services.console.expense') }} ¥{{ formatMoney(financeState.summary.total_out || 0) }}</span>
+        <span>{{ $t('services.console.refund') }} ¥{{ formatMoney(financeState.summary.refund_in || 0) }}</span>
       </div>
       <data-state
         :loading="financeState.loading"
         :empty="!financeState.list.length"
-        :description="financeState.error || '暂无财务记录'"
+        :description="financeState.error || $t('services.console.noFinanceRecords')"
       >
         <t-table
           row-key="id"

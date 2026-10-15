@@ -2,20 +2,22 @@
   <section class="order-detail-page">
     <!-- 面包屑导航 -->
     <t-breadcrumb class="order-breadcrumb">
-      <t-breadcrumb-item @click="router.push('/client/dashboard')">财务中心</t-breadcrumb-item>
-      <t-breadcrumb-item @click="router.push('/client/orders')">订单记录</t-breadcrumb-item>
-      <t-breadcrumb-item>订单详情</t-breadcrumb-item>
+      <t-breadcrumb-item @click="router.push('/client/dashboard')">{{ $t('client.orderDetail.financeCenter') }}</t-breadcrumb-item>
+      <t-breadcrumb-item @click="router.push('/client/orders')">{{ $t('client.orderDetail.orderRecords') }}</t-breadcrumb-item>
+      <t-breadcrumb-item>{{ $t('client.orderDetail.orderDetail') }}</t-breadcrumb-item>
     </t-breadcrumb>
 
     <!-- 操作栏 -->
     <div class="detail-toolbar">
-      <t-button variant="outline" @click="router.push('/client/orders')">返回列表</t-button>
+      <t-button variant="outline" @click="router.push('/client/orders')">{{ $t('client.orderDetail.backToList') }}</t-button>
       <div class="detail-toolbar__actions">
         <t-button variant="outline" :loading="loading" @click="loadDetail(orderId)">
           <template #icon><refresh-icon /></template>
-          刷新
+          {{ $t('client.orderDetail.refresh') }}
         </t-button>
-        <t-button v-if="canPayDetail" theme="primary" @click="goPayDetail"> 去支付 </t-button>
+        <t-button v-if="canPayDetail" theme="primary" @click="goPayDetail">{{
+            $t('client.orderDetail.goPay')
+          }}</t-button>
         <t-button
           v-if="detail && Number(detail.status) === 0"
           theme="danger"
@@ -23,77 +25,77 @@
           :loading="canceling"
           @click="cancelOrder()"
         >
-          取消订单
+          {{ $t('client.orderDetail.cancelOrder') }}
         </t-button>
       </div>
     </div>
 
-    <t-loading :loading="loading" text="正在加载订单详情">
+    <t-loading :loading="loading" :text="$t('client.orderDetail.loading')">
       <template v-if="detail">
         <!-- 标签页 -->
         <t-card :bordered="false" class="order-detail-tabs-card">
           <t-tabs v-model="activeTab">
-            <t-tab-panel value="basic" label="基础信息">
+            <t-tab-panel value="basic" :label="$t('client.orderDetail.basicTab')">
               <div class="detail-kv-grid">
                 <div class="detail-kv-item">
-                  <span>订单号</span>
+                  <span>{{ $t('client.orderDetail.orderNo') }}</span>
                   <strong>{{ detail.order_no || '--' }}</strong>
                 </div>
                 <div class="detail-kv-item">
-                  <span>订单类型</span>
+                  <span>{{ $t('client.orderDetail.orderType') }}</span>
                   <strong>{{ detail.type_label || '--' }}</strong>
                 </div>
                 <div class="detail-kv-item">
-                  <span>订单状态</span>
+                  <span>{{ $t('client.orderDetail.orderStatus') }}</span>
                   <status-tag :status-map="ORDER_STATUS_MAP" :status="Number(detail.status)" />
                 </div>
                 <div class="detail-kv-item">
-                  <span>订单金额</span>
+                  <span>{{ $t('client.orderDetail.orderAmount') }}</span>
                   <strong>¥{{ formatMoney(detail.amount) }}</strong>
                 </div>
                 <div class="detail-kv-item">
-                  <span>优惠金额</span>
+                  <span>{{ $t('client.orderDetail.discountAmount') }}</span>
                   <strong>¥{{ formatMoney(detail.discount) }}</strong>
                 </div>
                 <div class="detail-kv-item">
-                  <span>已付金额</span>
+                  <span>{{ $t('client.orderDetail.paidAmount') }}</span>
                   <strong>¥{{ formatMoney(detail.paid_amount) }}</strong>
                 </div>
                 <div class="detail-kv-item">
-                  <span>开通商品</span>
+                  <span>{{ $t('client.orderDetail.productName') }}</span>
                   <strong>{{ orderProductDisplay(detail) }}</strong>
                 </div>
                 <div class="detail-kv-item">
-                  <span>计费周期</span>
+                  <span>{{ $t('client.orderDetail.billingCycle') }}</span>
                   <strong>{{ billingCycleLabel(detail.billing_cycle) }}</strong>
                 </div>
                 <div class="detail-kv-item">
-                  <span>数量</span>
+                  <span>{{ $t('client.orderDetail.quantity') }}</span>
                   <strong>{{ detail.quantity ?? 1 }}</strong>
                 </div>
                 <div class="detail-kv-item">
-                  <span>创建时间</span>
+                  <span>{{ $t('client.orderDetail.createdAt') }}</span>
                   <strong>{{ detail.created_at || '--' }}</strong>
                 </div>
                 <div v-if="detail.paid_at" class="detail-kv-item">
-                  <span>支付时间</span>
+                  <span>{{ $t('client.orderDetail.paidAt') }}</span>
                   <strong>{{ detail.paid_at }}</strong>
                 </div>
                 <div v-if="detail.coupon_code" class="detail-kv-item">
-                  <span>优惠券</span>
+                  <span>{{ $t('client.orderDetail.coupon') }}</span>
                   <strong>{{ detail.coupon?.name || detail.coupon_code }}</strong>
                 </div>
                 <div v-if="detail.remark" class="detail-kv-item detail-kv-item--wide">
-                  <span>备注</span>
+                  <span>{{ $t('client.orderDetail.remark') }}</span>
                   <strong>{{ detail.remark }}</strong>
                 </div>
               </div>
             </t-tab-panel>
 
-            <t-tab-panel v-if="showConfigTab" value="config" label="产品配置">
+            <t-tab-panel v-if="showConfigTab" value="config" :label="$t('client.orderDetail.configTab')">
               <div v-if="configSnapshotView.length" class="order-pricing-block">
                 <section class="order-section">
-                  <h4 class="order-section-title">配置快照</h4>
+                  <h4 class="order-section-title">{{ $t('client.orderDetail.configSnapshot') }}</h4>
                   <div class="snapshot-line-list">
                     <div v-for="item in configSnapshotView" :key="`cfg-${item.label}`" class="snapshot-line-item">
                       <span class="snapshot-line-label">{{ item.label }}</span>
@@ -104,7 +106,7 @@
               </div>
               <div v-if="pricingSnapshotView.length" class="order-pricing-block">
                 <section class="order-section">
-                  <h4 class="order-section-title">配置定价</h4>
+                  <h4 class="order-section-title">{{ $t('client.orderDetail.configPricing') }}</h4>
                   <div class="snapshot-line-list">
                     <div v-for="item in pricingSnapshotView" :key="`price-${item.label}`" class="snapshot-line-item">
                       <span class="snapshot-line-label">{{ item.label }}</span>
@@ -114,17 +116,17 @@
                 </section>
               </div>
               <div v-if="!configSnapshotView.length && !pricingSnapshotView.length" class="order-detail-empty">
-                暂无配置快照
+                {{ $t('client.orderDetail.noConfigSnapshot') }}
               </div>
             </t-tab-panel>
 
-            <t-tab-panel value="related" label="关联信息">
+            <t-tab-panel value="related" :label="$t('client.orderDetail.relatedTab')">
               <!-- 关联账单 -->
               <section v-if="detail.invoice" class="related-section">
-                <h4>关联账单</h4>
+                <h4>{{ $t('client.orderDetail.relatedInvoice') }}</h4>
                 <div class="detail-kv-grid">
                   <div class="detail-kv-item">
-                    <span>账单号</span>
+                    <span>{{ $t('client.orderDetail.invoiceNo') }}</span>
                     <t-button
                       variant="text"
                       theme="primary"
@@ -135,39 +137,39 @@
                     </t-button>
                   </div>
                   <div class="detail-kv-item">
-                    <span>账单状态</span>
+                    <span>{{ $t('client.orderDetail.invoiceStatus') }}</span>
                     <status-tag :status-map="INVOICE_STATUS_MAP" :status="Number(detail.invoice.status)" />
                   </div>
                 </div>
               </section>
-              <div v-else class="related-empty">暂无关联账单</div>
+              <div v-else class="related-empty">{{ $t('client.orderDetail.noRelatedInvoice') }}</div>
 
               <!-- 关联服务 -->
               <section v-if="detail.service" class="related-section">
-                <h4>关联服务</h4>
+                <h4>{{ $t('client.orderDetail.relatedService') }}</h4>
                 <div class="detail-kv-grid">
                   <div class="detail-kv-item">
-                    <span>实例ID</span>
+                    <span>{{ $t('client.orderDetail.instanceId') }}</span>
                     <strong>{{ detail.service.instance_id || '--' }}</strong>
                   </div>
                   <div class="detail-kv-item">
-                    <span>主机名</span>
+                    <span>{{ $t('client.orderDetail.hostname') }}</span>
                     <strong>{{ detail.service.hostname || '--' }}</strong>
                   </div>
                 </div>
               </section>
-              <div v-else class="related-empty">暂无关联服务</div>
+              <div v-else class="related-empty">{{ $t('client.orderDetail.noRelatedService') }}</div>
 
               <!-- 优惠券 -->
               <section v-if="detail.coupon" class="related-section">
-                <h4>使用优惠券</h4>
+                <h4>{{ $t('client.orderDetail.couponUsage') }}</h4>
                 <div class="detail-kv-grid">
                   <div class="detail-kv-item">
-                    <span>优惠券码</span>
+                    <span>{{ $t('client.orderDetail.couponCode') }}</span>
                     <strong>{{ detail.coupon.code || '--' }}</strong>
                   </div>
                   <div class="detail-kv-item">
-                    <span>优惠券名称</span>
+                    <span>{{ $t('client.orderDetail.couponName') }}</span>
                     <strong>{{ detail.coupon.name || '--' }}</strong>
                   </div>
                 </div>
@@ -178,7 +180,9 @@
       </template>
 
       <div v-else-if="!loading" class="detail-empty">
-        <t-button variant="outline" @click="router.push('/client/orders')">返回订单列表</t-button>
+        <t-button variant="outline" @click="router.push('/client/orders')">{{
+          $t('client.orderDetail.backToOrders')
+        }}</t-button>
       </div>
     </t-loading>
   </section>

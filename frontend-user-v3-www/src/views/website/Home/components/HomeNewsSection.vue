@@ -2,7 +2,7 @@
   <section class="news-section">
     <div class="container">
       <header class="news-section__head">
-        <h2 class="news-section__title">资讯动态</h2>
+        <h2 class="news-section__title">{{ $t('home.news.title') }}</h2>
         <p class="news-section__desc">
           为您呈现行业动态、活动公告、产品发布
           <router-link to="/notices" class="news-section__more">
@@ -30,7 +30,7 @@
               fetchpriority="low"
             />
             <template v-else>
-              <span class="news-feature__cover-text">公告</span>
+              <span class="news-feature__cover-text">{{ $t('home.news.announcements') }}</span>
               <div class="news-feature__cover-decor" aria-hidden="true"></div>
             </template>
           </div>

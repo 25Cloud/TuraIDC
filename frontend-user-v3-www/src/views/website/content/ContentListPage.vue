@@ -9,7 +9,7 @@
               <p>{{ config.heroDescription }}</p>
 
               <div class="hero-keywords">
-                <span class="hero-keywords__label">热门搜索:</span>
+                <span class="hero-keywords__label">{{ $t('content.list.hotSearches') }}</span>
                 <button
                   v-for="item in heroKeywords"
                   :key="item"
@@ -33,7 +33,7 @@
               >
                 <template #append>
                   <el-button type="primary" @click="submitSearch"
-                    >搜索</el-button
+                    >{{ $t('content.list.search') }}</el-button
                   >
                 </template>
               </el-input>

@@ -2,9 +2,9 @@
   <div class="about-page">
     <section class="about-hero">
       <div class="container">
-        <p class="about-kicker">关于我们</p>
+        <p class="about-kicker">{{ $t('layout.nav.aboutUs') }}</p>
         <!-- H1 描述页面本身而非站点名；与后端 SEO 快照（renderStaticBody）口径一致 -->
-        <h1>关于我们</h1>
+        <h1>{{ $t('layout.nav.aboutUs') }}</h1>
         <p class="about-desc">
           我们专注于云服务器、独立服务器与相关基础设施服务，提供从选型、购买、开通到运维支持的一体化体验。
         </p>
@@ -14,13 +14,13 @@
     <section class="about-section">
       <div class="container about-grid">
         <article class="about-card">
-          <h2>服务能力</h2>
+          <h2>{{ $t('content.about.serviceCapabilities') }}</h2>
           <p>
             覆盖产品展示、在线购买、统一账单、自动开通、售后支持与服务控制台。
           </p>
         </article>
         <article class="about-card">
-          <h2>联系方式</h2>
+          <h2>{{ $t('content.about.contactInformation') }}</h2>
           <p>客服邮箱：{{ appStore.serviceEmail || "暂无配置" }}</p>
           <p>服务时间：{{ appStore.serviceHours || "以站内通知为准" }}</p>
           <p>

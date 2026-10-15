@@ -1,0 +1,776 @@
+{
+  "lang": "English",
+  "product": {
+    "group": {
+      "level1": "Level 1 Group",
+      "level2": "Level 2 Group",
+      "level3": "Level 3 Group"
+    },
+    "detail": {
+      "title": "Product Detail",
+      "serverSpecs": "Server Specs",
+      "basePrice": "Base Price",
+      "coupon": "Coupon",
+      "selectCoupon": "Select a coupon",
+      "totalCost": "Total Cost",
+      "region": "Region",
+      "operatingSystem": "Operating System",
+      "network": "Network Configuration",
+      "purchaseNotes": "Purchase Notes",
+      "baseSettings": "Base Settings",
+      "billingCycle": "Billing Cycle",
+      "quantity": "Quantity",
+      "quantityHint": "1 unit (place separate orders for multiple units)",
+      "configFee": "Configuration Fee",
+      "syncing": "Syncing...",
+      "syncFailed": "Sync failed",
+      "costBreakdown": "Cost Breakdown",
+      "setupFee": "Setup Fee",
+      "calculating": "Calculating",
+      "category": "Category",
+      "selectOs": "Select an OS",
+      "selectVersion": "Select a version",
+      "readyToBuy": "Ready to Buy",
+      "summary": "Configuration Summary",
+      "notFound": "This product does not exist or has been taken down",
+      "backToProducts": "Back to Products"
+    },
+    "osPicker": {
+      "version": "Version",
+      "system": "System",
+      "selectOs": "Select Operating System",
+      "noSystemAvailable": "No system available",
+      "selectSystemFirst": "Please select a system first",
+      "noVersionAvailable": "No version available"
+    },
+    "checkout": {
+      "quoteExpired": "The quote has expired. Please try again later.",
+      "selectBillingCycle": "Please select a billing cycle",
+      "pricingInProgress": "Calculating the price, please wait",
+      "consoleRedirectFailed": "Failed to open the console. Please try again",
+      "stockSyncing": "Syncing stock",
+      "stockSyncFailed": "Stock sync failed",
+      "stockSyncingHint": "Syncing real-time stock, please wait.",
+      "discountRate": "${String(value).replace(/\\.0$/, \"\")}x off",
+      "stockSufficient": "In stock",
+      "stockLow": "Low stock",
+      "stockOutOfStock": "Out of stock",
+      "stockSyncRetryHint": "Real-time stock sync failed. Please try again later.",
+      "stockSufficientHint": "Stock is sufficient. You can submit the order directly.",
+      "stockRemainingHint": "Only ${stock} left. Please purchase soon.",
+      "stockInsufficientHint": "Insufficient stock. Please contact support.",
+      "enteringConsole": "Redirecting to the console to continue creating the order",
+      "couponCode": "Coupon Code",
+      "loginRequired": "Please sign in before purchasing this product",
+      "sessionExpired": "Your session has expired. Please sign in again",
+      "prerequisitesRequired": "Please complete the purchase requirements first",
+      "stockSyncingNotice": "Syncing stock, please wait",
+      "stockSyncFailedNotice": "Stock sync failed. Please try again later",
+      "purchaseUnavailable": "Insufficient stock. This product cannot be ordered right now"
+    },
+    "requirements": {
+      "realNameVerification": "Real-name verification required",
+      "realNameVerificationHint": "Complete real-name verification before purchase",
+      "realNameVerificationBlocked": "You must complete real-name verification before purchasing this product.",
+      "goToRealNameVerification": "Go to real-name verification",
+      "phoneBinding": "Phone number binding",
+      "phoneBindingRequired": "Phone number binding required",
+      "phoneBindingHint": "Bind a phone number before purchase",
+      "phoneBindingBlocked": "You must bind a phone number before purchasing this product.",
+      "goToPhoneBinding": "Bind a phone number",
+      "statusIncomplete": "Not completed",
+      "loginRequired": "Please sign in first",
+      "statusChecking": "Checking",
+      "statusPassed": "Passed"
+    },
+    "spec": {
+      "oneCore": "1 Core",
+      "unitCore": "Core",
+      "familyWithCode": "Instance Family ${code}"
+    },
+    "instanceFamily": {
+      "computeC9i": "Compute c9i",
+      "generalPurposeG9i": "General Purpose g9i",
+      "economyE": "Economy e",
+      "burstPerformanceT6": "Burst Performance t6"
+    },
+    "configurator": {
+      "systemDisk": "System Disk",
+      "dataDisk": "Data Disk",
+      "disk": "Disk",
+      "bandwidth": "Bandwidth",
+      "traffic": "Traffic",
+      "download": "Download",
+      "upload": "Upload",
+      "quantity": "Quantity",
+      "selected": "Selected",
+      "cpuModel": "CPU Model",
+      "unitCount": "${text} pcs"
+    },
+    "list": {
+      "osInstall": "OS Installation",
+      "memory": "Memory",
+      "viewSpecNotes": "View instance spec notes",
+      "productIntro": "Product Overview",
+      "selectVersion": "Select a version",
+      "processor": "Processor",
+      "breadcrumbRoot": "Products · Select a Level 1 Group",
+      "enterSubdirectory": "Enter subdirectory",
+      "categoryPath": "Level 1 Group / Level 2 Group",
+      "specSelector": "Product Spec Selection",
+      "instanceSpecs": "Instance Specs",
+      "sortVcpu": "vCPU sorting",
+      "sortVcpuAsc": "Sort by vCPU (low to high)",
+      "sortVcpuDesc": "Sort by vCPU (high to low)",
+      "sortMemory": "memory sorting",
+      "sortMemoryAsc": "Sort by memory (low to high)",
+      "sortMemoryDesc": "Sort by memory (high to low)",
+      "clockSpeed": "Base / Turbo Frequency",
+      "sortPrice": "base price sorting",
+      "sortPriceAsc": "Sort by base price (low to high)",
+      "sortPriceDesc": "Sort by base price (high to low)",
+      "otherConfig": "Other Configuration",
+      "selectCouponProduct": "Select the product the coupon applies to",
+      "empty": "No products in this category yet",
+      "cycle": "Cycle",
+      "totalCostLabel": "Total cost: ",
+      "costDetailsLabel": "Cost details: ",
+      "configName": "Configuration Name",
+      "configDetail": "Configuration Details",
+      "grandTotalLabel": "Total price: ",
+      "selectCoupon": "Select a coupon",
+      "spec": "Product Specs",
+      "selectSpec": "Select a product spec"
+    },
+    "cpuBadge": {
+      "coreShort": "Core",
+      "coreFull": "Core",
+      "platinumShort": "Platinum",
+      "platinumFull": "Platinum",
+      "goldShort": "Gold",
+      "goldFull": "Gold",
+      "xeonShort": "Xeon",
+      "xeonFull": "Xeon"
+    }
+  },
+  "layout": {
+    "nav": {
+      "products": "Products",
+      "aboutUs": "About Us",
+      "notices": "Announcements",
+      "helpCenter": "Help Center",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "productCatalog": "Product Catalog",
+      "solutions": "Solutions",
+      "viewAllProducts": "All Products →",
+      "moreLinks": "More Links",
+      "moreLinksDesc": "About, help, and other frequently used links",
+      "productsAndServices": "Products & Services"
+    },
+    "navProductMenu": {
+      "categoryFallback": "Category ${index + 1}"
+    },
+    "notice": {
+      "categoryTitle": "Announcement Categories",
+      "viewAll": "View All →",
+      "categoryLoadFailed": "Failed to load categories",
+      "allAnnouncements": "All Announcements",
+      "loadFailed": "Failed to load announcements",
+      "viewAllMore": "View All Announcements →",
+      "empty": "No announcements yet"
+    },
+    "user": {
+      "menuLabel": "User Menu",
+      "registerFree": "Sign Up Free",
+      "realNameVerification": "Real-Name Verification",
+      "signIn": "Sign In",
+      "console": "Console",
+      "signInOrRegister": "Sign In / Sign Up",
+      "account": "Account",
+      "accountLogin": "Account Sign In",
+      "enterConsole": "Go to Console"
+    },
+    "a11y": {
+      "skipToMainContent": "Skip to main content",
+      "mainNavigation": "Main Navigation"
+    },
+    "doc": {
+      "categoryTitle": "Documentation Categories",
+      "allDocs": "All Documentation",
+      "loadFailed": "Failed to load documentation",
+      "viewAllMore": "View All Documentation →",
+      "empty": "No documentation yet"
+    },
+    "product": {
+      "emptyCategories": "No product categories yet"
+    },
+    "solutions": {
+      "ecommerce": "E-commerce",
+      "gaming": "Gaming",
+      "finance": "Finance",
+      "overseas": "Global Expansion"
+    },
+    "footer": {
+      "support": "Support",
+      "siteAnnouncements": "Site Announcements",
+      "ticketSystem": "Ticket System"
+    },
+    "navContent": {
+      "uncategorized": "Uncategorized"
+    }
+  },
+  "content": {
+    "notice": {
+      "detailTitle": "Announcement Detail",
+      "empty": "No announcements available",
+      "title": "Announcements"
+    },
+    "help": {
+      "detailTitle": "Help Article Detail",
+      "category": {
+        "container": "Container Systems",
+        "gettingStarted": "Getting Started",
+        "billing": "Billing & Payment",
+        "serviceManagement": "Service Management",
+        "renewal": "Renewal Guide",
+        "console": "Instance Console"
+      },
+      "subtitle": "Quickly find step-by-step guides for purchasing, payment, renewal, instance management, and more.",
+      "searchPlaceholder": "Search help docs, billing notes, renewal rules",
+      "empty": "No help content available",
+      "hotDocuments": "Popular Documents",
+      "recentlyUpdated": "Recently Updated",
+      "categories": "Help Categories"
+    },
+    "about": {
+      "serviceCapabilities": "Service Capabilities",
+      "contactInformation": "Contact Information"
+    },
+    "legal": {
+      "openOriginal": "Open original",
+      "documentUrlMissing": "The address of this document is not configured on the site yet"
+    },
+    "detail": {
+      "tableOfContents": "Table of Contents"
+    },
+    "nav": {
+      "news": "News",
+      "docs": "Documentation Center",
+      "allCategories": "All Categories",
+      "moreSections": "More Sections",
+      "downloads": "Download Center",
+      "newsDesc": "View the latest platform notices, maintenance announcements, product updates, and important service alerts."
+    },
+    "search": {
+      "placeholder": "Enter the keyword you want to search for"
+    },
+    "article": {
+      "hot": "Popular Articles"
+    },
+    "activity": {
+      "latest": "Latest Events"
+    },
+    "list": {
+      "empty": "No content yet",
+      "hotSearches": "Hot Searches:",
+      "search": "Search",
+      "pinned": "Pinned"
+    }
+  },
+  "seo": {
+    "home": {
+      "description": "Cloud servers, dedicated servers, cloud PCs, and IDC services across Hong Kong, the United States, and multiple mainland China locations."
+    },
+    "products": {
+      "description": "Browse cloud server, dedicated server, cloud PC, and IDC product solutions."
+    },
+    "about": {
+      "description": "Learn about our IDC service capabilities, node coverage, and platform advantages."
+    },
+    "terms": {
+      "description": "Read the Terms of Service."
+    },
+    "privacy": {
+      "description": "Read the Privacy Policy."
+    },
+    "notices": {
+      "description": "View platform announcements and service notifications."
+    },
+    "help": {
+      "description": "Get help with product purchases, billing and payments, and service management."
+    }
+  },
+  "seoLanding": {
+    "cloudServer": {
+      "keyword": "Cloud Server",
+      "title": "Cloud Server - Reliable Elastic Computing and IDC Cloud Hosting",
+      "description": "Cloud servers built for corporate websites, business systems, and development and testing, with reliable elastic computing, flexible configuration, and IDC operations support.",
+      "keywords": "cloud server,cloud hosting,elastic cloud server,IDC cloud server",
+      "heroTitle": "Stable and Easy-to-Use Cloud Servers",
+      "heroSummary": "For website hosting, business systems, API services, and development and testing, pick CPU, memory, bandwidth, and OS images to match your actual workload and cut up-front hardware spending.",
+      "hero": {
+        "points": {
+          "fastDelivery": "Fast delivery",
+          "ticketSupport": "Ticket support"
+        },
+        "stats": {
+          "specs": {
+            "value": "Multiple specs",
+            "label": "CPU / RAM / bandwidth combinations"
+          },
+          "os": {
+            "value": "Multiple OS",
+            "label": "Linux and Windows images"
+          },
+          "onDemand": {
+            "value": "On demand",
+            "label": "From test to production"
+          }
+        },
+        "visualAlt": "Cloud server deployment overview"
+      },
+      "features": {
+        "scalable": {
+          "title": "Configuration you can adjust at every stage",
+          "description": "Pick the right spec for everything from lightweight sites to business applications, and scale up later without repeated migration."
+        },
+        "standardized": {
+          "title": "Ready for standardized deployment",
+          "description": "Common OS images, network and security settings are managed centrally, so new workloads go live quickly."
+        },
+        "support": {
+          "title": "A clear path to after-sales support",
+          "description": "Issues are recorded through your account and ticket system, which makes network, system and billing problems easier to diagnose."
+        }
+      },
+      "scenarios": {
+        "marketingSite": {
+          "title": "Corporate sites and marketing pages",
+          "description": "Runs official sites, landing pages, form submissions and lightweight back offices, suited to stable delivery and routine maintenance."
+        },
+        "devTest": {
+          "title": "Development and testing environments",
+          "description": "Provides an isolated environment for project testing, API integration and temporary demos, with fewer local environment differences."
+        },
+        "smbSystem": {
+          "title": "Small and midsize business systems",
+          "description": "Suited to admin panels, API services, data dashboards and other workloads that need an isolated runtime environment."
+        }
+      },
+      "faqs": {
+        "useCases": {
+          "question": "What workloads are cloud servers good for?",
+          "answer": "Ideal for corporate sites, business back ends, API services, development and testing, and lightweight databases."
+        },
+        "sizing": {
+          "question": "How should I size a new workload?",
+          "answer": "Start with a smaller spec, then adjust based on traffic, CPU, memory and bandwidth usage."
+        },
+        "vsDedicated": {
+          "question": "What is the difference between cloud servers and dedicated servers?",
+          "answer": "Cloud servers suit elasticity and fast delivery, while dedicated servers suit workloads that need exclusive physical resources."
+        }
+      },
+      "relatedLinks": {
+        "helpCenter": "Read the help center",
+        "aboutUs": "About us"
+      },
+      "cta": {
+        "title": "Choose a cloud server that matches your workload size",
+        "description": "Review the available products and specs, then sign up and place your order in the console."
+      }
+    },
+    "hongKongServer": {
+      "keyword": "Hong Kong Server",
+      "title": "Hong Kong Server - Cloud Servers for Overseas and Cross-Border Access",
+      "description": "Hong Kong servers suit cross-border websites, foreign trade business, and Asia-Pacific traffic, with cloud server configuration options and ticket support.",
+      "keywords": "Hong Kong server,Hong Kong cloud server,Hong Kong cloud hosting,cross-border server",
+      "heroTitle": "Hong Kong Servers for Asia-Pacific Business",
+      "heroSummary": "Ideal for foreign trade sites, cross-border business, Asia-Pacific user access, and traffic routing, balancing deployment speed, access quality, and routine operations support."
+    },
+    "meta": {
+      "usServer": {
+        "keyword": "US Servers",
+        "title": "US Servers - Overseas Deployment and Web Hosting",
+        "description": "US servers serve overseas websites, cross-border business, and development and testing workloads, with cloud server configuration options, system deployment, and after-sales support.",
+        "keywords": "US Servers,US Cloud Servers,Overseas Servers,Overseas Cloud Hosts",
+        "heroTitle": "US Servers for Overseas Deployment",
+        "heroSummary": "Built for overseas showcase sites, application services, cross-border business, and test environments, helping teams launch an overseas entry point with a low barrier."
+      },
+      "highDefenseServer": {
+        "keyword": "DDoS-Protected Servers",
+        "title": "DDoS-Protected Servers - Cloud Servers for Attack Protection",
+        "description": "DDoS-protected servers fit defense-sensitive scenarios such as gaming, business APIs, and high-risk websites, with configuration options and operations support.",
+        "keywords": "DDoS-Protected Servers,DDoS-Protected Cloud Servers,Protected Servers,Game Server Protection",
+        "heroTitle": "DDoS-Protected Servers for Attack Protection",
+        "heroSummary": "For websites, games, and API services that are exposed to abnormal traffic, with clearer resource and ticket management paths under risk scenarios."
+      },
+      "cloudPc": {
+        "keyword": "Cloud PCs",
+        "title": "Cloud PCs - Remote Work and Lightweight Desktop Cloud",
+        "description": "Cloud PCs suit remote work, lightweight desktops, software testing, and temporary work environments, with cloud resource selection and account management.",
+        "keywords": "Cloud PCs,Cloud Desktops,Remote Work Cloud PCs,Desktop Cloud",
+        "heroTitle": "Flexible Cloud PCs for Everyday Use",
+        "heroSummary": "Cloud resources for remote work, software testing, temporary desktops, and lightweight operating environments, reducing the maintenance cost of local device differences."
+      }
+    },
+    "breadcrumb": {
+      "home": "Home"
+    },
+    "pages": {
+      "relatedLinks": {
+        "viewProductsServices": "View products and services",
+        "viewCloudServer": "View cloud servers",
+        "viewHelpCenter": "View help center"
+      },
+      "cta": {
+        "viewProductConfig": "View product configurations",
+        "registerAccount": "Register an account",
+        "submitConsultationTicket": "Submit a consultation ticket"
+      },
+      "common": {
+        "flexibleConfig": "Flexible configuration"
+      },
+      "cloudServer": {
+        "hero": {
+          "eyebrow": "Elastic Computing"
+        }
+      }
+    },
+    "tag": {
+      "crossBorderAccess": "Cross-border access",
+      "apacAccess": "APAC access",
+      "foreignTradeSite": "Foreign trade sites",
+      "flexibleDeployment": "Flexible deployment",
+      "hongKongNode": "Hong Kong node",
+      "multipleBandwidth": "Multiple bandwidth options",
+      "ticketSupport": "Ticket-based support"
+    },
+    "highlight": {
+      "apacAccessScenario": "Ideal for APAC access",
+      "selectBySiteTraffic": "Pick by site traffic",
+      "networkSystemTroubleshooting": "Network and system troubleshooting",
+      "crossBorderEntry": "A fit for cross-border entry points",
+      "shorterDeploymentChain": "A shorter deployment path",
+      "easyToScaleLater": "Easier to scale later"
+    },
+    "figure": {
+      "crossBorderScenario": "Cross-border scenarios for Hong Kong servers"
+    },
+    "paragraph": {
+      "hongKongNodeCommonUse": "Hong Kong nodes are widely used for websites, API services, and lightweight workloads serving APAC users.",
+      "migrationInOneFlow": "Website, certificate, application, and data migration can be completed step by step within a single workflow.",
+      "growthUpgrade": "As your business grows, you can move to a higher configuration or adjust bandwidth, easing the burden of a large upfront spend."
+    },
+    "scenario": {
+      "foreignTradeShowcase": "Foreign trade showcase sites",
+      "foreignTradeShowcaseDesc": "Host company profiles, product catalogs, inquiry forms, and multilingual pages.",
+      "crossBorderEntry": "Cross-border business entry",
+      "crossBorderEntryDesc": "Serve as an application entry point, API service, or lightweight admin panel for APAC users.",
+      "overseasStaging": "Overseas staging environments",
+      "overseasStagingDesc": "Used to validate overseas routes, service access, and the experience for users in different regions."
+    },
+    "faq": {
+      "suitableWorkloadsQ": "What workloads suit Hong Kong servers?",
+      "suitableWorkloadsA": "Foreign trade websites, APAC user access, cross-border entry points, and overseas staging environments.",
+      "mainlandAccessQ": "Are Hong Kong servers suitable for mainland China users?",
+      "mainlandAccessA": "Actual experience depends on the network route, bandwidth, and access region; choose a configuration based on where your main users are located.",
+      "bandwidthSelectionQ": "How do I choose bandwidth for a Hong Kong server?",
+      "bandwidthSelectionA": "Showcase sites usually start on basic bandwidth, while video, download, or high-concurrency workloads need more bandwidth reserved.",
+      "usServerForDomesticBusinessQuestion": "Are US servers suitable for mainland China business?",
+      "usServerForDomesticBusinessAnswer": "If your main users are overseas, US servers are a better fit; if they are mainly in mainland China, evaluate mainland China or Hong Kong nodes first.",
+      "usServerAsTestEnvironmentQuestion": "Can US servers be used as a test environment?",
+      "usServerAsTestEnvironmentAnswer": "Yes. Suitable for validating overseas access, system deployment and cross-border business processes.",
+      "chooseOverseasServerQuestion": "What should I check first when choosing an overseas server?",
+      "chooseOverseasServerAnswer": "Start with user location, bandwidth requirements, system environment and ongoing maintenance approach.",
+      "ddosVsCloud": "How does a DDoS-protected server differ from a standard cloud server?",
+      "ddosVsCloudAnswer": "DDoS-protected servers focus on blocking abnormal traffic, while standard cloud servers fit routine computing and hosting needs.",
+      "ddosForEverySite": "Does every website need a DDoS-protected server?",
+      "ddosForEverySiteAnswer": "Not always. Most corporate sites can start with a standard cloud server; gaming, campaigns and other high-risk workloads can then assess their DDoS protection needs.",
+      "ddosPreparation": "What should be prepared before choosing a DDoS-protected server?",
+      "ddosPreparationAnswer": "You need to define the business type, traffic peak, attack risk, system environment and acceptable recovery time."
+    },
+    "cta": {
+      "viewUsServers": "View US servers",
+      "chooseHongKongForCrossBorder": "Choose a Hong Kong server for cross-border business",
+      "chooseHongKongTip": "Confirm your access region, bandwidth needs, and system environment first, then pick the right configuration.",
+      "viewHongKongServers": "View Hong Kong servers"
+    },
+    "related": {
+      "overseasNode": "Overseas nodes",
+      "overseasDeployment": "Overseas deployment",
+      "websiteHosting": "Website hosting",
+      "serviceTesting": "Business testing",
+      "overseasAccess": "Overseas access",
+      "fitOverseasAudience": "For businesses whose target users are overseas",
+      "selectBySystemBandwidth": "Choose by system and bandwidth needs"
+    },
+    "feature": {
+      "unifiedManagement": "Unified management",
+      "unifiedManagementDescription": "Orders, billing and tickets handled in one place",
+      "easyTrialRun": "Easy trial runs",
+      "easyTrialRunDescription": "Deploy a test environment first, then tune configuration and bandwidth based on traffic data.",
+      "unifiedBilling": "Unified billing",
+      "unifiedBillingDescription": "Overseas node resources can be viewed and renewed together with your other products in one account.",
+      "overseasWebsite": "Overseas websites",
+      "overseasWebsiteDescription": "Hosts English and multilingual sites, plus corporate showcase content for overseas markets.",
+      "crossBorderAppService": "Cross-border application services",
+      "crossBorderAppServiceDescription": "Deploy APIs, relay services, lightweight backends and operations tools.",
+      "overseasLinkValidation": "Overseas link validation",
+      "overseasLinkValidationDescription": "Used to test access from different regions, system compatibility and application latency.",
+      "overseasBusinessEntry": "Deploy overseas business entry points",
+      "overseasBusinessEntryDescription": "Choose nodes and bandwidth based on your target users' region, launch at a small scale first, then keep optimizing.",
+      "centralizedTroubleshooting": "Reduce scattered troubleshooting",
+      "centralizedManagement": "Resources, billing and tickets are managed in one account, making issues easier to review."
+    },
+    "diagram": {
+      "usServerOverseasDeployment": "US server overseas deployment",
+      "usServerOverseasDeploymentLabel": "Serving overseas visitors",
+      "usServerOverseasDeploymentDescription": "Ideal for websites, API services and lightweight apps serving overseas users.",
+      "ddosProtectionScenarios": "DDoS-Protected Server Scenarios",
+      "ddosProtectionScenariosLabel": "For workloads with higher attack risk",
+      "ddosProtectionScenariosDescription": "Games, campaign sites, API services and similar workloads attract more abnormal traffic and need a protection plan in advance."
+    },
+    "ddos": {
+      "scenarioProtection": "Protection scenarios",
+      "scenarioBusinessContinuity": "Business continuity",
+      "scenarioIssueTracking": "Issue tracking",
+      "scenarioHighRiskBusiness": "High-risk workloads",
+      "scenarioGameAndApi": "Ideal for games and API services",
+      "tagTraceable": "Traceable",
+      "tagTraceableDescription": "Issue records accumulate through support tickets",
+      "tagCombinable": "Composable",
+      "tagCombinableDescription": "Choose by server specification and bandwidth",
+      "highRiskPlan": "Prepare a server plan for high-risk workloads",
+      "highRiskPlanDesc": "Review your traffic peak, attack risk and system configuration first, then choose the right resources."
+    },
+    "serverPlan": {
+      "matchWorkload": "Choose a configuration to match the workload",
+      "matchWorkloadDesc": "Select a server spec based on your business type, traffic volume and system load."
+    },
+    "game": {
+      "workloadEntry": "Gaming workloads",
+      "workloadEntryDesc": "For availability-sensitive workloads such as game logins, APIs and official websites."
+    },
+    "campaign": {
+      "pages": "Campaign and marketing pages",
+      "pagesDesc": "For pages with sharp short-term traffic swings that need a protection plan in advance."
+    },
+    "api": {
+      "services": "Business API services",
+      "servicesDesc": "Hosts APIs, callback services and external endpoints, reducing the impact of abnormal traffic on core business."
+    },
+    "cloudDesktop": {
+      "cloudDesktop": "Cloud desktop",
+      "remoteAccess": "Remote access",
+      "lightweightDesktop": "Lightweight desktop",
+      "accountManagement": "Account management",
+      "runsInCloud": "Runs in the cloud",
+      "lessLocalDependency": "Less dependence on local devices",
+      "flexibleUse": "Flexible use",
+      "shortAndLongTerm": "Fits both short-term and long-term use",
+      "singleEntry": "Single entry point",
+      "consoleAndRenewal": "Console management and renewal",
+      "remoteWorkAlt": "Cloud PC remote work illustration",
+      "lowerDeviceBarrier": "Lower the local device barrier",
+      "cloudResourceDesc": "Common software, test environments and lightweight desktops can all run on cloud resources.",
+      "temporaryProject": "Good for temporary projects",
+      "temporaryProjectDesc": "Short-term testing, outsourced collaboration and demo environments can be set up quickly.",
+      "easyAccountManagement": "Easy account management"
+    },
+    "cloudPc": {
+      "unifiedAccount": {
+        "desc": "View services, renewals, and after-sales records from one unified account."
+      },
+      "remoteWork": {
+        "title": "Remote Work",
+        "desc": "Give employees and temporary collaborators a consistent cloud working environment."
+      },
+      "softwareTesting": {
+        "title": "Software Testing",
+        "desc": "Isolate test environments and reduce dependence on personal PC specs and OS versions."
+      },
+      "demoTraining": {
+        "title": "Demos and Training",
+        "desc": "Provision ready-to-use desktops in minutes for short-term events, training, and customer demos."
+      },
+      "faq": {
+        "whoIsItFor": {
+          "question": "Who is Cloud PC for?",
+          "answer": "It suits remote work, software testing, temporary projects, training and demos, and lightweight desktop workloads."
+        },
+        "replaceAllLocalPc": {
+          "question": "Can Cloud PC replace every local computer?",
+          "answer": "Not always. High-performance graphics, professional hardware, and low-latency peripherals need individual evaluation."
+        },
+        "vsCloudServer": {
+          "question": "What is the difference between Cloud PC and Cloud Server?",
+          "answer": "Cloud PC focuses on the desktop experience, while Cloud Server focuses on running business systems and server-side applications."
+        }
+      },
+      "section": {
+        "remoteWorkDesktop": {
+          "title": "Prepare a cloud desktop for remote work",
+          "desc": "Confirm your software, operating system, and usage period first, then pick the right Cloud PC configuration."
+        }
+      }
+    },
+    "productCategories": "Product Categories",
+    "coreSellingPoints": "Core Selling Points",
+    "serviceCapabilitySummary": "Service Capability Summary",
+    "viewAllProducts": "View All Products &gt;",
+    "buyNow": "Buy Now",
+    "productDetails": "Product Details",
+    "scenarioList": "Scenario List",
+    "relatedProducts": "Related Products:"
+  },
+  "common": {
+    "request": {
+      "apiBaseUrlRequired": "VITE_API_BASE_URL must be configured",
+      "failed": "Request failed",
+      "networkError": "Network error",
+      "connectionLost": "The network connection was lost. Please check it and try again",
+      "timeout": "The request timed out. Please check your network and try again",
+      "invalidParameters": "Some parameters are invalid. Please check them and try again",
+      "tooManyRequestsRetryAfter": "Too many requests. Please try again in ${retryAfter} seconds",
+      "tooManyRequests": "Too many requests. Please try again later"
+    },
+    "site": {
+      "slogan": "Cloud server and IDC service platform"
+    },
+    "regionPicker": {
+      "selectGroups": "Select a Level 1 Group and a Level 2 Group"
+    },
+    "userMessage": {
+      "operationFailed": "The operation failed. Please try again later"
+    },
+    "toast": {
+      "success": "Operation successful"
+    },
+    "notFound": {
+      "backHome": "Back to Home",
+      "title": "Page Not Found",
+      "description": "The page you visited may have been moved, or the link address is incorrect.",
+      "goBack": "Go Back"
+    },
+    "product": {
+      "specNotConfigured": "Spec not configured #${productId}"
+    }
+  },
+  "home": {
+    "partners": {
+      "mediaAndReading": "iQIYI, KuGou Music, Xunlei, iReader and other partners",
+      "internetTech": "Alibaba, Tencent, ByteDance, Meituan and other partners",
+      "telecomAndTravel": "China Mobile, China Unicom, 58.com, Ctrip and other partners",
+      "ecommerceAndMobility": "Gree, JD.com, Segway-Ninebot, Taobao and other partners",
+      "electronicsAndEv": "Gree, BOE, XPeng, NIO and other partners",
+      "title": "Premium Partners"
+    },
+    "hero": {
+      "productEntries": "Product Entries",
+      "carouselIndicator": "Carousel Indicator",
+      "carouselControls": "Carousel Controls"
+    },
+    "news": {
+      "title": "News & Updates",
+      "announcements": "Announcements",
+      "recommended": "Recommended"
+    },
+    "products": {
+      "title": "Secure, Stable and Trustworthy Products and Services"
+    },
+    "solutions": {
+      "title": "Comprehensive Solutions for Every Industry",
+      "industrySolutions": "Industry Solutions",
+      "relatedProducts": "Related Products",
+      "securityProtection": "Security Protection",
+      "ecommerce": {
+        "title": "E-Commerce Solution",
+        "tags": "Business Operations, Data Analytics, Security Protection",
+        "description": "We provide a one-stop e-commerce solution that brings business operations, data analytics, and security protection together, keeping your e-commerce business running smoothly.",
+        "points": {
+          "operationsOptimization": "Business Operations Optimization",
+          "dataAnalyticsAndMining": "Data Analytics and Mining",
+          "paymentLinkCoordination": "Payment Link Coordination"
+        }
+      },
+      "game": {
+        "label": "Gaming",
+        "title": "Gaming Cloud Solution",
+        "subtitle": "High-Concurrency Access, Elastic Scaling, Stable Protection",
+        "description": "Built for high-concurrency, low-latency and reliable delivery scenarios, it combines elastic compute, traffic scheduling, alerting and node disaster recovery to keep gaming workloads running reliably.",
+        "points": {
+          "elasticResourceScheduling": "Elastic Resource Scheduling",
+          "lowLatencyAccessOptimization": "Low-Latency Access Optimization",
+          "eventPeakCapacity": "Event Peak Capacity",
+          "nodeDisasterRecoveryAndMonitoring": "Node Disaster Recovery and Monitoring"
+        }
+      },
+      "security": {
+        "label": "Security",
+        "title": "Security Industry Solution",
+        "subtitle": "Access Control, Log Auditing, Asset Protection",
+        "description": "It builds a defense system around identity authentication, access management, audit logs and risk alerting, moving security into every step of procurement, delivery and operations.",
+        "points": {
+          "identityAndAccessIsolation": "Identity and Access Isolation",
+          "logAuditingAndTracing": "Log Auditing and Tracing",
+          "securityPolicyOrchestration": "Security Policy Orchestration",
+          "anomalousAccessProtection": "Anomalous Access Protection"
+        }
+      },
+      "website": {
+        "label": "Website",
+        "title": "Website Hosting Solution",
+        "subtitle": "Fast Deployment, Reliable Hosting, Continuous Operations",
+        "description": "From site deployment and performance optimization to ICP filing support and routine inspection, it provides a one-stop cloud hosting solution for showcase, business and content sites.",
+        "points": {
+          "fastSiteProvisioning": "Fast Site Provisioning",
+          "performanceAndStabilityOptimization": "Performance and Stability Optimization",
+          "multiSiteHostingCoordination": "Multi-Site Hosting Coordination",
+          "registrationAndOperationsSupport": "Filing and Operations Support"
+        }
+      },
+      "finance": {
+        "label": "Finance",
+        "title": "Financial Services Solution",
+        "subtitle": "Stable Delivery, Audit Trails, Compliance Support",
+        "description": "Built around payment processing, audit trails for sensitive operations, failure fallback and high-availability resource orchestration, it creates a more reliable infrastructure and operations system for financial services.",
+        "points": {
+          "clearBillingAndInvoicing": "Clear Billing and Invoicing",
+          "coreResourceHighAvailabilityDeployment": "Core Resource High-Availability Deployment",
+          "criticalActionAuditTrail": "Critical Action Audit Trail",
+          "complianceScenarioSupport": "Compliance Scenario Support"
+        }
+      },
+      "goGlobal": {
+        "label": "Global Expansion",
+        "title": "Global Expansion Solution",
+        "subtitle": "Global Nodes, Link Optimization, Service Coordination",
+        "description": "For cross-border businesses, it provides global node deployment, regional routing optimization, multi-region resource scheduling and unified delivery support to reach overseas users faster."
+      },
+      "globalNodeAccess": "Global node access",
+      "crossRegionLinkOptimization": "Cross-region link optimization",
+      "unifiedMultiRegionScheduling": "Unified multi-region resource scheduling",
+      "overseasBusinessDelivery": "Reliable delivery for overseas business",
+      "government": "Government",
+      "governmentEnterpriseCloud": "Government & Enterprise Cloud Solution",
+      "governmentFeatureSummary": "Resource orchestration, permission management, long-term operations",
+      "governmentSolutionDescription": "Built for government and enterprise projects with long cycles, rigorous processes and high operations demands, it covers resource planning, permission management and continuous service support.",
+      "unifiedPlanningAndDelivery": "Unified resource planning and delivery",
+      "tieredPermissionsAndProcessControl": "Tiered permissions and process control",
+      "documentedDeliveryManagement": "Documented delivery management",
+      "longTermOperationsAndSupport": "Long-term operations and service assurance"
+    }
+  },
+  "help": {
+    "support": {
+      "groupNumberPending": "Group number to be added",
+      "joinOfficialChat": "Join the official chat",
+      "officialChatDescription": "The official chat is used for maintenance notices, event updates and FAQ answers. Scan the QR code to join.",
+      "officialQqGroup": "Official QQ group",
+      "partnershipEmail": "Partnership email",
+      "serviceHours": "Service hours"
+    }
+  }
+}

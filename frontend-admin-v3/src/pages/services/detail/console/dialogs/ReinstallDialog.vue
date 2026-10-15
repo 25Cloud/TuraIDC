@@ -1,15 +1,15 @@
 <template>
   <t-dialog
     v-model:visible="reinstallVisible"
-    header="重装系统"
+    :header="$t('services.console.reinstallTitle')"
     width="min(34rem, calc(100vw - 2rem))"
     destroy-on-close
   >
-    <loading-state :loading="reinstallState.loading" text="正在加载系统列表" compact>
+    <loading-state :loading="reinstallState.loading" :text="$t('services.console.loadingSystemList')" compact>
       <div class="dialog-form">
         <label>
-          <span>系统分组</span>
-          <t-select v-model="reinstallState.os_group" placeholder="请选择系统分组" @change="handleReinstallGroupChange">
+          <span>{{ $t('services.console.osGroup') }}</span>
+          <t-select v-model="reinstallState.os_group" :placeholder="$t('services.console.selectOsGroup')" @change="handleReinstallGroupChange">
             <t-option
               v-for="group in reinstallGroupedOptions"
               :key="group.group_name"
@@ -19,8 +19,8 @@
           </t-select>
         </label>
         <label>
-          <span>系统版本</span>
-          <t-select v-model="reinstallState.os_id" placeholder="请选择系统版本">
+          <span>{{ $t('services.console.osVersion') }}</span>
+          <t-select v-model="reinstallState.os_id" :placeholder="$t('services.console.selectOsVersion')">
             <t-option
               v-for="item in currentReinstallOptions"
               :key="item.os_id"
@@ -32,9 +32,9 @@
       </div>
     </loading-state>
     <template #footer>
-      <t-button variant="outline" @click="reinstallVisible = false">取消</t-button>
+      <t-button variant="outline" @click="reinstallVisible = false">{{ $t('services.console.cancel') }}</t-button>
       <t-button theme="primary" :loading="actionLoading" :disabled="!reinstallState.os_id" @click="submitReinstall"
-        >提交重装</t-button
+        >{{ $t('services.console.submitReinstall') }}</t-button
       >
     </template>
   </t-dialog>

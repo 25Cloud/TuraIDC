@@ -6,7 +6,7 @@
 
     <main class="profile-main">
       <t-card v-if="activeTab === 'profile'" class="profile-card" :bordered="false">
-        <template #actions><t-tag variant="light">基础信息</t-tag></template>
+        <template #actions><t-tag variant="light">{{ $t('profile.basicInfo') }}</t-tag></template>
         <t-form label-align="left" label-width="6rem" class="profile-form">
           <t-form-item label="账户ID">
             <div class="profile-id-row">

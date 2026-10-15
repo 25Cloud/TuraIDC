@@ -1,6 +1,6 @@
 <template>
   <auth-shell
-    title="账号登录"
+    :title="$t('auth.loginTitle')"
     nav-text="还没有账户？"
     nav-link-text="现在注册"
     :nav-to="registerLink"
@@ -8,8 +8,8 @@
     hero-description="登录后可继续查看实例、支付账单、提交工单，并维护账户安全与实名认证。"
   >
     <t-tabs v-model="loginMode" class="client-auth-tabs">
-      <t-tab-panel value="password" label="密码登录" />
-      <t-tab-panel value="code" label="验证码登录" />
+      <t-tab-panel value="password" :label="$t('auth.byPassword')" />
+      <t-tab-panel value="code" :label="$t('auth.byCode')" />
     </t-tabs>
 
     <!-- 密码登录 -->
@@ -24,14 +24,14 @@
     >
       <t-form-item name="account">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required" for="login-account">手机号 / 邮箱</label>
+          <label class="client-auth-label is-required" for="login-account">{{ $t('auth.accountLabel') }}</label>
           <t-input
             id="login-account"
             v-model="form.account"
             size="large"
             clearable
             autocomplete="username"
-            placeholder="请输入手机号或邮箱"
+            :placeholder="$t('auth.loginAccountPlaceholder')"
             @enter="submitForm"
           >
             <template #prefix-icon><user-icon /></template>

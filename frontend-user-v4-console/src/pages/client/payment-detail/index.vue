@@ -2,14 +2,14 @@
   <section class="payment-detail-page">
     <!-- 面包屑导航 -->
     <t-breadcrumb class="payment-breadcrumb">
-      <t-breadcrumb-item @click="router.push('/client/dashboard')">财务中心</t-breadcrumb-item>
-      <t-breadcrumb-item @click="router.push('/client/payments')">充值记录</t-breadcrumb-item>
-      <t-breadcrumb-item>充值详情</t-breadcrumb-item>
+      <t-breadcrumb-item @click="router.push('/client/dashboard')">{{ $t('paymentDetail.title') }}</t-breadcrumb-item>
+      <t-breadcrumb-item @click="router.push('/client/payments')">{{ $t('paymentDetail.records') }}</t-breadcrumb-item>
+      <t-breadcrumb-item>{{ $t('paymentDetail.recordDetail') }}</t-breadcrumb-item>
     </t-breadcrumb>
 
     <!-- 操作栏 -->
     <div class="detail-toolbar">
-      <t-button variant="outline" @click="router.push('/client/payments')">返回列表</t-button>
+      <t-button variant="outline" @click="router.push('/client/payments')">{{ $t('paymentDetail.back') }}</t-button>
       <div class="detail-toolbar__actions">
         <t-button variant="outline" :loading="loading" @click="loadPayment()">
           <template #icon><refresh-icon /></template>

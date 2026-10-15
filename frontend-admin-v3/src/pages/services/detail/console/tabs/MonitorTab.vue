@@ -1,20 +1,20 @@
 <template>
   <section class="console-panel-section">
-    <t-card title="监控信息" :bordered="false">
+    <t-card :title="$t('services.console.monitorTitle')" :bordered="false">
       <template #actions>
         <t-space>
           <t-radio-group v-model="monitorState.range" variant="default-filled" @change="() => loadMonitor(true)">
-            <t-radio-button value="3h">3 小时</t-radio-button>
-            <t-radio-button value="24h">24 小时</t-radio-button>
-            <t-radio-button value="7d">7 天</t-radio-button>
-            <t-radio-button value="30d">30 天</t-radio-button>
+            <t-radio-button value="3h">{{ $t('services.console.range3h') }}</t-radio-button>
+            <t-radio-button value="24h">{{ $t('services.console.range24h') }}</t-radio-button>
+            <t-radio-button value="7d">{{ $t('services.console.range7d') }}</t-radio-button>
+            <t-radio-button value="30d">{{ $t('services.console.range30d') }}</t-radio-button>
           </t-radio-group>
-          <t-button :loading="monitorState.loading" @click="loadMonitor(true)">刷新</t-button>
+          <t-button :loading="monitorState.loading" @click="loadMonitor(true)">{{ $t('services.console.refresh') }}</t-button>
         </t-space>
       </template>
 
       <t-alert v-if="monitorState.error" theme="warning" class="console-inline-alert">{{ monitorState.error }}</t-alert>
-      <t-empty v-if="monitorState.supported === false" :description="monitorState.message || '当前实例暂不支持监控'" />
+      <t-empty v-if="monitorState.supported === false" :description="monitorState.message || $t('services.console.monitorUnsupported')" />
       <div v-else class="monitor-grid">
         <article v-for="chart in monitorChartViews" :key="chart.key" class="monitor-card">
           <header class="monitor-card-header">
@@ -37,7 +37,7 @@
                   class="monitor-chart"
                   :viewBox="`0 0 ${MONITOR_CHART_WIDTH} ${MONITOR_CHART_HEIGHT}`"
                   role="img"
-                  :aria-label="`${chart.label}趋势图`"
+                  :aria-label="$t('services.console.chartTrendLabel', { name: chart.label })"
                   preserveAspectRatio="none"
                   @mousemove="handleMonitorPointerMove($event, chart)"
                   @mouseleave="clearMonitorPointer"
@@ -115,20 +115,20 @@
               </div>
             </div>
           </div>
-          <div v-else class="monitor-chart-empty">{{ chart.message || '当前时间范围内暂无趋势数据' }}</div>
+          <div v-else class="monitor-chart-empty">{{ chart.message || $t('services.console.noTrendData') }}</div>
           <div class="monitor-metrics">
             <span
-              >平均 <strong>{{ chart.averageText }}</strong></span
+              >{{ $t('services.console.average') }} <strong>{{ chart.averageText }}</strong></span
             >
             <span
-              >峰值 <strong>{{ chart.peakText }}</strong></span
+              >{{ $t('services.console.peak') }} <strong>{{ chart.peakText }}</strong></span
             >
             <span
-              >最低 <strong>{{ chart.lowestText }}</strong></span
+              >{{ $t('services.console.lowest') }} <strong>{{ chart.lowestText }}</strong></span
             >
           </div>
         </article>
-        <t-empty v-if="!monitorState.loading && !monitorState.charts.length" description="当前时间范围内暂无监控数据" />
+        <t-empty v-if="!monitorState.loading && !monitorState.charts.length" :description="$t('services.console.noMonitorData')" />
       </div>
     </t-card>
   </section>

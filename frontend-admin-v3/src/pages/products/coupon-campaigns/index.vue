@@ -5,19 +5,19 @@
         <t-input
           v-model="filters.keyword"
           clearable
-          placeholder="搜索活动名称 / 描述 / 备注"
+          :placeholder="$t('products.couponCampaigns.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.status" clearable placeholder="状态" @change="handleSearch">
-          <t-option value="1" label="运行中" />
-          <t-option value="0" label="已停用" />
+        <t-select v-model="filters.status" clearable :placeholder="$t('products.couponCampaigns.filterStatus')" @change="handleSearch">
+          <t-option value="1" :label="$t('products.couponCampaigns.statusRunning')" />
+          <t-option value="0" :label="$t('products.couponCampaigns.statusStopped')" />
         </t-select>
         <t-button theme="primary" :disabled="!canManage" @click="openCampaignDialog()">
           <template #icon><add-icon /></template>
-          新增活动
+          {{ $t('products.couponCampaigns.addCampaign') }}
         </t-button>
       </div>
 
@@ -27,21 +27,21 @@
             <div class="campaign-main">
               <div class="campaign-title-row">
                 <strong>{{ row.name || '-' }}</strong>
-                <t-tag size="small" variant="light">自动发放</t-tag>
+                <t-tag size="small" variant="light">{{ $t('products.couponCampaigns.autoIssue') }}</t-tag>
                 <t-tag v-if="Number(row.generated_coupon_count || 0) > 0" size="small" theme="default" variant="light"
-                  >已生成</t-tag
+                  >{{ $t('products.couponCampaigns.generated') }}</t-tag
                 >
               </div>
-              <span>{{ row.description || '暂无描述' }}</span>
+              <span>{{ row.description || $t('products.couponCampaigns.noDescription') }}</span>
             </div>
           </template>
 
           <template #schedule="{ row }">
             <div class="campaign-meta">
               <strong>{{ row.schedule_text || scheduleText(row) }}</strong>
-              <span>下次执行：{{ row.next_run_at || '未配置' }}</span>
+              <span>{{ $t('products.couponCampaigns.nextRunLabel') }}{{ row.next_run_at || $t('products.couponCampaigns.notConfigured') }}</span>
               <span>{{
-                row.valid_duration_hours ? `生成后 ${row.valid_duration_hours} 小时失效` : '生成后长期有效'
+                row.valid_duration_hours ? $t('products.couponCampaigns.expireAfterHours', { hours: row.valid_duration_hours }) : $t('products.couponCampaigns.neverExpires')
               }}</span>
             </div>
           </template>
@@ -57,18 +57,18 @@
                 </t-tag>
               </div>
               <strong>{{ row.discount_label || formatDiscount(row) }}</strong>
-              <span>发放数量：{{ row.issue_quantity || 0 }} 张</span>
-              <span>最低消费：{{ moneyText(row.min_amount) }}</span>
-              <span>{{ row.per_user_limit ? `每人可用 ${row.per_user_limit} 次` : '每人不限使用次数' }}</span>
+              <span>{{ $t('products.couponCampaigns.issueQuantity', { count: row.issue_quantity || 0 }) }}</span>
+              <span>{{ $t('products.couponCampaigns.minSpend', { amount: moneyText(row.min_amount) }) }}</span>
+              <span>{{ row.per_user_limit ? $t('products.couponCampaigns.perUserLimit', { count: row.per_user_limit }) : $t('products.couponCampaigns.perUserUnlimited') }}</span>
             </div>
           </template>
 
           <template #latest="{ row }">
             <div class="campaign-meta">
-              <span>{{ row.last_dispatched_at || '暂未发放' }}</span>
-              <span v-if="row.last_coupon_name">最近批次：{{ row.last_coupon_name }}</span>
-              <span v-if="row.last_coupon_code">券码：{{ row.last_coupon_code }}</span>
-              <span>累计生成 {{ row.generated_coupon_count || 0 }} 批</span>
+              <span>{{ row.last_dispatched_at || $t('products.couponCampaigns.notDispatched') }}</span>
+              <span v-if="row.last_coupon_name">{{ $t('products.couponCampaigns.latestBatchLabel') }}{{ row.last_coupon_name }}</span>
+              <span v-if="row.last_coupon_code">{{ $t('products.couponCampaigns.couponCodeLabel') }}{{ row.last_coupon_code }}</span>
+              <span>{{ $t('products.couponCampaigns.totalBatches', { count: row.generated_coupon_count || 0 }) }}</span>
             </div>
           </template>
 
@@ -77,7 +77,7 @@
               :theme="Number(row.status) === 1 || row.display_status === 'active' ? 'success' : 'default'"
               variant="light"
             >
-              {{ row.display_status_label || (Number(row.status) === 1 ? '运行中' : '已停用') }}
+              {{ row.display_status_label || (Number(row.status) === 1 ? $t('products.couponCampaigns.statusRunning') : $t('products.couponCampaigns.statusStopped')) }}
             </t-tag>
           </template>
 
@@ -92,7 +92,7 @@
                 :disabled="campaignEditDisabled(row)"
                 @click="openCampaignDialog(row)"
               >
-                编辑
+                {{ $t('products.couponCampaigns.edit') }}
               </t-button>
               <t-button
                 size="small"
@@ -102,7 +102,7 @@
                 :disabled="!canManage || Number(row.status) !== 1 || isRowBusy(row.id)"
                 @click="handleTrigger(row)"
               >
-                立即发放
+                {{ $t('products.couponCampaigns.issueNow') }}
               </t-button>
               <t-button
                 size="small"
@@ -111,7 +111,7 @@
                 :disabled="!canManage || isRowBusy(row.id)"
                 @click="handleToggleStatus(row)"
               >
-                {{ Number(row.status) === 1 ? '停用' : '启用' }}
+                {{ Number(row.status) === 1 ? $t('products.couponCampaigns.stopped') : $t('products.couponCampaigns.enabled') }}
               </t-button>
               <t-button
                 size="small"
@@ -121,11 +121,11 @@
                 :disabled="campaignDeleteDisabled(row)"
                 @click="handleDelete(row)"
               >
-                删除
+                {{ $t('products.couponCampaigns.delete') }}
               </t-button>
             </t-space>
             <t-dropdown v-else :options="mobileActionOptions(row)" @click="handleMobileActionHandler(row)">
-              <t-button size="small" variant="text">更多</t-button>
+              <t-button size="small" variant="text">{{ $t('products.couponCampaigns.more') }}</t-button>
             </t-dropdown>
           </template>
         </t-table>
@@ -138,16 +138,16 @@
               v-for="row in campaigns"
               :key="row.id"
               :title="row.name || '-'"
-              subtitle="自动发放"
+              :subtitle="$t('products.couponCampaigns.autoIssue')"
               :description="row.description || ''"
-              :status-label="row.display_status_label || (Number(row.status) === 1 ? '运行中' : '已停用')"
+              :status-label="row.display_status_label || (Number(row.status) === 1 ? $t('products.couponCampaigns.statusRunning') : $t('products.couponCampaigns.statusStopped'))"
               :status-theme="Number(row.status) === 1 || row.display_status === 'active' ? 'success' : 'default'"
               :rows="campaignMobileRows(row)"
               :action-options="mobileActionOptions(row)"
               @action="handleCampaignCardAction(row, $event)"
             />
           </div>
-          <t-empty v-else-if="!loading" description="暂无活动券" />
+          <t-empty v-else-if="!loading" :description="$t('products.couponCampaigns.empty')" />
         </t-loading>
       </div>
 
@@ -165,7 +165,7 @@
 
     <t-drawer
       v-model:visible="dialogVisible"
-      :header="form.id ? '编辑优惠券活动' : '新增优惠券活动'"
+      :header="form.id ? $t('products.couponCampaigns.editCampaignTitle') : $t('products.couponCampaigns.addCampaignTitle')"
       size="820px"
       class="campaign-edit-drawer"
       :close-on-overlay-click="false"
@@ -176,28 +176,28 @@
         <t-form ref="formRef" class="campaign-drawer-form" :data="form" :rules="formRules" label-align="top">
           <section class="campaign-drawer-section" data-title="基础信息">
             <div class="campaign-form-grid">
-              <t-form-item label="活动名称" name="name">
-                <t-input v-model="form.name" maxlength="120" placeholder="例如：周五特惠" />
+              <t-form-item :label="$t('products.couponCampaigns.activityNameLabel')" name="name">
+                <t-input v-model="form.name" maxlength="120" :placeholder="$t('products.couponCampaigns.activityNamePlaceholder')" />
               </t-form-item>
-              <t-form-item label="发放星期" name="weekdays">
-                <t-select v-model="form.weekdays" multiple placeholder="至少选择一个星期">
+              <t-form-item :label="$t('products.couponCampaigns.weekdaysLabel')" name="weekdays">
+                <t-select v-model="form.weekdays" multiple :placeholder="$t('products.couponCampaigns.weekdaysPlaceholder')">
                   <t-option v-for="item in weekdayOptions" :key="item.value" :label="item.label" :value="item.value" />
                 </t-select>
               </t-form-item>
-              <t-form-item label="发放时间" name="trigger_time">
-                <t-time-picker v-model="form.trigger_time" clearable format="HH:mm:ss" placeholder="请选择发放时间" />
+              <t-form-item :label="$t('products.couponCampaigns.triggerTimeLabel')" name="trigger_time">
+                <t-time-picker v-model="form.trigger_time" clearable format="HH:mm:ss" :placeholder="$t('products.couponCampaigns.triggerTimePlaceholder')" />
               </t-form-item>
-              <t-form-item label="每批发放数量" name="issue_quantity">
+              <t-form-item :label="$t('products.couponCampaigns.issueQuantityLabel')" name="issue_quantity">
                 <t-input-number v-model="form.issue_quantity" :min="1" />
               </t-form-item>
-              <t-form-item label="状态" name="status">
+              <t-form-item :label="$t('products.couponCampaigns.statusLabel')" name="status">
                 <div class="campaign-switch-line">
-                  <span>停用</span>
+                  <span>{{ $t('products.couponCampaigns.stopped') }}</span>
                   <t-switch v-model="form.status" :custom-value="[1, 0]" />
-                  <span>启用</span>
+                  <span>{{ $t('products.couponCampaigns.enabled') }}</span>
                 </div>
               </t-form-item>
-              <t-form-item label="排序值" name="sort_order">
+              <t-form-item :label="$t('products.couponCampaigns.sortOrderLabel')" name="sort_order">
                 <t-input-number v-model="form.sort_order" :min="0" />
               </t-form-item>
             </div>
@@ -205,21 +205,21 @@
 
           <section class="campaign-drawer-section" data-title="优惠规则">
             <div class="campaign-form-grid">
-              <t-form-item label="优惠类型" name="discount_type">
+              <t-form-item :label="$t('products.couponCampaigns.discountTypeLabel')" name="discount_type">
                 <t-select v-model="form.discount_type">
-                  <t-option value="fixed" label="满减券" />
-                  <t-option value="percentage" label="折扣券" />
+                  <t-option value="fixed" :label="$t('products.couponCampaigns.typeFullReduction')" />
+                  <t-option value="percentage" :label="$t('products.couponCampaigns.typeDiscount')" />
                 </t-select>
               </t-form-item>
-              <t-form-item label="优惠阶段" name="discount_scope">
+              <t-form-item :label="$t('products.couponCampaigns.discountScopeLabel')" name="discount_scope">
                 <t-select v-model="form.discount_scope">
-                  <t-option value="first_month" label="首月优惠" />
-                  <t-option value="recurring" label="持续优惠" />
-                  <t-option value="renew" label="续费优惠" />
+                  <t-option value="first_month" :label="$t('products.couponCampaigns.scopeFirstMonth')" />
+                  <t-option value="recurring" :label="$t('products.couponCampaigns.scopeRecurring')" />
+                  <t-option value="renew" :label="$t('products.couponCampaigns.scopeRenew')" />
                 </t-select>
               </t-form-item>
               <t-form-item
-                :label="form.discount_type === 'percentage' ? '优惠值（百分比）' : '优惠金额'"
+                :label="form.discount_type === 'percentage' ? $t('products.couponCampaigns.discountValuePercent') : $t('products.couponCampaigns.discountValueAmount')"
                 name="discount_value"
               >
                 <t-input-number
@@ -228,19 +228,19 @@
                   :max="form.discount_type === 'percentage' ? 100 : 999999999"
                 />
               </t-form-item>
-              <t-form-item label="最低消费金额" name="min_amount">
+              <t-form-item :label="$t('products.couponCampaigns.minAmountLabel')" name="min_amount">
                 <t-input-number v-model="form.min_amount" :min="0" :decimal-places="2" />
               </t-form-item>
-              <t-form-item label="最高优惠金额" name="max_discount_amount">
+              <t-form-item :label="$t('products.couponCampaigns.maxDiscountLabel')" name="max_discount_amount">
                 <t-input-number v-model="form.max_discount_amount" :min="0" :decimal-places="2" />
               </t-form-item>
-              <t-form-item label="有效时长（小时）" name="valid_duration_hours">
+              <t-form-item :label="$t('products.couponCampaigns.validDurationLabel')" name="valid_duration_hours">
                 <t-input-number v-model="form.valid_duration_hours" :min="1" />
               </t-form-item>
-              <t-form-item label="每人可用次数" name="per_user_limit">
+              <t-form-item :label="$t('products.couponCampaigns.perUserLimitLabel')" name="per_user_limit">
                 <t-input-number v-model="form.per_user_limit" :min="1" />
               </t-form-item>
-              <t-form-item label="仅限首单可用" name="first_order_only">
+              <t-form-item :label="$t('products.couponCampaigns.firstOrderOnlyLabel')" name="first_order_only">
                 <t-switch v-model="form.first_order_only" />
               </t-form-item>
             </div>
@@ -248,8 +248,8 @@
 
           <section class="campaign-drawer-section" data-title="时间与范围">
             <div class="campaign-form-grid">
-              <t-form-item label="适用计费周期" name="billing_cycles" class="form-span-2">
-                <t-select v-model="form.billing_cycles" multiple clearable placeholder="留空表示全部周期可用">
+              <t-form-item :label="$t('products.couponCampaigns.billingCyclesLabel')" name="billing_cycles" class="form-span-2">
+                <t-select v-model="form.billing_cycles" multiple clearable :placeholder="$t('products.couponCampaigns.billingCyclesPlaceholder')">
                   <t-option
                     v-for="item in billingCycleOptions"
                     :key="item.value"
@@ -258,11 +258,11 @@
                   />
                 </t-select>
               </t-form-item>
-              <t-form-item label="适用商品" name="product_ids" class="form-span-2">
+              <t-form-item :label="$t('products.couponCampaigns.productsLabel')" name="product_ids" class="form-span-2">
                 <product-binding-tree-select
                   v-model="form.product_ids"
                   mode="batch"
-                  placeholder="按分类批量选择适用商品，留空表示全站商品可用"
+                  :placeholder="$t('products.couponCampaigns.productsPlaceholder')"
                 />
               </t-form-item>
             </div>
@@ -270,10 +270,10 @@
 
           <section class="campaign-drawer-section" data-title="备注">
             <div class="campaign-form-grid">
-              <t-form-item label="描述" name="description" class="form-span-2">
+              <t-form-item :label="$t('products.couponCampaigns.descriptionLabel')" name="description" class="form-span-2">
                 <t-textarea v-model="form.description" :autosize="{ minRows: 3, maxRows: 5 }" maxlength="255" />
               </t-form-item>
-              <t-form-item label="后台备注" name="remark" class="form-span-2">
+              <t-form-item :label="$t('products.couponCampaigns.remarkLabel')" name="remark" class="form-span-2">
                 <t-textarea v-model="form.remark" :autosize="{ minRows: 3, maxRows: 5 }" maxlength="255" />
               </t-form-item>
             </div>
@@ -281,8 +281,8 @@
         </t-form>
 
         <div class="campaign-drawer-footer">
-          <t-button variant="outline" @click="closeCampaignDrawer">取消</t-button>
-          <t-button theme="primary" :loading="saving" @click="submitForm">保存更改</t-button>
+          <t-button variant="outline" @click="closeCampaignDrawer">{{ $t('products.couponCampaigns.cancel') }}</t-button>
+          <t-button theme="primary" :loading="saving" @click="submitForm">{{ $t('products.couponCampaigns.save') }}</t-button>
         </div>
       </div>
     </t-drawer>

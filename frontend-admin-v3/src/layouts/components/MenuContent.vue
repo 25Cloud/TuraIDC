@@ -65,7 +65,7 @@ const shouldShowIcon = (item: ListItemType) => {
 
 const renderMenuTitle = (title?: LocalizedTitle) => {
   if (!title) return '';
-  return title[locale.value as keyof LocalizedTitle] || '';
+  return (title[locale.value as keyof LocalizedTitle] || title.zh_CN) || '';
 };
 
 function getMenuList(list: MenuRoute[], basePath?: string): MenuRoute[] {

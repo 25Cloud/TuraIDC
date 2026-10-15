@@ -7,17 +7,17 @@
     @confirm="submitNatForwarding"
   >
     <t-form label-align="right" :label-width="96">
-      <t-form-item label="名称" required-mark>
-        <t-input v-model="natForm.name" placeholder="例如：Web 服务" :maxlength="255" />
+      <t-form-item :label="$t('serviceConsole.nat.nameLabel')" required-mark>
+        <t-input v-model="natForm.name" :placeholder="$t('serviceConsole.nat.namePlaceholder')" :maxlength="255" />
       </t-form-item>
-      <t-form-item label="公网端口">
-        <t-input v-model="natForm.ext_port" placeholder="留空由上游分配" :maxlength="5" />
+      <t-form-item :label="$t('serviceConsole.nat.publicPortLabel')">
+        <t-input v-model="natForm.ext_port" :placeholder="$t('serviceConsole.nat.internalPlaceholder')" :maxlength="5" />
       </t-form-item>
-      <t-form-item label="内网端口" required-mark>
-        <t-input v-model="natForm.int_port" placeholder="例如：80" :maxlength="5" />
+      <t-form-item :label="$t('serviceConsole.nat.internalPortLabel')" required-mark>
+        <t-input v-model="natForm.int_port" :placeholder="$t('serviceConsole.nat.portPlaceholder')" :maxlength="5" />
       </t-form-item>
-      <t-form-item label="协议" required-mark>
-        <t-select v-model="natForm.protocol" placeholder="请选择协议">
+      <t-form-item :label="$t('serviceConsole.nat.protocolLabel')" required-mark>
+        <t-select v-model="natForm.protocol" :placeholder="$t('serviceConsole.nat.protocolPlaceholder')">
           <t-option
             v-for="protocol in natState.protocols"
             :key="String(protocol.value)"

@@ -1,6 +1,11 @@
 <template>
-  <t-dialog v-model:visible="renewVisible" header="服务续费" width="min(34rem, calc(100vw - 2rem))" destroy-on-close>
-    <loading-state :loading="renewLoading" text="正在加载续费信息" compact>
+  <t-dialog
+    v-model:visible="renewVisible"
+    :header="$t('services.console.renewDialog.title')"
+    width="min(34rem, calc(100vw - 2rem))"
+    destroy-on-close
+  >
+    <loading-state :loading="renewLoading" :text="$t('services.console.renewDialog.loading')" compact>
       <template v-if="renewData">
         <t-radio-group v-model="renewForm.billing_cycle" class="renew-cycle-group" @change="handleRenewCycleChange">
           <t-radio-button
@@ -12,11 +17,11 @@
           </t-radio-button>
         </t-radio-group>
         <div v-if="renewCoupons.length" class="renew-coupon-row">
-          <span>续费优惠</span>
+          <span>{{ $t('services.console.renewDialog.discount') }}</span>
           <t-select
             :model-value="renewForm.user_coupon_id || undefined"
             clearable
-            placeholder="选择优惠券"
+            :placeholder="$t('services.console.renewDialog.couponPlaceholder')"
             @change="handleRenewCouponChange"
           >
             <t-option
@@ -28,23 +33,30 @@
           </t-select>
         </div>
         <div v-if="renewHasAgentDiscount" class="renew-agent-discount">
-          <span class="renew-original-amount">原价 ¥{{ renewOriginalAmount }}</span>
-          <span class="renew-agent-label"
-            >代理折扣（{{ renewAgentGroupName }}）{{ renewAgentDiscountRate / 10 }}折</span
+          <span class="renew-original-amount"
+            >{{ $t('services.console.renewDialog.originalPrice') }} ¥{{ renewOriginalAmount }}</span
           >
+          <span class="renew-agent-label">{{
+            $t('services.console.renewDialog.agentDiscount', {
+              group: renewAgentGroupName,
+              rate: renewAgentDiscountRate / 10,
+            })
+          }}</span>
         </div>
         <div class="renew-total-line">
-          <span>本次应付</span>
+          <span>{{ $t('services.console.renewDialog.payableNow') }}</span>
           <strong>¥{{ renewAmount }}</strong>
         </div>
       </template>
-      <t-empty v-else-if="!renewLoading" description="未获取到可续费周期" />
+      <t-empty v-else-if="!renewLoading" :description="$t('services.console.renewDialog.noCycle')" />
     </loading-state>
     <template #footer>
-      <t-button variant="outline" @click="renewVisible = false">取消</t-button>
-      <t-button theme="primary" :loading="renewSubmitting" :disabled="!renewForm.billing_cycle" @click="submitRenew"
-        >创建续费账单</t-button
-      >
+      <t-button variant="outline" @click="renewVisible = false">
+        {{ $t('services.console.renewDialog.cancel') }}
+      </t-button>
+      <t-button theme="primary" :loading="renewSubmitting" :disabled="!renewForm.billing_cycle" @click="submitRenew">{{
+        $t('services.console.renewDialog.createBill')
+      }}</t-button>
     </template>
   </t-dialog>
 </template>

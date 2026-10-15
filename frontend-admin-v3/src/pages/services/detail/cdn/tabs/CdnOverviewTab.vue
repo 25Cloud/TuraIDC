@@ -2,18 +2,22 @@
   <section class="cdn-overview">
     <data-state :loading="detailLoading" :empty="false" description="">
       <!-- 流量用量：CDN 唯一按量计费、也是用户最关心的指标 -->
-      <t-card v-if="trafficVisible" class="console-panel" title="流量用量" :bordered="false">
+      <t-card v-if="trafficVisible" class="console-panel" :title="$t('services.cdn.trafficUsage')" :bordered="false">
         <div class="detail-grid detail-grid--info">
-          <info-cell label="已用流量" :value="traffic.usage_label || '0G'" strong />
-          <info-cell label="流量上限" :value="traffic.limited ? traffic.limit_label || '不限' : '不限'" strong />
+          <info-cell :label="$t('services.cdn.usedTraffic')" :value="traffic.usage_label || '0G'" strong />
           <info-cell
-            label="剩余流量"
-            :value="traffic.limited ? traffic.remaining_label || '--' : '不限'"
+            :label="$t('services.cdn.trafficLimit')"
+            :value="traffic.limited ? traffic.limit_label || $t('services.cdn.unlimited') : $t('services.cdn.unlimited')"
+            strong
+          />
+          <info-cell
+            :label="$t('services.cdn.remainingTraffic')"
+            :value="traffic.limited ? traffic.remaining_label || '--' : $t('services.cdn.unlimited')"
             :warning="isTrafficOverWarning"
             strong
           />
           <info-cell
-            label="用量占比"
+            :label="$t('services.cdn.usageRatio')"
             :value="trafficPercentText"
             :warning="isTrafficOverWarning"
             strong
@@ -34,34 +38,42 @@
             :loading="trafficLoading"
             @click="openTrafficPackageDialog"
           >
-            {{ traffic.button_text || '购买流量包' }}
+            {{ traffic.button_text || $t('services.cdn.buyTrafficPackage') }}
           </t-button>
         </template>
       </t-card>
 
       <!-- 实例档案：去掉操作系统 / 公网 IP / CPU 内存等云主机字段 -->
-      <t-card class="console-panel" title="实例档案" :bordered="false">
+      <t-card class="console-panel" :title="$t('services.cdn.instanceProfile')" :bordered="false">
         <div class="detail-grid detail-grid--info">
-          <info-cell label="实例名称" :value="detail.name || `服务 #${serviceId}`" strong />
-          <info-cell label="实例 ID" :value="String(detail.id || '--')" copyable @copy="copyText" />
-          <info-cell label="产品" :value="productText" strong />
-          <info-cell label="加速区域" :value="regionText" strong />
-          <info-cell label="计费周期" :value="detail.billing_cycle_label || '--'" strong />
-          <info-cell label="到期时间" :value="detail.expires_at || '长期有效'" strong />
+          <info-cell
+            :label="$t('services.cdn.instanceName')"
+            :value="detail.name || `${$t('services.cdn.servicePrefix')} #${serviceId}`"
+            strong
+          />
+          <info-cell :label="$t('services.cdn.instanceId')" :value="String(detail.id || '--')" copyable @copy="copyText" />
+          <info-cell :label="$t('services.cdn.product')" :value="productText" strong />
+          <info-cell :label="$t('services.cdn.accelerationRegion')" :value="regionText" strong />
+          <info-cell :label="$t('services.cdn.billingCycle')" :value="detail.billing_cycle_label || '--'" strong />
+          <info-cell
+            :label="$t('services.cdn.expireTime')"
+            :value="detail.expires_at || $t('services.cdn.longTermValid')"
+            strong
+          />
           <div class="detail-cell">
-            <span>运行状态</span>
+            <span>{{ $t('services.cdn.runningStatus') }}</span>
             <t-tag :theme="instanceStatusTheme" variant="light">{{ instanceStatusText }}</t-tag>
           </div>
           <div class="detail-cell">
-            <span>自动续费</span>
+            <span>{{ $t('services.cdn.autoRenew') }}</span>
             <strong>{{ autoRenewLabel }}</strong>
           </div>
         </div>
       </t-card>
 
       <!-- 加速能力：把 CDN 真正关心的节点/防护/功能开关提到最前 -->
-      <t-card v-if="capabilities.length" class="console-panel" title="加速与防护能力" :bordered="false">
-        <p class="cdn-group-hint">套餐已开通的加速与安全功能，未开通项如需使用请升级套餐</p>
+      <t-card v-if="capabilities.length" class="console-panel" :title="$t('services.cdn.capabilities')" :bordered="false">
+        <p class="cdn-group-hint">{{ $t('services.cdn.capabilitiesTip') }}</p>
         <div class="cdn-capability-grid">
           <div v-for="item in capabilities" :key="item.key" class="cdn-capability-item">
             <span class="cdn-capability-label">{{ item.label }}</span>
@@ -95,8 +107,8 @@
       <t-alert
         v-if="!groups.length && !capabilities.length"
         theme="info"
-        title="暂无套餐配置数据"
-        description="该实例的上游尚未回传配置项，具体加速参数以上游 CDN 面板为准。"
+        :title="$t('services.cdn.noPlanConfigData')"
+        :description="$t('services.cdn.noPlanConfigDataTip')"
       />
     </data-state>
   </section>

@@ -1,10 +1,14 @@
 <template>
   <section class="console-overview-grid">
-    <t-card class="console-panel" title="基本信息" :bordered="false">
+    <t-card class="console-panel" :title="$t('services.console.basicInfo')" :bordered="false">
       <div class="detail-grid detail-grid--info">
-        <info-cell label="实例名称" :value="detail.name || `服务 #${serviceId}`" strong />
         <info-cell
-          label="实例规格"
+          :label="$t('services.console.instanceName')"
+          :value="detail.name || `${$t('services.console.servicePrefix')} #${serviceId}`"
+          strong
+        />
+        <info-cell
+          :label="$t('services.console.instanceSpec')"
           :value="
             String(
               detail.product_full_path ||
@@ -17,17 +21,17 @@
           "
           strong
         />
-        <info-cell label="实例 ID" :value="String(detail.id || '--')" copyable @copy="copyText" />
-        <info-cell label="操作系统" :value="serviceOs" strong />
-        <info-cell label="创建时间" :value="detail.created_at || '--'" strong />
+        <info-cell :label="$t('services.console.instanceId')" :value="String(detail.id || '--')" copyable @copy="copyText" />
+        <info-cell :label="$t('services.console.os')" :value="serviceOs" strong />
+        <info-cell :label="$t('services.console.createdAt')" :value="detail.created_at || '--'" strong />
         <div class="detail-cell">
-          <span>实例状态</span>
+          <span>{{ $t('services.console.instanceStatus') }}</span>
           <t-tag :theme="instanceStatusTheme" variant="light">{{ instanceStatusText }}</t-tag>
         </div>
       </div>
     </t-card>
 
-    <t-card class="console-panel console-panel-wide" title="配置信息" :bordered="false">
+    <t-card class="console-panel console-panel-wide" :title="$t('services.console.configInfo')" :bordered="false">
       <template #actions>
         <t-button
           v-if="canBuyTrafficPackage"
@@ -36,30 +40,30 @@
           :loading="trafficLoading"
           @click="openTrafficPackageDialog"
         >
-          {{ detail.traffic?.button_text || '购买流量包' }}
+          {{ detail.traffic?.button_text || $t('services.console.buyTrafficPackage') }}
         </t-button>
       </template>
       <div class="detail-grid detail-grid--config">
         <info-cell
-          label="流量"
+          :label="$t('services.console.traffic')"
           :value="
             detail.traffic?.limited
-              ? `${detail.traffic.usage_label || '0G'} / ${detail.traffic.limit_label || '不限'}`
-              : '不限'
+              ? `${detail.traffic.usage_label || '0G'} / ${detail.traffic.limit_label || $t('services.console.unlimited')}`
+              : $t('services.console.unlimited')
           "
           strong
         />
-        <info-cell label="区域" :value="serviceRegion" strong />
+        <info-cell :label="$t('services.console.region')" :value="serviceRegion" strong />
         <info-cell label="CPU" :value="findSpecValue(['CPU', '核心'])" strong />
-        <info-cell label="内存" :value="findSpecValue(['内存', 'RAM'])" strong />
-        <info-cell label="系统盘" :value="findSpecValue(['系统盘'])" strong />
-        <info-cell label="带宽" :value="bandwidthText" strong />
-        <info-cell label="IP数量" :value="serviceIpCount" strong />
-        <info-cell label="数据盘" :value="findSpecValue(['数据盘'])" strong />
+        <info-cell :label="$t('services.console.memory')" :value="findSpecValue(['内存', 'RAM'])" strong />
+        <info-cell :label="$t('services.console.systemDisk')" :value="findSpecValue(['系统盘'])" strong />
+        <info-cell :label="$t('services.console.bandwidth')" :value="bandwidthText" strong />
+        <info-cell :label="$t('services.console.ipCount')" :value="serviceIpCount" strong />
+        <info-cell :label="$t('services.console.dataDisk')" :value="findSpecValue(['数据盘'])" strong />
       </div>
     </t-card>
 
-    <t-card class="console-panel" title="网络信息" :bordered="false">
+    <t-card class="console-panel" :title="$t('services.console.networkInfo')" :bordered="false">
       <div class="detail-grid detail-grid--stack">
         <div class="detail-cell connection-ip-cell">
           <span>{{ primaryConnectionLabel }}</span>
@@ -70,7 +74,7 @@
                 <button
                   type="button"
                   class="copy-link"
-                  :aria-label="`复制${primaryConnectionValues[0]}`"
+                  :aria-label="`${$t('services.console.copy')}${primaryConnectionValues[0]}`"
                   @click="copyText(primaryConnectionValues[0])"
                 >
                   <copy-icon size="1rem" />
@@ -81,14 +85,14 @@
           </div>
         </div>
         <div class="detail-cell">
-          <span>内网 IP</span>
+          <span>{{ $t('services.console.internalIp') }}</span>
           <div class="detail-cell-value">
             <template v-if="detail.connection?.internal_ip">
               <strong>{{ detail.connection.internal_ip }}</strong>
               <button
                 type="button"
                 class="copy-link"
-                :aria-label="`复制${detail.connection.internal_ip}`"
+                :aria-label="`${$t('services.console.copy')}${detail.connection.internal_ip}`"
                 @click="copyText(detail.connection.internal_ip)"
               >
                 <copy-icon size="1rem" />
@@ -100,29 +104,32 @@
       </div>
     </t-card>
 
-    <t-card class="console-panel" title="登录凭据" :bordered="false">
+    <t-card class="console-panel" :title="$t('services.console.credentials')" :bordered="false">
       <div class="credential-grid">
-        <info-cell label="用户名" :value="detail.connection?.username || '--'" copyable @copy="copyText" />
+        <info-cell :label="$t('services.console.username')" :value="detail.connection?.username || '--'" copyable @copy="copyText" />
         <div class="detail-cell">
-          <span>密码</span>
+          <span>{{ $t('services.console.password') }}</span>
           <div class="detail-cell-value credential-password-value">
             <strong class="credential-password-text">{{ resolvedPassword }}</strong>
-            <t-tooltip v-if="hasConnectionPassword" :content="showPassword ? '隐藏密码' : '显示密码'">
+            <t-tooltip
+              v-if="hasConnectionPassword"
+              :content="showPassword ? $t('services.console.hidePassword') : $t('services.console.showPassword')"
+            >
               <button
                 type="button"
                 class="copy-link credential-icon-button"
-                :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+                :aria-label="showPassword ? $t('services.console.hidePassword') : $t('services.console.showPassword')"
                 @click="showPassword = !showPassword"
               >
                 <browse-off-icon v-if="showPassword" size="1.125rem" />
                 <browse-icon v-else size="1.125rem" />
               </button>
             </t-tooltip>
-            <t-tooltip v-if="hasConnectionPassword" content="复制密码">
+            <t-tooltip v-if="hasConnectionPassword" :content="$t('services.console.copyPassword')">
               <button
                 type="button"
                 class="copy-link credential-icon-button"
-                aria-label="复制密码"
+                :aria-label="$t('services.console.copyPassword')"
                 @click="copyText(detail.connection?.password || '')"
               >
                 <copy-icon size="1.125rem" />
@@ -134,24 +141,34 @@
               variant="text"
               theme="primary"
               @click="openPasswordDialog"
-              >重置</t-button
+              >{{ $t('services.console.reset') }}</t-button
             >
           </div>
         </div>
-        <info-cell label="端口" :value="connectionPortText" strong copyable @copy="copyText" />
-        <info-cell label="主机名" :value="connectionEndpointText" copyable @copy="copyText" />
+        <info-cell :label="$t('services.console.port')" :value="connectionPortText" strong copyable @copy="copyText" />
+        <info-cell
+          :label="$t('services.console.hostname')"
+          :value="connectionEndpointText"
+          copyable
+          @copy="copyText"
+        />
       </div>
     </t-card>
 
-    <t-card class="console-panel console-panel-wide" title="付费信息" :bordered="false">
+    <t-card class="console-panel console-panel-wide" :title="$t('services.console.billingInfo')" :bordered="false">
       <template #actions>
-        <t-button variant="text" theme="primary" @click="openRenewDialog">续费管理</t-button>
+        <t-button variant="text" theme="primary" @click="openRenewDialog">{{ $t('services.console.renewManage') }}</t-button>
       </template>
       <div class="detail-grid">
-        <info-cell label="计费方式" :value="detail.billing_cycle_label || '--'" strong />
-        <info-cell label="续费价格" :value="renewPriceText" strong />
-        <info-cell label="到期时间" :value="detail.expires_at || '长期有效'" strong warning />
-        <info-cell label="订单号" :value="detail.invoice?.order_no || '--'" copyable @copy="copyText" />
+        <info-cell :label="$t('services.console.billingMethod')" :value="detail.billing_cycle_label || '--'" strong />
+        <info-cell :label="$t('services.console.renewPrice')" :value="renewPriceText" strong />
+        <info-cell
+          :label="$t('services.console.expireTime')"
+          :value="detail.expires_at || $t('services.console.longTermValid')"
+          strong
+          warning
+        />
+        <info-cell :label="$t('services.console.orderNo')" :value="detail.invoice?.order_no || '--'" copyable @copy="copyText" />
       </div>
     </t-card>
   </section>
@@ -165,16 +182,16 @@
     <div class="ip-dialog-list">
       <div v-for="ip in primaryConnectionValues" :key="ip" class="ip-dialog-item">
         <strong>{{ ip }}</strong>
-        <button type="button" class="copy-link" :aria-label="`复制${ip}`" @click="copyText(ip)">
+        <button type="button" class="copy-link" :aria-label="`${$t('services.console.copy')}${ip}`" @click="copyText(ip)">
           <copy-icon size="1rem" />
         </button>
       </div>
     </div>
     <template #footer>
       <t-button v-if="primaryConnectionValues.length > 1" variant="outline" @click="copyText(primaryConnectionText)"
-        >复制全部</t-button
+        >{{ $t('services.console.copyAll') }}</t-button
       >
-      <t-button theme="primary" @click="ipDialogVisible = false">关闭</t-button>
+      <t-button theme="primary" @click="ipDialogVisible = false">{{ $t('services.console.close') }}</t-button>
     </template>
   </t-dialog>
 </template>

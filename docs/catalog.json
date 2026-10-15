@@ -326,6 +326,12 @@
       "review_by": "2026-11-25"
     },
     {
+      "path": "references/engineering/i18n.md",
+      "status": "current",
+      "summary": "三语言词条、翻译边界、接入方式与生成脚本的统一规范。",
+      "review_by": "2027-08-15"
+    },
+    {
       "path": "references/engineering/pitfalls.md",
       "status": "current",
       "summary": "领域建模、批量替换、验证与提交环节的实测坑。",

@@ -21,6 +21,22 @@
             </div>
           </div>
         </t-radio-group>
+        <div class="setting-group-title">{{ t('layout.setting.language') }}</div>
+        <t-radio-group
+          :value="locale"
+          class="setting-language-radio"
+          variant="default-filled"
+          @change="(val: unknown) => changeLocale(String(val))"
+        >
+          <t-radio-button
+            v-for="item in languageList"
+            :key="String(item.value)"
+            :value="String(item.value)"
+          >
+            {{ item.content }}
+          </t-radio-button>
+        </t-radio-group>
+
         <div class="setting-group-title">{{ t('layout.setting.theme.color') }}</div>
         <t-radio-group v-model="formData.brandTheme">
           <div v-for="(item, index) in DEFAULT_COLOR_OPTIONS" :key="index" class="setting-layout-drawer">
@@ -121,10 +137,12 @@ import ColorContainer from '@/components/color/index.vue';
 import Thumbnail from '@/components/thumbnail/index.vue';
 import { DEFAULT_COLOR_OPTIONS } from '@/config/color';
 import STYLE_CONFIG from '@/config/style';
-import { t } from '@/locales';
+import { languageList, t } from '@/locales';
+import { useLocale } from '@/locales/useLocale';
 import { useSettingStore } from '@/store';
 
 const settingStore = useSettingStore();
+const { changeLocale, locale } = useLocale();
 
 const LAYOUT_OPTION = ['side', 'top'];
 const LAYOUT_THUMBNAILS = Object.fromEntries(LAYOUT_OPTION.map((item) => [item, createLayoutThumbnail(item)]));

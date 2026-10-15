@@ -2,12 +2,18 @@
   <div class="admin-roles-page">
     <t-card class="roles-card" :bordered="false">
       <div class="roles-filter">
-        <t-input v-model="keyword" clearable placeholder="搜索角色编码/名称" @enter="loadRoles" @clear="loadRoles">
+        <t-input
+          v-model="keyword"
+          clearable
+          :placeholder="$t('roles.index.searchPlaceholder')"
+          @enter="loadRoles"
+          @clear="loadRoles"
+        >
           <template #suffix-icon><search-icon /></template>
         </t-input>
         <t-button v-if="canManage" theme="primary" @click="openCreateDialog">
           <template #icon><add-icon /></template>
-          新增角色
+          {{ $t('roles.index.addRole') }}
         </t-button>
       </div>
 
@@ -24,28 +30,34 @@
           <div class="role-cell">
             <strong>{{ row.label || row.name || '-' }}</strong>
             <span>{{ row.name || '-' }}</span>
-            <t-tag v-if="row.is_builtin" theme="primary" variant="light" size="small">系统默认</t-tag>
+            <t-tag v-if="row.is_builtin" theme="primary" variant="light" size="small">
+              {{ $t('roles.index.systemDefault') }}
+            </t-tag>
           </div>
         </template>
         <template #permissions="{ row }">
           <div class="permission-summary">
             <t-tag variant="light">{{ permissionSummary(row) }}</t-tag>
             <t-tag v-if="riskPermissionCount(row) > 0" theme="danger" variant="light">
-              高危 {{ riskPermissionCount(row) }}
+              {{ $t('roles.index.dangerousCount', { count: riskPermissionCount(row) }) }}
             </t-tag>
           </div>
         </template>
-        <template #adminCount="{ row }">{{ Number(row.admin_count || 0) }} 人</template>
+        <template #adminCount="{ row }">{{
+          $t('roles.index.adminCount', { count: Number(row.admin_count || 0) })
+        }}</template>
         <template #updatedAt="{ row }">{{ row.updated_at || '-' }}</template>
         <template #actions="{ row }">
           <t-space size="small">
             <t-button theme="primary" variant="text" @click="openEditDialog(row)">{{
-              canManage ? '权限' : '查看'
+              canManage ? $t('roles.index.permissions') : $t('roles.index.view')
             }}</t-button>
-            <t-button v-if="canManage" theme="default" variant="text" @click="handleCopy(row)">复制</t-button>
-            <t-button v-if="canManage && canDeleteRole(row)" theme="danger" variant="text" @click="handleDelete(row)"
-              >删除</t-button
-            >
+            <t-button v-if="canManage" theme="default" variant="text" @click="handleCopy(row)">
+              {{ $t('roles.index.copy') }}
+            </t-button>
+            <t-button v-if="canManage && canDeleteRole(row)" theme="danger" variant="text" @click="handleDelete(row)">{{
+              $t('roles.index.delete')
+            }}</t-button>
           </t-space>
         </template>
       </t-table>
@@ -58,11 +70,17 @@
               :key="row.id"
               :title="row.label || row.name || '-'"
               :subtitle="row.name"
-              :eyebrow="`管理员 ${Number(row.admin_count || 0)} 人`"
+              :eyebrow="$t('roles.index.adminCount', { count: Number(row.admin_count || 0) })"
               :rows="[
-                { label: '权限', value: permissionSummary(row) },
-                { label: '高危', value: riskPermissionCount(row) > 0 ? `${riskPermissionCount(row)} 项` : '无' },
-                { label: '更新时间', value: row.updated_at || '-' },
+                { label: $t('roles.index.permissions'), value: permissionSummary(row) },
+                {
+                  label: $t('roles.index.dangerous'),
+                  value:
+                    riskPermissionCount(row) > 0
+                      ? $t('roles.index.itemCount', { count: riskPermissionCount(row) })
+                      : $t('roles.index.none'),
+                },
+                { label: $t('roles.index.updatedAt'), value: row.updated_at || '-' },
               ]"
               :action-options="rolesMobileActions(row)"
               @action="(value) => handleRolesMobileAction(value, row)"
@@ -75,7 +93,7 @@
 
     <t-dialog
       v-model:visible="dialogVisible"
-      :header="form.id ? '编辑角色权限' : '新增角色'"
+      :header="form.id ? $t('roles.index.editPermissions') : $t('roles.index.addRoleTitle')"
       width="960px"
       :confirm-btn="dialogConfirmBtn"
       :confirm-loading="saving"
@@ -83,28 +101,35 @@
     >
       <t-form ref="formRef" :data="form" :rules="rules" label-align="top">
         <div class="role-form-grid">
-          <t-form-item label="角色编码" name="name">
+          <t-form-item :label="$t('roles.index.roleCode')" name="name">
             <t-input
               v-model="form.name"
               :disabled="!canManage || currentRoleLocked || isReadonlySuperRole"
-              placeholder="例如：operator"
+              :placeholder="$t('roles.index.roleCodePlaceholder')"
             />
           </t-form-item>
-          <t-form-item label="角色名称" name="label">
-            <t-input v-model="form.label" :disabled="!canManage || currentRoleLocked" placeholder="例如：运营人员" />
+          <t-form-item :label="$t('roles.index.roleName')" name="label">
+            <t-input
+              v-model="form.label"
+              :disabled="!canManage || currentRoleLocked"
+              :placeholder="$t('roles.index.roleNamePlaceholder')"
+            />
           </t-form-item>
         </div>
 
         <section class="permission-panel">
-          <t-alert
-            v-if="currentRoleLocked"
-            theme="info"
-            message="系统默认角色权限由后台固定维护，如需调整请复制后创建自定义角色。"
-          />
+          <t-alert v-if="currentRoleLocked" theme="info" :message="$t('roles.index.builtinRoleNotice')" />
           <div class="permission-panel__head">
             <div class="permission-panel__title">
-              <strong>权限目录</strong>
-              <span>已选 {{ selectedPermissionCount }} / {{ permissions.length }}</span>
+              <strong>{{ $t('roles.index.permissionCatalog') }}</strong>
+              <span>
+                {{
+                  $t('roles.index.selectedCount', {
+                    selected: selectedPermissionCount,
+                    total: permissions.length,
+                  })
+                }}
+              </span>
             </div>
             <t-space size="small">
               <template v-if="canEditCurrentRole">
@@ -118,16 +143,26 @@
                   {{ preset.label }}
                 </t-button>
               </template>
-              <t-button v-if="canEditCurrentRole" variant="text" @click="clearAllPermissions">清空全部</t-button>
+              <t-button v-if="canEditCurrentRole" variant="text" @click="clearAllPermissions">
+                {{ $t('roles.index.clearAll') }}
+              </t-button>
             </t-space>
           </div>
 
           <div class="permission-toolbar">
-            <t-input v-model="permissionKeyword" clearable placeholder="搜索权限名称/权限码/模块" />
-            <t-checkbox v-model="showDangerousOnly">只看高危</t-checkbox>
+            <t-input
+              v-model="permissionKeyword"
+              clearable
+              :placeholder="$t('roles.index.permissionSearchPlaceholder')"
+            />
+            <t-checkbox v-model="showDangerousOnly">{{ $t('roles.index.dangerousOnly') }}</t-checkbox>
             <t-space v-if="canEditCurrentRole" size="small">
-              <t-button size="small" variant="base" @click="selectVisiblePermissions">选中当前结果</t-button>
-              <t-button size="small" variant="base" @click="clearVisiblePermissions">清空当前结果</t-button>
+              <t-button size="small" variant="base" @click="selectVisiblePermissions">
+                {{ $t('roles.index.selectVisible') }}
+              </t-button>
+              <t-button size="small" variant="base" @click="clearVisiblePermissions">
+                {{ $t('roles.index.clearVisible') }}
+              </t-button>
             </t-space>
           </div>
 
@@ -139,10 +174,12 @@
                   <span>{{ group.parentLabel }} · {{ group.selectedCount }} / {{ group.items.length }}</span>
                 </div>
                 <t-space v-if="canEditCurrentRole" size="small">
-                  <t-button size="small" variant="text" theme="primary" @click="selectGroupPermissions(group)"
-                    >全选</t-button
-                  >
-                  <t-button size="small" variant="text" @click="clearGroupPermissions(group)">清空</t-button>
+                  <t-button size="small" variant="text" theme="primary" @click="selectGroupPermissions(group)">{{
+                    $t('roles.index.selectAll')
+                  }}</t-button>
+                  <t-button size="small" variant="text" @click="clearGroupPermissions(group)">
+                    {{ $t('roles.index.clear') }}
+                  </t-button>
                 </t-space>
               </div>
               <div class="permission-grid">
@@ -155,16 +192,20 @@
                   <span class="permission-name">
                     {{ item.name || item.key }}
                     <t-tag v-if="item.action_label" variant="light" size="small">{{ item.action_label }}</t-tag>
-                    <t-tag v-if="item.is_dangerous" theme="danger" variant="light" size="small">高危</t-tag>
-                    <t-tag v-else-if="item.risk_level === 'medium'" theme="warning" variant="light" size="small"
-                      >敏感</t-tag
-                    >
+                    <t-tag v-if="item.is_dangerous" theme="danger" variant="light" size="small">
+                      {{ $t('roles.index.dangerous') }}
+                    </t-tag>
+                    <t-tag v-else-if="item.risk_level === 'medium'" theme="warning" variant="light" size="small">{{
+                      $t('roles.index.sensitive')
+                    }}</t-tag>
                   </span>
                   <em>{{ item.key }}</em>
                 </t-checkbox>
               </div>
             </div>
-            <div v-if="permissionGroups.length === 0" class="permission-empty">暂无匹配权限</div>
+            <div v-if="permissionGroups.length === 0" class="permission-empty">
+              {{ $t('roles.index.noMatchingPermission') }}
+            </div>
           </t-checkbox-group>
         </section>
       </t-form>

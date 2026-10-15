@@ -1,5 +1,5 @@
 <template>
-  <result title="页面不存在" :tip="t('pages.result.404.subtitle')" type="404">
+  <result :title="$t('result.notFound.title')" :tip="t('pages.result.404.subtitle')" type="404">
     <t-button @click="() => router.push('/admin/dashboard')">{{ t('pages.result.404.back') }}</t-button>
   </result>
 </template>

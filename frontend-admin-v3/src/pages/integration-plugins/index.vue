@@ -3,11 +3,8 @@
     <t-card v-if="activeDomain === 'upstream'" :bordered="false" class="upstream-origin-check-card">
       <div class="upstream-origin-check">
         <div class="upstream-origin-check__text">
-          <strong>上游面板同源检测</strong>
-          <span>
-            开启后仅接受与本系统供应商接口同源的实例面板请求地址；上游为二次对接（面板片段指向再上游域名）时可关闭，
-            关闭仅放宽域名比对，请求地址仍须是同系统动作路由。
-          </span>
+          <strong>{{ $t('plugins.upstream.originCheckTitle') }}</strong>
+          <span>{{ $t('plugins.upstream.originCheckHint') }}</span>
         </div>
         <t-switch
           v-model="originCheckEnabled"
@@ -21,11 +18,8 @@
     <t-card v-if="activeDomain === 'upstream'" :bordered="false" class="upstream-origin-check-card">
       <div class="upstream-origin-check">
         <div class="upstream-origin-check__text">
-          <strong>面板区域首屏预热</strong>
-          <span>
-            开启后进入控制台就把所有自定义面板（魔方兼容 tab）一起加载好，切换 tab 无需等待；
-            关闭后只加载第一个面板，其余切到时才加载，可避免多个面板同时加载占用首屏带宽。
-          </span>
+          <strong>{{ $t('plugins.upstream.panelPreloadTitle') }}</strong>
+          <span>{{ $t('plugins.upstream.panelPreloadHint') }}</span>
         </div>
         <t-switch
           v-model="areaPreloadAllEnabled"
@@ -40,16 +34,16 @@
       <div class="plugins-toolbar">
         <t-space>
           <t-button v-if="canManagePlugins" theme="primary" :loading="scanning" @click="scanPlugins">
-            扫描插件
+            {{ $t('plugins.index.scan') }}
           </t-button>
         </t-space>
       </div>
     </t-card>
 
     <div v-if="loading" class="plugins-state">
-      <t-loading text="正在加载插件" />
+      <t-loading :text="$t('plugins.index.loading')" />
     </div>
-    <t-empty v-else-if="plugins.length === 0" description="当前目录没有可安装插件" />
+    <t-empty v-else-if="plugins.length === 0" :description="$t('plugins.index.empty')" />
     <section v-else class="plugin-grid">
       <article v-for="plugin in plugins" :key="`${plugin.domain}:${plugin.slug}`" class="plugin-card">
         <div class="plugin-card__main">
@@ -86,10 +80,12 @@
             :loading="actionLoading === actionKey(plugin, 'install')"
             @click="installPlugin(plugin)"
           >
-            安装
+            {{ $t('plugins.index.install') }}
           </t-button>
           <template v-else>
-            <t-button variant="outline" @click="openConfig(plugin)">{{ canManagePlugins ? '管理' : '查看' }}</t-button>
+            <t-button variant="outline" @click="openConfig(plugin)">{{
+              canManagePlugins ? $t('plugins.index.manage') : $t('plugins.index.view')
+            }}</t-button>
             <t-button
               v-if="plugin.is_enabled && canManagePlugins"
               theme="warning"
@@ -97,7 +93,7 @@
               :loading="actionLoading === actionKey(plugin, 'disable')"
               @click="disablePlugin(plugin)"
             >
-              停用
+              {{ $t('plugins.index.disable') }}
             </t-button>
             <t-button
               v-else-if="canManagePlugins"
@@ -108,7 +104,7 @@
               :title="enableDisabledReason(plugin)"
               @click="enablePlugin(plugin)"
             >
-              启用
+              {{ $t('plugins.index.enable') }}
             </t-button>
             <t-button
               v-if="canTestPlugins"
@@ -116,10 +112,10 @@
               :loading="actionLoading === actionKey(plugin, 'health')"
               @click="healthCheck(plugin)"
             >
-              检测
+              {{ $t('plugins.index.healthCheck') }}
             </t-button>
             <t-button v-if="plugin.id && plugin.is_enabled" variant="text" @click="openRuntimeLogs(plugin)">
-              日志
+              {{ $t('plugins.index.logs') }}
             </t-button>
             <t-button
               v-if="canManagePlugins && !plugin.is_enabled"
@@ -128,7 +124,7 @@
               :loading="actionLoading === actionKey(plugin, 'delete')"
               @click="deletePlugin(plugin)"
             >
-              删除
+              {{ $t('plugins.index.delete') }}
             </t-button>
           </template>
         </div>
@@ -138,31 +134,35 @@
     <t-drawer
       v-model:visible="configVisible"
       size="560px"
-      :header="currentPlugin ? `${currentPlugin.name} 管理` : '插件管理'"
-      :confirm-btn="canManagePlugins ? { content: '保存配置', loading: savingConfig, disabled: configLoading } : null"
-      cancel-btn="关闭"
+      :header="currentPlugin ? currentPlugin.name + $t('plugins.index.manageSuffix') : $t('plugins.index.manageTitle')"
+      :confirm-btn="
+        canManagePlugins
+          ? { content: $t('plugins.index.saveConfig'), loading: savingConfig, disabled: configLoading }
+          : null
+      "
+      :cancel-btn="$t('plugins.index.close')"
       @confirm="saveConfig"
     >
       <div v-if="configLoading" class="plugin-config-loading">
-        <t-loading text="正在加载插件配置" />
+        <t-loading :text="$t('plugins.index.loadingConfig')" />
       </div>
       <template v-else-if="currentPlugin">
         <div class="plugin-detail">
           <dl>
             <div>
-              <dt>插件目录</dt>
+              <dt>{{ $t('plugins.detail.directory') }}</dt>
               <dd>{{ currentPlugin.slug }}</dd>
             </div>
             <div>
-              <dt>业务标识</dt>
+              <dt>{{ $t('plugins.detail.businessKey') }}</dt>
               <dd>{{ currentPlugin.key }}</dd>
             </div>
             <div>
-              <dt>入口类</dt>
+              <dt>{{ $t('plugins.detail.entryClass') }}</dt>
               <dd>{{ currentPlugin.entry_class || '-' }}</dd>
             </div>
             <div>
-              <dt>安装时间</dt>
+              <dt>{{ $t('plugins.detail.installedAt') }}</dt>
               <dd>{{ currentPlugin.installed_at || '-' }}</dd>
             </div>
           </dl>
@@ -184,7 +184,7 @@
               />
               <span class="plugin-config-section__title">{{ fieldLabel(field) }}</span>
               <span class="plugin-config-section__hint">
-                {{ collapsedSections[field.key] ? '展开配置' : '收起' }}
+                {{ collapsedSections[field.key] ? $t('plugins.index.expandConfig') : $t('plugins.index.collapse') }}
               </span>
             </button>
             <t-divider v-else-if="field.type === 'divider'" align="left">{{ fieldLabel(field) }}</t-divider>
@@ -264,14 +264,18 @@
                       <div class="smtp-account-item__title">
                         <strong>{{ account.host || '-' }}</strong>
                         <t-tag :theme="account.enabled === false ? 'default' : 'success'" variant="light">
-                          {{ account.enabled === false ? '已暂停' : '已开启' }}
+                          {{ account.enabled === false ? $t('plugins.smtp.paused') : $t('plugins.smtp.enabled') }}
                         </t-tag>
                       </div>
                       <div class="smtp-account-item__meta">
                         <span>{{ account.username || '-' }}</span>
-                        <span>端口 {{ account.port || '-' }}</span>
-                        <span>{{ account.encryption || '自动加密' }}</span>
-                        <span>{{ account.password_configured || account.password ? '密码已配置' : '密码未配置' }}</span>
+                        <span>{{ $t('plugins.smtp.port') }} {{ account.port || '-' }}</span>
+                        <span>{{ account.encryption || $t('plugins.smtp.autoEncryption') }}</span>
+                        <span>{{
+                          account.password_configured || account.password
+                            ? $t('plugins.smtp.passwordConfigured')
+                            : $t('plugins.smtp.passwordNotConfigured')
+                        }}</span>
                       </div>
                     </div>
                     <t-dropdown
@@ -287,14 +291,14 @@
                     </t-dropdown>
                   </div>
                 </div>
-                <t-empty v-else description="暂无 SMTP 账号" />
+                <t-empty v-else :description="$t('plugins.smtp.empty')" />
                 <t-button
                   v-if="canManagePlugins"
                   variant="outline"
                   class="smtp-account-add"
                   @click="openSmtpAccountDialog()"
                 >
-                  添加账号
+                  {{ $t('plugins.smtp.addAccount') }}
                 </t-button>
               </div>
               <secret-input
@@ -350,60 +354,70 @@
     <t-dialog
       v-model:visible="testVisible"
       width="560px"
-      :header="currentPlugin ? `${currentPlugin.name} 测试` : '插件测试'"
-      cancel-btn="关闭"
+      :header="currentPlugin ? currentPlugin.name + $t('plugins.index.testSuffix') : $t('plugins.index.testTitle')"
+      :cancel-btn="$t('plugins.index.close')"
     >
       <template v-if="currentPlugin">
         <div v-if="currentPlugin.domain === 'sms'" class="plugin-test-section">
           <div class="plugin-test-section__header">
-            <strong>发送测试短信</strong>
-            <span class="plugin-test-section__hint">通过系统短信驱动发送一条验证码测试短信</span>
+            <strong>{{ $t('plugins.test.sendTestSms') }}</strong>
+            <span class="plugin-test-section__hint">{{ $t('plugins.test.sendTestSmsHint') }}</span>
           </div>
           <t-space direction="vertical" style="width: 100%">
-            <t-input v-model="smsTestPhone" placeholder="请输入手机号码" maxlength="20" />
-            <t-button block variant="outline" :loading="smsTesting" @click="sendTestSms">发送测试短信</t-button>
+            <t-input v-model="smsTestPhone" :placeholder="$t('plugins.test.phonePlaceholder')" maxlength="20" />
+            <t-button block variant="outline" :loading="smsTesting" @click="sendTestSms">{{
+              $t('plugins.test.sendTestSms')
+            }}</t-button>
           </t-space>
         </div>
 
         <div v-else-if="currentPlugin.domain === 'mail'" class="plugin-test-section">
           <div class="plugin-test-section__header">
-            <strong>发送测试邮件</strong>
-            <span class="plugin-test-section__hint">通过系统邮件驱动发送一封验证码测试邮件</span>
+            <strong>{{ $t('plugins.test.sendTestEmail') }}</strong>
+            <span class="plugin-test-section__hint">{{ $t('plugins.test.sendTestEmailHint') }}</span>
           </div>
           <t-space direction="vertical" style="width: 100%">
-            <t-input v-model="systemEmailTestTo" placeholder="请输入收件人邮箱" />
-            <t-button block variant="outline" :loading="emailTesting" @click="openSystemEmailTest"
-              >发送测试邮件</t-button
-            >
+            <t-input v-model="systemEmailTestTo" :placeholder="$t('plugins.test.recipientPlaceholder')" />
+            <t-button block variant="outline" :loading="emailTesting" @click="openSystemEmailTest">{{
+              $t('plugins.test.sendTestEmail')
+            }}</t-button>
           </t-space>
         </div>
 
         <div v-else-if="currentPlugin.domain === 'verification'" class="plugin-test-section">
           <div class="plugin-test-section__header">
-            <strong>创建测试认证任务</strong>
-            <span class="plugin-test-section__hint">将真实创建一条认证任务，测试结果只返回不保存</span>
+            <strong>{{ $t('plugins.test.createVerificationTask') }}</strong>
+            <span class="plugin-test-section__hint">{{ $t('plugins.test.createVerificationTaskHint') }}</span>
           </div>
           <t-space direction="vertical" style="width: 100%">
-            <t-input v-model="verificationTestForm.real_name" placeholder="请输入测试姓名" maxlength="64" />
-            <t-input v-model="verificationTestForm.card_no" placeholder="请输入测试身份证号" maxlength="32" />
-            <t-button block variant="outline" :loading="verificationTesting" @click="runVerificationTest"
-              >创建测试任务</t-button
-            >
+            <t-input
+              v-model="verificationTestForm.real_name"
+              :placeholder="$t('plugins.test.testNamePlaceholder')"
+              maxlength="64"
+            />
+            <t-input
+              v-model="verificationTestForm.card_no"
+              :placeholder="$t('plugins.test.testIdCardPlaceholder')"
+              maxlength="32"
+            />
+            <t-button block variant="outline" :loading="verificationTesting" @click="runVerificationTest">{{
+              $t('plugins.test.createTestTask')
+            }}</t-button>
           </t-space>
           <div v-if="verificationTestResult" class="plugin-test-result">
             <div class="plugin-test-result__item">
-              <span class="plugin-test-result__label">认证链接</span>
+              <span class="plugin-test-result__label">{{ $t('plugins.test.verifyLink') }}</span>
               <t-input
                 :model-value="String(verificationTestResult.verify_url || '')"
                 readonly
                 class="plugin-test-result__value"
               />
-              <t-button variant="text" @click="copyText(String(verificationTestResult.verify_url || ''))"
-                >复制</t-button
-              >
+              <t-button variant="text" @click="copyText(String(verificationTestResult.verify_url || ''))">{{
+                $t('plugins.test.copy')
+              }}</t-button>
             </div>
             <div v-if="verificationTestResult.task_no" class="plugin-test-result__item">
-              <span class="plugin-test-result__label">任务编号</span>
+              <span class="plugin-test-result__label">{{ $t('plugins.test.taskNo') }}</span>
               <span>{{ verificationTestResult.task_no }}</span>
             </div>
           </div>
@@ -411,24 +425,26 @@
 
         <div v-else-if="currentPlugin.domain === 'payment'" class="plugin-test-section">
           <div class="plugin-test-section__header">
-            <strong>创建测试支付订单</strong>
-            <span class="plugin-test-section__hint">真实创建一笔 0.01 元测试订单，测试结果只返回不保存</span>
+            <strong>{{ $t('plugins.test.createPaymentOrder') }}</strong>
+            <span class="plugin-test-section__hint">{{ $t('plugins.test.createPaymentOrderHint') }}</span>
           </div>
-          <t-button block variant="outline" :loading="paymentTesting" @click="runPaymentTest"
-            >创建 0.01 元测试订单</t-button
-          >
+          <t-button block variant="outline" :loading="paymentTesting" @click="runPaymentTest">{{
+            $t('plugins.test.createPennyTestOrder')
+          }}</t-button>
           <div v-if="paymentTestResult" class="plugin-test-result">
             <div class="plugin-test-result__item">
-              <span class="plugin-test-result__label">支付链接</span>
+              <span class="plugin-test-result__label">{{ $t('plugins.test.payUrl') }}</span>
               <t-input
                 :model-value="String(paymentTestResult.qr_code || '')"
                 readonly
                 class="plugin-test-result__value"
               />
-              <t-button variant="text" @click="copyText(String(paymentTestResult.qr_code || ''))">复制</t-button>
+              <t-button variant="text" @click="copyText(String(paymentTestResult.qr_code || ''))">{{
+                $t('plugins.test.copy')
+              }}</t-button>
             </div>
             <div v-if="paymentTestResult.out_trade_no" class="plugin-test-result__item">
-              <span class="plugin-test-result__label">测试单号</span>
+              <span class="plugin-test-result__label">{{ $t('plugins.test.testOrderNo') }}</span>
               <span>{{ paymentTestResult.out_trade_no }}</span>
             </div>
           </div>
@@ -436,24 +452,24 @@
 
         <div v-else-if="currentPlugin.domain === 'captcha'" class="plugin-test-section">
           <div class="plugin-test-section__header">
-            <strong>真人验证测试</strong>
-            <span class="plugin-test-section__hint">弹出验证码由管理员真人完成，走完整验证链路</span>
+            <strong>{{ $t('plugins.test.captchaTest') }}</strong>
+            <span class="plugin-test-section__hint">{{ $t('plugins.test.captchaTestHint') }}</span>
           </div>
-          <t-button block variant="outline" :loading="captchaTesting" @click="runCaptchaTest"
-            >弹出验证码并测试</t-button
-          >
+          <t-button block variant="outline" :loading="captchaTesting" @click="runCaptchaTest">{{
+            $t('plugins.test.popupCaptchaAndTest')
+          }}</t-button>
           <div v-if="captchaTestResult" class="plugin-test-result">
             <div class="plugin-test-result__item">
-              <span class="plugin-test-result__label">验证结果</span>
+              <span class="plugin-test-result__label">{{ $t('plugins.test.verifyResult') }}</span>
               <t-tag :theme="captchaTestResult.verified ? 'success' : 'danger'" variant="light">
-                {{ captchaTestResult.verified ? '验证通过' : '验证失败' }}
+                {{ captchaTestResult.verified ? $t('plugins.test.verifyPassed') : $t('plugins.test.verifyFailed') }}
               </t-tag>
             </div>
             <div v-if="captchaTestResult.message" class="plugin-test-result__item">
               <span>{{ captchaTestResult.message }}</span>
             </div>
             <div v-if="captchaTestResult.error_type" class="plugin-test-result__item">
-              <span class="plugin-test-result__label">诊断</span>
+              <span class="plugin-test-result__label">{{ $t('plugins.test.diagnostics') }}</span>
               <span>{{ captchaTestResult.error_type }}</span>
             </div>
           </div>
@@ -461,21 +477,23 @@
 
         <div v-else-if="currentPlugin.domain === 'upstream'" class="plugin-test-section">
           <div class="plugin-test-section__header">
-            <strong>连接测试</strong>
-            <span class="plugin-test-section__hint">解析插件声明的第一个能力，验证上游插件加载正常</span>
+            <strong>{{ $t('plugins.test.connectionTest') }}</strong>
+            <span class="plugin-test-section__hint">{{ $t('plugins.test.connectionTestHint') }}</span>
           </div>
-          <t-button block variant="outline" :loading="connectionTesting" @click="runConnectionTest"
-            >开始连接测试</t-button
-          >
+          <t-button block variant="outline" :loading="connectionTesting" @click="runConnectionTest">{{
+            $t('plugins.test.startConnectionTest')
+          }}</t-button>
           <div v-if="connectionTestResult" class="plugin-test-result">
             <div class="plugin-test-result__item">
-              <span class="plugin-test-result__label">连接状态</span>
+              <span class="plugin-test-result__label">{{ $t('plugins.test.connectionStatus') }}</span>
               <t-tag :theme="connectionTestResult.healthy ? 'success' : 'danger'" variant="light">
-                {{ connectionTestResult.healthy ? '连接正常' : '连接异常' }}
+                {{
+                  connectionTestResult.healthy ? $t('plugins.test.connectionOk') : $t('plugins.test.connectionError')
+                }}
               </t-tag>
             </div>
             <div v-if="connectionTestResult.capability" class="plugin-test-result__item">
-              <span class="plugin-test-result__label">能力</span>
+              <span class="plugin-test-result__label">{{ $t('plugins.test.capability') }}</span>
               <span>{{ connectionTestResult.capability }}</span>
             </div>
             <div v-if="connectionTestResult.message" class="plugin-test-result__item">
@@ -488,27 +506,27 @@
 
     <t-dialog
       v-model:visible="smtpAccountDialogVisible"
-      :header="editingSmtpAccountIndex >= 0 ? '编辑 SMTP 账号' : '添加 SMTP 账号'"
+      :header="editingSmtpAccountIndex >= 0 ? $t('plugins.smtp.editAccount') : $t('plugins.smtp.addAccountTitle')"
       width="520px"
-      :confirm-btn="{ content: '保存账号', loading: savingConfig }"
+      :confirm-btn="{ content: $t('plugins.smtp.saveAccount'), loading: savingConfig }"
       @confirm="confirmSmtpAccount"
     >
       <t-form label-align="top" class="smtp-account-form">
-        <t-form-item label="SMTP 主机">
-          <t-input v-model="smtpAccountForm.host" placeholder="请输入 SMTP 主机" />
+        <t-form-item :label="$t('plugins.smtp.host')">
+          <t-input v-model="smtpAccountForm.host" :placeholder="$t('plugins.smtp.hostPlaceholder')" />
         </t-form-item>
-        <t-form-item label="SMTP 端口">
+        <t-form-item :label="$t('plugins.smtp.portLabel')">
           <t-input-number v-model="smtpAccountForm.port" :min="1" :max="65535" theme="column" />
         </t-form-item>
-        <t-form-item label="账号">
-          <t-input v-model="smtpAccountForm.username" placeholder="请输入账号" />
+        <t-form-item :label="$t('plugins.smtp.account')">
+          <t-input v-model="smtpAccountForm.username" :placeholder="$t('plugins.smtp.accountPlaceholder')" />
         </t-form-item>
-        <t-form-item label="密码">
+        <t-form-item :label="$t('plugins.smtp.password')">
           <secret-input
             v-if="editingSmtpAccountIndex >= 0 && smtpAccountForm.password_configured"
             v-model="smtpAccountForm.password"
             :has-value="smtpAccountForm.password_configured"
-            placeholder="已配置，留空表示不修改"
+            :placeholder="$t('plugins.smtp.configuredKeepBlank')"
             :reset-key="`smtp:${currentPlugin?.id || 'new'}:${smtpAccountForm.__index ?? editingSmtpAccountIndex}`"
             :can-reveal="canRevealPluginSecrets"
             :reveal="revealSmtpAccountPassword"
@@ -519,35 +537,47 @@
             v-else
             v-model="smtpAccountForm.password"
             type="password"
-            :placeholder="editingSmtpAccountIndex >= 0 ? '已配置，留空表示不修改' : '请输入密码'"
+            :placeholder="
+              editingSmtpAccountIndex >= 0
+                ? $t('plugins.smtp.configuredKeepBlank')
+                : $t('plugins.smtp.passwordPlaceholder')
+            "
           />
         </t-form-item>
-        <t-form-item label="发件名称">
-          <t-input v-model="smtpAccountForm.from_name" placeholder="请输入发件名称" />
+        <t-form-item :label="$t('plugins.smtp.fromName')">
+          <t-input v-model="smtpAccountForm.from_name" :placeholder="$t('plugins.smtp.fromNamePlaceholder')" />
         </t-form-item>
-        <t-form-item label="加密方式">
+        <t-form-item :label="$t('plugins.smtp.encryption')">
           <t-select v-model="smtpAccountForm.encryption" clearable>
-            <t-option label="自动" value="" />
+            <t-option :label="$t('plugins.smtp.encryptionAuto')" value="" />
             <t-option label="SSL" value="ssl" />
             <t-option label="TLS" value="tls" />
-            <t-option label="无" value="none" />
+            <t-option :label="$t('plugins.smtp.encryptionNone')" value="none" />
           </t-select>
         </t-form-item>
-        <t-form-item label="状态">
+        <t-form-item :label="$t('plugins.smtp.status')">
           <t-switch v-model="smtpAccountForm.enabled" />
         </t-form-item>
       </t-form>
     </t-dialog>
     <t-dialog
       v-model:visible="emailTestVisible"
-      header="发送测试邮件"
+      :header="$t('plugins.test.sendTestEmail')"
       width="480px"
-      :confirm-btn="{ content: '发送测试', loading: emailTesting }"
+      :confirm-btn="{ content: $t('plugins.test.send'), loading: emailTesting }"
       @confirm="sendTestEmail"
     >
       <t-form label-align="top" class="email-test-form">
-        <t-form-item label="收件人邮箱" :status="emailTestErrors.to ? 'error' : undefined" :help="emailTestErrors.to">
-          <t-input v-model="emailTestForm.to" placeholder="请输入收件人邮箱" @change="clearEmailTestError('to')" />
+        <t-form-item
+          :label="$t('plugins.test.recipient')"
+          :status="emailTestErrors.to ? 'error' : undefined"
+          :help="emailTestErrors.to"
+        >
+          <t-input
+            v-model="emailTestForm.to"
+            :placeholder="$t('plugins.test.recipientPlaceholder')"
+            @change="clearEmailTestError('to')"
+          />
         </t-form-item>
       </t-form>
     </t-dialog>

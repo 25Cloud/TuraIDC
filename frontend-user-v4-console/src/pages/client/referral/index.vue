@@ -1,10 +1,10 @@
 <template>
   <section class="referral-page">
     <header class="client-page-heading">
-      <h1>推荐奖励</h1>
+      <h1>{{ $t('client.referral.title') }}</h1>
     </header>
 
-    <t-loading :loading="loading" text="正在加载推荐奖励">
+    <t-loading :loading="loading" :text="$t('client.referral.loading')">
       <div class="referral-stats">
         <t-card v-for="item in summaryCards" :key="item.key" class="referral-stat" :bordered="false">
           <span>{{ item.label }}</span>
@@ -13,49 +13,52 @@
       </div>
 
       <t-card class="referral-card" :bordered="false">
-        <template #title>我的推荐链接</template>
+        <template #title>{{ $t('client.referral.linkTitle') }}</template>
         <template #actions>
-          <t-tag variant="light">{{ levelName }} - 佣金比例 {{ rewardRateText }}</t-tag>
+          <t-tag variant="light">{{ levelName }} - {{ $t('client.referral.commissionRate') }} {{ rewardRateText }}</t-tag>
         </template>
         <div class="referral-link-row">
           <t-input :value="referralLink" readonly>
             <template #prefixIcon><link-icon /></template>
           </t-input>
-          <t-button @click="copyReferralLink">复制链接</t-button>
+          <t-button @click="copyReferralLink">{{ $t('client.referral.copyLink') }}</t-button>
         </div>
         <p>
-          好友通过此链接注册并消费，您可获得 {{ rewardRateText }} 佣金，冻结
-          {{ freezeDaysText }} 天后自动释放。最低提现金额 ¥{{ withdrawMinAmountText }}。
+          {{ $t('client.referral.description', {
+            rate: rewardRateText,
+            days: freezeDaysText,
+            min: withdrawMinAmountText,
+          }) }}
         </p>
       </t-card>
 
       <t-card class="referral-card" :bordered="false">
-        <template #title>提现支付宝</template>
+        <template #title>{{ $t('client.referral.alipayTitle') }}</template>
         <template #actions>
           <t-tag :theme="isAlipayBound ? 'success' : 'warning'" variant="light">{{
-            isAlipayBound ? '已绑定' : '提现前需先绑定'
+            isAlipayBound ? $t('client.referral.alipayBound') : $t('client.referral.alipayUnbound')
           }}</t-tag>
         </template>
         <div v-if="!isAlipayBound" class="referral-empty">
-          <t-empty description="提现前需要先绑定支付宝，并完成该手机号的短信验证，无需上传支付宝图片。" />
-          <t-button theme="primary" @click="openBindDialog">立即绑定</t-button>
+          <t-empty :description="$t('client.referral.alipayBindTip')" />
+          <t-button theme="primary" @click="openBindDialog">{{ $t('client.referral.bindNow') }}</t-button>
         </div>
         <t-form v-else class="withdraw-form" layout="inline">
-          <t-form-item label="收款账户">
+          <t-form-item :label="$t('client.referral.payeeAccount')">
             <span>{{ alipayAccount.real_name || '--' }} {{ alipayAccount.account || '--' }}</span>
           </t-form-item>
-          <t-form-item label="提现金额">
-            <t-input v-model="withdrawForm.amount" placeholder="请输入提现金额" />
+          <t-form-item :label="$t('client.referral.withdrawAmount')">
+            <t-input v-model="withdrawForm.amount" :placeholder="$t('client.referral.withdrawAmountPlaceholder')" />
           </t-form-item>
           <t-form-item>
-            <t-button theme="primary" :loading="withdrawSubmitting" @click="submitWithdrawal">提交提现</t-button>
+            <t-button theme="primary" :loading="withdrawSubmitting" @click="submitWithdrawal">{{ $t('client.referral.submitWithdraw') }}</t-button>
           </t-form-item>
         </t-form>
       </t-card>
 
       <t-card class="referral-card" :bordered="false">
         <t-tabs v-model="activeTab">
-          <t-tab-panel value="direct" label="被邀请人列表">
+          <t-tab-panel value="direct" :label="$t('client.referral.inviteesTab')">
             <t-table row-key="id" :data="directReferrals" :columns="directColumns" :pagination="null">
               <template #user="{ row }">{{ row.display_name || row.nickname || row.email || '--' }}</template>
               <template #referred_at="{ row }">{{ row.referred_at || row.created_at || '--' }}</template>
@@ -63,7 +66,7 @@
               <template #earnings="{ row }">¥{{ money(row.my_earnings) }}</template>
             </t-table>
           </t-tab-panel>
-          <t-tab-panel value="rewards" label="奖励明细">
+          <t-tab-panel value="rewards" :label="$t('client.referral.rewardsTab')">
             <t-table row-key="id" :data="rewards" :columns="rewardColumns" :pagination="null">
               <template #user="{ row }">{{
                 row.referred_user?.display_name || row.referred_user?.nickname || row.referred_user?.email || '--'
@@ -83,9 +86,9 @@
               </template>
             </t-table>
           </t-tab-panel>
-          <t-tab-panel value="withdrawals" label="提现记录">
+          <t-tab-panel value="withdrawals" :label="$t('client.referral.withdrawalsTab')">
             <t-table row-key="id" :data="withdrawals" :columns="withdrawColumns" :pagination="null">
-              <template #method="{ row }">{{ row.method === 'balance' ? '转余额' : '支付宝' }}</template>
+              <template #method="{ row }">{{ row.method === 'balance' ? $t('client.referral.toBalance') : $t('client.referral.alipay') }}</template>
               <template #amount="{ row }">¥{{ money(row.amount) }}</template>
               <template #account="{ row }">{{ row.account_name || '--' }} {{ row.account_no || '' }}</template>
               <template #status="{ row }">
@@ -95,7 +98,7 @@
               </template>
             </t-table>
           </t-tab-panel>
-          <t-tab-panel value="logs" label="账户流水">
+          <t-tab-panel value="logs" :label="$t('client.referral.accountLogsTab')">
             <t-table row-key="id" :data="accountLogs" :columns="logColumns" :pagination="null">
               <template #event_type="{ row }">{{ accountEventLabel(row.event_type) }}</template>
               <template #amount="{ row }">¥{{ money(row.amount) }}</template>
@@ -105,23 +108,28 @@
       </t-card>
     </t-loading>
 
-    <t-dialog v-model:visible="bindDialogVisible" header="绑定提现支付宝" width="min(30rem, calc(100vw - 2rem))">
+    <t-dialog
+      v-model:visible="bindDialogVisible"
+      :header="$t('client.referral.bindDialogTitle')"
+      width="min(30rem, calc(100vw - 2rem))"
+    >
       <t-form label-align="top">
-        <p class="bind-dialog-tip">请填写实名、支付宝绑定手机号、短信验证码与登录密码，用于提现打款。</p>
-        <t-form-item label="真实姓名"
-          ><t-input v-model="bindForm.real_name" placeholder="请输入支付宝实名姓名"
+        <p class="bind-dialog-tip">{{ $t('client.referral.bindDialogTip') }}</p>
+        <t-form-item :label="$t('client.referral.realName')"
+          ><t-input v-model="bindForm.real_name" :placeholder="$t('client.referral.realNamePlaceholder')"
         /></t-form-item>
-        <t-form-item label="支付宝手机号"
-          ><t-input v-model="bindForm.account" placeholder="请输入支付宝绑定手机号"
+        <t-form-item :label="$t('client.referral.alipayPhone')"
+          ><t-input v-model="bindForm.account" :placeholder="$t('client.referral.alipayPhonePlaceholder')"
         /></t-form-item>
-        <t-form-item label="短信验证码"><t-input v-model="bindForm.code" placeholder="请输入短信验证码" /></t-form-item>
-        <t-form-item label="登录密码"
-          ><t-input v-model="bindForm.password" type="password" placeholder="请输入登录密码确认"
+        <t-form-item :label="$t('client.referral.smsCode')"
+          ><t-input v-model="bindForm.code" :placeholder="$t('client.referral.smsCodePlaceholder')" /></t-form-item>
+        <t-form-item :label="$t('client.referral.loginPassword')"
+          ><t-input v-model="bindForm.password" type="password" :placeholder="$t('client.referral.loginPasswordPlaceholder')"
         /></t-form-item>
       </t-form>
       <template #footer>
-        <t-button variant="outline" @click="bindDialogVisible = false">取消</t-button>
-        <t-button theme="primary" :loading="bindSubmitting" @click="submitBindAlipay">保存绑定</t-button>
+        <t-button variant="outline" @click="bindDialogVisible = false">{{ $t('client.referral.cancel') }}</t-button>
+        <t-button theme="primary" :loading="bindSubmitting" @click="submitBindAlipay">{{ $t('client.referral.saveBind') }}</t-button>
       </template>
     </t-dialog>
   </section>

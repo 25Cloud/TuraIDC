@@ -70,7 +70,7 @@
       @touchstart="handleTouchStart"
       @touchend="handleTouchEnd"
     >
-      <aside class="hero-rail" role="tablist" aria-label="产品入口">
+      <aside class="hero-rail" role="tablist" :aria-label="$t('home.hero.productEntries')">
         <button
           v-for="(slide, index) in heroSlides"
           :key="slide.key"
@@ -142,7 +142,7 @@
         </div>
       </div>
 
-      <div class="hero-dots" role="tablist" aria-label="轮播指示">
+      <div class="hero-dots" role="tablist" :aria-label="$t('home.hero.carouselIndicator')">
         <button
           v-for="(slide, index) in heroSlides"
           :key="`dot-${slide.key}`"
@@ -156,7 +156,7 @@
         ></button>
       </div>
 
-      <div class="hero-mobile-nav" role="group" aria-label="轮播控制">
+      <div class="hero-mobile-nav" role="group" :aria-label="$t('home.hero.carouselControls')">
         <div class="hero-mobile-nav__dots">
           <button
             v-for="(slide, index) in heroSlides"

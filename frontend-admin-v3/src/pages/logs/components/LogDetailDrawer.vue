@@ -14,7 +14,7 @@
           class="mail-preview-frame"
           :srcdoc="item.value"
           sandbox="allow-same-origin"
-          title="邮件正文预览"
+          :title="$t('logs.detailDrawer.mailPreview')"
         />
         <pre v-else class="json-block">{{ item.value }}</pre>
       </div>
@@ -22,7 +22,7 @@
     <template #footer>
       <t-button variant="outline" @click="emit('close')">
         <template #icon><chevron-left-icon /></template>
-        返回
+        {{ $t('logs.detailDrawer.back') }}
       </t-button>
     </template>
   </t-drawer>

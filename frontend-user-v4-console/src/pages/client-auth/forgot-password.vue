@@ -1,6 +1,6 @@
 <template>
   <auth-shell
-    title="找回密码"
+    :title="$t('auth.forgotPassword')"
     nav-text="想起密码了？"
     nav-link-text="返回登录"
     :nav-to="loginLink"
@@ -12,22 +12,22 @@
     <t-form ref="formRef" class="client-auth-form" :data="form" :rules="rules" label-width="0" @submit="handleSubmit">
       <t-form-item name="account">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required">手机号 / 邮箱</label>
+          <label class="client-auth-label is-required">{{ $t('auth.accountLabel') }}</label>
           <t-input
             v-model="form.account"
             size="large"
             clearable
             autocomplete="username"
-            placeholder="请输入注册手机号或邮箱"
+            :placeholder="$t('auth.accountPlaceholder')"
           />
         </div>
       </t-form-item>
 
       <t-form-item name="code">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required">验证码</label>
+          <label class="client-auth-label is-required">{{ $t('auth.codeLabel') }}</label>
           <div class="client-auth-code-row">
-            <t-input v-model="form.code" size="large" maxlength="6" placeholder="请输入验证码" />
+            <t-input v-model="form.code" size="large" maxlength="6" :placeholder="$t('auth.codePlaceholder')" />
             <t-button
               variant="outline"
               :disabled="countdown > 0"
@@ -42,14 +42,14 @@
 
       <t-form-item name="password">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required">新密码</label>
+          <label class="client-auth-label is-required">{{ $t('auth.newPassword') }}</label>
           <t-input
             v-model="form.password"
             size="large"
             :type="showPassword ? 'text' : 'password'"
             clearable
             autocomplete="new-password"
-            placeholder="请输入至少 8 位新密码"
+            :placeholder="$t('auth.newPasswordPlaceholder')"
           >
             <template #prefix-icon><lock-on-icon /></template>
             <template #suffix-icon>

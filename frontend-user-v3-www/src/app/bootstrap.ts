@@ -12,6 +12,7 @@ import {
   initClientRuntimeConnectionHints,
   primeClientConnectionHints,
 } from "@/app/runtime/network";
+import { i18n } from "@/locales";
 import { useAppStore } from "@/stores/app";
 import "@/assets/styles/global.scss";
 
@@ -44,8 +45,12 @@ export function bootstrapClientApp() {
   const router = createClientRouter();
 
   app.use(pinia);
+  app.use(i18n);
+
+  // 组件语言（分页/日期等文案）由 App.vue 的 <el-config-provider> 响应式承载，
+  // 这里只负责全局尺寸与 zIndex。
   provideGlobalConfig(
-    { locale: zhCn, size: "default", zIndex: 3200 },
+    { size: "default", zIndex: 3200 },
     app,
     true,
   );

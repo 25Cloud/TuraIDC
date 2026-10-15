@@ -8,6 +8,7 @@ export const usersRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '用户列表',
+        zh_TW: '使用者列表',
         en_US: 'User List',
       },
       permission: 'user.list',
@@ -21,6 +22,7 @@ export const usersRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '实名列表',
+        zh_TW: '實名列表',
         en_US: 'Verification List',
       },
       permission: 'verification.list',
@@ -34,6 +36,7 @@ export const usersRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '实名管理',
+        zh_TW: '實名管理',
         en_US: 'Verification Settings',
       },
       permission: 'verification.list',
@@ -48,6 +51,7 @@ export const usersRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '用户详情',
+        zh_TW: '使用者詳情',
         en_US: 'User Detail',
       },
       permission: 'user.detail',

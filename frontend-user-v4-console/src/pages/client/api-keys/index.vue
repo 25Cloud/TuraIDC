@@ -3,7 +3,7 @@
     <t-card class="record-card api-key-hero" :bordered="false">
       <div class="api-key-hero__body">
         <div>
-          <h3 class="api-key-hero__title">API 凭据</h3>
+          <h3 class="api-key-hero__title">{{ $t('apiKeys.title') }}</h3>
           <p class="api-key-hero__desc">
             本页管理对接本系统的两套凭据：开放接口密钥用于系统间调用（/api/v2/open），魔方财务对接凭据供魔方财务在「上游」中配置（/api/v2/zjmf）。两套凭据都支持
             IP 白名单、有效期与调用审计。
@@ -13,13 +13,13 @@
             反过来，停用或删除单个密钥不影响魔方财务对接。
           </p>
         </div>
-        <t-button v-if="activeTab === 'keys'" theme="primary" @click="openCreateDialog">创建密钥</t-button>
+        <t-button v-if="activeTab === 'keys'" theme="primary" @click="openCreateDialog">{{ $t('apiKeys.create') }}</t-button>
       </div>
     </t-card>
 
     <t-card class="record-card" :bordered="false">
       <t-tabs v-model="activeTab">
-        <t-tab-panel value="keys" label="开放接口密钥">
+        <t-tab-panel value="keys" :label="$t('apiKeys.openApiLabel')">
           <div class="api-key-panel">
             <section class="record-list-card">
               <data-state

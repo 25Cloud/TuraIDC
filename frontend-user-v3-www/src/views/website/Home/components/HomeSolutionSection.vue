@@ -1,7 +1,7 @@
 <template>
   <section class="solution-section">
     <div class="container solution-section__head">
-      <h2 class="solution-section__title">为千行百业提供全面的解决方案</h2>
+      <h2 class="solution-section__title">{{ $t('home.solutions.title') }}</h2>
       <p class="solution-section__desc">
         面向丰富的业务场景，提供覆盖行业与技术的解决方案。
       </p>
@@ -28,7 +28,7 @@
           <aside
             class="solution-panel__rail"
             role="tablist"
-            aria-label="行业解决方案"
+            :aria-label="$t('home.solutions.industrySolutions')"
           >
             <button
               v-for="item in industrySolutions"
@@ -53,7 +53,7 @@
               {{ activeIndustrySolution.description }}
             </p>
 
-            <div class="solution-panel__section-title">解决方案</div>
+            <div class="solution-panel__section-title">{{ $t('layout.nav.solutions') }}</div>
             <ul class="solution-panel__feature-list">
               <li
                 v-for="point in activeIndustrySolution.points"
@@ -67,7 +67,7 @@
               </li>
             </ul>
 
-            <div class="solution-panel__section-title">相关产品</div>
+            <div class="solution-panel__section-title">{{ $t('home.solutions.relatedProducts') }}</div>
             <div class="solution-panel__actions">
               <button
                 type="button"

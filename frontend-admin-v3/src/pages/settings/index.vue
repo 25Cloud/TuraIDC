@@ -3,10 +3,10 @@
     <template v-if="activeTab !== 'site_hero'">
       <t-card v-if="sections.length > 1" :bordered="false">
         <div class="section-nav">
-          <span>分组</span>
+          <span>{{ $t('settings.index.groupLabel') }}</span>
           <t-radio-group v-model="activeSection" variant="default-filled">
             <t-radio-button v-for="section in sections" :key="section.anchor" :value="section.anchor">
-              {{ section.title }} · {{ section.fields.length }} 项
+              {{ section.title }} · {{ section.fields.length }} {{ $t('settings.index.fieldCountUnit') }}
             </t-radio-button>
           </t-radio-group>
         </div>
@@ -37,7 +37,7 @@
                   v-else-if="field.type === 'select'"
                   v-model="form[field.key]"
                   clearable
-                  :placeholder="field.placeholder || `请选择${field.label}`"
+                  :placeholder="field.placeholder || `${$t('settings.index.selectPrefix')}${field.label}`"
                 >
                   <t-option
                     v-for="option in field.options || []"
@@ -52,7 +52,7 @@
                   theme="normal"
                   :min="field.min"
                   :max="field.max"
-                  :placeholder="field.placeholder || `请输入${field.label}`"
+                  :placeholder="field.placeholder || `${$t('settings.index.inputPrefix')}${field.label}`"
                   @update:model-value="(value: unknown) => (form[field.key] = value as FieldNumberValue)"
                 />
                 <t-textarea
@@ -60,7 +60,7 @@
                   :model-value="form[field.key] as FieldStringValue"
                   :autosize="{ minRows: field.rows || 3, maxRows: Math.max(field.rows || 3, 6) }"
                   :maxlength="field.maxlength"
-                  :placeholder="field.placeholder || `请输入${field.label}`"
+                  :placeholder="field.placeholder || `${$t('settings.index.inputPrefix')}${field.label}`"
                   @update:model-value="(value: FieldStringValue) => (form[field.key] = value)"
                 />
                 <t-time-picker
@@ -68,7 +68,7 @@
                   :model-value="form[field.key] as string"
                   clearable
                   format="HH:mm:ss"
-                  :placeholder="field.placeholder || `请选择${field.label}`"
+                  :placeholder="field.placeholder || `${$t('settings.index.selectPrefix')}${field.label}`"
                   @update:model-value="(value: string) => (form[field.key] = value)"
                 />
                 <t-color-picker
@@ -102,7 +102,7 @@
                     theme="normal"
                     :min="0"
                     :max="24"
-                    :placeholder="`请输入${field.label}（px）`"
+                    :placeholder="`${$t('settings.index.inputPrefix')}${field.label}${$t('settings.index.pxSuffix')}`"
                     @update:model-value="
                       (value: unknown) => (form[field.key] = value as FieldNumberValue)
                     "
@@ -113,26 +113,26 @@
                   <span v-if="form[field.key]" class="cover-image-selector__name">{{
                     String(form[field.key]).split('/').pop()
                   }}</span>
-                  <span v-else class="cover-image-selector__placeholder">点击选择{{ field.label }}</span>
+                  <span v-else class="cover-image-selector__placeholder">{{ $t('settings.index.clickToSelectPrefix') }}{{ field.label }}</span>
                   <chevron-right-icon />
                 </div>
                 <secret-input
                   v-else-if="isSecretSettingField(field)"
                   v-model="form[field.key]"
                   :has-value="hasSettingSecretValue(field)"
-                  :placeholder="field.placeholder || `请输入${field.label}`"
+                  :placeholder="field.placeholder || `${$t('settings.index.inputPrefix')}${field.label}`"
                   :reset-key="settingSecretResetKey(field)"
                   :can-reveal="canRevealSettingsSecret"
                   :reveal="() => revealSettingSecret(field)"
                   @edited-change="(value: boolean) => (settingsSecretEdited[settingSecretEditKey(field)] = value)"
-                  @reveal-error="(error: unknown) => MessagePlugin.error(errorMessage(error, '读取敏感配置失败'))"
+                  @reveal-error="(error: unknown) => MessagePlugin.error(errorMessage(error, $t('settings.index.readSensitiveConfigFailed')))"
                 />
                 <t-input
                   v-else
                   :model-value="form[field.key] as FieldStringValue"
                   :type="field.type === 'password' ? 'password' : 'text'"
                   :maxlength="field.maxlength"
-                  :placeholder="field.placeholder || `请输入${field.label}`"
+                  :placeholder="field.placeholder || `${$t('settings.index.inputPrefix')}${field.label}`"
                   @update:model-value="(value: FieldStringValue) => (form[field.key] = value)"
                 />
               </div>
@@ -144,26 +144,28 @@
       <div v-if="allFields.length > 0" class="settings-bottom-actions">
         <t-button theme="primary" :loading="currentSaving" :disabled="!canManageCurrentTab" @click="saveCurrentTab">
           <template #icon><check-icon /></template>
-          保存设置
+          {{ $t('settings.index.saveSettings') }}
         </t-button>
       </div>
     </template>
 
     <template v-else>
       <t-card :bordered="false" :loading="heroLoading" class="slides-config-card">
-        <t-alert v-if="heroDirty" theme="warning" message="当前存在未保存修改。保存后官网首页最长约 2 分钟同步。" />
+        <t-alert v-if="heroDirty" theme="warning" :message="$t('settings.index.unsavedTip')" />
 
         <section class="slides-section">
           <div class="slides-section-head">
             <div>
-              <h2>轮播项（{{ heroForm.slides.length }} / {{ maxSlides }}）</h2>
-              <p>每个轮播项包含导航名称、主标题、描述和两个按钮。</p>
+              <h2>
+                {{ $t('settings.index.slidesTitle') }}（{{ heroForm.slides.length }} / {{ maxSlides }}）
+              </h2>
+              <p>{{ $t('settings.index.slidesTip') }}</p>
             </div>
             <t-space>
-              <t-button variant="outline" @click="resetSlidesToDefault">恢复默认</t-button>
+              <t-button variant="outline" @click="resetSlidesToDefault">{{ $t('settings.index.restoreDefault') }}</t-button>
               <t-button theme="primary" :disabled="heroForm.slides.length >= maxSlides" @click="addSlide">
                 <template #icon><add-icon /></template>
-                新增轮播
+                {{ $t('settings.index.addSlide') }}
               </t-button>
             </t-space>
           </div>
@@ -171,7 +173,7 @@
           <article v-for="(slide, index) in heroForm.slides" :key="`slide-${index}`" class="slide-card">
             <div class="slide-card-head">
               <span class="slide-card-head__index">{{ index + 1 }}</span>
-              <strong class="slide-card-head__name">{{ slide.rail_title || '未命名轮播' }}</strong>
+              <strong class="slide-card-head__name">{{ slide.rail_title || $t('settings.index.untitledSlide') }}</strong>
               <div class="slide-card-head__actions">
                 <t-button variant="text" size="small" :disabled="index === 0" @click="moveSlide(index, -1)">
                   <template #icon><arrow-up-icon /></template>
@@ -198,73 +200,83 @@
 
             <div class="slide-body">
               <div class="slide-row">
-                <label class="slide-label">标题</label>
-                <t-input v-model="slide.rail_title" maxlength="20" placeholder="导航名" class="slide-field--sm" />
+                <label class="slide-label">{{ $t('settings.index.slideTitle') }}</label>
+                <t-input
+                  v-model="slide.rail_title"
+                  maxlength="20"
+                  :placeholder="$t('settings.index.railTitlePlaceholder')"
+                  class="slide-field--sm"
+                />
                 <t-input
                   v-model="slide.title"
                   maxlength="80"
-                  placeholder="主标题，例如：官网焕新 · 云上新体验"
+                  :placeholder="$t('settings.index.mainTitlePlaceholder')"
                   class="slide-field--lg"
                 />
               </div>
 
               <div class="slide-row">
-                <label class="slide-label">按钮</label>
+                <label class="slide-label">{{ $t('settings.index.slideButtons') }}</label>
                 <div class="slide-btn-group">
-                  <span class="slide-btn-group__tag">主</span>
-                  <t-input v-model="slide.primary_text" maxlength="20" placeholder="按钮文案" class="slide-field--sm" />
+                  <span class="slide-btn-group__tag">{{ $t('settings.index.primary') }}</span>
+                  <t-input
+                    v-model="slide.primary_text"
+                    maxlength="20"
+                    :placeholder="$t('settings.index.buttonTextPlaceholder')"
+                    class="slide-field--sm"
+                  />
                   <t-input
                     v-model="slide.primary_path"
                     maxlength="255"
-                    placeholder="跳转路径"
+                    :placeholder="$t('settings.index.jumpPathPlaceholder')"
                     class="slide-field--lg"
                   />
                 </div>
                 <div class="slide-btn-group">
-                  <span class="slide-btn-group__tag">次</span>
+                  <span class="slide-btn-group__tag">{{ $t('settings.index.secondary') }}</span>
                   <t-input
                     v-model="slide.secondary_text"
                     maxlength="20"
-                    placeholder="按钮文案"
+                    :placeholder="$t('settings.index.buttonTextPlaceholder')"
                     class="slide-field--sm"
                   />
                   <t-input
                     v-model="slide.secondary_path"
                     maxlength="255"
-                    placeholder="跳转路径"
+                    :placeholder="$t('settings.index.jumpPathPlaceholder')"
                     class="slide-field--lg"
                   />
                 </div>
               </div>
 
               <div class="slide-row">
-                <label class="slide-label">描述</label>
+                <label class="slide-label">{{ $t('settings.index.slideDescription') }}</label>
                 <t-textarea
                   v-model="slide.desc"
                   :autosize="{ minRows: 2, maxRows: 4 }"
                   maxlength="300"
-                  placeholder="轮播描述文案"
+                  :placeholder="$t('settings.index.slideDescPlaceholder')"
                   class="slide-field--full"
                 />
               </div>
 
               <div class="slide-row">
-                <label class="slide-label">图片</label>
+                <label class="slide-label">{{ $t('settings.index.slideImage') }}</label>
                 <div class="slide-image-field">
                   <div class="slide-image-preview">
                     <img
                       v-if="slide.image"
                       :src="resolveAssetUrl(slide.image)"
-                      :alt="slide.rail_title || '轮播背景图'"
+                      :alt="slide.rail_title || $t('settings.index.slideBackgroundImage')"
                     />
-                    <span v-else class="slide-image-preview__empty">未设置</span>
+                    <span v-else class="slide-image-preview__empty">{{ $t('settings.index.notSet') }}</span>
                   </div>
                   <div class="slide-image-selector" @click="openHeroImageDrawer(index)">
                     <image-icon />
                     <span v-if="slide.image" class="slide-video-selector__name">{{
                       slide.image.split('/').pop()
                     }}</span>
-                    <span v-else class="slide-video-selector__placeholder">点击选择背景图片</span>
+                    <span v-else class="slide-video-selector__placeholder">{{ $t('settings.index.clickToSelectImage') }}</span>
                     <chevron-right-icon />
                   </div>
                   <t-button
@@ -274,21 +286,21 @@
                     theme="danger"
                     @click="clearSlideImage(index)"
                   >
-                    清除
+                    {{ $t('settings.index.clear') }}
                   </t-button>
                 </div>
-                <p class="slide-row__hint">有文字的一侧会加半透明白色磨砂，无文字的一侧渐变透出图片。</p>
+                <p class="slide-row__hint">{{ $t('settings.index.slideImageHint') }}</p>
               </div>
 
               <div class="slide-row">
-                <label class="slide-label">视频</label>
+                <label class="slide-label">{{ $t('settings.index.slideVideo') }}</label>
                 <div class="slide-video-selector" @click="openVideoDrawer(index)">
                   <video-icon />
                   <span v-if="slide.video" class="slide-video-selector__name">{{ videoDisplayName(slide.video) }}</span>
-                  <span v-else class="slide-video-selector__placeholder">点击选择背景视频</span>
+                  <span v-else class="slide-video-selector__placeholder">{{ $t('settings.index.clickToSelectVideo') }}</span>
                   <chevron-right-icon />
                 </div>
-                <p class="slide-row__hint">同时配置图片与视频时，视频铺在上层，图片作为加载中与移动端的兜底。</p>
+                <p class="slide-row__hint">{{ $t('settings.index.slideVideoHint') }}</p>
               </div>
             </div>
           </article>
@@ -297,14 +309,16 @@
         <section class="slides-section">
           <div class="slides-section-head">
             <div>
-              <h2>底部特色卡片（{{ heroForm.features.length }} / {{ maxFeatures }}）</h2>
-              <p>用于官网首页轮播下方的横向卡片组。</p>
+              <h2>
+                {{ $t('settings.index.featuresTitle') }}（{{ heroForm.features.length }} / {{ maxFeatures }}）
+              </h2>
+              <p>{{ $t('settings.index.featuresTip') }}</p>
             </div>
             <t-space>
-              <t-button variant="outline" @click="resetFeaturesToDefault">恢复默认</t-button>
+              <t-button variant="outline" @click="resetFeaturesToDefault">{{ $t('settings.index.restoreDefault') }}</t-button>
               <t-button theme="primary" :disabled="heroForm.features.length >= maxFeatures" @click="addFeature">
                 <template #icon><add-icon /></template>
-                新增卡片
+                {{ $t('settings.index.addFeature') }}
               </t-button>
             </t-space>
           </div>
@@ -323,15 +337,15 @@
                   <template #icon><arrow-down-icon /></template>
                 </t-button>
               </div>
-              <t-input v-model="feature.kicker" maxlength="20" placeholder="标签 kicker" />
-              <t-input v-model="feature.title" maxlength="50" placeholder="标题" />
+              <t-input v-model="feature.kicker" maxlength="20" :placeholder="$t('settings.index.kickerPlaceholder')" />
+              <t-input v-model="feature.title" maxlength="50" :placeholder="$t('settings.index.titlePlaceholder')" />
               <t-textarea
                 v-model="feature.desc"
                 :autosize="{ minRows: 2, maxRows: 3 }"
                 maxlength="120"
-                placeholder="描述"
+                :placeholder="$t('settings.index.descriptionPlaceholder')"
               />
-              <t-input v-model="feature.path" maxlength="255" placeholder="跳转路径，可选" />
+              <t-input v-model="feature.path" maxlength="255" :placeholder="$t('settings.index.jumpPathOptional')" />
               <t-button
                 theme="danger"
                 variant="text"
@@ -339,7 +353,7 @@
                 @click="removeFeature(index)"
               >
                 <template #icon><delete-icon /></template>
-                删除
+                {{ $t('settings.index.delete') }}
               </t-button>
             </article>
           </div>
@@ -349,7 +363,7 @@
       <div class="settings-bottom-actions">
         <t-button theme="primary" :loading="currentSaving" :disabled="!canManageCurrentTab" @click="saveCurrentTab">
           <template #icon><check-icon /></template>
-          保存设置
+          {{ $t('settings.index.saveSettings') }}
         </t-button>
       </div>
     </template>
@@ -365,19 +379,28 @@
 
     <t-drawer
       :visible="mediaDrawerVisible"
-      header="选择媒体"
+      :header="$t('settings.index.selectMedia')"
       size="520px"
       placement="right"
       :footer="null"
       @close="closeMediaDrawer"
     >
       <div class="cover-drawer-toolbar">
-        <t-select v-model="mediaDrawerType" placeholder="全部类型" @change="loadMediaDrawerList">
-          <t-option v-for="item in mediaDrawerTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
+        <t-select
+          v-model="mediaDrawerType"
+          :placeholder="$t('settings.index.allTypes')"
+          @change="loadMediaDrawerList"
+        >
+          <t-option
+            v-for="item in mediaDrawerTypeOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
         </t-select>
         <t-button variant="outline" @click="openMediaDrawerUpload">
           <template #icon><upload-icon /></template>
-          上传新文件
+          {{ $t('settings.index.uploadNewFile') }}
         </t-button>
       </div>
       <div class="cover-drawer-grid">
@@ -403,7 +426,7 @@
           </div>
         </div>
         <div v-if="!mediaDrawerList.length && !mediaDrawerLoading" class="cover-drawer-empty">
-          暂无已上传媒体，请先上传
+          {{ $t('settings.index.noMediaYet') }}
         </div>
       </div>
     </t-drawer>
@@ -417,8 +440,8 @@
       @close="closeVideoDrawer"
     >
       <t-radio-group v-model="videoDrawerMode" variant="default-filled" class="video-drawer-tabs">
-        <t-radio-button value="select">选择已有视频</t-radio-button>
-        <t-radio-button value="url">输入视频 URL</t-radio-button>
+        <t-radio-button value="select">{{ $t('settings.index.selectExistingVideo') }}</t-radio-button>
+        <t-radio-button value="url">{{ $t('settings.index.inputVideoUrl') }}</t-radio-button>
       </t-radio-group>
 
       <div v-if="videoDrawerMode === 'select'" class="video-drawer-grid">
@@ -438,11 +461,11 @@
             <span v-if="opt.size" class="video-drawer-card__size">{{ formatFileSize(opt.size) }}</span>
           </div>
         </div>
-        <div v-if="!heroVideoOptions.length" class="video-drawer-empty">后端 uploads/hero-videos 目录暂无视频</div>
+        <div v-if="!heroVideoOptions.length" class="video-drawer-empty">{{ $t('settings.index.noHeroVideo') }}</div>
       </div>
 
       <div v-else class="video-drawer-url-mode">
-        <p class="video-drawer-url-mode__hint">输入第三方视频 URL，支持 mp4/webm 格式。</p>
+        <p class="video-drawer-url-mode__hint">{{ $t('settings.index.videoUrlHint') }}</p>
         <t-input
           v-model="videoUrlInput"
           placeholder="https://example.com/videos/bg.mp4"
@@ -455,7 +478,7 @@
         <t-space class="video-drawer-url-mode__actions">
           <t-button theme="primary" @click="confirmVideoUrl">
             <template #icon><check-icon /></template>
-            确认使用该 URL
+            {{ $t('settings.index.confirmVideoUrl') }}
           </t-button>
         </t-space>
       </div>

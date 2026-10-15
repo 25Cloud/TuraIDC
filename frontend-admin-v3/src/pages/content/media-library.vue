@@ -5,22 +5,27 @@
         <t-input
           v-model="filters.keyword"
           clearable
-          placeholder="按文件名搜索"
+          :placeholder="$t('content.mediaLibrary.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.type" clearable placeholder="全部类型" @change="handleFilterChange">
+        <t-select
+          v-model="filters.type"
+          clearable
+          :placeholder="$t('content.mediaLibrary.allTypes')"
+          @change="handleFilterChange"
+        >
           <t-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
         <t-button variant="outline" :loading="reindexing" @click="handleReindex">
           <template #icon><refresh-icon /></template>
-          重新获取
+          {{ $t('content.mediaLibrary.refetch') }}
         </t-button>
         <t-button theme="primary" :loading="uploading" @click="triggerUpload">
           <template #icon><upload-icon /></template>
-          上传媒体
+          {{ $t('content.mediaLibrary.upload') }}
         </t-button>
       </div>
     </t-card>
@@ -66,7 +71,7 @@
 
         <template #type="{ row }">
           <t-tag :theme="isVideo(row) ? 'warning' : 'primary'" variant="light">
-            {{ isVideo(row) ? '视频' : '图片' }}
+            {{ isVideo(row) ? $t('content.mediaLibrary.video') : $t('content.mediaLibrary.image') }}
           </t-tag>
         </template>
 
@@ -79,11 +84,15 @@
 
         <template #actions="{ row }">
           <t-space size="8">
-            <t-button variant="text" @click="copyText(String(row.url || ''))">复制 URL</t-button>
-            <t-button variant="text" @click="copyText(String(row.path || ''))">复制路径</t-button>
+            <t-button variant="text" @click="copyText(String(row.url || ''))">
+              {{ $t('content.mediaLibrary.copyUrl') }}
+            </t-button>
+            <t-button variant="text" @click="copyText(String(row.path || ''))">
+              {{ $t('content.mediaLibrary.copyPath') }}
+            </t-button>
             <t-popconfirm
-              content="删除后将无法恢复，确认继续？"
-              :confirm-btn="{ theme: 'danger', content: '删除' }"
+              :content="$t('content.mediaLibrary.deleteConfirm')"
+              :confirm-btn="{ theme: 'danger', content: $t('content.mediaLibrary.delete') }"
               @confirm="removeMedia(row)"
             >
               <t-button
@@ -91,14 +100,16 @@
                 theme="danger"
                 :disabled="!canDelete(row)"
                 :loading="deletingId === String(row.id || '')"
-                >删除</t-button
+                >{{ $t('content.mediaLibrary.delete') }}</t-button
               >
             </t-popconfirm>
           </t-space>
         </template>
       </t-table>
 
-      <div v-if="!loading && !items.length" class="media-empty">暂无媒体文件，先上传一批图片或视频。</div>
+      <div v-if="!loading && !items.length" class="media-empty">
+        {{ $t('content.mediaLibrary.empty') }}
+      </div>
     </t-card>
 
     <input

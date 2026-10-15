@@ -6,7 +6,7 @@
           v-model="filters.keyword"
           class="filter-keyword"
           clearable
-          placeholder="搜索订单号 / 账单号 / 用户 / 服务"
+          :placeholder="$t('orders.index.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >
@@ -17,7 +17,7 @@
           v-model="filters.type"
           class="filter-type"
           clearable
-          placeholder="类型"
+          :placeholder="$t('orders.index.typePlaceholder')"
           @change="handleSearch"
         >
           <t-option v-for="item in orderTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -27,13 +27,19 @@
           v-model="filters.upgrade_kind"
           class="filter-type"
           clearable
-          placeholder="配置类型"
+          :placeholder="$t('orders.index.configTypePlaceholder')"
           @change="handleSearch"
         >
-          <t-option label="全部" value="all" />
-          <t-option label="流量包" value="traffic_package" />
+          <t-option :label="$t('orders.index.all')" value="all" />
+          <t-option :label="$t('orders.index.trafficPackage')" value="traffic_package" />
         </t-select>
-        <t-select v-model="filters.status" class="filter-status" clearable placeholder="状态" @change="handleSearch">
+        <t-select
+          v-model="filters.status"
+          class="filter-status"
+          clearable
+          :placeholder="$t('orders.index.statusPlaceholder')"
+          @change="handleSearch"
+        >
           <t-option v-for="item in orderStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
         <t-date-picker
@@ -43,7 +49,7 @@
           mode="date"
           format="YYYY-MM-DD"
           value-type="YYYY-MM-DD"
-          placeholder="开始日期"
+          :placeholder="$t('orders.index.startDate')"
           @change="handleSearch"
         />
         <t-date-picker
@@ -53,7 +59,7 @@
           mode="date"
           format="YYYY-MM-DD"
           value-type="YYYY-MM-DD"
-          placeholder="结束日期"
+          :placeholder="$t('orders.index.endDate')"
           @change="handleSearch"
         />
       </div>
@@ -82,7 +88,7 @@
           <template #type="{ row }">{{ row.type_label || orderTypeLabel(row.type) }}</template>
           <template #upgrade="{ row }">
             <div class="stack-cell">
-              <strong>{{ row.upgrade_kind_label || '附加配置' }}</strong>
+              <strong>{{ row.upgrade_kind_label || $t('orders.index.extraConfig') }}</strong>
               <span>{{ fieldValue(row.upgrade_target_label || row.upgrade_mode) }}</span>
             </div>
           </template>
@@ -94,12 +100,16 @@
           <template #invoice="{ row }">
             <div class="stack-cell">
               <strong>{{ fieldValue(row.invoice?.invoice_no) }}</strong>
-              <span v-if="row.invoice?.paid_at">支付：{{ formatDateTime(row.invoice.paid_at) }}</span>
+              <span v-if="row.invoice?.paid_at">
+                {{ $t('orders.index.paid') }}{{ formatDateTime(row.invoice.paid_at) }}
+              </span>
             </div>
           </template>
           <template #createdAt="{ row }">{{ formatDateTime(row.created_at) }}</template>
           <template #operation="{ row }">
-            <t-button size="small" variant="text" theme="primary" @click="goDetail(row)">详情</t-button>
+            <t-button size="small" variant="text" theme="primary" @click="goDetail(row)">
+              {{ $t('orders.index.detail') }}
+            </t-button>
           </template>
         </t-table>
       </div>
@@ -114,16 +124,16 @@
               :eyebrow="mobileEyebrow"
               :subtitle="row.type_label || orderTypeLabel(row.type)"
               :description="fieldValue(row.product_full_path || row.product_name)"
-              highlight-label="订单金额"
+              :highlight-label="$t('orders.index.orderAmount')"
               :highlight-value="formatMoney(row.amount)"
               :status-map="ORDER_STATUS_MAP"
               :status="row.status"
               :rows="orderMobileRows(row)"
-              :action-options="[{ content: '详情', value: 'detail' }]"
+              :action-options="[{ content: $t('orders.index.detail'), value: 'detail' }]"
               @action="(value) => handleMobileAction(value, row)"
             />
           </div>
-          <t-empty v-else description="暂无订单" />
+          <t-empty v-else :description="$t('orders.index.empty')" />
         </t-loading>
       </div>
 

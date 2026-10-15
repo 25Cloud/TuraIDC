@@ -4,11 +4,11 @@
       v-model="remarkForm.remark"
       :autosize="{ minRows: 4, maxRows: 6 }"
       :maxlength="120"
-      placeholder="填写实例备注，便于识别"
+      :placeholder="$t('serviceConsole.remark.placeholder')"
     />
     <template #footer>
-      <t-button variant="outline" @click="remarkVisible = false">取消</t-button>
-      <t-button theme="primary" :loading="remarkSubmitting" @click="submitRemark">保存备注</t-button>
+      <t-button variant="outline" @click="remarkVisible = false">{{ $t('common.cancel') }}</t-button>
+      <t-button theme="primary" :loading="remarkSubmitting" @click="submitRemark">{{ $t('serviceConsole.remark.save') }}</t-button>
     </template>
   </t-dialog>
 </template>

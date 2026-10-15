@@ -1,13 +1,13 @@
 <template>
   <t-alert v-if="isExpiringSoon" theme="warning" class="console-alert">
-    实例将于 {{ detail.expires_at }} 到期，建议提前续费避免服务中断。
+    {{ $t('services.console.expiringTip', { date: detail.expires_at }) }}
     <template #operation>
-      <t-button variant="text" theme="primary" @click="openRenewDialog">立即续费</t-button>
+      <t-button variant="text" theme="primary" @click="openRenewDialog">{{ $t('services.console.renewNow') }}</t-button>
     </template>
   </t-alert>
 
   <t-alert v-if="!canManageConsole" theme="info" class="console-alert">
-    当前实例未接入完整控制能力，页面将以只读模式展示基础信息。
+    {{ $t('services.console.readOnlyTip') }}
   </t-alert>
 </template>
 <script setup lang="ts">

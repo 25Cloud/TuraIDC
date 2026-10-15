@@ -1,5 +1,5 @@
 <template>
-  <result title="服务器异常" type="500" :tip="t('pages.result.500.subtitle')">
+  <result :title="$t('result.error.title')" type="500" :tip="t('pages.result.500.subtitle')">
     <t-button @click="() => router.push('/')">{{ t('pages.result.500.back') }}</t-button>
   </result>
 </template>

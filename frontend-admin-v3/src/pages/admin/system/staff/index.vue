@@ -5,28 +5,28 @@
         <t-input
           v-model="filters.keyword"
           clearable
-          placeholder="搜索账号/昵称/邮箱"
+          :placeholder="$t('admin.staff.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.role_id" clearable placeholder="角色" @change="handleSearch">
+        <t-select v-model="filters.role_id" clearable :placeholder="$t('admin.staff.filterRole')" @change="handleSearch">
           <t-option v-for="role in roles" :key="role.id" :label="roleLabel(role)" :value="role.id" />
         </t-select>
-        <t-select v-model="filters.status" clearable placeholder="状态" @change="handleSearch">
-          <t-option label="启用" :value="1" />
-          <t-option label="停用" :value="0" />
+        <t-select v-model="filters.status" clearable :placeholder="$t('admin.staff.filterStatus')" @change="handleSearch">
+          <t-option :label="$t('admin.staff.enabled')" :value="1" />
+          <t-option :label="$t('admin.staff.disabled')" :value="0" />
         </t-select>
         <t-button v-if="canManage" theme="primary" @click="openCreateDialog">
           <template #icon><user-add-icon /></template>
-          新增员工
+          {{ $t('admin.staff.addStaff') }}
         </t-button>
       </div>
 
       <div class="staff-summary">
-        <span>共 {{ total }} 位员工</span>
-        <span>第 {{ page }} 页，每页 {{ pageSize }} 条</span>
+        <span>{{ $t('admin.staff.totalStaff', { count: total }) }}</span>
+        <span>{{ $t('admin.staff.pageInfo', { page, size: pageSize }) }}</span>
       </div>
 
       <t-table
@@ -51,11 +51,11 @@
           <t-tag variant="light">{{ fieldValue(row.role_label || row.role?.label || row.role?.name) }}</t-tag>
         </template>
         <template #permissionCount="{ row }">
-          <span>{{ row.permissions?.includes('*') ? '全部权限' : `${row.permissions?.length || 0} 项` }}</span>
+          <span>{{ row.permissions?.includes('*') ? $t('admin.staff.allPermissions') : $t('admin.staff.permissionCount', { count: row.permissions?.length || 0 }) }}</span>
         </template>
         <template #status="{ row }">
           <t-tag :theme="Number(row.status) === 1 ? 'success' : 'danger'" variant="light">
-            {{ Number(row.status) === 1 ? '启用' : '停用' }}
+            {{ Number(row.status) === 1 ? $t('admin.staff.enabled') : $t('admin.staff.disabled') }}
           </t-tag>
         </template>
         <template #lastLogin="{ row }">
@@ -66,9 +66,9 @@
         </template>
         <template #actions="{ row }">
           <t-space size="small">
-            <t-button v-if="canManage" theme="primary" variant="text" @click="openEditDialog(row)">编辑</t-button>
+            <t-button v-if="canManage" theme="primary" variant="text" @click="openEditDialog(row)">{{ $t('admin.staff.edit') }}</t-button>
             <t-button v-if="canEditStaffIdentity" theme="warning" variant="text" @click="openResetDialog(row)"
-              >重置密码</t-button
+              >{{ $t('admin.staff.resetPassword') }}</t-button
             >
             <t-button
               v-if="canManage"
@@ -76,10 +76,10 @@
               variant="text"
               @click="handleToggleStatus(row)"
             >
-              {{ Number(row.status) === 1 ? '停用' : '启用' }}
+              {{ Number(row.status) === 1 ? $t('admin.staff.disabled') : $t('admin.staff.enabled') }}
             </t-button>
             <t-button v-if="canDeleteStaff(row)" theme="danger" variant="text" @click="handleDelete(row)"
-              >删除</t-button
+              >{{ $t('admin.staff.delete') }}</t-button
             >
           </t-space>
         </template>
@@ -94,16 +94,16 @@
               :title="fieldValue(row.username)"
               :subtitle="fieldValue(row.role_label || row.role?.label || row.role?.name)"
               :description="fieldValue(row.email)"
-              :status-label="Number(row.status) === 1 ? '启用' : '停用'"
+              :status-label="Number(row.status) === 1 ? $t('admin.staff.enabled') : $t('admin.staff.disabled')"
               :status-theme="Number(row.status) === 1 ? 'success' : 'danger'"
               :rows="[
-                { label: '昵称', value: fieldValue(row.nickname) },
+                { label: $t('admin.staff.nicknameLabel'), value: fieldValue(row.nickname) },
                 {
-                  label: '权限',
-                  value: row.permissions?.includes('*') ? '全部权限' : `${row.permissions?.length || 0} 项`,
+                  label: $t('admin.staff.permissionLabel'),
+                  value: row.permissions?.includes('*') ? $t('admin.staff.allPermissions') : $t('admin.staff.permissionCount', { count: row.permissions?.length || 0 }),
                 },
-                { label: '最近登录', value: fieldValue(row.last_login_at) },
-                { label: '登录IP', value: fieldValue(row.last_login_ip) },
+                { label: $t('admin.staff.lastLoginLabel'), value: fieldValue(row.last_login_at) },
+                { label: $t('admin.staff.lastLoginIpLabel'), value: fieldValue(row.last_login_ip) },
               ]"
               :action-options="staffMobileActions(row)"
               @action="(value) => handleStaffMobileAction(value, row)"
@@ -124,37 +124,37 @@
 
     <t-dialog
       v-model:visible="formVisible"
-      :header="form.id ? '编辑员工' : '新增员工'"
+      :header="form.id ? $t('admin.staff.editStaffTitle') : $t('admin.staff.addStaffTitle')"
       width="720px"
-      :confirm-btn="{ content: '保存', theme: 'primary' }"
+      :confirm-btn="{ content: $t('admin.staff.save'), theme: 'primary' }"
       :confirm-loading="saving"
       @confirm="submitForm"
     >
       <t-form ref="formRef" :data="form" :rules="formRules" label-align="top">
         <div class="staff-form-grid">
-          <t-form-item label="登录账号" name="username">
+          <t-form-item :label="$t('admin.staff.accountLabel')" name="username">
             <t-input
               v-model="form.username"
               :disabled="form.id ? !canEditStaffIdentity : false"
-              placeholder="字母、数字、下划线、点、横线或 @"
+              :placeholder="$t('admin.staff.accountPlaceholder')"
             />
           </t-form-item>
-          <t-form-item label="昵称" name="nickname">
+          <t-form-item :label="$t('admin.staff.nicknameLabel')" name="nickname">
             <t-input v-model="form.nickname" />
           </t-form-item>
-          <t-form-item label="邮箱" name="email">
+          <t-form-item :label="$t('admin.staff.emailLabel')" name="email">
             <t-input v-model="form.email" :disabled="form.id ? !canEditStaffIdentity : false" />
           </t-form-item>
-          <t-form-item label="角色" name="role_id">
-            <t-select v-model="form.role_id" placeholder="请选择角色">
+          <t-form-item :label="$t('admin.staff.roleLabel')" name="role_id">
+            <t-select v-model="form.role_id" :placeholder="$t('admin.staff.selectRolePlaceholder')">
               <t-option v-for="role in roles" :key="role.id" :label="roleLabel(role)" :value="role.id" />
             </t-select>
           </t-form-item>
-          <t-form-item v-if="!form.id" label="初始密码" name="password">
+          <t-form-item v-if="!form.id" :label="$t('admin.staff.initialPasswordLabel')" name="password">
             <t-input v-model="form.password" type="password" />
           </t-form-item>
-          <t-form-item label="状态" name="status">
-            <t-switch v-model="form.status" :custom-value="[1, 0]" :label="['启用', '停用']" />
+          <t-form-item :label="$t('admin.staff.statusLabel')" name="status">
+            <t-switch v-model="form.status" :custom-value="[1, 0]" :label="[$t('admin.staff.enabled'), $t('admin.staff.disabled')]" />
           </t-form-item>
         </div>
       </t-form>
@@ -162,17 +162,17 @@
 
     <t-dialog
       v-model:visible="resetVisible"
-      header="重置员工密码"
+      :header="$t('admin.staff.resetPasswordTitle')"
       width="520px"
-      :confirm-btn="{ content: '确认重置', theme: 'danger' }"
+      :confirm-btn="{ content: $t('admin.staff.confirmReset'), theme: 'danger' }"
       :confirm-loading="resetting"
       @confirm="submitResetPassword"
     >
       <t-form ref="resetFormRef" :data="resetForm" :rules="resetRules" label-align="top">
-        <t-form-item label="新密码" name="password">
+        <t-form-item :label="$t('admin.staff.newPasswordLabel')" name="password">
           <t-input v-model="resetForm.password" type="password" />
         </t-form-item>
-        <t-form-item label="确认密码" name="password_confirmation">
+        <t-form-item :label="$t('admin.staff.confirmPasswordLabel')" name="password_confirmation">
           <t-input v-model="resetForm.password_confirmation" type="password" />
         </t-form-item>
       </t-form>

@@ -17,7 +17,7 @@ const route = useRoute();
 
 const renderTitle = (title?: LocalizedTitle, fallback?: string) => {
   if (!title) return fallback || '';
-  return title[locale.value as keyof LocalizedTitle] || fallback || '';
+  return (title[locale.value as keyof LocalizedTitle] || title.zh_CN) || fallback || '';
 };
 
 const crumbs = computed(() => {

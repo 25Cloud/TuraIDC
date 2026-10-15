@@ -2,7 +2,7 @@
   <section class="product-tabs-section" :aria-busy="loading ? 'true' : 'false'">
     <div class="container">
       <header class="product-tabs__head">
-        <h2 class="product-tabs__title">安全、稳定、可信赖的产品与服务</h2>
+        <h2 class="product-tabs__title">{{ $t('home.products.title') }}</h2>
         <p class="product-tabs__desc">
           {{ appStore.siteName }}
           的技术积淀与交付实践，助力企业上云与产业互联网。
@@ -13,7 +13,7 @@
         </p>
       </header>
 
-      <div class="product-tabs__list" role="tablist" aria-label="产品分类">
+      <div class="product-tabs__list" role="tablist" :aria-label="$t('seoLanding.productCategories')">
         <button
           v-for="item in enterpriseServiceItems"
           :key="item.key"

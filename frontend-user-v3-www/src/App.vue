@@ -1,5 +1,6 @@
 <template>
-  <div class="app-runtime-shell">
+  <el-config-provider :locale="elementLocale">
+    <div class="app-runtime-shell">
     <div class="app-route-progress" :class="{ 'is-active': isRouteLoading }" />
 
     <router-view v-slot="{ Component }">
@@ -8,12 +9,19 @@
         <RouteLoadingFallback v-else />
       </Transition>
     </router-view>
-  </div>
+    </div>
+  </el-config-provider>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 import RouteLoadingFallback from '@/components/common/RouteLoadingFallback.vue'
+import { useLocale } from '@/locales/useLocale'
 import { isRouteLoading } from '@/utils/routeLoading'
+
+const { getComponentsLocale } = useLocale()
+const elementLocale = computed(() => getComponentsLocale.value)
 </script>
 
 <style scoped lang="scss">

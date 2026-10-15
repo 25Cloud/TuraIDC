@@ -2,11 +2,11 @@
   <section class="client-order-create">
     <t-card class="order-create-card" :bordered="false">
       <div class="order-create-state">
-        <t-tag theme="warning" variant="light">购买链路</t-tag>
-        <h1>购买入口已重定向到统一购买链路</h1>
-        <p>新的购买、登录续接与账单创建均在官网产品目录与 /client/checkout-resume 中完成。</p>
+        <t-tag theme="warning" variant="light">{{ $t('orderCreate.title') }}</t-tag>
+        <h1>{{ $t('orderCreate.redirected') }}</h1>
+        <p>{{ $t('orderCreate.description') }}</p>
         <div class="order-create-actions">
-          <t-button theme="primary" @click="openProducts">打开购买页</t-button>
+          <t-button theme="primary" @click="openProducts">{{ $t('orderCreate.open') }}</t-button>
         </div>
       </div>
     </t-card>

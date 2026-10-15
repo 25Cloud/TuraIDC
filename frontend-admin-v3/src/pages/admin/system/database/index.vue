@@ -12,29 +12,33 @@
         >
           {{
             optimizationCoolingDown
-              ? `冷却中 ${formatDuration(status.optimization.cooldown_remaining_seconds)}`
-              : '智能优化表'
+              ? `${$t('system.database.cooling')}${formatDuration(status.optimization.cooldown_remaining_seconds)}`
+              : $t('system.database.optimizeTables')
           }}
         </t-button>
         <t-button v-if="canManage" theme="primary" :loading="exporting" @click="handleExportBackup">
-          导出备份
+          {{ $t('system.database.exportBackup') }}
         </t-button>
       </div>
 
       <div class="database-summary">
-        <span>数据库：{{ status.database || '-' }}</span>
-        <span>表数量：{{ status.total_count }}</span>
-        <span>总行数：{{ formatNumber(status.total_rows) }}</span>
-        <span>总大小：{{ formatSizeMb(status.total_size_mb) }}</span>
+        <span>{{ $t('system.database.databaseLabel') }}{{ status.database || '-' }}</span>
+        <span>{{ $t('system.database.tableCountLabel') }}{{ status.total_count }}</span>
+        <span>{{ $t('system.database.totalRowsLabel') }}{{ formatNumber(status.total_rows) }}</span>
+        <span>{{ $t('system.database.totalSizeLabel') }}{{ formatSizeMb(status.total_size_mb) }}</span>
         <span
-          >建议优化：{{ status.optimization.candidate_count }} 张，预计回收
+          >{{ $t('system.database.suggestOptimizePrefix') }}{{ status.optimization.candidate_count }}
+          {{ $t('system.database.suggestOptimizeUnit') }}
+          {{ $t('system.database.estimatedReclaimablePrefix') }}
           {{ formatSizeMb(status.optimization.estimated_reclaimable_mb) }}</span
         >
-        <span v-if="optimizationCoolingDown">上次优化：{{ status.optimization.last_optimized_at || '-' }}</span>
+        <span v-if="optimizationCoolingDown"
+          >{{ $t('system.database.lastOptimizedLabel') }}{{ status.optimization.last_optimized_at || '-' }}</span
+        >
       </div>
 
       <div class="database-optimization-candidates">
-        <span class="candidates-label">候选表：</span>
+        <span class="candidates-label">{{ $t('system.database.candidatesLabel') }}</span>
         <template v-if="status.optimization.candidates.length">
           <t-tag
             v-for="candidate in status.optimization.candidates"
@@ -46,7 +50,7 @@
             {{ formatPercent(candidate.fragmentation_ratio) }}
           </t-tag>
         </template>
-        <span v-else class="candidates-empty">暂无达到优化阈值的数据表</span>
+        <span v-else class="candidates-empty">{{ $t('system.database.noCandidates') }}</span>
       </div>
 
       <t-table row-key="name" :data="filteredList" :columns="columns" :loading="loading" hover table-layout="fixed">

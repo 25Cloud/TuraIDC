@@ -2,11 +2,11 @@
   <div class="not-found-page">
     <div class="not-found-card">
       <p class="not-found-code">404</p>
-      <h1>页面不存在</h1>
-      <p>你访问的页面可能已迁移，或者链接地址有误。</p>
+      <h1>{{ $t('common.notFound.title') }}</h1>
+      <p>{{ $t('common.notFound.description') }}</p>
       <div class="not-found-actions">
-        <el-button type="primary" @click="router.push('/')">返回首页</el-button>
-        <el-button @click="router.back()">返回上一页</el-button>
+        <el-button type="primary" @click="router.push('/')">{{ $t('common.notFound.backHome') }}</el-button>
+        <el-button @click="router.back()">{{ $t('common.notFound.goBack') }}</el-button>
       </div>
     </div>
   </div>

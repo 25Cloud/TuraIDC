@@ -5,25 +5,35 @@
         <t-input
           v-model="filters.keyword"
           clearable
-          placeholder="搜索用户ID/邮箱/手机号/昵称/真实姓名/QQ/身份证"
+          :placeholder="$t('users.index.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.status" clearable placeholder="状态" @change="handleSearch">
-          <t-option label="正常" :value="1" />
-          <t-option label="禁用" :value="0" />
+        <t-select
+          v-model="filters.status"
+          clearable
+          :placeholder="$t('users.index.statusPlaceholder')"
+          @change="handleSearch"
+        >
+          <t-option :label="$t('users.index.statusNormal')" :value="1" />
+          <t-option :label="$t('users.index.statusDisabled')" :value="0" />
         </t-select>
         <t-button v-if="canManageUsers" size="medium" theme="primary" @click="openCreateDialog">
           <template #icon><user-add-icon /></template>
-          新增用户
+          {{ $t('users.index.addUser') }}
         </t-button>
       </div>
 
       <div class="users-list-summary">
-        <span>共 {{ total }} 位用户</span>
-        <span>第 {{ page }} 页，每页 {{ pageSize }} 条</span>
+        <span
+          >{{ $t('users.index.totalUsersPrefix') }} {{ total }} {{ $t('users.index.totalUsersSuffix') }}</span
+        >
+        <span>
+          {{ $t('users.index.pagePrefix') }} {{ page }} {{ $t('users.index.pageMiddle') }} {{ pageSize }}
+          {{ $t('users.index.pageSuffix') }}
+        </span>
       </div>
 
       <t-table
@@ -39,8 +49,8 @@
       >
         <template #account="{ row }">
           <button class="users-account" type="button" @click="openDetail(row.id)">
-            <span>{{ row.phone || '未绑定手机号' }}</span>
-            <em>{{ row.email || '未绑定邮箱' }}</em>
+            <span>{{ row.phone || $t('users.index.unboundPhone') }}</span>
+            <em>{{ row.email || $t('users.index.unboundEmail') }}</em>
           </button>
         </template>
         <template #nickname="{ row }">
@@ -57,7 +67,7 @@
         </template>
         <template #openedServices="{ row }">
           <span :class="{ 'users-empty-count': !Number(row.opened_product_count || 0) }">
-            {{ Number(row.opened_product_count || 0) ? `${row.opened_product_count} 个` : '-' }}
+            {{ Number(row.opened_product_count || 0) ? `${row.opened_product_count} ${$t('users.index.itemUnit')}` : '-' }}
           </span>
         </template>
         <template #agentGroup="{ row }">
@@ -66,7 +76,7 @@
         </template>
         <template #status="{ row }">
           <t-tag :theme="Number(row.status) === 1 ? 'success' : 'danger'" variant="light">
-            {{ Number(row.status) === 1 ? '正常' : '禁用' }}
+            {{ Number(row.status) === 1 ? $t('users.index.statusNormal') : $t('users.index.statusDisabled') }}
           </t-tag>
         </template>
         <template #createdAt="{ row }">{{ formatDateTime(row.created_at) }}</template>
@@ -78,11 +88,11 @@
             <article v-for="row in list" :key="row.id" class="users-mobile-card">
               <div class="users-mobile-card__head">
                 <button class="users-mobile-card__account" type="button" @click="openDetail(row.id)">
-                  <span>{{ row.phone || '未绑定手机号' }}</span>
-                  <em>{{ row.email || '未绑定邮箱' }}</em>
+                  <span>{{ row.phone || $t('users.index.unboundPhone') }}</span>
+                  <em>{{ row.email || $t('users.index.unboundEmail') }}</em>
                 </button>
                 <t-tag :theme="Number(row.status) === 1 ? 'success' : 'danger'" variant="light">
-                  {{ Number(row.status) === 1 ? '正常' : '禁用' }}
+                  {{ Number(row.status) === 1 ? $t('users.index.statusNormal') : $t('users.index.statusDisabled') }}
                 </t-tag>
               </div>
               <div class="users-mobile-card__name">
@@ -94,11 +104,11 @@
               </div>
               <dl class="users-mobile-card__meta">
                 <div>
-                  <dt>余额</dt>
+                  <dt>{{ $t('users.index.balance') }}</dt>
                   <dd class="users-balance">{{ formatMoney(row.cash_balance) }}</dd>
                 </div>
                 <div>
-                  <dt>代理组</dt>
+                  <dt>{{ $t('users.index.agentGroup') }}</dt>
                   <dd>
                     <t-tag v-if="row.agent_group?.name" theme="primary" variant="light">{{
                       row.agent_group.name
@@ -107,11 +117,11 @@
                   </dd>
                 </div>
                 <div>
-                  <dt>服务</dt>
-                  <dd>{{ Number(row.opened_product_count || 0) ? `${row.opened_product_count} 个` : '-' }}</dd>
+                  <dt>{{ $t('users.index.services') }}</dt>
+                  <dd>{{ Number(row.opened_product_count || 0) ? `${row.opened_product_count} ${$t('users.index.itemUnit')}` : '-' }}</dd>
                 </div>
                 <div>
-                  <dt>注册时间</dt>
+                  <dt>{{ $t('users.index.registeredAt') }}</dt>
                   <dd>{{ formatDateTime(row.created_at) }}</dd>
                 </div>
               </dl>
@@ -132,22 +142,22 @@
 
     <t-dialog
       v-model:visible="createVisible"
-      header="新增用户"
+      :header="$t('users.index.addUser')"
       width="520px"
-      :confirm-btn="{ content: '确定', loading: submitLoading }"
+      :confirm-btn="{ content: $t('users.index.confirm'), loading: submitLoading }"
       @confirm="handleCreate"
     >
       <t-form ref="createFormRef" class="users-dialog-form" :data="createForm" :rules="createRules" label-align="top">
-        <t-form-item label="邮箱" name="email" required-mark>
+        <t-form-item :label="$t('users.index.email')" name="email" required-mark>
           <t-input v-model="createForm.email" />
         </t-form-item>
-        <t-form-item label="昵称" name="nickname">
+        <t-form-item :label="$t('users.index.nickname')" name="nickname">
           <t-input v-model="createForm.nickname" />
         </t-form-item>
-        <t-form-item label="手机号" name="phone" required-mark>
+        <t-form-item :label="$t('users.index.phone')" name="phone" required-mark>
           <t-input v-model="createForm.phone" />
         </t-form-item>
-        <t-form-item label="密码" name="password" required-mark>
+        <t-form-item :label="$t('users.index.password')" name="password" required-mark>
           <t-input v-model="createForm.password" type="password" />
         </t-form-item>
       </t-form>

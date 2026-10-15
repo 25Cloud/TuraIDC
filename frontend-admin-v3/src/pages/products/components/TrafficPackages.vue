@@ -2,18 +2,20 @@
   <t-card :bordered="false">
     <div class="traffic-head">
       <div>
-        <h2>流量包分组</h2>
-        <p>按旧端 `traffic_package_catalog` 设置项维护分组和档位，支持保存当前分组与从上游拉取后回填。</p>
+        <h2>{{ $t('products.trafficPackages.title') }}</h2>
+        <p>{{ $t('products.trafficPackages.description') }}</p>
       </div>
       <div class="traffic-actions">
-        <t-button theme="primary" variant="outline" @click="openTrafficGroupDialog()">新增分组</t-button>
+        <t-button theme="primary" variant="outline" @click="openTrafficGroupDialog()">
+          {{ $t('products.trafficPackages.addGroup') }}
+        </t-button>
         <t-button
           variant="outline"
           :loading="trafficPulling"
           :disabled="!selectedTrafficGroup"
           @click="pullTrafficPackages"
         >
-          上游拉取
+          {{ $t('products.trafficPackages.pullFromUpstream') }}
         </t-button>
         <t-button
           theme="primary"
@@ -21,7 +23,7 @@
           :disabled="!selectedTrafficGroup"
           @click="saveTrafficPackages"
         >
-          保存当前分组
+          {{ $t('products.trafficPackages.saveCurrentGroup') }}
         </t-button>
       </div>
     </div>
@@ -35,20 +37,30 @@
           :class="{ active: String(selectedTrafficGroupId) === String(group.id) }"
         >
           <button type="button" @click="handleTrafficGroupChange(group.id)">
-            <strong>{{ group.name || '未命名分组' }}</strong>
-            <span>{{ group.product_group_label || `分类 #${group.effective_product_group_id || '--'}` }}</span>
-            <small
-              >已绑定 {{ group.product_ids.length }} 个配置 · {{ trafficGroupPackageCount(group.id) }} 个档位</small
-            >
+            <strong>{{ group.name || $t('products.trafficPackages.untitledGroup') }}</strong>
+            <span>{{
+              group.product_group_label ||
+              $t('products.trafficPackages.categoryWithId', { id: group.effective_product_group_id || '--' })
+            }}</span>
+            <small>
+              {{
+                $t('products.trafficPackages.boundSummary', {
+                  products: group.product_ids.length,
+                  tiers: trafficGroupPackageCount(group.id),
+                })
+              }}
+            </small>
           </button>
           <t-space size="small">
-            <t-button size="small" variant="text" theme="primary" @click.stop="openTrafficGroupDialog(group)"
-              >编辑</t-button
-            >
-            <t-button size="small" variant="text" theme="danger" @click.stop="removeTrafficGroup(group)">删除</t-button>
+            <t-button size="small" variant="text" theme="primary" @click.stop="openTrafficGroupDialog(group)">
+              {{ $t('products.trafficPackages.edit') }}
+            </t-button>
+            <t-button size="small" variant="text" theme="danger" @click.stop="removeTrafficGroup(group)">
+              {{ $t('products.trafficPackages.delete') }}
+            </t-button>
           </t-space>
         </article>
-        <t-empty v-if="trafficGroupItems.length === 0" description="暂无流量包分组" />
+        <t-empty v-if="trafficGroupItems.length === 0" :description="$t('products.trafficPackages.emptyGroups')" />
       </aside>
 
       <section class="traffic-package-editor">
@@ -57,50 +69,78 @@
             <div>
               <strong>{{ selectedTrafficGroup.name }}</strong>
               <span>{{
-                selectedTrafficGroup.product_group_label || `分类 #${selectedTrafficGroup.effective_product_group_id}`
+                selectedTrafficGroup.product_group_label ||
+                $t('products.trafficPackages.categoryWithId', {
+                  id: selectedTrafficGroup.effective_product_group_id,
+                })
               }}</span>
-              <small>绑定配置：{{ trafficBoundProductSummary(selectedTrafficGroup) }}</small>
+              <small>
+                {{ $t('products.trafficPackages.boundConfig') }}{{ trafficBoundProductSummary(selectedTrafficGroup) }}
+              </small>
             </div>
             <t-space size="small">
-              <t-button variant="outline" @click="openTrafficGroupDialog(selectedTrafficGroup)">调整绑定</t-button>
-              <t-button theme="primary" variant="outline" @click="addTrafficRow">新增流量包</t-button>
+              <t-button variant="outline" @click="openTrafficGroupDialog(selectedTrafficGroup)">
+                {{ $t('products.trafficPackages.adjustBinding') }}
+              </t-button>
+              <t-button theme="primary" variant="outline" @click="addTrafficRow">
+                {{ $t('products.trafficPackages.addPackage') }}
+              </t-button>
             </t-space>
           </div>
 
           <div class="traffic-row-list">
             <div v-for="(row, index) in trafficRows" :key="row._rowKey" class="traffic-row">
-              <t-input v-model="row.label" placeholder="档位名称" />
-              <t-input-number v-model="row.target_value" :min="1" placeholder="目标 GB" />
-              <t-input-number v-model="row.price" :min="0" :decimal-places="2" placeholder="售价" />
+              <t-input v-model="row.label" :placeholder="$t('products.trafficPackages.tierName')" />
+              <t-input-number
+                v-model="row.target_value"
+                :min="1"
+                :placeholder="$t('products.trafficPackages.targetGb')"
+              />
+              <t-input-number
+                v-model="row.price"
+                :min="0"
+                :decimal-places="2"
+                :placeholder="$t('products.trafficPackages.price')"
+              />
               <t-switch v-model="row.enabled" />
-              <t-button variant="text" theme="danger" @click="removeTrafficRow(index)">删除</t-button>
+              <t-button variant="text" theme="danger" @click="removeTrafficRow(index)">
+                {{ $t('products.trafficPackages.delete') }}
+              </t-button>
             </div>
-            <t-empty v-if="trafficRows.length === 0" description="暂无档位，请新增或从上游拉取" />
+            <t-empty v-if="trafficRows.length === 0" :description="$t('products.trafficPackages.emptyTiers')" />
           </div>
         </template>
-        <t-empty v-else description="请选择流量包分组" />
+        <t-empty v-else :description="$t('products.trafficPackages.selectGroupFirst')" />
       </section>
     </div>
   </t-card>
 
   <t-dialog
     v-model:visible="trafficGroupDialogVisible"
-    :header="trafficGroupEditingId ? '编辑流量包分组' : '新增流量包分组'"
+    :header="
+      trafficGroupEditingId
+        ? $t('products.trafficPackages.editGroupTitle')
+        : $t('products.trafficPackages.addGroupTitle')
+    "
     width="560px"
-    :confirm-btn="{ content: '保存分组', loading: trafficGroupSubmitting }"
+    :confirm-btn="{ content: $t('products.trafficPackages.saveGroup'), loading: trafficGroupSubmitting }"
     @confirm="submitTrafficGroup"
   >
     <t-form :data="trafficGroupForm" label-width="110px">
-      <t-form-item label="分组名称" name="name">
-        <t-input v-model="trafficGroupForm.name" placeholder="例如 基础流量包" maxlength="30" />
+      <t-form-item :label="$t('products.trafficPackages.groupName')" name="name">
+        <t-input
+          v-model="trafficGroupForm.name"
+          :placeholder="$t('products.trafficPackages.groupNamePlaceholder')"
+          maxlength="30"
+        />
       </t-form-item>
-      <t-form-item label="绑定配置" name="product_ids">
+      <t-form-item :label="$t('products.trafficPackages.boundProducts')" name="product_ids">
         <product-binding-tree-select
           v-model="trafficGroupForm.product_ids"
           mode="batch"
           compact
           :popup-max-height="340"
-          placeholder="按一级分组 / 二级分组 / 三级分组选择流量包适用商品"
+          :placeholder="$t('products.trafficPackages.boundProductsPlaceholder')"
           @change="handleTrafficBindingsChange"
         />
       </t-form-item>

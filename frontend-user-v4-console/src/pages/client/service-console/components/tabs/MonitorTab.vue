@@ -1,15 +1,15 @@
 <template>
   <section class="console-panel-section">
-    <t-card title="监控信息" :bordered="false">
+    <t-card :title="$t('serviceConsole.monitorInfo')" :bordered="false">
       <template #actions>
         <t-space>
           <t-radio-group v-model="monitorState.range" variant="default-filled" @change="() => loadMonitor(true)">
-            <t-radio-button value="3h">3 小时</t-radio-button>
-            <t-radio-button value="24h">24 小时</t-radio-button>
-            <t-radio-button value="7d">7 天</t-radio-button>
-            <t-radio-button value="30d">30 天</t-radio-button>
+            <t-radio-button value="3h">{{ $t('serviceConsole.range3h') }}</t-radio-button>
+            <t-radio-button value="24h">{{ $t('serviceConsole.range24h') }}</t-radio-button>
+            <t-radio-button value="7d">{{ $t('serviceConsole.range7d') }}</t-radio-button>
+            <t-radio-button value="30d">{{ $t('serviceConsole.range30d') }}</t-radio-button>
           </t-radio-group>
-          <t-button :loading="monitorState.loading" @click="loadMonitor(true)">刷新</t-button>
+          <t-button :loading="monitorState.loading" @click="loadMonitor(true)">{{ $t('serviceConsole.refresh') }}</t-button>
         </t-space>
       </template>
 

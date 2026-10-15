@@ -6,7 +6,7 @@
       v-loading="pageLoading"
     >
       <section class="mobile-stage-card mobile-stage-card--intro">
-        <h1 class="mobile-stage-title">产品中心 · 选择一级分组</h1>
+        <h1 class="mobile-stage-title">{{ $t('product.list.breadcrumbRoot') }}</h1>
         <p class="mobile-stage-desc">
           先选一级分组，进入后再依次选择二级分组、三级分组和具体商品。
         </p>
@@ -38,7 +38,7 @@
           </p>
           <div class="mobile-type-foot">
             <span>{{ type.slogan || "继续浏览该目录下的可售商品" }}</span>
-            <span class="mobile-type-link">进入子目录</span>
+            <span class="mobile-type-link">{{ $t('product.list.enterSubdirectory') }}</span>
           </div>
         </button>
       </div>
@@ -53,7 +53,7 @@
       >
         <div class="sidebar-head">
           <span class="sidebar-head-text" v-show="!sidebarCollapsed"
-            >一级分组</span
+            >{{ $t('product.group.level1') }}</span
           >
           <button
             class="sidebar-toggle"

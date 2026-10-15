@@ -1,10 +1,10 @@
 <template>
   <section class="console-overview-grid">
-    <t-card class="console-panel" title="基本信息" :bordered="false">
+    <t-card class="console-panel" :title="$t('serviceConsole.basicInfo')" :bordered="false">
       <div class="detail-grid detail-grid--info">
-        <info-cell label="实例名称" :value="detail.name || `服务 #${serviceId}`" strong />
+        <info-cell :label="$t('serviceConsole.instanceName')" :value="detail.name || `服务 #${serviceId}`" strong />
         <info-cell
-          label="实例规格"
+          :label="$t('serviceConsole.instanceSpec')"
           :value="
             String(
               detail.product_full_path ||
@@ -17,17 +17,17 @@
           "
           strong
         />
-        <info-cell label="实例 ID" :value="String(detail.id || '--')" copyable @copy="copyText" />
-        <info-cell label="操作系统" :value="serviceOs" strong />
-        <info-cell label="创建时间" :value="detail.created_at || '--'" strong />
+        <info-cell :label="$t('serviceConsole.instanceId')" :value="String(detail.id || '--')" copyable @copy="copyText" />
+        <info-cell :label="$t('serviceConsole.os')" :value="serviceOs" strong />
+        <info-cell :label="$t('serviceConsole.createdAt')" :value="detail.created_at || '--'" strong />
         <div class="detail-cell">
-          <span>实例状态</span>
+          <span>{{ $t('serviceConsole.instanceStatus') }}</span>
           <t-tag :theme="instanceStatusTheme" variant="light">{{ instanceStatusText }}</t-tag>
         </div>
       </div>
     </t-card>
 
-    <t-card class="console-panel console-panel-wide" title="配置信息" :bordered="false">
+    <t-card class="console-panel console-panel-wide" :title="$t('serviceConsole.configInfo')" :bordered="false">
       <template #actions>
         <t-button
           v-if="canBuyTrafficPackage"

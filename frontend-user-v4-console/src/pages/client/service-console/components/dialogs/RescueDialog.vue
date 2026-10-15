@@ -11,16 +11,16 @@
     />
     <div class="dialog-form">
       <label>
-        <span>救援系统</span>
-        <t-select v-model="rescueState.system" placeholder="请选择救援系统">
-          <t-option label="Linux 救援系统" value="1" />
-          <t-option label="Windows 救援系统" value="2" />
+        <span>{{ $t('serviceConsole.rescue.title') }}</span>
+        <t-select v-model="rescueState.system" :placeholder="$t('serviceConsole.rescue.placeholder')">
+          <t-option :label="$t('serviceConsole.rescue.linux')" value="1" />
+          <t-option :label="$t('serviceConsole.rescue.windows')" value="2" />
         </t-select>
       </label>
     </div>
     <template #footer>
-      <t-button variant="outline" @click="rescueVisible = false">取消</t-button>
-      <t-button theme="warning" :loading="actionLoading" @click="submitRescue">确认进入</t-button>
+      <t-button variant="outline" @click="rescueVisible = false">{{ $t('common.cancel') }}</t-button>
+      <t-button theme="warning" :loading="actionLoading" @click="submitRescue">{{ $t('serviceConsole.rescue.confirm') }}</t-button>
     </template>
   </t-dialog>
 </template>

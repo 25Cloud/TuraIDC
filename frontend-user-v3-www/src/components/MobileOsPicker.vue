@@ -2,7 +2,7 @@
   <MobileSheet
     :visible="visible"
     size="282px"
-    title="选择操作系统"
+    :title="$t('product.osPicker.selectOs')"
     cancel-text="取消"
     confirm-text="确定"
     :close-on-press-modal="false"
@@ -17,7 +17,7 @@
       <div
         ref="groupCol"
         class="mop-col"
-        aria-label="系统"
+        :aria-label="$t('product.osPicker.system')"
         tabindex="0"
         @keydown="handleGroupKeydown"
       >
@@ -36,14 +36,14 @@
           <span v-else class="mop-item-abbr">{{ g.label.slice(0, 2) }}</span>
           {{ g.label }}
         </button>
-        <div v-if="!osGroups.length" class="mop-empty">暂无可用系统</div>
+        <div v-if="!osGroups.length" class="mop-empty">{{ $t('product.osPicker.noSystemAvailable') }}</div>
         <div class="mop-spacer" :style="{ height: spacerH + 'px' }"></div>
       </div>
 
       <div
         ref="verCol"
         class="mop-col"
-        aria-label="版本"
+        :aria-label="$t('product.osPicker.version')"
         tabindex="0"
         @keydown="handleVerKeydown"
       >
@@ -58,8 +58,8 @@
           tabindex="-1"
           @click="handleVersionClick(v)"
         >{{ v.label }}</button>
-        <div v-if="!osGroups.length" class="mop-empty">请先选择系统</div>
-        <div v-else-if="!currentVersions.length" class="mop-empty">暂无可用版本</div>
+        <div v-if="!osGroups.length" class="mop-empty">{{ $t('product.osPicker.selectSystemFirst') }}</div>
+        <div v-else-if="!currentVersions.length" class="mop-empty">{{ $t('product.osPicker.noVersionAvailable') }}</div>
         <div class="mop-spacer" :style="{ height: spacerH + 'px' }"></div>
       </div>
     </div>

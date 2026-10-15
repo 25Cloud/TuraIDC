@@ -6,16 +6,16 @@
           v-model="filters.keyword"
           class="filter-keyword"
           clearable
-          placeholder="搜索账单号 / 订单号 / 用户"
+          :placeholder="$t('finance.invoices.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.type" class="filter-type" clearable placeholder="类型" @change="handleSearch">
+        <t-select v-model="filters.type" class="filter-type" clearable :placeholder="$t('finance.invoices.filterType')" @change="handleSearch">
           <t-option v-for="item in invoiceTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
-        <t-select v-model="filters.status" class="filter-status" clearable placeholder="状态" @change="handleSearch">
+        <t-select v-model="filters.status" class="filter-status" clearable :placeholder="$t('finance.invoices.filterStatus')" @change="handleSearch">
           <t-option v-for="item in invoiceStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
         <t-date-picker
@@ -25,7 +25,7 @@
           mode="date"
           format="YYYY-MM-DD"
           value-type="YYYY-MM-DD"
-          placeholder="开始日期"
+          :placeholder="$t('finance.invoices.startDate')"
           @change="handleSearch"
         />
         <t-date-picker
@@ -35,7 +35,7 @@
           mode="date"
           format="YYYY-MM-DD"
           value-type="YYYY-MM-DD"
-          placeholder="结束日期"
+          :placeholder="$t('finance.invoices.endDate')"
           @change="handleSearch"
         />
       </div>
@@ -71,7 +71,7 @@
           <template #paidAt="{ row }">{{ formatDateTime(row.paid_at) }}</template>
           <template #operation="{ row }">
             <t-space v-if="!isMobile" size="small">
-              <t-button size="small" variant="text" theme="primary" @click="openDetail(row)">详情</t-button>
+              <t-button size="small" variant="text" theme="primary" @click="openDetail(row)">{{ $t('finance.invoices.detail') }}</t-button>
               <t-button
                 v-if="canCancel(row)"
                 size="small"
@@ -80,11 +80,11 @@
                 :loading="cancelLoadingId === row.id"
                 @click="confirmCancel(row)"
               >
-                取消
+                {{ $t('finance.invoices.cancel') }}
               </t-button>
             </t-space>
             <t-dropdown v-else :options="mobileActionOptions(row)" @click="handleMobileActionHandler(row)">
-              <t-button size="small" variant="text">更多</t-button>
+              <t-button size="small" variant="text">{{ $t('finance.invoices.more') }}</t-button>
             </t-dropdown>
           </template>
         </t-table>
@@ -97,10 +97,10 @@
               v-for="row in invoices"
               :key="row.id"
               :title="fieldValue(row.invoice_no || row.id)"
-              eyebrow="账单管理"
+              :eyebrow="$t('finance.invoices.eyebrow')"
               :subtitle="row.type_label || invoiceTypeLabel(row.type)"
               :description="invoiceTitle(row)"
-              highlight-label="账单金额"
+              :highlight-label="$t('finance.invoices.amountLabel')"
               :highlight-value="formatMoney(row.amount)"
               :status-map="INVOICE_STATUS_MAP"
               :status="row.status"
@@ -109,7 +109,7 @@
               @action="(value) => handleMobileAction(value, row)"
             />
           </div>
-          <t-empty v-else description="暂无账单" />
+          <t-empty v-else :description="$t('finance.invoices.empty')" />
         </t-loading>
       </div>
 

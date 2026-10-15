@@ -1,6 +1,6 @@
 <template>
   <div class="user-center-page">
-    <t-card :bordered="false" title="个人信息" class="profile-card">
+    <t-card :bordered="false" :title="$t('user.profile.title')" class="profile-card">
       <t-loading :loading="loading" show-overlay>
         <t-form
           ref="formRef"
@@ -10,28 +10,34 @@
           :disabled="!editing"
           @submit="handleSave"
         >
-          <t-form-item label="用户名" name="username">
+          <t-form-item :label="$t('user.profile.username')" name="username">
             <t-input v-model="formData.username" disabled />
-            <template #help>用户名不可修改</template>
+            <template #help>{{ $t('user.profile.usernameReadonly') }}</template>
           </t-form-item>
-          <t-form-item label="昵称" name="nickname">
-            <t-input v-model="formData.nickname" placeholder="请输入昵称" :maxlength="30" />
+          <t-form-item :label="$t('user.profile.nickname')" name="nickname">
+            <t-input
+              v-model="formData.nickname"
+              :placeholder="$t('user.profile.nicknamePlaceholder')"
+              :maxlength="30"
+            />
           </t-form-item>
-          <t-form-item label="邮箱" name="email">
+          <t-form-item :label="$t('user.profile.email')" name="email">
             <t-input v-model="formData.email" disabled />
           </t-form-item>
-          <t-form-item label="角色" name="role">
+          <t-form-item :label="$t('user.profile.role')" name="role">
             <t-tag theme="primary" variant="light">{{ formData.role || '-' }}</t-tag>
           </t-form-item>
           <t-form-item v-if="!editing">
             <t-space>
-              <t-button theme="primary" @click="startEdit">编辑资料</t-button>
+              <t-button theme="primary" @click="startEdit">{{ $t('user.profile.editProfile') }}</t-button>
             </t-space>
           </t-form-item>
           <t-form-item v-if="editing">
             <t-space>
-              <t-button theme="primary" type="submit" :loading="saving">保存</t-button>
-              <t-button theme="default" @click="cancelEdit">取消</t-button>
+              <t-button theme="primary" type="submit" :loading="saving">
+                {{ $t('user.profile.save') }}
+              </t-button>
+              <t-button theme="default" @click="cancelEdit">{{ $t('user.profile.cancel') }}</t-button>
             </t-space>
           </t-form-item>
         </t-form>

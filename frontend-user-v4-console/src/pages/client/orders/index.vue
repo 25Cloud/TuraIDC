@@ -19,7 +19,7 @@
         <t-input
           v-model="filters.keyword"
           clearable
-          placeholder="搜索订单号"
+          :placeholder="$t('orders.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >

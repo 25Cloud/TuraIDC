@@ -1,10 +1,14 @@
 <template>
   <div class="result-500">
-    <t-result theme="error" title="服务器异常" description="服务暂时不可用，请稍后重试；若持续出现请联系客服。">
+    <t-result
+      theme="error"
+      :title="$t('result.serverError.title')"
+      :description="$t('result.serverError.description')"
+    >
       <template #extra>
         <t-space size="small">
-          <t-button theme="primary" @click="goHome">返回首页</t-button>
-          <t-button variant="outline" @click="reload">重新加载</t-button>
+          <t-button theme="primary" @click="goHome">{{ $t('result.serverError.backHome') }}</t-button>
+          <t-button variant="outline" @click="reload">{{ $t('result.serverError.reload') }}</t-button>
         </t-space>
       </template>
     </t-result>

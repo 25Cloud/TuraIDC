@@ -2,26 +2,26 @@
   <section class="console-panel-section">
     <data-state :loading="detailLoading" :empty="false" description="">
       <!-- 流量概览：CDN / 虚拟主机唯一有真实用量的指标 -->
-      <t-card v-if="trafficOverviewVisible" class="console-panel" title="流量概览" :bordered="false">
+      <t-card v-if="trafficOverviewVisible" class="console-panel" :title="$t('services.console.trafficOverview')" :bordered="false">
         <div class="detail-grid detail-grid--info">
           <info-cell
-            label="已用流量"
+            :label="$t('services.console.usedTraffic')"
             :value="detail.traffic?.usage_label || '0G'"
             strong
           />
           <info-cell
-            label="流量上限"
-            :value="detail.traffic?.limit_label || '不限'"
+            :label="$t('services.console.trafficLimit')"
+            :value="detail.traffic?.limit_label || $t('services.console.unlimited')"
             strong
           />
           <info-cell
-            label="剩余流量"
-            :value="detail.traffic?.remaining_label || '不限'"
+            :label="$t('services.console.remainingTraffic')"
+            :value="detail.traffic?.remaining_label || $t('services.console.unlimited')"
             :warning="isTrafficOverWarning"
             strong
           />
           <info-cell
-            label="用量占比"
+            :label="$t('services.console.usageRatio')"
             :value="trafficPercentText"
             :warning="isTrafficOverWarning"
             strong
@@ -36,20 +36,20 @@
         />
       </t-card>
 
-      <t-card class="console-panel" title="接入信息" :bordered="false">
+      <t-card class="console-panel" :title="$t('services.console.connectionInfo')" :bordered="false">
         <div class="detail-grid detail-grid--info">
           <info-cell
-            label="实例名称"
-            :value="detail.name || `服务 #${serviceId}`"
+            :label="$t('services.console.instanceName')"
+            :value="detail.name || `${$t('services.console.servicePrefix')} #${serviceId}`"
             strong
           />
           <info-cell
-            label="产品类型"
+            :label="$t('services.console.productType')"
             :value="detail.machine_category?.label || detail.product?.type_label || '--'"
             strong
           />
           <info-cell
-            label="实例 ID"
+            :label="$t('services.console.instanceId')"
             :value="String(detail.id || '--')"
             copyable
             @copy="copyText"
@@ -60,32 +60,32 @@
             copyable
             @copy="copyText"
           />
-          <info-cell label="到期时间" :value="detail.expires_at || '--'" strong />
-          <info-cell label="计费周期" :value="detail.billing_cycle_label || '--'" strong />
+          <info-cell :label="$t('services.console.expireTime')" :value="detail.expires_at || '--'" strong />
+          <info-cell :label="$t('services.console.billingCycle')" :value="detail.billing_cycle_label || '--'" strong />
         </div>
       </t-card>
 
       <!-- 面板入口：面板型产品没有开关机/重装，用户真正要的是「去哪登录、账号密码是多少」 -->
-      <t-card v-if="panelVisible" class="console-panel" title="面板入口" :bordered="false">
+      <t-card v-if="panelVisible" class="console-panel" :title="$t('services.console.panelEntry')" :bordered="false">
         <p class="panel-group-hint">{{ panelHint }}</p>
         <div class="detail-grid detail-grid--info">
           <info-cell
             v-if="panelUrl"
-            label="面板地址"
+            :label="$t('services.console.panelUrl')"
             :value="panelUrl"
             copyable
             @copy="copyText"
           />
           <info-cell
             v-if="panelUsername"
-            label="面板账号"
+            :label="$t('services.console.panelAccount')"
             :value="panelUsername"
             copyable
             @copy="copyText"
           />
           <info-cell
             v-if="panelPassword"
-            label="面板密码"
+            :label="$t('services.console.panelPassword')"
             :value="revealedPassword ? panelPassword : maskPassword(panelPassword)"
             copyable
             @copy="copyPanelPassword"
@@ -98,7 +98,7 @@
             size="small"
             @click="revealedPassword = false"
           >
-            隐藏密码
+            {{ $t('services.console.hidePassword') }}
           </t-button>
           <t-button
             v-else-if="panelPassword"
@@ -106,17 +106,17 @@
             size="small"
             @click="revealedPassword = true"
           >
-            显示密码
+            {{ $t('services.console.showPassword') }}
           </t-button>
           <t-button v-if="panelUrl" theme="primary" size="small" @click="openPanel">
             <template #icon><jump-icon /></template>
-            进入面板
+            {{ $t('services.console.enterPanel') }}
           </t-button>
         </template>
       </t-card>
 
       <!-- 功能支持：CDN 的 WAF / 四层转发 / Websocket 等，值本身就是支持与否 -->
-      <t-card v-if="capabilities.length" class="console-panel" title="功能支持" :bordered="false">
+      <t-card v-if="capabilities.length" class="console-panel" :title="$t('services.console.featureSupport')" :bordered="false">
         <div class="panel-capability-grid">
           <div v-for="item in capabilities" :key="item.key" class="panel-capability-item">
             <span class="panel-capability-label">{{ item.label }}</span>
@@ -150,8 +150,8 @@
       <t-alert
         v-if="!groups.length && !capabilities.length && !panelVisible"
         theme="info"
-        title="暂无配置数据"
-        description="该实例的上游尚未回传配置项，配置详情以上游面板为准。"
+        :title="$t('services.console.noConfigData')"
+        :description="$t('services.console.noConfigDataTip')"
       />
     </data-state>
   </section>

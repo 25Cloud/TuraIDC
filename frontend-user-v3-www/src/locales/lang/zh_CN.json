@@ -1,0 +1,776 @@
+{
+  "lang": "简体中文",
+  "product": {
+    "group": {
+      "level1": "一级分组",
+      "level2": "二级分组",
+      "level3": "三级分组"
+    },
+    "detail": {
+      "title": "商品详情",
+      "serverSpecs": "机型配置",
+      "basePrice": "基础价格",
+      "coupon": "优惠券",
+      "selectCoupon": "请选择优惠券",
+      "totalCost": "合计费用",
+      "region": "区域",
+      "operatingSystem": "操作系统",
+      "network": "网络配置",
+      "purchaseNotes": "购买须知",
+      "baseSettings": "基础设置",
+      "billingCycle": "计费周期",
+      "quantity": "购买数量",
+      "quantityHint": "1 台（多台请分次下单）",
+      "configFee": "配置费用",
+      "syncing": "同步中...",
+      "syncFailed": "同步失败",
+      "costBreakdown": "费用明细",
+      "setupFee": "开通费",
+      "calculating": "计算中",
+      "category": "分类",
+      "selectOs": "请选择系统",
+      "selectVersion": "请选择版本",
+      "readyToBuy": "可直接购买",
+      "summary": "配置摘要",
+      "notFound": "商品不存在或已下架",
+      "backToProducts": "返回产品页"
+    },
+    "osPicker": {
+      "version": "版本",
+      "system": "系统",
+      "selectOs": "选择操作系统",
+      "noSystemAvailable": "暂无可用系统",
+      "selectSystemFirst": "请先选择系统",
+      "noVersionAvailable": "暂无可用版本"
+    },
+    "checkout": {
+      "quoteExpired": "报价凭证已失效，请稍后重试",
+      "selectBillingCycle": "请选择计费周期",
+      "pricingInProgress": "价格计算中，请稍候",
+      "consoleRedirectFailed": "跳转控制台失败，请重试",
+      "stockSyncing": "库存同步中",
+      "stockSyncFailed": "库存同步失败",
+      "stockSyncingHint": "正在同步实时库存，请稍候。",
+      "discountRate": "${String(value).replace(/\\.0$/, \"\")}折",
+      "stockSufficient": "库存充足",
+      "stockLow": "库存紧张",
+      "stockOutOfStock": "暂无库存",
+      "stockSyncRetryHint": "实时库存同步失败，请稍后重试。",
+      "stockSufficientHint": "当前库存充足，可直接提交账单。",
+      "stockRemainingHint": "剩余 ${stock} 台，请尽快购买。",
+      "stockInsufficientHint": "当前库存不足，请联系客服。",
+      "enteringConsole": "正在进入控制台继续创建账单",
+      "couponCode": "优惠码",
+      "loginRequired": "请先登录后再购买该商品",
+      "sessionExpired": "登录状态已失效，请重新登录",
+      "prerequisitesRequired": "请先完成购买前置要求",
+      "stockSyncingNotice": "库存同步中，请稍候",
+      "stockSyncFailedNotice": "库存同步失败，请稍后重试",
+      "purchaseUnavailable": "当前库存不足，暂时无法购买"
+    },
+    "requirements": {
+      "realNameVerification": "需实名认证",
+      "realNameVerificationHint": "购买前需完成实名认证",
+      "realNameVerificationBlocked": "该商品购买前需先完成实名认证。",
+      "goToRealNameVerification": "去实名认证",
+      "phoneBinding": "手机号绑定",
+      "phoneBindingRequired": "需绑定手机号",
+      "phoneBindingHint": "购买前需先绑定手机号",
+      "phoneBindingBlocked": "该商品购买前需先绑定手机号。",
+      "goToPhoneBinding": "去绑定手机号",
+      "statusIncomplete": "未完成",
+      "loginRequired": "请先登录",
+      "statusChecking": "校验中",
+      "statusPassed": "已通过"
+    },
+    "spec": {
+      "oneCore": "1 核",
+      "unitCore": "核",
+      "familyWithCode": "规格族 ${code}"
+    },
+    "instanceFamily": {
+      "computeC9i": "计算型 c9i",
+      "generalPurposeG9i": "通用型 g9i",
+      "economyE": "经济型 e",
+      "burstPerformanceT6": "突发性能实例 t6"
+    },
+    "configurator": {
+      "systemDisk": "系统盘",
+      "dataDisk": "数据盘",
+      "disk": "硬盘",
+      "bandwidth": "带宽",
+      "traffic": "流量",
+      "download": "下行",
+      "upload": "上行",
+      "quantity": "数量",
+      "selected": "已选",
+      "cpuModel": "CPU型号",
+      "unitCount": "${text}个"
+    },
+    "list": {
+      "osInstall": "系统安装",
+      "memory": "内存",
+      "viewSpecNotes": "查看实例规格说明",
+      "productIntro": "商品介绍",
+      "selectVersion": "选择版本",
+      "processor": "处理器",
+      "breadcrumbRoot": "产品中心 · 选择一级分组",
+      "enterSubdirectory": "进入子目录",
+      "categoryPath": "一级分组 / 二级分组",
+      "specSelector": "产品规格选择",
+      "instanceSpecs": "实例规格",
+      "sortVcpu": "vCPU 排序",
+      "sortVcpuAsc": "vCPU 从小到大排序",
+      "sortVcpuDesc": "vCPU 从大到小排序",
+      "sortMemory": "内存排序",
+      "sortMemoryAsc": "内存从小到大排序",
+      "sortMemoryDesc": "内存从大到小排序",
+      "clockSpeed": "主频/睿频",
+      "sortPrice": "基础价格排序",
+      "sortPriceAsc": "基础价格从小到大排序",
+      "sortPriceDesc": "基础价格从大到小排序",
+      "otherConfig": "其他配置",
+      "selectCouponProduct": "请选择需要使用优惠券的商品",
+      "empty": "当前分类暂无商品",
+      "cycle": "周期",
+      "totalCostLabel": "费用合计：",
+      "costDetailsLabel": "费用明细：",
+      "configName": "配置名称",
+      "configDetail": "配置详情",
+      "grandTotalLabel": "总价：",
+      "selectCoupon": "选择优惠券",
+      "spec": "产品规格",
+      "selectSpec": "请选择产品规格"
+    },
+    "cpuBadge": {
+      "coreShort": "酷",
+      "coreFull": "酷睿",
+      "platinumShort": "铂",
+      "platinumFull": "铂金",
+      "goldShort": "金",
+      "goldFull": "金牌",
+      "xeonShort": "至",
+      "xeonFull": "至强"
+    }
+  },
+  "layout": {
+    "nav": {
+      "products": "产品",
+      "aboutUs": "关于我们",
+      "notices": "官方公告",
+      "helpCenter": "帮助中心",
+      "terms": "服务条款",
+      "privacy": "隐私政策",
+      "productCatalog": "产品目录",
+      "solutions": "解决方案",
+      "viewAllProducts": "全部产品 →",
+      "moreLinks": "其他入口",
+      "moreLinksDesc": "关于、帮助与常用入口",
+      "productsAndServices": "产品与服务"
+    },
+    "navProductMenu": {
+      "categoryFallback": "分类 ${index + 1}"
+    },
+    "notice": {
+      "categoryTitle": "公告分类",
+      "viewAll": "查看全部 →",
+      "categoryLoadFailed": "分类加载失败",
+      "allAnnouncements": "全部公告",
+      "loadFailed": "公告加载失败",
+      "viewAllMore": "查看全部公告 →",
+      "empty": "暂无公告"
+    },
+    "user": {
+      "menuLabel": "用户菜单",
+      "registerFree": "免费注册",
+      "realNameVerification": "实名认证",
+      "signIn": "登录",
+      "console": "控制台",
+      "signInOrRegister": "登录 / 注册",
+      "account": "账户",
+      "accountLogin": "账户登录",
+      "enterConsole": "进入控制台"
+    },
+    "a11y": {
+      "skipToMainContent": "跳到主内容",
+      "mainNavigation": "主导航"
+    },
+    "doc": {
+      "categoryTitle": "文档分类",
+      "allDocs": "全部文档",
+      "loadFailed": "文档加载失败",
+      "viewAllMore": "查看全部文档 →",
+      "empty": "暂无文档"
+    },
+    "product": {
+      "emptyCategories": "暂无产品分类"
+    },
+    "solutions": {
+      "ecommerce": "电商行业",
+      "gaming": "游戏行业",
+      "finance": "金融行业",
+      "overseas": "出海业务"
+    },
+    "footer": {
+      "support": "支持",
+      "siteAnnouncements": "站点公告",
+      "ticketSystem": "工单系统"
+    },
+    "navContent": {
+      "uncategorized": "未分类"
+    }
+  },
+  "content": {
+    "notice": {
+      "detailTitle": "公告详情",
+      "empty": "暂无公告内容",
+      "title": "公告通知"
+    },
+    "help": {
+      "detailTitle": "帮助详情",
+      "category": {
+        "container": "容器系统",
+        "gettingStarted": "新手入门",
+        "billing": "支付账单",
+        "serviceManagement": "服务管理",
+        "renewal": "续费说明",
+        "console": "实例控制台"
+      },
+      "subtitle": "快速查找购买、支付、续费、实例管理等常见操作指引。",
+      "searchPlaceholder": "搜索帮助文档、账单说明、续费规则",
+      "empty": "暂无帮助内容",
+      "hotDocuments": "热门文档",
+      "recentlyUpdated": "最近更新",
+      "categories": "帮助分类"
+    },
+    "about": {
+      "serviceCapabilities": "服务能力",
+      "contactInformation": "联系方式"
+    },
+    "legal": {
+      "openOriginal": "打开原文",
+      "documentUrlMissing": "站点暂未配置该文档地址"
+    },
+    "detail": {
+      "tableOfContents": "目录结构"
+    },
+    "nav": {
+      "news": "新闻动态",
+      "docs": "文档中心",
+      "allCategories": "全部分类",
+      "moreSections": "更多栏目",
+      "downloads": "下载中心",
+      "newsDesc": "查看平台最新通知、维护公告、产品更新与重要业务提醒。"
+    },
+    "search": {
+      "placeholder": "请输入您要搜索的关键词"
+    },
+    "article": {
+      "hot": "热门文章"
+    },
+    "activity": {
+      "latest": "最新活动"
+    },
+    "list": {
+      "empty": "暂无内容",
+      "hotSearches": "热门搜索:",
+      "search": "搜索",
+      "pinned": "置顶"
+    }
+  },
+  "seo": {
+    "home": {
+      "description": "提供云服务器、独立服务器、云电脑与 IDC 服务，覆盖香港、美国与国内多地节点。"
+    },
+    "products": {
+      "description": "浏览云服务器、独立服务器、云电脑与 IDC 产品方案。"
+    },
+    "about": {
+      "description": "了解 IDC 服务能力、节点覆盖和平台优势。"
+    },
+    "terms": {
+      "description": "查看服务条款。"
+    },
+    "privacy": {
+      "description": "查看隐私政策。"
+    },
+    "notices": {
+      "description": "查看平台公告和服务通知。"
+    },
+    "help": {
+      "description": "查看产品购买、账单支付和服务管理帮助。"
+    }
+  },
+  "seoLanding": {
+    "cloudServer": {
+      "keyword": "云服务器",
+      "title": "云服务器 - 稳定弹性计算与 IDC 云主机",
+      "description": "云服务器面向企业网站、业务系统和开发测试场景，提供稳定弹性计算、灵活配置和 IDC 运维支持。",
+      "keywords": "云服务器,云主机,弹性云服务器,IDC 云服务器",
+      "heroTitle": "稳定易用的云服务器",
+      "heroSummary": "面向网站托管、业务系统、接口服务和开发测试，按实际业务规模选择 CPU、内存、带宽和系统镜像，减少前期硬件投入。",
+      "hero": {
+        "points": {
+          "fastDelivery": "快速交付",
+          "ticketSupport": "工单支持"
+        },
+        "stats": {
+          "specs": {
+            "value": "多规格",
+            "label": "CPU / 内存 / 带宽组合"
+          },
+          "os": {
+            "value": "多系统",
+            "label": "Linux 与 Windows 镜像"
+          },
+          "onDemand": {
+            "value": "按需选",
+            "label": "适配测试到生产环境"
+          }
+        },
+        "visualAlt": "云服务器业务部署示意"
+      },
+      "features": {
+        "scalable": {
+          "title": "配置可按业务阶段调整",
+          "description": "从轻量网站到业务应用都能选择合适规格，后续扩容时减少重复迁移成本。"
+        },
+        "standardized": {
+          "title": "适合标准化部署",
+          "description": "常用系统镜像、网络和安全配置集中管理，方便新业务快速上线。"
+        },
+        "support": {
+          "title": "售后路径清晰",
+          "description": "通过账号与工单体系沉淀问题记录，便于排查网络、系统和费用相关问题。"
+        }
+      },
+      "scenarios": {
+        "marketingSite": {
+          "title": "企业官网与营销站",
+          "description": "承载官网、专题页、表单提交和轻量后台，适合稳定展示与日常维护。"
+        },
+        "devTest": {
+          "title": "开发测试环境",
+          "description": "为项目测试、接口联调和临时演示提供独立环境，减少本地环境差异。"
+        },
+        "smbSystem": {
+          "title": "中小型业务系统",
+          "description": "适用于管理后台、API 服务、数据看板等需要独立运行环境的业务。"
+        }
+      },
+      "faqs": {
+        "useCases": {
+          "question": "云服务器适合哪些业务？",
+          "answer": "适合企业官网、业务后台、接口服务、开发测试和轻量数据库等常见互联网业务。"
+        },
+        "sizing": {
+          "question": "新业务应该怎么选配置？",
+          "answer": "可以先从较小规格开始，根据访问量、CPU、内存和带宽使用情况再调整。"
+        },
+        "vsDedicated": {
+          "question": "云服务器和独立服务器有什么区别？",
+          "answer": "云服务器更适合弹性和快速交付，独立服务器更适合对物理资源独占要求更高的场景。"
+        }
+      },
+      "relatedLinks": {
+        "helpCenter": "阅读帮助中心",
+        "aboutUs": "了解我们"
+      },
+      "cta": {
+        "title": "按业务规模选择云服务器",
+        "description": "先查看可售产品和配置，再进入控制台完成账号注册与下单。"
+      }
+    },
+    "hongKongServer": {
+      "keyword": "香港服务器",
+      "title": "香港服务器 - 面向出海与跨境访问的云服务器",
+      "description": "香港服务器适合跨境网站、外贸业务和亚太访问场景，提供云服务器配置选择与工单支持。",
+      "keywords": "香港服务器,香港云服务器,香港云主机,跨境服务器",
+      "heroTitle": "面向亚太业务的香港服务器",
+      "heroSummary": "适用于外贸站点、跨境业务、亚太用户访问和业务中转场景，兼顾部署效率、访问体验和日常运维支持。"
+    },
+    "meta": {
+      "usServer": {
+        "keyword": "美国服务器",
+        "title": "美国服务器 - 海外业务部署与网站托管",
+        "description": "美国服务器面向海外网站、跨境业务和开发测试场景，提供云服务器配置选择、系统部署和售后支持。",
+        "keywords": "美国服务器,美国云服务器,海外服务器,海外云主机",
+        "heroTitle": "适合海外部署的美国服务器",
+        "heroSummary": "面向海外展示站、应用服务、跨境业务和测试环境，帮助团队用较低门槛部署海外访问入口。"
+      },
+      "highDefenseServer": {
+        "keyword": "高防服务器",
+        "title": "高防服务器 - 面向攻击防护场景的云服务器",
+        "description": "高防服务器适合游戏、业务接口和高风险网站等防护需求场景，提供配置选择与运维支持。",
+        "keywords": "高防服务器,高防云服务器,防护服务器,游戏服务器防护",
+        "heroTitle": "面向防护需求的高防服务器",
+        "heroSummary": "适用于容易受到异常流量影响的网站、游戏和接口服务，帮助业务在风险场景下保持更清晰的资源与工单管理路径。"
+      },
+      "cloudPc": {
+        "keyword": "云电脑",
+        "title": "云电脑 - 远程办公与轻量桌面云方案",
+        "description": "云电脑适合远程办公、轻量桌面、软件测试和临时工作环境，提供云端资源选择与账号管理能力。",
+        "keywords": "云电脑,云桌面,远程办公云电脑,桌面云",
+        "heroTitle": "灵活可用的云电脑",
+        "heroSummary": "为远程办公、软件测试、临时桌面和轻量操作环境提供云端资源，减少本地设备差异带来的维护成本。"
+      }
+    },
+    "breadcrumb": {
+      "home": "首页"
+    },
+    "pages": {
+      "relatedLinks": {
+        "viewProductsServices": "查看产品与服务",
+        "viewCloudServer": "查看云服务器",
+        "viewHelpCenter": "查看帮助中心"
+      },
+      "cta": {
+        "viewProductConfig": "查看产品配置",
+        "registerAccount": "注册账号",
+        "submitConsultationTicket": "提交咨询工单"
+      },
+      "common": {
+        "flexibleConfig": "灵活配置"
+      },
+      "cloudServer": {
+        "hero": {
+          "eyebrow": "弹性计算"
+        }
+      }
+    },
+    "tag": {
+      "crossBorderAccess": "跨境访问",
+      "apacAccess": "亚太访问",
+      "foreignTradeSite": "外贸建站",
+      "flexibleDeployment": "部署灵活",
+      "hongKongNode": "香港节点",
+      "multipleBandwidth": "多带宽",
+      "ticketSupport": "工单协同"
+    },
+    "highlight": {
+      "apacAccessScenario": "适合亚太访问场景",
+      "selectBySiteTraffic": "按站点访问量选择",
+      "networkSystemTroubleshooting": "支持网络与系统问题排查",
+      "crossBorderEntry": "适合跨境访问入口",
+      "shorterDeploymentChain": "部署链路更短",
+      "easyToScaleLater": "便于后续扩展"
+    },
+    "figure": {
+      "crossBorderScenario": "香港服务器跨境业务示意"
+    },
+    "paragraph": {
+      "hongKongNodeCommonUse": "香港节点常用于面向亚太用户的网站、接口服务和轻量业务入口。",
+      "migrationInOneFlow": "网站、证书、应用和数据迁移可以在同一业务流程中逐步完成。",
+      "growthUpgrade": "业务增长后可继续选择更高配置或调整带宽，减少一次性投入压力。"
+    },
+    "scenario": {
+      "foreignTradeShowcase": "外贸展示站",
+      "foreignTradeShowcaseDesc": "承载企业介绍、产品目录、询盘表单和多语言页面。",
+      "crossBorderEntry": "跨境业务入口",
+      "crossBorderEntryDesc": "作为面向亚太用户的应用入口、接口服务或轻量后台。",
+      "overseasStaging": "海外测试环境",
+      "overseasStagingDesc": "用于验证海外线路、业务访问和不同区域用户体验。"
+    },
+    "faq": {
+      "suitableWorkloadsQ": "香港服务器适合什么业务？",
+      "suitableWorkloadsA": "适合外贸网站、亚太用户访问、跨境业务入口和海外测试环境。",
+      "mainlandAccessQ": "香港服务器是否适合国内用户访问？",
+      "mainlandAccessA": "具体体验受线路、带宽和访问区域影响，建议按业务主要用户所在地选择配置。",
+      "bandwidthSelectionQ": "如何选择香港服务器带宽？",
+      "bandwidthSelectionA": "展示型网站通常先按基础带宽试运行，视频、下载或高并发业务需要预留更高带宽。",
+      "usServerForDomesticBusinessQuestion": "美国服务器适合国内业务吗？",
+      "usServerForDomesticBusinessAnswer": "如果主要用户在海外，美国服务器更合适；如果主要用户在国内，应优先评估国内或香港节点。",
+      "usServerAsTestEnvironmentQuestion": "美国服务器可以做测试环境吗？",
+      "usServerAsTestEnvironmentAnswer": "可以，适合验证海外访问、系统部署和跨境业务流程。",
+      "chooseOverseasServerQuestion": "海外服务器选择时最先看什么？",
+      "chooseOverseasServerAnswer": "优先看用户所在地、带宽需求、系统环境和后续运维方式。",
+      "ddosVsCloud": "高防服务器和普通云服务器有什么区别？",
+      "ddosVsCloudAnswer": "高防服务器更偏向异常流量防护场景，普通云服务器更适合常规计算和托管需求。",
+      "ddosForEverySite": "所有网站都需要高防服务器吗？",
+      "ddosForEverySiteAnswer": "不一定。普通企业站通常先用常规云服务器，游戏、活动和高风险业务再评估高防需求。",
+      "ddosPreparation": "选择高防服务器前要准备什么？",
+      "ddosPreparationAnswer": "需要明确业务类型、访问峰值、攻击风险、系统环境和可接受的恢复时间。"
+    },
+    "cta": {
+      "viewUsServers": "查看美国服务器",
+      "chooseHongKongForCrossBorder": "为跨境业务选择香港服务器",
+      "chooseHongKongTip": "先确认访问区域、带宽需求和系统环境，再选择合适配置。",
+      "viewHongKongServers": "查看香港服务器"
+    },
+    "related": {
+      "overseasNode": "海外节点",
+      "overseasDeployment": "海外部署",
+      "websiteHosting": "网站托管",
+      "serviceTesting": "业务测试",
+      "overseasAccess": "海外访问",
+      "fitOverseasAudience": "适合目标用户在海外的业务",
+      "selectBySystemBandwidth": "按系统与带宽需求选择"
+    },
+    "feature": {
+      "unifiedManagement": "统一管理",
+      "unifiedManagementDescription": "订单、账单和工单集中处理",
+      "easyTrialRun": "方便业务试运行",
+      "easyTrialRunDescription": "先部署测试环境，再根据访问数据调整配置和带宽。",
+      "unifiedBilling": "统一账单管理",
+      "unifiedBillingDescription": "海外节点资源可与其他产品一起在账户内查看和续费。",
+      "overseasWebsite": "海外官网",
+      "overseasWebsiteDescription": "承载英文站、多语言站和面向海外市场的企业展示内容。",
+      "crossBorderAppService": "跨境应用服务",
+      "crossBorderAppServiceDescription": "部署 API、中转服务、轻量业务后台和运营工具。",
+      "overseasLinkValidation": "海外链路验证",
+      "overseasLinkValidationDescription": "用于测试不同区域访问、系统兼容和业务延迟。",
+      "overseasBusinessEntry": "部署海外业务入口",
+      "overseasBusinessEntryDescription": "根据目标用户区域选择节点和带宽，先小规模上线再持续优化。",
+      "centralizedTroubleshooting": "减少排查分散",
+      "centralizedManagement": "资源、账单和工单在账户内集中管理，便于复盘问题。"
+    },
+    "diagram": {
+      "usServerOverseasDeployment": "美国服务器海外部署示意",
+      "usServerOverseasDeploymentLabel": "面向海外用户访问",
+      "usServerOverseasDeploymentDescription": "适合服务海外用户的网站、接口服务和轻量应用。",
+      "ddosProtectionScenarios": "高防服务器防护场景示意",
+      "ddosProtectionScenariosLabel": "适配攻击风险更高的业务",
+      "ddosProtectionScenariosDescription": "游戏、活动站、接口服务等更容易遇到异常流量，需要提前规划防护方案。"
+    },
+    "ddos": {
+      "scenarioProtection": "防护场景",
+      "scenarioBusinessContinuity": "业务连续性",
+      "scenarioIssueTracking": "问题追踪",
+      "scenarioHighRiskBusiness": "高风险业务",
+      "scenarioGameAndApi": "适合游戏与接口服务",
+      "tagTraceable": "可追踪",
+      "tagTraceableDescription": "通过工单沉淀问题记录",
+      "tagCombinable": "可组合",
+      "tagCombinableDescription": "按服务器规格与带宽选择",
+      "highRiskPlan": "为高风险业务准备服务器方案",
+      "highRiskPlanDesc": "先梳理业务峰值、攻击风险和系统配置，再选择合适资源。"
+    },
+    "serverPlan": {
+      "matchWorkload": "按业务承压选择配置",
+      "matchWorkloadDesc": "根据业务类型、流量规模和系统负载选择服务器规格。"
+    },
+    "game": {
+      "workloadEntry": "游戏业务入口",
+      "workloadEntryDesc": "面向游戏登录、接口和官网等对可用性敏感的业务。"
+    },
+    "campaign": {
+      "pages": "活动与营销页面",
+      "pagesDesc": "适合短期访问波动明显、需要提前准备防护预案的页面。"
+    },
+    "api": {
+      "services": "业务接口服务",
+      "servicesDesc": "承载 API、回调服务和对外接口，减少异常流量对主业务影响。"
+    },
+    "cloudDesktop": {
+      "cloudDesktop": "云端桌面",
+      "remoteAccess": "远程访问",
+      "lightweightDesktop": "轻量桌面",
+      "accountManagement": "账号管理",
+      "runsInCloud": "云端运行",
+      "lessLocalDependency": "减少本地设备依赖",
+      "flexibleUse": "灵活使用",
+      "shortAndLongTerm": "适合临时与长期场景",
+      "singleEntry": "统一入口",
+      "consoleAndRenewal": "控制台管理与续费",
+      "remoteWorkAlt": "云电脑远程办公示意",
+      "lowerDeviceBarrier": "降低本地设备门槛",
+      "cloudResourceDesc": "常用软件、测试环境和轻量桌面可运行在云端资源上。",
+      "temporaryProject": "适合临时项目",
+      "temporaryProjectDesc": "短期测试、外包协作和演示环境可以快速准备。",
+      "easyAccountManagement": "方便账号管理"
+    },
+    "cloudPc": {
+      "unifiedAccount": {
+        "desc": "通过统一账户查看服务、续费和售后记录。"
+      },
+      "remoteWork": {
+        "title": "远程办公",
+        "desc": "为员工或临时协作者提供相对统一的云端操作环境。"
+      },
+      "softwareTesting": {
+        "title": "软件测试",
+        "desc": "隔离测试环境，减少对个人电脑配置和系统版本的依赖。"
+      },
+      "demoTraining": {
+        "title": "演示与培训",
+        "desc": "在短期活动、培训和客户演示中快速准备可用桌面。"
+      },
+      "faq": {
+        "whoIsItFor": {
+          "question": "云电脑适合哪些人使用？",
+          "answer": "适合远程办公、软件测试、临时项目、培训演示和轻量桌面使用场景。"
+        },
+        "replaceAllLocalPc": {
+          "question": "云电脑能替代所有本地电脑吗？",
+          "answer": "不一定。高性能图形、专业硬件和低延迟外设场景需要单独评估。"
+        },
+        "vsCloudServer": {
+          "question": "云电脑和云服务器有什么区别？",
+          "answer": "云电脑更偏桌面操作体验，云服务器更偏业务系统和服务端应用运行。"
+        }
+      },
+      "section": {
+        "remoteWorkDesktop": {
+          "title": "为远程办公准备云端桌面",
+          "desc": "先确认软件、系统和使用周期，再选择合适的云电脑资源。"
+        }
+      }
+    },
+    "productCategories": "产品分类",
+    "coreSellingPoints": "核心卖点",
+    "serviceCapabilitySummary": "服务能力摘要",
+    "viewAllProducts": "查看全部产品 &gt;",
+    "buyNow": "立即选购",
+    "productDetails": "产品详情",
+    "scenarioList": "场景列表",
+    "relatedProducts": "相关产品："
+  },
+  "common": {
+    "request": {
+      "apiBaseUrlRequired": "VITE_API_BASE_URL 必须配置",
+      "failed": "请求失败",
+      "networkError": "网络异常",
+      "connectionLost": "网络连接已断开，请检查后重试",
+      "timeout": "请求超时，请检查网络后重试",
+      "invalidParameters": "参数填写有误，请检查后重试",
+      "tooManyRequestsRetryAfter": "请求过于频繁，请 ${retryAfter} 秒后重试",
+      "tooManyRequests": "请求过于频繁，请稍后重试"
+    },
+    "site": {
+      "slogan": "云服务器与 IDC 服务平台"
+    },
+    "regionPicker": {
+      "selectGroups": "选择一级分组与二级分组"
+    },
+    "userMessage": {
+      "operationFailed": "操作失败，请稍后重试"
+    },
+    "toast": {
+      "success": "操作成功"
+    },
+    "notFound": {
+      "backHome": "返回首页",
+      "title": "页面不存在",
+      "description": "你访问的页面可能已迁移，或者链接地址有误。",
+      "goBack": "返回上一页"
+    },
+    "product": {
+      "specNotConfigured": "未配置规格 #${productId}"
+    }
+  },
+  "home": {
+    "partners": {
+      "mediaAndReading": "爱奇艺、酷狗音乐、迅雷、掌阅 iReader 等合作方",
+      "internetTech": "阿里巴巴、腾讯、字节跳动、美团 等合作方",
+      "telecomAndTravel": "中国移动、中国联通、58 同城、携程 等合作方",
+      "ecommerceAndMobility": "格力、京东、Segway-Ninebot、淘宝 等合作方",
+      "electronicsAndEv": "格力、京东方、小鹏、蔚来 等合作方",
+      "title": "优质合作伙伴"
+    },
+    "hero": {
+      "productEntries": "产品入口",
+      "carouselIndicator": "轮播指示",
+      "carouselControls": "轮播控制"
+    },
+    "news": {
+      "title": "资讯动态",
+      "announcements": "公告",
+      "recommended": "推荐"
+    },
+    "products": {
+      "title": "安全、稳定、可信赖的产品与服务"
+    },
+    "solutions": {
+      "title": "为千行百业提供全面的解决方案",
+      "industrySolutions": "行业解决方案",
+      "relatedProducts": "相关产品",
+      "securityProtection": "安全防护",
+      "ecommerce": {
+        "title": "电商解决方案",
+        "tags": "业务运营、数据分析、安全防护",
+        "description": "我们提供一站式的电商解决方案，将业务运营、数据分析、安全防护等多方面服务融为一体，确保您的电商业务顺畅无阻。",
+        "points": {
+          "operationsOptimization": "业务运营优化",
+          "dataAnalyticsAndMining": "数据分析与挖掘",
+          "paymentLinkCoordination": "支付链路协同"
+        }
+      },
+      "game": {
+        "label": "游戏",
+        "title": "游戏云解决方案",
+        "subtitle": "高并发接入、弹性扩容、稳定防护",
+        "description": "针对高并发、低时延和稳定交付场景，整合弹性计算、流量调度、告警巡检和节点容灾能力，支撑游戏业务稳定运行。",
+        "points": {
+          "elasticResourceScheduling": "弹性资源调度",
+          "lowLatencyAccessOptimization": "低时延接入优化",
+          "eventPeakCapacity": "活动峰值承载",
+          "nodeDisasterRecoveryAndMonitoring": "节点容灾与监控"
+        }
+      },
+      "security": {
+        "label": "安全",
+        "title": "安全行业解决方案",
+        "subtitle": "访问控制、日志审计、资产防护",
+        "description": "围绕身份认证、权限管理、日志留痕和风险告警构建防护体系，帮助企业把安全能力前置到采购、交付和运维全链路。",
+        "points": {
+          "identityAndAccessIsolation": "身份认证与权限隔离",
+          "logAuditingAndTracing": "日志审计与追踪",
+          "securityPolicyOrchestration": "安全策略编排",
+          "anomalousAccessProtection": "异常访问防护"
+        }
+      },
+      "website": {
+        "label": "网站",
+        "title": "网站托管解决方案",
+        "subtitle": "快速部署、稳定托管、持续运维",
+        "description": "从建站部署、性能优化到备案支撑和日常巡检，为展示站、业务站和内容站提供一站式上云托管方案。",
+        "points": {
+          "fastSiteProvisioning": "建站资源快速开通",
+          "performanceAndStabilityOptimization": "性能与稳定性优化",
+          "multiSiteHostingCoordination": "多站点托管协同",
+          "registrationAndOperationsSupport": "备案与运维支撑"
+        }
+      },
+      "finance": {
+        "label": "金融",
+        "title": "金融业务解决方案",
+        "subtitle": "稳定交付、审计留痕、合规支撑",
+        "description": "围绕资金处理、敏感操作留痕、故障兜底 and 高可用资源编排，帮助金融场景建立更稳妥的基础设施与运维体系。",
+        "points": {
+          "clearBillingAndInvoicing": "账单与计费链路清晰",
+          "coreResourceHighAvailabilityDeployment": "核心资源高可用部署",
+          "criticalActionAuditTrail": "关键操作审计留痕",
+          "complianceScenarioSupport": "合规场景支撑"
+        }
+      },
+      "goGlobal": {
+        "label": "出海",
+        "title": "出海业务解决方案",
+        "subtitle": "全球节点、链路优化、服务协同",
+        "description": "面向跨境业务提供全球节点部署、区域路由优化、多地资源调度与统一交付支持，帮助业务更快覆盖海外用户。"
+      },
+      "globalNodeAccess": "全球节点接入",
+      "crossRegionLinkOptimization": "跨区域链路优化",
+      "unifiedMultiRegionScheduling": "多地资源统一调度",
+      "overseasBusinessDelivery": "海外业务稳定交付",
+      "government": "政府",
+      "governmentEnterpriseCloud": "政企上云解决方案",
+      "governmentFeatureSummary": "资源统筹、权限管理、长期运维",
+      "governmentSolutionDescription": "针对政企项目周期长、流程严谨和运维要求高的特点，提供从资源规划、权限管理到持续服务支撑的整套方案。",
+      "unifiedPlanningAndDelivery": "资源统一规划与交付",
+      "tieredPermissionsAndProcessControl": "权限分级与流程控制",
+      "documentedDeliveryManagement": "文档化交付管理",
+      "longTermOperationsAndSupport": "长期运维与服务保障"
+    }
+  },
+  "help": {
+    "support": {
+      "groupNumberPending": "待补充群号",
+      "joinOfficialChat": "加入官方群聊",
+      "officialChatDescription": "官方群聊用于发布维护通知、活动消息和常见问题答疑，欢迎扫码加入。",
+      "officialQqGroup": "官方QQ群",
+      "partnershipEmail": "合作邮箱",
+      "serviceHours": "服务时间"
+    }
+  }
+}

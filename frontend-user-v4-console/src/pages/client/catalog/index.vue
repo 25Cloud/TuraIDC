@@ -2,9 +2,9 @@
   <section class="catalog-page">
     <t-card class="catalog-card" :bordered="false">
       <div class="catalog-result">
-        <t-empty type="maintenance" description="统一使用官网产品目录" />
-        <p>购买、报价和配置流程已经收口到官网产品目录，客户端这里保留为稳定入口。</p>
-        <t-button theme="primary" @click="openPublicProducts">打开产品目录</t-button>
+        <t-empty type="maintenance" :description="$t('client.catalog.description')" />
+        <p>{{ $t('client.catalog.hint') }}</p>
+        <t-button theme="primary" @click="openPublicProducts">{{ $t('client.catalog.openCatalog') }}</t-button>
       </div>
     </t-card>
   </section>

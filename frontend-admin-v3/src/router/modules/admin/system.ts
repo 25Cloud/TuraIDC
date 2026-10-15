@@ -17,6 +17,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '日志中心',
+        zh_TW: '日誌中心',
         en_US: 'Logs',
       },
       permission: 'log.list',
@@ -31,6 +32,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '系统日志',
+        zh_TW: '系統日誌',
         en_US: 'System Logs',
       },
       permission: 'log.list',
@@ -45,6 +47,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '运行日志',
+        zh_TW: '執行日誌',
         en_US: 'Runtime Logs',
       },
       permission: 'log.list',
@@ -59,6 +62,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '管理员登录',
+        zh_TW: '管理員登入',
         en_US: 'Admin Logins',
       },
       permission: 'log.list',
@@ -73,6 +77,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: 'API 日志',
+        zh_TW: 'API 日誌',
         en_US: 'API Logs',
       },
       permission: 'log.list',
@@ -87,6 +92,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '短信日志',
+        zh_TW: '簡訊日誌',
         en_US: 'SMS Logs',
       },
       permission: 'log.list',
@@ -101,6 +107,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '邮件日志',
+        zh_TW: '郵件日誌',
         en_US: 'Email Logs',
       },
       permission: 'log.list',
@@ -115,6 +122,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '自动任务日志',
+        zh_TW: '自動任務日誌',
         en_US: 'Task Logs',
       },
       permission: 'log.list',
@@ -129,6 +137,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '网关日志',
+        zh_TW: '閘道器日誌',
         en_US: 'Gateway Logs',
       },
       permission: 'log.list',
@@ -143,6 +152,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '工单推送日志',
+        zh_TW: '工單推送日誌',
         en_US: 'Ticket Push Logs',
       },
       permission: 'log.list',
@@ -157,6 +167,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '上传/清理日志',
+        zh_TW: '上傳/清理日誌',
         en_US: 'Upload & Cleanup Logs',
       },
       permission: 'log.list',
@@ -171,6 +182,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '定时任务',
+        zh_TW: '定時任務',
         en_US: 'Scheduled Tasks',
       },
       permission: 'schedule.view',
@@ -185,6 +197,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '日志清理',
+        zh_TW: '日誌清理',
         en_US: 'Log Cleanup',
       },
       permission: 'log.list',
@@ -199,6 +212,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '员工管理',
+        zh_TW: '員工管理',
         en_US: 'Staff',
       },
       permission: 'staff.list',
@@ -211,6 +225,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '角色权限',
+        zh_TW: '角色許可權',
         en_US: 'Roles',
       },
       permission: 'role.list',
@@ -223,6 +238,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '数据库状态',
+        zh_TW: '資料庫狀態',
         en_US: 'Database Status',
       },
       permission: 'database.view',
@@ -236,6 +252,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '缓存状态',
+        zh_TW: '快取狀態',
         en_US: 'Cache Status',
       },
       permission: 'database.view',
@@ -249,6 +266,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '自动化策略',
+        zh_TW: '自動化策略',
         en_US: 'Automation',
       },
       permission: 'schedule.view',
@@ -263,6 +281,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '日志归档',
+        zh_TW: '日誌歸檔',
         en_US: 'Log Archive',
       },
       permission: 'settings.view',
@@ -289,6 +308,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '插件管理',
+        zh_TW: '外掛管理',
         en_US: 'Plugins',
       },
       permission: 'integration_plugin.view',
@@ -301,6 +321,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '人机验证',
+        zh_TW: '人機驗證',
         en_US: 'Captcha Plugins',
       },
       permission: 'integration_plugin.view',
@@ -315,6 +336,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '实名认证',
+        zh_TW: '實名認證',
         en_US: 'Verification Plugins',
       },
       permission: 'integration_plugin.view',
@@ -329,6 +351,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '支付渠道',
+        zh_TW: '支付渠道',
         en_US: 'Payment Plugins',
       },
       permission: 'integration_plugin.view',
@@ -343,6 +366,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '邮件发送',
+        zh_TW: '郵件傳送',
         en_US: 'Mail Plugins',
       },
       permission: 'integration_plugin.view',
@@ -357,6 +381,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '短信发送',
+        zh_TW: '簡訊傳送',
         en_US: 'SMS Plugins',
       },
       permission: 'integration_plugin.view',
@@ -371,6 +396,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '上游开通',
+        zh_TW: '上游開通',
         en_US: 'Upstream Plugins',
       },
       permission: 'integration_plugin.view',
@@ -385,6 +411,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '功能扩展',
+        zh_TW: '功能擴充套件',
         en_US: 'Addon Plugins',
       },
       permission: 'integration_plugin.view',
@@ -399,6 +426,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '推荐奖励',
+        zh_TW: '推薦獎勵',
         en_US: 'Referral Settings',
       },
       permission: 'settings.view',
@@ -413,6 +441,7 @@ export const systemRoutes: RouteRecordRaw[] = [
     meta: {
       title: {
         zh_CN: '开放接口',
+        zh_TW: '開放介面',
         en_US: 'Open API',
       },
       permission: 'open_api.view',

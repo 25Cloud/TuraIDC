@@ -2,24 +2,24 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <h1>管理后台</h1>
-        <p>请登录您的管理员账号</p>
+        <h1>{{ $t('login.consoleTitle') }}</h1>
+        <p>{{ $t('login.subtitle') }}</p>
       </div>
       <t-form ref="formRef" :data="formData" :rules="formRules" label-align="top" @submit="handleLogin">
-        <t-form-item label="账号" name="account">
+        <t-form-item :label="$t('login.account')" name="account">
           <t-input
             v-model="formData.account"
-            placeholder="请输入管理员账号"
+            :placeholder="$t('login.accountPlaceholder')"
             size="large"
             clearable
             autocomplete="username"
           />
         </t-form-item>
-        <t-form-item label="密码" name="password">
+        <t-form-item :label="$t('login.password')" name="password">
           <t-input
             v-model="formData.password"
             type="password"
-            placeholder="请输入密码"
+            :placeholder="$t('login.passwordPlaceholder')"
             size="large"
             clearable
             autocomplete="current-password"
@@ -28,17 +28,17 @@
         <!-- inline 形态（Turnstile）的验证组件落点：点击登录时就地加载，无感通过时不占位 -->
         <div v-show="captchaRenderMode === 'inline'" ref="captchaContainer" class="login-captcha"></div>
         <div class="login-remember">
-          <t-checkbox v-model="rememberAccount">记住账号</t-checkbox>
+          <t-checkbox v-model="rememberAccount">{{ $t('login.rememberAccount') }}</t-checkbox>
         </div>
         <t-form-item class="login-submit-item">
           <t-button block theme="primary" size="large" type="submit" :loading="loading || captchaLoading">
-            登录
+            {{ $t('login.submit') }}
           </t-button>
           <span class="sr-only" role="alert" aria-live="assertive">{{ errorMessage }}</span>
         </t-form-item>
       </t-form>
       <div class="login-footer">
-        <span>© {{ currentYear }} 管理后台</span>
+        <span>© {{ currentYear }} {{ $t('login.consoleTitle') }}</span>
       </div>
     </div>
   </div>

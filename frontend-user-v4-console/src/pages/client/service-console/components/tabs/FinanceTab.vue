@@ -1,8 +1,8 @@
 <template>
   <section class="console-panel-section">
-    <t-card title="财务日志" :bordered="false">
+    <t-card :title="$t('serviceConsole.financeLog')" :bordered="false">
       <template #actions>
-        <t-button :loading="financeState.loading" @click="loadFinanceLogs">刷新</t-button>
+        <t-button :loading="financeState.loading" @click="loadFinanceLogs">{{ $t('serviceConsole.refresh') }}</t-button>
       </template>
       <div class="log-summary finance-summary">
         <span>共 {{ financeState.summary.total_count || financeState.total || 0 }} 条</span>

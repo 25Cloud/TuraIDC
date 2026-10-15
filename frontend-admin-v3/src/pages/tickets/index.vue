@@ -5,19 +5,34 @@
         <t-input
           v-model="filters.keyword"
           clearable
-          placeholder="搜索工单标题或 ID"
+          :placeholder="$t('tickets.index.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.status" clearable placeholder="工单状态" @change="handleSearch">
+        <t-select
+          v-model="filters.status"
+          clearable
+          :placeholder="$t('tickets.index.statusPlaceholder')"
+          @change="handleSearch"
+        >
           <t-option v-for="option in statusOptions" :key="option.value" :label="option.label" :value="option.value" />
         </t-select>
-        <t-select v-model="filters.priority" clearable placeholder="优先级" @change="handleSearch">
+        <t-select
+          v-model="filters.priority"
+          clearable
+          :placeholder="$t('tickets.index.priorityPlaceholder')"
+          @change="handleSearch"
+        >
           <t-option v-for="option in priorityOptions" :key="option.value" :label="option.label" :value="option.value" />
         </t-select>
-        <t-select v-model="filters.department" clearable placeholder="工单分类" @change="handleSearch">
+        <t-select
+          v-model="filters.department"
+          clearable
+          :placeholder="$t('tickets.index.departmentPlaceholder')"
+          @change="handleSearch"
+        >
           <t-option
             v-for="option in departmentOptions"
             :key="option.value"
@@ -43,7 +58,7 @@
                 {{ userName(item) }}
               </button>
             </span>
-            <span>处理人：{{ assigneeName(item) }}</span>
+            <span>{{ $t('tickets.index.assignee', { name: assigneeName(item) }) }}</span>
           </div>
           <div class="ticket-card__foot">
             <t-tag :theme="priorityTheme(item.priority)" variant="light">{{ priorityLabel(item.priority) }}</t-tag>
@@ -52,7 +67,7 @@
           </div>
         </article>
       </div>
-      <t-empty v-else-if="!loading" description="暂无工单记录" />
+      <t-empty v-else-if="!loading" :description="$t('tickets.index.empty')" />
     </t-loading>
 
     <div v-if="total > 0" class="ticket-pagination">

@@ -2,7 +2,7 @@
   <MobileSheet
     :visible="visible"
     size="282px"
-    title="选择一级分组与二级分组"
+    :title="$t('common.regionPicker.selectGroups')"
     cancel-text="取消"
     confirm-text="确定"
     :close-on-press-modal="false"
@@ -15,11 +15,11 @@
       <div class="mrp-frame" aria-hidden="true"></div>
 
       <div class="mrp-col-head">
-        <span class="mrp-col-head__item">一级分组</span>
-        <span class="mrp-col-head__item">二级分组</span>
+        <span class="mrp-col-head__item">{{ $t('product.group.level1') }}</span>
+        <span class="mrp-col-head__item">{{ $t('product.group.level2') }}</span>
       </div>
 
-      <div ref="regionCol" class="mrp-col" aria-label="一级分组">
+      <div ref="regionCol" class="mrp-col" :aria-label="$t('product.group.level1')">
         <div class="mrp-spacer" :style="{ height: spacerH + 'px' }"></div>
         <button
           v-for="g in regions"
@@ -35,7 +35,7 @@
         <div class="mrp-spacer" :style="{ height: spacerH + 'px' }"></div>
       </div>
 
-      <div ref="zoneCol" class="mrp-col" aria-label="二级分组">
+      <div ref="zoneCol" class="mrp-col" :aria-label="$t('product.group.level2')">
         <div class="mrp-spacer" :style="{ height: spacerH + 'px' }"></div>
         <button
           v-for="z in zoneMap"

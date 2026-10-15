@@ -232,7 +232,7 @@ const breadcrumbs = computed(() => {
       }
 
       const title = meta?.title as LocalizedTitle | undefined;
-      const renderedTitle = title?.[locale.value as keyof LocalizedTitle] || '';
+      const renderedTitle = (title?.[locale.value as keyof LocalizedTitle] || title?.zh_CN) || '';
       if (renderedTitle) {
         const to: RouteLocationRaw = matchedRoute.name ? { name: matchedRoute.name, params: route.params } : path;
         breadcrumbArray.push({ key: matchedRoute.name?.toString() || path, to, title: renderedTitle });

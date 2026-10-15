@@ -1,6 +1,6 @@
 <template>
   <auth-shell
-    title="代登录中"
+    :title="$t('auth.loginAsInProgress')"
     nav-text="如需手动登录"
     nav-link-text="返回登录页"
     nav-to="/client/login"

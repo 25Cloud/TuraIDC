@@ -5,16 +5,16 @@
         <template v-if="isMobileScreen">
           <div class="recharge-mobile">
             <header class="recharge-mobile__hero">
-              <h1>在线充值</h1>
+              <h1>{{ $t('recharge.title') }}</h1>
             </header>
 
             <section class="mobile-balance-card">
-              <span class="mobile-balance-card__label">当前余额</span>
+              <span class="mobile-balance-card__label">{{ $t('recharge.currentBalance') }}</span>
               <strong class="mobile-balance-card__value">{{ mobileBalanceText }}</strong>
             </section>
 
             <section class="recharge-mobile__section">
-              <label class="field-label recharge-mobile__label">充值金额</label>
+              <label class="field-label recharge-mobile__label">{{ $t('recharge.amountLabel') }}</label>
               <div class="mobile-amount-grid">
                 <button
                   v-for="item in RECHARGE_PRESET_AMOUNTS"
@@ -33,7 +33,7 @@
                   :class="{ 'is-active': mobileCustomSelected }"
                   @click="activateMobileCustomAmount"
                 >
-                  <span class="mobile-select-card__value">自定义</span>
+                  <span class="mobile-select-card__value">{{ $t('recharge.customAmount') }}</span>
                   <check-icon v-if="mobileCustomSelected" class="mobile-select-card__mark" />
                 </button>
               </div>
@@ -53,13 +53,13 @@
               </div>
 
               <div class="amount-payable amount-payable--mobile">
-                <span>实付金额</span>
+                <span>{{ $t('recharge.actualAmount') }}</span>
                 <strong>{{ amountText }} 元</strong>
               </div>
             </section>
 
             <section v-if="hasPaymentGateways" class="recharge-mobile__section">
-              <label class="field-label recharge-mobile__label">支付方式</label>
+              <label class="field-label recharge-mobile__label">{{ $t('recharge.method') }}</label>
               <div class="mobile-method-list">
                 <button
                   v-for="method in paymentGateways"
@@ -91,9 +91,9 @@
             />
 
             <div class="mobile-agreement">
-              <t-checkbox v-model="mobileAgreementChecked">我已了解充值说明</t-checkbox>
+              <t-checkbox v-model="mobileAgreementChecked">{{ $t('recharge.agreed') }}</t-checkbox>
               <t-button variant="text" theme="primary" size="small" @click="router.push('/client/help')"
-                >帮助中心</t-button
+                >{{ $t('recharge.help') }}</t-button
               >
             </div>
 
@@ -111,22 +111,22 @@
 
             <div v-if="paymentNo || rechargePaid" class="mobile-payment-meta">
               <div class="meta-row">
-                <span>支付状态</span>
+                <span>{{ $t('recharge.payStatus') }}</span>
                 <strong>{{ rechargePaid ? '充值成功' : '待支付' }}</strong>
               </div>
               <div class="meta-row">
-                <span>商家订单号</span>
+                <span>{{ $t('recharge.merchantOrderNo') }}</span>
                 <strong>{{ paymentNo || '--' }}</strong>
               </div>
               <div class="meta-row">
-                <span>应付金额</span>
+                <span>{{ $t('recharge.payableAmount') }}</span>
                 <strong>{{ amountText }} 元</strong>
               </div>
             </div>
 
             <div v-if="qrCodeValue && !rechargePaid" class="mobile-pay-helper">
               <p>{{ mobilePayHelperText }}</p>
-              <t-button size="small" theme="primary" variant="outline" @click="copyPayUrl">复制支付链接</t-button>
+              <t-button size="small" theme="primary" variant="outline" @click="copyPayUrl">{{ $t('recharge.copyLink') }}</t-button>
             </div>
           </div>
         </template>

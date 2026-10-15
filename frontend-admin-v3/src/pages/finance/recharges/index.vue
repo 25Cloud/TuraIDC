@@ -6,13 +6,13 @@
           v-model="filters.keyword"
           class="filter-keyword"
           clearable
-          placeholder="搜索支付号 / 第三方单号 / 用户"
+          :placeholder="$t('finance.recharges.searchPlaceholder')"
           @enter="handleSearch"
           @clear="handleSearch"
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.status" class="filter-status" clearable placeholder="状态" @change="handleSearch">
+        <t-select v-model="filters.status" class="filter-status" clearable :placeholder="$t('finance.recharges.filterStatus')" @change="handleSearch">
           <t-option v-for="item in paymentStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
         <t-date-picker
@@ -22,7 +22,7 @@
           mode="date"
           format="YYYY-MM-DD"
           value-type="YYYY-MM-DD"
-          placeholder="开始日期"
+          :placeholder="$t('finance.recharges.startDate')"
           @change="handleSearch"
         />
         <t-date-picker
@@ -32,7 +32,7 @@
           mode="date"
           format="YYYY-MM-DD"
           value-type="YYYY-MM-DD"
-          placeholder="结束日期"
+          :placeholder="$t('finance.recharges.endDate')"
           @change="handleSearch"
         />
       </div>
@@ -59,7 +59,7 @@
           <template #createdAt="{ row }">{{ formatDateTime(row.created_at) }}</template>
           <template #paidAt="{ row }">{{ formatDateTime(row.paid_at) }}</template>
           <template #operation="{ row }">
-            <t-button size="small" variant="text" theme="primary" @click="openDetail(row)">详情</t-button>
+            <t-button size="small" variant="text" theme="primary" @click="openDetail(row)">{{ $t('finance.recharges.detail') }}</t-button>
           </template>
         </t-table>
       </div>
@@ -71,10 +71,10 @@
               v-for="row in recharges"
               :key="row.id"
               :title="fieldValue(row.payment_no)"
-              eyebrow="充值管理"
-              :subtitle="fieldValue(row.gateway || '第三方支付')"
+              :eyebrow="$t('finance.recharges.eyebrow')"
+              :subtitle="fieldValue(row.gateway || $t('finance.recharges.thirdPartyPayment'))"
               :description="paymentSummary(row.payment || paymentRecord(row))"
-              highlight-label="充值金额"
+              :highlight-label="$t('finance.recharges.amountLabel')"
               :highlight-value="formatMoney(row.amount)"
               :status-map="PAYMENT_STATUS_MAP"
               :status="row.status"
@@ -83,7 +83,7 @@
               @action="(value) => handleMobileAction(value, row)"
             />
           </div>
-          <t-empty v-else description="暂无充值记录" />
+          <t-empty v-else :description="$t('finance.recharges.empty')" />
         </t-loading>
       </div>
 

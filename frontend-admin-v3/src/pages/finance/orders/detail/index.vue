@@ -3,23 +3,23 @@
     <record-detail-page
       :loading="detailLoading"
       :ready="Boolean(order.id)"
-      back-text="返回订单列表"
-      eyebrow="订单详情"
+      :back-text="$t('finance.orderDetail.backToList')"
+      :eyebrow="$t('finance.orderDetail.eyebrow')"
       :title="fieldValue(order.order_no || order.id)"
-      :description="`服务ID：${serviceIdLabel(order.service)}`"
+      :description="`${$t('finance.orderDetail.serviceIdPrefix')}${serviceIdLabel(order.service)}`"
       :status-label="orderStatusLabel(order.status)"
       :status-theme="orderStatusTheme(order.status)"
       :metrics="summaryMetrics"
       :tabs="tabs"
       :active-tab="activeTab"
-      empty-text="订单不存在"
+      :empty-text="$t('finance.orderDetail.empty')"
       @back="goBack"
       @refresh="loadDetail"
       @update:active-tab="(value) => (activeTab = value)"
     >
       <template #relations>
         <t-button v-if="order.invoice_id" variant="outline" size="small" @click="openInvoiceDetail(order.invoice_id)">
-          查看账单详情
+          {{ $t('finance.orderDetail.viewInvoice') }}
         </t-button>
         <t-button
           v-if="order.user_id"
@@ -27,84 +27,84 @@
           size="small"
           @click="router.push(`/admin/users/${order.user_id}`)"
         >
-          查看用户详情
+          {{ $t('finance.orderDetail.viewUser') }}
         </t-button>
       </template>
 
       <template #tab-basic>
         <section class="order-detail-section">
-          <h4>订单信息</h4>
+          <h4>{{ $t('finance.orderDetail.orderInfo') }}</h4>
           <div class="detail-kv-grid detail-kv-grid--two">
             <div class="detail-kv-item detail-kv-item--span-2">
-              <span>订单号</span>
+              <span>{{ $t('finance.orderDetail.orderNo') }}</span>
               <strong>{{ fieldValue(order.order_no) }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>订单类型</span>
+              <span>{{ $t('finance.orderDetail.orderType') }}</span>
               <strong>{{ order.type_label || orderTypeLabel(order.type) }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>状态</span>
+              <span>{{ $t('finance.orderDetail.status') }}</span>
               <t-tag :theme="orderStatusTheme(order.status)" variant="light">
                 {{ orderStatusLabel(order.status) }}
               </t-tag>
             </div>
             <div class="detail-kv-item">
-              <span>数量</span>
+              <span>{{ $t('finance.orderDetail.quantity') }}</span>
               <strong>{{ order.quantity || 1 }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>计费周期</span>
+              <span>{{ $t('finance.orderDetail.billingCycle') }}</span>
               <strong>{{ fieldValue(order.billing_cycle) }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>订单金额</span>
+              <span>{{ $t('finance.orderDetail.orderAmount') }}</span>
               <strong>{{ formatMoney(order.amount) }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>优惠金额</span>
+              <span>{{ $t('finance.orderDetail.discountAmount') }}</span>
               <strong>{{ formatMoney(order.discount) }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>实付金额</span>
+              <span>{{ $t('finance.orderDetail.paidAmount') }}</span>
               <strong>{{ formatMoney(order.paid_amount) }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>支付时间</span>
+              <span>{{ $t('finance.orderDetail.paidAt') }}</span>
               <strong>{{ formatDateTime(order.paid_at) }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>创建时间</span>
+              <span>{{ $t('finance.orderDetail.createdAt') }}</span>
               <strong>{{ formatDateTime(order.created_at) }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>更新时间</span>
+              <span>{{ $t('finance.orderDetail.updatedAt') }}</span>
               <strong>{{ formatDateTime(order.updated_at) }}</strong>
             </div>
             <div class="detail-kv-item detail-kv-item--span-2">
-              <span>链路追踪</span>
+              <span>{{ $t('finance.orderDetail.traceId') }}</span>
               <strong>{{ fieldValue(order.trace_id) }}</strong>
             </div>
             <div v-if="order.remark" class="detail-kv-item detail-kv-item--span-2">
-              <span>备注</span>
+              <span>{{ $t('finance.orderDetail.remark') }}</span>
               <strong>{{ order.remark }}</strong>
             </div>
           </div>
         </section>
 
         <section class="order-detail-section">
-          <h4>关联信息</h4>
+          <h4>{{ $t('finance.orderDetail.relatedInfo') }}</h4>
           <div class="detail-kv-grid detail-kv-grid--two">
             <div class="detail-kv-item">
-              <span>用户 ID</span>
+              <span>{{ $t('finance.orderDetail.userId') }}</span>
               <strong>{{ order.user_id || '-' }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>用户</span>
+              <span>{{ $t('finance.orderDetail.user') }}</span>
               <strong>{{ userName(order.user) }}</strong>
             </div>
             <div class="detail-kv-item detail-kv-item--span-2">
-              <span>账单号</span>
+              <span>{{ $t('finance.orderDetail.invoiceNo') }}</span>
               <div class="detail-inline-action">
                 <strong>{{ fieldValue(order.invoice?.invoice_no) }}</strong>
                 <t-button
@@ -114,24 +114,24 @@
                   theme="primary"
                   @click="openInvoiceDetail(order.invoice_id)"
                 >
-                  查看
+                  {{ $t('finance.orderDetail.view') }}
                 </t-button>
               </div>
             </div>
             <div class="detail-kv-item">
-              <span>账单金额</span>
+              <span>{{ $t('finance.orderDetail.invoiceAmount') }}</span>
               <strong>{{ formatMoney(order.invoice?.amount) }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>账单支付时间</span>
+              <span>{{ $t('finance.orderDetail.invoicePaidAt') }}</span>
               <strong>{{ formatDateTime(order.invoice?.paid_at) }}</strong>
             </div>
             <div class="detail-kv-item detail-kv-item--span-2">
-              <span>账单链路追踪</span>
+              <span>{{ $t('finance.orderDetail.invoiceTraceId') }}</span>
               <strong>{{ fieldValue(order.invoice?.trace_id) }}</strong>
             </div>
             <div class="detail-kv-item detail-kv-item--span-2">
-              <span>服务 ID</span>
+              <span>{{ $t('finance.orderDetail.serviceId') }}</span>
               <button
                 type="button"
                 class="user-link"
@@ -142,29 +142,29 @@
               </button>
             </div>
             <div class="detail-kv-item detail-kv-item--span-2">
-              <span>服务到期</span>
+              <span>{{ $t('finance.orderDetail.serviceExpiresAt') }}</span>
               <strong>{{ formatDateTime(order.service?.expires_at) }}</strong>
             </div>
           </div>
         </section>
 
         <section v-if="couponInfo" class="order-detail-section">
-          <h4>优惠券信息</h4>
+          <h4>{{ $t('finance.orderDetail.couponInfo') }}</h4>
           <div class="detail-kv-grid detail-kv-grid--two">
             <div class="detail-kv-item detail-kv-item--span-2">
-              <span>优惠码</span>
+              <span>{{ $t('finance.orderDetail.couponCode') }}</span>
               <strong>{{ fieldValue(couponInfo.code) }}</strong>
             </div>
             <div v-if="couponInfo.name" class="detail-kv-item">
-              <span>优惠券名称</span>
+              <span>{{ $t('finance.orderDetail.couponName') }}</span>
               <strong>{{ fieldValue(couponInfo.name) }}</strong>
             </div>
             <div v-if="couponInfo.type" class="detail-kv-item">
-              <span>类型</span>
+              <span>{{ $t('finance.orderDetail.type') }}</span>
               <strong>{{ fieldValue(couponInfo.type) }}</strong>
             </div>
             <div v-if="couponInfo.value" class="detail-kv-item detail-kv-item--span-2">
-              <span>面值</span>
+              <span>{{ $t('finance.orderDetail.faceValue') }}</span>
               <strong>{{ fieldValue(couponInfo.value) }}</strong>
             </div>
           </div>
@@ -173,17 +173,17 @@
 
       <template #tab-product>
         <section class="order-detail-section">
-          <h4>产品信息</h4>
+          <h4>{{ $t('finance.orderDetail.productInfo') }}</h4>
           <div class="detail-kv-grid detail-kv-grid--two">
             <div class="detail-kv-item detail-kv-item--span-2">
-              <span>分类链路</span>
+              <span>{{ $t('finance.orderDetail.categoryPath') }}</span>
               <strong>{{ fieldValue(order.product_full_path || order.product_name) }}</strong>
             </div>
           </div>
         </section>
 
         <section v-if="configItems.length" class="order-detail-section">
-          <h4>配置快照</h4>
+          <h4>{{ $t('finance.orderDetail.configSnapshot') }}</h4>
           <div class="config-list">
             <div v-for="item in configItems" :key="item.label" class="config-item">
               <span>{{ item.label }}</span>
@@ -193,7 +193,7 @@
         </section>
 
         <section v-if="pricingItems.length" class="order-detail-section">
-          <h4>配置定价</h4>
+          <h4>{{ $t('finance.orderDetail.configPricing') }}</h4>
           <div class="config-list">
             <div v-for="item in pricingItems" :key="item.label" class="config-item">
               <span>{{ item.label }}</span>
@@ -203,7 +203,7 @@
         </section>
 
         <section v-if="serviceSnapshotItems.length" class="order-detail-section">
-          <h4>实例快照</h4>
+          <h4>{{ $t('finance.orderDetail.instanceSnapshot') }}</h4>
           <div class="config-list">
             <div v-for="item in serviceSnapshotItems" :key="item.label" class="config-item">
               <span>{{ item.label }}</span>
@@ -215,35 +215,35 @@
 
       <template #tab-payments>
         <section class="order-detail-section">
-          <h4>支付记录</h4>
+          <h4>{{ $t('finance.orderDetail.paymentRecords') }}</h4>
           <div class="payment-list">
             <div v-for="payment in payments" :key="String(payment.id || payment.payment_no)" class="payment-item">
               <div class="payment-item__head">
                 <div>
-                  <span>支付单号</span>
+                  <span>{{ $t('finance.orderDetail.paymentNo') }}</span>
                   <strong>{{ fieldValue(payment.payment_no) }}</strong>
                 </div>
                 <t-tag :theme="paymentStatusTheme(payment)" variant="light">{{ paymentStatusLabel(payment) }}</t-tag>
               </div>
               <div class="detail-kv-grid detail-kv-grid--two">
                 <div class="detail-kv-item">
-                  <span>支付方式</span>
+                  <span>{{ $t('finance.orderDetail.paymentMethod') }}</span>
                   <strong>{{ fieldValue(payment.gateway) }}</strong>
                 </div>
                 <div class="detail-kv-item detail-kv-item--span-2">
-                  <span>第三方单号</span>
+                  <span>{{ $t('finance.orderDetail.thirdPartyNo') }}</span>
                   <strong>{{ fieldValue(payment.trade_no) }}</strong>
                 </div>
                 <div class="detail-kv-item">
-                  <span>金额</span>
+                  <span>{{ $t('finance.orderDetail.amount') }}</span>
                   <strong>{{ formatMoney(payment.amount) }}</strong>
                 </div>
                 <div class="detail-kv-item">
-                  <span>支付时间</span>
+                  <span>{{ $t('finance.orderDetail.paidAt') }}</span>
                   <strong>{{ formatDateTime(payment.paid_at || payment.created_at) }}</strong>
                 </div>
                 <div class="detail-kv-item detail-kv-item--span-2">
-                  <span>链路追踪</span>
+                  <span>{{ $t('finance.orderDetail.traceId') }}</span>
                   <strong>{{ fieldValue(payment.trace_id) }}</strong>
                 </div>
               </div>

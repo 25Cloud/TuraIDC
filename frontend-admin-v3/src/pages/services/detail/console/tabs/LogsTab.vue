@@ -1,13 +1,17 @@
 <template>
   <section class="console-panel-section">
-    <t-card title="操作日志" :bordered="false">
+    <t-card :title="$t('services.console.logsTab.title')" :bordered="false">
       <template #actions>
-        <t-button :loading="logsState.loading" @click="loadLogs">刷新</t-button>
+        <t-button :loading="logsState.loading" @click="loadLogs">{{ $t('services.console.logsTab.refresh') }}</t-button>
       </template>
       <div class="log-summary">
-        <span>共 {{ logsState.summary.total || logsState.total || 0 }} 条</span>
-        <span>今日 {{ logsState.summary.today_total || 0 }} 条</span>
-        <span v-if="logsState.summary.latest_created_at">最近 {{ logsState.summary.latest_created_at }}</span>
+        <span>{{
+          $t('services.console.logsTab.totalCount', { count: logsState.summary.total || logsState.total || 0 })
+        }}</span>
+        <span>{{ $t('services.console.logsTab.todayCount', { count: logsState.summary.today_total || 0 }) }}</span>
+        <span v-if="logsState.summary.latest_created_at">
+          {{ $t('services.console.logsTab.latest', { time: logsState.summary.latest_created_at }) }}
+        </span>
       </div>
       <t-table row-key="id" :data="logsState.list" :columns="logColumns" :pagination="null" size="small" />
       <div v-if="logsState.total > 0" class="console-pagination">

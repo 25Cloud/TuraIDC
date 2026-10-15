@@ -2,42 +2,42 @@
   <data-state :loading="loading" :empty="false" :description="loadError || ''">
     <div class="upstream-panel">
       <t-form label-align="top" class="upstream-form">
-        <t-form-item label="上游接入地址">
+        <t-form-item :label="$t('apiKeys.upstream.endpointLabel')">
           <div class="upstream-field">
             <t-input :value="accessEndpoint" readonly />
             <t-button v-if="accessEndpoint" size="small" variant="outline" @click="copyText(accessEndpoint)">
-              复制
+              {{ $t('apiKeys.upstream.copy') }}
             </t-button>
           </div>
           <p class="upstream-tip">
-            登录接口为
+            {{ $t('apiKeys.upstream.loginEndpointPrefix') }}
             <code>{{ accessEndpoint }}/zjmf_api_login</code
-            >。魔方财务「上游地址」直接填上面的接入地址即可，无需拼接登录路径。
+            >{{ $t('apiKeys.upstream.loginEndpointSuffix') }}
           </p>
         </t-form-item>
 
-        <t-form-item label="API 用户名">
+        <t-form-item :label="$t('apiKeys.upstream.apiUsername')">
           <div class="upstream-field">
-            <t-input :value="status?.username || '未生成'" readonly />
+            <t-input :value="status?.username || $t('apiKeys.upstream.notGenerated')" readonly />
             <t-button v-if="status?.username" size="small" variant="outline" @click="copyText(status.username)">
-              复制
+              {{ $t('apiKeys.upstream.copy') }}
             </t-button>
           </div>
         </t-form-item>
 
-        <t-form-item label="API 密码">
+        <t-form-item :label="$t('apiKeys.upstream.apiPassword')">
           <span class="upstream-password-state">
-            {{ status?.has_password ? '已设置（出于安全不显示，可重置）' : '未设置' }}
+            {{ status?.has_password ? $t('apiKeys.upstream.passwordSet') : $t('apiKeys.upstream.passwordUnset') }}
           </span>
-          <span v-if="status?.last_used_at" class="upstream-password-state"> 最近调用：{{ status.last_used_at }} </span>
+          <span v-if="status?.last_used_at" class="upstream-password-state"> {{ $t('apiKeys.upstream.lastUsedAt') }}{{ status.last_used_at }} </span>
         </t-form-item>
 
-        <t-form-item label="IP 白名单（可选，多个用英文逗号分隔）">
-          <t-input v-model="policyForm.ip_allowlist" placeholder="例如：203.0.113.9, 198.51.100.0/24" />
-          <p class="upstream-tip">留空表示不限制来源 IP；填了之后只有白名单内的 IP 能换取 JWT。</p>
+        <t-form-item :label="$t('apiKeys.upstream.ipAllowlistLabel')">
+          <t-input v-model="policyForm.ip_allowlist" :placeholder="$t('apiKeys.upstream.ipAllowlistPlaceholder')" />
+          <p class="upstream-tip">{{ $t('apiKeys.upstream.ipAllowlistHint') }}</p>
         </t-form-item>
 
-        <t-form-item label="有效期（可选）">
+        <t-form-item :label="$t('apiKeys.upstream.expiresAtLabel')">
           <t-date-picker
             v-model="policyForm.expires_at"
             format="YYYY-MM-DD HH:mm"
@@ -45,31 +45,31 @@
             clearable
             style="width: 100%"
           />
-          <p class="upstream-tip">留空表示永不过期；到期后该凭据无法再换取 JWT。</p>
+          <p class="upstream-tip">{{ $t('apiKeys.upstream.expiresAtHint') }}</p>
         </t-form-item>
       </t-form>
 
       <t-space class="upstream-actions" size="small">
         <t-button v-if="!status?.enabled" theme="primary" :loading="submitting" @click="enable">
-          开启上游 API
+          {{ $t('apiKeys.upstream.enable') }}
         </t-button>
         <template v-else>
-          <t-button variant="outline" :loading="submitting" @click="savePolicy">保存安全策略</t-button>
-          <t-button variant="outline" :loading="submitting" @click="openUsageLogs">调用日志</t-button>
-          <t-button variant="outline" :loading="submitting" @click="resetPassword">重置密码</t-button>
+          <t-button variant="outline" :loading="submitting" @click="savePolicy">{{ $t('apiKeys.upstream.savePolicy') }}</t-button>
+          <t-button variant="outline" :loading="submitting" @click="openUsageLogs">{{ $t('apiKeys.upstream.usageLogs') }}</t-button>
+          <t-button variant="outline" :loading="submitting" @click="resetPassword">{{ $t('apiKeys.upstream.resetPassword') }}</t-button>
           <t-button theme="danger" variant="outline" :loading="submitting" @click="confirmDisable">
-            关闭上游 API
+            {{ $t('apiKeys.upstream.disable') }}
           </t-button>
         </template>
       </t-space>
 
-      <p v-if="status?.is_expired" class="upstream-warning">该凭据已过期，魔方财务侧无法再换取 JWT，请更新有效期。</p>
+      <p v-if="status?.is_expired" class="upstream-warning">{{ $t('apiKeys.upstream.expiredWarning') }}</p>
 
       <t-dialog v-model:visible="credentialVisible" :header="credentialTitle" :footer="false" width="40rem">
         <div class="credential-box">
-          <p class="credential-box__warning">密码仅显示这一次，关闭后无法再次查看，请立即保存。</p>
+          <p class="credential-box__warning">{{ $t('apiKeys.upstream.credentialWarning') }}</p>
           <div class="credential-box__row">
-            <span class="credential-box__label">用户名</span>
+            <span class="credential-box__label">{{ $t('apiKeys.upstream.username') }}</span>
             <div class="credential-box__value">
               <code>{{ credential?.username }}</code>
               <t-button
@@ -78,12 +78,12 @@
                 variant="outline"
                 @click="copyText(String(credential?.username || ''))"
               >
-                复制
+                {{ $t('apiKeys.upstream.copy') }}
               </t-button>
             </div>
           </div>
           <div class="credential-box__row">
-            <span class="credential-box__label">密码</span>
+            <span class="credential-box__label">{{ $t('apiKeys.upstream.password') }}</span>
             <div class="credential-box__value">
               <code>{{ credential?.password }}</code>
               <t-button
@@ -92,21 +92,25 @@
                 variant="outline"
                 @click="copyText(String(credential?.password || ''))"
               >
-                复制
+                {{ $t('apiKeys.upstream.copy') }}
               </t-button>
             </div>
           </div>
           <p class="credential-box__hint">
-            在魔方财务后台「上游」新增 API 账号：上游地址填
+            {{ $t('apiKeys.upstream.credentialHintPrefix') }}
             <code>{{ accessEndpoint }}</code
-            >，用户名与密码填上面两项。
+            >{{ $t('apiKeys.upstream.credentialHintSuffix') }}
           </p>
-          <t-button block theme="primary" @click="closeCredential">我已保存</t-button>
+          <t-button block theme="primary" @click="closeCredential">{{ $t('apiKeys.upstream.saved') }}</t-button>
         </div>
       </t-dialog>
 
-      <t-drawer v-model:visible="logVisible" header="调用日志 · 魔方财务对接" size="560px" :footer="false">
-        <data-state :loading="logLoading" :empty="!logs.length" description="暂无调用记录">
+      <t-drawer v-model:visible="logVisible" :header="$t('apiKeys.upstream.usageLogsTitle')" size="560px" :footer="false">
+        <data-state
+          :loading="logLoading"
+          :empty="!logs.length"
+          :description="$t('apiKeys.upstream.noUsageLogs')"
+        >
           <t-table row-key="created_at" :data="logs" :columns="logColumns" :pagination="null" hover />
         </data-state>
       </t-drawer>
