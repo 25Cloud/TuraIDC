@@ -13,6 +13,7 @@ import type {
   ContentOverviewPayload,
 } from '@/types/client';
 import { renderMarkdown } from '@/utils/markdown';
+import { t } from '@/locales';
 
 type ContentType = 'notice' | 'help';
 
@@ -53,7 +54,7 @@ const CONTENT_CONFIG: Record<ContentType, ContentListConfig> = {
     detailTitle: '公告详情',
     heroDescription: '查看平台最新通知、维护公告、产品更新与重要业务提醒。',
     searchPlaceholder: '请输入要搜索的公告关键词',
-    emptyText: '暂无公告内容',
+    emptyText: t('content.notice.empty'),
     allCategoryLabel: '全部分类',
     hotTitle: '热门公告',
     secondaryTitle: '最近更新',
@@ -70,7 +71,7 @@ const CONTENT_CONFIG: Record<ContentType, ContentListConfig> = {
     detailTitle: '帮助详情',
     heroDescription: '快速查找购买、支付、续费、实例管理等常见操作指引。',
     searchPlaceholder: '搜索帮助文档、账单说明、续费规则',
-    emptyText: '暂无帮助内容',
+    emptyText: t('content.help.empty'),
     allCategoryLabel: '全部分类',
     hotTitle: '热门文档',
     secondaryTitle: '最近更新',
@@ -289,7 +290,7 @@ export function useContentDetail(contentType: ContentType) {
   const categories = ref<ContentCategoryRecord[]>([]);
   const currentArticle = ref<ContentDetailPayload | null>(null);
   const currentCategoryId = ref<number | null>(null);
-  const tocItems = ref<TocItem[]>([{ id: 'article-top', label: '全文', level: 1 }]);
+  const tocItems = ref<TocItem[]>([{ id: 'article-top', label: t('content.article.fullText'), level: 1 }]);
   const contentRef = ref<HTMLElement | null>(null);
 
   const backToListRoute = computed<RouteLocationRaw>(() => ({
@@ -369,12 +370,12 @@ export function useContentDetail(contentType: ContentType) {
   function buildToc() {
     const container = contentRef.value;
     if (!container) {
-      tocItems.value = [{ id: 'article-top', label: '全文', level: 1 }];
+      tocItems.value = [{ id: 'article-top', label: t('content.article.fullText'), level: 1 }];
       return;
     }
 
     const headings = Array.from(container.querySelectorAll('h1, h2, h3, h4'));
-    const items: TocItem[] = [{ id: 'article-top', label: '全文', level: 1 }];
+    const items: TocItem[] = [{ id: 'article-top', label: t('content.article.fullText'), level: 1 }];
     headings.forEach((heading, index) => {
       const label = heading.textContent?.trim();
       if (!label) return;

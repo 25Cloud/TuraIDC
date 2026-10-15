@@ -1,10 +1,11 @@
+import { t } from '@/locales';
 export const seoLandingPages = [
   {
     slug: "cloud-server",
     path: "/cloud-server",
     routeName: "WwwSeoCloudServer",
     keyword: "云服务器",
-    title: "云服务器 - 稳定弹性计算与 IDC 云主机",
+    title: t('seoLanding.cloudServer.title'),
     description:
       "云服务器面向企业网站、业务系统和开发测试场景，提供稳定弹性计算、灵活配置和 IDC 运维支持。",
     keywords: "云服务器,云主机,弹性云服务器,IDC 云服务器",
@@ -12,14 +13,14 @@ export const seoLandingPages = [
     priority: "0.9",
     hero: {
       eyebrow: "弹性计算",
-      title: "稳定易用的云服务器",
+      title: t('seoLanding.cloudServer.heroTitle'),
       summary:
         "面向网站托管、业务系统、接口服务和开发测试，按实际业务规模选择 CPU、内存、带宽和系统镜像，减少前期硬件投入。",
       points: ["灵活配置", "快速交付", "工单支持"],
       stats: [
-        { value: "多规格", label: "CPU / 内存 / 带宽组合" },
-        { value: "多系统", label: "Linux 与 Windows 镜像" },
-        { value: "按需选", label: "适配测试到生产环境" },
+        { value: "多规格", label: t('seoLanding.cloudServer.hero.stats.specs.label') },
+        { value: "多系统", label: t('seoLanding.cloudServer.hero.stats.os.label') },
+        { value: "按需选", label: t('seoLanding.cloudServer.hero.stats.onDemand.label') },
       ],
     },
     visual: {
@@ -28,34 +29,34 @@ export const seoLandingPages = [
     },
     features: [
       {
-        title: "配置可按业务阶段调整",
+        title: t('seoLanding.cloudServer.features.scalable.title'),
         description:
           "从轻量网站到业务应用都能选择合适规格，后续扩容时减少重复迁移成本。",
       },
       {
-        title: "适合标准化部署",
+        title: t('seoLanding.cloudServer.features.standardized.title'),
         description:
           "常用系统镜像、网络和安全配置集中管理，方便新业务快速上线。",
       },
       {
-        title: "售后路径清晰",
+        title: t('seoLanding.cloudServer.features.support.title'),
         description:
           "通过账号与工单体系沉淀问题记录，便于排查网络、系统和费用相关问题。",
       },
     ],
     scenarios: [
       {
-        title: "企业官网与营销站",
+        title: t('seoLanding.cloudServer.scenarios.marketingSite.title'),
         description:
           "承载官网、专题页、表单提交和轻量后台，适合稳定展示与日常维护。",
       },
       {
-        title: "开发测试环境",
+        title: t('seoLanding.cloudServer.scenarios.devTest.title'),
         description:
           "为项目测试、接口联调和临时演示提供独立环境，减少本地环境差异。",
       },
       {
-        title: "中小型业务系统",
+        title: t('seoLanding.cloudServer.scenarios.smbSystem.title'),
         description:
           "适用于管理后台、API 服务、数据看板等需要独立运行环境的业务。",
       },
@@ -78,13 +79,13 @@ export const seoLandingPages = [
       },
     ],
     relatedLinks: [
-      { label: "查看产品与服务", to: "/products" },
-      { label: "阅读帮助中心", to: "/help" },
-      { label: "了解我们", to: "/about" },
+      { label: t('seoLanding.pages.relatedLinks.viewProductsServices'), to: "/products" },
+      { label: t('seoLanding.cloudServer.relatedLinks.helpCenter'), to: "/help" },
+      { label: t('seoLanding.cloudServer.relatedLinks.aboutUs'), to: "/about" },
     ],
     cta: {
-      title: "按业务规模选择云服务器",
-      description: "先查看可售产品和配置，再进入控制台完成账号注册与下单。",
+      title: t('seoLanding.cloudServer.cta.title'),
+      description: t('seoLanding.cloudServer.cta.description'),
       primaryText: "查看产品配置",
       primaryTo: "/products",
       secondaryText: "注册账号",
@@ -96,7 +97,7 @@ export const seoLandingPages = [
     path: "/hong-kong-server",
     routeName: "WwwSeoHongKongServer",
     keyword: "香港服务器",
-    title: "香港服务器 - 面向出海与跨境访问的云服务器",
+    title: t('seoLanding.hongKongServer.title'),
     description:
       "香港服务器适合跨境网站、外贸业务和亚太访问场景，提供云服务器配置选择与工单支持。",
     keywords: "香港服务器,香港云服务器,香港云主机,跨境服务器",
@@ -104,14 +105,14 @@ export const seoLandingPages = [
     priority: "0.8",
     hero: {
       eyebrow: "跨境访问",
-      title: "面向亚太业务的香港服务器",
+      title: t('seoLanding.hongKongServer.heroTitle'),
       summary:
         "适用于外贸站点、跨境业务、亚太用户访问和业务中转场景，兼顾部署效率、访问体验和日常运维支持。",
       points: ["亚太访问", "外贸建站", "部署灵活"],
       stats: [
-        { value: "香港节点", label: "适合亚太访问场景" },
-        { value: "多带宽", label: "按站点访问量选择" },
-        { value: "工单协同", label: "支持网络与系统问题排查" },
+        { value: "香港节点", label: t('seoLanding.highlight.apacAccessScenario') },
+        { value: "多带宽", label: t('seoLanding.highlight.selectBySiteTraffic') },
+        { value: "工单协同", label: t('seoLanding.highlight.networkSystemTroubleshooting') },
       ],
     },
     visual: {
@@ -120,32 +121,32 @@ export const seoLandingPages = [
     },
     features: [
       {
-        title: "适合跨境访问入口",
+        title: t('seoLanding.highlight.crossBorderEntry'),
         description:
           "香港节点常用于面向亚太用户的网站、接口服务和轻量业务入口。",
       },
       {
-        title: "部署链路更短",
-        description: "网站、证书、应用和数据迁移可以在同一业务流程中逐步完成。",
+        title: t('seoLanding.highlight.shorterDeploymentChain'),
+        description: t('seoLanding.paragraph.migrationInOneFlow'),
       },
       {
-        title: "便于后续扩展",
+        title: t('seoLanding.highlight.easyToScaleLater'),
         description:
           "业务增长后可继续选择更高配置或调整带宽，减少一次性投入压力。",
       },
     ],
     scenarios: [
       {
-        title: "外贸展示站",
-        description: "承载企业介绍、产品目录、询盘表单和多语言页面。",
+        title: t('seoLanding.scenario.foreignTradeShowcase'),
+        description: t('seoLanding.scenario.foreignTradeShowcaseDesc'),
       },
       {
-        title: "跨境业务入口",
-        description: "作为面向亚太用户的应用入口、接口服务或轻量后台。",
+        title: t('seoLanding.scenario.crossBorderEntry'),
+        description: t('seoLanding.scenario.crossBorderEntryDesc'),
       },
       {
-        title: "海外测试环境",
-        description: "用于验证海外线路、业务访问和不同区域用户体验。",
+        title: t('seoLanding.scenario.overseasStaging'),
+        description: t('seoLanding.scenario.overseasStagingDesc'),
       },
     ],
     faqs: [
@@ -165,13 +166,13 @@ export const seoLandingPages = [
       },
     ],
     relatedLinks: [
-      { label: "查看云服务器", to: "/cloud-server" },
-      { label: "查看美国服务器", to: "/us-server" },
-      { label: "查看产品与服务", to: "/products" },
+      { label: t('seoLanding.pages.relatedLinks.viewCloudServer'), to: "/cloud-server" },
+      { label: t('seoLanding.cta.viewUsServers'), to: "/us-server" },
+      { label: t('seoLanding.pages.relatedLinks.viewProductsServices'), to: "/products" },
     ],
     cta: {
-      title: "为跨境业务选择香港服务器",
-      description: "先确认访问区域、带宽需求和系统环境，再选择合适配置。",
+      title: t('seoLanding.cta.chooseHongKongForCrossBorder'),
+      description: t('seoLanding.cta.chooseHongKongTip'),
       primaryText: "查看产品配置",
       primaryTo: "/products",
       secondaryText: "提交咨询工单",
@@ -183,7 +184,7 @@ export const seoLandingPages = [
     path: "/us-server",
     routeName: "WwwSeoUsServer",
     keyword: "美国服务器",
-    title: "美国服务器 - 海外业务部署与网站托管",
+    title: t('seoLanding.meta.usServer.title'),
     description:
       "美国服务器面向海外网站、跨境业务和开发测试场景，提供云服务器配置选择、系统部署和售后支持。",
     keywords: "美国服务器,美国云服务器,海外服务器,海外云主机",
@@ -191,14 +192,14 @@ export const seoLandingPages = [
     priority: "0.8",
     hero: {
       eyebrow: "海外节点",
-      title: "适合海外部署的美国服务器",
+      title: t('seoLanding.meta.usServer.heroTitle'),
       summary:
         "面向海外展示站、应用服务、跨境业务和测试环境，帮助团队用较低门槛部署海外访问入口。",
       points: ["海外部署", "网站托管", "业务测试"],
       stats: [
-        { value: "海外访问", label: "适合目标用户在海外的业务" },
-        { value: "灵活配置", label: "按系统与带宽需求选择" },
-        { value: "统一管理", label: "订单、账单和工单集中处理" },
+        { value: "海外访问", label: t('seoLanding.related.fitOverseasAudience') },
+        { value: "灵活配置", label: t('seoLanding.related.selectBySystemBandwidth') },
+        { value: "统一管理", label: t('seoLanding.feature.unifiedManagementDescription') },
       ],
     },
     visual: {
@@ -207,30 +208,30 @@ export const seoLandingPages = [
     },
     features: [
       {
-        title: "面向海外用户访问",
-        description: "适合服务海外用户的网站、接口服务和轻量应用。",
+        title: t('seoLanding.diagram.usServerOverseasDeploymentLabel'),
+        description: t('seoLanding.diagram.usServerOverseasDeploymentDescription'),
       },
       {
-        title: "方便业务试运行",
-        description: "先部署测试环境，再根据访问数据调整配置和带宽。",
+        title: t('seoLanding.feature.easyTrialRun'),
+        description: t('seoLanding.feature.easyTrialRunDescription'),
       },
       {
-        title: "统一账单管理",
-        description: "海外节点资源可与其他产品一起在账户内查看和续费。",
+        title: t('seoLanding.feature.unifiedBilling'),
+        description: t('seoLanding.feature.unifiedBillingDescription'),
       },
     ],
     scenarios: [
       {
-        title: "海外官网",
-        description: "承载英文站、多语言站和面向海外市场的企业展示内容。",
+        title: t('seoLanding.feature.overseasWebsite'),
+        description: t('seoLanding.feature.overseasWebsiteDescription'),
       },
       {
-        title: "跨境应用服务",
-        description: "部署 API、中转服务、轻量业务后台和运营工具。",
+        title: t('seoLanding.feature.crossBorderAppService'),
+        description: t('seoLanding.feature.crossBorderAppServiceDescription'),
       },
       {
-        title: "海外链路验证",
-        description: "用于测试不同区域访问、系统兼容和业务延迟。",
+        title: t('seoLanding.feature.overseasLinkValidation'),
+        description: t('seoLanding.feature.overseasLinkValidationDescription'),
       },
     ],
     faqs: [
@@ -249,13 +250,13 @@ export const seoLandingPages = [
       },
     ],
     relatedLinks: [
-      { label: "查看香港服务器", to: "/hong-kong-server" },
-      { label: "查看云服务器", to: "/cloud-server" },
-      { label: "查看帮助中心", to: "/help" },
+      { label: t('seoLanding.cta.viewHongKongServers'), to: "/hong-kong-server" },
+      { label: t('seoLanding.pages.relatedLinks.viewCloudServer'), to: "/cloud-server" },
+      { label: t('seoLanding.pages.relatedLinks.viewHelpCenter'), to: "/help" },
     ],
     cta: {
-      title: "部署海外业务入口",
-      description: "根据目标用户区域选择节点和带宽，先小规模上线再持续优化。",
+      title: t('seoLanding.feature.overseasBusinessEntry'),
+      description: t('seoLanding.feature.overseasBusinessEntryDescription'),
       primaryText: "查看产品配置",
       primaryTo: "/products",
       secondaryText: "注册账号",
@@ -267,7 +268,7 @@ export const seoLandingPages = [
     path: "/high-defense-server",
     routeName: "WwwSeoHighDefenseServer",
     keyword: "高防服务器",
-    title: "高防服务器 - 面向攻击防护场景的云服务器",
+    title: t('seoLanding.meta.highDefenseServer.title'),
     description:
       "高防服务器适合游戏、业务接口和高风险网站等防护需求场景，提供配置选择与运维支持。",
     keywords: "高防服务器,高防云服务器,防护服务器,游戏服务器防护",
@@ -275,14 +276,14 @@ export const seoLandingPages = [
     priority: "0.8",
     hero: {
       eyebrow: "安全防护",
-      title: "面向防护需求的高防服务器",
+      title: t('seoLanding.meta.highDefenseServer.heroTitle'),
       summary:
         "适用于容易受到异常流量影响的网站、游戏和接口服务，帮助业务在风险场景下保持更清晰的资源与工单管理路径。",
       points: ["防护场景", "业务连续性", "问题追踪"],
       stats: [
-        { value: "高风险业务", label: "适合游戏与接口服务" },
-        { value: "可追踪", label: "通过工单沉淀问题记录" },
-        { value: "可组合", label: "按服务器规格与带宽选择" },
+        { value: "高风险业务", label: t('seoLanding.ddos.scenarioGameAndApi') },
+        { value: "可追踪", label: t('seoLanding.ddos.tagTraceableDescription') },
+        { value: "可组合", label: t('seoLanding.ddos.tagCombinableDescription') },
       ],
     },
     visual: {
@@ -291,31 +292,31 @@ export const seoLandingPages = [
     },
     features: [
       {
-        title: "适配攻击风险更高的业务",
+        title: t('seoLanding.diagram.ddosProtectionScenariosLabel'),
         description:
           "游戏、活动站、接口服务等更容易遇到异常流量，需要提前规划防护方案。",
       },
       {
-        title: "减少排查分散",
-        description: "资源、账单和工单在账户内集中管理，便于复盘问题。",
+        title: t('seoLanding.feature.centralizedTroubleshooting'),
+        description: t('seoLanding.feature.centralizedManagement'),
       },
       {
-        title: "按业务承压选择配置",
-        description: "根据业务类型、流量规模和系统负载选择服务器规格。",
+        title: t('seoLanding.serverPlan.matchWorkload'),
+        description: t('seoLanding.serverPlan.matchWorkloadDesc'),
       },
     ],
     scenarios: [
       {
-        title: "游戏业务入口",
-        description: "面向游戏登录、接口和官网等对可用性敏感的业务。",
+        title: t('seoLanding.game.workloadEntry'),
+        description: t('seoLanding.game.workloadEntryDesc'),
       },
       {
-        title: "活动与营销页面",
-        description: "适合短期访问波动明显、需要提前准备防护预案的页面。",
+        title: t('seoLanding.campaign.pages'),
+        description: t('seoLanding.campaign.pagesDesc'),
       },
       {
-        title: "业务接口服务",
-        description: "承载 API、回调服务和对外接口，减少异常流量对主业务影响。",
+        title: t('seoLanding.api.services'),
+        description: t('seoLanding.api.servicesDesc'),
       },
     ],
     faqs: [
@@ -336,13 +337,13 @@ export const seoLandingPages = [
       },
     ],
     relatedLinks: [
-      { label: "查看云服务器", to: "/cloud-server" },
-      { label: "查看帮助中心", to: "/help" },
-      { label: "查看产品与服务", to: "/products" },
+      { label: t('seoLanding.pages.relatedLinks.viewCloudServer'), to: "/cloud-server" },
+      { label: t('seoLanding.pages.relatedLinks.viewHelpCenter'), to: "/help" },
+      { label: t('seoLanding.pages.relatedLinks.viewProductsServices'), to: "/products" },
     ],
     cta: {
-      title: "为高风险业务准备服务器方案",
-      description: "先梳理业务峰值、攻击风险和系统配置，再选择合适资源。",
+      title: t('seoLanding.ddos.highRiskPlan'),
+      description: t('seoLanding.ddos.highRiskPlanDesc'),
       primaryText: "查看产品配置",
       primaryTo: "/products",
       secondaryText: "提交咨询工单",
@@ -354,7 +355,7 @@ export const seoLandingPages = [
     path: "/cloud-pc",
     routeName: "WwwSeoCloudPc",
     keyword: "云电脑",
-    title: "云电脑 - 远程办公与轻量桌面云方案",
+    title: t('seoLanding.meta.cloudPc.title'),
     description:
       "云电脑适合远程办公、轻量桌面、软件测试和临时工作环境，提供云端资源选择与账号管理能力。",
     keywords: "云电脑,云桌面,远程办公云电脑,桌面云",
@@ -362,14 +363,14 @@ export const seoLandingPages = [
     priority: "0.7",
     hero: {
       eyebrow: "云端桌面",
-      title: "灵活可用的云电脑",
+      title: t('seoLanding.meta.cloudPc.heroTitle'),
       summary:
         "为远程办公、软件测试、临时桌面和轻量操作环境提供云端资源，减少本地设备差异带来的维护成本。",
       points: ["远程访问", "轻量桌面", "账号管理"],
       stats: [
-        { value: "云端运行", label: "减少本地设备依赖" },
-        { value: "灵活使用", label: "适合临时与长期场景" },
-        { value: "统一入口", label: "控制台管理与续费" },
+        { value: "云端运行", label: t('seoLanding.cloudDesktop.lessLocalDependency') },
+        { value: "灵活使用", label: t('seoLanding.cloudDesktop.shortAndLongTerm') },
+        { value: "统一入口", label: t('seoLanding.cloudDesktop.consoleAndRenewal') },
       ],
     },
     visual: {
@@ -378,30 +379,30 @@ export const seoLandingPages = [
     },
     features: [
       {
-        title: "降低本地设备门槛",
-        description: "常用软件、测试环境和轻量桌面可运行在云端资源上。",
+        title: t('seoLanding.cloudDesktop.lowerDeviceBarrier'),
+        description: t('seoLanding.cloudDesktop.cloudResourceDesc'),
       },
       {
-        title: "适合临时项目",
-        description: "短期测试、外包协作和演示环境可以快速准备。",
+        title: t('seoLanding.cloudDesktop.temporaryProject'),
+        description: t('seoLanding.cloudDesktop.temporaryProjectDesc'),
       },
       {
-        title: "方便账号管理",
-        description: "通过统一账户查看服务、续费和售后记录。",
+        title: t('seoLanding.cloudDesktop.easyAccountManagement'),
+        description: t('seoLanding.cloudPc.unifiedAccount.desc'),
       },
     ],
     scenarios: [
       {
-        title: "远程办公",
-        description: "为员工或临时协作者提供相对统一的云端操作环境。",
+        title: t('seoLanding.cloudPc.remoteWork.title'),
+        description: t('seoLanding.cloudPc.remoteWork.desc'),
       },
       {
-        title: "软件测试",
-        description: "隔离测试环境，减少对个人电脑配置和系统版本的依赖。",
+        title: t('seoLanding.cloudPc.softwareTesting.title'),
+        description: t('seoLanding.cloudPc.softwareTesting.desc'),
       },
       {
-        title: "演示与培训",
-        description: "在短期活动、培训和客户演示中快速准备可用桌面。",
+        title: t('seoLanding.cloudPc.demoTraining.title'),
+        description: t('seoLanding.cloudPc.demoTraining.desc'),
       },
     ],
     faqs: [
@@ -421,13 +422,13 @@ export const seoLandingPages = [
       },
     ],
     relatedLinks: [
-      { label: "查看云服务器", to: "/cloud-server" },
-      { label: "查看产品与服务", to: "/products" },
-      { label: "查看帮助中心", to: "/help" },
+      { label: t('seoLanding.pages.relatedLinks.viewCloudServer'), to: "/cloud-server" },
+      { label: t('seoLanding.pages.relatedLinks.viewProductsServices'), to: "/products" },
+      { label: t('seoLanding.pages.relatedLinks.viewHelpCenter'), to: "/help" },
     ],
     cta: {
-      title: "为远程办公准备云端桌面",
-      description: "先确认软件、系统和使用周期，再选择合适的云电脑资源。",
+      title: t('seoLanding.cloudPc.section.remoteWorkDesktop.title'),
+      description: t('seoLanding.cloudPc.section.remoteWorkDesktop.desc'),
       primaryText: "查看产品配置",
       primaryTo: "/products",
       secondaryText: "注册账号",
@@ -554,13 +555,13 @@ export function buildSeoLandingStructuredData(
       {
         "@type": "ListItem",
         position: 1,
-        name: "首页",
+        name: t('seoLanding.breadcrumb.home'),
         item: homeUrl,
       },
       {
         "@type": "ListItem",
         position: 2,
-        name: "产品与服务",
+        name: t('seoLanding.breadcrumb.productsServices'),
         item: productsUrl,
       },
       {

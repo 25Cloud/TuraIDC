@@ -165,6 +165,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useUserStore } from '@/store';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 defineOptions({ name: 'AdminFinanceInvoices' });
 
@@ -211,16 +212,16 @@ const invoiceTypeOptions = Object.entries(INVOICE_TYPE_MAP)
 const invoiceStatusOptions = Object.entries(statusLabelMap).map(([value, label]) => ({ value, label }));
 
 const columns: PrimaryTableCol<InvoiceRecord>[] = [
-  { colKey: 'invoice_no', title: '账单号', minWidth: 170 },
-  { colKey: 'user', title: '用户', minWidth: 180 },
-  { colKey: 'item', title: '账单项目', minWidth: 240 },
-  { colKey: 'type', title: '类型', width: 120 },
-  { colKey: 'amount', title: '金额', width: 120 },
-  { colKey: 'paid', title: '已付', width: 120 },
-  { colKey: 'status', title: '状态', width: 110 },
-  { colKey: 'createdAt', title: '创建时间', width: 170 },
-  { colKey: 'paidAt', title: '支付时间', width: 170 },
-  { colKey: 'operation', title: '操作', width: 130, fixed: 'right' },
+  { colKey: 'invoice_no', title: t('finance.invoices.invoiceNo'), minWidth: 170 },
+  { colKey: 'user', title: t('finance.invoices.user'), minWidth: 180 },
+  { colKey: 'item', title: t('finance.invoices.item'), minWidth: 240 },
+  { colKey: 'type', title: t('finance.invoices.type'), width: 120 },
+  { colKey: 'amount', title: t('finance.invoices.amount'), width: 120 },
+  { colKey: 'paid', title: t('finance.invoices.paid'), width: 120 },
+  { colKey: 'status', title: t('common.status'), width: 110 },
+  { colKey: 'createdAt', title: t('finance.invoices.createdAt'), width: 170 },
+  { colKey: 'paidAt', title: t('finance.invoices.paidAt'), width: 170 },
+  { colKey: 'operation', title: t('common.action'), width: 130, fixed: 'right' },
 ];
 
 const currentInvoice = computed(() => detailState.detail.invoice || ({} as InvoiceRecord));
@@ -339,8 +340,8 @@ function confirmCancel(row: InvoiceRecord, fromDrawer = false) {
     header: '取消账单',
     body: `确认取消账单「${row.invoice_no || row.id}」吗？`,
     theme: 'warning',
-    confirmBtn: '确认取消',
-    cancelBtn: '取消',
+    confirmBtn: t('finance.invoices.confirmCancel'),
+    cancelBtn: t('common.cancel'),
     async onConfirm() {
       await cancelInvoice(row, fromDrawer);
       dialog.hide();
@@ -354,7 +355,7 @@ async function cancelInvoice(row: InvoiceRecord, fromDrawer = false) {
   cancelLoadingId.value = row.id;
   try {
     await adminApi.invoices.cancel(row.id);
-    MessagePlugin.success('账单已取消');
+    MessagePlugin.success(t('finance.invoices.canceled'));
     await loadList();
     if (detailState.currentId === Number(row.id)) await reloadDetail();
   } catch (error) {
@@ -383,11 +384,11 @@ function handleMobileAction(action: unknown, row: InvoiceRecord) {
 
 function invoiceMobileRows(row: InvoiceRecord) {
   return [
-    { label: '用户', value: userName(row.user) },
-    { label: '已付', value: formatMoney(row.paid_amount) },
-    { label: '订单', value: fieldValue(row.order?.order_no || row.order_no) },
-    { label: '创建', value: formatDateTime(row.created_at) },
-    { label: '支付', value: formatDateTime(row.paid_at), show: Boolean(row.paid_at) },
+    { label: t('finance.invoices.user'), value: userName(row.user) },
+    { label: t('finance.invoices.paid'), value: formatMoney(row.paid_amount) },
+    { label: t('finance.invoices.order'), value: fieldValue(row.order?.order_no || row.order_no) },
+    { label: t('common.create'), value: formatDateTime(row.created_at) },
+    { label: t('finance.invoices.pay'), value: formatDateTime(row.paid_at), show: Boolean(row.paid_at) },
   ];
 }
 

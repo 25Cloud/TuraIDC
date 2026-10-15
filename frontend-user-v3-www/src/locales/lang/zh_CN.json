@@ -33,7 +33,8 @@
       "readyToBuy": "可直接购买",
       "summary": "配置摘要",
       "notFound": "商品不存在或已下架",
-      "backToProducts": "返回产品页"
+      "backToProducts": "返回产品页",
+      "cycle": "周期"
     },
     "osPicker": {
       "version": "版本",
@@ -252,7 +253,8 @@
       "documentUrlMissing": "站点暂未配置该文档地址"
     },
     "detail": {
-      "tableOfContents": "目录结构"
+      "tableOfContents": "目录结构",
+      "fullText": "全文"
     },
     "nav": {
       "news": "新闻动态",
@@ -283,22 +285,37 @@
       "description": "提供云服务器、独立服务器、云电脑与 IDC 服务，覆盖香港、美国与国内多地节点。"
     },
     "products": {
-      "description": "浏览云服务器、独立服务器、云电脑与 IDC 产品方案。"
+      "description": "浏览云服务器、独立服务器、云电脑与 IDC 产品方案。",
+      "title": "产品与服务"
     },
     "about": {
-      "description": "了解 IDC 服务能力、节点覆盖和平台优势。"
+      "description": "了解 IDC 服务能力、节点覆盖和平台优势。",
+      "title": "关于我们"
     },
     "terms": {
-      "description": "查看服务条款。"
+      "description": "查看服务条款。",
+      "title": "服务条款"
     },
     "privacy": {
-      "description": "查看隐私政策。"
+      "description": "查看隐私政策。",
+      "title": "隐私政策"
     },
     "notices": {
-      "description": "查看平台公告和服务通知。"
+      "description": "查看平台公告和服务通知。",
+      "title": "官方公告"
     },
     "help": {
-      "description": "查看产品购买、账单支付和服务管理帮助。"
+      "description": "查看产品购买、账单支付和服务管理帮助。",
+      "title": "帮助中心"
+    },
+    "productDetail": {
+      "title": "商品详情"
+    },
+    "noticeDetail": {
+      "title": "公告详情"
+    },
+    "helpDetail": {
+      "title": "帮助详情"
     }
   },
   "seoLanding": {
@@ -416,7 +433,8 @@
       }
     },
     "breadcrumb": {
-      "home": "首页"
+      "home": "首页",
+      "productsServices": "产品与服务"
     },
     "pages": {
       "relatedLinks": {
@@ -623,7 +641,17 @@
     "buyNow": "立即选购",
     "productDetails": "产品详情",
     "scenarioList": "场景列表",
-    "relatedProducts": "相关产品："
+    "relatedProducts": "相关产品：",
+    "process": {
+      "step1Title": "明确场景",
+      "step1Description": "确认业务访问区域、系统环境、带宽需求和预算范围。",
+      "step2Title": "查看配置",
+      "step2Description": "在产品列表中筛选合适的规格、节点和服务周期。",
+      "step3Title": "注册开通",
+      "step3Description": "进入控制台完成账号注册、下单、支付和服务管理。",
+      "step4Title": "持续维护",
+      "step4Description": "通过公告、帮助中心和工单体系跟踪使用与售后问题。"
+    }
   },
   "common": {
     "request": {
@@ -670,7 +698,41 @@
     "hero": {
       "productEntries": "产品入口",
       "carouselIndicator": "轮播指示",
-      "carouselControls": "轮播控制"
+      "carouselControls": "轮播控制",
+      "slides": {
+        "refresh": {
+          "title": "官网焕新 · 云上新体验"
+        },
+        "global": {
+          "title": "多地节点 · 全球低延迟互联"
+        },
+        "security": {
+          "title": "企业级安全 · 稳定可靠交付"
+        },
+        "value": {
+          "title": "低门槛套餐 · 直享实惠价"
+        },
+        "support": {
+          "title": "企业客服 · 一对一专属服务"
+        }
+      },
+      "features": {
+        "dynamic": {
+          "title": "香港 CN2 精品线路 上线"
+        },
+        "activity": {
+          "title": "新客首单 39 元/年"
+        },
+        "enterprise": {
+          "title": "IDC 企业采购通道"
+        },
+        "cloudDesktop": {
+          "title": "西安云电脑 即开即用"
+        },
+        "new": {
+          "title": "十堰高防独立服务器"
+        }
+      }
     },
     "news": {
       "title": "资讯动态",
@@ -693,7 +755,8 @@
           "operationsOptimization": "业务运营优化",
           "dataAnalyticsAndMining": "数据分析与挖掘",
           "paymentLinkCoordination": "支付链路协同"
-        }
+        },
+        "label": "电商"
       },
       "game": {
         "label": "游戏",
@@ -771,6 +834,14 @@
       "officialQqGroup": "官方QQ群",
       "partnershipEmail": "合作邮箱",
       "serviceHours": "服务时间"
+    }
+  },
+  "websiteProduct": {
+    "summary": {
+      "region": "区域",
+      "os": "系统安装",
+      "cpuModel": "CPU型号",
+      "memory": "内存"
     }
   }
 }

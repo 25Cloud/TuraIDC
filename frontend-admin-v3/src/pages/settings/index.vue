@@ -508,6 +508,7 @@ import type { HomeHeroFeature, HomeHeroPayload, HomeHeroSlide, MediaFileRecord, 
 import { adminApi } from '@/api/admin';
 import SecretInput from '@/components/secret-input/index.vue';
 import { AdminPermissions } from '@/constants/permissions';
+import { t } from '@/locales';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
 
@@ -542,10 +543,10 @@ interface FieldOption {
  * 选「自定义」则直接填像素值，后端会校验 0–24 后再下发。
  */
 const RADIUS_PRESETS: FieldOption[] = [
-  { label: '直角（0px）', value: 0 },
-  { label: '紧凑（3px）', value: 3 },
-  { label: '标准（6px）', value: 6 },
-  { label: '柔和（12px）', value: 12 },
+  { label: t('settings.index.radiusSharp'), value: 0 },
+  { label: t('settings.index.radiusCompact'), value: 3 },
+  { label: t('settings.index.radiusStandard'), value: 6 },
+  { label: t('settings.index.radiusSoft'), value: 12 },
 ];
 const RADIUS_CUSTOM = 'custom';
 const RADIUS_CUSTOM_LABEL = '自定义…';
@@ -627,9 +628,9 @@ const mediaDrawerLoading = ref(false);
 const mediaDrawerList = ref<Array<{ url: string; filename: string; isVideo: boolean }>>([]);
 const mediaDrawerType = ref('');
 const mediaDrawerTypeOptions = [
-  { label: '全部类型', value: '' },
-  { label: '图片', value: 'image' },
-  { label: '视频', value: 'video' },
+  { label: t('content.mediaLibrary.allTypes'), value: '' },
+  { label: t('content.mediaLibrary.image'), value: 'image' },
+  { label: t('content.mediaLibrary.video'), value: 'video' },
 ];
 const mediaDrawerUploadRef = ref<HTMLInputElement>();
 
@@ -647,29 +648,29 @@ const videoUrlInput = ref('');
 const videoUrlPreview = ref('');
 
 const automationScheduleModeOptions: FieldOption[] = [
-  { label: '每 15 分钟', value: 'every_fifteen_minutes' },
-  { label: '每 30 分钟', value: 'every_thirty_minutes' },
-  { label: '每小时', value: 'hourly' },
-  { label: '每天', value: 'daily' },
+  { label: t('settings.index.everyFifteenMinutes'), value: 'every_fifteen_minutes' },
+  { label: t('settings.index.everyThirtyMinutes'), value: 'every_thirty_minutes' },
+  { label: t('settings.index.hourly'), value: 'hourly' },
+  { label: t('settings.index.daily'), value: 'daily' },
 ];
 
 const tabGroups: Array<{ group: string; label: string; tabs: Array<{ label: string; value: SettingsTab }> }> = [
   {
     group: 'config',
-    label: '基础配置',
+    label: t('settings.index.sectionBase'),
     tabs: [
-      { label: '推荐奖励', value: 'referral' },
-      { label: '自动化策略', value: 'automation' },
-      { label: '日志归档', value: 'log_archive' },
-      { label: '账户与财务', value: 'finance' },
+      { label: t('settings.index.navReferral'), value: 'referral' },
+      { label: t('settings.index.navAutomation'), value: 'automation' },
+      { label: t('settings.index.navLogArchive'), value: 'log_archive' },
+      { label: t('settings.index.navFinance'), value: 'finance' },
     ],
   },
   {
     group: 'site',
-    label: '站点内容',
+    label: t('settings.index.sectionSite'),
     tabs: [
-      { label: '基础信息', value: 'site_basic' },
-      { label: '首页 Banner', value: 'site_hero' },
+      { label: t('settings.index.navSiteBasic'), value: 'site_basic' },
+      { label: t('settings.index.navSiteHero'), value: 'site_hero' },
     ],
   },
 ];
@@ -678,18 +679,18 @@ const tabOptions = tabGroups.flatMap((g) => g.tabs);
 const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
   finance: {
     group: 'finance',
-    title: '账户与财务',
-    description: '配置账户充值与实名认证之间的合规门槛。',
+    title: t('settings.index.navFinance'),
+    description: t('settings.index.financeDesc'),
     sections: [
       {
-        title: '充值',
+        title: t('settings.index.topUp'),
         fields: [
           {
             key: 'recharge_requires_verification',
-            label: '充值须实名认证',
+            label: t('settings.index.topUpRequireVerification'),
             type: 'switch',
             default: true,
-            help: '开启后未完成实名认证的用户无法为账户余额充值；面向非大陆主体部署可关闭。',
+            help: t('settings.index.topUpVerificationHint'),
           },
         ],
       },
@@ -697,61 +698,61 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
   },
   referral: {
     group: 'referral',
-    title: '推荐奖励配置',
-    description: '集中控制推荐返利开关、默认比例、冻结期和最低提现门槛。',
+    title: t('settings.index.referralConfig'),
+    description: t('settings.index.referralDesc'),
     sections: [
       {
-        title: '奖励规则',
+        title: t('settings.index.rewardRules'),
         fields: [
-          { key: 'enabled', label: '启用推荐返利', type: 'switch', default: true },
-          { key: 'reward_rate', label: '默认奖励比例（%）', type: 'number', default: 10, min: 0, max: 100 },
-          { key: 'reward_freeze_days', label: '奖励冻结期（天）', type: 'number', default: 4, min: 0, max: 365 },
-          { key: 'withdraw_min_amount', label: '最低提现金额（元）', type: 'number', default: 20, min: 0 },
+          { key: 'enabled', label: t('settings.index.referralEnabled'), type: 'switch', default: true },
+          { key: 'reward_rate', label: t('settings.index.rewardRate'), type: 'number', default: 10, min: 0, max: 100 },
+          { key: 'reward_freeze_days', label: t('settings.index.rewardFreezeDays'), type: 'number', default: 4, min: 0, max: 365 },
+          { key: 'withdraw_min_amount', label: t('settings.index.withdrawMin'), type: 'number', default: 20, min: 0 },
         ],
       },
     ],
   },
   automation: {
     group: 'automation',
-    title: '自动化策略配置',
-    description: '配置服务生命周期、账单提醒、工单关闭和未支付账单清理策略。',
+    title: t('settings.index.automationConfig'),
+    description: t('settings.index.automationDesc'),
     sections: [
       {
-        title: '服务生命周期',
+        title: t('settings.index.serviceLifecycle'),
         fields: [
-          { key: 'expire_suspend_enabled', label: '启用到期自动暂停', type: 'switch', default: true },
-          { key: 'expire_suspend_after_days', label: '到期后暂停天数', type: 'number', default: 0, min: 0, max: 365 },
-          { key: 'expire_suspend_notify_enabled', label: '暂停前发送通知', type: 'switch', default: true },
-          { key: 'expire_unsuspend_notify_enabled', label: '恢复后发送通知', type: 'switch', default: true },
-          { key: 'expire_terminate_enabled', label: '启用自动终止', type: 'switch', default: false },
-          { key: 'expire_terminate_after_days', label: '暂停后终止天数', type: 'number', default: 7, min: 1, max: 365 },
+          { key: 'expire_suspend_enabled', label: t('settings.index.expireSuspendEnabled'), type: 'switch', default: true },
+          { key: 'expire_suspend_after_days', label: t('settings.index.expireSuspendDays'), type: 'number', default: 0, min: 0, max: 365 },
+          { key: 'expire_suspend_notify_enabled', label: t('settings.index.suspendNotify'), type: 'switch', default: true },
+          { key: 'expire_unsuspend_notify_enabled', label: t('settings.index.resumeNotify'), type: 'switch', default: true },
+          { key: 'expire_terminate_enabled', label: t('settings.index.terminateEnabled'), type: 'switch', default: false },
+          { key: 'expire_terminate_after_days', label: t('settings.index.terminateDays'), type: 'number', default: 7, min: 1, max: 365 },
           {
             key: 'service_lifecycle_schedule_mode',
-            label: '任务执行周期',
+            label: t('settings.index.taskInterval'),
             type: 'select',
             default: 'every_fifteen_minutes',
             options: automationScheduleModeOptions,
           },
           {
             key: 'service_lifecycle_schedule_time',
-            label: '执行时间',
+            label: t('settings.index.runAt'),
             type: 'time',
             default: '00:00:00',
-            placeholder: '分钟仅支持 00/15/30/45',
+            placeholder: t('settings.index.minutePlaceholder'),
             pattern: /^\d{2}:(00|15|30|45):00$/,
             patternMessage: '分钟仅支持 00、15、30 或 45，秒必须为 00',
           },
         ],
       },
       {
-        title: '账单与提醒',
+        title: t('settings.index.billingReminder'),
         fields: [
-          { key: 'renew_notice_enabled', label: '启用续费提醒', type: 'switch', default: true },
-          { key: 'renew_create_invoice_enabled', label: '自动创建续费账单', type: 'switch', default: true },
-          { key: 'invoice_unpaid_reminder_enabled', label: '启用未支付提醒', type: 'switch', default: true },
+          { key: 'renew_notice_enabled', label: t('settings.index.renewNoticeEnabled'), type: 'switch', default: true },
+          { key: 'renew_create_invoice_enabled', label: t('settings.index.renewInvoiceEnabled'), type: 'switch', default: true },
+          { key: 'invoice_unpaid_reminder_enabled', label: t('settings.index.unpaidReminderEnabled'), type: 'switch', default: true },
           {
             key: 'invoice_unpaid_before_due_days',
-            label: '到期前提醒天数',
+            label: t('settings.index.remindBeforeDueDays'),
             type: 'number',
             default: 1,
             min: 0,
@@ -759,57 +760,57 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
           },
           {
             key: 'invoice_overdue_reminder_days',
-            label: '逾期提醒天数',
+            label: t('settings.index.overdueRemindDays'),
             type: 'input',
             default: '1,3,5',
             wide: true,
             pattern: /^\d+(,\d+)*$/,
             patternMessage: '请使用英文逗号分隔天数，例如 1,3,5',
           },
-          { key: 'invoice_overdue_after_days', label: '逾期标记天数', type: 'number', default: 0, min: 0, max: 365 },
+          { key: 'invoice_overdue_after_days', label: t('settings.index.overdueAfterDays'), type: 'number', default: 0, min: 0, max: 365 },
           {
             key: 'billing_maintenance_schedule_mode',
-            label: '任务执行周期',
+            label: t('settings.index.taskInterval'),
             type: 'select',
             default: 'hourly',
             options: automationScheduleModeOptions,
           },
           {
             key: 'billing_maintenance_schedule_time',
-            label: '执行时间',
+            label: t('settings.index.runAt'),
             type: 'time',
             default: '00:00:00',
-            placeholder: '分钟仅支持 00/15/30/45',
+            placeholder: t('settings.index.minutePlaceholder'),
             pattern: /^\d{2}:(00|15|30|45):00$/,
             patternMessage: '分钟仅支持 00、15、30 或 45，秒必须为 00',
           },
         ],
       },
       {
-        title: '工单与待支付清理',
+        title: t('settings.index.ticketCleanup'),
         fields: [
-          { key: 'ticket_auto_close_enabled', label: '启用工单自动关闭', type: 'switch', default: true },
+          { key: 'ticket_auto_close_enabled', label: t('settings.index.ticketAutoClose'), type: 'switch', default: true },
           {
             key: 'ticket_auto_close_after_hours',
-            label: '工单自动关闭时长（小时）',
+            label: t('settings.index.ticketAutoCloseHours'),
             type: 'number',
             default: 48,
             min: 1,
             max: 720,
           },
-          { key: 'pending_order_cleanup_enabled', label: '启用未支付账单清理', type: 'switch', default: true },
+          { key: 'pending_order_cleanup_enabled', label: t('settings.index.pendingOrderCleanup'), type: 'switch', default: true },
           {
             key: 'pending_order_cleanup_after_hours',
-            label: '未支付账单保留时长（小时）',
+            label: t('settings.index.pendingOrderKeepHours'),
             type: 'number',
             default: 1,
             min: 1,
             max: 720,
           },
-          { key: 'pending_recharge_cleanup_enabled', label: '启用未支付充值单清理', type: 'switch', default: true },
+          { key: 'pending_recharge_cleanup_enabled', label: t('settings.index.pendingRechargeCleanup'), type: 'switch', default: true },
           {
             key: 'pending_recharge_cleanup_after_days',
-            label: '未支付充值单保留天数',
+            label: t('settings.index.pendingRechargeKeepDays'),
             type: 'number',
             default: 3,
             min: 0,
@@ -817,58 +818,58 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
           },
           {
             key: 'ticket_auto_close_schedule_mode',
-            label: '工单任务执行周期',
+            label: t('settings.index.ticketTaskInterval'),
             type: 'select',
             default: 'hourly',
             options: automationScheduleModeOptions,
           },
           {
             key: 'ticket_auto_close_schedule_time',
-            label: '工单执行时间',
+            label: t('settings.index.ticketRunAt'),
             type: 'time',
             default: '00:00:00',
-            placeholder: '分钟仅支持 00/15/30/45',
+            placeholder: t('settings.index.minutePlaceholder'),
             pattern: /^\d{2}:(00|15|30|45):00$/,
             patternMessage: '分钟仅支持 00、15、30 或 45，秒必须为 00',
           },
           {
             key: 'order_cleanup_schedule_mode',
-            label: '账单清理执行周期',
+            label: t('settings.index.cleanupInterval'),
             type: 'select',
             default: 'every_fifteen_minutes',
             options: automationScheduleModeOptions,
           },
           {
             key: 'order_cleanup_schedule_time',
-            label: '账单清理执行时间',
+            label: t('settings.index.cleanupRunAt'),
             type: 'time',
             default: '00:00:00',
-            placeholder: '分钟仅支持 00/15/30/45',
+            placeholder: t('settings.index.minutePlaceholder'),
             pattern: /^\d{2}:(00|15|30|45):00$/,
             patternMessage: '分钟仅支持 00、15、30 或 45，秒必须为 00',
           },
           {
             key: 'supplier_balance_log_retention_days',
-            label: '上游额度变更记录保留天数',
+            label: t('settings.index.upstreamLogRetentionDays'),
             type: 'number',
             default: 30,
             min: 1,
             max: 365,
-            help: '超过该天数的上游额度变更流水会被自动清理。流水仅在余额发生变化时写入，占用极小；设长一些便于事后对账追溯。',
+            help: t('settings.index.upstreamLogRetentionHint'),
           },
         ],
       },
       {
-        title: '上游余额告警',
+        title: t('settings.index.upstreamBalanceAlert'),
         fields: [
           {
             key: 'supplier_low_balance_alert_repeat_hours',
-            label: '余额告警重复时间（小时）',
+            label: t('settings.index.balanceAlertRepeatHours'),
             type: 'number',
             default: 24,
             min: 1,
             max: 720,
-            help: '上游余额持续低于阈值时，每隔该时长重复提醒一次管理员。余额回升到阈值以上会立即清除告警标记，再次跌破时立刻提醒，不受该间隔限制。',
+            help: t('settings.index.balanceAlertHint'),
           },
         ],
       },
@@ -876,15 +877,15 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
   },
   log_archive: {
     group: 'log_archive',
-    title: '日志归档设置',
-    description: '配置 pt-archiver 的运行参数与日志保留策略。',
+    title: t('settings.index.logArchiveConfig'),
+    description: t('settings.index.logArchiveDesc'),
     sections: [
       {
-        title: '运行参数',
+        title: t('settings.index.runtimeParams'),
         fields: [
           {
             key: 'pt_archiver_binary',
-            label: 'pt-archiver 二进制路径',
+            label: t('settings.index.archiverBinaryPath'),
             type: 'input',
             default: '/usr/bin/pt-archiver',
             required: true,
@@ -892,53 +893,53 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
           },
           {
             key: 'pt_archiver_defaults_file',
-            label: '默认配置文件',
+            label: t('settings.index.archiverConfigFile'),
             type: 'input',
             default: '/etc/turaidc/pt-archiver.cnf',
             required: true,
             maxlength: 255,
           },
-          { key: 'concurrency', label: '最大并发数', type: 'number', default: 2, min: 1, max: 8 },
-          { key: 'batch_size', label: '每批处理行数', type: 'number', default: 1000, min: 100, max: 10000 },
-          { key: 'sleep_seconds', label: '批次间隔（秒）', type: 'number', default: 1, min: 0, max: 60 },
+          { key: 'concurrency', label: t('settings.index.maxConcurrency'), type: 'number', default: 2, min: 1, max: 8 },
+          { key: 'batch_size', label: t('settings.index.batchSize'), type: 'number', default: 1000, min: 100, max: 10000 },
+          { key: 'sleep_seconds', label: t('settings.index.batchInterval'), type: 'number', default: 1, min: 0, max: 60 },
         ],
       },
       {
-        title: '保留策略',
+        title: t('settings.index.retentionPolicy'),
         fields: [
-          { key: 'retention_days', label: '日志保留天数', type: 'number', default: 30, min: 1, max: 3650 },
-          { key: 'file_retention_days', label: '归档文件保留天数', type: 'number', default: 180, min: 1, max: 3650 },
+          { key: 'retention_days', label: t('settings.index.logRetentionDays'), type: 'number', default: 30, min: 1, max: 3650 },
+          { key: 'file_retention_days', label: t('settings.index.archiveRetentionDays'), type: 'number', default: 180, min: 1, max: 3650 },
         ],
       },
     ],
   },
   site_basic: {
     group: 'basic',
-    title: '基础信息',
-    description: '维护站点名称、Logo、Favicon、官方联系方式与备案号。',
+    title: t('settings.index.navSiteBasic'),
+    description: t('settings.index.siteBasicDesc'),
     sections: [
       {
-        title: '站点信息',
+        title: t('settings.index.siteInfo'),
         fields: [
           {
             key: 'site_name',
-            label: '站点名称',
+            label: t('settings.index.siteName'),
             type: 'input',
             default: '',
             maxlength: 50,
-            placeholder: '例如：图拉云',
+            placeholder: t('settings.index.siteNamePlaceholder'),
           },
           {
             key: 'browser_title',
-            label: '浏览器标题',
+            label: t('settings.index.browserTitle'),
             type: 'input',
             default: '',
             maxlength: 80,
-            placeholder: '留空则默认使用站点名称',
+            placeholder: t('settings.index.browserTitlePlaceholder'),
           },
           {
             key: 'site_logo',
-            label: '站点 Logo',
+            label: t('settings.index.siteLogo'),
             type: 'image',
             default: '',
             maxlength: 255,
@@ -946,7 +947,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
           },
           {
             key: 'site_favicon',
-            label: '站点 Favicon',
+            label: t('settings.index.siteFavicon'),
             type: 'image',
             default: '',
             maxlength: 255,
@@ -954,94 +955,94 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
           },
           {
             key: 'client_console_icon',
-            label: '用户控制台图标',
+            label: t('settings.index.consoleIcon'),
             type: 'image',
             default: '',
             maxlength: 255,
             placeholder: '/branding/logo.png',
-            help: '用于用户控制台侧边栏与登录页 Logo，留空则使用站点 Favicon。',
+            help: t('settings.index.consoleIconHint'),
           },
           {
             key: 'brand_primary_color',
-            label: '品牌主色',
+            label: t('settings.index.brandColor'),
             type: 'color',
             default: '#165DFF',
             maxlength: 7,
             pattern: /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/,
             patternMessage: '品牌主色必须是 #RRGGBG 或 #RGB 格式',
-            help: '按钮、链接、选中态等强调色。官网、用户控制台、管理端三端统一生效；控制台用户仍可在自己设置里临时改色。',
+            help: t('settings.index.brandColorHint'),
           },
           {
             key: 'brand_radius',
-            label: '界面圆角',
+            label: t('settings.index.radius'),
             type: 'radius',
             default: 6,
             min: 0,
             max: 24,
-            help: '控件取该值的一半、容器取该值。档位与项目既有规范一致（控件 3px / 容器 6px），选「自定义」可直接填像素。',
+            help: t('settings.index.radiusHint'),
           },
-          { key: 'service_phone', label: '官方QQ群', type: 'input', default: '', maxlength: 40 },
+          { key: 'service_phone', label: t('settings.index.officialQqGroup'), type: 'input', default: '', maxlength: 40 },
           {
             key: 'service_email',
-            label: '合作邮箱',
+            label: t('settings.index.contactEmail'),
             type: 'input',
             default: '',
             maxlength: 120,
-            placeholder: '例如：support@your-domain.com',
-            help: '展示在官网页脚与用户控制台的联系方式中，留空则该行不显示。',
+            placeholder: t('settings.index.contactEmailPlaceholder'),
+            help: t('settings.index.contactEmailHint'),
           },
           {
             key: 'service_hours',
-            label: '服务时间',
+            label: t('settings.index.serviceHours'),
             type: 'input',
             default: '',
             maxlength: 60,
-            placeholder: '例如：工作日 9:00 - 22:00',
-            help: '展示在官网页脚与「关于我们」页，留空则该行不显示。',
+            placeholder: t('settings.index.serviceHoursPlaceholder'),
+            help: t('settings.index.serviceHoursHint'),
           },
-          { key: 'support_group_qr', label: '官方群聊二维码', type: 'image', default: '', maxlength: 255 },
-          { key: 'support_group_link', label: '入群链接', type: 'input', default: '', maxlength: 255 },
+          { key: 'support_group_qr', label: t('settings.index.supportQrCode'), type: 'image', default: '', maxlength: 255 },
+          { key: 'support_group_link', label: t('settings.index.supportGroupLink'), type: 'input', default: '', maxlength: 255 },
           {
             key: 'icp_record',
-            label: 'ICP 备案号',
+            label: t('settings.index.icpNumber'),
             type: 'input',
             default: '',
             maxlength: 60,
-            placeholder: '例如：京ICP备00000000号-1',
-            help: '展示在官网页脚，留空则该行不显示。',
+            placeholder: t('settings.index.icpNumberPlaceholder'),
+            help: t('settings.index.footerRowHint'),
           },
           {
             key: 'value_added_license',
-            label: '增值电信业务经营许可证',
+            label: t('settings.index.licenseNumber'),
             type: 'input',
             default: '',
             maxlength: 80,
-            placeholder: '例如：京B2-20000000',
-            help: '展示在官网页脚，留空则该行不显示。',
+            placeholder: t('settings.index.licenseNumberPlaceholder'),
+            help: t('settings.index.footerRowHint'),
           },
-          { key: 'terms_url', label: '服务条款链接', type: 'input', default: '', maxlength: 255 },
-          { key: 'privacy_url', label: '隐私政策链接', type: 'input', default: '', maxlength: 255 },
+          { key: 'terms_url', label: t('settings.index.termsUrl'), type: 'input', default: '', maxlength: 255 },
+          { key: 'privacy_url', label: t('settings.index.privacyUrl'), type: 'input', default: '', maxlength: 255 },
         ],
       },
       {
-        title: '通知总开关',
-        description: '邮件与短信的全局开关；关闭后对应渠道的验证码与业务通知不再发送。',
+        title: t('settings.index.notificationMaster'),
+        description: t('settings.index.notificationDesc'),
         fields: [
           {
             key: 'email_enabled',
-            label: '启用邮件通知',
+            label: t('settings.index.emailEnabled'),
             type: 'switch',
             group: 'notification',
             default: false,
-            help: '关闭后系统邮件（邮箱验证码、服务/账单等通知）不再发送。',
+            help: t('settings.index.emailHint'),
           },
           {
             key: 'sms_enabled',
-            label: '启用短信通知',
+            label: t('settings.index.smsEnabled'),
             type: 'switch',
             group: 'notification',
             default: false,
-            help: '关闭后系统短信（短信验证码等）不再发送。',
+            help: t('settings.index.smsHint'),
           },
         ],
       },
@@ -1111,7 +1112,7 @@ watch(
 
 function saveCurrentTab() {
   if (!canManageCurrentTab.value) {
-    MessagePlugin.warning('当前账号无保存权限');
+    MessagePlugin.warning(t('settings.index.noSavePermission'));
     return undefined;
   }
 
@@ -1153,7 +1154,7 @@ async function loadSettings() {
 
 async function saveSettings() {
   if (!canManageSettings.value) {
-    MessagePlugin.warning('当前账号无系统配置管理权限');
+    MessagePlugin.warning(t('settings.index.noConfigPermission'));
     return;
   }
 
@@ -1407,7 +1408,7 @@ function isMediaDrawerVideo(row: MediaFileRecord): boolean {
 function selectMediaFromDrawer(item: { url: string; filename: string; isVideo: boolean }) {
   if (pendingHeroImageIndex.value < 0 && !pendingImageField.value) return;
   applyMediaToTarget(item.url);
-  MessagePlugin.success('已选择');
+  MessagePlugin.success(t('settings.index.selected'));
   closeMediaDrawer();
 }
 
@@ -1441,7 +1442,7 @@ async function handleMediaDrawerUpload(event: Event) {
     if (pendingHeroImageIndex.value >= 0 || pendingImageField.value) {
       applyMediaToTarget(url);
     }
-    MessagePlugin.success('上传成功');
+    MessagePlugin.success(t('settings.index.uploadSuccess'));
   } catch (error) {
     const record = error as Record<string, unknown>;
     MessagePlugin.error(String(record.message || '上传失败'));
@@ -1458,7 +1459,7 @@ async function handleImageFileChange(event: Event) {
   try {
     const response = await adminApi.media.upload(data);
     form[field.key] = String(response.url || '');
-    MessagePlugin.success('图片上传成功');
+    MessagePlugin.success(t('settings.index.imageUploadSuccess'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '图片上传失败'));
   }
@@ -1489,7 +1490,7 @@ function applyHeroPayload(payload: HomeHeroPayload = {}) {
 
 async function saveHero() {
   if (!canManageSite.value) {
-    MessagePlugin.warning('当前账号无站点管理权限');
+    MessagePlugin.warning(t('settings.index.noSitePermission'));
     return;
   }
 
@@ -1506,7 +1507,7 @@ async function saveHero() {
       slides: response.slides || payload.slides,
       features: response.features || payload.features,
     });
-    MessagePlugin.success('首页 Banner 已保存');
+    MessagePlugin.success(t('settings.index.heroSaved'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存首页 Banner 失败'));
   } finally {
@@ -1591,8 +1592,8 @@ function resetSlidesToDefault() {
   const dialog = DialogPlugin.confirm({
     header: '恢复默认轮播',
     body: '恢复默认会覆盖当前轮播项，下次保存才会写入数据库。',
-    confirmBtn: '恢复默认',
-    cancelBtn: '取消',
+    confirmBtn: t('settings.index.restoreDefault'),
+    cancelBtn: t('common.cancel'),
     onConfirm: () => {
       heroForm.slides = cloneList(heroDefaults.slides);
       dialog.destroy();
@@ -1604,8 +1605,8 @@ function resetFeaturesToDefault() {
   const dialog = DialogPlugin.confirm({
     header: '恢复默认卡片',
     body: '恢复默认会覆盖当前特色卡片，下次保存才会写入数据库。',
-    confirmBtn: '恢复默认',
-    cancelBtn: '取消',
+    confirmBtn: t('settings.index.restoreDefault'),
+    cancelBtn: t('common.cancel'),
     onConfirm: () => {
       heroForm.features = cloneList(heroDefaults.features);
       dialog.destroy();
@@ -1692,7 +1693,7 @@ function selectVideoFromDrawer(value: string) {
 function confirmVideoUrl() {
   const url = videoUrlInput.value.trim();
   if (!url) {
-    MessagePlugin.warning('请输入视频 URL');
+    MessagePlugin.warning(t('settings.index.videoUrlRequired'));
     return;
   }
   if (!/^https?:\/\/.+/.test(url)) {
@@ -1703,7 +1704,7 @@ function confirmVideoUrl() {
   if (idx >= 0 && idx < heroForm.slides.length) {
     heroForm.slides[idx].video = url;
   }
-  MessagePlugin.success('已设置第三方视频 URL');
+  MessagePlugin.success(t('settings.index.videoUrlSet'));
   closeVideoDrawer();
 }
 

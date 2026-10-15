@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 import clientApi from '@/api/client';
 import type { ApiEnvelope, CouponRecord, PagedList } from '@/types/client';
+import { t } from '@/locales';
 
 type CouponTab = 'owned' | 'plaza';
 type CouponTabChangeValue = CouponTab | { value?: CouponTab | string } | null | undefined;
@@ -99,14 +100,14 @@ export function useCoupons() {
   const currentStatusOptions = computed(() =>
     activeTab.value === 'plaza'
       ? [
-          { label: '可领取', value: 'available' },
-          { label: '已领完', value: 'used_up' },
-          { label: '已过期', value: 'expired' },
+          { label: t('coupon.plaza.claimable'), value: 'available' },
+          { label: t('coupon.plaza.claimedUp'), value: 'used_up' },
+          { label: t('coupon.plaza.expired'), value: 'expired' },
         ]
       : [
-          { label: '可用', value: 'available' },
-          { label: '已用完', value: 'used_up' },
-          { label: '已过期', value: 'expired' },
+          { label: t('coupon.mine.available'), value: 'available' },
+          { label: t('coupon.mine.usedUp'), value: 'used_up' },
+          { label: t('coupon.plaza.expired'), value: 'expired' },
         ],
   );
 
@@ -169,7 +170,7 @@ export function useCoupons() {
     claimingId.value = id;
     try {
       await clientApi.claimCoupon(id);
-      MessagePlugin.success('领取成功');
+      MessagePlugin.success(t('coupon.claimed'));
       await Promise.all([loadList('owned'), loadList('plaza')]);
     } catch (error: unknown) {
       MessagePlugin.error(getErrorMessage(error, '优惠券领取失败'));

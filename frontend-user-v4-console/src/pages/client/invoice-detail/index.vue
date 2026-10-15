@@ -338,6 +338,7 @@ import StatusTag from '@shared/user-v3/components/StatusTag.vue';
 
 import { formatMoney, resolveInvoiceNo, useInvoiceDetail } from '@/domains/finance/useInvoices';
 import { flattenSnapshot, formatBillingCycle, resolvePaymentStatusLabel } from '@/domains/finance/useRecords';
+import { t } from '@/locales';
 import type { InvoicePaymentMethod, InvoiceRecord } from '@/types/client';
 
 const {
@@ -403,18 +404,18 @@ const sessionCountdownText = computed(() => {
 const renewFlowItems = [
   {
     index: '1',
-    label: '完成支付',
-    description: '余额或支付宝支付成功后，账单状态会自动更新。',
+    label: t('invoiceDetail.renewFlow.completePayment'),
+    description: t('invoiceDetail.renewFlow.paymentHint'),
   },
   {
     index: '2',
-    label: '执行续费',
-    description: '系统按当前续费周期处理服务有效期。',
+    label: t('invoiceDetail.renewFlow.runRenewal'),
+    description: t('invoiceDetail.renewFlow.renewalHint'),
   },
   {
     index: '3',
-    label: '同步服务',
-    description: '处理完成后可在服务控制台查看新的到期时间。',
+    label: t('invoiceDetail.renewFlow.syncService'),
+    description: t('invoiceDetail.renewFlow.syncHint'),
   },
 ];
 
@@ -499,12 +500,12 @@ function renewedExpiresAt(row: InvoiceRecord | null | undefined) {
 function renewInfoItems(row: InvoiceRecord | null | undefined) {
   const serviceId = renewServiceId(row);
   return [
-    { label: '服务 ID', value: serviceId > 0 ? `#${serviceId}` : '--' },
-    { label: '当前到期', value: currentExpiresAt(row) },
-    { label: '续费周期', value: orderBillingCycle(row) },
-    { label: '续费金额', value: `¥${formatMoney(row?.amount)}` },
-    { label: '续费后到期', value: renewedExpiresAt(row) },
-    { label: '本次应付', value: `¥${formatMoney(row?.payable_amount)}` },
+    { label: t('invoiceDetail.serviceId'), value: serviceId > 0 ? `#${serviceId}` : '--' },
+    { label: t('invoiceDetail.currentExpiry'), value: currentExpiresAt(row) },
+    { label: t('invoiceDetail.renewalCycle'), value: orderBillingCycle(row) },
+    { label: t('invoiceDetail.renewalAmount'), value: `¥${formatMoney(row?.amount)}` },
+    { label: t('invoiceDetail.renewedExpiry'), value: renewedExpiresAt(row) },
+    { label: t('invoiceDetail.payableNow'), value: `¥${formatMoney(row?.payable_amount)}` },
   ];
 }
 

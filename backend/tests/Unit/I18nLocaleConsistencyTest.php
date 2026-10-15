@@ -25,8 +25,7 @@ class I18nLocaleConsistencyTest extends TestCase
     private const APPS = [
         'frontend-admin-v3',
         'frontend-user-v4-console',
-        'frontend-user-v3-www',
-    ];
+        'frontend-user-v3-www'];
 
     /**
      * 简体独有字：这些字在繁体中一定写成别的形。
@@ -36,7 +35,7 @@ class I18nLocaleConsistencyTest extends TestCase
      */
     private const SIMPLIFIED_ONLY = [
         '们', '条', '决', '这', '国', '说', '问', '题', '实', '现', '数', '网', '络',
-        '务', '缓', '认', '户', '软', '导', '邮', '箱', '注', '册', '机', '构',
+        '务', '缓', '认', '户', '软', '导', '邮', '册', '机', '构',
         '设', '备', '资', '产', '货', '币', '亿', '仅', '优', '价', '质', '额',
         '择', '择', '拟', '让', '训', '议', '记', '讲', '许', '论', '设', '访',
         '证', '评', '识', '诉', '译', '试', '话', '该', '详', '语', '误', '请',
@@ -112,8 +111,7 @@ class I18nLocaleConsistencyTest extends TestCase
         '舰', '艰', '艳', '艺', '节', '苏', '苹', '茎', '荐', '荡', '荣', '药',
         '莲', '获', '莹', '萝', '营', '萧', '蓝', '虏', '虑', '虚', '虫', '虽',
         '虾', '蚀', '蚁', '蚂', '蚕', '蛮', '蜡', '蝇', '补', '衬', '袜', '装',
-        '裤', '见', '观', '规', '视', '览', '觉', '触', '誉', '计', '订', '认',
-    ];
+        '裤', '见', '观', '规', '视', '览', '觉', '触', '誉', '计', '订', '认'];
 
     private function repoRoot(): string
     {
@@ -243,8 +241,7 @@ class I18nLocaleConsistencyTest extends TestCase
         $switchers = [
             'frontend-admin-v3' => 'src/layouts/setting.vue',
             'frontend-user-v4-console' => 'src/layouts/setting.vue',
-            'frontend-user-v3-www' => 'src/layout/WebsiteLayout.vue',
-        ];
+            'frontend-user-v3-www' => 'src/layout/WebsiteLayout.vue'];
 
         foreach ($switchers as $app => $relative) {
             $path = $this->repoRoot()."/{$app}/{$relative}";
@@ -268,8 +265,7 @@ class I18nLocaleConsistencyTest extends TestCase
         // 否则 zh_HK 用户看到的是台湾用词（或反过来）。
         $expectations = [
             'zh_TW' => ['請填寫', '已被使用', '必須是有效的電子郵件地址'],
-            'zh_HK' => ['請填寫', '已被使用', '必須是有效的電郵地址'],
-        ];
+            'zh_HK' => ['請填寫', '已被使用', '必須是有效的電郵地址']];
 
         foreach ($expectations as $locale => $needles) {
             $path = $this->repoRoot()."/backend/lang/{$locale}/validation.php";
@@ -345,8 +341,7 @@ public function test_templates_have_no_hardcoded_chinese(): void
         // 与协议字段，翻译它们会让商品规格识别和接口调用失效（见 i18n.md 第三节）。
         $attrs = [
             'title', 'placeholder', 'alt', 'aria-label', 'label',
-            'content', 'description', 'empty-text', 'confirm', 'cancel',
-        ];
+            'content', 'description', 'empty-text', 'confirm', 'cancel'];
 
         foreach (self::APPS as $app) {
             $hits = [];

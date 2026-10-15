@@ -5,7 +5,16 @@
     "copyright": "Copyright @ 2021-2025 Tencent. All Rights Reserved",
     "conjunction": "and",
     "admin": "admin",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "copiedToClipboard": "Copied to clipboard",
+    "copyFailedManual": "Copy failed, please copy manually",
+    "confirmDelete": "Confirm delete",
+    "time": "Time",
+    "method": "Method",
+    "status": "Status",
+    "createdAt": "Created at",
+    "action": "Action"
   },
   "components": {
     "isSetup": {
@@ -61,7 +70,8 @@
       "help": "Document",
       "user": "Profile",
       "signOut": "Sign Out",
-      "setting": "Setting"
+      "setting": "Setting",
+      "confirmSignOut": "Sign out"
     },
     "notice": {
       "title": "Notification Center",
@@ -69,7 +79,9 @@
       "setRead": "Set Read",
       "empty": "Empty",
       "emptyNotice": "No Notice",
-      "viewAll": "View All"
+      "viewAll": "View All",
+      "detailLoadFailed": "Failed to load the announcement",
+      "markAllRead": "All marked as read"
     },
     "tagTabs": {
       "closeOther": "close other",
@@ -788,11 +800,19 @@
       "saved": "I Have Saved It",
       "usageLogs": "Call Logs",
       "usageLogsTitle": "Call Logs · Magic Cube Integration",
-      "username": "Username"
+      "username": "Username",
+      "logPath": "Endpoint path"
     },
     "title": "API Credentials",
     "create": "Create Key",
-    "openApiLabel": "Open API Key"
+    "openApiLabel": "Open API Key",
+    "scopeProducts": "Product catalog",
+    "scopeOrders": "Orders and billing",
+    "scopeServices": "Service instances",
+    "scopeFinance": "Balance and finance",
+    "nameRequired": "Enter the key name",
+    "updated": "Credential updated",
+    "deleted": "Credential deleted"
   },
   "client": {
     "catalog": {
@@ -875,7 +895,11 @@
       "rechargeLabel": "Recharge",
       "rechargePrefix": "Recharge: ",
       "searchPlaceholder": "Search by invoice no., order no. or recharge no.",
-      "view": "View"
+      "view": "View",
+      "last7Days": "Last 7 days",
+      "thisMonth": "This month",
+      "pending": "Unpaid",
+      "relatedRefs": "Related records"
     },
     "orderDetail": {
       "backToList": "Back to List",
@@ -926,7 +950,14 @@
       "searchPlaceholder": "Search by merchant order no. or third-party order no.",
       "thirdPartyLabel": "Third Party: ",
       "view": "View",
-      "waitingCallback": "Waiting for the gateway callback"
+      "waitingCallback": "Waiting for the gateway callback",
+      "all": "All",
+      "last7Days": "Last 7 days",
+      "thisMonth": "This month",
+      "pending": "Pending",
+      "orderNo": "Payment order no.",
+      "gateway": "Payment channel",
+      "amount": "Amount"
     },
     "referral": {
       "accountLogsTab": "Account Activity",
@@ -961,7 +992,21 @@
       "toBalance": "To Balance",
       "withdrawAmount": "Withdrawal Amount",
       "withdrawAmountPlaceholder": "Enter the withdrawal amount",
-      "withdrawalsTab": "Withdrawal History"
+      "withdrawalsTab": "Withdrawal History",
+      "statusFrozen": "Frozen",
+      "statusReleased": "Released",
+      "statusReversed": "Reversed",
+      "statusReviewing": "Under review",
+      "statusApproved": "Approved",
+      "statusRejected": "Rejected",
+      "availableBalance": "Withdrawable balance",
+      "totalReward": "Total rewards",
+      "withdrawn": "Withdrawn",
+      "directCount": "Direct referrals",
+      "rewardedOrders": "Rewarded invoices",
+      "linkUnavailable": "The referral link is currently unavailable",
+      "alipayBoundSuccess": "Alipay linked successfully",
+      "withdrawSubmitted": "Withdrawal request submitted"
     },
     "services": {
       "addRemark": "Add a remark",
@@ -1019,7 +1064,11 @@
       "traffic": "Traffic",
       "trialMachine": "Trial Machine",
       "virtualHostInstance": "Web Hosting Instance",
-      "webSpace": "Web Space"
+      "webSpace": "Web Space",
+      "service": "Service",
+      "specSummary": "Spec summary",
+      "expiresAt": "Expiry date",
+      "ipTraffic": "IP / Traffic"
     },
     "ticketDetail": {
       "adminRole": "Admin",
@@ -1052,6 +1101,34 @@
       "updatedAt": "Updated At",
       "user": "User",
       "userRole": "User"
+    },
+    "support": {
+      "officialQqGroup": "Official QQ group",
+      "cooperationEmail": "Partnership email",
+      "serviceHours": "Service hours"
+    },
+    "dashboard": {
+      "accountBalance": "Account balance",
+      "monthlyRecharge": "Recharged this month",
+      "monthlySpend": "Spent this month",
+      "availableCoupons": "Available coupons",
+      "categoryCloudServer": "Cloud servers",
+      "categoryGameCloud": "Game cloud",
+      "categoryCloudDesktop": "Cloud PCs",
+      "categoryBareMetal": "Bare metal",
+      "categoryWebHosting": "Web hosting",
+      "todoUnpaidInvoices": "Unpaid invoices",
+      "todoOpenTickets": "Open tickets",
+      "todoExpiringServices": "Services expiring soon",
+      "todoUnreadNotices": "Unread notices",
+      "quickMyServices": "My services",
+      "quickInvoiceRecords": "Invoice records",
+      "quickPaymentRecords": "Top-up records",
+      "quickTicketSupport": "Ticket support",
+      "quickTopUp": "Top up",
+      "quickHelpCenter": "Help center",
+      "quickCoupons": "Coupons",
+      "quickReferral": "Referral rewards"
     }
   },
   "clientAuth": {
@@ -1075,7 +1152,40 @@
       "signInNow": "Sign In Now",
       "submit": "Sign Up and Enter Console",
       "title": "Free Sign Up",
-      "viewCatalog": "Browse Product Catalog"
+      "viewCatalog": "Browse Product Catalog",
+      "captchaRequired": "Complete the CAPTCHA verification first",
+      "accountInvalid": "Enter a valid phone number or email address",
+      "codeLength": "The verification code must be 6 digits",
+      "nicknameTooLong": "The username must not exceed 50 characters",
+      "referralCodeTooLong": "The referral code must not exceed 24 characters",
+      "passwordRequired": "Enter your password",
+      "passwordTooShort": "The password must be at least 8 characters",
+      "passwordMismatch": "The two passwords do not match",
+      "accountFirst": "Enter a valid phone number or email address first",
+      "success": "Registration successful"
+    },
+    "forgotPassword": {
+      "captchaRequired": "Please Complete the CAPTCHA First",
+      "accountInvalid": "Please Enter a Valid Phone Number or Email",
+      "codeRequired": "Please Enter the Verification Code",
+      "codeLength": "The Verification Code Must Be 6 Digits",
+      "newPasswordRequired": "Please Enter the New Password",
+      "passwordMinLength": "The Password Must Be at Least 8 Characters",
+      "confirmPasswordRequired": "Please Enter the New Password Again",
+      "passwordMismatch": "The Two Passwords Do Not Match",
+      "accountFirst": "Please Enter a Valid Phone Number or Email First",
+      "passwordResetSuccess": "Password Reset, Please Sign In Again"
+    },
+    "loginAs": {
+      "credentialMissing": "Missing login-as credential",
+      "success": "Login-as succeeded"
+    },
+    "login": {
+      "captchaRequired": "Complete the CAPTCHA first",
+      "accountRequired": "Enter a valid phone number or email address",
+      "codeLength": "The code must be 6 characters",
+      "passwordRequired": "Enter your login password",
+      "accountRequiredFirst": "Enter a valid phone number or email address first"
     }
   },
   "result": {
@@ -1124,7 +1234,8 @@
       "osVersion": "OS Version",
       "osVersionPlaceholder": "Select an OS version",
       "submit": "Submit Reinstall",
-      "title": "Reinstall OS"
+      "title": "Reinstall OS",
+      "selectOsVersion": "Select an OS version"
     },
     "renewDialog": {
       "agentDiscount": "Agent Discount",
@@ -1160,7 +1271,11 @@
       "source": "Source",
       "title": "Security Groups",
       "unsupported": "Security groups are not supported for this instance",
-      "view": "View"
+      "view": "View",
+      "rulesLoaded": "Security group rules loaded",
+      "groupNameRequired": "Enter a security group name",
+      "selectGroupFirst": "Select a security group first",
+      "ruleRequired": "Please complete all rule fields"
     },
     "securityGroup": {
       "cancel": "Cancel",
@@ -1190,7 +1305,9 @@
       "remainingUsage": "Remaining Traffic",
       "selectedTier": "Selected Tier",
       "title": "Buy Traffic Package",
-      "unlimited": "Unlimited"
+      "unlimited": "Unlimited",
+      "selectTier": "Select a traffic package tier",
+      "billCreated": "Traffic package invoice created. Redirecting to payment"
     },
     "virtualHost": {
       "bandwidth": "Bandwidth",
@@ -1219,7 +1336,9 @@
       "renewPrice": "Renewal Price",
       "runStatus": "Running Status",
       "spaceAndSites": "Storage and Sites",
-      "webSpace": "Web Space"
+      "webSpace": "Web Space",
+      "overview": "Host overview",
+      "panel": "Host and panel"
     },
     "vnc": {
       "connect": "Connect VNC",
@@ -1227,10 +1346,15 @@
       "loadedTip": "The VNC console has loaded on this page.",
       "openInWindow": "Open in New Window",
       "title": "VNC Console",
-      "waiting": "Waiting for connection"
+      "waiting": "Waiting for connection",
+      "popupBlocked": "Your browser blocked the new window; allow pop-ups and try again",
+      "windowOpened": "VNC window opened",
+      "loaded": "VNC console loaded"
     },
     "cdn": {
-      "trafficUsage": "Traffic Usage"
+      "trafficUsage": "Traffic Usage",
+      "overview": "CDN Overview",
+      "panel": "Plan and Panel"
     },
     "breadcrumb": {
       "userCenter": "User Center"
@@ -1255,7 +1379,8 @@
       "namePlaceholder": "e.g. Web Service",
       "internalPlaceholder": "Leave blank to let upstream assign",
       "portPlaceholder": "e.g. 80",
-      "protocolPlaceholder": "Select a protocol"
+      "protocolPlaceholder": "Select a protocol",
+      "publicAddress": "Public address"
     },
     "remark": {
       "save": "Save Remark",
@@ -1275,7 +1400,34 @@
     "instanceSpec": "Instance Type",
     "instanceId": "Instance ID",
     "os": "Operating System",
-    "createdAt": "Created At"
+    "createdAt": "Created At",
+    "upstreamFeatureUnsupported": "The current upstream API does not support this feature",
+    "detailUpdated": "Instance information updated",
+    "statusRefreshed": "Instance status refreshed",
+    "power": {
+      "starting": "Starting",
+      "stopping": "Stopping",
+      "rebooting": "Rebooting"
+    },
+    "renew": {
+      "invoiceCreated": "Renewal Invoice Created, Redirecting to Payment"
+    },
+    "portForward": {
+      "incomplete": "Enter the complete port forwarding details",
+      "invalidRange": "Port ranges must be between 1 and 65535"
+    },
+    "overview": "Console overview",
+    "tables": {
+      "logActionTime": "Action time",
+      "logSummary": "Action details",
+      "logOperator": "Operator",
+      "logIpAddress": "IP address",
+      "financeOccurredAt": "Occurred at",
+      "financeEventType": "Invoice type",
+      "financeAmount": "Amount",
+      "financeDescription": "Description",
+      "financeInvoiceNo": "Related invoice"
+    }
   },
   "recharge": {
     "title": "Top-up",
@@ -1289,7 +1441,13 @@
     "payStatus": "Payment Status",
     "merchantOrderNo": "Merchant Order No.",
     "payableAmount": "Payable Amount",
-    "copyLink": "Copy Payment Link"
+    "copyLink": "Copy Payment Link",
+    "renewalNeeded": "Renewal Needed",
+    "renewalScanHint": "Detect Renewal Amounts Due Within 7 Days",
+    "noPaymentMethod": "No Payment Method Available",
+    "qrCodeGenerated": "Recharge QR Code Generated",
+    "missingPollCredential": "Missing Payment Polling Credential",
+    "successBalanceRefreshed": "Recharge Successful, Balance Refreshed"
   },
   "services": {
     "console": {}
@@ -1317,17 +1475,63 @@
     "realNamePlaceholder": "Enter your real name",
     "idCardPlaceholder": "Enter your ID card number",
     "realNameLabel": "Real Name",
-    "idCardLabel": "ID Card Number"
+    "idCardLabel": "ID Card Number",
+    "idCardInvalid": "The ID number format is invalid",
+    "qrCodeGenerated": "QR code generated; scan it to continue verification",
+    "sessionMissing": "No verification session; submit your details again",
+    "qrCodeExpired": "The QR code has expired; submit the verification again",
+    "success": "Verification successful",
+    "qrCodeRefreshed": "QR code regenerated; scan it again",
+    "sessionClosed": "Verification session closed"
   },
   "checkoutResume": {
     "browse": "Browse Products",
-    "toFinance": "Go to Billing Center"
+    "toFinance": "Go to Billing Center",
+    "source": "Source",
+    "product": "Product",
+    "billingCycle": "Billing cycle",
+    "quantity": "Quantity",
+    "created": "Invoice created, redirecting",
+    "createFailed": "Failed to create the invoice, please try again later"
   },
   "content": {
-    "hotSearchLabel": "Hot Searches:"
+    "hotSearchLabel": "Hot Searches:",
+    "notice": {
+      "empty": "No announcements available"
+    },
+    "help": {
+      "empty": "No help content available"
+    },
+    "article": {
+      "fullText": "Full text"
+    }
   },
   "invoiceDetail": {
-    "back": "Back to Invoices"
+    "back": "Back to Invoices",
+    "renewFlow": {
+      "completePayment": "Complete payment",
+      "paymentHint": "The invoice updates automatically once payment succeeds via balance or Alipay.",
+      "runRenewal": "Run renewal",
+      "renewalHint": "The service validity is extended by the current billing cycle.",
+      "syncService": "Sync service",
+      "syncHint": "The new expiry date is available in the service console once processing finishes."
+    },
+    "serviceId": "Service ID",
+    "currentExpiry": "Current expiry",
+    "renewalCycle": "Renewal cycle",
+    "renewalAmount": "Renewal amount",
+    "renewedExpiry": "Expiry after renewal",
+    "payableNow": "Amount due",
+    "item": "Item",
+    "quantity": "Quantity",
+    "unitPrice": "Unit Price",
+    "discount": "Discount",
+    "subtotal": "Subtotal",
+    "merchantOrderNo": "Merchant Order No.",
+    "thirdPartyOrderNo": "Third-Party Order No.",
+    "channel": "Channel",
+    "amount": "Amount",
+    "paidAt": "Paid At"
   },
   "orderCreate": {
     "title": "Purchase Flow",
@@ -1336,7 +1540,21 @@
     "open": "Open Purchase Page"
   },
   "orders": {
-    "searchPlaceholder": "Search order number"
+    "searchPlaceholder": "Search order number",
+    "index": {
+      "confirmCancel": "Confirm cancellation",
+      "rethink": "Not now",
+      "canceled": "Order canceled"
+    },
+    "filterAll": "All",
+    "filterLast7Days": "Last 7 days",
+    "filterThisMonth": "This month",
+    "statusPending": "Pending payment",
+    "orderNo": "Order no.",
+    "productService": "Product / service",
+    "amount": "Amount",
+    "relatedInvoice": "Related invoice",
+    "createdAt": "Created at"
   },
   "paymentDetail": {
     "title": "Billing Center",
@@ -1345,7 +1563,44 @@
     "back": "Back to List"
   },
   "profile": {
-    "basicInfo": "Basic Information"
+    "basicInfo": "Basic Information",
+    "notifications": {
+      "loginAlert": "Account Login Alert",
+      "unusualLoginAlert": "Unusual Login Alert",
+      "passwordAlert": "Password Change Alert",
+      "phoneAlert": "Phone Number Change Alert",
+      "emailAlert": "Email Change Alert",
+      "marketingAlert": "Marketing Alerts"
+    },
+    "captchaRequired": "Complete the CAPTCHA first",
+    "realNameAuth": "Identity verification",
+    "securePhone": "Security phone",
+    "secureEmail": "Security email",
+    "loginPassword": "Login password",
+    "codeSent": "Verification code sent",
+    "codeRequired": "Enter the 6-digit verification code",
+    "newPasswordRequired": "Enter a new password",
+    "passwordMinLength": "Password must be at least 8 characters",
+    "passwordMismatch": "The two passwords do not match",
+    "passwordResetSuccess": "Password reset. Please sign in again",
+    "phoneNotBound": "No phone number is bound to this account",
+    "codeSentToOldPhone": "Verification code sent to the current phone number",
+    "emailNotBound": "No email is bound to this account",
+    "codeSentToOldEmail": "Verification code sent to the current email",
+    "newPhoneRequired": "Enter a new phone number",
+    "newEmailRequired": "Enter a new email",
+    "oldPhoneCodeRequired": "Enter the code sent to your current phone number",
+    "phoneUpdated": "Phone number updated",
+    "oldEmailCodeRequired": "Enter the code sent to your current email",
+    "emailUpdated": "Email updated",
+    "usernameRequired": "Username cannot be empty",
+    "usernameMaxLength": "Username can be at most 50 characters",
+    "qqFormatInvalid": "QQ number must be 5-20 digits",
+    "updated": "Profile updated",
+    "passwordInfoRequired": "Please fill in all password fields",
+    "newPasswordMinLength": "New password must be at least 8 characters",
+    "passwordChanged": "Password updated. Please sign in again",
+    "settingsSaved": "Settings saved"
   },
   "tickets": {
     "searchPlaceholder": "Search ticket title",
@@ -1364,5 +1619,92 @@
     "loginAccountPlaceholder": "Enter your phone or email",
     "byPassword": "Password Login",
     "byCode": "Code Login"
+  },
+  "finance": {
+    "invoice": {
+      "missingId": "Invoice ID is missing, payment cannot be started",
+      "confirmCancel": "Cancel invoice",
+      "notNow": "Not now",
+      "cancelled": "Invoice cancelled",
+      "sessionExpired": "The payment session has expired. Refresh the page and try again.",
+      "paid": "Invoice paid",
+      "confirmPay": "Pay now",
+      "selectPaymentMethod": "Please select an available payment method"
+    },
+    "records": {
+      "alipay": "Alipay",
+      "epay": "EPay",
+      "wechat": "WeChat Pay"
+    }
+  },
+  "coupon": {
+    "plaza": {
+      "claimable": "Claimable",
+      "claimedUp": "Fully claimed",
+      "expired": "Expired"
+    },
+    "mine": {
+      "available": "Available",
+      "usedUp": "Fully used"
+    },
+    "claimed": "Coupon claimed"
+  },
+  "ticket": {
+    "replyStatus": {
+      "open": "Open",
+      "customerReplied": "Customer replied",
+      "staffReplied": "Staff replied",
+      "closed": "Closed"
+    },
+    "department": {
+      "sales": "Sales",
+      "support": "Technical support",
+      "billing": "Billing",
+      "abuse": "Abuse"
+    },
+    "priority": {
+      "urgent": "Urgent"
+    },
+    "image": {
+      "unsupportedType": "Only jpg, png and webp images are supported",
+      "tooLarge": "Each image must be 5MB or smaller",
+      "uploaded": "Image uploaded"
+    },
+    "create": {
+      "titleRequired": "Please enter a ticket title",
+      "success": "Ticket submitted"
+    },
+    "detail": {
+      "notFound": "Ticket not found"
+    },
+    "reply": {
+      "uploading": "Images are still uploading, please send again in a moment",
+      "contentRequired": "Enter a reply or upload an image",
+      "sent": "Reply sent",
+      "recalled": "Message recalled"
+    },
+    "close": {
+      "confirm": "Close ticket",
+      "success": "Ticket closed"
+    }
+  },
+  "referral": {
+    "time": "Time",
+    "sourceUser": "Referrer",
+    "product": "Product",
+    "orderType": "Order type",
+    "orderAmount": "Order amount",
+    "rewardAmount": "Reward amount",
+    "user": "User",
+    "email": "Email",
+    "referredAt": "Referred at",
+    "customerConsumption": "Customer spending",
+    "earnings": "My earnings",
+    "withdrawMethod": "Payout method",
+    "withdrawAmount": "Payout amount",
+    "account": "Payout account",
+    "event": "Event",
+    "changeAmount": "Amount change",
+    "remark": "Remark"
   }
 }

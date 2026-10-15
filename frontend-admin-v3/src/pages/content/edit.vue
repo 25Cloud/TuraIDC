@@ -215,6 +215,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import type { ContentArticlePayload, ContentArticleRecord, ContentCategoryRecord, MediaFileRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
+import { t } from '@/locales';
 
 interface CoverMediaItem {
   url: string;
@@ -269,9 +270,9 @@ const coverImageLoading = ref(false);
 const coverImageList = ref<CoverMediaItem[]>([]);
 const coverMediaType = ref('');
 const coverMediaTypeOptions = [
-  { label: '全部类型', value: '' },
-  { label: '图片', value: 'image' },
-  { label: '视频', value: 'video' },
+  { label: t('content.mediaLibrary.allTypes'), value: '' },
+  { label: t('content.mediaLibrary.image'), value: 'image' },
+  { label: t('content.mediaLibrary.video'), value: 'video' },
 ];
 const categories = ref<ContentCategoryRecord[]>([]);
 
@@ -280,16 +281,16 @@ const articleLabel = computed(() => (contentType.value === 'help' ? '帮助文�
 const isCoverVideo = computed(() => isUrlVideo(form.cover_image));
 
 const statusOptions = [
-  { label: '草稿', value: 0 },
-  { label: '已发布', value: 1 },
-  { label: '已下线', value: 2 },
+  { label: t('content.edit.statusDraft'), value: 0 },
+  { label: t('content.edit.statusPublished'), value: 1 },
+  { label: t('content.edit.statusOffline'), value: 2 },
 ];
 
 const rules: Record<string, FormRule[]> = {
-  title: [{ required: true, message: '请输入标题', type: 'error' }],
-  category_id: [{ required: true, message: '请选择分类', type: 'error' }],
-  status: [{ required: true, message: '请选择状态', type: 'error' }],
-  content: [{ required: true, message: '请输入正文内容', type: 'error' }],
+  title: [{ required: true, message: t('content.edit.titleRequired'), type: 'error' }],
+  category_id: [{ required: true, message: t('content.edit.categoryRequired'), type: 'error' }],
+  status: [{ required: true, message: t('content.edit.statusRequired'), type: 'error' }],
+  content: [{ required: true, message: t('content.edit.bodyRequired'), type: 'error' }],
 };
 
 function createDefault(): ArticleForm {
@@ -355,7 +356,7 @@ function fillForm(row: ContentArticleRecord) {
 
 function buildPayload(): ContentArticlePayload | null {
   if (!form.category_id) {
-    MessagePlugin.warning('请选择分类');
+    MessagePlugin.warning(t('content.edit.categoryRequired'));
     return null;
   }
   return {
@@ -470,7 +471,7 @@ async function handleCoverImageUpload(event: Event) {
         isVideo: isMediaVideo(response),
       });
     }
-    MessagePlugin.success('封面上传成功');
+    MessagePlugin.success(t('content.edit.coverUploaded'));
   } catch (error) {
     const record = error as Record<string, unknown>;
     const resp = record.response as Record<string, unknown> | undefined;

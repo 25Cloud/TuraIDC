@@ -3,6 +3,7 @@ import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, reactive, ref } from 'vue';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type { ConsoleSelectOption, SecurityGroupRecord, SecurityRuleRecord } from '@/types/client';
 
 import { resolveErrorMessage } from './useConsoleCore';
@@ -166,7 +167,7 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
       return;
     }
     await loadSecurityGroupRules(groupId);
-    if (!silent) MessagePlugin.success('安全组规则已加载');
+    if (!silent) MessagePlugin.success(t('serviceConsole.security.rulesLoaded'));
   }
 
   function openSecurityGroupDialog() {
@@ -187,7 +188,7 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
 
   async function submitSecurityGroup() {
     if (!groupForm.name.trim()) {
-      MessagePlugin.warning('请输入安全组名称');
+      MessagePlugin.warning(t('serviceConsole.security.groupNameRequired'));
       return;
     }
     securityState.submitting = true;
@@ -226,8 +227,8 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
       header: '删除安全组',
       body: `确认删除安全组“${group.name || group.id}”吗？`,
       theme: 'warning',
-      confirmBtn: '确认删除',
-      cancelBtn: '取消',
+      confirmBtn: t('common.confirmDelete'),
+      cancelBtn: t('common.cancel'),
       onConfirm: async () => {
         dialog.setConfirmLoading(true);
         securityState.submitting = true;
@@ -248,7 +249,7 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
 
   async function submitSecurityRule() {
     if (!activeSecurityGroupId.value) {
-      MessagePlugin.warning('请先选择安全组');
+      MessagePlugin.warning(t('serviceConsole.security.selectGroupFirst'));
       return;
     }
     const defaultPort = resolveProtocolDefaultPort();
@@ -259,7 +260,7 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
       (!isNoPortProtocol && !ruleForm.port.trim()) ||
       !ruleForm.ip.trim()
     ) {
-      MessagePlugin.warning('请填写完整的规则信息');
+      MessagePlugin.warning(t('serviceConsole.security.ruleRequired'));
       return;
     }
     securityState.submitting = true;
@@ -288,8 +289,8 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
       header: '删除规则',
       body: '确认删除该安全组规则吗？',
       theme: 'warning',
-      confirmBtn: '确认删除',
-      cancelBtn: '取消',
+      confirmBtn: t('common.confirmDelete'),
+      cancelBtn: t('common.cancel'),
       onConfirm: async () => {
         dialog.setConfirmLoading(true);
         securityState.submitting = true;

@@ -100,6 +100,7 @@ import {
   recordApi,
   useRecordList,
 } from '@/domains/finance/useRecords';
+import { t } from '@/locales';
 import type { PaymentRecord } from '@/types/client';
 
 const router = useRouter();
@@ -108,10 +109,10 @@ const { loading, list, total, filters, hasRows, loadList, handleSearch, handlePa
   useRecordList(recordApi.payments, '第三方支付记录加载失败');
 
 const quickFilters = [
-  { key: '', label: '全部' },
-  { key: 'week', label: '最近7天' },
-  { key: 'month', label: '本月' },
-  { key: 'pending', label: '待支付' },
+  { key: '', label: t('client.payments.all') },
+  { key: 'week', label: t('client.payments.last7Days') },
+  { key: 'month', label: t('client.payments.thisMonth') },
+  { key: 'pending', label: t('client.payments.pending') },
 ];
 
 function goToDetail(row: PaymentRecord) {
@@ -123,12 +124,12 @@ function gatewayDisplay(row: PaymentRecord) {
 }
 
 const columns: PrimaryTableCol[] = [
-  { colKey: 'payment', title: '支付订单号', minWidth: '16rem' },
-  { colKey: 'gateway', title: '支付渠道', width: '8rem' },
-  { colKey: 'amount', title: '支付金额', width: '9rem' },
-  { colKey: 'status', title: '状态', width: '8rem' },
-  { colKey: 'time', title: '时间', minWidth: '12rem' },
-  { colKey: 'operation', title: '操作', width: '6rem', fixed: 'right', align: 'right' },
+  { colKey: 'payment', title: t('client.payments.orderNo'), minWidth: '16rem' },
+  { colKey: 'gateway', title: t('client.payments.gateway'), width: '8rem' },
+  { colKey: 'amount', title: t('client.payments.amount'), width: '9rem' },
+  { colKey: 'status', title: t('common.status'), width: '8rem' },
+  { colKey: 'time', title: t('common.time'), minWidth: '12rem' },
+  { colKey: 'operation', title: t('common.action'), width: '6rem', fixed: 'right', align: 'right' },
 ];
 </script>
 <style scoped lang="less">

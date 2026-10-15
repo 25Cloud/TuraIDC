@@ -249,6 +249,7 @@
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { ArrowRight, Check, QuestionFilled } from "@element-plus/icons-vue";
+import { t } from "@/locales";
 import { buildConsoleUrl } from "@/utils/consoleUrl";
 import {
   getSeoLandingPageByPath,
@@ -305,23 +306,23 @@ const defaultTags = [
 const processSteps = [
   {
     index: "01",
-    title: "明确场景",
-    description: "确认业务访问区域、系统环境、带宽需求和预算范围。",
+    title: t('seoLanding.process.step1Title'),
+    description: t('seoLanding.process.step1Description'),
   },
   {
     index: "02",
-    title: "查看配置",
-    description: "在产品列表中筛选合适的规格、节点和服务周期。",
+    title: t('seoLanding.process.step2Title'),
+    description: t('seoLanding.process.step2Description'),
   },
   {
     index: "03",
-    title: "注册开通",
-    description: "进入控制台完成账号注册、下单、支付和服务管理。",
+    title: t('seoLanding.process.step3Title'),
+    description: t('seoLanding.process.step3Description'),
   },
   {
     index: "04",
-    title: "持续维护",
-    description: "通过公告、帮助中心和工单体系跟踪使用与售后问题。",
+    title: t('seoLanding.process.step4Title'),
+    description: t('seoLanding.process.step4Description'),
   },
 ];
 

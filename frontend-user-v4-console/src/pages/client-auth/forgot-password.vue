@@ -111,6 +111,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { clientAuthApi } from '@/api/auth';
 import AuthShell from '@/components/auth/AuthShell.vue';
 import { useGeeTestCaptcha } from '@/composables/useGeeTestCaptcha';
+import { t } from '@/locales';
 import { buildAccountPayload, detectAccountType, normalizeAccountValue } from '@/utils/account';
 
 interface ResetPasswordForm {
@@ -144,7 +145,7 @@ const {
   prepare: prepareCaptcha,
 } = useGeeTestCaptcha({
   appendTo: captchaContainer,
-  onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
+  onPrompt: () => MessagePlugin.warning(t('clientAuth.forgotPassword.captchaRequired')),
   scenes: ['email_code', 'phone_code'],
 });
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
@@ -166,27 +167,27 @@ const rules: Record<keyof ResetPasswordForm, FormRule[]> = {
     {
       validator: (value: string) => ({
         result: Boolean(detectAccountType(value)),
-        message: '请输入正确的手机号或邮箱',
+        message: t('clientAuth.forgotPassword.accountInvalid'),
         type: 'error',
       }),
       trigger: 'blur',
     },
   ],
   code: [
-    { required: true, message: '请输入验证码', type: 'error', trigger: 'blur' },
-    { len: 6, message: '验证码为 6 位', type: 'error', trigger: 'blur' },
+    { required: true, message: t('clientAuth.forgotPassword.codeRequired'), type: 'error', trigger: 'blur' },
+    { len: 6, message: t('clientAuth.forgotPassword.codeLength'), type: 'error', trigger: 'blur' },
   ],
   password: [
-    { required: true, message: '请输入新密码', type: 'error', trigger: 'blur' },
+    { required: true, message: t('clientAuth.forgotPassword.newPasswordRequired'), type: 'error', trigger: 'blur' },
     // 与后端 ResetPasswordRequest 的 min:8 对齐。
-    { min: 8, message: '密码长度不能少于 8 位', type: 'error', trigger: 'blur' },
+    { min: 8, message: t('clientAuth.forgotPassword.passwordMinLength'), type: 'error', trigger: 'blur' },
   ],
   password_confirmation: [
-    { required: true, message: '请再次输入新密码', type: 'error', trigger: 'blur' },
+    { required: true, message: t('clientAuth.forgotPassword.confirmPasswordRequired'), type: 'error', trigger: 'blur' },
     {
       validator: (value: string) => ({
         result: value === form.password,
-        message: '两次输入的密码不一致',
+        message: t('clientAuth.forgotPassword.passwordMismatch'),
         type: 'error',
       }),
       trigger: 'blur',
@@ -216,7 +217,7 @@ function startCountdown() {
 async function handleSendCode() {
   const accountPayload = buildAccountPayload(form.account);
   if (!accountPayload) {
-    MessagePlugin.warning('请先输入正确的手机号或邮箱');
+    MessagePlugin.warning(t('clientAuth.forgotPassword.accountFirst'));
     return;
   }
 
@@ -309,7 +310,7 @@ async function runResetPassword() {
       password: form.password,
       password_confirmation: form.password_confirmation,
     });
-    MessagePlugin.success('密码已重置，请重新登录');
+    MessagePlugin.success(t('clientAuth.forgotPassword.passwordResetSuccess'));
     await router.push({
       path: '/client/login',
       query: { account: normalizeAccountValue(form.account) },

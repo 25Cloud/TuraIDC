@@ -5,6 +5,7 @@ import clientApi from '@/api/client';
 import type { ConsoleServiceDetail, ServiceReinstallOption } from '@/types/client';
 
 import { resolveErrorMessage } from './useConsoleCore';
+import { t } from '@/locales';
 
 export interface UseConsoleReinstallOptions {
   serviceId: { value: number };
@@ -78,7 +79,7 @@ export function useConsoleReinstall(options: UseConsoleReinstallOptions) {
 
   async function submitReinstall() {
     if (!reinstallState.os_id) {
-      MessagePlugin.warning('请选择系统版本');
+      MessagePlugin.warning(t('serviceConsole.reinstall.selectOsVersion'));
       return;
     }
 

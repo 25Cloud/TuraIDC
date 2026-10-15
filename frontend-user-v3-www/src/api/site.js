@@ -1,4 +1,5 @@
 import request from "@/utils/request";
+import { t } from "@/locales";
 import {
   normalizeContentDetailPayload,
   normalizeContentListPayload,
@@ -139,7 +140,7 @@ async function fetchAllV2SiteProducts(groupId, level, config = {}) {
 async function fetchV2SiteProductGroupCatalog(groupId, config = {}) {
   const cached = getCachedCatalog(groupId);
   if (cached) {
-    return { code: 0, message: "操作成功", data: cached };
+    return { code: 0, message: t('common.toast.success'), data: cached };
   }
 
   // children 列表与根产品无数据依赖，并行拉取省一个 RTT
@@ -187,7 +188,7 @@ async function fetchV2SiteProductGroupCatalog(groupId, config = {}) {
 
   const response = normalizeProductResponse(
     {
-      ...(childrenResult.response || { code: 0, message: "操作成功" }),
+      ...(childrenResult.response || { code: 0, message: t('common.toast.success') }),
       data: {
         effective_product_group_id: Number(groupId),
         effective_product_group_level: 2,

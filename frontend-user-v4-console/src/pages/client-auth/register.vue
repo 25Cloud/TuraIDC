@@ -138,6 +138,7 @@ import { useGeeTestCaptcha } from '@/composables/useGeeTestCaptcha';
 import { useUserStore } from '@/store';
 import { buildAccountPayload, detectAccountType, normalizeAccountValue } from '@/utils/account';
 import { toUserMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 interface RegisterForm {
   account: string;
@@ -172,7 +173,7 @@ const {
   prepare: prepareCaptcha,
 } = useGeeTestCaptcha({
   appendTo: captchaContainer,
-  onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
+  onPrompt: () => MessagePlugin.warning(t('clientAuth.register.captchaRequired')),
   // 本页涉及注册提交与发码两类动作，任一场景开启即需要验证
   scenes: ['client_register', 'email_code', 'phone_code'],
 });
@@ -200,7 +201,7 @@ const redirectPath = computed(() => {
 const accountRule: FormRule = {
   validator: (value: string) => ({
     result: Boolean(detectAccountType(value)),
-    message: '请输入正确的手机号或邮箱',
+    message: t('clientAuth.register.accountInvalid'),
     type: 'error',
   }),
   trigger: 'blur',
@@ -209,22 +210,22 @@ const accountRule: FormRule = {
 const rules: Record<keyof RegisterForm, FormRule[]> = {
   account: [accountRule],
   code: [
-    { required: true, message: '请输入验证码', type: 'error', trigger: 'blur' },
-    { len: 6, message: '验证码为 6 位', type: 'error', trigger: 'blur' },
+    { required: true, message: t('clientAuth.register.codePlaceholder'), type: 'error', trigger: 'blur' },
+    { len: 6, message: t('clientAuth.register.codeLength'), type: 'error', trigger: 'blur' },
   ],
-  nickname: [{ max: 50, message: '用户名不能超过 50 个字符', type: 'error', trigger: 'blur' }],
-  referral_code: [{ max: 24, message: '推荐码不能超过 24 个字符', type: 'error', trigger: 'blur' }],
+  nickname: [{ max: 50, message: t('clientAuth.register.nicknameTooLong'), type: 'error', trigger: 'blur' }],
+  referral_code: [{ max: 24, message: t('clientAuth.register.referralCodeTooLong'), type: 'error', trigger: 'blur' }],
   password: [
-    { required: true, message: '请输入登录密码', type: 'error', trigger: 'blur' },
+    { required: true, message: t('clientAuth.register.passwordRequired'), type: 'error', trigger: 'blur' },
     // 与后端 RegisterRequest 的 min:8 对齐；写 6 会让用户输 6-7 位时前端放行、后端 422。
-    { min: 8, message: '密码长度不能少于 8 位', type: 'error', trigger: 'blur' },
+    { min: 8, message: t('clientAuth.register.passwordTooShort'), type: 'error', trigger: 'blur' },
   ],
   password_confirmation: [
-    { required: true, message: '请再次输入密码', type: 'error', trigger: 'blur' },
+    { required: true, message: t('clientAuth.register.confirmPasswordPlaceholder'), type: 'error', trigger: 'blur' },
     {
       validator: (value: string) => ({
         result: value === form.password,
-        message: '两次输入的密码不一致',
+        message: t('clientAuth.register.passwordMismatch'),
         type: 'error',
       }),
       trigger: 'blur',
@@ -254,7 +255,7 @@ function startCountdown() {
 async function handleSendCode() {
   const accountPayload = buildAccountPayload(form.account);
   if (!accountPayload) {
-    MessagePlugin.warning('请先输入正确的手机号或邮箱');
+    MessagePlugin.warning(t('clientAuth.register.accountFirst'));
     return;
   }
 
@@ -365,7 +366,7 @@ async function runRegister() {
       },
       { scene: 'client_register' },
     );
-    MessagePlugin.success('注册成功');
+    MessagePlugin.success(t('clientAuth.register.success'));
     await router.push(redirectPath.value);
   } catch (error: unknown) {
     const runtimeError = error as RuntimeHandledError;

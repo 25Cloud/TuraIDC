@@ -2,6 +2,7 @@ import type { SwitchValue } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type { ConsoleRuntimeInfo, ConsoleServiceDetail } from '@/types/client';
 
 import { mergeConsoleDetail, normalizeConsoleDetail, resolveErrorMessage } from './useConsoleCore';
@@ -15,11 +16,11 @@ export const POWER_LABELS: Record<string, string> = {
 };
 
 export const OPTIMISTIC_POWER_DETAIL: Record<string, { runtime: ConsoleRuntimeInfo }> = {
-  on: { runtime: { power_state: 'starting', power_label: '开机中', description: '开机中' } },
-  off: { runtime: { power_state: 'stopping', power_label: '关机中', description: '关机中' } },
-  hard_off: { runtime: { power_state: 'stopping', power_label: '关机中', description: '关机中' } },
-  reboot: { runtime: { power_state: 'rebooting', power_label: '重启中', description: '重启中' } },
-  hard_reboot: { runtime: { power_state: 'rebooting', power_label: '重启中', description: '重启中' } },
+  on: { runtime: { power_state: 'starting', power_label: t('serviceConsole.power.starting'), description: t('serviceConsole.power.starting') } },
+  off: { runtime: { power_state: 'stopping', power_label: t('serviceConsole.power.stopping'), description: t('serviceConsole.power.stopping') } },
+  hard_off: { runtime: { power_state: 'stopping', power_label: t('serviceConsole.power.stopping'), description: t('serviceConsole.power.stopping') } },
+  reboot: { runtime: { power_state: 'rebooting', power_label: t('serviceConsole.power.rebooting'), description: t('serviceConsole.power.rebooting') } },
+  hard_reboot: { runtime: { power_state: 'rebooting', power_label: t('serviceConsole.power.rebooting'), description: t('serviceConsole.power.rebooting') } },
 };
 
 export interface UseConsolePowerOptions {
@@ -51,7 +52,7 @@ export function useConsolePower(options: UseConsolePowerOptions) {
       header: `${label}确认`,
       body: `确认对实例 ${detail.value.name || `#${serviceId.value}`} 执行“${label}”操作吗？`,
       confirmBtn: `确认${label}`,
-      cancelBtn: '取消',
+      cancelBtn: t('common.cancel'),
       theme: ['hard_off', 'hard_reboot'].includes(action) ? 'danger' : 'warning',
       async onConfirm() {
         dialog.setConfirmLoading(true);

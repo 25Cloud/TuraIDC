@@ -192,6 +192,7 @@ import { adminStaffApi } from '@/api/admin-staff';
 import MobileRecordCard from '@/components/mobile-record-card/index.vue';
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { required } from '@/utils/formRules';
 import { errorMessage } from '@/utils/userMessage';
@@ -249,27 +250,27 @@ const formRules = computed<Record<string, FormRule[]>>(() => ({
     required('请输入登录账号'),
     {
       pattern: /^[\w.@-]+$/,
-      message: '登录账号仅支持字母、数字、下划线、点、横线和 @',
+      message: t('admin.staff.accountPatternTip'),
       type: 'error',
       trigger: 'blur',
     },
   ],
   role_id: [required('请选择角色')],
-  password: form.id ? [] : [required('请输入初始密码'), { min: 8, message: '初始密码至少 8 位', type: 'error' }],
+  password: form.id ? [] : [required('请输入初始密码'), { min: 8, message: t('admin.staff.initialPasswordMinLength'), type: 'error' }],
 }));
 const resetRules: Record<string, FormRule[]> = {
-  password: [required('请输入新密码'), { min: 8, message: '新密码至少 8 位', type: 'error' }],
+  password: [required('请输入新密码'), { min: 8, message: t('admin.staff.newPasswordMinLength'), type: 'error' }],
   password_confirmation: [required('请再次输入新密码')],
 };
 const columns: PrimaryTableCol<TableRowData>[] = [
   { title: 'ID', colKey: 'id', width: 80 },
-  { title: '账号 / 邮箱', colKey: 'account', minWidth: 220 },
-  { title: '昵称', colKey: 'name', minWidth: 150 },
-  { title: '角色', colKey: 'role', width: 150 },
-  { title: '权限', colKey: 'permissionCount', width: 120 },
-  { title: '状态', colKey: 'status', width: 100 },
-  { title: '最近登录', colKey: 'lastLogin', minWidth: 210 },
-  { title: '操作', colKey: 'actions', fixed: 'right', width: 230 },
+  { title: t('admin.staff.accountOrEmailLabel'), colKey: 'account', minWidth: 220 },
+  { title: t('admin.staff.nicknameLabel'), colKey: 'name', minWidth: 150 },
+  { title: t('admin.staff.roleLabel'), colKey: 'role', width: 150 },
+  { title: t('admin.staff.permissionLabel'), colKey: 'permissionCount', width: 120 },
+  { title: t('common.status'), colKey: 'status', width: 100 },
+  { title: t('admin.staff.lastLoginLabel'), colKey: 'lastLogin', minWidth: 210 },
+  { title: t('common.action'), colKey: 'actions', fixed: 'right', width: 230 },
 ];
 
 onMounted(async () => {
@@ -374,12 +375,12 @@ async function submitForm() {
   if (result !== true) return;
 
   if (!form.role_id) {
-    MessagePlugin.warning('请选择角色');
+    MessagePlugin.warning(t('admin.staff.selectRolePlaceholder'));
     return;
   }
 
   if (!form.id && form.password.length < 8) {
-    MessagePlugin.warning('初始密码至少 8 位');
+    MessagePlugin.warning(t('admin.staff.initialPasswordMinLength'));
     return;
   }
 
@@ -387,10 +388,10 @@ async function submitForm() {
   try {
     if (form.id) {
       await adminStaffApi.update(form.id, buildUpdatePayload());
-      MessagePlugin.success('员工已更新');
+      MessagePlugin.success(t('admin.staff.updateSuccess'));
     } else {
       await adminStaffApi.create(buildCreatePayload());
-      MessagePlugin.success('员工已创建');
+      MessagePlugin.success(t('admin.staff.createSuccess'));
     }
     formVisible.value = false;
     await loadList();
@@ -412,19 +413,19 @@ async function submitResetPassword() {
   if (result !== true || !currentResetStaff.value) return;
 
   if (resetForm.password.length < 8) {
-    MessagePlugin.warning('新密码至少 8 位');
+    MessagePlugin.warning(t('admin.staff.newPasswordMinLength'));
     return;
   }
 
   if (resetForm.password !== resetForm.password_confirmation) {
-    MessagePlugin.warning('两次输入的密码不一致');
+    MessagePlugin.warning(t('admin.staff.passwordMismatch'));
     return;
   }
 
   resetting.value = true;
   try {
     await adminStaffApi.resetPassword(currentResetStaff.value.id, { ...resetForm });
-    MessagePlugin.success('员工密码已重置');
+    MessagePlugin.success(t('admin.staff.passwordResetSuccess'));
     resetVisible.value = false;
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '重置密码失败'));
@@ -439,11 +440,11 @@ function handleToggleStatus(row: StaffRecord) {
     header: enabling ? '启用员工' : '停用员工',
     body: `确认${enabling ? '启用' : '停用'}员工「${row.username || row.nickname || row.id}」？`,
     confirmBtn: { content: enabling ? '启用' : '停用', theme: enabling ? 'success' : 'danger' },
-    cancelBtn: '取消',
+    cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       try {
         await adminStaffApi.toggleStatus(row.id, enabling);
-        MessagePlugin.success('员工状态已更新');
+        MessagePlugin.success(t('admin.staff.statusUpdateSuccess'));
         await loadList();
         dialog.destroy();
       } catch (error) {
@@ -458,11 +459,11 @@ function handleDelete(row: StaffRecord) {
     header: '删除员工',
     body: `确认删除已停用员工「${row.username || row.nickname || row.id}」？删除后该员工将无法登录。`,
     confirmBtn: { content: '删除', theme: 'danger' },
-    cancelBtn: '取消',
+    cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       try {
         await adminStaffApi.delete(row.id);
-        MessagePlugin.success('员工已删除');
+        MessagePlugin.success(t('admin.staff.deleteSuccess'));
         await loadList();
         dialog.destroy();
       } catch (error) {

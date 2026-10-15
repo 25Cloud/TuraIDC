@@ -63,6 +63,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import type { TicketAdminUser, TicketPreReplySettingsPayload } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { errorMessage } from '@/utils/userMessage';
 
@@ -95,14 +96,14 @@ const formRules: Record<string, FormRule[]> = {
       // 后端未配置时返回 0，同样视为未选择。
       validator: (value) =>
         !form.enabled || (value !== '' && value !== null && value !== undefined && Number(value) > 0),
-      message: '启用预回复时必须选择管理员账号',
+      message: t('tickets.preReplySettings.replyAdminRequired'),
       type: 'error',
     },
   ],
   content: [
     {
       validator: (value) => !form.enabled || String(value || '').trim() !== '',
-      message: '启用预回复时必须填写回复内容',
+      message: t('tickets.preReplySettings.replyContentRequired'),
       type: 'error',
     },
   ],
@@ -129,7 +130,7 @@ async function loadConfig() {
 async function save() {
   // 无 ticket.pre_reply_manage 权限时直接拒绝调用（路由守卫之外的双保险）。
   if (!canManage.value) {
-    MessagePlugin.error('无权限保存工单预回复设置');
+    MessagePlugin.error(t('tickets.preReplySettings.noPermission'));
     return;
   }
 
@@ -147,7 +148,7 @@ async function save() {
       payload.upstream_content = form.upstream_content;
     }
     await adminApi.tickets.preReply.save(payload);
-    MessagePlugin.success('工单预回复设置已保存');
+    MessagePlugin.success(t('tickets.preReplySettings.saveSuccess'));
     // 保存成功后重新加载，确保表单与后端实际持久化的配置一致。
     await loadConfig();
   } catch (error) {

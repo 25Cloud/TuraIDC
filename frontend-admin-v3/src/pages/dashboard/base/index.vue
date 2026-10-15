@@ -69,6 +69,7 @@ import { useRouter } from 'vue-router';
 import type { DashboardStats, MonthlyRevenue, RecentInvoice } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import StatusTag from '@/components/status-tag/index.vue';
+import { t } from '@/locales';
 import { formatDateTime } from '@/utils/format';
 
 import TopPanel from './components/TopPanel.vue';
@@ -91,10 +92,10 @@ let productChart: echarts.ECharts | null = null;
 let dailyChart: echarts.ECharts | null = null;
 
 const invoiceColumns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'invoice_no', title: '账单号', minWidth: 180 },
-  { colKey: 'amount', title: '金额', width: 140, align: 'right' },
-  { colKey: 'status', title: '状态', width: 120 },
-  { colKey: 'created_at', title: '创建时间', width: 180 },
+  { colKey: 'invoice_no', title: t('pages.dashboardBase.invoiceNo'), minWidth: 180 },
+  { colKey: 'amount', title: t('pages.dashboardBase.amount'), width: 140, align: 'right' },
+  { colKey: 'status', title: t('common.status'), width: 120 },
+  { colKey: 'created_at', title: t('pages.dashboardBase.createdAt'), width: 180 },
 ];
 
 const monthLabel = computed(() => monthlyRevenue.value.month_label || '');

@@ -229,6 +229,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { fieldValue, formatDateTime } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { errorMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 defineOptions({ name: 'AdminContentNotices' });
 
@@ -273,9 +274,9 @@ const categoryForm = reactive({
 });
 
 const statusOptions = [
-  { label: '草稿', value: 0 },
-  { label: '已发布', value: 1 },
-  { label: '已下线', value: 2 },
+  { label: t('content.index.statusDraft'), value: 0 },
+  { label: t('content.index.statusPublished'), value: 1 },
+  { label: t('content.index.statusOffline'), value: 2 },
 ];
 const categoryRules: Record<string, FormRule[]> = {
   name: [required('请输入分类名称')],
@@ -288,21 +289,21 @@ const isMobile = useMediaQuery('(max-width: 768px)');
 
 const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'id', title: 'ID', width: 80 },
-  { colKey: 'title', title: '标题', minWidth: 300 },
-  { colKey: 'category', title: '分类', minWidth: 160 },
-  { colKey: 'status', title: '状态', width: 110 },
-  { colKey: 'flags', title: '属性', width: 150 },
-  { colKey: 'publish', title: '发布 / 浏览', minWidth: 180 },
-  { colKey: 'updated', title: '更新信息', minWidth: 180 },
-  { colKey: 'actions', title: '操作', fixed: 'right', width: 130 },
+  { colKey: 'title', title: t('content.index.title'), minWidth: 300 },
+  { colKey: 'category', title: t('content.index.category'), minWidth: 160 },
+  { colKey: 'status', title: t('common.status'), width: 110 },
+  { colKey: 'flags', title: t('content.index.flags'), width: 150 },
+  { colKey: 'publish', title: t('content.index.publishAndViews'), minWidth: 180 },
+  { colKey: 'updated', title: t('content.index.updatedInfo'), minWidth: 180 },
+  { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 130 },
 ];
 const categoryColumns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'name', title: '分类名称', minWidth: 130 },
-  { colKey: 'slug', title: '别名', minWidth: 120 },
-  { colKey: 'status', title: '状态', width: 80 },
-  { colKey: 'sort_order', title: '排序', width: 70 },
-  { colKey: 'articles_count', title: '文章数', width: 80 },
-  { colKey: 'actions', title: '操作', width: 120 },
+  { colKey: 'name', title: t('content.index.categoryName'), minWidth: 130 },
+  { colKey: 'slug', title: t('content.index.categorySlug'), minWidth: 120 },
+  { colKey: 'status', title: t('common.status'), width: 80 },
+  { colKey: 'sort_order', title: t('content.index.categorySort'), width: 70 },
+  { colKey: 'articles_count', title: t('content.index.articleCount'), width: 80 },
+  { colKey: 'actions', title: t('common.action'), width: 120 },
 ];
 
 function getBasePath() {
@@ -453,10 +454,10 @@ async function submitCategory() {
   try {
     if (categoryForm.id) {
       await adminApi.content.categories.update(categoryForm.id, payload);
-      MessagePlugin.success('分类已更新');
+      MessagePlugin.success(t('content.index.categoryUpdated'));
     } else {
       await adminApi.content.categories.create(payload);
-      MessagePlugin.success('分类已创建');
+      MessagePlugin.success(t('content.index.categoryCreated'));
     }
     resetCategoryForm();
     categoryDialogVisible.value = false;
@@ -476,7 +477,7 @@ function handleDeleteCategory(row: ContentCategoryRecord) {
     async onConfirm() {
       try {
         await adminApi.content.categories.delete(row.id);
-        MessagePlugin.success('分类已删除');
+        MessagePlugin.success(t('content.index.categoryDeleted'));
         dialog.destroy();
         if (String(filters.category_id) === String(row.id)) filters.category_id = '';
         await Promise.allSettled([loadCategories(), loadArticles()]);

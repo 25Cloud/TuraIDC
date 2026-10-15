@@ -163,12 +163,12 @@ const passwordForm = reactive({
   password_confirmation: '',
 });
 const passwordRules: Record<string, FormRule[]> = {
-  current_password: [{ required: true, message: '请输入当前密码', type: 'error' }],
+  current_password: [{ required: true, message: t('layout.header.currentPasswordRequired'), type: 'error' }],
   password: [
-    { required: true, message: '请输入新密码', type: 'error' },
-    { min: 8, message: '新密码至少 8 位', type: 'error' },
+    { required: true, message: t('layout.header.newPasswordRequired'), type: 'error' },
+    { min: 8, message: t('layout.header.passwordMinLength'), type: 'error' },
   ],
-  password_confirmation: [{ required: true, message: '请再次输入新密码', type: 'error' }],
+  password_confirmation: [{ required: true, message: t('layout.header.confirmPasswordRequired'), type: 'error' }],
 };
 
 const toggleSettingPanel = () => {
@@ -249,19 +249,19 @@ const submitPassword = async () => {
   if (result !== true) return;
 
   if (passwordForm.password.length < 8) {
-    MessagePlugin.warning('新密码至少 8 位');
+    MessagePlugin.warning(t('layout.header.passwordMinLength'));
     return;
   }
 
   if (passwordForm.password !== passwordForm.password_confirmation) {
-    MessagePlugin.warning('两次输入的新密码不一致');
+    MessagePlugin.warning(t('layout.header.passwordMismatch'));
     return;
   }
 
   passwordSaving.value = true;
   try {
     await adminAuthApi.updatePassword({ ...passwordForm });
-    MessagePlugin.success('密码已更新');
+    MessagePlugin.success(t('layout.header.passwordUpdated'));
     passwordVisible.value = false;
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '修改密码失败'));

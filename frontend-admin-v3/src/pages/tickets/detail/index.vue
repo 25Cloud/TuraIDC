@@ -319,6 +319,7 @@ import type {
   TicketUpstreamDeliveryLog,
 } from '@/api/admin';
 import { adminApi } from '@/api/admin';
+import { t } from '@/locales';
 import { formatDateTime } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
 
@@ -372,14 +373,14 @@ const priorityOptions = [
   { label: '低', value: 1 },
   { label: '中', value: 2 },
   { label: '高', value: 3 },
-  { label: '紧急', value: 4 },
+  { label: t('tickets.detail.priorityUrgent'), value: 4 },
 ];
 
 const departmentOptions = [
-  { label: '销售', value: 'sales' },
-  { label: '技术支持', value: 'support' },
-  { label: '财务', value: 'billing' },
-  { label: '投诉', value: 'abuse' },
+  { label: t('tickets.detail.departmentSales'), value: 'sales' },
+  { label: t('tickets.detail.departmentSupport'), value: 'support' },
+  { label: t('tickets.detail.departmentBilling'), value: 'billing' },
+  { label: t('tickets.detail.departmentAbuse'), value: 'abuse' },
 ];
 
 const messages = computed<ConversationMessage[]>(() => {
@@ -510,7 +511,7 @@ async function registerUpstreamCallback() {
   callbackRegistrationLoading.value = true;
   try {
     await adminApi.tickets.registerUpstreamCallback(id);
-    MessagePlugin.success('上游工单回调已重新注册');
+    MessagePlugin.success(t('tickets.detail.upstreamCallbackReregistered'));
     await reloadCurrentDetail();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '重新注册回调失败'));
@@ -547,7 +548,7 @@ function parseAttachments(
   return attachments
     .map((attachment, index) => {
       if (typeof attachment === 'string') {
-        return { id: index, url: attachment, path: attachment, name: '图片', type: 'image' } satisfies TicketAttachment;
+        return { id: index, url: attachment, path: attachment, name: t('tickets.detail.image'), type: 'image' } satisfies TicketAttachment;
       }
       return attachment;
     })
@@ -630,24 +631,24 @@ async function copyText(text: unknown) {
   const value = String(text || '').trim();
   if (!value || value === '--' || !navigator?.clipboard) return;
   await navigator.clipboard.writeText(value);
-  MessagePlugin.success('已复制');
+  MessagePlugin.success(t('tickets.detail.copied'));
 }
 
 async function handleAssign() {
   if (!detail.value?.id) return;
   if (!assignForm.assignee_id) {
-    MessagePlugin.warning('请选择处理人');
+    MessagePlugin.warning(t('tickets.detail.assigneeRequired'));
     return;
   }
   if (String(assignForm.assignee_id) === currentAssigneeId.value) {
-    MessagePlugin.warning('处理人未发生变化');
+    MessagePlugin.warning(t('tickets.detail.assigneeUnchanged'));
     return;
   }
 
   assignLoading.value = true;
   try {
     await adminApi.tickets.assign(detail.value.id, { assignee_id: assignForm.assignee_id });
-    MessagePlugin.success('指派成功');
+    MessagePlugin.success(t('tickets.detail.assigned'));
     await reloadCurrentDetail();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '指派失败'));
@@ -659,7 +660,7 @@ async function handleAssign() {
 async function handleReply() {
   if (!detail.value?.id) return;
   if (!replyForm.content.trim() && replyAttachments.value.length === 0) {
-    MessagePlugin.warning('请输入回复内容或上传图片');
+    MessagePlugin.warning(t('tickets.detail.replyRequired'));
     return;
   }
 
@@ -671,7 +672,7 @@ async function handleReply() {
       quote_reply_id: quoteReply.value?.id,
     });
     resetReplyDraft();
-    MessagePlugin.success('回复成功');
+    MessagePlugin.success(t('tickets.detail.replied'));
     await reloadCurrentDetail();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '回复失败'));
@@ -687,13 +688,13 @@ function handleClose() {
     header: '关闭工单',
     body: '确认关闭该工单吗？关闭后图片会被物理删除。',
     theme: 'warning',
-    confirmBtn: '确认关闭',
-    cancelBtn: '取消',
+    confirmBtn: t('tickets.detail.confirmClose'),
+    cancelBtn: t('common.cancel'),
     async onConfirm() {
       closeLoading.value = true;
       try {
         await adminApi.tickets.close(ticketId);
-        MessagePlugin.success('工单已关闭');
+        MessagePlugin.success(t('tickets.detail.closed'));
         dialog.hide();
         await reloadCurrentDetail();
       } catch (error) {
@@ -716,7 +717,7 @@ async function handleRecall(replyId: number | string) {
   recallLoading.value = replyId;
   try {
     await adminApi.tickets.recall(detail.value.id, replyId);
-    MessagePlugin.success('消息已撤回');
+    MessagePlugin.success(t('tickets.detail.recalled'));
     await reloadCurrentDetail();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '撤回失败'));
@@ -751,7 +752,7 @@ function beforeUpload(file: UploadFileLike) {
     return false;
   }
   if (file.type && !IMAGE_TYPES.includes(file.type)) {
-    MessagePlugin.warning('仅支持 jpg、png、webp 图片');
+    MessagePlugin.warning(t('tickets.detail.imageTypeUnsupported'));
     return false;
   }
   return true;

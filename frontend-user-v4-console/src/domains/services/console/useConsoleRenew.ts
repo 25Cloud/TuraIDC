@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
 import { formatMoney } from '@/domains/services/useServiceCenter';
+import { t } from '@/locales';
 import type { CouponOption, RenewCycleOption, ServiceRenewPreview } from '@/types/client';
 
 import { resolveErrorMessage } from './useConsoleCore';
@@ -94,7 +95,7 @@ export function useConsoleRenew(options: UseConsoleRenewOptions) {
       });
       const invoiceId = Number(res.data?.id || 0);
       renewVisible.value = false;
-      MessagePlugin.success('续费账单已创建，正在跳转支付');
+      MessagePlugin.success(t('serviceConsole.renew.invoiceCreated'));
       router.push(invoiceId > 0 ? `/client/invoices/${invoiceId}/pay` : '/client/invoices');
     } catch (error: unknown) {
       MessagePlugin.error(resolveErrorMessage(error, '创建续费账单失败'));

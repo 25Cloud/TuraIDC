@@ -5,7 +5,16 @@
     "copyright": "Copyright @ 2021-2025 Tencent. All Rights Reserved",
     "conjunction": "和",
     "admin": "admin",
-    "cancel": "取消"
+    "cancel": "取消",
+    "confirm": "確認",
+    "copiedToClipboard": "已複製到剪貼簿",
+    "copyFailedManual": "複製失敗，請手動複製",
+    "confirmDelete": "確認刪除",
+    "time": "時間",
+    "method": "方法",
+    "status": "狀態",
+    "createdAt": "建立時間",
+    "action": "操作"
   },
   "components": {
     "isSetup": {
@@ -61,7 +70,8 @@
       "help": "幫助文件",
       "user": "個人中心",
       "signOut": "登出",
-      "setting": "系統設定"
+      "setting": "系統設定",
+      "confirmSignOut": "確認退出"
     },
     "notice": {
       "title": "通知中心",
@@ -69,7 +79,9 @@
       "setRead": "設為已讀",
       "empty": "空",
       "emptyNotice": "暫無通知",
-      "viewAll": "檢視全部"
+      "viewAll": "檢視全部",
+      "detailLoadFailed": "公告內容載入失敗",
+      "markAllRead": "已全部標記為已讀"
     },
     "searchPlaceholder": "請輸入搜尋內容",
     "search": {
@@ -788,11 +800,19 @@
       "saved": "我已儲存",
       "usageLogs": "呼叫日誌",
       "usageLogsTitle": "呼叫日誌 · 魔方財務對接",
-      "username": "使用者名稱"
+      "username": "使用者名稱",
+      "logPath": "介面路徑"
     },
     "title": "API 憑據",
     "create": "建立金鑰",
-    "openApiLabel": "開放介面金鑰"
+    "openApiLabel": "開放介面金鑰",
+    "scopeProducts": "產品目錄",
+    "scopeOrders": "訂單與賬單",
+    "scopeServices": "服務例項",
+    "scopeFinance": "餘額與財務",
+    "nameRequired": "請輸入金鑰名稱",
+    "updated": "金鑰已更新",
+    "deleted": "金鑰已刪除"
   },
   "client": {
     "catalog": {
@@ -875,7 +895,11 @@
       "rechargeLabel": "充值",
       "rechargePrefix": "充值：",
       "searchPlaceholder": "搜尋賬單號、關聯訂單號或充值單號",
-      "view": "檢視"
+      "view": "檢視",
+      "last7Days": "最近7天",
+      "thisMonth": "本月",
+      "pending": "待支付",
+      "relatedRefs": "關聯單據"
     },
     "orderDetail": {
       "backToList": "返回列表",
@@ -926,7 +950,14 @@
       "searchPlaceholder": "搜尋商家訂單號或第三方訂單號",
       "thirdPartyLabel": "第三方：",
       "view": "檢視",
-      "waitingCallback": "等待渠道回撥"
+      "waitingCallback": "等待渠道回撥",
+      "all": "全部",
+      "last7Days": "最近7天",
+      "thisMonth": "本月",
+      "pending": "待支付",
+      "orderNo": "支付訂單號",
+      "gateway": "支付渠道",
+      "amount": "支付金額"
     },
     "referral": {
       "accountLogsTab": "賬戶流水",
@@ -961,7 +992,21 @@
       "toBalance": "轉餘額",
       "withdrawAmount": "提現金額",
       "withdrawAmountPlaceholder": "請輸入提現金額",
-      "withdrawalsTab": "提現記錄"
+      "withdrawalsTab": "提現記錄",
+      "statusFrozen": "凍結中",
+      "statusReleased": "已釋放",
+      "statusReversed": "已衝正",
+      "statusReviewing": "稽核中",
+      "statusApproved": "已通過",
+      "statusRejected": "已拒絕",
+      "availableBalance": "可提現餘額",
+      "totalReward": "累計獎勵",
+      "withdrawn": "已提現",
+      "directCount": "直推人數",
+      "rewardedOrders": "獎勵賬單數",
+      "linkUnavailable": "推薦連結暫不可用",
+      "alipayBoundSuccess": "支付寶繫結成功",
+      "withdrawSubmitted": "提現申請已提交"
     },
     "services": {
       "addRemark": "新增備註",
@@ -1019,7 +1064,11 @@
       "traffic": "流量",
       "trialMachine": "試用機",
       "virtualHostInstance": "虛擬主機例項",
-      "webSpace": "網頁空間"
+      "webSpace": "網頁空間",
+      "service": "服務資訊",
+      "specSummary": "配置摘要",
+      "expiresAt": "到期時間",
+      "ipTraffic": "IP / 流量"
     },
     "ticketDetail": {
       "adminRole": "管理員",
@@ -1052,6 +1101,34 @@
       "updatedAt": "更新時間",
       "user": "使用者",
       "userRole": "使用者"
+    },
+    "support": {
+      "officialQqGroup": "官方QQ群",
+      "cooperationEmail": "合作電子郵件",
+      "serviceHours": "服務時間"
+    },
+    "dashboard": {
+      "accountBalance": "賬戶餘額",
+      "monthlyRecharge": "本月充值",
+      "monthlySpend": "本月消費",
+      "availableCoupons": "可用優惠券",
+      "categoryCloudServer": "雲伺服器",
+      "categoryGameCloud": "遊戲雲",
+      "categoryCloudDesktop": "雲電腦",
+      "categoryBareMetal": "裸金屬",
+      "categoryWebHosting": "虛擬主機",
+      "todoUnpaidInvoices": "待支付賬單",
+      "todoOpenTickets": "待處理工單",
+      "todoExpiringServices": "即將到期服務",
+      "todoUnreadNotices": "未讀公告",
+      "quickMyServices": "我的服務",
+      "quickInvoiceRecords": "賬單記錄",
+      "quickPaymentRecords": "充值記錄",
+      "quickTicketSupport": "工單支援",
+      "quickTopUp": "賬戶充值",
+      "quickHelpCenter": "幫助中心",
+      "quickCoupons": "優惠券",
+      "quickReferral": "推薦獎勵"
     }
   },
   "clientAuth": {
@@ -1075,7 +1152,40 @@
       "signInNow": "立即登入",
       "submit": "註冊並進入控制台",
       "title": "免費註冊",
-      "viewCatalog": "檢視產品目錄"
+      "viewCatalog": "檢視產品目錄",
+      "captchaRequired": "請先完成人機驗證",
+      "accountInvalid": "請輸入正確的手機號或電子郵件",
+      "codeLength": "驗證碼為 6 位",
+      "nicknameTooLong": "使用者名稱不能超過 50 個字元",
+      "referralCodeTooLong": "推薦碼不能超過 24 個字元",
+      "passwordRequired": "請輸入登入密碼",
+      "passwordTooShort": "密碼長度不能少於 8 位",
+      "passwordMismatch": "兩次輸入的密碼不一致",
+      "accountFirst": "請先輸入正確的手機號或電子郵件",
+      "success": "註冊成功"
+    },
+    "forgotPassword": {
+      "captchaRequired": "請先完成人機驗證",
+      "accountInvalid": "請輸入正確的手機號或電子郵件",
+      "codeRequired": "請輸入驗證碼",
+      "codeLength": "驗證碼為 6 位",
+      "newPasswordRequired": "請輸入新密碼",
+      "passwordMinLength": "密碼長度不能少於 8 位",
+      "confirmPasswordRequired": "請再次輸入新密碼",
+      "passwordMismatch": "兩次輸入的密碼不一致",
+      "accountFirst": "請先輸入正確的手機號或電子郵件",
+      "passwordResetSuccess": "密碼已重置，請重新登入"
+    },
+    "loginAs": {
+      "credentialMissing": "缺少代理登入憑證",
+      "success": "代理登入成功"
+    },
+    "login": {
+      "captchaRequired": "請先完成人機驗證",
+      "accountRequired": "請輸入正確的手機號或電子郵件",
+      "codeLength": "驗證碼為 6 位",
+      "passwordRequired": "請輸入登入密碼",
+      "accountRequiredFirst": "請先輸入正確的手機號或電子郵件"
     }
   },
   "result": {
@@ -1124,7 +1234,8 @@
       "osVersion": "系統版本",
       "osVersionPlaceholder": "請選擇系統版本",
       "submit": "提交重灌",
-      "title": "重灌系統"
+      "title": "重灌系統",
+      "selectOsVersion": "請選擇系統版本"
     },
     "renewDialog": {
       "agentDiscount": "代理折扣",
@@ -1160,7 +1271,11 @@
       "source": "來源",
       "title": "安全組",
       "unsupported": "當前例項暫不支援安全組",
-      "view": "檢視"
+      "view": "檢視",
+      "rulesLoaded": "安全組規則已載入",
+      "groupNameRequired": "請輸入安全組名稱",
+      "selectGroupFirst": "請先選擇安全組",
+      "ruleRequired": "請填寫完整的規則資訊"
     },
     "securityGroup": {
       "cancel": "取消",
@@ -1190,7 +1305,9 @@
       "remainingUsage": "剩餘流量",
       "selectedTier": "已選檔位",
       "title": "購買流量包",
-      "unlimited": "不限"
+      "unlimited": "不限",
+      "selectTier": "請選擇流量包檔位",
+      "billCreated": "流量包賬單已建立，正在跳轉支付"
     },
     "virtualHost": {
       "bandwidth": "頻寬",
@@ -1219,7 +1336,9 @@
       "renewPrice": "續費價格",
       "runStatus": "執行狀態",
       "spaceAndSites": "空間與站點",
-      "webSpace": "網頁空間"
+      "webSpace": "網頁空間",
+      "overview": "主機總覽",
+      "panel": "主機與面板"
     },
     "vnc": {
       "connect": "連線 VNC",
@@ -1227,10 +1346,15 @@
       "loadedTip": "VNC 控制台已在當前頁面載入。",
       "openInWindow": "新視窗開啟",
       "title": "VNC 控制台",
-      "waiting": "等待連線"
+      "waiting": "等待連線",
+      "popupBlocked": "瀏覽器已攔截新視窗，請允許彈窗後重試",
+      "windowOpened": "VNC 新視窗已開啟",
+      "loaded": "VNC 控制台已載入"
     },
     "cdn": {
-      "trafficUsage": "流量用量"
+      "trafficUsage": "流量用量",
+      "overview": "CDN 總覽",
+      "panel": "套餐與面板"
     },
     "breadcrumb": {
       "userCenter": "使用者中心"
@@ -1255,7 +1379,8 @@
       "namePlaceholder": "例如：Web 服務",
       "internalPlaceholder": "留空由上游分配",
       "portPlaceholder": "例如：80",
-      "protocolPlaceholder": "請選擇協議"
+      "protocolPlaceholder": "請選擇協議",
+      "publicAddress": "公網地址"
     },
     "remark": {
       "save": "儲存備註",
@@ -1275,7 +1400,34 @@
     "instanceSpec": "例項規格",
     "instanceId": "例項 ID",
     "os": "作業系統",
-    "createdAt": "建立時間"
+    "createdAt": "建立時間",
+    "upstreamFeatureUnsupported": "當前上游介面暫不支援該功能",
+    "detailUpdated": "例項資訊已更新",
+    "statusRefreshed": "例項狀態已重新整理",
+    "power": {
+      "starting": "開機中",
+      "stopping": "關機中",
+      "rebooting": "重啟中"
+    },
+    "renew": {
+      "invoiceCreated": "續費賬單已建立，正在跳轉支付"
+    },
+    "portForward": {
+      "incomplete": "請填寫完整的埠轉發資訊",
+      "invalidRange": "埠範圍應為 1 到 65535"
+    },
+    "overview": "控制台總覽",
+    "tables": {
+      "logActionTime": "操作時間",
+      "logSummary": "操作詳情",
+      "logOperator": "操作人",
+      "logIpAddress": "IP 地址",
+      "financeOccurredAt": "發生時間",
+      "financeEventType": "賬單型別",
+      "financeAmount": "金額",
+      "financeDescription": "說明",
+      "financeInvoiceNo": "關聯賬單"
+    }
   },
   "recharge": {
     "title": "線上充值",
@@ -1289,7 +1441,13 @@
     "payStatus": "支付狀態",
     "merchantOrderNo": "商家訂單號",
     "payableAmount": "應付金額",
-    "copyLink": "複製支付連結"
+    "copyLink": "複製支付連結",
+    "renewalNeeded": "續費需要",
+    "renewalScanHint": "檢測 7 天內到期的續費金額",
+    "noPaymentMethod": "暫無可用支付方式",
+    "qrCodeGenerated": "充值二維碼已生成",
+    "missingPollCredential": "缺少支付輪詢憑證",
+    "successBalanceRefreshed": "充值成功，餘額已重新整理"
   },
   "services": {
     "console": {}
@@ -1317,17 +1475,63 @@
     "realNamePlaceholder": "請輸入真實姓名",
     "idCardPlaceholder": "請輸入身份證號",
     "realNameLabel": "真實姓名",
-    "idCardLabel": "身份證號"
+    "idCardLabel": "身份證號",
+    "idCardInvalid": "身份證號格式不正確",
+    "qrCodeGenerated": "二維碼已生成，請掃碼繼續認證",
+    "sessionMissing": "缺少認證會話，請重新提交實名資訊",
+    "qrCodeExpired": "二維碼已失效，請重新提交認證",
+    "success": "認證成功",
+    "qrCodeRefreshed": "已重新生成二維碼，請重新掃碼",
+    "sessionClosed": "認證會話已關閉"
   },
   "checkoutResume": {
     "browse": "去選購產品",
-    "toFinance": "前往資金中心"
+    "toFinance": "前往資金中心",
+    "source": "來源",
+    "product": "產品",
+    "billingCycle": "週期",
+    "quantity": "數量",
+    "created": "賬單建立成功，正在跳轉",
+    "createFailed": "賬單建立失敗，請稍後重試"
   },
   "content": {
-    "hotSearchLabel": "熱門搜尋:"
+    "hotSearchLabel": "熱門搜尋:",
+    "notice": {
+      "empty": "暫無公告內容"
+    },
+    "help": {
+      "empty": "暫無幫助內容"
+    },
+    "article": {
+      "fullText": "全文"
+    }
   },
   "invoiceDetail": {
-    "back": "返回賬單"
+    "back": "返回賬單",
+    "renewFlow": {
+      "completePayment": "完成支付",
+      "paymentHint": "餘額或支付寶支付成功後，賬單狀態會自動更新。",
+      "runRenewal": "執行續費",
+      "renewalHint": "系統按當前續費週期處理服務有效期。",
+      "syncService": "同步服務",
+      "syncHint": "處理完成後可在服務控制台檢視新的到期時間。"
+    },
+    "serviceId": "服務 ID",
+    "currentExpiry": "當前到期",
+    "renewalCycle": "續費週期",
+    "renewalAmount": "續費金額",
+    "renewedExpiry": "續費後到期",
+    "payableNow": "本次應付",
+    "item": "專案",
+    "quantity": "數量",
+    "unitPrice": "單價",
+    "discount": "優惠",
+    "subtotal": "小計",
+    "merchantOrderNo": "商家訂單號",
+    "thirdPartyOrderNo": "第三方訂單號",
+    "channel": "渠道",
+    "amount": "金額",
+    "paidAt": "支付時間"
   },
   "orderCreate": {
     "title": "購買鏈路",
@@ -1336,7 +1540,21 @@
     "open": "開啟購買頁"
   },
   "orders": {
-    "searchPlaceholder": "搜尋訂單號"
+    "searchPlaceholder": "搜尋訂單號",
+    "index": {
+      "confirmCancel": "確認取消",
+      "rethink": "再想想",
+      "canceled": "訂單已取消"
+    },
+    "filterAll": "全部",
+    "filterLast7Days": "最近7天",
+    "filterThisMonth": "本月",
+    "statusPending": "待支付",
+    "orderNo": "訂單號",
+    "productService": "產品/服務",
+    "amount": "金額",
+    "relatedInvoice": "關聯賬單",
+    "createdAt": "建立時間"
   },
   "paymentDetail": {
     "title": "財務中心",
@@ -1345,7 +1563,44 @@
     "back": "返回列表"
   },
   "profile": {
-    "basicInfo": "基礎資訊"
+    "basicInfo": "基礎資訊",
+    "notifications": {
+      "loginAlert": "賬號登入提醒",
+      "unusualLoginAlert": "異地登入提醒",
+      "passwordAlert": "更改密碼提醒",
+      "phoneAlert": "更改手機號提醒",
+      "emailAlert": "更改電子郵件提醒",
+      "marketingAlert": "營銷提醒接收"
+    },
+    "captchaRequired": "請先完成人機驗證",
+    "realNameAuth": "實名認證",
+    "securePhone": "安全手機",
+    "secureEmail": "安全電子郵件",
+    "loginPassword": "登入密碼",
+    "codeSent": "驗證碼已傳送",
+    "codeRequired": "請輸入 6 位驗證碼",
+    "newPasswordRequired": "請輸入新密碼",
+    "passwordMinLength": "密碼長度不能少於 8 位",
+    "passwordMismatch": "兩次密碼輸入不一致",
+    "passwordResetSuccess": "密碼重置成功，請重新登入",
+    "phoneNotBound": "當前賬號未繫結手機號",
+    "codeSentToOldPhone": "驗證碼已傳送至原手機號",
+    "emailNotBound": "當前賬號未繫結電子郵件",
+    "codeSentToOldEmail": "驗證碼已傳送至原電子郵件",
+    "newPhoneRequired": "請輸入新手機號",
+    "newEmailRequired": "請輸入新電子郵件",
+    "oldPhoneCodeRequired": "請輸入原手機號驗證碼",
+    "phoneUpdated": "手機號修改成功",
+    "oldEmailCodeRequired": "請輸入原電子郵件驗證碼",
+    "emailUpdated": "電子郵件修改成功",
+    "usernameRequired": "使用者名稱不能為空",
+    "usernameMaxLength": "使用者名稱最多 50 個字元",
+    "qqFormatInvalid": "QQ 號需為 5-20 位數字",
+    "updated": "資料修改成功",
+    "passwordInfoRequired": "請填寫完整密碼資訊",
+    "newPasswordMinLength": "新密碼長度不能少於 8 位",
+    "passwordChanged": "密碼修改成功，請重新登入",
+    "settingsSaved": "設定儲存成功"
   },
   "tickets": {
     "searchPlaceholder": "搜尋工單標題",
@@ -1364,5 +1619,92 @@
     "loginAccountPlaceholder": "請輸入手機號或電子郵件",
     "byPassword": "密碼登入",
     "byCode": "驗證碼登入"
+  },
+  "finance": {
+    "invoice": {
+      "missingId": "賬單 ID 缺失，無法發起支付",
+      "confirmCancel": "確認取消",
+      "notNow": "再想想",
+      "cancelled": "賬單已取消",
+      "sessionExpired": "支付會話已失效，請重新整理頁面後重試",
+      "paid": "賬單已支付",
+      "confirmPay": "確認支付",
+      "selectPaymentMethod": "請選擇可用支付方式"
+    },
+    "records": {
+      "alipay": "支付寶",
+      "epay": "易支付",
+      "wechat": "微信支付"
+    }
+  },
+  "coupon": {
+    "plaza": {
+      "claimable": "可領取",
+      "claimedUp": "已領完",
+      "expired": "已過期"
+    },
+    "mine": {
+      "available": "可用",
+      "usedUp": "已用完"
+    },
+    "claimed": "領取成功"
+  },
+  "ticket": {
+    "replyStatus": {
+      "open": "開啟",
+      "customerReplied": "客戶回覆",
+      "staffReplied": "員工回覆",
+      "closed": "已關閉"
+    },
+    "department": {
+      "sales": "銷售",
+      "support": "技術支援",
+      "billing": "財務",
+      "abuse": "投訴"
+    },
+    "priority": {
+      "urgent": "緊急"
+    },
+    "image": {
+      "unsupportedType": "僅支援 jpg、png、webp 圖片",
+      "tooLarge": "單張圖片不能超過 5MB",
+      "uploaded": "圖片已上傳"
+    },
+    "create": {
+      "titleRequired": "請輸入工單標題",
+      "success": "工單提交成功"
+    },
+    "detail": {
+      "notFound": "工單不存在"
+    },
+    "reply": {
+      "uploading": "圖片上傳中，請稍後傳送",
+      "contentRequired": "請輸入回覆內容或上傳圖片",
+      "sent": "回覆已傳送",
+      "recalled": "訊息已撤回"
+    },
+    "close": {
+      "confirm": "確認關閉",
+      "success": "工單已關閉"
+    }
+  },
+  "referral": {
+    "time": "時間",
+    "sourceUser": "來源使用者",
+    "product": "產品",
+    "orderType": "消費型別",
+    "orderAmount": "消費金額",
+    "rewardAmount": "獎勵金額",
+    "user": "使用者",
+    "email": "電子郵件",
+    "referredAt": "被邀請時間",
+    "customerConsumption": "客戶消費",
+    "earnings": "我的收益",
+    "withdrawMethod": "提現方式",
+    "withdrawAmount": "提現金額",
+    "account": "收款賬戶",
+    "event": "事件",
+    "changeAmount": "變動金額",
+    "remark": "說明"
   }
 }

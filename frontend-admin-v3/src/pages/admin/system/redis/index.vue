@@ -78,6 +78,7 @@ import { computed, onMounted, ref } from 'vue';
 import type { RedisStatus } from '@/api/admin/redis';
 import { redisApi } from '@/api/admin/redis';
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { errorMessage } from '@/utils/userMessage';
 
@@ -110,17 +111,17 @@ const unavailableMessage = computed(() => {
 });
 
 const connectionColumns = computed<PrimaryTableCol<TableRowData>[]>(() => [
-  { title: '连接', colKey: 'name', width: 160 },
-  { title: '库序号', colKey: 'database', width: 100 },
-  { title: '状态', colKey: 'connected', width: 100 },
-  { title: '说明', colKey: 'message', minWidth: 220 },
+  { title: t('redis.index.connection'), colKey: 'name', width: 160 },
+  { title: t('redis.index.databaseIndex'), colKey: 'database', width: 100 },
+  { title: t('common.status'), colKey: 'connected', width: 100 },
+  { title: t('redis.index.note'), colKey: 'message', minWidth: 220 },
 ]);
 
 const keyspaceColumns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   { title: '库', colKey: 'database', width: 100 },
-  { title: '键数量', colKey: 'keys', width: 140 },
-  { title: '过期键', colKey: 'expires', width: 140 },
-  { title: '平均 TTL', colKey: 'avgTtl', width: 140 },
+  { title: t('redis.index.keyCount'), colKey: 'keys', width: 140 },
+  { title: t('redis.index.expiringKeys'), colKey: 'expires', width: 140 },
+  { title: t('redis.index.avgTtl'), colKey: 'avgTtl', width: 140 },
 ]);
 
 async function loadStatus() {
@@ -140,7 +141,7 @@ function handleFlushCache() {
     header: '清理缓存',
     body: '将清空缓存库中的全部键，站点会重新从数据库加载配置。确认继续？',
     confirmBtn: { content: '确认清理', theme: 'warning' },
-    cancelBtn: '取消',
+    cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       flushing.value = true;
       try {

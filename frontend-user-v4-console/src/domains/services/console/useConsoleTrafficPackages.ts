@@ -11,6 +11,7 @@ import type {
 } from '@/types/client';
 
 import { resolveErrorMessage } from './useConsoleCore';
+import { t } from '@/locales';
 
 export interface UseConsoleTrafficPackagesOptions {
   serviceId: { value: number };
@@ -100,7 +101,7 @@ export function useConsoleTrafficPackages(options: UseConsoleTrafficPackagesOpti
   async function submitTrafficPackageOrder() {
     const targetValue = Number(trafficForm.target_value || 0);
     if (targetValue <= 0) {
-      MessagePlugin.warning('请选择流量包档位');
+      MessagePlugin.warning(t('serviceConsole.traffic.selectTier'));
       return;
     }
 
@@ -111,7 +112,7 @@ export function useConsoleTrafficPackages(options: UseConsoleTrafficPackagesOpti
       });
       const invoiceId = Number(res.data?.id || 0);
       trafficVisible.value = false;
-      MessagePlugin.success('流量包账单已创建，正在跳转支付');
+      MessagePlugin.success(t('serviceConsole.traffic.billCreated'));
       await router.push(invoiceId > 0 ? `/client/invoices/${invoiceId}/pay` : '/client/invoices');
     } catch (error: unknown) {
       MessagePlugin.error(resolveErrorMessage(error, '创建流量包账单失败'));

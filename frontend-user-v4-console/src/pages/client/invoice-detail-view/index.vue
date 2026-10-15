@@ -190,6 +190,7 @@ import { useRoute, useRouter } from 'vue-router';
 import clientApi from '@/api/client';
 import { formatMoney, isPayableInvoice } from '@/domains/finance/useInvoices';
 import { formatBillingCycle } from '@/domains/finance/useRecords';
+import { t } from '@/locales';
 import type { InvoiceItemInfo, InvoiceRecord } from '@/types/client';
 
 const route = useRoute();
@@ -260,11 +261,11 @@ function formatQuantity(value: unknown) {
 }
 
 const itemColumns: PrimaryTableCol[] = [
-  { colKey: 'description', title: '项目', minWidth: '14rem' },
-  { colKey: 'quantity', title: '数量', width: '7rem' },
-  { colKey: 'unitPrice', title: '单价', width: '8rem' },
-  { colKey: 'discountAmount', title: '优惠', width: '8rem' },
-  { colKey: 'amount', title: '小计', width: '8rem' },
+  { colKey: 'description', title: t('invoiceDetail.item'), minWidth: '14rem' },
+  { colKey: 'quantity', title: t('invoiceDetail.quantity'), width: '7rem' },
+  { colKey: 'unitPrice', title: t('invoiceDetail.unitPrice'), width: '8rem' },
+  { colKey: 'discountAmount', title: t('invoiceDetail.discount'), width: '8rem' },
+  { colKey: 'amount', title: t('invoiceDetail.subtotal'), width: '8rem' },
 ];
 
 function paymentGatewayDisplay(row: Record<string, unknown>) {
@@ -272,12 +273,12 @@ function paymentGatewayDisplay(row: Record<string, unknown>) {
 }
 
 const paymentColumns: PrimaryTableCol[] = [
-  { colKey: 'payment_no', title: '商家订单号', minWidth: '10rem' },
-  { colKey: 'trade_no', title: '第三方订单号', minWidth: '12rem' },
-  { colKey: 'gateway', title: '渠道', width: '8rem' },
-  { colKey: 'amount', title: '金额', width: '8rem' },
-  { colKey: 'status', title: '状态', width: '8rem' },
-  { colKey: 'paid_at', title: '支付时间', minWidth: '12rem' },
+  { colKey: 'payment_no', title: t('invoiceDetail.merchantOrderNo'), minWidth: '10rem' },
+  { colKey: 'trade_no', title: t('invoiceDetail.thirdPartyOrderNo'), minWidth: '12rem' },
+  { colKey: 'gateway', title: t('invoiceDetail.channel'), width: '8rem' },
+  { colKey: 'amount', title: t('invoiceDetail.amount'), width: '8rem' },
+  { colKey: 'status', title: t('common.status'), width: '8rem' },
+  { colKey: 'paid_at', title: t('invoiceDetail.paidAt'), minWidth: '12rem' },
 ];
 
 // 并发守卫：快速切换发票详情时丢弃晚返回的旧请求结果。

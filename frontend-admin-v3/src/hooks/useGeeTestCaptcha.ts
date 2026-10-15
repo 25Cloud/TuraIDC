@@ -4,6 +4,7 @@ import { createApp, nextTick, onScopeDispose, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { request } from '@/utils/request';
+import { t } from '@/locales';
 
 interface GeeTestConfig {
   enabled: boolean;
@@ -115,7 +116,7 @@ async function getCaptchaConfig() {
       })
       .catch((error: unknown) => {
         captchaConfigPromise = null;
-        const message = error instanceof Error ? error.message : '人机验证配置请求失败';
+        const message = error instanceof Error ? error.message : t('captcha.config.loadFailed');
         throw new Error(`人机验证配置加载失败：${message}`);
       });
   }
@@ -582,7 +583,7 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
           rejectPending(new Error('行为验证组件版本不兼容，请刷新页面后重试'));
         }
       } catch (error) {
-        rejectPending(new Error(error instanceof Error ? error.message : '行为验证打开失败'));
+        rejectPending(new Error(error instanceof Error ? error.message : t('captcha.openFailed')));
       }
     });
   };

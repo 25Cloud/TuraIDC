@@ -4,6 +4,7 @@ import type { Component } from 'vue';
 import AreaTab from '../tabs/AreaTab.vue';
 import FinanceTab from '../tabs/FinanceTab.vue';
 import VirtualHostOverviewTab from './tabs/VirtualHostOverviewTab.vue';
+import { t } from '@/locales';
 
 export interface VirtualHostConsoleNavItem {
   key: string;
@@ -22,9 +23,9 @@ export interface VirtualHostConsoleNavItem {
  * 未注册的自定义区域 key 一律走 AreaTab 的 iframe 隔离渲染。
  */
 const virtualHostTabMeta: Record<string, Omit<VirtualHostConsoleNavItem, 'key'>> = {
-  overview: { label: '主机总览', icon: DashboardIcon },
-  panel: { label: '主机与面板', icon: ServerIcon },
-  finance: { label: '财务日志', icon: BillIcon },
+  overview: { label: t('serviceConsole.virtualHost.overview'), icon: DashboardIcon },
+  panel: { label: t('serviceConsole.virtualHost.panel'), icon: ServerIcon },
+  finance: { label: t('serviceConsole.financeLog'), icon: BillIcon },
 };
 
 const virtualHostTabComponents: Record<string, Component> = {

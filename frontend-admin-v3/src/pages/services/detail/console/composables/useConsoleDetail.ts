@@ -2,6 +2,8 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, reactive, ref, shallowRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
+import { t } from '@/locales';
+
 import type { ConsoleServiceDetail, ServiceConsoleCapabilities } from '../types';
 import { createServiceConsoleApi } from './adminServiceApi';
 import {
@@ -121,7 +123,7 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
           const fresh = await clientApi.serviceDetail(serviceId.value);
           detail.value = normalizeConsoleDetail(fresh.data || {});
         }
-        MessagePlugin.info('实例信息已更新');
+        MessagePlugin.info(t('services.console.infoUpdated'));
       }
     } catch (error: unknown) {
       MessagePlugin.error(resolveErrorMessage(error, '加载实例信息失败'));
@@ -148,9 +150,9 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
       if (consumeSyncChangedMarker(res.data || {})) {
         // 后台有信息变动：自动重拉详情更新页面
         void loadDetailBase();
-        if (!silent) MessagePlugin.info('实例信息已更新');
+        if (!silent) MessagePlugin.info(t('services.console.infoUpdated'));
       } else if (!silent) {
-        MessagePlugin.success('实例状态已刷新');
+        MessagePlugin.success(t('services.console.statusRefreshed'));
       }
     } catch (error: unknown) {
       if (!silent) MessagePlugin.error(resolveErrorMessage(error, '刷新实例状态失败'));

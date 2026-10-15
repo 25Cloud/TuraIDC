@@ -176,6 +176,7 @@ import { useRouter } from 'vue-router';
 import type { AdminUser } from '@/api/user';
 import { userApi } from '@/api/user';
 import { AdminPermissions } from '@/constants/permissions';
+import { t } from '@/locales';
 import { formatDateTime, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { hasAdminPermission } from '@/utils/permission';
@@ -198,13 +199,13 @@ const filters = reactive<{ keyword: string; status: number | '' }>({ keyword: ''
 
 const columns: PrimaryTableCol<TableRowData>[] = [
   { title: 'ID', colKey: 'id', width: 80 },
-  { title: '手机号 / 邮箱', colKey: 'account', width: 220 },
-  { title: '昵称', colKey: 'nickname', width: 180 },
-  { title: '余额', colKey: 'cash_balance', width: 120 },
-  { title: '已开通服务', colKey: 'openedServices', width: 130, align: 'center' },
-  { title: '代理组', colKey: 'agentGroup', width: 140 },
-  { title: '状态', colKey: 'status', width: 100 },
-  { title: '注册时间', colKey: 'createdAt', width: 180 },
+  { title: t('users.index.account'), colKey: 'account', width: 220 },
+  { title: t('users.index.nickname'), colKey: 'nickname', width: 180 },
+  { title: t('users.index.balance'), colKey: 'cash_balance', width: 120 },
+  { title: t('users.index.openedServices'), colKey: 'openedServices', width: 130, align: 'center' },
+  { title: t('users.index.agentGroup'), colKey: 'agentGroup', width: 140 },
+  { title: t('users.index.statusPlaceholder'), colKey: 'status', width: 100 },
+  { title: t('users.index.registeredAt'), colKey: 'createdAt', width: 180 },
 ];
 
 const pagination = computed(() => ({
@@ -219,11 +220,11 @@ const createVisible = ref(false);
 const createFormRef = ref<FormInstanceFunctions>();
 const createForm = reactive({ email: '', nickname: '', phone: '', password: '' });
 const createRules: Record<string, FormRule[]> = {
-  email: [required('请输入有效邮箱'), { email: true, message: '请输入有效邮箱', type: 'warning' }],
+  email: [required(t('users.index.emailInvalid')), { email: true, message: t('users.index.emailInvalid'), type: 'warning' }],
   phone: [required('请输入手机号')],
   // 后端 StoreUserRequest 是 ['required','string','min:8']；此前只判必填，
   // 管理员输 3 位也能提交，直到 422 才知道。
-  password: [required('请输入密码'), { min: 8, message: '密码至少需要 8 位', type: 'error' }],
+  password: [required('请输入密码'), { min: 8, message: t('users.index.passwordMinLength'), type: 'error' }],
 };
 
 async function loadList() {
@@ -258,7 +259,7 @@ function handlePageChange(pageInfo: PageInfo) {
 
 function openCreateDialog() {
   if (!canManageUsers.value) {
-    MessagePlugin.warning('当前账号无用户管理权限');
+    MessagePlugin.warning(t('users.index.noPermission'));
     return;
   }
 
@@ -268,7 +269,7 @@ function openCreateDialog() {
 
 async function handleCreate() {
   if (!canManageUsers.value) {
-    MessagePlugin.warning('当前账号无用户管理权限');
+    MessagePlugin.warning(t('users.index.noPermission'));
     return;
   }
 
@@ -278,7 +279,7 @@ async function handleCreate() {
   submitLoading.value = true;
   try {
     await userApi.create(createForm);
-    MessagePlugin.success('创建成功');
+    MessagePlugin.success(t('users.index.created'));
     createVisible.value = false;
     loadList();
   } catch (error) {

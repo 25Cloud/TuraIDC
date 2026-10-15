@@ -2,38 +2,39 @@ import { ACCOUNT_TRANSACTION_EVENT_MAP, getStatusLabel } from '@shared/statusCon
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 
 import type { FinanceLedgerRecord } from '@/types/client';
+import { t } from '@/locales';
 
 export const securityColumns: PrimaryTableCol[] = [
-  { colKey: 'direction_label', title: '方向' },
-  { colKey: 'protocol_label', title: '协议' },
-  { colKey: 'port', title: '端口' },
-  { colKey: 'ip', title: '来源' },
-  { colKey: 'description', title: '说明' },
-  { colKey: 'operation', title: '操作', width: 96 },
+  { colKey: 'direction_label', title: t('serviceConsole.security.direction') },
+  { colKey: 'protocol_label', title: t('serviceConsole.security.protocol') },
+  { colKey: 'port', title: t('serviceConsole.security.port') },
+  { colKey: 'ip', title: t('serviceConsole.security.source') },
+  { colKey: 'description', title: t('serviceConsole.security.description') },
+  { colKey: 'operation', title: t('common.action'), width: 96 },
 ];
 
 export const natColumns: PrimaryTableCol[] = [
-  { colKey: 'name', title: '名称' },
-  { colKey: 'external_address', title: '公网地址' },
-  { colKey: 'internal_port', title: '内网端口' },
-  { colKey: 'protocol_label', title: '协议' },
-  { colKey: 'operation', title: '操作', width: 96 },
+  { colKey: 'name', title: t('serviceConsole.nat.nameLabel') },
+  { colKey: 'external_address', title: t('serviceConsole.nat.publicAddress') },
+  { colKey: 'internal_port', title: t('serviceConsole.nat.internalPortLabel') },
+  { colKey: 'protocol_label', title: t('serviceConsole.security.protocol') },
+  { colKey: 'operation', title: t('common.action'), width: 96 },
 ];
 
 export const logColumns: PrimaryTableCol[] = [
-  { colKey: 'created_at', title: '操作时间', minWidth: '10rem' },
-  { colKey: 'action_label', title: '操作' },
-  { colKey: 'summary', title: '操作详情', minWidth: '18rem' },
-  { colKey: 'actor_name', title: '操作人' },
-  { colKey: 'ip_address', title: 'IP 地址' },
+  { colKey: 'created_at', title: t('serviceConsole.tables.logActionTime'), minWidth: '10rem' },
+  { colKey: 'action_label', title: t('common.action') },
+  { colKey: 'summary', title: t('serviceConsole.tables.logSummary'), minWidth: '18rem' },
+  { colKey: 'actor_name', title: t('serviceConsole.tables.logOperator') },
+  { colKey: 'ip_address', title: t('serviceConsole.tables.logIpAddress') },
 ];
 
 export const financeColumns: PrimaryTableCol[] = [
-  { colKey: 'occurred_at', title: '发生时间', minWidth: '10rem' },
-  { colKey: 'event_type', title: '账单类型', minWidth: '8rem' },
-  { colKey: 'amount', title: '金额', minWidth: '7rem', align: 'right' },
-  { colKey: 'summary', title: '说明', minWidth: '16rem' },
-  { colKey: 'invoice_no', title: '关联账单', minWidth: '10rem' },
+  { colKey: 'occurred_at', title: t('serviceConsole.tables.financeOccurredAt'), minWidth: '10rem' },
+  { colKey: 'event_type', title: t('serviceConsole.tables.financeEventType'), minWidth: '8rem' },
+  { colKey: 'amount', title: t('serviceConsole.tables.financeAmount'), minWidth: '7rem', align: 'right' },
+  { colKey: 'summary', title: t('serviceConsole.tables.financeDescription'), minWidth: '16rem' },
+  { colKey: 'invoice_no', title: t('serviceConsole.tables.financeInvoiceNo'), minWidth: '10rem' },
 ];
 
 export function resolveFinanceTagTheme(row: FinanceLedgerRecord) {

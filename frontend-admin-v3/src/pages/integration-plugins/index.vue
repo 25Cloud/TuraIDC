@@ -604,6 +604,7 @@ import { settingsApi } from '@/api/admin/settings';
 import SecretInput from '@/components/secret-input/index.vue';
 import { AdminPermissions } from '@/constants/permissions';
 import { useGeeTestCaptcha } from '@/hooks/useGeeTestCaptcha';
+import { t } from '@/locales';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
 
@@ -625,13 +626,13 @@ interface SmtpAccountForm {
 }
 
 const domainTabs: Array<{ value: IntegrationPluginDomain; label: string }> = [
-  { value: 'captcha', label: '人机验证' },
-  { value: 'verification', label: '实名认证' },
-  { value: 'payment', label: '支付渠道' },
-  { value: 'mail', label: '邮件发送' },
-  { value: 'sms', label: '短信发送' },
-  { value: 'upstream', label: '上游开通' },
-  { value: 'addons', label: '功能扩展' },
+  { value: 'captcha', label: t('plugins.index.categoryCaptcha') },
+  { value: 'verification', label: t('plugins.index.categoryVerification') },
+  { value: 'payment', label: t('plugins.index.categoryPayment') },
+  { value: 'mail', label: t('plugins.index.categoryMail') },
+  { value: 'sms', label: t('plugins.index.categorySms') },
+  { value: 'upstream', label: t('plugins.index.categoryUpstream') },
+  { value: 'addons', label: t('plugins.index.categoryAddons') },
 ];
 
 const singleEnabledDomains = new Set<IntegrationPluginDomain>(['captcha', 'verification', 'mail', 'sms']);
@@ -845,7 +846,7 @@ function isTruthySetting(value: unknown): boolean {
 
 async function saveOriginCheck(value: string | number | boolean) {
   if (!canManageSettings.value) {
-    MessagePlugin.warning('当前账号无系统设置权限');
+    MessagePlugin.warning(t('plugins.index.noSettingsPermission'));
     originCheckEnabled.value = !value;
     return;
   }
@@ -867,7 +868,7 @@ async function saveOriginCheck(value: string | number | boolean) {
 
 async function saveAreaPreloadAll(value: string | number | boolean) {
   if (!canManageSettings.value) {
-    MessagePlugin.warning('当前账号无系统设置权限');
+    MessagePlugin.warning(t('plugins.index.noSettingsPermission'));
     areaPreloadAllEnabled.value = !value;
     return;
   }
@@ -889,7 +890,7 @@ async function saveAreaPreloadAll(value: string | number | boolean) {
 
 async function scanPlugins() {
   if (!canManagePlugins.value) {
-    MessagePlugin.warning('当前账号无插件管理权限');
+    MessagePlugin.warning(t('plugins.index.noManagePermission'));
     return;
   }
 
@@ -897,7 +898,7 @@ async function scanPlugins() {
   try {
     const response = await pluginsApi.scan({ domain: activeDomain.value });
     plugins.value = response.list || [];
-    MessagePlugin.success('插件目录扫描完成');
+    MessagePlugin.success(t('plugins.index.scanDone'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '扫描插件失败'));
   } finally {
@@ -910,7 +911,7 @@ async function installPlugin(plugin: IntegrationPluginRecord) {
 
   await runAction(plugin, 'install', async () => {
     const installed = await pluginsApi.install({ domain: plugin.domain, slug: plugin.slug });
-    MessagePlugin.success('插件安装成功');
+    MessagePlugin.success(t('plugins.index.installSuccess'));
     await loadPlugins();
     if (installed.id) openConfig(installed);
   });
@@ -927,7 +928,7 @@ async function enablePlugin(plugin: IntegrationPluginRecord) {
 
   await runAction(plugin, 'enable', async () => {
     await pluginsApi.enable(plugin.id as string | number);
-    MessagePlugin.success('插件已启用');
+    MessagePlugin.success(t('plugins.index.enabledSuccess'));
     await loadPlugins();
   });
 }
@@ -937,7 +938,7 @@ async function disablePlugin(plugin: IntegrationPluginRecord) {
   if (!plugin.id) return;
   await runAction(plugin, 'disable', async () => {
     await pluginsApi.disable(plugin.id as string | number);
-    MessagePlugin.success('插件已停用');
+    MessagePlugin.success(t('plugins.index.disabledSuccess'));
     await loadPlugins();
   });
 }
@@ -974,7 +975,7 @@ function deletePlugin(plugin: IntegrationPluginRecord) {
       dialog.destroy();
       await runAction(plugin, 'delete', async () => {
         await pluginsApi.remove(plugin.id as string | number, force);
-        MessagePlugin.success('插件已删除');
+        MessagePlugin.success(t('plugins.index.deleteSuccess'));
         await loadPlugins();
         if (currentPlugin.value?.id === plugin.id) configVisible.value = false;
       });
@@ -1058,7 +1059,7 @@ function resetTestResults() {
 async function openSystemEmailTest() {
   const to = systemEmailTestTo.value.trim();
   if (!to || !EMAIL_PATTERN.test(to)) {
-    MessagePlugin.error('请输入正确的收件人邮箱');
+    MessagePlugin.error(t('plugins.test.recipientInvalid'));
     return;
   }
 
@@ -1070,7 +1071,7 @@ async function openSystemEmailTest() {
       account_index: 0,
       to,
     });
-    MessagePlugin.success('测试邮件发送成功');
+    MessagePlugin.success(t('plugins.test.testEmailSuccess'));
     systemEmailTestTo.value = '';
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '测试邮件发送失败'));
@@ -1081,7 +1082,7 @@ async function openSystemEmailTest() {
 
 async function saveConfig() {
   if (!canManagePlugins.value) {
-    MessagePlugin.warning('当前账号无插件管理权限');
+    MessagePlugin.warning(t('plugins.index.noManagePermission'));
     return;
   }
 
@@ -1096,7 +1097,7 @@ async function saveConfig() {
     const detail = await pluginsApi.updateConfig(currentPlugin.value.id, payload);
     currentPlugin.value = detail;
     fillConfigForm(detail);
-    MessagePlugin.success('插件配置已保存');
+    MessagePlugin.success(t('plugins.index.saveConfigSuccess'));
     await loadPlugins();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存插件配置失败'));
@@ -1463,12 +1464,12 @@ async function confirmSmtpAccount() {
   if (!canManagePlugins.value) return;
 
   if (smtpAccountForm.host.trim() === '' || smtpAccountForm.username.trim() === '') {
-    MessagePlugin.error('请填写 SMTP 主机和账号');
+    MessagePlugin.error(t('plugins.test.smtpHostAccountRequired'));
     return;
   }
 
   if (editingSmtpAccountIndex.value < 0 && smtpAccountForm.password.trim() === '') {
-    MessagePlugin.error('新增 SMTP 账号需要填写密码');
+    MessagePlugin.error(t('plugins.test.smtpPasswordRequired'));
     return;
   }
 
@@ -1529,7 +1530,7 @@ async function sendTestEmail() {
       account_index: testingAccountIndex.value,
       to,
     });
-    MessagePlugin.success('测试邮件发送成功');
+    MessagePlugin.success(t('plugins.test.testEmailSuccess'));
     emailTestVisible.value = false;
   } catch (error) {
     const fieldErrors = extractFieldErrors(error);
@@ -1573,7 +1574,7 @@ async function sendTestSms() {
 
   const phone = smsTestPhone.value.trim();
   if (!phone) {
-    MessagePlugin.error('请输入手机号码');
+    MessagePlugin.error(t('plugins.test.phoneRequired'));
     return;
   }
   if (!currentPlugin.value?.id) return;
@@ -1581,7 +1582,7 @@ async function sendTestSms() {
   smsTesting.value = true;
   try {
     await pluginsApi.testSms(currentPlugin.value.id, { phone });
-    MessagePlugin.success('测试短信发送成功');
+    MessagePlugin.success(t('plugins.test.testSmsSuccess'));
     smsTestPhone.value = '';
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '测试短信发送失败'));
@@ -1614,7 +1615,7 @@ async function runVerificationTest() {
   const realName = verificationTestForm.real_name.trim();
   const cardNo = verificationTestForm.card_no.trim();
   if (!realName || !cardNo) {
-    MessagePlugin.error('请填写测试姓名和身份证号');
+    MessagePlugin.error(t('plugins.test.testNameIdRequired'));
     return;
   }
   if (!currentPlugin.value?.id) return;
@@ -1672,7 +1673,7 @@ async function runCaptchaTest() {
   try {
     const captcha = (await openCaptchaVerify()) as Record<string, unknown> | null;
     if (!captcha) {
-      MessagePlugin.error('未获取到验证结果');
+      MessagePlugin.error(t('plugins.test.verifyResultMissing'));
       return;
     }
 
@@ -1722,9 +1723,9 @@ async function copyText(value: string) {
   if (!value) return;
   try {
     await navigator.clipboard.writeText(value);
-    MessagePlugin.success('已复制');
+    MessagePlugin.success(t('common.copied'));
   } catch {
-    MessagePlugin.error('复制失败，请手动复制');
+    MessagePlugin.error(t('common.copyFailedManual'));
   }
 }
 

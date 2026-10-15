@@ -1,6 +1,8 @@
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { reactive, ref } from 'vue';
 
+import { t } from '@/locales';
+
 import type {
   ConsoleSelectOption,
   FinanceLedgerRecord,
@@ -150,12 +152,12 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
     const protocol = natForm.protocol.trim();
 
     if (!name || !internalPort || !protocol) {
-      MessagePlugin.warning('请填写完整的端口转发信息');
+      MessagePlugin.warning(t('services.console.portForwardingIncomplete'));
       return;
     }
 
     if (!isValidPort(internalPort) || (externalPort !== '' && !isValidPort(externalPort))) {
-      MessagePlugin.warning('端口范围应为 1 到 65535');
+      MessagePlugin.warning(t('services.console.portRangeInvalid'));
       return;
     }
 
@@ -186,8 +188,8 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       header: '删除端口转发',
       body: `确认删除端口转发“${String(forwarding.name || forwardingId)}”吗？`,
       theme: 'warning',
-      confirmBtn: '确认删除',
-      cancelBtn: '取消',
+      confirmBtn: t('services.console.confirmDelete'),
+      cancelBtn: t('common.cancel'),
       onConfirm: async () => {
         dialog.setConfirmLoading(true);
         natState.submitting = true;

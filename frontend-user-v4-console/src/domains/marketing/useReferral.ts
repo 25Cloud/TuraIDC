@@ -15,6 +15,7 @@ import type {
 } from '@/types/client';
 import { getErrorMessage } from '@/utils/error';
 import { copyText } from '@/utils/format';
+import { t } from '@/locales';
 
 type TagTheme = 'default' | 'success' | 'warning' | 'primary' | 'danger';
 
@@ -36,18 +37,18 @@ export function money(value: unknown) {
 
 export function rewardStatus(status: unknown) {
   const map: Record<number, { label: string; theme: TagTheme }> = {
-    0: { label: '冻结中', theme: 'warning' },
-    1: { label: '已释放', theme: 'success' },
-    2: { label: '已冲正', theme: 'danger' },
+    0: { label: t('client.referral.statusFrozen'), theme: 'warning' },
+    1: { label: t('client.referral.statusReleased'), theme: 'success' },
+    2: { label: t('client.referral.statusReversed'), theme: 'danger' },
   };
   return map[Number(status)] || { label: String(status ?? '--'), theme: 'default' };
 }
 
 export function withdrawStatus(status: unknown) {
   const map: Record<number, { label: string; theme: TagTheme }> = {
-    0: { label: '审核中', theme: 'warning' },
-    1: { label: '已通过', theme: 'success' },
-    2: { label: '已拒绝', theme: 'danger' },
+    0: { label: t('client.referral.statusReviewing'), theme: 'warning' },
+    1: { label: t('client.referral.statusApproved'), theme: 'success' },
+    2: { label: t('client.referral.statusRejected'), theme: 'danger' },
   };
   return map[Number(status)] || { label: String(status ?? '--'), theme: 'default' };
 }
@@ -97,12 +98,12 @@ export function useReferral() {
     return code && typeof window !== 'undefined' ? `${window.location.origin}/client/register?ref=${code}` : '--';
   });
   const summaryCards = computed(() => [
-    { key: 'available', label: '可提现余额', value: `￥${availableAmountText.value}`, primary: true },
-    { key: 'frozen', label: '冻结中', value: `￥${frozenAmountText.value}` },
-    { key: 'total', label: '累计奖励', value: `￥${totalRewardText.value}` },
-    { key: 'withdrawn', label: '已提现', value: `￥${withdrawnAmountText.value}` },
-    { key: 'direct', label: '直推人数', value: `${Number(overview.direct_referral_count || 0)} 人` },
-    { key: 'orders', label: '奖励账单数', value: `${Number(overview.rewarded_orders_count || 0)} 单` },
+    { key: 'available', label: t('client.referral.availableBalance'), value: `￥${availableAmountText.value}`, primary: true },
+    { key: 'frozen', label: t('client.referral.statusFrozen'), value: `￥${frozenAmountText.value}` },
+    { key: 'total', label: t('client.referral.totalReward'), value: `￥${totalRewardText.value}` },
+    { key: 'withdrawn', label: t('client.referral.withdrawn'), value: `￥${withdrawnAmountText.value}` },
+    { key: 'direct', label: t('client.referral.directCount'), value: `${Number(overview.direct_referral_count || 0)} 人` },
+    { key: 'orders', label: t('client.referral.rewardedOrders'), value: `${Number(overview.rewarded_orders_count || 0)} 单` },
   ]);
 
   async function loadAlipayAccount() {
@@ -142,7 +143,7 @@ export function useReferral() {
 
   async function copyReferralLink() {
     if (!referralLink.value || referralLink.value === '--') {
-      MessagePlugin.warning('推荐链接暂不可用');
+      MessagePlugin.warning(t('client.referral.linkUnavailable'));
       return;
     }
     await copyText(referralLink.value, { successMsg: '推荐链接已复制' });
@@ -163,7 +164,7 @@ export function useReferral() {
       Object.assign(alipayAccount, response.data || {});
       alipayAccount.is_bound = Boolean(response.data?.is_bound && response.data?.account);
       bindDialogVisible.value = false;
-      MessagePlugin.success('支付宝绑定成功');
+      MessagePlugin.success(t('client.referral.alipayBoundSuccess'));
       await userStore.getUserInfo();
     } catch (error: unknown) {
       MessagePlugin.error(getErrorMessage(error, '支付宝绑定失败'));
@@ -175,7 +176,7 @@ export function useReferral() {
   async function submitWithdrawal() {
     const amount = Number(withdrawForm.amount || 0);
     if (!Number.isFinite(amount) || amount <= 0) {
-      MessagePlugin.warning('请输入提现金额');
+      MessagePlugin.warning(t('client.referral.withdrawAmountPlaceholder'));
       return;
     }
 
@@ -187,7 +188,7 @@ export function useReferral() {
         account_name: alipayAccount.real_name,
         account_no: alipayAccount.account,
       });
-      MessagePlugin.success('提现申请已提交');
+      MessagePlugin.success(t('client.referral.withdrawSubmitted'));
       withdrawForm.amount = '';
       await loadAll();
     } catch (error: unknown) {

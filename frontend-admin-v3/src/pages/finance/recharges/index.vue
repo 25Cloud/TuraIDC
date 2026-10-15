@@ -134,6 +134,7 @@ import StatusTag from '@/components/status-tag/index.vue';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 type ThemeType = NonNullable<TagProps['theme']>;
 
@@ -171,15 +172,15 @@ const statusTypeMap = toTagTypeMap(PAYMENT_STATUS_MAP);
 const paymentStatusOptions = computed(() => Object.entries(statusLabelMap).map(([value, label]) => ({ value, label })));
 
 const columns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'payment_no', title: '支付单号', minWidth: 190 },
-  { colKey: 'user', title: '用户', minWidth: 180 },
-  { colKey: 'payment', title: '支付记录', minWidth: 220 },
-  { colKey: 'amount', title: '金额', width: 120 },
-  { colKey: 'paid', title: '到账', width: 120 },
-  { colKey: 'status', title: '状态', width: 110 },
-  { colKey: 'createdAt', title: '创建时间', width: 170 },
-  { colKey: 'paidAt', title: '支付时间', width: 170 },
-  { colKey: 'operation', title: '操作', width: 80, fixed: 'right' },
+  { colKey: 'payment_no', title: t('finance.recharges.paymentNo'), minWidth: 190 },
+  { colKey: 'user', title: t('finance.recharges.user'), minWidth: 180 },
+  { colKey: 'payment', title: t('finance.recharges.paymentRecord'), minWidth: 220 },
+  { colKey: 'amount', title: t('finance.recharges.amount'), width: 120 },
+  { colKey: 'paid', title: t('finance.recharges.paid'), width: 120 },
+  { colKey: 'status', title: t('common.status'), width: 110 },
+  { colKey: 'createdAt', title: t('finance.recharges.createdAt'), width: 170 },
+  { colKey: 'paidAt', title: t('finance.recharges.paidAt'), width: 170 },
+  { colKey: 'operation', title: t('common.action'), width: 80, fixed: 'right' },
 ];
 
 const currentInvoice = computed(() => detailState.detail.invoice || ({} as InvoiceRecord));
@@ -325,12 +326,12 @@ function mobileActionOptions() {
 
 function rechargeMobileRows(row: RechargeRecord) {
   return [
-    { label: '用户', value: userName(row.user) },
-    { label: '到账', value: formatMoney(row.paid_amount), strong: true },
-    { label: '账单', value: fieldValue(row.invoice_no), show: Boolean(row.invoice_no) },
-    { label: '三方单', value: fieldValue(row.trade_no), show: Boolean(row.trade_no) },
-    { label: '创建', value: formatDateTime(row.created_at) },
-    { label: '支付时', value: formatDateTime(row.paid_at), show: Boolean(row.paid_at) },
+    { label: t('finance.recharges.user'), value: userName(row.user) },
+    { label: t('finance.recharges.paid'), value: formatMoney(row.paid_amount), strong: true },
+    { label: t('finance.recharges.invoice'), value: fieldValue(row.invoice_no), show: Boolean(row.invoice_no) },
+    { label: t('finance.recharges.thirdPartyNo'), value: fieldValue(row.trade_no), show: Boolean(row.trade_no) },
+    { label: t('finance.recharges.createdLabel'), value: formatDateTime(row.created_at) },
+    { label: t('finance.recharges.paidAtLabel'), value: formatDateTime(row.paid_at), show: Boolean(row.paid_at) },
   ];
 }
 

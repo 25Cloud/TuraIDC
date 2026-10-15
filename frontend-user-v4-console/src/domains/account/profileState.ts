@@ -1,5 +1,7 @@
 import { reactive, ref } from 'vue';
 
+import { t } from '@/locales';
+
 import type { ClientAgentGroup, ClientNotificationPreferences } from '@/types/client';
 
 export type NotificationKey = keyof ClientNotificationPreferences;
@@ -39,35 +41,35 @@ export const agentGroup = ref<ClientAgentGroup | null>(null);
 export const notificationList = reactive<NotificationItem[]>([
   {
     key: 'login_notify',
-    name: '账号登录提醒',
+    name: t('profile.notifications.loginAlert'),
     desc: '每次账户成功登录后，向绑定邮箱发送登录安全提醒。',
     enabled: false,
   },
   {
     key: 'login_location_alert',
-    name: '异地登录提醒',
+    name: t('profile.notifications.unusualLoginAlert'),
     desc: '检测到新的登录 IP 环境时，额外发送一次异地登录风险提醒。',
     enabled: false,
   },
   {
     key: 'password_change_alert',
-    name: '更改密码提醒',
+    name: t('profile.notifications.passwordAlert'),
     desc: '账户密码修改成功后，立即发送安全提醒邮件。',
     enabled: false,
   },
   {
     key: 'phone_change_alert',
-    name: '更改手机号提醒',
+    name: t('profile.notifications.phoneAlert'),
     desc: '安全手机号发生变更时，及时发送变更提醒。',
     enabled: false,
   },
   {
     key: 'email_change_alert',
-    name: '更改邮箱提醒',
+    name: t('profile.notifications.emailAlert'),
     desc: '安全邮箱发生变更时，向原邮箱和新邮箱发送提醒。',
     enabled: false,
   },
-  { key: 'marketing_alert', name: '营销提醒接收', desc: '接收产品更新、活动优惠和运营消息。', enabled: false },
+  { key: 'marketing_alert', name: t('profile.notifications.marketingAlert'), desc: '接收产品更新、活动优惠和运营消息。', enabled: false },
 ]);
 
 /** 是否已经拉取过数据：只首次进入时请求接口，之后路由来回切换直接复用 */

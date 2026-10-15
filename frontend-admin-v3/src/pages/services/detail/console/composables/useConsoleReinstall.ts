@@ -4,6 +4,7 @@ import { computed, reactive, ref } from 'vue';
 import type { ConsoleServiceDetail, ServiceReinstallOption } from '../types';
 import { createServiceConsoleApi } from './adminServiceApi';
 import { resolveErrorMessage } from './useConsoleCore';
+import { t } from '@/locales';
 
 export interface UseConsoleReinstallOptions {
   userId: number | string;
@@ -80,7 +81,7 @@ export function useConsoleReinstall(options: UseConsoleReinstallOptions) {
 
   async function submitReinstall() {
     if (!reinstallState.os_id) {
-      MessagePlugin.warning('请选择系统版本');
+      MessagePlugin.warning(t('services.console.selectOsVersion'));
       return;
     }
 

@@ -33,7 +33,8 @@
       "readyToBuy": "Ready to Buy",
       "summary": "Configuration Summary",
       "notFound": "This product does not exist or has been taken down",
-      "backToProducts": "Back to Products"
+      "backToProducts": "Back to Products",
+      "cycle": "Cycle"
     },
     "osPicker": {
       "version": "Version",
@@ -252,7 +253,8 @@
       "documentUrlMissing": "The address of this document is not configured on the site yet"
     },
     "detail": {
-      "tableOfContents": "Table of Contents"
+      "tableOfContents": "Table of Contents",
+      "fullText": "Full text"
     },
     "nav": {
       "news": "News",
@@ -283,22 +285,37 @@
       "description": "Cloud servers, dedicated servers, cloud PCs, and IDC services across Hong Kong, the United States, and multiple mainland China locations."
     },
     "products": {
-      "description": "Browse cloud server, dedicated server, cloud PC, and IDC product solutions."
+      "description": "Browse cloud server, dedicated server, cloud PC, and IDC product solutions.",
+      "title": "Products & services"
     },
     "about": {
-      "description": "Learn about our IDC service capabilities, node coverage, and platform advantages."
+      "description": "Learn about our IDC service capabilities, node coverage, and platform advantages.",
+      "title": "About us"
     },
     "terms": {
-      "description": "Read the Terms of Service."
+      "description": "Read the Terms of Service.",
+      "title": "Terms of service"
     },
     "privacy": {
-      "description": "Read the Privacy Policy."
+      "description": "Read the Privacy Policy.",
+      "title": "Privacy policy"
     },
     "notices": {
-      "description": "View platform announcements and service notifications."
+      "description": "View platform announcements and service notifications.",
+      "title": "Announcements"
     },
     "help": {
-      "description": "Get help with product purchases, billing and payments, and service management."
+      "description": "Get help with product purchases, billing and payments, and service management.",
+      "title": "Help center"
+    },
+    "productDetail": {
+      "title": "Product details"
+    },
+    "noticeDetail": {
+      "title": "Announcement details"
+    },
+    "helpDetail": {
+      "title": "Help details"
     }
   },
   "seoLanding": {
@@ -416,7 +433,8 @@
       }
     },
     "breadcrumb": {
-      "home": "Home"
+      "home": "Home",
+      "productsServices": "Products & services"
     },
     "pages": {
       "relatedLinks": {
@@ -623,7 +641,17 @@
     "buyNow": "Buy Now",
     "productDetails": "Product Details",
     "scenarioList": "Scenario List",
-    "relatedProducts": "Related Products:"
+    "relatedProducts": "Related Products:",
+    "process": {
+      "step1Title": "Clarify your scenario",
+      "step1Description": "Confirm your target regions, OS environment, bandwidth needs and budget range.",
+      "step2Title": "Review the configuration",
+      "step2Description": "Filter the right specs, nodes and billing cycles in the product list.",
+      "step3Title": "Sign up",
+      "step3Description": "Sign up, place orders, pay and manage services in the console.",
+      "step4Title": "Ongoing care",
+      "step4Description": "Track usage and after-sales issues through announcements, the help center and support tickets."
+    }
   },
   "common": {
     "request": {
@@ -670,7 +698,41 @@
     "hero": {
       "productEntries": "Product Entries",
       "carouselIndicator": "Carousel Indicator",
-      "carouselControls": "Carousel Controls"
+      "carouselControls": "Carousel Controls",
+      "slides": {
+        "refresh": {
+          "title": "A New Look for the Website"
+        },
+        "global": {
+          "title": "Multi-Region Nodes, Low-Latency Global Interconnect"
+        },
+        "security": {
+          "title": "Enterprise-Grade Security, Reliable Delivery"
+        },
+        "value": {
+          "title": "Entry Packages, Honest Pricing"
+        },
+        "support": {
+          "title": "Enterprise Support, One-on-One Service"
+        }
+      },
+      "features": {
+        "dynamic": {
+          "title": "Hong Kong CN2 Premium Route Now Live"
+        },
+        "activity": {
+          "title": "First Order for New Customers: CNY 39/Year"
+        },
+        "enterprise": {
+          "title": "IDC Enterprise Procurement Channel"
+        },
+        "cloudDesktop": {
+          "title": "Xi'an Cloud Desktop, Ready on Demand"
+        },
+        "new": {
+          "title": "Shiyan DDoS-Protected Dedicated Servers"
+        }
+      }
     },
     "news": {
       "title": "News & Updates",
@@ -693,7 +755,8 @@
           "operationsOptimization": "Business Operations Optimization",
           "dataAnalyticsAndMining": "Data Analytics and Mining",
           "paymentLinkCoordination": "Payment Link Coordination"
-        }
+        },
+        "label": "E-Commerce"
       },
       "game": {
         "label": "Gaming",
@@ -771,6 +834,14 @@
       "officialQqGroup": "Official QQ group",
       "partnershipEmail": "Partnership email",
       "serviceHours": "Service hours"
+    }
+  },
+  "websiteProduct": {
+    "summary": {
+      "region": "Region",
+      "os": "Operating system",
+      "cpuModel": "CPU model",
+      "memory": "Memory"
     }
   }
 }

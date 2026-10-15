@@ -10,6 +10,7 @@ import { computed, onMounted, reactive, ref, shallowRef } from 'vue';
 import { useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type { ClientFinanceListParams, PaymentRecord } from '@/types/client';
 import { formatMoney } from '@/utils/format';
 
@@ -23,9 +24,9 @@ type DetailFetcher = (row: RecordListItem) => Promise<{ data: RecordListItem }>;
 export const PAYMENT_STATUS_OPTIONS = toSelectOptions(PAYMENT_STATUS_MAP, false);
 
 export const PAYMENT_GATEWAY_OPTIONS = [
-  { label: '支付宝', value: 'alipay' },
-  { label: '易支付', value: 'epay' },
-  { label: '微信支付', value: 'wechat' },
+  { label: t('finance.records.alipay'), value: 'alipay' },
+  { label: t('finance.records.epay'), value: 'epay' },
+  { label: t('finance.records.wechat'), value: 'wechat' },
 ];
 
 export const BALANCE_EVENT_OPTIONS = toSelectOptions(ACCOUNT_TRANSACTION_EVENT_MAP, false);

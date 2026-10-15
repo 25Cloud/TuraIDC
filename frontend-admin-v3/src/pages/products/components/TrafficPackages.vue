@@ -155,6 +155,7 @@ import type { ProductBindingRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import { productApi } from '@/api/product';
 import ProductBindingTreeSelect from '@/components/product-binding-tree-select/index.vue';
+import { t } from '@/locales';
 
 import { errorMessage, normalizeProductIds } from '../composables/useProductShared';
 
@@ -290,7 +291,7 @@ function resolveTrafficGroupCategory(bindings: ProductBindingRecord[]): ProductB
   if (firstEffectiveId > 0) {
     const sameCategory = bindings.filter((b) => Number(b.effective_product_group_id || 0) === firstEffectiveId);
     if (sameCategory.length < bindings.length) {
-      MessagePlugin.warning('流量包分组仅支持同一一级分组下的配置，已自动仅保留首个一级分组的商品');
+      MessagePlugin.warning(t('products.trafficPackages.singleGroupOnly'));
       return sameCategory;
     }
     return bindings;
@@ -298,7 +299,7 @@ function resolveTrafficGroupCategory(bindings: ProductBindingRecord[]): ProductB
 
   // effective_product_group_id 为 0 时，无法确定分类归属，保留第一个配置并警告
   if (bindings.length > 1) {
-    MessagePlugin.warning('部分配置无法确定分类归属，已自动仅保留第一个配置');
+    MessagePlugin.warning(t('products.trafficPackages.categoryUnresolved'));
     return [bindings[0]];
   }
   return bindings;
@@ -310,15 +311,15 @@ async function submitTrafficGroup() {
   const categoryId = Number(trafficGroupForm.effective_product_group_id || 0);
   const productIds = normalizeProductIds(trafficGroupForm.product_ids);
   if (!name) {
-    MessagePlugin.warning('请填写分组名称');
+    MessagePlugin.warning(t('products.trafficPackages.groupNameRequired'));
     return;
   }
   if (!productType || categoryId <= 0) {
-    MessagePlugin.warning('请选择关联分类与配置');
+    MessagePlugin.warning(t('products.trafficPackages.selectCategoryAndConfig'));
     return;
   }
   if (!productIds.length) {
-    MessagePlugin.warning('请至少绑定一个配置');
+    MessagePlugin.warning(t('products.trafficPackages.bindConfigRequired'));
     return;
   }
 
@@ -391,7 +392,7 @@ function removeTrafficGroup(group: TrafficPackageGroup) {
     header: '删除流量包分组',
     body: `删除分组「${group.name}」后，该分组下的流量包配置也会一并移除，是否继续？`,
     confirmBtn: { content: '确认删除', theme: 'danger' },
-    cancelBtn: '取消',
+    cancelBtn: t('common.cancel'),
     async onConfirm() {
       try {
         const nextGroups = trafficGroupItems.value.filter((item) => item.id !== group.id);
@@ -403,7 +404,7 @@ function removeTrafficGroup(group: TrafficPackageGroup) {
           selectedTrafficGroupId.value = trafficGroupItems.value[0]?.id || '';
         }
         syncTrafficRowsFromSelection();
-        MessagePlugin.success('分组已删除');
+        MessagePlugin.success(t('products.trafficPackages.groupDeleted'));
       } catch (error) {
         MessagePlugin.error(errorMessage(error, '删除分组失败'));
       } finally {
@@ -415,7 +416,7 @@ function removeTrafficGroup(group: TrafficPackageGroup) {
 
 function addTrafficRow() {
   if (!selectedTrafficGroup.value) {
-    MessagePlugin.warning('请先选择流量包分组');
+    MessagePlugin.warning(t('products.trafficPackages.selectGroupFirstHint'));
     return;
   }
   trafficRows.value.push(createTrafficRow({}, selectedTrafficGroup.value));
@@ -428,7 +429,7 @@ function removeTrafficRow(index: number) {
 async function saveTrafficPackages() {
   const group = selectedTrafficGroup.value;
   if (!group) {
-    MessagePlugin.warning('请先选择流量包分组');
+    MessagePlugin.warning(t('products.trafficPackages.selectGroupFirstHint'));
     return;
   }
   try {
@@ -464,7 +465,7 @@ async function saveTrafficPackages() {
     await saveTrafficPackageSettings(nextItems, trafficGroupItems.value);
     trafficPackageItems.value = normalizeTrafficPackageItems(nextItems);
     syncTrafficRowsFromSelection();
-    MessagePlugin.success('当前分组流量包已保存');
+    MessagePlugin.success(t('products.trafficPackages.currentGroupSaved'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存流量包配置失败'));
   } finally {
@@ -475,12 +476,12 @@ async function saveTrafficPackages() {
 async function pullTrafficPackages() {
   const group = selectedTrafficGroup.value;
   if (!group) {
-    MessagePlugin.warning('请先选择流量包分组');
+    MessagePlugin.warning(t('products.trafficPackages.selectGroupFirstHint'));
     return;
   }
   const categoryPayload = trafficPullCategoryPayload(group);
   if (!categoryPayload.second_product_group_id && !categoryPayload.third_product_group_id) {
-    MessagePlugin.warning('请先调整流量包分组的关联分类');
+    MessagePlugin.warning(t('products.trafficPackages.adjustCategoryFirst'));
     return;
   }
 
@@ -495,7 +496,7 @@ async function pullTrafficPackages() {
     trafficRows.value = packages.map((item, index) =>
       createTrafficRow({ ...(item as Record<string, unknown>), sort_order: index + 1 }, group),
     );
-    MessagePlugin.success('流量包配置已从上游拉取');
+    MessagePlugin.success(t('products.trafficPackages.pulledFromUpstream'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '拉取流量包配置失败'));
   } finally {

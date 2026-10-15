@@ -116,6 +116,7 @@ import { renderMarkdown } from "@/utils/markdown";
 import { updatePageMeta } from "@/utils/pageMeta";
 import { rewriteApiAssetUrlsInHtml } from "@/utils/apiAssetUrl";
 import { getContentConfig } from "./contentConfig";
+import { t } from '@/locales';
 
 // ---- 模块级分类缓存 ----
 const overviewCache = new Map();
@@ -165,7 +166,7 @@ const errorText = ref("");
 const categories = ref([]);
 const currentArticle = ref(null);
 const currentCategoryId = ref(null);
-const tocItems = ref([{ id: "article-top", label: "全文", level: 1 }]);
+const tocItems = ref([{ id: "article-top", label: t('content.detail.fullText'), level: 1 }]);
 const contentRef = ref(null);
 
 const backToListRoute = computed(() => {
@@ -296,7 +297,7 @@ async function syncPage() {
   errorText.value = "";
   currentArticle.value = null;
   currentCategoryId.value = null;
-  tocItems.value = [{ id: "article-top", label: "全文", level: 1 }];
+  tocItems.value = [{ id: "article-top", label: t('content.detail.fullText'), level: 1 }];
 
   try {
     await Promise.all([loadOverview(), loadArticleDetail(route.params.id)]);
@@ -336,12 +337,12 @@ function buildToc() {
   const container = contentRef.value;
 
   if (!container) {
-    tocItems.value = [{ id: "article-top", label: "全文", level: 1 }];
+    tocItems.value = [{ id: "article-top", label: t('content.detail.fullText'), level: 1 }];
     return;
   }
 
   const headings = [...container.querySelectorAll("h1, h2, h3, h4")];
-  const items = [{ id: "article-top", label: "全文", level: 1 }];
+  const items = [{ id: "article-top", label: t('content.detail.fullText'), level: 1 }];
 
   headings.forEach((heading, index) => {
     const text = heading.textContent?.trim();

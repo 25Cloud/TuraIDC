@@ -51,6 +51,7 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { onMounted, reactive, ref } from 'vue';
 
 import { adminAuthApi } from '@/api/auth';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { errorMessage } from '@/utils/userMessage';
 
@@ -70,8 +71,8 @@ const formData = reactive({
 
 const formRules: Record<string, FormRule[]> = {
   nickname: [
-    { required: true, message: '请输入昵称', type: 'error' },
-    { max: 30, message: '昵称最多 30 个字符', type: 'warning' },
+    { required: true, message: t('user.profile.nicknameRequired'), type: 'error' },
+    { max: 30, message: t('user.profile.nicknameMaxLength'), type: 'warning' },
   ],
 };
 
@@ -110,7 +111,7 @@ const handleSave = async () => {
   saving.value = true;
   try {
     await adminAuthApi.updateProfile({ nickname: formData.nickname });
-    MessagePlugin.success('资料已更新');
+    MessagePlugin.success(t('user.profile.updated'));
     editing.value = false;
     // 同步更新 store 中的用户信息
     userStore.userInfo = {

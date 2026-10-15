@@ -95,6 +95,7 @@ import type { TicketRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import { formatDateTime } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 defineOptions({ name: 'AdminTickets' });
 
@@ -114,23 +115,23 @@ const filters = reactive({
 });
 
 const statusOptions = [
-  { label: '进行中', value: DEFAULT_STATUS_FILTER },
-  { label: '开启', value: 0 },
-  { label: '客户回复', value: 1 },
-  { label: '员工回复', value: 2 },
-  { label: '已关闭', value: 3 },
+  { label: t('tickets.index.statusInProgress'), value: DEFAULT_STATUS_FILTER },
+  { label: t('tickets.index.statusOpen'), value: 0 },
+  { label: t('tickets.index.statusCustomerReply'), value: 1 },
+  { label: t('tickets.index.statusStaffReply'), value: 2 },
+  { label: t('tickets.index.statusClosed'), value: 3 },
 ];
 const priorityOptions = [
   { label: '低', value: 1 },
   { label: '中', value: 2 },
   { label: '高', value: 3 },
-  { label: '紧急', value: 4 },
+  { label: t('tickets.index.priorityUrgent'), value: 4 },
 ];
 const departmentOptions = [
-  { label: '销售', value: 'sales' },
-  { label: '技术支持', value: 'support' },
-  { label: '财务', value: 'billing' },
-  { label: '投诉', value: 'abuse' },
+  { label: t('tickets.index.departmentSales'), value: 'sales' },
+  { label: t('tickets.index.departmentSupport'), value: 'support' },
+  { label: t('tickets.index.departmentBilling'), value: 'billing' },
+  { label: t('tickets.index.departmentAbuse'), value: 'abuse' },
 ];
 
 async function loadList() {

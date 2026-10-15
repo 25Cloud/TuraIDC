@@ -278,6 +278,8 @@ import type {
 } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import { AdminPermissions } from '@/constants/permissions';
+
+import { t } from '@/locales';
 import { fieldValue, formatDateTime } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { hasAdminPermission } from '@/utils/permission';
@@ -345,22 +347,22 @@ const productGroupRules: Record<string, FormRule[]> = {
 };
 
 const agentGroupColumns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'sort_order', title: '排序', width: 90 },
-  { colKey: 'group', title: '代理组', minWidth: 220 },
-  { colKey: 'status', title: '状态', width: 110 },
-  { colKey: 'remark', title: '备注', minWidth: 200 },
-  { colKey: 'updatedAt', title: '更新时间', width: 170 },
-  { colKey: 'actions', title: '操作', fixed: 'right', width: 130 },
+  { colKey: 'sort_order', title: t('agentDiscounts.index.sortOrder'), width: 90 },
+  { colKey: 'group', title: t('agentDiscounts.index.agentGroups'), minWidth: 220 },
+  { colKey: 'status', title: t('common.status'), width: 110 },
+  { colKey: 'remark', title: t('agentDiscounts.index.remark'), minWidth: 200 },
+  { colKey: 'updatedAt', title: t('agentDiscounts.index.updatedAt'), width: 170 },
+  { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 130 },
 ];
 
 const productGroupColumns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'sort_order', title: '排序', width: 90 },
-  { colKey: 'group', title: '商品折扣组', minWidth: 220 },
-  { colKey: 'minRate', title: '最低折扣率', width: 130 },
-  { colKey: 'costRate', title: '成本占比', width: 130 },
-  { colKey: 'status', title: '状态', width: 110 },
-  { colKey: 'remark', title: '备注', minWidth: 180 },
-  { colKey: 'actions', title: '操作', fixed: 'right', width: 130 },
+  { colKey: 'sort_order', title: t('agentDiscounts.index.sortOrder'), width: 90 },
+  { colKey: 'group', title: t('agentDiscounts.index.productDiscountGroups'), minWidth: 220 },
+  { colKey: 'minRate', title: t('agentDiscounts.index.minRate'), width: 130 },
+  { colKey: 'costRate', title: t('agentDiscounts.index.costRatio'), width: 130 },
+  { colKey: 'status', title: t('common.status'), width: 110 },
+  { colKey: 'remark', title: t('agentDiscounts.index.remark'), minWidth: 180 },
+  { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 130 },
 ];
 
 function createAgentGroupForm(): AgentGroupForm {
@@ -381,7 +383,7 @@ function cellKey(productGroupId: number | string, agentGroupId: number | string)
 
 function assertManage() {
   if (canManage.value) return true;
-  MessagePlugin.warning('当前账号无代理折扣管理权限');
+  MessagePlugin.warning(t('agentDiscounts.index.noManagePermission'));
   return false;
 }
 
@@ -479,10 +481,10 @@ async function submitAgentGroup() {
   try {
     if (agentGroupForm.id) {
       await adminApi.agentDiscount.agentGroups.update(agentGroupForm.id, payload);
-      MessagePlugin.success('代理组已更新');
+      MessagePlugin.success(t('agentDiscounts.messages.agentGroupUpdated'));
     } else {
       await adminApi.agentDiscount.agentGroups.create(payload);
-      MessagePlugin.success('代理组已创建');
+      MessagePlugin.success(t('agentDiscounts.messages.agentGroupCreated'));
     }
     agentGroupDialogVisible.value = false;
     await loadAgentGroups();
@@ -503,7 +505,7 @@ function removeAgentGroup(row: AgentGroupRecord) {
     async onConfirm() {
       try {
         await adminApi.agentDiscount.agentGroups.delete(row.id);
-        MessagePlugin.success('代理组已删除');
+        MessagePlugin.success(t('agentDiscounts.messages.agentGroupDeleted'));
         dialog.destroy();
         await loadAgentGroups();
         await loadMatrix();
@@ -551,10 +553,10 @@ async function submitProductGroup() {
   try {
     if (productGroupForm.id) {
       await adminApi.agentDiscount.productDiscountGroups.update(productGroupForm.id, payload);
-      MessagePlugin.success('商品折扣组已更新');
+      MessagePlugin.success(t('agentDiscounts.messages.productGroupUpdated'));
     } else {
       await adminApi.agentDiscount.productDiscountGroups.create(payload);
-      MessagePlugin.success('商品折扣组已创建');
+      MessagePlugin.success(t('agentDiscounts.messages.productGroupCreated'));
     }
     productGroupDialogVisible.value = false;
     await loadProductGroups();
@@ -575,7 +577,7 @@ function removeProductGroup(row: ProductDiscountGroupRecord) {
     async onConfirm() {
       try {
         await adminApi.agentDiscount.productDiscountGroups.delete(row.id);
-        MessagePlugin.success('商品折扣组已删除');
+        MessagePlugin.success(t('agentDiscounts.messages.productGroupDeleted'));
         dialog.destroy();
         await loadProductGroups();
         await loadMatrix();
@@ -616,14 +618,14 @@ async function saveMatrix() {
   }
 
   if (!items.length) {
-    MessagePlugin.warning('没有需要保存的折扣，请先填写折扣率');
+    MessagePlugin.warning(t('agentDiscounts.messages.noDiscountToSave'));
     return;
   }
 
   savingMatrix.value = true;
   try {
     await adminApi.agentDiscount.matrix.save({ items });
-    MessagePlugin.success('折扣矩阵已保存');
+    MessagePlugin.success(t('agentDiscounts.messages.matrixSaved'));
     await loadMatrix();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存折扣矩阵失败'));

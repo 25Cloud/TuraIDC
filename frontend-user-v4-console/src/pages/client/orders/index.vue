@@ -178,6 +178,7 @@ import {
   orderProductDisplay,
   useOrderList,
 } from '@/domains/finance/useOrders';
+import { t } from '@/locales';
 
 const router = useRouter();
 
@@ -216,20 +217,20 @@ function goPayOrder(row: { invoice?: { id?: number | string | null } | null; inv
 }
 
 const quickFilters = [
-  { key: '', label: '全部' },
-  { key: 'week', label: '最近7天' },
-  { key: 'month', label: '本月' },
-  { key: 'pending', label: '待支付' },
+  { key: '', label: t('orders.filterAll') },
+  { key: 'week', label: t('orders.filterLast7Days') },
+  { key: 'month', label: t('orders.filterThisMonth') },
+  { key: 'pending', label: t('orders.statusPending') },
 ];
 
 const columns: PrimaryTableCol[] = [
-  { colKey: 'order', title: '订单号', minWidth: '12rem' },
-  { colKey: 'product', title: '产品/服务', minWidth: '12rem' },
-  { colKey: 'amount', title: '金额', width: '9rem' },
-  { colKey: 'status', title: '状态', width: '8rem' },
-  { colKey: 'invoice_ref', title: '关联账单', minWidth: '12rem' },
-  { colKey: 'created_at', title: '创建时间', minWidth: '12rem' },
-  { colKey: 'operation', title: '操作', width: '14rem', fixed: 'right', align: 'right' },
+  { colKey: 'order', title: t('orders.orderNo'), minWidth: '12rem' },
+  { colKey: 'product', title: t('orders.productService'), minWidth: '12rem' },
+  { colKey: 'amount', title: t('orders.amount'), width: '9rem' },
+  { colKey: 'status', title: t('common.status'), width: '8rem' },
+  { colKey: 'invoice_ref', title: t('orders.relatedInvoice'), minWidth: '12rem' },
+  { colKey: 'created_at', title: t('orders.createdAt'), minWidth: '12rem' },
+  { colKey: 'operation', title: t('common.action'), width: '14rem', fixed: 'right', align: 'right' },
 ];
 </script>
 <style scoped lang="less">

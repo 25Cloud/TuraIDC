@@ -32,6 +32,7 @@ import { ChevronLeftIcon } from 'tdesign-icons-vue-next';
 import { computed } from 'vue';
 
 import { fieldValue, formatDateTime } from '@/utils/format';
+import { t } from '@/locales';
 
 type LogTab =
   | 'system'
@@ -79,126 +80,126 @@ const detailFields = computed(() => {
   const row = props.currentLog || {};
   if (props.activeTab === 'api') {
     return [
-      { label: '请求方法', value: fieldValue(row.method) },
-      { label: '状态码', value: fieldValue(row.status) },
-      { label: '请求路径', value: fieldValue(row.path) },
-      { label: '模块', value: fieldValue(row.module) },
-      { label: '请求号', value: fieldValue(row.request_id) },
-      { label: '记录时间', value: formatDate(row.created_at) },
-      { label: '调用端', value: userTypeLabel(row.user_type) },
-      { label: 'IP 地址', value: fieldValue(row.ip_address) },
+      { label: t('logs.detailDrawer.requestMethod'), value: fieldValue(row.method) },
+      { label: t('logs.detailDrawer.statusCode'), value: fieldValue(row.status) },
+      { label: t('logs.detailDrawer.requestPath'), value: fieldValue(row.path) },
+      { label: t('logs.detailDrawer.module'), value: fieldValue(row.module) },
+      { label: t('logs.detailDrawer.requestId'), value: fieldValue(row.request_id) },
+      { label: t('logs.detailDrawer.recordedAt'), value: formatDate(row.created_at) },
+      { label: t('logs.detailDrawer.clientType'), value: userTypeLabel(row.user_type) },
+      { label: t('logs.detailDrawer.ipAddress'), value: fieldValue(row.ip_address) },
     ];
   }
   if (props.activeTab === 'admin-logins') {
     return [
-      { label: '登录账号', value: fieldValue(row.admin_username) },
-      { label: '昵称', value: fieldValue(row.admin_nickname || row.actor_name) },
-      { label: '角色', value: fieldValue(row.role_name) },
-      { label: '登录时间', value: formatDate(row.created_at) },
-      { label: 'IP 地址', value: fieldValue(row.ip_address) },
-      { label: '数据来源', value: sourceLabel(row.source) },
+      { label: t('logs.detailDrawer.loginAccount'), value: fieldValue(row.admin_username) },
+      { label: t('logs.detailDrawer.nickname'), value: fieldValue(row.admin_nickname || row.actor_name) },
+      { label: t('logs.detailDrawer.role'), value: fieldValue(row.role_name) },
+      { label: t('logs.detailDrawer.loginTime'), value: formatDate(row.created_at) },
+      { label: t('logs.detailDrawer.ipAddress'), value: fieldValue(row.ip_address) },
+      { label: t('logs.detailDrawer.dataSource'), value: sourceLabel(row.source) },
     ];
   }
   if (props.activeTab === 'sms') {
     return [
-      { label: '手机号', value: fieldValue(row.phone) },
-      { label: '发送状态', value: statusLabel(row.status) },
-      { label: '模板编号', value: fieldValue(row.template_code) },
-      { label: '供应商', value: fieldValue(row.provider) },
-      { label: '插件 ID', value: fieldValue(row.plugin_id) },
-      { label: '驱动 key', value: fieldValue(row.driver_key) },
+      { label: t('logs.detailDrawer.phone'), value: fieldValue(row.phone) },
+      { label: t('logs.detailDrawer.sendStatus'), value: statusLabel(row.status) },
+      { label: t('logs.detailDrawer.templateCode'), value: fieldValue(row.template_code) },
+      { label: t('logs.detailDrawer.provider'), value: fieldValue(row.provider) },
+      { label: t('logs.detailDrawer.pluginId'), value: fieldValue(row.plugin_id) },
+      { label: t('logs.detailDrawer.driverKey'), value: fieldValue(row.driver_key) },
       { label: 'Trace ID', value: fieldValue(row.trace_id) },
-      { label: '请求号', value: fieldValue(row.request_id) },
-      { label: '发送时间', value: formatDate(row.sent_at) },
-      { label: '创建时间', value: formatDate(row.created_at) },
-      { label: '错误信息', value: fieldValue(row.error_msg) },
+      { label: t('logs.detailDrawer.requestId'), value: fieldValue(row.request_id) },
+      { label: t('logs.detailDrawer.sentAt'), value: formatDate(row.sent_at) },
+      { label: t('logs.detailDrawer.createdAt'), value: formatDate(row.created_at) },
+      { label: t('logs.detailDrawer.errorMessage'), value: fieldValue(row.error_msg) },
     ];
   }
   if (props.activeTab === 'email') {
     return [
-      { label: '收件邮箱', value: fieldValue(row.to_email) },
-      { label: '发送状态', value: statusLabel(row.status) },
-      { label: '主题', value: fieldValue(row.subject) },
-      { label: '模板编号', value: fieldValue(row.template_code) },
-      { label: '插件 ID', value: fieldValue(row.plugin_id) },
-      { label: '驱动 key', value: fieldValue(row.driver_key) },
+      { label: t('logs.detailDrawer.recipientEmail'), value: fieldValue(row.to_email) },
+      { label: t('logs.detailDrawer.sendStatus'), value: statusLabel(row.status) },
+      { label: t('logs.detailDrawer.subject'), value: fieldValue(row.subject) },
+      { label: t('logs.detailDrawer.templateCode'), value: fieldValue(row.template_code) },
+      { label: t('logs.detailDrawer.pluginId'), value: fieldValue(row.plugin_id) },
+      { label: t('logs.detailDrawer.driverKey'), value: fieldValue(row.driver_key) },
       { label: 'Trace ID', value: fieldValue(row.trace_id) },
-      { label: '发送时间', value: formatDate(row.sent_at) },
-      { label: '创建时间', value: formatDate(row.created_at) },
-      { label: '错误信息', value: fieldValue(row.error_msg) },
+      { label: t('logs.detailDrawer.sentAt'), value: formatDate(row.sent_at) },
+      { label: t('logs.detailDrawer.createdAt'), value: formatDate(row.created_at) },
+      { label: t('logs.detailDrawer.errorMessage'), value: fieldValue(row.error_msg) },
     ];
   }
   if (props.activeTab === 'tasks') {
     return [
-      { label: '任务名称', value: fieldValue(row.task_title || row.task_key) },
-      { label: '任务键', value: fieldValue(row.task_key) },
-      { label: '状态', value: taskStatusLabel(row.status) },
-      { label: '日志级别', value: fieldValue(row.level) },
-      { label: '开始时间', value: formatDate(row.started_at || row.time) },
-      { label: '结束时间', value: formatDate(row.finished_at) },
-      { label: '耗时(ms)', value: fieldValue(row.duration_ms) },
-      { label: '数据来源', value: taskSourceLabel(row.source) },
+      { label: t('logs.detailDrawer.taskName'), value: fieldValue(row.task_title || row.task_key) },
+      { label: t('logs.detailDrawer.taskKey'), value: fieldValue(row.task_key) },
+      { label: t('common.status'), value: taskStatusLabel(row.status) },
+      { label: t('logs.detailDrawer.logLevel'), value: fieldValue(row.level) },
+      { label: t('logs.detailDrawer.startedAt'), value: formatDate(row.started_at || row.time) },
+      { label: t('logs.detailDrawer.finishedAt'), value: formatDate(row.finished_at) },
+      { label: t('logs.detailDrawer.durationMs'), value: fieldValue(row.duration_ms) },
+      { label: t('logs.detailDrawer.dataSource'), value: taskSourceLabel(row.source) },
     ];
   }
   if (props.activeTab === 'gateway') {
     return [
-      { label: '网关', value: gatewayLabel(row.gateway) },
-      { label: '操作', value: fieldValue(row.action) },
-      { label: '结果状态', value: fieldValue(row.result_status) },
-      { label: '插件 ID', value: fieldValue(row.plugin_id) },
-      { label: '业务 key', value: fieldValue(row.gateway_key) },
+      { label: t('logs.detailDrawer.gateway'), value: gatewayLabel(row.gateway) },
+      { label: t('common.action'), value: fieldValue(row.action) },
+      { label: t('logs.detailDrawer.resultStatus'), value: fieldValue(row.result_status) },
+      { label: t('logs.detailDrawer.pluginId'), value: fieldValue(row.plugin_id) },
+      { label: t('logs.detailDrawer.businessKey'), value: fieldValue(row.gateway_key) },
       { label: 'Trace ID', value: fieldValue(row.trace_id) },
-      { label: '商户单号', value: fieldValue(row.out_trade_no) },
-      { label: '交易号', value: fieldValue(row.trade_no) },
-      { label: '账单 ID', value: fieldValue(row.invoice_id) },
-      { label: '记录时间', value: formatDate(row.created_at) },
+      { label: t('logs.detailDrawer.merchantTradeNo'), value: fieldValue(row.out_trade_no) },
+      { label: t('logs.detailDrawer.tradeNo'), value: fieldValue(row.trade_no) },
+      { label: t('logs.detailDrawer.invoiceId'), value: fieldValue(row.invoice_id) },
+      { label: t('logs.detailDrawer.recordedAt'), value: formatDate(row.created_at) },
     ];
   }
   if (props.activeTab === 'upstream') {
     return [
-      { label: '工单 ID', value: fieldValue(row.ticket_id) },
-      { label: '回复 ID', value: fieldValue(row.ticket_reply_id) },
-      { label: '方向', value: fieldValue(row.direction) },
-      { label: '操作', value: fieldValue(row.operation) },
-      { label: '事件', value: fieldValue(row.event) },
-      { label: '状态', value: statusLabel(row.status) },
-      { label: '原因码', value: fieldValue(row.reason_code) },
-      { label: '供应商', value: fieldValue(row.supplier_name || row.provider_key) },
-      { label: '供应商 ID', value: fieldValue(row.supplier_id) },
-      { label: '尝试次数', value: fieldValue(row.attempt) },
-      { label: 'HTTP 状态', value: fieldValue(row.http_status) },
-      { label: '耗时(ms)', value: fieldValue(row.duration_ms) },
-      { label: '发生时间', value: formatDate(row.occurred_at || row.created_at) },
+      { label: t('logs.detailDrawer.ticketId'), value: fieldValue(row.ticket_id) },
+      { label: t('logs.detailDrawer.replyId'), value: fieldValue(row.ticket_reply_id) },
+      { label: t('logs.detailDrawer.direction'), value: fieldValue(row.direction) },
+      { label: t('common.action'), value: fieldValue(row.operation) },
+      { label: t('logs.detailDrawer.event'), value: fieldValue(row.event) },
+      { label: t('common.status'), value: statusLabel(row.status) },
+      { label: t('logs.detailDrawer.reasonCode'), value: fieldValue(row.reason_code) },
+      { label: t('logs.detailDrawer.provider'), value: fieldValue(row.supplier_name || row.provider_key) },
+      { label: t('logs.detailDrawer.providerId'), value: fieldValue(row.supplier_id) },
+      { label: t('logs.detailDrawer.attempts'), value: fieldValue(row.attempt) },
+      { label: t('logs.detailDrawer.httpStatus'), value: fieldValue(row.http_status) },
+      { label: t('logs.detailDrawer.durationMs'), value: fieldValue(row.duration_ms) },
+      { label: t('logs.detailDrawer.occurredAt'), value: formatDate(row.occurred_at || row.created_at) },
     ];
   }
   if (props.activeTab === 'system') {
     return [
-      { label: '操作人', value: fieldValue(row.actor_name) },
-      { label: '操作人类型', value: fieldValue(row.actor_type) },
-      { label: '模块', value: fieldValue(row.module) },
-      { label: '动作', value: fieldValue(row.action) },
-      { label: '关联类型', value: fieldValue(row.subject_type) },
-      { label: '关联 ID', value: fieldValue(row.subject_id) },
-      { label: '记录时间', value: formatDate(row.created_at) },
-      { label: 'IP 地址', value: fieldValue(row.ip_address) },
-      { label: '数据来源', value: activitySourceLabel(row.source) },
+      { label: t('logs.detailDrawer.actor'), value: fieldValue(row.actor_name) },
+      { label: t('logs.detailDrawer.actorType'), value: fieldValue(row.actor_type) },
+      { label: t('logs.detailDrawer.module'), value: fieldValue(row.module) },
+      { label: t('logs.detailDrawer.action'), value: fieldValue(row.action) },
+      { label: t('logs.detailDrawer.subjectType'), value: fieldValue(row.subject_type) },
+      { label: t('logs.detailDrawer.subjectId'), value: fieldValue(row.subject_id) },
+      { label: t('logs.detailDrawer.recordedAt'), value: formatDate(row.created_at) },
+      { label: t('logs.detailDrawer.ipAddress'), value: fieldValue(row.ip_address) },
+      { label: t('logs.detailDrawer.dataSource'), value: activitySourceLabel(row.source) },
     ];
   }
   if (props.activeTab === 'upstream-uploads') {
     return [
-      { label: '日志级别', value: fieldValue(row.level) },
-      { label: '插件 ID', value: fieldValue(row.plugin_id) },
-      { label: '插件 key', value: fieldValue(row.plugin_key) },
+      { label: t('logs.detailDrawer.logLevel'), value: fieldValue(row.level) },
+      { label: t('logs.detailDrawer.pluginId'), value: fieldValue(row.plugin_id) },
+      { label: t('logs.detailDrawer.pluginKey'), value: fieldValue(row.plugin_key) },
       { label: 'Trace ID', value: fieldValue(row.trace_id) },
-      { label: '记录时间', value: formatDate(row.time) },
+      { label: t('logs.detailDrawer.recordedAt'), value: formatDate(row.time) },
     ];
   }
   return [
-    { label: '日志级别', value: fieldValue(row.level) },
-    { label: '插件 ID', value: fieldValue(row.plugin_id) },
-    { label: '插件 key', value: fieldValue(row.plugin_key) },
+    { label: t('logs.detailDrawer.logLevel'), value: fieldValue(row.level) },
+    { label: t('logs.detailDrawer.pluginId'), value: fieldValue(row.plugin_id) },
+    { label: t('logs.detailDrawer.pluginKey'), value: fieldValue(row.plugin_key) },
     { label: 'Trace ID', value: fieldValue(row.trace_id) },
-    { label: '记录时间', value: formatDate(row.time) },
+    { label: t('logs.detailDrawer.recordedAt'), value: formatDate(row.time) },
   ];
 });
 
@@ -206,65 +207,65 @@ const detailBlocks = computed(() => {
   const row = props.currentLog || {};
   if (props.activeTab === 'api') {
     return [
-      { label: '请求参数', value: formatJson(row.params) },
-      { label: '完整上下文', value: formatJson(row.detail) },
+      { label: t('logs.detailDrawer.requestParams'), value: formatJson(row.params) },
+      { label: t('logs.detailDrawer.fullContext'), value: formatJson(row.detail) },
       { label: 'User-Agent', value: formatJson(row.user_agent) },
     ];
   }
   if (props.activeTab === 'admin-logins') {
-    return [{ label: '上下文详情', value: formatJson(row.detail) }];
+    return [{ label: t('logs.detailDrawer.contextDetail'), value: formatJson(row.detail) }];
   }
   if (props.activeTab === 'sms') {
     return [
-      { label: '模板参数', value: formatJson(row.params, '暂无模板参数') },
-      { label: '短信内容', value: fieldValue(row.content) },
+      { label: t('logs.detailDrawer.templateParams'), value: formatJson(row.params, '暂无模板参数') },
+      { label: t('logs.detailDrawer.smsContent'), value: fieldValue(row.content) },
     ];
   }
   if (props.activeTab === 'email') {
     return [
-      { label: '邮件正文预览', value: buildContentPreviewDoc(row.content), html: true },
-      { label: 'HTML 源码', value: fieldValue(row.content) },
+      { label: t('logs.detailDrawer.mailBodyPreview'), value: buildContentPreviewDoc(row.content), html: true },
+      { label: t('logs.detailDrawer.htmlSource'), value: fieldValue(row.content) },
     ];
   }
   if (props.activeTab === 'gateway') {
     return [
-      { label: '请求数据', value: formatJson(row.request_data) },
-      { label: '响应数据', value: formatJson(row.response_data) },
-      { label: '错误信息', value: fieldValue(row.error_msg) },
+      { label: t('logs.detailDrawer.requestData'), value: formatJson(row.request_data) },
+      { label: t('logs.detailDrawer.responseData'), value: formatJson(row.response_data) },
+      { label: t('logs.detailDrawer.errorMessage'), value: fieldValue(row.error_msg) },
     ];
   }
   if (props.activeTab === 'upstream') {
     return [
-      { label: '结果说明', value: fieldValue(row.message) },
-      { label: '原因码', value: fieldValue(row.reason_code) },
+      { label: t('logs.detailDrawer.resultMessage'), value: fieldValue(row.message) },
+      { label: t('logs.detailDrawer.reasonCode'), value: fieldValue(row.reason_code) },
     ];
   }
   if (props.activeTab === 'tasks') {
     return [
-      { label: '摘要 JSON', value: formatJson(row.summary) },
-      { label: '错误信息', value: fieldValue(row.error_msg) },
-      { label: '原始日志', value: fieldValue(row.raw || row.message) },
+      { label: t('logs.detailDrawer.summaryJson'), value: formatJson(row.summary) },
+      { label: t('logs.detailDrawer.errorMessage'), value: fieldValue(row.error_msg) },
+      { label: t('logs.detailDrawer.rawLog'), value: fieldValue(row.raw || row.message) },
     ];
   }
   if (props.activeTab === 'system') {
     return [
-      { label: '描述', value: fieldValue(row.description) },
-      { label: '上下文', value: formatJson(row.context) },
+      { label: t('logs.detailDrawer.description'), value: fieldValue(row.description) },
+      { label: t('logs.detailDrawer.context'), value: formatJson(row.context) },
     ];
   }
   if (props.activeTab === 'upstream-uploads') {
     return [
-      { label: '格式化内容', value: fieldValue(row.message) },
-      { label: '请求上下文', value: formatJson(row.request_meta) },
-      { label: '响应上下文', value: formatJson(row.response_meta) },
-      { label: '原始日志', value: fieldValue(row.raw) },
+      { label: t('logs.detailDrawer.formattedContent'), value: fieldValue(row.message) },
+      { label: t('logs.detailDrawer.requestContext'), value: formatJson(row.request_meta) },
+      { label: t('logs.detailDrawer.responseContext'), value: formatJson(row.response_meta) },
+      { label: t('logs.detailDrawer.rawLog'), value: fieldValue(row.raw) },
     ];
   }
   return [
-    { label: '格式化内容', value: fieldValue(row.message) },
-    { label: '请求上下文', value: formatJson(row.request_meta) },
-    { label: '响应上下文', value: formatJson(row.response_meta) },
-    { label: '原始日志', value: fieldValue(row.raw) },
+    { label: t('logs.detailDrawer.formattedContent'), value: fieldValue(row.message) },
+    { label: t('logs.detailDrawer.requestContext'), value: formatJson(row.request_meta) },
+    { label: t('logs.detailDrawer.responseContext'), value: formatJson(row.response_meta) },
+    { label: t('logs.detailDrawer.rawLog'), value: fieldValue(row.raw) },
   ];
 });
 

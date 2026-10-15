@@ -10,6 +10,8 @@ import {
 } from 'tdesign-icons-vue-next';
 import type { Component } from 'vue';
 
+import { t } from '@/locales';
+
 import AreaTab from './tabs/AreaTab.vue';
 import FinanceTab from './tabs/FinanceTab.vue';
 import LogsTab from './tabs/LogsTab.vue';
@@ -27,14 +29,14 @@ export interface ServiceConsoleNavItem {
 }
 
 const consoleTabMeta: Record<string, Omit<ServiceConsoleNavItem, 'key'>> = {
-  overview: { label: '控制台总览', icon: DashboardIcon },
-  panel: { label: '产品配置', icon: ServerIcon },
-  monitor: { label: '监控信息', icon: ChartLineDataIcon },
-  security: { label: '安全组', icon: LockOnIcon },
-  nat: { label: '端口转发', icon: ForwardIcon },
-  logs: { label: '操作日志', icon: CatalogIcon },
-  finance: { label: '财务日志', icon: BillIcon },
-  vnc: { label: 'VNC 控制台', icon: DesktopIcon },
+  overview: { label: t('services.console.overviewTab'), icon: DashboardIcon },
+  panel: { label: t('services.console.productConfigTab'), icon: ServerIcon },
+  monitor: { label: t('services.console.monitorTitle'), icon: ChartLineDataIcon },
+  security: { label: t('services.console.securityGroups'), icon: LockOnIcon },
+  nat: { label: t('services.console.portForwarding'), icon: ForwardIcon },
+  logs: { label: t('services.console.logsTab.title'), icon: CatalogIcon },
+  finance: { label: t('services.console.financeLogs'), icon: BillIcon },
+  vnc: { label: t('services.console.vncTab.title'), icon: DesktopIcon },
 };
 
 export const consoleTabComponents: Record<string, Component> = {

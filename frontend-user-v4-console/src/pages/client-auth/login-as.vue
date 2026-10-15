@@ -33,6 +33,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import AuthShell from '@/components/auth/AuthShell.vue';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { toUserMessage } from '@/utils/userMessage';
 
@@ -92,7 +93,7 @@ function clearMessageTimer() {
 async function runExchange(code: string) {
   if (!code) {
     status.value = 'error';
-    MessagePlugin.error('缺少代登录凭证');
+    MessagePlugin.error(t('clientAuth.loginAs.credentialMissing'));
     return;
   }
 
@@ -101,7 +102,7 @@ async function runExchange(code: string) {
   try {
     await userStore.exchangeLoginAsCode(code);
     status.value = 'success';
-    MessagePlugin.success('代登录成功');
+    MessagePlugin.success(t('clientAuth.loginAs.success'));
     await router.replace(redirectPath.value);
   } catch (error: unknown) {
     const runtimeError = error as RuntimeHandledError;

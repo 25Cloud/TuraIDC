@@ -293,6 +293,7 @@ import { adminApi } from '@/api/admin';
 import InvoiceDetailDrawer from '@/components/finance-record-detail/InvoiceDetailDrawer.vue';
 import type { RecordDetailMetric, RecordDetailTab } from '@/components/record-detail-page/index.vue';
 import RecordDetailPage from '@/components/record-detail-page/index.vue';
+import { t } from '@/locales';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
 
@@ -410,15 +411,15 @@ const payments = computed<Record<string, unknown>[]>(() => {
 });
 
 const summaryMetrics = computed<RecordDetailMetric[]>(() => [
-  { label: '订单金额', value: formatMoney(order.value.amount), primary: true },
-  { label: '实付金额', value: formatMoney(order.value.paid_amount) },
-  { label: '创建时间', value: formatDateTime(order.value.created_at) },
+  { label: t('finance.orderDetail.orderAmount'), value: formatMoney(order.value.amount), primary: true },
+  { label: t('finance.orderDetail.paidAmount'), value: formatMoney(order.value.paid_amount) },
+  { label: t('finance.orderDetail.createdAt'), value: formatDateTime(order.value.created_at) },
 ]);
 
 const tabs = computed<RecordDetailTab[]>(() => [
-  { value: 'basic', label: '基本信息' },
-  { value: 'product', label: '产品配置' },
-  { value: 'payments', label: '支付记录', show: payments.value.length > 0 },
+  { value: 'basic', label: t('finance.orderDetail.basicInfo') },
+  { value: 'product', label: t('finance.orderDetail.productConfig') },
+  { value: 'payments', label: t('finance.orderDetail.paymentRecords'), show: payments.value.length > 0 },
 ]);
 
 const couponInfo = computed(() => {

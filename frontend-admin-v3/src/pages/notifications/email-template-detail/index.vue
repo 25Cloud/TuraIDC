@@ -166,6 +166,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { adminApi } from '@/api/admin';
+import { t } from '@/locales';
 import { resolveApiAssetUrl } from '@/utils/apiAssetUrl';
 
 interface NotificationTemplateSource {
@@ -384,7 +385,7 @@ async function saveCurrentTemplate() {
       group: 'notification',
       settings,
     });
-    MessagePlugin.success('模板已保存');
+    MessagePlugin.success(t('notifications.emailTemplate.saved'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存模板失败'));
   } finally {
@@ -425,7 +426,7 @@ async function submitTestSend() {
     if (result.failed_count > 0) {
       MessagePlugin.warning(result.status === 'partial_failed' ? '测试发送部分失败' : '测试发送失败');
     } else {
-      MessagePlugin.success('测试发送成功');
+      MessagePlugin.success(t('notifications.emailTemplate.testSent'));
     }
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '测试发送失败'));

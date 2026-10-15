@@ -180,6 +180,7 @@ import {
   useInvoiceList,
 } from '@/domains/finance/useInvoices';
 import type { InvoiceRecord } from '@/types/client';
+import { t } from '@/locales';
 
 const router = useRouter();
 
@@ -198,10 +199,10 @@ const {
 } = useInvoiceList();
 
 const quickFilters = [
-  { key: '', label: '全部' },
-  { key: 'week', label: '最近7天' },
-  { key: 'month', label: '本月' },
-  { key: 'pending', label: '待支付' },
+  { key: '', label: t('client.services.all') },
+  { key: 'week', label: t('client.invoices.last7Days') },
+  { key: 'month', label: t('client.invoices.thisMonth') },
+  { key: 'pending', label: t('client.invoices.pending') },
 ];
 
 function goToDetail(row: InvoiceRecord) {
@@ -221,13 +222,13 @@ function goToPayment(row: InvoiceRecord) {
 }
 
 const columns: PrimaryTableCol[] = [
-  { colKey: 'invoice', title: '账单号', minWidth: '12rem' },
-  { colKey: 'amount', title: '账单金额', width: '9rem' },
-  { colKey: 'paid', title: '已付金额', width: '9rem' },
-  { colKey: 'related_refs', title: '关联单据', minWidth: '14rem' },
-  { colKey: 'status', title: '状态', width: '8rem' },
-  { colKey: 'created_at', title: '创建时间', minWidth: '12rem' },
-  { colKey: 'operation', title: '操作', width: '10rem', fixed: 'right', align: 'right' },
+  { colKey: 'invoice', title: t('client.invoiceDetail.invoiceNo'), minWidth: '12rem' },
+  { colKey: 'amount', title: t('client.invoiceDetail.invoiceAmount'), width: '9rem' },
+  { colKey: 'paid', title: t('client.invoiceDetail.paidAmount'), width: '9rem' },
+  { colKey: 'related_refs', title: t('client.invoices.relatedRefs'), minWidth: '14rem' },
+  { colKey: 'status', title: t('common.status'), width: '8rem' },
+  { colKey: 'created_at', title: t('common.createdAt'), minWidth: '12rem' },
+  { colKey: 'operation', title: t('common.action'), width: '10rem', fixed: 'right', align: 'right' },
 ];
 
 function invoiceOrderNo(row: InvoiceRecord) {

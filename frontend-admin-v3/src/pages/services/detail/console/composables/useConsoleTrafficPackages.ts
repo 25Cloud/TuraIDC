@@ -6,6 +6,7 @@ import { formatMoney } from '@/utils/format';
 import type { ServiceTrafficPackageOption, ServiceTrafficPackagePreview, ServiceTrafficPackageQuote } from '../types';
 import { createServiceConsoleApi } from './adminServiceApi';
 import { resolveErrorMessage } from './useConsoleCore';
+import { t } from '@/locales';
 
 export interface UseConsoleTrafficPackagesOptions {
   userId: number | string;
@@ -97,7 +98,7 @@ export function useConsoleTrafficPackages(options: UseConsoleTrafficPackagesOpti
   async function submitTrafficPackageOrder() {
     const targetValue = Number(trafficForm.target_value || 0);
     if (targetValue <= 0) {
-      MessagePlugin.warning('请选择流量包档位');
+      MessagePlugin.warning(t('services.console.selectTrafficTier'));
       return;
     }
 

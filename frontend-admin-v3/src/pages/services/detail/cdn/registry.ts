@@ -23,6 +23,7 @@ import AreaTab from '../console/tabs/AreaTab.vue';
 import FinanceTab from '../console/tabs/FinanceTab.vue';
 import PanelTab from '../console/tabs/PanelTab.vue';
 import CdnOverviewTab from './tabs/CdnOverviewTab.vue';
+import { t } from '@/locales';
 
 export interface CdnConsoleNavItem {
   key: string;
@@ -32,9 +33,9 @@ export interface CdnConsoleNavItem {
 
 /** CDN 内置 tab：面板型（自定义区域）key 不在内置表里，由 areaLabels 提供中文名 */
 const cdnTabMeta: Record<string, Omit<CdnConsoleNavItem, 'key'>> = {
-  overview: { label: 'CDN 总览', icon: DashboardIcon },
-  panel: { label: '套餐与面板', icon: ServerIcon },
-  finance: { label: '财务日志', icon: BillIcon },
+  overview: { label: t('services.cdn.tabOverview'), icon: DashboardIcon },
+  panel: { label: t('services.cdn.tabPanel'), icon: ServerIcon },
+  finance: { label: t('services.cdn.tabFinance'), icon: BillIcon },
 };
 
 const cdnTabComponents: Record<string, Component> = {

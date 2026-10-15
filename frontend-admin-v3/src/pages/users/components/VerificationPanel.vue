@@ -271,6 +271,7 @@ import { useUserStore } from '@/store';
 import { formatDateTime } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { errorMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 const userStore = useUserStore();
 const route = useRoute();
@@ -315,30 +316,30 @@ const editForm = reactive({
 const originalEditStatus = ref(0);
 const originalEditMessage = ref('');
 const verificationStatusOptions = [
-  { value: 2, label: '已认证' },
-  { value: 3, label: '认证失败' },
-  { value: 5, label: '已驳回' },
-  { value: 0, label: '未认证' },
+  { value: 2, label: t('verification.statusVerified') },
+  { value: 3, label: t('verification.statusFailed') },
+  { value: 5, label: t('verification.statusRejected') },
+  { value: 0, label: t('verification.statusUnverified') },
 ];
 const summaryConfig = reactive<Record<string, unknown>>({});
 
 const columns: PrimaryTableCol<TableRowData>[] = [
   { title: 'ID', colKey: 'id', width: 80 },
-  { title: '姓名', colKey: 'displayName', width: 140 },
-  { title: '实名认证名称', colKey: 'realName', width: 160 },
-  { title: '身份证号码', colKey: 'id_card_masked', width: 180 },
-  { title: '认证方式', colKey: 'method', width: 120 },
-  { title: '认证类型', colKey: 'verification_type_label', width: 120 },
-  { title: '状态/原因', colKey: 'status', width: 220 },
-  { title: '提交时间', colKey: 'createdAt', width: 180 },
-  { title: '操作', colKey: 'operation', width: 220 },
+  { title: t('verification.nameColumn'), colKey: 'displayName', width: 140 },
+  { title: t('verification.realNameColumn'), colKey: 'realName', width: 160 },
+  { title: t('verification.idCardField'), colKey: 'id_card_masked', width: 180 },
+  { title: t('verification.methodField'), colKey: 'method', width: 120 },
+  { title: t('verification.verificationTypeField'), colKey: 'verification_type_label', width: 120 },
+  { title: t('verification.statusReasonColumn'), colKey: 'status', width: 220 },
+  { title: t('verification.submittedAtField'), colKey: 'createdAt', width: 180 },
+  { title: t('common.action'), colKey: 'operation', width: 220 },
 ];
 
 const historyColumns: PrimaryTableCol<TableRowData>[] = [
-  { title: '真实姓名', colKey: 'real_name', width: 150 },
-  { title: '身份证号码', colKey: 'id_card_masked', width: 180 },
-  { title: '状态', colKey: 'historyStatus', width: 150 },
-  { title: '提交时间', colKey: 'submittedAt', width: 180 },
+  { title: t('verification.realNameFieldLabel'), colKey: 'real_name', width: 150 },
+  { title: t('verification.idCardField'), colKey: 'id_card_masked', width: 180 },
+  { title: t('common.status'), colKey: 'historyStatus', width: 150 },
+  { title: t('verification.submittedAtField'), colKey: 'submittedAt', width: 180 },
 ];
 
 const pagination = computed(() => ({
@@ -527,20 +528,20 @@ async function handleReject() {
   if (!rejectRow.value) return;
   const reason = rejectReason.value.trim();
   if (!reason) {
-    MessagePlugin.error('请输入驳回原因');
+    MessagePlugin.error(t('verification.rejectReasonPlaceholder'));
     return;
   }
 
   actionLoadingId.value = rejectRow.value.id;
   try {
     await adminApi.verifications.unbind(rejectRow.value.id, { reject_reason: reason });
-    MessagePlugin.success('操作成功');
+    MessagePlugin.success(t('common.operationSuccess'));
     rejectVisible.value = false;
     // 解绑已写入；刷新失败不得回退成"驳回失败"，避免管理员重复操作
     try {
       await Promise.all([loadList(), loadSummary()]);
     } catch {
-      MessagePlugin.warning('操作已成功，但列表刷新失败，请手动刷新查看');
+      MessagePlugin.warning(t('verification.operationSucceededRefreshFailed'));
     }
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '驳回失败，请稍后重试'));
@@ -578,7 +579,7 @@ async function handleEditSubmit() {
   if (status !== originalEditStatus.value) payload.verification_status = status;
   // 姓名/证件号回显脱敏，不允许把脱敏值原样提交；仅当填写了新值才视为修改。
   if ((realName || idCard) && /[*＊]/.test(`${realName}${idCard}`)) {
-    MessagePlugin.error('姓名与证件号码中不能包含脱敏符号（*），请填写完整真实资料');
+    MessagePlugin.error(t('verification.maskedSymbolRejected'));
     return;
   }
   // 状态说明：仅在显式改动时提交（状态未变且说明相同则跳过）。
@@ -587,14 +588,14 @@ async function handleEditSubmit() {
   }
 
   if (!Object.keys(payload).length) {
-    MessagePlugin.warning('没有需要变更的实名认证信息，请先修改实名状态、姓名、证件号码或状态说明');
+    MessagePlugin.warning(t('verification.nothingToUpdate'));
     return;
   }
 
   editSubmitting.value = true;
   try {
     await adminApi.verifications.update(editRow.value.id, payload);
-    MessagePlugin.success('实名认证信息已更新');
+    MessagePlugin.success(t('verification.infoUpdated'));
     editVisible.value = false;
     await Promise.all([loadList(), loadSummary()]);
   } catch (error) {
@@ -611,7 +612,7 @@ async function saveFeeSettings() {
   try {
     const plugin = await resolveActiveVerificationPlugin();
     if (!plugin?.id) {
-      MessagePlugin.error('请先在插件管理中安装并启用实名认证插件');
+      MessagePlugin.error(t('verification.pluginRequired'));
       return;
     }
 
@@ -623,7 +624,7 @@ async function saveFeeSettings() {
       amount: retryFee,
       charge_enabled: retryFee > 0,
     });
-    MessagePlugin.success('费用设置已保存');
+    MessagePlugin.success(t('verification.feeSettingsSaved'));
     // loadSummary 自身已 try/catch 吞错并降级为空态，从不抛出：保存成功不受其影响，
     // 直接调用即可（无需再包 catch，那会是永不触发的死代码）。
     await loadSummary();

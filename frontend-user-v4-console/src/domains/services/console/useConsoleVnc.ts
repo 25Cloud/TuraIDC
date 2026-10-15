@@ -2,6 +2,7 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { ref } from 'vue';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type { ServiceVncCredentials } from '@/types/client';
 
 import { resolveErrorMessage, VNC_CREDENTIAL_STORAGE_PREFIX } from './useConsoleCore';
@@ -81,7 +82,7 @@ export function useConsoleVnc(options: UseConsoleVncOptions) {
   async function handleOpenVnc(mode: 'embed' | 'window' = 'embed') {
     const popup = mode === 'window' ? window.open('about:blank', '_blank') : null;
     if (mode === 'window' && !popup) {
-      MessagePlugin.warning('浏览器已拦截新窗口，请允许弹窗后重试');
+      MessagePlugin.warning(t('serviceConsole.vnc.popupBlocked'));
       return;
     }
 
@@ -95,10 +96,10 @@ export function useConsoleVnc(options: UseConsoleVncOptions) {
       activeTab.value = 'vnc';
       if (mode === 'window' && popup) {
         popup.location.replace(url);
-        MessagePlugin.success('VNC 新窗口已打开');
+        MessagePlugin.success(t('serviceConsole.vnc.windowOpened'));
       } else {
         vncUrl.value = url;
-        MessagePlugin.success('VNC 控制台已载入');
+        MessagePlugin.success(t('serviceConsole.vnc.loaded'));
       }
     } catch (error: unknown) {
       if (popup) popup.close();

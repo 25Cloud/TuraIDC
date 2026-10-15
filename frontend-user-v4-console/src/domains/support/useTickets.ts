@@ -4,6 +4,7 @@ import { computed, reactive, ref, shallowRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type {
   TicketAttachment,
   TicketImageUploadPayload,
@@ -15,24 +16,24 @@ import type {
 type ServiceOption = TicketServiceOption;
 
 export const TICKET_STATUS_OPTIONS = [
-  { label: '开启', value: 0 },
-  { label: '客户回复', value: 1 },
-  { label: '员工回复', value: 2 },
-  { label: '已关闭', value: 3 },
+  { label: t('ticket.replyStatus.open'), value: 0 },
+  { label: t('ticket.replyStatus.customerReplied'), value: 1 },
+  { label: t('ticket.replyStatus.staffReplied'), value: 2 },
+  { label: t('ticket.replyStatus.closed'), value: 3 },
 ];
 
 export const TICKET_DEPARTMENT_OPTIONS = [
-  { label: '销售', value: 'sales' },
-  { label: '技术支持', value: 'support' },
-  { label: '财务', value: 'billing' },
-  { label: '投诉', value: 'abuse' },
+  { label: t('ticket.department.sales'), value: 'sales' },
+  { label: t('ticket.department.support'), value: 'support' },
+  { label: t('ticket.department.billing'), value: 'billing' },
+  { label: t('ticket.department.abuse'), value: 'abuse' },
 ];
 
 export const TICKET_PRIORITY_OPTIONS = [
   { label: '低', value: 1 },
   { label: '中', value: 2 },
   { label: '高', value: 3 },
-  { label: '紧急', value: 4 },
+  { label: t('ticket.priority.urgent'), value: 4 },
 ];
 
 const MAX_IMAGES = 9;
@@ -120,11 +121,11 @@ export function formatTicketServiceOptionLabel(option?: ServiceOption, includeSt
 
 function validateImage(file: File, currentCount: number) {
   if (!IMAGE_TYPES.includes(file.type)) {
-    MessagePlugin.warning('仅支持 jpg、png、webp 图片');
+    MessagePlugin.warning(t('ticket.image.unsupportedType'));
     return false;
   }
   if (file.size > MAX_SIZE) {
-    MessagePlugin.warning('单张图片不能超过 5MB');
+    MessagePlugin.warning(t('ticket.image.tooLarge'));
     return false;
   }
   if (currentCount >= MAX_IMAGES) {
@@ -239,7 +240,7 @@ export function useTicketList() {
       const res = await clientApi.uploadTicketImage(formData);
       const payload = res.data;
       uploadFiles.value = [...uploadFiles.value, payload].slice(0, MAX_IMAGES);
-      MessagePlugin.success('图片已上传');
+      MessagePlugin.success(t('ticket.image.uploaded'));
       return true;
     } catch (error: unknown) {
       MessagePlugin.error(getErrorMessage(error, '图片上传失败'));
@@ -260,7 +261,7 @@ export function useTicketList() {
 
   async function submitTicket() {
     if (!createForm.subject.trim()) {
-      MessagePlugin.warning('请输入工单标题');
+      MessagePlugin.warning(t('ticket.create.titleRequired'));
       return false;
     }
 
@@ -274,7 +275,7 @@ export function useTicketList() {
         service_id: createForm.service_id,
         attachments: uploadFiles.value.map((item) => item.path).filter(Boolean),
       });
-      MessagePlugin.success('工单提交成功');
+      MessagePlugin.success(t('ticket.create.success'));
       createVisible.value = false;
       resetCreateForm();
       await loadTickets();
@@ -361,7 +362,7 @@ export function useTicketDetail() {
 
   async function loadDetail() {
     if (!ticketId.value) {
-      MessagePlugin.error('工单不存在');
+      MessagePlugin.error(t('ticket.detail.notFound'));
       await router.replace('/client/tickets');
       return;
     }
@@ -392,7 +393,7 @@ export function useTicketDetail() {
       formData.append('file', file);
       const res = await clientApi.uploadTicketImage(formData);
       replyAttachments.value = [...replyAttachments.value, res.data || {}].slice(0, MAX_IMAGES);
-      MessagePlugin.success('图片已上传');
+      MessagePlugin.success(t('ticket.image.uploaded'));
       return true;
     } catch (error: unknown) {
       MessagePlugin.error(getErrorMessage(error, '图片上传失败'));
@@ -413,11 +414,11 @@ export function useTicketDetail() {
 
   async function submitReply() {
     if (replyUploading.value) {
-      MessagePlugin.warning('图片上传中，请稍后发送');
+      MessagePlugin.warning(t('ticket.reply.uploading'));
       return false;
     }
     if (!canSubmitReply.value) {
-      MessagePlugin.warning('请输入回复内容或上传图片');
+      MessagePlugin.warning(t('ticket.reply.contentRequired'));
       return false;
     }
     if (!ticketId.value) return false;
@@ -428,7 +429,7 @@ export function useTicketDetail() {
         content: replyContent.value,
         attachments: replyAttachments.value.map((item) => item.path).filter(Boolean),
       });
-      MessagePlugin.success('回复已发送');
+      MessagePlugin.success(t('ticket.reply.sent'));
       resetReplyDraft();
       await loadDetail();
       return true;
@@ -445,7 +446,7 @@ export function useTicketDetail() {
     recalling.value = true;
     try {
       await clientApi.recallTicketReply(ticketId.value, reply.id);
-      MessagePlugin.success('消息已撤回');
+      MessagePlugin.success(t('ticket.reply.recalled'));
       await loadDetail();
       return true;
     } catch (error: unknown) {
@@ -461,15 +462,15 @@ export function useTicketDetail() {
     const dialog = DialogPlugin.confirm({
       header: '确认关闭工单',
       body: '关闭后将无法继续回复此工单，确认关闭吗？',
-      confirmBtn: '确认关闭',
-      cancelBtn: '取消',
+      confirmBtn: t('ticket.close.confirm'),
+      cancelBtn: t('common.cancel'),
       theme: 'warning',
       async onConfirm() {
         dialog.setConfirmLoading(true);
         closing.value = true;
         try {
           await clientApi.closeTicket(ticketId.value);
-          MessagePlugin.success('工单已关闭');
+          MessagePlugin.success(t('ticket.close.success'));
           await loadDetail();
           dialog.hide();
         } catch (error: unknown) {

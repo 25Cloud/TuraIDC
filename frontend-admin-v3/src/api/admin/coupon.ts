@@ -13,6 +13,7 @@ import type {
   CouponProductRecord,
   CouponRecord,
 } from './types';
+import { t } from '@/locales';
 
 interface PagedResult<T> {
   list?: T[];
@@ -100,7 +101,7 @@ function otherGroupNode(group: CouponProductGroupRecord, children: ProductTreeNo
   return {
     ...group,
     id: `${group.node_key || `second:${group.id}`}:other`,
-    label: '其他',
+    label: t('products.coupons.otherGroup'),
     node_type: 'third_product_group',
     third_product_group_id: null,
     third_product_group_name: '其他',

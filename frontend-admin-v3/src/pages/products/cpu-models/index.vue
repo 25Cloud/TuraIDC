@@ -189,6 +189,7 @@ import type { CpuModelGroupRecord, CpuModelRecord, ProductBindingRecord } from '
 import { adminApi } from '@/api/admin';
 import ProductBindingTreeSelect from '@/components/product-binding-tree-select/index.vue';
 import { normalizeProductBindings as normalizeBindings } from '@/hooks/useProductBindingTree';
+import { t } from '@/locales';
 import { errorMessage } from '@/utils/userMessage';
 
 defineOptions({ name: 'AdminCpuModels' });
@@ -235,19 +236,19 @@ const groupForm = reactive({ name: '', value: '' });
 const modelForm = reactive({ name: '', value: '', base_frequency: '', turbo_frequency: '' });
 
 const groupRules: Record<string, FormRule[]> = {
-  name: [{ required: true, message: '请输入 CPU 分组名称', type: 'error' }],
+  name: [{ required: true, message: t('products.cpuModels.groupNameRequired'), type: 'error' }],
 };
 const modelRules: Record<string, FormRule[]> = {
-  name: [{ required: true, message: '请输入 CPU 型号名称', type: 'error' }],
+  name: [{ required: true, message: t('products.cpuModels.modelNameRequired'), type: 'error' }],
 };
 
 const columns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'name', title: '型号名称', minWidth: 220 },
-  { colKey: 'frequency', title: '主频 / 睿频', minWidth: 180 },
-  { colKey: 'value', title: '内部标识', minWidth: 180 },
-  { colKey: 'sort_order', title: '排序', width: 90 },
-  { colKey: 'bindings', title: '绑定配置', minWidth: 360 },
-  { colKey: 'operation', title: '操作', width: 140, fixed: 'right' },
+  { colKey: 'name', title: t('products.cpuModels.modelName'), minWidth: 220 },
+  { colKey: 'frequency', title: t('products.cpuModels.frequency'), minWidth: 180 },
+  { colKey: 'value', title: t('products.cpuModels.internalKey'), minWidth: 180 },
+  { colKey: 'sort_order', title: t('products.cpuModels.sortOrder'), width: 90 },
+  { colKey: 'bindings', title: t('products.cpuModels.bindingConfig'), minWidth: 360 },
+  { colKey: 'operation', title: t('common.action'), width: 140, fixed: 'right' },
 ];
 
 const currentGroup = computed(() => groups.value.find((item) => item.id === activeGroupId.value) || null);
@@ -352,7 +353,7 @@ function openGroupDialog(group?: CpuGroup) {
 
 function openModelDialog(model?: CpuModel) {
   if (!currentGroup.value) {
-    MessagePlugin.warning('请先选择 CPU 分组');
+    MessagePlugin.warning(t('products.cpuModels.selectGroupRequired'));
     return;
   }
   editingModelId.value = model?.id || '';
@@ -371,7 +372,7 @@ async function handleSubmitGroup() {
   const name = String(groupForm.name || '').trim();
   const duplicated = groups.value.find((item) => item.name === name && item.id !== editingGroupId.value);
   if (duplicated) {
-    MessagePlugin.warning('CPU 分组名称不能重复');
+    MessagePlugin.warning(t('products.cpuModels.duplicateGroupName'));
     return;
   }
 
@@ -416,7 +417,7 @@ async function handleSubmitModel() {
   const name = String(modelForm.name || '').trim();
   const duplicated = currentGroup.value.models.find((item) => item.name === name && item.id !== editingModelId.value);
   if (duplicated) {
-    MessagePlugin.warning('同一 CPU 分组下的型号名称不能重复');
+    MessagePlugin.warning(t('products.cpuModels.duplicateModelName'));
     return;
   }
 
@@ -458,11 +459,11 @@ function handleDeleteGroup(group: CpuGroup) {
     header: '删除 CPU 分组',
     body: `确认删除「${group.name || group.id}」吗？`,
     theme: 'warning',
-    confirmBtn: '确认删除',
-    cancelBtn: '取消',
+    confirmBtn: t('common.confirmDelete'),
+    cancelBtn: t('common.cancel'),
     onConfirm() {
       rebuildCatalogState(groups.value.filter((item) => item.id !== group.id));
-      MessagePlugin.success('CPU 分组已删除');
+      MessagePlugin.success(t('products.cpuModels.groupDeleted'));
       dialog.hide();
     },
   });
@@ -475,8 +476,8 @@ function handleDeleteModel(model: CpuModel) {
     header: '删除 CPU 型号',
     body: `确认删除「${model.name || model.id}」吗？`,
     theme: 'warning',
-    confirmBtn: '确认删除',
-    cancelBtn: '取消',
+    confirmBtn: t('common.confirmDelete'),
+    cancelBtn: t('common.cancel'),
     onConfirm() {
       groups.value = groups.value.map((group) => {
         if (group.id !== groupId) return group;
@@ -489,7 +490,7 @@ function handleDeleteModel(model: CpuModel) {
           models,
         };
       });
-      MessagePlugin.success('CPU 型号已删除');
+      MessagePlugin.success(t('products.cpuModels.modelDeleted'));
       dialog.hide();
     },
   });
@@ -523,14 +524,14 @@ function buildPayload(): CpuModelGroupRecord[] {
 
 async function handleSave() {
   if (!groups.value.length) {
-    MessagePlugin.warning('请至少添加一个 CPU 分组');
+    MessagePlugin.warning(t('products.cpuModels.groupRequired'));
     return;
   }
   saving.value = true;
   try {
     const response = await adminApi.cpuModelCatalog.save({ list: buildPayload() });
     rebuildCatalogState(response.list || []);
-    MessagePlugin.success('CPU 型号目录已保存');
+    MessagePlugin.success(t('products.cpuModels.catalogSaved'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存 CPU 型号目录失败'));
   } finally {

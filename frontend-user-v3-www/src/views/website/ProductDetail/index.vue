@@ -527,6 +527,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus/es/components/message/index.mjs";
 import siteApi from "@/api/site";
+import { t } from "@/locales";
 import { useUserStore } from "@/stores/user";
 import { getToken } from "@/utils/auth";
 import {
@@ -767,7 +768,7 @@ const summaryItems = computed(() => {
   if (regionOptions.value.length && configForm[regionKey.value]) {
     items.push({
       key: "region",
-      label: "区域",
+      label: t("product.detail.region"),
       value:
         regionOptions.value.find(
           (item) => item.id === configForm[regionKey.value],
@@ -778,7 +779,7 @@ const summaryItems = computed(() => {
   if (currentOsVerLabel.value) {
     items.push({
       key: "os",
-      label: "系统",
+      label: t("product.osPicker.system"),
       value: currentOsVerLabel.value,
     });
   }
@@ -786,7 +787,7 @@ const summaryItems = computed(() => {
   if (selectedCycleLabel.value) {
     items.push({
       key: "billing_cycle",
-      label: "周期",
+      label: t("product.detail.cycle"),
       value: selectedCycleLabel.value,
     });
   }
@@ -1053,7 +1054,7 @@ function redirectToConsoleCheckout(orderPayload, idempotencyKey) {
     "/client/checkout-resume",
     orderPayload.user_coupon_id,
   );
-  ElMessage.success("正在进入控制台继续创建账单");
+  ElMessage.success(t("product.checkout.enteringConsole"));
 
   navigateToConsole(
     checkoutPath,
@@ -1068,7 +1069,7 @@ async function ensurePurchaseRequirementsBeforeCheckout() {
   }
 
   if (!getToken()) {
-    ElMessage.warning("请先登录后再购买该商品");
+    ElMessage.warning(t("product.checkout.loginRequired"));
     navigateToConsole("/client/login");
     return false;
   }
@@ -1078,7 +1079,7 @@ async function ensurePurchaseRequirementsBeforeCheckout() {
     try {
       user = await userStore.fetchUserInfo();
     } catch {
-      ElMessage.warning("登录状态已失效，请重新登录");
+      ElMessage.warning(t("product.checkout.sessionExpired"));
       navigateToConsole("/client/login");
       return false;
     }
@@ -1097,23 +1098,23 @@ async function ensurePurchaseRequirementsBeforeCheckout() {
 
 async function submitOrder() {
   if (productStockLoading.value) {
-    ElMessage.warning("库存同步中，请稍候");
+    ElMessage.warning(t("product.checkout.stockSyncingNotice"));
     return;
   }
   if (productStockError.value) {
-    ElMessage.warning("库存同步失败，请稍后重试");
+    ElMessage.warning(t("product.checkout.stockSyncFailedNotice"));
     return;
   }
   if (resolvedStock.value === 0) {
-    ElMessage.warning("当前库存不足，暂时无法购买");
+    ElMessage.warning(t("product.checkout.purchaseUnavailable"));
     return;
   }
   if (!quoteToken.value) {
-    ElMessage.warning("报价凭证已失效，请稍后重试");
+    ElMessage.warning(t("product.checkout.quoteExpired"));
     return;
   }
   if (!canSubmit.value) {
-    ElMessage.warning("请选择计费周期");
+    ElMessage.warning(t("product.checkout.selectBillingCycle"));
     return;
   }
 

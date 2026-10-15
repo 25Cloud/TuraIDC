@@ -5,7 +5,16 @@
     "copyright": "Copyright @ 2021-2025 Tencent. All Rights Reserved",
     "conjunction": "和",
     "admin": "admin",
-    "cancel": "取消"
+    "cancel": "取消",
+    "confirm": "确认",
+    "copiedToClipboard": "已复制到剪贴板",
+    "copyFailedManual": "复制失败，请手动复制",
+    "confirmDelete": "确认删除",
+    "time": "时间",
+    "method": "方法",
+    "status": "状态",
+    "createdAt": "创建时间",
+    "action": "操作"
   },
   "components": {
     "isSetup": {
@@ -61,7 +70,8 @@
       "help": "帮助文档",
       "user": "个人中心",
       "signOut": "退出登录",
-      "setting": "系统设置"
+      "setting": "系统设置",
+      "confirmSignOut": "确认退出"
     },
     "notice": {
       "title": "通知中心",
@@ -69,7 +79,9 @@
       "setRead": "设为已读",
       "empty": "空",
       "emptyNotice": "暂无通知",
-      "viewAll": "查看全部"
+      "viewAll": "查看全部",
+      "detailLoadFailed": "公告内容加载失败",
+      "markAllRead": "已全部标记为已读"
     },
     "searchPlaceholder": "请输入搜索内容",
     "search": {
@@ -788,11 +800,19 @@
       "saved": "我已保存",
       "usageLogs": "调用日志",
       "usageLogsTitle": "调用日志 · 魔方财务对接",
-      "username": "用户名"
+      "username": "用户名",
+      "logPath": "接口路径"
     },
     "title": "API 凭据",
     "create": "创建密钥",
-    "openApiLabel": "开放接口密钥"
+    "openApiLabel": "开放接口密钥",
+    "scopeProducts": "产品目录",
+    "scopeOrders": "订单与账单",
+    "scopeServices": "服务实例",
+    "scopeFinance": "余额与财务",
+    "nameRequired": "请输入密钥名称",
+    "updated": "密钥已更新",
+    "deleted": "密钥已删除"
   },
   "client": {
     "catalog": {
@@ -875,7 +895,11 @@
       "rechargeLabel": "充值",
       "rechargePrefix": "充值：",
       "searchPlaceholder": "搜索账单号、关联订单号或充值单号",
-      "view": "查看"
+      "view": "查看",
+      "last7Days": "最近7天",
+      "thisMonth": "本月",
+      "pending": "待支付",
+      "relatedRefs": "关联单据"
     },
     "orderDetail": {
       "backToList": "返回列表",
@@ -926,7 +950,14 @@
       "searchPlaceholder": "搜索商家订单号或第三方订单号",
       "thirdPartyLabel": "第三方：",
       "view": "查看",
-      "waitingCallback": "等待渠道回调"
+      "waitingCallback": "等待渠道回调",
+      "all": "全部",
+      "last7Days": "最近7天",
+      "thisMonth": "本月",
+      "pending": "待支付",
+      "orderNo": "支付订单号",
+      "gateway": "支付渠道",
+      "amount": "支付金额"
     },
     "referral": {
       "accountLogsTab": "账户流水",
@@ -961,7 +992,21 @@
       "toBalance": "转余额",
       "withdrawAmount": "提现金额",
       "withdrawAmountPlaceholder": "请输入提现金额",
-      "withdrawalsTab": "提现记录"
+      "withdrawalsTab": "提现记录",
+      "statusFrozen": "冻结中",
+      "statusReleased": "已释放",
+      "statusReversed": "已冲正",
+      "statusReviewing": "审核中",
+      "statusApproved": "已通过",
+      "statusRejected": "已拒绝",
+      "availableBalance": "可提现余额",
+      "totalReward": "累计奖励",
+      "withdrawn": "已提现",
+      "directCount": "直推人数",
+      "rewardedOrders": "奖励账单数",
+      "linkUnavailable": "推荐链接暂不可用",
+      "alipayBoundSuccess": "支付宝绑定成功",
+      "withdrawSubmitted": "提现申请已提交"
     },
     "services": {
       "addRemark": "添加备注",
@@ -1019,7 +1064,11 @@
       "traffic": "流量",
       "trialMachine": "试用机",
       "virtualHostInstance": "虚拟主机实例",
-      "webSpace": "网页空间"
+      "webSpace": "网页空间",
+      "service": "服务信息",
+      "specSummary": "配置摘要",
+      "expiresAt": "到期时间",
+      "ipTraffic": "IP / 流量"
     },
     "ticketDetail": {
       "adminRole": "管理员",
@@ -1052,6 +1101,34 @@
       "updatedAt": "更新时间",
       "user": "用户",
       "userRole": "用户"
+    },
+    "support": {
+      "officialQqGroup": "官方QQ群",
+      "cooperationEmail": "合作邮箱",
+      "serviceHours": "服务时间"
+    },
+    "dashboard": {
+      "accountBalance": "账户余额",
+      "monthlyRecharge": "本月充值",
+      "monthlySpend": "本月消费",
+      "availableCoupons": "可用优惠券",
+      "categoryCloudServer": "云服务器",
+      "categoryGameCloud": "游戏云",
+      "categoryCloudDesktop": "云电脑",
+      "categoryBareMetal": "裸金属",
+      "categoryWebHosting": "虚拟主机",
+      "todoUnpaidInvoices": "待支付账单",
+      "todoOpenTickets": "待处理工单",
+      "todoExpiringServices": "即将到期服务",
+      "todoUnreadNotices": "未读公告",
+      "quickMyServices": "我的服务",
+      "quickInvoiceRecords": "账单记录",
+      "quickPaymentRecords": "充值记录",
+      "quickTicketSupport": "工单支持",
+      "quickTopUp": "账户充值",
+      "quickHelpCenter": "帮助中心",
+      "quickCoupons": "优惠券",
+      "quickReferral": "推荐奖励"
     }
   },
   "clientAuth": {
@@ -1075,7 +1152,40 @@
       "signInNow": "立即登录",
       "submit": "注册并进入控制台",
       "title": "免费注册",
-      "viewCatalog": "查看产品目录"
+      "viewCatalog": "查看产品目录",
+      "captchaRequired": "请先完成人机验证",
+      "accountInvalid": "请输入正确的手机号或邮箱",
+      "codeLength": "验证码为 6 位",
+      "nicknameTooLong": "用户名不能超过 50 个字符",
+      "referralCodeTooLong": "推荐码不能超过 24 个字符",
+      "passwordRequired": "请输入登录密码",
+      "passwordTooShort": "密码长度不能少于 8 位",
+      "passwordMismatch": "两次输入的密码不一致",
+      "accountFirst": "请先输入正确的手机号或邮箱",
+      "success": "注册成功"
+    },
+    "forgotPassword": {
+      "captchaRequired": "请先完成人机验证",
+      "accountInvalid": "请输入正确的手机号或邮箱",
+      "codeRequired": "请输入验证码",
+      "codeLength": "验证码为 6 位",
+      "newPasswordRequired": "请输入新密码",
+      "passwordMinLength": "密码长度不能少于 8 位",
+      "confirmPasswordRequired": "请再次输入新密码",
+      "passwordMismatch": "两次输入的密码不一致",
+      "accountFirst": "请先输入正确的手机号或邮箱",
+      "passwordResetSuccess": "密码已重置，请重新登录"
+    },
+    "loginAs": {
+      "credentialMissing": "缺少代登录凭证",
+      "success": "代登录成功"
+    },
+    "login": {
+      "captchaRequired": "请先完成人机验证",
+      "accountRequired": "请输入正确的手机号或邮箱",
+      "codeLength": "验证码为 6 位",
+      "passwordRequired": "请输入登录密码",
+      "accountRequiredFirst": "请先输入正确的手机号或邮箱"
     }
   },
   "result": {
@@ -1124,7 +1234,8 @@
       "osVersion": "系统版本",
       "osVersionPlaceholder": "请选择系统版本",
       "submit": "提交重装",
-      "title": "重装系统"
+      "title": "重装系统",
+      "selectOsVersion": "请选择系统版本"
     },
     "renewDialog": {
       "agentDiscount": "代理折扣",
@@ -1160,7 +1271,11 @@
       "source": "来源",
       "title": "安全组",
       "unsupported": "当前实例暂不支持安全组",
-      "view": "查看"
+      "view": "查看",
+      "rulesLoaded": "安全组规则已加载",
+      "groupNameRequired": "请输入安全组名称",
+      "selectGroupFirst": "请先选择安全组",
+      "ruleRequired": "请填写完整的规则信息"
     },
     "securityGroup": {
       "cancel": "取消",
@@ -1190,7 +1305,9 @@
       "remainingUsage": "剩余流量",
       "selectedTier": "已选档位",
       "title": "购买流量包",
-      "unlimited": "不限"
+      "unlimited": "不限",
+      "selectTier": "请选择流量包档位",
+      "billCreated": "流量包账单已创建，正在跳转支付"
     },
     "virtualHost": {
       "bandwidth": "带宽",
@@ -1219,7 +1336,9 @@
       "renewPrice": "续费价格",
       "runStatus": "运行状态",
       "spaceAndSites": "空间与站点",
-      "webSpace": "网页空间"
+      "webSpace": "网页空间",
+      "overview": "主机总览",
+      "panel": "主机与面板"
     },
     "vnc": {
       "connect": "连接 VNC",
@@ -1227,10 +1346,15 @@
       "loadedTip": "VNC 控制台已在当前页面载入。",
       "openInWindow": "新窗口打开",
       "title": "VNC 控制台",
-      "waiting": "等待连接"
+      "waiting": "等待连接",
+      "popupBlocked": "浏览器已拦截新窗口，请允许弹窗后重试",
+      "windowOpened": "VNC 新窗口已打开",
+      "loaded": "VNC 控制台已载入"
     },
     "cdn": {
-      "trafficUsage": "流量用量"
+      "trafficUsage": "流量用量",
+      "overview": "CDN 总览",
+      "panel": "套餐与面板"
     },
     "breadcrumb": {
       "userCenter": "用户中心"
@@ -1255,7 +1379,8 @@
       "namePlaceholder": "例如：Web 服务",
       "internalPlaceholder": "留空由上游分配",
       "portPlaceholder": "例如：80",
-      "protocolPlaceholder": "请选择协议"
+      "protocolPlaceholder": "请选择协议",
+      "publicAddress": "公网地址"
     },
     "remark": {
       "save": "保存备注",
@@ -1275,7 +1400,34 @@
     "instanceSpec": "实例规格",
     "instanceId": "实例 ID",
     "os": "操作系统",
-    "createdAt": "创建时间"
+    "createdAt": "创建时间",
+    "upstreamFeatureUnsupported": "当前上游接口暂不支持该功能",
+    "detailUpdated": "实例信息已更新",
+    "statusRefreshed": "实例状态已刷新",
+    "power": {
+      "starting": "开机中",
+      "stopping": "关机中",
+      "rebooting": "重启中"
+    },
+    "renew": {
+      "invoiceCreated": "续费账单已创建，正在跳转支付"
+    },
+    "portForward": {
+      "incomplete": "请填写完整的端口转发信息",
+      "invalidRange": "端口范围应为 1 到 65535"
+    },
+    "overview": "控制台总览",
+    "tables": {
+      "logActionTime": "操作时间",
+      "logSummary": "操作详情",
+      "logOperator": "操作人",
+      "logIpAddress": "IP 地址",
+      "financeOccurredAt": "发生时间",
+      "financeEventType": "账单类型",
+      "financeAmount": "金额",
+      "financeDescription": "说明",
+      "financeInvoiceNo": "关联账单"
+    }
   },
   "recharge": {
     "title": "在线充值",
@@ -1289,7 +1441,13 @@
     "payStatus": "支付状态",
     "merchantOrderNo": "商家订单号",
     "payableAmount": "应付金额",
-    "copyLink": "复制支付链接"
+    "copyLink": "复制支付链接",
+    "renewalNeeded": "续费需要",
+    "renewalScanHint": "检测 7 天内到期的续费金额",
+    "noPaymentMethod": "暂无可用支付方式",
+    "qrCodeGenerated": "充值二维码已生成",
+    "missingPollCredential": "缺少支付轮询凭证",
+    "successBalanceRefreshed": "充值成功，余额已刷新"
   },
   "services": {
     "console": {}
@@ -1317,17 +1475,63 @@
     "realNamePlaceholder": "请输入真实姓名",
     "idCardPlaceholder": "请输入身份证号",
     "realNameLabel": "真实姓名",
-    "idCardLabel": "身份证号"
+    "idCardLabel": "身份证号",
+    "idCardInvalid": "身份证号格式不正确",
+    "qrCodeGenerated": "二维码已生成，请扫码继续认证",
+    "sessionMissing": "缺少认证会话，请重新提交实名信息",
+    "qrCodeExpired": "二维码已失效，请重新提交认证",
+    "success": "认证成功",
+    "qrCodeRefreshed": "已重新生成二维码，请重新扫码",
+    "sessionClosed": "认证会话已关闭"
   },
   "checkoutResume": {
     "browse": "去选购产品",
-    "toFinance": "前往资金中心"
+    "toFinance": "前往资金中心",
+    "source": "来源",
+    "product": "产品",
+    "billingCycle": "周期",
+    "quantity": "数量",
+    "created": "账单创建成功，正在跳转",
+    "createFailed": "账单创建失败，请稍后重试"
   },
   "content": {
-    "hotSearchLabel": "热门搜索:"
+    "hotSearchLabel": "热门搜索:",
+    "notice": {
+      "empty": "暂无公告内容"
+    },
+    "help": {
+      "empty": "暂无帮助内容"
+    },
+    "article": {
+      "fullText": "全文"
+    }
   },
   "invoiceDetail": {
-    "back": "返回账单"
+    "back": "返回账单",
+    "renewFlow": {
+      "completePayment": "完成支付",
+      "paymentHint": "余额或支付宝支付成功后，账单状态会自动更新。",
+      "runRenewal": "执行续费",
+      "renewalHint": "系统按当前续费周期处理服务有效期。",
+      "syncService": "同步服务",
+      "syncHint": "处理完成后可在服务控制台查看新的到期时间。"
+    },
+    "serviceId": "服务 ID",
+    "currentExpiry": "当前到期",
+    "renewalCycle": "续费周期",
+    "renewalAmount": "续费金额",
+    "renewedExpiry": "续费后到期",
+    "payableNow": "本次应付",
+    "item": "项目",
+    "quantity": "数量",
+    "unitPrice": "单价",
+    "discount": "优惠",
+    "subtotal": "小计",
+    "merchantOrderNo": "商家订单号",
+    "thirdPartyOrderNo": "第三方订单号",
+    "channel": "渠道",
+    "amount": "金额",
+    "paidAt": "支付时间"
   },
   "orderCreate": {
     "title": "购买链路",
@@ -1336,7 +1540,21 @@
     "open": "打开购买页"
   },
   "orders": {
-    "searchPlaceholder": "搜索订单号"
+    "searchPlaceholder": "搜索订单号",
+    "index": {
+      "confirmCancel": "确认取消",
+      "rethink": "再想想",
+      "canceled": "订单已取消"
+    },
+    "filterAll": "全部",
+    "filterLast7Days": "最近7天",
+    "filterThisMonth": "本月",
+    "statusPending": "待支付",
+    "orderNo": "订单号",
+    "productService": "产品/服务",
+    "amount": "金额",
+    "relatedInvoice": "关联账单",
+    "createdAt": "创建时间"
   },
   "paymentDetail": {
     "title": "财务中心",
@@ -1345,7 +1563,44 @@
     "back": "返回列表"
   },
   "profile": {
-    "basicInfo": "基础信息"
+    "basicInfo": "基础信息",
+    "notifications": {
+      "loginAlert": "账号登录提醒",
+      "unusualLoginAlert": "异地登录提醒",
+      "passwordAlert": "更改密码提醒",
+      "phoneAlert": "更改手机号提醒",
+      "emailAlert": "更改邮箱提醒",
+      "marketingAlert": "营销提醒接收"
+    },
+    "captchaRequired": "请先完成人机验证",
+    "realNameAuth": "实名认证",
+    "securePhone": "安全手机",
+    "secureEmail": "安全邮箱",
+    "loginPassword": "登录密码",
+    "codeSent": "验证码已发送",
+    "codeRequired": "请输入 6 位验证码",
+    "newPasswordRequired": "请输入新密码",
+    "passwordMinLength": "密码长度不能少于 8 位",
+    "passwordMismatch": "两次密码输入不一致",
+    "passwordResetSuccess": "密码重置成功，请重新登录",
+    "phoneNotBound": "当前账号未绑定手机号",
+    "codeSentToOldPhone": "验证码已发送至原手机号",
+    "emailNotBound": "当前账号未绑定邮箱",
+    "codeSentToOldEmail": "验证码已发送至原邮箱",
+    "newPhoneRequired": "请输入新手机号",
+    "newEmailRequired": "请输入新邮箱",
+    "oldPhoneCodeRequired": "请输入原手机号验证码",
+    "phoneUpdated": "手机号修改成功",
+    "oldEmailCodeRequired": "请输入原邮箱验证码",
+    "emailUpdated": "邮箱修改成功",
+    "usernameRequired": "用户名不能为空",
+    "usernameMaxLength": "用户名最多 50 个字符",
+    "qqFormatInvalid": "QQ 号需为 5-20 位数字",
+    "updated": "资料修改成功",
+    "passwordInfoRequired": "请填写完整密码信息",
+    "newPasswordMinLength": "新密码长度不能少于 8 位",
+    "passwordChanged": "密码修改成功，请重新登录",
+    "settingsSaved": "设置保存成功"
   },
   "tickets": {
     "searchPlaceholder": "搜索工单标题",
@@ -1364,5 +1619,92 @@
     "loginAccountPlaceholder": "请输入手机号或邮箱",
     "byPassword": "密码登录",
     "byCode": "验证码登录"
+  },
+  "finance": {
+    "invoice": {
+      "missingId": "账单 ID 缺失，无法发起支付",
+      "confirmCancel": "确认取消",
+      "notNow": "再想想",
+      "cancelled": "账单已取消",
+      "sessionExpired": "支付会话已失效，请刷新页面后重试",
+      "paid": "账单已支付",
+      "confirmPay": "确认支付",
+      "selectPaymentMethod": "请选择可用支付方式"
+    },
+    "records": {
+      "alipay": "支付宝",
+      "epay": "易支付",
+      "wechat": "微信支付"
+    }
+  },
+  "coupon": {
+    "plaza": {
+      "claimable": "可领取",
+      "claimedUp": "已领完",
+      "expired": "已过期"
+    },
+    "mine": {
+      "available": "可用",
+      "usedUp": "已用完"
+    },
+    "claimed": "领取成功"
+  },
+  "ticket": {
+    "replyStatus": {
+      "open": "开启",
+      "customerReplied": "客户回复",
+      "staffReplied": "员工回复",
+      "closed": "已关闭"
+    },
+    "department": {
+      "sales": "销售",
+      "support": "技术支持",
+      "billing": "财务",
+      "abuse": "投诉"
+    },
+    "priority": {
+      "urgent": "紧急"
+    },
+    "image": {
+      "unsupportedType": "仅支持 jpg、png、webp 图片",
+      "tooLarge": "单张图片不能超过 5MB",
+      "uploaded": "图片已上传"
+    },
+    "create": {
+      "titleRequired": "请输入工单标题",
+      "success": "工单提交成功"
+    },
+    "detail": {
+      "notFound": "工单不存在"
+    },
+    "reply": {
+      "uploading": "图片上传中，请稍后发送",
+      "contentRequired": "请输入回复内容或上传图片",
+      "sent": "回复已发送",
+      "recalled": "消息已撤回"
+    },
+    "close": {
+      "confirm": "确认关闭",
+      "success": "工单已关闭"
+    }
+  },
+  "referral": {
+    "time": "时间",
+    "sourceUser": "来源用户",
+    "product": "产品",
+    "orderType": "消费类型",
+    "orderAmount": "消费金额",
+    "rewardAmount": "奖励金额",
+    "user": "用户",
+    "email": "邮箱",
+    "referredAt": "被邀请时间",
+    "customerConsumption": "客户消费",
+    "earnings": "我的收益",
+    "withdrawMethod": "提现方式",
+    "withdrawAmount": "提现金额",
+    "account": "收款账户",
+    "event": "事件",
+    "changeAmount": "变动金额",
+    "remark": "说明"
   }
 }

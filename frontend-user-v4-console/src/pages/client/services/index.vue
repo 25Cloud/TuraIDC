@@ -467,6 +467,7 @@ import {
   resolveTdesignStatusTheme,
   useServiceCenter,
 } from '@/domains/services/useServiceCenter';
+import { t } from '@/locales';
 import { openPublicProducts } from '@/utils/publicSite';
 
 const {
@@ -560,12 +561,12 @@ function markServiceOsIconFailed(item: Record<string, any>) {
 }
 
 const columns: PrimaryTableCol[] = [
-  { colKey: 'service', title: '服务信息', minWidth: '18rem' },
-  { colKey: 'specs', title: '配置摘要', minWidth: '14rem' },
-  { colKey: 'expires', title: '到期时间', minWidth: '10rem' },
-  { colKey: 'status', title: '状态', width: '8rem' },
-  { colKey: 'ip', title: 'IP / 流量', minWidth: '10rem' },
-  { colKey: 'operation', title: '操作', width: '13rem', fixed: 'right', align: 'right' },
+  { colKey: 'service', title: t('client.services.service'), minWidth: '18rem' },
+  { colKey: 'specs', title: t('client.services.specSummary'), minWidth: '14rem' },
+  { colKey: 'expires', title: t('client.services.expiresAt'), minWidth: '10rem' },
+  { colKey: 'status', title: t('common.status'), width: '8rem' },
+  { colKey: 'ip', title: t('client.services.ipTraffic'), minWidth: '10rem' },
+  { colKey: 'operation', title: t('common.action'), width: '13rem', fixed: 'right', align: 'right' },
 ];
 
 function resolveDropdownValue(option: unknown) {

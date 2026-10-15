@@ -297,6 +297,7 @@ import type {
 } from '@/types/client';
 import { getErrorMessage } from '@/utils/error';
 import { formatMoney, formatShortDateTime as formatDate } from '@/utils/format';
+import { t } from '@/locales';
 
 interface ProductCard {
   key: string;
@@ -438,21 +439,21 @@ const supportGroupText = computed(() => siteBranding.supportGroupText || '加入
 const summaryCards = computed(() => [
   {
     key: 'balance',
-    label: '账户余额',
+    label: t('client.dashboard.accountBalance'),
     value: formatMoney(financeSummary.value.cash_balance),
     unit: '元',
     note: `ID: ${userIdText.value}`,
   },
   {
     key: 'recharge',
-    label: '本月充值',
+    label: t('client.dashboard.monthlyRecharge'),
     value: formatMoney(financeSummary.value.recharge_in),
     unit: '元',
     note: '财务入账汇总',
   },
   {
     key: 'payment',
-    label: '本月消费',
+    label: t('client.dashboard.monthlySpend'),
     value: formatMoney(financeSummary.value.invoice_payment_out),
     unit: '元',
     note: '本月账单支出',
@@ -460,7 +461,7 @@ const summaryCards = computed(() => [
   },
   {
     key: 'coupon',
-    label: '可用优惠券',
+    label: t('client.dashboard.availableCoupons'),
     value: String(Number(couponSummary.value.available || 0)),
     unit: '张',
     note: `总计 ${Number(couponSummary.value.total || 0)} 张`,
@@ -508,7 +509,7 @@ const productCards = computed<ProductCard[]>(() => {
   return [
     {
       key: 'cloud_server',
-      title: '云服务器',
+      title: t('client.dashboard.categoryCloudServer'),
       levelLabel: '一级分组',
       countText: '0 个',
       count: 0,
@@ -519,7 +520,7 @@ const productCards = computed<ProductCard[]>(() => {
     },
     {
       key: 'game_cloud',
-      title: '游戏云',
+      title: t('client.dashboard.categoryGameCloud'),
       levelLabel: '一级分组',
       countText: '0 个',
       count: 0,
@@ -530,7 +531,7 @@ const productCards = computed<ProductCard[]>(() => {
     },
     {
       key: 'cloud_desktop',
-      title: '云电脑',
+      title: t('client.dashboard.categoryCloudDesktop'),
       levelLabel: '一级分组',
       countText: '0 个',
       count: 0,
@@ -541,7 +542,7 @@ const productCards = computed<ProductCard[]>(() => {
     },
     {
       key: 'bare_metal',
-      title: '裸金属',
+      title: t('client.dashboard.categoryBareMetal'),
       levelLabel: '一级分组',
       countText: '0 个',
       count: 0,
@@ -563,7 +564,7 @@ const productCards = computed<ProductCard[]>(() => {
     },
     {
       key: 'web_hosting',
-      title: '虚拟主机',
+      title: t('client.dashboard.categoryWebHosting'),
       levelLabel: '一级分组',
       countText: '0 个',
       count: 0,
@@ -662,7 +663,7 @@ const openTicketCount = computed(() => recentTickets.value.filter((item) => Numb
 const todoItems = computed(() => [
   {
     key: 'invoice',
-    label: '待支付账单',
+    label: t('client.dashboard.todoUnpaidInvoices'),
     count: Number(financeSummary.value.unpaid_count || 0),
     path: '/client/invoices',
     icon: FileIcon,
@@ -670,7 +671,7 @@ const todoItems = computed(() => [
   },
   {
     key: 'ticket',
-    label: '待处理工单',
+    label: t('client.dashboard.todoOpenTickets'),
     count: openTicketCount.value,
     path: '/client/tickets',
     icon: ServiceIcon,
@@ -678,7 +679,7 @@ const todoItems = computed(() => [
   },
   {
     key: 'renew',
-    label: '即将到期服务',
+    label: t('client.dashboard.todoExpiringServices'),
     count: expiringServiceCount.value,
     path: '/client/services',
     icon: ServerIcon,
@@ -686,7 +687,7 @@ const todoItems = computed(() => [
   },
   {
     key: 'notice',
-    label: '未读公告',
+    label: t('client.dashboard.todoUnreadNotices'),
     count: unreadCount.value,
     path: '/client/notices',
     icon: NotificationIcon,
@@ -695,14 +696,14 @@ const todoItems = computed(() => [
 ]);
 
 const quickLinks = [
-  { label: '我的服务', path: '/client/services', icon: ServerIcon },
-  { label: '账单记录', path: '/client/invoices', icon: FileIcon },
-  { label: '充值记录', path: '/client/payments', icon: MoneyIcon },
-  { label: '工单支持', path: '/client/tickets', icon: ServiceIcon },
-  { label: '账户充值', path: '/client/recharge', icon: WalletIcon },
-  { label: '帮助中心', path: '/client/help', icon: HelpCircleIcon },
-  { label: '优惠券', path: '/client/coupons', icon: CouponIcon },
-  { label: '推荐奖励', path: '/client/referral', icon: GiftIcon },
+  { label: t('client.dashboard.quickMyServices'), path: '/client/services', icon: ServerIcon },
+  { label: t('client.dashboard.quickInvoiceRecords'), path: '/client/invoices', icon: FileIcon },
+  { label: t('client.dashboard.quickPaymentRecords'), path: '/client/payments', icon: MoneyIcon },
+  { label: t('client.dashboard.quickTicketSupport'), path: '/client/tickets', icon: ServiceIcon },
+  { label: t('client.dashboard.quickTopUp'), path: '/client/recharge', icon: WalletIcon },
+  { label: t('client.dashboard.quickHelpCenter'), path: '/client/help', icon: HelpCircleIcon },
+  { label: t('client.dashboard.quickCoupons'), path: '/client/coupons', icon: CouponIcon },
+  { label: t('client.dashboard.quickReferral'), path: '/client/referral', icon: GiftIcon },
 ];
 
 async function loadDashboard() {

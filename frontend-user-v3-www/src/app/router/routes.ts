@@ -4,6 +4,7 @@ import {
   seoLandingMetaPages,
 } from "@/data/seoLandingMeta";
 import type { RouteRecordRaw } from "vue-router";
+import { t } from '@/locales';
 
 const seoLandingRoutes: RouteRecordRaw[] = seoLandingMetaPages.map((page) => ({
   path: page.path.replace(/^\/+/, ""),
@@ -40,8 +41,8 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/products/index.vue"),
         ),
         meta: {
-          title: "产品与服务",
-          description: "浏览云服务器、独立服务器、云电脑与 IDC 产品方案。",
+          title: t('seo.products.title'),
+          description: t('seo.products.description'),
           canonical: "/products",
         },
       },
@@ -53,7 +54,7 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/products/index.vue"),
         ),
         meta: {
-          title: "产品与服务",
+          title: t('seo.products.title'),
           noSitemap: true,
           robots: "noindex,nofollow",
         },
@@ -65,7 +66,7 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/products/index.vue"),
         ),
         meta: {
-          title: "产品与服务",
+          title: t('seo.products.title'),
           noSitemap: true,
           robots: "noindex,nofollow",
         },
@@ -76,7 +77,7 @@ export const clientRoutes: RouteRecordRaw[] = [
         component: lazyRouteView(
           () => import("@/pages/website/ProductDetail/index.vue"),
         ),
-        meta: { title: "商品详情" },
+        meta: { title: t('seo.productDetail.title') },
       },
       {
         path: "about",
@@ -85,8 +86,8 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/about/index.vue"),
         ),
         meta: {
-          title: "关于我们",
-          description: "了解 IDC 服务能力、节点覆盖和平台优势。",
+          title: t('seo.about.title'),
+          description: t('seo.about.description'),
           canonical: "/about",
         },
       },
@@ -97,8 +98,8 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/legal-document/index.vue"),
         ),
         meta: {
-          title: "服务条款",
-          description: "查看服务条款。",
+          title: t('seo.terms.title'),
+          description: t('seo.terms.description'),
           canonical: "/terms",
           documentKey: "terms",
         },
@@ -110,8 +111,8 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/legal-document/index.vue"),
         ),
         meta: {
-          title: "隐私政策",
-          description: "查看隐私政策。",
+          title: t('seo.privacy.title'),
+          description: t('seo.privacy.description'),
           canonical: "/privacy",
           documentKey: "privacy",
         },
@@ -123,8 +124,8 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/notices/index.vue"),
         ),
         meta: {
-          title: "官方公告",
-          description: "查看平台公告和服务通知。",
+          title: t('seo.notices.title'),
+          description: t('seo.notices.description'),
           canonical: "/notices",
         },
       },
@@ -134,7 +135,7 @@ export const clientRoutes: RouteRecordRaw[] = [
         component: lazyRouteView(
           () => import("@/pages/website/notice-detail/index.vue"),
         ),
-        meta: { title: "公告详情" },
+        meta: { title: t('seo.noticeDetail.title') },
       },
       {
         path: "help",
@@ -143,8 +144,8 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/help/index.vue"),
         ),
         meta: {
-          title: "帮助中心",
-          description: "查看产品购买、账单支付和服务管理帮助。",
+          title: t('seo.help.title'),
+          description: t('seo.help.description'),
           canonical: "/help",
         },
       },
@@ -154,7 +155,7 @@ export const clientRoutes: RouteRecordRaw[] = [
         component: lazyRouteView(
           () => import("@/pages/website/help-detail/index.vue"),
         ),
-        meta: { title: "帮助详情" },
+        meta: { title: t('seo.helpDetail.title') },
       },
     ],
   },

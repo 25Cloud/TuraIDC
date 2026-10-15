@@ -135,6 +135,7 @@ import type { MemberLevelPayload, MemberLevelRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import { AdminPermissions } from '@/constants/permissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { t } from '@/locales';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { hasAdminPermission } from '@/utils/permission';
@@ -171,14 +172,14 @@ const rules: Record<string, FormRule[]> = {
 };
 
 const columns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'sort_order', title: '排序', width: 90 },
-  { colKey: 'level', title: '等级信息', minWidth: 220 },
-  { colKey: 'range', title: '累计销售额门槛', minWidth: 220 },
-  { colKey: 'rate', title: '返利比例', width: 130 },
-  { colKey: 'status', title: '状态', width: 110 },
-  { colKey: 'remark', title: '备注', minWidth: 180 },
-  { colKey: 'updatedAt', title: '更新时间', width: 170 },
-  { colKey: 'actions', title: '操作', fixed: 'right', width: 130 },
+  { colKey: 'sort_order', title: t('common.sort'), width: 90 },
+  { colKey: 'level', title: t('admin.memberLevels.levelInfo'), minWidth: 220 },
+  { colKey: 'range', title: t('admin.memberLevels.salesThreshold'), minWidth: 220 },
+  { colKey: 'rate', title: t('admin.memberLevels.rewardRate'), width: 130 },
+  { colKey: 'status', title: t('common.status'), width: 110 },
+  { colKey: 'remark', title: t('admin.memberLevels.remark'), minWidth: 180 },
+  { colKey: 'updatedAt', title: t('admin.memberLevels.updatedAt'), width: 170 },
+  { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 130 },
 ];
 const mobileActionOptions: DropdownOption[] = [
   { content: '编辑', value: 'edit' },
@@ -213,7 +214,7 @@ async function loadLevels() {
 
 function openCreateDialog() {
   if (!canManage.value) {
-    MessagePlugin.warning('当前账号无会员等级管理权限');
+    MessagePlugin.warning(t('admin.memberLevels.noPermission'));
     return;
   }
 
@@ -223,7 +224,7 @@ function openCreateDialog() {
 
 function openEditDialog(row: MemberLevelRecord) {
   if (!canManage.value) {
-    MessagePlugin.warning('当前账号无会员等级管理权限');
+    MessagePlugin.warning(t('admin.memberLevels.noPermission'));
     return;
   }
 
@@ -244,7 +245,7 @@ function openEditDialog(row: MemberLevelRecord) {
 
 async function submitForm() {
   if (!canManage.value) {
-    MessagePlugin.warning('当前账号无会员等级管理权限');
+    MessagePlugin.warning(t('admin.memberLevels.noPermission'));
     return;
   }
 
@@ -258,10 +259,10 @@ async function submitForm() {
   try {
     if (form.id) {
       await adminApi.memberLevels.update(form.id, payload);
-      MessagePlugin.success('会员等级已更新');
+      MessagePlugin.success(t('admin.memberLevels.updateSuccess'));
     } else {
       await adminApi.memberLevels.create(payload);
-      MessagePlugin.success('会员等级已创建');
+      MessagePlugin.success(t('admin.memberLevels.createSuccess'));
     }
     dialogVisible.value = false;
     await loadLevels();
@@ -275,7 +276,7 @@ async function submitForm() {
 function buildPayload(): MemberLevelPayload | null {
   const maxValue = form.sales_amount_max.trim();
   if (maxValue !== '' && Number.isNaN(Number(maxValue))) {
-    MessagePlugin.warning('累计销售额上限必须是有效数字');
+    MessagePlugin.warning(t('admin.memberLevels.salesMaxInvalid'));
     return null;
   }
   return {
@@ -292,7 +293,7 @@ function buildPayload(): MemberLevelPayload | null {
 
 function handleDelete(row: MemberLevelRecord) {
   if (!canManage.value) {
-    MessagePlugin.warning('当前账号无会员等级管理权限');
+    MessagePlugin.warning(t('admin.memberLevels.noPermission'));
     return;
   }
 
@@ -303,7 +304,7 @@ function handleDelete(row: MemberLevelRecord) {
     async onConfirm() {
       try {
         await adminApi.memberLevels.delete(row.id);
-        MessagePlugin.success('会员等级已删除');
+        MessagePlugin.success(t('admin.memberLevels.deleteSuccess'));
         dialog.destroy();
         await loadLevels();
       } catch (error) {

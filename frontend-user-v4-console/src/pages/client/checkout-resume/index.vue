@@ -33,6 +33,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import { formatBillingCycle } from '@/domains/finance/useRecords';
 import { openPublicProducts } from '@/utils/publicSite';
 import type { PendingWebsiteCheckout } from '@/utils/websiteCheckout';
@@ -89,10 +90,10 @@ const description = computed(() => {
 const payloadRows = computed(() => {
   const payload = orderPayload.value || {};
   const rows = [
-    { label: '来源', value: pendingCheckout.value?.source },
-    { label: '产品', value: payload.product_id },
-    { label: '周期', value: formatBillingCycle(payload.billing_cycle) },
-    { label: '数量', value: payload.quantity },
+    { label: t('checkoutResume.source'), value: pendingCheckout.value?.source },
+    { label: t('checkoutResume.product'), value: payload.product_id },
+    { label: t('checkoutResume.billingCycle'), value: formatBillingCycle(payload.billing_cycle) },
+    { label: t('checkoutResume.quantity'), value: payload.quantity },
   ];
 
   return rows
@@ -166,11 +167,11 @@ async function resumeCheckout() {
     });
     const invoiceId = Number(response.data?.id || response.data?.invoice?.id || 0);
     clearPendingWebsiteCheckout();
-    MessagePlugin.success('账单创建成功，正在跳转');
+    MessagePlugin.success(t('checkoutResume.created'));
     await router.replace(invoiceId > 0 ? `/client/invoices/${invoiceId}/pay` : '/client/invoices');
   } catch (error) {
     status.value = 'error';
-    errorMessage.value = error instanceof Error ? error.message : '账单创建失败，请稍后重试';
+    errorMessage.value = error instanceof Error ? error.message : t('checkoutResume.createFailed');
   }
 }
 

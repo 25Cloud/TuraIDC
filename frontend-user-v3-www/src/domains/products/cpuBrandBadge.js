@@ -1,5 +1,6 @@
 // CPU 品牌识别：按优先级匹配中英文，返回徽章信息；无法识别时兜底为 Intel。
 // 优先级：Core Ultra > 铂金(Platinum) > 金牌(Gold) > AMD(EPYC/Ryzen) > Xeon/E5(志强) > 兜底 Intel。
+import { t } from '@/locales';
 const BRAND_RULES = [
   {
     brand: "core-ultra",
@@ -12,14 +13,14 @@ const BRAND_RULES = [
     brand: "platinum",
     className: "--platinum",
     icon: "铂",
-    label: "铂金",
+    label: t('product.cpuBadge.platinumFull'),
     pattern: /铂金|Platinum/i,
   },
   {
     brand: "gold",
     className: "--gold",
     icon: "金",
-    label: "金牌",
+    label: t('product.cpuBadge.goldFull'),
     pattern: /金牌|Gold/i,
   },
   {
@@ -33,14 +34,14 @@ const BRAND_RULES = [
     brand: "xeon",
     className: "--xeon",
     icon: "至",
-    label: "至强",
+    label: t('product.cpuBadge.xeonFull'),
     pattern: /Xeon|E5|志强|至强/i,
   },
   {
     brand: "intel",
     className: "--intel",
     icon: "酷",
-    label: "酷睿",
+    label: t('product.cpuBadge.coreFull'),
     pattern: /Intel|酷睿|赛扬|Pentium/i,
   },
 ];
@@ -70,7 +71,7 @@ export function resolveCpuBrandBadge(label) {
   return {
     brand: "intel",
     icon: "酷",
-    label: "酷睿",
+    label: t('product.cpuBadge.coreFull'),
     className: "--intel",
   };
 }

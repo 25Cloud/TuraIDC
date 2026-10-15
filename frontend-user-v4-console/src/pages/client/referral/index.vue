@@ -138,6 +138,7 @@
 import { LinkIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 
+import { t } from '@/locales';
 import { accountEventLabel, money, rewardStatus, useReferral, withdrawStatus } from '@/domains/marketing/useReferral';
 
 const {
@@ -167,33 +168,33 @@ const {
 } = useReferral();
 
 const rewardColumns: PrimaryTableCol[] = [
-  { colKey: 'rewarded_at', title: '时间', minWidth: '12rem' },
-  { colKey: 'user', title: '来源用户', minWidth: '10rem' },
-  { colKey: 'product', title: '产品', minWidth: '14rem' },
-  { colKey: 'order_type', title: '消费类型', width: '8rem' },
-  { colKey: 'order_amount', title: '消费金额', width: '8rem' },
-  { colKey: 'amount', title: '奖励金额', width: '8rem' },
-  { colKey: 'status', title: '状态', width: '8rem' },
+  { colKey: 'rewarded_at', title: t('referral.time'), minWidth: '12rem' },
+  { colKey: 'user', title: t('referral.sourceUser'), minWidth: '10rem' },
+  { colKey: 'product', title: t('referral.product'), minWidth: '14rem' },
+  { colKey: 'order_type', title: t('referral.orderType'), width: '8rem' },
+  { colKey: 'order_amount', title: t('referral.orderAmount'), width: '8rem' },
+  { colKey: 'amount', title: t('referral.rewardAmount'), width: '8rem' },
+  { colKey: 'status', title: t('common.status'), width: '8rem' },
 ];
 const directColumns: PrimaryTableCol[] = [
-  { colKey: 'user', title: '用户', minWidth: '10rem' },
-  { colKey: 'email', title: '邮箱', minWidth: '14rem' },
-  { colKey: 'referred_at', title: '被邀请时间', minWidth: '12rem' },
-  { colKey: 'consumption', title: '客户消费', width: '8rem' },
-  { colKey: 'earnings', title: '我的收益', width: '8rem' },
+  { colKey: 'user', title: t('referral.user'), minWidth: '10rem' },
+  { colKey: 'email', title: t('referral.email'), minWidth: '14rem' },
+  { colKey: 'referred_at', title: t('referral.referredAt'), minWidth: '12rem' },
+  { colKey: 'consumption', title: t('referral.customerConsumption'), width: '8rem' },
+  { colKey: 'earnings', title: t('referral.earnings'), width: '8rem' },
 ];
 const withdrawColumns: PrimaryTableCol[] = [
-  { colKey: 'created_at', title: '时间', minWidth: '12rem' },
-  { colKey: 'method', title: '提现方式', width: '8rem' },
-  { colKey: 'amount', title: '提现金额', width: '8rem' },
-  { colKey: 'account', title: '收款账户', minWidth: '14rem' },
-  { colKey: 'status', title: '状态', width: '8rem' },
+  { colKey: 'created_at', title: t('referral.time'), minWidth: '12rem' },
+  { colKey: 'method', title: t('referral.withdrawMethod'), width: '8rem' },
+  { colKey: 'amount', title: t('referral.withdrawAmount'), width: '8rem' },
+  { colKey: 'account', title: t('referral.account'), minWidth: '14rem' },
+  { colKey: 'status', title: t('common.status'), width: '8rem' },
 ];
 const logColumns: PrimaryTableCol[] = [
-  { colKey: 'created_at', title: '时间', minWidth: '12rem' },
-  { colKey: 'event_type', title: '事件', width: '9rem' },
-  { colKey: 'amount', title: '变动金额', width: '9rem' },
-  { colKey: 'remark', title: '说明', minWidth: '14rem' },
+  { colKey: 'created_at', title: t('referral.time'), minWidth: '12rem' },
+  { colKey: 'event_type', title: t('referral.event'), width: '9rem' },
+  { colKey: 'amount', title: t('referral.changeAmount'), width: '9rem' },
+  { colKey: 'remark', title: t('referral.remark'), minWidth: '14rem' },
 ];
 </script>
 <style scoped lang="less">

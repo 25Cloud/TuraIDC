@@ -710,6 +710,7 @@ import { fieldValue, formatDateTime } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
 
 import LogDetailDrawer from './components/LogDetailDrawer.vue';
+import { t } from '@/locales';
 
 type LogTab =
   | 'system'
@@ -811,103 +812,103 @@ const httpStatusOptions = [200, 201, 204, 400, 401, 403, 404, 422, 500].map((val
   value,
 }));
 const notifyStatusOptions = [
-  { label: '待发送', value: 'pending' },
-  { label: '发送成功', value: 'success' },
-  { label: '发送失败', value: 'failed' },
+  { label: t('logs.notify.pending'), value: 'pending' },
+  { label: t('logs.notify.sent'), value: 'success' },
+  { label: t('logs.notify.failed'), value: 'failed' },
 ];
 const gatewayOptions = [
-  { label: '支付宝', value: 'alipay' },
-  { label: '微信支付', value: 'wechat' },
+  { label: t('logs.gateway.alipay'), value: 'alipay' },
+  { label: t('logs.gateway.wechat'), value: 'wechat' },
   { label: 'Stripe', value: 'stripe' },
-  { label: '支付宝当面付（历史）', value: 'alipay_f2f' },
+  { label: t('logs.gateway.alipayF2f'), value: 'alipay_f2f' },
 ];
 const gatewayActionOptions = [
-  { label: '预下单', value: 'precreate' },
-  { label: '回调通知', value: 'notify' },
-  { label: '主动查询', value: 'query' },
-  { label: '退款', value: 'refund' },
+  { label: t('logs.gateway.actionPrecreate'), value: 'precreate' },
+  { label: t('logs.gateway.actionNotify'), value: 'notify' },
+  { label: t('logs.gateway.actionQuery'), value: 'query' },
+  { label: t('logs.gateway.actionRefund'), value: 'refund' },
 ];
 const gatewayResultOptions = [
-  { label: '成功', value: 'success' },
-  { label: '失败', value: 'failed' },
-  { label: '处理中', value: 'pending' },
-  { label: '未知', value: 'unknown' },
+  { label: t('logs.status.success'), value: 'success' },
+  { label: t('logs.status.failed'), value: 'failed' },
+  { label: t('logs.status.processing'), value: 'pending' },
+  { label: t('logs.status.unknown'), value: 'unknown' },
 ];
 const activitySubjectOptions = [
-  { label: '账单', value: 'invoice' },
-  { label: '订单', value: 'order' },
-  { label: '支付', value: 'payment' },
-  { label: '服务', value: 'service' },
-  { label: '用户', value: 'user' },
-  { label: '工单', value: 'ticket' },
-  { label: '商品', value: 'product' },
-  { label: '优惠券', value: 'coupon' },
-  { label: '系统', value: 'system' },
+  { label: t('logs.activity.invoice'), value: 'invoice' },
+  { label: t('logs.activity.order'), value: 'order' },
+  { label: t('logs.activity.payment'), value: 'payment' },
+  { label: t('logs.activity.service'), value: 'service' },
+  { label: t('logs.activity.user'), value: 'user' },
+  { label: t('logs.index.ticketLabel'), value: 'ticket' },
+  { label: t('logs.activity.product'), value: 'product' },
+  { label: t('logs.activity.coupon'), value: 'coupon' },
+  { label: t('logs.activity.system'), value: 'system' },
 ];
 const taskLogOptions = [
-  { value: 'refresh-hosting-panel-auth', label: '接口认证刷新' },
-  { value: 'service-auto-renew', label: '服务自动续费' },
-  { value: 'referral-release-rewards', label: '推荐奖励释放' },
-  { value: 'service-lifecycle-maintenance', label: '服务生命周期维护' },
-  { value: 'service-status-sync', label: '用户产品状态同步' },
-  { value: 'billing-maintenance', label: '账单自动化维护' },
-  { value: 'product-upstream-config-sync', label: '上游产品配置同步' },
-  { value: 'coupon-campaign-dispatch', label: '优惠券活动发放' },
-  { value: 'ticket-auto-close', label: '工单自动关闭' },
-  { value: 'order-cleanup', label: '账单与充值清理' },
+  { value: 'refresh-hosting-panel-auth', label: t('logs.task.refreshPanelAuth') },
+  { value: 'service-auto-renew', label: t('logs.task.serviceAutoRenew') },
+  { value: 'referral-release-rewards', label: t('logs.task.referralRewardRelease') },
+  { value: 'service-lifecycle-maintenance', label: t('logs.task.serviceLifecycle') },
+  { value: 'service-status-sync', label: t('logs.task.serviceStatusSync') },
+  { value: 'billing-maintenance', label: t('logs.task.billingMaintenance') },
+  { value: 'product-upstream-config-sync', label: t('logs.task.productConfigSync') },
+  { value: 'coupon-campaign-dispatch', label: t('logs.task.couponCampaignDispatch') },
+  { value: 'ticket-auto-close', label: t('logs.task.ticketAutoClose') },
+  { value: 'order-cleanup', label: t('logs.task.billingCleanup') },
 ];
 const logMeta: Record<LogTab, { title: string; description: string; filters: string[]; keyword: string }> = {
   system: {
-    title: '系统日志',
-    description: '业务操作审计日志，记录谁在什么时间、什么 IP 做了什么操作。',
+    title: t('logs.tab.system'),
+    description: t('logs.tab.systemDesc'),
     filters: ['actor_keyword', 'description_keyword', 'ip_address', 'module', 'actor_type', 'subject_type', 'date'],
     keyword: '操作人、模块或描述',
   },
   runtime: {
-    title: '运行日志',
-    description: '查看应用运行日志、警告与错误信息。',
+    title: t('logs.tab.runtime'),
+    description: t('logs.tab.runtimeDesc'),
     filters: ['level', 'plugin_id', 'gateway_key', 'driver_key', 'trace_id', 'keyword', 'date'],
     keyword: '日志内容、插件 key 或 Trace ID',
   },
   'admin-logins': {
-    title: '管理员登录日志',
-    description: '记录管理员账号最近登录情况。',
+    title: t('logs.tab.adminLogin'),
+    description: t('logs.tab.adminLoginDesc'),
     filters: ['keyword', 'date'],
     keyword: '账号、昵称、角色或 IP',
   },
   api: {
-    title: 'API 日志',
-    description: '审计后台与客户端接口访问情况。',
+    title: t('logs.tab.api'),
+    description: t('logs.tab.apiDesc'),
     filters: ['keyword', 'method', 'module', 'user_type', 'status', 'date'],
     keyword: '路径、模块、请求号或 IP',
   },
   sms: {
-    title: '短信日志',
-    description: '查看短信发送状态、请求号与失败原因。',
+    title: t('logs.tab.sms'),
+    description: t('logs.tab.smsDesc'),
     filters: ['phone', 'plugin_id', 'driver_key', 'trace_id', 'keyword', 'status'],
     keyword: '搜索模板编号、请求号或内容',
   },
   email: {
-    title: '邮件日志',
-    description: '查看邮件发送状态、失败原因与内容摘要。',
+    title: t('logs.tab.email'),
+    description: t('logs.tab.emailDesc'),
     filters: ['email', 'plugin_id', 'driver_key', 'trace_id', 'keyword', 'status'],
     keyword: '搜索模板编号、主题或正文关键词',
   },
   tasks: {
-    title: '自动任务日志',
-    description: '聚合展示调度任务执行结果、错误级别和原始日志内容。',
+    title: t('logs.tab.task'),
+    description: t('logs.tab.taskDesc'),
     filters: ['task_key', 'status', 'level', 'keyword', 'date'],
     keyword: '任务名称或日志内容',
   },
   gateway: {
-    title: '网关日志',
-    description: '支付网关请求/响应日志，含交易号、状态与错误信息。',
+    title: t('logs.tab.gateway'),
+    description: t('logs.tab.gatewayDesc'),
     filters: ['keyword', 'gateway', 'gateway_key', 'plugin_id', 'trace_id', 'action', 'result_status', 'date'],
     keyword: '交易号、网关名、Trace ID 或错误信息',
   },
   upstream: {
-    title: '工单推送日志',
-    description: '查看工单提交、回复推送、跳过和失败原因。',
+    title: t('logs.tab.ticketPush'),
+    description: t('logs.tab.ticketPushDesc'),
     filters: [
       'keyword',
       'ticket_id',
@@ -923,8 +924,8 @@ const logMeta: Record<LogTab, { title: string; description: string; filters: str
     keyword: '工单号、原因或日志内容',
   },
   'upstream-uploads': {
-    title: '上传/清理日志',
-    description: '上游附件上传成功、凭证校验、限流/白名单拒绝与未使用文件清理记录。',
+    title: t('logs.tab.upload'),
+    description: t('logs.tab.uploadDesc'),
     filters: ['level', 'keyword', 'date'],
     keyword: '上传、清理或拒绝原因',
   },
@@ -932,110 +933,110 @@ const logMeta: Record<LogTab, { title: string; description: string; filters: str
 
 const baseLogColumns: Record<LogTab, PrimaryTableCol<RecordRow>[]> = {
   system: [
-    { colKey: 'time', title: '时间', width: 170 },
-    { colKey: 'primary', title: '操作人', minWidth: 180 },
-    { colKey: 'actor_type', title: '操作人类型', width: 120 },
-    { colKey: 'message', title: '描述', minWidth: 320 },
-    { colKey: 'ip_address', title: 'IP 地址', width: 150 },
-    { colKey: 'subject_type', title: '关联对象', width: 140 },
-    { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
+    { colKey: 'time', title: t('logs.index.time'), width: 170 },
+    { colKey: 'primary', title: t('logs.index.actor'), minWidth: 180 },
+    { colKey: 'actor_type', title: t('logs.index.actorType'), width: 120 },
+    { colKey: 'message', title: t('logs.index.description'), minWidth: 320 },
+    { colKey: 'ip_address', title: t('logs.index.ipAddress'), width: 150 },
+    { colKey: 'subject_type', title: t('logs.index.relatedObject'), width: 140 },
+    { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 90 },
   ],
   runtime: [
-    { colKey: 'time', title: '记录时间', width: 170 },
-    { colKey: 'level', title: '级别', width: 100 },
-    { colKey: 'plugin_key', title: '插件 key', minWidth: 120, ellipsis: true },
+    { colKey: 'time', title: t('logs.index.recordedAt'), width: 170 },
+    { colKey: 'level', title: t('logs.index.level'), width: 100 },
+    { colKey: 'plugin_key', title: t('logs.index.pluginKey'), minWidth: 120, ellipsis: true },
     { colKey: 'trace_id', title: 'Trace ID', minWidth: 180, ellipsis: true },
-    { colKey: 'message', title: '日志内容', minWidth: 520 },
-    { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
+    { colKey: 'message', title: t('logs.index.content'), minWidth: 520 },
+    { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 90 },
   ],
   'admin-logins': [
-    { colKey: 'primary', title: '账号信息', minWidth: 230 },
-    { colKey: 'role_name', title: '角色', minWidth: 140 },
-    { colKey: 'ip_address', title: '登录 IP', minWidth: 150 },
-    { colKey: 'time', title: '登录时间', width: 170 },
-    { colKey: 'status', title: '来源', width: 120 },
-    { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
+    { colKey: 'primary', title: t('logs.index.accountInfo'), minWidth: 230 },
+    { colKey: 'role_name', title: t('logs.index.role'), minWidth: 140 },
+    { colKey: 'ip_address', title: t('logs.index.loginIp'), minWidth: 150 },
+    { colKey: 'time', title: t('logs.index.loginAt'), width: 170 },
+    { colKey: 'status', title: t('logs.index.source'), width: 120 },
+    { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 90 },
   ],
   api: [
-    { colKey: 'request', title: '请求', minWidth: 320 },
-    { colKey: 'httpStatus', title: '状态码', width: 100 },
-    { colKey: 'module', title: '模块', minWidth: 120 },
-    { colKey: 'primary', title: '调用端', minWidth: 160 },
+    { colKey: 'request', title: t('logs.index.request'), minWidth: 320 },
+    { colKey: 'httpStatus', title: t('logs.index.statusCode'), width: 100 },
+    { colKey: 'module', title: t('logs.index.module'), minWidth: 120 },
+    { colKey: 'primary', title: t('logs.index.caller'), minWidth: 160 },
     { colKey: 'ip_address', title: 'IP', minWidth: 140 },
-    { colKey: 'time', title: '记录时间', width: 170 },
-    { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
+    { colKey: 'time', title: t('logs.index.recordedAt'), width: 170 },
+    { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 90 },
   ],
   sms: [
     { colKey: 'id', title: 'ID', width: 72 },
-    { colKey: 'primary', title: '接收信息', minWidth: 200 },
-    { colKey: 'template_code', title: '模板编号', width: 116, ellipsis: true },
-    { colKey: 'message', title: '内容摘要', minWidth: 240 },
-    { colKey: 'status', title: '状态', width: 100 },
-    { colKey: 'driver_key', title: '驱动 key', minWidth: 112, ellipsis: true },
+    { colKey: 'primary', title: t('logs.index.receiver'), minWidth: 200 },
+    { colKey: 'template_code', title: t('logs.index.templateCode'), width: 116, ellipsis: true },
+    { colKey: 'message', title: t('logs.index.contentSummary'), minWidth: 240 },
+    { colKey: 'status', title: t('common.status'), width: 100 },
+    { colKey: 'driver_key', title: t('logs.index.driverKeyLabel'), minWidth: 112, ellipsis: true },
     { colKey: 'trace_id', title: 'Trace ID', minWidth: 150, ellipsis: true },
-    { colKey: 'request_id', title: '请求号', minWidth: 150, ellipsis: true },
-    { colKey: 'error', title: '错误信息', minWidth: 190 },
-    { colKey: 'time', title: '创建时间', width: 156 },
-    { colKey: 'actions', title: '操作', fixed: 'right', width: 80 },
+    { colKey: 'request_id', title: t('logs.index.requestId'), minWidth: 150, ellipsis: true },
+    { colKey: 'error', title: t('logs.index.errorMessage'), minWidth: 190 },
+    { colKey: 'time', title: t('logs.index.createdAt'), width: 156 },
+    { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 80 },
   ],
   email: [
     { colKey: 'id', title: 'ID', width: 72 },
-    { colKey: 'primary', title: '收件信息', minWidth: 200 },
-    { colKey: 'template_code', title: '模板编号', width: 116, ellipsis: true },
-    { colKey: 'subject', title: '主题', minWidth: 200, ellipsis: true },
-    { colKey: 'message', title: '正文摘要', minWidth: 240 },
-    { colKey: 'status', title: '状态', width: 100 },
-    { colKey: 'driver_key', title: '驱动 key', minWidth: 112, ellipsis: true },
+    { colKey: 'primary', title: t('logs.index.recipient'), minWidth: 200 },
+    { colKey: 'template_code', title: t('logs.index.templateCode'), width: 116, ellipsis: true },
+    { colKey: 'subject', title: t('logs.index.subject'), minWidth: 200, ellipsis: true },
+    { colKey: 'message', title: t('logs.index.bodySummary'), minWidth: 240 },
+    { colKey: 'status', title: t('common.status'), width: 100 },
+    { colKey: 'driver_key', title: t('logs.index.driverKeyLabel'), minWidth: 112, ellipsis: true },
     { colKey: 'trace_id', title: 'Trace ID', minWidth: 150, ellipsis: true },
-    { colKey: 'error', title: '错误信息', minWidth: 190 },
-    { colKey: 'time', title: '创建时间', width: 156 },
-    { colKey: 'actions', title: '操作', fixed: 'right', width: 80 },
+    { colKey: 'error', title: t('logs.index.errorMessage'), minWidth: 190 },
+    { colKey: 'time', title: t('logs.index.createdAt'), width: 156 },
+    { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 80 },
   ],
   tasks: [
-    { colKey: 'time', title: '记录时间', width: 170 },
-    { colKey: 'primary', title: '任务', minWidth: 220 },
-    { colKey: 'status', title: '状态', width: 110 },
-    { colKey: 'level', title: '级别', width: 100 },
-    { colKey: 'duration_ms', title: '耗时(ms)', width: 110 },
-    { colKey: 'message', title: '摘要', minWidth: 360 },
-    { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
+    { colKey: 'time', title: t('logs.index.recordedAt'), width: 170 },
+    { colKey: 'primary', title: t('logs.index.task'), minWidth: 220 },
+    { colKey: 'status', title: t('common.status'), width: 110 },
+    { colKey: 'level', title: t('logs.index.level'), width: 100 },
+    { colKey: 'duration_ms', title: t('logs.index.durationMs'), width: 110 },
+    { colKey: 'message', title: t('logs.index.summary'), minWidth: 360 },
+    { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 90 },
   ],
   gateway: [
-    { colKey: 'time', title: '记录时间', width: 170 },
-    { colKey: 'gateway', title: '网关', width: 110 },
-    { colKey: 'gateway_key', title: '业务 key', minWidth: 120, ellipsis: true },
-    { colKey: 'action', title: '操作', width: 110 },
-    { colKey: 'out_trade_no', title: '商户单号', minWidth: 180, ellipsis: true },
-    { colKey: 'trade_no', title: '交易号', minWidth: 180, ellipsis: true },
+    { colKey: 'time', title: t('logs.index.recordedAt'), width: 170 },
+    { colKey: 'gateway', title: t('logs.index.gatewayLabel'), width: 110 },
+    { colKey: 'gateway_key', title: t('logs.index.gatewayKeyLabel'), minWidth: 120, ellipsis: true },
+    { colKey: 'action', title: t('common.action'), width: 110 },
+    { colKey: 'out_trade_no', title: t('logs.index.merchantOrderNo'), minWidth: 180, ellipsis: true },
+    { colKey: 'trade_no', title: t('logs.index.tradeNo'), minWidth: 180, ellipsis: true },
     { colKey: 'trace_id', title: 'Trace ID', minWidth: 170, ellipsis: true },
-    { colKey: 'result_status', title: '结果', width: 90 },
-    { colKey: 'error_msg', title: '错误信息', minWidth: 150, ellipsis: true },
-    { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
+    { colKey: 'result_status', title: t('logs.index.result'), width: 90 },
+    { colKey: 'error_msg', title: t('logs.index.errorMessage'), minWidth: 150, ellipsis: true },
+    { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 90 },
   ],
   upstream: [
-    { colKey: 'time', title: '发生时间', width: 170 },
-    { colKey: 'ticket_id', title: '工单号', width: 100 },
-    { colKey: 'operation', title: '操作', width: 130 },
-    { colKey: 'event', title: '事件', width: 110 },
-    { colKey: 'status', title: '状态', width: 100 },
-    { colKey: 'reason_code', title: '原因码', minWidth: 170, ellipsis: true },
-    { colKey: 'message', title: '结果说明', minWidth: 320 },
-    { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
+    { colKey: 'time', title: t('logs.index.occurredAt'), width: 170 },
+    { colKey: 'ticket_id', title: t('logs.index.ticketNo'), width: 100 },
+    { colKey: 'operation', title: t('common.action'), width: 130 },
+    { colKey: 'event', title: t('logs.index.event'), width: 110 },
+    { colKey: 'status', title: t('common.status'), width: 100 },
+    { colKey: 'reason_code', title: t('logs.index.reasonCode'), minWidth: 170, ellipsis: true },
+    { colKey: 'message', title: t('logs.index.resultMessage'), minWidth: 320 },
+    { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 90 },
   ],
   'upstream-uploads': [
-    { colKey: 'time', title: '记录时间', width: 170 },
-    { colKey: 'level', title: '级别', width: 100 },
-    { colKey: 'message', title: '日志内容', minWidth: 520 },
-    { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
+    { colKey: 'time', title: t('logs.index.recordedAt'), width: 170 },
+    { colKey: 'level', title: t('logs.index.level'), width: 100 },
+    { colKey: 'message', title: t('logs.index.content'), minWidth: 520 },
+    { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 90 },
   ],
 };
 const scheduleColumns: PrimaryTableCol<RecordRow>[] = [
-  { colKey: 'task', title: '任务名称', minWidth: 260 },
-  { colKey: 'cycle', title: '刷新周期', minWidth: 180 },
-  { colKey: 'last', title: '最后执行', width: 170 },
-  { colKey: 'level', title: '状态', width: 110 },
-  { colKey: 'next', title: '下次执行', width: 170 },
-  { colKey: 'actions', title: '操作', fixed: 'right', width: 120 },
+  { colKey: 'task', title: t('logs.index.taskName'), minWidth: 260 },
+  { colKey: 'cycle', title: t('logs.index.refreshCycle'), minWidth: 180 },
+  { colKey: 'last', title: t('logs.index.lastRun'), width: 170 },
+  { colKey: 'level', title: t('common.status'), width: 110 },
+  { colKey: 'next', title: t('logs.index.nextRun'), width: 170 },
+  { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 120 },
 ];
 const currentLogMeta = computed(() => (isLogTab(activeTab.value) ? logMeta[activeTab.value] : logMeta.system));
 const logTableColumns = computed(() => (isLogTab(activeTab.value) ? baseLogColumns[activeTab.value] : []));
@@ -1092,16 +1093,16 @@ const statusPlaceholder = computed(() => {
   return '全部发送状态';
 });
 const taskStatusOptions = [
-  { label: '成功', value: 'success' },
-  { label: '失败', value: 'failed' },
-  { label: '跳过', value: 'skipped' },
+  { label: t('logs.status.success'), value: 'success' },
+  { label: t('logs.status.failed'), value: 'failed' },
+  { label: t('logs.status.skipped'), value: 'skipped' },
 ];
 const upstreamStatusOptions = [
-  { label: '等待发送', value: 'pending' },
-  { label: '发送中', value: 'sending' },
-  { label: '已转发', value: 'delivered' },
-  { label: '转发失败', value: 'failed' },
-  { label: '未转发', value: 'skipped' },
+  { label: t('logs.forward.pending'), value: 'pending' },
+  { label: t('logs.forward.sending'), value: 'sending' },
+  { label: t('logs.forward.delivered'), value: 'delivered' },
+  { label: t('logs.forward.failed'), value: 'failed' },
+  { label: t('logs.forward.notForwarded'), value: 'skipped' },
 ];
 const statusOptions = computed(() => {
   if (activeTab.value === 'api') return httpStatusOptions;
@@ -1125,15 +1126,15 @@ const scheduleSourceOptions = computed(() => [
 const scheduleTaskGroups = computed(() => [
   {
     key: 'system',
-    title: '系统任务',
-    description: '核心自动化',
+    title: t('logs.index.systemTasks'),
+    description: t('logs.schedule.coreAutomation'),
     theme: 'primary' as const,
     tasks: scheduleSystemTasks.value,
   },
   {
     key: 'third_party',
-    title: '第三方任务',
-    description: '插件 / Addon / Hook',
+    title: t('logs.index.thirdPartyTasks'),
+    description: t('logs.schedule.pluginAddonHook'),
     theme: 'warning' as const,
     tasks: scheduleThirdPartyTasks.value,
   },
@@ -1160,7 +1161,7 @@ const scheduleEnvAlerts = computed(() => {
   const mutexEnabled = Boolean(mutex.enabled);
   alerts.push({
     key: 'mutex',
-    label: '调度互斥',
+    label: t('logs.schedule.mutex'),
     value: mutexEnabled ? '已启用' : '降级中',
     detail: mutexEnabled
       ? String(mutex.mode || 'without_overlapping')
@@ -1173,7 +1174,7 @@ const scheduleEnvAlerts = computed(() => {
   if (businessQueue && automationQueue) {
     alerts.push({
       key: 'queue_isolation',
-      label: '队列隔离',
+      label: t('logs.schedule.queueIsolation'),
       value: '业务与定时已分离',
       detail: `业务：${businessQueue}；定时：${automationQueue}`,
       theme: 'success',
@@ -1184,7 +1185,7 @@ const scheduleEnvAlerts = computed(() => {
   if (typeof pendingJobs === 'number') {
     alerts.push({
       key: 'pending_jobs',
-      label: '待处理任务',
+      label: t('logs.schedule.pendingJobs'),
       value: String(pendingJobs),
       detail: env.queue_runtime_mode ? `队列模式：${env.queue_runtime_mode}` : undefined,
       theme: pendingJobs > 50 ? 'danger' : pendingJobs > 10 ? 'warning' : 'success',
@@ -1195,7 +1196,7 @@ const scheduleEnvAlerts = computed(() => {
   if (typeof failedJobs === 'number') {
     alerts.push({
       key: 'failed_jobs',
-      label: '失败队列任务',
+      label: t('logs.schedule.failedJobs'),
       value: String(failedJobs),
       detail: failedJobs > 0 ? 'failed_jobs 表累计失败记录，建议排查后重试或清理' : undefined,
       theme: failedJobs > 0 ? 'danger' : 'success',
@@ -1206,7 +1207,7 @@ const scheduleEnvAlerts = computed(() => {
   if (automationStatus !== 'loaded') {
     alerts.push({
       key: 'automation_config',
-      label: '自动化配置',
+      label: t('logs.schedule.automationConfig'),
       value: automationStatus === 'fallback_default' ? '回退默认' : automationStatus,
       detail: String(scheduleAutomationConfig.value.fallback_reason || '配置读取失败'),
       theme: 'warning',
@@ -1231,23 +1232,23 @@ const cleanupTypes = computed(() => asArray(cleanupOverview.value.supported_clea
 const databaseCards = computed(() => {
   const database = toRecord(cleanupOverview.value.database);
   return [
-    { key: 'sms', label: '短信日志', value: numberText(database.sms) },
-    { key: 'email', label: '邮件日志', value: numberText(database.email) },
-    { key: 'api', label: 'API 日志', value: numberText(database.api) },
-    { key: 'admin_login', label: '管理员登录日志', value: numberText(database.admin_login) },
-    { key: 'schedule_run', label: '调度执行日志', value: numberText(database.schedule_run) },
-    { key: 'ticket_upstream', label: '工单推送日志', value: numberText(database.ticket_upstream) },
+    { key: 'sms', label: t('logs.index.databaseSms'), value: numberText(database.sms) },
+    { key: 'email', label: t('logs.index.databaseEmail'), value: numberText(database.email) },
+    { key: 'api', label: t('logs.index.databaseApi'), value: numberText(database.api) },
+    { key: 'admin_login', label: t('logs.index.databaseAdminLogin'), value: numberText(database.admin_login) },
+    { key: 'schedule_run', label: t('logs.index.databaseScheduleRun'), value: numberText(database.schedule_run) },
+    { key: 'ticket_upstream', label: t('logs.index.databaseTicketPush'), value: numberText(database.ticket_upstream) },
   ];
 });
 const fileCards = computed(() => {
   const file = toRecord(cleanupOverview.value.file);
   return [
-    { key: 'exists', label: '日志文件状态', value: file.exists ? '存在' : '缺失' },
-    { key: 'size_bytes', label: '文件大小', value: formatBytes(file.size_bytes) },
-    { key: 'task_log_count', label: '自动任务日志条数', value: numberText(file.task_log_count) },
+    { key: 'exists', label: t('logs.index.fileStatus'), value: file.exists ? '存在' : '缺失' },
+    { key: 'size_bytes', label: t('logs.index.fileSize'), value: formatBytes(file.size_bytes) },
+    { key: 'task_log_count', label: t('logs.index.taskLogCount'), value: numberText(file.task_log_count) },
     {
       key: 'runtime_log_count',
-      label: '运行日志条数',
+      label: t('logs.index.runtimeLogCount'),
       value: numberText(file.runtime_log_count ?? file.system_log_count),
     },
   ];
@@ -1448,7 +1449,7 @@ async function loadScheduleOverview() {
 
 async function triggerTask(row: TableRowData) {
   if (!canTriggerSchedules.value) {
-    MessagePlugin.warning('当前账号缺少 schedule.trigger 权限');
+    MessagePlugin.warning(t('logs.schedule.triggerForbidden'));
     return;
   }
 
@@ -1464,7 +1465,7 @@ async function triggerTask(row: TableRowData) {
         queue: '已进入队列',
       }[String(response.execution_mode || '').toLowerCase()] || '已提交执行';
     MessagePlugin.success(`${fieldValue(row.title || row.key)}${modeText}`);
-    MessagePlugin.info('自动化任务通常需要 1 分钟左右执行完成，请稍候查看状态。');
+    MessagePlugin.info(t('logs.schedule.runningTip'));
     await loadScheduleOverview();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, `${fieldValue(row.title || row.key)}执行失败`));
@@ -1488,19 +1489,19 @@ async function loadCleanupOverview() {
 
 async function handleCleanup() {
   if (!canManageLogCleanup.value) {
-    MessagePlugin.warning('当前账号缺少 log.manage 权限');
+    MessagePlugin.warning(t('logs.cleanup.forbidden'));
     return;
   }
   if (!cleanupForm.type) {
-    MessagePlugin.warning('请选择清理类型');
+    MessagePlugin.warning(t('logs.index.selectCleanupType'));
     return;
   }
   if (!Number.isFinite(Number(cleanupForm.keep_days)) || Number(cleanupForm.keep_days) < 1) {
-    MessagePlugin.warning('保留天数必须大于 0');
+    MessagePlugin.warning(t('logs.cleanup.keepDaysPositive'));
     return;
   }
   if (cleanupForm.confirm_text.trim() !== '立即清理') {
-    MessagePlugin.warning('确认文本必须为 立即清理');
+    MessagePlugin.warning(t('logs.cleanup.confirmTextMismatch'));
     return;
   }
   cleanupSubmitting.value = true;
@@ -1512,7 +1513,7 @@ async function handleCleanup() {
     });
     cleanupForm.confirm_text = '';
     await loadCleanupOverview();
-    MessagePlugin.success('日志清理完成');
+    MessagePlugin.success(t('logs.cleanup.done'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '日志清理失败'));
   } finally {
@@ -1655,7 +1656,7 @@ function copyId(label: string, id: string) {
   const value = `${label}:${id}`;
   navigator.clipboard.writeText(value).then(
     () => MessagePlugin.success(`已复制 ${value}`),
-    () => MessagePlugin.warning('复制失败，请手动选择'),
+    () => MessagePlugin.warning(t('logs.copyFailed')),
   );
   const routePath = routeForIdSegment(label, id);
   if (routePath) {

@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { clientAuthApi } from '@/api/auth';
 import { useUserStore } from '@/store';
 import type { ClientUserInfo, ClientVerificationPayload } from '@/types/client';
+import { t } from '@/locales';
 
 const IDENTITY_CARD_PATTERN = /^(?:\d{15}|\d{17}[\dX])$/i;
 const QR_SESSION_TTL_SECONDS = 300;
@@ -151,15 +152,15 @@ export function useVerification() {
 
   function validateVerificationForm() {
     if (!verificationForm.realName.trim()) {
-      MessagePlugin.warning('请输入真实姓名');
+      MessagePlugin.warning(t('verification.realNamePlaceholder'));
       return false;
     }
     if (!verificationForm.idCard.trim()) {
-      MessagePlugin.warning('请输入身份证号');
+      MessagePlugin.warning(t('verification.idCardPlaceholder'));
       return false;
     }
     if (!IDENTITY_CARD_PATTERN.test(verificationForm.idCard.trim())) {
-      MessagePlugin.warning('身份证号格式不正确');
+      MessagePlugin.warning(t('verification.idCardInvalid'));
       return false;
     }
     return true;
@@ -192,7 +193,7 @@ export function useVerification() {
       });
       applyVerificationPayload(res.data);
       if (!verificationUrl.value) await refreshVerificationLink();
-      if (verificationUrl.value) MessagePlugin.success('二维码已生成，请扫码继续认证');
+      if (verificationUrl.value) MessagePlugin.success(t('verification.qrCodeGenerated'));
       startPolling();
     } catch (error: unknown) {
       MessagePlugin.error(resolveMessage(error, '提交失败'));
@@ -203,14 +204,14 @@ export function useVerification() {
 
   async function refreshVerificationLink() {
     if (!certifyId.value) {
-      MessagePlugin.warning('缺少认证会话，请重新提交实名信息');
+      MessagePlugin.warning(t('verification.sessionMissing'));
       return;
     }
     if (isVerificationQrExpired.value) {
       clearVerificationSessionState();
       certifyId.value = '';
       verificationMessage.value = '二维码已失效，请重新提交认证';
-      MessagePlugin.warning('二维码已失效，请重新提交认证');
+      MessagePlugin.warning(t('verification.qrCodeExpired'));
       return;
     }
     verificationLoading.value = true;
@@ -294,7 +295,7 @@ export function useVerification() {
       const payload = res.data || {};
       verificationMessage.value = String(payload.msg || payload.message || '');
       if (Number(payload.status) === 1) {
-        MessagePlugin.success('认证成功');
+        MessagePlugin.success(t('verification.success'));
         clearVerificationSessionState();
         showVerificationDialog.value = false;
         canRestartVerification.value = false;
@@ -321,7 +322,7 @@ export function useVerification() {
       const res = await clientAuthApi.restartVerification();
       applyVerificationPayload(res.data);
       if (!verificationUrl.value) await refreshVerificationLink();
-      if (verificationUrl.value) MessagePlugin.success('已重新生成二维码，请重新扫码');
+      if (verificationUrl.value) MessagePlugin.success(t('verification.qrCodeRefreshed'));
       startPolling();
     } catch (error: unknown) {
       canRestartVerification.value = true;
@@ -345,7 +346,7 @@ export function useVerification() {
         await clientAuthApi.closeVerificationSession({ certify_id: closingCertifyId });
       }
       verificationMessage.value = '';
-      if (!silent && shouldNotifyBackend) MessagePlugin.success('认证会话已关闭');
+      if (!silent && shouldNotifyBackend) MessagePlugin.success(t('verification.sessionClosed'));
     } catch (error: unknown) {
       if (!silent) MessagePlugin.error(resolveMessage(error, '关闭认证会话失败'));
     } finally {

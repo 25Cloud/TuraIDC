@@ -9,6 +9,8 @@ import {
 } from 'tdesign-icons-vue-next';
 import type { Component } from 'vue';
 
+import { t } from '@/locales';
+
 import AreaTab from './tabs/AreaTab.vue';
 import FinanceTab from './tabs/FinanceTab.vue';
 import LogsTab from './tabs/LogsTab.vue';
@@ -25,13 +27,13 @@ export interface ServiceConsoleNavItem {
 }
 
 const consoleTabMeta: Record<string, Omit<ServiceConsoleNavItem, 'key'>> = {
-  overview: { label: '控制台总览', icon: DashboardIcon },
-  monitor: { label: '监控信息', icon: ChartLineDataIcon },
-  security: { label: '安全组', icon: LockOnIcon },
-  nat: { label: '端口转发', icon: ForwardIcon },
-  logs: { label: '操作日志', icon: CatalogIcon },
-  finance: { label: '财务日志', icon: BillIcon },
-  vnc: { label: 'VNC 控制台', icon: DesktopIcon },
+  overview: { label: t('serviceConsole.overview'), icon: DashboardIcon },
+  monitor: { label: t('serviceConsole.monitorInfo'), icon: ChartLineDataIcon },
+  security: { label: t('serviceConsole.security.title'), icon: LockOnIcon },
+  nat: { label: t('serviceConsole.nat.title'), icon: ForwardIcon },
+  logs: { label: t('serviceConsole.logs.title'), icon: CatalogIcon },
+  finance: { label: t('serviceConsole.financeLog'), icon: BillIcon },
+  vnc: { label: t('serviceConsole.vnc.title'), icon: DesktopIcon },
 };
 
 export const consoleTabComponents: Record<string, Component> = {

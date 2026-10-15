@@ -6,6 +6,7 @@ import {
   Notification,
   Reading,
 } from "@element-plus/icons-vue";
+import { t } from '@/locales';
 
 export const CONTENT_TYPE_NOTICE = "notice";
 export const CONTENT_TYPE_HELP = "help";
@@ -22,7 +23,7 @@ export function getContentConfig(contentType, scope = CONTENT_SCOPE_CLIENT) {
       heroTitle: "官方公告",
       heroDescription: "查看平台最新通知、维护公告、产品更新与重要业务提醒。",
       searchPlaceholder: "请输入您要搜索的关键词",
-      emptyText: "暂无公告内容",
+      emptyText: t("content.notice.empty"),
       // 与帮助中心页及控制台端统一用「全部分类」，此前公告页写「所有分类」，
       // 同一套内容页里两种叫法混用。
       allCategoryLabel: "全部分类",
@@ -47,14 +48,14 @@ export function getContentConfig(contentType, scope = CONTENT_SCOPE_CLIENT) {
         ? [
             {
               key: "notices",
-              label: "新闻动态",
+              label: t("content.nav.news"),
               icon: Notification,
               route: "/notices",
             },
-            { key: "help", label: "文档中心", icon: Files, route: "/help" },
+            { key: "help", label: t("content.nav.docs"), icon: Files, route: "/help" },
             {
               key: "products",
-              label: "产品目录",
+              label: t("layout.nav.productCatalog"),
               icon: Box,
               route: "/products",
             },
@@ -62,19 +63,19 @@ export function getContentConfig(contentType, scope = CONTENT_SCOPE_CLIENT) {
         : [
             {
               key: "notices",
-              label: "新闻动态",
+              label: t("content.nav.news"),
               icon: Notification,
               route: "/client/notices",
             },
             {
               key: "help",
-              label: "文档中心",
+              label: t("content.nav.docs"),
               icon: Files,
               route: "/client/help",
             },
             {
               key: "tools",
-              label: "下载中心",
+              label: t("content.nav.downloads"),
               icon: Download,
               route: "/client/tools",
             },
@@ -87,7 +88,7 @@ export function getContentConfig(contentType, scope = CONTENT_SCOPE_CLIENT) {
       heroTitle: "帮助中心",
       heroDescription: "快速查找购买、支付、续费、实例管理等常见操作指引。",
       searchPlaceholder: "搜索帮助文档、账单说明、续费规则",
-      emptyText: "暂无帮助内容",
+      emptyText: t("content.help.empty"),
       allCategoryLabel: "全部分类",
       hotTitle: "热门文档",
       secondaryTitle: "最近更新",
@@ -108,16 +109,16 @@ export function getContentConfig(contentType, scope = CONTENT_SCOPE_CLIENT) {
       ],
       shortcuts: isSiteScope
         ? [
-            { key: "help", label: "文档中心", icon: Reading, route: "/help" },
+            { key: "help", label: t("content.nav.docs"), icon: Reading, route: "/help" },
             {
               key: "notices",
-              label: "新闻动态",
+              label: t("content.nav.news"),
               icon: Bell,
               route: "/notices",
             },
             {
               key: "products",
-              label: "产品目录",
+              label: t("layout.nav.productCatalog"),
               icon: Box,
               route: "/products",
             },
@@ -125,19 +126,19 @@ export function getContentConfig(contentType, scope = CONTENT_SCOPE_CLIENT) {
         : [
             {
               key: "help",
-              label: "文档中心",
+              label: t("content.nav.docs"),
               icon: Reading,
               route: "/client/help",
             },
             {
               key: "notices",
-              label: "新闻动态",
+              label: t("content.nav.news"),
               icon: Bell,
               route: "/client/notices",
             },
             {
               key: "tools",
-              label: "下载中心",
+              label: t("content.nav.downloads"),
               icon: Download,
               route: "/client/tools",
             },

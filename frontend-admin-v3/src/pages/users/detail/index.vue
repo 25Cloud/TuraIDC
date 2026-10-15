@@ -976,6 +976,7 @@ import { required } from '@/utils/formRules';
 import { buildIdempotencyKey } from '@/utils/idempotency';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 defineOptions({ name: 'AdminUserDetail' });
 
@@ -1163,7 +1164,7 @@ const editRules: Record<string, FormRule[]> = {
   password: [
     {
       validator: (val) => !String(val ?? '').trim() || String(val).trim().length >= 8,
-      message: '密码至少需要 8 位',
+      message: t('users.detail.passwordMinLength'),
       type: 'error',
     },
   ],
@@ -1179,14 +1180,14 @@ const addServiceRules: Record<string, FormRule[]> = {
   amount: [required('请输入服务金额')],
 };
 const serviceUpstreamRules: Record<string, FormRule[]> = {
-  supplier_id: [{ validator: validateUpstreamPair, message: '选择上游接口时必须填写上游实例 ID', type: 'error' }],
-  upstream_host_id: [{ validator: validateUpstreamPair, message: '填写上游实例 ID 时必须选择上游接口', type: 'error' }],
+  supplier_id: [{ validator: validateUpstreamPair, message: t('users.detail.upstreamIdRequired'), type: 'error' }],
+  upstream_host_id: [{ validator: validateUpstreamPair, message: t('users.detail.upstreamInterfaceRequired'), type: 'error' }],
 };
 const servicePricingRules: Record<string, FormRule[]> = {
   amount: [required('请输入购买价格')],
 };
 const resetPasswordRules: Record<string, FormRule[]> = {
-  password: [{ validator: (val) => String(val || '').length >= 8, message: '密码长度至少 8 位', type: 'error' }],
+  password: [{ validator: (val) => String(val || '').length >= 8, message: t('users.detail.passwordLengthMin'), type: 'error' }],
 };
 const manualProvisionRules: Record<string, FormRule[]> = {
   upstream_host_id: [required('请输入上游实例 ID')],
@@ -1203,67 +1204,67 @@ const invoiceStatusTypeMap = toTagTypeMap(INVOICE_STATUS_MAP);
 const serviceStatusOptions = toSelectOptions(SERVICE_STATUS_MAP, false);
 const invoiceStatusOptions = toSelectOptions(INVOICE_STATUS_MAP, false);
 const invoiceTypeOptions = [
-  { label: '新购', value: 'new' },
-  { label: '续费', value: 'renew' },
-  { label: '充值', value: 'recharge' },
-  { label: '扣款', value: 'deduction' },
-  { label: '推荐奖励', value: 'referral_credit' },
-  { label: '手工', value: 'manual' },
+  { label: t('users.detail.changeTypeNew'), value: 'new' },
+  { label: t('users.detail.changeTypeRenew'), value: 'renew' },
+  { label: t('users.detail.changeTypeRecharge'), value: 'recharge' },
+  { label: t('users.detail.changeTypeDeduction'), value: 'deduction' },
+  { label: t('users.detail.changeTypeReferralReward'), value: 'referral_credit' },
+  { label: t('users.detail.changeTypeManual'), value: 'manual' },
 ];
 
 const recentReferralColumns: PrimaryTableCol<TableRowData>[] = [
-  { title: '用户', colKey: 'referralUser', width: 260 },
-  { title: '推荐时间', colKey: 'referredAt', width: 180 },
+  { title: t('users.detail.referralUser'), colKey: 'referralUser', width: 260 },
+  { title: t('users.detail.referredAt'), colKey: 'referredAt', width: 180 },
 ];
 const serviceColumns: PrimaryTableCol<TableRowData>[] = [
   { title: 'ID', colKey: 'id', width: 80 },
-  { title: '配置/服务', colKey: 'serviceName', width: 240 },
-  { title: '公网 IP', colKey: 'upstream.dedicated_ip', width: 140 },
-  { title: '金额', colKey: 'serviceAmount', width: 120 },
-  { title: '产品类型', colKey: 'product.type_label', width: 120 },
-  { title: '计费周期', colKey: 'billing_cycle_label', width: 120 },
-  { title: '购买时间', colKey: 'serviceCreated', width: 180 },
-  { title: '到期时间', colKey: 'serviceExpires', width: 180 },
-  { title: '状态', colKey: 'serviceStatus', width: 120 },
-  { title: '操作', colKey: 'serviceOperation', width: 180 },
+  { title: t('users.detail.serviceName'), colKey: 'serviceName', width: 240 },
+  { title: t('users.detail.publicIp'), colKey: 'upstream.dedicated_ip', width: 140 },
+  { title: t('users.detail.amount'), colKey: 'serviceAmount', width: 120 },
+  { title: t('users.detail.productType'), colKey: 'product.type_label', width: 120 },
+  { title: t('users.detail.billingCycle'), colKey: 'billing_cycle_label', width: 120 },
+  { title: t('users.detail.purchasedAt'), colKey: 'serviceCreated', width: 180 },
+  { title: t('users.detail.expiresAt'), colKey: 'serviceExpires', width: 180 },
+  { title: t('common.status'), colKey: 'serviceStatus', width: 120 },
+  { title: t('common.action'), colKey: 'serviceOperation', width: 180 },
 ];
 const invoiceColumns: PrimaryTableCol<TableRowData>[] = [
-  { title: '账单编号', colKey: 'invoice_no', width: 180 },
-  { title: '生成时间', colKey: 'invoiceCreated', width: 180 },
-  { title: '到期时间', colKey: 'due_date', width: 140 },
-  { title: '支付时间', colKey: 'invoicePaid', width: 180 },
-  { title: '金额', colKey: 'invoiceAmount', width: 120 },
-  { title: '支付方式', colKey: 'payment_summary.gateway', width: 140 },
-  { title: '状态', colKey: 'invoiceStatus', width: 120 },
-  { title: '账单类型', colKey: 'invoiceType', width: 140 },
-  { title: '操作', colKey: 'invoiceOperation', width: 140 },
+  { title: t('users.detail.invoiceNo'), colKey: 'invoice_no', width: 180 },
+  { title: t('users.detail.invoiceCreatedAt'), colKey: 'invoiceCreated', width: 180 },
+  { title: t('users.detail.expiresAt'), colKey: 'due_date', width: 140 },
+  { title: t('users.detail.invoicePaidAt'), colKey: 'invoicePaid', width: 180 },
+  { title: t('users.detail.amount'), colKey: 'invoiceAmount', width: 120 },
+  { title: t('users.detail.paymentMethod'), colKey: 'payment_summary.gateway', width: 140 },
+  { title: t('common.status'), colKey: 'invoiceStatus', width: 120 },
+  { title: t('users.detail.invoiceType'), colKey: 'invoiceType', width: 140 },
+  { title: t('common.action'), colKey: 'invoiceOperation', width: 140 },
 ];
 const balanceColumns: PrimaryTableCol<TableRowData>[] = [
-  { title: '时间', colKey: 'balanceTime', width: 180 },
-  { title: '类型', colKey: 'balanceType', width: 140 },
-  { title: '变动金额', colKey: 'balanceChange', width: 140 },
-  { title: '变动后余额', colKey: 'balanceAfter', width: 140 },
-  { title: '备注', colKey: 'remark', width: 220 },
-  { title: '操作人', colKey: 'operator', width: 140 },
+  { title: t('users.detail.time'), colKey: 'balanceTime', width: 180 },
+  { title: t('users.detail.balanceType'), colKey: 'balanceType', width: 140 },
+  { title: t('users.detail.balanceChange'), colKey: 'balanceChange', width: 140 },
+  { title: t('users.detail.balanceAfter'), colKey: 'balanceAfter', width: 140 },
+  { title: t('users.detail.remark'), colKey: 'remark', width: 220 },
+  { title: t('users.detail.operator'), colKey: 'operator', width: 140 },
 ];
 const ticketColumns: PrimaryTableCol<TableRowData>[] = [
   { title: 'ID', colKey: 'id', width: 80 },
-  { title: '标题', colKey: 'subject', width: 260 },
-  { title: '优先级', colKey: 'ticketPriority', width: 120 },
-  { title: '状态', colKey: 'ticketStatus', width: 120 },
-  { title: '创建时间', colKey: 'ticketCreated', width: 180 },
+  { title: t('users.detail.ticketSubject'), colKey: 'subject', width: 260 },
+  { title: t('users.detail.ticketPriority'), colKey: 'ticketPriority', width: 120 },
+  { title: t('common.status'), colKey: 'ticketStatus', width: 120 },
+  { title: t('users.detail.ticketCreatedAt'), colKey: 'ticketCreated', width: 180 },
 ];
 const logColumns: PrimaryTableCol<TableRowData>[] = [
-  { title: '时间', colKey: 'logTime', width: 180 },
-  { title: '动作', colKey: 'action', width: 220 },
-  { title: '模块', colKey: 'module', width: 140 },
+  { title: t('users.detail.time'), colKey: 'logTime', width: 180 },
+  { title: t('users.detail.logAction'), colKey: 'action', width: 220 },
+  { title: t('users.detail.logModule'), colKey: 'module', width: 140 },
   { title: 'IP', colKey: 'ip_address', width: 160 },
 ];
 const noticeColumns: PrimaryTableCol<TableRowData>[] = [
-  { title: '接收地址', colKey: 'noticeTarget', width: 200 },
-  { title: '主题/模板', colKey: 'noticeTitle', width: 240 },
-  { title: '状态', colKey: 'noticeStatus', width: 120 },
-  { title: '发送时间', colKey: 'noticeTime', width: 180 },
+  { title: t('users.detail.noticeTarget'), colKey: 'noticeTarget', width: 200 },
+  { title: t('users.detail.noticeTitle'), colKey: 'noticeTitle', width: 240 },
+  { title: t('common.status'), colKey: 'noticeStatus', width: 120 },
+  { title: t('users.detail.noticeSentAt'), colKey: 'noticeTime', width: 180 },
 ];
 
 const userId = computed(() => String(route.params.id || ''));
@@ -1341,35 +1342,35 @@ const canRefundInvoice = computed(() => Number(currentInvoice.value.status) === 
 const primaryPayment = computed(() => invoicePayments.value.find((item: Row) => Number(item.status) === 1) || null);
 const canOriginalInvoiceRefund = computed(() => primaryPayment.value?.gateway === 'alipay');
 const statCards = computed(() => [
-  { key: 'ticket_open', label: '在线工单', value: stats.value.ticket_open || 0, tone: 'warning' },
-  { key: 'cash_balance', label: '余额', value: formatMoney(user.value.cash_balance), tone: 'success' },
-  { key: 'total_expense', label: '总消费', value: formatMoney(stats.value.total_expense), tone: 'primary' },
+  { key: 'ticket_open', label: t('users.detail.openTickets'), value: stats.value.ticket_open || 0, tone: 'warning' },
+  { key: 'cash_balance', label: t('users.detail.balance'), value: formatMoney(user.value.cash_balance), tone: 'success' },
+  { key: 'total_expense', label: t('users.detail.totalSpending'), value: formatMoney(stats.value.total_expense), tone: 'primary' },
 ]);
 const referralItems = computed(() => [
-  { label: '推荐码', value: referral.value.referral_code || '-' },
-  { label: '当前等级', value: referral.value.member_level?.name || user.value.member_level?.name || '未分级' },
-  { label: '直推人数', value: stats.value.direct_referral_count || 0 },
-  { label: '累计奖励', value: formatMoney(stats.value.total_referral_reward), tone: 'success' },
-  { label: '可提现奖励', value: formatMoney(referral.value.referral_available_amount), tone: 'success' },
+  { label: t('users.detail.referralCode'), value: referral.value.referral_code || '-' },
+  { label: t('users.detail.currentLevel'), value: referral.value.member_level?.name || user.value.member_level?.name || '未分级' },
+  { label: t('users.detail.directReferralCount'), value: stats.value.direct_referral_count || 0 },
+  { label: t('users.detail.totalReferralReward'), value: formatMoney(stats.value.total_referral_reward), tone: 'success' },
+  { label: t('users.detail.withdrawableReward'), value: formatMoney(referral.value.referral_available_amount), tone: 'success' },
 ]);
 const infoItems = computed(() => [
-  { label: '邮箱', value: fieldValue(user.value.email) },
-  { label: '手机号', value: fieldValue(user.value.phone) },
+  { label: t('users.detail.email'), value: fieldValue(user.value.email) },
+  { label: t('users.detail.phone'), value: fieldValue(user.value.phone) },
   {
-    label: '账号状态',
+    label: t('users.detail.accountStatus'),
     value: Number(user.value.status) === 1 ? '正常' : '禁用',
     tone: Number(user.value.status) === 1 ? 'success' : 'danger',
   },
-  { label: '公司', value: fieldValue(user.value.company) },
+  { label: t('users.detail.company'), value: fieldValue(user.value.company) },
   { label: 'QQ', value: fieldValue(user.value.qq) },
-  { label: '账户余额', value: formatMoney(user.value.cash_balance), tone: 'success' },
-  { label: '会员等级', value: user.value.member_level?.name || '未分级' },
-  { label: '代理组', value: user.value.agent_group?.name || '未设置' },
-  { label: '实名认证', value: verificationText(), tone: isVerified.value ? 'success' : 'warning' },
-  { label: '证件号', value: fieldValue(user.value.id_card_masked) },
-  { label: '推荐人 ID', value: fieldValue(user.value.referrer_user_id) },
-  { label: '最后登录时间', value: formatDateTime(user.value.last_login_at) },
-  { label: '最后登录 IP', value: fieldValue(user.value.last_login_ip) },
+  { label: t('users.detail.accountBalance'), value: formatMoney(user.value.cash_balance), tone: 'success' },
+  { label: t('users.detail.memberLevel'), value: user.value.member_level?.name || '未分级' },
+  { label: t('users.detail.agentGroup'), value: user.value.agent_group?.name || '未设置' },
+  { label: t('users.detail.realNameVerified'), value: verificationText(), tone: isVerified.value ? 'success' : 'warning' },
+  { label: t('users.detail.idNumber'), value: fieldValue(user.value.id_card_masked) },
+  { label: t('users.detail.referrerId'), value: fieldValue(user.value.referrer_user_id) },
+  { label: t('users.detail.lastLoginAt'), value: formatDateTime(user.value.last_login_at) },
+  { label: t('users.detail.lastLoginIp'), value: fieldValue(user.value.last_login_ip) },
 ]);
 
 async function loadDetail() {
@@ -1519,7 +1520,7 @@ async function saveNote() {
     await userApi.update(userId.value, { admin_note: noteForm.value });
     user.value.admin_note = noteForm.value;
     noteEditing.value = false;
-    MessagePlugin.success('备注已保存');
+    MessagePlugin.success(t('users.detail.remarkSaved'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '备注保存失败'));
   } finally {
@@ -1552,13 +1553,13 @@ async function handleSave() {
     const password = editForm.password.trim();
     if (password) payload.password = password;
     await userApi.update(userId.value, payload);
-    MessagePlugin.success('用户资料已更新');
+    MessagePlugin.success(t('users.detail.profileUpdated'));
     editVisible.value = false;
     // 写入已成功；刷新失败不得回退成"更新失败"，否则管理员会误以为没保存而重复提交
     try {
       await loadDetail();
     } catch {
-      MessagePlugin.warning('资料已更新，但页面刷新失败，请手动刷新查看');
+      MessagePlugin.warning(t('users.detail.profileRefreshFailed'));
     }
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '用户资料更新失败，请检查手机号是否已被占用或格式是否正确'));
@@ -1597,7 +1598,7 @@ async function handleRecharge() {
       await loadDetail();
       if (loadedTabs.balance) await loadBalance();
     } catch {
-      MessagePlugin.warning('操作已成功，但页面刷新失败，请手动刷新查看最新余额');
+      MessagePlugin.warning(t('users.detail.actionRefreshFailed'));
     }
   } catch (error) {
     MessagePlugin.error(
@@ -1705,7 +1706,7 @@ async function handleSubmitAddService() {
       os: addServiceForm.os,
       remark: addServiceForm.remark,
     });
-    MessagePlugin.success('实例已创建');
+    MessagePlugin.success(t('users.detail.instanceCreated'));
     addServiceVisible.value = false;
     await Promise.all([
       loadServices(),
@@ -1726,7 +1727,7 @@ async function handleRefreshService(row: Row) {
   try {
     const detail = await userApi.serviceRemoteStatus(userId.value, row.id);
     patchServiceListItem(detail);
-    MessagePlugin.success('服务状态已刷新');
+    MessagePlugin.success(t('users.detail.serviceStatusRefreshed'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '刷新服务状态失败'));
   } finally {
@@ -1740,7 +1741,7 @@ async function handleRefreshServicesStatus() {
   try {
     await userApi.refreshServiceStatuses(userId.value, { service_ids: services.list.map((item) => item.id) });
     await loadServices();
-    MessagePlugin.success('服务状态已批量刷新');
+    MessagePlugin.success(t('users.detail.serviceStatusBatchRefreshed'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '批量刷新失败'));
   } finally {
@@ -1753,14 +1754,14 @@ function handleDeleteServiceRow(row: Row) {
   const dialog = DialogPlugin.confirm({
     header: '删除实例记录',
     body: `确认删除实例“${serviceName(row)}”记录吗？`,
-    confirmBtn: '确认删除',
-    cancelBtn: '取消',
+    confirmBtn: t('common.confirmDelete'),
+    cancelBtn: t('common.cancel'),
     theme: 'warning',
     async onConfirm() {
       services.refreshing = true;
       try {
         await userApi.serviceDelete(userId.value, row.id);
-        MessagePlugin.success('实例记录已删除');
+        MessagePlugin.success(t('users.detail.instanceDeleted'));
         dialog.hide();
         await Promise.all([loadServices(), loadDetail()]);
       } catch (error) {
@@ -1774,13 +1775,13 @@ function handleDeleteServiceRow(row: Row) {
 
 async function handleLoginAs() {
   if (!canLoginAs.value) {
-    MessagePlugin.error('当前账号没有代登录权限');
+    MessagePlugin.error(t('users.detail.delegateLoginForbidden'));
     return;
   }
 
   const popup = window.open('about:blank', '_blank');
   if (!popup) {
-    MessagePlugin.error('浏览器拦截了代登录窗口，请允许弹窗后重试');
+    MessagePlugin.error(t('users.detail.delegateLoginPopupBlocked'));
     return;
   }
 
@@ -1790,21 +1791,21 @@ async function handleLoginAs() {
     const code = String(response.login_code || '').trim();
     if (!code) {
       closeLoginAsPopup(popup);
-      MessagePlugin.error('未获取到代登录凭证');
+      MessagePlugin.error(t('users.detail.delegateLoginCredentialMissing'));
       return;
     }
 
     const target = resolveLoginAsTarget(response.target_url);
     if (!target) {
       closeLoginAsPopup(popup);
-      MessagePlugin.error('客户端代登录地址无效，请检查客户端控制台配置');
+      MessagePlugin.error(t('users.detail.delegateLoginUrlInvalid'));
       return;
     }
 
     popup.location.replace(target);
     await waitForLoginAsReady(popup, target);
     popup.postMessage({ type: LOGIN_AS_CODE_EVENT, code }, new URL(target, window.location.origin).origin);
-    MessagePlugin.success('已打开客户端登录页');
+    MessagePlugin.success(t('users.detail.delegateLoginOpened'));
   } catch (error) {
     closeLoginAsPopup(popup);
     MessagePlugin.error(errorMessage(error, '代登录失败'));
@@ -1901,7 +1902,7 @@ async function handleRefreshConsoleRemoteStatus() {
     const detail = await userApi.serviceRemoteStatus(userId.value, serviceDrawer.serviceId);
     serviceDrawer.detail = mergeServiceDetail(serviceDrawer.detail, detail);
     patchServiceListItem(detail);
-    MessagePlugin.success('远程状态已刷新');
+    MessagePlugin.success(t('users.detail.remoteStatusRefreshed'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '刷新远程状态失败'));
   } finally {
@@ -1916,7 +1917,7 @@ function handleServicePower(action: string) {
     header: `${label}确认`,
     body: `确认对实例执行“${label}”操作？`,
     confirmBtn: `确认${label}`,
-    cancelBtn: '取消',
+    cancelBtn: t('common.cancel'),
     theme: 'warning',
     async onConfirm() {
       serviceDrawer.actionLoading = `power:${action}`;
@@ -1947,7 +1948,7 @@ async function handleResetServicePassword() {
   serviceDrawer.actionLoading = 'reset-password';
   try {
     await userApi.serviceResetPassword(userId.value, serviceDrawer.serviceId, { password: resetPasswordForm.password });
-    MessagePlugin.success('密码重置指令已下发');
+    MessagePlugin.success(t('users.detail.passwordResetDispatched'));
     resetPasswordVisible.value = false;
     await reloadServiceDrawer();
   } catch (error) {
@@ -1971,7 +1972,7 @@ async function handleManualProvision() {
     await userApi.manualProvisionService(userId.value, serviceDrawer.serviceId, {
       upstream_host_id: Number(manualProvisionForm.upstream_host_id || 0),
     });
-    MessagePlugin.success('手动开通指令已下发');
+    MessagePlugin.success(t('users.detail.manualProvisionDispatched'));
     manualProvisionVisible.value = false;
     await Promise.all([reloadServiceDrawer(), loadServices()]);
   } catch (error) {
@@ -2023,7 +2024,7 @@ async function submitServiceUpstream() {
     serviceDrawer.detail = mergeServiceDetail(serviceDrawer.detail, detail);
     patchServiceListItem(serviceDrawer.detail);
     serviceUpstreamVisible.value = false;
-    MessagePlugin.success('上游绑定已更新');
+    MessagePlugin.success(t('users.detail.upstreamBindingUpdated'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '更新上游绑定失败'));
   } finally {
@@ -2068,7 +2069,7 @@ async function submitServicePricing() {
     serviceDrawer.detail = mergeServiceDetail(serviceDrawer.detail, detail);
     patchServiceListItem(serviceDrawer.detail);
     servicePricingVisible.value = false;
-    MessagePlugin.success('价格信息已更新');
+    MessagePlugin.success(t('users.detail.priceUpdated'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '更新价格信息失败'));
   } finally {
@@ -2093,7 +2094,7 @@ async function submitServiceName() {
     serviceDrawer.detail = mergeServiceDetail(serviceDrawer.detail, detail);
     patchServiceListItem(serviceDrawer.detail);
     serviceNameVisible.value = false;
-    MessagePlugin.success('实例名称已更新');
+    MessagePlugin.success(t('users.detail.instanceNameUpdated'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '更新实例名称失败'));
   } finally {
@@ -2170,13 +2171,13 @@ function handleCancelInvoice(row: Row) {
   const dialog = DialogPlugin.confirm({
     header: '取消账单',
     body: '取消账单后将关闭关联流程，确认继续吗？',
-    confirmBtn: '确认取消',
-    cancelBtn: '取消',
+    confirmBtn: t('common.confirmCancel'),
+    cancelBtn: t('common.cancel'),
     theme: 'warning',
     async onConfirm() {
       try {
         await adminApi.invoices.cancel(row.id);
-        MessagePlugin.success('账单已取消');
+        MessagePlugin.success(t('users.detail.invoiceCancelled'));
         dialog.hide();
         await Promise.all([loadInvoices(), loadDetail()]);
       } catch (error) {
@@ -2191,7 +2192,7 @@ async function handleDrawerCancelInvoice() {
   invoiceDrawer.cancelLoading = true;
   try {
     await adminApi.invoices.cancel(invoiceDrawer.currentId);
-    MessagePlugin.success('账单已取消');
+    MessagePlugin.success(t('users.detail.invoiceCancelled'));
     await Promise.all([loadInvoices(), loadDetail(), reloadInvoiceDrawer()]);
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '取消账单失败'));
@@ -2217,7 +2218,7 @@ async function handleInvoiceRefund() {
       amount: currentInvoice.value.paid_amount || currentInvoice.value.amount,
       remark: invoiceRefundForm.remark,
     });
-    MessagePlugin.success('账单已完成退款');
+    MessagePlugin.success(t('users.detail.invoiceRefunded'));
     invoiceRefundVisible.value = false;
     await Promise.all([loadInvoices(), loadDetail(), reloadInvoiceDrawer()]);
   } catch (error) {

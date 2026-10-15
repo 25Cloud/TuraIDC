@@ -2,13 +2,14 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { onMounted, reactive, ref } from 'vue';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type { ApiKeyRecord, ApiKeyStorePayload, ApiKeyUsageLogRecord } from '@/types/client';
 
 export const SCOPE_DOMAINS = [
-  { key: 'products', label: '产品目录' },
-  { key: 'orders', label: '订单与账单' },
-  { key: 'services', label: '服务实例' },
-  { key: 'finance', label: '余额与财务' },
+  { key: 'products', label: t('apiKeys.scopeProducts') },
+  { key: 'orders', label: t('apiKeys.scopeOrders') },
+  { key: 'services', label: t('apiKeys.scopeServices') },
+  { key: 'finance', label: t('apiKeys.scopeFinance') },
 ] as const;
 
 export type ScopeLevel = 'read' | 'write';
@@ -130,7 +131,7 @@ export function useApiKeys() {
 
   async function submit() {
     if (!form.name.trim()) {
-      MessagePlugin.warning('请输入密钥名称');
+      MessagePlugin.warning(t('apiKeys.nameRequired'));
       return;
     }
     submitting.value = true;
@@ -148,7 +149,7 @@ export function useApiKeys() {
         const id = editingKey.value?.id;
         if (!id) return;
         await clientApi.updateApiKey(id, collectPayload());
-        MessagePlugin.success('密钥已更新');
+        MessagePlugin.success(t('apiKeys.updated'));
         dialogVisible.value = false;
         await loadList();
       }
@@ -173,7 +174,7 @@ export function useApiKeys() {
   async function removeKey(key: ApiKeyRecord) {
     try {
       await clientApi.deleteApiKey(key.id);
-      MessagePlugin.success('密钥已删除');
+      MessagePlugin.success(t('apiKeys.deleted'));
       await loadList();
     } catch (error: unknown) {
       MessagePlugin.error(getErrorMessage(error, '删除失败'));
@@ -185,8 +186,8 @@ export function useApiKeys() {
     if (!text) return;
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(text).then(
-        () => MessagePlugin.success('已复制到剪贴板'),
-        () => MessagePlugin.error('复制失败，请手动复制'),
+        () => MessagePlugin.success(t('common.copiedToClipboard')),
+        () => MessagePlugin.error(t('common.copyFailedManual')),
       );
     } else {
       MessagePlugin.info(text);

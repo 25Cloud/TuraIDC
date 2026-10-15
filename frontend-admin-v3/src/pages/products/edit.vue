@@ -440,6 +440,7 @@ import {
   providerTypeFallbackLabels,
   toPlainRecord,
 } from './composables/useProductShared';
+import { t } from '@/locales';
 
 defineOptions({ name: 'AdminProductEdit' });
 
@@ -465,10 +466,10 @@ const isEdit = computed(() => productId.value > 0);
 // --- Section nav ---
 const activeSection = ref('basic');
 const sections = [
-  { key: 'basic', label: '详情', description: '名称、分类、状态' },
-  { key: 'pricing', label: '定价', description: '多周期价格' },
-  { key: 'interface', label: '接口设置', description: '上游商品绑定' },
-  { key: 'config', label: '产品配置', description: '规格与可选项' },
+  { key: 'basic', label: t('products.edit.sectionBasic'), description: t('products.edit.sectionBasicHint') },
+  { key: 'pricing', label: t('products.catalog.sectionPricing'), description: t('products.edit.sectionPricingHint') },
+  { key: 'interface', label: t('products.edit.sectionInterface'), description: t('products.edit.sectionInterfaceHint') },
+  { key: 'config', label: t('products.catalog.sectionProductConfig'), description: t('products.edit.sectionConfigHint') },
 ];
 
 // --- Form ---
@@ -515,8 +516,8 @@ async function loadDiscountGroups() {
 }
 
 const rules: FormRules<typeof form> = {
-  display_name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
-  selected_product_group_key: [{ required: true, message: '请选择所属分类', trigger: 'change' }],
+  display_name: [{ required: true, message: t('products.edit.nameRequired'), trigger: 'blur' }],
+  selected_product_group_key: [{ required: true, message: t('products.edit.categoryRequired'), trigger: 'change' }],
 };
 
 // --- Categories ---
@@ -543,11 +544,11 @@ function decorateCascaderKeys(nodes: ProductCategoryRecord[]): ProductCategoryRe
 // --- Pricing ---
 const pricingPlan = ref('standard');
 const pricingPlanOptions = [
-  { value: 'standard', label: '无优惠', ratios: { quarterly: 3, semiannually: 6, annually: 12 } },
-  { value: 'annual', label: '年付优惠', ratios: { quarterly: 3, semiannually: 6, annually: 10 } },
-  { value: 'bulk', label: '大额优惠', ratios: { quarterly: 2.7, semiannually: 5.1, annually: 8.4 } },
-  { value: 'rule1', label: '规则一', ratios: { quarterly: 3, semiannually: 4.8, annually: 9 } },
-  { value: 'rule2', label: '规则二', ratios: { quarterly: 2.7, semiannually: 5.1, annually: 9.6 } },
+  { value: 'standard', label: t('products.edit.discountNone'), ratios: { quarterly: 3, semiannually: 6, annually: 12 } },
+  { value: 'annual', label: t('products.edit.discountAnnual'), ratios: { quarterly: 3, semiannually: 6, annually: 10 } },
+  { value: 'bulk', label: t('products.edit.discountBulk'), ratios: { quarterly: 2.7, semiannually: 5.1, annually: 8.4 } },
+  { value: 'rule1', label: t('products.edit.discountRule1'), ratios: { quarterly: 3, semiannually: 4.8, annually: 9 } },
+  { value: 'rule2', label: t('products.edit.discountRule2'), ratios: { quarterly: 2.7, semiannually: 5.1, annually: 9.6 } },
 ];
 
 // --- Suppliers ---
@@ -721,7 +722,7 @@ async function loadProductDetail() {
       loadSupplierProducts(form.supplier_id);
     }
   } catch {
-    MessagePlugin.error('加载商品详情失败');
+    MessagePlugin.error(t('products.edit.loadFailed'));
   }
 }
 
@@ -813,13 +814,13 @@ function syncPricingCycles() {
   const plan = pricingPlanOptions.find((item) => item.value === pricingPlan.value) || pricingPlanOptions[0];
   const monthly = Number(form.monthly_price || 0);
   if (monthly <= 0) {
-    MessagePlugin.warning('请先填写月付价格');
+    MessagePlugin.warning(t('products.edit.monthlyPriceRequired'));
     return;
   }
   form.quarterly_price = roundPrice(monthly * plan.ratios.quarterly);
   form.semiannually_price = roundPrice(monthly * plan.ratios.semiannually);
   form.annually_price = roundPrice(monthly * plan.ratios.annually);
-  MessagePlugin.success('已同步其他计费周期价格');
+  MessagePlugin.success(t('products.edit.cyclesSynced'));
 }
 
 function roundPrice(value: number) {
@@ -1148,7 +1149,7 @@ function submitConfigOption() {
   const field = configOptionForm.field.trim();
   const mode = normalizeModeValue(configOptionForm.option_mode);
   if (!name || !field) {
-    MessagePlugin.warning('请填写配置名称和字段名');
+    MessagePlugin.warning(t('products.edit.configNameFieldRequired'));
     return;
   }
   let subItems: ReturnType<typeof buildConfigSubItemsFromRows> = [];
@@ -1162,15 +1163,15 @@ function submitConfigOption() {
     ? subItems.map((item) => `${item.value}|${item.label}`).join(',')
     : configOptionForm.parameter.trim();
   if (mode === 'select' && !parameter) {
-    MessagePlugin.warning('请填写参数值或子项');
+    MessagePlugin.warning(t('products.edit.configValueRequired'));
     return;
   }
   if (mode === 'text' && !configOptionForm.text_content.trim()) {
-    MessagePlugin.warning('请填写提示内容');
+    MessagePlugin.warning(t('products.edit.configHintRequired'));
     return;
   }
   if (mode === 'range' && toNumber(configOptionForm.qty_maximum) <= 0) {
-    MessagePlugin.warning('数量范围需要填写大于 0 的最大值');
+    MessagePlugin.warning(t('products.edit.qtyRangeMaxRequired'));
     return;
   }
 
@@ -1255,7 +1256,7 @@ async function pullConfigTemplate() {
   const supplierId = form.supplier_id;
   const upstreamProductId = form.upstream_product_id;
   if (!supplierId || !upstreamProductId) {
-    MessagePlugin.warning('请先绑定提供商和提供商商品 ID');
+    MessagePlugin.warning(t('products.edit.supplierBindingRequired'));
     return;
   }
   configTemplateLoading.value = true;
@@ -1263,7 +1264,7 @@ async function pullConfigTemplate() {
     const response = await supplierApi.productConfigTemplate(supplierId, upstreamProductId);
     const options = Array.isArray(response.config_options) ? response.config_options : [];
     form.config_options = normalizeConfigOptions(options);
-    MessagePlugin.success('配置项模板已拉取');
+    MessagePlugin.success(t('products.edit.templatesLoaded'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '拉取配置项模板失败'));
   } finally {
@@ -1277,7 +1278,7 @@ async function submit() {
   if (validateResult !== true) return;
   if (!hasPositivePrice()) {
     activeSection.value = 'pricing';
-    MessagePlugin.warning('请至少填写一个大于 0 的计费周期价格');
+    MessagePlugin.warning(t('products.edit.cyclePriceRequired'));
     return;
   }
   submitting.value = true;
@@ -1304,10 +1305,10 @@ async function submit() {
     };
     if (isEdit.value) {
       await productApi.update(productId.value, payload);
-      MessagePlugin.success('商品已更新');
+      MessagePlugin.success(t('products.edit.updated'));
     } else {
       await productApi.create(payload);
-      MessagePlugin.success('商品已创建');
+      MessagePlugin.success(t('products.edit.created'));
     }
     goBack();
   } catch (error) {

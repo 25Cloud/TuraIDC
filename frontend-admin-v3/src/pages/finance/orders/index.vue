@@ -168,14 +168,15 @@ import { useListPage } from '@/hooks/useListPage';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 type FinanceOrderMode = 'all' | 'orders' | 'renewals' | 'upgrade';
 
 const ORDER_TAB_OPTIONS = [
-  { value: 'all', label: '全部订单' },
-  { value: 'orders', label: '普通订单' },
-  { value: 'renewals', label: '续费订单' },
-  { value: 'upgrade', label: '附加配置' },
+  { value: 'all', label: t('finance.orders.allOrders') },
+  { value: 'orders', label: t('finance.orders.newOrders') },
+  { value: 'renewals', label: t('finance.orders.renewalOrders') },
+  { value: 'upgrade', label: t('orders.index.extraConfig') },
 ];
 
 const route = useRoute();
@@ -241,21 +242,21 @@ const {
 
 const columns = computed<PrimaryTableCol<TableRowData>[]>(() => {
   const base: PrimaryTableCol<TableRowData>[] = [
-    { colKey: 'order_no', title: '订单号', minWidth: 170 },
-    { colKey: 'user', title: '用户', minWidth: 180 },
-    { colKey: 'product', title: '产品/服务', minWidth: 240 },
-    { colKey: 'type', title: '类型', width: 110 },
+    { colKey: 'order_no', title: t('finance.orderDetail.orderNo'), minWidth: 170 },
+    { colKey: 'user', title: t('common.user'), minWidth: 180 },
+    { colKey: 'product', title: t('finance.orders.productService'), minWidth: 240 },
+    { colKey: 'type', title: t('common.type'), width: 110 },
   ];
   if (mode.value === 'upgrade') {
-    base.push({ colKey: 'upgrade', title: '配置', minWidth: 140 });
+    base.push({ colKey: 'upgrade', title: t('finance.orders.upgradeConfig'), minWidth: 140 });
   }
   base.push(
-    { colKey: 'amount', title: '金额', width: 120 },
-    { colKey: 'quantity', title: '数量', width: 80 },
-    { colKey: 'status', title: '状态', width: 110 },
-    { colKey: 'invoice', title: '关联账单', minWidth: 170 },
-    { colKey: 'createdAt', title: '时间', width: 170 },
-    { colKey: 'operation', title: '操作', width: 80, fixed: 'right' },
+    { colKey: 'amount', title: t('finance.orderDetail.amount'), width: 120 },
+    { colKey: 'quantity', title: t('finance.orderDetail.quantity'), width: 80 },
+    { colKey: 'status', title: t('common.status'), width: 110 },
+    { colKey: 'invoice', title: t('finance.orders.invoice'), minWidth: 170 },
+    { colKey: 'createdAt', title: t('common.time'), width: 170 },
+    { colKey: 'operation', title: t('common.action'), width: 80, fixed: 'right' },
   );
   return base;
 });
@@ -294,11 +295,11 @@ function handleMobileAction(value: unknown, row: OrderRecord) {
 
 function orderMobileRows(row: OrderRecord) {
   return [
-    { label: '用户', value: userName(row) },
-    { label: '数量', value: String(row.quantity || 1) },
-    { label: '服务', value: serviceIdLabel(row.service) },
-    { label: '账单', value: fieldValue(row.invoice?.invoice_no) },
-    { label: '时间', value: formatDateTime(row.created_at) },
+    { label: t('common.user'), value: userName(row) },
+    { label: t('finance.orders.quantity'), value: String(row.quantity || 1) },
+    { label: t('common.service'), value: serviceIdLabel(row.service) },
+    { label: t('finance.orders.invoiceRef'), value: fieldValue(row.invoice?.invoice_no) },
+    { label: t('common.time'), value: formatDateTime(row.created_at) },
   ];
 }
 

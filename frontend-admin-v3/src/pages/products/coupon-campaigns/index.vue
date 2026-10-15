@@ -306,6 +306,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { formatDateTime } from '@/utils/format';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 interface CampaignForm {
   id: number | null;
@@ -333,13 +334,13 @@ interface CampaignForm {
 const billingCycleOptions = billingCycleOptionsOf();
 
 const weekdayOptions = [
-  { label: '周一', value: 1 },
-  { label: '周二', value: 2 },
-  { label: '周三', value: 3 },
-  { label: '周四', value: 4 },
-  { label: '周五', value: 5 },
-  { label: '周六', value: 6 },
-  { label: '周日', value: 0 },
+  { label: t('products.couponCampaigns.weekdayMon'), value: 1 },
+  { label: t('products.couponCampaigns.weekdayTue'), value: 2 },
+  { label: t('products.couponCampaigns.weekdayWed'), value: 3 },
+  { label: t('products.couponCampaigns.weekdayThu'), value: 4 },
+  { label: t('products.couponCampaigns.weekdayFri'), value: 5 },
+  { label: t('products.couponCampaigns.weekdaySat'), value: 6 },
+  { label: t('products.couponCampaigns.weekdaySun'), value: 0 },
 ];
 
 const loading = ref(false);
@@ -362,24 +363,24 @@ const filters = reactive({
 const form = reactive<CampaignForm>(createDefaultForm());
 
 const formRules: Record<string, FormRule[]> = {
-  name: [{ required: true, message: '请输入活动名称', type: 'error' }],
-  weekdays: [{ required: true, message: '至少选择一个发放星期', type: 'error' }],
-  trigger_time: [{ required: true, message: '请输入发放时间', type: 'error' }],
-  issue_quantity: [{ required: true, message: '请输入发放数量', type: 'error' }],
-  discount_type: [{ required: true, message: '请选择优惠类型', type: 'error' }],
-  discount_scope: [{ required: true, message: '请选择优惠阶段', type: 'error' }],
-  discount_value: [{ required: true, message: '请输入优惠值', type: 'error' }],
+  name: [{ required: true, message: t('products.couponCampaigns.nameRequired'), type: 'error' }],
+  weekdays: [{ required: true, message: t('products.couponCampaigns.weekdaysRequired'), type: 'error' }],
+  trigger_time: [{ required: true, message: t('products.couponCampaigns.triggerTimeRequired'), type: 'error' }],
+  issue_quantity: [{ required: true, message: t('products.couponCampaigns.issueQuantityRequired'), type: 'error' }],
+  discount_type: [{ required: true, message: t('products.couponCampaigns.discountTypeRequired'), type: 'error' }],
+  discount_scope: [{ required: true, message: t('products.couponCampaigns.discountScopeRequired'), type: 'error' }],
+  discount_value: [{ required: true, message: t('products.couponCampaigns.discountValueRequired'), type: 'error' }],
 };
 
 const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'id', title: 'ID', width: 72 },
-  { colKey: 'campaign', title: '活动信息', minWidth: 260 },
-  { colKey: 'schedule', title: '调度规则', minWidth: 220 },
-  { colKey: 'rule', title: '优惠规则', minWidth: 220 },
-  { colKey: 'latest', title: '最近发放', minWidth: 220 },
-  { colKey: 'status', title: '状态', width: 110 },
-  { colKey: 'updatedAt', title: '更新时间', minWidth: 170 },
-  { colKey: 'operation', title: '操作', width: 210, fixed: 'right' },
+  { colKey: 'campaign', title: t('products.couponCampaigns.campaignInfo'), minWidth: 260 },
+  { colKey: 'schedule', title: t('products.couponCampaigns.scheduleRule'), minWidth: 220 },
+  { colKey: 'rule', title: t('products.couponCampaigns.discountRule'), minWidth: 220 },
+  { colKey: 'latest', title: t('products.couponCampaigns.latestIssue'), minWidth: 220 },
+  { colKey: 'status', title: t('common.status'), width: 110 },
+  { colKey: 'updatedAt', title: t('products.couponCampaigns.updatedAt'), minWidth: 170 },
+  { colKey: 'operation', title: t('common.action'), width: 210, fixed: 'right' },
 ];
 
 function createDefaultForm(): CampaignForm {
@@ -468,7 +469,7 @@ function handlePageChange(data: { current: number; pageSize: number }) {
 
 async function openCampaignDialog(row?: CouponCampaignRecord) {
   if (!canManage.value) {
-    MessagePlugin.warning('您没有管理优惠券活动的权限');
+    MessagePlugin.warning(t('products.couponCampaigns.noPermission'));
     return;
   }
   resetForm();
@@ -528,21 +529,21 @@ function buildPayload(): CouponCampaignPayload {
 
 async function submitForm() {
   if (!canManage.value) {
-    MessagePlugin.warning('您没有管理优惠券活动的权限');
+    MessagePlugin.warning(t('products.couponCampaigns.noPermission'));
     return;
   }
   const validateResult = await formRef.value?.validate?.();
   if (validateResult !== true) return;
   if (!form.weekdays.length) {
-    MessagePlugin.warning('至少选择一个发放星期');
+    MessagePlugin.warning(t('products.couponCampaigns.weekdaysRequired'));
     return;
   }
   if (Number(form.discount_value || 0) <= 0) {
-    MessagePlugin.warning('优惠值必须大于 0');
+    MessagePlugin.warning(t('products.couponCampaigns.discountValuePositive'));
     return;
   }
   if (form.discount_type === 'percentage' && Number(form.discount_value || 0) > 100) {
-    MessagePlugin.warning('折扣值不能大于 100');
+    MessagePlugin.warning(t('products.couponCampaigns.discountValueTooLarge'));
     return;
   }
   saving.value = true;
@@ -550,10 +551,10 @@ async function submitForm() {
     const payload = buildPayload();
     if (form.id) {
       await adminApi.couponCampaigns.update(form.id, payload);
-      MessagePlugin.success('活动已更新');
+      MessagePlugin.success(t('products.couponCampaigns.updated'));
     } else {
       await adminApi.couponCampaigns.create(payload);
-      MessagePlugin.success('活动已创建');
+      MessagePlugin.success(t('products.couponCampaigns.created'));
     }
     dialogVisible.value = false;
     await loadData();
@@ -584,7 +585,7 @@ async function runRowAction(
 ) {
   const key = rowKey(row.id);
   if (!canManage.value) {
-    MessagePlugin.warning('您没有管理优惠券活动的权限');
+    MessagePlugin.warning(t('products.couponCampaigns.noPermission'));
     return;
   }
   if (!key || isRowBusy(row.id)) return;
@@ -600,19 +601,19 @@ async function runRowAction(
 
 function handleTrigger(row: CouponCampaignRecord) {
   if (!canManage.value) {
-    MessagePlugin.warning('您没有管理优惠券活动的权限');
+    MessagePlugin.warning(t('products.couponCampaigns.noPermission'));
     return;
   }
   const dialog = DialogPlugin.confirm({
     header: '立即发放',
     body: `确认立即发放活动「${row.name || row.id}」的新一批优惠券吗？`,
     theme: 'warning',
-    confirmBtn: '确认发放',
-    cancelBtn: '取消',
+    confirmBtn: t('products.couponCampaigns.confirmIssue'),
+    cancelBtn: t('common.cancel'),
     async onConfirm() {
       await runRowAction(row, 'trigger', '发放活动批次失败', async () => {
         await adminApi.couponCampaigns.trigger(row.id);
-        MessagePlugin.success('活动批次已发放');
+        MessagePlugin.success(t('products.couponCampaigns.batchIssued'));
         dialog.hide();
         await loadData();
       });
@@ -622,19 +623,19 @@ function handleTrigger(row: CouponCampaignRecord) {
 
 async function handleToggleStatus(row: CouponCampaignRecord) {
   if (!canManage.value) {
-    MessagePlugin.warning('您没有管理优惠券活动的权限');
+    MessagePlugin.warning(t('products.couponCampaigns.noPermission'));
     return;
   }
   await runRowAction(row, 'toggle', '更新活动状态失败', async () => {
     await adminApi.couponCampaigns.toggleStatus(row.id, Number(row.status) !== 1);
-    MessagePlugin.success('活动状态已更新');
+    MessagePlugin.success(t('products.couponCampaigns.statusUpdated'));
     await loadData();
   });
 }
 
 function handleDelete(row: CouponCampaignRecord) {
   if (!canManage.value) {
-    MessagePlugin.warning('您没有管理优惠券活动的权限');
+    MessagePlugin.warning(t('products.couponCampaigns.noPermission'));
     return;
   }
   if (row.can_delete === false) {
@@ -645,12 +646,12 @@ function handleDelete(row: CouponCampaignRecord) {
     header: '删除活动',
     body: `确认删除活动「${row.name || row.id}」吗？仅未生成批次的活动可删除。`,
     theme: 'warning',
-    confirmBtn: '确认删除',
-    cancelBtn: '取消',
+    confirmBtn: t('common.confirmDelete'),
+    cancelBtn: t('common.cancel'),
     async onConfirm() {
       await runRowAction(row, 'delete', '删除活动失败', async () => {
         await adminApi.couponCampaigns.delete(row.id);
-        MessagePlugin.success('活动已删除');
+        MessagePlugin.success(t('products.couponCampaigns.deleted'));
         dialog.hide();
         await loadData();
       });
@@ -677,18 +678,18 @@ function mobileActionOptions(row: CouponCampaignRecord) {
 
 function campaignMobileRows(row: CouponCampaignRecord) {
   return [
-    { label: '调度', value: row.schedule_text || scheduleText(row), strong: true },
-    { label: '优惠', value: row.discount_label || formatDiscount(row), strong: true },
+    { label: t('products.couponCampaigns.scheduleLabel'), value: row.schedule_text || scheduleText(row), strong: true },
+    { label: t('products.couponCampaigns.discountLabel'), value: row.discount_label || formatDiscount(row), strong: true },
     {
-      label: '类型',
+      label: t('products.couponCampaigns.typeLabel'),
       value: `${row.discount_type_label || discountTypeLabel(row.discount_type)} / ${
         row.discount_scope_label || discountScopeLabel(row.discount_scope)
       }`,
     },
-    { label: '数量', value: `${row.issue_quantity || 0} 张` },
-    { label: '下次', value: row.next_run_at || '未配置' },
-    { label: '生成', value: `${row.generated_coupon_count || 0} 批` },
-    { label: '锁定', value: campaignLockReason(row), show: row.can_update === false || row.can_delete === false },
+    { label: t('products.couponCampaigns.quantity'), value: `${row.issue_quantity || 0} 张` },
+    { label: t('products.couponCampaigns.nextRun'), value: row.next_run_at || '未配置' },
+    { label: t('products.couponCampaigns.generatedLabel'), value: `${row.generated_coupon_count || 0} 批` },
+    { label: t('products.couponCampaigns.locked'), value: campaignLockReason(row), show: row.can_update === false || row.can_delete === false },
   ];
 }
 

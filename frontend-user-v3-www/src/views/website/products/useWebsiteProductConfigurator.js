@@ -1,4 +1,5 @@
 import { computed, reactive } from 'vue'
+import { t } from '@/locales'
 import {
   buildOsGroups,
   buildPricingEntries,
@@ -244,20 +245,20 @@ export function useWebsiteProductConfigurator(productDetail) {
     if (configForm.region) {
       const region = regionOptions.value.find((item) => item.id === configForm.region)
       if (region) {
-        items.push({ key: 'region', label: '区域', value: region.label })
+        items.push({ key: 'region', label: t('websiteProduct.summary.region'), value: region.label })
       }
     }
 
     if (configForm.os) {
       const version = currentOsGroup.value?.versions?.find((item) => item.id === configForm.os)
       if (version) {
-        items.push({ key: 'os', label: '系统安装', value: version.label })
+        items.push({ key: 'os', label: t('websiteProduct.summary.os'), value: version.label })
       }
     }
 
     const cpuModelName = String(productDetail.value?.cpu_model_name || '').trim()
     if (cpuModelName) {
-      items.push({ key: 'cpu_model_name', label: 'CPU型号', value: cpuModelName })
+      items.push({ key: 'cpu_model_name', label: t('websiteProduct.summary.cpuModel'), value: cpuModelName })
     }
 
     if (selectedMachineSpec.value.cpuText) {
@@ -265,7 +266,7 @@ export function useWebsiteProductConfigurator(productDetail) {
     }
 
     if (selectedMachineSpec.value.memoryText) {
-      items.push({ key: 'memory_spec', label: '内存', value: selectedMachineSpec.value.memoryText })
+      items.push({ key: 'memory_spec', label: t('websiteProduct.summary.memory'), value: selectedMachineSpec.value.memoryText })
     }
 
     const allConfigs = [...machineConfigs.value, ...networkConfigs.value, ...otherConfigs.value]

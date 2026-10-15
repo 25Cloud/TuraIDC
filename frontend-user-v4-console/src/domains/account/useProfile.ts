@@ -12,6 +12,7 @@ import {
   resetProfileState,
   setProfileDataLoaded,
 } from '@/domains/account/profileState';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import type { ClientNotificationPreferences, ClientUserInfo } from '@/types/client';
 import { getErrorMessage } from '@/utils/error';
@@ -26,7 +27,7 @@ export function useProfile() {
   const router = useRouter();
   const userStore = useUserStore();
   const { runWithCaptcha } = useGeeTestCaptcha({
-    onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
+    onPrompt: () => MessagePlugin.warning(t('profile.captchaRequired')),
   });
   const activeTab = ref<ProfileTab>('profile');
   const profileLoading = ref(false);
@@ -55,7 +56,7 @@ export function useProfile() {
   const securityItems = computed(() => [
     {
       key: 'verification',
-      name: '实名认证',
+      name: t('profile.realNameAuth'),
       desc: profileForm.real_name
         ? `${profileForm.real_name}${profileForm.id_card_masked ? ` · ${profileForm.id_card_masked}` : ''}`
         : '完成实名认证后，可提升账户可信度与业务可用范围',
@@ -66,7 +67,7 @@ export function useProfile() {
     },
     {
       key: 'phone',
-      name: '安全手机',
+      name: t('profile.securePhone'),
       desc: profileForm.phone || '绑定手机号后，可用于验证码接收和安全校验',
       theme: (profileForm.phone ? 'success' : 'warning') as TagTheme,
       tag: profileForm.phone ? '已绑定' : '未绑定',
@@ -75,7 +76,7 @@ export function useProfile() {
     },
     {
       key: 'email',
-      name: '安全邮箱',
+      name: t('profile.secureEmail'),
       desc: profileForm.email || '建议绑定常用邮箱，用于接收通知与安全提醒',
       theme: (profileForm.email ? 'success' : 'warning') as TagTheme,
       tag: profileForm.email ? '已绑定' : '未绑定',
@@ -84,7 +85,7 @@ export function useProfile() {
     },
     {
       key: 'password',
-      name: '登录密码',
+      name: t('profile.loginPassword'),
       desc: '建议定期更新密码，并避免与其他平台共用同一组凭证',
       theme: 'success' as TagTheme,
       tag: '已设置',
@@ -151,7 +152,7 @@ export function useProfile() {
           await clientAuthApi.sendEmailCode({ email: profileForm.email, captcha });
         }
       });
-      MessagePlugin.success('验证码已发送');
+      MessagePlugin.success(t('profile.codeSent'));
       resetCountdown.value = 60;
       resetTimer = setInterval(() => {
         resetCountdown.value -= 1;
@@ -167,20 +168,20 @@ export function useProfile() {
 
   async function submitResetPassword() {
     if (!resetForm.code || resetForm.code.length !== 6) {
-      MessagePlugin.warning('请输入 6 位验证码');
+      MessagePlugin.warning(t('profile.codeRequired'));
       return;
     }
     if (!resetForm.password) {
-      MessagePlugin.warning('请输入新密码');
+      MessagePlugin.warning(t('profile.newPasswordRequired'));
       return;
     }
     // 这里此前只判空。后端 ResetPasswordRequest 是 min:8，短密码会一路发出去再被 422 打回。
     if (resetForm.password.length < 8) {
-      MessagePlugin.warning('密码长度不能少于 8 位');
+      MessagePlugin.warning(t('profile.passwordMinLength'));
       return;
     }
     if (resetForm.password !== resetForm.confirmPassword) {
-      MessagePlugin.warning('两次密码输入不一致');
+      MessagePlugin.warning(t('profile.passwordMismatch'));
       return;
     }
     profileLoading.value = true;
@@ -192,7 +193,7 @@ export function useProfile() {
         password: resetForm.password,
         password_confirmation: resetForm.confirmPassword,
       });
-      MessagePlugin.success('密码重置成功，请重新登录');
+      MessagePlugin.success(t('profile.passwordResetSuccess'));
       passwordDialogVisible.value = false;
       clearResetTimer();
       await userStore.logout();
@@ -228,14 +229,14 @@ export function useProfile() {
 
   async function sendPhoneOldVerificationCode() {
     if (!profileForm.phone) {
-      MessagePlugin.warning('当前账号未绑定手机号');
+      MessagePlugin.warning(t('profile.phoneNotBound'));
       return;
     }
     try {
       await runWithCaptcha(async (captcha: unknown) => {
         await clientAuthApi.sendPhoneCode({ phone: profileForm.phone, purpose: 'verify_bound_phone', captcha });
       });
-      MessagePlugin.success('验证码已发送至原手机号');
+      MessagePlugin.success(t('profile.codeSentToOldPhone'));
       phoneOldCountdown.value = 60;
       phoneOldTimer = setInterval(() => {
         phoneOldCountdown.value -= 1;
@@ -251,14 +252,14 @@ export function useProfile() {
 
   async function sendEmailOldVerificationCode() {
     if (!profileForm.email) {
-      MessagePlugin.warning('当前账号未绑定邮箱');
+      MessagePlugin.warning(t('profile.emailNotBound'));
       return;
     }
     try {
       await runWithCaptcha(async (captcha: unknown) => {
         await clientAuthApi.sendEmailCode({ email: profileForm.email, purpose: 'verify_bound_email', captcha });
       });
-      MessagePlugin.success('验证码已发送至原邮箱');
+      MessagePlugin.success(t('profile.codeSentToOldEmail'));
       emailOldCountdown.value = 60;
       emailOldTimer = setInterval(() => {
         emailOldCountdown.value -= 1;
@@ -274,7 +275,7 @@ export function useProfile() {
 
   async function sendPhoneVerificationCode() {
     if (!phoneForm.phone) {
-      MessagePlugin.warning('请输入新手机号');
+      MessagePlugin.warning(t('profile.newPhoneRequired'));
       return;
     }
     try {
@@ -285,7 +286,7 @@ export function useProfile() {
           captcha,
         });
       });
-      MessagePlugin.success('验证码已发送');
+      MessagePlugin.success(t('profile.codeSent'));
       phoneCountdown.value = 60;
       phoneTimer = setInterval(() => {
         phoneCountdown.value -= 1;
@@ -301,14 +302,14 @@ export function useProfile() {
 
   async function sendEmailVerificationCode() {
     if (!emailForm.email) {
-      MessagePlugin.warning('请输入新邮箱');
+      MessagePlugin.warning(t('profile.newEmailRequired'));
       return;
     }
     try {
       await runWithCaptcha(async (captcha: unknown) => {
         await clientAuthApi.sendEmailCode({ email: emailForm.email, captcha });
       });
-      MessagePlugin.success('验证码已发送');
+      MessagePlugin.success(t('profile.codeSent'));
       emailCountdown.value = 60;
       emailTimer = setInterval(() => {
         emailCountdown.value -= 1;
@@ -324,15 +325,15 @@ export function useProfile() {
 
   async function submitPhoneChange() {
     if (!phoneForm.phone) {
-      MessagePlugin.warning('请输入新手机号');
+      MessagePlugin.warning(t('profile.newPhoneRequired'));
       return;
     }
     if (!phoneForm.code || phoneForm.code.length !== 6) {
-      MessagePlugin.warning('请输入 6 位验证码');
+      MessagePlugin.warning(t('profile.codeRequired'));
       return;
     }
     if (profileForm.phone && (!phoneForm.oldCode || phoneForm.oldCode.length !== 6)) {
-      MessagePlugin.warning('请输入原手机号验证码');
+      MessagePlugin.warning(t('profile.oldPhoneCodeRequired'));
       return;
     }
     profileLoading.value = true;
@@ -342,7 +343,7 @@ export function useProfile() {
         code: phoneForm.code,
         old_code: phoneForm.oldCode || undefined,
       });
-      MessagePlugin.success('手机号修改成功');
+      MessagePlugin.success(t('profile.phoneUpdated'));
       phoneDialogVisible.value = false;
       clearPhoneTimer();
       clearPhoneOldTimer();
@@ -356,15 +357,15 @@ export function useProfile() {
 
   async function submitEmailChange() {
     if (!emailForm.email) {
-      MessagePlugin.warning('请输入新邮箱');
+      MessagePlugin.warning(t('profile.newEmailRequired'));
       return;
     }
     if (!emailForm.code || emailForm.code.length !== 6) {
-      MessagePlugin.warning('请输入 6 位验证码');
+      MessagePlugin.warning(t('profile.codeRequired'));
       return;
     }
     if (profileForm.email && (!emailForm.oldCode || emailForm.oldCode.length !== 6)) {
-      MessagePlugin.warning('请输入原邮箱验证码');
+      MessagePlugin.warning(t('profile.oldEmailCodeRequired'));
       return;
     }
     profileLoading.value = true;
@@ -374,7 +375,7 @@ export function useProfile() {
         code: emailForm.code,
         old_code: emailForm.oldCode || undefined,
       });
-      MessagePlugin.success('邮箱修改成功');
+      MessagePlugin.success(t('profile.emailUpdated'));
       emailDialogVisible.value = false;
       clearEmailTimer();
       clearEmailOldTimer();
@@ -418,23 +419,23 @@ export function useProfile() {
   async function updateProfile() {
     const trimmed = (profileForm.nickname || '').trim();
     if (!trimmed) {
-      MessagePlugin.warning('用户名不能为空');
+      MessagePlugin.warning(t('profile.usernameRequired'));
       return;
     }
     if (trimmed.length > 50) {
-      MessagePlugin.warning('用户名最多 50 个字符');
+      MessagePlugin.warning(t('profile.usernameMaxLength'));
       return;
     }
     const trimmedQq = (profileForm.qq || '').trim();
     if (trimmedQq && !/^\d{5,20}$/.test(trimmedQq)) {
-      MessagePlugin.warning('QQ 号需为 5-20 位数字');
+      MessagePlugin.warning(t('profile.qqFormatInvalid'));
       return;
     }
     profileLoading.value = true;
     try {
       await clientAuthApi.updateProfile({ nickname: trimmed, qq: trimmedQq });
       await loadProfile();
-      MessagePlugin.success('资料修改成功');
+      MessagePlugin.success(t('profile.updated'));
     } catch (error: unknown) {
       MessagePlugin.error(getErrorMessage(error, '资料保存失败'));
     } finally {
@@ -444,16 +445,16 @@ export function useProfile() {
 
   async function changePassword() {
     if (!passwordForm.oldPassword || !passwordForm.newPassword) {
-      MessagePlugin.warning('请填写完整密码信息');
+      MessagePlugin.warning(t('profile.passwordInfoRequired'));
       return;
     }
     // 与 submitResetPassword 同口径：后端 UpdatePasswordRequest 的 newPassword 是 min:8。
     if (passwordForm.newPassword.length < 8) {
-      MessagePlugin.warning('新密码长度不能少于 8 位');
+      MessagePlugin.warning(t('profile.newPasswordMinLength'));
       return;
     }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      MessagePlugin.warning('两次密码输入不一致');
+      MessagePlugin.warning(t('profile.passwordMismatch'));
       return;
     }
     profileLoading.value = true;
@@ -463,7 +464,7 @@ export function useProfile() {
         newPassword: passwordForm.newPassword,
         confirmPassword: passwordForm.confirmPassword,
       });
-      MessagePlugin.success('密码修改成功，请重新登录');
+      MessagePlugin.success(t('profile.passwordChanged'));
       passwordDialogVisible.value = false;
       await userStore.logout();
       router.push('/client/login');
@@ -491,7 +492,7 @@ export function useProfile() {
     try {
       const settings = Object.fromEntries(notificationList.map((item) => [item.key, item.enabled]));
       await clientAuthApi.updateNotificationPreferences(settings);
-      MessagePlugin.success('设置保存成功');
+      MessagePlugin.success(t('profile.settingsSaved'));
     } catch (error: unknown) {
       MessagePlugin.error(getErrorMessage(error, '保存失败'));
     } finally {

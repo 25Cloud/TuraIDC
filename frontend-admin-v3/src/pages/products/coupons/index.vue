@@ -459,6 +459,7 @@ import MobileRecordCard from '@/components/mobile-record-card/index.vue';
 import ProductBindingTreeSelect from '@/components/product-binding-tree-select/index.vue';
 import { AdminPermissions } from '@/constants/permissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { t } from '@/locales';
 import { formatDateTime } from '@/utils/format';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
@@ -548,22 +549,22 @@ const lockedFields = ref<string[]>([]);
 const lockReason = ref('');
 
 const formRules: Record<string, FormRule[]> = {
-  name: [{ required: true, message: '请输入优惠券名称', type: 'error' }],
-  distribution_type: [{ required: true, message: '请选择发放方式', type: 'error' }],
-  discount_scope: [{ required: true, message: '请选择优惠阶段', type: 'error' }],
-  discount_type: [{ required: true, message: '请选择优惠类型', type: 'error' }],
-  discount_value: [{ required: true, message: '请输入优惠值', type: 'error' }],
+  name: [{ required: true, message: t('products.coupons.couponNameRequired'), type: 'error' }],
+  distribution_type: [{ required: true, message: t('products.coupons.distributionRequired'), type: 'error' }],
+  discount_scope: [{ required: true, message: t('products.coupons.discountScopeRequired'), type: 'error' }],
+  discount_type: [{ required: true, message: t('products.coupons.discountTypeRequired'), type: 'error' }],
+  discount_value: [{ required: true, message: t('products.coupons.discountValueRequired'), type: 'error' }],
 };
 
 const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'id', title: 'ID', width: 72 },
-  { colKey: 'coupon', title: '优惠券信息', minWidth: 260 },
-  { colKey: 'rule', title: '优惠规则', minWidth: 220 },
-  { colKey: 'usage', title: '使用情况', minWidth: 180 },
-  { colKey: 'status', title: '状态', width: 110 },
-  { colKey: 'validity', title: '有效期', minWidth: 200 },
-  { colKey: 'updatedAt', title: '更新时间', minWidth: 170 },
-  { colKey: 'operation', title: '操作', width: 160, fixed: 'right' },
+  { colKey: 'coupon', title: t('products.coupons.couponInfo'), minWidth: 260 },
+  { colKey: 'rule', title: t('products.coupons.discountRule'), minWidth: 220 },
+  { colKey: 'usage', title: t('products.coupons.usage'), minWidth: 180 },
+  { colKey: 'status', title: t('common.status'), width: 110 },
+  { colKey: 'validity', title: t('products.coupons.validity'), minWidth: 200 },
+  { colKey: 'updatedAt', title: t('products.coupons.updatedAt'), minWidth: 170 },
+  { colKey: 'operation', title: t('common.action'), width: 160, fixed: 'right' },
 ];
 
 const selectedUsers = computed(() => {
@@ -741,11 +742,11 @@ function handlePageChange(data: { current: number; pageSize: number }) {
 
 async function openCouponDialog(row?: CouponRecord) {
   if (!canManage.value) {
-    MessagePlugin.warning('您没有管理优惠券的权限');
+    MessagePlugin.warning(t('products.coupons.noPermission'));
     return;
   }
   if (!couponFeatureEnabled.value) {
-    MessagePlugin.warning('当前环境未启用优惠券功能');
+    MessagePlugin.warning(t('products.coupons.featureDisabled'));
     return;
   }
   if (row?.can_update === false) {
@@ -815,25 +816,25 @@ function buildPayload(): CouponPayload {
 
 async function submitForm() {
   if (!canManage.value) {
-    MessagePlugin.warning('您没有管理优惠券的权限');
+    MessagePlugin.warning(t('products.coupons.noPermission'));
     return;
   }
   if (!couponFeatureEnabled.value) {
-    MessagePlugin.warning('当前环境未启用优惠券功能');
+    MessagePlugin.warning(t('products.coupons.featureDisabled'));
     return;
   }
   const validateResult = await formRef.value?.validate?.();
   if (validateResult !== true) return;
   if (Number(form.discount_value || 0) <= 0) {
-    MessagePlugin.warning('优惠值必须大于 0');
+    MessagePlugin.warning(t('products.coupons.discountValuePositive'));
     return;
   }
   if (form.discount_type === 'percentage' && Number(form.discount_value || 0) > 100) {
-    MessagePlugin.warning('折扣值不能大于 100');
+    MessagePlugin.warning(t('products.coupons.discountPercentLimit'));
     return;
   }
   if (form.distribution_type === 'private' && !form.user_ids.length) {
-    MessagePlugin.warning('私有优惠券至少需要选择一个发放用户');
+    MessagePlugin.warning(t('products.coupons.privateUserRequired'));
     return;
   }
   saving.value = true;
@@ -841,10 +842,10 @@ async function submitForm() {
     const payload = buildPayload();
     if (form.id) {
       await adminApi.coupons.update(form.id, payload);
-      MessagePlugin.success('优惠券已更新');
+      MessagePlugin.success(t('products.coupons.updateSuccess'));
     } else {
       await adminApi.coupons.create(payload);
-      MessagePlugin.success('优惠券已创建');
+      MessagePlugin.success(t('products.coupons.createSuccess'));
     }
     dialogVisible.value = false;
     await loadData();
@@ -857,17 +858,17 @@ async function submitForm() {
 
 async function handleToggleStatus(row: CouponRecord) {
   if (!canManage.value) {
-    MessagePlugin.warning('您没有管理优惠券的权限');
+    MessagePlugin.warning(t('products.coupons.noPermission'));
     return;
   }
   if (!couponFeatureEnabled.value) {
-    MessagePlugin.warning('当前环境未启用优惠券功能');
+    MessagePlugin.warning(t('products.coupons.featureDisabled'));
     return;
   }
   actionLoading.value = row.id;
   try {
     await adminApi.coupons.toggleStatus(row.id, Number(row.status) !== 1);
-    MessagePlugin.success('优惠券状态已更新');
+    MessagePlugin.success(t('products.coupons.statusUpdateSuccess'));
     await loadData();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '更新优惠券状态失败'));
@@ -878,11 +879,11 @@ async function handleToggleStatus(row: CouponRecord) {
 
 function handleDelete(row: CouponRecord) {
   if (!canManage.value) {
-    MessagePlugin.warning('您没有管理优惠券的权限');
+    MessagePlugin.warning(t('products.coupons.noPermission'));
     return;
   }
   if (!couponFeatureEnabled.value) {
-    MessagePlugin.warning('当前环境未启用优惠券功能');
+    MessagePlugin.warning(t('products.coupons.featureDisabled'));
     return;
   }
   if (row.can_delete === false) {
@@ -893,13 +894,13 @@ function handleDelete(row: CouponRecord) {
     header: '删除优惠券',
     body: `确认删除优惠券「${row.name || row.id}」吗？未使用的领取和发放记录会一并清理。`,
     theme: 'warning',
-    confirmBtn: '确认删除',
-    cancelBtn: '取消',
+    confirmBtn: t('products.coupons.deleteConfirm'),
+    cancelBtn: t('common.cancel'),
     async onConfirm() {
       actionLoading.value = row.id;
       try {
         await adminApi.coupons.delete(row.id);
-        MessagePlugin.success('优惠券已删除');
+        MessagePlugin.success(t('products.coupons.deleteSuccess'));
         dialog.hide();
         await loadData();
       } catch (error) {
@@ -925,17 +926,17 @@ function mobileActionOptions(row: CouponRecord) {
 
 function couponMobileRows(row: CouponRecord) {
   return [
-    { label: '优惠', value: row.discount_label || formatDiscount(row), strong: true },
+    { label: t('products.coupons.discount'), value: row.discount_label || formatDiscount(row), strong: true },
     {
-      label: '类型',
+      label: t('products.coupons.couponType'),
       value: `${row.discount_type_label || discountTypeLabel(row.discount_type)} / ${
         row.discount_scope_label || discountScopeLabel(row.discount_scope)
       }`,
     },
-    { label: '门槛', value: moneyText(row.min_amount) },
-    { label: '库存', value: row.total_usage_limit ? `${row.remaining_stock ?? 0} / ${row.total_usage_limit}` : '不限' },
-    { label: '有效期', value: row.validity_text || validityText(row) },
-    { label: '活动', value: row.coupon_campaign_name || '', show: Boolean(row.coupon_campaign_name) },
+    { label: t('products.coupons.threshold'), value: moneyText(row.min_amount) },
+    { label: t('products.coupons.stock'), value: row.total_usage_limit ? `${row.remaining_stock ?? 0} / ${row.total_usage_limit}` : '不限' },
+    { label: t('products.coupons.validity'), value: row.validity_text || validityText(row) },
+    { label: t('products.coupons.campaign'), value: row.coupon_campaign_name || '', show: Boolean(row.coupon_campaign_name) },
   ];
 }
 

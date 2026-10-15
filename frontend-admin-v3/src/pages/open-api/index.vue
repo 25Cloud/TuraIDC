@@ -236,14 +236,15 @@ import type { OpenApiConfigPayload, OpenApiKeyRecord, OpenApiUsageLogRecord } fr
 import { AdminPermissions } from '@/constants/permissions';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 defineOptions({ name: 'AdminOpenApi' });
 
 const SCOPE_DOMAINS = [
-  { key: 'products', label: '产品目录' },
-  { key: 'orders', label: '订单与账单' },
-  { key: 'services', label: '服务实例' },
-  { key: 'finance', label: '余额与财务' },
+  { key: 'products', label: t('openApi.index.scopeProducts') },
+  { key: 'orders', label: t('openApi.index.scopeOrders') },
+  { key: 'services', label: t('openApi.index.scopeServices') },
+  { key: 'finance', label: t('openApi.index.scopeFinance') },
 ] as const;
 
 const activeTab = ref('config');
@@ -306,7 +307,7 @@ async function saveConfig() {
   try {
     const data = await adminApi.openApi.saveConfig({ ...config });
     Object.assign(config, data);
-    MessagePlugin.success('开放接口配置已保存');
+    MessagePlugin.success(t('openApi.index.configSaved'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存配置失败'));
   } finally {
@@ -363,7 +364,7 @@ function confirmRemove(row: OpenApiKeyRecord) {
     onConfirm: async () => {
       try {
         await adminApi.openApi.remove(row.id);
-        MessagePlugin.success('密钥已删除');
+        MessagePlugin.success(t('openApi.index.keyDeleted'));
         await loadKeys();
       } catch (error) {
         MessagePlugin.error(errorMessage(error, '删除失败'));
@@ -389,31 +390,31 @@ async function openUsageLogs(row: OpenApiKeyRecord) {
 }
 
 const columns: PrimaryTableCol[] = [
-  { colKey: 'key_name', title: '密钥', minWidth: '11rem' },
-  { colKey: 'owner', title: '所属用户', minWidth: '11rem' },
-  { colKey: 'scopes', title: '权限范围', minWidth: '16rem' },
-  { colKey: 'status', title: '状态', width: '6rem' },
-  { colKey: 'expires_at', title: '到期时间', minWidth: '9rem' },
-  { colKey: 'operation', title: '操作', width: '12rem', fixed: 'right', align: 'right' },
+  { colKey: 'key_name', title: t('openApi.index.keyName'), minWidth: '11rem' },
+  { colKey: 'owner', title: t('openApi.index.owner'), minWidth: '11rem' },
+  { colKey: 'scopes', title: t('openApi.index.scopes'), minWidth: '16rem' },
+  { colKey: 'status', title: t('common.status'), width: '6rem' },
+  { colKey: 'expires_at', title: t('openApi.index.expiresAt'), minWidth: '9rem' },
+  { colKey: 'operation', title: t('common.action'), width: '12rem', fixed: 'right', align: 'right' },
 ];
 
 const logColumns: PrimaryTableCol[] = [
-  { colKey: 'created_at', title: '时间', minWidth: '10rem' },
-  { colKey: 'method', title: '方法', width: '5rem' },
-  { colKey: 'path', title: '接口路径', minWidth: '14rem' },
-  { colKey: 'status_code', title: '状态', width: '5rem' },
+  { colKey: 'created_at', title: t('openApi.index.time'), minWidth: '10rem' },
+  { colKey: 'method', title: t('openApi.index.method'), width: '5rem' },
+  { colKey: 'path', title: t('openApi.index.path'), minWidth: '14rem' },
+  { colKey: 'status_code', title: t('common.status'), width: '5rem' },
   { colKey: 'ip', title: 'IP', minWidth: '8rem' },
-  { colKey: 'duration_ms', title: '耗时', width: '6rem' },
+  { colKey: 'duration_ms', title: t('openApi.index.duration'), width: '6rem' },
 ];
 
 const upstreamLogColumns: PrimaryTableCol[] = [
-  { colKey: 'created_at', title: '时间', minWidth: '10rem' },
-  { colKey: 'user_id', title: '账号', width: '5rem' },
-  { colKey: 'method', title: '方法', width: '5rem' },
-  { colKey: 'path', title: '接口路径', minWidth: '14rem' },
-  { colKey: 'status_code', title: '状态', width: '5rem' },
+  { colKey: 'created_at', title: t('openApi.index.time'), minWidth: '10rem' },
+  { colKey: 'user_id', title: t('openApi.index.account'), width: '5rem' },
+  { colKey: 'method', title: t('openApi.index.method'), width: '5rem' },
+  { colKey: 'path', title: t('openApi.index.path'), minWidth: '14rem' },
+  { colKey: 'status_code', title: t('common.status'), width: '5rem' },
   { colKey: 'ip', title: 'IP', minWidth: '8rem' },
-  { colKey: 'duration_ms', title: '耗时', width: '6rem' },
+  { colKey: 'duration_ms', title: t('openApi.index.duration'), width: '6rem' },
 ];
 
 async function loadUpstreamLogs() {

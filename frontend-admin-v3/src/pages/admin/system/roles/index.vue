@@ -234,6 +234,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useUserStore } from '@/store';
 import { required } from '@/utils/formRules';
 import { errorMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 defineOptions({
   name: 'AdminRoles',
@@ -341,11 +342,11 @@ const rules: Record<string, FormRule[]> = {
 };
 const columns: PrimaryTableCol<TableRowData>[] = [
   { title: 'ID', colKey: 'id', width: 80 },
-  { title: '角色', colKey: 'role', minWidth: 220 },
-  { title: '权限', colKey: 'permissions', width: 180 },
-  { title: '员工数', colKey: 'adminCount', width: 110 },
-  { title: '更新时间', colKey: 'updatedAt', width: 180 },
-  { title: '操作', colKey: 'actions', fixed: 'right', width: 180 },
+  { title: t('roles.index.role'), colKey: 'role', minWidth: 220 },
+  { title: t('roles.index.permissions'), colKey: 'permissions', width: 180 },
+  { title: t('roles.index.staffCount'), colKey: 'adminCount', width: 110 },
+  { title: t('roles.index.updatedAt'), colKey: 'updatedAt', width: 180 },
+  { title: t('common.action'), colKey: 'actions', fixed: 'right', width: 180 },
 ];
 
 watch(
@@ -432,11 +433,11 @@ function openEditDialog(row: RoleRecord) {
 
 async function submitForm() {
   if (!canManage.value) {
-    MessagePlugin.warning('当前账号无角色管理权限');
+    MessagePlugin.warning(t('roles.index.noPermission'));
     return;
   }
   if (currentRoleLocked.value) {
-    MessagePlugin.warning('系统默认角色不可直接编辑，请复制后自定义');
+    MessagePlugin.warning(t('roles.index.systemDefaultNotEditable'));
     return;
   }
 
@@ -452,10 +453,10 @@ async function submitForm() {
   try {
     if (form.id) {
       await adminRoleApi.update(form.id, payload);
-      MessagePlugin.success('角色已更新');
+      MessagePlugin.success(t('roles.index.updated'));
     } else {
       await adminRoleApi.create(payload);
-      MessagePlugin.success('角色已创建');
+      MessagePlugin.success(t('roles.index.created'));
     }
     dialogVisible.value = false;
     await loadRoles();
@@ -471,11 +472,11 @@ function handleCopy(row: RoleRecord) {
     header: '复制角色',
     body: `确认复制角色「${row.label || row.name || row.id}」？`,
     confirmBtn: { content: '复制', theme: 'primary' },
-    cancelBtn: '取消',
+    cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       try {
         await adminRoleApi.copy(row.id);
-        MessagePlugin.success('角色已复制');
+        MessagePlugin.success(t('roles.index.copied'));
         await loadRoles();
         dialog.destroy();
       } catch (error) {
@@ -487,7 +488,7 @@ function handleCopy(row: RoleRecord) {
 
 function handleDelete(row: RoleRecord) {
   if (!canDeleteRole(row)) {
-    MessagePlugin.warning('系统默认角色不可删除');
+    MessagePlugin.warning(t('roles.index.systemDefaultNotDeletable'));
     return;
   }
 
@@ -495,11 +496,11 @@ function handleDelete(row: RoleRecord) {
     header: '删除角色',
     body: `确认删除角色「${row.label || row.name || row.id}」？已分配员工的角色无法删除。`,
     confirmBtn: { content: '删除', theme: 'danger' },
-    cancelBtn: '取消',
+    cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       try {
         await adminRoleApi.delete(row.id);
-        MessagePlugin.success('角色已删除');
+        MessagePlugin.success(t('roles.index.deleted'));
         await loadRoles();
         dialog.destroy();
       } catch (error) {
@@ -616,7 +617,7 @@ function confirmAllPermission() {
       header: '确认授予全部权限',
       body: '全部权限将允许该角色访问并操作后台所有功能。',
       confirmBtn: { content: '确认授予', theme: 'danger' },
-      cancelBtn: '取消',
+      cancelBtn: t('common.cancel'),
       onConfirm: () => {
         settle(true);
         dialog.destroy();

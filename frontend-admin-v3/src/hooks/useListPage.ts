@@ -1,5 +1,6 @@
 import type { Ref } from 'vue';
 import { onMounted, reactive, ref } from 'vue';
+import { t } from '@/locales';
 
 export interface ListPageResponse<T> {
   list?: T[];
@@ -50,7 +51,7 @@ export function useListPage<F extends Record<string, any>, T>(options: UseListPa
       if (res.page) pagination.page = Number(res.page);
       if (res.page_size) pagination.page_size = Number(res.page_size);
     } catch (err) {
-      error.value = err instanceof Error ? err.message : '加载失败，请稍后重试';
+      error.value = err instanceof Error ? err.message : t('common.listPage.loadFailed');
       console.error('[useListPage] 列表加载失败:', err);
       if (onError) onError(err);
     } finally {

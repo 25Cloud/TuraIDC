@@ -1,6 +1,8 @@
 import { BillIcon, DashboardIcon, ServerIcon } from 'tdesign-icons-vue-next';
 import type { Component } from 'vue';
 
+import { t } from '@/locales';
+
 import AreaTab from '../tabs/AreaTab.vue';
 import FinanceTab from '../tabs/FinanceTab.vue';
 import CdnOverviewTab from './tabs/CdnOverviewTab.vue';
@@ -18,9 +20,9 @@ export interface CdnConsoleNavItem {
  * 监控、安全组、端口转发、VNC 都不该出现。
  */
 const cdnTabMeta: Record<string, Omit<CdnConsoleNavItem, 'key'>> = {
-  overview: { label: 'CDN 总览', icon: DashboardIcon },
-  panel: { label: '套餐与面板', icon: ServerIcon },
-  finance: { label: '财务日志', icon: BillIcon },
+  overview: { label: t('serviceConsole.cdn.overview'), icon: DashboardIcon },
+  panel: { label: t('serviceConsole.cdn.panel'), icon: ServerIcon },
+  finance: { label: t('serviceConsole.financeLog'), icon: BillIcon },
 };
 
 const cdnTabComponents: Record<string, Component> = {

@@ -15,6 +15,7 @@ import type {
 } from '@/types/client';
 
 import { resolveErrorMessage } from './useConsoleCore';
+import { t } from '@/locales';
 
 type MonitorRangePreset = '3h' | '24h' | '7d' | '30d';
 
@@ -148,12 +149,12 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
     const protocol = natForm.protocol.trim();
 
     if (!name || !internalPort || !protocol) {
-      MessagePlugin.warning('请填写完整的端口转发信息');
+      MessagePlugin.warning(t('serviceConsole.portForward.incomplete'));
       return;
     }
 
     if (!isValidPort(internalPort) || (externalPort !== '' && !isValidPort(externalPort))) {
-      MessagePlugin.warning('端口范围应为 1 到 65535');
+      MessagePlugin.warning(t('serviceConsole.portForward.invalidRange'));
       return;
     }
 
@@ -184,8 +185,8 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       header: '删除端口转发',
       body: `确认删除端口转发“${String(forwarding.name || forwardingId)}”吗？`,
       theme: 'warning',
-      confirmBtn: '确认删除',
-      cancelBtn: '取消',
+      confirmBtn: t('common.confirmDelete'),
+      cancelBtn: t('common.cancel'),
       onConfirm: async () => {
         dialog.setConfirmLoading(true);
         natState.submitting = true;

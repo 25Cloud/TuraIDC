@@ -150,6 +150,7 @@ import { useGeeTestCaptcha } from '@/composables/useGeeTestCaptcha';
 import { useUserStore } from '@/store';
 import { buildAccountPayload, detectAccountType, normalizeAccountValue } from '@/utils/account';
 import { toUserMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 interface LoginForm {
   account: string;
@@ -202,7 +203,7 @@ const {
   prepare: prepareCaptcha,
 } = useGeeTestCaptcha({
   appendTo: captchaContainer,
-  onPrompt: () => MessagePlugin.warning('请先完成人机验证'),
+  onPrompt: () => MessagePlugin.warning(t('clientAuth.login.captchaRequired')),
   // 本页涉及密码登录与验证码登录的发码动作，任一场景开启即需要验证
   scenes: ['client_login', 'email_code', 'phone_code'],
 });
@@ -236,15 +237,15 @@ const codeRules: Record<keyof CodeLoginForm, FormRule[]> = {
     {
       validator: (value: string) => ({
         result: Boolean(detectAccountType(value)),
-        message: '请输入正确的手机号或邮箱',
+        message: t('clientAuth.login.accountRequired'),
         type: 'error',
       }),
       trigger: 'blur',
     },
   ],
   code: [
-    { required: true, message: '请输入验证码', type: 'error', trigger: 'blur' },
-    { len: 6, message: '验证码为 6 位', type: 'error', trigger: 'blur' },
+    { required: true, message: t('auth.codePlaceholder'), type: 'error', trigger: 'blur' },
+    { len: 6, message: t('clientAuth.login.codeLength'), type: 'error', trigger: 'blur' },
   ],
 };
 
@@ -265,13 +266,13 @@ const rules: Record<keyof LoginForm, FormRule[]> = {
     {
       validator: (value: string) => ({
         result: Boolean(detectAccountType(value)),
-        message: '请输入正确的手机号或邮箱',
+        message: t('clientAuth.login.accountRequired'),
         type: 'error',
       }),
       trigger: 'blur',
     },
   ],
-  password: [{ required: true, message: '请输入登录密码', type: 'error', trigger: 'blur' }],
+  password: [{ required: true, message: t('clientAuth.login.passwordRequired'), type: 'error', trigger: 'blur' }],
 };
 
 const isCaptchaRequiredError = (error: unknown) =>
@@ -335,7 +336,7 @@ async function runLogin() {
       },
       { scene: 'client_login' },
     );
-    MessagePlugin.success('登录成功');
+    MessagePlugin.success(t('pages.login.loginSuccess'));
     await router.push(redirectPath.value);
   } catch (error: unknown) {
     const runtimeError = asRuntimeLoginError(error);
@@ -349,7 +350,7 @@ async function runLogin() {
           },
           { required: true },
         );
-        MessagePlugin.success('登录成功');
+        MessagePlugin.success(t('pages.login.loginSuccess'));
         await router.push(redirectPath.value);
         return;
       } catch (captchaError: unknown) {
@@ -390,7 +391,7 @@ function startCountdown() {
 async function handleSendCode() {
   const accountPayload = buildAccountPayload(codeForm.account);
   if (!accountPayload) {
-    MessagePlugin.warning('请先输入正确的手机号或邮箱');
+    MessagePlugin.warning(t('clientAuth.login.accountRequiredFirst'));
     return;
   }
 
@@ -455,7 +456,7 @@ async function runCodeLogin() {
       account: normalizeAccountValue(codeForm.account),
       code: codeForm.code,
     });
-    MessagePlugin.success('登录成功');
+    MessagePlugin.success(t('pages.login.loginSuccess'));
     await router.push(redirectPath.value);
   } catch (error: unknown) {
     const runtimeError = error as RuntimeLoginError;

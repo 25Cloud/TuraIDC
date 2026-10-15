@@ -117,6 +117,7 @@ import { adminApi } from '@/api/admin';
 import ProductBindingTreeSelect from '@/components/product-binding-tree-select/index.vue';
 import { normalizeProductBindings } from '@/hooks/useProductBindingTree';
 import { errorMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 defineOptions({ name: 'AdminSpecs' });
 
@@ -157,15 +158,15 @@ const specForm = reactive({
 });
 
 const specRules: Record<string, FormRule[]> = {
-  text: [{ required: true, message: '请输入实例规格文本', type: 'error' }],
+  text: [{ required: true, message: t('products.specs.specTextRequired'), type: 'error' }],
 };
 
 const columns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'spec', title: '实例规格文本', minWidth: 220 },
-  { colKey: 'note', title: '说明', minWidth: 220, ellipsis: true },
-  { colKey: 'status', title: '状态', width: 110 },
-  { colKey: 'bindings', title: '绑定配置', minWidth: 360 },
-  { colKey: 'operation', title: '操作', width: 150, fixed: 'right' },
+  { colKey: 'spec', title: t('products.specs.specText'), minWidth: 220 },
+  { colKey: 'note', title: t('products.specs.note'), minWidth: 220, ellipsis: true },
+  { colKey: 'status', title: t('common.status'), width: 110 },
+  { colKey: 'bindings', title: t('products.specs.bindingConfig'), minWidth: 360 },
+  { colKey: 'operation', title: t('common.action'), width: 150, fixed: 'right' },
 ];
 
 function createLocalId(prefix: string) {
@@ -243,7 +244,7 @@ async function handleSubmitSpec() {
   const text = String(specForm.text || '').trim();
   const duplicated = specs.value.find((item) => item.text === text && item.id !== editingSpecId.value);
   if (duplicated) {
-    MessagePlugin.warning('实例规格文本不能重复');
+    MessagePlugin.warning(t('products.specs.specTextDuplicated'));
     return;
   }
 
@@ -293,11 +294,11 @@ function handleDeleteSpec(row: SpecRecord) {
     header: '删除实例规格',
     body: `确认删除「${row.text || row.id}」吗？`,
     theme: 'warning',
-    confirmBtn: '确认删除',
-    cancelBtn: '取消',
+    confirmBtn: t('common.confirmDelete'),
+    cancelBtn: t('common.cancel'),
     onConfirm() {
       specs.value = specs.value.filter((item) => item.id !== row.id);
-      MessagePlugin.success('实例规格已删除');
+      MessagePlugin.success(t('products.specs.specDeleted'));
       dialog.hide();
     },
   });
@@ -326,14 +327,14 @@ function buildPayload(): InstanceSpecRecord[] {
 
 async function handleSave() {
   if (!specs.value.length) {
-    MessagePlugin.warning('请至少添加一个实例规格');
+    MessagePlugin.warning(t('products.specs.specRequired'));
     return;
   }
   saving.value = true;
   try {
     const response = await adminApi.instanceSpecCatalog.save({ list: buildPayload() });
     rebuildCatalogState(response.list || []);
-    MessagePlugin.success('实例规格目录已保存');
+    MessagePlugin.success(t('products.specs.catalogSaved'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存实例规格失败'));
   } finally {

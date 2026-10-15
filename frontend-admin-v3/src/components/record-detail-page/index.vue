@@ -58,6 +58,8 @@ import { ChevronLeftIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 import type { TagProps } from 'tdesign-vue-next';
 import { computed } from 'vue';
 
+import { t } from '@/locales';
+
 type ThemeType = NonNullable<TagProps['theme']>;
 
 export interface RecordDetailMetric {
@@ -98,9 +100,9 @@ const props = withDefaults(
     statusLabel: '',
     statusTheme: 'default',
     metrics: () => [],
-    tabs: () => [{ value: 'basic', label: '基本信息' }],
+    tabs: () => [{ value: 'basic', label: t('recordDetail.basicInfo') }],
     activeTab: 'basic',
-    emptyText: '暂无详情',
+    emptyText: t('recordDetail.empty'),
   },
 );
 

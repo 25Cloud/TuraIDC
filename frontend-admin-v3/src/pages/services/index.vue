@@ -213,6 +213,7 @@ import StatusTag from '@/components/status-tag/index.vue';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { fieldValue, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 defineOptions({ name: 'AdminServices' });
 
@@ -252,22 +253,22 @@ const statusOptions = computed(() =>
 
 const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'row-select', type: 'multiple', width: 54, fixed: 'left' },
-  { colKey: 'service', title: '服务', minWidth: 280 },
-  { colKey: 'host', title: '主机信息', minWidth: 240 },
-  { colKey: 'user', title: '用户', minWidth: 180 },
-  { colKey: 'product', title: '配置', minWidth: 180 },
-  { colKey: 'status', title: '状态', width: 110 },
-  { colKey: 'billing', title: '计费/金额', width: 130 },
-  { colKey: 'expires', title: '到期时间', width: 130 },
-  { colKey: 'created', title: '开通时间', width: 120 },
-  { colKey: 'operation', title: '操作', width: 110 },
+  { colKey: 'service', title: t('services.index.service'), minWidth: 280 },
+  { colKey: 'host', title: t('services.index.hostInfo'), minWidth: 240 },
+  { colKey: 'user', title: t('services.index.user'), minWidth: 180 },
+  { colKey: 'product', title: t('services.index.product'), minWidth: 180 },
+  { colKey: 'status', title: t('common.status'), width: 110 },
+  { colKey: 'billing', title: t('services.index.billingAmount'), width: 130 },
+  { colKey: 'expires', title: t('services.index.expiresAt'), width: 130 },
+  { colKey: 'created', title: t('services.index.createdAt'), width: 120 },
+  { colKey: 'operation', title: t('common.action'), width: 110 },
 ];
 
 const hostnameColumns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'service_id', title: '服务ID', width: 90 },
-  { colKey: 'service', title: '服务信息', minWidth: 240 },
-  { colKey: 'current', title: '当前展示', minWidth: 170 },
-  { colKey: 'hostname', title: '目标主机名', minWidth: 240 },
+  { colKey: 'service_id', title: t('services.index.serviceId'), width: 90 },
+  { colKey: 'service', title: t('services.index.serviceInfo'), minWidth: 240 },
+  { colKey: 'current', title: t('services.index.currentValue'), minWidth: 170 },
+  { colKey: 'hostname', title: t('services.index.targetHostname'), minWidth: 240 },
 ];
 
 const selectedRows = computed(() => {
@@ -320,7 +321,7 @@ function clearSelection() {
 
 function openHostnameDialog() {
   if (!selectedRows.value.length) {
-    MessagePlugin.warning('请先选择需要批量设置的服务');
+    MessagePlugin.warning(t('services.index.selectServicesFirst'));
     return;
   }
   hostnameRows.value = selectedRows.value.map(buildHostnameRow);
@@ -391,10 +392,10 @@ function handleMobileAction(value: unknown, row: ServiceRecord) {
 function serviceMobileRows(row: ServiceRecord) {
   return [
     { label: '用户', value: userName(row.user) },
-    { label: '主机', value: hostSummary(row) },
-    { label: '周期', value: billingCycleLabel(row.billing_cycle) },
-    { label: '到期', value: shortDate(row.expires_at), strong: isExpiringSoon(row.expires_at) },
-    { label: '开通', value: shortDate(row.created_at) },
+    { label: t('services.index.host'), value: hostSummary(row) },
+    { label: t('services.index.cycle'), value: billingCycleLabel(row.billing_cycle) },
+    { label: t('services.index.expires'), value: shortDate(row.expires_at), strong: isExpiringSoon(row.expires_at) },
+    { label: t('services.index.provisioned'), value: shortDate(row.created_at) },
   ];
 }
 

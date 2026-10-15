@@ -7,6 +7,7 @@ import type { ClientFinanceListParams, OrderListSummary, OrderRecord } from '@/t
 import { formatMoney } from '@/utils/format';
 
 import { resolveQuickDateRange } from './dateFilters';
+import { t } from '@/locales';
 
 export const ORDER_STATUS_OPTIONS = toSelectOptions(ORDER_STATUS_MAP, false);
 
@@ -123,15 +124,15 @@ export function useOrderList(options: { pageSize?: number } = {}) {
     const dialog = DialogPlugin.confirm({
       header: '取消订单',
       body: '确定取消该订单？取消后不可恢复。\n关联的账单也将被取消，使用的优惠券将退回账户。\n如果是新产品购买，库存将释放。',
-      confirmBtn: '确认取消',
-      cancelBtn: '再想想',
+      confirmBtn: t('orders.index.confirmCancel'),
+      cancelBtn: t('orders.index.rethink'),
       theme: 'warning',
       async onConfirm() {
         dialog.setConfirmLoading(true);
         canceling.value = true;
         try {
           await clientApi.cancelOrder(row.id);
-          MessagePlugin.success('订单已取消');
+          MessagePlugin.success(t('orders.index.canceled'));
           await loadData();
           dialog.hide();
         } catch (error: unknown) {
@@ -214,15 +215,15 @@ export function useOrderDetail() {
     const dialog = DialogPlugin.confirm({
       header: '取消订单',
       body: '确定取消该订单？取消后不可恢复。\n关联的账单也将被取消，使用的优惠券将退回账户。\n如果是新产品购买，库存将释放。',
-      confirmBtn: '确认取消',
-      cancelBtn: '再想想',
+      confirmBtn: t('orders.index.confirmCancel'),
+      cancelBtn: t('orders.index.rethink'),
       theme: 'warning',
       async onConfirm() {
         dialog.setConfirmLoading(true);
         canceling.value = true;
         try {
           await clientApi.cancelOrder(row.id);
-          MessagePlugin.success('订单已取消');
+          MessagePlugin.success(t('orders.index.canceled'));
           await loadDetail(row.id);
           onSuccess?.();
           dialog.hide();

@@ -1375,6 +1375,7 @@ import { productDiscountGroupsApi } from '@/api/admin/agentDiscount';
 import type { ProductDiscountGroupRecord } from '@/api/admin/types';
 import type { ProductCategoryRecord, ProductRecord, ProductTypeRecord, SpecHighlightDimension } from '@/api/product';
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { productApi } from '@/api/product';
 import type { ProviderTypeRecord, SupplierFormField, SupplierRecord } from '@/api/supplier';
@@ -1643,78 +1644,78 @@ const categoryForm = reactive<CategoryFormData>({
 
 const productPricingPlan = ref('standard');
 const productPricingPlanOptions = [
-  { value: 'standard', label: '无优惠', ratios: { quarterly: 3, semiannually: 6, annually: 12 } },
-  { value: 'annual', label: '年付优惠', ratios: { quarterly: 3, semiannually: 6, annually: 10 } },
-  { value: 'bulk', label: '大额优惠', ratios: { quarterly: 2.7, semiannually: 5.1, annually: 8.4 } },
-  { value: 'rule1', label: '规则一', ratios: { quarterly: 3, semiannually: 4.8, annually: 9 } },
-  { value: 'rule2', label: '规则二', ratios: { quarterly: 2.7, semiannually: 5.1, annually: 9.6 } },
+  { value: 'standard', label: t('products.catalog.discountStandard'), ratios: { quarterly: 3, semiannually: 6, annually: 12 } },
+  { value: 'annual', label: t('products.catalog.discountAnnual'), ratios: { quarterly: 3, semiannually: 6, annually: 10 } },
+  { value: 'bulk', label: t('products.catalog.discountBulk'), ratios: { quarterly: 2.7, semiannually: 5.1, annually: 8.4 } },
+  { value: 'rule1', label: t('products.catalog.discountRuleOne'), ratios: { quarterly: 3, semiannually: 4.8, annually: 9 } },
+  { value: 'rule2', label: t('products.catalog.discountRuleTwo'), ratios: { quarterly: 2.7, semiannually: 5.1, annually: 9.6 } },
 ];
 const lifecycleStatusOptions = [
-  { value: 'active', label: '正常商品' },
-  { value: 'deleted', label: '已删除商品' },
-  { value: 'all', label: '全部商品' },
+  { value: 'active', label: t('products.catalog.filterActive') },
+  { value: 'deleted', label: t('products.catalog.filterDeleted') },
+  { value: 'all', label: t('products.catalog.filterAll') },
 ] satisfies Array<{ value: ProductLifecycleStatus; label: string }>;
 const productTypeIconOptions = [
-  { value: 'server', label: '服务器', aliases: ['vps', 'Server'] },
-  { value: 'cloud', label: '云服务', aliases: ['cloud'] },
-  { value: 'control-platform', label: '平台', aliases: ['Platform'] },
-  { value: 'building', label: '机房', aliases: ['dedicated', 'OfficeBuilding'] },
-  { value: 'desktop', label: '主机', aliases: ['hosting', 'Monitor'] },
-  { value: 'internet', label: '网络', aliases: ['cdn'] },
-  { value: 'hard-disk-storage', label: '存储', aliases: ['storage'] },
-  { value: 'data-base', label: '数据库', aliases: ['database', 'db'] },
-  { value: 'link', label: '域名', aliases: ['domain', 'Link'] },
-  { value: 'lock-on', label: '安全', aliases: ['ssl'] },
-  { value: 'component-grid', label: '应用', aliases: ['Grid', 'other'] },
-  { value: 'tools', label: '工具', aliases: ['tool'] },
-  { value: 'shop', label: '商品', aliases: ['product'] },
+  { value: 'server', label: t('products.catalog.typeServer'), aliases: ['vps', 'Server'] },
+  { value: 'cloud', label: t('products.catalog.typeCloud'), aliases: ['cloud'] },
+  { value: 'control-platform', label: t('products.catalog.typePlatform'), aliases: ['Platform'] },
+  { value: 'building', label: t('products.catalog.typeDatacenter'), aliases: ['dedicated', 'OfficeBuilding'] },
+  { value: 'desktop', label: t('products.catalog.typeHost'), aliases: ['hosting', 'Monitor'] },
+  { value: 'internet', label: t('products.catalog.typeNetwork'), aliases: ['cdn'] },
+  { value: 'hard-disk-storage', label: t('products.catalog.typeStorage'), aliases: ['storage'] },
+  { value: 'data-base', label: t('products.catalog.typeDatabase'), aliases: ['database', 'db'] },
+  { value: 'link', label: t('products.catalog.typeDomain'), aliases: ['domain', 'Link'] },
+  { value: 'lock-on', label: t('products.catalog.typeSecurity'), aliases: ['ssl'] },
+  { value: 'component-grid', label: t('products.catalog.typeApplication'), aliases: ['Grid', 'other'] },
+  { value: 'tools', label: t('products.catalog.typeTool'), aliases: ['tool'] },
+  { value: 'shop', label: t('products.catalog.product'), aliases: ['product'] },
 ] satisfies Array<{ value: string; label: string; aliases?: string[] }>;
 
 const productDrawerSections = [
-  { key: 'basic', label: '详情', description: '名称、分类、状态' },
-  { key: 'pricing', label: '定价', description: '多周期价格' },
-  { key: 'interface', label: '接口设置', description: '上游商品绑定' },
-  { key: 'config', label: '产品配置', description: '规格与可选项' },
+  { key: 'basic', label: t('products.catalog.sectionDetails'), description: t('products.catalog.sectionDetailsDesc') },
+  { key: 'pricing', label: t('products.catalog.sectionPricing'), description: t('products.catalog.sectionPricingDesc') },
+  { key: 'interface', label: t('products.catalog.sectionInterface'), description: t('products.catalog.sectionInterfaceDesc') },
+  { key: 'config', label: t('products.catalog.sectionProductConfig'), description: t('products.catalog.sectionProductConfigDesc') },
 ];
 
 const productColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'row-select', type: 'multiple', width: 54, fixed: 'left' },
   { colKey: 'id', title: 'ID', width: 80 },
-  { colKey: 'name', title: '商品', minWidth: 260 },
-  { colKey: 'effective_product_group_full_name', title: '分类', width: 180 },
-  { colKey: 'price', title: '月价格', width: 120 },
-  { colKey: 'stock', title: '库存', width: 100 },
-  { colKey: 'services_count', title: '现存', width: 100 },
-  { colKey: 'cpu', title: 'CPU 型号', width: 180 },
-  { colKey: 'discountGroup', title: '折扣分组', width: 140 },
-  { colKey: 'sort_order', title: '排序', width: 76 },
-  { colKey: 'status', title: '显示状态', width: 110 },
-  { colKey: 'operation', title: '操作', width: 72, fixed: 'right' },
+  { colKey: 'name', title: t('products.catalog.product'), minWidth: 260 },
+  { colKey: 'effective_product_group_full_name', title: t('products.catalog.categoryColumn'), width: 180 },
+  { colKey: 'price', title: t('products.catalog.priceMonthly'), width: 120 },
+  { colKey: 'stock', title: t('products.catalog.stock'), width: 100 },
+  { colKey: 'services_count', title: t('products.catalog.servicesCount'), width: 100 },
+  { colKey: 'cpu', title: t('products.catalog.cpuModel'), width: 180 },
+  { colKey: 'discountGroup', title: t('products.catalog.discountGroup'), width: 140 },
+  { colKey: 'sort_order', title: t('products.catalog.sortOrder'), width: 76 },
+  { colKey: 'status', title: t('products.catalog.visibilityPlaceholder'), width: 110 },
+  { colKey: 'operation', title: t('common.action'), width: 72, fixed: 'right' },
 ];
 
 const productRules: FormRules<ProductFormData> = {
-  display_name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
-  selected_product_group_key: [{ required: true, message: '请选择所属分类', trigger: 'change' }],
+  display_name: [{ required: true, message: t('products.catalog.productNameRequired'), trigger: 'blur' }],
+  selected_product_group_key: [{ required: true, message: t('products.catalog.categoryRequired'), trigger: 'change' }],
 };
 const categoryRules: FormRules<CategoryFormData> = {
-  name: [{ required: true, message: '请输入分类名称', trigger: 'blur' }],
-  product_type: [{ required: true, message: '请选择一级分组', trigger: 'change' }],
+  name: [{ required: true, message: t('products.catalog.categoryNameRequired'), trigger: 'blur' }],
+  product_type: [{ required: true, message: t('products.catalog.productTypeRequired'), trigger: 'change' }],
 };
 
 // --- Computeds ---
 const productTypeOptions = computed(() => {
   if (productTypes.value.length) return productTypes.value;
-  return [{ value: '', label: '全部商品', usage_count: productTotal.value }];
+  return [{ value: '', label: t('products.catalog.filterAll'), usage_count: productTotal.value }];
 });
 const businessProductTypeOptions = [
-  { value: 'cloud_server', label: '云服务器 (cloud_server)' },
-  { value: 'game_cloud', label: '游戏云 (game_cloud)' },
-  { value: 'cloud_desktop', label: '云电脑 (cloud_desktop)' },
-  { value: 'bare_metal', label: '裸金属 (bare_metal)' },
+  { value: 'cloud_server', label: t('products.catalog.specCloudServer') },
+  { value: 'game_cloud', label: t('products.catalog.specGameCloud') },
+  { value: 'cloud_desktop', label: t('products.catalog.specCloudDesktop') },
+  { value: 'bare_metal', label: t('products.catalog.specBareMetal') },
   { value: 'cdn', label: 'CDN' },
-  { value: 'other', label: '其他 (other)' },
-  { value: 'physical_machine', label: '物理机 (physical_machine)' },
-  { value: 'web_hosting', label: '虚拟主机 (web_hosting)' },
+  { value: 'other', label: t('products.catalog.specOther') },
+  { value: 'physical_machine', label: t('products.catalog.specPhysicalMachine') },
+  { value: 'web_hosting', label: t('products.catalog.specWebHosting') },
 ];
 const businessProductTypeValueSet = new Set(businessProductTypeOptions.map((item) => item.value));
 const typeManagerProductCount = computed(() =>
@@ -2006,7 +2007,7 @@ async function submitSpecHighlight() {
       }
     }
     await productApi.saveSpecHighlight(String(target.id), items);
-    MessagePlugin.success('规格描述栏已更新');
+    MessagePlugin.success(t('products.catalog.specHighlightSaved'));
     specHighlightDialogVisible.value = false;
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '保存规格描述栏失败'));
@@ -2454,7 +2455,7 @@ function editType(type: ProductTypeRecord) {
 async function submitType() {
   const label = typeForm.label.trim();
   if (!label) {
-    MessagePlugin.warning('请输入一级分组名称');
+    MessagePlugin.warning(t('products.catalog.productTypeNameRequired'));
     return;
   }
 
@@ -2464,10 +2465,10 @@ async function submitType() {
     const productType = normalizeBusinessProductType(typeForm.product_type);
     if (editingTypeValue.value) {
       await productApi.updateType(editingTypeValue.value, { label, product_type: productType, icon });
-      MessagePlugin.success('一级分组已更新');
+      MessagePlugin.success(t('products.catalog.productTypeUpdated'));
     } else {
       await productApi.createType({ label, product_type: productType, icon });
-      MessagePlugin.success('一级分组已创建');
+      MessagePlugin.success(t('products.catalog.productTypeCreated'));
     }
     resetTypeForm();
     await refreshTypeCatalog();
@@ -2508,7 +2509,7 @@ async function moveType(value: string, direction: -1 | 1) {
   try {
     await productApi.reorderTypes({ values: nextTypes.map((item) => item.value) });
     productTypes.value = nextTypes;
-    MessagePlugin.success('一级分组排序已更新');
+    MessagePlugin.success(t('products.catalog.productTypeSorted'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '更新一级分组排序失败'));
     await loadProductTypes();
@@ -2522,15 +2523,15 @@ function deleteType(type: ProductTypeRecord) {
     header: '删除一级分组',
     body: `确认删除「${type.label || type.value}」吗？`,
     theme: 'warning',
-    confirmBtn: '确认删除',
-    cancelBtn: '取消',
+    confirmBtn: t('products.catalog.confirmDelete'),
+    cancelBtn: t('products.catalog.cancel'),
     async onConfirm() {
       typeSubmitting.value = true;
       try {
         await productApi.deleteType(type.value);
-        MessagePlugin.success('一级分组已删除');
+        MessagePlugin.success(t('products.catalog.productTypeDeleted'));
         if (false && catalogFilters.lifecycle_status === 'all') {
-          MessagePlugin.info('当前筛选为“全部商品”，已删除商品仍会显示在列表中');
+          MessagePlugin.info(t('products.catalog.deletedProductsVisibleTip'));
         }
         dialog.hide();
         if (catalogFilters.product_type === type.value) {
@@ -2606,7 +2607,7 @@ async function commitCategoryReorder(row: ProductCategoryRecord, orderedSiblings
   categorySortLoadingId.value = `${row.id}:reorder`;
   try {
     await productApi.reorderCategory(payload);
-    MessagePlugin.success('分类排序已更新');
+    MessagePlugin.success(t('products.catalog.categorySorted'));
     await reloadCategoryScopedProducts();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '更新分类排序失败'));
@@ -2768,7 +2769,7 @@ async function commitProductSort(orderedIds: number[]) {
         ...productGroupPayload(selectedGroup),
       },
     });
-    MessagePlugin.success('商品排序已更新');
+    MessagePlugin.success(t('products.catalog.productSorted'));
     await loadProducts();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '更新商品排序失败'));
@@ -2791,7 +2792,7 @@ async function loadProducts() {
     const selectedGroup = findProductGroupByKey(categoryOptions.value, catalogFilters.product_group_key);
     if (shouldAutoRevealDeletedProducts(selectedGroup)) {
       catalogFilters.lifecycle_status = 'all';
-      MessagePlugin.info('当前分类仅包含已删除商品，已自动切换到“全部商品”');
+      MessagePlugin.info(t('products.catalog.switchedToAllProducts'));
     }
     const response = await productApi.list({
       keyword: catalogFilters.keyword,
@@ -2926,7 +2927,7 @@ function openProductBatchDialog(
 ) {
   const targetRowsIds = targetRows.map((row) => Number(row.id)).filter((id) => Number.isFinite(id) && id > 0);
   if (!group && !targetRowsIds.length) {
-    MessagePlugin.warning('请先选择商品');
+    MessagePlugin.warning(t('products.catalog.selectProductFirst'));
     return;
   }
 
@@ -3035,15 +3036,15 @@ async function submitProductBatch() {
 function handleBatchDeleteProducts() {
   const rows = selectedProductRows();
   if (!rows.length) {
-    MessagePlugin.warning('请先选择商品');
+    MessagePlugin.warning(t('products.catalog.selectProductFirst'));
     return;
   }
   const dialog = DialogPlugin.confirm({
     header: '批量删除商品',
     body: `确认删除选中的 ${rows.length} 个商品吗？存在服务实例的商品将自动跳过。`,
     theme: 'warning',
-    confirmBtn: '确认删除',
-    cancelBtn: '取消',
+    confirmBtn: t('products.catalog.confirmDelete'),
+    cancelBtn: t('products.catalog.cancel'),
     async onConfirm() {
       try {
         const response = await productApi.batchDeleteProducts({
@@ -3070,15 +3071,15 @@ function handleBatchDeleteProducts() {
 function handleBatchForceDeleteProducts() {
   const rows = selectedProductRows();
   if (!rows.length) {
-    MessagePlugin.warning('请先选择商品');
+    MessagePlugin.warning(t('products.catalog.selectProductFirst'));
     return;
   }
   const dialog = DialogPlugin.confirm({
     header: '批量强制删除商品',
     body: `确认彻底删除选中的 ${rows.length} 个商品吗？其下服务实例将同步删除，该操作不可恢复。`,
     theme: 'danger',
-    confirmBtn: '确认强制删除',
-    cancelBtn: '取消',
+    confirmBtn: t('products.catalog.confirmForceDelete'),
+    cancelBtn: t('products.catalog.cancel'),
     async onConfirm() {
       try {
         const response = await productApi.batchForceDeleteProducts({
@@ -3108,8 +3109,8 @@ function handleForceDeleteCategory(row: ProductCategoryRecord) {
     header: '强制删除分类',
     body: `确认强制删除「${categoryDisplayName(row)}」吗？其下所有商品与相关服务实例将同步删除，该操作不可恢复。`,
     theme: 'danger',
-    confirmBtn: '确认强制删除',
-    cancelBtn: '取消',
+    confirmBtn: t('products.catalog.confirmForceDelete'),
+    cancelBtn: t('products.catalog.cancel'),
     async onConfirm() {
       categorySubmitting.value = true;
       try {
@@ -3137,7 +3138,7 @@ function handleForceDeleteCategory(row: ProductCategoryRecord) {
 function openBatchCategoryDialog() {
   const targetRows = selectedProductRows();
   if (!targetRows.length) {
-    MessagePlugin.warning('请先选择商品');
+    MessagePlugin.warning(t('products.catalog.selectProductFirst'));
     return;
   }
 
@@ -3149,7 +3150,7 @@ function openBatchCategoryDialog() {
 async function openSplitProductDialog() {
   const targetRows = selectedProductRows();
   if (!targetRows.length) {
-    MessagePlugin.warning('请先选择需要拆分的商品');
+    MessagePlugin.warning(t('products.catalog.selectSplitProductFirst'));
     return;
   }
 
@@ -3195,7 +3196,7 @@ function isSameProvisionHostnameRule(left: unknown, right: unknown) {
 function openProvisionHostnameDialog() {
   const targetRows = selectedProductRows();
   if (!targetRows.length) {
-    MessagePlugin.warning('请先选择商品');
+    MessagePlugin.warning(t('products.catalog.selectProductFirst'));
     return;
   }
 
@@ -3220,11 +3221,11 @@ async function submitBatchCategory() {
   const targetGroup = findProductGroupByKey(categoryOptions.value, batchCategoryForm.target_product_group_key);
 
   if (!productIds.length) {
-    MessagePlugin.warning('请先选择商品');
+    MessagePlugin.warning(t('products.catalog.selectProductFirst'));
     return;
   }
   if (!targetGroup) {
-    MessagePlugin.warning('请选择目标分类');
+    MessagePlugin.warning(t('products.catalog.selectTargetCategory'));
     return;
   }
 
@@ -3261,7 +3262,7 @@ async function submitBatchCategory() {
 async function submitSplitProducts() {
   const productIds = selectedProductIdsFromKeys(splitProductTargetKeys.value);
   if (!productIds.length) {
-    MessagePlugin.warning('请先选择需要拆分的商品');
+    MessagePlugin.warning(t('products.catalog.selectSplitProductFirst'));
     return;
   }
 
@@ -3294,7 +3295,7 @@ async function submitSplitProducts() {
 async function submitProvisionHostname() {
   const productIds = selectedProductIdsFromKeys(provisionHostnameTargetKeys.value);
   if (!productIds.length) {
-    MessagePlugin.warning('请先选择商品');
+    MessagePlugin.warning(t('products.catalog.selectProductFirst'));
     return;
   }
   if (provisionHostnameForm.mode !== 'system' && !provisionHostnameForm.value.trim()) {
@@ -3312,7 +3313,7 @@ async function submitProvisionHostname() {
         length: Number(provisionHostnameForm.length || 12),
       },
     });
-    MessagePlugin.success('商品开通主机名规则已更新');
+    MessagePlugin.success(t('products.catalog.hostnameRuleUpdated'));
     provisionHostnameDialogVisible.value = false;
     provisionHostnameTargetKeys.value = [];
     selectedProductKeys.value = [];
@@ -3336,7 +3337,7 @@ function syncProductPricingCycles(planValue?: unknown) {
   const monthly = Number(productForm.monthly_price || 0);
 
   if (monthly <= 0) {
-    MessagePlugin.warning('请先填写月付价格');
+    MessagePlugin.warning(t('products.catalog.monthlyPriceFirst'));
     return;
   }
 
@@ -3344,7 +3345,7 @@ function syncProductPricingCycles(planValue?: unknown) {
   productForm.quarterly_price = roundPricingAmount(monthly * plan.ratios.quarterly);
   productForm.semiannually_price = roundPricingAmount(monthly * plan.ratios.semiannually);
   productForm.annually_price = roundPricingAmount(monthly * plan.ratios.annually);
-  MessagePlugin.success('已同步其他计费周期价格');
+  MessagePlugin.success(t('products.catalog.cyclePricesSynced'));
 }
 
 function roundPricingAmount(value: number) {
@@ -3381,7 +3382,7 @@ async function submitProduct() {
   if (validateResult !== true) return;
   if (!hasPositiveProductPrice()) {
     activeProductDrawerSection.value = 'pricing';
-    MessagePlugin.warning('请至少填写一个大于 0 的计费周期价格');
+    MessagePlugin.warning(t('products.catalog.cyclePriceRequired'));
     return;
   }
   productSubmitting.value = true;
@@ -3405,10 +3406,10 @@ async function submitProduct() {
     };
     if (editingProduct.value?.id) {
       await productApi.update(editingProduct.value.id, payload);
-      MessagePlugin.success('商品已更新');
+      MessagePlugin.success(t('products.catalog.productUpdated'));
     } else {
       await productApi.create(payload);
-      MessagePlugin.success('商品已创建');
+      MessagePlugin.success(t('products.catalog.productCreated'));
     }
     productDialogVisible.value = false;
     await loadProducts();
@@ -3673,7 +3674,7 @@ function submitConfigOption() {
   const field = configOptionForm.field.trim();
   const mode = normalizeModeValue(configOptionForm.option_mode);
   if (!name || !field) {
-    MessagePlugin.warning('请填写配置名称和字段名');
+    MessagePlugin.warning(t('products.catalog.configNameFieldRequired'));
     return;
   }
   let subItems: ReturnType<typeof parseConfigSubItems> = [];
@@ -3687,15 +3688,15 @@ function submitConfigOption() {
     ? subItems.map((item) => `${item.value}|${item.label}`).join(',')
     : configOptionForm.parameter.trim();
   if (mode === 'select' && !parameter) {
-    MessagePlugin.warning('请填写参数值或子项');
+    MessagePlugin.warning(t('products.catalog.paramValueRequired'));
     return;
   }
   if (mode === 'text' && !configOptionForm.text_content.trim()) {
-    MessagePlugin.warning('请填写提示内容');
+    MessagePlugin.warning(t('products.catalog.tipContentRequired'));
     return;
   }
   if (mode === 'range' && toNumber(configOptionForm.qty_maximum) <= 0) {
-    MessagePlugin.warning('数量范围需要填写大于 0 的最大值');
+    MessagePlugin.warning(t('products.catalog.maxValueRequired'));
     return;
   }
 
@@ -3825,7 +3826,7 @@ async function pullProductConfigTemplate() {
   const supplierId = productForm.supplier_id;
   const upstreamProductId = productForm.upstream_product_id;
   if (!supplierId || !upstreamProductId) {
-    MessagePlugin.warning('请先绑定提供商和提供商商品 ID');
+    MessagePlugin.warning(t('products.catalog.providerProductRequired'));
     return;
   }
 
@@ -3834,7 +3835,7 @@ async function pullProductConfigTemplate() {
     const response = await supplierApi.productConfigTemplate(supplierId, upstreamProductId);
     const options = Array.isArray(response.config_options) ? response.config_options : [];
     productForm.config_options = normalizeConfigOptions(options);
-    MessagePlugin.success('配置项模板已拉取');
+    MessagePlugin.success(t('products.catalog.templatePulled'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '拉取配置项模板失败'));
   } finally {
@@ -3849,7 +3850,7 @@ async function handleToggleProduct(row: ProductRecord) {
     header: `${actionLabel}商品`,
     body: `确定${actionLabel}「${row.display_name || row.name || row.id}」吗？${newStatus ? '' : '隐藏后前台不显示，可在筛选中找回。'}`,
     confirmBtn: `确认${actionLabel}`,
-    cancelBtn: '取消',
+    cancelBtn: t('products.catalog.cancel'),
     async onConfirm() {
       productActionLoading.value = row.id;
       try {
@@ -3871,8 +3872,8 @@ function handleDeleteProduct(row: ProductRecord) {
     header: '删除商品',
     body: `确认删除「${row.display_name || row.name || row.id}」吗？${Number(row.active_services_count ?? row.services_count ?? 0) > 0 ? ` 该商品下有 ${row.active_services_count ?? row.services_count} 个现存服务，删除后可能影响已开通实例。` : ''}`,
     theme: 'warning',
-    confirmBtn: '确认删除',
-    cancelBtn: '取消',
+    confirmBtn: t('products.catalog.confirmDelete'),
+    cancelBtn: t('products.catalog.cancel'),
     async onConfirm() {
       productActionLoading.value = row.id;
       try {
@@ -3880,7 +3881,7 @@ function handleDeleteProduct(row: ProductRecord) {
         MessagePlugin.success({ content: '商品已删除', duration: 3000 });
         dialog.hide();
         if (catalogFilters.lifecycle_status === 'all') {
-          MessagePlugin.info('当前筛选为“全部商品”，已删除商品仍会显示在列表中');
+          MessagePlugin.info(t('products.catalog.deletedProductsVisibleTip'));
         }
         await loadProducts();
       } catch (error) {
@@ -3896,13 +3897,13 @@ function handleRestoreProduct(row: ProductRecord) {
   const dialog = DialogPlugin.confirm({
     header: '恢复商品',
     body: `确认恢复《${row.display_name || row.name || row.id}》吗？`,
-    confirmBtn: '确认恢复',
-    cancelBtn: '取消',
+    confirmBtn: t('products.catalog.confirmRestore'),
+    cancelBtn: t('products.catalog.cancel'),
     async onConfirm() {
       productActionLoading.value = `restore:${row.id}`;
       try {
         await productApi.restore(row.id);
-        MessagePlugin.success('商品已恢复');
+        MessagePlugin.success(t('products.catalog.productRestored'));
         dialog.hide();
         await loadProducts();
       } catch (error) {
@@ -3919,13 +3920,13 @@ function handleForceDeleteProduct(row: ProductRecord) {
     header: '彻底删除商品',
     body: `确认彻底删除《${row.display_name || row.name || row.id}》吗？该操作不可恢复。`,
     theme: 'warning',
-    confirmBtn: '确认彻底删除',
-    cancelBtn: '取消',
+    confirmBtn: t('products.catalog.confirmPurge'),
+    cancelBtn: t('products.catalog.cancel'),
     async onConfirm() {
       productActionLoading.value = `force:${row.id}`;
       try {
         await productApi.forceDelete(row.id);
-        MessagePlugin.success('商品已彻底删除');
+        MessagePlugin.success(t('products.catalog.productPurged'));
         dialog.hide();
         await loadProducts();
       } catch (error) {
@@ -3989,11 +3990,11 @@ async function submitCategory() {
       firstProductGroupId = resolveFirstProductGroupId(firstGroupCode);
     }
     if (targetLevel === 2 && !firstProductGroupId) {
-      MessagePlugin.warning('一级分组数据未同步，请刷新一级分组后重试');
+      MessagePlugin.warning(t('products.catalog.productTypeNotSynced'));
       return;
     }
     if (targetLevel === 3 && !selectedParent) {
-      MessagePlugin.warning('请选择二级分组父级');
+      MessagePlugin.warning(t('products.catalog.selectSecondCategoryParent'));
       return;
     }
     const payload: Record<string, unknown> = {
@@ -4015,10 +4016,10 @@ async function submitCategory() {
     };
     if (editingCategory.value?.id) {
       await productApi.updateCategory(productGroupEffectiveId(editingCategory.value), payload);
-      MessagePlugin.success('分类已更新');
+      MessagePlugin.success(t('products.catalog.categoryUpdated'));
     } else {
       await productApi.createCategory(payload);
-      MessagePlugin.success('分类已创建');
+      MessagePlugin.success(t('products.catalog.categoryCreated'));
     }
     categoryDialogVisible.value = false;
     await reloadCategoryScopedProducts();
@@ -4034,15 +4035,15 @@ function handleDeleteCategory(row: ProductCategoryRecord) {
     header: '删除分类',
     body: `确认删除「${row.name || row.label || row.id}」吗？`,
     theme: 'warning',
-    confirmBtn: '确认删除',
-    cancelBtn: '取消',
+    confirmBtn: t('products.catalog.confirmDelete'),
+    cancelBtn: t('products.catalog.cancel'),
     async onConfirm() {
       categorySubmitting.value = true;
       try {
         await productApi.deleteCategory(productGroupEffectiveId(row), {
           effective_product_group_level: productGroupLevel(row),
         });
-        MessagePlugin.success('分类已删除');
+        MessagePlugin.success(t('products.catalog.categoryDeleted'));
         dialog.hide();
         if (catalogFilters.product_group_key === categoryIdKey(row)) {
           catalogFilters.product_group_key = '';
@@ -4159,7 +4160,7 @@ async function loadProductSupplierProducts(supplierId: string | number, notify =
   const supplier = productSupplierOptions.value.find((item) => String(item.id) === String(supplierId));
   if (supplier && !canSupplierBatchConnect(supplier)) {
     supplierProductOptions.value = [];
-    MessagePlugin.warning('接口配置不完整，暂时无法同步上游商品');
+    MessagePlugin.warning(t('products.catalog.interfaceIncomplete'));
     return;
   }
 
@@ -4182,7 +4183,7 @@ async function loadProductSupplierProducts(supplierId: string | number, notify =
         });
       }
     }
-    if (notify) MessagePlugin.success('上游商品已同步');
+    if (notify) MessagePlugin.success(t('products.catalog.upstreamSynced'));
   } catch (error) {
     supplierProductOptions.value = [];
     MessagePlugin.error(errorMessage(error, '同步上游商品失败'));

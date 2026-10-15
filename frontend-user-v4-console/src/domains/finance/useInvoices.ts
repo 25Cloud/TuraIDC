@@ -13,6 +13,7 @@ import type {
   InvoicePaymentSecurity,
   InvoiceRecord,
 } from '@/types/client';
+import { t } from '@/locales';
 import { formatMoney } from '@/utils/format';
 
 import { resolveQuickDateRange } from './dateFilters';
@@ -316,7 +317,7 @@ export function useInvoiceList(options: { fixedTypes?: unknown; pageSize?: numbe
   function goToPay(row: InvoiceRecord) {
     const invoiceId = normalizeInvoiceId(row?.id);
     if (!invoiceId) {
-      MessagePlugin.warning('账单 ID 缺失，无法发起支付');
+      MessagePlugin.warning(t('finance.invoice.missingId'));
       return;
     }
 
@@ -328,15 +329,15 @@ export function useInvoiceList(options: { fixedTypes?: unknown; pageSize?: numbe
     const dialog = DialogPlugin.confirm({
       header: '取消账单',
       body: '确定取消该账单？取消后不可恢复。\n使用的优惠券将退回账户。\n如果是新产品购买，库存将释放。',
-      confirmBtn: '确认取消',
-      cancelBtn: '再想想',
+      confirmBtn: t('finance.invoice.confirmCancel'),
+      cancelBtn: t('finance.invoice.notNow'),
       theme: 'warning',
       async onConfirm() {
         dialog.setConfirmLoading(true);
         canceling.value = true;
         try {
           await clientApi.cancelInvoice(row.id);
-          MessagePlugin.success('账单已取消');
+          MessagePlugin.success(t('finance.invoice.cancelled'));
           closeDetail();
           await loadData();
           dialog.hide();
@@ -572,15 +573,15 @@ export function useInvoiceDetail() {
     const dialog = DialogPlugin.confirm({
       header: '取消账单',
       body: '取消后需重新创建账单才能继续支付，确认取消吗？',
-      confirmBtn: '确认取消',
-      cancelBtn: '再想想',
+      confirmBtn: t('finance.invoice.confirmCancel'),
+      cancelBtn: t('finance.invoice.notNow'),
       theme: 'warning',
       async onConfirm() {
         dialog.setConfirmLoading(true);
         canceling.value = true;
         try {
           await clientApi.cancelInvoice(invoiceId.value);
-          MessagePlugin.success('账单已取消');
+          MessagePlugin.success(t('finance.invoice.cancelled'));
           resetPaymentPayload();
           await loadDetail();
           dialog.hide();
@@ -597,7 +598,7 @@ export function useInvoiceDetail() {
   async function executeBalancePayment() {
     const sessionToken = String(paySecurity.value.session_token || '');
     if (!invoiceId.value || !sessionToken) {
-      MessagePlugin.warning('支付会话已失效，请刷新页面后重试');
+      MessagePlugin.warning(t('finance.invoice.sessionExpired'));
       return;
     }
 
@@ -606,7 +607,7 @@ export function useInvoiceDetail() {
       const res = await clientApi.payInvoiceByBalance(invoiceId.value, {
         payment_session_token: sessionToken,
       });
-      MessagePlugin.success('账单已支付');
+      MessagePlugin.success(t('finance.invoice.paid'));
       resetPaymentPayload();
       await refreshClientInfo();
       detail.value = res.data?.invoice || detail.value;
@@ -622,8 +623,8 @@ export function useInvoiceDetail() {
     const dialog = DialogPlugin.confirm({
       header: '余额支付',
       body: `确认使用账户余额支付 ¥${formatMoney(payableAmount.value)} 吗？`,
-      confirmBtn: '确认支付',
-      cancelBtn: '取消',
+      confirmBtn: t('finance.invoice.confirmPay'),
+      cancelBtn: t('common.cancel'),
       theme: 'warning',
       async onConfirm() {
         dialog.setConfirmLoading(true);
@@ -640,13 +641,13 @@ export function useInvoiceDetail() {
   async function handlePayByAlipay() {
     const sessionToken = String(paySecurity.value.session_token || '');
     if (!invoiceId.value || !sessionToken) {
-      MessagePlugin.warning('支付会话已失效，请刷新页面后重试');
+      MessagePlugin.warning(t('finance.invoice.sessionExpired'));
       return;
     }
 
     const gateway = selectedGatewayKey.value;
     if (!gateway || ['balance', 'free'].includes(gateway)) {
-      MessagePlugin.warning('请选择可用支付方式');
+      MessagePlugin.warning(t('finance.invoice.selectPaymentMethod'));
       return;
     }
 
@@ -705,7 +706,7 @@ export function useInvoiceDetail() {
       if (payload.paid) {
         clearPollingTimer();
         resetPaymentPayload();
-        MessagePlugin.success('账单已支付');
+        MessagePlugin.success(t('finance.invoice.paid'));
         await refreshClientInfo();
         detail.value = payload.invoice || detail.value;
         await loadDetail();

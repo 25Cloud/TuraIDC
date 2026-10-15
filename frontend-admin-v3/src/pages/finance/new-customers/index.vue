@@ -42,6 +42,7 @@ import { onMounted, reactive, ref } from 'vue';
 
 import type { NewCustomerDailyRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
+import { t } from '@/locales';
 import { errorMessage } from '@/utils/userMessage';
 
 const loading = ref(false);
@@ -49,18 +50,18 @@ const dailyList = ref<NewCustomerDailyRecord[]>([]);
 const dateRange = reactive(currentMonthRange());
 
 const columns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'date', title: '日期', minWidth: 130 },
-  { colKey: 'new_customers', title: '新增客户', minWidth: 110 },
-  { colKey: 'new_orders', title: '新订单', minWidth: 100 },
-  { colKey: 'completed_orders', title: '完成', minWidth: 100 },
-  { colKey: 'new_tickets', title: '新建工单', minWidth: 110 },
-  { colKey: 'ticket_replies', title: '回复工单', minWidth: 110 },
-  { colKey: 'cancel_requests', title: '取消请求', minWidth: 110 },
+  { colKey: 'date', title: t('finance.newCustomers.date'), minWidth: 130 },
+  { colKey: 'new_customers', title: t('finance.newCustomers.newCustomers'), minWidth: 110 },
+  { colKey: 'new_orders', title: t('finance.newCustomers.newOrders'), minWidth: 100 },
+  { colKey: 'completed_orders', title: t('finance.newCustomers.completed'), minWidth: 100 },
+  { colKey: 'new_tickets', title: t('finance.newCustomers.newTickets'), minWidth: 110 },
+  { colKey: 'ticket_replies', title: t('finance.newCustomers.ticketReplies'), minWidth: 110 },
+  { colKey: 'cancel_requests', title: t('finance.newCustomers.cancelRequests'), minWidth: 110 },
 ];
 
 async function loadData() {
   if (!dateRange.start_date || !dateRange.end_date) {
-    MessagePlugin.warning('请选择起始时间和终止时间');
+    MessagePlugin.warning(t('finance.newCustomers.rangeRequired'));
     return;
   }
 

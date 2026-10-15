@@ -131,15 +131,16 @@ import { computed, onMounted, reactive, ref } from 'vue';
 
 import type { MediaFileRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
+import { t } from '@/locales';
 
 defineOptions({ name: 'AdminMediaLibrary' });
 
 const PAGE_SIZE = 24;
 
 const typeOptions = [
-  { label: '全部类型', value: '' },
-  { label: '图片', value: 'image' },
-  { label: '视频', value: 'video' },
+  { label: t('content.mediaLibrary.allTypes'), value: '' },
+  { label: t('content.mediaLibrary.image'), value: 'image' },
+  { label: t('content.mediaLibrary.video'), value: 'video' },
 ];
 
 const loading = ref(false);
@@ -157,12 +158,12 @@ const filters = reactive({
 });
 
 const columns = computed<PrimaryTableCol<MediaFileRecord>[]>(() => [
-  { colKey: 'preview', title: '预览', width: 112 },
-  { colKey: 'filename', title: '文件', minWidth: 360 },
-  { colKey: 'type', title: '类型', width: 96 },
-  { colKey: 'meta', title: '体积 / 尺寸', width: 160 },
-  { colKey: 'created_at', title: '上传时间', width: 180 },
-  { colKey: 'actions', title: '操作', width: 220, fixed: 'right' },
+  { colKey: 'preview', title: t('content.mediaLibrary.preview'), width: 112 },
+  { colKey: 'filename', title: t('content.mediaLibrary.file'), minWidth: 360 },
+  { colKey: 'type', title: t('content.mediaLibrary.type'), width: 96 },
+  { colKey: 'meta', title: t('content.mediaLibrary.size'), width: 160 },
+  { colKey: 'created_at', title: t('content.mediaLibrary.uploadedAt'), width: 180 },
+  { colKey: 'actions', title: t('common.action'), width: 220, fixed: 'right' },
 ]);
 
 const pagination = computed(() => ({
@@ -251,7 +252,7 @@ async function handleFileChange(event: Event) {
   uploading.value = true;
   try {
     await adminApi.media.upload(data);
-    MessagePlugin.success('媒体上传成功');
+    MessagePlugin.success(t('content.mediaLibrary.uploadSuccess'));
     filters.page = 1;
     await loadMediaList();
   } catch (error) {
@@ -303,7 +304,7 @@ async function removeMedia(row: MediaFileRecord) {
         header: '确认删除',
         body: `该媒体文件被以下内容引用：${refList}。删除后将导致这些内容出现死链，确认继续？`,
         confirmBtn: { theme: 'danger', content: '仍然删除' },
-        cancelBtn: '取消',
+        cancelBtn: t('common.cancel'),
         onConfirm: () => {
           dialog.destroy();
           resolve(true);
@@ -325,7 +326,7 @@ async function removeMedia(row: MediaFileRecord) {
   deletingId.value = id;
   try {
     await adminApi.media.remove(id);
-    MessagePlugin.success('媒体已删除');
+    MessagePlugin.success(t('content.mediaLibrary.deleteSuccess'));
 
     if (items.value.length === 1 && filters.page > 1) {
       filters.page -= 1;
@@ -340,15 +341,15 @@ async function removeMedia(row: MediaFileRecord) {
 
 async function copyText(value: string) {
   if (!value) {
-    MessagePlugin.warning('没有可复制的内容');
+    MessagePlugin.warning(t('content.mediaLibrary.copyEmpty'));
     return;
   }
 
   try {
     await navigator.clipboard.writeText(value);
-    MessagePlugin.success('已复制到剪贴板');
+    MessagePlugin.success(t('common.copiedToClipboard'));
   } catch {
-    MessagePlugin.error('复制失败，请手动复制');
+    MessagePlugin.error(t('common.copyFailedManual'));
   }
 }
 

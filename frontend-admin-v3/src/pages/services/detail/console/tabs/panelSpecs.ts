@@ -10,6 +10,8 @@
  * 中文 key 已由 PANEL_SPEC_FIELD_LABELS 归一到下列英文字段。
  */
 
+import { t } from '@/locales';
+
 /** 能力开关类字段：值表达"支持/不支持"，适合用标签展示 */
 const CAPABILITY_FIELDS = new Set([
   'websocket',
@@ -45,21 +47,21 @@ export interface PanelCapabilityItem {
 
 /** CDN 配置分组：按业务关注点从「套餐」到「防护」排列 */
 const CDN_GROUPS: Array<{ title: string; hint: string; fields: string[] }> = [
-  { title: '套餐与线路', hint: '所购套餐档位、加速区域与节点带宽', fields: ['plan', 'area', 'bw'] },
-  { title: '流量与配额', hint: '月流量上限、并发连接数与可接入的站点规模', fields: ['flow_limit', 'concurrency', 'sites', 'domains'] },
-  { title: '加速与转发', hint: 'CDN 节点系统与四层转发能力', fields: ['cdn_system', 'l4_forward'] },
-  { title: '安全防护', hint: 'DDoS / CC 防御等级与 WAF 功能', fields: ['defense_level', 'cc_defense', 'waf_custom', 'waf_security'] },
+  { title: t('serviceConsole.panelSpecs.planGroup'), hint: t('serviceConsole.panelSpecs.planGroupHint'), fields: ['plan', 'area', 'bw'] },
+  { title: t('serviceConsole.panelSpecs.quotaGroup'), hint: t('serviceConsole.panelSpecs.quotaGroupHint'), fields: ['flow_limit', 'concurrency', 'sites', 'domains'] },
+  { title: t('serviceConsole.panelSpecs.accelerationGroup'), hint: t('serviceConsole.panelSpecs.accelerationGroupHint'), fields: ['cdn_system', 'l4_forward'] },
+  { title: t('serviceConsole.panelSpecs.securityGroup'), hint: t('serviceConsole.panelSpecs.securityGroupHint'), fields: ['defense_level', 'cc_defense', 'waf_custom', 'waf_security'] },
 ];
 
 /** 虚拟主机配置分组 */
 const HOSTING_GROUPS: Array<{ title: string; hint: string; fields: string[] }> = [
-  { title: '空间与数据库', hint: 'WEB 空间与数据库容量配额', fields: ['web_space', 'database_space', 'disk'] },
-  { title: '流量与带宽', hint: '月流量上限与带宽峰值', fields: ['flow_limit', 'bw'] },
-  { title: '绑定与线路', hint: '可绑定域名数量与机房线路', fields: ['domains', 'area'] },
+  { title: t('serviceConsole.panelSpecs.storageGroup'), hint: t('serviceConsole.panelSpecs.storageGroupHint'), fields: ['web_space', 'database_space', 'disk'] },
+  { title: t('serviceConsole.panelSpecs.bandwidthGroup'), hint: t('serviceConsole.panelSpecs.bandwidthGroupHint'), fields: ['flow_limit', 'bw'] },
+  { title: t('serviceConsole.panelSpecs.bindingGroup'), hint: t('serviceConsole.panelSpecs.bindingGroupHint'), fields: ['domains', 'area'] },
 ];
 
 /** 未归入上述分组的字段（如各套餐独有的扩展项）统一收进「其他配置」 */
-const EXTRA_GROUP = { title: '其他配置', hint: '该套餐包含的附加配置项' };
+const EXTRA_GROUP = { title: t('serviceConsole.panelSpecs.extraGroup'), hint: t('serviceConsole.panelSpecs.extraGroupHint') };
 
 /** "放开限制"类语义值：在能力语境下代表「支持且不限量」，应判为支持 */
 const UNLIMITED_TOKENS = ['不限', '不限制', '无限制'];

@@ -266,6 +266,7 @@ import { computed, reactive, ref } from 'vue';
 
 import { supplierApi } from '@/api/supplier';
 import { userApi } from '@/api/user';
+import { t } from '@/locales';
 import { fieldValue, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { errorMessage } from '@/utils/userMessage';
@@ -370,8 +371,8 @@ const serviceUpstreamForm = reactive({
 });
 const serviceUpstreamOptions = ref<Array<{ id: number; label: string }>>([]);
 const serviceUpstreamRules: Record<string, FormRule[]> = {
-  supplier_id: [{ validator: validateUpstreamPair, message: '选择上游接口时必须填写上游实例 ID', type: 'error' }],
-  upstream_host_id: [{ validator: validateUpstreamPair, message: '填写上游实例 ID 时必须选择上游接口', type: 'error' }],
+  supplier_id: [{ validator: validateUpstreamPair, message: t('services.cdnConsole.upstreamInstanceIdRequired'), type: 'error' }],
+  upstream_host_id: [{ validator: validateUpstreamPair, message: t('services.cdnConsole.upstreamInterfaceRequired'), type: 'error' }],
 };
 
 const servicePricingVisible = ref(false);
@@ -430,7 +431,7 @@ async function handleManualProvision() {
     await userApi.manualProvisionService(props.userId, detail.value.id, {
       upstream_host_id: Number(manualProvisionForm.upstream_host_id || 0),
     });
-    MessagePlugin.success('手动开通指令已下发');
+    MessagePlugin.success(t('services.cdnConsole.manualProvisionSent'));
     manualProvisionVisible.value = false;
     await loadDetailBase();
   } catch (error) {
@@ -479,7 +480,7 @@ async function submitServiceUpstream() {
       upstream_host_id: serviceUpstreamForm.upstream_host_id ? Number(serviceUpstreamForm.upstream_host_id) : null,
     });
     serviceUpstreamVisible.value = false;
-    MessagePlugin.success('上游绑定已更新');
+    MessagePlugin.success(t('services.cdnConsole.upstreamBindingUpdated'));
     await loadDetailBase();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '更新上游绑定失败'));
@@ -521,7 +522,7 @@ async function submitServicePricing() {
   try {
     await userApi.updateServiceMeta(props.userId, detail.value.id, payload);
     servicePricingVisible.value = false;
-    MessagePlugin.success('价格信息已更新');
+    MessagePlugin.success(t('services.cdnConsole.priceUpdated'));
     await loadDetailBase();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '更新价格信息失败'));
@@ -582,7 +583,7 @@ function handleUnsuspendService() {
   const dialog = DialogPlugin.confirm({
     header: '解除暂停确认',
     body: '确认对该实例解除暂停？解除后实例将恢复可用。',
-    confirmBtn: '确认解除',
+    confirmBtn: t('services.cdnConsole.confirmUnbind'),
     theme: 'warning',
     async onConfirm() {
       adminActionLoading.value = 'suspend';

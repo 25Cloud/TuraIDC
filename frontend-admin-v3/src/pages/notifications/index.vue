@@ -307,6 +307,7 @@ import { adminApi } from '@/api/admin';
 import apiCatalogData from '@/data/apiCatalog.generated.json';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { errorMessage } from '@/utils/userMessage';
+import { t } from '@/locales';
 
 defineOptions({ name: 'AdminNotifications' });
 
@@ -476,24 +477,24 @@ const filteredApiItems = computed(() => {
 });
 
 const templateColumns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'name', title: '模板信息', minWidth: 260 },
-  { colKey: 'code', title: '编号 / 对象', minWidth: 180 },
-  { colKey: 'subject', title: '当前主题', minWidth: 220, ellipsis: true },
-  { colKey: 'preview', title: '正文摘要', minWidth: 260, ellipsis: true },
-  { colKey: 'variables', title: '变量数', width: 90 },
-  { colKey: 'templateType', title: '模板类型', width: 100 },
-  { colKey: 'bodyType', title: '正文类型', width: 110 },
-  { colKey: 'status', title: '发送状态', width: 130 },
-  { colKey: 'actions', title: '操作', fixed: 'right', width: 150 },
+  { colKey: 'name', title: t('pages.notification.apiTemplate'), minWidth: 260 },
+  { colKey: 'code', title: t('pages.notification.apiCodeObject'), minWidth: 180 },
+  { colKey: 'subject', title: t('pages.notification.apiCurrentSubject'), minWidth: 220, ellipsis: true },
+  { colKey: 'preview', title: t('pages.notification.apiBodyPreview'), minWidth: 260, ellipsis: true },
+  { colKey: 'variables', title: t('pages.notification.apiVariableCount'), width: 90 },
+  { colKey: 'templateType', title: t('pages.notification.apiTemplateType'), width: 100 },
+  { colKey: 'bodyType', title: t('pages.notification.apiBodyType'), width: 110 },
+  { colKey: 'status', title: t('pages.notification.apiSendStatus'), width: 130 },
+  { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 150 },
 ];
 const apiColumns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'category', title: '所属分类', minWidth: 220 },
-  { colKey: 'method', title: '方法', width: 100 },
-  { colKey: 'path', title: '路径', minWidth: 340 },
-  { colKey: 'access', title: '访问控制', minWidth: 210 },
-  { colKey: 'source', title: '前端来源', minWidth: 170 },
-  { colKey: 'handler', title: '控制器方法', minWidth: 220 },
-  { colKey: 'actions', title: '操作', fixed: 'right', width: 90 },
+  { colKey: 'category', title: t('pages.notification.apiCategory'), minWidth: 220 },
+  { colKey: 'method', title: t('pages.notification.apiMethod'), width: 100 },
+  { colKey: 'path', title: t('pages.notification.apiPath'), minWidth: 340 },
+  { colKey: 'access', title: t('pages.notification.apiAccess'), minWidth: 210 },
+  { colKey: 'source', title: t('pages.notification.apiSource'), minWidth: 170 },
+  { colKey: 'handler', title: t('pages.notification.apiHandler'), minWidth: 220 },
+  { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 90 },
 ];
 
 function normalizeTab(value: unknown): NotificationTab {
@@ -576,7 +577,7 @@ async function submitTestSend() {
     if (result.failed_count > 0) {
       MessagePlugin.warning(result.status === 'partial_failed' ? '测试发送部分失败' : '测试发送失败');
     } else {
-      MessagePlugin.success('测试发送成功');
+      MessagePlugin.success(t('pages.notification.testSent'));
     }
   } catch (error) {
     MessagePlugin.error(errorMessage(error, '测试发送失败'));
@@ -596,9 +597,9 @@ function resetApiFilters() {
 async function copyApiPath(path: string) {
   try {
     await navigator.clipboard?.writeText(path);
-    MessagePlugin.success('接口路径已复制');
+    MessagePlugin.success(t('pages.notification.pathCopied'));
   } catch {
-    MessagePlugin.error('复制失败，请手动复制');
+    MessagePlugin.error(t('pages.notification.copyFailed'));
   }
 }
 

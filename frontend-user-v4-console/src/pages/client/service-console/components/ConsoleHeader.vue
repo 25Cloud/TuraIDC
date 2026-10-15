@@ -141,6 +141,7 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, ref } from 'vue';
 
 import { useServiceConsoleContext } from './context';
+import { t } from '@/locales';
 
 /**
  * compact：面板型控制台模式（CDN / 虚拟主机共用）。
@@ -230,7 +231,7 @@ function handleMoreCommand(command: string) {
   }
 
   if (command === 'snapshot' || command === 'ssh_key' || command === 'disk') {
-    MessagePlugin.info('当前上游接口暂不支持该功能');
+    MessagePlugin.info(t('serviceConsole.upstreamFeatureUnsupported'));
   }
 }
 

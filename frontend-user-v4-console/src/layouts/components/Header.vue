@@ -333,7 +333,7 @@ const openInboxDetail = async (item: InboxItem) => {
     inboxDetailHtml.value = renderMarkdown(content, { imageAltFallback: item.title || '公告配图' });
   } catch {
     // 加载失败时退回列表摘要展示，并给出提示
-    MessagePlugin.error('公告内容加载失败');
+    MessagePlugin.error(t('layout.notice.detailLoadFailed'));
   } finally {
     inboxDetailLoading.value = false;
   }
@@ -350,7 +350,7 @@ const handleMarkAllRead = async () => {
     const dialog = DialogPlugin.confirm({
       header: '全部标记已读',
       body: '确认将所有未读消息标记为已读吗？此操作不可撤销。',
-      confirmBtn: '确认',
+      confirmBtn: t('common.confirm'),
       onConfirm: () => {
         dialog.destroy();
         resolve(true);
@@ -367,7 +367,7 @@ const handleMarkAllRead = async () => {
   });
   if (!confirmed) return;
   markAllRead();
-  MessagePlugin.success('已全部标记为已读');
+  MessagePlugin.success(t('layout.notice.markAllRead'));
 };
 
 const handleMarkAllReadClick = () => {
@@ -403,7 +403,7 @@ const handleLogout = async () => {
     const dialog = DialogPlugin.confirm({
       header: '退出登录',
       body: '确认退出当前账户吗？',
-      confirmBtn: '确认退出',
+      confirmBtn: t('layout.header.confirmSignOut'),
       onConfirm: () => {
         dialog.destroy();
         resolve(true);

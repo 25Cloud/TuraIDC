@@ -155,6 +155,7 @@ import type { InvoiceRecord } from '@/api/admin';
 import type { RecordDetailMetric, RecordDetailTab } from '@/components/record-detail-page/index.vue';
 import RecordDetailPage from '@/components/record-detail-page/index.vue';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { t } from '@/locales';
 
 type ThemeType = NonNullable<TagProps['theme']>;
 
@@ -212,19 +213,19 @@ const items = computed(() => {
 });
 
 const summaryMetrics = computed<RecordDetailMetric[]>(() => [
-  { label: '账单金额', value: formatMoney(invoice.value.amount), primary: true },
+  { label: t('finance.invoiceDetail.billAmount'), value: formatMoney(invoice.value.amount), primary: true },
   // 优惠金额只在该账单确实用券时占位，避免无券账单多一行空指标。
   ...(Number(invoice.value.discount || 0) > 0
-    ? [{ label: '优惠金额', value: `-${formatMoney(invoice.value.discount)}` }]
+    ? [{ label: t('finance.invoiceDetail.discountAmount'), value: `-${formatMoney(invoice.value.discount)}` }]
     : []),
-  { label: '已付金额', value: formatMoney(invoice.value.paid_amount) },
-  { label: '创建时间', value: formatDateTime(invoice.value.created_at) },
+  { label: t('finance.invoiceDetail.paidAmount'), value: formatMoney(invoice.value.paid_amount) },
+  { label: t('finance.invoiceDetail.createdAt'), value: formatDateTime(invoice.value.created_at) },
 ]);
 
 const tabs = computed<RecordDetailTab[]>(() => [
-  { value: 'basic', label: '基础信息' },
-  { value: 'payments', label: '支付记录', show: payments.value.length > 0 },
-  { value: 'logs', label: '操作日志', show: logs.value.length > 0 },
+  { value: 'basic', label: t('finance.invoiceDetail.basicInfo') },
+  { value: 'payments', label: t('finance.invoiceDetail.payments'), show: payments.value.length > 0 },
+  { value: 'logs', label: t('finance.invoiceDetail.operationLogs'), show: logs.value.length > 0 },
 ]);
 
 function invoiceTitle(row: InvoiceRecord) {

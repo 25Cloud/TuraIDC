@@ -1,10 +1,12 @@
+import { t } from '@/locales';
+
 const rawIndustrySolutions = [
   {
     key: 'ecommerce',
-    label: '电商',
-    title: '电商解决方案',
+    label: t('home.solutions.ecommerce.label'),
+    title: t('home.solutions.ecommerce.title'),
     subtitle: '业务运营、数据分析、安全防护',
-    description: '我们提供一站式的电商解决方案，将业务运营、数据分析、安全防护等多方面服务融为一体，确保您的电商业务顺畅无阻。',
+    description: t('home.solutions.ecommerce.description'),
     points: [
       '业务运营优化',
       '数据分析与挖掘',
@@ -19,10 +21,10 @@ const rawIndustrySolutions = [
   },
   {
     key: 'game',
-    label: '游戏',
-    title: '游戏云解决方案',
+    label: t('home.solutions.game.label'),
+    title: t('home.solutions.game.title'),
     subtitle: '高并发接入、弹性扩容、稳定防护',
-    description: '针对高并发、低时延和稳定交付场景，整合弹性计算、流量调度、告警巡检和节点容灾能力，支撑游戏业务稳定运行。',
+    description: t('home.solutions.game.description'),
     points: [
       '弹性资源调度',
       '低时延接入优化',
@@ -37,10 +39,10 @@ const rawIndustrySolutions = [
   },
   {
     key: 'security',
-    label: '安全',
-    title: '安全行业解决方案',
+    label: t('home.solutions.security.label'),
+    title: t('home.solutions.security.title'),
     subtitle: '访问控制、日志审计、资产防护',
-    description: '围绕身份认证、权限管理、日志留痕和风险告警构建防护体系，帮助企业把安全能力前置到采购、交付和运维全链路。',
+    description: t('home.solutions.security.description'),
     points: [
       '身份认证与权限隔离',
       '日志审计与追踪',
@@ -55,10 +57,10 @@ const rawIndustrySolutions = [
   },
   {
     key: 'website',
-    label: '网站',
-    title: '网站托管解决方案',
+    label: t('home.solutions.website.label'),
+    title: t('home.solutions.website.title'),
     subtitle: '快速部署、稳定托管、持续运维',
-    description: '从建站部署、性能优化到备案支撑和日常巡检，为展示站、业务站和内容站提供一站式上云托管方案。',
+    description: t('home.solutions.website.description'),
     points: [
       '建站资源快速开通',
       '性能与稳定性优化',
@@ -73,10 +75,10 @@ const rawIndustrySolutions = [
   },
   {
     key: 'finance',
-    label: '金融',
-    title: '金融业务解决方案',
+    label: t('home.solutions.finance.label'),
+    title: t('home.solutions.finance.title'),
     subtitle: '稳定交付、审计留痕、合规支撑',
-    description: '围绕资金处理、敏感操作留痕、故障兜底 and 高可用资源编排，帮助金融场景建立更稳妥的基础设施与运维体系。',
+    description: t('home.solutions.finance.description'),
     points: [
       '账单与计费链路清晰',
       '核心资源高可用部署',
@@ -91,10 +93,10 @@ const rawIndustrySolutions = [
   },
   {
     key: 'go-global',
-    label: '出海',
-    title: '出海业务解决方案',
+    label: t('home.solutions.goGlobal.label'),
+    title: t('home.solutions.goGlobal.title'),
     subtitle: '全球节点、链路优化、服务协同',
-    description: '面向跨境业务提供全球节点部署、区域路由优化、多地资源调度与统一交付支持，帮助业务更快覆盖海外用户。',
+    description: t('home.solutions.goGlobal.description'),
     points: [
       '全球节点接入',
       '跨区域链路优化',
@@ -109,10 +111,10 @@ const rawIndustrySolutions = [
   },
   {
     key: 'government',
-    label: '政府',
-    title: '政企上云解决方案',
+    label: t('home.solutions.government'),
+    title: t('home.solutions.governmentEnterpriseCloud'),
     subtitle: '资源统筹、权限管理、长期运维',
-    description: '针对政企项目周期长、流程严谨和运维要求高的特点，提供从资源规划、权限管理到持续服务支撑的整套方案。',
+    description: t('home.solutions.governmentSolutionDescription'),
     points: [
       '资源统一规划与交付',
       '权限分级与流程控制',

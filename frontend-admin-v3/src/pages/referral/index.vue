@@ -282,6 +282,7 @@ import { useRoute } from 'vue-router';
 import type { ReferralOverview, ReferralRewardRecord, ReferralWithdrawalRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { t } from '@/locales';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
 
@@ -361,52 +362,52 @@ const rewardLabelMap = toLabelMap(REWARD_STATUS_MAP);
 const rewardTypeMap = toTagTypeMap(REWARD_STATUS_MAP);
 const rewardStatusOptions = computed(() => toSelectOptions(REWARD_STATUS_MAP, false));
 const withdrawalStatusOptions = [
-  { label: '待审核', value: 0 },
-  { label: '已通过', value: 1 },
-  { label: '已拒绝', value: 2 },
+  { label: t('referral.index.statusPending'), value: 0 },
+  { label: t('referral.index.statusApproved'), value: 1 },
+  { label: t('referral.index.statusRejected'), value: 2 },
 ];
 
 const overviewMetrics = computed(() => {
   const summary = toRecord(overview.value.summary);
   return [
-    { label: '累计销售额', value: formatMoney(summary.total_sales_amount) },
-    { label: '冻结奖励', value: formatMoney(summary.frozen_amount) },
-    { label: '可提现奖励', value: formatMoney(summary.available_amount) },
-    { label: '已提现奖励', value: formatMoney(summary.withdrawn_amount) },
+    { label: t('referral.index.totalSales'), value: formatMoney(summary.total_sales_amount) },
+    { label: t('referral.index.frozenReward'), value: formatMoney(summary.frozen_amount) },
+    { label: t('referral.index.availableReward'), value: formatMoney(summary.available_amount) },
+    { label: t('referral.index.withdrawnReward'), value: formatMoney(summary.withdrawn_amount) },
   ];
 });
 
 const overviewColumns: PrimaryTableCol<Record<string, unknown>>[] = [
-  { colKey: 'user', title: '推广用户', minWidth: 220 },
-  { colKey: 'level', title: '会员等级', minWidth: 150 },
-  { colKey: 'sales', title: '累计销售额', width: 130 },
-  { colKey: 'frozen', title: '冻结中', width: 120 },
-  { colKey: 'available', title: '可提现', width: 120 },
-  { colKey: 'withdrawing', title: '提现中', width: 120 },
-  { colKey: 'withdrawn', title: '已提现', width: 120 },
+  { colKey: 'user', title: t('referral.index.promotedUser'), minWidth: 220 },
+  { colKey: 'level', title: t('referral.index.memberLevel'), minWidth: 150 },
+  { colKey: 'sales', title: t('referral.index.totalSales'), width: 130 },
+  { colKey: 'frozen', title: t('referral.index.frozen'), width: 120 },
+  { colKey: 'available', title: t('referral.index.available'), width: 120 },
+  { colKey: 'withdrawing', title: t('referral.index.withdrawing'), width: 120 },
+  { colKey: 'withdrawn', title: t('referral.index.withdrawn'), width: 120 },
 ];
 
 const rewardColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'id', title: 'ID', width: 80 },
-  { colKey: 'relation', title: '推荐关系', minWidth: 220 },
-  { colKey: 'order', title: '订单 / 配置', minWidth: 220 },
-  { colKey: 'orderAmount', title: '订单金额', width: 120 },
-  { colKey: 'rate', title: '比例', width: 100 },
-  { colKey: 'amount', title: '奖励金额', width: 120 },
-  { colKey: 'status', title: '状态', width: 110 },
-  { colKey: 'time', title: '时间', minWidth: 190 },
-  { colKey: 'remark', title: '备注', minWidth: 180 },
+  { colKey: 'relation', title: t('referral.index.relation'), minWidth: 220 },
+  { colKey: 'order', title: t('referral.index.orderSpec'), minWidth: 220 },
+  { colKey: 'orderAmount', title: t('referral.index.orderAmount'), width: 120 },
+  { colKey: 'rate', title: t('referral.index.rate'), width: 100 },
+  { colKey: 'amount', title: t('referral.index.rewardAmount'), width: 120 },
+  { colKey: 'status', title: t('common.status'), width: 110 },
+  { colKey: 'time', title: t('common.time'), minWidth: 190 },
+  { colKey: 'remark', title: t('referral.index.remark'), minWidth: 180 },
 ];
 
 const withdrawalColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'id', title: 'ID', width: 80 },
-  { colKey: 'user', title: '申请用户', minWidth: 220 },
-  { colKey: 'amount', title: '提现金额', width: 120 },
-  { colKey: 'method', title: '提现方式', minWidth: 220 },
-  { colKey: 'status', title: '状态', width: 110 },
-  { colKey: 'time', title: '申请 / 处理时间', minWidth: 220 },
-  { colKey: 'operator', title: '处理信息', minWidth: 200 },
-  { colKey: 'actions', title: '操作', fixed: 'right', width: 130 },
+  { colKey: 'user', title: t('referral.index.applicant'), minWidth: 220 },
+  { colKey: 'amount', title: t('referral.index.withdrawAmount'), width: 120 },
+  { colKey: 'method', title: t('referral.index.withdrawMethod'), minWidth: 220 },
+  { colKey: 'status', title: t('common.status'), width: 110 },
+  { colKey: 'time', title: t('referral.index.appliedAt'), minWidth: 220 },
+  { colKey: 'operator', title: t('referral.index.reviewInfo'), minWidth: 200 },
+  { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 130 },
 ];
 
 async function loadOverview() {
@@ -517,7 +518,7 @@ async function submitWithdrawalAction() {
   if (!withdrawalDialog.row) return;
   const remark = withdrawalDialog.remark.trim();
   if (withdrawalDialog.mode === 'reject' && !remark) {
-    MessagePlugin.warning('请输入拒绝原因');
+    MessagePlugin.warning(t('referral.index.rejectReasonRequired'));
     return;
   }
 
@@ -525,10 +526,10 @@ async function submitWithdrawalAction() {
   try {
     if (withdrawalDialog.mode === 'approve') {
       await adminApi.referral.approveWithdrawal(withdrawalDialog.row.id, { remark: remark || undefined });
-      MessagePlugin.success('提现申请已通过');
+      MessagePlugin.success(t('referral.index.withdrawApproved'));
     } else {
       await adminApi.referral.rejectWithdrawal(withdrawalDialog.row.id, { remark });
-      MessagePlugin.success('提现申请已拒绝');
+      MessagePlugin.success(t('referral.index.withdrawRejected'));
     }
     withdrawalDialog.visible = false;
     await Promise.allSettled([loadOverview(), loadWithdrawals()]);

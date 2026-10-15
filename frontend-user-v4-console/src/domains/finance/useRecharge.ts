@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue
 import { useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import type {
   RechargeGatewayOption,
@@ -130,16 +131,16 @@ export function useRecharge() {
   const summaryCards = computed(() => [
     {
       key: 'balance',
-      label: '当前余额',
+      label: t('recharge.currentBalance'),
       value: rechargeSummary.cashBalance,
       suffix: '元',
     },
     {
       key: 'renew-needed-7-days',
-      label: '续费需要',
+      label: t('recharge.renewalNeeded'),
       value: rechargeSummary.renewNeeded7Days,
       suffix: '元',
-      hint: '检测 7 天内到期的续费金额',
+      hint: t('recharge.renewalScanHint'),
       quickFilter: 'expiring_7d',
     },
   ]);
@@ -183,7 +184,7 @@ export function useRecharge() {
     const targetAmount = normalizeRechargeAmount(overrideAmount ?? amount.value);
     const gateway = selectedPaymentGateway.value;
     if (!gateway) {
-      MessagePlugin.warning('暂无可用支付方式');
+      MessagePlugin.warning(t('recharge.noPaymentMethod'));
       return null;
     }
 
@@ -199,7 +200,7 @@ export function useRecharge() {
       amount.value = targetAmount;
       inputAmount.value = targetAmount;
       paymentPayload.value = response.data || null;
-      MessagePlugin.success('充值二维码已生成');
+      MessagePlugin.success(t('recharge.qrCodeGenerated'));
       return paymentPayload.value;
     } catch (error: unknown) {
       // interceptor 对 HTTP 错误已调用 showError，避免重复弹窗
@@ -218,7 +219,7 @@ export function useRecharge() {
     const pollPaymentNo = String(paymentPayload.value?.payment_no || '');
     const pollToken = String(paymentPayload.value?.poll_token || '');
     if (!pollPaymentNo || !pollToken) {
-      MessagePlugin.warning('缺少支付轮询凭证');
+      MessagePlugin.warning(t('recharge.missingPollCredential'));
       return;
     }
 
@@ -239,7 +240,7 @@ export function useRecharge() {
           payload.cash_balance ?? userStore.info?.cash_balance ?? rechargeSummary.cashBalance,
         );
         notifyScreenReader('支付已成功，充值金额已到账');
-        MessagePlugin.success('充值成功，余额已刷新');
+        MessagePlugin.success(t('recharge.successBalanceRefreshed'));
       } else if (!options.silentPending) {
         notifyScreenReader('支付仍在处理中，请稍候');
         MessagePlugin.info(payload.message || '当前仍未支付成功');

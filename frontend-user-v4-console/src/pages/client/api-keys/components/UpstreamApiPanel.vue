@@ -124,6 +124,7 @@ import { DialogPlugin } from 'tdesign-vue-next';
 import { computed } from 'vue';
 
 import { useUpstreamApi } from '@/domains/developer/useUpstreamApi';
+import { t } from '@/locales';
 
 const {
   loading,
@@ -153,10 +154,10 @@ const accessEndpoint = computed(() => {
 });
 
 const logColumns: PrimaryTableCol[] = [
-  { colKey: 'created_at', title: '时间', minWidth: '10rem' },
-  { colKey: 'method', title: '方法', width: '5rem' },
-  { colKey: 'path', title: '接口路径', minWidth: '14rem' },
-  { colKey: 'status_code', title: '状态', width: '5rem' },
+  { colKey: 'created_at', title: t('common.time'), minWidth: '10rem' },
+  { colKey: 'method', title: t('common.method'), width: '5rem' },
+  { colKey: 'path', title: t('apiKeys.upstream.logPath'), minWidth: '14rem' },
+  { colKey: 'status_code', title: t('common.status'), width: '5rem' },
   { colKey: 'ip', title: 'IP', minWidth: '8rem' },
 ];
 

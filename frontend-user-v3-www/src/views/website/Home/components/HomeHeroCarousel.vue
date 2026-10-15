@@ -202,6 +202,7 @@ import {
 import { useRouter } from "vue-router";
 import { ElIcon } from "element-plus/es/components/icon/index.mjs";
 import { ArrowRight } from "@element-plus/icons-vue";
+import { t } from "@/locales";
 import { resolveApiAssetUrl } from "@/utils/apiAssetUrl";
 
 const props = defineProps({
@@ -253,7 +254,7 @@ const DEFAULT_SLIDES = freezeConfigList([
   {
     key: "refresh",
     railTitle: "官网换新",
-    title: "官网焕新 · 云上新体验",
+    title: t('home.hero.slides.refresh.title'),
     desc: "产品目录、购买支付、自动开通、账单结算与服务支持统一打通；首页即是控制台入口，让资源采购和后续管理始终在同一条链路里完成。",
     primaryText: "立即体验",
     primaryPath: "/products",
@@ -268,7 +269,7 @@ const DEFAULT_SLIDES = freezeConfigList([
   {
     key: "global",
     railTitle: "全球互联",
-    title: "多地节点 · 全球低延迟互联",
+    title: t('home.hero.slides.global.title'),
     desc: "覆盖香港、美国与国内多地优质节点，三网 CN2 / BGP 线路优化回国；跨区域组网、跨境业务秒级响应，适合建站、代理、跨境电商与出海 SaaS。",
     primaryText: "选购节点",
     primaryPath: "/products",
@@ -283,7 +284,7 @@ const DEFAULT_SLIDES = freezeConfigList([
   {
     key: "security",
     railTitle: "安全防护",
-    title: "企业级安全 · 稳定可靠交付",
+    title: t('home.hero.slides.security.title'),
     desc: "T3+ 数据中心 + BGP 多线接入 + 100G 抗 DDoS 防护；实名认证、权限分级与操作留痕保障账户安全，长期业务和合规场景稳定承载。",
     primaryText: "查看防护",
     primaryPath: "/products",
@@ -298,7 +299,7 @@ const DEFAULT_SLIDES = freezeConfigList([
   {
     key: "value",
     railTitle: "实惠专区",
-    title: "低门槛套餐 · 直享实惠价",
+    title: t('home.hero.slides.value.title'),
     desc: "新客首单 2 核 2G 云服务器 39 元/年起，轻量云电脑按月订阅即开即用；优惠券、折扣券灵活叠加，配置随业务弹性升级，先用后付更省心。",
     primaryText: "立即抢购",
     primaryPath: "/products",
@@ -313,7 +314,7 @@ const DEFAULT_SLIDES = freezeConfigList([
   {
     key: "support",
     railTitle: "企业客服",
-    title: "企业客服 · 一对一专属服务",
+    title: t('home.hero.slides.support.title'),
     desc: "7×24 小时工单、官方QQ群与一对一商务对接，覆盖选型、部署、迁移、运维与结算；支持对公结算、批量采购、子账号协作与统一对账。",
     primaryText: "联系客服",
     primaryPath: "/help",
@@ -331,35 +332,35 @@ const DEFAULT_FEATURES = freezeConfigList([
   {
     key: "dynamic",
     kicker: "产品动态",
-    title: "香港 CN2 精品线路 上线",
+    title: t('home.hero.features.dynamic.title'),
     desc: "三网 CN2 GIA 优化回国，跨境业务低时延稳定承载。",
     path: "/products",
   },
   {
     key: "activity",
     kicker: "活动内容",
-    title: "新客首单 39 元/年",
+    title: t('home.hero.features.activity.title'),
     desc: "2H2G 云服务器覆盖建站、代理、轻量业务全场景。",
     path: "/notices",
   },
   {
     key: "enterprise",
     kicker: "企业专区",
-    title: "IDC 企业采购通道",
+    title: t('home.hero.features.enterprise.title'),
     desc: "统一账单、多子账号协作与对公结算能力同步上线。",
     path: "/about",
   },
   {
     key: "cloud-desktop",
     kicker: "轻量产品",
-    title: "西安云电脑 即开即用",
+    title: t('home.hero.features.cloudDesktop.title'),
     desc: "西安节点低延迟，支持远程办公、外包协作、教学实训。",
     path: "/products",
   },
   {
     key: "new",
     kicker: "新开产品",
-    title: "十堰高防独立服务器",
+    title: t('home.hero.features.new.title'),
     desc: "100G 抗 DDoS + BGP 多线，面向长期稳定业务承载。",
     path: "/products",
   },

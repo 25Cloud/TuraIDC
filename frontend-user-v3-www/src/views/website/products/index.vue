@@ -1803,6 +1803,7 @@ import MobileOsPicker from "@/components/MobileOsPicker.vue";
 import MobileOptionPicker from "@/components/MobileOptionPicker.vue";
 import MobileRangePicker from "@/components/MobileRangePicker.vue";
 import MobileSheet from "@/components/MobileSheet.vue";
+import { t } from '@/locales';
 import { resolveProductDisplayName } from "@/utils/websiteProductConfig";
 import {
   buildInstanceSpecName,
@@ -2168,7 +2169,7 @@ const mobileCostRows = computed(() => {
   if (selectedProduct.value) {
     rows.push({
       key: "product",
-      label: "配置名称",
+      label: t('product.list.configName'),
       detail:
         selectedProductSummaryName.value ||
         resolveProductDisplayName(selectedProduct.value),
