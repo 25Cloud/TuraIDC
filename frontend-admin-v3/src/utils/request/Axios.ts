@@ -1,3 +1,4 @@
+import { i18n } from '@/locales';
 import type {
   AxiosError,
   AxiosInstance,
@@ -115,6 +116,8 @@ export class VAxios {
       const { ignoreCancelToken } = config.requestOptions;
       const ignoreCancel = ignoreCancelToken ?? this.options.requestOptions?.ignoreCancelToken;
       if (!ignoreCancel) axiosCanceler.addPending(config);
+      // 后端据此本地化校验与业务消息（zh_CN / zh_TW / zh_HK / en_US）
+      config.headers['X-Locale'] = i18n.global.locale.value;
 
       if (requestInterceptors && isFunction(requestInterceptors)) {
         config = requestInterceptors(config, this.options) as InternalAxiosRequestConfig;

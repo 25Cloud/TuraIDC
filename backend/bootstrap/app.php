@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureClientAuthenticated;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\LogOperation;
 use App\Http\Middleware\SetJsonEncodingOptions;
+use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\TicketUpstreamUploadThrottle;
 use App\Http\Middleware\VerifyAlipayCallbackSignature;
 use App\Http\Middleware\VerifyCallbackSignature;
@@ -87,6 +88,7 @@ return Application::configure(basePath: dirname(__DIR__))
             prepend: [
                 // WAF 放在最前：可疑请求应在触及会话、认证与业务逻辑之前就被拒绝，
                 // 既减少无谓开销，也避免攻击载荷进入更深的调用栈。
+                SetLocale::class,
                 WebApplicationFirewall::class,
                 SetJsonEncodingOptions::class,
                 EnsureFrontendRequestsAreStateful::class,

@@ -1,3 +1,4 @@
+import { i18n } from '@/locales'
 import {
   attachSafeRequestDedupe,
   buildSafeRequestKey,
@@ -129,6 +130,8 @@ httpClient.interceptors.request.use(
 
     runtimeConfig.silentError = Boolean(runtimeConfig.silentError || runtimeConfig.silent);
     runtimeConfig.__safeRequest = safeRequest;
+    // 后端据此本地化校验与业务消息（zh_CN / zh_TW / zh_HK / en_US）
+    runtimeConfig.headers['X-Locale'] = i18n.global.locale.value;
     runtimeConfig.timeout = resolveTimeout(runtimeConfig, safeRequest);
 
     if (token && !isPublicSiteGetRequest) {
