@@ -1,36 +1,28 @@
 <template>
   <div class="service-console admin-console">
     <t-loading :loading="detailLoading" size="small">
-      <t-card class="console-header-card" :bordered="false">
+      <service-header-panel
+        :user-id="props.userId"
+        :display-name="displayName"
+        :product-text="fieldValue(productText)"
+        :refunded-text="$t('services.console.refunded')"
+        :spec-chips="specChips"
+      >
+        <template #badges>
+          <t-tag v-if="detail.console_mode === 'nat'" variant="outline">NAT</t-tag>
+        </template>
+      </service-header-panel>
+
+      <t-alert
+        v-if="detail.upstream?.remote_error"
+        theme="warning"
+        class="console-header-alert"
+        :message="String(detail.upstream.remote_error)"
+      />
+
+      <t-card class="console-actions-card" :bordered="false">
         <div class="console-header-body">
           <div class="console-header-main">
-            <div class="console-title-line">
-              <h3 class="console-title">{{ displayName }}</h3>
-              <t-tag :theme="instanceStatusTheme" variant="light">{{ instanceStatusText }}</t-tag>
-              <t-tag v-if="isServiceRefunded" theme="danger" variant="light">{{ $t('services.console.refunded') }}</t-tag>
-            </div>
-            <div class="console-meta-line">
-              <span>{{ $t('services.console.productLabel') }}{{ fieldValue(productText) }}</span>
-              <span>{{ $t('services.console.regionLabel') }}{{ serviceRegion }}</span>
-              <span>{{ $t('services.console.osLabel') }}{{ serviceOs }}</span>
-              <span>{{ $t('services.console.billingLabel') }}{{ fieldValue(detail.billing_cycle_label) }}</span>
-              <span>{{ $t('services.console.renewPriceLabel') }}{{ renewPriceText }}</span>
-              <span>{{ $t('services.console.expireLabel') }}{{ detail.expires_at || $t('services.console.longTermValid') }}</span>
-              <span>{{ $t('services.console.publicIpLabel') }}{{ primaryConnectionText }}</span>
-              <span>{{ $t('services.console.autoRenewLabel') }}{{ autoRenewLabel }}</span>
-            </div>
-            <t-alert
-              v-if="detail.upstream?.remote_error"
-              theme="warning"
-              class="console-header-alert"
-              :message="String(detail.upstream.remote_error)"
-            />
-            <div v-if="specChips.length" class="spec-grid">
-              <div v-for="item in specChips" :key="item.label" class="spec-chip">
-                <span>{{ item.label }}</span>
-                <strong>{{ item.value }}</strong>
-              </div>
-            </div>
             <div class="drawer-actions">
               <t-button
                 v-if="canPowerOn"
@@ -271,12 +263,13 @@ import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, reactive, ref } from 'vue';
 
 import { supplierApi } from '@/api/supplier';
-import { t } from '@/locales';
 import { userApi } from '@/api/user';
+import { t } from '@/locales';
 import { fieldValue, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { errorMessage } from '@/utils/userMessage';
 
+import ServiceHeaderPanel from './components/ServiceHeaderPanel.vue';
 import ConsoleAlerts from './console/ConsoleAlerts.vue';
 import ConsoleDialogs from './console/ConsoleDialogs.vue';
 import { provideServiceConsoleContext } from './console/context';
@@ -301,13 +294,6 @@ const {
   availableTabs,
   consoleAreaLabels,
   canSyncStatus,
-  serviceRegion,
-  serviceOs,
-  primaryConnectionText,
-  instanceStatusText,
-  instanceStatusTheme,
-  renewPriceText,
-  autoRenewLabel,
   handleSyncStatus,
   handlePowerAction,
   openRenewDialog,
@@ -375,7 +361,6 @@ const canRefundService = computed(() => {
   const available = detail.value.actions?.available;
   return !Array.isArray(available) || available.includes('refund');
 });
-const isServiceRefunded = computed(() => [5, 6].includes(Number(detail.value.status)));
 
 // ==================== 管理端专属操作 ====================
 const adminActionLoading = ref('');

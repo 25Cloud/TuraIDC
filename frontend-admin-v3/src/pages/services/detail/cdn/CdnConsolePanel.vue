@@ -1,39 +1,28 @@
 <template>
   <div class="service-console cdn-console">
     <t-loading :loading="detailLoading" size="small">
-      <t-card class="console-header-card" :bordered="false">
+      <service-header-panel
+        :user-id="props.userId"
+        :display-name="displayName"
+        :product-text="fieldValue(productText)"
+        :refunded-text="$t('services.cdnConsole.refunded')"
+        :spec-chips="specChips"
+      >
+        <template #badges>
+          <t-tag variant="outline">CDN</t-tag>
+        </template>
+      </service-header-panel>
+
+      <t-alert
+        v-if="detail.upstream?.remote_error"
+        theme="warning"
+        class="console-header-alert"
+        :message="String(detail.upstream.remote_error)"
+      />
+
+      <t-card class="console-actions-card" :bordered="false">
         <div class="console-header-body">
           <div class="console-header-main">
-            <div class="console-title-line">
-              <h3 class="console-title">{{ displayName }}</h3>
-              <t-tag :theme="instanceStatusTheme" variant="light">{{ instanceStatusText }}</t-tag>
-              <t-tag v-if="isServiceRefunded" theme="danger" variant="light">
-                {{ $t('services.cdnConsole.refunded') }}
-              </t-tag>
-              <t-tag variant="outline">CDN</t-tag>
-            </div>
-            <div class="console-meta-line">
-              <span>{{ $t('services.cdnConsole.product') }}{{ fieldValue(productText) }}</span>
-              <span>{{ $t('services.cdnConsole.billing') }}{{ fieldValue(detail.billing_cycle_label) }}</span>
-              <span>{{ $t('services.cdnConsole.renewPrice') }}{{ renewPriceText }}</span>
-              <span>
-                {{ $t('services.cdnConsole.expiresAt')
-                }}{{ detail.expires_at || $t('services.cdnConsole.neverExpires') }}
-              </span>
-              <span>{{ $t('services.cdnConsole.autoRenew') }}{{ autoRenewLabel }}</span>
-            </div>
-            <t-alert
-              v-if="detail.upstream?.remote_error"
-              theme="warning"
-              class="console-header-alert"
-              :message="String(detail.upstream.remote_error)"
-            />
-            <div v-if="specChips.length" class="spec-grid">
-              <div v-for="item in specChips" :key="item.label" class="spec-chip">
-                <span>{{ item.label }}</span>
-                <strong>{{ item.value }}</strong>
-              </div>
-            </div>
             <!-- CDN 只有账务与上游操作：开关机 / 重装 / 重置密码 / VNC 等云主机动作一律不出现 -->
             <div class="drawer-actions">
               <t-button
@@ -271,6 +260,7 @@ import { fieldValue, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { errorMessage } from '@/utils/userMessage';
 
+import ServiceHeaderPanel from '../components/ServiceHeaderPanel.vue';
 import ConsoleAlerts from '../console/ConsoleAlerts.vue';
 import ConsoleDialogs from '../console/ConsoleDialogs.vue';
 import { provideServiceConsoleContext } from '../console/context';
@@ -294,10 +284,6 @@ const {
   availableTabs,
   consoleAreaLabels,
   canSyncStatus,
-  instanceStatusText,
-  instanceStatusTheme,
-  renewPriceText,
-  autoRenewLabel,
   handleSyncStatus,
   openRenewDialog,
   openNameDialog,
@@ -349,7 +335,6 @@ const canRefundService = computed(() => {
   const available = detail.value.actions?.available;
   return !Array.isArray(available) || available.includes('refund');
 });
-const isServiceRefunded = computed(() => [5, 6].includes(Number(detail.value.status)));
 
 // ==================== 管理端专属操作 ====================
 const adminActionLoading = ref('');

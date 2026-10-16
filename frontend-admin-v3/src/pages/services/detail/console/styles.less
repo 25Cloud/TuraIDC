@@ -35,11 +35,24 @@
   }
 
   /* ---- 顶部卡片 ---- */
-  .console-header-card {
+  .console-header-card,
+  .console-actions-card {
     background: var(--td-bg-color-container);
     border: 0.0625rem solid var(--td-border-color);
     border-radius: var(--td-radius-medium);
     box-shadow: var(--td-shadow-1);
+  }
+
+  .console-actions-card .t-card__body {
+    padding: 0.875rem 1.5rem;
+  }
+
+  .console-actions-card .drawer-actions {
+    margin-top: 0;
+  }
+
+  .console-header-alert {
+    border-radius: var(--td-radius-medium);
   }
 
   .console-header-card .t-card__body {

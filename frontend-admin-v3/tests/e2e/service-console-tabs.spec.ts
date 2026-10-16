@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
@@ -99,6 +103,40 @@ async function consoleTabLabels(page: Page): Promise<string[]> {
   return (await tabs.allTextContents()).map((text) => text.trim());
 }
 
+/**
+ * 从语言包读出页签文案，而不是把中文写死在断言里。
+ *
+ * 页面语言会随浏览器偏好自适应（首屏走 shared/locale 的探测逻辑），
+ * 断言写死中文等于假设「测试环境一定是简体中文」——探测一旦生效就会整片变红，
+ * 且与被测逻辑（页签取名）毫无关系。
+ */
+/**
+ * 从语言包读页签文案，而不是把中文写死在断言里。
+ *
+ * 返回类型必须写成显式结构：写成 Record<string, string> 时 t.logsTab.title
+ * 在类型上就是 string，运行时却取不到嵌套值，断言会拿 undefined 去比对。
+ */
+function consoleTabTexts() {
+  // 用 fs 读而不是 import/require：Playwright 把 spec 当 ESM 处理，
+  // require 与 __dirname 都不可用，而 JSON 静态 import 在 Node ESM 下还需要 import attribute。
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const file = path.resolve(here, '../../src/locales/lang/zh_CN.json');
+  const dict = JSON.parse(fs.readFileSync(file, 'utf8')) as {
+    services: {
+      console: {
+        overviewTab: string;
+        monitorTitle: string;
+        securityGroups: string;
+        financeLogs: string;
+        logsTab: { title: string };
+        vncTab: { title: string };
+        productConfigTab: string;
+      };
+    };
+  };
+  return dict.services.console;
+}
+
 test('动态自定义区域：页签显示区域中文名而非「选项卡N」', async ({ page }) => {
   await seedAdminSession(page);
   await mockAdminConsoleApi(page, panelServiceDetail(), {
@@ -114,8 +152,20 @@ test('动态自定义区域：页签显示区域中文名而非「选项卡N」'
   await page.goto(`/admin/services/${SERVICE_ID}?user=${USER_ID}`, { waitUntil: 'domcontentloaded' });
 
   const labels = await consoleTabLabels(page);
-  // 面板型产品只保留总览与账单，自定义区域插在总览之后
-  expect(labels).toEqual(['控制台总览', '基本信息', '网络信息', '财务日志']);
+  const t = consoleTabTexts();
+  // 面板型产品没有监控/安全组/VNC，只保留「总览 / 产品配置 / 账单」，
+  // 上游自定义区域插在产品配置之前。
+  // 「基本信息 / 网络信息」是上游区域名，由 mock 直接给出，不走语言包。
+  //
+  // 面板型的判定走 isPanelConsole()，它先看 console_template 再看
+  // machine_category.key——本 mock 是靠 machine_category.key='web_hosting' 命中的。
+  expect(labels).toEqual([
+    t.overviewTab,
+    '基本信息',
+    '网络信息',
+    t.productConfigTab,
+    t.financeLogs,
+  ]);
   expect(labels.join('')).not.toContain('选项卡');
 });
 
@@ -126,7 +176,15 @@ test('静态兜底页签：显示内置中文名而非「选项卡N」', async (
   await page.goto(`/admin/services/${SERVICE_ID}?user=${USER_ID}`, { waitUntil: 'domcontentloaded' });
 
   const labels = await consoleTabLabels(page);
-  expect(labels).toEqual(['控制台总览', '监控信息', '安全组', '操作日志', '财务日志', 'VNC 控制台']);
+  const t = consoleTabTexts();
+  expect(labels).toEqual([
+    t.overviewTab,
+    t.monitorTitle,
+    t.securityGroups,
+    t.logsTab.title,
+    t.financeLogs,
+    t.vncTab.title,
+  ]);
   expect(labels.join('')).not.toContain('选项卡');
 });
 
