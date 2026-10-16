@@ -1,3 +1,8 @@
+---
+title: TuraIDC 文档中心
+titleTemplate: false
+---
+
 # TuraIDC 文档记录系统
 
 `docs/` 是项目文档的唯一记录系统。这里保存可执行的知识、决策和计划；代码、测试、路由和数据库实况优先于文字说明。
