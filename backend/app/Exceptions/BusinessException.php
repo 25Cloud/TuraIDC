@@ -46,13 +46,22 @@ class BusinessException extends Exception
         // 必须显式带上 group 前缀：Laravel 会把不含点号的 key 当成 group 名
         // （去查 "消息文本"[null]），永远命中不了 messages.php 里的条目。
         $key = 'messages.' . $message;
-        if (! Lang::has($key)) {
+
+        // 取译文失败一律放行中文原文，绝不让"翻译"反过来搞挂业务异常的构造。
+        // 两条真实路径：裸 PHPUnit 场景没有绑定 translator（容器里根本没这个服务），
+        // 以及配置缓存 / 队列反序列化等 translator 尚未就绪的早期启动路径。
+        // 回落语义与"未翻译则回落中文"完全一致，因此这里吞掉异常是安全的。
+        try {
+            if (! Lang::has($key)) {
+                return $message;
+            }
+
+            $translated = Lang::get($key);
+
+            return is_string($translated) && $translated !== '' ? $translated : $message;
+        } catch (\Throwable) {
             return $message;
         }
-
-        $translated = Lang::get($key);
-
-        return is_string($translated) && $translated !== '' ? $translated : $message;
     }
 
     /**
