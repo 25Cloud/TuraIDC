@@ -81,7 +81,7 @@
                 <span
                   v-if="Number(item.is_pinned) === 1"
                   class="list-item__badge"
-                  >置顶</span
+                  >{{ $t('content.list.pinned') }}</span
                 >
               </div>
 

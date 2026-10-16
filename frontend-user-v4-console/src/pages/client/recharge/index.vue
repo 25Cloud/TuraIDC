@@ -147,7 +147,7 @@
             </div>
 
             <div class="field-block">
-              <label class="field-label">充值数量</label>
+              <label class="field-label">{{ t('recharge.amountQuantity') }}</label>
               <div class="amount-row">
                 <t-input-number
                   v-model="inputAmount"
@@ -161,14 +161,14 @@
                   @change="handleAmountChange"
                 />
                 <div class="amount-payable">
-                  <span>实付金额：</span>
+                  <span>{{ t('recharge.actualAmountPrefix') }}</span>
                   <strong>{{ amountText }} 元</strong>
                 </div>
               </div>
             </div>
 
             <div v-if="hasPaymentGateways" class="field-block">
-              <label class="field-label">选择支付方式</label>
+              <label class="field-label">{{ t('recharge.selectPaymentMethod') }}</label>
               <div class="pay-methods">
                 <t-button
                   v-for="method in paymentGateways"

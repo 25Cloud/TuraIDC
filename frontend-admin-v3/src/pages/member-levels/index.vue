@@ -38,8 +38,12 @@
           <template #remark="{ row }">{{ fieldValue(row.remark) }}</template>
           <template #actions="{ row }">
             <t-space v-if="canManage" size="small">
-              <t-button theme="primary" variant="text" @click="openEditDialog(row)">编辑</t-button>
-              <t-button theme="danger" variant="text" @click="handleDelete(row)">删除</t-button>
+              <t-button theme="primary" variant="text" @click="openEditDialog(row)">{{
+                $t('admin.memberLevels.actionEdit')
+              }}</t-button>
+              <t-button theme="danger" variant="text" @click="handleDelete(row)">{{
+                $t('admin.memberLevels.actionDelete')
+              }}</t-button>
             </t-space>
             <span v-else>-</span>
           </template>

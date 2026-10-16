@@ -104,7 +104,7 @@
             :loading="verificationLoading"
             @click="restartVerification"
           >
-            重新认证
+            {{ $t('verification.reverify') }}
           </t-button>
         </div>
       </div>

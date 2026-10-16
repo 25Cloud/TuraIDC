@@ -4,14 +4,8 @@
       <div class="api-key-hero__body">
         <div>
           <h3 class="api-key-hero__title">{{ $t('apiKeys.title') }}</h3>
-          <p class="api-key-hero__desc">
-            本页管理对接本系统的两套凭据：开放接口密钥用于系统间调用（/api/v2/open），魔方财务对接凭据供魔方财务在「上游」中配置（/api/v2/zjmf）。两套凭据都支持
-            IP 白名单、有效期与调用审计。
-          </p>
-          <p class="api-key-hero__linkage">
-            两套凭据的联动是单向的：在「魔方财务对接」中关闭上游会一并停用本账号全部开放接口密钥；
-            反过来，停用或删除单个密钥不影响魔方财务对接。
-          </p>
+          <p class="api-key-hero__desc">{{ $t('apiKeys.overview') }}</p>
+          <p class="api-key-hero__linkage">{{ $t('apiKeys.linkageNote') }}</p>
         </div>
         <t-button v-if="activeTab === 'keys'" theme="primary" @click="openCreateDialog">{{ $t('apiKeys.create') }}</t-button>
       </div>
@@ -56,8 +50,8 @@
                   <template #last_used_at="{ row }">{{ row.last_used_at || '从未使用' }}</template>
                   <template #operation="{ row }">
                     <t-space size="0">
-                      <t-button size="small" theme="primary" variant="text" @click="openEditDialog(row)">编辑</t-button>
-                      <t-button size="small" theme="primary" variant="text" @click="openUsageLogs(row)">日志</t-button>
+                      <t-button size="small" theme="primary" variant="text" @click="openEditDialog(row)">{{ t('client.apiKeys.edit') }}</t-button>
+                      <t-button size="small" theme="primary" variant="text" @click="openUsageLogs(row)">{{ t('client.apiKeys.logs') }}</t-button>
                       <t-button
                         size="small"
                         variant="text"
@@ -66,7 +60,7 @@
                       >
                         {{ row.status === 'enabled' ? '停用' : '启用' }}
                       </t-button>
-                      <t-button size="small" theme="danger" variant="text" @click="confirmRemove(row)">删除</t-button>
+                      <t-button size="small" theme="danger" variant="text" @click="confirmRemove(row)">{{ t('components.delete') }}</t-button>
                     </t-space>
                   </template>
                 </t-table>
@@ -98,8 +92,8 @@
                       <span>最近使用：{{ row.last_used_at || '从未使用' }}</span>
                     </div>
                     <div class="record-mobile-card__actions">
-                      <t-button size="small" theme="primary" variant="text" @click="openEditDialog(row)">编辑</t-button>
-                      <t-button size="small" theme="primary" variant="text" @click="openUsageLogs(row)">日志</t-button>
+                      <t-button size="small" theme="primary" variant="text" @click="openEditDialog(row)">{{ t('client.apiKeys.edit') }}</t-button>
+                      <t-button size="small" theme="primary" variant="text" @click="openUsageLogs(row)">{{ t('client.apiKeys.logs') }}</t-button>
                       <t-button
                         size="small"
                         variant="text"
@@ -108,7 +102,7 @@
                       >
                         {{ row.status === 'enabled' ? '停用' : '启用' }}
                       </t-button>
-                      <t-button size="small" theme="danger" variant="text" @click="confirmRemove(row)">删除</t-button>
+                      <t-button size="small" theme="danger" variant="text" @click="confirmRemove(row)">{{ t('components.delete') }}</t-button>
                     </div>
                   </article>
                 </div>

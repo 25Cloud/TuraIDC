@@ -4,9 +4,9 @@
       <header class="news-section__head">
         <h2 class="news-section__title">{{ $t('home.news.title') }}</h2>
         <p class="news-section__desc">
-          为您呈现行业动态、活动公告、产品发布
+          {{ $t('home.news.subtitle') }}
           <router-link to="/notices" class="news-section__more">
-            查看更多
+            {{ $t('home.news.viewMore') }}
             <el-icon><ArrowRight /></el-icon>
           </router-link>
         </p>

@@ -120,9 +120,9 @@
     </div>
     <template #footer>
       <t-button v-if="primaryConnectionValues.length > 1" variant="outline" @click="copyText(primaryConnectionText)"
-        >复制全部</t-button
+        >{{ t('serviceConsole.copyAll') }}</t-button
       >
-      <t-button theme="primary" @click="ipDialogVisible = false">关闭</t-button>
+      <t-button theme="primary" @click="ipDialogVisible = false">{{ t('serviceConsole.close') }}</t-button>
     </template>
   </t-dialog>
 </template>

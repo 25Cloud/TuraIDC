@@ -219,13 +219,24 @@ class I18nLocaleConsistencyTest extends TestCase
 
     public function test_supported_locales_cover_all_four_languages(): void
     {
+        // 四语言清单现在收敛在 shared/locale 一处，各端从它导出。
+        // 护栏要查的仍是「四语言都在、且没有任何一端私自改小集合」，
+        // 只是真源从每端各写一遍字面量变成了单一常量。
+        $shared = (string) file_get_contents($this->repoRoot().'/shared/locale/index.ts');
+        $this->assertMatchesRegularExpression(
+            '/SUPPORTED_LOCALES\s*=\s*\[[^\]]*[\'"]zh_CN[\'"][^\]]*[\'"]zh_TW[\'"][^\]]*[\'"]zh_HK[\'"][^\]]*[\'"]en_US[\'"]/',
+            $shared,
+            'shared/locale 的 SUPPORTED_LOCALES 未同时声明四种语言（i18n.md 第一节）'
+        );
+
         foreach (self::APPS as $app) {
             $source = (string) file_get_contents($this->repoRoot()."/{$app}/src/locales/index.ts");
 
             $this->assertMatchesRegularExpression(
-                '/supportedLocales\s*=\s*\[[^\]]*[\'"]zh_CN[\'"][^\]]*[\'"]zh_TW[\'"][^\]]*[\'"]zh_HK[\'"][^\]]*[\'"]en_US[\'"]/',
+                '/supportedLocales\s*=\s*SUPPORTED_LOCALES/',
                 $source,
-                "{$app} 的 supportedLocales 未同时声明四种语言（i18n.md 第一节）"
+                "{$app} 的 supportedLocales 必须从 shared/locale 的 SUPPORTED_LOCALES 导出，"
+                    .'各端自己写一份字面量迟早会漂移'
             );
 
             $this->assertMatchesRegularExpression(
@@ -330,63 +341,212 @@ public function test_referenced_keys_exist_in_locales(): void
         }
 
         return $files;
-    }
-public function test_templates_have_no_hardcoded_chinese(): void
+    }    /**
+     * 模板层硬编码中文的存量基线（app → 相对 src 的路径 → 处数）。
+     *
+     * 这是**债务棘轮**，不是豁免名单：
+     *   - 清单外的文件出现中文 → 失败（新代码必须走 i18n）
+     *   - 清单内文件的处数**超过**登记值 → 失败（存量只减不增）
+     *   - 处数变少 → 通过；请顺手把这里的数字改小，让进度出现在 diff 里
+     *
+     * 为什么需要它：这道守卫此前因两处缺陷从未真正执行——`preg_match_all(...) === 1`
+     * 把「匹配条数」当成布尔（真实页面几十处命中时条件恒为假），以及命中后
+     * 「含换行就整条跳过」（Vue 模板里文本节点几乎总带缩进换行，真命中全被放过）。
+     * 另外它只扫每个文件**第一个** `<template>` 段，大型 SFC 从第二段起完全在盲区里。
+     * 三处修好后一次性暴露 482 处存量，逐条清理不现实，故先冻结存量、堵死新增，再分批还。
+     */
+    private const TEMPLATE_CHINESE_BASELINE = [
+        'frontend-admin-v3' => [
+            'pages/products/edit.vue' => 90,
+            'pages/tickets/detail/index.vue' => 37,
+            'pages/content/edit.vue' => 34,
+            'pages/notifications/index.vue' => 29,
+            'pages/content/index.vue' => 18,
+            'pages/notifications/email-template-detail/index.vue' => 16,
+            'pages/member-levels/index.vue' => 15,
+            'pages/referral/index.vue' => 12,
+            'pages/services/detail/console/tabs/AreaTab.vue' => 4,
+            'pages/services/detail/index.vue' => 4,
+            'components/record-detail-page/index.vue' => 2,
+            'pages/products/specs/index.vue' => 2,
+        ], // 12 个文件 / 263 处
+        'frontend-user-v4-console' => [
+            'pages/client/invoice-detail/index.vue' => 36,
+            'pages/client/service-console/components/tabs/OverviewTab.vue' => 22,
+            'pages/client/service-console/components/cdn/tabs/CdnOverviewTab.vue' => 21,
+            'pages/client/tickets/index.vue' => 16,
+            'pages/client/api-keys/index.vue' => 15,
+            'pages/client/payment-detail/index.vue' => 15,
+            'pages/client/dashboard/index.vue' => 14,
+            'pages/client-auth/login.vue' => 9,
+            'pages/client/service-console/components/ConsoleHeader.vue' => 7,
+            'pages/client/recharge/index.vue' => 5,
+            'pages/client/service-console/components/tabs/AreaTab.vue' => 4,
+            'pages/client-auth/forgot-password.vue' => 3,
+            'pages/client/content-list/ContentListPage.vue' => 3,
+            'pages/client/service-console/components/tabs/MonitorTab.vue' => 3,
+            'components/auth/AuthShell.vue' => 2,
+            'pages/client/orders/index.vue' => 2,
+            'layouts/components/Header.vue' => 1,
+            'layouts/components/Notice.vue' => 1,
+            'pages/client/content-detail/ContentDetailPage.vue' => 1,
+        ], // 19 个文件 / 180 处
+        'frontend-user-v3-www' => [
+            'layout/WebsiteLayout.vue' => 35,
+            'views/website/content/ContentListPage.vue' => 2,
+            'views/website/content/ContentDetailPage.vue' => 1,
+            'views/website/Home/components/HomeNewsSection.vue' => 1,
+        ], // 4 个文件 / 39 处
+    ];
+
+    /** 值为文案的属性：值里带中文即为硬编码 */
+    private const TEMPLATE_TEXT_ATTRS = [
+        'title', 'placeholder', 'alt', 'aria-label', 'label',
+        'content', 'description', 'empty-text', 'confirm', 'cancel',
+    ];
+
+    /**
+     * 模板层的文案必须全部走 \$t()。这是本项目唯一能自动发现「漏翻译页面」的手段。
+     *
+     * 只查 <template> 段内的纯文本节点与常见文案属性；<script> 段的字符串刻意不查——
+     * 那里混着匹配用关键词常量与协议字段，翻译它们会让商品规格识别和接口调用失效
+     * （见 i18n.md 第三节）。
+     *
+     * 判定按文件粒度对照 TEMPLATE_CHINESE_BASELINE，而不是要求全仓一次性清零。
+     */
+    public function test_templates_have_no_hardcoded_chinese(): void
     {
-        // 模板层的文案必须全部走 $t()。这是本项目唯一能自动发现「漏翻译页面」的手段：
-        // 新增页面若直接写中文，这里会立刻失败。
-        //
-        // 检测口径与后端排查工具保持一致：只查 <template> 段内的纯文本节点，
-        // 以及常见文案属性；<script> 段的字符串刻意不查——那里混着匹配用关键词常量
-        // 与协议字段，翻译它们会让商品规格识别和接口调用失效（见 i18n.md 第三节）。
-        $attrs = [
-            'title', 'placeholder', 'alt', 'aria-label', 'label',
-            'content', 'description', 'empty-text', 'confirm', 'cancel'];
-
         foreach (self::APPS as $app) {
-            $hits = [];
+            $counts = $this->templateChineseCounts($app);
+            $baseline = self::TEMPLATE_CHINESE_BASELINE[$app] ?? [];
 
-            foreach ($this->vueTemplates($app) as $file) {
-                $src = (string) file_get_contents($file);
-                $start = strpos($src, '<template>');
-                $end = strpos($src, '</template>');
-                if ($start === false || $end === false || $end <= $start) {
-                    continue;
+            $newFiles = [];
+            foreach ($counts as $file => $count) {
+                if (! array_key_exists($file, $baseline)) {
+                    $newFiles[] = $file.'（'.$count.' 处）';
                 }
-                $tpl = substr($src, $start, $end - $start);
+            }
 
-                if (preg_match_all('/>([^<>{}]*[\x{4e00}-\x{9fff}][^<>{}]*)</u', $tpl, $m) === 1) {
-                    foreach ($m[1] as $text) {
-                        if (str_contains($text, "\n")) {
-                            continue;
-                        }
-                        if (trim($text) !== '') {
-                            $hits[] = basename($file).': >'.trim($text).'<';
-                        }
-                    }
-                }
-
-                foreach ($attrs as $attr) {
-                    $pattern = '/(?<![:\w-])'.$attr.'\s*=\s*"[^"{}<>]*[\x{4e00}-\x{9fff}][^"{}<>]*"/u';
-                    if (preg_match_all($pattern, $tpl, $m) > 0) {
-                        foreach ($m[0] as $raw) {
-                            $hits[] = basename($file).': '.$raw;
-                        }
-                    }
+            $grown = [];
+            foreach ($counts as $file => $count) {
+                if (array_key_exists($file, $baseline) && $count > $baseline[$file]) {
+                    $grown[] = $file.'（'.$baseline[$file].' → '.$count.'）';
                 }
             }
 
             $this->assertSame(
                 [],
-                array_slice($hits, 0, 10),
+                $newFiles,
                 sprintf(
-                    "%s 模板层仍有 %d 处硬编码中文未走 i18n，例如：%s",
+                    '%s 有 %d 个文件新增了模板层硬编码中文：%s。新代码请直接用 $t()，不要加进基线（i18n.md 第一节）',
                     $app,
-                    count($hits),
-                    implode(' | ', array_slice($hits, 0, 3))
+                    count($newFiles),
+                    implode(' | ', $newFiles)
+                )
+            );
+
+            $this->assertSame(
+                [],
+                $grown,
+                sprintf(
+                    '%s 有 %d 个文件的硬编码中文超出基线：%s。存量只减不增，新增文案请走 $t()',
+                    $app,
+                    count($grown),
+                    implode(' | ', $grown)
                 )
             );
         }
+    }
+
+    /**
+     * 统计某个 app 每个 .vue 的模板层硬编码中文处数（只返回 > 0 的文件）。
+     *
+     * @return array<string, int> 相对该 app 的 src 的路径 => 处数
+     */
+    private function templateChineseCounts(string $app): array
+    {
+        $base = $this->repoRoot()."/{$app}/src";
+        $counts = [];
+
+        foreach ($this->vueTemplates($app) as $file) {
+            $tpl = $this->rootTemplateBlock((string) file_get_contents($file));
+            if ($tpl === '') {
+                continue;
+            }
+
+            $count = 0;
+
+            // 纯文本节点按行拆开逐行判断：Vue 模板里文本节点几乎总是带缩进换行，
+            // 「含换行就整条跳过」会把绝大多数真实命中放过去。
+            if (preg_match_all('/>([^<>{}]*[\x{4e00}-\x{9fff}][^<>{}]*)</u', $tpl, $m) > 0) {
+                foreach ($m[1] as $text) {
+                    foreach (preg_split('/\R/u', $text) ?: [] as $line) {
+                        if (trim($line) !== '') {
+                            $count += 1;
+                        }
+                    }
+                }
+            }
+
+            foreach (self::TEMPLATE_TEXT_ATTRS as $attr) {
+                $pattern = '/(?<![:\w-])'.$attr.'\s*=\s*"[^"{}<>]*[\x{4e00}-\x{9fff}][^"{}<>]*"/u';
+                $count += (int) preg_match_all($pattern, $tpl, $m);
+            }
+
+            if ($count > 0) {
+                $counts[str_replace('\\', '/', substr($file, strlen($base) + 1))] = $count;
+            }
+        }
+
+        ksort($counts);
+
+        return $counts;
+    }
+
+    /**
+     * 取 SFC 的根 <template> 块（栈平衡配对，含标签）。
+     *
+     * 必须用栈，不能用「开标签 → 其后第一个闭标签」的线性配对：\`<template #slot>\` 可以嵌套，
+     * 线性配对会在内层闭合处提前截断，之后的正文整片落在扫描范围外。取根块
+     * （第一个 <template> 到使深度归零的那个 </template>）天然包含全部嵌套内容，
+     * 且每段只算一次，不会重复计数。
+     *
+     * 返回值**含标签**：纯文本节点的判据是 \`>文本<\`，若只返回标签之间的内容，
+     * \`<template #title>等级列表</template>\` 就只剩「等级列表」，前后没有 > 与 <，永远匹配不上。
+     */
+    private function rootTemplateBlock(string $src): string
+    {
+        if (preg_match_all('/<template(?:\s[^>]*)?>|<\/template>/', $src, $m, PREG_OFFSET_CAPTURE) === 0) {
+            return '';
+        }
+
+        $depth = 0;
+        $start = -1;
+
+        foreach ($m[0] as $token) {
+            [$text, $offset] = $token;
+
+            if (str_starts_with($text, '</')) {
+                if ($depth === 0) {
+                    continue;
+                }
+
+                $depth -= 1;
+                if ($depth === 0) {
+                    return substr($src, $start, $offset + strlen($text) - $start);
+                }
+
+                continue;
+            }
+
+            if ($depth === 0) {
+                $start = $offset;
+            }
+
+            $depth += 1;
+        }
+
+        return '';
     }
 
     /**

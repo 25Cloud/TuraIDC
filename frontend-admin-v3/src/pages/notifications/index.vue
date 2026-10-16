@@ -65,8 +65,12 @@
             </template>
             <template #actions="{ row }">
               <t-space size="small">
-                <t-button variant="text" @click.stop="openTestSend(row)">测试发送</t-button>
-                <t-button theme="primary" variant="text" @click.stop="openTemplate(row)">编辑</t-button>
+                <t-button variant="text" @click.stop="openTestSend(row)">{{
+                  $t('notifications.template.actionTestSend')
+                }}</t-button>
+                <t-button theme="primary" variant="text" @click.stop="openTemplate(row)">{{
+                  $t('notifications.template.actionEdit')
+                }}</t-button>
               </t-space>
             </template>
           </t-table>
@@ -125,7 +129,7 @@
     <template v-else>
       <section class="api-layout">
         <t-card :bordered="false" class="api-sidebar">
-          <template #title>接口分类</template>
+          <template #title>{{ $t('notifications.api.categoryList') }}</template>
           <div class="api-meta-grid">
             <article>
               <span>接口</span><strong>{{ apiMeta.total || apiItems.length }}</strong>
@@ -219,13 +223,13 @@
                   <div class="tag-stack">
                     <t-tag :theme="accessTheme(row.access)" variant="light">{{ row.accessLabel }}</t-tag>
                     <t-tag v-if="row.permission" variant="light">{{ row.permission }}</t-tag>
-                    <span v-else>无需额外权限码</span>
+                    <span v-else>{{ $t('notifications.api.noExtraPermission') }}</span>
                   </div>
                 </template>
                 <template #source="{ row }">
                   <div class="tag-stack">
                     <t-tag v-for="label in row.sourceAppLabels" :key="label" variant="light">{{ label }}</t-tag>
-                    <span v-if="!row.sourceAppLabels.length">未发现前端调用</span>
+                    <span v-if="!row.sourceAppLabels.length">{{ $t('notifications.api.noFrontendCall') }}</span>
                   </div>
                 </template>
                 <template #handler="{ row }">
@@ -235,7 +239,9 @@
                   </div>
                 </template>
                 <template #actions="{ row }">
-                  <t-button theme="primary" variant="text" @click="copyApiPath(row.backendPath)">复制</t-button>
+                  <t-button theme="primary" variant="text" @click="copyApiPath(row.backendPath)">{{
+                    $t('notifications.api.actionCopy')
+                  }}</t-button>
                 </template>
               </t-table>
             </div>

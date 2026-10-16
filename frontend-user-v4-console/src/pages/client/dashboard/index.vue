@@ -62,9 +62,9 @@
       <div class="dashboard-grid">
         <main class="dashboard-main">
           <t-card class="dashboard-card" :bordered="false">
-            <template #title>我的产品</template>
+            <template #title>{{ t('client.dashboard.myProducts') }}</template>
             <template #actions>
-              <t-button theme="primary" variant="text" @click="router.push('/client/services')">管理全部</t-button>
+              <t-button theme="primary" variant="text" @click="router.push('/client/services')">{{ t('client.dashboard.manageAll') }}</t-button>
             </template>
 
             <div class="product-grid">
@@ -87,12 +87,12 @@
 
           <div class="chart-grid">
             <t-card class="dashboard-card chart-card" :bordered="false">
-              <template #title>今年消费</template>
+              <template #title>{{ t('client.dashboard.thisYearSpend') }}</template>
               <template #actions>
                 <div class="chart-card__actions">
                   <span class="card-meta">{{ currentYearLabel }}</span>
                   <span class="chart-summary">
-                    合计 <strong>{{ formatMoney(currentYearConsumptionTotal) }} 元</strong>
+                    {{ t('client.dashboard.totalLabel') }} <strong>{{ formatMoney(currentYearConsumptionTotal) }} 元</strong>
                   </span>
                 </div>
               </template>
@@ -125,13 +125,13 @@
             </t-card>
 
             <t-card class="dashboard-card chart-card" :bordered="false">
-              <template #title>近 7 天每日消费</template>
+              <template #title>{{ t('client.dashboard.last7DaysDailySpend') }}</template>
               <template #actions>
                 <div class="chart-card__actions">
                   <span class="chart-summary">
-                    合计 <strong>{{ formatMoney(last7DaysConsumptionTotal) }} 元</strong>
+                    {{ t('client.dashboard.totalLabel') }} <strong>{{ formatMoney(last7DaysConsumptionTotal) }} 元</strong>
                   </span>
-                  <t-button theme="primary" variant="text" @click="router.push('/client/payments')">消费明细</t-button>
+                  <t-button theme="primary" variant="text" @click="router.push('/client/payments')">{{ t('client.dashboard.spendDetails') }}</t-button>
                 </div>
               </template>
 
@@ -155,14 +155,14 @@
           </div>
 
           <t-card class="dashboard-card" :bordered="false">
-            <template #title>消息中心</template>
+            <template #title>{{ t('client.dashboard.messageCenter') }}</template>
             <template #actions>
               <t-button
                 theme="primary"
                 variant="text"
                 @click="router.push(activeNoticeTab === 'notice' ? '/client/notices' : '/client/help')"
               >
-                查看全部
+                {{ t('layout.notice.viewAll') }}
               </t-button>
             </template>
 

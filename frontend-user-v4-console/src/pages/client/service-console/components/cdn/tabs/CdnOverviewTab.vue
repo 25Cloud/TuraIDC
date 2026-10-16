@@ -64,7 +64,7 @@
     <t-card class="console-panel console-panel-wide" title="付费信息" :bordered="false">
       <template #actions>
         <t-button v-if="!isTrialMachine" variant="text" theme="primary" @click="openRenewDialog">
-          续费管理
+          {{ $t('serviceConsole.virtualHost.renewManage') }}
         </t-button>
       </template>
       <div class="detail-grid">

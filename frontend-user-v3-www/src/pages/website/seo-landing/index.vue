@@ -77,9 +77,9 @@
     <section id="seo-products" class="seo-section seo-section--products">
       <div class="seo-container">
         <div class="seo-section__heading seo-section__heading--center">
-          <h2>安全、稳定、可信赖的{{ page.keyword }}服务</h2>
+          <h2>{{ $t('seoLanding.pages.common.productsTitle', { keyword: page.keyword }) }}</h2>
           <p>
-            围绕真实业务选型整理产品能力、适用场景和开通入口，让搜索进入的用户能直接完成判断。
+            {{ $t('seoLanding.pages.common.productsIntro') }}
           </p>
           <router-link to="/products">{{ $t('seoLanding.viewAllProducts') }}</router-link>
         </div>
@@ -130,9 +130,9 @@
     <section id="seo-solutions" class="seo-section seo-section--solutions">
       <div class="seo-container">
         <div class="seo-section__heading seo-section__heading--center">
-          <h2>为不同业务场景提供{{ page.keyword }}方案</h2>
+          <h2>{{ $t('seoLanding.pages.common.solutionTitle', { keyword: page.keyword }) }}</h2>
           <p>
-            从访问区域、系统环境、带宽需求和售后协同出发，先明确场景，再选择资源。
+            {{ $t('seoLanding.pages.common.solutionIntro') }}
           </p>
         </div>
 
@@ -177,9 +177,9 @@
     <section id="seo-process" class="seo-section seo-section--process">
       <div class="seo-container">
         <div class="seo-section__heading seo-section__heading--center">
-          <h2>从搜索了解，到开通{{ page.keyword }}</h2>
+          <h2>{{ $t('seoLanding.pages.common.processTitle', { keyword: page.keyword }) }}</h2>
           <p>
-            把官网内容、产品列表、注册入口和工单咨询连起来，减少用户在多个页面之间反复寻找。
+            {{ $t('seoLanding.pages.common.processIntro') }}
           </p>
         </div>
 
@@ -200,10 +200,10 @@
     <section id="seo-faq" class="seo-section seo-section--faq">
       <div class="seo-container">
         <div class="seo-section__heading seo-section__heading--center">
-          <h2>选择{{ page.keyword }}前的常见问题</h2>
+          <h2>{{ $t('seoLanding.pages.common.faqTitle', { keyword: page.keyword }) }}</h2>
           <p>
-            FAQ
-            使用真实搜索问题组织，避免堆砌关键词，让页面正文更容易被理解和收录。
+            {{ $t('seoLanding.pages.common.faqBadge') }}
+            {{ $t('seoLanding.pages.common.faqIntro') }}
           </p>
         </div>
 

@@ -3,10 +3,10 @@
     <div class="register-bar">
       <div class="register-bar__inner container">
         <h3 class="register-bar__title">
-          现在注册，开启您的互联网高速稳定之旅！
+          {{ $t('home.registerBar.title') }}
         </h3>
         <button type="button" class="register-bar__button" @click="goRegister">
-          立即注册
+          {{ $t('home.registerBar.registerNow') }}
         </button>
       </div>
     </div>

@@ -16,7 +16,7 @@
 
           <div class="checkout-actions">
             <t-button v-if="status === 'error'" theme="primary" :loading="retrying" @click="resumeCheckout">
-              重新创建账单
+              {{ $t('checkoutResume.recreate') }}
             </t-button>
             <t-button v-if="status === 'empty'" theme="primary" @click="openProducts">{{ $t('checkoutResume.browse') }}</t-button>
             <t-button v-if="status !== 'loading'" variant="outline" @click="openInvoices">{{ $t('checkoutResume.toFinance') }}</t-button>

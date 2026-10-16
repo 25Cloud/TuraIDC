@@ -75,7 +75,7 @@
             </t-form-item>
             <t-form-item v-if="isEditing && contentType === 'notice'" label="要求重新查看" name="require_reread">
               <t-switch v-model="form.require_reread" :custom-value="[true, false]" :label="['是', '否']" />
-              <template #help>勾选后所有用户的已读状态将被重置</template>
+              <template #help>{{ $t('content.edit.requireRereadResetHint') }}</template>
             </t-form-item>
           </div>
         </section>

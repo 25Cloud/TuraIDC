@@ -18,7 +18,7 @@
         <section class="pay-shell">
           <main class="pay-main-column">
             <t-card v-if="isRenewInvoiceView" class="renew-info-card" :bordered="false">
-              <template #title>续费信息</template>
+              <template #title>{{ t('invoiceDetail.renewalInfo') }}</template>
 
               <div class="renew-service-panel">
                 <div>
@@ -58,7 +58,7 @@
             </t-card>
 
             <t-card v-if="isNewPurchaseInvoice(detail)" class="order-info-card" :bordered="false">
-              <template #title>账单信息</template>
+              <template #title>{{ t('invoiceDetail.invoiceInfo') }}</template>
               <div class="order-summary-grid">
                 <div class="order-kv-item">
                   <span>账单号</span>
@@ -109,7 +109,7 @@
             </t-card>
 
             <t-card v-if="detail.payment_summary" class="payment-record-card" :bordered="false">
-              <template #title>关联支付记录</template>
+              <template #title>{{ t('invoiceDetail.relatedPaymentsTitle') }}</template>
               <div class="payment-record-grid">
                 <div>
                   <span>支付方式</span>
@@ -146,7 +146,7 @@
 
           <aside class="invoice-summary-column">
             <t-card class="invoice-summary-card" :bordered="false">
-              <template #title>账单摘要</template>
+              <template #title>{{ t('invoiceDetail.summary') }}</template>
               <div class="summary-total">
                 <span>本次应付</span>
                 <strong>¥{{ formatMoney(detail.payable_amount) }}</strong>
@@ -312,7 +312,7 @@
       </div>
       <template #footer>
         <t-button theme="primary" :loading="polling" :disabled="!alipayPollingReady" @click="pollAlipayStatus(false)">
-          我已完成支付，刷新状态
+          {{ t('invoiceDetail.paidRefresh') }}
         </t-button>
       </template>
     </t-dialog>

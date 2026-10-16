@@ -3,7 +3,7 @@
     <header class="partner-section__head">
       <h2 class="partner-section__title">{{ $t('home.partners.title') }}</h2>
       <p class="partner-section__desc">
-        以优质资源与服务领航开拓，助力更多企业高效上云
+        {{ $t('home.partners.subtitle') }}
       </p>
     </header>
 

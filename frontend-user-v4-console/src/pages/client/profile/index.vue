@@ -76,9 +76,9 @@
           </article>
         </div>
         <div class="profile-footer">
-          <span>关闭安全提醒可能会错过密码、邮箱或手机号变更通知。</span>
+          <span>{{ t('profile.notificationDisableTip') }}</span>
           <t-button theme="primary" :loading="notificationLoading" @click="saveNotificationPreferences"
-            >保存设置</t-button
+            >{{ t('profile.saveSettings') }}</t-button
           >
         </div>
       </t-card>
@@ -90,47 +90,47 @@
       width="min(30rem, calc(100vw - 2rem))"
     >
       <t-form v-if="passwordMode === 'old'" label-align="top">
-        <t-form-item label="原密码"><t-input v-model="passwordForm.oldPassword" type="password" /></t-form-item>
-        <t-form-item label="新密码"
-          ><t-input v-model="passwordForm.newPassword" type="password" placeholder="至少 8 位"
+        <t-form-item :label="t('profile.oldPasswordLabel')"><t-input v-model="passwordForm.oldPassword" type="password" /></t-form-item>
+        <t-form-item :label="t('serviceConsole.passwordReset.newPassword')"
+          ><t-input v-model="passwordForm.newPassword" type="password" :placeholder="t('serviceConsole.passwordReset.passwordPlaceholder')"
         /></t-form-item>
-        <t-form-item label="确认密码"><t-input v-model="passwordForm.confirmPassword" type="password" /></t-form-item>
+        <t-form-item :label="t('clientAuth.register.confirmPasswordLabel')"><t-input v-model="passwordForm.confirmPassword" type="password" /></t-form-item>
         <t-button variant="text" theme="primary" class="password-forgot" @click="togglePasswordMode"
-          >忘记原密码？</t-button
+          >{{ t('profile.forgotOldPassword') }}</t-button
         >
       </t-form>
       <t-form v-else label-align="top">
         <t-tabs v-if="profileForm.phone && profileForm.email" v-model="resetForm.type" theme="normal">
-          <t-tab-panel value="phone" label="手机验证" />
-          <t-tab-panel value="email" label="邮箱验证" />
+          <t-tab-panel value="phone" :label="t('profile.phoneVerifyLabel')" />
+          <t-tab-panel value="email" :label="t('profile.emailVerifyLabel')" />
         </t-tabs>
-        <div v-else-if="profileForm.phone" class="reset-single-tip">验证方式：手机验证</div>
-        <div v-else class="reset-single-tip">验证方式：邮箱验证</div>
-        <t-form-item label="验证对象"
+        <div v-else-if="profileForm.phone" class="reset-single-tip">{{ t('profile.verifyByPhone') }}</div>
+        <div v-else class="reset-single-tip">{{ t('profile.verifyByEmail') }}</div>
+        <t-form-item :label="t('profile.verifyTargetLabel')"
           ><t-input :value="resetForm.type === 'phone' ? profileForm.phone : profileForm.email" readonly
         /></t-form-item>
-        <t-form-item label="验证码">
+        <t-form-item :label="t('clientAuth.register.codeLabel')">
           <div class="bind-code-row">
-            <t-input v-model="resetForm.code" placeholder="请输入 6 位验证码" maxlength="6" />
+            <t-input v-model="resetForm.code" :placeholder="t('profile.codeRequired')" maxlength="6" />
             <t-button variant="outline" :disabled="resetCountdown > 0" @click="sendResetCode">
               {{ resetCountdown > 0 ? `${resetCountdown}s` : '发送验证码' }}
             </t-button>
           </div>
         </t-form-item>
-        <t-form-item label="新密码"
-          ><t-input v-model="resetForm.password" type="password" placeholder="至少 8 位"
+        <t-form-item :label="t('serviceConsole.passwordReset.newPassword')"
+          ><t-input v-model="resetForm.password" type="password" :placeholder="t('serviceConsole.passwordReset.passwordPlaceholder')"
         /></t-form-item>
-        <t-form-item label="确认密码"><t-input v-model="resetForm.confirmPassword" type="password" /></t-form-item>
+        <t-form-item :label="t('clientAuth.register.confirmPasswordLabel')"><t-input v-model="resetForm.confirmPassword" type="password" /></t-form-item>
         <t-button variant="text" theme="primary" class="password-forgot" @click="togglePasswordMode"
-          >使用原密码修改</t-button
+          >{{ t('profile.useOldPassword') }}</t-button
         >
       </t-form>
       <template #footer>
-        <t-button variant="outline" @click="passwordDialogVisible = false">取消</t-button>
+        <t-button variant="outline" @click="passwordDialogVisible = false">{{ t('common.cancel') }}</t-button>
         <t-button v-if="passwordMode === 'old'" theme="primary" :loading="profileLoading" @click="changePassword"
-          >确定</t-button
+          >{{ t('pages.listCard.dialogForm.confirm') }}</t-button
         >
-        <t-button v-else theme="primary" :loading="profileLoading" @click="submitResetPassword">确定</t-button>
+        <t-button v-else theme="primary" :loading="profileLoading" @click="submitResetPassword">{{ t('pages.listCard.dialogForm.confirm') }}</t-button>
       </template>
     </t-dialog>
 
@@ -142,20 +142,20 @@
       <t-form label-align="top">
         <!-- 已绑定手机号时后端要求 old_code，必须先给出原号码的取证入口 -->
         <template v-if="profileForm.phone">
-          <t-form-item label="原手机号"><t-input :value="profileForm.phone" readonly /></t-form-item>
-          <t-form-item label="原手机号验证码">
+          <t-form-item :label="t('profile.oldPhoneLabel')"><t-input :value="profileForm.phone" readonly /></t-form-item>
+          <t-form-item :label="t('profile.oldPhoneCodeLabel')">
             <div class="bind-code-row">
-              <t-input v-model="phoneForm.oldCode" placeholder="请输入原手机号收到的验证码" maxlength="6" />
+              <t-input v-model="phoneForm.oldCode" :placeholder="t('profile.oldPhoneCodePlaceholder')" maxlength="6" />
               <t-button variant="outline" :disabled="phoneOldCountdown > 0" @click="sendPhoneOldVerificationCode">
                 {{ phoneOldCountdown > 0 ? `${phoneOldCountdown}s` : '发送验证码' }}
               </t-button>
             </div>
           </t-form-item>
         </template>
-        <t-form-item label="新手机号"><t-input v-model="phoneForm.phone" placeholder="请输入新手机号" /></t-form-item>
-        <t-form-item label="验证码">
+        <t-form-item :label="t('profile.newPhoneLabel')"><t-input v-model="phoneForm.phone" :placeholder="t('profile.newPhoneRequired')" /></t-form-item>
+        <t-form-item :label="t('clientAuth.register.codeLabel')">
           <div class="bind-code-row">
-            <t-input v-model="phoneForm.code" placeholder="请输入 6 位验证码" maxlength="6" />
+            <t-input v-model="phoneForm.code" :placeholder="t('profile.codeRequired')" maxlength="6" />
             <t-button variant="outline" :disabled="phoneCountdown > 0" @click="sendPhoneVerificationCode">
               {{ phoneCountdown > 0 ? `${phoneCountdown}s` : '发送验证码' }}
             </t-button>
@@ -163,8 +163,8 @@
         </t-form-item>
       </t-form>
       <template #footer>
-        <t-button variant="outline" @click="phoneDialogVisible = false">取消</t-button>
-        <t-button theme="primary" :loading="profileLoading" @click="submitPhoneChange">确定</t-button>
+        <t-button variant="outline" @click="phoneDialogVisible = false">{{ t('common.cancel') }}</t-button>
+        <t-button theme="primary" :loading="profileLoading" @click="submitPhoneChange">{{ t('pages.listCard.dialogForm.confirm') }}</t-button>
       </template>
     </t-dialog>
 
@@ -176,20 +176,20 @@
       <t-form label-align="top">
         <!-- 已绑定邮箱时后端要求 old_code，必须先给出原邮箱的取证入口 -->
         <template v-if="profileForm.email">
-          <t-form-item label="原邮箱"><t-input :value="profileForm.email" readonly /></t-form-item>
-          <t-form-item label="原邮箱验证码">
+          <t-form-item :label="t('profile.oldEmailLabel')"><t-input :value="profileForm.email" readonly /></t-form-item>
+          <t-form-item :label="t('profile.oldEmailCodeLabel')">
             <div class="bind-code-row">
-              <t-input v-model="emailForm.oldCode" placeholder="请输入原邮箱收到的验证码" maxlength="6" />
+              <t-input v-model="emailForm.oldCode" :placeholder="t('profile.oldEmailCodePlaceholder')" maxlength="6" />
               <t-button variant="outline" :disabled="emailOldCountdown > 0" @click="sendEmailOldVerificationCode">
                 {{ emailOldCountdown > 0 ? `${emailOldCountdown}s` : '发送验证码' }}
               </t-button>
             </div>
           </t-form-item>
         </template>
-        <t-form-item label="新邮箱"><t-input v-model="emailForm.email" placeholder="请输入新邮箱" /></t-form-item>
-        <t-form-item label="验证码">
+        <t-form-item :label="t('profile.newEmailLabel')"><t-input v-model="emailForm.email" :placeholder="t('profile.newEmailRequired')" /></t-form-item>
+        <t-form-item :label="t('clientAuth.register.codeLabel')">
           <div class="bind-code-row">
-            <t-input v-model="emailForm.code" placeholder="请输入 6 位验证码" maxlength="6" />
+            <t-input v-model="emailForm.code" :placeholder="t('profile.codeRequired')" maxlength="6" />
             <t-button variant="outline" :disabled="emailCountdown > 0" @click="sendEmailVerificationCode">
               {{ emailCountdown > 0 ? `${emailCountdown}s` : '发送验证码' }}
             </t-button>
@@ -197,8 +197,8 @@
         </t-form-item>
       </t-form>
       <template #footer>
-        <t-button variant="outline" @click="emailDialogVisible = false">取消</t-button>
-        <t-button theme="primary" :loading="profileLoading" @click="submitEmailChange">确定</t-button>
+        <t-button variant="outline" @click="emailDialogVisible = false">{{ t('common.cancel') }}</t-button>
+        <t-button theme="primary" :loading="profileLoading" @click="submitEmailChange">{{ t('pages.listCard.dialogForm.confirm') }}</t-button>
       </template>
     </t-dialog>
   </section>
@@ -209,6 +209,7 @@ import { computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { useProfile } from '@/domains/account/useProfile';
+import { t } from '@/locales';
 
 // 三个路由共用本组件，按路由决定展示哪个分区
 const SECTION_BY_ROUTE: Record<string, 'profile' | 'security' | 'notification'> = {

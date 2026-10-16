@@ -145,7 +145,7 @@
 
     <t-card class="console-panel console-panel-wide" title="付费信息" :bordered="false">
       <template #actions>
-        <t-button variant="text" theme="primary" @click="openRenewDialog">续费管理</t-button>
+        <t-button variant="text" theme="primary" @click="openRenewDialog">{{ $t('serviceConsole.virtualHost.renewManage') }}</t-button>
       </template>
       <div class="detail-grid">
         <info-cell label="计费方式" :value="detail.billing_cycle_label || '--'" strong />
@@ -172,9 +172,9 @@
     </div>
     <template #footer>
       <t-button v-if="primaryConnectionValues.length > 1" variant="outline" @click="copyText(primaryConnectionText)"
-        >复制全部</t-button
+        >{{ $t('serviceConsole.copyAll') }}</t-button
       >
-      <t-button theme="primary" @click="ipDialogVisible = false">关闭</t-button>
+      <t-button theme="primary" @click="ipDialogVisible = false">{{ $t('serviceConsole.close') }}</t-button>
     </template>
   </t-dialog>
 </template>

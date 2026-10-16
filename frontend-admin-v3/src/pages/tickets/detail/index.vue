@@ -24,7 +24,7 @@
         <t-card :bordered="false" class="conversation-card">
           <template #header>
             <div class="card-headline">
-              <span>沟通记录</span>
+              <span>{{ $t('tickets.detail.conversation') }}</span>
               <small>{{ messages.length }} 条消息</small>
             </div>
           </template>
@@ -60,7 +60,7 @@
                         @click="previewAttachment(attachment)"
                       >
                         <img v-if="attachment.url" :src="attachment.url" :alt="attachment.name || '附件'" />
-                        <span v-else>已删除</span>
+                        <span v-else>{{ $t('tickets.detail.deletedAttachment') }}</span>
                       </button>
                     </div>
                   </template>

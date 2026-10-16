@@ -77,10 +77,10 @@
           <template #operation="{ row }">
             <t-space>
               <t-button size="small" theme="primary" variant="text" @click="router.push(`/client/orders/${row.id}`)">
-                详情
+                {{ t('pages.listBase.detail') }}
               </t-button>
               <t-button v-if="canPayOrder(row)" size="small" theme="primary" variant="outline" @click="goPayOrder(row)">
-                去支付
+                {{ t('client.invoices.goPay') }}
               </t-button>
               <t-button
                 v-if="Number(row.status) === 0"
@@ -90,7 +90,7 @@
                 :loading="canceling"
                 @click="cancelOrder(row)"
               >
-                取消
+                {{ t('common.cancel') }}
               </t-button>
             </t-space>
           </template>
@@ -123,7 +123,7 @@
                 variant="text"
                 @click.stop="router.push(`/client/orders/${row.id}`)"
               >
-                详情
+                {{ t('pages.listBase.detail') }}
               </t-button>
               <t-button
                 v-if="canPayOrder(row)"
@@ -132,7 +132,7 @@
                 variant="outline"
                 @click.stop="goPayOrder(row)"
               >
-                去支付
+                {{ t('client.invoices.goPay') }}
               </t-button>
               <t-button
                 v-if="Number(row.status) === 0"
@@ -142,7 +142,7 @@
                 :loading="canceling"
                 @click.stop="cancelOrder(row)"
               >
-                取消
+                {{ t('common.cancel') }}
               </t-button>
             </div>
           </article>

@@ -43,7 +43,7 @@
             </template>
             <template #updated_at="{ row }">{{ formatTicketTime(row.updated_at) }}</template>
             <template #operation="{ row }">
-              <t-button size="small" theme="primary" variant="text" @click="openDetail(row)">查看交流</t-button>
+              <t-button size="small" theme="primary" variant="text" @click="openDetail(row)">{{ t('tickets.viewThread') }}</t-button>
             </template>
           </t-table>
         </div>

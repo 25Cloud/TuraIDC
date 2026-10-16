@@ -33,7 +33,7 @@
             <template #content>
               <div class="inbox-panel">
                 <div class="inbox-panel__head">
-                  <span class="inbox-panel__title">站内信</span>
+                  <span class="inbox-panel__title">{{ t('layout.header.inbox.title') }}</span>
                   <t-button
                     v-if="inboxUnread > 0"
                     theme="primary"
@@ -41,7 +41,7 @@
                     size="small"
                     @click="handleMarkAllReadClick"
                   >
-                    全部已读
+                    {{ t('layout.header.inbox.markAllRead') }}
                   </t-button>
                 </div>
                 <t-loading :loading="feedLoading" size="small">
@@ -63,9 +63,9 @@
                       <div v-if="item.summary" class="inbox-item__summary">{{ item.summary }}</div>
                     </div>
                   </div>
-                  <div v-else class="inbox-panel__empty">暂无消息</div>
+                  <div v-else class="inbox-panel__empty">{{ t('layout.header.inbox.empty') }}</div>
                 </t-loading>
-                <div class="inbox-panel__foot" @click="handleNav('/client/notices')">查看全部</div>
+                <div class="inbox-panel__foot" @click="handleNav('/client/notices')">{{ t('layout.notice.viewAll') }}</div>
               </div>
             </template>
             <t-badge :count="inboxUnread" :offset="[-2, 2]" size="small">
@@ -88,13 +88,13 @@
           <t-dropdown :min-column-width="160" trigger="click">
             <template #dropdown>
               <t-dropdown-item class="operations-dropdown-container-item" @click="handleNav('/client/profile')">
-                <user-circle-icon />个人资料
+                <user-circle-icon />{{ t('layout.header.userMenu.profile') }}
               </t-dropdown-item>
               <t-dropdown-item class="operations-dropdown-container-item" @click="handleNav('/client/recharge')">
-                <wallet-icon />账户充值
+                <wallet-icon />{{ t('client.dashboard.quickTopUp') }}
               </t-dropdown-item>
               <t-dropdown-item class="operations-dropdown-container-item" @click="handleLogout">
-                <poweroff-icon />退出登录
+                <poweroff-icon />{{ t('layout.header.signOut') }}
               </t-dropdown-item>
             </template>
             <t-button class="header-user-btn" theme="default" variant="text">
@@ -138,7 +138,7 @@
         </t-loading>
       </div>
       <template v-if="inboxDetailItem?.link" #footer>
-        <t-button theme="primary" @click="handleInboxDetailLink">查看详情</t-button>
+        <t-button theme="primary" @click="handleInboxDetailLink">{{ t('layout.header.inbox.viewDetail') }}</t-button>
       </template>
     </t-dialog>
   </div>

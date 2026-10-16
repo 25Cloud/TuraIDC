@@ -6,7 +6,7 @@
         <!-- H1 描述页面本身而非站点名；与后端 SEO 快照（renderStaticBody）口径一致 -->
         <h1>{{ $t('layout.nav.aboutUs') }}</h1>
         <p class="about-desc">
-          我们专注于云服务器、独立服务器与相关基础设施服务，提供从选型、购买、开通到运维支持的一体化体验。
+          {{ $t('content.about.intro') }}
         </p>
       </div>
     </section>
@@ -16,23 +16,23 @@
         <article class="about-card">
           <h2>{{ $t('content.about.serviceCapabilities') }}</h2>
           <p>
-            覆盖产品展示、在线购买、统一账单、自动开通、售后支持与服务控制台。
+            {{ $t('content.about.serviceCapabilitiesDesc') }}
           </p>
         </article>
         <article class="about-card">
           <h2>{{ $t('content.about.contactInformation') }}</h2>
-          <p>客服邮箱：{{ appStore.serviceEmail || "暂无配置" }}</p>
-          <p>服务时间：{{ appStore.serviceHours || "以站内通知为准" }}</p>
+          <p>{{ $t('content.about.serviceEmailLabel') }}{{ appStore.serviceEmail || $t('content.about.notConfigured') }}</p>
+          <p>{{ $t('content.about.serviceHoursLabel') }}{{ appStore.serviceHours || $t('content.about.serviceHoursFallback') }}</p>
           <p>
-            官方群号：
+            {{ $t('content.about.officialGroupLabel') }}
             <a
               v-if="appStore.supportGroupLink"
               :href="appStore.supportGroupLink"
               target="_blank"
               rel="noopener noreferrer"
-              >{{ appStore.serviceQqGroup || "暂无配置" }}</a
+              >{{ appStore.serviceQqGroup || $t('content.about.notConfigured') }}</a
             >
-            <span v-else>{{ appStore.serviceQqGroup || "暂无配置" }}</span>
+            <span v-else>{{ appStore.serviceQqGroup || $t('content.about.notConfigured') }}</span>
           </p>
         </article>
       </div>

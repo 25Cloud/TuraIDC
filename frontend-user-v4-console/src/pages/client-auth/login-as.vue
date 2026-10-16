@@ -17,10 +17,10 @@
       <p class="login-as-result__desc">{{ resultSubtitle }}</p>
       <t-space>
         <t-button v-if="status === 'error'" theme="primary" :loading="loading" @click="retryExchange">
-          重试代登录
+          {{ $t('auth.loginAsRetry') }}
         </t-button>
         <t-button v-if="status !== 'loading'" variant="outline" @click="router.push('/client/login')">
-          返回登录页
+          {{ $t('auth.backToLogin') }}
         </t-button>
       </t-space>
     </div>

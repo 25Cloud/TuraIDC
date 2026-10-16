@@ -3,7 +3,7 @@
     <div class="container solution-section__head">
       <h2 class="solution-section__title">{{ $t('home.solutions.title') }}</h2>
       <p class="solution-section__desc">
-        面向丰富的业务场景，提供覆盖行业与技术的解决方案。
+        {{ $t('home.solutions.subtitle') }}
       </p>
     </div>
 
@@ -74,14 +74,14 @@
                 class="solution-panel__action solution-panel__action--primary"
                 @click="router.push(activeIndustrySolution.productPath)"
               >
-                云服务器
+                {{ $t('home.solutions.cloudServer') }}
               </button>
               <button
                 type="button"
                 class="solution-panel__action"
                 @click="router.push(activeIndustrySolution.consultPath)"
               >
-                了解更多
+                {{ $t('home.solutions.learnMore') }}
               </button>
             </div>
           </div>
