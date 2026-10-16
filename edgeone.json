@@ -1,6 +1,6 @@
 {
-  "installCommand": "cd docs-web && npm install",
-  "buildCommand": "cd docs-web && npm run build",
+  "installCommand": "cd docs-web && npm ci",
+  "buildCommand": "node backend/scripts/check_docs.mjs && cd docs-web && npm run build",
   "outputDirectory": "docs-web/.vitepress/dist",
   "nodeVersion": "22.11.0"
 }
