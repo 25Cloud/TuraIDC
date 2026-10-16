@@ -2,6 +2,7 @@ import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { reactive, ref } from 'vue';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type {
   ConsoleSelectOption,
   FinanceLedgerRecord,
@@ -15,13 +16,15 @@ import type {
 } from '@/types/client';
 
 import { resolveErrorMessage } from './useConsoleCore';
-import { t } from '@/locales';
 
 type MonitorRangePreset = '3h' | '24h' | '7d' | '30d';
 
 function createEmptyLogsState() {
   return {
     loading: false,
+    /** 是否已经拿到过一份有效数据 */
+    loaded: false,
+    error: '',
     list: [] as ServiceOperationLogRecord[],
     total: 0,
     page: 1,
@@ -40,6 +43,8 @@ function createEmptyLogsState() {
 function createEmptyFinanceState() {
   return {
     loading: false,
+    /** 是否已经拿到过一份有效数据 */
+    loaded: false,
     list: [] as FinanceLedgerRecord[],
     total: 0,
     error: '',
@@ -63,6 +68,8 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
 
   const monitorState = reactive({
     loading: false,
+    /** 是否已经拿到过一份有效数据：区分「首次加载遮罩」与「后台刷新保留内容」 */
+    loaded: false,
     range: '3h' as MonitorRangePreset,
     window: null as MonitorRangePayload | null,
     supported: true,
@@ -73,6 +80,8 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
 
   const natState = reactive({
     loading: false,
+    /** 是否已经拿到过一份有效数据：区分「首次加载遮罩」与「后台刷新保留内容」 */
+    loaded: false,
     submitting: false,
     supported: true,
     message: '',
@@ -88,12 +97,26 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
   const financeState = reactive(createEmptyFinanceState());
   const loadedTabs = reactive({ monitor: false, security: false, nat: false, logs: false, finance: false });
 
+  /**
+   * 切换实例时复位「已加载」标记。
+   *
+   * 遮罩判定用的 loaded 必须一起复位，否则会拿着上一个实例的 true 直接渲染新面板的
+   * 空态 —— 看起来像「这个实例没有数据」，其实是残留标记。
+   */
   function resetLazyTabs() {
     loadedTabs.monitor = false;
     loadedTabs.security = false;
     loadedTabs.nat = false;
     loadedTabs.logs = false;
     loadedTabs.finance = false;
+    monitorState.loaded = false;
+    monitorState.error = '';
+    natState.loaded = false;
+    natState.error = '';
+    logsState.loaded = false;
+    logsState.error = '';
+    financeState.loaded = false;
+    financeState.error = '';
   }
 
   async function loadMonitor(force = false) {
@@ -108,6 +131,7 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       monitorState.message = String(payload.message || '');
       monitorState.window = payload.range || null;
       monitorState.charts = Array.isArray(payload.charts) ? payload.charts : [];
+      monitorState.loaded = true;
     } catch (error: unknown) {
       monitorState.error = resolveErrorMessage(error, '加载监控数据失败');
     } finally {
@@ -127,6 +151,7 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       natState.can_create = Boolean(payload.can_create);
       natState.protocols = Array.isArray(payload.protocols) ? payload.protocols : [];
       natState.list = Array.isArray(payload.list) ? payload.list : [];
+      natState.loaded = true;
     } catch (error: unknown) {
       natState.error = resolveErrorMessage(error, '加载 NAT 转发失败');
     } finally {
@@ -206,8 +231,12 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
     });
   }
 
-  async function loadLogs() {
+  /**
+   * @param silent 预热阶段传 true：不出 toast，错误留在面板内由错误态统一呈现
+   */
+  async function loadLogs(silent = false) {
     logsState.loading = true;
+    logsState.error = '';
     try {
       const params: Record<string, unknown> = { page: logsState.page, page_size: logsState.page_size };
       if (logsState.category) params.category = logsState.category;
@@ -220,14 +249,19 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       logsState.list = Array.isArray(payload.list) ? payload.list : [];
       logsState.total = Number(payload.total || 0);
       logsState.summary = { ...logsState.summary, ...(payload.summary || {}) };
+      logsState.loaded = true;
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '加载操作日志失败'));
+      logsState.error = resolveErrorMessage(error, '加载操作日志失败');
+      if (!silent) MessagePlugin.error(logsState.error);
     } finally {
       logsState.loading = false;
     }
   }
 
-  async function loadFinanceLogs() {
+  /**
+   * @param silent 预热阶段传 true：不出 toast，错误留在面板内由错误态统一呈现
+   */
+  async function loadFinanceLogs(silent = false) {
     financeState.loading = true;
     try {
       financeState.error = '';
@@ -246,11 +280,12 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       financeState.list = Array.isArray(listPayload.list) ? listPayload.list : [];
       financeState.total = Number(listPayload.total || 0);
       financeState.summary = { ...financeState.summary, ...summaryPayload };
+      financeState.loaded = true;
     } catch (error: unknown) {
       financeState.list = [];
       financeState.total = 0;
       financeState.error = resolveErrorMessage(error, '加载财务日志失败');
-      MessagePlugin.error(financeState.error);
+      if (!silent) MessagePlugin.error(financeState.error);
     } finally {
       financeState.loading = false;
     }

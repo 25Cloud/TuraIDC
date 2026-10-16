@@ -72,7 +72,16 @@
       "user": "个人中心",
       "signOut": "退出登录",
       "setting": "系统设置",
-      "confirmSignOut": "确认退出"
+      "confirmSignOut": "确认退出",
+      "inbox": {
+        "title": "站内信",
+        "markAllRead": "全部已读",
+        "empty": "暂无消息",
+        "viewDetail": "查看详情"
+      },
+      "userMenu": {
+        "profile": "个人资料"
+      }
     },
     "notice": {
       "title": "通知中心",
@@ -822,7 +831,9 @@
     "columnScopes": "权限范围",
     "columnExpiresAt": "到期时间",
     "columnLastUsedAt": "最近使用",
-    "columnDuration": "耗时"
+    "columnDuration": "耗时",
+    "overview": "本页管理对接本系统的两套凭据：开放接口密钥用于系统间调用（/api/v2/open），魔方财务对接凭据供魔方财务在「上游」中配置（/api/v2/zjmf）。两套凭据都支持 IP 白名单、有效期与调用审计。",
+    "linkageNote": "两套凭据的联动是单向的：在「魔方财务对接」中关闭上游会一并停用本账号全部开放接口密钥；反过来，停用或删除单个密钥不影响魔方财务对接。"
   },
   "client": {
     "catalog": {
@@ -1143,7 +1154,18 @@
       "quickTopUp": "账户充值",
       "quickHelpCenter": "帮助中心",
       "quickCoupons": "优惠券",
-      "quickReferral": "推荐奖励"
+      "quickReferral": "推荐奖励",
+      "myProducts": "我的产品",
+      "manageAll": "管理全部",
+      "thisYearSpend": "今年消费",
+      "totalLabel": "合计",
+      "last7DaysDailySpend": "近 7 天每日消费",
+      "spendDetails": "消费明细",
+      "messageCenter": "消息中心"
+    },
+    "apiKeys": {
+      "edit": "编辑",
+      "logs": "日志"
     }
   },
   "clientAuth": {
@@ -1222,7 +1244,8 @@
       "refresh": "刷新",
       "title": "操作日志",
       "todayCount": "今日 {count} 条",
-      "totalCount": "共 {count} 条"
+      "totalCount": "共 {count} 条",
+      "empty": "暂无操作日志"
     },
     "nameDialog": {
       "cancel": "取消",
@@ -1290,7 +1313,8 @@
       "rulesLoaded": "安全组规则已加载",
       "groupNameRequired": "请输入安全组名称",
       "selectGroupFirst": "请先选择安全组",
-      "ruleRequired": "请填写完整的规则信息"
+      "ruleRequired": "请填写完整的规则信息",
+      "rulesEmpty": "当前安全组没有规则，可先新增后再应用"
     },
     "securityGroup": {
       "cancel": "取消",
@@ -1395,7 +1419,11 @@
       "internalPlaceholder": "留空由上游分配",
       "portPlaceholder": "例如：80",
       "protocolPlaceholder": "请选择协议",
-      "publicAddress": "公网地址"
+      "publicAddress": "公网地址",
+      "unsupported": "当前实例暂不支持端口转发",
+      "emptyCanCreate": "暂无端口转发规则，可先添加后再配置",
+      "emptyNotCreatable": "暂无端口转发规则",
+      "delete": "删除"
     },
     "remark": {
       "save": "保存备注",
@@ -1446,7 +1474,27 @@
     "instanceNameSaved": "实例名称已保存",
     "remarkSaved": "备注已保存",
     "passwordTooShort": "新密码至少需要 8 位",
-    "passwordMismatch": "两次输入的密码不一致"
+    "passwordMismatch": "两次输入的密码不一致",
+    "panelState": {
+      "loading": "正在加载面板数据",
+      "loadingHint": "首次进入需从上游取数，请稍候",
+      "errorTitle": "面板数据加载失败",
+      "errorDefault": "读取面板数据失败，请稍后重试",
+      "errorHint": "可点击下方按钮重新加载；若持续失败，请联系客服协助处理",
+      "retry": "重新加载",
+      "emptyDefault": "暂无数据"
+    },
+    "monitor": {
+      "unsupported": "当前实例暂不支持监控",
+      "empty": "当前时间范围内暂无监控数据",
+      "noTrend": "当前时间范围内暂无趋势数据",
+      "chartLabel": "{name}趋势图"
+    },
+    "finance": {
+      "empty": "暂无财务记录"
+    },
+    "copyAll": "复制全部",
+    "close": "关闭"
   },
   "recharge": {
     "title": "在线充值",
@@ -1466,7 +1514,10 @@
     "noPaymentMethod": "暂无可用支付方式",
     "qrCodeGenerated": "充值二维码已生成",
     "missingPollCredential": "缺少支付轮询凭证",
-    "successBalanceRefreshed": "充值成功，余额已刷新"
+    "successBalanceRefreshed": "充值成功，余额已刷新",
+    "amountQuantity": "充值数量",
+    "actualAmountPrefix": "实付金额：",
+    "selectPaymentMethod": "选择支付方式"
   },
   "services": {
     "console": {}
@@ -1501,7 +1552,8 @@
     "qrCodeExpired": "二维码已失效，请重新提交认证",
     "success": "认证成功",
     "qrCodeRefreshed": "已重新生成二维码，请重新扫码",
-    "sessionClosed": "认证会话已关闭"
+    "sessionClosed": "认证会话已关闭",
+    "reverify": "重新认证"
   },
   "checkoutResume": {
     "browse": "去选购产品",
@@ -1511,7 +1563,8 @@
     "billingCycle": "周期",
     "quantity": "数量",
     "created": "账单创建成功，正在跳转",
-    "createFailed": "账单创建失败，请稍后重试"
+    "createFailed": "账单创建失败，请稍后重试",
+    "recreate": "重新创建账单"
   },
   "content": {
     "hotSearchLabel": "热门搜索:",
@@ -1550,7 +1603,12 @@
     "thirdPartyOrderNo": "第三方订单号",
     "channel": "渠道",
     "amount": "金额",
-    "paidAt": "支付时间"
+    "paidAt": "支付时间",
+    "renewalInfo": "续费信息",
+    "invoiceInfo": "账单信息",
+    "relatedPaymentsTitle": "关联支付记录",
+    "summary": "账单摘要",
+    "paidRefresh": "我已完成支付，刷新状态"
   },
   "orderCreate": {
     "title": "购买链路",
@@ -1619,14 +1677,33 @@
     "passwordInfoRequired": "请填写完整密码信息",
     "newPasswordMinLength": "新密码长度不能少于 8 位",
     "passwordChanged": "密码修改成功，请重新登录",
-    "settingsSaved": "设置保存成功"
+    "settingsSaved": "设置保存成功",
+    "notificationDisableTip": "关闭安全提醒可能会错过密码、邮箱或手机号变更通知。",
+    "saveSettings": "保存设置",
+    "forgotOldPassword": "忘记原密码？",
+    "verifyByPhone": "验证方式：手机验证",
+    "verifyByEmail": "验证方式：邮箱验证",
+    "useOldPassword": "使用原密码修改",
+    "oldPhoneCodePlaceholder": "请输入原手机号收到的验证码",
+    "oldEmailCodePlaceholder": "请输入原邮箱收到的验证码",
+    "oldPasswordLabel": "原密码",
+    "phoneVerifyLabel": "手机验证",
+    "emailVerifyLabel": "邮箱验证",
+    "verifyTargetLabel": "验证对象",
+    "oldPhoneLabel": "原手机号",
+    "oldPhoneCodeLabel": "原手机号验证码",
+    "oldEmailLabel": "原邮箱",
+    "oldEmailCodeLabel": "原邮箱验证码",
+    "newPhoneLabel": "新手机号",
+    "newEmailLabel": "新邮箱"
   },
   "tickets": {
     "searchPlaceholder": "搜索工单标题",
     "allStatus": "全部状态",
     "columnSubject": "标题",
     "columnPriority": "优先级",
-    "columnUpdatedAt": "更新时间"
+    "columnUpdatedAt": "更新时间",
+    "viewThread": "查看交流"
   },
   "auth": {
     "accountLabel": "手机号 / 邮箱",
@@ -1640,7 +1717,9 @@
     "loginTitle": "账号登录",
     "loginAccountPlaceholder": "请输入手机号或邮箱",
     "byPassword": "密码登录",
-    "byCode": "验证码登录"
+    "byCode": "验证码登录",
+    "loginAsRetry": "重试代登录",
+    "backToLogin": "返回登录页"
   },
   "finance": {
     "invoice": {

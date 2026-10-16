@@ -106,6 +106,7 @@ export function useServiceConsole() {
   const {
     securityState,
     activeSecurityGroup,
+    resetSecurityState,
     groupVisible,
     groupForm,
     ruleVisible,
@@ -308,37 +309,71 @@ export function useServiceConsole() {
     () => route.params.id,
     () => {
       resetLazyTabs();
+      resetSecurityState();
       void bootstrap();
     },
     { immediate: true },
   );
+
+  /**
+   * 需要走接口取数的数据面板 tab。
+   *
+   * 与魔方兼容 tab（自定义区域 iframe）共用后台开关 system.console_area_preload_all_enabled：
+   * 开关开启时这些面板的数据同样在首屏预热，关闭时保持「切到面板再按需加载」。
+   * 总览 / VNC 不在此列：总览由页面级 detailLoading 负责，VNC 是点击后才打开的弹窗。
+   */
+  const DATA_TAB_KEYS = ['monitor', 'security', 'nat', 'logs', 'finance'] as const;
+  type DataTabKey = (typeof DATA_TAB_KEYS)[number];
+
+  function isDataTabKey(key: string): key is DataTabKey {
+    return (DATA_TAB_KEYS as readonly string[]).includes(key);
+  }
+
+  /**
+   * 加载某个数据面板的数据，同一 tab 只发一次请求。
+   *
+   * 先置 loadedTabs 再 await：预热与用户切 tab 可能同时命中同一 tab，
+   * 置位在前才能去重，否则会重复回源上游。
+   */
+  async function ensureDataTabLoaded(key: DataTabKey, silent = false) {
+    if (loadedTabs[key]) return;
+    loadedTabs[key] = true;
+
+    if (key === 'monitor') await loadMonitor();
+    else if (key === 'security') await loadSecurityGroups();
+    else if (key === 'nat') await loadNatForwardings();
+    else if (key === 'logs') await loadLogs(silent);
+    else if (key === 'finance') await loadFinanceLogs(silent);
+  }
 
   watch(activeTab, async (tab) => {
     if (!availableTabs.value.includes(tab)) {
       activeTab.value = DEFAULT_TAB;
       return;
     }
-    if (tab === 'monitor' && !loadedTabs.monitor) {
-      loadedTabs.monitor = true;
-      await loadMonitor();
-    }
-    if (tab === 'security' && !loadedTabs.security) {
-      loadedTabs.security = true;
-      await loadSecurityGroups();
-    }
-    if (tab === 'nat' && !loadedTabs.nat) {
-      loadedTabs.nat = true;
-      await loadNatForwardings();
-    }
-    if (tab === 'logs' && !loadedTabs.logs) {
-      loadedTabs.logs = true;
-      await loadLogs();
-    }
-    if (tab === 'finance' && !loadedTabs.finance) {
-      loadedTabs.finance = true;
-      await loadFinanceLogs();
-    }
+    // 开关关闭时的按需加载路径：切到面板才发请求
+    if (isDataTabKey(tab)) await ensureDataTabLoaded(tab);
   });
+
+  /**
+   * 首屏预热数据面板。
+   *
+   * 后台开关 system.console_area_preload_all_enabled 开启（缺省开启）时，在用户还停在总览页
+   * 就把安全组 / NAT / 监控 / 日志等面板的数据拉回来，切 tab 零等待；
+   * 关闭时上面的 activeTab watcher 按需加载，用来规避首屏并发回源上游占用带宽。
+   *
+   * detail 落地前不预热：那之前还不确定这个实例到底有哪些面板（能力接口可能还会裁掉监控 / NAT）。
+   */
+  watch(
+    () => [areaPreloadAll.value, availableTabs.value.join(','), Number(detail.value.id || 0)] as const,
+    ([preloadAll, tabs, id]) => {
+      if (!preloadAll || id <= 0 || tabs === '') return;
+      for (const tab of tabs.split(',')) {
+        if (isDataTabKey(tab)) void ensureDataTabLoaded(tab, true);
+      }
+    },
+    { immediate: true },
+  );
 
   onUnmounted(() => {
     clearStatusSyncTimer();

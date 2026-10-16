@@ -2,7 +2,9 @@
   <section class="console-panel-section">
     <t-card :title="$t('serviceConsole.financeLog')" :bordered="false">
       <template #actions>
-        <t-button :loading="financeState.loading" @click="loadFinanceLogs">{{ $t('serviceConsole.refresh') }}</t-button>
+        <t-button :loading="financeState.loading" @click="loadFinanceLogs()">{{
+          $t('serviceConsole.refresh')
+        }}</t-button>
       </template>
       <div class="log-summary finance-summary">
         <span>共 {{ financeState.summary.total_count || financeState.total || 0 }} 条</span>
@@ -10,10 +12,15 @@
         <span>支出 ¥{{ formatMoney(financeState.summary.total_out || 0) }}</span>
         <span>退款 ¥{{ formatMoney(financeState.summary.refund_in || 0) }}</span>
       </div>
-      <data-state
+      <!-- 原来把错误文案直接塞进空态描述，失败和「没有记录」长得一模一样；
+           这里改成三态容器：加载遮罩 / 错误块 + 重试 / 空态引导 -->
+      <panel-state
         :loading="financeState.loading"
-        :empty="!financeState.list.length"
-        :description="financeState.error || '暂无财务记录'"
+        :loaded="financeState.loaded"
+        :error="financeState.error"
+        :empty="financeState.list.length === 0"
+        :empty-text="$t('serviceConsole.finance.empty')"
+        @retry="loadFinanceLogs"
       >
         <t-table
           row-key="id"
@@ -59,16 +66,14 @@
             :total="financeState.total"
             :page-size-options="[10, 20, 50]"
             show-total
-            @change="loadFinanceLogs"
+            @change="loadFinanceLogs()"
           />
         </div>
-      </data-state>
+      </panel-state>
     </t-card>
   </section>
 </template>
 <script setup lang="ts">
-import DataState from '@shared/user-v3/components/DataState.vue';
-
 import {
   financeColumns,
   resolveFinanceBusinessLabel,
@@ -76,6 +81,7 @@ import {
   resolveFinanceTagTheme,
 } from '../../composables/useConsoleTables';
 import { useServiceConsoleContext } from '../context';
+import PanelState from '../PanelState.vue';
 
 const { financeState, formatMoney, loadFinanceLogs } = useServiceConsoleContext();
 </script>

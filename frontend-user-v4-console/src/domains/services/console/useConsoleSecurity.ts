@@ -17,8 +17,13 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
 
   const securityState = reactive({
     loading: false,
+    /** 是否已经拿到过一份有效数据：区分「首次加载遮罩」与「后台刷新保留内容」 */
+    loaded: false,
     submitting: false,
     rulesLoading: false,
+    /** 规则子面板同理：加载失败不能和「该安全组没有规则」共用一个空白视图 */
+    rulesLoaded: false,
+    rulesError: '',
     supported: true,
     canCreate: true,
     message: '',
@@ -109,12 +114,34 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
     () => securityState.groups.find((item) => Number(item.id || 0) === activeSecurityGroupId.value) || null,
   );
 
+  /**
+   * 切换实例时复位安全组与规则的全部状态。
+   *
+   * 不复位的话新实例会先渲染上一个实例的分组列表，看起来像「这台机器有别人的安全组」。
+   */
+  function resetSecurityState() {
+    securityState.loaded = false;
+    securityState.error = '';
+    securityState.rulesLoaded = false;
+    securityState.rulesError = '';
+    securityState.groups = [];
+    securityState.rules = [];
+    activeSecurityGroupId.value = 0;
+  }
+
   function resolveActionMessage(payload: { message?: string } | null | undefined, fallback: string) {
     return String(payload?.message || '').trim() || fallback;
   }
 
+  /**
+   * @param fresh true 表示用户主动刷新（绕过上游缓存）
+   *
+   * 这里刻意不接 silent：安全组列表的失败已经由面板内的错误态 + 重试按钮呈现，
+   * 自动选中的安全组也不再弹「规则已加载」提示，弹窗只会打断当前操作。
+   */
   async function loadSecurityGroups(fresh = false) {
     securityState.loading = true;
+    securityState.error = '';
     try {
       const res = await clientApi.serviceSecurityGroups(serviceId.value, fresh ? { fresh: true } : undefined);
       const payload = res.data || {};
@@ -125,6 +152,7 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
       securityState.directions = Array.isArray(payload.directions) ? payload.directions : [];
       securityState.protocols = Array.isArray(payload.protocols) ? payload.protocols : [];
       securityState.groups = Array.isArray(payload.groups) ? payload.groups : [];
+      securityState.loaded = true;
       const viewableGroups = securityState.groups.filter((item) => item.can_view !== false);
       const current = viewableGroups.find((item) => Number(item.id || 0) === activeSecurityGroupId.value);
       const active = current || viewableGroups.find((item) => item.is_applied) || viewableGroups[0];
@@ -133,6 +161,7 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
       } else {
         activeSecurityGroupId.value = 0;
         securityState.rules = [];
+        securityState.rulesLoaded = false;
       }
     } catch (error: unknown) {
       securityState.error = resolveErrorMessage(error, '加载安全组失败');
@@ -141,13 +170,18 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
     }
   }
 
-  async function loadSecurityGroupRules(groupId: number | string) {
+  async function loadSecurityGroupRules(groupId: number | string, silent = false) {
     securityState.rulesLoading = true;
+    securityState.rulesError = '';
     try {
       const res = await clientApi.serviceSecurityGroupRules(serviceId.value, groupId);
       securityState.rules = Array.isArray(res.data?.list) ? res.data.list : [];
+      securityState.rulesLoaded = true;
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '加载安全组规则失败'));
+      securityState.rules = [];
+      securityState.rulesLoaded = false;
+      securityState.rulesError = resolveErrorMessage(error, '加载安全组规则失败');
+      if (!silent) MessagePlugin.error(securityState.rulesError);
     } finally {
       securityState.rulesLoading = false;
     }
@@ -158,15 +192,23 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
     if (group.can_view === false) {
       activeSecurityGroupId.value = 0;
       securityState.rules = [];
+      securityState.rulesLoaded = false;
       return;
+    }
+
+    // 换了安全组就重新盖回遮罩：上一组的规则不能拿来冒充当前组的数据
+    if (activeSecurityGroupId.value !== groupId) {
+      securityState.rulesLoaded = false;
+      securityState.rulesError = '';
     }
 
     activeSecurityGroupId.value = groupId;
     if (!groupId) {
       securityState.rules = [];
+      securityState.rulesLoaded = false;
       return;
     }
-    await loadSecurityGroupRules(groupId);
+    await loadSecurityGroupRules(groupId, silent);
     if (!silent) MessagePlugin.success(t('serviceConsole.security.rulesLoaded'));
   }
 
@@ -313,6 +355,7 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
     securityState,
     activeSecurityGroupId,
     activeSecurityGroup,
+    resetSecurityState,
     groupVisible,
     groupForm,
     ruleVisible,

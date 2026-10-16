@@ -461,6 +461,102 @@
     }
   }
 
+  /* ---- 数据面板四态容器（PanelState） ----
+     首次加载盖整块遮罩 + 骨架占位，避免「空白但没提示」被误读成空列表；
+     加载失败用红色结果块 + 重试按钮，与空态在底色和操作上彻底分开。 */
+  .panel-state {
+    position: relative;
+    min-width: 0;
+  }
+
+  /* 后台刷新：内容留着，只降透明度表示「正在更新」，不做整块遮罩 */
+  .panel-state.is-refreshing {
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+
+  .panel-state__mask {
+    position: relative;
+    min-height: 14rem;
+    padding: 1rem 0.25rem;
+    background: var(--td-bg-color-container);
+    border-radius: var(--td-radius-default);
+  }
+
+  .panel-state__skeleton {
+    padding: 0.25rem 0;
+  }
+
+  .panel-state__mask-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: color-mix(in srgb, var(--td-bg-color-container) 72%, transparent);
+    backdrop-filter: blur(2px);
+  }
+
+  .panel-state__spinner {
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 0.1875rem solid var(--td-component-stroke);
+    border-top-color: var(--td-brand-color);
+    border-radius: 50%;
+    animation: area-spin 0.9s linear infinite;
+  }
+
+  .panel-state__mask-text {
+    margin: 0;
+    color: var(--td-text-color-primary);
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+
+  .panel-state__mask-hint,
+  .panel-state__error-hint {
+    margin: 0;
+    color: var(--td-text-color-placeholder);
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  .panel-state__error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2rem 1rem;
+    background: var(--td-error-color-light);
+    border: 0.0625rem solid var(--td-error-color-light-border);
+    border-radius: var(--td-radius-default);
+  }
+
+  .panel-state__error-icon {
+    font-size: 2.5rem;
+    color: var(--td-error-color);
+  }
+
+  .panel-state__error-title {
+    margin: 0;
+    color: var(--td-error-color);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .panel-state__error-message {
+    margin: 0;
+    color: var(--td-text-color-primary);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    text-align: center;
+    word-break: break-word;
+  }
+
   /*
    * 预热态：面板已在后台渲染完成，但用户还没切到这个 tab。
    *

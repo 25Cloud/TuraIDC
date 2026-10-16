@@ -72,7 +72,16 @@
       "user": "Profile",
       "signOut": "Sign Out",
       "setting": "Setting",
-      "confirmSignOut": "Sign out"
+      "confirmSignOut": "Sign out",
+      "inbox": {
+        "title": "Inbox",
+        "markAllRead": "Mark all as read",
+        "empty": "No messages",
+        "viewDetail": "View details"
+      },
+      "userMenu": {
+        "profile": "Profile"
+      }
     },
     "notice": {
       "title": "Notification Center",
@@ -822,7 +831,9 @@
     "columnScopes": "Scopes",
     "columnExpiresAt": "Expiry",
     "columnLastUsedAt": "Last used",
-    "columnDuration": "Duration"
+    "columnDuration": "Duration",
+    "overview": "This page manages the two sets of credentials used to integrate with this system: Open API keys serve system-to-system calls (/api/v2/open), while Magic Finance integration credentials are configured by Magic Finance under \"Upstream\" (/api/v2/zjmf). Both support IP allowlists, expiration dates, and call auditing.",
+    "linkageNote": "The two credential sets are linked in one direction only: disabling the upstream connection under \"Magic Finance Integration\" also disables every Open API key on this account; the reverse does not hold, since disabling or deleting a single key has no effect on the Magic Finance integration."
   },
   "client": {
     "catalog": {
@@ -1143,7 +1154,18 @@
       "quickTopUp": "Top up",
       "quickHelpCenter": "Help center",
       "quickCoupons": "Coupons",
-      "quickReferral": "Referral rewards"
+      "quickReferral": "Referral rewards",
+      "myProducts": "My Products",
+      "manageAll": "Manage all",
+      "thisYearSpend": "Spending this year",
+      "totalLabel": "Total",
+      "last7DaysDailySpend": "Daily spending, last 7 days",
+      "spendDetails": "Spending details",
+      "messageCenter": "Message Center"
+    },
+    "apiKeys": {
+      "edit": "Edit",
+      "logs": "Logs"
     }
   },
   "clientAuth": {
@@ -1222,7 +1244,8 @@
       "refresh": "Refresh",
       "title": "Operation Logs",
       "todayCount": "{count} today",
-      "totalCount": "{count} in total"
+      "totalCount": "{count} in total",
+      "empty": "No operation logs yet"
     },
     "nameDialog": {
       "cancel": "Cancel",
@@ -1290,7 +1313,8 @@
       "rulesLoaded": "Security group rules loaded",
       "groupNameRequired": "Enter a security group name",
       "selectGroupFirst": "Select a security group first",
-      "ruleRequired": "Please complete all rule fields"
+      "ruleRequired": "Please complete all rule fields",
+      "rulesEmpty": "This security group has no rules yet, add one to get started"
     },
     "securityGroup": {
       "cancel": "Cancel",
@@ -1395,7 +1419,11 @@
       "internalPlaceholder": "Leave blank to let upstream assign",
       "portPlaceholder": "e.g. 80",
       "protocolPlaceholder": "Select a protocol",
-      "publicAddress": "Public address"
+      "publicAddress": "Public address",
+      "unsupported": "Port forwarding is not supported for this instance",
+      "emptyCanCreate": "No port forwarding rules yet, add one to get started",
+      "emptyNotCreatable": "No port forwarding rules",
+      "delete": "Delete"
     },
     "remark": {
       "save": "Save Remark",
@@ -1446,7 +1474,27 @@
     "instanceNameSaved": "Instance name saved",
     "remarkSaved": "Remark saved",
     "passwordTooShort": "The new password must be at least 8 characters",
-    "passwordMismatch": "The two passwords do not match"
+    "passwordMismatch": "The two passwords do not match",
+    "panelState": {
+      "loading": "Loading panel data",
+      "loadingHint": "The first visit fetches data from the upstream, please wait",
+      "errorTitle": "Failed to load panel data",
+      "errorDefault": "Could not read the panel data, please try again later",
+      "errorHint": "Use the button below to reload; contact support if it keeps failing",
+      "retry": "Reload",
+      "emptyDefault": "No data"
+    },
+    "monitor": {
+      "unsupported": "Monitoring is not supported for this instance",
+      "empty": "No monitoring data in the selected time range",
+      "noTrend": "No trend data in the selected time range",
+      "chartLabel": "{name} trend chart"
+    },
+    "finance": {
+      "empty": "No billing records yet"
+    },
+    "copyAll": "Copy all",
+    "close": "Close"
   },
   "recharge": {
     "title": "Top-up",
@@ -1466,7 +1514,10 @@
     "noPaymentMethod": "No Payment Method Available",
     "qrCodeGenerated": "Recharge QR Code Generated",
     "missingPollCredential": "Missing Payment Polling Credential",
-    "successBalanceRefreshed": "Recharge Successful, Balance Refreshed"
+    "successBalanceRefreshed": "Recharge Successful, Balance Refreshed",
+    "amountQuantity": "Recharge amount",
+    "actualAmountPrefix": "Amount payable:",
+    "selectPaymentMethod": "Select a payment method"
   },
   "services": {
     "console": {}
@@ -1501,7 +1552,8 @@
     "qrCodeExpired": "The QR code has expired; submit the verification again",
     "success": "Verification successful",
     "qrCodeRefreshed": "QR code regenerated; scan it again",
-    "sessionClosed": "Verification session closed"
+    "sessionClosed": "Verification session closed",
+    "reverify": "Verify again"
   },
   "checkoutResume": {
     "browse": "Browse Products",
@@ -1511,7 +1563,8 @@
     "billingCycle": "Billing cycle",
     "quantity": "Quantity",
     "created": "Invoice created, redirecting",
-    "createFailed": "Failed to create the invoice, please try again later"
+    "createFailed": "Failed to create the invoice, please try again later",
+    "recreate": "Create the invoice again"
   },
   "content": {
     "hotSearchLabel": "Hot Searches:",
@@ -1550,7 +1603,12 @@
     "thirdPartyOrderNo": "Third-Party Order No.",
     "channel": "Channel",
     "amount": "Amount",
-    "paidAt": "Paid At"
+    "paidAt": "Paid At",
+    "renewalInfo": "Renewal information",
+    "invoiceInfo": "Invoice information",
+    "relatedPaymentsTitle": "Related payments",
+    "summary": "Invoice summary",
+    "paidRefresh": "I have completed the payment. Refresh status"
   },
   "orderCreate": {
     "title": "Purchase Flow",
@@ -1619,14 +1677,33 @@
     "passwordInfoRequired": "Please fill in all password fields",
     "newPasswordMinLength": "New password must be at least 8 characters",
     "passwordChanged": "Password updated. Please sign in again",
-    "settingsSaved": "Settings saved"
+    "settingsSaved": "Settings saved",
+    "notificationDisableTip": "Turning off security alerts may cause you to miss password, email, or phone number change notifications.",
+    "saveSettings": "Save settings",
+    "forgotOldPassword": "Forgot your old password?",
+    "verifyByPhone": "Verification method: phone",
+    "verifyByEmail": "Verification method: email",
+    "useOldPassword": "Use your old password",
+    "oldPhoneCodePlaceholder": "Enter the code sent to your old phone number",
+    "oldEmailCodePlaceholder": "Enter the code sent to your old email address",
+    "oldPasswordLabel": "Old password",
+    "phoneVerifyLabel": "Phone verification",
+    "emailVerifyLabel": "Email verification",
+    "verifyTargetLabel": "Verification target",
+    "oldPhoneLabel": "Old phone number",
+    "oldPhoneCodeLabel": "Old phone verification code",
+    "oldEmailLabel": "Old email address",
+    "oldEmailCodeLabel": "Old email verification code",
+    "newPhoneLabel": "New phone number",
+    "newEmailLabel": "New email address"
   },
   "tickets": {
     "searchPlaceholder": "Search ticket title",
     "allStatus": "All Statuses",
     "columnSubject": "Title",
     "columnPriority": "Priority",
-    "columnUpdatedAt": "Updated at"
+    "columnUpdatedAt": "Updated at",
+    "viewThread": "View thread"
   },
   "auth": {
     "accountLabel": "Phone / Email",
@@ -1640,7 +1717,9 @@
     "loginTitle": "Account Login",
     "loginAccountPlaceholder": "Enter your phone or email",
     "byPassword": "Password Login",
-    "byCode": "Code Login"
+    "byCode": "Code Login",
+    "loginAsRetry": "Retry sign-in",
+    "backToLogin": "Back to sign in"
   },
   "finance": {
     "invoice": {

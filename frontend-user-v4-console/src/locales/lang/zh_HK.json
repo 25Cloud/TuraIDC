@@ -72,7 +72,16 @@
       "user": "個人中心",
       "signOut": "登出",
       "setting": "系統設置",
-      "confirmSignOut": "確認退出"
+      "confirmSignOut": "確認退出",
+      "inbox": {
+        "title": "站內信",
+        "markAllRead": "全部已讀",
+        "empty": "暫無消息",
+        "viewDetail": "查看詳情"
+      },
+      "userMenu": {
+        "profile": "個人資料"
+      }
     },
     "notice": {
       "title": "通知中心",
@@ -822,7 +831,9 @@
     "columnScopes": "權限範圍",
     "columnExpiresAt": "到期時間",
     "columnLastUsedAt": "最近使用",
-    "columnDuration": "耗時"
+    "columnDuration": "耗時",
+    "overview": "本頁管理對接本系統的兩套憑據：開放接口密鑰用於系統間調用（/api/v2/open），魔方財務對接憑據供魔方財務在「上游」中配置（/api/v2/zjmf）。兩套憑據都支持 IP 白名單、有效期與調用審計。",
+    "linkageNote": "兩套憑據的聯動是單向的：在「魔方財務對接」中關閉上游會一併停用本賬號全部開放接口密鑰；反過來，停用或刪除單個密鑰不影響魔方財務對接。"
   },
   "client": {
     "catalog": {
@@ -1143,7 +1154,18 @@
       "quickTopUp": "賬戶充值",
       "quickHelpCenter": "幫助中心",
       "quickCoupons": "優惠券",
-      "quickReferral": "推薦獎勵"
+      "quickReferral": "推薦獎勵",
+      "myProducts": "我的產品",
+      "manageAll": "管理全部",
+      "thisYearSpend": "今年消費",
+      "totalLabel": "合計",
+      "last7DaysDailySpend": "近 7 天每日消費",
+      "spendDetails": "消費明細",
+      "messageCenter": "消息中心"
+    },
+    "apiKeys": {
+      "edit": "編輯",
+      "logs": "日誌"
     }
   },
   "clientAuth": {
@@ -1222,7 +1244,8 @@
       "refresh": "刷新",
       "title": "操作日誌",
       "todayCount": "今日 {count} 條",
-      "totalCount": "共 {count} 條"
+      "totalCount": "共 {count} 條",
+      "empty": "暫無操作日誌"
     },
     "nameDialog": {
       "cancel": "取消",
@@ -1290,7 +1313,8 @@
       "rulesLoaded": "安全組規則已加載",
       "groupNameRequired": "請輸入安全組名稱",
       "selectGroupFirst": "請先選擇安全組",
-      "ruleRequired": "請填寫完整的規則信息"
+      "ruleRequired": "請填寫完整的規則信息",
+      "rulesEmpty": "當前安全組沒有規則，可先新增後再應用"
     },
     "securityGroup": {
       "cancel": "取消",
@@ -1395,7 +1419,11 @@
       "internalPlaceholder": "留空由上游分配",
       "portPlaceholder": "例如：80",
       "protocolPlaceholder": "請選擇協議",
-      "publicAddress": "公網地址"
+      "publicAddress": "公網地址",
+      "unsupported": "當前實例暫不支持端口轉發",
+      "emptyCanCreate": "暫無端口轉發規則，可先添加後再配置",
+      "emptyNotCreatable": "暫無端口轉發規則",
+      "delete": "刪除"
     },
     "remark": {
       "save": "保存備註",
@@ -1446,7 +1474,27 @@
     "instanceNameSaved": "實例名稱已保存",
     "remarkSaved": "備註已保存",
     "passwordTooShort": "新密碼至少需要 8 位",
-    "passwordMismatch": "兩次輸入的密碼不一致"
+    "passwordMismatch": "兩次輸入的密碼不一致",
+    "panelState": {
+      "loading": "正在加載面板數據",
+      "loadingHint": "首次進入需從上游取數，請稍候",
+      "errorTitle": "面板數據加載失敗",
+      "errorDefault": "讀取面板數據失敗，請稍後重試",
+      "errorHint": "可點擊下方按鈕重新加載；若持續失敗，請聯繫客服協助處理",
+      "retry": "重新加載",
+      "emptyDefault": "暫無數據"
+    },
+    "monitor": {
+      "unsupported": "當前實例暫不支持監控",
+      "empty": "當前時間範圍內暫無監控數據",
+      "noTrend": "當前時間範圍內暫無趨勢數據",
+      "chartLabel": "{name}趨勢圖"
+    },
+    "finance": {
+      "empty": "暫無財務記錄"
+    },
+    "copyAll": "複製全部",
+    "close": "關閉"
   },
   "recharge": {
     "title": "在線充值",
@@ -1466,7 +1514,10 @@
     "noPaymentMethod": "暫無可用支付方式",
     "qrCodeGenerated": "充值二維碼已生成",
     "missingPollCredential": "缺少支付輪詢憑證",
-    "successBalanceRefreshed": "充值成功，餘額已刷新"
+    "successBalanceRefreshed": "充值成功，餘額已刷新",
+    "amountQuantity": "充值數量",
+    "actualAmountPrefix": "實付金額：",
+    "selectPaymentMethod": "選擇支付方式"
   },
   "services": {
     "console": {}
@@ -1501,7 +1552,8 @@
     "qrCodeExpired": "二維碼已失效，請重新提交認證",
     "success": "認證成功",
     "qrCodeRefreshed": "已重新生成二維碼，請重新掃碼",
-    "sessionClosed": "認證會話已關閉"
+    "sessionClosed": "認證會話已關閉",
+    "reverify": "重新認證"
   },
   "checkoutResume": {
     "browse": "去選購產品",
@@ -1511,7 +1563,8 @@
     "billingCycle": "週期",
     "quantity": "數量",
     "created": "賬單創建成功，正在跳轉",
-    "createFailed": "賬單創建失敗，請稍後重試"
+    "createFailed": "賬單創建失敗，請稍後重試",
+    "recreate": "重新創建賬單"
   },
   "content": {
     "hotSearchLabel": "熱門搜尋:",
@@ -1550,7 +1603,12 @@
     "thirdPartyOrderNo": "第三方訂單號",
     "channel": "渠道",
     "amount": "金額",
-    "paidAt": "支付時間"
+    "paidAt": "支付時間",
+    "renewalInfo": "續費信息",
+    "invoiceInfo": "賬單信息",
+    "relatedPaymentsTitle": "關聯支付記錄",
+    "summary": "賬單摘要",
+    "paidRefresh": "我已完成支付，刷新狀態"
   },
   "orderCreate": {
     "title": "購買鏈路",
@@ -1619,14 +1677,33 @@
     "passwordInfoRequired": "請填寫完整密碼信息",
     "newPasswordMinLength": "新密碼長度不能少於 8 位",
     "passwordChanged": "密碼修改成功，請重新登錄",
-    "settingsSaved": "設置保存成功"
+    "settingsSaved": "設置保存成功",
+    "notificationDisableTip": "關閉安全提醒可能會錯過密碼、電郵或手機號變更通知。",
+    "saveSettings": "保存設置",
+    "forgotOldPassword": "忘記原密碼？",
+    "verifyByPhone": "驗證方式：手機驗證",
+    "verifyByEmail": "驗證方式：電郵驗證",
+    "useOldPassword": "使用原密碼修改",
+    "oldPhoneCodePlaceholder": "請輸入原手機號收到的驗證碼",
+    "oldEmailCodePlaceholder": "請輸入原電郵收到的驗證碼",
+    "oldPasswordLabel": "原密碼",
+    "phoneVerifyLabel": "手機驗證",
+    "emailVerifyLabel": "電郵驗證",
+    "verifyTargetLabel": "驗證對象",
+    "oldPhoneLabel": "原手機號",
+    "oldPhoneCodeLabel": "原手機號驗證碼",
+    "oldEmailLabel": "原電郵",
+    "oldEmailCodeLabel": "原電郵驗證碼",
+    "newPhoneLabel": "新手機號",
+    "newEmailLabel": "新電郵"
   },
   "tickets": {
     "searchPlaceholder": "搜尋工單標題",
     "allStatus": "全部狀態",
     "columnSubject": "標題",
     "columnPriority": "優先級",
-    "columnUpdatedAt": "更新時間"
+    "columnUpdatedAt": "更新時間",
+    "viewThread": "查看交流"
   },
   "auth": {
     "accountLabel": "手機號 / 電郵",
@@ -1640,7 +1717,9 @@
     "loginTitle": "賬號登錄",
     "loginAccountPlaceholder": "請輸入手機號或電郵",
     "byPassword": "密碼登錄",
-    "byCode": "驗證碼登錄"
+    "byCode": "驗證碼登錄",
+    "loginAsRetry": "重試代理登入",
+    "backToLogin": "返回登錄頁"
   },
   "finance": {
     "invoice": {
