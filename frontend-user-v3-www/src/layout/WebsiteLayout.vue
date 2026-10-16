@@ -1,4 +1,3 @@
-import { t } from '@/locales'
 <template>
   <div class="website-layout">
     <a class="skip-to-content" href="#main-content">{{ $t('layout.a11y.skipToMainContent') }}</a>
@@ -87,7 +86,7 @@ import { t } from '@/locales'
                     v-else-if="!navProductTypes.length"
                     class="mega-menu__col-empty"
                   >
-                    暂无产品目录
+                    {{ $t('layout.nav.noProductCatalog') }}
                   </div>
                   <!-- 点击顶栏「产品」只开关本面板，一级入口统一放这里，
                        与公告/帮助面板的「查看全部」保持同一种模式。 -->
@@ -114,7 +113,7 @@ import { t } from '@/locales'
                       class="mega-menu__retry"
                       @click="navReloadGroups"
                     >
-                      重新加载
+                      {{ $t('layout.product.reload') }}
                     </button>
                   </div>
                   <template v-else>
@@ -135,7 +134,7 @@ import { t } from '@/locales'
                       v-if="!navActiveGroups.length"
                       class="mega-menu__empty"
                     >
-                      暂无产品分类
+                      {{ $t('layout.product.emptyCategories') }}
                     </div>
                   </template>
                 </div>
@@ -143,14 +142,18 @@ import { t } from '@/locales'
 
               <template v-else-if="activeMenuId === 'notices'">
                 <div class="mega-menu__types">
-                  <span class="mega-menu__col-title">公告分类</span>
+                  <span class="mega-menu__col-title">{{
+                    $t('layout.notice.categoryTitle')
+                  }}</span>
                   <button
                     type="button"
                     class="mega-type-btn"
                     :class="{ active: !navNoticesActiveCategory }"
                     @mouseenter="navNoticesActivateCategory(null)"
                   >
-                    <span class="mega-type-btn__label">全部公告</span>
+                    <span class="mega-type-btn__label">{{
+                      $t('layout.notice.allAnnouncements')
+                    }}</span>
                     <span class="mega-type-btn__count">{{
                       navNoticesItems.length
                     }}</span>
@@ -172,7 +175,7 @@ import { t } from '@/locales'
                     :count="3"
                   />
                   <router-link to="/notices" class="mega-type-more"
-                    >查看全部 →</router-link
+                    >{{ $t('layout.notice.viewAll') }}</router-link
                   >
                 </div>
                 <div class="mega-menu__groups" :aria-busy="navNoticesLoading">
@@ -184,13 +187,15 @@ import { t } from '@/locales'
                     v-else-if="navNoticesError && !navNoticesFiltered.length"
                     class="mega-menu__empty"
                   >
-                    <p class="mega-menu__empty-text">公告加载失败</p>
+                    <p class="mega-menu__empty-text">{{
+                      $t('layout.notice.loadFailed')
+                    }}</p>
                     <button
                       type="button"
                       class="mega-menu__retry"
                       @click="navReloadNotices"
                     >
-                      重新加载
+                      {{ $t('layout.product.reload') }}
                     </button>
                   </div>
                   <template v-else>
@@ -211,7 +216,7 @@ import { t } from '@/locales'
                       v-if="!navNoticesFiltered.length"
                       class="mega-menu__empty"
                     >
-                      暂无公告
+                      {{ $t('layout.notice.empty') }}
                     </div>
                   </template>
                 </div>
@@ -219,14 +224,18 @@ import { t } from '@/locales'
 
               <template v-else-if="activeMenuId === 'help'">
                 <div class="mega-menu__types">
-                  <span class="mega-menu__col-title">文档分类</span>
+                  <span class="mega-menu__col-title">{{
+                    $t('layout.doc.categoryTitle')
+                  }}</span>
                   <button
                     type="button"
                     class="mega-type-btn"
                     :class="{ active: !navHelpActiveCategory }"
                     @mouseenter="navHelpActivateCategory(null)"
                   >
-                    <span class="mega-type-btn__label">全部文档</span>
+                    <span class="mega-type-btn__label">{{
+                      $t('layout.doc.allDocs')
+                    }}</span>
                     <span class="mega-type-btn__count">{{
                       navHelpItems.length
                     }}</span>
@@ -248,7 +257,7 @@ import { t } from '@/locales'
                     :count="3"
                   />
                   <router-link to="/help" class="mega-type-more"
-                    >查看全部 →</router-link
+                    >{{ $t('layout.doc.viewAll') }}</router-link
                   >
                 </div>
                 <div class="mega-menu__groups" :aria-busy="navHelpLoading">
@@ -260,13 +269,15 @@ import { t } from '@/locales'
                     v-else-if="navHelpError && !navHelpFiltered.length"
                     class="mega-menu__empty"
                   >
-                    <p class="mega-menu__empty-text">文档加载失败</p>
+                    <p class="mega-menu__empty-text">{{
+                      $t('layout.doc.loadFailed')
+                    }}</p>
                     <button
                       type="button"
                       class="mega-menu__retry"
                       @click="navReloadHelp"
                     >
-                      重新加载
+                      {{ $t('layout.product.reload') }}
                     </button>
                   </div>
                   <template v-else>
@@ -287,7 +298,7 @@ import { t } from '@/locales'
                       v-if="!navHelpFiltered.length"
                       class="mega-menu__empty"
                     >
-                      暂无文档
+                      {{ $t('layout.doc.empty') }}
                     </div>
                   </template>
                 </div>
@@ -295,8 +306,12 @@ import { t } from '@/locales'
 
               <template v-else-if="activeMenuId === 'about'">
                 <div class="mega-menu__types">
-                  <span class="mega-menu__col-title">其他入口</span>
-                  <div class="mega-type-desc">关于、帮助与常用入口</div>
+                  <span class="mega-menu__col-title">{{
+                    $t('layout.nav.moreLinks')
+                  }}</span>
+                  <div class="mega-type-desc">{{
+                    $t('layout.nav.moreLinksDesc')
+                  }}</div>
                 </div>
                 <div class="mega-menu__groups">
                   <template v-for="link in aboutQuickLinks" :key="link.to">
@@ -399,9 +414,11 @@ import { t } from '@/locales'
             </transition>
           </div>
           <template v-if="!userStore.isLoggedIn">
-            <a :href="consoleUrl('/client/login')" class="header-link">登录</a>
+            <a :href="consoleUrl('/client/login')" class="header-link">{{
+              $t('layout.user.signIn')
+            }}</a>
             <a :href="consoleUrl('/client/register')" class="header-register"
-              >免费注册</a
+              >{{ $t('layout.user.registerFree') }}</a
             >
           </template>
         </div>
@@ -526,14 +543,14 @@ import { t } from '@/locales'
                 <a
                   :href="consoleUrl('/client/dashboard')"
                   class="mobile-left-login-btn"
-                  >控制台</a
+                  >{{ $t('layout.user.console') }}</a
                 >
               </template>
               <template v-else>
                 <a
                   :href="consoleUrl('/client/login')"
                   class="mobile-left-login-btn"
-                  >登录 / 注册</a
+                  >{{ $t('layout.user.signInOrRegister') }}</a
                 >
               </template>
             </div>
@@ -665,7 +682,7 @@ import { t } from '@/locales'
                   to="/notices"
                   class="mobile-view-all"
                   @click="closeMobileMenu()"
-                  >查看全部公告 →</router-link
+                  >{{ $t('layout.notice.viewAllMore') }}</router-link
                 >
               </template>
               <div v-else-if="navNoticesLoading" class="mobile-menu-loading">
@@ -734,7 +751,7 @@ import { t } from '@/locales'
                   to="/help"
                   class="mobile-view-all"
                   @click="closeMobileMenu()"
-                  >查看全部文档 →</router-link
+                  >{{ $t('layout.doc.viewAllMore') }}</router-link
                 >
               </template>
               <div v-else-if="navHelpLoading" class="mobile-menu-loading">
@@ -902,7 +919,10 @@ import { useAppStore } from "@/stores/app";
 import { useUserStore } from "@/stores/user";
 import { buildSupportContacts } from "@/data/supportContacts";
 import { seoLandingFooterLinks } from "@/data/seoLandingMeta";
-import { languageList } from "@/locales";
+// t 必须在这里导入：script 里多处直接用 t('layout.nav.*') 构造导航与页脚文案。
+// 之前这行 import 被写在了 <template> 之外（文件第 1 行），Vue 的 SFC 解析器会直接忽略，
+// 于是 setup 阶段抛 ReferenceError: t is not defined，整个布局挂掉、官网整页白屏。
+import { languageList, t } from "@/locales";
 import { useLocale } from "@/locales/useLocale";
 import { buildConsoleUrl, isConsolePath } from "@/utils/consoleUrl";
 import { useNavProductMenu } from "./useNavProductMenu";

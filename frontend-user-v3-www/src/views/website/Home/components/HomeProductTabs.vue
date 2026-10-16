@@ -1,4 +1,3 @@
-import { t } from '@/locales'
 <template>
   <section class="product-tabs-section" :aria-busy="loading ? 'true' : 'false'">
     <div class="container">
@@ -6,9 +5,9 @@ import { t } from '@/locales'
         <h2 class="product-tabs__title">{{ $t('home.products.title') }}</h2>
         <p class="product-tabs__desc">
           {{ appStore.siteName }}
-          的技术积淀与交付实践，助力企业上云与产业互联网。
+          {{ $t('home.products.techDeliveryDesc') }}
           <router-link to="/products" class="product-tabs__more">
-            查看全部产品
+            {{ $t('home.products.viewAll') }}
             <el-icon><ArrowRight /></el-icon>
           </router-link>
         </p>
@@ -41,7 +40,7 @@ import { t } from '@/locales'
           <strong class="product-card__title">{{ card.title }}</strong>
           <p class="product-card__desc">{{ card.desc }}</p>
           <span class="product-card__cta">
-            立即选购
+            {{ $t('home.products.buyNow') }}
             <el-icon><ArrowRight /></el-icon>
           </span>
         </button>
@@ -56,6 +55,10 @@ import { useRouter } from "vue-router";
 import { ElIcon } from "element-plus/es/components/icon/index.mjs";
 import { ArrowRight } from "@element-plus/icons-vue";
 import { useAppStore } from "@/stores/app";
+// t 必须导入到 script 块里：模板下方用 t('home.products.emptyCategory') 直接取文案。
+// 之前这行 import 被写在了 <template> 之外（文件第 1 行），SFC 解析器直接忽略，
+// 运行时抛 ReferenceError: t is not defined。
+import { t } from "@/locales";
 import { buildWebsiteProductPath } from "@/utils/productRoute";
 import { resolveProductDisplayName } from "@/utils/websiteProductConfig";
 

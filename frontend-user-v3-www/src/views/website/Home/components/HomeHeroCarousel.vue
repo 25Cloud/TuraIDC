@@ -1,4 +1,3 @@
-import { t } from '@/locales'
 <template>
   <section ref="heroSectionRef" class="hero-section">
     <div class="hero-bg" aria-hidden="true">
