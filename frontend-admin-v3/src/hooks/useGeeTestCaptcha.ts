@@ -1,6 +1,6 @@
 import type { CapCaptchaLabels } from '@shared/components/CapCaptchaCard.vue';
 import CapCaptchaCard from '@shared/components/CapCaptchaCard.vue';
-import { createApp, nextTick, onScopeDispose, ref } from 'vue';
+import { createApp, nextTick, onMounted, onScopeDispose, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { request } from '@/utils/request';
@@ -55,35 +55,57 @@ const defaultConfig: GeeTestConfig = {
 
 let captchaConfigPromise: Promise<GeeTestConfig> | null = null;
 let geetestScriptPromise: Promise<GeeTestInitializer> | null = null;
-let captchaRequirementPromise: Promise<GeeTestConfig> | null = null;
+/** 最近一次配置请求的失败原因，供初始化路径区分「接口失败」与「插件未启用」两种错误分支 */
+let captchaConfigLoadError: unknown = null;
 
 /**
- * 探测人机验证是否可用、以及某个场景是否要求验证。
+ * 拉取人机验证配置——全模块唯一的配置请求入口。
  *
- * 与下方 getCaptchaConfig 的关键区别：这里**不抛错**。插件未配置、接口失败都归一为
- * 「不需要验证」。登录页必须用这个版本——验证码配置出问题不应该把管理员挡在后台之外，
- * 后端在插件未启用时同样不会要求验证，两侧语义一致。
+ * 这里**永不抛错**：插件未配置、接口失败都归一为「不需要验证」。登录页必须这样——
+ * 验证码配置出问题不应该把管理员挡在后台之外，后端在插件未启用时同样不会要求验证，
+ * 两侧语义一致。需要区分失败原因时读 captchaConfigLoadError。
+ *
+ * 此前探测与初始化各持一个模块级 promise，同一接口在一次登录页打开过程中被打了两遍，
+ * 且两段串行往返都排在首屏之后。现在合并为单例：一次打开只请求一次，且不再阻塞首屏。
+ *
+ * 失败后必须清缓存：captchaConfigPromise 是模块级单例，一旦把 defaultConfig
+ * （enabled: false）固化进去，本页此后永久不唤起验证码，而后端仍会要求验证并拒绝提交，
+ * 且后续调用复用同一个已缓存 promise 无法自恢复，只能整页刷新。
  */
-export async function resolveCaptchaRequirement(
-  scene: CaptchaScene,
-): Promise<{ enabled: boolean; required: boolean; renderMode: 'popup' | 'inline' }> {
-  if (!captchaRequirementPromise) {
-    captchaRequirementPromise = request
+function loadCaptchaConfig(): Promise<GeeTestConfig> {
+  if (!captchaConfigPromise) {
+    // 显式标注类型：下面的 catch 回调引用了 pending 自身（判断是否仍是最新一次请求），
+    // 不标注会让 TS 陷入循环推断（TS7011）。
+    const pending: Promise<GeeTestConfig> = request
       .get<GeeTestConfig>({ url: '/v2/client/auth/captcha-config' })
-      .then((response: unknown) => ({ ...defaultConfig, ...(response as GeeTestConfig) }))
-      .catch(() => {
-        captchaRequirementPromise = null;
+      .then((response: unknown) => {
+        captchaConfigLoadError = null;
+
+        return { ...defaultConfig, ...(response as GeeTestConfig) };
+      })
+      .catch((error: unknown) => {
+        captchaConfigLoadError = error;
+        if (captchaConfigPromise === pending) {
+          captchaConfigPromise = null;
+        }
+
         return defaultConfig;
       });
+
+    captchaConfigPromise = pending;
   }
 
-  const config = await captchaRequirementPromise;
+  return captchaConfigPromise;
+}
+
+/** 由配置推导「是否可用 / 某场景是否要求验证 / 渲染形态」 */
+function deriveCaptchaState(config: GeeTestConfig, scene: CaptchaScene) {
   const enabled = Boolean(config.enabled && config.captcha_id);
 
   return {
     enabled,
     required: enabled && config.scenes?.[scene] === true,
-    renderMode: config.render_mode === 'inline' ? 'inline' : 'popup',
+    renderMode: config.render_mode === 'inline' ? ('inline' as const) : ('popup' as const),
   };
 }
 
@@ -102,26 +124,27 @@ function resolveAppendTarget(target: CaptchaAppendTarget): string | HTMLElement 
   return undefined;
 }
 
-async function getCaptchaConfig() {
-  if (!captchaConfigPromise) {
-    captchaConfigPromise = request
-      .get<GeeTestConfig>({ url: '/v2/client/auth/captcha-config' })
-      .then((response: unknown) => {
-        const config = { ...defaultConfig, ...(response as GeeTestConfig) };
-        if (!config.enabled || !config.captcha_id) {
-          throw new Error('人机验证插件未启用或配置不完整');
-        }
+/**
+ * 初始化组件用的配置读取：与 loadCaptchaConfig 共用同一份缓存，不产生第二次请求。
+ * 与 loadCaptchaConfig 的区别是这里**会抛错**——渲染组件必须有真实配置兜底，
+ * 否则会把「配置没到」渲染成一个永远不会出现的空容器。
+ */
+async function getCaptchaConfig(): Promise<GeeTestConfig> {
+  const config = await loadCaptchaConfig();
 
-        return config;
-      })
-      .catch((error: unknown) => {
-        captchaConfigPromise = null;
-        const message = error instanceof Error ? error.message : t('captcha.config.loadFailed');
-        throw new Error(`人机验证配置加载失败：${message}`);
-      });
+  if (captchaConfigLoadError) {
+    const message =
+      captchaConfigLoadError instanceof Error ? captchaConfigLoadError.message : t('captcha.config.loadFailed');
+    throw new Error(`人机验证配置加载失败：${message}`);
   }
 
-  return captchaConfigPromise;
+  if (!config.enabled || !config.captcha_id) {
+    // 插件未启用时不留缓存：管理端可能在同一次会话里刚把插件打开，下次调用要能重新读到
+    captchaConfigPromise = null;
+    throw new Error('人机验证插件未启用或配置不完整');
+  }
+
+  return config;
 }
 
 function resolveScriptUrl(src: string) {
@@ -300,13 +323,48 @@ function createCapInstance(
  * 管理端极验弹窗验证。用于插件测试：真人完成一次行为验证后，
  * 把 getValidate() 结果交给后端走完整验证链路。
  */
+export interface GeeTestCaptchaOptions extends Record<string, unknown> {
+  /** 后端场景标识（CaptchaPolicyService），决定 scenes[scene] 是否要求验证 */
+  scene?: CaptchaScene;
+  /** inline 形态的挂载容器，可直接传 ref */
+  appendTo?: CaptchaAppendTarget;
+  /** appendTo 的兼容别名 */
+  container?: CaptchaAppendTarget;
+  /** inline 形态下用户尚未完成验证时的提示回调 */
+  onPrompt?: () => void;
+  /**
+   * 是否在组件挂载后自动预热，默认 false。
+   *
+   * 只有「首屏就要展示验证码」的页面才应打开：登录页需要它来并行首屏与验证码初始化。
+   * 插件配置页的自测按钮不需要——那里预加载等于每次进页面都白拉一次外网 SDK。
+   */
+  autoPrepare?: boolean;
+}
+
 /**
+ * 管理端人机验证 hook。
+ *
  * @param options 透传给验证组件的初始化参数。传 appendTo（可为 ref）即改为内联渲染，
  *                不传则沿用弹窗模式——插件配置页的自测按钮用的就是弹窗模式。
  */
-export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
+export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
   const { t } = useI18n();
+  /** 管理端默认场景即管理员登录；插件自测页不关心 required，用默认值无副作用 */
+  const scene = options.scene || 'admin_login';
   const loading = ref(false);
+  // 以下状态全部由配置驱动：页面不必先 await 探测接口再决定要不要渲染验证码区域
+  /** 配置是否可用（enabled 且 captcha_id 完整） */
+  const enabled = ref(false);
+  /** 当前场景是否要求人机验证；配置拿不到时为 false（降级放行，与后端语义一致） */
+  const required = ref(false);
+  /** popup：插件自行弹窗；inline：渲染进页面提供的容器 */
+  const renderMode = ref<'popup' | 'inline'>('popup');
+  /** 配置是否已解析完成（无论成功失败），页面据此决定要不要继续占位 */
+  const initialized = ref(false);
+  /** 验证组件是否已渲染就绪 */
+  const ready = ref(false);
+  /** 最近一次初始化/校验失败原因，供页面提供重试入口，避免验证码区域永久空白 */
+  const initError = ref('');
 
   /** Cap 状态文案随当前界面语言注入（当前仅简体中文，预留扩展） */
   const capLabels: CapCaptchaLabels = {
@@ -367,19 +425,32 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
     verifiedResult = result;
   };
 
+  /** 把配置结果写进响应式状态：页面读的 required / renderMode 与实际渲染形态始终一致 */
+  const applyCaptchaState = (config: GeeTestConfig) => {
+    const state = deriveCaptchaState(config, scene);
+    enabled.value = state.enabled;
+    required.value = state.required;
+    renderMode.value = state.renderMode;
+    initialized.value = true;
+
+    return config;
+  };
+
+  /** 解析配置并同步状态；永不抛错，失败降级为「不要求验证」 */
+  const resolveConfig = () => loadCaptchaConfig().then(applyCaptchaState);
+
+  /** 提交前的兜底：配置尚未回来时先等它落地，避免把「未知」当成「不需要验证」而漏带 captcha */
+  const ensureConfig = () => (initialized.value ? Promise.resolve() : resolveConfig());
+
   const initCaptcha = async (): Promise<CaptchaInstance | null> => {
-    const config = await getCaptchaConfig();
+    const config = applyCaptchaState(await getCaptchaConfig());
 
     if (destroyed) {
       throw new Error('行为验证组件已卸载');
     }
 
-    if (!config.enabled || !config.captcha_id) {
-      throw new Error('行为验证当前不可用，请检查人机验证插件配置');
-    }
-
-    // 容器用 v-show 控制显隐：等 DOM 更新（display 恢复）后再渲染组件，
-    // 避免 widget 渲染进 display:none 容器导致不可见或尺寸测量为 0。
+    // 容器由页面常驻渲染（不再等配置回来才 display），这里仍等一次 DOM 更新，
+    // 确保 appendTo 传的是 ref 时组件已解引用到真实元素
     await nextTick();
 
     currentRenderMode = config.render_mode === 'inline' ? 'inline' : 'popup';
@@ -539,10 +610,14 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
   };
 
   const verify = async () => {
+    // 提交路径同样要先把配置落地：required 由配置驱动，未解析完就提交会漏带 captcha
+    await ensureConfig();
+
     const instance = await initCaptcha();
     if (!instance) {
       throw new Error('行为验证组件初始化失败，请稍后重试');
     }
+    ready.value = true;
 
     // 组件已自行完成验证：取出结果并重置，同样保证 token 只用一次
     if (verifiedResult !== null && verifiedResult !== undefined) {
@@ -589,20 +664,48 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
   };
 
   /**
-   * 页面加载后主动初始化并渲染验证组件（inline 形态提前展示，可提前完成挑战）。
-   * 仅启用且为 inline 时执行；初始化失败静默忽略，不阻断页面。
+   * 主动初始化并渲染验证组件（inline 形态提前展示，可提前完成挑战）。
+   * 失败不阻断首屏，但会记下原因供页面给出重试入口，点击提交时仍会走
+   * verify() 的完整错误提示。
    */
   const prepare = async () => {
     if (destroyed) {
       return;
     }
 
+    initError.value = '';
+
     try {
-      await initCaptcha();
-    } catch {
-      // 加载失败不打扰用户，点击提交时仍会走 verify() 的完整错误提示
+      // 先解析配置（同步写出 required / renderMode），再决定是否预加载：
+      // - popup 形态：只加载 SDK 不弹窗，页面零 UI 副作用；
+      // - inline 形态：必须由页面提供挂载容器，否则不预加载——避免适配层把
+      //   验证码渲染到页面默认位置（如插件配置页没有容器）。
+      await resolveConfig();
+      if (!enabled.value) {
+        return;
+      }
+
+      if (
+        renderMode.value === 'inline' &&
+        !resolveAppendTarget((options.appendTo ?? options.container) as CaptchaAppendTarget)
+      ) {
+        return;
+      }
+
+      ready.value = Boolean(await initCaptcha());
+    } catch (error: unknown) {
+      ready.value = false;
+      // 加载失败不打扰首屏，但页面要知道该给出重试入口
+      initError.value = error instanceof Error ? error.message : t('captcha.config.loadFailed');
     }
   };
+
+  // 预热放在 hook 内部：页面不再自己判断何时准备，首屏渲染与验证码初始化并行
+  if (options.autoPrepare === true) {
+    onMounted(() => {
+      void prepare();
+    });
+  }
 
   const cleanup = () => {
     destroyed = true;
@@ -622,7 +725,14 @@ export function useGeeTestCaptcha(options: Record<string, unknown> = {}) {
 
   return {
     loading,
+    enabled,
+    required,
+    renderMode,
+    initialized,
+    ready,
+    initError,
     verify,
     prepare,
+    ensureConfig,
   };
 }

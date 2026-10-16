@@ -25,8 +25,23 @@
             autocomplete="current-password"
           />
         </t-form-item>
-        <!-- inline 形态（Turnstile）的验证组件落点：点击登录时就地加载，无感通过时不占位 -->
-        <div v-show="captchaRenderMode === 'inline'" ref="captchaContainer" class="login-captcha"></div>
+        <!--
+          验证组件落点：容器常驻渲染，不再等配置回来才 display。
+          配置/组件未就绪时先用等高占位块顶住高度，组件渲染完成后原地替换，
+          杜绝「先空白后出现」的布局跳变；加载失败时给出显式重试入口。
+        -->
+        <div v-show="captchaSlotVisible" class="login-captcha">
+          <div v-if="captchaPending" class="login-captcha-placeholder" aria-hidden="true"></div>
+          <t-link
+            v-if="captchaInitError"
+            class="login-captcha-retry"
+            theme="primary"
+            @click="handleCaptchaRetry"
+          >
+            {{ $t('login.captchaRetry') }}
+          </t-link>
+          <div ref="captchaContainer" class="login-captcha-container"></div>
+        </div>
         <div class="login-remember">
           <t-checkbox v-model="rememberAccount">{{ $t('login.rememberAccount') }}</t-checkbox>
         </div>
@@ -49,7 +64,7 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { resolveCaptchaRequirement, useGeeTestCaptcha } from '@/hooks/useGeeTestCaptcha';
+import { useGeeTestCaptcha } from '@/hooks/useGeeTestCaptcha';
 import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { resolveAdminHomePath } from '@/utils/route/adminHome';
@@ -62,32 +77,48 @@ const errorMessage = ref('');
 const currentYear = computed(() => new Date().getFullYear());
 
 // 管理员登录的人机验证：是否要求由后端场景开关决定（验证码插件配置里的「管理员登录」）。
+//
+// 首屏不再串行：配置请求、适配脚本加载、组件渲染全部由 hook 在挂载后并行推进，
+// 页面不 await 探测结果，表单先渲染出来，验证码就绪后原地出现。
 // 探测失败一律视为不要求——验证码配置出问题不应该把管理员挡在后台之外。
 //
-// 验证 SDK 在点击登录时才加载。渲染形态由后端下发：popup（极验）由插件自行弹窗，
-// inline（Turnstile）渲染进登录按钮上方的容器，无感通过时不占位。
-const captchaRequired = ref(false);
-const captchaRenderMode = ref<'popup' | 'inline'>('popup');
+// 渲染形态由后端下发：popup（极验）由插件自行弹窗，页面没有组件可放；
+// inline（Turnstile/Corptcha）渲染进登录按钮上方的容器。
 const captchaContainer = ref<HTMLElement>();
 const {
   verify: verifyCaptcha,
   loading: captchaLoading,
   prepare: prepareCaptcha,
+  enabled: captchaEnabled,
+  required: captchaRequired,
+  renderMode: captchaRenderMode,
+  initialized: captchaInitialized,
+  ready: captchaReady,
+  initError: captchaInitError,
+  ensureConfig: ensureCaptchaConfig,
 } = useGeeTestCaptcha({
+  scene: 'admin_login',
+  autoPrepare: true,
   appendTo: captchaContainer,
   onPrompt: () => MessagePlugin.warning(t('login.captchaRequired')),
 });
 
-onMounted(async () => {
-  const { required, renderMode } = await resolveCaptchaRequirement('admin_login');
-  captchaRequired.value = required;
-  captchaRenderMode.value = renderMode;
+// 只有 inline 形态才有内联组件可放；popup 形态不占位
+const captchaNeedsSlot = computed(() => captchaEnabled.value && captchaRenderMode.value === 'inline');
+// 配置还没回来、或 inline 组件还没渲染好时都保留占位（首屏即为 true，先顶住高度）
+const captchaPending = computed(
+  () => !captchaReady.value && !(captchaInitialized.value && !captchaNeedsSlot.value),
+);
+// popup 形态本来就没有内联区域，但组件加载失败时仍要留一个显式重试入口，
+// 不能只依赖「点登录才报错」
+const captchaSlotVisible = computed(
+  () => captchaPending.value || captchaNeedsSlot.value || Boolean(captchaInitError.value),
+);
 
-  // inline 形态：页面加载即渲染验证组件，用户可提前完成挑战并保留已验证状态
-  if (renderMode === 'inline') {
-    void prepareCaptcha();
-  }
-});
+// 组件加载失败时给出显式重试入口，避免验证码区域永久空白把人堵在门外
+function handleCaptchaRetry() {
+  void prepareCaptcha();
+}
 
 // 「记住账号」只持久化账号，密码一律不落本地存储。
 // 后台账号一旦泄露即等同于整套财务系统失守，而 localStorage 可被任意同源脚本读取
@@ -137,6 +168,10 @@ async function handleLogin() {
 
   loading.value = true;
   try {
+    // 提交瞬间配置可能还没回来（首屏与验证码初始化是并行的）：
+    // 此时 required 还是初始的 false，直接提交会被后端以 captcha_required 拒掉。
+    // 先把配置等落地，再决定这次要不要带 captcha。
+    await ensureCaptchaConfig();
     // 验证结果随登录请求一起提交；未要求验证时不带 captcha 字段
     const captcha = captchaRequired.value ? await verifyCaptcha() : null;
 
@@ -245,13 +280,32 @@ async function handleLogin() {
   }
 }
 
-/* 验证组件落点：无感通过时容器内为空、不占高度；需要挑战时才撑开 */
+/* 验证组件落点：常驻占位，组件未就绪时用等高骨架块撑住布局 */
 .login-captcha {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
 
-  &:not(:empty) {
-    margin-bottom: 16px;
+  /* 占位高度对齐常见内联组件（Turnstile/Corptcha），组件渲染后不产生位移 */
+  &-placeholder {
+    width: 300px;
+    max-width: 100%;
+    height: 64px;
+    border-radius: var(--td-radius-medium, 6px);
+    background: var(--td-bg-color-secondarycontainer, #f3f3f3);
+  }
+
+  &-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+  }
+
+  &-retry {
+    font-size: var(--td-font-size-size-2, 13px);
   }
 }
 

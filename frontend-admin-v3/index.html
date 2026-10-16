@@ -5,6 +5,8 @@
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
+    <!-- 人机验证适配脚本内部还会再加载 https://res.25y.cn 的外网 SDK，这里提前握手省掉一整轮 DNS+TCP+TLS -->
+    <link rel="preconnect" href="https://res.25y.cn" crossorigin />
     <title>管理后台</title>
   </head>
   <body>
