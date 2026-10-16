@@ -1,0 +1,165 @@
+/* ===== 卡片式商品网格 ===== */
+/*
+ * 形态参考魔方 public/themes/cart/default/product.tpl：col-sm-4 的卡片网格，
+ * 卡片承载「名称 + 描述 + 价格 + 立即选购」，点击后进入独立的配置页。
+ * 这里改用 CSS Grid + auto-fill，容器宽度变化时列数自然重排，不再依赖断点写死列数。
+ */
+
+.product-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+  gap: 14px;
+  padding: 4px 0 24px;
+}
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 208px;
+  background: $bg-color-card;
+  border: 1px solid $divider-color;
+  border-radius: 6px;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+
+  &:hover {
+    border-color: $color-primary-border;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  }
+}
+
+.product-card--sold-out {
+  opacity: 0.72;
+}
+
+.product-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 16px 0;
+}
+
+.product-card-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: $text-color-primary;
+  /* 商品名可能很长，固定两行截断，避免卡片高度被单个长名撑开 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-card-flag {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  font-size: 12px;
+  color: $color-danger;
+  background: $color-danger-soft;
+  border-radius: 3px;
+}
+
+.product-card-desc {
+  flex: 1;
+  margin: 0;
+  padding: 10px 16px 4px;
+  font-size: 13px;
+  line-height: 1.75;
+  color: $text-color-secondary;
+  word-break: break-word;
+
+  /* v-html 渲染的是商家填写的富文本片段，scoped 选择器打不到内部节点 */
+  :deep(ul),
+  :deep(ol) {
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  :deep(li) {
+    margin: 2px 0;
+  }
+
+  :deep(li::marker) {
+    color: $color-primary;
+  }
+
+  :deep(p) {
+    margin: 0 0 6px;
+  }
+
+  :deep(h1),
+  :deep(h2),
+  :deep(h3),
+  :deep(h4) {
+    margin: 0 0 6px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  :deep(table) {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  :deep(td),
+  :deep(th) {
+    padding: 4px 6px;
+    border: 1px solid $divider-color;
+  }
+
+  :deep(img) {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+.product-card-desc--empty {
+  color: $text-color-placeholder;
+}
+
+.product-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px 14px;
+}
+
+.product-card-price {
+  font-size: 15px;
+  font-weight: 600;
+  color: $color-accent-orange;
+  white-space: nowrap;
+
+  .agent-price-original {
+    margin-right: 4px;
+    font-size: 12px;
+    font-weight: 400;
+    color: $text-color-placeholder;
+    text-decoration: line-through;
+  }
+
+  .agent-price-current {
+    margin-left: 4px;
+  }
+
+  .discount-tag {
+    padding: 0 4px;
+    font-size: 12px;
+    font-style: normal;
+    color: #fff;
+    background: $color-danger;
+    border-radius: 3px;
+  }
+}
+
+.product-card-buy {
+  flex-shrink: 0;
+}
+
+.product-card-empty {
+  grid-column: 1 / -1;
+  padding: 40px 0;
+}

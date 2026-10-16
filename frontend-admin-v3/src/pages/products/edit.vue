@@ -218,6 +218,19 @@
                 <t-empty v-else description="暂无配置项" />
               </div>
             </section>
+
+            <!-- 商品描述 -->
+            <section v-show="activeSection === 'description'" class="product-edit-section">
+              <h3 class="product-edit-section-title">{{ t('products.description.sectionTitle') }}</h3>
+              <t-loading :loading="descriptionLoading" size="small">
+                <product-description-editor
+                  v-model="form.description"
+                  :auto-html="descriptionAutoHtml"
+                  :auto-items="descriptionAutoItems"
+                  :source="descriptionSource"
+                />
+              </t-loading>
+            </section>
           </t-form>
         </div>
       </div>
@@ -426,11 +439,12 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { adminApi } from '@/api/admin';
-import type { ProductCategoryRecord, ProductRecord } from '@/api/product';
+import type { ProductCategoryRecord, ProductDescriptionItem, ProductRecord } from '@/api/product';
 import { productApi } from '@/api/product';
 import type { SupplierRecord } from '@/api/supplier';
 import { supplierApi } from '@/api/supplier';
 
+import ProductDescriptionEditor from './components/ProductDescriptionEditor.vue';
 import {
   errorMessage,
   findProductGroupByKey,
@@ -470,6 +484,11 @@ const sections = [
   { key: 'pricing', label: t('products.catalog.sectionPricing'), description: t('products.edit.sectionPricingHint') },
   { key: 'interface', label: t('products.edit.sectionInterface'), description: t('products.edit.sectionInterfaceHint') },
   { key: 'config', label: t('products.catalog.sectionProductConfig'), description: t('products.edit.sectionConfigHint') },
+  {
+    key: 'description',
+    label: t('products.description.sectionTitle'),
+    description: t('products.description.sectionHint'),
+  },
 ];
 
 // --- Form ---
@@ -490,6 +509,7 @@ const form = reactive({
   console_template: 'compute' as ConsoleTemplate,
   config_options: [] as ConfigOptionRecord[],
   product_discount_group_id: null as number | null,
+  description: '',
 });
 
 // --- Discount groups ---
@@ -672,6 +692,7 @@ onMounted(async () => {
   if (isEdit.value) {
     await loadProductDetail();
   }
+  await loadProductDescription();
 });
 
 // --- Data loading ---
@@ -717,12 +738,40 @@ async function loadProductDetail() {
       console_template: normalizeConsoleTemplate(detail.console_template),
       config_options: normalizeConfigOptions(detail.config_options),
       product_discount_group_id: resolveDiscountGroupId(detail),
+      description: String(detail.description ?? ''),
     });
     if (form.supplier_id) {
       loadSupplierProducts(form.supplier_id);
     }
   } catch {
     MessagePlugin.error(t('products.edit.loadFailed'));
+  }
+}
+
+// --- Description ---
+const descriptionLoading = ref(false);
+const descriptionAutoHtml = ref('');
+const descriptionAutoItems = ref<ProductDescriptionItem[]>([]);
+const descriptionSource = ref('empty');
+
+/**
+ * 商品描述本身随商品表单一起提交，这里只额外拉一份只读数据：
+ * 自动生成的 HTML 与来源，供编辑器提示与预览使用。
+ */
+async function loadProductDescription() {
+  if (!isEdit.value) return;
+  descriptionLoading.value = true;
+  try {
+    const detail = await productApi.description(productId.value);
+    descriptionAutoHtml.value = String(detail.auto_html || '');
+    descriptionAutoItems.value = Array.isArray(detail.auto_items) ? detail.auto_items : [];
+    descriptionSource.value = String(detail.source || 'empty');
+  } catch {
+    descriptionAutoHtml.value = '';
+    descriptionAutoItems.value = [];
+    descriptionSource.value = 'empty';
+  } finally {
+    descriptionLoading.value = false;
   }
 }
 
@@ -1302,6 +1351,8 @@ async function submit() {
       },
       config_options: serializeConfigOptions(form.config_options),
       product_discount_group_id: form.product_discount_group_id || null,
+      // 留空提交空串，后端落库为 null 并回落到按规格自动生成
+      description: form.description,
     };
     if (isEdit.value) {
       await productApi.update(productId.value, payload);

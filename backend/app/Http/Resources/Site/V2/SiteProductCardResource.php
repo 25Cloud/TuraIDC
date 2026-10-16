@@ -7,6 +7,7 @@ namespace App\Http\Resources\Site\V2;
 use App\Constants\BillingCycle;
 use App\Http\Resources\Site\V2\Concerns\ResolvesSiteAgentDiscount;
 use App\Models\Product;
+use App\Services\ProductCatalog\ProductDescriptionService;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductSpecHighlightService;
 use App\Support\ProductGroupHierarchyFields;
@@ -34,6 +35,10 @@ class SiteProductCardResource extends JsonResource
         $primaryCycle = $this->primaryCycle($pricing);
         $primaryPrice = $primaryCycle !== '' ? $pricing[$primaryCycle] : '0.00';
         $agentDiscount = $this->siteAgentDiscount($product, $request, $primaryPrice);
+        // 分组浏览（/product-groups/{id}/products）用的就是这个资源，是购物车卡片网格
+        // 的主要数据源，所以描述必须在这里下发；自动生成与 spec_highlights 同源，算一次两处用。
+        $highlights = $specHighlight->resolveHighlightsForProduct($product);
+        $description = app(ProductDescriptionService::class)->resolve($product, $highlights);
 
         return [
             'id' => (int) $product->id,
@@ -57,7 +62,8 @@ class SiteProductCardResource extends JsonResource
             'setup_fee' => number_format((float) ($product->setup_fee ?? 0), 2, '.', ''),
             'stock' => (int) ($product->stock ?? -1),
             'auto_setup' => (int) ($product->auto_setup ?? 0),
-            'spec_highlights' => $specHighlight->resolveHighlightsForProduct($product),
+            'spec_highlights' => $highlights,
+            'description_html' => $description['html'],
             'spec_highlight_text' => $specHighlight->resolveHighlightText($product),
             ...$agentDiscount,
         ];

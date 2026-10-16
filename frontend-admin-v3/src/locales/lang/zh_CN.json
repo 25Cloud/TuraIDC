@@ -1432,7 +1432,13 @@
       "vncWindowOpened": "VNC 新窗口已打开",
       "vncLoaded": "VNC 控制台已载入",
       "overviewTab": "控制台总览",
-      "productConfigTab": "产品配置"
+      "productConfigTab": "产品配置",
+      "ownerUser": "所属用户",
+      "dealPrice": "成交价",
+      "openUpstreamAdmin": "跳转上游管理",
+      "notBound": "未绑定",
+      "specAndUpstream": "规格与上游",
+      "upstreamName": "上游名称"
     },
     "index": {
       "hostStatus": "主机状态",
@@ -1770,10 +1776,29 @@
       "updateSuccess": "会员等级已更新",
       "createSuccess": "会员等级已创建",
       "salesMaxInvalid": "累计销售额上限必须是有效数字",
-      "deleteSuccess": "会员等级已删除"
+      "deleteSuccess": "会员等级已删除",
+      "actionEdit": "编辑",
+      "actionDelete": "删除"
     }
   },
   "products": {
+    "description": {
+      "sectionTitle": "商品描述",
+      "sectionHint": "留空时自动按规格生成",
+      "modeStructured": "结构化",
+      "modeAdvanced": "高级",
+      "addRow": "新增一行",
+      "removeRow": "删除",
+      "moveUp": "上移",
+      "moveDown": "下移",
+      "keyPlaceholder": "名称（留空则整段作为内容）",
+      "valuePlaceholder": "内容",
+      "autoHint": "描述留空时将按规格维度自动生成，下方为自动生成的效果预览",
+      "manualHint": "当前使用人工填写的描述，留空可恢复自动生成",
+      "previewTitle": "自动生成预览",
+      "htmlLabel": "HTML 源码",
+      "emptyRows": "还没有描述内容，点击「新增一行」开始填写"
+    },
     "couponCampaigns": {
       "searchPlaceholder": "搜索活动名称 / 描述 / 备注",
       "filterStatus": "状态",
@@ -2591,6 +2616,10 @@
   },
   "settings": {
     "index": {
+      "productDisplayMode": "商品展示方式",
+      "productDisplayModeList": "列表式",
+      "productDisplayModeCard": "卡片式",
+      "productDisplayModeHint": "控制前台商品列表的排版方式，保存后立即对全站生效。",
       "addFeature": "新增卡片",
       "addSlide": "新增轮播",
       "allTypes": "全部类型",
@@ -2907,7 +2936,9 @@
       "confirmClose": "确认关闭",
       "closed": "工单已关闭",
       "recalled": "消息已撤回",
-      "imageTypeUnsupported": "仅支持 jpg、png、webp 图片"
+      "imageTypeUnsupported": "仅支持 jpg、png、webp 图片",
+      "conversation": "沟通记录",
+      "deletedAttachment": "已删除"
     }
   },
   "users": {
@@ -3020,7 +3051,16 @@
       "priceUpdated": "价格信息已更新",
       "instanceNameUpdated": "实例名称已更新",
       "invoiceCancelled": "账单已取消",
-      "invoiceRefunded": "账单已完成退款"
+      "invoiceRefunded": "账单已完成退款",
+      "adminRemark": "管理员备注",
+      "actionEdit": "编辑",
+      "manageService": "管理实例",
+      "actionRefresh": "刷新",
+      "actionDelete": "删除",
+      "invoiceDetails": "详情",
+      "loginAccount": "登录账号",
+      "loginPort": "登录端口",
+      "runningStatus": "运行状态"
     }
   },
   "content": {
@@ -3053,7 +3093,8 @@
       "categoryRequired": "请选择分类",
       "statusRequired": "请选择状态",
       "bodyRequired": "请输入正文内容",
-      "coverUploaded": "封面上传成功"
+      "coverUploaded": "封面上传成功",
+      "requireRereadResetHint": "勾选后所有用户的已读状态将被重置"
     },
     "index": {
       "statusDraft": "草稿",
@@ -3070,7 +3111,13 @@
       "articleCount": "文章数",
       "categoryUpdated": "分类已更新",
       "categoryCreated": "分类已创建",
-      "categoryDeleted": "分类已删除"
+      "categoryDeleted": "分类已删除",
+      "flagPinned": "置顶",
+      "flagRecommended": "推荐",
+      "flagNormal": "普通",
+      "actionEdit": "编辑",
+      "actionDelete": "删除",
+      "categoryList": "分类列表"
     }
   },
   "login": {
@@ -3086,7 +3133,8 @@
     "accountRequired": "请输入账号",
     "passwordRequired": "请输入密码",
     "loginSuccess": "登录成功",
-    "loginFailed": "登录失败，请检查账号密码"
+    "loginFailed": "登录失败，请检查账号密码",
+    "captchaRetry": "验证码加载失败，点击重试"
   },
   "orders": {
     "index": {
@@ -3331,6 +3379,16 @@
     "emailTemplate": {
       "saved": "模板已保存",
       "testSent": "测试发送成功"
+    },
+    "template": {
+      "actionTestSend": "测试发送",
+      "actionEdit": "编辑"
+    },
+    "api": {
+      "categoryList": "接口分类",
+      "noExtraPermission": "无需额外权限码",
+      "noFrontendCall": "未发现前端调用",
+      "actionCopy": "复制"
     }
   },
   "referral": {
@@ -3361,7 +3419,15 @@
       "reviewInfo": "处理信息",
       "rejectReasonRequired": "请输入拒绝原因",
       "withdrawApproved": "提现申请已通过",
-      "withdrawRejected": "提现申请已拒绝"
+      "withdrawRejected": "提现申请已拒绝",
+      "topReferrerRanking": "推广达人排行",
+      "rewardRecords": "奖励记录",
+      "withdrawalRecords": "提现记录",
+      "rewardSearchPlaceholder": "搜索推荐人 / 被推荐人 / 账单号",
+      "withdrawalSearchPlaceholder": "搜索用户 / 邮箱 / 账号 / 备注",
+      "actionApprove": "通过",
+      "actionReject": "拒绝",
+      "alreadyProcessed": "已处理"
     }
   },
   "serviceConsole": {

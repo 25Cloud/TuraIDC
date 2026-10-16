@@ -6,6 +6,7 @@ namespace App\Http\Resources\Site\V2;
 
 use App\Http\Resources\Site\V2\Concerns\ResolvesSiteAgentDiscount;
 use App\Models\Product;
+use App\Services\ProductCatalog\ProductDescriptionService;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductSpecHighlightService;
 use App\Support\ProductGroupHierarchyFields;
@@ -31,6 +32,11 @@ class SiteProductSummaryResource extends JsonResource
         $primaryCycle = $this->primaryCycle($pricing);
         $primaryPrice = $primaryCycle !== '' ? $pricing[$primaryCycle] : '0.00';
         $agentDiscount = $this->siteAgentDiscount($product, $request, $primaryPrice);
+        // 卡片式要靠这里渲染商品描述：列表式不读它，但同一份接口同时供两种形态使用，
+        // 不按展示方式裁剪字段，避免运营切形态后才发现列表接口缺字段。
+        // 描述的自动生成与 spec_highlights 同源，算一次两处用。
+        $highlights = $specHighlight->resolveHighlightsForProduct($product);
+        $description = app(ProductDescriptionService::class)->resolve($product, $highlights);
 
         return [
             'id' => (int) $product->id,
@@ -46,8 +52,11 @@ class SiteProductSummaryResource extends JsonResource
             'setup_fee' => number_format((float) ($product->setup_fee ?? 0), 2, '.', ''),
             'stock' => (int) ($product->stock ?? -1),
             'auto_setup' => (int) ($product->auto_setup ?? 0),
-            'spec_highlights' => $specHighlight->resolveHighlightsForProduct($product),
+            'spec_highlights' => $highlights,
             'spec_highlight_text' => $specHighlight->resolveHighlightText($product),
+            // 只下发 HTML：前台两种形态都只渲染它。source 是后台编辑器的概念，
+            // 站点接口带出去没有消费方，列表一次 50 条时不白付这个字段。
+            'description_html' => $description['html'],
             ...$agentDiscount,
         ];
     }

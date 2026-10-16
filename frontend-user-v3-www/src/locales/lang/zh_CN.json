@@ -34,7 +34,8 @@
       "summary": "配置摘要",
       "notFound": "商品不存在或已下架",
       "backToProducts": "返回产品页",
-      "cycle": "周期"
+      "cycle": "周期",
+      "description": "商品描述"
     },
     "osPicker": {
       "version": "版本",
@@ -116,6 +117,7 @@
       "selectVersion": "选择版本",
       "processor": "处理器",
       "breadcrumbRoot": "产品中心 · 选择一级分组",
+      "mobileStageDesc": "先选一级分组，进入后再依次选择二级分组、三级分组和具体商品。",
       "enterSubdirectory": "进入子目录",
       "categoryPath": "一级分组 / 二级分组",
       "specSelector": "产品规格选择",
@@ -141,7 +143,9 @@
       "grandTotalLabel": "总价：",
       "selectCoupon": "选择优惠券",
       "spec": "产品规格",
-      "selectSpec": "请选择产品规格"
+      "selectSpec": "请选择产品规格",
+      "noSwitchableOsVersion": "当前商品未提供可切换的系统版本",
+      "switchLevel1Group": "切换一级分组"
     },
     "cpuBadge": {
       "coreShort": "酷",
@@ -152,6 +156,27 @@
       "goldFull": "金牌",
       "xeonShort": "至",
       "xeonFull": "至强"
+    },
+    "displayMode": {
+      "list": "列表",
+      "card": "卡片",
+      "useSiteDefault": "恢复默认"
+    },
+    "card": {
+      "buyNow": "立即选购",
+      "soldOut": "已售罄",
+      "noDescription": "暂无商品描述",
+      "priceOnRequest": "价格面议",
+      "empty": "当前分类暂无商品"
+    },
+    "coupon": {
+      "remove": "移除",
+      "loading": "正在获取可用优惠券…",
+      "noneAvailable": "当前暂无可用优惠券，登录后如有优惠券会自动展示在这里。",
+      "selectProductFirst": "请选择商品后查看可用优惠券。",
+      "appliedTip": "{name}，{discount}，本次已减免 ¥{amount}",
+      "use": "使用优惠券",
+      "usedAmount": "使用优惠券 -¥{amount}"
     }
   },
   "layout": {
@@ -163,6 +188,7 @@
       "terms": "服务条款",
       "privacy": "隐私政策",
       "productCatalog": "产品目录",
+      "noProductCatalog": "暂无产品目录",
       "solutions": "解决方案",
       "viewAllProducts": "全部产品 →",
       "moreLinks": "其他入口",
@@ -203,10 +229,12 @@
       "allDocs": "全部文档",
       "loadFailed": "文档加载失败",
       "viewAllMore": "查看全部文档 →",
-      "empty": "暂无文档"
+      "empty": "暂无文档",
+      "viewAll": "查看全部 →"
     },
     "product": {
-      "emptyCategories": "暂无产品分类"
+      "emptyCategories": "暂无产品分类",
+      "reload": "重新加载"
     },
     "solutions": {
       "ecommerce": "电商行业",
@@ -254,7 +282,14 @@
     },
     "about": {
       "serviceCapabilities": "服务能力",
-      "contactInformation": "联系方式"
+      "contactInformation": "联系方式",
+      "intro": "我们专注于云服务器、独立服务器与相关基础设施服务，提供从选型、购买、开通到运维支持的一体化体验。",
+      "serviceCapabilitiesDesc": "覆盖产品展示、在线购买、统一账单、自动开通、售后支持与服务控制台。",
+      "serviceEmailLabel": "客服邮箱：",
+      "serviceHoursLabel": "服务时间：",
+      "serviceHoursFallback": "以站内通知为准",
+      "officialGroupLabel": "官方群号：",
+      "notConfigured": "暂无配置"
     },
     "legal": {
       "openOriginal": "打开原文",
@@ -456,7 +491,16 @@
         "submitConsultationTicket": "提交咨询工单"
       },
       "common": {
-        "flexibleConfig": "灵活配置"
+        "flexibleConfig": "灵活配置",
+        "productsTitle": "安全、稳定、可信赖的{keyword}服务",
+        "productsIntro": "围绕真实业务选型整理产品能力、适用场景和开通入口，让搜索进入的用户能直接完成判断。",
+        "solutionTitle": "为不同业务场景提供{keyword}方案",
+        "solutionIntro": "从访问区域、系统环境、带宽需求和售后协同出发，先明确场景，再选择资源。",
+        "processTitle": "从搜索了解，到开通{keyword}",
+        "processIntro": "把官网内容、产品列表、注册入口和工单咨询连起来，减少用户在多个页面之间反复寻找。",
+        "faqBadge": "FAQ",
+        "faqTitle": "选择{keyword}前的常见问题",
+        "faqIntro": "使用真实搜索问题组织，避免堆砌关键词，让页面正文更容易被理解和收录。"
       },
       "cloudServer": {
         "hero": {
@@ -701,7 +745,8 @@
       "telecomAndTravel": "中国移动、中国联通、58 同城、携程 等合作方",
       "ecommerceAndMobility": "格力、京东、Segway-Ninebot、淘宝 等合作方",
       "electronicsAndEv": "格力、京东方、小鹏、蔚来 等合作方",
-      "title": "优质合作伙伴"
+      "title": "优质合作伙伴",
+      "subtitle": "以优质资源与服务领航开拓，助力更多企业高效上云"
     },
     "hero": {
       "productEntries": "产品入口",
@@ -752,17 +797,29 @@
       "xian": "西安节点低延迟，支持远程办公、外包协作、教学实训。",
       "ddos": "100G 抗 DDoS + BGP 多线，面向长期稳定业务承载。"
     },
+    "registerBar": {
+      "title": "现在注册，开启您的互联网高速稳定之旅！",
+      "registerNow": "立即注册"
+    },
     "news": {
       "title": "资讯动态",
       "announcements": "公告",
-      "recommended": "推荐"
+      "recommended": "推荐",
+      "subtitle": "为您呈现行业动态、活动公告、产品发布",
+      "viewMore": "查看更多"
     },
     "products": {
       "title": "安全、稳定、可信赖的产品与服务",
-      "emptyCategory": "当前分类暂无可展示的二级分组，点击后可进入产品目录查看更多内容。"
+      "emptyCategory": "当前分类暂无可展示的二级分组，点击后可进入产品目录查看更多内容。",
+      "techDeliveryDesc": "的技术积淀与交付实践，助力企业上云与产业互联网。",
+      "viewAll": "查看全部产品",
+      "buyNow": "立即选购"
     },
     "solutions": {
       "title": "为千行百业提供全面的解决方案",
+      "subtitle": "面向丰富的业务场景，提供覆盖行业与技术的解决方案。",
+      "cloudServer": "云服务器",
+      "learnMore": "了解更多",
       "industrySolutions": "行业解决方案",
       "relatedProducts": "相关产品",
       "securityProtection": "安全防护",

@@ -194,6 +194,23 @@ export interface ProductSpecHighlightResponse {
   dimensions?: SpecHighlightDimension[];
 }
 
+/** 自动生成商品描述时使用的规格维度 */
+export interface ProductDescriptionItem {
+  key: string;
+  label: string;
+  value: string;
+}
+
+/** 商品描述只读接口：description 为库中原文，html 为当前生效内容，source 为来源 */
+export interface ProductDescriptionResponse {
+  product_id: number | string;
+  description?: string | null;
+  html?: string;
+  source?: 'manual' | 'auto' | 'empty' | string;
+  auto_html?: string;
+  auto_items?: ProductDescriptionItem[];
+}
+
 interface V2ProductDetailResponse {
   product?: V2ProductDetailRecord;
 }
@@ -299,6 +316,7 @@ function normalizeV2ProductDetail(response: V2ProductDetailResponse): ProductRec
     product_display_name: displayName,
     cpu_memory_display: String(display.cpu_memory_display || ''),
     combined_display_name: String(display.combined_display_name || ''),
+    description: String(display.description || ''),
     product_type: productType,
     type: productType,
     product_type_label: typeLabel,
@@ -480,6 +498,9 @@ export const productApi = {
     request.get<ProductSpecHighlightResponse>({ url: `/v2/admin/products/${id}/spec-highlight` }),
   saveSpecHighlight: (id: number | string, items: Record<string, string>) =>
     request.post({ url: `/v2/admin/products/${id}/spec-highlight`, data: { items } }),
+  /** 商品描述只读：仅用于回填表单与预览自动生成结果，保存仍走商品表单的 description 字段 */
+  description: (id: number | string) =>
+    request.get<ProductDescriptionResponse>({ url: `/v2/admin/products/${id}/description` }),
   types: () => request.get<ProductTypeRecord[] | { list?: ProductTypeRecord[] }>({ url: '/v2/admin/product-types' }),
   reorderTypes: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/product-types/reorders', data }),
   createType: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/product-types', data }),

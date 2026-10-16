@@ -1432,7 +1432,13 @@
       "vncWindowOpened": "VNC 新視窗已開啟",
       "vncLoaded": "VNC 控制台已載入",
       "overviewTab": "控制台總覽",
-      "productConfigTab": "產品配置"
+      "productConfigTab": "產品配置",
+      "ownerUser": "所屬使用者",
+      "dealPrice": "成交價",
+      "openUpstreamAdmin": "跳轉上游管理",
+      "notBound": "未繫結",
+      "specAndUpstream": "規格與上游",
+      "upstreamName": "上游名稱"
     },
     "index": {
       "hostStatus": "主機狀態",
@@ -1770,10 +1776,29 @@
       "updateSuccess": "會員等級已更新",
       "createSuccess": "會員等級已建立",
       "salesMaxInvalid": "累計銷售額上限必須是有效數字",
-      "deleteSuccess": "會員等級已刪除"
+      "deleteSuccess": "會員等級已刪除",
+      "actionEdit": "編輯",
+      "actionDelete": "刪除"
     }
   },
   "products": {
+    "description": {
+      "sectionTitle": "商品描述",
+      "sectionHint": "留空時自動按規格生成",
+      "modeStructured": "結構化",
+      "modeAdvanced": "高階",
+      "addRow": "新增一行",
+      "removeRow": "刪除",
+      "moveUp": "上移",
+      "moveDown": "下移",
+      "keyPlaceholder": "名稱（留空則整段作為內容）",
+      "valuePlaceholder": "內容",
+      "autoHint": "描述留空時將按規格維度自動生成，下方為自動生成的效果預覽",
+      "manualHint": "當前使用人工填寫的描述，留空可恢復自動生成",
+      "previewTitle": "自動生成預覽",
+      "htmlLabel": "HTML 原始碼",
+      "emptyRows": "還沒有描述內容，點選「新增一行」開始填寫"
+    },
     "couponCampaigns": {
       "searchPlaceholder": "搜尋活動名稱 / 描述 / 備註",
       "filterStatus": "狀態",
@@ -2591,6 +2616,10 @@
   },
   "settings": {
     "index": {
+      "productDisplayMode": "商品展示方式",
+      "productDisplayModeList": "列表式",
+      "productDisplayModeCard": "卡片式",
+      "productDisplayModeHint": "控制前臺商品列表的排版方式，儲存後立即對全站生效。",
       "addFeature": "新增卡片",
       "addSlide": "新增輪播",
       "allTypes": "全部型別",
@@ -2907,7 +2936,9 @@
       "confirmClose": "確認關閉",
       "closed": "工單已關閉",
       "recalled": "訊息已撤回",
-      "imageTypeUnsupported": "僅支援 jpg、png、webp 圖片"
+      "imageTypeUnsupported": "僅支援 jpg、png、webp 圖片",
+      "conversation": "溝通記錄",
+      "deletedAttachment": "已刪除"
     }
   },
   "users": {
@@ -3020,7 +3051,16 @@
       "priceUpdated": "價格資訊已更新",
       "instanceNameUpdated": "例項名稱已更新",
       "invoiceCancelled": "賬單已取消",
-      "invoiceRefunded": "賬單已完成退款"
+      "invoiceRefunded": "賬單已完成退款",
+      "adminRemark": "管理員備註",
+      "actionEdit": "編輯",
+      "manageService": "管理例項",
+      "actionRefresh": "重新整理",
+      "actionDelete": "刪除",
+      "invoiceDetails": "詳情",
+      "loginAccount": "登入賬號",
+      "loginPort": "登入埠",
+      "runningStatus": "執行狀態"
     }
   },
   "content": {
@@ -3053,7 +3093,8 @@
       "categoryRequired": "請選擇分類",
       "statusRequired": "請選擇狀態",
       "bodyRequired": "請輸入正文內容",
-      "coverUploaded": "封面上傳成功"
+      "coverUploaded": "封面上傳成功",
+      "requireRereadResetHint": "勾選後所有使用者的已讀狀態將被重置"
     },
     "index": {
       "statusDraft": "草稿",
@@ -3070,7 +3111,13 @@
       "articleCount": "文章數",
       "categoryUpdated": "分類已更新",
       "categoryCreated": "分類已建立",
-      "categoryDeleted": "分類已刪除"
+      "categoryDeleted": "分類已刪除",
+      "flagPinned": "置頂",
+      "flagRecommended": "推薦",
+      "flagNormal": "普通",
+      "actionEdit": "編輯",
+      "actionDelete": "刪除",
+      "categoryList": "分類列表"
     }
   },
   "login": {
@@ -3086,7 +3133,8 @@
     "accountRequired": "請輸入賬號",
     "passwordRequired": "請輸入密碼",
     "loginSuccess": "登入成功",
-    "loginFailed": "登入失敗，請檢查賬號密碼"
+    "loginFailed": "登入失敗，請檢查賬號密碼",
+    "captchaRetry": "驗證碼載入失敗，點選重試"
   },
   "orders": {
     "index": {
@@ -3331,6 +3379,16 @@
     "emailTemplate": {
       "saved": "模板已儲存",
       "testSent": "測試傳送成功"
+    },
+    "template": {
+      "actionTestSend": "測試傳送",
+      "actionEdit": "編輯"
+    },
+    "api": {
+      "categoryList": "介面分類",
+      "noExtraPermission": "無需額外許可權碼",
+      "noFrontendCall": "未發現前端呼叫",
+      "actionCopy": "複製"
     }
   },
   "referral": {
@@ -3361,7 +3419,15 @@
       "reviewInfo": "處理資訊",
       "rejectReasonRequired": "請輸入拒絕原因",
       "withdrawApproved": "提現申請已通過",
-      "withdrawRejected": "提現申請已拒絕"
+      "withdrawRejected": "提現申請已拒絕",
+      "topReferrerRanking": "推廣達人排行",
+      "rewardRecords": "獎勵記錄",
+      "withdrawalRecords": "提現記錄",
+      "rewardSearchPlaceholder": "搜尋推薦人 / 被推薦人 / 賬單號",
+      "withdrawalSearchPlaceholder": "搜尋使用者 / 電子郵件 / 賬號 / 備註",
+      "actionApprove": "通過",
+      "actionReject": "拒絕",
+      "alreadyProcessed": "已處理"
     }
   },
   "serviceConsole": {

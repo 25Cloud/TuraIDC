@@ -40,6 +40,8 @@ class AdminProductDetailResource extends JsonResource
                 'cpu_memory_display' => (string) $display['cpu_memory_display'],
                 'combined_display_name' => (string) $display['combined_display_name'],
                 'remark' => (string) ($product->remark ?? ''),
+                // 商品描述原文：编辑器回填用；自动生成的预览走 /products/{product}/description
+                'description' => (string) ($product->description ?? ''),
             ],
             'classification' => [
                 'product_type' => $productType,

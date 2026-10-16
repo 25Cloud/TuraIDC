@@ -98,6 +98,16 @@
         </div>
       </section>
 
+      <!--
+        商品描述：卡片式点进来的落地页。与列表式规格表格同源（都来自
+        ProductSpecHighlightService 的维度识别），商家手填时以手填为准。
+        后端落库前已过富文本白名单消毒，这里按原样渲染。
+      -->
+      <section v-if="productDescription" class="pd-desc">
+        <h2 class="pd-desc-title">{{ $t('product.detail.description') }}</h2>
+        <div class="pd-desc-body" v-html="productDescription" />
+      </section>
+
       <!-- 主体：左配置 + 右摘要 -->
       <div class="pd-body">
         <div class="pd-config">
@@ -344,13 +354,15 @@
             <div class="aside-divider"></div>
 
             <section class="aside-section">
-              <div class="aside-section-title">配置摘要</div>
+              <div class="aside-section-title">{{
+                $t('product.detail.summary')
+              }}</div>
               <div
                 class="cost-detail"
                 :class="{ 'cost-detail--loading': quoteLoading }"
               >
                 <div class="cost-item">
-                  <span>产品</span>
+                  <span>{{ $t('layout.nav.products') }}</span>
                   <span>{{ selectedMachineSpec.displayName }}</span>
                 </div>
                 <div
@@ -367,17 +379,19 @@
             <div class="aside-divider"></div>
 
             <section class="aside-section">
-              <div class="aside-section-title">费用明细</div>
+              <div class="aside-section-title">{{
+                $t('product.detail.costBreakdown')
+              }}</div>
               <div
                 class="cost-breakdown"
                 :class="{ 'cost-breakdown--loading': quoteLoading }"
               >
                 <div class="cost-item">
-                  <span>基础价格</span>
+                  <span>{{ $t('product.detail.basePrice') }}</span>
                   <span>¥{{ baseAmount }}</span>
                 </div>
                 <div class="cost-item" v-if="Number(setupFee) > 0">
-                  <span>开通费</span>
+                  <span>{{ $t('product.detail.setupFee') }}</span>
                   <span>¥{{ setupFee }}</span>
                 </div>
                 <div
@@ -390,7 +404,8 @@
                 </div>
                 <div class="cost-item cost-item--discount" v-if="appliedCoupon">
                   <span
-                    >优惠券 {{ appliedCoupon.code || appliedCoupon.name }}</span
+                    >{{ $t('product.detail.coupon') }}
+                    {{ appliedCoupon.code || appliedCoupon.name }}</span
                   >
                   <span>-¥{{ appliedCoupon.discount_amount }}</span>
                 </div>
@@ -399,21 +414,23 @@
 
             <div class="coupon-panel">
               <div class="coupon-panel-head">
-                <span class="coupon-panel-title">优惠券</span>
+                <span class="coupon-panel-title">{{
+                  $t('product.detail.coupon')
+                }}</span>
                 <button
                   v-if="appliedCoupon"
                   type="button"
                   class="coupon-clear-btn"
                   @click="clearCoupon"
                 >
-                  移除
+                  {{ $t('product.coupon.remove') }}
                 </button>
               </div>
               <div class="coupon-panel-form">
                 <el-select
                   :model-value="selectedCouponId || undefined"
                   clearable
-                  placeholder="请选择优惠券"
+                  :placeholder="$t('product.detail.selectCoupon')"
                   @change="handleCouponChange"
                 >
                   <el-option
@@ -425,9 +442,13 @@
                 </el-select>
               </div>
               <div v-if="appliedCoupon" class="coupon-panel-tip">
-                {{ appliedCoupon.name }}，{{
-                  appliedCoupon.discount_label
-                }}，本次已减免 ¥{{ appliedCoupon.discount_amount }}
+                {{
+                  $t('product.coupon.appliedTip', {
+                    name: appliedCoupon.name,
+                    discount: appliedCoupon.discount_label,
+                    amount: appliedCoupon.discount_amount,
+                  })
+                }}
               </div>
               <div
                 v-else-if="!availableCoupons.length"
@@ -435,8 +456,8 @@
               >
                 {{
                   product
-                    ? "当前暂无可用优惠券，登录后如有优惠券会自动展示在这里。"
-                    : "请选择商品后查看可用优惠券。"
+                    ? $t('product.coupon.noneAvailable')
+                    : $t('product.coupon.selectProductFirst')
                 }}
               </div>
             </div>
@@ -447,13 +468,15 @@
               class="cost-total"
               :class="{ 'cost-total--loading': quoteLoading }"
             >
-              <span class="cost-total-label">合计费用</span>
+              <span class="cost-total-label">{{
+                $t('product.detail.totalCost')
+              }}</span>
               <div class="cost-price-wrap">
                 <span class="cost-currency">¥</span>
                 <span
                   v-if="quoteLoading"
                   class="cost-amount cost-amount--loading"
-                  >计算中</span
+                  >{{ $t('product.detail.calculating') }}</span
                 >
                 <span v-else class="cost-amount">{{ totalAmount }}</span>
                 <span class="cost-cycle"
@@ -478,7 +501,9 @@
       <div class="allocation-footer">
         <div class="allocation-footer-inner">
           <div class="allocation-footer-main">
-            <div class="allocation-footer-label">合计费用</div>
+            <div class="allocation-footer-label">{{
+              $t('product.detail.totalCost')
+            }}</div>
             <div class="allocation-footer-price">
               <span class="allocation-footer-symbol">¥</span>
               <span class="allocation-footer-num" v-if="quoteLoading">…</span>
@@ -513,9 +538,9 @@
     </div>
 
     <div class="pd-empty" v-else-if="!loading">
-      <el-empty description="商品不存在或已下架">
+      <el-empty :description="$t('product.detail.notFound')">
         <el-button type="primary" @click="router.push('/products')"
-          >返回产品页</el-button
+          >{{ $t('product.detail.backToProducts') }}</el-button
         >
       </el-empty>
     </div>
@@ -573,6 +598,9 @@ const quantity = ref(1);
 const selectedCouponId = ref(0);
 
 const productDetailRef = computed(() => product.value);
+const productDescription = computed(() =>
+  String(product.value?.description_html || ""),
+);
 const configurator = useWebsiteProductConfigurator(productDetailRef);
 const configForm = configurator.configForm;
 const quoteResult = ref(null);
@@ -1298,6 +1326,73 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
+/* ===== 商品描述 ===== */
+.pd-desc {
+  margin: 0 0 16px;
+  padding: 16px 18px;
+  background: $bg-color-card;
+  border: 1px solid $divider-color;
+  border-radius: 6px;
+}
+
+.pd-desc-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: $text-color-primary;
+}
+
+.pd-desc-body {
+  font-size: 13px;
+  line-height: 1.8;
+  color: $text-color-secondary;
+  word-break: break-word;
+
+  /* v-html 渲染的是商家填写的富文本片段，scoped 选择器打不到内部节点 */
+  :deep(ul),
+  :deep(ol) {
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  :deep(li) {
+    margin: 2px 0;
+  }
+
+  :deep(li::marker) {
+    color: $color-primary;
+  }
+
+  :deep(p) {
+    margin: 0 0 6px;
+  }
+
+  :deep(h1),
+  :deep(h2),
+  :deep(h3),
+  :deep(h4) {
+    margin: 0 0 6px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  :deep(table) {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  :deep(td),
+  :deep(th) {
+    padding: 4px 6px;
+    border: 1px solid $divider-color;
+  }
+
+  :deep(img) {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
 /* 目标页精确色值：
    主色   #165dff (rgb(22,93,255))
    激活bg #e8f1ff (rgb(232,241,255))

@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\V2\MemberLevelController;
 use App\Http\Controllers\Admin\V2\OpenApiAdminController;
 use App\Http\Controllers\Admin\V2\OrderController;
 use App\Http\Controllers\Admin\V2\ProductController;
+use App\Http\Controllers\Admin\V2\ProductDescriptionController;
 use App\Http\Controllers\Admin\V2\ProductDiscountGroupController;
 use App\Http\Controllers\Admin\V2\ProductGroupController;
 use App\Http\Controllers\Admin\V2\ProductSpecHighlightController;
@@ -248,6 +249,7 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::get('/products', [ProductController::class, 'index']);
         Route::get('/products/{product}/owners', [ProductController::class, 'owners']);
         Route::get('/products/{product}/spec-highlight', [ProductSpecHighlightController::class, 'show']);
+        Route::get('/products/{product}/description', [ProductDescriptionController::class, 'show']);
         Route::get('/products/{product}', [ProductController::class, 'show']);
         Route::get('/services', [ServiceController::class, 'index']);
     });

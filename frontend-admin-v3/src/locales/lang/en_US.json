@@ -1432,7 +1432,13 @@
       "vncWindowOpened": "VNC opened in a new window",
       "vncLoaded": "VNC console loaded",
       "overviewTab": "Console overview",
-      "productConfigTab": "Product configuration"
+      "productConfigTab": "Product configuration",
+      "ownerUser": "Owner",
+      "dealPrice": "Deal price",
+      "openUpstreamAdmin": "Open upstream admin",
+      "notBound": "Not bound",
+      "specAndUpstream": "Spec and upstream",
+      "upstreamName": "Upstream name"
     },
     "index": {
       "hostStatus": "Host status",
@@ -1770,10 +1776,29 @@
       "updateSuccess": "Member level updated",
       "createSuccess": "Member level created",
       "salesMaxInvalid": "The cumulative sales upper limit must be a valid number",
-      "deleteSuccess": "Member level deleted"
+      "deleteSuccess": "Member level deleted",
+      "actionEdit": "Edit",
+      "actionDelete": "Delete"
     }
   },
   "products": {
+    "description": {
+      "sectionTitle": "Description",
+      "sectionHint": "Auto-generated from specs when left empty",
+      "modeStructured": "Structured",
+      "modeAdvanced": "Advanced",
+      "addRow": "Add row",
+      "removeRow": "Delete",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "keyPlaceholder": "Label (leave empty to keep the whole line as content)",
+      "valuePlaceholder": "Content",
+      "autoHint": "The description is empty, so it is generated from the spec dimensions. The preview below shows the auto-generated result.",
+      "manualHint": "A manually written description is in use. Clear it to restore auto-generation.",
+      "previewTitle": "Auto-generated preview",
+      "htmlLabel": "HTML source",
+      "emptyRows": "No description yet. Use Add row to start writing."
+    },
     "couponCampaigns": {
       "searchPlaceholder": "Search by campaign name, description or remark",
       "filterStatus": "Status",
@@ -2591,6 +2616,10 @@
   },
   "settings": {
     "index": {
+      "productDisplayMode": "Product display mode",
+      "productDisplayModeList": "List",
+      "productDisplayModeCard": "Card",
+      "productDisplayModeHint": "Controls how products are laid out across the whole site. Takes effect right after saving.",
       "addFeature": "Add card",
       "addSlide": "Add slide",
       "allTypes": "All types",
@@ -2907,7 +2936,9 @@
       "confirmClose": "Close ticket",
       "closed": "Ticket closed",
       "recalled": "Message recalled",
-      "imageTypeUnsupported": "Only jpg, png and webp images are supported"
+      "imageTypeUnsupported": "Only jpg, png and webp images are supported",
+      "conversation": "Conversation",
+      "deletedAttachment": "Deleted"
     }
   },
   "users": {
@@ -3020,7 +3051,16 @@
       "priceUpdated": "Pricing updated",
       "instanceNameUpdated": "Instance name updated",
       "invoiceCancelled": "Invoice cancelled",
-      "invoiceRefunded": "Invoice refunded"
+      "invoiceRefunded": "Invoice refunded",
+      "adminRemark": "Admin Remark",
+      "actionEdit": "Edit",
+      "manageService": "Manage Instance",
+      "actionRefresh": "Refresh",
+      "actionDelete": "Delete",
+      "invoiceDetails": "Details",
+      "loginAccount": "Login Account",
+      "loginPort": "Login Port",
+      "runningStatus": "Running Status"
     }
   },
   "content": {
@@ -3053,7 +3093,8 @@
       "categoryRequired": "Please select a category",
       "statusRequired": "Please select a status",
       "bodyRequired": "Please enter the article body",
-      "coverUploaded": "Cover uploaded"
+      "coverUploaded": "Cover uploaded",
+      "requireRereadResetHint": "Checking this resets the read status for all users"
     },
     "index": {
       "statusDraft": "Draft",
@@ -3070,7 +3111,13 @@
       "articleCount": "Articles",
       "categoryUpdated": "Category updated",
       "categoryCreated": "Category created",
-      "categoryDeleted": "Category deleted"
+      "categoryDeleted": "Category deleted",
+      "flagPinned": "Pinned",
+      "flagRecommended": "Featured",
+      "flagNormal": "Normal",
+      "actionEdit": "Edit",
+      "actionDelete": "Delete",
+      "categoryList": "Category List"
     }
   },
   "login": {
@@ -3086,7 +3133,8 @@
     "accountRequired": "Enter the account",
     "passwordRequired": "Enter the password",
     "loginSuccess": "Signed in successfully",
-    "loginFailed": "Login failed. Please check your account and password"
+    "loginFailed": "Login failed. Please check your account and password",
+    "captchaRetry": "Captcha failed to load, click to retry"
   },
   "orders": {
     "index": {
@@ -3331,6 +3379,16 @@
     "emailTemplate": {
       "saved": "Template saved",
       "testSent": "Test send succeeded"
+    },
+    "template": {
+      "actionTestSend": "Test Send",
+      "actionEdit": "Edit"
+    },
+    "api": {
+      "categoryList": "API Categories",
+      "noExtraPermission": "No extra permission code",
+      "noFrontendCall": "No frontend call found",
+      "actionCopy": "Copy"
     }
   },
   "referral": {
@@ -3361,7 +3419,15 @@
       "reviewInfo": "Review notes",
       "rejectReasonRequired": "Enter the rejection reason",
       "withdrawApproved": "Withdrawal approved",
-      "withdrawRejected": "Withdrawal rejected"
+      "withdrawRejected": "Withdrawal rejected",
+      "topReferrerRanking": "Top Promoter Ranking",
+      "rewardRecords": "Reward Records",
+      "withdrawalRecords": "Withdrawal Records",
+      "rewardSearchPlaceholder": "Search referrer / referred user / invoice no.",
+      "withdrawalSearchPlaceholder": "Search user / email / account / remark",
+      "actionApprove": "Approve",
+      "actionReject": "Reject",
+      "alreadyProcessed": "Processed"
     }
   },
   "serviceConsole": {

@@ -25,6 +25,10 @@ const DEFAULT_SITE_LOGO = "/branding/logo.png";
 const DEFAULT_FAVICON = "/branding/favicon-32.png";
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "");
 
+function normalizeDisplayMode(value) {
+  return String(value || "").trim().toLowerCase() === "card" ? "card" : "list";
+}
+
 function pick(raw, keys, fallback) {
   for (const key of keys) {
     const value = raw?.[key];
@@ -149,6 +153,12 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
       String(import.meta.env.VITE_VALUE_ADDED_LICENSE || ""),
     ),
   );
+  // 全站商品展示方式：list=商品表格（列表式）/ card=商品卡片（卡片式）。
+  // 只存后台设置的原值；用户级的临时切换由 useProductDisplayMode 用 cookie 覆盖，
+  // 不写进 store，避免把「运营设定的默认」和「本次浏览的偏好」混成一个状态。
+  const productDisplayMode = ref(
+    normalizeDisplayMode(pick(initialSiteConfig, ["product_display_mode"], "")),
+  );
   const brandInitials = computed(() => deriveInitials(siteName.value));
 
   let fetchPromise = null;
@@ -244,6 +254,9 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
       ],
       valueAddedLicense.value || "",
     );
+    productDisplayMode.value = normalizeDisplayMode(
+      pick(data, ["product_display_mode"], productDisplayMode.value),
+    );
     syncDocumentTitle(
       browserTitle.value || siteName.value || DEFAULT_SITE_NAME,
       previousBaseTitle,
@@ -306,6 +319,7 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
     privacyUrl,
     icpRecord,
     valueAddedLicense,
+    productDisplayMode,
     brandInitials,
     toggleSidebar,
     applyPageTitle,

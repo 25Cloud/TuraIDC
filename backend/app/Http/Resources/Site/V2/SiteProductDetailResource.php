@@ -8,6 +8,7 @@ use App\Constants\BillingCycle;
 use App\Constants\ProductType;
 use App\Http\Resources\Site\V2\Concerns\ResolvesSiteAgentDiscount;
 use App\Models\Product;
+use App\Services\ProductCatalog\ProductDescriptionService;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductSiteService;
 use App\Services\ProductCatalog\ProductSpecHighlightService;
@@ -38,6 +39,9 @@ class SiteProductDetailResource extends JsonResource
         $primaryCycle = $this->primaryCycle($pricing);
         $primaryPrice = $primaryCycle !== '' ? $pricing[$primaryCycle] : '0.00';
         $agentDiscount = $this->siteAgentDiscount($product, $request, $primaryPrice);
+        // 描述的自动生成与 spec_highlights 同源，算一次两处用
+        $highlights = $specHighlight->resolveHighlightsForProduct($product);
+        $description = app(ProductDescriptionService::class)->resolve($product, $highlights);
 
         return [
             'id' => (int) $product->id,
@@ -65,8 +69,9 @@ class SiteProductDetailResource extends JsonResource
             'group' => $this->groupPayload($hierarchy, $productType, $display),
             'config_options' => $this->trimConfigOptions($product->config_options),
             'siblings' => [],
-            'spec_highlights' => $specHighlight->resolveHighlightsForProduct($product),
+            'spec_highlights' => $highlights,
             'spec_highlight_text' => $specHighlight->resolveHighlightText($product),
+            'description_html' => $description['html'],
         ];
     }
 

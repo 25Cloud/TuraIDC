@@ -9,6 +9,9 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   use: {
+    // 钉住语言：应用首屏按浏览器偏好自适应，而本套 spec 的断言写的是中文。
+    // 不钉的话，宿主语言是英文时页面就渲染英文，整批用例会以「看起来像回归」的形式变红。
+    locale: 'zh-CN',
     baseURL: 'http://127.0.0.1:5177',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

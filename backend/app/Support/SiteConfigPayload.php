@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Models\Setting;
+use App\Services\ProductCatalog\ProductDescriptionService;
 
 /**
  * Builds the public site branding/config payload from basic settings.
@@ -77,6 +78,15 @@ class SiteConfigPayload
             ),
             'brand_radius' => (string) self::normalizeRadius(
                 self::read(self::SETTING_GROUP_BASIC, 'brand_radius', (string) self::DEFAULT_BRAND_RADIUS)
+            ),
+            // 全站商品展示方式：列表式（商品表格）/ 卡片式（商品卡片）。
+            // 与魔方的 order_page_style 同义，只是我们的取值只有两种形态。
+            'product_display_mode' => ProductDescriptionService::normalizeDisplayMode(
+                self::read(
+                    self::SETTING_GROUP_BASIC,
+                    ProductDescriptionService::SETTING_KEY_DISPLAY_MODE,
+                    ProductDescriptionService::DEFAULT_DISPLAY_MODE
+                )
             ),
             'frontend_url' => (string) config('app.frontend_url', ''),
         ];

@@ -981,6 +981,17 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             max: 24,
             help: t('settings.index.radiusHint'),
           },
+          {
+            key: 'product_display_mode',
+            label: t('settings.index.productDisplayMode'),
+            type: 'select',
+            default: 'list',
+            options: [
+              { label: t('settings.index.productDisplayModeList'), value: 'list' },
+              { label: t('settings.index.productDisplayModeCard'), value: 'card' },
+            ],
+            help: t('settings.index.productDisplayModeHint'),
+          },
           { key: 'service_phone', label: t('settings.index.officialQqGroup'), type: 'input', default: '', maxlength: 40 },
           {
             key: 'service_email',

@@ -34,7 +34,8 @@
       "summary": "配置摘要",
       "notFound": "商品不存在或已下架",
       "backToProducts": "返回產品頁",
-      "cycle": "週期"
+      "cycle": "週期",
+      "description": "商品描述"
     },
     "osPicker": {
       "version": "版本",
@@ -116,6 +117,7 @@
       "selectVersion": "選擇版本",
       "processor": "處理器",
       "breadcrumbRoot": "產品中心 · 選擇一級分組",
+      "mobileStageDesc": "先選一級分組，進入後再依次選擇二級分組、三級分組和具體商品。",
       "enterSubdirectory": "進入子目錄",
       "categoryPath": "一級分組 / 二級分組",
       "specSelector": "產品規格選擇",
@@ -141,7 +143,9 @@
       "grandTotalLabel": "總價：",
       "selectCoupon": "選擇優惠券",
       "spec": "產品規格",
-      "selectSpec": "請選擇產品規格"
+      "selectSpec": "請選擇產品規格",
+      "noSwitchableOsVersion": "當前商品未提供可切換的系統版本",
+      "switchLevel1Group": "切換一級分組"
     },
     "cpuBadge": {
       "coreShort": "酷",
@@ -152,6 +156,27 @@
       "goldFull": "金牌",
       "xeonShort": "至",
       "xeonFull": "至強"
+    },
+    "displayMode": {
+      "list": "列表",
+      "card": "卡片",
+      "useSiteDefault": "恢復默認"
+    },
+    "card": {
+      "buyNow": "立即選購",
+      "soldOut": "已售罄",
+      "noDescription": "暫無商品描述",
+      "priceOnRequest": "價格面議",
+      "empty": "當前分類暫無商品"
+    },
+    "coupon": {
+      "remove": "移除",
+      "loading": "正在獲取可用優惠券…",
+      "noneAvailable": "當前暫無可用優惠券，登錄後如有優惠券會自動展示在這裡。",
+      "selectProductFirst": "請選擇商品後查看可用優惠券。",
+      "appliedTip": "{name}，{discount}，本次已減免 ¥{amount}",
+      "use": "使用優惠券",
+      "usedAmount": "使用優惠券 -¥{amount}"
     }
   },
   "layout": {
@@ -163,6 +188,7 @@
       "terms": "服務條款",
       "privacy": "隱私政策",
       "productCatalog": "產品目錄",
+      "noProductCatalog": "暫無產品目錄",
       "solutions": "解決方案",
       "viewAllProducts": "全部產品 →",
       "moreLinks": "其他入口",
@@ -203,10 +229,12 @@
       "allDocs": "全部文檔",
       "loadFailed": "文檔加載失敗",
       "viewAllMore": "查看全部文檔 →",
-      "empty": "暫無文檔"
+      "empty": "暫無文檔",
+      "viewAll": "查看全部 →"
     },
     "product": {
-      "emptyCategories": "暫無產品分類"
+      "emptyCategories": "暫無產品分類",
+      "reload": "重新加載"
     },
     "solutions": {
       "ecommerce": "電商行業",
@@ -254,7 +282,14 @@
     },
     "about": {
       "serviceCapabilities": "服務能力",
-      "contactInformation": "聯繫方式"
+      "contactInformation": "聯繫方式",
+      "intro": "我們專注於雲伺服器、獨立伺服器與相關基礎設施服務，提供從選型、購買、開通到運維支持的一體化體驗。",
+      "serviceCapabilitiesDesc": "覆蓋產品展示、在線購買、統一賬單、自動開通、售後支持與服務控制台。",
+      "serviceEmailLabel": "客服電郵：",
+      "serviceHoursLabel": "服務時間：",
+      "serviceHoursFallback": "以站內通知為準",
+      "officialGroupLabel": "官方羣號：",
+      "notConfigured": "暫無配置"
     },
     "legal": {
       "openOriginal": "打開原文",
@@ -456,7 +491,16 @@
         "submitConsultationTicket": "提交諮詢工單"
       },
       "common": {
-        "flexibleConfig": "靈活配置"
+        "flexibleConfig": "靈活配置",
+        "productsTitle": "安全、穩定、可信賴的{keyword}服務",
+        "productsIntro": "圍繞真實業務選型整理產品能力、適用場景和開通入口，讓搜尋進入的用戶能直接完成判斷。",
+        "solutionTitle": "為不同業務場景提供{keyword}方案",
+        "solutionIntro": "從訪問區域、系統環境、帶寬需求和售後協同出發，先明確場景，再選擇資源。",
+        "processTitle": "從搜尋瞭解，到開通{keyword}",
+        "processIntro": "把官網內容、產品列表、註冊入口和工單諮詢連起來，減少用戶在多個頁面之間反覆尋找。",
+        "faqBadge": "FAQ",
+        "faqTitle": "選擇{keyword}前的常見問題",
+        "faqIntro": "使用真實搜尋問題組織，避免堆砌關鍵詞，讓頁面正文更容易被理解和收錄。"
       },
       "cloudServer": {
         "hero": {
@@ -701,7 +745,8 @@
       "telecomAndTravel": "中國移動、中國聯通、58 同城、攜程 等合作方",
       "ecommerceAndMobility": "格力、京東、Segway-Ninebot、淘寶 等合作方",
       "electronicsAndEv": "格力、京東方、小鵬、蔚來 等合作方",
-      "title": "優質合作伙伴"
+      "title": "優質合作伙伴",
+      "subtitle": "以優質資源與服務領航開拓，助力更多企業高效上雲"
     },
     "hero": {
       "productEntries": "產品入口",
@@ -752,17 +797,29 @@
       "xian": "西安節點低延遲，支持遠程辦公、外包協作、教學實訓。",
       "ddos": "100G 抗 DDoS + BGP 多線，面向長期穩定業務承載。"
     },
+    "registerBar": {
+      "title": "現在註冊，開啟您的互聯網高速穩定之旅！",
+      "registerNow": "立即註冊"
+    },
     "news": {
       "title": "資訊動態",
       "announcements": "公告",
-      "recommended": "推薦"
+      "recommended": "推薦",
+      "subtitle": "為您呈現行業動態、活動公告、產品發佈",
+      "viewMore": "查看更多"
     },
     "products": {
       "title": "安全、穩定、可信賴的產品與服務",
-      "emptyCategory": "當前分類暫無可展示的二級分組，點擊後可進入產品目錄查看更多內容。"
+      "emptyCategory": "當前分類暫無可展示的二級分組，點擊後可進入產品目錄查看更多內容。",
+      "techDeliveryDesc": "的技術積澱與交付實踐，助力企業上雲與產業互聯網。",
+      "viewAll": "查看全部產品",
+      "buyNow": "立即選購"
     },
     "solutions": {
       "title": "為千行百業提供全面的解決方案",
+      "subtitle": "面向豐富的業務場景，提供覆蓋行業與技術的解決方案。",
+      "cloudServer": "雲伺服器",
+      "learnMore": "瞭解更多",
       "industrySolutions": "行業解決方案",
       "relatedProducts": "相關產品",
       "securityProtection": "安全防護",

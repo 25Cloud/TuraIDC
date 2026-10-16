@@ -1774,6 +1774,8 @@ class ProductAdminService
                     ? ['cpu_turbo' => $this->normalizeNullableString($data['cpu_turbo'] ?? null)]
                     : []),
                 'remark' => $this->normalizeNullableString($data['remark'] ?? null),
+                // 落库即消毒：前台直接 v-html 渲染这一列，存什么就该是什么。
+                'description' => app(ProductDescriptionService::class)->sanitize($data['description'] ?? null),
                 'pricing' => $pricing,
                 'setup_fee' => max((float) ($data['setup_fee'] ?? 0), 0),
                 'config_options' => $this->normalizeConfigOptions($data['config_options'] ?? []),

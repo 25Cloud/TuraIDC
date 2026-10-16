@@ -8,7 +8,7 @@
       <section class="mobile-stage-card mobile-stage-card--intro">
         <h1 class="mobile-stage-title">{{ $t('product.list.breadcrumbRoot') }}</h1>
         <p class="mobile-stage-desc">
-          先选一级分组，进入后再依次选择二级分组、三级分组和具体商品。
+          {{ $t('product.list.mobileStageDesc') }}
         </p>
       </section>
 
@@ -183,6 +183,47 @@
             </el-tabs>
           </div>
 
+          <!--
+            展示方式切换。后台「站点设置 → 基础设置」决定默认形态，这里允许用户临时改一次。
+            两种形态是同一份接口数据的两种排布，不做数据裁剪：
+            列表式读 spec_highlights 填表格列，卡片式读 description_html 填卡片描述。
+          -->
+          <div class="display-mode-switch">
+            <div class="display-mode-switch-group">
+              <button
+                type="button"
+                class="display-mode-btn"
+                :class="{ active: displayMode === DISPLAY_MODE_LIST }"
+                @click="setDisplayMode(DISPLAY_MODE_LIST)"
+              >
+                {{ $t("product.displayMode.list") }}
+              </button>
+              <button
+                type="button"
+                class="display-mode-btn"
+                :class="{ active: displayMode === DISPLAY_MODE_CARD }"
+                @click="setDisplayMode(DISPLAY_MODE_CARD)"
+              >
+                {{ $t("product.displayMode.card") }}
+              </button>
+            </div>
+            <button
+              v-if="hasDisplayModeOverride"
+              type="button"
+              class="display-mode-reset"
+              @click="useSiteDisplayMode"
+            >
+              {{ $t("product.displayMode.useSiteDefault") }}
+            </button>
+          </div>
+
+          <!-- 卡片式：商品卡片网格。与配置区互斥，选中商品后自动切到配置区 -->
+          <ProductCardGrid
+            v-if="showCardGrid"
+            class="product-card-grid-wrap"
+            :products="visibleProducts"
+          />
+
           <div
             v-if="selectedProduct && productIntroText"
             class="product-intro-card"
@@ -233,7 +274,9 @@
               v-if="osConfig && !isMobile && !machineConfigs.length"
             >
               <template>
-                <div class="config-block-title">系统安装</div>
+                <div class="config-block-title">{{
+                  $t('product.list.osInstall')
+                }}</div>
                 <div class="os-section">
                   <div v-if="osGroups.length" class="os-cards">
                     <button
@@ -262,7 +305,9 @@
                         <span v-if="configForm.os_group === os.id">{{
                           currentOsVersionLabel
                         }}</span>
-                        <span v-else class="os-placeholder">选择版本</span>
+                        <span v-else class="os-placeholder">{{
+                          $t('product.list.selectVersion')
+                        }}</span>
                       </div>
                       <span
                         class="os-check-mark"
@@ -272,13 +317,15 @@
                     </button>
                   </div>
                   <div v-else class="spec-fixed">
-                    当前商品未提供可切换的系统版本
+                    {{ $t('product.list.noSwitchableOsVersion') }}
                   </div>
                   <div
                     class="os-ver-row"
                     v-if="currentOsGroup?.versions?.length"
                   >
-                    <span class="os-ver-label">版本</span>
+                    <span class="os-ver-label">{{
+                      $t('product.osPicker.version')
+                    }}</span>
                     <div class="os-ver-btns">
                       <button
                         v-for="ver in currentOsGroup.versions"
@@ -661,7 +708,7 @@
                             class="spec-note-trigger"
                             role="button"
                             tabindex="0"
-                            aria-label="查看实例规格说明"
+                            :aria-label="$t('product.list.viewSpecNotes')"
                             @click.stop
                             @keydown.enter.stop.prevent
                             @keydown.space.stop.prevent
@@ -780,7 +827,9 @@
                       class="os-ver-row"
                       v-if="currentOsGroup?.versions?.length"
                     >
-                      <span class="os-ver-label">版本</span>
+                      <span class="os-ver-label">{{
+                        $t('product.osPicker.version')
+                      }}</span>
                       <div class="os-ver-btns">
                         <button
                           v-for="ver in currentOsGroup.versions"
@@ -1100,7 +1149,7 @@
               !selectedProduct &&
               visibleProducts.length
             "
-            description="请选择需要使用优惠券的商品"
+            :description="$t('product.list.selectCouponProduct')"
             style="padding: 60px 0"
           />
 
@@ -1163,7 +1212,7 @@
               :class="{ 'cost-detail--loading': quoteLoading }"
             >
               <div class="cost-item">
-                <span>产品</span
+                <span>{{ $t('layout.nav.products') }}</span
                 ><span>{{
                   selectedProductSummaryName || selectedProductDisplayName
                 }}</span>
@@ -1177,7 +1226,8 @@
                 ><span>{{ item.value }}</span>
               </div>
               <div class="cost-item" v-if="selectedCycleLabel">
-                <span>周期</span><span>{{ selectedCycleLabel }}</span>
+                <span>{{ $t('product.list.cycle') }}</span
+                ><span>{{ selectedCycleLabel }}</span>
               </div>
             </div>
 
@@ -1188,10 +1238,12 @@
               :class="{ 'cost-breakdown--loading': quoteLoading }"
             >
               <div class="cost-item">
-                <span>基础价格</span><span>¥{{ baseAmount }}</span>
+                <span>{{ $t('product.detail.basePrice') }}</span
+                ><span>¥{{ baseAmount }}</span>
               </div>
               <div class="cost-item" v-if="Number(setupFee) > 0">
-                <span>开通费</span><span>¥{{ setupFee }}</span>
+                <span>{{ $t('product.detail.setupFee') }}</span
+                ><span>¥{{ setupFee }}</span>
               </div>
               <div
                 class="cost-item cost-item--extra"
@@ -1202,7 +1254,9 @@
                 ><span>¥{{ item.amount }}</span>
               </div>
               <div class="cost-item cost-item--discount" v-if="appliedCoupon">
-                <span>优惠券 {{ appliedCoupon.code }}</span
+                <span
+                  >{{ $t('product.detail.coupon') }}
+                  {{ appliedCoupon.code }}</span
                 ><span>-¥{{ appliedCoupon.discount_amount }}</span>
               </div>
               <div
@@ -1221,21 +1275,23 @@
 
             <div class="coupon-panel">
               <div class="coupon-panel-head">
-                <span class="coupon-panel-title">优惠券</span>
+                <span class="coupon-panel-title">{{
+                  $t('product.detail.coupon')
+                }}</span>
                 <button
                   v-if="appliedCoupon"
                   type="button"
                   class="coupon-clear-btn"
                   @click="clearCoupon"
                 >
-                  移除
+                  {{ $t('product.coupon.remove') }}
                 </button>
               </div>
               <div class="coupon-panel-form">
                 <el-select
                   :model-value="selectedCouponId || undefined"
                   clearable
-                  placeholder="请选择优惠券"
+                  :placeholder="$t('product.detail.selectCoupon')"
                   @change="handleCouponChange"
                 >
                   <el-option
@@ -1247,15 +1303,19 @@
                 </el-select>
               </div>
               <div v-if="appliedCoupon" class="coupon-panel-tip">
-                {{ appliedCoupon.name }}，{{
-                  appliedCoupon.discount_label
-                }}，本次已减免 ¥{{ appliedCoupon.discount_amount }}
+                {{
+                  $t('product.coupon.appliedTip', {
+                    name: appliedCoupon.name,
+                    discount: appliedCoupon.discount_label,
+                    amount: appliedCoupon.discount_amount,
+                  })
+                }}
               </div>
               <div
                 v-else-if="quoteLoading"
                 class="coupon-panel-tip coupon-panel-tip--muted"
               >
-                正在获取可用优惠券…
+                {{ $t('product.coupon.loading') }}
               </div>
               <div
                 v-else-if="!availableCoupons.length"
@@ -1263,8 +1323,8 @@
               >
                 {{
                   selectedProduct
-                    ? "当前暂无可用优惠券，登录后如有优惠券会自动展示在这里。"
-                    : "请选择商品后查看可用优惠券。"
+                    ? $t('product.coupon.noneAvailable')
+                    : $t('product.coupon.selectProductFirst')
                 }}
               </div>
             </div>
@@ -1275,11 +1335,15 @@
               class="cost-total"
               :class="{ 'cost-total--loading': quoteLoading }"
             >
-              <span class="cost-total-label">合计费用</span>
+              <span class="cost-total-label">{{
+                $t('product.detail.totalCost')
+              }}</span>
               <div class="cost-price-wrap">
                 <template v-if="quoteLoading">
                   <span class="cost-currency">¥</span>
-                  <span class="cost-amount cost-amount--loading">计算中</span>
+                  <span class="cost-amount cost-amount--loading">{{
+                    $t('product.detail.calculating')
+                  }}</span>
                 </template>
                 <template v-else-if="hasAgentDiscount">
                   <span class="cost-amount cost-amount--original"
@@ -1369,8 +1433,10 @@
                 /></el-icon>
                 {{
                   appliedCoupon
-                    ? `使用优惠券 -¥${appliedCoupon.discount_amount}`
-                    : "使用优惠券"
+                    ? $t('product.coupon.usedAmount', {
+                        amount: appliedCoupon.discount_amount,
+                      })
+                    : $t('product.coupon.use')
                 }}
               </button>
             </div>
@@ -1447,13 +1513,13 @@
 
           <div class="mobile-cost-table-card">
             <div class="mobile-cost-table-head">
-              <span>费用明细：</span>
+              <span>{{ $t('product.list.costDetailsLabel') }}</span>
               <strong>共{{ mobileCostRows.length }}项</strong>
             </div>
             <div class="mobile-cost-table">
               <div class="mobile-cost-table-header">
-                <span>配置名称</span>
-                <span>配置详情</span>
+                <span>{{ $t('product.list.configName') }}</span>
+                <span>{{ $t('product.list.configDetail') }}</span>
                 <span>{{
                   hasAgentDiscount || appliedCoupon
                     ? "折后价已优惠"
@@ -1470,7 +1536,7 @@
                 <span class="mobile-cost-table-amount">¥{{ row.amount }}</span>
               </div>
               <div class="mobile-cost-table-total">
-                <span>总价：</span>
+                <span>{{ $t('product.list.grandTotalLabel') }}</span>
                 <strong>¥{{ totalPrice }}</strong>
               </div>
             </div>
@@ -1481,28 +1547,30 @@
       <MobileSheet
         v-model="mobileCouponDrawer"
         size="42%"
-        title="优惠券"
+        :title="$t('product.detail.coupon')"
         confirm-text="关闭"
         @confirm="mobileCouponDrawer = false"
       >
         <div class="mobile-coupon-sheet-body">
           <div class="coupon-panel">
             <div class="coupon-panel-head">
-              <span class="coupon-panel-title">选择优惠券</span>
+              <span class="coupon-panel-title">{{
+                $t('product.list.selectCoupon')
+              }}</span>
               <button
                 v-if="appliedCoupon"
                 type="button"
                 class="coupon-clear-btn"
                 @click="clearCoupon"
               >
-                移除
+                {{ $t('product.coupon.remove') }}
               </button>
             </div>
             <div class="coupon-panel-form">
               <el-select
                 :model-value="selectedCouponId || undefined"
                 clearable
-                placeholder="请选择优惠券"
+                :placeholder="$t('product.detail.selectCoupon')"
                 @change="handleCouponChange"
               >
                 <el-option
@@ -1514,15 +1582,19 @@
               </el-select>
             </div>
             <div v-if="appliedCoupon" class="coupon-panel-tip">
-              {{ appliedCoupon.name }}，{{
-                appliedCoupon.discount_label
-              }}，本次已减免 ¥{{ appliedCoupon.discount_amount }}
+              {{
+                $t('product.coupon.appliedTip', {
+                  name: appliedCoupon.name,
+                  discount: appliedCoupon.discount_label,
+                  amount: appliedCoupon.discount_amount,
+                })
+              }}
             </div>
             <div
               v-else-if="quoteLoading"
               class="coupon-panel-tip coupon-panel-tip--muted"
             >
-              正在获取可用优惠券…
+              {{ $t('product.coupon.loading') }}
             </div>
             <div
               v-else-if="!availableCoupons.length"
@@ -1530,8 +1602,8 @@
             >
               {{
                 selectedProduct
-                  ? "当前暂无可用优惠券，登录后如有优惠券会自动展示在这里。"
-                  : "请选择商品后查看可用优惠券。"
+                  ? $t('product.coupon.noneAvailable')
+                  : $t('product.coupon.selectProductFirst')
               }}
             </div>
           </div>
@@ -1581,7 +1653,7 @@
       <MobileOptionPicker
         v-if="hasMobileProductGroups"
         :visible="mobileSpecFamilyDrawer"
-        title="产品规格"
+        :title="$t('product.list.spec')"
         :options="mobileSpecFamilyOptions"
         :active-id="selectedMobileSpecFamily?.key || ''"
         @close="mobileSpecFamilyDrawer = false"
@@ -1601,7 +1673,7 @@
       <MobileOptionPicker
         v-if="hasMobileProductGroups"
         :visible="mobileGroupedMemoryDrawer"
-        title="内存"
+        :title="$t('product.list.memory')"
         :options="mobileGroupedMemoryOptions"
         :active-id="String(selectedProductId || '')"
         @close="mobileGroupedMemoryDrawer = false"
@@ -1628,7 +1700,9 @@
         <div class="mobile-drawer-sheet">
           <div class="mobile-drawer-head">
             <div>
-              <div class="mobile-drawer-title">一级分组</div>
+              <div class="mobile-drawer-title">{{
+                $t('product.group.level1')
+              }}</div>
               <p class="mobile-drawer-desc">
                 一级分组：{{ activeTypeLabel || "未选择" }}
               </p>
@@ -1638,7 +1712,7 @@
               class="mobile-drawer-switch"
               @click="returnToMobileTypePicker"
             >
-              切换一级分组
+              {{ $t('product.list.switchLevel1Group') }}
             </button>
           </div>
 
@@ -1675,7 +1749,7 @@
       <MobileSheet
         v-model="mobileProductDrawer"
         size="40%"
-        title="请选择产品规格"
+        :title="$t('product.list.selectSpec')"
         cancel-text="取消"
         confirm-text="确定"
         @confirm="confirmMobileProductSelection"
@@ -1704,7 +1778,7 @@
                       class="spec-note-trigger"
                       role="button"
                       tabindex="0"
-                      aria-label="查看实例规格说明"
+                      :aria-label="$t('product.list.viewSpecNotes')"
                       @click.stop
                       @keydown.enter.stop.prevent
                       @keydown.space.stop.prevent
@@ -1742,7 +1816,7 @@
                       class="spec-note-trigger"
                       role="button"
                       tabindex="0"
-                      aria-label="查看实例规格说明"
+                      :aria-label="$t('product.list.viewSpecNotes')"
                       @click.stop
                       @keydown.enter.stop.prevent
                       @keydown.space.stop.prevent
@@ -1805,6 +1879,16 @@ import MobileRangePicker from "@/components/MobileRangePicker.vue";
 import MobileSheet from "@/components/MobileSheet.vue";
 import { t } from '@/locales';
 import { resolveProductDisplayName } from "@/utils/websiteProductConfig";
+import ProductCardGrid from "./ProductCardGrid.vue";
+import {
+  DISPLAY_MODE_CARD,
+  DISPLAY_MODE_LIST,
+  useProductDisplayMode,
+} from "./useProductDisplayMode";
+import {
+  formatMoneyText,
+  formatProductListPrice,
+} from "./productPrice";
 import {
   buildInstanceSpecName,
   buildMachineSpecDisplayName,
@@ -1814,6 +1898,23 @@ import {
   parseMachineSpecFromText,
   resolveMachineSpecSelection,
 } from "@/domains/products/machineSpecResolver";
+
+/**
+ * 展示方式：后台「站点设置 → 基础设置」决定默认形态，用户可用 cookie 临时改一次
+ * （对齐魔方的 cookie("cart_theme")）。两种形态共用同一份接口数据，不做字段裁剪。
+ */
+const {
+  displayMode,
+  hasOverride: hasDisplayModeOverride,
+  setMode: setDisplayMode,
+  useSiteDefault: useSiteDisplayMode,
+} = useProductDisplayMode();
+
+// 卡片式不自动选中第一个商品：没有选中态才展示卡片网格，
+// 选中态交给 /products/:id 独立配置页承载。
+const autoSelectProduct = computed(
+  () => displayMode.value !== DISPLAY_MODE_CARD,
+);
 
 const {
   pageLoading,
@@ -1892,7 +1993,12 @@ const {
   switchGroup,
   switchChild,
   selectProduct,
-} = useWebsiteProductsPage();
+} = useWebsiteProductsPage({ autoSelectProduct });
+
+// 选中商品后不再显示卡片网格，直接进入配置区（深链 /products/t/g/c/p 亦如此）
+const showCardGrid = computed(
+  () => displayMode.value === DISPLAY_MODE_CARD && !selectedProduct.value,
+);
 
 const mobileOsDrawer = ref(false);
 const mobileIntroDrawer = ref(false);
@@ -1960,42 +2066,6 @@ onBeforeUnmount(() => {
 watch([isMobile, selectedProduct], () => {
   nextTick(setupAllocationFooterObserver);
 });
-
-function formatMoneyText(value) {
-  const amount = Number(value || 0);
-  return amount.toFixed(2);
-}
-
-function formatProductListPrice(product) {
-  const pricingEntries = Array.isArray(product?.pricing_entries)
-    ? product.pricing_entries
-    : [];
-  const monthlyEntry = pricingEntries.find(
-    (item) => item?.cycle === "monthly" && Number(item?.amount || 0) > 0,
-  );
-  const fallbackEntry =
-    monthlyEntry ||
-    pricingEntries.find((item) => Number(item?.amount || 0) > 0);
-
-  if (fallbackEntry) {
-    return `¥${formatMoneyText(fallbackEntry.amount)}/${fallbackEntry.label || "月"}`;
-  }
-
-  const pricing =
-    product?.pricing && typeof product.pricing === "object"
-      ? product.pricing
-      : {};
-  const monthlyAmount = Number(pricing.monthly || 0);
-  if (monthlyAmount > 0) {
-    return `¥${formatMoneyText(monthlyAmount)}/月`;
-  }
-
-  if (Number(product?.primary_price || 0) > 0) {
-    return `¥${formatMoneyText(product.primary_price)}/${product.primary_cycle === "monthly" ? "月" : "起"}`;
-  }
-
-  return "";
-}
 
 function normalizeInstanceSpecNote(value) {
   return String(value || "").trim();

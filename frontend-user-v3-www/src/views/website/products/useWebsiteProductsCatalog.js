@@ -59,6 +59,7 @@ function catalogBelongsToGroup(catalog, groupId) {
 export function useWebsiteProductsCatalog({
   onProductSelect,
   onResetSelection,
+  autoSelectProduct = null,
 }) {
   const route = useRoute();
   const router = useRouter();
@@ -121,9 +122,15 @@ export function useWebsiteProductsCatalog({
       productTypes.value.length > 1 &&
       !hasWebsiteProductRouteParams(readWebsiteProductRouteParams(route)),
   );
-  const shouldAutoSelectProduct = computed(
-    () => getPendingWebsiteCouponId() <= 0,
-  );
+  // 卡片式下不自动选中第一个商品：没有选中态才能展示卡片网格，
+  // 选中态留给 /products/:id 独立配置页去承载。
+  const shouldAutoSelectProduct = computed(() => {
+    if (autoSelectProduct && autoSelectProduct.value === false) {
+      return false;
+    }
+
+    return getPendingWebsiteCouponId() <= 0;
+  });
   const visibleProducts = computed(() => {
     const categoryKey = activeCatalogCategoryKey.value;
     return categoryKey ? productsByGroup.value[categoryKey] || [] : [];

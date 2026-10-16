@@ -34,7 +34,8 @@
       "summary": "Configuration Summary",
       "notFound": "This product does not exist or has been taken down",
       "backToProducts": "Back to Products",
-      "cycle": "Cycle"
+      "cycle": "Cycle",
+      "description": "Product description"
     },
     "osPicker": {
       "version": "Version",
@@ -116,6 +117,7 @@
       "selectVersion": "Select a version",
       "processor": "Processor",
       "breadcrumbRoot": "Products · Select a Level 1 Group",
+      "mobileStageDesc": "Start with a level 1 group, then pick a level 2 group, a level 3 group and finally the product.",
       "enterSubdirectory": "Enter subdirectory",
       "categoryPath": "Level 1 Group / Level 2 Group",
       "specSelector": "Product Spec Selection",
@@ -141,7 +143,9 @@
       "grandTotalLabel": "Total price: ",
       "selectCoupon": "Select a coupon",
       "spec": "Product Specs",
-      "selectSpec": "Select a product spec"
+      "selectSpec": "Select a product spec",
+      "noSwitchableOsVersion": "This product has no switchable OS version",
+      "switchLevel1Group": "Switch Level 1 Group"
     },
     "cpuBadge": {
       "coreShort": "Core",
@@ -152,6 +156,27 @@
       "goldFull": "Gold",
       "xeonShort": "Xeon",
       "xeonFull": "Xeon"
+    },
+    "displayMode": {
+      "list": "List",
+      "card": "Cards",
+      "useSiteDefault": "Back to default"
+    },
+    "card": {
+      "buyNow": "Buy now",
+      "soldOut": "Sold out",
+      "noDescription": "No description yet",
+      "priceOnRequest": "Price on request",
+      "empty": "No products in this category yet"
+    },
+    "coupon": {
+      "remove": "Remove",
+      "loading": "Loading available coupons…",
+      "noneAvailable": "No coupons available yet. Any coupons you hold will show up here once you sign in.",
+      "selectProductFirst": "Select a product to see available coupons.",
+      "appliedTip": "{name}, {discount} — you saved ¥{amount} on this order",
+      "use": "Use coupon",
+      "usedAmount": "Coupon applied -¥{amount}"
     }
   },
   "layout": {
@@ -163,6 +188,7 @@
       "terms": "Terms of Service",
       "privacy": "Privacy Policy",
       "productCatalog": "Product Catalog",
+      "noProductCatalog": "No product catalog yet",
       "solutions": "Solutions",
       "viewAllProducts": "All Products →",
       "moreLinks": "More Links",
@@ -203,10 +229,12 @@
       "allDocs": "All Documentation",
       "loadFailed": "Failed to load documentation",
       "viewAllMore": "View All Documentation →",
-      "empty": "No documentation yet"
+      "empty": "No documentation yet",
+      "viewAll": "View All →"
     },
     "product": {
-      "emptyCategories": "No product categories yet"
+      "emptyCategories": "No product categories yet",
+      "reload": "Reload"
     },
     "solutions": {
       "ecommerce": "E-commerce",
@@ -254,7 +282,14 @@
     },
     "about": {
       "serviceCapabilities": "Service Capabilities",
-      "contactInformation": "Contact Information"
+      "contactInformation": "Contact Information",
+      "intro": "We focus on cloud servers, dedicated servers and related infrastructure services, delivering one-stop experience from selection and purchase through provisioning to operations support.",
+      "serviceCapabilitiesDesc": "Covering product presentation, online purchase, unified billing, automatic provisioning, after-sales support and the service console.",
+      "serviceEmailLabel": "Support email: ",
+      "serviceHoursLabel": "Service hours: ",
+      "serviceHoursFallback": "Subject to on-site notices",
+      "officialGroupLabel": "Official group: ",
+      "notConfigured": "Not configured yet"
     },
     "legal": {
       "openOriginal": "Open original",
@@ -456,7 +491,16 @@
         "submitConsultationTicket": "Submit a consultation ticket"
       },
       "common": {
-        "flexibleConfig": "Flexible configuration"
+        "flexibleConfig": "Flexible configuration",
+        "productsTitle": "Secure, stable and trustworthy {keyword} services",
+        "productsIntro": "We organize product capabilities, applicable scenarios and provisioning entry points around real business selection needs, so visitors arriving from search can decide at a glance.",
+        "solutionTitle": "{keyword} solutions for every business scenario",
+        "solutionIntro": "Start from access region, system environment, bandwidth requirements and after-sales coordination — clarify the scenario first, then choose the resources.",
+        "processTitle": "From search to provisioning your {keyword}",
+        "processIntro": "We connect website content, the product list, registration and ticket consultation, so users spend less time hunting across separate pages.",
+        "faqBadge": "FAQ",
+        "faqTitle": "Common questions before choosing {keyword}",
+        "faqIntro": "Organized around real search questions rather than keyword stuffing, so the page body is easier to understand and to index."
       },
       "cloudServer": {
         "hero": {
@@ -701,7 +745,8 @@
       "telecomAndTravel": "China Mobile, China Unicom, 58.com, Ctrip and other partners",
       "ecommerceAndMobility": "Gree, JD.com, Segway-Ninebot, Taobao and other partners",
       "electronicsAndEv": "Gree, BOE, XPeng, NIO and other partners",
-      "title": "Premium Partners"
+      "title": "Premium Partners",
+      "subtitle": "Pioneering with quality resources and services, helping more enterprises move to the cloud efficiently"
     },
     "hero": {
       "productEntries": "Product Entries",
@@ -752,17 +797,29 @@
       "xian": "Low-latency Xi'an nodes support remote work, outsourcing collaboration and training.",
       "ddos": "100G DDoS protection with multi-line BGP, built for long-running stable workloads."
     },
+    "registerBar": {
+      "title": "Register now and begin your fast, stable journey online!",
+      "registerNow": "Register Now"
+    },
     "news": {
       "title": "News & Updates",
       "announcements": "Announcements",
-      "recommended": "Recommended"
+      "recommended": "Recommended",
+      "subtitle": "Industry news, event announcements and product releases",
+      "viewMore": "View More"
     },
     "products": {
       "title": "Secure, Stable and Trustworthy Products and Services",
-      "emptyCategory": "This category has no subcategories to show. Open the product catalog to browse more."
+      "emptyCategory": "This category has no subcategories to show. Open the product catalog to browse more.",
+      "techDeliveryDesc": "’s technical expertise and delivery practice, helping enterprises move to the cloud and build industrial internet.",
+      "viewAll": "View All Products",
+      "buyNow": "Buy Now"
     },
     "solutions": {
       "title": "Comprehensive Solutions for Every Industry",
+      "subtitle": "Solutions spanning both industries and technologies, built for a wide range of business scenarios.",
+      "cloudServer": "Cloud Servers",
+      "learnMore": "Learn More",
       "industrySolutions": "Industry Solutions",
       "relatedProducts": "Related Products",
       "securityProtection": "Security Protection",

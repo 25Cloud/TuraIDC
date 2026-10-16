@@ -25,6 +25,9 @@ class StoreProductRequest extends AdminFormRequest
             'cpu_model' => ['nullable', 'string', 'max:120'],
             'cpu_turbo' => ['nullable', 'string', 'max:40'],
             'remark' => ['nullable', 'string', 'max:255'],
+            // 描述是富文本片段，落库前由 ProductDescriptionService 过白名单消毒。
+            // 这里只限长度：HTML 体积本身没有业务上限，text 列上限 65535 字节。
+            'description' => ['nullable', 'string', 'max:60000'],
             'pricing' => ['required', 'array'],
             'pricing.monthly' => ['nullable', 'numeric', 'min:0'],
             'pricing.quarterly' => ['nullable', 'numeric', 'min:0'],

@@ -61,7 +61,7 @@ class Product extends Model
         'service_type_code',
         'product_type', 'type',
         'console_template',
-        'custom_display_name', 'remark',
+        'custom_display_name', 'remark', 'description',
         'pricing',
         'setup_fee', 'config_options', 'purchase_requires', 'stock', 'status',
         'sort_order', 'auto_setup',
@@ -196,6 +196,12 @@ class Product extends Model
     {
         $normalized = trim((string) $value);
         $this->attributes['remark'] = $normalized !== '' ? $normalized : null;
+    }
+
+    public function setDescriptionAttribute(mixed $value): void
+    {
+        $normalized = trim((string) $value);
+        $this->attributes['description'] = $normalized !== '' ? $normalized : null;
     }
 
     public function setConsoleTemplateAttribute(mixed $value): void
