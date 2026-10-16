@@ -11,10 +11,12 @@
 | 计划                                                                                                                   | 状态   | 简介                                                                                      |
 | ---------------------------------------------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------- |
 | [代理折扣实施计划](active/2026-08-20-agent-discount.md)                                                                | active | 代理折扣体系落地：AgentDiscountService 与三张配置表、新购续费计价与三端展示。             |
+| [管理端与用户端体验整改](active/admin-console-and-user-experience-batch-2026-10-15.md)                              | active | 补齐管理端可点击链接、登录验证码首屏、实例台预加载与遮罩、实例详情信息架构、上游跳转与语言自适应。 |
 | [后端专家团审查修复计划](active/backend-expert-review-remediation-2026-08-13.md)                                       | active | 6 功能域 × 5 视角专家团审查结论的分批修复计划，P0 资金与账号安全优先。                    |
 | [绑定表写入放大治理](active/binding-table-write-amplification-2026-09-16.md)                                           | active | 绑定表与快照表的无变化重写治理：改为变更感知写入，收敛生产 binlog 写入放大。              |
 | [工单上游 CodeRabbit 安全修复](active/coderabbit-security-remediation-ticket-upstream-2026-08-21.md)                   | active | 按 PR #20 CodeRabbit 审查修复工单上游传递安全与一致性问题，含上游 zjmfv376 配套改动。     |
 | [数据库专家团审查修复计划](active/database-expert-review-remediation-2026-08-13.md)                                    | active | 数据库结构专家团审查发现的分组修复与回归计划。                                            |
+| [购物车展示方式与商品描述](active/product-cart-display-mode-and-description-2026-10-15.md)                       | active | 选购页列表式 / 卡片式切换与商品描述：描述复用规格维度识别自动生成，管理端双模式编辑。     |
 | [商品分类层级与登录注册导向修复](active/product-category-hierarchy-and-console-routing-fix-2026-10-05.md)          | active | 一级 / 二级 / 三级分类显式分层、同类型一级菜单不再并项、官网登录注册导向与按钮可见性修复。 |
 | [专家团审查修复计划](active/expert-review-remediation-2026-08-12.md)                                                   | active | 换绑安全、密码策略、履约锁、升级锁、共享状态常量、回调 URL 与文档索引修复。               |
 | [日志归档系统可靠性重构方案](active/log-archive-reliability-refactor-2026-08-01.md)                                    | active | 日志写入、检索、归档、存储、运维与恢复实施计划。                                          |

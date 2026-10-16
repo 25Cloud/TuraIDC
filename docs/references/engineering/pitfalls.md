@@ -109,6 +109,118 @@ webServer 直接启动失败，整个 e2e 套件在 Windows 上跑不起来。�
 另外 `projects` 里的 `tablet`（`devices['iPad (gen 7)']`）用的是 WebKit，没装浏览器时
 **只有 tablet project 全挂**，desktop/mobile 正常。`pnpm exec playwright install webkit` 可补。
 
+### 3.5 SFC 里的游离 import 会让整个组件在运行时崩掉
+
+v0.4.1 国际化时，批量脚本把 `import { t } from '@/locales'` 插到了**文件第 1 行**，
+也就是 `<template>` 标签**外面**。Vue 的 SFC 解析器会直接忽略它，于是：
+
+- 模板与 script 里的裸 `t('...')` 在 setup 阶段抛 `ReferenceError: t is not defined`
+- 报错发生在 `setup()`，整个组件挂载失败，**页面全白且控制台只有一条难定位的警告**
+- `pnpm run build`、类型检查、`vue-tsc` **全部通过**——它们不校验「脚本块之外不能有顶层语句」
+
+当时受害的是官网布局 `src/layout/WebsiteLayout.vue`（整站）、
+`src/views/website/Home/components/HomeHeroCarousel.vue` 与 `HomeProductTabs.vue`（首页）。
+
+**怎么发现**：`playwright test` 的失败截图是一片纯白（`APP_LEN=0`），
+再用一个 Playwright 探针脚本挂 `pageerror` 监听把完整堆栈打出来，堆栈直接指到 `setup (...)`。
+
+**怎么防**：
+
+```powershell
+# 扫所有 .vue，找出「第一行就是 import/export」的文件
+Get-ChildItem -Recurse -Include *.vue -Path <app>\src | ForEach-Object {
+  $first = Get-Content $_.FullName -Encoding UTF8 -TotalCount 1
+  if ($first -match '^\s*(import|export)\s') { "$($_.Name) :: $first" }
+}
+```
+
+这类错误**只能靠运行时验证发现**，任何静态检查和构建都不会报。改完 UI 一定要跑一遍 e2e 或真看一眼页面。
+
+### 3.6 `preg_match_all` 返回的是条数，写 `=== 1` 会让守卫静默失效
+
+`I18nLocaleConsistencyTest::test_templates_have_no_hardcoded_chinese` 里有两处正则扫描，
+其中一处写的是：
+
+```php
+if (preg_match_all('/>([^<>{}]*中文[^<>{}]*)</u', $tpl, $m) === 1) {
+```
+
+`preg_match_all` 返回的是**匹配条数**，不是布尔。真实页面有几十处硬编码中文时它返回几十，
+`=== 1` 恒为假——**这道「模板层不得有硬编码中文」的守卫从写下那天起就没执行过**。
+
+同一段代码里还有个配套问题：命中后用 `str_contains($text, "\n") => continue` 跳过含换行的文本，
+本意是排除跨多行的内容块，但 Vue 模板里文本节点**几乎总是带缩进换行**，
+于是真命中也被放过去。正确做法是**按行拆开逐行判断**。
+
+**教训**：写自动守卫时，先造一个**必定该失败的输入**验证它真的会红。
+「测试一直绿」在这里不是优点，是它根本没在工作。判定条件要用 `> 0` 而不是 `=== 1`。
+
+#### 3.6.1 修这道守卫时又踩了三个坑，规模数字反复变
+
+把上述两处修好之后，同一道守卫又暴露三个新问题，命中数一路从 `0 → 171 → 12 → 1005 → 482`：
+
+| 做法 | 结果 | 问题 |
+| --- | --- | --- |
+| 每份 `.vue` 只取**第一个** `<template>` 段 | 171 | 3000+ 行的 SFC 从第二段起全在盲区 |
+| **逐段收集但只返回标签之间的内容** | 12 | 错得最隐蔽：纯文本判据是 `>文本<`，去掉外层标签后 `<template #title>等级列表</template>` 只剩「等级列表」，前后没有 `>` `<`，永远匹配不上 |
+| 「每遇到一个闭标签就记一段」 | 1005（虚高） | 嵌套时内外层重复计数 |
+| **栈式取根 `<template>` 块（含标签）** | 482 | 正确口径 |
+
+要点：
+
+1. **SFC 只有一个根 `<template>` 块**，嵌套的 `<template #slot>` 都在它里面。
+   用栈求根块（第一个 `<template>` 到使深度归零的那个 `</template>`）既覆盖全部嵌套内容，又不会重复计数。
+   「开标签 → 其后第一个闭标签」的线性配对会在**内层**闭合处提前截断。
+2. **返回的片段必须含标签**。正则靠 `>文本<` 定位文本节点，剥掉外层标签后单行段落就无从匹配。
+3. **每换一次口径都要拿独立实现交叉核对**。本轮最终用一份等价的 JS 扫描器独立算出同样的 482，才敢基线化。
+
+#### 3.6.2 存量太大时用「债务棘轮」，不要清零也不要放行
+
+482 处逐条清理不是一次能做完的体量，而把守卫留在错误口径等于没有守卫。落地方式是
+按「app → 文件 → 处数」冻结存量（`TEMPLATE_CHINESE_BASELINE`）：
+
+- 清单外的文件出现中文 → 红
+- 清单内文件处数**超过**登记值 → 红（消息带 `89 → 90` 差值）
+- 处数变少 → 绿，顺手把基线数字改小，进度就体现在 diff 里
+
+写完之后**必须**验证它会红：基线态绿 → 把某文件基线调低 1 → 红且消息精确 → 还原后绿。
+本轮的实测输出：`frontend-admin-v3 有 1 个文件的硬编码中文超出基线：pages/products/edit.vue（89 → 90）`。
+
+### 3.7 应用支持按浏览器语言自适应之后，e2e 必须在配置里钉住语言
+
+三端首屏语言走 `shared/locale` 的 `resolveInitialLocale`（显式选择 > 浏览器偏好 > 默认 zh_CN）。
+Playwright 的默认上下文跟随宿主环境，本机/CI 是 `en-US`，于是**页面渲染英文，而各 spec 的断言全部写的是中文**——
+一整批「看起来像回归、其实是环境差异」的红灯。
+
+实测规模：控制台一次跑 **13 failed / 7 passed**，全是这个原因。
+
+**正确做法**：在各 app 的 `playwright.config.ts` 顶层 `use` 里钉一次，覆盖全部 spec。
+
+```ts
+use: {
+  locale: 'zh-CN',   // 应用会按浏览器偏好自适应，不钉的话断言里的中文匹配不上
+  baseURL: 'http://127.0.0.1:5176',
+},
+```
+
+钉完之后控制台 **20 passed / 0 failed**。
+
+**不要**在每个 spec 里用 `page.addInitScript` 写 `localStorage['turaidc-locale:<app>']`——
+那是第二套机制。配置层能覆盖的，就不要下沉到用例里重复一遍。
+（两者还不同源：配置层钉的是 `navigator.language`，走「探测」分支；spec 里写 storage 走的是「显式选择」分支。）
+
+注意 `devices['Desktop Chrome']` 不含 `locale`，所以项目级 `use` 不会盖掉顶层的这个设置。
+
+### 3.8 Vite 新增依赖后 dev server 会一直 504
+
+给前端引入了新的依赖（本例是把语言基建抽到 `shared/locale`）之后，dev server 会持续返回
+`504 (Outdated Optimize Dep)`，页面只剩 `#app` 空壳。原因是依赖预构建缓存的 hash 变了，
+但浏览器仍在请求旧 hash 的模块。
+
+处理：删掉 `node_modules/.vite` 再启动 dev server（不是重启就行，必须删缓存）。
+注意 e2e 的 `webServer` 只等端口就绪、不等依赖优化完成，所以**第一次跑必红、第二次跑会绿**，
+容易误判成 flaky——见到这种「一跑就红、重跑就好」的，先怀疑 504，别急着改代码。
+
 ## 四、提交
 
 ### 4.1 必须 `--no-verify`

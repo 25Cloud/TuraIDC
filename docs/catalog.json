@@ -86,6 +86,12 @@
       "review_by": "2026-09-20"
     },
     {
+      "path": "execution-plans/active/admin-console-and-user-experience-batch-2026-10-15.md",
+      "status": "active",
+      "summary": "管理端与用户端体验整改：补齐可点击链接、登录验证码首屏、实例台预加载与遮罩、实例详情信息架构、上游跳转、语言自适应。",
+      "review_by": "2026-11-14"
+    },
+    {
       "path": "execution-plans/active/backend-expert-review-remediation-2026-08-13.md",
       "status": "active",
       "summary": "6 功能域 × 5 视角专家团审查结论的分批修复计划，P0 资金与账号安全优先。",
@@ -126,6 +132,12 @@
       "status": "active",
       "summary": "开放 API v2 实施计划：api_keys 表、open 网关中间件、Open 控制器与三端配置管理界面。",
       "review_by": "2026-09-30"
+    },
+    {
+      "path": "execution-plans/active/product-cart-display-mode-and-description-2026-10-15.md",
+      "status": "active",
+      "summary": "购物车列表式 / 卡片式切换与商品描述：描述复用规格维度识别自动生成，管理端双模式编辑。",
+      "review_by": "2026-11-14"
     },
     {
       "path": "execution-plans/active/product-category-hierarchy-and-console-routing-fix-2026-10-05.md",
