@@ -1,9 +1,14 @@
-import { useLocalStorage } from '@vueuse/core';
+import {
+  DEFAULT_LOCALE,
+  applyDocumentLang,
+  isSupportedLocale,
+  writeStoredLocale,
+} from '@turaidc/shared/locale';
 import type { GlobalConfigProvider } from 'tdesign-vue-next';
 import { computed } from 'vue';
 
 import type { SupportedLocale } from '@/locales/index';
-import { i18n, localeConfigKey, supportedLocales } from '@/locales/index';
+import { i18n, localeConfigKey } from '@/locales/index';
 
 export function useLocale() {
   const locale = computed({
@@ -12,12 +17,14 @@ export function useLocale() {
       i18n.global.locale.value = val;
     },
   });
-  const storedLocale = useLocalStorage<SupportedLocale>(localeConfigKey, 'zh_CN');
-
   const changeLocale = (lang: string) => {
-    const validLang = supportedLocales.includes(lang as SupportedLocale) ? (lang as SupportedLocale) : 'zh_CN';
+    const validLang: SupportedLocale = isSupportedLocale(lang) ? lang : DEFAULT_LOCALE;
     locale.value = validLang;
-    storedLocale.value = validLang;
+    // 持久化走 shared/locale 的存储封装，与首屏读取同一套实现：
+    // 之前这里用 vueuse 的 useLocalStorage，与官网的裸 localStorage 写法不一致，
+    // 隐私模式下也不会统一地静默失败。
+    writeStoredLocale(localeConfigKey, validLang);
+    applyDocumentLang(validLang);
   };
 
   const getComponentsLocale = computed(() => {

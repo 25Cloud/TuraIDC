@@ -80,11 +80,20 @@ class SetLocale
             }
         }
 
-        // zh-Hant-HK / en-GB 这类带子标签的，退回到主语言再试一次
-        $primary = explode('-', $tag)[0];
-        foreach (self::TAGS as $locale => $aliases) {
-            if (in_array($primary, $aliases, true)) {
-                return $locale;
+        // 带子标签的逐级去掉末尾段再试：
+        //   zh-hant-hk-mo → zh-hant-hk → zh-hant → zh
+        //   en-gb         → en
+        // 不能只退到主语言：那样 'zh-hant-hk-mo' 会命中 'zh' 被判成简体，
+        // 繁体用户会拿到简体中文的业务消息。前端 shared/locale/index.ts 是同一套逻辑，
+        // 改动必须同步，否则界面语言与消息语言会错开。
+        $segments = explode('-', $tag);
+        while (count($segments) > 1) {
+            array_pop($segments);
+            $candidate = implode('-', $segments);
+            foreach (self::TAGS as $locale => $aliases) {
+                if (in_array($candidate, $aliases, true)) {
+                    return $locale;
+                }
             }
         }
 

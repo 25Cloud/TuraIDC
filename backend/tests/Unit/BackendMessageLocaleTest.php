@@ -208,6 +208,15 @@ class BackendMessageLocaleTest extends TestCase
             ['X-Locale' => '', 'Accept-Language' => 'zh-Hant-HK', 'expect' => 'zh_HK'],
             ['X-Locale' => '', 'Accept-Language' => 'fr-FR', 'expect' => 'zh_CN'],
             ['X-Locale' => '', 'Accept-Language' => '', 'expect' => 'zh_CN'],
+            // 逐级前缀回退：只退到主语言时 'zh-hant-hk-mo' 会命中 'zh' 被判成简体，
+            // 繁体用户会拿到简体中文的业务消息。前端 shared/locale/index.ts 同套逻辑。
+            ['X-Locale' => '', 'Accept-Language' => 'zh-Hant-HK-MO', 'expect' => 'zh_HK'],
+            ['X-Locale' => '', 'Accept-Language' => 'zh-Hant-TW', 'expect' => 'zh_TW'],
+            ['X-Locale' => '', 'Accept-Language' => 'zh-Hans-CN-x-private', 'expect' => 'zh_CN'],
+            ['X-Locale' => '', 'Accept-Language' => 'en-Latn-GB', 'expect' => 'en_US'],
+            ['X-Locale' => 'zh_hk', 'Accept-Language' => '', 'expect' => 'zh_HK'],
+            ['X-Locale' => 'zh-TW;q=0.9', 'Accept-Language' => '', 'expect' => 'zh_TW'],
+            ['X-Locale' => 'ja', 'Accept-Language' => 'zh-HK', 'expect' => 'zh_HK'],
         ];
 
         foreach ($cases as $index => $case) {

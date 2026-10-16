@@ -1,20 +1,13 @@
+import {
+  DEFAULT_LOCALE,
+  applyDocumentLang,
+  isSupportedLocale,
+  writeStoredLocale,
+} from "@turaidc/shared/locale";
 import { computed } from "vue";
 
 import type { SupportedLocale } from "@/locales/index";
-import { i18n, localeConfigKey, supportedLocales } from "@/locales/index";
-
-/** locale -> html lang 属性值 */
-const HTML_LANG: Record<SupportedLocale, string> = {
-  zh_CN: "zh-CN",
-  zh_TW: "zh-TW",
-  zh_HK: "zh-HK",
-  en_US: "en",
-};
-
-function applyHtmlLang(locale: SupportedLocale) {
-  if (typeof document === "undefined") return;
-  document.documentElement.setAttribute("lang", HTML_LANG[locale]);
-}
+import { i18n, localeConfigKey } from "@/locales/index";
 
 export function useLocale() {
   const locale = computed({
@@ -25,14 +18,11 @@ export function useLocale() {
   });
 
   const changeLocale = (lang: string) => {
-    const valid = supportedLocales.includes(lang as SupportedLocale)
-      ? (lang as SupportedLocale)
-      : "zh_CN";
+    const valid: SupportedLocale = isSupportedLocale(lang) ? lang : DEFAULT_LOCALE;
     locale.value = valid;
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(localeConfigKey, valid);
-    }
-    applyHtmlLang(valid);
+    // 存储与 <html lang> 都收敛到 shared/locale，另两端是同一套实现
+    writeStoredLocale(localeConfigKey, valid);
+    applyDocumentLang(valid);
   };
 
   // 供 Element Plus 的 config-provider 使用
@@ -44,7 +34,7 @@ export function useLocale() {
     return message.componentsLocale;
   });
 
-  applyHtmlLang(locale.value as SupportedLocale);
+  applyDocumentLang(locale.value as SupportedLocale);
 
   return { changeLocale, getComponentsLocale, locale };
 }
