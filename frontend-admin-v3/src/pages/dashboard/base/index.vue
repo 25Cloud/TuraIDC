@@ -14,7 +14,7 @@
 
       <t-card :bordered="false" :title="$t('dashboard.base.recentInvoices')" :subtitle="$t('dashboard.base.recentInvoicesSubtitle')" class="recent-invoices-card">
         <template #actions>
-          <t-button theme="primary" variant="text" @click="router.push('/admin/finance/invoices')">{{ $t('dashboard.base.viewAll') }}</t-button>
+          <t-button theme="primary" variant="text" @click="goInvoiceList">{{ $t('dashboard.base.viewAll') }}</t-button>
         </template>
         <t-table
           v-if="recentInvoices.length"
@@ -25,7 +25,9 @@
           table-layout="fixed"
         >
           <template #invoice_no="{ row }">
-            <span class="invoice-no">{{ row.invoice_no || `#${row.id}` }}</span>
+            <button type="button" class="user-link invoice-no" @click="goInvoiceList">
+              <strong>{{ row.invoice_no || `#${row.id}` }}</strong>
+            </button>
           </template>
           <template #amount="{ row }">
             <strong>{{ formatCurrency(row.amount) }}</strong>
@@ -38,9 +40,9 @@
           </template>
         </t-table>
         <t-empty v-else :title="$t('dashboard.base.emptyRecentInvoices')" :description="$t('dashboard.base.emptyRecentInvoicesDesc')">
-          <t-button theme="primary" variant="outline" @click="router.push('/admin/finance/invoices')"
-            >{{ $t('dashboard.base.goToInvoiceList') }}</t-button
-          >
+          <t-button theme="primary" variant="outline" @click="goInvoiceList">{{
+            $t('dashboard.base.goToInvoiceList')
+          }}</t-button>
         </t-empty>
       </t-card>
     </div>
@@ -113,6 +115,11 @@ const productChartData = computed(() => {
 
   return Array.from(grouped, ([name, value]) => ({ name, value })).filter((item) => item.value > 0);
 });
+
+/** 账单号没有独立详情路由，统一点进账单列表（与卡片「查看全部」同一入口）。 */
+function goInvoiceList() {
+  router.push('/admin/finance/invoices');
+}
 
 function formatCurrency(value: unknown) {
   return `¥${Number(value || 0).toFixed(2)}`;

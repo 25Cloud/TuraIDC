@@ -62,7 +62,7 @@
             </div>
           </template>
           <template #user="{ row }">
-            <button type="button" class="user-link" :disabled="!row.user?.id" @click="goUserDetail(row)">
+            <button type="button" class="user-link" :disabled="!isEntityId(row.user?.id)" @click="goUserDetail(row)">
               <strong>{{ userName(row.user) }}</strong>
               <span>{{ fieldValue(row.user?.email) }}</span>
             </button>
@@ -71,7 +71,7 @@
             <button
               type="button"
               class="user-link"
-              :disabled="!Number(row.service_id || row.id || 0)"
+              :disabled="!canGoService(row.service_id || row.id, row.user?.id)"
               @click="goServiceDetail(row)"
             >
               <strong>{{
@@ -103,7 +103,7 @@
               variant="text"
               theme="primary"
               size="small"
-              :disabled="!Number(row.service_id || row.id || 0)"
+              :disabled="!canGoService(row.service_id || row.id, row.user?.id)"
               @click="goServiceDetail(row)"
             >
               {{ $t('services.index.manageInstance') }}
@@ -174,6 +174,16 @@
           table-layout="fixed"
           max-height="420"
         >
+          <template #service_id="{ row }">
+            <button
+              type="button"
+              class="user-link"
+              :disabled="!canGoService(row.service_id, row.user_id)"
+              @click="goHostnameServiceDetail(row)"
+            >
+              <strong>{{ fieldValue(row.service_id) }}</strong>
+            </button>
+          </template>
           <template #service="{ row }">
             <div class="hostname-service">
               <strong>{{ fieldValue(row.service_name) }}</strong>
@@ -212,6 +222,7 @@ import MobileRecordCard from '@/components/mobile-record-card/index.vue';
 import StatusTag from '@/components/status-tag/index.vue';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { fieldValue, formatMoney } from '@/utils/format';
+import { canGoService, goService, goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
 import { t } from '@/locales';
 
@@ -219,6 +230,7 @@ defineOptions({ name: 'AdminServices' });
 
 interface HostnameRow {
   service_id: number;
+  user_id: number;
   service_name: string;
   product_name: string;
   user_name: string;
@@ -351,6 +363,7 @@ async function submitHostnames() {
 function buildHostnameRow(row: ServiceRecord): HostnameRow {
   return {
     service_id: Number(row.id || 0),
+    user_id: Number(row.user?.id || 0),
     service_name: String(row.service_id || row.id || ''),
     product_name: String(
       row.product_full_path ||
@@ -366,21 +379,25 @@ function buildHostnameRow(row: ServiceRecord): HostnameRow {
 }
 
 function goUserDetail(row: ServiceRecord) {
-  if (row.user?.id) {
-    router.push({ name: 'AdminUserDetail', params: { id: String(row.user.id) } });
-  }
+  goUser(router, row.user?.id);
 }
 
 function goServiceDetail(row: ServiceRecord) {
-  const id = Number(row.service_id || row.id || 0);
-  if (!id) return;
-  router.push({ path: `/admin/services/${id}`, query: { user: String(row.user?.id || '') } });
+  goService(router, row.service_id || row.id, row.user?.id);
+}
+
+function goHostnameServiceDetail(row: HostnameRow) {
+  goService(router, row.service_id, row.user_id);
 }
 
 function mobileActionOptions(row: ServiceRecord) {
   return [
-    { content: '管理实例', value: 'service', disabled: !Number(row.service_id || row.id || 0) },
-    { content: t('services.index.viewUser'), value: 'user', disabled: !row.user?.id },
+    {
+      content: '管理实例',
+      value: 'service',
+      disabled: !canGoService(row.service_id || row.id, row.user?.id),
+    },
+    { content: t('services.index.viewUser'), value: 'user', disabled: !isEntityId(row.user?.id) },
   ];
 }
 

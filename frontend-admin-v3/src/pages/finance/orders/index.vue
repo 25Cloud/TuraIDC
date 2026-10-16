@@ -66,10 +66,22 @@
 
       <div v-if="!isMobile" class="table-scroll">
         <t-table row-key="id" :data="orders" :columns="columns" :loading="loading" hover table-layout="fixed">
+          <template #order_no="{ row }">
+            <button type="button" class="user-link" :disabled="!isEntityId(row.id)" @click="goDetail(row)">
+              <strong>{{ fieldValue(row.order_no) }}</strong>
+            </button>
+          </template>
           <template #user="{ row }">
             <div class="stack-cell">
-              <strong>{{ userName(row) }}</strong>
-              <span>{{ fieldValue(row.user?.email) }}</span>
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!isEntityId(row.user_id)"
+                @click="goUserLink(row.user_id)"
+              >
+                <strong>{{ userName(row) }}</strong>
+                <span>{{ fieldValue(row.user?.email) }}</span>
+              </button>
             </div>
           </template>
           <template #product="{ row }">
@@ -77,7 +89,7 @@
               <button
                 type="button"
                 class="user-link"
-                :disabled="!Number(row.service?.id || 0)"
+                :disabled="!canGoService(row.service?.id, row.user_id || row.user?.id)"
                 @click="goServiceDetail(row)"
               >
                 <strong>{{ fieldValue(row.product_full_path || row.product_name) }}</strong>
@@ -99,7 +111,9 @@
           </template>
           <template #invoice="{ row }">
             <div class="stack-cell">
-              <strong>{{ fieldValue(row.invoice?.invoice_no) }}</strong>
+              <button type="button" class="user-link" :disabled="!isEntityId(row.id)" @click="goDetail(row)">
+                <strong>{{ fieldValue(row.invoice?.invoice_no) }}</strong>
+              </button>
               <span v-if="row.invoice?.paid_at">
                 {{ $t('orders.index.paid') }}{{ formatDateTime(row.invoice.paid_at) }}
               </span>
@@ -167,6 +181,7 @@ import StatusTag from '@/components/status-tag/index.vue';
 import { useListPage } from '@/hooks/useListPage';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
+import { canGoService, goOrder, goService, goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
 import { t } from '@/locales';
 
@@ -276,17 +291,16 @@ function buildParams() {
 }
 
 function goDetail(row: OrderRecord) {
-  router.push(`/admin/finance/orders/${row.id}`);
+  goOrder(router, row.id);
+}
+
+function goUserLink(userId: unknown) {
+  goUser(router, userId);
 }
 
 function goServiceDetail(row: OrderRecord) {
   const service = toRecord(row.service);
-  const id = Number(service.id || 0);
-  if (!id) return;
-  router.push({
-    path: `/admin/services/${id}`,
-    query: { user: String(row.user_id || (toRecord(row.user).id as number) || '') },
-  });
+  goService(router, service.id, row.user_id || toRecord(row.user).id);
 }
 
 function handleMobileAction(value: unknown, row: OrderRecord) {

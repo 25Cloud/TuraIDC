@@ -64,9 +64,14 @@
           <t-card :bordered="true">
             <template #header>
               <div class="note-header">
-                <span>管理员备注</span>
-                <t-button v-if="!noteEditing" variant="text" theme="primary" size="small" @click="startEditNote"
-                  >编辑</t-button
+                <span>{{ $t('users.detail.adminRemark') }}</span>
+                <t-button
+                  v-if="!noteEditing"
+                  variant="text"
+                  theme="primary"
+                  size="small"
+                  @click="startEditNote"
+                  >{{ $t('users.detail.actionEdit') }}</t-button
                 >
               </div>
             </template>
@@ -151,8 +156,23 @@
             table-layout="fixed"
             @page-change="handleServicesPageChange"
           >
+            <template #id="{ row }">
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!canGoService(row.id, userId)"
+                @click="goServiceDetail(row)"
+              >
+                <strong>{{ fieldValue(row.id) }}</strong>
+              </button>
+            </template>
             <template #serviceName="{ row }">
-              <button type="button" class="user-link" :disabled="!Number(row.id || 0)" @click="goServiceDetail(row)">
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!canGoService(row.id, userId)"
+                @click="goServiceDetail(row)"
+              >
                 <strong>{{ serviceName(row) }}</strong>
               </button>
               <p class="table-subtext">{{ row.domain || row.product?.group_name || '-' }}</p>
@@ -167,17 +187,19 @@
             <template #serviceExpires="{ row }">{{ formatDateTime(row.expires_at) }}</template>
             <template #serviceOperation="{ row }">
               <div class="row-actions">
-                <t-button variant="text" theme="primary" size="small" @click="goServiceDetail(row)">管理实例</t-button>
+                <t-button variant="text" theme="primary" size="small" @click="goServiceDetail(row)">{{
+                  $t('users.detail.manageService')
+                }}</t-button>
                 <t-button
                   variant="text"
                   theme="default"
                   size="small"
                   :loading="services.refreshing"
                   @click="handleRefreshService(row)"
-                  >刷新</t-button
+                  >{{ $t('users.detail.actionRefresh') }}</t-button
                 >
                 <t-button variant="text" theme="danger" size="small" @click="handleDeleteServiceRow(row)"
-                  >删除</t-button
+                  >{{ $t('users.detail.actionDelete') }}</t-button
                 >
               </div>
             </template>
@@ -214,6 +236,11 @@
             table-layout="fixed"
             @page-change="handleInvoicesPageChange"
           >
+            <template #invoice_no="{ row }">
+              <button type="button" class="user-link" :disabled="!isEntityId(row.id)" @click="openInvoiceDrawer(row)">
+                <strong>{{ fieldValue(row.invoice_no) }}</strong>
+              </button>
+            </template>
             <template #invoiceAmount="{ row }">{{ formatMoney(row.amount) }}</template>
             <template #invoiceStatus="{ row }">
               <t-tag :theme="invoiceStatusTheme(row.status)" variant="light">{{
@@ -225,14 +252,16 @@
             <template #invoicePaid="{ row }">{{ formatDateTime(row.paid_at) }}</template>
             <template #invoiceOperation="{ row }">
               <div class="row-actions">
-                <t-button variant="text" theme="primary" size="small" @click="openInvoiceDrawer(row)">详情</t-button>
+                <t-button variant="text" theme="primary" size="small" @click="openInvoiceDrawer(row)">{{
+                  $t('users.detail.invoiceDetails')
+                }}</t-button>
                 <t-button
                   v-if="isCancelableInvoice(row)"
                   variant="text"
                   theme="danger"
                   size="small"
                   @click="handleCancelInvoice(row)"
-                  >取消</t-button
+                  >{{ $t('common.cancel') }}</t-button
                 >
               </div>
             </template>
@@ -276,6 +305,11 @@
             table-layout="fixed"
             @page-change="handleTicketsPageChange"
           >
+            <template #id="{ row }">
+              <button type="button" class="user-link" :disabled="!isEntityId(row.id)" @click="goTicket(router, row.id)">
+                <strong>{{ fieldValue(row.id) }}</strong>
+              </button>
+            </template>
             <template #ticketPriority="{ row }">
               <t-tag :theme="priorityTheme(row.priority)" variant="light">{{ priorityLabel(row.priority) }}</t-tag>
             </template>
@@ -559,16 +593,16 @@
               / host #{{ serviceDrawer.detail.upstream.host_id }}</template
             ></t-descriptions-item
           >
-          <t-descriptions-item label="公网 IP">{{
+          <t-descriptions-item :label="$t('users.detail.publicIp')">{{
             fieldValue(serviceDrawer.detail.connection?.dedicated_ip || serviceDrawer.detail.upstream?.dedicated_ip)
           }}</t-descriptions-item>
-          <t-descriptions-item label="登录账号">{{
+          <t-descriptions-item :label="$t('users.detail.loginAccount')">{{
             fieldValue(serviceDrawer.detail.connection?.username)
           }}</t-descriptions-item>
-          <t-descriptions-item label="登录端口">{{
+          <t-descriptions-item :label="$t('users.detail.loginPort')">{{
             fieldValue(serviceDrawer.detail.connection?.port)
           }}</t-descriptions-item>
-          <t-descriptions-item label="运行状态">
+          <t-descriptions-item :label="$t('users.detail.runningStatus')">
             <template v-if="serviceDrawer.detail.runtime?.power_label || serviceDrawer.detail.runtime?.description">
               {{ fieldValue(serviceDrawer.detail.runtime?.power_label || serviceDrawer.detail.runtime?.description) }}
             </template>
@@ -975,6 +1009,7 @@ import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { buildIdempotencyKey } from '@/utils/idempotency';
 import { hasAdminPermission } from '@/utils/permission';
+import { canGoService, goService, goTicket, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
 import { t } from '@/locales';
 
@@ -2251,15 +2286,11 @@ function serviceName(row: Row) {
   );
 }
 function goServiceDetail(row: Row) {
-  const id = Number(row.id || 0);
-  if (!id) return;
-  router.push({ path: `/admin/services/${id}`, query: { user: String(userId.value || '') } });
+  goService(router, row.id, userId.value);
 }
 function viewInvoiceLinkedService() {
   const service = (currentInvoice.value.service as Row | undefined) || {};
-  const id = Number(service.id || 0);
-  if (!id) return;
-  router.push({ path: `/admin/services/${id}`, query: { user: String(userId.value || '') } });
+  goService(router, service.id, userId.value);
 }
 function normalizeServiceDetail(payload: Row = {}) {
   const empty = {

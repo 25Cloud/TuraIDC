@@ -263,6 +263,11 @@
                 "
               />
             </template>
+            <template #id="{ row }">
+              <button type="button" class="user-link" :disabled="!isEntityId(row.id)" @click="goProductEdit(router, row.id)">
+                <strong>{{ row.id }}</strong>
+              </button>
+            </template>
             <template #name="{ row }">
               <div
                 class="product-name"
@@ -1377,6 +1382,7 @@ import type { ProductCategoryRecord, ProductRecord, ProductTypeRecord, SpecHighl
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
 import { t } from '@/locales';
 import { useUserStore } from '@/store';
+import { goProductEdit, isEntityId } from '@/utils/route/adminEntityLink';
 import { productApi } from '@/api/product';
 import type { ProviderTypeRecord, SupplierFormField, SupplierRecord } from '@/api/supplier';
 import { supplierApi } from '@/api/supplier';
@@ -2891,7 +2897,7 @@ function selectedProductIdsFromKeys(keys: Array<string | number>) {
 }
 
 function goProductEditPage(row: ProductRecord) {
-  router.push({ name: 'AdminProductEdit', params: { id: row.id } });
+  goProductEdit(router, row.id);
 }
 
 function openProductRowMenu(id: number | string) {

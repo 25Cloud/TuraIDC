@@ -21,12 +21,7 @@
         <t-button v-if="order.invoice_id" variant="outline" size="small" @click="openInvoiceDetail(order.invoice_id)">
           {{ $t('finance.orderDetail.viewInvoice') }}
         </t-button>
-        <t-button
-          v-if="order.user_id"
-          variant="outline"
-          size="small"
-          @click="router.push(`/admin/users/${order.user_id}`)"
-        >
+        <t-button v-if="order.user_id" variant="outline" size="small" @click="goUser(router, order.user_id)">
           {{ $t('finance.orderDetail.viewUser') }}
         </t-button>
       </template>
@@ -97,7 +92,14 @@
           <div class="detail-kv-grid detail-kv-grid--two">
             <div class="detail-kv-item">
               <span>{{ $t('finance.orderDetail.userId') }}</span>
-              <strong>{{ order.user_id || '-' }}</strong>
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!isEntityId(order.user_id)"
+                @click="goUser(router, order.user_id)"
+              >
+                <strong>{{ order.user_id || '-' }}</strong>
+              </button>
             </div>
             <div class="detail-kv-item">
               <span>{{ $t('finance.orderDetail.user') }}</span>
@@ -106,16 +108,14 @@
             <div class="detail-kv-item detail-kv-item--span-2">
               <span>{{ $t('finance.orderDetail.invoiceNo') }}</span>
               <div class="detail-inline-action">
-                <strong>{{ fieldValue(order.invoice?.invoice_no) }}</strong>
-                <t-button
-                  v-if="order.invoice_id"
-                  size="small"
-                  variant="text"
-                  theme="primary"
+                <button
+                  type="button"
+                  class="user-link"
+                  :disabled="!isEntityId(order.invoice_id)"
                   @click="openInvoiceDetail(order.invoice_id)"
                 >
-                  {{ $t('finance.orderDetail.view') }}
-                </t-button>
+                  <strong>{{ fieldValue(order.invoice?.invoice_no) }}</strong>
+                </button>
               </div>
             </div>
             <div class="detail-kv-item">
@@ -264,8 +264,8 @@
       :status-theme="invoiceStatusTheme(currentInvoice.status)"
       @close="closeInvoiceDetail"
       @refresh="reloadInvoiceDetail"
-      @view-order="(id) => id && router.push(`/admin/finance/orders/${id}`)"
-      @view-user="(id) => id && router.push(`/admin/users/${id}`)"
+      @view-order="(id) => goOrder(router, id)"
+      @view-user="(id) => goUser(router, id)"
       @view-service="(id) => viewLinkedService(id)"
     />
   </div>
@@ -295,6 +295,7 @@ import type { RecordDetailMetric, RecordDetailTab } from '@/components/record-de
 import RecordDetailPage from '@/components/record-detail-page/index.vue';
 import { t } from '@/locales';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
+import { goOrder, goService, goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
 
 defineOptions({ name: 'AdminFinanceOrderDetail' });
@@ -684,20 +685,11 @@ function serviceIdLabel(service: unknown) {
 
 function goServiceDetail() {
   const service = toRecord(order.value.service);
-  const id = Number(service.id || service.service_id || 0);
-  if (!id) return;
-  router.push({
-    path: `/admin/services/${id}`,
-    query: { user: String(order.value.user_id || (toRecord(order.value.user).id as number) || '') },
-  });
+  goService(router, service.id || service.service_id, order.value.user_id || toRecord(order.value.user).id);
 }
 
 function viewLinkedService(id: unknown) {
-  if (!Number(id || 0)) return;
-  router.push({
-    path: `/admin/services/${Number(id)}`,
-    query: { user: String(order.value.user_id || (toRecord(order.value.user).id as number) || '') },
-  });
+  goService(router, id, order.value.user_id || toRecord(order.value.user).id);
 }
 
 function toRecord(value: unknown): Record<string, unknown> {

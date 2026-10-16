@@ -201,7 +201,11 @@
             }"
             hover
           >
-            <template #user_id="{ row }">#{{ row.user_id ?? '--' }}</template>
+            <template #user_id="{ row }">
+              <button type="button" class="user-link" :disabled="!isEntityId(row.user_id)" @click="goUser(router, row.user_id)">
+                <strong>#{{ row.user_id ?? '--' }}</strong>
+              </button>
+            </template>
             <template #status_code="{ row }">
               <t-tag
                 :theme="row.status_code === 200 ? 'success' : row.status_code === 405 ? 'warning' : 'danger'"
@@ -230,11 +234,13 @@ import { CheckIcon, SearchIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 import { adminApi } from '@/api/admin';
 import type { OpenApiConfigPayload, OpenApiKeyRecord, OpenApiUsageLogRecord } from '@/api/admin/openApi';
 import { AdminPermissions } from '@/constants/permissions';
 import { hasAdminPermission } from '@/utils/permission';
+import { goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
 import { t } from '@/locales';
 
@@ -247,6 +253,7 @@ const SCOPE_DOMAINS = [
   { key: 'finance', label: t('openApi.index.scopeFinance') },
 ] as const;
 
+const router = useRouter();
 const activeTab = ref('config');
 const canManage = computed(() => hasAdminPermission(AdminPermissions.OPEN_API_MANAGE));
 

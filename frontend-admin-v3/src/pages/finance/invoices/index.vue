@@ -42,10 +42,22 @@
 
       <div v-if="!isMobile" class="table-scroll">
         <t-table row-key="id" :data="invoices" :columns="columns" :loading="loading" hover table-layout="fixed">
+          <template #invoice_no="{ row }">
+            <button type="button" class="user-link" :disabled="!isEntityId(row.id)" @click="openDetail(row)">
+              <strong>{{ fieldValue(row.invoice_no) }}</strong>
+            </button>
+          </template>
           <template #user="{ row }">
             <div class="stack-cell">
-              <strong>{{ userName(row.user) }}</strong>
-              <span>{{ fieldValue(row.user?.email) }}</span>
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!isEntityId(row.user_id || row.user?.id)"
+                @click="goUserDetail(row)"
+              >
+                <strong>{{ userName(row.user) }}</strong>
+                <span>{{ fieldValue(row.user?.email) }}</span>
+              </button>
             </div>
           </template>
           <template #item="{ row }">
@@ -53,7 +65,7 @@
               <button
                 type="button"
                 class="user-link"
-                :disabled="!Number(toRecord(row.service).id || 0)"
+                :disabled="!canGoService(toRecord(row.service).id, row.user_id || row.user?.id)"
                 @click="goServiceDetail(row)"
               >
                 <strong>{{ invoiceTitle(row) }}</strong>
@@ -139,8 +151,8 @@
       @close="closeDetail"
       @refresh="reloadDetail"
       @cancel="confirmCancel(currentInvoice, true)"
-      @view-order="(id) => id && router.push(`/admin/finance/orders/${id}`)"
-      @view-user="(id) => id && router.push(`/admin/users/${id}`)"
+      @view-order="(id) => goOrder(router, id)"
+      @view-user="(id) => goUser(router, id)"
       @view-service="(id) => viewLinkedService(id, currentInvoice)"
     />
   </div>
@@ -164,6 +176,7 @@ import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useUserStore } from '@/store';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
+import { canGoService, goOrder, goService, goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
 import { t } from '@/locales';
 
@@ -403,22 +416,17 @@ function invoiceTitle(row: InvoiceRecord) {
   );
 }
 
+function goUserDetail(row: InvoiceRecord) {
+  goUser(router, row.user_id || toRecord(row.user).id);
+}
+
 function goServiceDetail(row: InvoiceRecord) {
   const service = toRecord(row.service);
-  const id = Number(service.id || 0);
-  if (!id) return;
-  router.push({
-    path: `/admin/services/${id}`,
-    query: { user: String(row.user_id || (toRecord(row.user).id as number) || '') },
-  });
+  goService(router, service.id, row.user_id || toRecord(row.user).id);
 }
 
 function viewLinkedService(id: unknown, row: InvoiceRecord) {
-  if (!Number(id || 0)) return;
-  router.push({
-    path: `/admin/services/${Number(id)}`,
-    query: { user: String(row.user_id || (toRecord(row.user).id as number) || '') },
-  });
+  goService(router, id, row.user_id || toRecord(row.user).id);
 }
 
 function invoiceTypeLabel(type: unknown) {

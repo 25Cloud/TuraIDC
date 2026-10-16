@@ -9,7 +9,7 @@
       </section>
 
       <t-card :bordered="false" :loading="overviewLoading">
-        <template #title>推广达人排行</template>
+        <template #title>{{ $t('referral.index.topReferrerRanking') }}</template>
         <div class="table-scroll">
           <t-table row-key="id" :data="overview.top_referrers" :columns="overviewColumns" hover table-layout="fixed">
             <template #user="{ row }">
@@ -42,7 +42,7 @@
           <t-input
             v-model="rewardFilters.keyword"
             clearable
-            placeholder="搜索推荐人 / 被推荐人 / 账单号"
+            :placeholder="$t('referral.index.rewardSearchPlaceholder')"
             @enter="handleRewardSearch"
             @clear="handleRewardSearch"
           >
@@ -55,9 +55,19 @@
       </t-card>
 
       <t-card :bordered="false" :loading="rewardsLoading">
-        <template #title>奖励记录</template>
+        <template #title>{{ $t('referral.index.rewardRecords') }}</template>
         <div v-if="!isMobile" class="table-scroll">
           <t-table row-key="id" :data="rewardList" :columns="rewardColumns" hover table-layout="fixed">
+            <template #id="{ row }">
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!isEntityId(row.referred_user?.id)"
+                @click="goRewardUser(row)"
+              >
+                <strong>{{ fieldValue(row.id) }}</strong>
+              </button>
+            </template>
             <template #relation="{ row }">
               <div class="stack-cell">
                 <strong>{{ userName(row.referrer) }}</strong>
@@ -66,8 +76,15 @@
             </template>
             <template #order="{ row }">
               <div class="stack-cell">
-                <strong>{{ fieldValue(row.order?.order_no) }}</strong>
-                <span>{{ rewardProductName(row) }}</span>
+                <button
+                  type="button"
+                  class="user-link"
+                  :disabled="!isEntityId(row.order?.id)"
+                  @click="goRewardOrder(row)"
+                >
+                  <strong>{{ fieldValue(row.order?.order_no) }}</strong>
+                  <span>{{ rewardProductName(row) }}</span>
+                </button>
               </div>
             </template>
             <template #orderAmount="{ row }">{{ formatMoney(row.order_amount) }}</template>
@@ -134,7 +151,7 @@
           <t-input
             v-model="withdrawalFilters.keyword"
             clearable
-            placeholder="搜索用户 / 邮箱 / 账号 / 备注"
+            :placeholder="$t('referral.index.withdrawalSearchPlaceholder')"
             @enter="handleWithdrawalSearch"
             @clear="handleWithdrawalSearch"
           >
@@ -157,13 +174,30 @@
       </t-card>
 
       <t-card :bordered="false" :loading="withdrawalsLoading">
-        <template #title>提现记录</template>
+        <template #title>{{ $t('referral.index.withdrawalRecords') }}</template>
         <div v-if="!isMobile" class="table-scroll">
           <t-table row-key="id" :data="withdrawalList" :columns="withdrawalColumns" hover table-layout="fixed">
+            <template #id="{ row }">
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!isEntityId(row.user?.id)"
+                @click="goWithdrawalUser(row)"
+              >
+                <strong>{{ fieldValue(row.id) }}</strong>
+              </button>
+            </template>
             <template #user="{ row }">
               <div class="stack-cell">
-                <strong>{{ userName(row.user) }}</strong>
-                <span>{{ fieldValue(row.user?.email) }}</span>
+                <button
+                  type="button"
+                  class="user-link"
+                  :disabled="!isEntityId(row.user?.id)"
+                  @click="goWithdrawalUser(row)"
+                >
+                  <strong>{{ userName(row.user) }}</strong>
+                  <span>{{ fieldValue(row.user?.email) }}</span>
+                </button>
               </div>
             </template>
             <template #amount="{ row }">{{ formatMoney(row.amount) }}</template>
@@ -192,10 +226,14 @@
             </template>
             <template #actions="{ row }">
               <t-space v-if="Number(row.status) === 0" size="small">
-                <t-button theme="primary" variant="text" @click="openWithdrawalDialog('approve', row)">通过</t-button>
-                <t-button theme="danger" variant="text" @click="openWithdrawalDialog('reject', row)">拒绝</t-button>
+                <t-button theme="primary" variant="text" @click="openWithdrawalDialog('approve', row)">{{
+                  $t('referral.index.actionApprove')
+                }}</t-button>
+                <t-button theme="danger" variant="text" @click="openWithdrawalDialog('reject', row)">{{
+                  $t('referral.index.actionReject')
+                }}</t-button>
               </t-space>
-              <span v-else class="muted-text">已处理</span>
+              <span v-else class="muted-text">{{ $t('referral.index.alreadyProcessed') }}</span>
             </template>
           </t-table>
         </div>
@@ -277,13 +315,14 @@ import { SearchIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol, TableRowData, TagProps } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import type { ReferralOverview, ReferralRewardRecord, ReferralWithdrawalRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { t } from '@/locales';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
+import { goOrder, goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
 
 defineOptions({ name: 'AdminReferral' });
@@ -293,6 +332,7 @@ type WithdrawalMode = 'approve' | 'reject';
 type ThemeType = NonNullable<TagProps['theme']>;
 
 const route = useRoute();
+const router = useRouter();
 const validTabs: ReferralTab[] = ['overview', 'rewards', 'withdrawals'];
 const activeTab = ref<ReferralTab>(resolveRouteTab());
 
@@ -409,6 +449,20 @@ const withdrawalColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'operator', title: t('referral.index.reviewInfo'), minWidth: 200 },
   { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 130 },
 ];
+
+/** 奖励记录：ID 点进被推荐用户，订单列点进订单详情。 */
+function goRewardUser(row: ReferralRewardRecord) {
+  goUser(router, row.referred_user?.id);
+}
+
+function goRewardOrder(row: ReferralRewardRecord) {
+  goOrder(router, row.order?.id);
+}
+
+/** 提现记录：ID 列与申请人列都指向同一个申请人用户详情。 */
+function goWithdrawalUser(row: ReferralWithdrawalRecord) {
+  goUser(router, row.user?.id);
+}
 
 async function loadOverview() {
   overviewLoading.value = true;

@@ -47,6 +47,11 @@
         table-layout="fixed"
         @page-change="handlePageChange"
       >
+        <template #id="{ row }">
+          <button type="button" class="user-link" :disabled="!isEntityId(row.id)" @click="openDetail(row.id)">
+            <strong>{{ fieldValue(row.id) }}</strong>
+          </button>
+        </template>
         <template #account="{ row }">
           <button class="users-account" type="button" @click="openDetail(row.id)">
             <span>{{ row.phone || $t('users.index.unboundPhone') }}</span>
@@ -177,9 +182,10 @@ import type { AdminUser } from '@/api/user';
 import { userApi } from '@/api/user';
 import { AdminPermissions } from '@/constants/permissions';
 import { t } from '@/locales';
-import { formatDateTime, formatMoney } from '@/utils/format';
+import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { hasAdminPermission } from '@/utils/permission';
+import { goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
 
 defineOptions({
@@ -290,7 +296,7 @@ async function handleCreate() {
 }
 
 function openDetail(id: number | string) {
-  router.push(`/admin/users/${id}`);
+  goUser(router, id);
 }
 
 onMounted(() => loadList());

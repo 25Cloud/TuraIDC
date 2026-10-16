@@ -38,6 +38,11 @@
 
       <div v-if="!isMobile" class="table-scroll">
         <t-table row-key="id" :data="articles" :columns="columns" hover table-layout="fixed">
+          <template #id="{ row }">
+            <button type="button" class="user-link" :disabled="!isEntityId(row.id)" @click="goEditArticle(row.id)">
+              <strong>{{ fieldValue(row.id) }}</strong>
+            </button>
+          </template>
           <template #title="{ row }">
             <button class="title-button" type="button" @click="goEditArticle(row.id)">
               {{ fieldValue(row.title) }}
@@ -57,10 +62,14 @@
           </template>
           <template #flags="{ row }">
             <t-space size="small">
-              <t-tag v-if="Number(row.is_pinned) === 1" theme="danger" variant="light">置顶</t-tag>
-              <t-tag v-if="Number(row.is_recommended) === 1" theme="success" variant="light">推荐</t-tag>
+              <t-tag v-if="Number(row.is_pinned) === 1" theme="danger" variant="light">{{
+                $t('content.index.flagPinned')
+              }}</t-tag>
+              <t-tag v-if="Number(row.is_recommended) === 1" theme="success" variant="light">{{
+                $t('content.index.flagRecommended')
+              }}</t-tag>
               <span v-if="Number(row.is_pinned) !== 1 && Number(row.is_recommended) !== 1" class="muted-text"
-                >普通</span
+                >{{ $t('content.index.flagNormal') }}</span
               >
             </t-space>
           </template>
@@ -78,8 +87,12 @@
           </template>
           <template #actions="{ row }">
             <t-space size="small">
-              <t-button theme="primary" variant="text" @click="goEditArticle(row.id)">编辑</t-button>
-              <t-button theme="danger" variant="text" @click="handleDeleteArticle(row)">删除</t-button>
+              <t-button theme="primary" variant="text" @click="goEditArticle(row.id)">{{
+                $t('content.index.actionEdit')
+              }}</t-button>
+              <t-button theme="danger" variant="text" @click="handleDeleteArticle(row)">{{
+                $t('content.index.actionDelete')
+              }}</t-button>
             </t-space>
           </template>
         </t-table>
@@ -177,7 +190,7 @@
       <!-- 只用 #header 插槽：若同时写 header 属性，TDesign 以属性为准，插槽不渲染 -->
       <template #header>
         <div class="category-list-head">
-          <span>分类列表</span>
+          <span>{{ $t('content.index.categoryList') }}</span>
           <t-button v-if="canManageCategories" theme="primary" size="small" @click="openCategoryCreator">
             <template #icon><add-icon /></template>
             新增分类
@@ -200,11 +213,21 @@
         </template>
         <template #actions="{ row }">
           <t-space size="small">
-            <t-button v-if="canManageCategories" theme="primary" variant="text" @click="openCategoryEditor(row)">
-              编辑
+            <t-button
+              v-if="canManageCategories"
+              theme="primary"
+              variant="text"
+              @click="openCategoryEditor(row)"
+            >
+              {{ $t('content.index.actionEdit') }}
             </t-button>
-            <t-button v-if="canManageCategories" theme="danger" variant="text" @click="handleDeleteCategory(row)">
-              删除
+            <t-button
+              v-if="canManageCategories"
+              theme="danger"
+              variant="text"
+              @click="handleDeleteCategory(row)"
+            >
+              {{ $t('content.index.actionDelete') }}
             </t-button>
           </t-space>
         </template>
@@ -228,6 +251,7 @@ import { useUserStore } from '@/store';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { fieldValue, formatDateTime } from '@/utils/format';
 import { required } from '@/utils/formRules';
+import { isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
 import { t } from '@/locales';
 

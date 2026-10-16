@@ -39,10 +39,22 @@
 
       <div v-if="!isMobile" class="table-scroll">
         <t-table row-key="id" :data="recharges" :columns="columns" :loading="loading" hover table-layout="fixed">
+          <template #payment_no="{ row }">
+            <button type="button" class="user-link" :disabled="!isEntityId(row.id)" @click="openDetail(row)">
+              <strong>{{ fieldValue(row.payment_no) }}</strong>
+            </button>
+          </template>
           <template #user="{ row }">
             <div class="stack-cell">
-              <strong>{{ userName(row.user) }}</strong>
-              <span>{{ fieldValue(row.user?.email) }}</span>
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!isEntityId(row.user?.id || row.user_id)"
+                @click="goUserDetail(row)"
+              >
+                <strong>{{ userName(row.user) }}</strong>
+                <span>{{ fieldValue(row.user?.email) }}</span>
+              </button>
             </div>
           </template>
           <template #payment="{ row }">
@@ -110,8 +122,8 @@
       :status-theme="invoiceStatusTheme(currentInvoice.status)"
       @close="closeDetail"
       @refresh="reloadDetail"
-      @view-order="(id) => id && router.push(`/admin/finance/orders/${id}`)"
-      @view-user="(id) => id && router.push(`/admin/users/${id}`)"
+      @view-order="(id) => goOrder(router, id)"
+      @view-user="(id) => goUser(router, id)"
       @view-service="(id) => viewLinkedService(id)"
     />
   </div>
@@ -133,6 +145,7 @@ import MobileRecordCard from '@/components/mobile-record-card/index.vue';
 import StatusTag from '@/components/status-tag/index.vue';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
+import { goOrder, goService, goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
 import { t } from '@/locales';
 
@@ -359,13 +372,13 @@ function toRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
 }
 
+function goUserDetail(row: RechargeRecord) {
+  goUser(router, toRecord(row.user).id || row.user_id);
+}
+
 function viewLinkedService(id: unknown) {
-  if (!Number(id || 0)) return;
   const invoice = currentInvoice.value;
-  router.push({
-    path: `/admin/services/${Number(id)}`,
-    query: { user: String(invoice.user_id || (toRecord(invoice.user).id as number) || '') },
-  });
+  goService(router, id, invoice.user_id || toRecord(invoice.user).id);
 }
 
 onMounted(() => loadList());

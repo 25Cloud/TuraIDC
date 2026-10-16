@@ -314,8 +314,15 @@
             </template>
             <template #ticket_id="{ row }">
               <div class="stack-cell">
-                <strong>{{ $t('logs.index.ticketLabel') }} #{{ fieldValue(row.ticket_id) }}</strong>
-                <span>{{ $t('logs.index.pushRecordCount', { count: row.log_count || 1 }) }}</span>
+                <button
+                  type="button"
+                  class="user-link"
+                  :disabled="!isEntityId(row.ticket_id)"
+                  @click="goTicket(router, row.ticket_id)"
+                >
+                  <strong>{{ $t('logs.index.ticketLabel') }} #{{ fieldValue(row.ticket_id) }}</strong>
+                  <span>{{ $t('logs.index.pushRecordCount', { count: row.log_count || 1 }) }}</span>
+                </button>
               </div>
             </template>
             <template #httpStatus="{ row }">
@@ -707,6 +714,7 @@ import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useUserStore } from '@/store';
 import { fieldValue, formatDateTime } from '@/utils/format';
+import { goTicket, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
 
 import LogDetailDrawer from './components/LogDetailDrawer.vue';
