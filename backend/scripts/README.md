@@ -27,7 +27,7 @@
 
 | 脚本 | 用途 | 调用 |
 | --- | --- | --- |
-| `backup_mysql.sh` | 每日备份 MySQL、保留 14 天 | 见 `docs/references/operations/deployment.md`「数据库备份」 |
+| `backup_mysql.sh` | 每日备份 MySQL、保留 14 天 | 见 `docs/guide/deploy/generic.md`「数据库备份」 |
 | `install_db.py` / `install_db.sh` | 初始化项目数据库 | 见 `backend/database/README.md` |
 
 ## 质量门禁（当前未接入 `package.json`，手工执行）

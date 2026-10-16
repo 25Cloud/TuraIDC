@@ -1,6 +1,6 @@
 # TuraIDC Agent Map
 
-`AGENTS.md` 只提供导航，不重复说明书。开始任何修改前，先读 [工作规则](docs/governance/WORKING_RULES.md) 和 [文档记录系统](docs/README.md)，随后只打开与任务直接相关的资料。
+`AGENTS.md` 只提供导航，不重复说明书。开始任何修改前，先读 [工作规则](docs/internal/governance/WORKING_RULES.md) 和 [文档记录系统](docs/README.md)，随后只打开与任务直接相关的资料。
 
 ## 不可违反的边界
 
@@ -25,39 +25,42 @@
 | `frontend-user-v3-www/`     | 官网与用户入口，Vue 3 + Element Plus。          |
 | `frontend-user-v4-console/` | 用户控制台，Vue 3 + TDesign Vue Next。          |
 | `shared/`                   | 跨端状态、组件和运行时能力。                    |
-| `docs/`                     | 唯一的长期文档记录系统。                        |
+| `docs/`                     | 唯一的长期文档记录系统，按读者分三层（见下）。  |
+
+`docs/` 的分层：`guide/` 给部署并运营这套系统的站长，`develop/` 给二次开发者与贡献者，`internal/` 给维护这个仓库的人。前两层进公开文档站，`internal/` 不上站但同样受文档校验。
 
 当前不存在 `frontend-admin/`、`frontend-client/`、`frontend-user-v3-console/`、根 `scripts/` 与 `.kiro/`；不要重新引用或创建它们。
 
 ## 按任务阅读
 
-| 任务                         | 先读                                                                                                                                                                                  |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 入项、资料定位               | [docs/README.md](docs/README.md)                                                                                                                                                      |
-| 系统边界、运行方式           | [ARCHITECTURE.md](docs/ARCHITECTURE.md) 与 [运维参考](docs/references/operations/deployment-and-scheduling.md)                                                                        |
-| 后端、API、上游或插件        | [BACKEND.md](docs/BACKEND.md)、[API 规范](docs/references/api/api-format.md)、[插件开发](docs/references/integrations/plugins/README.md)                                              |
-| API 重构                     | [API 直接重构方案](docs/designs/backend/direct-api-refactor.md) 与自动生成 [API 清单](docs/generated/api/backend-api-catalog.md)                                                      |
-| 前端或页面                   | [FRONTEND.md](docs/FRONTEND.md) 与 [DESIGN.md](docs/DESIGN.md)                                                                                                                        |
-| 数据库、迁移、归档           | [DATABASE.md](docs/DATABASE.md) 与 [数据库参考](docs/references/README.md)                                                                                                            |
-| 产品范围与验收               | [产品规格索引](docs/product-specs/README.md)                                                                                                                                          |
-| 跨模块、迁移、上线或回滚风险 | [执行计划索引](docs/execution-plans/README.md)；先建或更新计划                                                                                                                        |
-| 部署、本地启动、测试         | [本地启动](docs/references/operations/local-development.md)、[部署与调度](docs/references/operations/deployment-and-scheduling.md)、[测试指南](docs/references/operations/testing.md) |
-| 改代码、改文案、跑测试、提交、增量部署 | [工程踩坑记录](docs/references/engineering/pitfalls.md)：这些环节的实测坑，动之前先看 |
+| 任务                                   | 先读                                                                                                                                                 |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 入项、资料定位                         | [docs/README.md](docs/README.md)                                                                                                                     |
+| 系统边界、运行方式                     | [ARCHITECTURE.md](docs/develop/architecture.md) 与 [运维参考](docs/guide/deploy/scheduling.md)                                                       |
+| 后端、API、上游或插件                  | [BACKEND.md](docs/develop/backend.md)、[API 规范](docs/develop/api/format.md)、[插件开发](docs/develop/plugins/index.md)                             |
+| API 重构                               | [API 直接重构方案](docs/internal/designs/backend/direct-api-refactor.md) 与自动生成 [API 清单](docs/develop/api/backend-api-catalog.md)              |
+| 前端或页面                             | [FRONTEND.md](docs/develop/frontend.md) 与 [DESIGN.md](docs/develop/design.md)                                                                       |
+| 数据库、迁移、归档                     | [DATABASE.md](docs/develop/database.md)、[MySQL 版本兼容基线](docs/develop/mysql-compatibility.md) 与 [日志归档](docs/guide/maintain/log-archive.md) |
+| 产品范围与验收                         | [产品规格索引](docs/internal/product-specs/README.md)                                                                                                |
+| 跨模块、迁移、上线或回滚风险           | [执行计划索引](docs/internal/execution-plans/README.md)；先建或更新计划                                                                              |
+| 部署、配置与运营（站长视角）           | [使用者文档](docs/guide/index.md)                                                                                                                    |
+| 部署、本地启动、测试                   | [本地启动](docs/develop/local-development.md)、[部署与调度](docs/guide/deploy/scheduling.md)、[测试指南](docs/develop/testing.md)                    |
+| 改代码、改文案、跑测试、提交、增量部署 | [工程踩坑记录](docs/develop/pitfalls.md)：这些环节的实测坑，动之前先看                                                                               |
 
 ## 关键约束入口
 
 - 后端：控制器薄层；第三方调用进入专用 Service/Driver/插件；Payment 不物理删除；迁移只新增。
-- 数据库：绝不删表/删列/删索引（存量升级与魔方财务搬迁依赖表结构稳定）；SQL 须同时兼容 MySQL 5.7.44 与 8.x，禁用窗口函数、CTE 等 8.0 专属语法。细则见 [MySQL 版本兼容基线](docs/references/database/mysql-version-compatibility.md)。
+- 数据库：绝不删表/删列/删索引（存量升级与魔方财务搬迁依赖表结构稳定）；SQL 须同时兼容 MySQL 5.7.44 与 8.x，禁用窗口函数、CTE 等 8.0 专属语法。细则见 [MySQL 版本兼容基线](docs/develop/mysql-compatibility.md)。
 - 插件：全部特有逻辑收敛到 `backend/plugins/{domain}/{slug}/`，不得注册系统级路由、调度或全局中间件；不得自建鉴权中间件绕过统一认证入口；所有插件不需要 SSL 和 CA——上游可能是纯 HTTP，或证书链不完整，强制校验会直接打断对接，这是既定取舍，评审时不必反复提，但**不得**以此为由放松签名校验、密钥纪律与输入输出净化。
 - 安全分层：入站 WAF（正则载荷特征匹配，配置在 `backend/config/waf.php`）是纵深防御的外层，不是唯一防线，也识别不了身份与权限。禁止把鉴权、授权、越权与令牌伪造问题「交给 WAF 解决」，这类必须在认证/授权层修；同样禁止因为有 WAF 就放松参数绑定、FormRequest 校验与富文本白名单净化。WAF 豁免名单每加一条都是一个洞，必须在该条目旁写明理由；规则库改动先以观察模式确认无误伤，再切拦截。
 - 密钥缺省即拒绝：任何签名、HMAC 或令牌密钥读到空值时必须拒绝服务（拒签 + 拒验），绝不允许降级为「空密钥照常计算」——那等于任何人都能伪造凭据。新增此类配置项必须同时写入 `backend/.env.example` 并注明留空的后果。
 - 前端：不混用 UI 框架；管理端不加头部说明卡片；v4-console 财务页不加指标卡片。
-- 自动生成物：修改路由或结构后运行生成脚本，绝不手工编辑 `docs/generated/`。
-- 细节以 [工作规则](docs/governance/WORKING_RULES.md) 和任务对应领域文档为准。
+- 自动生成物：修改路由或结构后运行生成脚本，绝不手工编辑 [数据库快照](docs/develop/database.md) 与 [后端 API 清单](docs/develop/api/backend-api-catalog.md)。
+- 细节以 [工作规则](docs/internal/governance/WORKING_RULES.md) 和任务对应领域文档为准。
 
 ## 事实与裁决
 
-执行规则优先级为本文件、[工作规则](docs/governance/WORKING_RULES.md)、任务文档、其他参考资料。事实冲突时，以运行代码与测试、实库 `information_schema`、自动生成文档为准，并更新或标记过期文档。
+执行规则优先级为本文件、[工作规则](docs/internal/governance/WORKING_RULES.md)、任务文档、其他参考资料。事实冲突时，以运行代码与测试、实库 `information_schema`、自动生成文档为准，并更新或标记过期文档。
 
 ## 验证
 
@@ -75,6 +78,8 @@
 ## 文档维护
 
 - 所有长期文档放入 `docs/` 的正确分区；不在仓库根或应用根新增临时说明。
-- 设计、产品规格、执行计划、参考资料和生成物分别进入对应索引；不为同一主题创建重复真源。
-- 执行计划必须放在 `active/`、`completed/` 或 `tech-debt/`，包含状态、进度和决策日志。
-- 文档链接与目录覆盖由 `pnpm run docs:check` 校验；复核期限由 `pnpm run docs:freshness` 扫描。
+- 分区按读者决定：站长进 `docs/guide/`，开发者进 `docs/develop/`，只有维护者关心进 `docs/internal/`；同一主题不建第二个真源。
+- 设计、产品规格、执行计划与一次性修复记录进入 `docs/internal/` 的对应分区与索引；生成物按内容归属放在所属分区内。
+- 执行计划必须放在 `internal/execution-plans/` 的 `active/`、`completed/` 或 `tech-debt/`，包含状态、进度和决策日志。
+- `guide/` 与 `develop/` 的正文不要链接 `internal/` 的文档，站点上会是 404。
+- 文档链接与目录覆盖由 `pnpm run docs:check` 校验；复核期限由 `pnpm run docs:freshness` 扫描。该脚本也是 EdgeOne 自动部署的构建前置步骤。

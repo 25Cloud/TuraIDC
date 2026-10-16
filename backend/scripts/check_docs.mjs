@@ -28,27 +28,38 @@ const catalogStatuses = new Set([
 ]);
 
 const requiredGeneratedCatalogPaths = new Set([
-  "DATABASE.md",
-  "generated/api/backend-api-catalog.md",
+  "develop/database.md",
+  "develop/api/backend-api-catalog.md",
 ]);
 const statusesRequiringReviewBy = new Set(["current", "active"]);
 const requiredDirectories = [
-  "designs",
-  "product-specs",
-  "execution-plans",
-  "execution-plans/active",
-  "execution-plans/completed",
-  "execution-plans/tech-debt",
-  "references",
-  "generated",
+  "develop",
+  "develop/api",
+  "develop/plugins",
+  "develop/integrations",
+  "guide",
+  "guide/deploy",
+  "guide/configure",
+  "guide/operate",
+  "guide/maintain",
+  "guide/migrate",
+  "internal",
+  "internal/designs",
+  "internal/execution-plans",
+  "internal/execution-plans/active",
+  "internal/execution-plans/completed",
+  "internal/execution-plans/tech-debt",
+  "internal/product-specs",
+  "internal/governance",
 ];
 const requiredFiles = [
   "README.md",
-  "designs/index.md",
-  "product-specs/README.md",
-  "execution-plans/README.md",
-  "references/README.md",
-  "generated/README.md",
+  "guide/index.md",
+  "develop/index.md",
+  "internal/README.md",
+  "internal/designs/index.md",
+  "internal/product-specs/README.md",
+  "internal/execution-plans/README.md",
   "catalog.json",
 ];
 
@@ -373,7 +384,12 @@ function isValidDate(value) {
 
 function checkExecPlanRecords() {
   for (const folder of ["active", "completed", "tech-debt"]) {
-    const directoryPath = path.join(docsRoot, "execution-plans", folder);
+    const directoryPath = path.join(
+      docsRoot,
+      "internal",
+      "execution-plans",
+      folder,
+    );
     for (const markdownFile of walkMarkdown(directoryPath)) {
       if (isIndexMarkdown(markdownFile)) {
         continue;

@@ -170,7 +170,7 @@ flowchart TB
 
 ## 🗺️ Roadmap
 
-当前版本进行中的工作（详见 `docs/execution-plans/active/`）：
+当前版本进行中的工作（详见 `docs/internal/execution-plans/active/`）：
 
 - 后端专家团审查修复计划（认证、财务、并发安全域）收尾
 - 定时任务体系重构方案
@@ -219,7 +219,7 @@ TuraIDC/
 ## 🔧 环境要求
 
 - PHP 8.3+（扩展：`pdo_mysql`、`redis`、`mbstring`、`openssl`、`zip` 等）
-- MySQL 8.0+（推荐；最低兼容 5.7.8，5.7 已 EOL 仅兼容性支持；5.7 部署需在 my.cnf 设置 `explicit_defaults_for_timestamp=ON`，详见 docs/references/operations/deployment.md）
+- MySQL 8.0+（推荐；最低兼容 5.7.8，5.7 已 EOL 仅兼容性支持；5.7 部署需在 my.cnf 设置 `explicit_defaults_for_timestamp=ON`，详见 docs/guide/deploy/generic.md）
 - Redis 6.0+（生产环境必需，分布式锁依赖 Redis）
 - Composer 2.x
 - Node.js 20+（构建前端）
@@ -233,7 +233,7 @@ TuraIDC/
 - **实名认证、商品配置项、OS 系统选择** 等细节数据完整落地
 - 老用户密码 `###md5` 无缝兼容，登录后自动升级
 
-> 📖 完整分步教程（含生产踩坑记录）：[从智简魔方财务系统迁移](docs/references/database/migrate-from-zjmf-finance.md)
+> 📖 完整分步教程（含生产踩坑记录）：[从智简魔方财务系统迁移](docs/guide/migrate/zjmf-finance.md)
 
 ```bash
 # 示例：迁移主流程（预检 → 重建分组 → 迁移数据 → 预热缓存）
@@ -288,7 +288,7 @@ npm run dev:admin-v3
 
 ### 3. 后台进程
 
-生产环境需常驻两个进程（详见 [部署指南](./docs/references/operations/deployment.md)）：
+生产环境需常驻两个进程（详见 [部署指南](docs/guide/deploy/generic.md)）：
 
 ```bash
 php artisan queue:work --queue=provision,referral,notification,coupon,default --sleep=1 --tries=3 --timeout=1200
@@ -297,7 +297,7 @@ php artisan schedule:work
 
 ## 🐳 快速开始（Docker 部署）
 
-`docker compose` 一键拉起 MySQL 8 + Redis 7 + 后端（PHP-FPM / Nginx / Cron / VNC Relay）+ 前端三端合一，共 4 个容器。详细说明见 [Docker 与 1Panel 部署指南](docs/references/operations/docker-and-1panel-deployment.md)。
+`docker compose` 一键拉起 MySQL 8 + Redis 7 + 后端（PHP-FPM / Nginx / Cron / VNC Relay）+ 前端三端合一，共 4 个容器。详细说明见 [Docker 与 1Panel 部署指南](docs/guide/deploy/docker-1panel.md)。
 
 ### 1. 配置 CI Secrets（自动构建镜像）
 
@@ -372,15 +372,15 @@ docker compose pull && docker compose up -d   # 升级到新镜像
 
 ## 📚 文档
 
-- [文档官网维护指南](docs/governance/docs-web-maintenance.md)
-- [部署指南](./docs/references/operations/deployment.md)
-- [贡献指南](./.github/CONTRIBUTING.md)
-- [安全政策](./.github/SECURITY.md)
-- [行为准则](./.github/CODE_OF_CONDUCT.md)
-- [变更记录](./docs/CHANGELOG.md)
+- [文档官网维护指南](docs/internal/governance/docs-web-maintenance.md)
+- [部署指南](docs/guide/deploy/generic.md)
+- [贡献指南](.github/CONTRIBUTING.md)
+- [安全政策](.github/SECURITY.md)
+- [行为准则](.github/CODE_OF_CONDUCT.md)
+- [变更记录](docs/internal/changelog.md)
 
 ## 📄 开源许可
 
-本项目采用 [GNU Affero General Public License v3.0 或更高版本（AGPL-3.0-or-later）](./LICENSE) 开源。
+本项目采用 [GNU Affero General Public License v3.0 或更高版本（AGPL-3.0-or-later）](LICENSE) 开源。
 
 > 说明：本项目管理后台与控制台基于 [TDesign Vue Next Starter](https://github.com/Tencent/tdesign-vue-next-starter) 构建；TuraIDC 自有代码采用 AGPL-3.0-or-later，TDesign 原始代码及其许可声明继续采用 MIT，详见各子目录的 `LICENSE`。

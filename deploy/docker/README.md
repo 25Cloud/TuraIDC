@@ -70,7 +70,7 @@ deploy/docker/
 - 官网 SEO：公开页面（首页、产品、落地页、公告/帮助等）由后端 Laravel 动态渲染完整 HTML，`frontends` 容器内 Nginx 已把公开路径转发到 `app` 容器的 `/seo/www/{path}`，无需额外配置。站点名/Logo/meta 实时读数据库；sitemap.xml 与 robots.txt 由后端动态生成（`/sitemap.xml`、`/robots.txt`）。
 - 如需限制端口仅本机访问（配合反代），将 `.env` 中端口改为 `127.0.0.1:8080` 形式。
 - 升级服务器：`git pull`（更新 .env 与 compose 文件）→ `docker compose pull && docker compose up -d`，后端增量迁移由容器启动时自动执行。
-- 详细部署与运维指南见 `docs/references/operations/docker-and-1panel-deployment.md`。
+- 详细部署与运维指南见 `docs/guide/deploy/docker-1panel.md`。
 
 ## 从智简魔方财务系统迁移
 
@@ -86,4 +86,4 @@ php artisan services:backfill-upstream-bindings                    # 服务控�
 php artisan optimize:clear && php artisan app:warmup-site-cache    # 预热缓存
 ```
 
-> 📖 完整分步教程（含生产踩坑记录）：[从智简魔方财务系统迁移](../../docs/references/database/migrate-from-zjmf-finance.md)
+> 📖 完整分步教程（含生产踩坑记录）：[从智简魔方财务系统迁移](../../docs/guide/migrate/zjmf-finance.md)

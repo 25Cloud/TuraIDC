@@ -4,7 +4,7 @@
 
 ## 开发
 
-- 插件包规范（目录结构 / manifest 字段 / 命名空间 / 打包格式）：`docs/references/integrations/plugins/plugin-package-spec.md`
+- 插件包规范（目录结构 / manifest 字段 / 命名空间 / 打包格式）：`docs/develop/plugins/package-spec.md`
 - 本骨架由命令生成：`php artisan plugin:make {{domain}} {{slug}}`
 
 ## 结构

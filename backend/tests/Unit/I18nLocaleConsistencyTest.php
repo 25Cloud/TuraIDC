@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * 国际化护栏：三语言词条一致性回归。
  *
- * 覆盖 docs/references/engineering/i18n.md 的约定：
+ * 覆盖 docs/develop/i18n.md 的约定：
  *  1. zh_CN / zh_TW / en_US 三份词条的 key 集合必须完全一致（漏补语言会在这里暴露）；
  *  2. zh_TW 不得残留简体（繁体由 backend/scripts/i18n/build-zh-tw.mjs 从 zh_CN 生成）；
  *  3. 各端 supportedLocales 必须与实际词条文件对应，且覆盖三语言；

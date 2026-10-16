@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Schema;
  * 时间列一律 nullable（带显式 DEFAULT NULL）：MySQL 5.7 在
  * explicit_defaults_for_timestamp=OFF 时会给首个无显式默认值的 timestamp NOT NULL
  * 列偷偷附加 ON UPDATE CURRENT_TIMESTAMP，任何不含该列的 UPDATE 都会改写它。
- * 详见 docs/references/database/mysql-version-compatibility.md。
+ * 详见 docs/develop/mysql-compatibility.md。
  */
 return new class extends Migration
 {

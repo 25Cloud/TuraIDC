@@ -22,7 +22,7 @@ use Tests\TestCase;
  * 简体残留的全量扫描在 I18nLocaleConsistencyTest 里针对前端词条做，
  * 这里用抽样覆盖后端消息，两边不重复维护同一份字表。
  *
- * 详见 docs/references/engineering/i18n.md。
+ * 详见 docs/develop/i18n.md。
  */
 class BackendMessageLocaleTest extends TestCase
 {

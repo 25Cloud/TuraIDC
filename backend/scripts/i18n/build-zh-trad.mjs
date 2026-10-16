@@ -9,7 +9,7 @@
  * 用一份繁体词条覆盖两地，会有一半用词是错的。
  *
  * 字符与词汇层面交给 OpenCC（cn->twp / cn->hkp），两者都覆盖不到的地方再人工补
- * （见 EXTRA_TERMS）。详见 docs/references/engineering/i18n.md 第五节。
+ * （见 EXTRA_TERMS）。详见 docs/develop/i18n.md 第五节。
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'

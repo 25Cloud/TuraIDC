@@ -361,7 +361,7 @@ foreach ($tables as $offset => $table) {
     }
 }
 
-$target = dirname($basePath).'/docs/DATABASE.md';
+$target = dirname($basePath).'/docs/develop/database.md';
 file_put_contents($target, implode("\n", $lines)."\n");
 
 fwrite(STDOUT, sprintf(

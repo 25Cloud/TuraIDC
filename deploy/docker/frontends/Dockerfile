@@ -38,7 +38,7 @@ COPY frontend-user-v3-www/package.json ./frontend-user-v3-www/
 COPY frontend-user-v4-console/package.json ./frontend-user-v4-console/
 # 按 package.json 的 packageManager 字段启用 pnpm。
 # --shamefully-hoist：本项目依赖根 hoist 布局（v3-www 直接 import element-plus 深路径），
-# 与 docs/references/operations/deployment-and-scheduling.md 记载的部署命令保持一致。
+# 与 docs/guide/deploy/scheduling.md 记载的部署命令保持一致。
 # verify-deps-before-run=false：关闭 pnpm run 前的依赖检查，否则它会 purge 掉根 hoist 布局
 # （容器内无 TTY，purge 会直接以 ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY 中止构建）
 RUN corepack enable pnpm \

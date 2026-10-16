@@ -15,7 +15,7 @@ namespace App\Support;
  * 转义契约（调用方必须了解）：本类转义产生 `\%`、`\_`、`\\`，依赖 MySQL 的
  * **默认行为**——LIKE 的默认转义字符是 `\`，查询无需也不能再追加 `ESCAPE`
  * 子句（Eloquent 的 where() 不暴露 ESCAPE；逐点改 whereRaw 会丢失绑定与
- * 可读性）。项目数据库基线（MySQL 5.7.44 / 8.x，见 docs/references/database/
+ * 可读性）。项目数据库基线（MySQL 5.7.44 / 8.x，见 docs/develop/
  * mysql-version-compatibility.md）未启用 NO_BACKSLASH_ESCAPES；若将来有人
  * 在 sql mode 里开启它，本类的转义会失效，SqlLikeEscapeTest 会当场红掉。
  * SQLite（仅出现在测试内存库）默认不把 `\` 当转义符，同样由该测试区分约束。

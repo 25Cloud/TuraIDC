@@ -1,49 +1,103 @@
 <script setup lang="ts">
-const guides = [
+// 首页按读者身份分区：使用者（部署并运营本站的站长/运营）与开发者（二次开发、
+// 上游对接与仓库贡献者）。两组卡片共用同一套样式，只有数据不同。
+const audiences = [
   {
-    title: "快速开始",
-    description: "选择适合生产环境的部署方式并完成上线检查。",
-    links: [
-      ["部署方式选择", "/quick-start"],
-      ["宝塔部署", "/references/operations/bt-panel-deployment"],
-      [
-        "Docker / 1Panel",
-        "/references/operations/docker-and-1panel-deployment",
-      ],
+    id: "guide",
+    label: "我是使用者",
+    title: "部署并运营 TuraIDC",
+    description:
+      "从选择部署方式、完成初始配置，到商品订单财务工单的日常运营，以及升级、备份与故障排查。",
+    groups: [
+      {
+        title: "部署安装",
+        description: "选择与服务器和运维流程匹配的方式完成上线。",
+        links: [
+          ["部署方式选择", "/guide/deploy/"],
+          ["宝塔面板部署", "/guide/deploy/bt-panel"],
+          ["Docker / 1Panel", "/guide/deploy/docker-1panel"],
+          ["裸机源码部署", "/guide/deploy/bare-metal"],
+        ],
+      },
+      {
+        title: "初始配置",
+        description: "站点品牌、通知渠道、支付与上游的接入配置。",
+        links: [
+          ["站点与品牌设置", "/guide/configure/site-settings"],
+          ["邮件与短信", "/guide/configure/mail-and-sms"],
+          ["支付渠道接入", "/guide/configure/payment"],
+          ["上游供应商对接", "/guide/configure/upstream"],
+        ],
+      },
+      {
+        title: "日常运营",
+        description: "商品上架、订单开通、资金对账与客服工单。",
+        links: [
+          ["商品与计费", "/guide/operate/products"],
+          ["订单与自动开通", "/guide/operate/orders"],
+          ["财务与账单", "/guide/operate/finance"],
+          ["工单与客服", "/guide/operate/tickets"],
+        ],
+      },
+      {
+        title: "维护与迁移",
+        description: "版本升级、数据备份、日志归档与排障。",
+        links: [
+          ["版本升级", "/guide/maintain/upgrade"],
+          ["备份与恢复", "/guide/maintain/backup"],
+          ["从魔方财务迁移", "/guide/migrate/zjmf-finance"],
+          ["故障排查", "/guide/troubleshooting"],
+        ],
+      },
     ],
   },
   {
-    title: "开发指南",
-    description: "后端、前端、数据库、设计与插件开发的当前规范。",
-    links: [
-      ["后端规范", "/BACKEND"],
-      ["前端规范", "/FRONTEND"],
-      ["插件开发", "/references/integrations/plugins/"],
-    ],
-  },
-  {
-    title: "系统架构",
-    description: "查看运行中的系统结构、模块边界与扩展架构。",
-    links: [
-      ["系统架构", "/ARCHITECTURE"],
-      ["架构设计", "/designs/architecture/"],
-    ],
-  },
-  {
-    title: "API 文档",
-    description: "查看接口契约、业务域导航和后端 API 自动清单。",
-    links: [
-      ["API 格式规范", "/references/api/api-format"],
-      ["后端 API 清单", "/generated/api/backend-api-catalog"],
-    ],
-  },
-  {
-    title: "系统运维",
-    description: "覆盖部署调度、数据迁移、维护操作与执行计划。",
-    links: [
-      ["部署与调度", "/references/operations/deployment-and-scheduling"],
-      ["数据库迁移", "/references/database/"],
-      ["执行计划", "/execution-plans/"],
+    id: "develop",
+    label: "我是开发者",
+    title: "二次开发与上游对接",
+    description:
+      "系统架构与模块边界、三端工程规范、数据库与接口契约、插件开发，以及本地开发测试与贡献流程。",
+    groups: [
+      {
+        title: "系统概览",
+        description: "运行中的系统结构、模块边界与扩展架构。",
+        links: [
+          ["系统架构", "/develop/architecture"],
+          ["后端规范", "/develop/backend"],
+          ["前端规范", "/develop/frontend"],
+          ["数据库快照", "/develop/database"],
+        ],
+      },
+      {
+        title: "接口与插件",
+        description: "接口契约、业务域导航与插件扩展点。",
+        links: [
+          ["API 格式规范", "/develop/api/format"],
+          ["API 清单导航", "/develop/api/catalog-navigation"],
+          ["后端 API 清单", "/develop/api/backend-api-catalog"],
+          ["插件开发", "/develop/plugins/"],
+        ],
+      },
+      {
+        title: "开发与测试",
+        description: "本地启动、测试范围、国际化与实测踩坑。",
+        links: [
+          ["本地启动", "/develop/local-development"],
+          ["测试指南", "/develop/testing"],
+          ["安全开发规范", "/develop/security"],
+          ["工程踩坑记录", "/develop/pitfalls"],
+        ],
+      },
+      {
+        title: "对接与贡献",
+        description: "上游协议对接与参与仓库维护的规则。",
+        links: [
+          ["魔方上游协议", "/develop/integrations/zjmf-upstream-api"],
+          ["插件包规范", "/develop/plugins/package-spec"],
+          ["MySQL 兼容基线", "/develop/mysql-compatibility"],
+          ["参与贡献", "/develop/contributing"],
+        ],
+      },
     ],
   },
 ];
@@ -57,9 +111,9 @@ const guides = [
         <span>文档中心</span>
       </a>
       <nav class="portal-nav" aria-label="主要导航">
-        <a href="/ARCHITECTURE">系统架构</a>
-        <a href="/generated/api/backend-api-catalog">API 参考</a>
-        <a href="/references/operations/deployment-and-scheduling">部署运维</a>
+        <a href="/guide/">使用者文档</a>
+        <a href="/develop/">开发者文档</a>
+        <a href="/develop/api/backend-api-catalog">API 参考</a>
         <a
           href="https://github.com/25Cloud/TuraIDC"
           target="_blank"
@@ -74,12 +128,16 @@ const guides = [
         <div class="portal-hero-copy">
           <h1><span>TuraIDC</span><br />业务/财务系统</h1>
           <p>
-            从生产部署到接口集成，围绕快速开始、开发指南、系统架构、API
-            文档和系统运维组织项目知识。
+            文档按读者身份分成两区：要部署并运营这套系统的站长进入使用者文档，
+            要改代码、对接接口或参与维护的开发者进入开发者文档。
           </p>
           <div class="portal-actions">
-            <a class="portal-primary-action" href="/quick-start">快速开始</a>
-            <a class="portal-secondary-action" href="/BACKEND">开发指南</a>
+            <a class="portal-primary-action" href="/guide/"
+              >我是使用者 · 部署与运营</a
+            >
+            <a class="portal-secondary-action" href="/develop/"
+              >我是开发者 · 开发与对接</a
+            >
           </div>
         </div>
         <div class="portal-hero-visual">
@@ -91,21 +149,30 @@ const guides = [
         </div>
       </section>
 
-      <section class="portal-section" aria-labelledby="portal-guides-title">
+      <section
+        v-for="audience in audiences"
+        :key="audience.id"
+        class="portal-section"
+        :aria-labelledby="`portal-${audience.id}-title`"
+      >
         <div class="portal-section-heading">
-          <h2 id="portal-guides-title">按主题进入文档</h2>
+          <p class="portal-section-label">{{ audience.label }}</p>
+          <h2 :id="`portal-${audience.id}-title`">{{ audience.title }}</h2>
+          <p class="portal-section-description">
+            {{ audience.description }}
+          </p>
         </div>
         <div class="portal-guide-grid">
           <section
-            v-for="(guide, index) in guides"
-            :key="guide.title"
+            v-for="(group, index) in audience.groups"
+            :key="group.title"
             class="portal-guide"
             :style="{ animationDelay: `${index * 70}ms` }"
           >
-            <h3>{{ guide.title }}</h3>
-            <p>{{ guide.description }}</p>
+            <h3>{{ group.title }}</h3>
+            <p>{{ group.description }}</p>
             <ul>
-              <li v-for="[text, link] in guide.links" :key="link">
+              <li v-for="[text, link] in group.links" :key="link">
                 <a :href="link">{{ text }}<span aria-hidden="true">→</span></a>
               </li>
             </ul>
@@ -392,13 +459,34 @@ const guides = [
   padding: 80px 0 88px;
 }
 
+/* 使用者与开发者两个分区之间加分隔线，避免连成一片看不出分界 */
+.portal-section + .portal-section {
+  border-top: 1px solid var(--portal-border);
+}
+
 .portal-section-heading {
   margin-bottom: 30px;
+}
+
+.portal-section-label {
+  margin: 0 0 8px;
+  color: var(--portal-brand);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
 .portal-section h2 {
   font-size: 28px;
   line-height: 1.35;
+}
+
+.portal-section-description {
+  max-width: 720px;
+  margin: 12px 0 0;
+  color: var(--portal-text-2);
+  font-size: 15px;
+  line-height: 1.75;
 }
 
 .portal-guide-grid {

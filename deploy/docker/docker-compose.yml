@@ -12,7 +12,7 @@
 # 数据库与 Redis 来源由 .env 控制：
 #   DB_HOST / REDIS_HOST 留空 -> 拉起本地 mysql / redis 容器（默认）
 #   填写远程地址 -> 本地容器不拉取不启动，app 直连远程
-# 详细说明见 docs/references/operations/docker-and-1panel-deployment.md
+# 详细说明见 docs/guide/deploy/docker-1panel.md
 # ============================================================================
 name: turaidc
 

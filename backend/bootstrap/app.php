@@ -58,7 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         // 反代信任：四端部署一律在反向代理之后（1Panel / 宝塔 / 宿主机 Nginx，
-        // 见 docs/references/operations/）。此前未配置受信代理，Laravel 忽略
+        // 见 docs/guide/deploy/）。此前未配置受信代理，Laravel 忽略
         // X-Forwarded-For，request()->ip() 取到的是反代或 Docker 网关地址
         // （容器部署下所有用户的 last_login_ip 都是 172.x.0.1）。影响不止审计：
         // ReferralService 的自荐风控以「注册 IP == 推荐人 last_login_ip」为拒绝条件，

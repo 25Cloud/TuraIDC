@@ -2,7 +2,7 @@
 
 官网门户前端应用，负责品牌展示与购买入口。
 
-> 完整项目文档见根目录 [README](../../README.md)，部署指南见 [DEPLOYMENT.md](../../docs/references/operations/deployment.md)。
+> 完整项目文档见根目录 [README](../../README.md)，部署指南见 [DEPLOYMENT.md](../../docs/guide/deploy/generic.md)。
 
 - 文档性质：现行方案 / 官网与购买入口部署说明
 - 对齐时间：2026-06-28
