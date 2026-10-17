@@ -215,6 +215,27 @@ export function useWebsiteProductConfigurator(productDetail) {
   })
   const regionFieldKey = computed(() => parseField(regionConfigItem.value || {}).key || 'region')
 
+  /**
+   * 地区值的唯一读写入口。
+   *
+   * 各上游给地区字段起的 key 不同（region / area / node…）。此前列表式配置区按
+   * configForm.region 读写、独立配置页按 configForm[regionFieldKey] 写，两边各存
+   * 一份：用户点了地区，报价与提交仍拿默认地区，展示与实发不一致。
+   * 现在统一读写 regionFieldKey，并把 region 当兼容镜像一起维护。
+   */
+  const regionValue = computed({
+    get: () => {
+      const key = regionFieldKey.value
+      const value = configForm[key]
+
+      return value !== undefined && value !== null && value !== '' ? value : configForm.region || ''
+    },
+    set: (value) => {
+      configForm[regionFieldKey.value] = value
+      configForm.region = value
+    },
+  })
+
   const osConfig = computed(() => {
     const raw = productDetail.value?.config_options || []
     return raw.find((item) => {
@@ -242,8 +263,9 @@ export function useWebsiteProductConfigurator(productDetail) {
   const summaryItems = computed(() => {
     const items = []
 
-    if (configForm.region) {
-      const region = regionOptions.value.find((item) => item.id === configForm.region)
+    const regionId = regionValue.value
+    if (regionId) {
+      const region = regionOptions.value.find((item) => item.id === regionId)
       if (region) {
         items.push({ key: 'region', label: t('websiteProduct.summary.region'), value: region.label })
       }
@@ -348,8 +370,8 @@ export function useWebsiteProductConfigurator(productDetail) {
   function buildConfigPayload() {
     const payload = {}
 
-    if (configForm.region) {
-      payload[regionFieldKey.value] = configForm.region
+    if (regionValue.value) {
+      payload[regionFieldKey.value] = regionValue.value
     }
 
     if (configForm.os) {
@@ -407,7 +429,7 @@ export function useWebsiteProductConfigurator(productDetail) {
     })
 
     if (regionOptions.value.length) {
-      configForm.region = regionOptions.value[0].id
+      regionValue.value = regionOptions.value[0].id
     }
 
     if (osGroups.value.length) {
@@ -422,6 +444,7 @@ export function useWebsiteProductConfigurator(productDetail) {
     configForm,
     osConfig,
     regionFieldKey,
+    regionValue,
     regionOptions,
     osGroups,
     currentOsGroup,
