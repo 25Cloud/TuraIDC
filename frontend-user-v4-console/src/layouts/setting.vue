@@ -441,4 +441,25 @@ watchEffect(() => {
     }
   }
 }
+
+/*
+ * 语言切换单独排布。
+ *
+ * 面板里所有 .t-radio-group 都被设成 width:100% + justify-content:space-between
+ * （为「主题模式」那组两个按钮贴两端设计的）。语言这栏现在是四个选项，其中还有
+ * 「繁體中文（香港）」「English」这种长标签，被 space-between 摊开后互相挤压、
+ * 换行错位——看着像样式崩了。这里改成左对齐、按内容宽度自然换行。
+ */
+.setting-drawer-container .t-radio-group.setting-language-radio {
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-start;
+
+  .t-radio-button {
+    flex: 0 0 auto;
+    width: auto;
+    height: auto;
+    white-space: nowrap;
+  }
+}
 </style>
