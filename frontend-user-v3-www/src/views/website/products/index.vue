@@ -185,7 +185,7 @@
 
           <!-- 展示方式由后台「站点设置 → 基础设置」统一决定，页面不提供用户级切换 -->
 
-          <!-- 卡片式：商品卡片网格。与配置区互斥，选中商品后自动切到配置区 -->
+          <!-- 卡片式：商品卡片网格。卡片只做辨认与比价，点击进入独立的 /products/:id 配置页 -->
           <ProductCardGrid
             v-if="showCardGrid"
             class="product-card-grid-wrap"
@@ -1109,17 +1109,6 @@
               </div>
             </div>
           </div>
-
-          <el-empty
-            v-else-if="
-              !pageLoading &&
-              !configLoading &&
-              !selectedProduct &&
-              visibleProducts.length
-            "
-            :description="$t('product.list.selectCouponProduct')"
-            style="padding: 60px 0"
-          />
 
           <el-empty
             v-if="

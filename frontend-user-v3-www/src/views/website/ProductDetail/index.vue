@@ -133,51 +133,85 @@
             </div>
           </div>
 
-          <!-- 操作系统 -->
+          <!-- 操作系统：与列表式配置区一致的图标卡片 + 同屏版本选择 -->
           <div class="cfg-group" v-if="osConfig">
             <div class="cfg-group-head">{{ $t('product.detail.operatingSystem') }}</div>
             <div class="cfg-group-body">
-              <div class="os-row">
-                <div class="os-col">
-                  <div class="os-col-label">{{ $t('product.osPicker.system') }}</div>
-                  <el-select
-                    v-model="configForm.os_group"
-                    :placeholder="$t('product.detail.selectOs')"
-                    @change="handleOsGroupChange"
-                  >
-                    <el-option
-                      v-for="os in osGroups"
-                      :key="os.id"
-                      :label="os.label"
-                      :value="os.id"
+              <div class="os-cards">
+                <button
+                  v-for="os in osGroups"
+                  :key="os.id"
+                  type="button"
+                  class="os-card"
+                  :class="{ active: configForm.os_group === os.id }"
+                  @click="handleOsGroupChange(os.id)"
+                >
+                  <div class="os-card-head">
+                    <img
+                      v-if="os.icon"
+                      :src="os.icon"
+                      :alt="os.label"
+                      class="os-logo-img"
+                      width="28"
+                      height="28"
                     />
-                  </el-select>
-                </div>
-                <div class="os-col">
-                  <div class="os-col-label">{{ $t('product.osPicker.version') }}</div>
-                  <el-select
-                    v-model="configForm.os"
-                    :placeholder="$t('product.detail.selectVersion')"
-                    :disabled="!currentOsGroup?.versions?.length"
-                    @change="fetchQuote"
+                    <span v-else class="os-logo">{{
+                      os.label.slice(0, 2)
+                    }}</span>
+                    <span class="os-label-name">{{ os.label }}</span>
+                  </div>
+                  <div class="os-card-ver">
+                    <span v-if="configForm.os_group === os.id">{{
+                      currentOsVerLabel
+                    }}</span>
+                    <span v-else class="os-placeholder">{{
+                      $t('product.list.selectVersion')
+                    }}</span>
+                  </div>
+                  <span
+                    v-if="configForm.os_group === os.id"
+                    class="os-check-mark"
+                    >✓</span
                   >
-                    <el-option
-                      v-for="ver in currentOsGroup?.versions"
-                      :key="ver.id"
-                      :label="ver.label"
-                      :value="ver.id"
-                    />
-                  </el-select>
+                </button>
+              </div>
+              <div class="os-ver-row" v-if="currentOsGroup?.versions?.length">
+                <span class="os-ver-label">{{
+                  $t('product.osPicker.version')
+                }}</span>
+                <div class="os-ver-btns">
+                  <button
+                    v-for="ver in currentOsGroup.versions"
+                    :key="ver.id"
+                    type="button"
+                    class="ver-btn"
+                    :class="{ active: configForm.os === ver.id }"
+                    @click="
+                      configForm.os = ver.id;
+                      fetchQuote();
+                    "
+                  >
+                    {{ ver.label }}
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 机型配置 -->
-          <div class="cfg-group" v-if="specConfigs.length">
-            <div class="cfg-group-head">{{ $t('product.detail.serverSpecs') }}</div>
+          <!--
+            配置分组：机型 / 网络 / 其他，口径与列表式配置区一致。
+            分组由共享层（useWebsiteProductConfigurator）给出，这里不再做二次过滤——
+            本地过滤曾把「其他配置」整组（绑定域名数 / WEB 空间 / 连接数等）与
+            机型里命中网络词的项全部吃掉，虚拟主机与 CDN 商品几乎不剩配置项。
+          -->
+          <div
+            class="cfg-group"
+            v-for="group in configGroups"
+            :key="group.title"
+          >
+            <div class="cfg-group-head">{{ group.title }}</div>
             <div class="cfg-group-body">
-              <div class="spec-row" v-for="cfg in specConfigs" :key="cfg.key">
+              <div class="spec-row" v-for="cfg in group.configs" :key="cfg.key">
                 <div class="spec-label">{{ cfg.label }}</div>
                 <div class="spec-ctrl">
                   <template v-if="cfg.isNumber">
@@ -204,56 +238,10 @@
                       {{ opt.label }}
                     </button>
                   </div>
-                  <button
-                    v-else-if="cfg.options.length === 1"
-                    type="button"
-                    class="opt-btn active"
-                  >
-                    {{ cfg.options[0].label }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 网络配置 -->
-          <div class="cfg-group" v-if="netConfigs.length">
-            <div class="cfg-group-head">网络配置</div>
-            <div class="cfg-group-body">
-              <div class="spec-row" v-for="cfg in netConfigs" :key="cfg.key">
-                <div class="spec-label">{{ cfg.label }}</div>
-                <div class="spec-ctrl">
-                  <template v-if="cfg.isNumber">
-                    <el-input-number
-                      v-model="configForm[cfg.key + '_num']"
-                      :min="cfg.min ?? 1"
-                      :max="cfg.max ?? undefined"
-                      controls-position="right"
-                      @change="fetchQuote"
-                    />
-                  </template>
-                  <div class="opt-wrap" v-else-if="cfg.options.length > 1">
-                    <button
-                      v-for="opt in cfg.options"
-                      :key="opt.id"
-                      type="button"
-                      class="opt-btn"
-                      :class="{ active: configForm[cfg.key] === opt.id }"
-                      @click="
-                        configForm[cfg.key] = opt.id;
-                        fetchQuote();
-                      "
-                    >
-                      {{ opt.label }}
-                    </button>
-                  </div>
-                  <button
-                    v-else-if="cfg.options.length === 1"
-                    type="button"
-                    class="opt-btn active"
-                  >
-                    {{ cfg.options[0].label }}
-                  </button>
+                  <!-- 单选项是既成事实而不是可点控件：渲染成静态高亮，避免「看着能点、点了没反应」 -->
+                  <span v-else-if="cfg.options.length === 1" class="spec-fixed">{{
+                    cfg.options[0].label
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -610,26 +598,6 @@ const productStock = ref(null);
 const productStockLoading = ref(false);
 const productStockError = ref("");
 
-// 网络关键词（带宽/IP/流量/防护等）
-const NET_KEYWORDS = [
-  "bandwidth",
-  "bw",
-  "ip",
-  "traffic",
-  "ddos",
-  "port",
-  "speed",
-  "mbps",
-  "gbps",
-  "带宽",
-  "流量",
-];
-
-function isNetConfig(key, label) {
-  const k = key.toLowerCase();
-  const l = String(label || "").toLowerCase();
-  return NET_KEYWORDS.some((kw) => k.includes(kw) || l.includes(kw));
-}
 const regionKey = computed(() => configurator.regionFieldKey.value || "region");
 const regionOptions = computed(() => configurator.regionOptions.value || []);
 const osConfig = computed(() => configurator.osConfig.value || null);
@@ -676,19 +644,19 @@ function handleOsGroupChange(value) {
   selectOsGroup(nextGroup);
 }
 
-// 机型配置（排除 区域/OS/网络）
-const specConfigs = computed(() =>
-  configurator.machineConfigs.value.filter(
-    (cfg) => !isNetConfig(cfg.key, cfg.label),
-  ),
-);
-
-// 网络配置
-const netConfigs = computed(() =>
+/**
+ * 配置分组直接取共享层（useWebsiteProductConfigurator）的权威口径。
+ *
+ * 这里曾再按关键词做一次本地过滤，后果是「其他配置」整组（绑定域名数、WEB 空间、
+ * 连接数等）与机型里命中网络词的项在两侧都不渲染——虚拟主机 / CDN 商品在
+ * 独立配置页几乎不剩任何配置项。分组规则只允许有一处真源。
+ */
+const configGroups = computed(() =>
   [
-    ...configurator.networkConfigs.value,
-    ...configurator.otherConfigs.value,
-  ].filter((cfg) => isNetConfig(cfg.key, cfg.label)),
+    { title: t('product.detail.serverSpecs'), configs: configurator.machineConfigs.value || [] },
+    { title: '网络配置', configs: configurator.networkConfigs.value || [] },
+    { title: '其他配置', configs: configurator.otherConfigs.value || [] },
+  ].filter((group) => group.configs.length > 0),
 );
 
 // 购买须知：仅展示，不参与选配与计价
@@ -1418,10 +1386,13 @@ onBeforeUnmount(() => {
   }
 }
 
-/* 统一内容容器：限制最大宽度并水平居中（左右留出安全间距） */
+/* 统一内容容器：限制最大宽度并水平居中（左右留出安全间距）。
+   .pd-desc 曾经漏在这一组里，导致「商品描述」整块通栏、左右没有边距，
+   与上下卡片（顶栏 / 头部 / 主体）对不齐。 */
 .pd-topbar,
 .pd-name-bar,
 .pd-hero,
+.pd-desc,
 .pd-body {
   width: calc(100% - 2 * var(--pd-content-gutter));
   max-width: calc(var(--pd-content-max) - 2 * var(--pd-content-gutter));
@@ -1689,12 +1660,12 @@ onBeforeUnmount(() => {
   }
 }
 
-/* ===== 规格行 ===== */
+/* ===== 规格行（间距与列表式配置区对齐）===== */
 .spec-row {
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  padding: 10px 0;
+  padding: 12px 0;
   border-bottom: 1px solid #f2f3f5;
 
   &:first-child {
@@ -1712,13 +1683,167 @@ onBeforeUnmount(() => {
   width: 64px;
   padding-top: 8px;
   font-size: 13px;
-  color: #86909c;
+  color: $text-color-placeholder;
   line-height: 1.4;
 }
 
 .spec-ctrl {
   flex: 1;
   min-width: 0;
+}
+
+/* ===== 操作系统卡片（与列表式配置区同一套样式）===== */
+.os-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.os-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 170px;
+  padding: 14px 16px;
+  border: 1px solid $border-color;
+  border-radius: 4px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: all $motion-fast ease;
+
+  &:hover {
+    border-color: $color-primary;
+  }
+
+  &.active {
+    border-color: $color-primary;
+    background: $color-primary-soft;
+  }
+}
+
+.os-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.os-logo {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.os-logo-img {
+  display: block;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.os-label-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: $text-color-primary;
+}
+
+.os-card-ver {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 12px;
+  color: $text-color-placeholder;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.os-placeholder {
+  color: $text-color-placeholder;
+}
+
+.os-check-mark {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  background: $color-primary;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.os-ver-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.os-ver-label {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: $text-color-secondary;
+}
+
+.os-ver-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ver-btn {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid $border-color;
+  border-radius: 4px;
+  background: #fff;
+  color: $text-color-primary;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all $motion-fast ease;
+
+  &:hover {
+    border-color: $color-primary;
+    color: $color-primary;
+  }
+
+  &.active {
+    border-color: $color-primary;
+    background: $color-primary-soft;
+    color: $color-primary;
+    font-weight: 600;
+  }
+}
+
+/* 单选项是既成事实而不是可点控件：静态高亮，避免「看着能点、点了没反应」 */
+.spec-fixed {
+  display: inline-block;
+  padding: 5px 12px;
+  border: 1px solid $divider-color;
+  border-radius: 4px;
+  background: $divider-color;
+  color: $text-color-secondary;
+  font-size: 13px;
+}
+
+/* 900px：与列表式的移动断点保持一致；平板不再挤三栏，
+   并隐藏摘要卡里的提交按钮——移动底栏已有同一个按钮，否则同屏两个 */
+@media (max-width: 900px) {
+  .pd-body {
+    grid-template-columns: 1fr;
+  }
+
+  .aside-card .buy-btn {
+    display: none;
+  }
 }
 
 /* ===== 购买须知 ===== */

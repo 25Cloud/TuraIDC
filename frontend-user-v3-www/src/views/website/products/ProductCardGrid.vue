@@ -4,7 +4,12 @@
       v-for="card in cards"
       :key="card.id"
       class="product-card"
-      :class="{ 'product-card--sold-out': card.soldOut }"
+      :class="{
+        'product-card--sold-out': card.soldOut,
+        'product-card--selected': card.selected,
+      }"
+      :aria-current="card.selected ? 'true' : undefined"
+      @click="select(card)"
     >
       <header class="product-card-head">
         <h3 class="product-card-name" :title="card.name">{{ card.name }}</h3>
