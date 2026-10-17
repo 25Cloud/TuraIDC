@@ -72,6 +72,9 @@
       "clickToVerify": "Click to verify"
     }
   },
+  "adminViewMode": {
+    "title": "Default view"
+  },
   "layout": {
     "skipToContent": "Skip to main content",
     "header": {

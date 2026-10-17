@@ -72,6 +72,9 @@
       "failed": "驗證失敗"
     }
   },
+  "adminViewMode": {
+    "title": "預設顯示方式"
+  },
   "layout": {
     "skipToContent": "跳到主內容",
     "header": {

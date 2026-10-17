@@ -38,6 +38,16 @@
           </t-radio-button>
         </t-radio-group>
 
+        <div class="setting-group-title">{{ t('adminViewMode.title') }}</div>
+        <t-radio-group
+          :value="defaultViewMode"
+          class="setting-default-view-mode"
+          @change="(value: unknown) => changeDefaultViewMode(String(value))"
+        >
+          <t-radio-button value="list">{{ t('settings.index.productDisplayModeList') }}</t-radio-button>
+          <t-radio-button value="card">{{ t('settings.index.productDisplayModeCard') }}</t-radio-button>
+        </t-radio-group>
+
         <div class="setting-group-title">{{ t('layout.setting.theme.color') }}</div>
         <p class="setting-theme-readonly">{{ t('layout.setting.theme.siteManaged') }}</p>
 
@@ -90,6 +100,21 @@ import { languageList, t } from '@/locales';
 import { useLocale } from '@/locales/useLocale';
 import { useSettingStore } from '@/store';
 import type { ModeType } from '@/types/interface';
+import { getDefaultViewMode, setDefaultViewMode, type AdminViewMode } from '@/composables/useAdminViewMode';
+
+/**
+ * 列表页默认展示方式（列表式 / 卡片式）。
+ *
+ * 各列表页的切换开关（useAdminViewMode）在没被单独设置过时以它为初始值，
+ * 管理员在这里改一次，所有列表页跟着变；单独切过某一页则尊重页面自己的偏好。
+ */
+const defaultViewMode = ref<AdminViewMode>(getDefaultViewMode());
+
+function changeDefaultViewMode(value: string): void {
+  const next: AdminViewMode = value === 'card' ? 'card' : 'list';
+  setDefaultViewMode(next);
+  defaultViewMode.value = next;
+}
 
 const settingStore = useSettingStore();
 const { changeLocale, locale } = useLocale();
@@ -379,6 +404,27 @@ watchEffect(() => {
       border-color: var(--td-component-border) !important;
       cursor: not-allowed;
     }
+  }
+}
+
+/*
+ * 语言栏单独排布。
+ *
+ * 抽屉里所有 .t-radio-group.t-size-m 都被设成 width:100% + justify-content:space-between
+ * （本为「主题模式」两个按钮贴两端）。i18n 之后语言栏变成四个选项、还有长标签，
+ * 被摊开后互相挤压换行错位——看着像样式崩了。这里改成左对齐、按内容宽度换行。
+ * 必须放在上面 .t-radio-group.t-size-m 规则之后，同权重靠后覆盖。
+ */
+.t-radio-group.t-size-m.setting-language-radio {
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-start;
+
+  .t-radio-button {
+    flex: 0 0 auto;
+    width: auto;
+    height: auto;
+    white-space: nowrap;
   }
 }
 </style>

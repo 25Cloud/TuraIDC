@@ -72,6 +72,9 @@
       "failed": "验证失败"
     }
   },
+  "adminViewMode": {
+    "title": "默认展示方式"
+  },
   "layout": {
     "skipToContent": "跳到主内容",
     "header": {
