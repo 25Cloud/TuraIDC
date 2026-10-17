@@ -157,11 +157,6 @@
       "xeonShort": "Xeon",
       "xeonFull": "Xeon"
     },
-    "displayMode": {
-      "list": "List",
-      "card": "Cards",
-      "useSiteDefault": "Back to default"
-    },
     "card": {
       "buyNow": "Buy now",
       "soldOut": "Sold out",

@@ -2352,60 +2352,6 @@
   justify-content: flex-end;
 }
 
-/* ===== 展示方式切换 ===== */
-/*
- * 列表式 / 卡片式的切换控件。放在分组筛选之下、商品内容之上，
- * 因为它切的是「下面这一大片怎么排」，不是页面级导航。
- */
-
-.display-mode-switch {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 4px 0 12px;
-}
-
-.display-mode-switch-group {
-  display: inline-flex;
-  padding: 2px;
-  background: $bg-color-soft;
-  border: 1px solid $divider-color;
-  border-radius: 6px;
-}
-
-.display-mode-btn {
-  padding: 5px 14px;
-  font-size: 13px;
-  color: $text-color-secondary;
-  background: transparent;
-  border: 0;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-
-  &:hover {
-    color: $color-primary;
-  }
-
-  &.active {
-    color: #fff;
-    background: $color-primary;
-  }
-}
-
-.display-mode-reset {
-  padding: 0;
-  font-size: 12px;
-  color: $color-primary;
-  background: none;
-  border: 0;
-  cursor: pointer;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
 .product-card-grid-wrap {
   margin-bottom: 8px;
 }

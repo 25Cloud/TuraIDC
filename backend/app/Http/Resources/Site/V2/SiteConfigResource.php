@@ -31,6 +31,10 @@ class SiteConfigResource extends JsonResource
         // 值已在 SiteConfigPayload 做过严格格式校验，这里只做透传。
         'brand_primary_color',
         'brand_radius',
+        // 全站商品展示方式（list / card）：选购页据此决定渲列表还是卡片。
+        // 它只在 SiteConfigPayload 里算出来、这里漏登记过一次，导致后台配了也不生效，
+        // 新增站点级字段时务必两处同时改（回归用例见 V2SiteHomeApiTest）。
+        'product_display_mode',
     ];
 
     /**

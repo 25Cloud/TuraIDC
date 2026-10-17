@@ -44,9 +44,27 @@ class V2SiteHomeApiTest extends TestCase
             'privacy_url',
             'icp_record',
             'value_added_license',
+            // 品牌与展示方式：SiteConfigPayload 里算出来之后必须在 SiteConfigResource
+            // 的白名单里再登记一次，漏登记就会「后台配了、接口不下发、前端永远默认值」。
+            'brand_primary_color',
+            'brand_radius',
+            'product_display_mode',
         ], array_keys($response->json('data')));
         $this->assertNoSensitiveKeys($response->json());
         $this->assertLessThan(50 * 1024, strlen((string) $response->getContent()));
+    }
+
+    public function test_site_config_exposes_product_display_mode(): void
+    {
+        Setting::setValue('basic', 'product_display_mode', 'card');
+        $this->assertSame('card', $this->getJson('/api/v2/site/config')->json('data.product_display_mode'));
+
+        Setting::setValue('basic', 'product_display_mode', 'list');
+        $this->assertSame('list', $this->getJson('/api/v2/site/config')->json('data.product_display_mode'));
+
+        // 写脏值必须回落到列表式，避免站点出现第三种未知排版
+        Setting::setValue('basic', 'product_display_mode', 'weird');
+        $this->assertSame('list', $this->getJson('/api/v2/site/config')->json('data.product_display_mode'));
     }
 
     public function test_site_config_exposes_icp_record_and_value_added_license(): void

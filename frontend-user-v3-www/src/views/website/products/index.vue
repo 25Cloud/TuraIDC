@@ -183,39 +183,7 @@
             </el-tabs>
           </div>
 
-          <!--
-            展示方式切换。后台「站点设置 → 基础设置」决定默认形态，这里允许用户临时改一次。
-            两种形态是同一份接口数据的两种排布，不做数据裁剪：
-            列表式读 spec_highlights 填表格列，卡片式读 description_html 填卡片描述。
-          -->
-          <div class="display-mode-switch">
-            <div class="display-mode-switch-group">
-              <button
-                type="button"
-                class="display-mode-btn"
-                :class="{ active: displayMode === DISPLAY_MODE_LIST }"
-                @click="setDisplayMode(DISPLAY_MODE_LIST)"
-              >
-                {{ $t("product.displayMode.list") }}
-              </button>
-              <button
-                type="button"
-                class="display-mode-btn"
-                :class="{ active: displayMode === DISPLAY_MODE_CARD }"
-                @click="setDisplayMode(DISPLAY_MODE_CARD)"
-              >
-                {{ $t("product.displayMode.card") }}
-              </button>
-            </div>
-            <button
-              v-if="hasDisplayModeOverride"
-              type="button"
-              class="display-mode-reset"
-              @click="useSiteDisplayMode"
-            >
-              {{ $t("product.displayMode.useSiteDefault") }}
-            </button>
-          </div>
+          <!-- 展示方式由后台「站点设置 → 基础设置」统一决定，页面不提供用户级切换 -->
 
           <!-- 卡片式：商品卡片网格。与配置区互斥，选中商品后自动切到配置区 -->
           <ProductCardGrid
@@ -1882,7 +1850,6 @@ import { resolveProductDisplayName } from "@/utils/websiteProductConfig";
 import ProductCardGrid from "./ProductCardGrid.vue";
 import {
   DISPLAY_MODE_CARD,
-  DISPLAY_MODE_LIST,
   useProductDisplayMode,
 } from "./useProductDisplayMode";
 import {
@@ -1900,15 +1867,12 @@ import {
 } from "@/domains/products/machineSpecResolver";
 
 /**
- * 展示方式：后台「站点设置 → 基础设置」决定默认形态，用户可用 cookie 临时改一次
- * （对齐魔方的 cookie("cart_theme")）。两种形态共用同一份接口数据，不做字段裁剪。
+ * 展示方式：只由后台「站点设置 → 基础设置」决定，页面不提供用户级覆盖。
+ * 排版是经营方的决策，同一站点必须只呈现一种形态，否则运营无法确认自己配置的效果。
+ * 两种形态共用同一份接口数据：列表式读 spec_highlights 填表格列，
+ * 卡片式读 description_html 填卡片描述。
  */
-const {
-  displayMode,
-  hasOverride: hasDisplayModeOverride,
-  setMode: setDisplayMode,
-  useSiteDefault: useSiteDisplayMode,
-} = useProductDisplayMode();
+const { displayMode } = useProductDisplayMode();
 
 // 卡片式不自动选中第一个商品：没有选中态才展示卡片网格，
 // 选中态交给 /products/:id 独立配置页承载。

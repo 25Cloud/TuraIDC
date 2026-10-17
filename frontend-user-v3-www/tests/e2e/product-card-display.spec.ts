@@ -8,7 +8,7 @@ import { expect, test } from "@playwright/test";
  * 表达空间（商品没有可编辑的描述，展示方式也无法按站点偏好调整）。本次新增：
  *
  *   - 全站展示方式由后台「站点设置 → 基础设置」决定，经既有 /v2/site/config 下发；
- *   - 用户可用 cookie 临时改一次形态（对齐魔方的 cookie("cart_theme")）；
+ *   - 前台不提供用户级切换：排版是站点经营方的决策，同一站点只呈现一种形态；
  *   - 描述只有一个真源 products.description，留空时按规格维度自动生成
  *     <ul><li>键: 值</li></ul>，由后端 ProductDescriptionService 产出。
  *
@@ -225,13 +225,13 @@ async function mockSiteApi(page: Page, displayMode: "list" | "card") {
 const catalogPath = `/products?type=${TYPE_CODE}&group=${GROUP_ID}`;
 
 test.describe("选购页展示方式与商品描述", () => {
-  test("列表式（默认）不显示卡片网格", async ({ page }) => {
+  test("站点配置为列表式时不渲染卡片网格，且页面不提供切换入口", async ({ page }) => {
     await mockSiteApi(page, "list");
     await page.goto(catalogPath);
 
     await expect(page.locator(".product-card-grid")).toHaveCount(0);
-    // 列表式的形态识别入口仍然在
-    await expect(page.locator(".display-mode-switch")).toBeVisible();
+    // 展示方式只由后台站点设置决定，前台不再提供用户级切换
+    await expect(page.locator(".display-mode-switch")).toHaveCount(0);
   });
 
   test("卡片式展示卡片网格且不自动选中商品", async ({ page }) => {
@@ -259,20 +259,6 @@ test.describe("选购页展示方式与商品描述", () => {
     await expect(cards.nth(1).locator(".product-card-desc a")).toHaveAttribute("href", "https://example.com/help");
   });
 
-  test("切换到列表式后卡片网格消失", async ({ page }) => {
-    await mockSiteApi(page, "card");
-    await page.goto(catalogPath);
-    await expect(page.locator(".product-card-grid")).toBeVisible();
-
-    await page.locator(".display-mode-btn").filter({ hasText: "列表" }).click();
-
-    await expect(page.locator(".product-card-grid")).toHaveCount(0);
-    // 用户级选择被记住，刷新后仍是列表式
-    await page.reload();
-    await expect(page.locator(".product-card-grid")).toHaveCount(0);
-    await expect(page.locator(".display-mode-reset")).toBeVisible();
-  });
-
   test("点立即选购进入独立配置页，配置页展示描述", async ({ page }) => {
     await mockSiteApi(page, "card");
     await page.goto(catalogPath);
@@ -293,7 +279,10 @@ test.describe("选购页展示方式与商品描述", () => {
     await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
     await page.screenshot({ path: shot("card-mode"), fullPage: true });
 
-    await page.locator(".display-mode-btn").filter({ hasText: "列表" }).click();
+    // 列表式不再靠前台切换：换掉站点配置重新加载，验证站点默认值直接生效
+    await page.unroute("**/api/v2/site/**");
+    await mockSiteApi(page, "list");
+    await page.reload();
     await expect(page.locator(".product-card-grid")).toHaveCount(0);
     await page.screenshot({ path: shot("list-mode"), fullPage: true });
 

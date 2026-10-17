@@ -157,11 +157,6 @@
       "xeonShort": "至",
       "xeonFull": "至強"
     },
-    "displayMode": {
-      "list": "列表",
-      "card": "卡片",
-      "useSiteDefault": "恢復預設"
-    },
     "card": {
       "buyNow": "立即選購",
       "soldOut": "已售罄",
