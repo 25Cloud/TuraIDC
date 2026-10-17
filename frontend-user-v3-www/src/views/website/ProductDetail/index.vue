@@ -1,5 +1,10 @@
 <template>
-  <div class="pd-page" v-loading="loading">
+  <!--
+    整页遮罩只在「还没有商品可看」的首次加载时出现。
+    后续任何重载（切换系统、切换付费周期等触发的状态刷新）都不能再盖住整页，
+    否则每次改动都像整页重新刷了一下，配置项还会短暂不可点。
+  -->
+  <div class="pd-page" v-loading="loading && !product">
     <div v-if="product">
       <!-- 顶部工具栏：分类 + 型号横向Tab -->
       <div class="pd-topbar">
