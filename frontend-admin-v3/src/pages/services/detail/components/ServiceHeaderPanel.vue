@@ -94,82 +94,82 @@
         </div>
       </div>
 
-      <!-- 第三层：次级信息，折叠下沉，不与主信息争抢首屏 -->
-      <t-collapse :value="['identity']" :borderless="true" class="console-header-collapse">
-        <t-collapse-panel value="identity" :header="$t('services.console.specAndUpstream')">
-          <div class="console-meta-grid">
-            <div class="detail-cell">
-              <span>{{ $t('services.console.upstreamName') }}</span>
-              <div class="detail-cell-value">
-                <strong>{{ upstreamName || $t('services.console.notBound') }}</strong>
-              </div>
-            </div>
-            <div class="detail-cell">
-              <span>{{ $t('services.console.upstreamInstanceId') }}</span>
-              <div class="detail-cell-value">
-                <strong>{{ upstreamHostId > 0 ? upstreamHostId : $t('services.console.notBound') }}</strong>
-              </div>
-            </div>
-            <div class="detail-cell">
-              <span>{{ $t('services.console.instanceId') }}</span>
-              <div class="detail-cell-value">
-                <strong>{{ detail.id || '--' }}</strong>
-                <button
-                  v-if="detail.id"
-                  type="button"
-                  class="copy-link"
-                  :aria-label="`${$t('services.console.copy')}${detail.id}`"
-                  @click="copyText(detail.id)"
-                >
-                  <copy-icon size="1rem" />
-                </button>
-              </div>
-            </div>
-            <div class="detail-cell">
-              <span>{{ $t('services.console.createdAt') }}</span>
-              <div class="detail-cell-value">
-                <strong>{{ detail.created_at || '--' }}</strong>
-              </div>
-            </div>
-            <div class="detail-cell">
-              <span>{{ $t('services.console.billingCycle') }}</span>
-              <div class="detail-cell-value">
-                <strong>{{ detail.billing_cycle_label || '--' }}</strong>
-              </div>
-            </div>
-            <div class="detail-cell">
-              <span>{{ $t('services.console.region') }}</span>
-              <div class="detail-cell-value">
-                <strong>{{ serviceRegion }}</strong>
-              </div>
-            </div>
-            <div v-if="hasServiceOs" class="detail-cell">
-              <span>{{ $t('services.console.os') }}</span>
-              <div class="detail-cell-value">
-                <strong>{{ serviceOs }}</strong>
-              </div>
-            </div>
-            <div class="detail-cell">
-              <span>{{ $t('services.console.publicIpLabel') }}</span>
-              <div class="detail-cell-value">
-                <strong>{{ primaryConnectionText }}</strong>
-              </div>
-            </div>
-            <div class="detail-cell">
-              <span>{{ $t('services.console.autoRenewLabel') }}</span>
-              <div class="detail-cell-value">
-                <strong>{{ autoRenewLabel }}</strong>
-              </div>
+      <!-- 第三层：次级信息，平铺展示。这里不做折叠：内容量固定且都是运营核对时真要看的，
+           加一个默认展开的折叠开关只会多一个点击目标。 -->
+      <div class="console-secondary">
+        <div class="console-secondary-title">{{ $t('services.console.specAndUpstream') }}</div>
+        <div class="console-meta-grid">
+          <div class="detail-cell">
+            <span>{{ $t('services.console.upstreamName') }}</span>
+            <div class="detail-cell-value">
+              <strong>{{ upstreamName || $t('services.console.notBound') }}</strong>
             </div>
           </div>
-          <div v-if="specChips.length" class="spec-grid">
-            <div v-for="item in specChips" :key="item.label" class="spec-chip">
-              <span>{{ item.label }}</span>
-              <strong>{{ item.value }}</strong>
+          <div class="detail-cell">
+            <span>{{ $t('services.console.upstreamInstanceId') }}</span>
+            <div class="detail-cell-value">
+              <strong>{{ upstreamHostId > 0 ? upstreamHostId : $t('services.console.notBound') }}</strong>
             </div>
           </div>
-        </t-collapse-panel>
-      </t-collapse>
+          <div class="detail-cell">
+            <span>{{ $t('services.console.instanceId') }}</span>
+            <div class="detail-cell-value">
+              <strong>{{ detail.id || '--' }}</strong>
+              <button
+                v-if="detail.id"
+                type="button"
+                class="copy-link"
+                :aria-label="`${$t('services.console.copy')}${detail.id}`"
+                @click="copyText(detail.id)"
+              >
+                <copy-icon size="1rem" />
+              </button>
+            </div>
+          </div>
+          <div class="detail-cell">
+            <span>{{ $t('services.console.createdAt') }}</span>
+            <div class="detail-cell-value">
+              <strong>{{ detail.created_at || '--' }}</strong>
+            </div>
+          </div>
+          <div class="detail-cell">
+            <span>{{ $t('services.console.billingCycle') }}</span>
+            <div class="detail-cell-value">
+              <strong>{{ detail.billing_cycle_label || '--' }}</strong>
+            </div>
+          </div>
+          <div class="detail-cell">
+            <span>{{ $t('services.console.region') }}</span>
+            <div class="detail-cell-value">
+              <strong>{{ serviceRegion }}</strong>
+            </div>
+          </div>
+          <div v-if="hasServiceOs" class="detail-cell">
+            <span>{{ $t('services.console.os') }}</span>
+            <div class="detail-cell-value">
+              <strong>{{ serviceOs }}</strong>
+            </div>
+          </div>
+          <div class="detail-cell">
+            <span>{{ $t('services.console.publicIpLabel') }}</span>
+            <div class="detail-cell-value">
+              <strong>{{ primaryConnectionText }}</strong>
+            </div>
+          </div>
+          <div class="detail-cell">
+            <span>{{ $t('services.console.autoRenewLabel') }}</span>
+            <div class="detail-cell-value">
+              <strong>{{ autoRenewLabel }}</strong>
+            </div>
+          </div>
+        </div>
+        <div v-if="specChips.length" class="spec-grid">
+          <div v-for="item in specChips" :key="item.label" class="spec-chip">
+            <span>{{ item.label }}</span>
+            <strong>{{ item.value }}</strong>
+          </div>
+        </div>
+      </div>
     </div>
   </t-card>
 </template>
@@ -227,26 +227,55 @@ function goUserDetail() {
 }
 </script>
 <style lang="less" scoped>
-/* 顶部改为纵向三层（识别 → 商务 → 次级），覆盖全局的横向两栏布局 */
+/* 顶部改为纵向三层（识别 → 商务 → 次级）。
+   必须显式铺满卡片：父级 .t-card__body 是 flex 行容器，块级子元素默认按内容收缩，
+   宽屏会贴左留下大片空白、窄屏则因最小内容宽度溢出到右侧。 */
 .console-header-body {
   display: block;
+  width: 100%;
+  min-width: 0;
 }
 
 .console-identity-grid,
 .console-meta-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  /* min(100%, Nrem)：容器比单列最小宽度还窄时轨道不许溢出，否则窄屏横向拉出滚动条 */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
   gap: 0.5rem 1.5rem;
   margin-top: 0.75rem;
 }
 
 .console-commerce {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
   gap: 0.5rem 1.5rem;
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 0.0625rem dashed var(--td-border-color);
+}
+
+/* 长主机名、长路径、长邮箱允许收缩换行，不把网格撑破 */
+.console-header-body .detail-cell {
+  min-width: 0;
+}
+
+.console-header-body .detail-cell-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 第三层：次级信息平铺（原折叠区块），与商务信息用虚线分隔 */
+.console-secondary {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 0.0625rem dashed var(--td-border-color);
+}
+
+.console-secondary-title {
+  margin-bottom: 0.25rem;
+  color: var(--td-text-color-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .console-price-original {
@@ -267,10 +296,6 @@ function goUserDetail() {
   color: var(--td-text-color-secondary);
   font-size: 0.8125rem;
   font-weight: 400;
-}
-
-.console-header-collapse {
-  margin-top: 0.75rem;
 }
 
 @media (width <= 56.25rem) {

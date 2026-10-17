@@ -55,11 +55,10 @@
     border-radius: var(--td-radius-medium);
   }
 
+  // 顶部卡片正文：只提供内边距，布局交给 ServiceHeaderPanel 自己管。
+  // 这里曾经是 flex + space-between（为旧版「左信息 + 右操作」两栏写的），
+  // 新面板只有一个块级子元素，继续沿用会让内容按内容宽度收缩、右侧留白。
   .console-header-card .t-card__body {
-    display: flex;
-    gap: 1.25rem;
-    align-items: flex-start;
-    justify-content: space-between;
     padding: 1.375rem 1.5rem;
   }
 
@@ -1201,8 +1200,6 @@
 
   @media (width <= 56.25rem) {
     .console-header-card .t-card__body {
-      flex-direction: column;
-      gap: 0.875rem;
       padding: 1.125rem 1rem;
     }
 

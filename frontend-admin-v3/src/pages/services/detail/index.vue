@@ -9,7 +9,7 @@
         <h3>{{ consoleTitle }}</h3>
         <span>服务 #{{ serviceId }}</span>
       </div>
-      <t-button v-if="hasUser" variant="outline" @click="goUserDetail">查看用户</t-button>
+      <!-- 「查看用户」只在顶部信息卡片里出现一次（紧邻所属用户），此处不再重复 -->
     </div>
 
     <t-empty v-if="!hasUser" description="缺少用户上下文，请从用户详情或服务列表进入该页面">
@@ -76,22 +76,20 @@ async function resolveConsoleKind() {
   }
 }
 
-watch([hasUser, serviceId], () => {
-  consoleKind.value = 'unknown';
-  void resolveConsoleKind();
-}, { immediate: true });
+watch(
+  [hasUser, serviceId],
+  () => {
+    consoleKind.value = 'unknown';
+    void resolveConsoleKind();
+  },
+  { immediate: true },
+);
 
 function goBack() {
   if (window.history.length > 1) {
     router.back();
   } else {
     router.push({ name: 'AdminServices' });
-  }
-}
-
-function goUserDetail() {
-  if (hasUser.value) {
-    router.push({ name: 'AdminUserDetail', params: { id: userId.value } });
   }
 }
 </script>
