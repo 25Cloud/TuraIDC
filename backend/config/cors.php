@@ -48,6 +48,10 @@ return [
         'X-CSRF-TOKEN',
         'X-Request-Id',
         'X-Idempotency-Key',
+        // 三端 i18n 请求拦截器都会带上它，SetLocale 中间件据此协商语言。
+        // 漏登记的后果不是「少一个头」：预检不返回它时浏览器会拒绝整个请求，
+        // 三端所有 API 调用一起不可用。
+        'X-Locale',
     ],
     'exposed_headers' => ['Content-Disposition', 'Retry-After', 'X-Request-Id'],
     // 三端与 API 分域部署，浏览器对每个跨源 API 请求都会先发一次 OPTIONS 预检。

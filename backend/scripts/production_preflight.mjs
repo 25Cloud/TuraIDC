@@ -288,12 +288,21 @@ export function validateCorsResponse(origin, status, headers) {
     "access-control-allow-headers",
   ).toLowerCase();
   const headerNames = allowedHeaders.split(/\s*,\s*/);
-  if (
-    !headerNames.includes("authorization") ||
-    !headerNames.includes("content-type")
-  ) {
+  // 三端前端实际发送的自定义头：x-locale 由 SetLocale 中间件消费，另两个用于链路追踪与支付幂等。
+  // 漏掉任一个都不是「少一个头」：预检不返回它时浏览器会拒绝整条请求，三端 API 一起不可用。
+  const requiredHeaders = [
+    "authorization",
+    "content-type",
+    "x-locale",
+    "x-request-id",
+    "x-idempotency-key",
+  ];
+  const missingHeaders = requiredHeaders.filter(
+    (name) => !headerNames.includes(name),
+  );
+  if (missingHeaders.length > 0) {
     failures.push(
-      "Access-Control-Allow-Headers 未允许 Authorization 和 Content-Type。",
+      `Access-Control-Allow-Headers 未允许：${missingHeaders.join("、")}。`,
     );
   }
 
