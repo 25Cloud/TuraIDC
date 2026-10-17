@@ -236,19 +236,32 @@ function goUserDetail() {
   min-width: 0;
 }
 
+/* 三层（识别 / 商务 / 次级）共用同一套列定义：列宽一致，上下才会对齐。
+   用 auto-fill 而不是 auto-fit —— auto-fit 会把空轨道折掉，剩下的格子被拉满整行，
+   在宽屏上每格几百像素，标签与值被拽得老远，看起来就是「乱七八糟」。
+   窄屏直接单列：轨道最小宽（18rem）在手机宽度下会顶破容器，拉出横向滚动条。 */
 .console-identity-grid,
+.console-commerce,
 .console-meta-grid {
   display: grid;
-  /* min(100%, Nrem)：容器比单列最小宽度还窄时轨道不许溢出，否则窄屏横向拉出滚动条 */
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 22rem));
   gap: 0.5rem 1.5rem;
+}
+
+@media (width <= 40rem) {
+  .console-identity-grid,
+  .console-commerce,
+  .console-meta-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.console-identity-grid,
+.console-meta-grid {
   margin-top: 0.75rem;
 }
 
 .console-commerce {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
-  gap: 0.5rem 1.5rem;
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 0.0625rem dashed var(--td-border-color);

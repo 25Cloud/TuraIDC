@@ -67,6 +67,16 @@ function cloudServiceDetail(): Record<string, unknown> {
     upstream: { provider_key: 'zjmf', host_id: 168, status: 'active', admin_url: '' },
     actions: { refresh: true, module_status: true, power: true },
     user: { id: USER_ID, username: 'demo-user', email: 'demo@example.com' },
+    // 规格块：后端只下发有中文标签的真实规格（上游内部元字段已在
+    // ServiceTransformService::resolveFallbackSpecLabel 过滤掉）
+    specs: [
+      { key: 'node', label: '节点', value: '枣庄' },
+      { key: 'os', label: '操作系统', value: 'Ubuntu24.04_x64' },
+      { key: 'cpu', label: 'CPU', value: '32核' },
+      { key: 'memory', label: '内存', value: '32G' },
+      { key: 'system_disk_size', label: '系统盘', value: 'Lin80G,Win90G' },
+      { key: 'bw', label: '带宽', value: '30Mbps' },
+    ],
   };
 }
 

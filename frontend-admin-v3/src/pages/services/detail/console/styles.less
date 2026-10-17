@@ -38,7 +38,9 @@
   .console-header-card,
   .console-actions-card {
     background: var(--td-bg-color-container);
-    border: 0.0625rem solid var(--td-border-color);
+    /* 用卡片描边 token 而不是分割线 token：深色下 --td-border-color 与容器底色
+       过近，卡片看起来像没有边框 */
+    border: 0.0625rem solid var(--td-component-stroke);
     border-radius: var(--td-radius-medium);
     box-shadow: var(--td-shadow-1);
   }
@@ -318,7 +320,9 @@
   }
 
   .detail-cell .detail-cell-value strong {
-    flex: 1;
+    /* 不 flex:1：值撑满会把紧随其后的复制按钮推到单元格最右侧，
+       在宽屏上离正文几百像素，看起来像是「飘着的图标」 */
+    flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
     color: var(--td-text-color-primary);

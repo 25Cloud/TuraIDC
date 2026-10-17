@@ -1538,7 +1538,10 @@ class ServiceTransformService
             'advanced_bw' => '智能带宽',
             'qty' => '数量',
             'period' => '周期',
-            default => $field,
+            // 未知字段不猜标签：回空会被 buildFallbackSpecDefinitions 过滤掉。
+            // 这些通常是上游供应数据里的内部元字段（schema_type、stock_reserved、
+            // product_full_path 之类），把它们当规格标签展示出来只会挤满首屏。
+            default => '',
         };
     }
 

@@ -47,14 +47,21 @@
 
 .spec-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  /* 有界列宽 + 顶部对齐：minmax(120px, 1fr) 在宽屏上会把每个规格块拉成几百像素宽，
+     内容稍长就整行等高，观感像一排空盒子 */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 8rem), 12rem));
+  align-items: start;
   gap: var(--td-comp-margin-s);
   margin-top: var(--td-comp-margin-l);
 }
 
 .spec-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
   padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-s);
-  border: 1px solid var(--td-component-border);
+  border: 1px solid var(--td-component-stroke);
   border-radius: var(--td-radius-medium);
   background: var(--td-bg-color-container);
 }
