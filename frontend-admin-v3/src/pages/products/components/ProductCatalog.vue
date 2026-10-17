@@ -200,6 +200,7 @@
             />
           </t-select>
           <div class="catalog-filter-actions">
+            <admin-view-mode-switch :mode="productViewMode" @change="setProductViewMode" />
             <t-button theme="primary" @click="router.push({ name: 'AdminProductCreate' })">
               <template #icon><add-icon /></template>
               {{ $t('products.catalog.addProduct') }}
@@ -238,7 +239,25 @@
           </t-space>
         </div>
 
-        <div class="table-scroll">
+        <admin-record-cards
+          v-if="isProductCardView"
+          :records="products"
+          :fields="productCardFields"
+          :empty-text="$t('products.catalog.emptyProduct')"
+        >
+          <template #title="{ record }">
+            <button
+              type="button"
+              class="user-link"
+              :disabled="!isEntityId(record.id)"
+              @click="goProductEdit(router, record.id)"
+            >
+              <strong>{{ record.display_name || record.name || `#${record.id}` }}</strong>
+            </button>
+          </template>
+        </admin-record-cards>
+
+        <div v-else class="table-scroll">
           <t-table
             row-key="id"
             :data="products"
@@ -1382,6 +1401,9 @@ import type { ProductCategoryRecord, ProductRecord, ProductTypeRecord, SpecHighl
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
 import { t } from '@/locales';
 import { useUserStore } from '@/store';
+import AdminRecordCards from '@/components/admin-record-cards/index.vue';
+import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
+import { useAdminViewMode } from '@/composables/useAdminViewMode';
 import { goProductEdit, isEntityId } from '@/utils/route/adminEntityLink';
 import { productApi } from '@/api/product';
 import type { ProviderTypeRecord, SupplierFormField, SupplierRecord } from '@/api/supplier';
@@ -1483,6 +1505,30 @@ const categoryOptions = ref<ProductCategoryRecord[]>([]);
 const categoryParentOptions = ref<ProductCategoryRecord[]>([]);
 const categoryParentLoading = ref(false);
 const products = ref<ProductRecord[]>([]);
+
+/**
+ * 商品列表的展示方式：与其它列表页共用 useAdminViewMode，偏好按页面记住，
+ * 默认值在设置面板里配置。列表式是既有形态，卡片式是可选的第二形态——
+ * 两者只影响展示，不影响勾选与批量操作（卡片视图下暂不提供批选）。
+ */
+const {
+  mode: productViewMode,
+  isCard: isProductCardView,
+  setMode: setProductViewMode,
+} = useAdminViewMode('admin-products', 'list');
+
+/** 卡片字段直接取表格列定义，避免再维护一份易漂移的字段清单。 */
+const productCardFields = computed(() =>
+  productColumns
+    .filter(
+      (column) =>
+        column.colKey &&
+        column.title &&
+        !['row-select', 'operation'].includes(String(column.colKey)),
+    )
+    .slice(0, 4)
+    .map((column) => ({ key: String(column.colKey), label: String(column.title) })),
+);
 const productTotal = ref(0);
 const productPage = ref(1);
 const productPageSize = ref(20);
