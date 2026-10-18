@@ -74,7 +74,8 @@
   },
   "adminViewMode": {
     "title": "默认展示方式",
-    "switchLabel": "切换展示方式"
+    "switchLabel": "切换展示方式",
+    "hint": "对所有列表页生效；页面内的切换只在当前会话有效。"
   },
   "layout": {
     "skipToContent": "跳到主内容",

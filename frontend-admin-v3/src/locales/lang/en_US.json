@@ -74,7 +74,8 @@
   },
   "adminViewMode": {
     "title": "Default view",
-    "switchLabel": "Switch view mode"
+    "switchLabel": "Switch view mode",
+    "hint": "Applies to all list pages; switching inside a page only lasts for the current session."
   },
   "layout": {
     "skipToContent": "Skip to main content",

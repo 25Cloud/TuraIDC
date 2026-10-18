@@ -74,7 +74,8 @@
   },
   "adminViewMode": {
     "title": "預設顯示方式",
-    "switchLabel": "切換顯示方式"
+    "switchLabel": "切換顯示方式",
+    "hint": "對所有列表頁生效；頁面內的切換只在目前工作階段有效。"
   },
   "layout": {
     "skipToContent": "跳到主內容",

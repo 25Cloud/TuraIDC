@@ -47,6 +47,7 @@
           <t-radio-button value="list">{{ t('settings.index.productDisplayModeList') }}</t-radio-button>
           <t-radio-button value="card">{{ t('settings.index.productDisplayModeCard') }}</t-radio-button>
         </t-radio-group>
+        <p class="setting-view-mode-hint">{{ t('adminViewMode.hint') }}</p>
 
         <div class="setting-group-title">{{ t('layout.setting.theme.color') }}</div>
         <p class="setting-theme-readonly">{{ t('layout.setting.theme.siteManaged') }}</p>
@@ -211,6 +212,15 @@ watchEffect(() => {
   margin: 0;
   font-size: 12px;
   line-height: 20px;
+  text-align: left;
+  color: var(--td-text-color-secondary);
+}
+
+/* 默认展示方式下方说明：与上一个控件留 8px，避免和单选项贴在一起 */
+.setting-view-mode-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
   text-align: left;
   color: var(--td-text-color-secondary);
 }
