@@ -54,17 +54,17 @@
           <span>{{ $t('product.detail.category') }}</span>
         </button>
 
-        <!-- 产品线 Tab（同一产品组下的同级） -->
-        <div class="sibling-scroll" v-if="siblings.length > 1">
+        <!-- 同级机型快速切换：桌面端与机型对比表并存，移动端走抽屉选择器 -->
+        <div class="sibling-scroll" v-if="!isMobile && skuRows.length > 1">
           <button
-            v-for="sib in siblings"
+            v-for="sib in skuRows"
             :key="sib.id"
             type="button"
             class="sib-tab"
             :class="{ active: sib.id === product.id }"
             @click="switchProduct(sib.id)"
           >
-            {{ siblingDisplayNames[sib.id] }}
+            {{ sib.name }}
           </button>
         </div>
       </div>
@@ -113,24 +113,240 @@
         <div class="pd-desc-body" v-html="productDescription" />
       </section>
 
+      <!--
+        机型对比表：同组在售商品与列表式机型表同源
+        （/v2/site/product-groups/{id}/products），独立配置页不再只有一排同级 tab，
+        可以直接比较规格与价格后再切换机型。
+      -->
+      <section v-if="!isMobile && skuRows.length > 1" class="pd-sku">
+        <div class="pd-sku-head">
+          <h2 class="pd-sku-title">机型对比</h2>
+          <span class="pd-sku-hint">点击任意机型切换配置与报价</span>
+        </div>
+        <div class="sku-table" role="table" aria-label="机型对比">
+          <div class="sku-row sku-row--head" role="row">
+            <span class="sku-cell sku-cell--name">实例规格</span>
+            <span class="sku-cell sku-cell--sortable">
+              <span>vCPU</span>
+              <span class="sku-sort">
+                <button
+                  type="button"
+                  class="sku-sort-btn"
+                  :class="{
+                    active:
+                      skuSort.key === 'cpu' && skuSort.direction === 'asc',
+                  }"
+                  aria-label="vCPU 从小到大排序"
+                  @click="setSkuSort('cpu', 'asc')"
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  class="sku-sort-btn"
+                  :class="{
+                    active:
+                      skuSort.key === 'cpu' && skuSort.direction === 'desc',
+                  }"
+                  aria-label="vCPU 从大到小排序"
+                  @click="setSkuSort('cpu', 'desc')"
+                >
+                  ▼
+                </button>
+              </span>
+            </span>
+            <span class="sku-cell sku-cell--sortable">
+              <span>内存</span>
+              <span class="sku-sort">
+                <button
+                  type="button"
+                  class="sku-sort-btn"
+                  :class="{
+                    active:
+                      skuSort.key === 'memory' && skuSort.direction === 'asc',
+                  }"
+                  aria-label="内存从小到大排序"
+                  @click="setSkuSort('memory', 'asc')"
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  class="sku-sort-btn"
+                  :class="{
+                    active:
+                      skuSort.key === 'memory' && skuSort.direction === 'desc',
+                  }"
+                  aria-label="内存从大到小排序"
+                  @click="setSkuSort('memory', 'desc')"
+                >
+                  ▼
+                </button>
+              </span>
+            </span>
+            <span class="sku-cell">处理器</span>
+            <span class="sku-cell">主频/睿频</span>
+            <span class="sku-cell sku-cell--sortable">
+              <span>价格</span>
+              <span class="sku-sort">
+                <button
+                  type="button"
+                  class="sku-sort-btn"
+                  :class="{
+                    active:
+                      skuSort.key === 'price' && skuSort.direction === 'asc',
+                  }"
+                  aria-label="价格从低到高排序"
+                  @click="setSkuSort('price', 'asc')"
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  class="sku-sort-btn"
+                  :class="{
+                    active:
+                      skuSort.key === 'price' && skuSort.direction === 'desc',
+                  }"
+                  aria-label="价格从高到低排序"
+                  @click="setSkuSort('price', 'desc')"
+                >
+                  ▼
+                </button>
+              </span>
+            </span>
+          </div>
+          <button
+            v-for="row in skuRows"
+            :key="row.id"
+            type="button"
+            class="sku-row"
+            :class="{ active: row.id === product.id }"
+            role="row"
+            @click="switchProduct(row.id)"
+          >
+            <span class="sku-cell sku-cell--name">
+              <span class="sku-radio" aria-hidden="true"></span>
+              <span class="sku-name">{{ row.name }}</span>
+            </span>
+            <span class="sku-cell">{{ row.cpuText }}</span>
+            <span class="sku-cell">{{ row.memoryText }}</span>
+            <span class="sku-cell sku-cell--processor">
+              <span
+                v-if="row.brandBadge"
+                class="cpu-brand-badge"
+                :class="`cpu-brand-badge${row.brandBadge.className}`"
+              >
+                <span class="cpu-brand-badge__icon">{{
+                  row.brandBadge.icon
+                }}</span>
+                <span class="cpu-brand-badge__label">{{
+                  row.brandBadge.label
+                }}</span>
+              </span>
+              <span class="sku-processor-text">{{
+                row.processorLabel || "-"
+              }}</span>
+            </span>
+            <span class="sku-cell">{{ row.frequency || "-" }}</span>
+            <span class="sku-cell sku-cell--price">
+              <template v-if="row.agentDiscount">
+                <span class="agent-price-original"
+                  >¥{{ row.agentOriginalPrice }}</span
+                >
+                <em
+                  v-if="row.agentDiscountPercent"
+                  class="discount-tag"
+                  >{{ row.agentDiscountPercent }}</em
+                >
+                <span class="agent-price-current">¥{{ row.agentPrice }}</span>
+              </template>
+              <template v-else>{{ row.priceText }}</template>
+            </span>
+          </button>
+        </div>
+      </section>
+
       <!-- 主体：左配置 + 右摘要 -->
       <div class="pd-body">
         <div class="pd-config">
-          <!-- 区域 -->
+          <!-- 移动端隐藏右侧摘要后，购买前置要求仍要能看到 -->
+          <el-alert
+            v-if="isMobile && purchaseRequirementList.length"
+            type="warning"
+            :closable="false"
+            show-icon
+            class="purchase-guard-alert"
+          >
+            <template #title
+              >购买要求：{{ purchaseRequirementSummary }}</template
+            >
+          </el-alert>
+
+          <!-- 移动端：同级机型（SKU）收进抽屉，桌面端用下面的对比表 -->
+          <div class="cfg-group" v-if="isMobile && skuOptions.length > 1">
+            <div class="cfg-group-head">产品规格</div>
+            <div class="cfg-group-body">
+              <button
+                type="button"
+                class="mobile-picker-trigger"
+                @click="mobileSkuPicker = true"
+              >
+                <span>{{ currentSkuLabel }}</span>
+                <svg
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  width="12"
+                  height="12"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3 4.5l3 3 3-3"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- 区域：移动端改抽屉选择，避免一屏铺开一长串按钮 -->
           <div class="cfg-group" v-if="regionOptions.length">
             <div class="cfg-group-head">{{ $t('product.detail.region') }}</div>
             <div class="cfg-group-body">
-              <div class="opt-wrap">
+              <button
+                v-if="isMobile"
+                type="button"
+                class="mobile-picker-trigger"
+                @click="mobileRegionPicker = true"
+              >
+                <span>{{ selectedRegionLabel || "请选择地区" }}</span>
+                <svg
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  width="12"
+                  height="12"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3 4.5l3 3 3-3"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+              <div class="opt-wrap" v-else>
                 <button
                   v-for="opt in regionOptions"
                   :key="opt.id"
                   type="button"
                   class="opt-btn"
-                  :class="{ active: configForm[regionKey] === opt.id }"
-                  @click="
-                    configForm[regionKey] = opt.id;
-                    fetchQuote();
-                  "
+                  :class="{ active: regionValue === opt.id }"
+                  @click="selectRegion(opt.id)"
                 >
                   {{ opt.label }}
                 </button>
@@ -142,64 +358,98 @@
           <div class="cfg-group" v-if="osConfig">
             <div class="cfg-group-head">{{ $t('product.detail.operatingSystem') }}</div>
             <div class="cfg-group-body">
-              <div class="os-cards">
-                <button
-                  v-for="os in osGroups"
-                  :key="os.id"
-                  type="button"
-                  class="os-card"
-                  :class="{ active: configForm.os_group === os.id }"
-                  @click="handleOsGroupChange(os.id)"
+              <!-- 移动端：系统与版本合并进一个抽屉，版本列表跟随所选系统 -->
+              <button
+                v-if="isMobile"
+                type="button"
+                class="mobile-picker-trigger"
+                @click="mobileOsPicker = true"
+              >
+                <span>
+                  {{ currentOsGroup?.label || "请选择系统"
+                  }}{{
+                    currentOsGroup?.label ? ` ${currentOsVerLabel}` : ""
+                  }}
+                </span>
+                <svg
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  width="12"
+                  height="12"
+                  aria-hidden="true"
                 >
-                  <div class="os-card-head">
-                    <img
-                      v-if="os.icon"
-                      :src="os.icon"
-                      :alt="os.label"
-                      class="os-logo-img"
-                      width="28"
-                      height="28"
-                    />
-                    <span v-else class="os-logo">{{
-                      os.label.slice(0, 2)
-                    }}</span>
-                    <span class="os-label-name">{{ os.label }}</span>
-                  </div>
-                  <div class="os-card-ver">
-                    <span v-if="configForm.os_group === os.id">{{
-                      currentOsVerLabel
-                    }}</span>
-                    <span v-else class="os-placeholder">{{
-                      $t('product.list.selectVersion')
-                    }}</span>
-                  </div>
-                  <span
-                    v-if="configForm.os_group === os.id"
-                    class="os-check-mark"
-                    >✓</span
-                  >
-                </button>
-              </div>
-              <div class="os-ver-row" v-if="currentOsGroup?.versions?.length">
-                <span class="os-ver-label">{{
-                  $t('product.osPicker.version')
-                }}</span>
-                <div class="os-ver-btns">
+                  <path
+                    d="M3 4.5l3 3 3-3"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+              <template v-else>
+                <div class="os-cards">
                   <button
-                    v-for="ver in currentOsGroup.versions"
-                    :key="ver.id"
+                    v-for="os in osGroups"
+                    :key="os.id"
                     type="button"
-                    class="ver-btn"
-                    :class="{ active: configForm.os === ver.id }"
-                    @click="
-                      configForm.os = ver.id;
-                      fetchQuote();
-                    "
+                    class="os-card"
+                    :class="{ active: configForm.os_group === os.id }"
+                    @click="handleOsGroupChange(os.id)"
                   >
-                    {{ ver.label }}
+                    <div class="os-card-head">
+                      <img
+                        v-if="os.icon"
+                        :src="os.icon"
+                        :alt="os.label"
+                        class="os-logo-img"
+                        width="28"
+                        height="28"
+                      />
+                      <span v-else class="os-logo">{{
+                        os.label.slice(0, 2)
+                      }}</span>
+                      <span class="os-label-name">{{ os.label }}</span>
+                    </div>
+                    <div class="os-card-ver">
+                      <span v-if="configForm.os_group === os.id">{{
+                        currentOsVerLabel
+                      }}</span>
+                      <span v-else class="os-placeholder">{{
+                        $t('product.list.selectVersion')
+                      }}</span>
+                    </div>
+                    <span
+                      v-if="configForm.os_group === os.id"
+                      class="os-check-mark"
+                      >✓</span
+                    >
                   </button>
                 </div>
-              </div>
+                <div
+                  class="os-ver-row"
+                  v-if="currentOsGroup?.versions?.length"
+                >
+                  <span class="os-ver-label">{{
+                    $t('product.osPicker.version')
+                  }}</span>
+                  <div class="os-ver-btns">
+                    <button
+                      v-for="ver in currentOsGroup.versions"
+                      :key="ver.id"
+                      type="button"
+                      class="ver-btn"
+                      :class="{ active: configForm.os === ver.id }"
+                      @click="
+                        configForm.os = ver.id;
+                        fetchQuote();
+                      "
+                    >
+                      {{ ver.label }}
+                    </button>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
 
@@ -216,39 +466,85 @@
           >
             <div class="cfg-group-head">{{ group.title }}</div>
             <div class="cfg-group-body">
-              <div class="spec-row" v-for="cfg in group.configs" :key="cfg.key">
-                <div class="spec-label">{{ cfg.label }}</div>
-                <div class="spec-ctrl">
-                  <template v-if="cfg.isNumber">
-                    <el-input-number
-                      v-model="configForm[cfg.key + '_num']"
-                      :min="cfg.min ?? 1"
-                      :max="cfg.max ?? undefined"
-                      controls-position="right"
-                      @change="fetchQuote"
-                    />
-                  </template>
-                  <div class="opt-wrap" v-else-if="cfg.options.length > 1">
-                    <button
-                      v-for="opt in cfg.options"
-                      :key="opt.id"
-                      type="button"
-                      class="opt-btn"
-                      :class="{ active: configForm[cfg.key] === opt.id }"
-                      @click="
-                        configForm[cfg.key] = opt.id;
-                        fetchQuote();
-                      "
-                    >
-                      {{ opt.label }}
-                    </button>
+              <template v-for="cfg in group.configs" :key="cfg.key">
+                <!-- 移动端：区间项用滑块，离散项收进抽屉，避免一屏几十个按钮 -->
+                <template v-if="isMobile">
+                  <MobileRangePicker
+                    v-if="cfg.isNumber"
+                    v-model="configForm[cfg.key + '_num']"
+                    :label="cfg.label"
+                    :min="cfg.min ?? 1"
+                    :max="cfg.max ?? 9999"
+                  />
+                  <button
+                    v-else-if="cfg.options.length > 1"
+                    type="button"
+                    class="mobile-config-select-row"
+                    @click="openMobileConfigPicker(cfg)"
+                  >
+                    <span class="mobile-config-select-label">{{
+                      cfg.label
+                    }}</span>
+                    <span class="mobile-config-select-value">
+                      {{ selectedConfigLabel(cfg) || "请选择" }}
+                      <svg
+                        viewBox="0 0 12 12"
+                        fill="none"
+                        width="12"
+                        height="12"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M4.5 3l3 3-3 3"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  </button>
+                  <div class="spec-row" v-else-if="cfg.options.length === 1">
+                    <span class="spec-label">{{ cfg.label }}</span>
+                    <span class="spec-fixed">{{ cfg.options[0].label }}</span>
                   </div>
-                  <!-- 单选项是既成事实而不是可点控件：渲染成静态高亮，避免「看着能点、点了没反应」 -->
-                  <span v-else-if="cfg.options.length === 1" class="spec-fixed">{{
-                    cfg.options[0].label
-                  }}</span>
+                </template>
+                <div class="spec-row" v-else>
+                  <div class="spec-label">{{ cfg.label }}</div>
+                  <div class="spec-ctrl">
+                    <template v-if="cfg.isNumber">
+                      <el-input-number
+                        v-model="configForm[cfg.key + '_num']"
+                        :min="cfg.min ?? 1"
+                        :max="cfg.max ?? undefined"
+                        controls-position="right"
+                        @change="fetchQuote"
+                      />
+                    </template>
+                    <div class="opt-wrap" v-else-if="cfg.options.length > 1">
+                      <button
+                        v-for="opt in cfg.options"
+                        :key="opt.id"
+                        type="button"
+                        class="opt-btn"
+                        :class="{ active: configForm[cfg.key] === opt.id }"
+                        @click="
+                          configForm[cfg.key] = opt.id;
+                          fetchQuote();
+                        "
+                      >
+                        {{ opt.label }}
+                      </button>
+                    </div>
+                    <!-- 单选项是既成事实而不是可点控件：渲染成静态高亮，避免「看着能点、点了没反应」 -->
+                    <span
+                      v-else-if="cfg.options.length === 1"
+                      class="spec-fixed"
+                      >{{ cfg.options[0].label }}</span
+                    >
+                  </div>
                 </div>
-              </div>
+              </template>
             </div>
           </div>
 
@@ -402,6 +698,19 @@
                   >
                   <span>-¥{{ appliedCoupon.discount_amount }}</span>
                 </div>
+                <!-- 代理折扣行：没有这一行时，明细各项之和会大于合计，用户会以为算错账 -->
+                <div
+                  class="cost-item cost-item--discount"
+                  v-if="hasAgentDiscount"
+                >
+                  <span>
+                    代理折扣（{{ agentGroupName }}）
+                    <em v-if="agentDiscountPercent" class="discount-tag">{{
+                      agentDiscountPercent
+                    }}</em>
+                  </span>
+                  <span>-¥{{ agentDiscountAmount }}</span>
+                </div>
               </div>
             </section>
 
@@ -465,13 +774,27 @@
                 $t('product.detail.totalCost')
               }}</span>
               <div class="cost-price-wrap">
-                <span class="cost-currency">¥</span>
-                <span
-                  v-if="quoteLoading"
-                  class="cost-amount cost-amount--loading"
-                  >{{ $t('product.detail.calculating') }}</span
-                >
-                <span v-else class="cost-amount">{{ totalAmount }}</span>
+                <template v-if="quoteLoading">
+                  <span class="cost-currency">¥</span>
+                  <span class="cost-amount cost-amount--loading">{{
+                    $t('product.detail.calculating')
+                  }}</span>
+                </template>
+                <!-- 命中代理折扣：原价划线 + 折扣标签 + 折后应付 -->
+                <template v-else-if="hasAgentDiscount">
+                  <span class="cost-amount cost-amount--original"
+                    >¥{{ agentOriginalAmount }}</span
+                  >
+                  <em v-if="agentDiscountPercent" class="discount-tag">{{
+                    agentDiscountPercent
+                  }}</em>
+                  <span class="cost-currency">¥</span>
+                  <span class="cost-amount">{{ totalAmount }}</span>
+                </template>
+                <template v-else>
+                  <span class="cost-currency">¥</span>
+                  <span class="cost-amount">{{ totalAmount }}</span>
+                </template>
                 <span class="cost-cycle"
                   >/{{ selectedCycleLabel || "月付" }}</span
                 >
@@ -498,24 +821,52 @@
               $t('product.detail.totalCost')
             }}</div>
             <div class="allocation-footer-price">
-              <span class="allocation-footer-symbol">¥</span>
-              <span class="allocation-footer-num" v-if="quoteLoading">…</span>
-              <span class="allocation-footer-num" v-else>{{
-                totalAmount
-              }}</span>
+              <template v-if="quoteLoading">
+                <span class="allocation-footer-symbol">¥</span>
+                <span class="allocation-footer-num">…</span>
+              </template>
+              <template v-else-if="hasAgentDiscount">
+                <span class="allocation-footer-original"
+                  >¥{{ agentOriginalAmount }}</span
+                >
+                <em v-if="agentDiscountPercent" class="discount-tag">{{
+                  agentDiscountPercent
+                }}</em>
+                <span class="allocation-footer-symbol">¥</span>
+                <span class="allocation-footer-num">{{ totalAmount }}</span>
+              </template>
+              <template v-else>
+                <span class="allocation-footer-symbol">¥</span>
+                <span class="allocation-footer-num">{{ totalAmount }}</span>
+              </template>
               <span class="allocation-footer-cycle"
                 >/{{ selectedCycleLabel || "月付" }}</span
               >
             </div>
             <div class="allocation-footer-meta">
+              <span v-if="stockLabel">{{ stockLabel }}</span>
               <span v-if="selectedCycleLabel">{{ selectedCycleLabel }}</span>
-              <span v-if="regionOptions.length && configForm[regionKey]">
-                {{
-                  regionOptions.find((o) => o.id === configForm[regionKey])
-                    ?.label || configForm[regionKey]
-                }}
-              </span>
+              <span v-if="selectedRegionLabel">{{ selectedRegionLabel }}</span>
               <span v-if="currentOsVerLabel">{{ currentOsVerLabel }}</span>
+              <button
+                v-if="isMobile && hasAgentDiscount"
+                type="button"
+                class="allocation-footer-coupon-btn"
+                disabled
+                >代理折扣（{{ agentGroupName }}）{{ agentDiscountPercent }}</button
+              >
+              <button
+                v-if="isMobile"
+                type="button"
+                class="allocation-footer-coupon-btn"
+                @click="mobileCouponSheet = true"
+              >
+                {{
+                  appliedCoupon
+                    ? `已用券 -¥${appliedCoupon.discount_amount}`
+                    : "优惠券"
+                }}
+              </button>
             </div>
           </div>
           <button
@@ -537,6 +888,126 @@
         >
       </el-empty>
     </div>
+
+    <!-- 移动端抽屉：与列表式配置区复用同一套选择器组件，交互保持一致 -->
+    <MobileOptionPicker
+      v-if="regionOptions.length"
+      :visible="mobileRegionPicker"
+      :title="$t('product.detail.region')"
+      :options="regionOptions"
+      :active-id="regionValue || ''"
+      @close="mobileRegionPicker = false"
+      @confirm="selectRegion"
+    />
+    <MobileOsPicker
+      v-if="osGroups.length"
+      :visible="mobileOsPicker"
+      :os-groups="osGroups"
+      :active-os-group-id="configForm.os_group || ''"
+      :active-os-version-id="configForm.os || ''"
+      @close="mobileOsPicker = false"
+      @confirm="confirmMobileOsSelection"
+    />
+    <MobileOptionPicker
+      v-if="mobileConfigPicker"
+      :visible="mobileConfigPickerVisible"
+      :title="mobileConfigPicker.label"
+      :options="mobileConfigPicker.options"
+      :active-id="configForm[mobileConfigPicker.key] || ''"
+      @close="mobileConfigPickerVisible = false"
+      @confirm="confirmMobileConfigSelection"
+    />
+    <MobileOptionPicker
+      v-if="skuOptions.length > 1"
+      :visible="mobileSkuPicker"
+      title="产品规格"
+      :options="skuOptions"
+      :active-id="String(product.id || '')"
+      @close="mobileSkuPicker = false"
+      @confirm="confirmMobileSkuSelection"
+    />
+
+    <!-- 移动端优惠券抽屉：右侧摘要隐藏后，优惠券选择与折扣明细在这里 -->
+    <MobileSheet
+      :visible="mobileCouponSheet"
+      size="58%"
+      title="优惠券"
+      cancel-text="关闭"
+      :close-on-press-modal="false"
+      @close="mobileCouponSheet = false"
+      @cancel="mobileCouponSheet = false"
+    >
+      <div class="mobile-coupon-sheet">
+        <div class="coupon-panel">
+          <div class="coupon-panel-head">
+            <span class="coupon-panel-title">{{
+              $t('product.detail.coupon')
+            }}</span>
+            <button
+              v-if="appliedCoupon"
+              type="button"
+              class="coupon-clear-btn"
+              @click="clearCoupon"
+            >
+              {{ $t('product.coupon.remove') }}
+            </button>
+          </div>
+          <div class="coupon-panel-form">
+            <el-select
+              :model-value="selectedCouponId || undefined"
+              clearable
+              :placeholder="$t('product.detail.selectCoupon')"
+              @change="handleCouponChange"
+            >
+              <el-option
+                v-for="item in availableCoupons"
+                :key="item.id"
+                :label="`${item.name} · ${item.discount_label}`"
+                :value="item.id"
+              />
+            </el-select>
+          </div>
+          <div v-if="appliedCoupon" class="coupon-panel-tip">
+            {{
+              $t('product.coupon.appliedTip', {
+                name: appliedCoupon.name,
+                discount: appliedCoupon.discount_label,
+                amount: appliedCoupon.discount_amount,
+              })
+            }}
+          </div>
+          <div
+            v-else-if="!availableCoupons.length"
+            class="coupon-panel-tip coupon-panel-tip--muted"
+          >
+            {{ $t('product.coupon.noneAvailable') }}
+          </div>
+        </div>
+
+        <ul class="mobile-coupon-summary">
+          <li>
+            <span>{{ $t('product.detail.basePrice') }}</span>
+            <span>¥{{ baseAmount }}</span>
+          </li>
+          <li v-if="Number(setupFee) > 0">
+            <span>{{ $t('product.detail.setupFee') }}</span>
+            <span>¥{{ setupFee }}</span>
+          </li>
+          <li v-for="item in quoteItems" :key="item.field">
+            <span>+ {{ item.label }}</span>
+            <span>¥{{ item.amount }}</span>
+          </li>
+          <li v-if="hasAgentDiscount" class="is-discount">
+            <span>代理折扣（{{ agentGroupName }}）{{ agentDiscountPercent }}</span>
+            <span>-¥{{ agentDiscountAmount }}</span>
+          </li>
+          <li v-if="appliedCoupon" class="is-discount">
+            <span>{{ appliedCoupon.code || appliedCoupon.name }}</span>
+            <span>-¥{{ appliedCoupon.discount_amount }}</span>
+          </li>
+        </ul>
+      </div>
+    </MobileSheet>
   </div>
 </template>
 
@@ -554,10 +1025,6 @@ import {
   resolvePurchaseRequirementSummary,
 } from "@/utils/productPurchaseRequirements";
 import {
-  buildWebsiteProductPath,
-  resolveWebsiteProductRoutePayloadByDetail,
-} from "@/utils/productRoute";
-import {
   normalizeMoneyText,
   resolveProductDisplayName,
 } from "@/utils/websiteProductConfig";
@@ -569,12 +1036,14 @@ import {
 } from "@/utils/websiteCheckout";
 import { buildPendingCouponRedirectUrl } from "@/utils/websiteCoupon";
 import { updatePageMeta } from "@/utils/pageMeta";
-import {
-  isCpuConfigKey,
-  isMemoryConfigKey,
-  resolveMachineSpecPresentation,
-} from "@/domains/products/machineSpecResolver";
+import { resolveCpuBrandBadge } from "@/domains/products/cpuBrandBadge";
+import { resolveMachineSpecPresentation } from "@/domains/products/machineSpecResolver";
+import { formatProductListPrice } from "@/views/website/products/productPrice";
 import { useWebsiteProductConfigurator } from "@/domains/products/useWebsiteProductConfigurator";
+import MobileOptionPicker from "@/components/MobileOptionPicker.vue";
+import MobileOsPicker from "@/components/MobileOsPicker.vue";
+import MobileRangePicker from "@/components/MobileRangePicker.vue";
+import MobileSheet from "@/components/MobileSheet.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -583,10 +1052,7 @@ const userStore = useUserStore();
 const loading = ref(false);
 const submitting = ref(false);
 const product = ref(null);
-const siblings = ref([]);
 const selectedCycle = ref("");
-const hostname = ref("");
-const password = ref("");
 const quantity = ref(1);
 const selectedCouponId = ref(0);
 
@@ -603,7 +1069,9 @@ const productStock = ref(null);
 const productStockLoading = ref(false);
 const productStockError = ref("");
 
-const regionKey = computed(() => configurator.regionFieldKey.value || "region");
+// 地区读写统一走共享层的 regionValue（各上游地区字段叫 region/area/node 不等，
+// 且它同时维护 region 兼容镜像），这里不再按固定的 configForm.region 取值。
+const regionValue = configurator.regionValue;
 const regionOptions = computed(() => configurator.regionOptions.value || []);
 const osConfig = computed(() => configurator.osConfig.value || null);
 const osGroups = computed(() => configurator.osGroups.value || []);
@@ -619,18 +1087,32 @@ const selectedMachineSpec = computed(() =>
     memory: configForm.memory,
   }),
 );
-
-// 同级 Tab 的规格展示名缓存：仅 siblings 变化时重算，避免每次渲染对每个同级重复正则解析
-const siblingDisplayNames = computed(() => {
-  const map = new Map();
-  (siblings.value || []).forEach((sib) => {
-    const id = Number(sib?.id || 0);
-    if (id > 0) {
-      map.set(id, resolveMachineSpecPresentation(sib).displayName);
-    }
-  });
-  return map;
+const selectedRegionLabel = computed(() => {
+  const id = regionValue.value;
+  return regionOptions.value.find((item) => item.id === id)?.label || "";
 });
+
+// 移动端断点与列表式配置区保持同一个值（900px），避免两处对「手机/桌面」判断分叉
+const MOBILE_BREAKPOINT = 900;
+const isMobile = ref(false);
+const mobileRegionPicker = ref(false);
+const mobileOsPicker = ref(false);
+const mobileSkuPicker = ref(false);
+const mobileConfigPicker = ref(null);
+const mobileConfigPickerVisible = ref(false);
+const mobileCouponSheet = ref(false);
+
+function updateMobileState() {
+  if (typeof window === "undefined") return;
+  const nextMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+  if (nextMobile === isMobile.value) return;
+  isMobile.value = nextMobile;
+}
+
+function selectRegion(regionId) {
+  regionValue.value = regionId;
+  mobileRegionPicker.value = false;
+}
 
 function selectOsGroup(os) {
   configForm.os_group = os.id;
@@ -647,6 +1129,36 @@ function handleOsGroupChange(value) {
   }
 
   selectOsGroup(nextGroup);
+}
+
+function confirmMobileOsSelection(groupId, versionId) {
+  mobileOsPicker.value = false;
+  const group = osGroups.value.find((item) => item.id === groupId);
+  if (!group) return;
+
+  configForm.os_group = group.id;
+  configForm.os = versionId || group.versions?.[0]?.id || "";
+}
+
+function selectedConfigLabel(cfg) {
+  const value = configForm[cfg?.key];
+  return (
+    cfg?.options?.find((item) => item.id === value)?.label ||
+    cfg?.options?.[0]?.label ||
+    ""
+  );
+}
+
+function openMobileConfigPicker(cfg) {
+  if (!cfg?.options?.length) return;
+  mobileConfigPicker.value = cfg;
+  mobileConfigPickerVisible.value = true;
+}
+
+function confirmMobileConfigSelection(optionId) {
+  const cfg = mobileConfigPicker.value;
+  mobileConfigPickerVisible.value = false;
+  if (cfg && optionId) configForm[cfg.key] = optionId;
 }
 
 /**
@@ -666,28 +1178,6 @@ const configGroups = computed(() =>
 
 // 购买须知：仅展示，不参与选配与计价
 const noticeConfigs = computed(() => configurator.noticeConfigs.value || []);
-
-function isSpecSummaryConfig(cfg) {
-  return (
-    isCpuConfigKey(cfg.key, cfg.label) || isMemoryConfigKey(cfg.key, cfg.label)
-  );
-}
-
-function resolveSummaryConfigValue(cfg) {
-  if (cfg.isNumber) {
-    const value = configForm[cfg.key + "_num"];
-    return value !== undefined && value !== null && value !== ""
-      ? String(value)
-      : "";
-  }
-
-  const value = configForm[cfg.key];
-  if (value === undefined || value === null || value === "") {
-    return "";
-  }
-
-  return cfg.options.find((item) => item.id === value)?.label || String(value);
-}
 
 // 价格
 const pricingEntries = computed(() => configurator.pricingEntries.value || []);
@@ -763,28 +1253,47 @@ const totalAmount = computed(() => {
     Number(selectedPricingEntry.value?.total_amount || 0) * quantity.value
   ).toFixed(2);
 });
+
+/**
+ * 代理折扣：命中代理折扣矩阵时后端报价会下发 agent_* 字段
+ * （agent_discount_rate < 100），与列表式配置区同一判定口径。
+ * 详情接口另外带一份商品级折扣字段，仅在报价尚未返回时兜底。
+ */
+const hasAgentDiscount = computed(() => {
+  const rate = Number(quoteResult.value?.agent_discount_rate);
+  if (quoteResult.value && Number.isFinite(rate) && rate > 0) {
+    return rate < 100;
+  }
+  return Boolean(product.value?.has_agent_discount);
+});
+const agentDiscountPercent = computed(() => {
+  const rate = Number(quoteResult.value?.agent_discount_rate);
+  if (Number.isFinite(rate) && rate > 0 && rate < 100) {
+    const value = Math.round((rate / 10) * 10) / 10;
+    return `${String(value).replace(/\.0$/, "")}折`;
+  }
+  return String(product.value?.agent_discount_percent || "");
+});
+const agentGroupName = computed(() =>
+  String(
+    quoteResult.value?.agent_group_name ||
+      product.value?.agent_group_name ||
+      "",
+  ),
+);
+const agentOriginalAmount = computed(() =>
+  normalizeMoneyText(
+    quoteResult.value?.original_total_amount || totalAmount.value,
+  ),
+);
+const agentDiscountAmount = computed(() =>
+  normalizeMoneyText(quoteResult.value?.agent_discount_amount),
+);
+
+// 配置摘要取共享层口径（含地区 / 系统 / CPU 型号 / 机型规格与全部配置项），
+// 独立页不再自己维护一套键名与分组，避免与列表式配置区对不上。
 const summaryItems = computed(() => {
-  const items = [];
-
-  if (regionOptions.value.length && configForm[regionKey.value]) {
-    items.push({
-      key: "region",
-      label: t("product.detail.region"),
-      value:
-        regionOptions.value.find(
-          (item) => item.id === configForm[regionKey.value],
-        )?.label || configForm[regionKey.value],
-    });
-  }
-
-  if (currentOsVerLabel.value) {
-    items.push({
-      key: "os",
-      label: t("product.osPicker.system"),
-      value: currentOsVerLabel.value,
-    });
-  }
-
+  const items = (configurator.summaryItems.value || []).slice();
   if (selectedCycleLabel.value) {
     items.push({
       key: "billing_cycle",
@@ -792,36 +1301,6 @@ const summaryItems = computed(() => {
       value: selectedCycleLabel.value,
     });
   }
-
-  specConfigs.value.forEach((cfg) => {
-    if (isSpecSummaryConfig(cfg)) {
-      return;
-    }
-
-    const value = resolveSummaryConfigValue(cfg);
-    if (!value) {
-      return;
-    }
-
-    items.push({
-      key: `spec-${cfg.key}`,
-      label: cfg.label,
-      value,
-    });
-  });
-
-  netConfigs.value.forEach((cfg) => {
-    const value = resolveSummaryConfigValue(cfg);
-    if (!value) {
-      return;
-    }
-
-    items.push({
-      key: `net-${cfg.key}`,
-      label: cfg.label,
-      value,
-    });
-  });
 
   return items;
 });
@@ -964,9 +1443,6 @@ function buildConfigPayload() {
   return configurator.buildConfigPayload();
 }
 
-const defaultHostname = computed(
-  () => `svr${Math.floor(Math.random() * 9e8 + 1e8)}`,
-);
 const resolvedStock = computed(() => {
   if (productStock.value !== null && productStock.value !== undefined) {
     return Number(productStock.value);
@@ -1137,13 +1613,153 @@ async function submitOrder() {
 }
 
 function switchProduct(id) {
-  const routePayload = resolveWebsiteProductRoutePayloadByDetail(product.value);
-  router.replace(
-    buildWebsiteProductPath({
-      ...routePayload,
-      productId: Number(id || 0),
-    }),
+  const productId = Number(id || 0);
+  if (!productId || productId === Number(product.value?.id || 0)) {
+    return;
+  }
+
+  // 独立配置页换机型留在本页：此前跳的是列表式选购页的多段路由，
+  // 用户在「独立打开配置页」里换一台机型就被带回了列表页。
+  router.replace(`/products/${productId}`);
+}
+
+// ===== 机型/SKU 对比 =====
+// 详情接口的 siblings 只带 id 与几个名称字段，撑不起与列表式一致的机型表。
+// 这里直接取同一商品组的在售商品（列表式的机型表用的就是这个接口），
+// 价格、CPU 型号、规格亮点因此与列表式同源。
+const groupProducts = ref([]);
+const skuSort = ref({ key: "", direction: "" });
+
+const FREQUENCY_UNIT = "GHz";
+
+function parseSpecNumber(value) {
+  const match = String(value || "").match(/\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : Number.NaN;
+}
+
+function formatFrequencyValue(value) {
+  const text = String(value || "")
+    .replace(/\s*GHz$/i, "")
+    .trim();
+
+  if (!text) {
+    return "";
+  }
+
+  return /^[+-]?\d+(?:\.\d+)?$/.test(text) ? `${text}${FREQUENCY_UNIT}` : text;
+}
+
+function formatFrequencyPair(baseFrequency, turboFrequency) {
+  const base = formatFrequencyValue(baseFrequency);
+  const turbo = formatFrequencyValue(turboFrequency);
+
+  if (base && turbo) {
+    return `${base}/${turbo}`;
+  }
+
+  return base || turbo || "";
+}
+
+const skuRows = computed(() => {
+  const rows = groupProducts.value
+    .map((item) => {
+      const spec = resolveMachineSpecPresentation(item, {});
+      const cpuText = spec.cpuText || String(item?.cpu_display || "").trim();
+      const memoryText =
+        spec.memoryText || String(item?.memory_display || "").trim();
+
+      return {
+        id: Number(item?.id || 0),
+        name: spec.displayName || resolveProductDisplayName(item),
+        cpuText: cpuText || "-",
+        memoryText: memoryText || "-",
+        processorLabel: String(item?.cpu_model_name || "").trim(),
+        brandBadge: resolveCpuBrandBadge(item?.cpu_model_name),
+        frequency: formatFrequencyPair(
+          item?.cpu_base_frequency,
+          item?.cpu_turbo_frequency,
+        ),
+        priceText: formatProductListPrice(item) || "-",
+        agentDiscount: Boolean(item?.has_agent_discount),
+        agentOriginalPrice: normalizeMoneyText(item?.primary_price),
+        agentPrice: normalizeMoneyText(item?.agent_primary_price),
+        agentDiscountPercent: String(item?.agent_discount_percent || ""),
+        cpuValue: parseSpecNumber(cpuText),
+        memoryValue: parseSpecNumber(memoryText),
+        priceValue: Number(item?.primary_price || 0),
+      };
+    })
+    .filter((row) => row.id > 0);
+
+  if (!skuSort.value.key || !skuSort.value.direction) {
+    return rows;
+  }
+
+  const factor = skuSort.value.direction === "desc" ? -1 : 1;
+  const valueKey = `${skuSort.value.key}Value`;
+
+  return rows.slice().sort((left, right) => {
+    const leftValue = Number(left[valueKey]);
+    const rightValue = Number(right[valueKey]);
+    const leftValid = Number.isFinite(leftValue);
+    const rightValid = Number.isFinite(rightValue);
+
+    if (!leftValid && !rightValid) return left.id - right.id;
+    if (!leftValid) return 1;
+    if (!rightValid) return -1;
+
+    const result = (leftValue - rightValue) * factor;
+    return result === 0 ? left.id - right.id : result;
+  });
+});
+
+function setSkuSort(key, direction) {
+  skuSort.value =
+    skuSort.value.key === key && skuSort.value.direction === direction
+      ? { key: "", direction: "" }
+      : { key, direction };
+}
+
+const skuOptions = computed(() =>
+  skuRows.value.map((row) => ({ id: String(row.id), label: row.name })),
+);
+
+const currentSkuLabel = computed(() => {
+  const currentId = Number(product.value?.id || 0);
+  return (
+    skuRows.value.find((row) => row.id === currentId)?.name ||
+    selectedMachineSpec.value.displayName ||
+    resolveProductDisplayName(product.value)
   );
+});
+
+function confirmMobileSkuSelection(productId) {
+  mobileSkuPicker.value = false;
+  const nextId = Number(productId || 0);
+  if (nextId > 0 && nextId !== Number(product.value?.id || 0)) {
+    switchProduct(nextId);
+  }
+}
+
+async function loadGroupProducts(detail) {
+  const groupId = Number(detail?.effective_product_group_id || 0);
+  const level = Number(detail?.effective_product_group_level || 3) === 2 ? 2 : 3;
+
+  if (groupId <= 0) {
+    groupProducts.value = [];
+    return;
+  }
+
+  try {
+    const res = await siteApi.productGroupProducts(groupId, {
+      level,
+      page: 1,
+      page_size: 50,
+    });
+    groupProducts.value = Array.isArray(res.data?.list) ? res.data.list : [];
+  } catch {
+    groupProducts.value = [];
+  }
 }
 
 function initDefaults() {
@@ -1157,9 +1773,6 @@ function initDefaults() {
         quoteToken.value = "";
       },
     });
-
-    hostname.value = defaultHostname.value;
-    password.value = "";
   } finally {
     quoteWatchSuspendCount = Math.max(0, quoteWatchSuspendCount - 1);
   }
@@ -1227,9 +1840,9 @@ async function loadProduct() {
     const res = await siteApi.product(pid);
     if (token !== productLoadToken) return;
     product.value = res.data.product || null;
-    siblings.value = res.data.product?.siblings || [];
     syncProductMeta(product.value);
     initDefaults();
+    void loadGroupProducts(product.value);
   } catch {
     if (token !== productLoadToken) return;
     product.value = null;
@@ -1287,7 +1900,11 @@ watch(
   },
   { immediate: true },
 );
-onMounted(loadProduct);
+onMounted(() => {
+  updateMobileState();
+  window.addEventListener("resize", updateMobileState);
+  loadProduct();
+});
 
 onBeforeUnmount(() => {
   // 清理报价防抖定时器与在途请求，避免卸载后仍发请求/写已卸载组件状态
@@ -1295,6 +1912,7 @@ onBeforeUnmount(() => {
   quoteAbortController?.abort();
   // 使仍在途的 loadProduct 响应失效
   productLoadToken += 1;
+  window.removeEventListener("resize", updateMobileState);
 });
 </script>
 
@@ -1386,7 +2004,7 @@ onBeforeUnmount(() => {
   --pd-content-max: 1280px;
   --pd-content-gutter: 16px;
 
-  @media (max-width: 768px) {
+  @media (max-width: 900px) {
     padding-bottom: 108px;
   }
 }
@@ -1398,6 +2016,7 @@ onBeforeUnmount(() => {
 .pd-name-bar,
 .pd-hero,
 .pd-desc,
+.pd-sku,
 .pd-body {
   width: calc(100% - 2 * var(--pd-content-gutter));
   max-width: calc(var(--pd-content-max) - 2 * var(--pd-content-gutter));
@@ -1589,7 +2208,7 @@ onBeforeUnmount(() => {
   padding: 12px 0 0;
   align-items: start;
 
-  @media (max-width: 768px) {
+  @media (max-width: 900px) {
     grid-template-columns: 1fr;
   }
 }
@@ -2009,7 +2628,7 @@ onBeforeUnmount(() => {
   position: sticky;
   top: 80px;
 
-  @media (max-width: 768px) {
+  @media (max-width: 900px) {
     position: static;
   }
 }
@@ -2341,7 +2960,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .coupon-panel-form {
     grid-template-columns: 1fr;
   }
@@ -2387,7 +3006,7 @@ onBeforeUnmount(() => {
 .allocation-footer {
   display: none;
 
-  @media (max-width: 768px) {
+  @media (max-width: 900px) {
     position: fixed;
     left: 0;
     right: 0;
@@ -2532,9 +3151,11 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+  /* 移动端不再重复一份右侧摘要：费用明细与合计都在底部结算栏 + 优惠券抽屉里，
+     与列表式配置区移动端（隐藏 .shop-cost）保持同一套信息结构。 */
   .pd-aside {
-    position: static;
+    display: none;
   }
 
   .aside-card {
@@ -2548,5 +3169,421 @@ onBeforeUnmount(() => {
   justify-content: center;
   align-items: center;
   min-height: 400px;
+}
+
+/* ===== 机型对比表（与列表式机型表同一套字段口径） ===== */
+.pd-sku {
+  margin-top: 12px;
+  padding: 16px;
+  background: $bg-color-card;
+  border: 1px solid $divider-color;
+  border-radius: 6px;
+}
+
+.pd-sku-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pd-sku-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: $text-color-primary;
+}
+
+.pd-sku-hint {
+  font-size: 12px;
+  color: $text-color-placeholder;
+}
+
+.sku-table {
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+}
+
+.sku-row {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1.6fr) minmax(80px, 0.8fr) minmax(80px, 0.8fr)
+    minmax(200px, 1.4fr) minmax(100px, 0.9fr) minmax(150px, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 860px;
+  padding: 10px 8px;
+  border: none;
+  border-bottom: 1px solid $divider-color;
+  background: transparent;
+  color: $text-color-primary;
+  font-size: 13px;
+  text-align: left;
+}
+
+.sku-row--head {
+  color: $text-color-placeholder;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: default;
+}
+
+button.sku-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: rgba($color-primary, 0.04);
+  }
+
+  &.active {
+    background: rgba($color-primary, 0.08);
+  }
+}
+
+.sku-cell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sku-cell--name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: normal;
+}
+
+.sku-cell--sortable {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sku-sort {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sku-sort-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 8px;
+  line-height: 1;
+  color: $text-color-placeholder;
+  cursor: pointer;
+
+  &.active {
+    color: $color-primary;
+  }
+}
+
+.sku-radio {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  border: 1px solid $divider-color;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.sku-row.active .sku-radio {
+  border: 4px solid $color-primary;
+}
+
+.sku-cell--processor {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  white-space: normal;
+}
+
+.sku-cell--price {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+  white-space: normal;
+}
+
+/* ===== 移动端选择器（与列表式配置区同一套按钮形态） ===== */
+.mobile-picker-trigger {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 1px solid $divider-color;
+  border-radius: 4px;
+  background: #fff;
+  color: $text-color-primary;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  svg {
+    flex-shrink: 0;
+    color: $text-color-placeholder;
+  }
+}
+
+.mobile-config-select-row {
+  width: 100%;
+  min-height: 46px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid $divider-color;
+  background: #fff;
+  color: $text-color-primary;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+  text-align: left;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.mobile-config-select-label {
+  min-width: 0;
+  font-weight: 500;
+}
+
+.mobile-config-select-value {
+  min-width: 0;
+  max-width: 62%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-weight: 500;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  svg {
+    flex-shrink: 0;
+    color: #b8bec8;
+  }
+}
+
+/* ===== 代理折扣（与列表式配置区同一套视觉） ===== */
+.discount-tag {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 6px;
+  padding: 0 6px;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  color: #fff;
+  background: #f56c6c;
+  border-radius: 4px;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+.cost-amount--original {
+  font-size: 13px;
+  font-weight: 500;
+  color: $text-color-placeholder;
+  text-decoration: line-through;
+  margin-right: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.allocation-footer-original {
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: #b7bcc5;
+  text-decoration: line-through;
+  margin-right: 2px;
+}
+
+.allocation-footer-coupon-btn {
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: $color-primary;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 600;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+
+  &:disabled {
+    color: #b7bcc5;
+    font-weight: 500;
+    cursor: default;
+  }
+}
+
+/* 移动端优惠券抽屉 */
+.mobile-coupon-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+.mobile-coupon-summary {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid $divider-color;
+  border-radius: 6px;
+  background: $bg-color-card;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+    font-size: 13px;
+    color: $text-color-secondary;
+
+    &.is-discount {
+      color: $color-warning;
+    }
+  }
+}
+
+.agent-price-original {
+  color: $text-color-placeholder;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: line-through;
+}
+
+.agent-price-current {
+  color: $color-warning;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* CPU 品牌徽标：与列表式机型表同一套配色 */
+.cpu-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  height: 20px;
+  padding: 0 6px 0 4px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    border-radius: 3px;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 14px;
+  }
+
+  &__label {
+    line-height: 1;
+  }
+
+  &--core-ultra {
+    color: #5b3df5;
+    border: 1px solid rgba(91, 61, 245, 0.35);
+    background: rgba(91, 61, 245, 0.08);
+
+    .cpu-brand-badge__icon {
+      background: #5b3df5;
+    }
+  }
+
+  &--platinum {
+    color: #475569;
+    border: 1px solid rgba(100, 116, 139, 0.4);
+    background: linear-gradient(
+      180deg,
+      rgba(203, 213, 225, 0.5),
+      rgba(148, 163, 184, 0.35)
+    );
+
+    .cpu-brand-badge__icon {
+      background: linear-gradient(180deg, #94a3b8, #64748b);
+    }
+  }
+
+  &--gold {
+    color: #a16207;
+    border: 1px solid rgba(202, 138, 4, 0.4);
+    background: rgba(250, 204, 21, 0.14);
+
+    .cpu-brand-badge__icon {
+      background: linear-gradient(180deg, #eab308, #ca8a04);
+    }
+  }
+
+  &--amd {
+    color: #c4001d;
+    border: 1px solid rgba(196, 0, 29, 0.35);
+    background: rgba(196, 0, 29, 0.07);
+
+    .cpu-brand-badge__icon {
+      background: #c4001d;
+    }
+  }
+
+  &--xeon {
+    color: #0066cc;
+    border: 1px solid rgba(0, 102, 204, 0.35);
+    background: rgba(0, 102, 204, 0.07);
+
+    .cpu-brand-badge__icon {
+      background: #0066cc;
+    }
+  }
+
+  &--intel {
+    color: #0071c5;
+    border: 1px solid rgba(0, 113, 197, 0.35);
+    background: rgba(0, 113, 197, 0.07);
+
+    .cpu-brand-badge__icon {
+      background: #0071c5;
+    }
+  }
 }
 </style>
