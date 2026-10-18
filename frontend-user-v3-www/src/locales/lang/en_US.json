@@ -154,7 +154,12 @@
       "widthContained": "Fixed width",
       "widthFull": "Full width",
       "widthHint": "Wide screens only; mobile always fills the screen",
-      "widthReset": "Reset to site default"
+      "widthReset": "Reset to site default",
+      "groupNav": "Group navigation",
+      "groupNavLevel2": "Level 2 groups",
+      "groupNavLevel3": "Level 3 groups",
+      "groupNavSidebar": "Groups in sidebar",
+      "groupNavTop": "Groups on top"
     },
     "cpuBadge": {
       "coreShort": "Core",

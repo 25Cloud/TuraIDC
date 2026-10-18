@@ -95,6 +95,20 @@
             <span class="item-count">{{ type.product_count || 0 }}</span>
           </template>
         </div>
+
+        <!-- 分组导航放在侧栏时：二级分组纵向展开三级分组（参考主流 IDC 侧栏） -->
+        <ProductGroupNav
+          v-if="
+            groupNavMode === 'sidebar' && !sidebarCollapsed && rootGroups.length
+          "
+          variant="sidebar"
+          :groups="rootGroups"
+          :child-groups="childGroups"
+          :active-group-id="activeGroupId"
+          :active-child-id="activeChildId"
+          @select-group="handleGroupNavSelectGroup"
+          @select-child="handleGroupNavSelectChild"
+        />
       </aside>
 
       <!-- 右侧主区域 -->
@@ -222,6 +236,44 @@
                 </button>
               </div>
 
+              <!-- 分组导航位置：顶部折叠面板 / 左侧栏 -->
+              <button
+                v-if="!isMobile"
+                type="button"
+                class="shop-group-nav-trigger"
+                :class="{ 'is-active': groupNavMode === 'sidebar' }"
+                :aria-pressed="groupNavMode === 'sidebar'"
+                @click="toggleGroupNavMode"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="2"
+                    y="3"
+                    width="12"
+                    height="10"
+                    rx="1.5"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                  />
+                  <path
+                    d="M6.5 3v10"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                  />
+                </svg>
+                <span>{{
+                  groupNavMode === "sidebar"
+                    ? $t("product.list.groupNavTop")
+                    : $t("product.list.groupNavSidebar")
+                }}</span>
+              </button>
+
               <!-- 宽屏版心：固定宽度（含档位）或撑满屏幕，偏好只存本机浏览器 -->
               <div v-if="!isMobile" class="shop-width-control">
                 <button
@@ -324,94 +376,57 @@
             </div>
           </div>
 
-          <div v-if="isMobile" class="mobile-picker-row mobile-picker-row--duo">
-            <div class="mobile-picker-col">
-              <div class="config-block-title">一级分组 / 二级分组</div>
-              <button
-                type="button"
-                class="mobile-picker-trigger"
-                @click="openMobileRegionDrawer"
-              >
-                <span
-                  >{{ activeGroupName || "请选择一级分组"
-                  }}{{ activeChildName ? ` › ${activeChildName}` : "" }}</span
-                >
-                <svg
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  width="12"
-                  height="12"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M3 4.5l3 3 3-3"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div v-if="visibleProducts.length" class="mobile-picker-col">
-              <div class="config-block-title">产品规格选择</div>
-              <button
-                type="button"
-                class="mobile-picker-trigger"
-                @click="openMobileSpecPicker"
-              >
-                <span>{{ mobileSpecPickerLabel || "请选择产品规格" }}</span>
-                <svg
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  width="12"
-                  height="12"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M3 4.5l3 3 3-3"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
+          <!--
+            分组导航（顶部折叠）：二级分组纵向排列，展开后纵向列出三级分组，
+            不再用横向 tab + 左右箭头；面板限高滚动，手机端默认收起、展开时推内容。
+            访客可把它切到左侧栏（见切换条右侧按钮）。
+          -->
+          <ProductGroupNav
+            v-if="showTopGroupNav"
+            variant="top"
+            :groups="rootGroups"
+            :child-groups="childGroups"
+            :active-group-id="activeGroupId"
+            :active-child-id="activeChildId"
+            :active-group-name="activeGroupName"
+            :active-child-name="activeChildName"
+            :start-open="!isMobile"
+            :auto-close="isMobile"
+            @select-group="handleGroupNavSelectGroup"
+            @select-child="handleGroupNavSelectChild"
+          />
 
-          <!-- 一级分组 -->
-          <div class="filter-block" v-if="rootGroups.length && !isMobile">
-            <span class="filter-label">一级分组</span>
-            <el-tabs
-              class="catalog-tabs"
-              :model-value="activeGroupId"
-              @tab-change="handleDesktopGroupChange"
+          <div
+            v-if="isMobile && visibleProducts.length"
+            class="mobile-picker-row"
+          >
+            <div class="config-block-title">
+              {{ $t("product.list.specSelector") }}
+            </div>
+            <button
+              type="button"
+              class="mobile-picker-trigger"
+              @click="openMobileSpecPicker"
             >
-              <el-tab-pane
-                v-for="g in rootGroups"
-                :key="g.id"
-                :name="g.id"
-                :label="g.name"
-              />
-            </el-tabs>
-          </div>
-
-          <!-- 二级分组 -->
-          <div class="filter-block" v-if="childGroups.length && !isMobile">
-            <span class="filter-label">二级分组</span>
-            <el-tabs
-              class="catalog-tabs catalog-tabs--child"
-              :model-value="activeChildId"
-              @tab-change="handleDesktopChildChange"
-            >
-              <el-tab-pane
-                v-for="c in childGroups"
-                :key="c.id"
-                :name="c.id"
-                :label="c.name"
-              />
-            </el-tabs>
+              <span>{{
+                mobileSpecPickerLabel || $t("product.list.selectSpec")
+              }}</span>
+              <svg
+                viewBox="0 0 12 12"
+                fill="none"
+                width="12"
+                height="12"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3 4.5l3 3 3-3"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
           </div>
 
           <!--
@@ -1802,17 +1817,6 @@
         </div>
       </MobileSheet>
 
-      <MobileRegionPicker
-        :visible="mobileRegionDrawer"
-        :regions="rootGroups"
-        :zone-map="tempChildGroups"
-        :active-group-id="activeGroupId"
-        :active-zone-id="activeChildId"
-        @close="mobileRegionDrawer = false"
-        @change="handleRegionChange"
-        @confirm="confirmRegionSelection"
-      />
-
       <MobileOsPicker
         :visible="mobileOsDrawer"
         :os-groups="osGroups"
@@ -1881,62 +1885,6 @@
         @close="closeMobileSingleConfigDrawer"
         @confirm="confirmMobileSingleConfigSelection"
       />
-
-      <el-drawer
-        v-model="mobileCategoryDrawer"
-        direction="ltr"
-        size="72%"
-        :with-header="false"
-        class="mobile-category-drawer"
-      >
-        <div class="mobile-drawer-sheet">
-          <div class="mobile-drawer-head">
-            <div>
-              <div class="mobile-drawer-title">
-                {{ $t("product.group.level1") }}
-              </div>
-              <p class="mobile-drawer-desc">
-                一级分组：{{ activeTypeLabel || "未选择" }}
-              </p>
-            </div>
-            <button
-              type="button"
-              class="mobile-drawer-switch"
-              @click="returnToMobileTypePicker"
-            >
-              {{ $t("product.list.switchLevel1Group") }}
-            </button>
-          </div>
-
-          <div class="mobile-drawer-list">
-            <button
-              v-for="g in rootGroups"
-              :key="g.id"
-              type="button"
-              class="mobile-drawer-item"
-              :class="{ active: activeGroupId === g.id }"
-              @click="handleMobileGroupSelect(g.id)"
-            >
-              <span>{{ g.name }}</span>
-              <svg
-                viewBox="0 0 12 12"
-                fill="none"
-                width="12"
-                height="12"
-                aria-hidden="true"
-              >
-                <path
-                  d="M4.5 3l3 3-3 3"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </el-drawer>
 
       <MobileSheet
         v-model="mobileProductDrawer"
@@ -2064,7 +2012,6 @@ import {
 } from "@element-plus/icons-vue";
 import { useWebsiteProductsPage } from "@/domains/products/useWebsiteProductsPage";
 import { resolveCpuBrandBadge } from "@/domains/products/cpuBrandBadge";
-import MobileRegionPicker from "@/components/MobileRegionPicker.vue";
 import MobileOsPicker from "@/components/MobileOsPicker.vue";
 import MobileOptionPicker from "@/components/MobileOptionPicker.vue";
 import MobileRangePicker from "@/components/MobileRangePicker.vue";
@@ -2072,6 +2019,7 @@ import MobileSheet from "@/components/MobileSheet.vue";
 import { t } from "@/locales";
 import { resolveProductDisplayName } from "@/utils/websiteProductConfig";
 import ProductCardGrid from "./ProductCardGrid.vue";
+import ProductGroupNav from "./ProductGroupNav.vue";
 import {
   DISPLAY_MODE_CARD,
   DISPLAY_MODE_LIST,
@@ -2125,10 +2073,7 @@ const {
   submitting,
   sidebarCollapsed,
   isMobile,
-  mobileCategoryDrawer,
   mobileProductDrawer,
-  mobileRegionDrawer,
-  tempChildGroups,
   mobilePendingProductId,
   productTypes,
   rootGroups,
@@ -2185,11 +2130,6 @@ const {
   selectOsGroup,
   handleSubmit,
   enterMobileType,
-  returnToMobileTypePicker,
-  openMobileRegionDrawer,
-  handleRegionChange,
-  confirmRegionSelection,
-  handleMobileGroupSelect,
   openMobileProductDrawer,
   confirmMobileProductSelection: confirmRawMobileProductSelection,
   switchType,
@@ -2225,6 +2165,54 @@ function handleDisplayModeChange(mode) {
   }
 
   syncDefaultProduct(visibleProducts.value, { syncRoute: true });
+}
+
+/* ===== 分组导航位置（顶部折叠 / 左侧栏） ===== */
+const GROUP_NAV_STORAGE_KEY = "turaidc:shop-group-nav";
+const groupNavMode = ref(
+  (() => {
+    try {
+      return window.localStorage.getItem(GROUP_NAV_STORAGE_KEY) === "sidebar"
+        ? "sidebar"
+        : "top";
+    } catch {
+      return "top";
+    }
+  })(),
+);
+
+// 桌面端放到侧栏时，主区域不再渲染顶部折叠导航；
+// 手机端没有侧栏，始终用顶部可折叠形态。
+const showTopGroupNav = computed(
+  () => !(groupNavMode.value === "sidebar" && !isMobile.value),
+);
+
+function toggleGroupNavMode() {
+  const next = groupNavMode.value === "sidebar" ? "top" : "sidebar";
+  groupNavMode.value = next;
+  try {
+    window.localStorage.setItem(GROUP_NAV_STORAGE_KEY, next);
+  } catch {
+    // 写不进去只影响下次是否记得
+  }
+}
+
+function handleGroupNavSelectGroup(id) {
+  const nextId = Number(id || 0);
+  if (!nextId || nextId === Number(activeGroupId.value || 0)) {
+    return;
+  }
+
+  void switchGroup(nextId);
+}
+
+function handleGroupNavSelectChild(id) {
+  const nextId = Number(id || 0);
+  if (!nextId || nextId === Number(activeChildId.value || 0)) {
+    return;
+  }
+
+  switchChild(nextId);
 }
 
 /* ===== 宽屏版心面板 ===== */
@@ -3473,24 +3461,6 @@ function confirmOsSelection(groupId, versionId) {
       configForm.os = versionId;
     }
   }
-}
-
-function handleDesktopGroupChange(value) {
-  const nextGroupId = Number(value || 0);
-  if (!nextGroupId) {
-    return;
-  }
-
-  void switchGroup(nextGroupId);
-}
-
-function handleDesktopChildChange(value) {
-  const nextChildId = Number(value || 0);
-  if (!nextChildId) {
-    return;
-  }
-
-  switchChild(nextChildId);
 }
 </script>
 

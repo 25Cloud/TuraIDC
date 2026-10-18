@@ -177,16 +177,14 @@ export function useWebsiteProductsCatalog({
       childGroupId: activeChildId.value,
       productId: selectedProductId.value,
     });
-    // 目录态要保留类型/分组/三级分组：路径承载类型与分组，三级分组放 ?child=。
-    // 否则卡片式地址只剩 /products，刷新或从详情页返回都会丢目录。
-    const targetQuery = buildWebsiteProductRouteQuery(route.query, {
-      childGroupId: activeChildId.value,
-      productId: selectedProductId.value,
-    });
+    // 目录上下文（类型/分组/三级分组）全部写在路径里；查询里只保留优惠券等
+    // 无关参数，旧的 ?type= / ?group= / ?child= 写法顺手清掉。
+    const targetQuery = buildWebsiteProductRouteQuery(route.query);
+    const legacyQueryKeys = ["type", "group", "child"].filter(
+      (key) => route.query?.[key] !== undefined,
+    );
 
-    const currentChild = String(route.query?.child ?? "");
-    const nextChild = String(targetQuery.child ?? "");
-    if (route.path === targetPath && currentChild === nextChild) {
+    if (route.path === targetPath && legacyQueryKeys.length === 0) {
       return;
     }
 
@@ -286,9 +284,15 @@ export function useWebsiteProductsCatalog({
     // 这里不复用 syncSelectionRoute()：它的「深链保护」正是为了阻止地址回退到
     // /products（防止深链刷新时状态未解析完就把参数抹掉）。这里是用户主动返回，
     // 本地分组与商品状态都已加载完毕，不该被那条保护拦住。
+    const {
+      type: _type,
+      group: _group,
+      child: _child,
+      ...restQuery
+    } = route.query || {};
     void router.replace({
       path: "/products",
-      query: route.query,
+      query: restQuery,
     });
   }
 
@@ -533,14 +537,49 @@ export function useWebsiteProductsCatalog({
     });
     productsByGroup.value = map;
 
+    // 三段路径的 thirdId 可能是三级分组 ID，也可能是旧深链的商品 ID。
+    // 这里拿到真实 children / 商品后才好判定：
+    //  - 命中 children → 当作三级分组；
+    //  - 否则当商品 ID，再在各级分组商品里找它所属分组的归属。
+    const ambiguousId = Number(options.ambiguousId || 0);
+    let targetChildId = Number(options.targetChildId || 0);
+    let targetProductId = Number(options.targetProductId || 0);
+
+    if (ambiguousId > 0) {
+      if (children.some((child) => Number(child.id) === ambiguousId)) {
+        targetChildId = ambiguousId;
+        targetProductId = 0;
+      } else {
+        targetProductId = ambiguousId;
+      }
+    }
+
     if (children.length) {
-      const targetChildId = Number(options.targetChildId || 0);
-      const matchedChild = children.find((item) => item.id === targetChildId);
-      const nextChild = matchedChild || children[0];
+      let nextChild =
+        children.find((child) => Number(child.id) === targetChildId) ||
+        children[0];
+
+      // 旧商品深链只带商品 ID：扫描各级分组的商品，找到它真正所属的三级分组，
+      // 避免停在第一个分组、把深链商品丢掉。
+      if (targetProductId > 0 && ambiguousId > 0) {
+        const owner = children.find((child) => {
+          const list = map[catalogGroupKey(child)] || [];
+          return list.some((item) => Number(item.id) === targetProductId);
+        });
+        if (owner) {
+          nextChild = owner;
+        }
+      }
+
       activeChildId.value = nextChild.id;
       const activeChildKey = catalogGroupKey(nextChild);
       const products = activeChildKey ? map[activeChildKey] || [] : [];
-      syncDefaultProduct(products, options);
+      syncDefaultProduct(products, {
+        ...options,
+        ambiguousId: 0,
+        targetChildId: nextChild.id,
+        targetProductId,
+      });
     } else {
       activeChildId.value = 0;
       const rootKey = catalogGroupKey({
@@ -552,7 +591,11 @@ export function useWebsiteProductsCatalog({
         ),
       });
       const products = rootKey ? map[rootKey] || [] : [];
-      syncDefaultProduct(products, options);
+      syncDefaultProduct(products, {
+        ...options,
+        ambiguousId: 0,
+        targetProductId,
+      });
     }
   }
 
@@ -579,6 +622,18 @@ export function useWebsiteProductsCatalog({
       return false;
     }
 
+    const ambiguousId = Number(routePayload.thirdId || 0);
+    // 当前已加载的 children 能命中 thirdId 时按三级分组处理；
+    // 否则交给 applyGroupPayload 在目标分组目录到达后再判定（可能是旧商品深链）。
+    const knownChildId =
+      ambiguousId > 0 &&
+      childGroups.value.some((child) => Number(child.id) === ambiguousId)
+        ? ambiguousId
+        : 0;
+    const targetChildId =
+      Number(routePayload.childGroupId || 0) || knownChildId;
+    const targetProductId = Number(routePayload.productId || 0);
+
     await withSuspendedRouteSync(async () => {
       if (isMobile.value) {
         mobileTypeEntered.value = true;
@@ -588,8 +643,9 @@ export function useWebsiteProductsCatalog({
         activeTypeValue.value = nextTypeValue;
         await loadRootGroups({
           targetGroupId: routePayload.groupId,
-          targetChildId: routePayload.childGroupId,
-          targetProductId: routePayload.productId,
+          targetChildId,
+          targetProductId,
+          ambiguousId,
           syncRoute: false,
         });
         return;
@@ -600,8 +656,21 @@ export function useWebsiteProductsCatalog({
         activeGroupId.value !== routePayload.groupId
       ) {
         await switchGroup(routePayload.groupId, {
-          targetChildId: routePayload.childGroupId,
-          targetProductId: routePayload.productId,
+          targetChildId,
+          targetProductId,
+          ambiguousId,
+          syncRoute: false,
+        });
+        return;
+      }
+
+      if (ambiguousId > 0 && knownChildId === 0) {
+        // 同一分组内无法判定 thirdId 是三级分组还是商品：重新解析目录，
+        // applyGroupPayload 会找到它所属的三级分组（或按商品选中）。
+        await loadGroupPayload(activeGroupId.value, {
+          targetChildId,
+          targetProductId: 0,
+          ambiguousId,
           syncRoute: false,
         });
         return;
@@ -612,26 +681,23 @@ export function useWebsiteProductsCatalog({
         activeChildId.value !== routePayload.childGroupId
       ) {
         switchChild(routePayload.childGroupId, {
-          targetProductId: routePayload.productId,
+          targetProductId,
           syncRoute: false,
         });
         return;
       }
 
-      if (
-        routePayload.productId > 0 &&
-        selectedProductId.value !== routePayload.productId
-      ) {
+      if (targetProductId > 0 && selectedProductId.value !== targetProductId) {
         const matchedProduct = visibleProducts.value.find(
-          (item) => item.id === routePayload.productId,
+          (item) => item.id === targetProductId,
         );
 
         if (matchedProduct) {
           selectProduct(matchedProduct.id, { syncRoute: false });
         } else if (activeGroupId.value > 0) {
           await loadGroupPayload(activeGroupId.value, {
-            targetChildId: routePayload.childGroupId,
-            targetProductId: routePayload.productId,
+            targetChildId,
+            targetProductId,
             syncRoute: false,
           });
         }
@@ -790,6 +856,7 @@ export function useWebsiteProductsCatalog({
         route.params.groupId,
         route.params.childGroupId,
         route.params.productId,
+        route.params.thirdId,
         route.query.type,
         route.query.group,
         route.query.child,
@@ -806,13 +873,18 @@ export function useWebsiteProductsCatalog({
         const currentGroupId = activeGroupId.value;
         const currentChildId = activeChildId.value;
         const currentProductId = selectedProductId.value;
+        const thirdId = Number(routePayload.thirdId || 0);
+        const thirdAlreadyApplied =
+          thirdId > 0 &&
+          (thirdId === currentChildId || thirdId === currentProductId);
 
         const changed =
           String(routePayload.typeId) !== String(currentTypeValue) ||
           routePayload.groupId !== currentGroupId ||
           routePayload.childGroupId !== currentChildId ||
           (routePayload.productId > 0 &&
-            routePayload.productId !== currentProductId);
+            routePayload.productId !== currentProductId) ||
+          (thirdId > 0 && !thirdAlreadyApplied);
 
         if (changed) {
           await applyRouteSelection();

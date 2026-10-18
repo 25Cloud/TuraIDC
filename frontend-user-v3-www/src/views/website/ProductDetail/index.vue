@@ -34,6 +34,36 @@
           </svg>
           <span>{{ $t("product.detail.backToProducts") }}</span>
         </button>
+
+        <!-- 配置页也要能切列表式 / 卡片式：切回列表式带着当前商品进入列表配置，
+             切到卡片式回到该分组的商品卡网格 -->
+        <div class="pd-topbar-actions">
+          <span class="pd-view-label">{{
+            $t("product.list.displayMode")
+          }}</span>
+          <div
+            class="pd-view-switch"
+            role="group"
+            :aria-label="$t('product.list.displayMode')"
+          >
+            <button
+              type="button"
+              :class="{ 'is-active': detailDisplayMode === DISPLAY_MODE_CARD }"
+              :aria-pressed="detailDisplayMode === DISPLAY_MODE_CARD"
+              @click="handleDetailDisplayModeChange(DISPLAY_MODE_CARD)"
+            >
+              {{ $t("product.list.displayCard") }}
+            </button>
+            <button
+              type="button"
+              :class="{ 'is-active': detailDisplayMode === DISPLAY_MODE_LIST }"
+              :aria-pressed="detailDisplayMode === DISPLAY_MODE_LIST"
+              @click="handleDetailDisplayModeChange(DISPLAY_MODE_LIST)"
+            >
+              {{ $t("product.list.displayList") }}
+            </button>
+          </div>
+        </div>
       </div>
 
       <section v-if="showCatalogHero" class="pd-hero">
@@ -996,6 +1026,15 @@ import { resolveCpuBrandBadge } from "@/domains/products/cpuBrandBadge";
 import { resolveMachineSpecPresentation } from "@/domains/products/machineSpecResolver";
 import { formatProductListPrice } from "@/views/website/products/productPrice";
 import { useProductDisplaySettings } from "@/views/website/products/useProductDisplaySettings";
+import {
+  DISPLAY_MODE_CARD,
+  DISPLAY_MODE_LIST,
+  useProductDisplayMode,
+} from "@/views/website/products/useProductDisplayMode";
+import {
+  buildWebsiteProductPath,
+  resolveWebsiteProductRoutePayloadByDetail,
+} from "@/utils/productRoute";
 import { useWebsiteProductConfigurator } from "@/domains/products/useWebsiteProductConfigurator";
 import MobileOptionPicker from "@/components/MobileOptionPicker.vue";
 import MobileOsPicker from "@/components/MobileOsPicker.vue";
@@ -1008,6 +1047,44 @@ const router = useRouter();
 // 版心与「机型对比」开关都由后台「商品展示」页面控制，与选购页共用同一份配置
 const { isContained, contentMaxWidthVar, detailSpecCompare } =
   useProductDisplaySettings();
+
+// 配置页同样支持列表式 / 卡片式切换：切换后回到对应形态的列表页
+const { displayMode: detailDisplayMode, setDisplayMode: setDetailDisplayMode } =
+  useProductDisplayMode();
+
+function handleDetailDisplayModeChange(mode) {
+  if (mode === detailDisplayMode.value) {
+    return;
+  }
+
+  const payload = resolveWebsiteProductRoutePayloadByDetail(product.value);
+  setDetailDisplayMode(mode);
+
+  if (!payload.typeId || !payload.groupId) {
+    router.push("/products");
+    return;
+  }
+
+  if (mode === DISPLAY_MODE_CARD) {
+    // 卡片式：回到该三级分组的商品卡网格（不带商品 ID，网格只在无选中态时展示）
+    router.push(
+      buildWebsiteProductPath({
+        typeId: payload.typeId,
+        groupId: payload.groupId,
+        childGroupId: payload.childGroupId,
+      }),
+    );
+    return;
+  }
+
+  // 列表式：带着当前商品进入列表配置
+  router.push(
+    buildWebsiteProductPath({
+      ...payload,
+      productId: payload.productId || Number(product.value?.id || 0),
+    }),
+  );
+}
 
 /**
  * 顶部返回：能回上一页就回上一页（多来自列表或卡片），
@@ -2061,6 +2138,65 @@ onBeforeUnmount(() => {
 
   svg {
     color: #86909c;
+  }
+}
+
+/* 配置页的列表式 / 卡片式切换（与选购页同一套形态口径） */
+.pd-topbar-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.pd-view-label {
+  color: #86909c;
+  font-size: 12px;
+}
+
+.pd-view-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #e5e6eb;
+  border-radius: 4px;
+  background: #f7f8fa;
+}
+
+.pd-view-switch button {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #4e5969;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
+}
+
+.pd-view-switch button:hover {
+  color: #165dff;
+}
+
+.pd-view-switch button.is-active {
+  background: #fff;
+  color: #165dff;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+@media (max-width: 520px) {
+  .pd-view-label {
+    display: none;
+  }
+
+  .pd-view-switch button {
+    padding: 0 8px;
   }
 }
 

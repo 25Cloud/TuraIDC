@@ -154,7 +154,12 @@
       "widthContained": "固定寬度",
       "widthFull": "撐滿畫面",
       "widthHint": "僅寬屏生效，手機端始終鋪滿",
-      "widthReset": "恢復站點預設"
+      "widthReset": "恢復站點預設",
+      "groupNav": "分組導覽",
+      "groupNavLevel2": "二級分組",
+      "groupNavLevel3": "三級分組",
+      "groupNavSidebar": "分組側欄",
+      "groupNavTop": "分組置頂"
     },
     "cpuBadge": {
       "coreShort": "酷",

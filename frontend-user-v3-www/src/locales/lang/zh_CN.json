@@ -154,7 +154,12 @@
       "widthContained": "固定宽度",
       "widthFull": "撑满屏幕",
       "widthHint": "仅宽屏生效，手机端始终铺满",
-      "widthReset": "恢复站点默认"
+      "widthReset": "恢复站点默认",
+      "groupNav": "分组导航",
+      "groupNavLevel2": "二级分组",
+      "groupNavLevel3": "三级分组",
+      "groupNavSidebar": "分组侧栏",
+      "groupNavTop": "分组顶部"
     },
     "cpuBadge": {
       "coreShort": "酷",

@@ -60,7 +60,9 @@ export const clientRoutes: RouteRecordRaw[] = [
         },
       },
       {
-        path: "products/:typeId/:groupId(\\d+)/:productId(\\d+)",
+        // 三段路径的第三段：三级分组 ID（目录态）或旧商品深链的商品 ID（历史兼容）。
+        // 路由层形状相同无法区分，参数名用 thirdId，由页面按目录数据判定。
+        path: "products/:typeId/:groupId(\\d+)/:thirdId(\\d+)",
         name: "WwwProductsPurchase",
         component: lazyRouteView(
           () => import("@/pages/website/products/index.vue"),
@@ -72,10 +74,8 @@ export const clientRoutes: RouteRecordRaw[] = [
         },
       },
       {
-        // 目录态（未选中商品）：卡片式浏览时也要把类型与分组留在地址里，
+        // 目录态（未选中商品）：卡片式浏览时也要把类型、分组与三级分组留在地址里，
         // 否则刷新/从详情页返回都会掉回 /products、丢掉当前分类。
-        // 三级分组不放在路径里——/products/:typeId/:groupId/:childGroupId 与
-        // /products/:typeId/:groupId/:productId 形状相同，路由无法区分，改用 ?child=。
         path: "products/:typeId/:groupId(\\d+)",
         name: "WwwProductsGroup",
         component: lazyRouteView(

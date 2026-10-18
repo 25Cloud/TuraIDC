@@ -405,7 +405,8 @@
   position: relative;
 }
 
-.shop-width-trigger {
+.shop-width-trigger,
+.shop-group-nav-trigger {
   display: inline-flex;
   height: 32px;
   align-items: center;
@@ -417,12 +418,14 @@
   color: $text-color-secondary;
   font-size: 12px;
   cursor: pointer;
+  white-space: nowrap;
   transition:
     border-color $motion-fast ease,
     color $motion-fast ease;
 
   &:hover,
-  &.is-open {
+  &.is-open,
+  &.is-active {
     border-color: $color-primary;
     color: $color-primary;
   }

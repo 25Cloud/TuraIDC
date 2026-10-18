@@ -280,14 +280,14 @@ test.describe("选购页展示方式与商品描述", () => {
     await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
     await expect(page.locator(".config-area")).toHaveCount(0);
 
-    // 卡片态地址必须保留目录：/products/:type/:group?child=:child
+    // 卡片态地址必须保留目录：/products/:type/:group/:三级分组（路径参数，不用 ?child=）
     // 以前这里会退化成裸 /products，刷新/返回都丢分类。
     await expect
-      .poll(() => {
-        const url = new URL(page.url());
-        return `${url.pathname}${url.search}`;
-      })
-      .toBe(`/products/${TYPE_CODE}/${GROUP_ID}?child=${CHILD_GROUP_ID}`);
+      .poll(() => new URL(page.url()).pathname)
+      .toBe(`/products/${TYPE_CODE}/${GROUP_ID}/${CHILD_GROUP_ID}`);
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("child"))
+      .toBeNull();
 
     // 偏好只存本机，刷新后仍是卡片式，且目录（三级分组「高防」）仍在
     await expect
@@ -300,7 +300,7 @@ test.describe("选购页展示方式与商品描述", () => {
     await expect(page.locator(".shop-view-bar__name")).toHaveText("高防");
     await expect
       .poll(() => new URL(page.url()).pathname)
-      .toBe(`/products/${TYPE_CODE}/${GROUP_ID}`);
+      .toBe(`/products/${TYPE_CODE}/${GROUP_ID}/${CHILD_GROUP_ID}`);
   });
 
   test("卡片式地址保留目录：刷新与从配置页返回都能回到原分类", async ({
@@ -310,13 +310,10 @@ test.describe("选购页展示方式与商品描述", () => {
     await page.goto(catalogPath);
 
     await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
-    // 进入卡片态后地址是 /products/hosting/112?child=1030
+    // 进入卡片态后地址是 /products/hosting/112/1030（三级分组在路径里）
     await expect
-      .poll(() => {
-        const url = new URL(page.url());
-        return `${url.pathname}?${url.searchParams.get("child")}`;
-      })
-      .toBe(`/products/${TYPE_CODE}/${GROUP_ID}?${CHILD_GROUP_ID}`);
+      .poll(() => new URL(page.url()).pathname)
+      .toBe(`/products/${TYPE_CODE}/${GROUP_ID}/${CHILD_GROUP_ID}`);
 
     // 点卡片进入独立配置页，再点返回：应回到原分类的卡片网格，而不是裸 /products
     await page.locator(".product-card").first().locator(".product-card-name").click();
@@ -326,11 +323,8 @@ test.describe("选购页展示方式与商品描述", () => {
     await expect(page.locator(".product-card-grid")).toBeVisible();
     await expect(page.locator(".shop-view-bar__name")).toHaveText("高防");
     await expect
-      .poll(() => {
-        const url = new URL(page.url());
-        return url.searchParams.get("child");
-      })
-      .toBe(String(CHILD_GROUP_ID));
+      .poll(() => new URL(page.url()).pathname)
+      .toBe(`/products/${TYPE_CODE}/${GROUP_ID}/${CHILD_GROUP_ID}`);
   });
 
   test("站点默认卡片式：访客切回列表式后恢复表格配置区", async ({ page }) => {
@@ -564,6 +558,109 @@ test.describe("选购页展示方式与商品描述", () => {
     await expect(page).toHaveURL(new RegExp(`/products/${PRODUCT_IDS[0]}$`));
     await expect(page.locator(".pd-desc")).toBeVisible();
     await expect(page.locator(".pd-desc")).toContainText("流量");
+  });
+
+  test("独立配置页也能切换列表式 / 卡片式", async ({ page }) => {
+    await mockSiteApi(page, "card");
+    await page.goto(`/products/${PRODUCT_IDS[0]}`);
+    await expect(page.locator(".pd-body")).toBeVisible();
+
+    const detailSwitch = page.locator(".pd-view-switch");
+    await expect(
+      detailSwitch.getByRole("button", { name: "卡片式" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await page.screenshot({
+      path: `${process.env.TEMP || "."}\\turaidc-www-detail-switch.png`,
+      fullPage: false,
+    });
+
+    // 切到列表式：带着当前商品回到列表配置页（三段以上路径，含三级分组）
+    await detailSwitch.getByRole("button", { name: "列表式" }).click();
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/products/${TYPE_CODE}/${GROUP_ID}/${CHILD_GROUP_ID}/${PRODUCT_IDS[0]}$`,
+      ),
+    );
+    await expect(page.locator(".desktop-machine-table")).toBeVisible();
+
+    // 再回配置页，切到卡片式：回到该三级分组的商品网格
+    await page.goto(`/products/${PRODUCT_IDS[0]}`);
+    await expect(page.locator(".pd-body")).toBeVisible();
+    await page
+      .locator(".pd-view-switch")
+      .getByRole("button", { name: "卡片式" })
+      .click();
+    await expect(page).toHaveURL(
+      new RegExp(`/products/${TYPE_CODE}/${GROUP_ID}/${CHILD_GROUP_ID}$`),
+    );
+    await expect(page.locator(".product-card-grid")).toBeVisible();
+  });
+
+  test("分组导航：二/三级分组标签正确，可折叠并移到侧栏", async ({ page }) => {
+    await mockSiteApi(page, "card");
+    await page.goto(catalogPath);
+
+    const topNav = page.locator(".pg-nav--top");
+    await expect(topNav).toBeVisible();
+    // 桌面临时默认展开：面板里是「二级分组」，展开后出现「三级分组」
+    const panel = topNav.locator(".pg-nav__panel");
+    await expect(panel).toBeVisible();
+    await expect(panel.locator(".pg-nav__caption").first()).toHaveText(
+      "二级分组",
+    );
+    await expect(panel.locator(".pg-nav__caption--sub")).toHaveText("三级分组");
+    await expect(panel.locator(".pg-nav__child").first()).toContainText("高防");
+    // 旧的横向筛选行已移除，不再出现「一级分组/二级分组」错位标签
+    await expect(page.locator(".filter-block")).toHaveCount(0);
+    await page.screenshot({
+      path: `${process.env.TEMP || "."}\\turaidc-www-group-nav-top.png`,
+      fullPage: false,
+    });
+
+    // 折叠
+    await page.locator(".pg-nav__toggle").click();
+    await expect(topNav.locator(".pg-nav__panel")).toHaveCount(0);
+
+    // 移到侧栏并刷新保持
+    await page.getByRole("button", { name: "分组侧栏" }).click();
+    await expect(page.locator(".shop-sidebar .pg-nav--sidebar")).toBeVisible();
+    await expect(page.locator(".pg-nav--top")).toHaveCount(0);
+    await page.screenshot({
+      path: `${process.env.TEMP || "."}\\turaidc-www-group-nav-sidebar.png`,
+      fullPage: false,
+    });
+    await page.reload();
+    await expect(page.locator(".shop-sidebar .pg-nav--sidebar")).toBeVisible();
+
+    // 切回顶部
+    await page.getByRole("button", { name: "分组顶部" }).click();
+    await expect(page.locator(".pg-nav--top")).toBeVisible();
+  });
+
+  test("手机端分组导航默认收起，展开后纵向选三级分组", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockSiteApi(page, "card");
+    await page.goto(catalogPath);
+
+    const nav = page.locator(".pg-nav--top");
+    await expect(nav).toBeVisible();
+    // 默认收起，避免展开列表遮挡内容
+    await expect(nav.locator(".pg-nav__panel")).toHaveCount(0);
+
+    await nav.locator(".pg-nav__toggle").click();
+    await expect(nav.locator(".pg-nav__panel")).toBeVisible();
+    await expect(nav.locator(".pg-nav__caption").first()).toHaveText(
+      "二级分组",
+    );
+    await expect(nav.locator(".pg-nav__child").first()).toContainText("高防");
+    await page.screenshot({
+      path: `${process.env.TEMP || "."}\\turaidc-www-group-nav-mobile.png`,
+      fullPage: false,
+    });
+
+    // 选三级分组后面板自动收起
+    await nav.locator(".pg-nav__child").first().click();
+    await expect(nav.locator(".pg-nav__panel")).toHaveCount(0);
   });
 
   test("视觉快照：两种形态与独立配置页", async ({ page }) => {
