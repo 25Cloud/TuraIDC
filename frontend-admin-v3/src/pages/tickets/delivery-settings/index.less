@@ -1,4 +1,12 @@
 .ticket-delivery-page {
+  /*
+   * 两卡片（规则列表 + 上传防护）纵向排列：显式给间距。
+   * 此前两张 t-card 直接相邻，视觉上像一张卡片被切了两半。
+   */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
   .ticket-delivery-card {
     border-radius: var(--td-radius-large, 8px);
   }
@@ -58,7 +66,41 @@
   .ticket-delivery-form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
     gap: 0 16px;
+
+    /* 两列对齐靠 form-item 自带的下边距，这里统一成 16px，避免行距忽宽忽窄 */
+    .t-form__item {
+      margin-bottom: 16px;
+    }
+  }
+
+  /*
+   * 上传防护表单：开关 / 数字输入与说明文字排成可换行的一行，间距 12px。
+   * 此前说明文字紧接着开关，看起来像开关自己的标签；窄屏时整行挤压控件。
+   */
+  .ticket-delivery-guard-form {
+    .t-form__controls-content {
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 12px;
+    }
+
+    .t-textarea {
+      width: 100%;
+    }
+
+    .t-input-number {
+      width: 220px;
+    }
+
+    .ticket-delivery-guard-hint {
+      flex: 1 1 280px;
+      min-width: 0;
+      color: var(--td-text-color-secondary);
+      font-size: var(--td-font-size-body-small, 13px);
+      line-height: 1.6;
+    }
   }
 
   .ticket-delivery-mobile-stack {
@@ -156,7 +198,9 @@
       }
 
       .ticket-delivery-guard-hint {
-        flex: 1 0 100%;
+        // 手机端也给一个可伸缩的基准宽度：放得下就贴在开关右侧，放不下再整段换行，
+        // 而不是无论多短都把说明挤到下一行、让开关孤零零占一行。
+        flex: 1 1 160px;
         width: auto;
       }
     }

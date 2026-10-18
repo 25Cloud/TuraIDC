@@ -270,7 +270,7 @@ import { useWindowSize } from '@vueuse/core';
 import { AddIcon } from 'tdesign-icons-vue-next';
 import type { FormInstanceFunctions, FormRule, PrimaryTableCol, SelectValue } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 
 import type {
   TicketDeliveryDepartment,
@@ -332,7 +332,9 @@ const form = reactive({
   name: '',
   department: '',
   supplier_id: '' as number | string,
-  product_scope_mode: 'selected' as TicketDeliveryScopeMode,
+  // 新规则默认「全部产品」：多数传递规则按供应商整体转发，
+  // 默认指定产品会让弹窗一打开就挂一个「至少选择一个产品」的必填错误。
+  product_scope_mode: 'all' as TicketDeliveryScopeMode,
   product_ids: [] as Array<number | string>,
   upstream_department_id: '',
   enabled: true,
@@ -387,7 +389,7 @@ function createDefaultForm() {
     name: '',
     department: '',
     supplier_id: '',
-    product_scope_mode: 'selected' as TicketDeliveryScopeMode,
+    product_scope_mode: 'all' as TicketDeliveryScopeMode,
     product_ids: [],
     upstream_department_id: '',
     enabled: true,
@@ -597,6 +599,8 @@ function openCreateDialog() {
   editingId.value = null;
   createDefaultForm();
   dialogVisible.value = true;
+  // 弹窗复用同一个表单实例：打开时清掉上一次留下的校验红框
+  nextTick(() => formRef.value?.clearValidate?.());
 }
 
 function openEditDialog(row: TicketDeliveryRuleRecord) {
@@ -618,6 +622,8 @@ function openEditDialog(row: TicketDeliveryRuleRecord) {
     mask_keywords: row.mask_keywords || '',
   });
   dialogVisible.value = true;
+  // 复用表单实例：先清掉上一次或本页别的规则留下的校验红框，再异步补拉选项
+  nextTick(() => formRef.value?.clearValidate?.());
   const supplierId = String(form.supplier_id);
   void Promise.all([
     loadSupplierProducts(supplierId),
