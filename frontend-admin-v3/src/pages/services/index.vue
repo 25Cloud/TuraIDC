@@ -23,7 +23,15 @@
       </div>
 
       <div v-if="!isMobile" class="table-scroll">
-        <t-table
+        <div class="admin-view-mode-bar">
+          <admin-view-mode-switch :mode="viewMode" @change="setViewMode" />
+        </div>
+
+        <admin-record-cards v-if="isCardView" :records="cardRows" :fields="cardFields">
+          <template #title="{ record }">{{ record.name || record.title || record.id }}</template>
+        </admin-record-cards>
+
+        <t-table v-else
           row-key="id"
           :data="services"
           :columns="columns"
@@ -206,6 +214,23 @@
   </div>
 </template>
 <script setup lang="ts">
+import AdminRecordCards from '@/components/admin-record-cards/index.vue';
+import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
+import { useAdminViewMode } from '@/composables/useAdminViewMode';
+
+const { mode: viewMode, isCard: isCardView, setMode: setViewMode } = useAdminViewMode('admin-services', 'list');
+
+/** 卡片视图的行数据与字段：字段直接复用表格列定义，不维护第二份清单 */
+const cardRows = computed(() => (services as unknown as Array<Record<string, unknown>>) ?? []);
+const cardFields = computed(() => {
+  const source = (columns as unknown as Array<Record<string, unknown>>) ?? [];
+
+  return source
+    .filter((column) => column.colKey && column.title && column.colKey !== 'operation')
+    .slice(0, 4)
+    .map((column) => ({ key: String(column.colKey), label: String(column.title) }));
+});
+
 import './index.less';
 
 import { billingCycleLabel as billingCycleLabelOf } from '@shared/billingCycle';
