@@ -371,7 +371,13 @@ export function useWebsiteProductConfigurator(productDetail) {
     const payload = {}
 
     if (regionValue.value) {
-      payload[regionFieldKey.value] = regionValue.value
+      // 地区同样只能提交上游认的传参值：regionValue 里存的是选项 id（UI 选中标记），
+      // 直接发出去等于把库里的自增 id 当地区参数，与其它配置项的约定相反。
+      const selectedRegion = regionOptions.value.find(
+        (option) => String(option.id) === String(regionValue.value),
+      )
+      payload[regionFieldKey.value] =
+        selectedRegion && selectedRegion.value ? selectedRegion.value : regionValue.value
     }
 
     if (configForm.os) {
