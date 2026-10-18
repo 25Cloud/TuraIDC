@@ -140,12 +140,13 @@ export function formatDateTime(value: unknown): string {
  * Format monthly price for display
  */
 export function formatMonthlyPrice(row: {
-  monthly_price?: number;
-  primary_price?: { amount?: number };
-  pricing?: { monthly?: number };
+  monthly_price?: number | string | null;
+  primary_price?: { amount?: number | string | null } | number | string | null;
+  pricing?: { monthly?: number | string | null } | null;
 }): string {
   const primaryPrice = toPlainRecord(row.primary_price);
-  const amount = row.monthly_price ?? primaryPrice.amount ?? row.pricing?.monthly;
+  const pricing = toPlainRecord(row.pricing);
+  const amount = row.monthly_price ?? primaryPrice.amount ?? pricing.monthly;
   if (amount === undefined || amount === null || amount === '') return '-';
   const numericAmount = Number(amount);
   if (!Number.isFinite(numericAmount)) return `¥ ${amount}`;

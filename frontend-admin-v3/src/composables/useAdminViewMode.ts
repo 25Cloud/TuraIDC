@@ -15,6 +15,19 @@ import { computed, ref, watch } from 'vue';
 
 export type AdminViewMode = 'list' | 'card';
 
+/**
+ * 桌面卡片视图的网格样式。
+ *
+ * 各列表页已经有一套信息完整的移动端卡片，桌面卡片视图直接复用它们，
+ * 只把容器从「单列堆叠」换成自适应网格。用行内样式而不是全局类：
+ * 移动端容器的样式是按页面定义的，加类会被页面 scoped 样式按优先级压回去。
+ */
+export const ADMIN_CARD_GRID_STYLE = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 22rem), 1fr))',
+  gap: '16px',
+} as const;
+
 const DEFAULT_STORAGE_KEY = 'turaidc:admin-view-mode-default';
 const PAGE_STORAGE_PREFIX = 'turaidc:admin-view-mode:';
 
@@ -39,14 +52,20 @@ function writeStorage(key: string, value: string): void {
   }
 }
 
-/** 全站默认展示方式（新页面 / 未单独设置过的页面用）。 */
-const defaultMode = ref<AdminViewMode>(
-  (() => {
-    const stored = readStorage(DEFAULT_STORAGE_KEY);
+/**
+ * 全站默认展示方式。
+ *
+ * 注意 displayDefault 与「已配置过的默认值」是两回事：没有配置过时不能拿 'list'
+ * 去覆盖页面自己的兜底形态（工单原本就是卡片，强行当列表会让它默认变成'
+ * 一张空表格）。
+ */
+function readConfiguredDefault(): AdminViewMode | null {
+  const stored = readStorage(DEFAULT_STORAGE_KEY);
 
-    return isMode(stored) ? stored : 'list';
-  })(),
-);
+  return isMode(stored) ? stored : null;
+}
+
+const defaultMode = ref<AdminViewMode>(readConfiguredDefault() ?? 'list');
 
 /** 已创建的页面开关，默认值变化时未被单独设置过的页面要跟着变。 */
 const pageModes = new Map<string, ReturnType<typeof ref<AdminViewMode>>>();
@@ -64,7 +83,7 @@ export function setDefaultViewMode(mode: AdminViewMode): void {
  * 页面级开关。
  *
  * @param pageKey 页面的稳定标识（不要用路由参数拼，避免同一页面多种 URL 各记一份）
- * @param fallback 该页面原有的形态；没有默认值时作为兜底（例如工单本来就是卡片）
+ * @param fallback 该页面原有的形态；用户没单独切过、后台也没配默认值时用它
  */
 export function useAdminViewMode(
   pageKey: string,
@@ -74,14 +93,17 @@ export function useAdminViewMode(
 
   if (!pageModes.has(pageKeyFull)) {
     const stored = readStorage(pageKeyFull);
-    pageModes.set(pageKeyFull, ref(isMode(stored) ? stored : defaultMode.value || fallback));
+    pageModes.set(
+      pageKeyFull,
+      ref(isMode(stored) ? stored : (readConfiguredDefault() ?? fallback)),
+    );
   }
 
   const state = pageModes.get(pageKeyFull)!;
 
   // 默认值改了，且这个页面从没被单独切换过 → 跟随默认值
   watch(defaultMode, (next) => {
-    if (!readStorage(pageKeyFull)) {
+    if (!readStorage(pageKeyFull) && readConfiguredDefault()) {
       state.value = next;
     }
   });

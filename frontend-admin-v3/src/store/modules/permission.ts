@@ -175,6 +175,7 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
         children: [
           { path: '/admin/site-info', title: { zh_CN: '站点设置', en_US: 'Site Settings' } },
           { path: '/admin/site-hero', title: { zh_CN: '首页 Banner', en_US: 'Home Banner' } },
+          { path: '/admin/product-display', title: { zh_CN: '商品展示', en_US: 'Product Display' } },
         ],
       },
       {

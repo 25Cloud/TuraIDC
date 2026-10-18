@@ -2951,3 +2951,109 @@ button.supplier-tree-node__content {
   outline: 2px solid var(--td-brand-color);
   outline-offset: 1px;
 }
+
+/* ===== 商品卡片视图 ===== */
+/*
+ * 卡片字段与列表式同源（同一批行数据、同一套格式化函数），
+ * 卡片只做辨认与快速进入编辑，不重复表格里的批量操作。
+ */
+.product-card-view {
+  padding: 4px 0 8px;
+}
+
+.product-record-card {
+  background: var(--td-bg-color-container);
+  border: 1px solid var(--td-component-stroke);
+  border-radius: var(--td-radius-medium);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: var(--td-brand-color-light-active);
+    box-shadow: var(--td-shadow-1);
+  }
+
+  :deep(.t-card__body) {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+}
+
+.product-record-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.product-record-title {
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  text-align: left;
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+.product-record-sub {
+  margin: 0;
+  overflow: hidden;
+  color: var(--td-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-record-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--td-radius-default);
+  background: var(--td-bg-color-secondarycontainer);
+
+  > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  dt {
+    flex-shrink: 0;
+    color: var(--td-text-color-secondary);
+    font-size: 13px;
+  }
+
+  dd {
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    color: var(--td-text-color-primary);
+    font-size: 13px;
+    font-weight: 500;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.product-record-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid var(--td-component-stroke);
+}
+
+.product-record-empty {
+  padding: 48px 0;
+  grid-column: 1 / -1;
+}

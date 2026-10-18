@@ -36,15 +36,12 @@
         </span>
       </div>
 
-        <div class="admin-view-mode-bar">
-          <admin-view-mode-switch :mode="viewMode" @change="setViewMode" />
-        </div>
+      <div v-if="!isMobile" class="admin-list-toolbar">
+        <admin-view-mode-switch inline :mode="viewMode" @change="setViewMode" />
+      </div>
 
-        <admin-record-cards v-if="isCardView" :records="cardRows" :fields="cardFields">
-          <template #title="{ record }">{{ record.name || record.title || record.id }}</template>
-        </admin-record-cards>
-
-      <t-table v-else
+      <t-table
+        v-if="!isCardView"
         class="users-desktop-table"
         row-key="id"
         :data="list"
@@ -95,9 +92,17 @@
         <template #createdAt="{ row }">{{ formatDateTime(row.created_at) }}</template>
       </t-table>
 
-      <div class="users-mobile-list">
+      <div
+        v-if="isMobile || isCardView"
+        class="users-mobile-list"
+        :style="isCardView && !isMobile ? { display: 'block' } : undefined"
+      >
         <t-loading :loading="loading" size="small">
-          <div v-if="list.length" class="users-mobile-stack">
+          <div
+            v-if="list.length"
+            class="users-mobile-stack"
+            :style="isCardView && !isMobile ? ADMIN_CARD_GRID_STYLE : undefined"
+          >
             <article v-for="row in list" :key="row.id" class="users-mobile-card">
               <div class="users-mobile-card__head">
                 <button class="users-mobile-card__account" type="button" @click="openDetail(row.id)">
@@ -178,22 +183,13 @@
   </div>
 </template>
 <script setup lang="ts">
-import AdminRecordCards from '@/components/admin-record-cards/index.vue';
 import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
-import { useAdminViewMode } from '@/composables/useAdminViewMode';
+import { ADMIN_CARD_GRID_STYLE, useAdminViewMode } from '@/composables/useAdminViewMode';
 
 const { mode: viewMode, isCard: isCardView, setMode: setViewMode } = useAdminViewMode('admin-users', 'list');
 
-/** 卡片视图的行数据与字段：字段直接复用表格列定义，不维护第二份清单 */
-const cardRows = computed(() => (list as unknown as Array<Record<string, unknown>>) ?? []);
-const cardFields = computed(() => {
-  const source = (columns as unknown as Array<Record<string, unknown>>) ?? [];
-
-  return source
-    .filter((column) => column.colKey && column.title && column.colKey !== 'operation')
-    .slice(0, 4)
-    .map((column) => ({ key: String(column.colKey), label: String(column.title) }));
-});
+// 与其它列表页同一个断点（含 768px）
+const isMobile = useMediaQuery('(max-width: 768px)');
 
 import './index.less';
 
@@ -202,6 +198,7 @@ import type { FormInstanceFunctions, FormRule, PageInfo, PrimaryTableCol, TableR
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useMediaQuery } from '@vueuse/core';
 
 import type { AdminUser } from '@/api/user';
 import { userApi } from '@/api/user';

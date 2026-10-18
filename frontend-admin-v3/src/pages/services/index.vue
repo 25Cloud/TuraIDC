@@ -22,16 +22,12 @@
         >
       </div>
 
-      <div v-if="!isMobile" class="table-scroll">
-        <div class="admin-view-mode-bar">
-          <admin-view-mode-switch :mode="viewMode" @change="setViewMode" />
-        </div>
+      <div v-if="!isMobile" class="admin-list-toolbar">
+        <admin-view-mode-switch inline :mode="viewMode" @change="setViewMode" />
+      </div>
 
-        <admin-record-cards v-if="isCardView" :records="cardRows" :fields="cardFields">
-          <template #title="{ record }">{{ record.name || record.title || record.id }}</template>
-        </admin-record-cards>
-
-        <t-table v-else
+      <div v-if="!isMobile && !isCardView" class="table-scroll">
+        <t-table
           row-key="id"
           :data="services"
           :columns="columns"
@@ -120,9 +116,13 @@
         </t-table>
       </div>
 
-      <div v-else class="service-mobile-list">
+      <div v-if="isMobile || isCardView" class="service-mobile-list">
         <t-loading :loading="loading" size="small">
-          <div v-if="services.length" class="service-mobile-stack">
+          <div
+            v-if="services.length"
+            class="service-mobile-stack"
+            :style="isCardView && !isMobile ? ADMIN_CARD_GRID_STYLE : undefined"
+          >
             <mobile-record-card
               v-for="row in services"
               :key="row.id"
@@ -214,22 +214,10 @@
   </div>
 </template>
 <script setup lang="ts">
-import AdminRecordCards from '@/components/admin-record-cards/index.vue';
 import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
-import { useAdminViewMode } from '@/composables/useAdminViewMode';
+import { ADMIN_CARD_GRID_STYLE, useAdminViewMode } from '@/composables/useAdminViewMode';
 
 const { mode: viewMode, isCard: isCardView, setMode: setViewMode } = useAdminViewMode('admin-services', 'list');
-
-/** 卡片视图的行数据与字段：字段直接复用表格列定义，不维护第二份清单 */
-const cardRows = computed(() => (services as unknown as Array<Record<string, unknown>>) ?? []);
-const cardFields = computed(() => {
-  const source = (columns as unknown as Array<Record<string, unknown>>) ?? [];
-
-  return source
-    .filter((column) => column.colKey && column.title && column.colKey !== 'operation')
-    .slice(0, 4)
-    .map((column) => ({ key: String(column.colKey), label: String(column.title) }));
-});
 
 import './index.less';
 

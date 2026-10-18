@@ -73,7 +73,8 @@
     }
   },
   "adminViewMode": {
-    "title": "默认展示方式"
+    "title": "默认展示方式",
+    "switchLabel": "切换展示方式"
   },
   "layout": {
     "skipToContent": "跳到主内容",
@@ -2123,6 +2124,7 @@
       "sectionInterfaceDesc": "上游商品绑定",
       "sectionProductConfigDesc": "规格与可选项",
       "categoryColumn": "分类",
+      "editProduct": "编辑商品",
       "priceMonthly": "月价格",
       "stock": "库存",
       "servicesCount": "现存",
@@ -2617,12 +2619,38 @@
       "matrixSaved": "折扣矩阵已保存"
     }
   },
+  "productDisplay": {
+    "title": "商品展示",
+    "description": "控制官网选购页与独立配置页的排版方式、卡片信息与机型对比，保存后对全站立即生效。",
+    "save": "保存设置",
+    "saved": "商品展示设置已保存",
+    "saveFailed": "保存设置失败",
+    "loadFailed": "读取设置失败",
+    "noPermission": "没有修改站点设置的权限",
+    "sectionDisplay": "展示形态",
+    "displayMode": "商品列表形态",
+    "displayModeHint": "列表式适合规格维度多的商品（逐行对比参数）；卡片式适合突出商品名、描述与价格的站点。",
+    "modeList": "列表式",
+    "modeCard": "卡片式",
+    "sectionCard": "卡片式样式",
+    "cardShowStock": "卡片显示库存",
+    "cardShowStockHint": "关闭后卡片只在售罄时提示；库存充足与剩余台数不展示。",
+    "sectionDetail": "独立配置页",
+    "detailSpecCompare": "展示机型对比",
+    "detailSpecCompareHint": "开启后独立配置页展示同组机型对比表，移动端改为抽屉选择机型；关闭后只展示当前商品。",
+    "sectionLayout": "页面版心",
+    "pageLayout": "版心方式",
+    "pageLayoutHint": "选购页与独立配置页共用同一套版心，避免一个居中、一个铺满。",
+    "layoutContained": "居中",
+    "layoutFull": "铺满",
+    "maxWidth": "版心最大宽度",
+    "maxWidthUnit": "px",
+    "maxWidthHint": "仅在「居中」时生效，可设置 960–1920px。"
+  },
   "settings": {
     "index": {
-      "productDisplayMode": "商品展示方式",
       "productDisplayModeList": "列表式",
       "productDisplayModeCard": "卡片式",
-      "productDisplayModeHint": "控制前台商品列表的排版方式，保存后立即对全站生效。",
       "addFeature": "新增卡片",
       "addSlide": "新增轮播",
       "allTypes": "全部类型",
@@ -2906,6 +2934,13 @@
     },
     "index": {
       "assignee": "处理人：{name}",
+      "columnId": "单号",
+      "columnSubject": "标题",
+      "columnUser": "用户",
+      "columnStatus": "状态",
+      "columnPriority": "优先级",
+      "columnDepartment": "分类",
+      "columnUpdatedAt": "更新时间",
       "departmentPlaceholder": "工单分类",
       "empty": "暂无工单记录",
       "priorityPlaceholder": "优先级",

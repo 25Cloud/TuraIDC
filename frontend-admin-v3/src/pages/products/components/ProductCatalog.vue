@@ -200,7 +200,7 @@
             />
           </t-select>
           <div class="catalog-filter-actions">
-            <admin-view-mode-switch :mode="productViewMode" @change="setProductViewMode" />
+            <admin-view-mode-switch inline :mode="productViewMode" @change="setProductViewMode" />
             <t-button theme="primary" @click="router.push({ name: 'AdminProductCreate' })">
               <template #icon><add-icon /></template>
               {{ $t('products.catalog.addProduct') }}
@@ -239,23 +239,56 @@
           </t-space>
         </div>
 
-        <admin-record-cards
-          v-if="isProductCardView"
-          :records="products"
-          :fields="productCardFields"
-          :empty-text="$t('products.catalog.emptyProduct')"
-        >
-          <template #title="{ record }">
-            <button
-              type="button"
-              class="user-link"
-              :disabled="!isEntityId(record.id)"
-              @click="goProductEdit(router, record.id)"
-            >
-              <strong>{{ record.display_name || record.name || `#${record.id}` }}</strong>
-            </button>
-          </template>
-        </admin-record-cards>
+        <!-- 卡片视图：字段与列表式同源（同一批行数据与格式化函数），不另建一份字段清单 -->
+        <div v-if="isProductCardView" class="admin-card-grid product-card-view">
+          <t-card v-for="row in products" :key="row.id" :bordered="false" class="product-record-card">
+            <div class="product-record-head">
+              <button
+                type="button"
+                class="user-link product-record-title"
+                :class="{ 'is-hidden': !isProductVisible(row) }"
+                :disabled="!isEntityId(row.id)"
+                @click="goProductEditPage(row)"
+              >
+                <strong>{{ productSpecDisplayName(row) }}</strong>
+              </button>
+              <span
+                class="visibility-status-text"
+                :class="{ 'is-hidden': !isProductVisible(row), 'is-deleted': row.is_deleted }"
+                >{{ productVisibilityLabel(row) }}</span
+              >
+            </div>
+
+            <p class="product-record-sub">{{ productSubtitle(row) }}</p>
+
+            <dl class="product-record-meta">
+              <div>
+                <dt>{{ $t('products.catalog.categoryColumn') }}</dt>
+                <dd>{{ row.effective_product_group_full_name || '-' }}</dd>
+              </div>
+              <div>
+                <dt>{{ $t('products.catalog.priceMonthly') }}</dt>
+                <dd>{{ formatMonthlyPrice(row) }}</dd>
+              </div>
+              <div>
+                <dt>{{ $t('products.catalog.stock') }}</dt>
+                <dd>{{ formatStock(row.stock) }}</dd>
+              </div>
+              <div>
+                <dt>{{ $t('products.catalog.servicesCount') }}</dt>
+                <dd>{{ formatCount(row.active_services_count ?? row.services_count) }}</dd>
+              </div>
+            </dl>
+
+            <div class="product-record-actions">
+              <t-button size="small" variant="outline" @click="goProductEditPage(row)">
+                {{ $t('products.catalog.editProduct') }}
+              </t-button>
+            </div>
+          </t-card>
+
+          <t-empty v-if="!products.length" class="product-record-empty" :description="$t('products.catalog.emptyProduct')" />
+        </div>
 
         <div v-else class="table-scroll">
           <t-table
@@ -1401,7 +1434,6 @@ import type { ProductCategoryRecord, ProductRecord, ProductTypeRecord, SpecHighl
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
 import { t } from '@/locales';
 import { useUserStore } from '@/store';
-import AdminRecordCards from '@/components/admin-record-cards/index.vue';
 import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
 import { useAdminViewMode } from '@/composables/useAdminViewMode';
 import { goProductEdit, isEntityId } from '@/utils/route/adminEntityLink';
@@ -1517,18 +1549,6 @@ const {
   setMode: setProductViewMode,
 } = useAdminViewMode('admin-products', 'list');
 
-/** 卡片字段直接取表格列定义，避免再维护一份易漂移的字段清单。 */
-const productCardFields = computed(() =>
-  productColumns
-    .filter(
-      (column) =>
-        column.colKey &&
-        column.title &&
-        !['row-select', 'operation'].includes(String(column.colKey)),
-    )
-    .slice(0, 4)
-    .map((column) => ({ key: String(column.colKey), label: String(column.title) })),
-);
 const productTotal = ref(0);
 const productPage = ref(1);
 const productPageSize = ref(20);

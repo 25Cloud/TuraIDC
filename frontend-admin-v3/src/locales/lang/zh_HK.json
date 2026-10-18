@@ -73,7 +73,8 @@
     }
   },
   "adminViewMode": {
-    "title": "預設顯示方式"
+    "title": "預設顯示方式",
+    "switchLabel": "切換顯示方式"
   },
   "layout": {
     "skipToContent": "跳到主內容",
@@ -2123,6 +2124,7 @@
       "sectionInterfaceDesc": "上游商品綁定",
       "sectionProductConfigDesc": "規格與可選項",
       "categoryColumn": "分類",
+      "editProduct": "編輯商品",
       "priceMonthly": "月價格",
       "stock": "庫存",
       "servicesCount": "現存",
@@ -2617,12 +2619,38 @@
       "matrixSaved": "折扣矩陣已保存"
     }
   },
+  "productDisplay": {
+    "title": "商品展示",
+    "description": "控制官網選購頁與獨立配置頁的排版方式、卡片資訊與機型對比，儲存後對全站即時生效。",
+    "save": "儲存設定",
+    "saved": "商品展示設定已儲存",
+    "saveFailed": "儲存設定失敗",
+    "loadFailed": "讀取設定失敗",
+    "noPermission": "沒有修改站點設定的權限",
+    "sectionDisplay": "展示形態",
+    "displayMode": "商品列表形態",
+    "displayModeHint": "列表式適合規格維度多的商品（逐行對比參數）；卡片式適合突出商品名、描述與價格的站點。",
+    "modeList": "列表式",
+    "modeCard": "卡片式",
+    "sectionCard": "卡片式樣式",
+    "cardShowStock": "卡片顯示庫存",
+    "cardShowStockHint": "關閉後卡片只在售罄時提示；庫存充足與剩餘台數不展示。",
+    "sectionDetail": "獨立配置頁",
+    "detailSpecCompare": "展示機型對比",
+    "detailSpecCompareHint": "開啟後獨立配置頁展示同組機型對比表，手機端改為抽屜選擇機型；關閉後只展示當前商品。",
+    "sectionLayout": "頁面版心",
+    "pageLayout": "版心方式",
+    "pageLayoutHint": "選購頁與獨立配置頁共用同一套版心，避免一個居中、一個鋪滿。",
+    "layoutContained": "居中",
+    "layoutFull": "鋪滿",
+    "maxWidth": "版心最大寬度",
+    "maxWidthUnit": "px",
+    "maxWidthHint": "僅在「居中」時生效，可設定 960–1920px。"
+  },
   "settings": {
     "index": {
-      "productDisplayMode": "商品展示方式",
       "productDisplayModeList": "列表式",
       "productDisplayModeCard": "卡片式",
-      "productDisplayModeHint": "控制前台商品列表的排版方式，保存後立即對全站生效。",
       "addFeature": "新增卡片",
       "addSlide": "新增輪播",
       "allTypes": "全部類型",
@@ -2906,6 +2934,13 @@
     },
     "index": {
       "assignee": "處理人：{name}",
+      "columnId": "單號",
+      "columnSubject": "標題",
+      "columnUser": "用戶",
+      "columnStatus": "狀態",
+      "columnPriority": "優先級",
+      "columnDepartment": "分類",
+      "columnUpdatedAt": "更新時間",
       "departmentPlaceholder": "工單分類",
       "empty": "暫無工單記錄",
       "priorityPlaceholder": "優先級",

@@ -1,0 +1,25 @@
+/*
+ * 列表页「卡片视图」的共享网格。
+ *
+ * 后台每个列表页都有一套移动端卡片（信息密度与状态展示已经打磨过），
+ * 桌面端的卡片视图直接复用同一套卡片，只是排成自适应网格——
+ * 避免再为桌面另写一份「字段: 值」映射，出现「表格有值、卡片空白」的割裂。
+ */
+.admin-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  gap: 16px;
+  padding: 4px 0 8px;
+}
+
+/*
+ * 列表页工具条：展示方式开关固定在表格/卡片上方右对齐。
+ *
+ * 不塞进筛选行：各页筛选行有 grid 也有 flex，宽度和换行规则各不相同，
+ * 图标开关跟着它们跑会出现「居中被夹在中间」「掉到第二行」这类错位。
+ */
+.admin-list-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 12px 0 8px;
+}

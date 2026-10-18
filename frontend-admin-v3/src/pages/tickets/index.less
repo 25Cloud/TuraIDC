@@ -238,3 +238,27 @@
       "department";
   }
 }
+
+/* 列表式：整行可点进入会话，正文用链接样式保持可发现性 */
+.ticket-id-link,
+.ticket-subject-link,
+.ticket-user-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--td-brand-color);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ticket-subject-link {
+  color: var(--td-text-color-primary);
+  font-weight: 500;
+}
+
+.ticket-id-link:hover,
+.ticket-subject-link:hover,
+.ticket-user-link:hover {
+  text-decoration: underline;
+}

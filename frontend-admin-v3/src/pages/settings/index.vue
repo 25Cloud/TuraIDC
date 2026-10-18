@@ -981,17 +981,8 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             max: 24,
             help: t('settings.index.radiusHint'),
           },
-          {
-            key: 'product_display_mode',
-            label: t('settings.index.productDisplayMode'),
-            type: 'select',
-            default: 'list',
-            options: [
-              { label: t('settings.index.productDisplayModeList'), value: 'list' },
-              { label: t('settings.index.productDisplayModeCard'), value: 'card' },
-            ],
-            help: t('settings.index.productDisplayModeHint'),
-          },
+          // 商品展示方式、卡片库存、机型对比与版心已移到独立页面「商品展示」，
+          // 那里按「展示形态 / 卡片样式 / 独立配置页 / 页面版心」分段，不再挤在这张表单里。
           { key: 'service_phone', label: t('settings.index.officialQqGroup'), type: 'input', default: '', maxlength: 40 },
           {
             key: 'service_email',

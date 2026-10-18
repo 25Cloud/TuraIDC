@@ -135,6 +135,21 @@ export const contentRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    // 选购页与独立配置页的展示层配置单独成页：这些开关属于「商品怎么卖」，
+    // 与站点信息里的名称/联系方式挤在同一张表单里既难找也容易误改。
+    path: 'product-display',
+    name: 'AdminProductDisplay',
+    component: () => import('@/pages/product-display/index.vue'),
+    meta: {
+      title: {
+        zh_CN: '商品展示',
+        zh_TW: '商品展示',
+        en_US: 'Product Display',
+      },
+      permission: 'site.view',
+    },
+  },
+  {
     path: 'notifications',
     name: 'AdminNotifications',
     component: () => import('@/pages/notifications/index.vue'),

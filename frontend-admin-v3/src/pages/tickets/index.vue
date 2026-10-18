@@ -41,10 +41,15 @@
           />
         </t-select>
       </div>
+
+      <div v-if="!isMobile" class="admin-list-toolbar">
+        <admin-view-mode-switch inline :mode="viewMode" @change="setViewMode" />
+      </div>
     </t-card>
 
     <t-loading :loading="loading" size="small">
-      <div v-if="list.length" class="ticket-grid">
+      <!-- 卡片式是本页既有形态；列表式给需要逐行扫状态与优先级的场景 -->
+      <div v-if="isMobile || viewMode === 'card'" class="ticket-grid">
         <article v-for="item in list" :key="item.id" class="ticket-card" @click="openDetail(item.id)">
           <div class="ticket-card__head">
             <span>#{{ item.id }}</span>
@@ -67,7 +72,43 @@
           </div>
         </article>
       </div>
-      <t-empty v-else-if="!loading" :description="$t('tickets.index.empty')" />
+      <div v-else class="table-scroll">
+        <t-table
+          row-key="id"
+          :data="list"
+          :columns="columns"
+          hover
+          table-layout="fixed"
+          @row-click="handleRowClick"
+        >
+          <template #id="{ row }">
+            <button type="button" class="ticket-id-link" @click.stop="openDetail(row.id)">#{{ row.id }}</button>
+          </template>
+          <template #subject="{ row }">
+            <button type="button" class="ticket-subject-link" @click.stop="openDetail(row.id)">
+              {{ row.subject || '-' }}
+            </button>
+          </template>
+          <template #user="{ row }">
+            <button
+              type="button"
+              class="ticket-user-link"
+              @click.stop="goUserDetail(row.user?.id || row.user_id)"
+            >
+              {{ userName(row) }}
+            </button>
+          </template>
+          <template #status="{ row }">
+            <t-tag :theme="statusTheme(row.status)" variant="light">{{ statusLabel(row.status) }}</t-tag>
+          </template>
+          <template #priority="{ row }">
+            <t-tag :theme="priorityTheme(row.priority)" variant="light">{{ priorityLabel(row.priority) }}</t-tag>
+          </template>
+          <template #department="{ row }">{{ departmentLabel(row.department) }}</template>
+          <template #updatedAt="{ row }">{{ formatDateTime(row.updated_at || row.created_at) }}</template>
+        </t-table>
+      </div>
+      <t-empty v-if="!list.length && !loading" :description="$t('tickets.index.empty')" />
     </t-loading>
 
     <div v-if="total > 0" class="ticket-pagination">
@@ -85,14 +126,17 @@
 <script setup lang="ts">
 import './index.less';
 
+import { useMediaQuery } from '@vueuse/core';
 import { SearchIcon, UserIcon } from 'tdesign-icons-vue-next';
-import type { PageInfo } from 'tdesign-vue-next';
+import type { PageInfo, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import type { TicketRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
+import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
+import { useAdminViewMode } from '@/composables/useAdminViewMode';
 import { formatDateTime } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
 import { t } from '@/locales';
@@ -102,6 +146,21 @@ defineOptions({ name: 'AdminTickets' });
 const DEFAULT_STATUS_FILTER = 'ongoing';
 
 const router = useRouter();
+// 与其它列表页同一个断点（含 768px），避免平板横屏在「显示切换入口」与「卡片视图」之间错位
+const isMobile = useMediaQuery('(max-width: 768px)');
+// 工单原本只有卡片形态，默认值取 card，切换过之后按页面偏好记住
+const { mode: viewMode, setMode: setViewMode } = useAdminViewMode('admin-tickets', 'card');
+
+const columns: PrimaryTableCol<TableRowData>[] = [
+  { colKey: 'id', title: t('tickets.index.columnId'), width: 90 },
+  { colKey: 'subject', title: t('tickets.index.columnSubject'), minWidth: 260 },
+  { colKey: 'user', title: t('tickets.index.columnUser'), width: 160 },
+  { colKey: 'status', title: t('tickets.index.columnStatus'), width: 120 },
+  { colKey: 'priority', title: t('tickets.index.columnPriority'), width: 100 },
+  { colKey: 'department', title: t('tickets.index.columnDepartment'), width: 120 },
+  { colKey: 'updatedAt', title: t('tickets.index.columnUpdatedAt'), width: 170 },
+];
+
 const loading = ref(false);
 const list = ref<TicketRecord[]>([]);
 const total = ref(0);
@@ -168,6 +227,13 @@ function handlePageChange(pageInfo: PageInfo) {
 
 function openDetail(id: number | string) {
   router.push(`/admin/ticket-conversations/${id}`);
+}
+
+/** 列表式整行可点：与卡片式点卡片进详情保持一致的操作习惯 */
+function handleRowClick({ row }: { row: TableRowData }) {
+  if (row?.id) {
+    openDetail(row.id as number | string);
+  }
 }
 
 function goUserDetail(userId: unknown) {

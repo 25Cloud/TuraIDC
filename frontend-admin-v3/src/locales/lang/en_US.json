@@ -73,7 +73,8 @@
     }
   },
   "adminViewMode": {
-    "title": "Default view"
+    "title": "Default view",
+    "switchLabel": "Switch view mode"
   },
   "layout": {
     "skipToContent": "Skip to main content",
@@ -2123,6 +2124,7 @@
       "sectionInterfaceDesc": "Upstream product binding",
       "sectionProductConfigDesc": "Specs and options",
       "categoryColumn": "Category",
+      "editProduct": "Edit product",
       "priceMonthly": "Monthly price",
       "stock": "Stock",
       "servicesCount": "Active",
@@ -2617,12 +2619,38 @@
       "matrixSaved": "Discount matrix saved"
     }
   },
+  "productDisplay": {
+    "title": "Product Display",
+    "description": "Controls the layout, card details and SKU comparison of the storefront catalog and the standalone configuration page. Changes take effect immediately.",
+    "save": "Save",
+    "saved": "Product display settings saved",
+    "saveFailed": "Failed to save settings",
+    "loadFailed": "Failed to load settings",
+    "noPermission": "You do not have permission to change site settings",
+    "sectionDisplay": "Layout Mode",
+    "displayMode": "Catalog layout",
+    "displayModeHint": "List mode suits products with many spec dimensions (row-by-row comparison); card mode highlights product name, description and price.",
+    "modeList": "List",
+    "modeCard": "Card",
+    "sectionCard": "Card Style",
+    "cardShowStock": "Show stock on cards",
+    "cardShowStockHint": "When off, cards only flag sold-out products; availability and remaining units are hidden.",
+    "sectionDetail": "Standalone Config Page",
+    "detailSpecCompare": "Show SKU comparison",
+    "detailSpecCompareHint": "When on, the standalone config page shows a comparison table of sibling SKUs (drawer picker on mobile). When off, only the current product is shown.",
+    "sectionLayout": "Page Width",
+    "pageLayout": "Content width",
+    "pageLayoutHint": "The catalog and the standalone config page share the same content width so one is not centered while the other is full-bleed.",
+    "layoutContained": "Centered",
+    "layoutFull": "Full width",
+    "maxWidth": "Max content width",
+    "maxWidthUnit": "px",
+    "maxWidthHint": "Only applies to centered mode; 960–1920px."
+  },
   "settings": {
     "index": {
-      "productDisplayMode": "Product display mode",
       "productDisplayModeList": "List",
       "productDisplayModeCard": "Card",
-      "productDisplayModeHint": "Controls how products are laid out across the whole site. Takes effect right after saving.",
       "addFeature": "Add card",
       "addSlide": "Add slide",
       "allTypes": "All types",
@@ -2906,6 +2934,13 @@
     },
     "index": {
       "assignee": "Assignee: {name}",
+      "columnId": "Ticket No.",
+      "columnSubject": "Subject",
+      "columnUser": "User",
+      "columnStatus": "Status",
+      "columnPriority": "Priority",
+      "columnDepartment": "Category",
+      "columnUpdatedAt": "Updated",
       "departmentPlaceholder": "Ticket category",
       "empty": "No tickets",
       "priorityPlaceholder": "Priority",
