@@ -7,7 +7,7 @@
   <div
     class="pd-page"
     :class="{ 'pd-page--full': !isContained }"
-    :style="isContained ? { '--pd-content-max': contentMaxWidthVar } : undefined"
+    :style="{ '--pd-content-max': contentMaxWidthVar }"
     v-loading="loading && !product"
   >
     <div v-if="product">
@@ -32,7 +32,7 @@
               stroke-linejoin="round"
             />
           </svg>
-          <span>{{ $t('product.detail.backToProducts') }}</span>
+          <span>{{ $t("product.detail.backToProducts") }}</span>
         </button>
       </div>
 
@@ -60,7 +60,8 @@
         后端落库前已过富文本白名单消毒，这里按原样渲染。
       -->
       <section v-if="productDescription" class="pd-desc">
-        <h2 class="pd-desc-title">{{ $t('product.detail.description') }}</h2>
+        <h2 class="pd-desc-title">{{ $t("product.detail.description") }}</h2>
+        <!-- eslint-disable-next-line vue/no-v-html -- 描述入库前已过 RichHtmlSanitizer 白名单消毒 -->
         <div class="pd-desc-body" v-html="productDescription" />
       </section>
 
@@ -208,11 +209,9 @@
                 <span class="agent-price-original"
                   >¥{{ row.agentOriginalPrice }}</span
                 >
-                <em
-                  v-if="row.agentDiscountPercent"
-                  class="discount-tag"
-                  >{{ row.agentDiscountPercent }}</em
-                >
+                <em v-if="row.agentDiscountPercent" class="discount-tag">{{
+                  row.agentDiscountPercent
+                }}</em>
                 <span class="agent-price-current">¥{{ row.agentPrice }}</span>
               </template>
               <template v-else>{{ row.priceText }}</template>
@@ -271,7 +270,7 @@
 
           <!-- 区域：移动端改抽屉选择，避免一屏铺开一长串按钮 -->
           <div class="cfg-group" v-if="regionOptions.length">
-            <div class="cfg-group-head">{{ $t('product.detail.region') }}</div>
+            <div class="cfg-group-head">{{ $t("product.detail.region") }}</div>
             <div class="cfg-group-body">
               <button
                 v-if="isMobile"
@@ -313,7 +312,9 @@
 
           <!-- 操作系统：与列表式配置区一致的图标卡片 + 同屏版本选择 -->
           <div class="cfg-group" v-if="osConfig">
-            <div class="cfg-group-head">{{ $t('product.detail.operatingSystem') }}</div>
+            <div class="cfg-group-head">
+              {{ $t("product.detail.operatingSystem") }}
+            </div>
             <div class="cfg-group-body">
               <!-- 移动端：系统与版本合并进一个抽屉，版本列表跟随所选系统 -->
               <button
@@ -324,9 +325,7 @@
               >
                 <span>
                   {{ currentOsGroup?.label || "请选择系统"
-                  }}{{
-                    currentOsGroup?.label ? ` ${currentOsVerLabel}` : ""
-                  }}
+                  }}{{ currentOsGroup?.label ? ` ${currentOsVerLabel}` : "" }}
                 </span>
                 <svg
                   viewBox="0 0 12 12"
@@ -373,7 +372,7 @@
                         currentOsVerLabel
                       }}</span>
                       <span v-else class="os-placeholder">{{
-                        $t('product.list.selectVersion')
+                        $t("product.list.selectVersion")
                       }}</span>
                     </div>
                     <span
@@ -383,12 +382,9 @@
                     >
                   </button>
                 </div>
-                <div
-                  class="os-ver-row"
-                  v-if="currentOsGroup?.versions?.length"
-                >
+                <div class="os-ver-row" v-if="currentOsGroup?.versions?.length">
                   <span class="os-ver-label">{{
-                    $t('product.osPicker.version')
+                    $t("product.osPicker.version")
                   }}</span>
                   <div class="os-ver-btns">
                     <button
@@ -600,15 +596,15 @@
             <div class="aside-divider"></div>
 
             <section class="aside-section">
-              <div class="aside-section-title">{{
-                $t('product.detail.summary')
-              }}</div>
+              <div class="aside-section-title">
+                {{ $t("product.detail.summary") }}
+              </div>
               <div
                 class="cost-detail"
                 :class="{ 'cost-detail--loading': quoteLoading }"
               >
                 <div class="cost-item">
-                  <span>{{ $t('layout.nav.products') }}</span>
+                  <span>{{ $t("layout.nav.products") }}</span>
                   <span>{{ selectedMachineSpec.displayName }}</span>
                 </div>
                 <div
@@ -625,19 +621,19 @@
             <div class="aside-divider"></div>
 
             <section class="aside-section">
-              <div class="aside-section-title">{{
-                $t('product.detail.costBreakdown')
-              }}</div>
+              <div class="aside-section-title">
+                {{ $t("product.detail.costBreakdown") }}
+              </div>
               <div
                 class="cost-breakdown"
                 :class="{ 'cost-breakdown--loading': quoteLoading }"
               >
                 <div class="cost-item">
-                  <span>{{ $t('product.detail.basePrice') }}</span>
+                  <span>{{ $t("product.detail.basePrice") }}</span>
                   <span>¥{{ baseAmount }}</span>
                 </div>
                 <div class="cost-item" v-if="Number(setupFee) > 0">
-                  <span>{{ $t('product.detail.setupFee') }}</span>
+                  <span>{{ $t("product.detail.setupFee") }}</span>
                   <span>¥{{ setupFee }}</span>
                 </div>
                 <div
@@ -650,7 +646,7 @@
                 </div>
                 <div class="cost-item cost-item--discount" v-if="appliedCoupon">
                   <span
-                    >{{ $t('product.detail.coupon') }}
+                    >{{ $t("product.detail.coupon") }}
                     {{ appliedCoupon.code || appliedCoupon.name }}</span
                   >
                   <span>-¥{{ appliedCoupon.discount_amount }}</span>
@@ -674,7 +670,7 @@
             <div class="coupon-panel">
               <div class="coupon-panel-head">
                 <span class="coupon-panel-title">{{
-                  $t('product.detail.coupon')
+                  $t("product.detail.coupon")
                 }}</span>
                 <button
                   v-if="appliedCoupon"
@@ -682,7 +678,7 @@
                   class="coupon-clear-btn"
                   @click="clearCoupon"
                 >
-                  {{ $t('product.coupon.remove') }}
+                  {{ $t("product.coupon.remove") }}
                 </button>
               </div>
               <div class="coupon-panel-form">
@@ -702,7 +698,7 @@
               </div>
               <div v-if="appliedCoupon" class="coupon-panel-tip">
                 {{
-                  $t('product.coupon.appliedTip', {
+                  $t("product.coupon.appliedTip", {
                     name: appliedCoupon.name,
                     discount: appliedCoupon.discount_label,
                     amount: appliedCoupon.discount_amount,
@@ -715,8 +711,8 @@
               >
                 {{
                   product
-                    ? $t('product.coupon.noneAvailable')
-                    : $t('product.coupon.selectProductFirst')
+                    ? $t("product.coupon.noneAvailable")
+                    : $t("product.coupon.selectProductFirst")
                 }}
               </div>
             </div>
@@ -728,13 +724,13 @@
               :class="{ 'cost-total--loading': quoteLoading }"
             >
               <span class="cost-total-label">{{
-                $t('product.detail.totalCost')
+                $t("product.detail.totalCost")
               }}</span>
               <div class="cost-price-wrap">
                 <template v-if="quoteLoading">
                   <span class="cost-currency">¥</span>
                   <span class="cost-amount cost-amount--loading">{{
-                    $t('product.detail.calculating')
+                    $t("product.detail.calculating")
                   }}</span>
                 </template>
                 <!-- 命中代理折扣：原价划线 + 折扣标签 + 折后应付 -->
@@ -774,9 +770,9 @@
       <div class="allocation-footer">
         <div class="allocation-footer-inner">
           <div class="allocation-footer-main">
-            <div class="allocation-footer-label">{{
-              $t('product.detail.totalCost')
-            }}</div>
+            <div class="allocation-footer-label">
+              {{ $t("product.detail.totalCost") }}
+            </div>
             <div class="allocation-footer-price">
               <template v-if="quoteLoading">
                 <span class="allocation-footer-symbol">¥</span>
@@ -810,8 +806,9 @@
                 type="button"
                 class="allocation-footer-coupon-btn"
                 disabled
-                >代理折扣（{{ agentGroupName }}）{{ agentDiscountPercent }}</button
               >
+                代理折扣（{{ agentGroupName }}）{{ agentDiscountPercent }}
+              </button>
               <button
                 v-if="isMobile"
                 type="button"
@@ -840,9 +837,9 @@
 
     <div class="pd-empty" v-else-if="!loading">
       <el-empty :description="$t('product.detail.notFound')">
-        <el-button type="primary" @click="router.push('/products')"
-          >{{ $t('product.detail.backToProducts') }}</el-button
-        >
+        <el-button type="primary" @click="router.push('/products')">{{
+          $t("product.detail.backToProducts")
+        }}</el-button>
       </el-empty>
     </div>
 
@@ -898,7 +895,7 @@
         <div class="coupon-panel">
           <div class="coupon-panel-head">
             <span class="coupon-panel-title">{{
-              $t('product.detail.coupon')
+              $t("product.detail.coupon")
             }}</span>
             <button
               v-if="appliedCoupon"
@@ -906,7 +903,7 @@
               class="coupon-clear-btn"
               @click="clearCoupon"
             >
-              {{ $t('product.coupon.remove') }}
+              {{ $t("product.coupon.remove") }}
             </button>
           </div>
           <div class="coupon-panel-form">
@@ -926,7 +923,7 @@
           </div>
           <div v-if="appliedCoupon" class="coupon-panel-tip">
             {{
-              $t('product.coupon.appliedTip', {
+              $t("product.coupon.appliedTip", {
                 name: appliedCoupon.name,
                 discount: appliedCoupon.discount_label,
                 amount: appliedCoupon.discount_amount,
@@ -937,17 +934,17 @@
             v-else-if="!availableCoupons.length"
             class="coupon-panel-tip coupon-panel-tip--muted"
           >
-            {{ $t('product.coupon.noneAvailable') }}
+            {{ $t("product.coupon.noneAvailable") }}
           </div>
         </div>
 
         <ul class="mobile-coupon-summary">
           <li>
-            <span>{{ $t('product.detail.basePrice') }}</span>
+            <span>{{ $t("product.detail.basePrice") }}</span>
             <span>¥{{ baseAmount }}</span>
           </li>
           <li v-if="Number(setupFee) > 0">
-            <span>{{ $t('product.detail.setupFee') }}</span>
+            <span>{{ $t("product.detail.setupFee") }}</span>
             <span>¥{{ setupFee }}</span>
           </li>
           <li v-for="item in quoteItems" :key="item.field">
@@ -955,7 +952,9 @@
             <span>¥{{ item.amount }}</span>
           </li>
           <li v-if="hasAgentDiscount" class="is-discount">
-            <span>代理折扣（{{ agentGroupName }}）{{ agentDiscountPercent }}</span>
+            <span
+              >代理折扣（{{ agentGroupName }}）{{ agentDiscountPercent }}</span
+            >
             <span>-¥{{ agentDiscountAmount }}</span>
           </li>
           <li v-if="appliedCoupon" class="is-discount">
@@ -1145,9 +1144,12 @@ function confirmMobileConfigSelection(optionId) {
  */
 const configGroups = computed(() =>
   [
-    { title: t('product.detail.serverSpecs'), configs: configurator.machineConfigs.value || [] },
-    { title: '网络配置', configs: configurator.networkConfigs.value || [] },
-    { title: '其他配置', configs: configurator.otherConfigs.value || [] },
+    {
+      title: t("product.detail.serverSpecs"),
+      configs: configurator.machineConfigs.value || [],
+    },
+    { title: "网络配置", configs: configurator.networkConfigs.value || [] },
+    { title: "其他配置", configs: configurator.otherConfigs.value || [] },
   ].filter((group) => group.configs.length > 0),
 );
 
@@ -1718,7 +1720,8 @@ function confirmMobileSkuSelection(productId) {
 
 async function loadGroupProducts(detail) {
   const groupId = Number(detail?.effective_product_group_id || 0);
-  const level = Number(detail?.effective_product_group_level || 3) === 2 ? 2 : 3;
+  const level =
+    Number(detail?.effective_product_group_level || 3) === 2 ? 2 : 3;
 
   if (groupId <= 0) {
     groupProducts.value = [];
@@ -1986,7 +1989,8 @@ onBeforeUnmount(() => {
 
 /* 统一内容容器：限制最大宽度并水平居中（左右留出安全间距）。
    .pd-desc 曾经漏在这一组里，导致「商品描述」整块通栏、左右没有边距，
-   与上下卡片（顶栏 / 头部 / 主体）对不齐。 */
+   与上下卡片（顶栏 / 头部 / 主体）对不齐。
+   版心宽度与选购页同源（访客选择优先），切换时做同样的宽度过渡。 */
 .pd-topbar,
 .pd-hero,
 .pd-desc,
@@ -1997,11 +2001,26 @@ onBeforeUnmount(() => {
   margin-right: auto;
   margin-left: auto;
   box-sizing: border-box;
+  transition: max-width 0.34s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 版心铺满：后台把选购页版心配成「铺满」时，独立配置页跟随同一决策 */
+/* 版心铺满：后台默认值或访客在选购页选择「撑满屏幕」 */
 .pd-page--full {
   --pd-content-max: 100vw;
+}
+
+@media (max-width: 900px) {
+  .pd-page {
+    --pd-content-max: 100vw;
+  }
+
+  .pd-topbar,
+  .pd-hero,
+  .pd-desc,
+  .pd-sku,
+  .pd-body {
+    transition: none;
+  }
 }
 
 /* ===== 顶部工具栏 ===== */

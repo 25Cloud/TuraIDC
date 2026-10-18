@@ -149,7 +149,12 @@
       "displayMode": "Display mode",
       "displayCard": "Card",
       "displayList": "List",
-      "productCount": "{count} products"
+      "productCount": "{count} products",
+      "pageWidth": "Page width",
+      "widthContained": "Fixed width",
+      "widthFull": "Full width",
+      "widthHint": "Wide screens only; mobile always fills the screen",
+      "widthReset": "Reset to site default"
     },
     "cpuBadge": {
       "coreShort": "Core",

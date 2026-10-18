@@ -51,6 +51,7 @@ owner: backend
 - 2026-10-15：顺带修掉 v0.4.1 遗留的 `BusinessException` 回归——构造时查翻译表在未绑定 `translator` 的场景会抛 `BindingResolutionException`，把业务异常整个替换掉（`tests/Unit` 有 5 项因此失败）。改为取译文失败即放行中文原文，并补 `BusinessExceptionWithoutContainerTest` 锁住。
 - 2026-10-18：按运营反馈恢复访客切换（右侧分段按钮，偏好存 localStorage），站点默认值只负责首屏；同时修掉「切到卡片后地址仍留商品 ID、刷新又回到配置页」的路由残留。管理端「商品展示」页仍是默认值的唯一维护入口。
 - 2026-10-18（第二轮运营反馈）：卡片视觉重做（类型/库存徽标、规格标签、大号价格与 CTA）；卡片态地址改为 `/products/:typeId/:groupId?child=:childGroupId`，刷新与从配置页返回都回到原分类；顺带修掉路由视图外层未定义样式的 `page-fade` 过渡导致的「返回后整块空白」。
+- 2026-10-18（第三轮运营反馈）：手机端恢复列表/卡片切换；宽屏增加访客级版心调整（固定宽度含档位 / 撑满屏幕，`max-width` 过渡动画，`localStorage` 记忆），独立配置页跟随同一版心。
 
 ## 决策日志
 

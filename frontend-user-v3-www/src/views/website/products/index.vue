@@ -102,11 +102,11 @@
         <!-- 中间配置区 -->
         <div class="shop-main" v-loading="pageLoading">
           <!--
-            展示方式：站点默认值决定首屏形态，访客可在右侧自行切换。
-            放在分组筛选条上方并右对齐——不抢占配置区的视觉重心；
-            手机端不展示（移动端始终是卡片/选择器形态，切换没有意义）。
+            展示方式与版心：站点默认值决定首屏形态，访客可在右侧自行切换。
+            手机端也保留「卡片式 / 列表式」切换（此前只在桌面显示，手机端改不了）；
+            「页面宽度」只在宽屏显示——手机端始终铺满，调了也没有意义。
           -->
-          <div v-if="!isMobile" class="shop-view-bar">
+          <div class="shop-view-bar">
             <div class="shop-view-bar__summary">
               <span class="shop-view-bar__name">{{
                 activeChildName || activeGroupName || activeTypeLabel
@@ -121,104 +121,206 @@
                 }}</span
               >
             </div>
-            <div
-              class="shop-view-switch"
-              role="group"
-              :aria-label="$t('product.list.displayMode')"
-            >
-              <button
-                type="button"
-                class="shop-view-switch__btn"
-                :class="{ 'is-active': displayMode === DISPLAY_MODE_CARD }"
-                :aria-pressed="displayMode === DISPLAY_MODE_CARD"
-                @click="handleDisplayModeChange(DISPLAY_MODE_CARD)"
+            <div class="shop-view-bar__controls">
+              <div
+                class="shop-view-switch"
+                role="group"
+                :aria-label="$t('product.list.displayMode')"
               >
-                <svg
-                  viewBox="0 0 16 16"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  aria-hidden="true"
+                <button
+                  type="button"
+                  class="shop-view-switch__btn"
+                  :class="{ 'is-active': displayMode === DISPLAY_MODE_CARD }"
+                  :aria-pressed="displayMode === DISPLAY_MODE_CARD"
+                  @click="handleDisplayModeChange(DISPLAY_MODE_CARD)"
                 >
-                  <rect
-                    x="2"
-                    y="2"
-                    width="5.2"
-                    height="5.2"
-                    rx="1.2"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="8.8"
-                    y="2"
-                    width="5.2"
-                    height="5.2"
-                    rx="1.2"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="2"
-                    y="8.8"
-                    width="5.2"
-                    height="5.2"
-                    rx="1.2"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="8.8"
-                    y="8.8"
-                    width="5.2"
-                    height="5.2"
-                    rx="1.2"
-                    fill="currentColor"
-                  />
-                </svg>
-                <span>{{ $t("product.list.displayCard") }}</span>
-              </button>
-              <button
-                type="button"
-                class="shop-view-switch__btn"
-                :class="{ 'is-active': displayMode === DISPLAY_MODE_LIST }"
-                :aria-pressed="displayMode === DISPLAY_MODE_LIST"
-                @click="handleDisplayModeChange(DISPLAY_MODE_LIST)"
-              >
-                <svg
-                  viewBox="0 0 16 16"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  aria-hidden="true"
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <rect
+                      x="2"
+                      y="2"
+                      width="5.2"
+                      height="5.2"
+                      rx="1.2"
+                      fill="currentColor"
+                    />
+                    <rect
+                      x="8.8"
+                      y="2"
+                      width="5.2"
+                      height="5.2"
+                      rx="1.2"
+                      fill="currentColor"
+                    />
+                    <rect
+                      x="2"
+                      y="8.8"
+                      width="5.2"
+                      height="5.2"
+                      rx="1.2"
+                      fill="currentColor"
+                    />
+                    <rect
+                      x="8.8"
+                      y="8.8"
+                      width="5.2"
+                      height="5.2"
+                      rx="1.2"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span>{{ $t("product.list.displayCard") }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="shop-view-switch__btn"
+                  :class="{ 'is-active': displayMode === DISPLAY_MODE_LIST }"
+                  :aria-pressed="displayMode === DISPLAY_MODE_LIST"
+                  @click="handleDisplayModeChange(DISPLAY_MODE_LIST)"
                 >
-                  <circle cx="3" cy="4" r="1.15" fill="currentColor" />
-                  <circle cx="3" cy="8" r="1.15" fill="currentColor" />
-                  <circle cx="3" cy="12" r="1.15" fill="currentColor" />
-                  <rect
-                    x="6"
-                    y="3.25"
-                    width="8"
-                    height="1.5"
-                    rx="0.75"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="6"
-                    y="7.25"
-                    width="8"
-                    height="1.5"
-                    rx="0.75"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="6"
-                    y="11.25"
-                    width="8"
-                    height="1.5"
-                    rx="0.75"
-                    fill="currentColor"
-                  />
-                </svg>
-                <span>{{ $t("product.list.displayList") }}</span>
-              </button>
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <circle cx="3" cy="4" r="1.15" fill="currentColor" />
+                    <circle cx="3" cy="8" r="1.15" fill="currentColor" />
+                    <circle cx="3" cy="12" r="1.15" fill="currentColor" />
+                    <rect
+                      x="6"
+                      y="3.25"
+                      width="8"
+                      height="1.5"
+                      rx="0.75"
+                      fill="currentColor"
+                    />
+                    <rect
+                      x="6"
+                      y="7.25"
+                      width="8"
+                      height="1.5"
+                      rx="0.75"
+                      fill="currentColor"
+                    />
+                    <rect
+                      x="6"
+                      y="11.25"
+                      width="8"
+                      height="1.5"
+                      rx="0.75"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span>{{ $t("product.list.displayList") }}</span>
+                </button>
+              </div>
+
+              <!-- 宽屏版心：固定宽度（含档位）或撑满屏幕，偏好只存本机浏览器 -->
+              <div v-if="!isMobile" class="shop-width-control">
+                <button
+                  type="button"
+                  class="shop-width-trigger"
+                  :class="{ 'is-open': widthPanelOpen }"
+                  :aria-expanded="widthPanelOpen"
+                  aria-haspopup="dialog"
+                  @click.stop="toggleWidthPanel"
+                >
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2.5 3.5v9M13.5 3.5v9"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M5 8h2M9 8h2"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M7 6.2 5.4 8 7 9.8M9 6.2 10.6 8 9 9.8"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span>{{ $t("product.list.pageWidth") }}</span>
+                </button>
+
+                <div
+                  v-if="widthPanelOpen"
+                  class="shop-width-panel"
+                  role="dialog"
+                  :aria-label="$t('product.list.pageWidth')"
+                  @click.stop
+                >
+                  <div class="shop-width-panel__head">
+                    <strong>{{ $t("product.list.pageWidth") }}</strong>
+                    <button
+                      v-if="followsUserWidthChoice"
+                      type="button"
+                      class="shop-width-reset"
+                      @click="resetLayoutWidth"
+                    >
+                      {{ $t("product.list.widthReset") }}
+                    </button>
+                  </div>
+
+                  <div class="shop-width-mode">
+                    <button
+                      type="button"
+                      :class="{ 'is-active': layoutMode === 'contained' }"
+                      :aria-pressed="layoutMode === 'contained'"
+                      @click="setLayoutMode('contained')"
+                    >
+                      {{ $t("product.list.widthContained") }}
+                    </button>
+                    <button
+                      type="button"
+                      :class="{ 'is-active': layoutMode === 'full' }"
+                      :aria-pressed="layoutMode === 'full'"
+                      @click="setLayoutMode('full')"
+                    >
+                      {{ $t("product.list.widthFull") }}
+                    </button>
+                  </div>
+
+                  <div
+                    v-if="layoutMode === 'contained'"
+                    class="shop-width-values"
+                  >
+                    <button
+                      v-for="width in widthOptions"
+                      :key="width"
+                      type="button"
+                      :class="{ 'is-active': contentMaxWidth === width }"
+                      :aria-pressed="contentMaxWidth === width"
+                      @click="setContentMaxWidth(width)"
+                    >
+                      {{ width }}
+                    </button>
+                  </div>
+
+                  <p class="shop-width-hint">
+                    {{ $t("product.list.widthHint") }}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1975,7 +2077,10 @@ import {
   DISPLAY_MODE_LIST,
   useProductDisplayMode,
 } from "./useProductDisplayMode";
-import { useProductDisplaySettings } from "./useProductDisplaySettings";
+import {
+  useProductDisplaySettings,
+  PRODUCT_PAGE_WIDTH_PRESETS,
+} from "./useProductDisplaySettings";
 import { formatMoneyText, formatProductListPrice } from "./productPrice";
 import {
   buildInstanceSpecName,
@@ -1995,9 +2100,18 @@ import {
  */
 const { displayMode, setDisplayMode } = useProductDisplayMode();
 
-// 版心与卡片库存同样只认后台配置：卡片式铺满整条视口会与独立配置页的居中版心割裂
-const { isContained, contentMaxWidthVar, cardShowStock } =
-  useProductDisplaySettings();
+// 版心：站点默认值兜底，访客可选固定宽度（含档位）或撑满；卡片库存仍只认后台配置
+const {
+  isContained,
+  contentMaxWidthVar,
+  layoutMode,
+  contentMaxWidth,
+  followsUserWidthChoice,
+  setLayoutMode,
+  setContentMaxWidth,
+  resetLayoutWidth,
+  cardShowStock,
+} = useProductDisplaySettings();
 
 // 卡片式不自动选中第一个商品：没有选中态才展示卡片网格，
 // 选中态交给 /products/:id 独立配置页承载。
@@ -2113,6 +2227,50 @@ function handleDisplayModeChange(mode) {
   syncDefaultProduct(visibleProducts.value, { syncRoute: true });
 }
 
+/* ===== 宽屏版心面板 ===== */
+const widthPanelOpen = ref(false);
+
+// 站点默认宽度可能不在预设档位里（后台允许 960–1920 的任意值），
+// 把它并进可选档，避免面板里没有当前值。
+const widthOptions = computed(() => {
+  const options = [...PRODUCT_PAGE_WIDTH_PRESETS];
+
+  if (!options.includes(contentMaxWidth.value)) {
+    options.push(contentMaxWidth.value);
+  }
+
+  return options.sort((left, right) => left - right);
+});
+
+function toggleWidthPanel() {
+  widthPanelOpen.value = !widthPanelOpen.value;
+}
+
+function closeWidthPanel() {
+  widthPanelOpen.value = false;
+}
+
+function handleWidthPanelOutsideClick(event) {
+  if (!widthPanelOpen.value) {
+    return;
+  }
+
+  const target = event.target;
+  if (target instanceof Element && target.closest(".shop-width-control")) {
+    return;
+  }
+
+  closeWidthPanel();
+  // 面板打开时，点外部只关闭面板：吞掉这次点击，避免顺带触发下面的卡片跳转
+  event.stopPropagation();
+}
+
+function handleWidthPanelKeydown(event) {
+  if (event.key === "Escape") {
+    closeWidthPanel();
+  }
+}
+
 const mobileOsDrawer = ref(false);
 const mobileIntroDrawer = ref(false);
 const mobileCostDrawer = ref(false);
@@ -2170,10 +2328,15 @@ function setupAllocationFooterObserver() {
 
 onMounted(() => {
   nextTick(setupAllocationFooterObserver);
+  // capture 阶段监听：面板打开时点外部只关闭面板，不触发下层卡片/按钮
+  document.addEventListener("click", handleWidthPanelOutsideClick, true);
+  document.addEventListener("keydown", handleWidthPanelKeydown);
 });
 
 onBeforeUnmount(() => {
   cleanupAllocationFooterObserver();
+  document.removeEventListener("click", handleWidthPanelOutsideClick, true);
+  document.removeEventListener("keydown", handleWidthPanelKeydown);
 });
 
 watch([isMobile, selectedProduct], () => {

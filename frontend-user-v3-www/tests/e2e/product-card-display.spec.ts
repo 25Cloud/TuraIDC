@@ -419,7 +419,7 @@ test.describe("选购页展示方式与商品描述", () => {
       /--shop-content-max:\s*1280px/,
     );
 
-    // 后台改成铺满 + 自定义宽度：不再限宽，但宽度值仍按配置下发
+    // 后台改成铺满：版心变量下发 100vw，容器不再限宽
     await page.unroute("**/api/v2/site/**");
     await mockSiteApi(page, "card", {
       product_page_layout: "full",
@@ -432,9 +432,128 @@ test.describe("选购页展示方式与商品描述", () => {
     );
     await expect(page.locator(".shop-wrap")).toHaveAttribute(
       "style",
-      /--shop-content-max:\s*1600px/,
+      /--shop-content-max:\s*100vw/,
     );
   });
+
+  test("访客可调宽屏版心：固定宽度档位或撑满，切换有过渡且配置页跟随", async ({
+    page,
+  }) => {
+    await mockSiteApi(page, "card");
+    await page.goto(catalogPath);
+
+    const shopWrap = page.locator(".shop-wrap");
+    await expect(shopWrap).toBeVisible();
+    // 站点默认：居中 1280
+    await expect
+      .poll(() => shopWrap.evaluate((el) => getComputedStyle(el).maxWidth))
+      .toBe("1280px");
+
+    // 宽度切换必须带过渡（"良好切换动画"）：max-width / border-color 各 0.34s
+    const transition = await shopWrap.evaluate(
+      (el) => getComputedStyle(el).transitionDuration,
+    );
+    expect(transition).toContain("0.34s");
+
+    // 打开「页面宽度」面板：默认固定宽度、当前档位 1280
+    await page.getByRole("button", { name: "页面宽度" }).click();
+    const panel = page.locator(".shop-width-panel");
+    await expect(panel).toBeVisible();
+    await expect(
+      panel.getByRole("button", { name: "固定宽度" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      panel.getByRole("button", { name: "1280" }),
+    ).toHaveAttribute("aria-pressed", "true");
+
+    // 选更大的固定宽度：容器 max-width 跟着变，偏好落 localStorage
+    await panel.getByRole("button", { name: "1600" }).click();
+    await expect
+      .poll(() => shopWrap.evaluate((el) => getComputedStyle(el).maxWidth))
+      .toBe("1600px");
+    const stored = await page.evaluate(() =>
+      JSON.parse(
+        window.localStorage.getItem("turaidc:shop-page-width") || "{}",
+      ),
+    );
+    expect(stored).toMatchObject({ mode: "contained", maxWidth: 1600 });
+    await page.screenshot({
+      path: `${process.env.TEMP || "."}\\turaidc-www-width-panel.png`,
+      fullPage: false,
+    });
+
+    // 切到撑满屏幕：变量变 100vw，计算宽度等于视口宽
+    await panel.getByRole("button", { name: "撑满屏幕" }).click();
+    await expect(shopWrap).toHaveAttribute(
+      "style",
+      /--shop-content-max:\s*100vw/,
+    );
+    await expect
+      .poll(() => shopWrap.evaluate((el) => getComputedStyle(el).maxWidth))
+      .toBe("1440px");
+
+    // 独立配置页跟随同一个版心选择
+    await page.goto(`/products/${PRODUCT_IDS[0]}`);
+    await expect(page.locator(".pd-page")).toHaveAttribute(
+      "style",
+      /--pd-content-max:\s*100vw/,
+    );
+
+    // 刷新后偏好保留；恢复站点默认后回到 1280 且清掉本机偏好
+    await page.goto(catalogPath);
+    await expect(page.locator(".shop-wrap")).toHaveAttribute(
+      "style",
+      /--shop-content-max:\s*100vw/,
+    );
+    await page.getByRole("button", { name: "页面宽度" }).click();
+    await page
+      .locator(".shop-width-panel")
+      .getByRole("button", { name: "恢复站点默认" })
+      .click();
+    await expect
+      .poll(() =>
+        page.locator(".shop-wrap").evaluate((el) => getComputedStyle(el).maxWidth),
+      )
+      .toBe("1280px");
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          window.localStorage.getItem("turaidc:shop-page-width"),
+        ),
+      )
+      .toBeNull();
+  });
+
+  test("手机端可选择卡片式或列表式", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockSiteApi(page, "card");
+    await page.goto(catalogPath);
+
+    // 站点默认卡片式，手机端也能看到切换条（宽度面板只属于宽屏）
+    await expect(page.locator(".product-card-grid")).toBeVisible();
+    const bar = page.locator(".shop-view-bar");
+    await expect(bar).toBeVisible();
+    await expect(page.locator(".shop-width-control")).toHaveCount(0);
+
+    await bar.getByRole("button", { name: "列表式", exact: true }).click();
+    await expect(page.locator(".product-card-grid")).toHaveCount(0);
+    await expect(page.locator(".config-area")).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          window.localStorage.getItem("turaidc:shop-display-mode"),
+        ),
+      )
+      .toBe("list");
+    await page.screenshot({
+      path: `${process.env.TEMP || "."}\\turaidc-www-mobile-view.png`,
+      fullPage: false,
+    });
+
+    await bar.getByRole("button", { name: "卡片式", exact: true }).click();
+    await expect(page.locator(".product-card-grid")).toBeVisible();
+  });
+
 
   test("点立即选购进入独立配置页，配置页展示描述", async ({ page }) => {
     await mockSiteApi(page, "card");

@@ -149,7 +149,12 @@
       "displayMode": "商品展示方式",
       "displayCard": "卡片式",
       "displayList": "列表式",
-      "productCount": "{count} 个商品"
+      "productCount": "{count} 个商品",
+      "pageWidth": "页面宽度",
+      "widthContained": "固定宽度",
+      "widthFull": "撑满屏幕",
+      "widthHint": "仅宽屏生效，手机端始终铺满",
+      "widthReset": "恢复站点默认"
     },
     "cpuBadge": {
       "coreShort": "酷",

@@ -1,28 +1,38 @@
 /* ===== 整体布局 ===== */
+/*
+ * 版心：后台「商品展示」配默认值，访客可在页面右上角「页面宽度」面板自己改：
+ * 固定宽度（1200/1280/1440/1600/1920）或撑满屏幕。
+ * 容器始终 100% 宽，只切换 max-width —— px 与 100vw 都是长度，过渡能平滑展开/收拢；
+ * 满宽时 max-width 大于可用宽度，不会撑出横向滚动条。
+ */
 .shop-wrap {
   display: flex;
+  width: 100%;
   min-height: calc(100vh - 64px);
-  background: #fff;
-}
-
-/*
- * 版心：后台「商品展示」可配置为居中限宽（contained）或铺满（full）。
- * 独立配置页一直是居中版心，选购页此前铺满整条视口，宽屏下两者割裂；
- * 默认改回居中，最大宽度由 --shop-content-max 下发。
- */
-.shop-wrap--contained {
-  width: min(100%, var(--shop-content-max, 1280px));
+  max-width: var(--shop-content-max, 100vw);
   margin-right: auto;
   margin-left: auto;
-  border-right: 1px solid $divider-color;
-  border-left: 1px solid $divider-color;
   box-sizing: border-box;
+  border-right: 1px solid transparent;
+  border-left: 1px solid transparent;
+  background: #fff;
+  transition:
+    max-width 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.34s ease;
+}
 
-  /* 移动端侧栏收起，限宽只会白占两侧边距 */
-  @media (max-width: 900px) {
-    width: 100%;
+.shop-wrap--contained {
+  border-right-color: $divider-color;
+  border-left-color: $divider-color;
+}
+
+/* 移动端侧栏收起，限宽只会白占两侧边距；也不做宽度过渡 */
+@media (max-width: 900px) {
+  .shop-wrap {
+    max-width: none;
     border-right: 0;
     border-left: 0;
+    transition: none;
   }
 }
 
@@ -301,10 +311,12 @@
 }
 
 /*
- * 展示方式切换条：左侧当前分组与商品数，右侧「卡片式 / 列表式」分段按钮。
- * 与下面的分组筛选条同高同边框，避免单独一条孤零零的控件浮在页面上。
+ * 展示方式 + 版心切换条：左侧当前分组与商品数，右侧「卡片式 / 列表式」分段按钮
+ * 与「页面宽度」面板。与下面的分组筛选条同高同边框，避免单独一条控件浮在页面上。
  */
 .shop-view-bar {
+  position: relative;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -334,6 +346,14 @@
   flex-shrink: 0;
   color: $text-color-placeholder;
   font-size: 12px;
+}
+
+.shop-view-bar__controls {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
 }
 
 .shop-view-switch {
@@ -380,9 +400,170 @@
   }
 }
 
-@media (max-width: 768px) {
+/* ===== 页面宽度面板（宽屏） ===== */
+.shop-width-control {
+  position: relative;
+}
+
+.shop-width-trigger {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: 1px solid $divider-color;
+  border-radius: 4px;
+  background: #fff;
+  color: $text-color-secondary;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    border-color $motion-fast ease,
+    color $motion-fast ease;
+
+  &:hover,
+  &.is-open {
+    border-color: $color-primary;
+    color: $color-primary;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba($color-primary, 0.45);
+    outline-offset: 1px;
+  }
+}
+
+.shop-width-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  width: 292px;
+  padding: 14px;
+  border: 1px solid $divider-color;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: $shadow-md;
+}
+
+.shop-width-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+
+  strong {
+    color: $text-color-primary;
+    font-size: 13px;
+    font-weight: 600;
+  }
+}
+
+.shop-width-reset {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: $color-primary;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.shop-width-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+
+  button {
+    height: 32px;
+    border: 1px solid $divider-color;
+    border-radius: 4px;
+    background: $bg-color-soft;
+    color: $text-color-secondary;
+    font-size: 12px;
+    cursor: pointer;
+    transition:
+      background-color $motion-fast ease,
+      border-color $motion-fast ease,
+      color $motion-fast ease;
+
+    &:hover {
+      color: $color-primary;
+    }
+
+    &.is-active {
+      border-color: $color-primary;
+      background: $color-primary-soft;
+      color: $color-primary;
+      font-weight: 600;
+    }
+  }
+}
+
+.shop-width-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+
+  button {
+    min-width: 60px;
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid $divider-color;
+    border-radius: 4px;
+    background: #fff;
+    color: $text-color-secondary;
+    font-size: 12px;
+    cursor: pointer;
+    transition:
+      background-color $motion-fast ease,
+      border-color $motion-fast ease,
+      color $motion-fast ease;
+
+    &:hover {
+      border-color: $color-primary-border;
+      color: $color-primary;
+    }
+
+    &.is-active {
+      border-color: $color-primary;
+      background: $color-primary-soft;
+      color: $color-primary;
+      font-weight: 600;
+    }
+  }
+}
+
+.shop-width-hint {
+  margin: 10px 0 0;
+  color: $text-color-placeholder;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
   .shop-view-bar {
-    padding: 12px 14px;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+
+  .shop-view-bar__name {
+    font-size: 14px;
+  }
+
+  .shop-view-switch__btn {
+    padding: 0 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .shop-view-bar__count {
+    display: none;
   }
 }
 
