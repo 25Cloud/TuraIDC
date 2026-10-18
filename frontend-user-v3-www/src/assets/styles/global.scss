@@ -1,4 +1,4 @@
-@use 'sass:meta';
+@use "sass:meta";
 
 :root {
   --el-color-primary: #{$color-primary};
@@ -32,8 +32,11 @@
   --el-border-radius-round: 999px;
   --el-box-shadow-light: #{$shadow-sm};
   --el-box-shadow: #{$shadow-md};
-  --site-grain:
-    radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.045) 1px, transparent 0);
+  --site-grain: radial-gradient(
+    circle at 1px 1px,
+    rgba(15, 23, 42, 0.045) 1px,
+    transparent 0
+  );
 }
 
 .skip-to-content {
@@ -89,7 +92,11 @@ body,
 
 body {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.74)),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.74),
+      rgba(255, 255, 255, 0.74)
+    ),
     $bg-color;
   background-size: auto, auto;
 }
@@ -135,28 +142,44 @@ ol {
     color $motion-fast ease !important;
 }
 
-.el-button--primary {
+/*
+ * 注意：Element Plus 的「默认尺寸」类名也叫 el-button--default，
+ * 与「未指定 type 的按钮」类型类同名。此前这里直接写 .el-button--default，
+ * 会把所有默认尺寸的彩色按钮（primary / success / warning / danger）一起覆盖成
+ * 白底灰字，主按钮看起来像禁用态。这里排除所有语义类型与文字/链接按钮。
+ */
+.el-button--primary:not(.is-text):not(.is-link):not(.is-plain) {
   background: $color-primary !important;
   border-color: $color-primary !important;
   color: $text-color-inverse !important;
   box-shadow: none !important;
 }
 
-.el-button--primary:hover,
-.el-button--primary:focus {
+.el-button--primary:not(.is-text):not(.is-link):not(.is-plain):hover,
+.el-button--primary:not(.is-text):not(.is-link):not(.is-plain):focus {
   background: $color-primary-hover !important;
   border-color: $color-primary-hover !important;
 }
 
-.el-button--default,
+.el-button:not(.el-button--primary):not(.el-button--success):not(
+    .el-button--warning
+  ):not(.el-button--danger):not(.el-button--info):not(.is-text):not(.is-link),
 .el-button.is-plain {
   border-color: $border-color !important;
   color: $text-color-secondary !important;
   background: $bg-color-card !important;
 }
 
-.el-button--default:hover,
-.el-button--default:focus,
+.el-button:not(.el-button--primary):not(.el-button--success):not(
+    .el-button--warning
+  ):not(.el-button--danger):not(.el-button--info):not(.is-text):not(
+    .is-link
+  ):hover,
+.el-button:not(.el-button--primary):not(.el-button--success):not(
+    .el-button--warning
+  ):not(.el-button--danger):not(.el-button--info):not(.is-text):not(
+    .is-link
+  ):focus,
 .el-button.is-plain:hover,
 .el-button.is-plain:focus {
   border-color: $color-primary !important;
@@ -282,9 +305,9 @@ ol {
 // ========== 自定义状态标签：紫色（已冻结/已暂停） ==========
 .el-tag--purple,
 .el-tag.is-purple {
-  --el-tag-bg-color: rgba(139, 92, 246, 0.10);
-  --el-tag-border-color: rgba(139, 92, 246, 0.20);
-  --el-tag-text-color: #8B5CF6;
+  --el-tag-bg-color: rgba(139, 92, 246, 0.1);
+  --el-tag-border-color: rgba(139, 92, 246, 0.2);
+  --el-tag-text-color: #8b5cf6;
   background-color: var(--el-tag-bg-color) !important;
   border-color: var(--el-tag-border-color) !important;
   color: var(--el-tag-text-color) !important;
@@ -308,8 +331,13 @@ ol {
 }
 
 @keyframes statusPulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.55; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 .el-menu {
@@ -484,7 +512,7 @@ ol {
   }
 }
 
-@include meta.load-css('record-list');
+@include meta.load-css("record-list");
 
 @media (max-width: 900px) {
   .client-metric-strip {

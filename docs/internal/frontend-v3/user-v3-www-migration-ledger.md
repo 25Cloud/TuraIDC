@@ -6,21 +6,22 @@
 
 ## 路由迁移
 
-| 旧路由                                                | v3 路由            | 页面             | SEO | 状态                 |
-| ----------------------------------------------------- | ------------------ | ---------------- | --- | -------------------- |
-| `/`                                                   | `/`                | 首页             | 是  | 已迁移               |
-| `/products`                                           | `/products`        | 产品与服务       | 是  | 已迁移               |
-| `/products/:typeId/:groupId/:productId`               | 同旧路由           | 产品购买深链兼容 | 否  | 已迁移，不进 sitemap |
-| `/products/:typeId/:groupId/:childGroupId/:productId` | 同旧路由           | 产品购买深链兼容 | 否  | 已迁移，不进 sitemap |
-| `/products/:id`                                       | `/products/:id`    | 商品详情         | 是  | 已迁移               |
-| `/about`                                              | `/about`           | 关于我们         | 是  | 已迁移               |
-| `/terms`                                              | `/terms`           | 服务条款         | 是  | 已迁移               |
-| `/privacy`                                            | `/privacy`         | 隐私政策         | 是  | 已迁移               |
-| `/notices`                                            | `/notices`         | 公告列表         | 是  | 已迁移               |
-| `/notices/:id`                                        | `/notices/:id`     | 公告详情         | 是  | 已迁移               |
-| `/help`                                               | `/help`            | 帮助列表         | 是  | 已迁移               |
-| `/help/:id`                                           | `/help/:id`        | 帮助详情         | 是  | 已迁移               |
-| `/:pathMatch(.*)*`                                    | `/:pathMatch(.*)*` | 404              | 否  | 已迁移               |
+| 旧路由                                                | v3 路由            | 页面                                              | SEO | 状态                 |
+| ----------------------------------------------------- | ------------------ | ------------------------------------------------- | --- | -------------------- |
+| `/`                                                   | `/`                | 首页                                              | 是  | 已迁移               |
+| `/products`                                           | `/products`        | 产品与服务                                        | 是  | 已迁移               |
+| `/products/:typeId/:groupId/:productId`               | 同旧路由           | 产品购买深链兼容                                  | 否  | 已迁移，不进 sitemap |
+| `/products/:typeId/:groupId/:childGroupId/:productId` | 同旧路由           | 产品购买深链兼容                                  | 否  | 已迁移，不进 sitemap |
+| `/products/:typeId/:groupId`（`?child=` 三级分组）    | 新增               | 选购页目录态（卡片式地址保留分类，刷新/返回不丢） | 否  | 已迁移，不进 sitemap |
+| `/products/:id`                                       | `/products/:id`    | 商品详情                                          | 是  | 已迁移               |
+| `/about`                                              | `/about`           | 关于我们                                          | 是  | 已迁移               |
+| `/terms`                                              | `/terms`           | 服务条款                                          | 是  | 已迁移               |
+| `/privacy`                                            | `/privacy`         | 隐私政策                                          | 是  | 已迁移               |
+| `/notices`                                            | `/notices`         | 公告列表                                          | 是  | 已迁移               |
+| `/notices/:id`                                        | `/notices/:id`     | 公告详情                                          | 是  | 已迁移               |
+| `/help`                                               | `/help`            | 帮助列表                                          | 是  | 已迁移               |
+| `/help/:id`                                           | `/help/:id`        | 帮助详情                                          | 是  | 已迁移               |
+| `/:pathMatch(.*)*`                                    | `/:pathMatch(.*)*` | 404                                               | 否  | 已迁移               |
 
 ## 构建产物要求
 

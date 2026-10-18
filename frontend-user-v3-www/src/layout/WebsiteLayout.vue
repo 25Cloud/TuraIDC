@@ -1,6 +1,8 @@
 <template>
   <div class="website-layout">
-    <a class="skip-to-content" href="#main-content">{{ $t('layout.a11y.skipToMainContent') }}</a>
+    <a class="skip-to-content" href="#main-content">{{
+      $t("layout.a11y.skipToMainContent")
+    }}</a>
     <header
       ref="headerRef"
       class="site-header"
@@ -63,7 +65,9 @@
             <div class="mega-menu__inner container">
               <template v-if="activeMenuId === 'products'">
                 <div class="mega-menu__types">
-                  <span class="mega-menu__col-title">{{ $t('layout.nav.productCatalog') }}</span>
+                  <span class="mega-menu__col-title">{{
+                    $t("layout.nav.productCatalog")
+                  }}</span>
                   <button
                     v-for="type in navProductTypes"
                     :key="type.value"
@@ -86,13 +90,13 @@
                     v-else-if="!navProductTypes.length"
                     class="mega-menu__col-empty"
                   >
-                    {{ $t('layout.nav.noProductCatalog') }}
+                    {{ $t("layout.nav.noProductCatalog") }}
                   </div>
                   <!-- 点击顶栏「产品」只开关本面板，一级入口统一放这里，
                        与公告/帮助面板的「查看全部」保持同一种模式。 -->
-                  <router-link to="/products" class="mega-type-more"
-                    >{{ $t('layout.nav.viewAllProducts') }}</router-link
-                  >
+                  <router-link to="/products" class="mega-type-more">{{
+                    $t("layout.nav.viewAllProducts")
+                  }}</router-link>
                 </div>
                 <div class="mega-menu__groups" :aria-busy="navGroupsPending">
                   <span class="mega-menu__col-title">
@@ -107,13 +111,15 @@
                     v-else-if="navGroupsError && !navActiveGroups.length"
                     class="mega-menu__empty"
                   >
-                    <p class="mega-menu__empty-text">{{ $t('layout.notice.categoryLoadFailed') }}</p>
+                    <p class="mega-menu__empty-text">
+                      {{ $t("layout.notice.categoryLoadFailed") }}
+                    </p>
                     <button
                       type="button"
                       class="mega-menu__retry"
                       @click="navReloadGroups"
                     >
-                      {{ $t('layout.product.reload') }}
+                      {{ $t("layout.product.reload") }}
                     </button>
                   </div>
                   <template v-else>
@@ -134,7 +140,7 @@
                       v-if="!navActiveGroups.length"
                       class="mega-menu__empty"
                     >
-                      {{ $t('layout.product.emptyCategories') }}
+                      {{ $t("layout.product.emptyCategories") }}
                     </div>
                   </template>
                 </div>
@@ -143,7 +149,7 @@
               <template v-else-if="activeMenuId === 'notices'">
                 <div class="mega-menu__types">
                   <span class="mega-menu__col-title">{{
-                    $t('layout.notice.categoryTitle')
+                    $t("layout.notice.categoryTitle")
                   }}</span>
                   <button
                     type="button"
@@ -152,7 +158,7 @@
                     @mouseenter="navNoticesActivateCategory(null)"
                   >
                     <span class="mega-type-btn__label">{{
-                      $t('layout.notice.allAnnouncements')
+                      $t("layout.notice.allAnnouncements")
                     }}</span>
                     <span class="mega-type-btn__count">{{
                       navNoticesItems.length
@@ -174,9 +180,9 @@
                     variant="row"
                     :count="3"
                   />
-                  <router-link to="/notices" class="mega-type-more"
-                    >{{ $t('layout.notice.viewAll') }}</router-link
-                  >
+                  <router-link to="/notices" class="mega-type-more">{{
+                    $t("layout.notice.viewAll")
+                  }}</router-link>
                 </div>
                 <div class="mega-menu__groups" :aria-busy="navNoticesLoading">
                   <MegaMenuSkeleton
@@ -187,15 +193,15 @@
                     v-else-if="navNoticesError && !navNoticesFiltered.length"
                     class="mega-menu__empty"
                   >
-                    <p class="mega-menu__empty-text">{{
-                      $t('layout.notice.loadFailed')
-                    }}</p>
+                    <p class="mega-menu__empty-text">
+                      {{ $t("layout.notice.loadFailed") }}
+                    </p>
                     <button
                       type="button"
                       class="mega-menu__retry"
                       @click="navReloadNotices"
                     >
-                      {{ $t('layout.product.reload') }}
+                      {{ $t("layout.product.reload") }}
                     </button>
                   </div>
                   <template v-else>
@@ -216,7 +222,7 @@
                       v-if="!navNoticesFiltered.length"
                       class="mega-menu__empty"
                     >
-                      {{ $t('layout.notice.empty') }}
+                      {{ $t("layout.notice.empty") }}
                     </div>
                   </template>
                 </div>
@@ -225,7 +231,7 @@
               <template v-else-if="activeMenuId === 'help'">
                 <div class="mega-menu__types">
                   <span class="mega-menu__col-title">{{
-                    $t('layout.doc.categoryTitle')
+                    $t("layout.doc.categoryTitle")
                   }}</span>
                   <button
                     type="button"
@@ -234,7 +240,7 @@
                     @mouseenter="navHelpActivateCategory(null)"
                   >
                     <span class="mega-type-btn__label">{{
-                      $t('layout.doc.allDocs')
+                      $t("layout.doc.allDocs")
                     }}</span>
                     <span class="mega-type-btn__count">{{
                       navHelpItems.length
@@ -256,9 +262,9 @@
                     variant="row"
                     :count="3"
                   />
-                  <router-link to="/help" class="mega-type-more"
-                    >{{ $t('layout.doc.viewAll') }}</router-link
-                  >
+                  <router-link to="/help" class="mega-type-more">{{
+                    $t("layout.doc.viewAll")
+                  }}</router-link>
                 </div>
                 <div class="mega-menu__groups" :aria-busy="navHelpLoading">
                   <MegaMenuSkeleton
@@ -269,15 +275,15 @@
                     v-else-if="navHelpError && !navHelpFiltered.length"
                     class="mega-menu__empty"
                   >
-                    <p class="mega-menu__empty-text">{{
-                      $t('layout.doc.loadFailed')
-                    }}</p>
+                    <p class="mega-menu__empty-text">
+                      {{ $t("layout.doc.loadFailed") }}
+                    </p>
                     <button
                       type="button"
                       class="mega-menu__retry"
                       @click="navReloadHelp"
                     >
-                      {{ $t('layout.product.reload') }}
+                      {{ $t("layout.product.reload") }}
                     </button>
                   </div>
                   <template v-else>
@@ -298,7 +304,7 @@
                       v-if="!navHelpFiltered.length"
                       class="mega-menu__empty"
                     >
-                      {{ $t('layout.doc.empty') }}
+                      {{ $t("layout.doc.empty") }}
                     </div>
                   </template>
                 </div>
@@ -307,11 +313,11 @@
               <template v-else-if="activeMenuId === 'about'">
                 <div class="mega-menu__types">
                   <span class="mega-menu__col-title">{{
-                    $t('layout.nav.moreLinks')
+                    $t("layout.nav.moreLinks")
                   }}</span>
-                  <div class="mega-type-desc">{{
-                    $t('layout.nav.moreLinksDesc')
-                  }}</div>
+                  <div class="mega-type-desc">
+                    {{ $t("layout.nav.moreLinksDesc") }}
+                  </div>
                 </div>
                 <div class="mega-menu__groups">
                   <template v-for="link in aboutQuickLinks" :key="link.to">
@@ -415,11 +421,11 @@
           </div>
           <template v-if="!userStore.isLoggedIn">
             <a :href="consoleUrl('/client/login')" class="header-link">{{
-              $t('layout.user.signIn')
+              $t("layout.user.signIn")
             }}</a>
-            <a :href="consoleUrl('/client/register')" class="header-register"
-              >{{ $t('layout.user.registerFree') }}</a
-            >
+            <a :href="consoleUrl('/client/register')" class="header-register">{{
+              $t("layout.user.registerFree")
+            }}</a>
           </template>
         </div>
 
@@ -543,14 +549,14 @@
                 <a
                   :href="consoleUrl('/client/dashboard')"
                   class="mobile-left-login-btn"
-                  >{{ $t('layout.user.console') }}</a
+                  >{{ $t("layout.user.console") }}</a
                 >
               </template>
               <template v-else>
                 <a
                   :href="consoleUrl('/client/login')"
                   class="mobile-left-login-btn"
-                  >{{ $t('layout.user.signInOrRegister') }}</a
+                  >{{ $t("layout.user.signInOrRegister") }}</a
                 >
               </template>
             </div>
@@ -682,7 +688,7 @@
                   to="/notices"
                   class="mobile-view-all"
                   @click="closeMobileMenu()"
-                  >{{ $t('layout.notice.viewAllMore') }}</router-link
+                  >{{ $t("layout.notice.viewAllMore") }}</router-link
                 >
               </template>
               <div v-else-if="navNoticesLoading" class="mobile-menu-loading">
@@ -751,7 +757,7 @@
                   to="/help"
                   class="mobile-view-all"
                   @click="closeMobileMenu()"
-                  >{{ $t('layout.doc.viewAllMore') }}</router-link
+                  >{{ $t("layout.doc.viewAllMore") }}</router-link
                 >
               </template>
               <div v-else-if="navHelpLoading" class="mobile-menu-loading">
@@ -789,9 +795,14 @@
 
     <main id="main-content" class="site-main">
       <router-view v-slot="{ Component }">
-        <transition name="page-fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
+        <!--
+          这里曾经套了一层 <transition name="page-fade" mode="out-in">，但 .page-fade-*
+          的样式从未定义过（等于没有动效），反而在「独立配置页 → 返回选购页」时
+          把视图卡在离场态：路由已经切回分类页，<main> 里却一直只有一个注释节点，
+          页面整块空白，必须刷新才恢复。去掉过渡后返回立即渲染；
+          将来要做页面切换动效，先在 CSS 里定义好 page-fade 类再加回来。
+        -->
+        <component :is="Component" />
       </router-view>
     </main>
 
@@ -1230,10 +1241,10 @@ const hideFooter = computed(() => {
 });
 
 const navigationItems = [
-  { to: "/", label: t('layout.nav.home'), match: ["WwwHome"] },
+  { to: "/", label: t("layout.nav.home"), match: ["WwwHome"] },
   {
     to: "/products",
-    label: t('layout.nav.products'),
+    label: t("layout.nav.products"),
     match: [
       "WwwProducts",
       "WwwProductsPurchase",
@@ -1244,28 +1255,45 @@ const navigationItems = [
   },
   {
     to: "/notices",
-    label: t('layout.nav.notices'),
+    label: t("layout.nav.notices"),
     match: ["WwwNotices", "WwwNoticeDetail"],
     menuId: "notices",
   },
   {
     to: "/help",
-    label: t('layout.nav.help'),
+    label: t("layout.nav.help"),
     match: ["WwwHelp", "WwwHelpDetail"],
     menuId: "help",
   },
-  { to: "/about", label: t('layout.nav.moreLinks'), match: ["WwwAbout"], menuId: "about" },
+  {
+    to: "/about",
+    label: t("layout.nav.moreLinks"),
+    match: ["WwwAbout"],
+    menuId: "about",
+  },
 ];
 
 const aboutQuickLinks = [
-  { to: "/about", title: t('layout.nav.aboutUs'), desc: t('layout.footer.aboutIntro') },
+  {
+    to: "/about",
+    title: t("layout.nav.aboutUs"),
+    desc: t("layout.footer.aboutIntro"),
+  },
   {
     to: "/client/tickets",
-    title: t('layout.footer.ticketSupport'),
-    desc: t('layout.footer.supportTicket'),
+    title: t("layout.footer.ticketSupport"),
+    desc: t("layout.footer.supportTicket"),
   },
-  { to: "/help", title: t('layout.footer.helpDocs'), desc: t('layout.footer.helpGuide') },
-  { to: "/notices", title: t('layout.footer.noticeUpdates'), desc: t('layout.footer.noticeUpdates') },
+  {
+    to: "/help",
+    title: t("layout.footer.helpDocs"),
+    desc: t("layout.footer.helpGuide"),
+  },
+  {
+    to: "/notices",
+    title: t("layout.footer.noticeUpdates"),
+    desc: t("layout.footer.noticeUpdates"),
+  },
 ];
 
 const logoSrc = computed(() => appStore.siteLogo || "/branding/logo.png");

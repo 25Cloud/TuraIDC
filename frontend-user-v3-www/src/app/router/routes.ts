@@ -4,7 +4,7 @@ import {
   seoLandingMetaPages,
 } from "@/data/seoLandingMeta";
 import type { RouteRecordRaw } from "vue-router";
-import { t } from '@/locales';
+import { t } from "@/locales";
 
 const seoLandingRoutes: RouteRecordRaw[] = seoLandingMetaPages.map((page) => ({
   path: page.path.replace(/^\/+/, ""),
@@ -41,8 +41,8 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/products/index.vue"),
         ),
         meta: {
-          title: t('seo.products.title'),
-          description: t('seo.products.description'),
+          title: t("seo.products.title"),
+          description: t("seo.products.description"),
           canonical: "/products",
         },
       },
@@ -54,7 +54,7 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/products/index.vue"),
         ),
         meta: {
-          title: t('seo.products.title'),
+          title: t("seo.products.title"),
           noSitemap: true,
           robots: "noindex,nofollow",
         },
@@ -66,7 +66,23 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/products/index.vue"),
         ),
         meta: {
-          title: t('seo.products.title'),
+          title: t("seo.products.title"),
+          noSitemap: true,
+          robots: "noindex,nofollow",
+        },
+      },
+      {
+        // 目录态（未选中商品）：卡片式浏览时也要把类型与分组留在地址里，
+        // 否则刷新/从详情页返回都会掉回 /products、丢掉当前分类。
+        // 三级分组不放在路径里——/products/:typeId/:groupId/:childGroupId 与
+        // /products/:typeId/:groupId/:productId 形状相同，路由无法区分，改用 ?child=。
+        path: "products/:typeId/:groupId(\\d+)",
+        name: "WwwProductsGroup",
+        component: lazyRouteView(
+          () => import("@/pages/website/products/index.vue"),
+        ),
+        meta: {
+          title: t("seo.products.title"),
           noSitemap: true,
           robots: "noindex,nofollow",
         },
@@ -77,7 +93,7 @@ export const clientRoutes: RouteRecordRaw[] = [
         component: lazyRouteView(
           () => import("@/pages/website/ProductDetail/index.vue"),
         ),
-        meta: { title: t('seo.productDetail.title') },
+        meta: { title: t("seo.productDetail.title") },
       },
       {
         path: "about",
@@ -86,8 +102,8 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/about/index.vue"),
         ),
         meta: {
-          title: t('seo.about.title'),
-          description: t('seo.about.description'),
+          title: t("seo.about.title"),
+          description: t("seo.about.description"),
           canonical: "/about",
         },
       },
@@ -98,8 +114,8 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/legal-document/index.vue"),
         ),
         meta: {
-          title: t('seo.terms.title'),
-          description: t('seo.terms.description'),
+          title: t("seo.terms.title"),
+          description: t("seo.terms.description"),
           canonical: "/terms",
           documentKey: "terms",
         },
@@ -111,8 +127,8 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/legal-document/index.vue"),
         ),
         meta: {
-          title: t('seo.privacy.title'),
-          description: t('seo.privacy.description'),
+          title: t("seo.privacy.title"),
+          description: t("seo.privacy.description"),
           canonical: "/privacy",
           documentKey: "privacy",
         },
@@ -124,8 +140,8 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/notices/index.vue"),
         ),
         meta: {
-          title: t('seo.notices.title'),
-          description: t('seo.notices.description'),
+          title: t("seo.notices.title"),
+          description: t("seo.notices.description"),
           canonical: "/notices",
         },
       },
@@ -135,7 +151,7 @@ export const clientRoutes: RouteRecordRaw[] = [
         component: lazyRouteView(
           () => import("@/pages/website/notice-detail/index.vue"),
         ),
-        meta: { title: t('seo.noticeDetail.title') },
+        meta: { title: t("seo.noticeDetail.title") },
       },
       {
         path: "help",
@@ -144,8 +160,8 @@ export const clientRoutes: RouteRecordRaw[] = [
           () => import("@/pages/website/help/index.vue"),
         ),
         meta: {
-          title: t('seo.help.title'),
-          description: t('seo.help.description'),
+          title: t("seo.help.title"),
+          description: t("seo.help.description"),
           canonical: "/help",
         },
       },
@@ -155,7 +171,7 @@ export const clientRoutes: RouteRecordRaw[] = [
         component: lazyRouteView(
           () => import("@/pages/website/help-detail/index.vue"),
         ),
-        meta: { title: t('seo.helpDetail.title') },
+        meta: { title: t("seo.helpDetail.title") },
       },
     ],
   },

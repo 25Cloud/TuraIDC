@@ -8,6 +8,7 @@ import siteApi, {
 import { getPendingWebsiteCouponId } from "@/utils/websiteCoupon";
 import {
   buildWebsiteProductPath,
+  buildWebsiteProductRouteQuery,
   hasWebsiteProductRouteParams,
   readWebsiteProductRouteParams,
 } from "@/utils/productRoute";
@@ -176,8 +177,16 @@ export function useWebsiteProductsCatalog({
       childGroupId: activeChildId.value,
       productId: selectedProductId.value,
     });
+    // 目录态要保留类型/分组/三级分组：路径承载类型与分组，三级分组放 ?child=。
+    // 否则卡片式地址只剩 /products，刷新或从详情页返回都会丢目录。
+    const targetQuery = buildWebsiteProductRouteQuery(route.query, {
+      childGroupId: activeChildId.value,
+      productId: selectedProductId.value,
+    });
 
-    if (route.path === targetPath) {
+    const currentChild = String(route.query?.child ?? "");
+    const nextChild = String(targetQuery.child ?? "");
+    if (route.path === targetPath && currentChild === nextChild) {
       return;
     }
 
@@ -197,7 +206,7 @@ export function useWebsiteProductsCatalog({
 
     await router.replace({
       path: targetPath,
-      query: route.query,
+      query: targetQuery,
     });
   }
 
@@ -783,6 +792,7 @@ export function useWebsiteProductsCatalog({
         route.params.productId,
         route.query.type,
         route.query.group,
+        route.query.child,
       ].join("|"),
     async () => {
       if (!productTypes.value.length) {

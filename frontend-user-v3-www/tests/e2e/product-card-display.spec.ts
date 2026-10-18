@@ -199,7 +199,26 @@ async function mockSiteApi(
       });
     }
 
-    if (pathname === `/v2/site/product-groups/${GROUP_ID}/products`) {
+    if (pathname === `/v2/site/product-groups/${GROUP_ID}/children`) {
+      return respond({
+        list: [
+          {
+            id: CHILD_GROUP_ID,
+            effective_product_group_id: CHILD_GROUP_ID,
+            effective_product_group_level: 3,
+            name: "高防",
+            group_level_label: "三级分组",
+            product_count: PRODUCTS.length,
+          },
+        ],
+        total: 1,
+      });
+    }
+
+    if (
+      pathname === `/v2/site/product-groups/${GROUP_ID}/products` ||
+      pathname === `/v2/site/product-groups/${CHILD_GROUP_ID}/products`
+    ) {
       return respond({ list: PRODUCTS, total: PRODUCTS.length });
     }
 
@@ -261,12 +280,16 @@ test.describe("选购页展示方式与商品描述", () => {
     await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
     await expect(page.locator(".config-area")).toHaveCount(0);
 
-    // 偏好只存本机，刷新后仍是卡片式（而不是回到站点默认的列表式）。
-    // 先等选中商品从地址里退掉：卡片态地址是 /products（带类型/分组查询），
-    // 若在路由回退完成前刷新，会按旧深链重新选中商品并渲染配置区。
+    // 卡片态地址必须保留目录：/products/:type/:group?child=:child
+    // 以前这里会退化成裸 /products，刷新/返回都丢分类。
     await expect
-      .poll(() => new URL(page.url()).pathname)
-      .toBe("/products");
+      .poll(() => {
+        const url = new URL(page.url());
+        return `${url.pathname}${url.search}`;
+      })
+      .toBe(`/products/${TYPE_CODE}/${GROUP_ID}?child=${CHILD_GROUP_ID}`);
+
+    // 偏好只存本机，刷新后仍是卡片式，且目录（三级分组「高防」）仍在
     await expect
       .poll(() =>
         page.evaluate(() => window.localStorage.getItem("turaidc:shop-display-mode")),
@@ -274,6 +297,40 @@ test.describe("选购页展示方式与商品描述", () => {
       .toBe("card");
     await page.reload();
     await expect(page.locator(".product-card-grid")).toBeVisible();
+    await expect(page.locator(".shop-view-bar__name")).toHaveText("高防");
+    await expect
+      .poll(() => new URL(page.url()).pathname)
+      .toBe(`/products/${TYPE_CODE}/${GROUP_ID}`);
+  });
+
+  test("卡片式地址保留目录：刷新与从配置页返回都能回到原分类", async ({
+    page,
+  }) => {
+    await mockSiteApi(page, "card");
+    await page.goto(catalogPath);
+
+    await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
+    // 进入卡片态后地址是 /products/hosting/112?child=1030
+    await expect
+      .poll(() => {
+        const url = new URL(page.url());
+        return `${url.pathname}?${url.searchParams.get("child")}`;
+      })
+      .toBe(`/products/${TYPE_CODE}/${GROUP_ID}?${CHILD_GROUP_ID}`);
+
+    // 点卡片进入独立配置页，再点返回：应回到原分类的卡片网格，而不是裸 /products
+    await page.locator(".product-card").first().locator(".product-card-name").click();
+    await expect(page).toHaveURL(new RegExp(`/products/${PRODUCT_IDS[0]}$`));
+
+    await page.goBack();
+    await expect(page.locator(".product-card-grid")).toBeVisible();
+    await expect(page.locator(".shop-view-bar__name")).toHaveText("高防");
+    await expect
+      .poll(() => {
+        const url = new URL(page.url());
+        return url.searchParams.get("child");
+      })
+      .toBe(String(CHILD_GROUP_ID));
   });
 
   test("站点默认卡片式：访客切回列表式后恢复表格配置区", async ({ page }) => {
@@ -294,6 +351,13 @@ test.describe("选购页展示方式与商品描述", () => {
         page.evaluate(() => window.localStorage.getItem("turaidc:shop-display-mode")),
       )
       .toBe("list");
+    // 列表态选中商品后地址带上商品 ID（以及三级分组），刷新可回到同一配置
+    await expect
+      .poll(() => {
+        const url = new URL(page.url());
+        return url.pathname;
+      })
+      .toBe(`/products/${TYPE_CODE}/${GROUP_ID}/${CHILD_GROUP_ID}/${PRODUCT_IDS[0]}`);
   });
 
   test("卡片式展示卡片网格且不自动选中商品", async ({ page }) => {

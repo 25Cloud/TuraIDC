@@ -10,46 +10,68 @@ export function formatMoneyText(value) {
   return amount.toFixed(2);
 }
 
-export function formatProductListPrice(product) {
+/**
+ * 商品列表价格拆成「金额 + 周期」两段：卡片式要把金额放大、周期做小字，
+ * 列表式仍用拼好的整串。两处同源，避免金额口径分叉。
+ */
+export function formatProductListPriceParts(product) {
   const pricingEntries = Array.isArray(product?.pricing_entries)
     ? product.pricing_entries
     : [];
   const monthlyEntry = pricingEntries.find(
-    (item) => item?.cycle === 'monthly' && Number(item?.amount || 0) > 0,
+    (item) => item?.cycle === "monthly" && Number(item?.amount || 0) > 0,
   );
   const fallbackEntry =
     monthlyEntry ||
     pricingEntries.find((item) => Number(item?.amount || 0) > 0);
 
   if (fallbackEntry) {
-    return `¥${formatMoneyText(fallbackEntry.amount)}/${fallbackEntry.label || '月'}`;
+    return {
+      amount: formatMoneyText(fallbackEntry.amount),
+      cycle: fallbackEntry.label || "月",
+    };
   }
 
   const pricing =
-    product?.pricing && typeof product.pricing === 'object' ? product.pricing : {};
+    product?.pricing && typeof product.pricing === "object"
+      ? product.pricing
+      : {};
   const monthlyAmount = Number(pricing.monthly || 0);
   if (monthlyAmount > 0) {
-    return `¥${formatMoneyText(monthlyAmount)}/月`;
+    return { amount: formatMoneyText(monthlyAmount), cycle: "月" };
   }
 
   if (Number(product?.primary_price || 0) > 0) {
-    return `¥${formatMoneyText(product.primary_price)}/${product.primary_cycle === 'monthly' ? '月' : '起'}`;
+    return {
+      amount: formatMoneyText(product.primary_price),
+      cycle: product.primary_cycle === "monthly" ? "月" : "起",
+    };
   }
 
-  return '';
+  return null;
+}
+
+export function formatProductListPrice(product) {
+  const parts = formatProductListPriceParts(product);
+
+  return parts ? `¥${parts.amount}/${parts.cycle}` : "";
 }
 
 /**
  * 卡片式要的最小价格字段集合。列表式表格另有一套列渲染，不共用这里。
  */
 export function resolveCardPrice(product) {
+  const parts = formatProductListPriceParts(product);
   const agentPrice = Number(product?.agent_primary_price || 0);
 
   return {
     hasAgentPrice: Boolean(product?.has_agent_discount) && agentPrice > 0,
     agentPrice,
+    agentAmount: formatMoneyText(product?.agent_primary_price),
     agentOriginal: formatMoneyText(product?.primary_price),
-    agentPercent: String(product?.agent_discount_percent || ''),
-    listPrice: formatProductListPrice(product),
+    agentPercent: String(product?.agent_discount_percent || ""),
+    listAmount: parts?.amount || "",
+    listCycle: parts?.cycle || "",
+    listPrice: parts ? `¥${parts.amount}/${parts.cycle}` : "",
   };
 }
