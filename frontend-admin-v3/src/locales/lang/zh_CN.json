@@ -2917,6 +2917,8 @@
       "ruleDeleted": "工单传递规则已删除"
     },
     "preReplySettings": {
+      "title": "工单预回复",
+      "titleTip": "新工单创建后自动以指定管理员身份发出首条回复，减少用户等待；会传送到上游的工单可单独设置内容。",
       "enablePreReply": "启用预回复",
       "enablePreReplyTip": "关闭时新建工单不自动回复",
       "replyAdmin": "预回复管理员",
@@ -3229,6 +3231,12 @@
       "categoryAddons": "功能扩展",
       "noSettingsPermission": "当前账号无系统设置权限",
       "noManagePermission": "当前账号无插件管理权限",
+      "columnPlugin": "插件",
+      "columnDomain": "功能域",
+      "columnVersion": "版本",
+      "columnStatus": "状态",
+      "columnRuntime": "最近运行",
+      "runtimeNone": "暂无运行记录",
       "scanDone": "插件目录扫描完成",
       "installSuccess": "插件安装成功",
       "enabledSuccess": "插件已启用",

@@ -138,6 +138,36 @@
   margin-top: auto;
 }
 
+/* 列表视图：插件名与业务标识上下两行，避免一列里塞满 slug / key */
+.plugin-name-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+
+  strong,
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: var(--td-text-color-primary);
+    font-size: 14px;
+  }
+
+  span {
+    color: var(--td-text-color-secondary);
+    font-size: var(--td-font-size-size-1, 12px);
+  }
+}
+
+.plugin-runtime-empty {
+  color: var(--td-text-color-placeholder);
+  font-size: var(--td-font-size-size-1, 12px);
+}
+
 .plugin-detail {
   margin-bottom: 18px;
   border: 1px solid var(--td-component-border);

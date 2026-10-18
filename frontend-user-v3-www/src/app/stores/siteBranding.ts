@@ -26,12 +26,18 @@ const DEFAULT_FAVICON = "/branding/favicon-32.png";
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "");
 
 function normalizeDisplayMode(value) {
-  return String(value || "").trim().toLowerCase() === "card" ? "card" : "list";
+  return String(value || "")
+    .trim()
+    .toLowerCase() === "card"
+    ? "card"
+    : "list";
 }
 
 /** 站点后台的布尔开关统一是 '1' / '0'，缺省或脏值走调用方给的默认值 */
 function normalizeSiteFlag(value, fallback: boolean): boolean {
-  const normalized = String(value ?? "").trim().toLowerCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
 
   if (["1", "true", "on", "yes"].includes(normalized)) {
     return true;
@@ -46,7 +52,9 @@ function normalizeSiteFlag(value, fallback: boolean): boolean {
 
 /** 选购页版心：contained=居中限宽，full=铺满；未知值回落居中 */
 function normalizePageLayout(value) {
-  return String(value || "").trim().toLowerCase() === "full"
+  return String(value || "")
+    .trim()
+    .toLowerCase() === "full"
     ? "full"
     : "contained";
 }
@@ -187,13 +195,13 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
     ),
   );
   // 全站商品展示方式：list=商品表格（列表式）/ card=商品卡片（卡片式）。
-  // 只存后台设置的原值；用户级的临时切换由 useProductDisplayMode 用 cookie 覆盖，
-  // 不写进 store，避免把「运营设定的默认」和「本次浏览的偏好」混成一个状态。
+  // 只存后台设定的站点默认值；访客自己的切换由 useProductDisplayMode 存
+  // localStorage 覆盖，不写进 store，避免把「运营设定的默认」和「本机偏好」混成一个状态。
   const productDisplayMode = ref(
     normalizeDisplayMode(pick(initialSiteConfig, ["product_display_mode"], "")),
   );
   // 选购页展示层开关：卡片是否展示库存、独立配置页是否展示机型对比、版心与最大宽度。
-  // 与展示方式一样只认后台设置，不提供用户级覆盖。
+  // 这些是站点经营方的决策，不提供用户级覆盖（展示方式例外，见上）。
   const productCardShowStock = ref(
     normalizeSiteFlag(
       pick(initialSiteConfig, ["product_card_show_stock"], ""),

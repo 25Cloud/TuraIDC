@@ -145,7 +145,11 @@
       "spec": "产品规格",
       "selectSpec": "请选择产品规格",
       "noSwitchableOsVersion": "当前商品未提供可切换的系统版本",
-      "switchLevel1Group": "切换一级分组"
+      "switchLevel1Group": "切换一级分组",
+      "displayMode": "商品展示方式",
+      "displayCard": "卡片式",
+      "displayList": "列表式",
+      "productCount": "{count} 个商品"
     },
     "cpuBadge": {
       "coreShort": "酷",

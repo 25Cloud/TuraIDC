@@ -145,7 +145,11 @@
       "spec": "Product Specs",
       "selectSpec": "Select a product spec",
       "noSwitchableOsVersion": "This product has no switchable OS version",
-      "switchLevel1Group": "Switch Level 1 Group"
+      "switchLevel1Group": "Switch Level 1 Group",
+      "displayMode": "Display mode",
+      "displayCard": "Card",
+      "displayList": "List",
+      "productCount": "{count} products"
     },
     "cpuBadge": {
       "coreShort": "Core",

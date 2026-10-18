@@ -2917,6 +2917,8 @@
       "ruleDeleted": "工單傳遞規則已刪除"
     },
     "preReplySettings": {
+      "title": "工單預回覆",
+      "titleTip": "新工單建立後自動以指定管理員身分送出首則回覆，減少使用者等待；會傳送到上游的工單可另外設定內容。",
       "enablePreReply": "啟用預回覆",
       "enablePreReplyTip": "關閉時新建工單不自動回覆",
       "replyAdmin": "預回覆管理員",
@@ -3229,6 +3231,12 @@
       "categoryAddons": "功能擴充套件",
       "noSettingsPermission": "當前賬號無系統設定許可權",
       "noManagePermission": "當前賬號無外掛管理許可權",
+      "columnPlugin": "外掛",
+      "columnDomain": "功能域",
+      "columnVersion": "版本",
+      "columnStatus": "狀態",
+      "columnRuntime": "最近執行",
+      "runtimeNone": "暫無執行記錄",
       "scanDone": "外掛目錄掃描完成",
       "installSuccess": "外掛安裝成功",
       "enabledSuccess": "外掛已啟用",

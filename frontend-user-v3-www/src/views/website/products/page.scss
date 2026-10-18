@@ -300,6 +300,92 @@
   padding: 0 0 48px;
 }
 
+/*
+ * 展示方式切换条：左侧当前分组与商品数，右侧「卡片式 / 列表式」分段按钮。
+ * 与下面的分组筛选条同高同边框，避免单独一条孤零零的控件浮在页面上。
+ */
+.shop-view-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid $divider-color;
+  background: #fff;
+}
+
+.shop-view-bar__summary {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.shop-view-bar__name {
+  overflow: hidden;
+  color: $text-color-primary;
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-view-bar__count {
+  flex-shrink: 0;
+  color: $text-color-placeholder;
+  font-size: 12px;
+}
+
+.shop-view-switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid $divider-color;
+  border-radius: 4px;
+  background: $bg-color-soft;
+}
+
+.shop-view-switch__btn {
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: $text-color-secondary;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color $motion-fast ease,
+    color $motion-fast ease,
+    box-shadow $motion-fast ease;
+
+  &:hover {
+    color: $color-primary;
+  }
+
+  &.is-active {
+    background: #fff;
+    color: $color-primary;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba($color-primary, 0.45);
+    outline-offset: 1px;
+  }
+}
+
+@media (max-width: 768px) {
+  .shop-view-bar {
+    padding: 12px 14px;
+  }
+}
+
 /* ===== 页面主标题（桌面 + 移动通用） ===== */
 .shop-main-heading {
   padding: 18px 20px 10px;

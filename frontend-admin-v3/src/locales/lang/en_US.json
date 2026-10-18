@@ -2917,6 +2917,8 @@
       "ruleDeleted": "Ticket delivery rule deleted"
     },
     "preReplySettings": {
+      "title": "Ticket auto-reply",
+      "titleTip": "When a ticket is created, the first reply is sent automatically as the chosen admin so customers don't wait. Tickets forwarded upstream can use a separate message.",
       "enablePreReply": "Enable auto-reply",
       "enablePreReplyTip": "When off, new tickets get no automatic reply",
       "replyAdmin": "Auto-reply admin",
@@ -3229,6 +3231,12 @@
       "categoryAddons": "Add-ons",
       "noSettingsPermission": "Your account has no system settings permission",
       "noManagePermission": "Your account has no plugin management permission",
+      "columnPlugin": "Plugin",
+      "columnDomain": "Domain",
+      "columnVersion": "Version",
+      "columnStatus": "Status",
+      "columnRuntime": "Last run",
+      "runtimeNone": "No runs yet",
       "scanDone": "Plugin directory scanned",
       "installSuccess": "Plugin installed",
       "enabledSuccess": "Plugin enabled",

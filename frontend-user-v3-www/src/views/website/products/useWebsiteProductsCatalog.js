@@ -165,7 +165,7 @@ export function useWebsiteProductsCatalog({
     });
   }
 
-  async function syncSelectionRoute() {
+  async function syncSelectionRoute(options = {}) {
     if (routeSyncSuspendCount > 0) {
       return;
     }
@@ -184,7 +184,11 @@ export function useWebsiteProductsCatalog({
     // 深链保护：当前 URL 是带参数的商品深链（刷新/直链进入），但本地状态尚未完整解析
     // （分组/目录/商品请求失败或仍为空）时，不要用空状态把 URL 回退到 /products，
     // 否则刷新后深链参数丢失、页面停摆在空目录。保持 URL，等待解析完成或用户手动切换。
+    //
+    // 用户主动退出选中态（切到卡片式）时必须跳过这条保护：否则地址上留着商品 ID，
+    // 刷新后会被当成深链重新选中商品，卡片偏好形同虚设。
     if (
+      !options.force &&
       targetPath === "/products" &&
       hasWebsiteProductRouteParams(readWebsiteProductRouteParams(route))
     ) {
@@ -202,7 +206,7 @@ export function useWebsiteProductsCatalog({
     onResetSelection?.();
 
     if (shouldSyncRoute(options)) {
-      void syncSelectionRoute();
+      void syncSelectionRoute({ force: options.forceRoute === true });
     }
   }
 
@@ -531,7 +535,9 @@ export function useWebsiteProductsCatalog({
     } else {
       activeChildId.value = 0;
       const rootKey = catalogGroupKey({
-        effective_product_group_id: Number(data.effective_product_group_id || 0),
+        effective_product_group_id: Number(
+          data.effective_product_group_id || 0,
+        ),
         effective_product_group_level: Number(
           data.effective_product_group_level || 2,
         ),
@@ -859,5 +865,7 @@ export function useWebsiteProductsCatalog({
     switchGroup,
     switchChild,
     selectProduct,
+    resetSelectedProduct,
+    syncDefaultProduct,
   };
 }

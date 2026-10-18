@@ -2,7 +2,13 @@
   <div class="ticket-pre-reply-page">
     <t-card :bordered="false" class="ticket-pre-reply-card">
       <div class="ticket-pre-reply-toolbar">
-        <t-button v-if="canManage" theme="primary" :loading="saving" @click="save">{{ $t('tickets.preReplySettings.saveSettings') }}</t-button>
+        <div class="ticket-pre-reply-summary">
+          <strong>{{ $t('tickets.preReplySettings.title') }}</strong>
+          <span>{{ $t('tickets.preReplySettings.titleTip') }}</span>
+        </div>
+        <t-button v-if="canManage" theme="primary" :loading="saving" @click="save">{{
+          $t('tickets.preReplySettings.saveSettings')
+        }}</t-button>
       </div>
 
       <t-form
@@ -55,7 +61,7 @@
 <script setup lang="ts">
 import './index.less';
 
-import { useWindowSize } from '@vueuse/core';
+import { useMediaQuery } from '@vueuse/core';
 import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
@@ -68,8 +74,8 @@ import { useUserStore } from '@/store';
 import { errorMessage } from '@/utils/userMessage';
 
 const userStore = useUserStore();
-const { width } = useWindowSize();
-const isMobile = computed(() => width.value < 768);
+// 与管理端其它页面统一的移动断点（含 768px）：平板竖屏走单列布局
+const isMobile = useMediaQuery('(max-width: 768px)');
 const saving = ref(false);
 const formRef = ref<FormInstanceFunctions>();
 const adminUsers = ref<TicketAdminUser[]>([]);

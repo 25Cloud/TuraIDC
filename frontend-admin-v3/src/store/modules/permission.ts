@@ -2,6 +2,7 @@ import { cloneDeep } from 'lodash-es';
 import { defineStore } from 'pinia';
 import {
   ArticleIcon,
+  ChatIcon,
   DashboardIcon,
   FileIcon,
   GiftIcon,
@@ -92,20 +93,24 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
     ],
   },
   {
-    path: '/admin/menu/ticket-processing',
-    title: { zh_CN: '工单处理', en_US: 'Ticket Processing' },
+    // 服务实例是独立业务（开通、到期、续费、控制台），长期挂在「工单处理」下
+    // 让管理员找不到入口，也让工单分组越挂越杂；单独成组，图标沿用服务器语义。
+    path: '/admin/menu/service-management',
+    title: { zh_CN: '服务管理', en_US: 'Service Management' },
     icon: shallowRef(ServerIcon),
     orderNo: 30,
+    children: [{ path: '/admin/services', title: { zh_CN: '服务实例', en_US: 'Service Instances' } }],
+  },
+  {
+    path: '/admin/menu/ticket-processing',
+    title: { zh_CN: '工单处理', en_US: 'Ticket Processing' },
+    icon: shallowRef(ChatIcon),
+    orderNo: 35,
     children: [
       {
-        path: '/admin/menu/ticket-processing/services-tickets',
-        title: { zh_CN: '服务与工单', en_US: 'Services & Tickets' },
-        children: [
-          { path: '/admin/services', title: { zh_CN: '服务实例', en_US: 'Service Instances' } },
-          '/admin/tickets',
-          '/admin/ticket-delivery-rules',
-          '/admin/ticket-pre-reply-settings',
-        ],
+        path: '/admin/menu/ticket-processing/tickets',
+        title: { zh_CN: '工单管理', en_US: 'Ticket Management' },
+        children: ['/admin/tickets', '/admin/ticket-delivery-rules', '/admin/ticket-pre-reply-settings'],
       },
     ],
   },

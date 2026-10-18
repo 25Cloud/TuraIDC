@@ -1,6 +1,6 @@
 ---
 status: 进行中
-updated: 2026-10-15
+updated: 2026-10-18
 owner: backend
 ---
 
@@ -30,7 +30,7 @@ owner: backend
 - [x] `remark` 完全不动，魔方回传、展示名兜底、订单快照全部不受影响。
 - [x] `SiteProductSummaryResource` 与 `SiteProductCardResource` 下发 `description_html` / `description_source`，两种形态共用同一份接口数据，不按展示方式裁剪字段。
 - [x] 全站展示方式存 `settings` group `basic` / key `product_display_mode`，经 `SiteConfigPayload` 随既有 `/site/config` 下发，不新增接口。
-- [x] 前端用户级覆盖用 cookie `product_display_mode`，对齐魔方 `cookie("cart_theme")`，不落 `users` 表。
+- [x] 前端访客级覆盖用 localStorage `turaidc:shop-display-mode`（后台默认值兜底），不落 `users` 表、不影响其他访客。
 - [x] 列表式保持现状不变；卡片式不自动选中第一个商品（选中态交给独立配置页承载）。
 - [x] 卡片点「立即选购」跳 `/products/{id}`，该页同时展示商品描述。
 - [x] 管理端描述编辑器双模式：结构化键值对增删改排序 + 高级 HTML 源码；高级切回结构化时解析不出的整行文本以 key 为空保留，不丢内容。
@@ -49,11 +49,13 @@ owner: backend
 - 2026-10-15：官网卡片网格、切换控件、独立配置页描述块、四语言文案完成，`frontend-user-v3-www` 构建通过。
 - 2026-10-15：管理端描述编辑器与展示方式开关完成。
 - 2026-10-15：顺带修掉 v0.4.1 遗留的 `BusinessException` 回归——构造时查翻译表在未绑定 `translator` 的场景会抛 `BindingResolutionException`，把业务异常整个替换掉（`tests/Unit` 有 5 项因此失败）。改为取译文失败即放行中文原文，并补 `BusinessExceptionWithoutContainerTest` 锁住。
+- 2026-10-18：按运营反馈恢复访客切换（右侧分段按钮，偏好存 localStorage），站点默认值只负责首屏；同时修掉「切到卡片后地址仍留商品 ID、刷新又回到配置页」的路由残留。管理端「商品展示」页仍是默认值的唯一维护入口。
 
 ## 决策日志
 
 - **新增 `description` 列而不是复用 `remark`**：`remark` 同时是展示名兜底与回传魔方的 `description`，扩容到富文本会污染订单 / 账单快照文案（代码里已有注释警告过这点），且历史值是 `<li>` 卡片 HTML，语义不同。
 - **自动生成只读不写库**：识别规则改进后历史商品立即跟着变，不必跑回填命令。代价是描述不是可导出数据，商家要固化某次结果在后台存一次即转为 `manual`。
-- **展示方式只做全局**：布局是页面级属性，商品级混排无法呈现。魔方的三层优先级里本计划只取全局设置 + cookie 覆盖两层。
+- **展示方式只做全局默认值，不做商品级**：布局是页面级属性，商品级混排无法呈现；访客覆盖只作为「个人浏览偏好」存在本机，不写后端。
+- **2026-10-18 再次放开访客切换**：此前一度以「运营无法确认配置效果」为由关闭用户级覆盖，实际运营反馈是「访客想按自己习惯看列表/卡片」。折中方案：站点默认值决定首屏形态，访客切换只存本机 localStorage，运营用无痕窗口验证默认值。
 - **不引入富文本编辑器**：管理端目前零富文本基础设施（无 wangeditor / tinymce / quill / tiptap，全仓 `v-html` 命中 0）。引入编辑器要连带做净化与预览一致性，成本远高于本次目标；结构化模式 + 高级源码 textarea 已经覆盖运营诉求。
 - **`description_source` 随接口下发**：后台要能预览「留空时长什么样」，而商品列表接口不逐个跑识别（要过一遍商品名正则与全部配置项匹配），因此单独给 `GET /v2/admin/products/{id}/description`。该接口只读——描述是商品的普通字段，随商品表单提交，不开第二个写接口。

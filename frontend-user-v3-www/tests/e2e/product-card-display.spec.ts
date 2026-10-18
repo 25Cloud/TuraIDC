@@ -7,8 +7,9 @@ import { expect, test } from "@playwright/test";
  * 背景：选购页此前只有一种形态——商品规格表格与配置区同页铺开，运营没有任何
  * 表达空间（商品没有可编辑的描述，展示方式也无法按站点偏好调整）。本次新增：
  *
- *   - 全站展示方式由后台「站点设置 → 基础设置」决定，经既有 /v2/site/config 下发；
- *   - 前台不提供用户级切换：排版是站点经营方的决策，同一站点只呈现一种形态；
+ *   - 站点默认展示方式由后台「商品展示」决定，经既有 /v2/site/config 下发；
+ *   - 访客可在选购页分组筛选条上方的切换条自行选择列表/卡片，偏好只存本机
+ *     localStorage，不写后端、不影响其他访客；
  *   - 描述只有一个真源 products.description，留空时按规格维度自动生成
  *     <ul><li>键: 值</li></ul>，由后端 ProductDescriptionService 产出。
  *
@@ -231,13 +232,68 @@ async function mockSiteApi(
 const catalogPath = `/products?type=${TYPE_CODE}&group=${GROUP_ID}`;
 
 test.describe("选购页展示方式与商品描述", () => {
-  test("站点配置为列表式时不渲染卡片网格，且页面不提供切换入口", async ({ page }) => {
+  test("站点默认列表式：不渲染卡片网格，访客可切到卡片式并记住偏好", async ({
+    page,
+  }) => {
     await mockSiteApi(page, "list");
     await page.goto(catalogPath);
 
     await expect(page.locator(".product-card-grid")).toHaveCount(0);
-    // 展示方式只由后台站点设置决定，前台不再提供用户级切换
-    await expect(page.locator(".display-mode-switch")).toHaveCount(0);
+    await expect(page.locator(".desktop-machine-table")).toBeVisible();
+
+    // 切换条在分组筛选条上方、靠右对齐（与筛选条同一行宽度，不悬空）
+    const bar = page.locator(".shop-view-bar");
+    await expect(bar).toBeVisible();
+    const barBox = await bar.boundingBox();
+    const switchBox = await page.locator(".shop-view-switch").boundingBox();
+    expect(barBox).not.toBeNull();
+    expect(switchBox).not.toBeNull();
+    expect(switchBox!.x).toBeGreaterThan(barBox!.x + barBox!.width / 2);
+
+    // 默认形态按钮处于选中态
+    await expect(
+      page.getByRole("button", { name: "列表式", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+
+    // 切到卡片式：网格出现、配置区让位
+    await page.getByRole("button", { name: "卡片式", exact: true }).click();
+    await expect(page.locator(".product-card-grid")).toBeVisible();
+    await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
+    await expect(page.locator(".config-area")).toHaveCount(0);
+
+    // 偏好只存本机，刷新后仍是卡片式（而不是回到站点默认的列表式）。
+    // 先等选中商品从地址里退掉：卡片态地址是 /products（带类型/分组查询），
+    // 若在路由回退完成前刷新，会按旧深链重新选中商品并渲染配置区。
+    await expect
+      .poll(() => new URL(page.url()).pathname)
+      .toBe("/products");
+    await expect
+      .poll(() =>
+        page.evaluate(() => window.localStorage.getItem("turaidc:shop-display-mode")),
+      )
+      .toBe("card");
+    await page.reload();
+    await expect(page.locator(".product-card-grid")).toBeVisible();
+  });
+
+  test("站点默认卡片式：访客切回列表式后恢复表格配置区", async ({ page }) => {
+    await mockSiteApi(page, "card");
+    await page.goto(catalogPath);
+
+    await expect(page.locator(".product-card-grid")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "卡片式", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+
+    await page.getByRole("button", { name: "列表式", exact: true }).click();
+
+    await expect(page.locator(".product-card-grid")).toHaveCount(0);
+    await expect(page.locator(".desktop-machine-table")).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() => window.localStorage.getItem("turaidc:shop-display-mode")),
+      )
+      .toBe("list");
   });
 
   test("卡片式展示卡片网格且不自动选中商品", async ({ page }) => {
@@ -341,6 +397,8 @@ test.describe("选购页展示方式与商品描述", () => {
     await mockSiteApi(page, "list");
     await page.reload();
     await expect(page.locator(".product-card-grid")).toHaveCount(0);
+    // 等目录与配置区真正渲染完再截图，否则会截到加载中的空白页
+    await expect(page.locator(".desktop-machine-table")).toBeVisible();
     await page.screenshot({ path: shot("list-mode"), fullPage: true });
 
     await page.goto(`/products/${PRODUCT_IDS[1]}`);

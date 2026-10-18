@@ -37,6 +37,7 @@
             {{ $t('plugins.index.scan') }}
           </t-button>
         </t-space>
+        <admin-view-mode-switch v-if="!isMobile" inline :mode="viewMode" @change="setViewMode" />
       </div>
     </t-card>
 
@@ -44,7 +45,7 @@
       <t-loading :text="$t('plugins.index.loading')" />
     </div>
     <t-empty v-else-if="plugins.length === 0" :description="$t('plugins.index.empty')" />
-    <section v-else class="plugin-grid">
+    <section v-else-if="isMobile || viewMode === 'card'" class="plugin-grid">
       <article v-for="plugin in plugins" :key="`${plugin.domain}:${plugin.slug}`" class="plugin-card">
         <div class="plugin-card__main">
           <div class="plugin-card__icon">
@@ -74,62 +75,64 @@
         </div>
 
         <div class="plugin-actions">
-          <t-button
-            v-if="!plugin.is_installed && canManagePlugins"
-            theme="primary"
-            :loading="actionLoading === actionKey(plugin, 'install')"
-            @click="installPlugin(plugin)"
-          >
-            {{ $t('plugins.index.install') }}
-          </t-button>
-          <template v-else>
-            <t-button variant="outline" @click="openConfig(plugin)">{{
-              canManagePlugins ? $t('plugins.index.manage') : $t('plugins.index.view')
-            }}</t-button>
-            <t-button
-              v-if="plugin.is_enabled && canManagePlugins"
-              theme="warning"
-              variant="outline"
-              :loading="actionLoading === actionKey(plugin, 'disable')"
-              @click="disablePlugin(plugin)"
-            >
-              {{ $t('plugins.index.disable') }}
-            </t-button>
-            <t-button
-              v-else-if="canManagePlugins"
-              theme="success"
-              variant="outline"
-              :loading="actionLoading === actionKey(plugin, 'enable')"
-              :disabled="isEnableDisabled(plugin)"
-              :title="enableDisabledReason(plugin)"
-              @click="enablePlugin(plugin)"
-            >
-              {{ $t('plugins.index.enable') }}
-            </t-button>
-            <t-button
-              v-if="canTestPlugins"
-              variant="text"
-              :loading="actionLoading === actionKey(plugin, 'health')"
-              @click="healthCheck(plugin)"
-            >
-              {{ $t('plugins.index.healthCheck') }}
-            </t-button>
-            <t-button v-if="plugin.id && plugin.is_enabled" variant="text" @click="openRuntimeLogs(plugin)">
-              {{ $t('plugins.index.logs') }}
-            </t-button>
-            <t-button
-              v-if="canManagePlugins && !plugin.is_enabled"
-              theme="danger"
-              variant="text"
-              :loading="actionLoading === actionKey(plugin, 'delete')"
-              @click="deletePlugin(plugin)"
-            >
-              {{ $t('plugins.index.delete') }}
-            </t-button>
-          </template>
+          <plugin-actions
+            :plugin="plugin"
+            :action-loading="actionLoading"
+            :can-manage="canManagePlugins"
+            :can-test="canTestPlugins"
+            :enable-reason="enableDisabledReason(plugin)"
+            @install="installPlugin(plugin)"
+            @config="openConfig(plugin)"
+            @disable="disablePlugin(plugin)"
+            @enable="enablePlugin(plugin)"
+            @health="healthCheck(plugin)"
+            @logs="openRuntimeLogs(plugin)"
+            @delete="deletePlugin(plugin)"
+          />
         </div>
       </article>
     </section>
+
+    <t-card v-else :bordered="false" class="plugins-table-card">
+      <t-table row-key="slug" :data="plugins" :columns="columns" hover table-layout="fixed">
+        <template #name="{ row }">
+          <div class="plugin-name-cell">
+            <strong>{{ row.name }}</strong>
+            <span>{{ row.slug }} / {{ row.key }}</span>
+          </div>
+        </template>
+        <template #domain="{ row }">{{ domainLabel(row.domain) }}</template>
+        <template #version="{ row }">v{{ row.version || '-' }}</template>
+        <template #status="{ row }">
+          <t-tag :theme="row.is_enabled ? 'success' : row.is_installed ? 'warning' : 'default'" variant="light">
+            {{ pluginStatusText(row) }}
+          </t-tag>
+        </template>
+        <template #runtime="{ row }">
+          <t-tag v-if="row.latest_runtime_log" size="small" variant="light" :theme="runtimeStatusTheme(row)">
+            {{ latestRuntimeText(row) }}
+          </t-tag>
+          <span v-else class="plugin-runtime-empty">{{ $t('plugins.index.runtimeNone') }}</span>
+        </template>
+        <template #actions="{ row }">
+          <plugin-actions
+            :plugin="row"
+            :action-loading="actionLoading"
+            :can-manage="canManagePlugins"
+            :can-test="canTestPlugins"
+            :enable-reason="enableDisabledReason(row)"
+            size="small"
+            @install="installPlugin(row)"
+            @config="openConfig(row)"
+            @disable="disablePlugin(row)"
+            @enable="enablePlugin(row)"
+            @health="healthCheck(row)"
+            @logs="openRuntimeLogs(row)"
+            @delete="deletePlugin(row)"
+          />
+        </template>
+      </t-table>
+    </t-card>
 
     <t-drawer
       v-model:visible="configVisible"
@@ -586,8 +589,9 @@
 <script setup lang="ts">
 import './index.less';
 
+import { useMediaQuery } from '@vueuse/core';
 import { BrowseIcon, BrowseOffIcon, ChevronRightIcon, MoreIcon } from 'tdesign-icons-vue-next';
-import type { DropdownOption } from 'tdesign-vue-next';
+import type { DropdownOption, PrimaryTableCol } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -601,12 +605,16 @@ import type {
 } from '@/api/admin/plugins';
 import { pluginsApi } from '@/api/admin/plugins';
 import { settingsApi } from '@/api/admin/settings';
+import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
 import SecretInput from '@/components/secret-input/index.vue';
+import { useAdminViewMode } from '@/composables/useAdminViewMode';
 import { AdminPermissions } from '@/constants/permissions';
 import { useGeeTestCaptcha } from '@/hooks/useGeeTestCaptcha';
 import { t } from '@/locales';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
+
+import PluginActions from './PluginActions.vue';
 
 defineOptions({ name: 'AdminIntegrationPlugins' });
 
@@ -636,6 +644,9 @@ const domainTabs: Array<{ value: IntegrationPluginDomain; label: string }> = [
 ];
 
 const singleEnabledDomains = new Set<IntegrationPluginDomain>(['captcha', 'verification', 'mail', 'sms']);
+const isMobile = useMediaQuery('(max-width: 768px)');
+// 插件原只有卡片形态，默认取 card；列表式给需要逐行扫状态与运行记录的场景
+const { mode: viewMode, setMode: setViewMode } = useAdminViewMode('admin-integration-plugins', 'card');
 const activeDomain = ref<IntegrationPluginDomain>(resolveRouteDomain());
 const plugins = ref<IntegrationPluginRecord[]>([]);
 const loading = ref(false);
@@ -663,6 +674,19 @@ const smtpAccountForm = reactive<SmtpAccountForm>({
 });
 
 const currentSchema = computed(() => currentPlugin.value?.config_schema || []);
+
+/**
+ * 列表视图列：只保留管理员扫一眼要判断的字段（是什么、哪个域、版本、状态、最近运行）。
+ * 操作按钮与卡片视图共用 PluginActions，启用/停用条件不会两边分叉。
+ */
+const columns: PrimaryTableCol[] = [
+  { colKey: 'name', title: t('plugins.index.columnPlugin'), minWidth: 220 },
+  { colKey: 'domain', title: t('plugins.index.columnDomain'), width: 130 },
+  { colKey: 'version', title: t('plugins.index.columnVersion'), width: 100 },
+  { colKey: 'status', title: t('plugins.index.columnStatus'), width: 110 },
+  { colKey: 'runtime', title: t('plugins.index.columnRuntime'), width: 160 },
+  { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 380 },
+];
 
 /** 可折叠分组的收起状态，键为该分组 divider 的 key */
 const collapsedSections = ref<Record<string, boolean>>({});
@@ -1742,10 +1766,6 @@ function fieldOptions(field: IntegrationPluginConfigSchema) {
 
 function domainLabel(domain: string) {
   return domainTabs.find((item) => item.value === domain)?.label || domain;
-}
-
-function isEnableDisabled(plugin: IntegrationPluginRecord) {
-  return enableDisabledReason(plugin) !== '';
 }
 
 function enableDisabledReason(plugin: IntegrationPluginRecord) {

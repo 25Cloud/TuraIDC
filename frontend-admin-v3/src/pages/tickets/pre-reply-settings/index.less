@@ -3,21 +3,96 @@
     border-radius: var(--td-radius-large, 8px);
   }
 
+  /*
+   * 卡片内头部：左侧说明、右侧保存。
+   * 此前只有一枚孤零零的保存按钮贴在卡片右上角，下面直接接表单，页头像少了标题。
+   */
   .ticket-pre-reply-toolbar {
     display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 16px;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
   }
 
-  .ticket-pre-reply-hint {
-    margin-left: 8px;
-    color: var(--td-text-color-placeholder);
-    font-size: var(--td-font-size-body-small, 13px);
+  .ticket-pre-reply-summary {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+
+    strong {
+      color: var(--td-text-color-primary);
+      font-size: var(--td-font-size-title-medium, 18px);
+    }
+
+    span {
+      color: var(--td-text-color-secondary);
+      font-size: var(--td-font-size-body-small, 13px);
+      line-height: 1.6;
+    }
   }
 
   .ticket-pre-reply-form {
-    max-width: 720px;
+    max-width: 880px;
+
+    /* 控件与说明统一按「控件 + 可伸缩说明」两段排，窄屏说明整段换行 */
+    .t-form__item {
+      margin-bottom: 20px;
+    }
+
+    .t-form__controls-content {
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 12px;
+    }
+
+    .t-select {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .t-textarea {
+      width: 100%;
+    }
+  }
+
+  /*
+   * 说明文字：不再用 margin-left 紧贴控件。
+   * 之前 8px 间距 + 默认行高让开关和说明像同一个标签，窄屏还会被挤成一条窄条。
+   */
+  .ticket-pre-reply-hint {
+    flex: 1 1 280px;
+    min-width: 0;
+    color: var(--td-text-color-secondary);
+    font-size: var(--td-font-size-body-small, 13px);
+    line-height: 1.7;
+  }
+}
+
+@media (width <= 768px) {
+  .ticket-pre-reply-page {
+    .ticket-pre-reply-toolbar {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .ticket-pre-reply-toolbar .t-button {
+      width: 100%;
+    }
+
+    .ticket-pre-reply-form {
+      .t-form__item {
+        margin-bottom: 18px;
+      }
+
+      .t-select {
+        max-width: none;
+      }
+    }
+
+    .ticket-pre-reply-hint {
+      flex: 1 1 100%;
+    }
   }
 }

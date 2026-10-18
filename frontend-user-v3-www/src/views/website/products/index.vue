@@ -10,9 +10,11 @@
       v-loading="pageLoading"
     >
       <section class="mobile-stage-card mobile-stage-card--intro">
-        <h1 class="mobile-stage-title">{{ $t('product.list.breadcrumbRoot') }}</h1>
+        <h1 class="mobile-stage-title">
+          {{ $t("product.list.breadcrumbRoot") }}
+        </h1>
         <p class="mobile-stage-desc">
-          {{ $t('product.list.mobileStageDesc') }}
+          {{ $t("product.list.mobileStageDesc") }}
         </p>
       </section>
 
@@ -42,7 +44,9 @@
           </p>
           <div class="mobile-type-foot">
             <span>{{ type.slogan || "继续浏览该目录下的可售商品" }}</span>
-            <span class="mobile-type-link">{{ $t('product.list.enterSubdirectory') }}</span>
+            <span class="mobile-type-link">{{
+              $t("product.list.enterSubdirectory")
+            }}</span>
           </div>
         </button>
       </div>
@@ -56,9 +60,9 @@
         :class="{ collapsed: sidebarCollapsed }"
       >
         <div class="sidebar-head">
-          <span class="sidebar-head-text" v-show="!sidebarCollapsed"
-            >{{ $t('product.group.level1') }}</span
-          >
+          <span class="sidebar-head-text" v-show="!sidebarCollapsed">{{
+            $t("product.group.level1")
+          }}</span>
           <button
             class="sidebar-toggle"
             @click="sidebarCollapsed = !sidebarCollapsed"
@@ -97,6 +101,127 @@
       <div class="shop-body">
         <!-- 中间配置区 -->
         <div class="shop-main" v-loading="pageLoading">
+          <!--
+            展示方式：站点默认值决定首屏形态，访客可在右侧自行切换。
+            放在分组筛选条上方并右对齐——不抢占配置区的视觉重心；
+            手机端不展示（移动端始终是卡片/选择器形态，切换没有意义）。
+          -->
+          <div v-if="!isMobile" class="shop-view-bar">
+            <div class="shop-view-bar__summary">
+              <span class="shop-view-bar__name">{{
+                activeChildName || activeGroupName || activeTypeLabel
+              }}</span>
+              <span
+                v-if="visibleProducts.length"
+                class="shop-view-bar__count"
+                >{{
+                  $t("product.list.productCount", {
+                    count: visibleProducts.length,
+                  })
+                }}</span
+              >
+            </div>
+            <div
+              class="shop-view-switch"
+              role="group"
+              :aria-label="$t('product.list.displayMode')"
+            >
+              <button
+                type="button"
+                class="shop-view-switch__btn"
+                :class="{ 'is-active': displayMode === DISPLAY_MODE_CARD }"
+                :aria-pressed="displayMode === DISPLAY_MODE_CARD"
+                @click="handleDisplayModeChange(DISPLAY_MODE_CARD)"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="2"
+                    y="2"
+                    width="5.2"
+                    height="5.2"
+                    rx="1.2"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="8.8"
+                    y="2"
+                    width="5.2"
+                    height="5.2"
+                    rx="1.2"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="2"
+                    y="8.8"
+                    width="5.2"
+                    height="5.2"
+                    rx="1.2"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="8.8"
+                    y="8.8"
+                    width="5.2"
+                    height="5.2"
+                    rx="1.2"
+                    fill="currentColor"
+                  />
+                </svg>
+                <span>{{ $t("product.list.displayCard") }}</span>
+              </button>
+              <button
+                type="button"
+                class="shop-view-switch__btn"
+                :class="{ 'is-active': displayMode === DISPLAY_MODE_LIST }"
+                :aria-pressed="displayMode === DISPLAY_MODE_LIST"
+                @click="handleDisplayModeChange(DISPLAY_MODE_LIST)"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <circle cx="3" cy="4" r="1.15" fill="currentColor" />
+                  <circle cx="3" cy="8" r="1.15" fill="currentColor" />
+                  <circle cx="3" cy="12" r="1.15" fill="currentColor" />
+                  <rect
+                    x="6"
+                    y="3.25"
+                    width="8"
+                    height="1.5"
+                    rx="0.75"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="6"
+                    y="7.25"
+                    width="8"
+                    height="1.5"
+                    rx="0.75"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="6"
+                    y="11.25"
+                    width="8"
+                    height="1.5"
+                    rx="0.75"
+                    fill="currentColor"
+                  />
+                </svg>
+                <span>{{ $t("product.list.displayList") }}</span>
+              </button>
+            </div>
+          </div>
+
           <div v-if="isMobile" class="mobile-picker-row mobile-picker-row--duo">
             <div class="mobile-picker-col">
               <div class="config-block-title">一级分组 / 二级分组</div>
@@ -187,7 +312,10 @@
             </el-tabs>
           </div>
 
-          <!-- 展示方式由后台「站点设置 → 基础设置」统一决定，页面不提供用户级切换 -->
+          <!--
+            展示方式：后台「商品展示」决定站点默认形态，访客可在上方切换条
+            按自己的习惯选择（仅本机记忆）。两种形态共用同一份接口数据。
+          -->
 
           <!-- 卡片式：商品卡片网格。卡片只做辨认与比价，点击进入独立的 /products/:id 配置页 -->
           <ProductCardGrid
@@ -247,9 +375,9 @@
               v-if="osConfig && !isMobile && !machineConfigs.length"
             >
               <template>
-                <div class="config-block-title">{{
-                  $t('product.list.osInstall')
-                }}</div>
+                <div class="config-block-title">
+                  {{ $t("product.list.osInstall") }}
+                </div>
                 <div class="os-section">
                   <div v-if="osGroups.length" class="os-cards">
                     <button
@@ -279,7 +407,7 @@
                           currentOsVersionLabel
                         }}</span>
                         <span v-else class="os-placeholder">{{
-                          $t('product.list.selectVersion')
+                          $t("product.list.selectVersion")
                         }}</span>
                       </div>
                       <span
@@ -290,14 +418,14 @@
                     </button>
                   </div>
                   <div v-else class="spec-fixed">
-                    {{ $t('product.list.noSwitchableOsVersion') }}
+                    {{ $t("product.list.noSwitchableOsVersion") }}
                   </div>
                   <div
                     class="os-ver-row"
                     v-if="currentOsGroup?.versions?.length"
                   >
                     <span class="os-ver-label">{{
-                      $t('product.osPicker.version')
+                      $t("product.osPicker.version")
                     }}</span>
                     <div class="os-ver-btns">
                       <button
@@ -801,7 +929,7 @@
                       v-if="currentOsGroup?.versions?.length"
                     >
                       <span class="os-ver-label">{{
-                        $t('product.osPicker.version')
+                        $t("product.osPicker.version")
                       }}</span>
                       <div class="os-ver-btns">
                         <button
@@ -1174,7 +1302,7 @@
               :class="{ 'cost-detail--loading': quoteLoading }"
             >
               <div class="cost-item">
-                <span>{{ $t('layout.nav.products') }}</span
+                <span>{{ $t("layout.nav.products") }}</span
                 ><span>{{
                   selectedProductSummaryName || selectedProductDisplayName
                 }}</span>
@@ -1188,7 +1316,7 @@
                 ><span>{{ item.value }}</span>
               </div>
               <div class="cost-item" v-if="selectedCycleLabel">
-                <span>{{ $t('product.list.cycle') }}</span
+                <span>{{ $t("product.list.cycle") }}</span
                 ><span>{{ selectedCycleLabel }}</span>
               </div>
             </div>
@@ -1200,11 +1328,11 @@
               :class="{ 'cost-breakdown--loading': quoteLoading }"
             >
               <div class="cost-item">
-                <span>{{ $t('product.detail.basePrice') }}</span
+                <span>{{ $t("product.detail.basePrice") }}</span
                 ><span>¥{{ baseAmount }}</span>
               </div>
               <div class="cost-item" v-if="Number(setupFee) > 0">
-                <span>{{ $t('product.detail.setupFee') }}</span
+                <span>{{ $t("product.detail.setupFee") }}</span
                 ><span>¥{{ setupFee }}</span>
               </div>
               <div
@@ -1217,7 +1345,7 @@
               </div>
               <div class="cost-item cost-item--discount" v-if="appliedCoupon">
                 <span
-                  >{{ $t('product.detail.coupon') }}
+                  >{{ $t("product.detail.coupon") }}
                   {{ appliedCoupon.code }}</span
                 ><span>-¥{{ appliedCoupon.discount_amount }}</span>
               </div>
@@ -1238,7 +1366,7 @@
             <div class="coupon-panel">
               <div class="coupon-panel-head">
                 <span class="coupon-panel-title">{{
-                  $t('product.detail.coupon')
+                  $t("product.detail.coupon")
                 }}</span>
                 <button
                   v-if="appliedCoupon"
@@ -1246,7 +1374,7 @@
                   class="coupon-clear-btn"
                   @click="clearCoupon"
                 >
-                  {{ $t('product.coupon.remove') }}
+                  {{ $t("product.coupon.remove") }}
                 </button>
               </div>
               <div class="coupon-panel-form">
@@ -1266,7 +1394,7 @@
               </div>
               <div v-if="appliedCoupon" class="coupon-panel-tip">
                 {{
-                  $t('product.coupon.appliedTip', {
+                  $t("product.coupon.appliedTip", {
                     name: appliedCoupon.name,
                     discount: appliedCoupon.discount_label,
                     amount: appliedCoupon.discount_amount,
@@ -1277,7 +1405,7 @@
                 v-else-if="quoteLoading"
                 class="coupon-panel-tip coupon-panel-tip--muted"
               >
-                {{ $t('product.coupon.loading') }}
+                {{ $t("product.coupon.loading") }}
               </div>
               <div
                 v-else-if="!availableCoupons.length"
@@ -1285,8 +1413,8 @@
               >
                 {{
                   selectedProduct
-                    ? $t('product.coupon.noneAvailable')
-                    : $t('product.coupon.selectProductFirst')
+                    ? $t("product.coupon.noneAvailable")
+                    : $t("product.coupon.selectProductFirst")
                 }}
               </div>
             </div>
@@ -1298,13 +1426,13 @@
               :class="{ 'cost-total--loading': quoteLoading }"
             >
               <span class="cost-total-label">{{
-                $t('product.detail.totalCost')
+                $t("product.detail.totalCost")
               }}</span>
               <div class="cost-price-wrap">
                 <template v-if="quoteLoading">
                   <span class="cost-currency">¥</span>
                   <span class="cost-amount cost-amount--loading">{{
-                    $t('product.detail.calculating')
+                    $t("product.detail.calculating")
                   }}</span>
                 </template>
                 <template v-else-if="hasAgentDiscount">
@@ -1395,10 +1523,10 @@
                 /></el-icon>
                 {{
                   appliedCoupon
-                    ? $t('product.coupon.usedAmount', {
+                    ? $t("product.coupon.usedAmount", {
                         amount: appliedCoupon.discount_amount,
                       })
-                    : $t('product.coupon.use')
+                    : $t("product.coupon.use")
                 }}
               </button>
             </div>
@@ -1475,13 +1603,13 @@
 
           <div class="mobile-cost-table-card">
             <div class="mobile-cost-table-head">
-              <span>{{ $t('product.list.costDetailsLabel') }}</span>
+              <span>{{ $t("product.list.costDetailsLabel") }}</span>
               <strong>共{{ mobileCostRows.length }}项</strong>
             </div>
             <div class="mobile-cost-table">
               <div class="mobile-cost-table-header">
-                <span>{{ $t('product.list.configName') }}</span>
-                <span>{{ $t('product.list.configDetail') }}</span>
+                <span>{{ $t("product.list.configName") }}</span>
+                <span>{{ $t("product.list.configDetail") }}</span>
                 <span>{{
                   hasAgentDiscount || appliedCoupon
                     ? "折后价已优惠"
@@ -1498,7 +1626,7 @@
                 <span class="mobile-cost-table-amount">¥{{ row.amount }}</span>
               </div>
               <div class="mobile-cost-table-total">
-                <span>{{ $t('product.list.grandTotalLabel') }}</span>
+                <span>{{ $t("product.list.grandTotalLabel") }}</span>
                 <strong>¥{{ totalPrice }}</strong>
               </div>
             </div>
@@ -1517,7 +1645,7 @@
           <div class="coupon-panel">
             <div class="coupon-panel-head">
               <span class="coupon-panel-title">{{
-                $t('product.list.selectCoupon')
+                $t("product.list.selectCoupon")
               }}</span>
               <button
                 v-if="appliedCoupon"
@@ -1525,7 +1653,7 @@
                 class="coupon-clear-btn"
                 @click="clearCoupon"
               >
-                {{ $t('product.coupon.remove') }}
+                {{ $t("product.coupon.remove") }}
               </button>
             </div>
             <div class="coupon-panel-form">
@@ -1545,7 +1673,7 @@
             </div>
             <div v-if="appliedCoupon" class="coupon-panel-tip">
               {{
-                $t('product.coupon.appliedTip', {
+                $t("product.coupon.appliedTip", {
                   name: appliedCoupon.name,
                   discount: appliedCoupon.discount_label,
                   amount: appliedCoupon.discount_amount,
@@ -1556,7 +1684,7 @@
               v-else-if="quoteLoading"
               class="coupon-panel-tip coupon-panel-tip--muted"
             >
-              {{ $t('product.coupon.loading') }}
+              {{ $t("product.coupon.loading") }}
             </div>
             <div
               v-else-if="!availableCoupons.length"
@@ -1564,8 +1692,8 @@
             >
               {{
                 selectedProduct
-                  ? $t('product.coupon.noneAvailable')
-                  : $t('product.coupon.selectProductFirst')
+                  ? $t("product.coupon.noneAvailable")
+                  : $t("product.coupon.selectProductFirst")
               }}
             </div>
           </div>
@@ -1662,9 +1790,9 @@
         <div class="mobile-drawer-sheet">
           <div class="mobile-drawer-head">
             <div>
-              <div class="mobile-drawer-title">{{
-                $t('product.group.level1')
-              }}</div>
+              <div class="mobile-drawer-title">
+                {{ $t("product.group.level1") }}
+              </div>
               <p class="mobile-drawer-desc">
                 一级分组：{{ activeTypeLabel || "未选择" }}
               </p>
@@ -1674,7 +1802,7 @@
               class="mobile-drawer-switch"
               @click="returnToMobileTypePicker"
             >
-              {{ $t('product.list.switchLevel1Group') }}
+              {{ $t("product.list.switchLevel1Group") }}
             </button>
           </div>
 
@@ -1839,18 +1967,16 @@ import MobileOsPicker from "@/components/MobileOsPicker.vue";
 import MobileOptionPicker from "@/components/MobileOptionPicker.vue";
 import MobileRangePicker from "@/components/MobileRangePicker.vue";
 import MobileSheet from "@/components/MobileSheet.vue";
-import { t } from '@/locales';
+import { t } from "@/locales";
 import { resolveProductDisplayName } from "@/utils/websiteProductConfig";
 import ProductCardGrid from "./ProductCardGrid.vue";
 import {
   DISPLAY_MODE_CARD,
+  DISPLAY_MODE_LIST,
   useProductDisplayMode,
 } from "./useProductDisplayMode";
 import { useProductDisplaySettings } from "./useProductDisplaySettings";
-import {
-  formatMoneyText,
-  formatProductListPrice,
-} from "./productPrice";
+import { formatMoneyText, formatProductListPrice } from "./productPrice";
 import {
   buildInstanceSpecName,
   buildMachineSpecDisplayName,
@@ -1862,12 +1988,12 @@ import {
 } from "@/domains/products/machineSpecResolver";
 
 /**
- * 展示方式：只由后台「站点设置 → 基础设置」决定，页面不提供用户级覆盖。
- * 排版是经营方的决策，同一站点必须只呈现一种形态，否则运营无法确认自己配置的效果。
+ * 展示方式：站点默认值来自后台「商品展示」，访客可在选购页右上角自行切换。
+ * 访客的选择只存本机 localStorage，换浏览器/清缓存后回到站点默认值。
  * 两种形态共用同一份接口数据：列表式读 spec_highlights 填表格列，
  * 卡片式读 description_html 填卡片描述。
  */
-const { displayMode } = useProductDisplayMode();
+const { displayMode, setDisplayMode } = useProductDisplayMode();
 
 // 版心与卡片库存同样只认后台配置：卡片式铺满整条视口会与独立配置页的居中版心割裂
 const { isContained, contentMaxWidthVar, cardShowStock } =
@@ -1956,12 +2082,36 @@ const {
   switchGroup,
   switchChild,
   selectProduct,
+  resetSelectedProduct,
+  syncDefaultProduct,
 } = useWebsiteProductsPage({ autoSelectProduct });
 
 // 选中商品后不再显示卡片网格，直接进入配置区（深链 /products/t/g/c/p 亦如此）
 const showCardGrid = computed(
   () => displayMode.value === DISPLAY_MODE_CARD && !selectedProduct.value,
 );
+
+/**
+ * 切换展示方式时同步选中态：
+ *  - 切到卡片式必须清空选中商品（网格只在无选中态时渲染，且路由要退回分组）；
+ *  - 切回列表式按目录默认规则重新选中（有深链商品则保留，否则第一个）。
+ */
+function handleDisplayModeChange(mode) {
+  if (mode === displayMode.value) {
+    return;
+  }
+
+  setDisplayMode(mode);
+
+  if (mode === DISPLAY_MODE_CARD) {
+    // forceRoute：跳过深链保护，把地址上的商品 ID 一并退掉，
+    // 否则刷新后会被当成商品深链重新选中商品，卡片偏好不生效
+    resetSelectedProduct({ syncRoute: true, forceRoute: true });
+    return;
+  }
+
+  syncDefaultProduct(visibleProducts.value, { syncRoute: true });
+}
 
 const mobileOsDrawer = ref(false);
 const mobileIntroDrawer = ref(false);
@@ -2202,7 +2352,7 @@ const mobileCostRows = computed(() => {
   if (selectedProduct.value) {
     rows.push({
       key: "product",
-      label: t('product.list.configName'),
+      label: t("product.list.configName"),
       detail:
         selectedProductSummaryName.value ||
         resolveProductDisplayName(selectedProduct.value),
