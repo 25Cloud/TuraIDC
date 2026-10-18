@@ -49,6 +49,11 @@ class V2SiteHomeApiTest extends TestCase
             'brand_primary_color',
             'brand_radius',
             'product_display_mode',
+            // 选购页展示层开关：卡片库存 / 机型对比 / 版心与最大宽度
+            'product_card_show_stock',
+            'product_detail_spec_compare',
+            'product_page_layout',
+            'product_page_max_width',
         ], array_keys($response->json('data')));
         $this->assertNoSensitiveKeys($response->json());
         $this->assertLessThan(50 * 1024, strlen((string) $response->getContent()));
@@ -65,6 +70,37 @@ class V2SiteHomeApiTest extends TestCase
         // 写脏值必须回落到列表式，避免站点出现第三种未知排版
         Setting::setValue('basic', 'product_display_mode', 'weird');
         $this->assertSame('list', $this->getJson('/api/v2/site/config')->json('data.product_display_mode'));
+    }
+
+    public function test_site_config_exposes_product_layout_switches(): void
+    {
+        // 默认值：卡片显示库存、配置页显示机型对比、版心居中 1280
+        $response = $this->getJson('/api/v2/site/config')->assertOk();
+        $this->assertSame('1', $response->json('data.product_card_show_stock'));
+        $this->assertSame('1', $response->json('data.product_detail_spec_compare'));
+        $this->assertSame('contained', $response->json('data.product_page_layout'));
+        $this->assertSame('1280', $response->json('data.product_page_max_width'));
+
+        Setting::setValue('basic', 'product_card_show_stock', '0');
+        Setting::setValue('basic', 'product_detail_spec_compare', 'false');
+        Setting::setValue('basic', 'product_page_layout', 'full');
+        Setting::setValue('basic', 'product_page_max_width', '1600');
+
+        $response = $this->getJson('/api/v2/site/config')->assertOk();
+        $this->assertSame('0', $response->json('data.product_card_show_stock'));
+        $this->assertSame('0', $response->json('data.product_detail_spec_compare'));
+        $this->assertSame('full', $response->json('data.product_page_layout'));
+        $this->assertSame('1600', $response->json('data.product_page_max_width'));
+
+        // 脏值必须收敛：未知版心回落 contained，宽度夹到可读区间，开关回落默认
+        Setting::setValue('basic', 'product_page_layout', 'weird');
+        Setting::setValue('basic', 'product_page_max_width', '100');
+        Setting::setValue('basic', 'product_card_show_stock', 'maybe');
+
+        $response = $this->getJson('/api/v2/site/config')->assertOk();
+        $this->assertSame('contained', $response->json('data.product_page_layout'));
+        $this->assertSame('960', $response->json('data.product_page_max_width'));
+        $this->assertSame('1', $response->json('data.product_card_show_stock'));
     }
 
     public function test_site_config_exposes_icp_record_and_value_added_license(): void

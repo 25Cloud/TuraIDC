@@ -5,6 +5,27 @@
   background: #fff;
 }
 
+/*
+ * 版心：后台「商品展示」可配置为居中限宽（contained）或铺满（full）。
+ * 独立配置页一直是居中版心，选购页此前铺满整条视口，宽屏下两者割裂；
+ * 默认改回居中，最大宽度由 --shop-content-max 下发。
+ */
+.shop-wrap--contained {
+  width: min(100%, var(--shop-content-max, 1280px));
+  margin-right: auto;
+  margin-left: auto;
+  border-right: 1px solid $divider-color;
+  border-left: 1px solid $divider-color;
+  box-sizing: border-box;
+
+  /* 移动端侧栏收起，限宽只会白占两侧边距 */
+  @media (max-width: 900px) {
+    width: 100%;
+    border-right: 0;
+    border-left: 0;
+  }
+}
+
 .mobile-type-stage {
   width: min(100%, 760px);
   margin: 0 auto;

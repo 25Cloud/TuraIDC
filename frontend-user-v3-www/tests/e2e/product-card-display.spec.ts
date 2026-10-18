@@ -117,7 +117,8 @@ function buildProduct(index: number) {
     primary_cycle: "monthly",
     primary_price: monthly,
     setup_fee: "0.00",
-    stock: -1,
+    // 第三张卡片故意设成售罄，用来锚定库存徽标与「不可选购」状态
+    stock: index === 2 ? 0 : -1,
     auto_setup: 1,
     spec_highlights: [],
     spec_highlight_text: "",
@@ -129,7 +130,11 @@ function buildProduct(index: number) {
 
 const PRODUCTS = PRODUCT_IDS.map((_, index) => buildProduct(index));
 
-async function mockSiteApi(page: Page, displayMode: "list" | "card") {
+async function mockSiteApi(
+  page: Page,
+  displayMode: "list" | "card",
+  siteConfigOverrides: Record<string, unknown> = {},
+) {
   await page.route("**/api/v2/site/**", async (route) => {
     const url = new URL(route.request().url());
     const pathname = url.pathname.replace(/^\/api/, "");
@@ -144,6 +149,7 @@ async function mockSiteApi(page: Page, displayMode: "list" | "card") {
         site_name: "测试站点",
         // 全站展示方式：后台设定值，与 ProductDescriptionService::normalizeDisplayMode 同口径
         product_display_mode: displayMode,
+        ...siteConfigOverrides,
       });
     }
 
@@ -257,6 +263,57 @@ test.describe("选购页展示方式与商品描述", () => {
     // 人工填写的描述保留富文本结构
     await expect(cards.nth(1).locator(".product-card-desc strong")).toBeVisible();
     await expect(cards.nth(1).locator(".product-card-desc a")).toHaveAttribute("href", "https://example.com/help");
+  });
+
+  test("卡片展示库存徽标，售罄卡片不可选购", async ({ page }) => {
+    await mockSiteApi(page, "card");
+    await page.goto(catalogPath);
+
+    const cards = page.locator(".product-card");
+    // 有货：后台开启「卡片显示库存」时的常态徽标
+    await expect(cards.nth(0).locator(".product-card-flag--ok")).toHaveText("有货");
+    // 售罄：无论开关如何都要提示，且按钮不可点
+    await expect(cards.nth(2).locator(".product-card-flag--danger")).toHaveText("已售罄");
+    await expect(cards.nth(2).locator(".product-card-buy")).toBeDisabled();
+  });
+
+  test("点击卡片正文也能进入独立配置页", async ({ page }) => {
+    await mockSiteApi(page, "card");
+    await page.goto(catalogPath);
+
+    // 此前只有「立即选购」按钮绑了跳转，点卡片正文没反应
+    await page.locator(".product-card").nth(0).locator(".product-card-name").click();
+
+    await expect(page).toHaveURL(new RegExp(`/products/${PRODUCT_IDS[0]}$`));
+  });
+
+  test("选购页版心按后台配置居中限宽，可切换铺满", async ({ page }) => {
+    // 默认：居中 1280（接口未下发版心字段时的兜底）
+    await mockSiteApi(page, "card");
+    await page.goto(catalogPath);
+
+    const shopWrap = page.locator(".shop-wrap");
+    await expect(shopWrap).toHaveClass(/shop-wrap--contained/);
+    await expect(shopWrap).toHaveAttribute(
+      "style",
+      /--shop-content-max:\s*1280px/,
+    );
+
+    // 后台改成铺满 + 自定义宽度：不再限宽，但宽度值仍按配置下发
+    await page.unroute("**/api/v2/site/**");
+    await mockSiteApi(page, "card", {
+      product_page_layout: "full",
+      product_page_max_width: "1600",
+    });
+    await page.reload();
+
+    await expect(page.locator(".shop-wrap")).not.toHaveClass(
+      /shop-wrap--contained/,
+    );
+    await expect(page.locator(".shop-wrap")).toHaveAttribute(
+      "style",
+      /--shop-content-max:\s*1600px/,
+    );
   });
 
   test("点立即选购进入独立配置页，配置页展示描述", async ({ page }) => {

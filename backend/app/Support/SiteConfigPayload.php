@@ -34,6 +34,24 @@ class SiteConfigPayload
     /** 全站默认圆角（px）：对齐项目规范「容器 6px、控件 3px」，即取 TDesign medium */
     public const DEFAULT_BRAND_RADIUS = 6;
 
+    /** 卡片式商品卡片是否展示库存：默认展示，运营可在后台独立页面关掉 */
+    public const DEFAULT_PRODUCT_CARD_SHOW_STOCK = '1';
+
+    /** 独立配置页是否展示「机型对比」表：默认展示 */
+    public const DEFAULT_PRODUCT_DETAIL_SPEC_COMPARE = '1';
+
+    /** 选购页版心：contained=居中并限制最大宽度，full=铺满 */
+    public const DEFAULT_PRODUCT_PAGE_LAYOUT = 'contained';
+
+    /** 选购页版心最大宽度（px），仅 contained 生效 */
+    public const DEFAULT_PRODUCT_PAGE_MAX_WIDTH = 1280;
+
+    private const PRODUCT_PAGE_LAYOUTS = ['contained', 'full'];
+
+    private const PRODUCT_PAGE_MAX_WIDTH_MIN = 960;
+
+    private const PRODUCT_PAGE_MAX_WIDTH_MAX = 1920;
+
     /** 圆角上限：超过后控件会呈胶囊状，界面比例失衡，直接回退默认 */
     private const BRAND_RADIUS_MAX = 24;
 
@@ -88,6 +106,30 @@ class SiteConfigPayload
                     ProductDescriptionService::DEFAULT_DISPLAY_MODE
                 )
             ),
+            // 选购页展示层的四个开关（后台「商品展示」独立页面维护）：
+            // 卡片是否展示库存、独立配置页是否展示机型对比、版心是否居中、版心最大宽度。
+            'product_card_show_stock' => self::normalizeFlag(
+                self::read(self::SETTING_GROUP_BASIC, 'product_card_show_stock', self::DEFAULT_PRODUCT_CARD_SHOW_STOCK),
+                self::DEFAULT_PRODUCT_CARD_SHOW_STOCK
+            ),
+            'product_detail_spec_compare' => self::normalizeFlag(
+                self::read(
+                    self::SETTING_GROUP_BASIC,
+                    'product_detail_spec_compare',
+                    self::DEFAULT_PRODUCT_DETAIL_SPEC_COMPARE
+                ),
+                self::DEFAULT_PRODUCT_DETAIL_SPEC_COMPARE
+            ),
+            'product_page_layout' => self::normalizePageLayout(
+                self::read(self::SETTING_GROUP_BASIC, 'product_page_layout', self::DEFAULT_PRODUCT_PAGE_LAYOUT)
+            ),
+            'product_page_max_width' => (string) self::normalizePageMaxWidth(
+                self::read(
+                    self::SETTING_GROUP_BASIC,
+                    'product_page_max_width',
+                    (string) self::DEFAULT_PRODUCT_PAGE_MAX_WIDTH
+                )
+            ),
             'frontend_url' => (string) config('app.frontend_url', ''),
         ];
     }
@@ -117,6 +159,50 @@ class SiteConfigPayload
     private static function resolveManagedAsset(string $value): string
     {
         return UploadUrl::resolve($value) ?? '';
+    }
+
+    /**
+     * 布尔开关统一收敛成 '1' / '0'，脏值回落默认值。
+     *
+     * 开关值会进首屏配置与运营决策路径（卡片是否显示库存、是否显示机型对比），
+     * 出现第三种取值会让前台判断分叉，所以这里只认常见的真/假写法。
+     */
+    private static function normalizeFlag(string $value, string $default): string
+    {
+        $normalized = strtolower(trim($value));
+
+        if (in_array($normalized, ['1', 'true', 'on', 'yes'], true)) {
+            return '1';
+        }
+
+        if (in_array($normalized, ['0', 'false', 'off', 'no'], true)) {
+            return '0';
+        }
+
+        return $default;
+    }
+
+    private static function normalizePageLayout(string $value): string
+    {
+        $normalized = strtolower(trim($value));
+
+        return in_array($normalized, self::PRODUCT_PAGE_LAYOUTS, true)
+            ? $normalized
+            : self::DEFAULT_PRODUCT_PAGE_LAYOUT;
+    }
+
+    /**
+     * 版心最大宽度限制在可读区间：太窄会挤坏机型表，太宽等于没限制。
+     */
+    private static function normalizePageMaxWidth(string $value): int
+    {
+        $width = (int) trim($value);
+
+        if ($width <= 0) {
+            return self::DEFAULT_PRODUCT_PAGE_MAX_WIDTH;
+        }
+
+        return min(max($width, self::PRODUCT_PAGE_MAX_WIDTH_MIN), self::PRODUCT_PAGE_MAX_WIDTH_MAX);
     }
 
     /**

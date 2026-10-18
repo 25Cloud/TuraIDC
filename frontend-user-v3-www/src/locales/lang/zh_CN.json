@@ -160,6 +160,8 @@
     "card": {
       "buyNow": "立即选购",
       "soldOut": "已售罄",
+      "inStock": "有货",
+      "stockLeft": "仅剩 {count} 台",
       "noDescription": "暂无商品描述",
       "priceOnRequest": "价格面议",
       "empty": "当前分类暂无商品"

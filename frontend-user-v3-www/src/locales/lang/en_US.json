@@ -160,6 +160,8 @@
     "card": {
       "buyNow": "Buy now",
       "soldOut": "Sold out",
+      "inStock": "In stock",
+      "stockLeft": "{count} left",
       "noDescription": "No description yet",
       "priceOnRequest": "Price on request",
       "empty": "No products in this category yet"

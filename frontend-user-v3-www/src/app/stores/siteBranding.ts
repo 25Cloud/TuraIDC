@@ -29,6 +29,39 @@ function normalizeDisplayMode(value) {
   return String(value || "").trim().toLowerCase() === "card" ? "card" : "list";
 }
 
+/** 站点后台的布尔开关统一是 '1' / '0'，缺省或脏值走调用方给的默认值 */
+function normalizeSiteFlag(value, fallback: boolean): boolean {
+  const normalized = String(value ?? "").trim().toLowerCase();
+
+  if (["1", "true", "on", "yes"].includes(normalized)) {
+    return true;
+  }
+
+  if (["0", "false", "off", "no"].includes(normalized)) {
+    return false;
+  }
+
+  return fallback;
+}
+
+/** 选购页版心：contained=居中限宽，full=铺满；未知值回落居中 */
+function normalizePageLayout(value) {
+  return String(value || "").trim().toLowerCase() === "full"
+    ? "full"
+    : "contained";
+}
+
+/** 版心最大宽度夹在可读区间，避免后台写脏值后把机型表挤坏或等于没限制 */
+function normalizePageMaxWidth(value, fallback = 1280) {
+  const width = Number(String(value ?? "").trim());
+
+  if (!Number.isFinite(width) || width <= 0) {
+    return fallback;
+  }
+
+  return Math.min(Math.max(Math.round(width), 960), 1920);
+}
+
 function pick(raw, keys, fallback) {
   for (const key of keys) {
     const value = raw?.[key];
@@ -159,6 +192,28 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
   const productDisplayMode = ref(
     normalizeDisplayMode(pick(initialSiteConfig, ["product_display_mode"], "")),
   );
+  // 选购页展示层开关：卡片是否展示库存、独立配置页是否展示机型对比、版心与最大宽度。
+  // 与展示方式一样只认后台设置，不提供用户级覆盖。
+  const productCardShowStock = ref(
+    normalizeSiteFlag(
+      pick(initialSiteConfig, ["product_card_show_stock"], ""),
+      true,
+    ),
+  );
+  const productDetailSpecCompare = ref(
+    normalizeSiteFlag(
+      pick(initialSiteConfig, ["product_detail_spec_compare"], ""),
+      true,
+    ),
+  );
+  const productPageLayout = ref(
+    normalizePageLayout(pick(initialSiteConfig, ["product_page_layout"], "")),
+  );
+  const productPageMaxWidth = ref(
+    normalizePageMaxWidth(
+      pick(initialSiteConfig, ["product_page_max_width"], ""),
+    ),
+  );
   const brandInitials = computed(() => deriveInitials(siteName.value));
 
   let fetchPromise = null;
@@ -257,6 +312,21 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
     productDisplayMode.value = normalizeDisplayMode(
       pick(data, ["product_display_mode"], productDisplayMode.value),
     );
+    productCardShowStock.value = normalizeSiteFlag(
+      pick(data, ["product_card_show_stock"], ""),
+      productCardShowStock.value,
+    );
+    productDetailSpecCompare.value = normalizeSiteFlag(
+      pick(data, ["product_detail_spec_compare"], ""),
+      productDetailSpecCompare.value,
+    );
+    productPageLayout.value = normalizePageLayout(
+      pick(data, ["product_page_layout"], productPageLayout.value),
+    );
+    productPageMaxWidth.value = normalizePageMaxWidth(
+      pick(data, ["product_page_max_width"], ""),
+      productPageMaxWidth.value,
+    );
     syncDocumentTitle(
       browserTitle.value || siteName.value || DEFAULT_SITE_NAME,
       previousBaseTitle,
@@ -320,6 +390,10 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
     icpRecord,
     valueAddedLicense,
     productDisplayMode,
+    productCardShowStock,
+    productDetailSpecCompare,
+    productPageLayout,
+    productPageMaxWidth,
     brandInitials,
     toggleSidebar,
     applyPageTitle,

@@ -13,9 +13,12 @@
     >
       <header class="product-card-head">
         <h3 class="product-card-name" :title="card.name">{{ card.name }}</h3>
-        <span v-if="card.soldOut" class="product-card-flag">{{
-          $t('product.card.soldOut')
-        }}</span>
+        <span
+          v-if="card.stock"
+          class="product-card-flag"
+          :class="`product-card-flag--${card.stock.tone}`"
+          >{{ card.stock.text }}</span
+        >
       </header>
 
       <!--
@@ -34,7 +37,9 @@
       <footer class="product-card-foot">
         <div class="product-card-price">
           <template v-if="card.price.hasAgentPrice">
-            <span class="agent-price-original">¥{{ card.price.agentOriginal }}</span>
+            <span class="agent-price-original"
+              >¥{{ card.price.agentOriginal }}</span
+            >
             <em v-if="card.price.agentPercent" class="discount-tag">{{
               card.price.agentPercent
             }}</em>
@@ -66,6 +71,7 @@
 <script setup>
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import { t } from "@/locales";
 import { resolveProductDisplayName } from "@/utils/websiteProductConfig";
 import { resolveCardPrice } from "./productPrice";
 
@@ -74,9 +80,47 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  // 卡片是否展示库存由后台「商品展示」页面控制；售罄标记不受这个开关影响
+  showStock: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const router = useRouter();
+
+/**
+ * 库存徽标：售罄永远展示（关系到能不能下单），
+ * 库存充足 / 仅剩 N 台只在后台开启「卡片显示库存」时展示。
+ */
+function resolveStockBadge(product) {
+  const stock = Number(product?.stock);
+
+  if (!Number.isFinite(stock)) {
+    return null;
+  }
+
+  if (stock === 0) {
+    return { tone: "danger", text: t("product.card.soldOut") };
+  }
+
+  if (!props.showStock) {
+    return null;
+  }
+
+  if (stock > 0 && stock <= 10) {
+    return {
+      tone: "warn",
+      text: t("product.card.stockLeft", { count: stock }),
+    };
+  }
+
+  if (stock === -1 || stock > 10) {
+    return { tone: "ok", text: t("product.card.inStock") };
+  }
+
+  return null;
+}
 
 /**
  * 卡片式是「选商品 → 进配置页」两步，与魔方 public/themes/cart/default/product.tpl
@@ -89,9 +133,16 @@ const cards = computed(() =>
     name: resolveProductDisplayName(product),
     description: String(product?.description_html || ""),
     soldOut: Number(product?.stock ?? -1) === 0,
+    stock: resolveStockBadge(product),
     price: resolveCardPrice(product),
+    selected: false,
   })),
 );
+
+// 卡片整块可点：此前只有「立即选购」按钮绑了跳转，点卡片正文没有任何反应
+function select(card) {
+  openConfigure(card?.id);
+}
 
 function openConfigure(id) {
   if (!id) {

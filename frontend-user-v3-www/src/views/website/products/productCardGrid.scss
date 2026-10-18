@@ -1,29 +1,52 @@
 /* ===== 卡片式商品网格 ===== */
 /*
- * 形态参考魔方 public/themes/cart/default/product.tpl：col-sm-4 的卡片网格，
- * 卡片承载「名称 + 描述 + 价格 + 立即选购」，点击后进入独立的配置页。
- * 这里改用 CSS Grid + auto-fill，容器宽度变化时列数自然重排，不再依赖断点写死列数。
+ * 形态参考魔方 public/themes/cart/default/product.tpl：卡片网格承载
+ * 「名称 + 库存 + 描述 + 价格 + 立即选购」，点击后进入独立的 /products/:id 配置页。
+ *
+ * 排版约束（此前踩过的坑）：
+ *   - 网格必须自带左右内边距，否则卡片直接顶到侧栏与费用栏的边框上，看着「没边距」；
+ *   - 卡片列宽要有上限，宽屏铺满时一列能拉到五六百像素、内容被拉散；
+ *   - 底部价格/按钮用一条分隔带固定住，卡片高度不一时按钮仍落在同一条线上。
  */
 
 .product-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
-  gap: 14px;
-  padding: 4px 0 24px;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  align-items: stretch;
+  gap: 16px;
+  padding: 18px 20px 28px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    padding: 14px 14px 20px;
+  }
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .product-card {
   display: flex;
   flex-direction: column;
-  min-height: 208px;
+  min-width: 0;
+  /* 列宽上限：宽屏下不让一张卡片横跨大半个屏幕 */
+  max-width: 360px;
   background: $bg-color-card;
   border: 1px solid $divider-color;
   border-radius: 6px;
-  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
 
   &:hover {
     border-color: $color-primary-border;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
   }
 }
 
@@ -55,30 +78,48 @@
 .product-card-flag {
   flex-shrink: 0;
   padding: 1px 7px;
-  font-size: 12px;
-  color: $color-danger;
-  background: $color-danger-soft;
   border-radius: 3px;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+
+  &--danger {
+    color: $color-danger;
+    background: $color-danger-soft;
+  }
+
+  &--warn {
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.14);
+  }
+
+  &--ok {
+    color: #15803d;
+    background: rgba(34, 197, 94, 0.12);
+  }
 }
 
 .product-card-desc {
   flex: 1;
   margin: 0;
-  padding: 10px 16px 4px;
-  font-size: 13px;
-  line-height: 1.75;
+  padding: 8px 16px 12px;
+  font-size: 12.5px;
+  line-height: 1.7;
   color: $text-color-secondary;
   word-break: break-word;
+  /* 描述长短不一：限高后卡片高度收敛，超出的维度点进配置页再看 */
+  max-height: 148px;
+  overflow: hidden;
 
   /* v-html 渲染的是商家填写的富文本片段，scoped 选择器打不到内部节点 */
   :deep(ul),
   :deep(ol) {
     margin: 0;
-    padding-left: 18px;
+    padding-left: 16px;
   }
 
   :deep(li) {
-    margin: 2px 0;
+    margin: 1px 0;
   }
 
   :deep(li::marker) {
@@ -86,15 +127,15 @@
   }
 
   :deep(p) {
-    margin: 0 0 6px;
+    margin: 0 0 4px;
   }
 
   :deep(h1),
   :deep(h2),
   :deep(h3),
   :deep(h4) {
-    margin: 0 0 6px;
-    font-size: 14px;
+    margin: 0 0 4px;
+    font-size: 13px;
     font-weight: 600;
   }
 
@@ -105,7 +146,7 @@
 
   :deep(td),
   :deep(th) {
-    padding: 4px 6px;
+    padding: 2px 4px;
     border: 1px solid $divider-color;
   }
 
@@ -119,19 +160,26 @@
   color: $text-color-placeholder;
 }
 
+/* 底部动作带：价格与按钮同一条基线，整条带子用浅底与分隔线立起来 */
 .product-card-foot {
+  margin-top: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 12px 16px 14px;
+  padding: 10px 16px;
+  border-top: 1px solid $divider-color;
+  background: $bg-color-soft;
 }
 
 .product-card-price {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: $color-accent-orange;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   .agent-price-original {
     margin-right: 4px;
@@ -157,6 +205,9 @@
 
 .product-card-buy {
   flex-shrink: 0;
+  height: 30px;
+  padding: 0 14px;
+  font-size: 13px;
 }
 
 .product-card-empty {

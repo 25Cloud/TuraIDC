@@ -1,5 +1,9 @@
 <template>
-  <div class="shop-wrap">
+  <div
+    class="shop-wrap"
+    :class="{ 'shop-wrap--contained': isContained }"
+    :style="{ '--shop-content-max': contentMaxWidthVar }"
+  >
     <div
       v-if="showMobileTypePicker"
       class="mobile-type-stage"
@@ -190,6 +194,7 @@
             v-if="showCardGrid"
             class="product-card-grid-wrap"
             :products="visibleProducts"
+            :show-stock="cardShowStock"
           />
 
           <div
@@ -1841,6 +1846,7 @@ import {
   DISPLAY_MODE_CARD,
   useProductDisplayMode,
 } from "./useProductDisplayMode";
+import { useProductDisplaySettings } from "./useProductDisplaySettings";
 import {
   formatMoneyText,
   formatProductListPrice,
@@ -1862,6 +1868,10 @@ import {
  * 卡片式读 description_html 填卡片描述。
  */
 const { displayMode } = useProductDisplayMode();
+
+// 版心与卡片库存同样只认后台配置：卡片式铺满整条视口会与独立配置页的居中版心割裂
+const { isContained, contentMaxWidthVar, cardShowStock } =
+  useProductDisplaySettings();
 
 // 卡片式不自动选中第一个商品：没有选中态才展示卡片网格，
 // 选中态交给 /products/:id 独立配置页承载。

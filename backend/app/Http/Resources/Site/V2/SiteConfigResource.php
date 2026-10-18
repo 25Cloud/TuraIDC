@@ -35,6 +35,12 @@ class SiteConfigResource extends JsonResource
         // 它只在 SiteConfigPayload 里算出来、这里漏登记过一次，导致后台配了也不生效，
         // 新增站点级字段时务必两处同时改（回归用例见 V2SiteHomeApiTest）。
         'product_display_mode',
+        // 选购页展示层开关（后台「商品展示」独立页面维护）：
+        // 卡片是否展示库存 / 独立配置页是否展示机型对比 / 版心居中或铺满 / 版心最大宽度。
+        'product_card_show_stock',
+        'product_detail_spec_compare',
+        'product_page_layout',
+        'product_page_max_width',
     ];
 
     /**

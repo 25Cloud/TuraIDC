@@ -294,7 +294,7 @@ function buildQuote(options: QuoteOptions = {}) {
 
 async function mockSiteApi(
   page: Page,
-  options: { quote?: QuoteOptions } = {},
+  options: { quote?: QuoteOptions; siteConfig?: Record<string, unknown> } = {},
 ) {
   await page.route("**/api/v2/site/**", async (route) => {
     const url = new URL(route.request().url());
@@ -306,7 +306,7 @@ async function mockSiteApi(
       });
 
     if (pathname === "/v2/site/config") {
-      return respond({ site_name: "测试站点" });
+      return respond({ site_name: "测试站点", ...(options.siteConfig || {}) });
     }
 
     // 机型对比表的数据源
@@ -442,6 +442,59 @@ test.describe("独立配置页选配与报价", () => {
 
     await expect(page).toHaveURL(new RegExp(`/products/${SIBLING_PRODUCT_ID}$`));
     await expect(page.locator(".pd-body")).toBeVisible();
+  });
+
+  test("顶部只保留返回按钮，不再重复机型 tab 与产品名下栏", async ({ page }) => {
+    await mockSiteApi(page);
+    await page.goto(detailPath);
+    await expect(page.locator(".pd-body")).toBeVisible();
+
+    // 返回入口：此前这里是「分类」，点它只会把用户丢回列表
+    await expect(page.locator(".pd-topbar .back-btn")).toBeVisible();
+    await expect(page.locator(".pd-topbar .category-btn")).toHaveCount(0);
+
+    // 机型切换只保留机型对比表这一处；顶部重复的 tab 与产品名下栏已删除
+    await expect(page.locator(".sib-tab")).toHaveCount(0);
+    await expect(page.locator(".pd-name-bar")).toHaveCount(0);
+    await expect(page.locator(".pd-sku")).toBeVisible();
+  });
+
+  test("后台关闭机型对比后不再渲染对比表", async ({ page }) => {
+    await mockSiteApi(page, {
+      siteConfig: { product_detail_spec_compare: "0" },
+    });
+    await page.goto(detailPath);
+    await expect(page.locator(".pd-body")).toBeVisible();
+
+    await expect(page.locator(".pd-sku")).toHaveCount(0);
+  });
+
+  test("后台把版心配成铺满时独立配置页跟随铺满", async ({ page }) => {
+    await mockSiteApi(page, {
+      siteConfig: { product_page_layout: "full" },
+    });
+    await page.goto(detailPath);
+    await expect(page.locator(".pd-body")).toBeVisible();
+
+    await expect(page.locator(".pd-page")).toHaveClass(/pd-page--full/);
+  });
+
+  test("后台配置的版心最大宽度生效", async ({ page }) => {
+    await mockSiteApi(page, {
+      siteConfig: {
+        product_page_layout: "contained",
+        product_page_max_width: "1400",
+      },
+    });
+    await page.goto(detailPath);
+    await expect(page.locator(".pd-body")).toBeVisible();
+
+    await expect(page.locator(".pd-page")).not.toHaveClass(/pd-page--full/);
+    // 最大宽度以 CSS 变量下发，样式里统一按它限宽
+    await expect(page.locator(".pd-page")).toHaveAttribute(
+      "style",
+      /--pd-content-max:\s*1400px/,
+    );
   });
 });
 

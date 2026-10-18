@@ -4,84 +4,35 @@
     后续任何重载（切换系统、切换付费周期等触发的状态刷新）都不能再盖住整页，
     否则每次改动都像整页重新刷了一下，配置项还会短暂不可点。
   -->
-  <div class="pd-page" v-loading="loading && !product">
+  <div
+    class="pd-page"
+    :class="{ 'pd-page--full': !isContained }"
+    :style="isContained ? { '--pd-content-max': contentMaxWidthVar } : undefined"
+    v-loading="loading && !product"
+  >
     <div v-if="product">
-      <!-- 顶部工具栏：分类 + 型号横向Tab -->
+      <!--
+        顶部只留返回：机型切换在机型对比表（移动端在抽屉）里，
+        此前这里还有一排同级 tab + 一条产品名下栏，与下方内容完全重复且占掉首屏。
+      -->
       <div class="pd-topbar">
-        <button
-          type="button"
-          class="category-btn"
-          @click="router.push('/products')"
-        >
-          <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
-            <rect
-              x="1"
-              y="1"
-              width="6"
-              height="6"
-              rx="1"
-              stroke="currentColor"
-              stroke-width="1.5"
-            />
-            <rect
-              x="9"
-              y="1"
-              width="6"
-              height="6"
-              rx="1"
-              stroke="currentColor"
-              stroke-width="1.5"
-            />
-            <rect
-              x="1"
-              y="9"
-              width="6"
-              height="6"
-              rx="1"
-              stroke="currentColor"
-              stroke-width="1.5"
-            />
-            <rect
-              x="9"
-              y="9"
-              width="6"
-              height="6"
-              rx="1"
-              stroke="currentColor"
-              stroke-width="1.5"
-            />
-          </svg>
-          <span>{{ $t('product.detail.category') }}</span>
-        </button>
-
-        <!-- 同级机型快速切换：桌面端与机型对比表并存，移动端走抽屉选择器 -->
-        <div class="sibling-scroll" v-if="!isMobile && skuRows.length > 1">
-          <button
-            v-for="sib in skuRows"
-            :key="sib.id"
-            type="button"
-            class="sib-tab"
-            :class="{ active: sib.id === product.id }"
-            @click="switchProduct(sib.id)"
+        <button type="button" class="back-btn" @click="goBack">
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            width="14"
+            height="14"
+            aria-hidden="true"
           >
-            {{ sib.name }}
-          </button>
-        </div>
-      </div>
-
-      <!-- 产品名称下拉按钮 -->
-      <div class="pd-name-bar">
-        <button type="button" class="product-name-btn active">
-          <span>{{ selectedMachineSpec.displayName }}</span>
-          <svg viewBox="0 0 12 12" fill="none" width="12" height="12">
             <path
-              d="M3 4.5l3 3 3-3"
+              d="M10 3L5 8l5 5"
               stroke="currentColor"
-              stroke-width="1.5"
+              stroke-width="1.6"
               stroke-linecap="round"
               stroke-linejoin="round"
             />
           </svg>
+          <span>{{ $t('product.detail.backToProducts') }}</span>
         </button>
       </div>
 
@@ -118,7 +69,10 @@
         （/v2/site/product-groups/{id}/products），独立配置页不再只有一排同级 tab，
         可以直接比较规格与价格后再切换机型。
       -->
-      <section v-if="!isMobile && skuRows.length > 1" class="pd-sku">
+      <section
+        v-if="detailSpecCompare && !isMobile && skuRows.length > 1"
+        class="pd-sku"
+      >
         <div class="pd-sku-head">
           <h2 class="pd-sku-title">机型对比</h2>
           <span class="pd-sku-hint">点击任意机型切换配置与报价</span>
@@ -283,8 +237,11 @@
             >
           </el-alert>
 
-          <!-- 移动端：同级机型（SKU）收进抽屉，桌面端用下面的对比表 -->
-          <div class="cfg-group" v-if="isMobile && skuOptions.length > 1">
+          <!-- 移动端：同级机型（SKU）收进抽屉，桌面端用下面的对比表；后台可整体关闭 -->
+          <div
+            class="cfg-group"
+            v-if="detailSpecCompare && isMobile && skuOptions.length > 1"
+          >
             <div class="cfg-group-head">产品规格</div>
             <div class="cfg-group-body">
               <button
@@ -918,7 +875,7 @@
       @confirm="confirmMobileConfigSelection"
     />
     <MobileOptionPicker
-      v-if="skuOptions.length > 1"
+      v-if="detailSpecCompare && skuOptions.length > 1"
       :visible="mobileSkuPicker"
       title="产品规格"
       :options="skuOptions"
@@ -1039,6 +996,7 @@ import { updatePageMeta } from "@/utils/pageMeta";
 import { resolveCpuBrandBadge } from "@/domains/products/cpuBrandBadge";
 import { resolveMachineSpecPresentation } from "@/domains/products/machineSpecResolver";
 import { formatProductListPrice } from "@/views/website/products/productPrice";
+import { useProductDisplaySettings } from "@/views/website/products/useProductDisplaySettings";
 import { useWebsiteProductConfigurator } from "@/domains/products/useWebsiteProductConfigurator";
 import MobileOptionPicker from "@/components/MobileOptionPicker.vue";
 import MobileOsPicker from "@/components/MobileOsPicker.vue";
@@ -1047,6 +1005,23 @@ import MobileSheet from "@/components/MobileSheet.vue";
 
 const route = useRoute();
 const router = useRouter();
+
+// 版心与「机型对比」开关都由后台「商品展示」页面控制，与选购页共用同一份配置
+const { isContained, contentMaxWidthVar, detailSpecCompare } =
+  useProductDisplaySettings();
+
+/**
+ * 顶部返回：能回上一页就回上一页（多来自列表或卡片），
+ * 直接落地（外链、刷新）时退回商品列表，避免把用户甩出站外。
+ */
+function goBack() {
+  if (router.options.history.state.back) {
+    router.back();
+    return;
+  }
+
+  router.push("/products");
+}
 const userStore = useUserStore();
 
 const loading = ref(false);
@@ -2013,7 +1988,6 @@ onBeforeUnmount(() => {
    .pd-desc 曾经漏在这一组里，导致「商品描述」整块通栏、左右没有边距，
    与上下卡片（顶栏 / 头部 / 主体）对不齐。 */
 .pd-topbar,
-.pd-name-bar,
 .pd-hero,
 .pd-desc,
 .pd-sku,
@@ -2025,6 +1999,11 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
 }
 
+/* 版心铺满：后台把选购页版心配成「铺满」时，独立配置页跟随同一决策 */
+.pd-page--full {
+  --pd-content-max: 100vw;
+}
+
 /* ===== 顶部工具栏 ===== */
 .pd-topbar {
   display: flex;
@@ -2034,13 +2013,17 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.category-btn {
+/*
+ * 顶部只保留返回：入口可能来自列表、卡片或站外，能回上一页就回上一页。
+ * 此前这里放的是「分类」按钮，点它只会把用户丢回商品列表，返回意图落空。
+ */
+.back-btn {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   height: 34px;
-  padding: 0 12px;
+  padding: 0 12px 0 10px;
   border: 1px solid #d0d3d9;
   border-radius: 4px;
   background: #fff;
@@ -2060,47 +2043,6 @@ onBeforeUnmount(() => {
   svg {
     color: #86909c;
   }
-}
-
-.sibling-scroll {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-.sib-tab {
-  flex-shrink: 0;
-  height: 34px;
-  padding: 0 14px;
-  border: 1px solid #d0d3d9;
-  border-radius: 4px;
-  background: #fff;
-  color: #4e5969;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s;
-
-  &:hover {
-    border-color: #165dff;
-    color: #165dff;
-  }
-  &.active {
-    border-color: #165dff;
-    background: #165dff;
-    color: #fff;
-    font-weight: 600;
-  }
-}
-
-/* ===== 产品名称栏 ===== */
-.pd-name-bar {
-  /* 纵向间距保留，横向交由上面的统一容器规则控制 */
-  padding: 10px 0 0;
 }
 
 .pd-hero {
@@ -2163,41 +2105,6 @@ onBeforeUnmount(() => {
   color: #4e5969;
   font-size: 12px;
   white-space: nowrap;
-}
-
-.product-name-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 14px;
-  border: 1px solid #d0d3d9;
-  border-radius: 4px;
-  background: #fff;
-  color: #1d2129;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  max-width: 100%;
-
-  span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  svg {
-    flex-shrink: 0;
-    color: #86909c;
-  }
-
-  &.active {
-    border-color: #165dff;
-    color: #165dff;
-    svg {
-      color: #165dff;
-    }
-  }
 }
 
 /* ===== 主体 ===== */
@@ -2496,83 +2403,6 @@ onBeforeUnmount(() => {
   color: #c45656;
   line-height: 1.7;
   word-break: break-word;
-}
-
-/* ===== 步进器 ===== */
-.stepper {
-  display: inline-flex;
-  align-items: stretch;
-  border: 1px solid #d0d3d9;
-  border-radius: 4px;
-  overflow: hidden;
-  height: 34px;
-}
-
-.stepper-dec,
-.stepper-inc {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  border: none;
-  background: #fafafa;
-  color: #4e5969;
-  cursor: pointer;
-  transition: background 0.15s;
-  flex-shrink: 0;
-
-  &:hover:not(:disabled) {
-    background: #e8f1ff;
-    color: #165dff;
-  }
-  &:disabled {
-    opacity: 0.38;
-    cursor: not-allowed;
-  }
-}
-
-.stepper-dec {
-  border-right: 1px solid #d0d3d9;
-}
-.stepper-inc {
-  border-left: 1px solid #d0d3d9;
-}
-
-.stepper-val {
-  width: 52px;
-  border: none;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1d2129;
-  background: #fff;
-  outline: none;
-
-  &::-webkit-outer-spin-button,
-  &::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-  }
-}
-
-/* ===== 操作系统双列 ===== */
-.os-row {
-  display: flex;
-  gap: 12px;
-}
-
-.os-col {
-  flex: 1;
-  min-width: 0;
-
-  :deep(.el-select) {
-    width: 100%;
-  }
-}
-
-.os-col-label {
-  font-size: 12px;
-  color: #86909c;
-  margin-bottom: 6px;
 }
 
 /* ===== 计费周期 ===== */
