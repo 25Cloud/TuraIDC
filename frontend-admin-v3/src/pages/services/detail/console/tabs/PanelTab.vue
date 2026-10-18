@@ -2,13 +2,14 @@
   <section class="console-panel-section">
     <data-state :loading="detailLoading" :empty="false" description="">
       <!-- 流量概览：CDN / 虚拟主机唯一有真实用量的指标 -->
-      <t-card v-if="trafficOverviewVisible" class="console-panel" :title="$t('services.console.trafficOverview')" :bordered="false">
+      <t-card
+        v-if="trafficOverviewVisible"
+        class="console-panel"
+        :title="$t('services.console.trafficOverview')"
+        :bordered="false"
+      >
         <div class="detail-grid detail-grid--info">
-          <info-cell
-            :label="$t('services.console.usedTraffic')"
-            :value="detail.traffic?.usage_label || '0G'"
-            strong
-          />
+          <info-cell :label="$t('services.console.usedTraffic')" :value="detail.traffic?.usage_label || '0G'" strong />
           <info-cell
             :label="$t('services.console.trafficLimit')"
             :value="detail.traffic?.limit_label || $t('services.console.unlimited')"
@@ -54,12 +55,7 @@
             copyable
             @copy="copyText"
           />
-          <info-cell
-            :label="primaryHostnameLabel"
-            :value="primaryHostnameValue"
-            copyable
-            @copy="copyText"
-          />
+          <info-cell :label="primaryHostnameLabel" :value="primaryHostnameValue" copyable @copy="copyText" />
           <info-cell :label="$t('services.console.expireTime')" :value="detail.expires_at || '--'" strong />
           <info-cell :label="$t('services.console.billingCycle')" :value="detail.billing_cycle_label || '--'" strong />
         </div>
@@ -92,20 +88,10 @@
           />
         </div>
         <template v-if="panelUrl || panelPassword" #actions>
-          <t-button
-            v-if="revealedPassword"
-            variant="outline"
-            size="small"
-            @click="revealedPassword = false"
-          >
+          <t-button v-if="revealedPassword" variant="outline" size="small" @click="revealedPassword = false">
             {{ $t('services.console.hidePassword') }}
           </t-button>
-          <t-button
-            v-else-if="panelPassword"
-            variant="outline"
-            size="small"
-            @click="revealedPassword = true"
-          >
+          <t-button v-else-if="panelPassword" variant="outline" size="small" @click="revealedPassword = true">
             {{ $t('services.console.showPassword') }}
           </t-button>
           <t-button v-if="panelUrl" theme="primary" size="small" @click="openPanel">
@@ -116,7 +102,12 @@
       </t-card>
 
       <!-- 功能支持：CDN 的 WAF / 四层转发 / Websocket 等，值本身就是支持与否 -->
-      <t-card v-if="capabilities.length" class="console-panel" :title="$t('services.console.featureSupport')" :bordered="false">
+      <t-card
+        v-if="capabilities.length"
+        class="console-panel"
+        :title="$t('services.console.featureSupport')"
+        :bordered="false"
+      >
         <div class="panel-capability-grid">
           <div v-for="item in capabilities" :key="item.key" class="panel-capability-item">
             <span class="panel-capability-label">{{ item.label }}</span>
@@ -128,22 +119,10 @@
       </t-card>
 
       <!-- 配置分组：替代云主机的CPU / 内存 / 系统盘规格表 -->
-      <t-card
-        v-for="group in groups"
-        :key="group.title"
-        class="console-panel"
-        :title="group.title"
-        :bordered="false"
-      >
+      <t-card v-for="group in groups" :key="group.title" class="console-panel" :title="group.title" :bordered="false">
         <p class="panel-group-hint">{{ group.hint }}</p>
         <div class="detail-grid detail-grid--config">
-          <info-cell
-            v-for="item in group.items"
-            :key="item.key"
-            :label="item.label"
-            :value="item.value"
-            strong
-          />
+          <info-cell v-for="item in group.items" :key="item.key" :label="item.label" :value="item.value" strong />
         </div>
       </t-card>
 
@@ -156,16 +135,15 @@
     </data-state>
   </section>
 </template>
-
 <script setup lang="ts">
-import { JumpIcon } from 'tdesign-icons-vue-next';
 import DataState from '@shared/user-v3/components/DataState.vue';
+import { JumpIcon } from 'tdesign-icons-vue-next';
 import { computed, ref } from 'vue';
 
-import { InfoCell } from '../InfoCell';
 import { useServiceConsoleContext } from '../context';
-import { splitPanelSpecs } from './panelSpecs';
+import { InfoCell } from '../InfoCell';
 import type { PanelCapabilityState } from './panelSpecs';
+import { splitPanelSpecs } from './panelSpecs';
 
 const { detail, detailLoading, serviceId, copyText } = useServiceConsoleContext();
 
@@ -221,11 +199,7 @@ const primaryHostnameLabel = computed(() => {
 
 const primaryHostnameValue = computed(() => {
   const connection = detail.value.connection;
-  return (
-    String(connection?.hostname || '').trim() ||
-    String(connection?.dedicated_ip || '').trim() ||
-    '--'
-  );
+  return String(connection?.hostname || '').trim() || String(connection?.dedicated_ip || '').trim() || '--';
 });
 
 const panelSpecs = computed(() => splitPanelSpecs(detail.value.specs || []));
@@ -244,7 +218,7 @@ const isTrafficOverWarning = computed(() => (trafficPercent.value ?? 0) >= 80);
 
 const trafficOverviewVisible = computed(() => detail.value.traffic?.limited === true || trafficPercent.value !== null);
 
-const progressTheme = computed(() => (isTrafficOverWarning.value ? 'warning' : 'primary'));
+const _progressTheme = computed(() => (isTrafficOverWarning.value ? 'warning' : 'primary'));
 
 function capabilityTheme(state: PanelCapabilityState): 'success' | 'default' | 'warning' {
   if (state === 'supported') return 'success';
@@ -252,7 +226,6 @@ function capabilityTheme(state: PanelCapabilityState): 'success' | 'default' | '
   return 'warning';
 }
 </script>
-
 <style lang="less" scoped>
 .panel-group-hint {
   margin: 0 0 var(--td-comp-margin-s, 12px);

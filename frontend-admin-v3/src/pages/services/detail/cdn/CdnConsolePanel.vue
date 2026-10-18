@@ -356,8 +356,12 @@ const serviceUpstreamForm = reactive({
 });
 const serviceUpstreamOptions = ref<Array<{ id: number; label: string }>>([]);
 const serviceUpstreamRules: Record<string, FormRule[]> = {
-  supplier_id: [{ validator: validateUpstreamPair, message: t('services.cdnConsole.upstreamInstanceIdRequired'), type: 'error' }],
-  upstream_host_id: [{ validator: validateUpstreamPair, message: t('services.cdnConsole.upstreamInterfaceRequired'), type: 'error' }],
+  supplier_id: [
+    { validator: validateUpstreamPair, message: t('services.cdnConsole.upstreamInstanceIdRequired'), type: 'error' },
+  ],
+  upstream_host_id: [
+    { validator: validateUpstreamPair, message: t('services.cdnConsole.upstreamInterfaceRequired'), type: 'error' },
+  ],
 };
 
 const servicePricingVisible = ref(false);
@@ -383,7 +387,7 @@ const servicePricingEntries = computed(() =>
 );
 
 const serviceRefundVisible = ref(false);
-const serviceRefundSubmitting = ref(false);
+const _serviceRefundSubmitting = ref(false);
 const serviceRefundFormRef = ref<FormInstanceFunctions>();
 const serviceRefundForm = reactive({ refund_method: 'balance' as 'balance' | 'original', remark: '' });
 const refundRules: Record<string, FormRule[]> = {
