@@ -160,7 +160,7 @@
       "hideCatalogNav": "Hide catalog",
       "showCatalogNav": "Show catalog",
       "catalogTitle": "Product catalog",
-      "catalogBack": "Back to {name}",
+      "catalogBackUp": "Back one level",
       "groupEmpty": "No groups available under this category"
     },
     "cpuBadge": {

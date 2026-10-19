@@ -160,7 +160,7 @@
       "hideCatalogNav": "收起目录",
       "showCatalogNav": "展开目录",
       "catalogTitle": "商品目录",
-      "catalogBack": "返回「{name}」",
+      "catalogBackUp": "返回上级",
       "groupEmpty": "该分类下暂无可选分组"
     },
     "cpuBadge": {

@@ -37,9 +37,7 @@
               stroke-linejoin="round"
             />
           </svg>
-          <span>{{
-            $t("product.list.catalogBack", { name: drilledGroup.name })
-          }}</span>
+          <span>{{ $t("product.list.catalogBackUp") }}</span>
         </button>
 
         <button
