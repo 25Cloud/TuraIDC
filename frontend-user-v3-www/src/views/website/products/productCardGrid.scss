@@ -295,6 +295,23 @@
   }
 }
 
+/*
+ * 售罄卡片的「立即选购」必须明确不可点：Element Plus 的 primary 禁用态只是浅蓝
+ * （#a0cfff 一类），在一排蓝色主按钮里看着仍像能点。这里压成中性灰、去掉主按钮的
+ * 阴影与位移，并把指针改成 not-allowed。
+ */
+.product-card--sold-out .product-card-buy.is-disabled,
+.product-card--sold-out .product-card-buy.is-disabled:hover,
+.product-card-buy:disabled,
+.product-card-buy:disabled:hover {
+  background: $divider-color;
+  border-color: $divider-color;
+  color: $text-color-placeholder;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .product-card-empty {
   grid-column: 1 / -1;
   padding: 40px 0;

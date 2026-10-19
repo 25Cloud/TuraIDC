@@ -562,6 +562,29 @@ test.describe("选购页统一路由与展示方式", () => {
       cards.nth(2).locator(".product-card-flag--danger"),
     ).toHaveText("已售罄");
     await expect(cards.nth(2).locator(".product-card-buy")).toBeDisabled();
+
+    // 禁用态必须压成中性灰：Element Plus 的 primary 禁用以浅蓝呈现，
+    // 在一排蓝色主按钮里看着仍像能点（运营反馈过）。
+    const soldOutButton = cards.nth(2).locator(".product-card-buy");
+    const soldOutStyles = await soldOutButton.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        background: style.backgroundColor,
+        cursor: style.cursor,
+        shadow: style.boxShadow,
+      };
+    });
+    expect(soldOutStyles.cursor).toBe("not-allowed");
+    expect(soldOutStyles.shadow).toBe("none");
+    // #eef2f7 = rgb(238, 242, 247)，即中性灰底
+    expect(soldOutStyles.background).toBe("rgb(238, 242, 247)");
+
+    // 有货卡片的按钮仍是主色蓝，两者必须能一眼区分
+    const buyableBackground = await cards
+      .nth(0)
+      .locator(".product-card-buy")
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(buyableBackground).not.toBe(soldOutStyles.background);
   });
 
   test("卡片正文不可点击，只有立即选购按钮进入配置页", async ({ page }) => {
