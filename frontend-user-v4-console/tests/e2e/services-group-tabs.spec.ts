@@ -25,7 +25,7 @@ const CATALOG_TYPES = [
   { label: '游戏云', value: 'dedicated', icon: 'game', count: 1 },
 ];
 
-const SERVICES: Record<string, Record<string, unknown>> = {
+const SERVICES: Record<string, Array<Record<string, unknown>>> = {
   vps: [
     {
       id: 101,
