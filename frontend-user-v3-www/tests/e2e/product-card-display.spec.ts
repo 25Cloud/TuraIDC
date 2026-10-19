@@ -532,7 +532,8 @@ test.describe("选购页统一路由与展示方式", () => {
     await page.goto(`/products/${TYPE_VALUE}/${GROUP_ID}`);
 
     await expect(page.locator(".product-card-grid")).toBeVisible();
-    await expect.poll(() => new URL(page.url()).pathname).toBe(groupPath);
+    // 卡片式会把自动补全的三级分组写进地址（code 段换成 slug）
+    await expect.poll(() => new URL(page.url()).pathname).toBe(childPath);
   });
 
   test("卡片渲染商品描述 HTML，描述完整且按一行一项排版", async ({ page }) => {
@@ -613,6 +614,8 @@ test.describe("选购页统一路由与展示方式", () => {
     await page.goto(groupPath);
 
     const card = page.locator(".product-card").first();
+    // 等地址补全稳定后再记录「目录地址」，否则会把补全前的地址当成基准
+    await expect.poll(() => new URL(page.url()).pathname).toBe(childPath);
     const directoryUrl = page.url();
 
     await card.locator(".product-card-name").click();
@@ -834,7 +837,8 @@ test.describe("选购页统一路由与展示方式", () => {
 
     // 点二级分组：原地钻取它的三级分组
     await sheet.locator(".m-cat__row").first().click();
-    await expect(sheet.locator(".m-cat__back")).toContainText("美国");
+    // 返回按钮文案是「返回上级」，不再重复当前分组名
+    await expect(sheet.locator(".m-cat__back")).toContainText("返回上级");
     await expect(sheet.locator(".m-cat__row").first()).toContainText("高防");
 
     // 选三级分组后地址推进到三段，抽屉自动收起
