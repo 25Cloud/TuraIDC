@@ -116,7 +116,7 @@
       "productIntro": "商品介绍",
       "selectVersion": "选择版本",
       "processor": "处理器",
-      "categoryPath": "一级分组 / 二级分组",
+
       "specSelector": "产品规格选择",
       "instanceSpecs": "实例规格",
       "sortVcpu": "vCPU 排序",
@@ -142,7 +142,7 @@
       "spec": "产品规格",
       "selectSpec": "请选择产品规格",
       "noSwitchableOsVersion": "当前商品未提供可切换的系统版本",
-      "switchLevel1Group": "切换一级分组",
+
       "displayMode": "商品展示方式",
       "displayCard": "卡片式",
       "displayList": "列表式",
@@ -160,6 +160,7 @@
       "hideCatalogNav": "收起目录",
       "showCatalogNav": "展开目录",
       "catalogTitle": "商品目录",
+      "catalogBack": "返回「{name}」",
       "groupEmpty": "该分类下暂无可选分组"
     },
     "cpuBadge": {

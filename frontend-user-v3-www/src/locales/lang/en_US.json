@@ -116,7 +116,7 @@
       "productIntro": "Product Overview",
       "selectVersion": "Select a version",
       "processor": "Processor",
-      "categoryPath": "Level 1 Group / Level 2 Group",
+
       "specSelector": "Product Spec Selection",
       "instanceSpecs": "Instance Specs",
       "sortVcpu": "vCPU sorting",
@@ -142,7 +142,7 @@
       "spec": "Product Specs",
       "selectSpec": "Select a product spec",
       "noSwitchableOsVersion": "This product has no switchable OS version",
-      "switchLevel1Group": "Switch Level 1 Group",
+
       "displayMode": "Display mode",
       "displayCard": "Card",
       "displayList": "List",
@@ -160,6 +160,7 @@
       "hideCatalogNav": "Hide catalog",
       "showCatalogNav": "Show catalog",
       "catalogTitle": "Product catalog",
+      "catalogBack": "Back to {name}",
       "groupEmpty": "No groups available under this category"
     },
     "cpuBadge": {

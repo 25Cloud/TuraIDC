@@ -260,6 +260,16 @@
   }
 }
 
+@media (max-width: 1120px) {
+  .shop-sidebar {
+    width: 180px;
+  }
+
+  .shop-catalog {
+    width: 204px;
+  }
+}
+
 /* ===== 右侧整体 ===== */
 .shop-body {
   flex: 1;
