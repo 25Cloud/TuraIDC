@@ -411,6 +411,7 @@ class ProductType
             }
 
             $label = Str::limit($label, 30, '');
+            $slug = self::normalizeSlugValue($item['slug'] ?? null);
             $productType = array_key_exists('product_type', $item)
                 ? self::normalizeBusinessValue($item['product_type'])
                 : self::normalizeBusinessValueFromMenuCode($value);
@@ -421,6 +422,8 @@ class ProductType
             $normalized[] = [
                 'internal_id' => $internalId,
                 'value' => $value,
+                // 前台地址里的一级分组标识（可自定义；空表示按 code 生成）
+                'slug' => $slug,
                 'label' => $label,
                 'product_type' => $productType,
                 'icon' => self::normalizeIcon($item['icon'] ?? ''),
@@ -471,5 +474,28 @@ class ProductType
     private static function normalizeIcon(mixed $icon): string
     {
         return Str::limit(trim((string) $icon), 50, '');
+    }
+
+    /**
+     * 一级分组 URL 标识：只允许 2-60 位小写字母、数字与短横线，且不能是纯数字
+     * （纯数字单段路径会和旧商品 ID 地址冲突）。非法值静默清空，由同步按 code 兜底。
+     */
+    private static function normalizeSlugValue(mixed $slug): string
+    {
+        $normalized = strtolower(trim((string) $slug));
+
+        if (strlen($normalized) < 2 || strlen($normalized) > 60) {
+            return '';
+        }
+
+        if (preg_match('/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/', $normalized) !== 1) {
+            return '';
+        }
+
+        if (preg_match('/^\d+$/', $normalized) === 1) {
+            return '';
+        }
+
+        return $normalized;
     }
 }
