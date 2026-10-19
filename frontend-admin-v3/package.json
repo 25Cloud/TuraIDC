@@ -1,6 +1,6 @@
 {
   "name": "turaidc-admin-v3",
-  "version": "1.0.0",
+  "version": "0.4.2",
   "type": "module",
   "scripts": {
     "dev": "vite --mode development",
