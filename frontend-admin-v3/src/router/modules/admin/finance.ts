@@ -53,7 +53,7 @@ export const financeRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '续费订单',
         zh_TW: '續費訂單',
-        en_US: 'Renewal Orders',
+        en_US: 'Renewals',
       },
       permission: 'order.list',
       keepAlive: false,
@@ -68,7 +68,7 @@ export const financeRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '附加配置',
         zh_TW: '附加配置',
-        en_US: 'Upgrade Orders',
+        en_US: 'Upgrades',
       },
       permission: 'order.list',
       keepAlive: false,
@@ -152,7 +152,7 @@ export const financeRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '续费订单',
         zh_TW: '續費訂單',
-        en_US: 'Renewal Orders',
+        en_US: 'Renewals',
       },
       permission: 'invoice.list',
       hidden: true,
@@ -166,7 +166,7 @@ export const financeRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '附加配置订单',
         zh_TW: '附加配置訂單',
-        en_US: 'Upgrade Orders',
+        en_US: 'Upgrades',
       },
       permission: 'invoice.list',
       hidden: true,
