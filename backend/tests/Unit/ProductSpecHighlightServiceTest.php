@@ -55,6 +55,24 @@ class ProductSpecHighlightServiceTest extends TestCase
         $this->assertSame('20M', $values['bandwidth'] ?? null);
     }
 
+    public function test_it_cleans_truncated_remark_fragments(): void
+    {
+        $service = new ProductSpecHighlightService();
+
+        // varchar(255) 截断后的形态：末尾留着半个标签
+        $highlights = $service->resolveHighlightsForProduct(new Product([
+            'remark' => '&lt;li&gt;硬盘：30G SSD&lt;/li&gt;&lt;li&gt;带宽：20M峰值&lt;span class',
+        ]));
+
+        $values = collect($highlights)->pluck('value', 'key')->all();
+
+        $this->assertSame('20M峰值', $values['bandwidth'] ?? null);
+        foreach ($values as $value) {
+            $this->assertTrue(mb_check_encoding((string) $value, 'UTF-8'));
+            $this->assertStringNotContainsString('<', (string) $value);
+        }
+    }
+
     public function test_it_reads_select_sub_values_even_when_qty_minimum_is_zero(): void
     {
         $service = new ProductSpecHighlightService();

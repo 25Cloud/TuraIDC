@@ -103,14 +103,33 @@ final class ProductDescriptionService
             return '';
         }
 
+        // remark 是 varchar(255)，截断处可能留下半个多字节字符 / 半个标签，
+        // 先丢弃非法字节与残缺标签，避免前台拿到非法 UTF-8 或破标签。
+        $remark = $this->scrubUtf8($remark);
         $decoded = html_entity_decode($remark, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $decoded = $this->scrubUtf8($decoded);
         $decoded = preg_replace('/<br\s*\/?>/iu', '<br>', $decoded) ?? $decoded;
+        $decoded = preg_replace('/<[^>]*$/u', '', $decoded) ?? $decoded;
 
         if (preg_match('/<li[\s>]/iu', $decoded) === 1 && preg_match('/<ul[\s>]/iu', $decoded) !== 1) {
             $decoded = '<ul>'.$decoded.'</ul>';
         }
 
         return $this->sanitize($decoded);
+    }
+
+    /** 丢弃非法 UTF-8 字节（iconv 不可用时退化为替换字符） */
+    private function scrubUtf8(string $value): string
+    {
+        if (mb_check_encoding($value, 'UTF-8')) {
+            return $value;
+        }
+
+        $scrubbed = function_exists('iconv')
+            ? iconv('UTF-8', 'UTF-8//IGNORE', $value)
+            : mb_scrub($value, 'UTF-8');
+
+        return $scrubbed !== false ? $scrubbed : mb_scrub($value, 'UTF-8');
     }
 
     /**

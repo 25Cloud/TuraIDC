@@ -285,13 +285,18 @@ class ProductSpecHighlightService
             return [];
         }
 
+        // remark 在 varchar(255) 上存过，末尾可能被截断成半个多字节字符或半个标签
+        // （如 `<span class`）。先洗掉非法字节，再在解码后清掉不完整标签。
+        $remark = mb_scrub($remark, 'UTF-8');
         $decoded = html_entity_decode($remark, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $decoded = preg_replace('/<br\s*\/?>/iu', "\n", $decoded) ?? $decoded;
         $decoded = preg_replace('/<\/li\s*>/iu', "\n", $decoded) ?? $decoded;
         // 标签替换成空格而不是直接删：`4G<span>INTEL</span>` 直接 strip_tags 会粘成
         // 「4GINTEL」，后面的数字正则就匹配不到了。
         $text = preg_replace('/<[^>]*>/u', ' ', $decoded) ?? $decoded;
-        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // 截断产生的残缺标签（没有闭合的 `>`）再清一次
+        $text = preg_replace('/<[^>]*$/mu', ' ', $text) ?? $text;
+        $text = mb_scrub(html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'), 'UTF-8');
 
         $dimensions = [];
         foreach (preg_split('/\R/u', $text) ?: [] as $line) {
@@ -382,12 +387,25 @@ class ProductSpecHighlightService
         }
 
         $key = $this->matchDimension($match[1]);
-        $value = trim($match[2]);
+        $value = $this->cleanDimensionValue($match[2]);
         if ($key === null || $value === '' || $this->isPlaceholderValue($value)) {
             return [];
         }
 
         return [$key => $value];
+    }
+
+    /**
+     * 维度取值清洗：洗掉非法 UTF-8、残缺标签与多余空白。
+     * remark 是被 varchar(255) 截断过的，末行常带 `<span class` 这类残片。
+     */
+    private function cleanDimensionValue(string $value): string
+    {
+        $value = mb_scrub($value, 'UTF-8');
+        $value = preg_replace('/<[^>]*(?:>|$)/u', ' ', $value) ?? $value;
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+        return trim($value, " \t\n\r\0\x0B，,;；");
     }
 
     /**

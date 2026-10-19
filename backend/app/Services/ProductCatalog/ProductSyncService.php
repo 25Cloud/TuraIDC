@@ -1689,6 +1689,8 @@ class ProductSyncService
 
         $decoded = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $decoded = preg_replace('/<br\s*\/?>/iu', '<br>', $decoded) ?? $decoded;
+        // 上游历史数据可能被截断，去掉末尾残缺标签再消毒
+        $decoded = preg_replace('/<[^>]*$/u', '', $decoded) ?? $decoded;
 
         if (preg_match('/<li[\s>]/iu', $decoded) === 1 && preg_match('/<ul[\s>]/iu', $decoded) !== 1) {
             $decoded = '<ul>'.$decoded.'</ul>';
