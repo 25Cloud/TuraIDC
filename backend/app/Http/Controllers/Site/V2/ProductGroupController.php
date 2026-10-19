@@ -62,9 +62,12 @@ class ProductGroupController extends Controller
     }
 
     /**
-     * 选购页目录聚合接口：一次请求返回「全部二级/三级分组 + 根分组商品 +
-     * 当前三级分组商品」，替代前端逐个三级分组拉商品列表（30 个子分组就是
-     * 30 个请求）。其余三级分组的商品由前端按需再拉。
+     * 选购页目录聚合接口：一次请求返回「全部可见三级分组 + 当前要展示的商品」，
+     * 替代前端逐个三级分组拉商品列表（30 个子分组就是 30 个请求）。其余三级
+     * 分组的商品由前端按需再拉。
+     *
+     * 有三级分组时只下发该三级分组的商品（页面只展示它）；没有三级分组时
+     * 才下发二级分组自己的商品。
      *
      * 响应同样缓存到 tags: site-products，商品/分组变更时由模型事件失效。
      */
@@ -86,15 +89,17 @@ class ProductGroupController extends Controller
 
             $targetChildId = $this->resolveCatalogChildId($group, $childIds, $childGroupId, $resolveId);
 
-            $items = [
-                [
+            // 有可见三级分组时页面只展示三级分组的商品，二级分组自己的商品列表
+            // 前端根本不用（一条 200 个商品就 700KB+）。只有没有三级分组时才下发。
+            $items = [];
+
+            if ($targetChildId <= 0) {
+                $items[] = [
                     'effective_product_group_id' => $group,
                     'effective_product_group_level' => 2,
                     'products' => $this->catalogProducts($group, 2, $request),
-                ],
-            ];
-
-            if ($targetChildId > 0) {
+                ];
+            } else {
                 $items[] = [
                     'effective_product_group_id' => $targetChildId,
                     'effective_product_group_level' => 3,

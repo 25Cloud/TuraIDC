@@ -165,7 +165,7 @@ class V2ProductGroupCatalogTest extends TestCase
         ]))
             ->assertOk()
             ->assertJsonPath('code', 0)
-            ->assertJsonPath('data.total', 2)
+            ->assertJsonPath('data.total', 1)
             ->assertJsonPath('data.list.0.id', $thirdGroup->id)
             ->assertJsonPath('data.list.0.effective_product_group_level', 3);
 
@@ -239,6 +239,30 @@ class V2ProductGroupCatalogTest extends TestCase
             [(int) $thirdProduct->id],
             array_map('intval', array_column((array) ($catalogChildItem['products'] ?? []), 'id'))
         );
+
+        // 有三级分组时不再下发二级分组自己的商品：前端只展示三级分组商品，
+        // 而一个二级分组动辄几百个商品（实测单条响应 700KB+）。
+        $this->assertCount(1, (array) $catalogResponse->json('data.items_by_group'));
+        $this->assertSame(3, (int) $catalogChildItem['effective_product_group_level']);
+
+        // 没有三级分组时，目录商品就是二级分组自己的商品
+        $flatSecondGroup = $this->createSecondGroup($firstGroup, '无三级分组 '.$suffix, 9, true);
+        Product::query()->create($this->productPayload($flatSecondGroup, null, '无三级商品 '.$suffix, '44.00', 4));
+        ThirdProductGroup::query()->where('second_product_group_id', (int) $flatSecondGroup->id)->update(['is_visible' => 0]);
+
+        $flatCatalogResponse = $this->getJson('/api/v2/site/product-groups/'.$flatSecondGroup->id.'/catalog')
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonCount(0, 'data.children');
+
+        $flatItem = collect($flatCatalogResponse->json('data.items_by_group'))->first();
+        $this->assertIsArray($flatItem);
+        $this->assertSame(2, (int) $flatItem['effective_product_group_level']);
+        $this->assertSame(
+            [(int) $flatItem['products'][0]['id']],
+            array_map('intval', array_column((array) $flatItem['products'], 'id'))
+        );
+        $this->assertStringContainsString('无三级商品 '.$suffix, (string) $flatItem['products'][0]['display_name']);
     }
 
     public function test_site_product_group_responses_stay_under_size_limits(): void
