@@ -61,9 +61,11 @@
 // 表格列宽合计超过容器时（TDesign 会加 .t-table--width-overflow），
 // .t-table__content 默认仍不滚动，右侧列会被页面直接裁掉（商品目录、通知模板
 // 等列表都踩过）。这里统一让它横向滚动，固定列（复选框 / 操作）仍可 sticky。
+// TDesign 自己也给 .t-table__content 设了 overflow，普通声明会被压住（实测仍是 visible），
+// 这里必须 !important 才能让超宽表格真正横向滚动。
 .t-table--width-overflow .t-table__content {
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
 }
 
 // 防止 .table-scroll 包装 TDesign 表格时产生双层横向滑动条

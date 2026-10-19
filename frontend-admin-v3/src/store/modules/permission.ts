@@ -39,17 +39,17 @@ interface MenuGroupConfig {
 const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
   {
     path: '/admin/menu/data-dashboard',
-    title: { zh_CN: '数据看板', en_US: 'Data Dashboard' },
+    title: { zh_CN: '数据看板', en_US: 'Dashboard' },
     icon: shallowRef(DashboardIcon),
     orderNo: 0,
     children: [
       {
         path: '/admin/menu/data-dashboard/business-overview',
-        title: { zh_CN: '经营概览', en_US: 'Business Overview' },
+        title: { zh_CN: '经营概览', en_US: 'Overview' },
         children: [
           {
             path: '/admin/finance/new-customers',
-            title: { zh_CN: '新客户日报', en_US: 'New Customer Daily' },
+            title: { zh_CN: '新客户日报', en_US: 'New Customers' },
             showWhenHidden: true,
           },
         ],
@@ -58,36 +58,36 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
   },
   {
     path: '/admin/menu/product-config',
-    title: { zh_CN: '产品配置', en_US: 'Product Configuration' },
+    title: { zh_CN: '产品配置', en_US: 'Catalog' },
     icon: shallowRef(ShopIcon),
     orderNo: 10,
     children: [
       {
         path: '/admin/menu/product-config/product-management',
-        title: { zh_CN: '商品管理', en_US: 'Product Management' },
+        title: { zh_CN: '商品管理', en_US: 'Products' },
         children: ['/admin/products', '/admin/products/traffic-packages', '/admin/specs', '/admin/cpu-models'],
       },
       {
         path: '/admin/menu/product-config/upstream-supply',
-        title: { zh_CN: '上游供应', en_US: 'Upstream Supply' },
+        title: { zh_CN: '上游供应', en_US: 'Upstream' },
         children: ['/admin/products/suppliers'],
       },
     ],
   },
   {
     path: '/admin/menu/user-management',
-    title: { zh_CN: '用户管理', en_US: 'User Management' },
+    title: { zh_CN: '用户管理', en_US: 'Users' },
     icon: shallowRef(UserCircleIcon),
     orderNo: 20,
     children: [
       {
         path: '/admin/menu/user-management/customer-management',
-        title: { zh_CN: '客户管理', en_US: 'Customer Management' },
+        title: { zh_CN: '客户管理', en_US: 'Customers' },
         children: ['/admin/users', '/admin/users/verification', '/admin/users/verification/manage'],
       },
       {
         path: '/admin/menu/user-management/member-benefits',
-        title: { zh_CN: '会员权益', en_US: 'Member Benefits' },
+        title: { zh_CN: '会员权益', en_US: 'Membership' },
         children: ['/admin/member-levels'],
       },
     ],
@@ -96,33 +96,33 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
     // 服务实例是独立业务（开通、到期、续费、控制台），长期挂在「工单处理」下
     // 让管理员找不到入口，也让工单分组越挂越杂；单独成组，图标沿用服务器语义。
     path: '/admin/menu/service-management',
-    title: { zh_CN: '服务管理', en_US: 'Service Management' },
+    title: { zh_CN: '服务管理', en_US: 'Services' },
     icon: shallowRef(ServerIcon),
     orderNo: 30,
-    children: [{ path: '/admin/services', title: { zh_CN: '服务实例', en_US: 'Service Instances' } }],
+    children: [{ path: '/admin/services', title: { zh_CN: '服务实例', en_US: 'Instances' } }],
   },
   {
     path: '/admin/menu/ticket-processing',
-    title: { zh_CN: '工单处理', en_US: 'Ticket Processing' },
+    title: { zh_CN: '工单处理', en_US: 'Support' },
     icon: shallowRef(ChatIcon),
     orderNo: 35,
     children: [
       {
         path: '/admin/menu/ticket-processing/tickets',
-        title: { zh_CN: '工单管理', en_US: 'Ticket Management' },
+        title: { zh_CN: '工单管理', en_US: 'Tickets' },
         children: ['/admin/tickets', '/admin/ticket-delivery-rules', '/admin/ticket-pre-reply-settings'],
       },
     ],
   },
   {
     path: '/admin/menu/finance',
-    title: { zh_CN: '财务管理', en_US: 'Finance Management' },
+    title: { zh_CN: '财务管理', en_US: 'Finance' },
     icon: shallowRef(FileIcon),
     orderNo: 40,
     children: [
       {
         path: '/admin/menu/finance/order-management',
-        title: { zh_CN: '订单管理', en_US: 'Order Management' },
+        title: { zh_CN: '订单管理', en_US: 'Orders' },
         children: [
           '/admin/finance/orders',
           '/admin/finance/orders/normal',
@@ -132,17 +132,17 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
       },
       {
         path: '/admin/menu/finance/accounting-management',
-        title: { zh_CN: '账务管理', en_US: 'Accounting Management' },
+        title: { zh_CN: '账务管理', en_US: 'Billing' },
         children: [
           '/admin/finance/invoices',
-          { path: '/admin/finance/recharges', title: { zh_CN: '充值记录', en_US: 'Recharge Records' } },
+          { path: '/admin/finance/recharges', title: { zh_CN: '充值记录', en_US: 'Recharges' } },
         ],
       },
     ],
   },
   {
     path: '/admin/menu/marketing-promotion',
-    title: { zh_CN: '营销推广', en_US: 'Marketing Promotion' },
+    title: { zh_CN: '营销推广', en_US: 'Marketing' },
     icon: shallowRef(GiftIcon),
     orderNo: 50,
     children: [
@@ -153,12 +153,12 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
       },
       {
         path: '/admin/menu/marketing-promotion/agent-discounts',
-        title: { zh_CN: '代理折扣', en_US: 'Agent Discounts' },
+        title: { zh_CN: '代理折扣', en_US: 'Discounts' },
         children: ['/admin/agent-discounts'],
       },
       {
         path: '/admin/menu/marketing-promotion/referral-management',
-        title: { zh_CN: '推广管理', en_US: 'Referral Management' },
+        title: { zh_CN: '推广管理', en_US: 'Referral' },
         children: [
           '/admin/referral',
           '/admin/referral/rewards',
@@ -176,7 +176,7 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
     children: [
       {
         path: '/admin/menu/site-content/site-config',
-        title: { zh_CN: '站点配置', en_US: 'Site Configuration' },
+        title: { zh_CN: '站点配置', en_US: 'Site Config' },
         children: [
           { path: '/admin/site-info', title: { zh_CN: '站点设置', en_US: 'Site Settings' } },
           { path: '/admin/site-hero', title: { zh_CN: '首页 Banner', en_US: 'Home Banner' } },
@@ -185,25 +185,25 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
       },
       {
         path: '/admin/menu/site-content/content-management',
-        title: { zh_CN: '内容管理', en_US: 'Content Management' },
+        title: { zh_CN: '内容管理', en_US: 'Articles' },
         children: ['/admin/content/notices', '/admin/content/help', '/admin/content/media-library'],
       },
       {
         path: '/admin/menu/site-content/notifications-api',
-        title: { zh_CN: '通知与接口', en_US: 'Notifications & APIs' },
+        title: { zh_CN: '通知与接口', en_US: 'Notifications' },
         children: ['/admin/notifications', '/admin/notifications/sms-templates', '/admin/notifications/api-directory'],
       },
     ],
   },
   {
     path: '/admin/menu/system-settings',
-    title: { zh_CN: '系统设置', en_US: 'System Settings' },
+    title: { zh_CN: '系统设置', en_US: 'Settings' },
     icon: shallowRef(ToolsIcon),
     orderNo: 70,
     children: [
       {
         path: '/admin/menu/system-settings/integration-plugins',
-        title: { zh_CN: '集成插件', en_US: 'Integration Plugins' },
+        title: { zh_CN: '集成插件', en_US: 'Plugins' },
         children: [
           '/admin/integration-plugins/captcha',
           '/admin/integration-plugins/verification',
@@ -226,25 +226,25 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
       },
       {
         path: '/admin/menu/system-settings/permissions',
-        title: { zh_CN: '权限管理', en_US: 'Permission Management' },
+        title: { zh_CN: '权限管理', en_US: 'Permissions' },
         children: ['/admin/system/staff', '/admin/system/roles'],
       },
       {
         path: '/admin/menu/system-settings/database',
-        title: { zh_CN: '数据库状态', en_US: 'Database Status' },
+        title: { zh_CN: '数据库状态', en_US: 'Database' },
         children: ['/admin/system/database', '/admin/system/redis'],
       },
     ],
   },
   {
     path: '/admin/menu/log-center',
-    title: { zh_CN: '日志中心', en_US: 'Log Center' },
+    title: { zh_CN: '日志中心', en_US: 'Logs' },
     icon: shallowRef(FileIcon),
     orderNo: 80,
     children: [
       {
         path: '/admin/menu/log-center/log-management',
-        title: { zh_CN: '日志管理', en_US: 'Log Management' },
+        title: { zh_CN: '日志管理', en_US: 'Log Settings' },
         children: [
           '/admin/logs/system',
           '/admin/logs/runtime',
