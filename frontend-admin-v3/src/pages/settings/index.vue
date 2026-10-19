@@ -103,9 +103,7 @@
                     :min="0"
                     :max="24"
                     :placeholder="`${$t('settings.index.inputPrefix')}${field.label}${$t('settings.index.pxSuffix')}`"
-                    @update:model-value="
-                      (value: unknown) => (form[field.key] = value as FieldNumberValue)
-                    "
+                    @update:model-value="(value: unknown) => (form[field.key] = value as FieldNumberValue)"
                   />
                 </t-space>
                 <div v-else-if="field.type === 'image'" class="cover-image-selector" @click="selectImage(field)">
@@ -113,7 +111,9 @@
                   <span v-if="form[field.key]" class="cover-image-selector__name">{{
                     String(form[field.key]).split('/').pop()
                   }}</span>
-                  <span v-else class="cover-image-selector__placeholder">{{ $t('settings.index.clickToSelectPrefix') }}{{ field.label }}</span>
+                  <span v-else class="cover-image-selector__placeholder"
+                    >{{ $t('settings.index.clickToSelectPrefix') }}{{ field.label }}</span
+                  >
                   <chevron-right-icon />
                 </div>
                 <secret-input
@@ -125,7 +125,10 @@
                   :can-reveal="canRevealSettingsSecret"
                   :reveal="() => revealSettingSecret(field)"
                   @edited-change="(value: boolean) => (settingsSecretEdited[settingSecretEditKey(field)] = value)"
-                  @reveal-error="(error: unknown) => MessagePlugin.error(errorMessage(error, $t('settings.index.readSensitiveConfigFailed')))"
+                  @reveal-error="
+                    (error: unknown) =>
+                      MessagePlugin.error(errorMessage(error, $t('settings.index.readSensitiveConfigFailed')))
+                  "
                 />
                 <t-input
                   v-else
@@ -156,13 +159,13 @@
         <section class="slides-section">
           <div class="slides-section-head">
             <div>
-              <h2>
-                {{ $t('settings.index.slidesTitle') }}（{{ heroForm.slides.length }} / {{ maxSlides }}）
-              </h2>
+              <h2>{{ $t('settings.index.slidesTitle') }}（{{ heroForm.slides.length }} / {{ maxSlides }}）</h2>
               <p>{{ $t('settings.index.slidesTip') }}</p>
             </div>
             <t-space>
-              <t-button variant="outline" @click="resetSlidesToDefault">{{ $t('settings.index.restoreDefault') }}</t-button>
+              <t-button variant="outline" @click="resetSlidesToDefault">{{
+                $t('settings.index.restoreDefault')
+              }}</t-button>
               <t-button theme="primary" :disabled="heroForm.slides.length >= maxSlides" @click="addSlide">
                 <template #icon><add-icon /></template>
                 {{ $t('settings.index.addSlide') }}
@@ -173,7 +176,9 @@
           <article v-for="(slide, index) in heroForm.slides" :key="`slide-${index}`" class="slide-card">
             <div class="slide-card-head">
               <span class="slide-card-head__index">{{ index + 1 }}</span>
-              <strong class="slide-card-head__name">{{ slide.rail_title || $t('settings.index.untitledSlide') }}</strong>
+              <strong class="slide-card-head__name">{{
+                slide.rail_title || $t('settings.index.untitledSlide')
+              }}</strong>
               <div class="slide-card-head__actions">
                 <t-button variant="text" size="small" :disabled="index === 0" @click="moveSlide(index, -1)">
                   <template #icon><arrow-up-icon /></template>
@@ -276,7 +281,9 @@
                     <span v-if="slide.image" class="slide-video-selector__name">{{
                       slide.image.split('/').pop()
                     }}</span>
-                    <span v-else class="slide-video-selector__placeholder">{{ $t('settings.index.clickToSelectImage') }}</span>
+                    <span v-else class="slide-video-selector__placeholder">{{
+                      $t('settings.index.clickToSelectImage')
+                    }}</span>
                     <chevron-right-icon />
                   </div>
                   <t-button
@@ -297,7 +304,9 @@
                 <div class="slide-video-selector" @click="openVideoDrawer(index)">
                   <video-icon />
                   <span v-if="slide.video" class="slide-video-selector__name">{{ videoDisplayName(slide.video) }}</span>
-                  <span v-else class="slide-video-selector__placeholder">{{ $t('settings.index.clickToSelectVideo') }}</span>
+                  <span v-else class="slide-video-selector__placeholder">{{
+                    $t('settings.index.clickToSelectVideo')
+                  }}</span>
                   <chevron-right-icon />
                 </div>
                 <p class="slide-row__hint">{{ $t('settings.index.slideVideoHint') }}</p>
@@ -309,13 +318,13 @@
         <section class="slides-section">
           <div class="slides-section-head">
             <div>
-              <h2>
-                {{ $t('settings.index.featuresTitle') }}（{{ heroForm.features.length }} / {{ maxFeatures }}）
-              </h2>
+              <h2>{{ $t('settings.index.featuresTitle') }}（{{ heroForm.features.length }} / {{ maxFeatures }}）</h2>
               <p>{{ $t('settings.index.featuresTip') }}</p>
             </div>
             <t-space>
-              <t-button variant="outline" @click="resetFeaturesToDefault">{{ $t('settings.index.restoreDefault') }}</t-button>
+              <t-button variant="outline" @click="resetFeaturesToDefault">{{
+                $t('settings.index.restoreDefault')
+              }}</t-button>
               <t-button theme="primary" :disabled="heroForm.features.length >= maxFeatures" @click="addFeature">
                 <template #icon><add-icon /></template>
                 {{ $t('settings.index.addFeature') }}
@@ -386,17 +395,8 @@
       @close="closeMediaDrawer"
     >
       <div class="cover-drawer-toolbar">
-        <t-select
-          v-model="mediaDrawerType"
-          :placeholder="$t('settings.index.allTypes')"
-          @change="loadMediaDrawerList"
-        >
-          <t-option
-            v-for="item in mediaDrawerTypeOptions"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
+        <t-select v-model="mediaDrawerType" :placeholder="$t('settings.index.allTypes')" @change="loadMediaDrawerList">
+          <t-option v-for="item in mediaDrawerTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
         <t-button variant="outline" @click="openMediaDrawerUpload">
           <template #icon><upload-icon /></template>
@@ -549,7 +549,7 @@ const RADIUS_PRESETS: FieldOption[] = [
   { label: t('settings.index.radiusSoft'), value: 12 },
 ];
 const RADIUS_CUSTOM = 'custom';
-const RADIUS_CUSTOM_LABEL = '自定义…';
+const RADIUS_CUSTOM_LABEL = t('settings.index.customRadius');
 
 /** 当前值命中哪个预设；命中不到就按自定义处理，这样手填的值不会被下拉悄悄改掉 */
 function radiusPresetOf(value: FieldValue): string | number {
@@ -587,7 +587,7 @@ interface SettingField {
   rows?: number;
   wide?: boolean;
   required?: boolean;
-  requiredWhen?: (model: Record<string, FieldValue>) => boolean;
+  requiredWhen?: (_model: Record<string, FieldValue>) => boolean;
   pattern?: RegExp;
   patternMessage?: string;
   preview?: 'image';
@@ -706,7 +706,14 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
         fields: [
           { key: 'enabled', label: t('settings.index.referralEnabled'), type: 'switch', default: true },
           { key: 'reward_rate', label: t('settings.index.rewardRate'), type: 'number', default: 10, min: 0, max: 100 },
-          { key: 'reward_freeze_days', label: t('settings.index.rewardFreezeDays'), type: 'number', default: 4, min: 0, max: 365 },
+          {
+            key: 'reward_freeze_days',
+            label: t('settings.index.rewardFreezeDays'),
+            type: 'number',
+            default: 4,
+            min: 0,
+            max: 365,
+          },
           { key: 'withdraw_min_amount', label: t('settings.index.withdrawMin'), type: 'number', default: 20, min: 0 },
         ],
       },
@@ -720,12 +727,46 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
       {
         title: t('settings.index.serviceLifecycle'),
         fields: [
-          { key: 'expire_suspend_enabled', label: t('settings.index.expireSuspendEnabled'), type: 'switch', default: true },
-          { key: 'expire_suspend_after_days', label: t('settings.index.expireSuspendDays'), type: 'number', default: 0, min: 0, max: 365 },
-          { key: 'expire_suspend_notify_enabled', label: t('settings.index.suspendNotify'), type: 'switch', default: true },
-          { key: 'expire_unsuspend_notify_enabled', label: t('settings.index.resumeNotify'), type: 'switch', default: true },
-          { key: 'expire_terminate_enabled', label: t('settings.index.terminateEnabled'), type: 'switch', default: false },
-          { key: 'expire_terminate_after_days', label: t('settings.index.terminateDays'), type: 'number', default: 7, min: 1, max: 365 },
+          {
+            key: 'expire_suspend_enabled',
+            label: t('settings.index.expireSuspendEnabled'),
+            type: 'switch',
+            default: true,
+          },
+          {
+            key: 'expire_suspend_after_days',
+            label: t('settings.index.expireSuspendDays'),
+            type: 'number',
+            default: 0,
+            min: 0,
+            max: 365,
+          },
+          {
+            key: 'expire_suspend_notify_enabled',
+            label: t('settings.index.suspendNotify'),
+            type: 'switch',
+            default: true,
+          },
+          {
+            key: 'expire_unsuspend_notify_enabled',
+            label: t('settings.index.resumeNotify'),
+            type: 'switch',
+            default: true,
+          },
+          {
+            key: 'expire_terminate_enabled',
+            label: t('settings.index.terminateEnabled'),
+            type: 'switch',
+            default: false,
+          },
+          {
+            key: 'expire_terminate_after_days',
+            label: t('settings.index.terminateDays'),
+            type: 'number',
+            default: 7,
+            min: 1,
+            max: 365,
+          },
           {
             key: 'service_lifecycle_schedule_mode',
             label: t('settings.index.taskInterval'),
@@ -740,7 +781,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             default: '00:00:00',
             placeholder: t('settings.index.minutePlaceholder'),
             pattern: /^\d{2}:(00|15|30|45):00$/,
-            patternMessage: '分钟仅支持 00、15、30 或 45，秒必须为 00',
+            patternMessage: t('settings.index.minutePattern'),
           },
         ],
       },
@@ -748,8 +789,18 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
         title: t('settings.index.billingReminder'),
         fields: [
           { key: 'renew_notice_enabled', label: t('settings.index.renewNoticeEnabled'), type: 'switch', default: true },
-          { key: 'renew_create_invoice_enabled', label: t('settings.index.renewInvoiceEnabled'), type: 'switch', default: true },
-          { key: 'invoice_unpaid_reminder_enabled', label: t('settings.index.unpaidReminderEnabled'), type: 'switch', default: true },
+          {
+            key: 'renew_create_invoice_enabled',
+            label: t('settings.index.renewInvoiceEnabled'),
+            type: 'switch',
+            default: true,
+          },
+          {
+            key: 'invoice_unpaid_reminder_enabled',
+            label: t('settings.index.unpaidReminderEnabled'),
+            type: 'switch',
+            default: true,
+          },
           {
             key: 'invoice_unpaid_before_due_days',
             label: t('settings.index.remindBeforeDueDays'),
@@ -765,9 +816,16 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             default: '1,3,5',
             wide: true,
             pattern: /^\d+(,\d+)*$/,
-            patternMessage: '请使用英文逗号分隔天数，例如 1,3,5',
+            patternMessage: t('settings.index.overdueDaysPattern'),
           },
-          { key: 'invoice_overdue_after_days', label: t('settings.index.overdueAfterDays'), type: 'number', default: 0, min: 0, max: 365 },
+          {
+            key: 'invoice_overdue_after_days',
+            label: t('settings.index.overdueAfterDays'),
+            type: 'number',
+            default: 0,
+            min: 0,
+            max: 365,
+          },
           {
             key: 'billing_maintenance_schedule_mode',
             label: t('settings.index.taskInterval'),
@@ -782,14 +840,19 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             default: '00:00:00',
             placeholder: t('settings.index.minutePlaceholder'),
             pattern: /^\d{2}:(00|15|30|45):00$/,
-            patternMessage: '分钟仅支持 00、15、30 或 45，秒必须为 00',
+            patternMessage: t('settings.index.minutePattern'),
           },
         ],
       },
       {
         title: t('settings.index.ticketCleanup'),
         fields: [
-          { key: 'ticket_auto_close_enabled', label: t('settings.index.ticketAutoClose'), type: 'switch', default: true },
+          {
+            key: 'ticket_auto_close_enabled',
+            label: t('settings.index.ticketAutoClose'),
+            type: 'switch',
+            default: true,
+          },
           {
             key: 'ticket_auto_close_after_hours',
             label: t('settings.index.ticketAutoCloseHours'),
@@ -798,7 +861,12 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             min: 1,
             max: 720,
           },
-          { key: 'pending_order_cleanup_enabled', label: t('settings.index.pendingOrderCleanup'), type: 'switch', default: true },
+          {
+            key: 'pending_order_cleanup_enabled',
+            label: t('settings.index.pendingOrderCleanup'),
+            type: 'switch',
+            default: true,
+          },
           {
             key: 'pending_order_cleanup_after_hours',
             label: t('settings.index.pendingOrderKeepHours'),
@@ -807,7 +875,12 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             min: 1,
             max: 720,
           },
-          { key: 'pending_recharge_cleanup_enabled', label: t('settings.index.pendingRechargeCleanup'), type: 'switch', default: true },
+          {
+            key: 'pending_recharge_cleanup_enabled',
+            label: t('settings.index.pendingRechargeCleanup'),
+            type: 'switch',
+            default: true,
+          },
           {
             key: 'pending_recharge_cleanup_after_days',
             label: t('settings.index.pendingRechargeKeepDays'),
@@ -830,7 +903,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             default: '00:00:00',
             placeholder: t('settings.index.minutePlaceholder'),
             pattern: /^\d{2}:(00|15|30|45):00$/,
-            patternMessage: '分钟仅支持 00、15、30 或 45，秒必须为 00',
+            patternMessage: t('settings.index.minutePattern'),
           },
           {
             key: 'order_cleanup_schedule_mode',
@@ -846,7 +919,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             default: '00:00:00',
             placeholder: t('settings.index.minutePlaceholder'),
             pattern: /^\d{2}:(00|15|30|45):00$/,
-            patternMessage: '分钟仅支持 00、15、30 或 45，秒必须为 00',
+            patternMessage: t('settings.index.minutePattern'),
           },
           {
             key: 'supplier_balance_log_retention_days',
@@ -900,15 +973,43 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             maxlength: 255,
           },
           { key: 'concurrency', label: t('settings.index.maxConcurrency'), type: 'number', default: 2, min: 1, max: 8 },
-          { key: 'batch_size', label: t('settings.index.batchSize'), type: 'number', default: 1000, min: 100, max: 10000 },
-          { key: 'sleep_seconds', label: t('settings.index.batchInterval'), type: 'number', default: 1, min: 0, max: 60 },
+          {
+            key: 'batch_size',
+            label: t('settings.index.batchSize'),
+            type: 'number',
+            default: 1000,
+            min: 100,
+            max: 10000,
+          },
+          {
+            key: 'sleep_seconds',
+            label: t('settings.index.batchInterval'),
+            type: 'number',
+            default: 1,
+            min: 0,
+            max: 60,
+          },
         ],
       },
       {
         title: t('settings.index.retentionPolicy'),
         fields: [
-          { key: 'retention_days', label: t('settings.index.logRetentionDays'), type: 'number', default: 30, min: 1, max: 3650 },
-          { key: 'file_retention_days', label: t('settings.index.archiveRetentionDays'), type: 'number', default: 180, min: 1, max: 3650 },
+          {
+            key: 'retention_days',
+            label: t('settings.index.logRetentionDays'),
+            type: 'number',
+            default: 30,
+            min: 1,
+            max: 3650,
+          },
+          {
+            key: 'file_retention_days',
+            label: t('settings.index.archiveRetentionDays'),
+            type: 'number',
+            default: 180,
+            min: 1,
+            max: 3650,
+          },
         ],
       },
     ],
@@ -968,8 +1069,8 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             type: 'color',
             default: '#165DFF',
             maxlength: 7,
-            pattern: /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/,
-            patternMessage: '品牌主色必须是 #RRGGBG 或 #RGB 格式',
+            pattern: /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i,
+            patternMessage: t('settings.index.colorPattern'),
             help: t('settings.index.brandColorHint'),
           },
           {
@@ -983,7 +1084,13 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
           },
           // 商品展示方式、卡片库存、机型对比与版心已移到独立页面「商品展示」，
           // 那里按「展示形态 / 卡片样式 / 独立配置页 / 页面版心」分段，不再挤在这张表单里。
-          { key: 'service_phone', label: t('settings.index.officialQqGroup'), type: 'input', default: '', maxlength: 40 },
+          {
+            key: 'service_phone',
+            label: t('settings.index.officialQqGroup'),
+            type: 'input',
+            default: '',
+            maxlength: 40,
+          },
           {
             key: 'service_email',
             label: t('settings.index.contactEmail'),
@@ -1002,8 +1109,20 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             placeholder: t('settings.index.serviceHoursPlaceholder'),
             help: t('settings.index.serviceHoursHint'),
           },
-          { key: 'support_group_qr', label: t('settings.index.supportQrCode'), type: 'image', default: '', maxlength: 255 },
-          { key: 'support_group_link', label: t('settings.index.supportGroupLink'), type: 'input', default: '', maxlength: 255 },
+          {
+            key: 'support_group_qr',
+            label: t('settings.index.supportQrCode'),
+            type: 'image',
+            default: '',
+            maxlength: 255,
+          },
+          {
+            key: 'support_group_link',
+            label: t('settings.index.supportGroupLink'),
+            type: 'input',
+            default: '',
+            maxlength: 255,
+          },
           {
             key: 'icp_record',
             label: t('settings.index.icpNumber'),
@@ -1069,9 +1188,14 @@ const currentSaving = computed(() => (activeTab.value === 'site_hero' ? heroSavi
 const heroDirty = computed(() => JSON.stringify(heroForm) !== heroSnapshot.value);
 
 const videoDrawerTitle = computed(() => {
-  if (videoDrawerSlideIndex.value < 0) return '选择背景视频';
+  if (videoDrawerSlideIndex.value < 0) return t('settings.index.selectBackgroundVideo');
   const slide = heroForm.slides[videoDrawerSlideIndex.value];
-  return `背景视频 · 第 ${videoDrawerSlideIndex.value + 1} 项${slide?.rail_title ? `（${slide.rail_title}）` : ''}`;
+  return slide?.rail_title
+    ? t('settings.index.backgroundVideoNthWithName', {
+        index: videoDrawerSlideIndex.value + 1,
+        name: slide.rail_title,
+      })
+    : t('settings.index.backgroundVideoNth', { index: videoDrawerSlideIndex.value + 1 });
 });
 
 function normalizeTab(value: unknown): SettingsTab {
@@ -1148,7 +1272,7 @@ async function loadSettings() {
       form[field.key] = parseFieldValue(field, maps[group]?.[field.key]);
     });
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载设置失败'));
+    MessagePlugin.error(errorMessage(error, t('settings.index.loadFailed')));
   } finally {
     settingsLoading.value = false;
   }
@@ -1168,9 +1292,11 @@ async function saveSettings() {
     Object.entries(payload).forEach(([group, settings]) => {
       settingsGroupCache[group] = { ...(settingsGroupCache[group] || {}), ...settings };
     });
-    MessagePlugin.success(`${pageConfig.value?.title || '设置'}已保存`);
+    MessagePlugin.success(
+      t('settings.index.savedSuffix', { title: pageConfig.value?.title || t('settings.index.defaultTitle') }),
+    );
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存设置失败'));
+    MessagePlugin.error(errorMessage(error, t('settings.index.saveFailed')));
   } finally {
     settingsSaving.value = false;
   }
@@ -1180,26 +1306,26 @@ function validateSettings() {
   for (const field of allFields.value) {
     const value = form[field.key];
     if (isFieldRequired(field) && !String(value ?? '').trim() && field.type !== 'switch') {
-      MessagePlugin.warning(`请填写${field.label}`);
+      MessagePlugin.warning(t('settings.index.fieldRequired', { label: field.label }));
       return false;
     }
     if (field.type === 'number' || field.type === 'radius') {
       const num = Number(value);
       if (!Number.isFinite(num)) {
-        MessagePlugin.warning(`${field.label}必须是数字`);
+        MessagePlugin.warning(t('settings.index.fieldNumber', { label: field.label }));
         return false;
       }
       if (field.min !== undefined && num < field.min) {
-        MessagePlugin.warning(`${field.label}不能小于 ${field.min}`);
+        MessagePlugin.warning(t('settings.index.fieldMin', { label: field.label, min: field.min }));
         return false;
       }
       if (field.max !== undefined && num > field.max) {
-        MessagePlugin.warning(`${field.label}不能大于 ${field.max}`);
+        MessagePlugin.warning(t('settings.index.fieldMax', { label: field.label, max: field.max }));
         return false;
       }
     }
     if (field.pattern && !field.pattern.test(String(value ?? '').trim())) {
-      MessagePlugin.warning(field.patternMessage || `${field.label}格式不正确`);
+      MessagePlugin.warning(field.patternMessage || t('settings.index.fieldPattern', { label: field.label }));
       return false;
     }
   }
@@ -1447,7 +1573,7 @@ async function handleMediaDrawerUpload(event: Event) {
     MessagePlugin.success(t('settings.index.uploadSuccess'));
   } catch (error) {
     const record = error as Record<string, unknown>;
-    MessagePlugin.error(String(record.message || '上传失败'));
+    MessagePlugin.error(String(record.message || t('settings.index.uploadFailed')));
   }
 }
 
@@ -1463,7 +1589,7 @@ async function handleImageFileChange(event: Event) {
     form[field.key] = String(response.url || '');
     MessagePlugin.success(t('settings.index.imageUploadSuccess'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '图片上传失败'));
+    MessagePlugin.error(errorMessage(error, t('settings.index.imageUploadFailed')));
   }
 }
 
@@ -1473,7 +1599,7 @@ async function loadHero() {
     const data = await adminApi.siteHero.get();
     applyHeroPayload(data);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载首页 Banner 失败'));
+    MessagePlugin.error(errorMessage(error, t('settings.index.loadHeroFailed')));
   } finally {
     heroLoading.value = false;
   }
@@ -1511,7 +1637,7 @@ async function saveHero() {
     });
     MessagePlugin.success(t('settings.index.heroSaved'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存首页 Banner 失败'));
+    MessagePlugin.error(errorMessage(error, t('settings.index.saveHeroFailed')));
   } finally {
     heroSaving.value = false;
   }
@@ -1520,28 +1646,28 @@ async function saveHero() {
 function validateHero() {
   for (const [index, slide] of heroForm.slides.entries()) {
     for (const [key, label] of [
-      ['rail_title', '导航名称'],
-      ['title', '主标题'],
-      ['desc', '描述'],
-      ['primary_text', '主按钮文案'],
-      ['primary_path', '主按钮跳转'],
-      ['secondary_text', '次按钮文案'],
-      ['secondary_path', '次按钮跳转'],
+      ['rail_title', t('settings.index.heroFieldRailTitle')],
+      ['title', t('settings.index.heroFieldTitle')],
+      ['desc', t('settings.index.heroFieldDesc')],
+      ['primary_text', t('settings.index.heroFieldPrimaryText')],
+      ['primary_path', t('settings.index.heroFieldPrimaryPath')],
+      ['secondary_text', t('settings.index.heroFieldSecondaryText')],
+      ['secondary_path', t('settings.index.heroFieldSecondaryPath')],
     ] as Array<[keyof HomeHeroSlide, string]>) {
       if (!String(slide[key] ?? '').trim()) {
-        MessagePlugin.warning(`第 ${index + 1} 个轮播项的${label}不能为空`);
+        MessagePlugin.warning(t('settings.index.slideFieldRequired', { index: index + 1, label }));
         return false;
       }
     }
   }
   for (const [index, feature] of heroForm.features.entries()) {
     for (const [key, label] of [
-      ['kicker', '标签'],
-      ['title', '标题'],
-      ['desc', '描述'],
+      ['kicker', t('settings.index.heroFieldKicker')],
+      ['title', t('settings.index.heroFieldTitle')],
+      ['desc', t('settings.index.heroFieldDesc')],
     ] as Array<[keyof HomeHeroFeature, string]>) {
       if (!String(feature[key] ?? '').trim()) {
-        MessagePlugin.warning(`第 ${index + 1} 张卡片的${label}不能为空`);
+        MessagePlugin.warning(t('settings.index.featureFieldRequired', { index: index + 1, label }));
         return false;
       }
     }
@@ -1551,19 +1677,19 @@ function validateHero() {
 
 function buildBlankSlide(): HomeHeroSlide {
   return {
-    rail_title: '新轮播项',
+    rail_title: t('settings.index.newSlide'),
     title: '',
     desc: '',
-    primary_text: '立即体验',
+    primary_text: t('settings.index.primaryButtonText'),
     primary_path: '/products',
-    secondary_text: '查看详情',
+    secondary_text: t('settings.index.secondaryButtonText'),
     secondary_path: '/about',
     video: heroVideoOptions.value[0]?.value || '',
   };
 }
 
 function buildBlankFeature(): HomeHeroFeature {
-  return { kicker: '新卡片', title: '', desc: '', path: '' };
+  return { kicker: t('settings.index.newFeature'), title: '', desc: '', path: '' };
 }
 
 function addSlide() {
@@ -1592,8 +1718,8 @@ function moveFeature(index: number, offset: number) {
 
 function resetSlidesToDefault() {
   const dialog = DialogPlugin.confirm({
-    header: '恢复默认轮播',
-    body: '恢复默认会覆盖当前轮播项，下次保存才会写入数据库。',
+    header: t('settings.index.restoreSlidesTitle'),
+    body: t('settings.index.restoreSlidesBody'),
     confirmBtn: t('settings.index.restoreDefault'),
     cancelBtn: t('common.cancel'),
     onConfirm: () => {
@@ -1605,8 +1731,8 @@ function resetSlidesToDefault() {
 
 function resetFeaturesToDefault() {
   const dialog = DialogPlugin.confirm({
-    header: '恢复默认卡片',
-    body: '恢复默认会覆盖当前特色卡片，下次保存才会写入数据库。',
+    header: t('settings.index.restoreFeaturesTitle'),
+    body: t('settings.index.restoreFeaturesBody'),
     confirmBtn: t('settings.index.restoreDefault'),
     cancelBtn: t('common.cancel'),
     onConfirm: () => {
@@ -1699,7 +1825,7 @@ function confirmVideoUrl() {
     return;
   }
   if (!/^https?:\/\/.+/.test(url)) {
-    MessagePlugin.warning('请输入以 http:// 或 https:// 开头的有效 URL');
+    MessagePlugin.warning(t('settings.index.invalidUrl'));
     return;
   }
   const idx = videoDrawerSlideIndex.value;
@@ -1719,7 +1845,7 @@ function videoDisplayName(src: string) {
   try {
     const url = new URL(src);
     const path = url.pathname.split('/').filter(Boolean).pop() || url.hostname;
-    return `外部 · ${path}`;
+    return t('settings.index.externalPrefix', { path });
   } catch {
     return src.split('/').pop() || src;
   }

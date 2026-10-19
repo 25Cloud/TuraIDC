@@ -2,6 +2,7 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { reactive } from 'vue';
 
 import type { InvoiceRecord } from '@/api/admin';
+import { t } from '@/locales';
 import { errorMessage } from '@/utils/userMessage';
 
 export interface InvoiceDetailState {
@@ -19,13 +20,13 @@ export interface InvoiceDetailState {
 
 interface UseFinanceDetailDrawerOptions {
   /** 加载详情的 API 函数 */
-  fetchDetail: (id: number) => Promise<Record<string, unknown>>;
+  fetchDetail: (_id: number) => Promise<Record<string, unknown>>;
   /** 详情加载失败的回退文案 */
   errorFallback?: string;
 }
 
 export function useFinanceDetailDrawer(options: UseFinanceDetailDrawerOptions) {
-  const { fetchDetail, errorFallback = '加载详情失败' } = options;
+  const { fetchDetail, errorFallback = t('common.loadDetailFailed') } = options;
 
   const detailState = reactive<InvoiceDetailState>({
     visible: false,

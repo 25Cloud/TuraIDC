@@ -1,8 +1,14 @@
 {
   "lang": "English",
+  "shared": {
+    "state": {
+      "loading": "Loading",
+      "empty": "No data"
+    }
+  },
   "common": {
-    "appName": "TDesign Starter",
-    "copyright": "Copyright {'@'} 2021-2025 Tencent. All Rights Reserved",
+    "appName": "TuraIDC",
+    "copyright": "Copyright {'@'} TuraIDC contributors · AGPL-3.0-or-later",
     "conjunction": "and",
     "admin": "admin",
     "cancel": "Cancel",
@@ -15,7 +21,20 @@
     "status": "Status",
     "createdAt": "Created at",
     "action": "Action",
-    "copied": "Copied"
+    "copied": "Copied",
+    "loading": "Loading",
+    "listSeparator": "; ",
+    "labelValue": "{label}: {value}",
+    "countUnit": "{count}",
+    "errors": {
+      "requestFailed": "Request failed",
+      "networkError": "Network error",
+      "networkOffline": "The network connection was lost, please check and try again",
+      "timeout": "The request timed out, please check the network and try again",
+      "invalidParams": "Some fields are invalid, please check and try again",
+      "rateLimited": "Too many requests, please try again later",
+      "rateLimitedRetry": "Too many requests, please try again in {seconds}s"
+    }
   },
   "components": {
     "isSetup": {
@@ -81,7 +100,22 @@
       },
       "userMenu": {
         "profile": "Profile"
-      }
+      },
+      "balance": "Balance",
+      "inboxDetail": "Message details",
+      "noContent": "No content",
+      "accountFallback": "User",
+      "avatarFallback": "U",
+      "closeMenu": "Close menu",
+      "openMenu": "Open menu",
+      "inboxImageAlt": "Notice image",
+      "markAllReadTitle": "Mark all as read",
+      "markAllReadBody": "Mark every unread message as read? This cannot be undone.",
+      "justNow": "just now",
+      "minutesAgo": "{count} minutes ago",
+      "hoursAgo": "{count} hours ago",
+      "daysAgo": "{count} days ago",
+      "logoutBody": "Sign out of the current account?"
     },
     "notice": {
       "title": "Notification Center",
@@ -91,7 +125,8 @@
       "emptyNotice": "No Notice",
       "viewAll": "View All",
       "detailLoadFailed": "Failed to load the announcement",
-      "markAllRead": "All marked as read"
+      "markAllRead": "All marked as read",
+      "emptyImageAlt": "Empty"
     },
     "tagTabs": {
       "closeOther": "close other",
@@ -742,7 +777,7 @@
         "title": "Browser Incompatible",
         "subtitle": "The browser version you are using is too outdated to open the current page.",
         "back": "Back to homepage",
-        "recommend": "TDesign Starter recommend the following browser"
+        "recommend": "TuraIDC recommend the following browser"
       },
       "networkError": {
         "title": "Network Error",
@@ -815,7 +850,17 @@
       "enabled": "The upstream API is enabled",
       "disabled": "The upstream API is disabled. Open API keys under the same account have also been disabled.",
       "passwordReset": "Password reset",
-      "policySaved": "Security policy updated"
+      "policySaved": "Security policy updated",
+      "loadFailed": "Failed to load the upstream API status",
+      "credentialTitle": "Upstream API credential (shown only once)",
+      "newPasswordTitle": "New upstream API password (shown only once)",
+      "enableFailed": "Failed to enable",
+      "disableFailed": "Failed to disable",
+      "resetFailed": "Reset failed",
+      "policyFailed": "Failed to update the policy",
+      "disableConfirmTitle": "Disable the upstream API",
+      "disableConfirmBody": "The credential stops working immediately and any ZJMF finance integration using this account breaks. Open API keys on the same account are disabled too. Continue?",
+      "disableConfirmBtn": "Disable"
     },
     "title": "API Credentials",
     "create": "Create Key",
@@ -833,7 +878,50 @@
     "columnLastUsedAt": "Last used",
     "columnDuration": "Duration",
     "overview": "This page manages the two sets of credentials used to integrate with this system: Open API keys serve system-to-system calls (/api/v2/open), while Magic Finance integration credentials are configured by Magic Finance under \"Upstream\" (/api/v2/zjmf). Both support IP allowlists, expiration dates, and call auditing.",
-    "linkageNote": "The two credential sets are linked in one direction only: disabling the upstream connection under \"Magic Finance Integration\" also disables every Open API key on this account; the reverse does not hold, since disabling or deleting a single key has no effect on the Magic Finance integration."
+    "linkageNote": "The two credential sets are linked in one direction only: disabling the upstream connection under \"Magic Finance Integration\" also disables every Open API key on this account; the reverse does not hold, since disabling or deleting a single key has no effect on the Magic Finance integration.",
+    "empty": "No API keys yet. Use the button in the top right to create one.",
+    "unnamed": "Untitled",
+    "disabledTag": "Disabled",
+    "enabledTag": "Enabled",
+    "neverExpires": "Never expires",
+    "neverUsed": "Never used",
+    "disable": "Disable",
+    "enable": "Enable",
+    "expiresPrefix": "Expires: ",
+    "lastUsedPrefix": "Last used: ",
+    "upstreamTabLabel": "ZJMF finance integration",
+    "createTitle": "Create API key",
+    "editTitle": "Edit API key",
+    "submitting": "Submitting...",
+    "save": "Save",
+    "nameLabel": "Key name",
+    "namePlaceholder": "e.g. ZJMF platform integration",
+    "scopesLabel": "Scopes",
+    "scopeNone": "None",
+    "scopeRead": "Read-only",
+    "scopeWrite": "Read/write",
+    "scopeHint": "Read/write includes read-only. See the Open API documentation for the endpoints covered by each scope.",
+    "expiresLabel": "Expiry (optional)",
+    "ipLabel": "IP allowlist (optional, separate multiple entries with commas)",
+    "ipPlaceholder": "e.g. 203.0.113.9, 198.51.100.2",
+    "createdTitle": "API key created",
+    "secretWarning": "The full key is shown only once and cannot be viewed again. Save it somewhere safe, and use Edit to update the expiry or allowlist later.",
+    "logsTitle": "Call logs · {name}",
+    "keyFallback": "API key",
+    "deleteTitle": "Delete API key",
+    "deleteBody": "Delete the key \"{name}\"? Any integration using it stops working immediately. The ZJMF finance credential is not affected.",
+    "deleteConfirm": "Delete",
+    "disableTitle": "Disable API key",
+    "disableBody": "Disabling \"{name}\" stops any integration using it until it is enabled again. The ZJMF finance credential is not affected.",
+    "disableConfirm": "Disable",
+    "listLoadFailed": "Failed to load API keys",
+    "createFailed": "Creation failed",
+    "updateFailed": "Update failed",
+    "disableSuccess": "API key disabled",
+    "enableSuccess": "API key enabled",
+    "actionFailed": "Operation failed",
+    "deleteFailed": "Deletion failed",
+    "logsLoadFailed": "Failed to load call logs"
   },
   "client": {
     "catalog": {
@@ -1095,7 +1183,9 @@
       "metricTotal": "Total instances",
       "metricActive": "Running",
       "metricPending": "Pending",
-      "metricExpiring": "Expiring soon"
+      "metricExpiring": "Expiring soon",
+      "renewNow": "Renew now",
+      "invoiceDetail": "Invoice details"
     },
     "ticketDetail": {
       "adminRole": "Admin",
@@ -1132,7 +1222,10 @@
     "support": {
       "officialQqGroup": "Official QQ group",
       "cooperationEmail": "Partnership email",
-      "serviceHours": "Service hours"
+      "serviceHours": "Service hours",
+      "pendingGroupNo": "Group number to be announced",
+      "joinGroupTitle": "Join the official group",
+      "joinGroupText": "The official group shares maintenance notices, events and FAQ answers. Scan the code to join."
     },
     "dashboard": {
       "accountBalance": "Account balance",
@@ -1162,7 +1255,64 @@
       "totalLabel": "Total",
       "last7DaysDailySpend": "Daily spending, last 7 days",
       "spendDetails": "Spending details",
-      "messageCenter": "Message Center"
+      "messageCenter": "Message Center",
+      "loading": "Loading console data",
+      "verified": "Verified",
+      "unverified": "Unverified",
+      "phoneBound": "Phone bound",
+      "phoneUnbound": "Phone not bound",
+      "emailBound": "Email bound",
+      "emailUnbound": "Email not bound",
+      "onlineRecharge": "Top up online",
+      "rechargeRecords": "Top-up records",
+      "thisYearSpendAria": "Monthly spending this year",
+      "monthlyBarAria": "{label}: ¥{amount}",
+      "monthlyBarAriaEmpty": "{label}: No spending",
+      "emptyYearSpend": "No spending data for this year yet",
+      "last7DaysAria": "Daily spending over the last 7 days",
+      "dailyBarAria": "{label} · spent ¥{amount}",
+      "emptyDailySpend": "No spending records yet",
+      "noticeTab": "News & notices",
+      "helpTab": "Help center",
+      "emptyNotices": "No notices yet",
+      "emptyHelp": "No help articles yet",
+      "todoTitle": "To-do",
+      "todoAriaPending": "{label}: {count} pending",
+      "todoAriaEmpty": "{label}: 0 items",
+      "quickTitle": "Quick links",
+      "supportQrAlt": "QQ group QR code",
+      "supportGroupNo": "Group no.: {no}",
+      "joinGroup": "Join the group",
+      "defaultAccountName": "Customer account",
+      "avatarFallbackLetter": "C",
+      "supportGroupTitle": "Official QQ group",
+      "supportGroupText": "Join the official QQ group",
+      "financeSummaryNote": "Finance credit summary",
+      "monthlyBillNote": "Billed this month",
+      "couponTotalNote": "{count} in total",
+      "couponUnit": "pcs",
+      "yearLabel": "{year}",
+      "greetingNight": "Working late",
+      "greetingMorning": "Good morning",
+      "greetingForenoon": "Good morning",
+      "greetingNoon": "Good afternoon",
+      "greetingAfternoon": "Good afternoon",
+      "greetingEvening": "Good evening",
+      "weekdaySun": "Sunday",
+      "weekdayMon": "Monday",
+      "weekdayTue": "Tuesday",
+      "weekdayWed": "Wednesday",
+      "weekdayThu": "Thursday",
+      "weekdayFri": "Friday",
+      "weekdaySat": "Saturday",
+      "todayDate": "{weekday}, {month}/{day}/{year}",
+      "defaultProductTitle": "Cloud products",
+      "defaultGroupLevel": "Primary group",
+      "serviceCount": "{count}",
+      "dailyBarTooltip": "{date} · spent ¥{amount}",
+      "monthLabel": "{month}",
+      "monthlyBarTooltip": "{label} · spent ¥{amount} · {count} invoice(s)",
+      "loadFailed": "Failed to load console data"
     },
     "apiKeys": {
       "edit": "Edit",
@@ -1200,7 +1350,10 @@
       "passwordTooShort": "The password must be at least 8 characters",
       "passwordMismatch": "The two passwords do not match",
       "accountFirst": "Enter a valid phone number or email address first",
-      "success": "Registration successful"
+      "success": "Registration successful",
+      "codeRequired": "Enter the verification code",
+      "confirmPasswordRequired": "Enter the password again",
+      "failed": "Sign-up failed"
     },
     "forgotPassword": {
       "captchaRequired": "Please Complete the CAPTCHA First",
@@ -1212,18 +1365,49 @@
       "confirmPasswordRequired": "Please Enter the New Password Again",
       "passwordMismatch": "The Two Passwords Do Not Match",
       "accountFirst": "Please Enter a Valid Phone Number or Email First",
-      "passwordResetSuccess": "Password Reset, Please Sign In Again"
+      "passwordResetSuccess": "Password Reset, Please Sign In Again",
+      "navText": "Remembered your password?",
+      "heroTitle": "Reset your password and get back to the console",
+      "heroDescription": "Once you regain access you can continue with services, invoices and account security settings.",
+      "submit": "Reset password",
+      "failed": "Failed to reset the password"
     },
     "loginAs": {
       "credentialMissing": "Missing login-as credential",
-      "success": "Login-as succeeded"
+      "success": "Login-as succeeded",
+      "navText": "Sign in manually instead",
+      "heroTitle": "Verifying this identity switch request",
+      "heroDescription": "Once verified you will be taken to the console automatically; no business data is changed.",
+      "failed": "Login-as failed",
+      "processing": "Processing login-as",
+      "descriptionSuccess": "Identity switch completed, entering the client console.",
+      "descriptionError": "The login-as link is invalid or expired, or the request was rejected.",
+      "descriptionProcessing": "Verifying the login-as credential, please wait.",
+      "missingDefault": "No login-as credential was received from the admin console. Please start again there.",
+      "missingEmpty": "The admin console returned an empty login-as credential. Please start again.",
+      "missingTimeout": "Timed out waiting for the login-as credential. Make sure the popup was not blocked and try again."
     },
     "login": {
       "captchaRequired": "Complete the CAPTCHA first",
       "accountRequired": "Enter a valid phone number or email address",
       "codeLength": "The code must be 6 characters",
       "passwordRequired": "Enter your login password",
-      "accountRequiredFirst": "Enter a valid phone number or email address first"
+      "accountRequiredFirst": "Enter a valid phone number or email address first",
+      "navText": "No account yet?",
+      "registerNow": "Sign up",
+      "heroDescription": "Sign in to view instances, pay invoices, submit tickets and manage account security.",
+      "heroTitle": "Sign in to your console,\nand continue with services and invoices",
+      "codeRequired": "Enter the verification code",
+      "failed": "Sign-in failed"
+    },
+    "codeSentSms": "SMS code sent",
+    "codeSentEmail": "Email code sent",
+    "codeSendFailed": "Failed to send the code",
+    "shell": {
+      "brandContext": "Client console",
+      "back": "Back",
+      "defaultHeroTitle": "Sign in to your client console securely",
+      "defaultHeroDescription": "Manage cloud services, invoices, tickets and account details with the existing client APIs."
     }
   },
   "result": {
@@ -1274,7 +1458,14 @@
       "osVersionPlaceholder": "Select an OS version",
       "submit": "Submit Reinstall",
       "title": "Reinstall OS",
-      "selectOsVersion": "Select an OS version"
+      "selectOsVersion": "Select an OS version",
+      "defaultGroup": "Default group",
+      "confirmHeader": "Confirm OS reinstall",
+      "confirmBody": "All data on the current system disk will be permanently erased and cannot be recovered. Reinstall the OS?",
+      "confirmBtn": "Reinstall",
+      "running": "Reinstalling the OS",
+      "submitted": "OS reinstall task submitted",
+      "failed": "Failed to reinstall the OS"
     },
     "renewDialog": {
       "agentDiscount": "Agent Discount",
@@ -1315,7 +1506,25 @@
       "groupNameRequired": "Enter a security group name",
       "selectGroupFirst": "Select a security group first",
       "ruleRequired": "Please complete all rule fields",
-      "rulesEmpty": "This security group has no rules yet, add one to get started"
+      "rulesEmpty": "This security group has no rules yet, add one to get started",
+      "deleteGroupHeader": "Delete security group",
+      "deleteGroupBody": "Delete security group \"{name}\"?",
+      "deleteRuleHeader": "Delete rule",
+      "deleteRuleBody": "Delete this security group rule?",
+      "groupCreateSuccess": "Security group created",
+      "groupCreateFailed": "Failed to create the security group",
+      "groupApplied": "Security group applied",
+      "groupApplyFailed": "Failed to apply the security group",
+      "groupDeleted": "Security group deleted",
+      "groupDeleteFailed": "Failed to delete the security group",
+      "ruleCreateSuccess": "Security group rule created",
+      "ruleCreateFailed": "Failed to create the security group rule",
+      "ruleDeleted": "Security group rule deleted",
+      "ruleDeleteFailed": "Failed to delete the security group rule",
+      "addRuleHeader": "Add security group rule",
+      "portPlaceholderAll": "All ports (filled automatically)",
+      "portPlaceholderNone": "No ports for this protocol (handled automatically)",
+      "portPlaceholderExample": "e.g. 22 or 80-90"
     },
     "securityGroup": {
       "cancel": "Cancel",
@@ -1397,7 +1606,9 @@
       "panel": "Plan and Panel"
     },
     "breadcrumb": {
-      "userCenter": "User Center"
+      "userCenter": "User Center",
+      "instanceService": "Instance service",
+      "instanceHash": "Instance #{id}"
     },
     "rename": "Rename",
     "autoRenew": "Auto Renew",
@@ -1424,18 +1635,35 @@
       "unsupported": "Port forwarding is not supported for this instance",
       "emptyCanCreate": "No port forwarding rules yet, add one to get started",
       "emptyNotCreatable": "No port forwarding rules",
-      "delete": "Delete"
+      "delete": "Delete",
+      "addForwardHeader": "Add port forwarding",
+      "createBtn": "Create",
+      "createSuccess": "Port forwarding created",
+      "createFailed": "Failed to create port forwarding",
+      "deleteHeader": "Delete port forwarding",
+      "deleteBody": "Delete port forwarding \"{name}\"?",
+      "deleteSuccess": "Port forwarding deleted",
+      "deleteFailed": "Failed to delete port forwarding"
     },
     "remark": {
       "save": "Save Remark",
-      "placeholder": "Add a remark to help identify this instance"
+      "placeholder": "Add a remark to help identify this instance",
+      "dialogHeader": "Edit remark"
     },
     "rescue": {
       "title": "Rescue System",
       "confirm": "Enter",
       "placeholder": "Select a rescue system",
       "linux": "Linux Rescue",
-      "windows": "Windows Rescue"
+      "windows": "Windows Rescue",
+      "confirmHeader": "Confirm entering rescue mode",
+      "confirmBody": "The instance will reboot into the rescue system for troubleshooting. Continue?",
+      "confirmBtn": "Enter rescue mode",
+      "entering": "Entering rescue mode",
+      "submitted": "Rescue mode command submitted",
+      "failed": "Failed to enter rescue mode",
+      "dialogHeader": "Enter rescue mode",
+      "dialogMessage": "The instance will reboot into the rescue system for troubleshooting. When done, run \"exit rescue\" in the rescue system or reinstall the OS to exit."
     },
     "instanceStatus": "Instance Status",
     "basicInfo": "Basic Information",
@@ -1451,7 +1679,21 @@
     "power": {
       "starting": "Starting",
       "stopping": "Stopping",
-      "rebooting": "Rebooting"
+      "rebooting": "Rebooting",
+      "on": "Power on",
+      "off": "Power off",
+      "reboot": "Reboot",
+      "hardOff": "Force power off",
+      "hardReboot": "Force reboot",
+      "confirmHeader": "Confirm {label}",
+      "confirmBody": "Run \"{label}\" on instance {name}?",
+      "confirmBtn": "Confirm {label}",
+      "operating": "{label} in progress",
+      "dispatched": "{label} command sent",
+      "failed": "{label} failed",
+      "autoRenewEnabled": "Auto-renewal enabled",
+      "autoRenewDisabled": "Auto-renewal disabled",
+      "autoRenewFailed": "Failed to update auto-renewal"
     },
     "renew": {
       "invoiceCreated": "Renewal Invoice Created, Redirecting to Payment"
@@ -1470,7 +1712,11 @@
       "financeEventType": "Invoice type",
       "financeAmount": "Amount",
       "financeDescription": "Description",
-      "financeInvoiceNo": "Related invoice"
+      "financeInvoiceNo": "Related invoice",
+      "eventRefunded": "Refunded",
+      "eventAutoRenew": "Auto-renewal",
+      "eventManualRenew": "Manual renewal",
+      "eventPurchase": "Product purchase"
     },
     "instanceNameSaved": "Instance name saved",
     "remarkSaved": "Remark saved",
@@ -1489,13 +1735,113 @@
       "unsupported": "Monitoring is not supported for this instance",
       "empty": "No monitoring data in the selected time range",
       "noTrend": "No trend data in the selected time range",
-      "chartLabel": "{name} trend chart"
+      "chartLabel": "{name} trend chart",
+      "average": "Avg",
+      "peak": "Peak",
+      "lowest": "Min",
+      "metricFallback": "Metric {index}"
     },
     "finance": {
-      "empty": "No billing records yet"
+      "empty": "No billing records yet",
+      "totalCount": "{count} records",
+      "totalIn": "Income",
+      "totalOut": "Expense",
+      "refundIn": "Refund"
     },
     "copyAll": "Copy all",
-    "close": "Close"
+    "close": "Close",
+    "errors": {
+      "areaServiceIdInvalid": "Invalid service ID",
+      "areaTokenFailed": "Failed to generate the access credential, please try again later",
+      "detailLoadFailed": "Failed to load instance information",
+      "statusRefreshFailed": "Failed to refresh the instance status",
+      "nameSaveFailed": "Failed to save the instance name",
+      "remarkSaveFailed": "Failed to save the remark",
+      "passwordResetting": "Resetting the password",
+      "passwordSubmitted": "Password reset command submitted",
+      "passwordResetFailed": "Failed to reset the password",
+      "reinstallOptionsFailed": "Failed to load reinstall options",
+      "renewLoadFailed": "Failed to load renewal info",
+      "renewCreateFailed": "Failed to create the renewal invoice",
+      "securityLoadFailed": "Failed to load security groups",
+      "securityRulesLoadFailed": "Failed to load security group rules",
+      "monitorLoadFailed": "Failed to load monitoring data",
+      "natLoadFailed": "Failed to load NAT forwarding",
+      "logsLoadFailed": "Failed to load operation logs",
+      "financeLoadFailed": "Failed to load finance logs",
+      "trafficPackagesLoadFailed": "Failed to load traffic packages",
+      "trafficQuoteFailed": "Failed to get the traffic package quote",
+      "trafficInvoiceFailed": "Failed to create the traffic package invoice",
+      "vncUrlMissing": "No usable VNC address was returned",
+      "vncUrlFailed": "Failed to get the VNC address"
+    },
+    "area": {
+      "refresh": "Refresh",
+      "openInNewWindow": "Open in a new window",
+      "enterPanel": "Open the panel",
+      "reload": "Reload",
+      "loadingPanel": "Loading the feature panel",
+      "preparingPanel": "Preparing the feature panel",
+      "customPanel": "Custom feature panel",
+      "loadFailed": "Failed to load the feature panel, please try again later"
+    },
+    "areaLabel": {
+      "idcRegion": "Datacenter region",
+      "acceleration": "Acceleration region"
+    },
+    "copyLabel": "Copy {label}",
+    "loadingConsole": "Loading the instance console",
+    "instanceHash": "Service #{id}",
+    "instanceIdMeta": "Instance ID: {id}",
+    "addressMeta": "Address: {address}",
+    "networkInfo": "Network",
+    "loginCredentials": "Login credentials",
+    "instanceArchive": "Instance profile",
+    "trafficLabel": "Traffic",
+    "regionLabel": "Region",
+    "memoryLabel": "Memory",
+    "systemDisk": "System disk",
+    "bandwidthLabel": "Bandwidth",
+    "ipCount": "IP count",
+    "dataDisk": "Data disk",
+    "internalIp": "Private IP",
+    "passwordLabel": "Password",
+    "usernameLabel": "Username",
+    "portLabel": "Port",
+    "hostnameLabel": "Hostname",
+    "reset": "Reset",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "copyPassword": "Copy password",
+    "copyIp": "Copy {ip}",
+    "trafficUsed": "Traffic used",
+    "trafficLimit": "Traffic limit",
+    "trafficRemaining": "Traffic remaining",
+    "usageProgress": "Usage",
+    "accelerationProtection": "Acceleration & protection",
+    "nodeCount": "Nodes",
+    "protection": "Protection capacity",
+    "originLine": "Origin line",
+    "addRemarkHint": "Click to add a remark",
+    "editRemark": "Edit remark",
+    "addRemark": "Add remark",
+    "statusSync": "Sync status",
+    "renewLabel": "Renew",
+    "more": "More",
+    "menu": {
+      "resetPassword": "Reset password",
+      "reinstall": "Reinstall OS",
+      "rescue": "Rescue mode",
+      "upgrade": "Upgrade plan",
+      "snapshot": "Snapshots/backups",
+      "sshKey": "SSH keys",
+      "disk": "Disk management"
+    },
+    "statusSynced": "Instance status synced",
+    "statusSyncFailed": "Failed to sync the instance status",
+    "remoteAddress": "Remote address",
+    "publicIp": "Public IP",
+    "contentCopied": "Copied"
   },
   "recharge": {
     "title": "Top-up",
@@ -1518,12 +1864,28 @@
     "successBalanceRefreshed": "Recharge Successful, Balance Refreshed",
     "amountQuantity": "Recharge amount",
     "actualAmountPrefix": "Amount payable:",
-    "selectPaymentMethod": "Select a payment method"
+    "selectPaymentMethod": "Select a payment method",
+    "scanToPay": "Scan to pay",
+    "paymentGatewaysLoading": "Loading payment methods",
+    "noPaymentGatewayHint": "No payment method available. Please ask the administrator to enable a payment channel.",
+    "paySuccess": "Top-up succeeded",
+    "pendingPay": "Awaiting payment",
+    "generateQr": "Generate the {method} QR code",
+    "pay": "Pay",
+    "balanceRefreshed": "Balance refreshed",
+    "chooseAmountHint": "Choose an amount to generate the payment QR code",
+    "continueRecharge": "Top up again",
+    "rechargeNow": "Top up now",
+    "wechatPayTip": "Copy the payment link and continue in WeChat or a mobile browser.",
+    "alipayPayTip": "If Alipay does not open automatically, copy the payment link and continue in a mobile browser.",
+    "confirmTitle": "Confirm top-up",
+    "confirmBody": "Top up ¥{amount} via {method}?"
   },
   "services": {
     "console": {}
   },
   "verification": {
+    "verifyNow": "Verify now",
     "currentStatus": "Current Status",
     "name": "Verified Name",
     "idCard": "ID Card Number",
@@ -1554,7 +1916,29 @@
     "success": "Verification successful",
     "qrCodeRefreshed": "QR code regenerated; scan it again",
     "sessionClosed": "Verification session closed",
-    "reverify": "Verify again"
+    "reverify": "Verify again",
+    "pendingTag": "Not verified",
+    "notVerifiedTitle": "Identity verification incomplete",
+    "verifiedTitle": "Identity verified",
+    "verifiedDesc": "This account is verified. You can keep purchasing products that require identity verification.",
+    "pendingDesc": "Complete verification to buy products restricted to verified accounts and improve account security.",
+    "infoLoadFailed": "Failed to load verification information",
+    "submitFailed": "Submission failed",
+    "providerLinkMissing": "No verification provider link was returned",
+    "authLinkFailed": "Failed to get the verification link",
+    "processing": "Verification is being processed, please try again later",
+    "incomplete": "Verification not completed",
+    "queryFailed": "Query failed",
+    "reverifyFailed": "Failed to restart verification",
+    "closeSessionFailed": "Failed to close the verification session",
+    "loading": "Loading verification information",
+    "viewInfo": "View verification info",
+    "submitVerification": "Submit for verification",
+    "qrInvalidShort": "The QR code has expired",
+    "qrExpiresIn": "The QR code expires in {time}",
+    "dialogHeader": "Identity verification",
+    "nameLine": "Name: {name}",
+    "idCardLine": "ID number: {idCard}"
   },
   "checkoutResume": {
     "browse": "Browse Products",
@@ -1565,7 +1949,16 @@
     "quantity": "Quantity",
     "created": "Invoice created, redirecting",
     "createFailed": "Failed to create the invoice, please try again later",
-    "recreate": "Create the invoice again"
+    "recreate": "Create the invoice again",
+    "statusError": "Creation failed",
+    "statusEmpty": "Waiting to create the invoice",
+    "statusCreating": "Creating the invoice",
+    "titleError": "Failed to restore the purchase",
+    "titleEmpty": "No purchase to restore",
+    "titleCreating": "Creating the invoice",
+    "descError": "Please try again later, or check the invoice list in the finance center.",
+    "descEmpty": "Pick a plan again from the product page to create the invoice.",
+    "descCreating": "Restoring your purchase, please keep this page open."
   },
   "content": {
     "hotSearchLabel": "Hot Searches:",
@@ -1576,7 +1969,16 @@
       "empty": "No help content available"
     },
     "article": {
-      "fullText": "Full text"
+      "fullText": "Full text",
+      "publisher": "Published by: {name}",
+      "viewCount": "Views: {count}",
+      "toc": "Contents"
+    },
+    "list": {
+      "markAllRead": "Mark all as read ({count})",
+      "pinned": "Pinned",
+      "views": "Views {count}",
+      "empty": "Nothing here yet"
     }
   },
   "invoiceDetail": {
@@ -1609,7 +2011,70 @@
     "invoiceInfo": "Invoice information",
     "relatedPaymentsTitle": "Related payments",
     "summary": "Invoice summary",
-    "paidRefresh": "I have completed the payment. Refresh status"
+    "paidRefresh": "I have completed the payment. Refresh status",
+    "refreshDetail": "Refresh details",
+    "cancelInvoice": "Cancel invoice",
+    "loadingDetail": "Loading invoice details",
+    "renewService": "Service to renew",
+    "renewDoneTip": "The renewal is processed automatically after payment; the new expiry date shown in the service console prevails.",
+    "viewService": "View service",
+    "postPayment": "After payment",
+    "invoiceNo": "Invoice no.",
+    "invoiceType": "Invoice type",
+    "typeNew": "New purchase",
+    "typeRenew": "Renewal",
+    "invoiceAmount": "Invoice amount",
+    "billingCycleLabel": "Billing cycle",
+    "productPath": "Product path",
+    "machineSpec": "Machine specs",
+    "configPricing": "Configuration pricing",
+    "paymentMethod": "Payment method",
+    "paymentStatus": "Payment status",
+    "paymentAmount": "Payment amount",
+    "balanceDeduction": "Balance deduction",
+    "sessionDeadline": "Session expires",
+    "status": "Status",
+    "discountAmount": "Discount amount",
+    "paid": "Paid",
+    "createdAt": "Created at",
+    "dueAt": "Due at",
+    "choosePaymentTitle": "Choose a payment method",
+    "choosePaymentDesc": "Pick a channel to continue paying this invoice",
+    "pay": "Pay",
+    "scanToPay": "Scan to pay",
+    "maxDeduction": "Up to",
+    "alipayBalanceHint": "Use the account balance when paying with Alipay",
+    "currentBalance": "Current balance",
+    "estimatedDeduction": "Estimated deduction",
+    "alipayRemaining": "Alipay remaining",
+    "confirmBalancePay": "Confirm balance payment",
+    "payWithBalance": "Pay with balance",
+    "generateQr": "Generate the {method} QR code",
+    "zeroAmountNoAction": "Nothing to do for a zero-amount invoice",
+    "refreshStatus": "Refresh status",
+    "notFound": "Invoice details not found",
+    "alipayPay": "Alipay payment",
+    "sessionRemaining": "{countdown} left",
+    "sessionExpired": "Expired",
+    "serviceHash": "Service #{id}",
+    "daysCountdown": "{days}d {time}",
+    "specs": {
+      "area": "Region",
+      "cpu": "CPU",
+      "memory": "Memory",
+      "systemDisk": "System disk",
+      "dataDisk": "Data disk",
+      "bandwidth": "Bandwidth",
+      "networkType": "Network type",
+      "independentIp": "Dedicated IP",
+      "os": "Operating system",
+      "traffic": "Traffic"
+    },
+    "typeUpgrade": "Upgrade/downgrade",
+    "typeRecharge": "Top-up",
+    "typeDeduction": "Charge",
+    "typeReferralCredit": "Referral reward",
+    "typeManual": "Manual invoice"
   },
   "orderCreate": {
     "title": "Purchase Flow",
@@ -1632,13 +2097,33 @@
     "productService": "Product / service",
     "amount": "Amount",
     "relatedInvoice": "Related invoice",
-    "createdAt": "Created at"
+    "createdAt": "Created at",
+    "allStatusPlaceholder": "All statuses",
+    "allTypePlaceholder": "All types",
+    "emptyOrders": "No orders yet",
+    "invoice": "Invoice"
   },
   "paymentDetail": {
     "title": "Billing Center",
     "records": "Top-up Records",
     "recordDetail": "Top-up Detail",
-    "back": "Back to List"
+    "back": "Back to List",
+    "refresh": "Refresh",
+    "loading": "Loading top-up details",
+    "paymentInfo": "Payment info",
+    "merchantOrderNo": "Merchant order no.",
+    "thirdPartyOrderNo": "Third-party order no.",
+    "paymentAmount": "Payment amount",
+    "gateway": "Payment channel",
+    "status": "Payment status",
+    "createdAt": "Created at",
+    "paidAt": "Paid at",
+    "relatedInvoice": "Related invoice",
+    "invoiceNo": "Invoice no.",
+    "invoiceStatus": "Invoice status",
+    "invoiceAmount": "Invoice amount",
+    "paidAmount": "Paid amount",
+    "backToPayments": "Back to top-up records"
   },
   "profile": {
     "basicInfo": "Basic Information",
@@ -1696,7 +2181,57 @@
     "oldEmailLabel": "Old email address",
     "oldEmailCodeLabel": "Old email verification code",
     "newPhoneLabel": "New phone number",
-    "newEmailLabel": "New email address"
+    "newEmailLabel": "New email address",
+    "verifiedDesc": "Complete identity verification to raise account trust and the range of available services",
+    "statusDone": "Done",
+    "statusPending": "Pending",
+    "viewVerification": "View verification",
+    "verifyNow": "Verify now",
+    "phoneDesc": "Bind a phone number to receive codes and pass security checks",
+    "statusBound": "Bound",
+    "statusUnbound": "Not bound",
+    "goBind": "Bind",
+    "changeBind": "Change",
+    "emailDesc": "Bind a frequently used email to receive notifications and security alerts",
+    "statusSet": "Set",
+    "changePassword": "Change password",
+    "codeSendFailed": "Failed to send the code",
+    "passwordResetFailed": "Failed to reset the password",
+    "phoneUpdateFailed": "Failed to update the phone number",
+    "emailUpdateFailed": "Failed to update the email",
+    "copySuccess": "Copied",
+    "profileSaveFailed": "Failed to save the profile",
+    "updateFailed": "Update failed",
+    "saveFailed": "Save failed",
+    "accountId": "Account ID",
+    "copyAccountId": "Copy account ID",
+    "registeredAt": "Registered at",
+    "usernameLabel": "Username",
+    "usernamePlaceholder": "Enter a username",
+    "qqLabel": "QQ number",
+    "qqPlaceholder": "If set, your QQ avatar is used as the account avatar",
+    "balanceLabel": "Account balance",
+    "loginEmailLabel": "Login email",
+    "accountStatus": "Account status",
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "agentGroup": "Agent group",
+    "none": "None",
+    "saveHint": "Saving updates the current account profile immediately.",
+    "saveProfile": "Save profile",
+    "enabledTag": "Enabled",
+    "changeLoginPassword": "Change login password",
+    "resetPasswordByCode": "Reset password by code",
+    "changePhoneTitle": "Change bound phone",
+    "bindPhoneTitle": "Bind a phone number",
+    "changeEmailTitle": "Change bound email",
+    "bindEmailTitle": "Bind an email",
+    "tabs": {
+      "personal": "Profile",
+      "security": "Account security",
+      "notification": "Notifications",
+      "settings": "Account settings"
+    }
   },
   "tickets": {
     "searchPlaceholder": "Search ticket title",
@@ -1704,7 +2239,23 @@
     "columnSubject": "Title",
     "columnPriority": "Priority",
     "columnUpdatedAt": "Updated at",
-    "viewThread": "View thread"
+    "viewThread": "View thread",
+    "createTitle": "Submit a ticket",
+    "empty": "No tickets yet",
+    "priorityPrefix": "Priority: {value}",
+    "categoryLabel": "Category",
+    "subjectLabel": "Subject",
+    "subjectPlaceholder": "Briefly describe your issue",
+    "relatedServiceLabel": "Related service",
+    "relatedServicePlaceholder": "Optional, if related to a specific service",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Describe the problem in detail",
+    "attachmentLabel": "Attachments",
+    "uploadImage": "Upload images",
+    "uploadTip": "jpg/png/webp, up to 9 images, max 5MB each",
+    "attachmentAlt": "Attachment",
+    "remove": "Remove",
+    "attachmentPreview": "Attachment preview"
   },
   "auth": {
     "accountLabel": "Phone / Email",
@@ -1720,7 +2271,16 @@
     "byPassword": "Password Login",
     "byCode": "Code Login",
     "loginAsRetry": "Retry sign-in",
-    "backToLogin": "Back to sign in"
+    "backToLogin": "Back to sign in",
+    "passwordLabel": "Password",
+    "forgetPasswordLink": "Forgot password?",
+    "submitLogin": "Sign in",
+    "registeredAccountPlaceholder": "Enter your registered phone or email",
+    "loginPasswordPlaceholder": "Enter your password",
+    "confirmNewPassword": "Confirm new password",
+    "confirmNewPasswordPlaceholder": "Enter the new password again",
+    "backToLoginShort": "Back to sign in",
+    "backToProducts": "Back to products"
   },
   "finance": {
     "invoice": {
@@ -1737,6 +2297,91 @@
       "alipay": "Alipay",
       "epay": "EPay",
       "wechat": "WeChat Pay"
+    },
+    "snapshot": {
+      "bandwidth": "Bandwidth",
+      "downBandwidth": "Downlink bandwidth",
+      "upBandwidth": "Uplink bandwidth",
+      "os": "Operating system",
+      "region": "Region",
+      "node": "Node",
+      "nodeGroup": "Node group",
+      "ipCount": "IP count",
+      "ipv6Count": "IPv6 count",
+      "memory": "Memory",
+      "hostname": "Hostname",
+      "quantity": "Quantity",
+      "setupFee": "Setup fee",
+      "baseAmount": "Base amount",
+      "totalAmount": "Total amount",
+      "configAmount": "Configuration amount",
+      "subtotalAmount": "Subtotal",
+      "discountAmount": "Discount amount",
+      "amount": "Amount",
+      "price": "Price",
+      "items": "Configuration items",
+      "meta": "Extra info",
+      "configOption": "Configuration parameters",
+      "kind": "Type",
+      "mode": "Mode",
+      "targetService": "Target service",
+      "targetServiceId": "Target service ID",
+      "productId": "Product ID",
+      "productName": "Product name",
+      "billingCycle": "Billing cycle",
+      "remark": "Remark",
+      "dataDisk": "Data disk",
+      "amountWithValue": "Amount ¥{amount}",
+      "setupFeeWithValue": "Setup fee ¥{amount}",
+      "cpu": "CPU"
+    },
+    "messages": {
+      "orderListLoadFailed": "Failed to load orders",
+      "orderDetailLoadFailed": "Failed to load order details",
+      "cancelOrderTitle": "Cancel order",
+      "cancelOrderTip": "Cancel this order? This cannot be undone.\nThe related invoice will also be cancelled and any coupon used will be returned to your account.\nFor new product purchases the stock will be released.",
+      "cancelOrderFailed": "Failed to cancel the order",
+      "invoiceListLoadFailed": "Failed to load invoices",
+      "invoiceDetailLoadFailed": "Failed to load invoice details",
+      "cancelInvoiceTitle": "Cancel invoice",
+      "cancelInvoiceTip": "Cancel this invoice? This cannot be undone.\nAny coupon used will be returned to your account.\nFor new product purchases the stock will be released.",
+      "cancelInvoiceConfirmTip": "A new invoice must be created before paying again. Cancel anyway?",
+      "cancelInvoiceFailed": "Failed to cancel the invoice",
+      "pay": "Pay",
+      "cannotPay": "This invoice can no longer be paid.",
+      "balanceDeductionHint": "¥{balance} will be deducted from your balance and ¥{alipay} remains to be paid via Alipay.",
+      "qrGeneratedHint": "After the QR code is generated, pay with {method}; the status is polled automatically.",
+      "balancePayHint": "Paying with balance deducts the amount from your account and settles the invoice.",
+      "zeroAmountHint": "Zero-amount invoices need no payment.",
+      "balancePayFailed": "Balance payment failed",
+      "balancePayTitle": "Pay with balance",
+      "balancePayConfirm": "Pay ¥{amount} from your account balance?",
+      "qrGenerated": "{method} QR code generated",
+      "qrGenerateFailed": "Failed to generate the {method} QR code",
+      "notPaidYet": "Payment has not succeeded yet",
+      "queryPaymentStatusFailed": "Failed to check the payment status",
+      "detailLoadFailed": "Failed to load details",
+      "paymentRecordsLoadFailed": "Failed to load third-party payment records",
+      "paymentMethodLoading": "Loading payment methods",
+      "noPaymentMethod": "No payment method available",
+      "generatingQr": "Generating the QR code",
+      "continueRecharge": "Top up again",
+      "refreshQr": "Refresh the payment QR code",
+      "generateQr": "Generate the {method} QR code",
+      "rechargePaid": "Top-up succeeded, balance refreshed",
+      "qrPending": "The payment QR code has not been generated yet",
+      "scanToPay": "Scan with {method} to pay",
+      "afterPaidTip": "Once the funds arrive you can continue purchasing or renewing services.",
+      "pollingTip": "Confirming the payment automatically, please do not pay twice.",
+      "chooseAmountTip": "Choose an amount and payment method to generate the QR code.",
+      "createRechargeFailed": "Failed to create the top-up invoice",
+      "payArrived": "Payment succeeded and the top-up has arrived",
+      "stillProcessing": "The payment is still processing, please wait",
+      "queryRechargeStatusFailed": "Failed to check the top-up status",
+      "loadRechargeSummaryFailed": "Failed to load the top-up summary",
+      "loadPaymentMethodsFailed": "Failed to load payment methods",
+      "linkCopied": "Payment link copied to the clipboard",
+      "copyUnsupported": "This browser does not support auto-copy, please copy manually"
     }
   },
   "coupon": {
@@ -1765,7 +2410,10 @@
       "abuse": "Abuse"
     },
     "priority": {
-      "urgent": "Urgent"
+      "urgent": "Urgent",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
     },
     "image": {
       "unsupportedType": "Only jpg, png and webp images are supported",
@@ -1777,7 +2425,8 @@
       "success": "Ticket submitted"
     },
     "detail": {
-      "notFound": "Ticket not found"
+      "notFound": "Ticket not found",
+      "title": "Ticket details"
     },
     "reply": {
       "uploading": "Images are still uploading, please send again in a moment",
@@ -1787,7 +2436,24 @@
     },
     "close": {
       "confirm": "Close ticket",
-      "success": "Ticket closed"
+      "success": "Ticket closed",
+      "confirmTitle": "Close the ticket",
+      "confirmBody": "You will not be able to reply after closing. Close this ticket?"
+    },
+    "maxImages": "Up to {count} images",
+    "sender": {
+      "customer": "Customer"
+    },
+    "unassigned": "Unassigned",
+    "errors": {
+      "listLoadFailed": "Failed to load tickets",
+      "servicesLoadFailed": "Failed to load service options",
+      "imageUploadFailed": "Failed to upload the image",
+      "submitFailed": "Failed to submit the ticket",
+      "detailLoadFailed": "Failed to load ticket details",
+      "replyFailed": "Failed to send the reply",
+      "recallFailed": "Failed to recall the message",
+      "closeFailed": "Failed to close the ticket"
     }
   },
   "referral": {
@@ -1829,8 +2495,15 @@
       "metrics": {
         "console": "Open the console to manage it directly",
         "attention": "Instances that need attention, such as provisioning or suspended",
-        "renew": "Renew in advance to avoid service interruption"
-      }
+        "renew": "Renew in advance to avoid service interruption",
+        "coverage": "Covering {count} service categories"
+      },
+      "serviceHash": "Service #{id}",
+      "fallbackMark": "Service",
+      "renewLoadFailed": "Failed to load renewal info",
+      "renewCreateFailed": "Failed to create the renewal invoice",
+      "remarkSaveFailed": "Failed to save the remark",
+      "ipCopied": "Public IP copied"
     }
   }
 }

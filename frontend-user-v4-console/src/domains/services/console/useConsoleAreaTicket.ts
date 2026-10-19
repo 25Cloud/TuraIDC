@@ -1,4 +1,5 @@
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type { ServiceConsoleAreaTicket } from '@/types/client';
 
 /**
@@ -41,7 +42,7 @@ function readCachedTicket(serviceId: number): string {
  */
 export function ensureAreaTicket(serviceId: number): Promise<string> {
   if (!(serviceId > 0)) {
-    return Promise.reject(new Error('服务ID无效'));
+    return Promise.reject(new Error(t('serviceConsole.errors.areaServiceIdInvalid')));
   }
 
   const cached = readCachedTicket(serviceId);
@@ -59,7 +60,7 @@ export function ensureAreaTicket(serviceId: number): Promise<string> {
     .then((res) => {
       const next = String((res.data as ServiceConsoleAreaTicket | undefined)?.ticket || '');
       if (!next) {
-        throw new Error('访问凭证生成失败，请稍后重试');
+        throw new Error(t('serviceConsole.errors.areaTokenFailed'));
       }
 
       ticketCache.set(serviceId, { ticket: next, expiresAt: Date.now() + TICKET_TTL_MS });

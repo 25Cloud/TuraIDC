@@ -2,11 +2,15 @@
   <section class="service-console">
     <console-breadcrumb />
 
-    <loading-state :loading="detailLoading" text="正在加载实例控制台">
+    <loading-state :loading="detailLoading" :text="$t('serviceConsole.loadingConsole')">
       <!-- 面板型控制台（CDN / 虚拟主机）没有电源/重装等操作按钮，头部用紧凑版 -->
       <console-header
         :compact="consoleKind !== 'generic'"
-        :compact-region-label="consoleKind === 'virtualhost' ? '机房区域' : '加速区域'"
+        :compact-region-label="
+          consoleKind === 'virtualhost'
+            ? $t('serviceConsole.areaLabel.idcRegion')
+            : $t('serviceConsole.areaLabel.acceleration')
+        "
       />
       <console-alerts />
 
@@ -27,7 +31,7 @@
             :preloading="activeTab !== key"
             :class="{ 'is-offstage': activeTab !== key }"
           />
-          <component v-if="!isAreaTab" :is="activeTabComponent" />
+          <component :is="activeTabComponent" v-if="!isAreaTab" />
         </main>
       </div>
     </loading-state>
@@ -39,25 +43,19 @@
 import LoadingState from '@shared/user-v3/components/LoadingState.vue';
 import { computed } from 'vue';
 
-import {
-  isCdnConsole,
-  isVirtualHostConsole,
-} from '@/domains/services/console/useConsoleCore';
+import { isCdnConsole, isVirtualHostConsole } from '@/domains/services/console/useConsoleCore';
 import { useServiceConsole } from '@/domains/services/useServiceConsole';
 
+import { resolveCdnNavItems, resolveCdnTabComponent } from './components/cdn/registry';
 import ConsoleAlerts from './components/ConsoleAlerts.vue';
 import ConsoleBreadcrumb from './components/ConsoleBreadcrumb.vue';
 import ConsoleDialogs from './components/ConsoleDialogs.vue';
 import ConsoleHeader from './components/ConsoleHeader.vue';
 import ConsoleSidebar from './components/ConsoleSidebar.vue';
-import AreaTab from './components/tabs/AreaTab.vue';
-import { resolveCdnNavItems, resolveCdnTabComponent } from './components/cdn/registry';
 import { provideServiceConsoleContext } from './components/context';
 import { resolveConsoleNavItems, resolveConsoleTabComponent } from './components/registry';
-import {
-  resolveVirtualHostNavItems,
-  resolveVirtualHostTabComponent,
-} from './components/virtualhost/registry';
+import AreaTab from './components/tabs/AreaTab.vue';
+import { resolveVirtualHostNavItems, resolveVirtualHostTabComponent } from './components/virtualhost/registry';
 
 const serviceConsole = useServiceConsole();
 provideServiceConsoleContext(serviceConsole);
@@ -75,13 +73,9 @@ const consoleKind = computed<'cdn' | 'virtualhost' | 'generic'>(() => {
   return 'generic';
 });
 
-const consoleNavItems = computed(() =>
-  resolveConsoleNavItems(availableTabs.value, consoleAreaLabels.value),
-);
+const consoleNavItems = computed(() => resolveConsoleNavItems(availableTabs.value, consoleAreaLabels.value));
 const cdnNavItems = computed(() => resolveCdnNavItems(availableTabs.value, consoleAreaLabels.value));
-const virtualHostNavItems = computed(() =>
-  resolveVirtualHostNavItems(availableTabs.value, consoleAreaLabels.value),
-);
+const virtualHostNavItems = computed(() => resolveVirtualHostNavItems(availableTabs.value, consoleAreaLabels.value));
 
 const navItems = computed(() => {
   if (consoleKind.value === 'cdn') return cdnNavItems.value;

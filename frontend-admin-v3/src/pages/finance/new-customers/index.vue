@@ -73,7 +73,7 @@ async function loadData() {
     });
     dailyList.value = response.list || [];
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载新客户日报失败'));
+    MessagePlugin.error(errorMessage(error, t('finance.newCustomers.loadFailed')));
   } finally {
     loading.value = false;
   }

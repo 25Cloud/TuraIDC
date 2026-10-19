@@ -12,11 +12,11 @@ export interface UseConsoleDialogsOptions {
   serviceId: { value: number };
   detail: { value: ConsoleServiceDetail };
   actionLoading: { value: boolean };
-  setOperationStatus: (type: string, label: string) => void;
-  loadRemoteStatus: (silent: boolean) => Promise<void>;
+  setOperationStatus: (_type: string, _label: string) => void;
+  loadRemoteStatus: (_silent: boolean) => Promise<void>;
   clearStatusSyncTimer: () => void;
-  scheduleStatusSync: (callback: () => void, delay: number) => void;
-  mergeDetail: (patch: Partial<ConsoleServiceDetail>) => void;
+  scheduleStatusSync: (_callback: () => void, _delay: number) => void;
+  mergeDetail: (_patch: Partial<ConsoleServiceDetail>) => void;
 }
 
 export function useConsoleDialogs(options: UseConsoleDialogsOptions) {
@@ -55,7 +55,7 @@ export function useConsoleDialogs(options: UseConsoleDialogsOptions) {
       nameVisible.value = false;
       MessagePlugin.success(t('services.console.instanceNameSaved'));
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '实例名称保存失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('services.console.instanceNameSaveFailed')));
     } finally {
       nameSubmitting.value = false;
     }
@@ -78,7 +78,7 @@ export function useConsoleDialogs(options: UseConsoleDialogsOptions) {
       remarkVisible.value = false;
       MessagePlugin.success(t('services.console.remarkSaved'));
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '备注保存失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('services.console.remarkSaveFailed')));
     } finally {
       remarkSubmitting.value = false;
     }
@@ -139,15 +139,15 @@ export function useConsoleDialogs(options: UseConsoleDialogsOptions) {
         password_confirmation: passwordForm.password_confirmation,
       });
       const payload = res.data || {};
-      setOperationStatus('repassword', '重置密码中');
+      setOperationStatus('repassword', t('services.console.resettingPassword'));
       passwordVisible.value = false;
       passwordForm.password = '';
       passwordForm.password_confirmation = '';
-      MessagePlugin.success(String(payload.message || '重置密码指令已提交'));
+      MessagePlugin.success(String(payload.message || t('services.console.resetPasswordSubmitted')));
       clearStatusSyncTimer();
       scheduleStatusSync(() => loadRemoteStatus(true), 1500);
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '重置密码失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('services.console.resetPasswordFailed')));
     } finally {
       actionLoading.value = false;
     }

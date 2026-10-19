@@ -3,8 +3,8 @@
     :visible="visible"
     size="282px"
     :title="$t('product.osPicker.selectOs')"
-    cancel-text="取消"
-    confirm-text="确定"
+    :cancel-text="$t('common.cancel')"
+    :confirm-text="$t('common.confirm')"
     :close-on-press-modal="false"
     @close="$emit('close')"
     @cancel="$emit('close')"
@@ -32,11 +32,18 @@
           tabindex="-1"
           @click="handleGroupClick(g)"
         >
-          <img v-if="g.icon" :src="g.icon" :alt="g.label" class="mop-item-icon" />
+          <img
+            v-if="g.icon"
+            :src="g.icon"
+            :alt="g.label"
+            class="mop-item-icon"
+          />
           <span v-else class="mop-item-abbr">{{ g.label.slice(0, 2) }}</span>
           {{ g.label }}
         </button>
-        <div v-if="!osGroups.length" class="mop-empty">{{ $t('product.osPicker.noSystemAvailable') }}</div>
+        <div v-if="!osGroups.length" class="mop-empty">
+          {{ $t("product.osPicker.noSystemAvailable") }}
+        </div>
         <div class="mop-spacer" :style="{ height: spacerH + 'px' }"></div>
       </div>
 
@@ -57,9 +64,15 @@
           :class="{ 'is-active': tempVersionId === v.id }"
           tabindex="-1"
           @click="handleVersionClick(v)"
-        >{{ v.label }}</button>
-        <div v-if="!osGroups.length" class="mop-empty">{{ $t('product.osPicker.selectSystemFirst') }}</div>
-        <div v-else-if="!currentVersions.length" class="mop-empty">{{ $t('product.osPicker.noVersionAvailable') }}</div>
+        >
+          {{ v.label }}
+        </button>
+        <div v-if="!osGroups.length" class="mop-empty">
+          {{ $t("product.osPicker.selectSystemFirst") }}
+        </div>
+        <div v-else-if="!currentVersions.length" class="mop-empty">
+          {{ $t("product.osPicker.noVersionAvailable") }}
+        </div>
         <div class="mop-spacer" :style="{ height: spacerH + 'px' }"></div>
       </div>
     </div>
@@ -67,279 +80,318 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
-import MobileSheet from '@/components/MobileSheet.vue'
+import { ref, computed, watch, onBeforeUnmount, nextTick } from "vue";
+import MobileSheet from "@/components/MobileSheet.vue";
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
   osGroups: { type: Array, default: () => [] },
-  activeOsGroupId: { type: String, default: '' },
-  activeOsVersionId: { type: String, default: '' },
-})
+  activeOsGroupId: { type: String, default: "" },
+  activeOsVersionId: { type: String, default: "" },
+});
 
-const emit = defineEmits(['close', 'confirm'])
+const emit = defineEmits(["close", "confirm"]);
 
-const groupCol = ref(null)
-const verCol = ref(null)
-const tempGroupId = ref('')
-const tempVersionId = ref('')
-const spacerH = ref(104)
-let scrollBound = false
-let resizeObs = null
-let removeScrollListeners = null
-let programmaticScrollCount = 0
+const groupCol = ref(null);
+const verCol = ref(null);
+const tempGroupId = ref("");
+const tempVersionId = ref("");
+const spacerH = ref(104);
+let scrollBound = false;
+let resizeObs = null;
+let removeScrollListeners = null;
+let programmaticScrollCount = 0;
 
 // 缓存 DOM 查询结果，避免每帧 querySelectorAll
-let cachedGroupItems = []
-let cachedVerItems = []
+let cachedGroupItems = [];
+let cachedVerItems = [];
 
 const currentVersions = computed(() => {
-  const group = props.osGroups.find((g) => g.id === tempGroupId.value)
-  return group?.versions || []
-})
+  const group = props.osGroups.find((g) => g.id === tempGroupId.value);
+  return group?.versions || [];
+});
 
 function refreshCache() {
   cachedGroupItems = groupCol.value
-    ? Array.from(groupCol.value.querySelectorAll('.mop-item'))
-    : []
+    ? Array.from(groupCol.value.querySelectorAll(".mop-item"))
+    : [];
   cachedVerItems = verCol.value
-    ? Array.from(verCol.value.querySelectorAll('.mop-item'))
-    : []
+    ? Array.from(verCol.value.querySelectorAll(".mop-item"))
+    : [];
 }
 
-watch(() => props.visible, (v) => {
-  if (!v) {
-    cleanup()
-    return
-  }
-  tempGroupId.value = props.activeOsGroupId
-  tempVersionId.value = props.activeOsVersionId
-  nextTick(() => {
-    updateSpacers()
-    refreshCache()
-    bindScrolls()
-    resizeObs = new ResizeObserver(() => updateSpacers())
-    resizeObs.observe(groupCol.value)
-  })
-})
+watch(
+  () => props.visible,
+  (v) => {
+    if (!v) {
+      cleanup();
+      return;
+    }
+    tempGroupId.value = props.activeOsGroupId;
+    tempVersionId.value = props.activeOsVersionId;
+    nextTick(() => {
+      updateSpacers();
+      refreshCache();
+      bindScrolls();
+      resizeObs = new ResizeObserver(() => updateSpacers());
+      resizeObs.observe(groupCol.value);
+    });
+  },
+);
 
 function handleOpened() {
-  updateSpacers()
-  refreshCache()
-  init()
+  updateSpacers();
+  refreshCache();
+  init();
 }
 
 // 版本列表变化时刷新缓存并定位
 watch(currentVersions, () => {
-  if (!props.visible) return
+  if (!props.visible) return;
   nextTick(() => {
-    refreshCache()
-    if (!verCol.value) return
-    const item = cachedVerItems.find((el) => el.dataset.id === tempVersionId.value)
-      || cachedVerItems[0]
-    if (item) { setActive(verCol.value, item); updateScales(verCol.value) }
-  })
-})
+    refreshCache();
+    if (!verCol.value) return;
+    const item =
+      cachedVerItems.find((el) => el.dataset.id === tempVersionId.value) ||
+      cachedVerItems[0];
+    if (item) {
+      setActive(verCol.value, item);
+      updateScales(verCol.value);
+    }
+  });
+});
 
 onBeforeUnmount(() => {
-  cleanup()
-})
+  cleanup();
+});
 
 function cleanup() {
-  scrollBound = false
-  removeScrollListeners?.()
-  removeScrollListeners = null
-  resizeObs?.disconnect()
-  resizeObs = null
-  programmaticScrollCount = 0
-  cachedGroupItems = []
-  cachedVerItems = []
+  scrollBound = false;
+  removeScrollListeners?.();
+  removeScrollListeners = null;
+  resizeObs?.disconnect();
+  resizeObs = null;
+  programmaticScrollCount = 0;
+  cachedGroupItems = [];
+  cachedVerItems = [];
 }
 
 function updateSpacers() {
-  const col = groupCol.value
-  if (!col) return
-  const h = (col.clientHeight - 34) / 2
-  if (h > 0) spacerH.value = h
+  const col = groupCol.value;
+  if (!col) return;
+  const h = (col.clientHeight - 34) / 2;
+  if (h > 0) spacerH.value = h;
 }
 
 function centerItem(item) {
-  const col = item.closest('.mop-col')
-  if (!col) return
-  programmaticScrollCount += 1
-  col.scrollTo({ top: item.offsetTop - (col.clientHeight - item.offsetHeight) / 2, behavior: 'smooth' })
-  let ended = false
+  const col = item.closest(".mop-col");
+  if (!col) return;
+  programmaticScrollCount += 1;
+  col.scrollTo({
+    top: item.offsetTop - (col.clientHeight - item.offsetHeight) / 2,
+    behavior: "smooth",
+  });
+  let ended = false;
   const onEnd = () => {
-    if (ended) return
-    ended = true
-    col.removeEventListener('scrollend', onEnd)
-    updateScales(col)
-    programmaticScrollCount = Math.max(programmaticScrollCount - 1, 0)
-  }
-  col.addEventListener('scrollend', onEnd, { once: true })
-  setTimeout(onEnd, 800)
+    if (ended) return;
+    ended = true;
+    col.removeEventListener("scrollend", onEnd);
+    updateScales(col);
+    programmaticScrollCount = Math.max(programmaticScrollCount - 1, 0);
+  };
+  col.addEventListener("scrollend", onEnd, { once: true });
+  setTimeout(onEnd, 800);
 }
 
 function getCachedItems(col) {
-  return col === groupCol.value ? cachedGroupItems : cachedVerItems
+  return col === groupCol.value ? cachedGroupItems : cachedVerItems;
 }
 
 function updateScales(col) {
-  if (!col) return
-  const items = getCachedItems(col)
-  const halfH = col.clientHeight / 2
-  const scrollTop = col.scrollTop
+  if (!col) return;
+  const items = getCachedItems(col);
+  const halfH = col.clientHeight / 2;
+  const scrollTop = col.scrollTop;
   items.forEach((item) => {
-    const center = item.offsetTop + item.offsetHeight / 2 - scrollTop
-    const ratio = Math.min(Math.abs(center - halfH) / halfH, 1)
-    const scale = Math.max(1 - ratio * 0.35, 0.78)
-    const opacity = Math.max(1 - ratio * 0.6, 0.5)
-    item.style.transform = `scale(${scale})`
-    item.style.opacity = String(opacity)
-  })
+    const center = item.offsetTop + item.offsetHeight / 2 - scrollTop;
+    const ratio = Math.min(Math.abs(center - halfH) / halfH, 1);
+    const scale = Math.max(1 - ratio * 0.35, 0.78);
+    const opacity = Math.max(1 - ratio * 0.6, 0.5);
+    item.style.transform = `scale(${scale})`;
+    item.style.opacity = String(opacity);
+  });
 }
 
 function setActive(col, item) {
-  getCachedItems(col).forEach((el) => el.classList.toggle('is-active', el === item))
-  centerItem(item)
+  getCachedItems(col).forEach((el) =>
+    el.classList.toggle("is-active", el === item),
+  );
+  centerItem(item);
 }
 
 function findClosest(col) {
-  const items = getCachedItems(col)
-  if (!items.length) return null
-  const halfH = col.clientHeight / 2
-  const scrollTop = col.scrollTop
-  let closest = null
-  let min = Infinity
+  const items = getCachedItems(col);
+  if (!items.length) return null;
+  const halfH = col.clientHeight / 2;
+  const scrollTop = col.scrollTop;
+  let closest = null;
+  let min = Infinity;
   items.forEach((item) => {
-    const center = item.offsetTop + item.offsetHeight / 2 - scrollTop
-    const dist = Math.abs(center - halfH)
-    if (dist < min) { min = dist; closest = item }
-  })
-  return closest
+    const center = item.offsetTop + item.offsetHeight / 2 - scrollTop;
+    const dist = Math.abs(center - halfH);
+    if (dist < min) {
+      min = dist;
+      closest = item;
+    }
+  });
+  return closest;
 }
 
 function snapToClosest(col, isGroup) {
-  const closest = findClosest(col)
-  if (!closest) return
-  setActive(col, closest)
+  const closest = findClosest(col);
+  if (!closest) return;
+  setActive(col, closest);
   if (isGroup) {
-    const id = closest.dataset.id
-    tempGroupId.value = id
-    const group = props.osGroups.find((g) => g.id === id)
+    const id = closest.dataset.id;
+    tempGroupId.value = id;
+    const group = props.osGroups.find((g) => g.id === id);
     if (group?.versions?.length) {
-      tempVersionId.value = group.versions[0].id
+      tempVersionId.value = group.versions[0].id;
     }
   } else {
-    tempVersionId.value = closest.dataset.id
+    tempVersionId.value = closest.dataset.id;
   }
 }
 
 // 确认前同步：程序化滚动中跳过视觉同步，直接使用已设置的目标值
 function syncClosestBeforeConfirm() {
-  if (programmaticScrollCount > 0) return
+  if (programmaticScrollCount > 0) return;
 
-  const groupItem = groupCol.value ? findClosest(groupCol.value) : null
+  const groupItem = groupCol.value ? findClosest(groupCol.value) : null;
   if (groupItem) {
-    tempGroupId.value = groupItem.dataset.id
-    cachedGroupItems.forEach((el) => el.classList.toggle('is-active', el === groupItem))
-    updateScales(groupCol.value)
+    tempGroupId.value = groupItem.dataset.id;
+    cachedGroupItems.forEach((el) =>
+      el.classList.toggle("is-active", el === groupItem),
+    );
+    updateScales(groupCol.value);
   }
 
-  const versionItem = verCol.value ? findClosest(verCol.value) : null
+  const versionItem = verCol.value ? findClosest(verCol.value) : null;
   if (versionItem) {
-    tempVersionId.value = versionItem.dataset.id
-    cachedVerItems.forEach((el) => el.classList.toggle('is-active', el === versionItem))
-    updateScales(verCol.value)
+    tempVersionId.value = versionItem.dataset.id;
+    cachedVerItems.forEach((el) =>
+      el.classList.toggle("is-active", el === versionItem),
+    );
+    updateScales(verCol.value);
   }
 }
 
 function handleGroupClick(g) {
-  tempGroupId.value = g.id
-  const item = cachedGroupItems.find((el) => el.dataset.id === g.id)
-  if (item) setActive(groupCol.value, item)
+  tempGroupId.value = g.id;
+  const item = cachedGroupItems.find((el) => el.dataset.id === g.id);
+  if (item) setActive(groupCol.value, item);
   if (g.versions?.length) {
-    tempVersionId.value = g.versions[0].id
+    tempVersionId.value = g.versions[0].id;
   }
 }
 
 function handleVersionClick(v) {
-  tempVersionId.value = v.id
-  const item = cachedVerItems.find((el) => el.dataset.id === v.id)
-  if (item) setActive(verCol.value, item)
+  tempVersionId.value = v.id;
+  const item = cachedVerItems.find((el) => el.dataset.id === v.id);
+  if (item) setActive(verCol.value, item);
 }
 
 function handleConfirm() {
-  syncClosestBeforeConfirm()
-  emit('confirm', tempGroupId.value, tempVersionId.value)
+  syncClosestBeforeConfirm();
+  emit("confirm", tempGroupId.value, tempVersionId.value);
 }
 
 // ---- 键盘导航 ----
 
 function navigateItem(col, items, direction, isGroup) {
-  if (!items.length) return
-  const activeItem = col.querySelector('.mop-item.is-active')
-  const idx = activeItem ? items.indexOf(activeItem) : -1
-  const nextIdx = idx + direction
-  if (nextIdx < 0 || nextIdx >= items.length) return
+  if (!items.length) return;
+  const activeItem = col.querySelector(".mop-item.is-active");
+  const idx = activeItem ? items.indexOf(activeItem) : -1;
+  const nextIdx = idx + direction;
+  if (nextIdx < 0 || nextIdx >= items.length) return;
   if (isGroup) {
-    const group = props.osGroups.find((g) => g.id === items[nextIdx].dataset.id)
-    if (group) handleGroupClick(group)
+    const group = props.osGroups.find(
+      (g) => g.id === items[nextIdx].dataset.id,
+    );
+    if (group) handleGroupClick(group);
   } else {
-    handleVersionClick({ id: items[nextIdx].dataset.id })
+    handleVersionClick({ id: items[nextIdx].dataset.id });
   }
 }
 
 function handleGroupKeydown(e) {
-  if (e.key === 'ArrowUp') { e.preventDefault(); navigateItem(groupCol.value, cachedGroupItems, -1, true) }
-  else if (e.key === 'ArrowDown') { e.preventDefault(); navigateItem(groupCol.value, cachedGroupItems, 1, true) }
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    navigateItem(groupCol.value, cachedGroupItems, -1, true);
+  } else if (e.key === "ArrowDown") {
+    e.preventDefault();
+    navigateItem(groupCol.value, cachedGroupItems, 1, true);
+  }
 }
 
 function handleVerKeydown(e) {
-  if (e.key === 'ArrowUp') { e.preventDefault(); navigateItem(verCol.value, cachedVerItems, -1, false) }
-  else if (e.key === 'ArrowDown') { e.preventDefault(); navigateItem(verCol.value, cachedVerItems, 1, false) }
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    navigateItem(verCol.value, cachedVerItems, -1, false);
+  } else if (e.key === "ArrowDown") {
+    e.preventDefault();
+    navigateItem(verCol.value, cachedVerItems, 1, false);
+  }
 }
 
 function bindScrolls() {
-  if (scrollBound) return
-  scrollBound = true
-  const listeners = []
-  ;[
+  if (scrollBound) return;
+  scrollBound = true;
+  const listeners = [];
+  [
     [groupCol.value, true],
     [verCol.value, false],
   ].forEach(([col, isGroup]) => {
-    if (!col) return
-    let timer = null
-    let raf = null
+    if (!col) return;
+    let timer = null;
+    let raf = null;
     const handleScroll = () => {
-      if (raf) cancelAnimationFrame(raf)
-      raf = requestAnimationFrame(() => updateScales(col))
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => updateScales(col));
       if (programmaticScrollCount > 0) {
-        return
+        return;
       }
-      if (timer) clearTimeout(timer)
-      timer = setTimeout(() => snapToClosest(col, isGroup), 150)
-    }
-    col.addEventListener('scroll', handleScroll, { passive: true })
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => snapToClosest(col, isGroup), 150);
+    };
+    col.addEventListener("scroll", handleScroll, { passive: true });
     listeners.push(() => {
-      if (raf) cancelAnimationFrame(raf)
-      if (timer) clearTimeout(timer)
-      col.removeEventListener('scroll', handleScroll)
-    })
-  })
-  removeScrollListeners = () => listeners.forEach((remove) => remove())
+      if (raf) cancelAnimationFrame(raf);
+      if (timer) clearTimeout(timer);
+      col.removeEventListener("scroll", handleScroll);
+    });
+  });
+  removeScrollListeners = () => listeners.forEach((remove) => remove());
 }
 
 function init() {
   if (groupCol.value) {
-    const item = cachedGroupItems.find((el) => el.dataset.id === tempGroupId.value)
-      || cachedGroupItems[0]
-    if (item) { setActive(groupCol.value, item); updateScales(groupCol.value) }
+    const item =
+      cachedGroupItems.find((el) => el.dataset.id === tempGroupId.value) ||
+      cachedGroupItems[0];
+    if (item) {
+      setActive(groupCol.value, item);
+      updateScales(groupCol.value);
+    }
   }
   if (verCol.value) {
-    const item = cachedVerItems.find((el) => el.dataset.id === tempVersionId.value)
-      || cachedVerItems[0]
-    if (item) { setActive(verCol.value, item); updateScales(verCol.value) }
+    const item =
+      cachedVerItems.find((el) => el.dataset.id === tempVersionId.value) ||
+      cachedVerItems[0];
+    if (item) {
+      setActive(verCol.value, item);
+      updateScales(verCol.value);
+    }
   }
 }
 </script>
@@ -384,7 +436,9 @@ function init() {
   }
 }
 
-.mop-col::-webkit-scrollbar { display: none; }
+.mop-col::-webkit-scrollbar {
+  display: none;
+}
 
 .mop-spacer {
   flex-shrink: 0;
@@ -409,9 +463,10 @@ function init() {
   cursor: pointer;
   scroll-snap-align: center;
   transform-origin: center center;
-  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 200ms cubic-bezier(0.22, 1, 0.36, 1),
-              color 160ms ease-out;
+  transition:
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 160ms ease-out;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -453,4 +508,3 @@ function init() {
   scroll-snap-align: center;
 }
 </style>
-

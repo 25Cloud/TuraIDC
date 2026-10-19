@@ -231,10 +231,10 @@ import {
   VISITOR_PERMISSION_CODES,
 } from '@/constants/permissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { required } from '@/utils/formRules';
 import { errorMessage } from '@/utils/userMessage';
-import { t } from '@/locales';
 
 defineOptions({
   name: 'AdminRoles',
@@ -305,7 +305,7 @@ const selectedPermissionCount = computed(() =>
   hasAllPermissionSelected.value ? permissions.value.length : form.permissions.length,
 );
 const dialogConfirmBtn = computed(() =>
-  canEditCurrentRole.value ? { content: '保存', theme: 'primary' as const } : null,
+  canEditCurrentRole.value ? { content: t('roles.index.save'), theme: 'primary' as const } : null,
 );
 const permissionMap = computed(() => new Map(permissions.value.map((item) => [item.key, item])));
 const filteredPermissions = computed(() => {
@@ -330,15 +330,15 @@ const permissionGroups = computed<PermissionGroup[]>(() => {
   return Array.from(grouped.entries()).map(([key, items]) => ({
     key,
     label: items[0]?.group_label || items[0]?.module_label || groupFallbackLabel(key),
-    parentLabel: items[0]?.module_label || '系统',
+    parentLabel: items[0]?.module_label || t('roles.index.systemLabel'),
     items,
     selectedCount: items.filter((item) => hasPermissionSelected(item.key)).length,
   }));
 });
 
 const rules: Record<string, FormRule[]> = {
-  name: [required('请输入角色编码')],
-  label: [required('请输入角色名称')],
+  name: [required(t('roles.index.codeRequired'))],
+  label: [required(t('roles.index.nameRequired'))],
 };
 const columns: PrimaryTableCol<TableRowData>[] = [
   { title: 'ID', colKey: 'id', width: 80 },
@@ -376,7 +376,7 @@ async function loadPermissions() {
     const response = await adminRoleApi.permissions();
     permissions.value = response.list || [];
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载权限目录失败'));
+    MessagePlugin.error(errorMessage(error, t('roles.index.loadPermissionCatalogFailed')));
   }
 }
 
@@ -387,7 +387,7 @@ async function loadRoles() {
     roles.value = response.list || [];
   } catch (error) {
     roles.value = [];
-    MessagePlugin.error(errorMessage(error, '加载角色列表失败'));
+    MessagePlugin.error(errorMessage(error, t('roles.index.loadRolesFailed')));
   } finally {
     loading.value = false;
   }
@@ -401,11 +401,11 @@ function openCreateDialog() {
 }
 
 function rolesMobileActions(row: RoleRecord) {
-  const actions = [{ content: canManage.value ? '权限' : '查看', value: 'edit' }];
+  const actions = [{ content: canManage.value ? t('roles.index.permission') : t('roles.index.view'), value: 'edit' }];
   if (canManage.value) {
-    actions.push({ content: '复制', value: 'copy' });
+    actions.push({ content: t('roles.index.copy'), value: 'copy' });
     if (canDeleteRole(row)) {
-      actions.push({ content: '删除', value: 'delete' });
+      actions.push({ content: t('roles.index.delete'), value: 'delete' });
     }
   }
   return actions;
@@ -461,7 +461,7 @@ async function submitForm() {
     dialogVisible.value = false;
     await loadRoles();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存角色失败'));
+    MessagePlugin.error(errorMessage(error, t('roles.index.saveFailed')));
   } finally {
     saving.value = false;
   }
@@ -469,9 +469,9 @@ async function submitForm() {
 
 function handleCopy(row: RoleRecord) {
   const dialog = DialogPlugin.confirm({
-    header: '复制角色',
-    body: `确认复制角色「${row.label || row.name || row.id}」？`,
-    confirmBtn: { content: '复制', theme: 'primary' },
+    header: t('roles.index.copyTitle'),
+    body: t('roles.index.copyConfirm', { name: row.label || row.name || row.id }),
+    confirmBtn: { content: t('roles.index.copy'), theme: 'primary' },
     cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       try {
@@ -480,7 +480,7 @@ function handleCopy(row: RoleRecord) {
         await loadRoles();
         dialog.destroy();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '复制角色失败'));
+        MessagePlugin.error(errorMessage(error, t('roles.index.copyFailed')));
       }
     },
   });
@@ -493,9 +493,9 @@ function handleDelete(row: RoleRecord) {
   }
 
   const dialog = DialogPlugin.confirm({
-    header: '删除角色',
-    body: `确认删除角色「${row.label || row.name || row.id}」？已分配员工的角色无法删除。`,
-    confirmBtn: { content: '删除', theme: 'danger' },
+    header: t('roles.index.deleteTitle'),
+    body: t('roles.index.deleteConfirm', { name: row.label || row.name || row.id }),
+    confirmBtn: { content: t('roles.index.delete'), theme: 'danger' },
     cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       try {
@@ -504,7 +504,7 @@ function handleDelete(row: RoleRecord) {
         await loadRoles();
         dialog.destroy();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除角色失败'));
+        MessagePlugin.error(errorMessage(error, t('roles.index.deleteFailed')));
       }
     },
   });
@@ -566,8 +566,8 @@ function normalizePermissionSelection(values: string[]) {
 
 function permissionSummary(row: RoleRecord) {
   const resolved = row.permissions || [];
-  if (resolved.includes(AdminPermissions.ALL)) return '全部权限';
-  return `${resolved.length} 项权限`;
+  if (resolved.includes(AdminPermissions.ALL)) return t('roles.index.allPermissions');
+  return t('roles.index.permissionCount', { count: resolved.length });
 }
 
 function riskPermissionCount(row: RoleRecord) {
@@ -584,23 +584,23 @@ function hasPermissionSelected(permission: string) {
 function groupFallbackLabel(group: string) {
   return (
     {
-      system_root: '超级权限',
-      organization_staff: '员工账号',
-      organization_role: '角色授权',
-      organization_permission: '权限目录',
-      dashboard_workbench: '工作台',
-      customer_profile: '客户资料',
-      customer_verification: '实名审核',
-      finance_order: '订单管理',
-      finance_invoice: '账单管理',
-      finance_funds: '资金操作',
-      finance_report: '财务报表',
-      support_ticket: '工单支持',
-      product_catalog: '商品配置',
-      content_ops: '内容运营',
-      marketing_growth: '推广会员',
-      system_config: '系统设置',
-      system_audit: '日志审计',
+      system_root: t('roles.index.moduleSystemRoot'),
+      organization_staff: t('roles.index.moduleOrganizationStaff'),
+      organization_role: t('roles.index.moduleOrganizationRole'),
+      organization_permission: t('roles.index.moduleOrganizationPermission'),
+      dashboard_workbench: t('roles.index.moduleDashboardWorkbench'),
+      customer_profile: t('roles.index.moduleCustomerProfile'),
+      customer_verification: t('roles.index.moduleCustomerVerification'),
+      finance_order: t('roles.index.moduleFinanceOrder'),
+      finance_invoice: t('roles.index.moduleFinanceInvoice'),
+      finance_funds: t('roles.index.moduleFinanceFunds'),
+      finance_report: t('roles.index.moduleFinanceReport'),
+      support_ticket: t('roles.index.moduleSupportTicket'),
+      product_catalog: t('roles.index.moduleProductCatalog'),
+      content_ops: t('roles.index.moduleContentOps'),
+      marketing_growth: t('roles.index.moduleMarketingGrowth'),
+      system_config: t('roles.index.moduleSystemConfig'),
+      system_audit: t('roles.index.moduleSystemAudit'),
     }[group] || group
   );
 }
@@ -614,9 +614,9 @@ function confirmAllPermission() {
       resolve(value);
     };
     const dialog = DialogPlugin.confirm({
-      header: '确认授予全部权限',
-      body: '全部权限将允许该角色访问并操作后台所有功能。',
-      confirmBtn: { content: '确认授予', theme: 'danger' },
+      header: t('roles.index.grantAllTitle'),
+      body: t('roles.index.grantAllBody'),
+      confirmBtn: { content: t('roles.index.confirmGrant'), theme: 'danger' },
       cancelBtn: t('common.cancel'),
       onConfirm: () => {
         settle(true);

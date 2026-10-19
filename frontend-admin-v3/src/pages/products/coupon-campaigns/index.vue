@@ -11,7 +11,12 @@
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.status" clearable :placeholder="$t('products.couponCampaigns.filterStatus')" @change="handleSearch">
+        <t-select
+          v-model="filters.status"
+          clearable
+          :placeholder="$t('products.couponCampaigns.filterStatus')"
+          @change="handleSearch"
+        >
           <t-option value="1" :label="$t('products.couponCampaigns.statusRunning')" />
           <t-option value="0" :label="$t('products.couponCampaigns.statusStopped')" />
         </t-select>
@@ -28,7 +33,11 @@
               <div class="campaign-title-row">
                 <strong>{{ row.name || '-' }}</strong>
                 <t-tag size="small" variant="light">{{ $t('products.couponCampaigns.autoIssue') }}</t-tag>
-                <t-tag v-if="Number(row.generated_coupon_count || 0) > 0" size="small" theme="default" variant="light"
+                <t-tag
+                  v-if="Number(row.generated_coupon_count || 0) > 0"
+                  size="small"
+                  theme="default"
+                  variant="light"
                   >{{ $t('products.couponCampaigns.generated') }}</t-tag
                 >
               </div>
@@ -39,9 +48,14 @@
           <template #schedule="{ row }">
             <div class="campaign-meta">
               <strong>{{ row.schedule_text || scheduleText(row) }}</strong>
-              <span>{{ $t('products.couponCampaigns.nextRunLabel') }}{{ row.next_run_at || $t('products.couponCampaigns.notConfigured') }}</span>
+              <span
+                >{{ $t('products.couponCampaigns.nextRunLabel')
+                }}{{ row.next_run_at || $t('products.couponCampaigns.notConfigured') }}</span
+              >
               <span>{{
-                row.valid_duration_hours ? $t('products.couponCampaigns.expireAfterHours', { hours: row.valid_duration_hours }) : $t('products.couponCampaigns.neverExpires')
+                row.valid_duration_hours
+                  ? $t('products.couponCampaigns.expireAfterHours', { hours: row.valid_duration_hours })
+                  : $t('products.couponCampaigns.neverExpires')
               }}</span>
             </div>
           </template>
@@ -59,15 +73,23 @@
               <strong>{{ row.discount_label || formatDiscount(row) }}</strong>
               <span>{{ $t('products.couponCampaigns.issueQuantity', { count: row.issue_quantity || 0 }) }}</span>
               <span>{{ $t('products.couponCampaigns.minSpend', { amount: moneyText(row.min_amount) }) }}</span>
-              <span>{{ row.per_user_limit ? $t('products.couponCampaigns.perUserLimit', { count: row.per_user_limit }) : $t('products.couponCampaigns.perUserUnlimited') }}</span>
+              <span>{{
+                row.per_user_limit
+                  ? $t('products.couponCampaigns.perUserLimit', { count: row.per_user_limit })
+                  : $t('products.couponCampaigns.perUserUnlimited')
+              }}</span>
             </div>
           </template>
 
           <template #latest="{ row }">
             <div class="campaign-meta">
               <span>{{ row.last_dispatched_at || $t('products.couponCampaigns.notDispatched') }}</span>
-              <span v-if="row.last_coupon_name">{{ $t('products.couponCampaigns.latestBatchLabel') }}{{ row.last_coupon_name }}</span>
-              <span v-if="row.last_coupon_code">{{ $t('products.couponCampaigns.couponCodeLabel') }}{{ row.last_coupon_code }}</span>
+              <span v-if="row.last_coupon_name"
+                >{{ $t('products.couponCampaigns.latestBatchLabel') }}{{ row.last_coupon_name }}</span
+              >
+              <span v-if="row.last_coupon_code"
+                >{{ $t('products.couponCampaigns.couponCodeLabel') }}{{ row.last_coupon_code }}</span
+              >
               <span>{{ $t('products.couponCampaigns.totalBatches', { count: row.generated_coupon_count || 0 }) }}</span>
             </div>
           </template>
@@ -77,7 +99,12 @@
               :theme="Number(row.status) === 1 || row.display_status === 'active' ? 'success' : 'default'"
               variant="light"
             >
-              {{ row.display_status_label || (Number(row.status) === 1 ? $t('products.couponCampaigns.statusRunning') : $t('products.couponCampaigns.statusStopped')) }}
+              {{
+                row.display_status_label ||
+                (Number(row.status) === 1
+                  ? $t('products.couponCampaigns.statusRunning')
+                  : $t('products.couponCampaigns.statusStopped'))
+              }}
             </t-tag>
           </template>
 
@@ -111,7 +138,11 @@
                 :disabled="!canManage || isRowBusy(row.id)"
                 @click="handleToggleStatus(row)"
               >
-                {{ Number(row.status) === 1 ? $t('products.couponCampaigns.stopped') : $t('products.couponCampaigns.enabled') }}
+                {{
+                  Number(row.status) === 1
+                    ? $t('products.couponCampaigns.stopped')
+                    : $t('products.couponCampaigns.enabled')
+                }}
               </t-button>
               <t-button
                 size="small"
@@ -140,7 +171,12 @@
               :title="row.name || '-'"
               :subtitle="$t('products.couponCampaigns.autoIssue')"
               :description="row.description || ''"
-              :status-label="row.display_status_label || (Number(row.status) === 1 ? $t('products.couponCampaigns.statusRunning') : $t('products.couponCampaigns.statusStopped'))"
+              :status-label="
+                row.display_status_label ||
+                (Number(row.status) === 1
+                  ? $t('products.couponCampaigns.statusRunning')
+                  : $t('products.couponCampaigns.statusStopped'))
+              "
               :status-theme="Number(row.status) === 1 || row.display_status === 'active' ? 'success' : 'default'"
               :rows="campaignMobileRows(row)"
               :action-options="mobileActionOptions(row)"
@@ -165,7 +201,9 @@
 
     <t-drawer
       v-model:visible="dialogVisible"
-      :header="form.id ? $t('products.couponCampaigns.editCampaignTitle') : $t('products.couponCampaigns.addCampaignTitle')"
+      :header="
+        form.id ? $t('products.couponCampaigns.editCampaignTitle') : $t('products.couponCampaigns.addCampaignTitle')
+      "
       size="820px"
       class="campaign-edit-drawer"
       :close-on-overlay-click="false"
@@ -174,18 +212,31 @@
     >
       <div class="campaign-drawer-shell">
         <t-form ref="formRef" class="campaign-drawer-form" :data="form" :rules="formRules" label-align="top">
-          <section class="campaign-drawer-section" data-title="基础信息">
+          <section class="campaign-drawer-section" :data-title="$t('products.couponCampaigns.sectionBasicInfo')">
             <div class="campaign-form-grid">
               <t-form-item :label="$t('products.couponCampaigns.activityNameLabel')" name="name">
-                <t-input v-model="form.name" maxlength="120" :placeholder="$t('products.couponCampaigns.activityNamePlaceholder')" />
+                <t-input
+                  v-model="form.name"
+                  maxlength="120"
+                  :placeholder="$t('products.couponCampaigns.activityNamePlaceholder')"
+                />
               </t-form-item>
               <t-form-item :label="$t('products.couponCampaigns.weekdaysLabel')" name="weekdays">
-                <t-select v-model="form.weekdays" multiple :placeholder="$t('products.couponCampaigns.weekdaysPlaceholder')">
+                <t-select
+                  v-model="form.weekdays"
+                  multiple
+                  :placeholder="$t('products.couponCampaigns.weekdaysPlaceholder')"
+                >
                   <t-option v-for="item in weekdayOptions" :key="item.value" :label="item.label" :value="item.value" />
                 </t-select>
               </t-form-item>
               <t-form-item :label="$t('products.couponCampaigns.triggerTimeLabel')" name="trigger_time">
-                <t-time-picker v-model="form.trigger_time" clearable format="HH:mm:ss" :placeholder="$t('products.couponCampaigns.triggerTimePlaceholder')" />
+                <t-time-picker
+                  v-model="form.trigger_time"
+                  clearable
+                  format="HH:mm:ss"
+                  :placeholder="$t('products.couponCampaigns.triggerTimePlaceholder')"
+                />
               </t-form-item>
               <t-form-item :label="$t('products.couponCampaigns.issueQuantityLabel')" name="issue_quantity">
                 <t-input-number v-model="form.issue_quantity" :min="1" />
@@ -203,7 +254,7 @@
             </div>
           </section>
 
-          <section class="campaign-drawer-section" data-title="优惠规则">
+          <section class="campaign-drawer-section" :data-title="$t('products.couponCampaigns.sectionDiscountRules')">
             <div class="campaign-form-grid">
               <t-form-item :label="$t('products.couponCampaigns.discountTypeLabel')" name="discount_type">
                 <t-select v-model="form.discount_type">
@@ -219,7 +270,11 @@
                 </t-select>
               </t-form-item>
               <t-form-item
-                :label="form.discount_type === 'percentage' ? $t('products.couponCampaigns.discountValuePercent') : $t('products.couponCampaigns.discountValueAmount')"
+                :label="
+                  form.discount_type === 'percentage'
+                    ? $t('products.couponCampaigns.discountValuePercent')
+                    : $t('products.couponCampaigns.discountValueAmount')
+                "
                 name="discount_value"
               >
                 <t-input-number
@@ -246,10 +301,19 @@
             </div>
           </section>
 
-          <section class="campaign-drawer-section" data-title="时间与范围">
+          <section class="campaign-drawer-section" :data-title="$t('products.couponCampaigns.sectionTimeAndScope')">
             <div class="campaign-form-grid">
-              <t-form-item :label="$t('products.couponCampaigns.billingCyclesLabel')" name="billing_cycles" class="form-span-2">
-                <t-select v-model="form.billing_cycles" multiple clearable :placeholder="$t('products.couponCampaigns.billingCyclesPlaceholder')">
+              <t-form-item
+                :label="$t('products.couponCampaigns.billingCyclesLabel')"
+                name="billing_cycles"
+                class="form-span-2"
+              >
+                <t-select
+                  v-model="form.billing_cycles"
+                  multiple
+                  clearable
+                  :placeholder="$t('products.couponCampaigns.billingCyclesPlaceholder')"
+                >
                   <t-option
                     v-for="item in billingCycleOptions"
                     :key="item.value"
@@ -268,9 +332,13 @@
             </div>
           </section>
 
-          <section class="campaign-drawer-section" data-title="备注">
+          <section class="campaign-drawer-section" :data-title="$t('products.couponCampaigns.sectionRemark')">
             <div class="campaign-form-grid">
-              <t-form-item :label="$t('products.couponCampaigns.descriptionLabel')" name="description" class="form-span-2">
+              <t-form-item
+                :label="$t('products.couponCampaigns.descriptionLabel')"
+                name="description"
+                class="form-span-2"
+              >
                 <t-textarea v-model="form.description" :autosize="{ minRows: 3, maxRows: 5 }" maxlength="255" />
               </t-form-item>
               <t-form-item :label="$t('products.couponCampaigns.remarkLabel')" name="remark" class="form-span-2">
@@ -281,8 +349,12 @@
         </t-form>
 
         <div class="campaign-drawer-footer">
-          <t-button variant="outline" @click="closeCampaignDrawer">{{ $t('products.couponCampaigns.cancel') }}</t-button>
-          <t-button theme="primary" :loading="saving" @click="submitForm">{{ $t('products.couponCampaigns.save') }}</t-button>
+          <t-button variant="outline" @click="closeCampaignDrawer">{{
+            $t('products.couponCampaigns.cancel')
+          }}</t-button>
+          <t-button theme="primary" :loading="saving" @click="submitForm">{{
+            $t('products.couponCampaigns.save')
+          }}</t-button>
         </div>
       </div>
     </t-drawer>
@@ -303,10 +375,10 @@ import MobileRecordCard from '@/components/mobile-record-card/index.vue';
 import ProductBindingTreeSelect from '@/components/product-binding-tree-select/index.vue';
 import { AdminPermissions } from '@/constants/permissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { t } from '@/locales';
 import { formatDateTime } from '@/utils/format';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
-import { t } from '@/locales';
 
 interface CampaignForm {
   id: number | null;
@@ -430,7 +502,7 @@ function campaignDeleteDisabled(row: CouponCampaignRecord) {
 }
 
 function campaignLockReason(row: CouponCampaignRecord) {
-  return String(row.lock_reason || '活动已生成优惠券批次，不允许删除；编辑仅影响后续批次');
+  return String(row.lock_reason || t('products.couponCampaigns.lockedGenerated'));
 }
 
 async function loadList() {
@@ -446,7 +518,7 @@ async function loadList() {
   } catch (error) {
     campaigns.value = [];
     total.value = 0;
-    MessagePlugin.error(errorMessage(error, '加载活动列表失败'));
+    MessagePlugin.error(errorMessage(error, t('products.couponCampaigns.loadCampaignsFailed')));
   } finally {
     loading.value = false;
   }
@@ -559,7 +631,7 @@ async function submitForm() {
     dialogVisible.value = false;
     await loadData();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存活动失败'));
+    MessagePlugin.error(errorMessage(error, t('products.couponCampaigns.saveCampaignFailed')));
   } finally {
     saving.value = false;
   }
@@ -605,13 +677,13 @@ function handleTrigger(row: CouponCampaignRecord) {
     return;
   }
   const dialog = DialogPlugin.confirm({
-    header: '立即发放',
-    body: `确认立即发放活动「${row.name || row.id}」的新一批优惠券吗？`,
+    header: t('products.couponCampaigns.issueNow'),
+    body: t('products.couponCampaigns.issueConfirmBody', { name: row.name || row.id }),
     theme: 'warning',
     confirmBtn: t('products.couponCampaigns.confirmIssue'),
     cancelBtn: t('common.cancel'),
     async onConfirm() {
-      await runRowAction(row, 'trigger', '发放活动批次失败', async () => {
+      await runRowAction(row, 'trigger', t('products.couponCampaigns.issueBatchFailed'), async () => {
         await adminApi.couponCampaigns.trigger(row.id);
         MessagePlugin.success(t('products.couponCampaigns.batchIssued'));
         dialog.hide();
@@ -626,7 +698,7 @@ async function handleToggleStatus(row: CouponCampaignRecord) {
     MessagePlugin.warning(t('products.couponCampaigns.noPermission'));
     return;
   }
-  await runRowAction(row, 'toggle', '更新活动状态失败', async () => {
+  await runRowAction(row, 'toggle', t('products.couponCampaigns.updateStatusFailed'), async () => {
     await adminApi.couponCampaigns.toggleStatus(row.id, Number(row.status) !== 1);
     MessagePlugin.success(t('products.couponCampaigns.statusUpdated'));
     await loadData();
@@ -643,13 +715,13 @@ function handleDelete(row: CouponCampaignRecord) {
     return;
   }
   const dialog = DialogPlugin.confirm({
-    header: '删除活动',
-    body: `确认删除活动「${row.name || row.id}」吗？仅未生成批次的活动可删除。`,
+    header: t('products.couponCampaigns.deleteCampaignTitle'),
+    body: t('products.couponCampaigns.deleteCampaignConfirm', { name: row.name || row.id }),
     theme: 'warning',
     confirmBtn: t('common.confirmDelete'),
     cancelBtn: t('common.cancel'),
     async onConfirm() {
-      await runRowAction(row, 'delete', '删除活动失败', async () => {
+      await runRowAction(row, 'delete', t('products.couponCampaigns.deleteCampaignFailed'), async () => {
         await adminApi.couponCampaigns.delete(row.id);
         MessagePlugin.success(t('products.couponCampaigns.deleted'));
         dialog.hide();
@@ -661,35 +733,52 @@ function handleDelete(row: CouponCampaignRecord) {
 
 function mobileActionOptions(row: CouponCampaignRecord) {
   return [
-    { content: '编辑', value: 'edit', disabled: campaignEditDisabled(row) },
+    { content: t('products.couponCampaigns.edit'), value: 'edit', disabled: campaignEditDisabled(row) },
     {
-      content: '立即发放',
+      content: t('products.couponCampaigns.issueNow'),
       value: 'trigger',
       disabled: !canManage.value || Number(row.status) !== 1 || isRowBusy(row.id),
     },
     {
-      content: Number(row.status) === 1 ? '停用' : '启用',
+      content: Number(row.status) === 1 ? t('products.couponCampaigns.stopped') : t('products.couponCampaigns.enabled'),
       value: 'toggle',
       disabled: !canManage.value || isRowBusy(row.id),
     },
-    { content: '删除', value: 'delete', disabled: campaignDeleteDisabled(row) },
+    { content: t('products.couponCampaigns.delete'), value: 'delete', disabled: campaignDeleteDisabled(row) },
   ];
 }
 
 function campaignMobileRows(row: CouponCampaignRecord) {
   return [
     { label: t('products.couponCampaigns.scheduleLabel'), value: row.schedule_text || scheduleText(row), strong: true },
-    { label: t('products.couponCampaigns.discountLabel'), value: row.discount_label || formatDiscount(row), strong: true },
+    {
+      label: t('products.couponCampaigns.discountLabel'),
+      value: row.discount_label || formatDiscount(row),
+      strong: true,
+    },
     {
       label: t('products.couponCampaigns.typeLabel'),
       value: `${row.discount_type_label || discountTypeLabel(row.discount_type)} / ${
         row.discount_scope_label || discountScopeLabel(row.discount_scope)
       }`,
     },
-    { label: t('products.couponCampaigns.quantity'), value: `${row.issue_quantity || 0} 张` },
-    { label: t('products.couponCampaigns.nextRun'), value: row.next_run_at || '未配置' },
-    { label: t('products.couponCampaigns.generatedLabel'), value: `${row.generated_coupon_count || 0} 批` },
-    { label: t('products.couponCampaigns.locked'), value: campaignLockReason(row), show: row.can_update === false || row.can_delete === false },
+    {
+      label: t('products.couponCampaigns.quantity'),
+      value: t('products.couponCampaigns.issueQuantityUnit', { count: row.issue_quantity || 0 }),
+    },
+    {
+      label: t('products.couponCampaigns.nextRun'),
+      value: row.next_run_at || t('products.couponCampaigns.notConfigured'),
+    },
+    {
+      label: t('products.couponCampaigns.generatedLabel'),
+      value: t('products.couponCampaigns.generatedBatches', { count: row.generated_coupon_count || 0 }),
+    },
+    {
+      label: t('products.couponCampaigns.locked'),
+      value: campaignLockReason(row),
+      show: row.can_update === false || row.can_delete === false,
+    },
   ];
 }
 
@@ -709,11 +798,17 @@ function handleMobileAction(action: unknown, row: CouponCampaignRecord) {
 }
 
 function discountTypeLabel(value: unknown) {
-  return value === 'percentage' ? '折扣券' : '满减券';
+  return value === 'percentage'
+    ? t('products.couponCampaigns.typeDiscount')
+    : t('products.couponCampaigns.typeFullReduction');
 }
 
 function discountScopeLabel(value: unknown) {
-  const map: Record<string, string> = { first_month: '首月优惠', recurring: '持续优惠', renew: '续费优惠' };
+  const map: Record<string, string> = {
+    first_month: t('products.couponCampaigns.scopeFirstMonth'),
+    recurring: t('products.couponCampaigns.scopeRecurring'),
+    renew: t('products.couponCampaigns.scopeRenew'),
+  };
   return map[String(value || '')] || '-';
 }
 
@@ -729,8 +824,13 @@ function moneyText(value: unknown) {
 function scheduleText(row: CouponCampaignRecord) {
   const weekdays = Array.isArray(row.weekdays) ? row.weekdays : [];
   const map = new Map(weekdayOptions.map((item) => [item.value, item.label]));
-  const dayText = weekdays.length ? weekdays.map((item) => map.get(Number(item)) || item).join('、') : '未配置星期';
-  return `${dayText} ${row.trigger_time || '未配置时间'}`;
+  const dayText = weekdays.length
+    ? weekdays.map((item) => map.get(Number(item)) || item).join(t('products.couponCampaigns.weekdaySeparator'))
+    : t('products.couponCampaigns.weekdaysNotConfigured');
+  return t('products.couponCampaigns.scheduleSummary', {
+    days: dayText,
+    time: row.trigger_time || t('products.couponCampaigns.timeNotConfigured'),
+  });
 }
 
 onMounted(async () => {

@@ -1,6 +1,7 @@
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, reactive, ref } from 'vue';
 
+import { t } from '@/locales';
 import { formatMoney } from '@/utils/format';
 
 import type { CouponOption, RenewCycleOption, ServiceRenewPreview } from '../types';
@@ -61,7 +62,7 @@ export function useConsoleRenew(options: UseConsoleRenewOptions) {
       );
       renewForm.user_coupon_id = Number(res.data?.selected_user_coupon_id || 0);
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '加载续费信息失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('services.console.loadRenewFailed')));
     } finally {
       renewLoading.value = false;
     }
@@ -92,9 +93,9 @@ export function useConsoleRenew(options: UseConsoleRenewOptions) {
       const res = await clientApi.createRenewOrder(serviceId.value, { billing_cycle: renewForm.billing_cycle });
       const payload = (res.data || {}) as { message?: string };
       renewVisible.value = false;
-      MessagePlugin.success(String(payload.message || '续费订单已创建，账单已生成'));
+      MessagePlugin.success(String(payload.message || t('services.console.renewOrderCreated')));
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '创建续费账单失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('services.console.createRenewInvoiceFailed')));
     } finally {
       renewSubmitting.value = false;
     }

@@ -6,44 +6,52 @@
 
     <main class="profile-main">
       <t-card v-if="activeTab === 'profile'" class="profile-card" :bordered="false">
-        <template #actions><t-tag variant="light">{{ $t('profile.basicInfo') }}</t-tag></template>
+        <template #actions
+          ><t-tag variant="light">{{ $t('profile.basicInfo') }}</t-tag></template
+        >
         <t-form label-align="left" label-width="6rem" class="profile-form">
-          <t-form-item label="账户ID">
+          <t-form-item :label="$t('profile.accountId')">
             <div class="profile-id-row">
               <t-input :value="profileForm.id" readonly />
               <button
                 type="button"
                 class="profile-copy-btn"
-                title="复制账户ID"
-                aria-label="复制账户ID"
+                :title="$t('profile.copyAccountId')"
+                :aria-label="$t('profile.copyAccountId')"
                 @click="copyText(profileForm.id)"
               >
                 <copy-icon />
               </button>
             </div>
           </t-form-item>
-          <t-form-item label="注册时间"><t-input :value="profileForm.createdAt || '--'" readonly /></t-form-item>
-          <t-form-item label="用户名"
-            ><t-input v-model="profileForm.nickname" maxlength="50" placeholder="请输入用户名"
+          <t-form-item :label="$t('profile.registeredAt')"
+            ><t-input :value="profileForm.createdAt || '--'" readonly
           /></t-form-item>
-          <t-form-item label="QQ 号">
-            <t-input v-model="profileForm.qq" maxlength="20" placeholder="填写后将以 QQ 头像作为账户头像" />
+          <t-form-item :label="$t('profile.usernameLabel')"
+            ><t-input v-model="profileForm.nickname" maxlength="50" :placeholder="$t('profile.usernamePlaceholder')"
+          /></t-form-item>
+          <t-form-item :label="$t('profile.qqLabel')">
+            <t-input v-model="profileForm.qq" maxlength="20" :placeholder="$t('profile.qqPlaceholder')" />
           </t-form-item>
-          <t-form-item label="账户余额"><t-input :value="balanceText" readonly /></t-form-item>
-          <t-form-item label="登录邮箱"><t-input :value="profileForm.email || '--'" readonly /></t-form-item>
-          <t-form-item label="账户状态">
+          <t-form-item :label="$t('profile.balanceLabel')"><t-input :value="balanceText" readonly /></t-form-item>
+          <t-form-item :label="$t('profile.loginEmailLabel')"
+            ><t-input :value="profileForm.email || '--'" readonly
+          /></t-form-item>
+          <t-form-item :label="$t('profile.accountStatus')">
             <t-tag :theme="profileForm.is_verified ? 'success' : 'default'" variant="light">
-              {{ profileForm.is_verified ? '已实名' : '未实名' }}
+              {{ profileForm.is_verified ? $t('profile.verified') : $t('profile.unverified') }}
             </t-tag>
           </t-form-item>
-          <t-form-item label="代理组">
+          <t-form-item :label="$t('profile.agentGroup')">
             <t-tag v-if="agentGroup?.name" theme="primary" variant="light">{{ agentGroup.name }}</t-tag>
-            <span v-else class="profile-muted-text">无</span>
+            <span v-else class="profile-muted-text">{{ $t('profile.none') }}</span>
           </t-form-item>
         </t-form>
         <div class="profile-footer">
-          <span>保存后会立即更新当前账户资料。</span>
-          <t-button theme="primary" :loading="profileLoading" @click="updateProfile">保存资料</t-button>
+          <span>{{ $t('profile.saveHint') }}</span>
+          <t-button theme="primary" :loading="profileLoading" @click="updateProfile">{{
+            $t('profile.saveProfile')
+          }}</t-button>
         </div>
       </t-card>
 
@@ -64,7 +72,7 @@
 
       <t-card v-else-if="activeTab === 'notification'" class="profile-card" :bordered="false">
         <template #actions
-          ><t-tag variant="light">已开启 {{ enabledNotificationCount }}</t-tag></template
+          ><t-tag variant="light">{{ $t('profile.enabledTag') }} {{ enabledNotificationCount }}</t-tag></template
         >
         <div class="notification-list">
           <article v-for="item in notificationList" :key="item.key" class="notification-item">
@@ -77,27 +85,34 @@
         </div>
         <div class="profile-footer">
           <span>{{ t('profile.notificationDisableTip') }}</span>
-          <t-button theme="primary" :loading="notificationLoading" @click="saveNotificationPreferences"
-            >{{ t('profile.saveSettings') }}</t-button
-          >
+          <t-button theme="primary" :loading="notificationLoading" @click="saveNotificationPreferences">{{
+            t('profile.saveSettings')
+          }}</t-button>
         </div>
       </t-card>
     </main>
 
     <t-dialog
       v-model:visible="passwordDialogVisible"
-      :header="passwordMode === 'old' ? '修改登录密码' : '验证码重置密码'"
+      :header="passwordMode === 'old' ? $t('profile.changeLoginPassword') : $t('profile.resetPasswordByCode')"
       width="min(30rem, calc(100vw - 2rem))"
     >
       <t-form v-if="passwordMode === 'old'" label-align="top">
-        <t-form-item :label="t('profile.oldPasswordLabel')"><t-input v-model="passwordForm.oldPassword" type="password" /></t-form-item>
-        <t-form-item :label="t('serviceConsole.passwordReset.newPassword')"
-          ><t-input v-model="passwordForm.newPassword" type="password" :placeholder="t('serviceConsole.passwordReset.passwordPlaceholder')"
+        <t-form-item :label="t('profile.oldPasswordLabel')"
+          ><t-input v-model="passwordForm.oldPassword" type="password"
         /></t-form-item>
-        <t-form-item :label="t('clientAuth.register.confirmPasswordLabel')"><t-input v-model="passwordForm.confirmPassword" type="password" /></t-form-item>
-        <t-button variant="text" theme="primary" class="password-forgot" @click="togglePasswordMode"
-          >{{ t('profile.forgotOldPassword') }}</t-button
-        >
+        <t-form-item :label="t('serviceConsole.passwordReset.newPassword')"
+          ><t-input
+            v-model="passwordForm.newPassword"
+            type="password"
+            :placeholder="t('serviceConsole.passwordReset.passwordPlaceholder')"
+        /></t-form-item>
+        <t-form-item :label="t('clientAuth.register.confirmPasswordLabel')"
+          ><t-input v-model="passwordForm.confirmPassword" type="password"
+        /></t-form-item>
+        <t-button variant="text" theme="primary" class="password-forgot" @click="togglePasswordMode">{{
+          t('profile.forgotOldPassword')
+        }}</t-button>
       </t-form>
       <t-form v-else label-align="top">
         <t-tabs v-if="profileForm.phone && profileForm.email" v-model="resetForm.type" theme="normal">
@@ -113,30 +128,37 @@
           <div class="bind-code-row">
             <t-input v-model="resetForm.code" :placeholder="t('profile.codeRequired')" maxlength="6" />
             <t-button variant="outline" :disabled="resetCountdown > 0" @click="sendResetCode">
-              {{ resetCountdown > 0 ? `${resetCountdown}s` : '发送验证码' }}
+              {{ resetCountdown > 0 ? `${resetCountdown}s` : $t('clientAuth.register.sendCode') }}
             </t-button>
           </div>
         </t-form-item>
         <t-form-item :label="t('serviceConsole.passwordReset.newPassword')"
-          ><t-input v-model="resetForm.password" type="password" :placeholder="t('serviceConsole.passwordReset.passwordPlaceholder')"
+          ><t-input
+            v-model="resetForm.password"
+            type="password"
+            :placeholder="t('serviceConsole.passwordReset.passwordPlaceholder')"
         /></t-form-item>
-        <t-form-item :label="t('clientAuth.register.confirmPasswordLabel')"><t-input v-model="resetForm.confirmPassword" type="password" /></t-form-item>
-        <t-button variant="text" theme="primary" class="password-forgot" @click="togglePasswordMode"
-          >{{ t('profile.useOldPassword') }}</t-button
-        >
+        <t-form-item :label="t('clientAuth.register.confirmPasswordLabel')"
+          ><t-input v-model="resetForm.confirmPassword" type="password"
+        /></t-form-item>
+        <t-button variant="text" theme="primary" class="password-forgot" @click="togglePasswordMode">{{
+          t('profile.useOldPassword')
+        }}</t-button>
       </t-form>
       <template #footer>
         <t-button variant="outline" @click="passwordDialogVisible = false">{{ t('common.cancel') }}</t-button>
-        <t-button v-if="passwordMode === 'old'" theme="primary" :loading="profileLoading" @click="changePassword"
-          >{{ t('pages.listCard.dialogForm.confirm') }}</t-button
-        >
-        <t-button v-else theme="primary" :loading="profileLoading" @click="submitResetPassword">{{ t('pages.listCard.dialogForm.confirm') }}</t-button>
+        <t-button v-if="passwordMode === 'old'" theme="primary" :loading="profileLoading" @click="changePassword">{{
+          t('pages.listCard.dialogForm.confirm')
+        }}</t-button>
+        <t-button v-else theme="primary" :loading="profileLoading" @click="submitResetPassword">{{
+          t('pages.listCard.dialogForm.confirm')
+        }}</t-button>
       </template>
     </t-dialog>
 
     <t-dialog
       v-model:visible="phoneDialogVisible"
-      :header="profileForm.phone ? '更换绑定手机' : '绑定手机号'"
+      :header="profileForm.phone ? $t('profile.changePhoneTitle') : $t('profile.bindPhoneTitle')"
       width="min(30rem, calc(100vw - 2rem))"
     >
       <t-form label-align="top">
@@ -147,30 +169,34 @@
             <div class="bind-code-row">
               <t-input v-model="phoneForm.oldCode" :placeholder="t('profile.oldPhoneCodePlaceholder')" maxlength="6" />
               <t-button variant="outline" :disabled="phoneOldCountdown > 0" @click="sendPhoneOldVerificationCode">
-                {{ phoneOldCountdown > 0 ? `${phoneOldCountdown}s` : '发送验证码' }}
+                {{ phoneOldCountdown > 0 ? `${phoneOldCountdown}s` : $t('clientAuth.register.sendCode') }}
               </t-button>
             </div>
           </t-form-item>
         </template>
-        <t-form-item :label="t('profile.newPhoneLabel')"><t-input v-model="phoneForm.phone" :placeholder="t('profile.newPhoneRequired')" /></t-form-item>
+        <t-form-item :label="t('profile.newPhoneLabel')"
+          ><t-input v-model="phoneForm.phone" :placeholder="t('profile.newPhoneRequired')"
+        /></t-form-item>
         <t-form-item :label="t('clientAuth.register.codeLabel')">
           <div class="bind-code-row">
             <t-input v-model="phoneForm.code" :placeholder="t('profile.codeRequired')" maxlength="6" />
             <t-button variant="outline" :disabled="phoneCountdown > 0" @click="sendPhoneVerificationCode">
-              {{ phoneCountdown > 0 ? `${phoneCountdown}s` : '发送验证码' }}
+              {{ phoneCountdown > 0 ? `${phoneCountdown}s` : $t('clientAuth.register.sendCode') }}
             </t-button>
           </div>
         </t-form-item>
       </t-form>
       <template #footer>
         <t-button variant="outline" @click="phoneDialogVisible = false">{{ t('common.cancel') }}</t-button>
-        <t-button theme="primary" :loading="profileLoading" @click="submitPhoneChange">{{ t('pages.listCard.dialogForm.confirm') }}</t-button>
+        <t-button theme="primary" :loading="profileLoading" @click="submitPhoneChange">{{
+          t('pages.listCard.dialogForm.confirm')
+        }}</t-button>
       </template>
     </t-dialog>
 
     <t-dialog
       v-model:visible="emailDialogVisible"
-      :header="profileForm.email ? '更换绑定邮箱' : '绑定邮箱'"
+      :header="profileForm.email ? $t('profile.changeEmailTitle') : $t('profile.bindEmailTitle')"
       width="min(30rem, calc(100vw - 2rem))"
     >
       <t-form label-align="top">
@@ -181,24 +207,28 @@
             <div class="bind-code-row">
               <t-input v-model="emailForm.oldCode" :placeholder="t('profile.oldEmailCodePlaceholder')" maxlength="6" />
               <t-button variant="outline" :disabled="emailOldCountdown > 0" @click="sendEmailOldVerificationCode">
-                {{ emailOldCountdown > 0 ? `${emailOldCountdown}s` : '发送验证码' }}
+                {{ emailOldCountdown > 0 ? `${emailOldCountdown}s` : $t('clientAuth.register.sendCode') }}
               </t-button>
             </div>
           </t-form-item>
         </template>
-        <t-form-item :label="t('profile.newEmailLabel')"><t-input v-model="emailForm.email" :placeholder="t('profile.newEmailRequired')" /></t-form-item>
+        <t-form-item :label="t('profile.newEmailLabel')"
+          ><t-input v-model="emailForm.email" :placeholder="t('profile.newEmailRequired')"
+        /></t-form-item>
         <t-form-item :label="t('clientAuth.register.codeLabel')">
           <div class="bind-code-row">
             <t-input v-model="emailForm.code" :placeholder="t('profile.codeRequired')" maxlength="6" />
             <t-button variant="outline" :disabled="emailCountdown > 0" @click="sendEmailVerificationCode">
-              {{ emailCountdown > 0 ? `${emailCountdown}s` : '发送验证码' }}
+              {{ emailCountdown > 0 ? `${emailCountdown}s` : $t('clientAuth.register.sendCode') }}
             </t-button>
           </div>
         </t-form-item>
       </t-form>
       <template #footer>
         <t-button variant="outline" @click="emailDialogVisible = false">{{ t('common.cancel') }}</t-button>
-        <t-button theme="primary" :loading="profileLoading" @click="submitEmailChange">{{ t('pages.listCard.dialogForm.confirm') }}</t-button>
+        <t-button theme="primary" :loading="profileLoading" @click="submitEmailChange">{{
+          t('pages.listCard.dialogForm.confirm')
+        }}</t-button>
       </template>
     </t-dialog>
   </section>
@@ -218,10 +248,11 @@ const SECTION_BY_ROUTE: Record<string, 'profile' | 'security' | 'notification'> 
   ClientNotification: 'notification',
 };
 
-const SECTION_TITLE: Record<string, string> = {
-  profile: '个人资料',
-  security: '账户安全',
-  notification: '消息提醒',
+// 只存 i18n key，翻译在 pageTitle 里做，切换语言时才会重新求值
+const SECTION_TITLE_KEYS: Record<string, string> = {
+  profile: 'profile.tabs.personal',
+  security: 'profile.tabs.security',
+  notification: 'profile.tabs.notification',
 };
 
 const {
@@ -277,7 +308,9 @@ watch(
   { immediate: true },
 );
 
-const pageTitle = computed(() => SECTION_TITLE[activeTab.value] || '账户设置');
+const pageTitle = computed(() =>
+  SECTION_TITLE_KEYS[activeTab.value] ? t(SECTION_TITLE_KEYS[activeTab.value]) : t('profile.tabs.settings'),
+);
 </script>
 <style scoped lang="less">
 .profile-page {

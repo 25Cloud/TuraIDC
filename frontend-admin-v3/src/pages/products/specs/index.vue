@@ -44,7 +44,7 @@
           </template>
           <template #status="{ row }">
             <t-tag :theme="row.status === '隐藏' ? 'default' : 'success'" variant="light">
-              {{ row.status || '展示中' }}
+              {{ specStatusText(row.status) }}
             </t-tag>
           </template>
           <template #bindings="{ row }">
@@ -96,8 +96,8 @@
         </t-form-item>
         <t-form-item :label="$t('products.specs.status')" name="status">
           <t-select v-model="specForm.status">
-            <t-option value="展示中" label="展示中" />
-            <t-option value="隐藏" label="隐藏" />
+            <t-option value="展示中" :label="$t('products.specs.statusDisplayed')" />
+            <t-option value="隐藏" :label="$t('products.specs.statusHidden')" />
           </t-select>
         </t-form-item>
       </t-form>
@@ -116,8 +116,8 @@ import type { InstanceSpecRecord, ProductBindingRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import ProductBindingTreeSelect from '@/components/product-binding-tree-select/index.vue';
 import { normalizeProductBindings } from '@/hooks/useProductBindingTree';
-import { errorMessage } from '@/utils/userMessage';
 import { t } from '@/locales';
+import { errorMessage } from '@/utils/userMessage';
 
 defineOptions({ name: 'AdminSpecs' });
 
@@ -154,12 +154,19 @@ const specForm = reactive({
   value: '',
   alias: '',
   note: '',
-  status: '展示中',
+  status: t('products.specs.statusDisplayed'),
 });
 
 const specRules: Record<string, FormRule[]> = {
   text: [{ required: true, message: t('products.specs.specTextRequired'), type: 'error' }],
 };
+
+function specStatusText(value: unknown) {
+  const status = String(value || '').trim();
+  if (status === '展示中') return t('products.specs.statusDisplayed');
+  if (status === '隐藏') return t('products.specs.statusHidden');
+  return status || t('products.specs.statusDisplayed');
+}
 
 const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'spec', title: t('products.specs.specText'), minWidth: 220 },
@@ -193,7 +200,7 @@ function normalizeSpec(itemValue: unknown, index = 0): SpecRecord {
     text,
     alias: String(item.alias || '').trim(),
     note: String(item.note || '').trim(),
-    status: String(item.status || '展示中').trim() || '展示中',
+    status: String(item.status || t('products.specs.statusDisplayed')).trim() || t('products.specs.statusDisplayed'),
     sort_order: Number(item.sort_order || index + 1),
     bindings,
     binding_ids: bindings
@@ -215,7 +222,7 @@ async function loadCatalog() {
     });
     rebuildCatalogState(response.list || []);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载实例规格失败'));
+    MessagePlugin.error(errorMessage(error, t('products.specs.loadFailed')));
   } finally {
     loading.value = false;
   }
@@ -228,7 +235,7 @@ function openSpecDialog(spec?: SpecRecord) {
     value: spec?.value || '',
     alias: spec?.alias || '',
     note: spec?.note || '',
-    status: spec?.status || '展示中',
+    status: spec?.status || t('products.specs.statusDisplayed'),
   });
   specDialogVisible.value = true;
 }
@@ -260,7 +267,9 @@ async function handleSubmitSpec() {
               value: nextValue,
               alias: String(specForm.alias || '').trim(),
               note: String(specForm.note || '').trim(),
-              status: String(specForm.status || '展示中').trim() || '展示中',
+              status:
+                String(specForm.status || t('products.specs.statusDisplayed')).trim() ||
+                t('products.specs.statusDisplayed'),
               sort_order: index + 1,
             }
           : item,
@@ -282,7 +291,7 @@ async function handleSubmitSpec() {
         ),
       ];
     }
-    MessagePlugin.success(editingSpecId.value ? '实例规格已更新' : '实例规格已添加');
+    MessagePlugin.success(editingSpecId.value ? t('products.specs.updated') : t('products.specs.created'));
     specDialogVisible.value = false;
   } finally {
     dialogSubmitting.value = false;
@@ -291,8 +300,8 @@ async function handleSubmitSpec() {
 
 function handleDeleteSpec(row: SpecRecord) {
   const dialog = DialogPlugin.confirm({
-    header: '删除实例规格',
-    body: `确认删除「${row.text || row.id}」吗？`,
+    header: t('products.specs.deleteTitle'),
+    body: t('products.specs.deleteConfirm', { name: row.text || row.id }),
     theme: 'warning',
     confirmBtn: t('common.confirmDelete'),
     cancelBtn: t('common.cancel'),
@@ -319,7 +328,7 @@ function buildPayload(): InstanceSpecRecord[] {
     text: String(spec.text || '').trim(),
     alias: String(spec.alias || '').trim(),
     note: String(spec.note || '').trim(),
-    status: String(spec.status || '展示中').trim() || '展示中',
+    status: String(spec.status || t('products.specs.statusDisplayed')).trim() || t('products.specs.statusDisplayed'),
     sort_order: index + 1,
     bindings: spec.bindings,
   }));
@@ -336,7 +345,7 @@ async function handleSave() {
     rebuildCatalogState(response.list || []);
     MessagePlugin.success(t('products.specs.catalogSaved'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存实例规格失败'));
+    MessagePlugin.error(errorMessage(error, t('products.specs.saveFailed')));
   } finally {
     saving.value = false;
   }

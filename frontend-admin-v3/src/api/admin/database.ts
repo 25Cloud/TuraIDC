@@ -1,4 +1,5 @@
 import { getAdminToken } from '@/app/runtime/session';
+import { t } from '@/locales';
 import { request } from '@/utils/request';
 
 export interface DatabaseTableItem {
@@ -78,7 +79,7 @@ export const databaseApi = {
 
     const contentType = String(response.headers.get('content-type') || '').toLowerCase();
     if (!response.ok || contentType.includes('application/json')) {
-      let message = `导出备份失败（HTTP ${response.status}）`;
+      let message = t('system.database.backupExportFailed', { status: response.status });
       try {
         const payload = await response.json();
         if (payload?.message) {

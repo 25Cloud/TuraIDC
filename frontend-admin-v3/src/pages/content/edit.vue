@@ -4,40 +4,44 @@
       <div class="content-edit-head">
         <t-button variant="text" @click="goBack">
           <template #icon><arrow-left-icon /></template>
-          返回列表
+          {{ $t('content.edit.backToList') }}
         </t-button>
-        <span class="content-edit-head__title">{{ isEditing ? `编辑${articleLabel}` : `新增${articleLabel}` }}</span>
+        <span class="content-edit-head__title">{{
+          isEditing
+            ? $t('content.edit.editTitle', { label: articleLabel })
+            : $t('content.edit.addTitle', { label: articleLabel })
+        }}</span>
       </div>
     </t-card>
 
     <t-card :bordered="false" :loading="pageLoading">
       <t-form ref="formRef" :data="form" :rules="rules" label-align="top" class="content-edit-form">
         <section class="edit-section">
-          <h3 class="edit-section__title">基本信息</h3>
+          <h3 class="edit-section__title">{{ $t('content.edit.basicInfo') }}</h3>
           <div class="edit-section__body">
-            <t-form-item class="edit-span-full" label="标题" name="title">
-              <t-input v-model="form.title" size="large" placeholder="请输入标题" />
+            <t-form-item class="edit-span-full" :label="$t('content.edit.titleLabel')" name="title">
+              <t-input v-model="form.title" size="large" :placeholder="$t('content.edit.titlePlaceholder')" />
             </t-form-item>
-            <t-form-item label="所属分类" name="category_id">
-              <t-select v-model="form.category_id" filterable placeholder="请选择分类">
+            <t-form-item :label="$t('content.edit.categoryLabel')" name="category_id">
+              <t-select v-model="form.category_id" filterable :placeholder="$t('content.edit.selectCategory')">
                 <t-option v-for="item in categories" :key="item.id" :label="item.name || '-'" :value="item.id" />
               </t-select>
             </t-form-item>
-            <t-form-item label="状态" name="status">
-              <t-select v-model="form.status" placeholder="请选择状态">
+            <t-form-item :label="$t('content.edit.statusLabel')" name="status">
+              <t-select v-model="form.status" :placeholder="$t('content.edit.selectStatus')">
                 <t-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
               </t-select>
             </t-form-item>
-            <t-form-item label="别名" name="slug">
-              <t-input v-model="form.slug" placeholder="留空自动生成" />
+            <t-form-item :label="$t('content.edit.slugLabel')" name="slug">
+              <t-input v-model="form.slug" :placeholder="$t('content.edit.slugPlaceholder')" />
             </t-form-item>
           </div>
         </section>
 
         <section class="edit-section">
-          <h3 class="edit-section__title">发布设置</h3>
+          <h3 class="edit-section__title">{{ $t('content.edit.publishSettings') }}</h3>
           <div class="edit-section__body">
-            <t-form-item label="发布时间" name="publish_at">
+            <t-form-item :label="$t('content.edit.publishAt')" name="publish_at">
               <t-date-picker
                 v-model="form.publish_at"
                 clearable
@@ -45,119 +49,133 @@
                 mode="date"
                 format="YYYY-MM-DD HH:mm:ss"
                 value-type="YYYY-MM-DD HH:mm:ss"
-                placeholder="请选择发布时间"
+                :placeholder="$t('content.edit.selectPublishAt')"
                 style="width: 100%"
               />
             </t-form-item>
-            <t-form-item label="排序值" name="sort_order">
+            <t-form-item :label="$t('content.edit.sortOrder')" name="sort_order">
               <t-input-number v-model="form.sort_order" :min="0" :max="999999" theme="normal" style="width: 100%" />
             </t-form-item>
-            <t-form-item label="操作人" name="operator">
-              <t-input v-model="form.operator" placeholder="例如：admin#1" />
+            <t-form-item :label="$t('content.edit.operator')" name="operator">
+              <t-input v-model="form.operator" :placeholder="$t('content.edit.operatorPlaceholder')" />
             </t-form-item>
           </div>
           <div class="edit-flag-row">
-            <t-form-item label="置顶" name="is_pinned">
+            <t-form-item :label="$t('content.edit.pinned')" name="is_pinned">
               <t-switch
                 v-model="form.is_pinned"
                 :custom-value="[1, 0]"
-                :label="['置顶', '普通']"
+                :label="[$t('content.edit.pinned'), $t('content.edit.normal')]"
                 @change="handlePinnedChange"
               />
             </t-form-item>
-            <t-form-item label="推荐" name="is_recommended">
+            <t-form-item :label="$t('content.edit.recommended')" name="is_recommended">
               <t-switch
                 v-model="form.is_recommended"
                 :custom-value="[1, 0]"
-                :label="['推荐', '不推荐']"
+                :label="[$t('content.edit.recommended'), $t('content.edit.notRecommended')]"
                 @change="handleRecommendedChange"
               />
             </t-form-item>
-            <t-form-item v-if="isEditing && contentType === 'notice'" label="要求重新查看" name="require_reread">
-              <t-switch v-model="form.require_reread" :custom-value="[true, false]" :label="['是', '否']" />
+            <t-form-item
+              v-if="isEditing && contentType === 'notice'"
+              :label="$t('content.edit.requireReread')"
+              name="require_reread"
+            >
+              <t-switch
+                v-model="form.require_reread"
+                :custom-value="[true, false]"
+                :label="[$t('content.edit.yes'), $t('content.edit.no')]"
+              />
               <template #help>{{ $t('content.edit.requireRereadResetHint') }}</template>
             </t-form-item>
           </div>
         </section>
 
         <section class="edit-section">
-          <h3 class="edit-section__title">封面与摘要</h3>
+          <h3 class="edit-section__title">{{ $t('content.edit.coverAndSummary') }}</h3>
           <div class="edit-section__body edit-section__body--single">
-            <t-form-item label="封面" name="cover_image">
+            <t-form-item :label="$t('content.edit.cover')" name="cover_image">
               <div class="cover-image-selector" @click="openCoverImageDrawer">
                 <image-icon v-if="!isCoverVideo" />
                 <video-icon v-else />
                 <span v-if="form.cover_image" class="cover-image-selector__name">{{
                   form.cover_image.split('/').pop()
                 }}</span>
-                <span v-else class="cover-image-selector__placeholder">点击选择封面图片或视频</span>
+                <span v-else class="cover-image-selector__placeholder">{{ $t('content.edit.coverPlaceholder') }}</span>
                 <chevron-right-icon />
               </div>
             </t-form-item>
-            <t-form-item label="摘要" name="summary">
+            <t-form-item :label="$t('content.edit.summary')" name="summary">
               <t-textarea
                 v-model="form.summary"
                 :autosize="{ minRows: 2, maxRows: 4 }"
                 :maxlength="500"
-                placeholder="简要描述内容，用于列表预览"
+                :placeholder="$t('content.edit.summaryPlaceholder')"
               />
             </t-form-item>
-            <t-form-item label="关键词" name="keywords">
-              <t-input v-model="form.keywords" placeholder="多个关键词用逗号分隔" />
+            <t-form-item :label="$t('content.edit.keywords')" name="keywords">
+              <t-input v-model="form.keywords" :placeholder="$t('content.edit.keywordsPlaceholder')" />
             </t-form-item>
           </div>
         </section>
 
         <section class="edit-section">
-          <h3 class="edit-section__title">正文内容</h3>
+          <h3 class="edit-section__title">{{ $t('content.edit.body') }}</h3>
           <div class="edit-section__body edit-section__body--single">
             <t-form-item name="content">
               <t-textarea
                 v-model="form.content"
                 :autosize="{ minRows: 14, maxRows: 24 }"
                 :maxlength="30000"
-                placeholder="请输入正文内容"
+                :placeholder="$t('content.edit.bodyPlaceholder')"
               />
             </t-form-item>
           </div>
         </section>
 
         <section class="edit-section">
-          <h3 class="edit-section__title">备注</h3>
+          <h3 class="edit-section__title">{{ $t('content.edit.remark') }}</h3>
           <div class="edit-section__body edit-section__body--single">
             <t-form-item name="remark">
               <t-textarea
                 v-model="form.remark"
                 :autosize="{ minRows: 2, maxRows: 4 }"
                 :maxlength="255"
-                placeholder="内部备注，不对外展示"
+                :placeholder="$t('content.edit.remarkPlaceholder')"
               />
             </t-form-item>
           </div>
         </section>
 
         <div class="content-edit-actions">
-          <t-button variant="outline" @click="goBack">取消</t-button>
-          <t-button theme="primary" :loading="saving" @click="submit">保存{{ articleLabel }}</t-button>
+          <t-button variant="outline" @click="goBack">{{ $t('content.edit.cancel') }}</t-button>
+          <t-button theme="primary" :loading="saving" @click="submit">{{
+            $t('content.edit.save', { label: articleLabel })
+          }}</t-button>
         </div>
       </t-form>
     </t-card>
 
     <t-drawer
       :visible="coverImageDrawerVisible"
-      header="选择封面媒体"
+      :header="$t('content.edit.selectCoverMedia')"
       size="520px"
       placement="right"
       :footer="null"
       @close="closeCoverImageDrawer"
     >
       <div class="cover-drawer-toolbar">
-        <t-select v-model="coverMediaType" placeholder="全部类型" @change="loadCoverMediaList">
+        <t-select
+          v-model="coverMediaType"
+          :placeholder="$t('content.edit.mediaTypePlaceholder')"
+          @change="loadCoverMediaList"
+        >
           <t-option v-for="item in coverMediaTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
         <t-button variant="outline" @click="openCoverImagePicker">
           <template #icon><upload-icon /></template>
-          上传新文件
+          {{ $t('content.edit.uploadNewFile') }}
         </t-button>
       </div>
       <div class="cover-drawer-grid">
@@ -183,7 +201,7 @@
           </div>
         </div>
         <div v-if="!coverImageList.length && !coverImageLoading" class="cover-drawer-empty">
-          暂无已上传媒体，请先上传
+          {{ $t('content.edit.emptyMedia') }}
         </div>
       </div>
     </t-drawer>
@@ -277,7 +295,9 @@ const coverMediaTypeOptions = [
 const categories = ref<ContentCategoryRecord[]>([]);
 
 const contentType = computed<string>(() => String(route.meta.contentType || route.query.type || 'notice'));
-const articleLabel = computed(() => (contentType.value === 'help' ? '帮助文章' : '公告'));
+const articleLabel = computed(() =>
+  contentType.value === 'help' ? t('content.edit.articleLabelHelp') : t('content.edit.articleLabelNotice'),
+);
 const isCoverVideo = computed(() => isUrlVideo(form.cover_image));
 
 const statusOptions = [
@@ -389,17 +409,17 @@ async function submit() {
   try {
     if (form.id) {
       await adminApi.content.articles.update(form.id, payload);
-      MessagePlugin.success(`${articleLabel.value}已更新`);
+      MessagePlugin.success(t('content.edit.updated', { label: articleLabel.value }));
     } else {
       await adminApi.content.articles.create(payload);
-      MessagePlugin.success(`${articleLabel.value}已创建`);
+      MessagePlugin.success(t('content.edit.created', { label: articleLabel.value }));
     }
     goBack();
   } catch (error) {
     const record = error as Record<string, unknown>;
     const resp = record.response as Record<string, unknown> | undefined;
     const data = resp?.data as Record<string, unknown> | undefined;
-    MessagePlugin.error(String(data?.message || record.message || '保存失败'));
+    MessagePlugin.error(String(data?.message || record.message || t('content.edit.saveFailed')));
   } finally {
     saving.value = false;
   }
@@ -476,7 +496,7 @@ async function handleCoverImageUpload(event: Event) {
     const record = error as Record<string, unknown>;
     const resp = record.response as Record<string, unknown> | undefined;
     const d = resp?.data as Record<string, unknown> | undefined;
-    MessagePlugin.error(String(d?.message || record.message || '封面上传失败'));
+    MessagePlugin.error(String(d?.message || record.message || t('content.edit.coverUploadFailed')));
   }
 }
 

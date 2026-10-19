@@ -1,13 +1,13 @@
 <template>
   <auth-shell
     :title="$t('auth.forgotPassword')"
-    nav-text="想起密码了？"
-    nav-link-text="返回登录"
+    :nav-text="$t('clientAuth.forgotPassword.navText')"
+    :nav-link-text="$t('auth.backToLoginShort')"
     :nav-to="loginLink"
-    cta-text="返回产品页"
+    :cta-text="$t('auth.backToProducts')"
     cta-to="/products"
-    hero-title="重置密码后，继续进入控制台"
-    hero-description="找回登录凭证后，可继续处理服务、账单与账户安全设置。"
+    :hero-title="$t('clientAuth.forgotPassword.heroTitle')"
+    :hero-description="$t('clientAuth.forgotPassword.heroDescription')"
   >
     <t-form ref="formRef" class="client-auth-form" :data="form" :rules="rules" label-width="0" @submit="handleSubmit">
       <t-form-item name="account">
@@ -34,7 +34,7 @@
               :loading="sendingCode || captchaLoading"
               @click="handleSendCode"
             >
-              {{ countdown > 0 ? `${countdown}s` : '发送验证码' }}
+              {{ countdown > 0 ? `${countdown}s` : $t('clientAuth.register.sendCode') }}
             </t-button>
           </div>
         </div>
@@ -62,14 +62,14 @@
 
       <t-form-item name="password_confirmation">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required">确认新密码</label>
+          <label class="client-auth-label is-required">{{ $t('auth.confirmNewPassword') }}</label>
           <t-input
             v-model="form.password_confirmation"
             size="large"
             :type="showConfirmPassword ? 'text' : 'password'"
             clearable
             autocomplete="new-password"
-            placeholder="请再次输入新密码"
+            :placeholder="$t('auth.confirmNewPasswordPlaceholder')"
             @enter="submitForm"
           >
             <template #prefix-icon><lock-on-icon /></template>
@@ -96,7 +96,7 @@
         :loading="loading || captchaLoading"
         @click="submitForm"
       >
-        重置密码
+        {{ $t('clientAuth.forgotPassword.submit') }}
       </t-button>
     </t-form>
   </auth-shell>
@@ -235,12 +235,14 @@ async function handleSendCode() {
       { scene: accountPayload.accountType === 'phone' ? 'phone_code' : 'email_code' },
     );
 
-    MessagePlugin.success(`${accountPayload.accountType === 'phone' ? '短信' : '邮箱'}验证码已发送`);
+    MessagePlugin.success(
+      accountPayload.accountType === 'phone' ? t('clientAuth.codeSentSms') : t('clientAuth.codeSentEmail'),
+    );
     startCountdown();
   } catch (error: unknown) {
     const runtimeError = error as RuntimeHandledError;
     if (!runtimeError.__handled) {
-      MessagePlugin.error(runtimeError.message || '验证码发送失败');
+      MessagePlugin.error(runtimeError.message || t('clientAuth.codeSendFailed'));
     }
   } finally {
     sendingCode.value = false;
@@ -274,22 +276,22 @@ function setFormErrors(errors: Partial<Record<keyof ResetPasswordForm, string>>)
 function validateForm() {
   const errors: Partial<Record<keyof ResetPasswordForm, string>> = {};
   if (!detectAccountType(form.account)) {
-    errors.account = '请输入正确的手机号或邮箱';
+    errors.account = t('clientAuth.forgotPassword.accountInvalid');
   }
   if (!form.code) {
-    errors.code = '请输入验证码';
+    errors.code = t('clientAuth.forgotPassword.codeRequired');
   } else if (form.code.length !== 6) {
-    errors.code = '验证码为 6 位';
+    errors.code = t('clientAuth.forgotPassword.codeLength');
   }
   if (!form.password) {
-    errors.password = '请输入新密码';
+    errors.password = t('clientAuth.forgotPassword.newPasswordRequired');
   } else if (form.password.length < 8) {
-    errors.password = '密码长度不能少于 8 位';
+    errors.password = t('clientAuth.forgotPassword.passwordMinLength');
   }
   if (!form.password_confirmation) {
-    errors.password_confirmation = '请再次输入新密码';
+    errors.password_confirmation = t('clientAuth.forgotPassword.confirmPasswordRequired');
   } else if (form.password_confirmation !== form.password) {
-    errors.password_confirmation = '两次输入的密码不一致';
+    errors.password_confirmation = t('clientAuth.forgotPassword.passwordMismatch');
   }
 
   if (Object.keys(errors).length > 0) {
@@ -318,7 +320,7 @@ async function runResetPassword() {
   } catch (error: unknown) {
     const runtimeError = error as RuntimeHandledError;
     if (!runtimeError.__handled) {
-      MessagePlugin.error(runtimeError.message || '密码重置失败');
+      MessagePlugin.error(runtimeError.message || t('clientAuth.forgotPassword.failed'));
     }
   } finally {
     loading.value = false;

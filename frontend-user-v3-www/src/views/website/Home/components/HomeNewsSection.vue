@@ -2,11 +2,11 @@
   <section class="news-section">
     <div class="container">
       <header class="news-section__head">
-        <h2 class="news-section__title">{{ $t('home.news.title') }}</h2>
+        <h2 class="news-section__title">{{ $t("home.news.title") }}</h2>
         <p class="news-section__desc">
-          {{ $t('home.news.subtitle') }}
+          {{ $t("home.news.subtitle") }}
           <router-link to="/notices" class="news-section__more">
-            {{ $t('home.news.viewMore') }}
+            {{ $t("home.news.viewMore") }}
             <el-icon><ArrowRight /></el-icon>
           </router-link>
         </p>
@@ -30,7 +30,9 @@
               fetchpriority="low"
             />
             <template v-else>
-              <span class="news-feature__cover-text">{{ $t('home.news.announcements') }}</span>
+              <span class="news-feature__cover-text">{{
+                $t("home.news.announcements")
+              }}</span>
               <div class="news-feature__cover-decor" aria-hidden="true"></div>
             </template>
           </div>
@@ -55,7 +57,7 @@
                 {{
                   featuredNotice.summary ||
                   featuredNotice.excerpt ||
-                  "资讯动态主焦点卡片展示区域，点击查看完整内容。"
+                  $t("home.news.summaryFallback")
                 }}
               </p>
             </div>
@@ -90,11 +92,13 @@
           :class="`news-promo--tone-${promoIndex % 4}`"
           @click="openNotice(promo)"
         >
-          <span class="news-promo__badge">推荐</span>
+          <span class="news-promo__badge">{{
+            $t("home.news.recommended")
+          }}</span>
           <div class="news-promo__body">
             <strong class="news-promo__title">{{ promo.title }}</strong>
             <p class="news-promo__desc">
-              {{ promo.summary || promo.excerpt || "点击查看详细内容。" }}
+              {{ promo.summary || promo.excerpt || $t("home.news.detailHint") }}
             </p>
           </div>
           <span class="news-promo__arrow" aria-hidden="true">

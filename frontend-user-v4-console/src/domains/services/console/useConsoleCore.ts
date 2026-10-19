@@ -1,5 +1,6 @@
 import type { Ref } from 'vue';
 
+import { t } from '@/locales';
 import type {
   ConsoleMachineCategory,
   ConsoleServiceDetail,
@@ -55,11 +56,11 @@ export function emptyDetail(): ConsoleServiceDetail {
       limit: 0,
       remaining: '',
       usage_label: '0G',
-      limit_label: '不限',
-      remaining_label: '不限',
+      limit_label: t('serviceConsole.traffic.unlimited'),
+      remaining_label: t('serviceConsole.traffic.unlimited'),
       usage_percent: null,
       limited: false,
-      button_text: '购买流量包',
+      button_text: t('serviceConsole.traffic.title'),
       purchase_enabled: false,
     },
     connection: {

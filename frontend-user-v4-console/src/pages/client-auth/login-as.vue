@@ -1,11 +1,11 @@
 <template>
   <auth-shell
     :title="$t('auth.loginAsInProgress')"
-    nav-text="如需手动登录"
-    nav-link-text="返回登录页"
+    :nav-text="$t('clientAuth.loginAs.navText')"
+    :nav-link-text="$t('auth.backToLogin')"
     nav-to="/client/login"
-    hero-title="正在校验本次身份切换请求"
-    hero-description="验证通过后将自动进入控制台，本次跳转不会修改现有业务数据。"
+    :hero-title="$t('clientAuth.loginAs.heroTitle')"
+    :hero-description="$t('clientAuth.loginAs.heroDescription')"
   >
     <div class="login-as-result" :class="`login-as-result--${status}`">
       <div class="login-as-result__icon">
@@ -59,15 +59,15 @@ const redirectPath = computed(() => {
 });
 
 const resultTitle = computed(() => {
-  if (status.value === 'success') return '代登录成功';
-  if (status.value === 'error') return '代登录失败';
-  return '正在处理代登录';
+  if (status.value === 'success') return t('clientAuth.loginAs.success');
+  if (status.value === 'error') return t('clientAuth.loginAs.failed');
+  return t('clientAuth.loginAs.processing');
 });
 
 const resultSubtitle = computed(() => {
-  if (status.value === 'success') return '已完成身份切换，正在进入客户端控制台。';
-  if (status.value === 'error') return '代登录链路无效、已过期，或当前请求已被拒绝。';
-  return '正在校验代登录凭证，请稍候。';
+  if (status.value === 'success') return t('clientAuth.loginAs.descriptionSuccess');
+  if (status.value === 'error') return t('clientAuth.loginAs.descriptionError');
+  return t('clientAuth.loginAs.descriptionProcessing');
 });
 
 function resolveOpenerOrigin() {
@@ -108,14 +108,14 @@ async function runExchange(code: string) {
     const runtimeError = error as RuntimeHandledError;
     status.value = 'error';
     if (!runtimeError.__handled) {
-      MessagePlugin.error(toUserMessage(runtimeError.message, '代登录失败'));
+      MessagePlugin.error(toUserMessage(runtimeError.message, t('clientAuth.loginAs.failed')));
     }
   } finally {
     loading.value = false;
   }
 }
 
-function handleMissingMessage(reason = '未检测到管理端发来的代登录凭证，请回到管理端重新发起。') {
+function handleMissingMessage(reason = t('clientAuth.loginAs.missingDefault')) {
   clearMessageTimer();
   status.value = 'error';
   MessagePlugin.error(reason);
@@ -136,7 +136,7 @@ function handleLoginAsMessage(event: MessageEvent) {
 
   const code = typeof event.data?.code === 'string' ? event.data.code.trim() : '';
   if (!code) {
-    handleMissingMessage('管理端返回的代登录凭证为空，请重新发起。');
+    handleMissingMessage(t('clientAuth.loginAs.missingEmpty'));
     return;
   }
 
@@ -154,7 +154,7 @@ function requestLoginAsCode() {
   loading.value = false;
   clearMessageTimer();
   messageTimer = window.setTimeout(() => {
-    handleMissingMessage('等待管理端返回代登录凭证超时，请确认弹窗未被拦截后重试。');
+    handleMissingMessage(t('clientAuth.loginAs.missingTimeout'));
   }, LOGIN_AS_MESSAGE_TIMEOUT_MS);
   window.opener.postMessage({ type: LOGIN_AS_READY_EVENT }, openerOrigin);
 }

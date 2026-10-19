@@ -1,5 +1,11 @@
 <template>
-  <data-state :loading="loading" :empty="false" :description="loadError || ''">
+  <data-state
+    :loading-text="$t('shared.state.loading')"
+    :empty-text="$t('shared.state.empty')"
+    :loading="loading"
+    :empty="false"
+    :description="loadError || ''"
+  >
     <div class="upstream-panel">
       <t-form label-align="top" class="upstream-form">
         <t-form-item :label="$t('apiKeys.upstream.endpointLabel')">
@@ -11,8 +17,7 @@
           </div>
           <p class="upstream-tip">
             {{ $t('apiKeys.upstream.loginEndpointPrefix') }}
-            <code>{{ accessEndpoint }}/zjmf_api_login</code
-            >{{ $t('apiKeys.upstream.loginEndpointSuffix') }}
+            <code>{{ accessEndpoint }}/zjmf_api_login</code>{{ $t('apiKeys.upstream.loginEndpointSuffix') }}
           </p>
         </t-form-item>
 
@@ -29,7 +34,9 @@
           <span class="upstream-password-state">
             {{ status?.has_password ? $t('apiKeys.upstream.passwordSet') : $t('apiKeys.upstream.passwordUnset') }}
           </span>
-          <span v-if="status?.last_used_at" class="upstream-password-state"> {{ $t('apiKeys.upstream.lastUsedAt') }}{{ status.last_used_at }} </span>
+          <span v-if="status?.last_used_at" class="upstream-password-state">
+            {{ $t('apiKeys.upstream.lastUsedAt') }}{{ status.last_used_at }}
+          </span>
         </t-form-item>
 
         <t-form-item :label="$t('apiKeys.upstream.ipAllowlistLabel')">
@@ -54,9 +61,15 @@
           {{ $t('apiKeys.upstream.enable') }}
         </t-button>
         <template v-else>
-          <t-button variant="outline" :loading="submitting" @click="savePolicy">{{ $t('apiKeys.upstream.savePolicy') }}</t-button>
-          <t-button variant="outline" :loading="submitting" @click="openUsageLogs">{{ $t('apiKeys.upstream.usageLogs') }}</t-button>
-          <t-button variant="outline" :loading="submitting" @click="resetPassword">{{ $t('apiKeys.upstream.resetPassword') }}</t-button>
+          <t-button variant="outline" :loading="submitting" @click="savePolicy">{{
+            $t('apiKeys.upstream.savePolicy')
+          }}</t-button>
+          <t-button variant="outline" :loading="submitting" @click="openUsageLogs">{{
+            $t('apiKeys.upstream.usageLogs')
+          }}</t-button>
+          <t-button variant="outline" :loading="submitting" @click="resetPassword">{{
+            $t('apiKeys.upstream.resetPassword')
+          }}</t-button>
           <t-button theme="danger" variant="outline" :loading="submitting" @click="confirmDisable">
             {{ $t('apiKeys.upstream.disable') }}
           </t-button>
@@ -105,8 +118,15 @@
         </div>
       </t-dialog>
 
-      <t-drawer v-model:visible="logVisible" :header="$t('apiKeys.upstream.usageLogsTitle')" size="560px" :footer="false">
+      <t-drawer
+        v-model:visible="logVisible"
+        :header="$t('apiKeys.upstream.usageLogsTitle')"
+        size="560px"
+        :footer="false"
+      >
         <data-state
+          :loading-text="$t('shared.state.loading')"
+          :empty-text="$t('shared.state.empty')"
           :loading="logLoading"
           :empty="!logs.length"
           :description="$t('apiKeys.upstream.noUsageLogs')"
@@ -163,9 +183,9 @@ const logColumns: PrimaryTableCol[] = [
 
 function confirmDisable() {
   const dialog = DialogPlugin.confirm({
-    header: '关闭上游 API',
-    body: '关闭后凭据立即失效，正在使用该账号的魔方财务对接会中断；同一账号的开放接口密钥也会一并停用。确定关闭？',
-    confirmBtn: { content: '确认关闭', theme: 'danger' },
+    header: t('apiKeys.upstream.disableConfirmTitle'),
+    body: t('apiKeys.upstream.disableConfirmBody'),
+    confirmBtn: { content: t('apiKeys.upstream.disableConfirmBtn'), theme: 'danger' },
     onConfirm: async () => {
       await disable();
       dialog.destroy();

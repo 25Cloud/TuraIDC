@@ -85,7 +85,7 @@ export function resolveServiceName(item: ServiceLike | null | undefined) {
     item?.product_spec_display ||
     item?.product_display_name ||
     item?.product?.display_name ||
-    `服务 #${item?.id || 0}`
+    t('service.center.serviceHash', { id: item?.id || 0 })
   );
 }
 
@@ -107,7 +107,11 @@ export function resolveServiceOsIcon(item: ServiceLike) {
 export function resolveServiceMark(item: ServiceLike) {
   const osText = resolveServiceOsText(item);
   const text =
-    osText || item?.product?.type_label || item?.product?.group_name || item?.product?.display_name || '服务';
+    osText ||
+    item?.product?.type_label ||
+    item?.product?.group_name ||
+    item?.product?.display_name ||
+    t('service.center.fallbackMark');
   return String(text).replace(/\s+/g, '').slice(0, 2);
 }
 
@@ -354,7 +358,7 @@ export function useServiceCenter() {
         key: 'total',
         label: t('client.services.metricTotal'),
         value: Number(overview.value.total || 0),
-        copy: `覆盖 ${Number(overview.value.category_total || 0)} 个业务分类`,
+        copy: t('service.center.metrics.coverage', { count: Number(overview.value.category_total || 0) }),
       },
       {
         key: 'active',
@@ -517,7 +521,7 @@ export function useServiceCenter() {
       );
       renewForm.user_coupon_id = Number(res.data?.selected_user_coupon_id || 0);
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '加载续费信息失败'));
+      MessagePlugin.error(getErrorMessage(error, t('service.center.renewLoadFailed')));
     } finally {
       renewPreviewLoading.value = false;
     }
@@ -557,7 +561,7 @@ export function useServiceCenter() {
       MessagePlugin.success(t('serviceConsole.renew.invoiceCreated'));
       router.push(invoiceId > 0 ? `/client/invoices/${invoiceId}/pay` : '/client/invoices');
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '续费账单创建失败'));
+      MessagePlugin.error(getErrorMessage(error, t('service.center.renewCreateFailed')));
     } finally {
       renewSubmitting.value = false;
     }
@@ -584,7 +588,7 @@ export function useServiceCenter() {
       remarkVisible.value = false;
       MessagePlugin.success(t('serviceConsole.remarkSaved'));
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '备注保存失败'));
+      MessagePlugin.error(getErrorMessage(error, t('service.center.remarkSaveFailed')));
     } finally {
       remarkSubmitting.value = false;
     }
@@ -592,8 +596,8 @@ export function useServiceCenter() {
 
   async function copyPublicIp(value: unknown) {
     await copyText(value, {
-      successMsg: '公网 IP 已复制',
-      errorMsg: '当前浏览器不支持自动复制，请手动复制',
+      successMsg: t('service.center.ipCopied'),
+      errorMsg: t('finance.messages.copyUnsupported'),
     });
   }
 

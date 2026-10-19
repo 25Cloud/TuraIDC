@@ -48,8 +48,10 @@
             <span class="item-name">{{ type.label }}</span>
             <span class="item-sub">{{
               type.product_count > 0
-                ? `${type.product_count} 个商品`
-                : "暂无商品"
+                ? $t("product.list.productCount", {
+                    count: type.product_count,
+                  })
+                : $t("product.list.empty")
             }}</span>
           </span>
         </button>
@@ -422,7 +424,9 @@
           v-if="selectedProduct && productIntroText"
           class="product-intro-card"
         >
-          <div class="config-block-title">商品介绍</div>
+          <div class="config-block-title">
+            {{ $t("product.list.productIntro") }}
+          </div>
           <p>{{ productIntroText }}</p>
         </div>
 
@@ -434,14 +438,16 @@
         >
           <!-- 操作系统 -->
           <div v-if="osGroups.length && isMobile" class="mobile-picker-row">
-            <div class="config-block-title">操作系统</div>
+            <div class="config-block-title">
+              {{ $t("product.detail.operatingSystem") }}
+            </div>
             <button
               type="button"
               class="mobile-picker-trigger"
               @click="openMobileOsDrawer"
             >
               <span
-                >{{ currentOsGroup?.label || "请选择系统"
+                >{{ currentOsGroup?.label || $t("product.detail.selectOs")
                 }}{{
                   currentOsVersionLabel ? ` · ${currentOsVersionLabel}` : ""
                 }}</span
@@ -549,7 +555,9 @@
                   class="mobile-picker-trigger"
                   @click="openMobileGroupedCpuDrawer"
                 >
-                  <span>{{ selectedMobileCpuLabel || "请选择 CPU" }}</span>
+                  <span>{{
+                    selectedMobileCpuLabel || $t("product.list.selectCpu")
+                  }}</span>
                   <svg
                     viewBox="0 0 12 12"
                     fill="none"
@@ -568,13 +576,17 @@
                 </button>
               </div>
               <div class="mobile-picker-col">
-                <div class="config-block-title">内存</div>
+                <div class="config-block-title">
+                  {{ $t("product.list.memory") }}
+                </div>
                 <button
                   type="button"
                   class="mobile-picker-trigger"
                   @click="openMobileGroupedMemoryDrawer"
                 >
-                  <span>{{ selectedMobileMemoryLabel || "请选择内存" }}</span>
+                  <span>{{
+                    selectedMobileMemoryLabel || $t("product.list.selectMemory")
+                  }}</span>
                   <svg
                     viewBox="0 0 12 12"
                     fill="none"
@@ -607,7 +619,7 @@
                   <span>{{
                     cpuConfig.options.find(
                       (o) => o.id === configForm[cpuConfig.key],
-                    )?.label || "请选择"
+                    )?.label || $t("product.list.selectOption")
                   }}</span>
                   <svg
                     viewBox="0 0 12 12"
@@ -636,7 +648,7 @@
                   <span>{{
                     memConfig.options.find(
                       (o) => o.id === configForm[memConfig.key],
-                    )?.label || "请选择"
+                    )?.label || $t("product.list.selectOption")
                   }}</span>
                   <svg
                     viewBox="0 0 12 12"
@@ -676,7 +688,10 @@
                       cfg.label
                     }}</span>
                     <span class="mobile-config-select-value">
-                      {{ selectedOptionLabel(cfg) || "请选择" }}
+                      {{
+                        selectedOptionLabel(cfg) ||
+                        $t("product.list.selectOption")
+                      }}
                       <svg
                         viewBox="0 0 12 12"
                         fill="none"
@@ -727,7 +742,9 @@
             class="config-block"
             v-if="desktopMachineSpecRows.length && !isMobile"
           >
-            <div class="config-block-title">机型配置</div>
+            <div class="config-block-title">
+              {{ $t("product.detail.serverSpecs") }}
+            </div>
             <div
               v-if="desktopMachineSpecRows.length"
               class="desktop-machine-spec-panel"
@@ -736,12 +753,12 @@
                 class="desktop-machine-table"
                 :style="machineSpecGridStyle"
                 role="table"
-                aria-label="机型配置"
+                :aria-label="$t('product.detail.serverSpecs')"
               >
                 <div class="desktop-machine-table-head" role="row">
-                  <span class="machine-spec-cell machine-spec-cell--name"
-                    >实例规格</span
-                  >
+                  <span class="machine-spec-cell machine-spec-cell--name">{{
+                    $t("product.list.instanceSpecs")
+                  }}</span>
                   <span
                     v-if="showCpuMemoryColumns"
                     class="machine-spec-cell machine-spec-cell--sortable"
@@ -749,7 +766,7 @@
                     <span>vCPU</span>
                     <span
                       class="machine-spec-sort-controls"
-                      aria-label="vCPU 排序"
+                      :aria-label="$t('product.list.sortVcpu')"
                     >
                       <button
                         type="button"
@@ -759,7 +776,7 @@
                             machineSpecSort.key === 'cpu' &&
                             machineSpecSort.direction === 'asc',
                         }"
-                        aria-label="vCPU 从小到大排序"
+                        :aria-label="$t('product.list.sortVcpuAsc')"
                         @click="setMachineSpecSort('cpu', 'asc')"
                       >
                         <el-icon><CaretTop /></el-icon>
@@ -772,7 +789,7 @@
                             machineSpecSort.key === 'cpu' &&
                             machineSpecSort.direction === 'desc',
                         }"
-                        aria-label="vCPU 从大到小排序"
+                        :aria-label="$t('product.list.sortVcpuDesc')"
                         @click="setMachineSpecSort('cpu', 'desc')"
                       >
                         <el-icon><CaretBottom /></el-icon>
@@ -783,10 +800,10 @@
                     v-if="showCpuMemoryColumns"
                     class="machine-spec-cell machine-spec-cell--sortable"
                   >
-                    <span>内存</span>
+                    <span>{{ $t("product.list.memory") }}</span>
                     <span
                       class="machine-spec-sort-controls"
-                      aria-label="内存排序"
+                      :aria-label="$t('product.list.sortMemory')"
                     >
                       <button
                         type="button"
@@ -796,7 +813,7 @@
                             machineSpecSort.key === 'memory' &&
                             machineSpecSort.direction === 'asc',
                         }"
-                        aria-label="内存从小到大排序"
+                        :aria-label="$t('product.list.sortMemoryAsc')"
                         @click="setMachineSpecSort('memory', 'asc')"
                       >
                         <el-icon><CaretTop /></el-icon>
@@ -809,7 +826,7 @@
                             machineSpecSort.key === 'memory' &&
                             machineSpecSort.direction === 'desc',
                         }"
-                        aria-label="内存从大到小排序"
+                        :aria-label="$t('product.list.sortMemoryDesc')"
                         @click="setMachineSpecSort('memory', 'desc')"
                       >
                         <el-icon><CaretBottom /></el-icon>
@@ -819,11 +836,11 @@
                   <span
                     v-if="showProcessorColumns"
                     class="machine-spec-cell machine-spec-cell--processor"
-                    >处理器</span
+                    >{{ $t("product.list.processor") }}</span
                   >
-                  <span v-if="showProcessorColumns" class="machine-spec-cell"
-                    >主频/睿频</span
-                  >
+                  <span v-if="showProcessorColumns" class="machine-spec-cell">{{
+                    $t("product.list.clockSpeed")
+                  }}</span>
                   <span
                     v-for="column in specHighlightColumns"
                     :key="column.key"
@@ -833,10 +850,10 @@
                   <span
                     class="machine-spec-cell machine-spec-cell--price machine-spec-cell--sortable"
                   >
-                    <span>基础价格</span>
+                    <span>{{ $t("product.detail.basePrice") }}</span>
                     <span
                       class="machine-spec-sort-controls"
-                      aria-label="基础价格排序"
+                      :aria-label="$t('product.list.sortPrice')"
                     >
                       <button
                         type="button"
@@ -846,7 +863,7 @@
                             machineSpecSort.key === 'price' &&
                             machineSpecSort.direction === 'asc',
                         }"
-                        aria-label="基础价格从小到大排序"
+                        :aria-label="$t('product.list.sortPriceAsc')"
                         @click="setMachineSpecSort('price', 'asc')"
                       >
                         <el-icon><CaretTop /></el-icon>
@@ -859,7 +876,7 @@
                             machineSpecSort.key === 'price' &&
                             machineSpecSort.direction === 'desc',
                         }"
-                        aria-label="基础价格从大到小排序"
+                        :aria-label="$t('product.list.sortPriceDesc')"
                         @click="setMachineSpecSort('price', 'desc')"
                       >
                         <el-icon><CaretBottom /></el-icon>
@@ -957,7 +974,9 @@
                 </button>
               </div>
               <div v-if="osConfig" class="desktop-machine-os-panel">
-                <div class="desktop-machine-subtitle">系统安装</div>
+                <div class="desktop-machine-subtitle">
+                  {{ $t("product.list.osInstall") }}
+                </div>
                 <div class="os-section">
                   <div v-if="osGroups.length" class="os-cards">
                     <button
@@ -986,7 +1005,9 @@
                         <span v-if="configForm.os_group === os.id">{{
                           currentOsVersionLabel
                         }}</span>
-                        <span v-else class="os-placeholder">选择版本</span>
+                        <span v-else class="os-placeholder">{{
+                          $t("product.list.selectVersion")
+                        }}</span>
                       </div>
                       <span
                         class="os-check-mark"
@@ -996,7 +1017,7 @@
                     </button>
                   </div>
                   <div v-else class="spec-fixed">
-                    当前商品未提供可切换的系统版本
+                    {{ $t("product.list.noSwitchableOsVersion") }}
                   </div>
                   <div
                     class="os-ver-row"
@@ -1136,7 +1157,9 @@
 
           <!-- 网络配置 -->
           <div class="config-block" v-if="networkConfigs.length">
-            <div class="config-block-title">网络配置</div>
+            <div class="config-block-title">
+              {{ $t("product.detail.network") }}
+            </div>
             <div class="spec-list">
               <template v-for="cfg in networkConfigs" :key="cfg.key">
                 <MobileRangePicker
@@ -1156,7 +1179,10 @@
                     cfg.label
                   }}</span>
                   <span class="mobile-config-select-value">
-                    {{ selectedOptionLabel(cfg) || "请选择" }}
+                    {{
+                      selectedOptionLabel(cfg) ||
+                      $t("product.list.selectOption")
+                    }}
                     <svg
                       viewBox="0 0 12 12"
                       fill="none"
@@ -1205,7 +1231,9 @@
 
           <!-- 其他配置（兜底） -->
           <div class="config-block" v-if="otherConfigs.length">
-            <div class="config-block-title">其他配置</div>
+            <div class="config-block-title">
+              {{ $t("product.list.otherConfig") }}
+            </div>
             <div class="spec-list">
               <template v-for="cfg in otherConfigs" :key="cfg.key">
                 <MobileRangePicker
@@ -1225,7 +1253,10 @@
                     cfg.label
                   }}</span>
                   <span class="mobile-config-select-value">
-                    {{ selectedOptionLabel(cfg) || "请选择" }}
+                    {{
+                      selectedOptionLabel(cfg) ||
+                      $t("product.list.selectOption")
+                    }}
                     <svg
                       viewBox="0 0 12 12"
                       fill="none"
@@ -1271,7 +1302,9 @@
 
           <!-- 购买须知：上游以普通配置项下发的文字提示（如「明确禁止」），只展示不参与选配 -->
           <div class="config-block" v-if="noticeConfigs.length">
-            <div class="config-block-title">购买须知</div>
+            <div class="config-block-title">
+              {{ $t("product.detail.purchaseNotes") }}
+            </div>
             <div class="spec-list">
               <div
                 class="spec-row notice-row"
@@ -1286,11 +1319,15 @@
 
           <!-- 基础设置 -->
           <div class="config-block">
-            <div class="config-block-title">基础设置</div>
+            <div class="config-block-title">
+              {{ $t("product.detail.baseSettings") }}
+            </div>
             <div class="spec-list">
               <!-- 计费周期 -->
               <div class="spec-row">
-                <span class="spec-label">计费周期</span>
+                <span class="spec-label">{{
+                  $t("product.detail.billingCycle")
+                }}</span>
                 <div class="opt-row">
                   <button
                     v-for="item in pricingEntries"
@@ -1308,8 +1345,10 @@
 
               <!-- 单笔订单仅支持创建一台服务实例，避免多台计价但仅开通一台。 -->
               <div class="spec-row">
-                <span class="spec-label">购买数量</span>
-                <span>1 台（多台请分次下单）</span>
+                <span class="spec-label">{{
+                  $t("product.detail.quantity")
+                }}</span>
+                <span>{{ $t("product.detail.quantityHint") }}</span>
               </div>
             </div>
           </div>
@@ -1322,7 +1361,7 @@
             !selectedProduct &&
             !visibleProducts.length
           "
-          description="当前分类暂无商品"
+          :description="$t('product.list.empty')"
           style="padding: 60px 0"
         />
       </div>
@@ -1332,7 +1371,7 @@
         <!-- 明细区：面板内唯一的滚动容器，内容再长也不会挤压下方结算栏 -->
         <div class="cost-scroll">
           <div class="cost-header">
-            <span class="cost-title">配置费用</span>
+            <span class="cost-title">{{ $t("product.detail.configFee") }}</span>
             <span class="stock-badge" :class="stockClass">{{
               stockLabel
             }}</span>
@@ -1343,14 +1382,20 @@
               v-if="resolvedStock !== null && resolvedStock !== -1"
               class="stock-main"
             >
-              当前库存&nbsp;&nbsp;
-              <strong>剩余 {{ resolvedStock }} 台</strong>
+              {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;
+              <strong>{{
+                $t("product.list.stockLeft", { count: resolvedStock })
+              }}</strong>
             </div>
             <div v-else-if="productStockLoading" class="stock-main">
-              当前库存&nbsp;&nbsp;<strong>同步中...</strong>
+              {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;<strong>{{
+                $t("product.detail.syncing")
+              }}</strong>
             </div>
             <div v-else-if="productStockError" class="stock-main">
-              当前库存&nbsp;&nbsp;<strong>同步失败</strong>
+              {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;<strong>{{
+                $t("product.detail.syncFailed")
+              }}</strong>
             </div>
             <div class="stock-hint">{{ stockHint }}</div>
           </div>
@@ -1363,7 +1408,8 @@
             class="purchase-requirements-alert"
           >
             <template #title
-              >购买要求：{{ purchaseRequirementSummary }}</template
+              >{{ $t("product.list.purchaseRequirements")
+              }}{{ purchaseRequirementSummary }}</template
             >
           </el-alert>
 
@@ -1419,9 +1465,8 @@
             </div>
             <div class="cost-item cost-item--discount" v-if="hasAgentDiscount">
               <span
-                >代理折扣（{{ agentGroupName }}）<em class="discount-tag">{{
-                  agentDiscountPercent
-                }}</em></span
+                >{{ $t("product.list.agentDiscount", { name: agentGroupName })
+                }}<em class="discount-tag">{{ agentDiscountPercent }}</em></span
               ><span>-¥{{ agentDiscountAmount }}</span>
             </div>
           </div>
@@ -1514,7 +1559,7 @@
                 <span class="cost-amount">{{ totalPrice }}</span>
               </template>
               <span class="cost-cycle"
-                >/{{ selectedCycleLabel || "月付" }}</span
+                >/{{ selectedCycleLabel || $t("product.list.monthly") }}</span
               >
             </div>
           </div>
@@ -1528,7 +1573,11 @@
             @click="handleSubmit"
           >
             <span>{{
-              soldOut ? "已售罄" : submitting ? "提交中..." : "立即购买"
+              soldOut
+                ? $t("product.card.soldOut")
+                : submitting
+                  ? $t("product.list.submitting")
+                  : $t("product.list.buyNow")
             }}</span>
           </button>
         </div>
@@ -1544,7 +1593,9 @@
       <div ref="allocationFooterInnerEl" class="allocation-footer-inner">
         <div class="allocation-footer-main">
           <div class="allocation-footer-summary">
-            <span class="allocation-footer-label">费用合计：</span>
+            <span class="allocation-footer-label">{{
+              $t("product.list.totalCostLabel")
+            }}</span>
             <div class="allocation-footer-price">
               <template v-if="quoteLoading">
                 <span class="allocation-footer-symbol">¥</span>
@@ -1568,10 +1619,15 @@
             <span class="allocation-footer-discount-text">
               {{
                 hasAgentDiscount
-                  ? `代理折扣（${agentGroupName}）${agentDiscountPercent}`
+                  ? $t("product.list.agentDiscountPercent", {
+                      name: agentGroupName,
+                      percent: agentDiscountPercent,
+                    })
                   : appliedCoupon
-                    ? `已优惠 ¥${appliedCoupon.discount_amount}`
-                    : "无折扣"
+                    ? $t("product.list.couponApplied", {
+                        amount: appliedCoupon.discount_amount,
+                      })
+                    : $t("product.list.noDiscount")
               }}
             </span>
           </div>
@@ -1604,7 +1660,11 @@
             @click="handleSubmit"
           >
             <span>{{
-              soldOut ? "已售罄" : submitting ? "提交中..." : "加入购物车"
+              soldOut
+                ? $t("product.card.soldOut")
+                : submitting
+                  ? $t("product.list.submitting")
+                  : $t("product.list.addToCart")
             }}</span>
           </button>
         </div>
@@ -1618,7 +1678,7 @@
             <el-icon class="allocation-footer-detail-icon"
               ><Document
             /></el-icon>
-            商品介绍
+            {{ $t("product.list.productIntro") }}
           </button>
           <button
             type="button"
@@ -1628,7 +1688,7 @@
             <el-icon class="allocation-footer-detail-icon"
               ><Document
             /></el-icon>
-            费用明细
+            {{ $t("product.detail.costBreakdown") }}
           </button>
         </div>
       </div>
@@ -1637,8 +1697,8 @@
     <MobileSheet
       v-model="mobileIntroDrawer"
       size="40%"
-      title="商品介绍"
-      confirm-text="关闭"
+      :title="$t('product.list.productIntro')"
+      :confirm-text="$t('common.close')"
       @confirm="mobileIntroDrawer = false"
     >
       <div class="mobile-intro-sheet-body">
@@ -1649,8 +1709,8 @@
     <MobileSheet
       v-model="mobileCostDrawer"
       size="78%"
-      title="费用明细"
-      confirm-text="关闭"
+      :title="$t('product.detail.costBreakdown')"
+      :confirm-text="$t('common.close')"
       @confirm="mobileCostDrawer = false"
     >
       <div class="mobile-cost-sheet-body">
@@ -1661,13 +1721,18 @@
           show-icon
           class="purchase-requirements-alert purchase-requirements-alert--mobile"
         >
-          <template #title>购买要求：{{ purchaseRequirementSummary }}</template>
+          <template #title
+            >{{ $t("product.list.purchaseRequirements")
+            }}{{ purchaseRequirementSummary }}</template
+          >
         </el-alert>
 
         <div class="mobile-cost-table-card">
           <div class="mobile-cost-table-head">
             <span>{{ $t("product.list.costDetailsLabel") }}</span>
-            <strong>共{{ mobileCostRows.length }}项</strong>
+            <strong>{{
+              $t("product.list.costRowsCount", { count: mobileCostRows.length })
+            }}</strong>
           </div>
           <div class="mobile-cost-table">
             <div class="mobile-cost-table-header">
@@ -1675,8 +1740,8 @@
               <span>{{ $t("product.list.configDetail") }}</span>
               <span>{{
                 hasAgentDiscount || appliedCoupon
-                  ? "折后价已优惠"
-                  : "折后价无折扣"
+                  ? $t("product.list.priceDiscounted")
+                  : $t("product.list.priceNoDiscount")
               }}</span>
             </div>
             <div
@@ -1701,7 +1766,7 @@
       v-model="mobileCouponDrawer"
       size="42%"
       :title="$t('product.detail.coupon')"
-      confirm-text="关闭"
+      :confirm-text="$t('common.close')"
       @confirm="mobileCouponDrawer = false"
     >
       <div class="mobile-coupon-sheet-body">
@@ -1836,8 +1901,8 @@
       v-model="mobileProductDrawer"
       size="40%"
       :title="$t('product.list.selectSpec')"
-      cancel-text="取消"
-      confirm-text="确定"
+      :cancel-text="$t('common.cancel')"
+      :confirm-text="$t('common.confirm')"
       @confirm="confirmMobileProductSelection"
     >
       <div class="mobile-product-sheet-list">
@@ -1941,7 +2006,7 @@
       v-model="mobileCatalogDrawer"
       size="82%"
       :title="$t('product.list.catalogTitle')"
-      cancel-text="关闭"
+      :cancel-text="$t('common.close')"
     >
       <MobileCatalogPicker
         :visible="mobileCatalogDrawer"
@@ -2856,7 +2921,7 @@ const desktopMachineSpecRows = computed(() => {
           base.family ||
           activeChildName.value ||
           activeGroupName.value ||
-          "通用型",
+          t("product.instanceFamily.general"),
         originalIndex: index,
       };
     })

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 
 import { adminAuthApi } from '@/api/auth';
 import { getAdminToken, removeAdminToken, setAdminToken } from '@/app/runtime/session';
+import { t } from '@/locales';
 import { usePermissionStore } from '@/store';
 import type { UserInfo } from '@/types/interface';
 
@@ -36,7 +37,7 @@ export const useUserStore = defineStore('user', {
       const admin = res.admin || {};
       const role = typeof admin.role === 'string' && admin.role ? admin.role : '';
       this.userInfo = {
-        name: admin.nickname || admin.username || admin.email || '管理员',
+        name: admin.nickname || admin.username || admin.email || t('common.administrator'),
         roles: role ? [role] : [],
         permissions: admin.permissions || [],
         ...admin,
@@ -50,7 +51,7 @@ export const useUserStore = defineStore('user', {
       if (!token) {
         this.token = '';
         this.userInfo = { ...InitUserInfo };
-        throw new Error('未登录');
+        throw new Error(t('common.notLoggedIn'));
       }
       this.token = token;
       const res = (await adminAuthApi.info()) as {
@@ -59,7 +60,7 @@ export const useUserStore = defineStore('user', {
       const admin = res.admin || {};
       const role = typeof admin.role === 'string' && admin.role ? admin.role : '';
       this.userInfo = {
-        name: admin.nickname || admin.username || admin.email || '管理员',
+        name: admin.nickname || admin.username || admin.email || t('common.administrator'),
         roles: role ? [role] : [],
         permissions: admin.permissions || [],
         ...admin,

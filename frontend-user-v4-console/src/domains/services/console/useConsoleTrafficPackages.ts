@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
 import { formatMoney } from '@/domains/services/useServiceCenter';
+import { t } from '@/locales';
 import type {
   ServiceTrafficPackageOption,
   ServiceTrafficPackagePreview,
@@ -11,7 +12,6 @@ import type {
 } from '@/types/client';
 
 import { resolveErrorMessage } from './useConsoleCore';
-import { t } from '@/locales';
 
 export interface UseConsoleTrafficPackagesOptions {
   serviceId: { value: number };
@@ -58,7 +58,7 @@ export function useConsoleTrafficPackages(options: UseConsoleTrafficPackagesOpti
       }
     } catch (error: unknown) {
       trafficData.value = null;
-      MessagePlugin.error(resolveErrorMessage(error, '加载流量包失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.trafficPackagesLoadFailed')));
     } finally {
       trafficLoading.value = false;
     }
@@ -80,7 +80,7 @@ export function useConsoleTrafficPackages(options: UseConsoleTrafficPackagesOpti
       });
       trafficQuote.value = res.data || null;
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '获取流量包报价失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.trafficQuoteFailed')));
     } finally {
       trafficQuoting.value = false;
     }
@@ -115,7 +115,7 @@ export function useConsoleTrafficPackages(options: UseConsoleTrafficPackagesOpti
       MessagePlugin.success(t('serviceConsole.traffic.billCreated'));
       await router.push(invoiceId > 0 ? `/client/invoices/${invoiceId}/pay` : '/client/invoices');
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '创建流量包账单失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.trafficInvoiceFailed')));
     } finally {
       trafficSubmitting.value = false;
     }

@@ -31,22 +31,28 @@
     </t-card>
 
     <div class="coupon-tabs" role="tablist" :aria-label="$t('client.coupons.categoryAriaLabel')">
-      <t-button :theme="activeTab === 'owned' ? 'primary' : 'default'" @click="switchTab('owned')"
-        >{{ $t('client.coupons.ownedTab') }}</t-button
-      >
-      <t-button :theme="activeTab === 'plaza' ? 'primary' : 'default'" @click="switchTab('plaza')">{{ $t('client.coupons.plazaTab') }}</t-button>
+      <t-button :theme="activeTab === 'owned' ? 'primary' : 'default'" @click="switchTab('owned')">{{
+        $t('client.coupons.ownedTab')
+      }}</t-button>
+      <t-button :theme="activeTab === 'plaza' ? 'primary' : 'default'" @click="switchTab('plaza')">{{
+        $t('client.coupons.plazaTab')
+      }}</t-button>
     </div>
 
     <template v-if="activeTab === 'owned'">
       <div class="coupon-list-shell">
         <data-state
+          :loading-text="$t('shared.state.loading')"
+          :empty-text="$t('shared.state.empty')"
           :loading="ownedState.loading"
           :empty="!ownedState.list.length"
           :description="$t('client.coupons.emptyOwned')"
         >
           <div class="coupon-grid">
             <article v-for="item in ownedState.list" :key="item.id" class="coupon-item">
-              <button class="coupon-item__detail" type="button" @click="openCouponDetail(item)">{{ $t('client.coupons.detail') }}</button>
+              <button class="coupon-item__detail" type="button" @click="openCouponDetail(item)">
+                {{ $t('client.coupons.detail') }}
+              </button>
               <div class="coupon-item__head">
                 <div class="coupon-item__value">
                   <span>{{ resolveDiscountTypeLabel(item.discount_type) }}</span>
@@ -63,9 +69,9 @@
                   <span>{{ resolveThresholdText(item) }}</span>
                   <span>{{ resolveDiscountAmountText(item) }}</span>
                   <span v-if="item.first_order_only">{{ $t('client.coupons.firstOrderOnly') }}</span>
-                  <span v-if="item.per_user_limit"
-                    >{{ $t('client.coupons.usableTimes', { used: item.remaining_times ?? 0, total: item.per_user_limit }) }}</span
-                  >
+                  <span v-if="item.per_user_limit">{{
+                    $t('client.coupons.usableTimes', { used: item.remaining_times ?? 0, total: item.per_user_limit })
+                  }}</span>
                   <span v-else>{{ $t('client.coupons.unlimitedTimes') }}</span>
                 </div>
               </div>
@@ -92,13 +98,17 @@
     <template v-else>
       <div class="coupon-list-shell">
         <data-state
+          :loading-text="$t('shared.state.loading')"
+          :empty-text="$t('shared.state.empty')"
           :loading="plazaState.loading"
           :empty="!plazaState.list.length"
           :description="$t('client.coupons.emptyPlaza')"
         >
           <div class="coupon-grid">
             <article v-for="item in plazaState.list" :key="item.id" class="coupon-item">
-              <button class="coupon-item__detail" type="button" @click="openCouponDetail(item)">{{ $t('client.coupons.detail') }}</button>
+              <button class="coupon-item__detail" type="button" @click="openCouponDetail(item)">
+                {{ $t('client.coupons.detail') }}
+              </button>
               <div class="coupon-item__head">
                 <div class="coupon-item__value">
                   <span>{{ resolveDiscountTypeLabel(item.discount_type) }}</span>
@@ -115,9 +125,12 @@
                   <span>{{ resolveThresholdText(item) }}</span>
                   <span>{{ resolveDiscountAmountText(item) }}</span>
                   <span v-if="item.first_order_only">{{ $t('client.coupons.firstOrderOnly') }}</span>
-                  <span v-if="item.total_usage_limit"
-                    >{{ $t('client.coupons.remainingStock', { remaining: item.remaining_stock, total: item.total_usage_limit }) }}</span
-                  >
+                  <span v-if="item.total_usage_limit">{{
+                    $t('client.coupons.remainingStock', {
+                      remaining: item.remaining_stock,
+                      total: item.total_usage_limit,
+                    })
+                  }}</span>
                 </div>
               </div>
               <div class="coupon-item__foot">
@@ -129,7 +142,9 @@
                   :loading="claimingId === item.id"
                   @click="claimCoupon(item.id)"
                 >
-                  {{ item.can_claim ? $t('client.coupons.claim') : item.status_label || $t('client.coupons.notClaimable') }}
+                  {{
+                    item.can_claim ? $t('client.coupons.claim') : item.status_label || $t('client.coupons.notClaimable')
+                  }}
                 </t-button>
               </div>
             </article>

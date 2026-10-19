@@ -73,14 +73,7 @@
         </article>
       </div>
       <div v-else class="table-scroll">
-        <t-table
-          row-key="id"
-          :data="list"
-          :columns="columns"
-          hover
-          table-layout="fixed"
-          @row-click="handleRowClick"
-        >
+        <t-table row-key="id" :data="list" :columns="columns" hover table-layout="fixed" @row-click="handleRowClick">
           <template #id="{ row }">
             <button type="button" class="ticket-id-link" @click.stop="openDetail(row.id)">#{{ row.id }}</button>
           </template>
@@ -90,11 +83,7 @@
             </button>
           </template>
           <template #user="{ row }">
-            <button
-              type="button"
-              class="ticket-user-link"
-              @click.stop="goUserDetail(row.user?.id || row.user_id)"
-            >
+            <button type="button" class="ticket-user-link" @click.stop="goUserDetail(row.user?.id || row.user_id)">
               {{ userName(row) }}
             </button>
           </template>
@@ -130,16 +119,16 @@ import { useMediaQuery } from '@vueuse/core';
 import { SearchIcon, UserIcon } from 'tdesign-icons-vue-next';
 import type { PageInfo, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import type { TicketRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
 import { useAdminViewMode } from '@/composables/useAdminViewMode';
+import { t } from '@/locales';
 import { formatDateTime } from '@/utils/format';
 import { errorMessage } from '@/utils/userMessage';
-import { t } from '@/locales';
 
 defineOptions({ name: 'AdminTickets' });
 
@@ -181,9 +170,9 @@ const statusOptions = [
   { label: t('tickets.index.statusClosed'), value: 3 },
 ];
 const priorityOptions = [
-  { label: '低', value: 1 },
-  { label: '中', value: 2 },
-  { label: '高', value: 3 },
+  { label: t('tickets.index.priorityLow'), value: 1 },
+  { label: t('tickets.index.priorityMedium'), value: 2 },
+  { label: t('tickets.index.priorityHigh'), value: 3 },
   { label: t('tickets.index.priorityUrgent'), value: 4 },
 ];
 const departmentOptions = [
@@ -208,7 +197,7 @@ async function loadList() {
   } catch (error) {
     list.value = [];
     total.value = 0;
-    MessagePlugin.error(errorMessage(error, '加载工单列表失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.index.loadFailed')));
   } finally {
     loading.value = false;
   }
@@ -243,12 +232,14 @@ function goUserDetail(userId: unknown) {
 
 function userName(item: TicketRecord) {
   const user = item.user || {};
-  return String(user.nickname || user.display_name || user.email || `用户 #${item.user_id || '-'}`);
+  return String(
+    user.nickname || user.display_name || user.email || t('tickets.index.userFallback', { id: item.user_id || '-' }),
+  );
 }
 
 function assigneeName(item: TicketRecord) {
   const assignee = item.assignee || {};
-  return String(assignee.nickname || assignee.username || '未指派');
+  return String(assignee.nickname || assignee.username || t('tickets.index.unassigned'));
 }
 
 function departmentLabel(value: unknown) {
@@ -268,16 +259,13 @@ function priorityTheme(value: unknown): 'default' | 'success' | 'warning' | 'dan
 }
 
 function statusLabel(value: unknown) {
-  return (
-    (
-      {
-        0: '开启',
-        1: '客户回复',
-        2: '员工回复',
-        3: '已关闭',
-      } as Record<number, string>
-    )[Number(value)] || '--'
-  );
+  const labels: Record<number, string> = {
+    0: t('tickets.index.statusOpen'),
+    1: t('tickets.index.statusCustomerReply'),
+    2: t('tickets.index.statusStaffReply'),
+    3: t('tickets.index.statusClosed'),
+  };
+  return labels[Number(value)] || '--';
 }
 
 function statusTheme(value: unknown): 'default' | 'success' | 'warning' | 'danger' {

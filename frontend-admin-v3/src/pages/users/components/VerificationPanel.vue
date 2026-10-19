@@ -11,7 +11,11 @@
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="quickStatus" :placeholder="$t('verification.statusFilter')" @change="handleQuickStatusChange">
+        <t-select
+          v-model="quickStatus"
+          :placeholder="$t('verification.statusFilter')"
+          @change="handleQuickStatusChange"
+        >
           <t-option :label="$t('verification.statusAll')" value="all" />
           <t-option :label="$t('verification.statusPending')" value="pending" />
           <t-option :label="$t('verification.statusSuccess')" value="success" />
@@ -39,8 +43,12 @@
         <template #createdAt="{ row }">{{ formatDateTime(row.created_at) }}</template>
         <template #operation="{ row }">
           <t-space size="small">
-            <t-button variant="text" theme="primary" size="small" @click="openDetail(row)">{{ $t('verification.view') }}</t-button>
-            <t-button variant="text" theme="primary" size="small" @click="openHistory(row)">{{ $t('verification.history') }}</t-button>
+            <t-button variant="text" theme="primary" size="small" @click="openDetail(row)">{{
+              $t('verification.view')
+            }}</t-button>
+            <t-button variant="text" theme="primary" size="small" @click="openHistory(row)">{{
+              $t('verification.history')
+            }}</t-button>
             <t-button v-if="canEditVerification" variant="text" theme="primary" size="small" @click="openEdit(row)">
               {{ $t('verification.edit') }}
             </t-button>
@@ -85,8 +93,12 @@
                 </div>
               </dl>
               <div class="verification-mobile-card__actions">
-                <t-button variant="outline" theme="primary" size="small" @click="openDetail(row)">{{ $t('verification.view') }}</t-button>
-                <t-button variant="outline" theme="primary" size="small" @click="openHistory(row)">{{ $t('verification.history') }}</t-button>
+                <t-button variant="outline" theme="primary" size="small" @click="openDetail(row)">{{
+                  $t('verification.view')
+                }}</t-button>
+                <t-button variant="outline" theme="primary" size="small" @click="openHistory(row)">{{
+                  $t('verification.history')
+                }}</t-button>
                 <t-button
                   v-if="canEditVerification"
                   variant="outline"
@@ -126,7 +138,9 @@
           <p class="verification-help">{{ $t('verification.retryFeeHelp') }}</p>
         </t-form-item>
         <t-form-item>
-          <t-button theme="primary" :loading="feeLoading" @click="saveFeeSettings">{{ $t('verification.saveFeeSettings') }}</t-button>
+          <t-button theme="primary" :loading="feeLoading" @click="saveFeeSettings">{{
+            $t('verification.saveFeeSettings')
+          }}</t-button>
         </t-form-item>
       </t-form>
     </section>
@@ -140,8 +154,12 @@
     >
       <t-loading :loading="detailLoading" size="small">
         <t-descriptions :column="1" bordered>
-          <t-descriptions-item :label="$t('verification.userNameField')">{{ formatDetailValue(detail.display_name) }}</t-descriptions-item>
-          <t-descriptions-item :label="$t('verification.realNameFieldLabel')">{{ formatDetailValue(detail.real_name) }}</t-descriptions-item>
+          <t-descriptions-item :label="$t('verification.userNameField')">{{
+            formatDetailValue(detail.display_name)
+          }}</t-descriptions-item>
+          <t-descriptions-item :label="$t('verification.realNameFieldLabel')">{{
+            formatDetailValue(detail.real_name)
+          }}</t-descriptions-item>
           <t-descriptions-item :label="$t('verification.methodFieldLabel')">{{
             formatDetailValue(detail.verification_method_label)
           }}</t-descriptions-item>
@@ -204,7 +222,11 @@
       @confirm="handleReject"
     >
       <p class="verification-help">{{ $t('verification.rejectHelp') }}</p>
-      <t-textarea v-model="rejectReason" :placeholder="$t('verification.rejectReasonPlaceholder')" :autosize="{ minRows: 3, maxRows: 6 }" />
+      <t-textarea
+        v-model="rejectReason"
+        :placeholder="$t('verification.rejectReasonPlaceholder')"
+        :autosize="{ minRows: 3, maxRows: 6 }"
+      />
     </t-dialog>
 
     <t-dialog
@@ -215,7 +237,12 @@
       @confirm="handleEditSubmit"
     >
       <div class="verification-edit-subject">
-        {{ editRow?.display_name || editRow?.email || editRow?.real_name || $t('verification.userFallback', { id: editRow?.id }) }}
+        {{
+          editRow?.display_name ||
+          editRow?.email ||
+          editRow?.real_name ||
+          $t('verification.userFallback', { id: editRow?.id })
+        }}
       </div>
       <t-form :data="editForm" label-align="top">
         <t-form-item :label="$t('verification.realNameStatusLabel')">
@@ -267,11 +294,11 @@ import { useRoute } from 'vue-router';
 
 import type { VerificationRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { formatDateTime } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { errorMessage } from '@/utils/userMessage';
-import { t } from '@/locales';
 
 const userStore = useUserStore();
 const route = useRoute();
@@ -299,7 +326,7 @@ const detailLoading = ref(false);
 const detail = ref<Partial<VerificationRecord>>({});
 const historyVisible = ref(false);
 const historyLoading = ref(false);
-const historyTitle = ref('历史记录');
+const historyTitle = ref(t('verification.historyTitle'));
 const historyList = ref<VerificationRecord[]>([]);
 const rejectVisible = ref(false);
 const rejectRow = ref<VerificationRecord | null>(null);
@@ -351,8 +378,8 @@ const pagination = computed(() => ({
 }));
 
 const feeRules: Record<string, FormRule[]> = {
-  free_attempts: [required('请输入免费认证次数')],
-  retry_fee: [required('请输入再次认证费用')],
+  free_attempts: [required(t('verification.freeAttemptsRequired'))],
+  retry_fee: [required(t('verification.retryFeeRequired'))],
 };
 
 function normalizePane(value: unknown): VerificationPane | null {
@@ -434,12 +461,12 @@ function verificationMethodLabel(row: VerificationRecord) {
   if (!hasVerificationRecord(row)) return '-';
   const bizCode = String(summaryConfig.verification_biz_code || 'FACE');
   const labels: Record<string, string> = {
-    FACE: '人脸识别',
-    CERT_PHOTO: '证照认证',
-    CERT_PHOTO_FACE: '证照+人脸',
-    SMART_FACE: '快捷认证',
+    FACE: t('verification.methodFace'),
+    CERT_PHOTO: t('verification.methodCertPhoto'),
+    CERT_PHOTO_FACE: t('verification.methodCertPhotoFace'),
+    SMART_FACE: t('verification.methodSmartFace'),
   };
-  return row.verification_method_label || labels[bizCode] || '人脸识别';
+  return row.verification_method_label || labels[bizCode] || t('verification.methodFace');
 }
 
 function hasVerificationRecord(row: VerificationRecord) {
@@ -449,11 +476,15 @@ function hasVerificationRecord(row: VerificationRecord) {
 function verificationStatusLabel(row: VerificationRecord) {
   const status = Number(row.verification_status || 0);
   const message = normalizeVerificationMessage(row.verification_message);
-  if (status === 2) return '认证成功';
-  if (status === 3) return message ? `认证失败：${message}` : '认证失败';
-  if (status === 5) return message ? `已驳回：${message}` : '已驳回';
-  if (status === 1 || status === 4) return '待认证';
-  return message || '未提交认证';
+  if (status === 2) return t('verification.statusVerified');
+  if (status === 3) {
+    return message ? t('verification.statusFailedWithReason', { reason: message }) : t('verification.statusFailed');
+  }
+  if (status === 5) {
+    return message ? t('verification.statusRejectedWithReason', { reason: message }) : t('verification.statusRejected');
+  }
+  if (status === 1 || status === 4) return t('verification.statusPending');
+  return message || t('verification.statusNotSubmitted');
 }
 
 function verificationStatusTheme(row: VerificationRecord): 'default' | 'success' | 'primary' | 'warning' | 'danger' {
@@ -499,11 +530,15 @@ async function openDetail(row: VerificationRecord) {
 async function openHistory(row: VerificationRecord) {
   historyVisible.value = true;
   historyLoading.value = true;
-  historyTitle.value = row.display_name ? `历史记录(${row.display_name})` : '历史记录';
+  historyTitle.value = row.display_name
+    ? t('verification.historyTitleWithName', { name: row.display_name })
+    : t('verification.historyTitle');
   historyList.value = [];
   try {
     const response = await adminApi.verifications.history(row.id);
-    historyTitle.value = response.user_name ? `历史记录(${response.user_name})` : historyTitle.value;
+    historyTitle.value = response.user_name
+      ? t('verification.historyTitleWithName', { name: response.user_name })
+      : historyTitle.value;
     historyList.value = response.list?.length ? response.list : [row];
   } finally {
     historyLoading.value = false;
@@ -544,7 +579,7 @@ async function handleReject() {
       MessagePlugin.warning(t('verification.operationSucceededRefreshFailed'));
     }
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '驳回失败，请稍后重试'));
+    MessagePlugin.error(errorMessage(error, t('verification.rejectFailed')));
   } finally {
     actionLoadingId.value = null;
   }
@@ -599,7 +634,7 @@ async function handleEditSubmit() {
     editVisible.value = false;
     await Promise.all([loadList(), loadSummary()]);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '实名认证信息保存失败'));
+    MessagePlugin.error(errorMessage(error, t('verification.saveInfoFailed')));
   } finally {
     editSubmitting.value = false;
   }
@@ -629,7 +664,7 @@ async function saveFeeSettings() {
     // 直接调用即可（无需再包 catch，那会是永不触发的死代码）。
     await loadSummary();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '费用设置保存失败，请稍后重试'));
+    MessagePlugin.error(errorMessage(error, t('verification.saveFeeFailed')));
   } finally {
     feeLoading.value = false;
   }

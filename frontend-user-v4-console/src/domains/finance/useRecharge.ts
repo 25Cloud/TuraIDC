@@ -110,23 +110,27 @@ export function useRecharge() {
     () => paymentGateways.value.find((item) => gatewayOptionKey(item) === selectedGateway.value) || null,
   );
   const selectedPaymentGatewayName = computed(
-    () => selectedPaymentGateway.value?.name || selectedPaymentGateway.value?.label || '支付',
+    () => selectedPaymentGateway.value?.name || selectedPaymentGateway.value?.label || t('finance.messages.pay'),
   );
   const paymentButtonText = computed(() => {
-    if (paymentGatewaysLoading.value) return '正在加载支付方式';
-    if (!hasPaymentGateways.value) return '暂无可用支付方式';
-    if (submitting.value) return '正在生成二维码';
-    if (rechargePaid.value) return '继续充值';
-    return paymentPayload.value ? '刷新支付二维码' : `生成${selectedPaymentGatewayName.value}二维码`;
+    if (paymentGatewaysLoading.value) return t('finance.messages.paymentMethodLoading');
+    if (!hasPaymentGateways.value) return t('finance.messages.noPaymentMethod');
+    if (submitting.value) return t('finance.messages.generatingQr');
+    if (rechargePaid.value) return t('finance.messages.continueRecharge');
+    return paymentPayload.value
+      ? t('finance.messages.refreshQr')
+      : t('finance.messages.generateQr', { method: selectedPaymentGatewayName.value });
   });
   const qrCodeTitle = computed(() => {
-    if (rechargePaid.value) return '充值成功，余额已刷新';
-    return qrCodeValue.value ? `请使用${selectedPaymentGatewayName.value}扫码支付` : '支付二维码待生成';
+    if (rechargePaid.value) return t('finance.messages.rechargePaid');
+    return qrCodeValue.value
+      ? t('finance.messages.scanToPay', { method: selectedPaymentGatewayName.value })
+      : t('finance.messages.qrPending');
   });
   const qrCodeSubtitle = computed(() => {
-    if (rechargePaid.value) return '到账完成后，可继续购买或续费服务。';
-    if (qrCodeValue.value && polling.value) return '正在自动确认支付状态，请勿重复支付。';
-    return qrCodeValue.value ? '' : '选择金额和支付方式后生成二维码。';
+    if (rechargePaid.value) return t('finance.messages.afterPaidTip');
+    if (qrCodeValue.value && polling.value) return t('finance.messages.pollingTip');
+    return qrCodeValue.value ? '' : t('finance.messages.chooseAmountTip');
   });
   const summaryCards = computed(() => [
     {
@@ -207,7 +211,7 @@ export function useRecharge() {
       const alreadyHandled =
         typeof error === 'object' && error !== null && (error as Record<string, unknown>).__handled === true;
       if (!alreadyHandled) {
-        MessagePlugin.error(getErrorMessage(error, '创建充值账单失败'));
+        MessagePlugin.error(getErrorMessage(error, t('finance.messages.createRechargeFailed')));
       }
       return null;
     } finally {
@@ -239,14 +243,14 @@ export function useRecharge() {
         rechargeSummary.cashBalance = formatMoney(
           payload.cash_balance ?? userStore.info?.cash_balance ?? rechargeSummary.cashBalance,
         );
-        notifyScreenReader('支付已成功，充值金额已到账');
+        notifyScreenReader(t('finance.messages.payArrived'));
         MessagePlugin.success(t('recharge.successBalanceRefreshed'));
       } else if (!options.silentPending) {
-        notifyScreenReader('支付仍在处理中，请稍候');
-        MessagePlugin.info(payload.message || '当前仍未支付成功');
+        notifyScreenReader(t('finance.messages.stillProcessing'));
+        MessagePlugin.info(payload.message || t('finance.messages.notPaidYet'));
       }
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '查询充值状态失败'));
+      MessagePlugin.error(getErrorMessage(error, t('finance.messages.queryRechargeStatusFailed')));
     } finally {
       polling.value = false;
     }
@@ -340,7 +344,7 @@ export function useRecharge() {
       rechargeSummary.renewNeeded7Days = formatMoney(renewNeeded7Days);
     } catch (error: unknown) {
       rechargeSummary.cashBalance = formatMoney(userStore.info?.cash_balance || 0);
-      MessagePlugin.error(getErrorMessage(error, '加载充值摘要失败'));
+      MessagePlugin.error(getErrorMessage(error, t('finance.messages.loadRechargeSummaryFailed')));
     } finally {
       summaryLoading.value = false;
     }
@@ -367,7 +371,7 @@ export function useRecharge() {
       paymentGateways.value = [];
       selectedGateway.value = '';
       clearPaymentPayload();
-      MessagePlugin.error(getErrorMessage(error, '加载支付方式失败'));
+      MessagePlugin.error(getErrorMessage(error, t('finance.messages.loadPaymentMethodsFailed')));
     } finally {
       paymentGatewaysLoading.value = false;
     }
@@ -400,8 +404,8 @@ export function useRecharge() {
   async function copyPayUrl() {
     if (!qrCodeValue.value) return;
     await copyText(qrCodeValue.value, {
-      successMsg: '支付链接已复制到剪贴板',
-      errorMsg: '当前浏览器不支持自动复制，请手动复制',
+      successMsg: t('finance.messages.linkCopied'),
+      errorMsg: t('finance.messages.copyUnsupported'),
     });
   }
 

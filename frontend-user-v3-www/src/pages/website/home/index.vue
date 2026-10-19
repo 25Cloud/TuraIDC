@@ -37,6 +37,7 @@ import {
 } from "vue";
 import siteApi from "@/api/site";
 import { useAppStore } from "@/stores/app";
+import { t } from "@/locales";
 import HomeHeroCarousel from "@/views/website/Home/components/HomeHeroCarousel.vue";
 import HomeProductTabs from "@/views/website/Home/components/HomeProductTabs.vue";
 import HomeSectionSkeleton from "@/views/website/Home/components/HomeSectionSkeleton.vue";
@@ -98,7 +99,10 @@ function deriveProductTypesFromGroups(groups: any[]) {
     const current = map.get(value) || {
       id: Number(group?.product_type_id || index + 1),
       value,
-      label: String(group?.first_product_group_name || `产品分类 ${index + 1}`),
+      label: String(
+        group?.first_product_group_name ||
+          t("home.products.categoryFallback", { index: index + 1 }),
+      ),
       product_count: 0,
     };
 

@@ -1731,8 +1731,8 @@ const configOptionSubItemRows = ref<ConfigOptionSubItemFormRow[]>([]);
 const configOptionTextTip = computed(() => {
   const field = configOptionForm.field.trim();
   return field
-    ? `该内容会在购买页作为文字提示展示，不参与计价，也不会作为配置提交给上游（回传字段「${field}」已被排除）。`
-    : '该内容会在购买页作为文字提示展示，不参与计价，也不会作为配置提交给上游。';
+    ? t('products.catalog.optionDescriptionHintExcluded', { field })
+    : t('products.catalog.optionDescriptionHint');
 });
 const categoryDialogVisible = ref(false);
 const editingCategory = ref<ProductCategoryRecord | null>(null);
@@ -1904,7 +1904,7 @@ const productDrawerSectionValid = (key: string) => {
 };
 const selectedProductTypeLabel = computed(() => {
   const current = productTypeOptions.value.find((item) => String(item.value) === String(catalogFilters.product_type));
-  return current?.label || '全部商品';
+  return current?.label || t('products.catalog.filterAll');
 });
 const categoryProductTypeOptions = computed(() => {
   const options = productTypeOptions.value.filter((item) => String(item.value || '').trim());
@@ -1931,8 +1931,10 @@ const editingCategoryHasChildren = computed(() => {
   return Number(current.children_count || 0) > 0;
 });
 const categoryDialogHeader = computed(() => {
-  if (editingCategory.value) return '编辑分类';
-  return creatingThirdCategoryParent.value ? '新增三级分组' : '新增二级分组';
+  if (editingCategory.value) return t('products.catalog.editCategory');
+  return creatingThirdCategoryParent.value
+    ? t('products.catalog.createThirdCategory')
+    : t('products.catalog.createSecondCategory');
 });
 const categoryParentFieldVisible = computed(() => {
   if (creatingThirdCategoryParent.value) return true;
@@ -1962,9 +1964,9 @@ const categoryParentCategoryOptions = computed(() => {
 });
 const selectedCategoryLabel = computed(() => {
   const selectedKey = String(catalogFilters.product_group_key || '');
-  if (!selectedKey) return '全部分类';
+  if (!selectedKey) return t('products.catalog.allCategories');
   const category = findProductGroupByKey(categoryOptions.value, selectedKey);
-  return category ? categoryDisplayName(category) : '全部分类';
+  return category ? categoryDisplayName(category) : t('products.catalog.allCategories');
 });
 const splitProductPreviewItems = computed(() => {
   const items = splitProductPreview.value?.items;
@@ -1993,16 +1995,19 @@ const provisionHostnamePreviewText = computed(() => {
   if (provisionHostnameForm.mode === 'fixed') {
     const value = provisionHostnameForm.value.trim();
     return value
-      ? `开通时将固定提交主机名：${value}。若上游不允许重复主机名，可能会被拒绝。`
-      : '固定主机名模式需要填写一个上游允许的 host 值。';
+      ? t('products.catalog.provisionFixedHint', { hostname: value })
+      : t('products.catalog.provisionFixedRequired');
   }
 
   if (provisionHostnameForm.mode === 'prefix') {
     const prefix = provisionHostnameForm.value.trim() || 'prefix';
-    return `开通时将按"${prefix} + 随机后缀"生成主机名，总长度 ${Number(provisionHostnameForm.length || 12)}。`;
+    return t('products.catalog.provisionRandomHint', {
+      prefix,
+      length: Number(provisionHostnameForm.length || 12),
+    });
   }
 
-  return '默认优先按上游商品规则生成；若上游未返回规则，则回退到系统默认规则或账单快照。';
+  return t('products.catalog.provisionFollowHint');
 });
 const providerTypeOptions = computed(() => {
   return mergeProviderTypeOptions(providerTypes.value);
@@ -2010,7 +2015,7 @@ const providerTypeOptions = computed(() => {
 const supplierProductCascaderOptions = computed(() => {
   const groups = new Map<string, SupplierBatchProduct[]>();
   supplierProductOptions.value.forEach((item) => {
-    const groupName = String(item.remote_group_name || item.type_label || '默认分组');
+    const groupName = String(item.remote_group_name || item.type_label || t('products.catalog.defaultGroup'));
     const list = groups.get(groupName) || [];
     list.push(item);
     groups.set(groupName, list);
@@ -2036,10 +2041,10 @@ function categoryIdKey(row: ProductCategoryRecord) {
 // 之前按深度标成「一级 / 二级」，和上面的 L1 撞车，看起来就像两套一级分组。
 function categoryLevelLabel(row: ProductCategoryRecord) {
   const level = productGroupLevel(row);
-  if (level === 1) return '一级分组';
-  if (level === 2) return '二级分组';
-  if (level === 3) return '三级分组';
-  return '分类';
+  if (level === 1) return t('products.catalog.level1Group');
+  if (level === 2) return t('products.catalog.level2Group');
+  if (level === 3) return t('products.catalog.level3Group');
+  return t('products.catalog.categoryColumn');
 }
 
 function categoryLevelTagClass(row: ProductCategoryRecord) {
@@ -2047,7 +2052,7 @@ function categoryLevelTagClass(row: ProductCategoryRecord) {
 }
 
 function categoryDisplayName(row: ProductCategoryRecord) {
-  return String(row.name || row.label || `分类 #${row.id}`).trim();
+  return String(row.name || row.label || t('products.catalog.categoryFallbackWithId', { id: row.id })).trim();
 }
 
 function isCategoryVisible(row: ProductCategoryRecord) {
@@ -2070,8 +2075,8 @@ function categoryTotalProductCount(row: ProductCategoryRecord) {
 }
 
 function productVisibilityLabel(row: ProductRecord) {
-  if (row.is_deleted) return '已删除';
-  return isProductVisible(row) ? '显示中' : '已隐藏';
+  if (row.is_deleted) return t('products.catalog.deletedState');
+  return isProductVisible(row) ? t('products.catalog.visibilityShown') : t('products.catalog.visibilityHidden');
 }
 
 function isProductVisible(row: ProductRecord) {
@@ -2082,13 +2087,13 @@ function productRowMenuOptions(row: ProductRecord): DropdownOption[] {
   if (row.is_deleted) {
     return [
       {
-        content: '恢复',
+        content: t('products.catalog.restore'),
         value: 'restore',
         theme: 'primary',
         loading: productActionLoading.value === `restore:${row.id}`,
       },
       {
-        content: '彻底删除',
+        content: t('products.catalog.purge'),
         value: 'force-delete',
         theme: 'error',
         loading: productActionLoading.value === `force:${row.id}`,
@@ -2096,17 +2101,17 @@ function productRowMenuOptions(row: ProductRecord): DropdownOption[] {
     ] as DropdownOption[];
   }
   return [
-    { content: '编辑', value: 'edit', theme: 'default' },
-    { content: '规格描述栏', value: 'spec-highlight', theme: 'default' },
-    { content: '控制台类型', value: 'console-template', theme: 'default' },
-    { content: '代理折扣分组', value: 'discount-group', theme: 'default' },
+    { content: t('products.catalog.edit'), value: 'edit', theme: 'default' },
+    { content: t('products.catalog.specHighlightTitle'), value: 'spec-highlight', theme: 'default' },
+    { content: t('products.catalog.consoleType'), value: 'console-template', theme: 'default' },
+    { content: t('products.catalog.agentDiscountGroup'), value: 'discount-group', theme: 'default' },
     {
-      content: Number(row.status) === 1 ? '隐藏' : '显示',
+      content: Number(row.status) === 1 ? t('products.catalog.hidden') : t('products.catalog.show'),
       value: 'toggle',
       theme: 'default',
       loading: productActionLoading.value === row.id,
     },
-    { content: '删除', value: 'delete', theme: 'error' },
+    { content: t('products.catalog.delete'), value: 'delete', theme: 'error' },
   ] as DropdownOption[];
 }
 
@@ -2155,7 +2160,7 @@ async function openSpecHighlightDialog(row: ProductRecord) {
       specHighlightForm[dimension.key] = overrides[dimension.key] || '';
     }
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载规格描述栏失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.loadSpecHighlightFailed')));
   }
 }
 
@@ -2175,7 +2180,7 @@ async function submitSpecHighlight() {
     MessagePlugin.success(t('products.catalog.specHighlightSaved'));
     specHighlightDialogVisible.value = false;
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存规格描述栏失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.saveSpecHighlightFailed')));
   } finally {
     specHighlightSubmitting.value = false;
   }
@@ -2446,19 +2451,19 @@ function canMoveCategory(row: ProductCategoryRecord, direction: 'up' | 'down') {
 
 function categoryMenuOptions(row: ProductCategoryRecord): DropdownOption[] {
   const options: DropdownOption[] = [
-    { content: '上移', value: 'up', disabled: !canMoveCategory(row, 'up') },
-    { content: '下移', value: 'down', disabled: !canMoveCategory(row, 'down') },
+    { content: t('products.catalog.moveUp'), value: 'up', disabled: !canMoveCategory(row, 'up') },
+    { content: t('products.catalog.moveDown'), value: 'down', disabled: !canMoveCategory(row, 'down') },
   ];
   if (productGroupLevel(row) === 2) {
-    options.push({ content: '新增三级分组', value: 'create-child', divider: true });
+    options.push({ content: t('products.catalog.createThirdCategory'), value: 'create-child', divider: true });
   }
-  options.push({ content: '折扣分组', value: 'batch-discount', divider: true });
-  options.push({ content: '控制台类型', value: 'batch-console' });
-  options.push({ content: 'CPU规格', value: 'batch-cpu', divider: true });
+  options.push({ content: t('products.catalog.discountGroup'), value: 'batch-discount', divider: true });
+  options.push({ content: t('products.catalog.consoleType'), value: 'batch-console' });
+  options.push({ content: t('products.catalog.batchCpu'), value: 'batch-cpu', divider: true });
   options.push(
-    { content: '编辑', value: 'edit', divider: true },
-    { content: '删除', value: 'delete', theme: 'error' } as DropdownOption,
-    { content: '强制删除', value: 'force-delete', theme: 'error' } as DropdownOption,
+    { content: t('products.catalog.edit'), value: 'edit', divider: true },
+    { content: t('products.catalog.delete'), value: 'delete', theme: 'error' } as DropdownOption,
+    { content: t('products.catalog.forceDelete'), value: 'force-delete', theme: 'error' } as DropdownOption,
   );
   return options;
 }
@@ -2524,7 +2529,10 @@ function resolveSelectedParentCategory() {
 
 function categoryParentOptionLabel(item: ProductCategoryRecord) {
   return String(
-    item.second_product_group_name || item.name || item.label || `二级分组 #${productGroupEffectiveId(item)}`,
+    item.second_product_group_name ||
+      item.name ||
+      item.label ||
+      t('products.catalog.secondGroupFallback', { id: productGroupEffectiveId(item) }),
   ).trim();
 }
 
@@ -2542,7 +2550,7 @@ async function loadCategoryParentOptions(firstGroupCode: string) {
     );
     categoryParentOptions.value = flattenCategories(scopedTree).filter((item) => productGroupLevel(item) === 2);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载二级分组父级失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.loadSecondCategoryParentFailed')));
     categoryParentOptions.value = [];
   } finally {
     categoryParentLoading.value = false;
@@ -2559,7 +2567,7 @@ async function loadProductTypes() {
       catalogFilters.product_type = productTypes.value[0].value;
     }
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载一级分组失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.loadFirstGroupFailed')));
   } finally {
     typeLoading.value = false;
   }
@@ -2677,7 +2685,7 @@ async function submitType() {
     resetTypeForm();
     await refreshTypeCatalog();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存一级分组失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.saveFirstGroupFailed')));
   } finally {
     typeSubmitting.value = false;
   }
@@ -2692,10 +2700,12 @@ async function toggleTypeHidden(type: ProductTypeRecord) {
       icon: type.icon || '',
       is_hidden: !type.is_hidden,
     });
-    MessagePlugin.success(type.is_hidden ? '一级分组已显示' : '一级分组已隐藏');
+    MessagePlugin.success(
+      type.is_hidden ? t('products.catalog.firstGroupShown') : t('products.catalog.firstGroupHidden'),
+    );
     await refreshTypeCatalog();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新一级分组失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.updateFirstGroupFailed')));
   } finally {
     typeSubmitting.value = false;
   }
@@ -2715,7 +2725,7 @@ async function moveType(value: string, direction: -1 | 1) {
     productTypes.value = nextTypes;
     MessagePlugin.success(t('products.catalog.productTypeSorted'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新一级分组排序失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.updateFirstGroupSortFailed')));
     await loadProductTypes();
   } finally {
     typeSubmitting.value = false;
@@ -2724,8 +2734,8 @@ async function moveType(value: string, direction: -1 | 1) {
 
 function deleteType(type: ProductTypeRecord) {
   const dialog = DialogPlugin.confirm({
-    header: '删除一级分组',
-    body: `确认删除「${type.label || type.value}」吗？`,
+    header: t('products.catalog.deleteFirstGroupTitle'),
+    body: t('products.catalog.deleteNamedConfirm', { name: type.label || type.value }),
     theme: 'warning',
     confirmBtn: t('products.catalog.confirmDelete'),
     cancelBtn: t('products.catalog.cancel'),
@@ -2745,7 +2755,7 @@ function deleteType(type: ProductTypeRecord) {
         resetTypeForm();
         await refreshTypeCatalog();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除一级分组失败'));
+        MessagePlugin.error(errorMessage(error, t('products.catalog.deleteFirstGroupFailed')));
       } finally {
         typeSubmitting.value = false;
       }
@@ -2773,7 +2783,7 @@ async function loadCategories() {
     if (requestVersion !== categoryRequestVersion || productType !== catalogFilters.product_type) return;
     categoryOptions.value = [];
     categoryExpandedKeys.value = new Set();
-    MessagePlugin.error(errorMessage(error, '加载商品分类失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.loadCategoriesFailed')));
   } finally {
     if (requestVersion === categoryRequestVersion) categoryLoading.value = false;
   }
@@ -2814,7 +2824,7 @@ async function commitCategoryReorder(row: ProductCategoryRecord, orderedSiblings
     MessagePlugin.success(t('products.catalog.categorySorted'));
     await reloadCategoryScopedProducts();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新分类排序失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.updateCategorySortFailed')));
   } finally {
     categorySortLoadingId.value = '';
   }
@@ -2976,7 +2986,7 @@ async function commitProductSort(orderedIds: number[]) {
     MessagePlugin.success(t('products.catalog.productSorted'));
     await loadProducts();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新商品排序失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.updateProductSortFailed')));
     await loadProducts();
   } finally {
     productSortLoading.value = false;
@@ -3018,7 +3028,7 @@ async function loadProducts() {
     products.value = [];
     selectedProductKeys.value = [];
     productTotal.value = 0;
-    MessagePlugin.error(errorMessage(error, '加载商品列表失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.loadProductsFailed')));
   } finally {
     if (requestVersion === productRequestVersion) productLoading.value = false;
   }
@@ -3137,7 +3147,11 @@ function openProductBatchDialog(
 
   productBatchDialogKind.value = kind;
   productBatchDialogTitle.value =
-    kind === 'console-template' ? '设置控制台类型' : kind === 'discount-group' ? '设置代理折扣分组' : '设置 CPU 规格';
+    kind === 'console-template'
+      ? t('products.catalog.batchConsoleTitle')
+      : kind === 'discount-group'
+        ? t('products.catalog.batchDiscountTitle')
+        : t('products.catalog.batchCpuTitle');
   productBatchTargetProductIds.value = targetRowsIds;
   productBatchTargetGroup.value = group
     ? { id: productGroupEffectiveId(group), level: productGroupLevel(group), name: categoryDisplayName(group) }
@@ -3194,7 +3208,7 @@ async function loadDiscountGroups() {
   try {
     discountGroupOptions.value = await productDiscountGroupsApi.list();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载折扣分组失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.loadDiscountGroupsFailed')));
   } finally {
     discountGroupLoading.value = false;
   }
@@ -3224,14 +3238,16 @@ async function submitProductBatch() {
     const updatedCount = Number(record.updated_count ?? 0);
     const targetLabel = productBatchTargetGroup.value
       ? productBatchTargetGroup.value.name
-      : `${productBatchTargetProductIds.value.length} 个商品`;
+      : t('products.catalog.batchTargetProducts', { count: productBatchTargetProductIds.value.length });
     MessagePlugin.success(
-      updatedCount > 0 ? `已更新 ${updatedCount} 个商品（${targetLabel}）` : `所选商品无需变更（${targetLabel}）`,
+      updatedCount > 0
+        ? t('products.catalog.batchUpdated', { count: updatedCount, target: targetLabel })
+        : t('products.catalog.batchUnchanged', { target: targetLabel }),
     );
     productBatchDialogVisible.value = false;
     await loadProducts();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '批量更新失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.batchUpdateFailed')));
   } finally {
     productBatchSubmitting.value = false;
   }
@@ -3244,8 +3260,8 @@ function handleBatchDeleteProducts() {
     return;
   }
   const dialog = DialogPlugin.confirm({
-    header: '批量删除商品',
-    body: `确认删除选中的 ${rows.length} 个商品吗？存在服务实例的商品将自动跳过。`,
+    header: t('products.catalog.batchDeleteTitle'),
+    body: t('products.catalog.batchDeleteConfirm', { count: rows.length }),
     theme: 'warning',
     confirmBtn: t('products.catalog.confirmDelete'),
     cancelBtn: t('products.catalog.cancel'),
@@ -3259,14 +3275,19 @@ function handleBatchDeleteProducts() {
         const failed = Array.isArray(record.failed) ? record.failed : [];
         MessagePlugin.success(
           deletedCount > 0
-            ? `已删除 ${deletedCount} 个商品${failed.length ? `，跳过 ${failed.length} 个（存在实例）` : ''}`
-            : `无商品可删除${failed.length ? `，${failed.length} 个存在实例` : ''}`,
+            ? t('products.catalog.batchDeleted', {
+                count: deletedCount,
+                skipped: failed.length ? t('products.catalog.batchDeleteSkipped', { count: failed.length }) : '',
+              })
+            : t('products.catalog.batchNothingDeleted', {
+                failed: failed.length ? t('products.catalog.batchDeleteFailedCount', { count: failed.length }) : '',
+              }),
         );
         dialog.hide();
         selectedProductKeys.value = [];
         await loadProducts();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '批量删除失败'));
+        MessagePlugin.error(errorMessage(error, t('products.catalog.batchDeleteFailed')));
       }
     },
   });
@@ -3279,8 +3300,8 @@ function handleBatchForceDeleteProducts() {
     return;
   }
   const dialog = DialogPlugin.confirm({
-    header: '批量强制删除商品',
-    body: `确认彻底删除选中的 ${rows.length} 个商品吗？其下服务实例将同步删除，该操作不可恢复。`,
+    header: t('products.catalog.batchForceDeleteTitle'),
+    body: t('products.catalog.batchForceDeleteConfirm', { count: rows.length }),
     theme: 'danger',
     confirmBtn: t('products.catalog.confirmForceDelete'),
     cancelBtn: t('products.catalog.cancel'),
@@ -3294,14 +3315,20 @@ function handleBatchForceDeleteProducts() {
         const deletedServices = Number(record.deleted_services ?? 0);
         MessagePlugin.success(
           deletedCount > 0
-            ? `已强制删除 ${deletedCount} 个商品${deletedServices > 0 ? `，同步删除 ${deletedServices} 个实例` : ''}`
-            : '未删除任何商品',
+            ? t('products.catalog.batchForceDeleted', {
+                count: deletedCount,
+                services:
+                  deletedServices > 0
+                    ? t('products.catalog.batchForceDeletedServices', { count: deletedServices })
+                    : '',
+              })
+            : t('products.catalog.batchForceNothing'),
         );
         dialog.hide();
         selectedProductKeys.value = [];
         await loadProducts();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '批量强制删除失败'));
+        MessagePlugin.error(errorMessage(error, t('products.catalog.batchForceDeleteFailed')));
       }
     },
   });
@@ -3310,8 +3337,8 @@ function handleBatchForceDeleteProducts() {
 function handleForceDeleteCategory(row: ProductCategoryRecord) {
   const level = productGroupLevel(row);
   const dialog = DialogPlugin.confirm({
-    header: '强制删除分类',
-    body: `确认强制删除「${categoryDisplayName(row)}」吗？其下所有商品与相关服务实例将同步删除，该操作不可恢复。`,
+    header: t('products.catalog.forceDeleteCategoryTitle'),
+    body: t('products.catalog.forceDeleteCategoryConfirm', { name: categoryDisplayName(row) }),
     theme: 'danger',
     confirmBtn: t('products.catalog.confirmForceDelete'),
     cancelBtn: t('products.catalog.cancel'),
@@ -3323,7 +3350,10 @@ function handleForceDeleteCategory(row: ProductCategoryRecord) {
         });
         const record = toPlainRecord(response);
         MessagePlugin.success(
-          `已强制删除，同步删除 ${record.deleted_products || 0} 个商品、${record.deleted_services || 0} 个实例`,
+          t('products.catalog.forceDeleteCategoryResult', {
+            products: record.deleted_products || 0,
+            services: record.deleted_services || 0,
+          }),
         );
         dialog.hide();
         if (catalogFilters.product_group_key === categoryIdKey(row)) {
@@ -3331,7 +3361,7 @@ function handleForceDeleteCategory(row: ProductCategoryRecord) {
         }
         await reloadCategoryScopedProducts();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '强制删除分类失败'));
+        MessagePlugin.error(errorMessage(error, t('products.catalog.forceDeleteCategoryFailed')));
       } finally {
         categorySubmitting.value = false;
       }
@@ -3368,7 +3398,7 @@ async function openSplitProductDialog() {
     });
     splitProductPreview.value = toPlainRecord(response);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载拆分预览失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.loadSplitPreviewFailed')));
   } finally {
     splitProductPreviewLoading.value = false;
   }
@@ -3417,7 +3447,7 @@ function openProvisionHostnameDialog() {
 
 function resolveProductGroupLabel(key: string) {
   const group = findProductGroupByKey(categoryOptions.value, key);
-  return group ? productGroupOptionLabel(group) : '目标分类';
+  return group ? productGroupOptionLabel(group) : t('products.catalog.targetCategory');
 }
 
 async function submitBatchCategory() {
@@ -3448,16 +3478,16 @@ async function submitBatchCategory() {
     );
 
     if (updatedCount > 0) {
-      MessagePlugin.success(`已将 ${updatedCount} 个商品移入「${targetLabel}」`);
+      MessagePlugin.success(t('products.catalog.categorized', { count: updatedCount, target: targetLabel }));
     } else {
-      MessagePlugin.success(`所选商品已在「${targetLabel}」下`);
+      MessagePlugin.success(t('products.catalog.alreadyCategorized', { target: targetLabel }));
     }
 
     batchCategoryDialogVisible.value = false;
     batchCategoryTargetKeys.value = [];
     await reloadCategoryScopedProducts();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '批量归类失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.categorizeFailed')));
   } finally {
     batchCategorySubmitting.value = false;
   }
@@ -3480,9 +3510,19 @@ async function submitSplitProducts() {
     const changedCount = createdCount + updatedCount;
 
     if (changedCount > 0) {
-      MessagePlugin.success(`已生成 ${createdCount} 个商品，更新 ${updatedCount} 个，跳过 ${skippedCount} 个`);
+      MessagePlugin.success(
+        t('products.catalog.splitCreated', {
+          created: createdCount,
+          updated: updatedCount,
+          skipped: skippedCount,
+        }),
+      );
     } else {
-      MessagePlugin.warning(skippedCount > 0 ? `未生成新商品，跳过 ${skippedCount} 个` : '未找到可拆分商品');
+      MessagePlugin.warning(
+        skippedCount > 0
+          ? t('products.catalog.splitSkipped', { count: skippedCount })
+          : t('products.catalog.splitNoMatch'),
+      );
     }
 
     splitProductDialogVisible.value = false;
@@ -3490,7 +3530,7 @@ async function submitSplitProducts() {
     selectedProductKeys.value = [];
     await reloadCategoryScopedProducts();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '拆分商品失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.splitFailed')));
   } finally {
     splitProductSubmitting.value = false;
   }
@@ -3503,7 +3543,11 @@ async function submitProvisionHostname() {
     return;
   }
   if (provisionHostnameForm.mode !== 'system' && !provisionHostnameForm.value.trim()) {
-    MessagePlugin.warning(provisionHostnameForm.mode === 'fixed' ? '请输入固定主机名' : '请输入主机名前缀');
+    MessagePlugin.warning(
+      provisionHostnameForm.mode === 'fixed'
+        ? t('products.catalog.hostnameFixedRequired')
+        : t('products.catalog.hostnamePrefixRequired'),
+    );
     return;
   }
 
@@ -3523,7 +3567,7 @@ async function submitProvisionHostname() {
     selectedProductKeys.value = [];
     await loadProducts();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新主机名规则失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.updateHostnameRuleFailed')));
   } finally {
     provisionHostnameSubmitting.value = false;
   }
@@ -3618,7 +3662,7 @@ async function submitProduct() {
     productDialogVisible.value = false;
     await loadProducts();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存商品失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.saveProductFailed')));
   } finally {
     productSubmitting.value = false;
   }
@@ -3850,7 +3894,7 @@ function buildConfigSubItemsFromRows() {
 
   const invalidRow = rows.find((row) => !row.name || !row.value);
   if (invalidRow) {
-    throw new Error('请完整填写子项名称和传参值');
+    throw new Error(t('products.catalog.configItemsIncomplete'));
   }
 
   return rows.map((row, index) => {
@@ -3885,7 +3929,7 @@ function submitConfigOption() {
   try {
     subItems = mode === 'select' ? buildConfigSubItemsFromRows() : [];
   } catch (error) {
-    MessagePlugin.warning(errorMessage(error, '请检查子项配置'));
+    MessagePlugin.warning(errorMessage(error, t('products.catalog.checkConfigItems')));
     return;
   }
   const parameter = subItems.length
@@ -4018,16 +4062,16 @@ function toNumber(value: unknown, fallback = 0): number {
 function configOptionModeLabel(item: ProductConfigOptionRecord): string {
   const mode = normalizeConfigOptionMode(item);
   if (mode === 'text') {
-    return '文字提示';
+    return t('products.catalog.optionModeTextHint');
   }
   if (mode === 'range') {
     const min = toNumber(item.qty_minimum);
     const max = toNumber(item.qty_maximum);
     const unit = String(item.unit || '').trim();
-    const range = max > 0 ? `${min}~${max}${unit}` : '范围待填写';
-    return `数量范围 ${range}`;
+    const range = max > 0 ? `${min}~${max}${unit}` : t('products.catalog.rangePending');
+    return t('products.catalog.rangeLabel', { range });
   }
-  return '单选';
+  return t('products.catalog.optionModeSingle');
 }
 
 async function pullProductConfigTemplate() {
@@ -4045,7 +4089,7 @@ async function pullProductConfigTemplate() {
     productForm.config_options = normalizeConfigOptions(options);
     MessagePlugin.success(t('products.catalog.templatePulled'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '拉取配置项模板失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.pullTemplateFailed')));
   } finally {
     configTemplateLoading.value = false;
   }
@@ -4053,21 +4097,26 @@ async function pullProductConfigTemplate() {
 
 async function handleToggleProduct(row: ProductRecord) {
   const newStatus = Number(row.status) !== 1;
-  const actionLabel = newStatus ? '显示' : '隐藏';
+  const productLabel = row.display_name || row.name || row.id;
   const dialog = DialogPlugin.confirm({
-    header: `${actionLabel}商品`,
-    body: `确定${actionLabel}「${row.display_name || row.name || row.id}」吗？${newStatus ? '' : '隐藏后前台不显示，可在筛选中找回。'}`,
-    confirmBtn: `确认${actionLabel}`,
+    header: newStatus ? t('products.catalog.toggleShowTitle') : t('products.catalog.toggleHideTitle'),
+    body: newStatus
+      ? t('products.catalog.toggleShowConfirm', { name: productLabel })
+      : t('products.catalog.toggleHideConfirm', { name: productLabel }),
+    confirmBtn: newStatus ? t('products.catalog.confirmShow') : t('products.catalog.confirmHide'),
     cancelBtn: t('products.catalog.cancel'),
     async onConfirm() {
       productActionLoading.value = row.id;
       try {
         await productApi.toggleStatus(row.id, newStatus);
-        MessagePlugin.success({ content: `商品已${actionLabel}`, duration: 3000 });
+        MessagePlugin.success({
+          content: newStatus ? t('products.catalog.productShown') : t('products.catalog.productHidden'),
+          duration: 3000,
+        });
         dialog.hide();
         await loadProducts();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '更新状态失败'));
+        MessagePlugin.error(errorMessage(error, t('products.catalog.updateStatusFailed')));
       } finally {
         productActionLoading.value = null;
       }
@@ -4077,8 +4126,16 @@ async function handleToggleProduct(row: ProductRecord) {
 
 function handleDeleteProduct(row: ProductRecord) {
   const dialog = DialogPlugin.confirm({
-    header: '删除商品',
-    body: `确认删除「${row.display_name || row.name || row.id}」吗？${Number(row.active_services_count ?? row.services_count ?? 0) > 0 ? ` 该商品下有 ${row.active_services_count ?? row.services_count} 个现存服务，删除后可能影响已开通实例。` : ''}`,
+    header: t('products.catalog.deleteProductTitle'),
+    body: t('products.catalog.deleteProductConfirm', {
+      name: row.display_name || row.name || row.id,
+      services:
+        Number(row.active_services_count ?? row.services_count ?? 0) > 0
+          ? t('products.catalog.deleteProductServices', {
+              count: row.active_services_count ?? row.services_count,
+            })
+          : '',
+    }),
     theme: 'warning',
     confirmBtn: t('products.catalog.confirmDelete'),
     cancelBtn: t('products.catalog.cancel'),
@@ -4086,14 +4143,14 @@ function handleDeleteProduct(row: ProductRecord) {
       productActionLoading.value = row.id;
       try {
         await productApi.delete(row.id);
-        MessagePlugin.success({ content: '商品已删除', duration: 3000 });
+        MessagePlugin.success({ content: t('products.catalog.productDeleted'), duration: 3000 });
         dialog.hide();
         if (catalogFilters.lifecycle_status === 'all') {
           MessagePlugin.info(t('products.catalog.deletedProductsVisibleTip'));
         }
         await loadProducts();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除商品失败'));
+        MessagePlugin.error(errorMessage(error, t('products.catalog.deleteProductFailed')));
       } finally {
         productActionLoading.value = null;
       }
@@ -4103,8 +4160,8 @@ function handleDeleteProduct(row: ProductRecord) {
 
 function handleRestoreProduct(row: ProductRecord) {
   const dialog = DialogPlugin.confirm({
-    header: '恢复商品',
-    body: `确认恢复《${row.display_name || row.name || row.id}》吗？`,
+    header: t('products.catalog.restoreProductTitle'),
+    body: t('products.catalog.restoreProductConfirm', { name: row.display_name || row.name || row.id }),
     confirmBtn: t('products.catalog.confirmRestore'),
     cancelBtn: t('products.catalog.cancel'),
     async onConfirm() {
@@ -4115,7 +4172,7 @@ function handleRestoreProduct(row: ProductRecord) {
         dialog.hide();
         await loadProducts();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '恢复商品失败'));
+        MessagePlugin.error(errorMessage(error, t('products.catalog.restoreProductFailed')));
       } finally {
         productActionLoading.value = null;
       }
@@ -4125,8 +4182,8 @@ function handleRestoreProduct(row: ProductRecord) {
 
 function handleForceDeleteProduct(row: ProductRecord) {
   const dialog = DialogPlugin.confirm({
-    header: '彻底删除商品',
-    body: `确认彻底删除《${row.display_name || row.name || row.id}》吗？该操作不可恢复。`,
+    header: t('products.catalog.purgeProductTitle'),
+    body: t('products.catalog.purgeProductConfirm', { name: row.display_name || row.name || row.id }),
     theme: 'warning',
     confirmBtn: t('products.catalog.confirmPurge'),
     cancelBtn: t('products.catalog.cancel'),
@@ -4138,7 +4195,7 @@ function handleForceDeleteProduct(row: ProductRecord) {
         dialog.hide();
         await loadProducts();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '彻底删除商品失败'));
+        MessagePlugin.error(errorMessage(error, t('products.catalog.purgeProductFailed')));
       } finally {
         productActionLoading.value = null;
       }
@@ -4232,7 +4289,7 @@ async function submitCategory() {
     categoryDialogVisible.value = false;
     await reloadCategoryScopedProducts();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存分类失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.saveCategoryFailed')));
   } finally {
     categorySubmitting.value = false;
   }
@@ -4240,8 +4297,8 @@ async function submitCategory() {
 
 function handleDeleteCategory(row: ProductCategoryRecord) {
   const dialog = DialogPlugin.confirm({
-    header: '删除分类',
-    body: `确认删除「${row.name || row.label || row.id}」吗？`,
+    header: t('products.catalog.deleteCategoryTitle'),
+    body: t('products.catalog.deleteNamedConfirm', { name: row.name || row.label || row.id }),
     theme: 'warning',
     confirmBtn: t('products.catalog.confirmDelete'),
     cancelBtn: t('products.catalog.cancel'),
@@ -4258,7 +4315,7 @@ function handleDeleteCategory(row: ProductCategoryRecord) {
         }
         await reloadCategoryScopedProducts();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除分类失败'));
+        MessagePlugin.error(errorMessage(error, t('products.catalog.deleteCategoryFailed')));
       } finally {
         categorySubmitting.value = false;
       }
@@ -4383,8 +4440,8 @@ async function loadProductSupplierProducts(supplierId: string | number, notify =
       if (!hasCurrent) {
         supplierProductOptions.value.unshift({
           id: Number(productForm.upstream_product_id),
-          name: `已绑定商品 #${productForm.upstream_product_id}`,
-          type_label: '当前绑定',
+          name: t('products.catalog.boundProduct', { id: productForm.upstream_product_id }),
+          type_label: t('products.catalog.currentBinding'),
           remote_group_name: '',
           is_connected: true,
           connected_display_name: '',
@@ -4394,7 +4451,7 @@ async function loadProductSupplierProducts(supplierId: string | number, notify =
     if (notify) MessagePlugin.success(t('products.catalog.upstreamSynced'));
   } catch (error) {
     supplierProductOptions.value = [];
-    MessagePlugin.error(errorMessage(error, '同步上游商品失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.syncUpstreamFailed')));
   } finally {
     supplierProductLoading.value = false;
   }
@@ -4434,7 +4491,7 @@ function buildSupplierBatchProducts(payloadValue: unknown) {
 }
 
 function formatSplitAction(action: string) {
-  return action === 'update' ? '更新' : '新建';
+  return action === 'update' ? t('products.catalog.actionUpdate') : t('products.catalog.actionCreate');
 }
 
 // --- Init ---

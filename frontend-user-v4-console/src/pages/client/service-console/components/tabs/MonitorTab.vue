@@ -130,13 +130,13 @@
             <div v-else class="monitor-chart-empty">{{ chart.message || $t('serviceConsole.monitor.noTrend') }}</div>
             <div class="monitor-metrics">
               <span
-                >平均 <strong>{{ chart.averageText }}</strong></span
+                >{{ $t('serviceConsole.monitor.average') }} <strong>{{ chart.averageText }}</strong></span
               >
               <span
-                >峰值 <strong>{{ chart.peakText }}</strong></span
+                >{{ $t('serviceConsole.monitor.peak') }} <strong>{{ chart.peakText }}</strong></span
               >
               <span
-                >最低 <strong>{{ chart.lowestText }}</strong></span
+                >{{ $t('serviceConsole.monitor.lowest') }} <strong>{{ chart.lowestText }}</strong></span
               >
             </div>
           </article>

@@ -35,7 +35,17 @@
       "notFound": "商品不存在或已下架",
       "backToProducts": "返回產品頁",
       "cycle": "週期",
-      "description": "商品描述"
+      "description": "商品描述",
+      "skuCompare": "機型對比",
+      "skuCompareHint": "點選任意機型切換配置與報價",
+      "skuPrice": "價格",
+      "sortPriceAsc": "價格從低到高排序",
+      "sortPriceDesc": "價格從高到低排序",
+      "selectRegion": "請選擇地區",
+      "couponUsed": "已用券 -¥{amount}",
+      "cloudProductTitle": "雲產品詳情",
+      "cloudProductDescription": "雲產品詳情與即時購買報價",
+      "windowTitle": "{title} - 雲產品"
     },
     "osPicker": {
       "version": "版本",
@@ -53,13 +63,13 @@
       "stockSyncing": "庫存同步中",
       "stockSyncFailed": "庫存同步失敗",
       "stockSyncingHint": "正在同步即時庫存，請稍候。",
-      "discountRate": "${String(value).replace(/\\.0$/, \"\")}折",
+      "discountRate": "{rate}折",
       "stockSufficient": "庫存充足",
       "stockLow": "庫存緊張",
       "stockOutOfStock": "暫無庫存",
       "stockSyncRetryHint": "即時庫存同步失敗，請稍後重試。",
       "stockSufficientHint": "當前庫存充足，可直接提交賬單。",
-      "stockRemainingHint": "剩餘 ${stock} 臺，請儘快購買。",
+      "stockRemainingHint": "剩餘 {stock} 臺，請儘快購買。",
       "stockInsufficientHint": "當前庫存不足，請聯絡客服。",
       "enteringConsole": "正在進入控制台繼續建立賬單",
       "couponCode": "優惠碼",
@@ -83,18 +93,20 @@
       "statusIncomplete": "未完成",
       "loginRequired": "請先登入",
       "statusChecking": "校驗中",
-      "statusPassed": "已通過"
+      "statusPassed": "已通過",
+      "listSeparator": "、"
     },
     "spec": {
       "oneCore": "1 核",
       "unitCore": "核",
-      "familyWithCode": "規格族 ${code}"
+      "familyWithCode": "規格族 {code}"
     },
     "instanceFamily": {
       "computeC9i": "計算型 c9i",
       "generalPurposeG9i": "通用型 g9i",
       "economyE": "經濟型 e",
-      "burstPerformanceT6": "突發性能例項 t6"
+      "burstPerformanceT6": "突發性能例項 t6",
+      "general": "通用型"
     },
     "configurator": {
       "systemDisk": "系統盤",
@@ -107,7 +119,7 @@
       "quantity": "數量",
       "selected": "已選",
       "cpuModel": "CPU型號",
-      "unitCount": "${text}個"
+      "unitCount": "{text}個"
     },
     "list": {
       "osInstall": "系統安裝",
@@ -161,7 +173,24 @@
       "showCatalogNav": "展開目錄",
       "catalogTitle": "商品目錄",
       "catalogBackUp": "返回上層",
-      "groupEmpty": "該分類下暫無可選分組"
+      "groupEmpty": "該分類下暫無可選分組",
+      "selectCpu": "請選擇 CPU",
+      "selectMemory": "請選擇記憶體",
+      "selectOption": "請選擇",
+      "stockLabel": "當前庫存",
+      "stockLeft": "剩餘 {count} 臺",
+      "purchaseRequirements": "購買要求：",
+      "agentDiscount": "代理折扣（{name}）",
+      "agentDiscountPercent": "代理折扣（{name}）{percent}",
+      "couponApplied": "已優惠 ¥{amount}",
+      "noDiscount": "無折扣",
+      "monthly": "月付",
+      "submitting": "提交中...",
+      "buyNow": "立即購買",
+      "addToCart": "加入購物車",
+      "costRowsCount": "共{count}項",
+      "priceDiscounted": "折後價已優惠",
+      "priceNoDiscount": "折後價無折扣"
     },
     "cpuBadge": {
       "coreShort": "酷",
@@ -208,10 +237,12 @@
       "moreLinksDesc": "關於、幫助與常用入口",
       "productsAndServices": "產品與服務",
       "home": "首頁",
-      "help": "幫助"
+      "help": "幫助",
+      "all": "全部",
+      "viewDetail": "檢視詳情"
     },
     "navProductMenu": {
-      "categoryFallback": "分類 ${index + 1}"
+      "categoryFallback": "分類 {index}"
     },
     "notice": {
       "categoryTitle": "公告分類",
@@ -231,7 +262,11 @@
       "signInOrRegister": "登入 / 註冊",
       "account": "賬戶",
       "accountLogin": "賬戶登入",
-      "enterConsole": "進入控制台"
+      "enterConsole": "進入控制台",
+      "myServices": "我的服務",
+      "profile": "個人資料",
+      "recharge": "賬戶充值",
+      "signOut": "登出"
     },
     "a11y": {
       "skipToMainContent": "跳到主內容",
@@ -247,7 +282,8 @@
     },
     "product": {
       "emptyCategories": "暫無產品分類",
-      "reload": "重新載入"
+      "reload": "重新載入",
+      "productCount": "{count} 款產品"
     },
     "solutions": {
       "ecommerce": "電商行業",
@@ -264,17 +300,31 @@
       "noticeUpdates": "公告動態",
       "aboutIntro": "企業簡介、發展願景與服務承諾",
       "helpGuide": "常見問題與使用指南",
-      "supportTicket": "提交售後工單，獲得 1v1 響應"
+      "supportTicket": "提交售後工單，獲得 1v1 響應",
+      "brandDesc": "為企業與開發者提供穩定、安全、高性價比的雲端計算與 IDC 服務。",
+      "account": "賬戶",
+      "valueAddedLicense": "增值電信業務經營許可證：",
+      "icpRecord": "ICP 備案號：",
+      "productCloudServer": "雲伺服器",
+      "productHongKongServer": "香港伺服器",
+      "productUsServer": "美國伺服器",
+      "productHighDefenseServer": "高防伺服器",
+      "productCloudPc": "雲電腦"
     },
     "navContent": {
       "uncategorized": "未分類"
+    },
+    "mobileMenu": {
+      "open": "開啟選單",
+      "close": "關閉選單"
     }
   },
   "content": {
     "notice": {
       "detailTitle": "公告詳情",
       "empty": "暫無公告內容",
-      "title": "公告通知"
+      "title": "公告通知",
+      "pageTitle": "官方公告"
     },
     "help": {
       "detailTitle": "幫助詳情",
@@ -291,7 +341,8 @@
       "empty": "暫無幫助內容",
       "hotDocuments": "熱門文件",
       "recentlyUpdated": "最近更新",
-      "categories": "幫助分類"
+      "categories": "幫助分類",
+      "pageTitle": "幫助中心"
     },
     "about": {
       "serviceCapabilities": "服務能力",
@@ -306,11 +357,17 @@
     },
     "legal": {
       "openOriginal": "開啟原文",
-      "documentUrlMissing": "站點暫未配置該文件地址"
+      "documentUrlMissing": "站點暫未配置該文件地址",
+      "termsDescription": "檢視平臺的服務條款、使用約定與相關說明。",
+      "privacyDescription": "檢視平臺的隱私政策與個人資訊處理說明。"
     },
     "detail": {
       "tableOfContents": "目錄結構",
-      "fullText": "全文"
+      "fullText": "全文",
+      "updatedAt": "更新時間",
+      "publishedAt": "釋出時間",
+      "jumpTo": "跳轉到 {name}",
+      "loadFailed": "{title}載入失敗，請稍後重試"
     },
     "nav": {
       "news": "新聞動態",
@@ -324,7 +381,12 @@
       "placeholder": "請輸入您要搜尋的關鍵詞"
     },
     "article": {
-      "hot": "熱門文章"
+      "hot": "熱門文章",
+      "publisher": "釋出人：",
+      "views": "閱讀量：",
+      "categoryCount": "{name}，共 {count} 篇",
+      "officialSupport": "官方客服",
+      "figureCaption": "相關配圖"
     },
     "activity": {
       "latest": "最新活動"
@@ -333,7 +395,8 @@
       "empty": "暫無內容",
       "hotSearches": "熱門搜尋:",
       "search": "搜尋",
-      "pinned": "置頂"
+      "pinned": "置頂",
+      "views": "瀏覽量: "
     }
   },
   "seo": {
@@ -726,7 +789,7 @@
       "connectionLost": "網路連線已斷開，請檢查後重試",
       "timeout": "請求超時，請檢查網路後重試",
       "invalidParameters": "引數填寫有誤，請檢查後重試",
-      "tooManyRequestsRetryAfter": "請求過於頻繁，請 ${retryAfter} 秒後重試",
+      "tooManyRequestsRetryAfter": "請求過於頻繁，請 {retryAfter} 秒後重試",
       "tooManyRequests": "請求過於頻繁，請稍後重試"
     },
     "site": {
@@ -748,8 +811,12 @@
       "goBack": "返回上一頁"
     },
     "product": {
-      "specNotConfigured": "未配置規格 #${productId}"
-    }
+      "specNotConfigured": "未配置規格 #{productId}"
+    },
+    "cancel": "取消",
+    "close": "關閉",
+    "confirm": "確定",
+    "loading": "載入中…"
   },
   "home": {
     "partners": {
@@ -767,36 +834,56 @@
       "carouselControls": "輪播控制",
       "slides": {
         "refresh": {
-          "title": "官網煥新 · 雲上新體驗"
+          "title": "官網煥新 · 雲上新體驗",
+          "railTitle": "官網換新",
+          "primaryText": "立即體驗",
+          "secondaryText": "檢視詳情"
         },
         "global": {
-          "title": "多地節點 · 全球低延遲互聯"
+          "title": "多地節點 · 全球低延遲互聯",
+          "railTitle": "全球互聯",
+          "primaryText": "選購節點",
+          "secondaryText": "檢視線路"
         },
         "security": {
-          "title": "企業級安全 · 穩定可靠交付"
+          "title": "企業級安全 · 穩定可靠交付",
+          "railTitle": "安全防護",
+          "primaryText": "檢視防護",
+          "secondaryText": "線上諮詢"
         },
         "value": {
-          "title": "低門檻套餐 · 直享實惠價"
+          "title": "低門檻套餐 · 直享實惠價",
+          "railTitle": "實惠專區",
+          "primaryText": "立即搶購",
+          "secondaryText": "檢視優惠"
         },
         "support": {
-          "title": "企業客服 · 一對一專屬服務"
+          "title": "企業客服 · 一對一專屬服務",
+          "railTitle": "企業客服",
+          "primaryText": "聯絡客服",
+          "secondaryText": "企業採購"
         }
       },
       "features": {
         "dynamic": {
-          "title": "香港 CN2 精品線路 上線"
+          "title": "香港 CN2 精品線路 上線",
+          "kicker": "產品動態"
         },
         "activity": {
-          "title": "新客首單 39 元/年"
+          "title": "新客首單 39 元/年",
+          "kicker": "活動內容"
         },
         "enterprise": {
-          "title": "IDC 企業採購通道"
+          "title": "IDC 企業採購通道",
+          "kicker": "企業專區"
         },
         "cloudDesktop": {
-          "title": "西安雲電腦 即開即用"
+          "title": "西安雲電腦 即開即用",
+          "kicker": "輕量產品"
         },
         "new": {
-          "title": "十堰高防獨立伺服器"
+          "title": "十堰高防獨立伺服器",
+          "kicker": "新開產品"
         }
       },
       "entry": "產品目錄、購買支付、自動開通、賬單結算與服務支援統一打通；首頁即是控制台入口，讓資源採購和後續管理始終在同一條鏈路裡完成。",
@@ -808,7 +895,11 @@
       "cloud2c2g": "2H2G 雲伺服器覆蓋建站、代理、輕量業務全場景。",
       "billing": "統一賬單、多子賬號協作與對公結算能力同步上線。",
       "xian": "西安節點低延遲，支援遠端辦公、外包協作、教學實訓。",
-      "ddos": "100G 抗 DDoS + BGP 多線，面向長期穩定業務承載。"
+      "ddos": "100G 抗 DDoS + BGP 多線，面向長期穩定業務承載。",
+      "switchTo": "切換到 {title}",
+      "unnamed": "未命名",
+      "learnMore": "瞭解更多",
+      "viewDetail": "檢視詳情"
     },
     "registerBar": {
       "title": "現在註冊，開啟您的網際網路高速穩定之旅！",
@@ -819,14 +910,22 @@
       "announcements": "公告",
       "recommended": "推薦",
       "subtitle": "為您呈現行業動態、活動公告、產品釋出",
-      "viewMore": "檢視更多"
+      "viewMore": "檢視更多",
+      "summaryFallback": "資訊動態主焦點卡片展示區域，點選檢視完整內容。",
+      "detailHint": "點選檢視詳細內容。"
     },
     "products": {
       "title": "安全、穩定、可信賴的產品與服務",
       "emptyCategory": "當前分類暫無可展示的二級分組，點選後可進入產品目錄檢視更多內容。",
       "techDeliveryDesc": "的技術積澱與交付實踐，助力企業上雲與產業網際網路。",
       "viewAll": "檢視全部產品",
-      "buyNow": "立即選購"
+      "buyNow": "立即選購",
+      "groupFallback": "二級分組 {index}",
+      "categoryFallback": "產品分類 {index}",
+      "currentCategory": "當前分類",
+      "categoryCatalog": "{name}目錄",
+      "recommendedIntro": "主推 {name}，可線上檢視配置並快速完成選型。",
+      "groupIntro": "{category} 下已上架 {count} 款在售產品，可按業務需求快速選型。"
     },
     "solutions": {
       "title": "為千行百業提供全面的解決方案",

@@ -35,7 +35,17 @@
       "notFound": "This product does not exist or has been taken down",
       "backToProducts": "Back to Products",
       "cycle": "Cycle",
-      "description": "Product description"
+      "description": "Product description",
+      "skuCompare": "Compare instances",
+      "skuCompareHint": "Click any instance to switch its configuration and pricing",
+      "skuPrice": "Price",
+      "sortPriceAsc": "Sort by price ascending",
+      "sortPriceDesc": "Sort by price descending",
+      "selectRegion": "Select region",
+      "couponUsed": "Coupon applied -¥{amount}",
+      "cloudProductTitle": "Cloud product details",
+      "cloudProductDescription": "Cloud product details and live pricing",
+      "windowTitle": "{title} - Cloud product"
     },
     "osPicker": {
       "version": "Version",
@@ -53,13 +63,13 @@
       "stockSyncing": "Syncing stock",
       "stockSyncFailed": "Stock sync failed",
       "stockSyncingHint": "Syncing real-time stock, please wait.",
-      "discountRate": "${String(value).replace(/\\.0$/, \"\")}x off",
+      "discountRate": "{rate}% off",
       "stockSufficient": "In stock",
       "stockLow": "Low stock",
       "stockOutOfStock": "Out of stock",
       "stockSyncRetryHint": "Real-time stock sync failed. Please try again later.",
       "stockSufficientHint": "Stock is sufficient. You can submit the order directly.",
-      "stockRemainingHint": "Only ${stock} left. Please purchase soon.",
+      "stockRemainingHint": "Only {stock} left. Order soon.",
       "stockInsufficientHint": "Insufficient stock. Please contact support.",
       "enteringConsole": "Redirecting to the console to continue creating the order",
       "couponCode": "Coupon Code",
@@ -83,18 +93,20 @@
       "statusIncomplete": "Not completed",
       "loginRequired": "Please sign in first",
       "statusChecking": "Checking",
-      "statusPassed": "Passed"
+      "statusPassed": "Passed",
+      "listSeparator": ", "
     },
     "spec": {
       "oneCore": "1 Core",
       "unitCore": "Core",
-      "familyWithCode": "Instance Family ${code}"
+      "familyWithCode": "Instance family {code}"
     },
     "instanceFamily": {
       "computeC9i": "Compute c9i",
       "generalPurposeG9i": "General Purpose g9i",
       "economyE": "Economy e",
-      "burstPerformanceT6": "Burst Performance t6"
+      "burstPerformanceT6": "Burst Performance t6",
+      "general": "General purpose"
     },
     "configurator": {
       "systemDisk": "System Disk",
@@ -107,7 +119,7 @@
       "quantity": "Quantity",
       "selected": "Selected",
       "cpuModel": "CPU Model",
-      "unitCount": "${text} pcs"
+      "unitCount": "{text}"
     },
     "list": {
       "osInstall": "OS Installation",
@@ -161,7 +173,24 @@
       "showCatalogNav": "Show catalog",
       "catalogTitle": "Product catalog",
       "catalogBackUp": "Back one level",
-      "groupEmpty": "No groups available under this category"
+      "groupEmpty": "No groups available under this category",
+      "selectCpu": "Select CPU",
+      "selectMemory": "Select memory",
+      "selectOption": "Please select",
+      "stockLabel": "Current stock",
+      "stockLeft": "{count} left",
+      "purchaseRequirements": "Requirements: ",
+      "agentDiscount": "Agent discount ({name})",
+      "agentDiscountPercent": "Agent discount ({name}) {percent}",
+      "couponApplied": "¥{amount} saved",
+      "noDiscount": "No discount",
+      "monthly": "Monthly",
+      "submitting": "Submitting...",
+      "buyNow": "Buy now",
+      "addToCart": "Add to cart",
+      "costRowsCount": "{count} items",
+      "priceDiscounted": "Discounted price applied",
+      "priceNoDiscount": "No discount applied"
     },
     "cpuBadge": {
       "coreShort": "Core",
@@ -208,10 +237,12 @@
       "moreLinksDesc": "About, help, and other frequently used links",
       "productsAndServices": "Products & Services",
       "home": "Home",
-      "help": "Help"
+      "help": "Help",
+      "all": "All",
+      "viewDetail": "View details"
     },
     "navProductMenu": {
-      "categoryFallback": "Category ${index + 1}"
+      "categoryFallback": "Category {index}"
     },
     "notice": {
       "categoryTitle": "Announcement Categories",
@@ -231,7 +262,11 @@
       "signInOrRegister": "Sign In / Sign Up",
       "account": "Account",
       "accountLogin": "Account Sign In",
-      "enterConsole": "Go to Console"
+      "enterConsole": "Go to Console",
+      "myServices": "My services",
+      "profile": "Profile",
+      "recharge": "Add funds",
+      "signOut": "Sign out"
     },
     "a11y": {
       "skipToMainContent": "Skip to main content",
@@ -247,7 +282,8 @@
     },
     "product": {
       "emptyCategories": "No product categories yet",
-      "reload": "Reload"
+      "reload": "Reload",
+      "productCount": "{count} products"
     },
     "solutions": {
       "ecommerce": "E-commerce",
@@ -264,17 +300,31 @@
       "noticeUpdates": "Product updates, promotions and maintenance notices",
       "aboutIntro": "Company profile, vision and service commitments",
       "helpGuide": "FAQ and usage guides",
-      "supportTicket": "Submit a support ticket for one-on-one response"
+      "supportTicket": "Submit a support ticket for one-on-one response",
+      "brandDesc": "Stable, secure and cost-effective cloud computing and IDC services for businesses and developers.",
+      "account": "Account",
+      "valueAddedLicense": "Value-added telecom license: ",
+      "icpRecord": "ICP filing number: ",
+      "productCloudServer": "Cloud servers",
+      "productHongKongServer": "Hong Kong servers",
+      "productUsServer": "US servers",
+      "productHighDefenseServer": "High-defense servers",
+      "productCloudPc": "Cloud PCs"
     },
     "navContent": {
       "uncategorized": "Uncategorized"
+    },
+    "mobileMenu": {
+      "open": "Open menu",
+      "close": "Close menu"
     }
   },
   "content": {
     "notice": {
       "detailTitle": "Announcement Detail",
       "empty": "No announcements available",
-      "title": "Announcements"
+      "title": "Announcements",
+      "pageTitle": "Announcements"
     },
     "help": {
       "detailTitle": "Help Article Detail",
@@ -291,7 +341,8 @@
       "empty": "No help content available",
       "hotDocuments": "Popular Documents",
       "recentlyUpdated": "Recently Updated",
-      "categories": "Help Categories"
+      "categories": "Help Categories",
+      "pageTitle": "Help center"
     },
     "about": {
       "serviceCapabilities": "Service Capabilities",
@@ -306,11 +357,17 @@
     },
     "legal": {
       "openOriginal": "Open original",
-      "documentUrlMissing": "The address of this document is not configured on the site yet"
+      "documentUrlMissing": "The address of this document is not configured on the site yet",
+      "termsDescription": "Read the platform terms of service, usage rules and related notes.",
+      "privacyDescription": "Read the platform privacy policy and how personal data is handled."
     },
     "detail": {
       "tableOfContents": "Table of Contents",
-      "fullText": "Full text"
+      "fullText": "Full text",
+      "updatedAt": "Updated",
+      "publishedAt": "Published",
+      "jumpTo": "Jump to {name}",
+      "loadFailed": "Failed to load {title}. Please try again later."
     },
     "nav": {
       "news": "News",
@@ -324,7 +381,12 @@
       "placeholder": "Enter the keyword you want to search for"
     },
     "article": {
-      "hot": "Popular Articles"
+      "hot": "Popular Articles",
+      "publisher": "Author: ",
+      "views": "Views: ",
+      "categoryCount": "{name}, {count} articles",
+      "officialSupport": "Official support",
+      "figureCaption": "Related image"
     },
     "activity": {
       "latest": "Latest Events"
@@ -333,7 +395,8 @@
       "empty": "No content yet",
       "hotSearches": "Hot Searches:",
       "search": "Search",
-      "pinned": "Pinned"
+      "pinned": "Pinned",
+      "views": "Views: "
     }
   },
   "seo": {
@@ -726,7 +789,7 @@
       "connectionLost": "The network connection was lost. Please check it and try again",
       "timeout": "The request timed out. Please check your network and try again",
       "invalidParameters": "Some parameters are invalid. Please check them and try again",
-      "tooManyRequestsRetryAfter": "Too many requests. Please try again in ${retryAfter} seconds",
+      "tooManyRequestsRetryAfter": "Too many requests. Please retry in {retryAfter} seconds.",
       "tooManyRequests": "Too many requests. Please try again later"
     },
     "site": {
@@ -748,8 +811,12 @@
       "goBack": "Go Back"
     },
     "product": {
-      "specNotConfigured": "Spec not configured #${productId}"
-    }
+      "specNotConfigured": "Specification not configured #{productId}"
+    },
+    "cancel": "Cancel",
+    "close": "Close",
+    "confirm": "OK",
+    "loading": "Loading…"
   },
   "home": {
     "partners": {
@@ -767,36 +834,56 @@
       "carouselControls": "Carousel Controls",
       "slides": {
         "refresh": {
-          "title": "A New Look for the Website"
+          "title": "A New Look for the Website",
+          "railTitle": "New look",
+          "primaryText": "Try it now",
+          "secondaryText": "View details"
         },
         "global": {
-          "title": "Multi-Region Nodes, Low-Latency Global Interconnect"
+          "title": "Multi-Region Nodes, Low-Latency Global Interconnect",
+          "railTitle": "Global network",
+          "primaryText": "Browse regions",
+          "secondaryText": "View routes"
         },
         "security": {
-          "title": "Enterprise-Grade Security, Reliable Delivery"
+          "title": "Enterprise-Grade Security, Reliable Delivery",
+          "railTitle": "Security",
+          "primaryText": "View protection",
+          "secondaryText": "Contact us"
         },
         "value": {
-          "title": "Entry Packages, Honest Pricing"
+          "title": "Entry Packages, Honest Pricing",
+          "railTitle": "Best value",
+          "primaryText": "Buy now",
+          "secondaryText": "View offers"
         },
         "support": {
-          "title": "Enterprise Support, One-on-One Service"
+          "title": "Enterprise Support, One-on-One Service",
+          "railTitle": "Enterprise support",
+          "primaryText": "Contact support",
+          "secondaryText": "Enterprise purchasing"
         }
       },
       "features": {
         "dynamic": {
-          "title": "Hong Kong CN2 Premium Route Now Live"
+          "title": "Hong Kong CN2 Premium Route Now Live",
+          "kicker": "Product news"
         },
         "activity": {
-          "title": "First Order for New Customers: CNY 39/Year"
+          "title": "First Order for New Customers: CNY 39/Year",
+          "kicker": "Campaigns"
         },
         "enterprise": {
-          "title": "IDC Enterprise Procurement Channel"
+          "title": "IDC Enterprise Procurement Channel",
+          "kicker": "Enterprise"
         },
         "cloudDesktop": {
-          "title": "Xi'an Cloud Desktop, Ready on Demand"
+          "title": "Xi'an Cloud Desktop, Ready on Demand",
+          "kicker": "Lightweight"
         },
         "new": {
-          "title": "Shiyan DDoS-Protected Dedicated Servers"
+          "title": "Shiyan DDoS-Protected Dedicated Servers",
+          "kicker": "New products"
         }
       },
       "entry": "Product catalog, purchase and payment, auto-provisioning, billing and service support are unified. The home page doubles as the console entry, so resource procurement and day-to-day management stay on one path.",
@@ -808,7 +895,11 @@
       "cloud2c2g": "2H2G cloud servers cover website hosting, proxy services and lightweight workloads alike.",
       "billing": "Unified billing, multi-sub-account collaboration and corporate settlement are now available.",
       "xian": "Low-latency Xi'an nodes support remote work, outsourcing collaboration and training.",
-      "ddos": "100G DDoS protection with multi-line BGP, built for long-running stable workloads."
+      "ddos": "100G DDoS protection with multi-line BGP, built for long-running stable workloads.",
+      "switchTo": "Switch to {title}",
+      "unnamed": "Untitled",
+      "learnMore": "Learn more",
+      "viewDetail": "View details"
     },
     "registerBar": {
       "title": "Register now and begin your fast, stable journey online!",
@@ -819,14 +910,22 @@
       "announcements": "Announcements",
       "recommended": "Recommended",
       "subtitle": "Industry news, event announcements and product releases",
-      "viewMore": "View More"
+      "viewMore": "View More",
+      "summaryFallback": "Featured news card. Click to read the full story.",
+      "detailHint": "Click to read more."
     },
     "products": {
       "title": "Secure, Stable and Trustworthy Products and Services",
       "emptyCategory": "This category has no subcategories to show. Open the product catalog to browse more.",
       "techDeliveryDesc": "’s technical expertise and delivery practice, helping enterprises move to the cloud and build industrial internet.",
       "viewAll": "View All Products",
-      "buyNow": "Buy Now"
+      "buyNow": "Buy Now",
+      "groupFallback": "Subgroup {index}",
+      "categoryFallback": "Category {index}",
+      "currentCategory": "Current category",
+      "categoryCatalog": "{name} catalog",
+      "recommendedIntro": "Featuring {name}. Review the configuration online and choose quickly.",
+      "groupIntro": "{count} products are available under {category}. Pick the one that fits your workload."
     },
     "solutions": {
       "title": "Comprehensive Solutions for Every Industry",

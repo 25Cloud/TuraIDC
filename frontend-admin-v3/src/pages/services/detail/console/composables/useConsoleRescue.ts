@@ -1,6 +1,8 @@
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { reactive, ref } from 'vue';
 
+import { t } from '@/locales';
+
 import { createServiceConsoleApi } from './adminServiceApi';
 import { resolveErrorMessage } from './useConsoleCore';
 
@@ -8,10 +10,10 @@ export interface UseConsoleRescueOptions {
   userId: number | string;
   serviceId: { value: number };
   actionLoading: { value: boolean };
-  setOperationStatus: (type: string, label: string) => void;
-  loadRemoteStatus: (silent: boolean) => Promise<void>;
+  setOperationStatus: (_type: string, _label: string) => void;
+  loadRemoteStatus: (_silent: boolean) => Promise<void>;
   clearStatusSyncTimer: () => void;
-  scheduleStatusSync: (callback: () => void, delay: number) => void;
+  scheduleStatusSync: (_callback: () => void, _delay: number) => void;
 }
 
 export function useConsoleRescue(options: UseConsoleRescueOptions) {
@@ -33,10 +35,10 @@ export function useConsoleRescue(options: UseConsoleRescueOptions) {
   async function submitRescue() {
     const confirmed = await new Promise<boolean>((resolve) => {
       const dialog = DialogPlugin.confirm({
-        header: '确认进入救援模式',
-        body: '进入救援模式后，实例将重启并挂载救援系统，用于排查系统故障。确认继续吗？',
+        header: t('services.console.rescueConfirmTitle'),
+        body: t('services.console.rescueConfirmBody'),
         theme: 'warning',
-        confirmBtn: { content: '确认进入', theme: 'warning' },
+        confirmBtn: { content: t('services.console.confirmEnter'), theme: 'warning' },
         onConfirm: () => {
           dialog.destroy();
           resolve(true);
@@ -57,13 +59,13 @@ export function useConsoleRescue(options: UseConsoleRescueOptions) {
     try {
       const res = await clientApi.serviceRescue(serviceId.value, { system: rescueState.system });
       const payload = res.data || {};
-      setOperationStatus('rescue', '进入救援模式中');
+      setOperationStatus('rescue', t('services.console.rescueInProgress'));
       rescueVisible.value = false;
-      MessagePlugin.success(String(payload.message || '救援模式指令已提交'));
+      MessagePlugin.success(String(payload.message || t('services.console.rescueSubmitted')));
       clearStatusSyncTimer();
       scheduleStatusSync(() => loadRemoteStatus(true), 1500);
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '进入救援模式失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('services.console.rescueFailed')));
     } finally {
       actionLoading.value = false;
     }

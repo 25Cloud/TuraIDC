@@ -4,28 +4,35 @@
       <div class="template-toolbar__left">
         <t-button theme="primary" variant="text" @click="goBack">
           <template #icon><chevron-left-icon /></template>
-          返回列表
+          {{ $t('notifications.emailTemplate.backToList') }}
         </t-button>
         <div v-if="templateDefinition" class="template-title">
           <h2>{{ templateDefinition.name }}</h2>
           <span
-            >{{ templateDefinition.channel === 'sms' ? '短信模板' : '邮件模板' }} · {{ templateDefinition.code }} ·
-            {{ templateDefinition.isEnabled ? '启用' : '停用' }}</span
+            >{{
+              templateDefinition.channel === 'sms' ? $t('notifications.templateSms') : $t('notifications.templateEmail')
+            }}
+            · {{ templateDefinition.code }} ·
+            {{ templateDefinition.isEnabled ? $t('notifications.enabled') : $t('notifications.disabled') }}</span
           >
         </div>
       </div>
       <t-space>
-        <t-button variant="outline" :disabled="!templateDefinition" @click="openTestSendDialog">测试发送</t-button>
-        <t-button variant="outline" :disabled="!templateDefinition" @click="resetCurrentTemplate">恢复默认</t-button>
-        <t-button theme="primary" :loading="saving" :disabled="!templateDefinition" @click="saveCurrentTemplate"
-          >保存模板</t-button
-        >
+        <t-button variant="outline" :disabled="!templateDefinition" @click="openTestSendDialog">{{
+          $t('notifications.testSend')
+        }}</t-button>
+        <t-button variant="outline" :disabled="!templateDefinition" @click="resetCurrentTemplate">{{
+          $t('notifications.emailTemplate.resetDefault')
+        }}</t-button>
+        <t-button theme="primary" :loading="saving" :disabled="!templateDefinition" @click="saveCurrentTemplate">{{
+          $t('notifications.emailTemplate.saveTemplate')
+        }}</t-button>
       </t-space>
     </div>
 
     <template v-if="templateDefinition">
       <t-card :bordered="false" :loading="loading">
-        <template #title>可用变量</template>
+        <template #title>{{ $t('notifications.emailTemplate.availableVariables') }}</template>
         <div class="token-list">
           <t-tag v-for="variable in templateDefinition.variables" :key="variable" variant="light">{{ variable }}</t-tag>
         </div>
@@ -39,23 +46,37 @@
 
       <t-card :bordered="false" :loading="loading">
         <t-form :data="templateDefinition" label-align="top">
-          <t-form-item label="发送状态" name="isEnabled">
+          <t-form-item :label="$t('notifications.emailTemplate.sendStatus')" name="isEnabled">
             <div class="status-control">
               <t-switch
                 v-model="templateDefinition.isEnabled"
                 :custom-value="[true, false]"
-                :label="['启用', '停用']"
+                :label="[$t('notifications.enabled'), $t('notifications.disabled')]"
               />
             </div>
           </t-form-item>
-          <t-form-item v-if="templateDefinition.channel === 'email'" label="邮件主题" name="subject">
-            <t-input v-model="templateDefinition.subject" placeholder="请输入邮件主题" />
+          <t-form-item
+            v-if="templateDefinition.channel === 'email'"
+            :label="$t('notifications.emailTemplate.emailSubject')"
+            name="subject"
+          >
+            <t-input
+              v-model="templateDefinition.subject"
+              :placeholder="$t('notifications.emailTemplate.emailSubjectPlaceholder')"
+            />
           </t-form-item>
-          <t-form-item v-if="templateDefinition.channel === 'sms'" label="供应商模板 ID" name="providerTemplateId">
-            <t-input v-model="templateDefinition.providerTemplateId" placeholder="请输入运营商审核通过的模板 ID" />
+          <t-form-item
+            v-if="templateDefinition.channel === 'sms'"
+            :label="$t('notifications.emailTemplate.providerTemplateId')"
+            name="providerTemplateId"
+          >
+            <t-input
+              v-model="templateDefinition.providerTemplateId"
+              :placeholder="$t('notifications.emailTemplate.providerTemplatePlaceholder')"
+            />
           </t-form-item>
           <div v-if="templateDefinition.channel === 'email'" class="subject-preview">
-            <span>主题预览</span>
+            <span>{{ $t('notifications.emailTemplate.subjectPreview') }}</span>
             <strong>{{ renderPreviewSubject(templateDefinition) }}</strong>
           </div>
 
@@ -63,17 +84,25 @@
             <div class="editor-stack">
               <section class="editor-pane">
                 <div class="pane-header">
-                  <strong>{{ templateDefinition.channel === 'sms' ? '短信正文' : 'HTML 正文' }}</strong>
+                  <strong>{{
+                    templateDefinition.channel === 'sms'
+                      ? $t('notifications.emailTemplate.smsBody')
+                      : $t('notifications.emailTemplate.htmlBody')
+                  }}</strong>
                   <span>{{
                     templateDefinition.channel === 'sms'
-                      ? '业务层会先渲染正文，再连同供应商模板 ID 一起交给短信插件发送。'
-                      : '可填写完整 HTML 文档或正文 HTML。'
+                      ? $t('notifications.emailTemplate.smsBodyHint')
+                      : $t('notifications.emailTemplate.htmlBodyHint')
                   }}</span>
                 </div>
                 <t-textarea
                   v-model="templateDefinition.content"
                   class="template-code-input"
-                  :placeholder="templateDefinition.channel === 'sms' ? '请输入短信正文' : '请输入邮件 HTML 正文'"
+                  :placeholder="
+                    templateDefinition.channel === 'sms'
+                      ? $t('notifications.emailTemplate.smsBodyPlaceholder')
+                      : $t('notifications.emailTemplate.htmlBodyPlaceholder')
+                  "
                   :autosize="{ minRows: templateDefinition.channel === 'sms' ? 18 : 14, maxRows: 26 }"
                 />
               </section>
@@ -81,15 +110,19 @@
 
             <section class="preview-pane">
               <div class="pane-header">
-                <strong>实时预览</strong>
-                <span>{{ templateDefinition.channel === 'sms' ? '短信内容' : '按真实发送结构渲染' }}</span>
+                <strong>{{ $t('notifications.emailTemplate.livePreview') }}</strong>
+                <span>{{
+                  templateDefinition.channel === 'sms'
+                    ? $t('notifications.emailTemplate.smsContent')
+                    : $t('notifications.emailTemplate.renderAsSent')
+                }}</span>
               </div>
               <iframe
                 v-if="templateDefinition.channel === 'email'"
                 class="preview-frame"
                 :srcdoc="buildPreviewDocument(templateDefinition)"
                 sandbox="allow-same-origin"
-                title="邮件模板预览"
+                :title="$t('notifications.emailTemplate.emailPreviewTitle')"
               />
               <div v-else class="sms-preview">
                 <p>{{ renderPreviewSmsContent(templateDefinition) }}</p>
@@ -101,8 +134,11 @@
     </template>
 
     <t-card v-else :bordered="false">
-      <t-empty title="模板不存在" description="当前模板编号不在系统通知模板目录中。">
-        <t-button theme="primary" @click="goBack">返回模板列表</t-button>
+      <t-empty
+        :title="$t('notifications.emailTemplate.templateNotFound')"
+        :description="$t('notifications.emailTemplate.templateNotFoundHint')"
+      >
+        <t-button theme="primary" @click="goBack">{{ $t('notifications.emailTemplate.backToTemplateList') }}</t-button>
       </t-empty>
     </t-card>
 
@@ -110,18 +146,23 @@
       v-model:visible="testSendVisible"
       :header="testSendDialogTitle"
       width="560px"
-      :confirm-btn="{ content: '确认发送', loading: testSending }"
+      :confirm-btn="{ content: $t('notifications.confirmSend'), loading: testSending }"
       @confirm="submitTestSend"
     >
       <div class="template-test-dialog">
         <div v-if="templateDefinition" class="template-test-target">
           <strong>{{ templateDefinition.name }}</strong>
           <span
-            >{{ templateDefinition.channel === 'sms' ? '短信模板' : '邮件模板' }} · {{ templateDefinition.code }}</span
+            >{{
+              templateDefinition.channel === 'sms' ? $t('notifications.templateSms') : $t('notifications.templateEmail')
+            }}
+            · {{ templateDefinition.code }}</span
           >
         </div>
         <t-form label-align="top">
-          <t-form-item :label="templateChannel === 'sms' ? '接收手机号' : '接收邮箱地址'">
+          <t-form-item
+            :label="templateChannel === 'sms' ? $t('notifications.recipientPhone') : $t('notifications.recipientEmail')"
+          >
             <t-input
               v-model="testSendRecipient"
               :placeholder="testSendPlaceholder"
@@ -138,7 +179,12 @@
           :class="`template-test-feedback--${testSendResult.status}`"
         >
           <strong>{{ testSendSummaryText }}</strong>
-          <span>成功 {{ testSendResult.success_count }} 条，失败 {{ testSendResult.failed_count }} 条</span>
+          <span>{{
+            $t('notifications.successFailed', {
+              success: testSendResult.success_count,
+              failed: testSendResult.failed_count,
+            })
+          }}</span>
         </div>
         <div v-if="testSendResult?.results?.length" class="template-test-results">
           <div
@@ -148,7 +194,7 @@
           >
             <span>{{ item.recipient }}</span>
             <t-tag :theme="item.status === 'success' ? 'success' : 'danger'" variant="light">
-              {{ item.status === 'success' ? '成功' : '失败' }}
+              {{ item.status === 'success' ? $t('notifications.success') : $t('notifications.failed') }}
             </t-tag>
             <small v-if="item.error">{{ item.error }}</small>
           </div>
@@ -224,15 +270,19 @@ const currentTab = computed(() => {
   if (route.query.tab === 'admin' || route.query.tab === 'user') return route.query.tab;
   return templateDefinition.value?.audience === 'admin' ? 'admin' : 'user';
 });
-const testSendDialogTitle = computed(() => (templateChannel.value === 'sms' ? '测试发送短信' : '测试发送邮件'));
+const testSendDialogTitle = computed(() =>
+  templateChannel.value === 'sms' ? t('notifications.testSendSms') : t('notifications.testSendEmail'),
+);
 const testSendPlaceholder = computed(() =>
-  templateChannel.value === 'sms' ? '请输入接收手机号，例如：13900001234' : '请输入接收邮箱，例如：tester@example.com',
+  templateChannel.value === 'sms'
+    ? t('notifications.smsRecipientPlaceholder')
+    : t('notifications.emailRecipientPlaceholder'),
 );
 const testSendSummaryText = computed(() => {
   if (!testSendResult.value) return '';
-  if (testSendResult.value.status === 'success') return '测试发送成功';
-  if (testSendResult.value.status === 'partial_failed') return '测试发送部分失败';
-  return '测试发送失败';
+  if (testSendResult.value.status === 'success') return t('notifications.testSendSuccess');
+  if (testSendResult.value.status === 'partial_failed') return t('notifications.testSendPartialFailed');
+  return t('notifications.testSendFailed');
 });
 
 const previewBaseParams = computed(() => ({
@@ -353,7 +403,7 @@ async function loadSettings() {
     siteLogo.value = resolvePreviewLogo(String(basicSettings.site_logo || DEFAULT_SITE_LOGO));
     templateDefinitions.value = (templateResponse.list || []).map((template) => applySettings(template, settings));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载通知模板失败'));
+    MessagePlugin.error(errorMessage(error, t('notifications.emailTemplate.loadFailed')));
   } finally {
     loading.value = false;
   }
@@ -387,7 +437,7 @@ async function saveCurrentTemplate() {
     });
     MessagePlugin.success(t('notifications.emailTemplate.saved'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存模板失败'));
+    MessagePlugin.error(errorMessage(error, t('notifications.emailTemplate.saveFailed')));
   } finally {
     saving.value = false;
   }
@@ -410,7 +460,11 @@ async function submitTestSend() {
 
   const recipient = normalizeRecipient(testSendRecipient.value);
   if (!recipient) {
-    MessagePlugin.warning(templateChannel.value === 'sms' ? '请输入接收手机号' : '请输入接收邮箱地址');
+    MessagePlugin.warning(
+      templateChannel.value === 'sms'
+        ? t('notifications.recipientPhoneRequired')
+        : t('notifications.recipientEmailRequired'),
+    );
     return;
   }
 
@@ -424,12 +478,16 @@ async function submitTestSend() {
     testSendResult.value = result;
 
     if (result.failed_count > 0) {
-      MessagePlugin.warning(result.status === 'partial_failed' ? '测试发送部分失败' : '测试发送失败');
+      MessagePlugin.warning(
+        result.status === 'partial_failed'
+          ? t('notifications.testSendPartialFailed')
+          : t('notifications.testSendFailed'),
+      );
     } else {
       MessagePlugin.success(t('notifications.emailTemplate.testSent'));
     }
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '测试发送失败'));
+    MessagePlugin.error(errorMessage(error, t('notifications.testSendFailed')));
   } finally {
     testSending.value = false;
   }
@@ -452,7 +510,7 @@ function goBack() {
 function getPreviewParams(template: NotificationTemplate): PreviewParams {
   const params: PreviewParams = { ...previewBaseParams.value };
   template.variables.forEach((key: string) => {
-    if (!(key in params)) params[key] = `示例${key}`;
+    if (!(key in params)) params[key] = t('notifications.emailTemplate.samplePrefix', { key });
   });
   return params;
 }
@@ -463,11 +521,11 @@ function getPreviewValue(key: string) {
 }
 
 function renderPreviewSubject(template: NotificationTemplate) {
-  return renderTemplateText(template.subject, getPreviewParams(template)) || '未设置主题';
+  return renderTemplateText(template.subject, getPreviewParams(template)) || t('notifications.emailTemplate.noSubject');
 }
 
 function renderPreviewSmsContent(template: NotificationTemplate) {
-  return renderTemplateText(template.content, getPreviewParams(template)) || '未设置短信正文';
+  return renderTemplateText(template.content, getPreviewParams(template)) || t('notifications.emailTemplate.noSmsBody');
 }
 
 function buildPreviewDocument(template: NotificationTemplate) {
@@ -494,7 +552,7 @@ function renderTemplateText(template: string, params: PreviewParams) {
 function renderTemplateWithResolver(
   template: string,
   params: PreviewParams,
-  resolver: (key: string) => string,
+  resolver: (_key: string) => string,
   htmlMode = false,
 ) {
   let rendered = String(template || '').replace(/\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_match, key, content) => {

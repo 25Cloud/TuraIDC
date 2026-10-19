@@ -1,5 +1,5 @@
-import { i18n } from '@/locales'
-import axios, { type InternalAxiosRequestConfig } from 'axios'
+import { i18n, t } from "@/locales";
+import axios, { type InternalAxiosRequestConfig } from "axios";
 import {
   attachSafeRequestDedupe,
   buildSafeRequestKey,
@@ -9,221 +9,250 @@ import {
   isSafeRequest,
   isWriteRequest,
   retrySafeRequest,
-} from '@turaidc/shared/runtime'
-import { toUserMessage } from '@/utils/userMessage'
-import { getClientToken } from '@/app/runtime/session'
+} from "@turaidc/shared/runtime";
+import { toUserMessage } from "@/utils/userMessage";
+import { getClientToken } from "@/app/runtime/session";
 
-const DEFAULT_TIMEOUT = 18000
-const SAFE_TIMEOUT = 16000
-const WEAK_NETWORK_TIMEOUT_BOOST = 9000
+const DEFAULT_TIMEOUT = 18000;
+const SAFE_TIMEOUT = 16000;
+const WEAK_NETWORK_TIMEOUT_BOOST = 9000;
 
 interface ClientRuntimeRequestConfig extends InternalAxiosRequestConfig {
-  safeRetryCount?: number
-  dedupeSafeRequest?: boolean
-  retrySafeRequest?: boolean
-  silentError?: boolean
-  silent?: boolean
-  __safeRequest?: boolean
-  __safeRequestKey?: string
-  __safeRetryCount?: number
-  __skipSafeDedupe?: boolean
+  safeRetryCount?: number;
+  dedupeSafeRequest?: boolean;
+  retrySafeRequest?: boolean;
+  silentError?: boolean;
+  silent?: boolean;
+  __safeRequest?: boolean;
+  __safeRequestKey?: string;
+  __safeRetryCount?: number;
+  __skipSafeDedupe?: boolean;
 }
 
 interface RuntimeHandledError extends Error {
-  __handled?: boolean
-  response?: unknown
-  config?: unknown
+  __handled?: boolean;
+  response?: unknown;
+  config?: unknown;
 }
 
-let lastErrorMsg = ''
-let lastErrorTimer: ReturnType<typeof setTimeout> | null = null
-let messageLoader: Promise<typeof import('element-plus/es/components/message/index.mjs')> | null = null
+let lastErrorMsg = "";
+let lastErrorTimer: ReturnType<typeof setTimeout> | null = null;
+let messageLoader: Promise<
+  typeof import("element-plus/es/components/message/index.mjs")
+> | null = null;
 
 function loadMessage() {
-  messageLoader ||= import('element-plus/es/components/message/index.mjs')
-  return messageLoader
+  messageLoader ||= import("element-plus/es/components/message/index.mjs");
+  return messageLoader;
 }
 
 function showError(msg: string) {
   if (msg === lastErrorMsg) {
-    return
+    return;
   }
 
-  lastErrorMsg = msg
+  lastErrorMsg = msg;
   void loadMessage().then((messageModule) => {
-    messageModule.default.error(msg)
-  })
+    messageModule.default.error(msg);
+  });
   if (lastErrorTimer) {
-    clearTimeout(lastErrorTimer)
+    clearTimeout(lastErrorTimer);
   }
   lastErrorTimer = setTimeout(() => {
-    lastErrorMsg = ''
-  }, 1000)
+    lastErrorMsg = "";
+  }, 1000);
 }
 
 function hasExplicitTimeout(config: Partial<ClientRuntimeRequestConfig>) {
-  return Number.isFinite(Number(config.timeout)) && Number(config.timeout) > 0
+  return Number.isFinite(Number(config.timeout)) && Number(config.timeout) > 0;
 }
 
-function resolveTimeout(config: Partial<ClientRuntimeRequestConfig>, safeRequest: boolean) {
+function resolveTimeout(
+  config: Partial<ClientRuntimeRequestConfig>,
+  safeRequest: boolean,
+) {
   if (hasExplicitTimeout(config)) {
-    return Number(config.timeout)
+    return Number(config.timeout);
   }
 
   if (!safeRequest) {
-    return DEFAULT_TIMEOUT
+    return DEFAULT_TIMEOUT;
   }
 
-  const profile = getNetworkProfile()
-  return SAFE_TIMEOUT + (profile.isWeakConnection ? WEAK_NETWORK_TIMEOUT_BOOST : 0)
+  const profile = getNetworkProfile();
+  return (
+    SAFE_TIMEOUT + (profile.isWeakConnection ? WEAK_NETWORK_TIMEOUT_BOOST : 0)
+  );
 }
 
-function canDedupeSafeRequest(config: Partial<ClientRuntimeRequestConfig>, safeRequest: boolean) {
+function canDedupeSafeRequest(
+  config: Partial<ClientRuntimeRequestConfig>,
+  safeRequest: boolean,
+) {
   return Boolean(
-    safeRequest
-    && config.dedupeSafeRequest !== false
-    && !config.signal
-    && !config.cancelToken
-  )
+    safeRequest &&
+    config.dedupeSafeRequest !== false &&
+    !config.signal &&
+    !config.cancelToken,
+  );
 }
 
-const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '')
+const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "")
+  .trim()
+  .replace(/\/+$/, "");
 
 if (!apiBaseUrl) {
-  throw new Error('VITE_API_BASE_URL 必须配置')
+  throw new Error(t("common.request.apiBaseUrlRequired"));
 }
 
 const request = axios.create({
   baseURL: apiBaseUrl,
   timeout: DEFAULT_TIMEOUT,
   headers: {
-    Accept: 'application/json',
+    Accept: "application/json",
   },
-})
+});
 
 request.interceptors.request.use(
   (config) => {
-    const runtimeConfig = config as ClientRuntimeRequestConfig
-    const method = String(runtimeConfig.method || 'get').toLowerCase()
-    const safeRequest = isSafeRequest(method)
-    const writeRequest = isWriteRequest(method)
+    const runtimeConfig = config as ClientRuntimeRequestConfig;
+    const method = String(runtimeConfig.method || "get").toLowerCase();
+    const safeRequest = isSafeRequest(method);
+    const writeRequest = isWriteRequest(method);
 
-    runtimeConfig.silentError = Boolean(runtimeConfig.silentError || runtimeConfig.silent)
-    runtimeConfig.__safeRequest = safeRequest
+    runtimeConfig.silentError = Boolean(
+      runtimeConfig.silentError || runtimeConfig.silent,
+    );
+    runtimeConfig.__safeRequest = safeRequest;
     // 后端据此本地化校验与业务消息（zh_CN / zh_TW / zh_HK / en_US）
-    runtimeConfig.headers['X-Locale'] = i18n.global.locale.value
-    runtimeConfig.timeout = resolveTimeout(runtimeConfig, safeRequest)
+    runtimeConfig.headers["X-Locale"] = i18n.global.locale.value;
+    runtimeConfig.timeout = resolveTimeout(runtimeConfig, safeRequest);
 
-    const token = getClientToken()
+    const token = getClientToken();
     if (token) {
-      runtimeConfig.headers.Authorization = `Bearer ${token}`
+      runtimeConfig.headers.Authorization = `Bearer ${token}`;
     }
 
-    if (writeRequest && !runtimeConfig.headers['Content-Type']) {
-      runtimeConfig.headers['Content-Type'] = 'application/json'
+    if (writeRequest && !runtimeConfig.headers["Content-Type"]) {
+      runtimeConfig.headers["Content-Type"] = "application/json";
     }
 
     if (writeRequest) {
-      runtimeConfig.headers['X-Request-Id'] = createRequestId()
+      runtimeConfig.headers["X-Request-Id"] = createRequestId();
     }
 
     if (canDedupeSafeRequest(runtimeConfig, safeRequest)) {
-      runtimeConfig.__safeRequestKey = buildSafeRequestKey(runtimeConfig as any)
-      attachSafeRequestDedupe(runtimeConfig as any, request.defaults.adapter)
+      runtimeConfig.__safeRequestKey = buildSafeRequestKey(
+        runtimeConfig as any,
+      );
+      attachSafeRequestDedupe(runtimeConfig as any, request.defaults.adapter);
     }
 
-    return runtimeConfig
+    return runtimeConfig;
   },
-  (error) => Promise.reject(error)
-)
+  (error) => Promise.reject(error),
+);
 
 request.interceptors.response.use(
   (response) => {
-    const res = response.data
-    const runtimeConfig = response.config as ClientRuntimeRequestConfig
+    const res = response.data;
+    const runtimeConfig = response.config as ClientRuntimeRequestConfig;
 
     if (res.code !== 0) {
-      const msg = toUserMessage(res.message, '请求失败')
-      const captchaRequired = Boolean(res.data?.captcha_required)
+      const msg = toUserMessage(res.message, t("common.request.failed"));
+      const captchaRequired = Boolean(res.data?.captcha_required);
 
       if (res.code === 40100) {
-        return Promise.reject(new Error(msg))
+        return Promise.reject(new Error(msg));
       }
 
       if (!captchaRequired && !runtimeConfig?.silentError) {
-        showError(msg)
+        showError(msg);
       }
 
-      const err = new Error(msg) as RuntimeHandledError
-      err.__handled = captchaRequired
-      err.response = { ...response, data: res }
-      err.config = response.config
-      return Promise.reject(err)
+      const err = new Error(msg) as RuntimeHandledError;
+      err.__handled = captchaRequired;
+      err.response = { ...response, data: res };
+      err.config = response.config;
+      return Promise.reject(err);
     }
 
-    return res
+    return res;
   },
   async (error) => {
-    if (axios.isCancel(error) || error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') {
-      return Promise.reject(error)
+    if (
+      axios.isCancel(error) ||
+      error?.code === "ERR_CANCELED" ||
+      error?.name === "CanceledError"
+    ) {
+      return Promise.reject(error);
     }
 
     try {
-      return await retrySafeRequest((config) => request(config), error)
+      return await retrySafeRequest((config) => request(config), error);
     } catch (retryError) {
       if (retryError !== error) {
-        return Promise.reject(retryError)
+        return Promise.reject(retryError);
       }
     }
 
-    let msg = toUserMessage(error.response?.data?.message, '网络异常')
+    let msg = toUserMessage(
+      error.response?.data?.message,
+      t("common.request.networkError"),
+    );
 
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-      msg = '网络连接已断开，请检查后重试'
-    } else if (error.code === 'ECONNABORTED' || String(error.message || '').toLowerCase().includes('timeout')) {
-      msg = '请求超时，请检查网络后重试'
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      msg = t("common.request.connectionLost");
+    } else if (
+      error.code === "ECONNABORTED" ||
+      String(error.message || "")
+        .toLowerCase()
+        .includes("timeout")
+    ) {
+      msg = t("common.request.timeout");
     }
 
     if (error.response?.status === 422) {
-      const errors = extractValidationErrors(error.response?.data)
+      const errors = extractValidationErrors(error.response?.data);
       const trustedErrors = errors
-        .map((item) => toUserMessage(item, ''))
-        .filter(Boolean)
+        .map((item) => toUserMessage(item, ""))
+        .filter(Boolean);
       if (trustedErrors.length > 0) {
-        msg = trustedErrors.join(', ')
+        msg = trustedErrors.join(", ");
       } else {
         // 业务异常（BusinessException）也走 422，message 里有真实原因，优先展示。
         // 与 v4-console 的同一条流水线对齐；此前 www 端直接落到通用文案，丢失服务端真实原因。
-        const serverMsg = toUserMessage(error.response?.data?.message, '')
-        msg = serverMsg || '参数填写有误，请检查后重试'
+        const serverMsg = toUserMessage(error.response?.data?.message, "");
+        msg = serverMsg || t("common.request.invalidParameters");
       }
     }
 
     if (error.response?.status === 429) {
-      const retryAfter = Number(error.response?.headers?.['retry-after'] || 0)
-      msg = retryAfter > 0
-        ? `请求过于频繁，请 ${retryAfter} 秒后重试`
-        : '请求过于频繁，请稍后重试'
+      const retryAfter = Number(error.response?.headers?.["retry-after"] || 0);
+      msg =
+        retryAfter > 0
+          ? t("common.request.tooManyRequestsRetryAfter", { retryAfter })
+          : t("common.request.tooManyRequests");
     }
 
     if (error.response?.status === 401) {
-      return Promise.reject(error)
+      return Promise.reject(error);
     }
 
-    const runtimeConfig = (error.config || {}) as ClientRuntimeRequestConfig
-    const shownByInterceptor = !runtimeConfig.silentError
+    const runtimeConfig = (error.config || {}) as ClientRuntimeRequestConfig;
+    const shownByInterceptor = !runtimeConfig.silentError;
     if (shownByInterceptor) {
-      showError(msg)
+      showError(msg);
     }
 
-    const err = new Error(msg) as RuntimeHandledError
+    const err = new Error(msg) as RuntimeHandledError;
     // silentError 的请求由调用方自行提示，这里不能谎报已处理，否则错误会被静默吞掉。
     // 与 v4-console 对齐；此前 www 端无条件置 true，导致静默请求出错后调用方以为已提示、实际无提示。
-    err.__handled = shownByInterceptor
-    err.response = error.response
-    err.config = error.config
-    return Promise.reject(err)
-  }
-)
+    err.__handled = shownByInterceptor;
+    err.response = error.response;
+    err.config = error.config;
+    return Promise.reject(err);
+  },
+);
 
-export default request
+export default request;

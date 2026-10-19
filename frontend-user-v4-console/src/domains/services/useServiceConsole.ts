@@ -3,6 +3,7 @@ import { computed, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { formatMoney, resolveServiceStatusLabel, resolveTdesignStatusTheme } from '@/domains/services/useServiceCenter';
+import { t } from '@/locales';
 
 import { copyText, DEFAULT_TAB, findSpecValue, isNatConsole, normalizeConsoleDetail } from './console/useConsoleCore';
 import { useConsoleDetail } from './console/useConsoleDetail';
@@ -215,10 +216,12 @@ export function useServiceConsole() {
     statusSyncing.value = true;
     try {
       await refreshHostStatus();
-      MessagePlugin.success(detail.value.actions?.module_status ? '实例状态已同步' : '实例状态已刷新');
+      MessagePlugin.success(
+        detail.value.actions?.module_status ? t('serviceConsole.statusSynced') : t('serviceConsole.statusRefreshed'),
+      );
     } catch (error: unknown) {
       const runtimeError = error as { message?: string };
-      MessagePlugin.error(String(runtimeError?.message || '').trim() || '同步实例状态失败');
+      MessagePlugin.error(String(runtimeError?.message || '').trim() || t('serviceConsole.statusSyncFailed'));
     } finally {
       statusSyncing.value = false;
     }
@@ -233,7 +236,9 @@ export function useServiceConsole() {
   const serviceOs = computed(
     () => String(detail.value.upstream?.os || '').trim() || findSpecValue(detail, ['操作系统', 'os'], '--'),
   );
-  const primaryConnectionLabel = computed(() => (isNatConsole(detail.value) ? '远程地址' : '公网 IP'));
+  const primaryConnectionLabel = computed(() =>
+    isNatConsole(detail.value) ? t('serviceConsole.remoteAddress') : t('serviceConsole.publicIp'),
+  );
   const publicIpValues = computed(() => {
     const connection = detail.value.connection || {};
 
@@ -280,12 +285,18 @@ export function useServiceConsole() {
     return resolveTdesignStatusTheme(detail.value);
   });
   const serviceIpCount = computed(() => {
-    if (publicIpValues.value.length) return `${publicIpValues.value.length} 个`;
-    return findSpecValue(detail, ['IP数量', 'IP 数量', 'ip'], primaryConnectionText.value !== '--' ? '1 个' : '--');
+    if (publicIpValues.value.length) return t('common.countUnit', { count: publicIpValues.value.length });
+    return findSpecValue(
+      detail,
+      ['IP数量', 'IP 数量', 'ip'],
+      primaryConnectionText.value !== '--' ? t('common.countUnit', { count: 1 }) : '--',
+    );
   });
   const bandwidthText = computed(() => findSpecValue(detail, ['带宽', '宽带', 'bandwidth'], '--'));
   const renewPriceText = computed(() => `¥${formatMoney(detail.value.amount)}`);
-  const autoRenewLabel = computed(() => (Number(detail.value.auto_renew) === 1 ? '已开启' : '未开启'));
+  const autoRenewLabel = computed(() =>
+    Number(detail.value.auto_renew) === 1 ? t('client.services.enabled') : t('client.services.disabled'),
+  );
   const resolvedPassword = computed(() => {
     const password = String(detail.value.connection?.password || '').trim();
 
@@ -293,14 +304,14 @@ export function useServiceConsole() {
       return showPassword.value ? password : '••••••••';
     }
 
-    return detail.value.connection?.has_password ? '已设置' : '--';
+    return detail.value.connection?.has_password ? t('profile.statusSet') : '--';
   });
 
   // Copy helper with toast
   async function copyTextWithToast(value: unknown) {
     await copyText(value, {
-      successMsg: '内容已复制',
-      errorMsg: '当前浏览器不支持自动复制，请手动复制',
+      successMsg: t('serviceConsole.contentCopied'),
+      errorMsg: t('finance.messages.copyUnsupported'),
     });
   }
 

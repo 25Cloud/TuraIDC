@@ -9,7 +9,9 @@
               <p>{{ config.heroDescription }}</p>
 
               <div class="hero-keywords">
-                <span class="hero-keywords__label">{{ $t('content.list.hotSearches') }}</span>
+                <span class="hero-keywords__label">{{
+                  $t("content.list.hotSearches")
+                }}</span>
                 <button
                   v-for="item in heroKeywords"
                   :key="item"
@@ -32,9 +34,9 @@
                 clearable
               >
                 <template #append>
-                  <el-button type="primary" @click="submitSearch"
-                    >{{ $t('content.list.search') }}</el-button
-                  >
+                  <el-button type="primary" @click="submitSearch">{{
+                    $t("content.list.search")
+                  }}</el-button>
                 </template>
               </el-input>
             </div>
@@ -81,7 +83,7 @@
                 <span
                   v-if="Number(item.is_pinned) === 1"
                   class="list-item__badge"
-                  >{{ $t('content.list.pinned') }}</span
+                  >{{ $t("content.list.pinned") }}</span
                 >
               </div>
 
@@ -92,7 +94,10 @@
               <div class="list-item__meta">
                 <span>{{ item.category_name || currentCategoryLabel }}</span>
                 <span>{{ item.publish_at || item.created_at || "--" }}</span>
-                <span>浏览量: {{ item.view_count || 0 }}</span>
+                <span
+                  >{{ $t("content.list.views")
+                  }}{{ item.view_count || 0 }}</span
+                >
               </div>
             </article>
           </template>
@@ -149,7 +154,7 @@
               <span class="ranking-item__title">{{ item.title }}</span>
             </router-link>
           </div>
-          <el-empty v-else description="暂无内容" />
+          <el-empty v-else :description="$t('content.list.empty')" />
         </section>
 
         <section class="sidebar-card">
@@ -168,7 +173,7 @@
               }}</span>
             </router-link>
           </div>
-          <el-empty v-else description="暂无内容" />
+          <el-empty v-else :description="$t('content.list.empty')" />
         </section>
       </aside>
     </div>

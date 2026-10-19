@@ -1,3 +1,4 @@
+import { t } from '@/locales';
 import { request } from '@/utils/request';
 
 import type {
@@ -13,7 +14,6 @@ import type {
   CouponProductRecord,
   CouponRecord,
 } from './types';
-import { t } from '@/locales';
 
 interface PagedResult<T> {
   list?: T[];
@@ -38,7 +38,7 @@ function productGroupTreeKey(level: number, groupId: number | string) {
   return `${level}:${groupId}`;
 }
 
-async function fetchAllPages<T>(loader: (page: number) => Promise<PagedResult<T>>) {
+async function fetchAllPages<T>(loader: (_page: number) => Promise<PagedResult<T>>) {
   const result: T[] = [];
   let page = 1;
   let total = 0;
@@ -65,7 +65,7 @@ function productGroupNodeType(level: number) {
 
 function productGroupTreeNode(group: CouponProductGroupRecord, children: ProductTreeNode[] = []): ProductTreeNode {
   const level = Number(group.level || group.effective_product_group_level || 0);
-  const label = String(group.label || group.name || '未命名分类');
+  const label = String(group.label || group.name || t('products.coupons.untitledCategory'));
 
   return {
     ...group,
@@ -81,7 +81,11 @@ function productGroupTreeNode(group: CouponProductGroupRecord, children: Product
 
 function productTreeNode(product: CouponProductRecord): ProductTreeNode {
   const label = String(
-    product.label || product.display_name || product.product_display_name || product.name || `商品 #${product.id}`,
+    product.label ||
+      product.display_name ||
+      product.product_display_name ||
+      product.name ||
+      t('products.coupons.productWithId', { id: product.id }),
   );
 
   return {
@@ -104,10 +108,12 @@ function otherGroupNode(group: CouponProductGroupRecord, children: ProductTreeNo
     label: t('products.coupons.otherGroup'),
     node_type: 'third_product_group',
     third_product_group_id: null,
-    third_product_group_name: '其他',
+    third_product_group_name: t('products.coupons.otherGroup'),
     effective_product_group_id: group.id,
     effective_product_group_level: 2,
-    effective_product_group_full_name: path ? `${path} / 其他` : '其他',
+    effective_product_group_full_name: path
+      ? `${path} / ${t('products.coupons.otherGroup')}`
+      : t('products.coupons.otherGroup'),
     leaf: false,
     disabled: false,
     children,

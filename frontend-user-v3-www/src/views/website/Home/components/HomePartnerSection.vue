@@ -1,9 +1,9 @@
 <template>
   <section class="partner-section">
     <header class="partner-section__head">
-      <h2 class="partner-section__title">{{ $t('home.partners.title') }}</h2>
+      <h2 class="partner-section__title">{{ $t("home.partners.title") }}</h2>
       <p class="partner-section__desc">
-        {{ $t('home.partners.subtitle') }}
+        {{ $t("home.partners.subtitle") }}
       </p>
     </header>
 
@@ -33,7 +33,7 @@
             :key="copy"
             class="partner-marquee__strip"
             :src="strip.src"
-            :alt="copy === 1 ? strip.alt : ''"
+            :alt="copy === 1 ? $t(strip.altKey) : ''"
             :aria-hidden="copy !== 1"
             loading="lazy"
             decoding="async"

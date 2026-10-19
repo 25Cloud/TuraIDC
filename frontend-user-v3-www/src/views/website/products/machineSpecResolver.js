@@ -3,6 +3,7 @@ import {
   parseParamOptions,
   resolveProductDisplayName,
 } from "@/utils/websiteProductConfig";
+import { t } from "@/locales";
 
 export const CPU_KEYWORDS = ["cpu", "core", "处理器", "核"];
 export const MEMORY_KEYWORDS = ["memory", "ram", "内存"];
@@ -32,7 +33,9 @@ function isProcessorSpecKey(key, label, keywords) {
     return includesKeyword(key, keywords);
   }
 
-  return includesKeyword(key, keywords) && includesKeyword(normalizedLabel, keywords);
+  return (
+    includesKeyword(key, keywords) && includesKeyword(normalizedLabel, keywords)
+  );
 }
 
 function includesKeyword(text, keywords) {
@@ -321,11 +324,15 @@ function normalizeComparableValue(value) {
 
 function resolveSpecFamily(code) {
   const value = String(code || "").toLowerCase();
-  if (value.includes("c9i") || value.includes("c9")) return "计算型 c9i";
-  if (value.includes("g9i") || value.includes("g9")) return "通用型 g9i";
-  if (value.includes("e")) return "经济型 e";
-  if (value.includes("t6")) return "突发性能实例 t6";
-  return value ? `规格族 ${code}` : "";
+  // 品牌族名是展示文案，按当前语言取；下面的 includes 判断仍用原始 code
+  if (value.includes("c9i") || value.includes("c9"))
+    return t("product.instanceFamily.computeC9i");
+  if (value.includes("g9i") || value.includes("g9"))
+    return t("product.instanceFamily.generalPurposeG9i");
+  if (value.includes("e")) return t("product.instanceFamily.economyE");
+  if (value.includes("t6"))
+    return t("product.instanceFamily.burstPerformanceT6");
+  return value ? t("product.spec.familyWithCode", { code }) : "";
 }
 
 function hasMachineSpecSuffix(value) {

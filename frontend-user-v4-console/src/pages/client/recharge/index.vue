@@ -75,7 +75,7 @@
                   </span>
                   <span class="pay-method-card__text">
                     <strong>{{ method.name || method.label }}</strong>
-                    <small>{{ method.label || '扫码支付' }}</small>
+                    <small>{{ method.label || $t('recharge.scanToPay') }}</small>
                   </span>
                   <span v-if="selectedGateway === paymentOptionKey(method)" class="pay-method-card__check">
                     <check-icon />
@@ -87,14 +87,16 @@
               v-else
               class="recharge-empty-payment"
               theme="warning"
-              :message="paymentGatewaysLoading ? '支付方式加载中' : '暂无可用支付方式，请联系管理员开启支付渠道'"
+              :message="
+                paymentGatewaysLoading ? $t('recharge.paymentGatewaysLoading') : $t('recharge.noPaymentGatewayHint')
+              "
             />
 
             <div class="mobile-agreement">
               <t-checkbox v-model="mobileAgreementChecked">{{ $t('recharge.agreed') }}</t-checkbox>
-              <t-button variant="text" theme="primary" size="small" @click="router.push('/client/help')"
-                >{{ $t('recharge.help') }}</t-button
-              >
+              <t-button variant="text" theme="primary" size="small" @click="router.push('/client/help')">{{
+                $t('recharge.help')
+              }}</t-button>
             </div>
 
             <t-button
@@ -112,7 +114,7 @@
             <div v-if="paymentNo || rechargePaid" class="mobile-payment-meta">
               <div class="meta-row">
                 <span>{{ $t('recharge.payStatus') }}</span>
-                <strong>{{ rechargePaid ? '充值成功' : '待支付' }}</strong>
+                <strong>{{ rechargePaid ? $t('recharge.paySuccess') : $t('recharge.pendingPay') }}</strong>
               </div>
               <div class="meta-row">
                 <span>{{ $t('recharge.merchantOrderNo') }}</span>
@@ -126,7 +128,9 @@
 
             <div v-if="qrCodeValue && !rechargePaid" class="mobile-pay-helper">
               <p>{{ mobilePayHelperText }}</p>
-              <t-button size="small" theme="primary" variant="outline" @click="copyPayUrl">{{ $t('recharge.copyLink') }}</t-button>
+              <t-button size="small" theme="primary" variant="outline" @click="copyPayUrl">{{
+                $t('recharge.copyLink')
+              }}</t-button>
             </div>
           </div>
         </template>
@@ -187,7 +191,7 @@
                   {{
                     selectedGateway === paymentOptionKey(method)
                       ? paymentButtonText
-                      : `生成${method.name || method.label || '支付'}二维码`
+                      : $t('recharge.generateQr', { method: method.name || method.label || $t('recharge.pay') })
                   }}
                 </t-button>
               </div>
@@ -196,7 +200,9 @@
               v-else
               class="recharge-empty-payment"
               theme="warning"
-              :message="paymentGatewaysLoading ? '支付方式加载中' : '暂无可用支付方式，请联系管理员开启支付渠道'"
+              :message="
+                paymentGatewaysLoading ? $t('recharge.paymentGatewaysLoading') : $t('recharge.noPaymentGatewayHint')
+              "
             />
           </div>
 
@@ -216,13 +222,13 @@
                   <span class="success-icon">
                     <check-circle-icon />
                   </span>
-                  <strong>充值成功</strong>
-                  <small>余额已刷新</small>
+                  <strong>{{ $t('recharge.paySuccess') }}</strong>
+                  <small>{{ $t('recharge.balanceRefreshed') }}</small>
                 </div>
               </transition>
               <div v-if="!qrCodeValue" class="qrcode-empty">
                 <span class="empty-icon">¥</span>
-                <p>选择金额后生成支付二维码</p>
+                <p>{{ $t('recharge.chooseAmountHint') }}</p>
               </div>
             </div>
 
@@ -230,11 +236,11 @@
               <p class="qrcode-title">{{ qrCodeTitle }}</p>
               <p v-if="qrCodeSubtitle" class="qrcode-subtitle">{{ qrCodeSubtitle }}</p>
               <div class="meta-row">
-                <span>商家订单号</span>
+                <span>{{ $t('recharge.merchantOrderNo') }}</span>
                 <strong>{{ paymentNo || '--' }}</strong>
               </div>
               <div class="meta-row">
-                <span>应付金额</span>
+                <span>{{ $t('recharge.payableAmount') }}</span>
                 <strong>{{ amountText }} 元</strong>
               </div>
             </div>
@@ -295,13 +301,15 @@ const {
 } = useRecharge();
 
 const mobileCustomSelected = computed(() => mobileCustomMode.value || activePreset.value === null);
-const mobileSubmitText = computed(() => (rechargePaid.value ? '继续充值' : '立即充值'));
+const mobileSubmitText = computed(() =>
+  rechargePaid.value ? t('recharge.continueRecharge') : t('recharge.rechargeNow'),
+);
 const mobilePayHelperText = computed(() => {
   if (selectedPaymentGateway.value?.payment_type === 'wxpay') {
-    return '请复制支付链接后在微信或手机浏览器中继续支付。';
+    return t('recharge.wechatPayTip');
   }
 
-  return '若未能自动打开支付宝，请复制支付链接后在手机浏览器中继续支付。';
+  return t('recharge.alipayPayTip');
 });
 
 const mobileBalanceText = computed(() => {
@@ -347,8 +355,11 @@ async function handleGatewayCreate(method: RechargeGatewayOption) {
   selectPaymentGateway(paymentOptionKey(method));
   const confirmed = await new Promise<boolean>((resolve) => {
     const dialog = DialogPlugin.confirm({
-      header: '确认充值',
-      body: `确认通过 ${method.name || method.label || '支付'} 充值 ¥${amountText.value}？`,
+      header: t('recharge.confirmTitle'),
+      body: t('recharge.confirmBody', {
+        method: method.name || method.label || t('recharge.pay'),
+        amount: amountText.value,
+      }),
       confirmBtn: t('finance.invoice.confirmPay'),
       cancelBtn: t('finance.invoice.notNow'),
       onConfirm: () => {

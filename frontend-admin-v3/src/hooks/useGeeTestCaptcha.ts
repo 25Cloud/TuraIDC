@@ -3,8 +3,8 @@ import CapCaptchaCard from '@shared/components/CapCaptchaCard.vue';
 import { createApp, nextTick, onMounted, onScopeDispose, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { request } from '@/utils/request';
 import { t } from '@/locales';
+import { request } from '@/utils/request';
 
 interface GeeTestConfig {
   enabled: boolean;
@@ -26,10 +26,10 @@ interface GeeTestConfig {
 export type CaptchaScene = 'client_login' | 'client_register' | 'admin_login' | 'email_code' | 'phone_code';
 
 interface CaptchaInstance {
-  onReady?: (callback: () => void) => void;
-  onSuccess?: (callback: () => void) => void;
-  onError?: (callback: (error: unknown) => void) => void;
-  onClose?: (callback: () => void) => void;
+  onReady?: (_callback: () => void) => void;
+  onSuccess?: (_callback: () => void) => void;
+  onError?: (_callback: (_error: unknown) => void) => void;
+  onClose?: (_callback: () => void) => void;
   showCaptcha?: () => void;
   validate?: () => unknown;
   getValidate?: () => unknown;
@@ -135,13 +135,13 @@ async function getCaptchaConfig(): Promise<GeeTestConfig> {
   if (captchaConfigLoadError) {
     const message =
       captchaConfigLoadError instanceof Error ? captchaConfigLoadError.message : t('captcha.config.loadFailed');
-    throw new Error(`人机验证配置加载失败：${message}`);
+    throw new Error(t('captcha.config.loadFailedPrefix', { message }));
   }
 
   if (!config.enabled || !config.captcha_id) {
     // 插件未启用时不留缓存：管理端可能在同一次会话里刚把插件打开，下次调用要能重新读到
     captchaConfigPromise = null;
-    throw new Error('人机验证插件未启用或配置不完整');
+    throw new Error(t('captcha.config.incomplete'));
   }
 
   return config;
@@ -181,7 +181,7 @@ function loadGeeTestScript(src: string, cacheKey: string): Promise<GeeTestInitia
 
   const scriptUrl = appendScriptCacheKey(resolveScriptUrl(src), cacheKey);
   if (!scriptUrl) {
-    return Promise.reject(new Error('GeeTest 脚本地址为空'));
+    return Promise.reject(new Error(t('captcha.script.emptyUrl')));
   }
 
   const existing = document.querySelector<HTMLScriptElement>('script[data-geetest-script="gt4"]');
@@ -205,17 +205,17 @@ function loadGeeTestScript(src: string, cacheKey: string): Promise<GeeTestInitia
       script.dataset.captchaKey = cacheKey;
       const timeout = window.setTimeout(() => {
         script.remove();
-        reject(new Error(`GeeTest 脚本加载超时：${scriptUrl}`));
+        reject(new Error(t('captcha.script.timeout', { url: scriptUrl })));
       }, 15000);
       script.onload = () => {
         window.clearTimeout(timeout);
         if (window.__TURA_GEETEST_FALLBACK__) {
-          reject(new Error(`GeeTest 代理脚本不可用：${scriptUrl}`));
+          reject(new Error(t('captcha.script.proxyUnavailable', { url: scriptUrl })));
           return;
         }
 
         if (typeof window.initGeetest4 !== 'function') {
-          reject(new Error(`GeeTest 脚本未提供初始化方法：${scriptUrl}`));
+          reject(new Error(t('captcha.script.noInitializer', { url: scriptUrl })));
           return;
         }
 
@@ -223,7 +223,7 @@ function loadGeeTestScript(src: string, cacheKey: string): Promise<GeeTestInitia
       };
       script.onerror = () => {
         window.clearTimeout(timeout);
-        reject(new Error(`GeeTest 脚本加载失败：${scriptUrl}`));
+        reject(new Error(t('captcha.script.loadFailedWithUrl', { url: scriptUrl })));
       };
       document.head.appendChild(script);
     }).catch((error: unknown) => {
@@ -251,7 +251,7 @@ function createCapInstance(
 ): CaptchaInstance {
   let token: string | null = null;
   let successCallback: (() => void) | null = null;
-  let errorCallback: ((error: unknown) => void) | null = null;
+  let errorCallback: ((_error: unknown) => void) | null = null;
   let readyCallback: (() => void) | null = null;
   let app: ReturnType<typeof createApp> | null = null;
   let holder: HTMLElement | null = null;
@@ -283,7 +283,7 @@ function createCapInstance(
         successCallback?.();
       },
       onError: (message: string) => {
-        errorCallback?.(new Error(message || labels.error || 'Cap 人机验证失败，请重试'));
+        errorCallback?.(new Error(message || labels.error || t('captcha.cap.failed')));
       },
     });
     app.mount(holder);
@@ -297,7 +297,7 @@ function createCapInstance(
     onSuccess: (callback: () => void) => {
       successCallback = callback;
     },
-    onError: (callback: (error: unknown) => void) => {
+    onError: (callback: (_error: unknown) => void) => {
       errorCallback = callback;
     },
     onClose: () => {},
@@ -376,9 +376,9 @@ export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
 
   let captchaObj: CaptchaInstance | null = null;
   let initPromise: Promise<CaptchaInstance | null> | null = null;
-  let initRejecter: ((error: Error) => void) | null = null;
-  let pendingResolver: ((value: unknown) => void) | null = null;
-  let pendingRejecter: ((error: Error) => void) | null = null;
+  let initRejecter: ((_error: Error) => void) | null = null;
+  let pendingResolver: ((_value: unknown) => void) | null = null;
+  let pendingRejecter: ((_error: Error) => void) | null = null;
   let destroyed = false;
   // 当前渲染形态：popup（极验弹窗）/ inline（页面容器内联组件，如 Corptcha）
   let currentRenderMode: 'popup' | 'inline' = 'popup';
@@ -446,7 +446,7 @@ export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
     const config = applyCaptchaState(await getCaptchaConfig());
 
     if (destroyed) {
-      throw new Error('行为验证组件已卸载');
+      throw new Error(t('captcha.component.unmounted'));
     }
 
     // 容器由页面常驻渲染（不再等配置回来才 display），这里仍等一次 DOM 更新，
@@ -473,7 +473,7 @@ export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
     if (config.provider === 'cap') {
       const apiEndpoint = config.api_endpoint || '';
       if (!apiEndpoint) {
-        throw new Error('Cap 人机验证配置缺少服务端地址');
+        throw new Error(t('captcha.cap.missingEndpoint'));
       }
 
       const currentInitPromise = new Promise<CaptchaInstance | null>((resolve, reject) => {
@@ -487,15 +487,17 @@ export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
           });
           instance.onSuccess?.(() => resolveSuccess(instance));
           instance.onError?.((error) => {
-            rejectPending(new Error(error instanceof Error ? error.message : String(error || '行为验证失败')));
+            rejectPending(
+              new Error(error instanceof Error ? error.message : String(error || t('captcha.behavior.failed'))),
+            );
           });
           instance.onClose?.(() => {
-            rejectPending(new Error('请先完成行为验证'));
+            rejectPending(new Error(t('captcha.behavior.completeFirst')));
           });
           instance.showCaptcha?.();
         } catch (error) {
           initRejecter = null;
-          reject(error instanceof Error ? error : new Error('行为验证初始化失败'));
+          reject(error instanceof Error ? error : new Error(t('captcha.behavior.initFailed')));
         }
       });
 
@@ -527,7 +529,7 @@ export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
       try {
         initGeetest4 = await loadGeeTestScript(candidate.url, candidate.key);
         if (destroyed) {
-          throw new Error('行为验证组件已卸载');
+          throw new Error(t('captcha.component.unmounted'));
         }
         break;
       } catch (error) {
@@ -536,7 +538,7 @@ export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
     }
 
     if (!initGeetest4) {
-      throw lastError instanceof Error ? lastError : new Error('GeeTest 脚本加载失败');
+      throw lastError instanceof Error ? lastError : new Error(t('captcha.script.loadFailed'));
     }
     const currentInitPromise = new Promise<CaptchaInstance | null>((resolve, reject) => {
       initRejecter = reject;
@@ -552,7 +554,7 @@ export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
           },
           (instance) => {
             if (destroyed) {
-              reject(new Error('行为验证组件已卸载'));
+              reject(new Error(t('captcha.component.unmounted')));
               return;
             }
 
@@ -570,7 +572,9 @@ export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
 
             instance.onSuccess?.(() => resolveSuccess(instance));
             instance.onError?.((error) => {
-              const normalized = new Error(error instanceof Error ? error.message : String(error || '行为验证失败'));
+              const normalized = new Error(
+                error instanceof Error ? error.message : String(error || t('captcha.behavior.failed')),
+              );
 
               // 尚未就绪就报错（典型是 SDK 加载超时）：让初始化本身失败。
               // 验证组件的 SDK 由适配层内部异步加载，加载失败只会以 onError 抛出；
@@ -588,13 +592,13 @@ export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
               rejectPending(normalized);
             });
             instance.onClose?.(() => {
-              rejectPending(new Error('请先完成行为验证'));
+              rejectPending(new Error(t('captcha.behavior.completeFirst')));
             });
           },
         );
       } catch (error) {
         initRejecter = null;
-        reject(error instanceof Error ? error : new Error('行为验证初始化失败'));
+        reject(error instanceof Error ? error : new Error(t('captcha.behavior.initFailed')));
       }
     });
 
@@ -615,7 +619,7 @@ export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
 
     const instance = await initCaptcha();
     if (!instance) {
-      throw new Error('行为验证组件初始化失败，请稍后重试');
+      throw new Error(t('captcha.behavior.initFailedRetry'));
     }
     ready.value = true;
 
@@ -634,7 +638,7 @@ export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
       if (typeof options.onPrompt === 'function') {
         options.onPrompt();
       }
-      const error = new Error('请先完成人机验证') as Error & { __handled?: boolean };
+      const error = new Error(t('captcha.behavior.completeHumanFirst')) as Error & { __handled?: boolean };
       error.__handled = true;
       throw error;
     }
@@ -652,10 +656,12 @@ export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
           Promise.resolve(instance.validate())
             .then(() => resolveSuccess(instance))
             .catch((error: unknown) => {
-              rejectPending(new Error(error instanceof Error ? error.message : String(error || '行为验证失败')));
+              rejectPending(
+                new Error(error instanceof Error ? error.message : String(error || t('captcha.behavior.failed'))),
+              );
             });
         } else {
-          rejectPending(new Error('行为验证组件版本不兼容，请刷新页面后重试'));
+          rejectPending(new Error(t('captcha.behavior.versionIncompatible')));
         }
       } catch (error) {
         rejectPending(new Error(error instanceof Error ? error.message : t('captcha.openFailed')));
@@ -711,14 +717,14 @@ export function useGeeTestCaptcha(options: GeeTestCaptchaOptions = {}) {
     destroyed = true;
     // 组件销毁后旧 token 即失效，不能留到下次使用
     verifiedResult = null;
-    initRejecter?.(new Error('行为验证组件已卸载'));
+    initRejecter?.(new Error(t('captcha.component.unmounted')));
     initRejecter = null;
     if (captchaObj) {
       captchaObj.destroy?.();
       captchaObj = null;
     }
     initPromise = null;
-    rejectPending(new Error('行为验证组件已卸载'));
+    rejectPending(new Error(t('captcha.component.unmounted')));
   };
 
   onScopeDispose(cleanup);

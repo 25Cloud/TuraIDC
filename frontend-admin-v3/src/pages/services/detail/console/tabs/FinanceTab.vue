@@ -2,7 +2,9 @@
   <section class="console-panel-section">
     <t-card :title="$t('services.console.financeLogs')" :bordered="false">
       <template #actions>
-        <t-button :loading="financeState.loading" @click="loadFinanceLogs">{{ $t('services.console.refresh') }}</t-button>
+        <t-button :loading="financeState.loading" @click="loadFinanceLogs">{{
+          $t('services.console.refresh')
+        }}</t-button>
       </template>
       <div class="log-summary finance-summary">
         <span
@@ -15,6 +17,8 @@
         <span>{{ $t('services.console.refund') }} ¥{{ formatMoney(financeState.summary.refund_in || 0) }}</span>
       </div>
       <data-state
+        :loading-text="$t('shared.state.loading')"
+        :empty-text="$t('shared.state.empty')"
         :loading="financeState.loading"
         :empty="!financeState.list.length"
         :description="financeState.error || $t('services.console.noFinanceRecords')"

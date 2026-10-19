@@ -1,13 +1,13 @@
 <template>
   <div class="member-levels-page">
     <t-card :bordered="false" :loading="loading">
-      <template #title>等级列表</template>
-      <template #subtitle>共 {{ levels.length }} 个档位</template>
+      <template #title>{{ $t('admin.memberLevels.listTitle') }}</template>
+      <template #subtitle>{{ $t('admin.memberLevels.tierCount', { count: levels.length }) }}</template>
       <template #actions>
         <t-space>
           <t-button v-if="canManage" theme="primary" @click="openCreateDialog">
             <template #icon><add-icon /></template>
-            新增等级
+            {{ $t('admin.memberLevels.addLevel') }}
           </t-button>
         </t-space>
       </template>
@@ -23,7 +23,10 @@
           <template #range="{ row }">
             <div class="stack-cell">
               <strong>{{ formatMoney(row.sales_amount_min) }}</strong>
-              <span>至 {{ row.sales_amount_max ? formatMoney(row.sales_amount_max) : '不封顶' }}</span>
+              <span
+                >{{ $t('admin.memberLevels.upTo') }}
+                {{ row.sales_amount_max ? formatMoney(row.sales_amount_max) : $t('admin.memberLevels.noCap') }}</span
+              >
             </div>
           </template>
           <template #rate="{ row }">
@@ -31,7 +34,7 @@
           </template>
           <template #status="{ row }">
             <t-tag :theme="Number(row.status) === 1 ? 'success' : 'default'" variant="light">
-              {{ Number(row.status) === 1 ? '启用' : '停用' }}
+              {{ Number(row.status) === 1 ? $t('admin.memberLevels.enabled') : $t('admin.memberLevels.disabled') }}
             </t-tag>
           </template>
           <template #updatedAt="{ row }">{{ formatDateTime(row.updated_at) }}</template>
@@ -69,17 +72,17 @@
           </div>
           <dl>
             <div>
-              <dt>门槛</dt>
+              <dt>{{ $t('admin.memberLevels.threshold') }}</dt>
               <dd>
                 {{ formatMoney(row.sales_amount_min) }} ~
-                {{ row.sales_amount_max ? formatMoney(row.sales_amount_max) : '不封顶' }}
+                {{ row.sales_amount_max ? formatMoney(row.sales_amount_max) : $t('admin.memberLevels.noCap') }}
               </dd>
             </div>
             <div>
-              <dt>状态</dt>
+              <dt>{{ $t('admin.memberLevels.status') }}</dt>
               <dd>
                 <t-tag :theme="Number(row.status) === 1 ? 'success' : 'default'" variant="light">
-                  {{ Number(row.status) === 1 ? '启用' : '停用' }}
+                  {{ Number(row.status) === 1 ? $t('admin.memberLevels.enabled') : $t('admin.memberLevels.disabled') }}
                 </t-tag>
               </dd>
             </div>
@@ -90,36 +93,40 @@
 
     <t-dialog
       v-model:visible="dialogVisible"
-      :header="form.id ? '编辑会员等级' : '新增会员等级'"
+      :header="form.id ? $t('admin.memberLevels.editTitle') : $t('admin.memberLevels.addTitle')"
       width="720px"
-      :confirm-btn="canManage ? { content: '保存', theme: 'primary' } : null"
+      :confirm-btn="canManage ? { content: $t('admin.memberLevels.save'), theme: 'primary' } : null"
       :confirm-loading="saving"
       @confirm="submitForm"
     >
       <t-form ref="formRef" :data="form" :rules="rules" label-align="top">
         <div class="member-form-grid">
-          <t-form-item label="等级名称" name="name">
-            <t-input v-model="form.name" placeholder="例如：黄金会员" />
+          <t-form-item :label="$t('admin.memberLevels.nameLabel')" name="name">
+            <t-input v-model="form.name" :placeholder="$t('admin.memberLevels.namePlaceholder')" />
           </t-form-item>
-          <t-form-item label="等级编码" name="code">
-            <t-input v-model="form.code" placeholder="例如：gold" />
+          <t-form-item :label="$t('admin.memberLevels.codeLabel')" name="code">
+            <t-input v-model="form.code" :placeholder="$t('admin.memberLevels.codePlaceholder')" />
           </t-form-item>
-          <t-form-item label="累计销售额下限" name="sales_amount_min">
+          <t-form-item :label="$t('admin.memberLevels.salesMin')" name="sales_amount_min">
             <t-input-number v-model="form.sales_amount_min" :min="0" :decimal-places="2" />
           </t-form-item>
-          <t-form-item label="累计销售额上限" name="sales_amount_max">
-            <t-input v-model="form.sales_amount_max" placeholder="留空表示不封顶" />
+          <t-form-item :label="$t('admin.memberLevels.salesMax')" name="sales_amount_max">
+            <t-input v-model="form.sales_amount_max" :placeholder="$t('admin.memberLevels.salesMaxPlaceholder')" />
           </t-form-item>
-          <t-form-item label="返利比例（%）" name="reward_rate">
+          <t-form-item :label="$t('admin.memberLevels.rewardRateLabel')" name="reward_rate">
             <t-input-number v-model="form.reward_rate" :min="0" :max="100" :decimal-places="2" />
           </t-form-item>
-          <t-form-item label="排序值" name="sort_order">
+          <t-form-item :label="$t('admin.memberLevels.sortOrder')" name="sort_order">
             <t-input-number v-model="form.sort_order" :min="0" :max="999999" />
           </t-form-item>
-          <t-form-item label="状态" name="status">
-            <t-switch v-model="form.status" :custom-value="[1, 0]" :label="['启用', '停用']" />
+          <t-form-item :label="$t('admin.memberLevels.status')" name="status">
+            <t-switch
+              v-model="form.status"
+              :custom-value="[1, 0]"
+              :label="[$t('admin.memberLevels.enabled'), $t('admin.memberLevels.disabled')]"
+            />
           </t-form-item>
-          <t-form-item class="member-form-span" label="备注" name="remark">
+          <t-form-item class="member-form-span" :label="$t('admin.memberLevels.remark')" name="remark">
             <t-textarea v-model="form.remark" :autosize="{ minRows: 3, maxRows: 5 }" :maxlength="255" />
           </t-form-item>
         </div>
@@ -170,9 +177,9 @@ const canManage = computed(() => hasAdminPermission(AdminPermissions.MEMBER_LEVE
 const form = reactive<MemberLevelForm>(createDefaultForm());
 
 const rules: Record<string, FormRule[]> = {
-  name: [required('请输入等级名称')],
-  sales_amount_min: [required('请输入累计销售额下限')],
-  reward_rate: [required('请输入返利比例')],
+  name: [required(t('admin.memberLevels.nameRequired'))],
+  sales_amount_min: [required(t('admin.memberLevels.salesMinRequired'))],
+  reward_rate: [required(t('admin.memberLevels.rewardRateRequired'))],
 };
 
 const columns: PrimaryTableCol<TableRowData>[] = [
@@ -186,8 +193,8 @@ const columns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 130 },
 ];
 const mobileActionOptions: DropdownOption[] = [
-  { content: '编辑', value: 'edit' },
-  { content: '删除', value: 'delete', theme: 'error' },
+  { content: t('admin.memberLevels.edit'), value: 'edit' },
+  { content: t('admin.memberLevels.delete'), value: 'delete', theme: 'error' },
 ];
 
 function createDefaultForm(): MemberLevelForm {
@@ -210,7 +217,7 @@ async function loadLevels() {
     const response = await adminApi.memberLevels.list();
     levels.value = response || [];
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载会员等级失败'));
+    MessagePlugin.error(errorMessage(error, t('admin.memberLevels.loadFailed')));
   } finally {
     loading.value = false;
   }
@@ -271,7 +278,7 @@ async function submitForm() {
     dialogVisible.value = false;
     await loadLevels();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存会员等级失败'));
+    MessagePlugin.error(errorMessage(error, t('admin.memberLevels.saveFailed')));
   } finally {
     saving.value = false;
   }
@@ -302,9 +309,9 @@ function handleDelete(row: MemberLevelRecord) {
   }
 
   const dialog = DialogPlugin.confirm({
-    header: '删除会员等级',
-    body: `确认删除等级“${fieldValue(row.name)}”吗？`,
-    confirmBtn: { content: '确认删除', theme: 'danger' },
+    header: t('admin.memberLevels.deleteTitle'),
+    body: t('admin.memberLevels.deleteConfirm', { name: fieldValue(row.name) }),
+    confirmBtn: { content: t('admin.memberLevels.confirmDelete'), theme: 'danger' },
     async onConfirm() {
       try {
         await adminApi.memberLevels.delete(row.id);
@@ -312,7 +319,7 @@ function handleDelete(row: MemberLevelRecord) {
         dialog.destroy();
         await loadLevels();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除会员等级失败'));
+        MessagePlugin.error(errorMessage(error, t('admin.memberLevels.deleteFailed')));
       }
     },
   });

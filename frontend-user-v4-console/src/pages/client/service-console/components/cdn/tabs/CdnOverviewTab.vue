@@ -9,14 +9,14 @@
           :loading="trafficLoading"
           @click="openTrafficPackageDialog"
         >
-          {{ detail.traffic?.button_text || '购买流量包' }}
+          {{ detail.traffic?.button_text || $t('serviceConsole.traffic.title') }}
         </t-button>
       </template>
       <div class="detail-grid detail-grid--info">
-        <info-cell label="已用流量" :value="trafficUsedText" strong />
-        <info-cell label="流量上限" :value="trafficLimitText" strong />
-        <info-cell label="剩余流量" :value="trafficRemainingText" strong />
-        <info-cell label="使用进度" :value="trafficPercentText" strong />
+        <info-cell :label="$t('serviceConsole.trafficUsed')" :value="trafficUsedText" strong />
+        <info-cell :label="$t('serviceConsole.trafficLimit')" :value="trafficLimitText" strong />
+        <info-cell :label="$t('serviceConsole.trafficRemaining')" :value="trafficRemainingText" strong />
+        <info-cell :label="$t('serviceConsole.usageProgress')" :value="trafficPercentText" strong />
       </div>
       <t-progress
         v-if="detail.traffic?.limited && Number(detail.traffic.usage_percent) > 0"
@@ -27,29 +27,46 @@
       />
     </t-card>
 
-    <t-card class="console-panel" title="实例档案" :bordered="false">
+    <t-card class="console-panel" :title="$t('serviceConsole.instanceArchive')" :bordered="false">
       <div class="detail-grid detail-grid--stack">
-        <info-cell label="实例名称" :value="detail.name || `服务 #${serviceId}`" strong />
-        <info-cell label="实例 ID" :value="String(detail.id || '--')" copyable @copy="copyText" />
-        <info-cell label="实例规格" :value="instanceSpecText" strong />
+        <info-cell
+          :label="$t('serviceConsole.instanceName')"
+          :value="detail.name || $t('serviceConsole.instanceHash', { id: serviceId })"
+          strong
+        />
+        <info-cell
+          :label="$t('serviceConsole.instanceId')"
+          :value="String(detail.id || '--')"
+          copyable
+          @copy="copyText"
+        />
+        <info-cell :label="$t('serviceConsole.instanceSpec')" :value="instanceSpecText" strong />
         <div class="detail-cell">
-          <span>实例状态</span>
+          <span>{{ $t('serviceConsole.instanceStatus') }}</span>
           <t-tag :theme="instanceStatusTheme" variant="light">{{ instanceStatusText }}</t-tag>
         </div>
-        <info-cell label="创建时间" :value="detail.created_at || '--'" strong />
+        <info-cell :label="$t('serviceConsole.createdAt')" :value="detail.created_at || '--'" strong />
       </div>
     </t-card>
 
-    <t-card class="console-panel" title="加速与防护" :bordered="false">
+    <t-card class="console-panel" :title="$t('serviceConsole.accelerationProtection')" :bordered="false">
       <div class="detail-grid detail-grid--stack">
-        <info-cell label="加速区域" :value="regionText" strong />
-        <info-cell label="节点数" :value="findSpecValue(['节点数', '节点数量'])" strong />
-        <info-cell label="防护能力" :value="findSpecValue(['防护', '防御', 'DDOS', 'DDoS'])" strong />
-        <info-cell label="回源线路" :value="findSpecValue(['回源', '源站'])" strong />
+        <info-cell :label="$t('serviceConsole.areaLabel.acceleration')" :value="regionText" strong />
+        <info-cell :label="$t('serviceConsole.nodeCount')" :value="findSpecValue(['节点数', '节点数量'])" strong />
+        <info-cell
+          :label="$t('serviceConsole.protection')"
+          :value="findSpecValue(['防护', '防御', 'DDOS', 'DDoS'])"
+          strong
+        />
+        <info-cell :label="$t('serviceConsole.originLine')" :value="findSpecValue(['回源', '源站'])" strong />
       </div>
     </t-card>
 
-    <t-card class="console-panel console-panel-wide" title="套餐参数" :bordered="false">
+    <t-card
+      class="console-panel console-panel-wide"
+      :title="$t('serviceConsole.virtualHost.planSpecs')"
+      :bordered="false"
+    >
       <div class="detail-grid detail-grid--config">
         <info-cell
           v-for="spec in displaySpecs"
@@ -61,23 +78,43 @@
       </div>
     </t-card>
 
-    <t-card class="console-panel console-panel-wide" title="付费信息" :bordered="false">
+    <t-card
+      class="console-panel console-panel-wide"
+      :title="$t('serviceConsole.virtualHost.billingInfo')"
+      :bordered="false"
+    >
       <template #actions>
         <t-button v-if="!isTrialMachine" variant="text" theme="primary" @click="openRenewDialog">
           {{ $t('serviceConsole.virtualHost.renewManage') }}
         </t-button>
       </template>
       <div class="detail-grid">
-        <info-cell label="计费方式" :value="detail.billing_cycle_label || '--'" strong />
-        <info-cell label="续费价格" :value="renewPriceText" strong />
-        <info-cell label="到期时间" :value="detail.expires_at || '长期有效'" strong warning />
-        <info-cell label="订单号" :value="detail.invoice?.order_no || '--'" copyable @copy="copyText" />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.billingCycle')"
+          :value="detail.billing_cycle_label || '--'"
+          strong
+        />
+        <info-cell :label="$t('serviceConsole.virtualHost.renewPrice')" :value="renewPriceText" strong />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.expiresAt')"
+          :value="detail.expires_at || $t('client.services.longTermValid')"
+          strong
+          warning
+        />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.orderNo')"
+          :value="detail.invoice?.order_no || '--'"
+          copyable
+          @copy="copyText"
+        />
       </div>
     </t-card>
   </section>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue';
+
+import { t } from '@/locales';
 
 import { useServiceConsoleContext } from '../../context';
 import { InfoCell } from '../../InfoCell';
@@ -98,10 +135,11 @@ const {
 const specs = computed(() => (Array.isArray(detail.value.specs) ? detail.value.specs : []));
 
 /** 试用机（上游下发 ontrial）不支持续费，隐藏续费入口 */
-const isTrialMachine = computed(() =>
-  String(detail.value.billing_cycle || '')
-    .trim()
-    .toLowerCase() === 'ontrial',
+const isTrialMachine = computed(
+  () =>
+    String(detail.value.billing_cycle || '')
+      .trim()
+      .toLowerCase() === 'ontrial',
 );
 
 const canBuyTrafficPackage = computed(() =>
@@ -109,8 +147,10 @@ const canBuyTrafficPackage = computed(() =>
 );
 
 const trafficUsedText = computed(() => detail.value.traffic?.usage_label || '0G');
-const trafficLimitText = computed(() => detail.value.traffic?.limit_label || '不限');
-const trafficRemainingText = computed(() => detail.value.traffic?.remaining_label || '不限');
+const trafficLimitText = computed(() => detail.value.traffic?.limit_label || t('serviceConsole.traffic.unlimited'));
+const trafficRemainingText = computed(
+  () => detail.value.traffic?.remaining_label || t('serviceConsole.traffic.unlimited'),
+);
 const trafficPercentText = computed(() => {
   const percent = Number(detail.value.traffic?.usage_percent);
   if (!detail.value.traffic?.limited || !Number.isFinite(percent) || percent <= 0) return '--';

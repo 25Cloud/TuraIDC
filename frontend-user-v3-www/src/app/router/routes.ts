@@ -29,8 +29,7 @@ export const clientRoutes: RouteRecordRaw[] = [
         meta: {
           // 首页标题由站点配置的 browser_title 动态提供，不硬编码品牌名
           title: "",
-          description:
-            "提供云服务器、独立服务器、云电脑与 IDC 服务，覆盖香港、美国与国内多地节点。",
+          description: t("seo.home.description"),
           canonical: "/",
         },
       },

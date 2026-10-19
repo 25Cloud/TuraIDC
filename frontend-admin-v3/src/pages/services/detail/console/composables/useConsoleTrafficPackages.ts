@@ -1,12 +1,12 @@
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, reactive, ref } from 'vue';
 
+import { t } from '@/locales';
 import { formatMoney } from '@/utils/format';
 
 import type { ServiceTrafficPackageOption, ServiceTrafficPackagePreview, ServiceTrafficPackageQuote } from '../types';
 import { createServiceConsoleApi } from './adminServiceApi';
 import { resolveErrorMessage } from './useConsoleCore';
-import { t } from '@/locales';
 
 export interface UseConsoleTrafficPackagesOptions {
   userId: number | string;
@@ -55,7 +55,7 @@ export function useConsoleTrafficPackages(options: UseConsoleTrafficPackagesOpti
       }
     } catch (error: unknown) {
       trafficData.value = null;
-      MessagePlugin.error(resolveErrorMessage(error, '加载流量包失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('services.console.loadTrafficPackagesFailed')));
     } finally {
       trafficLoading.value = false;
     }
@@ -77,7 +77,7 @@ export function useConsoleTrafficPackages(options: UseConsoleTrafficPackagesOpti
       });
       trafficQuote.value = res.data || null;
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '获取流量包报价失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('services.console.quoteFailed')));
     } finally {
       trafficQuoting.value = false;
     }
@@ -110,10 +110,15 @@ export function useConsoleTrafficPackages(options: UseConsoleTrafficPackagesOpti
       const payload = (res.data || {}) as { message?: string; invoice_no?: string };
       trafficVisible.value = false;
       MessagePlugin.success(
-        String(payload.message || `流量包账单已创建${payload.invoice_no ? `（${payload.invoice_no}）` : ''}`),
+        String(
+          payload.message ||
+            t('services.console.invoiceCreated', {
+              invoice: payload.invoice_no ? `（${payload.invoice_no}）` : '',
+            }),
+        ),
       );
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '创建流量包账单失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('services.console.createInvoiceFailed')));
     } finally {
       trafficSubmitting.value = false;
     }

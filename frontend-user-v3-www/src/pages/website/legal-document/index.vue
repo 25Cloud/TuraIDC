@@ -5,10 +5,12 @@
       <p>{{ pageDescription }}</p>
 
       <div class="legal-actions">
-        <el-button v-if="targetUrl" type="primary" @click="openDocument"
-          >{{ $t('content.legal.openOriginal') }}</el-button
-        >
-        <el-button @click="router.push('/')">{{ $t('common.notFound.backHome') }}</el-button>
+        <el-button v-if="targetUrl" type="primary" @click="openDocument">{{
+          $t("content.legal.openOriginal")
+        }}</el-button>
+        <el-button @click="router.push('/')">{{
+          $t("common.notFound.backHome")
+        }}</el-button>
       </div>
 
       <el-empty
@@ -24,6 +26,7 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAppStore } from "@/stores/app";
+import { t } from "@/locales";
 
 const route = useRoute();
 const router = useRouter();
@@ -34,11 +37,13 @@ const isPrivacy = computed(() => documentKey.value === "privacy");
 const targetUrl = computed(() =>
   isPrivacy.value ? appStore.privacyUrl : appStore.termsUrl,
 );
-const pageTitle = computed(() => (isPrivacy.value ? "隐私政策" : "服务条款"));
+const pageTitle = computed(() =>
+  isPrivacy.value ? t("seo.privacy.title") : t("seo.terms.title"),
+);
 const pageDescription = computed(() =>
   isPrivacy.value
-    ? "查看平台的隐私政策与个人信息处理说明。"
-    : "查看平台的服务条款、使用约定与相关说明。",
+    ? t("content.legal.privacyDescription")
+    : t("content.legal.termsDescription"),
 );
 
 function openDocument() {

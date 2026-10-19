@@ -4,7 +4,7 @@
       <div class="conversation-action-bar">
         <t-button variant="text" theme="default" @click="goBack">
           <template #icon><chevron-left-icon /></template>
-          返回工单列表
+          {{ $t('tickets.detail.backToList') }}
         </t-button>
         <t-button
           v-if="detail && !isClosed(detail.status)"
@@ -14,7 +14,7 @@
           @click="handleClose"
         >
           <template #icon><close-circle-icon /></template>
-          关闭工单
+          {{ $t('tickets.detail.closeTicket') }}
         </t-button>
       </div>
     </t-loading>
@@ -25,7 +25,7 @@
           <template #header>
             <div class="card-headline">
               <span>{{ $t('tickets.detail.conversation') }}</span>
-              <small>{{ messages.length }} 条消息</small>
+              <small>{{ $t('tickets.detail.messageCount', { count: messages.length }) }}</small>
             </div>
           </template>
 
@@ -43,13 +43,15 @@
                 </div>
 
                 <div class="message-bubble">
-                  <div v-if="message.recalled" class="recalled-text">消息已撤回</div>
+                  <div v-if="message.recalled" class="recalled-text">{{ $t('tickets.detail.recalled') }}</div>
                   <template v-else>
                     <div v-if="message.quote" class="quote-box">
-                      <span>{{ message.quote.sender_name || '用户' }}:</span>
-                      <strong>{{ message.quote.recalled ? '消息已撤回' : message.quote.content || '-' }}</strong>
+                      <span>{{ message.quote.sender_name || $t('tickets.detail.user') }}:</span>
+                      <strong>{{
+                        message.quote.recalled ? $t('tickets.detail.recalled') : message.quote.content || '-'
+                      }}</strong>
                     </div>
-                    <div class="message-content">{{ message.content || '无文字内容' }}</div>
+                    <div class="message-content">{{ message.content || $t('tickets.detail.noTextContent') }}</div>
                     <div v-if="parseAttachments(message).length" class="attachment-list">
                       <button
                         v-for="attachment in parseAttachments(message)"
@@ -59,7 +61,11 @@
                         :class="{ 'is-deleted': attachment.deleted || !attachment.url }"
                         @click="previewAttachment(attachment)"
                       >
-                        <img v-if="attachment.url" :src="attachment.url" :alt="attachment.name || '附件'" />
+                        <img
+                          v-if="attachment.url"
+                          :src="attachment.url"
+                          :alt="attachment.name || $t('tickets.detail.attachment')"
+                        />
                         <span v-else>{{ $t('tickets.detail.deletedAttachment') }}</span>
                       </button>
                     </div>
@@ -67,7 +73,9 @@
                 </div>
 
                 <div v-if="!message.recalled && !message.isInitial" class="message-actions">
-                  <t-button size="small" variant="text" theme="primary" @click="handleQuote(message)">引用</t-button>
+                  <t-button size="small" variant="text" theme="primary" @click="handleQuote(message)">{{
+                    $t('tickets.detail.quote')
+                  }}</t-button>
                   <t-button
                     v-if="canRecall(message)"
                     size="small"
@@ -76,29 +84,31 @@
                     :loading="recallLoading === message.id"
                     @click="handleRecall(message.id)"
                   >
-                    撤回
+                    {{ $t('tickets.detail.withdraw') }}
                   </t-button>
                 </div>
               </div>
             </article>
 
-            <t-empty v-if="messages.length === 0" description="暂无沟通记录" />
+            <t-empty v-if="messages.length === 0" :description="$t('tickets.detail.emptyMessages')" />
           </div>
 
           <section v-if="!isClosed(detail.status)" class="reply-composer">
             <div v-if="quoteReply" class="composer-quote">
               <div>
-                <span>回复 {{ quoteReply.sender_name }}</span>
-                <strong>{{ quoteReply.content || '无文字内容' }}</strong>
+                <span>{{ $t('tickets.detail.replyingTo', { name: quoteReply.sender_name }) }}</span>
+                <strong>{{ quoteReply.content || $t('tickets.detail.noTextContent') }}</strong>
               </div>
-              <t-button size="small" variant="text" theme="default" @click="cancelQuote">取消引用</t-button>
+              <t-button size="small" variant="text" theme="default" @click="cancelQuote">{{
+                $t('tickets.detail.cancelQuote')
+              }}</t-button>
             </div>
 
             <t-textarea
               v-model="replyForm.content"
               :autosize="{ minRows: 3, maxRows: 6 }"
               :maxlength="10000"
-              placeholder="输入回复内容，或只上传图片后发送"
+              :placeholder="$t('tickets.detail.replyPlaceholder')"
             />
 
             <div class="composer-actions">
@@ -109,7 +119,7 @@
                 multiple
                 :max="MAX_TICKET_IMAGES"
                 :auto-upload="true"
-                :size-limit="{ size: 5, unit: 'MB', message: '单张图片不能超过 5MB' }"
+                :size-limit="{ size: 5, unit: 'MB', message: $t('tickets.detail.imageTooLarge') }"
                 :request-method="handleUpload"
                 :before-upload="beforeUpload"
                 :on-remove="handleUploadRemove"
@@ -117,43 +127,54 @@
               >
                 <t-button variant="outline" :disabled="replyUploadDisabled || replyLoading">
                   <template #icon><upload-icon /></template>
-                  上传图片
+                  {{ $t('tickets.detail.uploadImage') }}
                 </t-button>
               </t-upload>
 
               <t-button theme="primary" :loading="replyLoading" :disabled="replySubmitDisabled" @click="handleReply">
-                发送
+                {{ $t('tickets.detail.send') }}
               </t-button>
             </div>
           </section>
 
-          <t-alert v-else theme="warning" message="此工单已关闭，不能继续回复。" />
+          <t-alert v-else theme="warning" :message="$t('tickets.detail.closedCannotReply')" />
         </t-card>
 
         <aside class="conversation-side">
-          <t-card :bordered="false" header="工单信息">
+          <t-card :bordered="false" :header="$t('tickets.detail.ticketInfo')">
             <t-descriptions :column="1" bordered>
-              <t-descriptions-item label="提交用户">
+              <t-descriptions-item :label="$t('tickets.detail.submittedUser')">
                 <t-button variant="text" theme="primary" @click="goUserDetail(detail.user?.id || detail.user_id)">
                   {{ userName }}
                 </t-button>
               </t-descriptions-item>
-              <t-descriptions-item label="工单分类">{{ departmentLabel(detail.department) }}</t-descriptions-item>
-              <t-descriptions-item label="优先级">
+              <t-descriptions-item :label="$t('tickets.detail.department')">{{
+                departmentLabel(detail.department)
+              }}</t-descriptions-item>
+              <t-descriptions-item :label="$t('tickets.detail.priority')">
                 <t-tag :theme="priorityTheme(detail.priority)" variant="light">{{
                   priorityLabel(detail.priority)
                 }}</t-tag>
               </t-descriptions-item>
-              <t-descriptions-item label="处理人">{{ assigneeName }}</t-descriptions-item>
-              <t-descriptions-item label="关联服务">{{ linkedServiceId }}</t-descriptions-item>
-              <t-descriptions-item label="创建时间">{{ formatDateTime(detail.created_at) }}</t-descriptions-item>
-              <t-descriptions-item v-if="detail.close_reason_label" label="关闭原因">
+              <t-descriptions-item :label="$t('tickets.detail.assigneeLabel')">{{ assigneeName }}</t-descriptions-item>
+              <t-descriptions-item :label="$t('tickets.detail.linkedService')">{{
+                linkedServiceId
+              }}</t-descriptions-item>
+              <t-descriptions-item :label="$t('tickets.detail.createdAt')">{{
+                formatDateTime(detail.created_at)
+              }}</t-descriptions-item>
+              <t-descriptions-item v-if="detail.close_reason_label" :label="$t('tickets.detail.closeReason')">
                 {{ detail.close_reason_label }}
               </t-descriptions-item>
             </t-descriptions>
 
             <div v-if="!isClosed(detail.status)" class="assign-box">
-              <t-select v-model="assignForm.assignee_id" clearable filterable placeholder="选择处理人">
+              <t-select
+                v-model="assignForm.assignee_id"
+                clearable
+                filterable
+                :placeholder="$t('tickets.detail.selectAssignee')"
+              >
                 <t-option
                   v-for="admin in adminUsers"
                   :key="admin.id"
@@ -161,19 +182,17 @@
                   :value="admin.id"
                 />
               </t-select>
-              <t-button theme="primary" :loading="assignLoading" @click="handleAssign">保存指派</t-button>
+              <t-button theme="primary" :loading="assignLoading" @click="handleAssign">{{
+                $t('tickets.detail.saveAssignment')
+              }}</t-button>
             </div>
           </t-card>
 
-          <t-card :bordered="false" header="自动转发">
-            <t-alert
-              theme="info"
-              message="自动化转发通常需要 1 分钟左右执行完成，请稍候查看状态。"
-              class="upstream-delivery-tip"
-            />
+          <t-card :bordered="false" :header="$t('tickets.detail.autoForward')">
+            <t-alert theme="info" :message="$t('tickets.detail.autoForwardHint')" class="upstream-delivery-tip" />
             <div class="upstream-delivery-head">
               <t-tag :theme="upstreamDeliveryTheme" variant="light">
-                {{ upstreamDelivery?.status_label || '未配置' }}
+                {{ upstreamDelivery?.status_label || $t('tickets.detail.notConfigured') }}
               </t-tag>
               <div class="upstream-delivery-actions">
                 <t-button
@@ -184,26 +203,26 @@
                   :loading="callbackRegistrationLoading"
                   @click="registerUpstreamCallback"
                 >
-                  重新注册回调
+                  {{ $t('tickets.detail.reregisterCallback') }}
                 </t-button>
                 <t-button size="small" variant="text" theme="primary" @click="openDeliveryLogs">
-                  查看转发日志
+                  {{ $t('tickets.detail.viewForwardLogs') }}
                 </t-button>
               </div>
             </div>
             <t-descriptions :column="1" bordered>
-              <t-descriptions-item label="上游工单号">
+              <t-descriptions-item :label="$t('tickets.detail.upstreamTicketNo')">
                 {{ upstreamDelivery?.upstream_ticket_id || '--' }}
               </t-descriptions-item>
-              <t-descriptions-item label="尝试次数">
+              <t-descriptions-item :label="$t('tickets.detail.attempts')">
                 {{ upstreamDelivery?.attempts ?? 0 }}
               </t-descriptions-item>
-              <t-descriptions-item label="最近尝试">
+              <t-descriptions-item :label="$t('tickets.detail.lastAttempt')">
                 {{ upstreamDelivery?.last_attempt_at || '--' }}
               </t-descriptions-item>
               <t-descriptions-item
                 v-if="upstreamDelivery?.last_error || upstreamDelivery?.last_event?.message"
-                label="最近结果"
+                :label="$t('tickets.detail.lastResult')"
               >
                 <span class="upstream-delivery-error">
                   {{ upstreamDelivery.last_error || upstreamDelivery.last_event?.message }}
@@ -212,10 +231,10 @@
             </t-descriptions>
           </t-card>
 
-          <t-card :bordered="false" header="关联服务信息">
+          <t-card :bordered="false" :header="$t('tickets.detail.linkedServiceInfo')">
             <div class="service-grid">
               <div>
-                <span>商品名称</span>
+                <span>{{ $t('tickets.detail.productName') }}</span>
                 <button
                   type="button"
                   class="user-link"
@@ -226,29 +245,29 @@
                 </button>
               </div>
               <div>
-                <span>公网 IP</span>
+                <span>{{ $t('tickets.detail.publicIp') }}</span>
                 <button type="button" @click="copyText(linkedServiceConnection.dedicated_ip)">
                   {{ linkedServiceConnection.dedicated_ip || '--' }}
                 </button>
               </div>
               <div>
-                <span>登录账号</span>
+                <span>{{ $t('tickets.detail.loginAccount') }}</span>
                 <button type="button" @click="copyText(linkedServiceConnection.username)">
                   {{ linkedServiceConnection.username || '--' }}
                 </button>
               </div>
               <div>
-                <span>登录密码</span>
+                <span>{{ $t('tickets.detail.loginPassword') }}</span>
                 <button type="button" @click="toggleLinkedServicePassword">
                   {{ linkedServicePassword }}
                 </button>
               </div>
               <div>
-                <span>登录端口</span>
+                <span>{{ $t('tickets.detail.loginPort') }}</span>
                 <strong>{{ linkedServiceConnection.port || '--' }}</strong>
               </div>
               <div>
-                <span>到期时间</span>
+                <span>{{ $t('tickets.detail.expiresAt') }}</span>
                 <strong>{{ detail.service?.expires_at || '--' }}</strong>
               </div>
             </div>
@@ -258,26 +277,26 @@
                 <span>{{ item.label }}</span>
                 <strong>{{ item.value }}</strong>
               </div>
-              <t-empty v-if="linkedServiceSpecs.length === 0" description="暂无规格信息" />
+              <t-empty v-if="linkedServiceSpecs.length === 0" :description="$t('tickets.detail.emptySpecs')" />
             </div>
           </t-card>
         </aside>
       </div>
 
-      <t-empty v-else-if="!detailLoading" description="工单不存在">
-        <t-button theme="primary" @click="goBack">返回工单列表</t-button>
+      <t-empty v-else-if="!detailLoading" :description="$t('tickets.detail.ticketNotFound')">
+        <t-button theme="primary" @click="goBack">{{ $t('tickets.detail.backToList') }}</t-button>
       </t-empty>
     </t-loading>
 
     <t-drawer
       v-model:visible="deliveryLogsVisible"
-      header="工单转发日志"
+      :header="$t('tickets.detail.deliveryLogsTitle')"
       size="620px"
       @confirm="closeDeliveryLogs"
       @cancel="closeDeliveryLogs"
     >
       <t-loading :loading="deliveryLogsLoading" size="small">
-        <t-empty v-if="deliveryLogs.length === 0" description="暂无转发日志" />
+        <t-empty v-if="deliveryLogs.length === 0" :description="$t('tickets.detail.emptyDeliveryLogs')" />
         <div v-else class="delivery-log-list">
           <article v-for="log in deliveryLogs" :key="String(log.id)" class="delivery-log-item">
             <div class="delivery-log-meta">
@@ -285,19 +304,24 @@
               <span>{{ log.operation || '--' }}</span>
               <time>{{ log.occurred_at || '--' }}</time>
             </div>
-            <strong>{{ log.message || log.reason_code || '状态已更新' }}</strong>
-            <small v-if="log.attempt">第 {{ log.attempt }} 次尝试</small>
+            <strong>{{ log.message || log.reason_code || $t('tickets.detail.statusUpdated') }}</strong>
+            <small v-if="log.attempt">{{ $t('tickets.detail.attemptNth', { count: log.attempt }) }}</small>
           </article>
         </div>
       </t-loading>
     </t-drawer>
 
-    <t-dialog v-model:visible="previewVisible" header="图片预览" width="720px" :footer="false">
-      <img v-if="previewUrl" class="preview-image" :src="previewUrl" alt="图片预览" />
+    <t-dialog
+      v-model:visible="previewVisible"
+      :header="$t('tickets.detail.imagePreview')"
+      width="720px"
+      :footer="false"
+    >
+      <img v-if="previewUrl" class="preview-image" :src="previewUrl" :alt="$t('tickets.detail.imagePreview')" />
       <div class="preview-dialog-actions">
         <t-button variant="outline" @click="previewVisible = false">
           <template #icon><close-circle-icon /></template>
-          关闭
+          {{ $t('tickets.detail.close') }}
         </t-button>
       </div>
     </t-dialog>
@@ -370,9 +394,9 @@ const callbackRegistrationLoading = ref(false);
 const deliveryLogs = ref<TicketUpstreamDeliveryLog[]>([]);
 
 const priorityOptions = [
-  { label: '低', value: 1 },
-  { label: '中', value: 2 },
-  { label: '高', value: 3 },
+  { label: t('tickets.detail.priorityLow'), value: 1 },
+  { label: t('tickets.detail.priorityMedium'), value: 2 },
+  { label: t('tickets.detail.priorityHigh'), value: 3 },
   { label: t('tickets.detail.priorityUrgent'), value: 4 },
 ];
 
@@ -408,12 +432,17 @@ const messages = computed<ConversationMessage[]>(() => {
 
 const userName = computed(() => {
   const user = detail.value?.user || {};
-  return String(user.display_name || user.nickname || user.email || `用户 #${detail.value?.user_id || '--'}`);
+  return String(
+    user.display_name ||
+      user.nickname ||
+      user.email ||
+      t('tickets.detail.userFallback', { id: detail.value?.user_id || '--' }),
+  );
 });
 
 const assigneeName = computed(() => {
   const assignee = detail.value?.assignee || {};
-  return String(assignee.nickname || assignee.username || '未指派');
+  return String(assignee.nickname || assignee.username || t('tickets.detail.unassigned'));
 });
 
 const linkedServiceId = computed(() => detail.value?.service?.id || detail.value?.service_id || '--');
@@ -483,14 +512,14 @@ function departmentLabel(value: unknown) {
 
 function messageSenderName(message: ConversationMessage) {
   if (message.sender_type === 'upstream_admin' || (Number(message.user_id) === 0 && Number(message.is_staff) === 1)) {
-    return '上游客服';
+    return t('tickets.detail.upstreamSupport');
   }
 
-  return message.sender_name || (message.is_staff ? '客服' : '客户');
+  return message.sender_name || (message.is_staff ? t('tickets.detail.staff') : t('tickets.detail.customer'));
 }
 
 function adminOptionLabel(admin: TicketAdminUser) {
-  const name = admin.nickname || admin.username || `管理员 #${admin.id}`;
+  const name = admin.nickname || admin.username || t('tickets.detail.adminFallback', { id: admin.id });
   return admin.email ? `${name}(${admin.email})` : name;
 }
 
@@ -514,7 +543,7 @@ async function registerUpstreamCallback() {
     MessagePlugin.success(t('tickets.detail.upstreamCallbackReregistered'));
     await reloadCurrentDetail();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '重新注册回调失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.detail.reregisterFailed')));
   } finally {
     callbackRegistrationLoading.value = false;
   }
@@ -530,7 +559,7 @@ async function openDeliveryLogs() {
     deliveryLogs.value = response.list || [];
   } catch (error) {
     deliveryLogs.value = [];
-    MessagePlugin.error(errorMessage(error, '加载工单转发日志失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.detail.loadDeliveryLogsFailed')));
   } finally {
     deliveryLogsLoading.value = false;
   }
@@ -548,7 +577,13 @@ function parseAttachments(
   return attachments
     .map((attachment, index) => {
       if (typeof attachment === 'string') {
-        return { id: index, url: attachment, path: attachment, name: t('tickets.detail.image'), type: 'image' } satisfies TicketAttachment;
+        return {
+          id: index,
+          url: attachment,
+          path: attachment,
+          name: t('tickets.detail.image'),
+          type: 'image',
+        } satisfies TicketAttachment;
       }
       return attachment;
     })
@@ -567,7 +602,7 @@ async function loadAdmins() {
     adminUsers.value = Array.isArray(response) ? response : response.list || [];
   } catch (error) {
     adminUsers.value = [];
-    MessagePlugin.error(errorMessage(error, '加载管理员列表失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.detail.loadAdminsFailed')));
   }
 }
 
@@ -590,7 +625,7 @@ async function loadDetail() {
     assignForm.assignee_id = response.assignee_id || null;
   } catch (error) {
     detail.value = null;
-    MessagePlugin.error(errorMessage(error, '加载工单详情失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.detail.loadDetailFailed')));
   } finally {
     detailLoading.value = false;
   }
@@ -651,7 +686,7 @@ async function handleAssign() {
     MessagePlugin.success(t('tickets.detail.assigned'));
     await reloadCurrentDetail();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '指派失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.detail.assignFailed')));
   } finally {
     assignLoading.value = false;
   }
@@ -675,7 +710,7 @@ async function handleReply() {
     MessagePlugin.success(t('tickets.detail.replied'));
     await reloadCurrentDetail();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '回复失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.detail.replyFailed')));
   } finally {
     replyLoading.value = false;
   }
@@ -685,8 +720,8 @@ function handleClose() {
   if (!detail.value?.id) return;
   const ticketId = detail.value.id;
   const dialog = DialogPlugin.confirm({
-    header: '关闭工单',
-    body: '确认关闭该工单吗？关闭后图片会被物理删除。',
+    header: t('tickets.detail.closeTitle'),
+    body: t('tickets.detail.closeConfirm'),
     theme: 'warning',
     confirmBtn: t('tickets.detail.confirmClose'),
     cancelBtn: t('common.cancel'),
@@ -698,7 +733,7 @@ function handleClose() {
         dialog.hide();
         await reloadCurrentDetail();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '关闭失败'));
+        MessagePlugin.error(errorMessage(error, t('tickets.detail.closeFailed')));
       } finally {
         closeLoading.value = false;
       }
@@ -720,7 +755,7 @@ async function handleRecall(replyId: number | string) {
     MessagePlugin.success(t('tickets.detail.recalled'));
     await reloadCurrentDetail();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '撤回失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.detail.recallFailed')));
   } finally {
     recallLoading.value = null;
   }
@@ -730,7 +765,7 @@ function handleQuote(reply: TicketReply) {
   if (!reply || reply.recalled) return;
   quoteReply.value = {
     id: reply.id,
-    sender_name: reply.sender_name || '用户',
+    sender_name: reply.sender_name || t('tickets.detail.user'),
     content: reply.content || '',
   };
 }
@@ -748,7 +783,7 @@ function resetReplyDraft() {
 
 function beforeUpload(file: UploadFileLike) {
   if (replyAttachments.value.length >= MAX_TICKET_IMAGES) {
-    MessagePlugin.warning(`最多上传 ${MAX_TICKET_IMAGES} 张图片`);
+    MessagePlugin.warning(t('tickets.detail.imageLimit', { count: MAX_TICKET_IMAGES }));
     return false;
   }
   if (file.type && !IMAGE_TYPES.includes(file.type)) {
@@ -764,7 +799,7 @@ async function handleUpload(files: UploadFileLike | UploadFileLike[]) {
   if (!(rawFile instanceof File)) {
     return {
       status: 'fail' as const,
-      error: '未获取到有效图片文件',
+      error: t('tickets.detail.noValidImage'),
       response: {},
     };
   }
@@ -785,7 +820,7 @@ async function handleUpload(files: UploadFileLike | UploadFileLike[]) {
   } catch (error) {
     return {
       status: 'fail' as const,
-      error: errorMessage(error, '上传失败'),
+      error: errorMessage(error, t('tickets.detail.uploadFailed')),
       response: {},
     };
   }

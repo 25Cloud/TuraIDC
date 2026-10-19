@@ -1,5 +1,7 @@
 import { MessagePlugin } from 'tdesign-vue-next';
 
+import { t } from '@/locales';
+
 /**
  * 通用格式化工具。所有业务页面应从本模块导入，禁止本地重写。
  */
@@ -47,7 +49,7 @@ export async function copyText(value: unknown, options: CopyTextOptions = {}): P
     if (options.successMsg) MessagePlugin.success(options.successMsg);
     return true;
   } catch {
-    MessagePlugin.warning(options.errorMsg ?? '复制失败，请手动复制');
+    MessagePlugin.warning(options.errorMsg ?? t('common.copyFailedManual'));
     return false;
   }
 }

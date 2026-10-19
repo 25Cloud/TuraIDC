@@ -1,7 +1,7 @@
 <template>
   <section class="checkout-resume-page">
     <t-card class="checkout-resume-card" :bordered="false">
-      <loading-state :loading="status === 'loading'" text="正在创建账单">
+      <loading-state :loading="status === 'loading'" :text="$t('checkoutResume.titleCreating')">
         <div class="checkout-resume-state">
           <t-tag :theme="statusTheme" variant="light">{{ statusLabel }}</t-tag>
           <h1>{{ title }}</h1>
@@ -18,8 +18,12 @@
             <t-button v-if="status === 'error'" theme="primary" :loading="retrying" @click="resumeCheckout">
               {{ $t('checkoutResume.recreate') }}
             </t-button>
-            <t-button v-if="status === 'empty'" theme="primary" @click="openProducts">{{ $t('checkoutResume.browse') }}</t-button>
-            <t-button v-if="status !== 'loading'" variant="outline" @click="openInvoices">{{ $t('checkoutResume.toFinance') }}</t-button>
+            <t-button v-if="status === 'empty'" theme="primary" @click="openProducts">{{
+              $t('checkoutResume.browse')
+            }}</t-button>
+            <t-button v-if="status !== 'loading'" variant="outline" @click="openInvoices">{{
+              $t('checkoutResume.toFinance')
+            }}</t-button>
           </div>
         </div>
       </loading-state>
@@ -33,8 +37,8 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
-import { t } from '@/locales';
 import { formatBillingCycle } from '@/domains/finance/useRecords';
+import { t } from '@/locales';
 import { openPublicProducts } from '@/utils/publicSite';
 import type { PendingWebsiteCheckout } from '@/utils/websiteCheckout';
 import {
@@ -66,25 +70,25 @@ const statusTheme = computed(() => {
 });
 
 const statusLabel = computed(() => {
-  if (status.value === 'error') return '创建失败';
-  if (status.value === 'empty') return '等待创建账单';
-  return '创建账单中';
+  if (status.value === 'error') return t('checkoutResume.statusError');
+  if (status.value === 'empty') return t('checkoutResume.statusEmpty');
+  return t('checkoutResume.statusCreating');
 });
 
 const title = computed(() => {
-  if (status.value === 'error') return '恢复购买信息失败';
-  if (status.value === 'empty') return '没有待恢复的购买信息';
-  return '正在创建账单';
+  if (status.value === 'error') return t('checkoutResume.titleError');
+  if (status.value === 'empty') return t('checkoutResume.titleEmpty');
+  return t('checkoutResume.titleCreating');
 });
 
 const description = computed(() => {
   if (status.value === 'error') {
-    return errorMessage.value || '请稍后重试，或前往资金中心查看账单记录。';
+    return errorMessage.value || t('checkoutResume.descError');
   }
   if (status.value === 'empty') {
-    return '请从产品页重新选择规格并创建账单。';
+    return t('checkoutResume.descEmpty');
   }
-  return '正在恢复你刚才的购买信息，请不要关闭页面。';
+  return t('checkoutResume.descCreating');
 });
 
 const payloadRows = computed(() => {

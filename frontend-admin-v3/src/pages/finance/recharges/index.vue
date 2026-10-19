@@ -12,7 +12,13 @@
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.status" class="filter-status" clearable :placeholder="$t('finance.recharges.filterStatus')" @change="handleSearch">
+        <t-select
+          v-model="filters.status"
+          class="filter-status"
+          clearable
+          :placeholder="$t('finance.recharges.filterStatus')"
+          @change="handleSearch"
+        >
           <t-option v-for="item in paymentStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
         <t-date-picker
@@ -75,7 +81,9 @@
           <template #createdAt="{ row }">{{ formatDateTime(row.created_at) }}</template>
           <template #paidAt="{ row }">{{ formatDateTime(row.paid_at) }}</template>
           <template #operation="{ row }">
-            <t-button size="small" variant="text" theme="primary" @click="openDetail(row)">{{ $t('finance.recharges.detail') }}</t-button>
+            <t-button size="small" variant="text" theme="primary" @click="openDetail(row)">{{
+              $t('finance.recharges.detail')
+            }}</t-button>
           </template>
         </t-table>
       </div>
@@ -157,10 +165,10 @@ import InvoiceDetailDrawer from '@/components/finance-record-detail/InvoiceDetai
 import MobileRecordCard from '@/components/mobile-record-card/index.vue';
 import StatusTag from '@/components/status-tag/index.vue';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { t } from '@/locales';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { goOrder, goService, goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
-import { t } from '@/locales';
 
 type ThemeType = NonNullable<TagProps['theme']>;
 
@@ -239,7 +247,7 @@ async function loadList() {
     pagination.page = Number(response.page || pagination.page);
     pagination.page_size = Number(response.page_size || pagination.page_size);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载充值记录失败'));
+    MessagePlugin.error(errorMessage(error, t('finance.recharges.loadFailed')));
   } finally {
     loading.value = false;
   }
@@ -276,7 +284,7 @@ async function reloadDetail() {
     const response = await adminApi.invoices.detail(detailState.currentId);
     detailState.detail = normalizeInvoiceDetail(response, currentInvoice.value);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载充值详情失败'));
+    MessagePlugin.error(errorMessage(error, t('finance.recharges.loadDetailFailed')));
   } finally {
     detailState.loading = false;
   }
@@ -347,7 +355,7 @@ function handleMobileAction(value: unknown, row: RechargeRecord) {
 }
 
 function mobileActionOptions() {
-  return [{ content: '详情', value: 'detail' }];
+  return [{ content: t('finance.recharges.detailAction'), value: 'detail' }];
 }
 
 function rechargeMobileRows(row: RechargeRecord) {

@@ -193,10 +193,10 @@ import MobileRecordCard from '@/components/mobile-record-card/index.vue';
 import StatusTag from '@/components/status-tag/index.vue';
 import { useListPage } from '@/hooks/useListPage';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { t } from '@/locales';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { canGoService, goOrder, goService, goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
-import { t } from '@/locales';
 
 type FinanceOrderMode = 'all' | 'orders' | 'renewals' | 'upgrade';
 
@@ -233,7 +233,7 @@ const mode = computed<FinanceOrderMode>(() => activeTab.value);
 const orderStatusOptions = computed(() => toSelectOptions(ORDER_STATUS_MAP, false));
 const mobileEyebrow = computed(() => {
   const found = ORDER_TAB_OPTIONS.find((o) => o.value === mode.value);
-  return found?.label || '订单管理';
+  return found?.label || t('orders.index.orderManagement');
 });
 
 const {
@@ -255,7 +255,7 @@ const {
     end_date: '',
   },
   defaultPageSize: 20,
-  onError: (error) => MessagePlugin.error(errorMessage(error, '加载订单列表失败')),
+  onError: (error) => MessagePlugin.error(errorMessage(error, t('orders.index.loadFailed'))),
   fetch: async () => {
     const apiCall =
       mode.value === 'renewals'
@@ -335,7 +335,12 @@ watch(activeTab, () => resetFilters());
 
 function userName(row: OrderRecord) {
   const user = toRecord(row.user);
-  return fieldValue(user.nickname || user.display_name || user.email || (row.user_id ? `用户 #${row.user_id}` : ''));
+  return fieldValue(
+    user.nickname ||
+      user.display_name ||
+      user.email ||
+      (row.user_id ? t('orders.index.userFallback', { id: row.user_id }) : ''),
+  );
 }
 
 function serviceIdLabel(service: unknown) {

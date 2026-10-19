@@ -27,9 +27,7 @@
       </div>
 
       <div class="users-list-summary">
-        <span
-          >{{ $t('users.index.totalUsersPrefix') }} {{ total }} {{ $t('users.index.totalUsersSuffix') }}</span
-        >
+        <span>{{ $t('users.index.totalUsersPrefix') }} {{ total }} {{ $t('users.index.totalUsersSuffix') }}</span>
         <span>
           {{ $t('users.index.pagePrefix') }} {{ page }} {{ $t('users.index.pageMiddle') }} {{ pageSize }}
           {{ $t('users.index.pageSuffix') }}
@@ -77,7 +75,9 @@
         </template>
         <template #openedServices="{ row }">
           <span :class="{ 'users-empty-count': !Number(row.opened_product_count || 0) }">
-            {{ Number(row.opened_product_count || 0) ? `${row.opened_product_count} ${$t('users.index.itemUnit')}` : '-' }}
+            {{
+              Number(row.opened_product_count || 0) ? `${row.opened_product_count} ${$t('users.index.itemUnit')}` : '-'
+            }}
           </span>
         </template>
         <template #agentGroup="{ row }">
@@ -136,7 +136,13 @@
                 </div>
                 <div>
                   <dt>{{ $t('users.index.services') }}</dt>
-                  <dd>{{ Number(row.opened_product_count || 0) ? `${row.opened_product_count} ${$t('users.index.itemUnit')}` : '-' }}</dd>
+                  <dd>
+                    {{
+                      Number(row.opened_product_count || 0)
+                        ? `${row.opened_product_count} ${$t('users.index.itemUnit')}`
+                        : '-'
+                    }}
+                  </dd>
                 </div>
                 <div>
                   <dt>{{ $t('users.index.registeredAt') }}</dt>
@@ -186,6 +192,10 @@
 import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
 import { ADMIN_CARD_GRID_STYLE, useAdminViewMode } from '@/composables/useAdminViewMode';
 
+defineOptions({
+  name: 'AdminUsers',
+});
+
 const { mode: viewMode, isCard: isCardView, setMode: setViewMode } = useAdminViewMode('admin-users', 'list');
 
 // 与其它列表页同一个断点（含 768px）
@@ -193,12 +203,12 @@ const isMobile = useMediaQuery('(max-width: 768px)');
 
 import './index.less';
 
+import { useMediaQuery } from '@vueuse/core';
 import { CheckCircleFilledIcon, SearchIcon, UserAddIcon } from 'tdesign-icons-vue-next';
 import type { FormInstanceFunctions, FormRule, PageInfo, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useMediaQuery } from '@vueuse/core';
 
 import type { AdminUser } from '@/api/user';
 import { userApi } from '@/api/user';
@@ -209,10 +219,6 @@ import { required } from '@/utils/formRules';
 import { hasAdminPermission } from '@/utils/permission';
 import { goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
-
-defineOptions({
-  name: 'AdminUsers',
-});
 
 const router = useRouter();
 const canManageUsers = computed(() => hasAdminPermission(AdminPermissions.USER_MANAGE));
@@ -248,11 +254,17 @@ const createVisible = ref(false);
 const createFormRef = ref<FormInstanceFunctions>();
 const createForm = reactive({ email: '', nickname: '', phone: '', password: '' });
 const createRules: Record<string, FormRule[]> = {
-  email: [required(t('users.index.emailInvalid')), { email: true, message: t('users.index.emailInvalid'), type: 'warning' }],
-  phone: [required('请输入手机号')],
+  email: [
+    required(t('users.index.emailInvalid')),
+    { email: true, message: t('users.index.emailInvalid'), type: 'warning' },
+  ],
+  phone: [required(t('users.index.phoneRequired'))],
   // 后端 StoreUserRequest 是 ['required','string','min:8']；此前只判必填，
   // 管理员输 3 位也能提交，直到 422 才知道。
-  password: [required('请输入密码'), { min: 8, message: t('users.index.passwordMinLength'), type: 'error' }],
+  password: [
+    required(t('users.index.passwordRequired')),
+    { min: 8, message: t('users.index.passwordMinLength'), type: 'error' },
+  ],
 };
 
 async function loadList() {
@@ -311,7 +323,7 @@ async function handleCreate() {
     createVisible.value = false;
     loadList();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '创建失败，请检查手机号/邮箱是否已被占用或格式是否正确'));
+    MessagePlugin.error(errorMessage(error, t('users.index.createFailed')));
   } finally {
     submitLoading.value = false;
   }

@@ -129,7 +129,7 @@ async function loadConfig() {
     form.content = settings.content || '';
     form.upstream_content = settings.upstream_content || '';
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载工单预回复设置失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.preReplySettings.loadFailed')));
   }
 }
 
@@ -158,7 +158,7 @@ async function save() {
     // 保存成功后重新加载，确保表单与后端实际持久化的配置一致。
     await loadConfig();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存工单预回复设置失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.preReplySettings.saveFailed')));
   } finally {
     saving.value = false;
   }

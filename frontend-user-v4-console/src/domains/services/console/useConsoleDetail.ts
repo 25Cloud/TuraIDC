@@ -134,7 +134,7 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
         MessagePlugin.info(t('serviceConsole.detailUpdated'));
       }
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '加载实例信息失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.detailLoadFailed')));
     } finally {
       detailLoading.value = false;
     }
@@ -163,7 +163,7 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
         MessagePlugin.success(t('serviceConsole.statusRefreshed'));
       }
     } catch (error: unknown) {
-      if (!silent) MessagePlugin.error(resolveErrorMessage(error, '刷新实例状态失败'));
+      if (!silent) MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.statusRefreshFailed')));
     }
   }
 

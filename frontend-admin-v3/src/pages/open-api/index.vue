@@ -83,7 +83,12 @@
             >
               <template #suffixIcon><search-icon /></template>
             </t-input>
-            <t-select v-model="filters.status" clearable :placeholder="$t('openApi.index.allStatuses')" @change="handleSearch">
+            <t-select
+              v-model="filters.status"
+              clearable
+              :placeholder="$t('openApi.index.allStatuses')"
+              @change="handleSearch"
+            >
               <t-option :label="$t('openApi.index.statusEnabled')" value="enabled" />
               <t-option :label="$t('openApi.index.statusDisabled')" value="disabled" />
             </t-select>
@@ -129,7 +134,8 @@
                   :theme="item.level === 'write' ? 'primary' : 'success'"
                   variant="light"
                 >
-                  {{ item.label }} · {{ item.level === 'write' ? $t('openApi.index.scopeReadWrite') : $t('openApi.index.scopeReadOnly') }}
+                  {{ item.label }} ·
+                  {{ item.level === 'write' ? $t('openApi.index.scopeReadWrite') : $t('openApi.index.scopeReadOnly') }}
                 </t-tag>
               </div>
             </template>
@@ -141,7 +147,9 @@
             <template #expires_at="{ row }">{{ row.expires_at || $t('openApi.index.neverExpires') }}</template>
             <template #operation="{ row }">
               <t-space size="0">
-                <t-button size="small" variant="text" :disabled="!canManage" @click="openUsageLogs(row)">{{ $t('openApi.index.viewLogs') }}</t-button>
+                <t-button size="small" variant="text" :disabled="!canManage" @click="openUsageLogs(row)">{{
+                  $t('openApi.index.viewLogs')
+                }}</t-button>
                 <t-button
                   size="small"
                   variant="text"
@@ -202,7 +210,12 @@
             hover
           >
             <template #user_id="{ row }">
-              <button type="button" class="user-link" :disabled="!isEntityId(row.user_id)" @click="goUser(router, row.user_id)">
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!isEntityId(row.user_id)"
+                @click="goUser(router, row.user_id)"
+              >
                 <strong>#{{ row.user_id ?? '--' }}</strong>
               </button>
             </template>
@@ -239,10 +252,10 @@ import { useRouter } from 'vue-router';
 import { adminApi } from '@/api/admin';
 import type { OpenApiConfigPayload, OpenApiKeyRecord, OpenApiUsageLogRecord } from '@/api/admin/openApi';
 import { AdminPermissions } from '@/constants/permissions';
+import { t } from '@/locales';
 import { hasAdminPermission } from '@/utils/permission';
 import { goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
-import { t } from '@/locales';
 
 defineOptions({ name: 'AdminOpenApi' });
 
@@ -303,7 +316,7 @@ async function loadConfig() {
     const data = await adminApi.openApi.getConfig();
     Object.assign(config, data);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载配置失败'));
+    MessagePlugin.error(errorMessage(error, t('openApi.index.loadConfigFailed')));
   } finally {
     configLoading.value = false;
   }
@@ -316,7 +329,7 @@ async function saveConfig() {
     Object.assign(config, data);
     MessagePlugin.success(t('openApi.index.configSaved'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存配置失败'));
+    MessagePlugin.error(errorMessage(error, t('openApi.index.saveConfigFailed')));
   } finally {
     configSaving.value = false;
   }
@@ -334,7 +347,7 @@ async function loadKeys() {
     keys.value = result.list;
     keysTotal.value = result.total;
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '密钥列表加载失败'));
+    MessagePlugin.error(errorMessage(error, t('openApi.index.loadKeysFailed')));
   } finally {
     keysLoading.value = false;
   }
@@ -355,26 +368,29 @@ async function toggleStatus(row: OpenApiKeyRecord) {
   const next = row.status === 'enabled' ? 'disabled' : 'enabled';
   try {
     await adminApi.openApi.setStatus(row.id, next);
-    MessagePlugin.success(next === 'enabled' ? '密钥已启用' : '密钥已停用');
+    MessagePlugin.success(next === 'enabled' ? t('openApi.index.keyEnabled') : t('openApi.index.keyDisabled'));
     await loadKeys();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '操作失败'));
+    MessagePlugin.error(errorMessage(error, t('openApi.index.operationFailed')));
   }
 }
 
 function confirmRemove(row: OpenApiKeyRecord) {
   const dialog = DialogPlugin.confirm({
-    header: '删除 API 密钥',
-    body: `确定删除密钥「${row.name || '未命名'}」（${row.user?.nickname || row.user?.email || '未知用户'}）吗？删除后该密钥立即失效。`,
+    header: t('openApi.index.deleteKeyTitle'),
+    body: t('openApi.index.deleteKeyConfirm', {
+      name: row.name || t('openApi.index.untitled'),
+      user: row.user?.nickname || row.user?.email || t('openApi.index.unknownUser'),
+    }),
     theme: 'warning',
-    confirmBtn: { content: '删除', theme: 'danger' },
+    confirmBtn: { content: t('openApi.index.remove'), theme: 'danger' },
     onConfirm: async () => {
       try {
         await adminApi.openApi.remove(row.id);
         MessagePlugin.success(t('openApi.index.keyDeleted'));
         await loadKeys();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除失败'));
+        MessagePlugin.error(errorMessage(error, t('openApi.index.deleteFailed')));
       }
       dialog.destroy();
     },
@@ -390,7 +406,7 @@ async function openUsageLogs(row: OpenApiKeyRecord) {
     const result = await adminApi.openApi.usageLogs(row.id, { page: 1, page_size: 50 });
     logs.value = result.list;
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '调用日志加载失败'));
+    MessagePlugin.error(errorMessage(error, t('openApi.index.loadUsageLogsFailed')));
   } finally {
     logLoading.value = false;
   }
@@ -437,7 +453,7 @@ async function loadUpstreamLogs() {
     upstreamLogs.value = result.list;
     upstreamLogsTotal.value = result.total;
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '上游链路审计加载失败'));
+    MessagePlugin.error(errorMessage(error, t('openApi.index.loadUpstreamAuditFailed')));
   } finally {
     upstreamLogsLoading.value = false;
   }

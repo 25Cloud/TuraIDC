@@ -2,6 +2,7 @@ import { computed, ref } from 'vue';
 
 import type { ProductBindingRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
+import { t } from '@/locales';
 
 function toPlainRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
@@ -28,15 +29,30 @@ export interface BindingTreeNode {
   [key: string]: unknown;
 }
 
+// 用 getter 读取词条：语言切换后重新求值，避免模块加载时把文案固化下来。
 const PRODUCT_TYPE_LABELS: Record<string, string> = {
-  cloud_server: '云服务器',
-  game_cloud: '游戏云',
-  cloud_desktop: '云电脑',
-  bare_metal: '裸金属',
+  get cloud_server() {
+    return t('products.bindingTree.typeCloudServer');
+  },
+  get game_cloud() {
+    return t('products.bindingTree.typeGameCloud');
+  },
+  get cloud_desktop() {
+    return t('products.bindingTree.typeCloudDesktop');
+  },
+  get bare_metal() {
+    return t('products.bindingTree.typeBareMetal');
+  },
   cdn: 'CDN',
-  other: '其他',
-  physical_machine: '物理机',
-  web_hosting: '虚拟主机',
+  get other() {
+    return t('products.bindingTree.typeOther');
+  },
+  get physical_machine() {
+    return t('products.bindingTree.typePhysicalMachine');
+  },
+  get web_hosting() {
+    return t('products.bindingTree.typeWebHosting');
+  },
 };
 
 // ---- price normalization ----
@@ -133,7 +149,7 @@ function createBindingRecord(sourceValue: unknown, parent?: BindingParentContext
     productDisplayName ||
     combinedDisplayName ||
     displayName ||
-    `商品 #${productId}`;
+    t('products.bindingTree.productWithId', { id: productId });
   const categoryName = String(
     source.category_full_name ||
       source.group_full_name ||
@@ -309,7 +325,9 @@ function buildBindingCategoryTreeNode(
     if (categoryNode) result.push(categoryNode);
   });
 
-  const label = String(node.label || node.name || node.title || node.text || '未命名分类').trim();
+  const label = String(
+    node.label || node.name || node.title || node.text || t('products.bindingTree.untitledCategory'),
+  ).trim();
   if (!label && result.length === 0) return null;
 
   // 添加实例使用单选树：分类仅用于导航，不能作为商品写入表单。
@@ -319,8 +337,8 @@ function buildBindingCategoryTreeNode(
 
   return {
     value: categoryTreeValue(nodeKey, rawValue),
-    label: label || '未命名分类',
-    text: label || '未命名分类',
+    label: label || t('products.bindingTree.untitledCategory'),
+    text: label || t('products.bindingTree.untitledCategory'),
     selectable,
     activable: mode === 'single' ? false : undefined,
     raw_value: rawValue,

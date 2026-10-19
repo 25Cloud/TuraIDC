@@ -5,24 +5,18 @@
         <t-space>
           <t-button variant="outline" size="small" :loading="loading" @click="reloadArea">
             <template #icon><refresh-icon /></template>
-            刷新
+            {{ $t('services.console.refresh') }}
           </t-button>
           <!-- 面板型产品的跳转按钮在 iframe 内，上游脚本用 window.open 打开第三方面板。
                跨域 iframe 里的 window.open 常被浏览器当作无用户手势直接拦掉，
                表现为「点了没反应」。这里由父页面直接代开，绕开 iframe 的弹窗限制。 -->
-          <t-button
-            v-if="panelEntryUrl"
-            variant="outline"
-            size="small"
-            theme="primary"
-            @click="openPanelEntry"
-          >
+          <t-button v-if="panelEntryUrl" variant="outline" size="small" theme="primary" @click="openPanelEntry">
             <template #icon><jump-icon /></template>
-            进入面板
+            {{ $t('services.console.enterPanel') }}
           </t-button>
           <t-button variant="outline" size="small" @click="openInNewWindow">
             <template #icon><jump-icon /></template>
-            新窗口打开
+            {{ $t('services.console.openInNewWindow') }}
           </t-button>
         </t-space>
       </template>
@@ -41,7 +35,7 @@
         <div v-else-if="errorText" class="area-state">
           <div class="area-state__body">
             <p>{{ errorText }}</p>
-            <t-button size="small" variant="outline" @click="reloadArea">重新加载</t-button>
+            <t-button size="small" variant="outline" @click="reloadArea">{{ $t('services.console.reload') }}</t-button>
           </div>
         </div>
 
@@ -51,7 +45,7 @@
         <div v-if="!errorText && !frameLoaded" class="area-loading" role="status" aria-live="polite">
           <div class="area-state__body">
             <span class="area-spinner" aria-hidden="true" />
-            <p>{{ frameSrc ? '正在加载功能面板' : '正在准备功能面板' }}</p>
+            <p>{{ frameSrc ? $t('services.console.loadingPanel') : $t('services.console.preparingPanel') }}</p>
           </div>
         </div>
       </div>
@@ -61,6 +55,8 @@
 <script setup lang="ts">
 import { JumpIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+
+import { t } from '@/locales';
 
 import { resolveErrorMessage } from '../composables/useConsoleCore';
 import { useServiceConsoleContext } from '../context';
@@ -103,7 +99,7 @@ function openPanelEntry() {
 
 const moduleKey = computed(() => String(activeTab.value || '').trim());
 const panelTitle = computed(() =>
-  String(consoleAreaLabels.value?.[moduleKey.value] || moduleKey.value || '自定义功能面板'),
+  String(consoleAreaLabels.value?.[moduleKey.value] || moduleKey.value || t('services.console.customPanel')),
 );
 const frameSrc = computed(() => {
   const id = serviceId.value;
@@ -122,7 +118,7 @@ async function ensureTicket(id: number): Promise<string> {
   const res = await consoleApi.createServiceConsoleAreaTicket(id);
   const next = String((res.data as ServiceConsoleAreaTicket | undefined)?.ticket || '');
   if (!next) {
-    throw new Error('访问凭证生成失败，请稍后重试');
+    throw new Error(t('services.console.credentialFailed'));
   }
 
   ticketCache.set(id, { ticket: next, expiresAt: Date.now() + TICKET_TTL_MS });
@@ -144,7 +140,7 @@ async function loadArea() {
     ticket.value = next;
   } catch (error: unknown) {
     if (token !== loadingToken.value) return;
-    errorText.value = resolveErrorMessage(error, '功能面板加载失败，请稍后重试');
+    errorText.value = resolveErrorMessage(error, t('services.console.panelLoadFailed'));
   } finally {
     if (token === loadingToken.value) {
       loading.value = false;

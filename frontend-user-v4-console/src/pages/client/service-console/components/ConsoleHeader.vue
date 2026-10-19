@@ -2,7 +2,7 @@
   <t-card class="console-header-card" :class="{ 'is-compact': compact }" :bordered="false">
     <div class="console-header-main">
       <div class="console-title-line">
-        <h1>{{ detail.name || `服务 #${serviceId}` }}</h1>
+        <h1>{{ detail.name || $t('serviceConsole.instanceHash', { id: serviceId }) }}</h1>
         <t-button theme="primary" variant="text" @click="openNameDialog">{{ $t('serviceConsole.rename') }}</t-button>
         <t-tag :theme="resolveTdesignStatusTheme(detail)" variant="light">{{
           resolveServiceStatusLabel(detail.status)
@@ -11,8 +11,10 @@
       </div>
 
       <div class="console-meta-grid">
-        <span class="meta-item meta-id">实例 ID：{{ detail.id || '--' }}</span>
-        <span v-if="!compact" class="meta-item meta-region">地址：{{ serviceRegion }}</span>
+        <span class="meta-item meta-id">{{ $t('serviceConsole.instanceIdMeta', { id: detail.id || '--' }) }}</span>
+        <span v-if="!compact" class="meta-item meta-region">{{
+          $t('serviceConsole.addressMeta', { address: serviceRegion })
+        }}</span>
         <span v-if="!compact" class="meta-item meta-ip"
           >{{ primaryConnectionLabel }}：{{ primaryConnectionValues[0] || '--' }}</span
         >
@@ -27,12 +29,14 @@
         </div>
         <div class="console-remark-line">
           <span>{{ $t('serviceConsole.remarkLabel') }}</span>
-          <strong :class="{ 'is-empty': !detail.remark }">{{ detail.remark || '点击添加备注' }}</strong>
+          <strong :class="{ 'is-empty': !detail.remark }">{{
+            detail.remark || $t('serviceConsole.addRemarkHint')
+          }}</strong>
           <t-button
             shape="square"
             variant="text"
             size="small"
-            :aria-label="detail.remark ? '编辑备注' : '添加备注'"
+            :aria-label="detail.remark ? $t('serviceConsole.editRemark') : $t('serviceConsole.addRemark')"
             @click="openRemarkDialog"
           >
             <template #icon><edit-icon /></template>
@@ -51,11 +55,11 @@
           @click="handleSyncStatus"
         >
           <template #icon><refresh-icon /></template>
-          状态同步
+          {{ $t('serviceConsole.statusSync') }}
         </t-button>
         <t-button v-if="!isTrialMachine" variant="outline" @click="openRenewDialog">
           <template #icon><money-icon /></template>
-          续费
+          {{ $t('serviceConsole.renewLabel') }}
         </t-button>
       </template>
       <template v-else>
@@ -66,7 +70,7 @@
           @click="handlePowerAction('off')"
         >
           <template #icon><pause-circle-filled-icon /></template>
-          关机
+          {{ $t('serviceConsole.power.off') }}
         </t-button>
         <t-button
           v-else
@@ -75,7 +79,7 @@
           @click="handlePowerAction('on')"
         >
           <template #icon><play-circle-filled-icon /></template>
-          开机
+          {{ $t('serviceConsole.power.on') }}
         </t-button>
         <t-button
           variant="outline"
@@ -83,7 +87,7 @@
           @click="handlePowerAction('reboot')"
         >
           <template #icon><rotate-icon /></template>
-          重启
+          {{ $t('serviceConsole.power.reboot') }}
         </t-button>
         <t-button
           variant="outline"
@@ -92,12 +96,12 @@
           @click="handleSyncStatus"
         >
           <template #icon><refresh-icon /></template>
-          状态同步
+          {{ $t('serviceConsole.statusSync') }}
         </t-button>
         <t-dropdown trigger="click" :options="moreOptions" @click="handleMoreClick">
           <t-button variant="outline">
             <template #icon><ellipsis-icon /></template>
-            更多
+            {{ $t('serviceConsole.more') }}
           </t-button>
         </t-dropdown>
       </template>
@@ -113,15 +117,15 @@
     <div class="ip-dialog-list">
       <div v-for="ip in primaryConnectionValues" :key="ip" class="ip-dialog-item">
         <strong>{{ ip }}</strong>
-        <button type="button" class="copy-link" :aria-label="`复制${ip}`" @click="copyText(ip)">
+        <button type="button" class="copy-link" :aria-label="$t('serviceConsole.copyIp', { ip })" @click="copyText(ip)">
           <copy-icon size="1rem" />
         </button>
       </div>
     </div>
     <template #footer>
-      <t-button v-if="primaryConnectionValues.length > 1" variant="outline" @click="copyText(primaryConnectionText)"
-        >{{ t('serviceConsole.copyAll') }}</t-button
-      >
+      <t-button v-if="primaryConnectionValues.length > 1" variant="outline" @click="copyText(primaryConnectionText)">{{
+        t('serviceConsole.copyAll')
+      }}</t-button>
       <t-button theme="primary" @click="ipDialogVisible = false">{{ t('serviceConsole.close') }}</t-button>
     </template>
   </t-dialog>
@@ -131,17 +135,18 @@ import {
   CopyIcon,
   EditIcon,
   EllipsisIcon,
+  MoneyIcon,
   PauseCircleFilledIcon,
   PlayCircleFilledIcon,
   RefreshIcon,
-  MoneyIcon,
   RotateIcon,
 } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, ref } from 'vue';
 
-import { useServiceConsoleContext } from './context';
 import { t } from '@/locales';
+
+import { useServiceConsoleContext } from './context';
 
 /**
  * compact：面板型控制台模式（CDN / 虚拟主机共用）。
@@ -152,7 +157,7 @@ import { t } from '@/locales';
  * 虚拟主机说「机房区域」，由调用方按控制台类别传入。
  */
 withDefaults(defineProps<{ compact?: boolean; compactRegionLabel?: string }>(), {
-  compactRegionLabel: '加速区域',
+  compactRegionLabel: t('serviceConsole.areaLabel.acceleration'),
 });
 
 const {
@@ -184,15 +189,19 @@ const {
 const ipDialogVisible = ref(false);
 
 const moreOptions = computed(() => [
-  { content: '重置密码', value: 'password', disabled: !detail.value.actions?.password_reset },
-  { content: '重装系统', value: 'reinstall', disabled: !detail.value.actions?.reinstall },
-  { content: '救援模式', value: 'rescue', disabled: !detail.value.actions?.rescue },
-  { content: '强制关机', value: 'hard_off', disabled: !detail.value.actions?.power },
-  { content: '强制重启', value: 'hard_reboot', disabled: !detail.value.actions?.power },
-  { content: '规格升级', value: 'upgrade', disabled: !hasUpgradeEntry.value },
-  { content: '快照/备份', value: 'snapshot', disabled: true },
-  { content: 'SSH 密钥', value: 'ssh_key', disabled: true },
-  { content: '磁盘管理', value: 'disk', disabled: true },
+  {
+    content: t('serviceConsole.menu.resetPassword'),
+    value: 'password',
+    disabled: !detail.value.actions?.password_reset,
+  },
+  { content: t('serviceConsole.menu.reinstall'), value: 'reinstall', disabled: !detail.value.actions?.reinstall },
+  { content: t('serviceConsole.menu.rescue'), value: 'rescue', disabled: !detail.value.actions?.rescue },
+  { content: t('serviceConsole.power.hardOff'), value: 'hard_off', disabled: !detail.value.actions?.power },
+  { content: t('serviceConsole.power.hardReboot'), value: 'hard_reboot', disabled: !detail.value.actions?.power },
+  { content: t('serviceConsole.menu.upgrade'), value: 'upgrade', disabled: !hasUpgradeEntry.value },
+  { content: t('serviceConsole.menu.snapshot'), value: 'snapshot', disabled: true },
+  { content: t('serviceConsole.menu.sshKey'), value: 'ssh_key', disabled: true },
+  { content: t('serviceConsole.menu.disk'), value: 'disk', disabled: true },
 ]);
 
 const hasUpgradeEntry = computed(() => Boolean(detail.value.actions?.upgrade ?? false));
@@ -201,10 +210,11 @@ const hasUpgradeEntry = computed(() => Boolean(detail.value.actions?.upgrade ?? 
  * 试用机（上游下发 ontrial）不支持续费，隐藏续费入口。
  * 与 CDN 总览「付费信息」卡的判断保持一致，避免头部能点却弹不出。
  */
-const isTrialMachine = computed(() =>
-  String(detail.value.billing_cycle || '')
-    .trim()
-    .toLowerCase() === 'ontrial',
+const isTrialMachine = computed(
+  () =>
+    String(detail.value.billing_cycle || '')
+      .trim()
+      .toLowerCase() === 'ontrial',
 );
 
 const isInstanceRunning = computed(() => instanceStatusTheme.value === 'success');

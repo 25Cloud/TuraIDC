@@ -3,9 +3,9 @@ import { computed, onBeforeUnmount, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { clientAuthApi } from '@/api/auth';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import type { ClientUserInfo, ClientVerificationPayload } from '@/types/client';
-import { t } from '@/locales';
 
 const IDENTITY_CARD_PATTERN = /^(?:\d{15}|\d{17}[\dX])$/i;
 const QR_SESSION_TTL_SECONDS = 300;
@@ -86,12 +86,12 @@ export function useVerification() {
 
   const isVerified = computed(() => Number(form.is_verified || 0) === 1 || Number(form.verification_status || 0) === 2);
   const statusTheme = computed(() => (isVerified.value ? 'success' : 'warning'));
-  const statusLabel = computed(() => (isVerified.value ? '已认证' : '待认证'));
-  const statusTitle = computed(() => (isVerified.value ? '已完成实名认证' : '尚未完成实名认证'));
+  const statusLabel = computed(() => (isVerified.value ? t('verification.verifiedTag') : t('verification.pendingTag')));
+  const statusTitle = computed(() =>
+    isVerified.value ? t('verification.verifiedTitle') : t('verification.notVerifiedTitle'),
+  );
   const statusDescription = computed(() =>
-    isVerified.value
-      ? '当前账户已经通过实名校验，可继续购买需要实名的产品。'
-      : '完成实名后，可继续购买受实名限制的商品并提升账户安全性。',
+    isVerified.value ? t('verification.verifiedDesc') : t('verification.pendingDesc'),
   );
   const canSubmit = computed(
     () => verificationForm.realName.trim().length > 0 && verificationForm.idCard.trim().length > 0,
@@ -128,7 +128,7 @@ export function useVerification() {
         syncFromUserInfo(userStore.info);
       }
     } catch (error: unknown) {
-      MessagePlugin.error(resolveMessage(error, '实名信息加载失败'));
+      MessagePlugin.error(resolveMessage(error, t('verification.infoLoadFailed')));
     } finally {
       loading.value = false;
     }
@@ -196,7 +196,7 @@ export function useVerification() {
       if (verificationUrl.value) MessagePlugin.success(t('verification.qrCodeGenerated'));
       startPolling();
     } catch (error: unknown) {
-      MessagePlugin.error(resolveMessage(error, '提交失败'));
+      MessagePlugin.error(resolveMessage(error, t('verification.submitFailed')));
     } finally {
       verificationLoading.value = false;
     }
@@ -210,7 +210,7 @@ export function useVerification() {
     if (isVerificationQrExpired.value) {
       clearVerificationSessionState();
       certifyId.value = '';
-      verificationMessage.value = '二维码已失效，请重新提交认证';
+      verificationMessage.value = t('verification.qrCodeExpired');
       MessagePlugin.warning(t('verification.qrCodeExpired'));
       return;
     }
@@ -218,10 +218,10 @@ export function useVerification() {
     try {
       const res = await clientAuthApi.verificationQrcode({ certify_id: certifyId.value });
       applyVerificationPayload(res.data);
-      if (!verificationUrl.value) throw new Error('未获取到实名服务商链接');
+      if (!verificationUrl.value) throw new Error(t('verification.providerLinkMissing'));
       startPolling();
     } catch (error: unknown) {
-      MessagePlugin.error(resolveMessage(error, '获取认证链接失败'));
+      MessagePlugin.error(resolveMessage(error, t('verification.authLinkFailed')));
     } finally {
       verificationLoading.value = false;
     }
@@ -257,7 +257,7 @@ export function useVerification() {
       clearVerificationSessionState();
       certifyId.value = '';
       canRestartVerification.value = false;
-      verificationMessage.value = '二维码已失效，请重新提交认证';
+      verificationMessage.value = t('verification.qrCodeExpired');
     }
   }
 
@@ -302,13 +302,13 @@ export function useVerification() {
         await refreshUserInfo();
       } else if (Number(payload.status) === 4) {
         canRestartVerification.value = false;
-        if (!silent) MessagePlugin.warning(verificationMessage.value || '认证处理中，请稍后再试');
+        if (!silent) MessagePlugin.warning(verificationMessage.value || t('verification.processing'));
       } else {
         canRestartVerification.value = Boolean(payload.can_restart);
-        if (!silent) MessagePlugin.warning(verificationMessage.value || '认证未完成');
+        if (!silent) MessagePlugin.warning(verificationMessage.value || t('verification.incomplete'));
       }
     } catch (error: unknown) {
-      if (!silent) MessagePlugin.error(resolveMessage(error, '查询失败'));
+      if (!silent) MessagePlugin.error(resolveMessage(error, t('verification.queryFailed')));
     } finally {
       checkingStatus.value = false;
     }
@@ -326,7 +326,7 @@ export function useVerification() {
       startPolling();
     } catch (error: unknown) {
       canRestartVerification.value = true;
-      MessagePlugin.error(resolveMessage(error, '重新认证失败'));
+      MessagePlugin.error(resolveMessage(error, t('verification.reverifyFailed')));
     } finally {
       verificationLoading.value = false;
     }
@@ -348,7 +348,7 @@ export function useVerification() {
       verificationMessage.value = '';
       if (!silent && shouldNotifyBackend) MessagePlugin.success(t('verification.sessionClosed'));
     } catch (error: unknown) {
-      if (!silent) MessagePlugin.error(resolveMessage(error, '关闭认证会话失败'));
+      if (!silent) MessagePlugin.error(resolveMessage(error, t('verification.closeSessionFailed')));
     } finally {
       closingSession.value = false;
       // 关闭会话后清空 certifyId，再次打开时回到表单并新建会话，避免复用旧 token。

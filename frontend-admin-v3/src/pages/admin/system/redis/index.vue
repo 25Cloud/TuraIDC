@@ -105,9 +105,7 @@ const canManage = computed(() => {
 
 const unavailableMessage = computed(() => {
   const hasExtension = status.value.client !== '';
-  return hasExtension
-    ? 'Redis 未连接成功，请检查 .env 中的 REDIS_HOST / REDIS_PORT / REDIS_PASSWORD 与服务进程状态。'
-    : 'PHP 未安装 redis 扩展，缓存与队列无法使用 Redis。';
+  return hasExtension ? t('redis.index.disconnectedHint') : t('redis.index.extensionMissingHint');
 });
 
 const connectionColumns = computed<PrimaryTableCol<TableRowData>[]>(() => [
@@ -118,7 +116,7 @@ const connectionColumns = computed<PrimaryTableCol<TableRowData>[]>(() => [
 ]);
 
 const keyspaceColumns = computed<PrimaryTableCol<TableRowData>[]>(() => [
-  { title: '库', colKey: 'database', width: 100 },
+  { title: t('redis.index.databaseColumn'), colKey: 'database', width: 100 },
   { title: t('redis.index.keyCount'), colKey: 'keys', width: 140 },
   { title: t('redis.index.expiringKeys'), colKey: 'expires', width: 140 },
   { title: t('redis.index.avgTtl'), colKey: 'avgTtl', width: 140 },
@@ -130,7 +128,7 @@ async function loadStatus() {
     const payload = await redisApi.status();
     status.value = normalizeStatus(payload);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, 'Redis 状态加载失败'));
+    MessagePlugin.error(errorMessage(error, t('redis.index.loadFailed')));
   } finally {
     loading.value = false;
   }
@@ -138,19 +136,19 @@ async function loadStatus() {
 
 function handleFlushCache() {
   const dialog = DialogPlugin.confirm({
-    header: '清理缓存',
-    body: '将清空缓存库中的全部键，站点会重新从数据库加载配置。确认继续？',
-    confirmBtn: { content: '确认清理', theme: 'warning' },
+    header: t('redis.index.clearTitle'),
+    body: t('redis.index.clearConfirm'),
+    confirmBtn: { content: t('redis.index.confirmClear'), theme: 'warning' },
     cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       flushing.value = true;
       try {
         const result = await redisApi.flushCache();
-        MessagePlugin.success(String(result.message || '缓存已清理'));
+        MessagePlugin.success(String(result.message || t('redis.index.cleared')));
         await loadStatus();
         dialog.destroy();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '缓存清理失败'));
+        MessagePlugin.error(errorMessage(error, t('redis.index.clearFailed')));
       } finally {
         flushing.value = false;
       }
@@ -189,14 +187,14 @@ function formatRatio(value: unknown) {
 function formatUptime(days: unknown) {
   const total = Number(days || 0);
   if (total <= 0) return '-';
-  return `${total} 天`;
+  return t('redis.index.days', { count: total });
 }
 
 function formatTtl(ms: number) {
   const value = Number(ms || 0);
   if (value <= 0) return '-';
-  if (value >= 1000) return `${Math.round(value / 1000)} 秒`;
-  return `${value} 毫秒`;
+  if (value >= 1000) return t('redis.index.seconds', { count: Math.round(value / 1000) });
+  return t('redis.index.milliseconds', { count: value });
 }
 
 onMounted(loadStatus);

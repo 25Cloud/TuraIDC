@@ -59,7 +59,7 @@ export function useUpstreamApi() {
       status.value = (response?.data ?? null) as UpstreamApiStatus | null;
       syncPolicyForm(status.value);
     } catch (error) {
-      loadError.value = getErrorMessage(error, '加载上游 API 状态失败');
+      loadError.value = getErrorMessage(error, t('apiKeys.upstream.loadFailed'));
       status.value = null;
     } finally {
       loading.value = false;
@@ -85,13 +85,13 @@ export function useUpstreamApi() {
       const payload = (response?.data ?? null) as UpstreamApiCredential | null;
       if (payload?.password) {
         credential.value = payload;
-        credentialTitle.value = '上游 API 凭据（仅显示这一次）';
+        credentialTitle.value = t('apiKeys.upstream.credentialTitle');
         credentialVisible.value = true;
       }
       await loadStatus();
       MessagePlugin.success(t('apiKeys.upstream.enabled'));
     } catch (error) {
-      MessagePlugin.error(getErrorMessage(error, '开启失败'));
+      MessagePlugin.error(getErrorMessage(error, t('apiKeys.upstream.enableFailed')));
     } finally {
       submitting.value = false;
     }
@@ -104,7 +104,7 @@ export function useUpstreamApi() {
       await loadStatus();
       MessagePlugin.success(t('apiKeys.upstream.disabled'));
     } catch (error) {
-      MessagePlugin.error(getErrorMessage(error, '关闭失败'));
+      MessagePlugin.error(getErrorMessage(error, t('apiKeys.upstream.disableFailed')));
     } finally {
       submitting.value = false;
     }
@@ -117,13 +117,13 @@ export function useUpstreamApi() {
       const payload = (response?.data ?? null) as UpstreamApiCredential | null;
       if (payload?.password) {
         credential.value = payload;
-        credentialTitle.value = '新的上游 API 密码（仅显示这一次）';
+        credentialTitle.value = t('apiKeys.upstream.newPasswordTitle');
         credentialVisible.value = true;
       }
       await loadStatus();
       MessagePlugin.success(t('apiKeys.upstream.passwordReset'));
     } catch (error) {
-      MessagePlugin.error(getErrorMessage(error, '重置失败'));
+      MessagePlugin.error(getErrorMessage(error, t('apiKeys.upstream.resetFailed')));
     } finally {
       submitting.value = false;
     }
@@ -136,7 +136,7 @@ export function useUpstreamApi() {
       await loadStatus();
       MessagePlugin.success(t('apiKeys.upstream.policySaved'));
     } catch (error) {
-      MessagePlugin.error(getErrorMessage(error, '策略更新失败'));
+      MessagePlugin.error(getErrorMessage(error, t('apiKeys.upstream.policyFailed')));
     } finally {
       submitting.value = false;
     }
@@ -150,7 +150,7 @@ export function useUpstreamApi() {
       const response = await clientApi.upstreamApiUsageLogs();
       logs.value = Array.isArray(response.data?.list) ? response.data.list : [];
     } catch (error) {
-      MessagePlugin.error(getErrorMessage(error, '调用日志加载失败'));
+      MessagePlugin.error(getErrorMessage(error, t('apiKeys.logsLoadFailed')));
     } finally {
       logLoading.value = false;
     }

@@ -28,18 +28,34 @@
           </template>
         </t-input>
 
-        <t-select v-model="filters.status" clearable placeholder="全部状态" @change="handleSearch">
+        <t-select
+          v-model="filters.status"
+          clearable
+          :placeholder="$t('orders.allStatusPlaceholder')"
+          @change="handleSearch"
+        >
           <t-option v-for="item in ORDER_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
 
-        <t-select v-model="filters.type" clearable placeholder="全部类型" @change="handleSearch">
+        <t-select
+          v-model="filters.type"
+          clearable
+          :placeholder="$t('orders.allTypePlaceholder')"
+          @change="handleSearch"
+        >
           <t-option v-for="item in ORDER_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
       </div>
     </t-card>
 
     <section class="record-list-card">
-      <data-state :loading="loading" :empty="!list.length" :description="listError || '暂无订单记录'">
+      <data-state
+        :loading-text="$t('shared.state.loading')"
+        :empty-text="$t('shared.state.empty')"
+        :loading="loading"
+        :empty="!list.length"
+        :description="listError || $t('orders.emptyOrders')"
+      >
         <t-table class="record-table" row-key="id" :data="list" :columns="columns" :pagination="null" hover>
           <template #order="{ row }">
             <div class="stack-cell">
@@ -113,7 +129,7 @@
               <span>¥{{ formatMoney(row.amount) }}</span>
             </div>
             <div class="record-mobile-card__meta">
-              <span v-if="row.invoice">账单: {{ row.invoice.invoice_no || '--' }}</span>
+              <span v-if="row.invoice">{{ $t('orders.invoice') }}: {{ row.invoice.invoice_no || '--' }}</span>
               <span>{{ row.created_at || '--' }}</span>
             </div>
             <div class="record-mobile-card__actions">

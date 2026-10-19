@@ -1,28 +1,19 @@
 <template>
-  <section
-    class="console-panel-section area-panel"
-    :aria-hidden="preloading ? 'true' : undefined"
-  >
+  <section class="console-panel-section area-panel" :aria-hidden="preloading ? 'true' : undefined">
     <t-card :title="panelTitle" :bordered="false">
       <template v-if="frameSrc && !preloading" #actions>
         <t-space>
           <t-button variant="outline" size="small" :loading="loading" @click="reloadArea">
             <template #icon><refresh-icon /></template>
-            刷新
+            {{ $t('serviceConsole.area.refresh') }}
           </t-button>
           <t-button variant="outline" size="small" @click="openInNewWindow">
             <template #icon><jump-icon /></template>
-            新窗口打开
+            {{ $t('serviceConsole.area.openInNewWindow') }}
           </t-button>
-          <t-button
-            v-if="panelEntryUrl"
-            variant="outline"
-            size="small"
-            theme="primary"
-            @click="openPanelEntry"
-          >
+          <t-button v-if="panelEntryUrl" variant="outline" size="small" theme="primary" @click="openPanelEntry">
             <template #icon><jump-icon /></template>
-            进入面板
+            {{ $t('serviceConsole.area.enterPanel') }}
           </t-button>
         </t-space>
       </template>
@@ -41,7 +32,9 @@
         <div v-else-if="errorText" class="area-state">
           <div class="area-state__body">
             <p>{{ errorText }}</p>
-            <t-button size="small" variant="outline" @click="reloadArea">重新加载</t-button>
+            <t-button size="small" variant="outline" @click="reloadArea">{{
+              $t('serviceConsole.area.reload')
+            }}</t-button>
           </div>
         </div>
 
@@ -51,7 +44,7 @@
         <div v-if="!errorText && !frameLoaded" class="area-loading" role="status" aria-live="polite">
           <div class="area-state__body">
             <span class="area-spinner" aria-hidden="true" />
-            <p>{{ frameSrc ? '正在加载功能面板' : '正在准备功能面板' }}</p>
+            <p>{{ frameSrc ? $t('serviceConsole.area.loadingPanel') : $t('serviceConsole.area.preparingPanel') }}</p>
           </div>
         </div>
       </div>
@@ -63,13 +56,11 @@ import { JumpIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 import clientApi from '@/api/client';
-import { resolveErrorMessage } from '@/domains/services/console/useConsoleCore';
 import { ensureAreaTicket, invalidateAreaTicket } from '@/domains/services/console/useConsoleAreaTicket';
+import { resolveErrorMessage } from '@/domains/services/console/useConsoleCore';
+import { t } from '@/locales';
 
 import { useServiceConsoleContext } from '../context';
-
-/** 与后端注入的 popupBridgeScript 约定一致的桥接事件名 */
-const POPUP_BRIDGE_EVENT = 'tura:open-url';
 
 const props = defineProps<{
   /**
@@ -89,6 +80,9 @@ const props = defineProps<{
   moduleKey?: string;
 }>();
 
+/** 与后端注入的 popupBridgeScript 约定一致的桥接事件名 */
+const POPUP_BRIDGE_EVENT = 'tura:open-url';
+
 const { serviceId, activeTab, consoleAreaLabels, detail } = useServiceConsoleContext();
 
 const loading = ref(false);
@@ -100,11 +94,9 @@ const frameLoaded = ref(false);
 // 用于校验 postMessage 来源，避免任意窗口借桥接打开外部地址
 const frameRef = ref<HTMLIFrameElement | null>(null);
 
-const moduleKey = computed(() =>
-  String(props.moduleKey || activeTab.value || '').trim(),
-);
+const moduleKey = computed(() => String(props.moduleKey || activeTab.value || '').trim());
 const panelTitle = computed(() =>
-  String(consoleAreaLabels.value?.[moduleKey.value] || moduleKey.value || '自定义功能面板'),
+  String(consoleAreaLabels.value?.[moduleKey.value] || moduleKey.value || t('serviceConsole.area.customPanel')),
 );
 const frameSrc = computed(() => {
   const id = serviceId.value;
@@ -132,7 +124,7 @@ async function loadArea() {
     // 预热失败不打扰用户：用户还没点到这个 tab，报错只会污染当前页面。
     // 真正切过来时会重新触发 loadArea()，那时再如实提示并给出「重新加载」。
     if (props.preloading) return;
-    errorText.value = resolveErrorMessage(error, '功能面板加载失败，请稍后重试');
+    errorText.value = resolveErrorMessage(error, t('serviceConsole.area.loadFailed'));
   } finally {
     if (token === loadingToken.value) {
       loading.value = false;
@@ -247,7 +239,7 @@ watch(frameSrc, (next, previous) => {
 watch(
   () => props.preloading,
   (preloading, wasPreloading) => {
-    //只关心「预热 -> 展示」这一次切换
+    // 只关心「预热 -> 展示」这一次切换
     if (preloading !== false || wasPreloading !== true) return;
     // 预热已经拿到地址：说明面板加载过了，切过来直接显示，不重复请求
     if (frameSrc.value) return;

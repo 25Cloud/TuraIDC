@@ -1,7 +1,7 @@
 <template>
   <t-dialog
     v-model:visible="ruleVisible"
-    header="新增安全组规则"
+    :header="$t('serviceConsole.security.addRuleHeader')"
     width="min(34rem, calc(100vw - 2rem))"
     destroy-on-close
   >
@@ -19,7 +19,11 @@
       </label>
       <label>
         <span>{{ $t('serviceConsole.securityGroup.protocol') }}</span>
-        <t-select v-model="ruleForm.protocol" :placeholder="$t('serviceConsole.securityGroup.protocolPlaceholder')" @change="onProtocolChange">
+        <t-select
+          v-model="ruleForm.protocol"
+          :placeholder="$t('serviceConsole.securityGroup.protocolPlaceholder')"
+          @change="onProtocolChange"
+        >
           <t-option v-for="item in securityState.protocols" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
       </label>
@@ -30,9 +34,9 @@
           :placeholder="
             isPortDisabled
               ? isAllPortProtocol
-                ? '全部端口（自动填充）'
-                : '该协议无端口（自动处理）'
-              : '例如 22 或 80-90'
+                ? $t('serviceConsole.security.portPlaceholderAll')
+                : $t('serviceConsole.security.portPlaceholderNone')
+              : $t('serviceConsole.security.portPlaceholderExample')
           "
           :disabled="isPortDisabled"
         />
@@ -53,7 +57,9 @@
     </div>
     <template #footer>
       <t-button variant="outline" @click="ruleVisible = false">{{ $t('common.cancel') }}</t-button>
-      <t-button theme="primary" :loading="securityState.submitting" @click="submitSecurityRule">{{ $t('serviceConsole.securityGroup.create') }}</t-button>
+      <t-button theme="primary" :loading="securityState.submitting" @click="submitSecurityRule">{{
+        $t('serviceConsole.securityGroup.create')
+      }}</t-button>
     </template>
   </t-dialog>
 </template>

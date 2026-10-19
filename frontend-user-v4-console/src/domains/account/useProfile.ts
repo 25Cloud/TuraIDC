@@ -14,7 +14,7 @@ import {
 } from '@/domains/account/profileState';
 import { t } from '@/locales';
 import { useUserStore } from '@/store';
-import type { ClientNotificationPreferences, ClientUserInfo } from '@/types/client';
+import type { ClientUserInfo } from '@/types/client';
 import { getErrorMessage } from '@/utils/error';
 import { copyText as copyShared } from '@/utils/format';
 
@@ -59,28 +59,28 @@ export function useProfile() {
       name: t('profile.realNameAuth'),
       desc: profileForm.real_name
         ? `${profileForm.real_name}${profileForm.id_card_masked ? ` · ${profileForm.id_card_masked}` : ''}`
-        : '完成实名认证后，可提升账户可信度与业务可用范围',
+        : t('profile.verifiedDesc'),
       theme: (profileForm.is_verified ? 'success' : 'warning') as TagTheme,
-      tag: profileForm.is_verified ? '已完成' : '待处理',
-      actionLabel: profileForm.is_verified ? '查看认证' : '立即认证',
+      tag: profileForm.is_verified ? t('profile.statusDone') : t('profile.statusPending'),
+      actionLabel: profileForm.is_verified ? t('profile.viewVerification') : t('profile.verifyNow'),
       action: () => router.push('/client/verification'),
     },
     {
       key: 'phone',
       name: t('profile.securePhone'),
-      desc: profileForm.phone || '绑定手机号后，可用于验证码接收和安全校验',
+      desc: profileForm.phone || t('profile.phoneDesc'),
       theme: (profileForm.phone ? 'success' : 'warning') as TagTheme,
-      tag: profileForm.phone ? '已绑定' : '未绑定',
-      actionLabel: profileForm.phone ? '更换绑定' : '前往绑定',
+      tag: profileForm.phone ? t('profile.statusBound') : t('profile.statusUnbound'),
+      actionLabel: profileForm.phone ? t('profile.changeBind') : t('profile.goBind'),
       action: () => openPhoneDialog(),
     },
     {
       key: 'email',
       name: t('profile.secureEmail'),
-      desc: profileForm.email || '建议绑定常用邮箱，用于接收通知与安全提醒',
+      desc: profileForm.email || t('profile.emailDesc'),
       theme: (profileForm.email ? 'success' : 'warning') as TagTheme,
-      tag: profileForm.email ? '已绑定' : '未绑定',
-      actionLabel: profileForm.email ? '更换绑定' : '前往绑定',
+      tag: profileForm.email ? t('profile.statusBound') : t('profile.statusUnbound'),
+      actionLabel: profileForm.email ? t('profile.changeBind') : t('profile.goBind'),
       action: () => openEmailDialog(),
     },
     {
@@ -88,8 +88,8 @@ export function useProfile() {
       name: t('profile.loginPassword'),
       desc: t('account.password.tips'),
       theme: 'success' as TagTheme,
-      tag: '已设置',
-      actionLabel: '修改密码',
+      tag: t('profile.statusSet'),
+      actionLabel: t('profile.changePassword'),
       action: () => openPasswordDialog(),
     },
   ]);
@@ -162,7 +162,7 @@ export function useProfile() {
         }
       }, 1000);
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '验证码发送失败'));
+      MessagePlugin.error(getErrorMessage(error, t('profile.codeSendFailed')));
     }
   }
 
@@ -199,7 +199,7 @@ export function useProfile() {
       await userStore.logout();
       router.push('/client/login');
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '密码重置失败'));
+      MessagePlugin.error(getErrorMessage(error, t('profile.passwordResetFailed')));
     } finally {
       profileLoading.value = false;
     }
@@ -246,7 +246,7 @@ export function useProfile() {
         }
       }, 1000);
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '验证码发送失败'));
+      MessagePlugin.error(getErrorMessage(error, t('profile.codeSendFailed')));
     }
   }
 
@@ -269,7 +269,7 @@ export function useProfile() {
         }
       }, 1000);
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '验证码发送失败'));
+      MessagePlugin.error(getErrorMessage(error, t('profile.codeSendFailed')));
     }
   }
 
@@ -296,7 +296,7 @@ export function useProfile() {
         }
       }, 1000);
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '验证码发送失败'));
+      MessagePlugin.error(getErrorMessage(error, t('profile.codeSendFailed')));
     }
   }
 
@@ -319,7 +319,7 @@ export function useProfile() {
         }
       }, 1000);
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '验证码发送失败'));
+      MessagePlugin.error(getErrorMessage(error, t('profile.codeSendFailed')));
     }
   }
 
@@ -349,7 +349,7 @@ export function useProfile() {
       clearPhoneOldTimer();
       await loadProfile();
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '手机号修改失败'));
+      MessagePlugin.error(getErrorMessage(error, t('profile.phoneUpdateFailed')));
     } finally {
       profileLoading.value = false;
     }
@@ -381,7 +381,7 @@ export function useProfile() {
       clearEmailOldTimer();
       await loadProfile();
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '邮箱修改失败'));
+      MessagePlugin.error(getErrorMessage(error, t('profile.emailUpdateFailed')));
     } finally {
       profileLoading.value = false;
     }
@@ -407,7 +407,7 @@ export function useProfile() {
   }
 
   async function copyText(text: string) {
-    await copyShared(text, { successMsg: '复制成功' });
+    await copyShared(text, { successMsg: t('profile.copySuccess') });
   }
 
   function handleProfileTabChange(value: unknown) {
@@ -437,7 +437,7 @@ export function useProfile() {
       await loadProfile();
       MessagePlugin.success(t('profile.updated'));
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '资料保存失败'));
+      MessagePlugin.error(getErrorMessage(error, t('profile.profileSaveFailed')));
     } finally {
       profileLoading.value = false;
     }
@@ -469,7 +469,7 @@ export function useProfile() {
       await userStore.logout();
       router.push('/client/login');
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '修改失败'));
+      MessagePlugin.error(getErrorMessage(error, t('profile.updateFailed')));
     } finally {
       profileLoading.value = false;
     }
@@ -494,7 +494,7 @@ export function useProfile() {
       await clientAuthApi.updateNotificationPreferences(settings);
       MessagePlugin.success(t('profile.settingsSaved'));
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '保存失败'));
+      MessagePlugin.error(getErrorMessage(error, t('profile.saveFailed')));
     } finally {
       notificationLoading.value = false;
     }

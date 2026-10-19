@@ -33,15 +33,21 @@
               </template>
               <template #status="{ row }">
                 <t-tag :theme="Number(row.status) === 1 ? 'success' : 'default'" variant="light">
-                  {{ Number(row.status) === 1 ? $t('agentDiscounts.index.enabled') : $t('agentDiscounts.index.disabled') }}
+                  {{
+                    Number(row.status) === 1 ? $t('agentDiscounts.index.enabled') : $t('agentDiscounts.index.disabled')
+                  }}
                 </t-tag>
               </template>
               <template #remark="{ row }">{{ fieldValue(row.remark) }}</template>
               <template #updatedAt="{ row }">{{ formatDateTime(row.updated_at) }}</template>
               <template #actions="{ row }">
                 <t-space v-if="canManage" size="small">
-                  <t-button theme="primary" variant="text" @click="openAgentGroupDialog(row)">{{ $t('agentDiscounts.index.edit') }}</t-button>
-                  <t-button theme="danger" variant="text" @click="removeAgentGroup(row)">{{ $t('agentDiscounts.index.delete') }}</t-button>
+                  <t-button theme="primary" variant="text" @click="openAgentGroupDialog(row)">{{
+                    $t('agentDiscounts.index.edit')
+                  }}</t-button>
+                  <t-button theme="danger" variant="text" @click="removeAgentGroup(row)">{{
+                    $t('agentDiscounts.index.delete')
+                  }}</t-button>
                 </t-space>
                 <span v-else>-</span>
               </template>
@@ -88,14 +94,20 @@
               </template>
               <template #status="{ row }">
                 <t-tag :theme="Number(row.status) === 1 ? 'success' : 'default'" variant="light">
-                  {{ Number(row.status) === 1 ? $t('agentDiscounts.index.enabled') : $t('agentDiscounts.index.disabled') }}
+                  {{
+                    Number(row.status) === 1 ? $t('agentDiscounts.index.enabled') : $t('agentDiscounts.index.disabled')
+                  }}
                 </t-tag>
               </template>
               <template #remark="{ row }">{{ fieldValue(row.remark) }}</template>
               <template #actions="{ row }">
                 <t-space v-if="canManage" size="small">
-                  <t-button theme="primary" variant="text" @click="openProductGroupDialog(row)">{{ $t('agentDiscounts.index.edit') }}</t-button>
-                  <t-button theme="danger" variant="text" @click="removeProductGroup(row)">{{ $t('agentDiscounts.index.delete') }}</t-button>
+                  <t-button theme="primary" variant="text" @click="openProductGroupDialog(row)">{{
+                    $t('agentDiscounts.index.edit')
+                  }}</t-button>
+                  <t-button theme="danger" variant="text" @click="removeProductGroup(row)">{{
+                    $t('agentDiscounts.index.delete')
+                  }}</t-button>
                 </t-space>
                 <span v-else>-</span>
               </template>
@@ -112,7 +124,9 @@
           <template #actions>
             <t-space size="small">
               <t-button variant="outline" @click="loadMatrix">{{ $t('agentDiscounts.index.reload') }}</t-button>
-              <t-button v-if="canManage" theme="primary" :loading="savingMatrix" @click="saveMatrix">{{ $t('agentDiscounts.index.saveMatrix') }}</t-button>
+              <t-button v-if="canManage" theme="primary" :loading="savingMatrix" @click="saveMatrix">{{
+                $t('agentDiscounts.index.saveMatrix')
+              }}</t-button>
             </t-space>
           </template>
 
@@ -166,10 +180,18 @@
       <t-form ref="agentGroupFormRef" :data="agentGroupForm" :rules="agentGroupRules" label-width="110px">
         <div class="agent-form-grid">
           <t-form-item :label="$t('agentDiscounts.index.name')" name="name">
-            <t-input v-model="agentGroupForm.name" :maxlength="50" :placeholder="$t('agentDiscounts.index.namePlaceholderAgent')" />
+            <t-input
+              v-model="agentGroupForm.name"
+              :maxlength="50"
+              :placeholder="$t('agentDiscounts.index.namePlaceholderAgent')"
+            />
           </t-form-item>
           <t-form-item :label="$t('agentDiscounts.index.code')" name="code">
-            <t-input v-model="agentGroupForm.code" :maxlength="50" :placeholder="$t('agentDiscounts.index.codePlaceholderGold')" />
+            <t-input
+              v-model="agentGroupForm.code"
+              :maxlength="50"
+              :placeholder="$t('agentDiscounts.index.codePlaceholderGold')"
+            />
           </t-form-item>
           <t-form-item :label="$t('agentDiscounts.index.sortOrder')" name="sort_order">
             <t-input-number v-model="agentGroupForm.sort_order" theme="normal" :min="0" />
@@ -209,9 +231,7 @@
     <t-dialog
       v-model:visible="productGroupDialogVisible"
       :header="
-        productGroupForm.id
-          ? $t('agentDiscounts.index.editDiscountGroup')
-          : $t('agentDiscounts.index.addDiscountGroup')
+        productGroupForm.id ? $t('agentDiscounts.index.editDiscountGroup') : $t('agentDiscounts.index.addDiscountGroup')
       "
       :confirm-btn="{ content: $t('agentDiscounts.index.save'), loading: savingProductGroup }"
       width="560px"
@@ -220,10 +240,18 @@
       <t-form ref="productGroupFormRef" :data="productGroupForm" :rules="productGroupRules" label-width="130px">
         <div class="agent-form-grid">
           <t-form-item :label="$t('agentDiscounts.index.name')" name="name">
-            <t-input v-model="productGroupForm.name" :maxlength="50" :placeholder="$t('agentDiscounts.index.namePlaceholderCloud')" />
+            <t-input
+              v-model="productGroupForm.name"
+              :maxlength="50"
+              :placeholder="$t('agentDiscounts.index.namePlaceholderCloud')"
+            />
           </t-form-item>
           <t-form-item :label="$t('agentDiscounts.index.code')" name="code">
-            <t-input v-model="productGroupForm.code" :maxlength="50" :placeholder="$t('agentDiscounts.index.codePlaceholderCloud')" />
+            <t-input
+              v-model="productGroupForm.code"
+              :maxlength="50"
+              :placeholder="$t('agentDiscounts.index.codePlaceholderCloud')"
+            />
           </t-form-item>
           <t-form-item :label="$t('agentDiscounts.index.minDiscountRate')" name="min_discount_rate">
             <t-input-number
@@ -278,7 +306,6 @@ import type {
 } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import { AdminPermissions } from '@/constants/permissions';
-
 import { t } from '@/locales';
 import { fieldValue, formatDateTime } from '@/utils/format';
 import { required } from '@/utils/formRules';
@@ -335,15 +362,15 @@ const agentGroupForm = reactive<AgentGroupForm>(createAgentGroupForm());
 const productGroupForm = reactive<ProductGroupForm>(createProductGroupForm());
 
 const agentGroupRules: Record<string, FormRule[]> = {
-  name: [required('请输入代理组名称')],
-  code: [required('请输入代理组标识')],
+  name: [required(t('agentDiscounts.agentNameRequired'))],
+  code: [required(t('agentDiscounts.agentCodeRequired'))],
 };
 
 const productGroupRules: Record<string, FormRule[]> = {
-  name: [required('请输入折扣组名称')],
-  code: [required('请输入折扣组标识')],
-  min_discount_rate: [required('请输入最低折扣率')],
-  cost_rate: [required('请输入成本占比')],
+  name: [required(t('agentDiscounts.groupNameRequired'))],
+  code: [required(t('agentDiscounts.groupCodeRequired'))],
+  min_discount_rate: [required(t('agentDiscounts.minRateRequired'))],
+  cost_rate: [required(t('agentDiscounts.costRateRequired'))],
 };
 
 const agentGroupColumns: PrimaryTableCol<TableRowData>[] = [
@@ -392,7 +419,7 @@ async function loadAgentGroups() {
   try {
     agentGroups.value = (await adminApi.agentDiscount.agentGroups.list()) || [];
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载代理组失败'));
+    MessagePlugin.error(errorMessage(error, t('agentDiscounts.loadAgentsFailed')));
   } finally {
     loadingAgentGroups.value = false;
   }
@@ -403,7 +430,7 @@ async function loadProductGroups() {
   try {
     productGroups.value = (await adminApi.agentDiscount.productDiscountGroups.list()) || [];
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载商品折扣组失败'));
+    MessagePlugin.error(errorMessage(error, t('agentDiscounts.loadProductGroupsFailed')));
   } finally {
     loadingProductGroups.value = false;
   }
@@ -430,7 +457,7 @@ async function loadMatrix() {
     });
   } catch (error) {
     if (seq !== matrixLoadSeq) return;
-    MessagePlugin.error(errorMessage(error, '加载折扣矩阵失败'));
+    MessagePlugin.error(errorMessage(error, t('agentDiscounts.loadMatrixFailed')));
   } finally {
     if (seq === matrixLoadSeq) {
       loadingMatrix.value = false;
@@ -490,7 +517,7 @@ async function submitAgentGroup() {
     await loadAgentGroups();
     await loadMatrix();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存代理组失败'));
+    MessagePlugin.error(errorMessage(error, t('agentDiscounts.saveAgentFailed')));
   } finally {
     savingAgentGroup.value = false;
   }
@@ -499,9 +526,9 @@ async function submitAgentGroup() {
 function removeAgentGroup(row: AgentGroupRecord) {
   if (!assertManage()) return;
   const dialog = DialogPlugin.confirm({
-    header: '删除代理组',
-    body: `确认删除代理组“${fieldValue(row.name)}”吗？组内仍有用户时将无法删除。`,
-    confirmBtn: { content: '确认删除', theme: 'danger' },
+    header: t('agentDiscounts.deleteAgentTitle'),
+    body: t('agentDiscounts.deleteAgentConfirm', { name: fieldValue(row.name) }),
+    confirmBtn: { content: t('agentDiscounts.confirmDelete'), theme: 'danger' },
     async onConfirm() {
       try {
         await adminApi.agentDiscount.agentGroups.delete(row.id);
@@ -510,7 +537,7 @@ function removeAgentGroup(row: AgentGroupRecord) {
         await loadAgentGroups();
         await loadMatrix();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除代理组失败'));
+        MessagePlugin.error(errorMessage(error, t('agentDiscounts.deleteAgentFailed')));
       }
     },
   });
@@ -562,7 +589,7 @@ async function submitProductGroup() {
     await loadProductGroups();
     await loadMatrix();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存商品折扣组失败'));
+    MessagePlugin.error(errorMessage(error, t('agentDiscounts.saveProductGroupFailed')));
   } finally {
     savingProductGroup.value = false;
   }
@@ -571,9 +598,9 @@ async function submitProductGroup() {
 function removeProductGroup(row: ProductDiscountGroupRecord) {
   if (!assertManage()) return;
   const dialog = DialogPlugin.confirm({
-    header: '删除商品折扣组',
-    body: `确认删除折扣组“${fieldValue(row.name)}”吗？组内仍有商品时将无法删除。`,
-    confirmBtn: { content: '确认删除', theme: 'danger' },
+    header: t('agentDiscounts.deleteProductGroupTitle'),
+    body: t('agentDiscounts.deleteProductGroupConfirm', { name: fieldValue(row.name) }),
+    confirmBtn: { content: t('agentDiscounts.confirmDelete'), theme: 'danger' },
     async onConfirm() {
       try {
         await adminApi.agentDiscount.productDiscountGroups.delete(row.id);
@@ -582,7 +609,7 @@ function removeProductGroup(row: ProductDiscountGroupRecord) {
         await loadProductGroups();
         await loadMatrix();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除商品折扣组失败'));
+        MessagePlugin.error(errorMessage(error, t('agentDiscounts.deleteProductGroupFailed')));
       }
     },
   });
@@ -613,7 +640,7 @@ async function saveMatrix() {
   });
 
   if (belowMinimum.length) {
-    MessagePlugin.error(`以下组合的折扣率低于所属折扣组的最低折扣率：${belowMinimum.join('、')}`);
+    MessagePlugin.error(t('agentDiscounts.belowMinimum', { groups: belowMinimum.join('、') }));
     return;
   }
 
@@ -628,7 +655,7 @@ async function saveMatrix() {
     MessagePlugin.success(t('agentDiscounts.messages.matrixSaved'));
     await loadMatrix();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存折扣矩阵失败'));
+    MessagePlugin.error(errorMessage(error, t('agentDiscounts.saveMatrixFailed')));
   } finally {
     savingMatrix.value = false;
   }

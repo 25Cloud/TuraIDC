@@ -2,7 +2,7 @@
   <button
     type="button"
     class="password-toggle"
-    :aria-label="modelValue ? '隐藏密码' : '显示密码'"
+    :aria-label="modelValue ? $t('serviceConsole.hidePassword') : $t('serviceConsole.showPassword')"
     :aria-pressed="modelValue"
     @click="$emit('update:modelValue', !modelValue)"
     @keydown.enter.prevent="$emit('update:modelValue', !modelValue)"

@@ -3,9 +3,9 @@
     <div class="product-edit-toolbar">
       <t-button variant="text" @click="goBack">
         <template #icon><chevron-left-icon /></template>
-        返回商品目录
+        {{ $t('products.edit.backToCatalog') }}
       </t-button>
-      <h2>{{ isEdit ? '编辑商品' : '新增商品' }}</h2>
+      <h2>{{ isEdit ? $t('products.catalog.editProduct') : $t('products.catalog.addProduct') }}</h2>
     </div>
 
     <div class="product-edit-card">
@@ -32,12 +32,12 @@
           <t-form ref="formRef" class="product-edit-form" :data="form" :rules="rules" label-width="96px">
             <!-- 详情 -->
             <section v-show="activeSection === 'basic'" class="product-edit-section">
-              <h3 class="product-edit-section-title">详情</h3>
+              <h3 class="product-edit-section-title">{{ $t('products.edit.sectionBasic') }}</h3>
               <div class="product-edit-grid">
-                <t-form-item label="商品名称" name="display_name">
+                <t-form-item :label="$t('products.catalog.productName')" name="display_name">
                   <t-input v-model="form.display_name" />
                 </t-form-item>
-                <t-form-item label="所属分类" name="selected_product_group_key">
+                <t-form-item :label="$t('products.catalog.belongingCategory')" name="selected_product_group_key">
                   <t-cascader
                     v-model="form.selected_product_group_key"
                     :options="categoryCascaderOptions"
@@ -45,37 +45,35 @@
                     value-mode="onlyLeaf"
                     filterable
                     clearable
-                    placeholder="请选择所属分类"
+                    :placeholder="$t('products.edit.selectCategoryPlaceholder')"
                   />
                 </t-form-item>
-                <t-form-item label="状态" name="status">
+                <t-form-item :label="$t('products.catalog.status')" name="status">
                   <t-switch v-model="form.status" :custom-value="[1, 0]" />
                 </t-form-item>
-                <t-form-item label="控制台面板" name="console_template">
+                <t-form-item :label="$t('products.edit.consolePanel')" name="console_template">
                   <div class="product-edit-console-template-field">
                     <t-select v-model="form.console_template">
-                      <t-option label="通用计算控制台" value="compute" />
-                      <t-option label="端口映射控制台" value="port_mapping" />
-                      <t-option label="CDN 控制台" value="cdn" />
-                      <t-option label="虚拟主机控制台" value="virtualhost" />
+                      <t-option :label="$t('products.edit.consoleCompute')" value="compute" />
+                      <t-option :label="$t('products.edit.consolePortMapping')" value="port_mapping" />
+                      <t-option :label="$t('products.edit.consoleCdn')" value="cdn" />
+                      <t-option :label="$t('products.edit.consoleVirtualHost')" value="virtualhost" />
                     </t-select>
-                    <span
-                      >默认通用计算控制台；CDN 与虚拟主机属面板型（无云主机语义）。选择后，关联服务下次打开控制台将按此页面进入。</span
-                    >
+                    <span>{{ $t('products.edit.consolePanelHint') }}</span>
                   </div>
                 </t-form-item>
-                <t-form-item label="折扣分组" name="product_discount_group_id">
+                <t-form-item :label="$t('products.catalog.discountGroup')" name="product_discount_group_id">
                   <t-select
                     v-model="form.product_discount_group_id"
                     clearable
                     filterable
-                    placeholder="请选择商品折扣分组，留空表示不参与代理折扣"
+                    :placeholder="$t('products.edit.discountGroupPlaceholder')"
                     :loading="discountGroupLoading"
                   >
                     <t-option
                       v-for="item in discountGroupOptions"
                       :key="item.id"
-                      :label="`${item.name || item.code || item.id}${item.min_discount_rate !== undefined ? `（最低 ${item.min_discount_rate}%）` : ''}`"
+                      :label="`${item.name || item.code || item.id}${item.min_discount_rate !== undefined ? $t('products.catalog.minDiscountRateSuffix', { rate: item.min_discount_rate }) : ''}`"
                       :value="item.id"
                     />
                   </t-select>
@@ -86,7 +84,7 @@
             <!-- 定价 -->
             <section v-show="activeSection === 'pricing'" class="product-edit-section">
               <div class="product-edit-section-head">
-                <h3 class="product-edit-section-title">定价</h3>
+                <h3 class="product-edit-section-title">{{ $t('products.catalog.sectionPricing') }}</h3>
                 <div class="product-edit-section-actions">
                   <t-select v-model="pricingPlan" size="small" style="width: 150px" @change="syncPricingCycles">
                     <t-option
@@ -99,16 +97,16 @@
                 </div>
               </div>
               <div class="product-edit-grid">
-                <t-form-item label="月付价格" name="monthly_price">
+                <t-form-item :label="$t('products.catalog.monthlyPrice')" name="monthly_price">
                   <t-input-number v-model="form.monthly_price" :min="0" style="width: 100%" />
                 </t-form-item>
-                <t-form-item label="季付价格" name="quarterly_price">
+                <t-form-item :label="$t('products.catalog.quarterlyPrice')" name="quarterly_price">
                   <t-input-number v-model="form.quarterly_price" :min="0" style="width: 100%" />
                 </t-form-item>
-                <t-form-item label="半年付价格" name="semiannually_price">
+                <t-form-item :label="$t('products.catalog.semiannualPrice')" name="semiannually_price">
                   <t-input-number v-model="form.semiannually_price" :min="0" style="width: 100%" />
                 </t-form-item>
-                <t-form-item label="年付价格" name="annually_price">
+                <t-form-item :label="$t('products.catalog.annualPrice')" name="annually_price">
                   <t-input-number v-model="form.annually_price" :min="0" style="width: 100%" />
                 </t-form-item>
               </div>
@@ -116,15 +114,15 @@
 
             <!-- 接口设置 -->
             <section v-show="activeSection === 'interface'" class="product-edit-section">
-              <h3 class="product-edit-section-title">自动开通</h3>
-              <div class="product-edit-tip">配置开通模块、支付方式和上架状态。</div>
+              <h3 class="product-edit-section-title">{{ $t('products.catalog.sectionAutoSetup') }}</h3>
+              <div class="product-edit-tip">{{ $t('products.catalog.interfaceTip') }}</div>
               <div class="product-edit-interface-panel">
-                <t-form-item label="提供商" name="supplier_id">
+                <t-form-item :label="$t('products.catalog.provider')" name="supplier_id">
                   <t-select
                     v-model="form.supplier_id"
                     filterable
                     clearable
-                    placeholder="请选择提供商接口"
+                    :placeholder="$t('products.catalog.selectProviderPlaceholder')"
                     :loading="supplierLoading"
                     @change="handleSupplierChange"
                   >
@@ -141,14 +139,14 @@
                     </t-option>
                   </t-select>
                 </t-form-item>
-                <t-form-item label="提供商商品" name="upstream_product_id">
+                <t-form-item :label="$t('products.catalog.providerProduct')" name="upstream_product_id">
                   <div class="product-edit-supplier-product-row">
                     <t-cascader
                       v-model="form.upstream_product_id"
                       :options="supplierProductCascaderOptions"
                       filterable
                       clearable
-                      placeholder="请选择提供商商品"
+                      :placeholder="$t('products.catalog.selectProviderProductPlaceholder')"
                       :loading="supplierProductLoading"
                       :disabled="!form.supplier_id"
                       value-mode="onlyLeaf"
@@ -161,23 +159,23 @@
                       :disabled="!form.supplier_id"
                       @click="loadSupplierProducts(form.supplier_id, true)"
                     >
-                      同步数据
+                      {{ $t('products.catalog.syncData') }}
                     </t-button>
                   </div>
                 </t-form-item>
                 <div class="product-edit-interface-grid">
-                  <t-form-item label="自动开通" name="auto_setup">
+                  <t-form-item :label="$t('products.catalog.autoSetup')" name="auto_setup">
                     <div class="product-edit-switch-line">
-                      <span>手动</span>
+                      <span>{{ $t('products.catalog.manual') }}</span>
                       <t-switch v-model="form.auto_setup" :custom-value="[1, 0]" />
-                      <span>自动</span>
+                      <span>{{ $t('products.catalog.automatic') }}</span>
                     </div>
                   </t-form-item>
-                  <t-form-item label="上架状态" name="interface_status">
+                  <t-form-item :label="$t('products.edit.listingStatus')" name="interface_status">
                     <div class="product-edit-switch-line">
-                      <span>下架</span>
+                      <span>{{ $t('products.edit.unlisted') }}</span>
                       <t-switch v-model="form.status" :custom-value="[1, 0]" />
-                      <span>上架</span>
+                      <span>{{ $t('products.edit.listed') }}</span>
                     </div>
                   </t-form-item>
                 </div>
@@ -187,18 +185,20 @@
             <!-- 产品配置 -->
             <section v-show="activeSection === 'config'" class="product-edit-section">
               <div class="product-edit-section-head">
-                <h3 class="product-edit-section-title">产品配置</h3>
+                <h3 class="product-edit-section-title">{{ $t('products.catalog.sectionProductConfig') }}</h3>
                 <div class="product-edit-section-actions">
                   <t-button size="small" variant="outline" :loading="configTemplateLoading" @click="pullConfigTemplate">
-                    拉取模板
+                    {{ $t('products.catalog.pullTemplate') }}
                   </t-button>
-                  <t-button size="small" theme="primary" variant="outline" @click="openConfigOptionDialog()"
-                    >新增配置</t-button
-                  >
+                  <t-button size="small" theme="primary" variant="outline" @click="openConfigOptionDialog()">{{
+                    $t('products.catalog.addConfig')
+                  }}</t-button>
                 </div>
               </div>
               <div class="product-edit-config-panel">
-                <div class="product-edit-config-count">{{ form.config_options.length }} 项配置，保存商品后生效。</div>
+                <div class="product-edit-config-count">
+                  {{ form.config_options.length }}{{ $t('products.catalog.configCountSuffix') }}
+                </div>
                 <div v-if="form.config_options.length" class="product-edit-config-list">
                   <article v-for="(item, index) in form.config_options" :key="item.uid || item.field || index">
                     <div>
@@ -206,16 +206,20 @@
                       <span>{{ item.field || '-' }} · {{ configOptionModeLabel(item) }}</span>
                     </div>
                     <t-space size="small">
-                      <t-button size="small" variant="text" theme="primary" @click="openConfigOptionDialog(item, index)"
-                        >编辑</t-button
+                      <t-button
+                        size="small"
+                        variant="text"
+                        theme="primary"
+                        @click="openConfigOptionDialog(item, index)"
+                        >{{ $t('products.catalog.edit') }}</t-button
                       >
-                      <t-button size="small" variant="text" theme="danger" @click="removeConfigOption(index)"
-                        >删除</t-button
-                      >
+                      <t-button size="small" variant="text" theme="danger" @click="removeConfigOption(index)">{{
+                        $t('products.catalog.delete')
+                      }}</t-button>
                     </t-space>
                   </article>
                 </div>
-                <t-empty v-else description="暂无配置项" />
+                <t-empty v-else :description="$t('products.catalog.emptyConfigOption')" />
               </div>
             </section>
 
@@ -236,8 +240,10 @@
       </div>
 
       <div class="product-edit-footer">
-        <t-button variant="outline" @click="goBack">取消</t-button>
-        <t-button theme="primary" :loading="submitting" @click="submit">保存更改</t-button>
+        <t-button variant="outline" @click="goBack">{{ $t('products.catalog.cancel') }}</t-button>
+        <t-button theme="primary" :loading="submitting" @click="submit">{{
+          $t('products.catalog.saveChanges')
+        }}</t-button>
       </div>
     </div>
 
@@ -245,42 +251,57 @@
     <t-dialog
       v-model:visible="configOptionDialogVisible"
       class="config-option-edit-dialog"
-      :header="configOptionEditingIndex >= 0 ? '编辑配置项' : '新增配置项'"
+      :header="
+        configOptionEditingIndex >= 0 ? $t('products.catalog.editConfigOption') : $t('products.catalog.addConfigOption')
+      "
       width="760px"
-      :confirm-btn="{ content: '保存配置', loading: configOptionSubmitting }"
+      :confirm-btn="{ content: $t('products.catalog.saveConfig'), loading: configOptionSubmitting }"
       @confirm="submitConfigOption"
     >
       <t-form class="config-option-edit-form" :data="configOptionForm" label-align="top">
         <div class="config-option-basic-grid">
-          <t-form-item label="配置项名称" name="name" required-mark>
-            <t-input v-model="configOptionForm.name" placeholder="例如 CPU、内存" />
+          <t-form-item :label="$t('products.catalog.configOptionName')" name="name" required-mark>
+            <t-input
+              v-model="configOptionForm.name"
+              :placeholder="$t('products.catalog.configOptionNamePlaceholder')"
+            />
           </t-form-item>
-          <t-form-item label="配置项类型" name="option_mode" required-mark>
+          <t-form-item :label="$t('products.catalog.configOptionType')" name="option_mode" required-mark>
             <t-select v-model="configOptionForm.option_mode" @change="handleConfigOptionModeChange">
-              <t-option label="单选（固定选项）" value="select" />
-              <t-option label="数量范围（滑块）" value="range" />
-              <t-option label="文字提示（仅展示）" value="text" />
+              <t-option :label="$t('products.catalog.optionModeSelect')" value="select" />
+              <t-option :label="$t('products.catalog.optionModeRange')" value="range" />
+              <t-option :label="$t('products.catalog.optionModeText')" value="text" />
             </t-select>
           </t-form-item>
-          <t-form-item label="高级设置">
+          <t-form-item :label="$t('products.catalog.advancedSettings')">
             <t-checkbox v-model="configOptionForm.advanced" />
           </t-form-item>
-          <t-form-item label="配置标识" name="field" required-mark>
-            <t-input v-model="configOptionForm.field" placeholder="例如 cpu、memory、os" />
+          <t-form-item :label="$t('products.catalog.configField')" name="field" required-mark>
+            <t-input v-model="configOptionForm.field" :placeholder="$t('products.catalog.configFieldPlaceholder')" />
           </t-form-item>
-          <t-form-item label="选项说明">
-            <t-input v-model="configOptionForm.description" placeholder="例如 镜像管理中的操作系统 ID。" />
+          <t-form-item :label="$t('products.catalog.optionDescription')">
+            <t-input
+              v-model="configOptionForm.description"
+              :placeholder="$t('products.catalog.optionDescriptionPlaceholder')"
+            />
           </t-form-item>
-          <t-form-item label="选项尾部文字">
-            <t-input v-model="configOptionForm.suffix_text" placeholder="请输入选项尾部文字" />
+          <t-form-item :label="$t('products.catalog.suffixText')">
+            <t-input
+              v-model="configOptionForm.suffix_text"
+              :placeholder="$t('products.catalog.suffixTextPlaceholder')"
+            />
           </t-form-item>
         </div>
 
         <!-- 文字提示：只展示购买须知，不计价也不提交上游 -->
-        <t-form-item v-if="configOptionForm.option_mode === 'text'" label="提示内容" name="text_content">
+        <t-form-item
+          v-if="configOptionForm.option_mode === 'text'"
+          :label="$t('products.catalog.tipContent')"
+          name="text_content"
+        >
           <t-textarea
             v-model="configOptionForm.text_content"
-            placeholder="例如 禁止搭建任何形式的流量中转、流量转发、代理用途，发现一律清退甚至封机不退款！"
+            :placeholder="$t('products.catalog.tipContentPlaceholder')"
           />
         </t-form-item>
         <t-alert
@@ -293,46 +314,51 @@
         <!-- 数量范围：数据范围即滑块上下限，需明确回传字段 -->
         <div v-else-if="configOptionForm.option_mode === 'range'" class="config-range-panel">
           <div class="config-range-head">
-            <strong>数据范围</strong>
-            <span class="config-range-hint">用户按滑块在此范围内选择，提交时回传数量</span>
+            <strong>{{ $t('products.catalog.dataRange') }}</strong>
+            <span class="config-range-hint">{{ $t('products.catalog.dataRangeHint') }}</span>
           </div>
           <div class="config-range-grid">
-            <t-form-item label="最小值">
+            <t-form-item :label="$t('products.catalog.minValue')">
               <t-input-number v-model="configOptionForm.qty_minimum" :min="0" />
             </t-form-item>
-            <t-form-item label="最大值">
+            <t-form-item :label="$t('products.catalog.maxValue')">
               <t-input-number v-model="configOptionForm.qty_maximum" :min="0" />
             </t-form-item>
-            <t-form-item label="步长">
+            <t-form-item :label="$t('products.catalog.step')">
               <t-input-number v-model="configOptionForm.qty_step" :min="1" />
             </t-form-item>
-            <t-form-item label="单位">
-              <t-input v-model="configOptionForm.unit" placeholder="例如 GB" />
+            <t-form-item :label="$t('products.catalog.unit')">
+              <t-input v-model="configOptionForm.unit" :placeholder="$t('products.catalog.unitPlaceholder')" />
             </t-form-item>
-            <t-form-item label="默认值">
+            <t-form-item :label="$t('products.catalog.defaultValue')">
               <t-input-number v-model="configOptionForm.default_value" :min="0" />
             </t-form-item>
-            <t-form-item label="回传参数名">
-              <t-input v-model="configOptionForm.submit_field" placeholder="例如 data_disk_size" />
+            <t-form-item :label="$t('products.catalog.submitFieldName')">
+              <t-input
+                v-model="configOptionForm.submit_field"
+                :placeholder="$t('products.catalog.submitFieldNamePlaceholder')"
+              />
             </t-form-item>
           </div>
         </div>
 
         <div v-else class="config-subitem-table">
           <div class="config-subitem-head">
-            <strong>子项列表</strong>
-            <t-button size="small" variant="outline" @click="addConfigSubItemRow">新增子项</t-button>
+            <strong>{{ $t('products.catalog.subItemList') }}</strong>
+            <t-button size="small" variant="outline" @click="addConfigSubItemRow">{{
+              $t('products.catalog.addSubItem')
+            }}</t-button>
           </div>
           <div class="config-subitem-grid config-subitem-grid--header">
-            <span>子项名称</span>
-            <span>传参值</span>
-            <span>月付价格</span>
-            <span>排序</span>
-            <span>操作</span>
+            <span>{{ $t('products.catalog.subItemName') }}</span>
+            <span>{{ $t('products.catalog.subItemParamValue') }}</span>
+            <span>{{ $t('products.catalog.subItemMonthlyPrice') }}</span>
+            <span>{{ $t('products.catalog.subItemSort') }}</span>
+            <span>{{ $t('products.catalog.subItemOperation') }}</span>
           </div>
           <div v-for="(row, index) in configOptionSubItemRows" :key="row.uid" class="config-subitem-grid">
-            <t-input v-model="row.name" placeholder="例如 CentOS^CentOS-7.6" />
-            <t-input v-model="row.value" placeholder="例如 27" />
+            <t-input v-model="row.name" :placeholder="$t('products.catalog.subItemNamePlaceholder')" />
+            <t-input v-model="row.value" :placeholder="$t('products.catalog.subItemValuePlaceholder')" />
             <t-input v-model="row.monthly_price" placeholder="0.00" />
             <t-input-number v-model="row.sort_order" :min="0" theme="column" />
             <t-button
@@ -348,38 +374,42 @@
         <div class="config-option-markup-panel">
           <div class="config-option-markup-head">
             <div>
-              <strong>加价设置</strong>
+              <strong>{{ $t('products.edit.markupTitle') }}</strong>
               <span class="config-option-markup-hint">
-                转售商品的配置项成本来自上游，可在此设置加价方式实现盈利
+                {{ $t('products.edit.markupHint') }}
               </span>
             </div>
             <t-switch v-model="configOptionForm.markup_enabled" />
           </div>
           <div v-if="configOptionForm.markup_enabled" class="config-option-markup-body">
             <t-radio-group v-model="configOptionForm.markup_mode" variant="default-filled">
-              <t-radio-button value="inherit">跟随上游</t-radio-button>
-              <t-radio-button value="multiplier">倍率加价</t-radio-button>
-              <t-radio-button value="fixed">自定义单价</t-radio-button>
-              <t-radio-button value="both">单价 + 倍率 + 附加费</t-radio-button>
+              <t-radio-button value="inherit">{{ $t('products.catalog.followUpstream') }}</t-radio-button>
+              <t-radio-button value="multiplier">{{ $t('products.edit.markupMultiplier') }}</t-radio-button>
+              <t-radio-button value="fixed">{{ $t('products.edit.markupFixed') }}</t-radio-button>
+              <t-radio-button value="both">{{ $t('products.edit.markupBoth') }}</t-radio-button>
             </t-radio-group>
 
             <div class="config-option-markup-tip">
               <template v-if="configOptionForm.markup_mode === 'inherit'">
-                不加价，配置项金额直接使用上游报价（上游调价自动跟随）。
+                {{ $t('products.edit.markupInheritHint') }}
               </template>
               <template v-else-if="configOptionForm.markup_mode === 'multiplier'">
-                最终加价 = 上游价 × 倍率。上游涨价时自动按同比例调整，适合赚差价。
+                {{ $t('products.edit.markupMultiplierHint') }}
               </template>
               <template v-else-if="configOptionForm.markup_mode === 'fixed'">
-                最终加价 = 自定义单价 × 数量。完全由你定价，不受上游成本影响；上游接口异常时也用此价格兜底。
+                {{ $t('products.edit.markupFixedHint') }}
               </template>
-              <template v-else>最终加价 = 自定义单价 × 数量 × 倍率 + 每单附加费，三项全部生效。</template>
+              <template v-else>{{ $t('products.edit.markupBothHint') }}</template>
             </div>
 
             <div class="config-option-markup-grid">
               <t-form-item
                 v-if="configOptionForm.markup_mode === 'fixed' || configOptionForm.markup_mode === 'both'"
-                :label="configOptionForm.option_mode === 'range' ? '自定义单价（元/GB）' : '自定义单价（元）'"
+                :label="
+                  configOptionForm.option_mode === 'range'
+                    ? $t('products.edit.markupUnitPriceRange')
+                    : $t('products.edit.markupUnitPrice')
+                "
               >
                 <t-input-number
                   v-model="configOptionForm.markup_unit_price"
@@ -391,7 +421,7 @@
               </t-form-item>
               <t-form-item
                 v-if="configOptionForm.markup_mode === 'multiplier' || configOptionForm.markup_mode === 'both'"
-                label="加价倍率"
+                :label="$t('products.edit.markupMultiplierLabel')"
               >
                 <t-input-number
                   v-model="configOptionForm.markup_multiplier"
@@ -403,7 +433,7 @@
               </t-form-item>
               <t-form-item
                 v-if="configOptionForm.markup_mode === 'both'"
-                label="每单固定附加费（元）"
+                :label="$t('products.edit.markupExtraAmount')"
               >
                 <t-input-number
                   v-model="configOptionForm.markup_extra_amount"
@@ -417,13 +447,13 @@
           </div>
         </div>
         <div class="config-option-footer-row">
-          <t-form-item label="排序" name="sort_order">
+          <t-form-item :label="$t('products.catalog.sortOrder')" name="sort_order">
             <t-input-number v-model="configOptionForm.sort_order" :min="0" />
           </t-form-item>
-          <t-form-item label="开关">
+          <t-form-item :label="$t('products.catalog.switches')">
             <t-space>
-              <t-checkbox v-model="configOptionForm.required">必选</t-checkbox>
-              <t-checkbox v-model="configOptionForm.hidden">隐藏</t-checkbox>
+              <t-checkbox v-model="configOptionForm.required">{{ $t('products.catalog.required') }}</t-checkbox>
+              <t-checkbox v-model="configOptionForm.hidden">{{ $t('products.catalog.hidden') }}</t-checkbox>
             </t-space>
           </t-form-item>
         </div>
@@ -443,6 +473,7 @@ import type { ProductCategoryRecord, ProductDescriptionItem, ProductRecord } fro
 import { productApi } from '@/api/product';
 import type { SupplierRecord } from '@/api/supplier';
 import { supplierApi } from '@/api/supplier';
+import { t } from '@/locales';
 
 import ProductDescriptionEditor from './components/ProductDescriptionEditor.vue';
 import {
@@ -454,7 +485,6 @@ import {
   providerTypeFallbackLabels,
   toPlainRecord,
 } from './composables/useProductShared';
-import { t } from '@/locales';
 
 defineOptions({ name: 'AdminProductEdit' });
 
@@ -482,8 +512,16 @@ const activeSection = ref('basic');
 const sections = [
   { key: 'basic', label: t('products.edit.sectionBasic'), description: t('products.edit.sectionBasicHint') },
   { key: 'pricing', label: t('products.catalog.sectionPricing'), description: t('products.edit.sectionPricingHint') },
-  { key: 'interface', label: t('products.edit.sectionInterface'), description: t('products.edit.sectionInterfaceHint') },
-  { key: 'config', label: t('products.catalog.sectionProductConfig'), description: t('products.edit.sectionConfigHint') },
+  {
+    key: 'interface',
+    label: t('products.edit.sectionInterface'),
+    description: t('products.edit.sectionInterfaceHint'),
+  },
+  {
+    key: 'config',
+    label: t('products.catalog.sectionProductConfig'),
+    description: t('products.edit.sectionConfigHint'),
+  },
   {
     key: 'description',
     label: t('products.description.sectionTitle'),
@@ -564,11 +602,27 @@ function decorateCascaderKeys(nodes: ProductCategoryRecord[]): ProductCategoryRe
 // --- Pricing ---
 const pricingPlan = ref('standard');
 const pricingPlanOptions = [
-  { value: 'standard', label: t('products.edit.discountNone'), ratios: { quarterly: 3, semiannually: 6, annually: 12 } },
-  { value: 'annual', label: t('products.edit.discountAnnual'), ratios: { quarterly: 3, semiannually: 6, annually: 10 } },
-  { value: 'bulk', label: t('products.edit.discountBulk'), ratios: { quarterly: 2.7, semiannually: 5.1, annually: 8.4 } },
+  {
+    value: 'standard',
+    label: t('products.edit.discountNone'),
+    ratios: { quarterly: 3, semiannually: 6, annually: 12 },
+  },
+  {
+    value: 'annual',
+    label: t('products.edit.discountAnnual'),
+    ratios: { quarterly: 3, semiannually: 6, annually: 10 },
+  },
+  {
+    value: 'bulk',
+    label: t('products.edit.discountBulk'),
+    ratios: { quarterly: 2.7, semiannually: 5.1, annually: 8.4 },
+  },
   { value: 'rule1', label: t('products.edit.discountRule1'), ratios: { quarterly: 3, semiannually: 4.8, annually: 9 } },
-  { value: 'rule2', label: t('products.edit.discountRule2'), ratios: { quarterly: 2.7, semiannually: 5.1, annually: 9.6 } },
+  {
+    value: 'rule2',
+    label: t('products.edit.discountRule2'),
+    ratios: { quarterly: 2.7, semiannually: 5.1, annually: 9.6 },
+  },
 ];
 
 // --- Suppliers ---
@@ -588,7 +642,7 @@ interface SupplierBatchProduct {
 const supplierProductCascaderOptions = computed(() => {
   const groups = new Map<string, SupplierBatchProduct[]>();
   supplierProductOptions.value.forEach((item) => {
-    const groupName = String(item.remote_group_name || item.type_label || '默认分组');
+    const groupName = String(item.remote_group_name || item.type_label || t('products.catalog.defaultGroup'));
     const list = groups.get(groupName) || [];
     list.push(item);
     groups.set(groupName, list);
@@ -682,8 +736,8 @@ const configOptionSubItemRows = ref<ConfigOptionSubItemFormRow[]>([]);
 const configOptionTextTip = computed(() => {
   const field = configOptionForm.field.trim();
   return field
-    ? `该内容会在购买页作为文字提示展示，不参与计价，也不会作为配置提交给上游（回传字段「${field}」已被排除）。`
-    : '该内容会在购买页作为文字提示展示，不参与计价，也不会作为配置提交给上游。';
+    ? t('products.catalog.optionDescriptionHintExcluded', { field })
+    : t('products.catalog.optionDescriptionHint');
 });
 
 // --- Lifecycle ---
@@ -818,14 +872,14 @@ async function loadSupplierProducts(supplierId: string | number, notify = false)
       if (!hasCurrent) {
         supplierProductOptions.value.unshift({
           id: Number(form.upstream_product_id),
-          name: `已绑定商品 #${form.upstream_product_id}`,
-          type_label: '当前绑定',
+          name: t('products.catalog.boundProduct', { id: form.upstream_product_id }),
+          type_label: t('products.catalog.currentBinding'),
           remote_group_name: '',
         });
       }
     }
   } catch (error) {
-    if (notify) MessagePlugin.error(errorMessage(error, '同步上游商品失败'));
+    if (notify) MessagePlugin.error(errorMessage(error, t('products.catalog.syncUpstreamFailed')));
   } finally {
     supplierProductLoading.value = false;
   }
@@ -884,7 +938,9 @@ function hasPositivePrice() {
 
 // --- Config option helpers ---
 function normalizeConsoleTemplate(value: unknown): ConsoleTemplate {
-  const text = String(value ?? '').trim().toLowerCase();
+  const text = String(value ?? '')
+    .trim()
+    .toLowerCase();
   // cdn / virtualhost 必须原样保留：归一成 compute 会让这类商品打开控制台时
   // 走进通用计算控制台，前端专属的 CDN / 虚拟主机控制台分支永远不会命中，
   // 而且运营一保存就把库里的值覆盖回 compute。
@@ -1102,7 +1158,11 @@ function openConfigOptionDialog(row?: ConfigOptionRecord, index = -1) {
  * 被降级成单选、丢掉原本的区间语义。
  */
 function isRangeOptionType(value: unknown): boolean {
-  if (String(value ?? '').trim().toLowerCase() === 'quantity') {
+  if (
+    String(value ?? '')
+      .trim()
+      .toLowerCase() === 'quantity'
+  ) {
     return true;
   }
   return RANGE_OPTION_TYPES.includes(Number(value));
@@ -1173,7 +1233,7 @@ function buildConfigSubItemsFromRows() {
 
   const invalidRow = rows.find((row) => !row.name || !row.value);
   if (invalidRow) {
-    throw new Error('请完整填写子项名称和传参值');
+    throw new Error(t('products.catalog.configItemsIncomplete'));
   }
 
   return rows.map((row, index) => {
@@ -1205,7 +1265,7 @@ function submitConfigOption() {
   try {
     subItems = mode === 'select' ? buildConfigSubItemsFromRows() : [];
   } catch (error) {
-    MessagePlugin.warning(errorMessage(error, '请检查子项配置'));
+    MessagePlugin.warning(errorMessage(error, t('products.catalog.checkConfigItems')));
     return;
   }
   const parameter = subItems.length
@@ -1289,16 +1349,16 @@ function removeConfigOption(index: number) {
 function configOptionModeLabel(item: ConfigOptionRecord): string {
   const mode = normalizeConfigOptionMode(item);
   if (mode === 'text') {
-    return '文字提示';
+    return t('products.catalog.optionModeTextHint');
   }
   if (mode === 'range') {
     const min = toNumber(item.qty_minimum);
     const max = toNumber(item.qty_maximum);
     const unit = String(item.unit || '').trim();
-    const range = max > 0 ? `${min}~${max}${unit}` : '范围待填写';
-    return `数量范围 ${range}`;
+    const range = max > 0 ? `${min}~${max}${unit}` : t('products.catalog.rangePending');
+    return t('products.catalog.rangeLabel', { range });
   }
-  return '单选';
+  return t('products.catalog.optionModeSingle');
 }
 
 async function pullConfigTemplate() {
@@ -1315,7 +1375,7 @@ async function pullConfigTemplate() {
     form.config_options = normalizeConfigOptions(options);
     MessagePlugin.success(t('products.edit.templatesLoaded'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '拉取配置项模板失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.pullTemplateFailed')));
   } finally {
     configTemplateLoading.value = false;
   }
@@ -1363,7 +1423,7 @@ async function submit() {
     }
     goBack();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存商品失败'));
+    MessagePlugin.error(errorMessage(error, t('products.catalog.saveProductFailed')));
   } finally {
     submitting.value = false;
   }

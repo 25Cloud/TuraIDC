@@ -27,9 +27,15 @@
           <header class="reader-article__header">
             <h1>{{ currentArticle?.title || config.detailTitle }}</h1>
             <div v-if="currentArticle" class="reader-meta">
-              <span>发布人：{{ currentPublisher }}</span>
+              <span
+                >{{ $t("content.article.publisher")
+                }}{{ currentPublisher }}</span
+              >
               <span>{{ timeLabel }}：{{ currentPublishTime }}</span>
-              <span>阅读量：{{ currentArticle.view_count || 0 }}</span>
+              <span
+                >{{ $t("content.article.views")
+                }}{{ currentArticle.view_count || 0 }}</span
+              >
             </div>
           </header>
 
@@ -75,7 +81,12 @@
               class="category-item"
               :class="{ 'is-active': currentCategoryId === item.id }"
               :aria-current="currentCategoryId === item.id ? 'page' : undefined"
-              :aria-label="`${item.name}，共 ${item.articles_count || 0} 篇`"
+              :aria-label="
+                $t('content.article.categoryCount', {
+                  name: item.name,
+                  count: item.articles_count || 0,
+                })
+              "
               @click="goCategoryList(item.id)"
             >
               <span class="category-item__name">{{ item.name }}</span>
@@ -87,7 +98,9 @@
         </section>
 
         <section v-if="tocItems.length > 1" class="sidebar-card">
-          <div class="sidebar-card__title">目录结构</div>
+          <div class="sidebar-card__title">
+            {{ $t("content.detail.tableOfContents") }}
+          </div>
           <div class="toc-list">
             <button
               v-for="item in tocItems"
@@ -95,7 +108,7 @@
               type="button"
               class="toc-item"
               :class="[`level-${item.level}`]"
-              :aria-label="`跳转到 ${item.label}`"
+              :aria-label="$t('content.detail.jumpTo', { name: item.label })"
               @click="scrollToAnchor(item.id)"
             >
               {{ item.label }}
@@ -116,7 +129,7 @@ import { renderMarkdown } from "@/utils/markdown";
 import { updatePageMeta } from "@/utils/pageMeta";
 import { rewriteApiAssetUrlsInHtml } from "@/utils/apiAssetUrl";
 import { getContentConfig } from "./contentConfig";
-import { t } from '@/locales';
+import { t } from "@/locales";
 
 // ---- 模块级分类缓存 ----
 const overviewCache = new Map();
@@ -166,7 +179,9 @@ const errorText = ref("");
 const categories = ref([]);
 const currentArticle = ref(null);
 const currentCategoryId = ref(null);
-const tocItems = ref([{ id: "article-top", label: t('content.detail.fullText'), level: 1 }]);
+const tocItems = ref([
+  { id: "article-top", label: t("content.detail.fullText"), level: 1 },
+]);
 const contentRef = ref(null);
 
 const backToListRoute = computed(() => {
@@ -189,14 +204,20 @@ const categoryListRoute = computed(() => {
 });
 
 const timeLabel = computed(() =>
-  props.contentType === "help" ? "更新时间" : "发布时间",
+  props.contentType === "help"
+    ? t("content.detail.updatedAt")
+    : t("content.detail.publishedAt"),
 );
 
 const currentCategoryName = computed(() => {
   const matched = categories.value.find(
     (item) => item.id === currentCategoryId.value,
   );
-  return matched?.name || currentArticle.value?.category_name || "未分类";
+  return (
+    matched?.name ||
+    currentArticle.value?.category_name ||
+    t("layout.navContent.uncategorized")
+  );
 });
 
 const currentPublisher = computed(
@@ -204,7 +225,7 @@ const currentPublisher = computed(
     currentArticle.value?.creator?.nickname ||
     currentArticle.value?.creator?.username ||
     currentArticle.value?.operator ||
-    "官方客服",
+    t("content.article.officialSupport"),
 );
 
 const currentPublishTime = computed(
@@ -220,7 +241,9 @@ const articleContentHtml = computed(() => {
   const source = sanitizeMarkdownSource(currentArticle.value?.content || "");
   const rendered = renderMarkdown(source, {
     imageAltFallback:
-      currentArticle.value?.title || config.value.detailTitle || "相关配图",
+      currentArticle.value?.title ||
+      config.value.detailTitle ||
+      t("content.article.figureCaption"),
   });
   return rewriteApiAssetUrlsInHtml(rendered, apiBaseUrl);
 });
@@ -297,7 +320,9 @@ async function syncPage() {
   errorText.value = "";
   currentArticle.value = null;
   currentCategoryId.value = null;
-  tocItems.value = [{ id: "article-top", label: t('content.detail.fullText'), level: 1 }];
+  tocItems.value = [
+    { id: "article-top", label: t("content.detail.fullText"), level: 1 },
+  ];
 
   try {
     await Promise.all([loadOverview(), loadArticleDetail(route.params.id)]);
@@ -307,7 +332,9 @@ async function syncPage() {
     errorText.value =
       error?.response?.data?.message ||
       error?.message ||
-      `${config.value.detailTitle}加载失败，请稍后重试`;
+      t("content.detail.loadFailed", {
+        title: config.value.detailTitle,
+      });
   } finally {
     loading.value = false;
   }
@@ -337,12 +364,16 @@ function buildToc() {
   const container = contentRef.value;
 
   if (!container) {
-    tocItems.value = [{ id: "article-top", label: t('content.detail.fullText'), level: 1 }];
+    tocItems.value = [
+      { id: "article-top", label: t("content.detail.fullText"), level: 1 },
+    ];
     return;
   }
 
   const headings = [...container.querySelectorAll("h1, h2, h3, h4")];
-  const items = [{ id: "article-top", label: t('content.detail.fullText'), level: 1 }];
+  const items = [
+    { id: "article-top", label: t("content.detail.fullText"), level: 1 },
+  ];
 
   headings.forEach((heading, index) => {
     const text = heading.textContent?.trim();

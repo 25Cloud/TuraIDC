@@ -2,6 +2,8 @@ import { CopyIcon } from 'tdesign-icons-vue-next';
 import { Popup as TPopup } from 'tdesign-vue-next';
 import { defineComponent, h, nextTick, onMounted, onUpdated, ref } from 'vue';
 
+import { t } from '@/locales';
+
 export const InfoCell = defineComponent({
   name: 'InfoCell',
   props: {
@@ -69,8 +71,8 @@ export const InfoCell = defineComponent({
                 {
                   type: 'button',
                   class: 'copy-link',
-                  title: `复制${props.label}`,
-                  'aria-label': `复制${props.label}`,
+                  title: t('serviceConsole.copyLabel', { label: props.label }),
+                  'aria-label': t('serviceConsole.copyLabel', { label: props.label }),
                   onClick: () => emit('copy', props.value),
                 },
                 [h(CopyIcon, { size: '1.125rem' })],

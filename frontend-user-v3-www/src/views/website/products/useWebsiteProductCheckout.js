@@ -126,7 +126,7 @@ export function useWebsiteProductCheckout({
     const rate = Number(quoteResult.value?.agent_discount_rate);
     if (!Number.isFinite(rate) || rate <= 0) return "";
     const value = Math.round((rate / 10) * 10) / 10;
-    return `${String(value).replace(/\.0$/, "")}折`;
+    return t("product.checkout.discountRate", { rate: value });
   });
   const selectedCycleLabel = computed(
     () => selectedPricingEntry.value?.label || "",
@@ -147,22 +147,26 @@ export function useWebsiteProductCheckout({
     return "empty";
   });
   const stockLabel = computed(() => {
-    if (productStockLoading.value) return "库存同步中";
-    if (productStockError.value) return "库存同步失败";
+    if (productStockLoading.value) return t("product.checkout.stockSyncing");
+    if (productStockError.value) return t("product.checkout.stockSyncFailed");
     const stock = resolvedStock.value;
-    if (stock === null) return "库存同步中";
-    if (stock === -1 || stock > 10) return "库存充足";
-    if (stock > 0) return "库存紧张";
-    return "暂无库存";
+    if (stock === null) return t("product.checkout.stockSyncing");
+    if (stock === -1 || stock > 10)
+      return t("product.checkout.stockSufficient");
+    if (stock > 0) return t("product.checkout.stockLow");
+    return t("product.checkout.stockOutOfStock");
   });
   const stockHint = computed(() => {
-    if (productStockLoading.value) return "正在同步实时库存，请稍候。";
-    if (productStockError.value) return "实时库存同步失败，请稍后重试。";
+    if (productStockLoading.value)
+      return t("product.checkout.stockSyncingHint");
+    if (productStockError.value)
+      return t("product.checkout.stockSyncRetryHint");
     const stock = resolvedStock.value;
-    if (stock === null) return "正在同步实时库存，请稍候。";
-    if (stock === -1 || stock > 10) return "当前库存充足，可直接提交账单。";
-    if (stock > 0) return `剩余 ${stock} 台，请尽快购买。`;
-    return "当前库存不足，请联系客服。";
+    if (stock === null) return t("product.checkout.stockSyncingHint");
+    if (stock === -1 || stock > 10)
+      return t("product.checkout.stockSufficientHint");
+    if (stock > 0) return t("product.checkout.stockRemainingHint", { stock });
+    return t("product.checkout.stockInsufficientHint");
   });
   const canSubmit = computed(() => {
     const stock = resolvedStock.value;
@@ -483,7 +487,9 @@ export function useWebsiteProductCheckout({
     }
 
     const primary = missing[0];
-    ElMessage.warning(primary.unmetMessage || "请先完成购买前置要求");
+    ElMessage.warning(
+      primary.unmetMessage || t("product.checkout.prerequisitesRequired"),
+    );
     navigateToConsole(primary.route || "/client/profile");
     return false;
   }
@@ -532,7 +538,8 @@ export function useWebsiteProductCheckout({
       redirectToConsoleCheckout(orderPayload, idempotencyKey);
     } catch (error) {
       ElMessage.error(
-        error?.response?.data?.message || "跳转控制台失败，请重试",
+        error?.response?.data?.message ||
+          t("product.checkout.consoleRedirectFailed"),
       );
     } finally {
       submitting.value = false;
@@ -719,7 +726,7 @@ export function useWebsiteProductCheckout({
       }
 
       productStockError.value =
-        error?.response?.data?.message || "库存同步失败";
+        error?.response?.data?.message || t("product.checkout.stockSyncFailed");
     } finally {
       if (token === stockToken && currentProductId === productId) {
         productStockLoading.value = false;

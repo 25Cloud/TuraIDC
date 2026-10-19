@@ -1,13 +1,13 @@
 import { t } from '@/locales';
 
 export const DEFAULT_SUPPORT_CONTACTS = Object.freeze({
-  qqGroup: '待补充群号',
+  qqGroup: t('client.support.pendingGroupNo'),
   // 合作邮箱与服务时间由后台「基础信息」配置（basic.service_email / basic.service_hours）。
   // 未配置时留空并整行隐藏，不再回落到写死的示例邮箱与服务时段。
   email: '',
   hours: '',
-  groupTitle: '加入官方群聊',
-  groupText: '官方群聊用于发布维护通知、活动消息和常见问题答疑，欢迎扫码加入。',
+  groupTitle: t('client.support.joinGroupTitle'),
+  groupText: t('client.support.joinGroupText'),
   groupQr: '',
 });
 

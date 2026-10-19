@@ -28,7 +28,12 @@
           </template>
         </t-input>
 
-        <t-select v-model="filters.status" clearable :placeholder="$t('client.invoices.allStatusPlaceholder')" @change="handleSearch">
+        <t-select
+          v-model="filters.status"
+          clearable
+          :placeholder="$t('client.invoices.allStatusPlaceholder')"
+          @change="handleSearch"
+        >
           <t-option v-for="item in INVOICE_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
 
@@ -45,7 +50,13 @@
     </t-card>
 
     <section class="record-list-card">
-      <data-state :loading="loading" :empty="!list.length" :description="listError || $t('client.invoices.empty')">
+      <data-state
+        :loading-text="$t('shared.state.loading')"
+        :empty-text="$t('shared.state.empty')"
+        :loading="loading"
+        :empty="!list.length"
+        :description="listError || $t('client.invoices.empty')"
+      >
         <t-table class="record-table" row-key="id" :data="list" :columns="columns" :pagination="null" hover>
           <template #invoice="{ row }">
             <div class="stack-cell">
@@ -100,7 +111,9 @@
           </template>
           <template #operation="{ row }">
             <t-space>
-              <t-button size="small" theme="primary" variant="text" @click="goToDetail(row)">{{ $t('client.invoices.view') }}</t-button>
+              <t-button size="small" theme="primary" variant="text" @click="goToDetail(row)">{{
+                $t('client.invoices.view')
+              }}</t-button>
               <t-button
                 v-if="isPayableInvoice(row)"
                 size="small"
@@ -134,7 +147,9 @@
             </div>
 
             <div class="record-mobile-card__actions">
-              <t-button size="small" theme="primary" variant="text" @click="goToDetail(row)">{{ $t('client.invoices.view') }}</t-button>
+              <t-button size="small" theme="primary" variant="text" @click="goToDetail(row)">{{
+                $t('client.invoices.view')
+              }}</t-button>
               <t-button
                 v-if="isPayableInvoice(row)"
                 size="small"
@@ -179,8 +194,8 @@ import {
   resolveInvoiceNo,
   useInvoiceList,
 } from '@/domains/finance/useInvoices';
-import type { InvoiceRecord } from '@/types/client';
 import { t } from '@/locales';
+import type { InvoiceRecord } from '@/types/client';
 
 const router = useRouter();
 

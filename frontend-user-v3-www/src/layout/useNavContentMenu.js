@@ -1,5 +1,6 @@
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import siteApi from "@/api/site";
+import { t } from "@/locales";
 
 const CACHE_TTL = 5 * 60 * 1000;
 const caches = {
@@ -97,7 +98,7 @@ export function useNavContentMenu(contentType) {
   const categories = computed(() => {
     const map = {};
     items.value.forEach((item) => {
-      const cat = item.category || "未分类";
+      const cat = item.category || t("layout.navContent.uncategorized");
       if (!map[cat]) map[cat] = 0;
       map[cat]++;
     });
@@ -107,8 +108,21 @@ export function useNavContentMenu(contentType) {
   const filteredItems = computed(() => {
     if (!activeCategory.value) return items.value;
     return items.value.filter(
-      (item) => (item.category || "未分类") === activeCategory.value,
+      (item) =>
+        (item.category || t("layout.navContent.uncategorized")) ===
+        activeCategory.value,
     );
+  });
+
+  // 「未分类」这个兜底分类名是可翻译的，切语言后旧值不再命中任何条目，
+  // 这里清掉失效的选中项，回落到不筛选，避免面板看起来空了一块。
+  watch(categories, (list) => {
+    if (
+      activeCategory.value &&
+      !list.some((item) => item.label === activeCategory.value)
+    ) {
+      activeCategory.value = null;
+    }
   });
 
   function activateCategory(cat) {

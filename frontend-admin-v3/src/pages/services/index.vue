@@ -2,7 +2,12 @@
   <div class="services-page">
     <t-card :bordered="false">
       <div class="service-filter">
-        <t-select v-model="filters.status" clearable :placeholder="$t('services.index.hostStatus')" @change="handleSearch">
+        <t-select
+          v-model="filters.status"
+          clearable
+          :placeholder="$t('services.index.hostStatus')"
+          @change="handleSearch"
+        >
           <t-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
         <t-input
@@ -15,11 +20,12 @@
           <template #suffix-icon><search-icon /></template>
         </t-input>
         <t-button v-if="!isMobile" variant="outline" :disabled="!selectedRowKeys.length" @click="openHostnameDialog">
-          {{ $t('services.index.batchHostname') }}<span v-if="selectedRowKeys.length">({{ selectedRowKeys.length }})</span>
+          {{ $t('services.index.batchHostname')
+          }}<span v-if="selectedRowKeys.length">({{ selectedRowKeys.length }})</span>
         </t-button>
-        <t-button v-if="!isMobile" variant="text" :disabled="!selectedRowKeys.length" @click="clearSelection"
-          >{{ $t('services.index.clearSelection') }}</t-button
-        >
+        <t-button v-if="!isMobile" variant="text" :disabled="!selectedRowKeys.length" @click="clearSelection">{{
+          $t('services.index.clearSelection')
+        }}</t-button>
       </div>
 
       <div v-if="!isMobile" class="admin-list-toolbar">
@@ -46,21 +52,29 @@
                   :disabled="!Number(row.service_id || row.id || 0)"
                   @click="goServiceDetail(row)"
                 >
-                  <strong>{{ $t('services.index.serviceInstanceLabel') }} #{{ fieldValue(row.service_id || row.id) }}</strong>
+                  <strong
+                    >{{ $t('services.index.serviceInstanceLabel') }} #{{ fieldValue(row.service_id || row.id) }}</strong
+                  >
                 </button>
-                <t-tag v-if="row.invoice?.id" variant="light">{{ $t('services.index.invoiceLabel') }} #{{ row.invoice.id }}</t-tag>
+                <t-tag v-if="row.invoice?.id" variant="light"
+                  >{{ $t('services.index.invoiceLabel') }} #{{ row.invoice.id }}</t-tag
+                >
               </div>
-              <span v-if="row.invoice?.invoice_no">{{ $t('services.index.invoiceNoLabel') }} {{ row.invoice.invoice_no }}</span>
+              <span v-if="row.invoice?.invoice_no"
+                >{{ $t('services.index.invoiceNoLabel') }} {{ row.invoice.invoice_no }}</span
+              >
             </div>
           </template>
           <template #host="{ row }">
             <div class="host-cell">
               <span v-if="row.upstream_host_id_text || row.upstream_host_id">
-                <em>{{ $t('services.index.upstream') }}</em>{{ row.upstream_host_id_text || row.upstream_host_id }}
+                <em>{{ $t('services.index.upstream') }}</em
+                >{{ row.upstream_host_id_text || row.upstream_host_id }}
               </span>
               <span v-if="row.host_ips?.length"><em>IP</em>{{ row.host_ips.join(' / ') }}</span>
               <span v-if="row.host_username || row.connection?.username">
-                <em>{{ $t('services.index.login') }}</em>{{ row.host_username || row.connection?.username }}
+                <em>{{ $t('services.index.login') }}</em
+                >{{ row.host_username || row.connection?.username }}
               </span>
               <span v-if="!hasHostInfo(row)" class="muted">-</span>
             </div>
@@ -168,7 +182,9 @@
 
     <t-dialog
       v-model:visible="hostnameDialogVisible"
-      :header="hostnameRows.length > 1 ? $t('services.index.batchSetHostnameTitle') : $t('services.index.setHostnameTitle')"
+      :header="
+        hostnameRows.length > 1 ? $t('services.index.batchSetHostnameTitle') : $t('services.index.setHostnameTitle')
+      "
       width="920px"
       :confirm-btn="{ content: $t('services.index.save'), loading: hostnameSubmitting }"
       @confirm="submitHostnames"
@@ -202,11 +218,18 @@
           <template #current="{ row }">
             <div class="hostname-current">
               <span>{{ fieldValue(row.current_domain) }}</span>
-              <small v-if="row.current_custom_hostname">{{ $t('services.index.currentCustomHostname') }}{{ row.current_custom_hostname }}</small>
+              <small v-if="row.current_custom_hostname"
+                >{{ $t('services.index.currentCustomHostname') }}{{ row.current_custom_hostname }}</small
+              >
             </div>
           </template>
           <template #hostname="{ row }">
-            <t-input v-model="row.hostname" clearable maxlength="200" :placeholder="$t('services.index.emptyHostnamePlaceholder')" />
+            <t-input
+              v-model="row.hostname"
+              clearable
+              maxlength="200"
+              :placeholder="$t('services.index.emptyHostnamePlaceholder')"
+            />
           </template>
         </t-table>
       </div>
@@ -216,6 +239,8 @@
 <script setup lang="ts">
 import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
 import { ADMIN_CARD_GRID_STYLE, useAdminViewMode } from '@/composables/useAdminViewMode';
+
+defineOptions({ name: 'AdminServices' });
 
 const { mode: viewMode, isCard: isCardView, setMode: setViewMode } = useAdminViewMode('admin-services', 'list');
 
@@ -234,12 +259,10 @@ import { serviceApi } from '@/api/service';
 import MobileRecordCard from '@/components/mobile-record-card/index.vue';
 import StatusTag from '@/components/status-tag/index.vue';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { t } from '@/locales';
 import { fieldValue, formatMoney } from '@/utils/format';
 import { canGoService, goService, goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
-import { t } from '@/locales';
-
-defineOptions({ name: 'AdminServices' });
 
 interface HostnameRow {
   service_id: number;
@@ -319,7 +342,7 @@ async function loadList() {
     total.value = Number(response.total || 0);
     selectedRowKeys.value = [];
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载服务列表失败'));
+    MessagePlugin.error(errorMessage(error, t('services.index.loadServicesFailed')));
   } finally {
     loading.value = false;
   }
@@ -363,11 +386,11 @@ async function submitHostnames() {
         hostname: row.hostname || '',
       })),
     });
-    MessagePlugin.success(response.message || '自定义主机名已更新');
+    MessagePlugin.success(response.message || t('services.index.hostnameUpdated'));
     hostnameDialogVisible.value = false;
     await loadList();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存自定义主机名失败'));
+    MessagePlugin.error(errorMessage(error, t('services.index.hostnameSaveFailed')));
   } finally {
     hostnameSubmitting.value = false;
   }
@@ -382,7 +405,7 @@ function buildHostnameRow(row: ServiceRecord): HostnameRow {
       row.product_full_path ||
         row.product_display_name ||
         row.product?.display_name ||
-        (row.product_id ? `未配置规格 #${row.product_id}` : ''),
+        (row.product_id ? t('services.index.specNotConfigured', { id: row.product_id }) : ''),
     ),
     user_name: userName(row.user),
     current_domain: String(row.domain || ''),
@@ -406,7 +429,7 @@ function goHostnameServiceDetail(row: HostnameRow) {
 function mobileActionOptions(row: ServiceRecord) {
   return [
     {
-      content: '管理实例',
+      content: t('services.index.manageInstance'),
       value: 'service',
       disabled: !canGoService(row.service_id || row.id, row.user?.id),
     },
@@ -430,7 +453,7 @@ function serviceMobileRows(row: ServiceRecord) {
 }
 
 function serviceTitle(row: ServiceRecord) {
-  return `服务 ID ${fieldValue(row.service_id || row.id)}`;
+  return t('services.index.serviceIdLabel', { id: fieldValue(row.service_id || row.id) });
 }
 
 function hostSummary(row: ServiceRecord) {

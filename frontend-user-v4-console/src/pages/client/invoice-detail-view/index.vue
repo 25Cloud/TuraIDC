@@ -2,14 +2,20 @@
   <section class="invoice-detail-page">
     <!-- 面包屑导航 -->
     <t-breadcrumb class="invoice-breadcrumb">
-      <t-breadcrumb-item @click="router.push('/client/dashboard')">{{ $t('client.invoiceDetail.financeCenter') }}</t-breadcrumb-item>
-      <t-breadcrumb-item @click="router.push('/client/invoices')">{{ $t('client.invoiceDetail.invoiceRecords') }}</t-breadcrumb-item>
+      <t-breadcrumb-item @click="router.push('/client/dashboard')">{{
+        $t('client.invoiceDetail.financeCenter')
+      }}</t-breadcrumb-item>
+      <t-breadcrumb-item @click="router.push('/client/invoices')">{{
+        $t('client.invoiceDetail.invoiceRecords')
+      }}</t-breadcrumb-item>
       <t-breadcrumb-item>{{ $t('client.invoiceDetail.invoiceDetail') }}</t-breadcrumb-item>
     </t-breadcrumb>
 
     <!-- 操作栏 -->
     <div class="detail-toolbar">
-      <t-button variant="outline" @click="router.push('/client/invoices')">{{ $t('client.invoiceDetail.backToList') }}</t-button>
+      <t-button variant="outline" @click="router.push('/client/invoices')">{{
+        $t('client.invoiceDetail.backToList')
+      }}</t-button>
       <div class="detail-toolbar__actions">
         <t-button variant="outline" :loading="loading" @click="loadInvoice()">
           <template #icon><refresh-icon /></template>
@@ -211,14 +217,14 @@ function billingCycleLabel(value?: string) {
 
 function typeLabel(type?: string) {
   const map: Record<string, string> = {
-    new: '新购',
-    normal: '新购',
-    renew: '续费',
-    upgrade: '升降级',
-    recharge: '充值',
-    deduction: '扣款',
-    referral_credit: '推荐奖励',
-    manual: '手工账单',
+    new: t('invoiceDetail.typeNew'),
+    normal: t('invoiceDetail.typeNew'),
+    renew: t('invoiceDetail.typeRenew'),
+    upgrade: t('invoiceDetail.typeUpgrade'),
+    recharge: t('invoiceDetail.typeRecharge'),
+    deduction: t('invoiceDetail.typeDeduction'),
+    referral_credit: t('invoiceDetail.typeReferralCredit'),
+    manual: t('invoiceDetail.typeManual'),
   };
   return type ? map[type] || type : '--';
 }

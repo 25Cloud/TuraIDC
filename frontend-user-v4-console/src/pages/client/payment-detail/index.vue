@@ -13,43 +13,43 @@
       <div class="detail-toolbar__actions">
         <t-button variant="outline" :loading="loading" @click="loadPayment()">
           <template #icon><refresh-icon /></template>
-          刷新
+          {{ $t('paymentDetail.refresh') }}
         </t-button>
       </div>
     </div>
 
-    <t-loading :loading="loading" text="正在加载充值详情">
+    <t-loading :loading="loading" :text="$t('paymentDetail.loading')">
       <template v-if="detail">
         <!-- 详情卡片 -->
         <t-card :bordered="false" class="payment-detail-card">
-          <template #title>支付信息</template>
+          <template #title>{{ $t('paymentDetail.paymentInfo') }}</template>
           <div class="detail-kv-grid">
             <div class="detail-kv-item">
-              <span>商家订单号</span>
+              <span>{{ $t('paymentDetail.merchantOrderNo') }}</span>
               <strong>{{ detail.payment_no || '--' }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>第三方订单号</span>
+              <span>{{ $t('paymentDetail.thirdPartyOrderNo') }}</span>
               <strong>{{ detail.trade_no || '--' }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>支付金额</span>
+              <span>{{ $t('paymentDetail.paymentAmount') }}</span>
               <strong>¥{{ formatMoney(detail.amount) }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>支付渠道</span>
+              <span>{{ $t('paymentDetail.gateway') }}</span>
               <strong>{{ detail.gateway_label || detail.gateway_key || detail.gateway || '--' }}</strong>
             </div>
             <div class="detail-kv-item">
-              <span>支付状态</span>
+              <span>{{ $t('paymentDetail.status') }}</span>
               <status-tag :status-map="PAYMENT_STATUS_MAP" :status="Number(detail.status)" />
             </div>
             <div class="detail-kv-item">
-              <span>创建时间</span>
+              <span>{{ $t('paymentDetail.createdAt') }}</span>
               <strong>{{ detail.created_at || '--' }}</strong>
             </div>
             <div v-if="detail.paid_at" class="detail-kv-item">
-              <span>支付时间</span>
+              <span>{{ $t('paymentDetail.paidAt') }}</span>
               <strong>{{ detail.paid_at }}</strong>
             </div>
           </div>
@@ -57,10 +57,10 @@
 
         <!-- 关联账单 -->
         <t-card v-if="detail.invoice" :bordered="false" class="payment-related-card">
-          <template #title>关联账单</template>
+          <template #title>{{ $t('paymentDetail.relatedInvoice') }}</template>
           <div class="detail-kv-grid">
             <div class="detail-kv-item">
-              <span>账单号</span>
+              <span>{{ $t('paymentDetail.invoiceNo') }}</span>
               <t-button
                 variant="text"
                 theme="primary"
@@ -71,15 +71,15 @@
               </t-button>
             </div>
             <div class="detail-kv-item">
-              <span>账单状态</span>
+              <span>{{ $t('paymentDetail.invoiceStatus') }}</span>
               <status-tag :status-map="INVOICE_STATUS_MAP" :status="Number(detail.invoice.status)" />
             </div>
             <div class="detail-kv-item">
-              <span>账单金额</span>
+              <span>{{ $t('paymentDetail.invoiceAmount') }}</span>
               <strong>¥{{ formatMoney(detail.invoice.amount) }}</strong>
             </div>
             <div v-if="detail.invoice.paid_amount" class="detail-kv-item">
-              <span>已付金额</span>
+              <span>{{ $t('paymentDetail.paidAmount') }}</span>
               <strong>¥{{ formatMoney(detail.invoice.paid_amount) }}</strong>
             </div>
           </div>
@@ -87,7 +87,9 @@
       </template>
 
       <div v-else-if="!loading" class="detail-empty">
-        <t-button variant="outline" @click="router.push('/client/payments')">返回充值记录</t-button>
+        <t-button variant="outline" @click="router.push('/client/payments')">{{
+          $t('paymentDetail.backToPayments')
+        }}</t-button>
       </div>
     </t-loading>
   </section>

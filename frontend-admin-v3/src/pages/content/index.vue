@@ -5,36 +5,52 @@
         <t-input
           v-model="filters.keyword"
           clearable
-          :placeholder="`搜索${articleLabel}标题 / 摘要 / 正文 / 别名`"
+          :placeholder="$t('content.index.searchPlaceholder', { label: articleLabel })"
           @enter="handleSearch"
           @clear="handleSearch"
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.category_id" clearable filterable placeholder="全部分类" @change="handleSearch">
+        <t-select
+          v-model="filters.category_id"
+          clearable
+          filterable
+          :placeholder="$t('content.index.allCategories')"
+          @change="handleSearch"
+        >
           <t-option v-for="item in categories" :key="item.id" :label="fieldValue(item.name)" :value="item.id" />
         </t-select>
-        <t-select v-model="filters.status" clearable placeholder="全部状态" @change="handleSearch">
+        <t-select
+          v-model="filters.status"
+          clearable
+          :placeholder="$t('content.index.allStatus')"
+          @change="handleSearch"
+        >
           <t-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
-        <t-select v-model="filters.is_pinned" clearable placeholder="置顶状态" @change="handleSearch">
-          <t-option label="仅看置顶" :value="1" />
-          <t-option label="仅看普通" :value="0" />
+        <t-select
+          v-model="filters.is_pinned"
+          clearable
+          :placeholder="$t('content.index.pinnedStatus')"
+          @change="handleSearch"
+        >
+          <t-option :label="$t('content.index.pinnedOnly')" :value="1" />
+          <t-option :label="$t('content.index.normalOnly')" :value="0" />
         </t-select>
         <t-button variant="outline" @click="openCategoryDialog">
           <template #icon><folder-icon /></template>
-          分类管理
+          {{ $t('content.index.categoryManagement') }}
         </t-button>
         <t-button theme="primary" @click="goCreateArticle">
           <template #icon><add-icon /></template>
-          新增{{ articleLabel }}
+          {{ $t('content.index.addArticle', { label: articleLabel }) }}
         </t-button>
       </div>
     </t-card>
 
     <t-card :bordered="false" :loading="loading">
-      <template #title>{{ pageTitle }}列表</template>
-      <template #subtitle>共 {{ total }} 条</template>
+      <template #title>{{ $t('content.index.listTitle', { title: pageTitle }) }}</template>
+      <template #subtitle>{{ $t('content.index.totalCount', { count: total }) }}</template>
 
       <div v-if="!isMobile" class="table-scroll">
         <t-table row-key="id" :data="articles" :columns="columns" hover table-layout="fixed">
@@ -68,15 +84,15 @@
               <t-tag v-if="Number(row.is_recommended) === 1" theme="success" variant="light">{{
                 $t('content.index.flagRecommended')
               }}</t-tag>
-              <span v-if="Number(row.is_pinned) !== 1 && Number(row.is_recommended) !== 1" class="muted-text"
-                >{{ $t('content.index.flagNormal') }}</span
-              >
+              <span v-if="Number(row.is_pinned) !== 1 && Number(row.is_recommended) !== 1" class="muted-text">{{
+                $t('content.index.flagNormal')
+              }}</span>
             </t-space>
           </template>
           <template #publish="{ row }">
             <div class="stack-cell">
               <strong>{{ formatDateTime(row.publish_at || row.created_at) }}</strong>
-              <span>浏览 {{ row.view_count || 0 }}</span>
+              <span>{{ $t('content.index.views', { count: row.view_count || 0 }) }}</span>
             </div>
           </template>
           <template #updated="{ row }">
@@ -120,19 +136,27 @@
           </div>
           <dl class="content-mobile-card__meta">
             <div>
-              <dt>分类</dt>
+              <dt>{{ $t('content.index.categoryLabel') }}</dt>
               <dd>{{ fieldValue(row.category_name || row.content_category?.name) }}</dd>
             </div>
             <div>
-              <dt>属性</dt>
-              <dd>{{ Number(row.is_pinned) === 1 ? '置顶' : Number(row.is_recommended) === 1 ? '推荐' : '普通' }}</dd>
+              <dt>{{ $t('content.index.flagsLabel') }}</dt>
+              <dd>
+                {{
+                  Number(row.is_pinned) === 1
+                    ? $t('content.index.flagPinned')
+                    : Number(row.is_recommended) === 1
+                      ? $t('content.index.flagRecommended')
+                      : $t('content.index.flagNormal')
+                }}
+              </dd>
             </div>
             <div>
-              <dt>发布</dt>
+              <dt>{{ $t('content.index.publishLabel') }}</dt>
               <dd>{{ formatDateTime(row.publish_at || row.created_at) }}</dd>
             </div>
             <div>
-              <dt>浏览</dt>
+              <dt>{{ $t('content.index.viewsLabel') }}</dt>
               <dd>{{ row.view_count || 0 }}</dd>
             </div>
           </dl>
@@ -154,46 +178,48 @@
     <!-- 分类管理：与系统其他管理弹窗保持一致 —— 裸 t-form + 默认 footer，不做左右分栏卡片 -->
     <t-dialog
       v-model:visible="categoryDialogVisible"
-      :header="categoryForm.id ? '编辑分类' : '新增分类'"
+      :header="categoryForm.id ? $t('content.index.editCategory') : $t('content.index.addCategory')"
       width="520px"
-      :confirm-btn="{ content: categoryForm.id ? '保存' : '新增', loading: categorySaving }"
-      :cancel-btn="{ content: '关闭' }"
+      :confirm-btn="{
+        content: categoryForm.id ? $t('content.index.save') : $t('content.index.add'),
+        loading: categorySaving,
+      }"
+      :cancel-btn="{ content: $t('content.index.close') }"
       @confirm="submitCategory"
       @close="resetCategoryForm"
     >
       <t-form ref="categoryFormRef" :data="categoryForm" :rules="categoryRules" label-align="top">
-        <t-form-item label="分类名称" name="name">
-          <t-input v-model="categoryForm.name" placeholder="请输入分类名称" />
+        <t-form-item :label="$t('content.index.categoryName')" name="name">
+          <t-input v-model="categoryForm.name" :placeholder="$t('content.index.categoryNamePlaceholder')" />
         </t-form-item>
-        <t-form-item label="别名" name="slug">
-          <t-input v-model="categoryForm.slug" placeholder="留空自动生成" />
+        <t-form-item :label="$t('content.index.categorySlug')" name="slug">
+          <t-input v-model="categoryForm.slug" :placeholder="$t('content.index.slugPlaceholder')" />
         </t-form-item>
-        <t-form-item label="排序值" name="sort_order">
+        <t-form-item :label="$t('content.index.sortOrder')" name="sort_order">
           <t-input-number v-model="categoryForm.sort_order" :min="0" :max="999999" style="width: 100%" />
         </t-form-item>
-        <t-form-item label="状态" name="status">
-          <t-switch v-model="categoryForm.status" :custom-value="[1, 0]" :label="['启用', '停用']" />
+        <t-form-item :label="$t('content.index.status')" name="status">
+          <t-switch
+            v-model="categoryForm.status"
+            :custom-value="[1, 0]"
+            :label="[$t('content.index.enabled'), $t('content.index.disabled')]"
+          />
         </t-form-item>
-        <t-form-item label="分类说明" name="description">
+        <t-form-item :label="$t('content.index.categoryDescription')" name="description">
           <t-textarea v-model="categoryForm.description" :autosize="{ minRows: 3, maxRows: 5 }" :maxlength="255" />
         </t-form-item>
       </t-form>
     </t-dialog>
 
     <!-- 分类列表：独立弹窗，表格列宽收敛避免横向滚动 -->
-    <t-dialog
-      v-model:visible="categoryListDialogVisible"
-      width="720px"
-      :footer="false"
-      @close="resetCategoryForm"
-    >
+    <t-dialog v-model:visible="categoryListDialogVisible" width="720px" :footer="false" @close="resetCategoryForm">
       <!-- 只用 #header 插槽：若同时写 header 属性，TDesign 以属性为准，插槽不渲染 -->
       <template #header>
         <div class="category-list-head">
           <span>{{ $t('content.index.categoryList') }}</span>
           <t-button v-if="canManageCategories" theme="primary" size="small" @click="openCategoryCreator">
             <template #icon><add-icon /></template>
-            新增分类
+            {{ $t('content.index.addCategory') }}
           </t-button>
         </div>
       </template>
@@ -208,25 +234,15 @@
       >
         <template #status="{ row }">
           <t-tag :theme="Number(row.status) === 1 ? 'success' : 'default'" variant="light">
-            {{ Number(row.status) === 1 ? '启用' : '停用' }}
+            {{ Number(row.status) === 1 ? $t('content.index.enabled') : $t('content.index.disabled') }}
           </t-tag>
         </template>
         <template #actions="{ row }">
           <t-space size="small">
-            <t-button
-              v-if="canManageCategories"
-              theme="primary"
-              variant="text"
-              @click="openCategoryEditor(row)"
-            >
+            <t-button v-if="canManageCategories" theme="primary" variant="text" @click="openCategoryEditor(row)">
               {{ $t('content.index.actionEdit') }}
             </t-button>
-            <t-button
-              v-if="canManageCategories"
-              theme="danger"
-              variant="text"
-              @click="handleDeleteCategory(row)"
-            >
+            <t-button v-if="canManageCategories" theme="danger" variant="text" @click="handleDeleteCategory(row)">
               {{ $t('content.index.actionDelete') }}
             </t-button>
           </t-space>
@@ -247,13 +263,13 @@ import { useRoute, useRouter } from 'vue-router';
 import type { ContentArticleRecord, ContentCategoryPayload, ContentCategoryRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
-import { useUserStore } from '@/store';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { t } from '@/locales';
+import { useUserStore } from '@/store';
 import { fieldValue, formatDateTime } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
-import { t } from '@/locales';
 
 defineOptions({ name: 'AdminContentNotices' });
 
@@ -303,12 +319,16 @@ const statusOptions = [
   { label: t('content.index.statusOffline'), value: 2 },
 ];
 const categoryRules: Record<string, FormRule[]> = {
-  name: [required('请输入分类名称')],
+  name: [required(t('content.index.categoryNameRequired'))],
 };
 
 const contentType = computed<ContentType>(() => (route.meta.contentType === 'help' ? 'help' : 'notice'));
-const pageTitle = computed(() => (contentType.value === 'help' ? '帮助中心' : '系统公告'));
-const articleLabel = computed(() => (contentType.value === 'help' ? '帮助文章' : '公告'));
+const pageTitle = computed(() =>
+  contentType.value === 'help' ? t('content.index.pageTitleHelp') : t('content.index.pageTitleNotice'),
+);
+const articleLabel = computed(() =>
+  contentType.value === 'help' ? t('content.index.articleLabelHelp') : t('content.index.articleLabelNotice'),
+);
 const isMobile = useMediaQuery('(max-width: 768px)');
 
 const columns: PrimaryTableCol<TableRowData>[] = [
@@ -336,7 +356,7 @@ function getBasePath() {
 
 function goCreateArticle() {
   if (!categories.value.length) {
-    MessagePlugin.warning(`请先创建${articleLabel.value}分类`);
+    MessagePlugin.warning(t('content.index.createCategoryFirst', { label: articleLabel.value }));
     openCategoryDialog();
     return;
   }
@@ -362,12 +382,6 @@ function handleSearch() {
   loadArticles();
 }
 
-function applyCategoryFilter(value: string | number) {
-  filters.category_id = value;
-  pagination.page = 1;
-  loadArticles();
-}
-
 function handlePageChange(data: { current: number; pageSize: number }) {
   pagination.page = data.current;
   pagination.page_size = data.pageSize;
@@ -376,8 +390,8 @@ function handlePageChange(data: { current: number; pageSize: number }) {
 
 function mobileActionOptions(): DropdownOption[] {
   return [
-    { content: '编辑', value: 'edit' },
-    { content: '删除', value: 'delete', theme: 'error' },
+    { content: t('content.index.edit'), value: 'edit' },
+    { content: t('content.index.delete'), value: 'delete', theme: 'error' },
   ] as DropdownOption[];
 }
 
@@ -408,7 +422,7 @@ async function loadCategories() {
   try {
     categories.value = await adminApi.content.categories.list({ content_type: contentType.value });
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载分类失败'));
+    MessagePlugin.error(errorMessage(error, t('content.index.loadCategoriesFailed')));
   } finally {
     categoryLoading.value = false;
   }
@@ -423,7 +437,7 @@ async function loadArticles() {
     pagination.page = Number(response.page || pagination.page);
     pagination.page_size = Number(response.page_size || pagination.page_size);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载内容列表失败'));
+    MessagePlugin.error(errorMessage(error, t('content.index.loadContentFailed')));
   } finally {
     loading.value = false;
   }
@@ -487,7 +501,7 @@ async function submitCategory() {
     categoryDialogVisible.value = false;
     await Promise.allSettled([loadCategories(), loadArticles()]);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存分类失败'));
+    MessagePlugin.error(errorMessage(error, t('content.index.saveCategoryFailed')));
   } finally {
     categorySaving.value = false;
   }
@@ -495,9 +509,9 @@ async function submitCategory() {
 
 function handleDeleteCategory(row: ContentCategoryRecord) {
   const dialog = DialogPlugin.confirm({
-    header: '删除分类',
-    body: `确认删除分类"${fieldValue(row.name)}"吗？`,
-    confirmBtn: { content: '确认删除', theme: 'danger' },
+    header: t('content.index.deleteCategoryTitle'),
+    body: t('content.index.deleteCategoryConfirm', { name: fieldValue(row.name) }),
+    confirmBtn: { content: t('content.index.confirmDelete'), theme: 'danger' },
     async onConfirm() {
       try {
         await adminApi.content.categories.delete(row.id);
@@ -506,7 +520,7 @@ function handleDeleteCategory(row: ContentCategoryRecord) {
         if (String(filters.category_id) === String(row.id)) filters.category_id = '';
         await Promise.allSettled([loadCategories(), loadArticles()]);
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除分类失败'));
+        MessagePlugin.error(errorMessage(error, t('content.index.deleteCategoryFailed')));
       }
     },
   });
@@ -514,24 +528,28 @@ function handleDeleteCategory(row: ContentCategoryRecord) {
 
 function handleDeleteArticle(row: ContentArticleRecord) {
   const dialog = DialogPlugin.confirm({
-    header: '删除内容',
-    body: `确认删除"${fieldValue(row.title)}"吗？`,
-    confirmBtn: { content: '确认删除', theme: 'danger' },
+    header: t('content.index.deleteContentTitle'),
+    body: t('content.index.deleteContentConfirm', { title: fieldValue(row.title) }),
+    confirmBtn: { content: t('content.index.confirmDelete'), theme: 'danger' },
     async onConfirm() {
       try {
         await adminApi.content.articles.delete(row.id);
-        MessagePlugin.success(`${articleLabel.value}已删除`);
+        MessagePlugin.success(t('content.index.contentDeleted', { label: articleLabel.value }));
         dialog.destroy();
         await loadArticles();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除内容失败'));
+        MessagePlugin.error(errorMessage(error, t('content.index.deleteContentFailed')));
       }
     },
   });
 }
 
 function contentStatusLabel(status: unknown) {
-  const labels: Record<string, string> = { 0: '草稿', 1: '已发布', 2: '已下线' };
+  const labels: Record<string, string> = {
+    0: t('content.index.statusDraft'),
+    1: t('content.index.statusPublished'),
+    2: t('content.index.statusOffline'),
+  };
   return labels[String(status ?? '')] || fieldValue(status);
 }
 

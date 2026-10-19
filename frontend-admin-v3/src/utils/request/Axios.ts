@@ -1,4 +1,3 @@
-import { i18n } from '@/locales';
 import type {
   AxiosError,
   AxiosInstance,
@@ -12,6 +11,7 @@ import { cloneDeep, debounce, isFunction, throttle } from 'lodash-es';
 import { stringify } from 'qs';
 
 import { ContentTypeEnum } from '@/constants';
+import { i18n } from '@/locales';
 import type { AxiosRequestConfigRetry, RequestOptions, Result } from '@/types/axios';
 
 import { AxiosCanceler } from './AxiosCancel';
@@ -37,14 +37,14 @@ export class VAxios {
    * 节流/防抖包装后的请求函数
    * @private
    */
-  private throttledRequest: ((config: AxiosRequestConfigRetry, options?: RequestOptions) => void) | null = null;
+  private throttledRequest: ((_config: AxiosRequestConfigRetry, _options?: RequestOptions) => void) | null = null;
 
   /**
    * 待resolve的请求回调队列
    * @private
    */
   private pendingResolvers: {
-    resolve: (value: any) => void;
+    resolve: (_value: any) => void;
   }[] = [];
 
   constructor(options: CreateAxiosOptions) {
@@ -309,7 +309,7 @@ export class VAxios {
               const ret = transformRequestHook(res, opt);
               resolve(ret);
             } catch (err) {
-              reject(err || new Error('请求错误'));
+              reject(err || new Error(i18n.global.t('common.requestError')));
             }
             return;
           }

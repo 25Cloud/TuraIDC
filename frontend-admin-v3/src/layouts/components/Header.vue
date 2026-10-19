@@ -264,7 +264,7 @@ const submitPassword = async () => {
     MessagePlugin.success(t('layout.header.passwordUpdated'));
     passwordVisible.value = false;
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '修改密码失败'));
+    MessagePlugin.error(errorMessage(error, t('layout.header.passwordChangeFailed')));
   } finally {
     passwordSaving.value = false;
   }

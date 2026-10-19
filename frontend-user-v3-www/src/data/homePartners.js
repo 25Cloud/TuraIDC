@@ -8,44 +8,48 @@
  * 维护约定：
  * - 素材已本地化到 public/img/website/partners/，不依赖外部 CDN：
  *   对方站点不可用时本区块会直接空白，且第三方长图会拖慢首屏。
- * - alt 写明该行出现的代表合作方，读屏用户才能获知这部分内容；
- *   替换素材后请同步更新。
+ * - altKey 指向词条里该行代表合作方的描述（读屏用户据此获知内容）；
+ *   替换素材后请同步更新词条。
  * - speed 是整轮滚完一遍的秒数，只用于制造轻微错位感：
  *   低于 24s 会让整块区域持续晃动，Logo 一闪而过无法阅读。
+ *
+ * 本模块刻意不 import i18n：tests/homePartners.test.mjs 直接用 node 跑它，
+ * 而 `@/` 是 Vite 别名，node 解析不了。文案在组件里用 $t(altKey) 取，
+ * 切换语言时会跟着重渲染。
  */
 export const partnerStrips = Object.freeze([
   {
     id: "row1",
     src: "/img/website/partners/row1.png",
-    alt: "爱奇艺、酷狗音乐、迅雷、掌阅 iReader 等合作方",
+    altKey: "home.partners.mediaAndReading",
     direction: "forward",
     speed: "62s",
   },
   {
     id: "row2",
     src: "/img/website/partners/row2.png",
-    alt: "阿里巴巴、腾讯、字节跳动、美团 等合作方",
+    altKey: "home.partners.internetTech",
     direction: "reverse",
     speed: "70s",
   },
   {
     id: "row3",
     src: "/img/website/partners/row3.png",
-    alt: "中国移动、中国联通、58 同城、携程 等合作方",
+    altKey: "home.partners.telecomAndTravel",
     direction: "forward",
     speed: "78s",
   },
   {
     id: "row4",
     src: "/img/website/partners/row4.png",
-    alt: "格力、京东、Segway-Ninebot、淘宝 等合作方",
+    altKey: "home.partners.ecommerceAndMobility",
     direction: "reverse",
     speed: "86s",
   },
   {
     id: "row5",
     src: "/img/website/partners/row5.png",
-    alt: "格力、京东方、小鹏、蔚来 等合作方",
+    altKey: "home.partners.electronicsAndEv",
     direction: "forward",
     speed: "94s",
   },

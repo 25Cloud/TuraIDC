@@ -12,10 +12,22 @@
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.type" class="filter-type" clearable :placeholder="$t('finance.invoices.filterType')" @change="handleSearch">
+        <t-select
+          v-model="filters.type"
+          class="filter-type"
+          clearable
+          :placeholder="$t('finance.invoices.filterType')"
+          @change="handleSearch"
+        >
           <t-option v-for="item in invoiceTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
-        <t-select v-model="filters.status" class="filter-status" clearable :placeholder="$t('finance.invoices.filterStatus')" @change="handleSearch">
+        <t-select
+          v-model="filters.status"
+          class="filter-status"
+          clearable
+          :placeholder="$t('finance.invoices.filterStatus')"
+          @change="handleSearch"
+        >
           <t-option v-for="item in invoiceStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
         <t-date-picker
@@ -87,7 +99,9 @@
           <template #paidAt="{ row }">{{ formatDateTime(row.paid_at) }}</template>
           <template #operation="{ row }">
             <t-space v-if="!isMobile" size="small">
-              <t-button size="small" variant="text" theme="primary" @click="openDetail(row)">{{ $t('finance.invoices.detail') }}</t-button>
+              <t-button size="small" variant="text" theme="primary" @click="openDetail(row)">{{
+                $t('finance.invoices.detail')
+              }}</t-button>
               <t-button
                 v-if="canCancel(row)"
                 size="small"
@@ -169,6 +183,8 @@
 import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
 import { ADMIN_CARD_GRID_STYLE, useAdminViewMode } from '@/composables/useAdminViewMode';
 
+defineOptions({ name: 'AdminFinanceInvoices' });
+
 const { mode: viewMode, isCard: isCardView, setMode: setViewMode } = useAdminViewMode('admin-invoices', 'list');
 
 import './index.less';
@@ -187,13 +203,11 @@ import MobileRecordCard from '@/components/mobile-record-card/index.vue';
 import StatusTag from '@/components/status-tag/index.vue';
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { canGoService, goOrder, goService, goUser, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
-import { t } from '@/locales';
-
-defineOptions({ name: 'AdminFinanceInvoices' });
 
 const loading = ref(false);
 const invoices = ref<InvoiceRecord[]>([]);
@@ -291,7 +305,7 @@ async function loadList() {
     pagination.page = Number(response.page || pagination.page);
     pagination.page_size = Number(response.page_size || pagination.page_size);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载账单列表失败'));
+    MessagePlugin.error(errorMessage(error, t('finance.invoices.loadFailed')));
   } finally {
     loading.value = false;
   }
@@ -323,7 +337,7 @@ async function reloadDetail() {
     const response = await adminApi.invoices.detail(detailState.currentId);
     detailState.detail = normalizeInvoiceDetail(response, currentInvoice.value);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载账单详情失败'));
+    MessagePlugin.error(errorMessage(error, t('finance.invoices.loadDetailFailed')));
   } finally {
     detailState.loading = false;
   }
@@ -363,8 +377,8 @@ function canCancel(row: InvoiceRecord) {
 
 function confirmCancel(row: InvoiceRecord, fromDrawer = false) {
   const dialog = DialogPlugin.confirm({
-    header: '取消账单',
-    body: `确认取消账单「${row.invoice_no || row.id}」吗？`,
+    header: t('finance.invoices.cancelTitle'),
+    body: t('finance.invoices.cancelConfirm', { invoiceNo: row.invoice_no || row.id }),
     theme: 'warning',
     confirmBtn: t('finance.invoices.confirmCancel'),
     cancelBtn: t('common.cancel'),
@@ -385,7 +399,7 @@ async function cancelInvoice(row: InvoiceRecord, fromDrawer = false) {
     await loadList();
     if (detailState.currentId === Number(row.id)) await reloadDetail();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '取消账单失败'));
+    MessagePlugin.error(errorMessage(error, t('finance.invoices.cancelFailed')));
   } finally {
     cancelLoadingId.value = null;
     detailState.cancelLoading = false;
@@ -394,8 +408,8 @@ async function cancelInvoice(row: InvoiceRecord, fromDrawer = false) {
 
 function mobileActionOptions(row: InvoiceRecord) {
   return [
-    { content: '详情', value: 'detail' },
-    { content: '取消', value: 'cancel', disabled: !canCancel(row) },
+    { content: t('finance.invoices.detailAction'), value: 'detail' },
+    { content: t('finance.invoices.cancelAction'), value: 'cancel', disabled: !canCancel(row) },
   ];
 }
 

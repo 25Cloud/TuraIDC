@@ -1,8 +1,8 @@
 import { ACCOUNT_TRANSACTION_EVENT_MAP, getStatusLabel } from '@shared/statusConfig';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 
-import type { FinanceLedgerRecord } from '@/types/client';
 import { t } from '@/locales';
+import type { FinanceLedgerRecord } from '@/types/client';
 
 export const securityColumns: PrimaryTableCol[] = [
   { colKey: 'direction_label', title: t('serviceConsole.security.direction') },
@@ -55,10 +55,11 @@ export function resolveFinanceTagTheme(row: FinanceLedgerRecord) {
 
 export function resolveFinanceBusinessLabel(row: FinanceLedgerRecord) {
   const sceneKey = resolveFinanceBusinessKey(row);
-  if (sceneKey.includes('refund') || String(row?.event_type || '').includes('refund')) return '已退款';
-  if (sceneKey === 'auto_renew') return '自动续费';
-  if (sceneKey === 'manual_renew') return '手动续费';
-  if (sceneKey === 'purchase') return '产品购买';
+  if (sceneKey.includes('refund') || String(row?.event_type || '').includes('refund'))
+    return t('serviceConsole.tables.eventRefunded');
+  if (sceneKey === 'auto_renew') return t('serviceConsole.tables.eventAutoRenew');
+  if (sceneKey === 'manual_renew') return t('serviceConsole.tables.eventManualRenew');
+  if (sceneKey === 'purchase') return t('serviceConsole.tables.eventPurchase');
 
   const label = String(
     row?.business_scene_label ||
@@ -68,8 +69,8 @@ export function resolveFinanceBusinessLabel(row: FinanceLedgerRecord) {
       resolveFinanceEventLabel(row?.event_type) ||
       '--',
   );
-  if (label.includes('退款')) return '已退款';
-  if (label === '购买') return '产品购买';
+  if (label.includes('退款')) return t('serviceConsole.tables.eventRefunded');
+  if (label === '购买') return t('serviceConsole.tables.eventPurchase');
 
   return label;
 }

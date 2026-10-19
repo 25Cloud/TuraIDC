@@ -16,14 +16,20 @@
         <div class="ticket-filter-actions">
           <t-button theme="primary" @click="openCreateDialog">
             <template #icon><add-icon /></template>
-            提交工单
+            {{ $t('tickets.createTitle') }}
           </t-button>
         </div>
       </div>
     </t-card>
 
     <section class="ticket-list-card">
-      <data-state :loading="loading" :empty="!list.length" description="暂无工单记录">
+      <data-state
+        :loading-text="$t('shared.state.loading')"
+        :empty-text="$t('shared.state.empty')"
+        :loading="loading"
+        :empty="!list.length"
+        :description="$t('tickets.empty')"
+      >
         <div class="ticket-table-shell">
           <t-table row-key="id" :data="list" :columns="columns" :pagination="null" hover>
             <template #subject="{ row }">
@@ -43,7 +49,9 @@
             </template>
             <template #updated_at="{ row }">{{ formatTicketTime(row.updated_at) }}</template>
             <template #operation="{ row }">
-              <t-button size="small" theme="primary" variant="text" @click="openDetail(row)">{{ t('tickets.viewThread') }}</t-button>
+              <t-button size="small" theme="primary" variant="text" @click="openDetail(row)">{{
+                t('tickets.viewThread')
+              }}</t-button>
             </template>
           </t-table>
         </div>
@@ -58,7 +66,7 @@
             </span>
             <span class="mobile-ticket-card__title">{{ row.subject || '--' }}</span>
             <span class="mobile-ticket-card__meta">
-              <span>优先级：{{ resolvePriorityLabel(row.priority) }}</span>
+              <span>{{ $t('tickets.priorityPrefix', { value: resolvePriorityLabel(row.priority) }) }}</span>
               <span>{{ formatTicketTime(row.updated_at) }}</span>
             </span>
           </button>
@@ -80,16 +88,20 @@
 
     <t-dialog
       v-model:visible="createVisible"
-      header="提交工单"
+      :header="$t('tickets.createTitle')"
       width="min(44rem, calc(100vw - var(--td-comp-margin-xl)))"
       destroy-on-close
-      :confirm-btn="{ content: '提交工单', loading: creating, disabled: !createForm.subject.trim() || uploading }"
-      cancel-btn="取消"
+      :confirm-btn="{
+        content: $t('tickets.createTitle'),
+        loading: creating,
+        disabled: !createForm.subject.trim() || uploading,
+      }"
+      :cancel-btn="$t('common.cancel')"
       @confirm="submitTicket"
       @close="closeCreateDialog"
     >
       <t-form label-align="top" class="ticket-create-form">
-        <t-form-item label="问题分类" required-mark>
+        <t-form-item :label="$t('tickets.categoryLabel')" required-mark>
           <t-select v-model="createForm.department">
             <t-option
               v-for="item in TICKET_DEPARTMENT_OPTIONS"
@@ -99,21 +111,21 @@
             />
           </t-select>
         </t-form-item>
-        <t-form-item label="工单标题" required-mark>
-          <t-input v-model="createForm.subject" maxlength="200" placeholder="请简要描述您的问题" />
+        <t-form-item :label="$t('tickets.subjectLabel')" required-mark>
+          <t-input v-model="createForm.subject" maxlength="200" :placeholder="$t('tickets.subjectPlaceholder')" />
         </t-form-item>
-        <t-form-item label="关联服务">
+        <t-form-item :label="$t('tickets.relatedServiceLabel')">
           <t-select
             v-model="createForm.service_id"
             clearable
             filterable
             :loading="serviceLoading"
-            placeholder="可选，如与具体服务相关"
+            :placeholder="$t('tickets.relatedServicePlaceholder')"
           >
             <t-option v-for="item in serviceSelectOptions" :key="item.value" :label="item.label" :value="item.value" />
           </t-select>
         </t-form-item>
-        <t-form-item label="优先级">
+        <t-form-item :label="$t('tickets.columnPriority')">
           <t-select v-model="createForm.priority">
             <t-option
               v-for="item in TICKET_PRIORITY_OPTIONS"
@@ -123,21 +135,21 @@
             />
           </t-select>
         </t-form-item>
-        <t-form-item label="问题描述">
+        <t-form-item :label="$t('tickets.descriptionLabel')">
           <t-textarea
             v-model="createForm.content"
             :autosize="{ minRows: 5, maxRows: 8 }"
             maxlength="10000"
-            placeholder="请详细描述您遇到的问题"
+            :placeholder="$t('tickets.descriptionPlaceholder')"
           />
         </t-form-item>
-        <t-form-item label="添加附件">
+        <t-form-item :label="$t('tickets.attachmentLabel')">
           <div class="ticket-attachment-box">
             <label class="upload-trigger">
               <input type="file" accept=".jpg,.jpeg,.png,.webp" multiple @change="handleCreateUpload" />
-              <span><add-icon /> 上传图片</span>
+              <span><add-icon /> {{ $t('tickets.uploadImage') }}</span>
             </label>
-            <span class="upload-tip">支持 jpg/png/webp，最多 9 张，单张不超过 5MB</span>
+            <span class="upload-tip">{{ $t('tickets.uploadTip') }}</span>
             <div v-if="uploadFiles.length" class="attachment-list">
               <button
                 v-for="(file, index) in uploadFiles"
@@ -146,8 +158,8 @@
                 class="attachment-thumb"
                 @click="previewUploadFile(file)"
               >
-                <img :src="file.url || file.path" alt="附件" />
-                <span @click.stop="removeUploadFile(index)">移除</span>
+                <img :src="file.url || file.path" :alt="$t('tickets.attachmentAlt')" />
+                <span @click.stop="removeUploadFile(index)">{{ $t('tickets.remove') }}</span>
               </button>
             </div>
           </div>
@@ -157,10 +169,10 @@
 
     <t-dialog
       v-model:visible="previewVisible"
-      header="附件预览"
+      :header="$t('tickets.attachmentPreview')"
       width="min(45rem, calc(100vw - var(--td-comp-margin-xl)))"
     >
-      <img v-if="previewUrl" :src="previewUrl" class="preview-image" alt="附件预览" />
+      <img v-if="previewUrl" :src="previewUrl" class="preview-image" :alt="$t('tickets.attachmentPreview')" />
     </t-dialog>
   </section>
 </template>

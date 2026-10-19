@@ -43,7 +43,7 @@
               <button
                 type="button"
                 class="route-tab-more"
-                :aria-label="`标签操作：${renderTitle(routeItem.title)}`"
+                :aria-label="$t('layout.tagTabs.operationAria', { title: renderTitle(routeItem.title) })"
                 @click.stop
               >
                 <t-icon name="more" />
@@ -131,7 +131,7 @@ const handleRemove = (options: TTabRemoveOptions) => {
 
 const renderTitle = (title?: LocalizedTitle) => {
   if (!title) return '';
-  return (title[locale.value as keyof LocalizedTitle] || title.zh_CN) || '';
+  return title[locale.value as keyof LocalizedTitle] || title.zh_CN || '';
 };
 const handleRefresh = (route: TRouterInfo, routeIdx: number) => {
   tabsRouterStore.toggleTabRouterAlive(routeIdx);

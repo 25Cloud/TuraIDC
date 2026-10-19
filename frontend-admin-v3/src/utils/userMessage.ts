@@ -1,9 +1,11 @@
+import { t } from '@/locales';
+
 export function isTrustedChineseMessage(message: unknown) {
   const text = String(message || '').trim();
   return text !== '' && /[\u4E00-\u9FA5]/.test(text);
 }
 
-export function toUserMessage(message: unknown, fallback = '操作失败，请稍后重试') {
+export function toUserMessage(message: unknown, fallback = t('common.operationFailed')) {
   return isTrustedChineseMessage(message) ? String(message).trim() : fallback;
 }
 
@@ -76,7 +78,7 @@ export function validationErrorMessage(error: unknown): string | null {
  * 优先用字段级验证错误，其次用可信的中文后端消息，否则回退 fallback。
  * 所有页面应使用本函数，禁止本地重写 errorMessage。
  */
-export function errorMessage(error: { message?: unknown } | unknown, fallback = '操作失败，请稍后重试'): string {
+export function errorMessage(error: { message?: unknown } | unknown, fallback = t('common.operationFailed')): string {
   const validationMessage = validationErrorMessage(error);
   if (validationMessage) return validationMessage;
 

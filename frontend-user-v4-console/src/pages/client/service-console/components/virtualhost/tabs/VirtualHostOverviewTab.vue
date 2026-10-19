@@ -1,6 +1,10 @@
 <template>
   <section class="console-overview-grid is-virtual-host">
-    <t-card class="console-panel console-panel-wide" :title="$t('serviceConsole.virtualHost.profile')" :bordered="false">
+    <t-card
+      class="console-panel console-panel-wide"
+      :title="$t('serviceConsole.virtualHost.profile')"
+      :bordered="false"
+    >
       <div class="detail-grid detail-grid--stack">
         <info-cell :label="$t('serviceConsole.virtualHost.hostName')" :value="hostNameText" strong />
         <info-cell
@@ -24,13 +28,37 @@
       </div>
     </t-card>
 
-    <t-card class="console-panel console-panel-wide" :title="$t('serviceConsole.virtualHost.spaceAndSites')" :bordered="false">
+    <t-card
+      class="console-panel console-panel-wide"
+      :title="$t('serviceConsole.virtualHost.spaceAndSites')"
+      :bordered="false"
+    >
       <div class="detail-grid detail-grid--stack">
-        <info-cell :label="$t('serviceConsole.virtualHost.webSpace')" :value="findSpecValue(['WEB空间', '网页空间', '网站空间', '磁盘'])" strong />
-        <info-cell :label="$t('serviceConsole.virtualHost.databaseSpace')" :value="findSpecValue(['数据库空间', '数据库', 'MySQL'])" strong />
-        <info-cell :label="$t('serviceConsole.virtualHost.monthlyTraffic')" :value="findSpecValue(['流量限制', '月流量', '流量'])" strong />
-        <info-cell :label="$t('serviceConsole.virtualHost.bandwidth')" :value="findSpecValue(['带宽', '宽带'])" strong />
-        <info-cell :label="$t('serviceConsole.virtualHost.bindableDomains')" :value="findSpecValue(['绑定域名数', '域名数', '域名绑定'])" strong />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.webSpace')"
+          :value="findSpecValue(['WEB空间', '网页空间', '网站空间', '磁盘'])"
+          strong
+        />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.databaseSpace')"
+          :value="findSpecValue(['数据库空间', '数据库', 'MySQL'])"
+          strong
+        />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.monthlyTraffic')"
+          :value="findSpecValue(['流量限制', '月流量', '流量'])"
+          strong
+        />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.bandwidth')"
+          :value="findSpecValue(['带宽', '宽带'])"
+          strong
+        />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.bindableDomains')"
+          :value="findSpecValue(['绑定域名数', '域名数', '域名绑定'])"
+          strong
+        />
       </div>
     </t-card>
 
@@ -47,7 +75,12 @@
       </template>
       <div class="detail-grid detail-grid--stack">
         <info-cell :label="$t('serviceConsole.virtualHost.panelUrl')" :value="panelUrlText" copyable @copy="copyText" />
-        <info-cell :label="$t('serviceConsole.virtualHost.panelAccount')" :value="panelUsernameText" copyable @copy="copyText" />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.panelAccount')"
+          :value="panelUsernameText"
+          copyable
+          @copy="copyText"
+        />
         <info-cell
           :label="$t('serviceConsole.virtualHost.panelPassword')"
           :value="panelPasswordText"
@@ -61,7 +94,11 @@
       </p>
     </t-card>
 
-    <t-card class="console-panel console-panel-wide" :title="$t('serviceConsole.virtualHost.planSpecs')" :bordered="false">
+    <t-card
+      class="console-panel console-panel-wide"
+      :title="$t('serviceConsole.virtualHost.planSpecs')"
+      :bordered="false"
+    >
       <div class="detail-grid detail-grid--config">
         <info-cell
           v-for="spec in displaySpecs"
@@ -74,14 +111,22 @@
       <p v-if="!displaySpecs.length" class="vh-panel-hint">{{ $t('serviceConsole.virtualHost.noPlanSpecs') }}</p>
     </t-card>
 
-    <t-card class="console-panel console-panel-wide" :title="$t('serviceConsole.virtualHost.billingInfo')" :bordered="false">
+    <t-card
+      class="console-panel console-panel-wide"
+      :title="$t('serviceConsole.virtualHost.billingInfo')"
+      :bordered="false"
+    >
       <template #actions>
         <t-button v-if="!isTrialMachine" variant="text" theme="primary" @click="openRenewDialog">
           {{ $t('serviceConsole.virtualHost.renewManage') }}
         </t-button>
       </template>
       <div class="detail-grid">
-        <info-cell :label="$t('serviceConsole.virtualHost.billingCycle')" :value="detail.billing_cycle_label || '--'" strong />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.billingCycle')"
+          :value="detail.billing_cycle_label || '--'"
+          strong
+        />
         <info-cell :label="$t('serviceConsole.virtualHost.renewPrice')" :value="renewPriceText" strong />
         <info-cell
           :label="$t('serviceConsole.virtualHost.expiresAt')"
@@ -89,7 +134,12 @@
           strong
           warning
         />
-        <info-cell :label="$t('serviceConsole.virtualHost.orderNo')" :value="detail.invoice?.order_no || '--'" copyable @copy="copyText" />
+        <info-cell
+          :label="$t('serviceConsole.virtualHost.orderNo')"
+          :value="detail.invoice?.order_no || '--'"
+          copyable
+          @copy="copyText"
+        />
       </div>
     </t-card>
   </section>
@@ -97,18 +147,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+import { t } from '@/locales';
+
 import { useServiceConsoleContext } from '../../context';
 import { InfoCell } from '../../InfoCell';
 
-const {
-  detail,
-  instanceStatusText,
-  instanceStatusTheme,
-  renewPriceText,
-  findSpecValue,
-  openRenewDialog,
-  copyText,
-} = useServiceConsoleContext();
+const { detail, instanceStatusText, instanceStatusTheme, renewPriceText, findSpecValue, openRenewDialog, copyText } =
+  useServiceConsoleContext();
 
 interface OverviewSpec {
   key?: unknown;
@@ -120,7 +165,10 @@ const specs = computed(() => (Array.isArray(detail.value.specs) ? detail.value.s
 
 /** 试用机（上游下发 ontrial）不支持续费，隐藏续费入口 */
 const isTrialMachine = computed(
-  () => String(detail.value.billing_cycle || '').trim().toLowerCase() === 'ontrial',
+  () =>
+    String(detail.value.billing_cycle || '')
+      .trim()
+      .toLowerCase() === 'ontrial',
 );
 
 const hostNameText = computed(
@@ -131,7 +179,7 @@ const hostNameText = computed(
         detail.value.product_display_name ||
         detail.value.product?.display_name ||
         '--',
-    ) || `服务 #${detail.value.id}`,
+    ) || t('serviceConsole.instanceHash', { id: detail.value.id }),
 );
 
 /**
@@ -155,20 +203,12 @@ const panel = computed(() => detail.value.panel || null);
 
 const panelUrlText = computed(() => String(panel.value?.panel_url || '').trim() || '--');
 const panelUsernameText = computed(
-  () =>
-    String(panel.value?.panel_username || '').trim() ||
-    hostAccountText.value ||
-    '--',
+  () => String(panel.value?.panel_username || '').trim() || hostAccountText.value || '--',
 );
-const panelPasswordText = computed(
-  () => String(panel.value?.panel_password || '').trim() || '--',
-);
+const panelPasswordText = computed(() => String(panel.value?.panel_password || '').trim() || '--');
 
 const hasPanelAccess = computed(
-  () =>
-    panelUrlText.value !== '--' ||
-    panelUsernameText.value !== '--' ||
-    panelPasswordText.value !== '--',
+  () => panelUrlText.value !== '--' || panelUsernameText.value !== '--' || panelPasswordText.value !== '--',
 );
 
 /** 面板类型展示名（cpanel / btpanel / ftp 等） */

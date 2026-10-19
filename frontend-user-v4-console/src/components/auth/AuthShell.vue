@@ -33,12 +33,12 @@
             <span class="auth-brand__name">{{ siteBranding.siteName }}</span>
           </template>
           <span class="auth-brand__divider" />
-          <span class="auth-brand__context">用户控制台</span>
+          <span class="auth-brand__context">{{ $t('clientAuth.shell.brandContext') }}</span>
         </a>
         <span class="auth-shell__header-spacer" />
         <button class="auth-shell__back" type="button" @click="handleBack">
           <chevron-left-icon />
-          <span>返回</span>
+          <span>{{ $t('clientAuth.shell.back') }}</span>
         </button>
       </header>
 
@@ -60,8 +60,8 @@
         </div>
 
         <div class="auth-guide">
-          <h1 class="auth-guide__title">{{ heroTitle }}</h1>
-          <p class="auth-guide__description">{{ heroDescription }}</p>
+          <h1 class="auth-guide__title">{{ heroTitle || $t('clientAuth.shell.defaultHeroTitle') }}</h1>
+          <p class="auth-guide__description">{{ heroDescription || $t('clientAuth.shell.defaultHeroDescription') }}</p>
           <router-link v-if="ctaText" class="auth-guide__cta" :to="ctaTo">{{ ctaText }}</router-link>
         </div>
       </section>
@@ -95,8 +95,8 @@ withDefaults(
     navTo: '/client/login',
     ctaText: '',
     ctaTo: '/client/login',
-    heroTitle: '安全进入用户控制台',
-    heroDescription: '管理云服务、账单、工单与账户资料，所有操作继续沿用原有用户端接口。',
+    heroTitle: '',
+    heroDescription: '',
   },
 );
 

@@ -4,6 +4,7 @@ import { isString, merge } from 'lodash-es';
 
 import { getAdminToken, removeAdminToken } from '@/app/runtime/session';
 import { ContentTypeEnum } from '@/constants';
+import { t } from '@/locales';
 import router from '@/router';
 import { toUserMessage } from '@/utils/userMessage';
 
@@ -62,7 +63,7 @@ const transform: AxiosTransform = {
     // 错误的时候返回
     const { data } = res;
     if (!data) {
-      throw new Error('请求接口错误');
+      throw new Error(t('common.requestFailed'));
     }
 
     //  这里 code为 后台统一的字段，需要在 types.ts内修改为项目自己的接口返回格式
@@ -74,7 +75,7 @@ const transform: AxiosTransform = {
       return data.data;
     }
 
-    const message = toUserMessage(data.message, `请求接口错误，错误码：${code}`);
+    const message = toUserMessage(data.message, t('common.requestFailedWithCode', { code }));
     // 登录接口自身的失败（用户名或密码错误）不需要清 token 或跳转，避免重复导航
     if (code === 40100 && !String(res.config?.url ?? '').includes('/v2/admin/login')) {
       removeAdminToken();
@@ -178,7 +179,7 @@ const transform: AxiosTransform = {
     const { config } = error;
     const responseMessage = error?.response?.data?.message;
     if (responseMessage) {
-      error.message = toUserMessage(responseMessage, error.message || '请求接口错误');
+      error.message = toUserMessage(responseMessage, error.message || t('common.requestFailed'));
     }
 
     if (!canRetryRequest(config)) return Promise.reject(error);

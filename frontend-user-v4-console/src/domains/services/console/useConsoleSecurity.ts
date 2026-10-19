@@ -164,7 +164,7 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
         securityState.rulesLoaded = false;
       }
     } catch (error: unknown) {
-      securityState.error = resolveErrorMessage(error, '加载安全组失败');
+      securityState.error = resolveErrorMessage(error, t('serviceConsole.errors.securityLoadFailed'));
     } finally {
       securityState.loading = false;
     }
@@ -180,7 +180,7 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
     } catch (error: unknown) {
       securityState.rules = [];
       securityState.rulesLoaded = false;
-      securityState.rulesError = resolveErrorMessage(error, '加载安全组规则失败');
+      securityState.rulesError = resolveErrorMessage(error, t('serviceConsole.errors.securityRulesLoadFailed'));
       if (!silent) MessagePlugin.error(securityState.rulesError);
     } finally {
       securityState.rulesLoading = false;
@@ -240,10 +240,10 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
         description: groupForm.description.trim(),
       });
       groupVisible.value = false;
-      MessagePlugin.success(resolveActionMessage(res.data, '安全组创建成功'));
+      MessagePlugin.success(resolveActionMessage(res.data, t('serviceConsole.security.groupCreateSuccess')));
       await loadSecurityGroups();
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '创建安全组失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.security.groupCreateFailed')));
     } finally {
       securityState.submitting = false;
     }
@@ -254,10 +254,10 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
     securityState.submitting = true;
     try {
       const res = await clientApi.applySecurityGroup(serviceId.value, group.id);
-      MessagePlugin.success(resolveActionMessage(res.data, '安全组已应用'));
+      MessagePlugin.success(resolveActionMessage(res.data, t('serviceConsole.security.groupApplied')));
       await loadSecurityGroups();
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '应用安全组失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.security.groupApplyFailed')));
     } finally {
       securityState.submitting = false;
     }
@@ -266,8 +266,8 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
   async function deleteSecurityGroup(group: SecurityGroupRecord) {
     if (!group.id) return;
     const dialog = DialogPlugin.confirm({
-      header: '删除安全组',
-      body: `确认删除安全组“${group.name || group.id}”吗？`,
+      header: t('serviceConsole.security.deleteGroupHeader'),
+      body: t('serviceConsole.security.deleteGroupBody', { name: group.name || group.id }),
       theme: 'warning',
       confirmBtn: t('common.confirmDelete'),
       cancelBtn: t('common.cancel'),
@@ -276,11 +276,11 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
         securityState.submitting = true;
         try {
           const res = await clientApi.deleteSecurityGroup(serviceId.value, group.id);
-          MessagePlugin.success(resolveActionMessage(res.data, '安全组已删除'));
+          MessagePlugin.success(resolveActionMessage(res.data, t('serviceConsole.security.groupDeleted')));
           await loadSecurityGroups();
           dialog.hide();
         } catch (error: unknown) {
-          MessagePlugin.error(resolveErrorMessage(error, '删除安全组失败'));
+          MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.security.groupDeleteFailed')));
         } finally {
           securityState.submitting = false;
           dialog.setConfirmLoading(false);
@@ -316,10 +316,10 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
         description: ruleForm.description.trim(),
       });
       ruleVisible.value = false;
-      MessagePlugin.success(resolveActionMessage(res.data, '安全组规则创建成功'));
+      MessagePlugin.success(resolveActionMessage(res.data, t('serviceConsole.security.ruleCreateSuccess')));
       await loadSecurityGroupRules(activeSecurityGroupId.value);
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '创建安全组规则失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.security.ruleCreateFailed')));
     } finally {
       securityState.submitting = false;
     }
@@ -328,8 +328,8 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
   async function deleteSecurityRule(rule: SecurityRuleRecord) {
     if (!rule.id || !activeSecurityGroupId.value) return;
     const dialog = DialogPlugin.confirm({
-      header: '删除规则',
-      body: '确认删除该安全组规则吗？',
+      header: t('serviceConsole.security.deleteRuleHeader'),
+      body: t('serviceConsole.security.deleteRuleBody'),
       theme: 'warning',
       confirmBtn: t('common.confirmDelete'),
       cancelBtn: t('common.cancel'),
@@ -338,11 +338,11 @@ export function useConsoleSecurity(options: UseConsoleSecurityOptions) {
         securityState.submitting = true;
         try {
           const res = await clientApi.deleteSecurityRule(serviceId.value, activeSecurityGroupId.value, rule.id);
-          MessagePlugin.success(resolveActionMessage(res.data, '安全组规则已删除'));
+          MessagePlugin.success(resolveActionMessage(res.data, t('serviceConsole.security.ruleDeleted')));
           await loadSecurityGroupRules(activeSecurityGroupId.value);
           dialog.hide();
         } catch (error: unknown) {
-          MessagePlugin.error(resolveErrorMessage(error, '删除安全组规则失败'));
+          MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.security.ruleDeleteFailed')));
         } finally {
           securityState.submitting = false;
           dialog.setConfirmLoading(false);

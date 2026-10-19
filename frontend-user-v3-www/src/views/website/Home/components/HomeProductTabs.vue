@@ -124,7 +124,8 @@ const activeEnterpriseCards = computed(() =>
 
     return {
       key: String(groupId || index + 1),
-      title: group?.name || `二级分组 ${index + 1}`,
+      title:
+        group?.name || t("home.products.groupFallback", { index: index + 1 }),
       desc: resolveEnterpriseCategoryDesc(group, summary, primaryProduct),
       path: resolveEnterpriseCategoryPath(group, primaryProduct),
     };
@@ -137,7 +138,11 @@ const activeEnterpriseService = computed(() => {
     : [
         {
           key: "catalog",
-          title: `${activeEnterpriseType.value?.label || "当前分类"}目录`,
+          title: t("home.products.categoryCatalog", {
+            name:
+              activeEnterpriseType.value?.label ||
+              t("home.products.currentCategory"),
+          }),
           desc: t("home.products.emptyCategory"),
           path: "/products",
         },
@@ -153,7 +158,8 @@ const enterpriseServiceItems = computed(() =>
   resolvedProductTypes.value.map((type, index) => ({
     key: type.value || String(Number(type.id || index + 1)),
     id: Number(type.id || index + 1),
-    label: type.label || `产品分类 ${index + 1}`,
+    label:
+      type.label || t("home.products.categoryFallback", { index: index + 1 }),
   })),
 );
 
@@ -174,7 +180,9 @@ function deriveProductTypesFromGroups(groups) {
     const current = map.get(value) || {
       id: Number(group?.product_type_id || index + 1),
       value,
-      label: group?.first_product_group_name || `产品分类 ${index + 1}`,
+      label:
+        group?.first_product_group_name ||
+        t("home.products.categoryFallback", { index: index + 1 }),
       group_count: 0,
       product_count: 0,
     };
@@ -194,12 +202,12 @@ function activateEnterpriseService(key) {
 function resolveEnterpriseCategoryDesc(group, summary, primaryProduct) {
   const featuredName = resolveProductDisplayName(summary?.featured_product);
   if (featuredName) {
-    return `主推 ${featuredName}，可在线查看配置并快速完成选型。`;
+    return t("home.products.recommendedIntro", { name: featuredName });
   }
 
   const previewName = resolveProductDisplayName(primaryProduct?.product);
   if (previewName) {
-    return `主推 ${previewName}，可在线查看配置并快速完成选型。`;
+    return t("home.products.recommendedIntro", { name: previewName });
   }
 
   if (group?.slogan) {
@@ -207,7 +215,10 @@ function resolveEnterpriseCategoryDesc(group, summary, primaryProduct) {
   }
 
   const totalProducts = Number(group?.product_count || 0);
-  return `${group?.product_type_label || "当前分类"} 下已上架 ${totalProducts} 款在售产品，可按业务需求快速选型。`;
+  return t("home.products.groupIntro", {
+    category: group?.product_type_label || t("home.products.currentCategory"),
+    count: totalProducts,
+  });
 }
 
 function resolveEnterpriseCategoryPath(group, primaryProduct) {

@@ -83,7 +83,12 @@
                 @click="handleUnsuspendService"
                 >{{ $t('services.console.unsuspend') }}</t-button
               >
-              <t-button v-if="canRenewService" theme="primary" variant="outline" size="small" @click="openRenewDialog"
+              <t-button
+                v-if="canRenewService"
+                theme="primary"
+                variant="outline"
+                size="small"
+                @click="openRenewDialog"
                 >{{ $t('services.console.renew') }}</t-button
               >
               <t-button
@@ -93,9 +98,15 @@
                 @click="openPasswordDialog"
                 >{{ $t('services.console.resetPassword') }}</t-button
               >
-              <t-button theme="default" size="small" @click="openServiceUpstreamDialog">{{ $t('services.console.upstreamBind') }}</t-button>
-              <t-button theme="default" size="small" @click="openServicePricingDialog">{{ $t('services.console.adjustPrice') }}</t-button>
-              <t-button theme="default" size="small" @click="openNameDialog">{{ $t('services.console.rename') }}</t-button>
+              <t-button theme="default" size="small" @click="openServiceUpstreamDialog">{{
+                $t('services.console.upstreamBind')
+              }}</t-button>
+              <t-button theme="default" size="small" @click="openServicePricingDialog">{{
+                $t('services.console.adjustPrice')
+              }}</t-button>
+              <t-button theme="default" size="small" @click="openNameDialog">{{
+                $t('services.console.rename')
+              }}</t-button>
               <t-button
                 theme="default"
                 size="small"
@@ -185,7 +196,10 @@
           <div v-for="item in servicePricingEntries" :key="item.cycle" class="pricing-row">
             <div>
               <strong>{{ item.label }}</strong>
-              <span>{{ $t('services.console.basePrice') }}{{ item.base_amount ? formatMoney(item.base_amount) : $t('services.console.notConfigured') }}</span>
+              <span
+                >{{ $t('services.console.basePrice')
+                }}{{ item.base_amount ? formatMoney(item.base_amount) : $t('services.console.notConfigured') }}</span
+              >
             </div>
             <t-switch v-model="servicePricingForm.locked_pricing[item.cycle].enabled" />
             <t-input-number
@@ -206,7 +220,11 @@
       v-model:visible="serviceRefundVisible"
       :header="$t('services.console.serviceRefund')"
       width="500px"
-      :confirm-btn="{ content: $t('services.console.confirmRefund'), theme: 'danger', loading: adminActionLoading === 'refund' }"
+      :confirm-btn="{
+        content: $t('services.console.confirmRefund'),
+        theme: 'danger',
+        loading: adminActionLoading === 'refund',
+      }"
       @cancel="serviceRefundVisible = false"
       @confirm="handleServiceRefund"
     >
@@ -224,11 +242,17 @@
         <t-form-item :label="$t('services.console.refundMethod')" name="refund_method">
           <t-radio-group v-model="serviceRefundForm.refund_method">
             <t-radio value="balance">{{ $t('services.console.refundToBalance') }}</t-radio>
-            <t-radio value="original" :disabled="!canOriginalServiceRefund">{{ $t('services.console.refundToOriginal') }}</t-radio>
+            <t-radio value="original" :disabled="!canOriginalServiceRefund">{{
+              $t('services.console.refundToOriginal')
+            }}</t-radio>
           </t-radio-group>
         </t-form-item>
         <t-form-item :label="$t('services.console.refundReason')" name="remark">
-          <t-textarea v-model="serviceRefundForm.remark" :maxlength="200" :placeholder="$t('services.console.refundReasonPlaceholder')" />
+          <t-textarea
+            v-model="serviceRefundForm.remark"
+            :maxlength="200"
+            :placeholder="$t('services.console.refundReasonPlaceholder')"
+          />
         </t-form-item>
       </t-form>
     </t-dialog>
@@ -237,18 +261,22 @@
       v-model:visible="suspendVisible"
       :header="$t('services.console.suspendInstance')"
       width="420px"
-      :confirm-btn="{ content: $t('services.console.confirmSuspend'), theme: 'warning', loading: adminActionLoading === 'suspend' }"
+      :confirm-btn="{
+        content: $t('services.console.confirmSuspend'),
+        theme: 'warning',
+        loading: adminActionLoading === 'suspend',
+      }"
       @cancel="suspendVisible = false"
       @confirm="handleSuspendService"
     >
-      <t-alert
-        theme="warning"
-        :message="$t('services.console.suspendTip')"
-        class="dialog-alert"
-      />
+      <t-alert theme="warning" :message="$t('services.console.suspendTip')" class="dialog-alert" />
       <t-form label-align="top">
         <t-form-item :label="$t('services.console.suspendReason')">
-          <t-textarea v-model="suspendReason" :maxlength="255" :placeholder="$t('services.console.suspendReasonPlaceholder')" />
+          <t-textarea
+            v-model="suspendReason"
+            :maxlength="255"
+            :placeholder="$t('services.console.suspendReasonPlaceholder')"
+          />
         </t-form-item>
       </t-form>
     </t-dialog>
@@ -322,7 +350,7 @@ const displayName = computed(() => {
     d.product_full_path ||
     d.product?.display_name ||
     d.domain ||
-    `服务 #${detail.value.id}`
+    t('services.console.serviceLabel', { id: detail.value.id })
   );
 });
 const productText = computed(
@@ -369,7 +397,7 @@ const manualProvisionVisible = ref(false);
 const manualProvisionFormRef = ref<FormInstanceFunctions>();
 const manualProvisionForm = reactive({ upstream_host_id: undefined as number | undefined });
 const manualProvisionRules: Record<string, FormRule[]> = {
-  upstream_host_id: [required('请输入上游实例 ID')],
+  upstream_host_id: [required(t('services.console.upstreamHostIdRequired'))],
 };
 
 const serviceUpstreamVisible = ref(false);
@@ -382,8 +410,12 @@ const serviceUpstreamForm = reactive({
 });
 const serviceUpstreamOptions = ref<Array<{ id: number; label: string }>>([]);
 const serviceUpstreamRules: Record<string, FormRule[]> = {
-  supplier_id: [{ validator: validateUpstreamPair, message: t('services.cdnConsole.upstreamInstanceIdRequired'), type: 'error' }],
-  upstream_host_id: [{ validator: validateUpstreamPair, message: t('services.cdnConsole.upstreamInterfaceRequired'), type: 'error' }],
+  supplier_id: [
+    { validator: validateUpstreamPair, message: t('services.cdnConsole.upstreamInstanceIdRequired'), type: 'error' },
+  ],
+  upstream_host_id: [
+    { validator: validateUpstreamPair, message: t('services.cdnConsole.upstreamInterfaceRequired'), type: 'error' },
+  ],
 };
 
 const servicePricingVisible = ref(false);
@@ -398,7 +430,7 @@ const servicePricingForm = reactive({
   clear_locked_pricing: false,
 });
 const servicePricingRules: Record<string, FormRule[]> = {
-  amount: [required('请输入购买价格')],
+  amount: [required(t('services.console.purchasePriceRequired'))],
 };
 const servicePricingEntries = computed(() =>
   Object.entries(servicePricingForm.locked_pricing || {}).map(([cycle, item]) => ({
@@ -412,8 +444,8 @@ const serviceRefundVisible = ref(false);
 const serviceRefundFormRef = ref<FormInstanceFunctions>();
 const serviceRefundForm = reactive({ refund_method: 'balance' as 'balance' | 'original', remark: '' });
 const refundRules: Record<string, FormRule[]> = {
-  refund_method: [required('请选择退款方式')],
-  remark: [required('请填写退款原因')],
+  refund_method: [required(t('services.console.refundMethodRequired'))],
+  remark: [required(t('services.console.refundReasonRequired'))],
 };
 const canOriginalServiceRefund = computed(() => (detailRow.value.refund as Row | undefined)?.can_original !== false);
 const serviceRefundAmount = computed(
@@ -445,7 +477,7 @@ async function handleManualProvision() {
     manualProvisionVisible.value = false;
     await loadDetailBase();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '手动开通失败'));
+    MessagePlugin.error(errorMessage(error, t('services.console.manualProvisionFailed')));
   } finally {
     adminActionLoading.value = '';
   }
@@ -469,12 +501,12 @@ async function loadServiceUpstreamOptions() {
         const id = Number(item.id || 0);
         const upstreamBinding =
           item.upstream_binding && typeof item.upstream_binding === 'object' ? (item.upstream_binding as Row) : {};
-        const type = item.provider_label || upstreamBinding.provider_key || '上游';
+        const type = item.provider_label || upstreamBinding.provider_key || t('services.console.upstreamFallback');
         return { id, label: `${item.name || `接口 #${item.id}`} · ${type}` };
       })
       .filter((item) => item.id > 0);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载上游接口失败'));
+    MessagePlugin.error(errorMessage(error, t('services.console.loadUpstreamFailed')));
   } finally {
     serviceUpstreamLoading.value = false;
   }
@@ -493,7 +525,7 @@ async function submitServiceUpstream() {
     MessagePlugin.success(t('services.cdnConsole.upstreamBindingUpdated'));
     await loadDetailBase();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新上游绑定失败'));
+    MessagePlugin.error(errorMessage(error, t('services.console.updateUpstreamFailed')));
   } finally {
     serviceUpstreamSubmitting.value = false;
   }
@@ -535,7 +567,7 @@ async function submitServicePricing() {
     MessagePlugin.success(t('services.cdnConsole.priceUpdated'));
     await loadDetailBase();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新价格信息失败'));
+    MessagePlugin.error(errorMessage(error, t('services.console.updatePriceFailed')));
   } finally {
     servicePricingSubmitting.value = false;
   }
@@ -558,11 +590,11 @@ async function handleServiceRefund() {
       amount: serviceRefundAmount.value,
       remark: serviceRefundForm.remark,
     });
-    MessagePlugin.success(response.message || '服务已完成退款');
+    MessagePlugin.success(response.message || t('services.console.refundSuccess'));
     serviceRefundVisible.value = false;
     await loadDetailBase();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '退款失败'));
+    MessagePlugin.error(errorMessage(error, t('services.console.refundFailed')));
   } finally {
     adminActionLoading.value = '';
   }
@@ -579,11 +611,11 @@ async function handleSuspendService() {
     const response = await userApi.serviceSuspend(props.userId, detail.value.id, {
       reason: suspendReason.value,
     });
-    MessagePlugin.success(response.message || '实例已暂停');
+    MessagePlugin.success(response.message || t('services.console.instanceSuspended'));
     suspendVisible.value = false;
     await loadDetailBase();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '暂停实例失败'));
+    MessagePlugin.error(errorMessage(error, t('services.console.suspendFailed')));
   } finally {
     adminActionLoading.value = '';
   }
@@ -591,19 +623,19 @@ async function handleSuspendService() {
 
 function handleUnsuspendService() {
   const dialog = DialogPlugin.confirm({
-    header: '解除暂停确认',
-    body: '确认对该实例解除暂停？解除后实例将恢复可用。',
+    header: t('services.console.resumeConfirmTitle'),
+    body: t('services.console.resumeConfirmBody'),
     confirmBtn: t('services.cdnConsole.confirmUnbind'),
     theme: 'warning',
     async onConfirm() {
       adminActionLoading.value = 'unsuspend';
       try {
         const response = await userApi.serviceUnsuspend(props.userId, detail.value.id);
-        MessagePlugin.success(response.message || '实例已解除暂停');
+        MessagePlugin.success(response.message || t('services.console.instanceResumed'));
         dialog.hide();
         await loadDetailBase();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '解除暂停失败'));
+        MessagePlugin.error(errorMessage(error, t('services.console.resumeFailed')));
       } finally {
         adminActionLoading.value = '';
       }

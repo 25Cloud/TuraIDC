@@ -100,7 +100,8 @@
                 </div>
                 <div class="mega-menu__groups" :aria-busy="navGroupsPending">
                   <span class="mega-menu__col-title">
-                    一级分组 · {{ navActiveTypeLabel || "全部" }}
+                    {{ $t("product.group.level1") }} ·
+                    {{ navActiveTypeLabel || $t("layout.nav.all") }}
                   </span>
                   <!-- 取数中先占位：既不闪「暂无产品分类」，也不会让面板高度塌下去 -->
                   <MegaMenuSkeleton
@@ -133,7 +134,10 @@
                         group.name
                       }}</span>
                       <span class="mega-group-card__desc">{{
-                        group.slogan || `${group.product_count} 款产品`
+                        group.slogan ||
+                        $t("layout.product.productCount", {
+                          count: group.product_count,
+                        })
                       }}</span>
                     </router-link>
                     <div
@@ -297,7 +301,7 @@
                         item.title
                       }}</span>
                       <span class="mega-group-card__desc">{{
-                        item.summary || "查看详情"
+                        item.summary || $t("layout.nav.viewDetail")
                       }}</span>
                     </router-link>
                     <div
@@ -354,7 +358,7 @@
               type="button"
               class="header-user-trigger"
               :class="{ 'is-active': userMenuOpen }"
-              aria-label="用户菜单"
+              :aria-label="$t('layout.user.menuLabel')"
               :aria-expanded="userMenuOpen"
               @click="toggleUserMenu"
             >
@@ -380,7 +384,7 @@
                   class="user-menu-item"
                   @click="onUserMenuCommand(consoleUrl('/client/dashboard'))"
                 >
-                  <el-icon><Monitor /></el-icon>控制台
+                  <el-icon><Monitor /></el-icon>{{ $t("layout.user.console") }}
                 </button>
                 <button
                   type="button"
@@ -388,7 +392,7 @@
                   class="user-menu-item"
                   @click="onUserMenuCommand(consoleUrl('/client/services'))"
                 >
-                  <el-icon><Box /></el-icon>我的服务
+                  <el-icon><Box /></el-icon>{{ $t("layout.user.myServices") }}
                 </button>
                 <div class="user-menu-divider"></div>
                 <button
@@ -397,7 +401,7 @@
                   class="user-menu-item"
                   @click="onUserMenuCommand(consoleUrl('/client/profile'))"
                 >
-                  <el-icon><User /></el-icon>个人资料
+                  <el-icon><User /></el-icon>{{ $t("layout.user.profile") }}
                 </button>
                 <button
                   type="button"
@@ -405,7 +409,7 @@
                   class="user-menu-item"
                   @click="onUserMenuCommand(consoleUrl('/client/recharge'))"
                 >
-                  <el-icon><Wallet /></el-icon>账户充值
+                  <el-icon><Wallet /></el-icon>{{ $t("layout.user.recharge") }}
                 </button>
                 <div class="user-menu-divider"></div>
                 <button
@@ -414,7 +418,8 @@
                   class="user-menu-item is-danger"
                   @click="onUserMenuCommand('logout')"
                 >
-                  <el-icon><CircleClose /></el-icon>退出登录
+                  <el-icon><CircleClose /></el-icon
+                  >{{ $t("layout.user.signOut") }}
                 </button>
               </div>
             </transition>
@@ -437,7 +442,7 @@
           <button
             type="button"
             class="mobile-user-icon is-avatar"
-            aria-label="用户菜单"
+            :aria-label="$t('layout.user.menuLabel')"
             :aria-expanded="mobileUserMenuOpen"
             @click="toggleMobileUserMenu"
           >
@@ -461,7 +466,7 @@
                 class="user-menu-item"
                 @click="onUserMenuCommand(consoleUrl('/client/dashboard'))"
               >
-                <el-icon><Monitor /></el-icon>控制台
+                <el-icon><Monitor /></el-icon>{{ $t("layout.user.console") }}
               </button>
               <button
                 type="button"
@@ -469,7 +474,7 @@
                 class="user-menu-item"
                 @click="onUserMenuCommand(consoleUrl('/client/services'))"
               >
-                <el-icon><Box /></el-icon>我的服务
+                <el-icon><Box /></el-icon>{{ $t("layout.user.myServices") }}
               </button>
               <div class="user-menu-divider"></div>
               <button
@@ -478,7 +483,7 @@
                 class="user-menu-item"
                 @click="onUserMenuCommand(consoleUrl('/client/profile'))"
               >
-                <el-icon><User /></el-icon>个人资料
+                <el-icon><User /></el-icon>{{ $t("layout.user.profile") }}
               </button>
               <button
                 type="button"
@@ -486,7 +491,7 @@
                 class="user-menu-item"
                 @click="onUserMenuCommand(consoleUrl('/client/recharge'))"
               >
-                <el-icon><Wallet /></el-icon>账户充值
+                <el-icon><Wallet /></el-icon>{{ $t("layout.user.recharge") }}
               </button>
               <div class="user-menu-divider"></div>
               <button
@@ -495,7 +500,8 @@
                 class="user-menu-item is-danger"
                 @click="onUserMenuCommand('logout')"
               >
-                <el-icon><CircleClose /></el-icon>退出登录
+                <el-icon><CircleClose /></el-icon
+                >{{ $t("layout.user.signOut") }}
               </button>
             </div>
           </transition>
@@ -507,7 +513,11 @@
           type="button"
           class="mobile-menu-toggle"
           :class="{ 'is-open': mobileNavVisible }"
-          :aria-label="mobileNavVisible ? '关闭菜单' : '打开菜单'"
+          :aria-label="
+            mobileNavVisible
+              ? $t('layout.mobileMenu.close')
+              : $t('layout.mobileMenu.open')
+          "
           @click="mobileNavVisible = !mobileNavVisible"
         >
           <span class="hamburger">
@@ -623,9 +633,11 @@
                 </div>
               </template>
               <div v-else-if="navLoading" class="mobile-menu-loading">
-                加载中…
+                {{ $t("common.loading") }}
               </div>
-              <div v-else class="mobile-menu-empty">暂无产品分类</div>
+              <div v-else class="mobile-menu-empty">
+                {{ $t("layout.product.emptyCategories") }}
+              </div>
             </template>
 
             <template v-else-if="mobileActiveFirstLevel === 'notices'">
@@ -692,9 +704,11 @@
                 >
               </template>
               <div v-else-if="navNoticesLoading" class="mobile-menu-loading">
-                加载中…
+                {{ $t("common.loading") }}
               </div>
-              <div v-else class="mobile-menu-empty">暂无公告</div>
+              <div v-else class="mobile-menu-empty">
+                {{ $t("layout.notice.empty") }}
+              </div>
             </template>
 
             <template v-else-if="mobileActiveFirstLevel === 'help'">
@@ -761,9 +775,11 @@
                 >
               </template>
               <div v-else-if="navHelpLoading" class="mobile-menu-loading">
-                加载中…
+                {{ $t("common.loading") }}
               </div>
-              <div v-else class="mobile-menu-empty">暂无文档</div>
+              <div v-else class="mobile-menu-empty">
+                {{ $t("layout.doc.empty") }}
+              </div>
             </template>
 
             <template v-else-if="mobileActiveFirstLevel === 'about'">
@@ -822,7 +838,7 @@
               }}</span>
             </div>
             <p class="footer-brand__desc">
-              为企业与开发者提供稳定、安全、高性价比的云计算与 IDC 服务。
+              {{ $t("layout.footer.brandDesc") }}
             </p>
             <ul class="footer-contact">
               <li v-for="item in supportContacts" :key="item.key">
@@ -844,38 +860,62 @@
 
           <div class="footer-columns">
             <div class="footer-col">
-              <h4>产品</h4>
+              <h4>{{ $t("layout.nav.products") }}</h4>
               <router-link
                 v-for="item in seoLandingFooterLinks"
                 :key="item.to"
                 :to="item.to"
               >
-                {{ item.label }}
+                {{ $t(item.labelKey) }}
               </router-link>
             </div>
 
             <div class="footer-col">
-              <h4>解决方案</h4>
-              <router-link to="/products">电商行业</router-link>
-              <router-link to="/products">游戏行业</router-link>
-              <router-link to="/products">金融行业</router-link>
-              <router-link to="/products">出海业务</router-link>
+              <h4>{{ $t("layout.nav.solutions") }}</h4>
+              <router-link to="/products">{{
+                $t("layout.solutions.ecommerce")
+              }}</router-link>
+              <router-link to="/products">{{
+                $t("layout.solutions.gaming")
+              }}</router-link>
+              <router-link to="/products">{{
+                $t("layout.solutions.finance")
+              }}</router-link>
+              <router-link to="/products">{{
+                $t("layout.solutions.overseas")
+              }}</router-link>
             </div>
 
             <div class="footer-col">
-              <h4>支持</h4>
-              <router-link to="/notices">站点公告</router-link>
-              <router-link to="/help">帮助中心</router-link>
-              <a :href="consoleUrl('/client/tickets')">工单系统</a>
-              <router-link to="/about">关于我们</router-link>
+              <h4>{{ $t("layout.footer.support") }}</h4>
+              <router-link to="/notices">{{
+                $t("layout.footer.siteAnnouncements")
+              }}</router-link>
+              <router-link to="/help">{{
+                $t("layout.nav.helpCenter")
+              }}</router-link>
+              <a :href="consoleUrl('/client/tickets')">{{
+                $t("layout.footer.ticketSystem")
+              }}</a>
+              <router-link to="/about">{{
+                $t("layout.nav.aboutUs")
+              }}</router-link>
             </div>
 
             <div class="footer-col">
-              <h4>账户</h4>
-              <a :href="consoleUrl('/client/register')">免费注册</a>
-              <a :href="consoleUrl('/client/login')">账户登录</a>
-              <a :href="consoleUrl('/client/dashboard')">进入控制台</a>
-              <a :href="consoleUrl('/client/verification')">实名认证</a>
+              <h4>{{ $t("layout.footer.account") }}</h4>
+              <a :href="consoleUrl('/client/register')">{{
+                $t("layout.user.registerFree")
+              }}</a>
+              <a :href="consoleUrl('/client/login')">{{
+                $t("layout.user.accountLogin")
+              }}</a>
+              <a :href="consoleUrl('/client/dashboard')">{{
+                $t("layout.user.enterConsole")
+              }}</a>
+              <a :href="consoleUrl('/client/verification')">{{
+                $t("layout.user.realNameVerification")
+              }}</a>
             </div>
           </div>
         </div>
@@ -902,10 +942,11 @@
             class="footer-bottom__meta"
           >
             <span v-if="appStore.valueAddedLicense"
-              >增值电信业务经营许可证：{{ appStore.valueAddedLicense }}</span
+              >{{ $t("layout.footer.valueAddedLicense")
+              }}{{ appStore.valueAddedLicense }}</span
             >
             <span v-if="appStore.icpRecord"
-              >ICP 备案号：{{ appStore.icpRecord }}</span
+              >{{ $t("layout.footer.icpRecord") }}{{ appStore.icpRecord }}</span
             >
           </p>
         </div>
@@ -1240,7 +1281,9 @@ const hideFooter = computed(() => {
   return path === "/products" || path.startsWith("/products/");
 });
 
-const navigationItems = [
+// 导航与「其他入口」文案跟着语言切换走：t() 必须在 computed 里调用，
+// 模块顶层求值只会拿到首屏语言，切换后仍是旧语言。
+const navigationItems = computed(() => [
   { to: "/", label: t("layout.nav.home"), match: ["WwwHome"] },
   {
     to: "/products",
@@ -1271,9 +1314,9 @@ const navigationItems = [
     match: ["WwwAbout"],
     menuId: "about",
   },
-];
+]);
 
-const aboutQuickLinks = [
+const aboutQuickLinks = computed(() => [
   {
     to: "/about",
     title: t("layout.nav.aboutUs"),
@@ -1294,7 +1337,7 @@ const aboutQuickLinks = [
     title: t("layout.footer.noticeUpdates"),
     desc: t("layout.footer.noticeUpdates"),
   },
-];
+]);
 
 const logoSrc = computed(() => appStore.siteLogo || "/branding/logo.png");
 const supportContacts = computed(() =>

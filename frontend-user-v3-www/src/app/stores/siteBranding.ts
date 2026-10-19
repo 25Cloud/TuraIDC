@@ -9,6 +9,7 @@ import {
   updateFavicon,
 } from "@turaidc/shared/runtime";
 import siteApi from "@/api/site";
+import { t } from "@/locales";
 import { DEFAULT_SUPPORT_CONTACTS } from "@/data/supportContacts";
 import { resolveApiAssetUrl } from "@/utils/apiAssetUrl";
 import { applyBrandTokens } from "@/utils/brandTheme";
@@ -20,7 +21,7 @@ const CONFIGURED_SITE_NAME = String(
   import.meta.env.VITE_APP_TITLE || "",
 ).trim();
 // 环境变量也没配时用中性描述，避免标题/页头出现空白
-const DEFAULT_SITE_NAME = CONFIGURED_SITE_NAME || "云服务器与 IDC 服务平台";
+const DEFAULT_SITE_NAME = CONFIGURED_SITE_NAME || t("common.site.slogan");
 const DEFAULT_SITE_LOGO = "/branding/logo.png";
 const DEFAULT_FAVICON = "/branding/favicon-32.png";
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "");

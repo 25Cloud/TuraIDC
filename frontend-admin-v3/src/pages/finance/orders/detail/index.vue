@@ -302,86 +302,78 @@ defineOptions({ name: 'AdminFinanceOrderDetail' });
 
 type ThemeType = NonNullable<TagProps['theme']>;
 
-const SNAPSHOT_LABEL_MAP: Record<string, string> = {
-  // ── 产品配置 ──
-  bw: '带宽',
-  in_bw: '下行带宽',
-  out_bw: '上行带宽',
-  os: '操作系统',
-  cpu: 'CPU',
-  area: '区域',
-  region: '区域',
-  node: '节点',
-  node_group: '节点分组',
-  ip: 'IP数量',
-  ip_num: 'IP数量',
-  ipv6_num: 'IPv6数量',
-  memory: '内存',
-  hostname: '主机名',
-  quantity: '数量',
-  instance_id: '实例ID',
-  // ── 金额 ──
-  setup_fee: '初装费',
-  base_amount: '基础金额',
-  total_amount: '合计金额',
-  config_amount: '配置金额',
-  subtotal_amount: '小计金额',
-  discount_amount: '优惠金额',
-  amount: '金额',
-  price: '价格',
-  pricing: '价格',
-  // ── 通用 ──
-  items: '配置项',
-  meta: '扩展信息',
-  configoption: '配置参数',
-  kind: '类型',
-  mode: '模式',
-  source_type: '来源类型',
-  created_by: '创建者',
-  source: '来源',
-  remark: '备注',
-  // ── 产品/服务 ──
-  target_label: '目标服务',
-  target_service_id: '目标服务ID',
-  product_id: '产品ID',
-  product_name: '产品名称',
-  product_full_path: '产品路径',
-  product_path_segments: '产品路径段',
-  first_product_group_name: '一级分组',
-  second_product_group_name: '二级分组',
-  third_product_group_name: '三级分组',
-  // ── 计费周期 ──
-  billing_cycle: '周期',
-  billingcycle: '周期',
-  billingcycle_zh: '周期',
-  period: '周期',
-  // ── 续费 ──
-  renew_service_id: '续费服务ID',
-  renew_service_name: '续费服务名称',
-  auto_renew: '自动续费',
-  auto_renew_trace_id: '自动续费追踪',
-  local_renew_amount: '本地续费金额',
-  // ── 上游供应商 ──
-  upstream_host_id: '上游主机ID',
-  upstream_host_ids: '上游主机列表',
-  upstream_invoice_id: '上游账单ID',
-  upstream_product_id: '上游产品ID',
-  upstream_product_name: '上游产品名称',
-  upstream_amount: '上游金额',
-  upstream_status: '上游状态',
-  supports_upstream: '支持上游开通',
-  provider_key: '供应商标识',
-  supplier_id: '供应商ID',
-  // ── 开通 ──
-  requested_host: '请求主机名',
-  dedicated_ip: '独立IP',
-  assigned_ips: '分配IP',
-  host_config_option: '主机配置',
-  connection_secret: '连接信息',
-  connection_cached_at: '连接缓存时间',
-  last_provisioned_at: '开通时间',
-  last_provision_attempt_at: '开通尝试时间',
-  provision_error: '开通失败原因',
+// 快照字段名来自上游，展示时映射到本地化标签；未收录的字段保持原键名。
+const SNAPSHOT_LABEL_KEY_MAP: Record<string, string> = {
+  bw: 'snapshotBw',
+  in_bw: 'snapshotInBw',
+  out_bw: 'snapshotOutBw',
+  os: 'snapshotOs',
+  area: 'snapshotArea',
+  region: 'snapshotRegion',
+  node: 'snapshotNode',
+  node_group: 'snapshotNodeGroup',
+  ip: 'snapshotIpCount',
+  ip_num: 'snapshotIpCount',
+  ipv6_num: 'snapshotIpCountV6',
+  memory: 'snapshotMemory',
+  hostname: 'snapshotHostname',
+  quantity: 'snapshotQuantity',
+  instance_id: 'snapshotInstanceId',
+  setup_fee: 'snapshotSetupFee',
+  base_amount: 'snapshotBaseAmount',
+  total_amount: 'snapshotTotalAmount',
+  config_amount: 'snapshotConfigAmount',
+  subtotal_amount: 'snapshotSubtotalAmount',
+  discount_amount: 'snapshotDiscountAmount',
+  amount: 'snapshotAmount',
+  price: 'snapshotPrice',
+  pricing: 'snapshotPrice',
+  items: 'snapshotItems',
+  meta: 'snapshotMeta',
+  configoption: 'snapshotConfigoption',
+  kind: 'snapshotKind',
+  mode: 'snapshotMode',
+  source_type: 'snapshotSourceType',
+  created_by: 'snapshotCreatedBy',
+  source: 'snapshotSource',
+  remark: 'snapshotRemark',
+  target_label: 'snapshotTargetLabel',
+  target_service_id: 'snapshotTargetServiceId',
+  product_id: 'snapshotProductId',
+  product_name: 'snapshotProductName',
+  product_full_path: 'snapshotProductFullPath',
+  product_path_segments: 'snapshotProductPathSegments',
+  first_product_group_name: 'snapshotFirstProductGroupName',
+  second_product_group_name: 'snapshotSecondProductGroupName',
+  third_product_group_name: 'snapshotThirdProductGroupName',
+  billing_cycle: 'snapshotBillingCycle',
+  billingcycle: 'snapshotBillingCycle',
+  billingcycle_zh: 'snapshotBillingCycle',
+  period: 'snapshotBillingCycle',
+  renew_service_id: 'snapshotRenewServiceId',
+  renew_service_name: 'snapshotRenewServiceName',
+  auto_renew: 'snapshotAutoRenew',
+  auto_renew_trace_id: 'snapshotAutoRenewTraceId',
+  local_renew_amount: 'snapshotLocalRenewAmount',
+  upstream_host_id: 'snapshotUpstreamHostId',
+  upstream_host_ids: 'snapshotUpstreamHostIds',
+  upstream_invoice_id: 'snapshotUpstreamInvoiceId',
+  upstream_product_id: 'snapshotUpstreamProductId',
+  upstream_product_name: 'snapshotUpstreamProductName',
+  upstream_amount: 'snapshotUpstreamAmount',
+  upstream_status: 'snapshotUpstreamStatus',
+  supports_upstream: 'snapshotSupportsUpstream',
+  provider_key: 'snapshotProviderKey',
+  supplier_id: 'snapshotSupplierId',
+  requested_host: 'snapshotRequestedHost',
+  dedicated_ip: 'snapshotDedicatedIp',
+  assigned_ips: 'snapshotAssignedIps',
+  host_config_option: 'snapshotHostConfigOption',
+  connection_secret: 'snapshotConnectionSecret',
+  connection_cached_at: 'snapshotConnectionCachedAt',
+  last_provisioned_at: 'snapshotLastProvisionedAt',
+  last_provision_attempt_at: 'snapshotLastProvisionAttemptAt',
+  provision_error: 'snapshotProvisionError',
 };
 
 const route = useRoute();
@@ -519,7 +511,9 @@ function flattenSnapshot(
 function snapshotLabel(value: unknown) {
   const key = String(value || '').trim();
   if (!key) return '-';
-  return SNAPSHOT_LABEL_MAP[key] || key;
+  if (key === 'cpu') return 'CPU';
+  const labelKey = SNAPSHOT_LABEL_KEY_MAP[key];
+  return labelKey ? t(`finance.orderDetail.${labelKey}`) : key;
 }
 
 function formatSnapshotItem(record: Record<string, unknown>) {
@@ -539,8 +533,12 @@ function formatSnapshotItem(record: Record<string, unknown>) {
   const amount = record.amount ?? record.total_amount ?? record.price ?? record.pricing ?? record.fee;
   const setupFee = record.setup_fee ?? record.setupfee;
   const parts = [value];
-  if (amount !== null && amount !== undefined && amount !== '') parts.push(`金额 ${formatMoney(amount)}`);
-  if (setupFee !== null && setupFee !== undefined && setupFee !== '') parts.push(`初装费 ${formatMoney(setupFee)}`);
+  if (amount !== null && amount !== undefined && amount !== '') {
+    parts.push(t('finance.orderDetail.amountWithValue', { amount: formatMoney(amount) }));
+  }
+  if (setupFee !== null && setupFee !== undefined && setupFee !== '') {
+    parts.push(t('finance.orderDetail.setupFeeWithValue', { amount: formatMoney(setupFee) }));
+  }
   return parts.join(' / ');
 }
 
@@ -565,7 +563,9 @@ function formatSnapshotValue(value: unknown, key = ''): string {
   const raw = String(value);
   if (['bw', 'in_bw', 'out_bw'].includes(key) && /^\d+(?:\.\d+)?$/.test(raw)) return `${raw} Mbps`;
   if (key === 'memory' && /^\d+(?:\.\d+)?$/.test(raw)) return `${raw} MB`;
-  if (['ip_num', 'ipv6_num', 'quantity'].includes(key) && /^\d+(?:\.\d+)?$/.test(raw)) return `${raw} 个`;
+  if (['ip_num', 'ipv6_num', 'quantity'].includes(key) && /^\d+(?:\.\d+)?$/.test(raw)) {
+    return t('finance.orderDetail.countUnit', { count: raw });
+  }
   return raw;
 }
 
@@ -577,7 +577,7 @@ async function loadDetail() {
     const response = await adminApi.orders.detail(id);
     order.value = response;
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载订单详情失败'));
+    MessagePlugin.error(errorMessage(error, t('finance.orderDetail.loadFailed')));
   } finally {
     detailLoading.value = false;
   }
@@ -607,7 +607,7 @@ async function reloadInvoiceDetail() {
     const response = await adminApi.invoices.detail(invoiceDrawer.currentId);
     invoiceDrawer.detail = normalizeInvoiceDetail(response, currentInvoice.value);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载账单详情失败'));
+    MessagePlugin.error(errorMessage(error, t('finance.orderDetail.loadInvoiceFailed')));
   } finally {
     invoiceDrawer.loading = false;
   }

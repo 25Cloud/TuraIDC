@@ -1,9 +1,9 @@
 <template>
   <section class="solution-section">
     <div class="container solution-section__head">
-      <h2 class="solution-section__title">{{ $t('home.solutions.title') }}</h2>
+      <h2 class="solution-section__title">{{ $t("home.solutions.title") }}</h2>
       <p class="solution-section__desc">
-        {{ $t('home.solutions.subtitle') }}
+        {{ $t("home.solutions.subtitle") }}
       </p>
     </div>
 
@@ -53,7 +53,9 @@
               {{ activeIndustrySolution.description }}
             </p>
 
-            <div class="solution-panel__section-title">{{ $t('layout.nav.solutions') }}</div>
+            <div class="solution-panel__section-title">
+              {{ $t("layout.nav.solutions") }}
+            </div>
             <ul class="solution-panel__feature-list">
               <li
                 v-for="point in activeIndustrySolution.points"
@@ -67,21 +69,23 @@
               </li>
             </ul>
 
-            <div class="solution-panel__section-title">{{ $t('home.solutions.relatedProducts') }}</div>
+            <div class="solution-panel__section-title">
+              {{ $t("home.solutions.relatedProducts") }}
+            </div>
             <div class="solution-panel__actions">
               <button
                 type="button"
                 class="solution-panel__action solution-panel__action--primary"
                 @click="router.push(activeIndustrySolution.productPath)"
               >
-                {{ $t('home.solutions.cloudServer') }}
+                {{ $t("home.solutions.cloudServer") }}
               </button>
               <button
                 type="button"
                 class="solution-panel__action"
                 @click="router.push(activeIndustrySolution.consultPath)"
               >
-                {{ $t('home.solutions.learnMore') }}
+                {{ $t("home.solutions.learnMore") }}
               </button>
             </div>
           </div>
@@ -96,15 +100,18 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElIcon } from "element-plus/es/components/icon/index.mjs";
 import { Select } from "@element-plus/icons-vue";
-import { industrySolutions } from "@/data/homeSolutions";
+import { buildIndustrySolutions } from "@/data/homeSolutions";
 
 const router = useRouter();
-const activeSolutionKey = ref(industrySolutions[0].key);
+// 文案随当前语言重新求值，切换语言后方案标题、要点一起更新
+const industrySolutions = computed(() => buildIndustrySolutions());
+const activeSolutionKey = ref(industrySolutions.value[0].key);
 
 const activeIndustrySolution = computed(
   () =>
-    industrySolutions.find((item) => item.key === activeSolutionKey.value) ||
-    industrySolutions[0],
+    industrySolutions.value.find(
+      (item) => item.key === activeSolutionKey.value,
+    ) || industrySolutions.value[0],
 );
 </script>
 

@@ -23,6 +23,7 @@ import { computed, ref, watch } from 'vue';
 import type { ProductBindingRecord } from '@/api/admin';
 import type { BindingTreeMode } from '@/hooks/useProductBindingTree';
 import { useProductBindingTree } from '@/hooks/useProductBindingTree';
+import { t } from '@/locales';
 
 const props = withDefaults(
   defineProps<{
@@ -74,11 +75,11 @@ const placeholderText = computed(() => {
 
   switch (props.mode) {
     case 'single':
-      return '选择一个商品配置';
+      return t('products.bindingTree.selectProductConfig');
     case 'batch':
-      return '按分类批量选择绑定配置';
+      return t('products.bindingTree.selectByCategoryBatch');
     default:
-      return '按分类选择绑定配置';
+      return t('products.bindingTree.selectByCategory');
   }
 });
 
@@ -89,7 +90,7 @@ const minCollapsedNum = computed(() => {
 
 const collapsedItems = computed(() => {
   if (!props.compact || props.mode === 'single') return undefined;
-  return (_h: unknown, context: { count: number }) => `已选 ${context.count} 个配置`;
+  return (_h: unknown, context: { count: number }) => t('products.bindingTree.selectedCount', { count: context.count });
 });
 
 const treePopupProps = computed(() => ({

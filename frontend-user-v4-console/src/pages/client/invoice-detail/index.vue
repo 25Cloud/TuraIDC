@@ -5,15 +5,15 @@
       <div class="pay-toolbar__actions">
         <t-button variant="outline" :loading="loading" @click="loadDetail">
           <template #icon><refresh-icon /></template>
-          刷新详情
+          {{ $t('invoiceDetail.refreshDetail') }}
         </t-button>
         <t-button v-if="showPayActions" theme="danger" variant="outline" :loading="canceling" @click="handleCancel">
-          取消账单
+          {{ $t('invoiceDetail.cancelInvoice') }}
         </t-button>
       </div>
     </div>
 
-    <t-loading :loading="loading" text="正在加载账单详情">
+    <t-loading :loading="loading" :text="$t('invoiceDetail.loadingDetail')">
       <template v-if="detail">
         <section class="pay-shell">
           <main class="pay-main-column">
@@ -22,9 +22,9 @@
 
               <div class="renew-service-panel">
                 <div>
-                  <span>续费服务</span>
+                  <span>{{ $t('invoiceDetail.renewService') }}</span>
                   <strong>{{ renewServiceName(detail) }}</strong>
-                  <p>支付完成后系统会自动处理续费，到期时间以服务控制台更新为准。</p>
+                  <p>{{ $t('invoiceDetail.renewDoneTip') }}</p>
                 </div>
                 <t-button
                   v-if="renewServiceId(detail)"
@@ -32,7 +32,7 @@
                   theme="primary"
                   @click="router.push(`/client/services/${renewServiceId(detail)}`)"
                 >
-                  查看服务
+                  {{ $t('invoiceDetail.viewService') }}
                 </t-button>
               </div>
 
@@ -44,7 +44,7 @@
               </div>
 
               <section class="renew-flow-section">
-                <h4>支付后处理</h4>
+                <h4>{{ $t('invoiceDetail.postPayment') }}</h4>
                 <div class="renew-flow-list">
                   <div v-for="step in renewFlowItems" :key="step.label" class="renew-flow-item">
                     <span class="renew-flow-item__mark">{{ step.index }}</span>
@@ -61,23 +61,26 @@
               <template #title>{{ t('invoiceDetail.invoiceInfo') }}</template>
               <div class="order-summary-grid">
                 <div class="order-kv-item">
-                  <span>账单号</span>
+                  <span>{{ $t('invoiceDetail.invoiceNo') }}</span>
                   <strong>{{ detail.invoice_no || '--' }}</strong>
                 </div>
                 <div class="order-kv-item">
-                  <span>账单类型</span>
-                  <strong>{{ detail.type_label || (detail.type === 'renew' ? '续费' : '新购') }}</strong>
+                  <span>{{ $t('invoiceDetail.invoiceType') }}</span>
+                  <strong>{{
+                    detail.type_label ||
+                    (detail.type === 'renew' ? $t('invoiceDetail.typeRenew') : $t('invoiceDetail.typeNew'))
+                  }}</strong>
                 </div>
                 <div class="order-kv-item">
-                  <span>账单金额</span>
+                  <span>{{ $t('invoiceDetail.invoiceAmount') }}</span>
                   <strong>¥{{ formatMoney(detail.amount) }}</strong>
                 </div>
                 <div class="order-kv-item">
-                  <span>计费周期</span>
+                  <span>{{ $t('invoiceDetail.billingCycleLabel') }}</span>
                   <strong>{{ orderBillingCycle(detail) }}</strong>
                 </div>
                 <div class="order-kv-item order-summary-grid__wide">
-                  <span>产品链路</span>
+                  <span>{{ $t('invoiceDetail.productPath') }}</span>
                   <strong>{{ productPathView }}</strong>
                 </div>
               </div>
@@ -85,7 +88,7 @@
               <!-- 机器基础信息：CPU / 内存 / 磁盘 / 带宽 / 网络等 -->
               <div v-if="machineSpecItems.length" class="order-pricing-block">
                 <section class="order-section">
-                  <h4>机器基础信息</h4>
+                  <h4>{{ $t('invoiceDetail.machineSpec') }}</h4>
                   <div class="spec-grid">
                     <div v-for="item in machineSpecItems" :key="`spec-${item.label}`" class="spec-item">
                       <span class="spec-item__label">{{ item.label }}</span>
@@ -97,7 +100,7 @@
 
               <div v-if="pricingItemsView.length" class="order-pricing-block">
                 <section class="order-section">
-                  <h4>配置定价</h4>
+                  <h4>{{ $t('invoiceDetail.configPricing') }}</h4>
                   <div class="snapshot-line-list">
                     <div v-for="item in pricingItemsView" :key="`pricing-${item.label}`" class="snapshot-line-item">
                       <span>{{ item.label }}</span>
@@ -112,7 +115,7 @@
               <template #title>{{ t('invoiceDetail.relatedPaymentsTitle') }}</template>
               <div class="payment-record-grid">
                 <div>
-                  <span>支付方式</span>
+                  <span>{{ $t('invoiceDetail.paymentMethod') }}</span>
                   <strong>{{
                     detail.payment_summary.gateway_label ||
                     detail.payment_summary.gateway_key ||
@@ -121,23 +124,23 @@
                   }}</strong>
                 </div>
                 <div>
-                  <span>支付状态</span>
+                  <span>{{ $t('invoiceDetail.paymentStatus') }}</span>
                   <strong>{{ resolvePaymentStatusLabel(detail.payment_summary.status) }}</strong>
                 </div>
                 <div>
-                  <span>商家订单号</span>
+                  <span>{{ $t('invoiceDetail.merchantOrderNo') }}</span>
                   <strong>{{ detail.payment_summary.payment_no || '--' }}</strong>
                 </div>
                 <div>
-                  <span>第三方订单号</span>
+                  <span>{{ $t('invoiceDetail.thirdPartyOrderNo') }}</span>
                   <strong>{{ detail.payment_summary.trade_no || '--' }}</strong>
                 </div>
                 <div>
-                  <span>支付金额</span>
+                  <span>{{ $t('invoiceDetail.paymentAmount') }}</span>
                   <strong>¥{{ formatMoney(detail.payment_summary.amount) }}</strong>
                 </div>
                 <div v-if="hasAppliedBalanceDeduction">
-                  <span>余额抵扣</span>
+                  <span>{{ $t('invoiceDetail.balanceDeduction') }}</span>
                   <strong>¥{{ appliedDeductionAmountText }}</strong>
                 </div>
               </div>
@@ -148,26 +151,28 @@
             <t-card class="invoice-summary-card" :bordered="false">
               <template #title>{{ t('invoiceDetail.summary') }}</template>
               <div class="summary-total">
-                <span>本次应付</span>
+                <span>{{ $t('invoiceDetail.payableNow') }}</span>
                 <strong>¥{{ formatMoney(detail.payable_amount) }}</strong>
               </div>
               <div v-if="sessionExpiresAt" class="summary-session">
-                <t-tag variant="outline" theme="primary">会话截止 {{ formattedSessionExpiresAt }}</t-tag>
+                <t-tag variant="outline" theme="primary"
+                  >{{ $t('invoiceDetail.sessionDeadline') }} {{ formattedSessionExpiresAt }}</t-tag
+                >
                 <span class="summary-session__countdown" :class="{ 'is-expired': sessionExpired }">
                   {{ sessionCountdownText }}
                 </span>
               </div>
               <div class="summary-list">
                 <div>
-                  <span>账单号</span>
+                  <span>{{ $t('invoiceDetail.invoiceNo') }}</span>
                   <strong>{{ resolveInvoiceNo(detail) }}</strong>
                 </div>
                 <div>
-                  <span>账单类型</span>
+                  <span>{{ $t('invoiceDetail.invoiceType') }}</span>
                   <strong>{{ detail.type_label || '--' }}</strong>
                 </div>
                 <div class="summary-status-row">
-                  <span>状态</span>
+                  <span>{{ $t('invoiceDetail.status') }}</span>
                   <status-tag
                     class="summary-status-tag"
                     :status-map="INVOICE_STATUS_MAP"
@@ -175,23 +180,23 @@
                   />
                 </div>
                 <div>
-                  <span>账单金额</span>
+                  <span>{{ $t('invoiceDetail.invoiceAmount') }}</span>
                   <strong>¥{{ formatMoney(detail.amount) }}</strong>
                 </div>
                 <div>
-                  <span>优惠金额</span>
+                  <span>{{ $t('invoiceDetail.discountAmount') }}</span>
                   <strong>¥{{ formatMoney(detail.discount) }}</strong>
                 </div>
                 <div>
-                  <span>已支付</span>
+                  <span>{{ $t('invoiceDetail.paid') }}</span>
                   <strong>¥{{ formatMoney(detail.paid_amount) }}</strong>
                 </div>
                 <div>
-                  <span>创建时间</span>
+                  <span>{{ $t('invoiceDetail.createdAt') }}</span>
                   <strong>{{ detail.created_at || '--' }}</strong>
                 </div>
                 <div>
-                  <span>截止时间</span>
+                  <span>{{ $t('invoiceDetail.dueAt') }}</span>
                   <strong>{{ detail.due_date || '--' }}</strong>
                 </div>
               </div>
@@ -199,8 +204,8 @@
 
             <t-card v-if="showPayActions && hasPayMethods" class="pay-work-card" :bordered="false">
               <div class="pay-work-head">
-                <h2>选择支付方式</h2>
-                <p>确认渠道后继续完成当前账单支付</p>
+                <h2>{{ $t('invoiceDetail.choosePaymentTitle') }}</h2>
+                <p>{{ $t('invoiceDetail.choosePaymentDesc') }}</p>
               </div>
 
               <div class="pay-method-list">
@@ -219,8 +224,8 @@
                     <component :is="paymentMethodIcon(method)" />
                   </span>
                   <span class="pay-method-card__text">
-                    <strong>{{ method.name || method.label || '支付' }}</strong>
-                    <small>{{ method.label || method.key || '扫码支付' }}</small>
+                    <strong>{{ method.name || method.label || $t('invoiceDetail.pay') }}</strong>
+                    <small>{{ method.label || method.key || $t('invoiceDetail.scanToPay') }}</small>
                   </span>
                   <span class="pay-method-card__check">
                     <check-circle-icon v-if="selectedPayMethod === paymentOptionKey(method)" />
@@ -231,16 +236,16 @@
 
               <div v-if="showBalanceDeductionOption" class="deduction-panel">
                 <div class="deduction-panel__head">
-                  <strong>余额抵扣</strong>
-                  <span>最多可抵扣 ¥{{ autoDeductionAmountText }}</span>
+                  <strong>{{ $t('invoiceDetail.balanceDeduction') }}</strong>
+                  <span>{{ $t('invoiceDetail.maxDeduction') }} ¥{{ autoDeductionAmountText }}</span>
                 </div>
                 <t-checkbox v-model="allowBalanceDeduction" @change="handleDeductionToggle">
-                  支付宝支付时使用余额抵扣
+                  {{ $t('invoiceDetail.alipayBalanceHint') }}
                 </t-checkbox>
                 <div v-if="allowBalanceDeduction" class="deduction-summary">
-                  <span>当前余额 {{ balanceText }}</span>
-                  <span>预计抵扣 ¥{{ autoDeductionAmountText }}</span>
-                  <span>支付宝待付 ¥{{ estimatedAlipayAmountText }}</span>
+                  <span>{{ $t('invoiceDetail.currentBalance') }} {{ balanceText }}</span>
+                  <span>{{ $t('invoiceDetail.estimatedDeduction') }} ¥{{ autoDeductionAmountText }}</span>
+                  <span>{{ $t('invoiceDetail.alipayRemaining') }} ¥{{ estimatedAlipayAmountText }}</span>
                 </div>
               </div>
 
@@ -255,7 +260,7 @@
                   :disabled="!canPay"
                   @click="handlePayByBalance"
                 >
-                  确认余额支付
+                  {{ $t('invoiceDetail.confirmBalancePay') }}
                 </t-button>
                 <t-button
                   v-else-if="selectedPayMethod && selectedPayMethod !== 'free'"
@@ -269,12 +274,12 @@
                 >
                   {{
                     allowBalanceDeduction && balanceAmount >= payableAmount
-                      ? '使用余额完成支付'
-                      : `生成${selectedPayMethodName}二维码`
+                      ? $t('invoiceDetail.payWithBalance')
+                      : $t('invoiceDetail.generateQr', { method: selectedPayMethodName })
                   }}
                 </t-button>
                 <t-button v-else-if="selectedPayMethod === 'free'" theme="primary" size="large" block disabled>
-                  零元账单无需操作
+                  {{ $t('invoiceDetail.zeroAmountNoAction') }}
                 </t-button>
                 <t-button
                   class="pay-actions__secondary"
@@ -284,7 +289,7 @@
                   :disabled="paying || loading"
                   @click="loadDetail"
                 >
-                  刷新状态
+                  {{ $t('invoiceDetail.refreshStatus') }}
                 </t-button>
               </div>
 
@@ -294,12 +299,12 @@
         </section>
       </template>
 
-      <t-empty v-else description="未找到账单详情" />
+      <t-empty v-else :description="$t('invoiceDetail.notFound')" />
     </t-loading>
 
     <t-dialog
       v-model:visible="alipayDialogVisible"
-      header="支付宝支付"
+      :header="$t('invoiceDetail.alipayPay')"
       width="min(24rem, calc(100vw - 2rem))"
       destroy-on-close
     >
@@ -307,8 +312,8 @@
         <qrcode-vue v-if="alipayQrCode" :value="alipayQrCode" :size="180" level="H" render-as="svg" />
       </div>
       <div class="dialog-meta">
-        <p>金额 ¥{{ alipayPayableAmount }}</p>
-        <p>商家订单号 {{ alipayPaymentNo || '--' }}</p>
+        <p>{{ $t('invoiceDetail.amount') }} ¥{{ alipayPayableAmount }}</p>
+        <p>{{ $t('invoiceDetail.merchantOrderNo') }} {{ alipayPaymentNo || '--' }}</p>
       </div>
       <template #footer>
         <t-button theme="primary" :loading="polling" :disabled="!alipayPollingReady" @click="pollAlipayStatus(false)">
@@ -397,9 +402,9 @@ const formattedSessionExpiresAt = computed(() =>
 const sessionRemainingMs = computed(() => (sessionExpiresTime.value ? sessionExpiresTime.value - now.value : 0));
 const sessionExpired = computed(() => Boolean(sessionExpiresTime.value) && sessionRemainingMs.value <= 0);
 const sessionCountdownText = computed(() => {
-  if (!sessionExpiresTime.value) return '剩余 --';
-  if (sessionRemainingMs.value <= 0) return '已过期';
-  return `剩余 ${formatCountdown(sessionRemainingMs.value)}`;
+  if (!sessionExpiresTime.value) return t('invoiceDetail.sessionRemaining', { countdown: '--' });
+  if (sessionRemainingMs.value <= 0) return t('invoiceDetail.sessionExpired');
+  return t('invoiceDetail.sessionRemaining', { countdown: formatCountdown(sessionRemainingMs.value) });
 });
 const renewFlowItems = [
   {
@@ -478,7 +483,11 @@ function renewServiceName(row: InvoiceRecord | null | undefined) {
   const service = serviceRecord(row);
   const serviceId = renewServiceId(row);
   const productName = productPath(row);
-  return service?.name || (productName !== '--' ? productName : '') || (serviceId > 0 ? `服务 #${serviceId}` : '--');
+  return (
+    service?.name ||
+    (productName !== '--' ? productName : '') ||
+    (serviceId > 0 ? t('invoiceDetail.serviceHash', { id: serviceId }) : '--')
+  );
 }
 
 function currentExpiresAt(row: InvoiceRecord | null | undefined) {
@@ -528,19 +537,25 @@ const MACHINE_SPEC_FIELD_ORDER = [
   'traffic',
 ];
 
-const MACHINE_SPEC_FALLBACK_LABELS: Record<string, string> = {
-  area: '区域',
-  cpu: 'CPU',
-  memory: '内存',
-  system_disk_size: '系统盘',
-  data_disk_size: '数据盘',
-  bw: '带宽',
-  bandwidth: '带宽',
-  network_type: '网络类型',
-  ip_num: '独立 IP',
-  os: '操作系统',
-  traffic: '流量',
+// 只存 i18n key，翻译在 machineSpecLabel() 里做：模块级常量存译好的文案时，切换语言不会重新求值
+const MACHINE_SPEC_FALLBACK_LABEL_KEYS: Record<string, string> = {
+  area: 'invoiceDetail.specs.area',
+  cpu: 'invoiceDetail.specs.cpu',
+  memory: 'invoiceDetail.specs.memory',
+  system_disk_size: 'invoiceDetail.specs.systemDisk',
+  data_disk_size: 'invoiceDetail.specs.dataDisk',
+  bw: 'invoiceDetail.specs.bandwidth',
+  bandwidth: 'invoiceDetail.specs.bandwidth',
+  network_type: 'invoiceDetail.specs.networkType',
+  ip_num: 'invoiceDetail.specs.independentIp',
+  os: 'invoiceDetail.specs.os',
+  traffic: 'invoiceDetail.specs.traffic',
 };
+
+function machineSpecLabel(field: string) {
+  const key = MACHINE_SPEC_FALLBACK_LABEL_KEYS[field];
+  return key ? t(key) : '';
+}
 
 // 金额汇总类字段不属于「机器基础信息」
 const MACHINE_SPEC_AMOUNT_FIELDS = new Set([
@@ -571,7 +586,7 @@ function formatSpecValue(field: string, value: string) {
       return `${Number.isInteger(gb) ? gb : gb.toFixed(1)}G`;
     }
     if (field === 'bw' || field === 'bandwidth') return `${num}Mbps`;
-    if (field === 'ip_num') return `${num} 个`;
+    if (field === 'ip_num') return t('common.countUnit', { count: num });
   }
 
   return text;
@@ -607,7 +622,7 @@ function machineSpecs(row: InvoiceRecord | null | undefined) {
     const item = toRecord(raw);
     const field = String(item.field ?? '').trim();
     if (MACHINE_SPEC_AMOUNT_FIELDS.has(field)) return;
-    const label = String(item.label ?? '').trim() || MACHINE_SPEC_FALLBACK_LABELS[field] || field;
+    const label = String(item.label ?? '').trim() || machineSpecLabel(field) || field;
     const value = String(item.value_label ?? item.value ?? '').trim();
     push(field, label, value);
   });
@@ -616,7 +631,7 @@ function machineSpecs(row: InvoiceRecord | null | undefined) {
   const rawSnapshot = toRecord(row?.config_snapshot);
   MACHINE_SPEC_FIELD_ORDER.forEach((field) => {
     if (seenFields.has(field)) return;
-    const label = MACHINE_SPEC_FALLBACK_LABELS[field];
+    const label = machineSpecLabel(field);
     if (!label) return;
     push(field, label, formatSpecValue(field, String(rawSnapshot[field] ?? '')));
   });
@@ -649,7 +664,7 @@ function formatCountdown(value: number) {
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
   const timeText = [hours, minutes, seconds].map((item) => String(item).padStart(2, '0')).join(':');
-  return days > 0 ? `${days}天 ${timeText}` : timeText;
+  return days > 0 ? t('invoiceDetail.daysCountdown', { days, time: timeText }) : timeText;
 }
 
 function startSessionCountdown() {

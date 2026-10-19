@@ -7,10 +7,14 @@
         }}</t-button>
       </template>
       <div class="log-summary finance-summary">
-        <span>共 {{ financeState.summary.total_count || financeState.total || 0 }} 条</span>
-        <span>收入 ¥{{ formatMoney(financeState.summary.total_in || 0) }}</span>
-        <span>支出 ¥{{ formatMoney(financeState.summary.total_out || 0) }}</span>
-        <span>退款 ¥{{ formatMoney(financeState.summary.refund_in || 0) }}</span>
+        <span>{{
+          $t('serviceConsole.finance.totalCount', {
+            count: financeState.summary.total_count || financeState.total || 0,
+          })
+        }}</span>
+        <span>{{ $t('serviceConsole.finance.totalIn') }} ¥{{ formatMoney(financeState.summary.total_in || 0) }}</span>
+        <span>{{ $t('serviceConsole.finance.totalOut') }} ¥{{ formatMoney(financeState.summary.total_out || 0) }}</span>
+        <span>{{ $t('serviceConsole.finance.refundIn') }} ¥{{ formatMoney(financeState.summary.refund_in || 0) }}</span>
       </div>
       <!-- 原来把错误文案直接塞进空态描述，失败和「没有记录」长得一模一样；
            这里改成三态容器：加载遮罩 / 错误块 + 重试 / 空态引导 -->

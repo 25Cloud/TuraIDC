@@ -1,4 +1,5 @@
 import type { ProviderTypeRecord } from '@/api/supplier';
+import { t } from '@/locales';
 import { toUserMessage } from '@/utils/userMessage';
 
 /**
@@ -6,9 +7,15 @@ import { toUserMessage } from '@/utils/userMessage';
  */
 
 export const providerTypeFallbackLabels: Record<string, string> = {
-  zjmf_finance_api: 'ZJMF 财务',
-  zjmf_cloud_api: 'ZJMF 云',
-  hosting_panel_api: '通用主机面板',
+  get zjmf_finance_api() {
+    return t('products.shared.providerZjmfFinance');
+  },
+  get zjmf_cloud_api() {
+    return t('products.shared.providerZjmfCloud');
+  },
+  get hosting_panel_api() {
+    return t('products.shared.providerHostingPanel');
+  },
 };
 
 export const fallbackProviderTypeOptions = Object.entries(providerTypeFallbackLabels).map(([value, label]) => ({
@@ -99,7 +106,9 @@ export function findProductGroupByKey<T extends ProductGroupLike>(options: T[], 
 }
 
 export function productGroupOptionLabel(row: ProductGroupLike): string {
-  return String(row.label || row.name || `分类 #${productGroupEffectiveId(row)}`).trim();
+  return String(
+    row.label || row.name || t('products.shared.categoryWithId', { id: productGroupEffectiveId(row) }),
+  ).trim();
 }
 
 export function isSelectableProductGroup(row: ProductGroupLike): boolean {
@@ -159,7 +168,7 @@ export function formatMonthlyPrice(row: {
 export function formatStock(value: unknown): string {
   const stock = Number(value);
   if (!Number.isFinite(stock)) return '-';
-  return stock < 0 ? '不限' : String(stock);
+  return stock < 0 ? t('products.shared.unlimited') : String(stock);
 }
 
 /**
@@ -193,7 +202,9 @@ function validationErrorMessage(error: unknown): string {
     .filter(Boolean);
   if (!messages.length) return '';
 
-  return messages.length > 1 ? `${messages[0]}（另有 ${messages.length - 1} 项未通过校验）` : messages[0];
+  return messages.length > 1
+    ? t('products.shared.validationExtra', { first: messages[0], count: messages.length - 1 })
+    : messages[0];
 }
 
 /**

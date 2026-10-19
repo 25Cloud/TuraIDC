@@ -1,4 +1,3 @@
-import { i18n } from '@/locales'
 import {
   attachSafeRequestDedupe,
   buildSafeRequestKey,
@@ -14,6 +13,7 @@ import axios from 'axios';
 import { MessagePlugin } from 'tdesign-vue-next';
 
 import { getClientToken, removeClientToken } from '@/app/runtime/session';
+import { i18n } from '@/locales';
 import router from '@/router';
 import { toUserMessage } from '@/utils/userMessage';
 
@@ -163,7 +163,7 @@ httpClient.interceptors.response.use(
     const runtimeConfig = response.config as ClientRuntimeRequestConfig;
 
     if (res.code !== 0) {
-      const msg = toUserMessage(res.message, '请求失败');
+      const msg = toUserMessage(res.message, i18n.global.t('common.errors.requestFailed'));
       const captchaRequired = Boolean(res.data?.captcha_required);
 
       if (res.code === 40100) {
@@ -199,17 +199,17 @@ httpClient.interceptors.response.use(
       }
     }
 
-    let msg = toUserMessage(error.response?.data?.message, '网络异常');
+    let msg = toUserMessage(error.response?.data?.message, i18n.global.t('common.errors.networkError'));
 
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-      msg = '网络连接已断开，请检查后重试';
+      msg = i18n.global.t('common.errors.networkOffline');
     } else if (
       error.code === 'ECONNABORTED' ||
       String(error.message || '')
         .toLowerCase()
         .includes('timeout')
     ) {
-      msg = '请求超时，请检查网络后重试';
+      msg = i18n.global.t('common.errors.timeout');
     }
 
     if (error.response?.status === 422) {
@@ -220,13 +220,16 @@ httpClient.interceptors.response.use(
       } else {
         // 业务异常（BusinessException）也走 422，message 里有真实原因，优先展示
         const serverMsg = toUserMessage(error.response?.data?.message, '');
-        msg = serverMsg || '参数填写有误，请检查后重试';
+        msg = serverMsg || i18n.global.t('common.errors.invalidParams');
       }
     }
 
     if (error.response?.status === 429) {
       const retryAfter = Number(error.response?.headers?.['retry-after'] || 0);
-      msg = retryAfter > 0 ? `请求过于频繁，请 ${retryAfter} 秒后重试` : '请求过于频繁，请稍后重试';
+      msg =
+        retryAfter > 0
+          ? i18n.global.t('common.errors.rateLimitedRetry', { seconds: retryAfter })
+          : i18n.global.t('common.errors.rateLimited');
     }
 
     if (error.response?.status === 401) {
@@ -252,8 +255,8 @@ httpClient.interceptors.response.use(
 export default httpClient;
 
 interface StarterRequestCompat {
-  get: <T = unknown>(config: { url: string; params?: unknown }) => Promise<T>;
-  post: <T = unknown>(config: { url: string; data?: unknown }) => Promise<T>;
+  get: <T = unknown>(_config: { url: string; params?: unknown }) => Promise<T>;
+  post: <T = unknown>(_config: { url: string; data?: unknown }) => Promise<T>;
 }
 
 export const request: StarterRequestCompat = {

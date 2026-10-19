@@ -2,20 +2,20 @@ import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, reactive, ref } from 'vue';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type { ConsoleServiceDetail, ServiceReinstallOption } from '@/types/client';
 
 import { resolveErrorMessage } from './useConsoleCore';
-import { t } from '@/locales';
 
 export interface UseConsoleReinstallOptions {
   serviceId: { value: number };
   actionLoading: { value: boolean };
-  setOperationStatus: (type: string, label: string) => void;
-  loadRemoteStatus: (silent: boolean) => Promise<void>;
+  setOperationStatus: (_type: string, _label: string) => void;
+  loadRemoteStatus: (_silent: boolean) => Promise<void>;
   clearStatusSyncTimer: () => void;
-  scheduleStatusSync: (callback: () => void, delay: number) => void;
-  normalizeDetail: (payload: Partial<ConsoleServiceDetail>) => ConsoleServiceDetail;
-  mergeDetail: (patch: Partial<ConsoleServiceDetail>) => void;
+  scheduleStatusSync: (_callback: () => void, _delay: number) => void;
+  normalizeDetail: (_payload: Partial<ConsoleServiceDetail>) => ConsoleServiceDetail;
+  mergeDetail: (_patch: Partial<ConsoleServiceDetail>) => void;
 }
 
 interface ReinstallGroupOption {
@@ -38,7 +38,7 @@ export function useConsoleReinstall(options: UseConsoleReinstallOptions) {
   const reinstallGroupedOptions = computed<ReinstallGroupOption[]>(() => {
     const groups: Record<string, ReinstallGroupOption> = {};
     for (const item of reinstallState.os) {
-      const groupName = String(item.group_name || '默认分组');
+      const groupName = String(item.group_name || t('serviceConsole.reinstall.defaultGroup'));
       if (!groups[groupName]) {
         groups[groupName] = { group_name: groupName, items: [] };
       }
@@ -65,7 +65,7 @@ export function useConsoleReinstall(options: UseConsoleReinstallOptions) {
       reinstallState.os_group = firstGroup?.group_name || '';
       reinstallState.os_id = String(firstGroup?.items?.[0]?.os_id || '');
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '加载重装系统选项失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.reinstallOptionsFailed')));
     } finally {
       reinstallState.loading = false;
     }
@@ -85,10 +85,10 @@ export function useConsoleReinstall(options: UseConsoleReinstallOptions) {
 
     const confirmed = await new Promise<boolean>((resolve) => {
       const dialog = DialogPlugin.confirm({
-        header: '确认重装系统',
-        body: '重装系统后，当前系统盘中的所有数据将被永久清除且不可恢复，确定要重装系统吗？',
+        header: t('serviceConsole.reinstall.confirmHeader'),
+        body: t('serviceConsole.reinstall.confirmBody'),
         theme: 'danger',
-        confirmBtn: { content: '确认重装', theme: 'danger' },
+        confirmBtn: { content: t('serviceConsole.reinstall.confirmBtn'), theme: 'danger' },
         onConfirm: () => {
           dialog.destroy();
           resolve(true);
@@ -109,13 +109,13 @@ export function useConsoleReinstall(options: UseConsoleReinstallOptions) {
     try {
       const res = await clientApi.serviceReinstall(serviceId.value, { os_id: reinstallState.os_id });
       const payload = res.data || {};
-      setOperationStatus('reinstall', '重装系统中');
+      setOperationStatus('reinstall', t('serviceConsole.reinstall.running'));
       reinstallVisible.value = false;
-      MessagePlugin.success(String(payload.message || '重装系统任务已提交'));
+      MessagePlugin.success(String(payload.message || t('serviceConsole.reinstall.submitted')));
       clearStatusSyncTimer();
       scheduleStatusSync(() => loadRemoteStatus(true), 1500);
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '重装系统失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.reinstall.failed')));
     } finally {
       actionLoading.value = false;
     }

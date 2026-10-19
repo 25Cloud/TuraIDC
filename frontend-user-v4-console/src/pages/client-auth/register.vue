@@ -12,7 +12,9 @@
     <t-form ref="formRef" class="client-auth-form" :data="form" :rules="rules" label-width="0" @submit="handleRegister">
       <t-form-item name="account">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required" for="register-account">{{ $t('clientAuth.register.accountLabel') }}</label>
+          <label class="client-auth-label is-required" for="register-account">{{
+            $t('clientAuth.register.accountLabel')
+          }}</label>
           <t-input
             id="register-account"
             v-model="form.account"
@@ -26,9 +28,17 @@
 
       <t-form-item name="code">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required" for="register-code">{{ $t('clientAuth.register.codeLabel') }}</label>
+          <label class="client-auth-label is-required" for="register-code">{{
+            $t('clientAuth.register.codeLabel')
+          }}</label>
           <div class="client-auth-code-row">
-            <t-input id="register-code" v-model="form.code" size="large" maxlength="6" :placeholder="$t('clientAuth.register.codePlaceholder')" />
+            <t-input
+              id="register-code"
+              v-model="form.code"
+              size="large"
+              maxlength="6"
+              :placeholder="$t('clientAuth.register.codePlaceholder')"
+            />
             <t-button
               variant="outline"
               :disabled="countdown > 0"
@@ -69,7 +79,9 @@
 
       <t-form-item name="password">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required" for="register-password">{{ $t('clientAuth.register.passwordLabel') }}</label>
+          <label class="client-auth-label is-required" for="register-password">{{
+            $t('clientAuth.register.passwordLabel')
+          }}</label>
           <t-input
             id="register-password"
             v-model="form.password"
@@ -89,7 +101,9 @@
 
       <t-form-item name="password_confirmation">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required" for="register-confirm-password">{{ $t('clientAuth.register.confirmPasswordLabel') }}</label>
+          <label class="client-auth-label is-required" for="register-confirm-password">{{
+            $t('clientAuth.register.confirmPasswordLabel')
+          }}</label>
           <t-input
             id="register-confirm-password"
             v-model="form.password_confirmation"
@@ -135,10 +149,10 @@ import { clientAuthApi } from '@/api/auth';
 import AuthShell from '@/components/auth/AuthShell.vue';
 import PasswordToggle from '@/components/auth/PasswordToggle.vue';
 import { useGeeTestCaptcha } from '@/composables/useGeeTestCaptcha';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { buildAccountPayload, detectAccountType, normalizeAccountValue } from '@/utils/account';
 import { toUserMessage } from '@/utils/userMessage';
-import { t } from '@/locales';
 
 interface RegisterForm {
   account: string;
@@ -273,12 +287,14 @@ async function handleSendCode() {
       { scene: accountPayload.accountType === 'phone' ? 'phone_code' : 'email_code' },
     );
 
-    MessagePlugin.success(`${accountPayload.accountType === 'phone' ? '短信' : '邮箱'}验证码已发送`);
+    MessagePlugin.success(
+      accountPayload.accountType === 'phone' ? t('clientAuth.codeSentSms') : t('clientAuth.codeSentEmail'),
+    );
     startCountdown();
   } catch (error: unknown) {
     const runtimeError = error as RuntimeHandledError;
     if (!runtimeError.__handled) {
-      MessagePlugin.error(toUserMessage(runtimeError.message, '验证码发送失败'));
+      MessagePlugin.error(toUserMessage(runtimeError.message, t('clientAuth.codeSendFailed')));
     }
   } finally {
     sendingCode.value = false;
@@ -314,28 +330,28 @@ function setFormErrors(errors: Partial<Record<keyof RegisterForm, string>>) {
 function validateForm() {
   const errors: Partial<Record<keyof RegisterForm, string>> = {};
   if (!detectAccountType(form.account)) {
-    errors.account = '请输入正确的手机号或邮箱';
+    errors.account = t('clientAuth.register.accountInvalid');
   }
   if (!form.code) {
-    errors.code = '请输入验证码';
+    errors.code = t('clientAuth.register.codeRequired');
   } else if (form.code.length !== 6) {
-    errors.code = '验证码为 6 位';
+    errors.code = t('clientAuth.register.codeLength');
   }
   if (form.nickname.length > 50) {
-    errors.nickname = '用户名不能超过 50 个字符';
+    errors.nickname = t('clientAuth.register.nicknameTooLong');
   }
   if (form.referral_code.length > 24) {
-    errors.referral_code = '推荐码不能超过 24 个字符';
+    errors.referral_code = t('clientAuth.register.referralCodeTooLong');
   }
   if (!form.password) {
-    errors.password = '请输入登录密码';
+    errors.password = t('clientAuth.register.passwordRequired');
   } else if (form.password.length < 8) {
-    errors.password = '密码长度不能少于 8 位';
+    errors.password = t('clientAuth.register.passwordTooShort');
   }
   if (!form.password_confirmation) {
-    errors.password_confirmation = '请再次输入密码';
+    errors.password_confirmation = t('clientAuth.register.confirmPasswordRequired');
   } else if (form.password_confirmation !== form.password) {
-    errors.password_confirmation = '两次输入的密码不一致';
+    errors.password_confirmation = t('clientAuth.register.passwordMismatch');
   }
 
   if (Object.keys(errors).length > 0) {
@@ -371,7 +387,7 @@ async function runRegister() {
   } catch (error: unknown) {
     const runtimeError = error as RuntimeHandledError;
     if (!runtimeError.__handled) {
-      MessagePlugin.error(toUserMessage(runtimeError.message, '注册失败'));
+      MessagePlugin.error(toUserMessage(runtimeError.message, t('clientAuth.register.failed')));
     }
   } finally {
     loading.value = false;

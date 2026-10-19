@@ -1,5 +1,7 @@
 import { computed, ref } from 'vue';
 
+import { t } from '@/locales';
+
 import type { MonitorChartRecord, MonitorSummaryItem } from '../types';
 
 interface MonitorSeries {
@@ -79,7 +81,7 @@ export function useConsoleMonitor(monitorState: { charts: MonitorChartRecord[] }
 
     return {
       key: String(chart.type || chart.label || index),
-      label: String(chart.label || chart.type || `指标 ${index + 1}`),
+      label: String(chart.label || chart.type || t('services.console.chartFallback', { index: index + 1 })),
       message: String(chart.error || chart.message || ''),
       latestText: resolveMonitorSummaryText(summary.latest || null, series, 'latest') || '--',
       latestTime: String(summary.latest?.time || latestPoint?.time || ''),

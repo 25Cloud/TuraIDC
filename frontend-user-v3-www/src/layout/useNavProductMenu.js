@@ -1,5 +1,6 @@
 import { computed, ref, shallowRef } from "vue";
 import siteApi from "@/api/site";
+import { t } from "@/locales";
 
 const CACHE_TTL = 5 * 60 * 1000;
 let cachedProductTypes = null;
@@ -80,7 +81,10 @@ export function useNavProductMenu() {
           .map((item, index) => ({
             id: Number(item.id || index + 1),
             value: String(item.first_product_group_code || item.value || ""),
-            label: item.label || item.product_type_label || `分类 ${index + 1}`,
+            label:
+              item.label ||
+              item.product_type_label ||
+              t("layout.navProductMenu.categoryFallback", { index: index + 1 }),
             product_type: String(item.product_type || ""),
             product_count: Number(item.product_count || 0),
             group_count: Number(item.group_count || 0),

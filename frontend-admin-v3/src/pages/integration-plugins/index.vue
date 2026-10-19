@@ -316,7 +316,9 @@
                 :can-reveal="canRevealPluginSecrets"
                 :reveal="() => revealPluginSecret(field)"
                 @edited-change="(value: boolean) => (editedSecretKeys[field.key] = value)"
-                @reveal-error="(error: unknown) => MessagePlugin.error(errorMessage(error, '读取密钥失败'))"
+                @reveal-error="
+                  (error: unknown) => MessagePlugin.error(errorMessage(error, t('plugins.index.revealSecretFailed')))
+                "
               />
               <t-textarea
                 v-else-if="field.type === 'textarea' || field.type === 'json'"
@@ -534,7 +536,9 @@
             :can-reveal="canRevealPluginSecrets"
             :reveal="revealSmtpAccountPassword"
             @edited-change="(value: boolean) => (smtpAccountPasswordEdited = value)"
-            @reveal-error="(error: unknown) => MessagePlugin.error(errorMessage(error, '读取 SMTP 密码失败'))"
+            @reveal-error="
+              (error: unknown) => MessagePlugin.error(errorMessage(error, t('plugins.index.revealSmtpPasswordFailed')))
+            "
           />
           <t-input
             v-else
@@ -827,7 +831,7 @@ async function loadPlugins() {
     const response = await pluginsApi.list({ domain: activeDomain.value });
     plugins.value = response.list || [];
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载插件列表失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.loadListFailed')));
   } finally {
     loading.value = false;
   }
@@ -858,7 +862,7 @@ async function loadUpstreamPanelSettings() {
     const preloadAll = read('console_area_preload_all_enabled');
     if (preloadAll !== null) areaPreloadAllEnabled.value = preloadAll;
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载上游面板设置失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.loadUpstreamSettingsFailed')));
   } finally {
     panelSettingsLoading.value = false;
   }
@@ -881,10 +885,10 @@ async function saveOriginCheck(value: string | number | boolean) {
       group: 'system',
       settings: { console_module_origin_check_enabled: value ? 1 : 0 },
     });
-    MessagePlugin.success(value ? '已开启上游面板同源检测' : '已关闭上游面板同源检测');
+    MessagePlugin.success(value ? t('plugins.index.originCheckEnabled') : t('plugins.index.originCheckDisabled'));
   } catch (error) {
     originCheckEnabled.value = !value;
-    MessagePlugin.error(errorMessage(error, '保存同源检测设置失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.saveOriginCheckFailed')));
   } finally {
     originCheckSaving.value = false;
   }
@@ -903,10 +907,10 @@ async function saveAreaPreloadAll(value: string | number | boolean) {
       group: 'system',
       settings: { console_area_preload_all_enabled: value ? 1 : 0 },
     });
-    MessagePlugin.success(value ? '已开启面板区域首屏预热' : '已关闭面板区域首屏预热');
+    MessagePlugin.success(value ? t('plugins.index.panelPreloadEnabled') : t('plugins.index.panelPreloadDisabled'));
   } catch (error) {
     areaPreloadAllEnabled.value = !value;
-    MessagePlugin.error(errorMessage(error, '保存面板预热设置失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.savePanelPreloadFailed')));
   } finally {
     areaPreloadAllSaving.value = false;
   }
@@ -924,7 +928,7 @@ async function scanPlugins() {
     plugins.value = response.list || [];
     MessagePlugin.success(t('plugins.index.scanDone'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '扫描插件失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.scanFailed')));
   } finally {
     scanning.value = false;
   }
@@ -968,16 +972,24 @@ async function disablePlugin(plugin: IntegrationPluginRecord) {
 }
 
 const BINDING_TABLE_LABELS: Record<string, string> = {
-  integration_plugin_bindings: '插件绑定',
-  supplier_plugin_bindings: '供应商绑定',
-  product_upstream_bindings: '商品上游绑定',
-  service_upstream_bindings: '服务上游绑定',
+  get integration_plugin_bindings() {
+    return t('plugins.index.bindingPlugin');
+  },
+  get supplier_plugin_bindings() {
+    return t('plugins.index.bindingSupplier');
+  },
+  get product_upstream_bindings() {
+    return t('plugins.index.bindingProduct');
+  },
+  get service_upstream_bindings() {
+    return t('plugins.index.bindingService');
+  },
 };
 
 function bindingSummary(plugin: IntegrationPluginRecord): string {
   return Object.entries(plugin.binding_counts || {})
     .filter(([, count]) => Number(count) > 0)
-    .map(([table, count]) => `${BINDING_TABLE_LABELS[table] || table} ${count} 条`)
+    .map(([table, count]) => t('plugins.index.bindingCount', { label: BINDING_TABLE_LABELS[table] || table, count }))
     .join('、');
 }
 
@@ -990,11 +1002,17 @@ function deletePlugin(plugin: IntegrationPluginRecord) {
   const force = Number(plugin.business_reference_count || 0) > 0 || summary !== '';
 
   const dialog = DialogPlugin.confirm({
-    header: force ? '强制卸载插件' : '删除插件',
+    header: force ? t('plugins.index.forceUninstallTitle') : t('plugins.index.deleteTitle'),
     body: force
-      ? `插件「${plugin.name}」仍被业务数据引用${summary ? `（${summary}）` : ''}。卸载会一并删除这些绑定关系且无法恢复，确定继续吗？`
-      : `确定删除插件「${plugin.name}」的安装记录和配置吗？插件目录文件不会被删除。`,
-    confirmBtn: { content: force ? '强制卸载' : '确认删除', theme: 'danger' },
+      ? t('plugins.index.forceUninstallReferenced', {
+          name: plugin.name,
+          summary: summary ? t('plugins.index.uninstallReferencedSummary', { summary }) : '',
+        })
+      : t('plugins.index.deleteConfirm', { name: plugin.name }),
+    confirmBtn: {
+      content: force ? t('plugins.index.forceUninstall') : t('plugins.index.confirmDelete'),
+      theme: 'danger',
+    },
     async onConfirm() {
       dialog.destroy();
       await runAction(plugin, 'delete', async () => {
@@ -1016,11 +1034,11 @@ async function healthCheck(plugin: IntegrationPluginRecord) {
     if (sequence !== healthCheckSequence.value) return;
     const healthy = result.detail?.result?.healthy !== false;
     if (!healthy) {
-      MessagePlugin.error(String(result.message || '插件检测失败'));
+      MessagePlugin.error(String(result.message || t('plugins.index.healthCheckFailed')));
       return;
     }
 
-    MessagePlugin.success(String(result.message || '插件加载正常'));
+    MessagePlugin.success(String(result.message || t('plugins.index.healthCheckOk')));
     if (supportsSystemTest(plugin.domain)) {
       await openTest(plugin, sequence);
     }
@@ -1049,7 +1067,7 @@ async function openConfig(plugin: IntegrationPluginRecord) {
     fillConfigForm(detail);
     initCollapsedSections();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载插件配置失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.loadConfigFailed')));
   } finally {
     configLoading.value = false;
   }
@@ -1065,7 +1083,7 @@ async function openTest(plugin: IntegrationPluginRecord, sequence?: number) {
     resetTestResults();
     testVisible.value = true;
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载插件测试失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.loadTestFailed')));
   }
 }
 
@@ -1098,7 +1116,7 @@ async function openSystemEmailTest() {
     MessagePlugin.success(t('plugins.test.testEmailSuccess'));
     systemEmailTestTo.value = '';
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '测试邮件发送失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.testEmailFailed')));
   } finally {
     emailTesting.value = false;
   }
@@ -1124,7 +1142,7 @@ async function saveConfig() {
     MessagePlugin.success(t('plugins.index.saveConfigSuccess'));
     await loadPlugins();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存插件配置失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.saveConfigFailed')));
   } finally {
     savingConfig.value = false;
   }
@@ -1135,7 +1153,7 @@ async function runAction(plugin: IntegrationPluginRecord, action: string, callba
   try {
     await callback();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '操作失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.operationFailed')));
   } finally {
     actionLoading.value = '';
   }
@@ -1218,7 +1236,7 @@ function parseJsonField(value: unknown, label: string) {
   try {
     return JSON.parse(raw);
   } catch {
-    throw new Error(`${label} 必须是合法 JSON`);
+    throw new Error(t('plugins.index.jsonInvalid', { label }));
   }
 }
 
@@ -1228,9 +1246,9 @@ function fieldLabel(field: IntegrationPluginConfigSchema) {
 
 function fieldPlaceholder(field: IntegrationPluginConfigSchema) {
   if (field.placeholder) return field.placeholder;
-  if (fieldHasSecretValue(field)) return '已配置，留空表示不修改';
-  if (field.type === 'json') return '请输入 JSON 数组或对象';
-  return `请输入${fieldLabel(field)}`;
+  if (fieldHasSecretValue(field)) return t('plugins.smtp.configuredKeepBlank');
+  if (field.type === 'json') return t('plugins.index.jsonPlaceholder');
+  return t('plugins.index.inputField', { label: fieldLabel(field) });
 }
 
 function inputType(field: IntegrationPluginConfigSchema) {
@@ -1313,7 +1331,7 @@ async function toggleSecretVisibility(field: IntegrationPluginConfigSchema) {
     visibleSecretKeys[field.key] = true;
     editedSecretKeys[field.key] = false;
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '读取密钥失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.revealSecretFailed')));
   } finally {
     loadingSecretKeys[field.key] = false;
   }
@@ -1409,14 +1427,17 @@ function smtpAccountPreview(field: IntegrationPluginConfigSchema, plugin = curre
 function smtpAccountActionOptions(account: SmtpAccountForm) {
   const actions = [];
   if (canManagePlugins.value) {
-    actions.push({ content: account.enabled === false ? '开启' : '暂停', value: 'toggle' });
-    actions.push({ content: '编辑', value: 'edit' });
+    actions.push({
+      content: account.enabled === false ? t('plugins.index.enableAccount') : t('plugins.index.pauseAccount'),
+      value: 'toggle',
+    });
+    actions.push({ content: t('plugins.index.edit'), value: 'edit' });
   }
   if (canTestPlugins.value) {
-    actions.push({ content: '发送测试邮件', value: 'test' });
+    actions.push({ content: t('plugins.test.sendTestEmail'), value: 'test' });
   }
   if (canManagePlugins.value) {
-    actions.push({ content: '删除', value: 'delete' });
+    actions.push({ content: t('plugins.index.delete'), value: 'delete' });
   }
   return actions;
 }
@@ -1452,9 +1473,9 @@ async function handleSmtpAccountAction(action: string, index: number) {
   if (action === 'delete') {
     if (!canManagePlugins.value) return;
     const dialog = DialogPlugin.confirm({
-      header: '删除 SMTP 账号',
-      body: '确定删除这个 SMTP 账号吗？',
-      confirmBtn: { content: '确认删除', theme: 'danger' },
+      header: t('plugins.index.deleteAccountTitle'),
+      body: t('plugins.index.deleteAccountConfirm'),
+      confirmBtn: { content: t('plugins.index.confirmDelete'), theme: 'danger' },
       async onConfirm() {
         dialog.destroy();
         smtpAccounts.value.splice(index, 1);
@@ -1537,12 +1558,12 @@ async function sendTestEmail() {
   const to = emailTestForm.to.trim();
 
   if (!to) {
-    emailTestErrors.to = '请输入收件人邮箱';
+    emailTestErrors.to = t('plugins.index.recipientRequired');
     return;
   }
 
   if (!EMAIL_PATTERN.test(to)) {
-    emailTestErrors.to = '请输入正确的邮箱地址';
+    emailTestErrors.to = t('plugins.index.recipientInvalid');
     return;
   }
 
@@ -1561,7 +1582,7 @@ async function sendTestEmail() {
     if (fieldErrors.to) {
       Object.assign(emailTestErrors, fieldErrors);
     }
-    MessagePlugin.error(errorMessage(error, '测试邮件发送失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.testEmailFailed')));
   } finally {
     emailTesting.value = false;
   }
@@ -1609,7 +1630,7 @@ async function sendTestSms() {
     MessagePlugin.success(t('plugins.test.testSmsSuccess'));
     smsTestPhone.value = '';
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '测试短信发送失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.testSmsFailed')));
   } finally {
     smsTesting.value = false;
   }
@@ -1654,13 +1675,13 @@ async function runVerificationTest() {
     const result = readTestResult(response);
     verificationTestResult.value = result;
     if (result?.success) {
-      MessagePlugin.success(result.message || '测试任务创建成功');
+      MessagePlugin.success(result.message || t('plugins.index.testTaskCreated'));
       verificationTestForm.card_no = '';
     } else {
-      MessagePlugin.error(result?.message || '测试任务创建失败');
+      MessagePlugin.error(result?.message || t('plugins.index.testTaskCreateFailed'));
     }
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '创建测试任务失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.createTestTaskFailed')));
   } finally {
     verificationTesting.value = false;
   }
@@ -1677,12 +1698,12 @@ async function runPaymentTest() {
     const result = readTestResult(response);
     paymentTestResult.value = result;
     if (result?.success) {
-      MessagePlugin.success(result.message || '测试支付单创建成功');
+      MessagePlugin.success(result.message || t('plugins.index.testPaymentCreated'));
     } else {
-      MessagePlugin.error(result?.message || '测试支付单创建失败');
+      MessagePlugin.error(result?.message || t('plugins.index.testPaymentCreateFailed'));
     }
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '创建测试支付单失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.createTestPaymentFailed')));
   } finally {
     paymentTesting.value = false;
   }
@@ -1710,12 +1731,12 @@ async function runCaptchaTest() {
     const result = readTestResult(response);
     captchaTestResult.value = result;
     if (result?.success) {
-      MessagePlugin.success(result.message || '验证通过');
+      MessagePlugin.success(result.message || t('plugins.test.verifyPassed'));
     } else {
-      MessagePlugin.error(result?.message || '验证未通过');
+      MessagePlugin.error(result?.message || t('plugins.index.verifyNotPassed'));
     }
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '验证测试失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.verifyTestFailed')));
   } finally {
     captchaTesting.value = false;
   }
@@ -1732,12 +1753,12 @@ async function runConnectionTest() {
     const result = readTestResult(response);
     connectionTestResult.value = result;
     if (result?.success) {
-      MessagePlugin.success(result.message || '连接正常');
+      MessagePlugin.success(result.message || t('plugins.test.connectionOk'));
     } else {
-      MessagePlugin.error(result?.message || '连接测试失败');
+      MessagePlugin.error(result?.message || t('plugins.index.connectionTestFailed'));
     }
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '连接测试失败'));
+    MessagePlugin.error(errorMessage(error, t('plugins.index.connectionTestFailed')));
   } finally {
     connectionTesting.value = false;
   }
@@ -1779,21 +1800,26 @@ function enableDisabledReason(plugin: IntegrationPluginRecord) {
   );
   if (!enabledPlugin) return '';
 
-  return `当前功能域已启用「${enabledPlugin.name}」，请先停用后再启用其他插件`;
+  return t('plugins.index.featureConflict', { name: enabledPlugin.name });
 }
 
 function pluginStatusText(plugin: IntegrationPluginRecord) {
-  if (plugin.is_enabled) return '已启用';
-  if (plugin.is_installed) return '已安装';
-  return '未安装';
+  if (plugin.is_enabled) return t('plugins.index.pluginEnabled');
+  if (plugin.is_installed) return t('plugins.index.pluginInstalled');
+  return t('plugins.index.pluginNotInstalled');
 }
 
 function latestRuntimeText(plugin: IntegrationPluginRecord) {
   const log = plugin.latest_runtime_log;
-  if (!log) return '暂无运行记录';
+  if (!log) return t('plugins.index.runtimeNone');
   const status = String(log.status || '').toLowerCase();
-  const statusText = status === 'failed' ? '失败' : status === 'success' ? '成功' : status || '未知';
-  return `最近运行 ${statusText}`;
+  const statusText =
+    status === 'failed'
+      ? t('plugins.index.statusFailed')
+      : status === 'success'
+        ? t('plugins.index.statusSuccess')
+        : status || t('plugins.index.statusUnknown');
+  return t('plugins.index.runtimeStatus', { status: statusText });
 }
 
 function runtimeStatusTheme(plugin: IntegrationPluginRecord) {

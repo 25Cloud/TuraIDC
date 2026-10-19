@@ -7,31 +7,61 @@ import type { ConsoleRuntimeInfo, ConsoleServiceDetail } from '@/types/client';
 
 import { mergeConsoleDetail, normalizeConsoleDetail, resolveErrorMessage } from './useConsoleCore';
 
-export const POWER_LABELS: Record<string, string> = {
-  on: '开机',
-  off: '关机',
-  reboot: '重启',
-  hard_off: '强制关机',
-  hard_reboot: '强制重启',
+export const POWER_LABEL_KEYS: Record<string, string> = {
+  on: 'serviceConsole.power.on',
+  off: 'serviceConsole.power.off',
+  reboot: 'serviceConsole.power.reboot',
+  hard_off: 'serviceConsole.power.hardOff',
+  hard_reboot: 'serviceConsole.power.hardReboot',
 };
 
 export const OPTIMISTIC_POWER_DETAIL: Record<string, { runtime: ConsoleRuntimeInfo }> = {
-  on: { runtime: { power_state: 'starting', power_label: t('serviceConsole.power.starting'), description: t('serviceConsole.power.starting') } },
-  off: { runtime: { power_state: 'stopping', power_label: t('serviceConsole.power.stopping'), description: t('serviceConsole.power.stopping') } },
-  hard_off: { runtime: { power_state: 'stopping', power_label: t('serviceConsole.power.stopping'), description: t('serviceConsole.power.stopping') } },
-  reboot: { runtime: { power_state: 'rebooting', power_label: t('serviceConsole.power.rebooting'), description: t('serviceConsole.power.rebooting') } },
-  hard_reboot: { runtime: { power_state: 'rebooting', power_label: t('serviceConsole.power.rebooting'), description: t('serviceConsole.power.rebooting') } },
+  on: {
+    runtime: {
+      power_state: 'starting',
+      power_label: t('serviceConsole.power.starting'),
+      description: t('serviceConsole.power.starting'),
+    },
+  },
+  off: {
+    runtime: {
+      power_state: 'stopping',
+      power_label: t('serviceConsole.power.stopping'),
+      description: t('serviceConsole.power.stopping'),
+    },
+  },
+  hard_off: {
+    runtime: {
+      power_state: 'stopping',
+      power_label: t('serviceConsole.power.stopping'),
+      description: t('serviceConsole.power.stopping'),
+    },
+  },
+  reboot: {
+    runtime: {
+      power_state: 'rebooting',
+      power_label: t('serviceConsole.power.rebooting'),
+      description: t('serviceConsole.power.rebooting'),
+    },
+  },
+  hard_reboot: {
+    runtime: {
+      power_state: 'rebooting',
+      power_label: t('serviceConsole.power.rebooting'),
+      description: t('serviceConsole.power.rebooting'),
+    },
+  },
 };
 
 export interface UseConsolePowerOptions {
   serviceId: { value: number };
   detail: { value: ConsoleServiceDetail };
   actionLoading: { value: boolean };
-  setOperationStatus: (type: string, label: string) => void;
-  clearOperationStatus: (type?: string) => void;
-  loadRemoteStatus: (silent: boolean) => Promise<void>;
+  setOperationStatus: (_type: string, _label: string) => void;
+  clearOperationStatus: (_type?: string) => void;
+  loadRemoteStatus: (_silent: boolean) => Promise<void>;
   clearStatusSyncTimer: () => void;
-  scheduleStatusSync: (callback: () => void, delay: number) => void;
+  scheduleStatusSync: (_callback: () => void, _delay: number) => void;
 }
 
 export function useConsolePower(options: UseConsolePowerOptions) {
@@ -47,11 +77,14 @@ export function useConsolePower(options: UseConsolePowerOptions) {
   } = options;
 
   function handlePowerAction(action: string) {
-    const label = POWER_LABELS[action] || action;
+    const label = POWER_LABEL_KEYS[action] ? t(POWER_LABEL_KEYS[action]) : action;
     const dialog = DialogPlugin.confirm({
-      header: `${label}确认`,
-      body: `确认对实例 ${detail.value.name || `#${serviceId.value}`} 执行“${label}”操作吗？`,
-      confirmBtn: `确认${label}`,
+      header: t('serviceConsole.power.confirmHeader', { label }),
+      body: t('serviceConsole.power.confirmBody', {
+        name: detail.value.name || `#${serviceId.value}`,
+        label,
+      }),
+      confirmBtn: t('serviceConsole.power.confirmBtn', { label }),
       cancelBtn: t('common.cancel'),
       theme: ['hard_off', 'hard_reboot'].includes(action) ? 'danger' : 'warning',
       async onConfirm() {
@@ -60,22 +93,25 @@ export function useConsolePower(options: UseConsolePowerOptions) {
         const optimisticPatch = OPTIMISTIC_POWER_DETAIL[action];
         if (optimisticPatch) {
           detail.value = mergeConsoleDetail(detail.value, optimisticPatch);
-          setOperationStatus('power', String(optimisticPatch.runtime.power_label || `${label}中`));
+          setOperationStatus(
+            'power',
+            String(optimisticPatch.runtime.power_label || t('serviceConsole.power.operating', { label })),
+          );
         } else {
-          setOperationStatus('power', `${label}中`);
+          setOperationStatus('power', t('serviceConsole.power.operating', { label }));
         }
         actionLoading.value = true;
         try {
           const res = await clientApi.servicePower(serviceId.value, { action });
           const payload = res.data || {};
-          MessagePlugin.success(payload.message || `${label}指令已下发`);
+          MessagePlugin.success(payload.message || t('serviceConsole.power.dispatched', { label }));
           dialog.hide();
           clearStatusSyncTimer();
           scheduleStatusSync(() => loadRemoteStatus(true), 1500);
         } catch (error: unknown) {
           detail.value = previousDetail;
           clearOperationStatus('power');
-          MessagePlugin.error(resolveErrorMessage(error, `${label}失败`));
+          MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.power.failed', { label })));
         } finally {
           actionLoading.value = false;
           dialog.setConfirmLoading(false);
@@ -86,7 +122,7 @@ export function useConsolePower(options: UseConsolePowerOptions) {
 
   return {
     handlePowerAction,
-    POWER_LABELS,
+    POWER_LABEL_KEYS,
     OPTIMISTIC_POWER_DETAIL,
   };
 }
@@ -95,7 +131,7 @@ export interface UseConsoleAutoRenewOptions {
   serviceId: { value: number };
   detail: { value: ConsoleServiceDetail };
   autoRenewLoading: { value: boolean };
-  mergeDetail: (patch: Partial<ConsoleServiceDetail>) => void;
+  mergeDetail: (_patch: Partial<ConsoleServiceDetail>) => void;
 }
 
 export function useConsoleAutoRenew(options: UseConsoleAutoRenewOptions) {
@@ -107,9 +143,11 @@ export function useConsoleAutoRenew(options: UseConsoleAutoRenewOptions) {
     try {
       await clientApi.updateAutoRenew(serviceId.value, { auto_renew: enabled ? 1 : 0 });
       mergeDetail({ auto_renew: enabled ? 1 : 0 });
-      MessagePlugin.success(`自动续费已${enabled ? '开启' : '关闭'}`);
+      MessagePlugin.success(
+        enabled ? t('serviceConsole.power.autoRenewEnabled') : t('serviceConsole.power.autoRenewDisabled'),
+      );
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '自动续费更新失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.power.autoRenewFailed')));
     } finally {
       autoRenewLoading.value = false;
     }

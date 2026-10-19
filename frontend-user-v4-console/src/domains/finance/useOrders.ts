@@ -3,11 +3,11 @@ import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { onMounted, reactive, ref, shallowRef } from 'vue';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type { ClientFinanceListParams, OrderListSummary, OrderRecord } from '@/types/client';
 import { formatMoney } from '@/utils/format';
 
 import { resolveQuickDateRange } from './dateFilters';
-import { t } from '@/locales';
 
 export const ORDER_STATUS_OPTIONS = toSelectOptions(ORDER_STATUS_MAP, false);
 
@@ -82,7 +82,7 @@ export function useOrderList(options: { pageSize?: number } = {}) {
     } catch (error: unknown) {
       list.value = [];
       total.value = 0;
-      listError.value = getErrorMessage(error, '订单列表加载失败');
+      listError.value = getErrorMessage(error, t('finance.messages.orderListLoadFailed'));
       MessagePlugin.error(listError.value);
     } finally {
       loading.value = false;
@@ -122,8 +122,8 @@ export function useOrderList(options: { pageSize?: number } = {}) {
 
   function cancelOrder(row: OrderRecord) {
     const dialog = DialogPlugin.confirm({
-      header: '取消订单',
-      body: '确定取消该订单？取消后不可恢复。\n关联的账单也将被取消，使用的优惠券将退回账户。\n如果是新产品购买，库存将释放。',
+      header: t('finance.messages.cancelOrderTitle'),
+      body: t('finance.messages.cancelOrderTip'),
       confirmBtn: t('orders.index.confirmCancel'),
       cancelBtn: t('orders.index.rethink'),
       theme: 'warning',
@@ -136,7 +136,7 @@ export function useOrderList(options: { pageSize?: number } = {}) {
           await loadData();
           dialog.hide();
         } catch (error: unknown) {
-          MessagePlugin.error(getErrorMessage(error, '取消订单失败'));
+          MessagePlugin.error(getErrorMessage(error, t('finance.messages.cancelOrderFailed')));
         } finally {
           canceling.value = false;
           dialog.setConfirmLoading(false);
@@ -195,7 +195,7 @@ export function useOrderDetail() {
       if (seq !== requestSeq) {
         return;
       }
-      MessagePlugin.error(getErrorMessage(error, '订单详情加载失败'));
+      MessagePlugin.error(getErrorMessage(error, t('finance.messages.orderDetailLoadFailed')));
     } finally {
       if (seq === requestSeq) {
         loading.value = false;
@@ -213,8 +213,8 @@ export function useOrderDetail() {
     if (!detail.value) return;
     const row = detail.value;
     const dialog = DialogPlugin.confirm({
-      header: '取消订单',
-      body: '确定取消该订单？取消后不可恢复。\n关联的账单也将被取消，使用的优惠券将退回账户。\n如果是新产品购买，库存将释放。',
+      header: t('finance.messages.cancelOrderTitle'),
+      body: t('finance.messages.cancelOrderTip'),
       confirmBtn: t('orders.index.confirmCancel'),
       cancelBtn: t('orders.index.rethink'),
       theme: 'warning',
@@ -228,7 +228,7 @@ export function useOrderDetail() {
           onSuccess?.();
           dialog.hide();
         } catch (error: unknown) {
-          MessagePlugin.error(getErrorMessage(error, '取消订单失败'));
+          MessagePlugin.error(getErrorMessage(error, t('finance.messages.cancelOrderFailed')));
         } finally {
           canceling.value = false;
           dialog.setConfirmLoading(false);

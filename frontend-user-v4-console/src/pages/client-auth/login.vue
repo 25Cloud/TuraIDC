@@ -1,11 +1,11 @@
 <template>
   <auth-shell
     :title="$t('auth.loginTitle')"
-    nav-text="还没有账户？"
-    nav-link-text="现在注册"
+    :nav-text="$t('clientAuth.login.navText')"
+    :nav-link-text="$t('clientAuth.login.registerNow')"
     :nav-to="registerLink"
     :hero-title="heroTitle"
-    hero-description="登录后可继续查看实例、支付账单、提交工单，并维护账户安全与实名认证。"
+    :hero-description="$t('clientAuth.login.heroDescription')"
   >
     <t-tabs v-model="loginMode" class="client-auth-tabs">
       <t-tab-panel value="password" :label="$t('auth.byPassword')" />
@@ -41,7 +41,7 @@
 
       <t-form-item name="password">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required" for="login-password">密码</label>
+          <label class="client-auth-label is-required" for="login-password">{{ $t('auth.passwordLabel') }}</label>
           <t-input
             id="login-password"
             v-model="form.password"
@@ -49,7 +49,7 @@
             :type="showPassword ? 'text' : 'password'"
             clearable
             autocomplete="current-password"
-            placeholder="请输入登录密码"
+            :placeholder="$t('auth.loginPasswordPlaceholder')"
             @enter="submitForm"
           >
             <template #prefix-icon><lock-on-icon /></template>
@@ -61,14 +61,15 @@
       </t-form-item>
 
       <div class="client-auth-form__links">
-        <router-link to="/client/forgot-password">忘记密码？</router-link>
+        <router-link to="/client/forgot-password">{{ $t('auth.forgetPasswordLink') }}</router-link>
       </div>
 
       <!-- inline 形态（Turnstile）的验证组件落点：点击登录时就地加载，无感通过时不占位 -->
       <div v-show="renderMode === 'inline'" ref="captchaContainer" class="client-auth-captcha"></div>
 
-      <t-button block size="large" theme="primary" :loading="loading || captchaLoading" @click="submitForm"
-        >登录</t-button
+      <t-button block size="large" theme="primary" :loading="loading || captchaLoading" @click="submitForm">{{
+        $t('auth.submitLogin')
+      }}</t-button>
       >
     </t-form>
 
@@ -84,14 +85,14 @@
     >
       <t-form-item name="account">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required" for="login-code-account">手机号 / 邮箱</label>
+          <label class="client-auth-label is-required" for="login-code-account">{{ $t('auth.accountLabel') }}</label>
           <t-input
             id="login-code-account"
             v-model="codeForm.account"
             size="large"
             clearable
             autocomplete="username"
-            placeholder="请输入已注册的手机号或邮箱"
+            :placeholder="$t('auth.registeredAccountPlaceholder')"
           >
             <template #prefix-icon><user-icon /></template>
           </t-input>
@@ -100,13 +101,13 @@
 
       <t-form-item name="code">
         <div class="client-auth-field">
-          <label class="client-auth-label is-required" for="login-code">验证码</label>
+          <label class="client-auth-label is-required" for="login-code">{{ $t('auth.codeLabel') }}</label>
           <div class="client-auth-code-row">
             <t-input
               v-model="codeForm.code"
               size="large"
               maxlength="6"
-              placeholder="请输入验证码"
+              :placeholder="$t('auth.codePlaceholder')"
               @enter="submitCodeForm"
             />
             <t-button
@@ -115,7 +116,7 @@
               :loading="sendingCode || captchaLoading"
               @click="handleSendCode"
             >
-              {{ countdown > 0 ? `${countdown}s` : '发送验证码' }}
+              {{ countdown > 0 ? `${countdown}s` : $t('clientAuth.register.sendCode') }}
             </t-button>
           </div>
         </div>
@@ -131,7 +132,8 @@
         theme="primary"
         :loading="codeLoading"
         @click="submitCodeForm"
-        >登录</t-button
+        >{{ $t('auth.submitLogin') }}</t-button
+      >
       >
     </t-form>
   </auth-shell>
@@ -147,10 +149,10 @@ import { clientAuthApi } from '@/api/auth';
 import AuthShell from '@/components/auth/AuthShell.vue';
 import PasswordToggle from '@/components/auth/PasswordToggle.vue';
 import { useGeeTestCaptcha } from '@/composables/useGeeTestCaptcha';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { buildAccountPayload, detectAccountType, normalizeAccountValue } from '@/utils/account';
 import { toUserMessage } from '@/utils/userMessage';
-import { t } from '@/locales';
 
 interface LoginForm {
   account: string;
@@ -259,7 +261,7 @@ const registerLink = computed(() => ({
   query: route.query.redirect ? { redirect: route.query.redirect } : {},
 }));
 
-const heroTitle = '进入控制台，\n继续处理服务与账单';
+const heroTitle = t('clientAuth.login.heroTitle');
 
 const rules: Record<keyof LoginForm, FormRule[]> = {
   account: [
@@ -309,10 +311,10 @@ function setFormErrors(errors: Partial<Record<keyof LoginForm, string>>) {
 function validateForm() {
   const errors: Partial<Record<keyof LoginForm, string>> = {};
   if (!detectAccountType(form.account)) {
-    errors.account = '请输入正确的手机号或邮箱';
+    errors.account = t('clientAuth.login.accountRequired');
   }
   if (!form.password) {
-    errors.password = '请输入登录密码';
+    errors.password = t('clientAuth.login.passwordRequired');
   }
 
   if (Object.keys(errors).length > 0) {
@@ -356,14 +358,14 @@ async function runLogin() {
       } catch (captchaError: unknown) {
         const runtimeCaptchaError = asRuntimeLoginError(captchaError);
         if (!runtimeCaptchaError.__handled) {
-          MessagePlugin.error(toUserMessage(runtimeCaptchaError.message, '登录失败'));
+          MessagePlugin.error(toUserMessage(runtimeCaptchaError.message, t('clientAuth.login.failed')));
         }
         return;
       }
     }
 
     if (!runtimeError.__handled) {
-      MessagePlugin.error(toUserMessage(runtimeError.message, '登录失败'));
+      MessagePlugin.error(toUserMessage(runtimeError.message, t('clientAuth.login.failed')));
     }
   } finally {
     loading.value = false;
@@ -410,12 +412,14 @@ async function handleSendCode() {
       { scene: accountPayload.accountType === 'phone' ? 'phone_code' : 'email_code' },
     );
 
-    MessagePlugin.success(`${accountPayload.accountType === 'phone' ? '短信' : '邮箱'}验证码已发送`);
+    MessagePlugin.success(
+      accountPayload.accountType === 'phone' ? t('clientAuth.codeSentSms') : t('clientAuth.codeSentEmail'),
+    );
     startCountdown();
   } catch (error: unknown) {
     const runtimeError = error as RuntimeCodeSendError;
     if (!runtimeError.__handled) {
-      MessagePlugin.error(toUserMessage(runtimeError.message, '验证码发送失败'));
+      MessagePlugin.error(toUserMessage(runtimeError.message, t('clientAuth.codeSendFailed')));
     }
   } finally {
     sendingCode.value = false;
@@ -430,10 +434,10 @@ async function handleCodeLogin(ctx: SubmitContext) {
 function validateCodeForm() {
   const errors: Partial<Record<keyof CodeLoginForm, string>> = {};
   if (!detectAccountType(codeForm.account)) {
-    errors.account = '请输入正确的手机号或邮箱';
+    errors.account = t('clientAuth.login.accountRequired');
   }
   if (!codeForm.code || codeForm.code.length !== 6) {
-    errors.code = codeForm.code ? '验证码为 6 位' : '请输入验证码';
+    errors.code = codeForm.code ? t('clientAuth.login.codeLength') : t('clientAuth.login.codeRequired');
   }
 
   if (Object.keys(errors).length > 0) {
@@ -461,7 +465,7 @@ async function runCodeLogin() {
   } catch (error: unknown) {
     const runtimeError = error as RuntimeLoginError;
     if (!runtimeError.__handled) {
-      MessagePlugin.error(toUserMessage(runtimeError.message, '登录失败'));
+      MessagePlugin.error(toUserMessage(runtimeError.message, t('clientAuth.login.failed')));
     }
   } finally {
     codeLoading.value = false;

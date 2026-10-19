@@ -18,8 +18,8 @@ import { resolveQuickDateRange } from './dateFilters';
 
 type AnyRecord = Record<string, unknown>;
 type RecordListItem = PaymentRecord;
-type Fetcher = (params?: ClientFinanceListParams) => Promise<{ data: { list: RecordListItem[]; total: number } }>;
-type DetailFetcher = (row: RecordListItem) => Promise<{ data: RecordListItem }>;
+type Fetcher = (_params?: ClientFinanceListParams) => Promise<{ data: { list: RecordListItem[]; total: number } }>;
+type DetailFetcher = (_row: RecordListItem) => Promise<{ data: RecordListItem }>;
 
 export const PAYMENT_STATUS_OPTIONS = toSelectOptions(PAYMENT_STATUS_MAP, false);
 
@@ -65,52 +65,54 @@ function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-const SNAPSHOT_LABEL_MAP: Record<string, string> = {
-  bw: '带宽',
-  in_bw: '下行带宽',
-  out_bw: '上行带宽',
-  os: '操作系统',
-  cpu: 'CPU',
-  area: '区域',
-  region: '区域',
-  node: '节点',
-  node_group: '节点分组',
-  ip: 'IP数量',
-  ip_num: 'IP数量',
-  ipv6_num: 'IPv6数量',
-  memory: '内存',
-  hostname: '主机名',
-  quantity: '数量',
-  setup_fee: '初装费',
-  base_amount: '基础金额',
-  total_amount: '合计金额',
-  config_amount: '配置金额',
-  subtotal_amount: '小计金额',
-  discount_amount: '优惠金额',
-  amount: '金额',
-  price: '价格',
-  pricing: '价格',
-  items: '配置项',
-  meta: '扩展信息',
-  configoption: '配置参数',
-  kind: '类型',
-  mode: '模式',
-  target_label: '目标服务',
-  target_service_id: '目标服务ID',
-  product_id: '产品ID',
-  product_name: '产品名称',
-  billing_cycle: '周期',
-  billingcycle: '周期',
-  billingcycle_zh: '周期',
-  period: '周期',
-  remark: '备注',
-  data_disk_size: '数据盘',
+// 这里只存 i18n key，翻译在 snapshotLabel() 里做：模块级常量若存译好的文案，切换语言不会重新求值。
+const SNAPSHOT_LABEL_KEYS: Record<string, string> = {
+  bw: 'finance.snapshot.bandwidth',
+  in_bw: 'finance.snapshot.downBandwidth',
+  out_bw: 'finance.snapshot.upBandwidth',
+  os: 'finance.snapshot.os',
+  cpu: 'finance.snapshot.cpu',
+  area: 'finance.snapshot.region',
+  region: 'finance.snapshot.region',
+  node: 'finance.snapshot.node',
+  node_group: 'finance.snapshot.nodeGroup',
+  ip: 'finance.snapshot.ipCount',
+  ip_num: 'finance.snapshot.ipCount',
+  ipv6_num: 'finance.snapshot.ipv6Count',
+  memory: 'finance.snapshot.memory',
+  hostname: 'finance.snapshot.hostname',
+  quantity: 'finance.snapshot.quantity',
+  setup_fee: 'finance.snapshot.setupFee',
+  base_amount: 'finance.snapshot.baseAmount',
+  total_amount: 'finance.snapshot.totalAmount',
+  config_amount: 'finance.snapshot.configAmount',
+  subtotal_amount: 'finance.snapshot.subtotalAmount',
+  discount_amount: 'finance.snapshot.discountAmount',
+  amount: 'finance.snapshot.amount',
+  price: 'finance.snapshot.price',
+  pricing: 'finance.snapshot.price',
+  items: 'finance.snapshot.items',
+  meta: 'finance.snapshot.meta',
+  configoption: 'finance.snapshot.configOption',
+  kind: 'finance.snapshot.kind',
+  mode: 'finance.snapshot.mode',
+  target_label: 'finance.snapshot.targetService',
+  target_service_id: 'finance.snapshot.targetServiceId',
+  product_id: 'finance.snapshot.productId',
+  product_name: 'finance.snapshot.productName',
+  billing_cycle: 'finance.snapshot.billingCycle',
+  billingcycle: 'finance.snapshot.billingCycle',
+  billingcycle_zh: 'finance.snapshot.billingCycle',
+  period: 'finance.snapshot.billingCycle',
+  remark: 'finance.snapshot.remark',
+  data_disk_size: 'finance.snapshot.dataDisk',
 };
 
 export function snapshotLabel(value: unknown) {
   const key = String(value || '').trim();
   if (!key) return '--';
-  return SNAPSHOT_LABEL_MAP[key] || key;
+  const labelKey = SNAPSHOT_LABEL_KEYS[key];
+  return labelKey ? t(labelKey) : key;
 }
 
 export function flattenSnapshot(
@@ -193,8 +195,10 @@ function formatSnapshotItem(record: AnyRecord) {
   const amount = record.amount ?? record.total_amount ?? record.price ?? record.pricing ?? record.fee;
   const setupFee = record.setup_fee ?? record.setupfee;
   const parts = [value];
-  if (amount !== null && amount !== undefined && amount !== '') parts.push(`金额 ¥${formatMoney(amount)}`);
-  if (setupFee !== null && setupFee !== undefined && setupFee !== '') parts.push(`初装费 ¥${formatMoney(setupFee)}`);
+  if (amount !== null && amount !== undefined && amount !== '')
+    parts.push(t('finance.snapshot.amountWithValue', { amount: formatMoney(amount) }));
+  if (setupFee !== null && setupFee !== undefined && setupFee !== '')
+    parts.push(t('finance.snapshot.setupFeeWithValue', { amount: formatMoney(setupFee) }));
   return parts.join(' / ');
 }
 
@@ -206,19 +210,25 @@ function formatSnapshotValue(value: unknown, key = ''): string {
         if (item && typeof item === 'object') return `${index + 1}. ${formatSnapshotItem(toRecord(item))}`;
         return fieldValue(item);
       })
-      .join('；');
+      .join(t('common.listSeparator'));
   }
   if (value && typeof value === 'object') {
     return Object.entries(toRecord(value))
       .filter(([, childValue]) => childValue !== null && childValue !== undefined && childValue !== '')
-      .map(([childKey, childValue]) => `${snapshotLabel(childKey)}：${formatSnapshotValue(childValue, childKey)}`)
-      .join('；');
+      .map(([childKey, childValue]) =>
+        t('common.labelValue', {
+          label: snapshotLabel(childKey),
+          value: formatSnapshotValue(childValue, childKey),
+        }),
+      )
+      .join(t('common.listSeparator'));
   }
   const raw = String(value);
   if (BILLING_CYCLE_KEYS.has(key)) return formatBillingCycle(raw);
   if (['bw', 'in_bw', 'out_bw'].includes(key) && /^\d+(?:\.\d+)?$/.test(raw)) return `${raw} Mbps`;
   if (key === 'memory' && /^\d+(?:\.\d+)?$/.test(raw)) return `${raw} MB`;
-  if (['ip_num', 'ipv6_num', 'quantity'].includes(key) && /^\d+(?:\.\d+)?$/.test(raw)) return `${raw} 个`;
+  if (['ip_num', 'ipv6_num', 'quantity'].includes(key) && /^\d+(?:\.\d+)?$/.test(raw))
+    return t('common.countUnit', { count: raw });
   return raw;
 }
 
@@ -347,7 +357,7 @@ export function useRecordList(fetcher: Fetcher, errorMessage: string, options: {
       const response = await options.detailFetcher(row);
       currentRow.value = response.data || row;
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '详情加载失败'));
+      MessagePlugin.error(getErrorMessage(error, t('finance.messages.detailLoadFailed')));
     } finally {
       detailLoading.value = false;
     }

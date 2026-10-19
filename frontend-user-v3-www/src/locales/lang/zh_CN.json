@@ -35,7 +35,17 @@
       "notFound": "商品不存在或已下架",
       "backToProducts": "返回产品页",
       "cycle": "周期",
-      "description": "商品描述"
+      "description": "商品描述",
+      "skuCompare": "机型对比",
+      "skuCompareHint": "点击任意机型切换配置与报价",
+      "skuPrice": "价格",
+      "sortPriceAsc": "价格从低到高排序",
+      "sortPriceDesc": "价格从高到低排序",
+      "selectRegion": "请选择地区",
+      "couponUsed": "已用券 -¥{amount}",
+      "cloudProductTitle": "云产品详情",
+      "cloudProductDescription": "云产品详情与实时购买报价",
+      "windowTitle": "{title} - 云产品"
     },
     "osPicker": {
       "version": "版本",
@@ -53,13 +63,13 @@
       "stockSyncing": "库存同步中",
       "stockSyncFailed": "库存同步失败",
       "stockSyncingHint": "正在同步实时库存，请稍候。",
-      "discountRate": "${String(value).replace(/\\.0$/, \"\")}折",
+      "discountRate": "{rate}折",
       "stockSufficient": "库存充足",
       "stockLow": "库存紧张",
       "stockOutOfStock": "暂无库存",
       "stockSyncRetryHint": "实时库存同步失败，请稍后重试。",
       "stockSufficientHint": "当前库存充足，可直接提交账单。",
-      "stockRemainingHint": "剩余 ${stock} 台，请尽快购买。",
+      "stockRemainingHint": "剩余 {stock} 台，请尽快购买。",
       "stockInsufficientHint": "当前库存不足，请联系客服。",
       "enteringConsole": "正在进入控制台继续创建账单",
       "couponCode": "优惠码",
@@ -83,18 +93,20 @@
       "statusIncomplete": "未完成",
       "loginRequired": "请先登录",
       "statusChecking": "校验中",
-      "statusPassed": "已通过"
+      "statusPassed": "已通过",
+      "listSeparator": "、"
     },
     "spec": {
       "oneCore": "1 核",
       "unitCore": "核",
-      "familyWithCode": "规格族 ${code}"
+      "familyWithCode": "规格族 {code}"
     },
     "instanceFamily": {
       "computeC9i": "计算型 c9i",
       "generalPurposeG9i": "通用型 g9i",
       "economyE": "经济型 e",
-      "burstPerformanceT6": "突发性能实例 t6"
+      "burstPerformanceT6": "突发性能实例 t6",
+      "general": "通用型"
     },
     "configurator": {
       "systemDisk": "系统盘",
@@ -107,7 +119,7 @@
       "quantity": "数量",
       "selected": "已选",
       "cpuModel": "CPU型号",
-      "unitCount": "${text}个"
+      "unitCount": "{text}个"
     },
     "list": {
       "osInstall": "系统安装",
@@ -161,7 +173,24 @@
       "showCatalogNav": "展开目录",
       "catalogTitle": "商品目录",
       "catalogBackUp": "返回上级",
-      "groupEmpty": "该分类下暂无可选分组"
+      "groupEmpty": "该分类下暂无可选分组",
+      "selectCpu": "请选择 CPU",
+      "selectMemory": "请选择内存",
+      "selectOption": "请选择",
+      "stockLabel": "当前库存",
+      "stockLeft": "剩余 {count} 台",
+      "purchaseRequirements": "购买要求：",
+      "agentDiscount": "代理折扣（{name}）",
+      "agentDiscountPercent": "代理折扣（{name}）{percent}",
+      "couponApplied": "已优惠 ¥{amount}",
+      "noDiscount": "无折扣",
+      "monthly": "月付",
+      "submitting": "提交中...",
+      "buyNow": "立即购买",
+      "addToCart": "加入购物车",
+      "costRowsCount": "共{count}项",
+      "priceDiscounted": "折后价已优惠",
+      "priceNoDiscount": "折后价无折扣"
     },
     "cpuBadge": {
       "coreShort": "酷",
@@ -208,10 +237,12 @@
       "moreLinksDesc": "关于、帮助与常用入口",
       "productsAndServices": "产品与服务",
       "home": "首页",
-      "help": "帮助"
+      "help": "帮助",
+      "all": "全部",
+      "viewDetail": "查看详情"
     },
     "navProductMenu": {
-      "categoryFallback": "分类 ${index + 1}"
+      "categoryFallback": "分类 {index}"
     },
     "notice": {
       "categoryTitle": "公告分类",
@@ -231,7 +262,11 @@
       "signInOrRegister": "登录 / 注册",
       "account": "账户",
       "accountLogin": "账户登录",
-      "enterConsole": "进入控制台"
+      "enterConsole": "进入控制台",
+      "myServices": "我的服务",
+      "profile": "个人资料",
+      "recharge": "账户充值",
+      "signOut": "退出登录"
     },
     "a11y": {
       "skipToMainContent": "跳到主内容",
@@ -247,7 +282,8 @@
     },
     "product": {
       "emptyCategories": "暂无产品分类",
-      "reload": "重新加载"
+      "reload": "重新加载",
+      "productCount": "{count} 款产品"
     },
     "solutions": {
       "ecommerce": "电商行业",
@@ -264,17 +300,31 @@
       "noticeUpdates": "公告动态",
       "aboutIntro": "企业简介、发展愿景与服务承诺",
       "helpGuide": "常见问题与使用指南",
-      "supportTicket": "提交售后工单，获得 1v1 响应"
+      "supportTicket": "提交售后工单，获得 1v1 响应",
+      "brandDesc": "为企业与开发者提供稳定、安全、高性价比的云计算与 IDC 服务。",
+      "account": "账户",
+      "valueAddedLicense": "增值电信业务经营许可证：",
+      "icpRecord": "ICP 备案号：",
+      "productCloudServer": "云服务器",
+      "productHongKongServer": "香港服务器",
+      "productUsServer": "美国服务器",
+      "productHighDefenseServer": "高防服务器",
+      "productCloudPc": "云电脑"
     },
     "navContent": {
       "uncategorized": "未分类"
+    },
+    "mobileMenu": {
+      "open": "打开菜单",
+      "close": "关闭菜单"
     }
   },
   "content": {
     "notice": {
       "detailTitle": "公告详情",
       "empty": "暂无公告内容",
-      "title": "公告通知"
+      "title": "公告通知",
+      "pageTitle": "官方公告"
     },
     "help": {
       "detailTitle": "帮助详情",
@@ -291,7 +341,8 @@
       "empty": "暂无帮助内容",
       "hotDocuments": "热门文档",
       "recentlyUpdated": "最近更新",
-      "categories": "帮助分类"
+      "categories": "帮助分类",
+      "pageTitle": "帮助中心"
     },
     "about": {
       "serviceCapabilities": "服务能力",
@@ -306,11 +357,17 @@
     },
     "legal": {
       "openOriginal": "打开原文",
-      "documentUrlMissing": "站点暂未配置该文档地址"
+      "documentUrlMissing": "站点暂未配置该文档地址",
+      "termsDescription": "查看平台的服务条款、使用约定与相关说明。",
+      "privacyDescription": "查看平台的隐私政策与个人信息处理说明。"
     },
     "detail": {
       "tableOfContents": "目录结构",
-      "fullText": "全文"
+      "fullText": "全文",
+      "updatedAt": "更新时间",
+      "publishedAt": "发布时间",
+      "jumpTo": "跳转到 {name}",
+      "loadFailed": "{title}加载失败，请稍后重试"
     },
     "nav": {
       "news": "新闻动态",
@@ -324,7 +381,12 @@
       "placeholder": "请输入您要搜索的关键词"
     },
     "article": {
-      "hot": "热门文章"
+      "hot": "热门文章",
+      "publisher": "发布人：",
+      "views": "阅读量：",
+      "categoryCount": "{name}，共 {count} 篇",
+      "officialSupport": "官方客服",
+      "figureCaption": "相关配图"
     },
     "activity": {
       "latest": "最新活动"
@@ -333,7 +395,8 @@
       "empty": "暂无内容",
       "hotSearches": "热门搜索:",
       "search": "搜索",
-      "pinned": "置顶"
+      "pinned": "置顶",
+      "views": "浏览量: "
     }
   },
   "seo": {
@@ -726,7 +789,7 @@
       "connectionLost": "网络连接已断开，请检查后重试",
       "timeout": "请求超时，请检查网络后重试",
       "invalidParameters": "参数填写有误，请检查后重试",
-      "tooManyRequestsRetryAfter": "请求过于频繁，请 ${retryAfter} 秒后重试",
+      "tooManyRequestsRetryAfter": "请求过于频繁，请 {retryAfter} 秒后重试",
       "tooManyRequests": "请求过于频繁，请稍后重试"
     },
     "site": {
@@ -748,8 +811,12 @@
       "goBack": "返回上一页"
     },
     "product": {
-      "specNotConfigured": "未配置规格 #${productId}"
-    }
+      "specNotConfigured": "未配置规格 #{productId}"
+    },
+    "cancel": "取消",
+    "close": "关闭",
+    "confirm": "确定",
+    "loading": "加载中…"
   },
   "home": {
     "partners": {
@@ -767,36 +834,56 @@
       "carouselControls": "轮播控制",
       "slides": {
         "refresh": {
-          "title": "官网焕新 · 云上新体验"
+          "title": "官网焕新 · 云上新体验",
+          "railTitle": "官网换新",
+          "primaryText": "立即体验",
+          "secondaryText": "查看详情"
         },
         "global": {
-          "title": "多地节点 · 全球低延迟互联"
+          "title": "多地节点 · 全球低延迟互联",
+          "railTitle": "全球互联",
+          "primaryText": "选购节点",
+          "secondaryText": "查看线路"
         },
         "security": {
-          "title": "企业级安全 · 稳定可靠交付"
+          "title": "企业级安全 · 稳定可靠交付",
+          "railTitle": "安全防护",
+          "primaryText": "查看防护",
+          "secondaryText": "在线咨询"
         },
         "value": {
-          "title": "低门槛套餐 · 直享实惠价"
+          "title": "低门槛套餐 · 直享实惠价",
+          "railTitle": "实惠专区",
+          "primaryText": "立即抢购",
+          "secondaryText": "查看优惠"
         },
         "support": {
-          "title": "企业客服 · 一对一专属服务"
+          "title": "企业客服 · 一对一专属服务",
+          "railTitle": "企业客服",
+          "primaryText": "联系客服",
+          "secondaryText": "企业采购"
         }
       },
       "features": {
         "dynamic": {
-          "title": "香港 CN2 精品线路 上线"
+          "title": "香港 CN2 精品线路 上线",
+          "kicker": "产品动态"
         },
         "activity": {
-          "title": "新客首单 39 元/年"
+          "title": "新客首单 39 元/年",
+          "kicker": "活动内容"
         },
         "enterprise": {
-          "title": "IDC 企业采购通道"
+          "title": "IDC 企业采购通道",
+          "kicker": "企业专区"
         },
         "cloudDesktop": {
-          "title": "西安云电脑 即开即用"
+          "title": "西安云电脑 即开即用",
+          "kicker": "轻量产品"
         },
         "new": {
-          "title": "十堰高防独立服务器"
+          "title": "十堰高防独立服务器",
+          "kicker": "新开产品"
         }
       },
       "entry": "产品目录、购买支付、自动开通、账单结算与服务支持统一打通；首页即是控制台入口，让资源采购和后续管理始终在同一条链路里完成。",
@@ -808,7 +895,11 @@
       "cloud2c2g": "2H2G 云服务器覆盖建站、代理、轻量业务全场景。",
       "billing": "统一账单、多子账号协作与对公结算能力同步上线。",
       "xian": "西安节点低延迟，支持远程办公、外包协作、教学实训。",
-      "ddos": "100G 抗 DDoS + BGP 多线，面向长期稳定业务承载。"
+      "ddos": "100G 抗 DDoS + BGP 多线，面向长期稳定业务承载。",
+      "switchTo": "切换到 {title}",
+      "unnamed": "未命名",
+      "learnMore": "了解更多",
+      "viewDetail": "查看详情"
     },
     "registerBar": {
       "title": "现在注册，开启您的互联网高速稳定之旅！",
@@ -819,14 +910,22 @@
       "announcements": "公告",
       "recommended": "推荐",
       "subtitle": "为您呈现行业动态、活动公告、产品发布",
-      "viewMore": "查看更多"
+      "viewMore": "查看更多",
+      "summaryFallback": "资讯动态主焦点卡片展示区域，点击查看完整内容。",
+      "detailHint": "点击查看详细内容。"
     },
     "products": {
       "title": "安全、稳定、可信赖的产品与服务",
       "emptyCategory": "当前分类暂无可展示的二级分组，点击后可进入产品目录查看更多内容。",
       "techDeliveryDesc": "的技术积淀与交付实践，助力企业上云与产业互联网。",
       "viewAll": "查看全部产品",
-      "buyNow": "立即选购"
+      "buyNow": "立即选购",
+      "groupFallback": "二级分组 {index}",
+      "categoryFallback": "产品分类 {index}",
+      "currentCategory": "当前分类",
+      "categoryCatalog": "{name}目录",
+      "recommendedIntro": "主推 {name}，可在线查看配置并快速完成选型。",
+      "groupIntro": "{category} 下已上架 {count} 款在售产品，可按业务需求快速选型。"
     },
     "solutions": {
       "title": "为千行百业提供全面的解决方案",

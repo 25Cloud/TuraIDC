@@ -329,13 +329,15 @@ async function submitTrafficGroup() {
     return boundIds.some((id) => productIds.includes(id));
   });
   if (conflictGroup) {
-    MessagePlugin.warning(`所选配置已绑定在分组「${conflictGroup.name}」`);
+    MessagePlugin.warning(t('products.trafficPackages.configBoundInGroup', { name: conflictGroup.name }));
     return;
   }
 
   trafficGroupSubmitting.value = true;
   try {
-    const categoryLabel = String(trafficGroupForm.product_group_label || '').trim() || `分类 #${categoryId}`;
+    const categoryLabel =
+      String(trafficGroupForm.product_group_label || '').trim() ||
+      t('products.trafficPackages.categoryWithId', { id: categoryId });
     const groupId = trafficGroupEditingId.value || generateTrafficGroupId(productType, categoryId);
     const previous = trafficGroupItems.value.find((group) => group.id === groupId);
     const nextGroup: TrafficPackageGroup = {
@@ -379,9 +381,13 @@ async function submitTrafficGroup() {
     selectedTrafficGroupId.value = groupId;
     syncTrafficRowsFromSelection();
     trafficGroupDialogVisible.value = false;
-    MessagePlugin.success(trafficGroupEditingId.value ? '分组已更新' : '分组已创建');
+    MessagePlugin.success(
+      trafficGroupEditingId.value
+        ? t('products.trafficPackages.groupUpdated')
+        : t('products.trafficPackages.groupCreated'),
+    );
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存分组失败'));
+    MessagePlugin.error(errorMessage(error, t('products.trafficPackages.saveGroupFailed')));
   } finally {
     trafficGroupSubmitting.value = false;
   }
@@ -389,9 +395,9 @@ async function submitTrafficGroup() {
 
 function removeTrafficGroup(group: TrafficPackageGroup) {
   const dialog = DialogPlugin.confirm({
-    header: '删除流量包分组',
-    body: `删除分组「${group.name}」后，该分组下的流量包配置也会一并移除，是否继续？`,
-    confirmBtn: { content: '确认删除', theme: 'danger' },
+    header: t('products.trafficPackages.deleteGroupTitle'),
+    body: t('products.trafficPackages.deleteGroupConfirm', { name: group.name }),
+    confirmBtn: { content: t('products.trafficPackages.confirmDelete'), theme: 'danger' },
     cancelBtn: t('common.cancel'),
     async onConfirm() {
       try {
@@ -406,7 +412,7 @@ function removeTrafficGroup(group: TrafficPackageGroup) {
         syncTrafficRowsFromSelection();
         MessagePlugin.success(t('products.trafficPackages.groupDeleted'));
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除分组失败'));
+        MessagePlugin.error(errorMessage(error, t('products.trafficPackages.deleteGroupFailed')));
       } finally {
         dialog.destroy();
       }
@@ -435,7 +441,7 @@ async function saveTrafficPackages() {
   try {
     validateTrafficRows();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '流量包配置校验失败'));
+    MessagePlugin.error(errorMessage(error, t('products.trafficPackages.validateFailed')));
     return;
   }
 
@@ -467,7 +473,7 @@ async function saveTrafficPackages() {
     syncTrafficRowsFromSelection();
     MessagePlugin.success(t('products.trafficPackages.currentGroupSaved'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存流量包配置失败'));
+    MessagePlugin.error(errorMessage(error, t('products.trafficPackages.saveFailed')));
   } finally {
     trafficSaving.value = false;
   }
@@ -498,7 +504,7 @@ async function pullTrafficPackages() {
     );
     MessagePlugin.success(t('products.trafficPackages.pulledFromUpstream'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '拉取流量包配置失败'));
+    MessagePlugin.error(errorMessage(error, t('products.trafficPackages.pullFailed')));
   } finally {
     trafficPulling.value = false;
   }
@@ -522,7 +528,7 @@ async function loadTrafficPackages() {
     trafficGroupItems.value = [];
     trafficPackageItems.value = [];
     trafficRows.value = [];
-    MessagePlugin.error(errorMessage(error, '加载流量包配置失败'));
+    MessagePlugin.error(errorMessage(error, t('products.trafficPackages.loadFailed')));
   } finally {
     trafficLoading.value = false;
   }
@@ -615,7 +621,10 @@ function createTrafficGroupsFromItems(items: TrafficPackageItem[]): TrafficPacka
     if (!id || map.has(id)) return;
     map.set(id, {
       id,
-      name: item.group_name || item.product_group_label || `分类 #${item.effective_product_group_id}`,
+      name:
+        item.group_name ||
+        item.product_group_label ||
+        t('products.trafficPackages.categoryWithId', { id: item.effective_product_group_id }),
       product_type: item.product_type,
       product_group_key: '',
       first_product_group_id: item.first_product_group_id,
@@ -642,7 +651,9 @@ function generateTrafficGroupId(productType: string, categoryId: number) {
 
 function trafficBoundProductSummary(group: TrafficPackageGroup) {
   const ids = normalizeProductIds(group.product_ids);
-  return ids.length ? `${ids.length} 个配置` : '未绑定配置';
+  return ids.length
+    ? t('products.trafficPackages.boundConfigCount', { count: ids.length })
+    : t('products.trafficPackages.unboundConfig');
 }
 
 function trafficPullCategoryPayload(group: TrafficPackageGroup) {
@@ -673,10 +684,10 @@ function validateTrafficRows() {
     const label = String(row.label || '').trim();
     const target = Number(row.target_value || 0);
     const price = Number(row.price || 0);
-    if (!label) throw new Error('请填写流量包名称');
-    if (!Number.isFinite(target) || target <= 0) throw new Error('目标流量必须大于 0');
-    if (seenTargets.has(target)) throw new Error('同一分组下的目标流量不能重复');
-    if (!Number.isFinite(price) || price < 0) throw new Error('售价不能小于 0');
+    if (!label) throw new Error(t('products.trafficPackages.nameRequired'));
+    if (!Number.isFinite(target) || target <= 0) throw new Error(t('products.trafficPackages.targetRequired'));
+    if (seenTargets.has(target)) throw new Error(t('products.trafficPackages.targetDuplicated'));
+    if (!Number.isFinite(price) || price < 0) throw new Error(t('products.trafficPackages.priceInvalid'));
     seenTargets.add(target);
   });
 }

@@ -105,12 +105,20 @@
         class="pd-sku"
       >
         <div class="pd-sku-head">
-          <h2 class="pd-sku-title">机型对比</h2>
-          <span class="pd-sku-hint">点击任意机型切换配置与报价</span>
+          <h2 class="pd-sku-title">{{ $t("product.detail.skuCompare") }}</h2>
+          <span class="pd-sku-hint">{{
+            $t("product.detail.skuCompareHint")
+          }}</span>
         </div>
-        <div class="sku-table" role="table" aria-label="机型对比">
+        <div
+          class="sku-table"
+          role="table"
+          :aria-label="$t('product.detail.skuCompare')"
+        >
           <div class="sku-row sku-row--head" role="row">
-            <span class="sku-cell sku-cell--name">实例规格</span>
+            <span class="sku-cell sku-cell--name">{{
+              $t("product.list.instanceSpecs")
+            }}</span>
             <span class="sku-cell sku-cell--sortable">
               <span>vCPU</span>
               <span class="sku-sort">
@@ -121,7 +129,7 @@
                     active:
                       skuSort.key === 'cpu' && skuSort.direction === 'asc',
                   }"
-                  aria-label="vCPU 从小到大排序"
+                  :aria-label="$t('product.list.sortVcpuAsc')"
                   @click="setSkuSort('cpu', 'asc')"
                 >
                   ▲
@@ -133,7 +141,7 @@
                     active:
                       skuSort.key === 'cpu' && skuSort.direction === 'desc',
                   }"
-                  aria-label="vCPU 从大到小排序"
+                  :aria-label="$t('product.list.sortVcpuDesc')"
                   @click="setSkuSort('cpu', 'desc')"
                 >
                   ▼
@@ -141,7 +149,7 @@
               </span>
             </span>
             <span class="sku-cell sku-cell--sortable">
-              <span>内存</span>
+              <span>{{ $t("product.list.memory") }}</span>
               <span class="sku-sort">
                 <button
                   type="button"
@@ -150,7 +158,7 @@
                     active:
                       skuSort.key === 'memory' && skuSort.direction === 'asc',
                   }"
-                  aria-label="内存从小到大排序"
+                  :aria-label="$t('product.list.sortMemoryAsc')"
                   @click="setSkuSort('memory', 'asc')"
                 >
                   ▲
@@ -162,17 +170,17 @@
                     active:
                       skuSort.key === 'memory' && skuSort.direction === 'desc',
                   }"
-                  aria-label="内存从大到小排序"
+                  :aria-label="$t('product.list.sortMemoryDesc')"
                   @click="setSkuSort('memory', 'desc')"
                 >
                   ▼
                 </button>
               </span>
             </span>
-            <span class="sku-cell">处理器</span>
-            <span class="sku-cell">主频/睿频</span>
+            <span class="sku-cell">{{ $t("product.list.processor") }}</span>
+            <span class="sku-cell">{{ $t("product.list.clockSpeed") }}</span>
             <span class="sku-cell sku-cell--sortable">
-              <span>价格</span>
+              <span>{{ $t("product.detail.skuPrice") }}</span>
               <span class="sku-sort">
                 <button
                   type="button"
@@ -181,7 +189,7 @@
                     active:
                       skuSort.key === 'price' && skuSort.direction === 'asc',
                   }"
-                  aria-label="价格从低到高排序"
+                  :aria-label="$t('product.detail.sortPriceAsc')"
                   @click="setSkuSort('price', 'asc')"
                 >
                   ▲
@@ -193,7 +201,7 @@
                     active:
                       skuSort.key === 'price' && skuSort.direction === 'desc',
                   }"
-                  aria-label="价格从高到低排序"
+                  :aria-label="$t('product.detail.sortPriceDesc')"
                   @click="setSkuSort('price', 'desc')"
                 >
                   ▼
@@ -262,7 +270,8 @@
             class="purchase-guard-alert"
           >
             <template #title
-              >购买要求：{{ purchaseRequirementSummary }}</template
+              >{{ $t("product.list.purchaseRequirements")
+              }}{{ purchaseRequirementSummary }}</template
             >
           </el-alert>
 
@@ -271,7 +280,7 @@
             class="cfg-group"
             v-if="detailSpecCompare && isMobile && skuOptions.length > 1"
           >
-            <div class="cfg-group-head">产品规格</div>
+            <div class="cfg-group-head">{{ $t("product.list.spec") }}</div>
             <div class="cfg-group-body">
               <button
                 type="button"
@@ -308,7 +317,9 @@
                 class="mobile-picker-trigger"
                 @click="mobileRegionPicker = true"
               >
-                <span>{{ selectedRegionLabel || "请选择地区" }}</span>
+                <span>{{
+                  selectedRegionLabel || $t("product.detail.selectRegion")
+                }}</span>
                 <svg
                   viewBox="0 0 12 12"
                   fill="none"
@@ -354,7 +365,7 @@
                 @click="mobileOsPicker = true"
               >
                 <span>
-                  {{ currentOsGroup?.label || "请选择系统"
+                  {{ currentOsGroup?.label || $t("product.detail.selectOs")
                   }}{{ currentOsGroup?.label ? ` ${currentOsVerLabel}` : "" }}
                 </span>
                 <svg
@@ -469,7 +480,10 @@
                       cfg.label
                     }}</span>
                     <span class="mobile-config-select-value">
-                      {{ selectedConfigLabel(cfg) || "请选择" }}
+                      {{
+                        selectedConfigLabel(cfg) ||
+                        $t("product.list.selectOption")
+                      }}
                       <svg
                         viewBox="0 0 12 12"
                         fill="none"
@@ -533,7 +547,9 @@
 
           <!-- 购买须知：上游以普通配置项下发的文字提示（如「明确禁止」），只展示不参与选配 -->
           <div class="cfg-group cfg-group--notice" v-if="noticeConfigs.length">
-            <div class="cfg-group-head">购买须知</div>
+            <div class="cfg-group-head">
+              {{ $t("product.detail.purchaseNotes") }}
+            </div>
             <div class="cfg-group-body">
               <div
                 class="notice-item"
@@ -548,11 +564,15 @@
 
           <!-- 基础设置 -->
           <div class="cfg-group">
-            <div class="cfg-group-head">基础设置</div>
+            <div class="cfg-group-head">
+              {{ $t("product.detail.baseSettings") }}
+            </div>
             <div class="cfg-group-body">
               <!-- 计费周期 -->
               <div class="spec-row">
-                <div class="spec-label">计费周期</div>
+                <div class="spec-label">
+                  {{ $t("product.detail.billingCycle") }}
+                </div>
                 <div class="spec-ctrl">
                   <div class="cycle-wrap">
                     <button
@@ -571,9 +591,11 @@
               </div>
               <!-- 单笔订单仅支持创建一台服务实例，避免多台计价但仅开通一台。 -->
               <div class="spec-row spec-row--last">
-                <div class="spec-label">购买数量</div>
+                <div class="spec-label">
+                  {{ $t("product.detail.quantity") }}
+                </div>
                 <div class="spec-ctrl">
-                  <span>1 台（多台请分次下单）</span>
+                  <span>{{ $t("product.detail.quantityHint") }}</span>
                 </div>
               </div>
             </div>
@@ -585,7 +607,9 @@
         <aside class="pd-aside">
           <div class="aside-card">
             <div class="cost-header">
-              <span class="cost-title">配置费用</span>
+              <span class="cost-title">{{
+                $t("product.detail.configFee")
+              }}</span>
               <span class="stock-badge" :class="stockClass">{{
                 stockLabel
               }}</span>
@@ -596,17 +620,25 @@
                 v-if="resolvedStock !== null && resolvedStock !== -1"
                 class="stock-main"
               >
-                当前库存&nbsp;&nbsp;
-                <strong>剩余 {{ resolvedStock }} 台</strong>
+                {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;
+                <strong>{{
+                  $t("product.list.stockLeft", { count: resolvedStock })
+                }}</strong>
               </div>
               <div v-else-if="productStockLoading" class="stock-main">
-                当前库存&nbsp;&nbsp;<strong>同步中...</strong>
+                {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;<strong>{{
+                  $t("product.detail.syncing")
+                }}</strong>
               </div>
               <div v-else-if="productStockError" class="stock-main">
-                当前库存&nbsp;&nbsp;<strong>同步失败</strong>
+                {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;<strong>{{
+                  $t("product.detail.syncFailed")
+                }}</strong>
               </div>
               <div v-else class="stock-main">
-                当前库存&nbsp;&nbsp;<strong>可直接购买</strong>
+                {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;<strong>{{
+                  $t("product.detail.readyToBuy")
+                }}</strong>
               </div>
               <div class="stock-hint">{{ stockHint }}</div>
             </div>
@@ -619,7 +651,8 @@
               class="purchase-guard-alert"
             >
               <template #title
-                >购买要求：{{ purchaseRequirementSummary }}</template
+                >{{ $t("product.list.purchaseRequirements")
+                }}{{ purchaseRequirementSummary }}</template
               >
             </el-alert>
 
@@ -687,7 +720,9 @@
                   v-if="hasAgentDiscount"
                 >
                   <span>
-                    代理折扣（{{ agentGroupName }}）
+                    {{
+                      $t("product.list.agentDiscount", { name: agentGroupName })
+                    }}
                     <em v-if="agentDiscountPercent" class="discount-tag">{{
                       agentDiscountPercent
                     }}</em>
@@ -779,7 +814,7 @@
                   <span class="cost-amount">{{ totalAmount }}</span>
                 </template>
                 <span class="cost-cycle"
-                  >/{{ selectedCycleLabel || "月付" }}</span
+                  >/{{ selectedCycleLabel || $t("product.list.monthly") }}</span
                 >
               </div>
             </div>
@@ -823,7 +858,7 @@
                 <span class="allocation-footer-num">{{ totalAmount }}</span>
               </template>
               <span class="allocation-footer-cycle"
-                >/{{ selectedCycleLabel || "月付" }}</span
+                >/{{ selectedCycleLabel || $t("product.list.monthly") }}</span
               >
             </div>
             <div class="allocation-footer-meta">
@@ -837,7 +872,8 @@
                 class="allocation-footer-coupon-btn"
                 disabled
               >
-                代理折扣（{{ agentGroupName }}）{{ agentDiscountPercent }}
+                {{ $t("product.list.agentDiscount", { name: agentGroupName })
+                }}{{ agentDiscountPercent }}
               </button>
               <button
                 v-if="isMobile"
@@ -847,8 +883,10 @@
               >
                 {{
                   appliedCoupon
-                    ? `已用券 -¥${appliedCoupon.discount_amount}`
-                    : "优惠券"
+                    ? $t("product.detail.couponUsed", {
+                        amount: appliedCoupon.discount_amount,
+                      })
+                    : $t("product.detail.coupon")
                 }}
               </button>
             </div>
@@ -904,7 +942,7 @@
     <MobileOptionPicker
       v-if="detailSpecCompare && skuOptions.length > 1"
       :visible="mobileSkuPicker"
-      title="产品规格"
+      :title="$t('product.list.spec')"
       :options="skuOptions"
       :active-id="String(product.id || '')"
       @close="mobileSkuPicker = false"
@@ -915,8 +953,8 @@
     <MobileSheet
       :visible="mobileCouponSheet"
       size="58%"
-      title="优惠券"
-      cancel-text="关闭"
+      :title="$t('product.detail.coupon')"
+      :cancel-text="$t('common.close')"
       :close-on-press-modal="false"
       @close="mobileCouponSheet = false"
       @cancel="mobileCouponSheet = false"
@@ -983,7 +1021,8 @@
           </li>
           <li v-if="hasAgentDiscount" class="is-discount">
             <span
-              >代理折扣（{{ agentGroupName }}）{{ agentDiscountPercent }}</span
+              >{{ $t("product.list.agentDiscount", { name: agentGroupName })
+              }}{{ agentDiscountPercent }}</span
             >
             <span>-¥{{ agentDiscountAmount }}</span>
           </li>
@@ -1227,8 +1266,14 @@ const configGroups = computed(() =>
       title: t("product.detail.serverSpecs"),
       configs: configurator.machineConfigs.value || [],
     },
-    { title: "网络配置", configs: configurator.networkConfigs.value || [] },
-    { title: "其他配置", configs: configurator.otherConfigs.value || [] },
+    {
+      title: t("product.detail.network"),
+      configs: configurator.networkConfigs.value || [],
+    },
+    {
+      title: t("product.list.otherConfig"),
+      configs: configurator.otherConfigs.value || [],
+    },
   ].filter((group) => group.configs.length > 0),
 );
 
@@ -1326,7 +1371,7 @@ const agentDiscountPercent = computed(() => {
   const rate = Number(quoteResult.value?.agent_discount_rate);
   if (Number.isFinite(rate) && rate > 0 && rate < 100) {
     const value = Math.round((rate / 10) * 10) / 10;
-    return `${String(value).replace(/\.0$/, "")}折`;
+    return t("product.checkout.discountRate", { rate: value });
   }
   return String(product.value?.agent_discount_percent || "");
 });
@@ -1515,22 +1560,23 @@ const stockClass = computed(() => {
   return "empty";
 });
 const stockLabel = computed(() => {
-  if (productStockLoading.value) return "库存同步中";
-  if (productStockError.value) return "库存同步失败";
+  if (productStockLoading.value) return t("product.checkout.stockSyncing");
+  if (productStockError.value) return t("product.checkout.stockSyncFailed");
   const stock = resolvedStock.value;
-  if (stock === null) return "库存同步中";
-  if (stock === -1 || stock > 10) return "库存充足";
-  if (stock > 0) return "库存紧张";
-  return "暂无库存";
+  if (stock === null) return t("product.checkout.stockSyncing");
+  if (stock === -1 || stock > 10) return t("product.checkout.stockSufficient");
+  if (stock > 0) return t("product.checkout.stockLow");
+  return t("product.checkout.stockOutOfStock");
 });
 const stockHint = computed(() => {
-  if (productStockLoading.value) return "正在同步实时库存，请稍候。";
-  if (productStockError.value) return "实时库存同步失败，请稍后重试。";
+  if (productStockLoading.value) return t("product.checkout.stockSyncingHint");
+  if (productStockError.value) return t("product.checkout.stockSyncRetryHint");
   const stock = resolvedStock.value;
-  if (stock === null) return "正在同步实时库存，请稍候。";
-  if (stock === -1 || stock > 10) return "当前库存充足，可直接提交账单。";
-  if (stock > 0) return `剩余 ${stock} 台，请尽快购买。`;
-  return "当前库存不足，请联系客服。";
+  if (stock === null) return t("product.checkout.stockSyncingHint");
+  if (stock === -1 || stock > 10)
+    return t("product.checkout.stockSufficientHint");
+  if (stock > 0) return t("product.checkout.stockRemainingHint", { stock });
+  return t("product.checkout.stockInsufficientHint");
 });
 const soldOut = computed(
   () =>
@@ -1552,9 +1598,9 @@ const canSubmit = computed(() => {
   );
 });
 const submitButtonText = computed(() => {
-  if (submitting.value) return "提交中...";
-  if (soldOut.value) return "已售罄";
-  return "立即购买";
+  if (submitting.value) return t("product.list.submitting");
+  if (soldOut.value) return t("product.card.soldOut");
+  return t("product.list.buyNow");
 });
 
 function buildOrderPayload() {
@@ -1624,7 +1670,9 @@ async function ensurePurchaseRequirementsBeforeCheckout() {
   }
 
   const primary = missing[0];
-  ElMessage.warning(primary.unmetMessage || "请先完成购买前置要求");
+  ElMessage.warning(
+    primary.unmetMessage || t("product.checkout.prerequisitesRequired"),
+  );
   navigateToConsole(primary.route || "/client/profile");
   return false;
 }
@@ -1662,7 +1710,10 @@ async function submitOrder() {
 
     redirectToConsoleCheckout(orderPayload, idempotencyKey);
   } catch (err) {
-    ElMessage.error(err?.response?.data?.message || "跳转控制台失败，请重试");
+    ElMessage.error(
+      err?.response?.data?.message ||
+        t("product.checkout.consoleRedirectFailed"),
+    );
   } finally {
     submitting.value = false;
   }
@@ -1867,12 +1918,14 @@ function plainTextSummary(value, maxLength = 160) {
 
 function syncProductMeta(nextProduct) {
   if (!nextProduct) return;
-  const title = resolveProductDisplayName(nextProduct) || "云产品详情";
+  const title =
+    resolveProductDisplayName(nextProduct) ||
+    t("product.detail.cloudProductTitle");
   const description = plainTextSummary(
     nextProduct.description ||
       nextProduct.group?.slogan ||
       nextProduct.group?.parent_slogan ||
-      "云产品详情与实时购买报价",
+      t("product.detail.cloudProductDescription"),
   );
   // canonical 基址用配置的公开站点域名，与后端 SEO 渲染的 canonical 同源，
   // 避免双域名部署下 SSR 与客户端各写一个不同域名的 canonical
@@ -1887,7 +1940,7 @@ function syncProductMeta(nextProduct) {
       : "";
 
   updatePageMeta({
-    title: `${title} - 云产品`,
+    title: t("product.detail.windowTitle", { title }),
     description,
     keywords: [title, nextProduct.type_label, nextProduct.group?.full_name]
       .filter(Boolean)
@@ -1952,7 +2005,8 @@ async function refreshProductStock(id) {
     productStock.value = Number(res.data?.stock ?? 0);
   } catch (err) {
     if (routeProductId.value !== id) return;
-    productStockError.value = err?.response?.data?.message || "库存同步失败";
+    productStockError.value =
+      err?.response?.data?.message || t("product.checkout.stockSyncFailed");
   } finally {
     if (routeProductId.value === id) {
       productStockLoading.value = false;

@@ -29,7 +29,7 @@
         </t-list>
 
         <div v-else class="empty-list">
-          <img :src="emptyImage" alt="空" loading="lazy" decoding="async" />
+          <img :src="emptyImage" :alt="$t('layout.notice.emptyImageAlt')" loading="lazy" decoding="async" />
           <p>{{ t('layout.notice.empty') }}</p>
         </div>
         <div v-if="unreadMsg.length > 0" class="header-msg-bottom">

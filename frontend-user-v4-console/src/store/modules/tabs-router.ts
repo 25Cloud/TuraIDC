@@ -7,7 +7,8 @@ const homeRoute: Array<TRouterInfo> = [
   {
     path: '/client/dashboard',
     routeIdx: 0,
-    title: { zh_CN: '控制台', en_US: 'Console' },
+    // 补全 zh_TW / zh_HK：缺项时标签栏会回落到简体
+    title: { zh_CN: '控制台', zh_TW: '控制台', zh_HK: '控制台', en_US: 'Console' },
     name: 'ClientDashboard',
     isHome: true,
   },

@@ -1,8 +1,14 @@
 {
   "lang": "简体中文",
+  "shared": {
+    "state": {
+      "loading": "加载中",
+      "empty": "暂无数据"
+    }
+  },
   "common": {
-    "appName": "TDesign Starter",
-    "copyright": "Copyright {'@'} 2021-2025 Tencent. All Rights Reserved",
+    "appName": "TuraIDC",
+    "copyright": "Copyright {'@'} TuraIDC 贡献者 · AGPL-3.0-or-later",
     "conjunction": "和",
     "admin": "admin",
     "cancel": "取消",
@@ -15,7 +21,20 @@
     "status": "状态",
     "createdAt": "创建时间",
     "action": "操作",
-    "copied": "已复制"
+    "copied": "已复制",
+    "loading": "加载中",
+    "listSeparator": "；",
+    "labelValue": "{label}：{value}",
+    "countUnit": "{count} 个",
+    "errors": {
+      "requestFailed": "请求失败",
+      "networkError": "网络异常",
+      "networkOffline": "网络连接已断开，请检查后重试",
+      "timeout": "请求超时，请检查网络后重试",
+      "invalidParams": "参数填写有误，请检查后重试",
+      "rateLimited": "请求过于频繁，请稍后重试",
+      "rateLimitedRetry": "请求过于频繁，请 {seconds} 秒后重试"
+    }
   },
   "components": {
     "isSetup": {
@@ -81,7 +100,22 @@
       },
       "userMenu": {
         "profile": "个人资料"
-      }
+      },
+      "balance": "余额",
+      "inboxDetail": "消息详情",
+      "noContent": "暂无正文内容",
+      "accountFallback": "用户",
+      "avatarFallback": "图",
+      "closeMenu": "关闭菜单",
+      "openMenu": "打开菜单",
+      "inboxImageAlt": "公告配图",
+      "markAllReadTitle": "全部标记已读",
+      "markAllReadBody": "确认将所有未读消息标记为已读吗？此操作不可撤销。",
+      "justNow": "刚刚",
+      "minutesAgo": "{count} 分钟前",
+      "hoursAgo": "{count} 小时前",
+      "daysAgo": "{count} 天前",
+      "logoutBody": "确认退出当前账户吗？"
     },
     "notice": {
       "title": "通知中心",
@@ -91,7 +125,8 @@
       "emptyNotice": "暂无通知",
       "viewAll": "查看全部",
       "detailLoadFailed": "公告内容加载失败",
-      "markAllRead": "已全部标记为已读"
+      "markAllRead": "已全部标记为已读",
+      "emptyImageAlt": "空"
     },
     "searchPlaceholder": "请输入搜索内容",
     "search": {
@@ -742,7 +777,7 @@
         "title": "浏览器不兼容",
         "subtitle": "抱歉，您正在使用的浏览器版本过低，无法打开当前网页。",
         "back": "回到首页",
-        "recommend": "TDesign Starter 推荐以下主流浏览器"
+        "recommend": "TuraIDC 推荐以下主流浏览器"
       },
       "networkError": {
         "title": "网络异常",
@@ -815,7 +850,17 @@
       "enabled": "上游 API 已开启",
       "disabled": "上游 API 已关闭，同账号的开放接口密钥也已停用",
       "passwordReset": "密码已重置",
-      "policySaved": "安全策略已更新"
+      "policySaved": "安全策略已更新",
+      "loadFailed": "加载上游 API 状态失败",
+      "credentialTitle": "上游 API 凭据（仅显示这一次）",
+      "newPasswordTitle": "新的上游 API 密码（仅显示这一次）",
+      "enableFailed": "开启失败",
+      "disableFailed": "关闭失败",
+      "resetFailed": "重置失败",
+      "policyFailed": "策略更新失败",
+      "disableConfirmTitle": "关闭上游 API",
+      "disableConfirmBody": "关闭后凭据立即失效，正在使用该账号的魔方财务对接会中断；同一账号的开放接口密钥也会一并停用。确定关闭？",
+      "disableConfirmBtn": "确认关闭"
     },
     "title": "API 凭据",
     "create": "创建密钥",
@@ -833,7 +878,50 @@
     "columnLastUsedAt": "最近使用",
     "columnDuration": "耗时",
     "overview": "本页管理对接本系统的两套凭据：开放接口密钥用于系统间调用（/api/v2/open），魔方财务对接凭据供魔方财务在「上游」中配置（/api/v2/zjmf）。两套凭据都支持 IP 白名单、有效期与调用审计。",
-    "linkageNote": "两套凭据的联动是单向的：在「魔方财务对接」中关闭上游会一并停用本账号全部开放接口密钥；反过来，停用或删除单个密钥不影响魔方财务对接。"
+    "linkageNote": "两套凭据的联动是单向的：在「魔方财务对接」中关闭上游会一并停用本账号全部开放接口密钥；反过来，停用或删除单个密钥不影响魔方财务对接。",
+    "empty": "暂无 API 密钥，点击右上角创建",
+    "unnamed": "未命名",
+    "disabledTag": "已停用",
+    "enabledTag": "已启用",
+    "neverExpires": "永不过期",
+    "neverUsed": "从未使用",
+    "disable": "停用",
+    "enable": "启用",
+    "expiresPrefix": "到期：",
+    "lastUsedPrefix": "最近使用：",
+    "upstreamTabLabel": "魔方财务对接",
+    "createTitle": "创建 API 密钥",
+    "editTitle": "编辑 API 密钥",
+    "submitting": "提交中...",
+    "save": "保存",
+    "nameLabel": "密钥名称",
+    "namePlaceholder": "例如：魔方平台对接",
+    "scopesLabel": "权限范围",
+    "scopeNone": "无",
+    "scopeRead": "只读",
+    "scopeWrite": "读写",
+    "scopeHint": "读写权限包含只读权限；已授权的接口范围见开放接口文档。",
+    "expiresLabel": "过期时间（可选）",
+    "ipLabel": "IP 白名单（可选，多个用英文逗号分隔）",
+    "ipPlaceholder": "例如：203.0.113.9, 198.51.100.2",
+    "createdTitle": "密钥创建成功",
+    "secretWarning": "完整密钥仅显示这一次，关闭后无法再次查看。请立即保存到安全位置，并通过「编辑」更新过期时间或白名单。",
+    "logsTitle": "调用日志 · {name}",
+    "keyFallback": "密钥",
+    "deleteTitle": "删除 API 密钥",
+    "deleteBody": "确定删除密钥「{name}」吗？删除后使用该密钥的对接将立即失效。此操作不影响魔方财务对接凭据。",
+    "deleteConfirm": "删除",
+    "disableTitle": "停用 API 密钥",
+    "disableBody": "停用「{name}」后，使用该密钥的对接将立即失效，直至重新启用。此操作不影响魔方财务对接凭据。",
+    "disableConfirm": "停用",
+    "listLoadFailed": "API 密钥列表加载失败",
+    "createFailed": "创建失败",
+    "updateFailed": "更新失败",
+    "disableSuccess": "密钥已停用",
+    "enableSuccess": "密钥已启用",
+    "actionFailed": "操作失败",
+    "deleteFailed": "删除失败",
+    "logsLoadFailed": "调用日志加载失败"
   },
   "client": {
     "catalog": {
@@ -1095,7 +1183,9 @@
       "metricTotal": "实例总数",
       "metricActive": "正常运行",
       "metricPending": "待处理实例",
-      "metricExpiring": "即将到期"
+      "metricExpiring": "即将到期",
+      "renewNow": "立即续费",
+      "invoiceDetail": "账单详情"
     },
     "ticketDetail": {
       "adminRole": "管理员",
@@ -1132,7 +1222,10 @@
     "support": {
       "officialQqGroup": "官方QQ群",
       "cooperationEmail": "合作邮箱",
-      "serviceHours": "服务时间"
+      "serviceHours": "服务时间",
+      "pendingGroupNo": "待补充群号",
+      "joinGroupTitle": "加入官方群聊",
+      "joinGroupText": "官方群聊用于发布维护通知、活动消息和常见问题答疑，欢迎扫码加入。"
     },
     "dashboard": {
       "accountBalance": "账户余额",
@@ -1162,7 +1255,64 @@
       "totalLabel": "合计",
       "last7DaysDailySpend": "近 7 天每日消费",
       "spendDetails": "消费明细",
-      "messageCenter": "消息中心"
+      "messageCenter": "消息中心",
+      "loading": "正在加载控制台数据",
+      "verified": "已实名",
+      "unverified": "未实名",
+      "phoneBound": "已绑手机",
+      "phoneUnbound": "未绑手机",
+      "emailBound": "已绑邮箱",
+      "emailUnbound": "未绑邮箱",
+      "onlineRecharge": "在线充值",
+      "rechargeRecords": "充值记录",
+      "thisYearSpendAria": "今年月度消费",
+      "monthlyBarAria": "{label}：¥{amount}",
+      "monthlyBarAriaEmpty": "{label}：无消费",
+      "emptyYearSpend": "暂无今年消费数据",
+      "last7DaysAria": "近 7 天每日消费",
+      "dailyBarAria": "{label} · 消费 ¥{amount}",
+      "emptyDailySpend": "暂无消费记录",
+      "noticeTab": "新闻公告",
+      "helpTab": "帮助中心",
+      "emptyNotices": "暂无公告",
+      "emptyHelp": "暂无帮助内容",
+      "todoTitle": "待办事项",
+      "todoAriaPending": "{label}：{count} 项，需要处理",
+      "todoAriaEmpty": "{label}：0 项",
+      "quickTitle": "快捷入口",
+      "supportQrAlt": "QQ 群二维码",
+      "supportGroupNo": "群号：{no}",
+      "joinGroup": "加入群聊",
+      "defaultAccountName": "客户账户",
+      "avatarFallbackLetter": "客",
+      "supportGroupTitle": "官方 QQ 群聊",
+      "supportGroupText": "加入官方 QQ 群聊",
+      "financeSummaryNote": "财务入账汇总",
+      "monthlyBillNote": "本月账单支出",
+      "couponTotalNote": "总计 {count} 张",
+      "couponUnit": "张",
+      "yearLabel": "{year} 年",
+      "greetingNight": "夜深了",
+      "greetingMorning": "早上好",
+      "greetingForenoon": "上午好",
+      "greetingNoon": "中午好",
+      "greetingAfternoon": "下午好",
+      "greetingEvening": "晚上好",
+      "weekdaySun": "日",
+      "weekdayMon": "一",
+      "weekdayTue": "二",
+      "weekdayWed": "三",
+      "weekdayThu": "四",
+      "weekdayFri": "五",
+      "weekdaySat": "六",
+      "todayDate": "{year}年{month}月{day}日 星期{weekday}",
+      "defaultProductTitle": "云产品",
+      "defaultGroupLevel": "一级分组",
+      "serviceCount": "{count} 个",
+      "dailyBarTooltip": "{date} · 消费 ¥{amount}",
+      "monthLabel": "{month}月",
+      "monthlyBarTooltip": "{label} · 消费 ¥{amount} · {count} 笔账单",
+      "loadFailed": "控制台数据加载失败"
     },
     "apiKeys": {
       "edit": "编辑",
@@ -1200,7 +1350,10 @@
       "passwordTooShort": "密码长度不能少于 8 位",
       "passwordMismatch": "两次输入的密码不一致",
       "accountFirst": "请先输入正确的手机号或邮箱",
-      "success": "注册成功"
+      "success": "注册成功",
+      "codeRequired": "请输入验证码",
+      "confirmPasswordRequired": "请再次输入密码",
+      "failed": "注册失败"
     },
     "forgotPassword": {
       "captchaRequired": "请先完成人机验证",
@@ -1212,18 +1365,49 @@
       "confirmPasswordRequired": "请再次输入新密码",
       "passwordMismatch": "两次输入的密码不一致",
       "accountFirst": "请先输入正确的手机号或邮箱",
-      "passwordResetSuccess": "密码已重置，请重新登录"
+      "passwordResetSuccess": "密码已重置，请重新登录",
+      "navText": "想起密码了？",
+      "heroTitle": "重置密码后，继续进入控制台",
+      "heroDescription": "找回登录凭证后，可继续处理服务、账单与账户安全设置。",
+      "submit": "重置密码",
+      "failed": "密码重置失败"
     },
     "loginAs": {
       "credentialMissing": "缺少代登录凭证",
-      "success": "代登录成功"
+      "success": "代登录成功",
+      "navText": "如需手动登录",
+      "heroTitle": "正在校验本次身份切换请求",
+      "heroDescription": "验证通过后将自动进入控制台，本次跳转不会修改现有业务数据。",
+      "failed": "代登录失败",
+      "processing": "正在处理代登录",
+      "descriptionSuccess": "已完成身份切换，正在进入客户端控制台。",
+      "descriptionError": "代登录链路无效、已过期，或当前请求已被拒绝。",
+      "descriptionProcessing": "正在校验代登录凭证，请稍候。",
+      "missingDefault": "未检测到管理端发来的代登录凭证，请回到管理端重新发起。",
+      "missingEmpty": "管理端返回的代登录凭证为空，请重新发起。",
+      "missingTimeout": "等待管理端返回代登录凭证超时，请确认弹窗未被拦截后重试。"
     },
     "login": {
       "captchaRequired": "请先完成人机验证",
       "accountRequired": "请输入正确的手机号或邮箱",
       "codeLength": "验证码为 6 位",
       "passwordRequired": "请输入登录密码",
-      "accountRequiredFirst": "请先输入正确的手机号或邮箱"
+      "accountRequiredFirst": "请先输入正确的手机号或邮箱",
+      "navText": "还没有账户？",
+      "registerNow": "现在注册",
+      "heroDescription": "登录后可继续查看实例、支付账单、提交工单，并维护账户安全与实名认证。",
+      "heroTitle": "进入控制台，\n继续处理服务与账单",
+      "codeRequired": "请输入验证码",
+      "failed": "登录失败"
+    },
+    "codeSentSms": "短信验证码已发送",
+    "codeSentEmail": "邮箱验证码已发送",
+    "codeSendFailed": "验证码发送失败",
+    "shell": {
+      "brandContext": "用户控制台",
+      "back": "返回",
+      "defaultHeroTitle": "安全进入用户控制台",
+      "defaultHeroDescription": "管理云服务、账单、工单与账户资料，所有操作继续沿用原有用户端接口。"
     }
   },
   "result": {
@@ -1274,7 +1458,14 @@
       "osVersionPlaceholder": "请选择系统版本",
       "submit": "提交重装",
       "title": "重装系统",
-      "selectOsVersion": "请选择系统版本"
+      "selectOsVersion": "请选择系统版本",
+      "defaultGroup": "默认分组",
+      "confirmHeader": "确认重装系统",
+      "confirmBody": "重装系统后，当前系统盘中的所有数据将被永久清除且不可恢复，确定要重装系统吗？",
+      "confirmBtn": "确认重装",
+      "running": "重装系统中",
+      "submitted": "重装系统任务已提交",
+      "failed": "重装系统失败"
     },
     "renewDialog": {
       "agentDiscount": "代理折扣",
@@ -1315,7 +1506,25 @@
       "groupNameRequired": "请输入安全组名称",
       "selectGroupFirst": "请先选择安全组",
       "ruleRequired": "请填写完整的规则信息",
-      "rulesEmpty": "当前安全组没有规则，可先新增后再应用"
+      "rulesEmpty": "当前安全组没有规则，可先新增后再应用",
+      "deleteGroupHeader": "删除安全组",
+      "deleteGroupBody": "确认删除安全组“{name}”吗？",
+      "deleteRuleHeader": "删除规则",
+      "deleteRuleBody": "确认删除该安全组规则吗？",
+      "groupCreateSuccess": "安全组创建成功",
+      "groupCreateFailed": "创建安全组失败",
+      "groupApplied": "安全组已应用",
+      "groupApplyFailed": "应用安全组失败",
+      "groupDeleted": "安全组已删除",
+      "groupDeleteFailed": "删除安全组失败",
+      "ruleCreateSuccess": "安全组规则创建成功",
+      "ruleCreateFailed": "创建安全组规则失败",
+      "ruleDeleted": "安全组规则已删除",
+      "ruleDeleteFailed": "删除安全组规则失败",
+      "addRuleHeader": "新增安全组规则",
+      "portPlaceholderAll": "全部端口（自动填充）",
+      "portPlaceholderNone": "该协议无端口（自动处理）",
+      "portPlaceholderExample": "例如 22 或 80-90"
     },
     "securityGroup": {
       "cancel": "取消",
@@ -1397,7 +1606,9 @@
       "panel": "套餐与面板"
     },
     "breadcrumb": {
-      "userCenter": "用户中心"
+      "userCenter": "用户中心",
+      "instanceService": "实例服务",
+      "instanceHash": "实例 #{id}"
     },
     "rename": "修改名称",
     "autoRenew": "自动续费",
@@ -1424,18 +1635,35 @@
       "unsupported": "当前实例暂不支持端口转发",
       "emptyCanCreate": "暂无端口转发规则，可先添加后再配置",
       "emptyNotCreatable": "暂无端口转发规则",
-      "delete": "删除"
+      "delete": "删除",
+      "addForwardHeader": "添加端口转发",
+      "createBtn": "创建",
+      "createSuccess": "端口转发创建成功",
+      "createFailed": "创建端口转发失败",
+      "deleteHeader": "删除端口转发",
+      "deleteBody": "确认删除端口转发“{name}”吗？",
+      "deleteSuccess": "端口转发删除成功",
+      "deleteFailed": "删除端口转发失败"
     },
     "remark": {
       "save": "保存备注",
-      "placeholder": "填写实例备注，便于识别"
+      "placeholder": "填写实例备注，便于识别",
+      "dialogHeader": "编辑备注"
     },
     "rescue": {
       "title": "救援系统",
       "confirm": "确认进入",
       "placeholder": "请选择救援系统",
       "linux": "Linux 救援系统",
-      "windows": "Windows 救援系统"
+      "windows": "Windows 救援系统",
+      "confirmHeader": "确认进入救援模式",
+      "confirmBody": "进入救援模式后，实例将重启并挂载救援系统，用于排查系统故障。确认继续吗？",
+      "confirmBtn": "确认进入",
+      "entering": "进入救援模式中",
+      "submitted": "救援模式指令已提交",
+      "failed": "进入救援模式失败",
+      "dialogHeader": "进入救援模式",
+      "dialogMessage": "进入救援模式后实例将重启并挂载救援系统，用于排查系统故障。完成后请在救援系统中执行“exit rescue”或重新安装系统退出。"
     },
     "instanceStatus": "实例状态",
     "basicInfo": "基本信息",
@@ -1451,7 +1679,21 @@
     "power": {
       "starting": "开机中",
       "stopping": "关机中",
-      "rebooting": "重启中"
+      "rebooting": "重启中",
+      "on": "开机",
+      "off": "关机",
+      "reboot": "重启",
+      "hardOff": "强制关机",
+      "hardReboot": "强制重启",
+      "confirmHeader": "{label}确认",
+      "confirmBody": "确认对实例 {name} 执行“{label}”操作吗？",
+      "confirmBtn": "确认{label}",
+      "operating": "{label}中",
+      "dispatched": "{label}指令已下发",
+      "failed": "{label}失败",
+      "autoRenewEnabled": "自动续费已开启",
+      "autoRenewDisabled": "自动续费已关闭",
+      "autoRenewFailed": "自动续费更新失败"
     },
     "renew": {
       "invoiceCreated": "续费账单已创建，正在跳转支付"
@@ -1470,7 +1712,11 @@
       "financeEventType": "账单类型",
       "financeAmount": "金额",
       "financeDescription": "说明",
-      "financeInvoiceNo": "关联账单"
+      "financeInvoiceNo": "关联账单",
+      "eventRefunded": "已退款",
+      "eventAutoRenew": "自动续费",
+      "eventManualRenew": "手动续费",
+      "eventPurchase": "产品购买"
     },
     "instanceNameSaved": "实例名称已保存",
     "remarkSaved": "备注已保存",
@@ -1489,13 +1735,113 @@
       "unsupported": "当前实例暂不支持监控",
       "empty": "当前时间范围内暂无监控数据",
       "noTrend": "当前时间范围内暂无趋势数据",
-      "chartLabel": "{name}趋势图"
+      "chartLabel": "{name}趋势图",
+      "average": "平均",
+      "peak": "峰值",
+      "lowest": "最低",
+      "metricFallback": "指标 {index}"
     },
     "finance": {
-      "empty": "暂无财务记录"
+      "empty": "暂无财务记录",
+      "totalCount": "共 {count} 条",
+      "totalIn": "收入",
+      "totalOut": "支出",
+      "refundIn": "退款"
     },
     "copyAll": "复制全部",
-    "close": "关闭"
+    "close": "关闭",
+    "errors": {
+      "areaServiceIdInvalid": "服务ID无效",
+      "areaTokenFailed": "访问凭证生成失败，请稍后重试",
+      "detailLoadFailed": "加载实例信息失败",
+      "statusRefreshFailed": "刷新实例状态失败",
+      "nameSaveFailed": "实例名称保存失败",
+      "remarkSaveFailed": "备注保存失败",
+      "passwordResetting": "重置密码中",
+      "passwordSubmitted": "重置密码指令已提交",
+      "passwordResetFailed": "重置密码失败",
+      "reinstallOptionsFailed": "加载重装系统选项失败",
+      "renewLoadFailed": "加载续费信息失败",
+      "renewCreateFailed": "创建续费账单失败",
+      "securityLoadFailed": "加载安全组失败",
+      "securityRulesLoadFailed": "加载安全组规则失败",
+      "monitorLoadFailed": "加载监控数据失败",
+      "natLoadFailed": "加载 NAT 转发失败",
+      "logsLoadFailed": "加载操作日志失败",
+      "financeLoadFailed": "加载财务日志失败",
+      "trafficPackagesLoadFailed": "加载流量包失败",
+      "trafficQuoteFailed": "获取流量包报价失败",
+      "trafficInvoiceFailed": "创建流量包账单失败",
+      "vncUrlMissing": "未获取到可用的 VNC 地址",
+      "vncUrlFailed": "获取 VNC 地址失败"
+    },
+    "area": {
+      "refresh": "刷新",
+      "openInNewWindow": "新窗口打开",
+      "enterPanel": "进入面板",
+      "reload": "重新加载",
+      "loadingPanel": "正在加载功能面板",
+      "preparingPanel": "正在准备功能面板",
+      "customPanel": "自定义功能面板",
+      "loadFailed": "功能面板加载失败，请稍后重试"
+    },
+    "areaLabel": {
+      "idcRegion": "机房区域",
+      "acceleration": "加速区域"
+    },
+    "copyLabel": "复制{label}",
+    "loadingConsole": "正在加载实例控制台",
+    "instanceHash": "服务 #{id}",
+    "instanceIdMeta": "实例 ID：{id}",
+    "addressMeta": "地址：{address}",
+    "networkInfo": "网络信息",
+    "loginCredentials": "登录凭据",
+    "instanceArchive": "实例档案",
+    "trafficLabel": "流量",
+    "regionLabel": "区域",
+    "memoryLabel": "内存",
+    "systemDisk": "系统盘",
+    "bandwidthLabel": "带宽",
+    "ipCount": "IP数量",
+    "dataDisk": "数据盘",
+    "internalIp": "内网 IP",
+    "passwordLabel": "密码",
+    "usernameLabel": "用户名",
+    "portLabel": "端口",
+    "hostnameLabel": "主机名",
+    "reset": "重置",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码",
+    "copyPassword": "复制密码",
+    "copyIp": "复制{ip}",
+    "trafficUsed": "已用流量",
+    "trafficLimit": "流量上限",
+    "trafficRemaining": "剩余流量",
+    "usageProgress": "使用进度",
+    "accelerationProtection": "加速与防护",
+    "nodeCount": "节点数",
+    "protection": "防护能力",
+    "originLine": "回源线路",
+    "addRemarkHint": "点击添加备注",
+    "editRemark": "编辑备注",
+    "addRemark": "添加备注",
+    "statusSync": "状态同步",
+    "renewLabel": "续费",
+    "more": "更多",
+    "menu": {
+      "resetPassword": "重置密码",
+      "reinstall": "重装系统",
+      "rescue": "救援模式",
+      "upgrade": "规格升级",
+      "snapshot": "快照/备份",
+      "sshKey": "SSH 密钥",
+      "disk": "磁盘管理"
+    },
+    "statusSynced": "实例状态已同步",
+    "statusSyncFailed": "同步实例状态失败",
+    "remoteAddress": "远程地址",
+    "publicIp": "公网 IP",
+    "contentCopied": "内容已复制"
   },
   "recharge": {
     "title": "在线充值",
@@ -1518,12 +1864,28 @@
     "successBalanceRefreshed": "充值成功，余额已刷新",
     "amountQuantity": "充值数量",
     "actualAmountPrefix": "实付金额：",
-    "selectPaymentMethod": "选择支付方式"
+    "selectPaymentMethod": "选择支付方式",
+    "scanToPay": "扫码支付",
+    "paymentGatewaysLoading": "支付方式加载中",
+    "noPaymentGatewayHint": "暂无可用支付方式，请联系管理员开启支付渠道",
+    "paySuccess": "充值成功",
+    "pendingPay": "待支付",
+    "generateQr": "生成{method}二维码",
+    "pay": "支付",
+    "balanceRefreshed": "余额已刷新",
+    "chooseAmountHint": "选择金额后生成支付二维码",
+    "continueRecharge": "继续充值",
+    "rechargeNow": "立即充值",
+    "wechatPayTip": "请复制支付链接后在微信或手机浏览器中继续支付。",
+    "alipayPayTip": "若未能自动打开支付宝，请复制支付链接后在手机浏览器中继续支付。",
+    "confirmTitle": "确认充值",
+    "confirmBody": "确认通过 {method} 充值 ¥{amount}？"
   },
   "services": {
     "console": {}
   },
   "verification": {
+    "verifyNow": "立即认证",
     "currentStatus": "当前状态",
     "name": "认证姓名",
     "idCard": "身份证号",
@@ -1554,7 +1916,29 @@
     "success": "认证成功",
     "qrCodeRefreshed": "已重新生成二维码，请重新扫码",
     "sessionClosed": "认证会话已关闭",
-    "reverify": "重新认证"
+    "reverify": "重新认证",
+    "pendingTag": "待认证",
+    "notVerifiedTitle": "尚未完成实名认证",
+    "verifiedTitle": "已完成实名认证",
+    "verifiedDesc": "当前账户已经通过实名校验，可继续购买需要实名的产品。",
+    "pendingDesc": "完成实名后，可继续购买受实名限制的商品并提升账户安全性。",
+    "infoLoadFailed": "实名信息加载失败",
+    "submitFailed": "提交失败",
+    "providerLinkMissing": "未获取到实名服务商链接",
+    "authLinkFailed": "获取认证链接失败",
+    "processing": "认证处理中，请稍后再试",
+    "incomplete": "认证未完成",
+    "queryFailed": "查询失败",
+    "reverifyFailed": "重新认证失败",
+    "closeSessionFailed": "关闭认证会话失败",
+    "loading": "正在加载实名信息",
+    "viewInfo": "查看实名信息",
+    "submitVerification": "提交认证",
+    "qrInvalidShort": "二维码已失效",
+    "qrExpiresIn": "二维码 {time} 后失效",
+    "dialogHeader": "实名认证",
+    "nameLine": "姓名：{name}",
+    "idCardLine": "身份证号：{idCard}"
   },
   "checkoutResume": {
     "browse": "去选购产品",
@@ -1565,7 +1949,16 @@
     "quantity": "数量",
     "created": "账单创建成功，正在跳转",
     "createFailed": "账单创建失败，请稍后重试",
-    "recreate": "重新创建账单"
+    "recreate": "重新创建账单",
+    "statusError": "创建失败",
+    "statusEmpty": "等待创建账单",
+    "statusCreating": "创建账单中",
+    "titleError": "恢复购买信息失败",
+    "titleEmpty": "没有待恢复的购买信息",
+    "titleCreating": "正在创建账单",
+    "descError": "请稍后重试，或前往资金中心查看账单记录。",
+    "descEmpty": "请从产品页重新选择规格并创建账单。",
+    "descCreating": "正在恢复你刚才的购买信息，请不要关闭页面。"
   },
   "content": {
     "hotSearchLabel": "热门搜索:",
@@ -1576,7 +1969,16 @@
       "empty": "暂无帮助内容"
     },
     "article": {
-      "fullText": "全文"
+      "fullText": "全文",
+      "publisher": "发布人：{name}",
+      "viewCount": "阅读量：{count}",
+      "toc": "目录结构"
+    },
+    "list": {
+      "markAllRead": "全部标记已读 ({count})",
+      "pinned": "置顶",
+      "views": "浏览量 {count}",
+      "empty": "暂无内容"
     }
   },
   "invoiceDetail": {
@@ -1609,7 +2011,70 @@
     "invoiceInfo": "账单信息",
     "relatedPaymentsTitle": "关联支付记录",
     "summary": "账单摘要",
-    "paidRefresh": "我已完成支付，刷新状态"
+    "paidRefresh": "我已完成支付，刷新状态",
+    "refreshDetail": "刷新详情",
+    "cancelInvoice": "取消账单",
+    "loadingDetail": "正在加载账单详情",
+    "renewService": "续费服务",
+    "renewDoneTip": "支付完成后系统会自动处理续费，到期时间以服务控制台更新为准。",
+    "viewService": "查看服务",
+    "postPayment": "支付后处理",
+    "invoiceNo": "账单号",
+    "invoiceType": "账单类型",
+    "typeNew": "新购",
+    "typeRenew": "续费",
+    "invoiceAmount": "账单金额",
+    "billingCycleLabel": "计费周期",
+    "productPath": "产品链路",
+    "machineSpec": "机器基础信息",
+    "configPricing": "配置定价",
+    "paymentMethod": "支付方式",
+    "paymentStatus": "支付状态",
+    "paymentAmount": "支付金额",
+    "balanceDeduction": "余额抵扣",
+    "sessionDeadline": "会话截止",
+    "status": "状态",
+    "discountAmount": "优惠金额",
+    "paid": "已支付",
+    "createdAt": "创建时间",
+    "dueAt": "截止时间",
+    "choosePaymentTitle": "选择支付方式",
+    "choosePaymentDesc": "确认渠道后继续完成当前账单支付",
+    "pay": "支付",
+    "scanToPay": "扫码支付",
+    "maxDeduction": "最多可抵扣",
+    "alipayBalanceHint": "支付宝支付时使用余额抵扣",
+    "currentBalance": "当前余额",
+    "estimatedDeduction": "预计抵扣",
+    "alipayRemaining": "支付宝待付",
+    "confirmBalancePay": "确认余额支付",
+    "payWithBalance": "使用余额完成支付",
+    "generateQr": "生成{method}二维码",
+    "zeroAmountNoAction": "零元账单无需操作",
+    "refreshStatus": "刷新状态",
+    "notFound": "未找到账单详情",
+    "alipayPay": "支付宝支付",
+    "sessionRemaining": "剩余 {countdown}",
+    "sessionExpired": "已过期",
+    "serviceHash": "服务 #{id}",
+    "daysCountdown": "{days}天 {time}",
+    "specs": {
+      "area": "区域",
+      "cpu": "CPU",
+      "memory": "内存",
+      "systemDisk": "系统盘",
+      "dataDisk": "数据盘",
+      "bandwidth": "带宽",
+      "networkType": "网络类型",
+      "independentIp": "独立 IP",
+      "os": "操作系统",
+      "traffic": "流量"
+    },
+    "typeUpgrade": "升降级",
+    "typeRecharge": "充值",
+    "typeDeduction": "扣款",
+    "typeReferralCredit": "推荐奖励",
+    "typeManual": "手工账单"
   },
   "orderCreate": {
     "title": "购买链路",
@@ -1632,13 +2097,33 @@
     "productService": "产品/服务",
     "amount": "金额",
     "relatedInvoice": "关联账单",
-    "createdAt": "创建时间"
+    "createdAt": "创建时间",
+    "allStatusPlaceholder": "全部状态",
+    "allTypePlaceholder": "全部类型",
+    "emptyOrders": "暂无订单记录",
+    "invoice": "账单"
   },
   "paymentDetail": {
     "title": "财务中心",
     "records": "充值记录",
     "recordDetail": "充值详情",
-    "back": "返回列表"
+    "back": "返回列表",
+    "refresh": "刷新",
+    "loading": "正在加载充值详情",
+    "paymentInfo": "支付信息",
+    "merchantOrderNo": "商家订单号",
+    "thirdPartyOrderNo": "第三方订单号",
+    "paymentAmount": "支付金额",
+    "gateway": "支付渠道",
+    "status": "支付状态",
+    "createdAt": "创建时间",
+    "paidAt": "支付时间",
+    "relatedInvoice": "关联账单",
+    "invoiceNo": "账单号",
+    "invoiceStatus": "账单状态",
+    "invoiceAmount": "账单金额",
+    "paidAmount": "已付金额",
+    "backToPayments": "返回充值记录"
   },
   "profile": {
     "basicInfo": "基础信息",
@@ -1696,7 +2181,57 @@
     "oldEmailLabel": "原邮箱",
     "oldEmailCodeLabel": "原邮箱验证码",
     "newPhoneLabel": "新手机号",
-    "newEmailLabel": "新邮箱"
+    "newEmailLabel": "新邮箱",
+    "verifiedDesc": "完成实名认证后，可提升账户可信度与业务可用范围",
+    "statusDone": "已完成",
+    "statusPending": "待处理",
+    "viewVerification": "查看认证",
+    "verifyNow": "立即认证",
+    "phoneDesc": "绑定手机号后，可用于验证码接收和安全校验",
+    "statusBound": "已绑定",
+    "statusUnbound": "未绑定",
+    "goBind": "前往绑定",
+    "changeBind": "更换绑定",
+    "emailDesc": "建议绑定常用邮箱，用于接收通知与安全提醒",
+    "statusSet": "已设置",
+    "changePassword": "修改密码",
+    "codeSendFailed": "验证码发送失败",
+    "passwordResetFailed": "密码重置失败",
+    "phoneUpdateFailed": "手机号修改失败",
+    "emailUpdateFailed": "邮箱修改失败",
+    "copySuccess": "复制成功",
+    "profileSaveFailed": "资料保存失败",
+    "updateFailed": "修改失败",
+    "saveFailed": "保存失败",
+    "accountId": "账户ID",
+    "copyAccountId": "复制账户ID",
+    "registeredAt": "注册时间",
+    "usernameLabel": "用户名",
+    "usernamePlaceholder": "请输入用户名",
+    "qqLabel": "QQ 号",
+    "qqPlaceholder": "填写后将以 QQ 头像作为账户头像",
+    "balanceLabel": "账户余额",
+    "loginEmailLabel": "登录邮箱",
+    "accountStatus": "账户状态",
+    "verified": "已实名",
+    "unverified": "未实名",
+    "agentGroup": "代理组",
+    "none": "无",
+    "saveHint": "保存后会立即更新当前账户资料。",
+    "saveProfile": "保存资料",
+    "enabledTag": "已开启",
+    "changeLoginPassword": "修改登录密码",
+    "resetPasswordByCode": "验证码重置密码",
+    "changePhoneTitle": "更换绑定手机",
+    "bindPhoneTitle": "绑定手机号",
+    "changeEmailTitle": "更换绑定邮箱",
+    "bindEmailTitle": "绑定邮箱",
+    "tabs": {
+      "personal": "个人资料",
+      "security": "账户安全",
+      "notification": "消息提醒",
+      "settings": "账户设置"
+    }
   },
   "tickets": {
     "searchPlaceholder": "搜索工单标题",
@@ -1704,7 +2239,23 @@
     "columnSubject": "标题",
     "columnPriority": "优先级",
     "columnUpdatedAt": "更新时间",
-    "viewThread": "查看交流"
+    "viewThread": "查看交流",
+    "createTitle": "提交工单",
+    "empty": "暂无工单记录",
+    "priorityPrefix": "优先级：{value}",
+    "categoryLabel": "问题分类",
+    "subjectLabel": "工单标题",
+    "subjectPlaceholder": "请简要描述您的问题",
+    "relatedServiceLabel": "关联服务",
+    "relatedServicePlaceholder": "可选，如与具体服务相关",
+    "descriptionLabel": "问题描述",
+    "descriptionPlaceholder": "请详细描述您遇到的问题",
+    "attachmentLabel": "添加附件",
+    "uploadImage": "上传图片",
+    "uploadTip": "支持 jpg/png/webp，最多 9 张，单张不超过 5MB",
+    "attachmentAlt": "附件",
+    "remove": "移除",
+    "attachmentPreview": "附件预览"
   },
   "auth": {
     "accountLabel": "手机号 / 邮箱",
@@ -1720,7 +2271,16 @@
     "byPassword": "密码登录",
     "byCode": "验证码登录",
     "loginAsRetry": "重试代登录",
-    "backToLogin": "返回登录页"
+    "backToLogin": "返回登录页",
+    "passwordLabel": "密码",
+    "forgetPasswordLink": "忘记密码？",
+    "submitLogin": "登录",
+    "registeredAccountPlaceholder": "请输入已注册的手机号或邮箱",
+    "loginPasswordPlaceholder": "请输入登录密码",
+    "confirmNewPassword": "确认新密码",
+    "confirmNewPasswordPlaceholder": "请再次输入新密码",
+    "backToLoginShort": "返回登录",
+    "backToProducts": "返回产品页"
   },
   "finance": {
     "invoice": {
@@ -1737,6 +2297,91 @@
       "alipay": "支付宝",
       "epay": "易支付",
       "wechat": "微信支付"
+    },
+    "snapshot": {
+      "bandwidth": "带宽",
+      "downBandwidth": "下行带宽",
+      "upBandwidth": "上行带宽",
+      "os": "操作系统",
+      "region": "区域",
+      "node": "节点",
+      "nodeGroup": "节点分组",
+      "ipCount": "IP数量",
+      "ipv6Count": "IPv6数量",
+      "memory": "内存",
+      "hostname": "主机名",
+      "quantity": "数量",
+      "setupFee": "初装费",
+      "baseAmount": "基础金额",
+      "totalAmount": "合计金额",
+      "configAmount": "配置金额",
+      "subtotalAmount": "小计金额",
+      "discountAmount": "优惠金额",
+      "amount": "金额",
+      "price": "价格",
+      "items": "配置项",
+      "meta": "扩展信息",
+      "configOption": "配置参数",
+      "kind": "类型",
+      "mode": "模式",
+      "targetService": "目标服务",
+      "targetServiceId": "目标服务ID",
+      "productId": "产品ID",
+      "productName": "产品名称",
+      "billingCycle": "周期",
+      "remark": "备注",
+      "dataDisk": "数据盘",
+      "amountWithValue": "金额 ¥{amount}",
+      "setupFeeWithValue": "初装费 ¥{amount}",
+      "cpu": "CPU"
+    },
+    "messages": {
+      "orderListLoadFailed": "订单列表加载失败",
+      "orderDetailLoadFailed": "订单详情加载失败",
+      "cancelOrderTitle": "取消订单",
+      "cancelOrderTip": "确定取消该订单？取消后不可恢复。\n关联的账单也将被取消，使用的优惠券将退回账户。\n如果是新产品购买，库存将释放。",
+      "cancelOrderFailed": "取消订单失败",
+      "invoiceListLoadFailed": "账单列表加载失败",
+      "invoiceDetailLoadFailed": "账单详情加载失败",
+      "cancelInvoiceTitle": "取消账单",
+      "cancelInvoiceTip": "确定取消该账单？取消后不可恢复。\n使用的优惠券将退回账户。\n如果是新产品购买，库存将释放。",
+      "cancelInvoiceConfirmTip": "取消后需重新创建账单才能继续支付，确认取消吗？",
+      "cancelInvoiceFailed": "取消账单失败",
+      "pay": "支付",
+      "cannotPay": "当前账单状态不支持继续支付。",
+      "balanceDeductionHint": "将自动抵扣余额 ¥{balance}，支付宝支付剩余 ¥{alipay}。",
+      "qrGeneratedHint": "生成二维码后请使用{method}完成支付，系统会自动轮询状态。",
+      "balancePayHint": "余额支付会直接扣减账户余额并完成账单。",
+      "zeroAmountHint": "零元账单无需额外支付。",
+      "balancePayFailed": "余额支付失败",
+      "balancePayTitle": "余额支付",
+      "balancePayConfirm": "确认使用账户余额支付 ¥{amount} 吗？",
+      "qrGenerated": "{method}二维码已生成",
+      "qrGenerateFailed": "生成{method}二维码失败",
+      "notPaidYet": "当前仍未支付成功",
+      "queryPaymentStatusFailed": "查询支付状态失败",
+      "detailLoadFailed": "详情加载失败",
+      "paymentRecordsLoadFailed": "第三方支付记录加载失败",
+      "paymentMethodLoading": "正在加载支付方式",
+      "noPaymentMethod": "暂无可用支付方式",
+      "generatingQr": "正在生成二维码",
+      "continueRecharge": "继续充值",
+      "refreshQr": "刷新支付二维码",
+      "generateQr": "生成{method}二维码",
+      "rechargePaid": "充值成功，余额已刷新",
+      "qrPending": "支付二维码待生成",
+      "scanToPay": "请使用{method}扫码支付",
+      "afterPaidTip": "到账完成后，可继续购买或续费服务。",
+      "pollingTip": "正在自动确认支付状态，请勿重复支付。",
+      "chooseAmountTip": "选择金额和支付方式后生成二维码。",
+      "createRechargeFailed": "创建充值账单失败",
+      "payArrived": "支付已成功，充值金额已到账",
+      "stillProcessing": "支付仍在处理中，请稍候",
+      "queryRechargeStatusFailed": "查询充值状态失败",
+      "loadRechargeSummaryFailed": "加载充值摘要失败",
+      "loadPaymentMethodsFailed": "加载支付方式失败",
+      "linkCopied": "支付链接已复制到剪贴板",
+      "copyUnsupported": "当前浏览器不支持自动复制，请手动复制"
     }
   },
   "coupon": {
@@ -1765,7 +2410,10 @@
       "abuse": "投诉"
     },
     "priority": {
-      "urgent": "紧急"
+      "urgent": "紧急",
+      "low": "低",
+      "medium": "中",
+      "high": "高"
     },
     "image": {
       "unsupportedType": "仅支持 jpg、png、webp 图片",
@@ -1777,7 +2425,8 @@
       "success": "工单提交成功"
     },
     "detail": {
-      "notFound": "工单不存在"
+      "notFound": "工单不存在",
+      "title": "工单详情"
     },
     "reply": {
       "uploading": "图片上传中，请稍后发送",
@@ -1787,7 +2436,24 @@
     },
     "close": {
       "confirm": "确认关闭",
-      "success": "工单已关闭"
+      "success": "工单已关闭",
+      "confirmTitle": "确认关闭工单",
+      "confirmBody": "关闭后将无法继续回复此工单，确认关闭吗？"
+    },
+    "maxImages": "最多上传 {count} 张图片",
+    "sender": {
+      "customer": "客户"
+    },
+    "unassigned": "未分配",
+    "errors": {
+      "listLoadFailed": "工单列表加载失败",
+      "servicesLoadFailed": "服务选项加载失败",
+      "imageUploadFailed": "图片上传失败",
+      "submitFailed": "工单提交失败",
+      "detailLoadFailed": "工单详情加载失败",
+      "replyFailed": "发送回复失败",
+      "recallFailed": "撤回失败",
+      "closeFailed": "关闭工单失败"
     }
   },
   "referral": {
@@ -1829,8 +2495,15 @@
       "metrics": {
         "console": "可直接进入控制台操作",
         "attention": "开通中、暂停等需要关注的实例",
-        "renew": "建议提前续费避免业务中断"
-      }
+        "renew": "建议提前续费避免业务中断",
+        "coverage": "覆盖 {count} 个业务分类"
+      },
+      "serviceHash": "服务 #{id}",
+      "fallbackMark": "服务",
+      "renewLoadFailed": "加载续费信息失败",
+      "renewCreateFailed": "续费账单创建失败",
+      "remarkSaveFailed": "备注保存失败",
+      "ipCopied": "公网 IP 已复制"
     }
   }
 }

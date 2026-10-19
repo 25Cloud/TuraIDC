@@ -2,11 +2,7 @@
   <div class="coupons-page">
     <!-- 优惠券列表 -->
     <template v-if="activeTab === 'coupons'">
-      <t-alert
-        v-if="!couponFeatureEnabled"
-        theme="warning"
-        :message="$t('products.coupons.featureDisabledTip')"
-      />
+      <t-alert v-if="!couponFeatureEnabled" theme="warning" :message="$t('products.coupons.featureDisabledTip')" />
 
       <t-card :bordered="false">
         <div class="coupons-filter">
@@ -57,11 +53,7 @@
             <t-option value="public" :label="$t('products.coupons.distributionPublic')" />
             <t-option value="private" :label="$t('products.coupons.distributionPrivate')" />
           </t-select>
-          <t-button
-            theme="primary"
-            :disabled="!couponFeatureEnabled || !canManage"
-            @click="openCouponDialog()"
-          >
+          <t-button theme="primary" :disabled="!couponFeatureEnabled || !canManage" @click="openCouponDialog()">
             <template #icon><add-icon /></template>
             {{ $t('products.coupons.addCoupon') }}
           </t-button>
@@ -83,7 +75,9 @@
                   <t-tag v-if="row.coupon_campaign_name" size="small" theme="warning" variant="light">
                     {{ $t('products.coupons.campaignPrefix') }}{{ row.coupon_campaign_name }}
                   </t-tag>
-                  <t-tag v-if="couponHasLockedFields(row)" size="small" theme="default" variant="light">{{ $t('products.coupons.partiallyLocked') }}</t-tag>
+                  <t-tag v-if="couponHasLockedFields(row)" size="small" theme="default" variant="light">{{
+                    $t('products.coupons.partiallyLocked')
+                  }}</t-tag>
                 </div>
                 <span>{{ row.description || $t('products.coupons.noDescription') }}</span>
               </div>
@@ -101,14 +95,21 @@
                 </div>
                 <strong>{{ row.discount_label || formatDiscount(row) }}</strong>
                 <span>{{ $t('products.coupons.minSpendPrefix') }}{{ moneyText(row.min_amount) }}</span>
-                <span v-if="row.max_discount_amount">{{ $t('products.coupons.maxDiscountPrefix') }}{{ moneyText(row.max_discount_amount) }}</span>
+                <span v-if="row.max_discount_amount"
+                  >{{ $t('products.coupons.maxDiscountPrefix') }}{{ moneyText(row.max_discount_amount) }}</span
+                >
               </div>
             </template>
 
             <template #usage="{ row }">
               <div class="coupon-meta">
-                <span>{{ $t('products.coupons.usedPrefix') }} {{ row.used_count || 0 }} {{ $t('products.coupons.timesUnit') }}</span>
-                <span>{{ formatLimitText(row.total_usage_limit, row.remaining_stock, $t('products.coupons.totalQuota')) }}</span>
+                <span
+                  >{{ $t('products.coupons.usedPrefix') }} {{ row.used_count || 0 }}
+                  {{ $t('products.coupons.timesUnit') }}</span
+                >
+                <span>{{
+                  formatLimitText(row.total_usage_limit, row.remaining_stock, $t('products.coupons.totalQuota'))
+                }}</span>
                 <span>{{ formatLimitText(row.per_user_limit, null, $t('products.coupons.perUserQuota')) }}</span>
               </div>
             </template>
@@ -225,7 +226,11 @@
             <section class="coupon-drawer-section" :data-title="$t('products.coupons.sectionBasic')">
               <div class="coupon-form-grid">
                 <t-form-item :label="$t('products.coupons.couponName')" name="name">
-                  <t-input v-model="form.name" maxlength="120" :placeholder="$t('products.coupons.couponNamePlaceholder')" />
+                  <t-input
+                    v-model="form.name"
+                    maxlength="120"
+                    :placeholder="$t('products.coupons.couponNamePlaceholder')"
+                  />
                 </t-form-item>
                 <t-form-item :label="$t('products.coupons.distributionType')" name="distribution_type">
                   <t-select v-model="form.distribution_type" :disabled="isFieldLocked('distribution_type')">
@@ -333,11 +338,7 @@
                     :placeholder="$t('products.coupons.expiresAtPlaceholder')"
                   />
                 </t-form-item>
-                <t-form-item
-                  :label="$t('products.coupons.billingCycles')"
-                  name="billing_cycles"
-                  class="form-span-2"
-                >
+                <t-form-item :label="$t('products.coupons.billingCycles')" name="billing_cycles" class="form-span-2">
                   <t-select
                     v-model="form.billing_cycles"
                     multiple
@@ -402,7 +403,11 @@
                       >
                         <strong>{{ item.title }}</strong>
                         <span>{{ item.meta }}</span>
-                        <em>{{ form.user_ids.includes(item.value) ? $t('products.coupons.selected') : $t('products.coupons.add') }}</em>
+                        <em>{{
+                          form.user_ids.includes(item.value)
+                            ? $t('products.coupons.selected')
+                            : $t('products.coupons.add')
+                        }}</em>
                       </button>
                       <t-empty v-if="!userSearchResults.length" :description="$t('products.coupons.noSearchResult')" />
                     </div>
@@ -445,7 +450,9 @@
 
           <div class="coupon-drawer-footer">
             <t-button variant="outline" @click="closeCouponDrawer">{{ $t('products.coupons.cancel') }}</t-button>
-            <t-button theme="primary" :loading="saving" @click="submitForm">{{ $t('products.coupons.saveChanges') }}</t-button>
+            <t-button theme="primary" :loading="saving" @click="submitForm">{{
+              $t('products.coupons.saveChanges')
+            }}</t-button>
           </div>
         </div>
       </t-drawer>
@@ -458,6 +465,8 @@
 <script setup lang="ts">
 import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
 import { ADMIN_CARD_GRID_STYLE, useAdminViewMode } from '@/composables/useAdminViewMode';
+
+defineOptions({ name: 'AdminCoupons' });
 
 const { mode: viewMode, isCard: isCardView, setMode: setViewMode } = useAdminViewMode('admin-coupons', 'list');
 
@@ -480,8 +489,6 @@ import { t } from '@/locales';
 import { formatDateTime } from '@/utils/format';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
-
-defineOptions({ name: 'AdminCoupons' });
 
 const CouponCampaigns = defineAsyncComponent(() => import('@/pages/products/coupon-campaigns/index.vue'));
 
@@ -587,7 +594,14 @@ const columns: PrimaryTableCol<TableRowData>[] = [
 const selectedUsers = computed(() => {
   return form.user_ids.map((id) => {
     const matched = userOptions.value.find((item) => item.value === Number(id));
-    return matched || { value: Number(id), title: `#${id}`, meta: '用户信息加载中', label: `#${id}` };
+    return (
+      matched || {
+        value: Number(id),
+        title: `#${id}`,
+        meta: t('products.coupons.userInfoLoading'),
+        label: `#${id}`,
+      }
+    );
   });
 });
 
@@ -644,11 +658,11 @@ function couponDeleteDisabled(row: CouponRecord) {
 }
 
 function couponEditDisabledReason(row: CouponRecord) {
-  return String(row.lock_reason || '已发放或活动生成的优惠券不允许修改');
+  return String(row.lock_reason || t('products.coupons.lockedIssued'));
 }
 
 function couponDeleteDisabledReason(row: CouponRecord) {
-  return String(row.delete_reason || '该优惠券当前不允许删除');
+  return String(row.delete_reason || t('products.coupons.deleteLocked'));
 }
 
 function isFieldLocked(field: string): boolean {
@@ -663,8 +677,8 @@ function normalizeUserOption(row: AdminUser): UserOption {
   const id = Number(row.id);
   return {
     value: id,
-    title: `#${id} / ${row.email || '未填写邮箱'}`,
-    meta: `${row.phone || '未填写手机号'}${row.nickname ? ` / ${row.nickname}` : ''}`,
+    title: `#${id} / ${row.email || t('products.coupons.emailMissing')}`,
+    meta: `${row.phone || t('products.coupons.phoneMissing')}${row.nickname ? ` / ${row.nickname}` : ''}`,
     label: `#${id} / ${row.email || ''}${row.phone ? ` / ${row.phone}` : ''}${row.nickname ? ` / ${row.nickname}` : ''}`,
   };
 }
@@ -689,7 +703,7 @@ async function loadUserOptions(keyword = '') {
     mergeUserOptions(items);
     userSearchResults.value = items;
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载用户列表失败'));
+    MessagePlugin.error(errorMessage(error, t('products.coupons.loadUsersFailed')));
   } finally {
     userOptionsLoading.value = false;
   }
@@ -721,7 +735,7 @@ async function loadList() {
   } catch (error) {
     coupons.value = [];
     total.value = 0;
-    MessagePlugin.error(errorMessage(error, '加载优惠券列表失败'));
+    MessagePlugin.error(errorMessage(error, t('products.coupons.loadCouponsFailed')));
   } finally {
     loading.value = false;
   }
@@ -738,7 +752,7 @@ async function loadSummary() {
     couponFeatureEnabled.value = Boolean(response.enabled);
   } catch (error) {
     couponFeatureEnabled.value = false;
-    MessagePlugin.error(errorMessage(error, '加载优惠券开关失败'));
+    MessagePlugin.error(errorMessage(error, t('products.coupons.loadFeatureFailed')));
   }
 }
 
@@ -867,7 +881,7 @@ async function submitForm() {
     dialogVisible.value = false;
     await loadData();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存优惠券失败'));
+    MessagePlugin.error(errorMessage(error, t('products.coupons.saveCouponFailed')));
   } finally {
     saving.value = false;
   }
@@ -888,7 +902,7 @@ async function handleToggleStatus(row: CouponRecord) {
     MessagePlugin.success(t('products.coupons.statusUpdateSuccess'));
     await loadData();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新优惠券状态失败'));
+    MessagePlugin.error(errorMessage(error, t('products.coupons.updateCouponStatusFailed')));
   } finally {
     actionLoading.value = null;
   }
@@ -908,8 +922,8 @@ function handleDelete(row: CouponRecord) {
     return;
   }
   const dialog = DialogPlugin.confirm({
-    header: '删除优惠券',
-    body: `确认删除优惠券「${row.name || row.id}」吗？未使用的领取和发放记录会一并清理。`,
+    header: t('products.coupons.deleteCouponTitle'),
+    body: t('products.coupons.deleteCouponConfirm', { name: row.name || row.id }),
     theme: 'warning',
     confirmBtn: t('products.coupons.deleteConfirm'),
     cancelBtn: t('common.cancel'),
@@ -921,7 +935,7 @@ function handleDelete(row: CouponRecord) {
         dialog.hide();
         await loadData();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除优惠券失败'));
+        MessagePlugin.error(errorMessage(error, t('products.coupons.deleteCouponFailed')));
       } finally {
         actionLoading.value = null;
       }
@@ -931,13 +945,13 @@ function handleDelete(row: CouponRecord) {
 
 function mobileActionOptions(row: CouponRecord) {
   return [
-    { content: '编辑', value: 'edit', disabled: couponEditDisabled(row) },
+    { content: t('products.coupons.edit'), value: 'edit', disabled: couponEditDisabled(row) },
     {
-      content: Number(row.status) === 1 ? '停用' : '启用',
+      content: Number(row.status) === 1 ? t('products.coupons.disable') : t('products.coupons.enable'),
       value: 'toggle',
       disabled: !couponFeatureEnabled.value || !canManage.value,
     },
-    { content: '删除', value: 'delete', disabled: couponDeleteDisabled(row) },
+    { content: t('products.coupons.delete'), value: 'delete', disabled: couponDeleteDisabled(row) },
   ];
 }
 
@@ -951,9 +965,18 @@ function couponMobileRows(row: CouponRecord) {
       }`,
     },
     { label: t('products.coupons.threshold'), value: moneyText(row.min_amount) },
-    { label: t('products.coupons.stock'), value: row.total_usage_limit ? `${row.remaining_stock ?? 0} / ${row.total_usage_limit}` : '不限' },
+    {
+      label: t('products.coupons.stock'),
+      value: row.total_usage_limit
+        ? `${row.remaining_stock ?? 0} / ${row.total_usage_limit}`
+        : t('products.coupons.unlimited'),
+    },
     { label: t('products.coupons.validity'), value: row.validity_text || validityText(row) },
-    { label: t('products.coupons.campaign'), value: row.coupon_campaign_name || '', show: Boolean(row.coupon_campaign_name) },
+    {
+      label: t('products.coupons.campaign'),
+      value: row.coupon_campaign_name || '',
+      show: Boolean(row.coupon_campaign_name),
+    },
   ];
 }
 
@@ -988,16 +1011,20 @@ function removeSelectedUser(userId: number) {
 }
 
 function discountTypeLabel(value: unknown) {
-  return value === 'percentage' ? '折扣券' : '满减券';
+  return value === 'percentage' ? t('products.coupons.typePercentage') : t('products.coupons.typeFixed');
 }
 
 function discountScopeLabel(value: unknown) {
-  const map: Record<string, string> = { first_month: '首月优惠', recurring: '持续优惠', renew: '续费优惠' };
+  const map: Record<string, string> = {
+    first_month: t('products.coupons.scopeFirstMonth'),
+    recurring: t('products.coupons.scopeRecurring'),
+    renew: t('products.coupons.scopeRenew'),
+  };
   return map[String(value || '')] || '-';
 }
 
 function distributionLabel(value: unknown) {
-  return value === 'private' ? '私有优惠券' : '公开优惠券';
+  return value === 'private' ? t('products.coupons.distributionPrivate') : t('products.coupons.distributionPublic');
 }
 
 function statusTheme(value: unknown) {
@@ -1007,8 +1034,8 @@ function statusTheme(value: unknown) {
 }
 
 function statusLabel(row: CouponRecord) {
-  if (row.display_status === 'expired') return '已过期';
-  return Number(row.status) === 1 ? '生效中' : '已停用';
+  if (row.display_status === 'expired') return t('products.coupons.statusExpired');
+  return Number(row.status) === 1 ? t('products.coupons.statusActive') : t('products.coupons.statusDisabled');
 }
 
 function formatDiscount(row: CouponRecord) {
@@ -1021,14 +1048,19 @@ function moneyText(value: unknown) {
 }
 
 function formatLimitText(limit: unknown, remain: unknown, label: string) {
-  if (!limit) return `${label}：不限`;
-  if (label === '总量') return `${label}：${limit} 次，剩余 ${remain ?? 0} 次`;
-  return `${label}：${limit} 次`;
+  if (!limit) return t('products.coupons.limitUnlimited', { label });
+  if (remain !== null && remain !== undefined) {
+    return t('products.coupons.limitWithRemaining', { label, limit, remain: remain ?? 0 });
+  }
+  return t('products.coupons.limitOnly', { label, limit });
 }
 
 function validityText(row: CouponRecord) {
-  if (!row.starts_at && !row.expires_at) return '长期有效';
-  return `${row.starts_at || '立即'} 至 ${row.expires_at || '长期'}`;
+  if (!row.starts_at && !row.expires_at) return t('products.coupons.validityForever');
+  return t('products.coupons.validityRange', {
+    start: row.starts_at || t('products.coupons.immediate'),
+    end: row.expires_at || t('products.coupons.foreverShort'),
+  });
 }
 
 onMounted(async () => {

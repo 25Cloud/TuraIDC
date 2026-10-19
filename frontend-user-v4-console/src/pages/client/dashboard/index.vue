@@ -1,28 +1,24 @@
 <template>
   <section class="client-dashboard">
-    <loading-state :loading="loading" text="正在加载控制台数据">
+    <loading-state :loading="loading" :text="t('client.dashboard.loading')">
       <div class="summary-grid">
         <t-card class="account-card dashboard-card" :bordered="false">
           <div class="account-card__user">
-            <t-avatar
-              class="account-card__avatar"
-              :image="avatarImage"
-              size="large"
-              @error="avatarLoadFailed = true"
-              >{{ avatarText }}</t-avatar
-            >
+            <t-avatar class="account-card__avatar" :image="avatarImage" size="large" @error="avatarLoadFailed = true">{{
+              avatarText
+            }}</t-avatar>
             <div class="account-card__main">
               <h2>{{ greetingText }}，{{ displayName }}</h2>
               <p>{{ todayDateText }}</p>
               <div class="account-card__tags">
                 <t-tag :theme="isVerified ? 'success' : 'warning'" variant="light">{{
-                  isVerified ? '已实名' : '未实名'
+                  isVerified ? t('client.dashboard.verified') : t('client.dashboard.unverified')
                 }}</t-tag>
                 <t-tag :theme="isPhoneBound ? 'success' : 'default'" variant="light">{{
-                  isPhoneBound ? '已绑手机' : '未绑手机'
+                  isPhoneBound ? t('client.dashboard.phoneBound') : t('client.dashboard.phoneUnbound')
                 }}</t-tag>
                 <t-tag :theme="isEmailBound ? 'success' : 'default'" variant="light">{{
-                  isEmailBound ? '已绑邮箱' : '未绑邮箱'
+                  isEmailBound ? t('client.dashboard.emailBound') : t('client.dashboard.emailUnbound')
                 }}</t-tag>
                 <t-tag v-if="agentGroupName" theme="warning" variant="outline" class="account-card__agent-tag">
                   {{ agentGroupName }}
@@ -33,11 +29,11 @@
           <div class="account-card__actions">
             <t-button theme="primary" @click="router.push('/client/recharge')">
               <template #icon><wallet-icon /></template>
-              在线充值
+              {{ t('client.dashboard.onlineRecharge') }}
             </t-button>
             <t-button variant="outline" @click="router.push('/client/payments')">
               <template #icon><file-icon /></template>
-              充值记录
+              {{ t('client.dashboard.rechargeRecords') }}
             </t-button>
           </div>
         </t-card>
@@ -64,7 +60,9 @@
           <t-card class="dashboard-card" :bordered="false">
             <template #title>{{ t('client.dashboard.myProducts') }}</template>
             <template #actions>
-              <t-button theme="primary" variant="text" @click="router.push('/client/services')">{{ t('client.dashboard.manageAll') }}</t-button>
+              <t-button theme="primary" variant="text" @click="router.push('/client/services')">{{
+                t('client.dashboard.manageAll')
+              }}</t-button>
             </template>
 
             <div class="product-grid">
@@ -92,13 +90,18 @@
                 <div class="chart-card__actions">
                   <span class="card-meta">{{ currentYearLabel }}</span>
                   <span class="chart-summary">
-                    {{ t('client.dashboard.totalLabel') }} <strong>{{ formatMoney(currentYearConsumptionTotal) }} 元</strong>
+                    {{ t('client.dashboard.totalLabel') }}
+                    <strong>{{ formatMoney(currentYearConsumptionTotal) }} 元</strong>
                   </span>
                 </div>
               </template>
 
-              <t-loading :loading="!invoicesLoaded" text="加载中">
-                <div v-if="monthlyBarsHasData" class="bar-chart bar-chart--monthly" aria-label="今年月度消费">
+              <t-loading :loading="!invoicesLoaded" :text="t('common.loading')">
+                <div
+                  v-if="monthlyBarsHasData"
+                  class="bar-chart bar-chart--monthly"
+                  :aria-label="t('client.dashboard.thisYearSpendAria')"
+                >
                   <t-tooltip
                     v-for="bar in monthlyBars"
                     :key="bar.key"
@@ -110,7 +113,11 @@
                       class="bar-chart__slot"
                       tabindex="0"
                       role="img"
-                      :aria-label="`${bar.label}：${bar.amountLabel ? `¥${bar.amountLabel}` : '无消费'}`"
+                      :aria-label="
+                        bar.amountLabel
+                          ? t('client.dashboard.monthlyBarAria', { label: bar.label, amount: bar.amountLabel })
+                          : t('client.dashboard.monthlyBarAriaEmpty', { label: bar.label })
+                      "
                     >
                       <div class="bar-chart__col" :style="{ height: bar.height }">
                         <span v-if="bar.amountLabel" class="bar-chart__value">¥{{ bar.amountLabel }}</span>
@@ -120,7 +127,7 @@
                     </div>
                   </t-tooltip>
                 </div>
-                <t-empty v-else description="暂无今年消费数据" />
+                <t-empty v-else :description="t('client.dashboard.emptyYearSpend')" />
               </t-loading>
             </t-card>
 
@@ -129,27 +136,36 @@
               <template #actions>
                 <div class="chart-card__actions">
                   <span class="chart-summary">
-                    {{ t('client.dashboard.totalLabel') }} <strong>{{ formatMoney(last7DaysConsumptionTotal) }} 元</strong>
+                    {{ t('client.dashboard.totalLabel') }}
+                    <strong>{{ formatMoney(last7DaysConsumptionTotal) }} 元</strong>
                   </span>
-                  <t-button theme="primary" variant="text" @click="router.push('/client/payments')">{{ t('client.dashboard.spendDetails') }}</t-button>
+                  <t-button theme="primary" variant="text" @click="router.push('/client/payments')">{{
+                    t('client.dashboard.spendDetails')
+                  }}</t-button>
                 </div>
               </template>
 
-              <t-loading :loading="!balanceLogsLoaded" text="加载中">
-                <div v-if="dailyBarsHasData" class="bar-chart bar-chart--daily" aria-label="近 7 天每日消费">
+              <t-loading :loading="!balanceLogsLoaded" :text="t('common.loading')">
+                <div
+                  v-if="dailyBarsHasData"
+                  class="bar-chart bar-chart--daily"
+                  :aria-label="t('client.dashboard.last7DaysAria')"
+                >
                   <t-tooltip v-for="bar in dailyBars" :key="bar.date" :content="bar.tooltip" placement="top" show-arrow>
                     <div
                       class="bar-chart__slot"
                       tabindex="0"
                       role="img"
-                      :aria-label="`${bar.label} · 消费 ¥${formatMoney(bar.amount)}`"
+                      :aria-label="
+                        t('client.dashboard.dailyBarAria', { label: bar.label, amount: formatMoney(bar.amount) })
+                      "
                     >
                       <span class="bar-chart__bar" :style="{ height: bar.height }"></span>
                       <span v-if="bar.showLabel" class="bar-chart__label">{{ bar.label }}</span>
                     </div>
                   </t-tooltip>
                 </div>
-                <t-empty v-else description="暂无消费记录" />
+                <t-empty v-else :description="t('client.dashboard.emptyDailySpend')" />
               </t-loading>
             </t-card>
           </div>
@@ -167,7 +183,7 @@
             </template>
 
             <t-tabs v-model="activeNoticeTab" class="message-tabs">
-              <t-tab-panel value="notice" label="新闻公告">
+              <t-tab-panel value="notice" :label="t('client.dashboard.noticeTab')">
                 <div v-if="recentNotices.length" class="message-list">
                   <router-link
                     v-for="item in recentNotices"
@@ -179,9 +195,9 @@
                     <span class="message-row__time">{{ formatDate(item.publish_at || item.created_at) }}</span>
                   </router-link>
                 </div>
-                <t-empty v-else description="暂无公告" />
+                <t-empty v-else :description="t('client.dashboard.emptyNotices')" />
               </t-tab-panel>
-              <t-tab-panel value="help" label="帮助中心">
+              <t-tab-panel value="help" :label="t('client.dashboard.helpTab')">
                 <div v-if="recentHelpArticles.length" class="message-list">
                   <router-link
                     v-for="item in recentHelpArticles"
@@ -193,7 +209,7 @@
                     <span class="message-row__time">{{ formatDate(item.publish_at || item.created_at) }}</span>
                   </router-link>
                 </div>
-                <t-empty v-else description="暂无帮助内容" />
+                <t-empty v-else :description="t('client.dashboard.emptyHelp')" />
               </t-tab-panel>
             </t-tabs>
           </t-card>
@@ -201,14 +217,18 @@
 
         <aside class="dashboard-aside">
           <t-card class="dashboard-card" :bordered="false">
-            <template #title>待办事项</template>
+            <template #title>{{ t('client.dashboard.todoTitle') }}</template>
             <div class="todo-list">
               <router-link
                 v-for="item in todoItems"
                 :key="item.key"
                 class="todo-row"
                 :to="item.path"
-                :aria-label="item.count > 0 ? `${item.label}：${item.count} 项，需要处理` : `${item.label}：0 项`"
+                :aria-label="
+                  item.count > 0
+                    ? t('client.dashboard.todoAriaPending', { label: item.label, count: item.count })
+                    : t('client.dashboard.todoAriaEmpty', { label: item.label })
+                "
               >
                 <span class="todo-row__left">
                   <span class="todo-row__icon" :class="item.tone"><component :is="item.icon" /></span>
@@ -223,7 +243,7 @@
           </t-card>
 
           <t-card class="dashboard-card" :bordered="false">
-            <template #title>快捷入口</template>
+            <template #title>{{ t('client.dashboard.quickTitle') }}</template>
             <div class="quick-grid">
               <router-link v-for="item in quickLinks" :key="item.path" :to="item.path" class="quick-link">
                 <component :is="item.icon" />
@@ -235,11 +255,16 @@
           <t-card class="dashboard-card" :bordered="false">
             <template #title>{{ supportGroupTitle }}</template>
             <div class="support-box">
-              <img v-if="supportQr" :src="supportQr" alt="QQ 群二维码" class="support-box__qr" />
+              <img
+                v-if="supportQr"
+                :src="supportQr"
+                :alt="t('client.dashboard.supportQrAlt')"
+                class="support-box__qr"
+              />
               <div v-else class="support-box__qr support-box__qr--empty">{{ siteBranding.brandInitials }}</div>
               <div class="support-box__content">
                 <strong>{{ supportGroupText }}</strong>
-                <span>群号：{{ supportPhoneText }}</span>
+                <span>{{ t('client.dashboard.supportGroupNo', { no: supportPhoneText }) }}</span>
                 <t-button
                   v-if="supportGroupLink"
                   theme="primary"
@@ -248,7 +273,7 @@
                   target="_blank"
                   variant="outline"
                 >
-                  加入群聊
+                  {{ t('client.dashboard.joinGroup') }}
                 </t-button>
               </div>
             </div>
@@ -282,6 +307,7 @@ import { useRouter } from 'vue-router';
 import clientApi from '@/api/client';
 import { useSiteBrandingStore } from '@/app/stores/siteBranding';
 import { useNoticeReadStatus } from '@/domains/content/useNoticeReadStatus';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import type {
   BalanceLog,
@@ -297,7 +323,6 @@ import type {
 } from '@/types/client';
 import { getErrorMessage } from '@/utils/error';
 import { formatMoney, formatShortDateTime as formatDate } from '@/utils/format';
-import { t } from '@/locales';
 
 interface ProductCard {
   key: string;
@@ -413,16 +438,18 @@ function resolveProductMeta(item: ServiceOverviewGroup, key: string) {
 const userInfo = computed<ClientUserInfo>(() => (userStore.info || {}) as ClientUserInfo);
 const displayName = computed(() =>
   String(
-    userInfo.value.nickname || userInfo.value.display_name || userInfo.value.email || userInfo.value.name || '客户账户',
+    userInfo.value.nickname ||
+      userInfo.value.display_name ||
+      userInfo.value.email ||
+      userInfo.value.name ||
+      t('client.dashboard.defaultAccountName'),
   ),
 );
-const avatarText = computed(() => displayName.value.slice(0, 1) || '客');
+const avatarText = computed(() => displayName.value.slice(0, 1) || t('client.dashboard.avatarFallbackLetter'));
 const avatarUrl = computed(() => String(userInfo.value.avatar || '').trim());
 // 头像加载失败时清空地址，让 t-avatar 回退显示首字母内容
 const avatarLoadFailed = ref(false);
-const avatarImage = computed(() =>
-  avatarLoadFailed.value ? undefined : avatarUrl.value || undefined,
-);
+const avatarImage = computed(() => (avatarLoadFailed.value ? undefined : avatarUrl.value || undefined));
 const userIdText = computed(() => String(userInfo.value.id || '--'));
 const isVerified = computed(() => Number(userInfo.value.is_verified || 0) === 1);
 const isPhoneBound = computed(() => Boolean(String(userInfo.value.phone || '').trim()));
@@ -433,8 +460,8 @@ const agentGroupName = computed(() =>
 const supportQr = computed(() => siteBranding.supportGroupQr || '');
 const supportGroupLink = computed(() => siteBranding.supportGroupLink || '');
 const supportPhoneText = computed(() => siteBranding.serviceQqGroup || '-');
-const supportGroupTitle = computed(() => siteBranding.supportGroupTitle || '官方 QQ 群聊');
-const supportGroupText = computed(() => siteBranding.supportGroupText || '加入官方 QQ 群聊');
+const supportGroupTitle = computed(() => siteBranding.supportGroupTitle || t('client.dashboard.supportGroupTitle'));
+const supportGroupText = computed(() => siteBranding.supportGroupText || t('client.dashboard.supportGroupText'));
 
 const summaryCards = computed(() => [
   {
@@ -449,42 +476,47 @@ const summaryCards = computed(() => [
     label: t('client.dashboard.monthlyRecharge'),
     value: formatMoney(financeSummary.value.recharge_in),
     unit: '元',
-    note: '财务入账汇总',
+    note: t('client.dashboard.financeSummaryNote'),
   },
   {
     key: 'payment',
     label: t('client.dashboard.monthlySpend'),
     value: formatMoney(financeSummary.value.invoice_payment_out),
     unit: '元',
-    note: '本月账单支出',
+    note: t('client.dashboard.monthlyBillNote'),
     warning: true,
   },
   {
     key: 'coupon',
     label: t('client.dashboard.availableCoupons'),
     value: String(Number(couponSummary.value.available || 0)),
-    unit: '张',
-    note: `总计 ${Number(couponSummary.value.total || 0)} 张`,
+    unit: t('client.dashboard.couponUnit'),
+    note: t('client.dashboard.couponTotalNote', { count: Number(couponSummary.value.total || 0) }),
   },
 ]);
 
-const currentYearLabel = computed(() => `${new Date().getFullYear()} 年`);
+const currentYearLabel = computed(() => t('client.dashboard.yearLabel', { year: new Date().getFullYear() }));
 
 const greetingText = computed(() => {
   const hour = new Date().getHours();
-  if (hour < 6) return '夜深了';
-  if (hour < 9) return '早上好';
-  if (hour < 12) return '上午好';
-  if (hour < 14) return '中午好';
-  if (hour < 18) return '下午好';
-  if (hour < 22) return '晚上好';
-  return '夜深了';
+  if (hour < 6) return t('client.dashboard.greetingNight');
+  if (hour < 9) return t('client.dashboard.greetingMorning');
+  if (hour < 12) return t('client.dashboard.greetingForenoon');
+  if (hour < 14) return t('client.dashboard.greetingNoon');
+  if (hour < 18) return t('client.dashboard.greetingAfternoon');
+  if (hour < 22) return t('client.dashboard.greetingEvening');
+  return t('client.dashboard.greetingNight');
 });
 
 const todayDateText = computed(() => {
   const now = new Date();
-  const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
-  return `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 星期${weekDays[now.getDay()]}`;
+  const weekDays = ['weekdaySun', 'weekdayMon', 'weekdayTue', 'weekdayWed', 'weekdayThu', 'weekdayFri', 'weekdaySat'];
+  return t('client.dashboard.todayDate', {
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+    day: now.getDate(),
+    weekday: t(`client.dashboard.${weekDays[now.getDay()]}`),
+  });
 });
 
 const productCards = computed<ProductCard[]>(() => {
@@ -494,9 +526,9 @@ const productCards = computed<ProductCard[]>(() => {
       const meta = resolveProductMeta(item, key);
       return {
         key,
-        title: String(item.title || item.name || item.product_type_label || '云产品'),
-        levelLabel: String(item.group_level_label || '一级分组'),
-        countText: `${Number(item.active_count || 0)} 个`,
+        title: String(item.title || item.name || item.product_type_label || t('client.dashboard.defaultProductTitle')),
+        levelLabel: String(item.group_level_label || t('client.dashboard.defaultGroupLevel')),
+        countText: t('client.dashboard.serviceCount', { count: Number(item.active_count || 0) }),
         count: Number(item.active_count || 0),
         path: '/client/services',
         primaryServiceId: Number(item.primary_service_id || 0),
@@ -510,8 +542,8 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'cloud_server',
       title: t('client.dashboard.categoryCloudServer'),
-      levelLabel: '一级分组',
-      countText: '0 个',
+      levelLabel: t('client.dashboard.defaultGroupLevel'),
+      countText: t('client.dashboard.serviceCount', { count: 0 }),
       count: 0,
       path: '/client/services',
       primaryServiceId: 0,
@@ -521,8 +553,8 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'game_cloud',
       title: t('client.dashboard.categoryGameCloud'),
-      levelLabel: '一级分组',
-      countText: '0 个',
+      levelLabel: t('client.dashboard.defaultGroupLevel'),
+      countText: t('client.dashboard.serviceCount', { count: 0 }),
       count: 0,
       path: '/client/services',
       primaryServiceId: 0,
@@ -532,8 +564,8 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'cloud_desktop',
       title: t('client.dashboard.categoryCloudDesktop'),
-      levelLabel: '一级分组',
-      countText: '0 个',
+      levelLabel: t('client.dashboard.defaultGroupLevel'),
+      countText: t('client.dashboard.serviceCount', { count: 0 }),
       count: 0,
       path: '/client/services',
       primaryServiceId: 0,
@@ -543,8 +575,8 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'bare_metal',
       title: t('client.dashboard.categoryBareMetal'),
-      levelLabel: '一级分组',
-      countText: '0 个',
+      levelLabel: t('client.dashboard.defaultGroupLevel'),
+      countText: t('client.dashboard.serviceCount', { count: 0 }),
       count: 0,
       path: '/client/services',
       primaryServiceId: 0,
@@ -554,8 +586,8 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'cdn',
       title: 'CDN',
-      levelLabel: '一级分组',
-      countText: '0 个',
+      levelLabel: t('client.dashboard.defaultGroupLevel'),
+      countText: t('client.dashboard.serviceCount', { count: 0 }),
       count: 0,
       path: '/client/services',
       primaryServiceId: 0,
@@ -565,8 +597,8 @@ const productCards = computed<ProductCard[]>(() => {
     {
       key: 'web_hosting',
       title: t('client.dashboard.categoryWebHosting'),
-      levelLabel: '一级分组',
-      countText: '0 个',
+      levelLabel: t('client.dashboard.defaultGroupLevel'),
+      countText: t('client.dashboard.serviceCount', { count: 0 }),
       count: 0,
       path: '/client/services',
       primaryServiceId: 0,
@@ -606,7 +638,10 @@ const dailyBars = computed(() => {
     height: item.amount > 0 ? `${Math.max(8, Math.round((item.amount / max) * 100))}%` : '0%',
     showLabel: true,
     label: `${Number(item.date.slice(5, 7))}/${Number(item.date.slice(8, 10))}`,
-    tooltip: `${item.date.slice(5).replace('-', '/')} · 消费 ¥${formatMoney(item.amount)}`,
+    tooltip: t('client.dashboard.dailyBarTooltip', {
+      date: item.date.slice(5).replace('-', '/'),
+      amount: formatMoney(item.amount),
+    }),
   }));
 });
 
@@ -622,7 +657,13 @@ const monthlyConsumptionData = computed(() => {
   const months: { key: string; label: string; month: number; amount: number; count: number }[] = [];
   for (let m = 0; m < 12; m += 1) {
     const key = `${year}-${String(m + 1).padStart(2, '0')}`;
-    months.push({ key, label: `${String(m + 1).padStart(2, '0')}月`, month: m + 1, amount: 0, count: 0 });
+    months.push({
+      key,
+      label: t('client.dashboard.monthLabel', { month: String(m + 1).padStart(2, '0') }),
+      month: m + 1,
+      amount: 0,
+      count: 0,
+    });
   }
 
   for (const invoice of paidInvoices.value) {
@@ -645,7 +686,11 @@ const monthlyBars = computed(() => {
     ...item,
     height: item.amount > 0 ? `${Math.max(8, Math.round((item.amount / max) * 100))}%` : '0%',
     amountLabel: item.amount > 0 ? formatMoney(item.amount) : '',
-    tooltip: `${item.label} · 消费 ¥${formatMoney(item.amount)} · ${item.count} 笔账单`,
+    tooltip: t('client.dashboard.monthlyBarTooltip', {
+      label: item.label,
+      amount: formatMoney(item.amount),
+      count: item.count,
+    }),
   }));
 });
 
@@ -807,7 +852,7 @@ async function loadDashboard() {
   } catch (error: unknown) {
     loading.value = false;
     if (!isHandledError(error)) {
-      MessagePlugin.error(getErrorMessage(error, '控制台数据加载失败'));
+      MessagePlugin.error(getErrorMessage(error, t('client.dashboard.loadFailed')));
     }
   }
 }

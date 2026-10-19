@@ -20,9 +20,11 @@
             </template>
             <template #level="{ row }">
               <div class="stack-cell">
-                <strong>{{ fieldValue(row.member_level?.name || '未分级') }}</strong>
+                <strong>{{ fieldValue(row.member_level?.name || $t('referral.ungraded')) }}</strong>
                 <span>{{
-                  row.member_level?.reward_rate ? formatPercent(row.member_level.reward_rate) : '默认比例'
+                  row.member_level?.reward_rate
+                    ? formatPercent(row.member_level.reward_rate)
+                    : $t('referral.defaultRate')
                 }}</span>
               </div>
             </template>
@@ -48,7 +50,12 @@
           >
             <template #suffix-icon><search-icon /></template>
           </t-input>
-          <t-select v-model="rewardFilters.status" clearable placeholder="奖励状态" @change="handleRewardSearch">
+          <t-select
+            v-model="rewardFilters.status"
+            clearable
+            :placeholder="$t('referral.rewardStatus')"
+            @change="handleRewardSearch"
+          >
             <t-option v-for="item in rewardStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
           </t-select>
         </div>
@@ -71,7 +78,7 @@
             <template #relation="{ row }">
               <div class="stack-cell">
                 <strong>{{ userName(row.referrer) }}</strong>
-                <span>下级：{{ userName(row.referred_user) }}</span>
+                <span>{{ $t('referral.subordinate') }}：{{ userName(row.referred_user) }}</span>
               </div>
             </template>
             <template #order="{ row }">
@@ -97,7 +104,9 @@
               <div class="stack-cell">
                 <strong>{{ fieldValue(row.rewarded_at) }}</strong>
                 <span>{{
-                  row.released_at ? `释放：${row.released_at}` : `可用：${fieldValue(row.available_at)}`
+                  row.released_at
+                    ? $t('referral.releasedAt', { time: row.released_at })
+                    : $t('referral.availableAt', { time: fieldValue(row.available_at) })
                 }}</span>
               </div>
             </template>
@@ -113,19 +122,19 @@
             </div>
             <dl>
               <div>
-                <dt>下级</dt>
+                <dt>{{ $t('referral.subordinate') }}</dt>
                 <dd>{{ userName(row.referred_user) }}</dd>
               </div>
               <div>
-                <dt>订单</dt>
+                <dt>{{ $t('referral.order') }}</dt>
                 <dd>{{ fieldValue(row.order?.order_no) }}</dd>
               </div>
               <div>
-                <dt>奖励金额</dt>
+                <dt>{{ $t('referral.rewardAmount') }}</dt>
                 <dd>{{ formatMoney(row.reward_amount) }}</dd>
               </div>
               <div>
-                <dt>奖励比例</dt>
+                <dt>{{ $t('referral.rewardRate') }}</dt>
                 <dd>{{ formatPercent(row.reward_rate) }}</dd>
               </div>
             </dl>
@@ -160,7 +169,7 @@
           <t-select
             v-model="withdrawalFilters.status"
             clearable
-            placeholder="提现状态"
+            :placeholder="$t('referral.withdrawStatus')"
             @change="handleWithdrawalSearch"
           >
             <t-option
@@ -215,7 +224,11 @@
             <template #time="{ row }">
               <div class="stack-cell">
                 <strong>{{ formatDateTime(row.created_at) }}</strong>
-                <span>{{ row.processed_at ? `处理：${formatDateTime(row.processed_at)}` : '待审核' }}</span>
+                <span>{{
+                  row.processed_at
+                    ? $t('referral.processedAt', { time: formatDateTime(row.processed_at) })
+                    : $t('referral.pendingReview')
+                }}</span>
               </div>
             </template>
             <template #operator="{ row }">
@@ -248,25 +261,29 @@
             </div>
             <dl>
               <div>
-                <dt>金额</dt>
+                <dt>{{ $t('referral.amount') }}</dt>
                 <dd>{{ formatMoney(row.amount) }}</dd>
               </div>
               <div>
-                <dt>方式</dt>
+                <dt>{{ $t('referral.method') }}</dt>
                 <dd>{{ withdrawalMethodLabel(row.method) }}</dd>
               </div>
               <div>
-                <dt>账号</dt>
+                <dt>{{ $t('referral.account') }}</dt>
                 <dd>{{ fieldValue(row.account_no) }}</dd>
               </div>
               <div>
-                <dt>申请时间</dt>
+                <dt>{{ $t('referral.appliedAt') }}</dt>
                 <dd>{{ formatDateTime(row.created_at) }}</dd>
               </div>
             </dl>
             <div v-if="Number(row.status) === 0" class="referral-mobile-card__actions">
-              <t-button theme="primary" variant="outline" @click="openWithdrawalDialog('approve', row)">通过</t-button>
-              <t-button theme="danger" variant="outline" @click="openWithdrawalDialog('reject', row)">拒绝</t-button>
+              <t-button theme="primary" variant="outline" @click="openWithdrawalDialog('approve', row)">{{
+                $t('referral.approve')
+              }}</t-button>
+              <t-button theme="danger" variant="outline" @click="openWithdrawalDialog('reject', row)">{{
+                $t('referral.reject')
+              }}</t-button>
             </div>
           </article>
         </div>
@@ -286,20 +303,31 @@
 
     <t-dialog
       v-model:visible="withdrawalDialog.visible"
-      :header="withdrawalDialog.mode === 'approve' ? '通过提现申请' : '拒绝提现申请'"
+      :header="withdrawalDialog.mode === 'approve' ? $t('referral.approveTitle') : $t('referral.rejectTitle')"
       width="520px"
       :confirm-btn="{
-        content: withdrawalDialog.mode === 'approve' ? '确认通过' : '确认拒绝',
+        content: withdrawalDialog.mode === 'approve' ? $t('referral.confirmApprove') : $t('referral.confirmReject'),
         theme: withdrawalDialog.mode === 'approve' ? 'primary' : 'danger',
       }"
       :confirm-loading="withdrawalSubmitting"
       @confirm="submitWithdrawalAction"
     >
       <div class="withdrawal-dialog">
-        <p>申请 #{{ withdrawalDialog.row?.id || '-' }}， 金额 {{ formatMoney(withdrawalDialog.row?.amount) }}</p>
+        <p>
+          {{
+            $t('referral.applicationInfo', {
+              id: withdrawalDialog.row?.id || '-',
+              amount: formatMoney(withdrawalDialog.row?.amount),
+            })
+          }}
+        </p>
         <t-textarea
           v-model="withdrawalDialog.remark"
-          :placeholder="withdrawalDialog.mode === 'approve' ? '通过备注，可留空' : '拒绝原因，必填'"
+          :placeholder="
+            withdrawalDialog.mode === 'approve'
+              ? $t('referral.approveRemarkPlaceholder')
+              : $t('referral.rejectReasonPlaceholder')
+          "
           :autosize="{ minRows: 3, maxRows: 5 }"
           :maxlength="255"
         />
@@ -473,7 +501,7 @@ async function loadOverview() {
       top_referrers: response.top_referrers || [],
     };
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载推广概览失败'));
+    MessagePlugin.error(errorMessage(error, t('referral.loadOverviewFailed')));
   } finally {
     overviewLoading.value = false;
   }
@@ -488,7 +516,7 @@ async function loadRewards() {
     rewardPagination.page = Number(response.page || rewardPagination.page);
     rewardPagination.page_size = Number(response.page_size || rewardPagination.page_size);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载奖励记录失败'));
+    MessagePlugin.error(errorMessage(error, t('referral.loadRewardsFailed')));
   } finally {
     rewardsLoading.value = false;
   }
@@ -503,7 +531,7 @@ async function loadWithdrawals() {
     withdrawalPagination.page = Number(response.page || withdrawalPagination.page);
     withdrawalPagination.page_size = Number(response.page_size || withdrawalPagination.page_size);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载提现记录失败'));
+    MessagePlugin.error(errorMessage(error, t('referral.loadWithdrawalsFailed')));
   } finally {
     withdrawalsLoading.value = false;
   }
@@ -588,7 +616,7 @@ async function submitWithdrawalAction() {
     withdrawalDialog.visible = false;
     await Promise.allSettled([loadOverview(), loadWithdrawals()]);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '处理提现申请失败'));
+    MessagePlugin.error(errorMessage(error, t('referral.handleWithdrawalFailed')));
   } finally {
     withdrawalSubmitting.value = false;
   }
@@ -607,9 +635,9 @@ function rewardStatusTheme(status: unknown): ThemeType {
 
 function withdrawalStatusLabel(status: unknown) {
   const labels: Record<string, string> = {
-    0: '待审核',
-    1: '已通过',
-    2: '已拒绝',
+    0: t('referral.statusPending'),
+    1: t('referral.statusApproved'),
+    2: t('referral.statusRejected'),
   };
   return labels[String(status ?? '')] || fieldValue(status);
 }
@@ -625,8 +653,8 @@ function withdrawalStatusTheme(status: unknown): ThemeType {
 
 function withdrawalMethodLabel(method: unknown) {
   const labels: Record<string, string> = {
-    alipay: '支付宝',
-    balance: '余额转回',
+    alipay: t('referral.alipay'),
+    balance: t('referral.balanceTransfer'),
   };
   return labels[String(method ?? '')] || fieldValue(method);
 }
@@ -637,7 +665,12 @@ function rewardProductName(row: ReferralRewardRecord) {
 
 function userName(user: unknown) {
   const record = toRecord(user);
-  return fieldValue(record.display_name || record.nickname || record.email || (record.id ? `用户 #${record.id}` : ''));
+  return fieldValue(
+    record.display_name ||
+      record.nickname ||
+      record.email ||
+      (record.id ? t('referral.userFallback', { id: record.id }) : ''),
+  );
 }
 
 function formatPercent(value: unknown) {

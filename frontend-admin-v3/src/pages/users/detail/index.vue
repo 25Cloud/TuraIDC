@@ -4,7 +4,7 @@
       <div class="detail-action-bar">
         <t-button variant="text" theme="default" @click="goBack">
           <template #icon><chevron-left-icon /></template>
-          返回用户列表
+          {{ $t('users.detail.backToList') }}
         </t-button>
         <div class="user-detail-actions">
           <t-button
@@ -13,9 +13,11 @@
             :disabled="!user.id"
             :loading="loginAsLoading"
             @click="handleLoginAs"
-            >代登录</t-button
+            >{{ $t('users.detail.loginAs') }}</t-button
           >
-          <t-button theme="default" :disabled="!user.id" @click="openEditDialog">编辑资料</t-button>
+          <t-button theme="default" :disabled="!user.id" @click="openEditDialog">{{
+            $t('users.detail.editProfile')
+          }}</t-button>
         </div>
       </div>
     </t-loading>
@@ -39,19 +41,19 @@
 
     <t-card :bordered="false">
       <t-tabs :value="activeTab" @change="handleTabChange">
-        <t-tab-panel value="basic" label="基本信息" />
-        <t-tab-panel value="referral" label="推荐信息" />
-        <t-tab-panel value="services" label="产品/服务" />
-        <t-tab-panel value="invoices" label="账单" />
-        <t-tab-panel value="balance" label="资金流水" />
-        <t-tab-panel value="tickets" label="工单" />
-        <t-tab-panel value="logs" label="操作日志" />
-        <t-tab-panel value="notices" label="通知记录" />
+        <t-tab-panel value="basic" :label="$t('users.detail.tabBasic')" />
+        <t-tab-panel value="referral" :label="$t('users.detail.tabReferral')" />
+        <t-tab-panel value="services" :label="$t('users.detail.tabServices')" />
+        <t-tab-panel value="invoices" :label="$t('users.detail.tabInvoices')" />
+        <t-tab-panel value="balance" :label="$t('users.detail.tabBalance')" />
+        <t-tab-panel value="tickets" :label="$t('users.detail.tabTickets')" />
+        <t-tab-panel value="logs" :label="$t('users.detail.tabLogs')" />
+        <t-tab-panel value="notices" :label="$t('users.detail.tabNotices')" />
       </t-tabs>
 
       <section v-if="activeTab === 'basic'" class="user-detail-section">
         <div class="basic-grid">
-          <t-card header="基础信息" :bordered="true">
+          <t-card :header="$t('users.detail.basicInfo')" :bordered="true">
             <div class="info-grid">
               <div v-for="item in infoItems" :key="item.label" class="info-field">
                 <span class="info-label">{{ item.label }}</span>
@@ -65,23 +67,18 @@
             <template #header>
               <div class="note-header">
                 <span>{{ $t('users.detail.adminRemark') }}</span>
-                <t-button
-                  v-if="!noteEditing"
-                  variant="text"
-                  theme="primary"
-                  size="small"
-                  @click="startEditNote"
-                  >{{ $t('users.detail.actionEdit') }}</t-button
-                >
+                <t-button v-if="!noteEditing" variant="text" theme="primary" size="small" @click="startEditNote">{{
+                  $t('users.detail.actionEdit')
+                }}</t-button>
               </div>
             </template>
             <div v-if="!noteEditing" class="user-note" :class="{ 'is-empty': !user.admin_note }">
-              {{ user.admin_note || '暂无备注' }}
+              {{ user.admin_note || $t('users.detail.noRemark') }}
             </div>
             <div v-else class="note-edit">
               <t-textarea
                 v-model="noteForm"
-                placeholder="输入管理员备注"
+                :placeholder="$t('users.detail.notePlaceholder')"
                 :maxlength="500"
                 :autosize="{ minRows: 3, maxRows: 6 }"
               />
@@ -90,14 +87,16 @@
                   >{{ noteForm.length }} / 500</span
                 >
                 <div class="note-edit-actions">
-                  <t-button size="small" theme="default" @click="noteEditing = false">取消</t-button>
+                  <t-button size="small" theme="default" @click="noteEditing = false">{{
+                    $t('common.cancel')
+                  }}</t-button>
                   <t-button
                     size="small"
                     theme="primary"
                     :loading="noteSaving"
                     :disabled="noteForm.length > 500"
                     @click="saveNote"
-                    >保存</t-button
+                    >{{ $t('users.detail.save') }}</t-button
                   >
                 </div>
               </div>
@@ -127,13 +126,18 @@
           <t-input
             v-model="services.filters.keyword"
             clearable
-            placeholder="搜索服务名、域名、账单号、配置名"
+            :placeholder="$t('users.detail.searchServicesPlaceholder')"
             @enter="searchServices"
             @clear="searchServices"
           >
             <template #suffix-icon><search-icon /></template>
           </t-input>
-          <t-select v-model="services.filters.status" clearable placeholder="状态" @change="searchServices">
+          <t-select
+            v-model="services.filters.status"
+            clearable
+            :placeholder="$t('users.detail.statusPlaceholder')"
+            @change="searchServices"
+          >
             <t-option
               v-for="option in serviceStatusOptions"
               :key="option.value"
@@ -141,10 +145,10 @@
               :value="option.value"
             />
           </t-select>
-          <t-button theme="primary" @click="openAddServiceDialog">添加实例</t-button>
-          <t-button theme="default" :loading="services.refreshingStatus" @click="handleRefreshServicesStatus"
-            >批量刷新状态</t-button
-          >
+          <t-button theme="primary" @click="openAddServiceDialog">{{ $t('users.detail.addInstance') }}</t-button>
+          <t-button theme="default" :loading="services.refreshingStatus" @click="handleRefreshServicesStatus">{{
+            $t('users.detail.refreshAllStatus')
+          }}</t-button>
         </div>
         <div class="table-scroll">
           <t-table
@@ -198,9 +202,9 @@
                   @click="handleRefreshService(row)"
                   >{{ $t('users.detail.actionRefresh') }}</t-button
                 >
-                <t-button variant="text" theme="danger" size="small" @click="handleDeleteServiceRow(row)"
-                  >{{ $t('users.detail.actionDelete') }}</t-button
-                >
+                <t-button variant="text" theme="danger" size="small" @click="handleDeleteServiceRow(row)">{{
+                  $t('users.detail.actionDelete')
+                }}</t-button>
               </div>
             </template>
           </t-table>
@@ -209,7 +213,12 @@
 
       <section v-else-if="activeTab === 'invoices'" class="user-detail-section">
         <div class="detail-toolbar compact">
-          <t-select v-model="invoices.filters.status" clearable placeholder="状态" @change="searchInvoices">
+          <t-select
+            v-model="invoices.filters.status"
+            clearable
+            :placeholder="$t('users.detail.statusPlaceholder')"
+            @change="searchInvoices"
+          >
             <t-option
               v-for="option in invoiceStatusOptions"
               :key="option.value"
@@ -217,7 +226,12 @@
               :value="option.value"
             />
           </t-select>
-          <t-select v-model="invoices.filters.type" clearable placeholder="类型" @change="searchInvoices">
+          <t-select
+            v-model="invoices.filters.type"
+            clearable
+            :placeholder="$t('users.detail.typePlaceholder')"
+            @change="searchInvoices"
+          >
             <t-option
               v-for="option in invoiceTypeOptions"
               :key="option.value"
@@ -323,23 +337,38 @@
 
       <section v-else-if="activeTab === 'logs'" class="user-detail-section">
         <div class="detail-toolbar compact">
-          <t-date-picker v-model="logs.filters.start_date" clearable placeholder="开始日期" @change="searchLogs" />
-          <t-date-picker v-model="logs.filters.end_date" clearable placeholder="结束日期" @change="searchLogs" />
+          <t-date-picker
+            v-model="logs.filters.start_date"
+            clearable
+            :placeholder="$t('users.detail.startDate')"
+            @change="searchLogs"
+          />
+          <t-date-picker
+            v-model="logs.filters.end_date"
+            clearable
+            :placeholder="$t('users.detail.endDate')"
+            @change="searchLogs"
+          />
           <t-input
             v-model="logs.filters.keyword"
             clearable
-            placeholder="描述"
+            :placeholder="$t('users.detail.descriptionPlaceholder')"
             @enter="searchLogs"
             @clear="searchLogs"
           />
           <t-input
             v-model="logs.filters.ip_address"
             clearable
-            placeholder="IP 地址"
+            :placeholder="$t('users.detail.ipAddressPlaceholder')"
             @enter="searchLogs"
             @clear="searchLogs"
           />
-          <t-select v-model="logs.filters.source" clearable placeholder="来源" @change="searchLogs">
+          <t-select
+            v-model="logs.filters.source"
+            clearable
+            :placeholder="$t('users.detail.sourcePlaceholder')"
+            @change="searchLogs"
+          >
             <t-option value="web" label="Web" />
             <t-option value="api" label="API" />
           </t-select>
@@ -362,8 +391,8 @@
       <section v-else class="user-detail-section">
         <div class="detail-toolbar compact">
           <t-radio-group v-model="notices.channel" variant="default-filled" @change="reloadNotices">
-            <t-radio-button value="email">邮件</t-radio-button>
-            <t-radio-button value="sms">短信</t-radio-button>
+            <t-radio-button value="email">{{ $t('users.detail.emailChannel') }}</t-radio-button>
+            <t-radio-button value="sms">{{ $t('users.detail.smsChannel') }}</t-radio-button>
           </t-radio-group>
         </div>
         <div class="table-scroll">
@@ -391,36 +420,36 @@
 
     <t-dialog
       v-model:visible="editVisible"
-      header="编辑资料"
+      :header="$t('users.detail.editProfile')"
       width="560px"
-      :confirm-btn="{ content: '保存修改', loading: saveLoading }"
+      :confirm-btn="{ content: $t('users.detail.saveChanges'), loading: saveLoading }"
       @cancel="editVisible = false"
       @confirm="handleSave"
     >
       <t-form ref="editFormRef" :data="editForm" :rules="editRules" label-align="top">
-        <t-form-item label="邮箱">
+        <t-form-item :label="$t('users.detail.email')">
           <t-input :value="user.email || '-'" disabled />
         </t-form-item>
-        <t-form-item label="昵称" name="nickname">
+        <t-form-item :label="$t('users.detail.nicknameLabel')" name="nickname">
           <t-input v-model="editForm.nickname" />
         </t-form-item>
-        <t-form-item label="手机号" name="phone">
+        <t-form-item :label="$t('users.detail.phone')" name="phone">
           <t-input v-model="editForm.phone" />
         </t-form-item>
-        <t-form-item label="新密码" name="password">
-          <t-input v-model="editForm.password" type="password" placeholder="留空则不修改" />
+        <t-form-item :label="$t('users.detail.newPassword')" name="password">
+          <t-input v-model="editForm.password" type="password" :placeholder="$t('users.detail.leaveBlankToKeep')" />
         </t-form-item>
-        <t-form-item label="状态" name="status">
+        <t-form-item :label="$t('users.detail.statusLabel')" name="status">
           <t-switch v-model="editForm.status" :custom-value="[1, 0]" />
         </t-form-item>
-        <t-form-item v-if="canManageUsers" label="代理组" name="agent_group_id">
+        <t-form-item v-if="canManageUsers" :label="$t('users.detail.agentGroup')" name="agent_group_id">
           <t-select
             v-model="editForm.agent_group_id"
             filterable
             :loading="agentGroupOptionsLoading"
-            placeholder="请选择代理组"
+            :placeholder="$t('users.detail.selectAgentGroup')"
           >
-            <t-option label="无代理分组" :value="0" />
+            <t-option :label="$t('users.detail.noAgentGroup')" :value="0" />
             <t-option
               v-for="item in agentGroupOptions"
               :key="item.id"
@@ -434,23 +463,27 @@
 
     <t-dialog
       v-model:visible="rechargeVisible"
-      header="资金管理"
+      :header="$t('users.detail.fundManagement')"
       width="480px"
-      :confirm-btn="{ content: rechargeForm.type === 'decrease' ? '确认扣减' : '确认增加', loading: rechargeLoading }"
+      :confirm-btn="{
+        content:
+          rechargeForm.type === 'decrease' ? $t('users.detail.confirmDecrease') : $t('users.detail.confirmIncrease'),
+        loading: rechargeLoading,
+      }"
       @cancel="rechargeVisible = false"
       @confirm="handleRecharge"
     >
       <t-form ref="rechargeFormRef" :data="rechargeForm" :rules="rechargeRules" label-align="top">
-        <t-form-item label="用户">
+        <t-form-item :label="$t('users.detail.userLabel')">
           <t-input :value="rechargeForm.email" disabled />
         </t-form-item>
-        <t-form-item label="操作类型" name="type">
+        <t-form-item :label="$t('users.detail.operationType')" name="type">
           <t-radio-group v-model="rechargeForm.type">
-            <t-radio value="increase">增加余额</t-radio>
-            <t-radio value="decrease">扣减余额</t-radio>
+            <t-radio value="increase">{{ $t('users.detail.increaseBalance') }}</t-radio>
+            <t-radio value="decrease">{{ $t('users.detail.decreaseBalance') }}</t-radio>
           </t-radio-group>
         </t-form-item>
-        <t-form-item label="金额" name="amount">
+        <t-form-item :label="$t('users.detail.amountLabel')" name="amount">
           <t-input-number
             v-model="rechargeForm.amount"
             :min="0.01"
@@ -459,24 +492,21 @@
             style="width: 100%"
           />
         </t-form-item>
-        <t-form-item label="备注" name="remark">
-          <t-input v-model="rechargeForm.remark" placeholder="请填写操作原因" />
+        <t-form-item :label="$t('users.detail.remarkLabel')" name="remark">
+          <t-input v-model="rechargeForm.remark" :placeholder="$t('users.detail.operationReasonPlaceholder')" />
         </t-form-item>
       </t-form>
     </t-dialog>
 
     <t-dialog
       v-model:visible="addServiceVisible"
-      header="添加实例"
+      :header="$t('users.detail.addInstanceTitle')"
       width="760px"
-      :confirm-btn="{ content: '确认创建', loading: addServiceSubmitting }"
+      :confirm-btn="{ content: $t('users.detail.confirmCreate'), loading: addServiceSubmitting }"
       @cancel="addServiceVisible = false"
       @confirm="handleSubmitAddService"
     >
-      <t-alert
-        theme="info"
-        message="确认后会创建本地服务；可按开关选择自动创建订单、账单和从余额扣款。余额扣款需同时创建账单，余额不足时会回滚本次创建。不会自动发起上游控制，需要时请在服务控制台绑定上游实例。"
-      />
+      <t-alert theme="info" :message="$t('users.detail.addInstanceHint')" />
       <t-form
         ref="addServiceFormRef"
         :data="addServiceForm"
@@ -485,17 +515,17 @@
         class="dialog-form"
       >
         <div class="dialog-grid">
-          <t-form-item label="选择商品" name="product_id" class="form-item-full">
+          <t-form-item :label="$t('users.detail.selectProduct')" name="product_id" class="form-item-full">
             <product-binding-tree-select
               v-model="addServiceProductIdArray"
               mode="single"
               @change="handleAddServiceProductChange"
             />
           </t-form-item>
-          <t-form-item label="计费周期" name="billing_cycle">
+          <t-form-item :label="$t('users.detail.billingCycle')" name="billing_cycle">
             <t-select
               v-model="addServiceForm.billing_cycle"
-              placeholder="请选择计费周期"
+              :placeholder="$t('users.detail.selectBillingCycle')"
               @change="syncAddServiceAmountFromCycle"
             >
               <t-option
@@ -506,13 +536,13 @@
               />
             </t-select>
           </t-form-item>
-          <t-form-item label="系统类型">
+          <t-form-item :label="$t('users.detail.systemType')">
             <t-select
               v-model="addServiceForm.os"
               clearable
               filterable
               :loading="addServiceOsLoading"
-              placeholder="请选择系统"
+              :placeholder="$t('users.detail.selectSystem')"
             >
               <t-option
                 v-for="item in addServiceOsFlatOptions"
@@ -522,8 +552,8 @@
               />
             </t-select>
           </t-form-item>
-          <t-form-item label="服务状态" name="status">
-            <t-select v-model="addServiceForm.status" placeholder="请选择状态">
+          <t-form-item :label="$t('users.detail.serviceStatusLabel')" name="status">
+            <t-select v-model="addServiceForm.status" :placeholder="$t('users.detail.selectStatus')">
               <t-option
                 v-for="item in serviceStatusOptions"
                 :key="item.value"
@@ -532,24 +562,24 @@
               />
             </t-select>
           </t-form-item>
-          <t-form-item label="服务金额" name="amount">
+          <t-form-item :label="$t('users.detail.serviceAmount')" name="amount">
             <t-input-number v-model="addServiceForm.amount" :min="0" :decimal-places="2" style="width: 100%" />
           </t-form-item>
-          <t-form-item label="服务名称">
-            <t-input v-model="addServiceForm.name" placeholder="为空时默认使用配置名" />
+          <t-form-item :label="$t('users.detail.serviceNameLabel')">
+            <t-input v-model="addServiceForm.name" :placeholder="$t('users.detail.defaultNameHint')" />
           </t-form-item>
           <t-form-item class="form-item-full">
             <div class="add-service-automation-switches">
               <div class="add-service-automation-switch">
-                <span>自动续费</span>
+                <span>{{ $t('users.detail.autoRenew') }}</span>
                 <t-switch v-model="addServiceForm.auto_renew" :custom-value="[1, 0]" />
               </div>
               <div class="add-service-automation-switch">
-                <span>自动创建订单</span>
+                <span>{{ $t('users.detail.autoCreateOrder') }}</span>
                 <t-switch v-model="addServiceForm.create_order" :custom-value="[1, 0]" />
               </div>
               <div class="add-service-automation-switch">
-                <span>自动创建账单</span>
+                <span>{{ $t('users.detail.autoCreateInvoice') }}</span>
                 <t-switch
                   v-model="addServiceForm.create_invoice"
                   :custom-value="[1, 0]"
@@ -557,7 +587,7 @@
                 />
               </div>
               <div class="add-service-automation-switch">
-                <span>从余额扣款</span>
+                <span>{{ $t('users.detail.deductFromBalance') }}</span>
                 <t-switch
                   v-model="addServiceForm.deduct_balance"
                   :custom-value="[1, 0]"
@@ -567,27 +597,40 @@
             </div>
           </t-form-item>
         </div>
-        <t-form-item label="备注">
-          <t-textarea v-model="addServiceForm.remark" :maxlength="200" placeholder="记录手工开通说明或交付信息" />
+        <t-form-item :label="$t('users.detail.remarkLabel')">
+          <t-textarea
+            v-model="addServiceForm.remark"
+            :maxlength="200"
+            :placeholder="$t('users.detail.remarkPlaceholder')"
+          />
         </t-form-item>
       </t-form>
     </t-dialog>
 
-    <t-drawer v-model:visible="serviceDrawer.visible" size="620px" header="服务控制台" @close="closeServiceDrawer">
+    <t-drawer
+      v-model:visible="serviceDrawer.visible"
+      size="620px"
+      :header="$t('users.detail.serviceConsole')"
+      @close="closeServiceDrawer"
+    >
       <t-loading :loading="serviceDrawer.loading" size="small">
         <t-descriptions :column="1" bordered>
-          <t-descriptions-item label="服务名称">{{
+          <t-descriptions-item :label="$t('users.detail.serviceNameLabel')">{{
             fieldValue(serviceDrawer.detail.name || serviceDrawer.detail.domain)
           }}</t-descriptions-item>
-          <t-descriptions-item label="状态">{{ serviceStatusLabel(serviceDrawer.detail.status) }}</t-descriptions-item>
-          <t-descriptions-item label="计费周期">{{
+          <t-descriptions-item :label="$t('users.detail.statusLabel')">{{
+            serviceStatusLabel(serviceDrawer.detail.status)
+          }}</t-descriptions-item>
+          <t-descriptions-item :label="$t('users.detail.billingCycle')">{{
             fieldValue(serviceDrawer.detail.billing_cycle_label)
           }}</t-descriptions-item>
-          <t-descriptions-item label="金额">{{ formatMoney(serviceDrawer.detail.amount) }}</t-descriptions-item>
-          <t-descriptions-item label="账单号">{{
+          <t-descriptions-item :label="$t('users.detail.amountShort')">{{
+            formatMoney(serviceDrawer.detail.amount)
+          }}</t-descriptions-item>
+          <t-descriptions-item :label="$t('users.detail.invoiceNoLabel')">{{
             fieldValue(serviceDrawer.detail.invoice?.invoice_no || serviceDrawer.detail.order?.invoice_no)
           }}</t-descriptions-item>
-          <t-descriptions-item label="上游"
+          <t-descriptions-item :label="$t('users.detail.upstreamLabel')"
             >{{ fieldValue(serviceDrawer.detail.upstream?.provider_key)
             }}<template v-if="serviceDrawer.detail.upstream?.host_id">
               / host #{{ serviceDrawer.detail.upstream.host_id }}</template
@@ -606,11 +649,11 @@
             <template v-if="serviceDrawer.detail.runtime?.power_label || serviceDrawer.detail.runtime?.description">
               {{ fieldValue(serviceDrawer.detail.runtime?.power_label || serviceDrawer.detail.runtime?.description) }}
             </template>
-            <t-tooltip v-else content="上游暂未返回实例的电源状态">
-              <t-tag theme="warning" variant="light">未获取到运行状态</t-tag>
+            <t-tooltip v-else :content="$t('users.detail.upstreamPowerUnavailable')">
+              <t-tag theme="warning" variant="light">{{ $t('users.detail.runningStatusUnavailable') }}</t-tag>
             </t-tooltip>
           </t-descriptions-item>
-          <t-descriptions-item label="到期时间">{{
+          <t-descriptions-item :label="$t('users.detail.expiresAt')">{{
             formatDateTime(serviceDrawer.detail.expires_at)
           }}</t-descriptions-item>
         </t-descriptions>
@@ -630,7 +673,7 @@
             size="small"
             :loading="serviceDrawer.actionLoading === 'power:on'"
             @click="handleServicePower('on')"
-            >开机</t-button
+            >{{ $t('users.detail.powerOn') }}</t-button
           >
           <t-button
             v-if="canPowerOff"
@@ -639,7 +682,7 @@
             size="small"
             :loading="serviceDrawer.actionLoading === 'power:off'"
             @click="handleServicePower('off')"
-            >关机</t-button
+            >{{ $t('users.detail.powerOff') }}</t-button
           >
           <t-button
             v-if="canReboot"
@@ -648,14 +691,14 @@
             size="small"
             :loading="serviceDrawer.actionLoading === 'power:reboot'"
             @click="handleServicePower('reboot')"
-            >重启</t-button
+            >{{ $t('users.detail.reboot') }}</t-button
           >
           <t-button
             theme="default"
             size="small"
             :loading="serviceDrawer.actionLoading === 'remote-status'"
             @click="handleRefreshConsoleRemoteStatus"
-            >刷新远程</t-button
+            >{{ $t('users.detail.refreshRemote') }}</t-button
           >
           <t-button
             theme="default"
@@ -663,18 +706,24 @@
             :disabled="!serviceActions.password_reset"
             :loading="serviceDrawer.actionLoading === 'reset-password'"
             @click="openResetPasswordDialog"
-            >重置密码</t-button
+            >{{ $t('users.detail.resetPassword') }}</t-button
           >
-          <t-button theme="default" size="small" @click="openServiceUpstreamDialog">上游绑定</t-button>
-          <t-button theme="default" size="small" @click="openServicePricingDialog">调价</t-button>
-          <t-button theme="default" size="small" @click="openServiceNameDialog">改名称</t-button>
+          <t-button theme="default" size="small" @click="openServiceUpstreamDialog">{{
+            $t('users.detail.upstreamBinding')
+          }}</t-button>
+          <t-button theme="default" size="small" @click="openServicePricingDialog">{{
+            $t('users.detail.adjustPrice')
+          }}</t-button>
+          <t-button theme="default" size="small" @click="openServiceNameDialog">{{
+            $t('users.detail.rename')
+          }}</t-button>
           <t-button
             theme="default"
             size="small"
             :disabled="!serviceActions.manual_provision"
             :loading="serviceDrawer.actionLoading === 'manual-provision'"
             @click="openManualProvisionDialog"
-            >手动开通</t-button
+            >{{ $t('users.detail.manualProvision') }}</t-button
           >
           <t-button
             v-if="canRefundService"
@@ -682,14 +731,16 @@
             size="small"
             :loading="serviceDrawer.actionLoading === 'refund'"
             @click="openServiceRefundDialog"
-            >退款</t-button
+            >{{ $t('users.detail.refund') }}</t-button
           >
-          <t-tag v-else-if="isServiceRefunded" theme="danger" variant="light">已退款</t-tag>
+          <t-tag v-else-if="isServiceRefunded" theme="danger" variant="light">{{
+            $t('users.detail.serviceRefunded')
+          }}</t-tag>
         </div>
         <div class="drawer-close-actions">
           <t-button variant="outline" @click="closeServiceDrawer">
             <template #icon><chevron-left-icon /></template>
-            返回
+            {{ $t('users.detail.back') }}
           </t-button>
         </div>
       </t-loading>
@@ -697,29 +748,35 @@
 
     <t-dialog
       v-model:visible="resetPasswordVisible"
-      header="重置登录密码"
+      :header="$t('users.detail.resetLoginPassword')"
       width="420px"
-      :confirm-btn="{ content: '确认重置', loading: serviceDrawer.actionLoading === 'reset-password' }"
+      :confirm-btn="{
+        content: $t('users.detail.confirmReset'),
+        loading: serviceDrawer.actionLoading === 'reset-password',
+      }"
       @cancel="resetPasswordVisible = false"
       @confirm="handleResetServicePassword"
     >
       <t-form ref="resetPasswordFormRef" :data="resetPasswordForm" :rules="resetPasswordRules" label-align="top">
-        <t-form-item label="新密码" name="password">
-          <t-input v-model="resetPasswordForm.password" type="password" placeholder="至少 8 位" />
+        <t-form-item :label="$t('users.detail.newPassword')" name="password">
+          <t-input v-model="resetPasswordForm.password" type="password" :placeholder="$t('users.detail.atLeast8')" />
         </t-form-item>
       </t-form>
     </t-dialog>
 
     <t-dialog
       v-model:visible="manualProvisionVisible"
-      header="手动开通 / 关联上游"
+      :header="$t('users.detail.manualProvisionTitle')"
       width="420px"
-      :confirm-btn="{ content: '确认关联', loading: serviceDrawer.actionLoading === 'manual-provision' }"
+      :confirm-btn="{
+        content: $t('users.detail.confirmBind'),
+        loading: serviceDrawer.actionLoading === 'manual-provision',
+      }"
       @cancel="manualProvisionVisible = false"
       @confirm="handleManualProvision"
     >
       <t-form ref="manualProvisionFormRef" :data="manualProvisionForm" :rules="manualProvisionRules" label-align="top">
-        <t-form-item label="上游实例 ID" name="upstream_host_id">
+        <t-form-item :label="$t('users.detail.upstreamInstanceId')" name="upstream_host_id">
           <t-input-number v-model="manualProvisionForm.upstream_host_id" :min="1" style="width: 100%" />
         </t-form-item>
       </t-form>
@@ -727,25 +784,25 @@
 
     <t-dialog
       v-model:visible="serviceUpstreamVisible"
-      header="上游绑定"
+      :header="$t('users.detail.upstreamBinding')"
       width="520px"
-      :confirm-btn="{ content: '保存', loading: serviceUpstreamSubmitting }"
+      :confirm-btn="{ content: $t('users.detail.save'), loading: serviceUpstreamSubmitting }"
       @cancel="serviceUpstreamVisible = false"
       @confirm="submitServiceUpstream"
     >
       <t-form ref="serviceUpstreamFormRef" :data="serviceUpstreamForm" :rules="serviceUpstreamRules" label-align="top">
-        <t-form-item label="上游接口" name="supplier_id">
+        <t-form-item :label="$t('users.detail.upstreamInterface')" name="supplier_id">
           <t-select
             v-model="serviceUpstreamForm.supplier_id"
             clearable
             filterable
             :loading="serviceUpstreamLoading"
-            placeholder="请选择上游接口"
+            :placeholder="$t('users.detail.selectUpstreamInterface')"
           >
             <t-option v-for="item in serviceUpstreamOptions" :key="item.id" :label="item.label" :value="item.id" />
           </t-select>
         </t-form-item>
-        <t-form-item label="上游实例 ID" name="upstream_host_id">
+        <t-form-item :label="$t('users.detail.upstreamInstanceId')" name="upstream_host_id">
           <t-input-number v-model="serviceUpstreamForm.upstream_host_id" :min="1" style="width: 100%" />
         </t-form-item>
       </t-form>
@@ -753,59 +810,72 @@
 
     <t-dialog
       v-model:visible="servicePricingVisible"
-      header="调整价格"
+      :header="$t('users.detail.adjustPriceTitle')"
       width="620px"
-      :confirm-btn="{ content: '保存', loading: servicePricingSubmitting }"
+      :confirm-btn="{ content: $t('users.detail.save'), loading: servicePricingSubmitting }"
       @cancel="servicePricingVisible = false"
       @confirm="submitServicePricing"
     >
       <t-form ref="servicePricingFormRef" :data="servicePricingForm" :rules="servicePricingRules" label-align="top">
-        <t-form-item label="购买价格" name="amount">
+        <t-form-item :label="$t('users.detail.purchasePrice')" name="amount">
           <t-input-number v-model="servicePricingForm.amount" :min="0" :decimal-places="2" style="width: 100%" />
         </t-form-item>
         <div v-if="servicePricingEntries.length" class="pricing-list">
           <div v-for="item in servicePricingEntries" :key="item.cycle" class="pricing-row">
             <div>
               <strong>{{ item.label }}</strong>
-              <span>基础价 {{ item.base_amount ? formatMoney(item.base_amount) : '未配置' }}</span>
+              <span
+                >{{ $t('users.detail.basePrice') }}
+                {{ item.base_amount ? formatMoney(item.base_amount) : $t('users.detail.notConfigured') }}</span
+              >
             </div>
             <t-switch v-model="servicePricingForm.locked_pricing[item.cycle].enabled" />
             <t-input-number
               v-model="servicePricingForm.locked_pricing[item.cycle].manual_amount"
               :min="0"
               :decimal-places="2"
-              placeholder="手动价"
+              :placeholder="$t('users.detail.manualPrice')"
             />
           </div>
-          <t-checkbox v-model="servicePricingForm.clear_locked_pricing">恢复默认续费价格</t-checkbox>
+          <t-checkbox v-model="servicePricingForm.clear_locked_pricing">{{
+            $t('users.detail.restoreRenewPrice')
+          }}</t-checkbox>
         </div>
       </t-form>
     </t-dialog>
 
     <t-dialog
       v-model:visible="serviceNameVisible"
-      header="修改实例名称"
+      :header="$t('users.detail.renameTitle')"
       width="420px"
-      :confirm-btn="{ content: '保存', loading: serviceNameSubmitting }"
+      :confirm-btn="{ content: $t('users.detail.save'), loading: serviceNameSubmitting }"
       @cancel="serviceNameVisible = false"
       @confirm="submitServiceName"
     >
       <t-form :data="serviceNameForm" label-align="top">
-        <t-form-item label="实例名称">
-          <t-input v-model="serviceNameForm.service_name" :maxlength="120" placeholder="填写便于识别的实例名称" />
+        <t-form-item :label="$t('users.detail.instanceName')">
+          <t-input
+            v-model="serviceNameForm.service_name"
+            :maxlength="120"
+            :placeholder="$t('users.detail.instanceNamePlaceholder')"
+          />
         </t-form-item>
       </t-form>
     </t-dialog>
 
     <t-dialog
       v-model:visible="serviceRefundVisible"
-      header="服务退款"
+      :header="$t('users.detail.serviceRefund')"
       width="500px"
-      :confirm-btn="{ content: '确认退款', theme: 'danger', loading: serviceDrawer.actionLoading === 'refund' }"
+      :confirm-btn="{
+        content: $t('users.detail.confirmRefund'),
+        theme: 'danger',
+        loading: serviceDrawer.actionLoading === 'refund',
+      }"
       @cancel="serviceRefundVisible = false"
       @confirm="handleServiceRefund"
     >
-      <t-alert theme="warning" message="退款将把对应账单标记为已退款，并关闭该实例的计费流程，当前仅支持全额退款。" />
+      <t-alert theme="warning" :message="$t('users.detail.refundHint')" />
       <t-form
         ref="serviceRefundFormRef"
         :data="serviceRefundForm"
@@ -813,27 +883,38 @@
         label-align="top"
         class="dialog-form"
       >
-        <t-form-item label="退款金额">
+        <t-form-item :label="$t('users.detail.refundAmount')">
           <t-input :value="formatMoney(serviceRefundAmount)" disabled />
         </t-form-item>
-        <t-form-item label="退款方式" name="refund_method">
+        <t-form-item :label="$t('users.detail.refundMethod')" name="refund_method">
           <t-radio-group v-model="serviceRefundForm.refund_method">
-            <t-radio value="balance">退回余额</t-radio>
-            <t-radio value="original" :disabled="!canOriginalServiceRefund">原路退款</t-radio>
+            <t-radio value="balance">{{ $t('users.detail.refundToBalance') }}</t-radio>
+            <t-radio value="original" :disabled="!canOriginalServiceRefund">{{
+              $t('users.detail.refundOriginal')
+            }}</t-radio>
           </t-radio-group>
         </t-form-item>
-        <t-form-item label="退款原因" name="remark">
-          <t-textarea v-model="serviceRefundForm.remark" :maxlength="200" placeholder="请输入退款原因" />
+        <t-form-item :label="$t('users.detail.refundReason')" name="remark">
+          <t-textarea
+            v-model="serviceRefundForm.remark"
+            :maxlength="200"
+            :placeholder="$t('users.detail.refundReasonPlaceholder')"
+          />
         </t-form-item>
       </t-form>
     </t-dialog>
 
-    <t-drawer v-model:visible="invoiceDrawer.visible" size="720px" header="账单详情" @close="closeInvoiceDrawer">
+    <t-drawer
+      v-model:visible="invoiceDrawer.visible"
+      size="720px"
+      :header="$t('users.detail.invoiceDetail')"
+      @close="closeInvoiceDrawer"
+    >
       <t-loading :loading="invoiceDrawer.loading" size="small">
         <div class="invoice-detail-panel">
           <section class="invoice-summary">
             <div class="invoice-summary__main">
-              <span>账单编号</span>
+              <span>{{ $t('users.detail.invoiceNoLabel') }}</span>
               <strong>{{ fieldValue(currentInvoice.invoice_no) }}</strong>
               <p>
                 {{
@@ -847,17 +928,17 @@
               </p>
             </div>
             <div>
-              <span>状态</span>
+              <span>{{ $t('users.detail.statusLabel') }}</span>
               <t-tag :theme="invoiceStatusTheme(currentInvoice.status)" variant="light">{{
                 invoiceStatusLabel(currentInvoice.status)
               }}</t-tag>
             </div>
             <div>
-              <span>金额</span>
+              <span>{{ $t('users.detail.amountShort') }}</span>
               <strong>{{ formatMoney(currentInvoice.amount) }}</strong>
             </div>
             <div>
-              <span>支付方式</span>
+              <span>{{ $t('users.detail.paymentMethodLabel') }}</span>
               <strong>{{ fieldValue(currentInvoice.payment_summary?.gateway) }}</strong>
             </div>
           </section>
@@ -868,54 +949,56 @@
               theme="primary"
               variant="outline"
               @click="viewInvoiceLinkedService"
-              >查看服务</t-button
+              >{{ $t('users.detail.viewService') }}</t-button
             >
-            <t-button theme="default" :loading="invoiceDrawer.loading" @click="reloadInvoiceDrawer">刷新</t-button>
+            <t-button theme="default" :loading="invoiceDrawer.loading" @click="reloadInvoiceDrawer">{{
+              $t('users.detail.refresh')
+            }}</t-button>
             <t-button
               v-if="isCancelableInvoice(currentInvoice)"
               theme="danger"
               variant="outline"
               :loading="invoiceDrawer.cancelLoading"
               @click="handleDrawerCancelInvoice"
-              >取消账单</t-button
+              >{{ $t('users.detail.cancelInvoice') }}</t-button
             >
             <t-button
               v-if="canRefundInvoice"
               theme="danger"
               :loading="invoiceRefundLoading"
               @click="openInvoiceRefundDialog"
-              >退款</t-button
+              >{{ $t('users.detail.refund') }}</t-button
             >
           </div>
 
           <section class="invoice-detail-section">
-            <h4>基础信息</h4>
+            <h4>{{ $t('users.detail.basicInfo') }}</h4>
             <div class="invoice-detail-grid">
               <div>
-                <span>账单类型</span>
+                <span>{{ $t('users.detail.invoiceTypeLabel') }}</span>
                 <strong>{{ currentInvoice.type_label || invoiceTypeLabel(currentInvoice.type) }}</strong>
               </div>
               <div>
-                <span>订单号</span>
+                <span>{{ $t('users.detail.orderNo') }}</span>
                 <strong>{{ fieldValue(currentInvoice.order?.order_no || currentInvoice.order_no) }}</strong>
               </div>
               <div>
-                <span>到期日</span>
+                <span>{{ $t('users.detail.dueDate') }}</span>
                 <strong>{{ fieldValue(currentInvoice.due_date) }}</strong>
               </div>
               <div>
-                <span>创建时间</span>
+                <span>{{ $t('users.detail.createdAt') }}</span>
                 <strong>{{ formatDateTime(currentInvoice.created_at) }}</strong>
               </div>
               <div>
-                <span>支付时间</span>
+                <span>{{ $t('users.detail.paidAt') }}</span>
                 <strong>{{ formatDateTime(currentInvoice.paid_at) }}</strong>
               </div>
             </div>
           </section>
 
           <section v-if="invoiceSceneItems.length" class="invoice-detail-section">
-            <h4>账单项目</h4>
+            <h4>{{ $t('users.detail.invoiceItems') }}</h4>
             <div class="line-list">
               <div v-for="item in invoiceSceneItems" :key="item.id || item.description" class="line-item">
                 <span>{{ fieldValue(item.description) }}</span>
@@ -925,7 +1008,7 @@
           </section>
 
           <section v-if="invoicePayments.length" class="invoice-detail-section">
-            <h4>支付 / 退款记录</h4>
+            <h4>{{ $t('users.detail.paymentRecords') }}</h4>
             <div class="line-list">
               <div v-for="payment in invoicePayments" :key="payment.id || payment.payment_no" class="line-item stacked">
                 <strong>{{ fieldValue(payment.payment_no) }}</strong>
@@ -936,7 +1019,7 @@
           </section>
 
           <section v-if="invoiceLogs.length" class="invoice-detail-section">
-            <h4>操作日志</h4>
+            <h4>{{ $t('users.detail.operationLogs') }}</h4>
             <div class="line-list">
               <div v-for="log in invoiceLogs" :key="log.id || log.created_at" class="line-item stacked">
                 <strong>{{ fieldValue(log.summary || log.action) }}</strong>
@@ -947,7 +1030,7 @@
           <div class="drawer-close-actions">
             <t-button variant="outline" @click="closeInvoiceDrawer">
               <template #icon><chevron-left-icon /></template>
-              返回
+              {{ $t('users.detail.back') }}
             </t-button>
           </div>
         </div>
@@ -956,24 +1039,30 @@
 
     <t-dialog
       v-model:visible="invoiceRefundVisible"
-      header="账单退款"
+      :header="$t('users.detail.invoiceRefund')"
       width="500px"
-      :confirm-btn="{ content: '确认退款', theme: 'danger', loading: invoiceRefundLoading }"
+      :confirm-btn="{ content: $t('users.detail.confirmRefund'), theme: 'danger', loading: invoiceRefundLoading }"
       @cancel="invoiceRefundVisible = false"
       @confirm="handleInvoiceRefund"
     >
       <t-form ref="invoiceRefundFormRef" :data="invoiceRefundForm" :rules="refundRules" label-align="top">
-        <t-form-item label="退款金额">
+        <t-form-item :label="$t('users.detail.refundAmount')">
           <t-input :value="formatMoney(currentInvoice.paid_amount || currentInvoice.amount)" disabled />
         </t-form-item>
-        <t-form-item label="退款方式" name="refund_method">
+        <t-form-item :label="$t('users.detail.refundMethod')" name="refund_method">
           <t-radio-group v-model="invoiceRefundForm.refund_method">
-            <t-radio value="balance">退回余额</t-radio>
-            <t-radio value="original" :disabled="!canOriginalInvoiceRefund">原路退款</t-radio>
+            <t-radio value="balance">{{ $t('users.detail.refundToBalance') }}</t-radio>
+            <t-radio value="original" :disabled="!canOriginalInvoiceRefund">{{
+              $t('users.detail.refundOriginal')
+            }}</t-radio>
           </t-radio-group>
         </t-form-item>
-        <t-form-item label="退款原因" name="remark">
-          <t-textarea v-model="invoiceRefundForm.remark" :maxlength="200" placeholder="请输入退款原因" />
+        <t-form-item :label="$t('users.detail.refundReason')" name="remark">
+          <t-textarea
+            v-model="invoiceRefundForm.remark"
+            :maxlength="200"
+            :placeholder="$t('users.detail.refundReasonPlaceholder')"
+          />
         </t-form-item>
       </t-form>
     </t-dialog>
@@ -1005,13 +1094,13 @@ import type { AdminUser, PageParams, UserUpdatePayload } from '@/api/user';
 import { userApi } from '@/api/user';
 import ProductBindingTreeSelect from '@/components/product-binding-tree-select/index.vue';
 import { AdminPermissions } from '@/constants/permissions';
+import { t } from '@/locales';
 import { fieldValue, formatDateTime, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
 import { buildIdempotencyKey } from '@/utils/idempotency';
 import { hasAdminPermission } from '@/utils/permission';
 import { canGoService, goService, goTicket, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
-import { t } from '@/locales';
 
 defineOptions({ name: 'AdminUserDetail' });
 
@@ -1205,31 +1294,35 @@ const editRules: Record<string, FormRule[]> = {
   ],
 };
 const rechargeRules: Record<string, FormRule[]> = {
-  amount: [required('请输入金额')],
-  remark: [required('请填写操作备注')],
+  amount: [required(t('users.detail.amountRequired'))],
+  remark: [required(t('users.detail.remarkRequired'))],
 };
 const addServiceRules: Record<string, FormRule[]> = {
-  product_id: [required('请选择商品')],
-  billing_cycle: [required('请选择计费周期')],
-  status: [required('请选择服务状态')],
-  amount: [required('请输入服务金额')],
+  product_id: [required(t('users.detail.productRequired'))],
+  billing_cycle: [required(t('users.detail.billingCycleRequired'))],
+  status: [required(t('users.detail.statusRequired'))],
+  amount: [required(t('users.detail.serviceAmountRequired'))],
 };
 const serviceUpstreamRules: Record<string, FormRule[]> = {
   supplier_id: [{ validator: validateUpstreamPair, message: t('users.detail.upstreamIdRequired'), type: 'error' }],
-  upstream_host_id: [{ validator: validateUpstreamPair, message: t('users.detail.upstreamInterfaceRequired'), type: 'error' }],
+  upstream_host_id: [
+    { validator: validateUpstreamPair, message: t('users.detail.upstreamInterfaceRequired'), type: 'error' },
+  ],
 };
 const servicePricingRules: Record<string, FormRule[]> = {
-  amount: [required('请输入购买价格')],
+  amount: [required(t('users.detail.purchasePriceRequired'))],
 };
 const resetPasswordRules: Record<string, FormRule[]> = {
-  password: [{ validator: (val) => String(val || '').length >= 8, message: t('users.detail.passwordLengthMin'), type: 'error' }],
+  password: [
+    { validator: (val) => String(val || '').length >= 8, message: t('users.detail.passwordLengthMin'), type: 'error' },
+  ],
 };
 const manualProvisionRules: Record<string, FormRule[]> = {
-  upstream_host_id: [required('请输入上游实例 ID')],
+  upstream_host_id: [required(t('users.detail.upstreamInstanceRequired'))],
 };
 const refundRules: Record<string, FormRule[]> = {
-  refund_method: [required('请选择退款方式')],
-  remark: [required('请填写退款原因')],
+  refund_method: [required(t('users.detail.refundMethodRequired'))],
+  remark: [required(t('users.detail.refundReasonRequired'))],
 };
 
 const serviceStatusLabelMap = toLabelMap(SERVICE_STATUS_MAP);
@@ -1378,30 +1471,55 @@ const primaryPayment = computed(() => invoicePayments.value.find((item: Row) => 
 const canOriginalInvoiceRefund = computed(() => primaryPayment.value?.gateway === 'alipay');
 const statCards = computed(() => [
   { key: 'ticket_open', label: t('users.detail.openTickets'), value: stats.value.ticket_open || 0, tone: 'warning' },
-  { key: 'cash_balance', label: t('users.detail.balance'), value: formatMoney(user.value.cash_balance), tone: 'success' },
-  { key: 'total_expense', label: t('users.detail.totalSpending'), value: formatMoney(stats.value.total_expense), tone: 'primary' },
+  {
+    key: 'cash_balance',
+    label: t('users.detail.balance'),
+    value: formatMoney(user.value.cash_balance),
+    tone: 'success',
+  },
+  {
+    key: 'total_expense',
+    label: t('users.detail.totalSpending'),
+    value: formatMoney(stats.value.total_expense),
+    tone: 'primary',
+  },
 ]);
 const referralItems = computed(() => [
   { label: t('users.detail.referralCode'), value: referral.value.referral_code || '-' },
-  { label: t('users.detail.currentLevel'), value: referral.value.member_level?.name || user.value.member_level?.name || '未分级' },
+  {
+    label: t('users.detail.currentLevel'),
+    value: referral.value.member_level?.name || user.value.member_level?.name || t('users.detail.ungraded'),
+  },
   { label: t('users.detail.directReferralCount'), value: stats.value.direct_referral_count || 0 },
-  { label: t('users.detail.totalReferralReward'), value: formatMoney(stats.value.total_referral_reward), tone: 'success' },
-  { label: t('users.detail.withdrawableReward'), value: formatMoney(referral.value.referral_available_amount), tone: 'success' },
+  {
+    label: t('users.detail.totalReferralReward'),
+    value: formatMoney(stats.value.total_referral_reward),
+    tone: 'success',
+  },
+  {
+    label: t('users.detail.withdrawableReward'),
+    value: formatMoney(referral.value.referral_available_amount),
+    tone: 'success',
+  },
 ]);
 const infoItems = computed(() => [
   { label: t('users.detail.email'), value: fieldValue(user.value.email) },
   { label: t('users.detail.phone'), value: fieldValue(user.value.phone) },
   {
     label: t('users.detail.accountStatus'),
-    value: Number(user.value.status) === 1 ? '正常' : '禁用',
+    value: Number(user.value.status) === 1 ? t('users.index.statusNormal') : t('users.index.statusDisabled'),
     tone: Number(user.value.status) === 1 ? 'success' : 'danger',
   },
   { label: t('users.detail.company'), value: fieldValue(user.value.company) },
   { label: 'QQ', value: fieldValue(user.value.qq) },
   { label: t('users.detail.accountBalance'), value: formatMoney(user.value.cash_balance), tone: 'success' },
-  { label: t('users.detail.memberLevel'), value: user.value.member_level?.name || '未分级' },
-  { label: t('users.detail.agentGroup'), value: user.value.agent_group?.name || '未设置' },
-  { label: t('users.detail.realNameVerified'), value: verificationText(), tone: isVerified.value ? 'success' : 'warning' },
+  { label: t('users.detail.memberLevel'), value: user.value.member_level?.name || t('users.detail.ungraded') },
+  { label: t('users.detail.agentGroup'), value: user.value.agent_group?.name || t('users.detail.notSet') },
+  {
+    label: t('users.detail.realNameVerified'),
+    value: verificationText(),
+    tone: isVerified.value ? 'success' : 'warning',
+  },
   { label: t('users.detail.idNumber'), value: fieldValue(user.value.id_card_masked) },
   { label: t('users.detail.referrerId'), value: fieldValue(user.value.referrer_user_id) },
   { label: t('users.detail.lastLoginAt'), value: formatDateTime(user.value.last_login_at) },
@@ -1462,7 +1580,7 @@ function handleTabChange(value: string | number) {
 
 async function loadPageState(
   state: PageState,
-  loader: (params: PageParams) => Promise<{ list?: Row[]; total?: number; page?: number; page_size?: number }>,
+  loader: (_params: PageParams) => Promise<{ list?: Row[]; total?: number; page?: number; page_size?: number }>,
   loadedKey: string,
 ) {
   state.loading = true;
@@ -1557,7 +1675,7 @@ async function saveNote() {
     noteEditing.value = false;
     MessagePlugin.success(t('users.detail.remarkSaved'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '备注保存失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.noteSaveFailed')));
   } finally {
     noteSaving.value = false;
   }
@@ -1597,7 +1715,7 @@ async function handleSave() {
       MessagePlugin.warning(t('users.detail.profileRefreshFailed'));
     }
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '用户资料更新失败，请检查手机号是否已被占用或格式是否正确'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.profileSaveFailed')));
   } finally {
     saveLoading.value = false;
   }
@@ -1625,7 +1743,11 @@ async function handleRecharge() {
       remark: rechargeForm.remark,
       idempotency_key: rechargeIdempotencyKey.value,
     });
-    MessagePlugin.success(rechargeForm.type === 'decrease' ? '扣减成功' : '增加成功');
+    MessagePlugin.success(
+      rechargeForm.type === 'decrease'
+        ? t('users.detail.rechargeDecreaseSuccess')
+        : t('users.detail.rechargeIncreaseSuccess'),
+    );
     rechargeVisible.value = false;
     // 资金已写入（余额已变、流水已建）；刷新失败绝不能回退成"失败"，
     // 否则管理员会重试而造成重复扣款/充值。
@@ -1637,7 +1759,12 @@ async function handleRecharge() {
     }
   } catch (error) {
     MessagePlugin.error(
-      errorMessage(error, rechargeForm.type === 'decrease' ? '扣减失败，请稍后重试' : '增加余额失败，请稍后重试'),
+      errorMessage(
+        error,
+        rechargeForm.type === 'decrease'
+          ? t('users.detail.rechargeDecreaseFailed')
+          : t('users.detail.rechargeIncreaseFailed'),
+      ),
     );
   } finally {
     rechargeLoading.value = false;
@@ -1694,7 +1821,7 @@ async function handleAddServiceProductChange(
     addServiceForm.amount = firstCycle?.amount || 0;
     await fetchAddServiceOsOptions();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载商品详情失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.loadProductFailed')));
   } finally {
     addServiceLoading.value = false;
   }
@@ -1750,7 +1877,7 @@ async function handleSubmitAddService() {
       ...(loadedTabs.balance ? [loadBalance()] : []),
     ]);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '添加实例失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.addInstanceFailed')));
   } finally {
     addServiceSubmitting.value = false;
   }
@@ -1764,7 +1891,7 @@ async function handleRefreshService(row: Row) {
     patchServiceListItem(detail);
     MessagePlugin.success(t('users.detail.serviceStatusRefreshed'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '刷新服务状态失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.refreshServiceFailed')));
   } finally {
     services.refreshing = false;
   }
@@ -1778,7 +1905,7 @@ async function handleRefreshServicesStatus() {
     await loadServices();
     MessagePlugin.success(t('users.detail.serviceStatusBatchRefreshed'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '批量刷新失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.batchRefreshFailed')));
   } finally {
     services.refreshingStatus = false;
   }
@@ -1787,8 +1914,8 @@ async function handleRefreshServicesStatus() {
 function handleDeleteServiceRow(row: Row) {
   if (!row?.id) return;
   const dialog = DialogPlugin.confirm({
-    header: '删除实例记录',
-    body: `确认删除实例“${serviceName(row)}”记录吗？`,
+    header: t('users.detail.deleteServiceRecord'),
+    body: t('users.detail.deleteServiceConfirm', { name: serviceName(row) }),
     confirmBtn: t('common.confirmDelete'),
     cancelBtn: t('common.cancel'),
     theme: 'warning',
@@ -1800,7 +1927,7 @@ function handleDeleteServiceRow(row: Row) {
         dialog.hide();
         await Promise.all([loadServices(), loadDetail()]);
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除服务记录失败'));
+        MessagePlugin.error(errorMessage(error, t('users.detail.deleteServiceFailed')));
       } finally {
         services.refreshing = false;
       }
@@ -1843,7 +1970,7 @@ async function handleLoginAs() {
     MessagePlugin.success(t('users.detail.delegateLoginOpened'));
   } catch (error) {
     closeLoginAsPopup(popup);
-    MessagePlugin.error(errorMessage(error, '代登录失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.loginAsFailed')));
   } finally {
     loginAsLoading.value = false;
   }
@@ -1887,7 +2014,7 @@ function waitForLoginAsReady(targetWindow: Window, targetUrl: string) {
   return new Promise<void>((resolve, reject) => {
     const timer = window.setTimeout(() => {
       window.removeEventListener('message', handleMessage);
-      reject(new Error('客户端代登录窗口未完成初始化'));
+      reject(new Error(t('users.detail.loginAsInitTimeout')));
     }, LOGIN_AS_READY_TIMEOUT_MS);
 
     function handleMessage(event: MessageEvent) {
@@ -1924,7 +2051,7 @@ async function reloadServiceDrawer() {
     serviceDrawer.detail = normalizeServiceDetail(detail);
     patchServiceListItem(detail);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载实例详情失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.loadInstanceFailed')));
   } finally {
     serviceDrawer.loading = false;
   }
@@ -1939,7 +2066,7 @@ async function handleRefreshConsoleRemoteStatus() {
     patchServiceListItem(detail);
     MessagePlugin.success(t('users.detail.remoteStatusRefreshed'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '刷新远程状态失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.refreshRemoteFailed')));
   } finally {
     serviceDrawer.actionLoading = '';
   }
@@ -1947,11 +2074,17 @@ async function handleRefreshConsoleRemoteStatus() {
 
 function handleServicePower(action: string) {
   if (!serviceDrawer.serviceId || !action) return;
-  const label = ({ on: '开机', off: '关机', reboot: '重启' } as Record<string, string>)[action] || action;
+  const label =
+    (
+      { on: t('users.detail.powerOn'), off: t('users.detail.powerOff'), reboot: t('users.detail.reboot') } as Record<
+        string,
+        string
+      >
+    )[action] || action;
   const dialog = DialogPlugin.confirm({
-    header: `${label}确认`,
-    body: `确认对实例执行“${label}”操作？`,
-    confirmBtn: `确认${label}`,
+    header: t('users.detail.powerConfirmTitle', { action: label }),
+    body: t('users.detail.powerConfirmBody', { action: label }),
+    confirmBtn: t('users.detail.powerConfirmButton', { action: label }),
     cancelBtn: t('common.cancel'),
     theme: 'warning',
     async onConfirm() {
@@ -1959,11 +2092,11 @@ function handleServicePower(action: string) {
       try {
         const response = await userApi.servicePower(userId.value, serviceDrawer.serviceId, { action });
         if (response.detail) serviceDrawer.detail = mergeServiceDetail(serviceDrawer.detail, response.detail);
-        MessagePlugin.success(response.message || `${label}指令已下发`);
+        MessagePlugin.success(response.message || t('users.detail.powerDispatched', { action: label }));
         dialog.hide();
         await handleRefreshConsoleRemoteStatus();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, `${label}失败`));
+        MessagePlugin.error(errorMessage(error, t('users.detail.powerFailed', { action: label })));
       } finally {
         serviceDrawer.actionLoading = '';
       }
@@ -1987,7 +2120,7 @@ async function handleResetServicePassword() {
     resetPasswordVisible.value = false;
     await reloadServiceDrawer();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '密码重置失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.passwordResetFailed')));
   } finally {
     serviceDrawer.actionLoading = '';
   }
@@ -2011,7 +2144,7 @@ async function handleManualProvision() {
     manualProvisionVisible.value = false;
     await Promise.all([reloadServiceDrawer(), loadServices()]);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '手动开通失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.manualProvisionFailed')));
   } finally {
     serviceDrawer.actionLoading = '';
   }
@@ -2035,12 +2168,13 @@ async function loadServiceUpstreamOptions() {
         const id = Number(item.id || 0);
         const upstreamBinding =
           item.upstream_binding && typeof item.upstream_binding === 'object' ? (item.upstream_binding as Row) : {};
-        const type = item.provider_label || upstreamBinding.provider_key || '上游';
-        return { id, label: `${item.name || `接口 #${item.id}`} · ${type}` };
+        const type = item.provider_label || upstreamBinding.provider_key || t('users.detail.upstreamFallback');
+        const interfaceName = item.name || t('users.detail.interfaceWithId', { id: item.id });
+        return { id, label: `${interfaceName} · ${type}` };
       })
       .filter((item) => item.id > 0);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载上游接口失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.loadUpstreamInterfacesFailed')));
   } finally {
     serviceUpstreamLoading.value = false;
   }
@@ -2061,7 +2195,7 @@ async function submitServiceUpstream() {
     serviceUpstreamVisible.value = false;
     MessagePlugin.success(t('users.detail.upstreamBindingUpdated'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新上游绑定失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.updateUpstreamBindingFailed')));
   } finally {
     serviceUpstreamSubmitting.value = false;
     serviceDrawer.actionLoading = '';
@@ -2106,7 +2240,7 @@ async function submitServicePricing() {
     servicePricingVisible.value = false;
     MessagePlugin.success(t('users.detail.priceUpdated'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新价格信息失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.updatePricingFailed')));
   } finally {
     servicePricingSubmitting.value = false;
     serviceDrawer.actionLoading = '';
@@ -2131,7 +2265,7 @@ async function submitServiceName() {
     serviceNameVisible.value = false;
     MessagePlugin.success(t('users.detail.instanceNameUpdated'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新实例名称失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.updateInstanceNameFailed')));
   } finally {
     serviceNameSubmitting.value = false;
     serviceDrawer.actionLoading = '';
@@ -2155,11 +2289,11 @@ async function handleServiceRefund() {
       amount: serviceRefundAmount.value,
       remark: serviceRefundForm.remark,
     });
-    MessagePlugin.success(response.message || '服务已完成退款');
+    MessagePlugin.success(response.message || t('users.detail.serviceRefunded'));
     serviceRefundVisible.value = false;
     await Promise.all([reloadServiceDrawer(), loadServices(), loadDetail()]);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '退款失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.refundFailed')));
   } finally {
     serviceDrawer.actionLoading = '';
   }
@@ -2188,7 +2322,7 @@ async function reloadInvoiceDrawer() {
     const detail = await userApi.invoiceDetail(userId.value, invoiceDrawer.currentId);
     invoiceDrawer.detail = normalizeInvoiceDetail(detail, currentInvoice.value);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载账单详情失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.loadInvoiceFailed')));
   } finally {
     invoiceDrawer.loading = false;
   }
@@ -2204,8 +2338,8 @@ function isCancelableInvoice(row: Row) {
 function handleCancelInvoice(row: Row) {
   if (!row?.id) return;
   const dialog = DialogPlugin.confirm({
-    header: '取消账单',
-    body: '取消账单后将关闭关联流程，确认继续吗？',
+    header: t('users.detail.cancelInvoice'),
+    body: t('users.detail.cancelInvoiceConfirm'),
     confirmBtn: t('common.confirmCancel'),
     cancelBtn: t('common.cancel'),
     theme: 'warning',
@@ -2216,7 +2350,7 @@ function handleCancelInvoice(row: Row) {
         dialog.hide();
         await Promise.all([loadInvoices(), loadDetail()]);
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '取消账单失败'));
+        MessagePlugin.error(errorMessage(error, t('users.detail.cancelInvoiceFailed')));
       }
     },
   });
@@ -2230,7 +2364,7 @@ async function handleDrawerCancelInvoice() {
     MessagePlugin.success(t('users.detail.invoiceCancelled'));
     await Promise.all([loadInvoices(), loadDetail(), reloadInvoiceDrawer()]);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '取消账单失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.cancelInvoiceFailed')));
   } finally {
     invoiceDrawer.cancelLoading = false;
   }
@@ -2257,7 +2391,7 @@ async function handleInvoiceRefund() {
     invoiceRefundVisible.value = false;
     await Promise.all([loadInvoices(), loadDetail(), reloadInvoiceDrawer()]);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '退款失败'));
+    MessagePlugin.error(errorMessage(error, t('users.detail.refundFailed')));
   } finally {
     invoiceRefundLoading.value = false;
   }
@@ -2282,7 +2416,7 @@ function serviceName(row: Row) {
     row.name ||
     row.product_display_name ||
     row.product?.display_name ||
-    (row.product_id ? `未配置规格 #${row.product_id}` : '-')
+    (row.product_id ? t('users.detail.unconfiguredSpec', { id: row.product_id }) : '-')
   );
 }
 function goServiceDetail(row: Row) {
@@ -2404,7 +2538,10 @@ function createLockedPricingForm(detail: Row = {}) {
 function productLabel(product: ProductRecord | null | undefined) {
   if (!product) return '';
   return String(
-    product.display_name || product.name || product.product_name || (product.id ? `商品 #${product.id}` : ''),
+    product.display_name ||
+      product.name ||
+      product.product_name ||
+      (product.id ? t('users.detail.productWithId', { id: product.id }) : ''),
   ).trim();
 }
 function resolveBillingOptions(product: ProductRecord | null) {
@@ -2461,10 +2598,14 @@ function serviceStatusTheme(status: unknown): 'default' | 'success' | 'primary' 
   return value === 'info' || value === 'purple' ? 'default' : serviceTone(value);
 }
 function verificationText() {
-  if (isVerified.value) return user.value.real_name ? `已实名认证 / ${user.value.real_name}` : '已实名认证';
-  if (Number(user.value.verification_status) === 3) return '实名认证失败';
-  if ([1, 4].includes(Number(user.value.verification_status))) return '待实名认证';
-  return '未实名认证';
+  if (isVerified.value) {
+    return user.value.real_name
+      ? t('users.detail.verifiedWithName', { name: user.value.real_name })
+      : t('users.detail.verified');
+  }
+  if (Number(user.value.verification_status) === 3) return t('users.detail.verificationFailed');
+  if ([1, 4].includes(Number(user.value.verification_status))) return t('users.detail.verificationPending');
+  return t('users.detail.verificationNone');
 }
 function invoiceStatusLabel(status: unknown) {
   return invoiceStatusLabelMap[String(status ?? '')] || '-';
@@ -2473,13 +2614,13 @@ function invoiceTypeLabel(type: unknown) {
   return (
     (
       {
-        new: '新购',
-        renew: '续费',
-        recharge: '充值',
-        deduction: '扣款',
-        referral_credit: '推荐奖励',
-        manual: '手工',
-        upgrade: '升降级账单',
+        new: t('users.detail.changeTypeNew'),
+        renew: t('users.detail.changeTypeRenew'),
+        recharge: t('users.detail.changeTypeRecharge'),
+        deduction: t('users.detail.changeTypeDeduction'),
+        referral_credit: t('users.detail.changeTypeReferralReward'),
+        manual: t('users.detail.changeTypeManual'),
+        upgrade: t('users.detail.invoiceTypeUpgrade'),
       } as Record<string, string>
     )[String(type)] || '-'
   );
@@ -2491,17 +2632,17 @@ function invoiceStatusTheme(status: unknown): 'default' | 'success' | 'warning' 
 }
 function balanceTypeLabel(type: unknown) {
   const labels: Record<string, string> = {
-    recharge: '充值',
-    consume: '消费',
-    invoice_payment: '账单支付',
-    refund: '退款',
-    invoice_refund: '账单退款',
-    adjust: '调整',
-    admin_deduct: '管理员扣款',
-    manual_deduction: '手动扣款',
-    manual_recharge: '手动充值',
-    referral_withdraw_approved: '奖励转余额',
-    referral_credit_cash: '奖励转余额',
+    recharge: t('users.detail.changeTypeRecharge'),
+    consume: t('users.detail.balanceTypeConsume'),
+    invoice_payment: t('users.detail.balanceTypeInvoicePayment'),
+    refund: t('users.detail.balanceTypeRefund'),
+    invoice_refund: t('users.detail.balanceTypeInvoiceRefund'),
+    adjust: t('users.detail.balanceTypeAdjust'),
+    admin_deduct: t('users.detail.balanceTypeAdminDeduct'),
+    manual_deduction: t('users.detail.balanceTypeManualDeduction'),
+    manual_recharge: t('users.detail.balanceTypeManualRecharge'),
+    referral_withdraw_approved: t('users.detail.balanceTypeReferralWithdraw'),
+    referral_credit_cash: t('users.detail.balanceTypeReferralWithdraw'),
   };
   return labels[String(type)] || fieldValue(type);
 }
@@ -2526,10 +2667,16 @@ function balanceTheme(type: unknown): 'default' | 'success' | 'warning' | 'dange
 function priorityLabel(priority: unknown) {
   return (
     (
-      { 1: '低', 2: '中', 3: '高', 4: '紧急', low: '低', medium: '中', high: '高', urgent: '紧急' } as Record<
-        string,
-        string
-      >
+      {
+        1: t('users.detail.priorityLow'),
+        2: t('users.detail.priorityMedium'),
+        3: t('users.detail.priorityHigh'),
+        4: t('users.detail.priorityUrgent'),
+        low: t('users.detail.priorityLow'),
+        medium: t('users.detail.priorityMedium'),
+        high: t('users.detail.priorityHigh'),
+        urgent: t('users.detail.priorityUrgent'),
+      } as Record<string, string>
     )[String(priority)] || '-'
   );
 }
@@ -2542,7 +2689,16 @@ function priorityTheme(priority: unknown): 'default' | 'warning' | 'danger' {
 function ticketStatusLabel(status: unknown) {
   // 文案以后端 TicketService::STATUS_LABELS 为准（shared/statusConfig.js 的 TICKET_STATUS_MAP 同口径）。
   // 此前这里写作"待处理/用户回复/客服回复"，与工单列表页的"开启/客户回复/员工回复"矛盾。
-  return ({ 0: '开启', 1: '客户回复', 2: '员工回复', 3: '已关闭' } as Record<number, string>)[Number(status)] || '-';
+  return (
+    (
+      {
+        0: t('tickets.index.statusOpen'),
+        1: t('tickets.index.statusCustomerReply'),
+        2: t('tickets.index.statusStaffReply'),
+        3: t('tickets.index.statusClosed'),
+      } as Record<number, string>
+    )[Number(status)] || '-'
+  );
 }
 function ticketStatusTheme(status: unknown): 'default' | 'success' | 'warning' {
   const value = Number(status);
@@ -2552,8 +2708,13 @@ function ticketStatusTheme(status: unknown): 'default' | 'success' | 'warning' {
 }
 function noticeLabel(status: unknown) {
   return (
-    ({ success: '成功', failed: '失败', pending: '待发送' } as Record<string, string>)[String(status)] ||
-    fieldValue(status)
+    (
+      {
+        success: t('users.detail.noticeSuccess'),
+        failed: t('users.detail.noticeFailed'),
+        pending: t('users.detail.noticePending'),
+      } as Record<string, string>
+    )[String(status)] || fieldValue(status)
   );
 }
 function noticeTheme(status: unknown): 'default' | 'success' | 'warning' | 'danger' {

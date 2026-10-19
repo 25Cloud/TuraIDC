@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch 
 import { useRoute, useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import type {
   ClientFinanceListParams,
@@ -13,7 +14,6 @@ import type {
   InvoicePaymentSecurity,
   InvoiceRecord,
 } from '@/types/client';
-import { t } from '@/locales';
 import { formatMoney } from '@/utils/format';
 
 import { resolveQuickDateRange } from './dateFilters';
@@ -234,7 +234,7 @@ export function useInvoiceList(options: { fixedTypes?: unknown; pageSize?: numbe
     } catch (error: unknown) {
       list.value = [];
       total.value = 0;
-      listError.value = getErrorMessage(error, '账单列表加载失败');
+      listError.value = getErrorMessage(error, t('finance.messages.invoiceListLoadFailed'));
       MessagePlugin.error(listError.value);
     } finally {
       loading.value = false;
@@ -287,7 +287,7 @@ export function useInvoiceList(options: { fixedTypes?: unknown; pageSize?: numbe
       currentRow.value = res.data || null;
       detailVisible.value = Boolean(currentRow.value);
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '账单详情加载失败'));
+      MessagePlugin.error(getErrorMessage(error, t('finance.messages.invoiceDetailLoadFailed')));
     }
   }
 
@@ -327,8 +327,8 @@ export function useInvoiceList(options: { fixedTypes?: unknown; pageSize?: numbe
 
   function cancelInvoice(row: InvoiceRecord) {
     const dialog = DialogPlugin.confirm({
-      header: '取消账单',
-      body: '确定取消该账单？取消后不可恢复。\n使用的优惠券将退回账户。\n如果是新产品购买，库存将释放。',
+      header: t('finance.messages.cancelInvoiceTitle'),
+      body: t('finance.messages.cancelInvoiceTip'),
       confirmBtn: t('finance.invoice.confirmCancel'),
       cancelBtn: t('finance.invoice.notNow'),
       theme: 'warning',
@@ -342,7 +342,7 @@ export function useInvoiceList(options: { fixedTypes?: unknown; pageSize?: numbe
           await loadData();
           dialog.hide();
         } catch (error: unknown) {
-          MessagePlugin.error(getErrorMessage(error, '取消账单失败'));
+          MessagePlugin.error(getErrorMessage(error, t('finance.messages.cancelInvoiceFailed')));
         } finally {
           canceling.value = false;
           dialog.setConfirmLoading(false);
@@ -434,7 +434,7 @@ export function useInvoiceDetail() {
     () =>
       normalizeText(selectedPayMethodRecord.value?.name) ||
       normalizeText(selectedPayMethodRecord.value?.label) ||
-      '支付',
+      t('finance.messages.pay'),
   );
   const paySecurity = computed<InvoicePaymentSecurity>(() => detail.value?.payment_security || {});
   const canPay = computed(() => Boolean(paySecurity.value.can_pay) && isPayableInvoice(detail.value));
@@ -458,15 +458,18 @@ export function useInvoiceDetail() {
   const showBalanceDeductionOption = computed(() => selectedIsAlipay.value && canDeductBalance.value);
   const showPayActions = computed(() => Boolean(detail.value && isPayableInvoice(detail.value)));
   const payTip = computed(() => {
-    if (!canPay.value) return '当前账单状态不支持继续支付。';
+    if (!canPay.value) return t('finance.messages.cannotPay');
     if (selectedIsAlipay.value && allowBalanceDeduction.value) {
-      return `将自动抵扣余额 ¥${autoDeductionAmountText.value}，支付宝支付剩余 ¥${estimatedAlipayAmountText.value}。`;
+      return t('finance.messages.balanceDeductionHint', {
+        balance: autoDeductionAmountText.value,
+        alipay: estimatedAlipayAmountText.value,
+      });
     }
     if (selectedGatewayKey.value && !['balance', 'free'].includes(selectedGatewayKey.value)) {
-      return `生成二维码后请使用${selectedPayMethodName.value}完成支付，系统会自动轮询状态。`;
+      return t('finance.messages.qrGeneratedHint', { method: selectedPayMethodName.value });
     }
-    if (selectedPayMethod.value === 'balance') return '余额支付会直接扣减账户余额并完成账单。';
-    return '零元账单无需额外支付。';
+    if (selectedPayMethod.value === 'balance') return t('finance.messages.balancePayHint');
+    return t('finance.messages.zeroAmountHint');
   });
 
   function clearPollingTimer() {
@@ -560,7 +563,7 @@ export function useInvoiceDetail() {
       if (seq !== detailRequestSeq) {
         return;
       }
-      MessagePlugin.error(getErrorMessage(error, '账单详情加载失败'));
+      MessagePlugin.error(getErrorMessage(error, t('finance.messages.invoiceDetailLoadFailed')));
     } finally {
       if (seq === detailRequestSeq) {
         loading.value = false;
@@ -571,8 +574,8 @@ export function useInvoiceDetail() {
   function handleCancel() {
     if (!invoiceId.value) return;
     const dialog = DialogPlugin.confirm({
-      header: '取消账单',
-      body: '取消后需重新创建账单才能继续支付，确认取消吗？',
+      header: t('finance.messages.cancelInvoiceTitle'),
+      body: t('finance.messages.cancelInvoiceConfirmTip'),
       confirmBtn: t('finance.invoice.confirmCancel'),
       cancelBtn: t('finance.invoice.notNow'),
       theme: 'warning',
@@ -586,7 +589,7 @@ export function useInvoiceDetail() {
           await loadDetail();
           dialog.hide();
         } catch (error: unknown) {
-          MessagePlugin.error(getErrorMessage(error, '取消账单失败'));
+          MessagePlugin.error(getErrorMessage(error, t('finance.messages.cancelInvoiceFailed')));
         } finally {
           canceling.value = false;
           dialog.setConfirmLoading(false);
@@ -613,7 +616,7 @@ export function useInvoiceDetail() {
       detail.value = res.data?.invoice || detail.value;
       await loadDetail();
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '余额支付失败'));
+      MessagePlugin.error(getErrorMessage(error, t('finance.messages.balancePayFailed')));
     } finally {
       paying.value = false;
     }
@@ -621,8 +624,8 @@ export function useInvoiceDetail() {
 
   function handlePayByBalance() {
     const dialog = DialogPlugin.confirm({
-      header: '余额支付',
-      body: `确认使用账户余额支付 ¥${formatMoney(payableAmount.value)} 吗？`,
+      header: t('finance.messages.balancePayTitle'),
+      body: t('finance.messages.balancePayConfirm', { amount: formatMoney(payableAmount.value) }),
       confirmBtn: t('finance.invoice.confirmPay'),
       cancelBtn: t('common.cancel'),
       theme: 'warning',
@@ -677,7 +680,7 @@ export function useInvoiceDetail() {
       applyAlipayPayload(payload, shouldUseBalanceDeduction);
 
       if (alipayQrCode.value) {
-        MessagePlugin.success(`${selectedPayMethodName.value}二维码已生成`);
+        MessagePlugin.success(t('finance.messages.qrGenerated', { method: selectedPayMethodName.value }));
         clearPollingTimer();
         pollTimer.value = window.setInterval(() => {
           if (!polling.value && alipayPollingReady.value) {
@@ -686,7 +689,9 @@ export function useInvoiceDetail() {
         }, 5000);
       }
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, `生成${selectedPayMethodName.value}二维码失败`));
+      MessagePlugin.error(
+        getErrorMessage(error, t('finance.messages.qrGenerateFailed', { method: selectedPayMethodName.value })),
+      );
     } finally {
       paying.value = false;
     }
@@ -711,10 +716,10 @@ export function useInvoiceDetail() {
         detail.value = payload.invoice || detail.value;
         await loadDetail();
       } else if (!silent) {
-        MessagePlugin.info(payload.message || '当前仍未支付成功');
+        MessagePlugin.info(payload.message || t('finance.messages.notPaidYet'));
       }
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '查询支付状态失败'));
+      MessagePlugin.error(getErrorMessage(error, t('finance.messages.queryPaymentStatusFailed')));
     } finally {
       polling.value = false;
     }

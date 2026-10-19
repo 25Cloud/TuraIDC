@@ -65,11 +65,13 @@
                   </div>
                   <div v-else class="inbox-panel__empty">{{ t('layout.header.inbox.empty') }}</div>
                 </t-loading>
-                <div class="inbox-panel__foot" @click="handleNav('/client/notices')">{{ t('layout.notice.viewAll') }}</div>
+                <div class="inbox-panel__foot" @click="handleNav('/client/notices')">
+                  {{ t('layout.notice.viewAll') }}
+                </div>
               </div>
             </template>
             <t-badge :count="inboxUnread" :offset="[-2, 2]" size="small">
-              <t-button theme="default" shape="square" variant="text" title="站内信">
+              <t-button theme="default" shape="square" variant="text" :title="$t('layout.header.inbox.title')">
                 <template #icon><notification-icon /></template>
               </t-button>
             </t-badge>
@@ -108,7 +110,7 @@
                 >
               </template>
               <span class="header-user-account">{{ accountName }}</span>
-              <span class="header-user-balance">余额 {{ formattedBalance }}</span>
+              <span class="header-user-balance">{{ $t('layout.header.balance') }} {{ formattedBalance }}</span>
               <template #suffix><chevron-down-icon /></template>
             </t-button>
           </t-dropdown>
@@ -117,7 +119,7 @@
     </t-head-menu>
     <t-dialog
       v-model:visible="inboxDetailVisible"
-      :header="inboxDetailItem?.title || '消息详情'"
+      :header="inboxDetailItem?.title || $t('layout.header.inboxDetail')"
       :footer="inboxDetailItem?.link ? undefined : false"
       width="560px"
     >
@@ -133,7 +135,7 @@
           <!-- eslint-disable-next-line vue/no-v-html -- 内容已过 sanitizeRenderedHtml 白名单净化 -->
           <div v-if="inboxDetailHtml" class="inbox-detail__content" v-html="inboxDetailHtml"></div>
           <div v-else class="inbox-detail__content inbox-detail__content--text">
-            {{ inboxDetailItem?.summary || '暂无正文内容' }}
+            {{ inboxDetailItem?.summary || $t('layout.header.noContent') }}
           </div>
         </t-loading>
       </div>
@@ -232,7 +234,7 @@ const breadcrumbs = computed(() => {
       }
 
       const title = meta?.title as LocalizedTitle | undefined;
-      const renderedTitle = (title?.[locale.value as keyof LocalizedTitle] || title?.zh_CN) || '';
+      const renderedTitle = title?.[locale.value as keyof LocalizedTitle] || title?.zh_CN || '';
       if (renderedTitle) {
         const to: RouteLocationRaw = matchedRoute.name ? { name: matchedRoute.name, params: route.params } : path;
         breadcrumbArray.push({ key: matchedRoute.name?.toString() || path, to, title: renderedTitle });
@@ -242,17 +244,15 @@ const breadcrumbs = computed(() => {
     [],
   );
 });
-const accountName = computed(() => user.userInfo.name || '用户');
+const accountName = computed(() => user.userInfo.name || t('layout.header.accountFallback'));
 const userInitials = computed(() => {
   const name = accountName.value.trim();
-  return name.slice(0, 1) || siteBranding.brandInitials || '图';
+  return name.slice(0, 1) || siteBranding.brandInitials || t('layout.header.avatarFallback');
 });
 const userAvatarUrl = computed(() => String(user.userInfo.avatar || '').trim());
 // 头像加载失败时清空地址，让 t-avatar 回退显示首字母内容，而不是一直转圈/破图
 const userAvatarLoadFailed = ref(false);
-const userAvatarImage = computed(() =>
-  userAvatarLoadFailed.value ? undefined : userAvatarUrl.value || undefined,
-);
+const userAvatarImage = computed(() => (userAvatarLoadFailed.value ? undefined : userAvatarUrl.value || undefined));
 const formattedBalance = computed(() => {
   const value = user.userInfo.cash_balance;
   const amount = Number(value);
@@ -275,7 +275,9 @@ const menuCls = computed(() => {
   ];
 });
 const menuTheme = computed(() => theme as ModeType);
-const sidebarButtonTitle = computed(() => (settingStore.isMobileSidebarVisible ? '关闭菜单' : '打开菜单'));
+const sidebarButtonTitle = computed(() =>
+  settingStore.isMobileSidebarVisible ? t('layout.header.closeMenu') : t('layout.header.openMenu'),
+);
 
 const changeCollapsed = () => {
   if (isMobile.value) {
@@ -330,7 +332,9 @@ const openInboxDetail = async (item: InboxItem) => {
     const noticeId = item.id.replace('notice-', '');
     const response = await clientApi.noticeDetail(noticeId);
     const content = (response.data as { content?: string } | undefined)?.content || '';
-    inboxDetailHtml.value = renderMarkdown(content, { imageAltFallback: item.title || '公告配图' });
+    inboxDetailHtml.value = renderMarkdown(content, {
+      imageAltFallback: item.title || t('layout.header.inboxImageAlt'),
+    });
   } catch {
     // 加载失败时退回列表摘要展示，并给出提示
     MessagePlugin.error(t('layout.notice.detailLoadFailed'));
@@ -348,8 +352,8 @@ const handleInboxDetailLink = () => {
 const handleMarkAllRead = async () => {
   const confirmed = await new Promise<boolean>((resolve) => {
     const dialog = DialogPlugin.confirm({
-      header: '全部标记已读',
-      body: '确认将所有未读消息标记为已读吗？此操作不可撤销。',
+      header: t('layout.header.markAllReadTitle'),
+      body: t('layout.header.markAllReadBody'),
       confirmBtn: t('common.confirm'),
       onConfirm: () => {
         dialog.destroy();
@@ -391,18 +395,18 @@ const formatInboxTime = (value: string | null): string => {
   const minute = 60 * 1000;
   const hour = 60 * minute;
   const day = 24 * hour;
-  if (diff < minute) return '刚刚';
-  if (diff < hour) return `${Math.floor(diff / minute)} 分钟前`;
-  if (diff < day) return `${Math.floor(diff / hour)} 小时前`;
-  if (diff < 7 * day) return `${Math.floor(diff / day)} 天前`;
+  if (diff < minute) return t('layout.header.justNow');
+  if (diff < hour) return t('layout.header.minutesAgo', { count: Math.floor(diff / minute) });
+  if (diff < day) return t('layout.header.hoursAgo', { count: Math.floor(diff / hour) });
+  if (diff < 7 * day) return t('layout.header.daysAgo', { count: Math.floor(diff / day) });
   return `${date.getMonth() + 1}-${date.getDate()}`;
 };
 
 const handleLogout = async () => {
   const confirmed = await new Promise<boolean>((resolve) => {
     const dialog = DialogPlugin.confirm({
-      header: '退出登录',
-      body: '确认退出当前账户吗？',
+      header: t('layout.header.signOut'),
+      body: t('layout.header.logoutBody'),
       confirmBtn: t('layout.header.confirmSignOut'),
       onConfirm: () => {
         dialog.destroy();

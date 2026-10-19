@@ -3,13 +3,13 @@
     <div class="record-detail-toolbar">
       <t-button variant="text" theme="default" @click="emit('back')">
         <template #icon><chevron-left-icon /></template>
-        {{ backText }}
+        {{ backText || $t('recordDetail.back') }}
       </t-button>
       <div class="record-detail-toolbar__actions">
         <slot name="toolbar-actions" />
         <t-button variant="outline" :loading="loading" @click="emit('refresh')">
           <template #icon><refresh-icon /></template>
-          刷新
+          {{ $t('recordDetail.refresh') }}
         </t-button>
       </div>
     </div>
@@ -18,12 +18,12 @@
       <div v-if="ready" class="record-detail-shell">
         <section class="record-detail-summary">
           <div class="record-detail-summary__identity">
-            <span>{{ eyebrow }}</span>
+            <span>{{ eyebrow || $t('recordDetail.eyebrow') }}</span>
             <strong>{{ title || '-' }}</strong>
             <p v-if="description">{{ description }}</p>
           </div>
           <div v-if="statusLabel" class="record-detail-summary__status">
-            <span>状态</span>
+            <span>{{ $t('recordDetail.status') }}</span>
             <t-tag :theme="normalizedStatusTheme" variant="light">{{ statusLabel }}</t-tag>
           </div>
           <div v-for="metric in visibleMetrics" :key="metric.label" class="record-detail-summary__metric">
@@ -49,7 +49,7 @@
           </div>
         </section>
       </div>
-      <t-empty v-else-if="!loading" :description="emptyText" />
+      <t-empty v-else-if="!loading" :description="emptyText || $t('recordDetail.empty')" />
     </t-loading>
   </div>
 </template>
@@ -93,8 +93,8 @@ const props = withDefaults(
   {
     loading: false,
     ready: false,
-    backText: '返回',
-    eyebrow: '详情',
+    backText: '',
+    eyebrow: '',
     title: '',
     description: '',
     statusLabel: '',
@@ -102,14 +102,14 @@ const props = withDefaults(
     metrics: () => [],
     tabs: () => [{ value: 'basic', label: t('recordDetail.basicInfo') }],
     activeTab: 'basic',
-    emptyText: t('recordDetail.empty'),
+    emptyText: '',
   },
 );
 
 const emit = defineEmits<{
-  (event: 'back'): void;
-  (event: 'refresh'): void;
-  (event: 'update:activeTab', value: string): void;
+  (_event: 'back'): void;
+  (_event: 'refresh'): void;
+  (_event: 'update:activeTab', _value: string): void;
 }>();
 
 const visibleMetrics = computed(() => props.metrics.filter((item) => item.show !== false));

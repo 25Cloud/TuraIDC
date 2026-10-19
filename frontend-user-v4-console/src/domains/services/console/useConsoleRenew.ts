@@ -61,7 +61,7 @@ export function useConsoleRenew(options: UseConsoleRenewOptions) {
       );
       renewForm.user_coupon_id = Number(res.data?.selected_user_coupon_id || 0);
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '加载续费信息失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.renewLoadFailed')));
     } finally {
       renewLoading.value = false;
     }
@@ -98,7 +98,7 @@ export function useConsoleRenew(options: UseConsoleRenewOptions) {
       MessagePlugin.success(t('serviceConsole.renew.invoiceCreated'));
       router.push(invoiceId > 0 ? `/client/invoices/${invoiceId}/pay` : '/client/invoices');
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '创建续费账单失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.renewCreateFailed')));
     } finally {
       renewSubmitting.value = false;
     }

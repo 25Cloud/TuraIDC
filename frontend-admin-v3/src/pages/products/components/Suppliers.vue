@@ -486,7 +486,9 @@
           :reveal="() => revealSupplierSecret(field)"
           @update:model-value="(value: string) => (supplierCredentialValues[field.key] = value)"
           @edited-change="(value: boolean) => (supplierSecretEdited[field.key] = value)"
-          @reveal-error="(error: unknown) => MessagePlugin.error(errorMessage(error, '读取敏感配置失败'))"
+          @reveal-error="
+            (error: unknown) => MessagePlugin.error(errorMessage(error, t('products.suppliers.revealSecretFailed')))
+          "
         />
         <t-input
           v-else
@@ -630,7 +632,7 @@ const supplierBatchSubmitting = ref(false);
 const supplierBatchSupplier = ref<SupplierRecord | null>(null);
 // 弹窗文案曾写死「ZJMF 财务」，换成任意上游插件后说明与事实不符，改为按当前供应商的插件名渲染
 const supplierBatchPluginLabel = computed(
-  () => String(supplierBatchSupplier.value?.provider_label || '').trim() || '上游',
+  () => String(supplierBatchSupplier.value?.provider_label || '').trim() || t('products.suppliers.upstream'),
 );
 const supplierBatchAction = ref<SupplierCardAction | null>(null);
 const supplierBatchProducts = ref<SupplierBatchProduct[]>([]);
@@ -874,7 +876,7 @@ function supplierCardFieldKey(field: SupplierCardField) {
 function supplierCardFieldValue(field: SupplierCardField) {
   const value = field.value;
   if (value === null || value === undefined || value === '') return '-';
-  if (typeof value === 'boolean') return value ? '是' : '否';
+  if (typeof value === 'boolean') return value ? t('products.suppliers.yes') : t('products.suppliers.no');
   return String(value);
 }
 
@@ -928,7 +930,7 @@ async function loadSuppliers() {
     supplierLoadBatchId += 1;
     suppliers.value = [];
     supplierTotal.value = 0;
-    MessagePlugin.error(errorMessage(error, '加载提供商失败'));
+    MessagePlugin.error(errorMessage(error, t('products.suppliers.loadProvidersFailed')));
   } finally {
     supplierLoading.value = false;
   }
@@ -952,7 +954,7 @@ async function executeSupplierCardAction(row: SupplierRecord, action: SupplierCa
       patchSupplierCard(row.id, card);
     }
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '执行插件动作失败'));
+    MessagePlugin.error(errorMessage(error, t('products.suppliers.pluginActionFailed')));
   } finally {
     if (supplierCardActionLoading.value === loadingKey) {
       supplierCardActionLoading.value = null;
@@ -976,7 +978,7 @@ function handleSupplierCardAction(row: SupplierRecord, action: SupplierCardActio
   }
 
   if (supplierCardActionDisabled(action)) {
-    MessagePlugin.warning(action.disabled_reason || '插件动作暂不可用');
+    MessagePlugin.warning(action.disabled_reason || t('products.suppliers.pluginActionUnavailable'));
     return;
   }
 
@@ -1065,7 +1067,7 @@ function buildRemoteProductTreeRows(products: SupplierBatchProduct[]): SupplierB
 
   products.forEach((product) => {
     const groupPath = remoteProductGroupPath(product);
-    const segments = groupPath.length ? groupPath : ['未分组'];
+    const segments = groupPath.length ? groupPath : [t('products.suppliers.ungrouped')];
     const groupKeyParts: string[] = [];
     let parentNode: SupplierBatchRemoteGroupNode | undefined;
     let siblings = roots;
@@ -1135,7 +1137,9 @@ function countRemoteGroupProducts(node: SupplierBatchRemoteGroupNode): number {
 }
 
 function normalizeSupplierTreeKeyPart(value: string) {
-  return encodeURIComponent(String(value || '未命名').trim() || '未命名');
+  return encodeURIComponent(
+    String(value || t('products.suppliers.untitled')).trim() || t('products.suppliers.untitled'),
+  );
 }
 
 function remoteProductGroupPath(product: SupplierBatchProduct): string[] {
@@ -1178,7 +1182,7 @@ function appendLocalGroupRows(
     key: rowKey,
     node_type: 'group',
     level,
-    label: String(group.label || group.name || `分类 #${group.id}`).trim(),
+    label: String(group.label || group.name || t('products.suppliers.categoryWithId', { id: group.id })).trim(),
     parentKey,
     count: countLocalGroupProducts(group, productsByGroupKey),
     hasChildren: children.length > 0 || groupProducts.length > 0,
@@ -1307,10 +1311,14 @@ function localProductSubtitle(product?: ProductRecord) {
   const upstreamBinding = toPlainRecord(product.upstream_binding);
   const supplierName = String(upstreamBinding.supplier_name || '').trim();
   const upstreamProductId = String(upstreamBinding.upstream_product_id || '').trim();
-  if (supplierName && upstreamProductId) return `提供商：${supplierName} · 上游ID：${upstreamProductId}`;
-  if (supplierName) return `提供商：${supplierName}`;
+  if (supplierName && upstreamProductId) {
+    return t('products.suppliers.providerProductSummary', { provider: supplierName, id: upstreamProductId });
+  }
+  if (supplierName) return t('products.suppliers.providerOnly', { provider: supplierName });
   return (
-    String(product.effective_product_group_full_name || product.product_type_label || '本地商品').trim() || '本地商品'
+    String(
+      product.effective_product_group_full_name || product.product_type_label || t('products.suppliers.localProduct'),
+    ).trim() || t('products.suppliers.localProduct')
   );
 }
 
@@ -1490,7 +1498,7 @@ async function loadSupplierBatchLocalProducts() {
     syncSupplierBatchLocalExpandedKeys();
   } catch (error) {
     supplierBatchLocalProducts.value = [];
-    MessagePlugin.error(errorMessage(error, '加载系统商品失败'));
+    MessagePlugin.error(errorMessage(error, t('products.suppliers.loadSystemProductsFailed')));
   }
 }
 
@@ -1508,7 +1516,7 @@ async function loadSupplierBatchProducts() {
     syncSupplierBatchLocalExpandedKeys();
   } catch (error) {
     supplierBatchProducts.value = [];
-    MessagePlugin.error(errorMessage(error, '加载上游商品失败'));
+    MessagePlugin.error(errorMessage(error, t('products.suppliers.loadRemoteProductsFailed')));
   } finally {
     supplierBatchLoading.value = false;
   }
@@ -1521,7 +1529,7 @@ async function openSupplierBatchDialog(row: SupplierRecord, action: SupplierCard
   }
 
   if (supplierCardActionDisabled(action)) {
-    MessagePlugin.warning(action.disabled_reason || '插件动作暂不可用');
+    MessagePlugin.warning(action.disabled_reason || t('products.suppliers.pluginActionUnavailable'));
     return;
   }
 
@@ -1534,7 +1542,7 @@ async function openSupplierBatchDialog(row: SupplierRecord, action: SupplierCard
     setAllSupplierBatchRemoteExpanded(true);
     setAllSupplierBatchLocalExpanded(true);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载批量对接数据失败'));
+    MessagePlugin.error(errorMessage(error, t('products.suppliers.loadBatchDataFailed')));
   }
 }
 
@@ -1612,7 +1620,7 @@ async function submitSupplierBatchConnect() {
     setAllSupplierBatchRemoteExpanded(true);
     setAllSupplierBatchLocalExpanded(true);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '批量对接失败'));
+    MessagePlugin.error(errorMessage(error, t('products.suppliers.batchConnectFailed')));
   } finally {
     supplierBatchSubmitting.value = false;
   }
@@ -1683,7 +1691,7 @@ async function submitSupplier() {
     supplierDialogVisible.value = false;
     await loadSuppliers();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存提供商失败'));
+    MessagePlugin.error(errorMessage(error, t('products.suppliers.saveProviderFailed')));
   } finally {
     supplierSubmitting.value = false;
   }
@@ -1698,7 +1706,7 @@ async function handleToggleSupplier(row: SupplierRecord) {
     MessagePlugin.success(t('products.suppliers.statusUpdated'));
     await loadSuppliers();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新状态失败'));
+    MessagePlugin.error(errorMessage(error, t('products.suppliers.updateStatusFailed')));
   } finally {
     supplierActionLoading.value = null;
   }
@@ -1708,8 +1716,8 @@ function handleDeleteSupplier(row: SupplierRecord) {
   if (!canManageSuppliers.value) return;
 
   const dialog = DialogPlugin.confirm({
-    header: '删除提供商',
-    body: `确认删除「${row.name || row.id}」吗？`,
+    header: t('products.suppliers.deleteProviderTitle'),
+    body: t('products.suppliers.deleteProviderConfirm', { name: row.name || row.id }),
     theme: 'warning',
     confirmBtn: t('common.confirmDelete'),
     cancelBtn: t('common.cancel'),
@@ -1721,7 +1729,7 @@ function handleDeleteSupplier(row: SupplierRecord) {
         dialog.hide();
         await loadSuppliers();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除提供商失败'));
+        MessagePlugin.error(errorMessage(error, t('products.suppliers.deleteProviderFailed')));
       } finally {
         supplierActionLoading.value = null;
       }
@@ -1819,8 +1827,8 @@ function defaultSupplierFieldValue(field: SupplierFormField) {
 
 function supplierFieldPlaceholder(field: SupplierFormField) {
   if (field.placeholder) return field.placeholder;
-  if (field.secret && editingSupplier.value) return '留空则保持原值';
-  return `请输入${field.label}`;
+  if (field.secret && editingSupplier.value) return t('products.suppliers.secretKeepPlaceholder');
+  return t('products.suppliers.fieldPlaceholder', { label: field.label });
 }
 
 function hasExistingSupplierSecret(field: SupplierFormField) {
@@ -1851,7 +1859,7 @@ function validateSupplierCredentialValues() {
     const value = supplierCredentialValues[field.key];
     const hasExistingSecret = hasExistingSupplierSecret(field);
     if (hasExistingSecret && String(value || '').trim() === '') continue;
-    if (String(value ?? '').trim() === '') return `请填写${field.label}`;
+    if (String(value ?? '').trim() === '') return t('products.suppliers.fieldRequired', { label: field.label });
   }
   return '';
 }

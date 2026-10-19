@@ -1,6 +1,12 @@
 <template>
   <section class="console-panel-section">
-    <data-state :loading="detailLoading" :empty="false" description="">
+    <data-state
+      :loading-text="$t('shared.state.loading')"
+      :empty-text="$t('shared.state.empty')"
+      :loading="detailLoading"
+      :empty="false"
+      description=""
+    >
       <!-- 流量概览：CDN / 虚拟主机唯一有真实用量的指标 -->
       <t-card
         v-if="trafficOverviewVisible"
@@ -140,6 +146,8 @@ import DataState from '@shared/user-v3/components/DataState.vue';
 import { JumpIcon } from 'tdesign-icons-vue-next';
 import { computed, ref } from 'vue';
 
+import { t } from '@/locales';
+
 import { useServiceConsoleContext } from '../context';
 import { InfoCell } from '../InfoCell';
 import type { PanelCapabilityState } from './panelSpecs';
@@ -157,16 +165,26 @@ const panelVisible = computed(() => Boolean(panelUrl.value || panelUsername.valu
 const revealedPassword = ref(false);
 
 const PANEL_TYPE_LABELS: Record<string, string> = {
-  cdn: 'CDN 节点调度面板',
-  panel: '主机管理面板',
-  cpanel: 'cPanel 面板',
-  directadmin: 'DirectAdmin 面板',
-  ftp: 'FTP 服务',
+  get cdn() {
+    return t('services.console.panelTypeCdn');
+  },
+  get panel() {
+    return t('services.console.panelTypePanel');
+  },
+  get cpanel() {
+    return t('services.console.panelTypeCpanel');
+  },
+  get directadmin() {
+    return t('services.console.panelTypeDirectadmin');
+  },
+  get ftp() {
+    return t('services.console.panelTypeFtp');
+  },
 };
 
 const panelHint = computed(() => {
   const type = String(panel.value.panel_type || '').trim();
-  return type && PANEL_TYPE_LABELS[type] ? PANEL_TYPE_LABELS[type] : '上游厂商提供的独立管理入口';
+  return type && PANEL_TYPE_LABELS[type] ? PANEL_TYPE_LABELS[type] : t('services.console.panelEntryFallback');
 });
 
 /** 保留首尾各 2 位，中间固定长度打码，长度不足时全打码 */
@@ -194,7 +212,7 @@ function openPanel() {
 /** 面板型产品没有操作系统概念，主机名位置改展示实例业务标识 */
 const primaryHostnameLabel = computed(() => {
   const type = String(detail.value.product?.type || '').toLowerCase();
-  return type === 'cdn' ? '实例标识' : '主机标识';
+  return type === 'cdn' ? t('services.console.cdnIdentifier') : t('services.console.hostIdentifier');
 });
 
 const primaryHostnameValue = computed(() => {

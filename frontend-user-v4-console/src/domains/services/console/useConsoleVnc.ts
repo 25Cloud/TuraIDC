@@ -71,7 +71,7 @@ export function useConsoleVnc(options: UseConsoleVncOptions) {
   async function requestVncUrl(targetWindow: Window | null = null): Promise<string> {
     const res = await clientApi.serviceVnc(serviceId.value, { silentError: true });
     const url = String(res.data?.url || '').trim();
-    if (!url) throw new Error('未获取到可用的 VNC 地址');
+    if (!url) throw new Error(t('serviceConsole.errors.vncUrlMissing'));
     const decoratedUrl = decorateVncUrl(url);
     const credentials = res.data?.vnc_credentials;
     storeVncCredentialsForUrl(decoratedUrl, credentials);
@@ -103,7 +103,7 @@ export function useConsoleVnc(options: UseConsoleVncOptions) {
       }
     } catch (error: unknown) {
       if (popup) popup.close();
-      MessagePlugin.error(resolveErrorMessage(error, '获取 VNC 地址失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.vncUrlFailed')));
     } finally {
       actionLoading.value = false;
     }

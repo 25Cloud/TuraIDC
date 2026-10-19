@@ -3,8 +3,8 @@
     :visible="visible"
     size="282px"
     :title="title"
-    cancel-text="取消"
-    confirm-text="确定"
+    :cancel-text="$t('common.cancel')"
+    :confirm-text="$t('common.confirm')"
     :close-on-press-modal="false"
     @close="$emit('close')"
     @cancel="$emit('close')"
@@ -35,10 +35,14 @@
 <script setup>
 import { ref, watch, onBeforeUnmount, nextTick } from "vue";
 import MobileSheet from "@/components/MobileSheet.vue";
+import { t } from "@/locales";
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
-  title: { type: String, default: "请选择" },
+  title: {
+    type: String,
+    default: () => t("product.list.selectOption"),
+  },
   options: { type: Array, default: () => [] },
   activeId: { type: String, default: "" },
 });

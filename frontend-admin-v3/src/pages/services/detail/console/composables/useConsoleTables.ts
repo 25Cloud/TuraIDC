@@ -56,10 +56,11 @@ export function resolveFinanceTagTheme(row: FinanceLedgerRecord) {
 
 export function resolveFinanceBusinessLabel(row: FinanceLedgerRecord) {
   const sceneKey = resolveFinanceBusinessKey(row);
-  if (sceneKey.includes('refund') || String(row?.event_type || '').includes('refund')) return '已退款';
-  if (sceneKey === 'auto_renew') return '自动续费';
-  if (sceneKey === 'manual_renew') return '手动续费';
-  if (sceneKey === 'purchase') return '产品购买';
+  if (sceneKey.includes('refund') || String(row?.event_type || '').includes('refund'))
+    return t('services.console.refunded');
+  if (sceneKey === 'auto_renew') return t('services.console.autoRenew');
+  if (sceneKey === 'manual_renew') return t('services.console.manualRenew');
+  if (sceneKey === 'purchase') return t('services.console.productPurchase');
 
   const label = String(
     row?.business_scene_label ||
@@ -69,8 +70,8 @@ export function resolveFinanceBusinessLabel(row: FinanceLedgerRecord) {
       resolveFinanceEventLabel(row?.event_type) ||
       '--',
   );
-  if (label.includes('退款')) return '已退款';
-  if (label === '购买') return '产品购买';
+  if (label.includes('退款')) return t('services.console.refunded');
+  if (label === '购买') return t('services.console.productPurchase');
 
   return label;
 }

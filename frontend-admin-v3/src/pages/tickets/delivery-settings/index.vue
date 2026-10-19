@@ -37,15 +37,25 @@
             {{ isEnabled(row) ? $t('tickets.deliverySettings.enabled') : $t('tickets.deliverySettings.disabled') }}
           </t-tag>
         </template>
-        <template #sync="{ row }">{{ isEnabledValue(row.sync_admin_replies) ? $t('tickets.deliverySettings.sync') : $t('tickets.deliverySettings.notSync') }}</template>
+        <template #sync="{ row }">{{
+          isEnabledValue(row.sync_admin_replies)
+            ? $t('tickets.deliverySettings.sync')
+            : $t('tickets.deliverySettings.notSync')
+        }}</template>
         <template #actions="{ row }">
           <t-space size="small">
-            <t-button v-if="canManage" theme="primary" variant="text" @click="openEditDialog(row)">{{ $t('tickets.deliverySettings.edit') }}</t-button>
+            <t-button v-if="canManage" theme="primary" variant="text" @click="openEditDialog(row)">{{
+              $t('tickets.deliverySettings.edit')
+            }}</t-button>
             <t-button v-if="canManage" variant="text" @click="toggleRule(row)">
               {{ isEnabled(row) ? $t('tickets.deliverySettings.disabled') : $t('tickets.deliverySettings.enabled') }}
             </t-button>
-            <t-button v-if="canManage" theme="danger" variant="text" @click="confirmDelete(row)">{{ $t('tickets.deliverySettings.delete') }}</t-button>
-            <t-button v-if="!canManage" variant="text" @click="openEditDialog(row)">{{ $t('tickets.deliverySettings.view') }}</t-button>
+            <t-button v-if="canManage" theme="danger" variant="text" @click="confirmDelete(row)">{{
+              $t('tickets.deliverySettings.delete')
+            }}</t-button>
+            <t-button v-if="!canManage" variant="text" @click="openEditDialog(row)">{{
+              $t('tickets.deliverySettings.view')
+            }}</t-button>
           </t-space>
         </template>
       </t-table>
@@ -60,7 +70,9 @@
                   <span>{{ row.department || '-' }}</span>
                 </div>
                 <t-tag :theme="isEnabled(row) ? 'success' : 'default'" variant="light">
-                  {{ isEnabled(row) ? $t('tickets.deliverySettings.enabled') : $t('tickets.deliverySettings.disabled') }}
+                  {{
+                    isEnabled(row) ? $t('tickets.deliverySettings.enabled') : $t('tickets.deliverySettings.disabled')
+                  }}
                 </t-tag>
               </div>
               <dl>
@@ -78,7 +90,13 @@
                 </div>
                 <div>
                   <dt>{{ $t('tickets.deliverySettings.adminReply') }}</dt>
-                  <dd>{{ isEnabledValue(row.sync_admin_replies) ? $t('tickets.deliverySettings.sync') : $t('tickets.deliverySettings.notSync') }}</dd>
+                  <dd>
+                    {{
+                      isEnabledValue(row.sync_admin_replies)
+                        ? $t('tickets.deliverySettings.sync')
+                        : $t('tickets.deliverySettings.notSync')
+                    }}
+                  </dd>
                 </div>
               </dl>
               <div class="ticket-delivery-mobile-card__actions">
@@ -86,11 +104,13 @@
                   canManage ? $t('tickets.deliverySettings.edit') : $t('tickets.deliverySettings.view')
                 }}</t-button>
                 <t-button v-if="canManage" size="small" variant="text" @click="toggleRule(row)">
-                  {{ isEnabled(row) ? $t('tickets.deliverySettings.disabled') : $t('tickets.deliverySettings.enabled') }}
+                  {{
+                    isEnabled(row) ? $t('tickets.deliverySettings.disabled') : $t('tickets.deliverySettings.enabled')
+                  }}
                 </t-button>
-                <t-button v-if="canManage" size="small" theme="danger" variant="text" @click="confirmDelete(row)"
-                  >{{ $t('tickets.deliverySettings.delete') }}</t-button
-                >
+                <t-button v-if="canManage" size="small" theme="danger" variant="text" @click="confirmDelete(row)">{{
+                  $t('tickets.deliverySettings.delete')
+                }}</t-button>
               </div>
             </article>
           </div>
@@ -98,10 +118,7 @@
         </t-loading>
       </div>
 
-      <t-empty
-        v-if="!isMobile && !loading && rules.length === 0"
-        :description="$t('tickets.deliverySettings.empty')"
-      />
+      <t-empty v-if="!isMobile && !loading && rules.length === 0" :description="$t('tickets.deliverySettings.empty')" />
     </t-card>
 
     <t-dialog
@@ -198,8 +215,12 @@
         </div>
         <t-form-item :label="$t('tickets.deliverySettings.ruleOptions')">
           <t-space direction="vertical" size="small">
-            <t-checkbox v-model="form.enabled" :disabled="!canManage">{{ $t('tickets.deliverySettings.enableRule') }}</t-checkbox>
-            <t-checkbox v-model="form.sync_admin_replies" :disabled="!canManage">{{ $t('tickets.deliverySettings.syncAdminReplies') }}</t-checkbox>
+            <t-checkbox v-model="form.enabled" :disabled="!canManage">{{
+              $t('tickets.deliverySettings.enableRule')
+            }}</t-checkbox>
+            <t-checkbox v-model="form.sync_admin_replies" :disabled="!canManage">{{
+              $t('tickets.deliverySettings.syncAdminReplies')
+            }}</t-checkbox>
           </t-space>
         </t-form-item>
         <t-form-item :label="$t('tickets.deliverySettings.maskKeywords')" name="mask_keywords">
@@ -257,7 +278,9 @@
           <span class="ticket-delivery-guard-hint">{{ $t('tickets.deliverySettings.blockNonWhitelistedTip') }}</span>
         </t-form-item>
         <t-form-item :label="$t('tickets.deliverySettings.unusedRetention')">
-          <span>{{ uploadGuard.unused_retention_minutes }} {{ $t('tickets.deliverySettings.unusedRetentionUnit') }}</span>
+          <span
+            >{{ uploadGuard.unused_retention_minutes }} {{ $t('tickets.deliverySettings.unusedRetentionUnit') }}</span
+          >
         </t-form-item>
       </t-form>
     </t-card>
@@ -359,7 +382,9 @@ const formRules: Record<string, FormRule[]> = {
   ],
   department: [{ required: true, message: t('tickets.deliverySettings.selectDepartment'), type: 'error' }],
   supplier_id: [{ required: true, message: t('tickets.deliverySettings.selectSupplier'), type: 'error' }],
-  upstream_department_id: [{ required: true, message: t('tickets.deliverySettings.selectUpstreamDepartment'), type: 'error' }],
+  upstream_department_id: [
+    { required: true, message: t('tickets.deliverySettings.selectUpstreamDepartment'), type: 'error' },
+  ],
   product_scope_mode: [{ required: true, message: t('tickets.deliverySettings.selectProductScope'), type: 'error' }],
   product_ids: [
     {
@@ -411,7 +436,7 @@ async function loadUpstreamDepartments(supplierId: number | string, configuredId
     if (configuredId && !departments.some((department) => String(department.id) === String(configuredId))) {
       departments.unshift({
         id: String(configuredId),
-        name: `当前已配置：${configuredId}`,
+        name: t('tickets.deliverySettings.configuredDepartment', { id: configuredId }),
         description: t('tickets.deliverySettings.upstreamDepartmentGone'),
       });
     }
@@ -419,9 +444,15 @@ async function loadUpstreamDepartments(supplierId: number | string, configuredId
   } catch (error) {
     if (requestId !== departmentsRequestId) return;
     upstreamDepartments.value = configuredId
-      ? [{ id: String(configuredId), name: `当前已配置：${configuredId}`, description: t('tickets.deliverySettings.departmentListFailed') }]
+      ? [
+          {
+            id: String(configuredId),
+            name: t('tickets.deliverySettings.configuredDepartment', { id: configuredId }),
+            description: t('tickets.deliverySettings.departmentListFailed'),
+          },
+        ]
       : [];
-    MessagePlugin.error(errorMessage(error, '加载上游部门失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.deliverySettings.loadUpstreamDepartmentsFailed')));
   } finally {
     if (requestId === departmentsRequestId) departmentsLoading.value = false;
   }
@@ -465,7 +496,7 @@ async function loadSupplierProducts(supplierId: number | string) {
   } catch (error) {
     if (requestId !== productsRequestId) return;
     supplierProducts.value = [];
-    MessagePlugin.error(errorMessage(error, '加载已绑定产品失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.deliverySettings.loadBoundProductsFailed')));
   }
 }
 
@@ -481,15 +512,25 @@ async function handleSupplierChange(value: SelectValue) {
 }
 
 function supplierLabel(supplier: SupplierRecord) {
-  return `${supplier.name || `供应商 #${supplier.id}`} · ${supplier.provider_label || supplier.provider_key || '未知类型'}`;
+  const name = supplier.name || t('tickets.deliverySettings.supplierWithId', { id: supplier.id });
+  const type = supplier.provider_label || supplier.provider_key || t('tickets.deliverySettings.unknownType');
+  return `${name} · ${type}`;
 }
 
 function supplierName(id: unknown) {
-  return suppliers.value.find((supplier) => String(supplier.id) === String(id))?.name || `供应商 #${id || '-'}`;
+  return (
+    suppliers.value.find((supplier) => String(supplier.id) === String(id))?.name ||
+    t('tickets.deliverySettings.supplierWithId', { id: id || '-' })
+  );
 }
 
 function productLabel(product: ProductRecord) {
-  return product.display_name || product.name || product.product_display_name || `产品 #${product.id}`;
+  return (
+    product.display_name ||
+    product.name ||
+    product.product_display_name ||
+    t('tickets.deliverySettings.productWithId', { id: product.id })
+  );
 }
 
 function productNames(ids: Array<number | string> = []) {
@@ -497,11 +538,13 @@ function productNames(ids: Array<number | string> = []) {
     .map((id) => products.value.find((product) => String(product.id) === String(id)))
     .filter(Boolean)
     .map((product) => productLabel(product as ProductRecord));
-  return names.length ? names.join('、') : '指定产品';
+  return names.length ? names.join('、') : t('tickets.deliverySettings.specifiedProducts');
 }
 
 function scopeLabel(row: TicketDeliveryRuleRecord) {
-  return row.product_scope_mode === 'all' ? '全部产品' : productNames(row.product_ids || []);
+  return row.product_scope_mode === 'all'
+    ? t('tickets.deliverySettings.allProducts')
+    : productNames(row.product_ids || []);
 }
 
 function isEnabledValue(value: unknown) {
@@ -534,7 +577,7 @@ async function loadRules() {
     rules.value = response.list || [];
   } catch (error) {
     rules.value = [];
-    MessagePlugin.error(errorMessage(error, '加载工单传递规则失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.deliverySettings.loadRulesFailed')));
   } finally {
     loading.value = false;
   }
@@ -544,7 +587,7 @@ async function loadPage() {
   try {
     await Promise.all([loadOptions(), loadRules(), loadUploadGuard()]);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载工单传递设置失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.deliverySettings.loadSettingsFailed')));
   }
 }
 
@@ -560,7 +603,7 @@ async function loadUploadGuard() {
     uploadGuard.block_non_whitelisted = config.block_non_whitelisted !== false;
     uploadGuard.unused_retention_minutes = Number(config.unused_retention_minutes ?? 5);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载上传防护配置失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.deliverySettings.loadUploadGuardFailed')));
   }
 }
 
@@ -585,7 +628,7 @@ async function saveUploadGuard() {
     uploadGuard.block_non_whitelisted = saved.block_non_whitelisted !== false;
     MessagePlugin.success(t('tickets.deliverySettings.uploadGuardSaved'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存上传防护配置失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.deliverySettings.saveUploadGuardFailed')));
   } finally {
     guardSaving.value = false;
   }
@@ -667,7 +710,7 @@ async function submitForm() {
     dialogVisible.value = false;
     await loadRules();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存工单传递规则失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.deliverySettings.saveRuleFailed')));
   } finally {
     saving.value = false;
   }
@@ -692,19 +735,21 @@ async function toggleRule(row: TicketDeliveryRuleRecord) {
       sync_admin_replies: isEnabledValue(row.sync_admin_replies),
       mask_keywords: row.mask_keywords || '',
     });
-    MessagePlugin.success(isEnabled(row) ? '规则已停用' : '规则已启用');
+    MessagePlugin.success(
+      isEnabled(row) ? t('tickets.deliverySettings.ruleDisabled') : t('tickets.deliverySettings.ruleEnabled'),
+    );
     await loadRules();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '更新规则状态失败'));
+    MessagePlugin.error(errorMessage(error, t('tickets.deliverySettings.updateStatusFailed')));
   }
 }
 
 function confirmDelete(row: TicketDeliveryRuleRecord) {
   if (!canManage.value) return;
   const dialog = DialogPlugin.confirm({
-    header: '删除工单传递规则',
-    body: `确认删除规则「${row.name || row.id}」？删除后无法恢复。`,
-    confirmBtn: { content: '删除', theme: 'danger' },
+    header: t('tickets.deliverySettings.deleteRuleTitle'),
+    body: t('tickets.deliverySettings.deleteRuleConfirm', { name: row.name || row.id }),
+    confirmBtn: { content: t('common.confirmDelete'), theme: 'danger' },
     cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       try {
@@ -713,7 +758,7 @@ function confirmDelete(row: TicketDeliveryRuleRecord) {
         await loadRules();
         dialog.destroy();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除工单传递规则失败'));
+        MessagePlugin.error(errorMessage(error, t('tickets.deliverySettings.deleteFailed')));
       }
     },
   });

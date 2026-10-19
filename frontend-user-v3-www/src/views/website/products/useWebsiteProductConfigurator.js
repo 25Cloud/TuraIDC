@@ -1,5 +1,5 @@
-import { computed, reactive } from 'vue'
-import { t } from '@/locales'
+import { computed, reactive } from "vue";
+import { t } from "@/locales";
 import {
   buildOsGroups,
   buildPricingEntries,
@@ -7,126 +7,176 @@ import {
   parseField,
   parseParamOptions,
   REGION_FIELD_KEYS,
-} from '@/utils/websiteProductConfig'
-import { resolveNumberOptionBounds } from '@/domains/products/configNumberOptionBounds'
-import { isCpuConfigKey, resolveMachineSpecPresentation } from './machineSpecResolver'
+} from "@/utils/websiteProductConfig";
+import { resolveNumberOptionBounds } from "@/domains/products/configNumberOptionBounds";
+import {
+  isCpuConfigKey,
+  resolveMachineSpecPresentation,
+} from "./machineSpecResolver";
 
-const MACHINE_KEYS = ['cpu', 'core', 'memory', 'ram', 'disk', 'storage', 'ssd', 'hdd', '系统盘', '数据盘', '内存', '硬盘']
-const NETWORK_KEYS = ['bandwidth', 'traffic', 'ip', 'flow', 'net', 'port', 'speed', 'mbps', '带宽', '流量', '下行', '上行', 'ipv4', 'ipv6', '数量']
+const MACHINE_KEYS = [
+  "cpu",
+  "core",
+  "memory",
+  "ram",
+  "disk",
+  "storage",
+  "ssd",
+  "hdd",
+  "系统盘",
+  "数据盘",
+  "内存",
+  "硬盘",
+];
+const NETWORK_KEYS = [
+  "bandwidth",
+  "traffic",
+  "ip",
+  "flow",
+  "net",
+  "port",
+  "speed",
+  "mbps",
+  "带宽",
+  "流量",
+  "下行",
+  "上行",
+  "ipv4",
+  "ipv6",
+  "数量",
+];
 const REGION_FLAGS = {
-  美国: '🇺🇸',
-  US: '🇺🇸',
-  香港: '🇭🇰',
-  HK: '🇭🇰',
-  日本: '🇯🇵',
-  JP: '🇯🇵',
-  新加坡: '🇸🇬',
-  SG: '🇸🇬',
-  韩国: '🇰🇷',
-  KR: '🇰🇷',
-  台湾: '🇹🇼',
-  TW: '🇹🇼',
-  德国: '🇩🇪',
-  DE: '🇩🇪',
-  英国: '🇬🇧',
-  GB: '🇬🇧',
-  中国: '🇨🇳',
-  CN: '🇨🇳',
-}
-const QTY_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19]
+  美国: "🇺🇸",
+  US: "🇺🇸",
+  香港: "🇭🇰",
+  HK: "🇭🇰",
+  日本: "🇯🇵",
+  JP: "🇯🇵",
+  新加坡: "🇸🇬",
+  SG: "🇸🇬",
+  韩国: "🇰🇷",
+  KR: "🇰🇷",
+  台湾: "🇹🇼",
+  TW: "🇹🇼",
+  德国: "🇩🇪",
+  DE: "🇩🇪",
+  英国: "🇬🇧",
+  GB: "🇬🇧",
+  中国: "🇨🇳",
+  CN: "🇨🇳",
+};
+const QTY_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19];
 
 // 上游把「明确禁止」这类购买须知做成了普通单选配置项，后端归一化后
 // option_mode 会是 text。这类项只展示文案，不能进选配控件、不能计价、不能提交。
-const TEXT_OPTION_MODE = 'text'
+const TEXT_OPTION_MODE = "text";
 // 区间型（滑块/数量）的呈现模式，由后端 Presenter 归一化下发
-const RANGE_OPTION_MODE = 'range'
+const RANGE_OPTION_MODE = "range";
 
 export function useWebsiteProductConfigurator(productDetail) {
-  const configForm = reactive({})
+  const configForm = reactive({});
 
   function isNumberField(item) {
     // 提示型项即使 option_type 落在区间型里也按数量算，会得到 0~0 的滑块，
     // 这里直接排除，由 noticeConfigs 单独渲染文案。
-    if (String(item.option_mode || '') === TEXT_OPTION_MODE) {
-      return false
+    if (String(item.option_mode || "") === TEXT_OPTION_MODE) {
+      return false;
     }
 
     // option_mode 是后端判区间的权威口径（isRangeConfigOption：mode 非空时
     // 直接以 mode === 'range' 为准）。只认 option_type 会漏 —— 历史数据把区间项
     // 存成字符串 'quantity'，经接口 (int) 转换后到这里已经是 0，判不出区间型。
-    if (String(item.option_mode || '') === RANGE_OPTION_MODE) {
-      return true
+    if (String(item.option_mode || "") === RANGE_OPTION_MODE) {
+      return true;
     }
 
     // 兜底仍是 option_type：兼容未下发 option_mode 的老数据。
     // 'quantity' 是历史字符串写法，Number('quantity') 是 NaN、落在集合外。
-    const rawType = String(item.option_type ?? '').trim().toLowerCase()
-    if (rawType === 'quantity' || QTY_OPTION_TYPES.includes(Number(item.option_type))) {
-      return true
+    const rawType = String(item.option_type ?? "")
+      .trim()
+      .toLowerCase();
+    if (
+      rawType === "quantity" ||
+      QTY_OPTION_TYPES.includes(Number(item.option_type))
+    ) {
+      return true;
     }
 
-    const minQ = Number(item.qty_minimum ?? -1)
-    const maxQ = Number(item.qty_maximum ?? -1)
+    const minQ = Number(item.qty_minimum ?? -1);
+    const maxQ = Number(item.qty_maximum ?? -1);
     if (minQ >= 0 && maxQ >= 0 && minQ === maxQ && !item.parameter) {
-      return true
+      return true;
     }
 
-    const parameter = String(item.parameter || '').trim()
-    return parameter !== '' && /^\d+$/.test(parameter)
+    const parameter = String(item.parameter || "").trim();
+    return parameter !== "" && /^\d+$/.test(parameter);
   }
 
   function parseSubOptions(item) {
-    const subs = Array.isArray(item.sub) ? item.sub.filter((subItem) => !subItem.hidden) : []
+    const subs = Array.isArray(item.sub)
+      ? item.sub.filter((subItem) => !subItem.hidden)
+      : [];
     if (subs.length > 1) {
       return subs.map((subItem) => {
-        const version = String(subItem.version || subItem.option_name || subItem.option_name_first || '')
-        const parts = version.split('^')
-        const label = parts[parts.length - 1] || version || String(subItem.id)
+        const version = String(
+          subItem.version ||
+            subItem.option_name ||
+            subItem.option_name_first ||
+            "",
+        );
+        const parts = version.split("^");
+        const label = parts[parts.length - 1] || version || String(subItem.id);
         // value 是上游 parameter 里的真实传参值；option_name_first 在旧数据里
         // 等于 sub 的自增 id，优先用 value，避免把 id 提交给上游。
         const value = String(
-          subItem.value
-          || subItem.option_name_first
-          || subItem.qty_minimum
-          || label
-          || subItem.id
-        )
+          subItem.value ||
+            subItem.option_name_first ||
+            subItem.qty_minimum ||
+            label ||
+            subItem.id,
+        );
 
         return {
           id: String(subItem.id),
           label,
           value,
-        }
-      })
+        };
+      });
     }
 
-    return parseParamOptions(item.parameter)
+    return parseParamOptions(item.parameter);
   }
 
   function resolveTextContent(item) {
-    const explicit = String(item.text_content || '').trim()
+    const explicit = String(item.text_content || "").trim();
     if (explicit) {
-      return explicit
+      return explicit;
     }
 
-    const subs = Array.isArray(item.sub) ? item.sub.filter((subItem) => !subItem.hidden) : []
+    const subs = Array.isArray(item.sub)
+      ? item.sub.filter((subItem) => !subItem.hidden)
+      : [];
     if (subs.length === 1) {
-      const only = String(subs[0].option_name || subs[0].label || '').trim()
+      const only = String(subs[0].option_name || subs[0].label || "").trim();
       if (only) {
-        return only
+        return only;
       }
     }
 
-    return String(item.description || '').trim()
+    return String(item.description || "").trim();
   }
 
   function parseConfigItem(item) {
-    const { key, label } = parseField(item)
-    const isNum = isNumberField(item)
-    const subOptions = parseSubOptions(item)
-    const options = isNum ? [] : subOptions
-    const bounds = resolveNumberOptionBounds(item)
-    const defaultNum = isNum ? (bounds.hasExplicitMin ? bounds.min : (Number(item.parameter) || 1)) : 0
+    const { key, label } = parseField(item);
+    const isNum = isNumberField(item);
+    const subOptions = parseSubOptions(item);
+    const options = isNum ? [] : subOptions;
+    const bounds = resolveNumberOptionBounds(item);
+    const defaultNum = isNum
+      ? bounds.hasExplicitMin
+        ? bounds.min
+        : Number(item.parameter) || 1
+      : 0;
 
     return {
       key,
@@ -134,15 +184,15 @@ export function useWebsiteProductConfigurator(productDetail) {
       hidden: item.hidden === 1,
       sortOrder: Number(item.sort_order || 0),
       isNumber: isNum,
-      isTextNotice: String(item.option_mode || '') === TEXT_OPTION_MODE,
+      isTextNotice: String(item.option_mode || "") === TEXT_OPTION_MODE,
       textContent: resolveTextContent(item),
       defaultNum,
       min: isNum ? bounds.min : undefined,
       max: isNum ? bounds.max : undefined,
-      unit: String(item.unit || item.suffix_text || '').trim(),
+      unit: String(item.unit || item.suffix_text || "").trim(),
       options,
       subOptions,
-    }
+    };
   }
 
   // field 是上游传参键，会被复用到与规格无关的项上：虚拟主机与 CDN 的全部
@@ -151,69 +201,90 @@ export function useWebsiteProductConfigurator(productDetail) {
   // 消失。名称必须同时命中；名称为空时没有第二判据，退回只看 key。
   function matchesConfigKeywords(cfg, keywords) {
     const hit = (text) =>
-      keywords.some((keyword) => String(text).toLowerCase().includes(keyword.toLowerCase()))
-    const label = String(cfg.label || '').trim()
+      keywords.some((keyword) =>
+        String(text).toLowerCase().includes(keyword.toLowerCase()),
+      );
+    const label = String(cfg.label || "").trim();
 
-    return hit(cfg.key) && (!label || hit(label))
+    return hit(cfg.key) && (!label || hit(label));
   }
 
   function isMachine(cfg) {
-    return matchesConfigKeywords(cfg, MACHINE_KEYS)
+    return matchesConfigKeywords(cfg, MACHINE_KEYS);
   }
 
   function isNetwork(cfg) {
-    return matchesConfigKeywords(cfg, NETWORK_KEYS)
+    return matchesConfigKeywords(cfg, NETWORK_KEYS);
   }
 
   const allParsedConfigs = computed(() => {
-    const raw = productDetail.value?.config_options || []
+    const raw = productDetail.value?.config_options || [];
     return raw
       .map(parseConfigItem)
-      .filter((cfg) => cfg.key && !cfg.hidden && !OS_KEYS.includes(cfg.key) && !REGION_FIELD_KEYS.includes(cfg.key))
-      .sort((left, right) => left.sortOrder - right.sortOrder)
-  })
+      .filter(
+        (cfg) =>
+          cfg.key &&
+          !cfg.hidden &&
+          !OS_KEYS.includes(cfg.key) &&
+          !REGION_FIELD_KEYS.includes(cfg.key),
+      )
+      .sort((left, right) => left.sortOrder - right.sortOrder);
+  });
 
   // 提示型配置项（如「明确禁止」）不参与选配：单独收集为购买须知展示
   const noticeConfigs = computed(() =>
     allParsedConfigs.value.filter((cfg) => cfg.isTextNotice),
-  )
+  );
 
   const machineConfigs = computed(() =>
     allParsedConfigs.value.filter((cfg) => !cfg.isTextNotice && isMachine(cfg)),
-  )
+  );
   const networkConfigs = computed(() =>
-    allParsedConfigs.value.filter((cfg) => !cfg.isTextNotice && !isMachine(cfg) && isNetwork(cfg)),
-  )
+    allParsedConfigs.value.filter(
+      (cfg) => !cfg.isTextNotice && !isMachine(cfg) && isNetwork(cfg),
+    ),
+  );
   const otherConfigs = computed(() =>
-    allParsedConfigs.value.filter((cfg) => !cfg.isTextNotice && !isMachine(cfg) && !isNetwork(cfg)),
-  )
+    allParsedConfigs.value.filter(
+      (cfg) => !cfg.isTextNotice && !isMachine(cfg) && !isNetwork(cfg),
+    ),
+  );
 
   const regionOptions = computed(() => {
-    const raw = productDetail.value?.config_options || []
+    const raw = productDetail.value?.config_options || [];
     const item = raw.find((configItem) => {
-      const { key } = parseField(configItem)
-      return REGION_FIELD_KEYS.includes(key)
-    })
+      const { key } = parseField(configItem);
+      return REGION_FIELD_KEYS.includes(key);
+    });
 
     if (!item) {
-      return []
+      return [];
     }
 
-    const options = parseSubOptions(item).length ? parseSubOptions(item) : parseParamOptions(item.parameter)
+    const options = parseSubOptions(item).length
+      ? parseSubOptions(item)
+      : parseParamOptions(item.parameter);
     return options.map((option) => {
-      const flag = Object.entries(REGION_FLAGS).find(([keyword]) => option.label.includes(keyword))?.[1] || ''
-      return { ...option, flag }
-    })
-  })
+      const flag =
+        Object.entries(REGION_FLAGS).find(([keyword]) =>
+          option.label.includes(keyword),
+        )?.[1] || "";
+      return { ...option, flag };
+    });
+  });
 
   const regionConfigItem = computed(() => {
-    const raw = productDetail.value?.config_options || []
-    return raw.find((item) => {
-      const { key } = parseField(item)
-      return REGION_FIELD_KEYS.includes(key)
-    }) || null
-  })
-  const regionFieldKey = computed(() => parseField(regionConfigItem.value || {}).key || 'region')
+    const raw = productDetail.value?.config_options || [];
+    return (
+      raw.find((item) => {
+        const { key } = parseField(item);
+        return REGION_FIELD_KEYS.includes(key);
+      }) || null
+    );
+  });
+  const regionFieldKey = computed(
+    () => parseField(regionConfigItem.value || {}).key || "region",
+  );
 
   /**
    * 地区值的唯一读写入口。
@@ -225,173 +296,224 @@ export function useWebsiteProductConfigurator(productDetail) {
    */
   const regionValue = computed({
     get: () => {
-      const key = regionFieldKey.value
-      const value = configForm[key]
+      const key = regionFieldKey.value;
+      const value = configForm[key];
 
-      return value !== undefined && value !== null && value !== '' ? value : configForm.region || ''
+      return value !== undefined && value !== null && value !== ""
+        ? value
+        : configForm.region || "";
     },
     set: (value) => {
-      configForm[regionFieldKey.value] = value
-      configForm.region = value
+      configForm[regionFieldKey.value] = value;
+      configForm.region = value;
     },
-  })
+  });
 
   const osConfig = computed(() => {
-    const raw = productDetail.value?.config_options || []
+    const raw = productDetail.value?.config_options || [];
     return raw.find((item) => {
-      const { key } = parseField(item)
-      return OS_KEYS.includes(key) && item.hidden !== 1
-    })
-  })
-  const osFieldKey = computed(() => parseField(osConfig.value || {}).key || 'os')
-  const osGroups = computed(() => buildOsGroups(osConfig.value, { preferSub: true }))
-  const currentOsGroup = computed(() => osGroups.value.find((group) => group.id === configForm.os_group))
+      const { key } = parseField(item);
+      return OS_KEYS.includes(key) && item.hidden !== 1;
+    });
+  });
+  const osFieldKey = computed(
+    () => parseField(osConfig.value || {}).key || "os",
+  );
+  const osGroups = computed(() =>
+    buildOsGroups(osConfig.value, { preferSub: true }),
+  );
+  const currentOsGroup = computed(() =>
+    osGroups.value.find((group) => group.id === configForm.os_group),
+  );
   const currentOsVersionLabel = computed(() => {
-    const version = currentOsGroup.value?.versions?.find((item) => item.id === configForm.os)
-    return version?.label || '已选'
-  })
+    const version = currentOsGroup.value?.versions?.find(
+      (item) => item.id === configForm.os,
+    );
+    return version?.label || t("product.configurator.selected");
+  });
 
-  const pricingEntries = computed(() => buildPricingEntries(productDetail.value))
-  const selectedMachineSpec = computed(() => resolveMachineSpecPresentation(
-    productDetail.value,
-    {
+  const pricingEntries = computed(() =>
+    buildPricingEntries(productDetail.value),
+  );
+  const selectedMachineSpec = computed(() =>
+    resolveMachineSpecPresentation(productDetail.value, {
       cpu: configForm.cpu,
       memory: configForm.memory,
-    },
-  ))
+    }),
+  );
 
   const summaryItems = computed(() => {
-    const items = []
+    const items = [];
 
-    const regionId = regionValue.value
+    const regionId = regionValue.value;
     if (regionId) {
-      const region = regionOptions.value.find((item) => item.id === regionId)
+      const region = regionOptions.value.find((item) => item.id === regionId);
       if (region) {
-        items.push({ key: 'region', label: t('websiteProduct.summary.region'), value: region.label })
+        items.push({
+          key: "region",
+          label: t("websiteProduct.summary.region"),
+          value: region.label,
+        });
       }
     }
 
     if (configForm.os) {
-      const version = currentOsGroup.value?.versions?.find((item) => item.id === configForm.os)
+      const version = currentOsGroup.value?.versions?.find(
+        (item) => item.id === configForm.os,
+      );
       if (version) {
-        items.push({ key: 'os', label: t('websiteProduct.summary.os'), value: version.label })
+        items.push({
+          key: "os",
+          label: t("websiteProduct.summary.os"),
+          value: version.label,
+        });
       }
     }
 
-    const cpuModelName = String(productDetail.value?.cpu_model_name || '').trim()
+    const cpuModelName = String(
+      productDetail.value?.cpu_model_name || "",
+    ).trim();
     if (cpuModelName) {
-      items.push({ key: 'cpu_model_name', label: t('websiteProduct.summary.cpuModel'), value: cpuModelName })
+      items.push({
+        key: "cpu_model_name",
+        label: t("websiteProduct.summary.cpuModel"),
+        value: cpuModelName,
+      });
     }
 
     if (selectedMachineSpec.value.cpuText) {
-      items.push({ key: 'cpu_spec', label: 'CPU', value: selectedMachineSpec.value.cpuText })
+      items.push({
+        key: "cpu_spec",
+        label: "CPU",
+        value: selectedMachineSpec.value.cpuText,
+      });
     }
 
     if (selectedMachineSpec.value.memoryText) {
-      items.push({ key: 'memory_spec', label: t('websiteProduct.summary.memory'), value: selectedMachineSpec.value.memoryText })
+      items.push({
+        key: "memory_spec",
+        label: t("websiteProduct.summary.memory"),
+        value: selectedMachineSpec.value.memoryText,
+      });
     }
 
-    const allConfigs = [...machineConfigs.value, ...networkConfigs.value, ...otherConfigs.value]
+    const allConfigs = [
+      ...machineConfigs.value,
+      ...networkConfigs.value,
+      ...otherConfigs.value,
+    ];
     for (const cfg of allConfigs) {
       if (isCpuConfigKey(cfg.key, cfg.label)) {
-        continue
+        continue;
       }
 
-      if (cfg.key === 'memory' || cfg.key === 'ram') {
-        continue
+      if (cfg.key === "memory" || cfg.key === "ram") {
+        continue;
       }
 
       if (cfg.isNumber) {
-        const value = configForm[cfg.key + '_num']
+        const value = configForm[cfg.key + "_num"];
         if (value !== undefined && value !== null) {
-          items.push({ key: cfg.key, label: cfg.label, value: formatConfigSummaryValue(cfg, value) })
+          items.push({
+            key: cfg.key,
+            label: cfg.label,
+            value: formatConfigSummaryValue(cfg, value),
+          });
         }
-        continue
+        continue;
       }
 
-      const value = configForm[cfg.key]
+      const value = configForm[cfg.key];
       if (!value) {
-        continue
+        continue;
       }
 
-      const option = cfg.options.find((item) => item.id === value)
+      const option = cfg.options.find((item) => item.id === value);
       if (option) {
-        items.push({ key: cfg.key, label: cfg.label, value: option.label })
+        items.push({ key: cfg.key, label: cfg.label, value: option.label });
       }
     }
 
-    return items
-  })
+    return items;
+  });
 
   function selectOsGroup(os) {
-    configForm.os_group = os.id
+    configForm.os_group = os.id;
     if (os.versions?.length) {
-      configForm.os = os.versions[0].id
+      configForm.os = os.versions[0].id;
     }
   }
 
   function formatConfigSummaryValue(cfg, value) {
-    const text = String(value ?? '').trim()
+    const text = String(value ?? "").trim();
     if (!text) {
-      return ''
+      return "";
     }
 
-    const key = String(cfg.key || '').toLowerCase()
-    const unit = String(cfg.unit || '').trim()
+    const key = String(cfg.key || "").toLowerCase();
+    const unit = String(cfg.unit || "").trim();
     if (unit && Number.isFinite(Number(text))) {
-      return `${text}${unit}`
+      return `${text}${unit}`;
     }
 
-    if (['system_disk_size', 'data_disk_size'].includes(key)) {
-      return `${text}G`
+    if (["system_disk_size", "data_disk_size"].includes(key)) {
+      return `${text}G`;
     }
 
-    if (['bw', 'in_bw', 'out_bw', 'bandwidth'].includes(key)) {
-      return `${text}Mbps`
+    if (["bw", "in_bw", "out_bw", "bandwidth"].includes(key)) {
+      return `${text}Mbps`;
     }
 
-    if (['flow_limit', 'traffic'].includes(key)) {
-      return `${text}G`
+    if (["flow_limit", "traffic"].includes(key)) {
+      return `${text}G`;
     }
 
-    if (['ip_num', 'ipv6_num', 'snap_num', 'backup_num'].includes(key)) {
-      return `${text}个`
+    if (["ip_num", "ipv6_num", "snap_num", "backup_num"].includes(key)) {
+      return t("product.configurator.unitCount", { text });
     }
 
-    return text
+    return text;
   }
 
   function resetConfigForm() {
     Object.keys(configForm).forEach((key) => {
-      delete configForm[key]
-    })
+      delete configForm[key];
+    });
   }
 
   function buildConfigPayload() {
-    const payload = {}
+    const payload = {};
 
     if (regionValue.value) {
       // 地区同样只能提交上游认的传参值：regionValue 里存的是选项 id（UI 选中标记），
       // 直接发出去等于把库里的自增 id 当地区参数，与其它配置项的约定相反。
       const selectedRegion = regionOptions.value.find(
         (option) => String(option.id) === String(regionValue.value),
-      )
+      );
       payload[regionFieldKey.value] =
-        selectedRegion && selectedRegion.value ? selectedRegion.value : regionValue.value
+        selectedRegion && selectedRegion.value
+          ? selectedRegion.value
+          : regionValue.value;
     }
 
     if (configForm.os) {
-      payload[osFieldKey.value] = configForm.os
+      payload[osFieldKey.value] = configForm.os;
     }
 
-    const allConfigs = [...machineConfigs.value, ...networkConfigs.value, ...otherConfigs.value]
+    const allConfigs = [
+      ...machineConfigs.value,
+      ...networkConfigs.value,
+      ...otherConfigs.value,
+    ];
     for (const cfg of allConfigs) {
       if (cfg.isNumber) {
-        const value = Number(configForm[cfg.key + '_num'] ?? cfg.defaultNum ?? 0)
+        const value = Number(
+          configForm[cfg.key + "_num"] ?? cfg.defaultNum ?? 0,
+        );
         if (Number.isFinite(value) && value > 0) {
-          payload[cfg.key] = value
+          payload[cfg.key] = value;
         }
-        continue
+        continue;
       }
 
       // configForm[cfg.key] 存的是被选中项的 id —— 那是 UI 的选中标记，
@@ -399,51 +521,62 @@ export function useWebsiteProductConfigurator(productDetail) {
       // 与 parseSubOptions 里「优先用 value，避免把 id 提交给上游」的约定相反。
       // 这里按 id 回查选项并提交它的 value；查不到时才退回 id 本身
       // （parseParamOptions 兜底解析出的项没有 value，其 id 就是真实传参值）。
-      const selectedId = configForm[cfg.key]
-      if (selectedId === undefined || selectedId === null || selectedId === '') {
-        continue
+      const selectedId = configForm[cfg.key];
+      if (
+        selectedId === undefined ||
+        selectedId === null ||
+        selectedId === ""
+      ) {
+        continue;
       }
 
-      const matched = cfg.options.find((opt) => String(opt.id) === String(selectedId))
-      const submitValue = matched && matched.value !== undefined && matched.value !== ''
-        ? matched.value
-        : selectedId
+      const matched = cfg.options.find(
+        (opt) => String(opt.id) === String(selectedId),
+      );
+      const submitValue =
+        matched && matched.value !== undefined && matched.value !== ""
+          ? matched.value
+          : selectedId;
 
-      payload[cfg.key] = submitValue
+      payload[cfg.key] = submitValue;
     }
 
-    return payload
+    return payload;
   }
 
-  function initProductDefaults({ selectedCycleRef, quantityRef, resetQuoteState }) {
-    resetConfigForm()
+  function initProductDefaults({
+    selectedCycleRef,
+    quantityRef,
+    resetQuoteState,
+  }) {
+    resetConfigForm();
 
     if (pricingEntries.value.length) {
-      selectedCycleRef.value = pricingEntries.value[0].cycle
+      selectedCycleRef.value = pricingEntries.value[0].cycle;
     }
 
     allParsedConfigs.value.forEach((cfg) => {
       // 提示型配置项（如「明确禁止」）只用于展示购买须知，
       // 写进configForm 会覆盖同 key 真实规格的默认值。
-      if (cfg.isTextNotice) return
+      if (cfg.isTextNotice) return;
 
       if (cfg.isNumber) {
-        configForm[cfg.key + '_num'] = cfg.defaultNum
+        configForm[cfg.key + "_num"] = cfg.defaultNum;
       } else if (cfg.options.length) {
-        configForm[cfg.key] = cfg.options[0].id
+        configForm[cfg.key] = cfg.options[0].id;
       }
-    })
+    });
 
     if (regionOptions.value.length) {
-      regionValue.value = regionOptions.value[0].id
+      regionValue.value = regionOptions.value[0].id;
     }
 
     if (osGroups.value.length) {
-      selectOsGroup(osGroups.value[0])
+      selectOsGroup(osGroups.value[0]);
     }
 
-    quantityRef.value = 1
-    resetQuoteState?.()
+    quantityRef.value = 1;
+    resetQuoteState?.();
   }
 
   return {
@@ -466,5 +599,5 @@ export function useWebsiteProductConfigurator(productDetail) {
     resetConfigForm,
     buildConfigPayload,
     initProductDefaults,
-  }
+  };
 }

@@ -1,8 +1,8 @@
 import { MessagePlugin } from 'tdesign-vue-next';
 import { reactive, ref } from 'vue';
 
-import { t } from '@/locales';
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type { ConsoleServiceDetail } from '@/types/client';
 
 import { resolveErrorMessage } from './useConsoleCore';
@@ -11,11 +11,11 @@ export interface UseConsoleDialogsOptions {
   serviceId: { value: number };
   detail: { value: ConsoleServiceDetail };
   actionLoading: { value: boolean };
-  setOperationStatus: (type: string, label: string) => void;
-  loadRemoteStatus: (silent: boolean) => Promise<void>;
+  setOperationStatus: (_type: string, _label: string) => void;
+  loadRemoteStatus: (_silent: boolean) => Promise<void>;
   clearStatusSyncTimer: () => void;
-  scheduleStatusSync: (callback: () => void, delay: number) => void;
-  mergeDetail: (patch: Partial<ConsoleServiceDetail>) => void;
+  scheduleStatusSync: (_callback: () => void, _delay: number) => void;
+  mergeDetail: (_patch: Partial<ConsoleServiceDetail>) => void;
 }
 
 export function useConsoleDialogs(options: UseConsoleDialogsOptions) {
@@ -51,7 +51,7 @@ export function useConsoleDialogs(options: UseConsoleDialogsOptions) {
       nameVisible.value = false;
       MessagePlugin.success(t('serviceConsole.instanceNameSaved'));
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '实例名称保存失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.nameSaveFailed')));
     } finally {
       nameSubmitting.value = false;
     }
@@ -74,7 +74,7 @@ export function useConsoleDialogs(options: UseConsoleDialogsOptions) {
       remarkVisible.value = false;
       MessagePlugin.success(t('serviceConsole.remarkSaved'));
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '备注保存失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.remarkSaveFailed')));
     } finally {
       remarkSubmitting.value = false;
     }
@@ -135,15 +135,15 @@ export function useConsoleDialogs(options: UseConsoleDialogsOptions) {
         password_confirmation: passwordForm.password_confirmation,
       });
       const payload = res.data || {};
-      setOperationStatus('repassword', '重置密码中');
+      setOperationStatus('repassword', t('serviceConsole.errors.passwordResetting'));
       passwordVisible.value = false;
       passwordForm.password = '';
       passwordForm.password_confirmation = '';
-      MessagePlugin.success(String(payload.message || '重置密码指令已提交'));
+      MessagePlugin.success(String(payload.message || t('serviceConsole.errors.passwordSubmitted')));
       clearStatusSyncTimer();
       scheduleStatusSync(() => loadRemoteStatus(true), 1500);
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '重置密码失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.passwordResetFailed')));
     } finally {
       actionLoading.value = false;
     }

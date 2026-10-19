@@ -4,6 +4,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+import { t } from '@/locales';
+
 const props = defineProps({
   src: {
     type: String,
@@ -15,7 +17,7 @@ const props = defineProps({
   },
   alt: {
     type: String,
-    default: '布局缩略图',
+    default: '',
   },
   type: {
     type: String,
@@ -24,7 +26,7 @@ const props = defineProps({
 });
 
 const imageUrl = computed(() => props.url || props.src);
-const altText = computed(() => props.alt || '布局缩略图');
+const altText = computed(() => props.alt || t('components.thumbnailAlt'));
 const className = computed(() => {
   return [
     'thumbnail-container',

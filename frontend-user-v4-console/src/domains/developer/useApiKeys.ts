@@ -15,9 +15,9 @@ export const SCOPE_DOMAINS = [
 export type ScopeLevel = 'read' | 'write';
 
 export function resolveScopeLevelLabel(level: unknown) {
-  if (level === 'write') return '读写';
-  if (level === 'read') return '只读';
-  return '无';
+  if (level === 'write') return t('apiKeys.scopeWrite');
+  if (level === 'read') return t('apiKeys.scopeRead');
+  return t('apiKeys.scopeNone');
 }
 
 export function resolveScopeTheme(level: unknown) {
@@ -76,7 +76,7 @@ export function useApiKeys() {
       const response = await clientApi.apiKeys();
       list.value = Array.isArray(response.data?.list) ? response.data.list : [];
     } catch (error: unknown) {
-      listError.value = getErrorMessage(error, 'API 密钥列表加载失败');
+      listError.value = getErrorMessage(error, t('apiKeys.listLoadFailed'));
       MessagePlugin.error(listError.value);
     } finally {
       loading.value = false;
@@ -154,7 +154,9 @@ export function useApiKeys() {
         await loadList();
       }
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, dialogMode.value === 'create' ? '创建失败' : '更新失败'));
+      MessagePlugin.error(
+        getErrorMessage(error, dialogMode.value === 'create' ? t('apiKeys.createFailed') : t('apiKeys.updateFailed')),
+      );
     } finally {
       submitting.value = false;
     }
@@ -164,10 +166,10 @@ export function useApiKeys() {
     const next = key.status === 'enabled' ? 'disabled' : 'enabled';
     try {
       await clientApi.setApiKeyStatus(key.id, next);
-      MessagePlugin.success(next === 'enabled' ? '密钥已启用' : '密钥已停用');
+      MessagePlugin.success(next === 'enabled' ? t('apiKeys.enableSuccess') : t('apiKeys.disableSuccess'));
       await loadList();
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '操作失败'));
+      MessagePlugin.error(getErrorMessage(error, t('apiKeys.actionFailed')));
     }
   }
 
@@ -177,7 +179,7 @@ export function useApiKeys() {
       MessagePlugin.success(t('apiKeys.deleted'));
       await loadList();
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '删除失败'));
+      MessagePlugin.error(getErrorMessage(error, t('apiKeys.deleteFailed')));
     }
   }
 
@@ -203,7 +205,7 @@ export function useApiKeys() {
       const response = await clientApi.apiKeyUsageLogs(key.id);
       logs.value = Array.isArray(response.data?.list) ? response.data.list : [];
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '调用日志加载失败'));
+      MessagePlugin.error(getErrorMessage(error, t('apiKeys.logsLoadFailed')));
     } finally {
       logLoading.value = false;
     }

@@ -336,7 +336,7 @@ async function loadCatalog() {
     const response = await adminApi.cpuModelCatalog.list();
     rebuildCatalogState(response.list || []);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载 CPU 型号目录失败'));
+    MessagePlugin.error(errorMessage(error, t('products.cpuModels.loadFailed')));
   } finally {
     loading.value = false;
   }
@@ -403,7 +403,9 @@ async function handleSubmitGroup() {
       activeGroupId.value = nextGroup.id;
     }
     groupDialogVisible.value = false;
-    MessagePlugin.success(editingGroupId.value ? 'CPU 分组已更新' : 'CPU 分组已添加');
+    MessagePlugin.success(
+      editingGroupId.value ? t('products.cpuModels.groupUpdated') : t('products.cpuModels.groupCreated'),
+    );
   } finally {
     groupSubmitting.value = false;
   }
@@ -448,7 +450,9 @@ async function handleSubmitModel() {
       };
     });
     modelDialogVisible.value = false;
-    MessagePlugin.success(editingModelId.value ? 'CPU 型号已更新' : 'CPU 型号已添加');
+    MessagePlugin.success(
+      editingModelId.value ? t('products.cpuModels.modelUpdated') : t('products.cpuModels.modelCreated'),
+    );
   } finally {
     modelSubmitting.value = false;
   }
@@ -456,8 +460,8 @@ async function handleSubmitModel() {
 
 function handleDeleteGroup(group: CpuGroup) {
   const dialog = DialogPlugin.confirm({
-    header: '删除 CPU 分组',
-    body: `确认删除「${group.name || group.id}」吗？`,
+    header: t('products.cpuModels.deleteGroupTitle'),
+    body: t('products.cpuModels.deleteGroupConfirm', { name: group.name || group.id }),
     theme: 'warning',
     confirmBtn: t('common.confirmDelete'),
     cancelBtn: t('common.cancel'),
@@ -473,8 +477,8 @@ function handleDeleteModel(model: CpuModel) {
   if (!currentGroup.value) return;
   const groupId = currentGroup.value.id;
   const dialog = DialogPlugin.confirm({
-    header: '删除 CPU 型号',
-    body: `确认删除「${model.name || model.id}」吗？`,
+    header: t('products.cpuModels.deleteModelTitle'),
+    body: t('products.cpuModels.deleteModelConfirm', { name: model.name || model.id }),
     theme: 'warning',
     confirmBtn: t('common.confirmDelete'),
     cancelBtn: t('common.cancel'),
@@ -533,7 +537,7 @@ async function handleSave() {
     rebuildCatalogState(response.list || []);
     MessagePlugin.success(t('products.cpuModels.catalogSaved'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存 CPU 型号目录失败'));
+    MessagePlugin.error(errorMessage(error, t('products.cpuModels.saveFailed')));
   } finally {
     saving.value = false;
   }

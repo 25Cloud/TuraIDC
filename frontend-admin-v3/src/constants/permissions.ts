@@ -1,3 +1,5 @@
+import { t } from '@/locales';
+
 export const AdminPermissions = {
   ALL: '*',
   DASHBOARD_VIEW: 'dashboard.view',
@@ -70,9 +72,15 @@ export const BUILTIN_ROLE_CODES = ['super_admin', 'admin', 'visitor'] as const;
 export type BuiltinRoleCode = (typeof BUILTIN_ROLE_CODES)[number];
 
 export const BUILTIN_ROLE_LABELS: Record<BuiltinRoleCode, string> = {
-  super_admin: '超级管理员',
-  admin: '普通管理员',
-  visitor: '访客',
+  get super_admin() {
+    return t('common.roleSuperAdmin');
+  },
+  get admin() {
+    return t('common.roleAdmin');
+  },
+  get visitor() {
+    return t('common.roleVisitor');
+  },
 };
 
 export const VISITOR_PERMISSION_CODES = [

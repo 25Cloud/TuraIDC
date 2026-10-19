@@ -125,7 +125,7 @@ async function loadStatus() {
       optimization: normalizeOptimization(payload.optimization),
     };
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载数据库状态失败'));
+    MessagePlugin.error(errorMessage(error, t('system.database.loadFailed')));
   } finally {
     loading.value = false;
   }
@@ -142,29 +142,33 @@ function handleOptimizeTables(tables: string[]) {
 
   if (tables.length === 0 && optimizationCoolingDown.value) {
     MessagePlugin.warning(
-      `数据库优化冷却中，请在 ${formatDuration(status.value.optimization.cooldown_remaining_seconds)} 后重试`,
+      t('system.database.optimizeCooldown', {
+        time: formatDuration(status.value.optimization.cooldown_remaining_seconds),
+      }),
     );
     return;
   }
 
   const isAll = tables.length === 0;
-  const label = isAll ? `全部 ${status.value.total_count} 张表的碎片` : `${tables.length} 张选中表`;
+  const label = isAll
+    ? t('system.database.allTablesLabel', { count: status.value.total_count })
+    : t('system.database.selectedTablesLabel', { count: tables.length });
   const dialog = DialogPlugin.confirm({
-    header: '优化数据表',
+    header: t('system.database.optimizeTitle'),
     body: isAll
-      ? `确认检查${label}？仅对可回收空间达到阈值的表执行 OPTIMIZE TABLE；该操作可能短暂锁表，请避开高峰期。`
-      : `确认对${label}执行 OPTIMIZE TABLE？该操作可能短暂锁表，请避开高峰期。`,
-    confirmBtn: { content: '确认优化', theme: 'warning' },
+      ? t('system.database.optimizeConfirmCheck', { label })
+      : t('system.database.optimizeConfirmRun', { label }),
+    confirmBtn: { content: t('system.database.confirmOptimize'), theme: 'warning' },
     cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       optimizing.value = true;
       try {
         const result = await databaseApi.optimize(isAll ? {} : { tables });
-        MessagePlugin.success(String(result.message || '数据表优化完成'));
+        MessagePlugin.success(String(result.message || t('system.database.optimizeDone')));
         await loadStatus();
         dialog.destroy();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '优化数据表失败'));
+        MessagePlugin.error(errorMessage(error, t('system.database.optimizeFailed')));
       } finally {
         optimizing.value = false;
       }
@@ -178,9 +182,9 @@ function handleExportBackup() {
   }
 
   const dialog = DialogPlugin.confirm({
-    header: '导出数据库备份',
-    body: '确认导出当前数据库完整 SQL 备份？文件可能较大，导出期间请勿重复点击。',
-    confirmBtn: { content: '确认导出', theme: 'primary' },
+    header: t('system.database.exportTitle'),
+    body: t('system.database.exportConfirm'),
+    confirmBtn: { content: t('system.database.confirmExport'), theme: 'primary' },
     cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       exporting.value = true;
@@ -189,7 +193,7 @@ function handleExportBackup() {
         MessagePlugin.success(t('system.database.backupExportStarted'));
         dialog.destroy();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '导出数据库备份失败'));
+        MessagePlugin.error(errorMessage(error, t('system.database.exportFailed')));
       } finally {
         exporting.value = false;
       }
@@ -246,9 +250,11 @@ function formatDuration(value: number) {
   const remainingSeconds = seconds % 60;
 
   if (minutes <= 0) {
-    return `${remainingSeconds} 秒`;
+    return t('system.database.seconds', { count: remainingSeconds });
   }
-  return remainingSeconds > 0 ? `${minutes} 分 ${remainingSeconds} 秒` : `${minutes} 分钟`;
+  return remainingSeconds > 0
+    ? t('system.database.minutesSeconds', { minutes, seconds: remainingSeconds })
+    : t('system.database.minutes', { count: minutes });
 }
 
 function hasPermission(permission: string) {

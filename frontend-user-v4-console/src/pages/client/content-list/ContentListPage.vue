@@ -53,21 +53,29 @@
 
         <t-card class="content-card list-card" :bordered="false">
           <template v-if="isNotice && unreadCount > 0" #actions>
-            <t-button theme="primary" variant="text" @click="handleMarkAllRead"
-              >全部标记已读 ({{ unreadCount }})</t-button
-            >
+            <t-button theme="primary" variant="text" @click="handleMarkAllRead">{{
+              $t('content.list.markAllRead', { count: unreadCount })
+            }}</t-button>
           </template>
-          <data-state :loading="loading" :empty="!articleList.length" :description="config.emptyText">
+          <data-state
+            :loading-text="$t('shared.state.loading')"
+            :empty-text="$t('shared.state.empty')"
+            :loading="loading"
+            :empty="!articleList.length"
+            :description="config.emptyText"
+          >
             <article v-for="item in articleList" :key="item.id" class="article-row">
               <div class="article-row__head">
                 <router-link class="article-row__title" :to="buildDetailRoute(item)">{{ item.title }}</router-link>
-                <t-tag v-if="Number(item.is_pinned) === 1" theme="danger" variant="light">置顶</t-tag>
+                <t-tag v-if="Number(item.is_pinned) === 1" theme="danger" variant="light">{{
+                  $t('content.list.pinned')
+                }}</t-tag>
               </div>
               <p v-if="item.excerpt">{{ item.excerpt }}</p>
               <div class="article-row__meta">
                 <span>{{ item.category_name || currentCategoryLabel }}</span>
                 <span>{{ item.publish_at || item.created_at || '--' }}</span>
-                <span>浏览量 {{ item.view_count || 0 }}</span>
+                <span>{{ $t('content.list.views', { count: item.view_count || 0 }) }}</span>
               </div>
             </article>
           </data-state>
@@ -92,7 +100,7 @@
               <strong>{{ item.title }}</strong>
             </router-link>
           </div>
-          <t-empty v-else description="暂无内容" />
+          <t-empty v-else :description="$t('content.list.empty')" />
         </t-card>
 
         <t-card class="content-card" :bordered="false">
@@ -103,7 +111,7 @@
               <span>{{ item.publish_at || item.created_at || '--' }}</span>
             </router-link>
           </div>
-          <t-empty v-else description="暂无内容" />
+          <t-empty v-else :description="$t('content.list.empty')" />
         </t-card>
       </aside>
     </div>

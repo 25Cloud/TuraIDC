@@ -11,10 +11,20 @@
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.role_id" clearable :placeholder="$t('admin.staff.filterRole')" @change="handleSearch">
+        <t-select
+          v-model="filters.role_id"
+          clearable
+          :placeholder="$t('admin.staff.filterRole')"
+          @change="handleSearch"
+        >
           <t-option v-for="role in roles" :key="role.id" :label="roleLabel(role)" :value="role.id" />
         </t-select>
-        <t-select v-model="filters.status" clearable :placeholder="$t('admin.staff.filterStatus')" @change="handleSearch">
+        <t-select
+          v-model="filters.status"
+          clearable
+          :placeholder="$t('admin.staff.filterStatus')"
+          @change="handleSearch"
+        >
           <t-option :label="$t('admin.staff.enabled')" :value="1" />
           <t-option :label="$t('admin.staff.disabled')" :value="0" />
         </t-select>
@@ -51,7 +61,11 @@
           <t-tag variant="light">{{ fieldValue(row.role_label || row.role?.label || row.role?.name) }}</t-tag>
         </template>
         <template #permissionCount="{ row }">
-          <span>{{ row.permissions?.includes('*') ? $t('admin.staff.allPermissions') : $t('admin.staff.permissionCount', { count: row.permissions?.length || 0 }) }}</span>
+          <span>{{
+            row.permissions?.includes('*')
+              ? $t('admin.staff.allPermissions')
+              : $t('admin.staff.permissionCount', { count: row.permissions?.length || 0 })
+          }}</span>
         </template>
         <template #status="{ row }">
           <t-tag :theme="Number(row.status) === 1 ? 'success' : 'danger'" variant="light">
@@ -66,10 +80,12 @@
         </template>
         <template #actions="{ row }">
           <t-space size="small">
-            <t-button v-if="canManage" theme="primary" variant="text" @click="openEditDialog(row)">{{ $t('admin.staff.edit') }}</t-button>
-            <t-button v-if="canEditStaffIdentity" theme="warning" variant="text" @click="openResetDialog(row)"
-              >{{ $t('admin.staff.resetPassword') }}</t-button
-            >
+            <t-button v-if="canManage" theme="primary" variant="text" @click="openEditDialog(row)">{{
+              $t('admin.staff.edit')
+            }}</t-button>
+            <t-button v-if="canEditStaffIdentity" theme="warning" variant="text" @click="openResetDialog(row)">{{
+              $t('admin.staff.resetPassword')
+            }}</t-button>
             <t-button
               v-if="canManage"
               :theme="Number(row.status) === 1 ? 'danger' : 'success'"
@@ -78,9 +94,9 @@
             >
               {{ Number(row.status) === 1 ? $t('admin.staff.disabled') : $t('admin.staff.enabled') }}
             </t-button>
-            <t-button v-if="canDeleteStaff(row)" theme="danger" variant="text" @click="handleDelete(row)"
-              >{{ $t('admin.staff.delete') }}</t-button
-            >
+            <t-button v-if="canDeleteStaff(row)" theme="danger" variant="text" @click="handleDelete(row)">{{
+              $t('admin.staff.delete')
+            }}</t-button>
           </t-space>
         </template>
       </t-table>
@@ -100,7 +116,9 @@
                 { label: $t('admin.staff.nicknameLabel'), value: fieldValue(row.nickname) },
                 {
                   label: $t('admin.staff.permissionLabel'),
-                  value: row.permissions?.includes('*') ? $t('admin.staff.allPermissions') : $t('admin.staff.permissionCount', { count: row.permissions?.length || 0 }),
+                  value: row.permissions?.includes('*')
+                    ? $t('admin.staff.allPermissions')
+                    : $t('admin.staff.permissionCount', { count: row.permissions?.length || 0 }),
                 },
                 { label: $t('admin.staff.lastLoginLabel'), value: fieldValue(row.last_login_at) },
                 { label: $t('admin.staff.lastLoginIpLabel'), value: fieldValue(row.last_login_ip) },
@@ -154,7 +172,11 @@
             <t-input v-model="form.password" type="password" />
           </t-form-item>
           <t-form-item :label="$t('admin.staff.statusLabel')" name="status">
-            <t-switch v-model="form.status" :custom-value="[1, 0]" :label="[$t('admin.staff.enabled'), $t('admin.staff.disabled')]" />
+            <t-switch
+              v-model="form.status"
+              :custom-value="[1, 0]"
+              :label="[$t('admin.staff.enabled'), $t('admin.staff.disabled')]"
+            />
           </t-form-item>
         </div>
       </t-form>
@@ -247,7 +269,7 @@ const pagination = computed(() => ({
 
 const formRules = computed<Record<string, FormRule[]>>(() => ({
   username: [
-    required('请输入登录账号'),
+    required(t('admin.staff.accountRequired')),
     {
       pattern: /^[\w.@-]+$/,
       message: t('admin.staff.accountPatternTip'),
@@ -255,12 +277,20 @@ const formRules = computed<Record<string, FormRule[]>>(() => ({
       trigger: 'blur',
     },
   ],
-  role_id: [required('请选择角色')],
-  password: form.id ? [] : [required('请输入初始密码'), { min: 8, message: t('admin.staff.initialPasswordMinLength'), type: 'error' }],
+  role_id: [required(t('admin.staff.roleRequired'))],
+  password: form.id
+    ? []
+    : [
+        required(t('admin.staff.initialPasswordRequired')),
+        { min: 8, message: t('admin.staff.initialPasswordMinLength'), type: 'error' },
+      ],
 }));
 const resetRules: Record<string, FormRule[]> = {
-  password: [required('请输入新密码'), { min: 8, message: t('admin.staff.newPasswordMinLength'), type: 'error' }],
-  password_confirmation: [required('请再次输入新密码')],
+  password: [
+    required(t('admin.staff.newPasswordRequired')),
+    { min: 8, message: t('admin.staff.newPasswordMinLength'), type: 'error' },
+  ],
+  password_confirmation: [required(t('admin.staff.confirmPasswordRequired'))],
 };
 const columns: PrimaryTableCol<TableRowData>[] = [
   { title: 'ID', colKey: 'id', width: 80 },
@@ -294,7 +324,7 @@ async function loadRoles() {
     const response = await adminStaffApi.roles();
     roles.value = response.list || [];
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载角色列表失败'));
+    MessagePlugin.error(errorMessage(error, t('admin.staff.loadRolesFailed')));
   }
 }
 
@@ -313,7 +343,7 @@ async function loadList() {
   } catch (error) {
     list.value = [];
     total.value = 0;
-    MessagePlugin.error(errorMessage(error, '加载员工列表失败'));
+    MessagePlugin.error(errorMessage(error, t('admin.staff.loadStaffFailed')));
   } finally {
     loading.value = false;
   }
@@ -333,14 +363,17 @@ function handlePageChange(pageInfo: PageInfo) {
 function staffMobileActions(row: StaffRecord) {
   if (!canManage.value) return [];
   const actions = [
-    { content: '编辑', value: 'edit' },
-    { content: Number(row.status) === 1 ? '停用' : '启用', value: 'toggle' },
+    { content: t('admin.staff.edit'), value: 'edit' },
+    {
+      content: Number(row.status) === 1 ? t('admin.staff.disabled') : t('admin.staff.enabled'),
+      value: 'toggle',
+    },
   ];
   if (canEditStaffIdentity.value) {
-    actions.splice(1, 0, { content: '重置密码', value: 'reset' });
+    actions.splice(1, 0, { content: t('admin.staff.resetPassword'), value: 'reset' });
   }
   if (canDeleteStaff(row)) {
-    actions.push({ content: '删除', value: 'delete' });
+    actions.push({ content: t('admin.staff.delete'), value: 'delete' });
   }
   return actions;
 }
@@ -396,7 +429,7 @@ async function submitForm() {
     formVisible.value = false;
     await loadList();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '保存员工失败'));
+    MessagePlugin.error(errorMessage(error, t('admin.staff.saveFailed')));
   } finally {
     saving.value = false;
   }
@@ -428,7 +461,7 @@ async function submitResetPassword() {
     MessagePlugin.success(t('admin.staff.passwordResetSuccess'));
     resetVisible.value = false;
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '重置密码失败'));
+    MessagePlugin.error(errorMessage(error, t('admin.staff.resetPasswordFailed')));
   } finally {
     resetting.value = false;
   }
@@ -437,9 +470,15 @@ async function submitResetPassword() {
 function handleToggleStatus(row: StaffRecord) {
   const enabling = Number(row.status) !== 1;
   const dialog = DialogPlugin.confirm({
-    header: enabling ? '启用员工' : '停用员工',
-    body: `确认${enabling ? '启用' : '停用'}员工「${row.username || row.nickname || row.id}」？`,
-    confirmBtn: { content: enabling ? '启用' : '停用', theme: enabling ? 'success' : 'danger' },
+    header: enabling ? t('admin.staff.enableStaffTitle') : t('admin.staff.disableStaffTitle'),
+    body: t('admin.staff.toggleConfirm', {
+      action: enabling ? t('admin.staff.enabled') : t('admin.staff.disabled'),
+      name: row.username || row.nickname || row.id,
+    }),
+    confirmBtn: {
+      content: enabling ? t('admin.staff.enabled') : t('admin.staff.disabled'),
+      theme: enabling ? 'success' : 'danger',
+    },
     cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       try {
@@ -448,7 +487,7 @@ function handleToggleStatus(row: StaffRecord) {
         await loadList();
         dialog.destroy();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '更新员工状态失败'));
+        MessagePlugin.error(errorMessage(error, t('admin.staff.toggleFailed')));
       }
     },
   });
@@ -456,9 +495,9 @@ function handleToggleStatus(row: StaffRecord) {
 
 function handleDelete(row: StaffRecord) {
   const dialog = DialogPlugin.confirm({
-    header: '删除员工',
-    body: `确认删除已停用员工「${row.username || row.nickname || row.id}」？删除后该员工将无法登录。`,
-    confirmBtn: { content: '删除', theme: 'danger' },
+    header: t('admin.staff.deleteTitle'),
+    body: t('admin.staff.deleteConfirm', { name: row.username || row.nickname || row.id }),
+    confirmBtn: { content: t('admin.staff.delete'), theme: 'danger' },
     cancelBtn: t('common.cancel'),
     onConfirm: async () => {
       try {
@@ -467,7 +506,7 @@ function handleDelete(row: StaffRecord) {
         await loadList();
         dialog.destroy();
       } catch (error) {
-        MessagePlugin.error(errorMessage(error, '删除员工失败'));
+        MessagePlugin.error(errorMessage(error, t('admin.staff.deleteFailed')));
       }
     },
   });

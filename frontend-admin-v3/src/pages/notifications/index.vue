@@ -33,7 +33,7 @@
               <t-space size="small">
                 <t-tag variant="light">{{ row.code }}</t-tag>
                 <t-tag :theme="row.audience === 'admin' ? 'warning' : 'success'" variant="light">
-                  {{ row.audience === 'admin' ? '管理员' : '用户' }}
+                  {{ row.audience === 'admin' ? $t('notifications.adminAudience') : $t('notifications.userAudience') }}
                 </t-tag>
               </t-space>
             </template>
@@ -44,12 +44,12 @@
             <template #variables="{ row }">{{ row.variables.length }}</template>
             <template #templateType="{ row }">
               <t-tag :theme="row.channel === 'email' ? 'primary' : 'success'" variant="light">{{
-                row.channel === 'email' ? '邮件' : '短信'
+                row.channel === 'email' ? $t('notifications.emailChannel') : $t('notifications.smsChannel')
               }}</t-tag>
             </template>
             <template #bodyType="{ row }">
               <t-tag :theme="row.isHtml ? 'primary' : 'default'" variant="light">{{
-                row.isHtml ? 'HTML' : '文本'
+                row.isHtml ? 'HTML' : $t('notifications.textType')
               }}</t-tag>
             </template>
             <template #status="{ row }">
@@ -57,7 +57,7 @@
                 <t-switch
                   v-model="row.is_enabled"
                   :custom-value="[true, false]"
-                  :label="['启用', '停用']"
+                  :label="[$t('notifications.enabled'), $t('notifications.disabled')]"
                   :loading="statusSavingKey === templateRowKey(row)"
                   @change="(value: unknown) => updateTemplateEnabled(row, value)"
                 />
@@ -85,41 +85,47 @@
             <p>{{ row.description }}</p>
             <dl>
               <div>
-                <dt>{{ row.channel === 'email' ? '主题' : '正文' }}</dt>
+                <dt>{{ row.channel === 'email' ? $t('notifications.dtSubject') : $t('notifications.dtBody') }}</dt>
                 <dd>{{ row.channel === 'email' ? fieldValue(row.subject) : row.preview }}</dd>
               </div>
               <div>
-                <dt>模板类型</dt>
-                <dd>{{ row.channel === 'email' ? '邮件' : '短信' }}</dd>
+                <dt>{{ $t('notifications.templateType') }}</dt>
+                <dd>
+                  {{ row.channel === 'email' ? $t('notifications.emailChannel') : $t('notifications.smsChannel') }}
+                </dd>
               </div>
               <div>
-                <dt>变量数</dt>
+                <dt>{{ $t('notifications.variableCount') }}</dt>
                 <dd>{{ row.variables.length }}</dd>
               </div>
               <div>
-                <dt>正文类型</dt>
-                <dd>{{ row.isHtml ? 'HTML' : '文本' }}</dd>
+                <dt>{{ $t('notifications.bodyType') }}</dt>
+                <dd>{{ row.isHtml ? 'HTML' : $t('notifications.textType') }}</dd>
               </div>
               <div>
-                <dt>发送状态</dt>
+                <dt>{{ $t('notifications.sendStatus') }}</dt>
                 <dd>
                   <t-switch
                     v-model="row.is_enabled"
                     :custom-value="[true, false]"
-                    :label="['启用', '停用']"
+                    :label="[$t('notifications.enabled'), $t('notifications.disabled')]"
                     :loading="statusSavingKey === templateRowKey(row)"
                     @change="(value: unknown) => updateTemplateEnabled(row, value)"
                   />
                 </dd>
               </div>
               <div v-if="row.channel === 'email'">
-                <dt>面向对象</dt>
-                <dd>{{ row.audience === 'admin' ? '管理员' : '用户' }}</dd>
+                <dt>{{ $t('notifications.audience') }}</dt>
+                <dd>
+                  {{ row.audience === 'admin' ? $t('notifications.adminAudience') : $t('notifications.userAudience') }}
+                </dd>
               </div>
             </dl>
             <div class="template-mobile-card__actions">
-              <t-button variant="outline" @click="openTestSend(row)">测试发送</t-button>
-              <t-button theme="primary" variant="outline" @click="openTemplate(row)">编辑</t-button>
+              <t-button variant="outline" @click="openTestSend(row)">{{ $t('notifications.testSend') }}</t-button>
+              <t-button theme="primary" variant="outline" @click="openTemplate(row)">{{
+                $t('notifications.edit')
+              }}</t-button>
             </div>
           </article>
         </div>
@@ -132,21 +138,25 @@
           <template #title>{{ $t('notifications.api.categoryList') }}</template>
           <div class="api-meta-grid">
             <article>
-              <span>接口</span><strong>{{ apiMeta.total || apiItems.length }}</strong>
+              <span>{{ $t('notifications.apiInterface') }}</span
+              ><strong>{{ apiMeta.total || apiItems.length }}</strong>
             </article>
             <article>
-              <span>模块</span><strong>{{ apiMeta.moduleCount || apiModules.length }}</strong>
+              <span>{{ $t('notifications.apiModule') }}</span
+              ><strong>{{ apiMeta.moduleCount || apiModules.length }}</strong>
             </article>
             <article>
-              <span>权限</span><strong>{{ apiMeta.accessCounts?.permission || 0 }}</strong>
+              <span>{{ $t('notifications.apiPermission') }}</span
+              ><strong>{{ apiMeta.accessCounts?.permission || 0 }}</strong>
             </article>
             <article>
-              <span>登录</span><strong>{{ apiMeta.accessCounts?.auth || 0 }}</strong>
+              <span>{{ $t('notifications.apiLogin') }}</span
+              ><strong>{{ apiMeta.accessCounts?.auth || 0 }}</strong>
             </article>
           </div>
           <div class="api-category-list">
             <button type="button" :class="{ active: selectedApiModule === 'all' }" @click="selectedApiModule = 'all'">
-              <span>全部接口</span>
+              <span>{{ $t('notifications.allApis') }}</span>
               <strong>{{ apiItems.length }}</strong>
             </button>
             <button
@@ -166,41 +176,45 @@
           <t-card :bordered="false">
             <div class="api-directory-head">
               <div>
-                <h2>API 接口页</h2>
+                <h2>{{ $t('notifications.apiPageTitle') }}</h2>
                 <p>
-                  数据来源：{{ apiMeta.dataSource || '-' }}，生成时间：{{ apiMeta.generatedAt || '-' }}，基础地址：{{
-                    apiMeta.baseURL || '/api'
+                  {{
+                    $t('notifications.apiMeta', {
+                      source: apiMeta.dataSource || '-',
+                      generated: apiMeta.generatedAt || '-',
+                      base: apiMeta.baseURL || '/api',
+                    })
                   }}
                 </p>
               </div>
-              <t-button variant="outline" @click="resetApiFilters">重置筛选</t-button>
+              <t-button variant="outline" @click="resetApiFilters">{{ $t('notifications.resetFilters') }}</t-button>
             </div>
             <div class="api-filter-grid">
-              <t-input v-model="apiFilters.keyword" clearable placeholder="搜索路径、权限码、控制器或源码文件">
+              <t-input v-model="apiFilters.keyword" clearable :placeholder="$t('notifications.searchApiPlaceholder')">
                 <template #suffix-icon><search-icon /></template>
               </t-input>
-              <t-select v-model="apiFilters.access" placeholder="访问级别">
-                <t-option label="全部级别" value="all" />
-                <t-option label="公开" value="public" />
-                <t-option label="仅登录" value="auth" />
-                <t-option label="登录 + 权限" value="permission" />
+              <t-select v-model="apiFilters.access" :placeholder="$t('notifications.accessLevel')">
+                <t-option :label="$t('notifications.allLevels')" value="all" />
+                <t-option :label="$t('notifications.publicAccess')" value="public" />
+                <t-option :label="$t('notifications.authOnly')" value="auth" />
+                <t-option :label="$t('notifications.permissionAccess')" value="permission" />
               </t-select>
-              <t-select v-model="apiFilters.method" placeholder="请求方法">
-                <t-option label="全部方法" value="all" />
+              <t-select v-model="apiFilters.method" :placeholder="$t('notifications.requestMethod')">
+                <t-option :label="$t('notifications.allMethods')" value="all" />
                 <t-option v-for="item in methodOptions" :key="item" :label="item" :value="item" />
               </t-select>
-              <t-select v-model="apiFilters.source" placeholder="前端来源">
-                <t-option label="全部来源" value="all" />
-                <t-option label="管理端前端" value="frontend-admin-v3" />
-                <t-option label="官网/用户入口" value="frontend-user-v3-www" />
-                <t-option label="用户控制台" value="frontend-user-v4-console" />
-                <t-option label="未发现前端调用" value="untracked" />
+              <t-select v-model="apiFilters.source" :placeholder="$t('notifications.frontendSource')">
+                <t-option :label="$t('notifications.allSources')" value="all" />
+                <t-option :label="$t('notifications.adminFrontend')" value="frontend-admin-v3" />
+                <t-option :label="$t('notifications.userWww')" value="frontend-user-v3-www" />
+                <t-option :label="$t('notifications.userConsole')" value="frontend-user-v4-console" />
+                <t-option :label="$t('notifications.untracked')" value="untracked" />
               </t-select>
             </div>
           </t-card>
 
           <t-card :bordered="false">
-            <template #title>接口明细</template>
+            <template #title>{{ $t('notifications.apiDetail') }}</template>
             <template #subtitle>Showing {{ filteredApiItems.length }} / {{ apiItems.length }}</template>
             <div class="table-scroll">
               <t-table row-key="id" :data="filteredApiItems" :columns="apiColumns" hover table-layout="fixed">
@@ -235,7 +249,7 @@
                 <template #handler="{ row }">
                   <div class="stack-cell">
                     <strong>{{ row.handler }}</strong>
-                    <span>{{ row.sourceFiles.length }} 个源码命中</span>
+                    <span>{{ $t('notifications.sourceMatches', { count: row.sourceFiles.length }) }}</span>
                   </div>
                 </template>
                 <template #actions="{ row }">
@@ -254,16 +268,27 @@
       v-model:visible="testSendVisible"
       :header="testSendDialogTitle"
       width="560px"
-      :confirm-btn="{ content: '确认发送', loading: testSending }"
+      :confirm-btn="{ content: $t('notifications.confirmSend'), loading: testSending }"
       @confirm="submitTestSend"
     >
       <div class="template-test-dialog">
         <div v-if="testSendTemplate" class="template-test-target">
           <strong>{{ testSendTemplate.name }}</strong>
-          <span>{{ testSendTemplate.channel === 'sms' ? '短信模板' : '邮件模板' }} · {{ testSendTemplate.code }}</span>
+          <span
+            >{{
+              testSendTemplate.channel === 'sms' ? $t('notifications.templateSms') : $t('notifications.templateEmail')
+            }}
+            · {{ testSendTemplate.code }}</span
+          >
         </div>
         <t-form label-align="top">
-          <t-form-item :label="testSendTemplate?.channel === 'sms' ? '接收手机号' : '接收邮箱地址'">
+          <t-form-item
+            :label="
+              testSendTemplate?.channel === 'sms'
+                ? $t('notifications.recipientPhone')
+                : $t('notifications.recipientEmail')
+            "
+          >
             <t-input
               v-model="testSendRecipient"
               :placeholder="testSendPlaceholder"
@@ -280,7 +305,12 @@
           :class="`template-test-feedback--${testSendResult.status}`"
         >
           <strong>{{ testSendSummaryText }}</strong>
-          <span>成功 {{ testSendResult.success_count }} 条，失败 {{ testSendResult.failed_count }} 条</span>
+          <span>{{
+            $t('notifications.successFailed', {
+              success: testSendResult.success_count,
+              failed: testSendResult.failed_count,
+            })
+          }}</span>
         </div>
         <div v-if="testSendResult?.results?.length" class="template-test-results">
           <div
@@ -290,7 +320,7 @@
           >
             <span>{{ item.recipient }}</span>
             <t-tag :theme="item.status === 'success' ? 'success' : 'danger'" variant="light">
-              {{ item.status === 'success' ? '成功' : '失败' }}
+              {{ item.status === 'success' ? $t('notifications.success') : $t('notifications.failed') }}
             </t-tag>
             <small v-if="item.error">{{ item.error }}</small>
           </div>
@@ -312,8 +342,8 @@ import type { NotificationTemplateItem, NotificationTemplateTestSendResponse, Se
 import { adminApi } from '@/api/admin';
 import apiCatalogData from '@/data/apiCatalog.generated.json';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { errorMessage } from '@/utils/userMessage';
 import { t } from '@/locales';
+import { errorMessage } from '@/utils/userMessage';
 
 defineOptions({ name: 'AdminNotifications' });
 
@@ -390,31 +420,43 @@ const apiItems = (apiCatalog.items || []).map((item) => ({
 const isMobile = useMediaQuery('(max-width: 768px)');
 const isTemplateTab = computed(() => activeTab.value === 'email-templates' || activeTab.value === 'sms-templates');
 const templateChannel = computed<TemplateChannel>(() => (activeTab.value === 'sms-templates' ? 'sms' : 'email'));
-const templateTitle = computed(() => (templateChannel.value === 'sms' ? '短信模板' : '邮件模板'));
+const templateTitle = computed(() =>
+  templateChannel.value === 'sms' ? t('notifications.templateSms') : t('notifications.templateEmail'),
+);
 const templateDescription = computed(() => {
   if (templateChannel.value === 'sms') {
-    return '\u77ED\u4FE1\u6A21\u677F\u7528\u4E8E\u9A8C\u8BC1\u7801\u3001\u8D26\u5355\u3001\u670D\u52A1\u3001\u5DE5\u5355\u548C\u5B89\u5168\u63D0\u9192\u7B49\u77ED\u4FE1\u5185\u5BB9\u7BA1\u7406\u3002';
+    return t('notifications.smsDescription');
   }
 
-  return '点击编辑进入独立详情页，维护每封邮件自己的主题和 HTML 正文。';
+  return t('notifications.emailDescription');
 });
 const testSendDialogTitle = computed(() =>
-  testSendTemplate.value?.channel === 'sms' ? '测试发送短信' : '测试发送邮件',
+  testSendTemplate.value?.channel === 'sms' ? t('notifications.testSendSms') : t('notifications.testSendEmail'),
 );
 const testSendPlaceholder = computed(() =>
   testSendTemplate.value?.channel === 'sms'
-    ? '请输入接收手机号，例如：13900001234'
-    : '请输入接收邮箱，例如：tester@example.com',
+    ? t('notifications.smsRecipientPlaceholder')
+    : t('notifications.emailRecipientPlaceholder'),
 );
 const testSendSummaryText = computed(() => {
   if (!testSendResult.value) return '';
-  if (testSendResult.value.status === 'success') return '测试发送成功';
-  if (testSendResult.value.status === 'partial_failed') return '测试发送部分失败';
-  return '测试发送失败';
+  if (testSendResult.value.status === 'success') return t('notifications.testSendSuccess');
+  if (testSendResult.value.status === 'partial_failed') return t('notifications.testSendPartialFailed');
+  return t('notifications.testSendFailed');
 });
 const templateAudienceOptions = computed(() => [
-  { label: `用户模板（${templateRows.value.filter((item) => item.audience === 'user').length}）`, value: 'user' },
-  { label: `管理员模板（${templateRows.value.filter((item) => item.audience === 'admin').length}）`, value: 'admin' },
+  {
+    label: t('notifications.userTemplateCount', {
+      count: templateRows.value.filter((item) => item.audience === 'user').length,
+    }),
+    value: 'user',
+  },
+  {
+    label: t('notifications.adminTemplateCount', {
+      count: templateRows.value.filter((item) => item.audience === 'admin').length,
+    }),
+    value: 'admin',
+  },
 ]);
 const templateRows = computed<TemplateRow[]>(() =>
   templateSummaries.value.map((template) => {
@@ -537,7 +579,7 @@ async function loadTemplates() {
     templateSummaries.value = templateResponse.list || [];
     settingsMap.value = normalizeSettings(response);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, `加载${templateTitle.value}列表失败`));
+    MessagePlugin.error(errorMessage(error, t('notifications.loadTemplatesFailed', { title: templateTitle.value })));
   } finally {
     templatesLoading.value = false;
   }
@@ -567,7 +609,11 @@ async function submitTestSend() {
 
   const recipient = normalizeRecipient(testSendRecipient.value, template.channel);
   if (!recipient) {
-    MessagePlugin.warning(template.channel === 'sms' ? '请输入接收手机号' : '请输入接收邮箱地址');
+    MessagePlugin.warning(
+      template.channel === 'sms'
+        ? t('notifications.recipientPhoneRequired')
+        : t('notifications.recipientEmailRequired'),
+    );
     return;
   }
 
@@ -581,12 +627,16 @@ async function submitTestSend() {
     testSendResult.value = result;
 
     if (result.failed_count > 0) {
-      MessagePlugin.warning(result.status === 'partial_failed' ? '测试发送部分失败' : '测试发送失败');
+      MessagePlugin.warning(
+        result.status === 'partial_failed'
+          ? t('notifications.testSendPartialFailed')
+          : t('notifications.testSendFailed'),
+      );
     } else {
       MessagePlugin.success(t('pages.notification.testSent'));
     }
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '测试发送失败'));
+    MessagePlugin.error(errorMessage(error, t('notifications.testSendFailed')));
   } finally {
     testSending.value = false;
   }
@@ -627,10 +677,10 @@ async function updateTemplateEnabled(row: TemplateRow | TableRowData, value: unk
         [templateEnabledSettingKey(template)]: enabled ? 1 : 0,
       },
     });
-    MessagePlugin.success(enabled ? '模板已启用' : '模板已停用');
+    MessagePlugin.success(enabled ? t('notifications.templateEnabled') : t('notifications.templateDisabled'));
   } catch (error) {
     setTemplateEnabled(template, previous);
-    MessagePlugin.error(errorMessage(error, '保存模板状态失败'));
+    MessagePlugin.error(errorMessage(error, t('notifications.saveTemplateStatusFailed')));
   } finally {
     if (statusSavingKey.value === key) statusSavingKey.value = '';
   }

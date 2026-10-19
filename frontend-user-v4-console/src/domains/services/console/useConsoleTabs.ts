@@ -133,7 +133,7 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       monitorState.charts = Array.isArray(payload.charts) ? payload.charts : [];
       monitorState.loaded = true;
     } catch (error: unknown) {
-      monitorState.error = resolveErrorMessage(error, '加载监控数据失败');
+      monitorState.error = resolveErrorMessage(error, t('serviceConsole.errors.monitorLoadFailed'));
     } finally {
       monitorState.loading = false;
     }
@@ -153,7 +153,7 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       natState.list = Array.isArray(payload.list) ? payload.list : [];
       natState.loaded = true;
     } catch (error: unknown) {
-      natState.error = resolveErrorMessage(error, '加载 NAT 转发失败');
+      natState.error = resolveErrorMessage(error, t('serviceConsole.errors.natLoadFailed'));
     } finally {
       natState.loading = false;
     }
@@ -193,10 +193,10 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       });
       natVisible.value = false;
       const message = String((response.data as { message?: unknown } | undefined)?.message || '').trim();
-      MessagePlugin.success(message || '端口转发创建成功');
+      MessagePlugin.success(message || t('serviceConsole.nat.createSuccess'));
       await loadNatForwardings();
     } catch (error: unknown) {
-      MessagePlugin.error(resolveErrorMessage(error, '创建端口转发失败'));
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.nat.createFailed')));
     } finally {
       natState.submitting = false;
     }
@@ -207,8 +207,8 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
     if (!forwardingId || forwarding.can_delete === false) return;
 
     const dialog = DialogPlugin.confirm({
-      header: '删除端口转发',
-      body: `确认删除端口转发“${String(forwarding.name || forwardingId)}”吗？`,
+      header: t('serviceConsole.nat.deleteHeader'),
+      body: t('serviceConsole.nat.deleteBody', { name: String(forwarding.name || forwardingId) }),
       theme: 'warning',
       confirmBtn: t('common.confirmDelete'),
       cancelBtn: t('common.cancel'),
@@ -218,11 +218,11 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
         try {
           const response = await clientApi.deleteNatForwarding(serviceId.value, forwardingId);
           const message = String((response.data as { message?: unknown } | undefined)?.message || '').trim();
-          MessagePlugin.success(message || '端口转发删除成功');
+          MessagePlugin.success(message || t('serviceConsole.nat.deleteSuccess'));
           await loadNatForwardings();
           dialog.hide();
         } catch (error: unknown) {
-          MessagePlugin.error(resolveErrorMessage(error, '删除端口转发失败'));
+          MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.nat.deleteFailed')));
         } finally {
           natState.submitting = false;
           dialog.setConfirmLoading(false);
@@ -251,7 +251,7 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       logsState.summary = { ...logsState.summary, ...(payload.summary || {}) };
       logsState.loaded = true;
     } catch (error: unknown) {
-      logsState.error = resolveErrorMessage(error, '加载操作日志失败');
+      logsState.error = resolveErrorMessage(error, t('serviceConsole.errors.logsLoadFailed'));
       if (!silent) MessagePlugin.error(logsState.error);
     } finally {
       logsState.loading = false;
@@ -284,7 +284,7 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
     } catch (error: unknown) {
       financeState.list = [];
       financeState.total = 0;
-      financeState.error = resolveErrorMessage(error, '加载财务日志失败');
+      financeState.error = resolveErrorMessage(error, t('serviceConsole.errors.financeLoadFailed'));
       if (!silent) MessagePlugin.error(financeState.error);
     } finally {
       financeState.loading = false;

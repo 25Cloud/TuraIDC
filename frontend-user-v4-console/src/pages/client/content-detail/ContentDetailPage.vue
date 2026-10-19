@@ -11,14 +11,20 @@
     <div class="reader-layout">
       <main class="reader-main">
         <t-card class="reader-card" :bordered="false">
-          <data-state :loading="loading" :empty="!currentArticle" :description="config.emptyText">
+          <data-state
+            :loading-text="$t('shared.state.loading')"
+            :empty-text="$t('shared.state.empty')"
+            :loading="loading"
+            :empty="!currentArticle"
+            :description="config.emptyText"
+          >
             <article id="article-top" class="reader-article">
               <header class="reader-header">
                 <h1>{{ currentArticle?.title || config.detailTitle }}</h1>
                 <div v-if="currentArticle" class="reader-meta">
-                  <span>发布人：{{ currentPublisher }}</span>
+                  <span>{{ $t('content.article.publisher', { name: currentPublisher }) }}</span>
                   <span>{{ timeLabel }}：{{ currentPublishTime }}</span>
-                  <span>阅读量：{{ currentArticle.view_count || 0 }}</span>
+                  <span>{{ $t('content.article.viewCount', { count: currentArticle.view_count || 0 }) }}</span>
                 </div>
               </header>
 
@@ -51,7 +57,7 @@
         </t-card>
 
         <t-card class="reader-card" :bordered="false">
-          <template #title>目录结构</template>
+          <template #title>{{ $t('content.article.toc') }}</template>
           <button
             v-for="item in tocItems"
             :key="item.id"

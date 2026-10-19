@@ -1,8 +1,8 @@
 <template>
   <t-dialog
     v-model:visible="natVisible"
-    header="添加端口转发"
-    confirm-btn="创建"
+    :header="$t('serviceConsole.nat.addForwardHeader')"
+    :confirm-btn="$t('serviceConsole.nat.createBtn')"
     :confirm-loading="natState.submitting"
     @confirm="submitNatForwarding"
   >
@@ -11,7 +11,11 @@
         <t-input v-model="natForm.name" :placeholder="$t('serviceConsole.nat.namePlaceholder')" :maxlength="255" />
       </t-form-item>
       <t-form-item :label="$t('serviceConsole.nat.publicPortLabel')">
-        <t-input v-model="natForm.ext_port" :placeholder="$t('serviceConsole.nat.internalPlaceholder')" :maxlength="5" />
+        <t-input
+          v-model="natForm.ext_port"
+          :placeholder="$t('serviceConsole.nat.internalPlaceholder')"
+          :maxlength="5"
+        />
       </t-form-item>
       <t-form-item :label="$t('serviceConsole.nat.internalPortLabel')" required-mark>
         <t-input v-model="natForm.int_port" :placeholder="$t('serviceConsole.nat.portPlaceholder')" :maxlength="5" />

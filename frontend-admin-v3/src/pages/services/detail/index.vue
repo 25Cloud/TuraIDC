@@ -3,17 +3,17 @@
     <div class="detail-action-bar">
       <t-button variant="text" theme="default" @click="goBack">
         <template #icon><chevron-left-icon /></template>
-        返回
+        {{ $t('services.console.back') }}
       </t-button>
       <div class="detail-title">
         <h3>{{ consoleTitle }}</h3>
-        <span>服务 #{{ serviceId }}</span>
+        <span>{{ $t('services.console.serviceLabel', { id: serviceId }) }}</span>
       </div>
       <!-- 「查看用户」只在顶部信息卡片里出现一次（紧邻所属用户），此处不再重复 -->
     </div>
 
-    <t-empty v-if="!hasUser" description="缺少用户上下文，请从用户详情或服务列表进入该页面">
-      <t-button theme="primary" @click="goBack">返回服务列表</t-button>
+    <t-empty v-if="!hasUser" :description="$t('services.console.detailMissingUser')">
+      <t-button theme="primary" @click="goBack">{{ $t('services.console.backToServiceList') }}</t-button>
     </t-empty>
     <template v-else>
       <!-- 形态未判定前先压住渲染，避免控制台闪一下通用形态再切成 CDN -->
@@ -31,6 +31,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { userApi } from '@/api/user';
+import { t } from '@/locales';
 
 import CdnConsolePanel from './cdn/CdnConsolePanel.vue';
 import { isCdnConsole } from './console/composables/useConsoleCore';
@@ -57,7 +58,9 @@ const hasUser = computed(() => Number(userId.value) > 0);
 const consoleKind = ref<'cdn' | 'generic' | 'unknown'>('unknown');
 const kindPending = computed(() => hasUser.value && consoleKind.value === 'unknown');
 const isCdn = computed(() => consoleKind.value === 'cdn');
-const consoleTitle = computed(() => (isCdn.value ? 'CDN 控制台' : '实例详情'));
+const consoleTitle = computed(() =>
+  isCdn.value ? t('services.console.cdnConsoleTitle') : t('services.console.instanceDetailTitle'),
+);
 
 let kindToken = 0;
 

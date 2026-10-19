@@ -24,17 +24,33 @@
         >
           <template #suffixIcon><search-icon /></template>
         </t-input>
-        <t-select v-model="filters.status" clearable :placeholder="$t('client.payments.allStatusPlaceholder')" @change="handleSearch">
+        <t-select
+          v-model="filters.status"
+          clearable
+          :placeholder="$t('client.payments.allStatusPlaceholder')"
+          @change="handleSearch"
+        >
           <t-option v-for="item in PAYMENT_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
-        <t-select v-model="filters.type" clearable :placeholder="$t('client.payments.allGatewayPlaceholder')" @change="handleSearch">
+        <t-select
+          v-model="filters.type"
+          clearable
+          :placeholder="$t('client.payments.allGatewayPlaceholder')"
+          @change="handleSearch"
+        >
           <t-option v-for="item in PAYMENT_GATEWAY_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
       </div>
     </t-card>
 
     <section class="record-list-card">
-      <data-state :loading="loading" :empty="!hasRows" :description="$t('client.payments.empty')">
+      <data-state
+        :loading-text="$t('shared.state.loading')"
+        :empty-text="$t('shared.state.empty')"
+        :loading="loading"
+        :empty="!hasRows"
+        :description="$t('client.payments.empty')"
+      >
         <t-table class="record-table" row-key="id" :data="list" :columns="columns" :pagination="null" hover>
           <template #payment="{ row }">
             <div class="stack-cell">
@@ -49,7 +65,9 @@
           </template>
           <template #time="{ row }">{{ row.paid_at || row.created_at || '--' }}</template>
           <template #operation="{ row }">
-            <t-button size="small" theme="primary" variant="text" @click="goToDetail(row)">{{ $t('client.payments.view') }}</t-button>
+            <t-button size="small" theme="primary" variant="text" @click="goToDetail(row)">{{
+              $t('client.payments.view')
+            }}</t-button>
           </template>
         </t-table>
 
@@ -64,7 +82,10 @@
               <span>{{ gatewayDisplay(row) }}</span>
             </div>
             <div class="record-mobile-card__meta">
-              <span>{{ $t('client.payments.thirdPartyLabel') }}{{ row.trade_no || $t('client.payments.waitingCallback') }}</span>
+              <span
+                >{{ $t('client.payments.thirdPartyLabel')
+                }}{{ row.trade_no || $t('client.payments.waitingCallback') }}</span
+              >
               <span>{{ row.paid_at || row.created_at || '--' }}</span>
             </div>
           </article>
@@ -106,7 +127,7 @@ import type { PaymentRecord } from '@/types/client';
 const router = useRouter();
 
 const { loading, list, total, filters, hasRows, loadList, handleSearch, handlePageSizeChange, applyQuickFilter } =
-  useRecordList(recordApi.payments, '第三方支付记录加载失败');
+  useRecordList(recordApi.payments, t('finance.messages.paymentRecordsLoadFailed'));
 
 const quickFilters = [
   { key: '', label: t('client.payments.all') },

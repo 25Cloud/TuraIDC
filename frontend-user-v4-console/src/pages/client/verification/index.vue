@@ -1,6 +1,6 @@
 <template>
   <section class="client-verification">
-    <loading-state :loading="loading" text="正在加载实名信息">
+    <loading-state :loading="loading" :text="$t('verification.loading')">
       <t-card class="verification-status-card" :bordered="false">
         <div class="verification-status-card__main">
           <div>
@@ -11,7 +11,7 @@
           <div class="verification-status-card__actions">
             <t-tag :theme="statusTheme" variant="light">{{ statusLabel }}</t-tag>
             <t-button theme="primary" @click="openVerificationEntry">
-              {{ isVerified ? '查看实名信息' : '立即认证' }}
+              {{ isVerified ? $t('verification.viewInfo') : $t('verification.verifyNow') }}
             </t-button>
           </div>
         </div>
@@ -58,12 +58,14 @@
 
     <t-dialog
       v-model:visible="showVerificationDialog"
-      header="实名认证"
+      :header="$t('verification.dialogHeader')"
       width="min(32rem, calc(100vw - var(--td-comp-margin-xl)))"
       :confirm-btn="
-        verificationUrl ? null : { content: '提交认证', loading: verificationLoading, disabled: !canSubmit }
+        verificationUrl
+          ? null
+          : { content: $t('verification.submitVerification'), loading: verificationLoading, disabled: !canSubmit }
       "
-      cancel-btn="取消"
+      :cancel-btn="$t('common.cancel')"
       destroy-on-close
       @confirm="submitVerification"
       @close="handleVerificationDialogClose"
@@ -76,7 +78,11 @@
           <t-input v-model="verificationForm.realName" :placeholder="$t('verification.realNamePlaceholder')" />
         </t-form-item>
         <t-form-item :label="$t('verification.idCardLabel')" required-mark>
-          <t-input v-model="verificationForm.idCard" maxlength="18" :placeholder="$t('verification.idCardPlaceholder')" />
+          <t-input
+            v-model="verificationForm.idCard"
+            maxlength="18"
+            :placeholder="$t('verification.idCardPlaceholder')"
+          />
         </t-form-item>
       </t-form>
 
@@ -84,19 +90,23 @@
         <qrcode-vue :value="verificationUrl" :size="260" level="H" render-as="svg" />
         <p>{{ $t('verification.scanHint') }}</p>
         <p class="verification-countdown" :class="{ expired: isVerificationQrExpired }">
-          {{ isVerificationQrExpired ? '二维码已失效' : `二维码 ${verificationCountdownText} 后失效` }}
+          {{
+            isVerificationQrExpired
+              ? $t('verification.qrInvalidShort')
+              : $t('verification.qrExpiresIn', { time: verificationCountdownText })
+          }}
         </p>
         <p v-if="verificationMessage" class="verification-message">{{ verificationMessage }}</p>
         <div class="verification-link-actions">
-          <t-button variant="outline" :loading="verificationLoading" @click="refreshVerificationLink"
-            >{{ $t('verification.refreshQrcode') }}</t-button
-          >
-          <t-button theme="primary" :loading="checkingStatus" @click="checkVerificationStatus(false)"
-            >{{ $t('verification.checkStatus') }}</t-button
-          >
-          <t-button variant="outline" :loading="closingSession" @click="closeVerificationSession(false)"
-            >{{ $t('verification.closeSession') }}</t-button
-          >
+          <t-button variant="outline" :loading="verificationLoading" @click="refreshVerificationLink">{{
+            $t('verification.refreshQrcode')
+          }}</t-button>
+          <t-button theme="primary" :loading="checkingStatus" @click="checkVerificationStatus(false)">{{
+            $t('verification.checkStatus')
+          }}</t-button>
+          <t-button variant="outline" :loading="closingSession" @click="closeVerificationSession(false)">{{
+            $t('verification.closeSession')
+          }}</t-button>
           <t-button
             v-if="canRestartVerification"
             theme="warning"
@@ -112,16 +122,16 @@
 
     <t-dialog
       v-model:visible="showVerifiedInfoDialog"
-      header="实名信息"
+      :header="$t('verification.realName')"
       width="min(28rem, calc(100vw - var(--td-comp-margin-xl)))"
-      cancel-btn="关闭"
+      :cancel-btn="$t('serviceConsole.close')"
       :confirm-btn="null"
     >
       <div class="verified-info-dialog">
         <t-tag theme="success" variant="light">{{ $t('verification.verifiedTag') }}</t-tag>
         <h2>{{ $t('verification.realName') }}</h2>
-        <p>姓名：{{ form.real_name || '--' }}</p>
-        <p>身份证号：{{ form.id_card_masked || '--' }}</p>
+        <p>{{ $t('verification.nameLine', { name: form.real_name || '--' }) }}</p>
+        <p>{{ $t('verification.idCardLine', { idCard: form.id_card_masked || '--' }) }}</p>
       </div>
     </t-dialog>
   </section>

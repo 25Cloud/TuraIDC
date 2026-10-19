@@ -190,11 +190,11 @@ function formatFileSize(size: unknown) {
 }
 
 function formatDimensions(row: MediaFileRecord) {
-  if (isVideo(row)) return '视频文件';
+  if (isVideo(row)) return t('content.mediaLibrary.videoFile');
   const width = Number(row.width || 0);
   const height = Number(row.height || 0);
   if (width > 0 && height > 0) return `${width} × ${height}`;
-  return '未记录尺寸';
+  return t('content.mediaLibrary.sizeUnknown');
 }
 
 async function loadMediaList() {
@@ -210,7 +210,7 @@ async function loadMediaList() {
     items.value = response.list || [];
     total.value = Number(response.total || 0);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载媒体库失败'));
+    MessagePlugin.error(errorMessage(error, t('content.mediaLibrary.loadFailed')));
     items.value = [];
     total.value = 0;
   } finally {
@@ -256,7 +256,7 @@ async function handleFileChange(event: Event) {
     filters.page = 1;
     await loadMediaList();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '媒体上传失败'));
+    MessagePlugin.error(errorMessage(error, t('content.mediaLibrary.uploadFailed')));
   } finally {
     uploading.value = false;
   }
@@ -269,15 +269,15 @@ async function handleReindex() {
     const created = Number(response.created || 0);
     const unrecognized = response.unrecognized || [];
 
-    let msg = `重新获取完成，新增 ${created} 个媒体文件`;
+    let msg = t('content.mediaLibrary.refetchResult', { created });
     if (unrecognized.length > 0) {
-      msg += `，${unrecognized.length} 个文件因类型不支持被跳过`;
+      msg += t('content.mediaLibrary.refetchSkipped', { skipped: unrecognized.length });
     }
     MessagePlugin.success(msg);
 
     await loadMediaList();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '重新获取媒体文件失败'));
+    MessagePlugin.error(errorMessage(error, t('content.mediaLibrary.refetchFailed')));
   } finally {
     reindexing.value = false;
   }
@@ -301,9 +301,9 @@ async function removeMedia(row: MediaFileRecord) {
     const refList = refs.join('；');
     const confirmed = await new Promise<boolean>((resolve) => {
       const dialog = DialogPlugin.confirm({
-        header: '确认删除',
-        body: `该媒体文件被以下内容引用：${refList}。删除后将导致这些内容出现死链，确认继续？`,
-        confirmBtn: { theme: 'danger', content: '仍然删除' },
+        header: t('content.mediaLibrary.deleteTitle'),
+        body: t('content.mediaLibrary.deleteReferences', { refs: refList }),
+        confirmBtn: { theme: 'danger', content: t('content.mediaLibrary.stillDelete') },
         cancelBtn: t('common.cancel'),
         onConfirm: () => {
           dialog.destroy();
@@ -333,7 +333,7 @@ async function removeMedia(row: MediaFileRecord) {
     }
     await loadMediaList();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '删除媒体失败'));
+    MessagePlugin.error(errorMessage(error, t('content.mediaLibrary.deleteFailed')));
   } finally {
     deletingId.value = '';
   }

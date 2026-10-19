@@ -1,13 +1,21 @@
 <template>
   <section class="cdn-overview">
-    <data-state :loading="detailLoading" :empty="false" description="">
+    <data-state
+      :loading-text="$t('shared.state.loading')"
+      :empty-text="$t('shared.state.empty')"
+      :loading="detailLoading"
+      :empty="false"
+      description=""
+    >
       <!-- 流量用量：CDN 唯一按量计费、也是用户最关心的指标 -->
       <t-card v-if="trafficVisible" class="console-panel" :title="$t('services.cdn.trafficUsage')" :bordered="false">
         <div class="detail-grid detail-grid--info">
           <info-cell :label="$t('services.cdn.usedTraffic')" :value="traffic.usage_label || '0G'" strong />
           <info-cell
             :label="$t('services.cdn.trafficLimit')"
-            :value="traffic.limited ? traffic.limit_label || $t('services.cdn.unlimited') : $t('services.cdn.unlimited')"
+            :value="
+              traffic.limited ? traffic.limit_label || $t('services.cdn.unlimited') : $t('services.cdn.unlimited')
+            "
             strong
           />
           <info-cell
@@ -51,7 +59,12 @@
             :value="detail.name || `${$t('services.cdn.servicePrefix')} #${serviceId}`"
             strong
           />
-          <info-cell :label="$t('services.cdn.instanceId')" :value="String(detail.id || '--')" copyable @copy="copyText" />
+          <info-cell
+            :label="$t('services.cdn.instanceId')"
+            :value="String(detail.id || '--')"
+            copyable
+            @copy="copyText"
+          />
           <info-cell :label="$t('services.cdn.product')" :value="productText" strong />
           <info-cell :label="$t('services.cdn.accelerationRegion')" :value="regionText" strong />
           <info-cell :label="$t('services.cdn.billingCycle')" :value="detail.billing_cycle_label || '--'" strong />
@@ -72,7 +85,12 @@
       </t-card>
 
       <!-- 加速能力：把 CDN 真正关心的节点/防护/功能开关提到最前 -->
-      <t-card v-if="capabilities.length" class="console-panel" :title="$t('services.cdn.capabilities')" :bordered="false">
+      <t-card
+        v-if="capabilities.length"
+        class="console-panel"
+        :title="$t('services.cdn.capabilities')"
+        :bordered="false"
+      >
         <p class="cdn-group-hint">{{ $t('services.cdn.capabilitiesTip') }}</p>
         <div class="cdn-capability-grid">
           <div v-for="item in capabilities" :key="item.key" class="cdn-capability-item">
@@ -85,22 +103,10 @@
       </t-card>
 
       <!-- 套餐参数：替代云主机的 CPU/内存/系统盘规格表 -->
-      <t-card
-        v-for="group in groups"
-        :key="group.title"
-        class="console-panel"
-        :title="group.title"
-        :bordered="false"
-      >
+      <t-card v-for="group in groups" :key="group.title" class="console-panel" :title="group.title" :bordered="false">
         <p class="cdn-group-hint">{{ group.hint }}</p>
         <div class="detail-grid detail-grid--config">
-          <info-cell
-            v-for="item in group.items"
-            :key="item.key"
-            :label="item.label"
-            :value="item.value"
-            strong
-          />
+          <info-cell v-for="item in group.items" :key="item.key" :label="item.label" :value="item.value" strong />
         </div>
       </t-card>
 
@@ -113,17 +119,16 @@
     </data-state>
   </section>
 </template>
-
 <script setup lang="ts">
 import DataState from '@shared/user-v3/components/DataState.vue';
 import { computed } from 'vue';
 
 import { fieldValue } from '@/utils/format';
 
-import { InfoCell } from '../../console/InfoCell';
 import { useServiceConsoleContext } from '../../console/context';
-import { splitPanelSpecs } from '../../console/tabs/panelSpecs';
+import { InfoCell } from '../../console/InfoCell';
 import type { PanelCapabilityState } from '../../console/tabs/panelSpecs';
+import { splitPanelSpecs } from '../../console/tabs/panelSpecs';
 
 const {
   detail,
@@ -198,7 +203,6 @@ function capabilityTheme(state: PanelCapabilityState): 'success' | 'default' | '
   return 'warning';
 }
 </script>
-
 <style lang="less" scoped>
 .cdn-group-hint {
   margin: 0 0 var(--td-comp-margin-s, 12px);
