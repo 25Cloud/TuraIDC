@@ -145,12 +145,21 @@ class ProductGroupHierarchyService
         $item ??= $this->productTypeItem($code);
         $existing = FirstProductGroup::query()->where('code', $code)->first();
         $label = trim((string) ($item['label'] ?? ProductType::labelOf($code)));
-        $slug = $this->uniqueSlug(
-            FirstProductGroup::class,
-            Str::slug($code) ?: $code,
-            [],
-            $existing?->id
-        );
+        // slug 一旦确定就保持稳定：后台可自定义，旧的分享链接才不会被同步覆盖。
+        // 只有新建、或历史数据 slug 为空时才生成（优先用商品种类配置里的 slug）。
+        $configuredSlug = trim((string) ($item['slug'] ?? ''));
+        $slug = trim((string) ($existing?->slug ?? ''));
+
+        if ($slug === '') {
+            $baseSlug = $configuredSlug !== '' ? $configuredSlug : (Str::slug($code) ?: $code);
+            $slug = $this->uniqueSlug(
+                FirstProductGroup::class,
+                $baseSlug,
+                [],
+                $existing?->id
+            );
+        }
+
         $payload = [
             'name' => $label !== '' ? $label : $code,
             'slug' => $slug,

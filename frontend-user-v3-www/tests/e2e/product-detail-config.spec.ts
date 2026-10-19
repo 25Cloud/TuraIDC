@@ -153,6 +153,7 @@ function detailProduct(id: number, name: string) {
     type_label: "云服务器",
     first_product_group_id: 3,
     first_product_group_code: "cloud_server",
+    first_product_group_slug: "cloud-server",
     first_product_group_name: "云服务器",
     second_product_group_id: SECOND_GROUP_ID,
     second_product_group_name: "香港",
@@ -204,6 +205,13 @@ function groupProduct(id: number, name: string, extra: Record<string, unknown> =
     product_display_name: name,
     combined_display_name: name,
     instance_spec_text: name,
+    first_product_group_id: 3,
+    first_product_group_code: "cloud_server",
+    first_product_group_slug: "cloud-server",
+    second_product_group_id: SECOND_GROUP_ID,
+    second_product_group_name: "香港",
+    third_product_group_id: THIRD_GROUP_ID,
+    third_product_group_name: "计算型",
     cpu_display: "4 vCPU",
     memory_display: "8G",
     cpu_model_name: "Intel Xeon Platinum 8369B",
@@ -306,7 +314,12 @@ async function mockSiteApi(
       });
 
     if (pathname === "/v2/site/config") {
-      return respond({ site_name: "测试站点", ...(options.siteConfig || {}) });
+      return respond({
+        site_name: "测试站点",
+        // 本文件锚定卡片式独立配置页的渲染；同一地址在列表式下由选购页内联配置
+        product_display_mode: "card",
+        ...(options.siteConfig || {}),
+      });
     }
 
     // 机型对比表的数据源
@@ -342,7 +355,9 @@ async function mockSiteApi(
   });
 }
 
-const detailPath = `/products/${PRODUCT_ID}`;
+// 统一路由后的商品地址：/products/{typeSlug}/{二级}/{三级}/{商品}
+const detailPath = `/products/cloud-server/${SECOND_GROUP_ID}/${THIRD_GROUP_ID}/${PRODUCT_ID}`;
+const siblingDetailPath = `/products/cloud-server/${SECOND_GROUP_ID}/${THIRD_GROUP_ID}/${SIBLING_PRODUCT_ID}`;
 
 function regionGroup(page: Page) {
   // 分组标题走 i18n，中文为「区域」，用正则同时兼容「地区」
@@ -440,7 +455,7 @@ test.describe("独立配置页选配与报价", () => {
 
     await table.locator("button.sku-row").nth(1).click();
 
-    await expect(page).toHaveURL(new RegExp(`/products/${SIBLING_PRODUCT_ID}$`));
+    await expect(page).toHaveURL(new RegExp(`${siblingDetailPath}$`));
     await expect(page.locator(".pd-body")).toBeVisible();
   });
 

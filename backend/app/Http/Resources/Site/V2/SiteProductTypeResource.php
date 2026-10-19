@@ -19,6 +19,8 @@ class SiteProductTypeResource extends JsonResource
         return [
             'id' => (int) ($item['id'] ?? 0),
             'value' => (string) ($item['value'] ?? ''),
+            // 商品页地址里的类型段：/products/{slug}/...
+            'slug' => (string) ($item['slug'] ?? ''),
             'label' => (string) ($item['label'] ?? ''),
             'first_product_group_id' => isset($item['first_product_group_id']) ? (int) $item['first_product_group_id'] : null,
             'first_product_group_code' => (string) ($item['first_product_group_code'] ?? ''),

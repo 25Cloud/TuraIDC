@@ -87,6 +87,7 @@ class ProductGroupHierarchyFields
         $fallbackType = trim((string) ($product->getRawOriginal('product_type') ?: ''));
         $productType = ProductType::businessValueForFirstGroup($first, $fallbackType);
         $firstCode = trim((string) ($first?->code ?? ''));
+        $firstSlug = trim((string) ($first?->slug ?? ''));
         $firstName = trim((string) ($first?->name ?? ProductType::labelOf($firstCode)));
         $secondName = trim((string) ($second?->name ?? ''));
         $thirdName = $thirdId !== null ? trim((string) ($third?->name ?? '')) : null;
@@ -98,6 +99,8 @@ class ProductGroupHierarchyFields
         return [
             'first_product_group_id' => $firstId,
             'first_product_group_code' => $firstCode,
+            // 前台商品页地址用的类型段：/products/{slug}/...
+            'first_product_group_slug' => $firstSlug !== '' ? $firstSlug : $firstCode,
             'first_product_group_name' => $firstName,
             'second_product_group_id' => $secondId,
             'second_product_group_name' => $secondName,
@@ -123,6 +126,7 @@ class ProductGroupHierarchyFields
         return [
             'first_product_group_id' => null,
             'first_product_group_code' => '',
+            'first_product_group_slug' => '',
             'first_product_group_name' => '',
             'second_product_group_id' => null,
             'second_product_group_name' => '',

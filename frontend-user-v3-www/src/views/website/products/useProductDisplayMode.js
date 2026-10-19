@@ -7,7 +7,7 @@ import { useSiteBrandingStore } from "@/app/stores/siteBranding";
 //  1. 站点默认值——后台「商品展示」配置，决定访客第一次打开看到的形态；
 //  2. 访客自己的选择——选购页右上角的切换。只存在本机 localStorage，
 //     不写后端、不影响别人，同一浏览器下次打开仍是上次选的形态。
-// 运营仍然可以通过站点默认值决定首屏效果，访客想按自己的习惯看则由自己切。
+// 运营仍然可以通过站点默认值决定首屏效果，访客想按自己习惯看则由自己切。
 export const DISPLAY_MODE_LIST = "list";
 export const DISPLAY_MODE_CARD = "card";
 
@@ -42,6 +42,17 @@ function writeUserMode(mode) {
   }
 }
 
+// 访客偏好必须是模块级单例：路由入口、选购页、独立配置页会各自调用
+// useProductDisplayMode()，若每次调用都新建 ref，在一处切换后另一处读不到变化，
+// 同一个 URL 下的列表式/卡片式渲染就无法联动。
+const userDisplayMode = ref(readUserMode());
+
+export function setProductDisplayMode(value) {
+  const next = normalizeMode(value);
+  userDisplayMode.value = next;
+  writeUserMode(next);
+}
+
 export function useProductDisplayMode() {
   const siteBranding = useSiteBrandingStore();
   // 站点配置未下发或写脏时回落到列表式：列表式是既有行为，必须始终可售
@@ -49,23 +60,16 @@ export function useProductDisplayMode() {
     normalizeMode(siteBranding.productDisplayMode),
   );
   // 访客覆盖值；null 表示没选过，跟随站点默认
-  const userDisplayMode = ref(readUserMode());
   const displayMode = computed(
     () => userDisplayMode.value || siteDisplayMode.value,
   );
   /** 访客是否主动选过（用于提示「已按你的选择展示」这类文案，暂未使用） */
   const followsUserChoice = computed(() => userDisplayMode.value !== null);
 
-  function setDisplayMode(value) {
-    const next = normalizeMode(value);
-    userDisplayMode.value = next;
-    writeUserMode(next);
-  }
-
   return {
     displayMode,
     siteDisplayMode,
     followsUserChoice,
-    setDisplayMode,
+    setDisplayMode: setProductDisplayMode,
   };
 }

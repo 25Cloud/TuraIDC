@@ -25,6 +25,8 @@ class StoreProductTypeRequest extends AdminFormRequest
             'label' => ['required', 'string', 'max:30'],
             'product_type' => ['required', 'string', Rule::in(ProductType::businessAllowedValues())],
             'icon' => ['nullable', 'string', 'max:50'],
+            // 前台地址里的类型段；留空时按 value 生成
+            'slug' => ['nullable', 'string', 'min:2', 'max:60', 'regex:/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/', 'not_regex:/^\d+$/'],
         ];
     }
 }

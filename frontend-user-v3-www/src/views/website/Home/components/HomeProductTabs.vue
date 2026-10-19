@@ -2,18 +2,22 @@
   <section class="product-tabs-section" :aria-busy="loading ? 'true' : 'false'">
     <div class="container">
       <header class="product-tabs__head">
-        <h2 class="product-tabs__title">{{ $t('home.products.title') }}</h2>
+        <h2 class="product-tabs__title">{{ $t("home.products.title") }}</h2>
         <p class="product-tabs__desc">
           {{ appStore.siteName }}
-          {{ $t('home.products.techDeliveryDesc') }}
+          {{ $t("home.products.techDeliveryDesc") }}
           <router-link to="/products" class="product-tabs__more">
-            {{ $t('home.products.viewAll') }}
+            {{ $t("home.products.viewAll") }}
             <el-icon><ArrowRight /></el-icon>
           </router-link>
         </p>
       </header>
 
-      <div class="product-tabs__list" role="tablist" :aria-label="$t('seoLanding.productCategories')">
+      <div
+        class="product-tabs__list"
+        role="tablist"
+        :aria-label="$t('seoLanding.productCategories')"
+      >
         <button
           v-for="item in enterpriseServiceItems"
           :key="item.key"
@@ -40,7 +44,7 @@
           <strong class="product-card__title">{{ card.title }}</strong>
           <p class="product-card__desc">{{ card.desc }}</p>
           <span class="product-card__cta">
-            {{ $t('home.products.buyNow') }}
+            {{ $t("home.products.buyNow") }}
             <el-icon><ArrowRight /></el-icon>
           </span>
         </button>
@@ -134,7 +138,7 @@ const activeEnterpriseService = computed(() => {
         {
           key: "catalog",
           title: `${activeEnterpriseType.value?.label || "当前分类"}目录`,
-          desc: t('home.products.emptyCategory'),
+          desc: t("home.products.emptyCategory"),
           path: "/products",
         },
       ];
@@ -207,26 +211,21 @@ function resolveEnterpriseCategoryDesc(group, summary, primaryProduct) {
 }
 
 function resolveEnterpriseCategoryPath(group, primaryProduct) {
+  // 类型段用 slug（旧数据回退 code），与选购页统一路由保持一致
+  const typeSegment = String(
+    group?.first_product_group_slug || group?.first_product_group_code || "",
+  );
+  const groupId = Number(group?.id || 0);
+
   if (!primaryProduct?.product) {
-    const typeCode = String(group?.first_product_group_code || "");
-    const groupId = Number(group?.id || 0);
-
-    if (typeCode && groupId > 0) {
-      return {
-        path: "/products",
-        query: {
-          type: typeCode,
-          group: String(groupId),
-        },
-      };
-    }
-
-    return "/products";
+    return typeSegment && groupId > 0
+      ? buildWebsiteProductPath({ typeSlug: typeSegment, groupId })
+      : "/products";
   }
 
   return buildWebsiteProductPath({
-    typeId: String(group?.first_product_group_code || ""),
-    groupId: Number(group?.id || 0),
+    typeSlug: typeSegment,
+    groupId,
     childGroupId: Number(primaryProduct.childGroupId || 0),
     productId: Number(primaryProduct.product?.id || 0),
   });

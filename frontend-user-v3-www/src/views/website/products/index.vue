@@ -2162,7 +2162,6 @@ const {
   switchGroup,
   switchChild,
   selectProduct,
-  resetSelectedProduct,
   syncDefaultProduct,
 } = useWebsiteProductsPage({ autoSelectProduct });
 
@@ -2172,9 +2171,10 @@ const showCardGrid = computed(
 );
 
 /**
- * 切换展示方式时同步选中态：
- *  - 切到卡片式必须清空选中商品（网格只在无选中态时渲染，且路由要退回分组）；
- *  - 切回列表式按目录默认规则重新选中（有深链商品则保留，否则第一个）。
+ * 切换展示方式不再改写地址语义：
+ *  - 切到卡片式：地址保持不动。若当前是商品地址（四段），路由入口会换成
+ *    卡片式配置页渲染；若是目录地址，卡片网格直接替换列表。
+ *  - 切回列表式：按列表式规则自动补全到第一个商品，把地址推进到商品段。
  */
 function handleDisplayModeChange(mode) {
   if (mode === displayMode.value) {
@@ -2183,14 +2183,9 @@ function handleDisplayModeChange(mode) {
 
   setDisplayMode(mode);
 
-  if (mode === DISPLAY_MODE_CARD) {
-    // forceRoute：跳过深链保护，把地址上的商品 ID 一并退掉，
-    // 否则刷新后会被当成商品深链重新选中商品，卡片偏好不生效
-    resetSelectedProduct({ syncRoute: true, forceRoute: true });
-    return;
+  if (mode === DISPLAY_MODE_LIST) {
+    syncDefaultProduct(visibleProducts.value, { syncRoute: true });
   }
-
-  syncDefaultProduct(visibleProducts.value, { syncRoute: true });
 }
 
 /* ===== 分组导航位置（顶部折叠 / 左侧栏） ===== */
@@ -2225,19 +2220,22 @@ function toggleGroupNavMode() {
 
 function handleGroupNavSelectGroup(id) {
   const nextId = Number(id || 0);
-  if (!nextId || nextId === Number(activeGroupId.value || 0)) {
+  if (!nextId) {
     return;
   }
 
+  // 点当前分组的组头也要把地址层级补到两段（此前会直接 return，
+  // 卡片式从一段地址点进当前分组时地址没有变化）
   void switchGroup(nextId);
 }
 
 function handleGroupNavSelectChild(id) {
   const nextId = Number(id || 0);
-  if (!nextId || nextId === Number(activeChildId.value || 0)) {
+  if (!nextId) {
     return;
   }
 
+  // 点当前三级分组也要把地址补到三段，才能分享/刷新回到该三级分组
   switchChild(nextId);
 }
 

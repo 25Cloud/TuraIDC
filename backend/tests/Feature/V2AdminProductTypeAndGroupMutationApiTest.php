@@ -106,6 +106,80 @@ class V2AdminProductTypeAndGroupMutationApiTest extends TestCase
             ->assertJsonPath('data', null);
     }
 
+    public function test_admin_product_type_slug_can_be_customized_and_is_not_overwritten_by_catalog_sync(): void
+    {
+        Sanctum::actingAs($this->createAdmin([
+            AdminPermissions::PRODUCT_LIST,
+            AdminPermissions::PRODUCT_MANAGE,
+        ]));
+
+        $suffix = bin2hex(random_bytes(4));
+        $slug = 'custom-type-'.$suffix;
+
+        $createResponse = $this->postJson('/api/v2/admin/product-types', [
+            'label' => 'URL 标识类型 '.$suffix,
+            'product_type' => 'cloud_server',
+            'icon' => 'Server',
+            'slug' => $slug,
+        ])
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.type.slug', $slug);
+
+        $value = (string) $createResponse->json('data.type.value');
+        $this->assertSame(
+            $slug,
+            (string) FirstProductGroup::query()->where('code', $value)->value('slug')
+        );
+
+        // 列表接口会触发商品种类 → 一级分组的目录同步，自定义 slug 不能被重置
+        $this->getJson('/api/v2/admin/product-types')
+            ->assertOk()
+            ->assertJsonPath('code', 0);
+
+        $this->assertSame(
+            $slug,
+            (string) FirstProductGroup::query()->where('code', $value)->value('slug')
+        );
+
+        $renamedSlug = 'renamed-type-'.$suffix;
+        $this->putJson('/api/v2/admin/product-types/'.$value, [
+            'label' => 'URL 标识类型更新 '.$suffix,
+            'product_type' => 'cloud_server',
+            'icon' => 'Server',
+            'slug' => $renamedSlug,
+        ])
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.type.slug', $renamedSlug);
+
+        $this->assertSame(
+            $renamedSlug,
+            (string) FirstProductGroup::query()->where('code', $value)->value('slug')
+        );
+
+        // 与其它类型重复的 slug 必须被拒绝
+        $duplicateResponse = $this->postJson('/api/v2/admin/product-types', [
+            'label' => '重复标识类型 '.$suffix,
+            'product_type' => 'cloud_server',
+            'icon' => 'Server',
+            'slug' => $renamedSlug,
+        ]);
+
+        $this->assertNotSame(0, (int) $duplicateResponse->json('code'));
+        $this->assertStringContainsString('URL 标识', (string) $duplicateResponse->json('message'));
+
+        // 纯数字 slug 会和旧商品 ID 地址冲突，必须被拒绝
+        $numericSlugResponse = $this->postJson('/api/v2/admin/product-types', [
+            'label' => '数字标识类型 '.$suffix,
+            'product_type' => 'cloud_server',
+            'icon' => 'Server',
+            'slug' => '123456',
+        ]);
+
+        $this->assertNotSame(0, (int) $numericSlugResponse->json('code'));
+    }
+
     public function test_admin_product_group_children_are_paginated_whitelisted_and_size_limited(): void
     {
         $suffix = bin2hex(random_bytes(4));
@@ -345,6 +419,7 @@ class V2AdminProductTypeAndGroupMutationApiTest extends TestCase
         return [
             'internal_id',
             'value',
+            'slug',
             'label',
             'product_type',
             'product_type_label',

@@ -62,7 +62,7 @@
           type="primary"
           class="product-card-buy"
           :disabled="card.soldOut"
-          @click="openConfigure(card.id)"
+          @click="openConfigure(card.configurePath)"
         >
           {{ $t("product.card.buyNow") }}
         </el-button>
@@ -82,6 +82,7 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { t } from "@/locales";
 import { resolveProductDisplayName } from "@/utils/websiteProductConfig";
+import { buildWebsiteProductPath } from "@/utils/productRoute";
 import { resolveCardPrice } from "./productPrice";
 
 const props = defineProps({
@@ -133,30 +134,50 @@ function resolveStockBadge(product) {
 
 /**
  * 卡片式是「选商品 → 进配置页」两步，与魔方 public/themes/cart/default/product.tpl
- * 同构：卡片只承担辨认与比价，具体配置交给独立的 /products/:id 页面。
+ * 同构：卡片只承担辨认与比价，具体配置交给商品配置页。
+ *
+ * 配置页地址与列表式完全一致（/products/{typeSlug}/{groupId}/{childGroupId}/{productId}）：
+ * 卡片式用户与列表式用户互相分享链接时，对方也能打开同一台商品，
+ * 只是渲染成各自偏好/后台默认的形态。
  * 整张卡片不绑跳转——只有「立即选购」按钮能进配置页，避免浏览描述时误触。
  */
 const cards = computed(() =>
-  (props.products || []).map((product) => ({
-    id: Number(product?.id || 0),
-    name: resolveProductDisplayName(product),
-    // 商品类型作为卡片左上角的识别标签，避免一屏卡片全是白底黑字没有锚点
-    typeLabel: String(
-      product?.product_type_label || product?.type_label || "",
-    ).trim(),
-    description: String(product?.description_html || ""),
-    soldOut: Number(product?.stock ?? -1) === 0,
-    stock: resolveStockBadge(product),
-    price: resolveCardPrice(product),
-  })),
+  (props.products || []).map((product) => {
+    const id = Number(product?.id || 0);
+    const path = buildWebsiteProductPath({
+      typeSlug: String(
+        product?.first_product_group_slug ||
+          product?.first_product_group_code ||
+          "",
+      ).trim(),
+      groupId: Number(product?.second_product_group_id || 0),
+      childGroupId: Number(product?.third_product_group_id || 0),
+      productId: id,
+    });
+
+    return {
+      id,
+      name: resolveProductDisplayName(product),
+      // 商品类型作为卡片左上角的识别标签，避免一屏卡片全是白底黑字没有锚点
+      typeLabel: String(
+        product?.product_type_label || product?.type_label || "",
+      ).trim(),
+      description: String(product?.description_html || ""),
+      soldOut: Number(product?.stock ?? -1) === 0,
+      stock: resolveStockBadge(product),
+      price: resolveCardPrice(product),
+      // 缺少层级字段的历史数据退回旧的单段商品地址（会规范成四段）
+      configurePath: path === "/products" ? `/products/${id}` : path,
+    };
+  }),
 );
 
-function openConfigure(id) {
-  if (!id) {
+function openConfigure(path) {
+  if (!path) {
     return;
   }
 
-  router.push(`/products/${id}`);
+  router.push(path);
 }
 </script>
 

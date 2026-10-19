@@ -35,8 +35,8 @@
           <span>{{ $t("product.detail.backToProducts") }}</span>
         </button>
 
-        <!-- 配置页也要能切列表式 / 卡片式：切回列表式带着当前商品进入列表配置，
-             切到卡片式回到该分组的商品卡网格 -->
+        <!-- 配置页也能切列表式 / 卡片式：只改本机偏好，地址不变；
+             切列表式后同一个商品地址由选购页内联渲染配置 -->
         <div class="pd-topbar-actions">
           <span class="pd-view-label">{{
             $t("product.list.displayMode")
@@ -1044,11 +1044,29 @@ import MobileSheet from "@/components/MobileSheet.vue";
 const route = useRoute();
 const router = useRouter();
 
+// 商品地址统一为 /products/{typeSlug}/{groupId}/{childGroupId}/{productId}；
+// 旧版单段地址 /products/{id} 仍兼容，加载到商品后会被规范成四段地址。
+const routeProductId = computed(() =>
+  Number(route.params?.productId || route.params?.id || 0),
+);
+
+/** 由商品数据反推它自己的四段配置页地址（缺层级字段时返回空，保持旧地址） */
+function resolveCanonicalProductPath(nextProduct) {
+  const payload = resolveWebsiteProductRoutePayloadByDetail(nextProduct);
+
+  if (!payload.typeSlug || !payload.groupId || !payload.productId) {
+    return "";
+  }
+
+  return buildWebsiteProductPath(payload);
+}
+
 // 版心与「机型对比」开关都由后台「商品展示」页面控制，与选购页共用同一份配置
 const { isContained, contentMaxWidthVar, detailSpecCompare } =
   useProductDisplaySettings();
 
-// 配置页同样支持列表式 / 卡片式切换：切换后回到对应形态的列表页
+// 同一个商品地址在列表式下由选购页内联渲染，卡片式下由本页渲染；
+// 切换展示方式只改偏好、不改地址，路由入口会按偏好换渲染组件。
 const { displayMode: detailDisplayMode, setDisplayMode: setDetailDisplayMode } =
   useProductDisplayMode();
 
@@ -1057,38 +1075,12 @@ function handleDetailDisplayModeChange(mode) {
     return;
   }
 
-  const payload = resolveWebsiteProductRoutePayloadByDetail(product.value);
   setDetailDisplayMode(mode);
-
-  if (!payload.typeId || !payload.groupId) {
-    router.push("/products");
-    return;
-  }
-
-  if (mode === DISPLAY_MODE_CARD) {
-    // 卡片式：回到该三级分组的商品卡网格（不带商品 ID，网格只在无选中态时展示）
-    router.push(
-      buildWebsiteProductPath({
-        typeId: payload.typeId,
-        groupId: payload.groupId,
-        childGroupId: payload.childGroupId,
-      }),
-    );
-    return;
-  }
-
-  // 列表式：带着当前商品进入列表配置
-  router.push(
-    buildWebsiteProductPath({
-      ...payload,
-      productId: payload.productId || Number(product.value?.id || 0),
-    }),
-  );
 }
 
 /**
  * 顶部返回：能回上一页就回上一页（多来自列表或卡片），
- * 直接落地（外链、刷新）时退回商品列表，避免把用户甩出站外。
+ * 直接落地（外链、刷新）时退回该商品所属分类，避免把用户甩回全站目录。
  */
 function goBack() {
   if (router.options.history.state.back) {
@@ -1096,7 +1088,17 @@ function goBack() {
     return;
   }
 
-  router.push("/products");
+  const payload = resolveWebsiteProductRoutePayloadByDetail(product.value);
+  const directoryPath =
+    payload.typeSlug && payload.groupId
+      ? buildWebsiteProductPath({
+          typeSlug: payload.typeSlug,
+          groupId: payload.groupId,
+          childGroupId: payload.childGroupId,
+        })
+      : "/products";
+
+  router.push(directoryPath);
 }
 const userStore = useUserStore();
 
@@ -1672,8 +1674,28 @@ function switchProduct(id) {
     return;
   }
 
-  // 独立配置页换机型留在本页：此前跳的是列表式选购页的多段路由，
-  // 用户在「独立打开配置页」里换一台机型就被带回了列表页。
+  // 换机型留在本页，地址仍然用统一的四段商品地址；同组商品共享
+  // 一级/二级/三级分组，所以直接取该商品自己的层级字段拼地址。
+  const groupProduct = groupProducts.value.find(
+    (item) => Number(item?.id) === productId,
+  );
+  const canonicalPath = resolveCanonicalProductPath(groupProduct);
+
+  if (canonicalPath) {
+    router.replace(canonicalPath);
+    return;
+  }
+
+  // 兜底：当前已经是四段地址时只替换商品段，保住分类上下文
+  if (route.params?.productId) {
+    router.replace({
+      name: route.name,
+      params: { ...route.params, productId },
+      query: route.query,
+    });
+    return;
+  }
+
   router.replace(`/products/${productId}`);
 }
 
@@ -1881,7 +1903,7 @@ function syncProductMeta(nextProduct) {
 }
 
 async function loadProduct() {
-  const pid = Number(route.params.id || 0);
+  const pid = routeProductId.value;
   if (!pid) {
     router.push("/products");
     return;
@@ -1895,6 +1917,15 @@ async function loadProduct() {
     const res = await siteApi.product(pid);
     if (token !== productLoadToken) return;
     product.value = res.data.product || null;
+
+    // 旧版单段地址（/products/{id}）加载到商品后规范成四段商品地址：
+    // 地址统一后，列表式与卡片式用户分享的链接完全一致。
+    const canonicalPath = resolveCanonicalProductPath(product.value);
+    if (canonicalPath && !router.currentRoute.value.params?.productId) {
+      await router.replace(canonicalPath);
+      return;
+    }
+
     syncProductMeta(product.value);
     initDefaults();
     void loadGroupProducts(product.value);
@@ -1917,20 +1948,20 @@ async function refreshProductStock(id) {
 
   try {
     const res = await siteApi.productStock(id);
-    if (Number(route.params.id || 0) !== id) return;
+    if (routeProductId.value !== id) return;
     productStock.value = Number(res.data?.stock ?? 0);
   } catch (err) {
-    if (Number(route.params.id || 0) !== id) return;
+    if (routeProductId.value !== id) return;
     productStockError.value = err?.response?.data?.message || "库存同步失败";
   } finally {
-    if (Number(route.params.id || 0) === id) {
+    if (routeProductId.value === id) {
       productStockLoading.value = false;
     }
   }
 }
 
 watch(
-  () => route.params.id,
+  () => routeProductId.value,
   (v) => {
     if (v) loadProduct();
   },

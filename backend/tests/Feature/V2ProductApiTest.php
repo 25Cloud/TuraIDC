@@ -569,6 +569,7 @@ class V2ProductApiTest extends TestCase
         $this->assertSame([
             'id',
             'value',
+            'slug',
             'label',
             'first_product_group_id',
             'first_product_group_code',
@@ -978,6 +979,7 @@ class V2ProductApiTest extends TestCase
             'product_type',
             'first_product_group_id',
             'first_product_group_code',
+            'first_product_group_slug',
             'first_product_group_name',
             'second_product_group_id',
             'second_product_group_name',
@@ -1036,6 +1038,7 @@ class V2ProductApiTest extends TestCase
             'type_label',
             'first_product_group_id',
             'first_product_group_code',
+            'first_product_group_slug',
             'first_product_group_name',
             'second_product_group_id',
             'second_product_group_name',

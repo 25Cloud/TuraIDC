@@ -92,6 +92,10 @@ class ProductSiteService
                         return [
                             'id' => (int) ($item['internal_id'] ?? ProductType::routeIdOf($value)),
                             'value' => $value,
+                            // 前台地址用的类型段（可自定义）；未配置时按 code 生成
+                            'slug' => $firstGroup instanceof FirstProductGroup && trim((string) $firstGroup->slug) !== ''
+                                ? (string) $firstGroup->slug
+                                : (\Illuminate\Support\Str::slug($value) ?: $value),
                             'label' => $label,
                             'product_type' => $businessProductType,
                             'product_type_label' => ProductType::businessLabelOf($businessProductType),
@@ -99,6 +103,9 @@ class ProductSiteService
                             'product_type_plugin_driven' => ProductType::isPluginDriven($businessProductType),
                             'first_product_group_id' => $firstGroup instanceof FirstProductGroup ? (int) $firstGroup->id : null,
                             'first_product_group_code' => $value,
+                            'first_product_group_slug' => $firstGroup instanceof FirstProductGroup && trim((string) $firstGroup->slug) !== ''
+                                ? (string) $firstGroup->slug
+                                : (\Illuminate\Support\Str::slug($value) ?: $value),
                             'first_product_group_name' => $label,
                             'icon' => (string) ($item['icon'] ?? ProductType::iconOf($value)),
                             'group_count' => $groupCount,

@@ -48,10 +48,12 @@ export const clientRoutes: RouteRecordRaw[] = [
       },
       ...seoLandingRoutes,
       {
-        path: "products/:typeId/:groupId(\\d+)/:childGroupId(\\d+)/:productId(\\d+)",
-        name: "WwwProductsPurchaseWithChild",
+        // 商品地址（4 段）：列表式在选购页内联配置，卡片式渲染独立配置页。
+        // 两种形态共用这一套地址，展示方式只由本机偏好/后台默认决定。
+        path: "products/:typeSlug([A-Za-z][A-Za-z0-9_-]*)/:groupId(\\d+)/:childGroupId(\\d+)/:productId(\\d+)",
+        name: "WwwProductsPurchase",
         component: lazyRouteView(
-          () => import("@/pages/website/products/index.vue"),
+          () => import("@/pages/website/products/ProductsRoute.vue"),
         ),
         meta: {
           title: t("seo.products.title"),
@@ -62,10 +64,10 @@ export const clientRoutes: RouteRecordRaw[] = [
       {
         // 三段路径的第三段：三级分组 ID（目录态）或旧商品深链的商品 ID（历史兼容）。
         // 路由层形状相同无法区分，参数名用 thirdId，由页面按目录数据判定。
-        path: "products/:typeId/:groupId(\\d+)/:thirdId(\\d+)",
-        name: "WwwProductsPurchase",
+        path: "products/:typeSlug([A-Za-z][A-Za-z0-9_-]*)/:groupId(\\d+)/:thirdId(\\d+)",
+        name: "WwwProductsChild",
         component: lazyRouteView(
-          () => import("@/pages/website/products/index.vue"),
+          () => import("@/pages/website/products/ProductsRoute.vue"),
         ),
         meta: {
           title: t("seo.products.title"),
@@ -74,12 +76,12 @@ export const clientRoutes: RouteRecordRaw[] = [
         },
       },
       {
-        // 目录态（未选中商品）：卡片式浏览时也要把类型、分组与三级分组留在地址里，
-        // 否则刷新/从详情页返回都会掉回 /products、丢掉当前分类。
-        path: "products/:typeId/:groupId(\\d+)",
+        // 目录态（二级分组）：卡片式展示该分组下的商品卡；列表式会自动补全
+        // 到第一个商品，把地址推进到四段。
+        path: "products/:typeSlug([A-Za-z][A-Za-z0-9_-]*)/:groupId(\\d+)",
         name: "WwwProductsGroup",
         component: lazyRouteView(
-          () => import("@/pages/website/products/index.vue"),
+          () => import("@/pages/website/products/ProductsRoute.vue"),
         ),
         meta: {
           title: t("seo.products.title"),
@@ -88,7 +90,23 @@ export const clientRoutes: RouteRecordRaw[] = [
         },
       },
       {
-        path: "products/:id",
+        // 一级分组目录态：card 式自动补全到第一个二级/三级分组展示卡片，
+        // 但不改写地址；list 式会自动补全到第一个商品。
+        path: "products/:typeSlug([A-Za-z][A-Za-z0-9_-]*)",
+        name: "WwwProductsType",
+        component: lazyRouteView(
+          () => import("@/pages/website/products/ProductsRoute.vue"),
+        ),
+        meta: {
+          title: t("seo.products.title"),
+          noSitemap: true,
+          robots: "noindex,nofollow",
+        },
+      },
+      {
+        // 旧版卡片式配置页地址：/products/{商品 ID}。保留兼容，页面会把地址
+        // 规范成 /products/{typeSlug}/{groupId}/{childGroupId}/{productId}。
+        path: "products/:id(\\d+)",
         name: "WwwProductDetail",
         component: lazyRouteView(
           () => import("@/pages/website/ProductDetail/index.vue"),

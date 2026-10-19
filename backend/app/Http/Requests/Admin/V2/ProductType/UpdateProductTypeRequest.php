@@ -27,6 +27,8 @@ class UpdateProductTypeRequest extends AdminFormRequest
             'product_type' => ['required', 'string', Rule::in(ProductType::businessAllowedValues())],
             'is_hidden' => ['nullable', 'boolean'],
             'icon' => ['nullable', 'string', 'max:50'],
+            // 前台地址里的类型段；留空时按 value 生成
+            'slug' => ['nullable', 'string', 'min:2', 'max:60', 'regex:/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/', 'not_regex:/^\d+$/'],
         ];
     }
 

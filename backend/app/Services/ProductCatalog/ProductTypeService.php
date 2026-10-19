@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\SecondProductGroup;
 use App\Models\ThirdProductGroup;
 use App\Support\DatabaseSchema;
+use Illuminate\Support\Str;
 
 class ProductTypeService
 {
@@ -80,6 +81,10 @@ class ProductTypeService
             return [
                 'internal_id' => (int) ($item['internal_id'] ?? 0),
                 'value' => $value,
+                // 前台地址用的 slug：后台可自定义，未配置时按 code 生成
+                'slug' => $firstGroup instanceof FirstProductGroup && trim((string) $firstGroup->slug) !== ''
+                    ? (string) $firstGroup->slug
+                    : (Str::slug($value) ?: $value),
                 'label' => (string) $item['label'],
                 'product_type' => $businessType,
                 'product_type_label' => ProductType::businessLabelOf($businessType),
@@ -103,11 +108,12 @@ class ProductTypeService
         return DatabaseSchema::hasTableOrView($name);
     }
 
-    public function create(string $label, ?string $icon = null, ?string $productType = null): array
+    public function create(string $label, ?string $icon = null, ?string $productType = null, ?string $slug = null): array
     {
         $normalizedLabel = $this->normalizeLabel($label);
         $normalizedIcon = $this->normalizeIcon($icon);
         $normalizedProductType = ProductType::normalizeBusinessValue($productType);
+        $normalizedSlug = $this->normalizeSlug($slug);
         $items = ProductType::items();
 
         foreach ($items as $item) {
@@ -130,6 +136,13 @@ class ProductTypeService
             $value = ProductType::normalizeValue($baseValue.'_'.$suffix);
         }
 
+        // slug 必须是全站唯一的地址段：未填写时按 value 生成
+        if ($normalizedSlug === null) {
+            $normalizedSlug = $this->uniqueSlug(Str::slug($value) ?: $value);
+        } elseif ($this->slugExists($normalizedSlug)) {
+            throw new BusinessException('URL 标识已被其他商品种类占用');
+        }
+
         $nextInternalId = collect($items)
             ->map(fn (array $item) => (int) ($item['internal_id'] ?? 0))
             ->max() + 1;
@@ -137,6 +150,7 @@ class ProductTypeService
         $items[] = [
             'internal_id' => max(1, $nextInternalId),
             'value' => $value,
+            'slug' => $normalizedSlug,
             'label' => $normalizedLabel,
             'product_type' => $normalizedProductType,
             'icon' => $normalizedIcon,
@@ -150,16 +164,27 @@ class ProductTypeService
         return $this->findOrFail($value);
     }
 
-    public function update(string $value, string $label, ?bool $isHidden = null, ?string $icon = null, ?string $productType = null): array
-    {
+    public function update(
+        string $value,
+        string $label,
+        ?bool $isHidden = null,
+        ?string $icon = null,
+        ?string $productType = null,
+        ?string $slug = null,
+    ): array {
         $normalizedValue = trim($value);
         $normalizedLabel = $this->normalizeLabel($label);
         $normalizedIcon = $this->normalizeIcon($icon);
         $normalizedProductType = $productType !== null
             ? ProductType::normalizeBusinessValue($productType)
             : null;
+        $normalizedSlug = $this->normalizeSlug($slug);
         $items = ProductType::items();
         $matched = false;
+
+        if ($normalizedSlug !== null && $this->slugExists($normalizedSlug, $normalizedValue)) {
+            throw new BusinessException('URL 标识已被其他商品种类占用');
+        }
 
         foreach ($items as $index => $item) {
             if ((string) $item['value'] !== $normalizedValue) {
@@ -174,6 +199,11 @@ class ProductTypeService
             $items[$index]['is_hidden'] = $isHidden ?? (bool) ($item['is_hidden'] ?? false);
             $items[$index]['icon'] = $normalizedIcon;
             $items[$index]['product_type'] = $normalizedProductType ?? ProductType::normalizeBusinessValue($item['product_type'] ?? $item['value'] ?? $normalizedValue);
+
+            if ($normalizedSlug !== null) {
+                $items[$index]['slug'] = $normalizedSlug;
+            }
+
             $matched = true;
         }
 
@@ -183,6 +213,13 @@ class ProductTypeService
 
         ProductType::saveItems($items);
         $this->hierarchyService->syncProductTypes();
+
+        // 同步路径会保留已存在的 slug；这里再显式写一次，保证后台改完立即生效
+        // （不依赖下一次目录同步的时序）。
+        $firstGroup = FirstProductGroup::query()->where('code', $normalizedValue)->first();
+        if ($firstGroup instanceof FirstProductGroup && $normalizedSlug !== null) {
+            $firstGroup->forceFill(['slug' => $normalizedSlug])->save();
+        }
 
         return $this->findOrFail($normalizedValue);
     }
@@ -280,6 +317,66 @@ class ProductTypeService
         }
 
         return $matched;
+    }
+
+    /**
+     * slug 校验/归一化：只允许小写字母、数字与短横线，且不能是纯数字
+     * （纯数字单段路径会和旧商品 ID 地址冲突）。null 表示「不修改」。
+     */
+    private function normalizeSlug(?string $slug): ?string
+    {
+        if ($slug === null) {
+            return null;
+        }
+
+        $normalized = strtolower(trim($slug));
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        if (strlen($normalized) < 2 || strlen($normalized) > 60) {
+            throw new BusinessException('URL 标识长度需为 2-60 个字符');
+        }
+
+        if (preg_match('/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/', $normalized) !== 1) {
+            throw new BusinessException('URL 标识只能包含小写字母、数字和短横线，且不能以短横线开头或结尾');
+        }
+
+        if (preg_match('/^\d+$/', $normalized) === 1) {
+            throw new BusinessException('URL 标识不能是纯数字');
+        }
+
+        return $normalized;
+    }
+
+    private function uniqueSlug(string $baseSlug): string
+    {
+        $slug = Str::slug($baseSlug);
+        if ($slug === '') {
+            $slug = 'type';
+        }
+
+        $candidate = $slug;
+        $suffix = 1;
+
+        while ($this->slugExists($candidate)) {
+            $suffix++;
+            $candidate = $slug.'-'.$suffix;
+        }
+
+        return $candidate;
+    }
+
+    private function slugExists(string $slug, ?string $ignoreCode = null): bool
+    {
+        $query = FirstProductGroup::query()->where('slug', $slug);
+
+        if ($ignoreCode !== null) {
+            $query->where('code', '!=', $ignoreCode);
+        }
+
+        return $query->exists();
     }
 
     private function normalizeLabel(string $label): string

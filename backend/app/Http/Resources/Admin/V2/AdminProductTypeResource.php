@@ -19,6 +19,8 @@ class AdminProductTypeResource extends JsonResource
         return [
             'internal_id' => (int) ($item['internal_id'] ?? 0),
             'value' => (string) ($item['value'] ?? ''),
+            // 前台商品页地址用的 URL 标识（后台可自定义）
+            'slug' => (string) ($item['slug'] ?? ''),
             'label' => (string) ($item['label'] ?? ''),
             'product_type' => (string) ($item['product_type'] ?? ''),
             'product_type_label' => (string) ($item['product_type_label'] ?? ''),

@@ -11,6 +11,7 @@ import {
   buildWebsiteProductRouteQuery,
   hasWebsiteProductRouteParams,
   readWebsiteProductRouteParams,
+  resolveWebsiteProductTypeBySegment,
 } from "@/utils/productRoute";
 
 const MOBILE_BREAKPOINT = 900;
@@ -81,6 +82,10 @@ export function useWebsiteProductsCatalog({
   const activeGroupId = ref(0);
   const activeChildId = ref(0);
   const selectedProductId = ref(0);
+  // 卡片式下地址要停留在用户实际所在的层级（1=类型、2=二级、3=三级），
+  // 不能因为自动补全了分组就把地址推到更深的段。列表式不用这个值，它会
+  // 一路补全到商品段。
+  const routeDepth = ref(0);
   const mobileRegionDrawer = ref(false);
   const tempGroupId = ref(0);
   const tempChildGroups = ref([]);
@@ -88,6 +93,8 @@ export function useWebsiteProductsCatalog({
   let routeSyncSuspendCount = 0;
   let groupToken = 0;
   let groupAbortController = null;
+  // 卡片式把旧三段商品深链规范成四段地址期间，禁止目录态同步把地址改回去
+  let cardProductRedirectPending = false;
 
   const activeType = computed(
     () =>
@@ -95,6 +102,14 @@ export function useWebsiteProductsCatalog({
       null,
   );
   const activeTypeLabel = computed(() => activeType.value?.label || "");
+  // 地址里用 slug；老数据/未配置 slug 时退回 code（旧链接同样能解析）。
+  const activeTypeSlug = computed(() =>
+    String(activeType.value?.slug || activeTypeValue.value || "").trim(),
+  );
+  // 卡片式不自动选中商品，地址也只保留用户实际所在层级。
+  const isCardDisplayMode = computed(
+    () => autoSelectProduct !== null && autoSelectProduct.value === false,
+  );
   const activeGroup = computed(
     () =>
       rootGroups.value.find((group) => group.id === activeGroupId.value) ||
@@ -167,16 +182,31 @@ export function useWebsiteProductsCatalog({
   }
 
   async function syncSelectionRoute(options = {}) {
-    if (routeSyncSuspendCount > 0) {
+    if (routeSyncSuspendCount > 0 || cardProductRedirectPending) {
       return;
     }
 
-    const targetPath = buildWebsiteProductPath({
-      typeId: activeTypeValue.value,
-      groupId: activeGroupId.value,
-      childGroupId: activeChildId.value,
-      productId: selectedProductId.value,
-    });
+    // 卡片式下带商品段的地址由路由入口渲染独立配置页，选购页不要再把地址
+    // 改回目录态（切换组件期间本页可能还没卸载，这里必须显式让路）。
+    if (isCardDisplayMode.value && Number(route.params?.productId || 0) > 0) {
+      return;
+    }
+
+    // 卡片式：地址只保留用户实际所在的层级（类型 / 二级 / 三级），
+    // 不因为内部自动补全了分组就改写成更深的地址；商品由卡片按钮进入四段地址。
+    // 列表式：一路补全到商品段，刷新/分享后能直接落到同一台商品的配置。
+    const targetPath = isCardDisplayMode.value
+      ? buildWebsiteProductPath({
+          typeSlug: activeTypeSlug.value,
+          groupId: routeDepth.value >= 2 ? activeGroupId.value : 0,
+          childGroupId: routeDepth.value >= 3 ? activeChildId.value : 0,
+        })
+      : buildWebsiteProductPath({
+          typeSlug: activeTypeSlug.value,
+          groupId: activeGroupId.value,
+          childGroupId: activeChildId.value,
+          productId: selectedProductId.value,
+        });
     // 目录上下文（类型/分组/三级分组）全部写在路径里；查询里只保留优惠券等
     // 无关参数，旧的 ?type= / ?group= / ?child= 写法顺手清掉。
     const targetQuery = buildWebsiteProductRouteQuery(route.query);
@@ -191,9 +221,6 @@ export function useWebsiteProductsCatalog({
     // 深链保护：当前 URL 是带参数的商品深链（刷新/直链进入），但本地状态尚未完整解析
     // （分组/目录/商品请求失败或仍为空）时，不要用空状态把 URL 回退到 /products，
     // 否则刷新后深链参数丢失、页面停摆在空目录。保持 URL，等待解析完成或用户手动切换。
-    //
-    // 用户主动退出选中态（切到卡片式）时必须跳过这条保护：否则地址上留着商品 ID，
-    // 刷新后会被当成深链重新选中商品，卡片偏好形同虚设。
     if (
       !options.force &&
       targetPath === "/products" &&
@@ -274,6 +301,7 @@ export function useWebsiteProductsCatalog({
     mobileTypeEntered.value = false;
     mobileCategoryDrawer.value = false;
     mobileProductDrawer.value = false;
+    routeDepth.value = 0;
 
     // 必须把地址上的选购参数一并清掉，否则这个按钮没有任何可见效果：
     // showMobileTypePicker 的条件里带着 !hasWebsiteProductRouteParams(route)，
@@ -394,6 +422,11 @@ export function useWebsiteProductsCatalog({
   async function switchGroup(id, options = {}) {
     activeGroupId.value = id;
     activeChildId.value = 0;
+    // 用户主动选二级分组：卡片式地址推进到两段，列表式随后补全到商品段。
+    // 从地址解析（applyRouteSelection）过来时层级由地址决定，不能覆盖。
+    if (!options.preserveRouteDepth) {
+      routeDepth.value = 2;
+    }
     resetSelectedProduct({ syncRoute: false });
     mobileProductDrawer.value = false;
     await loadGroupPayload(id, options);
@@ -401,6 +434,9 @@ export function useWebsiteProductsCatalog({
 
   function switchChild(id, options = {}) {
     activeChildId.value = id;
+    if (!options.preserveRouteDepth) {
+      routeDepth.value = 3;
+    }
     resetSelectedProduct({ syncRoute: false });
     mobileProductDrawer.value = false;
 
@@ -413,6 +449,7 @@ export function useWebsiteProductsCatalog({
     activeTypeValue.value = value;
     activeGroupId.value = 0;
     activeChildId.value = 0;
+    routeDepth.value = 1;
     resetSelectedProduct({ syncRoute: false });
     productsByGroup.value = {};
     childGroups.value = [];
@@ -574,6 +611,29 @@ export function useWebsiteProductsCatalog({
       activeChildId.value = nextChild.id;
       const activeChildKey = catalogGroupKey(nextChild);
       const products = activeChildKey ? map[activeChildKey] || [] : [];
+
+      // 卡片式打开旧的三段商品深链（第三段其实是商品 ID）：解析出它归属的
+      // 三级分组后，把地址规范成四段商品地址，交给路由入口按卡片式渲染配置页。
+      if (isCardDisplayMode.value && targetProductId > 0) {
+        const typeSlug = activeTypeSlug.value;
+        if (typeSlug && activeGroupId.value && Number(nextChild.id) > 0) {
+          cardProductRedirectPending = true;
+          void router
+            .replace(
+              buildWebsiteProductPath({
+                typeSlug,
+                groupId: activeGroupId.value,
+                childGroupId: Number(nextChild.id),
+                productId: targetProductId,
+              }),
+            )
+            .finally(() => {
+              cardProductRedirectPending = false;
+            });
+        }
+        return;
+      }
+
       syncDefaultProduct(products, {
         ...options,
         ambiguousId: 0,
@@ -609,8 +669,9 @@ export function useWebsiteProductsCatalog({
       return false;
     }
 
-    const targetType = productTypes.value.find(
-      (item) => String(item.value || "") === String(routePayload.typeId),
+    const targetType = resolveWebsiteProductTypeBySegment(
+      productTypes.value,
+      routePayload.typeSlug,
     );
     const nextTypeValue =
       targetType?.value ||
@@ -621,6 +682,10 @@ export function useWebsiteProductsCatalog({
     if (!nextTypeValue) {
       return false;
     }
+
+    // 地址显式写了多少层就保持多少层（卡片式据此决定地址深度）；
+    // 列表式随后会自动补全到商品段。
+    routeDepth.value = Number(routePayload.depth || 0);
 
     const ambiguousId = Number(routePayload.thirdId || 0);
     // 当前已加载的 children 能命中 thirdId 时按三级分组处理；
@@ -634,9 +699,28 @@ export function useWebsiteProductsCatalog({
       Number(routePayload.childGroupId || 0) || knownChildId;
     const targetProductId = Number(routePayload.productId || 0);
 
+    // 卡片式打开四段商品地址：该地址由路由入口渲染独立配置页，
+    // 选购页（若仍在切换中）不做选中与地址改写，避免把地址退回目录态。
+    if (isCardDisplayMode.value && targetProductId > 0) {
+      return true;
+    }
+
     await withSuspendedRouteSync(async () => {
       if (isMobile.value) {
         mobileTypeEntered.value = true;
+      }
+
+      // 地址只有类型段（/products/{typeSlug}）：把第一个二级分组的目录加载出来，
+      // 卡片式保持一段地址，列表式随后会自动补全到商品段。
+      if (
+        routePayload.groupId <= 0 &&
+        !Object.keys(productsByGroup.value).length &&
+        rootGroups.value.length
+      ) {
+        activeTypeValue.value = nextTypeValue;
+        activeGroupId.value = rootGroups.value[0].id;
+        await loadGroupPayload(activeGroupId.value, { syncRoute: false });
+        return;
       }
 
       if (activeTypeValue.value !== nextTypeValue || !rootGroups.value.length) {
@@ -659,6 +743,7 @@ export function useWebsiteProductsCatalog({
           targetChildId,
           targetProductId,
           ambiguousId,
+          preserveRouteDepth: true,
           syncRoute: false,
         });
         return;
@@ -682,6 +767,7 @@ export function useWebsiteProductsCatalog({
       ) {
         switchChild(routePayload.childGroupId, {
           targetProductId,
+          preserveRouteDepth: true,
           syncRoute: false,
         });
         return;
@@ -738,7 +824,7 @@ export function useWebsiteProductsCatalog({
       // （如 isp），不传参会导致 root_groups 缺失该类型分组，前端过滤后为空并回退 /products。
       const res = await siteApi.productsInit(
         hasRouteTarget
-          ? { first_product_group_code: routePayload.typeId || undefined }
+          ? { first_product_group_code: routePayload.typeSlug || undefined }
           : undefined,
       );
       const data = res.data || {};
@@ -753,8 +839,9 @@ export function useWebsiteProductsCatalog({
         // 让 applyRouteSelection 命中本地分组与目录，避免深链「purchase-context →
         // product-groups → 完整目录」重复拉取首组目录。
         const routePayload = readWebsiteProductRouteParams(route);
-        const targetType = productTypes.value.find(
-          (item) => String(item.value || "") === String(routePayload.typeId),
+        const targetType = resolveWebsiteProductTypeBySegment(
+          productTypes.value,
+          routePayload.typeSlug,
         );
         const nextTypeValue =
           targetType?.value || productTypes.value[0]?.value || "";
@@ -786,6 +873,7 @@ export function useWebsiteProductsCatalog({
         rootGroups.value = [];
         childGroups.value = [];
         productsByGroup.value = {};
+        routeDepth.value = 0;
         resetSelectedProduct({ syncRoute: false });
         mobileTypeEntered.value = false;
         return true;
@@ -794,6 +882,7 @@ export function useWebsiteProductsCatalog({
       const types = productTypes.value;
       const firstTypeValue = types[0]?.value || "";
       activeTypeValue.value = firstTypeValue;
+      routeDepth.value = 0;
       rootGroups.value = filterGroupsByType(
         data.root_groups || [],
         firstTypeValue,
@@ -852,7 +941,7 @@ export function useWebsiteProductsCatalog({
   watch(
     () =>
       [
-        route.params.typeId,
+        route.params.typeSlug,
         route.params.groupId,
         route.params.childGroupId,
         route.params.productId,
@@ -868,18 +957,29 @@ export function useWebsiteProductsCatalog({
 
       const routePayload = readWebsiteProductRouteParams(route);
 
+      // 卡片式的四段商品地址由路由入口渲染独立配置页，选购页不参与选中/改写。
+      if (isCardDisplayMode.value && Number(routePayload.productId || 0) > 0) {
+        return;
+      }
+
       if (hasWebsiteProductRouteParams(routePayload)) {
         const currentTypeValue = activeTypeValue.value;
         const currentGroupId = activeGroupId.value;
         const currentChildId = activeChildId.value;
         const currentProductId = selectedProductId.value;
         const thirdId = Number(routePayload.thirdId || 0);
+        const targetType = resolveWebsiteProductTypeBySegment(
+          productTypes.value,
+          routePayload.typeSlug,
+        );
+        const targetTypeValue = String(targetType?.value || "");
         const thirdAlreadyApplied =
           thirdId > 0 &&
           (thirdId === currentChildId || thirdId === currentProductId);
 
         const changed =
-          String(routePayload.typeId) !== String(currentTypeValue) ||
+          (targetTypeValue !== "" &&
+            targetTypeValue !== String(currentTypeValue)) ||
           routePayload.groupId !== currentGroupId ||
           routePayload.childGroupId !== currentChildId ||
           (routePayload.productId > 0 &&
@@ -892,6 +992,8 @@ export function useWebsiteProductsCatalog({
 
         return;
       }
+
+      routeDepth.value = 0;
 
       if (route.path === "/products" && isMobile.value) {
         mobileTypeEntered.value = false;
@@ -928,7 +1030,10 @@ export function useWebsiteProductsCatalog({
     activeGroupId,
     activeChildId,
     selectedProductId,
+    routeDepth,
     activeTypeLabel,
+    activeTypeSlug,
+    isCardDisplayMode,
     activeGroupName,
     activeChildName,
     showMobileTypePicker,

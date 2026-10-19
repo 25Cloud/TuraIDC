@@ -71,6 +71,8 @@ export interface ProductRecord {
 export interface ProductTypeRecord {
   value: string;
   label: string;
+  /** 前台商品页地址里的类型段：/products/{slug}/... */
+  slug?: string;
   product_type?: string;
   product_type_label?: string;
   product_type_icon?: string;

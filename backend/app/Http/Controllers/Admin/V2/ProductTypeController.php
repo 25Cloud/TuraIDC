@@ -34,7 +34,8 @@ class ProductTypeController extends Controller
                 $this->productTypes->create(
                     (string) $payload['label'],
                     $payload['icon'] ?? null,
-                    $payload['product_type'] ?? null
+                    $payload['product_type'] ?? null,
+                    $payload['slug'] ?? null
                 )
             )->resolve(),
         ], '商品种类已创建');
@@ -51,7 +52,8 @@ class ProductTypeController extends Controller
                     (string) $payload['label'],
                     array_key_exists('is_hidden', $payload) ? (bool) $payload['is_hidden'] : null,
                     $payload['icon'] ?? null,
-                    $payload['product_type'] ?? null
+                    $payload['product_type'] ?? null,
+                    $payload['slug'] ?? null
                 )
             )->resolve(),
         ], '商品种类已更新');

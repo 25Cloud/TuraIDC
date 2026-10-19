@@ -7,9 +7,7 @@
           :key="item.value"
           :theme="catalogFilters.product_type === item.value ? 'primary' : 'default'"
           :variant="catalogFilters.product_type === item.value ? 'base' : 'outline'"
-          :aria-label="
-            `${item.label}${$t('products.catalog.typeCountLabel', { count: item.usage_count || 0 })}`
-          "
+          :aria-label="`${item.label}${$t('products.catalog.typeCountLabel', { count: item.usage_count || 0 })}`"
           :aria-pressed="catalogFilters.product_type === item.value ? 'true' : 'false'"
           @click="handleProductTypeChange(item.value)"
         >
@@ -67,7 +65,12 @@
           </t-input>
         </div>
 
-        <div v-if="categoryTreeRows.length" class="category-tree" role="tree" :aria-label="$t('products.catalog.categoryTree')">
+        <div
+          v-if="categoryTreeRows.length"
+          class="category-tree"
+          role="tree"
+          :aria-label="$t('products.catalog.categoryTree')"
+        >
           <div
             v-for="{ node: item, level, childCount } in categoryTreeRows"
             :key="categoryIdKey(item)"
@@ -235,7 +238,9 @@
             <t-button variant="outline" theme="danger" @click="handleBatchForceDeleteProducts">
               {{ $t('products.catalog.forceDelete') }}
             </t-button>
-            <t-button variant="text" @click="clearProductSelection">{{ $t('products.catalog.clearSelection') }}</t-button>
+            <t-button variant="text" @click="clearProductSelection">{{
+              $t('products.catalog.clearSelection')
+            }}</t-button>
           </t-space>
         </div>
 
@@ -287,7 +292,11 @@
             </div>
           </t-card>
 
-          <t-empty v-if="!products.length" class="product-record-empty" :description="$t('products.catalog.emptyProduct')" />
+          <t-empty
+            v-if="!products.length"
+            class="product-record-empty"
+            :description="$t('products.catalog.emptyProduct')"
+          />
         </div>
 
         <div v-else class="table-scroll">
@@ -316,7 +325,12 @@
               />
             </template>
             <template #id="{ row }">
-              <button type="button" class="user-link" :disabled="!isEntityId(row.id)" @click="goProductEdit(router, row.id)">
+              <button
+                type="button"
+                class="user-link"
+                :disabled="!isEntityId(row.id)"
+                @click="goProductEdit(router, row.id)"
+              >
                 <strong>{{ row.id }}</strong>
               </button>
             </template>
@@ -333,11 +347,9 @@
                   class="product-drag"
                   :class="{ 'is-dragging': productDragState?.id === row.id }"
                   :disabled="productSortLoading ? true : undefined"
-                  :aria-label="
-                    `${$t('products.catalog.dragSortPrefix')}${productSpecDisplayName(row)}${$t(
-                      'products.catalog.dragSortKeyboardSuffix',
-                    )}`
-                  "
+                  :aria-label="`${$t('products.catalog.dragSortPrefix')}${productSpecDisplayName(row)}${$t(
+                    'products.catalog.dragSortKeyboardSuffix',
+                  )}`"
                   draggable="true"
                   @dragstart="handleProductDragStart(row, $event)"
                   @dragend="handleProductDragEnd"
@@ -373,12 +385,17 @@
             <template #cpu="{ row }">
               <div class="product-cpu-cell">
                 <span class="product-cpu-cell__model">{{ row.cpu_model || '—' }}</span>
-                <span v-if="row.cpu_turbo" class="product-cpu-cell__turbo">{{ $t('products.catalog.turboPrefix') }} {{ row.cpu_turbo }}</span>
+                <span v-if="row.cpu_turbo" class="product-cpu-cell__turbo"
+                  >{{ $t('products.catalog.turboPrefix') }} {{ row.cpu_turbo }}</span
+                >
               </div>
             </template>
             <template #discountGroup="{ row }">
               <t-tag v-if="row.product_discount_group_id" theme="primary" variant="light" size="small">
-                {{ row.product_discount_group_name || `${$t('products.catalog.groupPrefix')}#${row.product_discount_group_id}` }}
+                {{
+                  row.product_discount_group_name ||
+                  `${$t('products.catalog.groupPrefix')}#${row.product_discount_group_id}`
+                }}
               </t-tag>
               <span v-else class="product-discount-group-empty">{{ $t('products.catalog.notSet') }}</span>
             </template>
@@ -439,7 +456,9 @@
     >
       <template #header>
         <div class="mobile-catalog-header">
-          <button type="button" class="mobile-catalog-back" @click="mobileCatalogDrawerVisible = false">{{ $t('products.catalog.back') }}</button>
+          <button type="button" class="mobile-catalog-back" @click="mobileCatalogDrawerVisible = false">
+            {{ $t('products.catalog.back') }}
+          </button>
           <div class="mobile-catalog-title">
             <strong>{{ $t('products.catalog.filterProduct') }}</strong>
             <span>{{ selectedProductTypeLabel }} / {{ selectedCategoryLabel }}</span>
@@ -491,7 +510,11 @@
             </t-space>
           </div>
           <div class="category-toolbar">
-            <t-input v-model="categoryKeyword" clearable :placeholder="$t('products.catalog.categorySearchPlaceholder')">
+            <t-input
+              v-model="categoryKeyword"
+              clearable
+              :placeholder="$t('products.catalog.categorySearchPlaceholder')"
+            >
               <template #prefix-icon><search-icon /></template>
             </t-input>
           </div>
@@ -635,7 +658,11 @@
               :rules="productRules"
               label-width="120px"
             >
-              <section v-show="activeProductDrawerSection === 'basic'" class="product-drawer-section" :data-title="$t('products.catalog.sectionDetails')">
+              <section
+                v-show="activeProductDrawerSection === 'basic'"
+                class="product-drawer-section"
+                :data-title="$t('products.catalog.sectionDetails')"
+              >
                 <div class="product-drawer-grid">
                   <t-form-item :label="$t('products.catalog.productName')" name="display_name">
                     <t-input v-model="productForm.display_name" />
@@ -771,9 +798,9 @@
                   >
                     {{ $t('products.catalog.pullTemplate') }}
                   </t-button>
-                  <t-button size="small" theme="primary" variant="outline" @click="openConfigOptionDialog()"
-                    >{{ $t('products.catalog.addConfig') }}</t-button
-                  >
+                  <t-button size="small" theme="primary" variant="outline" @click="openConfigOptionDialog()">{{
+                    $t('products.catalog.addConfig')
+                  }}</t-button>
                 </div>
                 <div class="config-option-panel">
                   <div class="config-option-count">
@@ -793,9 +820,9 @@
                           @click="openConfigOptionDialog(item, index)"
                           >{{ $t('products.catalog.edit') }}</t-button
                         >
-                        <t-button size="small" variant="text" theme="danger" @click="removeConfigOption(index)"
-                          >{{ $t('products.catalog.delete') }}</t-button
-                        >
+                        <t-button size="small" variant="text" theme="danger" @click="removeConfigOption(index)">{{
+                          $t('products.catalog.delete')
+                        }}</t-button>
                       </t-space>
                     </article>
                   </div>
@@ -808,7 +835,9 @@
 
         <div class="product-drawer-footer">
           <t-button variant="outline" @click="closeProductDrawer">{{ $t('products.catalog.cancel') }}</t-button>
-          <t-button theme="primary" :loading="productSubmitting" @click="submitProduct">{{ $t('products.catalog.saveChanges') }}</t-button>
+          <t-button theme="primary" :loading="productSubmitting" @click="submitProduct">{{
+            $t('products.catalog.saveChanges')
+          }}</t-button>
         </div>
       </div>
     </t-drawer>
@@ -817,10 +846,8 @@
       v-model:visible="configOptionDialogVisible"
       class="config-option-edit-dialog"
       :header="
-          configOptionEditingIndex >= 0
-            ? $t('products.catalog.editConfigOption')
-            : $t('products.catalog.addConfigOption')
-        "
+        configOptionEditingIndex >= 0 ? $t('products.catalog.editConfigOption') : $t('products.catalog.addConfigOption')
+      "
       width="760px"
       :confirm-btn="{ content: $t('products.catalog.saveConfig'), loading: configOptionSubmitting }"
       @confirm="submitConfigOption"
@@ -828,7 +855,10 @@
       <t-form class="config-option-edit-form" :data="configOptionForm" label-align="top">
         <div class="config-option-basic-grid">
           <t-form-item :label="$t('products.catalog.configOptionName')" name="name" required-mark>
-            <t-input v-model="configOptionForm.name" :placeholder="$t('products.catalog.configOptionNamePlaceholder')" />
+            <t-input
+              v-model="configOptionForm.name"
+              :placeholder="$t('products.catalog.configOptionNamePlaceholder')"
+            />
           </t-form-item>
           <t-form-item :label="$t('products.catalog.configOptionType')" name="option_mode" required-mark>
             <t-select v-model="configOptionForm.option_mode" @change="handleConfigOptionModeChange">
@@ -851,7 +881,10 @@
             />
           </t-form-item>
           <t-form-item :label="$t('products.catalog.suffixText')">
-            <t-input v-model="configOptionForm.suffix_text" :placeholder="$t('products.catalog.suffixTextPlaceholder')" />
+            <t-input
+              v-model="configOptionForm.suffix_text"
+              :placeholder="$t('products.catalog.suffixTextPlaceholder')"
+            />
           </t-form-item>
         </div>
 
@@ -907,7 +940,9 @@
         <div v-else class="config-subitem-table">
           <div class="config-subitem-head">
             <strong>{{ $t('products.catalog.subItemList') }}</strong>
-            <t-button size="small" variant="outline" @click="addConfigSubItemRow">{{ $t('products.catalog.addSubItem') }}</t-button>
+            <t-button size="small" variant="outline" @click="addConfigSubItemRow">{{
+              $t('products.catalog.addSubItem')
+            }}</t-button>
           </div>
           <div class="config-subitem-grid config-subitem-grid--header">
             <span>{{ $t('products.catalog.subItemName') }}</span>
@@ -990,10 +1025,7 @@
         }}
       </div>
       <t-form label-width="110px">
-        <t-form-item
-          v-if="productBatchDialogKind === 'console-template'"
-          :label="$t('products.catalog.consoleType')"
-        >
+        <t-form-item v-if="productBatchDialogKind === 'console-template'" :label="$t('products.catalog.consoleType')">
           <t-radio-group v-model="consoleTemplateValue" variant="default-filled">
             <t-radio-button value="compute">{{ $t('products.catalog.consoleCompute') }}</t-radio-button>
             <t-radio-button value="port_mapping">{{ $t('products.catalog.consolePortMapping') }}</t-radio-button>
@@ -1029,11 +1061,7 @@
             />
           </t-form-item>
           <t-form-item :label="$t('products.catalog.cpuTurbo')">
-            <t-input
-              v-model="cpuTurboValue"
-              :placeholder="$t('products.catalog.cpuTurboPlaceholder')"
-              maxlength="40"
-            />
+            <t-input v-model="cpuTurboValue" :placeholder="$t('products.catalog.cpuTurboPlaceholder')" maxlength="40" />
           </t-form-item>
           <p class="batch-dialog-tip">{{ $t('products.catalog.cpuSpecTip') }}</p>
         </template>
@@ -1161,7 +1189,9 @@
       @confirm="submitCategory"
     >
       <t-form ref="categoryFormRef" :data="categoryForm" :rules="categoryRules" label-width="110px">
-        <t-form-item :label="$t('products.catalog.categoryName')" name="name"><t-input v-model="categoryForm.name" /></t-form-item>
+        <t-form-item :label="$t('products.catalog.categoryName')" name="name"
+          ><t-input v-model="categoryForm.name"
+        /></t-form-item>
         <t-form-item :label="$t('products.catalog.productType')" name="product_type">
           <t-select
             v-model="categoryForm.product_type"
@@ -1199,7 +1229,9 @@
             />
           </t-select>
         </t-form-item>
-        <t-form-item :label="$t('products.catalog.slogan')" name="slogan"><t-input v-model="categoryForm.slogan" /></t-form-item>
+        <t-form-item :label="$t('products.catalog.slogan')" name="slogan"
+          ><t-input v-model="categoryForm.slogan"
+        /></t-form-item>
         <t-form-item :label="$t('products.catalog.sortOrder')" name="sort_order"
           ><t-input-number v-model="categoryForm.sort_order" :min="0"
         /></t-form-item>
@@ -1230,13 +1262,29 @@
           <t-form :data="typeForm" label-align="top" class="type-form">
             <div class="type-form-grid">
               <t-form-item :label="$t('products.catalog.productTypeName')" name="label" required-mark>
-                <t-input v-model="typeForm.label" maxlength="40" :placeholder="$t('products.catalog.productTypeNamePlaceholder')" />
+                <t-input
+                  v-model="typeForm.label"
+                  maxlength="40"
+                  :placeholder="$t('products.catalog.productTypeNamePlaceholder')"
+                />
               </t-form-item>
               <t-form-item :label="$t('products.catalog.productType')" name="product_type" required-mark>
                 <t-select v-model="typeForm.product_type" :options="businessProductTypeOptions" />
               </t-form-item>
+              <t-form-item :label="$t('products.catalog.productTypeSlug')" name="slug">
+                <t-input
+                  v-model="typeForm.slug"
+                  maxlength="60"
+                  :placeholder="$t('products.catalog.productTypeSlugPlaceholder')"
+                />
+                <p class="type-form-hint">{{ $t('products.catalog.productTypeSlugHint') }}</p>
+              </t-form-item>
               <t-form-item :label="$t('products.catalog.icon')" name="icon" class="type-icon-form-item">
-                <div class="type-icon-picker" role="radiogroup" :aria-label="$t('products.catalog.selectProductTypeIconAria')">
+                <div
+                  class="type-icon-picker"
+                  role="radiogroup"
+                  :aria-label="$t('products.catalog.selectProductTypeIconAria')"
+                >
                   <button
                     v-for="item in productTypeIconOptions"
                     :key="item.value"
@@ -1270,9 +1318,9 @@
             <div>
               <strong>{{ $t('products.catalog.categoryList') }}</strong>
               <span
-                >{{ productTypes.length }} {{ $t('products.catalog.productTypeUnit') }} ·
-                {{ typeManagerProductCount }} {{ $t('products.catalog.productUnit') }} ·
-                {{ typeManagerHiddenCount }} {{ $t('products.catalog.hiddenUnit') }}</span
+                >{{ productTypes.length }} {{ $t('products.catalog.productTypeUnit') }} · {{ typeManagerProductCount }}
+                {{ $t('products.catalog.productUnit') }} · {{ typeManagerHiddenCount }}
+                {{ $t('products.catalog.hiddenUnit') }}</span
               >
             </div>
             <t-button size="small" variant="outline" :loading="typeLoading" @click="loadProductTypes">
@@ -1292,11 +1340,16 @@
               <div class="type-manager-item__main">
                 <div class="type-manager-item__title">
                   <strong>{{ item.label }}</strong>
-                  <t-tag v-if="item.is_hidden" theme="warning" variant="light">{{ $t('products.catalog.hidden') }}</t-tag>
-                  <t-tag v-if="editingTypeValue === item.value" theme="primary" variant="light">{{ $t('products.catalog.editing') }}</t-tag>
+                  <t-tag v-if="item.is_hidden" theme="warning" variant="light">{{
+                    $t('products.catalog.hidden')
+                  }}</t-tag>
+                  <t-tag v-if="editingTypeValue === item.value" theme="primary" variant="light">{{
+                    $t('products.catalog.editing')
+                  }}</t-tag>
                 </div>
                 <div class="type-manager-item__meta">
                   <span>{{ normalizeBusinessProductType(item.product_type) }}</span>
+                  <span v-if="item.slug" class="type-manager-item__slug">/products/{{ item.slug }}</span>
                   <span v-if="item.icon" class="type-manager-item__icon-meta">
                     <t-icon :name="resolveProductTypeIconName(item.icon)" />
                     {{ productTypeIconDisplayLabel(item.icon) }}
@@ -1384,7 +1437,9 @@
           <t-empty v-if="productTypes.length === 0" :description="$t('products.catalog.emptyProductType')" />
         </div>
         <div class="type-manager-footer">
-          <t-button variant="outline" @click="typeManagerDialogVisible = false">{{ $t('products.catalog.close') }}</t-button>
+          <t-button variant="outline" @click="typeManagerDialogVisible = false">{{
+            $t('products.catalog.close')
+          }}</t-button>
         </div>
       </div>
     </t-dialog>
@@ -1404,7 +1459,11 @@
       <div class="spec-highlight-form">
         <label v-for="dimension in specHighlightDimensions" :key="dimension.key" class="spec-highlight-field">
           <span>{{ dimension.label }}</span>
-          <t-input v-model="specHighlightForm[dimension.key]" :placeholder="$t('products.catalog.autoExtractPlaceholder')" clearable />
+          <t-input
+            v-model="specHighlightForm[dimension.key]"
+            :placeholder="$t('products.catalog.autoExtractPlaceholder')"
+            clearable
+          />
         </label>
       </div>
     </t-dialog>
@@ -1431,15 +1490,15 @@ import { useRouter } from 'vue-router';
 import { productDiscountGroupsApi } from '@/api/admin/agentDiscount';
 import type { ProductDiscountGroupRecord } from '@/api/admin/types';
 import type { ProductCategoryRecord, ProductRecord, ProductTypeRecord, SpecHighlightDimension } from '@/api/product';
-import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
-import { t } from '@/locales';
-import { useUserStore } from '@/store';
-import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
-import { useAdminViewMode } from '@/composables/useAdminViewMode';
-import { goProductEdit, isEntityId } from '@/utils/route/adminEntityLink';
 import { productApi } from '@/api/product';
 import type { ProviderTypeRecord, SupplierFormField, SupplierRecord } from '@/api/supplier';
 import { supplierApi } from '@/api/supplier';
+import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
+import { useAdminViewMode } from '@/composables/useAdminViewMode';
+import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
+import { t } from '@/locales';
+import { useUserStore } from '@/store';
+import { goProductEdit, isEntityId } from '@/utils/route/adminEntityLink';
 
 import {
   errorMessage,
@@ -1567,6 +1626,8 @@ const typeForm = reactive({
   label: '',
   product_type: 'cloud_server',
   icon: '',
+  // 前台商品页地址里的类型段：/products/{slug}/...
+  slug: '',
 });
 
 const catalogFilters = reactive({
@@ -1716,11 +1777,31 @@ const categoryForm = reactive<CategoryFormData>({
 
 const productPricingPlan = ref('standard');
 const productPricingPlanOptions = [
-  { value: 'standard', label: t('products.catalog.discountStandard'), ratios: { quarterly: 3, semiannually: 6, annually: 12 } },
-  { value: 'annual', label: t('products.catalog.discountAnnual'), ratios: { quarterly: 3, semiannually: 6, annually: 10 } },
-  { value: 'bulk', label: t('products.catalog.discountBulk'), ratios: { quarterly: 2.7, semiannually: 5.1, annually: 8.4 } },
-  { value: 'rule1', label: t('products.catalog.discountRuleOne'), ratios: { quarterly: 3, semiannually: 4.8, annually: 9 } },
-  { value: 'rule2', label: t('products.catalog.discountRuleTwo'), ratios: { quarterly: 2.7, semiannually: 5.1, annually: 9.6 } },
+  {
+    value: 'standard',
+    label: t('products.catalog.discountStandard'),
+    ratios: { quarterly: 3, semiannually: 6, annually: 12 },
+  },
+  {
+    value: 'annual',
+    label: t('products.catalog.discountAnnual'),
+    ratios: { quarterly: 3, semiannually: 6, annually: 10 },
+  },
+  {
+    value: 'bulk',
+    label: t('products.catalog.discountBulk'),
+    ratios: { quarterly: 2.7, semiannually: 5.1, annually: 8.4 },
+  },
+  {
+    value: 'rule1',
+    label: t('products.catalog.discountRuleOne'),
+    ratios: { quarterly: 3, semiannually: 4.8, annually: 9 },
+  },
+  {
+    value: 'rule2',
+    label: t('products.catalog.discountRuleTwo'),
+    ratios: { quarterly: 2.7, semiannually: 5.1, annually: 9.6 },
+  },
 ];
 const lifecycleStatusOptions = [
   { value: 'active', label: t('products.catalog.filterActive') },
@@ -1745,9 +1826,21 @@ const productTypeIconOptions = [
 
 const productDrawerSections = [
   { key: 'basic', label: t('products.catalog.sectionDetails'), description: t('products.catalog.sectionDetailsDesc') },
-  { key: 'pricing', label: t('products.catalog.sectionPricing'), description: t('products.catalog.sectionPricingDesc') },
-  { key: 'interface', label: t('products.catalog.sectionInterface'), description: t('products.catalog.sectionInterfaceDesc') },
-  { key: 'config', label: t('products.catalog.sectionProductConfig'), description: t('products.catalog.sectionProductConfigDesc') },
+  {
+    key: 'pricing',
+    label: t('products.catalog.sectionPricing'),
+    description: t('products.catalog.sectionPricingDesc'),
+  },
+  {
+    key: 'interface',
+    label: t('products.catalog.sectionInterface'),
+    description: t('products.catalog.sectionInterfaceDesc'),
+  },
+  {
+    key: 'config',
+    label: t('products.catalog.sectionProductConfig'),
+    description: t('products.catalog.sectionProductConfigDesc'),
+  },
 ];
 
 const productColumns: PrimaryTableCol<TableRowData>[] = [
@@ -2510,6 +2603,7 @@ function resetTypeForm() {
   typeForm.label = '';
   typeForm.product_type = 'cloud_server';
   typeForm.icon = '';
+  typeForm.slug = '';
 }
 
 function openTypeManagerDialog() {
@@ -2522,6 +2616,32 @@ function editType(type: ProductTypeRecord) {
   typeForm.label = type.label;
   typeForm.product_type = normalizeBusinessProductType(type.product_type);
   typeForm.icon = resolveProductTypeIconName(type.icon);
+  typeForm.slug = String(type.slug || '');
+}
+
+const PRODUCT_TYPE_SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+
+function normalizeTypeSlugInput(value: string) {
+  return String(value || '')
+    .trim()
+    .toLowerCase();
+}
+
+function validateTypeSlugInput(slug: string) {
+  if (!slug) {
+    // 留空交给后端按 value 生成，不强制填写
+    return true;
+  }
+
+  if (slug.length < 2 || slug.length > 60) {
+    return false;
+  }
+
+  if (!PRODUCT_TYPE_SLUG_PATTERN.test(slug) || /^\d+$/.test(slug)) {
+    return false;
+  }
+
+  return true;
 }
 
 async function submitType() {
@@ -2531,15 +2651,27 @@ async function submitType() {
     return;
   }
 
+  const slug = normalizeTypeSlugInput(typeForm.slug);
+  if (!validateTypeSlugInput(slug)) {
+    MessagePlugin.warning(t('products.catalog.productTypeSlugInvalid'));
+    return;
+  }
+
   typeSubmitting.value = true;
   try {
     const icon = resolveProductTypeIconName(typeForm.icon);
     const productType = normalizeBusinessProductType(typeForm.product_type);
     if (editingTypeValue.value) {
-      await productApi.updateType(editingTypeValue.value, { label, product_type: productType, icon });
+      await productApi.updateType(editingTypeValue.value, {
+        label,
+        product_type: productType,
+        icon,
+        // 空字符串表示不修改（后端 nullable）
+        slug,
+      });
       MessagePlugin.success(t('products.catalog.productTypeUpdated'));
     } else {
-      await productApi.createType({ label, product_type: productType, icon });
+      await productApi.createType({ label, product_type: productType, icon, slug });
       MessagePlugin.success(t('products.catalog.productTypeCreated'));
     }
     resetTypeForm();
@@ -2750,8 +2882,8 @@ const productSortLoading = ref(false);
 // 拖拽排序会改写商品顺序，属于 product.manage 权限范围；
 // 无权限用户不应看到排序控件（后端仍会独立校验）。
 const userStore = useUserStore();
-const canSortProducts = computed(
-  () => hasPermissionInList(userStore.userInfo?.permissions || [], AdminPermissions.PRODUCT_MANAGE),
+const canSortProducts = computed(() =>
+  hasPermissionInList(userStore.userInfo?.permissions || [], AdminPermissions.PRODUCT_MANAGE),
 );
 
 function handleProductDragStart(row: TableRowData, event: DragEvent) {
@@ -3828,7 +3960,11 @@ function removeConfigOption(index: number) {
  * （Number('quantity') 是 NaN，落在集合外），避免存量数据被降级成单选。
  */
 function isRangeOptionType(value: unknown): boolean {
-  if (String(value ?? '').trim().toLowerCase() === 'quantity') {
+  if (
+    String(value ?? '')
+      .trim()
+      .toLowerCase() === 'quantity'
+  ) {
     return true;
   }
   return RANGE_OPTION_TYPES.includes(Number(value));

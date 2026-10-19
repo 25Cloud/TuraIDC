@@ -38,6 +38,10 @@ class SiteProductGroupResource extends JsonResource
             'product_type_label' => ProductType::businessLabelOf($productType),
             'first_product_group_id' => $firstGroup?->id ? (int) $firstGroup->id : null,
             'first_product_group_code' => $firstGroupCode,
+            // 前台地址用的类型段：/products/{slug}/...
+            'first_product_group_slug' => trim((string) ($firstGroup?->slug ?? '')) !== ''
+                ? (string) $firstGroup->slug
+                : (\Illuminate\Support\Str::slug($firstGroupCode) ?: $firstGroupCode),
             'first_product_group_name' => $firstGroup?->name,
             'second_product_group_id' => $secondGroup?->id ? (int) $secondGroup->id : null,
             'second_product_group_name' => $secondGroup?->name,
