@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Services\ProductCatalog;
 
 use App\Models\Product;
+use App\Support\ProductCatalogName;
 use App\Support\ProductConfigOptionPresenter;
+use App\Support\ProductGroupHierarchyFields;
 use Illuminate\Support\Str;
 
 class ProductDisplayNameResolver
@@ -40,6 +42,7 @@ class ProductDisplayNameResolver
 
     public function __construct(
         private readonly ?InstanceSpecCatalogService $instanceSpecCatalogService = null,
+        private readonly ?ProductSpecSummaryBuilder $specSummaryBuilder = null,
     ) {}
 
     /**
@@ -111,9 +114,13 @@ class ProductDisplayNameResolver
             $cpuMemoryDisplay,
             $instanceSpecText,
         ]);
+        // 没有同步上游商品名（或上游名只是「2 vCPU 2 GiB」这种默认名被判定为无效）时，
+        // 回退不能再只给半截规格：走「三级分组名 + 规范规格摘要」，与库里已改名的
+        // 商品、与前台目录展示是同一口径。
+        $specSummaryName = $this->resolveSpecSummaryName($product);
         $nameFallback = $customDisplayName !== ''
             ? $customDisplayName
-            : $this->resolveProductNameFallbackText($product, $configSnapshot);
+            : ($specSummaryName !== '' ? $specSummaryName : $this->resolveProductNameFallbackText($product, $configSnapshot));
         // 回退顺序：实例规格文本 → CPU/内存展示 → 自定义名 → 商品名/remark（legacy 链）。
         // legacyProductName 由 resolveLegacyProductNameText 产出（唯一会读 remark 的路径），
         // 必须接进最后兜底：商品既无规格绑定、配置里也没有 cpu/memory 时，此前它被丢弃、
@@ -906,6 +913,47 @@ class ProductDisplayNameResolver
         }
 
         return new InstanceSpecCatalogService;
+    }
+
+    /**
+     * 规范规格摘要：目录展示用的统一口径（"2核2G20Mbps"）。
+     *
+     * 与 product_display_name 分工：那边是上游原名（订单/账单/SEO 用），这边
+     * 只由结构化配置算出，不含线路描述。
+     */
+    private function resolveSpecSummary(Product $product): string
+    {
+        return $this->resolveSpecSummaryBuilder()->build($product);
+    }
+
+    private function resolveSpecSummaryBuilder(): ProductSpecSummaryBuilder
+    {
+        if ($this->specSummaryBuilder instanceof ProductSpecSummaryBuilder) {
+            return $this->specSummaryBuilder;
+        }
+
+        return new ProductSpecSummaryBuilder;
+    }
+
+    /**
+     * 「三级分组名 + 规范规格摘要」：没有同步上游商品名时的回退展示名。
+     *
+     * 此前回退只给「2 vCPU 2 GiB」这种半截规格，脱离目录看不知道是什么产品；
+     * 现在与库里已改名的商品、与前台目录展示保持同一口径。
+     */
+    private function resolveSpecSummaryName(Product $product): string
+    {
+        $summary = $this->resolveSpecSummary($product);
+        if ($summary === '') {
+            return '';
+        }
+
+        $hierarchy = ProductGroupHierarchyFields::fromProduct($product);
+
+        return ProductCatalogName::compose($hierarchy, [
+            'product_spec_summary' => $summary,
+            'product_display_name' => '',
+        ]);
     }
 
     /**
