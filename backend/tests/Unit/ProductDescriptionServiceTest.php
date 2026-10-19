@@ -115,6 +115,65 @@ class ProductDescriptionServiceTest extends TestCase
         $this->assertSame('', $resolved['html']);
     }
 
+    public function test_it_falls_back_to_escaped_upstream_description_in_remark(): void
+    {
+        $service = new ProductDescriptionService();
+
+        $resolved = $service->resolve(new Product([
+            // 魔方 description 历史导入后的形态：整段 HTML 被转义
+            'remark' => '&lt;li&gt;配置：4核 4G&lt;/li&gt;&lt;li&gt;硬盘：30G SSD&lt;/li&gt;',
+        ]));
+
+        $this->assertSame(ProductDescriptionService::SOURCE_REMARK, $resolved['source']);
+        // 解码实体 + 补列表容器，输出与上游商品描述一致
+        $this->assertSame(
+            '<ul><li>配置：4核 4G</li><li>硬盘：30G SSD</li></ul>',
+            $resolved['html']
+        );
+    }
+
+    public function test_remark_fallback_is_sanitized(): void
+    {
+        $service = new ProductDescriptionService();
+
+        $resolved = $service->resolve(new Product([
+            'remark' => '&lt;li&gt;正文&lt;script&gt;alert(1)&lt;/script&gt;&lt;/li&gt;',
+        ]));
+
+        $this->assertSame(ProductDescriptionService::SOURCE_REMARK, $resolved['source']);
+        $this->assertStringNotContainsString('script', $resolved['html']);
+        $this->assertStringContainsString('正文', $resolved['html']);
+    }
+
+    public function test_auto_description_reads_select_sub_values_despite_zero_qty_minimum(): void
+    {
+        $service = new ProductDescriptionService();
+
+        // 导入数据给每个配置项都补了 qty_minimum（下拉项为 0）；不能因此把值吞掉
+        $resolved = $service->resolve(new Product([
+            'config_options' => [
+                [
+                    'id' => 1,
+                    'field' => 'cpu',
+                    'name' => 'CPU',
+                    'qty_minimum' => 0,
+                    'sub' => [['option_name' => '4核', 'option_name_first' => '4']],
+                ],
+                [
+                    'id' => 2,
+                    'field' => 'memory',
+                    'name' => '内存',
+                    'qty_minimum' => 0,
+                    'sub' => [['version' => '4GB', 'option_name_first' => '4096']],
+                ],
+            ],
+        ]));
+
+        $this->assertSame(ProductDescriptionService::SOURCE_AUTO, $resolved['source']);
+        $this->assertStringContainsString('CPU: 4核', $resolved['html']);
+        $this->assertStringContainsString('内存: 4GB', $resolved['html']);
+    }
+
     public function test_it_skips_rows_with_a_missing_label_or_value(): void
     {
         $service = new ProductDescriptionService();

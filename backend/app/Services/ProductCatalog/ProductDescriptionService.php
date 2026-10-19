@@ -25,7 +25,9 @@ use App\Support\RichHtmlSanitizer;
  * 代价是描述不是可导出数据——商家要固化某次结果，在后台存一次即转 manual。
  *
  * 与 remark 的关系：remark 是内部备注、也是回传魔方的 description 字段
- * （见 ZjmfUpstream\ProductService），两列互不影响，本服务不读 remark。
+ * （见 ZjmfUpstream\ProductService）。历史导入把上游商品描述（转义过的卡片 HTML）
+ * 存在 remark 里；products.description 为空时，本服务会解码并消毒这段内容，
+ * 让前台展示与上游商品页一致。新导入的数据会直接把上游描述写进 description。
  */
 final class ProductDescriptionService
 {
@@ -34,6 +36,9 @@ final class ProductDescriptionService
 
     /** 描述留空、按规格维度自动生成 */
     public const SOURCE_AUTO = 'auto';
+
+    /** 描述留空、回退到 remark 里保存的上游商品描述（魔方导入的卡片 HTML） */
+    public const SOURCE_REMARK = 'remark';
 
     /** 描述留空且识别不出任何维度 */
     public const SOURCE_EMPTY = 'empty';
@@ -69,11 +74,43 @@ final class ProductDescriptionService
             return ['html' => $manual, 'source' => self::SOURCE_MANUAL];
         }
 
+        // 历史导入把上游商品描述（魔方卡片 HTML）存进了 remark。上游它就是商品详情里的
+        // 描述文案，前台直接展示这段内容才和上游一致；只有 remark 也为空时才退到
+        // 规格维度自动生成。
+        $upstream = $this->remarkHtml($product);
+        if ($upstream !== '') {
+            return ['html' => $upstream, 'source' => self::SOURCE_REMARK];
+        }
+
         $auto = $this->renderList($autoItems ?? $this->autoItems($product));
 
         return $auto === ''
             ? ['html' => '', 'source' => self::SOURCE_EMPTY]
             : ['html' => $auto, 'source' => self::SOURCE_AUTO];
+    }
+
+    /**
+     * remark 中保存的上游描述 HTML。
+     *
+     * 魔方接口返回的描述本身是转义过的 HTML（&lt;li&gt;…），历史导入按原样落库；
+     * 这里解码实体、给裸 &lt;li&gt; 片段补上列表容器，再过白名单消毒。
+     */
+    private function remarkHtml(Product $product): string
+    {
+        $remark = trim((string) ($product->remark ?? ''));
+
+        if ($remark === '') {
+            return '';
+        }
+
+        $decoded = html_entity_decode($remark, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $decoded = preg_replace('/<br\s*\/?>/iu', '<br>', $decoded) ?? $decoded;
+
+        if (preg_match('/<li[\s>]/iu', $decoded) === 1 && preg_match('/<ul[\s>]/iu', $decoded) !== 1) {
+            $decoded = '<ul>'.$decoded.'</ul>';
+        }
+
+        return $this->sanitize($decoded);
     }
 
     /**

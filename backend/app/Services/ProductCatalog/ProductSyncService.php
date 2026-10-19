@@ -22,6 +22,7 @@ use App\Services\ProductCatalog\Concerns\HandlesProductCatalogHelpers;
 use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\ProviderResolver;
 use App\Support\ProductGroupHierarchyFields;
+use App\Support\RichHtmlSanitizer;
 use App\Support\TextSanitizer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -323,6 +324,10 @@ class ProductSyncService
                 // 已经人工设过展示名的商品，重复对接时保留人工值。
                 if (trim((string) ($localProduct->custom_display_name ?? '')) !== '') {
                     unset($payload['custom_display_name']);
+                }
+                // 描述同理：只补空，不覆盖后台人工编辑过的描述。
+                if (trim((string) ($localProduct->description ?? '')) !== '') {
+                    unset($payload['description']);
                 }
                 $localProduct = DB::transaction(
                     fn () => $this->persistProductWithStructuredSync($localProduct, $payload)
@@ -1670,6 +1675,30 @@ class ProductSyncService
             ->all();
     }
 
+    /**
+     * 上游商品描述归一：魔方返回的是被转义过的卡片 HTML（&lt;li&gt;…），
+     * 解码实体后补上 <ul> 容器再过富文本白名单；为空返回 null。
+     */
+    private function normalizeUpstreamDescription(mixed $raw): ?string
+    {
+        $text = trim((string) $raw);
+
+        if ($text === '') {
+            return null;
+        }
+
+        $decoded = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $decoded = preg_replace('/<br\s*\/?>/iu', '<br>', $decoded) ?? $decoded;
+
+        if (preg_match('/<li[\s>]/iu', $decoded) === 1 && preg_match('/<ul[\s>]/iu', $decoded) !== 1) {
+            $decoded = '<ul>'.$decoded.'</ul>';
+        }
+
+        $sanitized = RichHtmlSanitizer::sanitize($decoded);
+
+        return $sanitized !== '' ? $sanitized : null;
+    }
+
     private function buildImportedPricing(array $supplierProduct): array
     {
         $monthlyBasePrice = $this->resolveMonthlyBaseAmount(
@@ -2119,6 +2148,10 @@ class ProductSyncService
             'setup_fee' => $this->normalizeImportedAmount($supplierProduct['setup_fee'] ?? null) ?? '0.00',
             'config_options' => $configOptions,
             'purchase_requires' => $purchaseRequires,
+            // 上游商品描述（HTML 片段）在此之前从未导入，前台只能按规格猜一段描述，
+            // 与上游商品页文案不一致。这里解码实体、补列表容器并过白名单后落库；
+            // 之后同步只补空描述，不覆盖商家在后台改过的描述。
+            'description' => $this->normalizeUpstreamDescription($supplierProduct['description'] ?? null),
             'stock' => $this->resolveRemoteCatalogStock($supplierProduct),
             'status' => $defaultStatus,
             'sort_order' => 0,

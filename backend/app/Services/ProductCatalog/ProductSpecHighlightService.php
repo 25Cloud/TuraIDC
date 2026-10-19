@@ -237,6 +237,10 @@ class ProductSpecHighlightService
         if (! $this->isPanelProduct($product)) {
             if (preg_match('/(\d+(?:\.\d+)?)\s*(?:核|v?cpu|cores?|core)(?![a-z])/iu', $name, $match) === 1) {
                 $dimensions['cpu'] = $this->normalizeNumeric($match[1]).'核';
+            } elseif (preg_match('/(\d+)\s*[cC](?=[\s-]*\d)/u', $name, $match) === 1) {
+                // 上游常见写法「4C4G20M」：C 就是核，之前只认「核 / CPU」，
+                // 这类商品名会漏掉 CPU 规格。
+                $dimensions['cpu'] = $this->normalizeNumeric($match[1]).'核';
             }
 
             if (preg_match('/(\d+(?:\.\d+)?)\s*(?:gb|g)(?![a-z])(?!\s*(?:防御|防护))/iu', $name, $match) === 1) {
@@ -264,7 +268,13 @@ class ProductSpecHighlightService
     }
 
     /**
-     * remark 商品卡片提取（<li>键:值</li> 与 <br> 分隔行）。
+     * remark 商品卡片提取。
+     *
+     * 上游（魔方）商品的 description 是一段被 HTML 转义过的卡片片段，历史导入把它原样
+     * 存进了 remark，例如 `&lt;li&gt;硬盘：30G SSD&lt;/li&gt;`。此前直接按 `</li>` 切分，
+     * 转义后的文本一个标签都匹配不上，整段 remark 等于没读——描述里只剩商品名能推断的
+     * 内存/带宽，硬盘、防御、流量、线路全部丢失。这里先解码实体，再按 li/br 切行，
+     * 最后一行里同时尝试「键:值」与自由文本数字两种解析。
      *
      * @return array<string, string>
      */
@@ -275,17 +285,86 @@ class ProductSpecHighlightService
             return [];
         }
 
+        $decoded = html_entity_decode($remark, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $decoded = preg_replace('/<br\s*\/?>/iu', "\n", $decoded) ?? $decoded;
+        $decoded = preg_replace('/<\/li\s*>/iu', "\n", $decoded) ?? $decoded;
+        // 标签替换成空格而不是直接删：`4G<span>INTEL</span>` 直接 strip_tags 会粘成
+        // 「4GINTEL」，后面的数字正则就匹配不到了。
+        $text = preg_replace('/<[^>]*>/u', ' ', $decoded) ?? $decoded;
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
         $dimensions = [];
-        $segments = preg_split('/<\/?li[^>]*>|<br\s*\/?>/iu', $remark) ?: [];
-        foreach ($segments as $segment) {
-            $line = trim(strip_tags($segment));
+        foreach (preg_split('/\R/u', $text) ?: [] as $line) {
+            $line = trim(preg_replace('/\s+/u', ' ', $line) ?? $line);
             if ($line === '') {
                 continue;
             }
 
+            // 「硬盘：30G SSD」「防御：200Gbps」这类带维度名的行优先
             foreach ($this->parseKeyValueLine($line) as $key => $value) {
                 $dimensions[$key] = $value;
             }
+
+            // 「配置：4核 4G」这类没有维度名、但数字本身就是规格的行，
+            // 再做一次自由文本提取；已有维度不覆盖。
+            foreach ($this->extractDimensionsFromText($line) as $key => $value) {
+                if (! isset($dimensions[$key]) || trim((string) $dimensions[$key]) === '') {
+                    $dimensions[$key] = $value;
+                }
+            }
+        }
+
+        return $dimensions;
+    }
+
+    /**
+     * 从一段自由文本里提取规格数字（商品名 / remark 的说明行共用同一套写法）。
+     *
+     * @return array<string, string>
+     */
+    private function extractDimensionsFromText(string $text): array
+    {
+        $dimensions = [];
+
+        if (preg_match('/(\d+(?:\.\d+)?)\s*(?:核|v?cpu|cores?|core)(?![a-z])/iu', $text, $match) === 1) {
+            $dimensions['cpu'] = $this->normalizeNumeric($match[1]).'核';
+        } elseif (preg_match('/(\d+)\s*[cC](?=[\s-]*\d)/u', $text, $match) === 1) {
+            $dimensions['cpu'] = $this->normalizeNumeric($match[1]).'核';
+        }
+
+        // 容量行（硬盘 / 磁盘 / 存储 / 系统盘 / 数据盘）里的「30G」不是内存，
+        // 不能因为只看到 G 就当成内存规格。
+        $isCapacityLine = preg_match('/(?:硬盘|磁盘|存储|系统盘|数据盘)/u', $text) === 1;
+
+        if (! $isCapacityLine
+            && preg_match('/(\d+(?:\.\d+)?)\s*(?:gb|g)(?![a-z])/iu', $text, $match) === 1
+            && preg_match('/'.preg_quote($match[0], '/').'\s*(?:bps|防御|防护|流量)/iu', $text) !== 1
+        ) {
+            $dimensions['memory'] = $this->normalizeNumeric($match[1]).'G';
+        }
+
+        if (preg_match('/(?:带宽)\s*[:：]?\s*([0-9.]+\s*[MG](?:bps)?(?:峰值|共享)?)/iu', $text, $match) === 1) {
+            $dimensions['bandwidth'] = trim($match[1]);
+        }
+
+        if (preg_match('/(?:防御|防护|抗攻击)\s*[:：]?\s*([0-9.]+\s*[GT](?:bps)?)/iu', $text, $match) === 1) {
+            $dimensions['defense'] = trim($match[1]);
+        }
+
+        if (preg_match('/(?:流量)\s*[:：]?\s*(不限流量|不限|无限|[0-9.]+\s*[TGM](?:B)?)/iu', $text, $match) === 1) {
+            $dimensions['traffic'] = trim($match[1]);
+        }
+
+        if (preg_match('/(?:硬盘|磁盘|存储)\s*[:：]?\s*([0-9.]+\s*[TGM](?:B)?(?:\s*SSD)?)/iu', $text, $match) === 1) {
+            $dimensions['disk'] = trim($match[1]);
+        }
+
+        if (preg_match('/(?:线路)\s*[:：]\s*([^\s，,;；]+)/u', $text, $match) === 1) {
+            $dimensions['route'] = trim($match[1]);
+        }
+
+        if (preg_match('/(?:地区|机房|区域)\s*[:：]\s*([^\s，,;；]+)/u', $text, $match) === 1) {
+            $dimensions['region'] = trim($match[1]);
         }
 
         return $dimensions;
@@ -370,17 +449,12 @@ class ProductSpecHighlightService
 
     private function resolveConfigOptionValue(array $option): string
     {
-        if (array_key_exists('qty_minimum', $option)) {
-            $minimum = $option['qty_minimum'];
-            if ($minimum === null || $minimum === '' || (float) $minimum <= 0) {
-                return '';
-            }
-
-            $unit = trim((string) ($option['suffix_text'] ?? $option['unit'] ?? ''));
-
-            return $this->normalizeNumeric((string) $minimum).($unit !== '' ? $unit : '');
-        }
-
+        // 先取子项展示值：下拉 / 单选 / 多选的真实规格在 sub 里。
+        //
+        // 此前先判断 qty_minimum 字段是否存在——升级后的导入数据给每个配置项都补了
+        // qty_minimum（非滑块为 0），于是所有下拉项都在这里被当成「最小值为 0」直接
+        // 返回空串，描述里连 CPU / 内存 / 硬盘都出不来。现在只有确实没有可用子项的
+        // 范围型配置项，才按 qty_minimum 取值。
         foreach ([$option['sub'] ?? [], $option['sub_items'] ?? []] as $subOptions) {
             foreach ((array) $subOptions as $sub) {
                 if (! is_array($sub) || (int) ($sub['hidden'] ?? 0) === 1) {
@@ -394,12 +468,44 @@ class ProductSpecHighlightService
             }
         }
 
+        $minimum = $option['qty_minimum'] ?? null;
+        if (is_numeric($minimum) && (float) $minimum > 0) {
+            $unit = trim((string) ($option['suffix_text'] ?? $option['unit'] ?? ''));
+
+            return $this->normalizeNumeric((string) $minimum).($unit !== '' ? $unit : '');
+        }
+
         return '';
     }
 
+    /**
+     * 子项的展示文案：优先 version / option_name 这类可读文本，纯数字是传给上游的
+     * 参数值（如 os 的 "12"），不能当规格展示。
+     */
     private function resolveSubValue(array $sub): string
     {
-        foreach (['option_name_first', 'value', 'id', 'option_name', 'label', 'version', 'name'] as $key) {
+        $version = trim((string) ($sub['version'] ?? ''));
+        if ($version !== '') {
+            // 魔方 OS 子项形如 "CentOS^CentOS-7.6.1810-x64"，^ 后才是真正的版本名
+            if (str_contains($version, '^')) {
+                $segments = array_values(array_filter(array_map('trim', explode('^', $version))));
+                $label = end($segments);
+
+                return $label !== false && $label !== '' ? $label : $version;
+            }
+
+            return $version;
+        }
+
+        foreach (['option_name', 'label', 'name', 'option_name_first', 'value'] as $key) {
+            $value = trim((string) ($sub[$key] ?? ''));
+            if ($value !== '' && preg_match('/^\d+$/', $value) !== 1) {
+                return $value;
+            }
+        }
+
+        // 全是数字时（IP 数量、内存 MB 等）保留原值
+        foreach (['option_name_first', 'value', 'id'] as $key) {
             $value = trim((string) ($sub[$key] ?? ''));
             if ($value !== '') {
                 return $value;
