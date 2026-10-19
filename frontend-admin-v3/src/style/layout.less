@@ -58,10 +58,10 @@
   }
 }
 
-// 商品目录表格列宽合计超过可用宽度（1440 屏下约 1472 > 1150），
-// TDesign 的 .t-table__content 默认不滚动，右侧「库存/状态/操作」会被页面裁掉；
-// 这里让它自己横向滚动，固定列（复选框 / 操作）仍可 sticky。
-.product-table-card .t-table__content {
+// 表格列宽合计超过容器时（TDesign 会加 .t-table--width-overflow），
+// .t-table__content 默认仍不滚动，右侧列会被页面直接裁掉（商品目录、通知模板
+// 等列表都踩过）。这里统一让它横向滚动，固定列（复选框 / 操作）仍可 sticky。
+.t-table--width-overflow .t-table__content {
   overflow-x: auto;
   overflow-y: hidden;
 }
@@ -390,7 +390,7 @@
 // 侧边栏菜单层级样式：一级跟随侧边栏白底，二级使用灰底区分层级
 .@{starter-prefix}-side-nav.t-default-menu.t-menu--light {
   box-sizing: border-box;
-  width: 232px;
+  width: 252px;
   padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-s);
   background: var(--td-bg-color-container);
   border-right: 1px solid var(--td-component-border);
@@ -724,8 +724,8 @@
   }
 
   &-side-nav-placeholder {
-    flex: 1 1 232px;
-    min-width: 232px;
+    flex: 1 1 252px;
+    min-width: 252px;
     transition: all 0.3s;
 
     &-hidden {

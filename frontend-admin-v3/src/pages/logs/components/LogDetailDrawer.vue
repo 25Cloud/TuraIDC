@@ -31,8 +31,8 @@
 import { ChevronLeftIcon } from 'tdesign-icons-vue-next';
 import { computed } from 'vue';
 
-import { fieldValue, formatDateTime } from '@/utils/format';
 import { t } from '@/locales';
+import { fieldValue, formatDateTime } from '@/utils/format';
 
 type LogTab =
   | 'system'
@@ -62,18 +62,31 @@ const emit = defineEmits<{
 
 const headerTitle = computed(() => {
   const row = props.currentLog || {};
-  if (props.activeTab === 'admin-logins') return `管理员登录 · ${fieldValue(row.admin_username) || '详情'}`;
-  if (props.activeTab === 'api') return `API 日志 · ${fieldValue(row.request_id) || '详情'}`;
-  if (props.activeTab === 'sms') return `短信日志 · ${fieldValue(row.phone) || '详情'}`;
-  if (props.activeTab === 'email') return `邮件日志 · ${fieldValue(row.to_email) || '详情'}`;
-  if (props.activeTab === 'tasks') return `自动任务日志 · ${fieldValue(row.task_key) || '详情'}`;
-  if (props.activeTab === 'gateway')
-    return `网关日志 · ${fieldValue(row.gateway) || ''} ${fieldValue(row.action) || ''}`;
-  if (props.activeTab === 'system') return `系统日志 · ${fieldValue(row.actor_name) || '详情'}`;
-  if (props.activeTab === 'runtime') return `运行日志 · ${fieldValue(row.id) || '详情'}`;
-  if (props.activeTab === 'upstream') return `工单推送日志 · 工单 ${fieldValue(row.ticket_id) || '详情'}`;
-  if (props.activeTab === 'upstream-uploads') return `上传日志 · ${fieldValue(row.id) || '详情'}`;
-  return `系统日志 · ${fieldValue(row.id) || '详情'}`;
+  const detailText = t('logs.detailDrawer.detail');
+  if (props.activeTab === 'admin-logins')
+    return t('logs.detailDrawer.titleAdminLogin', { value: fieldValue(row.admin_username) || detailText });
+  if (props.activeTab === 'api')
+    return t('logs.detailDrawer.titleApi', { value: fieldValue(row.request_id) || detailText });
+  if (props.activeTab === 'sms') return t('logs.detailDrawer.titleSms', { value: fieldValue(row.phone) || detailText });
+  if (props.activeTab === 'email')
+    return t('logs.detailDrawer.titleEmail', { value: fieldValue(row.to_email) || detailText });
+  if (props.activeTab === 'tasks')
+    return t('logs.detailDrawer.titleTask', { value: fieldValue(row.task_key) || detailText });
+  if (props.activeTab === 'gateway') {
+    return t('logs.detailDrawer.titleGateway', {
+      gateway: fieldValue(row.gateway),
+      action: fieldValue(row.action),
+    });
+  }
+  if (props.activeTab === 'system')
+    return t('logs.detailDrawer.titleSystem', { value: fieldValue(row.actor_name) || detailText });
+  if (props.activeTab === 'runtime')
+    return t('logs.detailDrawer.titleRuntime', { value: fieldValue(row.id) || detailText });
+  if (props.activeTab === 'upstream')
+    return t('logs.detailDrawer.titleUpstream', { value: fieldValue(row.ticket_id) || detailText });
+  if (props.activeTab === 'upstream-uploads')
+    return t('logs.detailDrawer.titleUpstreamUpload', { value: fieldValue(row.id) || detailText });
+  return t('logs.detailDrawer.titleSystem', { value: fieldValue(row.id) || detailText });
 });
 
 const detailFields = computed(() => {
@@ -217,7 +230,10 @@ const detailBlocks = computed(() => {
   }
   if (props.activeTab === 'sms') {
     return [
-      { label: t('logs.detailDrawer.templateParams'), value: formatJson(row.params, '暂无模板参数') },
+      {
+        label: t('logs.detailDrawer.templateParams'),
+        value: formatJson(row.params, t('logs.detailDrawer.noTemplateParams')),
+      },
       { label: t('logs.detailDrawer.smsContent'), value: fieldValue(row.content) },
     ];
   }
@@ -279,20 +295,27 @@ function statusLabel(status: unknown) {
   const statusKey = String(status || '').toLowerCase();
   if (props.activeTab === 'upstream') {
     return String(
-      { pending: '等待发送', sending: '发送中', delivered: '已转发', failed: '转发失败', skipped: '未转发' }[
-        statusKey
-      ] || fieldValue(status),
+      {
+        pending: t('logs.forward.pending'),
+        sending: t('logs.forward.sending'),
+        delivered: t('logs.forward.delivered'),
+        failed: t('logs.forward.failed'),
+        skipped: t('logs.forward.notForwarded'),
+      }[statusKey] || fieldValue(status),
     );
   }
-  return String({ success: '发送成功', failed: '发送失败', pending: '待发送' }[statusKey] || fieldValue(status));
+  return String(
+    { success: t('logs.notify.sent'), failed: t('logs.notify.failed'), pending: t('logs.notify.pending') }[statusKey] ||
+      fieldValue(status),
+  );
 }
 
 function taskStatusLabel(status: unknown) {
   return (
     {
-      success: '成功',
-      failed: '失败',
-      skipped: '跳过',
+      success: t('logs.status.success'),
+      failed: t('logs.status.failed'),
+      skipped: t('logs.status.skipped'),
     }[String(status || '').toLowerCase()] || fieldValue(status)
   );
 }
@@ -300,9 +323,9 @@ function taskStatusLabel(status: unknown) {
 function taskSourceLabel(value: unknown) {
   return (
     {
-      schedule_run_logs: '调度执行日志',
-      activity_logs: '活动日志',
-      laravel_log: '运行日志',
+      schedule_run_logs: t('logs.source.scheduleRun'),
+      activity_logs: t('logs.source.activityLog'),
+      laravel_log: t('logs.source.laravelLog'),
     }[String(value || '').toLowerCase()] || fieldValue(value)
   );
 }
@@ -310,29 +333,29 @@ function taskSourceLabel(value: unknown) {
 function userTypeLabel(value: unknown) {
   return (
     {
-      admin: '管理员',
-      client: '客户',
-      guest: '访客',
-    }[String(value || '').toLowerCase()] || '系统'
+      admin: t('logs.index.actorAdmin'),
+      client: t('logs.index.actorCustomer'),
+      guest: t('logs.index.actorGuest'),
+    }[String(value || '').toLowerCase()] || t('logs.index.actorSystem')
   );
 }
 
 function sourceLabel(value: unknown) {
   return (
     {
-      operation_log: '操作日志',
-      admin_snapshot: '账号快照',
-    }[String(value || '').toLowerCase()] || '未知来源'
+      operation_log: t('logs.source.operationLog'),
+      admin_snapshot: t('logs.source.adminSnapshot'),
+    }[String(value || '').toLowerCase()] || t('logs.source.unknown')
   );
 }
 
 function activitySourceLabel(value: unknown) {
   return (
     {
-      activity_log: '活动日志',
-      activity_logs: '活动日志',
-      operation_log: '操作日志',
-      operation_logs: '操作日志',
+      activity_log: t('logs.source.activityLog'),
+      activity_logs: t('logs.source.activityLog'),
+      operation_log: t('logs.source.operationLog'),
+      operation_logs: t('logs.source.operationLog'),
     }[String(value || '').toLowerCase()] || fieldValue(value)
   );
 }
@@ -340,10 +363,10 @@ function activitySourceLabel(value: unknown) {
 function gatewayLabel(value: unknown) {
   return (
     {
-      alipay: '支付宝',
-      wechat: '微信支付',
+      alipay: t('logs.gateway.alipay'),
+      wechat: t('logs.gateway.wechat'),
       stripe: 'Stripe',
-      alipay_f2f: '支付宝当面付（历史）',
+      alipay_f2f: t('logs.gateway.alipayF2f'),
     }[String(value || '').toLowerCase()] || fieldValue(value)
   );
 }
@@ -369,7 +392,7 @@ function formatJson(value: unknown, fallback = '-') {
 function buildContentPreviewDoc(value: unknown) {
   const normalized = String(value ?? '').trim();
   if (!normalized) {
-    return '<!doctype html><html lang="zh-CN"><body style="margin:0;padding:24px;color:#86909c;">暂无正文内容</body></html>';
+    return `<!doctype html><html lang="zh-CN"><body style="margin:0;padding:24px;color:#86909c;">${t('logs.detailDrawer.noContentPreview')}</body></html>`;
   }
   if (/<!doctype\s+html|<html\b|<body\b/i.test(normalized)) return sanitizeHtmlDoc(normalized);
   if (/<[a-z][a-z0-9]*(?:\s|>)/i.test(normalized)) {

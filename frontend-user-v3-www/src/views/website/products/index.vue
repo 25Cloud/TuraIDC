@@ -1568,7 +1568,7 @@
         <div class="cost-footer">
           <button
             class="buy-btn"
-            :disabled="!canSubmit || submitting || quoteLoading"
+            :disabled="soldOut || !canSubmit || submitting || quoteLoading"
             :class="{ loading: submitting, 'is-sold-out': soldOut }"
             @click="handleSubmit"
           >
@@ -1655,7 +1655,7 @@
         <div class="allocation-footer-actions">
           <button
             class="allocation-footer-action"
-            :disabled="!canSubmit || submitting || quoteLoading"
+            :disabled="soldOut || !canSubmit || submitting || quoteLoading"
             :class="{ loading: submitting, 'is-sold-out': soldOut }"
             @click="handleSubmit"
           >

@@ -369,7 +369,9 @@
             </template>
             <template #expandedRow="{ row }">
               <div v-if="isUpstreamLogTab" class="upstream-log-group">
-                <div class="upstream-log-group__title">{{ $t('logs.index.totalPushRecords', { count: row.log_count || 0 }) }}</div>
+                <div class="upstream-log-group__title">
+                  {{ $t('logs.index.totalPushRecords', { count: row.log_count || 0 }) }}
+                </div>
                 <div v-for="log in upstreamGroupLogs(row)" :key="String(log.id)" class="upstream-log-group__item">
                   <div class="upstream-log-group__meta">
                     <t-tag :theme="statusTheme(log.status)" variant="light" size="small">{{
@@ -380,7 +382,9 @@
                     <time>{{ formatDate(log.occurred_at) }}</time>
                   </div>
                   <div class="upstream-log-group__message">{{ fieldValue(log.message || log.reason_code) }}</div>
-                  <t-button theme="primary" variant="text" size="small" @click="openDetail(log)">{{ $t('logs.index.detail') }}</t-button>
+                  <t-button theme="primary" variant="text" size="small" @click="openDetail(log)">{{
+                    $t('logs.index.detail')
+                  }}</t-button>
                 </div>
               </div>
             </template>
@@ -422,10 +426,18 @@
                 <div class="log-mobile-card__meta">
                   <t-tag v-if="row.method" variant="outline" size="small">{{ fieldValue(row.method) }}</t-tag>
                   <span v-if="row.path" class="muted-text">{{ fieldValue(row.path) }}</span>
-                  <span v-if="row.gateway" class="muted-text">{{ $t('logs.index.gatewayLabel') }}: {{ gatewayLabel(row.gateway) }}</span>
-                  <span v-if="row.gateway_key" class="muted-text">{{ $t('logs.index.gatewayKeyLabel') }}: {{ fieldValue(row.gateway_key) }}</span>
-                  <span v-if="row.driver_key" class="muted-text">{{ $t('logs.index.driverKeyLabel') }}: {{ fieldValue(row.driver_key) }}</span>
-                  <span v-if="row.plugin_key" class="muted-text">{{ $t('logs.index.pluginLabel') }}: {{ fieldValue(row.plugin_key) }}</span>
+                  <span v-if="row.gateway" class="muted-text"
+                    >{{ $t('logs.index.gatewayLabel') }}: {{ gatewayLabel(row.gateway) }}</span
+                  >
+                  <span v-if="row.gateway_key" class="muted-text"
+                    >{{ $t('logs.index.gatewayKeyLabel') }}: {{ fieldValue(row.gateway_key) }}</span
+                  >
+                  <span v-if="row.driver_key" class="muted-text"
+                    >{{ $t('logs.index.driverKeyLabel') }}: {{ fieldValue(row.driver_key) }}</span
+                  >
+                  <span v-if="row.plugin_key" class="muted-text"
+                    >{{ $t('logs.index.pluginLabel') }}: {{ fieldValue(row.plugin_key) }}</span
+                  >
                   <span v-if="row.trace_id" class="muted-text">Trace: {{ fieldValue(row.trace_id) }}</span>
                   <span v-if="row.status" class="muted-text">HTTP {{ fieldValue(row.status) }}</span>
                 </div>
@@ -437,9 +449,15 @@
                     size="small"
                     @click="toggleLogGroup(row)"
                   >
-                    {{ isLogGroupExpanded(row) ? $t('logs.index.collapseLogs') : $t('logs.index.viewLogs', { count: row.log_count || 0 }) }}
+                    {{
+                      isLogGroupExpanded(row)
+                        ? $t('logs.index.collapseLogs')
+                        : $t('logs.index.viewLogs', { count: row.log_count || 0 })
+                    }}
                   </t-button>
-                  <t-button theme="primary" variant="text" size="small" @click="openDetail(row)">{{ $t('logs.index.detail') }}</t-button>
+                  <t-button theme="primary" variant="text" size="small" @click="openDetail(row)">{{
+                    $t('logs.index.detail')
+                  }}</t-button>
                 </div>
                 <div
                   v-if="isUpstreamLogTab && isLogGroupExpanded(row)"
@@ -455,7 +473,9 @@
                       <time>{{ formatDate(log.occurred_at) }}</time>
                     </div>
                     <div class="upstream-log-group__message">{{ fieldValue(log.message || log.reason_code) }}</div>
-                    <t-button theme="primary" variant="text" size="small" @click="openDetail(log)">{{ $t('logs.index.detail') }}</t-button>
+                    <t-button theme="primary" variant="text" size="small" @click="openDetail(log)">{{
+                      $t('logs.index.detail')
+                    }}</t-button>
                   </div>
                 </div>
               </article>
@@ -502,11 +522,7 @@
         <t-card :bordered="false" :loading="scheduleLoading">
           <template #title>{{ $t('logs.index.registeredTasks') }}</template>
           <template #subtitle>{{ $t('logs.index.taskCount', { count: scheduleTasks.length }) }}</template>
-          <t-alert
-            theme="info"
-            :message="$t('logs.index.scheduleExecutionTip')"
-            class="schedule-execution-tip"
-          />
+          <t-alert theme="info" :message="$t('logs.index.scheduleExecutionTip')" class="schedule-execution-tip" />
           <div class="schedule-task-toolbar">
             <div class="schedule-task-stats" :aria-label="$t('logs.index.taskSourceStats')">
               <div class="schedule-task-stat">
@@ -531,7 +547,9 @@
                   <h3>{{ group.title }}</h3>
                   <p>{{ group.description }}</p>
                 </div>
-                <t-tag :theme="group.theme" variant="light">{{ $t('logs.index.groupTaskCount', { count: group.tasks.length }) }}</t-tag>
+                <t-tag :theme="group.theme" variant="light">{{
+                  $t('logs.index.groupTaskCount', { count: group.tasks.length })
+                }}</t-tag>
               </div>
               <div v-if="group.tasks.length" class="table-scroll">
                 <t-table row-key="key" :data="group.tasks" :columns="scheduleColumns" hover table-layout="fixed">
@@ -585,11 +603,7 @@
     <template v-else>
       <t-card :bordered="false" :loading="cleanupLoading">
         <t-alert theme="warning" :message="$t('logs.index.cleanupIrreversible')" />
-        <t-alert
-          v-if="!canManageLogCleanup"
-          theme="warning"
-          :message="$t('logs.index.cleanupNoPermission')"
-        />
+        <t-alert v-if="!canManageLogCleanup" theme="warning" :message="$t('logs.index.cleanupNoPermission')" />
 
         <section class="cleanup-section">
           <div class="section-title">
@@ -647,7 +661,11 @@
               <t-input-number v-model="cleanupForm.keep_days" :min="1" :max="3650" theme="normal" />
             </t-form-item>
             <t-form-item :label="$t('logs.index.confirmText')" name="confirm_text">
-              <t-input v-model="cleanupForm.confirm_text" clearable :placeholder="$t('logs.index.confirmCleanupPlaceholder')" />
+              <t-input
+                v-model="cleanupForm.confirm_text"
+                clearable
+                :placeholder="$t('logs.index.confirmCleanupPlaceholder')"
+              />
             </t-form-item>
             <div class="cleanup-actions">
               <t-button
@@ -657,7 +675,9 @@
                 @click="handleCleanup"
                 >{{ $t('logs.index.cleanupNow') }}</t-button
               >
-              <t-button variant="outline" @click="cleanupForm.confirm_text = ''">{{ $t('logs.index.clearConfirm') }}</t-button>
+              <t-button variant="outline" @click="cleanupForm.confirm_text = ''">{{
+                $t('logs.index.clearConfirm')
+              }}</t-button>
             </div>
           </t-form>
         </section>
@@ -712,13 +732,13 @@ import type { LogListParams, PaginatedList } from '@/api/admin';
 import { adminApi } from '@/api/admin';
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { fieldValue, formatDateTime } from '@/utils/format';
 import { goTicket, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
 
 import LogDetailDrawer from './components/LogDetailDrawer.vue';
-import { t } from '@/locales';
 
 type LogTab =
   | 'system'
@@ -870,49 +890,49 @@ const logMeta: Record<LogTab, { title: string; description: string; filters: str
     title: t('logs.tab.system'),
     description: t('logs.tab.systemDesc'),
     filters: ['actor_keyword', 'description_keyword', 'ip_address', 'module', 'actor_type', 'subject_type', 'date'],
-    keyword: '操作人、模块或描述',
+    keyword: t('logs.index.keywordSystem'),
   },
   runtime: {
     title: t('logs.tab.runtime'),
     description: t('logs.tab.runtimeDesc'),
     filters: ['level', 'plugin_id', 'gateway_key', 'driver_key', 'trace_id', 'keyword', 'date'],
-    keyword: '日志内容、插件 key 或 Trace ID',
+    keyword: t('logs.index.keywordRuntime'),
   },
   'admin-logins': {
     title: t('logs.tab.adminLogin'),
     description: t('logs.tab.adminLoginDesc'),
     filters: ['keyword', 'date'],
-    keyword: '账号、昵称、角色或 IP',
+    keyword: t('logs.index.keywordAdminLogin'),
   },
   api: {
     title: t('logs.tab.api'),
     description: t('logs.tab.apiDesc'),
     filters: ['keyword', 'method', 'module', 'user_type', 'status', 'date'],
-    keyword: '路径、模块、请求号或 IP',
+    keyword: t('logs.index.keywordApi'),
   },
   sms: {
     title: t('logs.tab.sms'),
     description: t('logs.tab.smsDesc'),
     filters: ['phone', 'plugin_id', 'driver_key', 'trace_id', 'keyword', 'status'],
-    keyword: '搜索模板编号、请求号或内容',
+    keyword: t('logs.index.keywordSms'),
   },
   email: {
     title: t('logs.tab.email'),
     description: t('logs.tab.emailDesc'),
     filters: ['email', 'plugin_id', 'driver_key', 'trace_id', 'keyword', 'status'],
-    keyword: '搜索模板编号、主题或正文关键词',
+    keyword: t('logs.index.keywordEmail'),
   },
   tasks: {
     title: t('logs.tab.task'),
     description: t('logs.tab.taskDesc'),
     filters: ['task_key', 'status', 'level', 'keyword', 'date'],
-    keyword: '任务名称或日志内容',
+    keyword: t('logs.index.keywordTask'),
   },
   gateway: {
     title: t('logs.tab.gateway'),
     description: t('logs.tab.gatewayDesc'),
     filters: ['keyword', 'gateway', 'gateway_key', 'plugin_id', 'trace_id', 'action', 'result_status', 'date'],
-    keyword: '交易号、网关名、Trace ID 或错误信息',
+    keyword: t('logs.index.keywordGateway'),
   },
   upstream: {
     title: t('logs.tab.ticketPush'),
@@ -929,13 +949,13 @@ const logMeta: Record<LogTab, { title: string; description: string; filters: str
       'supplier_id',
       'date',
     ],
-    keyword: '工单号、原因或日志内容',
+    keyword: t('logs.index.keywordUpstream'),
   },
   'upstream-uploads': {
     title: t('logs.tab.upload'),
     description: t('logs.tab.uploadDesc'),
     filters: ['level', 'keyword', 'date'],
-    keyword: '上传、清理或拒绝原因',
+    keyword: t('logs.index.keywordUpstreamUpload'),
   },
 };
 
@@ -1095,10 +1115,10 @@ const isTextLog = computed(
 );
 const keywordPlaceholder = computed(() => currentLogMeta.value.keyword);
 const statusPlaceholder = computed(() => {
-  if (activeTab.value === 'api') return '全部状态码';
-  if (activeTab.value === 'tasks') return '全部任务状态';
-  if (activeTab.value === 'upstream') return '全部转发状态';
-  return '全部发送状态';
+  if (activeTab.value === 'api') return t('logs.index.statusPlaceholderAllCodes');
+  if (activeTab.value === 'tasks') return t('logs.index.statusPlaceholderAllTaskStatuses');
+  if (activeTab.value === 'upstream') return t('logs.index.statusPlaceholderAllForwardStatuses');
+  return t('logs.index.statusPlaceholderAllSendStatuses');
 });
 const taskStatusOptions = [
   { label: t('logs.status.success'), value: 'success' },
@@ -1127,9 +1147,12 @@ const scheduleThirdPartyTasks = computed(() =>
   scheduleTasks.value.filter((task) => scheduleTaskSourceType(task) === 'third_party'),
 );
 const scheduleSourceOptions = computed(() => [
-  { label: `全部 ${scheduleTasks.value.length}`, value: 'all' },
-  { label: `系统 ${scheduleSystemTasks.value.length}`, value: 'system' },
-  { label: `第三方 ${scheduleThirdPartyTasks.value.length}`, value: 'third_party' },
+  { label: t('logs.index.scheduleSourceAll', { count: scheduleTasks.value.length }), value: 'all' },
+  { label: t('logs.index.scheduleSourceSystem', { count: scheduleSystemTasks.value.length }), value: 'system' },
+  {
+    label: t('logs.index.scheduleSourceThirdParty', { count: scheduleThirdPartyTasks.value.length }),
+    value: 'third_party',
+  },
 ]);
 const scheduleTaskGroups = computed(() => [
   {
@@ -1170,10 +1193,14 @@ const scheduleEnvAlerts = computed(() => {
   alerts.push({
     key: 'mutex',
     label: t('logs.schedule.mutex'),
-    value: mutexEnabled ? '已启用' : '降级中',
+    value: mutexEnabled ? t('logs.index.scheduleMutexEnabled') : t('logs.index.scheduleMutexDegraded'),
     detail: mutexEnabled
       ? String(mutex.mode || 'without_overlapping')
-      : `${mutex.reason || '未知原因'}（${mutex.cache_store || '未知缓存'}/${mutex.os_family || '未知系统'}）`,
+      : t('logs.index.scheduleMutexDetail', {
+          reason: String(mutex.reason || t('logs.index.scheduleUnknownReason')),
+          cacheStore: String(mutex.cache_store || t('logs.index.scheduleUnknownCache')),
+          osFamily: String(mutex.os_family || t('logs.index.scheduleUnknownOs')),
+        }),
     theme: mutexEnabled ? 'success' : 'warning',
   });
 
@@ -1183,8 +1210,8 @@ const scheduleEnvAlerts = computed(() => {
     alerts.push({
       key: 'queue_isolation',
       label: t('logs.schedule.queueIsolation'),
-      value: '业务与定时已分离',
-      detail: `业务：${businessQueue}；定时：${automationQueue}`,
+      value: t('logs.index.scheduleQueueIsolated'),
+      detail: t('logs.index.scheduleQueueDetail', { business: businessQueue, automation: automationQueue }),
       theme: 'success',
     });
   }
@@ -1195,7 +1222,9 @@ const scheduleEnvAlerts = computed(() => {
       key: 'pending_jobs',
       label: t('logs.schedule.pendingJobs'),
       value: String(pendingJobs),
-      detail: env.queue_runtime_mode ? `队列模式：${env.queue_runtime_mode}` : undefined,
+      detail: env.queue_runtime_mode
+        ? t('logs.index.scheduleQueueMode', { mode: String(env.queue_runtime_mode) })
+        : undefined,
       theme: pendingJobs > 50 ? 'danger' : pendingJobs > 10 ? 'warning' : 'success',
     });
   }
@@ -1206,7 +1235,7 @@ const scheduleEnvAlerts = computed(() => {
       key: 'failed_jobs',
       label: t('logs.schedule.failedJobs'),
       value: String(failedJobs),
-      detail: failedJobs > 0 ? 'failed_jobs 表累计失败记录，建议排查后重试或清理' : undefined,
+      detail: failedJobs > 0 ? t('logs.index.scheduleFailedJobsDetail') : undefined,
       theme: failedJobs > 0 ? 'danger' : 'success',
     });
   }
@@ -1216,8 +1245,8 @@ const scheduleEnvAlerts = computed(() => {
     alerts.push({
       key: 'automation_config',
       label: t('logs.schedule.automationConfig'),
-      value: automationStatus === 'fallback_default' ? '回退默认' : automationStatus,
-      detail: String(scheduleAutomationConfig.value.fallback_reason || '配置读取失败'),
+      value: automationStatus === 'fallback_default' ? t('logs.index.scheduleAutomationFallback') : automationStatus,
+      detail: String(scheduleAutomationConfig.value.fallback_reason || t('logs.index.scheduleAutomationReadFailed')),
       theme: 'warning',
     });
   }
@@ -1251,7 +1280,11 @@ const databaseCards = computed(() => {
 const fileCards = computed(() => {
   const file = toRecord(cleanupOverview.value.file);
   return [
-    { key: 'exists', label: t('logs.index.fileStatus'), value: file.exists ? '存在' : '缺失' },
+    {
+      key: 'exists',
+      label: t('logs.index.fileStatus'),
+      value: file.exists ? t('logs.index.fileExists') : t('logs.index.fileMissing'),
+    },
     { key: 'size_bytes', label: t('logs.index.fileSize'), value: formatBytes(file.size_bytes) },
     { key: 'task_log_count', label: t('logs.index.taskLogCount'), value: numberText(file.task_log_count) },
     {
@@ -1351,7 +1384,7 @@ async function loadLogs() {
     if (seq !== logRequestSeq.value) return;
     logRows.value = [];
     logPagination.total = 0;
-    MessagePlugin.error(errorMessage(error, `加载${currentLogMeta.value.title}失败`));
+    MessagePlugin.error(errorMessage(error, t('logs.index.loadLogFailed', { title: currentLogMeta.value.title })));
   } finally {
     if (seq === logRequestSeq.value) {
       logLoading.value = false;
@@ -1449,7 +1482,7 @@ async function loadScheduleOverview() {
     scheduleOverview.value = { ...(await adminApi.schedules.overview()) };
   } catch (error) {
     scheduleOverview.value = { tasks: [], recent_logs: [] };
-    MessagePlugin.error(errorMessage(error, '定时任务状态加载失败'));
+    MessagePlugin.error(errorMessage(error, t('logs.index.scheduleLoadFailed')));
   } finally {
     scheduleLoading.value = false;
   }
@@ -1468,15 +1501,17 @@ async function triggerTask(row: TableRowData) {
     const response = await adminApi.schedules.trigger({ task });
     const modeText =
       {
-        sync: '同步执行',
-        after_response: '后台立即执行',
-        queue: '已进入队列',
-      }[String(response.execution_mode || '').toLowerCase()] || '已提交执行';
-    MessagePlugin.success(`${fieldValue(row.title || row.key)}${modeText}`);
+        sync: t('logs.index.executionSync'),
+        after_response: t('logs.index.executionAfterResponse'),
+        queue: t('logs.index.executionQueue'),
+      }[String(response.execution_mode || '').toLowerCase()] || t('logs.index.executionSubmitted');
+    MessagePlugin.success(t('logs.index.triggerSuccess', { title: fieldValue(row.title || row.key), mode: modeText }));
     MessagePlugin.info(t('logs.schedule.runningTip'));
     await loadScheduleOverview();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, `${fieldValue(row.title || row.key)}执行失败`));
+    MessagePlugin.error(
+      errorMessage(error, t('logs.index.triggerFailed', { title: fieldValue(row.title || row.key) })),
+    );
   } finally {
     triggeringKey.value = '';
   }
@@ -1489,7 +1524,7 @@ async function loadCleanupOverview() {
     if (!cleanupForm.type) cleanupForm.type = String(cleanupTypes.value[0]?.value || 'sms');
   } catch (error) {
     cleanupOverview.value = { database: {}, file: {}, supported_cleanup_types: [] };
-    MessagePlugin.error(errorMessage(error, '加载日志清理概览失败'));
+    MessagePlugin.error(errorMessage(error, t('logs.index.cleanupOverviewLoadFailed')));
   } finally {
     cleanupLoading.value = false;
   }
@@ -1523,7 +1558,7 @@ async function handleCleanup() {
     await loadCleanupOverview();
     MessagePlugin.success(t('logs.cleanup.done'));
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '日志清理失败'));
+    MessagePlugin.error(errorMessage(error, t('logs.index.cleanupFailed')));
   } finally {
     cleanupSubmitting.value = false;
   }
@@ -1545,7 +1580,7 @@ async function openDetail(row: TableRowData) {
     const detail = await adminApi.logs.detail(activeTab.value, detailRow.id as string | number);
     currentLog.value = { ...detailRow, ...detail };
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, '加载日志详情失败'));
+    MessagePlugin.error(errorMessage(error, t('logs.index.detailLoadFailed')));
   }
 }
 
@@ -1555,22 +1590,24 @@ function closeDetailDrawer() {
 }
 
 function primaryTitle(row: RecordRow) {
-  if (activeTab.value === 'system') return fieldValue(row.actor_name || '系统');
+  if (activeTab.value === 'system') return fieldValue(row.actor_name || t('logs.index.actorSystem'));
   if (activeTab.value === 'admin-logins') return fieldValue(row.admin_username);
   if (activeTab.value === 'api') return fieldValue(row.actor_name || userTypeLabel(row.user_type));
   if (activeTab.value === 'sms') return fieldValue(row.phone);
   if (activeTab.value === 'email') return fieldValue(row.to_email);
   if (activeTab.value === 'tasks') return fieldValue(row.task_title || row.task_key);
-  if (activeTab.value === 'upstream') return `工单 #${fieldValue(row.ticket_id)}`;
+  if (activeTab.value === 'upstream') return t('logs.index.ticketWithId', { id: fieldValue(row.ticket_id) });
   return fieldValue(row.id);
 }
 
 function primarySubText(row: RecordRow) {
   if (activeTab.value === 'system')
-    return fieldValue(row.actor_type === 'system' ? '系统操作' : `ID: ${row.actor_id || '-'}`);
-  if (activeTab.value === 'admin-logins') return fieldValue(row.admin_nickname || row.actor_name || '未设置昵称');
+    return fieldValue(row.actor_type === 'system' ? t('logs.index.systemOperation') : `ID: ${row.actor_id || '-'}`);
+  if (activeTab.value === 'admin-logins')
+    return fieldValue(row.admin_nickname || row.actor_name || t('logs.index.noNickname'));
   if (activeTab.value === 'api') return userTypeLabel(row.user_type);
-  if (activeTab.value === 'sms' || activeTab.value === 'email') return `发送时间：${formatDate(row.sent_at)}`;
+  if (activeTab.value === 'sms' || activeTab.value === 'email')
+    return t('logs.index.sentAtWithTime', { time: formatDate(row.sent_at) });
   if (activeTab.value === 'tasks') return fieldValue(row.task_key);
   if (activeTab.value === 'upstream') return `${fieldValue(row.operation)} · ${fieldValue(row.event)}`;
   return '';
@@ -1663,7 +1700,7 @@ function parseMessageSegments(row: RecordRow): MessageSegment[] {
 function copyId(label: string, id: string) {
   const value = `${label}:${id}`;
   navigator.clipboard.writeText(value).then(
-    () => MessagePlugin.success(`已复制 ${value}`),
+    () => MessagePlugin.success(t('logs.index.copied', { value })),
     () => MessagePlugin.warning(t('logs.copyFailed')),
   );
   const routePath = routeForIdSegment(label, id);
@@ -1674,8 +1711,8 @@ function copyId(label: string, id: string) {
 
 function idSegmentTitle(seg: Extract<MessageSegment, { type: 'id' }>) {
   return routeForIdSegment(seg.label, seg.id)
-    ? `点击复制并跳转 ${seg.label}:${seg.id}`
-    : `点击复制 ${seg.label}:${seg.id}`;
+    ? t('logs.index.clickCopyAndNavigate', { value: `${seg.label}:${seg.id}` })
+    : t('logs.index.clickCopy', { value: `${seg.label}:${seg.id}` });
 }
 
 function routeForIdSegment(label: string, id: string) {
@@ -1696,16 +1733,27 @@ function statusLabel(status: unknown) {
   if (activeTab.value === 'admin-logins') return sourceLabel(status);
   const statusKey = String(status || '').toLowerCase();
   if (activeTab.value === 'tasks') {
-    return String({ success: '成功', failed: '失败', skipped: '跳过' }[statusKey] || fieldValue(status));
-  }
-  if (activeTab.value === 'upstream') {
     return String(
-      { pending: '等待发送', sending: '发送中', delivered: '已转发', failed: '转发失败', skipped: '未转发' }[
+      { success: t('logs.status.success'), failed: t('logs.status.failed'), skipped: t('logs.status.skipped') }[
         statusKey
       ] || fieldValue(status),
     );
   }
-  return String({ success: '发送成功', failed: '发送失败', pending: '待发送' }[statusKey] || fieldValue(status));
+  if (activeTab.value === 'upstream') {
+    return String(
+      {
+        pending: t('logs.forward.pending'),
+        sending: t('logs.forward.sending'),
+        delivered: t('logs.forward.delivered'),
+        failed: t('logs.forward.failed'),
+        skipped: t('logs.forward.notForwarded'),
+      }[statusKey] || fieldValue(status),
+    );
+  }
+  return String(
+    { success: t('logs.notify.sent'), failed: t('logs.notify.failed'), pending: t('logs.notify.pending') }[statusKey] ||
+      fieldValue(status),
+  );
 }
 
 function statusValue(row: RecordRow) {
@@ -1768,19 +1816,19 @@ function httpStatusTheme(status: unknown): TagTheme {
 function userTypeLabel(value: unknown) {
   return (
     {
-      admin: '管理员',
-      client: '客户',
-      guest: '访客',
-    }[String(value || '').toLowerCase()] || '系统'
+      admin: t('logs.index.actorAdmin'),
+      client: t('logs.index.actorCustomer'),
+      guest: t('logs.index.actorGuest'),
+    }[String(value || '').toLowerCase()] || t('logs.index.actorSystem')
   );
 }
 
 function sourceLabel(value: unknown) {
   return (
     {
-      operation_log: '操作日志',
-      admin_snapshot: '账号快照',
-    }[String(value || '').toLowerCase()] || '未知来源'
+      operation_log: t('logs.source.operationLog'),
+      admin_snapshot: t('logs.source.adminSnapshot'),
+    }[String(value || '').toLowerCase()] || t('logs.source.unknown')
   );
 }
 
@@ -1859,12 +1907,12 @@ function formatBytes(value: unknown) {
 function gatewayResultStatusLabel(value: unknown) {
   return (
     {
-      success: '成功',
-      failed: '失败',
-      pending: '处理中',
+      success: t('logs.status.success'),
+      failed: t('logs.status.failed'),
+      pending: t('logs.status.processing'),
     }[String(value || '').toLowerCase()] ||
     fieldValue(value) ||
-    '未知'
+    t('logs.status.unknown')
   );
 }
 
@@ -1885,15 +1933,19 @@ function gatewayResultStatusTheme(value: unknown): TagTheme {
 function formatScheduleCycle(row: RecordRow) {
   const expression = String(row.expression || '').trim();
   if (!expression) return '--';
-  if (expression === '* * * * *') return '每 1 分钟';
-  if (expression === '0 * * * *') return '每 1 小时';
+  if (expression === '* * * * *') return t('logs.index.cycleEveryMinute');
+  if (expression === '0 * * * *') return t('logs.index.cycleEveryHour');
   const everyMinutesMatch = expression.match(/^\*\/(\d+) \* \* \* \*$/);
-  if (everyMinutesMatch) return `每 ${everyMinutesMatch[1]} 分钟`;
+  if (everyMinutesMatch) return t('logs.index.cycleEveryNMinutes', { count: everyMinutesMatch[1] });
   const fixedMinuteHourlyMatch = expression.match(/^(\d{1,2}) \* \* \* \*$/);
-  if (fixedMinuteHourlyMatch) return `每小时第 ${fixedMinuteHourlyMatch[1]} 分钟`;
+  if (fixedMinuteHourlyMatch) return t('logs.index.cycleHourlyAtMinute', { minute: fixedMinuteHourlyMatch[1] });
   const dailyMatch = expression.match(/^(\d{1,2}) (\d{1,2}) \* \* \*$/);
-  if (dailyMatch) return `每天 ${String(dailyMatch[2]).padStart(2, '0')}:${String(dailyMatch[1]).padStart(2, '0')}`;
-  return '自定义周期';
+  if (dailyMatch) {
+    return t('logs.index.cycleDailyAt', {
+      time: `${String(dailyMatch[2]).padStart(2, '0')}:${String(dailyMatch[1]).padStart(2, '0')}`,
+    });
+  }
+  return t('logs.index.cycleCustom');
 }
 
 watch(

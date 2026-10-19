@@ -4,6 +4,7 @@ import type { LocationQueryRaw, RouteLocationRaw } from 'vue-router';
 import { useRoute, useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import type {
   ApiEnvelope,
   ContentArticleRecord,
@@ -13,7 +14,6 @@ import type {
   ContentOverviewPayload,
 } from '@/types/client';
 import { renderMarkdown } from '@/utils/markdown';
-import { t } from '@/locales';
 
 type ContentType = 'notice' | 'help';
 
@@ -50,15 +50,31 @@ interface ContentListConfig {
 
 const CONTENT_CONFIG: Record<ContentType, ContentListConfig> = {
   notice: {
-    pageTitle: '官方公告',
-    detailTitle: '公告详情',
-    heroDescription: '查看平台最新通知、维护公告、产品更新与重要业务提醒。',
-    searchPlaceholder: '请输入要搜索的公告关键词',
+    get pageTitle() {
+      return t('content.notice.pageTitle');
+    },
+    get detailTitle() {
+      return t('content.notice.detailTitle');
+    },
+    get heroDescription() {
+      return t('content.notice.heroDescription');
+    },
+    get searchPlaceholder() {
+      return t('content.notice.searchPlaceholder');
+    },
     emptyText: t('content.notice.empty'),
-    allCategoryLabel: '全部分类',
-    hotTitle: '热门公告',
-    secondaryTitle: '最近更新',
-    categoryTitle: '公告分类',
+    get allCategoryLabel() {
+      return t('content.notice.allCategory');
+    },
+    get hotTitle() {
+      return t('content.notice.hot');
+    },
+    get secondaryTitle() {
+      return t('content.notice.recent');
+    },
+    get categoryTitle() {
+      return t('content.notice.categories');
+    },
     routeBasePath: '/client/notices',
     detailRouteName: 'ClientNoticeDetail',
     overviewCategoryKey: 'notice_categories',
@@ -67,15 +83,31 @@ const CONTENT_CONFIG: Record<ContentType, ContentListConfig> = {
     keywordSuggestions: ['服务条款', '公告通知', '云服务器', '产品更新'],
   },
   help: {
-    pageTitle: '帮助中心',
-    detailTitle: '帮助详情',
-    heroDescription: '快速查找购买、支付、续费、实例管理等常见操作指引。',
-    searchPlaceholder: '搜索帮助文档、账单说明、续费规则',
+    get pageTitle() {
+      return t('content.help.pageTitle');
+    },
+    get detailTitle() {
+      return t('content.help.detailTitle');
+    },
+    get heroDescription() {
+      return t('content.help.heroDescription');
+    },
+    get searchPlaceholder() {
+      return t('content.help.searchPlaceholder');
+    },
     emptyText: t('content.help.empty'),
-    allCategoryLabel: '全部分类',
-    hotTitle: '热门文档',
-    secondaryTitle: '最近更新',
-    categoryTitle: '帮助分类',
+    get allCategoryLabel() {
+      return t('content.help.allCategory');
+    },
+    get hotTitle() {
+      return t('content.help.hot');
+    },
+    get secondaryTitle() {
+      return t('content.help.recent');
+    },
+    get categoryTitle() {
+      return t('content.help.categories');
+    },
     routeBasePath: '/client/help',
     detailRouteName: 'ClientHelpDetail',
     overviewCategoryKey: 'help_categories',
