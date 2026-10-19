@@ -153,7 +153,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '工单推送日志',
         zh_TW: '工單推送日誌',
-        en_US: 'Ticket Push Logs',
+        en_US: 'Push Logs',
       },
       permission: 'log.list',
       keepAlive: false,
@@ -168,7 +168,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '上传/清理日志',
         zh_TW: '上傳/清理日誌',
-        en_US: 'Upload & Cleanup Logs',
+        en_US: 'Uploads',
       },
       permission: 'log.list',
       keepAlive: false,
@@ -183,7 +183,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '定时任务',
         zh_TW: '定時任務',
-        en_US: 'Scheduled Tasks',
+        en_US: 'Schedules',
       },
       permission: 'schedule.view',
       keepAlive: false,
@@ -239,7 +239,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '数据库状态',
         zh_TW: '資料庫狀態',
-        en_US: 'Database Status',
+        en_US: 'Database',
       },
       permission: 'database.view',
       keepAlive: false,
@@ -322,7 +322,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '人机验证',
         zh_TW: '人機驗證',
-        en_US: 'Captcha Plugins',
+        en_US: 'Captcha',
       },
       permission: 'integration_plugin.view',
       pluginDomain: 'captcha',
@@ -337,7 +337,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '实名认证',
         zh_TW: '實名認證',
-        en_US: 'Verification Plugins',
+        en_US: 'Verification',
       },
       permission: 'integration_plugin.view',
       pluginDomain: 'verification',
@@ -352,7 +352,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '支付渠道',
         zh_TW: '支付渠道',
-        en_US: 'Payment Plugins',
+        en_US: 'Payment',
       },
       permission: 'integration_plugin.view',
       pluginDomain: 'payment',
@@ -397,7 +397,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '上游开通',
         zh_TW: '上游開通',
-        en_US: 'Upstream Plugins',
+        en_US: 'Upstream',
       },
       permission: 'integration_plugin.view',
       pluginDomain: 'upstream',
@@ -427,7 +427,7 @@ export const systemRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '推荐奖励',
         zh_TW: '推薦獎勵',
-        en_US: 'Referral Settings',
+        en_US: 'Referral',
       },
       permission: 'settings.view',
       settingsTab: 'referral',

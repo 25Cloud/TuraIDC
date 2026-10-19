@@ -9,7 +9,7 @@ export const productsRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '商品目录',
         zh_TW: '商品目錄',
-        en_US: 'Product Catalog',
+        en_US: 'Catalog',
       },
       productTab: 'catalog',
       permission: 'product.list',
@@ -80,7 +80,7 @@ export const productsRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '流量包管理',
         zh_TW: '流量包管理',
-        en_US: 'Traffic Packages',
+        en_US: 'Traffic',
       },
       productTab: 'traffic-packages',
       permission: 'product.list',

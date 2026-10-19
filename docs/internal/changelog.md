@@ -19,6 +19,7 @@
 
 ### 修复
 
+- **三端全量页面巡检（www / 控制台 / 管理端共 130 个路由 × 中英双语）**：用 Playwright 逐页截图并自动统计「横向溢出 / 控制台报错 / 英文界面残留中文」。修掉：① 管理端通知模板三页因词条 `notifications.emailRecipientPlaceholder` 里的 `@` 被 vue-i18n 当作链接语法，整页抛 SyntaxError（改为 `{'@'}` 转义）；② 商品卡片售罄时「立即选购」仍是主色蓝——Element Plus 的 primary 按钮用 `!important` 设背景，普通特异度盖不过去，且列表式/移动端结算按钮的 disabled 条件漏了售罄，两处一并修正（售罄卡片按钮现为中性灰 + `not-allowed`）；③ 超宽表格右侧列被页面裁掉（商品目录、通知模板等）：TDesign 的 `.t-table__content` 自带 overflow 声明把它压住了，改为 `!important` 横向滚动；④ 管理端英文菜单标题过长被截成「Product Configur...」，侧栏宽度又受 TDesign 内部规则约束，改为收短英文标题（Catalog / Products / Services / Finance / Settings 等，中文标题不变）；⑤ 控制台公告/帮助页的标题、描述、搜索占位、分类标签是模块级中文常量，切语言不生效，改为读取时才求值的 getter + 四语言词条
 - **全站 i18n 补齐（三端）**：官网、控制台、管理端此前有大量页面可见中文硬编码（页脚、导航、表格列、筛选项、表单 label、确认弹窗、Message、空状态等），切到英文/繁体后仍是中文；三端四个语言包补齐并接线，管理端新增 1287 条、控制台 640 条、官网 97 条，另修正 7 处把 JS 模板串 ``当占位符的既有词条。共享组件 `shared/user-v3/components/DataState.vue` 的「加载中 / 暂无数据」也改为由调用方传``（组件本身不引 vue-i18n，避免 shared 目录类型检查缺全局增强），并修掉 admin 侧栏版本号链接、`productTypeSlugHint` 中文占位符 `{标识}` 与英文 `{slug}` 不一致、控制台缺 `verification.verifyNow` 等收口问题
 - **品牌与版权去模板化**：管理端/控制台的 `appName`、版权行、浏览器推荐文案里的 TDesign Starter 与 Tencent 版权声明全部换成 TuraIDC 与 AGPL-3.0-or-later；管理端侧栏底部由静态「TDesign Starter v1.0.0」改为可点击的 `TuraIDC v0.4.2`，链到开源仓库 <https://github.com/25Cloud/TuraIDC>；三个前端 package.json 版本对齐产品版本 0.4.2
 - **视觉巡检修复（三端逐页截图核对）**：首页 Hero 容器 1280 与页头/其它区块 1200 不一致（Hero 左右各宽 40px），统一到 1200；管理端仪表盘环形图外层标签互相压住（改为图例 + tooltip 承载），收入趋势图单日退款把 Y 轴拉到 -100（负值按 0 记，退款在财务页看）；管理端商品表格列宽合计 1472 远超可用宽度、右侧「库存/状态/操作」被页面裁掉（补横向滚动，固定列仍 sticky）；控制台服务列表空态「去选购产品」按钮贴左窄小（改为居中并留间距）

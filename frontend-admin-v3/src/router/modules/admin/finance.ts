@@ -138,7 +138,7 @@ export const financeRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '商品收入',
         zh_TW: '商品收入',
-        en_US: 'Product Income Redirect',
+        en_US: 'Income',
       },
       permission: 'finance.report',
       hidden: true,

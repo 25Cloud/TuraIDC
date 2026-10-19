@@ -22,7 +22,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '代理折扣',
         zh_TW: '代理折扣',
-        en_US: 'Agent Discounts',
+        en_US: 'Discounts',
       },
       permission: 'agent_discount.list',
     },
@@ -50,7 +50,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '活动券管理',
         zh_TW: '活動券管理',
-        en_US: 'Coupon Campaigns',
+        en_US: 'Campaigns',
       },
       permission: 'product.list',
       couponTab: 'campaigns',
@@ -65,7 +65,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '推广概览',
         zh_TW: '推廣概覽',
-        en_US: 'Referral Overview',
+        en_US: 'Overview',
       },
       permission: 'referral.list',
       referralTab: 'overview',
@@ -80,7 +80,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '奖励记录',
         zh_TW: '獎勵記錄',
-        en_US: 'Referral Rewards',
+        en_US: 'Rewards',
       },
       permission: 'referral.list',
       referralTab: 'rewards',
@@ -95,7 +95,7 @@ export const marketingRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '提现审核',
         zh_TW: '提現稽核',
-        en_US: 'Referral Withdrawals',
+        en_US: 'Withdrawals',
       },
       permission: 'referral_withdrawal.list',
       referralTab: 'withdrawals',

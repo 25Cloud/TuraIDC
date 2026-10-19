@@ -69,7 +69,7 @@ export const contentRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '新增帮助文章',
         zh_TW: '新增幫助文章',
-        en_US: 'Create Help Article',
+        en_US: 'New Article',
       },
       contentType: 'help',
       permission: 'content.manage',
@@ -84,7 +84,7 @@ export const contentRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '编辑帮助文章',
         zh_TW: '編輯幫助文章',
-        en_US: 'Edit Help Article',
+        en_US: 'Edit Article',
       },
       contentType: 'help',
       permission: 'content.manage',
@@ -144,7 +144,7 @@ export const contentRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '商品展示',
         zh_TW: '商品展示',
-        en_US: 'Product Display',
+        en_US: 'Display',
       },
       permission: 'site.view',
     },
@@ -157,7 +157,7 @@ export const contentRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '邮件模板',
         zh_TW: '郵件模板',
-        en_US: 'Email Templates',
+        en_US: 'Emails',
       },
       permission: 'settings.view',
       notificationTab: 'email-templates',
@@ -202,7 +202,7 @@ export const contentRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '邮件模板详情',
         zh_TW: '郵件模板詳情',
-        en_US: 'Email Template Detail',
+        en_US: 'Email Detail',
       },
       permission: 'settings.view',
       hidden: true,
@@ -216,7 +216,7 @@ export const contentRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '短信模板详情',
         zh_TW: '簡訊模板詳情',
-        en_US: 'SMS Template Detail',
+        en_US: 'SMS Detail',
       },
       permission: 'settings.view',
       hidden: true,

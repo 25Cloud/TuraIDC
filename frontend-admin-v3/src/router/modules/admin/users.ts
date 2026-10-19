@@ -23,7 +23,7 @@ export const usersRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '实名列表',
         zh_TW: '實名列表',
-        en_US: 'Verification List',
+        en_US: 'Verify List',
       },
       permission: 'verification.list',
       verificationPane: 'list',
@@ -37,7 +37,7 @@ export const usersRoutes: RouteRecordRaw[] = [
       title: {
         zh_CN: '实名管理',
         zh_TW: '實名管理',
-        en_US: 'Verification Settings',
+        en_US: 'Verify Setup',
       },
       permission: 'verification.list',
       verificationPane: 'manage',
