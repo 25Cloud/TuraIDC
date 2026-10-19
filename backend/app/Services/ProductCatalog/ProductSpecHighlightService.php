@@ -72,7 +72,12 @@ class ProductSpecHighlightService
         $result = [];
         foreach (self::DIMENSIONS as $key => $definition) {
             $value = $this->cleanDimensionValue((string) ($merged[$key] ?? ''));
-            if ($value === '') {
+            if ($value === '' || $this->isPlaceholderValue($value)) {
+                continue;
+            }
+
+            // 配置项取值退化成维度名本身（如「数据盘: 数据盘」）没有信息量
+            if (Str::lower($value) === Str::lower($definition['label'])) {
                 continue;
             }
 
@@ -424,7 +429,7 @@ class ProductSpecHighlightService
         }
 
         $scrubbed = function_exists('iconv')
-            ? iconv('UTF-8', 'UTF-8//IGNORE', $value)
+            ? @iconv('UTF-8', 'UTF-8//IGNORE', $value)
             : mb_scrub($value, 'UTF-8');
 
         if ($scrubbed === false) {

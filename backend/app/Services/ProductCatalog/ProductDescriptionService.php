@@ -126,7 +126,7 @@ final class ProductDescriptionService
         }
 
         $scrubbed = function_exists('iconv')
-            ? iconv('UTF-8', 'UTF-8//IGNORE', $value)
+            ? @iconv('UTF-8', 'UTF-8//IGNORE', $value)
             : mb_scrub($value, 'UTF-8');
 
         return $scrubbed !== false ? $scrubbed : mb_scrub($value, 'UTF-8');
