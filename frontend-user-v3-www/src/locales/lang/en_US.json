@@ -116,9 +116,6 @@
       "productIntro": "Product Overview",
       "selectVersion": "Select a version",
       "processor": "Processor",
-      "breadcrumbRoot": "Products · Select a Level 1 Group",
-      "mobileStageDesc": "Start with a level 1 group, then pick a level 2 group, a level 3 group and finally the product.",
-      "enterSubdirectory": "Enter subdirectory",
       "categoryPath": "Level 1 Group / Level 2 Group",
       "specSelector": "Product Spec Selection",
       "instanceSpecs": "Instance Specs",
@@ -156,10 +153,14 @@
       "widthHint": "Wide screens only; mobile always fills the screen",
       "widthReset": "Reset to site default",
       "groupNav": "Group navigation",
-      "groupNavLevel2": "Level 2 groups",
-      "groupNavLevel3": "Level 3 groups",
-      "groupNavSidebar": "Groups in sidebar",
-      "groupNavTop": "Groups on top"
+      "level1Nav": "Level 1 groups",
+      "level2Nav": "Level 2 groups",
+      "expandLevel1Nav": "Expand level 1 groups",
+      "collapseLevel1Nav": "Collapse level 1 groups",
+      "hideCatalogNav": "Hide catalog",
+      "showCatalogNav": "Show catalog",
+      "catalogTitle": "Product catalog",
+      "groupEmpty": "No groups available under this category"
     },
     "cpuBadge": {
       "coreShort": "Core",

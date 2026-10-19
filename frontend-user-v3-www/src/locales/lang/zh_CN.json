@@ -116,9 +116,6 @@
       "productIntro": "商品介绍",
       "selectVersion": "选择版本",
       "processor": "处理器",
-      "breadcrumbRoot": "产品中心 · 选择一级分组",
-      "mobileStageDesc": "先选一级分组，进入后再依次选择二级分组、三级分组和具体商品。",
-      "enterSubdirectory": "进入子目录",
       "categoryPath": "一级分组 / 二级分组",
       "specSelector": "产品规格选择",
       "instanceSpecs": "实例规格",
@@ -156,10 +153,14 @@
       "widthHint": "仅宽屏生效，手机端始终铺满",
       "widthReset": "恢复站点默认",
       "groupNav": "分组导航",
-      "groupNavLevel2": "二级分组",
-      "groupNavLevel3": "三级分组",
-      "groupNavSidebar": "分组侧栏",
-      "groupNavTop": "分组顶部"
+      "level1Nav": "一级分组",
+      "level2Nav": "二级分组",
+      "expandLevel1Nav": "展开一级分组",
+      "collapseLevel1Nav": "收起一级分组",
+      "hideCatalogNav": "收起目录",
+      "showCatalogNav": "展开目录",
+      "catalogTitle": "商品目录",
+      "groupEmpty": "该分类下暂无可选分组"
     },
     "cpuBadge": {
       "coreShort": "酷",

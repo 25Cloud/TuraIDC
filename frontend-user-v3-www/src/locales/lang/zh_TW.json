@@ -116,9 +116,6 @@
       "productIntro": "商品介紹",
       "selectVersion": "選擇版本",
       "processor": "處理器",
-      "breadcrumbRoot": "產品中心 · 選擇一級分組",
-      "mobileStageDesc": "先選一級分組，進入後再依次選擇二級分組、三級分組和具體商品。",
-      "enterSubdirectory": "進入子目錄",
       "categoryPath": "一級分組 / 二級分組",
       "specSelector": "產品規格選擇",
       "instanceSpecs": "例項規格",
@@ -156,10 +153,14 @@
       "widthHint": "僅寬螢幕生效，手機端始終鋪滿",
       "widthReset": "恢復站點預設",
       "groupNav": "分組導覽",
-      "groupNavLevel2": "二級分組",
-      "groupNavLevel3": "三級分組",
-      "groupNavSidebar": "分組側欄",
-      "groupNavTop": "分組置頂"
+      "level1Nav": "一級分組",
+      "level2Nav": "二級分組",
+      "expandLevel1Nav": "展開一級分組",
+      "collapseLevel1Nav": "收合一級分組",
+      "hideCatalogNav": "收合目錄",
+      "showCatalogNav": "展開目錄",
+      "catalogTitle": "商品目錄",
+      "groupEmpty": "該分類下暫無可選分組"
     },
     "cpuBadge": {
       "coreShort": "酷",

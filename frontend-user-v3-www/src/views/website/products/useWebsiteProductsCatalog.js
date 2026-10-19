@@ -58,8 +58,6 @@ export function useWebsiteProductsCatalog({
   const pageLoading = ref(false);
   const sidebarCollapsed = ref(false);
   const isMobile = ref(false);
-  const mobileTypeEntered = ref(false);
-  const mobileCategoryDrawer = ref(false);
   const mobileProductDrawer = ref(false);
   const mobilePendingProductId = ref(0);
 
@@ -76,9 +74,6 @@ export function useWebsiteProductsCatalog({
   // 不能因为自动补全了分组就把地址推到更深的段。列表式不用这个值，它会
   // 一路补全到商品段。
   const routeDepth = ref(0);
-  const mobileRegionDrawer = ref(false);
-  const tempGroupId = ref(0);
-  const tempChildGroups = ref([]);
 
   let routeSyncSuspendCount = 0;
   let groupToken = 0;
@@ -125,13 +120,6 @@ export function useWebsiteProductsCatalog({
 
     return catalogGroupKey(activeGroup.value);
   });
-  const showMobileTypePicker = computed(
-    () =>
-      isMobile.value &&
-      !mobileTypeEntered.value &&
-      productTypes.value.length > 1 &&
-      !hasWebsiteProductRouteParams(readWebsiteProductRouteParams(route)),
-  );
   // 卡片式下不自动选中第一个商品：没有选中态才能展示卡片网格，
   // 选中态留给 /products/:id 独立配置页去承载。
   const shouldAutoSelectProduct = computed(() => {
@@ -285,99 +273,6 @@ export function useWebsiteProductsCatalog({
     selectProduct(products[0].id, { syncRoute: shouldSyncRoute(options) });
   }
 
-  function enterMobileType(value) {
-    mobileTypeEntered.value = true;
-    mobileCategoryDrawer.value = false;
-    return switchType(value, { syncRoute: true });
-  }
-
-  function returnToMobileTypePicker() {
-    mobileTypeEntered.value = false;
-    mobileCategoryDrawer.value = false;
-    mobileProductDrawer.value = false;
-    routeDepth.value = 0;
-
-    // 必须把地址上的选购参数一并清掉，否则这个按钮没有任何可见效果：
-    // showMobileTypePicker 的条件里带着 !hasWebsiteProductRouteParams(route)，
-    // 而进入时 enterMobileType() → switchType(..., { syncRoute: true }) 已经把参数
-    // 写进地址。只翻 mobileTypeEntered 这个状态，一级分组界面永远不会回来，
-    // 用户看到的就是「切换一级分组」只把抽屉关掉。
-    //
-    // 这里不复用 syncSelectionRoute()：它的「深链保护」正是为了阻止地址回退到
-    // /products（防止深链刷新时状态未解析完就把参数抹掉）。这里是用户主动返回，
-    // 本地分组与商品状态都已加载完毕，不该被那条保护拦住。
-    const {
-      type: _type,
-      group: _group,
-      child: _child,
-      ...restQuery
-    } = route.query || {};
-    void router.replace({
-      path: "/products",
-      query: restQuery,
-    });
-  }
-
-  function openMobileCategoryDrawer() {
-    if (!rootGroups.value.length) {
-      return;
-    }
-
-    mobileCategoryDrawer.value = true;
-  }
-
-  function openMobileRegionDrawer() {
-    if (!rootGroups.value.length) {
-      return;
-    }
-
-    tempGroupId.value = activeGroupId.value;
-    tempChildGroups.value = [...childGroups.value];
-    mobileRegionDrawer.value = true;
-  }
-
-  async function selectTempGroup(id) {
-    if (tempGroupId.value === id) {
-      return;
-    }
-
-    tempGroupId.value = id;
-    tempChildGroups.value = [];
-
-    try {
-      // 只需要子分组列表：单独取 children，不再把整个目录（含各分组商品）拉一遍
-      const res = await siteApi.productGroupChildren(id);
-      tempChildGroups.value = res.data.list || [];
-    } catch {
-      // 静默处理
-    }
-  }
-
-  function handleRegionChange(groupId) {
-    return selectTempGroup(groupId);
-  }
-
-  async function confirmRegionSelection(groupId, childId) {
-    mobileRegionDrawer.value = false;
-    const targetGroupId = groupId || tempGroupId.value;
-    await withSuspendedRouteSync(async () => {
-      await switchGroup(targetGroupId, {
-        syncRoute: false,
-        targetChildId:
-          childId ||
-          tempChildGroups.value.find((g) => g.id === (childId || 0))?.id ||
-          0,
-        targetProductId: selectedProductId.value,
-      });
-    });
-    await syncSelectionRoute();
-  }
-
-  function handleMobileGroupSelect(id) {
-    mobileCategoryDrawer.value = false;
-    return switchGroup(id, { syncRoute: true });
-  }
-
   async function openMobileProductDrawer() {
     if (
       activeGroupId.value > 0 &&
@@ -442,11 +337,7 @@ export function useWebsiteProductsCatalog({
     resetSelectedProduct({ syncRoute: false });
     productsByGroup.value = {};
     childGroups.value = [];
-    mobileCategoryDrawer.value = false;
     mobileProductDrawer.value = false;
-    if (options.enterMobile !== false && isMobile.value) {
-      mobileTypeEntered.value = true;
-    }
 
     await loadRootGroups(options);
   }
@@ -768,10 +659,6 @@ export function useWebsiteProductsCatalog({
     }
 
     await withSuspendedRouteSync(async () => {
-      if (isMobile.value) {
-        mobileTypeEntered.value = true;
-      }
-
       // 地址只有类型段（/products/{typeSlug}）：把第一个二级分组的目录加载出来，
       // 卡片式保持一段地址，列表式随后会自动补全到商品段。
       if (
@@ -920,17 +807,7 @@ export function useWebsiteProductsCatalog({
         return linked;
       }
 
-      if (!hasRouteTarget && isMobile.value) {
-        activeTypeValue.value = "";
-        rootGroups.value = [];
-        childGroups.value = [];
-        productsByGroup.value = {};
-        routeDepth.value = 0;
-        resetSelectedProduct({ syncRoute: false });
-        mobileTypeEntered.value = false;
-        return true;
-      }
-
+      // 手机端也直接进目录：一级分组在底部抽屉里选，不再先给一整页卡片让用户点
       const types = productTypes.value;
       const firstTypeValue = types[0]?.value || "";
       activeTypeValue.value = firstTypeValue;
@@ -967,13 +844,10 @@ export function useWebsiteProductsCatalog({
 
   watch(isMobile, async (mobile) => {
     if (mobile) {
-      mobileTypeEntered.value = Boolean(activeTypeValue.value);
       return;
     }
 
-    mobileCategoryDrawer.value = false;
     mobileProductDrawer.value = false;
-    mobileTypeEntered.value = false;
 
     if (!activeTypeValue.value && productTypes.value.length) {
       activeTypeValue.value = productTypes.value[0].value;
@@ -1037,10 +911,6 @@ export function useWebsiteProductsCatalog({
       }
 
       routeDepth.value = 0;
-
-      if (route.path === "/products" && isMobile.value) {
-        mobileTypeEntered.value = false;
-      }
     },
   );
 
@@ -1059,12 +929,7 @@ export function useWebsiteProductsCatalog({
     pageLoading,
     sidebarCollapsed,
     isMobile,
-    mobileTypeEntered,
-    mobileCategoryDrawer,
     mobileProductDrawer,
-    mobileRegionDrawer,
-    tempGroupId,
-    tempChildGroups,
     mobilePendingProductId,
     productTypes,
     rootGroups,
@@ -1079,16 +944,7 @@ export function useWebsiteProductsCatalog({
     isCardDisplayMode,
     activeGroupName,
     activeChildName,
-    showMobileTypePicker,
     visibleProducts,
-    enterMobileType,
-    returnToMobileTypePicker,
-    openMobileCategoryDrawer,
-    openMobileRegionDrawer,
-    selectTempGroup,
-    handleRegionChange,
-    confirmRegionSelection,
-    handleMobileGroupSelect,
     openMobileProductDrawer,
     confirmMobileProductSelection,
     switchType,

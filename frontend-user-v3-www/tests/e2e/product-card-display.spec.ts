@@ -413,7 +413,7 @@ test.describe("选购页统一路由与展示方式", () => {
     expect(childProductRequests).toHaveLength(0);
 
     // 切到第二个三级分组：只按需拉这一个分组的商品
-    await page.locator(".pg-nav__child").nth(1).click();
+    await page.locator(".shop-cat__child").nth(1).click();
     await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
     await expect
       .poll(() => new URL(page.url()).pathname)
@@ -704,57 +704,99 @@ test.describe("选购页统一路由与展示方式", () => {
     await expect.poll(() => new URL(page.url()).pathname).toBe(productPath);
   });
 
-  test("分组导航：二/三级分组标签正确，可折叠并移到侧栏", async ({ page }) => {
+  test("分组导航：一级与二/三级分成两个侧栏，字号放大且点目录自动收起一级", async ({
+    page,
+  }) => {
     await mockSiteApi(page, "card");
     await page.goto(groupPath);
 
-    const topNav = page.locator(".pg-nav--top");
-    await expect(topNav).toBeVisible();
-    const panel = topNav.locator(".pg-nav__panel");
-    await expect(panel).toBeVisible();
-    await expect(panel.locator(".pg-nav__group-head").first()).toContainText(
+    const rail = page.locator(".shop-sidebar");
+    const catalog = page.locator(".shop-catalog");
+    await expect(rail).toBeVisible();
+    await expect(catalog).toBeVisible();
+
+    // 一层侧栏只管一级分组，另一层只管二/三级分组，不再挤在同一列
+    await expect(rail.locator(".sidebar-item")).toHaveCount(1);
+    await expect(rail.locator(".sidebar-item").first()).toContainText(
+      "虚拟主机",
+    );
+    await expect(catalog.locator(".shop-cat__group")).toHaveCount(1);
+    await expect(catalog.locator(".shop-cat__group").first()).toContainText(
       "美国",
     );
-    await expect(panel.locator(".pg-nav__child").first()).toContainText("高防");
-    await expect(panel.locator(".pg-nav__caption")).toHaveCount(0);
+    await expect(catalog.locator(".shop-cat__child").first()).toContainText(
+      "高防",
+    );
+    await expect(page.locator(".pg-nav--top")).toHaveCount(0);
     await expect(page.locator(".filter-block")).toHaveCount(0);
 
-    await page.locator(".pg-nav__toggle").click();
-    await expect(topNav.locator(".pg-nav__panel")).toHaveCount(0);
+    // 字号不能再比正文小一大截（此前 12.5px / 13px 就是「太小」的来源）
+    const groupFont = await catalog
+      .locator(".shop-cat__group")
+      .first()
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    const railFont = await rail
+      .locator(".item-name")
+      .first()
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    expect(groupFont).toBeGreaterThanOrEqual(14);
+    expect(railFont).toBeGreaterThanOrEqual(14);
 
-    await page.getByRole("button", { name: "分组侧栏" }).click();
-    await expect(page.locator(".shop-sidebar .pg-nav--sidebar")).toBeVisible();
-    await expect(page.locator(".pg-nav--top")).toHaveCount(0);
+    // 点三级分组：地址推进到三段，同时收起一级分组栏给配置区让位
+    await catalog.locator(".shop-cat__child").first().click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe(childPath);
+    await expect(rail).toHaveClass(/collapsed/);
+    await expect(catalog).toBeVisible();
+
+    // 一级分组可以手动展开回来
+    await rail.locator(".sidebar-toggle").click();
+    await expect(rail).not.toHaveClass(/collapsed/);
+
+    // 整块目录可以收起，偏好只存本机且跨刷新生效
+    await page.getByRole("button", { name: "收起目录" }).click();
+    await expect(page.locator(".shop-sidebar")).toHaveCount(0);
+    await expect(page.locator(".shop-catalog")).toHaveCount(0);
     await page.reload();
-    await expect(page.locator(".shop-sidebar .pg-nav--sidebar")).toBeVisible();
-
-    await page.getByRole("button", { name: "分组顶部" }).click();
-    await expect(page.locator(".pg-nav--top")).toBeVisible();
+    await expect(page.locator(".shop-catalog")).toHaveCount(0);
+    await page.getByRole("button", { name: "展开目录" }).click();
+    await expect(page.locator(".shop-sidebar")).toBeVisible();
+    await expect(page.locator(".shop-catalog")).toBeVisible();
   });
 
-  test("手机端分组导航默认收起，展开后纵向选三级分组", async ({ page }) => {
+  test("手机端目录：底部抽屉里选一/二/三级分组，选完自动收起", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await mockSiteApi(page, "card");
     await page.goto(groupPath);
 
-    const nav = page.locator(".pg-nav--top");
-    await expect(nav).toBeVisible();
-    await expect(page.locator(".mobile-type-back-btn")).toBeVisible();
-    await expect(nav.locator(".pg-nav__panel")).toHaveCount(0);
+    // 不再有整页「先选一级分组」的卡片页，也没有顶部折叠面板与两个侧栏
+    await expect(page.locator(".mobile-type-stage")).toHaveCount(0);
+    await expect(page.locator(".pg-nav--top")).toHaveCount(0);
+    await expect(page.locator(".shop-sidebar")).toHaveCount(0);
+    await expect(page.locator(".shop-catalog")).toHaveCount(0);
 
-    await nav.locator(".pg-nav__toggle").click();
-    await expect(nav.locator(".pg-nav__panel")).toBeVisible();
-    await expect(nav.locator(".pg-nav__group-head").first()).toContainText(
-      "美国",
+    const bar = page.locator(".shop-view-bar__catalog");
+    await expect(bar).toBeVisible();
+    await expect(bar).toContainText("虚拟主机");
+
+    await bar.click();
+    const sheet = page.locator(".ms-drawer");
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator(".m-cat__type").first()).toContainText(
+      "虚拟主机",
     );
-    await expect(nav.locator(".pg-nav__child").first()).toContainText("高防");
-    await expect(nav.locator(".pg-nav__caption")).toHaveCount(0);
-    await expect(page.locator(".mobile-picker-row")).toHaveCount(0);
+    await expect(sheet.locator(".m-cat__row").first()).toContainText("美国");
 
-    // 选三级分组后地址推进到三段，面板自动收起
-    await nav.locator(".pg-nav__child").first().click();
-    await expect(nav.locator(".pg-nav__panel")).toHaveCount(0);
+    // 点二级分组：原地钻取它的三级分组
+    await sheet.locator(".m-cat__row").first().click();
+    await expect(sheet.locator(".m-cat__back")).toContainText("美国");
+    await expect(sheet.locator(".m-cat__row").first()).toContainText("高防");
+
+    // 选三级分组后地址推进到三段，抽屉自动收起
+    await sheet.locator(".m-cat__row").first().click();
     await expect.poll(() => new URL(page.url()).pathname).toBe(childPath);
+    await expect(page.locator(".ms-drawer")).toHaveCount(0);
   });
 
   test("视觉快照：两种形态与商品配置页", async ({ page }) => {
@@ -765,6 +807,11 @@ test.describe("选购页统一路由与展示方式", () => {
     await page.goto(groupPath);
     await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
     await page.screenshot({ path: shot("card-mode"), fullPage: true });
+
+    // 目录侧栏：点过三级分组后一级分组收起的样子
+    await page.locator(".shop-cat__child").first().click();
+    await expect(page.locator(".shop-sidebar")).toHaveClass(/collapsed/);
+    await page.screenshot({ path: shot("catalog-nav-collapsed") });
 
     await page.unroute("**/api/v2/site/**");
     await mockSiteApi(page, "list");
@@ -777,5 +824,16 @@ test.describe("选购页统一路由与展示方式", () => {
     await page.goto(productPath);
     await expect(page.locator(".pd-desc")).toBeVisible();
     await page.screenshot({ path: shot("configure-page"), fullPage: true });
+
+    // 手机端：目录入口与底部抽屉
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(groupPath);
+    await expect(page.locator(".product-card-grid")).toBeVisible();
+    await page.screenshot({ path: shot("mobile-nav-bar"), fullPage: true });
+    await page.locator(".shop-view-bar__catalog").click();
+    await expect(page.locator(".m-cat__row").first()).toBeVisible();
+    // 等抽屉入场动画结束再截图，否则拍到的是还没淡入完的一帧
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: shot("mobile-catalog-drawer") });
   });
 });

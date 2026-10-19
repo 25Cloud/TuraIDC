@@ -298,12 +298,6 @@ export default {
       .then((response) =>
         normalizeProductResponse(response, normalizeProductGroupListPayload),
       ),
-  productGroupChildren: (groupId, config) =>
-    request
-      .get(`/v2/site/product-groups/${groupId}/children`, config)
-      .then((response) =>
-        normalizeProductResponse(response, normalizeProductGroupListPayload),
-      ),
   productGroupProducts: (groupId, params, config = {}) =>
     request
       .get(`/v2/site/product-groups/${groupId}/products`, { ...config, params })
