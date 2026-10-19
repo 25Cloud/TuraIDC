@@ -4,7 +4,6 @@
     class="pg-nav pg-nav--sidebar"
     :aria-label="$t('product.list.groupNav')"
   >
-    <div class="pg-nav__caption">{{ $t("product.list.groupNavLevel2") }}</div>
     <div class="pg-nav__list">
       <div v-for="group in groups" :key="group.id" class="pg-nav__group">
         <button
@@ -41,9 +40,6 @@
           v-if="isActiveGroup(group) && childGroups.length"
           class="pg-nav__children"
         >
-          <div class="pg-nav__caption pg-nav__caption--sub">
-            {{ $t("product.list.groupNavLevel3") }}
-          </div>
           <button
             v-for="child in childGroups"
             :key="child.id"
@@ -98,7 +94,6 @@
     </button>
 
     <div v-if="open" class="pg-nav__panel">
-      <div class="pg-nav__caption">{{ $t("product.list.groupNavLevel2") }}</div>
       <div class="pg-nav__list">
         <div v-for="group in groups" :key="group.id" class="pg-nav__group">
           <button
@@ -135,9 +130,6 @@
             v-if="isActiveGroup(group) && childGroups.length"
             class="pg-nav__children"
           >
-            <div class="pg-nav__caption pg-nav__caption--sub">
-              {{ $t("product.list.groupNavLevel3") }}
-            </div>
             <button
               v-for="child in childGroups"
               :key="child.id"

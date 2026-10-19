@@ -601,6 +601,34 @@
   }
 }
 
+/* 手机端返回「选择一级分组」入口：没有侧栏，必须给显式返回 */
+.mobile-type-back-row {
+  padding: 10px 14px 0;
+  background: #fff;
+}
+
+.mobile-type-back-btn {
+  display: inline-flex;
+  height: 30px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  border: 1px solid $divider-color;
+  border-radius: 4px;
+  background: #fff;
+  color: $text-color-secondary;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    border-color $motion-fast ease,
+    color $motion-fast ease;
+
+  &:hover {
+    border-color: $color-primary-border;
+    color: $color-primary;
+  }
+}
+
 .mobile-picker-row {
   padding: 16px 14px;
   border-bottom: 1px solid $divider-color;

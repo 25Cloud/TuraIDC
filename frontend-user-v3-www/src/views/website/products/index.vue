@@ -115,6 +115,31 @@
       <div class="shop-body">
         <!-- 中间配置区 -->
         <div class="shop-main" v-loading="pageLoading">
+          <!-- 手机端没有侧栏：给一个明确入口回到「选择一级分组」 -->
+          <div v-if="isMobile" class="mobile-type-back-row">
+            <button
+              type="button"
+              class="mobile-type-back-btn"
+              @click="returnToMobileTypePicker"
+            >
+              <svg
+                viewBox="0 0 12 12"
+                width="12"
+                height="12"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M7.5 2.5 4 6l3.5 3.5"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <span>{{ $t("product.list.switchLevel1Group") }}</span>
+            </button>
+          </div>
           <!--
             展示方式与版心：站点默认值决定首屏形态，访客可在右侧自行切换。
             手机端也保留「卡片式 / 列表式」切换（此前只在桌面显示，手机端改不了）；
@@ -397,7 +422,7 @@
           />
 
           <div
-            v-if="isMobile && visibleProducts.length"
+            v-if="isMobile && !showCardGrid && visibleProducts.length"
             class="mobile-picker-row"
           >
             <div class="config-block-title">
@@ -2130,6 +2155,7 @@ const {
   selectOsGroup,
   handleSubmit,
   enterMobileType,
+  returnToMobileTypePicker,
   openMobileProductDrawer,
   confirmMobileProductSelection: confirmRawMobileProductSelection,
   switchType,

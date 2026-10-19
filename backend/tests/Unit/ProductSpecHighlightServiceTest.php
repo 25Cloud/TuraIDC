@@ -73,6 +73,22 @@ class ProductSpecHighlightServiceTest extends TestCase
         }
     }
 
+    public function test_it_does_not_corrupt_values_ending_with_chinese_punctuation(): void
+    {
+        $service = new ProductSpecHighlightService();
+
+        // 「下行」的末字节 0x8C 与中文标点『，』的字节相同；用 trim() 按字节裁标点
+        // 会把「行」裁成半个字符，线上「云服务器/华中」因此 500。
+        $highlights = $service->resolveHighlightsForProduct(new Product([
+            'remark' => '&lt;li&gt;带宽：40M上行 100M下行&lt;/li&gt;',
+        ]));
+
+        $values = collect($highlights)->pluck('value', 'key')->all();
+
+        $this->assertSame('40M上行 100M下行', $values['bandwidth'] ?? null);
+        $this->assertTrue(mb_check_encoding($values['bandwidth'], 'UTF-8'));
+    }
+
     public function test_it_reads_select_sub_values_even_when_qty_minimum_is_zero(): void
     {
         $service = new ProductSpecHighlightService();

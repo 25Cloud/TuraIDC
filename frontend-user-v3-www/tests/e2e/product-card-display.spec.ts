@@ -602,14 +602,14 @@ test.describe("选购页展示方式与商品描述", () => {
 
     const topNav = page.locator(".pg-nav--top");
     await expect(topNav).toBeVisible();
-    // 桌面临时默认展开：面板里是「二级分组」，展开后出现「三级分组」
+    // 桌面默认展开：二级分组纵向列表，展开的二级下直接列三级分组（不再写层级字样）
     const panel = topNav.locator(".pg-nav__panel");
     await expect(panel).toBeVisible();
-    await expect(panel.locator(".pg-nav__caption").first()).toHaveText(
-      "二级分组",
+    await expect(panel.locator(".pg-nav__group-head").first()).toContainText(
+      "美国",
     );
-    await expect(panel.locator(".pg-nav__caption--sub")).toHaveText("三级分组");
     await expect(panel.locator(".pg-nav__child").first()).toContainText("高防");
+    await expect(panel.locator(".pg-nav__caption")).toHaveCount(0);
     // 旧的横向筛选行已移除，不再出现「一级分组/二级分组」错位标签
     await expect(page.locator(".filter-block")).toHaveCount(0);
     await page.screenshot({
@@ -644,15 +644,20 @@ test.describe("选购页展示方式与商品描述", () => {
 
     const nav = page.locator(".pg-nav--top");
     await expect(nav).toBeVisible();
+    // 手机端没有侧栏，必须有回到「选择一级分组」的入口
+    await expect(page.locator(".mobile-type-back-btn")).toBeVisible();
     // 默认收起，避免展开列表遮挡内容
     await expect(nav.locator(".pg-nav__panel")).toHaveCount(0);
 
     await nav.locator(".pg-nav__toggle").click();
     await expect(nav.locator(".pg-nav__panel")).toBeVisible();
-    await expect(nav.locator(".pg-nav__caption").first()).toHaveText(
-      "二级分组",
+    await expect(nav.locator(".pg-nav__group-head").first()).toContainText(
+      "美国",
     );
     await expect(nav.locator(".pg-nav__child").first()).toContainText("高防");
+    await expect(nav.locator(".pg-nav__caption")).toHaveCount(0);
+    // 卡片式下不再显示无意义的「产品规格选择」
+    await expect(page.locator(".mobile-picker-row")).toHaveCount(0);
     await page.screenshot({
       path: `${process.env.TEMP || "."}\\turaidc-www-group-nav-mobile.png`,
       fullPage: false,

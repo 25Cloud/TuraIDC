@@ -412,7 +412,12 @@ class ProductSpecHighlightService
         // mb_scrub 会把截断处的非法字节换成 '?'，这里把首尾残留的替换字符去掉
         $value = preg_replace('/^\?+|\?+$/u', '', $value) ?? $value;
 
-        return trim($value, " \t\n\r\0\x0B，,;；");
+        // 注意：不能用 trim($value, '，,;；') —— trim 是字节级操作，
+        // 而中文标点每个字含 0xEF/0xBC/0x8C 等字节，会把「下行」末尾的 0x8C
+        // 当成标点裁掉，产生非法 UTF-8（线上「云服务器/华中」500 的直接原因）。
+        $value = preg_replace('/^[\s,;，；]+|[\s,;，；]+$/u', '', $value) ?? $value;
+
+        return $value;
     }
 
     /**
