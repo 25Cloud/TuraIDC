@@ -54,7 +54,7 @@ class SiteProductPurchaseContextResource extends JsonResource
 
     /**
      * @param  array<int, mixed>  $types
-     * @return list<array{id: int, value: string, label: string, product_type: string, group_count: int, product_count: int}>
+     * @return list<array{id: int, value: string, slug: string, label: string, product_type: string, group_count: int, product_count: int}>
      */
     private function purchaseTypes(array $types): array
     {
@@ -63,6 +63,8 @@ class SiteProductPurchaseContextResource extends JsonResource
             ->map(static fn (array $type): array => [
                 'id' => (int) ($type['id'] ?? 0),
                 'value' => (string) ($type['value'] ?? ''),
+                // 前台地址用的类型段：/products/{slug}/...
+                'slug' => (string) ($type['slug'] ?? ($type['value'] ?? '')),
                 'label' => (string) ($type['label'] ?? ''),
                 'product_type' => (string) ($type['product_type'] ?? ''),
                 'group_count' => (int) ($type['group_count'] ?? 0),
