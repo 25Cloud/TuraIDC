@@ -212,6 +212,33 @@ class V2ProductGroupCatalogTest extends TestCase
 
         $this->assertSame($this->siteProductWhitelist(), array_keys($thirdProductsResponse->json('data.list.0')));
         $this->assertNoSensitiveKeys($thirdProductsResponse->json());
+
+        // 目录聚合接口：一次请求返回 children + 指定三级分组的商品，
+        // 前端不再按子分组数量逐个拉商品列表
+        $catalogResponse = $this->getJson('/api/v2/site/product-groups/'.$secondGroup->id.'/catalog?'.http_build_query([
+            'child_group_id' => $thirdGroup->id,
+        ]))
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.effective_product_group_id', (int) $secondGroup->id)
+            ->assertJsonPath('data.effective_product_group_level', 2);
+
+        $this->assertNoSensitiveKeys($catalogResponse->json());
+
+        $catalogChildren = collect($catalogResponse->json('data.children'))
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+        $this->assertContains((int) $thirdGroup->id, $catalogChildren);
+        $this->assertNotContains((int) $hiddenThirdGroup->id, $catalogChildren);
+
+        $catalogChildItem = collect($catalogResponse->json('data.items_by_group'))
+            ->firstWhere('effective_product_group_id', (int) $thirdGroup->id);
+        $this->assertIsArray($catalogChildItem);
+        $this->assertSame(
+            [(int) $thirdProduct->id],
+            array_map('intval', array_column((array) ($catalogChildItem['products'] ?? []), 'id'))
+        );
     }
 
     public function test_site_product_group_responses_stay_under_size_limits(): void

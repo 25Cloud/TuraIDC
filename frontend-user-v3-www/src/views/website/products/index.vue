@@ -2163,7 +2163,12 @@ const {
   switchChild,
   selectProduct,
   syncDefaultProduct,
-} = useWebsiteProductsPage({ autoSelectProduct });
+} = useWebsiteProductsPage({
+  autoSelectProduct,
+  // 卡片式不预取商品详情（卡片不需要配置数据，预取会额外打 3-8 个请求）；
+  // 列表式才为机型切换预取首屏附近的几台
+  shouldPrefetchProductDetails: () => displayMode.value === DISPLAY_MODE_LIST,
+});
 
 // 选中商品后不再显示卡片网格，直接进入配置区（深链 /products/t/g/c/p 亦如此）
 const showCardGrid = computed(
@@ -2235,8 +2240,9 @@ function handleGroupNavSelectChild(id) {
     return;
   }
 
-  // 点当前三级分组也要把地址补到三段，才能分享/刷新回到该三级分组
-  switchChild(nextId);
+  // 点当前三级分组也要把地址补到三段，才能分享/刷新回到该三级分组；
+  // 分组商品尚未加载时 switchChild 会按需拉一次
+  void switchChild(nextId);
 }
 
 /* ===== 宽屏版心面板 ===== */

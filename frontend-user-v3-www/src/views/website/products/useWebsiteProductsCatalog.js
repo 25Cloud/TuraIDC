@@ -1,10 +1,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import siteApi, {
-  getCachedCatalog,
-  invalidateCatalogCache,
-  setCachedCatalog,
-} from "@/api/site";
+import siteApi, { getCachedCatalog, invalidateCatalogCache } from "@/api/site";
 import { getPendingWebsiteCouponId } from "@/utils/websiteCoupon";
 import {
   buildWebsiteProductPath,
@@ -16,7 +12,7 @@ import {
 
 const MOBILE_BREAKPOINT = 900;
 
-// 进行中的目录请求去重（site.js 的 catalogCache 负责结果缓存）
+// 进行中的目录请求去重（api 层缓存负责结果缓存）
 const catalogPendingMap = new Map();
 // 已访问类型的根分组缓存：切换类型时本地过滤，避免重复请求 productGroups
 const rootGroupsByType = new Map();
@@ -50,12 +46,6 @@ function filterGroupsByType(groups = [], typeValue = "") {
   }
 
   return groups.filter((group) => groupMatchesType(group, typeValue));
-}
-
-function catalogBelongsToGroup(catalog, groupId) {
-  return (
-    Number(catalog?.effective_product_group_id || 0) === Number(groupId || 0)
-  );
 }
 
 export function useWebsiteProductsCatalog({
@@ -95,6 +85,10 @@ export function useWebsiteProductsCatalog({
   let groupAbortController = null;
   // 卡片式把旧三段商品深链规范成四段地址期间，禁止目录态同步把地址改回去
   let cardProductRedirectPending = false;
+  // 三级分组商品懒加载缓存：目录聚合接口只带当前分组，切过的分组记住结果，
+  // 切回来不再发请求（服务端也有缓存，这里省一次 RTT）
+  const childProductsCache = new Map();
+  const childProductsPending = new Map();
 
   const activeType = computed(
     () =>
@@ -350,18 +344,10 @@ export function useWebsiteProductsCatalog({
     tempGroupId.value = id;
     tempChildGroups.value = [];
 
-    const cached = getCachedCatalog(id);
-    if (cached) {
-      tempChildGroups.value = cached.children || [];
-      return;
-    }
-
     try {
-      const data = await siteApi
-        .productGroupCatalog(id)
-        .then((res) => res.data);
-      setCachedCatalog(id, data);
-      tempChildGroups.value = data.children || [];
+      // 只需要子分组列表：单独取 children，不再把整个目录（含各分组商品）拉一遍
+      const res = await siteApi.productGroupChildren(id);
+      tempChildGroups.value = res.data.list || [];
     } catch {
       // 静默处理
     }
@@ -399,6 +385,8 @@ export function useWebsiteProductsCatalog({
       visibleProducts.value.every((product) => !hasDisplayPrice(product))
     ) {
       invalidateCatalogCache(activeGroupId.value);
+      childProductsCache.clear();
+      childProductsPending.clear();
       await loadGroupPayload(activeGroupId.value, {
         syncRoute: false,
         targetChildId: activeChildId.value,
@@ -432,7 +420,7 @@ export function useWebsiteProductsCatalog({
     await loadGroupPayload(id, options);
   }
 
-  function switchChild(id, options = {}) {
+  async function switchChild(id, options = {}) {
     activeChildId.value = id;
     if (!options.preserveRouteDepth) {
       routeDepth.value = 3;
@@ -440,8 +428,9 @@ export function useWebsiteProductsCatalog({
     resetSelectedProduct({ syncRoute: false });
     mobileProductDrawer.value = false;
 
-    const childKey = getChildCategoryKey(id);
-    const products = childKey ? productsByGroup.value[childKey] || [] : [];
+    // 目录聚合接口只带当前三级分组的商品：切到未加载过的分组时按需拉一次，
+    // 已加载过的直接用缓存（切回来不再发请求）
+    const products = await ensureChildProductsLoaded(id);
     syncDefaultProduct(products, options);
   }
 
@@ -506,13 +495,20 @@ export function useWebsiteProductsCatalog({
     groupAbortController?.abort();
     groupAbortController = new AbortController();
 
-    const cached = getCachedCatalog(groupId);
+    // 目录聚合接口只带「根分组商品 + 当前三级分组商品」：
+    //  - 路由/交互已知道要看的 child 就带上，避免多一轮请求；
+    //  - 旧三段商品深链只给了一个数字时交给服务端解析（三级分组或商品归属）。
+    const targetChildId = Number(options.targetChildId || 0);
+    const resolveId = Number(options.ambiguousId || 0);
+    const cacheKey = `${groupId}:${targetChildId}:${resolveId}`;
+
+    const cached = getCachedCatalog(groupId, targetChildId, resolveId);
     if (cached) {
       applyGroupPayload(cached, options);
       return;
     }
 
-    const pending = catalogPendingMap.get(groupId);
+    const pending = catalogPendingMap.get(cacheKey);
     if (pending) {
       try {
         const data = await pending;
@@ -532,12 +528,14 @@ export function useWebsiteProductsCatalog({
     const controller = groupAbortController;
 
     const request = siteApi
-      .productGroupCatalog(groupId, {
-        signal: controller.signal,
-      })
+      .productGroupCatalog(
+        groupId,
+        { childGroupId: targetChildId, resolveId },
+        { signal: controller.signal },
+      )
       .then((res) => res.data);
 
-    catalogPendingMap.set(groupId, request);
+    catalogPendingMap.set(cacheKey, request);
 
     try {
       const data = await request;
@@ -545,7 +543,6 @@ export function useWebsiteProductsCatalog({
         return;
       }
 
-      setCachedCatalog(groupId, data);
       applyGroupPayload(data, options);
     } catch (error) {
       if (error?.code === "ERR_CANCELED" || error?.name === "CanceledError") {
@@ -554,11 +551,64 @@ export function useWebsiteProductsCatalog({
 
       throw error;
     } finally {
-      catalogPendingMap.delete(groupId);
+      catalogPendingMap.delete(cacheKey);
       if (token === groupToken) {
         pageLoading.value = false;
       }
     }
+  }
+
+  /**
+   * 按需拉某个三级分组的商品。目录聚合接口只下发当前分组，其余分组在用户
+   * 真正切过去时再取（服务端已有 60s 缓存，切回来基本是热响应）。
+   */
+  async function ensureChildProductsLoaded(childId) {
+    const normalizedChildId = Number(childId || 0);
+    const childKey = getChildCategoryKey(normalizedChildId);
+    if (!childKey) {
+      return [];
+    }
+
+    if (childProductsCache.has(normalizedChildId)) {
+      const cached = childProductsCache.get(normalizedChildId);
+      productsByGroup.value = {
+        ...productsByGroup.value,
+        [childKey]: cached,
+      };
+      return cached;
+    }
+
+    if (Array.isArray(productsByGroup.value[childKey])) {
+      return productsByGroup.value[childKey];
+    }
+
+    const pending = childProductsPending.get(normalizedChildId);
+    if (pending) {
+      return pending;
+    }
+
+    const child = childGroups.value.find(
+      (item) => Number(item.id) === normalizedChildId,
+    );
+    const level = Number(child?.effective_product_group_level || 3);
+
+    const request = siteApi
+      .productGroupProductsAll(normalizedChildId, level, { silentError: true })
+      .then((products) => {
+        childProductsCache.set(normalizedChildId, products);
+        productsByGroup.value = {
+          ...productsByGroup.value,
+          [childKey]: products,
+        };
+        return products;
+      })
+      .catch(() => [])
+      .finally(() => {
+        childProductsPending.delete(normalizedChildId);
+      });
+
+    childProductsPending.set(normalizedChildId, request);
+    return request;
   }
 
   function applyGroupPayload(data, options = {}) {
@@ -572,6 +622,18 @@ export function useWebsiteProductsCatalog({
         map[groupKey] = item.products || [];
       }
     });
+
+    // 聚合接口只带当前三级分组；之前懒加载过的其它分组商品合回来，
+    // 切回该分组时不用再请求一遍。
+    for (const child of children) {
+      const childId = Number(child?.id || 0);
+      const childKey = catalogGroupKey(child);
+      if (!childKey || map[childKey] || !childProductsCache.has(childId)) {
+        continue;
+      }
+      map[childKey] = childProductsCache.get(childId);
+    }
+
     productsByGroup.value = map;
 
     // 三段路径的 thirdId 可能是三级分组 ID，也可能是旧深链的商品 ID。
@@ -765,7 +827,7 @@ export function useWebsiteProductsCatalog({
         routePayload.childGroupId > 0 &&
         activeChildId.value !== routePayload.childGroupId
       ) {
-        switchChild(routePayload.childGroupId, {
+        await switchChild(routePayload.childGroupId, {
           targetProductId,
           preserveRouteDepth: true,
           syncRoute: false,
@@ -835,9 +897,8 @@ export function useWebsiteProductsCatalog({
       }
 
       if (hasRouteTarget) {
-        // 先用 productsInit 响应的 root_groups 与 catalog 填充本地状态/缓存，
-        // 让 applyRouteSelection 命中本地分组与目录，避免深链「purchase-context →
-        // product-groups → 完整目录」重复拉取首组目录。
+        // 先用 productsInit 响应的 root_groups 填充本地状态，让 applyRouteSelection
+        // 直接切到目标分组；目录由聚合接口按目标分组单独加载。
         const routePayload = readWebsiteProductRouteParams(route);
         const targetType = resolveWebsiteProductTypeBySegment(
           productTypes.value,
@@ -853,15 +914,6 @@ export function useWebsiteProductsCatalog({
           );
           rootGroupsByType.set(nextTypeValue, groups);
           rootGroups.value = groups;
-        }
-        if (
-          data.catalog &&
-          Number(data.catalog.effective_product_group_id || 0) > 0
-        ) {
-          setCachedCatalog(
-            data.catalog.effective_product_group_id,
-            data.catalog,
-          );
         }
 
         const linked = await applyRouteSelection();
@@ -889,16 +941,7 @@ export function useWebsiteProductsCatalog({
       );
       rootGroupsByType.set(firstTypeValue, rootGroups.value);
 
-      if (
-        rootGroups.value.length &&
-        data.catalog &&
-        catalogBelongsToGroup(data.catalog, rootGroups.value[0].id)
-      ) {
-        const firstGroupId = rootGroups.value[0].id;
-        activeGroupId.value = firstGroupId;
-        setCachedCatalog(firstGroupId, data.catalog);
-        applyGroupPayload(data.catalog, { syncRoute: true });
-      } else if (rootGroups.value.length) {
+      if (rootGroups.value.length) {
         activeGroupId.value = rootGroups.value[0].id;
         await loadGroupPayload(rootGroups.value[0].id, { syncRoute: true });
       }

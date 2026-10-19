@@ -9,6 +9,10 @@
 - **一级分组（商品种类）URL 标识可自定义**：后台「管理商品种类」新增「URL 标识（slug）」字段，用于商品页地址 `/products/{slug}/...`，只允许 2-60 位小写字母、数字与短横线且不能是纯数字；留空自动按内部 code 生成。目录同步不再覆盖已有 slug，改完后旧链接仍可用
 - **生产一级分组 slug 整理**：`vps → cloud-server`、`dedicated（游戏云）→ game-cloud`、`hosting → web-hosting`、`domain（云电脑）→ cloud-desktop`、`type_hopdwk（面板游戏云）→ panel-game-cloud`、`type_xo7hkf（轻量云）→ light-cloud`、`invalid_products → invalid-products`；`bare-metal` / `nat` / `isp` / `cdn` / `other` 保持。旧 code 链接由前端双匹配后自动规范成新地址
 
+### 优化
+
+- **选购页目录加载变快、不再时快时慢**：此前打开一个目录要先拉分组，再把每个三级分组的商品逐个拉一遍（最多 30 个子分组就是 30 多条请求），卡片式还会额外预取 8 个商品详情，加上首页重复请求 `/v2/site/config`，一条链路三十多个请求、好几秒才出内容；服务端本身是毫秒级，慢在请求扇出与网络往返。现在新增聚合接口 `GET /v2/site/product-groups/{group}/catalog`，一次返回二级/三级分组与该目录下的商品，服务端按 `site-products` 标签缓存 5 分钟（目录变更自动失效）；前端目录缓存从只存内存改为内存（3 分钟）+ `sessionStorage`（60 秒，按登录态分区），刷新页面不再全部重拉；三级分组商品改为点开才拉，卡片式不再预取商品详情，首页去掉重复的 config 预取
+
 ### 修复
 
 - **展示方式与路由绑定**：此前列表式的商品地址是「类型/分组/商品」、卡片式另有独立配置页 `/products/{id}`，同一个链接换个模式就变成另一种页面甚至打不开。现在两种形态共用 1-4 段地址：`/products/:typeSlug`、`/:groupId`、`/:childGroupId`、`/:productId`；目录地址下卡片式保持层级、列表式自动补全到第一个商品；四段商品地址下列表式内联配置、卡片式渲染配置页，展示方式只由本机偏好（没有则后台默认值）决定。旧单段商品地址与三段商品深链仍兼容并规范到四段

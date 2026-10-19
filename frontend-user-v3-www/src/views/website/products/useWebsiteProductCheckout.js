@@ -1,4 +1,4 @@
-import { t } from '@/locales'
+import { t } from "@/locales";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { ElMessage } from "element-plus/es/components/message/index.mjs";
 import siteApi from "@/api/site";
@@ -48,9 +48,9 @@ export function useWebsiteProductCheckout({
   const productDetailCache = {};
   const productDetailPending = {};
   const PRODUCT_DETAIL_PREFETCH_CONCURRENCY = 2;
-  // 单分类详情预取上限：仅预取列表前若干个（多在首屏视口附近），
-  // 避免大分类（page_size=50）对全部商品逐个发请求
-  const PRODUCT_DETAIL_PREFETCH_LIMIT = 8;
+  // 单分类详情预取上限：只预取前几台（列表式首选商品附近的机型），
+  // 避免大分类（page_size=50）对全部商品逐个发请求拖慢目录加载
+  const PRODUCT_DETAIL_PREFETCH_LIMIT = 3;
 
   let currentProductId = 0;
   let detailToken = 0;
@@ -322,7 +322,7 @@ export function useWebsiteProductCheckout({
       "/client/checkout-resume",
       orderPayload.user_coupon_id,
     );
-    ElMessage.success(t('product.checkout.enteringConsole'));
+    ElMessage.success(t("product.checkout.enteringConsole"));
 
     navigateToConsole(
       checkoutPath,
@@ -458,7 +458,7 @@ export function useWebsiteProductCheckout({
     }
 
     if (!getToken()) {
-      ElMessage.warning(t('product.checkout.loginRequired'));
+      ElMessage.warning(t("product.checkout.loginRequired"));
       navigateToConsole("/client/login");
       return false;
     }
@@ -468,7 +468,7 @@ export function useWebsiteProductCheckout({
       try {
         user = await userStore.fetchUserInfo();
       } catch {
-        ElMessage.warning(t('product.checkout.sessionExpired'));
+        ElMessage.warning(t("product.checkout.sessionExpired"));
         navigateToConsole("/client/login");
         return false;
       }
@@ -490,32 +490,32 @@ export function useWebsiteProductCheckout({
 
   async function submitOrder() {
     if (productStockLoading.value) {
-      ElMessage.warning(t('product.checkout.stockSyncingNotice'));
+      ElMessage.warning(t("product.checkout.stockSyncingNotice"));
       return;
     }
 
     if (productStockError.value) {
-      ElMessage.warning(t('product.checkout.stockSyncFailedNotice'));
+      ElMessage.warning(t("product.checkout.stockSyncFailedNotice"));
       return;
     }
 
     if (resolvedStock.value === 0) {
-      ElMessage.warning(t('product.checkout.purchaseUnavailable'));
+      ElMessage.warning(t("product.checkout.purchaseUnavailable"));
       return;
     }
 
     if (!quoteToken.value) {
-      ElMessage.warning(t('product.checkout.quoteExpired'));
+      ElMessage.warning(t("product.checkout.quoteExpired"));
       return;
     }
 
     if (!canSubmit.value) {
-      ElMessage.warning(t('product.checkout.selectBillingCycle'));
+      ElMessage.warning(t("product.checkout.selectBillingCycle"));
       return;
     }
 
     if (quoteLoading.value) {
-      ElMessage.warning(t('product.checkout.pricingInProgress'));
+      ElMessage.warning(t("product.checkout.pricingInProgress"));
       return;
     }
 

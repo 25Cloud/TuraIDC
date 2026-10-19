@@ -188,6 +188,22 @@ async function mockSiteApi(page: Page) {
       });
     }
 
+    // 目录聚合接口：该用例只关心根分组下的一台商品，children 为空
+    if (pathname === `/v2/site/product-groups/${GROUP_ID}/catalog`) {
+      return respond({
+        effective_product_group_id: GROUP_ID,
+        effective_product_group_level: 2,
+        children: [],
+        items_by_group: [
+          {
+            effective_product_group_id: GROUP_ID,
+            effective_product_group_level: 2,
+            products: [PRODUCT_SUMMARY],
+          },
+        ],
+      });
+    }
+
     if (pathname === `/v2/site/product-groups/${GROUP_ID}/products`) {
       return respond({
         list: [PRODUCT_SUMMARY],

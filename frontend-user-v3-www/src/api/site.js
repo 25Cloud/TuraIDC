@@ -1,4 +1,5 @@
 import request from "@/utils/request";
+import { getClientToken } from "@/app/runtime/session";
 import { t } from "@/locales";
 import {
   normalizeContentDetailPayload,
@@ -20,31 +21,126 @@ import {
 
 const V2_SITE_PRODUCT_GROUP_PAGE_SIZE = 50;
 
-// 目录数据缓存下沉到 api 层，供 productsInit 兜底与前端 composable 共享，
-// 避免深链/切组重复拉取同一完整目录。存 normalizer 后的 catalog data（幂等）。
-const CATALOG_CACHE_TTL = 3 * 60 * 1000;
-const catalogCache = new Map();
+// 目录缓存分两层：
+//  1. 进程内 Map：同一次访问里切分组/切三级分组直接命中，不发请求；
+//  2. sessionStorage：刷新/从详情页返回时复用（60s 内），避免整页重载后又把
+//     目录请求全打一遍。目录接口本身在服务端还有 300s 缓存，双端都省。
+const CATALOG_MEMORY_TTL = 3 * 60 * 1000;
+const CATALOG_SESSION_TTL = 60 * 1000;
+const CATALOG_SESSION_PREFIX = "turaidc:catalog:";
+const CATALOG_SESSION_MAX_ENTRIES = 12;
+const catalogMemory = new Map();
 
-export function getCachedCatalog(groupId) {
-  const entry = catalogCache.get(groupId);
-  if (!entry) {
-    return null;
-  }
-
-  if (Date.now() - entry.timestamp > CATALOG_CACHE_TTL) {
-    catalogCache.delete(groupId);
-    return null;
-  }
-
-  return entry.data;
+function catalogAuthScope() {
+  // 登录用户与游客的代理折扣价不同，缓存必须按身份隔离，不能串价
+  return getClientToken() ? "auth" : "guest";
 }
 
-export function setCachedCatalog(groupId, data) {
-  catalogCache.set(groupId, { data, timestamp: Date.now() });
+function catalogCacheKey(groupId, childGroupId = 0, resolveId = 0) {
+  return `${catalogAuthScope()}:${Number(groupId) || 0}:${Number(childGroupId) || 0}:${Number(resolveId) || 0}`;
+}
+
+function readSessionCatalog(key) {
+  try {
+    const raw = window.sessionStorage.getItem(CATALOG_SESSION_PREFIX + key);
+    if (!raw) {
+      return null;
+    }
+
+    const entry = JSON.parse(raw);
+    if (
+      !entry ||
+      !entry.data ||
+      Date.now() - Number(entry.timestamp || 0) > CATALOG_SESSION_TTL
+    ) {
+      window.sessionStorage.removeItem(CATALOG_SESSION_PREFIX + key);
+      return null;
+    }
+
+    return entry.data;
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionCatalog(key, data) {
+  try {
+    // 控制条数，避免长会话里把 sessionStorage 塞满
+    const keys = [];
+    for (let index = 0; index < window.sessionStorage.length; index += 1) {
+      const storageKey = window.sessionStorage.key(index);
+      if (storageKey && storageKey.startsWith(CATALOG_SESSION_PREFIX)) {
+        keys.push(storageKey);
+      }
+    }
+    if (keys.length >= CATALOG_SESSION_MAX_ENTRIES) {
+      window.sessionStorage.removeItem(keys[0]);
+    }
+    window.sessionStorage.setItem(
+      CATALOG_SESSION_PREFIX + key,
+      JSON.stringify({ timestamp: Date.now(), data }),
+    );
+  } catch {
+    // 隐私模式/存储已满：只影响缓存命中，不影响本次访问
+  }
+}
+
+/**
+ * 读取目录缓存。键里带三级分组与旧深链解析 ID：同一二级分组下不同三级
+ * 分组的商品不同，不能共用一个缓存条目。
+ */
+export function getCachedCatalog(groupId, childGroupId = 0, resolveId = 0) {
+  const key = catalogCacheKey(groupId, childGroupId, resolveId);
+  const entry = catalogMemory.get(key);
+  if (entry && Date.now() - entry.timestamp <= CATALOG_MEMORY_TTL) {
+    return entry.data;
+  }
+  if (entry) {
+    catalogMemory.delete(key);
+  }
+
+  const sessionData = readSessionCatalog(key);
+  if (sessionData) {
+    catalogMemory.set(key, { data: sessionData, timestamp: Date.now() });
+    return sessionData;
+  }
+
+  return null;
+}
+
+export function setCachedCatalog(
+  groupId,
+  data,
+  childGroupId = 0,
+  resolveId = 0,
+) {
+  const key = catalogCacheKey(groupId, childGroupId, resolveId);
+  catalogMemory.set(key, { data, timestamp: Date.now() });
+  writeSessionCatalog(key, data);
 }
 
 export function invalidateCatalogCache(groupId) {
-  catalogCache.delete(groupId);
+  const prefix = `${catalogAuthScope()}:${Number(groupId) || 0}:`;
+  for (const key of [...catalogMemory.keys()]) {
+    if (key.startsWith(prefix)) {
+      catalogMemory.delete(key);
+    }
+  }
+  try {
+    const keys = [];
+    for (let index = 0; index < window.sessionStorage.length; index += 1) {
+      const storageKey = window.sessionStorage.key(index);
+      if (
+        storageKey &&
+        storageKey.startsWith(CATALOG_SESSION_PREFIX + prefix)
+      ) {
+        keys.push(storageKey);
+      }
+    }
+    keys.forEach((key) => window.sessionStorage.removeItem(key));
+  } catch {
+    // 存储不可用时只清内存缓存即可
+  }
 }
 
 function configWithoutParams(config = {}) {
@@ -66,42 +162,6 @@ function normalizeProductListPayload(data = {}) {
     ...(data && typeof data === "object" && !Array.isArray(data) ? data : {}),
     list,
   };
-}
-
-async function fetchAllV2SiteProductGroups(url, params = {}, config = {}) {
-  const list = [];
-  let page = 1;
-  let total;
-  let baseResponse = null;
-
-  do {
-    const response = await request
-      .get(url, {
-        ...configWithoutParams(config),
-        params: mergeParams(config, {
-          ...params,
-          page,
-          page_size: V2_SITE_PRODUCT_GROUP_PAGE_SIZE,
-        }),
-      })
-      .then((payload) =>
-        normalizeProductResponse(payload, normalizeProductGroupListPayload),
-      );
-
-    baseResponse ||= response;
-    const data = response.data || {};
-    const pageList = data.list || [];
-    list.push(...pageList);
-    total = Number(data.total || list.length);
-    page += 1;
-    // 终止保护：本页返回空列表或已达最大页数即退出，
-    // 避免后端 total 与分页返回数不一致时无限翻页
-    if (!pageList.length || page > 100) {
-      break;
-    }
-  } while (list.length < total);
-
-  return { response: baseResponse, list, total };
 }
 
 async function fetchAllV2SiteProducts(groupId, level, config = {}) {
@@ -137,74 +197,51 @@ async function fetchAllV2SiteProducts(groupId, level, config = {}) {
   return products;
 }
 
-async function fetchV2SiteProductGroupCatalog(groupId, config = {}) {
-  const cached = getCachedCatalog(groupId);
-  if (cached) {
-    return { code: 0, message: t('common.toast.success'), data: cached };
+async function fetchV2SiteProductGroupCatalog(
+  groupId,
+  options = {},
+  config = {},
+) {
+  const childGroupId = Number(options.childGroupId || 0);
+  const resolveId = Number(options.resolveId || 0);
+  const force = Boolean(options.force);
+
+  if (!force) {
+    const cached = getCachedCatalog(groupId, childGroupId, resolveId);
+    if (cached) {
+      return { code: 0, message: t("common.toast.success"), data: cached };
+    }
   }
 
-  // children 列表与根产品无数据依赖，并行拉取省一个 RTT
-  const [childrenResult, rootProducts] = await Promise.all([
-    fetchAllV2SiteProductGroups(
-      `/v2/site/product-groups/${groupId}/children`,
-      {},
-      config,
-    ),
-    fetchAllV2SiteProducts(groupId, 2, config),
-  ]);
-  const children = childrenResult.list || [];
-  const itemsByGroup = [
-    {
-      effective_product_group_id: Number(groupId),
-      effective_product_group_level: 2,
-      products: rootProducts,
-    },
-  ];
+  // 目录聚合接口：一次请求拿回 children + 根分组商品 + 当前三级分组商品，
+  // 不再按三级分组数量发 N 个商品列表请求（30 个子分组就是 30 个请求）。
+  const params = {};
+  if (childGroupId > 0) {
+    params.child_group_id = childGroupId;
+  }
+  if (resolveId > 0) {
+    params.resolve_id = resolveId;
+  }
 
-  const childItems = await Promise.all(
-    children.map(async (child) => {
-      const childGroupId = Number(
-        child.effective_product_group_id || child.id || 0,
-      );
-      const childLevel = Number(child.effective_product_group_level || 3);
+  const response = await request
+    .get(`/v2/site/product-groups/${groupId}/catalog`, {
+      ...configWithoutParams(config),
+      params: mergeParams(config, params),
+    })
+    .then((payload) =>
+      normalizeProductResponse(payload, normalizeProductGroupCatalogPayload),
+    );
 
-      if (childGroupId <= 0) {
-        return null;
-      }
-
-      return {
-        effective_product_group_id: childGroupId,
-        effective_product_group_level: childLevel,
-        products: await fetchAllV2SiteProducts(
-          childGroupId,
-          childLevel,
-          config,
-        ),
-      };
-    }),
-  );
-
-  itemsByGroup.push(...childItems.filter(Boolean));
-
-  const response = normalizeProductResponse(
-    {
-      ...(childrenResult.response || { code: 0, message: t('common.toast.success') }),
-      data: {
-        effective_product_group_id: Number(groupId),
-        effective_product_group_level: 2,
-        children,
-        items_by_group: itemsByGroup,
-      },
-    },
-    normalizeProductGroupCatalogPayload,
-  );
-
-  setCachedCatalog(groupId, response.data);
+  const data = response.data || {};
+  setCachedCatalog(groupId, data, childGroupId, resolveId);
   return response;
 }
 
 async function fetchV2SiteProductPurchaseContext(params, config = {}) {
-  const response = await request
+  // 购买上下文只负责「类型 + 二级分组」两件轻量数据；目录由调用方按当前
+  // 目标分组单独拉（聚合接口），不再在初始化时顺手把第一个分组的整个目录
+  // 拖下来——深链到别的分组时那份目录完全是浪费。
+  return request
     .get("/v2/site/product-purchase-context", {
       ...configWithoutParams(config),
       params: mergeParams(config, params || {}),
@@ -212,35 +249,6 @@ async function fetchV2SiteProductPurchaseContext(params, config = {}) {
     .then((payload) =>
       normalizeProductResponse(payload, normalizeProductsInitPayload),
     );
-
-  const rootGroups = response.data?.root_groups || [];
-  const firstGroupId = Number(
-    rootGroups[0]?.id || rootGroups[0]?.effective_product_group_id || 0,
-  );
-  let catalog = response.data?.catalog;
-
-  if (firstGroupId > 0 && !catalog) {
-    // 优先复用 api 层目录缓存，避免每次进入 /products 都重复拉取首组完整目录
-    catalog = getCachedCatalog(firstGroupId);
-    if (!catalog) {
-      const catalogResponse = await fetchV2SiteProductGroupCatalog(
-        firstGroupId,
-        config,
-      );
-      catalog = catalogResponse.data;
-    }
-  }
-
-  return normalizeProductResponse(
-    {
-      ...response,
-      data: {
-        ...(response.data || {}),
-        catalog,
-      },
-    },
-    normalizeProductsInitPayload,
-  );
 }
 
 export default {
@@ -302,8 +310,12 @@ export default {
       .then((response) =>
         normalizeProductResponse(response, normalizeProductListPayload),
       ),
-  productGroupCatalog: (groupId, config) =>
-    fetchV2SiteProductGroupCatalog(groupId, config),
+  // 按需拉某个三级分组的全部商品（目录聚合接口只带当前分组，其余分组
+  // 在用户真正切过去时再取；结果同样有服务端缓存）
+  productGroupProductsAll: (groupId, level, config = {}) =>
+    fetchAllV2SiteProducts(groupId, level, config),
+  productGroupCatalog: (groupId, options = {}, config = {}) =>
+    fetchV2SiteProductGroupCatalog(groupId, options, config),
   products: (params, config = {}) =>
     request
       .get("/v2/site/products", { ...config, params })

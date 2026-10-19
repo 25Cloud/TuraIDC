@@ -26,6 +26,7 @@ const TYPE_VALUE = "hosting";
 const TYPE_SLUG = "web-hosting";
 const GROUP_ID = 112;
 const CHILD_GROUP_ID = 1030;
+const SECOND_CHILD_GROUP_ID = 1031;
 
 const PRODUCT_IDS = [985, 986, 987];
 
@@ -209,6 +210,15 @@ const CHILD_GROUP_PAYLOAD = {
   product_count: PRODUCTS.length,
 };
 
+const SECOND_CHILD_GROUP_PAYLOAD = {
+  id: SECOND_CHILD_GROUP_ID,
+  effective_product_group_id: SECOND_CHILD_GROUP_ID,
+  effective_product_group_level: 3,
+  name: "高防二区",
+  group_level_label: "三级分组",
+  product_count: PRODUCTS.length,
+};
+
 async function mockSiteApi(
   page: Page,
   displayMode: "list" | "card",
@@ -250,12 +260,59 @@ async function mockSiteApi(
     }
 
     if (pathname === `/v2/site/product-groups/${GROUP_ID}/children`) {
-      return respond({ list: [CHILD_GROUP_PAYLOAD], total: 1 });
+      return respond({
+        list: [CHILD_GROUP_PAYLOAD, SECOND_CHILD_GROUP_PAYLOAD],
+        total: 2,
+      });
+    }
+
+    // 目录聚合接口：children + 根分组商品 + 当前三级分组商品（一次请求）
+    if (
+      pathname === `/v2/site/product-groups/${GROUP_ID}/catalog` ||
+      pathname === `/v2/site/product-groups/${CHILD_GROUP_ID}/catalog`
+    ) {
+      const requestedChildId = Number(
+        url.searchParams.get("child_group_id") || 0,
+      );
+      const resolveId = Number(url.searchParams.get("resolve_id") || 0);
+      const childIds = [CHILD_GROUP_ID, SECOND_CHILD_GROUP_ID];
+      let targetChildId = 0;
+      if (childIds.includes(requestedChildId)) {
+        targetChildId = requestedChildId;
+      } else if (childIds.includes(resolveId)) {
+        targetChildId = resolveId;
+      } else if (PRODUCT_IDS.includes(resolveId)) {
+        // 旧商品深链：商品都属于第一个三级分组
+        targetChildId = CHILD_GROUP_ID;
+      } else {
+        targetChildId = childIds[0];
+      }
+
+      const itemsByGroup: unknown[] = [
+        {
+          effective_product_group_id: GROUP_ID,
+          effective_product_group_level: 2,
+          products: [],
+        },
+        {
+          effective_product_group_id: targetChildId,
+          effective_product_group_level: 3,
+          products: PRODUCTS,
+        },
+      ];
+
+      return respond({
+        effective_product_group_id: GROUP_ID,
+        effective_product_group_level: 2,
+        children: [CHILD_GROUP_PAYLOAD, SECOND_CHILD_GROUP_PAYLOAD],
+        items_by_group: itemsByGroup,
+      });
     }
 
     if (
       pathname === `/v2/site/product-groups/${GROUP_ID}/products` ||
-      pathname === `/v2/site/product-groups/${CHILD_GROUP_ID}/products`
+      pathname === `/v2/site/product-groups/${CHILD_GROUP_ID}/products` ||
+      pathname === `/v2/site/product-groups/${SECOND_CHILD_GROUP_ID}/products`
     ) {
       return respond({ list: PRODUCTS, total: PRODUCTS.length });
     }
@@ -329,6 +386,42 @@ test.describe("选购页统一路由与展示方式", () => {
     await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
     await expect.poll(() => new URL(page.url()).pathname).toBe(childPath);
     await expect(page.locator(".config-area")).toHaveCount(0);
+  });
+
+  test("卡片式目录只发一次聚合请求，三级分组商品按需加载", async ({
+    page,
+  }) => {
+    await mockSiteApi(page, "card");
+    const catalogRequests: string[] = [];
+    const childProductRequests: string[] = [];
+
+    page.on("request", (request) => {
+      const pathname = new URL(request.url()).pathname;
+      if (pathname.endsWith("/catalog")) {
+        catalogRequests.push(pathname);
+      }
+      if (/\/product-groups\/\d+\/products$/.test(pathname)) {
+        childProductRequests.push(pathname);
+      }
+    });
+
+    await page.goto(groupPath);
+    await expect(page.locator(".product-card-grid")).toBeVisible();
+
+    // 目录一次拿齐：children + 当前三级分组商品，不再给每个三级分组各发一轮
+    expect(catalogRequests).toHaveLength(1);
+    expect(childProductRequests).toHaveLength(0);
+
+    // 切到第二个三级分组：只按需拉这一个分组的商品
+    await page.locator(".pg-nav__child").nth(1).click();
+    await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
+    await expect
+      .poll(() => new URL(page.url()).pathname)
+      .toBe(`${groupPath}/${SECOND_CHILD_GROUP_ID}`);
+    expect(childProductRequests).toHaveLength(1);
+    expect(childProductRequests[0]).toContain(
+      `/${SECOND_CHILD_GROUP_ID}/products`,
+    );
   });
 
   test("同一个商品地址：卡片式渲染配置页，列表式渲染内联配置", async ({

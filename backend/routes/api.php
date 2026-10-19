@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/v2/site/product-groups', [V2SiteProductGroupController::class, 'index']);
+Route::get('/v2/site/product-groups/{group}/catalog', [V2SiteProductGroupController::class, 'catalog']);
 Route::get('/v2/site/product-groups/{group}/children', [V2SiteProductGroupController::class, 'children']);
 Route::get('/v2/site/product-groups/{group}/products', [V2SiteProductGroupController::class, 'products']);
 Route::get('/v2/site/product-types', [V2SiteProductController::class, 'types']);

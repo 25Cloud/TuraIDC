@@ -24,7 +24,8 @@
   <!-- vite 8 会把 html 内非外部 URL 当资源解析，href="/" 指向根目录会触发 EISDIR，故移除该 alternate 行 -->
   <!-- API 源站预连接：首屏数据请求与 hero 视频均指向该跨域源，提前 DNS + TLS -->
   <link rel="preconnect" href="%VITE_API_BASE_URL%" crossorigin />
-  <link rel="prefetch" href="%VITE_API_BASE_URL%/v2/site/config" as="fetch" crossorigin="anonymous" />
+  <!-- 不再用 <link rel=prefetch> 预取 /v2/site/config：bootstrap 挂载后会自己 fetch，
+       两者叠加会让每次进入都发 2-3 次同样的 config 请求 -->
 
   <!-- 首页 LCP 关键路径预热：在 JS 下载前提前发起 /v2/site/home，home 页消费 window.__HOME_FETCH__ 复用响应，砍掉 1 个串行 RTT -->
   <script>
