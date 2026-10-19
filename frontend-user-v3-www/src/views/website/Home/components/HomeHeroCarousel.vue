@@ -70,7 +70,11 @@
       @touchstart="handleTouchStart"
       @touchend="handleTouchEnd"
     >
-      <aside class="hero-rail" role="tablist" :aria-label="$t('home.hero.productEntries')">
+      <aside
+        class="hero-rail"
+        role="tablist"
+        :aria-label="$t('home.hero.productEntries')"
+      >
         <button
           v-for="(slide, index) in heroSlides"
           :key="slide.key"
@@ -142,7 +146,11 @@
         </div>
       </div>
 
-      <div class="hero-dots" role="tablist" :aria-label="$t('home.hero.carouselIndicator')">
+      <div
+        class="hero-dots"
+        role="tablist"
+        :aria-label="$t('home.hero.carouselIndicator')"
+      >
         <button
           v-for="(slide, index) in heroSlides"
           :key="`dot-${slide.key}`"
@@ -150,13 +158,17 @@
           role="tab"
           class="hero-dots__item"
           :class="{ 'is-active': index === activeIndex }"
-          :aria-label="`切换到 ${slide.railTitle}`"
+          :aria-label="$t('home.hero.switchTo', { title: slide.railTitle })"
           :aria-selected="index === activeIndex"
           @click="activateSlide(index)"
         ></button>
       </div>
 
-      <div class="hero-mobile-nav" role="group" :aria-label="$t('home.hero.carouselControls')">
+      <div
+        class="hero-mobile-nav"
+        role="group"
+        :aria-label="$t('home.hero.carouselControls')"
+      >
         <div class="hero-mobile-nav__dots">
           <button
             v-for="(slide, index) in heroSlides"
@@ -164,7 +176,7 @@
             type="button"
             class="hero-mobile-nav__dot"
             :class="{ 'is-active': index === activeIndex }"
-            :aria-label="`切换到 ${slide.railTitle}`"
+            :aria-label="$t('home.hero.switchTo', { title: slide.railTitle })"
             :aria-current="index === activeIndex ? 'true' : undefined"
             @click="activateSlide(index)"
           ></button>
@@ -253,12 +265,12 @@ function freezeNormalizedList(list, normalizer) {
 const DEFAULT_SLIDES = freezeConfigList([
   {
     key: "refresh",
-    railTitle: "官网换新",
-    title: t('home.hero.slides.refresh.title'),
-    desc: t('home.hero.entry'),
-    primaryText: "立即体验",
+    railTitle: t("home.hero.slides.refresh.railTitle"),
+    title: t("home.hero.slides.refresh.title"),
+    desc: t("home.hero.entry"),
+    primaryText: t("home.hero.slides.refresh.primaryText"),
     primaryPath: "/products",
-    secondaryText: "查看详情",
+    secondaryText: t("home.hero.slides.refresh.secondaryText"),
     secondaryPath: "/about",
     shape: "computer",
     video: "",
@@ -268,12 +280,12 @@ const DEFAULT_SLIDES = freezeConfigList([
   },
   {
     key: "global",
-    railTitle: "全球互联",
-    title: t('home.hero.slides.global.title'),
-    desc: t('home.hero.global'),
-    primaryText: "选购节点",
+    railTitle: t("home.hero.slides.global.railTitle"),
+    title: t("home.hero.slides.global.title"),
+    desc: t("home.hero.global"),
+    primaryText: t("home.hero.slides.global.primaryText"),
     primaryPath: "/products",
-    secondaryText: "查看线路",
+    secondaryText: t("home.hero.slides.global.secondaryText"),
     secondaryPath: "/help",
     shape: "connection",
     video: "",
@@ -283,12 +295,12 @@ const DEFAULT_SLIDES = freezeConfigList([
   },
   {
     key: "security",
-    railTitle: "安全防护",
-    title: t('home.hero.slides.security.title'),
-    desc: t('home.hero.tier'),
-    primaryText: "查看防护",
+    railTitle: t("home.hero.slides.security.railTitle"),
+    title: t("home.hero.slides.security.title"),
+    desc: t("home.hero.tier"),
+    primaryText: t("home.hero.slides.security.primaryText"),
     primaryPath: "/products",
-    secondaryText: "在线咨询",
+    secondaryText: t("home.hero.slides.security.secondaryText"),
     secondaryPath: "/help",
     shape: "security",
     video: "",
@@ -298,12 +310,12 @@ const DEFAULT_SLIDES = freezeConfigList([
   },
   {
     key: "value",
-    railTitle: "实惠专区",
-    title: t('home.hero.slides.value.title'),
-    desc: t('home.hero.firstOrder'),
-    primaryText: "立即抢购",
+    railTitle: t("home.hero.slides.value.railTitle"),
+    title: t("home.hero.slides.value.title"),
+    desc: t("home.hero.firstOrder"),
+    primaryText: t("home.hero.slides.value.primaryText"),
     primaryPath: "/products",
-    secondaryText: "查看优惠",
+    secondaryText: t("home.hero.slides.value.secondaryText"),
     secondaryPath: "/products",
     shape: "value",
     video: "",
@@ -313,12 +325,12 @@ const DEFAULT_SLIDES = freezeConfigList([
   },
   {
     key: "support",
-    railTitle: "企业客服",
-    title: t('home.hero.slides.support.title'),
-    desc: t('home.hero.support'),
-    primaryText: "联系客服",
+    railTitle: t("home.hero.slides.support.railTitle"),
+    title: t("home.hero.slides.support.title"),
+    desc: t("home.hero.support"),
+    primaryText: t("home.hero.slides.support.primaryText"),
     primaryPath: "/help",
-    secondaryText: "企业采购",
+    secondaryText: t("home.hero.slides.support.secondaryText"),
     secondaryPath: "/about",
     shape: "support",
     video: "",
@@ -331,37 +343,37 @@ const DEFAULT_SLIDES = freezeConfigList([
 const DEFAULT_FEATURES = freezeConfigList([
   {
     key: "dynamic",
-    kicker: "产品动态",
-    title: t('home.hero.features.dynamic.title'),
-    desc: t('home.hero.cn2'),
+    kicker: t("home.hero.features.dynamic.kicker"),
+    title: t("home.hero.features.dynamic.title"),
+    desc: t("home.hero.cn2"),
     path: "/products",
   },
   {
     key: "activity",
-    kicker: "活动内容",
-    title: t('home.hero.features.activity.title'),
-    desc: t('home.hero.cloud2c2g'),
+    kicker: t("home.hero.features.activity.kicker"),
+    title: t("home.hero.features.activity.title"),
+    desc: t("home.hero.cloud2c2g"),
     path: "/notices",
   },
   {
     key: "enterprise",
-    kicker: "企业专区",
-    title: t('home.hero.features.enterprise.title'),
-    desc: t('home.hero.billing'),
+    kicker: t("home.hero.features.enterprise.kicker"),
+    title: t("home.hero.features.enterprise.title"),
+    desc: t("home.hero.billing"),
     path: "/about",
   },
   {
     key: "cloud-desktop",
-    kicker: "轻量产品",
-    title: t('home.hero.features.cloudDesktop.title'),
-    desc: t('home.hero.xian'),
+    kicker: t("home.hero.features.cloudDesktop.kicker"),
+    title: t("home.hero.features.cloudDesktop.title"),
+    desc: t("home.hero.xian"),
     path: "/products",
   },
   {
     key: "new",
-    kicker: "新开产品",
-    title: t('home.hero.features.new.title'),
-    desc: t('home.hero.ddos'),
+    kicker: t("home.hero.features.new.kicker"),
+    title: t("home.hero.features.new.title"),
+    desc: t("home.hero.ddos"),
     path: "/products",
   },
 ]);
@@ -388,12 +400,15 @@ function normalizeSlide(raw, index = 0) {
 
   return {
     key: pickString(source.key, `slide-${index}`),
-    railTitle: pickString(source.rail_title ?? source.railTitle, "未命名"),
+    railTitle: pickString(
+      source.rail_title ?? source.railTitle,
+      t("home.hero.unnamed"),
+    ),
     title: pickString(source.title, ""),
     desc: pickString(source.desc, ""),
     primaryText: pickString(
       source.primary_text ?? source.primaryText,
-      "了解更多",
+      t("home.hero.learnMore"),
     ),
     primaryPath: pickString(
       source.primary_path ?? source.primaryPath,
@@ -401,7 +416,7 @@ function normalizeSlide(raw, index = 0) {
     ),
     secondaryText: pickString(
       source.secondary_text ?? source.secondaryText,
-      "查看详情",
+      t("home.hero.viewDetail"),
     ),
     secondaryPath: pickString(
       source.secondary_path ?? source.secondaryPath,
@@ -1037,8 +1052,10 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
+// 与 WebsiteLayout 的页头容器（1200）以及首页其它区块保持一致：
+// 之前这里写 1280，Hero 内容比页头和下方区块左右各宽 40px，视觉上对不齐。
 .container {
-  width: min(1280px, calc(100% - 48px));
+  width: min(1200px, calc(100% - 48px));
   margin: 0 auto;
 }
 

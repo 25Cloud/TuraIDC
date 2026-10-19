@@ -88,7 +88,13 @@
     </t-card>
 
     <section class="service-list-section">
-      <data-state :loading="loading" :empty="!list.length" :description="$t('client.services.empty')">
+      <data-state
+        :loading-text="$t('shared.state.loading')"
+        :empty-text="$t('shared.state.empty')"
+        :loading="loading"
+        :empty="!list.length"
+        :description="$t('client.services.empty')"
+      >
         <template #default>
           <div v-if="viewMode === 'grid'" class="service-card-grid">
             <article
@@ -650,10 +656,10 @@ function handleDropdownAction(option: unknown, target: Parameters<typeof handleS
 function actionOptions(item: Record<string, any>) {
   const options: { content: string; value: string }[] = [];
   if (resolveBillingCycleValue(item) !== 'ontrial') {
-    options.push({ content: '立即续费', value: 'renew' });
+    options.push({ content: t('client.services.renewNow'), value: 'renew' });
   }
   if (item.invoice?.id) {
-    options.push({ content: '账单详情', value: 'invoice' });
+    options.push({ content: t('client.services.invoiceDetail'), value: 'invoice' });
   }
   return options;
 }
@@ -753,6 +759,13 @@ function resolveBillingCycleValue(item: Record<string, any>) {
     background: var(--td-brand-color);
     color: #fff;
   }
+}
+
+.service-empty-action {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+  padding-bottom: 32px;
 }
 
 .service-list-section {

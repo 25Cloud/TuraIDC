@@ -4,15 +4,28 @@
       <top-panel :stats="dashboardStats" />
 
       <section class="chart-grid">
-        <t-card :bordered="false" :title="$t('dashboard.base.productRevenueShare')" :subtitle="monthLabel || $t('dashboard.base.thisMonth')">
+        <t-card
+          :bordered="false"
+          :title="$t('dashboard.base.productRevenueShare')"
+          :subtitle="monthLabel || $t('dashboard.base.thisMonth')"
+        >
           <div ref="productChartRef" class="chart-box" />
         </t-card>
-        <t-card :bordered="false" :title="$t('dashboard.base.dailyRevenueTrend')" :subtitle="monthLabel || $t('dashboard.base.thisMonth')">
+        <t-card
+          :bordered="false"
+          :title="$t('dashboard.base.dailyRevenueTrend')"
+          :subtitle="monthLabel || $t('dashboard.base.thisMonth')"
+        >
           <div ref="dailyChartRef" class="chart-box" />
         </t-card>
       </section>
 
-      <t-card :bordered="false" :title="$t('dashboard.base.recentInvoices')" :subtitle="$t('dashboard.base.recentInvoicesSubtitle')" class="recent-invoices-card">
+      <t-card
+        :bordered="false"
+        :title="$t('dashboard.base.recentInvoices')"
+        :subtitle="$t('dashboard.base.recentInvoicesSubtitle')"
+        class="recent-invoices-card"
+      >
         <template #actions>
           <t-button theme="primary" variant="text" @click="goInvoiceList">{{ $t('dashboard.base.viewAll') }}</t-button>
         </template>
@@ -39,7 +52,11 @@
             <span class="muted">{{ formatDateTime(row.created_at) }}</span>
           </template>
         </t-table>
-        <t-empty v-else :title="$t('dashboard.base.emptyRecentInvoices')" :description="$t('dashboard.base.emptyRecentInvoicesDesc')">
+        <t-empty
+          v-else
+          :title="$t('dashboard.base.emptyRecentInvoices')"
+          :description="$t('dashboard.base.emptyRecentInvoicesDesc')"
+        >
           <t-button theme="primary" variant="outline" @click="goInvoiceList">{{
             $t('dashboard.base.goToInvoiceList')
           }}</t-button>
@@ -107,7 +124,9 @@ const productChartData = computed(() => {
   const grouped = new Map<string, number>();
 
   revenueByProduct.value.forEach((item) => {
-    const name = String(item.label || item.product_name || item.name || '未知产品').trim() || '未知产品';
+    const name =
+      String(item.label || item.product_name || item.name || t('dashboard.base.unknownProduct')).trim() ||
+      t('dashboard.base.unknownProduct');
     const value = Number(item.income ?? item.amount ?? item.value ?? 0);
 
     grouped.set(name, (grouped.get(name) || 0) + value);
@@ -145,6 +164,11 @@ function renderCharts() {
         type: 'pie',
         radius: ['45%', '70%'],
         center: ['50%', '42%'],
+        // 商品名较长时外层标签会互相压住（看着挤成一团），
+        // 名称与占比交给底部图例 + tooltip，图面保持干净。
+        avoidLabelOverlap: true,
+        label: { show: false },
+        labelLine: { show: false },
         data: productChartData.value,
       },
     ],
@@ -157,13 +181,15 @@ function renderCharts() {
       type: 'category',
       data: dailyRevenue.value.map((item) => item.date || item.day || ''),
     },
-    yAxis: { type: 'value' },
+    // 收入趋势只表达「进账」：单日退款会把点拉到 0 以下，ECharts 随即把
+    // 轴下限画到 -100，看着像账目出错。负数按 0 记，退款明细在财务页看。
+    yAxis: { type: 'value', min: 0 },
     series: [
       {
         type: 'line',
         smooth: true,
         areaStyle: {},
-        data: dailyRevenue.value.map((item) => Number(item.income ?? item.amount ?? 0)),
+        data: dailyRevenue.value.map((item) => Math.max(0, Number(item.income ?? item.amount ?? 0))),
       },
     ],
   });

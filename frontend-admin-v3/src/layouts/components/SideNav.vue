@@ -29,10 +29,16 @@
         </template>
         <menu-content :nav-data="menu" />
         <template #operations>
-          <span :class="versionCls">
+          <a
+            :class="versionCls"
+            :href="repositoryUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            :title="t('common.repository')"
+          >
             <span v-if="!collapsed">{{ t('common.appName') }}</span>
             <span>v{{ pgk.version }}</span>
-          </span>
+          </a>
         </template>
       </t-menu>
       <div :class="`${prefix}-side-nav-placeholder${collapsed ? '-hidden' : ''}`"></div>
@@ -54,7 +60,6 @@ import { useSettingStore } from '@/store';
 import type { MenuRoute, ModeType } from '@/types/interface';
 
 import pgk from '../../../package.json';
-import MenuContent from './MenuContent.vue';
 
 const { menu, showLogo, isFixed, layout, theme, isCompact } = defineProps({
   menu: {
@@ -86,6 +91,9 @@ const { menu, showLogo, isFixed, layout, theme, isCompact } = defineProps({
     default: false,
   },
 });
+/** 项目开源仓库：侧栏底部的版本号链接到这里，方便使用者找到源码与更新。 */
+const repositoryUrl = 'https://github.com/25Cloud/TuraIDC';
+import MenuContent from './MenuContent.vue';
 
 const MIN_POINT = 992 - 1;
 const MOBILE_POINT = 768;
