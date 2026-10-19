@@ -24,8 +24,11 @@ for (const strip of partnerStrips) {
   assert.ok(strip.src.startsWith('/img/'), `条幅 ${strip.id} 必须使用本地图资源: ${strip.src}`)
   assert.ok(existsSync(`${PUBLIC_DIR}${strip.src.slice(1)}`), `条幅 ${strip.id} 的素材文件不存在: ${strip.src}`)
 
-  // alt 缺失会让读屏用户只听到「条幅 1」这类无意义文案。
-  assert.ok(strip.alt && strip.alt.trim().length > 0, `条幅 ${strip.id} 缺少 alt 描述`)
+  // altKey 缺失会让读屏用户只听到「条幅 1」这类无意义文案。
+  assert.ok(
+    strip.altKey && strip.altKey.startsWith('home.partners.'),
+    `条幅 ${strip.id} 的 altKey 必须指向 home.partners.* 词条: ${strip.altKey}`,
+  )
 
   assert.ok(DIRECTIONS.has(strip.direction), `条幅 ${strip.id} 的 direction 非法: ${strip.direction}`)
 
