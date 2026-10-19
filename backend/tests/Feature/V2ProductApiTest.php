@@ -1003,6 +1003,7 @@ class V2ProductApiTest extends TestCase
             // 站点规格亮点与代理折扣展示字段
             'spec_highlights',
             'spec_highlight_text',
+            'description_html',
             'has_agent_discount',
             'agent_group_name',
             'agent_discount_rate',
@@ -1071,6 +1072,7 @@ class V2ProductApiTest extends TestCase
             'siblings',
             'spec_highlights',
             'spec_highlight_text',
+            'description_html',
         ];
     }
 

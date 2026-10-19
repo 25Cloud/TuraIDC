@@ -65,6 +65,27 @@ class ProductDescriptionServiceTest extends TestCase
     }
 
     /**
+     * 「系统」是下单时才选的操作系统配置项，不是商品本身的规格；
+     * 自动拼描述时剔除，避免卡片/详情出现「系统: CentOS」这类噪音。
+     */
+    public function test_auto_description_omits_system_dimension(): void
+    {
+        $service = new ProductDescriptionService();
+
+        $resolved = $service->resolve(new Product([
+            'config_options' => [
+                ['id' => 1, 'field' => 'cpu', 'name' => 'CPU', 'sub' => [['option_name' => '4核']]],
+                ['id' => 2, 'field' => 'os', 'name' => '操作系统', 'sub' => [['version' => 'CentOS^CentOS-7.9-x64']]],
+            ],
+        ]));
+
+        $this->assertSame(ProductDescriptionService::SOURCE_AUTO, $resolved['source']);
+        $this->assertSame('<ul><li>CPU: 4核</li></ul>', $resolved['html']);
+        $this->assertStringNotContainsString('系统', $resolved['html']);
+        $this->assertStringNotContainsString('CentOS', $resolved['html']);
+    }
+
+    /**
      * 虚拟主机 / CDN 的配置项 field 全部是 cpu（上游允许复用），
      * 识别必须靠名称而不是 field，否则「WEB空间 12T」会被算成内存 12T。
      */

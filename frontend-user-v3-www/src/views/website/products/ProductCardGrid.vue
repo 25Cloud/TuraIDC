@@ -4,17 +4,7 @@
       v-for="card in cards"
       :key="card.id"
       class="product-card"
-      :class="{
-        'product-card--sold-out': card.soldOut,
-        'product-card--selected': card.selected,
-      }"
-      role="link"
-      tabindex="0"
-      :aria-current="card.selected ? 'true' : undefined"
-      :aria-label="card.name"
-      @click="select(card)"
-      @keydown.enter.prevent="select(card)"
-      @keydown.space.prevent="select(card)"
+      :class="{ 'product-card--sold-out': card.soldOut }"
     >
       <header class="product-card-head">
         <div class="product-card-tags">
@@ -33,16 +23,17 @@
 
       <div class="product-card-body">
         <!--
-          描述是后台填写的富文本片段，落库前已过富文本白名单消毒（script、
-          on* 事件属性、javascript: 协议都在入库前剥掉），这里按原样渲染。
-          自动生成的描述是 <ul><li>键: 值</li></ul>，样式上按两列规格标签排。
+          描述与详情页同源（products.description），后台填写的富文本片段落库前已过
+          白名单消毒；自动生成的描述是 <ul><li>键: 值</li></ul>，不含下单时才选的
+          系统维度。整段完整展示，不做截断——卡片描述必须和点进配置页看到的一致。
         -->
-        <!-- eslint-disable-next-line vue/no-v-html -- 描述入库前已过 RichHtmlSanitizer 白名单消毒 -->
+        <!-- eslint-disable vue/no-v-html -- 描述入库前已过 RichHtmlSanitizer 白名单消毒 -->
         <div
           v-if="card.description"
           class="product-card-desc"
           v-html="card.description"
         />
+        <!-- eslint-enable vue/no-v-html -->
         <p v-else class="product-card-desc product-card-desc--empty">
           {{ $t("product.card.noDescription") }}
         </p>
@@ -71,7 +62,7 @@
           type="primary"
           class="product-card-buy"
           :disabled="card.soldOut"
-          @click.stop="openConfigure(card.id)"
+          @click="openConfigure(card.id)"
         >
           {{ $t("product.card.buyNow") }}
         </el-button>
@@ -143,7 +134,7 @@ function resolveStockBadge(product) {
 /**
  * 卡片式是「选商品 → 进配置页」两步，与魔方 public/themes/cart/default/product.tpl
  * 同构：卡片只承担辨认与比价，具体配置交给独立的 /products/:id 页面。
- * 该路由已存在且自带返回入口，不需要为卡片式另开一条。
+ * 整张卡片不绑跳转——只有「立即选购」按钮能进配置页，避免浏览描述时误触。
  */
 const cards = computed(() =>
   (props.products || []).map((product) => ({
@@ -157,14 +148,8 @@ const cards = computed(() =>
     soldOut: Number(product?.stock ?? -1) === 0,
     stock: resolveStockBadge(product),
     price: resolveCardPrice(product),
-    selected: false,
   })),
 );
-
-// 卡片整块可点：此前只有「立即选购」按钮绑了跳转，点卡片正文没有任何反应
-function select(card) {
-  openConfigure(card?.id);
-}
 
 function openConfigure(id) {
   if (!id) {

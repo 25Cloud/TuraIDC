@@ -282,6 +282,10 @@ class ProductGroupV2QueryService
                 'service_type_code',
                 'product_type',
                 'custom_display_name',
+                // 卡片式与详情页必须吃同一份描述：description 是导入/手填的完整描述，
+                // remark 只是 varchar(255) 的历史上游描述回退。此前这里只选了 remark，
+                // 卡片描述被截断成半句话，还会带出 remark 里的「系统」等旧行。
+                'description',
                 'remark',
                 'pricing',
                 'setup_fee',

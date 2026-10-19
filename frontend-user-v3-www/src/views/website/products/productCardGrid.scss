@@ -1,16 +1,16 @@
 /* ===== 卡片式商品网格 ===== */
 /*
  * 形态参考魔方 public/themes/cart/default/product.tpl：卡片网格承载
- * 「类型/库存 + 名称 + 规格 + 价格 + 立即选购」，点击后进入独立的 /products/:id 配置页。
+ * 「类型/库存 + 名称 + 规格 + 价格 + 立即选购」，点「立即选购」进入独立的
+ * /products/:id 配置页。整张卡片不绑跳转，避免看描述时误触进配置页。
  *
  * 排版约束（此前踩过的坑）：
  *   - 网格必须自带左右内边距，否则卡片直接顶到侧栏与费用栏的边框上，看着「没边距」；
  *   - 卡片列宽要有上限，宽屏铺满时一列能拉到五六百像素、内容被拉散；
  *   - 底部价格/按钮用一条分隔带固定住，卡片高度不一时按钮仍落在同一条线上。
  *
- * 视觉分层（这次按「丑」的反馈重做）：顶部类型/库存徽标 → 商品名 → 规格标签 →
- * 底部价格与按钮。自动生成的描述是 <ul><li>键: 值</li></ul>，按两列规格标签排，
- * 不再是一坨没有层次的圆点列表。
+ * 视觉分层：顶部类型/库存徽标 → 商品名 → 描述（整段展示）→ 底部价格与按钮。
+ * 描述与详情页同源且不截断；自动生成的规格列表一行一项，不再挤成两列。
  */
 
 .product-card-grid {
@@ -42,23 +42,7 @@
   border: 1px solid $divider-color;
   border-radius: 10px;
   overflow: hidden;
-  cursor: pointer;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-  transition:
-    box-shadow $motion-base ease,
-    border-color $motion-base ease,
-    transform $motion-base ease;
-
-  &:hover {
-    border-color: $color-primary-border;
-    box-shadow: $shadow-md;
-    transform: translateY(-2px);
-  }
-
-  &:focus-visible {
-    outline: 2px solid rgba($color-primary, 0.45);
-    outline-offset: 2px;
-  }
 }
 
 .product-card--sold-out {
@@ -164,14 +148,12 @@
   line-height: 1.7;
   color: $text-color-secondary;
   word-break: break-word;
-  /* 描述长短不一：限高后卡片高度收敛，超出的维度点进配置页再看 */
-  max-height: 136px;
-  overflow: hidden;
+  /* 不再限高截断：卡片描述必须和点进配置页看到的完整描述一致 */
 
-  /* 自动生成的规格列表：两列标签，比一列圆点更像商品卡 */
+  /* 自动生成的规格列表 / 上游卡片列表：一行一项，两列会挤到看不清 */
   :deep(ul) {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 6px;
     margin: 0;
     padding: 0;
@@ -179,9 +161,7 @@
   }
 
   :deep(li) {
-    display: -webkit-box;
     min-width: 0;
-    overflow: hidden;
     padding: 5px 8px;
     border: 1px solid $divider-color;
     border-radius: 4px;
@@ -191,8 +171,6 @@
     line-height: 1.5;
     overflow-wrap: anywhere;
     white-space: normal;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
   }
 
   /* v-html 渲染的是商家填写的富文本片段，scoped 选择器打不到内部节点 */

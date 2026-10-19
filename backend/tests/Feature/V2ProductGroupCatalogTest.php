@@ -94,6 +94,12 @@ class V2ProductGroupCatalogTest extends TestCase
         $hiddenThirdGroup = $this->createThirdGroup($secondGroup, '隐藏三级 '.$suffix, 2, false);
         $directProduct = Product::query()->create($this->productPayload($secondGroup, null, '站点直属商品 '.$suffix, '11.00', 1));
         $thirdProduct = Product::query()->create($this->productPayload($secondGroup, $thirdGroup, '站点三级商品 '.$suffix, '22.00', 2));
+        // 卡片式读的是这份描述：remark 是历史上游描述（varchar(255) 会被截断），
+        // 不能让它盖掉完整 description，否则卡片描述会缺半句、还带出旧「系统」行。
+        $thirdProduct->update([
+            'description' => '<p>三级商品完整描述</p>',
+            'remark' => '&lt;b&gt;历史 remark 截断',
+        ]);
         Product::query()->create($this->productPayload($secondGroup, $hiddenThirdGroup, '隐藏商品 '.$suffix, '33.00', 3));
         Setting::setValue('product', 'cpu_model_catalog', json_encode([
             [
@@ -190,7 +196,19 @@ class V2ProductGroupCatalogTest extends TestCase
             ->assertOk()
             ->assertJsonPath('code', 0)
             ->assertJsonPath('data.total', 1)
-            ->assertJsonPath('data.list.0.id', $thirdProduct->id);
+            ->assertJsonPath('data.list.0.id', $thirdProduct->id)
+            ->assertJsonPath('data.list.0.description_html', '<p>三级商品完整描述</p>');
+
+        // 卡片描述必须与详情页一致：同一份 description，而不是被截断的 remark
+        $detailResponse = $this->getJson('/api/v2/site/products/'.$thirdProduct->id)
+            ->assertOk()
+            ->assertJsonPath('data.product.id', $thirdProduct->id);
+
+        $this->assertSame(
+            $detailResponse->json('data.product.description_html'),
+            $thirdProductsResponse->json('data.list.0.description_html')
+        );
+        $this->assertStringNotContainsString('历史 remark', (string) $thirdProductsResponse->json('data.list.0.description_html'));
 
         $this->assertSame($this->siteProductWhitelist(), array_keys($thirdProductsResponse->json('data.list.0')));
         $this->assertNoSensitiveKeys($thirdProductsResponse->json());
@@ -489,6 +507,8 @@ class V2ProductGroupCatalogTest extends TestCase
             'stock',
             'auto_setup',
             'spec_highlights',
+            // 卡片式渲染商品描述：与详情页同一份 description_html
+            'description_html',
             'spec_highlight_text',
             'has_agent_discount',
             'agent_group_name',

@@ -315,8 +315,8 @@ test.describe("选购页展示方式与商品描述", () => {
       .poll(() => new URL(page.url()).pathname)
       .toBe(`/products/${TYPE_CODE}/${GROUP_ID}/${CHILD_GROUP_ID}`);
 
-    // 点卡片进入独立配置页，再点返回：应回到原分类的卡片网格，而不是裸 /products
-    await page.locator(".product-card").first().locator(".product-card-name").click();
+    // 点「立即选购」进入独立配置页，再点返回：应回到原分类的卡片网格，而不是裸 /products
+    await page.locator(".product-card").first().locator(".product-card-buy").click();
     await expect(page).toHaveURL(new RegExp(`/products/${PRODUCT_IDS[0]}$`));
 
     await page.goBack();
@@ -366,7 +366,7 @@ test.describe("选购页展示方式与商品描述", () => {
     await expect(page.locator(".config-area")).toHaveCount(0);
   });
 
-  test("卡片渲染商品描述 HTML", async ({ page }) => {
+  test("卡片渲染商品描述 HTML，描述完整且按一行一项排版", async ({ page }) => {
     await mockSiteApi(page, "card");
     await page.goto(catalogPath);
 
@@ -377,6 +377,22 @@ test.describe("选购页展示方式与商品描述", () => {
     // 人工填写的描述保留富文本结构
     await expect(cards.nth(1).locator(".product-card-desc strong")).toBeVisible();
     await expect(cards.nth(1).locator(".product-card-desc a")).toHaveAttribute("href", "https://example.com/help");
+
+    // 描述与详情页同源且完整：不能再按 136px 限高截断
+    const desc = cards.nth(0).locator(".product-card-desc");
+    await expect
+      .poll(() => desc.evaluate((el) => getComputedStyle(el).maxHeight))
+      .toBe("none");
+    await expect
+      .poll(() => desc.evaluate((el) => getComputedStyle(el).overflow))
+      .not.toBe("hidden");
+
+    // 规格列表一行一项：单列网格，不再挤成两列
+    const columns = await cards
+      .nth(0)
+      .locator(".product-card-desc ul")
+      .evaluate((el) => getComputedStyle(el).gridTemplateColumns);
+    expect(columns.trim().split(/\s+/)).toHaveLength(1);
   });
 
   test("卡片展示库存徽标，售罄卡片不可选购", async ({ page }) => {
@@ -391,13 +407,26 @@ test.describe("选购页展示方式与商品描述", () => {
     await expect(cards.nth(2).locator(".product-card-buy")).toBeDisabled();
   });
 
-  test("点击卡片正文也能进入独立配置页", async ({ page }) => {
+  test("卡片正文不可点击，只有立即选购按钮进入配置页", async ({ page }) => {
     await mockSiteApi(page, "card");
     await page.goto(catalogPath);
 
-    // 此前只有「立即选购」按钮绑了跳转，点卡片正文没反应
-    await page.locator(".product-card").nth(0).locator(".product-card-name").click();
+    const card = page.locator(".product-card").first();
+    // 等目录归一化到卡片路径后再记录地址，避免把初始化中的旧 URL 当成基准
+    await expect(page.locator(".product-card-grid")).toBeVisible();
+    await expect
+      .poll(() => new URL(page.url()).pathname)
+      .toBe(`/products/${TYPE_CODE}/${GROUP_ID}/${CHILD_GROUP_ID}`);
+    const catalogUrl = page.url();
 
+    // 卡片正文（商品名、描述）不再绑跳转：看描述时点到不会误进配置页
+    await card.locator(".product-card-name").click();
+    await card.locator(".product-card-desc").click();
+    await expect(page).toHaveURL(catalogUrl);
+    await expect(page.locator(".product-card-grid")).toBeVisible();
+
+    // 只有「立即选购」按钮能进配置页
+    await card.locator(".product-card-buy").click();
     await expect(page).toHaveURL(new RegExp(`/products/${PRODUCT_IDS[0]}$`));
   });
 

@@ -18,7 +18,8 @@ use App\Support\RichHtmlSanitizer;
  *      不依赖前端再兜一层。
  *   2. 自动生成（auto）：描述留空时，用 ProductSpecHighlightService 的规格维度
  *      识别结果拼 <ul><li>键: 值</li></ul>。识别逻辑只此一份（与列表页的
- *      spec_highlights 同源），这里不新增第二套 CPU/内存判据。
+ *      spec_highlights 同源），这里不新增第二套 CPU/内存判据。系统（操作系统）
+ *      是下单时才选的配置项，自动描述里剔除，不当作商品规格展示。
  *   3. 空（empty）：识别不出任何维度时不硬造骨架，前台据此不渲染描述块。
  *
  * 自动生成只读不写库：识别规则改进后历史商品立即跟着变，且不必跑回填命令。
@@ -176,6 +177,12 @@ final class ProductDescriptionService
             $value = trim((string) ($item['value'] ?? ''));
 
             if ($label === '' || $value === '') {
+                continue;
+            }
+
+            // 「系统」来自配置项里的操作系统选项，是下单时才选的配置，不是商品本身
+            // 的规格；拼进描述会让卡片/详情多出一行「系统: CentOS」这类噪音。
+            if ((string) ($item['key'] ?? '') === 'system') {
                 continue;
             }
 
