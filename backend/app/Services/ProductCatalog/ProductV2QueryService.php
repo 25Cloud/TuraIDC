@@ -203,6 +203,11 @@ class ProductV2QueryService
                 'cpu_model',
                 'cpu_turbo',
                 'product_discount_group_id',
+                // 前台描述真源：商品描述（导入/手填）与 remark（历史上游描述回退）。
+                // 此前这里没选这两列，SiteProduct*Resource 里的描述服务永远读到空值，
+                // 详情页/列表只能退化成按规格拼出来的自动描述。
+                'description',
+                'remark',
             ]),
             'pricing',
             'setup_fee',
