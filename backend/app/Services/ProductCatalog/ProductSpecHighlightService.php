@@ -71,7 +71,7 @@ class ProductSpecHighlightService
 
         $result = [];
         foreach (self::DIMENSIONS as $key => $definition) {
-            $value = trim((string) ($merged[$key] ?? ''));
+            $value = $this->cleanDimensionValue((string) ($merged[$key] ?? ''));
             if ($value === '') {
                 continue;
             }
@@ -287,7 +287,7 @@ class ProductSpecHighlightService
 
         // remark 在 varchar(255) 上存过，末尾可能被截断成半个多字节字符或半个标签
         // （如 `<span class`）。先洗掉非法字节，再在解码后清掉不完整标签。
-        $remark = mb_scrub($remark, 'UTF-8');
+        $remark = $this->scrubUtf8($remark);
         $decoded = html_entity_decode($remark, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $decoded = preg_replace('/<br\s*\/?>/iu', "\n", $decoded) ?? $decoded;
         $decoded = preg_replace('/<\/li\s*>/iu', "\n", $decoded) ?? $decoded;
@@ -296,7 +296,7 @@ class ProductSpecHighlightService
         $text = preg_replace('/<[^>]*>/u', ' ', $decoded) ?? $decoded;
         // 截断产生的残缺标签（没有闭合的 `>`）再清一次
         $text = preg_replace('/<[^>]*$/mu', ' ', $text) ?? $text;
-        $text = mb_scrub(html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'), 'UTF-8');
+        $text = $this->scrubUtf8(html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
 
         $dimensions = [];
         foreach (preg_split('/\R/u', $text) ?: [] as $line) {
@@ -401,11 +401,39 @@ class ProductSpecHighlightService
      */
     private function cleanDimensionValue(string $value): string
     {
-        $value = mb_scrub($value, 'UTF-8');
+        $value = $this->scrubUtf8($value);
         $value = preg_replace('/<[^>]*(?:>|$)/u', ' ', $value) ?? $value;
         $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+        // mb_scrub 会把截断处的非法字节换成 '?'，这里把首尾残留的替换字符去掉
+        $value = preg_replace('/^\?+|\?+$/u', '', $value) ?? $value;
 
         return trim($value, " \t\n\r\0\x0B，,;；");
+    }
+
+    /**
+     * 丢弃非法 UTF-8 字节。
+     *
+     * 截断的 remark 会在多字节字符中间断开；mb_scrub 默认替换成 '?'，会留下
+     * 「??20M峰值」这种脏值，json_encode 也可能因残留字节失败。这里优先用
+     * iconv //IGNORE 直接丢弃，再做一次编码校验兜底。
+     */
+    private function scrubUtf8(string $value): string
+    {
+        if (mb_check_encoding($value, 'UTF-8')) {
+            return $value;
+        }
+
+        $scrubbed = function_exists('iconv')
+            ? iconv('UTF-8', 'UTF-8//IGNORE', $value)
+            : mb_scrub($value, 'UTF-8');
+
+        if ($scrubbed === false) {
+            $scrubbed = mb_scrub($value, 'UTF-8');
+        }
+
+        return mb_check_encoding($scrubbed, 'UTF-8')
+            ? $scrubbed
+            : (string) preg_replace('/[^\x09\x0A\x0D\x20-\x7E\xC2-\xF4][\x80-\xBF]*/u', '', $scrubbed);
     }
 
     /**
