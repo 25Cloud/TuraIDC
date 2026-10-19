@@ -1,5 +1,25 @@
 <template>
   <section class="client-services">
+    <!--
+      一级分组 tab：云服务器 / 游戏云 / 虚拟主机…… 各自管各自的产品，比一个
+      「服务分类」下拉更快看清自己有哪些实例；第一个是「全部产品」。
+      数量来自 grouped-overview 的 catalog_types（就是一级分组维度的计数）。
+    -->
+    <nav v-if="catalogTypeTabs.length > 1" class="service-group-tabs" :aria-label="$t('client.services.productGroups')">
+      <button
+        v-for="tab in catalogTypeTabs"
+        :key="tab.value"
+        type="button"
+        class="service-group-tab"
+        :class="{ 'is-active': tab.value === filters.catalog_type }"
+        :aria-current="tab.value === filters.catalog_type ? 'true' : undefined"
+        @click="pickCategory(tab.value)"
+      >
+        <span class="service-group-tab__label">{{ tab.label }}</span>
+        <span class="service-group-tab__count">{{ tab.count }}</span>
+      </button>
+    </nav>
+
     <t-card class="service-filter-card" :bordered="false">
       <div class="service-filter-bar">
         <t-input
@@ -18,10 +38,11 @@
         <t-select
           v-model="filters.catalog_type"
           clearable
+          class="service-filter-bar__catalog"
           :placeholder="$t('client.services.catalogTypePlaceholder')"
           @change="handleSearch"
         >
-          <t-option :label="$t('client.services.allCategories')" value="" />
+          <t-option :label="$t('client.services.allProducts')" value="" />
           <t-option
             v-for="item in catalogTypeOptions"
             :key="item.value"
@@ -30,7 +51,12 @@
           />
         </t-select>
 
-        <t-select v-model="filters.status" clearable :placeholder="$t('client.services.statusPlaceholder')" @change="handleSearch">
+        <t-select
+          v-model="filters.status"
+          clearable
+          :placeholder="$t('client.services.statusPlaceholder')"
+          @change="handleSearch"
+        >
           <t-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
 
@@ -134,7 +160,9 @@
                           <button
                             type="button"
                             class="service-remark-trigger"
-                            :aria-label="item.remark ? $t('client.services.editRemark') : $t('client.services.addRemark')"
+                            :aria-label="
+                              item.remark ? $t('client.services.editRemark') : $t('client.services.addRemark')
+                            "
                             @click="openRemark(item)"
                           >
                             <edit-icon />
@@ -144,11 +172,15 @@
                     </div>
 
                     <div v-if="isCdnCard(item)" class="service-spec-line">
-                      <span v-if="resolveCdnSpec(item).nodes">$t('client.services.nodeCount', { count: resolveCdnSpec(item).nodes })</span>
+                      <span v-if="resolveCdnSpec(item).nodes"
+                        >$t('client.services.nodeCount', { count: resolveCdnSpec(item).nodes })</span
+                      >
                       <span v-if="resolveCdnSpec(item).region">
                         {{ $t('client.services.nodeRegion') }} {{ resolveCdnSpec(item).region }}
                       </span>
-                      <span v-if="!hasCdnSpec(item)" class="service-spec-empty">{{ $t('client.services.cdnInstance') }}</span>
+                      <span v-if="!hasCdnSpec(item)" class="service-spec-empty">{{
+                        $t('client.services.cdnInstance')
+                      }}</span>
                     </div>
                     <div v-else-if="isVirtualHostCard(item)" class="service-spec-line">
                       <span v-if="resolveVirtualHostSpec(item).webSpace">
@@ -160,7 +192,9 @@
                       <span v-if="resolveVirtualHostSpec(item).traffic">
                         {{ $t('client.services.monthlyTraffic') }} {{ resolveVirtualHostSpec(item).traffic }}
                       </span>
-                      <span v-if="!hasVirtualHostCardSpec(item)" class="service-spec-empty">{{ $t('client.services.virtualHostInstance') }}</span>
+                      <span v-if="!hasVirtualHostCardSpec(item)" class="service-spec-empty">{{
+                        $t('client.services.virtualHostInstance')
+                      }}</span>
                     </div>
                     <div v-else class="service-spec-line">
                       <span>CPU {{ findListSpecValue(item, ['CPU', '核心']) }}</span>
@@ -173,11 +207,17 @@
                       class="service-expire-line is-cdn"
                       :class="{ warning: isExpiringSoon(item.expires_at) }"
                     >
-                      <span>{{ $t('client.services.billingCycleLabel') }}{{ item.billing_cycle_label || $t('client.services.trialMachine') }}</span>
-                      <span v-if="item.expires_at">{{ $t('client.services.expiresAtPrefix') }} {{ item.expires_at }}</span>
+                      <span
+                        >{{ $t('client.services.billingCycleLabel')
+                        }}{{ item.billing_cycle_label || $t('client.services.trialMachine') }}</span
+                      >
+                      <span v-if="item.expires_at"
+                        >{{ $t('client.services.expiresAtPrefix') }} {{ item.expires_at }}</span
+                      >
                     </div>
                     <div v-else class="service-expire-line" :class="{ warning: isExpiringSoon(item.expires_at) }">
-                      {{ $t('client.services.expiresAtLabel') }}{{ item.expires_at || $t('client.services.longTermValid') }}
+                      {{ $t('client.services.expiresAtLabel')
+                      }}{{ item.expires_at || $t('client.services.longTermValid') }}
                     </div>
                   </div>
 
@@ -252,11 +292,15 @@
                       <t-button theme="primary" variant="text" class="service-name-button" @click="openDetail(row.id)">
                         {{ resolveServiceName(row) }}
                       </t-button>
-                      <span v-if="Number(row.auto_renew) === 1" class="service-table-auto-renew">{{ $t('client.services.autoRenewBadge') }}</span>
+                      <span v-if="Number(row.auto_renew) === 1" class="service-table-auto-renew">{{
+                        $t('client.services.autoRenewBadge')
+                      }}</span>
                       <span class="service-row-id">ID {{ row.id }}</span>
                     </div>
                     <div class="service-table-meta">
-                      <span>{{ row.product?.group_name || row.product?.type_label || $t('client.services.cloudService') }}</span>
+                      <span>{{
+                        row.product?.group_name || row.product?.type_label || $t('client.services.cloudService')
+                      }}</span>
                       <span class="service-table-meta__dot"></span>
                       <span :class="{ empty: !row.remark }">{{ row.remark || $t('client.services.noRemark') }}</span>
                       <t-button shape="square" variant="text" size="small" @click="openRemark(row)">
@@ -268,9 +312,15 @@
               </template>
               <template #specs="{ row }">
                 <div v-if="isCdnCard(row)" class="service-table-specs">
-                  <span v-if="resolveCdnSpec(row).nodes">$t('client.services.nodeCount', { count: resolveCdnSpec(row).nodes })</span>
-                  <span v-if="resolveCdnSpec(row).region">{{ $t('client.services.nodeRegion') }} {{ resolveCdnSpec(row).region }}</span>
-                  <span v-if="!hasCdnSpec(row)" class="service-spec-empty">{{ $t('client.services.cdnInstance') }}</span>
+                  <span v-if="resolveCdnSpec(row).nodes"
+                    >$t('client.services.nodeCount', { count: resolveCdnSpec(row).nodes })</span
+                  >
+                  <span v-if="resolveCdnSpec(row).region"
+                    >{{ $t('client.services.nodeRegion') }} {{ resolveCdnSpec(row).region }}</span
+                  >
+                  <span v-if="!hasCdnSpec(row)" class="service-spec-empty">{{
+                    $t('client.services.cdnInstance')
+                  }}</span>
                 </div>
                 <div v-else-if="isVirtualHostCard(row)" class="service-table-specs">
                   <span v-if="resolveVirtualHostSpec(row).webSpace">
@@ -279,7 +329,9 @@
                   <span v-if="resolveVirtualHostSpec(row).traffic">
                     {{ $t('client.services.monthlyTraffic') }} {{ resolveVirtualHostSpec(row).traffic }}
                   </span>
-                  <span v-if="!hasVirtualHostTableSpec(row)" class="service-spec-empty">{{ $t('client.services.virtualHostInstance') }}</span>
+                  <span v-if="!hasVirtualHostTableSpec(row)" class="service-spec-empty">{{
+                    $t('client.services.virtualHostInstance')
+                  }}</span>
                 </div>
                 <div v-else class="service-table-specs">
                   <span>CPU {{ findListSpecValue(row, ['CPU', '核心']) }}</span>
@@ -321,7 +373,9 @@
               </template>
               <template #operation="{ row }">
                 <t-space>
-                  <t-button size="small" theme="primary" variant="outline" @click="openDetail(row.id)">{{ $t('client.services.console') }}</t-button>
+                  <t-button size="small" theme="primary" variant="outline" @click="openDetail(row.id)">{{
+                    $t('client.services.console')
+                  }}</t-button>
                   <t-dropdown
                     v-if="actionOptions(row).length"
                     trigger="click"
@@ -373,7 +427,9 @@
             </div>
             <div class="renew-summary-row">
               <span>{{ $t('client.services.renewAutoRenewLabel') }}</span>
-              <strong>{{ Number(renewData.auto_renew) === 1 ? $t('client.services.enabled') : $t('client.services.disabled') }}</strong>
+              <strong>{{
+                Number(renewData.auto_renew) === 1 ? $t('client.services.enabled') : $t('client.services.disabled')
+              }}</strong>
             </div>
           </div>
 
@@ -435,7 +491,9 @@
       />
       <template #footer>
         <t-button variant="outline" @click="remarkVisible = false">{{ $t('client.services.remarkCancel') }}</t-button>
-        <t-button theme="primary" :loading="remarkSubmitting" @click="submitRemark">{{ $t('client.services.saveRemark') }}</t-button>
+        <t-button theme="primary" :loading="remarkSubmitting" @click="submitRemark">{{
+          $t('client.services.saveRemark')
+        }}</t-button>
       </template>
     </t-dialog>
   </section>
@@ -487,6 +545,8 @@ const {
   remarkForm,
   statusOptions,
   catalogTypeOptions,
+  catalogTypeTabs,
+  pickCategory,
   selectedRenewAmount,
   availableRenewCoupons,
   loadList,
@@ -618,6 +678,81 @@ function resolveBillingCycleValue(item: Record<string, any>) {
   border: thin solid var(--td-border-color);
   border-radius: var(--td-radius-medium);
   box-shadow: var(--td-shadow-1);
+}
+
+/*
+ * 一级分组 tab：横向可滚动，数量随分组走。
+ * 与筛选条里的「服务分类」下拉同源，宽屏看 tab、窄屏看下拉，切换的是同一个值。
+ */
+.service-group-tabs {
+  display: none;
+  align-items: center;
+  gap: var(--td-comp-margin-s);
+  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-s);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  background: var(--td-bg-color-container);
+  border: thin solid var(--td-border-color);
+  border-radius: var(--td-radius-medium);
+  box-shadow: var(--td-shadow-1);
+}
+
+.service-group-tab {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: thin solid transparent;
+  border-radius: var(--td-radius-medium);
+  background: transparent;
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-body-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+
+  &:hover {
+    background: var(--td-bg-color-component);
+    color: var(--td-text-color-primary);
+  }
+
+  &.is-active {
+    border-color: var(--td-brand-color);
+    background: var(--td-brand-color-light);
+    color: var(--td-brand-color);
+    font-weight: 600;
+  }
+}
+
+.service-group-tab__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.service-group-tab__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3125rem;
+  border-radius: 62.4375rem;
+  background: var(--td-bg-color-component);
+  color: var(--td-text-color-placeholder);
+  font-size: var(--td-font-size-body-small);
+  font-weight: 600;
+  line-height: 1;
+
+  .service-group-tab.is-active & {
+    background: var(--td-brand-color);
+    color: #fff;
+  }
 }
 
 .service-list-section {
@@ -1291,6 +1426,25 @@ function resolveBillingCycleValue(item: Record<string, any>) {
   .renew-coupon-row {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+/*
+ * 宽屏用一级分组 tab、窄屏用同源的下拉：两者改的是同一个 filters.catalog_type。
+ * tab 行默认 display:none，这里放开，避免手机端多出一条横向滚动条。
+ */
+@media (min-width: 48rem) {
+  .service-group-tabs {
+    display: flex;
+  }
+
+  .service-filter-bar__catalog {
+    display: none;
+  }
+
+  // 隐藏下拉后少一列，搜索框 / 状态 / 续费方式 / 视图切换重新占满
+  .service-filter-bar {
+    grid-template-columns: minmax(16rem, 1.5fr) minmax(10rem, 0.72fr) minmax(8rem, 0.5fr) auto;
   }
 }
 </style>

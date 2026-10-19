@@ -1032,7 +1032,7 @@
     "services": {
       "addRemark": "添加备注",
       "all": "全部",
-      "allCategories": "全部分类",
+      "allProducts": "全部产品",
       "autoRenew": "自动续费",
       "autoRenewBadge": "自",
       "autoRenewOff": "未开启自动续费",
@@ -1041,6 +1041,7 @@
       "billingCycleLabel": "计费方式：",
       "cardView": "卡片",
       "catalogTypePlaceholder": "服务分类",
+      "productGroups": "一级分组",
       "cdnInstance": "CDN 加速实例",
       "cloudService": "云服务",
       "console": "控制台",

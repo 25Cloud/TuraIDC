@@ -311,6 +311,24 @@ export function useServiceCenter() {
       ? overview.value.catalog_types.filter((item: ServiceCatalogTypeOption) => item?.value)
       : [],
   );
+  /**
+   * 一级分组 tab：第一个是「全部产品」，后面按后台顺序排每个有实例的一级分组。
+   *
+   * 数据源就是 grouped-overview 的 catalog_types（后端按一级分组统计），所以
+   * tab 上的数量是该一级分组下的实例数，与列表筛选（状态 / 续费方式）无关。
+   */
+  const catalogTypeTabs = computed(() => [
+    {
+      value: '',
+      label: t('client.services.allProducts'),
+      count: Number(overview.value.total || 0),
+    },
+    ...catalogTypeOptions.value.map((item) => ({
+      value: String(item.value ?? ''),
+      label: String(item.label ?? ''),
+      count: Number(item.count || 0),
+    })),
+  ]);
   const viewModeOptions = [
     { label: t('client.services.cardView'), value: 'grid' },
     { label: t('client.services.listView'), value: 'list' },
@@ -456,10 +474,25 @@ export function useServiceCenter() {
     void loadList();
   }
 
+  /**
+   * 切换一级分组（tab / 下拉共用）。
+   *
+   * 同时把选择写回地址：仪表盘的「我的产品」磁贴就是靠 ?catalog_type= 跳进来的，
+   * tab 切换后地址跟着变，刷新和分享才能停在同一个分组。
+   */
   function pickCategory(value: string) {
-    if (filters.catalog_type === value) return;
-    filters.catalog_type = value;
-    handleSearch();
+    const next = String(value ?? '');
+    if (filters.catalog_type === next) return;
+    filters.catalog_type = next;
+    filters.page = 1;
+    const query = { ...(route.query || {}) };
+    if (next === '') {
+      delete query.catalog_type;
+    } else {
+      query.catalog_type = next;
+    }
+    void router.replace({ path: route.path, query });
+    void loadList();
   }
 
   function openDetail(id: number) {
@@ -603,6 +636,7 @@ export function useServiceCenter() {
     remarkForm,
     statusOptions,
     catalogTypeOptions,
+    catalogTypeTabs,
     metricCards,
     selectedRenewAmount,
     availableRenewCoupons,
