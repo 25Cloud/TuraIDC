@@ -2787,6 +2787,47 @@ function setMachineSpecSort(key, direction) {
 const desktopSpecRowCache = new Map();
 const mobileSpecCache = new Map();
 
+/**
+ * 机型表第一列只放「规格」，不再重复当前分组的名字。
+ *
+ * 商品名是「三级分组名 + 规格摘要」（如「美国/香港/日本 轻量 2核2G」），
+ * 而机型表本来就在该分组下展示，列宽只有一百多像素，整串名字会被截成
+ * 同一段分组前缀、每行看起来都一样。这里把与当前二级/三级分组名相同的
+ * 前缀剥掉，只留规格；剥完为空（商品名就是分组名）时保留原名。
+ */
+function stripActiveGroupPrefix(value) {
+  const name = String(value || "").trim();
+  if (!name) {
+    return "";
+  }
+
+  const prefixes = [activeChildName.value, activeGroupName.value]
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .sort((left, right) => right.length - left.length);
+
+  for (const prefix of prefixes) {
+    if (name === prefix) {
+      return name;
+    }
+
+    // 必须「分组名 + 分隔符」才算重复前缀：商品名「美国高防主机-A」与二级
+    // 分组「美国」只是同字开头，不是重复，不能被剥成「高防主机-A」。
+    if (name.startsWith(prefix)) {
+      const rest = name.slice(prefix.length);
+      if (!/^[\s·]+/.test(rest)) {
+        continue;
+      }
+      const stripped = rest.replace(/^[\s·]+/, "").trim();
+      if (stripped) {
+        return stripped;
+      }
+    }
+  }
+
+  return name;
+}
+
 function resolveDesktopSpecRowBase(product) {
   const cacheKey = Number(product?.id || 0);
   if (!cacheKey) return null;
@@ -2843,10 +2884,13 @@ function resolveDesktopSpecRowBase(product) {
 
   const base = {
     productId: product.id,
-    name:
+    // 机型表在分组内部展示，名字里重复分组名既占宽又让每行长得一样；
+    // 这里只留规格部分（剥不出东西时保留原名）。
+    name: stripActiveGroupPrefix(
       rowName ||
-      displayName ||
-      buildInstanceSpecName(specSource, spec, product.id),
+        displayName ||
+        buildInstanceSpecName(specSource, spec, product.id),
+    ),
     note: normalizeInstanceSpecNote(sourceProduct.instance_spec_note),
     family: spec.family,
     cpuText: resolvedCpuText || "-",

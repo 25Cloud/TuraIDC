@@ -174,14 +174,15 @@ export function useWebsiteProductsCatalog({
       return;
     }
 
-    // 卡片式：地址只保留用户实际所在的层级（类型 / 二级 / 三级），
-    // 不因为内部自动补全了分组就改写成更深的地址；商品由卡片按钮进入四段地址。
+    // 卡片式：进入 /products/{type}（或只有二级分组）时，目录会自动补全第一个
+    // 二级/三级分组，地址要跟着补全到该三级分组，否则刷新、分享、从配置页返回
+    // 都会掉回类型层。卡片式地址仍是三段，商品由卡片按钮进入四段地址。
     // 列表式：一路补全到商品段，刷新/分享后能直接落到同一台商品的配置。
     const targetPath = isCardDisplayMode.value
       ? buildWebsiteProductPath({
           typeSlug: activeTypeSlug.value,
-          groupId: routeDepth.value >= 2 ? activeGroupId.value : 0,
-          childGroupId: routeDepth.value >= 3 ? activeChildId.value : 0,
+          groupId: activeGroupId.value,
+          childGroupId: activeChildId.value,
         })
       : buildWebsiteProductPath({
           typeSlug: activeTypeSlug.value,

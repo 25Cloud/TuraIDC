@@ -14,7 +14,8 @@ import { expect, test } from "@playwright/test";
  *   /products/:typeSlug/:groupId/:childGroupId
  *   /products/:typeSlug/:groupId/:childGroupId/:productId
  *
- * - 目录地址：列表式自动补全到第一个商品（地址推进到四段），卡片式保持地址层级；
+ * - 目录地址：列表式自动补全到第一个商品（地址推进到四段），卡片式补全到自动选中的
+ *   第一个二/三级分组（地址推进到三段，商品由卡片按钮进入四段）；
  * - 商品地址：列表式在选购页内联配置，卡片式渲染独立配置页。
  *
  * 本用例同时锁住卡片描述与卡片交互：描述与详情页同源、完整展示、一行一项，
@@ -368,24 +369,44 @@ test.describe("选购页统一路由与展示方式", () => {
     await expect(page.locator(".product-card-grid")).toHaveCount(0);
   });
 
-  test("卡片式：目录地址保持所在层级，只展示卡片", async ({ page }) => {
+  test("卡片式：目录地址补全到自动选中的三级分组，只展示卡片", async ({ page }) => {
     await mockSiteApi(page, "card");
 
-    // 一级分组目录：自动补全二级/三级分组展示卡片，但地址保持一段
+    // 只给一级分组：自动选中第一个二级/三级分组，地址补全到三段
     await page.goto(typePath);
     await expect(page.locator(".product-card-grid")).toBeVisible();
-    await expect.poll(() => new URL(page.url()).pathname).toBe(typePath);
+    await expect.poll(() => new URL(page.url()).pathname).toBe(childPath);
 
-    // 二级分组目录：地址保持两段
+    // 二级分组：补全三级分组
     await page.goto(groupPath);
     await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
-    await expect.poll(() => new URL(page.url()).pathname).toBe(groupPath);
+    await expect.poll(() => new URL(page.url()).pathname).toBe(childPath);
 
-    // 三级分组目录：地址保持三段
+    // 三级分组：地址保持三段
     await page.goto(childPath);
     await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
     await expect.poll(() => new URL(page.url()).pathname).toBe(childPath);
     await expect(page.locator(".config-area")).toHaveCount(0);
+  });
+
+  test("列表式：从一级分组地址直接补全到第一个商品", async ({ page }) => {
+    await mockSiteApi(page, "list");
+    await page.goto(typePath);
+
+    await expect(page.locator(".desktop-machine-table")).toBeVisible();
+    await expect.poll(() => new URL(page.url()).pathname).toBe(productPath);
+  });
+
+  test("列表式：机型表首列只显示规格，不重复当前分组名", async ({ page }) => {
+    await mockSiteApi(page, "list");
+    await page.goto(childPath);
+
+    // 三级分组「高防」+ 商品名「美国高防主机-A」：同字开头但不是「分组名 + 分隔符」，
+    // 不能被误剥成「高防主机-A」。
+    const firstNameCell = page
+      .locator(".desktop-machine-table-row .machine-spec-name")
+      .first();
+    await expect(firstNameCell).toHaveText("美国高防主机-A");
   });
 
   test("卡片式目录只发一次聚合请求，三级分组商品按需加载", async ({
