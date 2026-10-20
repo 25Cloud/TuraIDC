@@ -266,7 +266,15 @@ export function useWebsiteProductsCatalog({
       }
     }
 
-    if (!shouldAutoSelectProduct.value) {
+    // 卡片式靠「没有选中商品」来展示卡片网格，任何情况下都不自动选中。
+    if (isCardDisplayMode.value) {
+      resetSelectedProduct({ syncRoute: shouldSyncRoute(options) });
+      return;
+    }
+
+    // 列表式：用户主动切换分组时强制选中第一个商品。优惠券等场景会关掉
+    // shouldAutoSelectProduct，那会让切组后停在空配置面板，必须再手动选一次。
+    if (!shouldAutoSelectProduct.value && !options.forceAutoSelect) {
       resetSelectedProduct({ syncRoute: shouldSyncRoute(options) });
       return;
     }
@@ -313,7 +321,7 @@ export function useWebsiteProductsCatalog({
     }
     resetSelectedProduct({ syncRoute: false });
     mobileProductDrawer.value = false;
-    await loadGroupPayload(id, options);
+    await loadGroupPayload(id, { ...options, forceAutoSelect: true });
   }
 
   async function switchChild(id, options = {}) {
@@ -327,7 +335,7 @@ export function useWebsiteProductsCatalog({
     // 目录聚合接口只带当前三级分组的商品：切到未加载过的分组时按需拉一次，
     // 已加载过的直接用缓存（切回来不再发请求）
     const products = await ensureChildProductsLoaded(id);
-    syncDefaultProduct(products, options);
+    syncDefaultProduct(products, { ...options, forceAutoSelect: true });
   }
 
   async function switchType(value, options = {}) {
@@ -340,7 +348,7 @@ export function useWebsiteProductsCatalog({
     childGroups.value = [];
     mobileProductDrawer.value = false;
 
-    await loadRootGroups(options);
+    await loadRootGroups({ ...options, forceAutoSelect: true });
   }
 
   async function loadRootGroups(options = {}) {

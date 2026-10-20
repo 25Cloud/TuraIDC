@@ -397,12 +397,11 @@ test.describe("选购页统一路由与展示方式", () => {
     await expect.poll(() => new URL(page.url()).pathname).toBe(productPath);
   });
 
-  test("列表式：机型表首列只显示规格，不重复当前分组名", async ({ page }) => {
+  test("列表式：机型表首列显示完整商品名，不做任何裁剪", async ({ page }) => {
     await mockSiteApi(page, "list");
     await page.goto(childPath);
 
-    // 三级分组「高防」+ 商品名「美国高防主机-A」：同字开头但不是「分组名 + 分隔符」，
-    // 不能被误剥成「高防主机-A」。
+    // 商品名原样展示：既是「分组名 + 规格」也不剥前缀，商品名就是商品名。
     const firstNameCell = page
       .locator(".desktop-machine-table-row .machine-spec-name")
       .first();
@@ -835,6 +834,44 @@ test.describe("选购页统一路由与展示方式", () => {
     await expect(page.locator(".shop-catalog")).toBeVisible();
   });
 
+  test("列表式：切换三级分组后自动选中并渲染第一个商品", async ({ page }) => {
+    await mockSiteApi(page, "list");
+    await page.goto(childPath);
+    await expect.poll(() => new URL(page.url()).pathname).toBe(productPath);
+
+    // 切到第二个三级分组：地址应直接推进到该分组的第一个商品
+    await page.locator(".shop-cat__child").nth(1).click();
+    const secondChildPath = `${groupPath}/${SECOND_CHILD_GROUP_ID}`;
+    await expect
+      .poll(() => new URL(page.url()).pathname)
+      .toBe(`${secondChildPath}/${PRODUCT_IDS[0]}`);
+    await expect(page.locator(".desktop-machine-table-row.active")).toHaveCount(
+      1,
+    );
+    await expect(page.locator(".config-area")).toBeVisible();
+  });
+
+  test("卡片式配置页：返回跳上级目录而不是浏览器返回", async ({ page }) => {
+    await mockSiteApi(page, "card");
+    await page.goto(productPath);
+    await expect(page.locator(".pd-page")).toBeVisible();
+
+    await page.locator(".back-btn").click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe(childPath);
+  });
+
+  test("卡片式：鼠标悬停轻微上浮，售罄卡片保持静止", async ({ page }) => {
+    await mockSiteApi(page, "card");
+    await page.goto(childPath);
+
+    const card = page.locator(".product-card").first();
+    await card.hover();
+    await expect
+      .poll(() =>
+        card.evaluate((el) => getComputedStyle(el).transform),
+      )
+      .toContain("-3");
+  });
   test("手机端目录：底部抽屉里选一/二/三级分组，选完自动收起", async ({
     page,
   }) => {

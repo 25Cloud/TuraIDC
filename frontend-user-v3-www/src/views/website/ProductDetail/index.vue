@@ -1118,15 +1118,11 @@ function handleDetailDisplayModeChange(mode) {
 }
 
 /**
- * 顶部返回：能回上一页就回上一页（多来自列表或卡片），
- * 直接落地（外链、刷新）时退回该商品所属分类，避免把用户甩回全站目录。
+ * 顶部返回：固定跳到该商品的上级目录（三级分组 → 二级 → 类型），
+ * 不依赖浏览器历史——从消息、外链、新标签进来时历史里可能是别处，
+ * 「返回」把用户带走会很突兀。
  */
 function goBack() {
-  if (router.options.history.state.back) {
-    router.back();
-    return;
-  }
-
   const payload = resolveWebsiteProductRoutePayloadByDetail(product.value);
   const directoryPath =
     payload.typeSlug && payload.groupId
