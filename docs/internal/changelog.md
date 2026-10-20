@@ -19,6 +19,7 @@
 
 ### 修复
 
+- **官网头部 logo 恢复**：品牌改造里 `stores/app.js` 是对品牌 store 的字段代理，漏了新增的 `brandingResolved`，导致头部/页脚 logo 永远不渲染（只剩空白占位）。补齐代理字段后线上已恢复（logo 取站点配置、首帧未解析前仍保持中性不闪默认品牌）
 - **品牌首帧一致性（www + 控制台）**：① 构建期 `VITE_APP_TITLE` 不再作为兜底品牌——生产构建会在服务器本地 env 写死品牌，导致首访先闪「图拉云」与默认 favicon 再被站点配置覆盖；现在站点配置接口是品牌唯一真源，未解析前用中性描述、静态 favicon 用 data URI 中性占位、不渲染默认 logo/站点名。② 控制台补上官网已有的首帧缓存注入脚本与 store 读写（`turaidc:site-config`），浏览器标签页标题/favicon 在 Vue 挂载前就用上次访问缓存覆盖；两端 store 增加 `brandingResolved`，未解析前模板不渲染默认品牌。实测（首次访问 + 二次访问）www 与 dash 均无「图拉云」/默认 favicon 痕迹，标题为「二五云」/「用户登录 - 二五云」，favicon 为站点配置图标
 - **商品目录交互与加载态（www 桌面/手机）**：① 目录收起/展开补 0.2s 宽度+透明度过渡（原为瞬间消失），不再产生横向滚动条；② 切换分组时侧栏选中态与三级分组列表立即切换、商品区显示卡片/表格骨架屏（移除全屏 loading），内容就绪后淡入；③ 配置页（`/products/{type}/{group}/{child}/{productId}`）补上与选购页一致的目录、收起/展开、页面宽度调节，支持切分组跳转；④ 顶栏「产品」菜单链接统一为 `/products/{typeSlug}` 与 `/products/{typeSlug}/{groupId}`（slug 而非 code、去掉旧的 `?type=` 参数）；⑤ NAT 商品卡片左上角标签由「其他」修正为「NAT服务器」（后续后端也补了标签兜底）。列表式「切组后必须再点一次才出商品」已按最坏竞态加固（切组先清态、切换 token、陈旧响应归属校验）
 - **一级分组图标（三端）**：`first_product_groups` 新增 `icon_text` / `icon_image` 两列（保留既有 `icon` 内置图标名），新增 `ProductGroupIcon` 统一解析优先级「图片 → 文字 → 内置图标 → 名称缩写」，缩写照半角宽度取前 4 单位（中文/全角=2、英文/数字=1，如 轻量云→轻量、GameCloud→Game、双ISP/住宅云→双IS）；管理端商品目录新增「图标」配置（内置图标/文字图标/图片上传）与列表预览列（四语言词条），控制台实例管理分类 tab、官网折叠后的一级分组侧栏与商品卡片角标均按 `icon_resolved` 渲染；shared 新增 `text/abbr` 工具与测试。接口 `site/product-types`、`admin/product-types`、`client/services/grouped-overview` 等已统一下发 `icon/icon_text/icon_image/icon_resolved`
