@@ -68,6 +68,21 @@ function writeStoredWidthPreference(preference) {
   }
 }
 
+// 版心偏好必须是模块级单例：选购页 / 卡片式配置页的页面容器、以及两页共用的
+// PageWidthControl 会各自调用 useProductPageWidth()。若每次调用都新建 ref，
+// 面板里改了宽度父容器读不到，页面宽度就不会跟着变。
+const storedWidthPreference = ref(null);
+let storedWidthPreferenceLoaded = false;
+
+function ensureStoredWidthPreference() {
+  if (storedWidthPreferenceLoaded) {
+    return;
+  }
+
+  storedWidthPreferenceLoaded = true;
+  storedWidthPreference.value = readStoredWidthPreference();
+}
+
 /**
  * 版心（页面宽度）开关。
  *
@@ -77,6 +92,7 @@ function writeStoredWidthPreference(preference) {
  */
 export function useProductPageWidth() {
   const siteBranding = useSiteBrandingStore();
+  ensureStoredWidthPreference();
 
   const siteLayoutMode = computed(() =>
     siteBranding.productPageLayout === "full" ? "full" : "contained",
@@ -87,7 +103,7 @@ export function useProductPageWidth() {
     return width ?? 1280;
   });
 
-  const stored = ref(readStoredWidthPreference());
+  const stored = storedWidthPreference;
 
   const layoutMode = computed(() => {
     const mode = stored.value?.mode;

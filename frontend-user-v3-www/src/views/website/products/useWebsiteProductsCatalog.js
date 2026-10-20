@@ -56,6 +56,13 @@ export function useWebsiteProductsCatalog({
   const route = useRoute();
   const router = useRouter();
   const pageLoading = ref(false);
+  // 用户主动切换分组 / 三级分组期间的加载态：商品区据此显示骨架屏。
+  // 与 pageLoading 分开是為了让「切组」在命中缓存时也能有一帧稳定的切换态，
+  // 同时不让首屏初始化把整套侧栏盖住。
+  const catalogSwitching = ref(false);
+  const catalogLoading = computed(
+    () => pageLoading.value || catalogSwitching.value,
+  );
   const sidebarCollapsed = ref(false);
   const isMobile = ref(false);
   const mobileProductDrawer = ref(false);
@@ -77,6 +84,9 @@ export function useWebsiteProductsCatalog({
 
   let routeSyncSuspendCount = 0;
   let groupToken = 0;
+  // 用户主动切换（一级分类 / 二级分组 / 三级分组）的序号：
+  // 连续快速点击时只允许最后一次切换落地，旧请求晚返回会被丢弃。
+  let catalogSwitchToken = 0;
   let groupAbortController = null;
   // 卡片式把旧三段商品深链规范成四段地址期间，禁止目录态同步把地址改回去
   let cardProductRedirectPending = false;
@@ -312,6 +322,8 @@ export function useWebsiteProductsCatalog({
   }
 
   async function switchGroup(id, options = {}) {
+    const switchToken = ++catalogSwitchToken;
+    catalogSwitching.value = true;
     activeGroupId.value = id;
     activeChildId.value = 0;
     // 用户主动选二级分组：卡片式地址推进到两段，列表式随后补全到商品段。
@@ -319,12 +331,25 @@ export function useWebsiteProductsCatalog({
     if (!options.preserveRouteDepth) {
       routeDepth.value = 2;
     }
+    // 旧二级分组的三级分组与商品必须立刻清掉：侧栏先进入骨架占位，
+    // 目录接口返回后再填充，避免上一个分组的子目录残留一帧。
+    childGroups.value = [];
+    productsByGroup.value = {};
     resetSelectedProduct({ syncRoute: false });
     mobileProductDrawer.value = false;
-    await loadGroupPayload(id, { ...options, forceAutoSelect: true });
+
+    try {
+      await loadGroupPayload(id, { ...options, forceAutoSelect: true });
+    } finally {
+      if (switchToken === catalogSwitchToken) {
+        catalogSwitching.value = false;
+      }
+    }
   }
 
   async function switchChild(id, options = {}) {
+    const switchToken = ++catalogSwitchToken;
+    catalogSwitching.value = true;
     activeChildId.value = id;
     if (!options.preserveRouteDepth) {
       routeDepth.value = 3;
@@ -332,13 +357,27 @@ export function useWebsiteProductsCatalog({
     resetSelectedProduct({ syncRoute: false });
     mobileProductDrawer.value = false;
 
-    // 目录聚合接口只带当前三级分组的商品：切到未加载过的分组时按需拉一次，
-    // 已加载过的直接用缓存（切回来不再发请求）
-    const products = await ensureChildProductsLoaded(id);
-    syncDefaultProduct(products, { ...options, forceAutoSelect: true });
+    try {
+      // 目录聚合接口只带当前三级分组的商品：切到未加载过的分组时按需拉一次，
+      // 已加载过的直接用缓存（切回来不再发请求）
+      const products = await ensureChildProductsLoaded(id);
+
+      // 连续快速切换时，旧请求可能晚于新选择返回：只允许最新一次切换落选中态
+      if (switchToken !== catalogSwitchToken) {
+        return;
+      }
+
+      syncDefaultProduct(products, { ...options, forceAutoSelect: true });
+    } finally {
+      if (switchToken === catalogSwitchToken) {
+        catalogSwitching.value = false;
+      }
+    }
   }
 
   async function switchType(value, options = {}) {
+    const switchToken = ++catalogSwitchToken;
+    catalogSwitching.value = true;
     activeTypeValue.value = value;
     activeGroupId.value = 0;
     activeChildId.value = 0;
@@ -348,7 +387,13 @@ export function useWebsiteProductsCatalog({
     childGroups.value = [];
     mobileProductDrawer.value = false;
 
-    await loadRootGroups({ ...options, forceAutoSelect: true });
+    try {
+      await loadRootGroups({ ...options, forceAutoSelect: true });
+    } finally {
+      if (switchToken === catalogSwitchToken) {
+        catalogSwitching.value = false;
+      }
+    }
   }
 
   async function loadRootGroups(options = {}) {
@@ -512,6 +557,13 @@ export function useWebsiteProductsCatalog({
   }
 
   function applyGroupPayload(data, options = {}) {
+    // 聚合响应必须属于当前选中的二级分组：快速切组时旧请求可能晚到，
+    // 直接套用会把商品错挂到新分组下面（表现为「点了分组但商品不对/不出现」）。
+    const payloadGroupId = Number(data?.effective_product_group_id || 0);
+    if (payloadGroupId > 0 && payloadGroupId !== Number(activeGroupId.value)) {
+      return;
+    }
+
     const children = data.children || [];
     childGroups.value = children;
 
@@ -936,6 +988,8 @@ export function useWebsiteProductsCatalog({
 
   return {
     pageLoading,
+    catalogLoading,
+    catalogSwitching,
     sidebarCollapsed,
     isMobile,
     mobileProductDrawer,

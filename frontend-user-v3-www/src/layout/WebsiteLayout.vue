@@ -13,14 +13,17 @@
       <div class="container header-bar">
         <router-link to="/" class="logo" :aria-label="appStore.siteName">
           <img
+            v-if="logoSrc"
             :src="logoSrc"
             :alt="appStore.siteName"
             class="logo-image"
             @error="handleLogoError"
           />
-          <span v-if="logoLoadFailed" class="logo-fallback">{{
-            appStore.siteName
-          }}</span>
+          <span
+            v-if="!logoSrc || logoLoadFailed"
+            class="logo-fallback logo-fallback--pending"
+            >{{ appStore.brandingResolved ? appStore.siteName : "" }}</span
+          >
         </router-link>
 
         <nav
@@ -68,10 +71,10 @@
                   <span class="mega-menu__col-title">{{
                     $t("layout.nav.productCatalog")
                   }}</span>
-                  <button
+                  <router-link
                     v-for="type in navProductTypes"
                     :key="type.value"
-                    type="button"
+                    :to="resolveTypePath(type)"
                     class="mega-type-btn"
                     :class="{ active: navActiveTypeValue === type.value }"
                     @mouseenter="navActivateType(type.value)"
@@ -80,7 +83,7 @@
                     <span class="mega-type-btn__count">{{
                       type.product_count
                     }}</span>
-                  </button>
+                  </router-link>
                   <MegaMenuSkeleton
                     v-if="!navProductTypes.length && navLoading"
                     variant="row"
@@ -621,6 +624,13 @@
                     class="mobile-third-level-list"
                   >
                     <router-link
+                      :to="resolveTypePath(type)"
+                      class="mobile-third-level-item mobile-third-level-item--all"
+                      @click="closeMobileMenu()"
+                    >
+                      {{ $t("layout.nav.viewAllProducts") }}
+                    </router-link>
+                    <router-link
                       v-for="group in navGetGroupsForType(type.value)"
                       :key="`m-group-${group.id}`"
                       :to="resolveGroupPath(group)"
@@ -828,14 +838,17 @@
           <div class="footer-brand">
             <div class="footer-logo">
               <img
+                v-if="logoSrc"
                 :src="logoSrc"
                 :alt="appStore.siteName"
                 class="footer-logo-image"
                 @error="handleFooterLogoError"
               />
-              <span v-if="footerLogoLoadFailed" class="footer-logo-fallback">{{
-                appStore.siteName
-              }}</span>
+              <span
+                v-if="!logoSrc || footerLogoLoadFailed"
+                class="footer-logo-fallback"
+                >{{ appStore.brandingResolved ? appStore.siteName : "" }}</span
+              >
             </div>
             <p class="footer-brand__desc">
               {{ $t("layout.footer.brandDesc") }}
@@ -1259,13 +1272,28 @@ function scheduleCloseMegaMenu() {
   megaMenuCloseTimer = setTimeout(closeMegaMenu, 180);
 }
 
+/**
+ * 顶栏产品菜单的一级分组地址：/products/{typeSlug}。
+ * 地址段必须用 slug（可自定义、与选购页路由一致），老数据没有 slug 才退回 code。
+ */
+function resolveTypePath(type) {
+  const typeSlug = String(type?.slug || type?.value || "").trim();
+  return typeSlug ? `/products/${encodeURIComponent(typeSlug)}` : "/products";
+}
+
+/**
+ * 顶栏 / 手机菜单里的二级分组地址：/products/{typeSlug}/{groupId}。
+ * 此前这里拼的是旧的查询写法 /products?type=...&group=...，与统一后的路径路由不一致。
+ */
 function resolveGroupPath(group) {
-  const typeCode = String(group.first_product_group_code || "");
+  const typeSlug = String(
+    group.first_product_group_slug || group.first_product_group_code || "",
+  ).trim();
   const groupId = Number(group.id || 0);
-  if (!typeCode || !groupId) {
+  if (!typeSlug || !groupId) {
     return "/products";
   }
-  return `/products?type=${encodeURIComponent(typeCode)}&group=${groupId}`;
+  return `/products/${encodeURIComponent(typeSlug)}/${groupId}`;
 }
 
 function formatDate(value) {
@@ -1339,7 +1367,9 @@ const aboutQuickLinks = computed(() => [
   },
 ]);
 
-const logoSrc = computed(() => appStore.siteLogo || "/branding/logo.png");
+const logoSrc = computed(() =>
+  appStore.brandingResolved ? appStore.siteLogo || "/branding/logo.png" : "",
+);
 const supportContacts = computed(() =>
   buildSupportContacts({
     serviceQqGroup: appStore.serviceQqGroup,
@@ -1671,6 +1701,8 @@ onBeforeUnmount(() => {
     color 0.14s ease,
     background 0.14s ease;
   text-align: left;
+  /* 一级分组现在是指向 /products/{typeSlug} 的链接，去掉默认下划线 */
+  text-decoration: none;
 }
 
 .mega-type-btn:hover {
@@ -2383,6 +2415,12 @@ onBeforeUnmount(() => {
 .mobile-third-level-item:active {
   background: rgba(0, 0, 0, 0.03);
   border-radius: 4px;
+}
+
+/* 手机端一级分组入口：跳到 /products/{typeSlug} 的「查看全部」 */
+.mobile-third-level-item--all {
+  color: $color-primary;
+  font-weight: 500;
 }
 
 .mobile-third-level-item--link {

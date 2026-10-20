@@ -4,89 +4,28 @@
     :class="{ 'shop-wrap--contained': isContained }"
     :style="{ '--shop-content-max': contentMaxWidthVar }"
   >
-    <!-- 第一个侧栏：一级分组（商品种类），可折叠成缩写方块 -->
-    <aside
-      v-if="!isMobile && navVisible"
-      class="shop-sidebar"
-      :class="{ collapsed: sidebarCollapsed }"
-      :aria-label="$t('product.list.level1Nav')"
-    >
-      <div class="sidebar-head">
-        <span v-show="!sidebarCollapsed" class="sidebar-head-text">{{
-          $t("product.list.level1Nav")
-        }}</span>
-        <button
-          type="button"
-          class="sidebar-toggle"
-          :aria-label="
-            sidebarCollapsed
-              ? $t('product.list.expandLevel1Nav')
-              : $t('product.list.collapseLevel1Nav')
-          "
-          :aria-expanded="!sidebarCollapsed"
-          @click="sidebarCollapsed = !sidebarCollapsed"
-        >
-          <el-icon><Expand v-if="sidebarCollapsed" /><Fold v-else /></el-icon>
-        </button>
-      </div>
-
-      <div class="sidebar-list">
-        <button
-          v-for="type in productTypes"
-          :key="type.value"
-          type="button"
-          class="sidebar-item"
-          :class="{ active: activeTypeValue === type.value }"
-          :title="sidebarCollapsed ? type.label : undefined"
-          :aria-current="activeTypeValue === type.value ? 'true' : undefined"
-          @click="handleSelectType(type.value)"
-        >
-          <span class="item-abbr">{{
-            type.abbr || type.label.slice(0, 2).toUpperCase()
-          }}</span>
-          <span v-if="!sidebarCollapsed" class="item-body">
-            <span class="item-name">{{ type.label }}</span>
-            <span class="item-sub">{{
-              type.product_count > 0
-                ? $t("product.list.productCount", {
-                    count: type.product_count,
-                  })
-                : $t("product.list.empty")
-            }}</span>
-          </span>
-        </button>
-      </div>
-    </aside>
-
-    <!-- 第二个侧栏：当前一级分组下的二 / 三级分组 -->
-    <aside
-      v-if="!isMobile && navVisible"
-      class="shop-catalog"
-      :aria-label="$t('product.list.groupNav')"
-    >
-      <div class="shop-catalog__head">
-        <span class="shop-catalog__title">{{ activeTypeLabel }}</span>
-        <span class="shop-catalog__badge">{{
-          $t("product.list.level2Nav")
-        }}</span>
-      </div>
-
-      <div class="shop-catalog__body">
-        <ProductGroupNav
-          :groups="rootGroups"
-          :child-groups="childGroups"
-          :active-group-id="activeGroupId"
-          :active-child-id="activeChildId"
-          @select-group="handleGroupNavSelectGroup"
-          @select-child="handleGroupNavSelectChild"
-        />
-      </div>
-    </aside>
+    <!-- 桌面端两栏目录：一级分组 + 二/三级分组。整块可收起，展开/收起带动画 -->
+    <ProductCatalogNav
+      v-if="!isMobile"
+      :types="productTypes"
+      :groups="rootGroups"
+      :child-groups="childGroups"
+      :active-type-value="activeTypeValue"
+      :active-group-id="activeGroupId"
+      :active-child-id="activeChildId"
+      :visible="catalogNavVisible"
+      :collapsed="sidebarCollapsed"
+      :loading="catalogLoading"
+      @select-type="handleSelectType"
+      @select-group="handleGroupNavSelectGroup"
+      @select-child="handleGroupNavSelectChild"
+      @update:collapsed="sidebarCollapsed = $event"
+    />
 
     <!-- 右侧主区域 -->
     <div class="shop-body">
       <!-- 中间配置区 -->
-      <div class="shop-main" v-loading="pageLoading">
+      <div class="shop-main">
         <!--
             展示方式与版心：站点默认值决定首屏形态，访客可在右侧自行切换。
             手机端也保留「卡片式 / 列表式」切换（此前只在桌面显示，手机端改不了）；
@@ -139,138 +78,14 @@
             />
 
             <!-- 目录侧栏：收起后右侧配置区更宽，偏好只存本机 -->
-            <button
+            <CatalogNavToggle
               v-if="!isMobile"
-              type="button"
-              class="shop-group-nav-trigger"
-              :class="{ 'is-active': !navVisible }"
-              :aria-pressed="!navVisible"
-              @click="toggleNavVisible"
-            >
-              <svg
-                viewBox="0 0 16 16"
-                width="14"
-                height="14"
-                fill="none"
-                aria-hidden="true"
-              >
-                <rect
-                  x="2"
-                  y="3"
-                  width="12"
-                  height="10"
-                  rx="1.5"
-                  stroke="currentColor"
-                  stroke-width="1.3"
-                />
-                <path d="M6.5 3v10" stroke="currentColor" stroke-width="1.3" />
-              </svg>
-              <span>{{
-                navVisible
-                  ? $t("product.list.hideCatalogNav")
-                  : $t("product.list.showCatalogNav")
-              }}</span>
-            </button>
+              :visible="catalogNavVisible"
+              @toggle="toggleCatalogNav"
+            />
 
             <!-- 宽屏版心：固定宽度（含档位）或撑满屏幕，偏好只存本机浏览器 -->
-            <div v-if="!isMobile" class="shop-width-control">
-              <button
-                type="button"
-                class="shop-width-trigger"
-                :class="{ 'is-open': widthPanelOpen }"
-                :aria-expanded="widthPanelOpen"
-                aria-haspopup="dialog"
-                @click.stop="toggleWidthPanel"
-              >
-                <svg
-                  viewBox="0 0 16 16"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M2.5 3.5v9M13.5 3.5v9"
-                    stroke="currentColor"
-                    stroke-width="1.4"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    d="M5 8h2M9 8h2"
-                    stroke="currentColor"
-                    stroke-width="1.4"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    d="M7 6.2 5.4 8 7 9.8M9 6.2 10.6 8 9 9.8"
-                    stroke="currentColor"
-                    stroke-width="1.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-                <span>{{ $t("product.list.pageWidth") }}</span>
-              </button>
-
-              <div
-                v-if="widthPanelOpen"
-                class="shop-width-panel"
-                role="dialog"
-                :aria-label="$t('product.list.pageWidth')"
-                @click.stop
-              >
-                <div class="shop-width-panel__head">
-                  <strong>{{ $t("product.list.pageWidth") }}</strong>
-                  <button
-                    v-if="followsUserWidthChoice"
-                    type="button"
-                    class="shop-width-reset"
-                    @click="resetLayoutWidth"
-                  >
-                    {{ $t("product.list.widthReset") }}
-                  </button>
-                </div>
-
-                <div class="shop-width-mode">
-                  <button
-                    type="button"
-                    :class="{ 'is-active': layoutMode === 'contained' }"
-                    :aria-pressed="layoutMode === 'contained'"
-                    @click="setLayoutMode('contained')"
-                  >
-                    {{ $t("product.list.widthContained") }}
-                  </button>
-                  <button
-                    type="button"
-                    :class="{ 'is-active': layoutMode === 'full' }"
-                    :aria-pressed="layoutMode === 'full'"
-                    @click="setLayoutMode('full')"
-                  >
-                    {{ $t("product.list.widthFull") }}
-                  </button>
-                </div>
-
-                <div
-                  v-if="layoutMode === 'contained'"
-                  class="shop-width-values"
-                >
-                  <button
-                    v-for="width in widthOptions"
-                    :key="width"
-                    type="button"
-                    :class="{ 'is-active': contentMaxWidth === width }"
-                    :aria-pressed="contentMaxWidth === width"
-                    @click="setContentMaxWidth(width)"
-                  >
-                    {{ width }}
-                  </button>
-                </div>
-
-                <p class="shop-width-hint">
-                  {{ $t("product.list.widthHint") }}
-                </p>
-              </div>
-            </div>
+            <PageWidthControl v-if="!isMobile" />
           </div>
         </div>
 
@@ -317,12 +132,23 @@
             按自己的习惯选择（仅本机记忆）。两种形态共用同一份接口数据。
           -->
 
+        <!--
+            商品区加载骨架：目录切换时先占住产品区，不让页面变成白屏。
+            卡片式给卡片骨架网格，列表式给表格行骨架；侧栏保持可点，不被遮罩盖住。
+          -->
+        <ProductCatalogSkeleton
+          v-if="catalogLoading && !selectedProduct"
+          :mode="displayMode === DISPLAY_MODE_CARD ? 'card' : 'list'"
+          :count="displayMode === DISPLAY_MODE_CARD ? 6 : 5"
+        />
+
         <!-- 卡片式：商品卡片网格。卡片只做辨认与比价，点击进入独立的 /products/:id 配置页 -->
         <ProductCardGrid
-          v-if="showCardGrid"
+          v-if="showCardGrid && !catalogLoading"
           class="product-card-grid-wrap"
           :products="visibleProducts"
           :show-stock="cardShowStock"
+          :type-icons="typeIconMap"
         />
 
         <div
@@ -335,12 +161,15 @@
           <p>{{ productIntroText }}</p>
         </div>
 
+        <!-- 列表式内联配置区：商品详情未到位时先给配置区骨架，避免右侧空白 -->
+        <ProductConfigSkeleton
+          v-if="selectedProduct && configLoading"
+          class="config-loading-skeleton"
+          mode="inline"
+        />
+
         <!-- 商品配置区 -->
-        <div
-          class="config-area"
-          v-if="selectedProduct"
-          v-loading="configLoading"
-        >
+        <div class="config-area" v-if="selectedProduct && !configLoading">
           <!-- 操作系统 -->
           <div v-if="osGroups.length && isMobile" class="mobile-picker-row">
             <div class="config-block-title">
@@ -1261,7 +1090,7 @@
 
         <el-empty
           v-if="
-            !pageLoading &&
+            !catalogLoading &&
             !configLoading &&
             !selectedProduct &&
             !visibleProducts.length
@@ -1925,7 +1754,7 @@
         :child-groups="childGroups"
         :active-group-id="activeGroupId"
         :active-child-id="activeChildId"
-        :loading="pageLoading"
+        :loading="catalogLoading"
         @select-type="handleMobileSelectType"
         @select-group="handleGroupNavSelectGroup"
         @select-child="handleGroupNavSelectChild"
@@ -1948,8 +1777,6 @@ import {
   CaretBottom,
   CaretTop,
   Document,
-  Expand,
-  Fold,
   Ticket,
 } from "@element-plus/icons-vue";
 import { useWebsiteProductsPage } from "@/domains/products/useWebsiteProductsPage";
@@ -1960,19 +1787,22 @@ import MobileRangePicker from "@/components/MobileRangePicker.vue";
 import MobileSheet from "@/components/MobileSheet.vue";
 import { t } from "@/locales";
 import { resolveProductDisplayName } from "@/utils/websiteProductConfig";
-import MobileCatalogPicker from "./MobileCatalogPicker.vue";
-import ProductCardGrid from "./ProductCardGrid.vue";
+import CatalogNavToggle from "./CatalogNavToggle.vue";
 import DisplayModeSwitch from "./DisplayModeSwitch.vue";
-import ProductGroupNav from "./ProductGroupNav.vue";
+import MobileCatalogPicker from "./MobileCatalogPicker.vue";
+import PageWidthControl from "./PageWidthControl.vue";
+import ProductCardGrid from "./ProductCardGrid.vue";
+import { buildTypeIconMap } from "@/utils/productGroupIcon";
+import ProductCatalogNav from "./ProductCatalogNav.vue";
+import ProductCatalogSkeleton from "./ProductCatalogSkeleton.vue";
+import ProductConfigSkeleton from "./ProductConfigSkeleton.vue";
+import { useCatalogNavVisibility } from "./useCatalogNavVisibility";
 import {
   DISPLAY_MODE_CARD,
   DISPLAY_MODE_LIST,
   useProductDisplayMode,
 } from "./useProductDisplayMode";
-import {
-  useProductDisplaySettings,
-  PRODUCT_PAGE_WIDTH_PRESETS,
-} from "./useProductDisplaySettings";
+import { useProductDisplaySettings } from "./useProductDisplaySettings";
 import { formatMoneyText, formatProductListPrice } from "./productPrice";
 import {
   buildInstanceSpecName,
@@ -1992,18 +1822,9 @@ import {
  */
 const { displayMode, setDisplayMode } = useProductDisplayMode();
 
-// 版心：站点默认值兜底，访客可选固定宽度（含档位）或撑满；卡片库存仍只认后台配置
-const {
-  isContained,
-  contentMaxWidthVar,
-  layoutMode,
-  contentMaxWidth,
-  followsUserWidthChoice,
-  setLayoutMode,
-  setContentMaxWidth,
-  resetLayoutWidth,
-  cardShowStock,
-} = useProductDisplaySettings();
+// 版心：站点默认值兜底，访客可选固定宽度（含档位）或撑满；面板在 PageWidthControl 内
+const { isContained, contentMaxWidthVar, cardShowStock } =
+  useProductDisplaySettings();
 
 // 卡片式不自动选中第一个商品：没有选中态才展示卡片网格，
 // 选中态交给 /products/:id 独立配置页承载。
@@ -2012,7 +1833,7 @@ const autoSelectProduct = computed(
 );
 
 const {
-  pageLoading,
+  catalogLoading,
   configLoading,
   submitting,
   sidebarCollapsed,
@@ -2109,31 +1930,10 @@ function handleDisplayModeChange(mode) {
   }
 }
 
-/* ===== 目录侧栏：两个侧栏 + 手机抽屉 ===== */
+/* ===== 目录侧栏：两栏目录 + 手机抽屉 ===== */
 // 桌面端目录占两条侧栏（一级分组 + 二/三级分组）。访客可以整块收起换取更宽的
-// 配置区，偏好只存本机；一级分组栏还能单独折成缩写方块。
-const NAV_VISIBLE_STORAGE_KEY = "turaidc:shop-nav-visible";
-const navVisible = ref(
-  (() => {
-    try {
-      return window.localStorage.getItem(NAV_VISIBLE_STORAGE_KEY) !== "0";
-    } catch {
-      return true;
-    }
-  })(),
-);
-
-function toggleNavVisible() {
-  navVisible.value = !navVisible.value;
-  try {
-    window.localStorage.setItem(
-      NAV_VISIBLE_STORAGE_KEY,
-      navVisible.value ? "1" : "0",
-    );
-  } catch {
-    // 写不进去只影响下次是否记得
-  }
-}
+// 配置区，偏好只存本机（与卡片式配置页共用），一级分组栏还能单独折成缩写方块。
+const { catalogNavVisible, toggleCatalogNav } = useCatalogNavVisibility();
 
 const mobileCatalogDrawer = ref(false);
 
@@ -2155,7 +1955,7 @@ const mobileCatalogPathText = computed(() => {
  * 一级分组标题确认位置，收起后配置区更宽（这正是「隐藏一级」想要的效果）。
  */
 function collapseLevel1NavOnCatalogPick() {
-  if (isMobile.value || !navVisible.value) {
+  if (isMobile.value || !catalogNavVisible.value) {
     return;
   }
 
@@ -2196,50 +1996,6 @@ function handleGroupNavSelectChild(id) {
   // 点当前三级分组也要把地址补到三段，才能分享/刷新回到该三级分组；
   // 分组商品尚未加载时 switchChild 会按需拉一次
   void switchChild(nextId);
-}
-
-/* ===== 宽屏版心面板 ===== */
-const widthPanelOpen = ref(false);
-
-// 站点默认宽度可能不在预设档位里（后台允许 960–1920 的任意值），
-// 把它并进可选档，避免面板里没有当前值。
-const widthOptions = computed(() => {
-  const options = [...PRODUCT_PAGE_WIDTH_PRESETS];
-
-  if (!options.includes(contentMaxWidth.value)) {
-    options.push(contentMaxWidth.value);
-  }
-
-  return options.sort((left, right) => left - right);
-});
-
-function toggleWidthPanel() {
-  widthPanelOpen.value = !widthPanelOpen.value;
-}
-
-function closeWidthPanel() {
-  widthPanelOpen.value = false;
-}
-
-function handleWidthPanelOutsideClick(event) {
-  if (!widthPanelOpen.value) {
-    return;
-  }
-
-  const target = event.target;
-  if (target instanceof Element && target.closest(".shop-width-control")) {
-    return;
-  }
-
-  closeWidthPanel();
-  // 面板打开时，点外部只关闭面板：吞掉这次点击，避免顺带触发下面的卡片跳转
-  event.stopPropagation();
-}
-
-function handleWidthPanelKeydown(event) {
-  if (event.key === "Escape") {
-    closeWidthPanel();
-  }
 }
 
 const mobileOsDrawer = ref(false);
@@ -2299,15 +2055,10 @@ function setupAllocationFooterObserver() {
 
 onMounted(() => {
   nextTick(setupAllocationFooterObserver);
-  // capture 阶段监听：面板打开时点外部只关闭面板，不触发下层卡片/按钮
-  document.addEventListener("click", handleWidthPanelOutsideClick, true);
-  document.addEventListener("keydown", handleWidthPanelKeydown);
 });
 
 onBeforeUnmount(() => {
   cleanupAllocationFooterObserver();
-  document.removeEventListener("click", handleWidthPanelOutsideClick, true);
-  document.removeEventListener("keydown", handleWidthPanelKeydown);
 });
 
 watch([isMobile, selectedProduct], () => {
@@ -2513,6 +2264,9 @@ const selectedProductGroup = computed(
   () => selectedProduct.value?.group || null,
 );
 // 配置摘要里的分组路径：一级 / 二级 / 三级，缺哪级就只显示已有层级。
+// 卡片角标用：一级分组类型值 → 图标数据（接口已给 icon_resolved）
+const typeIconMap = computed(() => buildTypeIconMap(productTypes.value));
+
 const productGroupPath = computed(() =>
   [activeTypeLabel.value, activeGroupName.value, activeChildName.value]
     .map((item) => String(item || "").trim())

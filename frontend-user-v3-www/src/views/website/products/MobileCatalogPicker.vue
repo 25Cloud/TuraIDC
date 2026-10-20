@@ -19,8 +19,14 @@
       </button>
     </div>
 
-    <div class="m-cat__body" v-loading="loading">
-      <template v-if="drilledGroup">
+    <div class="m-cat__body">
+      <div v-if="loading" class="m-cat__skeleton" aria-hidden="true">
+        <span v-for="index in 4" :key="index" class="m-cat__skeleton-row">
+          <span class="m-cat__skeleton-line" />
+        </span>
+      </div>
+
+      <template v-else-if="drilledGroup">
         <button type="button" class="m-cat__back" @click="drilledId = 0">
           <svg
             viewBox="0 0 12 12"
@@ -329,5 +335,50 @@ function pickChild(child) {
   color: $text-color-placeholder;
   font-size: 13.5px;
   text-align: center;
+}
+
+/* 抽屉里切换目录时的行骨架：不显示转圈遮罩，保持列表结构可预期 */
+.m-cat__skeleton {
+  display: flex;
+  flex-direction: column;
+}
+
+.m-cat__skeleton-row {
+  display: flex;
+  align-items: center;
+  min-height: 50px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba($divider-color, 0.7);
+}
+
+.m-cat__skeleton-line {
+  display: block;
+  width: 46%;
+  height: 13px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.05) 25%,
+    rgba(15, 23, 42, 0.09) 37%,
+    rgba(15, 23, 42, 0.05) 63%
+  );
+  background-size: 400% 100%;
+  animation: m-cat-skeleton-shimmer 1.4s ease infinite;
+}
+
+@keyframes m-cat-skeleton-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-cat__skeleton-line {
+    animation: none;
+  }
 }
 </style>

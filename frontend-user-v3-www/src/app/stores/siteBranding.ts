@@ -15,15 +15,11 @@ import { resolveApiAssetUrl } from "@/utils/apiAssetUrl";
 import { applyBrandTokens } from "@/utils/brandTheme";
 import { normalizeExternalLink } from "@/utils/externalLink";
 
-// 接口不可用时的兜底：只认构建期环境变量，不写死任何默认品牌，
-// 否则自建站在配置接口失败时会漏出别人的站点名。
-const CONFIGURED_SITE_NAME = String(
-  import.meta.env.VITE_APP_TITLE || "",
-).trim();
-// 环境变量也没配时用中性描述，避免标题/页头出现空白
-const DEFAULT_SITE_NAME = CONFIGURED_SITE_NAME || t("common.site.slogan");
-const DEFAULT_SITE_LOGO = "/branding/logo.png";
-const DEFAULT_FAVICON = "/branding/favicon-32.png";
+// 站点配置接口是品牌唯一真源：不再读构建期 VITE_APP_TITLE 当兜底，否则服务器
+// 本地 env 写死什么品牌，首访就会先闪什么品牌再被接口回包改掉。
+// 未解析出品牌时用中性描述、空 logo / 空 favicon（中性占位），避免任何品牌闪烁。
+const DEFAULT_SITE_NAME = t("common.site.slogan");
+const DEFAULT_FAVICON = "";
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "");
 
 function normalizeDisplayMode(value) {
@@ -111,26 +107,36 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
   // 引导注入（SEO 动态渲染）优先，其次是上次访问的缓存，最后才是构建期默认值。
   const initialSiteConfig = { ...cachedSiteConfig, ...bootstrappedSiteConfig };
   const sidebarCollapsed = ref(false);
-  const siteName = ref(
-    pick(initialSiteConfig, ["site_name"], DEFAULT_SITE_NAME),
-  );
-  const browserTitle = ref(
-    pick(
-      initialSiteConfig,
-      ["browser_title"],
-      siteName.value || DEFAULT_SITE_NAME,
+  // 品牌是否已解析（缓存/引导注入/接口回包任一来源）。未解析前不渲染默认 logo 与
+  // 兜底站点名，否则首访会先闪一下构建期默认品牌再变成站点配置。
+  const brandingResolved = ref(
+    Boolean(
+      String(
+        initialSiteConfig.site_name ||
+          initialSiteConfig.browser_title ||
+          initialSiteConfig.site_logo ||
+          "",
+      ).trim(),
     ),
   );
+  const siteName = ref(String(initialSiteConfig.site_name || "").trim());
+  const browserTitle = ref(
+    String(initialSiteConfig.browser_title || "").trim(),
+  );
   const siteLogo = ref(
-    resolveApiAssetUrl(
-      pick(initialSiteConfig, ["site_logo"], DEFAULT_SITE_LOGO),
-      API_BASE_URL,
+    String(
+      resolveApiAssetUrl(
+        String(initialSiteConfig.site_logo || "").trim(),
+        API_BASE_URL,
+      ) || "",
     ),
   );
   const siteFavicon = ref(
-    resolveApiAssetUrl(
-      pick(initialSiteConfig, ["site_favicon"], DEFAULT_FAVICON),
-      API_BASE_URL,
+    String(
+      resolveApiAssetUrl(
+        String(initialSiteConfig.site_favicon || "").trim(),
+        API_BASE_URL,
+      ) || "",
     ),
   );
   const serviceQqGroup = ref(
@@ -255,11 +261,11 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
       siteName.value || DEFAULT_SITE_NAME,
     );
     siteLogo.value = resolveApiAssetUrl(
-      pick(data, ["site_logo"], siteLogo.value || DEFAULT_SITE_LOGO),
+      pick(data, ["site_logo"], siteLogo.value || ""),
       API_BASE_URL,
     );
     siteFavicon.value = resolveApiAssetUrl(
-      pick(data, ["site_favicon"], siteFavicon.value || DEFAULT_FAVICON),
+      pick(data, ["site_favicon"], siteFavicon.value || ""),
       API_BASE_URL,
     );
     serviceQqGroup.value = pick(
@@ -341,7 +347,9 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
       previousBaseTitle,
       DEFAULT_SITE_NAME,
     );
-    updateFavicon(siteFavicon.value || DEFAULT_FAVICON, DEFAULT_FAVICON);
+    if (siteFavicon.value) {
+      updateFavicon(siteFavicon.value, "");
+    }
 
     // 品牌主色与圆角：SSR 页面由后端内联 style 注入（首屏无闪烁），
     // SPA 直达路由没有那段注入，这里补上，否则会停在 sass 编译期的默认色。
@@ -351,6 +359,7 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
     );
     // 缓存给下一次首帧用：index.html 的注入脚本在 Vue 挂载前就渲染完了，
     // 拿不到这里的配置，只能靠上一次访问留下的站点名 / logo / favicon。
+    brandingResolved.value = true;
     persistSplashBranding({
       site_name: siteName.value,
       browser_title: browserTitle.value,
@@ -370,11 +379,16 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
         hydrateSiteConfig(res.data || {});
       })
       .catch(() => {
-        siteLogo.value = siteLogo.value || DEFAULT_SITE_LOGO;
-        siteFavicon.value = siteFavicon.value || DEFAULT_FAVICON;
+        // 接口失败时保持中性：不塞默认 logo / favicon；站点名用中性描述，
+        // 至少标题与页头不是空白，但绝不闪出与站点无关的品牌。
+        siteName.value = siteName.value || DEFAULT_SITE_NAME;
+        browserTitle.value = browserTitle.value || DEFAULT_SITE_NAME;
+        brandingResolved.value = true;
       })
       .finally(() => {
-        updateFavicon(siteFavicon.value || DEFAULT_FAVICON, DEFAULT_FAVICON);
+        if (siteFavicon.value) {
+          updateFavicon(siteFavicon.value, "");
+        }
         fetchPromise = null;
       });
 
@@ -383,6 +397,7 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
 
   return {
     sidebarCollapsed,
+    brandingResolved,
     siteName,
     browserTitle,
     siteLogo,

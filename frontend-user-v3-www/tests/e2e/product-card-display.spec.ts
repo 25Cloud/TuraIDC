@@ -220,11 +220,84 @@ const SECOND_CHILD_GROUP_PAYLOAD = {
   product_count: PRODUCTS.length,
 };
 
+// 第二个二级分组（香港）：用于验证「点一次就出商品」与快速连续切换
+const SECOND_ROOT_GROUP_ID = 113;
+const SECOND_ROOT_GROUP_CHILD_ID = 1032;
+
+const SECOND_ROOT_GROUP_PAYLOAD = {
+  id: SECOND_ROOT_GROUP_ID,
+  parent_id: 3,
+  product_type: "web_hosting",
+  product_type_id: 3,
+  product_type_label: "虚拟主机",
+  first_product_group_id: 3,
+  first_product_group_code: TYPE_VALUE,
+  first_product_group_slug: TYPE_SLUG,
+  first_product_group_name: "虚拟主机",
+  second_product_group_id: SECOND_ROOT_GROUP_ID,
+  second_product_group_name: "香港",
+  third_product_group_id: null,
+  third_product_group_name: null,
+  effective_product_group_id: SECOND_ROOT_GROUP_ID,
+  effective_product_group_level: 2,
+  group_level_label: "二级分组",
+  group_path: GROUP_PATH.slice(0, 2),
+  group_path_text: "虚拟主机 / 香港",
+  service_type_code: "web_hosting",
+  name: "香港",
+  slogan: "",
+  slug: "香港主机",
+  children_count: 1,
+  direct_product_count: 0,
+  product_count: PRODUCTS.length,
+};
+
+const SECOND_ROOT_CHILD_PAYLOAD = {
+  id: SECOND_ROOT_GROUP_CHILD_ID,
+  effective_product_group_id: SECOND_ROOT_GROUP_CHILD_ID,
+  effective_product_group_level: 3,
+  name: "香港一区",
+  group_level_label: "三级分组",
+  product_count: PRODUCTS.length,
+};
+
+interface MockOptions {
+  extraRootGroup?: boolean;
+  catalogDelayMs?: number;
+  productDetailDelayMs?: number;
+  /** 模拟后端 product_type 映射缺失：product_type_label 回落成「其他」 */
+  genericTypeLabel?: boolean;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** 模拟接口里的商品数据；genericTypeLabel 用于复现「其他」标签的回退场景 */
+function productPayloads(options: MockOptions) {
+  if (!options.genericTypeLabel) {
+    return PRODUCTS;
+  }
+
+  return PRODUCTS.map((product) => ({
+    ...product,
+    product_type: "other",
+    type: "other",
+    type_label: "其他",
+    product_type_label: "其他",
+    first_product_group_code: "nat",
+    first_product_group_slug: "nat",
+    first_product_group_name: "NAT服务器",
+  }));
+}
+
 async function mockSiteApi(
   page: Page,
   displayMode: "list" | "card",
   siteConfigOverrides: Record<string, unknown> = {},
+  mockOptions: MockOptions = {},
 ) {
+  const products = productPayloads(mockOptions);
   await page.route("**/api/v2/site/**", async (route) => {
     const url = new URL(route.request().url());
     const pathname = url.pathname.replace(/^\/api/, "");
@@ -248,16 +321,22 @@ async function mockSiteApi(
     }
 
     if (pathname === "/v2/site/product-purchase-context") {
+      const rootGroups = mockOptions.extraRootGroup
+        ? [ROOT_GROUP_PAYLOAD, SECOND_ROOT_GROUP_PAYLOAD]
+        : [ROOT_GROUP_PAYLOAD];
       return respond({
         types: [TYPE_PAYLOAD],
-        root_groups: [ROOT_GROUP_PAYLOAD],
-        root_groups_total: 1,
+        root_groups: rootGroups,
+        root_groups_total: rootGroups.length,
         root_groups_page: 1,
       });
     }
 
     if (pathname === "/v2/site/product-groups") {
-      return respond({ list: [ROOT_GROUP_PAYLOAD], total: 1 });
+      const groups = mockOptions.extraRootGroup
+        ? [ROOT_GROUP_PAYLOAD, SECOND_ROOT_GROUP_PAYLOAD]
+        : [ROOT_GROUP_PAYLOAD];
+      return respond({ list: groups, total: groups.length });
     }
 
     if (pathname === `/v2/site/product-groups/${GROUP_ID}/children`) {
@@ -267,45 +346,68 @@ async function mockSiteApi(
       });
     }
 
+    if (pathname === `/v2/site/product-groups/${SECOND_ROOT_GROUP_ID}/children`) {
+      return respond({ list: [SECOND_ROOT_CHILD_PAYLOAD], total: 1 });
+    }
+
     // 目录聚合接口：children + 根分组商品 + 当前三级分组商品（一次请求）
     if (
       pathname === `/v2/site/product-groups/${GROUP_ID}/catalog` ||
-      pathname === `/v2/site/product-groups/${CHILD_GROUP_ID}/catalog`
+      pathname === `/v2/site/product-groups/${CHILD_GROUP_ID}/catalog` ||
+      pathname === `/v2/site/product-groups/${SECOND_ROOT_GROUP_ID}/catalog` ||
+      pathname === `/v2/site/product-groups/${SECOND_ROOT_GROUP_CHILD_ID}/catalog`
     ) {
+      if (mockOptions.catalogDelayMs) {
+        await sleep(mockOptions.catalogDelayMs);
+      }
+
       const requestedChildId = Number(
         url.searchParams.get("child_group_id") || 0,
       );
       const resolveId = Number(url.searchParams.get("resolve_id") || 0);
-      const childIds = [CHILD_GROUP_ID, SECOND_CHILD_GROUP_ID];
-      let targetChildId = 0;
+      const isSecondRoot =
+        pathname.includes(`/${SECOND_ROOT_GROUP_ID}/`) ||
+        pathname.includes(`/${SECOND_ROOT_GROUP_CHILD_ID}/`);
+      const groupId = isSecondRoot ? SECOND_ROOT_GROUP_ID : GROUP_ID;
+      const childPayload = isSecondRoot
+        ? SECOND_ROOT_CHILD_PAYLOAD
+        : CHILD_GROUP_PAYLOAD;
+      const childIds = isSecondRoot
+        ? [SECOND_ROOT_GROUP_CHILD_ID]
+        : [CHILD_GROUP_ID, SECOND_CHILD_GROUP_ID];
+      let targetChildId: number;
       if (childIds.includes(requestedChildId)) {
         targetChildId = requestedChildId;
       } else if (childIds.includes(resolveId)) {
         targetChildId = resolveId;
       } else if (PRODUCT_IDS.includes(resolveId)) {
         // 旧商品深链：商品都属于第一个三级分组
-        targetChildId = CHILD_GROUP_ID;
+        targetChildId = isSecondRoot
+          ? SECOND_ROOT_GROUP_CHILD_ID
+          : CHILD_GROUP_ID;
       } else {
         targetChildId = childIds[0];
       }
 
       const itemsByGroup: unknown[] = [
         {
-          effective_product_group_id: GROUP_ID,
+          effective_product_group_id: groupId,
           effective_product_group_level: 2,
           products: [],
         },
         {
           effective_product_group_id: targetChildId,
           effective_product_group_level: 3,
-          products: PRODUCTS,
+          products,
         },
       ];
 
       return respond({
-        effective_product_group_id: GROUP_ID,
+        effective_product_group_id: groupId,
         effective_product_group_level: 2,
-        children: [CHILD_GROUP_PAYLOAD, SECOND_CHILD_GROUP_PAYLOAD],
+        children: isSecondRoot
+          ? [childPayload]
+          : [CHILD_GROUP_PAYLOAD, SECOND_CHILD_GROUP_PAYLOAD],
         items_by_group: itemsByGroup,
       });
     }
@@ -313,9 +415,10 @@ async function mockSiteApi(
     if (
       pathname === `/v2/site/product-groups/${GROUP_ID}/products` ||
       pathname === `/v2/site/product-groups/${CHILD_GROUP_ID}/products` ||
-      pathname === `/v2/site/product-groups/${SECOND_CHILD_GROUP_ID}/products`
+      pathname === `/v2/site/product-groups/${SECOND_CHILD_GROUP_ID}/products` ||
+      pathname === `/v2/site/product-groups/${SECOND_ROOT_GROUP_CHILD_ID}/products`
     ) {
-      return respond({ list: PRODUCTS, total: PRODUCTS.length });
+      return respond({ list: products, total: products.length });
     }
 
     const stockMatch = pathname.match(/^\/v2\/site\/products\/(\d+)\/stock$/);
@@ -334,8 +437,11 @@ async function mockSiteApi(
 
     const detailMatch = pathname.match(/^\/v2\/site\/products\/(\d+)$/);
     if (detailMatch) {
+      if (mockOptions.productDetailDelayMs) {
+        await sleep(mockOptions.productDetailDelayMs);
+      }
       const id = Number(detailMatch[1]);
-      const product = PRODUCTS.find((item) => item.id === id) || PRODUCTS[0];
+      const product = products.find((item) => item.id === id) || products[0];
       return respond({ product });
     }
 
@@ -945,5 +1051,148 @@ test.describe("选购页统一路由与展示方式", () => {
     // 等抽屉入场动画结束再截图，否则拍到的是还没淡入完的一帧
     await page.waitForTimeout(500);
     await page.screenshot({ path: shot("mobile-catalog-drawer") });
+  });
+
+  test("列表式：点二级分组一次即出商品，快速连续切换不错位", async ({ page }) => {
+    await mockSiteApi(page, "list", {}, { extraRootGroup: true, catalogDelayMs: 300 });
+    await page.goto(groupPath);
+    await expect(page.locator(".desktop-machine-table")).toBeVisible();
+    await expect(page.locator(".shop-cat__group")).toHaveCount(2);
+
+    // 切到「香港」：侧栏选中态立刻切换，商品区先骨架再出表格，无需第二次点击
+    await page.locator(".shop-cat__group").nth(1).click();
+    await expect(page.locator(".catalog-skeleton--list")).toBeVisible();
+    await expect(page.locator(".desktop-machine-table-row")).toHaveCount(
+      PRODUCTS.length,
+    );
+    await expect(page.locator(".shop-cat__group.is-active")).toContainText(
+      "香港",
+    );
+    await expect
+      .poll(() => new URL(page.url()).pathname)
+      .toContain(`/${SECOND_ROOT_GROUP_ID}/${SECOND_ROOT_GROUP_CHILD_ID}/`);
+
+    // 连续快速切换三次：只允许最后一次落地，仍能一次点击出商品
+    await page.locator(".shop-cat__group").nth(0).click();
+    await page.waitForTimeout(60);
+    await page.locator(".shop-cat__group").nth(1).click();
+    await page.waitForTimeout(60);
+    await page.locator(".shop-cat__group").nth(0).click();
+    await expect(page.locator(".shop-cat__group.is-active")).toContainText(
+      "美国",
+    );
+    await expect(page.locator(".desktop-machine-table-row")).toHaveCount(
+      PRODUCTS.length,
+      { timeout: 10_000 },
+    );
+    await expect
+      .poll(() => new URL(page.url()).pathname)
+      .toContain(`/${GROUP_ID}/${CHILD_GROUP_ID}/`);
+  });
+
+  test("目录加载有骨架屏：卡片式卡片骨架、列表式表格骨架", async ({ page }) => {
+    await mockSiteApi(page, "card", {}, { catalogDelayMs: 600 });
+    await page.goto(groupPath);
+    await expect(page.locator(".catalog-skeleton--card")).toBeVisible();
+    await expect(page.locator(".catalog-skeleton-grid")).toBeVisible();
+    await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
+    await expect(page.locator(".catalog-skeleton")).toHaveCount(0);
+
+    await page.unroute("**/api/v2/site/**");
+    // 目录有 sessionStorage 缓存：清掉才能观察第二次首屏的骨架屏
+    await page.evaluate(() => window.sessionStorage.clear());
+    await mockSiteApi(page, "list", {}, { catalogDelayMs: 600 });
+    await page.goto(groupPath);
+    await expect(page.locator(".catalog-skeleton--list")).toBeVisible();
+    await expect(page.locator(".catalog-skeleton-table")).toBeVisible();
+    await expect(page.locator(".desktop-machine-table")).toBeVisible();
+    await expect(page.locator(".catalog-skeleton")).toHaveCount(0);
+  });
+
+  test("目录收起 / 展开有过渡动画，且不产生横向滚动条", async ({ page }) => {
+    await mockSiteApi(page, "card");
+    await page.goto(groupPath);
+    await expect(page.locator(".shop-sidebar")).toBeVisible();
+
+    const duration = await page
+      .locator(".shop-sidebar")
+      .evaluate((el) => getComputedStyle(el).transitionDuration);
+    expect(duration).toContain("0.2s");
+
+    await page.getByRole("button", { name: "收起目录" }).click();
+    await expect(page.locator(".shop-sidebar")).toHaveCount(0);
+
+    const hasHorizontalScroll = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth >
+        document.documentElement.clientWidth + 1,
+    );
+    expect(hasHorizontalScroll).toBe(false);
+
+    await page.getByRole("button", { name: "展开目录" }).click();
+    await expect(page.locator(".shop-sidebar")).toBeVisible();
+    await expect(page.locator(".shop-catalog")).toBeVisible();
+  });
+
+  test("卡片式配置页：有目录与页面宽度控件，切分组跳到对应目录", async ({
+    page,
+  }) => {
+    await mockSiteApi(page, "card");
+    await page.goto(productPath);
+    await expect(page.locator(".pd-page")).toBeVisible();
+
+    // 与选购页同一套两栏目录
+    await expect(page.locator(".shop-sidebar")).toBeVisible();
+    await expect(page.locator(".shop-catalog")).toBeVisible();
+    await expect(page.locator(".shop-cat__group").first()).toContainText(
+      "美国",
+    );
+    await expect(page.getByRole("button", { name: "页面宽度" })).toBeVisible();
+
+    // 页面宽度控件与选购页共用偏好：改档位后配置页版心跟着变
+    await page.getByRole("button", { name: "页面宽度" }).click();
+    await page
+      .locator(".shop-width-panel")
+      .getByRole("button", { name: "1600" })
+      .click();
+    await expect(page.locator(".pd-page")).toHaveAttribute(
+      "style",
+      /--pd-content-max:\s*1600px/,
+    );
+
+    // 点二级分组：跳到对应分组目录（卡片式会继续补全到三级分组三段地址）
+    // 先关掉宽度面板：面板打开时点外部只关面板、不触发下层点击（与选购页同口径）
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".shop-width-panel")).toHaveCount(0);
+    await page.locator(".shop-cat__group").first().click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe(childPath);
+    await expect(page.locator(".product-card-grid")).toBeVisible();
+  });
+
+  test("卡片式配置页首屏加载显示配置页骨架", async ({ page }) => {
+    await mockSiteApi(page, "card", {}, { productDetailDelayMs: 700 });
+    await page.goto(productPath);
+    await expect(page.locator(".config-skeleton--page")).toBeVisible();
+    await expect(page.locator(".pd-page")).toBeVisible();
+    await expect(page.locator(".config-skeleton")).toHaveCount(0);
+  });
+
+  test("手机端目录加载同样显示骨架屏", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockSiteApi(page, "card", {}, { catalogDelayMs: 600 });
+    await page.goto(groupPath);
+    await expect(page.locator(".catalog-skeleton--card")).toBeVisible();
+    await expect(page.locator(".product-card")).toHaveCount(PRODUCTS.length);
+  });
+
+  test("NAT 类商品卡片标签回退到一级分组名，不显示「其他」", async ({
+    page,
+  }) => {
+    await mockSiteApi(page, "card", {}, { genericTypeLabel: true });
+    await page.goto(childPath);
+    await expect(page.locator(".product-card").first()).toBeVisible();
+    await expect(
+      page.locator(".product-card").first().locator(".product-card-type"),
+    ).toHaveText("NAT服务器");
   });
 });

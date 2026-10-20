@@ -8,9 +8,23 @@
     >
       <header class="product-card-head">
         <div class="product-card-tags">
-          <span v-if="card.typeLabel" class="product-card-type">{{
-            card.typeLabel
-          }}</span>
+          <span v-if="card.typeLabel" class="product-card-type">
+            <span
+              v-if="card.typeIcon && card.typeIcon.kind !== 'text'"
+              class="product-card-type-icon"
+              aria-hidden="true"
+            >
+              <img
+                v-if="card.typeIcon.kind === 'image'"
+                :src="card.typeIcon.image"
+                alt=""
+              />
+              <el-icon v-else-if="card.typeIcon.kind === 'icon'"
+                ><component :is="card.typeIcon.component"
+              /></el-icon>
+            </span>
+            {{ card.typeLabel }}
+          </span>
           <span
             v-if="card.stock"
             class="product-card-flag"
@@ -81,7 +95,11 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { t } from "@/locales";
-import { resolveProductDisplayName } from "@/utils/websiteProductConfig";
+import {
+  resolveProductDisplayName,
+  resolveProductTypeLabel,
+} from "@/utils/websiteProductConfig";
+import { resolveProductTypeIcon } from "@/utils/productGroupIcon";
 import { buildWebsiteProductPath } from "@/utils/productRoute";
 import { resolveCardPrice } from "./productPrice";
 
@@ -94,6 +112,11 @@ const props = defineProps({
   showStock: {
     type: Boolean,
     default: true,
+  },
+  // 一级分组图标映射（选购页把类型列表转成「类型值 → icon_resolved」）
+  typeIcons: {
+    type: Object,
+    default: () => ({}),
   },
 });
 
@@ -158,10 +181,12 @@ const cards = computed(() =>
     return {
       id,
       name: resolveProductDisplayName(product),
-      // 商品类型作为卡片左上角的识别标签，避免一屏卡片全是白底黑字没有锚点
-      typeLabel: String(
-        product?.product_type_label || product?.type_label || "",
-      ).trim(),
+      // 商品类型作为卡片左上角的识别标签：优先用一级分组名。
+      // 后端 product_type 映射不到业务枚举时会给出兜底「其他」（如 NAT服务器），
+      // 此时必须回退到接口已经返回的 first_product_group_name，而不是把「其他」印上去。
+      typeLabel: resolveProductTypeLabel(product),
+      // 卡片左上角类型标签前的图标：与左侧目录同一套解析
+      typeIcon: resolveProductTypeIcon(product, props.typeIcons),
       description: String(product?.description_html || ""),
       soldOut: Number(product?.stock ?? -1) === 0,
       stock: resolveStockBadge(product),

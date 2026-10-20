@@ -1,6 +1,6 @@
 <template>
   <!--
-    整页遮罩只在「还没有商品可看」的首次加载时出现。
+    首次加载（还没有商品可看）时用配置页骨架占位，不再用整页遮罩转圈；
     后续任何重载（切换系统、切换付费周期等触发的状态刷新）都不能再盖住整页，
     否则每次改动都像整页重新刷了一下，配置项还会短暂不可点。
   -->
@@ -8,896 +8,975 @@
     class="pd-page"
     :class="{ 'pd-page--full': !isContained }"
     :style="{ '--pd-content-max': contentMaxWidthVar }"
-    v-loading="loading && !product"
   >
-    <div v-if="product">
+    <ProductConfigSkeleton v-if="loading && !product" mode="page" />
+
+    <div v-else class="pd-shell">
       <!--
+        配置页目录：与选购页同一套两栏侧栏（一级分组 + 二/三级分组），
+        点任意层级跳到对应分组目录；整块可收起，偏好与选购页共用。
+      -->
+      <ProductCatalogNav
+        v-if="product && !isMobile"
+        :types="catalogTypes"
+        :groups="catalogGroups"
+        :child-groups="catalogChildGroups"
+        :active-type-value="catalogActiveTypeValue"
+        :active-group-id="catalogActiveGroupId"
+        :active-child-id="catalogActiveChildId"
+        :visible="catalogNavVisible"
+        :collapsed="catalogLevel1Collapsed"
+        :loading="catalogLoading"
+        @select-type="handleCatalogSelectType"
+        @select-group="handleCatalogSelectGroup"
+        @select-child="handleCatalogSelectChild"
+        @update:collapsed="catalogLevel1Collapsed = $event"
+      />
+
+      <div class="pd-main">
+        <div v-if="product">
+          <!--
         顶部只留返回：机型切换在机型对比表（移动端在抽屉）里，
         此前这里还有一排同级 tab + 一条产品名下栏，与下方内容完全重复且占掉首屏。
       -->
-      <div class="pd-topbar">
-        <button type="button" class="back-btn" @click="goBack">
-          <svg
-            viewBox="0 0 16 16"
-            fill="none"
-            width="14"
-            height="14"
-            aria-hidden="true"
-          >
-            <path
-              d="M10 3L5 8l5 5"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          <span>{{ $t("product.detail.backToProducts") }}</span>
-        </button>
+          <div class="pd-topbar">
+            <button type="button" class="back-btn" @click="goBack">
+              <svg
+                viewBox="0 0 16 16"
+                fill="none"
+                width="14"
+                height="14"
+                aria-hidden="true"
+              >
+                <path
+                  d="M10 3L5 8l5 5"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <span>{{ $t("product.detail.backToProducts") }}</span>
+            </button>
 
-        <!-- 配置页也能切列表式 / 卡片式：只改本机偏好，地址不变；
+            <!-- 配置页也能切列表式 / 卡片式：只改本机偏好，地址不变；
              切列表式后同一个商品地址由选购页内联渲染配置 -->
-        <div class="pd-topbar-actions">
-          <span class="pd-view-label">{{
-            $t("product.list.displayMode")
-          }}</span>
-          <DisplayModeSwitch
-            :model-value="detailDisplayMode"
-            @update:model-value="handleDetailDisplayModeChange"
-          />
-        </div>
-      </div>
+            <div class="pd-topbar-actions">
+              <DisplayModeSwitch
+                :model-value="detailDisplayMode"
+                @update:model-value="handleDetailDisplayModeChange"
+              />
+              <CatalogNavToggle
+                v-if="!isMobile"
+                :visible="catalogNavVisible"
+                @toggle="toggleCatalogNav"
+              />
+              <PageWidthControl v-if="!isMobile" />
+            </div>
+          </div>
 
-      <section v-if="showCatalogHero" class="pd-hero">
-        <div class="pd-hero-copy">
-          <span v-if="detailCatalogEyebrow" class="pd-hero-eyebrow">{{
-            detailCatalogEyebrow
-          }}</span>
-          <h1>{{ detailCatalogTitle }}</h1>
-          <p v-if="detailCatalogSlogan">{{ detailCatalogSlogan }}</p>
-        </div>
-        <div v-if="detailCatalogTags.length" class="pd-hero-tags">
-          <span
-            v-for="tag in detailCatalogTags"
-            :key="tag"
-            class="pd-hero-tag"
-            >{{ tag }}</span
-          >
-        </div>
-      </section>
+          <section v-if="showCatalogHero" class="pd-hero">
+            <div class="pd-hero-copy">
+              <span v-if="detailCatalogEyebrow" class="pd-hero-eyebrow">{{
+                detailCatalogEyebrow
+              }}</span>
+              <h1>{{ detailCatalogTitle }}</h1>
+              <p v-if="detailCatalogSlogan">{{ detailCatalogSlogan }}</p>
+            </div>
+            <div v-if="detailCatalogTags.length" class="pd-hero-tags">
+              <span
+                v-for="tag in detailCatalogTags"
+                :key="tag"
+                class="pd-hero-tag"
+                >{{ tag }}</span
+              >
+            </div>
+          </section>
 
-      <!--
+          <!--
         商品描述：卡片式点进来的落地页。与列表式规格表格同源（都来自
         ProductSpecHighlightService 的维度识别），商家手填时以手填为准。
         后端落库前已过富文本白名单消毒，这里按原样渲染。
       -->
-      <section v-if="productDescription" class="pd-desc">
-        <h2 class="pd-desc-title">{{ $t("product.detail.description") }}</h2>
-        <!-- eslint-disable-next-line vue/no-v-html -- 描述入库前已过 RichHtmlSanitizer 白名单消毒 -->
-        <div class="pd-desc-body" v-html="productDescription" />
-      </section>
+          <section v-if="productDescription" class="pd-desc">
+            <h2 class="pd-desc-title">
+              {{ $t("product.detail.description") }}
+            </h2>
+            <!-- eslint-disable-next-line vue/no-v-html -- 描述入库前已过 RichHtmlSanitizer 白名单消毒 -->
+            <div class="pd-desc-body" v-html="productDescription" />
+          </section>
 
-      <!--
+          <!--
         机型对比表：同组在售商品与列表式机型表同源
         （/v2/site/product-groups/{id}/products），独立配置页不再只有一排同级 tab，
         可以直接比较规格与价格后再切换机型。
       -->
-      <section
-        v-if="detailSpecCompare && !isMobile && skuRows.length > 1"
-        class="pd-sku"
-      >
-        <div class="pd-sku-head">
-          <h2 class="pd-sku-title">{{ $t("product.detail.skuCompare") }}</h2>
-          <span class="pd-sku-hint">{{
-            $t("product.detail.skuCompareHint")
-          }}</span>
-        </div>
-        <div
-          class="sku-table"
-          role="table"
-          :aria-label="$t('product.detail.skuCompare')"
-        >
-          <div class="sku-row sku-row--head" role="row">
-            <span class="sku-cell sku-cell--name">{{
-              $t("product.list.instanceSpecs")
-            }}</span>
-            <span class="sku-cell sku-cell--sortable">
-              <span>vCPU</span>
-              <span class="sku-sort">
-                <button
-                  type="button"
-                  class="sku-sort-btn"
-                  :class="{
-                    active:
-                      skuSort.key === 'cpu' && skuSort.direction === 'asc',
-                  }"
-                  :aria-label="$t('product.list.sortVcpuAsc')"
-                  @click="setSkuSort('cpu', 'asc')"
-                >
-                  ▲
-                </button>
-                <button
-                  type="button"
-                  class="sku-sort-btn"
-                  :class="{
-                    active:
-                      skuSort.key === 'cpu' && skuSort.direction === 'desc',
-                  }"
-                  :aria-label="$t('product.list.sortVcpuDesc')"
-                  @click="setSkuSort('cpu', 'desc')"
-                >
-                  ▼
-                </button>
-              </span>
-            </span>
-            <span class="sku-cell sku-cell--sortable">
-              <span>{{ $t("product.list.memory") }}</span>
-              <span class="sku-sort">
-                <button
-                  type="button"
-                  class="sku-sort-btn"
-                  :class="{
-                    active:
-                      skuSort.key === 'memory' && skuSort.direction === 'asc',
-                  }"
-                  :aria-label="$t('product.list.sortMemoryAsc')"
-                  @click="setSkuSort('memory', 'asc')"
-                >
-                  ▲
-                </button>
-                <button
-                  type="button"
-                  class="sku-sort-btn"
-                  :class="{
-                    active:
-                      skuSort.key === 'memory' && skuSort.direction === 'desc',
-                  }"
-                  :aria-label="$t('product.list.sortMemoryDesc')"
-                  @click="setSkuSort('memory', 'desc')"
-                >
-                  ▼
-                </button>
-              </span>
-            </span>
-            <span class="sku-cell">{{ $t("product.list.processor") }}</span>
-            <span class="sku-cell">{{ $t("product.list.clockSpeed") }}</span>
-            <span class="sku-cell sku-cell--sortable">
-              <span>{{ $t("product.detail.skuPrice") }}</span>
-              <span class="sku-sort">
-                <button
-                  type="button"
-                  class="sku-sort-btn"
-                  :class="{
-                    active:
-                      skuSort.key === 'price' && skuSort.direction === 'asc',
-                  }"
-                  :aria-label="$t('product.detail.sortPriceAsc')"
-                  @click="setSkuSort('price', 'asc')"
-                >
-                  ▲
-                </button>
-                <button
-                  type="button"
-                  class="sku-sort-btn"
-                  :class="{
-                    active:
-                      skuSort.key === 'price' && skuSort.direction === 'desc',
-                  }"
-                  :aria-label="$t('product.detail.sortPriceDesc')"
-                  @click="setSkuSort('price', 'desc')"
-                >
-                  ▼
-                </button>
-              </span>
-            </span>
-          </div>
-          <button
-            v-for="row in skuRows"
-            :key="row.id"
-            type="button"
-            class="sku-row"
-            :class="{ active: row.id === product.id }"
-            role="row"
-            @click="switchProduct(row.id)"
+          <section
+            v-if="detailSpecCompare && !isMobile && skuRows.length > 1"
+            class="pd-sku"
           >
-            <span class="sku-cell sku-cell--name">
-              <span class="sku-radio" aria-hidden="true"></span>
-              <span class="sku-name">{{ row.name }}</span>
-            </span>
-            <span class="sku-cell">{{ row.cpuText }}</span>
-            <span class="sku-cell">{{ row.memoryText }}</span>
-            <span class="sku-cell sku-cell--processor">
-              <span
-                v-if="row.brandBadge"
-                class="cpu-brand-badge"
-                :class="`cpu-brand-badge${row.brandBadge.className}`"
-              >
-                <span class="cpu-brand-badge__icon">{{
-                  row.brandBadge.icon
-                }}</span>
-                <span class="cpu-brand-badge__label">{{
-                  row.brandBadge.label
-                }}</span>
-              </span>
-              <span class="sku-processor-text">{{
-                row.processorLabel || "-"
+            <div class="pd-sku-head">
+              <h2 class="pd-sku-title">
+                {{ $t("product.detail.skuCompare") }}
+              </h2>
+              <span class="pd-sku-hint">{{
+                $t("product.detail.skuCompareHint")
               }}</span>
-            </span>
-            <span class="sku-cell">{{ row.frequency || "-" }}</span>
-            <span class="sku-cell sku-cell--price">
-              <template v-if="row.agentDiscount">
-                <span class="agent-price-original"
-                  >¥{{ row.agentOriginalPrice }}</span
-                >
-                <em v-if="row.agentDiscountPercent" class="discount-tag">{{
-                  row.agentDiscountPercent
-                }}</em>
-                <span class="agent-price-current">¥{{ row.agentPrice }}</span>
-              </template>
-              <template v-else>{{ row.priceText }}</template>
-            </span>
-          </button>
-        </div>
-      </section>
-
-      <!-- 主体：左配置 + 右摘要 -->
-      <div class="pd-body">
-        <div class="pd-config">
-          <!-- 移动端隐藏右侧摘要后，购买前置要求仍要能看到 -->
-          <el-alert
-            v-if="isMobile && purchaseRequirementList.length"
-            type="warning"
-            :closable="false"
-            show-icon
-            class="purchase-guard-alert"
-          >
-            <template #title
-              >{{ $t("product.list.purchaseRequirements")
-              }}{{ purchaseRequirementSummary }}</template
+            </div>
+            <div
+              class="sku-table"
+              role="table"
+              :aria-label="$t('product.detail.skuCompare')"
             >
-          </el-alert>
-
-          <!-- 移动端：同级机型（SKU）收进抽屉，桌面端用下面的对比表；后台可整体关闭 -->
-          <div
-            class="cfg-group"
-            v-if="detailSpecCompare && isMobile && skuOptions.length > 1"
-          >
-            <div class="cfg-group-head">{{ $t("product.list.spec") }}</div>
-            <div class="cfg-group-body">
-              <button
-                type="button"
-                class="mobile-picker-trigger"
-                @click="mobileSkuPicker = true"
-              >
-                <span>{{ currentSkuLabel }}</span>
-                <svg
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  width="12"
-                  height="12"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M3 4.5l3 3 3-3"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- 区域：移动端改抽屉选择，避免一屏铺开一长串按钮 -->
-          <div class="cfg-group" v-if="regionOptions.length">
-            <div class="cfg-group-head">{{ $t("product.detail.region") }}</div>
-            <div class="cfg-group-body">
-              <button
-                v-if="isMobile"
-                type="button"
-                class="mobile-picker-trigger"
-                @click="mobileRegionPicker = true"
-              >
-                <span>{{
-                  selectedRegionLabel || $t("product.detail.selectRegion")
+              <div class="sku-row sku-row--head" role="row">
+                <span class="sku-cell sku-cell--name">{{
+                  $t("product.list.instanceSpecs")
                 }}</span>
-                <svg
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  width="12"
-                  height="12"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M3 4.5l3 3 3-3"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
-              <div class="opt-wrap" v-else>
-                <button
-                  v-for="opt in regionOptions"
-                  :key="opt.id"
-                  type="button"
-                  class="opt-btn"
-                  :class="{ active: regionValue === opt.id }"
-                  @click="selectRegion(opt.id)"
-                >
-                  {{ opt.label }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- 操作系统：与列表式配置区一致的图标卡片 + 同屏版本选择 -->
-          <div class="cfg-group" v-if="osConfig">
-            <div class="cfg-group-head">
-              {{ $t("product.detail.operatingSystem") }}
-            </div>
-            <div class="cfg-group-body">
-              <!-- 移动端：系统与版本合并进一个抽屉，版本列表跟随所选系统 -->
-              <button
-                v-if="isMobile"
-                type="button"
-                class="mobile-picker-trigger"
-                @click="mobileOsPicker = true"
-              >
-                <span>
-                  {{ currentOsGroup?.label || $t("product.detail.selectOs")
-                  }}{{ currentOsGroup?.label ? ` ${currentOsVerLabel}` : "" }}
-                </span>
-                <svg
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  width="12"
-                  height="12"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M3 4.5l3 3 3-3"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
-              <template v-else>
-                <div class="os-cards">
-                  <button
-                    v-for="os in osGroups"
-                    :key="os.id"
-                    type="button"
-                    class="os-card"
-                    :class="{ active: configForm.os_group === os.id }"
-                    @click="handleOsGroupChange(os.id)"
-                  >
-                    <div class="os-card-head">
-                      <img
-                        v-if="os.icon"
-                        :src="os.icon"
-                        :alt="os.label"
-                        class="os-logo-img"
-                        width="28"
-                        height="28"
-                      />
-                      <span v-else class="os-logo">{{
-                        os.label.slice(0, 2)
-                      }}</span>
-                      <span class="os-label-name">{{ os.label }}</span>
-                    </div>
-                    <div class="os-card-ver">
-                      <span v-if="configForm.os_group === os.id">{{
-                        currentOsVerLabel
-                      }}</span>
-                      <span v-else class="os-placeholder">{{
-                        $t("product.list.selectVersion")
-                      }}</span>
-                    </div>
-                    <span
-                      v-if="configForm.os_group === os.id"
-                      class="os-check-mark"
-                      >✓</span
+                <span class="sku-cell sku-cell--sortable">
+                  <span>vCPU</span>
+                  <span class="sku-sort">
+                    <button
+                      type="button"
+                      class="sku-sort-btn"
+                      :class="{
+                        active:
+                          skuSort.key === 'cpu' && skuSort.direction === 'asc',
+                      }"
+                      :aria-label="$t('product.list.sortVcpuAsc')"
+                      @click="setSkuSort('cpu', 'asc')"
                     >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      class="sku-sort-btn"
+                      :class="{
+                        active:
+                          skuSort.key === 'cpu' && skuSort.direction === 'desc',
+                      }"
+                      :aria-label="$t('product.list.sortVcpuDesc')"
+                      @click="setSkuSort('cpu', 'desc')"
+                    >
+                      ▼
+                    </button>
+                  </span>
+                </span>
+                <span class="sku-cell sku-cell--sortable">
+                  <span>{{ $t("product.list.memory") }}</span>
+                  <span class="sku-sort">
+                    <button
+                      type="button"
+                      class="sku-sort-btn"
+                      :class="{
+                        active:
+                          skuSort.key === 'memory' &&
+                          skuSort.direction === 'asc',
+                      }"
+                      :aria-label="$t('product.list.sortMemoryAsc')"
+                      @click="setSkuSort('memory', 'asc')"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      class="sku-sort-btn"
+                      :class="{
+                        active:
+                          skuSort.key === 'memory' &&
+                          skuSort.direction === 'desc',
+                      }"
+                      :aria-label="$t('product.list.sortMemoryDesc')"
+                      @click="setSkuSort('memory', 'desc')"
+                    >
+                      ▼
+                    </button>
+                  </span>
+                </span>
+                <span class="sku-cell">{{ $t("product.list.processor") }}</span>
+                <span class="sku-cell">{{
+                  $t("product.list.clockSpeed")
+                }}</span>
+                <span class="sku-cell sku-cell--sortable">
+                  <span>{{ $t("product.detail.skuPrice") }}</span>
+                  <span class="sku-sort">
+                    <button
+                      type="button"
+                      class="sku-sort-btn"
+                      :class="{
+                        active:
+                          skuSort.key === 'price' &&
+                          skuSort.direction === 'asc',
+                      }"
+                      :aria-label="$t('product.detail.sortPriceAsc')"
+                      @click="setSkuSort('price', 'asc')"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      class="sku-sort-btn"
+                      :class="{
+                        active:
+                          skuSort.key === 'price' &&
+                          skuSort.direction === 'desc',
+                      }"
+                      :aria-label="$t('product.detail.sortPriceDesc')"
+                      @click="setSkuSort('price', 'desc')"
+                    >
+                      ▼
+                    </button>
+                  </span>
+                </span>
+              </div>
+              <button
+                v-for="row in skuRows"
+                :key="row.id"
+                type="button"
+                class="sku-row"
+                :class="{ active: row.id === product.id }"
+                role="row"
+                @click="switchProduct(row.id)"
+              >
+                <span class="sku-cell sku-cell--name">
+                  <span class="sku-radio" aria-hidden="true"></span>
+                  <span class="sku-name">{{ row.name }}</span>
+                </span>
+                <span class="sku-cell">{{ row.cpuText }}</span>
+                <span class="sku-cell">{{ row.memoryText }}</span>
+                <span class="sku-cell sku-cell--processor">
+                  <span
+                    v-if="row.brandBadge"
+                    class="cpu-brand-badge"
+                    :class="`cpu-brand-badge${row.brandBadge.className}`"
+                  >
+                    <span class="cpu-brand-badge__icon">{{
+                      row.brandBadge.icon
+                    }}</span>
+                    <span class="cpu-brand-badge__label">{{
+                      row.brandBadge.label
+                    }}</span>
+                  </span>
+                  <span class="sku-processor-text">{{
+                    row.processorLabel || "-"
+                  }}</span>
+                </span>
+                <span class="sku-cell">{{ row.frequency || "-" }}</span>
+                <span class="sku-cell sku-cell--price">
+                  <template v-if="row.agentDiscount">
+                    <span class="agent-price-original"
+                      >¥{{ row.agentOriginalPrice }}</span
+                    >
+                    <em v-if="row.agentDiscountPercent" class="discount-tag">{{
+                      row.agentDiscountPercent
+                    }}</em>
+                    <span class="agent-price-current"
+                      >¥{{ row.agentPrice }}</span
+                    >
+                  </template>
+                  <template v-else>{{ row.priceText }}</template>
+                </span>
+              </button>
+            </div>
+          </section>
+
+          <!-- 主体：左配置 + 右摘要 -->
+          <div class="pd-body">
+            <div class="pd-config">
+              <!-- 移动端隐藏右侧摘要后，购买前置要求仍要能看到 -->
+              <el-alert
+                v-if="isMobile && purchaseRequirementList.length"
+                type="warning"
+                :closable="false"
+                show-icon
+                class="purchase-guard-alert"
+              >
+                <template #title
+                  >{{ $t("product.list.purchaseRequirements")
+                  }}{{ purchaseRequirementSummary }}</template
+                >
+              </el-alert>
+
+              <!-- 移动端：同级机型（SKU）收进抽屉，桌面端用下面的对比表；后台可整体关闭 -->
+              <div
+                class="cfg-group"
+                v-if="detailSpecCompare && isMobile && skuOptions.length > 1"
+              >
+                <div class="cfg-group-head">{{ $t("product.list.spec") }}</div>
+                <div class="cfg-group-body">
+                  <button
+                    type="button"
+                    class="mobile-picker-trigger"
+                    @click="mobileSkuPicker = true"
+                  >
+                    <span>{{ currentSkuLabel }}</span>
+                    <svg
+                      viewBox="0 0 12 12"
+                      fill="none"
+                      width="12"
+                      height="12"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M3 4.5l3 3 3-3"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
                   </button>
                 </div>
-                <div class="os-ver-row" v-if="currentOsGroup?.versions?.length">
-                  <span class="os-ver-label">{{
-                    $t("product.osPicker.version")
-                  }}</span>
-                  <div class="os-ver-btns">
-                    <button
-                      v-for="ver in currentOsGroup.versions"
-                      :key="ver.id"
-                      type="button"
-                      class="ver-btn"
-                      :class="{ active: configForm.os === ver.id }"
-                      @click="
-                        configForm.os = ver.id;
-                        fetchQuote();
-                      "
+              </div>
+
+              <!-- 区域：移动端改抽屉选择，避免一屏铺开一长串按钮 -->
+              <div class="cfg-group" v-if="regionOptions.length">
+                <div class="cfg-group-head">
+                  {{ $t("product.detail.region") }}
+                </div>
+                <div class="cfg-group-body">
+                  <button
+                    v-if="isMobile"
+                    type="button"
+                    class="mobile-picker-trigger"
+                    @click="mobileRegionPicker = true"
+                  >
+                    <span>{{
+                      selectedRegionLabel || $t("product.detail.selectRegion")
+                    }}</span>
+                    <svg
+                      viewBox="0 0 12 12"
+                      fill="none"
+                      width="12"
+                      height="12"
+                      aria-hidden="true"
                     >
-                      {{ ver.label }}
+                      <path
+                        d="M3 4.5l3 3 3-3"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <div class="opt-wrap" v-else>
+                    <button
+                      v-for="opt in regionOptions"
+                      :key="opt.id"
+                      type="button"
+                      class="opt-btn"
+                      :class="{ active: regionValue === opt.id }"
+                      @click="selectRegion(opt.id)"
+                    >
+                      {{ opt.label }}
                     </button>
                   </div>
                 </div>
-              </template>
-            </div>
-          </div>
+              </div>
 
-          <!--
+              <!-- 操作系统：与列表式配置区一致的图标卡片 + 同屏版本选择 -->
+              <div class="cfg-group" v-if="osConfig">
+                <div class="cfg-group-head">
+                  {{ $t("product.detail.operatingSystem") }}
+                </div>
+                <div class="cfg-group-body">
+                  <!-- 移动端：系统与版本合并进一个抽屉，版本列表跟随所选系统 -->
+                  <button
+                    v-if="isMobile"
+                    type="button"
+                    class="mobile-picker-trigger"
+                    @click="mobileOsPicker = true"
+                  >
+                    <span>
+                      {{ currentOsGroup?.label || $t("product.detail.selectOs")
+                      }}{{
+                        currentOsGroup?.label ? ` ${currentOsVerLabel}` : ""
+                      }}
+                    </span>
+                    <svg
+                      viewBox="0 0 12 12"
+                      fill="none"
+                      width="12"
+                      height="12"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M3 4.5l3 3 3-3"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <template v-else>
+                    <div class="os-cards">
+                      <button
+                        v-for="os in osGroups"
+                        :key="os.id"
+                        type="button"
+                        class="os-card"
+                        :class="{ active: configForm.os_group === os.id }"
+                        @click="handleOsGroupChange(os.id)"
+                      >
+                        <div class="os-card-head">
+                          <img
+                            v-if="os.icon"
+                            :src="os.icon"
+                            :alt="os.label"
+                            class="os-logo-img"
+                            width="28"
+                            height="28"
+                          />
+                          <span v-else class="os-logo">{{
+                            os.label.slice(0, 2)
+                          }}</span>
+                          <span class="os-label-name">{{ os.label }}</span>
+                        </div>
+                        <div class="os-card-ver">
+                          <span v-if="configForm.os_group === os.id">{{
+                            currentOsVerLabel
+                          }}</span>
+                          <span v-else class="os-placeholder">{{
+                            $t("product.list.selectVersion")
+                          }}</span>
+                        </div>
+                        <span
+                          v-if="configForm.os_group === os.id"
+                          class="os-check-mark"
+                          >✓</span
+                        >
+                      </button>
+                    </div>
+                    <div
+                      class="os-ver-row"
+                      v-if="currentOsGroup?.versions?.length"
+                    >
+                      <span class="os-ver-label">{{
+                        $t("product.osPicker.version")
+                      }}</span>
+                      <div class="os-ver-btns">
+                        <button
+                          v-for="ver in currentOsGroup.versions"
+                          :key="ver.id"
+                          type="button"
+                          class="ver-btn"
+                          :class="{ active: configForm.os === ver.id }"
+                          @click="
+                            configForm.os = ver.id;
+                            fetchQuote();
+                          "
+                        >
+                          {{ ver.label }}
+                        </button>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!--
             配置分组：机型 / 网络 / 其他，口径与列表式配置区一致。
             分组由共享层（useWebsiteProductConfigurator）给出，这里不再做二次过滤——
             本地过滤曾把「其他配置」整组（绑定域名数 / WEB 空间 / 连接数等）与
             机型里命中网络词的项全部吃掉，虚拟主机与 CDN 商品几乎不剩配置项。
           -->
-          <div
-            class="cfg-group"
-            v-for="group in configGroups"
-            :key="group.title"
-          >
-            <div class="cfg-group-head">{{ group.title }}</div>
-            <div class="cfg-group-body">
-              <template v-for="cfg in group.configs" :key="cfg.key">
-                <!-- 移动端：区间项用滑块，离散项收进抽屉，避免一屏几十个按钮 -->
-                <template v-if="isMobile">
-                  <MobileRangePicker
-                    v-if="cfg.isNumber"
-                    v-model="configForm[cfg.key + '_num']"
-                    :label="cfg.label"
-                    :min="cfg.min ?? 1"
-                    :max="cfg.max ?? 9999"
-                  />
-                  <button
-                    v-else-if="cfg.options.length > 1"
-                    type="button"
-                    class="mobile-config-select-row"
-                    @click="openMobileConfigPicker(cfg)"
-                  >
-                    <span class="mobile-config-select-label">{{
-                      cfg.label
-                    }}</span>
-                    <span class="mobile-config-select-value">
-                      {{
-                        selectedConfigLabel(cfg) ||
-                        $t("product.list.selectOption")
-                      }}
-                      <svg
-                        viewBox="0 0 12 12"
-                        fill="none"
-                        width="12"
-                        height="12"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M4.5 3l3 3-3 3"
-                          stroke="currentColor"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </span>
-                  </button>
-                  <div class="spec-row" v-else-if="cfg.options.length === 1">
-                    <span class="spec-label">{{ cfg.label }}</span>
-                    <span class="spec-fixed">{{ cfg.options[0].label }}</span>
-                  </div>
-                </template>
-                <div class="spec-row" v-else>
-                  <div class="spec-label">{{ cfg.label }}</div>
-                  <div class="spec-ctrl">
-                    <template v-if="cfg.isNumber">
-                      <el-input-number
+              <div
+                class="cfg-group"
+                v-for="group in configGroups"
+                :key="group.title"
+              >
+                <div class="cfg-group-head">{{ group.title }}</div>
+                <div class="cfg-group-body">
+                  <template v-for="cfg in group.configs" :key="cfg.key">
+                    <!-- 移动端：区间项用滑块，离散项收进抽屉，避免一屏几十个按钮 -->
+                    <template v-if="isMobile">
+                      <MobileRangePicker
+                        v-if="cfg.isNumber"
                         v-model="configForm[cfg.key + '_num']"
+                        :label="cfg.label"
                         :min="cfg.min ?? 1"
-                        :max="cfg.max ?? undefined"
-                        controls-position="right"
-                        @change="fetchQuote"
+                        :max="cfg.max ?? 9999"
                       />
-                    </template>
-                    <div class="opt-wrap" v-else-if="cfg.options.length > 1">
                       <button
-                        v-for="opt in cfg.options"
-                        :key="opt.id"
+                        v-else-if="cfg.options.length > 1"
                         type="button"
-                        class="opt-btn"
-                        :class="{ active: configForm[cfg.key] === opt.id }"
-                        @click="
-                          configForm[cfg.key] = opt.id;
-                          fetchQuote();
-                        "
+                        class="mobile-config-select-row"
+                        @click="openMobileConfigPicker(cfg)"
                       >
-                        {{ opt.label }}
+                        <span class="mobile-config-select-label">{{
+                          cfg.label
+                        }}</span>
+                        <span class="mobile-config-select-value">
+                          {{
+                            selectedConfigLabel(cfg) ||
+                            $t("product.list.selectOption")
+                          }}
+                          <svg
+                            viewBox="0 0 12 12"
+                            fill="none"
+                            width="12"
+                            height="12"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M4.5 3l3 3-3 3"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </span>
                       </button>
+                      <div
+                        class="spec-row"
+                        v-else-if="cfg.options.length === 1"
+                      >
+                        <span class="spec-label">{{ cfg.label }}</span>
+                        <span class="spec-fixed">{{
+                          cfg.options[0].label
+                        }}</span>
+                      </div>
+                    </template>
+                    <div class="spec-row" v-else>
+                      <div class="spec-label">{{ cfg.label }}</div>
+                      <div class="spec-ctrl">
+                        <template v-if="cfg.isNumber">
+                          <el-input-number
+                            v-model="configForm[cfg.key + '_num']"
+                            :min="cfg.min ?? 1"
+                            :max="cfg.max ?? undefined"
+                            controls-position="right"
+                            @change="fetchQuote"
+                          />
+                        </template>
+                        <div
+                          class="opt-wrap"
+                          v-else-if="cfg.options.length > 1"
+                        >
+                          <button
+                            v-for="opt in cfg.options"
+                            :key="opt.id"
+                            type="button"
+                            class="opt-btn"
+                            :class="{ active: configForm[cfg.key] === opt.id }"
+                            @click="
+                              configForm[cfg.key] = opt.id;
+                              fetchQuote();
+                            "
+                          >
+                            {{ opt.label }}
+                          </button>
+                        </div>
+                        <!-- 单选项是既成事实而不是可点控件：渲染成静态高亮，避免「看着能点、点了没反应」 -->
+                        <span
+                          v-else-if="cfg.options.length === 1"
+                          class="spec-fixed"
+                          >{{ cfg.options[0].label }}</span
+                        >
+                      </div>
                     </div>
-                    <!-- 单选项是既成事实而不是可点控件：渲染成静态高亮，避免「看着能点、点了没反应」 -->
-                    <span
-                      v-else-if="cfg.options.length === 1"
-                      class="spec-fixed"
-                      >{{ cfg.options[0].label }}</span
-                    >
+                  </template>
+                </div>
+              </div>
+
+              <!-- 购买须知：上游以普通配置项下发的文字提示（如「明确禁止」），只展示不参与选配 -->
+              <div
+                class="cfg-group cfg-group--notice"
+                v-if="noticeConfigs.length"
+              >
+                <div class="cfg-group-head">
+                  {{ $t("product.detail.purchaseNotes") }}
+                </div>
+                <div class="cfg-group-body">
+                  <div
+                    class="notice-item"
+                    v-for="cfg in noticeConfigs"
+                    :key="cfg.key"
+                  >
+                    <div class="notice-label" v-if="cfg.label">
+                      {{ cfg.label }}
+                    </div>
+                    <div class="notice-text">{{ cfg.textContent }}</div>
                   </div>
                 </div>
-              </template>
-            </div>
-          </div>
+              </div>
 
-          <!-- 购买须知：上游以普通配置项下发的文字提示（如「明确禁止」），只展示不参与选配 -->
-          <div class="cfg-group cfg-group--notice" v-if="noticeConfigs.length">
-            <div class="cfg-group-head">
-              {{ $t("product.detail.purchaseNotes") }}
-            </div>
-            <div class="cfg-group-body">
-              <div
-                class="notice-item"
-                v-for="cfg in noticeConfigs"
-                :key="cfg.key"
-              >
-                <div class="notice-label" v-if="cfg.label">{{ cfg.label }}</div>
-                <div class="notice-text">{{ cfg.textContent }}</div>
+              <!-- 基础设置 -->
+              <div class="cfg-group">
+                <div class="cfg-group-head">
+                  {{ $t("product.detail.baseSettings") }}
+                </div>
+                <div class="cfg-group-body">
+                  <!-- 计费周期 -->
+                  <div class="spec-row">
+                    <div class="spec-label">
+                      {{ $t("product.detail.billingCycle") }}
+                    </div>
+                    <div class="spec-ctrl">
+                      <div class="cycle-wrap">
+                        <button
+                          v-for="item in pricingEntries"
+                          :key="item.cycle"
+                          type="button"
+                          class="cycle-btn"
+                          :class="{ active: selectedCycle === item.cycle }"
+                          @click="selectedCycle = item.cycle"
+                        >
+                          <span class="cycle-name">{{ item.label }}</span>
+                          <span class="cycle-price">¥{{ item.amount }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 单笔订单仅支持创建一台服务实例，避免多台计价但仅开通一台。 -->
+                  <div class="spec-row spec-row--last">
+                    <div class="spec-label">
+                      {{ $t("product.detail.quantity") }}
+                    </div>
+                    <div class="spec-ctrl">
+                      <span>{{ $t("product.detail.quantityHint") }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+            <!-- /pd-config -->
 
-          <!-- 基础设置 -->
-          <div class="cfg-group">
-            <div class="cfg-group-head">
-              {{ $t("product.detail.baseSettings") }}
-            </div>
-            <div class="cfg-group-body">
-              <!-- 计费周期 -->
-              <div class="spec-row">
-                <div class="spec-label">
-                  {{ $t("product.detail.billingCycle") }}
+            <!-- 右侧：配置费用摘要 -->
+            <aside class="pd-aside">
+              <div class="aside-card">
+                <div class="cost-header">
+                  <span class="cost-title">{{
+                    $t("product.detail.configFee")
+                  }}</span>
+                  <span class="stock-badge" :class="stockClass">{{
+                    stockLabel
+                  }}</span>
                 </div>
-                <div class="spec-ctrl">
-                  <div class="cycle-wrap">
-                    <button
-                      v-for="item in pricingEntries"
-                      :key="item.cycle"
-                      type="button"
-                      class="cycle-btn"
-                      :class="{ active: selectedCycle === item.cycle }"
-                      @click="selectedCycle = item.cycle"
+
+                <div :class="['stock-info', `stock-info--${stockClass}`]">
+                  <div
+                    v-if="resolvedStock !== null && resolvedStock !== -1"
+                    class="stock-main"
+                  >
+                    {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;
+                    <strong>{{
+                      $t("product.list.stockLeft", { count: resolvedStock })
+                    }}</strong>
+                  </div>
+                  <div v-else-if="productStockLoading" class="stock-main">
+                    {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;<strong>{{
+                      $t("product.detail.syncing")
+                    }}</strong>
+                  </div>
+                  <div v-else-if="productStockError" class="stock-main">
+                    {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;<strong>{{
+                      $t("product.detail.syncFailed")
+                    }}</strong>
+                  </div>
+                  <div v-else class="stock-main">
+                    {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;<strong>{{
+                      $t("product.detail.readyToBuy")
+                    }}</strong>
+                  </div>
+                  <div class="stock-hint">{{ stockHint }}</div>
+                </div>
+
+                <el-alert
+                  v-if="purchaseRequirementList.length"
+                  type="warning"
+                  :closable="false"
+                  show-icon
+                  class="purchase-guard-alert"
+                >
+                  <template #title
+                    >{{ $t("product.list.purchaseRequirements")
+                    }}{{ purchaseRequirementSummary }}</template
+                  >
+                </el-alert>
+
+                <div class="aside-divider"></div>
+
+                <section class="aside-section">
+                  <div class="aside-section-title">
+                    {{ $t("product.detail.summary") }}
+                  </div>
+                  <div
+                    class="cost-detail"
+                    :class="{ 'cost-detail--loading': quoteLoading }"
+                  >
+                    <div class="cost-item">
+                      <span>{{ $t("layout.nav.products") }}</span>
+                      <span>{{ selectedMachineSpec.displayName }}</span>
+                    </div>
+                    <div
+                      class="cost-item"
+                      v-if="detailGroup && detailGroup.full_name"
                     >
-                      <span class="cycle-name">{{ item.label }}</span>
-                      <span class="cycle-price">¥{{ item.amount }}</span>
+                      <span>{{ $t("product.list.groupPath") }}</span>
+                      <span>{{ detailGroup.full_name }}</span>
+                    </div>
+                    <div
+                      class="cost-item"
+                      v-for="item in summaryItems"
+                      :key="item.key"
+                    >
+                      <span>{{ item.label }}</span>
+                      <span>{{ item.value }}</span>
+                    </div>
+                  </div>
+                </section>
+
+                <div class="aside-divider"></div>
+
+                <section class="aside-section">
+                  <div class="aside-section-title">
+                    {{ $t("product.detail.costBreakdown") }}
+                  </div>
+                  <div
+                    class="cost-breakdown"
+                    :class="{ 'cost-breakdown--loading': quoteLoading }"
+                  >
+                    <div class="cost-item">
+                      <span>{{ $t("product.detail.basePrice") }}</span>
+                      <span>¥{{ baseAmount }}</span>
+                    </div>
+                    <div class="cost-item" v-if="Number(setupFee) > 0">
+                      <span>{{ $t("product.detail.setupFee") }}</span>
+                      <span>¥{{ setupFee }}</span>
+                    </div>
+                    <div
+                      class="cost-item cost-item--extra"
+                      v-for="item in quoteItems"
+                      :key="item.field"
+                    >
+                      <span>+ {{ item.label }}</span>
+                      <span>¥{{ item.amount }}</span>
+                    </div>
+                    <div
+                      class="cost-item cost-item--discount"
+                      v-if="appliedCoupon"
+                    >
+                      <span
+                        >{{ $t("product.detail.coupon") }}
+                        {{ appliedCoupon.code || appliedCoupon.name }}</span
+                      >
+                      <span>-¥{{ appliedCoupon.discount_amount }}</span>
+                    </div>
+                    <!-- 代理折扣行：没有这一行时，明细各项之和会大于合计，用户会以为算错账 -->
+                    <div
+                      class="cost-item cost-item--discount"
+                      v-if="hasAgentDiscount"
+                    >
+                      <span>
+                        {{
+                          $t("product.list.agentDiscount", {
+                            name: agentGroupName,
+                          })
+                        }}
+                        <em v-if="agentDiscountPercent" class="discount-tag">{{
+                          agentDiscountPercent
+                        }}</em>
+                      </span>
+                      <span>-¥{{ agentDiscountAmount }}</span>
+                    </div>
+                  </div>
+                </section>
+
+                <div class="coupon-panel">
+                  <div class="coupon-panel-head">
+                    <span class="coupon-panel-title">{{
+                      $t("product.detail.coupon")
+                    }}</span>
+                    <button
+                      v-if="appliedCoupon"
+                      type="button"
+                      class="coupon-clear-btn"
+                      @click="clearCoupon"
+                    >
+                      {{ $t("product.coupon.remove") }}
                     </button>
                   </div>
-                </div>
-              </div>
-              <!-- 单笔订单仅支持创建一台服务实例，避免多台计价但仅开通一台。 -->
-              <div class="spec-row spec-row--last">
-                <div class="spec-label">
-                  {{ $t("product.detail.quantity") }}
-                </div>
-                <div class="spec-ctrl">
-                  <span>{{ $t("product.detail.quantityHint") }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- /pd-config -->
-
-        <!-- 右侧：配置费用摘要 -->
-        <aside class="pd-aside">
-          <div class="aside-card">
-            <div class="cost-header">
-              <span class="cost-title">{{
-                $t("product.detail.configFee")
-              }}</span>
-              <span class="stock-badge" :class="stockClass">{{
-                stockLabel
-              }}</span>
-            </div>
-
-            <div :class="['stock-info', `stock-info--${stockClass}`]">
-              <div
-                v-if="resolvedStock !== null && resolvedStock !== -1"
-                class="stock-main"
-              >
-                {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;
-                <strong>{{
-                  $t("product.list.stockLeft", { count: resolvedStock })
-                }}</strong>
-              </div>
-              <div v-else-if="productStockLoading" class="stock-main">
-                {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;<strong>{{
-                  $t("product.detail.syncing")
-                }}</strong>
-              </div>
-              <div v-else-if="productStockError" class="stock-main">
-                {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;<strong>{{
-                  $t("product.detail.syncFailed")
-                }}</strong>
-              </div>
-              <div v-else class="stock-main">
-                {{ $t("product.list.stockLabel") }}&nbsp;&nbsp;<strong>{{
-                  $t("product.detail.readyToBuy")
-                }}</strong>
-              </div>
-              <div class="stock-hint">{{ stockHint }}</div>
-            </div>
-
-            <el-alert
-              v-if="purchaseRequirementList.length"
-              type="warning"
-              :closable="false"
-              show-icon
-              class="purchase-guard-alert"
-            >
-              <template #title
-                >{{ $t("product.list.purchaseRequirements")
-                }}{{ purchaseRequirementSummary }}</template
-              >
-            </el-alert>
-
-            <div class="aside-divider"></div>
-
-            <section class="aside-section">
-              <div class="aside-section-title">
-                {{ $t("product.detail.summary") }}
-              </div>
-              <div
-                class="cost-detail"
-                :class="{ 'cost-detail--loading': quoteLoading }"
-              >
-                <div class="cost-item">
-                  <span>{{ $t("layout.nav.products") }}</span>
-                  <span>{{ selectedMachineSpec.displayName }}</span>
-                </div>
-                <div
-                  class="cost-item"
-                  v-if="detailGroup && detailGroup.full_name"
-                >
-                  <span>{{ $t("product.list.groupPath") }}</span>
-                  <span>{{ detailGroup.full_name }}</span>
-                </div>
-                <div
-                  class="cost-item"
-                  v-for="item in summaryItems"
-                  :key="item.key"
-                >
-                  <span>{{ item.label }}</span>
-                  <span>{{ item.value }}</span>
-                </div>
-              </div>
-            </section>
-
-            <div class="aside-divider"></div>
-
-            <section class="aside-section">
-              <div class="aside-section-title">
-                {{ $t("product.detail.costBreakdown") }}
-              </div>
-              <div
-                class="cost-breakdown"
-                :class="{ 'cost-breakdown--loading': quoteLoading }"
-              >
-                <div class="cost-item">
-                  <span>{{ $t("product.detail.basePrice") }}</span>
-                  <span>¥{{ baseAmount }}</span>
-                </div>
-                <div class="cost-item" v-if="Number(setupFee) > 0">
-                  <span>{{ $t("product.detail.setupFee") }}</span>
-                  <span>¥{{ setupFee }}</span>
-                </div>
-                <div
-                  class="cost-item cost-item--extra"
-                  v-for="item in quoteItems"
-                  :key="item.field"
-                >
-                  <span>+ {{ item.label }}</span>
-                  <span>¥{{ item.amount }}</span>
-                </div>
-                <div class="cost-item cost-item--discount" v-if="appliedCoupon">
-                  <span
-                    >{{ $t("product.detail.coupon") }}
-                    {{ appliedCoupon.code || appliedCoupon.name }}</span
-                  >
-                  <span>-¥{{ appliedCoupon.discount_amount }}</span>
-                </div>
-                <!-- 代理折扣行：没有这一行时，明细各项之和会大于合计，用户会以为算错账 -->
-                <div
-                  class="cost-item cost-item--discount"
-                  v-if="hasAgentDiscount"
-                >
-                  <span>
+                  <div class="coupon-panel-form">
+                    <el-select
+                      :model-value="selectedCouponId || undefined"
+                      clearable
+                      :placeholder="$t('product.detail.selectCoupon')"
+                      @change="handleCouponChange"
+                    >
+                      <el-option
+                        v-for="item in availableCoupons"
+                        :key="item.id"
+                        :label="`${item.name} · ${item.discount_label}`"
+                        :value="item.id"
+                      />
+                    </el-select>
+                  </div>
+                  <div v-if="appliedCoupon" class="coupon-panel-tip">
                     {{
-                      $t("product.list.agentDiscount", { name: agentGroupName })
+                      $t("product.coupon.appliedTip", {
+                        name: appliedCoupon.name,
+                        discount: appliedCoupon.discount_label,
+                        amount: appliedCoupon.discount_amount,
+                      })
                     }}
+                  </div>
+                  <div
+                    v-else-if="!availableCoupons.length"
+                    class="coupon-panel-tip coupon-panel-tip--muted"
+                  >
+                    {{
+                      product
+                        ? $t("product.coupon.noneAvailable")
+                        : $t("product.coupon.selectProductFirst")
+                    }}
+                  </div>
+                </div>
+
+                <div class="aside-divider"></div>
+
+                <div
+                  class="cost-total"
+                  :class="{ 'cost-total--loading': quoteLoading }"
+                >
+                  <span class="cost-total-label">{{
+                    $t("product.detail.totalCost")
+                  }}</span>
+                  <div class="cost-price-wrap">
+                    <template v-if="quoteLoading">
+                      <span class="cost-currency">¥</span>
+                      <span class="cost-amount cost-amount--loading">{{
+                        $t("product.detail.calculating")
+                      }}</span>
+                    </template>
+                    <!-- 命中代理折扣：原价划线 + 折扣标签 + 折后应付 -->
+                    <template v-else-if="hasAgentDiscount">
+                      <span class="cost-amount cost-amount--original"
+                        >¥{{ agentOriginalAmount }}</span
+                      >
+                      <em v-if="agentDiscountPercent" class="discount-tag">{{
+                        agentDiscountPercent
+                      }}</em>
+                      <span class="cost-currency">¥</span>
+                      <span class="cost-amount">{{ totalAmount }}</span>
+                    </template>
+                    <template v-else>
+                      <span class="cost-currency">¥</span>
+                      <span class="cost-amount">{{ totalAmount }}</span>
+                    </template>
+                    <span class="cost-cycle"
+                      >/{{
+                        selectedCycleLabel || $t("product.list.monthly")
+                      }}</span
+                    >
+                  </div>
+                </div>
+
+                <button
+                  class="buy-btn"
+                  :disabled="!canSubmit || submitting || quoteLoading"
+                  :class="{ loading: submitting, 'is-sold-out': soldOut }"
+                  @click="submitOrder"
+                >
+                  <span>{{ submitButtonText }}</span>
+                </button>
+              </div>
+            </aside>
+          </div>
+          <!-- /pd-body -->
+
+          <div class="allocation-footer">
+            <div class="allocation-footer-inner">
+              <div class="allocation-footer-main">
+                <div class="allocation-footer-label">
+                  {{ $t("product.detail.totalCost") }}
+                </div>
+                <div class="allocation-footer-price">
+                  <template v-if="quoteLoading">
+                    <span class="allocation-footer-symbol">¥</span>
+                    <span class="allocation-footer-num">…</span>
+                  </template>
+                  <template v-else-if="hasAgentDiscount">
+                    <span class="allocation-footer-original"
+                      >¥{{ agentOriginalAmount }}</span
+                    >
                     <em v-if="agentDiscountPercent" class="discount-tag">{{
                       agentDiscountPercent
                     }}</em>
-                  </span>
-                  <span>-¥{{ agentDiscountAmount }}</span>
+                    <span class="allocation-footer-symbol">¥</span>
+                    <span class="allocation-footer-num">{{ totalAmount }}</span>
+                  </template>
+                  <template v-else>
+                    <span class="allocation-footer-symbol">¥</span>
+                    <span class="allocation-footer-num">{{ totalAmount }}</span>
+                  </template>
+                  <span class="allocation-footer-cycle"
+                    >/{{
+                      selectedCycleLabel || $t("product.list.monthly")
+                    }}</span
+                  >
+                </div>
+                <div class="allocation-footer-meta">
+                  <span v-if="stockLabel">{{ stockLabel }}</span>
+                  <span v-if="selectedCycleLabel">{{
+                    selectedCycleLabel
+                  }}</span>
+                  <span v-if="selectedRegionLabel">{{
+                    selectedRegionLabel
+                  }}</span>
+                  <span v-if="currentOsVerLabel">{{ currentOsVerLabel }}</span>
+                  <button
+                    v-if="isMobile && hasAgentDiscount"
+                    type="button"
+                    class="allocation-footer-coupon-btn"
+                    disabled
+                  >
+                    {{
+                      $t("product.list.agentDiscount", {
+                        name: agentGroupName,
+                      })
+                    }}{{ agentDiscountPercent }}
+                  </button>
+                  <button
+                    v-if="isMobile"
+                    type="button"
+                    class="allocation-footer-coupon-btn"
+                    @click="mobileCouponSheet = true"
+                  >
+                    {{
+                      appliedCoupon
+                        ? $t("product.detail.couponUsed", {
+                            amount: appliedCoupon.discount_amount,
+                          })
+                        : $t("product.detail.coupon")
+                    }}
+                  </button>
                 </div>
               </div>
-            </section>
-
-            <div class="coupon-panel">
-              <div class="coupon-panel-head">
-                <span class="coupon-panel-title">{{
-                  $t("product.detail.coupon")
-                }}</span>
-                <button
-                  v-if="appliedCoupon"
-                  type="button"
-                  class="coupon-clear-btn"
-                  @click="clearCoupon"
-                >
-                  {{ $t("product.coupon.remove") }}
-                </button>
-              </div>
-              <div class="coupon-panel-form">
-                <el-select
-                  :model-value="selectedCouponId || undefined"
-                  clearable
-                  :placeholder="$t('product.detail.selectCoupon')"
-                  @change="handleCouponChange"
-                >
-                  <el-option
-                    v-for="item in availableCoupons"
-                    :key="item.id"
-                    :label="`${item.name} · ${item.discount_label}`"
-                    :value="item.id"
-                  />
-                </el-select>
-              </div>
-              <div v-if="appliedCoupon" class="coupon-panel-tip">
-                {{
-                  $t("product.coupon.appliedTip", {
-                    name: appliedCoupon.name,
-                    discount: appliedCoupon.discount_label,
-                    amount: appliedCoupon.discount_amount,
-                  })
-                }}
-              </div>
-              <div
-                v-else-if="!availableCoupons.length"
-                class="coupon-panel-tip coupon-panel-tip--muted"
-              >
-                {{
-                  product
-                    ? $t("product.coupon.noneAvailable")
-                    : $t("product.coupon.selectProductFirst")
-                }}
-              </div>
-            </div>
-
-            <div class="aside-divider"></div>
-
-            <div
-              class="cost-total"
-              :class="{ 'cost-total--loading': quoteLoading }"
-            >
-              <span class="cost-total-label">{{
-                $t("product.detail.totalCost")
-              }}</span>
-              <div class="cost-price-wrap">
-                <template v-if="quoteLoading">
-                  <span class="cost-currency">¥</span>
-                  <span class="cost-amount cost-amount--loading">{{
-                    $t("product.detail.calculating")
-                  }}</span>
-                </template>
-                <!-- 命中代理折扣：原价划线 + 折扣标签 + 折后应付 -->
-                <template v-else-if="hasAgentDiscount">
-                  <span class="cost-amount cost-amount--original"
-                    >¥{{ agentOriginalAmount }}</span
-                  >
-                  <em v-if="agentDiscountPercent" class="discount-tag">{{
-                    agentDiscountPercent
-                  }}</em>
-                  <span class="cost-currency">¥</span>
-                  <span class="cost-amount">{{ totalAmount }}</span>
-                </template>
-                <template v-else>
-                  <span class="cost-currency">¥</span>
-                  <span class="cost-amount">{{ totalAmount }}</span>
-                </template>
-                <span class="cost-cycle"
-                  >/{{ selectedCycleLabel || $t("product.list.monthly") }}</span
-                >
-              </div>
-            </div>
-
-            <button
-              class="buy-btn"
-              :disabled="!canSubmit || submitting || quoteLoading"
-              :class="{ loading: submitting, 'is-sold-out': soldOut }"
-              @click="submitOrder"
-            >
-              <span>{{ submitButtonText }}</span>
-            </button>
-          </div>
-        </aside>
-      </div>
-      <!-- /pd-body -->
-
-      <div class="allocation-footer">
-        <div class="allocation-footer-inner">
-          <div class="allocation-footer-main">
-            <div class="allocation-footer-label">
-              {{ $t("product.detail.totalCost") }}
-            </div>
-            <div class="allocation-footer-price">
-              <template v-if="quoteLoading">
-                <span class="allocation-footer-symbol">¥</span>
-                <span class="allocation-footer-num">…</span>
-              </template>
-              <template v-else-if="hasAgentDiscount">
-                <span class="allocation-footer-original"
-                  >¥{{ agentOriginalAmount }}</span
-                >
-                <em v-if="agentDiscountPercent" class="discount-tag">{{
-                  agentDiscountPercent
-                }}</em>
-                <span class="allocation-footer-symbol">¥</span>
-                <span class="allocation-footer-num">{{ totalAmount }}</span>
-              </template>
-              <template v-else>
-                <span class="allocation-footer-symbol">¥</span>
-                <span class="allocation-footer-num">{{ totalAmount }}</span>
-              </template>
-              <span class="allocation-footer-cycle"
-                >/{{ selectedCycleLabel || $t("product.list.monthly") }}</span
-              >
-            </div>
-            <div class="allocation-footer-meta">
-              <span v-if="stockLabel">{{ stockLabel }}</span>
-              <span v-if="selectedCycleLabel">{{ selectedCycleLabel }}</span>
-              <span v-if="selectedRegionLabel">{{ selectedRegionLabel }}</span>
-              <span v-if="currentOsVerLabel">{{ currentOsVerLabel }}</span>
               <button
-                v-if="isMobile && hasAgentDiscount"
-                type="button"
-                class="allocation-footer-coupon-btn"
-                disabled
+                class="allocation-footer-action"
+                :disabled="!canSubmit || submitting || quoteLoading"
+                :class="{ loading: submitting, 'is-sold-out': soldOut }"
+                @click="submitOrder"
               >
-                {{ $t("product.list.agentDiscount", { name: agentGroupName })
-                }}{{ agentDiscountPercent }}
-              </button>
-              <button
-                v-if="isMobile"
-                type="button"
-                class="allocation-footer-coupon-btn"
-                @click="mobileCouponSheet = true"
-              >
-                {{
-                  appliedCoupon
-                    ? $t("product.detail.couponUsed", {
-                        amount: appliedCoupon.discount_amount,
-                      })
-                    : $t("product.detail.coupon")
-                }}
+                <span>{{ submitButtonText }}</span>
               </button>
             </div>
           </div>
-          <button
-            class="allocation-footer-action"
-            :disabled="!canSubmit || submitting || quoteLoading"
-            :class="{ loading: submitting, 'is-sold-out': soldOut }"
-            @click="submitOrder"
-          >
-            <span>{{ submitButtonText }}</span>
-          </button>
         </div>
-      </div>
-    </div>
 
-    <div class="pd-empty" v-else-if="!loading">
-      <el-empty :description="$t('product.detail.notFound')">
-        <el-button type="primary" @click="router.push('/products')">{{
-          $t("product.detail.backToProducts")
-        }}</el-button>
-      </el-empty>
+        <div class="pd-empty" v-else-if="!loading">
+          <el-empty :description="$t('product.detail.notFound')">
+            <el-button type="primary" @click="router.push('/products')">{{
+              $t("product.detail.backToProducts")
+            }}</el-button>
+          </el-empty>
+        </div>
+        <!-- /pd-main -->
+      </div>
+      <!-- /pd-shell -->
     </div>
 
     <!-- 移动端抽屉：与列表式配置区复用同一套选择器组件，交互保持一致 -->
@@ -1041,6 +1120,7 @@ import {
 import {
   normalizeMoneyText,
   resolveProductDisplayName,
+  resolveProductTypeLabel,
 } from "@/utils/websiteProductConfig";
 import { navigateToConsole } from "@/utils/consoleUrl";
 import {
@@ -1053,6 +1133,11 @@ import { updatePageMeta } from "@/utils/pageMeta";
 import { resolveCpuBrandBadge } from "@/domains/products/cpuBrandBadge";
 import { resolveMachineSpecPresentation } from "@/domains/products/machineSpecResolver";
 import { formatProductListPrice } from "@/views/website/products/productPrice";
+import CatalogNavToggle from "@/views/website/products/CatalogNavToggle.vue";
+import PageWidthControl from "@/views/website/products/PageWidthControl.vue";
+import ProductCatalogNav from "@/views/website/products/ProductCatalogNav.vue";
+import ProductConfigSkeleton from "@/views/website/products/ProductConfigSkeleton.vue";
+import { useCatalogNavVisibility } from "@/views/website/products/useCatalogNavVisibility";
 import { useProductDisplaySettings } from "@/views/website/products/useProductDisplaySettings";
 import { useProductDisplayMode } from "@/views/website/products/useProductDisplayMode";
 import DisplayModeSwitch from "@/views/website/products/DisplayModeSwitch.vue";
@@ -1101,6 +1186,187 @@ function handleDetailDisplayModeChange(mode) {
   }
 
   setDetailDisplayMode(mode);
+}
+
+/* ===== 配置页目录：与选购页共用两栏侧栏组件 ===== */
+const { catalogNavVisible, toggleCatalogNav } = useCatalogNavVisibility();
+const catalogLevel1Collapsed = ref(false);
+const catalogTypes = ref([]);
+const catalogGroups = ref([]);
+const catalogChildGroups = ref([]);
+const catalogLoading = ref(false);
+
+// 当前商品所在层级：侧栏选中态直接跟商品数据走
+const catalogActiveTypeValue = computed(() =>
+  String(product.value?.first_product_group_code || "").trim(),
+);
+const catalogActiveGroupId = computed(() =>
+  Number(product.value?.second_product_group_id || 0),
+);
+const catalogActiveChildId = computed(() =>
+  Number(product.value?.third_product_group_id || 0),
+);
+const catalogActiveTypeSlug = computed(() => {
+  const code = catalogActiveTypeValue.value;
+  const matchedType = catalogTypes.value.find(
+    (type) => String(type?.value ?? "") === code,
+  );
+
+  return String(
+    matchedType?.slug || product.value?.first_product_group_slug || code || "",
+  ).trim();
+});
+
+let catalogToken = 0;
+const catalogGroupCache = new Map();
+const catalogChildrenCache = new Map();
+
+async function loadCatalogGroups(typeCode, token) {
+  if (!typeCode) {
+    return [];
+  }
+
+  if (catalogGroupCache.has(typeCode)) {
+    return catalogGroupCache.get(typeCode);
+  }
+
+  let groups;
+  try {
+    const response = await siteApi.productGroups({
+      first_product_group_code: typeCode,
+    });
+    groups = (response.data?.list || []).filter(
+      (group) =>
+        !typeCode ||
+        String(group?.first_product_group_code || "") === String(typeCode),
+    );
+  } catch {
+    groups = [];
+  }
+
+  if (token === catalogToken) {
+    catalogGroupCache.set(typeCode, groups);
+  }
+
+  return groups;
+}
+
+async function loadCatalogChildren(groupId, token) {
+  if (!groupId) {
+    return [];
+  }
+
+  if (catalogChildrenCache.has(groupId)) {
+    return catalogChildrenCache.get(groupId);
+  }
+
+  let children;
+  try {
+    const response = await siteApi.productGroupChildren(groupId);
+    children = response.data?.list || [];
+  } catch {
+    children = [];
+  }
+
+  if (token === catalogToken) {
+    catalogChildrenCache.set(groupId, children);
+  }
+
+  return children;
+}
+
+/**
+ * 配置页目录数据：一级分组用商品种类，二级分组取当前类型的分组，
+ * 三级分组取当前二级分组的子分组。任何一步失败都只是目录缺一级，不影响配置页本身。
+ */
+async function loadProductCatalog(nextProduct) {
+  const typeCode = String(nextProduct?.first_product_group_code || "").trim();
+  if (!typeCode) {
+    return;
+  }
+
+  const token = ++catalogToken;
+  catalogLoading.value = true;
+
+  try {
+    if (!catalogTypes.value.length) {
+      try {
+        const typesResponse = await siteApi.productTypes();
+        if (token === catalogToken) {
+          catalogTypes.value = typesResponse.data?.list || [];
+        }
+      } catch {
+        // 目录接口失败不阻断配置页
+      }
+    }
+
+    const groups = await loadCatalogGroups(typeCode, token);
+    const groupId = Number(nextProduct?.second_product_group_id || 0);
+    const children = await loadCatalogChildren(groupId, token);
+
+    if (token !== catalogToken) {
+      return;
+    }
+
+    catalogGroups.value = groups;
+    catalogChildGroups.value = children;
+
+    // 商品所属二级分组不在可见分组里（已隐藏/改名）时至少把它补进去，
+    // 保证侧栏能显示当前所在位置，而不是整栏空白。
+    if (
+      groupId > 0 &&
+      !catalogGroups.value.some((group) => Number(group.id) === groupId)
+    ) {
+      catalogGroups.value = [
+        {
+          id: groupId,
+          name: String(nextProduct?.second_product_group_name || "").trim(),
+          children_count: children.length,
+        },
+        ...catalogGroups.value,
+      ];
+    }
+  } finally {
+    if (token === catalogToken) {
+      catalogLoading.value = false;
+    }
+  }
+}
+
+function openCatalogPath({ typeSlug, groupId = 0, childGroupId = 0 }) {
+  if (!typeSlug) {
+    return;
+  }
+
+  void router.push(
+    buildWebsiteProductPath({ typeSlug, groupId, childGroupId }),
+  );
+}
+
+function handleCatalogSelectType(typeValue) {
+  const value = String(typeValue ?? "").trim();
+  const matchedType = catalogTypes.value.find(
+    (type) => String(type?.value ?? "") === value,
+  );
+
+  openCatalogPath({
+    typeSlug: String(matchedType?.slug || value).trim(),
+  });
+}
+
+function handleCatalogSelectGroup(groupId) {
+  openCatalogPath({
+    typeSlug: catalogActiveTypeSlug.value,
+    groupId: Number(groupId || 0),
+  });
+}
+
+function handleCatalogSelectChild(childId) {
+  openCatalogPath({
+    typeSlug: catalogActiveTypeSlug.value,
+    groupId: catalogActiveGroupId.value,
+    childGroupId: Number(childId || 0),
+  });
 }
 
 /**
@@ -1281,12 +1547,12 @@ const detailCatalogEyebrow = computed(() => {
     return parentTitle;
   }
 
-  return String(product.value?.type_label || "").trim();
+  return resolveProductTypeLabel(product.value);
 });
 const detailCatalogTags = computed(() => {
   const tags = [];
   const fullName = String(detailGroup.value.full_name || "").trim();
-  const typeLabel = String(product.value?.type_label || "").trim();
+  const typeLabel = resolveProductTypeLabel(product.value);
 
   if (fullName) {
     tags.push(fullName);
@@ -2002,6 +2268,15 @@ watch(
     if (v) loadProduct();
   },
 );
+// 商品所在层级变化时刷新配置页目录（一级分组 → 二级分组 → 三级分组）
+watch(
+  () => `${catalogActiveTypeValue.value}:${catalogActiveGroupId.value}`,
+  () => {
+    if (product.value) {
+      void loadProductCatalog(product.value);
+    }
+  },
+);
 watch(selectedCycle, fetchQuote);
 watch(configForm, fetchQuote, { deep: true });
 watch(quantity, fetchQuote);
@@ -2131,6 +2406,23 @@ onBeforeUnmount(() => {
   }
 }
 
+/* 配置页整体版心：目录侧栏 + 主内容放在同一个居中容器里，
+   与选购页的 .shop-wrap 同构——侧栏跟随版心宽度，收起后主内容自然变宽。 */
+.pd-shell {
+  display: flex;
+  width: 100%;
+  max-width: var(--pd-content-max, 1280px);
+  align-items: stretch;
+  margin-right: auto;
+  margin-left: auto;
+  transition: max-width 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pd-main {
+  flex: 1;
+  min-width: 0;
+}
+
 /* 统一内容容器：限制最大宽度并水平居中（左右留出安全间距）。
    .pd-desc 曾经漏在这一组里，导致「商品描述」整块通栏、左右没有边距，
    与上下卡片（顶栏 / 头部 / 主体）对不齐。
@@ -2158,6 +2450,7 @@ onBeforeUnmount(() => {
     --pd-content-max: 100vw;
   }
 
+  .pd-shell,
   .pd-topbar,
   .pd-hero,
   .pd-desc,

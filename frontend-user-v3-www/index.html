@@ -19,8 +19,8 @@
   <!-- canonical 不在静态 HTML 里声明：href="/" 会被 vite 8 当资源解析并触发 EISDIR，
        且 canonical 必须随路径变化，统一由后端 SEO 动态渲染注入 -->
   <title>云服务器与 IDC 服务平台</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="/branding/favicon-32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/branding/favicon-16.png" />
+  <!-- 首访不预置默认品牌图标：中性占位，缓存脚本或站点配置接口返回后再替换 -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3C/svg%3E" />
   <!-- vite 8 会把 html 内非外部 URL 当资源解析，href="/" 指向根目录会触发 EISDIR，故移除该 alternate 行 -->
   <!-- API 源站预连接：首屏数据请求与 hero 视频均指向该跨域源，提前 DNS + TLS -->
   <link rel="preconnect" href="%VITE_API_BASE_URL%" crossorigin />

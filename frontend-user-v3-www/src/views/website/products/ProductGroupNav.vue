@@ -40,27 +40,43 @@
       </button>
 
       <div
-        v-if="isActiveGroup(group) && childGroups.length"
+        v-if="isActiveGroup(group) && (childGroups.length || loading)"
         class="shop-cat__children"
       >
-        <button
-          v-for="child in childGroups"
-          :key="child.id"
-          type="button"
-          class="shop-cat__child"
-          :class="{ 'is-active': isActiveChild(child) }"
-          :aria-current="isActiveChild(child) ? 'true' : undefined"
-          @click="selectChild(child)"
+        <!-- 切换二级分组时三级分组列表先清空占位，不等接口回来才换内容 -->
+        <div
+          v-if="loading && !childGroups.length"
+          class="shop-cat__children-skeleton"
+          aria-hidden="true"
         >
-          <span class="shop-cat__name">{{ child.name }}</span>
-          <span v-if="showCount(child)" class="shop-cat__count">{{
-            child.product_count
-          }}</span>
-        </button>
+          <span
+            v-for="index in 3"
+            :key="index"
+            class="shop-cat__child-skeleton"
+          >
+            <span class="shop-cat__child-skeleton-line" />
+          </span>
+        </div>
+        <div v-else class="shop-cat__children-list">
+          <button
+            v-for="child in childGroups"
+            :key="child.id"
+            type="button"
+            class="shop-cat__child"
+            :class="{ 'is-active': isActiveChild(child) }"
+            :aria-current="isActiveChild(child) ? 'true' : undefined"
+            @click="selectChild(child)"
+          >
+            <span class="shop-cat__name">{{ child.name }}</span>
+            <span v-if="showCount(child)" class="shop-cat__count">{{
+              child.product_count
+            }}</span>
+          </button>
+        </div>
       </div>
     </template>
 
-    <p v-if="!groups.length" class="shop-cat__empty">
+    <p v-if="!loading && !groups.length" class="shop-cat__empty">
       {{ $t("product.list.groupEmpty") }}
     </p>
   </nav>
@@ -73,14 +89,17 @@
  * 一级分组（商品种类）在它左边独立成栏，这里只负责当前一级分组下的二级分组，
  * 以及当前二级分组展开的三级分组——两级不再和一级分组挤在同一列里。
  *
- * 只渲染当前已加载的 childGroups：切换二级分组会触发目录加载，加载完成后
- * 自然出现该分组的三级分组。
+ * 切换二级分组时父级会立刻清空 childGroups 并把 loading 置为 true：
+ * 这里先显示三级分组的骨架占位，接口返回后再换成新分组的数据，
+ * 不会让上一个二级分组的三级分组多停留一帧。loading 期间若已有数据
+ * （例如切换三级分组只重载商品），照常渲染列表，不遮挡已选中的项。
  */
 const props = defineProps({
   groups: { type: Array, default: () => [] },
   childGroups: { type: Array, default: () => [] },
   activeGroupId: { type: [Number, String], default: 0 },
   activeChildId: { type: [Number, String], default: 0 },
+  loading: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(["select-group", "select-child"]);
@@ -220,6 +239,78 @@ function selectChild(child) {
   margin: 2px 0 6px 14px;
   padding-left: 10px;
   border-left: 2px solid $divider-color;
+  /* 分组内容出现时轻微淡入 + 上移，不做大幅位移 */
+  animation: shop-cat-children-in $motion-base ease both;
+}
+
+.shop-cat__children-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: shop-cat-children-in $motion-base ease both;
+}
+
+/* 切换二级分组时的三级分组骨架占位 */
+.shop-cat__children-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 0;
+}
+
+.shop-cat__child-skeleton {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 12px;
+}
+
+.shop-cat__child-skeleton-line {
+  display: block;
+  width: 58%;
+  height: 11px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.05) 25%,
+    rgba(15, 23, 42, 0.09) 37%,
+    rgba(15, 23, 42, 0.05) 63%
+  );
+  background-size: 400% 100%;
+  animation: shop-cat-skeleton-shimmer 1.4s ease infinite;
+}
+
+@keyframes shop-cat-children-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shop-cat-skeleton-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-cat__children,
+  .shop-cat__children-list {
+    animation: none;
+  }
+
+  .shop-cat__child-skeleton-line {
+    animation: none;
+  }
 }
 
 .shop-cat__child {

@@ -36,240 +36,6 @@
   }
 }
 
-/* ===== 第一个侧栏：一级分组（商品种类） ===== */
-.shop-sidebar {
-  width: 216px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: 64px;
-  height: calc(100vh - 64px);
-  box-sizing: border-box;
-  border-right: 1px solid $divider-color;
-  background: #fff;
-  overflow-y: auto;
-  transition: width $motion-base ease;
-
-  &.collapsed {
-    width: 72px;
-  }
-}
-
-.sidebar-head {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 52px;
-  padding: 0 12px 0 16px;
-  border-bottom: 1px solid $divider-color;
-
-  .shop-sidebar.collapsed & {
-    justify-content: center;
-    padding: 0;
-  }
-}
-
-.sidebar-head-text {
-  color: $text-color-primary;
-  font-size: 15px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.sidebar-toggle {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid $divider-color;
-  border-radius: 6px;
-  background: #fff;
-  color: $text-color-secondary;
-  cursor: pointer;
-  transition:
-    border-color $motion-fast ease,
-    color $motion-fast ease;
-
-  &:hover {
-    border-color: $color-primary;
-    color: $color-primary;
-  }
-}
-
-.sidebar-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 10px 16px;
-}
-
-.sidebar-item {
-  display: flex;
-  width: 100%;
-  min-height: 56px;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: $text-color-primary;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background-color $motion-fast ease,
-    color $motion-fast ease;
-
-  .shop-sidebar.collapsed & {
-    justify-content: center;
-    padding: 8px 0;
-  }
-
-  &:hover {
-    background: $bg-color-soft;
-
-    .item-name {
-      color: $color-primary;
-    }
-
-    .item-abbr {
-      background: $color-primary-soft;
-      color: $color-primary;
-    }
-  }
-
-  &.active {
-    background: $color-primary-soft;
-
-    .item-name {
-      color: $color-primary;
-      font-weight: 600;
-    }
-
-    .item-abbr {
-      background: $color-primary;
-      color: #fff;
-    }
-  }
-}
-
-.item-abbr {
-  flex-shrink: 0;
-  display: inline-flex;
-  width: 34px;
-  height: 26px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  background: $bg-color-soft;
-  color: $text-color-secondary;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  transition: all $motion-fast ease;
-}
-
-.item-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.item-name {
-  overflow: hidden;
-  color: $text-color-primary;
-  font-size: 14px;
-  font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition: color $motion-fast ease;
-}
-
-.item-sub {
-  overflow: hidden;
-  color: $text-color-placeholder;
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ===== 第二个侧栏：当前一级分组下的二 / 三级分组 ===== */
-.shop-catalog {
-  width: 244px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: 64px;
-  height: calc(100vh - 64px);
-  box-sizing: border-box;
-  border-right: 1px solid $divider-color;
-  background: #fff;
-  overflow: hidden;
-}
-
-.shop-catalog__head {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 52px;
-  padding: 0 16px;
-  border-bottom: 1px solid $divider-color;
-}
-
-.shop-catalog__title {
-  overflow: hidden;
-  color: $text-color-primary;
-  font-size: 15px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.shop-catalog__badge {
-  flex-shrink: 0;
-  color: $text-color-placeholder;
-  font-size: 12px;
-}
-
-.shop-catalog__body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-/* 窄一点的桌面把两条侧栏一起收窄，避免配置区被挤扁 */
-@media (max-width: 1280px) {
-  .shop-sidebar {
-    width: 196px;
-  }
-
-  .shop-catalog {
-    width: 224px;
-  }
-}
-
-@media (max-width: 1120px) {
-  .shop-sidebar {
-    width: 180px;
-  }
-
-  .shop-catalog {
-    width: 204px;
-  }
-}
-
 /* ===== 右侧整体 ===== */
 .shop-body {
   flex: 1;
@@ -338,155 +104,6 @@
   flex-shrink: 0;
   align-items: center;
   gap: 10px;
-}
-
-/* ===== 页面宽度面板（宽屏） ===== */
-.shop-width-control {
-  position: relative;
-}
-
-.shop-width-trigger,
-.shop-group-nav-trigger {
-  display: inline-flex;
-  height: 32px;
-  align-items: center;
-  gap: 5px;
-  padding: 0 10px;
-  border: 1px solid $divider-color;
-  border-radius: 4px;
-  background: #fff;
-  color: $text-color-secondary;
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    border-color $motion-fast ease,
-    color $motion-fast ease;
-
-  &:hover,
-  &.is-open,
-  &.is-active {
-    border-color: $color-primary;
-    color: $color-primary;
-  }
-
-  &:focus-visible {
-    outline: 2px solid rgba($color-primary, 0.45);
-    outline-offset: 1px;
-  }
-}
-
-.shop-width-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 60;
-  width: 292px;
-  padding: 14px;
-  border: 1px solid $divider-color;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: $shadow-md;
-}
-
-.shop-width-panel__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-
-  strong {
-    color: $text-color-primary;
-    font-size: 13px;
-    font-weight: 600;
-  }
-}
-
-.shop-width-reset {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: $color-primary;
-  font-size: 12px;
-  cursor: pointer;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
-.shop-width-mode {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-
-  button {
-    height: 32px;
-    border: 1px solid $divider-color;
-    border-radius: 4px;
-    background: $bg-color-soft;
-    color: $text-color-secondary;
-    font-size: 12px;
-    cursor: pointer;
-    transition:
-      background-color $motion-fast ease,
-      border-color $motion-fast ease,
-      color $motion-fast ease;
-
-    &:hover {
-      color: $color-primary;
-    }
-
-    &.is-active {
-      border-color: $color-primary;
-      background: $color-primary-soft;
-      color: $color-primary;
-      font-weight: 600;
-    }
-  }
-}
-
-.shop-width-values {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-
-  button {
-    min-width: 60px;
-    height: 28px;
-    padding: 0 8px;
-    border: 1px solid $divider-color;
-    border-radius: 4px;
-    background: #fff;
-    color: $text-color-secondary;
-    font-size: 12px;
-    cursor: pointer;
-    transition:
-      background-color $motion-fast ease,
-      border-color $motion-fast ease,
-      color $motion-fast ease;
-
-    &:hover {
-      border-color: $color-primary-border;
-      color: $color-primary;
-    }
-
-    &.is-active {
-      border-color: $color-primary;
-      background: $color-primary-soft;
-      color: $color-primary;
-      font-weight: 600;
-    }
-  }
-}
-
-.shop-width-hint {
-  margin: 10px 0 0;
-  color: $text-color-placeholder;
-  font-size: 12px;
-  line-height: 1.6;
 }
 
 @media (max-width: 900px) {
@@ -2628,4 +2245,38 @@
 
 .product-card-grid-wrap {
   margin-bottom: 8px;
+}
+
+/* ===== 商品区内容入场 ===== */
+/*
+ * 目录切换 / 骨架屏撤下后，商品内容做一次轻微淡入 + 上移（0.2s），
+ * 与站内其它列表的轻量动效一致；不做大幅位移，避免视觉跳动。
+ * 展示方式切换时同样的入场动画让卡片与列表之间不是硬切。
+ */
+.product-card-grid-wrap,
+.config-area,
+.product-intro-card,
+.config-loading-skeleton {
+  animation: shop-content-in 0.2s ease both;
+}
+
+@keyframes shop-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-card-grid-wrap,
+  .config-area,
+  .product-intro-card,
+  .config-loading-skeleton {
+    animation: none;
+  }
 }

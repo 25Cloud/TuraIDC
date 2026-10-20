@@ -20,6 +20,8 @@ function normalizeGroup(group) {
     product_count: Number(group.product_count || 0),
     product_type: group.product_type || "",
     first_product_group_code: group.first_product_group_code || "",
+    // 前台地址用 slug；老数据没有 slug 时退回 code（与选购页的路由解析同口径）
+    first_product_group_slug: group.first_product_group_slug || "",
     product_type_id: Number(group.product_type_id || 0),
     children_count: Number(group.children_count || 0),
   };
@@ -81,6 +83,8 @@ export function useNavProductMenu() {
           .map((item, index) => ({
             id: Number(item.id || index + 1),
             value: String(item.first_product_group_code || item.value || ""),
+            // 前台地址段：优先用可自定义 slug，老数据退回 code
+            slug: String(item.slug || item.first_product_group_slug || ""),
             label:
               item.label ||
               item.product_type_label ||

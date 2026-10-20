@@ -304,6 +304,20 @@ export default {
       .then((response) =>
         normalizeProductResponse(response, normalizeProductListPayload),
       ),
+  // 只拉某个二级分组下的三级分组（配置页目录用，不连带商品）
+  productGroupChildren: (groupId, params = {}, config = {}) =>
+    request
+      .get(`/v2/site/product-groups/${groupId}/children`, {
+        ...config,
+        params: {
+          page: 1,
+          page_size: V2_SITE_PRODUCT_GROUP_PAGE_SIZE,
+          ...params,
+        },
+      })
+      .then((response) =>
+        normalizeProductResponse(response, normalizeProductGroupListPayload),
+      ),
   // 按需拉某个三级分组的全部商品（目录聚合接口只带当前分组，其余分组
   // 在用户真正切过去时再取；结果同样有服务端缓存）
   productGroupProductsAll: (groupId, level, config = {}) =>
