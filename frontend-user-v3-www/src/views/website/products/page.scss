@@ -295,9 +295,10 @@
   position: relative;
   z-index: 5;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px 16px;
   padding: 12px 20px;
   border-bottom: 1px solid $divider-color;
   background: #fff;
@@ -305,6 +306,8 @@
 
 .shop-view-bar__summary {
   display: flex;
+  /* 路径优先拿宽度：不足 260px 时整块换到下一行，不要被右侧按钮挤成省略号 */
+  flex: 1 1 260px;
   min-width: 0;
   align-items: baseline;
   gap: 10px;
