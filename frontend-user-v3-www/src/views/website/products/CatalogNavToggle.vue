@@ -6,7 +6,9 @@
     :aria-pressed="!visible"
     @click="emit('toggle')"
   >
+    <!-- 目录开合状态：面板图标随收起 / 展开旋转过渡，不再是瞬间翻转 -->
     <svg
+      class="shop-group-nav-trigger__glyph"
       viewBox="0 0 16 16"
       width="14"
       height="14"
@@ -76,6 +78,21 @@ const emit = defineEmits(["toggle"]);
 
   @media (max-width: 900px) {
     display: none;
+  }
+}
+
+.shop-group-nav-trigger__glyph {
+  flex-shrink: 0;
+  transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  .is-active & {
+    transform: rotate(180deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-group-nav-trigger__glyph {
+    transition-duration: 1ms;
   }
 }
 </style>

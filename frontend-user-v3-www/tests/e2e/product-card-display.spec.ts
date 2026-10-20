@@ -1117,7 +1117,12 @@ test.describe("选购页统一路由与展示方式", () => {
     const duration = await page
       .locator(".shop-sidebar")
       .evaluate((el) => getComputedStyle(el).transitionDuration);
-    expect(duration).toContain("0.2s");
+    // 宽度 260ms + 透明度 200ms：弱断言 0.2s 会被任意含 0.2 的时长误命中
+    expect(duration).toContain("0.26s");
+    const timing = await page
+      .locator(".shop-sidebar")
+      .evaluate((el) => getComputedStyle(el).transitionTimingFunction);
+    expect(timing).toContain("cubic-bezier(0.4, 0, 0.2, 1)");
 
     await page.getByRole("button", { name: "收起目录" }).click();
     await expect(page.locator(".shop-sidebar")).toHaveCount(0);

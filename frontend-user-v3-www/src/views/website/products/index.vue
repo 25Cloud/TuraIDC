@@ -39,7 +39,9 @@
             v-if="isMobile"
             type="button"
             class="shop-view-bar__catalog"
+            :class="{ 'is-open': mobileCatalogDrawer }"
             :aria-label="$t('product.list.catalogTitle')"
+            :aria-expanded="mobileCatalogDrawer"
             @click="mobileCatalogDrawer = true"
           >
             <span class="shop-view-bar__name">{{

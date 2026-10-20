@@ -19,14 +19,29 @@
       </button>
     </div>
 
+    <!--
+      目录层级切换用 keyed 面板：一级列表 → 钻取二/三级分组 → 返回上级时
+      重新挂载并播放一次轻微淡入上移，避免列表内容「啪」地整块换掉。
+    -->
     <div class="m-cat__body">
-      <div v-if="loading" class="m-cat__skeleton" aria-hidden="true">
-        <span v-for="index in 4" :key="index" class="m-cat__skeleton-row">
-          <span class="m-cat__skeleton-line" />
-        </span>
+      <div
+        v-if="loading"
+        class="m-cat__panel"
+        key="m-cat-loading"
+        aria-hidden="true"
+      >
+        <div class="m-cat__skeleton">
+          <span v-for="index in 4" :key="index" class="m-cat__skeleton-row">
+            <span class="m-cat__skeleton-line" />
+          </span>
+        </div>
       </div>
 
-      <template v-else-if="drilledGroup">
+      <div
+        v-else-if="drilledGroup"
+        class="m-cat__panel"
+        :key="`m-cat-group-${drilledGroup.id}`"
+      >
         <button type="button" class="m-cat__back" @click="drilledId = 0">
           <svg
             viewBox="0 0 12 12"
@@ -64,9 +79,9 @@
         <p v-if="!loading && !childGroups.length" class="m-cat__empty">
           {{ $t("product.list.groupEmpty") }}
         </p>
-      </template>
+      </div>
 
-      <template v-else>
+      <div v-else class="m-cat__panel" key="m-cat-root">
         <button
           v-for="group in groups"
           :key="group.id"
@@ -102,7 +117,7 @@
         <p v-if="!loading && !groups.length" class="m-cat__empty">
           {{ $t("product.list.groupEmpty") }}
         </p>
-      </template>
+      </div>
     </div>
   </div>
 </template>
@@ -275,6 +290,25 @@ function pickChild(child) {
   padding: 6px 0 20px;
 }
 
+/* 目录层级切换时的入场过渡：轻微上移 + 淡入，不做大幅位移 */
+.m-cat__panel {
+  display: flex;
+  flex-direction: column;
+  animation: m-cat-panel-in 240ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes m-cat-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .m-cat__back {
   display: flex;
   width: 100%;
@@ -287,6 +321,7 @@ function pickChild(child) {
   font-size: 13px;
   text-align: left;
   cursor: pointer;
+  transition: color $motion-fast ease;
 }
 
 .m-cat__row {
@@ -303,6 +338,9 @@ function pickChild(child) {
   font-size: 15px;
   text-align: left;
   cursor: pointer;
+  transition:
+    background-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 180ms cubic-bezier(0.4, 0, 0.2, 1);
 
   &.is-active {
     background: $color-primary-soft;
@@ -328,6 +366,11 @@ function pickChild(child) {
 .m-cat__chevron {
   flex-shrink: 0;
   color: $text-color-placeholder;
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.m-cat__row:hover .m-cat__chevron {
+  transform: translateX(2px);
 }
 
 .m-cat__empty {
@@ -377,8 +420,17 @@ function pickChild(child) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .m-cat__panel {
+    animation: none;
+  }
+
   .m-cat__skeleton-line {
     animation: none;
+  }
+
+  .m-cat__chevron,
+  .m-cat__row {
+    transition-duration: 1ms;
   }
 }
 </style>

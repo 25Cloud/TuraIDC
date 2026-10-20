@@ -134,10 +134,9 @@ defineProps({
 .catalog-skeleton-table-head,
 .catalog-skeleton-table-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1.7fr) 90px 90px minmax(
-      140px,
-      1fr
-    ) minmax(160px, 1.1fr);
+  grid-template-columns:
+    minmax(220px, 1.7fr) 90px 90px minmax(140px, 1fr)
+    minmax(160px, 1.1fr);
   align-items: center;
   gap: 0;
 }
@@ -169,7 +168,7 @@ defineProps({
     rgba(15, 23, 42, 0.05) 63%
   );
   background-size: 400% 100%;
-  animation: catalog-skeleton-shimmer 1.4s ease infinite;
+  animation: catalog-skeleton-shimmer 1.2s ease infinite;
 }
 
 .skeleton-chip {

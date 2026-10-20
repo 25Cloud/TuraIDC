@@ -534,9 +534,20 @@
                         v-else-if="cfg.options.length === 1"
                       >
                         <span class="spec-label">{{ cfg.label }}</span>
-                        <span class="spec-fixed">{{
-                          cfg.options[0].label
-                        }}</span>
+                        <!--
+                          单选项是既成事实：用与多选项完全相同的选中视觉
+                          （主题色描边 + 浅主题底 + 加粗），但不可取消、不参与切换。
+                        -->
+                        <div class="opt-wrap">
+                          <button
+                            type="button"
+                            class="opt-btn active"
+                            aria-pressed="true"
+                            disabled
+                          >
+                            {{ cfg.options[0].label }}
+                          </button>
+                        </div>
                       </div>
                     </template>
                     <div class="spec-row" v-else>
@@ -561,20 +572,31 @@
                             type="button"
                             class="opt-btn"
                             :class="{ active: configForm[cfg.key] === opt.id }"
-                            @click="
-                              configForm[cfg.key] = opt.id;
-                              fetchQuote();
+                            :aria-pressed="
+                              configForm[cfg.key] === opt.id ? 'true' : 'false'
                             "
+                            @click="selectConfigOption(cfg, opt)"
                           >
                             {{ opt.label }}
                           </button>
                         </div>
-                        <!-- 单选项是既成事实而不是可点控件：渲染成静态高亮，避免「看着能点、点了没反应」 -->
-                        <span
+                        <!--
+                          单选项：只有一个可选值，直接渲染主题色选中态，
+                          与多选项同一套 .opt-btn/.active 视觉，且不可取消。
+                        -->
+                        <div
+                          class="opt-wrap"
                           v-else-if="cfg.options.length === 1"
-                          class="spec-fixed"
-                          >{{ cfg.options[0].label }}</span
                         >
+                          <button
+                            type="button"
+                            class="opt-btn active"
+                            aria-pressed="true"
+                            disabled
+                          >
+                            {{ cfg.options[0].label }}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </template>
@@ -1487,6 +1509,21 @@ function selectedConfigLabel(cfg) {
     cfg?.options?.[0]?.label ||
     ""
   );
+}
+
+/**
+ * 选择配置项的可选项。
+ *
+ * 只有一个可选项的配置组（如固定带宽、固定空间）没有「切换」语义：
+ * 点击不改变选中值，也不重新报价；界面上按主题色选中态展示，不可取消。
+ */
+function selectConfigOption(cfg, option) {
+  if (!cfg || (cfg.options?.length || 0) < 2) {
+    return;
+  }
+
+  configForm[cfg.key] = option.id;
+  fetchQuote();
 }
 
 function openMobileConfigPicker(cfg) {
@@ -2654,7 +2691,7 @@ onBeforeUnmount(() => {
   white-space: nowrap;
   transition: all 0.15s;
 
-  &:hover {
+  &:not(:disabled):hover {
     border-color: #165dff;
     color: #165dff;
     background: #fff;
@@ -2664,6 +2701,10 @@ onBeforeUnmount(() => {
     background: #e8f1ff;
     color: #165dff;
     font-weight: 600;
+  }
+  /* 单选项以选中态展示但不接受点击：去掉手型和悬停反馈 */
+  &:disabled {
+    cursor: default;
   }
 }
 
@@ -2828,17 +2869,6 @@ onBeforeUnmount(() => {
     color: $color-primary;
     font-weight: 600;
   }
-}
-
-/* 单选项是既成事实而不是可点控件：静态高亮，避免「看着能点、点了没反应」 */
-.spec-fixed {
-  display: inline-block;
-  padding: 5px 12px;
-  border: 1px solid $divider-color;
-  border-radius: 4px;
-  background: $divider-color;
-  color: $text-color-secondary;
-  font-size: 13px;
 }
 
 /* 900px：与列表式的移动断点保持一致；平板不再挤三栏，

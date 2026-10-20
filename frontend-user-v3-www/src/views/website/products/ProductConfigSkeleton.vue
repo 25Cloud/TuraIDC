@@ -133,7 +133,7 @@ defineProps({
     rgba(15, 23, 42, 0.05) 63%
   );
   background-size: 400% 100%;
-  animation: config-skeleton-shimmer 1.4s ease infinite;
+  animation: config-skeleton-shimmer 1.2s ease infinite;
 }
 
 .skeleton-chip {
