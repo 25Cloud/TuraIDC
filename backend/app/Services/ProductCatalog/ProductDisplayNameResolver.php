@@ -110,14 +110,13 @@ class ProductDisplayNameResolver
         $cpuMemoryDisplay = $cpuMemorySegments !== []
             ? implode(' ', $cpuMemorySegments)
             : '';
+        // 规范规格摘要先算出来：它既是商品名的正式格式（「2核2G」），也用来避免
+        // 把这种规格名误判成上游默认名（见 isDefaultCustomDisplayName）。
+        $specSummaryName = $this->resolveSpecSummaryName($product);
         $customDisplayName = $this->resolveCustomDisplayNameText($product, $configSnapshot, [
             $cpuMemoryDisplay,
             $instanceSpecText,
-        ]);
-        // 没有同步上游商品名（或上游名只是「2 vCPU 2 GiB」这种默认名被判定为无效）时，
-        // 回退不能再只给半截规格：走「三级分组名 + 规范规格摘要」，与库里已改名的
-        // 商品、与前台目录展示是同一口径。
-        $specSummaryName = $this->resolveSpecSummaryName($product);
+        ], $specSummaryName);
         $nameFallback = $customDisplayName !== ''
             ? $customDisplayName
             : ($specSummaryName !== '' ? $specSummaryName : $this->resolveProductNameFallbackText($product, $configSnapshot));
@@ -849,7 +848,7 @@ class ProductDisplayNameResolver
      * @param  array<string, mixed>  $configSnapshot
      * @param  array<int, string>  $defaultCandidates
      */
-    private function resolveCustomDisplayNameText(Product $product, array $configSnapshot = [], array $defaultCandidates = []): string
+    private function resolveCustomDisplayNameText(Product $product, array $configSnapshot = [], array $defaultCandidates = [], string $canonicalSpecName = ''): string
     {
         $candidates = [
             $configSnapshot['custom_display_name'] ?? '',
@@ -866,7 +865,7 @@ class ProductDisplayNameResolver
             $normalized = trim((string) $candidate);
             if ($normalized !== '') {
                 $squished = Str::squish($normalized);
-                if (! $this->isDefaultCustomDisplayName($squished, $defaultCandidates)) {
+                if (! $this->isDefaultCustomDisplayName($squished, $defaultCandidates, $canonicalSpecName)) {
                     return $squished;
                 }
             }
@@ -883,7 +882,7 @@ class ProductDisplayNameResolver
             $cachedCustomDisplayName = trim($this->customDisplayNameCache[$productId]);
             $squished = $cachedCustomDisplayName !== '' ? Str::squish($cachedCustomDisplayName) : '';
 
-            return $squished !== '' && ! $this->isDefaultCustomDisplayName($squished, $defaultCandidates)
+            return $squished !== '' && ! $this->isDefaultCustomDisplayName($squished, $defaultCandidates, $canonicalSpecName)
                 ? $squished
                 : '';
         }
@@ -1041,10 +1040,16 @@ class ProductDisplayNameResolver
     /**
      * @param  array<int, string>  $defaultCandidates
      */
-    private function isDefaultCustomDisplayName(string $customDisplayName, array $defaultCandidates): bool
+    private function isDefaultCustomDisplayName(string $customDisplayName, array $defaultCandidates, string $canonicalSpecName = ''): bool
     {
         $customComparable = $this->normalizeSlugComparable($customDisplayName);
         if ($customComparable === '') {
+            return false;
+        }
+
+        // 「2核2G」就是我们的规范商品名格式：即使它与配置里的默认规格文本等价，
+        // 也是系统/运营明确写下的名字，不能当默认名丢掉。
+        if ($canonicalSpecName !== '' && $customComparable === $this->normalizeSlugComparable($canonicalSpecName)) {
             return false;
         }
 
