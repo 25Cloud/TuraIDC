@@ -1,27 +1,26 @@
 <template>
   <el-config-provider :locale="elementLocale">
     <div class="app-runtime-shell">
-    <div class="app-route-progress" :class="{ 'is-active': isRouteLoading }" />
-
-    <router-view v-slot="{ Component }">
-      <Transition name="route-fade" mode="out-in">
-        <component :is="Component" v-if="Component" />
-        <RouteLoadingFallback v-else />
-      </Transition>
-    </router-view>
+      <!-- 路由切换不再显示顶部进度条：所有加载态统一由骨架承担，
+         首屏/布局未就绪时用同形页面骨架占位，避免出现「另一种加载动画」 -->
+      <router-view v-slot="{ Component }">
+        <Transition name="route-fade" mode="out-in">
+          <component :is="Component" v-if="Component" />
+          <RouteLoadingFallback v-else with-header />
+        </Transition>
+      </router-view>
     </div>
   </el-config-provider>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed } from "vue";
 
-import RouteLoadingFallback from '@/components/common/RouteLoadingFallback.vue'
-import { useLocale } from '@/locales/useLocale'
-import { isRouteLoading } from '@/utils/routeLoading'
+import RouteLoadingFallback from "@/components/common/RouteLoadingFallback.vue";
+import { useLocale } from "@/locales/useLocale";
 
-const { getComponentsLocale } = useLocale()
-const elementLocale = computed(() => getComponentsLocale.value)
+const { getComponentsLocale } = useLocale();
+const elementLocale = computed(() => getComponentsLocale.value);
 </script>
 
 <style scoped lang="scss">
@@ -42,53 +41,9 @@ const elementLocale = computed(() => getComponentsLocale.value)
 .route-fade-leave-to {
   opacity: 0;
 }
+</style>
 
-/* 顶部进度条 */
-.app-route-progress {
-  position: fixed;
-  inset: 0 auto auto 0;
-  width: 100%;
-  height: 3px;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 4200;
-  transition: opacity 0.2s ease-out;
-  background: rgba($color-primary, 0.06);
-}
-
-.app-route-progress::before {
-  content: '';
-  display: block;
-  width: 28%;
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    rgba($color-primary, 0.02),
-    $color-primary 40%,
-    rgba($color-primary, 0.6)
-  );
-  box-shadow: 0 0 8px rgba($color-primary, 0.3);
-  animation: app-route-progress 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-.app-route-progress.is-active {
-  opacity: 1;
-}
-
-@keyframes app-route-progress {
-  0% {
-    transform: translateX(-100%);
-    opacity: 0.6;
-  }
-
-  50% {
-    opacity: 1;
-  }
-
-  100% {
-    transform: translateX(420%);
-    opacity: 0.4;
-  }
-}
+<style lang="scss">
+/* 全站统一骨架 token 与扫光节奏（.tura-skeleton）：只在这里引入一次 */
+@use "@/components/common/skeleton.scss";
 </style>

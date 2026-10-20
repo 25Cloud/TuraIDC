@@ -224,6 +224,8 @@ defineProps({
 </script>
 
 <style scoped lang="scss">
+@use "@/components/common/skeleton.scss" as sk;
+
 .container {
   width: min(1200px, calc(100% - 48px));
   margin: 0 auto;
@@ -235,12 +237,11 @@ defineProps({
 }
 
 .home-section-skeleton--hero {
-  min-height: 640px;
-  // 与真实 Hero 对齐：上移一个头部高度，让顶部 frosted 渐变铺到头部底下，
-  // 避免数据就绪时整体向下跳 64px；同时顶部 64px 透出的是这片浅色渐变（而非
-  // 透明后露出页面底色），与滚动前首页的磨砂观感衔接。
+  // 与 HomeHeroCarousel 的真实 Hero 对齐：上移一个头部高度让背景铺到顶栏下面，
+  // 92/44 的上下内边距 + 460px 主舞台 + 32px 间距 + 136px 能力条，
+  // 总高与真实 Hero 一致，数据到达替换时不会整体位移。
   margin-top: -64px;
-  padding: 92px 0 32px;
+  padding: 92px 0 44px;
   background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 52%, #ffffff 100%);
 }
 
@@ -260,10 +261,14 @@ defineProps({
 
 .home-section-skeleton__hero {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  grid-template-rows: minmax(320px, auto) auto;
-  gap: 28px 48px;
+  grid-template-columns: 220px minmax(0, 1fr) minmax(340px, 420px);
+  // 主舞台 460px 已包含 40/24 的上下内边距：这里写 396，加上 grid 自身 padding
+  // 正好等于真实 .hero-stage 的 460，避免骨架比真实 Hero 高 64px。
+  grid-template-rows: minmax(396px, auto) auto;
+  column-gap: clamp(28px, 3.2vw, 48px);
+  row-gap: 0;
   align-items: center;
+  padding: 40px 0 24px;
 }
 
 .home-section-skeleton__hero-rail {
@@ -281,7 +286,10 @@ defineProps({
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 14px;
+  // 1px 间隔露出白色底，模拟真实能力条的分隔线；高度仍与真实条一致
+  gap: 1px;
+  margin-top: 32px;
+  background: #ffffff;
 }
 
 .home-section-skeleton__heading {
@@ -406,14 +414,8 @@ defineProps({
 .home-section-skeleton__promo {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(
-    90deg,
-    rgba(222, 230, 242, 0.92) 0%,
-    rgba(245, 248, 252, 0.98) 50%,
-    rgba(222, 230, 242, 0.92) 100%
-  );
-  background-size: 200% 100%;
-  animation: home-section-skeleton-shimmer 1.4s ease-out infinite;
+  /* 底色与 1.2s 扫光统一来自 skeleton.scss，与页面骨架/顶栏骨架同一节奏 */
+  @include sk.tura-skeleton-surface;
 }
 
 .home-section-skeleton__line {
@@ -500,8 +502,8 @@ defineProps({
 
 .home-section-skeleton__feature {
   display: block;
-  min-height: 108px;
-  border-radius: 6px;
+  min-height: 116px;
+  border-radius: 0;
 }
 
 .home-section-skeleton__pill--button {
@@ -528,13 +530,18 @@ defineProps({
   width: 90px;
 }
 
-@keyframes home-section-skeleton-shimmer {
-  0% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0 50%;
+@media (prefers-reduced-motion: reduce) {
+  .home-section-skeleton__line,
+  .home-section-skeleton__pill,
+  .home-section-skeleton__media,
+  .home-section-skeleton__feature,
+  .home-section-skeleton__list-item,
+  .home-section-skeleton__promo,
+  .home-section-skeleton__partner-strip {
+    &::after {
+      animation: none;
+      display: none;
+    }
   }
 }
 
@@ -542,6 +549,22 @@ defineProps({
   .home-section-skeleton__grid--products,
   .home-section-skeleton__promo-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-section-skeleton__hero {
+    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-rows: minmax(0, auto) auto;
+    padding: 28px 0 16px;
+    align-items: start;
+  }
+
+  .home-section-skeleton__hero-rail {
+    padding-top: 8px;
+  }
+
+  .home-section-skeleton__hero-features {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 24px;
   }
 }
 
@@ -558,11 +581,28 @@ defineProps({
 
   .home-section-skeleton__hero {
     grid-template-rows: auto;
-    gap: 24px;
+    gap: 18px;
+    padding: 12px 0 4px;
+  }
+
+  .home-section-skeleton__hero-rail {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    padding: 0 0 4px;
+    overflow: hidden;
+  }
+
+  .home-section-skeleton__pill--rail {
+    flex: 0 0 auto;
+    width: 96px;
+    height: 32px;
+    border-radius: 999px;
   }
 
   .home-section-skeleton__hero-features {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 22px;
   }
 
   .home-section-skeleton__register {
@@ -591,9 +631,16 @@ defineProps({
     grid-template-columns: 1fr;
   }
 
+  .home-section-skeleton__feature {
+    min-height: 108px;
+  }
+
+  .home-section-skeleton__hero-rail {
+    display: none;
+  }
+
   .home-section-skeleton--hero {
-    min-height: 560px;
-    padding: 92px 0 28px;
+    padding: 80px 0 24px;
   }
 }
 
@@ -614,17 +661,9 @@ defineProps({
   display: block;
   height: 76px;
   border-radius: 6px;
-
   position: relative;
   overflow: hidden;
-  background: linear-gradient(
-    90deg,
-    rgba(222, 230, 242, 0.92) 0%,
-    rgba(245, 248, 252, 0.98) 50%,
-    rgba(222, 230, 242, 0.92) 100%
-  );
-  background-size: 200% 100%;
-  animation: home-section-skeleton-shimmer 1.4s ease-out infinite;
+  @include sk.tura-skeleton-surface;
 }
 
 @media (max-width: 640px) {

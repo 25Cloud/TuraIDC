@@ -89,59 +89,384 @@
 </head>
 <body>
   <div id="app"></div>
-  <!-- 初始加载动画：JS 解析完成前展示，Vue 挂载后淡出移除 -->
-  <div id="app-splash" aria-label="页面加载中">
+  <!-- 初始加载骨架：JS 解析完成前展示，与首页真实结构同形（顶栏 + 标题 + 卡片格）。
+       Vue 首次路由渲染完成后再淡出，页面内骨架与这里同形，切换不白闪、不跳高。
+       颜色与节奏必须与 src/components/common/skeleton.scss 保持一致（1.2s 扫光）。 -->
+  <div id="app-splash" role="status" aria-live="polite" aria-label="页面加载中">
     <style>
       #app-splash {
         position: fixed;
         inset: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 24px;
-        background: #fafafa;
         z-index: 9999;
+        background: #f5f7fb;
         opacity: 1;
-        transition: opacity 0.32s ease-out;
+        transition: opacity 0.3s ease-out;
+        overflow: hidden;
+      }
+      /* 内联骨架先于全局样式加载：自己补 box-sizing，否则 padding 会把
+         460px 主舞台撑成 524px，和真实 Hero 高度对不上（淡出瞬间跳 64px） */
+      #app-splash,
+      #app-splash *,
+      #app-splash *::before,
+      #app-splash *::after {
+        box-sizing: border-box;
       }
       #app-splash.fade-out {
         opacity: 0;
         pointer-events: none;
       }
-      #app-splash .splash-track {
-        position: relative;
-        width: 168px;
-        height: 1px;
-        background: #e5e5e5;
-        overflow: hidden;
+      #app-splash .sk-container {
+        width: min(1200px, calc(100% - 48px));
+        margin: 0 auto;
       }
-      #app-splash .splash-track::after {
+      #app-splash .sk {
+        position: relative;
+        display: block;
+        overflow: hidden;
+        border-radius: 6px;
+        background-color: #e1e8f2;
+      }
+      /* 与 src/components/common/skeleton.scss 同一套扫光：1.2s 白色高光从左到右 */
+      #app-splash .sk::after {
         content: '';
         position: absolute;
-        left: 0;
-        top: 0;
-        width: 40%;
-        height: 100%;
-        background: #1a1a1a;
-        animation: splash-scan 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.55) 50%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        animation: splash-skeleton-sweep 1.2s ease-in-out infinite;
       }
-      @media (prefers-reduced-motion: reduce) {
-        #app-splash .splash-track::after {
-          animation: none;
-          width: 100%;
-        }
+      /* 顶栏：与真实 header 同高同布局 */
+      #app-splash .sk-topbar {
+        height: 64px;
+        background: #ffffff;
+        border-bottom: 1px solid #eef2f7;
       }
-      @keyframes splash-scan {
+      #app-splash .sk-topbar .sk-container {
+        display: flex;
+        align-items: center;
+        height: 64px;
+      }
+      #app-splash .sk-logo {
+        width: 148px;
+        height: 32px;
+        flex: none;
+      }
+      #app-splash .sk-nav {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        margin-left: 40px;
+      }
+      #app-splash .sk-nav .sk {
+        height: 14px;
+        border-radius: 999px;
+      }
+      #app-splash .sk-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-left: auto;
+      }
+      #app-splash .sk-actions .sk {
+        height: 34px;
+        width: 72px;
+        border-radius: 3px;
+      }
+      #app-splash .sk-actions .sk:last-child {
+        width: 96px;
+      }
+      /* Hero：与 HomeHeroCarousel 的首屏结构一致 */
+      #app-splash .sk-hero {
+        padding: 28px 0 44px;
+        background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 52%, #ffffff 100%);
+      }
+      #app-splash .sk-stage {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr) minmax(340px, 420px);
+        column-gap: clamp(28px, 3.2vw, 48px);
+        row-gap: 20px;
+        align-items: center;
+        min-height: 460px;
+        padding: 40px 0 24px;
+      }
+      #app-splash .sk-rail {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-top: 18px;
+      }
+      #app-splash .sk-rail .sk {
+        height: 52px;
+      }
+      #app-splash .sk-hero-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      #app-splash .sk-hero-title {
+        width: min(520px, 92%);
+        height: 46px;
+      }
+      #app-splash .sk-hero-desc {
+        width: min(620px, 100%);
+        height: 16px;
+        border-radius: 999px;
+      }
+      #app-splash .sk-hero-desc.short {
+        width: min(460px, 78%);
+      }
+      #app-splash .sk-hero-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 14px;
+      }
+      #app-splash .sk-hero-actions .sk {
+        height: 48px;
+        border-radius: 999px;
+      }
+      #app-splash .sk-hero-actions .sk:first-child {
+        width: 160px;
+      }
+      #app-splash .sk-hero-actions .sk:last-child {
+        width: 132px;
+      }
+      #app-splash .sk-features {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 1px;
+        margin-top: 32px;
+        background: #ffffff;
+        border: 1px solid #e5eaf3;
+        border-radius: 6px;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+      }
+      #app-splash .sk-features .sk {
+        height: 116px;
+        border-radius: 0;
+      }
+      /* 产品区块：白底标题 + 分类 + 四张卡 */
+      #app-splash .sk-products {
+        padding: 72px 0 80px;
+        background: #ffffff;
+      }
+      #app-splash .sk-heading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+      #app-splash .sk-heading .sk:first-child {
+        width: min(360px, 60%);
+        height: 30px;
+        border-radius: 999px;
+      }
+      #app-splash .sk-heading .sk:last-child {
+        width: min(560px, 84%);
+        height: 14px;
+        border-radius: 999px;
+      }
+      #app-splash .sk-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin: 34px 0 28px;
+      }
+      #app-splash .sk-tabs .sk {
+        height: 34px;
+        border-radius: 999px;
+      }
+      #app-splash .sk-cards {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+      }
+      #app-splash .sk-card {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-height: 100px;
+        padding: 14px 20px 12px;
+        border: 1px solid #e5eaf3;
+        border-radius: 6px;
+        background: #ffffff;
+      }
+      #app-splash .sk-card .sk {
+        height: 12px;
+        border-radius: 999px;
+      }
+      #app-splash .sk-card .sk:first-child {
+        width: 62%;
+        height: 18px;
+      }
+      #app-splash .sk-card .sk:nth-child(2) {
+        width: 100%;
+      }
+      #app-splash .sk-card .sk:last-child {
+        width: 88px;
+        margin-top: auto;
+        margin-left: auto;
+      }
+      @keyframes splash-skeleton-sweep {
         0% {
           transform: translateX(-100%);
         }
         100% {
-          transform: translateX(420%);
+          transform: translateX(100%);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #app-splash {
+          transition: none;
+        }
+        #app-splash .sk::after {
+          animation: none;
+          display: none;
+        }
+      }
+      @media (max-width: 1180px) {
+        #app-splash .sk-stage {
+          grid-template-columns: 220px minmax(0, 1fr);
+          min-height: 0;
+          padding: 28px 0 16px;
+          align-items: start;
+        }
+        #app-splash .sk-features {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          margin-top: 24px;
+        }
+        #app-splash .sk-cards {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 960px) {
+        #app-splash .sk-nav,
+        #app-splash .sk-actions {
+          display: none;
+        }
+        #app-splash .sk-hero {
+          padding: 20px 0 28px;
+        }
+        #app-splash .sk-stage {
+          grid-template-columns: 1fr;
+          gap: 18px;
+          padding: 12px 0 4px;
+        }
+        #app-splash .sk-rail {
+          flex-direction: row;
+          padding: 0 0 4px;
+          overflow: hidden;
+        }
+        #app-splash .sk-rail .sk {
+          flex: 0 0 auto;
+          width: 96px;
+          height: 32px;
+          border-radius: 999px;
+        }
+        #app-splash .sk-features {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          margin-top: 22px;
+        }
+      }
+      @media (max-width: 640px) {
+        #app-splash .sk-container {
+          width: calc(100% - 24px);
+        }
+        #app-splash .sk-hero {
+          padding: 16px 0 24px;
+        }
+        #app-splash .sk-rail {
+          display: none;
+        }
+        #app-splash .sk-hero-title {
+          height: 32px;
+        }
+        #app-splash .sk-features {
+          grid-template-columns: 1fr;
+          margin-top: 18px;
+        }
+        #app-splash .sk-features .sk {
+          height: 108px;
+        }
+        #app-splash .sk-products {
+          padding: 48px 0 56px;
+        }
+        #app-splash .sk-cards {
+          grid-template-columns: 1fr;
         }
       }
     </style>
-    <div class="splash-track" aria-hidden="true"></div>
+    <div class="sk-topbar" aria-hidden="true">
+      <div class="sk-container">
+        <span class="sk sk-logo"></span>
+        <div class="sk-nav">
+          <span class="sk" style="width: 44px"></span>
+          <span class="sk" style="width: 52px"></span>
+          <span class="sk" style="width: 80px"></span>
+          <span class="sk" style="width: 52px"></span>
+          <span class="sk" style="width: 72px"></span>
+        </div>
+        <div class="sk-actions">
+          <span class="sk"></span>
+          <span class="sk"></span>
+        </div>
+      </div>
+    </div>
+    <div class="sk-hero" aria-hidden="true">
+      <div class="sk-container">
+        <div class="sk-stage">
+          <div class="sk-rail">
+            <span class="sk"></span>
+            <span class="sk"></span>
+            <span class="sk"></span>
+            <span class="sk"></span>
+            <span class="sk"></span>
+          </div>
+          <div class="sk-hero-copy">
+            <span class="sk sk-hero-title"></span>
+            <span class="sk sk-hero-desc"></span>
+            <span class="sk sk-hero-desc short"></span>
+            <div class="sk-hero-actions">
+              <span class="sk"></span>
+              <span class="sk"></span>
+            </div>
+          </div>
+        </div>
+        <div class="sk-features">
+          <span class="sk"></span>
+          <span class="sk"></span>
+          <span class="sk"></span>
+          <span class="sk"></span>
+          <span class="sk"></span>
+        </div>
+      </div>
+    </div>
+    <div class="sk-products" aria-hidden="true">
+      <div class="sk-container">
+        <div class="sk-heading">
+          <span class="sk"></span>
+          <span class="sk"></span>
+        </div>
+        <div class="sk-tabs">
+          <span class="sk" style="width: 88px"></span>
+          <span class="sk" style="width: 104px"></span>
+          <span class="sk" style="width: 96px"></span>
+          <span class="sk" style="width: 118px"></span>
+          <span class="sk" style="width: 90px"></span>
+        </div>
+        <div class="sk-cards">
+          <div class="sk-card"><span class="sk"></span><span class="sk"></span><span class="sk"></span></div>
+          <div class="sk-card"><span class="sk"></span><span class="sk"></span><span class="sk"></span></div>
+          <div class="sk-card"><span class="sk"></span><span class="sk"></span><span class="sk"></span></div>
+          <div class="sk-card"><span class="sk"></span><span class="sk"></span><span class="sk"></span></div>
+        </div>
+      </div>
+    </div>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>

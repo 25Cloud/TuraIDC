@@ -1,29 +1,66 @@
 <template>
   <div class="content-reader-page">
-    <div class="reader-breadcrumb">
-      <router-link class="reader-breadcrumb__link" :to="backToListRoute">
-        {{ config.pageTitle }}
-      </router-link>
-      <el-icon><ArrowRight /></el-icon>
-      <router-link
-        v-if="currentCategoryId"
-        class="reader-breadcrumb__link"
-        :to="categoryListRoute"
-      >
-        {{ currentCategoryName }}
-      </router-link>
-      <span v-else class="reader-breadcrumb__text">{{
-        currentCategoryName
-      }}</span>
-      <el-icon><ArrowRight /></el-icon>
-      <span class="reader-breadcrumb__current">
-        {{ currentArticle?.title || config.detailTitle }}
-      </span>
+    <div class="reader-breadcrumb" :aria-busy="loading ? 'true' : 'false'">
+      <template v-if="loading">
+        <SkeletonBlock :width="64" :height="13" />
+        <el-icon><ArrowRight /></el-icon>
+        <SkeletonBlock :width="72" :height="13" />
+        <el-icon><ArrowRight /></el-icon>
+        <SkeletonBlock :width="180" :height="13" />
+      </template>
+      <template v-else>
+        <router-link class="reader-breadcrumb__link" :to="backToListRoute">
+          {{ config.pageTitle }}
+        </router-link>
+        <el-icon><ArrowRight /></el-icon>
+        <router-link
+          v-if="currentCategoryId"
+          class="reader-breadcrumb__link"
+          :to="categoryListRoute"
+        >
+          {{ currentCategoryName }}
+        </router-link>
+        <span v-else class="reader-breadcrumb__text">{{
+          currentCategoryName
+        }}</span>
+        <el-icon><ArrowRight /></el-icon>
+        <span class="reader-breadcrumb__current">
+          {{ currentArticle?.title || config.detailTitle }}
+        </span>
+      </template>
     </div>
 
-    <div v-loading="loading" class="reader-layout">
+    <div class="reader-layout" :aria-busy="loading ? 'true' : 'false'">
       <section class="reader-main">
-        <article id="article-top" class="reader-article">
+        <!-- 详情接口未返回时用正文骨架占位：标题/元信息/段落与真实文章同尺寸，
+             不再整块盖遮罩 spinner -->
+        <article
+          v-if="loading"
+          class="reader-article reader-article--skeleton"
+          aria-hidden="true"
+        >
+          <SkeletonBlock :width="'min(420px, 72%)'" :height="30" />
+          <div class="reader-skeleton__meta">
+            <SkeletonBlock :width="110" :height="12" />
+            <SkeletonBlock :width="150" :height="12" />
+            <SkeletonBlock :width="86" :height="12" />
+          </div>
+          <SkeletonBlock :height="1" :radius="0" />
+          <div class="reader-skeleton__body">
+            <template v-for="line in 14" :key="`reader-line-${line}`">
+              <SkeletonBlock
+                :width="readerLineWidths[(line - 1) % readerLineWidths.length]"
+                :height="15"
+              />
+              <span
+                v-if="line % 5 === 0 && line !== 14"
+                class="reader-skeleton__gap"
+              />
+            </template>
+          </div>
+        </article>
+
+        <article v-else id="article-top" class="reader-article">
           <header class="reader-article__header">
             <h1>{{ currentArticle?.title || config.detailTitle }}</h1>
             <div v-if="currentArticle" class="reader-meta">
@@ -73,7 +110,15 @@
       <aside class="reader-sidebar">
         <section class="sidebar-card">
           <div class="sidebar-card__title">{{ config.categoryTitle }}</div>
-          <div class="category-list">
+          <div v-if="loading" class="sidebar-skeleton" aria-hidden="true">
+            <SkeletonBlock
+              v-for="index in 5"
+              :key="`detail-category-skeleton-${index}`"
+              :width="`${64 + ((index * 7) % 26)}%`"
+              :height="13"
+            />
+          </div>
+          <div v-else class="category-list">
             <button
               v-for="item in categories"
               :key="item.id"
@@ -125,6 +170,7 @@ import { computed, nextTick, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowRight } from "@element-plus/icons-vue";
 import siteApi from "@/api/site";
+import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
 import { renderMarkdown } from "@/utils/markdown";
 import { updatePageMeta } from "@/utils/pageMeta";
 import { rewriteApiAssetUrlsInHtml } from "@/utils/apiAssetUrl";
@@ -183,6 +229,17 @@ const tocItems = ref([
   { id: "article-top", label: t("content.detail.fullText"), level: 1 },
 ]);
 const contentRef = ref(null);
+// 正文骨架的段落宽度：固定一组自然宽度，避免骨架换真实正文时高度骤变
+const readerLineWidths = [
+  "100%",
+  "96%",
+  "88%",
+  "100%",
+  "72%",
+  "94%",
+  "100%",
+  "64%",
+];
 
 const backToListRoute = computed(() => {
   const query = {};
@@ -475,6 +532,44 @@ watch(
 
 .reader-article {
   padding: 22px 20px 28px;
+}
+
+/* 正文骨架：沿用 .reader-article 的内边距，标题/元信息/段落与真实文章同尺寸 */
+.reader-article--skeleton {
+  display: flex;
+  flex-direction: column;
+}
+
+.reader-skeleton__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 18px 0;
+  padding: 12px 14px;
+  border: 1px solid $color-primary-border;
+  background: $color-primary-soft;
+}
+
+.reader-skeleton__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.reader-skeleton__gap {
+  display: block;
+  height: 14px;
+}
+
+/* 侧栏分类骨架：行距与 .category-item 的 padding 对齐 */
+.sidebar-skeleton {
+  display: grid;
+  margin-top: 16px;
+}
+
+.sidebar-skeleton .tura-skeleton {
+  margin: 12px 0;
 }
 
 .reader-article__header h1 {

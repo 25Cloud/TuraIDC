@@ -19,11 +19,17 @@
             class="logo-image"
             @error="handleLogoError"
           />
-          <span
-            v-if="!logoSrc || logoLoadFailed"
-            class="logo-fallback logo-fallback--pending"
-            >{{ appStore.brandingResolved ? appStore.siteName : "" }}</span
-          >
+          <!-- 品牌配置未解析前用骨架占位：此前是空白 span，顶部会先空一块再出现 logo -->
+          <SkeletonBlock
+            v-else-if="!appStore.brandingResolved"
+            class="logo-skeleton"
+            :width="148"
+            :height="32"
+            :radius="3"
+          />
+          <span v-else-if="logoLoadFailed" class="logo-fallback">{{
+            appStore.siteName
+          }}</span>
         </router-link>
 
         <nav
@@ -351,9 +357,22 @@
           </div>
         </transition>
 
-        <div class="header-actions">
+        <div
+          class="header-actions"
+          :aria-busy="userInfoPending ? 'true' : undefined"
+        >
+          <!-- 登录态恢复（有 token，/user/info 还在飞）时先用等尺寸骨架占位，
+               避免先闪出「登录 / 免费注册」再跳成用户名 -->
           <div
-            v-if="userStore.isLoggedIn"
+            v-if="userInfoPending"
+            class="header-user-pending"
+            aria-hidden="true"
+          >
+            <SkeletonBlock :width="34" :height="34" circle />
+            <SkeletonBlock :width="76" :height="14" radius="999" />
+          </div>
+          <div
+            v-else-if="userStore.isLoggedIn"
             ref="userMenuTriggerRef"
             class="user-menu"
           >
@@ -427,7 +446,7 @@
               </div>
             </transition>
           </div>
-          <template v-if="!userStore.isLoggedIn">
+          <template v-else>
             <a :href="consoleUrl('/client/login')" class="header-link">{{
               $t("layout.user.signIn")
             }}</a>
@@ -437,8 +456,13 @@
           </template>
         </div>
 
+        <div v-if="userInfoPending" class="mobile-user-menu" aria-hidden="true">
+          <span class="mobile-user-pending">
+            <SkeletonBlock :width="36" :height="36" circle />
+          </span>
+        </div>
         <div
-          v-if="userStore.isLoggedIn"
+          v-else-if="userStore.isLoggedIn"
           ref="mobileUserMenuTriggerRef"
           class="mobile-user-menu"
         >
@@ -640,10 +664,45 @@
                       {{ group.name }}
                     </router-link>
                   </div>
+                  <!-- 目录已展开、二/三级分组还在飞：用与条目同高的骨架占位 -->
+                  <div
+                    v-else-if="
+                      mobileExpandedType === type.value && navGroupsPending
+                    "
+                    class="mobile-third-level-list mobile-third-level-list--skeleton"
+                    aria-hidden="true"
+                  >
+                    <div
+                      v-for="index in 4"
+                      :key="`m-group-skeleton-${type.value}-${index}`"
+                      class="mobile-menu-skeleton__sub-row"
+                    >
+                      <SkeletonBlock
+                        :width="`${56 + ((index * 9) % 26)}%`"
+                        :height="12"
+                        radius="999"
+                      />
+                    </div>
+                  </div>
                 </div>
               </template>
-              <div v-else-if="navLoading" class="mobile-menu-loading">
-                {{ $t("common.loading") }}
+              <div
+                v-else-if="navLoading"
+                class="mobile-menu-skeleton"
+                aria-hidden="true"
+              >
+                <div
+                  v-for="index in 5"
+                  :key="`m-product-skeleton-${index}`"
+                  class="mobile-menu-skeleton__row"
+                >
+                  <SkeletonBlock
+                    :width="`${54 + ((index * 7) % 28)}%`"
+                    :height="14"
+                    radius="999"
+                  />
+                  <SkeletonBlock :width="18" :height="8" radius="999" />
+                </div>
               </div>
               <div v-else class="mobile-menu-empty">
                 {{ $t("layout.product.emptyCategories") }}
@@ -713,8 +772,23 @@
                   >{{ $t("layout.notice.viewAllMore") }}</router-link
                 >
               </template>
-              <div v-else-if="navNoticesLoading" class="mobile-menu-loading">
-                {{ $t("common.loading") }}
+              <div
+                v-else-if="navNoticesLoading"
+                class="mobile-menu-skeleton"
+                aria-hidden="true"
+              >
+                <div
+                  v-for="index in 4"
+                  :key="`m-notice-skeleton-${index}`"
+                  class="mobile-menu-skeleton__row"
+                >
+                  <SkeletonBlock
+                    :width="`${50 + ((index * 8) % 30)}%`"
+                    :height="14"
+                    radius="999"
+                  />
+                  <SkeletonBlock :width="18" :height="8" radius="999" />
+                </div>
               </div>
               <div v-else class="mobile-menu-empty">
                 {{ $t("layout.notice.empty") }}
@@ -784,8 +858,23 @@
                   >{{ $t("layout.doc.viewAllMore") }}</router-link
                 >
               </template>
-              <div v-else-if="navHelpLoading" class="mobile-menu-loading">
-                {{ $t("common.loading") }}
+              <div
+                v-else-if="navHelpLoading"
+                class="mobile-menu-skeleton"
+                aria-hidden="true"
+              >
+                <div
+                  v-for="index in 4"
+                  :key="`m-help-skeleton-${index}`"
+                  class="mobile-menu-skeleton__row"
+                >
+                  <SkeletonBlock
+                    :width="`${56 + ((index * 6) % 26)}%`"
+                    :height="14"
+                    radius="999"
+                  />
+                  <SkeletonBlock :width="18" :height="8" radius="999" />
+                </div>
               </div>
               <div v-else class="mobile-menu-empty">
                 {{ $t("layout.doc.empty") }}
@@ -828,7 +917,9 @@
           页面整块空白，必须刷新才恢复。去掉过渡后返回立即渲染；
           将来要做页面切换动效，先在 CSS 里定义好 page-fade 类再加回来。
         -->
-        <component :is="Component" />
+        <component :is="Component" v-if="Component" />
+        <!-- 页面 chunk 尚未解析时用与目标页同形的骨架兜住内容区，不留白 -->
+        <RouteLoadingFallback v-else />
       </router-view>
     </main>
 
@@ -844,16 +935,37 @@
                 class="footer-logo-image"
                 @error="handleFooterLogoError"
               />
+              <SkeletonBlock
+                v-else-if="!appStore.brandingResolved"
+                :width="148"
+                :height="40"
+                :radius="3"
+              />
               <span
-                v-if="!logoSrc || footerLogoLoadFailed"
+                v-else-if="footerLogoLoadFailed"
                 class="footer-logo-fallback"
-                >{{ appStore.brandingResolved ? appStore.siteName : "" }}</span
+                >{{ appStore.siteName }}</span
               >
             </div>
             <p class="footer-brand__desc">
               {{ $t("layout.footer.brandDesc") }}
             </p>
-            <ul class="footer-contact">
+            <!-- 站点配置未返回前，联系方式先用与真实值等高的骨架占位，
+                 避免先显示「待补充群号」再跳成真实号码 -->
+            <ul
+              v-if="!appStore.brandingResolved"
+              class="footer-contact"
+              aria-hidden="true"
+            >
+              <li
+                v-for="labelKey in footerContactLabelKeys"
+                :key="`footer-contact-pending-${labelKey}`"
+              >
+                <span class="footer-contact__label">{{ $t(labelKey) }}</span>
+                <SkeletonBlock :width="120" :height="13" radius="999" />
+              </li>
+            </ul>
+            <ul v-else class="footer-contact">
               <li v-for="item in supportContacts" :key="item.key">
                 <span class="footer-contact__label">{{ item.label }}</span>
                 <a
@@ -930,6 +1042,21 @@
                 $t("layout.user.realNameVerification")
               }}</a>
             </div>
+
+            <!-- 开源入口：AGPL 第 13 条要求向网络用户提供源码获取途径，
+                 未修改部署指回官方仓库即可，修改版须在本站提供对应源码。 -->
+            <div class="footer-col">
+              <h4>{{ $t("openSource.kicker") }}</h4>
+              <router-link to="/open-source">{{
+                $t("openSource.footer.version")
+              }}</router-link>
+              <a
+                :href="repositoryUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                >{{ $t("openSource.footer.repository") }}</a
+              >
+            </div>
           </div>
         </div>
 
@@ -993,10 +1120,19 @@ import { buildConsoleUrl, isConsolePath } from "@/utils/consoleUrl";
 import { useNavProductMenu } from "./useNavProductMenu";
 import { useNavContentMenu } from "./useNavContentMenu";
 import MegaMenuSkeleton from "./MegaMenuSkeleton.vue";
+import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
+import RouteLoadingFallback from "@/components/common/RouteLoadingFallback.vue";
+import { getToken } from "@/utils/auth";
 
 const route = useRoute();
 const appStore = useAppStore();
 const userStore = useUserStore();
+// 登录态恢复中：有 token 但用户信息尚未返回，顶栏用户区用骨架占位
+const userInfoPending = ref(
+  typeof window !== "undefined" && Boolean(getToken()),
+);
+// 开源仓库地址：页脚「开源仓库」外链，与 README、/open-source 页面保持同一口径
+const repositoryUrl = "https://github.com/25Cloud/TuraIDC";
 
 // 首页判定：仅首页的 Hero 会与头部拼接，其他页面保持常规白底头部。
 // 首页是 "/" 下的子路由（name=WwwHome，path=""），fullPath 即 "/"。
@@ -1007,8 +1143,14 @@ const isHomeRoute = computed(
 // 登录态恢复放到 onMounted，避免 setup 顶层产生路由跳转副作用
 // 跨端口登录传递仍走 query _token（与控制台 v4-console 约定保持一致），收到后立即持久化并从 URL 剥离
 onMounted(() => {
-  // 仅在本地已有 token 时才拉取用户信息，避免未登录时触发 401
-  userStore.fetchUserInfo().catch(() => {});
+  // 仅在本地已有 token 时才拉取用户信息，避免未登录时触发 401；
+  // 有 token 时用户区先显示等尺寸骨架，请求结束（成功或失败）后再切真实内容
+  userStore
+    .fetchUserInfo()
+    .catch(() => {})
+    .finally(() => {
+      userInfoPending.value = false;
+    });
 });
 
 const navProductMenu = useNavProductMenu();
@@ -1370,6 +1512,12 @@ const aboutQuickLinks = computed(() => [
 const logoSrc = computed(() =>
   appStore.brandingResolved ? appStore.siteLogo || "/branding/logo.png" : "",
 );
+// 页脚联系方式的固定三行：配置未到时按这三行画骨架，行数与真实联系人一致
+const footerContactLabelKeys = [
+  "help.support.officialQqGroup",
+  "help.support.partnershipEmail",
+  "help.support.serviceHours",
+];
 const supportContacts = computed(() =>
   buildSupportContacts({
     serviceQqGroup: appStore.serviceQqGroup,
@@ -1865,6 +2013,17 @@ onBeforeUnmount(() => {
   gap: 6px;
   flex-shrink: 0;
   margin-left: auto;
+}
+
+/* 登录态恢复中的用户胶囊骨架：尺寸/内边距与 .header-user-trigger 完全一致，
+   骨架换成真实用户名时不发生产布局跳动 */
+.header-user-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .header-user-icon {
@@ -2437,11 +2596,34 @@ onBeforeUnmount(() => {
   text-decoration: none;
 }
 
-.mobile-menu-loading {
-  padding: 24px 0;
-  text-align: center;
-  color: $text-color-placeholder;
-  font-size: 13px;
+.mobile-menu-skeleton {
+  padding-top: 4px;
+}
+
+/* 移动端菜单取数占位：行高/分隔线与 .mobile-second-level-item 对齐 */
+.mobile-menu-skeleton__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 12px 4px;
+  border-bottom: 1px solid $divider-color;
+}
+
+.mobile-menu-skeleton__sub-row {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 8px 4px;
+}
+
+.mobile-user-pending {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
 }
 
 .mobile-menu-empty {
@@ -2579,7 +2761,8 @@ onBeforeUnmount(() => {
 
 .footer-columns {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  // 第 5 列是「开源」入口（开源版本 / 开源仓库），列宽随内容均分
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 32px;
 }
 

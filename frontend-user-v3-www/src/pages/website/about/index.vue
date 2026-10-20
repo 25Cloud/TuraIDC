@@ -2,11 +2,11 @@
   <div class="about-page">
     <section class="about-hero">
       <div class="container">
-        <p class="about-kicker">{{ $t('layout.nav.aboutUs') }}</p>
+        <p class="about-kicker">{{ $t("layout.nav.aboutUs") }}</p>
         <!-- H1 描述页面本身而非站点名；与后端 SEO 快照（renderStaticBody）口径一致 -->
-        <h1>{{ $t('layout.nav.aboutUs') }}</h1>
+        <h1>{{ $t("layout.nav.aboutUs") }}</h1>
         <p class="about-desc">
-          {{ $t('content.about.intro') }}
+          {{ $t("content.about.intro") }}
         </p>
       </div>
     </section>
@@ -14,25 +14,59 @@
     <section class="about-section">
       <div class="container about-grid">
         <article class="about-card">
-          <h2>{{ $t('content.about.serviceCapabilities') }}</h2>
+          <h2>{{ $t("content.about.serviceCapabilities") }}</h2>
           <p>
-            {{ $t('content.about.serviceCapabilitiesDesc') }}
+            {{ $t("content.about.serviceCapabilitiesDesc") }}
           </p>
         </article>
         <article class="about-card">
-          <h2>{{ $t('content.about.contactInformation') }}</h2>
-          <p>{{ $t('content.about.serviceEmailLabel') }}{{ appStore.serviceEmail || $t('content.about.notConfigured') }}</p>
-          <p>{{ $t('content.about.serviceHoursLabel') }}{{ appStore.serviceHours || $t('content.about.serviceHoursFallback') }}</p>
+          <h2>{{ $t("content.about.contactInformation") }}</h2>
           <p>
-            {{ $t('content.about.officialGroupLabel') }}
-            <a
-              v-if="appStore.supportGroupLink"
-              :href="appStore.supportGroupLink"
-              target="_blank"
-              rel="noopener noreferrer"
-              >{{ appStore.serviceQqGroup || $t('content.about.notConfigured') }}</a
-            >
-            <span v-else>{{ appStore.serviceQqGroup || $t('content.about.notConfigured') }}</span>
+            {{ $t("content.about.serviceEmailLabel") }}
+            <SkeletonBlock
+              v-if="!appStore.brandingResolved"
+              class="about-pending-value"
+              :width="180"
+              :height="14"
+            />
+            <template v-else>{{
+              appStore.serviceEmail || $t("content.about.notConfigured")
+            }}</template>
+          </p>
+          <p>
+            {{ $t("content.about.serviceHoursLabel") }}
+            <SkeletonBlock
+              v-if="!appStore.brandingResolved"
+              class="about-pending-value"
+              :width="150"
+              :height="14"
+            />
+            <template v-else>{{
+              appStore.serviceHours || $t("content.about.serviceHoursFallback")
+            }}</template>
+          </p>
+          <p>
+            {{ $t("content.about.officialGroupLabel") }}
+            <SkeletonBlock
+              v-if="!appStore.brandingResolved"
+              class="about-pending-value"
+              :width="120"
+              :height="14"
+            />
+            <template v-else>
+              <a
+                v-if="appStore.supportGroupLink"
+                :href="appStore.supportGroupLink"
+                target="_blank"
+                rel="noopener noreferrer"
+                >{{
+                  appStore.serviceQqGroup || $t("content.about.notConfigured")
+                }}</a
+              >
+              <span v-else>{{
+                appStore.serviceQqGroup || $t("content.about.notConfigured")
+              }}</span>
+            </template>
           </p>
         </article>
       </div>
@@ -42,6 +76,7 @@
 
 <script setup lang="ts">
 import { useAppStore } from "@/stores/app";
+import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
 
 const appStore = useAppStore();
 </script>
@@ -109,5 +144,11 @@ h1 {
   margin: 8px 0 0;
   color: #64748b;
   line-height: 1.8;
+}
+
+/* 配置未返回时的行内骨架：与正文同高，避免「未配置」闪一下再变真实值 */
+.about-pending-value {
+  display: inline-block;
+  vertical-align: -2px;
 }
 </style>

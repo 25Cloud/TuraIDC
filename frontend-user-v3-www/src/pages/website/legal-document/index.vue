@@ -5,7 +5,14 @@
       <p>{{ pageDescription }}</p>
 
       <div class="legal-actions">
-        <el-button v-if="targetUrl" type="primary" @click="openDocument">{{
+        <!-- 站点配置未返回前先用按钮骨架占位，避免先闪「文档地址缺失」再出现按钮 -->
+        <SkeletonBlock
+          v-if="!appStore.brandingResolved"
+          :width="132"
+          :height="36"
+          :radius="3"
+        />
+        <el-button v-else-if="targetUrl" type="primary" @click="openDocument">{{
           $t("content.legal.openOriginal")
         }}</el-button>
         <el-button @click="router.push('/')">{{
@@ -14,7 +21,7 @@
       </div>
 
       <el-empty
-        v-if="!targetUrl"
+        v-if="appStore.brandingResolved && !targetUrl"
         :description="$t('content.legal.documentUrlMissing')"
         :image-size="72"
       />
@@ -26,6 +33,7 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAppStore } from "@/stores/app";
+import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
 import { t } from "@/locales";
 
 const route = useRoute();

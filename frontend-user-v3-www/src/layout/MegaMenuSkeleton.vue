@@ -40,6 +40,8 @@ defineProps({
 </script>
 
 <style scoped lang="scss">
+@use "@/components/common/skeleton.scss" as sk;
+
 .mega-skeleton {
   display: contents;
 }
@@ -62,19 +64,12 @@ defineProps({
   padding: 10px 20px;
 }
 
+/* 底色与 1.2s 扫光统一走 skeleton.scss，和首页/页面骨架同一节奏 */
 .mega-skeleton-line {
   display: block;
   height: 12px;
   border-radius: 999px;
-  // 与首页骨架屏同一套底色与节奏，避免同一个站里出现两种灰
-  background: linear-gradient(
-    90deg,
-    rgba(222, 230, 242, 0.92) 0%,
-    rgba(245, 248, 252, 0.98) 50%,
-    rgba(222, 230, 242, 0.92) 100%
-  );
-  background-size: 200% 100%;
-  animation: mega-skeleton-shimmer 1.4s ease-out infinite;
+  @include sk.tura-skeleton-surface;
 }
 
 .mega-skeleton-line--title {
@@ -94,19 +89,12 @@ defineProps({
   height: 10px;
 }
 
-@keyframes mega-skeleton-shimmer {
-  0% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0 50%;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .mega-skeleton-line {
-    animation: none;
+    &::after {
+      animation: none;
+      display: none;
+    }
   }
 }
 </style>

@@ -43,30 +43,63 @@
           </div>
         </section>
 
-        <section class="category-panel">
-          <button
-            type="button"
-            class="category-tab"
-            :class="{ 'is-active': activeCategoryId === 0 }"
-            @click="selectCategory(0)"
-          >
-            {{ config.allCategoryLabel }}
-          </button>
+        <section class="category-panel" :aria-busy="categoryPending">
+          <template v-if="categoryPending">
+            <SkeletonBlock
+              v-for="index in 5"
+              :key="`category-skeleton-${index}`"
+              :width="index === 1 ? 96 : 72"
+              :height="18"
+              radius="999"
+            />
+          </template>
+          <template v-else>
+            <button
+              type="button"
+              class="category-tab"
+              :class="{ 'is-active': activeCategoryId === 0 }"
+              @click="selectCategory(0)"
+            >
+              {{ config.allCategoryLabel }}
+            </button>
 
-          <button
-            v-for="item in categories"
-            :key="item.id"
-            type="button"
-            class="category-tab"
-            :class="{ 'is-active': activeCategoryId === item.id }"
-            @click="selectCategory(item.id)"
-          >
-            {{ item.name }}
-          </button>
+            <button
+              v-for="item in categories"
+              :key="item.id"
+              type="button"
+              class="category-tab"
+              :class="{ 'is-active': activeCategoryId === item.id }"
+              @click="selectCategory(item.id)"
+            >
+              {{ item.name }}
+            </button>
+          </template>
         </section>
 
-        <section v-loading="loading" class="list-panel">
-          <template v-if="articleList.length">
+        <section class="list-panel" :aria-busy="loading ? 'true' : 'false'">
+          <!-- 列表接口未返回时用行骨架占位：不再整块盖遮罩 spinner，
+               行高/内边距与真实 .list-item 一致，数据到达后不跳 -->
+          <div v-if="loading" class="list-skeleton" aria-hidden="true">
+            <div
+              v-for="index in pageSize"
+              :key="`list-skeleton-${index}`"
+              class="list-skeleton__row"
+            >
+              <SkeletonBlock
+                :width="`${58 + ((index * 7) % 24)}%`"
+                :height="20"
+              />
+              <SkeletonBlock :height="14" />
+              <SkeletonBlock :width="'76%'" :height="14" />
+              <div class="list-skeleton__meta">
+                <SkeletonBlock :width="72" :height="12" />
+                <SkeletonBlock :width="88" :height="12" />
+                <SkeletonBlock :width="64" :height="12" />
+              </div>
+            </div>
+          </div>
+
+          <template v-else-if="articleList.length">
             <article
               v-for="item in articleList"
               :key="item.id"
@@ -104,7 +137,7 @@
 
           <el-empty v-else-if="!loading" :description="config.emptyText" />
 
-          <div v-if="total > pageSize" class="list-panel__pager">
+          <div v-if="!loading && total > pageSize" class="list-panel__pager">
             <el-pagination
               v-model:current-page="page"
               :page-size="pageSize"
@@ -141,7 +174,15 @@
         <section class="sidebar-card">
           <div class="sidebar-card__title">{{ config.hotTitle }}</div>
 
-          <div v-if="hotArticles.length" class="ranking-list">
+          <div v-if="loading" class="sidebar-skeleton" aria-hidden="true">
+            <SkeletonBlock
+              v-for="index in 5"
+              :key="`hot-skeleton-${index}`"
+              :width="`${62 + ((index * 7) % 26)}%`"
+              :height="13"
+            />
+          </div>
+          <div v-else-if="hotArticles.length" class="ranking-list">
             <router-link
               v-for="(item, index) in hotArticles"
               :key="item.id"
@@ -160,7 +201,15 @@
         <section class="sidebar-card">
           <div class="sidebar-card__title">{{ config.secondaryTitle }}</div>
 
-          <div v-if="recentArticles.length" class="recent-list">
+          <div v-if="loading" class="sidebar-skeleton" aria-hidden="true">
+            <SkeletonBlock
+              v-for="index in 5"
+              :key="`recent-skeleton-${index}`"
+              :width="`${56 + ((index * 9) % 28)}%`"
+              :height="13"
+            />
+          </div>
+          <div v-else-if="recentArticles.length" class="recent-list">
             <router-link
               v-for="item in recentArticles"
               :key="item.id"
@@ -184,6 +233,7 @@
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import siteApi from "@/api/site";
+import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
 import { getContentConfig } from "./contentConfig";
 
 const props = defineProps({
@@ -203,6 +253,8 @@ const api = computed(() => siteApi);
 const config = computed(() => getContentConfig(props.contentType, props.scope));
 
 const loading = ref(false);
+// 分类概览单独记 loading：分类栏与列表接口不同步，先回哪个都不该闪空态
+const overviewLoading = ref(false);
 const categories = ref([]);
 const articleList = ref([]);
 const hotArticles = ref([]);
@@ -212,6 +264,12 @@ const page = ref(1);
 const pageSize = 10;
 const total = ref(0);
 const activeCategoryId = ref(0);
+
+// 分类栏取数中（概览或列表任一在飞且还没有分类）用骨架占位，
+// 避免先只显示「全部分类」，数据回来再补出一排按钮导致横向跳动
+const categoryPending = computed(
+  () => (overviewLoading.value || loading.value) && !categories.value.length,
+);
 
 const heroKeywords = computed(() => {
   const categoryNames = categories.value.slice(0, 5).map((item) => item.name);
@@ -246,9 +304,17 @@ function normalizeQuery(query) {
 }
 
 async function loadOverview(token) {
-  const res = await api.value.contentOverview();
-  if (token !== syncToken) return;
-  categories.value = res.data?.[config.value.overviewCategoryKey] || [];
+  overviewLoading.value = true;
+
+  try {
+    const res = await api.value.contentOverview();
+    if (token !== syncToken) return;
+    categories.value = res.data?.[config.value.overviewCategoryKey] || [];
+  } finally {
+    if (token === syncToken) {
+      overviewLoading.value = false;
+    }
+  }
 }
 
 async function loadList(token) {
@@ -572,6 +638,36 @@ onBeforeUnmount(() => {
 
 .list-item:last-child {
   border-bottom: none;
+}
+
+/* 列表骨架：行内边距/分隔线与 .list-item 一致，接口返回替换时不跳高 */
+.list-skeleton__row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 26px 30px 22px;
+  border-bottom: 1px solid $divider-color;
+}
+
+.list-skeleton__row:last-child {
+  border-bottom: none;
+}
+
+.list-skeleton__meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 2px;
+}
+
+/* 侧栏排行榜/最新列表骨架：行距与 .ranking-item 的 padding 对齐 */
+.sidebar-skeleton {
+  display: grid;
+  margin-top: 14px;
+}
+
+.sidebar-skeleton .tura-skeleton {
+  margin: 13px 0;
 }
 
 .list-item__head {

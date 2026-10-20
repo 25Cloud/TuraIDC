@@ -13,10 +13,20 @@
     <HomeSectionSkeleton v-else type="products" />
 
     <template v-if="homeContentReady && mountDeferredSections">
-      <HomeSolutionSection />
-      <HomePartnerSection />
-      <HomeNewsSection :notices="notices" />
-      <HomeRegisterBar />
+      <DeferredHomeSection
+        :loader="loadSolutionSection"
+        skeleton-type="solutions"
+      />
+      <DeferredHomeSection
+        :loader="loadPartnerSection"
+        skeleton-type="partner"
+      />
+      <DeferredHomeSection
+        :loader="loadNewsSection"
+        skeleton-type="news"
+        :section-props="{ notices }"
+      />
+      <DeferredHomeSection :loader="loadRegisterBar" skeleton-type="register" />
     </template>
     <div v-else ref="deferredSkeletonRef">
       <HomeSectionSkeleton type="solutions" />
@@ -28,32 +38,25 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  defineAsyncComponent,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-} from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import siteApi from "@/api/site";
 import { useAppStore } from "@/stores/app";
 import { t } from "@/locales";
 import HomeHeroCarousel from "@/views/website/Home/components/HomeHeroCarousel.vue";
 import HomeProductTabs from "@/views/website/Home/components/HomeProductTabs.vue";
 import HomeSectionSkeleton from "@/views/website/Home/components/HomeSectionSkeleton.vue";
+import DeferredHomeSection from "@/views/website/Home/components/DeferredHomeSection.vue";
 
-const HomeSolutionSection = defineAsyncComponent(
-  () => import("@/views/website/Home/components/HomeSolutionSection.vue"),
-);
-const HomePartnerSection = defineAsyncComponent(
-  () => import("@/views/website/Home/components/HomePartnerSection.vue"),
-);
-const HomeNewsSection = defineAsyncComponent(
-  () => import("@/views/website/Home/components/HomeNewsSection.vue"),
-);
-const HomeRegisterBar = defineAsyncComponent(
-  () => import("@/views/website/Home/components/HomeRegisterBar.vue"),
-);
+// 延迟区块的 chunk loader 必须是模块级稳定引用：
+// 模板里写内联箭头函数会让 DeferredHomeSection 每次渲染都重新解析一次。
+const loadSolutionSection = () =>
+  import("@/views/website/Home/components/HomeSolutionSection.vue");
+const loadPartnerSection = () =>
+  import("@/views/website/Home/components/HomePartnerSection.vue");
+const loadNewsSection = () =>
+  import("@/views/website/Home/components/HomeNewsSection.vue");
+const loadRegisterBar = () =>
+  import("@/views/website/Home/components/HomeRegisterBar.vue");
 
 interface ProductTypeItem {
   id?: number;
@@ -78,14 +81,19 @@ const homeContentReady = computed(
   () => homeLoaded.value && homeLoadSucceeded.value,
 );
 const homeHeroReady = computed(() => {
+  if (!homeContentReady.value) {
+    return false;
+  }
   const hero = homeHero.value;
-  const slides = hero && typeof hero === "object" ? hero.slides : null;
-
-  return homeContentReady.value && Array.isArray(slides) && slides.length > 0;
+  if (!hero || typeof hero !== "object") {
+    return false;
+  }
+  const slides = hero.slides;
+  // 后端未返回 slides 字段时 HomeHeroCarousel 会用内置默认轮播，
+  // 同样算「已就绪」；否则页面会永远停在 Hero 骨架上。
+  return slides === undefined || (Array.isArray(slides) && slides.length > 0);
 });
-const productContentReady = computed(
-  () => homeContentReady.value && rootGroups.value.length > 0,
-);
+const productContentReady = computed(() => homeContentReady.value);
 
 function deriveProductTypesFromGroups(groups: any[]) {
   const map = new Map<string, ProductTypeItem>();

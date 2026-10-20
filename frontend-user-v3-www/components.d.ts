@@ -31,12 +31,11 @@ declare module 'vue' {
     MobileRangePicker: typeof import('./src/components/MobileRangePicker.vue')['default']
     MobileRegionPicker: typeof import('./src/components/MobileRegionPicker.vue')['default']
     MobileSheet: typeof import('./src/components/MobileSheet.vue')['default']
+    PageSkeleton: typeof import('./src/components/common/PageSkeleton.vue')['default']
     RouteLoadingFallback: typeof import('./src/components/common/RouteLoadingFallback.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-  }
-  export interface GlobalDirectives {
-    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
+    SkeletonBlock: typeof import('./src/components/common/SkeletonBlock.vue')['default']
   }
 }
 
@@ -61,7 +60,9 @@ declare global {
   const MobileRangePicker: typeof import('./src/components/MobileRangePicker.vue')['default']
   const MobileRegionPicker: typeof import('./src/components/MobileRegionPicker.vue')['default']
   const MobileSheet: typeof import('./src/components/MobileSheet.vue')['default']
+  const PageSkeleton: typeof import('./src/components/common/PageSkeleton.vue')['default']
   const RouteLoadingFallback: typeof import('./src/components/common/RouteLoadingFallback.vue')['default']
   const RouterLink: typeof import('vue-router')['RouterLink']
   const RouterView: typeof import('vue-router')['RouterView']
+  const SkeletonBlock: typeof import('./src/components/common/SkeletonBlock.vue')['default']
 }

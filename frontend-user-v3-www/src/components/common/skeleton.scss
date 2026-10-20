@@ -1,0 +1,86 @@
+/*
+ * 全站统一骨架规范（官网 frontend-user-v3-www）。
+ *
+ * 用户明确要求：所有加载态都用同一套骨架动画，不再出现遮罩转圈。
+ * 因此把底色、圆角、扫光节奏收敛到这里，任何骨架组件只消费这套 token：
+ *  - 底色：浅蓝灰，与页面 #f5f7fb / 卡片白底都能拉开层次；
+ *  - 扫光：1.2s 一次，200% 背景位移，缓入缓出；
+ *  - prefers-reduced-motion：完全静止为纯色块，不做位移。
+ *
+ * 注意：index.html 的 #app-splash 在 JS/CSS 加载前就要显示，无法复用本文件，
+ * 其内联样式必须保持与本文件相同的颜色与 1.2s 节奏（见 index.html 注释）。
+ */
+
+$skeleton-base: #e1e8f2;
+$skeleton-duration: 1.2s;
+
+/*
+ * 组件内联骨架（已有容器/尺寸样式，只想复用底色与节奏）用这个 mixin，
+ * 不要在组件里重新写一遍扫光与时长，否则同站又会出现两种加载动画。
+ * 扫光实现：底色块 + 一条半透明白色高光从左到右扫过（1.2s），
+ * 比整块明暗呼吸更像「扫光」，也更接近旧版 RouteLoadingFallback 的观感。
+ */
+@mixin tura-skeleton-surface {
+  position: relative;
+  overflow: hidden;
+  background-color: $skeleton-base;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.55) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: tura-skeleton-sweep $skeleton-duration ease-in-out infinite;
+    pointer-events: none;
+  }
+}
+
+.tura-skeleton {
+  display: block;
+  flex: none;
+  border-radius: 6px;
+  @include tura-skeleton-surface;
+  /* 骨架只是占位，不接收指针事件，避免挡住下方可交互区域 */
+  pointer-events: none;
+  user-select: none;
+}
+
+// 深色/主题色底上的骨架（例如首页底部注册条），底色换成白色系，节奏不变
+.tura-skeleton--inverse {
+  background-color: rgba(255, 255, 255, 0.28);
+
+  &::after {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.42) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+}
+
+@keyframes tura-skeleton-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tura-skeleton,
+  .tura-skeleton--inverse {
+    &::after {
+      animation: none;
+      display: none;
+    }
+  }
+}
