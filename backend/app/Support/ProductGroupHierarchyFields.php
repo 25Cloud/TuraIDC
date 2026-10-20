@@ -116,7 +116,7 @@ class ProductGroupHierarchyFields
             'group_path' => $groupPath,
             'group_path_text' => self::pathText($groupPath),
             'product_type' => $productType,
-            'product_type_label' => ProductType::businessLabelOf($productType),
+            'product_type_label' => ProductType::businessLabelWithFallback($productType, $firstName),
             'service_type_code' => $productType,
         ];
     }

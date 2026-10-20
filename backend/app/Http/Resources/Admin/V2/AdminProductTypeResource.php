@@ -30,6 +30,16 @@ class AdminProductTypeResource extends JsonResource
             'first_product_group_code' => (string) ($item['first_product_group_code'] ?? $item['value'] ?? ''),
             'first_product_group_name' => (string) ($item['first_product_group_name'] ?? $item['label'] ?? ''),
             'icon' => (string) ($item['icon'] ?? ''),
+            // 一级分组图标：原始值供表单回填，icon_resolved 已按优先级解析（列表预览直接用）
+            'icon_text' => $item['icon_text'] ?? null,
+            'icon_image' => $item['icon_image'] ?? null,
+            'icon_resolved' => $item['icon_resolved'] ?? [
+                'mode' => 'abbr',
+                'image' => null,
+                'text' => null,
+                'icon_name' => isset($item['icon']) ? (string) $item['icon'] : null,
+                'abbr' => '',
+            ],
             'is_builtin' => (bool) ($item['is_builtin'] ?? false),
             'is_hidden' => (bool) ($item['is_hidden'] ?? false),
             'sort_order' => (int) ($item['sort_order'] ?? 0),

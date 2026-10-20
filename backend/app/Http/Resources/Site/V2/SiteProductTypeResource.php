@@ -25,7 +25,17 @@ class SiteProductTypeResource extends JsonResource
             'first_product_group_id' => isset($item['first_product_group_id']) ? (int) $item['first_product_group_id'] : null,
             'first_product_group_code' => (string) ($item['first_product_group_code'] ?? ''),
             'first_product_group_name' => (string) ($item['first_product_group_name'] ?? ''),
+            // 一级分组图标：icon 为内置图标名，image 模式为可访问绝对地址，icon_resolved 已解析优先级
             'icon' => (string) ($item['icon'] ?? ''),
+            'icon_text' => $item['icon_text'] ?? null,
+            'icon_image' => $item['icon_image'] ?? null,
+            'icon_resolved' => $item['icon_resolved'] ?? [
+                'mode' => 'abbr',
+                'image' => null,
+                'text' => null,
+                'icon_name' => null,
+                'abbr' => '',
+            ],
             'group_count' => (int) ($item['group_count'] ?? 0),
             'product_count' => (int) ($item['product_count'] ?? 0),
         ];

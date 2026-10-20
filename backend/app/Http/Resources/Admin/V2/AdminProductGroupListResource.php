@@ -8,6 +8,7 @@ use App\Constants\ProductType;
 use App\Models\FirstProductGroup;
 use App\Models\SecondProductGroup;
 use App\Models\ThirdProductGroup;
+use App\Support\ProductGroupIcon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -44,6 +45,8 @@ class AdminProductGroupListResource extends JsonResource
             'first_product_group_id' => $firstGroup?->id ? (int) $firstGroup->id : null,
             'first_product_group_code' => $firstGroupCode,
             'first_product_group_name' => $firstGroup?->name,
+            // 一级分组图标（二/三级节点回填所属一级分组的图标，便于列表统一预览）
+            ...ProductGroupIcon::payload($firstGroup, false),
             'second_product_group_id' => $secondGroup?->id ? (int) $secondGroup->id : null,
             'second_product_group_name' => $secondGroup?->name,
             'third_product_group_id' => $thirdGroup?->id ? (int) $thirdGroup->id : null,

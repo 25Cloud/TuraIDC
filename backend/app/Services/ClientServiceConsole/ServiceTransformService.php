@@ -121,7 +121,7 @@ class ServiceTransformService
         $rootGroupName = trim((string) ($rootGroup?->name ?? ''));
         $leafGroupName = trim((string) ($leafGroup?->name ?? ''));
         $catalogProductType = $this->resolverService->resolveGroupedOverviewTypeValue($service);
-        $catalogProductTypeLabel = ProductType::businessLabelOf($catalogProductType);
+        $catalogProductTypeLabel = ProductType::businessLabelWithFallback($catalogProductType, $rootGroupName);
         $consoleMode = $this->resolverService->resolveConsoleMode($service);
         $productConfigOptions = is_array($service->product?->config_options ?? null)
             ? $service->product->config_options
@@ -209,8 +209,10 @@ class ServiceTransformService
         $runtimeState = trim((string) ($runtime['status'] ?? ''));
         $specConfigOptions = $this->resolveSpecConfigOptions($service, $host, $provisionData);
         $canExecuteConsoleActions = $this->canExecuteConsoleActions($service, $serviceStatus, $runtimeState);
+        $rootGroup = $this->resolverService->resolveServiceRootGroup($service);
+        $rootGroupName = trim((string) ($rootGroup?->name ?? ''));
         $catalogProductType = $this->resolverService->resolveGroupedOverviewTypeValue($service);
-        $catalogProductTypeLabel = ProductType::businessLabelOf($catalogProductType);
+        $catalogProductTypeLabel = ProductType::businessLabelWithFallback($catalogProductType, $rootGroupName);
         $consoleMode = $this->resolverService->resolveConsoleMode($service);
         $productPricing = Service::extractSupportedRenewPricing(
             is_array($service->product?->pricing ?? null) ? $service->product->pricing : []

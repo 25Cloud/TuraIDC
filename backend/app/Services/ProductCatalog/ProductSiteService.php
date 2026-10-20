@@ -15,6 +15,7 @@ use App\Services\ProductCatalog\Concerns\HandlesProductCatalogHelpers;
 use App\Support\CacheKey;
 use App\Support\ProductConfigOptionPresenter;
 use App\Support\ProductGroupHierarchyFields;
+use App\Support\ProductGroupIcon;
 use App\Support\SiteProductGroupQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -107,7 +108,12 @@ class ProductSiteService
                                 ? (string) $firstGroup->slug
                                 : (\Illuminate\Support\Str::slug($value) ?: $value),
                             'first_product_group_name' => $label,
-                            'icon' => (string) ($item['icon'] ?? ProductType::iconOf($value)),
+                            // 一级分组图标：官网分类导航 / 卡片角标直接可用，图片为解析后的绝对地址
+                            ...ProductGroupIcon::payload(
+                                $firstGroup,
+                                true,
+                                is_string($item['icon'] ?? null) ? $item['icon'] : ProductType::iconOf($value)
+                            ),
                             'group_count' => $groupCount,
                             'product_count' => (int) ($productCounts[$value] ?? 0),
                         ];
@@ -419,6 +425,8 @@ class ProductSiteService
             'first_product_group_id' => $firstGroup instanceof FirstProductGroup ? (int) $firstGroup->id : null,
             'first_product_group_code' => $firstGroupCode,
             'first_product_group_name' => $firstGroupName,
+            // 一级分组图标（图片 / 文字 / 内置图标 / 名称缩写）
+            ...ProductGroupIcon::payload($firstGroup, true),
             'second_product_group_id' => (int) $group->id,
             'second_product_group_name' => (string) $group->name,
             'second_product_group_parent_id' => $firstGroup instanceof FirstProductGroup ? (int) $firstGroup->id : null,
@@ -459,6 +467,8 @@ class ProductSiteService
             'first_product_group_id' => $firstGroup instanceof FirstProductGroup ? (int) $firstGroup->id : null,
             'first_product_group_code' => $firstGroupCode,
             'first_product_group_name' => $firstGroupName,
+            // 一级分组图标（图片 / 文字 / 内置图标 / 名称缩写）
+            ...ProductGroupIcon::payload($firstGroup, true),
             'second_product_group_id' => $secondGroup instanceof SecondProductGroup ? (int) $secondGroup->id : null,
             'second_product_group_name' => (string) ($secondGroup?->name ?? ''),
             'second_product_group_parent_id' => $firstGroup instanceof FirstProductGroup ? (int) $firstGroup->id : null,

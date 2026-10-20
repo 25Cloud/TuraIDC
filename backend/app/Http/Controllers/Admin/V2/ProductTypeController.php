@@ -35,7 +35,8 @@ class ProductTypeController extends Controller
                     (string) $payload['label'],
                     $payload['icon'] ?? null,
                     $payload['product_type'] ?? null,
-                    $payload['slug'] ?? null
+                    $payload['slug'] ?? null,
+                    $this->groupIconPayload($payload)
                 )
             )->resolve(),
         ], '商品种类已创建');
@@ -53,7 +54,8 @@ class ProductTypeController extends Controller
                     array_key_exists('is_hidden', $payload) ? (bool) $payload['is_hidden'] : null,
                     $payload['icon'] ?? null,
                     $payload['product_type'] ?? null,
-                    $payload['slug'] ?? null
+                    $payload['slug'] ?? null,
+                    $this->groupIconPayload($payload)
                 )
             )->resolve(),
         ], '商品种类已更新');
@@ -73,5 +75,24 @@ class ProductTypeController extends Controller
         return $this->success([
             'list' => AdminProductTypeResource::collection($this->productTypes->reorder((array) $payload['values']))->resolve(),
         ], '商品种类排序已更新');
+    }
+
+    /**
+     * 只挑出请求里显式提交的图标字段：未提交表示不改，空串表示清空。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function groupIconPayload(array $payload): array
+    {
+        $groupIcon = [];
+
+        foreach (['icon_text', 'icon_image'] as $field) {
+            if (array_key_exists($field, $payload)) {
+                $groupIcon[$field] = $payload[$field];
+            }
+        }
+
+        return $groupIcon;
     }
 }

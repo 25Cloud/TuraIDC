@@ -27,6 +27,9 @@ class StoreProductTypeRequest extends AdminFormRequest
             'icon' => ['nullable', 'string', 'max:50'],
             // 前台地址里的类型段；留空时按 value 生成
             'slug' => ['nullable', 'string', 'min:2', 'max:60', 'regex:/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/', 'not_regex:/^\d+$/'],
+            // 一级分组图标：与商品分组接口共用同一套字段
+            'icon_text' => ['nullable', 'string', 'max:16'],
+            'icon_image' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

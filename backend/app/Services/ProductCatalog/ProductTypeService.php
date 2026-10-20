@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\SecondProductGroup;
 use App\Models\ThirdProductGroup;
 use App\Support\DatabaseSchema;
+use App\Support\ProductGroupIcon;
 use Illuminate\Support\Str;
 
 class ProductTypeService
@@ -93,7 +94,14 @@ class ProductTypeService
                 'first_product_group_id' => $firstGroup instanceof FirstProductGroup ? (int) $firstGroup->id : null,
                 'first_product_group_code' => $value,
                 'first_product_group_name' => $firstGroup instanceof FirstProductGroup ? (string) $firstGroup->name : (string) $item['label'],
-                'icon' => (string) ($item['icon'] ?? ''),
+                // 一级分组图标：icon/icon_text/icon_image 为库内原始值（供表单回填），
+                // icon_resolved 已按「图片 > 文字 > 内置图标 > 名称缩写」解析。设置项里的
+                // icon 作为 DB 缺失时的兜底，保证系统分组仍能渲染内置图标。
+                ...ProductGroupIcon::payload(
+                    $firstGroup,
+                    false,
+                    is_string($item['icon'] ?? null) ? $item['icon'] : null
+                ),
                 'is_builtin' => (bool) ($item['is_builtin'] ?? false),
                 'is_hidden' => (bool) ($item['is_hidden'] ?? false),
                 'sort_order' => $index + 1,
@@ -108,8 +116,16 @@ class ProductTypeService
         return DatabaseSchema::hasTableOrView($name);
     }
 
-    public function create(string $label, ?string $icon = null, ?string $productType = null, ?string $slug = null): array
-    {
+    /**
+     * @param  array<string, mixed>  $groupIcon  一级分组图标字段（icon_text / icon_image）
+     */
+    public function create(
+        string $label,
+        ?string $icon = null,
+        ?string $productType = null,
+        ?string $slug = null,
+        array $groupIcon = [],
+    ): array {
         $normalizedLabel = $this->normalizeLabel($label);
         $normalizedIcon = $this->normalizeIcon($icon);
         $normalizedProductType = ProductType::normalizeBusinessValue($productType);
@@ -160,10 +176,14 @@ class ProductTypeService
 
         ProductType::saveItems($items);
         $this->hierarchyService->syncProductTypes();
+        $this->persistFirstGroupIcon($value, $groupIcon);
 
         return $this->findOrFail($value);
     }
 
+    /**
+     * @param  array<string, mixed>  $groupIcon  一级分组图标字段（icon_text / icon_image）
+     */
     public function update(
         string $value,
         string $label,
@@ -171,6 +191,7 @@ class ProductTypeService
         ?string $icon = null,
         ?string $productType = null,
         ?string $slug = null,
+        array $groupIcon = [],
     ): array {
         $normalizedValue = trim($value);
         $normalizedLabel = $this->normalizeLabel($label);
@@ -217,11 +238,42 @@ class ProductTypeService
         // 同步路径会保留已存在的 slug；这里再显式写一次，保证后台改完立即生效
         // （不依赖下一次目录同步的时序）。
         $firstGroup = FirstProductGroup::query()->where('code', $normalizedValue)->first();
-        if ($firstGroup instanceof FirstProductGroup && $normalizedSlug !== null) {
-            $firstGroup->forceFill(['slug' => $normalizedSlug])->save();
+        if ($firstGroup instanceof FirstProductGroup) {
+            $firstGroupPayload = ProductGroupIcon::fromInput($groupIcon);
+
+            if ($normalizedSlug !== null) {
+                $firstGroupPayload['slug'] = $normalizedSlug;
+            }
+
+            if ($firstGroupPayload !== []) {
+                $firstGroup->forceFill($firstGroupPayload)->save();
+                // 官网 /site/product-types 与 /site/product-groups 缓存了图标数据，改完必须失效。
+                app(SiteCatalogCacheInvalidator::class)->flush();
+            }
         }
 
         return $this->findOrFail($normalizedValue);
+    }
+
+    /**
+     * 把图标字段写到一级分组实体上（商品种类的配置项本身不存这两列）。
+     *
+     * @param  array<string, mixed>  $groupIcon
+     */
+    private function persistFirstGroupIcon(string $code, array $groupIcon): void
+    {
+        $payload = ProductGroupIcon::fromInput($groupIcon);
+        if ($payload === []) {
+            return;
+        }
+
+        $firstGroup = FirstProductGroup::query()->where('code', $code)->first();
+        if (! $firstGroup instanceof FirstProductGroup) {
+            return;
+        }
+
+        $firstGroup->forceFill($payload)->save();
+        app(SiteCatalogCacheInvalidator::class)->flush();
     }
 
     public function delete(string $value): void

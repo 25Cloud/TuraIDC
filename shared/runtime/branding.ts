@@ -183,6 +183,13 @@ export function applyDocumentTitle(
   }
 
   document.title = pageTitle ? `${pageTitle} - ${baseTitle}` : baseTitle;
+
+  // 没有站点配置过的 favicon 时什么都不做：留中性占位比先塞一个默认品牌图标
+  // 再被回包替换要好（后者会让标签页闪一下别的品牌）。
+  if (!faviconHref && !fallbackFavicon) {
+    return;
+  }
+
   updateFavicon(faviconHref, fallbackFavicon);
 }
 

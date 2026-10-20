@@ -8,6 +8,7 @@
     "./status": "./status/index.ts",
     "./locale": "./locale/index.ts",
     "./runtime": "./runtime/index.ts",
+    "./text": "./text/index.ts",
     "./content": "./content/index.ts",
     "./components/StatusTag.vue": "./components/StatusTag.vue",
     "./components/CapCaptchaCard.vue": "./components/CapCaptchaCard.vue",

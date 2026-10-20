@@ -13,6 +13,7 @@ use App\Models\Service;
 use App\Models\ThirdProductGroup;
 use App\Services\ProductCatalog\Concerns\HandlesProductCatalogHelpers;
 use App\Support\CacheKey;
+use App\Support\ProductGroupIcon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -107,6 +108,7 @@ class ProductCategoryService
 
                 $group = FirstProductGroup::query()->create([
                     ...$payload,
+                    ...ProductGroupIcon::fromInput($data),
                     'code' => $code,
                     'slug' => $this->generateUniqueSlug(FirstProductGroup::query(), $data['slug'] ?? $name),
                     'is_system' => (int) (($data['is_system'] ?? 0) ? 1 : 0),
@@ -160,6 +162,7 @@ class ProductCategoryService
 
             if ($level === 1) {
                 $group = $this->findFirstGroup($groupId);
+                $payload = [...$payload, ...ProductGroupIcon::fromInput($data)];
                 if (array_key_exists('first_product_group_code', $data) || array_key_exists('code', $data)) {
                     $code = trim((string) ($data['first_product_group_code'] ?? $data['code'] ?? ''));
                     throw_if($code === '', new BusinessException('一级分组编码不能为空'));
@@ -693,6 +696,8 @@ class ProductCategoryService
             'name' => (string) $group->name,
             'description' => (string) ($group->description ?? ''),
             'slug' => (string) $group->slug,
+            // 一级分组图标：icon / icon_text / icon_image + 已解析的 icon_resolved
+            ...ProductGroupIcon::payload($group, false),
             'sort_order' => (int) $group->sort_order,
             'is_visible' => (int) $group->is_visible,
             'status' => (int) $group->is_visible,

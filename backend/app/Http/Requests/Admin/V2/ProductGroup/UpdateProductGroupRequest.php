@@ -34,6 +34,8 @@ class UpdateProductGroupRequest extends AdminFormRequest
             'slogan' => ['nullable', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:120'],
             'banner_image' => ['nullable', 'string', 'max:255'],
+            'icon_text' => ['nullable', 'string', 'max:16'],
+            'icon_image' => ['nullable', 'string', 'max:255'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:999999'],
             'is_visible' => ['nullable', Rule::in([0, 1, '0', '1'])],
             'is_system' => ['nullable', Rule::in([0, 1, '0', '1'])],

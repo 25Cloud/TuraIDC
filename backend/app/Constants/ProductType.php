@@ -182,6 +182,24 @@ class ProductType
         return (string) (self::BUSINESS_TYPE_ITEMS[$normalizedValue]['label'] ?? self::$labels[$normalizedValue] ?? $normalizedValue);
     }
 
+    /**
+     * 业务标签；当业务枚举只能兜底成「其他」时，用一级分组名替代。
+     *
+     * 插件驱动的一级分组（如 NAT服务器）不在 BUSINESS_TYPE_ITEMS 里，
+     * businessLabelOf() 会固定返回「其他」，各端展示就变成错误标签。
+     * 有分组名的调用方用这个包装，接口自洽、前端也不用再各自兜底。
+     */
+    public static function businessLabelWithFallback(?string $value, ?string $fallbackName = null): string
+    {
+        $label = self::businessLabelOf($value);
+        $fallback = trim((string) $fallbackName);
+
+        if ($fallback !== '' && in_array($label, ['其他', '其它', 'Other'], true)) {
+            return $fallback;
+        }
+
+        return $label;
+    }
     public static function businessIconOf(?string $value): string
     {
         $normalizedValue = self::normalizeBusinessValue($value);

@@ -13,6 +13,7 @@ use App\Models\Service;
 use App\Models\ThirdProductGroup;
 use App\Models\User;
 use App\Support\ProductGroupHierarchyFields;
+use App\Support\ProductGroupIcon;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -229,9 +230,10 @@ class ServiceOverviewService
                 return $this->buildGroupedOverviewTypeItem([
                     'value' => (string) $group->code,
                     'label' => (string) $group->name,
-                    'icon' => ProductType::iconOf($businessType),
                     'product_type' => $businessType,
                     'first_product_group_id' => (int) $group->id,
+                    // 一级分组图标：图片 > 文字 > 内置图标 > 名称缩写，由统一 resolver 解析
+                    ...ProductGroupIcon::payload($group, true, ProductType::iconOf($businessType)),
                 ], $menuServices->values(), $expiringDeadline, $index);
             })
             ->filter()
@@ -256,16 +258,21 @@ class ServiceOverviewService
             })->values()->all();
 
         $catalogTypes = $menuGroups
-            ->map(fn (FirstProductGroup $group): array => [
-                'label' => (string) $group->name,
-                'value' => (string) $group->code,
-                'icon' => ProductType::iconOf(ProductType::businessValueForFirstGroup($group, $group->code)),
-                'count' => $groupedByMenu->get($group->code, collect())->count(),
-            ])
+            ->map(function (FirstProductGroup $group) use ($groupedByMenu): array {
+                $businessType = ProductType::businessValueForFirstGroup($group, $group->code);
+
+                return [
+                    'label' => (string) $group->name,
+                    'value' => (string) $group->code,
+                    // 一级分组图标：图片 > 文字 > 内置图标 > 名称缩写
+                    ...ProductGroupIcon::payload($group, true, ProductType::iconOf($businessType)),
+                    'count' => $groupedByMenu->get($group->code, collect())->count(),
+                ];
+            })
             ->push([
                 'label' => '其他服务',
                 'value' => self::OTHER_MENU_CODE,
-                'icon' => ProductType::iconOf(ProductType::OTHER),
+                ...ProductGroupIcon::payload(null, true, ProductType::iconOf(ProductType::OTHER)),
                 'count' => $otherServices->count(),
             ])
             ->filter(fn (array $item): bool => (int) ($item['count'] ?? 0) > 0)
@@ -395,6 +402,15 @@ class ServiceOverviewService
             'product_type' => $typeValue,
             'product_type_label' => ProductType::businessLabelOf($typeValue),
             'icon' => (string) ($typeItem['icon'] ?? ProductType::iconOf($typeValue)),
+            'icon_text' => $typeItem['icon_text'] ?? null,
+            'icon_image' => $typeItem['icon_image'] ?? null,
+            'icon_resolved' => $typeItem['icon_resolved'] ?? [
+                'mode' => ProductGroupIcon::MODE_ABBR,
+                'image' => null,
+                'text' => null,
+                'icon_name' => null,
+                'abbr' => '',
+            ],
             'name' => $typeLabel,
             'title' => $typeLabel,
             'description' => $isSyntheticOther

@@ -9,6 +9,7 @@ use App\Models\FirstProductGroup;
 use App\Models\SecondProductGroup;
 use App\Models\ThirdProductGroup;
 use App\Support\ProductGroupHierarchyFields;
+use App\Support\ProductGroupIcon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -43,6 +44,8 @@ class SiteProductGroupResource extends JsonResource
                 ? (string) $firstGroup->slug
                 : (\Illuminate\Support\Str::slug($firstGroupCode) ?: $firstGroupCode),
             'first_product_group_name' => $firstGroup?->name,
+            // 一级分组图标：image 模式为可访问绝对地址，icon_resolved 已按优先级解析
+            ...ProductGroupIcon::payload($firstGroup, true),
             'second_product_group_id' => $secondGroup?->id ? (int) $secondGroup->id : null,
             'second_product_group_name' => $secondGroup?->name,
             'second_product_group_parent_id' => $secondGroup?->first_product_group_id ? (int) $secondGroup->first_product_group_id : null,

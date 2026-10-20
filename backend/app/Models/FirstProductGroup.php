@@ -16,6 +16,8 @@ class FirstProductGroup extends Model
         'slug',
         'description',
         'icon',
+        'icon_image',
+        'icon_text',
         'banner_image',
         'sort_order',
         'is_visible',

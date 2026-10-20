@@ -47,7 +47,7 @@ class ProductResource extends JsonResource
             'combined_display_name' => (string) ($displayName['combined_display_name'] ?? ''),
             'product_type' => $productType,
             'type' => $productType,
-            'type_label' => ProductType::businessLabelOf($productType),
+            'type_label' => ProductType::businessLabelWithFallback($productType, (string) ($hierarchyFields['first_product_group_name'] ?? '')),
             ...$hierarchyFields,
             'remark' => (string) ($this->remark ?? ''),
             'pricing' => (array) $this->pricing,
