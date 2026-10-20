@@ -128,7 +128,6 @@
       "productIntro": "商品介绍",
       "selectVersion": "选择版本",
       "processor": "处理器",
-
       "specSelector": "产品规格选择",
       "instanceSpecs": "实例规格",
       "sortVcpu": "vCPU 排序",
@@ -154,7 +153,6 @@
       "spec": "产品规格",
       "selectSpec": "请选择产品规格",
       "noSwitchableOsVersion": "当前商品未提供可切换的系统版本",
-
       "displayMode": "商品展示方式",
       "displayCard": "卡片式",
       "displayList": "列表式",
@@ -190,7 +188,8 @@
       "addToCart": "加入购物车",
       "costRowsCount": "共{count}项",
       "priceDiscounted": "折后价已优惠",
-      "priceNoDiscount": "折后价无折扣"
+      "priceNoDiscount": "折后价无折扣",
+      "groupPath": "分组"
     },
     "cpuBadge": {
       "coreShort": "酷",

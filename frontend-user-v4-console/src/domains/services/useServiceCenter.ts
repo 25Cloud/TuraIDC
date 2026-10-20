@@ -78,6 +78,32 @@ export function createEmptyOverview(): ServiceOverview {
 
 export { formatMoney };
 
+/**
+ * 实例所属的分组路径（二级 / 三级）。
+ *
+ * 商品名现在只含规格（如「2核2G50M」），实例、订单等页面需要单独显示分组路径才能
+ * 看出是哪个产品线。后端 product_full_path 形如
+ * 「一级分组/二级分组/三级分组/商品名」：去掉末段商品名，再去掉一级分组
+ * （一级分组已经是页面 tab / 分类的上下文），剩下就是要展示的部分。
+ */
+export function resolveServiceGroupPath(item: ServiceLike | null | undefined) {
+  const fullPath = String(item?.product_full_path || '').trim();
+  const segments = fullPath
+    .split('/')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+
+  if (segments.length > 1) {
+    segments.pop();
+  }
+
+  const rootGroupName = String(item?.product?.root_group_name || '').trim();
+  if (rootGroupName && segments[0] === rootGroupName) {
+    segments.shift();
+  }
+
+  return segments.join(' / ');
+}
 export function resolveServiceName(item: ServiceLike | null | undefined) {
   return (
     item?.custom_service_name ||

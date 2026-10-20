@@ -1330,6 +1330,10 @@
                 selectedProductSummaryName || selectedProductDisplayName
               }}</span>
             </div>
+            <div class="cost-item" v-if="productGroupPath">
+              <span>{{ $t("product.list.groupPath") }}</span
+              ><span>{{ productGroupPath }}</span>
+            </div>
             <div class="cost-item" v-for="item in summaryItems" :key="item.key">
               <span>{{ item.label }}</span
               ><span>{{ item.value }}</span>
@@ -2508,6 +2512,14 @@ const mobileCostRows = computed(() => {
 const selectedProductGroup = computed(
   () => selectedProduct.value?.group || null,
 );
+// 配置摘要里的分组路径：一级 / 二级 / 三级，缺哪级就只显示已有层级。
+const productGroupPath = computed(() =>
+  [activeTypeLabel.value, activeGroupName.value, activeChildName.value]
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .join(" / "),
+);
+
 const productIntroText = computed(() => {
   const remark = String(selectedProduct.value?.remark || "").trim();
   if (remark) {

@@ -155,6 +155,10 @@
                           <span class="service-row-id">ID {{ item.id }}</span>
                         </div>
 
+                        <div v-if="resolveServiceGroupPath(item)" class="service-group-path">
+                          {{ resolveServiceGroupPath(item) }}
+                        </div>
+
                         <div class="service-remark-line">
                           <span
                             class="service-remark-text"
@@ -305,7 +309,10 @@
                     </div>
                     <div class="service-table-meta">
                       <span>{{
-                        row.product?.group_name || row.product?.type_label || $t('client.services.cloudService')
+                        resolveServiceGroupPath(row) ||
+                        row.product?.group_name ||
+                        row.product?.type_label ||
+                        $t('client.services.cloudService')
                       }}</span>
                       <span class="service-table-meta__dot"></span>
                       <span :class="{ empty: !row.remark }">{{ row.remark || $t('client.services.noRemark') }}</span>
@@ -524,6 +531,7 @@ import {
   resolveListTrafficText,
   resolveListVirtualHostSpecText,
   resolveRuntimeStatusLabel,
+  resolveServiceGroupPath,
   resolveServiceMark,
   resolveServiceName,
   resolveServiceOsIcon,
@@ -1029,6 +1037,15 @@ function resolveBillingCycleValue(item: Record<string, any>) {
   gap: 0.375rem;
 }
 
+.service-group-path {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--td-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .service-remark-line {
   margin-top: 0.25rem;
 }

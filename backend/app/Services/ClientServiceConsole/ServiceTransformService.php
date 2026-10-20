@@ -1739,11 +1739,8 @@ class ServiceTransformService
 
     private function resolveProductDisplayName(Service $service): string
     {
-        $orderDisplayName = trim((string) ($service->order?->display_product_name ?? ''));
-        if ($orderDisplayName !== '' && $orderDisplayName !== '未配置规格') {
-            return $orderDisplayName;
-        }
-
+        // 优先用当前目录口径（规格名，如「2核2G」）：商品名统一成规格后，订单快照里
+        // 存的还是旧名字，优先快照会让老实例和新实例显示两套名字。
         if ($service->product instanceof Product) {
             $resolver = $this->displayNameResolver();
             $resolved = $resolver->resolveForProduct(
@@ -1751,10 +1748,16 @@ class ServiceTransformService
                 (array) ($service->order?->config_snapshot ?? [])
             );
 
-            return trim((string) ($resolved['product_display_name'] ?? ''));
+            $current = trim((string) ($resolved['product_display_name'] ?? ''));
+            if ($current !== '') {
+                return $current;
+            }
         }
 
-        return '';
+        // 商品已删除或解析不出名字时，退回下单时的快照名，至少能看出买的是什么。
+        $orderDisplayName = trim((string) ($service->order?->display_product_name ?? ''));
+
+        return $orderDisplayName === '未配置规格' ? '' : $orderDisplayName;
     }
 
     private function resolveCombinedDisplayName(Service $service): string

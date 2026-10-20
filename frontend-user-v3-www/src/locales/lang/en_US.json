@@ -128,7 +128,6 @@
       "productIntro": "Product Overview",
       "selectVersion": "Select a version",
       "processor": "Processor",
-
       "specSelector": "Product Spec Selection",
       "instanceSpecs": "Instance Specs",
       "sortVcpu": "vCPU sorting",
@@ -154,7 +153,6 @@
       "spec": "Product Specs",
       "selectSpec": "Select a product spec",
       "noSwitchableOsVersion": "This product has no switchable OS version",
-
       "displayMode": "Display mode",
       "displayCard": "Card",
       "displayList": "List",
@@ -190,7 +188,8 @@
       "addToCart": "Add to cart",
       "costRowsCount": "{count} items",
       "priceDiscounted": "Discounted price applied",
-      "priceNoDiscount": "No discount applied"
+      "priceNoDiscount": "No discount applied",
+      "groupPath": "Group"
     },
     "cpuBadge": {
       "coreShort": "Core",

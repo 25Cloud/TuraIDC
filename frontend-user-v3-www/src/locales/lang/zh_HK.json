@@ -188,7 +188,8 @@
       "addToCart": "加入購物車",
       "costRowsCount": "共{count}項",
       "priceDiscounted": "折後價已優惠",
-      "priceNoDiscount": "折後價無折扣"
+      "priceNoDiscount": "折後價無折扣",
+      "groupPath": "分組"
     },
     "cpuBadge": {
       "coreShort": "酷",
