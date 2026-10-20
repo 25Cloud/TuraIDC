@@ -1,12 +1,13 @@
-import { defineStore } from 'pinia'
-import { computed } from 'vue'
-import { useSiteBrandingStore } from '@/app/stores/siteBranding'
+import { defineStore } from "pinia";
+import { computed } from "vue";
+import { useSiteBrandingStore } from "@/app/stores/siteBranding";
 
-export const useAppStore = defineStore('app', () => {
-  const siteBrandingStore = useSiteBrandingStore()
+export const useAppStore = defineStore("app", () => {
+  const siteBrandingStore = useSiteBrandingStore();
 
   return {
     sidebarCollapsed: computed(() => siteBrandingStore.sidebarCollapsed),
+    brandingResolved: computed(() => siteBrandingStore.brandingResolved),
     siteName: computed(() => siteBrandingStore.siteName),
     browserTitle: computed(() => siteBrandingStore.browserTitle),
     siteLogo: computed(() => siteBrandingStore.siteLogo),
@@ -27,5 +28,5 @@ export const useAppStore = defineStore('app', () => {
     applyPageTitle: siteBrandingStore.applyPageTitle,
     hydrateSiteConfig: siteBrandingStore.hydrateSiteConfig,
     fetchSiteConfig: siteBrandingStore.fetchSiteConfig,
-  }
-})
+  };
+});
