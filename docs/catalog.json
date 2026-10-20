@@ -341,6 +341,12 @@
       "review_by": "2026-12-16"
     },
     {
+      "path": "internal/execution-plans/active/brand-terms-skeleton-license-2026-10-20.md",
+      "status": "active",
+      "summary": "同步信息 42200 解耦、商品/实例术语统一、官网骨架、侧栏动画、图标库收口、CLA 与双许可。",
+      "review_by": "2027-01-18"
+    },
+    {
       "path": "internal/execution-plans/active/coderabbit-security-remediation-ticket-upstream-2026-08-21.md",
       "status": "active",
       "summary": "按 PR #20 CodeRabbit 审查修复工单上游传递安全与一致性问题，含上游 zjmfv376 配套改动。",
