@@ -215,10 +215,14 @@ export function useServiceConsole() {
   async function handleSyncStatus() {
     statusSyncing.value = true;
     try {
-      await refreshHostStatus();
-      MessagePlugin.success(
-        detail.value.actions?.module_status ? t('serviceConsole.statusSynced') : t('serviceConsole.statusRefreshed'),
-      );
+      const powerUnavailable = await refreshHostStatus();
+      if (powerUnavailable) {
+        MessagePlugin.warning(t('serviceConsole.statusSyncedPartial'));
+      } else {
+        MessagePlugin.success(
+          detail.value.actions?.module_status ? t('serviceConsole.statusSynced') : t('serviceConsole.statusRefreshed'),
+        );
+      }
     } catch (error: unknown) {
       const runtimeError = error as { message?: string };
       MessagePlugin.error(String(runtimeError?.message || '').trim() || t('serviceConsole.statusSyncFailed'));

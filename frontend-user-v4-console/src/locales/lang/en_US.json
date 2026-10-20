@@ -1838,6 +1838,7 @@
             "disk": "Disk management"
         },
         "statusSynced": "Instance status synced",
+        "statusSyncedPartial": "Instance details synced, but the power status is temporarily unavailable",
         "statusSyncFailed": "Failed to sync the instance status",
         "remoteAddress": "Remote address",
         "publicIp": "Public IP",

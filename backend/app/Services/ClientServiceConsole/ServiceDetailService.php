@@ -878,7 +878,35 @@ class ServiceDetailService
             'is_finished' => $isFinished,
             'is_success' => $isSuccess,
             'is_failed' => $isFailed,
+            'available' => true,
             'raw' => $payload,
+        ];
+    }
+
+    /**
+     * 状态读取不可用时的降级结果（当前只用于电源状态）。
+     *
+     * 电源状态是辅助展示信息：上游关机 / 暂停 / 接口暂不可用时读取失败，不能当成
+     * 整个「同步信息」或实例详情的失败——到期时间、商品、IP 必须照常同步。
+     * 调用方据此返回 available=false，前端展示「暂时不可用」而不是报错。
+     */
+    public function buildUnavailableModuleStatus(string $type, string $message): array
+    {
+        $normalizedType = $this->normalizeModuleStatusType($type);
+        $reason = trim($message) !== '' ? trim($message) : '上游暂未返回状态信息';
+
+        return [
+            'type' => $normalizedType,
+            'type_label' => ClientServiceConsoleService::MODULE_STATUS_TYPES[$normalizedType] ?? '状态',
+            'status' => 'unavailable',
+            'description' => $reason,
+            'progress' => null,
+            'is_finished' => true,
+            'is_success' => false,
+            'is_failed' => false,
+            'available' => false,
+            'error' => $reason,
+            'raw' => ['degraded' => true],
         ];
     }
 

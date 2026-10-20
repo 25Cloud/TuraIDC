@@ -244,12 +244,16 @@ export function useServiceConsole(userId: number | string) {
   async function handleSyncStatus() {
     statusSyncing.value = true;
     try {
-      await refreshHostStatus();
-      MessagePlugin.success(
-        detail.value.actions?.module_status
-          ? t('services.console.statusSynced')
-          : t('services.console.statusRefreshed'),
-      );
+      const powerUnavailable = await refreshHostStatus();
+      if (powerUnavailable) {
+        MessagePlugin.warning(t('services.console.statusSyncedPartial'));
+      } else {
+        MessagePlugin.success(
+          detail.value.actions?.module_status
+            ? t('services.console.statusSynced')
+            : t('services.console.statusRefreshed'),
+        );
+      }
     } catch (error: unknown) {
       const runtimeError = error as { message?: string };
       MessagePlugin.error(String(runtimeError?.message || '').trim() || t('services.console.syncStatusFailed'));

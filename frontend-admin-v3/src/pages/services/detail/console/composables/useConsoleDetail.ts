@@ -159,11 +159,31 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
     }
   }
 
-  async function refreshHostStatus() {
+  /**
+   * 同步信息：实例详情必须刷新成功；电源状态读取失败只降级为提示，不阻断同步。
+   *
+   * 电源状态是辅助信息：实例关机、暂停或上游接口临时不可用时读不到，
+   * 但到期时间、商品、IP 仍要同步，所以这里吞掉电源状态的失败。
+   *
+   * @returns 电源状态是否暂不可用
+   */
+  async function refreshHostStatus(): Promise<boolean> {
+    let powerUnavailable = false;
+
     if (detail.value.actions?.module_status) {
-      await clientApi.serviceModuleStatus(serviceId.value, { type: 'host' });
+      try {
+        const res = await clientApi.serviceModuleStatus(serviceId.value, { type: 'host' });
+        const payload = (res.data ?? {}) as { available?: boolean };
+        powerUnavailable = payload.available === false;
+      } catch {
+        // 旧版后端或上游异常：电源状态读取失败不影响详情同步
+        powerUnavailable = true;
+      }
     }
+
     await loadDetailBase(true);
+
+    return powerUnavailable;
   }
 
   async function bootstrap() {

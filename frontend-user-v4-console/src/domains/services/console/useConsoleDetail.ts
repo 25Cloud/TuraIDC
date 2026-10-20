@@ -167,11 +167,28 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
     }
   }
 
-  async function refreshHostStatus() {
+  /**
+   * 同步信息：实例详情必须刷新成功；电源状态读取失败只降级为提示，不阻断同步。
+   *
+   * @returns 电源状态是否暂不可用
+   */
+  async function refreshHostStatus(): Promise<boolean> {
+    let powerUnavailable = false;
+
     if (detail.value.actions?.module_status) {
-      await clientApi.serviceModuleStatus(serviceId.value, { type: 'host' });
+      try {
+        const res = (await clientApi.serviceModuleStatus(serviceId.value, { type: 'host' })) as
+          { data?: { available?: boolean } } | null | undefined;
+        powerUnavailable = res?.data?.available === false;
+      } catch {
+        // 旧版后端或上游异常：电源状态读取失败不影响详情同步
+        powerUnavailable = true;
+      }
     }
+
     await loadDetailBase(true);
+
+    return powerUnavailable;
   }
 
   async function bootstrap() {

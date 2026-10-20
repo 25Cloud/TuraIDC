@@ -1582,6 +1582,7 @@
       "instanceResumed": "实例已解除暂停",
       "resumeFailed": "解除暂停失败",
       "statusSynced": "实例状态已同步",
+      "statusSyncedPartial": "实例信息已同步，电源状态暂时不可用",
       "syncStatusFailed": "同步实例状态失败",
       "remoteAddress": "远程地址",
       "publicIp": "公网 IP",

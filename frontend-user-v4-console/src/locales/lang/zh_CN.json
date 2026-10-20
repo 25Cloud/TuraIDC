@@ -1838,6 +1838,7 @@
             "disk": "磁盘管理"
         },
         "statusSynced": "实例状态已同步",
+        "statusSyncedPartial": "实例信息已同步，电源状态暂时不可用",
         "statusSyncFailed": "同步实例状态失败",
         "remoteAddress": "远程地址",
         "publicIp": "公网 IP",

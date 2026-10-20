@@ -203,14 +203,44 @@ class ServicePowerService
             return $this->detailService->buildPasswordResetPendingStatus();
         }
 
+        if ($type === 'host') {
+            return $this->resolveHostModuleStatus($service);
+        }
+
         [, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
         $payload = $this->detailService->fetchModuleStatusPayload($supplier, $hostId, $jwt, $type);
 
-        if ($type === 'host' && $payload !== []) {
-            $this->detailService->syncServiceFromRemote($service, [], $payload);
-        }
-
         return $this->detailService->normalizeModuleStatus($payload, $type);
+    }
+
+    /**
+     * 读取电源状态：失败只降级为「暂不可用」，不打断调用方。
+     *
+     * 管理端 / 控制台的「同步信息」把电源状态读取和实例详情刷新串在一起。
+     * 实例关机、暂停、上游接口临时不可用时电源状态必然读不到，但到期时间、
+     * 商品、IP 仍然要同步——所以这里把这类失败收敛成 available=false 的结果，
+     * 由前端提示「实例信息已同步，电源状态暂不可用」而不是整体报错。
+     */
+    private function resolveHostModuleStatus(Service $service): array
+    {
+        try {
+            [, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
+            $payload = $this->detailService->fetchModuleStatusPayload($supplier, $hostId, $jwt, 'host');
+
+            if ($payload !== []) {
+                $this->detailService->syncServiceFromRemote($service, [], $payload);
+            }
+
+            return $this->detailService->normalizeModuleStatus($payload, 'host');
+        } catch (\Throwable $exception) {
+            Log::warning('[实例控制台] 电源状态读取失败，返回暂不可用', [
+                'service_id' => $service->id,
+                'message' => SensitiveDataSanitizer::sanitizeText($exception->getMessage()),
+                'exception' => $exception::class,
+            ]);
+
+            return $this->detailService->buildUnavailableModuleStatus('host', $exception->getMessage());
+        }
     }
 
     public function getReinstallOptionsForUser(User $user, int $serviceId, bool $forceRefresh = false): array

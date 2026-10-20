@@ -1838,6 +1838,7 @@
             "disk": "磁碟管理"
         },
         "statusSynced": "例項狀態已同步",
+        "statusSyncedPartial": "例項資訊已同步，電源狀態暫時無法取得",
         "statusSyncFailed": "同步例項狀態失敗",
         "remoteAddress": "遠端地址",
         "publicIp": "公網 IP",
