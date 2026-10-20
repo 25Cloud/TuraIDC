@@ -654,6 +654,13 @@
                 </div>
                 <div
                   class="cost-item"
+                  v-if="detailGroup && detailGroup.full_name"
+                >
+                  <span>{{ $t("product.list.groupPath") }}</span>
+                  <span>{{ detailGroup.full_name }}</span>
+                </div>
+                <div
+                  class="cost-item"
                   v-for="item in summaryItems"
                   :key="item.key"
                 >
