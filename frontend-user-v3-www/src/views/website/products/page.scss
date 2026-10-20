@@ -311,12 +311,16 @@
 }
 
 .shop-view-bar__name {
+  /* 路径含「一级 / 二级 / 三级」，窄容器里允许两行，不要截成一个字 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
   overflow: hidden;
   color: $text-color-primary;
   font-size: 15px;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
 }
 
 .shop-view-bar__count {
@@ -558,8 +562,12 @@
     min-width: 0;
     overflow: hidden;
     font-size: 14px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    /* 手机端也允许两行，避免只看到「轻量云 / 活动...」 */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
 
   svg {
@@ -1117,7 +1125,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding-left: 22px;
+  padding: 8px 0 8px 22px;
 }
 
 .machine-spec-radio {
@@ -1139,9 +1147,10 @@
   display: inline-block;
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  /* 商品名是「分组名 + 规格」，完整展示比截断更好读 */
+  white-space: normal;
 }
 
 .machine-spec-name-wrap {

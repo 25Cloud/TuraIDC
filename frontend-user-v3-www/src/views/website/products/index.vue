@@ -2961,8 +2961,9 @@ const machineSpecGridStyle = computed(() => {
     processorColPx = Math.max(220, Math.ceil(maxTextWidth) + 100);
   }
 
-  const columns = ["minmax(180px, 1.6fr)"];
-  let minWidth = 180;
+  // 商品名现在是「分组名 + 规格」，列宽给足并允许换行，不靠省略号猜内容
+  const columns = ["minmax(220px, 1.6fr)"];
+  let minWidth = 220;
   if (showCpuMemoryColumns.value) {
     columns.push("minmax(88px, 1fr)", "minmax(88px, 1fr)");
     minWidth += 176;
