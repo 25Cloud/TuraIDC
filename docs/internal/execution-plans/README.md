@@ -14,7 +14,6 @@
 | [管理端与用户端体验整改](active/admin-console-and-user-experience-batch-2026-10-15.md)                                 | active | 补齐管理端可点击链接、登录验证码首屏、实例台预加载与遮罩、实例详情信息架构、上游跳转与语言自适应。 |
 | [后端专家团审查修复计划](active/backend-expert-review-remediation-2026-08-13.md)                                       | active | 6 功能域 × 5 视角专家团审查结论的分批修复计划，P0 资金与账号安全优先。                             |
 | [绑定表写入放大治理](active/binding-table-write-amplification-2026-09-16.md)                                           | active | 绑定表与快照表的无变化重写治理：改为变更感知写入，收敛生产 binlog 写入放大。                       |
-| [官网体验收口、术语统一与双许可落地](active/brand-terms-skeleton-license-2026-10-20.md)                                | active | 同步信息 42200 解耦、商品/实例术语统一、官网骨架、侧栏动画、图标库收口、CLA 与双许可。             |
 | [工单上游 CodeRabbit 安全修复](active/coderabbit-security-remediation-ticket-upstream-2026-08-21.md)                   | active | 按 PR #20 CodeRabbit 审查修复工单上游传递安全与一致性问题，含上游 zjmfv376 配套改动。              |
 | [数据库专家团审查修复计划](active/database-expert-review-remediation-2026-08-13.md)                                    | active | 数据库结构专家团审查发现的分组修复与回归计划。                                                     |
 | [购物车展示方式与商品描述](active/product-cart-display-mode-and-description-2026-10-15.md)                             | active | 选购页列表式 / 卡片式切换与商品描述：描述复用规格维度识别自动生成，管理端双模式编辑。              |
@@ -30,19 +29,20 @@
 
 ## 已完成（completed/）
 
-| 计划                                                                                            | 状态      | 简介                                                                           |
-| ----------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------ |
-| [管理员代登录可靠性修复](completed/admin-impersonation-reliability-fix-2026-08-01.md)           | completed | 管理端代登录弹窗可靠性、消息交接与 E2E 契约修复。                              |
-| [文档路径英文化迁移](completed/documentation-path-migration-2026-08-20.md)                      | completed | 将 `docs/` 下中文目录和文件名迁移为英文路径，并同步 VitePress URL 与全仓引用。 |
-| [易支付网关标识统一为 epay](completed/epay-gateway-identifier-rename-2026-09-13.md)             | completed | 易支付插件包/命名空间/网关编码全量改名 epay，存量落库值迁移与回调别名兼容。    |
-| [财务账务一致性与回归修复](completed/financial-ledger-consistency-regression-fix-2026-08-04.md) | completed | 账务金额、收入统计、单据投影与管理端财务回归修复。                             |
-| [本地 IDC 异构数据映射迁移](completed/local-idc-heterogeneous-data-migration-20260722.md)       | completed | 异构数据中转恢复、受控 DML 导入与结构与数据验收。                              |
-| [商品分类结构修复](completed/product-category-structure-fix-2026-08-01.md)                      | completed | 恢复三层商品分类实体表、重建外键并修复异常商品归属。                           |
-| [生产备份本地恢复修复](completed/production-backup-local-restore-20260726.md)                   | completed | 生产备份已映射并完整恢复到本地 `idc`。                                         |
-| [TuraIDC 开放接口上游驱动插件](completed/tura-open-api-driver-2026-09-12.md)                    | completed | tura_open_api 插件打通纯自有协议无限级转售链：目录/开通/续费/状态同步/余额。   |
-| [上下游对接链路加固](completed/upstream-openapi-hardening-2026-09-12.md)                        | completed | 开放 API 写端点与审计加固、能力契约分层、开通失败退款标记、幂等 DB 兜底。      |
-| [VNC 与业务调度隔离方案](completed/vnc-and-business-scheduling-isolation-2026-08-04.md)         | completed | VNC Relay、业务队列与定时队列隔离实施计划。                                    |
-| [ZJMF 统一迁移方案](completed/zjmf-unified-migration.md)                                        | completed | ZJMF 实时绑定已切换、实例控制已验证，旧插件已卸载且历史已保留。                |
+| 计划                                                                                            | 状态      | 简介                                                                                   |
+| ----------------------------------------------------------------------------------------------- | --------- | -------------------------------------------------------------------------------------- |
+| [管理员代登录可靠性修复](completed/admin-impersonation-reliability-fix-2026-08-01.md)           | completed | 管理端代登录弹窗可靠性、消息交接与 E2E 契约修复。                                      |
+| [官网体验收口、术语统一与双许可落地](completed/brand-terms-skeleton-license-2026-10-20.md)      | completed | 同步信息 42200 解耦、商品/实例术语统一、官网骨架、侧栏动画、图标库收口、CLA 与双许可。 |
+| [文档路径英文化迁移](completed/documentation-path-migration-2026-08-20.md)                      | completed | 将 `docs/` 下中文目录和文件名迁移为英文路径，并同步 VitePress URL 与全仓引用。         |
+| [易支付网关标识统一为 epay](completed/epay-gateway-identifier-rename-2026-09-13.md)             | completed | 易支付插件包/命名空间/网关编码全量改名 epay，存量落库值迁移与回调别名兼容。            |
+| [财务账务一致性与回归修复](completed/financial-ledger-consistency-regression-fix-2026-08-04.md) | completed | 账务金额、收入统计、单据投影与管理端财务回归修复。                                     |
+| [本地 IDC 异构数据映射迁移](completed/local-idc-heterogeneous-data-migration-20260722.md)       | completed | 异构数据中转恢复、受控 DML 导入与结构与数据验收。                                      |
+| [商品分类结构修复](completed/product-category-structure-fix-2026-08-01.md)                      | completed | 恢复三层商品分类实体表、重建外键并修复异常商品归属。                                   |
+| [生产备份本地恢复修复](completed/production-backup-local-restore-20260726.md)                   | completed | 生产备份已映射并完整恢复到本地 `idc`。                                                 |
+| [TuraIDC 开放接口上游驱动插件](completed/tura-open-api-driver-2026-09-12.md)                    | completed | tura_open_api 插件打通纯自有协议无限级转售链：目录/开通/续费/状态同步/余额。           |
+| [上下游对接链路加固](completed/upstream-openapi-hardening-2026-09-12.md)                        | completed | 开放 API 写端点与审计加固、能力契约分层、开通失败退款标记、幂等 DB 兜底。              |
+| [VNC 与业务调度隔离方案](completed/vnc-and-business-scheduling-isolation-2026-08-04.md)         | completed | VNC Relay、业务队列与定时队列隔离实施计划。                                            |
+| [ZJMF 统一迁移方案](completed/zjmf-unified-migration.md)                                        | completed | ZJMF 实时绑定已切换、实例控制已验证，旧插件已卸载且历史已保留。                        |
 
 ## 技术债（tech-debt/）
 
