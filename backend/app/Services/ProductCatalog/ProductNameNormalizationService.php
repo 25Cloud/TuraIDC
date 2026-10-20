@@ -5,23 +5,24 @@ declare(strict_types=1);
 namespace App\Services\ProductCatalog;
 
 use App\Models\Product;
-use App\Support\ProductCatalogName;
-use App\Support\ProductGroupHierarchyFields;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
- * 商品展示名规范化：把 custom_display_name 统一成「三级分组名 + 规范规格摘要」。
+ * 商品展示名规范化：把 custom_display_name 统一成「[区域] + 规范规格摘要」。
  *
  * 上游商品名是把线路描述和规格混着写的自由文本（「宿迁AMD 锐龙 Threadripper
  * 3960X三线BGP 2G2H」「枣庄BGP 13900K 2核2G」「2vCPU2GiB」），对接同步进来的
  * 就是这些名字，同目录里横向比较完全对不上。
  *
- * 这里只做「对接之后」的加工，不改同步逻辑本身（同步仍按既有权口径把上游名写进
+ * 这里只做「对接之后」的加工，不改同步逻辑本身（同步仍按既有口径把上游名写进
  * custom_display_name）：把已落库的名字重新算成
- *   三级分组名（缺失时二级分组名） + 规范规格摘要
- * 例如「宿迁BGP Threadripper 3960X 2核2G30Mbps」。算不出规格摘要的商品
- * （虚拟主机 / CDN / 挂机宝等）保持原名不动。
+ *   区域 + 规范规格摘要（如「美国轻量区 2核2G」「宿迁BGP 16核16G」）
+ *
+ * 区域只在「同一个三级分组里存在多个区域」时才加：活动分区这类分组里同规格
+ * 商品可能来自美国/香港/日本等不同机房，只写规格用户分不清买什么；而单一区域
+ * 的分组（名字已经说明了地区）没必要重复。取不到区域又处于多区域分组时保留原名，
+ * 避免撞成同名。算不出规格摘要的商品（虚拟主机 / CDN / 挂机宝等）保持原名不动。
  *
  * 幂等：名字已经是新格式时不会重复写库，可以反复执行。
  *
@@ -32,9 +33,14 @@ class ProductNameNormalizationService
 {
     private readonly ProductSpecSummaryBuilder $specSummaryBuilder;
 
-    public function __construct(?ProductSpecSummaryBuilder $specSummaryBuilder = null)
-    {
+    private readonly ProductRegionLabelResolver $regionLabelResolver;
+
+    public function __construct(
+        ?ProductSpecSummaryBuilder $specSummaryBuilder = null,
+        ?ProductRegionLabelResolver $regionLabelResolver = null,
+    ) {
         $this->specSummaryBuilder = $specSummaryBuilder ?? new ProductSpecSummaryBuilder;
+        $this->regionLabelResolver = $regionLabelResolver ?? new ProductRegionLabelResolver;
     }
 
     /**
@@ -119,6 +125,29 @@ class ProductNameNormalizationService
 
         $products = $query->get();
 
+        // 区域标签来自上游绑定的配置结构；先整体取一遍，再按三级分组判断是否多区域。
+        $bindings = [];
+        $productIds = $products->pluck('id')->all();
+        if ($productIds !== []) {
+            foreach (DB::table('product_upstream_bindings')
+                ->select(['product_id', 'option_schema_json'])
+                ->whereIn('product_id', $productIds)
+                ->get() as $bindingRow) {
+                $bindings[(int) $bindingRow->product_id] = (string) $bindingRow->option_schema_json;
+            }
+        }
+
+        $areaByProduct = [];
+        $areasByGroup = [];
+        foreach ($products as $product) {
+            $area = $this->regionLabelResolver->fromOptionSchema($bindings[(int) $product->id] ?? null);
+            $areaByProduct[(int) $product->id] = $area;
+            $groupId = (int) ($product->product_group_id ?? 0);
+            if ($area !== '' && $groupId > 0) {
+                $areasByGroup[$groupId][$area] = true;
+            }
+        }
+
         $changes = [];
         $skipped = [];
         $tooLong = [];
@@ -137,10 +166,22 @@ class ProductNameNormalizationService
                 continue;
             }
 
-            $newName = ProductCatalogName::compose(ProductGroupHierarchyFields::fromProduct($product), [
-                'product_spec_summary' => $summary,
-                'product_display_name' => '',
-            ]);
+            $groupId = (int) ($product->product_group_id ?? 0);
+            $multiAreaGroup = $groupId > 0 && count($areasByGroup[$groupId] ?? []) > 1;
+            $area = (string) ($areaByProduct[(int) $product->id] ?? '');
+
+            if ($multiAreaGroup && $area === '') {
+                // 同组是多区域但本商品取不到区域：保留原名，别退化成会和别人重名的纯规格。
+                $skipped[] = [
+                    'id' => (int) $product->id,
+                    'name' => $currentName,
+                    'reason' => '多区域分组但缺少区域信息',
+                ];
+
+                continue;
+            }
+
+            $newName = $multiAreaGroup ? trim($area.' '.$summary) : $summary;
 
             if ($newName === '') {
                 $skipped[] = [
