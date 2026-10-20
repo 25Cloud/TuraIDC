@@ -356,9 +356,9 @@ export interface ServiceInstance {
 
 /** 一级分组图标的解析结果（后端 App\Support\ProductGroupIcon 统一计算） */
 export interface ServiceGroupIconResolved {
-  /** image=图片；text=文字图标；icon=内置 TDesign 图标名；abbr=名称缩写 */
+  /** image=历史图片模式（已下线，仅兼容旧缓存）；text=文字图标；icon=内置 TDesign 图标名；abbr=名称缩写 */
   mode?: 'image' | 'text' | 'icon' | 'abbr' | string;
-  /** 图片图标地址（后端已解析为可访问绝对地址） */
+  /** 图片图标地址（仅历史兼容字段，前端不再渲染） */
   image?: string | null;
   /** 文字图标 */
   text?: string | null;
@@ -378,7 +378,7 @@ export interface ServiceCatalogTypeOption {
   icon_text?: string | null;
   /** 图片图标地址（后端已解析为可访问绝对地址） */
   icon_image?: string | null;
-  /** 解析后的图标（图片 > 文字 > 内置图标 > 名称缩写） */
+  /** 解析后的图标（内置图标 > 文字图标 > 名称缩写；图片图标已下线，mode=image 仅历史缓存） */
   icon_resolved?: ServiceGroupIconResolved | null;
   [key: string]: unknown;
 }

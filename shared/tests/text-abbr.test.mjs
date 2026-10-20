@@ -5,7 +5,6 @@ import {
   charHalfWidth,
   GROUP_ICON_ABBR_MAX_UNITS,
   isFullWidthCodePoint,
-  resolveProductGroupIcon,
   truncateByHalfWidth,
 } from '../text/abbr.ts'
 
@@ -46,52 +45,5 @@ assert.equal(truncateByHalfWidth(12345, 2), '12')
 // 5. 全角数字 / 全角标点按 2 计
 assert.equal(abbreviateGroupName('１２３'), '１２') // 两个全角数字刚好 4
 assert.equal(abbreviateGroupName('云，A'), '云，') // 2 + 2 = 4
-
-// 6. 图标展示回退规则：icon_image → icon_text → icon（内置图标名）→ 名称缩写
-assert.deepEqual(resolveProductGroupIcon(null), {
-  mode: 'abbr',
-  image: '',
-  text: '',
-  icon_name: '',
-  abbr: '',
-})
-// 全部为空 → 名称缩写
-assert.deepEqual(resolveProductGroupIcon({ label: '云服务器' }), {
-  mode: 'abbr',
-  image: '',
-  text: '',
-  icon_name: '',
-  abbr: '云服',
-})
-// 图片优先级最高
-assert.deepEqual(resolveProductGroupIcon({ icon: 'Server', icon_text: '轻量', icon_image: '/media/a.png', label: '轻量云' }), {
-  mode: 'image',
-  image: '/media/a.png',
-  text: '轻量',
-  icon_name: 'Server',
-  abbr: '轻量',
-})
-assert.deepEqual(resolveProductGroupIcon({ icon_text: '轻量', label: '轻量云' }), {
-  mode: 'text',
-  image: '',
-  text: '轻量',
-  icon_name: '',
-  abbr: '轻量',
-})
-assert.deepEqual(resolveProductGroupIcon({ icon: 'Gamepad', label: '游戏云' }), {
-  mode: 'icon',
-  image: '',
-  text: '',
-  icon_name: 'Gamepad',
-  abbr: '游戏',
-})
-// 字符串两端空白不参与判定
-assert.deepEqual(resolveProductGroupIcon({ icon: '  ', icon_text: ' ', label: 'GameCloud' }), {
-  mode: 'abbr',
-  image: '',
-  text: '',
-  icon_name: '',
-  abbr: 'Game',
-})
 
 console.log('shared text abbr tests passed')

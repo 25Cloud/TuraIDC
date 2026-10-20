@@ -9,19 +9,13 @@
       <header class="product-card-head">
         <div class="product-card-tags">
           <span v-if="card.typeLabel" class="product-card-type">
+            <!-- 一级分组图标只走内置图标库（Element Plus 映射），图片图标已下线 -->
             <span
-              v-if="card.typeIcon && card.typeIcon.kind !== 'text'"
+              v-if="card.typeIcon && card.typeIcon.kind === 'icon'"
               class="product-card-type-icon"
               aria-hidden="true"
             >
-              <img
-                v-if="card.typeIcon.kind === 'image'"
-                :src="card.typeIcon.image"
-                alt=""
-              />
-              <el-icon v-else-if="card.typeIcon.kind === 'icon'"
-                ><component :is="card.typeIcon.component"
-              /></el-icon>
+              <el-icon><component :is="card.typeIcon.component" /></el-icon>
             </span>
             {{ card.typeLabel }}
           </span>

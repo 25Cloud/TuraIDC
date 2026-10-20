@@ -15,15 +15,9 @@
         :aria-current="tab.value === filters.catalog_type ? 'true' : undefined"
         @click="pickCategory(tab.value)"
       >
+        <!-- 一级分组图标只走内置图标库（TDesign），图片图标已下线 -->
         <span
-          v-if="tab.icon && tab.icon.mode === 'image' && tab.icon.image && !failedGroupIconKeys.has(tab.value)"
-          class="service-group-tab__icon service-group-tab__icon--image"
-          aria-hidden="true"
-        >
-          <img :src="tab.icon.image" alt="" loading="lazy" @error="markGroupIconFailed(tab.value)" />
-        </span>
-        <span
-          v-else-if="tab.icon && tab.fallbackText"
+          v-if="tab.icon && tab.fallbackText"
           class="service-group-tab__icon"
           :class="tab.icon.mode === 'icon' ? 'service-group-tab__icon--tdesign' : 'service-group-tab__icon--text'"
           aria-hidden="true"
@@ -595,14 +589,6 @@ const {
 
 const failedServiceOsIconKeys = shallowRef(new Set<string>());
 
-/** 分类 tab 图片图标加载失败的分组：失败后回退为文字徽标，不显示破图 */
-const failedGroupIconKeys = shallowRef(new Set<string>());
-
-function markGroupIconFailed(value: string) {
-  failedGroupIconKeys.value.add(value);
-  triggerRef(failedGroupIconKeys);
-}
-
 function resolveServiceIconKey(item: Record<string, any>) {
   return `${item?.id || ''}:${resolveServiceOsText(item)}`;
 }
@@ -773,7 +759,7 @@ function resolveBillingCycleValue(item: Record<string, any>) {
   white-space: nowrap;
 }
 
-/* 一级分组图标：图片 / 文字徽标 / 内置 TDesign 图标；缺图标时整块不渲染 */
+/* 一级分组图标：文字徽标 / 内置 TDesign 图标；缺图标时整块不渲染 */
 .service-group-tab__icon {
   display: inline-flex;
   flex: none;
@@ -783,12 +769,6 @@ function resolveBillingCycleValue(item: Record<string, any>) {
   height: 1.25rem;
   overflow: hidden;
   border-radius: 0.25rem;
-}
-
-.service-group-tab__icon--image img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
 }
 
 .service-group-tab__icon--text {

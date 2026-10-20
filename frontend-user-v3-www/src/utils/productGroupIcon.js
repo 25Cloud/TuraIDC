@@ -1,37 +1,79 @@
 import {
   Box,
+  Cloudy,
+  Coin,
   Connection,
   Cpu,
   DataLine,
   Grid,
+  Link,
+  Lock,
   Monitor,
+  OfficeBuilding,
   Platform,
+  Shop,
   Tickets,
+  Tools,
 } from "@element-plus/icons-vue";
 
 /**
  * 一级分组图标（官网侧）。
  *
  * 后端 Site 资源已经把图标解析成统一契约 `icon_resolved = { mode, image, text, icon_name, abbr }`
- * （优先级：图片 → 文字 → 内置图标名 → 名称缩写），这里只负责把它翻译成官网能渲染的形态：
- *  - image：直接 <img>
- *  - text / abbr：文字徽标
+ * （优先级：内置图标名 → 文字图标 → 名称缩写；图片图标已下线，icon_image 不再参与渲染），
+ * 这里只负责把它翻译成官网能渲染的形态：
  *  - icon：把 TDesign 图标名映射到 Element Plus 图标；映射不到时退回名称缩写
+ *  - text / abbr：文字徽标
+ *  - 历史 mode=image 的旧缓存一律降级为文字/缩写，不渲染 <img>，避免破图
  *
  * 缩写口径与后端 / shared/text/abbr.ts 一致：中文/全角算 2 单位，英文/数字/半角算 1 单位，
  * 最多 4 单位，不截半个字符。
  */
 
-// TDesign 图标名 → Element Plus 图标组件
+// TDesign 图标库名（后端 icon_name，kebab-case）→ Element Plus 图标组件。
+// 管理端一级分组图标选择器用的就是这 13 个 TDesign 名称，三端必须一一对应；
+// 同时保留历史大写名称与旧别名映射，避免存量缓存/旧接口数据不渲染。
 const ICON_NAME_MAP = {
+  server: Platform,
+  cloud: Cloudy,
+  internet: Connection,
+  "control-platform": Cpu,
+  "component-grid": Grid,
+  desktop: Monitor,
+  "hard-disk-storage": Box,
+  "data-base": Coin,
+  link: Link,
+  "lock-on": Lock,
+  building: OfficeBuilding,
+  tools: Tools,
+  shop: Shop,
+  // 历史/兼容别名（后端 ProductGroupIcon::ICON_ALIASES 归一前后的值都要能落到实际图标）
+  platform: Cpu,
   Platform,
+  gamepad: Cpu,
   Gamepad: Cpu,
-  Monitor,
-  Desktop: Monitor,
-  Grid,
+  "gamepad-1": Cpu,
+  node: Platform,
   Node: Connection,
-  Server: Box,
+  network: Connection,
   Network: Connection,
+  monitor: Monitor,
+  Monitor,
+  "desktop-1": Monitor,
+  Desktop: Monitor,
+  grid: Grid,
+  Grid,
+  "router-wave": Lock,
+  hosting: Box,
+  storage: Box,
+  domain: Link,
+  cdn: Link,
+  ssl: Lock,
+  nat: Lock,
+  tool: Tools,
+  other: Tools,
+  product: Shop,
+  invalid_products: Shop,
   DataLine,
   Tickets,
   Box,
@@ -79,9 +121,11 @@ export function abbrByWidth(label, maxUnits = 4) {
 /**
  * 把 icon_resolved 翻译成渲染描述。
  *
+ * 图片图标已下线：即使旧缓存仍带 mode=image，也降级为文字图标/名称缩写，不返回 <img>。
+ *
  * @param {object|null|undefined} iconResolved 后端 icon_resolved
  * @param {string} fallbackLabel 没有图标数据时用于生成缩写的名称
- * @returns {{kind: 'image'|'text'|'icon', image?: string, text?: string, component?: object|string}}
+ * @returns {{kind: 'text'|'icon', text?: string, component?: object}}
  */
 export function resolveGroupIcon(iconResolved, fallbackLabel = "") {
   const resolved =
@@ -89,14 +133,10 @@ export function resolveGroupIcon(iconResolved, fallbackLabel = "") {
 
   if (resolved) {
     const mode = String(resolved.mode || "").trim();
-    const image = String(resolved.image || "").trim();
     const text = String(resolved.text || "").trim();
     const abbr = String(resolved.abbr || "").trim();
     const iconName = String(resolved.icon_name || "").trim();
 
-    if (mode === "image" && image) {
-      return { kind: "image", image };
-    }
     if (mode === "text" && text) {
       return { kind: "text", text };
     }
@@ -112,6 +152,10 @@ export function resolveGroupIcon(iconResolved, fallbackLabel = "") {
     }
     if (mode === "abbr" && abbr) {
       return { kind: "text", text: abbr };
+    }
+    // 历史 mode=image / 未知 mode：不渲染图片，按文字或名称缩写兜底
+    if (text) {
+      return { kind: "text", text };
     }
   }
 

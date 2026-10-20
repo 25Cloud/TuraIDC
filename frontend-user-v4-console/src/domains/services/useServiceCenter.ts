@@ -1,6 +1,6 @@
 import { SERVICE_STATUS, SERVICE_STATUS_MAP, toSelectOptions } from '@shared/statusConfig';
 import type { ResolvedProductGroupIcon } from '@shared/text';
-import { resolveProductGroupIcon } from '@shared/text';
+import { abbreviateGroupName } from '@shared/text';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, shallowRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -144,28 +144,95 @@ export function resolveServiceMark(item: ServiceLike) {
 }
 
 /**
- * 一级分组分类 tab 的图标：优先用后端 icon_resolved（图片 > 文字 > 内置图标 > 名称缩写），
- * 老缓存或缺字段时用 shared 的同一套优先级自算，保证 tab 永远不会因为缺图标而报错。
+ * 一级分组分类 tab 的图标：优先用后端 icon_resolved（内置图标 > 文字图标 > 名称缩写），
+ * 老缓存或缺字段时把 icon / 历史 icon_text 别名归一成规范 TDesign 名，保证 tab 永远
+ * 不会因为缺图标而报错；图片图标已下线，mode=image 的旧缓存降级为文字/缩写。
  */
+const SERVICE_GROUP_ICON_ALIASES: Record<string, string> = {
+  server: 'server',
+  cloud: 'cloud',
+  internet: 'internet',
+  'control-platform': 'control-platform',
+  'component-grid': 'component-grid',
+  desktop: 'desktop',
+  'hard-disk-storage': 'hard-disk-storage',
+  'data-base': 'data-base',
+  link: 'link',
+  'lock-on': 'lock-on',
+  building: 'building',
+  tools: 'tools',
+  shop: 'shop',
+  // 历史别名（与后端 ProductGroupIcon::ICON_ALIASES 一致）
+  platform: 'control-platform',
+  gamepad: 'control-platform',
+  'gamepad-1': 'control-platform',
+  dedicated: 'control-platform',
+  monitor: 'desktop',
+  'desktop-1': 'desktop',
+  grid: 'component-grid',
+  node: 'server',
+  network: 'internet',
+  isp: 'internet',
+  vps: 'server',
+  officebuilding: 'building',
+  bare_metal: 'building',
+  hosting: 'hard-disk-storage',
+  cdn: 'link',
+  storage: 'hard-disk-storage',
+  database: 'data-base',
+  db: 'data-base',
+  domain: 'link',
+  ssl: 'lock-on',
+  nat: 'lock-on',
+  router: 'lock-on',
+  'router-wave': 'lock-on',
+  tool: 'tools',
+  other: 'tools',
+  product: 'shop',
+  invalid_products: 'shop',
+};
+
+/** 只返回规范 TDesign 图标名；普通文字返回空串，避免把文字误渲染成空图标。 */
+function canonicalServiceGroupIconName(value: unknown): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+
+  return SERVICE_GROUP_ICON_ALIASES[raw.toLowerCase()] || '';
+}
+
 export function resolveServiceCatalogIcon(item: ServiceCatalogTypeOption): ResolvedProductGroupIcon {
   const resolved = item.icon_resolved;
+  const abbr = String(resolved?.abbr || '') || abbreviateGroupName(item.label || '');
+  const text = String(resolved?.text || '').trim();
 
-  if (resolved && resolved.mode) {
-    return {
-      mode: resolved.mode as ResolvedProductGroupIcon['mode'],
-      image: String(resolved.image || ''),
-      text: String(resolved.text || ''),
-      icon_name: String(resolved.icon_name || item.icon || ''),
-      abbr: String(resolved.abbr || ''),
-    };
+  if (resolved?.mode === 'icon') {
+    const iconName =
+      canonicalServiceGroupIconName(resolved.icon_name || item.icon) || canonicalServiceGroupIconName(item.icon_text);
+    if (iconName) {
+      return { mode: 'icon', image: '', text: '', icon_name: iconName, abbr };
+    }
   }
 
-  return resolveProductGroupIcon({
-    icon: item.icon,
-    icon_text: item.icon_text,
-    icon_image: item.icon_image,
-    label: item.label,
-  });
+  if (resolved?.mode === 'text' && text) {
+    return { mode: 'text', image: '', text, icon_name: '', abbr };
+  }
+
+  if (resolved?.mode === 'abbr' && abbr) {
+    return { mode: 'abbr', image: '', text: '', icon_name: '', abbr };
+  }
+
+  // 老缓存 / 缺 icon_resolved / 历史 image 模式：icon → icon_text 别名 → 文字 → 缩写
+  const legacyIconName = canonicalServiceGroupIconName(item.icon) || canonicalServiceGroupIconName(item.icon_text);
+  if (legacyIconName) {
+    return { mode: 'icon', image: '', text: '', icon_name: legacyIconName, abbr };
+  }
+
+  const legacyText = String(item.icon_text || '').trim();
+  if (legacyText) {
+    return { mode: 'text', image: '', text: legacyText, icon_name: '', abbr };
+  }
+
+  return { mode: 'abbr', image: '', text: '', icon_name: '', abbr };
 }
 
 export function findListSpecValue(item: ServiceLike, aliases: string[] = [], fallback = '--') {
@@ -389,7 +456,7 @@ export function useServiceCenter() {
         label: String(item.label ?? ''),
         count: Number(item.count || 0),
         icon,
-        // 图片加载失败 / image 为空时的文字兜底：文字图标优先，其次名称缩写
+        // 内置图标缺失/未知时的文字兜底：文字图标优先，其次名称缩写
         fallbackText: icon.text || icon.abbr,
       };
     }),
