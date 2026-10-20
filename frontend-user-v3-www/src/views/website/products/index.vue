@@ -542,10 +542,10 @@
 
           <!-- 机型配置 -->
           <div
-            v-if="(machineConfigs.length || hasMobileProductGroups) && isMobile"
+            v-if="(machineConfigs.length || mobileGroupedSpecUi) && isMobile"
           >
             <div
-              v-if="hasMobileProductGroups"
+              v-if="mobileGroupedSpecUi"
               class="mobile-picker-row mobile-picker-row--duo"
             >
               <div class="mobile-picker-col">
@@ -1858,7 +1858,7 @@
     />
 
     <MobileOptionPicker
-      v-if="hasMobileProductGroups"
+      v-if="mobileGroupedSpecUi"
       :visible="mobileSpecFamilyDrawer"
       :title="$t('product.list.spec')"
       :options="mobileSpecFamilyOptions"
@@ -1868,7 +1868,7 @@
     />
 
     <MobileOptionPicker
-      v-if="hasMobileProductGroups"
+      v-if="mobileGroupedSpecUi"
       :visible="mobileGroupedCpuDrawer"
       title="CPU"
       :options="mobileGroupedCpuOptions"
@@ -1878,7 +1878,7 @@
     />
 
     <MobileOptionPicker
-      v-if="hasMobileProductGroups"
+      v-if="mobileGroupedSpecUi"
       :visible="mobileGroupedMemoryDrawer"
       :title="$t('product.list.memory')"
       :options="mobileGroupedMemoryOptions"
@@ -1906,7 +1906,7 @@
       @confirm="confirmMobileProductSelection"
     >
       <div class="mobile-product-sheet-list">
-        <template v-if="hasMobileProductGroups">
+        <template v-if="mobileGroupedSpecUi">
           <button
             v-for="group in mobileProductGroups"
             :key="group.key"
@@ -1953,7 +1953,7 @@
           >
             <span class="mobile-product-sheet-name-wrap">
               <span class="mobile-product-sheet-name">{{
-                resolveProductDisplayName(p)
+                stripActiveGroupPrefix(resolveProductDisplayName(p))
               }}</span>
               <el-popover
                 v-if="normalizeInstanceSpecNote(p.instance_spec_note)"
@@ -3283,6 +3283,18 @@ const hasMobileProductGroups = computed(
       (row) => row.baseName && row.cpuSlug && row.memorySlug,
     ),
 );
+/**
+ * 是否用「机型族 → CPU → 内存」的分组式选择。
+ *
+ * 只有多个机型族时这套 UI 才有意义：单族时 family 下拉只有一项，而且商品名
+ * 统一成「分组名 + 规格」之后 family 会被剥成分组名，用户在里面根本切不了商品。
+ * 单族直接列出商品（每项只显示规格，如 2核2G / 4核4G），选中即切换。
+ */
+const mobileGroupedSpecUi = computed(
+  () =>
+    hasMobileProductGroups.value && mobileProductSpecFamilies.value.length > 1,
+);
+
 const selectedMobileSpecFamily = computed(() => {
   if (!hasMobileProductGroups.value) {
     return null;
@@ -3327,11 +3339,15 @@ const selectedMobileCpuLabel = computed(
     selectedMobileProductGroup.value?.label ||
     "",
 );
-const mobileSpecPickerLabel = computed(() =>
-  hasMobileProductGroups.value
-    ? selectedMobileSpecFamily.value?.label || ""
-    : selectedMobileProductModelLabel.value,
-);
+const mobileSpecPickerLabel = computed(() => {
+  if (mobileGroupedSpecUi.value) {
+    return selectedMobileSpecFamily.value?.label || "";
+  }
+
+  // 单族：直接显示当前商品的规格（去掉与分组重名的前缀），例如「2核2G」
+  const displayName = stripActiveGroupPrefix(selectedProductDisplayName.value);
+  return displayName || selectedMobileProductModelLabel.value;
+});
 const selectedMobileMemoryLabel = computed(() => {
   const selectedId = Number(selectedProductId.value || 0);
   const matched = selectedMobileProductGroup.value?.products.find(
@@ -3379,7 +3395,7 @@ const mobileSingleConfig = ref(null);
 async function openMobileProductGroupDrawer() {
   await openMobileProductDrawer();
 
-  if (hasMobileProductGroups.value) {
+  if (mobileGroupedSpecUi.value) {
     mobilePendingProductGroupKey.value =
       selectedMobileProductGroup.value?.key ||
       mobileProductGroups.value[0]?.key ||
@@ -3405,7 +3421,7 @@ function openMobileGroupedCpuDrawer() {
 }
 
 function openMobileSpecPicker() {
-  if (hasMobileProductGroups.value) {
+  if (mobileGroupedSpecUi.value) {
     if (!mobileSpecFamilyOptions.value.length) return;
     mobileSpecFamilyDrawer.value = true;
     return;

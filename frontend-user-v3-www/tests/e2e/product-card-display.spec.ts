@@ -751,6 +751,31 @@ test.describe("选购页统一路由与展示方式", () => {
     await expect.poll(() => new URL(page.url()).pathname).toBe(productPath);
   });
 
+  test("手机端列表式：产品选择抽屉直接列商品，选中即切换", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockSiteApi(page, "list");
+    await page.goto(childPath);
+    await expect.poll(() => new URL(page.url()).pathname).toBe(productPath);
+
+    // 第一行「产品规格选择」：点开必须能看到每个商品，而不是只有一个分组名
+    const specTrigger = page.locator(".mobile-picker-trigger").first();
+    await expect(specTrigger).toBeVisible();
+    await specTrigger.click();
+
+    const items = page.locator(".mobile-product-sheet-item");
+    await expect(items).toHaveCount(PRODUCTS.length);
+    await expect(items.nth(0)).toContainText("美国高防主机-A");
+    await expect(items.nth(1)).toContainText("美国高防主机-B");
+    await expect(items.nth(1)).toContainText("¥");
+
+    // 选第二个商品 → 确定：地址与报价一起切过去
+    await items.nth(1).click();
+    await page.locator(".ms-head .ms-action--primary").click();
+    await expect
+      .poll(() => new URL(page.url()).pathname)
+      .toBe(`${childPath}/${PRODUCT_IDS[1]}`);
+    await expect(page.locator(".ms-drawer")).toHaveCount(0);
+  });
   test("分组导航：一级与二/三级分成两个侧栏，字号放大且点目录自动收起一级", async ({
     page,
   }) => {

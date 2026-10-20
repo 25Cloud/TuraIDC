@@ -78,6 +78,11 @@
   box-sizing: border-box;
 }
 
+// 抽屉/下拉展开时页面高度会跨过滚动阈值，滚动条出现瞬间内容宽度会抖一下
+// （表现为“右侧控件被挤了一点”）。预留滚动条槽位，出现/消失都不再改变布局。
+html {
+  scrollbar-gutter: stable;
+}
 html,
 body,
 #app {
