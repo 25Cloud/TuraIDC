@@ -41,28 +41,10 @@
           <span class="pd-view-label">{{
             $t("product.list.displayMode")
           }}</span>
-          <div
-            class="pd-view-switch"
-            role="group"
-            :aria-label="$t('product.list.displayMode')"
-          >
-            <button
-              type="button"
-              :class="{ 'is-active': detailDisplayMode === DISPLAY_MODE_CARD }"
-              :aria-pressed="detailDisplayMode === DISPLAY_MODE_CARD"
-              @click="handleDetailDisplayModeChange(DISPLAY_MODE_CARD)"
-            >
-              {{ $t("product.list.displayCard") }}
-            </button>
-            <button
-              type="button"
-              :class="{ 'is-active': detailDisplayMode === DISPLAY_MODE_LIST }"
-              :aria-pressed="detailDisplayMode === DISPLAY_MODE_LIST"
-              @click="handleDetailDisplayModeChange(DISPLAY_MODE_LIST)"
-            >
-              {{ $t("product.list.displayList") }}
-            </button>
-          </div>
+          <DisplayModeSwitch
+            :model-value="detailDisplayMode"
+            @update:model-value="handleDetailDisplayModeChange"
+          />
         </div>
       </div>
 
@@ -1065,11 +1047,8 @@ import { resolveCpuBrandBadge } from "@/domains/products/cpuBrandBadge";
 import { resolveMachineSpecPresentation } from "@/domains/products/machineSpecResolver";
 import { formatProductListPrice } from "@/views/website/products/productPrice";
 import { useProductDisplaySettings } from "@/views/website/products/useProductDisplaySettings";
-import {
-  DISPLAY_MODE_CARD,
-  DISPLAY_MODE_LIST,
-  useProductDisplayMode,
-} from "@/views/website/products/useProductDisplayMode";
+import { useProductDisplayMode } from "@/views/website/products/useProductDisplayMode";
+import DisplayModeSwitch from "@/views/website/products/DisplayModeSwitch.vue";
 import {
   buildWebsiteProductPath,
   resolveWebsiteProductRoutePayloadByDetail,
@@ -2236,48 +2215,9 @@ onBeforeUnmount(() => {
   font-size: 12px;
 }
 
-.pd-view-switch {
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid #e5e6eb;
-  border-radius: 4px;
-  background: #f7f8fa;
-}
-
-.pd-view-switch button {
-  height: 28px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 3px;
-  background: transparent;
-  color: #4e5969;
-  font-size: 12px;
-  cursor: pointer;
-  transition:
-    background-color 0.15s,
-    color 0.15s,
-    box-shadow 0.15s;
-}
-
-.pd-view-switch button:hover {
-  color: #165dff;
-}
-
-.pd-view-switch button.is-active {
-  background: #fff;
-  color: #165dff;
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-}
-
 @media (max-width: 520px) {
   .pd-view-label {
     display: none;
-  }
-
-  .pd-view-switch button {
-    padding: 0 8px;
   }
 }
 

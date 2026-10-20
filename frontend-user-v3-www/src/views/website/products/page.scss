@@ -333,50 +333,6 @@
   gap: 10px;
 }
 
-.shop-view-switch {
-  display: inline-flex;
-  flex-shrink: 0;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid $divider-color;
-  border-radius: 4px;
-  background: $bg-color-soft;
-}
-
-.shop-view-switch__btn {
-  display: inline-flex;
-  height: 28px;
-  align-items: center;
-  gap: 4px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 3px;
-  background: transparent;
-  color: $text-color-secondary;
-  font-size: 12px;
-  cursor: pointer;
-  transition:
-    background-color $motion-fast ease,
-    color $motion-fast ease,
-    box-shadow $motion-fast ease;
-
-  &:hover {
-    color: $color-primary;
-  }
-
-  &.is-active {
-    background: #fff;
-    color: $color-primary;
-    font-weight: 600;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-  }
-
-  &:focus-visible {
-    outline: 2px solid rgba($color-primary, 0.45);
-    outline-offset: 1px;
-  }
-}
-
 /* ===== 页面宽度面板（宽屏） ===== */
 .shop-width-control {
   position: relative;
@@ -929,6 +885,8 @@
     color: $text-color-secondary;
     font-size: 13px;
     line-height: 1.8;
+    // 规格摘要按「一条一行」渲染（productIntroText 用具名换行拼接）
+    white-space: pre-line;
   }
 }
 
@@ -2541,6 +2499,8 @@
     color: $text-color-secondary;
     font-size: 14px;
     line-height: 1.8;
+    // 与桌面列表式一致：一条规格一行
+    white-space: pre-line;
   }
 }
 

@@ -133,105 +133,10 @@
             }}</span>
           </div>
           <div class="shop-view-bar__controls">
-            <div
-              class="shop-view-switch"
-              role="group"
-              :aria-label="$t('product.list.displayMode')"
-            >
-              <button
-                type="button"
-                class="shop-view-switch__btn"
-                :class="{ 'is-active': displayMode === DISPLAY_MODE_CARD }"
-                :aria-pressed="displayMode === DISPLAY_MODE_CARD"
-                @click="handleDisplayModeChange(DISPLAY_MODE_CARD)"
-              >
-                <svg
-                  viewBox="0 0 16 16"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <rect
-                    x="2"
-                    y="2"
-                    width="5.2"
-                    height="5.2"
-                    rx="1.2"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="8.8"
-                    y="2"
-                    width="5.2"
-                    height="5.2"
-                    rx="1.2"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="2"
-                    y="8.8"
-                    width="5.2"
-                    height="5.2"
-                    rx="1.2"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="8.8"
-                    y="8.8"
-                    width="5.2"
-                    height="5.2"
-                    rx="1.2"
-                    fill="currentColor"
-                  />
-                </svg>
-                <span>{{ $t("product.list.displayCard") }}</span>
-              </button>
-              <button
-                type="button"
-                class="shop-view-switch__btn"
-                :class="{ 'is-active': displayMode === DISPLAY_MODE_LIST }"
-                :aria-pressed="displayMode === DISPLAY_MODE_LIST"
-                @click="handleDisplayModeChange(DISPLAY_MODE_LIST)"
-              >
-                <svg
-                  viewBox="0 0 16 16"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <circle cx="3" cy="4" r="1.15" fill="currentColor" />
-                  <circle cx="3" cy="8" r="1.15" fill="currentColor" />
-                  <circle cx="3" cy="12" r="1.15" fill="currentColor" />
-                  <rect
-                    x="6"
-                    y="3.25"
-                    width="8"
-                    height="1.5"
-                    rx="0.75"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="6"
-                    y="7.25"
-                    width="8"
-                    height="1.5"
-                    rx="0.75"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="6"
-                    y="11.25"
-                    width="8"
-                    height="1.5"
-                    rx="0.75"
-                    fill="currentColor"
-                  />
-                </svg>
-                <span>{{ $t("product.list.displayList") }}</span>
-              </button>
-            </div>
+            <DisplayModeSwitch
+              :model-value="displayMode"
+              @update:model-value="handleDisplayModeChange"
+            />
 
             <!-- 目录侧栏：收起后右侧配置区更宽，偏好只存本机 -->
             <button
@@ -2053,6 +1958,7 @@ import { t } from "@/locales";
 import { resolveProductDisplayName } from "@/utils/websiteProductConfig";
 import MobileCatalogPicker from "./MobileCatalogPicker.vue";
 import ProductCardGrid from "./ProductCardGrid.vue";
+import DisplayModeSwitch from "./DisplayModeSwitch.vue";
 import ProductGroupNav from "./ProductGroupNav.vue";
 import {
   DISPLAY_MODE_CARD,
@@ -2624,7 +2530,7 @@ const productIntroText = computed(() => {
     )
     .map((item) => `${item.label} ${item.value}`.trim())
     .filter(Boolean)
-    .join(" · ");
+    .join("\n");
 });
 const soldOut = computed(
   () =>

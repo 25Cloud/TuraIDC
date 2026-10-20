@@ -480,9 +480,9 @@ test.describe("选购页统一路由与展示方式", () => {
     await expect(page).toHaveURL(new RegExp(`${productPath}$`));
     await expect(page.locator(".pd-page")).toBeVisible();
 
-    // 卡片式配置页切列表式：地址不变，只换渲染
+    // 卡片式配置页切列表式：地址不变，只换渲染（切换器与选购页共用同一组件）
     await page
-      .locator(".pd-view-switch")
+      .locator(".shop-view-switch")
       .getByRole("button", { name: "列表式" })
       .click();
     await expect(page.locator(".desktop-machine-table")).toBeVisible();
