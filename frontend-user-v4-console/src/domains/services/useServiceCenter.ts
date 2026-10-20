@@ -1,4 +1,6 @@
 import { SERVICE_STATUS, SERVICE_STATUS_MAP, toSelectOptions } from '@shared/statusConfig';
+import type { ResolvedProductGroupIcon } from '@shared/text';
+import { resolveProductGroupIcon } from '@shared/text';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, shallowRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -139,6 +141,31 @@ export function resolveServiceMark(item: ServiceLike) {
     item?.product?.display_name ||
     t('service.center.fallbackMark');
   return String(text).replace(/\s+/g, '').slice(0, 2);
+}
+
+/**
+ * 一级分组分类 tab 的图标：优先用后端 icon_resolved（图片 > 文字 > 内置图标 > 名称缩写），
+ * 老缓存或缺字段时用 shared 的同一套优先级自算，保证 tab 永远不会因为缺图标而报错。
+ */
+export function resolveServiceCatalogIcon(item: ServiceCatalogTypeOption): ResolvedProductGroupIcon {
+  const resolved = item.icon_resolved;
+
+  if (resolved && resolved.mode) {
+    return {
+      mode: resolved.mode as ResolvedProductGroupIcon['mode'],
+      image: String(resolved.image || ''),
+      text: String(resolved.text || ''),
+      icon_name: String(resolved.icon_name || item.icon || ''),
+      abbr: String(resolved.abbr || ''),
+    };
+  }
+
+  return resolveProductGroupIcon({
+    icon: item.icon,
+    icon_text: item.icon_text,
+    icon_image: item.icon_image,
+    label: item.label,
+  });
 }
 
 export function findListSpecValue(item: ServiceLike, aliases: string[] = [], fallback = '--') {
@@ -352,12 +379,20 @@ export function useServiceCenter() {
       value: '',
       label: t('client.services.allProducts'),
       count: Number(overview.value.total || 0),
+      icon: null as ResolvedProductGroupIcon | null,
+      fallbackText: '',
     },
-    ...catalogTypeOptions.value.map((item) => ({
-      value: String(item.value ?? ''),
-      label: String(item.label ?? ''),
-      count: Number(item.count || 0),
-    })),
+    ...catalogTypeOptions.value.map((item) => {
+      const icon = resolveServiceCatalogIcon(item);
+      return {
+        value: String(item.value ?? ''),
+        label: String(item.label ?? ''),
+        count: Number(item.count || 0),
+        icon,
+        // 图片加载失败 / image 为空时的文字兜底：文字图标优先，其次名称缩写
+        fallbackText: icon.text || icon.abbr,
+      };
+    }),
   ]);
   const viewModeOptions = [
     { label: t('client.services.cardView'), value: 'grid' },

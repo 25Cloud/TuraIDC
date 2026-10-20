@@ -2,11 +2,41 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" href="/favicon.ico" />
+    <!-- 首访不预置默认品牌图标：中性占位，缓存脚本或站点配置接口返回后再替换 -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3C/svg%3E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
     <meta name="robots" content="noindex,nofollow" />
     <title>用户控制台</title>
+    <!-- 站点配置首帧注入：Vue 挂载、站点配置接口返回之前，用上一次访问缓存的站点名 /
+         favicon 覆盖构建期兜底值，避免首屏闪出默认品牌。缓存由
+         shared/runtime/branding.ts 写入，键名与字段需保持一致。 -->
+    <script>
+      (function () {
+        try {
+          var raw = window.localStorage.getItem('turaidc:site-config')
+          if (!raw) return
+          var config = JSON.parse(raw)
+          if (!config || typeof config !== 'object' || Array.isArray(config)) return
+
+          var siteName = String(config.site_name || '').trim().slice(0, 40)
+          var browserTitle = String(config.browser_title || '').trim().slice(0, 40)
+          var favicon = String(config.site_favicon || '').trim()
+
+          var baseTitle = browserTitle || siteName
+          if (baseTitle) document.title = baseTitle
+
+          if (favicon) {
+            var icons = document.querySelectorAll('link[rel*="icon"]')
+            for (var i = 0; i < icons.length; i++) {
+              icons[i].href = favicon
+            }
+          }
+        } catch (error) {
+          /* localStorage 被禁用、缓存损坏或 JSON 非法时保持兜底，不影响加载 */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>

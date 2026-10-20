@@ -20,6 +20,7 @@
           <span v-if="showLogo" :class="`${prefix}-side-nav-logo-wrapper`" @click="goHome">
             <span :class="brandLogoCls">
               <img
+                v-if="brandLogoSrc"
                 class="client-side-brand__logo"
                 :class="collapsed ? 'client-side-brand__logo--collapsed' : 'client-side-brand__logo--expanded'"
                 :src="brandLogoSrc"

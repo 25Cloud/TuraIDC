@@ -15,6 +15,22 @@
         :aria-current="tab.value === filters.catalog_type ? 'true' : undefined"
         @click="pickCategory(tab.value)"
       >
+        <span
+          v-if="tab.icon && tab.icon.mode === 'image' && tab.icon.image && !failedGroupIconKeys.has(tab.value)"
+          class="service-group-tab__icon service-group-tab__icon--image"
+          aria-hidden="true"
+        >
+          <img :src="tab.icon.image" alt="" loading="lazy" @error="markGroupIconFailed(tab.value)" />
+        </span>
+        <span
+          v-else-if="tab.icon && tab.fallbackText"
+          class="service-group-tab__icon"
+          :class="tab.icon.mode === 'icon' ? 'service-group-tab__icon--tdesign' : 'service-group-tab__icon--text'"
+          aria-hidden="true"
+        >
+          <t-icon v-if="tab.icon.mode === 'icon' && tab.icon.icon_name" :name="tab.icon.icon_name" />
+          <template v-else>{{ tab.fallbackText }}</template>
+        </span>
         <span class="service-group-tab__label">{{ tab.label }}</span>
         <span class="service-group-tab__count">{{ tab.count }}</span>
       </button>
@@ -579,6 +595,14 @@ const {
 
 const failedServiceOsIconKeys = shallowRef(new Set<string>());
 
+/** 分类 tab 图片图标加载失败的分组：失败后回退为文字徽标，不显示破图 */
+const failedGroupIconKeys = shallowRef(new Set<string>());
+
+function markGroupIconFailed(value: string) {
+  failedGroupIconKeys.value.add(value);
+  triggerRef(failedGroupIconKeys);
+}
+
 function resolveServiceIconKey(item: Record<string, any>) {
   return `${item?.id || ''}:${resolveServiceOsText(item)}`;
 }
@@ -747,6 +771,50 @@ function resolveBillingCycleValue(item: Record<string, any>) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 一级分组图标：图片 / 文字徽标 / 内置 TDesign 图标；缺图标时整块不渲染 */
+.service-group-tab__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  overflow: hidden;
+  border-radius: 0.25rem;
+}
+
+.service-group-tab__icon--image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.service-group-tab__icon--text {
+  width: auto;
+  min-width: 1.25rem;
+  padding: 0 0.1875rem;
+  background: var(--td-bg-color-component);
+  color: var(--td-text-color-secondary);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+
+  .service-group-tab.is-active & {
+    background: var(--td-brand-color);
+    color: #fff;
+  }
+}
+
+.service-group-tab__icon--tdesign {
+  color: var(--td-text-color-secondary);
+  font-size: 1rem;
+
+  .service-group-tab.is-active & {
+    color: var(--td-brand-color);
+  }
 }
 
 .service-group-tab__count {

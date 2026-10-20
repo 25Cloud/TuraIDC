@@ -22,13 +22,13 @@
       <header class="auth-shell__header">
         <a class="auth-brand" :href="authBrandHref">
           <img
-            v-if="showLogo"
+            v-if="showLogo && siteBranding.brandingResolved"
             :src="authLogoSrc"
             :alt="siteBranding.siteName"
             class="auth-brand__logo"
             @error="handleLogoError"
           />
-          <template v-else>
+          <template v-else-if="siteBranding.brandingResolved">
             <span class="auth-brand__mark">{{ siteBranding.brandInitials }}</span>
             <span class="auth-brand__name">{{ siteBranding.siteName }}</span>
           </template>

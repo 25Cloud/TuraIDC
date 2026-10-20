@@ -1,20 +1,28 @@
-import { applyDocumentTitle, deriveInitials, syncDocumentTitle, updateFavicon } from '@turaidc/shared/runtime';
+import {
+  applyDocumentTitle,
+  deriveInitials,
+  persistSplashBranding,
+  readSplashBranding,
+  syncDocumentTitle,
+  updateFavicon,
+} from '@turaidc/shared/runtime';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 
 import siteApi from '@/api/site';
 import { DEFAULT_SUPPORT_CONTACTS } from '@/data/supportContacts';
-import { resolveApiManagedAssetUrl } from '@/utils/apiOrigin';
 import { getSettingStore } from '@/store/modules/setting';
+import { resolveApiManagedAssetUrl } from '@/utils/apiOrigin';
 
-// 接口不可用时的兜底：只认构建期环境变量，不写死任何默认品牌，
-// 否则自建站在配置接口失败时会漏出别人的站点名。
-const CONFIGURED_SITE_NAME = String(import.meta.env.VITE_APP_TITLE || '').trim();
-// 环境变量也没配时用中性描述，避免标题/页头出现空白
-const DEFAULT_SITE_NAME = CONFIGURED_SITE_NAME || '用户控制台';
-const DEFAULT_SITE_LOGO = '/branding/logo.png';
-const DEFAULT_FAVICON = '/favicon.ico';
-const DEFAULT_CLIENT_CONSOLE_ICON = DEFAULT_FAVICON;
+// 站点配置接口是品牌唯一真源：不读构建期 VITE_APP_TITLE，避免服务器本地 env
+// 写死的品牌在首访时先闪一下再被回包改掉。未解析前用中性描述 + 空 logo/favicon。
+const DEFAULT_SITE_NAME = '用户控制台';
+const DEFAULT_SITE_LOGO = '';
+const DEFAULT_FAVICON = '';
+
+// 上一次访问留下的站点配置缓存：首帧注入脚本用它覆盖标题/favicon，这里把它作为
+// ref 初值，避免 Vue 挂载后先渲染默认品牌再被接口回包改写。
+const cachedSplashBranding = readSplashBranding();
 
 function normalizeBrandAsset(raw: unknown, fallback: string) {
   const value = String(raw ?? '').trim();
@@ -70,11 +78,19 @@ function pickOptional(raw: Record<string, unknown> | undefined, keys: string[]) 
 
 export const useSiteBrandingStore = defineStore('site-branding', () => {
   const sidebarCollapsed = ref(false);
-  const siteName = ref(DEFAULT_SITE_NAME);
-  const browserTitle = ref(DEFAULT_SITE_NAME);
-  const siteLogo = ref(DEFAULT_SITE_LOGO);
-  const siteFavicon = ref(DEFAULT_FAVICON);
-  const clientConsoleIcon = ref(DEFAULT_CLIENT_CONSOLE_ICON);
+  // 品牌未解析（无缓存、接口未回包）前不渲染默认 logo / 名称，避免首访闪默认品牌。
+  const brandingResolved = ref(
+    Boolean(
+      String(
+        cachedSplashBranding.site_name || cachedSplashBranding.browser_title || cachedSplashBranding.site_logo || '',
+      ).trim(),
+    ),
+  );
+  const siteName = ref(String(cachedSplashBranding.site_name || ''));
+  const browserTitle = ref(String(cachedSplashBranding.browser_title || ''));
+  const siteLogo = ref(String(cachedSplashBranding.site_logo || ''));
+  const siteFavicon = ref(String(cachedSplashBranding.site_favicon || ''));
+  const clientConsoleIcon = ref(String(cachedSplashBranding.site_favicon || cachedSplashBranding.site_logo || ''));
   const serviceQqGroup = ref<string>(DEFAULT_SUPPORT_CONTACTS.qqGroup);
   const serviceEmail = ref<string>(DEFAULT_SUPPORT_CONTACTS.email);
   const serviceHours = ref<string>(DEFAULT_SUPPORT_CONTACTS.hours);
@@ -106,19 +122,11 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
     const previousBaseTitle = browserTitle.value || siteName.value || DEFAULT_SITE_NAME;
     siteName.value = pick(data, ['site_name'], siteName.value || DEFAULT_SITE_NAME);
     browserTitle.value = pick(data, ['browser_title'], siteName.value || DEFAULT_SITE_NAME);
-    siteLogo.value = normalizeBrandAsset(
-      pick(data, ['site_logo'], siteLogo.value || DEFAULT_SITE_LOGO),
-      DEFAULT_SITE_LOGO,
-    );
-    siteFavicon.value = normalizeBrandAsset(
-      pick(data, ['site_favicon'], siteFavicon.value || DEFAULT_FAVICON),
-      DEFAULT_FAVICON,
-    );
+    siteLogo.value = normalizeBrandAsset(pick(data, ['site_logo'], siteLogo.value || ''), '');
+    siteFavicon.value = normalizeBrandAsset(pick(data, ['site_favicon'], siteFavicon.value || ''), '');
     clientConsoleIcon.value = normalizeBrandAsset(
-      pickOptional(data, ['client_console_icon', 'clientConsoleIcon']) ||
-        siteFavicon.value ||
-        DEFAULT_CLIENT_CONSOLE_ICON,
-      siteFavicon.value || DEFAULT_CLIENT_CONSOLE_ICON,
+      pickOptional(data, ['client_console_icon', 'clientConsoleIcon']) || siteFavicon.value || '',
+      siteFavicon.value || '',
     );
     serviceQqGroup.value = pick(
       data,
@@ -147,7 +155,16 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
     privacyUrl.value = pick(data, ['privacy_url'], privacyUrl.value || '');
     frontendUrl.value = pick(data, ['frontend_url'], frontendUrl.value || '');
     syncDocumentTitle(browserTitle.value || siteName.value || DEFAULT_SITE_NAME, previousBaseTitle, DEFAULT_SITE_NAME);
-    updateFavicon(siteFavicon.value || DEFAULT_FAVICON, DEFAULT_FAVICON);
+    if (siteFavicon.value) {
+      updateFavicon(siteFavicon.value, '');
+    }
+    brandingResolved.value = true;
+    persistSplashBranding({
+      site_name: siteName.value,
+      browser_title: browserTitle.value,
+      site_logo: siteLogo.value,
+      site_favicon: siteFavicon.value,
+    });
 
     // 品牌主色与圆角：控制台默认跟随站点配置，用户手动改过色则保留其个性化选择。
     // 接在这里而不是 fetchSiteConfig 的回调里：预取、强刷、SSR 兜底三条取数路径
@@ -181,15 +198,15 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
         hydratedAt = Date.now();
       })
       .catch(() => {
-        siteLogo.value = normalizeBrandAsset(siteLogo.value || DEFAULT_SITE_LOGO, DEFAULT_SITE_LOGO);
-        siteFavicon.value = normalizeBrandAsset(siteFavicon.value || DEFAULT_FAVICON, DEFAULT_FAVICON);
-        clientConsoleIcon.value = normalizeBrandAsset(
-          clientConsoleIcon.value || siteFavicon.value || DEFAULT_CLIENT_CONSOLE_ICON,
-          siteFavicon.value || DEFAULT_CLIENT_CONSOLE_ICON,
-        );
+        // 接口失败时保持中性品牌：不塞默认 logo / favicon，只确保标题不空。
+        siteName.value = siteName.value || DEFAULT_SITE_NAME;
+        browserTitle.value = browserTitle.value || DEFAULT_SITE_NAME;
+        brandingResolved.value = true;
       })
       .finally(() => {
-        updateFavicon(siteFavicon.value || DEFAULT_FAVICON, DEFAULT_FAVICON);
+        if (siteFavicon.value) {
+          updateFavicon(siteFavicon.value, '');
+        }
         fetchPromise = null;
       });
 
@@ -198,6 +215,7 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
 
   return {
     sidebarCollapsed,
+    brandingResolved,
     siteName,
     browserTitle,
     siteLogo,

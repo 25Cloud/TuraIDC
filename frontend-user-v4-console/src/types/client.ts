@@ -354,10 +354,32 @@ export interface ServiceInstance {
   [key: string]: unknown;
 }
 
+/** 一级分组图标的解析结果（后端 App\Support\ProductGroupIcon 统一计算） */
+export interface ServiceGroupIconResolved {
+  /** image=图片；text=文字图标；icon=内置 TDesign 图标名；abbr=名称缩写 */
+  mode?: 'image' | 'text' | 'icon' | 'abbr' | string;
+  /** 图片图标地址（后端已解析为可访问绝对地址） */
+  image?: string | null;
+  /** 文字图标 */
+  text?: string | null;
+  /** 内置 TDesign 图标名 */
+  icon_name?: string | null;
+  /** 一级分组名缩写（最多 4 个半角宽度） */
+  abbr?: string | null;
+}
+
 export interface ServiceCatalogTypeOption {
   label?: string;
   value?: string | number;
   count?: number;
+  /** 内置图标名（既有 icon 列，TDesign 图标名） */
+  icon?: string | null;
+  /** 文字图标（如「轻量」「游戏」） */
+  icon_text?: string | null;
+  /** 图片图标地址（后端已解析为可访问绝对地址） */
+  icon_image?: string | null;
+  /** 解析后的图标（图片 > 文字 > 内置图标 > 名称缩写） */
+  icon_resolved?: ServiceGroupIconResolved | null;
   [key: string]: unknown;
 }
 
@@ -371,6 +393,10 @@ export interface ServiceOverviewGroup {
   product_type?: string;
   product_type_label?: string;
   icon?: string;
+  /** 一级分组图标：文字 / 图片 / 解析结果（与 catalog_types 同源） */
+  icon_text?: string | null;
+  icon_image?: string | null;
+  icon_resolved?: ServiceGroupIconResolved | null;
   name?: string;
   title?: string;
   description?: string;

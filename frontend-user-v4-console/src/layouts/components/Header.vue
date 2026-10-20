@@ -3,8 +3,10 @@
     <t-head-menu :class="menuCls" :theme="menuTheme" expand-type="popup" :value="active">
       <template #logo>
         <span v-if="showLogo" class="header-logo-container" @click="handleNav('/client/dashboard')">
-          <span class="header-logo-mark">{{ siteBranding.brandInitials }}</span>
-          <span class="header-logo-name">{{ siteBranding.siteName }}</span>
+          <template v-if="siteBranding.brandingResolved">
+            <span class="header-logo-mark">{{ siteBranding.brandInitials }}</span>
+            <span class="header-logo-name">{{ siteBranding.siteName }}</span>
+          </template>
         </span>
         <div v-else class="header-operate-left">
           <t-button theme="default" shape="square" variant="text" :title="sidebarButtonTitle" @click="changeCollapsed">
