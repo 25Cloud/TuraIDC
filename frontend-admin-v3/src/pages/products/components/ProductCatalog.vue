@@ -1300,6 +1300,71 @@
                   </button>
                 </div>
               </t-form-item>
+              <t-form-item
+                :label="$t('products.catalog.groupIconText')"
+                name="icon_text"
+                class="type-group-icon-form-item"
+              >
+                <div class="group-icon-editor">
+                  <div class="group-icon-text-row">
+                    <t-input
+                      v-model="typeForm.icon_text"
+                      maxlength="4"
+                      :placeholder="$t('products.catalog.groupIconTextPlaceholder')"
+                    />
+                    <span
+                      class="group-icon-preview group-icon-preview--text"
+                      :title="groupIconTextPreview"
+                      aria-hidden="true"
+                      >{{ groupIconTextPreview || '—' }}</span
+                    >
+                  </div>
+                  <p class="type-form-hint">{{ $t('products.catalog.groupIconTextHint') }}</p>
+                </div>
+              </t-form-item>
+              <t-form-item
+                :label="$t('products.catalog.groupIconImage')"
+                name="icon_image"
+                class="type-group-icon-form-item"
+              >
+                <div class="group-icon-editor">
+                  <div class="group-icon-image-row">
+                    <span class="group-icon-preview" :class="{ 'is-empty': !groupIconImagePreview }">
+                      <img v-if="groupIconImagePreview" :src="groupIconImagePreview" alt="" />
+                      <image-icon v-else />
+                    </span>
+                    <input
+                      ref="groupIconFileInputRef"
+                      class="group-icon-file-input"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      @change="handleGroupIconFileChange"
+                    />
+                    <t-button
+                      size="small"
+                      variant="outline"
+                      :loading="groupIconUploading"
+                      @click="triggerGroupIconUpload"
+                    >
+                      <template #icon><upload-icon /></template>
+                      {{ $t('products.catalog.groupIconUpload') }}
+                    </t-button>
+                    <t-button
+                      v-if="typeForm.icon_image"
+                      size="small"
+                      variant="text"
+                      theme="danger"
+                      @click="clearGroupIconImage"
+                    >
+                      {{ $t('products.catalog.groupIconRemove') }}
+                    </t-button>
+                  </div>
+                  <p class="type-form-hint">{{ $t('products.catalog.groupIconImageHint') }}</p>
+                </div>
+              </t-form-item>
+              <p class="type-form-hint type-group-icon-resolve-hint">
+                {{ $t('products.catalog.groupIconResolveHint') }}
+              </p>
               <t-form-item class="type-form-actions">
                 <t-button theme="primary" :loading="typeSubmitting" @click="submitType">
                   <template #icon><add-icon v-if="!editingTypeValue" /><edit-icon v-else /></template>
@@ -1337,6 +1402,34 @@
               :class="{ 'is-hidden': item.is_hidden, 'is-editing': editingTypeValue === item.value }"
             >
               <span class="type-manager-item__order">{{ index + 1 }}</span>
+              <!-- 图标预览：按后端 icon_resolved 渲染（图片 > 文字 > 内置图标 > 名称缩写） -->
+              <span
+                class="type-manager-item__group-icon"
+                :class="`is-${resolveTypeGroupIcon(item).mode}`"
+                :title="
+                  resolveTypeGroupIcon(item).mode === 'image'
+                    ? item.label
+                    : resolveTypeGroupIcon(item).mode === 'text'
+                      ? resolveTypeGroupIcon(item).text
+                      : resolveTypeGroupIcon(item).mode === 'icon'
+                        ? resolveTypeGroupIcon(item).icon_name
+                        : `${item.label}（${resolveTypeGroupIcon(item).abbr}）`
+                "
+              >
+                <img
+                  v-if="resolveTypeGroupIcon(item).mode === 'image'"
+                  :src="resolveTypeGroupIcon(item).image"
+                  alt=""
+                />
+                <t-icon
+                  v-else-if="resolveTypeGroupIcon(item).mode === 'icon'"
+                  :name="resolveTypeGroupIcon(item).icon_name"
+                />
+                <template v-else-if="resolveTypeGroupIcon(item).mode === 'text'">{{
+                  resolveTypeGroupIcon(item).text
+                }}</template>
+                <template v-else>{{ resolveTypeGroupIcon(item).abbr || '—' }}</template>
+              </span>
               <div class="type-manager-item__main">
                 <div class="type-manager-item__title">
                   <strong>{{ item.label }}</strong>
@@ -1470,6 +1563,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { resolveProductGroupIcon } from '@shared/text';
 import {
   AddIcon,
   ArrowDownIcon,
@@ -1478,15 +1572,18 @@ import {
   BrowseOffIcon,
   DeleteIcon,
   EditIcon,
+  ImageIcon,
   RefreshIcon,
   SearchIcon,
   SettingIcon,
+  UploadIcon,
 } from 'tdesign-icons-vue-next';
 import type { DropdownOption, FormRules, PageInfo, PrimaryTableCol, SelectValue, TableRowData } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { adminApi } from '@/api/admin';
 import { productDiscountGroupsApi } from '@/api/admin/agentDiscount';
 import type { ProductDiscountGroupRecord } from '@/api/admin/types';
 import type { ProductCategoryRecord, ProductRecord, ProductTypeRecord, SpecHighlightDimension } from '@/api/product';
@@ -1498,6 +1595,7 @@ import { useAdminViewMode } from '@/composables/useAdminViewMode';
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
 import { t } from '@/locales';
 import { useUserStore } from '@/store';
+import { resolveApiAssetUrl } from '@/utils/apiAssetUrl';
 import { goProductEdit, isEntityId } from '@/utils/route/adminEntityLink';
 
 import {
@@ -1628,7 +1726,12 @@ const typeForm = reactive({
   icon: '',
   // 前台商品页地址里的类型段：/products/{slug}/...
   slug: '',
+  // 一级分组自定义图标：文字图标 / 图片图标；留空时回退到内置图标 icon 或名称缩写
+  icon_text: '',
+  icon_image: '',
 });
+const groupIconFileInputRef = ref<HTMLInputElement | null>(null);
+const groupIconUploading = ref(false);
 
 const catalogFilters = reactive({
   keyword: '',
@@ -1824,6 +1927,10 @@ const productTypeIconOptions = [
   { value: 'shop', label: t('products.catalog.product'), aliases: ['product'] },
 ] satisfies Array<{ value: string; label: string; aliases?: string[] }>;
 
+/** 一级分组图片图标：与媒体库上传准入保持一致（仅 jpeg/png/webp），限制 2MB。 */
+const GROUP_ICON_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const GROUP_ICON_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+
 const productDrawerSections = [
   { key: 'basic', label: t('products.catalog.sectionDetails'), description: t('products.catalog.sectionDetailsDesc') },
   {
@@ -1888,6 +1995,18 @@ const typeManagerProductCount = computed(() =>
 );
 const typeManagerHiddenCount = computed(() => productTypes.value.filter((item) => item.is_hidden).length);
 const normalizedTypeFormIcon = computed(() => resolveProductTypeIconName(typeForm.icon));
+const groupIconImagePreview = computed(() =>
+  resolveApiAssetUrl(typeForm.icon_image, import.meta.env.VITE_API_BASE_URL),
+);
+/** 文字图标输入框右侧的实时预览：未填文字时显示分组名缩写 */
+const groupIconTextPreview = computed(() => {
+  const resolved = resolveProductGroupIcon({
+    icon_text: typeForm.icon_text,
+    label: typeForm.label,
+  });
+
+  return resolved.text || resolved.abbr;
+});
 const productDrawerSectionValid = (key: string) => {
   switch (key) {
     case 'basic':
@@ -2606,12 +2725,94 @@ function selectTypeIcon(value: string) {
   typeForm.icon = value;
 }
 
+/**
+ * 列表 / 表单里的图标预览：优先用后端解析好的 icon_resolved，
+ * 老接口没有该字段时用 shared 的同一套优先级自算。
+ */
+function resolveTypeGroupIcon(type: ProductTypeRecord) {
+  const rawImage = type.icon_image;
+  const resolved = type.icon_resolved;
+
+  if (resolved && resolved.mode) {
+    return {
+      mode: resolved.mode,
+      image: resolveApiAssetUrl(resolved.image || rawImage, import.meta.env.VITE_API_BASE_URL),
+      text: String(resolved.text || ''),
+      icon_name: String(resolved.icon_name || type.icon || ''),
+      abbr: String(resolved.abbr || ''),
+    };
+  }
+
+  const fallback = resolveProductGroupIcon({
+    icon: type.icon,
+    icon_text: type.icon_text,
+    icon_image: rawImage,
+    label: type.label,
+  });
+
+  return {
+    ...fallback,
+    image: resolveApiAssetUrl(fallback.image, import.meta.env.VITE_API_BASE_URL),
+  };
+}
+
+function triggerGroupIconUpload() {
+  groupIconFileInputRef.value?.click();
+}
+
+function handleGroupIconFileChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  // 清空 input，允许连续选择同一个文件重传
+  input.value = '';
+  if (file) {
+    void uploadGroupIcon(file);
+  }
+}
+
+async function uploadGroupIcon(file: File) {
+  if (!GROUP_ICON_IMAGE_TYPES.includes(file.type)) {
+    MessagePlugin.warning(t('products.catalog.groupIconImageTypeInvalid'));
+    return;
+  }
+
+  if (file.size > GROUP_ICON_IMAGE_MAX_BYTES) {
+    MessagePlugin.warning(t('products.catalog.groupIconImageTooLarge'));
+    return;
+  }
+
+  groupIconUploading.value = true;
+  try {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    formData.append('group', 'product-groups');
+    // 复用管理端媒体库上传链路：后端统一落盘到 /media 并返回相对路径 + 可访问地址
+    const response = await adminApi.media.upload(formData);
+    const path = String(response?.path || '').trim();
+    const url = String(response?.url || '').trim();
+    typeForm.icon_image = path || url;
+    if (!typeForm.icon_image) {
+      throw new Error(t('products.catalog.groupIconUploadFailed'));
+    }
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, t('products.catalog.groupIconUploadFailed')));
+  } finally {
+    groupIconUploading.value = false;
+  }
+}
+
+function clearGroupIconImage() {
+  typeForm.icon_image = '';
+}
+
 function resetTypeForm() {
   editingTypeValue.value = '';
   typeForm.label = '';
   typeForm.product_type = 'cloud_server';
   typeForm.icon = '';
   typeForm.slug = '';
+  typeForm.icon_text = '';
+  typeForm.icon_image = '';
 }
 
 function openTypeManagerDialog() {
@@ -2625,6 +2826,9 @@ function editType(type: ProductTypeRecord) {
   typeForm.product_type = normalizeBusinessProductType(type.product_type);
   typeForm.icon = resolveProductTypeIconName(type.icon);
   typeForm.slug = String(type.slug || '');
+  typeForm.icon_text = String(type.icon_text || '');
+  // 表单回填用库里原始路径，预览时再解析
+  typeForm.icon_image = String(type.icon_image || '');
 }
 
 const PRODUCT_TYPE_SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
@@ -2669,6 +2873,11 @@ async function submitType() {
   try {
     const icon = resolveProductTypeIconName(typeForm.icon);
     const productType = normalizeBusinessProductType(typeForm.product_type);
+    // 图标字段与商品分组接口同名；留空表示不配置，由后端按优先级回退
+    const groupIconPayload = {
+      icon_text: typeForm.icon_text.trim(),
+      icon_image: typeForm.icon_image.trim(),
+    };
     if (editingTypeValue.value) {
       await productApi.updateType(editingTypeValue.value, {
         label,
@@ -2676,10 +2885,11 @@ async function submitType() {
         icon,
         // 空字符串表示不修改（后端 nullable）
         slug,
+        ...groupIconPayload,
       });
       MessagePlugin.success(t('products.catalog.productTypeUpdated'));
     } else {
-      await productApi.createType({ label, product_type: productType, icon, slug });
+      await productApi.createType({ label, product_type: productType, icon, slug, ...groupIconPayload });
       MessagePlugin.success(t('products.catalog.productTypeCreated'));
     }
     resetTypeForm();

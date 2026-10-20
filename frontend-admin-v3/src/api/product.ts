@@ -68,6 +68,20 @@ export interface ProductRecord {
   [key: string]: unknown;
 }
 
+/** 一级分组图标的解析结果（后端 App\Support\ProductGroupIcon 统一计算） */
+export interface ProductGroupIconResolved {
+  /** image=图片；text=文字图标；icon=内置 TDesign 图标名；abbr=名称缩写 */
+  mode: 'image' | 'text' | 'icon' | 'abbr' | string;
+  /** 图片图标可访问地址（mode=image 时使用） */
+  image?: string | null;
+  /** 文字图标（mode=text 时使用） */
+  text?: string | null;
+  /** 内置 TDesign 图标名（mode=icon 时使用） */
+  icon_name?: string | null;
+  /** 一级分组名缩写（mode=abbr 时使用，最多 4 个半角宽度） */
+  abbr?: string | null;
+}
+
 export interface ProductTypeRecord {
   value: string;
   label: string;
@@ -77,7 +91,14 @@ export interface ProductTypeRecord {
   product_type_label?: string;
   product_type_icon?: string;
   product_type_plugin_driven?: boolean;
-  icon?: string;
+  /** 内置图标名（既有 icon 列，TDesign 图标名） */
+  icon?: string | null;
+  /** 文字图标（如「轻量」「游戏」），留空时按优先级回退 */
+  icon_text?: string | null;
+  /** 图片图标：库里存的原始路径（管理端表单回填用） */
+  icon_image?: string | null;
+  /** 解析后的图标（图片 > 文字 > 内置图标 > 名称缩写） */
+  icon_resolved?: ProductGroupIconResolved | null;
   usage_count?: number;
   first_product_group_id?: number | string | null;
   first_product_group_code?: string;
