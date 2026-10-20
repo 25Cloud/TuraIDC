@@ -114,7 +114,7 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
     if (!serviceId.value) return;
     detailLoading.value = true;
     try {
-      const res = await clientApi.serviceDetail(serviceId.value);
+      const res = await clientApi.serviceDetail(serviceId.value, forceRefresh ? { params: { refresh: 1 } } : undefined);
       const payload = normalizeConsoleDetail(res.data || {});
       detail.value = payload;
       if (consumeSyncChangedMarker(payload)) {

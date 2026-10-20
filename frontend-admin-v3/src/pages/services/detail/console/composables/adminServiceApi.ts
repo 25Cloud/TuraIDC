@@ -104,8 +104,8 @@ export function createServiceConsoleApi(userId: number | string): ServiceConsole
   const uid = String(userId ?? '');
 
   return {
-    serviceDetail: (id) =>
-      userApi.serviceDetail(uid, id).then((data) => envelope((data || {}) as ConsoleServiceDetail)),
+    serviceDetail: (id, config) =>
+      userApi.serviceDetail(uid, id, config?.params).then((data) => envelope((data || {}) as ConsoleServiceDetail)),
     serviceBaseDetail: (id) =>
       userApi.serviceDetail(uid, id).then((data) => envelope((data || {}) as ConsoleServiceDetail)),
     serviceRemoteStatus: (id) =>

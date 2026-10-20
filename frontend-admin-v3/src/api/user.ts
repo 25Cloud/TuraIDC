@@ -131,9 +131,12 @@ function normalizeV2ServicePayload(payload: UserServiceV2DetailPayload | Record<
   };
 }
 
-async function v2UserServiceDetail(id: number | string, serviceId: number | string) {
+async function v2UserServiceDetail(id: number | string, serviceId: number | string, params?: Record<string, unknown>) {
   const [detailPayload, connectionPayload] = await Promise.all([
-    request.get<UserServiceV2DetailPayload>({ url: `/v2/admin/users/${id}/services/${serviceId}` }),
+    request.get<UserServiceV2DetailPayload>({
+      url: `/v2/admin/users/${id}/services/${serviceId}`,
+      params,
+    }),
     request.get<UserServiceV2ConnectionPayload>({ url: `/v2/admin/users/${id}/services/${serviceId}/connection` }),
   ]);
   const service = normalizeV2ServicePayload(detailPayload);
@@ -218,7 +221,8 @@ export const userApi = {
       url: `/v2/admin/users/${id}/email-logs`,
       params,
     }),
-  serviceDetail: (id: number | string, serviceId: number | string) => v2UserServiceDetail(id, serviceId),
+  serviceDetail: (id: number | string, serviceId: number | string, params?: Record<string, unknown>) =>
+    v2UserServiceDetail(id, serviceId, params),
   serviceRemoteStatus: (id: number | string, serviceId: number | string) =>
     request
       .get<UserServiceV2DetailPayload>({ url: `/v2/admin/users/${id}/services/${serviceId}/remote-status` })
