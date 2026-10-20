@@ -57,7 +57,7 @@
 - **没有零元购金额篡改漏洞**：订单、续费金额一律由服务端按规则重算，客户端参数（如计费乘数）无法将应付金额改为零或负值。
 - **没有对接上游不鉴权漏洞**：上游凭据仅由服务端持有，客户端与匿名请求无法获得原始上游令牌（JWT），所有上游调用经过鉴权与代理。
 - **没有文件任意上传**：上传接口强制认证，并校验类型、大小与配额，拒绝匿名大文件上传与内存放大。
-- **没有收费授权也没有后门**：完整开源（AGPL-3.0），无授权系统、无隐藏远程控制，代码可审计、可自行部署。
+- **没有功能锁定也没有后门**：完整开源（AGPL-3.0-or-later），无授权校验、无功能阉割、无隐藏远程控制，代码可审计、可自行部署；闭源场景的商业许可是可选的合规授权，不解锁任何功能。
 - **没有跨租户越权**：资源查询与操作一律绑定当前用户所有权，越权访问统一返回 403/404。
 - **没有支付回调重放**：网关回调幂等 + 交易号唯一约束，同一笔交易只入账、只履约一次。
 - **没有常见注入与伪造**：SQL 参数化查询、不可信代理头不参与 IP 判定、Cookie 带安全属性并启用 CSRF 防护。
@@ -69,7 +69,7 @@
 - **登录风控**：账号 + IP 级软锁定、验证码目标维度限流、多入口统一校验。
 - **插件化架构**：供应商、支付、短信、验证码、实名、邮件均以插件接入，边界清晰、可替换。
 - **自动化兜底**：调度任务、心跳监控、定时对账、失败重试与自动挂起/释放。
-- **开源可审计**：AGPL-3.0-or-later 许可，无授权收费，社区可自行审查、修复与二次开发。
+- **开源可审计**：AGPL-3.0-or-later 免费使用，社区可自行审查、修复与二次开发；不愿承担 AGPL 义务的组织可选商业授权（200 元/年）。
 
 ## 🏗️ 架构总览
 
@@ -372,15 +372,44 @@ docker compose pull && docker compose up -d   # 升级到新镜像
 
 ## 📚 文档
 
-- [文档官网维护指南](docs/internal/governance/docs-web-maintenance.md)
-- [部署指南](docs/guide/deploy/generic.md)
-- [贡献指南](.github/CONTRIBUTING.md)
-- [安全政策](.github/SECURITY.md)
-- [行为准则](.github/CODE_OF_CONDUCT.md)
-- [变更记录](docs/internal/changelog.md)
+- [部署指南](docs/guide/deploy/generic.md) · [运维与调度](docs/guide/deploy/scheduling.md)
+- [开源与商业许可](docs/guide/licensing.md)：AGPL 强制义务、商业授权适用场景与获取方式
+- [贡献指南](docs/develop/contributing.md) · [贡献者许可协议（CLA）](CLA.md)
+- [商业许可（草案）](LICENSE-COMMERCIAL.md)
+- [安全政策](SECURITY.md) · [行为准则](CODE_OF_CONDUCT.md)
+- [文档官网维护指南](docs/internal/governance/docs-web-maintenance.md) · [变更记录](docs/internal/changelog.md)
 
-## 📄 开源许可
+## 📄 开源许可（双许可）
 
-本项目采用 [GNU Affero General Public License v3.0 或更高版本（AGPL-3.0-or-later）](LICENSE) 开源。
+本项目采用 **AGPL-3.0-or-later + 商业许可** 的双许可模式，仓库地址：<https://github.com/25Cloud/TuraIDC>。
+
+### 免费路径：AGPL-3.0-or-later
+
+任何个人、组织、小企业都可以按 [GNU Affero General Public License v3.0 或更高版本（AGPL-3.0-or-later）](LICENSE) **免费使用**本项目（含商业经营），代价是承担 AGPL 的强制开源义务：
+
+- **改了就得上线开源**：修改版通过网络向用户提供服务时，必须向这些用户提供完整的对应源码（AGPL 第 13 条，含自己的改动）；不能「只部署不开源」，也不能用「内部使用」「私有化交付」绕过。
+- **不得闭源再分发**：二次开发后的对外服务同样受 AGPL 约束；需要闭源商用只能另行取得[商业授权](LICENSE-COMMERCIAL.md)，不能自行去掉许可证与版权声明。
+- **保留署名与许可文件**：不得删除 `LICENSE`、文件头版权声明、前端页脚/侧栏的版权与仓库链接，也不得把 TuraIDC 品牌包装成自研产品对外宣传。
+- **依赖也要合规**：引入新依赖前确认其许可证与 AGPL 兼容，并在改动说明里注明。
+- **通用改进优先回流上游**：修 bug、做兼容、补文档请提 Pull Request 到本仓库，而不是长期维护私有分叉。
+- 获取源码：直接 `git clone https://github.com/25Cloud/TuraIDC.git`、下载 [Release 源码包](https://github.com/25Cloud/TuraIDC/releases)，或见[开源与商业许可](docs/guide/licensing.md)。未修改的部署只需在站点保留到官方仓库的入口（官网页脚「开源仓库」与 `/open-source` 页面即为此提供）。
+
+### 商业路径：闭源使用的可选授权
+
+面向不能公开源码的**敏感企业**（政企、金融、医疗等）、私有化交付与闭源二次开发场景，可购买[商业许可证（草案）](LICENSE-COMMERCIAL.md)：
+
+- **200 元/年**，按「每个组织每个生产部署」计（多部署、OEM、白牌等可协商，具体以订单为准）；
+- 授权范围内**可闭源使用、修改后不公开**，**免除 AGPL 第 13 条**网络源码提供义务；
+- **不含商标授权**，不得转售、白牌或再分发源码；
+- **不提供额外功能**：商业版与开源版源码相同，付费只解决闭源使用的许可问题；
+- 取得方式：在 [Issues](https://github.com/25Cloud/TuraIDC/issues) 提交「商业授权申请」，或邮件 `opensource@turaidc.com`（占位地址，正式发布前替换）。
+
+> ⚠️ 商业许可与 CLA 均为工程侧草案，正式对外签署前需经法务或专业律师复核。
+
+### 贡献与规范
+
+- 提交贡献前请签署[贡献者许可协议（CLA）](CLA.md)：个人在 PR 评论声明、组织邮件签署。CLA 明确授予项目方版权与专利许可，并**允许项目方以 AGPL-3.0-or-later 与商业许可双许可分发**——没有这条再许可授权，商业许可模式不成立。
+- 参与社区请遵守[行为准则](CODE_OF_CONDUCT.md)；发现安全漏洞请按[安全政策](SECURITY.md)私下报告，**不要公开提交细节**。
+- 本站官网提供「开源仓库」与「开源版本」入口，任何用户都能获取完整源码与部署文档。
 
 > 说明：本项目管理后台与控制台基于 [TDesign Vue Next Starter](https://github.com/Tencent/tdesign-vue-next-starter) 构建；TuraIDC 自有代码采用 AGPL-3.0-or-later，TDesign 原始代码及其许可声明继续采用 MIT，详见各子目录的 `LICENSE`。

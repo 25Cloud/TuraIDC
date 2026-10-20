@@ -33,7 +33,7 @@
       "readyToBuy": "可直接購買",
       "summary": "配置摘要",
       "notFound": "商品不存在或已下架",
-      "backToProducts": "返回產品頁",
+      "backToProducts": "返回商品頁",
       "cycle": "週期",
       "description": "商品描述",
       "skuCompare": "機型對比",
@@ -43,9 +43,9 @@
       "sortPriceDesc": "價格從高到低排序",
       "selectRegion": "請選擇地區",
       "couponUsed": "已用券 -¥{amount}",
-      "cloudProductTitle": "雲產品詳情",
-      "cloudProductDescription": "雲產品詳情與即時購買報價",
-      "windowTitle": "{title} - 雲產品"
+      "cloudProductTitle": "雲商品詳情",
+      "cloudProductDescription": "雲商品詳情與即時購買報價",
+      "windowTitle": "{title} - 雲商品"
     },
     "osPicker": {
       "version": "版本",
@@ -128,7 +128,7 @@
       "productIntro": "商品介紹",
       "selectVersion": "選擇版本",
       "processor": "處理器",
-      "specSelector": "產品規格選擇",
+      "specSelector": "商品規格選擇",
       "instanceSpecs": "例項規格",
       "sortVcpu": "vCPU 排序",
       "sortVcpuAsc": "vCPU 從小到大排序",
@@ -150,8 +150,8 @@
       "configDetail": "配置詳情",
       "grandTotalLabel": "總價：",
       "selectCoupon": "選擇優惠券",
-      "spec": "產品規格",
-      "selectSpec": "請選擇產品規格",
+      "spec": "商品規格",
+      "selectSpec": "請選擇商品規格",
       "noSwitchableOsVersion": "當前商品未提供可切換的系統版本",
       "displayMode": "商品展示方式",
       "displayCard": "卡片式",
@@ -222,19 +222,19 @@
   },
   "layout": {
     "nav": {
-      "products": "產品",
+      "products": "商品",
       "aboutUs": "關於我們",
       "notices": "官方公告",
       "helpCenter": "幫助中心",
       "terms": "服務條款",
       "privacy": "隱私政策",
-      "productCatalog": "產品目錄",
-      "noProductCatalog": "暫無產品目錄",
+      "productCatalog": "商品目錄",
+      "noProductCatalog": "暫無商品目錄",
       "solutions": "解決方案",
-      "viewAllProducts": "全部產品 →",
+      "viewAllProducts": "全部商品 →",
       "moreLinks": "其他入口",
       "moreLinksDesc": "關於、幫助與常用入口",
-      "productsAndServices": "產品與服務",
+      "productsAndServices": "商品與服務",
       "home": "首頁",
       "help": "幫助",
       "all": "全部",
@@ -262,7 +262,7 @@
       "account": "賬戶",
       "accountLogin": "賬戶登入",
       "enterConsole": "進入控制台",
-      "myServices": "我的服務",
+      "myServices": "我的例項",
       "profile": "個人資料",
       "recharge": "賬戶充值",
       "signOut": "登出"
@@ -280,9 +280,9 @@
       "viewAll": "檢視全部 →"
     },
     "product": {
-      "emptyCategories": "暫無產品分類",
+      "emptyCategories": "暫無商品分類",
       "reload": "重新載入",
-      "productCount": "{count} 款產品"
+      "productCount": "{count} 款商品"
     },
     "solutions": {
       "ecommerce": "電商行業",
@@ -331,7 +331,7 @@
         "container": "容器系統",
         "gettingStarted": "新手入門",
         "billing": "支付賬單",
-        "serviceManagement": "服務管理",
+        "serviceManagement": "例項管理",
         "renewal": "續費說明",
         "console": "例項控制台"
       },
@@ -347,7 +347,7 @@
       "serviceCapabilities": "服務能力",
       "contactInformation": "聯絡方式",
       "intro": "我們專注於雲伺服器、獨立伺服器與相關基礎設施服務，提供從選型、購買、開通到運維支援的一體化體驗。",
-      "serviceCapabilitiesDesc": "覆蓋產品展示、線上購買、統一賬單、自動開通、售後支援與服務控制台。",
+      "serviceCapabilitiesDesc": "覆蓋商品展示、線上購買、統一賬單、自動開通、售後支援與例項控制台。",
       "serviceEmailLabel": "客服電子郵件：",
       "serviceHoursLabel": "服務時間：",
       "serviceHoursFallback": "以站內通知為準",
@@ -374,7 +374,7 @@
       "allCategories": "全部分類",
       "moreSections": "更多欄目",
       "downloads": "下載中心",
-      "newsDesc": "檢視平臺最新通知、維護公告、產品更新與重要業務提醒。"
+      "newsDesc": "檢視平臺最新通知、維護公告、商品更新與重要業務提醒。"
     },
     "search": {
       "placeholder": "請輸入您要搜尋的關鍵詞"
@@ -403,8 +403,8 @@
       "description": "提供雲伺服器、獨立伺服器、雲電腦與 IDC 服務，覆蓋香港、美國與國內多地節點。"
     },
     "products": {
-      "description": "瀏覽雲伺服器、獨立伺服器、雲電腦與 IDC 產品方案。",
-      "title": "產品與服務"
+      "description": "瀏覽雲伺服器、獨立伺服器、雲電腦與 IDC 商品方案。",
+      "title": "商品與服務"
     },
     "about": {
       "description": "瞭解 IDC 服務能力、節點覆蓋和平臺優勢。",
@@ -423,7 +423,7 @@
       "title": "官方公告"
     },
     "help": {
-      "description": "檢視產品購買、賬單支付和服務管理幫助。",
+      "description": "檢視商品購買、賬單支付和例項管理幫助。",
       "title": "幫助中心"
     },
     "productDetail": {
@@ -513,7 +513,7 @@
       },
       "cta": {
         "title": "按業務規模選擇雲伺服器",
-        "description": "先檢視可售產品和配置，再進入控制台完成賬號註冊與下單。"
+        "description": "先檢視可售商品和配置，再進入控制台完成賬號註冊與下單。"
       }
     },
     "hongKongServer": {
@@ -552,27 +552,27 @@
     },
     "breadcrumb": {
       "home": "首頁",
-      "productsServices": "產品與服務"
+      "productsServices": "商品與服務"
     },
     "pages": {
       "relatedLinks": {
-        "viewProductsServices": "檢視產品與服務",
+        "viewProductsServices": "檢視商品與服務",
         "viewCloudServer": "檢視雲伺服器",
         "viewHelpCenter": "檢視幫助中心"
       },
       "cta": {
-        "viewProductConfig": "檢視產品配置",
+        "viewProductConfig": "檢視商品配置",
         "registerAccount": "註冊賬號",
         "submitConsultationTicket": "提交諮詢工單"
       },
       "common": {
         "flexibleConfig": "靈活配置",
         "productsTitle": "安全、穩定、可信賴的{keyword}服務",
-        "productsIntro": "圍繞真實業務選型整理產品能力、適用場景和開通入口，讓搜尋進入的使用者能直接完成判斷。",
+        "productsIntro": "圍繞真實業務選型整理商品能力、適用場景和開通入口，讓搜尋進入的使用者能直接完成判斷。",
         "solutionTitle": "為不同業務場景提供{keyword}方案",
         "solutionIntro": "從訪問區域、系統環境、頻寬需求和售後協同出發，先明確場景，再選擇資源。",
         "processTitle": "從搜尋瞭解，到開通{keyword}",
-        "processIntro": "把官網內容、產品列表、註冊入口和工單諮詢連起來，減少使用者在多個頁面之間反覆尋找。",
+        "processIntro": "把官網內容、商品列表、註冊入口和工單諮詢連起來，減少使用者在多個頁面之間反覆尋找。",
         "faqBadge": "FAQ",
         "faqTitle": "選擇{keyword}前的常見問題",
         "faqIntro": "使用真實搜尋問題組織，避免堆砌關鍵詞，讓頁面正文更容易被理解和收錄。"
@@ -610,7 +610,7 @@
     },
     "scenario": {
       "foreignTradeShowcase": "外貿展示站",
-      "foreignTradeShowcaseDesc": "承載企業介紹、產品目錄、詢盤表單和多語言頁面。",
+      "foreignTradeShowcaseDesc": "承載企業介紹、商品目錄、詢盤表單和多語言頁面。",
       "crossBorderEntry": "跨境業務入口",
       "crossBorderEntryDesc": "作為面向亞太使用者的應用入口、介面服務或輕量後臺。",
       "overseasStaging": "海外測試環境",
@@ -657,7 +657,7 @@
       "easyTrialRun": "方便業務試執行",
       "easyTrialRunDescription": "先部署測試環境，再根據訪問資料調整配置和頻寬。",
       "unifiedBilling": "統一賬單管理",
-      "unifiedBillingDescription": "海外節點資源可與其他產品一起在賬戶內檢視和續費。",
+      "unifiedBillingDescription": "海外節點資源可與其他商品一起在賬戶內檢視和續費。",
       "overseasWebsite": "海外官網",
       "overseasWebsiteDescription": "承載英文站、多語言站和麵向海外市場的企業展示內容。",
       "crossBorderAppService": "跨境應用服務",
@@ -726,7 +726,7 @@
     },
     "cloudPc": {
       "unifiedAccount": {
-        "desc": "通過統一賬戶檢視服務、續費和售後記錄。"
+        "desc": "通過統一賬戶檢視例項、續費和售後記錄。"
       },
       "remoteWork": {
         "title": "遠端辦公",
@@ -761,21 +761,21 @@
         }
       }
     },
-    "productCategories": "產品分類",
+    "productCategories": "商品分類",
     "coreSellingPoints": "核心賣點",
     "serviceCapabilitySummary": "服務能力摘要",
-    "viewAllProducts": "檢視全部產品 &gt;",
+    "viewAllProducts": "檢視全部商品 &gt;",
     "buyNow": "立即選購",
-    "productDetails": "產品詳情",
+    "productDetails": "商品詳情",
     "scenarioList": "場景列表",
-    "relatedProducts": "相關產品：",
+    "relatedProducts": "相關商品：",
     "process": {
       "step1Title": "明確場景",
       "step1Description": "確認業務訪問區域、系統環境、頻寬需求和預算範圍。",
       "step2Title": "檢視配置",
-      "step2Description": "在產品列表中篩選合適的規格、節點和服務週期。",
+      "step2Description": "在商品列表中篩選合適的規格、節點和服務週期。",
       "step3Title": "註冊開通",
-      "step3Description": "進入控制台完成賬號註冊、下單、支付和服務管理。",
+      "step3Description": "進入控制台完成賬號註冊、下單、支付和例項管理。",
       "step4Title": "持續維護",
       "step4Description": "通過公告、幫助中心和工單體系跟蹤使用與售後問題。"
     }
@@ -828,7 +828,7 @@
       "subtitle": "以優質資源與服務領航開拓，助力更多企業高效上雲"
     },
     "hero": {
-      "productEntries": "產品入口",
+      "productEntries": "商品入口",
       "carouselIndicator": "輪播指示",
       "carouselControls": "輪播控制",
       "slides": {
@@ -866,7 +866,7 @@
       "features": {
         "dynamic": {
           "title": "香港 CN2 精品線路 上線",
-          "kicker": "產品動態"
+          "kicker": "商品動態"
         },
         "activity": {
           "title": "新客首單 39 元/年",
@@ -878,14 +878,14 @@
         },
         "cloudDesktop": {
           "title": "西安雲電腦 即開即用",
-          "kicker": "輕量產品"
+          "kicker": "輕量商品"
         },
         "new": {
           "title": "十堰高防獨立伺服器",
-          "kicker": "新開產品"
+          "kicker": "新開商品"
         }
       },
-      "entry": "產品目錄、購買支付、自動開通、賬單結算與服務支援統一打通；首頁即是控制台入口，讓資源採購和後續管理始終在同一條鏈路裡完成。",
+      "entry": "商品目錄、購買支付、自動開通、賬單結算與服務支援統一打通；首頁即是控制台入口，讓資源採購和後續管理始終在同一條鏈路裡完成。",
       "tier": "T3+ 資料中心 + BGP 多線接入 + 100G 抗 DDoS 防護；實名認證、許可權分級與操作留痕保障賬戶安全，長期業務和合規場景穩定承載。",
       "support": "7×24 小時工單、官方QQ群與一對一商務對接，覆蓋選型、部署、遷移、運維與結算；支援對公結算、批次採購、子賬號協作與統一對賬。",
       "firstOrder": "新客首單 2 核 2G 雲伺服器 39 元/年起，輕量雲電腦按月訂閱即開即用；優惠券、折扣券靈活疊加，配置隨業務彈性升級，先用後付更省心。",
@@ -908,23 +908,23 @@
       "title": "資訊動態",
       "announcements": "公告",
       "recommended": "推薦",
-      "subtitle": "為您呈現行業動態、活動公告、產品釋出",
+      "subtitle": "為您呈現行業動態、活動公告、商品釋出",
       "viewMore": "檢視更多",
       "summaryFallback": "資訊動態主焦點卡片展示區域，點選檢視完整內容。",
       "detailHint": "點選檢視詳細內容。"
     },
     "products": {
-      "title": "安全、穩定、可信賴的產品與服務",
-      "emptyCategory": "當前分類暫無可展示的二級分組，點選後可進入產品目錄檢視更多內容。",
+      "title": "安全、穩定、可信賴的商品與服務",
+      "emptyCategory": "當前分類暫無可展示的二級分組，點選後可進入商品目錄檢視更多內容。",
       "techDeliveryDesc": "的技術積澱與交付實踐，助力企業上雲與產業網際網路。",
-      "viewAll": "檢視全部產品",
+      "viewAll": "檢視全部商品",
       "buyNow": "立即選購",
       "groupFallback": "二級分組 {index}",
-      "categoryFallback": "產品分類 {index}",
+      "categoryFallback": "商品分類 {index}",
       "currentCategory": "當前分類",
       "categoryCatalog": "{name}目錄",
       "recommendedIntro": "主推 {name}，可線上檢視配置並快速完成選型。",
-      "groupIntro": "{category} 下已上架 {count} 款在售產品，可按業務需求快速選型。"
+      "groupIntro": "{category} 下已上架 {count} 款在售商品，可按業務需求快速選型。"
     },
     "solutions": {
       "title": "為千行百業提供全面的解決方案",
@@ -932,7 +932,7 @@
       "cloudServer": "雲伺服器",
       "learnMore": "瞭解更多",
       "industrySolutions": "行業解決方案",
-      "relatedProducts": "相關產品",
+      "relatedProducts": "相關商品",
       "securityProtection": "安全防護",
       "ecommerce": {
         "title": "電商解決方案",
@@ -1045,5 +1045,75 @@
       "cpuModel": "CPU型號",
       "memory": "記憶體"
     }
+  },
+  "openSource": {
+    "footer": {
+      "repository": "開源倉庫",
+      "version": "開源版本"
+    },
+    "kicker": "開源",
+    "title": "開源與商業授權",
+    "subtitle": "TuraIDC 採用 AGPL-3.0-or-later 與商業授權的雙重授權模式：可以免費開源使用，也可以購買商業授權後閉源使用。",
+    "agpl": {
+      "title": "AGPL-3.0-or-later（免費）",
+      "desc": "任何個人、組織、小企業都可以免費使用與商用，代價是承擔 AGPL 的強制開源義務。",
+      "rightsTitle": "你可以免費做",
+      "right1": "下載、部署，用於自己的業務經營",
+      "right2": "修改原始碼、二次開發、開發自己的外掛",
+      "right3": "複製與發佈（需遵守 AGPL）"
+    },
+    "obligations": {
+      "title": "免費使用必須履行的義務",
+      "networkTitle": "改了就得上線開源",
+      "networkDesc": "AGPL 第 13 條：修改版透過網路向使用者提供服務時，必須向這些使用者提供完整的對應原始碼（含自己的改動）。",
+      "noCloseTitle": "不得閉源再發佈",
+      "noCloseDesc": "對外服務與發佈同樣受 AGPL 約束；需要閉源商用必須另行取得商業授權，不能自行移除授權條款與版權聲明。",
+      "noticeTitle": "保留署名與倉庫連結",
+      "noticeDesc": "不得刪除 LICENSE、版權聲明與倉庫連結，也不得把 TuraIDC 包裝成自研產品對外宣傳。",
+      "depsTitle": "依賴授權要相容",
+      "depsDesc": "引入新依賴前確認其授權與 AGPL 相容（MIT / BSD / Apache-2.0 等一般可行）。"
+    },
+    "section13": {
+      "title": "AGPL 第 13 條怎麼落地",
+      "unmodifiedTitle": "部署的是未修改的官方版本",
+      "unmodifiedDesc": "只要在網站保留到官方倉庫的可見入口即可（本站頁尾「開源倉庫」與「開源版本」就是為此提供），不需要自建原始碼站。",
+      "modifiedTitle": "部署的是修改過的版本",
+      "modifiedDesc": "必須向網站使用者提供與實際執行版本對應的完整原始碼：公開倉庫、原始碼包下載，或明確告知取得方式並及時提供。"
+    },
+    "source": {
+      "title": "如何取得原始碼",
+      "desc": "完整原始碼始終公開，未購買商業授權也能取得；建議下載與線上版本一致的 Release 原始碼包。",
+      "repoTitle": "GitHub 倉庫",
+      "repoDesc": "瀏覽程式碼、提交 Issue 與 Pull Request。",
+      "cloneTitle": "git clone 取得",
+      "cloneDesc": "在伺服器上直接取得原始碼部署。",
+      "releaseTitle": "Release 原始碼包",
+      "releaseDesc": "下載與穩定版本對應的原始碼封存檔。",
+      "docsTitle": "部署文件",
+      "docsDesc": "依文件完成環境準備、部署與上線。",
+      "docsLink": "查看部署文件"
+    },
+    "commercial": {
+      "title": "商業授權（200 元/年）",
+      "desc": "面向不能公開原始碼的敏感企業、私有化交付與閉源二次開發情境，購買授權後可以閉源使用。",
+      "priceTitle": "價格口徑",
+      "priceDesc": "200 元/年，按「每個組織每個生產部署」計；多部署、OEM、白牌等可協商，最終以訂單為準。",
+      "grantTitle": "授權內容",
+      "grantDesc": "授權範圍內可閉源使用、修改後不公開，並免除 AGPL 第 13 條的網路原始碼提供義務。",
+      "excludeTitle": "不包含",
+      "excludeDesc": "不含商標授權，不得轉售、白牌或再發佈原始碼；不提供額外功能，與開源版原始碼相同。",
+      "howTitle": "如何取得",
+      "howDesc": "透過倉庫 Issues 提交「商業授權申請」，或寄信聯絡專案方；確認後簽署訂單並付款。"
+    },
+    "contact": {
+      "title": "商業授權與諮詢",
+      "desc": "商業授權、OEM 與合規問題請聯絡專案方。",
+      "emailLabel": "信箱",
+      "emailFallback": "待公布",
+      "issuesLabel": "倉庫 Issues",
+      "issuesLink": "提交「商業授權申請」",
+      "note": "以上聯絡方式為工程佔位，正式管道發布前可替換；商業授權與 CLA 條款為草案，簽署前需法務複核。"
+    },
+    "notice": "本頁為工程側授權說明，不構成法律意見；正式條款以 LICENSE、LICENSE-COMMERCIAL.md 與雙方簽署的授權文件為準。"
   }
 }

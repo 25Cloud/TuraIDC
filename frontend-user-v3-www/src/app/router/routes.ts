@@ -125,6 +125,20 @@ export const clientRoutes: RouteRecordRaw[] = [
         },
       },
       {
+        // 开源与商业许可：AGPL 免费路径的强制义务、源码获取入口与商业授权说明。
+        // 页脚「开源版本」入口指向这里，AGPL 第 13 条的源码提供入口也由本页承载。
+        path: "open-source",
+        name: "WwwOpenSource",
+        component: lazyRouteView(
+          () => import("@/views/website/OpenSource/index.vue"),
+        ),
+        meta: {
+          title: t("openSource.title"),
+          description: t("openSource.subtitle"),
+          canonical: "/open-source",
+        },
+      },
+      {
         path: "terms",
         name: "WwwTerms",
         component: lazyRouteView(

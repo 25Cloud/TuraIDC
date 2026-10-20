@@ -206,6 +206,10 @@ const guideSidebar: DefaultTheme.SidebarItem[] = [
     "guide/migrate/local-idc.md",
   ]),
   {
+    text: "开源与商业许可",
+    items: [pageItem("guide/licensing.md")],
+  },
+  {
     text: "故障排查",
     items: [pageItem("guide/troubleshooting.md")],
   },

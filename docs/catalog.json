@@ -184,6 +184,12 @@
       "review_by": "2026-12-13"
     },
     {
+      "path": "guide/licensing.md",
+      "status": "current",
+      "summary": "AGPL-3.0-or-later 免费路径的强制义务、商业许可适用场景与获取方式、源码获取与上线合规自检。",
+      "review_by": "2027-01-18"
+    },
+    {
       "path": "guide/maintain/backup.md",
       "status": "current",
       "summary": "备份对象、备份策略、恢复流程与有效性验证。",

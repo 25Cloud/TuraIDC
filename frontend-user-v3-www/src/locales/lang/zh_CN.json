@@ -33,7 +33,7 @@
       "readyToBuy": "可直接购买",
       "summary": "配置摘要",
       "notFound": "商品不存在或已下架",
-      "backToProducts": "返回产品页",
+      "backToProducts": "返回商品页",
       "cycle": "周期",
       "description": "商品描述",
       "skuCompare": "机型对比",
@@ -43,9 +43,9 @@
       "sortPriceDesc": "价格从高到低排序",
       "selectRegion": "请选择地区",
       "couponUsed": "已用券 -¥{amount}",
-      "cloudProductTitle": "云产品详情",
-      "cloudProductDescription": "云产品详情与实时购买报价",
-      "windowTitle": "{title} - 云产品"
+      "cloudProductTitle": "云商品详情",
+      "cloudProductDescription": "云商品详情与实时购买报价",
+      "windowTitle": "{title} - 云商品"
     },
     "osPicker": {
       "version": "版本",
@@ -128,7 +128,7 @@
       "productIntro": "商品介绍",
       "selectVersion": "选择版本",
       "processor": "处理器",
-      "specSelector": "产品规格选择",
+      "specSelector": "商品规格选择",
       "instanceSpecs": "实例规格",
       "sortVcpu": "vCPU 排序",
       "sortVcpuAsc": "vCPU 从小到大排序",
@@ -150,8 +150,8 @@
       "configDetail": "配置详情",
       "grandTotalLabel": "总价：",
       "selectCoupon": "选择优惠券",
-      "spec": "产品规格",
-      "selectSpec": "请选择产品规格",
+      "spec": "商品规格",
+      "selectSpec": "请选择商品规格",
       "noSwitchableOsVersion": "当前商品未提供可切换的系统版本",
       "displayMode": "商品展示方式",
       "displayCard": "卡片式",
@@ -222,19 +222,19 @@
   },
   "layout": {
     "nav": {
-      "products": "产品",
+      "products": "商品",
       "aboutUs": "关于我们",
       "notices": "官方公告",
       "helpCenter": "帮助中心",
       "terms": "服务条款",
       "privacy": "隐私政策",
-      "productCatalog": "产品目录",
-      "noProductCatalog": "暂无产品目录",
+      "productCatalog": "商品目录",
+      "noProductCatalog": "暂无商品目录",
       "solutions": "解决方案",
-      "viewAllProducts": "全部产品 →",
+      "viewAllProducts": "全部商品 →",
       "moreLinks": "其他入口",
       "moreLinksDesc": "关于、帮助与常用入口",
-      "productsAndServices": "产品与服务",
+      "productsAndServices": "商品与服务",
       "home": "首页",
       "help": "帮助",
       "all": "全部",
@@ -262,7 +262,7 @@
       "account": "账户",
       "accountLogin": "账户登录",
       "enterConsole": "进入控制台",
-      "myServices": "我的服务",
+      "myServices": "我的实例",
       "profile": "个人资料",
       "recharge": "账户充值",
       "signOut": "退出登录"
@@ -280,9 +280,9 @@
       "viewAll": "查看全部 →"
     },
     "product": {
-      "emptyCategories": "暂无产品分类",
+      "emptyCategories": "暂无商品分类",
       "reload": "重新加载",
-      "productCount": "{count} 款产品"
+      "productCount": "{count} 款商品"
     },
     "solutions": {
       "ecommerce": "电商行业",
@@ -331,7 +331,7 @@
         "container": "容器系统",
         "gettingStarted": "新手入门",
         "billing": "支付账单",
-        "serviceManagement": "服务管理",
+        "serviceManagement": "实例管理",
         "renewal": "续费说明",
         "console": "实例控制台"
       },
@@ -347,7 +347,7 @@
       "serviceCapabilities": "服务能力",
       "contactInformation": "联系方式",
       "intro": "我们专注于云服务器、独立服务器与相关基础设施服务，提供从选型、购买、开通到运维支持的一体化体验。",
-      "serviceCapabilitiesDesc": "覆盖产品展示、在线购买、统一账单、自动开通、售后支持与服务控制台。",
+      "serviceCapabilitiesDesc": "覆盖商品展示、在线购买、统一账单、自动开通、售后支持与实例控制台。",
       "serviceEmailLabel": "客服邮箱：",
       "serviceHoursLabel": "服务时间：",
       "serviceHoursFallback": "以站内通知为准",
@@ -374,7 +374,7 @@
       "allCategories": "全部分类",
       "moreSections": "更多栏目",
       "downloads": "下载中心",
-      "newsDesc": "查看平台最新通知、维护公告、产品更新与重要业务提醒。"
+      "newsDesc": "查看平台最新通知、维护公告、商品更新与重要业务提醒。"
     },
     "search": {
       "placeholder": "请输入您要搜索的关键词"
@@ -403,8 +403,8 @@
       "description": "提供云服务器、独立服务器、云电脑与 IDC 服务，覆盖香港、美国与国内多地节点。"
     },
     "products": {
-      "description": "浏览云服务器、独立服务器、云电脑与 IDC 产品方案。",
-      "title": "产品与服务"
+      "description": "浏览云服务器、独立服务器、云电脑与 IDC 商品方案。",
+      "title": "商品与服务"
     },
     "about": {
       "description": "了解 IDC 服务能力、节点覆盖和平台优势。",
@@ -423,7 +423,7 @@
       "title": "官方公告"
     },
     "help": {
-      "description": "查看产品购买、账单支付和服务管理帮助。",
+      "description": "查看商品购买、账单支付和实例管理帮助。",
       "title": "帮助中心"
     },
     "productDetail": {
@@ -513,7 +513,7 @@
       },
       "cta": {
         "title": "按业务规模选择云服务器",
-        "description": "先查看可售产品和配置，再进入控制台完成账号注册与下单。"
+        "description": "先查看可售商品和配置，再进入控制台完成账号注册与下单。"
       }
     },
     "hongKongServer": {
@@ -552,27 +552,27 @@
     },
     "breadcrumb": {
       "home": "首页",
-      "productsServices": "产品与服务"
+      "productsServices": "商品与服务"
     },
     "pages": {
       "relatedLinks": {
-        "viewProductsServices": "查看产品与服务",
+        "viewProductsServices": "查看商品与服务",
         "viewCloudServer": "查看云服务器",
         "viewHelpCenter": "查看帮助中心"
       },
       "cta": {
-        "viewProductConfig": "查看产品配置",
+        "viewProductConfig": "查看商品配置",
         "registerAccount": "注册账号",
         "submitConsultationTicket": "提交咨询工单"
       },
       "common": {
         "flexibleConfig": "灵活配置",
         "productsTitle": "安全、稳定、可信赖的{keyword}服务",
-        "productsIntro": "围绕真实业务选型整理产品能力、适用场景和开通入口，让搜索进入的用户能直接完成判断。",
+        "productsIntro": "围绕真实业务选型整理商品能力、适用场景和开通入口，让搜索进入的用户能直接完成判断。",
         "solutionTitle": "为不同业务场景提供{keyword}方案",
         "solutionIntro": "从访问区域、系统环境、带宽需求和售后协同出发，先明确场景，再选择资源。",
         "processTitle": "从搜索了解，到开通{keyword}",
-        "processIntro": "把官网内容、产品列表、注册入口和工单咨询连起来，减少用户在多个页面之间反复寻找。",
+        "processIntro": "把官网内容、商品列表、注册入口和工单咨询连起来，减少用户在多个页面之间反复寻找。",
         "faqBadge": "FAQ",
         "faqTitle": "选择{keyword}前的常见问题",
         "faqIntro": "使用真实搜索问题组织，避免堆砌关键词，让页面正文更容易被理解和收录。"
@@ -610,7 +610,7 @@
     },
     "scenario": {
       "foreignTradeShowcase": "外贸展示站",
-      "foreignTradeShowcaseDesc": "承载企业介绍、产品目录、询盘表单和多语言页面。",
+      "foreignTradeShowcaseDesc": "承载企业介绍、商品目录、询盘表单和多语言页面。",
       "crossBorderEntry": "跨境业务入口",
       "crossBorderEntryDesc": "作为面向亚太用户的应用入口、接口服务或轻量后台。",
       "overseasStaging": "海外测试环境",
@@ -657,7 +657,7 @@
       "easyTrialRun": "方便业务试运行",
       "easyTrialRunDescription": "先部署测试环境，再根据访问数据调整配置和带宽。",
       "unifiedBilling": "统一账单管理",
-      "unifiedBillingDescription": "海外节点资源可与其他产品一起在账户内查看和续费。",
+      "unifiedBillingDescription": "海外节点资源可与其他商品一起在账户内查看和续费。",
       "overseasWebsite": "海外官网",
       "overseasWebsiteDescription": "承载英文站、多语言站和面向海外市场的企业展示内容。",
       "crossBorderAppService": "跨境应用服务",
@@ -726,7 +726,7 @@
     },
     "cloudPc": {
       "unifiedAccount": {
-        "desc": "通过统一账户查看服务、续费和售后记录。"
+        "desc": "通过统一账户查看实例、续费和售后记录。"
       },
       "remoteWork": {
         "title": "远程办公",
@@ -761,21 +761,21 @@
         }
       }
     },
-    "productCategories": "产品分类",
+    "productCategories": "商品分类",
     "coreSellingPoints": "核心卖点",
     "serviceCapabilitySummary": "服务能力摘要",
-    "viewAllProducts": "查看全部产品 &gt;",
+    "viewAllProducts": "查看全部商品 &gt;",
     "buyNow": "立即选购",
-    "productDetails": "产品详情",
+    "productDetails": "商品详情",
     "scenarioList": "场景列表",
-    "relatedProducts": "相关产品：",
+    "relatedProducts": "相关商品：",
     "process": {
       "step1Title": "明确场景",
       "step1Description": "确认业务访问区域、系统环境、带宽需求和预算范围。",
       "step2Title": "查看配置",
-      "step2Description": "在产品列表中筛选合适的规格、节点和服务周期。",
+      "step2Description": "在商品列表中筛选合适的规格、节点和服务周期。",
       "step3Title": "注册开通",
-      "step3Description": "进入控制台完成账号注册、下单、支付和服务管理。",
+      "step3Description": "进入控制台完成账号注册、下单、支付和实例管理。",
       "step4Title": "持续维护",
       "step4Description": "通过公告、帮助中心和工单体系跟踪使用与售后问题。"
     }
@@ -828,7 +828,7 @@
       "subtitle": "以优质资源与服务领航开拓，助力更多企业高效上云"
     },
     "hero": {
-      "productEntries": "产品入口",
+      "productEntries": "商品入口",
       "carouselIndicator": "轮播指示",
       "carouselControls": "轮播控制",
       "slides": {
@@ -866,7 +866,7 @@
       "features": {
         "dynamic": {
           "title": "香港 CN2 精品线路 上线",
-          "kicker": "产品动态"
+          "kicker": "商品动态"
         },
         "activity": {
           "title": "新客首单 39 元/年",
@@ -878,14 +878,14 @@
         },
         "cloudDesktop": {
           "title": "西安云电脑 即开即用",
-          "kicker": "轻量产品"
+          "kicker": "轻量商品"
         },
         "new": {
           "title": "十堰高防独立服务器",
-          "kicker": "新开产品"
+          "kicker": "新开商品"
         }
       },
-      "entry": "产品目录、购买支付、自动开通、账单结算与服务支持统一打通；首页即是控制台入口，让资源采购和后续管理始终在同一条链路里完成。",
+      "entry": "商品目录、购买支付、自动开通、账单结算与服务支持统一打通；首页即是控制台入口，让资源采购和后续管理始终在同一条链路里完成。",
       "tier": "T3+ 数据中心 + BGP 多线接入 + 100G 抗 DDoS 防护；实名认证、权限分级与操作留痕保障账户安全，长期业务和合规场景稳定承载。",
       "support": "7×24 小时工单、官方QQ群与一对一商务对接，覆盖选型、部署、迁移、运维与结算；支持对公结算、批量采购、子账号协作与统一对账。",
       "firstOrder": "新客首单 2 核 2G 云服务器 39 元/年起，轻量云电脑按月订阅即开即用；优惠券、折扣券灵活叠加，配置随业务弹性升级，先用后付更省心。",
@@ -908,23 +908,23 @@
       "title": "资讯动态",
       "announcements": "公告",
       "recommended": "推荐",
-      "subtitle": "为您呈现行业动态、活动公告、产品发布",
+      "subtitle": "为您呈现行业动态、活动公告、商品发布",
       "viewMore": "查看更多",
       "summaryFallback": "资讯动态主焦点卡片展示区域，点击查看完整内容。",
       "detailHint": "点击查看详细内容。"
     },
     "products": {
-      "title": "安全、稳定、可信赖的产品与服务",
-      "emptyCategory": "当前分类暂无可展示的二级分组，点击后可进入产品目录查看更多内容。",
+      "title": "安全、稳定、可信赖的商品与服务",
+      "emptyCategory": "当前分类暂无可展示的二级分组，点击后可进入商品目录查看更多内容。",
       "techDeliveryDesc": "的技术积淀与交付实践，助力企业上云与产业互联网。",
-      "viewAll": "查看全部产品",
+      "viewAll": "查看全部商品",
       "buyNow": "立即选购",
       "groupFallback": "二级分组 {index}",
-      "categoryFallback": "产品分类 {index}",
+      "categoryFallback": "商品分类 {index}",
       "currentCategory": "当前分类",
       "categoryCatalog": "{name}目录",
       "recommendedIntro": "主推 {name}，可在线查看配置并快速完成选型。",
-      "groupIntro": "{category} 下已上架 {count} 款在售产品，可按业务需求快速选型。"
+      "groupIntro": "{category} 下已上架 {count} 款在售商品，可按业务需求快速选型。"
     },
     "solutions": {
       "title": "为千行百业提供全面的解决方案",
@@ -932,7 +932,7 @@
       "cloudServer": "云服务器",
       "learnMore": "了解更多",
       "industrySolutions": "行业解决方案",
-      "relatedProducts": "相关产品",
+      "relatedProducts": "相关商品",
       "securityProtection": "安全防护",
       "ecommerce": {
         "title": "电商解决方案",
@@ -1045,5 +1045,75 @@
       "cpuModel": "CPU型号",
       "memory": "内存"
     }
+  },
+  "openSource": {
+    "footer": {
+      "repository": "开源仓库",
+      "version": "开源版本"
+    },
+    "kicker": "开源",
+    "title": "开源与商业许可",
+    "subtitle": "TuraIDC 采用 AGPL-3.0-or-later 与商业许可的双许可模式：可以免费开源使用，也可以购买商业授权后闭源使用。",
+    "agpl": {
+      "title": "AGPL-3.0-or-later（免费）",
+      "desc": "任何个人、组织、小企业都可以免费使用与商用，代价是承担 AGPL 的强制开源义务。",
+      "rightsTitle": "你可以免费做",
+      "right1": "下载、部署，用于自己的业务经营",
+      "right2": "修改源码、二次开发、开发自己的插件",
+      "right3": "复制与分发（需遵守 AGPL）"
+    },
+    "obligations": {
+      "title": "免费使用必须履行的义务",
+      "networkTitle": "改了就得上线开源",
+      "networkDesc": "AGPL 第 13 条：修改版通过网络向用户提供服务时，必须向这些用户提供完整的对应源码（含自己的改动）。",
+      "noCloseTitle": "不得闭源再分发",
+      "noCloseDesc": "对外服务与分发同样受 AGPL 约束；需要闭源商用必须另行取得商业许可，不能自行去掉许可证与版权声明。",
+      "noticeTitle": "保留署名与仓库链接",
+      "noticeDesc": "不得删除 LICENSE、版权声明与仓库链接，也不得把 TuraIDC 包装成自研产品对外宣传。",
+      "depsTitle": "依赖许可要兼容",
+      "depsDesc": "引入新依赖前确认其许可证与 AGPL 兼容（MIT / BSD / Apache-2.0 等一般可行）。"
+    },
+    "section13": {
+      "title": "AGPL 第 13 条怎么落地",
+      "unmodifiedTitle": "部署的是未修改的官方版本",
+      "unmodifiedDesc": "只要在站点保留到官方仓库的可见入口即可（本站页脚「开源仓库」与「开源版本」就是为此提供），不需要自建源码站。",
+      "modifiedTitle": "部署的是修改过的版本",
+      "modifiedDesc": "必须向网站用户提供与实际运行版本对应的完整源码：公开仓库、源码包下载，或明确告知获取方式并及时提供。"
+    },
+    "source": {
+      "title": "如何获取源码",
+      "desc": "完整源码始终公开，未购买商业许可也能获取；建议下载与线上版本一致的 Release 源码包。",
+      "repoTitle": "GitHub 仓库",
+      "repoDesc": "浏览代码、提交 Issue 与 Pull Request。",
+      "cloneTitle": "git clone 拉取",
+      "cloneDesc": "在服务器上直接拉取源码部署。",
+      "releaseTitle": "Release 源码包",
+      "releaseDesc": "下载与稳定版本对应的源码归档。",
+      "docsTitle": "部署文档",
+      "docsDesc": "按文档完成环境准备、部署与上线。",
+      "docsLink": "查看部署文档"
+    },
+    "commercial": {
+      "title": "商业许可（200 元/年）",
+      "desc": "面向不能公开源码的敏感企业、私有化交付与闭源二次开发场景，购买授权后可以闭源使用。",
+      "priceTitle": "价格口径",
+      "priceDesc": "200 元/年，按「每个组织每个生产部署」计；多部署、OEM、白牌等可协商，最终以订单为准。",
+      "grantTitle": "授权内容",
+      "grantDesc": "授权范围内可闭源使用、修改后不公开，并免除 AGPL 第 13 条的网络源码提供义务。",
+      "excludeTitle": "不包含",
+      "excludeDesc": "不含商标授权，不得转售、白牌或再分发源码；不提供额外功能，与开源版源码相同。",
+      "howTitle": "如何获取",
+      "howDesc": "通过仓库 Issues 提交「商业授权申请」，或邮件联系项目方；确认后签署订单并付款。"
+    },
+    "contact": {
+      "title": "商业授权与咨询",
+      "desc": "商业授权、OEM 与合规问题请联系项目方。",
+      "emailLabel": "邮箱",
+      "emailFallback": "待公布",
+      "issuesLabel": "仓库 Issues",
+      "issuesLink": "提交「商业授权申请」",
+      "note": "以上联系方式为工程占位，正式渠道发布前可替换；商业许可与 CLA 条款为草案，签署前需法务复核。"
+    },
+    "notice": "本页为工程侧许可说明，不构成法律意见；正式条款以 LICENSE、LICENSE-COMMERCIAL.md 与双方签署的授权文件为准。"
   }
 }

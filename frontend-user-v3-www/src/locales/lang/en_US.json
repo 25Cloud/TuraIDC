@@ -262,7 +262,7 @@
       "account": "Account",
       "accountLogin": "Account Sign In",
       "enterConsole": "Go to Console",
-      "myServices": "My services",
+      "myServices": "My instances",
       "profile": "Profile",
       "recharge": "Add funds",
       "signOut": "Sign out"
@@ -331,7 +331,7 @@
         "container": "Container Systems",
         "gettingStarted": "Getting Started",
         "billing": "Billing & Payment",
-        "serviceManagement": "Service Management",
+        "serviceManagement": "Instance Management",
         "renewal": "Renewal Guide",
         "console": "Instance Console"
       },
@@ -347,7 +347,7 @@
       "serviceCapabilities": "Service Capabilities",
       "contactInformation": "Contact Information",
       "intro": "We focus on cloud servers, dedicated servers and related infrastructure services, delivering one-stop experience from selection and purchase through provisioning to operations support.",
-      "serviceCapabilitiesDesc": "Covering product presentation, online purchase, unified billing, automatic provisioning, after-sales support and the service console.",
+      "serviceCapabilitiesDesc": "Covering product presentation, online purchase, unified billing, automatic provisioning, after-sales support and the instance console.",
       "serviceEmailLabel": "Support email: ",
       "serviceHoursLabel": "Service hours: ",
       "serviceHoursFallback": "Subject to on-site notices",
@@ -423,7 +423,7 @@
       "title": "Announcements"
     },
     "help": {
-      "description": "Get help with product purchases, billing and payments, and service management.",
+      "description": "Get help with product purchases, billing and payments, and instance management.",
       "title": "Help center"
     },
     "productDetail": {
@@ -726,7 +726,7 @@
     },
     "cloudPc": {
       "unifiedAccount": {
-        "desc": "View services, renewals, and after-sales records from one unified account."
+        "desc": "View instances, renewals, and after-sales records from one unified account."
       },
       "remoteWork": {
         "title": "Remote Work",
@@ -775,7 +775,7 @@
       "step2Title": "Review the configuration",
       "step2Description": "Filter the right specs, nodes and billing cycles in the product list.",
       "step3Title": "Sign up",
-      "step3Description": "Sign up, place orders, pay and manage services in the console.",
+      "step3Description": "Sign up, place orders, pay and manage instances in the console.",
       "step4Title": "Ongoing care",
       "step4Description": "Track usage and after-sales issues through announcements, the help center and support tickets."
     }
@@ -1045,5 +1045,75 @@
       "cpuModel": "CPU model",
       "memory": "Memory"
     }
+  },
+  "openSource": {
+    "footer": {
+      "repository": "Source repository",
+      "version": "Open source"
+    },
+    "kicker": "Open source",
+    "title": "Open Source & Commercial Licensing",
+    "subtitle": "TuraIDC is dual-licensed under AGPL-3.0-or-later and a commercial license: use it for free as open source, or buy a commercial license to run it closed-source.",
+    "agpl": {
+      "title": "AGPL-3.0-or-later (free)",
+      "desc": "Individuals, organizations and small businesses can use the software free of charge, including commercially, in exchange for complying with AGPL's copyleft obligations.",
+      "rightsTitle": "What you can do for free",
+      "right1": "Download and deploy it to run your own business",
+      "right2": "Modify the source, build custom features and plugins",
+      "right3": "Copy and redistribute it (under AGPL terms)"
+    },
+    "obligations": {
+      "title": "Obligations of the free path",
+      "networkTitle": "If you modify it, you must publish the source",
+      "networkDesc": "AGPL Section 13: when a modified version is offered to users over a network, you must provide those users with the complete corresponding source, including your changes.",
+      "noCloseTitle": "No closed-source redistribution",
+      "noCloseDesc": "Services and redistribution are still governed by AGPL. For closed-source commercial use you need a commercial license; you may not remove the license or copyright notices.",
+      "noticeTitle": "Keep attribution and repository links",
+      "noticeDesc": "Do not remove LICENSE, copyright notices or repository links, and do not present TuraIDC as your own product.",
+      "depsTitle": "Keep dependencies license-compatible",
+      "depsDesc": "Before adding a dependency, confirm its license is compatible with AGPL (MIT / BSD / Apache-2.0 are generally fine)."
+    },
+    "section13": {
+      "title": "How Section 13 works in practice",
+      "unmodifiedTitle": "You deploy an unmodified official release",
+      "unmodifiedDesc": "Keep a visible link to the official repository on your site (the footer links \"Source repository\" and \"Open source\" on this site exist for this purpose). No self-hosted source mirror is required.",
+      "modifiedTitle": "You deploy a modified version",
+      "modifiedDesc": "You must provide users with the complete source matching the running version: a public repository, a source package download, or a clearly stated way to obtain it promptly."
+    },
+    "source": {
+      "title": "How to get the source",
+      "desc": "The full source is always public, even without a commercial license. Prefer the Release source archive that matches your deployed version.",
+      "repoTitle": "GitHub repository",
+      "repoDesc": "Browse the code, open issues and pull requests.",
+      "cloneTitle": "git clone",
+      "cloneDesc": "Clone the source directly onto your server and deploy.",
+      "releaseTitle": "Release source archive",
+      "releaseDesc": "Download the source archive for a stable release.",
+      "docsTitle": "Deployment docs",
+      "docsDesc": "Prepare the environment, deploy and go live step by step.",
+      "docsLink": "View deployment docs"
+    },
+    "commercial": {
+      "title": "Commercial license (CNY 200/year)",
+      "desc": "For sensitive organizations that cannot publish source, private delivery and closed-source customization: buy a license and run it closed-source.",
+      "priceTitle": "Pricing",
+      "priceDesc": "CNY 200 per year, counted per organization per production deployment. Multiple deployments, OEM and white-label scenarios are negotiable; the signed order prevails.",
+      "grantTitle": "What it grants",
+      "grantDesc": "Closed-source use within the authorized scope, no obligation to publish your modifications, and an exemption from the AGPL Section 13 network source obligation.",
+      "excludeTitle": "Not included",
+      "excludeDesc": "No trademark rights, no resale, white-label or source redistribution. No extra features: the commercial version is the same source as the open-source version.",
+      "howTitle": "How to obtain it",
+      "howDesc": "Open an issue titled \"Commercial license request\" in the repository, or email the project team; after confirmation, sign the order and pay."
+    },
+    "contact": {
+      "title": "Commercial licensing & enquiries",
+      "desc": "Contact the project team for commercial licensing, OEM and compliance questions.",
+      "emailLabel": "Email",
+      "emailFallback": "To be announced",
+      "issuesLabel": "Repository issues",
+      "issuesLink": "Open a \"Commercial license request\"",
+      "note": "The contact details above are placeholders and may be replaced before the official channel launches. The commercial license and CLA are drafts and require legal review before signing."
+    },
+    "notice": "This page summarizes licensing for engineering purposes and is not legal advice. The formal terms are LICENSE, LICENSE-COMMERCIAL.md and the signed authorization documents."
   }
 }
