@@ -107,6 +107,13 @@ html {
     height: 0;
     display: none;
   }
+
+  // 滚动条已隐藏，EP 锁滚动时仍按「滚动条 6px」给 body 补偿宽度
+  // （内联 width: calc(100% - 6px)），反而把顶栏和内容压窄 6px。这里取消补偿。
+  body.el-popup-parent--hidden {
+    width: auto !important;
+    padding-right: 0 !important;
+  }
 }
 
 // 遮罩按整个视口铺满（100vw 含滚动条槽），避免弹层打开时右侧露边。
