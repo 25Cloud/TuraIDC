@@ -3509,7 +3509,9 @@ function confirmMobileSpecFamilySelection(familyKey) {
 }
 
 function confirmMobileProductSelection() {
-  if (hasMobileProductGroups.value) {
+  // 与界面同口径：只有多机型族才按「机型族」确认；单族时抽屉里列的是商品，
+  // 必须按选中的商品确认，否则会一直回落到当前商品（点确定没反应）。
+  if (mobileGroupedSpecUi.value) {
     const targetGroup =
       mobileProductGroups.value.find(
         (group) => group.key === mobilePendingProductGroupKey.value,
