@@ -85,3 +85,20 @@ export function truncateByHalfWidth(value: unknown, maxUnits = GROUP_ICON_ABBR_M
 export function abbreviateGroupName(value: unknown, maxUnits = GROUP_ICON_ABBR_MAX_UNITS): string {
   return truncateByHalfWidth(value, maxUnits)
 }
+
+/**
+ * 一级分组图标的展示形态（与后端 `icon_resolved` 对齐）。
+ *
+ * 图片图标已下线：`image` 仅为兼容旧接口/旧缓存保留，恒为空字符串；
+ * 三端只渲染 text / icon / abbr 三种形态。
+ */
+export type ProductGroupIconMode = 'image' | 'text' | 'icon' | 'abbr'
+
+export interface ResolvedProductGroupIcon {
+  mode: ProductGroupIconMode
+  /** @deprecated 图片图标已下线，恒为空字符串 */
+  image: string
+  text: string
+  icon_name: string
+  abbr: string
+}
