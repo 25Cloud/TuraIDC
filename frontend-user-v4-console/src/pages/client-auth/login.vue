@@ -70,7 +70,6 @@
       <t-button block size="large" theme="primary" :loading="loading || captchaLoading" @click="submitForm">{{
         $t('auth.submitLogin')
       }}</t-button>
-      >
     </t-form>
 
     <!-- 验证码登录 -->
@@ -133,7 +132,6 @@
         :loading="codeLoading"
         @click="submitCodeForm"
         >{{ $t('auth.submitLogin') }}</t-button
-      >
       >
     </t-form>
   </auth-shell>
