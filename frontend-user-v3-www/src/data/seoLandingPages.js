@@ -1,11 +1,11 @@
-import { t } from '@/locales';
+import { t } from "@/locales";
 export const seoLandingPages = [
   {
     slug: "cloud-server",
     path: "/cloud-server",
     routeName: "WwwSeoCloudServer",
     keyword: "云服务器",
-    title: t('seoLanding.cloudServer.title'),
+    title: t("seoLanding.cloudServer.title"),
     description:
       "云服务器面向企业网站、业务系统和开发测试场景，提供稳定弹性计算、灵活配置和 IDC 运维支持。",
     keywords: "云服务器,云主机,弹性云服务器,IDC 云服务器",
@@ -13,14 +13,23 @@ export const seoLandingPages = [
     priority: "0.9",
     hero: {
       eyebrow: "弹性计算",
-      title: t('seoLanding.cloudServer.heroTitle'),
+      title: t("seoLanding.cloudServer.heroTitle"),
       summary:
         "面向网站托管、业务系统、接口服务和开发测试，按实际业务规模选择 CPU、内存、带宽和系统镜像，减少前期硬件投入。",
       points: ["灵活配置", "快速交付", "工单支持"],
       stats: [
-        { value: "多规格", label: t('seoLanding.cloudServer.hero.stats.specs.label') },
-        { value: "多系统", label: t('seoLanding.cloudServer.hero.stats.os.label') },
-        { value: "按需选", label: t('seoLanding.cloudServer.hero.stats.onDemand.label') },
+        {
+          value: "多规格",
+          label: t("seoLanding.cloudServer.hero.stats.specs.label"),
+        },
+        {
+          value: "多系统",
+          label: t("seoLanding.cloudServer.hero.stats.os.label"),
+        },
+        {
+          value: "按需选",
+          label: t("seoLanding.cloudServer.hero.stats.onDemand.label"),
+        },
       ],
     },
     visual: {
@@ -29,34 +38,34 @@ export const seoLandingPages = [
     },
     features: [
       {
-        title: t('seoLanding.cloudServer.features.scalable.title'),
+        title: t("seoLanding.cloudServer.features.scalable.title"),
         description:
           "从轻量网站到业务应用都能选择合适规格，后续扩容时减少重复迁移成本。",
       },
       {
-        title: t('seoLanding.cloudServer.features.standardized.title'),
+        title: t("seoLanding.cloudServer.features.standardized.title"),
         description:
           "常用系统镜像、网络和安全配置集中管理，方便新业务快速上线。",
       },
       {
-        title: t('seoLanding.cloudServer.features.support.title'),
+        title: t("seoLanding.cloudServer.features.support.title"),
         description:
           "通过账号与工单体系沉淀问题记录，便于排查网络、系统和费用相关问题。",
       },
     ],
     scenarios: [
       {
-        title: t('seoLanding.cloudServer.scenarios.marketingSite.title'),
+        title: t("seoLanding.cloudServer.scenarios.marketingSite.title"),
         description:
           "承载官网、专题页、表单提交和轻量后台，适合稳定展示与日常维护。",
       },
       {
-        title: t('seoLanding.cloudServer.scenarios.devTest.title'),
+        title: t("seoLanding.cloudServer.scenarios.devTest.title"),
         description:
           "为项目测试、接口联调和临时演示提供独立环境，减少本地环境差异。",
       },
       {
-        title: t('seoLanding.cloudServer.scenarios.smbSystem.title'),
+        title: t("seoLanding.cloudServer.scenarios.smbSystem.title"),
         description:
           "适用于管理后台、API 服务、数据看板等需要独立运行环境的业务。",
       },
@@ -79,14 +88,20 @@ export const seoLandingPages = [
       },
     ],
     relatedLinks: [
-      { label: t('seoLanding.pages.relatedLinks.viewProductsServices'), to: "/products" },
-      { label: t('seoLanding.cloudServer.relatedLinks.helpCenter'), to: "/help" },
-      { label: t('seoLanding.cloudServer.relatedLinks.aboutUs'), to: "/about" },
+      {
+        label: t("seoLanding.pages.relatedLinks.viewProductsServices"),
+        to: "/products",
+      },
+      {
+        label: t("seoLanding.cloudServer.relatedLinks.helpCenter"),
+        to: "/help",
+      },
+      { label: t("seoLanding.cloudServer.relatedLinks.aboutUs"), to: "/about" },
     ],
     cta: {
-      title: t('seoLanding.cloudServer.cta.title'),
-      description: t('seoLanding.cloudServer.cta.description'),
-      primaryText: "查看产品配置",
+      title: t("seoLanding.cloudServer.cta.title"),
+      description: t("seoLanding.cloudServer.cta.description"),
+      primaryText: "查看商品配置",
       primaryTo: "/products",
       secondaryText: "注册账号",
       secondaryConsolePath: "/client/register",
@@ -97,7 +112,7 @@ export const seoLandingPages = [
     path: "/hong-kong-server",
     routeName: "WwwSeoHongKongServer",
     keyword: "香港服务器",
-    title: t('seoLanding.hongKongServer.title'),
+    title: t("seoLanding.hongKongServer.title"),
     description:
       "香港服务器适合跨境网站、外贸业务和亚太访问场景，提供云服务器配置选择与工单支持。",
     keywords: "香港服务器,香港云服务器,香港云主机,跨境服务器",
@@ -105,14 +120,23 @@ export const seoLandingPages = [
     priority: "0.8",
     hero: {
       eyebrow: "跨境访问",
-      title: t('seoLanding.hongKongServer.heroTitle'),
+      title: t("seoLanding.hongKongServer.heroTitle"),
       summary:
         "适用于外贸站点、跨境业务、亚太用户访问和业务中转场景，兼顾部署效率、访问体验和日常运维支持。",
       points: ["亚太访问", "外贸建站", "部署灵活"],
       stats: [
-        { value: "香港节点", label: t('seoLanding.highlight.apacAccessScenario') },
-        { value: "多带宽", label: t('seoLanding.highlight.selectBySiteTraffic') },
-        { value: "工单协同", label: t('seoLanding.highlight.networkSystemTroubleshooting') },
+        {
+          value: "香港节点",
+          label: t("seoLanding.highlight.apacAccessScenario"),
+        },
+        {
+          value: "多带宽",
+          label: t("seoLanding.highlight.selectBySiteTraffic"),
+        },
+        {
+          value: "工单协同",
+          label: t("seoLanding.highlight.networkSystemTroubleshooting"),
+        },
       ],
     },
     visual: {
@@ -121,32 +145,32 @@ export const seoLandingPages = [
     },
     features: [
       {
-        title: t('seoLanding.highlight.crossBorderEntry'),
+        title: t("seoLanding.highlight.crossBorderEntry"),
         description:
           "香港节点常用于面向亚太用户的网站、接口服务和轻量业务入口。",
       },
       {
-        title: t('seoLanding.highlight.shorterDeploymentChain'),
-        description: t('seoLanding.paragraph.migrationInOneFlow'),
+        title: t("seoLanding.highlight.shorterDeploymentChain"),
+        description: t("seoLanding.paragraph.migrationInOneFlow"),
       },
       {
-        title: t('seoLanding.highlight.easyToScaleLater'),
+        title: t("seoLanding.highlight.easyToScaleLater"),
         description:
           "业务增长后可继续选择更高配置或调整带宽，减少一次性投入压力。",
       },
     ],
     scenarios: [
       {
-        title: t('seoLanding.scenario.foreignTradeShowcase'),
-        description: t('seoLanding.scenario.foreignTradeShowcaseDesc'),
+        title: t("seoLanding.scenario.foreignTradeShowcase"),
+        description: t("seoLanding.scenario.foreignTradeShowcaseDesc"),
       },
       {
-        title: t('seoLanding.scenario.crossBorderEntry'),
-        description: t('seoLanding.scenario.crossBorderEntryDesc'),
+        title: t("seoLanding.scenario.crossBorderEntry"),
+        description: t("seoLanding.scenario.crossBorderEntryDesc"),
       },
       {
-        title: t('seoLanding.scenario.overseasStaging'),
-        description: t('seoLanding.scenario.overseasStagingDesc'),
+        title: t("seoLanding.scenario.overseasStaging"),
+        description: t("seoLanding.scenario.overseasStagingDesc"),
       },
     ],
     faqs: [
@@ -166,14 +190,20 @@ export const seoLandingPages = [
       },
     ],
     relatedLinks: [
-      { label: t('seoLanding.pages.relatedLinks.viewCloudServer'), to: "/cloud-server" },
-      { label: t('seoLanding.cta.viewUsServers'), to: "/us-server" },
-      { label: t('seoLanding.pages.relatedLinks.viewProductsServices'), to: "/products" },
+      {
+        label: t("seoLanding.pages.relatedLinks.viewCloudServer"),
+        to: "/cloud-server",
+      },
+      { label: t("seoLanding.cta.viewUsServers"), to: "/us-server" },
+      {
+        label: t("seoLanding.pages.relatedLinks.viewProductsServices"),
+        to: "/products",
+      },
     ],
     cta: {
-      title: t('seoLanding.cta.chooseHongKongForCrossBorder'),
-      description: t('seoLanding.cta.chooseHongKongTip'),
-      primaryText: "查看产品配置",
+      title: t("seoLanding.cta.chooseHongKongForCrossBorder"),
+      description: t("seoLanding.cta.chooseHongKongTip"),
+      primaryText: "查看商品配置",
       primaryTo: "/products",
       secondaryText: "提交咨询工单",
       secondaryConsolePath: "/client/tickets",
@@ -184,7 +214,7 @@ export const seoLandingPages = [
     path: "/us-server",
     routeName: "WwwSeoUsServer",
     keyword: "美国服务器",
-    title: t('seoLanding.meta.usServer.title'),
+    title: t("seoLanding.meta.usServer.title"),
     description:
       "美国服务器面向海外网站、跨境业务和开发测试场景，提供云服务器配置选择、系统部署和售后支持。",
     keywords: "美国服务器,美国云服务器,海外服务器,海外云主机",
@@ -192,14 +222,23 @@ export const seoLandingPages = [
     priority: "0.8",
     hero: {
       eyebrow: "海外节点",
-      title: t('seoLanding.meta.usServer.heroTitle'),
+      title: t("seoLanding.meta.usServer.heroTitle"),
       summary:
         "面向海外展示站、应用服务、跨境业务和测试环境，帮助团队用较低门槛部署海外访问入口。",
       points: ["海外部署", "网站托管", "业务测试"],
       stats: [
-        { value: "海外访问", label: t('seoLanding.related.fitOverseasAudience') },
-        { value: "灵活配置", label: t('seoLanding.related.selectBySystemBandwidth') },
-        { value: "统一管理", label: t('seoLanding.feature.unifiedManagementDescription') },
+        {
+          value: "海外访问",
+          label: t("seoLanding.related.fitOverseasAudience"),
+        },
+        {
+          value: "灵活配置",
+          label: t("seoLanding.related.selectBySystemBandwidth"),
+        },
+        {
+          value: "统一管理",
+          label: t("seoLanding.feature.unifiedManagementDescription"),
+        },
       ],
     },
     visual: {
@@ -208,30 +247,32 @@ export const seoLandingPages = [
     },
     features: [
       {
-        title: t('seoLanding.diagram.usServerOverseasDeploymentLabel'),
-        description: t('seoLanding.diagram.usServerOverseasDeploymentDescription'),
+        title: t("seoLanding.diagram.usServerOverseasDeploymentLabel"),
+        description: t(
+          "seoLanding.diagram.usServerOverseasDeploymentDescription",
+        ),
       },
       {
-        title: t('seoLanding.feature.easyTrialRun'),
-        description: t('seoLanding.feature.easyTrialRunDescription'),
+        title: t("seoLanding.feature.easyTrialRun"),
+        description: t("seoLanding.feature.easyTrialRunDescription"),
       },
       {
-        title: t('seoLanding.feature.unifiedBilling'),
-        description: t('seoLanding.feature.unifiedBillingDescription'),
+        title: t("seoLanding.feature.unifiedBilling"),
+        description: t("seoLanding.feature.unifiedBillingDescription"),
       },
     ],
     scenarios: [
       {
-        title: t('seoLanding.feature.overseasWebsite'),
-        description: t('seoLanding.feature.overseasWebsiteDescription'),
+        title: t("seoLanding.feature.overseasWebsite"),
+        description: t("seoLanding.feature.overseasWebsiteDescription"),
       },
       {
-        title: t('seoLanding.feature.crossBorderAppService'),
-        description: t('seoLanding.feature.crossBorderAppServiceDescription'),
+        title: t("seoLanding.feature.crossBorderAppService"),
+        description: t("seoLanding.feature.crossBorderAppServiceDescription"),
       },
       {
-        title: t('seoLanding.feature.overseasLinkValidation'),
-        description: t('seoLanding.feature.overseasLinkValidationDescription'),
+        title: t("seoLanding.feature.overseasLinkValidation"),
+        description: t("seoLanding.feature.overseasLinkValidationDescription"),
       },
     ],
     faqs: [
@@ -250,14 +291,20 @@ export const seoLandingPages = [
       },
     ],
     relatedLinks: [
-      { label: t('seoLanding.cta.viewHongKongServers'), to: "/hong-kong-server" },
-      { label: t('seoLanding.pages.relatedLinks.viewCloudServer'), to: "/cloud-server" },
-      { label: t('seoLanding.pages.relatedLinks.viewHelpCenter'), to: "/help" },
+      {
+        label: t("seoLanding.cta.viewHongKongServers"),
+        to: "/hong-kong-server",
+      },
+      {
+        label: t("seoLanding.pages.relatedLinks.viewCloudServer"),
+        to: "/cloud-server",
+      },
+      { label: t("seoLanding.pages.relatedLinks.viewHelpCenter"), to: "/help" },
     ],
     cta: {
-      title: t('seoLanding.feature.overseasBusinessEntry'),
-      description: t('seoLanding.feature.overseasBusinessEntryDescription'),
-      primaryText: "查看产品配置",
+      title: t("seoLanding.feature.overseasBusinessEntry"),
+      description: t("seoLanding.feature.overseasBusinessEntryDescription"),
+      primaryText: "查看商品配置",
       primaryTo: "/products",
       secondaryText: "注册账号",
       secondaryConsolePath: "/client/register",
@@ -268,7 +315,7 @@ export const seoLandingPages = [
     path: "/high-defense-server",
     routeName: "WwwSeoHighDefenseServer",
     keyword: "高防服务器",
-    title: t('seoLanding.meta.highDefenseServer.title'),
+    title: t("seoLanding.meta.highDefenseServer.title"),
     description:
       "高防服务器适合游戏、业务接口和高风险网站等防护需求场景，提供配置选择与运维支持。",
     keywords: "高防服务器,高防云服务器,防护服务器,游戏服务器防护",
@@ -276,14 +323,20 @@ export const seoLandingPages = [
     priority: "0.8",
     hero: {
       eyebrow: "安全防护",
-      title: t('seoLanding.meta.highDefenseServer.heroTitle'),
+      title: t("seoLanding.meta.highDefenseServer.heroTitle"),
       summary:
         "适用于容易受到异常流量影响的网站、游戏和接口服务，帮助业务在风险场景下保持更清晰的资源与工单管理路径。",
       points: ["防护场景", "业务连续性", "问题追踪"],
       stats: [
-        { value: "高风险业务", label: t('seoLanding.ddos.scenarioGameAndApi') },
-        { value: "可追踪", label: t('seoLanding.ddos.tagTraceableDescription') },
-        { value: "可组合", label: t('seoLanding.ddos.tagCombinableDescription') },
+        { value: "高风险业务", label: t("seoLanding.ddos.scenarioGameAndApi") },
+        {
+          value: "可追踪",
+          label: t("seoLanding.ddos.tagTraceableDescription"),
+        },
+        {
+          value: "可组合",
+          label: t("seoLanding.ddos.tagCombinableDescription"),
+        },
       ],
     },
     visual: {
@@ -292,31 +345,31 @@ export const seoLandingPages = [
     },
     features: [
       {
-        title: t('seoLanding.diagram.ddosProtectionScenariosLabel'),
+        title: t("seoLanding.diagram.ddosProtectionScenariosLabel"),
         description:
           "游戏、活动站、接口服务等更容易遇到异常流量，需要提前规划防护方案。",
       },
       {
-        title: t('seoLanding.feature.centralizedTroubleshooting'),
-        description: t('seoLanding.feature.centralizedManagement'),
+        title: t("seoLanding.feature.centralizedTroubleshooting"),
+        description: t("seoLanding.feature.centralizedManagement"),
       },
       {
-        title: t('seoLanding.serverPlan.matchWorkload'),
-        description: t('seoLanding.serverPlan.matchWorkloadDesc'),
+        title: t("seoLanding.serverPlan.matchWorkload"),
+        description: t("seoLanding.serverPlan.matchWorkloadDesc"),
       },
     ],
     scenarios: [
       {
-        title: t('seoLanding.game.workloadEntry'),
-        description: t('seoLanding.game.workloadEntryDesc'),
+        title: t("seoLanding.game.workloadEntry"),
+        description: t("seoLanding.game.workloadEntryDesc"),
       },
       {
-        title: t('seoLanding.campaign.pages'),
-        description: t('seoLanding.campaign.pagesDesc'),
+        title: t("seoLanding.campaign.pages"),
+        description: t("seoLanding.campaign.pagesDesc"),
       },
       {
-        title: t('seoLanding.api.services'),
-        description: t('seoLanding.api.servicesDesc'),
+        title: t("seoLanding.api.services"),
+        description: t("seoLanding.api.servicesDesc"),
       },
     ],
     faqs: [
@@ -337,14 +390,20 @@ export const seoLandingPages = [
       },
     ],
     relatedLinks: [
-      { label: t('seoLanding.pages.relatedLinks.viewCloudServer'), to: "/cloud-server" },
-      { label: t('seoLanding.pages.relatedLinks.viewHelpCenter'), to: "/help" },
-      { label: t('seoLanding.pages.relatedLinks.viewProductsServices'), to: "/products" },
+      {
+        label: t("seoLanding.pages.relatedLinks.viewCloudServer"),
+        to: "/cloud-server",
+      },
+      { label: t("seoLanding.pages.relatedLinks.viewHelpCenter"), to: "/help" },
+      {
+        label: t("seoLanding.pages.relatedLinks.viewProductsServices"),
+        to: "/products",
+      },
     ],
     cta: {
-      title: t('seoLanding.ddos.highRiskPlan'),
-      description: t('seoLanding.ddos.highRiskPlanDesc'),
-      primaryText: "查看产品配置",
+      title: t("seoLanding.ddos.highRiskPlan"),
+      description: t("seoLanding.ddos.highRiskPlanDesc"),
+      primaryText: "查看商品配置",
       primaryTo: "/products",
       secondaryText: "提交咨询工单",
       secondaryConsolePath: "/client/tickets",
@@ -355,7 +414,7 @@ export const seoLandingPages = [
     path: "/cloud-pc",
     routeName: "WwwSeoCloudPc",
     keyword: "云电脑",
-    title: t('seoLanding.meta.cloudPc.title'),
+    title: t("seoLanding.meta.cloudPc.title"),
     description:
       "云电脑适合远程办公、轻量桌面、软件测试和临时工作环境，提供云端资源选择与账号管理能力。",
     keywords: "云电脑,云桌面,远程办公云电脑,桌面云",
@@ -363,14 +422,23 @@ export const seoLandingPages = [
     priority: "0.7",
     hero: {
       eyebrow: "云端桌面",
-      title: t('seoLanding.meta.cloudPc.heroTitle'),
+      title: t("seoLanding.meta.cloudPc.heroTitle"),
       summary:
         "为远程办公、软件测试、临时桌面和轻量操作环境提供云端资源，减少本地设备差异带来的维护成本。",
       points: ["远程访问", "轻量桌面", "账号管理"],
       stats: [
-        { value: "云端运行", label: t('seoLanding.cloudDesktop.lessLocalDependency') },
-        { value: "灵活使用", label: t('seoLanding.cloudDesktop.shortAndLongTerm') },
-        { value: "统一入口", label: t('seoLanding.cloudDesktop.consoleAndRenewal') },
+        {
+          value: "云端运行",
+          label: t("seoLanding.cloudDesktop.lessLocalDependency"),
+        },
+        {
+          value: "灵活使用",
+          label: t("seoLanding.cloudDesktop.shortAndLongTerm"),
+        },
+        {
+          value: "统一入口",
+          label: t("seoLanding.cloudDesktop.consoleAndRenewal"),
+        },
       ],
     },
     visual: {
@@ -379,30 +447,30 @@ export const seoLandingPages = [
     },
     features: [
       {
-        title: t('seoLanding.cloudDesktop.lowerDeviceBarrier'),
-        description: t('seoLanding.cloudDesktop.cloudResourceDesc'),
+        title: t("seoLanding.cloudDesktop.lowerDeviceBarrier"),
+        description: t("seoLanding.cloudDesktop.cloudResourceDesc"),
       },
       {
-        title: t('seoLanding.cloudDesktop.temporaryProject'),
-        description: t('seoLanding.cloudDesktop.temporaryProjectDesc'),
+        title: t("seoLanding.cloudDesktop.temporaryProject"),
+        description: t("seoLanding.cloudDesktop.temporaryProjectDesc"),
       },
       {
-        title: t('seoLanding.cloudDesktop.easyAccountManagement'),
-        description: t('seoLanding.cloudPc.unifiedAccount.desc'),
+        title: t("seoLanding.cloudDesktop.easyAccountManagement"),
+        description: t("seoLanding.cloudPc.unifiedAccount.desc"),
       },
     ],
     scenarios: [
       {
-        title: t('seoLanding.cloudPc.remoteWork.title'),
-        description: t('seoLanding.cloudPc.remoteWork.desc'),
+        title: t("seoLanding.cloudPc.remoteWork.title"),
+        description: t("seoLanding.cloudPc.remoteWork.desc"),
       },
       {
-        title: t('seoLanding.cloudPc.softwareTesting.title'),
-        description: t('seoLanding.cloudPc.softwareTesting.desc'),
+        title: t("seoLanding.cloudPc.softwareTesting.title"),
+        description: t("seoLanding.cloudPc.softwareTesting.desc"),
       },
       {
-        title: t('seoLanding.cloudPc.demoTraining.title'),
-        description: t('seoLanding.cloudPc.demoTraining.desc'),
+        title: t("seoLanding.cloudPc.demoTraining.title"),
+        description: t("seoLanding.cloudPc.demoTraining.desc"),
       },
     ],
     faqs: [
@@ -422,14 +490,20 @@ export const seoLandingPages = [
       },
     ],
     relatedLinks: [
-      { label: t('seoLanding.pages.relatedLinks.viewCloudServer'), to: "/cloud-server" },
-      { label: t('seoLanding.pages.relatedLinks.viewProductsServices'), to: "/products" },
-      { label: t('seoLanding.pages.relatedLinks.viewHelpCenter'), to: "/help" },
+      {
+        label: t("seoLanding.pages.relatedLinks.viewCloudServer"),
+        to: "/cloud-server",
+      },
+      {
+        label: t("seoLanding.pages.relatedLinks.viewProductsServices"),
+        to: "/products",
+      },
+      { label: t("seoLanding.pages.relatedLinks.viewHelpCenter"), to: "/help" },
     ],
     cta: {
-      title: t('seoLanding.cloudPc.section.remoteWorkDesktop.title'),
-      description: t('seoLanding.cloudPc.section.remoteWorkDesktop.desc'),
-      primaryText: "查看产品配置",
+      title: t("seoLanding.cloudPc.section.remoteWorkDesktop.title"),
+      description: t("seoLanding.cloudPc.section.remoteWorkDesktop.desc"),
+      primaryText: "查看商品配置",
       primaryTo: "/products",
       secondaryText: "注册账号",
       secondaryConsolePath: "/client/register",
@@ -555,13 +629,13 @@ export function buildSeoLandingStructuredData(
       {
         "@type": "ListItem",
         position: 1,
-        name: t('seoLanding.breadcrumb.home'),
+        name: t("seoLanding.breadcrumb.home"),
         item: homeUrl,
       },
       {
         "@type": "ListItem",
         position: 2,
-        name: t('seoLanding.breadcrumb.productsServices'),
+        name: t("seoLanding.breadcrumb.productsServices"),
         item: productsUrl,
       },
       {

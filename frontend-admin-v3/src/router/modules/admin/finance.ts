@@ -178,9 +178,9 @@ export const financeRoutes: RouteRecordRaw[] = [
     component: () => import('@/pages/services/index.vue'),
     meta: {
       title: {
-        zh_CN: '服务列表',
-        zh_TW: '服務列表',
-        en_US: 'Services',
+        zh_CN: '实例列表',
+        zh_TW: '實例列表',
+        en_US: 'Instances',
       },
       permission: 'product.list',
     },
@@ -191,9 +191,9 @@ export const financeRoutes: RouteRecordRaw[] = [
     component: () => import('@/pages/services/detail/index.vue'),
     meta: {
       title: {
-        zh_CN: '服务实例管理',
-        zh_TW: '服務例項管理',
-        en_US: 'Service Detail',
+        zh_CN: '实例管理',
+        zh_TW: '例項管理',
+        en_US: 'Instance Detail',
       },
       permission: 'product.list',
       hidden: true,

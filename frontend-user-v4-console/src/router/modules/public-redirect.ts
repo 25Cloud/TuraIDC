@@ -54,8 +54,8 @@ function redirectToPublicSite(path: string, titleText: string): RouteRecordRaw {
 }
 
 export default [
-  redirectToPublicSite('/products', '产品与服务'),
-  redirectToPublicSite('/products/:pathMatch(.*)*', '产品与服务'),
+  redirectToPublicSite('/products', '商品与服务'),
+  redirectToPublicSite('/products/:pathMatch(.*)*', '商品与服务'),
   redirectToPublicSite('/about', '关于我们'),
   redirectToPublicSite('/terms', '服务条款'),
   redirectToPublicSite('/privacy', '隐私政策'),

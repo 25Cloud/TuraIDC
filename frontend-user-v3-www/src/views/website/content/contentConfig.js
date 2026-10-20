@@ -108,7 +108,7 @@ export function getContentConfig(contentType, scope = CONTENT_SCOPE_CLIENT) {
       keywordSuggestions: [
         "新手入门",
         "支付账单",
-        "服务管理",
+        "实例管理",
         "续费说明",
         "实例控制台",
       ],

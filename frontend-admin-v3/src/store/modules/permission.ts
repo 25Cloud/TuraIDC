@@ -58,7 +58,7 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
   },
   {
     path: '/admin/menu/product-config',
-    title: { zh_CN: '产品配置', en_US: 'Catalog' },
+    title: { zh_CN: '商品配置', en_US: 'Catalog' },
     icon: shallowRef(ShopIcon),
     orderNo: 10,
     children: [
@@ -93,13 +93,13 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
     ],
   },
   {
-    // 服务实例是独立业务（开通、到期、续费、控制台），长期挂在「工单处理」下
+    // 实例是独立业务（开通、到期、续费、控制台），长期挂在「工单处理」下
     // 让管理员找不到入口，也让工单分组越挂越杂；单独成组，图标沿用服务器语义。
     path: '/admin/menu/service-management',
-    title: { zh_CN: '服务管理', en_US: 'Services' },
+    title: { zh_CN: '实例管理', en_US: 'Instance Management' },
     icon: shallowRef(ServerIcon),
     orderNo: 30,
-    children: [{ path: '/admin/services', title: { zh_CN: '服务实例', en_US: 'Instances' } }],
+    children: [{ path: '/admin/services', title: { zh_CN: '实例', en_US: 'Instances' } }],
   },
   {
     path: '/admin/menu/ticket-processing',

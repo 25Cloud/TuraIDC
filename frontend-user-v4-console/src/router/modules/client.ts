@@ -95,7 +95,7 @@ export default [
         path: '/client/products',
         redirect: '/client/services',
         meta: {
-          title: title('产品与服务', 'Products', '產品與服務'),
+          title: title('商品与服务', 'Products', '商品與服務'),
           icon: icon(ServerIcon),
           requireAuth: true,
           orderNo: 20,
@@ -106,7 +106,7 @@ export default [
             name: 'ClientServices',
             component: () => import('@/pages/client/services/index.vue'),
             meta: {
-              title: title('我的服务', 'My Services', '我的服務'),
+              title: title('我的实例', 'My Instances', '我的實例'),
               icon: icon(ServerIcon),
               requireAuth: true,
               orderNo: 10,
@@ -117,7 +117,7 @@ export default [
             name: 'ClientCatalog',
             component: () => import('@/pages/client/catalog/index.vue'),
             meta: {
-              title: title('购买产品', 'Buy Products', '購買產品'),
+              title: title('购买商品', 'Buy Products', '購買商品'),
               icon: icon(CatalogIcon),
               requireAuth: true,
               orderNo: 20,
