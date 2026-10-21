@@ -17,6 +17,7 @@ export function useConsoleVnc(options: UseConsoleVncOptions) {
   const { serviceId, actionLoading, activeTab } = options;
 
   const vncUrl = ref('');
+  const externalVncUrl = ref('');
 
   function decorateVncUrl(rawUrl: unknown): string {
     const url = String(rawUrl || '').trim();
@@ -68,15 +69,23 @@ export function useConsoleVnc(options: UseConsoleVncOptions) {
     }
   }
 
-  async function requestVncUrl(targetWindow: Window | null = null): Promise<string> {
+  async function requestVncUrl(targetWindow: Window | null = null): Promise<{ url: string; external: boolean }> {
     const res = await clientApi.serviceVnc(serviceId.value, { silentError: true });
     const url = String(res.data?.url || '').trim();
     if (!url) throw new Error(t('serviceConsole.errors.vncUrlMissing'));
+    if (res.data?.launch_mode === 'external') {
+      const parsed = new URL(url);
+      if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) {
+        throw new Error(t('serviceConsole.errors.vncUrlMissing'));
+      }
+      // 官方登录地址可能带签名，不附加图拉参数，也不写入本地 noVNC 凭据。
+      return { url, external: true };
+    }
     const decoratedUrl = decorateVncUrl(url);
     const credentials = res.data?.vnc_credentials;
     storeVncCredentialsForUrl(decoratedUrl, credentials);
     if (targetWindow) storeVncCredentialsForUrl(decoratedUrl, credentials, targetWindow);
-    return decoratedUrl;
+    return { url: decoratedUrl, external: false };
   }
 
   async function handleOpenVnc(mode: 'embed' | 'window' = 'embed') {
@@ -92,12 +101,14 @@ export function useConsoleVnc(options: UseConsoleVncOptions) {
 
     actionLoading.value = true;
     try {
-      const url = await requestVncUrl(popup);
+      const { url, external } = await requestVncUrl(popup);
+      externalVncUrl.value = external ? url : '';
+      if (external) vncUrl.value = '';
       activeTab.value = 'vnc';
       if (mode === 'window' && popup) {
         popup.location.replace(url);
         MessagePlugin.success(t('serviceConsole.vnc.windowOpened'));
-      } else {
+      } else if (!external) {
         vncUrl.value = url;
         MessagePlugin.success(t('serviceConsole.vnc.loaded'));
       }
@@ -111,6 +122,7 @@ export function useConsoleVnc(options: UseConsoleVncOptions) {
 
   return {
     vncUrl,
+    externalVncUrl,
     handleOpenVnc,
   };
 }

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\System\OperationLogService;
+use App\Services\Upstream\Contracts\ProvidesReinstallTimeout;
 use App\Support\SensitiveDataSanitizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -286,6 +287,9 @@ class ServicePowerService
             ->values()->all();
 
         $result = ['os' => $osList, 'os_groups' => $groups];
+        if ($runtime instanceof ProvidesReinstallTimeout) {
+            $result['request_timeout_ms'] = min(120, max(18, $runtime->reinstallTimeoutSeconds())) * 1000;
+        }
 
         if ($osList !== []) {
             Cache::put($cacheKey, $result, now()->addSeconds(self::REINSTALL_OPTIONS_CACHE_TTL_SECONDS));

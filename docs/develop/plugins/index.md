@@ -640,6 +640,7 @@ php artisan schedule:list
 | 上游开通/控制 | `backend/plugins/servers/zjmf_finance`            | ZJMF 财务上游插件                |
 | 上游开通/控制 | `backend/plugins/servers/tura_open_api`           | TuraIDC 开放接口上游驱动插件     |
 | 上游开通/控制 | `backend/plugins/servers/kanghostx`               | 康乐虚拟主机插件                 |
+| 上游开通/控制 | `backend/plugins/servers/rainyun_rcs`             | 雨云 RCS 与附加资源账单         |
 | 上游开通/控制 | `backend/plugins/servers/demo_servers`            | 模拟上游插件                     |
 | 功能扩展      | `backend/plugins/addons/demo_style`               | Addon、调度任务和 hook 示例插件  |
 | 功能扩展      | `backend/plugins/addons/zjmf_bridge`              | ZJMF Bridge 兼容接口插件         |

@@ -285,8 +285,8 @@ const clientApi = {
     getEnvelope<ServiceReinstallOptionsPayload>(`/v2/client/services/${id}/reinstallations/options`, { params }),
   serviceResetPassword: (id: number | string, data: Record<string, unknown>) =>
     postEnvelope<ServicePasswordResetPayload>(`/v2/client/services/${id}/password-resets`, data),
-  serviceReinstall: (id: number | string, data: Record<string, unknown>) =>
-    postEnvelope<ServiceReinstallPayload>(`/v2/client/services/${id}/reinstallations`, data),
+  serviceReinstall: (id: number | string, data: Record<string, unknown>, config?: RequestConfig) =>
+    postEnvelope<ServiceReinstallPayload>(`/v2/client/services/${id}/reinstallations`, data, config),
   serviceRescue: (id: number | string, data: Record<string, unknown>) =>
     postEnvelope<ServicePowerActionPayload>(`/v2/client/services/${id}/rescues`, data),
   serviceOperationLogs: (id: number | string, params?: QueryParams) =>

@@ -9,6 +9,7 @@ use App\Models\Service;
 use App\Models\Setting;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\Upstream\Contracts\ProvidesLocalConsoleActions;
 use App\Support\SensitiveDataSanitizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -274,6 +275,10 @@ class ServiceConsoleAreaService
         $endpoint = rtrim($rootUrl, '/').'/provision/custom/'.$hostId;
 
         try {
+            if ($runtime instanceof ProvidesLocalConsoleActions) {
+                return $runtime->submitServiceConsoleAction($service, $supplier, $hostId, $data);
+            }
+
             return is_callable([$runtime, 'submitCustomModuleAction'])
                 ? $runtime->submitCustomModuleAction($supplier, $endpoint, $data, $jwt)
                 : $runtime->post(
@@ -351,6 +356,10 @@ class ServiceConsoleAreaService
             [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
             $rootUrl = rtrim($this->detailService->resolveSupplierRootUrl($supplier), '/');
             $endpoint = $rootUrl.'/provision/custom/'.$hostId;
+
+            if ($runtime instanceof ProvidesLocalConsoleActions) {
+                return $runtime->submitServiceConsoleAction($service, $supplier, $hostId, $data);
+            }
 
             return is_callable([$runtime, 'submitCustomModuleAction'])
                 ? $runtime->submitCustomModuleAction($supplier, $endpoint, $data, $jwt)

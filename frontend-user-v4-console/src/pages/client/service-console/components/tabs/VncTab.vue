@@ -5,14 +5,21 @@
         <div class="vnc-toolbar">
           <p>{{ vncUrl ? $t('serviceConsole.vnc.loadedTip') : $t('serviceConsole.vnc.connectTip') }}</p>
           <t-space>
-            <t-button theme="primary" :loading="actionLoading" @click="handleOpenVnc()">{{ $t('serviceConsole.vnc.connect') }}</t-button>
-            <t-button variant="outline" :loading="actionLoading" @click="handleOpenVnc('window')">{{ $t('serviceConsole.vnc.openInWindow') }}</t-button>
+            <t-button theme="primary" :loading="actionLoading" @click="handleOpenVnc()">{{
+              $t('serviceConsole.vnc.connect')
+            }}</t-button>
+            <t-button variant="outline" :loading="actionLoading" @click="handleOpenVnc('window')">{{
+              $t('serviceConsole.vnc.openInWindow')
+            }}</t-button>
           </t-space>
         </div>
 
         <div class="vnc-frame-shell">
+          <a v-if="externalVncUrl" :href="externalVncUrl" target="_blank" rel="noopener noreferrer" class="vnc-empty">
+            {{ $t('serviceConsole.vnc.openInWindow') }}
+          </a>
           <iframe
-            v-if="vncUrl"
+            v-else-if="vncUrl"
             :key="vncUrl"
             class="vnc-frame"
             :src="vncUrl"
@@ -29,5 +36,5 @@
 <script setup lang="ts">
 import { useServiceConsoleContext } from '../context';
 
-const { vncUrl, actionLoading, handleOpenVnc } = useServiceConsoleContext();
+const { vncUrl, externalVncUrl, actionLoading, handleOpenVnc } = useServiceConsoleContext();
 </script>
