@@ -557,6 +557,12 @@
       "review_by": "2026-11-20"
     },
     {
+      "path": "internal/legal/cla-feasibility-2026-10-21.md",
+      "status": "current",
+      "summary": "CLA v1.0 双许可链条可行性核对：授权结构、历史贡献处理与剩余法务事项。",
+      "review_by": "2027-01-19"
+    },
+    {
       "path": "internal/product-specs/active/log-search-archive-coordination-2026-08-01.md",
       "status": "active",
       "summary": "管理端日志检索、留存与归档的验收边界。",

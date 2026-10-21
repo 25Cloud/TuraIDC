@@ -250,8 +250,10 @@ const deployDocsUrl = "https://docs.turaidc.com/guide/deploy/generic";
 
 const appStore = useAppStore();
 
-// 商业授权联系邮箱优先取站点配置；品牌配置尚未解析时显示骨架，避免先闪「待公布」再跳成邮箱。
-const contactEmail = computed(() => String(appStore.serviceEmail || "").trim());
+// 商业授权联系邮箱优先取站点配置；未配置时回退到 CLA 统一联系邮箱。
+const contactEmail = computed(
+  () => String(appStore.serviceEmail || "").trim() || "contact@turaidc.com",
+);
 const contactLoading = computed(() => !appStore.brandingResolved);
 </script>
 

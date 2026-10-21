@@ -402,7 +402,7 @@ docker compose pull && docker compose up -d   # 升级到新镜像
 - 授权范围内**可闭源使用、修改后不公开**，**免除 AGPL 第 13 条**网络源码提供义务；
 - **不含商标授权**，不得转售、白牌或再分发源码；
 - **不提供额外功能**：商业版与开源版源码相同，付费只解决闭源使用的许可问题；
-- 取得方式：在 [Issues](https://github.com/25Cloud/TuraIDC/issues) 提交「商业授权申请」，或邮件 `opensource@turaidc.com`（占位地址，正式发布前替换）。
+- 取得方式：在 [Issues](https://github.com/25Cloud/TuraIDC/issues) 提交「商业授权申请」，或邮件 `contact@turaidc.com`。
 
 > ⚠️ 商业许可与 CLA 均为工程侧草案，正式对外签署前需经法务或专业律师复核。
 

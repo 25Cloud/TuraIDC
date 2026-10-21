@@ -23,7 +23,7 @@
 请通过以下任一方式私下报告：
 
 1. **GitHub Security Advisory（推荐）**：<https://github.com/25Cloud/TuraIDC/security/advisories/new>
-2. **安全邮箱**：**`security@turaidc.com`**（**占位地址，正式发布前由项目方替换**；也可先通过 GitHub 私密 Advisory 联系）
+2. **安全邮箱**：**`contact@turaidc.com`**（也可先通过 GitHub 私密 Advisory 联系）
 
 > 如果项目方后续提供 PGP 公钥或加密说明，会在本文件更新；在未提供加密方式前，请不要在邮件中附带真实生产数据或用户隐私信息。
 
