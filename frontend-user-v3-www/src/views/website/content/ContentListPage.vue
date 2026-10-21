@@ -99,6 +99,14 @@
             </div>
           </div>
 
+          <div v-else-if="loadError" class="list-error">
+            <el-empty :description="loadError">
+              <el-button type="primary" @click="retryLoad">{{
+                $t("content.list.retry")
+              }}</el-button>
+            </el-empty>
+          </div>
+
           <template v-else-if="articleList.length">
             <article
               v-for="item in articleList"
@@ -135,7 +143,7 @@
             </article>
           </template>
 
-          <el-empty v-else-if="!loading" :description="config.emptyText" />
+          <el-empty v-else :description="config.emptyText" />
 
           <div v-if="!loading && total > pageSize" class="list-panel__pager">
             <el-pagination
@@ -234,6 +242,7 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import siteApi from "@/api/site";
 import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
+import { t } from "@/locales";
 import { getContentConfig } from "./contentConfig";
 
 const props = defineProps({
@@ -253,6 +262,8 @@ const api = computed(() => siteApi);
 const config = computed(() => getContentConfig(props.contentType, props.scope));
 
 const loading = ref(false);
+// 列表接口失败时展示错误态与重试入口，不能让骨架一直转下去
+const loadError = ref("");
 // 分类概览单独记 loading：分类栏与列表接口不同步，先回哪个都不该闪空态
 const overviewLoading = ref(false);
 const categories = ref([]);
@@ -319,6 +330,7 @@ async function loadOverview(token) {
 
 async function loadList(token) {
   loading.value = true;
+  loadError.value = "";
 
   try {
     const params = {
@@ -342,11 +354,24 @@ async function loadList(token) {
     if (!categories.value.length) {
       categories.value = res.data?.categories || [];
     }
+  } catch (error) {
+    if (token !== syncToken) return;
+    articleList.value = [];
+    total.value = 0;
+    loadError.value =
+      error?.response?.data?.message ||
+      error?.message ||
+      t("content.list.loadFailed");
   } finally {
     if (token === syncToken) {
       loading.value = false;
     }
   }
+}
+
+function retryLoad() {
+  loadError.value = "";
+  syncPage();
 }
 
 async function loadSidebarContent(token) {
@@ -381,9 +406,10 @@ async function syncPage() {
   activeCategoryId.value = parseQueryNumber(route.query.category, 0);
 
   await Promise.all([
-    loadOverview(token),
+    // 分类与侧栏是辅助内容：失败只影响各自区域，不阻断列表的错误态与重试
+    loadOverview(token).catch(() => {}),
     loadList(token),
-    loadSidebarContent(token),
+    loadSidebarContent(token).catch(() => {}),
   ]);
 }
 
@@ -629,6 +655,10 @@ onBeforeUnmount(() => {
 
 .list-panel {
   overflow: hidden;
+}
+
+.list-error {
+  padding: 40px 24px;
 }
 
 .list-item {

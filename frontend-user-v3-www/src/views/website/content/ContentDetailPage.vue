@@ -76,14 +76,22 @@
             </div>
           </header>
 
-          <el-alert
-            v-if="errorText && !loading"
-            :title="errorText"
-            type="error"
-            show-icon
-            :closable="false"
-            class="reader-error"
-          />
+          <div v-if="errorText && !loading" class="reader-error-block">
+            <el-alert
+              :title="errorText"
+              type="error"
+              show-icon
+              :closable="false"
+              class="reader-error"
+            />
+            <el-button
+              class="reader-error__retry"
+              type="primary"
+              plain
+              @click="syncPage"
+              >{{ $t("content.detail.retry") }}</el-button
+            >
+          </div>
 
           <template v-else-if="currentArticle">
             <el-divider />
@@ -382,7 +390,11 @@ async function syncPage() {
   ];
 
   try {
-    await Promise.all([loadOverview(), loadArticleDetail(route.params.id)]);
+    // 侧栏分类是辅助内容：读取失败不应把正常文章详情一起判成失败
+    await Promise.all([
+      loadOverview().catch(() => {}),
+      loadArticleDetail(route.params.id),
+    ]);
   } catch (error) {
     currentArticle.value = null;
     currentCategoryId.value = null;
@@ -517,6 +529,17 @@ watch(
 
 .reader-error {
   margin-top: 18px;
+}
+
+.reader-error-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.reader-error__retry {
+  margin-top: 4px;
 }
 
 .reader-main {

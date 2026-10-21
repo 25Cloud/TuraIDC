@@ -366,6 +366,7 @@
       "updatedAt": "更新时间",
       "publishedAt": "发布时间",
       "jumpTo": "跳转到 {name}",
+      "retry": "重新加载",
       "loadFailed": "{title}加载失败，请稍后重试"
     },
     "nav": {
@@ -392,6 +393,8 @@
     },
     "list": {
       "empty": "暂无内容",
+      "loadFailed": "内容加载失败，请稍后重试",
+      "retry": "重新加载",
       "hotSearches": "热门搜索:",
       "search": "搜索",
       "pinned": "置顶",

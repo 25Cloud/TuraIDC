@@ -366,6 +366,7 @@
       "updatedAt": "更新時間",
       "publishedAt": "發佈時間",
       "jumpTo": "跳轉到 {name}",
+      "retry": "重新載入",
       "loadFailed": "{title}加載失敗，請稍後重試"
     },
     "nav": {
@@ -392,6 +393,8 @@
     },
     "list": {
       "empty": "暫無內容",
+      "loadFailed": "內容載入失敗，請稍後再試",
+      "retry": "重新載入",
       "hotSearches": "熱門搜尋:",
       "search": "搜尋",
       "pinned": "置頂",

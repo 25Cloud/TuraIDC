@@ -366,6 +366,7 @@
       "updatedAt": "Updated",
       "publishedAt": "Published",
       "jumpTo": "Jump to {name}",
+      "retry": "Reload",
       "loadFailed": "Failed to load {title}. Please try again later."
     },
     "nav": {
@@ -392,6 +393,8 @@
     },
     "list": {
       "empty": "No content yet",
+      "loadFailed": "Failed to load content. Please try again.",
+      "retry": "Reload",
       "hotSearches": "Hot Searches:",
       "search": "Search",
       "pinned": "Pinned",
