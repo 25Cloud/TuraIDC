@@ -5,7 +5,7 @@
 ## 1. 环境要求
 
 - 操作系统：Linux（推荐 Ubuntu 22.04+ / Debian 12）或 Windows Server
-- PHP 8.3+
+- PHP 8.3+，且必须是**已修补 CVE-2026-109618 / CVE-2026-109619 的版本**：上游分支的最低补丁版为 8.3 ≥ 8.3.36 / 8.4 ≥ 8.4.27 / 8.5 ≥ 8.5.12；发行版与 LTS 厂商的回补包同样有效（发行版版本号可能低于上述数字，以厂商公告为准）。无法立刻打补丁时，先把 `session.upload_progress.enabled=0` 写进 php.ini / FPM 池并重启全部 worker，可挡住已知的攻击路径（不是完整修复）
 - MySQL 8.0+（推荐；最低兼容 5.7.8——5.7 已 EOL，仅兼容性支持。混用 8.0 的 mysqldump 客户端备份 5.7 服务端时需加 `--column-statistics=0`。**5.7 部署必须在 my.cnf 的 `[mysqld]` 段设置 `explicit_defaults_for_timestamp=ON`**：5.7 默认 OFF 时，表内首个无显式默认值的 `timestamp` 列会被隐式附加 `ON UPDATE CURRENT_TIMESTAMP`，与 8.0 行为不一致，可能悄悄改写业务时间字段）
 - Redis 6.0+（生产必需：分布式锁、缓存）
 - Composer 2.x

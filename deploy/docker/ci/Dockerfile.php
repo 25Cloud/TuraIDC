@@ -6,6 +6,7 @@
 # 无需编译额外扩展，避免 redis(pecl) 等无关开销。
 #
 # 构建在网络受限环境时请使用：docker build --network=host ...
+# php:8.3-cli 是浮动标签：重建即取该分支最新补丁版（当前 ≥ 8.3.36，含 CVE-2026-109618 / CVE-2026-109619 的修复）。
 FROM php:8.3-cli
 
 RUN set -eux; \

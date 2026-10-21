@@ -41,6 +41,9 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
+          # 8.3 是浮动版本：setup-php 每次都取该分支的最新补丁版（当前 ≥ 8.3.36）。
+          # 8.3.36 起修复 CVE-2026-109618 / CVE-2026-109619——两个未认证远程代码执行（CVSS 9.2），
+          # 可在应用代码执行前触发。不要把版本钉到具体补丁号，避免停在修复前的旧补丁。
           php-version: '8.3'
           extensions: pdo_mysql, mbstring, openssl, redis
           coverage: none

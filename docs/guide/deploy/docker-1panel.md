@@ -15,7 +15,7 @@ deploy/docker/docker-compose.yml  (project: turaidc)
 ├── mysql (mysql:8.0, 命名卷 mysql-data)      [可选：DB_HOST 留空时才拉取并启动]
 ├── redis (redis:7-alpine, 命名卷 redis-data) [可选：REDIS_HOST 留空时才拉取并启动]
 ├── app   (后端镜像, :80)
-│     ├── php-fpm   (PHP 8.3, 含 pdo_mysql/redis/pcntl/opcache/gd/zip/intl/bcmath)
+│     ├── php-fpm   (PHP 8.3, 含 pdo_mysql/redis/pcntl/opcache/gd/zip/intl/bcmath；镜像用 php:8.3-fpm 浮动标签，重建即取最新补丁版，须 ≥ 8.3.36 以含 CVE-2026-109618 / CVE-2026-109619 修复)
 │     ├── nginx     (API + /ws/vnc WebSocket -> 127.0.0.1:8100)
 │     ├── cron      (每分钟 php artisan schedule:run，驱动心跳与队列消费)
 │     └── vnc:relay (VNC WebSocket 中继, 127.0.0.1:8100)
