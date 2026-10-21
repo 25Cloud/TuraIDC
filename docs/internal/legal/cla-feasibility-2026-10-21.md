@@ -40,7 +40,7 @@ owner: lead
   - 默认按原 AGPL 授权，不自动适用 CLA；
   - 项目方自有贡献（仓库所有者创作或已书面取得再许可权）可直接用于商业版本；
   - 第三方历史贡献需贡献者自愿补签（声明中注明覆盖 2026-10-21 前的贡献），未补签部分不进入商业版本；
-  - 维护「贡献者签署记录 + 历史贡献覆盖清单」，每次商业授权交付前核对。
+  - 维护「贡献者签署记录 + 历史贡献覆盖清单」（落地件：[`cla-signing-register.md`](cla-signing-register.md)），每次商业授权交付前核对。
 - **不做的事**：不把未签署贡献者的代码强行改 license，不以「整体作品」模糊授权边界，不在未确认来源时把代码放进商业版本。
 
 ## 签署与留档
@@ -63,5 +63,6 @@ owner: lead
 
 - `CLA.md`：贡献者许可协议 v1.0（2026-10-21 生效）。
 - `LICENSE-COMMERCIAL.md`：商业许可草案。
+- `docs/internal/legal/cla-signing-register.md`：贡献者签署记录与历史贡献覆盖清单（排除清单的落地件）。
 - `docs/guide/licensing.md`：站长/企业视角的双许可说明。
 - `docs/develop/contributing.md`：CLA 签署流程。

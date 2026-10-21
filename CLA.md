@@ -226,5 +226,6 @@ TuraIDC 采用 **AGPL-3.0-or-later 与商业许可的双许可模式**：
 - [LICENSE](LICENSE)：AGPL-3.0-or-later 全文，免费使用路径的唯一许可依据。
 - [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md)：商业许可草案（200 元/年、可闭源、免 AGPL 第 13 条义务）。
 - [docs/guide/licensing.md](docs/guide/licensing.md)：面向站长与企业读者的开源/商业许可说明。
+- [docs/internal/legal/cla-signing-register.md](docs/internal/legal/cla-signing-register.md)：贡献者签署记录与历史贡献覆盖清单（内部件：登记已签署贡献，并列出未签署历史贡献在商业版本中的排除范围）。
 - [docs/develop/contributing.md](docs/develop/contributing.md)：贡献流程与 CLA 签署步骤。
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)、[SECURITY.md](SECURITY.md)：社区行为规范与漏洞披露渠道。

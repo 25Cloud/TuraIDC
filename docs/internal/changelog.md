@@ -6,6 +6,7 @@
 
 ### 新增
 
+- **CLA 签署记录与历史贡献覆盖清单落地**：新增内部件 `docs/internal/legal/cla-signing-register.md`，把 `CLA.md` 与可行性核对里承诺的「贡献者签署记录 + 历史贡献覆盖清单」落成可核对的文件——按 git 全量历史（1171 次提交、2892 个跟踪文件）归并出 13 个身份组：3 个项目方身份组（待书面确认归属）、9 个外部贡献者组、1 个来源待核实；列出仅由未签署外部贡献者写过、当前仍在仓库的 156 个文件，作为商业许可版本的默认排除范围（核心运行时 45、测试 31、插件 25、前端 13、迁移 11、部署 10，其余为文档与配置），并给出补签流程与商业交付前的核对清单
 - **CLA 与 AGPL + 商业双许可**：新增 `CLA.md`（个人/组织贡献者许可，明确允许项目方以 AGPL 与商业许可双许可分发）、`LICENSE-COMMERCIAL.md`（200 元/年、按组织与生产部署计、可闭源使用并免除 AGPL 第 13 条义务）、`CODE_OF_CONDUCT.md`、`SECURITY.md` 与 `docs/guide/licensing.md`；README 许可章节改为双许可口径。官网新增 `/open-source` 页面与页脚「开源版本 / 开源仓库」入口，说明 AGPL 强制开源义务、源码获取方式（GitHub / `git clone` / Release 源码包）与商业授权联系方式
 - **一级分组（商品种类）URL 标识可自定义**：后台「管理商品种类」新增「URL 标识（slug）」字段，用于商品页地址 `/products/{slug}/...`，只允许 2-60 位小写字母、数字与短横线且不能是纯数字；留空自动按内部 code 生成。目录同步不再覆盖已有 slug，改完后旧链接仍可用
 - **生产一级分组 slug 整理**：`vps → cloud-server`、`dedicated（游戏云）→ game-cloud`、`hosting → web-hosting`、`domain（云电脑）→ cloud-desktop`、`type_hopdwk（面板游戏云）→ panel-game-cloud`、`type_xo7hkf（轻量云）→ light-cloud`、`invalid_products → invalid-products`；`bare-metal` / `nat` / `isp` / `cdn` / `other` 保持。旧 code 链接由前端双匹配后自动规范成新地址

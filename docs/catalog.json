@@ -568,6 +568,12 @@
       "review_by": "2027-01-19"
     },
     {
+      "path": "internal/legal/cla-signing-register.md",
+      "status": "current",
+      "summary": "CLA 签署记录与历史贡献覆盖清单：贡献者身份归并、签署状态与商业版本排除范围。",
+      "review_by": "2027-01-19"
+    },
+    {
       "path": "internal/product-specs/active/log-search-archive-coordination-2026-08-01.md",
       "status": "active",
       "summary": "管理端日志检索、留存与归档的验收边界。",
