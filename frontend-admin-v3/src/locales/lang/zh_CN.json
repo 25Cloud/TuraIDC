@@ -1573,6 +1573,8 @@
       "loadUpstreamFailed": "加载上游接口失败",
       "updateUpstreamFailed": "更新上游绑定失败",
       "upstreamBindPending": "绑定请求已提交，后台正在处理，请稍后刷新查看",
+      "upstreamBindSyncing": "上游绑定已保存，上游信息正在同步，稍后会自动刷新",
+      "upstreamBindSynced": "上游信息已同步",
       "updatePriceFailed": "更新价格信息失败",
       "refundSuccess": "实例已完成退款",
       "refundFailed": "退款失败",

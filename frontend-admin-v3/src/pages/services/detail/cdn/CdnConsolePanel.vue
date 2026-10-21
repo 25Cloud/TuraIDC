@@ -471,7 +471,8 @@ async function submitServiceUpstream() {
       upstream_host_id: serviceUpstreamForm.upstream_host_id ? Number(serviceUpstreamForm.upstream_host_id) : null,
     });
     serviceUpstreamVisible.value = false;
-    MessagePlugin.success(t('services.cdnConsole.upstreamBindingUpdated'));
+    // 上游派生字段要等后台同步任务回填，此刻还没到，先提示「正在同步」
+    MessagePlugin.info(t('services.console.upstreamBindSyncing'));
     await loadDetailBase();
     // 上游数据由后台同步任务回填（队列每分钟消费一次），这里轮询等它回来
     startBindSyncPolling();

@@ -1573,6 +1573,8 @@
       "loadUpstreamFailed": "載入上游介面失敗",
       "updateUpstreamFailed": "更新上游繫結失敗",
       "upstreamBindPending": "綁定請求已提交，後台正在處理，請稍後重新整理查看",
+      "upstreamBindSyncing": "上游繫結已保存，上游資訊正在同步，稍後會自動重新整理",
+      "upstreamBindSynced": "上游資訊已同步",
       "updatePriceFailed": "更新價格資訊失敗",
       "refundSuccess": "例項已完成退款",
       "refundFailed": "退款失敗",

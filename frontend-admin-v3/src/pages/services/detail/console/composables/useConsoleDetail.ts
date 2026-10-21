@@ -22,10 +22,11 @@ export interface UseConsoleDetailOptions {
 /**
  * 实例详情加载结果：
  * - ok：正常返回；
+ * - changed：后台同步已产生新数据（响应带 _sync 变更标记）；
  * - timeout：上游响应过慢（强制刷新时请求已提交，后台仍在同步）；
  * - failed：请求真的失败。
  */
-export type DetailLoadStatus = 'ok' | 'timeout' | 'failed';
+export type DetailLoadStatus = 'ok' | 'changed' | 'timeout' | 'failed';
 
 /**
  * 「同步信息」的结果：详情刷新状态 + 电源状态是否暂不可用。
@@ -127,9 +128,15 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
     detail.value = mergeConsoleDetail(detail.value, patch);
   }
 
-  async function loadDetailBase(forceRefresh = false): Promise<DetailLoadStatus> {
+  /**
+   * 拉取实例详情。
+   *
+   * @param forceRefresh 是否强制回源上游（refresh=1）
+   * @param silent 静默模式：轮询补齐时用，不切 loading 态、不弹错误提示
+   */
+  async function loadDetailBase(forceRefresh = false, silent = false): Promise<DetailLoadStatus> {
     if (!serviceId.value) return 'ok';
-    detailLoading.value = true;
+    if (!silent) detailLoading.value = true;
     try {
       const res = await clientApi.serviceDetail(serviceId.value, forceRefresh ? { params: { refresh: 1 } } : undefined);
       const payload = normalizeConsoleDetail(res.data || {});
@@ -140,7 +147,8 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
           const fresh = await clientApi.serviceDetail(serviceId.value);
           detail.value = normalizeConsoleDetail(fresh.data || {});
         }
-        MessagePlugin.info(t('services.console.infoUpdated'));
+        if (!silent) MessagePlugin.info(t('services.console.infoUpdated'));
+        return 'changed';
       }
       return 'ok';
     } catch (error: unknown) {
@@ -149,10 +157,10 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
       if (forceRefresh && isSlowResponseError(error)) {
         return 'timeout';
       }
-      MessagePlugin.error(resolveErrorMessage(error, t('services.console.loadInstanceFailed')));
+      if (!silent) MessagePlugin.error(resolveErrorMessage(error, t('services.console.loadInstanceFailed')));
       return 'failed';
     } finally {
-      detailLoading.value = false;
+      if (!silent) detailLoading.value = false;
     }
   }
 
@@ -185,6 +193,10 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
 
   // 切换上游绑定后，新上游主机的 IP / 系统 / 连接信息要等后台同步任务回填，
   // 而队列默认每分钟消费一次；不轮询的话页面会一直空着，只能靠用户手动刷新。
+  //
+  // 轮询只拉「本地详情」：管理端的 remote-status 接口是强制回源的，
+  // 拿它轮询等于每一拍都打一次上游；本地详情命中后端 30s 缓存、不回源，
+  // 真正的上游拉取由后端派发的后台同步任务完成（带 10 秒节流，只拉一次）。
   let bindSyncPollTimer: number | null = null;
   let bindSyncPollAttempts = 0;
 
@@ -201,16 +213,27 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
 
   function startBindSyncPolling(): void {
     stopBindSyncPolling();
+
+    const targetServiceId = serviceId.value;
+    if (!targetServiceId) return;
     bindSyncPollAttempts = 0;
 
     const tick = async () => {
       bindSyncPollAttempts += 1;
-      await loadRemoteStatus(true);
+      const status = await loadDetailBase(false, true);
 
-      const synced = String(detail.value.upstream?.dedicated_ip || '').trim() !== '';
-      if (synced) {
+      // 换了实例就停：旧实例的轮询不该继续打扰新实例
+      if (serviceId.value !== targetServiceId) {
         stopBindSyncPolling();
-        MessagePlugin.success(t('services.console.statusRefreshed'));
+        return;
+      }
+
+      // 后台同步已回填：详情带 _sync 变更标记，或上游状态/系统已重新写回快照
+      const upstream = detail.value.upstream;
+      const snapshotFilled = String(upstream?.status || '').trim() !== '' || String(upstream?.os || '').trim() !== '';
+      if (status === 'changed' || snapshotFilled) {
+        stopBindSyncPolling();
+        MessagePlugin.success(t('services.console.upstreamBindSynced'));
         return;
       }
       if (bindSyncPollAttempts >= BIND_SYNC_POLL_MAX_ATTEMPTS) {

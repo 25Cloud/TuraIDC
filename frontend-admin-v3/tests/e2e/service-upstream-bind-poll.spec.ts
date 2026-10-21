@@ -7,7 +7,10 @@ import { expect, test } from '@playwright/test';
  * 由后台同步任务回填，而队列默认每分钟消费一次——不轮询的话，页面会一直空着，
  * 只能靠管理员手动刷新页面才看得到新数据。
  *
- * 期望：保存成功后前端开始轮询 remote-status，直到上游数据回填为止。
+ * 期望：
+ * 1. 保存成功后前端开始轮询，直到上游数据回填为止；
+ * 2. 轮询只打本地详情接口（命中后端 30s 缓存），不许打管理端那个强制回源的
+ *    remote-status 接口——否则每拍都回源一次上游，几分钟能打几十次。
  */
 
 const USER_ID = 1086;
@@ -16,10 +19,11 @@ const DETAIL_PATH = `/v2/admin/users/${USER_ID}/services/${SERVICE_ID}`;
 
 interface ServiceDetailOverrides {
   upstream?: Record<string, unknown>;
+  syncChanged?: boolean;
 }
 
 function serviceDetail(overrides: ServiceDetailOverrides = {}): Record<string, unknown> {
-  return {
+  const payload: Record<string, unknown> = {
     id: SERVICE_ID,
     user_id: USER_ID,
     name: '30 vCPU 16G',
@@ -34,15 +38,23 @@ function serviceDetail(overrides: ServiceDetailOverrides = {}): Record<string, u
     upstream: {
       provider_key: 'zjmf_finance_api',
       host_id: 10308,
-      status: 'Active',
+      status: '',
+      os: '',
       dedicated_ip: '',
       ...(overrides.upstream || {}),
     },
     actions: { refresh: true, module_status: true, power: true },
   };
+
+  if (overrides.syncChanged) {
+    payload._sync = { changed: true, changed_at: '2026-10-21 10:00:00' };
+  }
+
+  return payload;
 }
 
-test('切换上游绑定后轮询远端状态直到上游数据回填', async ({ page }) => {
+test('切换上游绑定后轮询本地详情直到上游数据回填', async ({ page }) => {
+  const detailCalls = { count: 0 };
   const remoteStatusCalls = { count: 0 };
   const metaCalls = { count: 0 };
 
@@ -72,12 +84,21 @@ test('切换上游绑定后轮询远端状态直到上游数据回填', async ({
 
     if (pathname === `${DETAIL_PATH}/remote-status`) {
       remoteStatusCalls.count += 1;
-      // 第一次还没回填，第二次才带上上游 IP（模拟后台同步任务落地）
-      if (remoteStatusCalls.count < 2) return respond({});
-      return respond({ upstream: { provider_key: 'zjmf_finance_api', host_id: 10308, dedicated_ip: '203.0.113.10' } });
+      return respond({});
     }
 
-    if (pathname === DETAIL_PATH) return respond(serviceDetail());
+    if (pathname === DETAIL_PATH) {
+      detailCalls.count += 1;
+      // 前两次还没回填（首屏 + 保存后立即刷新），第三次起后台同步任务已落地
+      if (detailCalls.count < 3) return respond(serviceDetail());
+      return respond(
+        serviceDetail({
+          upstream: { status: 'Active', os: 'Ubuntu-24.04-LTS-x64', dedicated_ip: '203.0.113.10' },
+          syncChanged: true,
+        }),
+      );
+    }
+
     if (pathname === `${DETAIL_PATH}/connection`) return respond({});
     if (pathname === `${DETAIL_PATH}/console/capabilities`) return respond({});
     if (pathname === `${DETAIL_PATH}/module-status`) {
@@ -102,9 +123,11 @@ test('切换上游绑定后轮询远端状态直到上游数据回填', async ({
   await dialog.getByRole('button', { name: '保存' }).click();
 
   await expect.poll(() => metaCalls.count, { message: '上游绑定必须提交到后端' }).toBe(1);
-  // 保存后必须继续轮询远端状态，等后台同步把上游数据回填
+  // 保存成功后必须继续轮询，等上游数据回填
   await expect
-    .poll(() => remoteStatusCalls.count, { message: '保存成功后必须轮询 remote-status 等上游数据回填' })
-    .toBeGreaterThan(1);
-  await expect(page.locator('.t-message').filter({ hasText: '实例状态已刷新' })).toBeVisible();
+    .poll(() => detailCalls.count, { message: '保存成功后必须轮询本地详情等上游数据回填' })
+    .toBeGreaterThanOrEqual(3);
+  await expect(page.locator('.t-message').filter({ hasText: '上游信息已同步' })).toBeVisible();
+  // 轮询不许打管理端那个强制回源的 remote-status 接口（首屏那一次除外）
+  expect(remoteStatusCalls.count).toBe(1);
 });
