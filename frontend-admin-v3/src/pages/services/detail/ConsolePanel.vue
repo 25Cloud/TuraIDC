@@ -295,6 +295,7 @@ import { userApi } from '@/api/user';
 import { t } from '@/locales';
 import { fieldValue, formatMoney } from '@/utils/format';
 import { required } from '@/utils/formRules';
+import { isSlowResponseError } from '@/utils/request';
 import { errorMessage } from '@/utils/userMessage';
 
 import ServiceHeaderPanel from './components/ServiceHeaderPanel.vue';
@@ -525,7 +526,12 @@ async function submitServiceUpstream() {
     MessagePlugin.success(t('services.cdnConsole.upstreamBindingUpdated'));
     await loadDetailBase();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, t('services.console.updateUpstreamFailed')));
+    if (isSlowResponseError(error)) {
+      // 上游响应过慢：绑定请求已提交、后台仍在处理，用中性提示代替红色失败
+      MessagePlugin.info(t('services.console.upstreamBindPending'));
+    } else {
+      MessagePlugin.error(errorMessage(error, t('services.console.updateUpstreamFailed')));
+    }
   } finally {
     serviceUpstreamSubmitting.value = false;
   }

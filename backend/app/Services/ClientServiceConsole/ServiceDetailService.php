@@ -554,14 +554,18 @@ class ServiceDetailService
 
         $natPayload = [];
 
-        try {
-            $natPayload = $resolvedJwt !== '' ? $this->fetchNatRemoteConnection($supplier, $hostId, $resolvedJwt) : [];
-        } catch (\Throwable $exception) {
-            Log::info('[实例详情] NAT远程地址获取失败', [
-                'service_id' => $service->id,
-                'host_id' => $hostId,
-                'message' => $exception->getMessage(),
-            ]);
+        // 只有 NAT 控制台的实例才需要上游 NAT 远程地址，其余商品抓回来也是空的，
+        // 却要为此多付一次网页请求（生产实测 1-2 秒）。
+        if ($this->shouldFetchNatRemote($service)) {
+            try {
+                $natPayload = $resolvedJwt !== '' ? $this->fetchNatRemoteConnection($supplier, $hostId, $resolvedJwt) : [];
+            } catch (\Throwable $exception) {
+                Log::info('[实例详情] NAT远程地址获取失败', [
+                    'service_id' => $service->id,
+                    'host_id' => $hostId,
+                    'message' => $exception->getMessage(),
+                ]);
+            }
         }
 
         return [
@@ -569,8 +573,33 @@ class ServiceDetailService
             'runtime' => is_array($statusPayload) ? $statusPayload : [],
             'nat' => $natPayload,
             'jwt' => $resolvedJwt,
-            'area_html' => $this->fetchAreaHtmlFragments($runtime, $supplier, $hostId, $resolvedJwt),
+            'area_html' => $this->shouldFetchAreaFragments($service)
+                ? $this->fetchAreaHtmlFragments($runtime, $supplier, $hostId, $resolvedJwt)
+                : [],
         ];
+    }
+
+    /**
+     * 云服务器（console_template=compute）不需要抓上游自定义区域 HTML。
+     *
+     * 自定义区域片段只用于拼面板入口（PanelAccessExtractor），而云服务器的区域页
+     * 是快照/备份/安全组这类控制台页，抓回来拼不出面板。生产实测 3 个区域页要 18 秒，
+     * 一次详情刷新被顶到 26 秒，客户端 10 秒超时后界面报「同步失败」。
+     * 面板型商品（CDN/虚拟主机）保持原样抓取。
+     */
+    private function shouldFetchAreaFragments(Service $service): bool
+    {
+        $template = strtolower(trim((string) ($service->product?->console_template ?? '')));
+
+        return $template !== Product::CONSOLE_TEMPLATE_COMPUTE;
+    }
+
+    /**
+     * 只有 NAT 控制台的实例才需要上游 NAT 远程地址。
+     */
+    private function shouldFetchNatRemote(Service $service): bool
+    {
+        return $this->resolverService->resolveConsoleMode($service) === 'nat';
     }
 
     /**
@@ -1071,6 +1100,18 @@ class ServiceDetailService
 
         Cache::put($dispatchKey, true, now()->addSeconds(10));
         ServiceConsoleSyncJob::dispatch($service->id, $service->user_id);
+    }
+
+    /**
+     * 派发后台同步任务，供「本地写完就返回」的场景使用。
+     *
+     * 改上游绑定这类操作只是改一个 ID，不该等上游：上游详情要 20s+，
+     * 等下去客户端会先超时断开，界面报「失败」，而库里其实早就改完了。
+     * 所以本地写立即返回，远端数据交给后台任务去拉。
+     */
+    public function dispatchBackgroundSync(Service $service): void
+    {
+        $this->dispatchAsyncSync($service);
     }
 
     // ── Private helpers ────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import { computed, reactive, ref, shallowRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { t } from '@/locales';
+import { isSlowResponseError } from '@/utils/request';
 
 import type { ConsoleServiceDetail, ServiceConsoleCapabilities } from '../types';
 import { createServiceConsoleApi } from './adminServiceApi';
@@ -16,6 +17,22 @@ import {
 
 export interface UseConsoleDetailOptions {
   userId: number | string;
+}
+
+/**
+ * 实例详情加载结果：
+ * - ok：正常返回；
+ * - timeout：上游响应过慢（强制刷新时请求已提交，后台仍在同步）；
+ * - failed：请求真的失败。
+ */
+export type DetailLoadStatus = 'ok' | 'timeout' | 'failed';
+
+/**
+ * 「同步信息」的结果：详情刷新状态 + 电源状态是否暂不可用。
+ */
+export interface RefreshHostStatusResult {
+  detailStatus: DetailLoadStatus;
+  powerUnavailable: boolean;
 }
 
 // 已提示过的后台同步变更标记时间戳，避免同一标记重复弹提示
@@ -110,8 +127,8 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
     detail.value = mergeConsoleDetail(detail.value, patch);
   }
 
-  async function loadDetailBase(forceRefresh = false) {
-    if (!serviceId.value) return;
+  async function loadDetailBase(forceRefresh = false): Promise<DetailLoadStatus> {
+    if (!serviceId.value) return 'ok';
     detailLoading.value = true;
     try {
       const res = await clientApi.serviceDetail(serviceId.value, forceRefresh ? { params: { refresh: 1 } } : undefined);
@@ -125,8 +142,15 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
         }
         MessagePlugin.info(t('services.console.infoUpdated'));
       }
+      return 'ok';
     } catch (error: unknown) {
+      // 强制刷新时上游回源过慢：请求已提交、后台仍在同步，不按失败报错，
+      // 交给调用方给中性提示，避免误报「同步失败」
+      if (forceRefresh && isSlowResponseError(error)) {
+        return 'timeout';
+      }
       MessagePlugin.error(resolveErrorMessage(error, t('services.console.loadInstanceFailed')));
+      return 'failed';
     } finally {
       detailLoading.value = false;
     }
@@ -165,9 +189,9 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
    * 电源状态是辅助信息：实例关机、暂停或上游接口临时不可用时读不到，
    * 但到期时间、商品、IP 仍要同步，所以这里吞掉电源状态的失败。
    *
-   * @returns 电源状态是否暂不可用
+   * @returns 详情刷新状态与电源状态是否暂不可用
    */
-  async function refreshHostStatus(): Promise<boolean> {
+  async function refreshHostStatus(): Promise<RefreshHostStatusResult> {
     let powerUnavailable = false;
 
     if (detail.value.actions?.module_status) {
@@ -181,9 +205,9 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
       }
     }
 
-    await loadDetailBase(true);
+    const detailStatus = await loadDetailBase(true);
 
-    return powerUnavailable;
+    return { detailStatus, powerUnavailable };
   }
 
   async function bootstrap() {

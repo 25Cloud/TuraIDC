@@ -1,4 +1,4 @@
-import { request } from '@/utils/request';
+import { request, UPSTREAM_SYNC_TIMEOUT } from '@/utils/request';
 
 import type { PagedListParams } from './types';
 
@@ -131,13 +131,33 @@ function normalizeV2ServicePayload(payload: UserServiceV2DetailPayload | Record<
   };
 }
 
+/**
+ * refresh=1 会让后端强制回源到上游重新拉数据，耗时远高于普通读取。
+ */
+function isForceRefreshRequest(params?: Record<string, unknown>): boolean {
+  return String(params?.refresh ?? '') === '1';
+}
+
 async function v2UserServiceDetail(id: number | string, serviceId: number | string, params?: Record<string, unknown>) {
+  // 强制刷新要回源上游，实测可能跑到几十秒：详情与连接两个请求都单独放宽超时，
+  // 并关掉自动重试（重试会重复触发上游同步，还会让用户多等好几轮）
+  const forceRefresh = isForceRefreshRequest(params);
   const [detailPayload, connectionPayload] = await Promise.all([
-    request.get<UserServiceV2DetailPayload>({
-      url: `/v2/admin/users/${id}/services/${serviceId}`,
-      params,
-    }),
-    request.get<UserServiceV2ConnectionPayload>({ url: `/v2/admin/users/${id}/services/${serviceId}/connection` }),
+    request.get<UserServiceV2DetailPayload>(
+      {
+        url: `/v2/admin/users/${id}/services/${serviceId}`,
+        params,
+        ...(forceRefresh ? { timeout: UPSTREAM_SYNC_TIMEOUT } : {}),
+      },
+      forceRefresh ? { retry: { count: 0, delay: 0 } } : undefined,
+    ),
+    request.get<UserServiceV2ConnectionPayload>(
+      {
+        url: `/v2/admin/users/${id}/services/${serviceId}/connection`,
+        ...(forceRefresh ? { timeout: UPSTREAM_SYNC_TIMEOUT } : {}),
+      },
+      forceRefresh ? { retry: { count: 0, delay: 0 } } : undefined,
+    ),
   ]);
   const service = normalizeV2ServicePayload(detailPayload);
 
@@ -250,7 +270,12 @@ export const userApi = {
     request.delete({ url: `/v2/admin/users/${id}/services/${serviceId}` }),
   updateServiceMeta: (id: number | string, serviceId: number | string, data: ServiceMetaPayload) =>
     request
-      .put<UserServiceV2DetailPayload>({ url: `/v2/admin/users/${id}/services/${serviceId}/meta`, data })
+      .put<UserServiceV2DetailPayload>({
+        url: `/v2/admin/users/${id}/services/${serviceId}/meta`,
+        data,
+        // 绑定上游会联动上游接口，实测可能很慢：单独放宽超时
+        timeout: UPSTREAM_SYNC_TIMEOUT,
+      })
       .then(normalizeV2ServicePayload),
   manualProvisionService: (id: number | string, serviceId: number | string, data: { upstream_host_id: number }) =>
     request
@@ -310,10 +335,15 @@ export const userApi = {
     )}&module=${encodeURIComponent(moduleKey)}`;
   },
   serviceModuleStatus: (id: number | string, serviceId: number | string, params?: PageParams) =>
-    request.get<Record<string, unknown>>({
-      url: `/v2/admin/users/${id}/services/${serviceId}/module-status`,
-      params,
-    }),
+    request.get<Record<string, unknown>>(
+      {
+        url: `/v2/admin/users/${id}/services/${serviceId}/module-status`,
+        params,
+        // 电源状态要回源上游取，实测本身就很慢：单独放宽超时并关掉自动重试
+        timeout: UPSTREAM_SYNC_TIMEOUT,
+      },
+      { retry: { count: 0, delay: 0 } },
+    ),
   serviceOperationLogs: (id: number | string, serviceId: number | string, params: PageParams) =>
     request.get<{ list?: Record<string, unknown>[]; total?: number; page?: number; page_size?: number }>({
       url: `/v2/admin/users/${id}/services/${serviceId}/operation-logs`,

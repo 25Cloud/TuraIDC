@@ -293,8 +293,11 @@ class ServiceStatusSyncService
 
                         $host = $this->extractHostPayload($responses['detail_'.$service->id] ?? [], $providerKey);
                         $runtime = $this->extractRuntimePayload($responses['runtime_'.$service->id] ?? [], $service, $host, $providerKey);
+                        if ($runtime['error'] !== null) {
+                            $this->logRuntimeDegraded($service, $supplier, $runtime['error']);
+                        }
 
-                        $this->syncServiceSnapshot($service, $host, $runtime);
+                        $this->syncServiceSnapshot($service, $host, $runtime['payload'], $runtime['error']);
                         $summary['synced']++;
                     } catch (\Throwable $exception) {
                         $summary['failed']++;
@@ -373,8 +376,15 @@ class ServiceStatusSyncService
 
                         $host = is_array($response['host'] ?? null) ? $response['host'] : [];
                         $runtime = is_array($response['runtime'] ?? null) ? $response['runtime'] : [];
+                        $runtimeError = trim((string) ($response['runtime_error'] ?? ''));
 
-                        $this->syncServiceSnapshot($service, $host, $runtime);
+                        // 实例详情是主数据：上游没返回实例数据说明实例读不到（已删除/不存在），
+                        // 必须判失败，不能被「电源状态失败降级为仅同步详情」的规则吞掉。
+                        if ($host === []) {
+                            throw new BusinessException('读取主机详情失败：上游未返回实例数据', 42200);
+                        }
+
+                        $this->syncServiceSnapshot($service, $host, $runtime, $runtimeError !== '' ? $runtimeError : null);
                         $summary['synced']++;
                     } catch (\Throwable $exception) {
                         $summary['failed']++;
@@ -482,10 +492,19 @@ class ServiceStatusSyncService
         return $host;
     }
 
+    /**
+     * 读取运行（电源）状态。
+     *
+     * 电源状态是辅助信息，实例详情才是主数据：读取失败时不再向上抛异常中断整条同步，
+     * 而是一律降级为「仅同步实例详情」，失败原因随结果返回，由调用方写进 status_sync_error。
+     *
+     * 上游实例真的不存在或已删除由 host detail 那条路径判定（见 extractHostPayload），
+     * 两条路径互相独立：这里放宽的只是运行状态这条。
+     */
     private function extractRuntimePayload(array $response, Service $service, array $host, string $providerKey): array
     {
         try {
-            return $this->extractParallelPayload($response, '读取电源状态', $providerKey);
+            return ['payload' => $this->extractParallelPayload($response, '读取电源状态', $providerKey), 'error' => null];
         } catch (\Throwable $exception) {
             $runtimeUnavailableContext = $this->resolveRuntimeUnavailableContext($response, $host);
 
@@ -496,10 +515,12 @@ class ServiceStatusSyncService
                     'upstream_status' => $runtimeUnavailableContext['upstream_status'],
                 ]);
 
-                return [];
+                return ['payload' => [], 'error' => null];
             }
 
-            throw $exception;
+            // 电源状态是辅助信息，实例详情才是主数据：这里不再抛异常中断整条同步，
+            // 失败原因交给调用方写进 status_sync_error 并记日志。
+            return ['payload' => [], 'error' => $exception->getMessage()];
         }
     }
 
@@ -630,7 +651,7 @@ class ServiceStatusSyncService
         return is_array($response['data'] ?? null) ? $response['data'] : $response;
     }
 
-    private function syncServiceSnapshot(Service $service, array $host, array $runtime = []): void
+    private function syncServiceSnapshot(Service $service, array $host, array $runtime = [], ?string $runtimeError = null): void
     {
         $now = now()->format('Y-m-d H:i:s');
         $currentProvisionData = $this->serviceProvisionData($service, includeSecrets: true);
@@ -676,7 +697,7 @@ class ServiceStatusSyncService
             'last_synced_at' => $now,
             'last_status_sync_at' => $now,
             'last_status_sync_attempt_at' => $now,
-            'status_sync_error' => null,
+            'status_sync_error' => $this->resolveStatusSyncError($runtimeError),
         ]);
 
         $persistedProvisionData = $this->bindingResolver()->sanitizeServiceProvisionData($provisionData);
@@ -691,6 +712,35 @@ class ServiceStatusSyncService
 
         $service->refresh()->loadMissing('product.supplier');
         $this->bindingWriter()->syncServiceState($service, $service->product, $provisionData);
+    }
+
+    /**
+     * 电源状态降级原因：写进 status_sync_error。
+     *
+     * 实例详情已经同步成功，只是电源状态没读到；把原因记在这里，
+     * 运维就能区分「整条同步失败」和「同步成功但缺电源状态」。
+     */
+    private function resolveStatusSyncError(?string $runtimeError): ?string
+    {
+        $message = trim((string) $runtimeError);
+
+        return $message === '' ? null : mb_substr($message, 0, 200);
+    }
+
+    /**
+     * 电源状态读取失败时的降级日志。
+     *
+     * 电源状态是辅助信息，读不到不影响实例详情同步；但故障必须留痕，
+     * 否则运维无从判断「实例详情已同步、只是电源状态没读到」。
+     */
+    private function logRuntimeDegraded(Service $service, Supplier $supplier, string $message): void
+    {
+        Log::warning('[定时任务] 读取电源状态失败，降级为仅同步实例详情', [
+            'service_id' => $service->id,
+            'supplier_id' => $supplier->id,
+            'host_id' => $this->resolveHostId($service),
+            'message' => $message,
+        ]);
     }
 
     private function markSyncFailure(Service $service, string $message): void

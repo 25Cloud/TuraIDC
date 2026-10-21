@@ -79,17 +79,32 @@ final class ZjmfStatusService
 
                 try {
                     $host = $this->extractHostPayload($responses['detail_'.$serviceId] ?? []);
-                    $runtime = $this->resolveHostRuntimePayload($supplier, $hostId, $jwt, $host);
-
-                    $results[$serviceId] = [
-                        'host' => $this->normalizeHost($host),
-                        'runtime' => $this->normalizeRuntime($runtime),
-                    ];
                 } catch (\Throwable $exception) {
+                    // 实例详情是主数据：读不到就是真故障（上游实例已删除/不存在），整条同步判失败。
                     $results[$serviceId] = [
                         'error' => $exception->getMessage(),
                     ];
+
+                    continue;
                 }
+
+                // 电源状态是辅助信息，实例详情才是主数据：读取失败只降级为「仅同步实例详情」，
+                // 不中断整条同步，失败原因放进 runtime_error 交给调用方留痕。
+                $runtime = $this->resolveHostRuntimePayload($supplier, $hostId, $jwt, $host);
+
+                if ($runtime['error'] !== null) {
+                    Log::warning('[ZJMF 财务状态同步] 读取电源状态失败，降级为仅同步实例详情', [
+                        'service_id' => $serviceId,
+                        'host_id' => $hostId,
+                        'message' => $runtime['error'],
+                    ]);
+                }
+
+                $results[$serviceId] = [
+                    'host' => $this->normalizeHost($host),
+                    'runtime' => $this->normalizeRuntime($runtime['payload']),
+                    'runtime_error' => $runtime['error'],
+                ];
             }
         }
 
@@ -201,14 +216,23 @@ final class ZjmfStatusService
      * $jwt 按引用传入：fetchRuntimeStatus() 遇到 401 会内部刷新 JWT，刷新后的新 token
      * 需要回传给 syncServiceStatuses()，供同一批次后续主机复用，否则后续主机会继续
      * 拿已失效的 token 请求。
+     *
+     * 返回值为「运行状态载荷 + 失败原因」：电源状态读不到时不再抛异常，
+     * 而是降级为仅同步实例详情，失败原因由调用方写进同步失败原因字段。
      */
     private function resolveHostRuntimePayload(Supplier $supplier, int $hostId, string &$jwt, array $host): array
     {
         if ($this->isHostingHost($host)) {
-            return [];
+            return ['payload' => [], 'error' => null];
         }
 
-        return $this->extractRuntimePayload($this->fetchRuntimeStatus($supplier, $hostId, $jwt), $host);
+        try {
+            return $this->extractRuntimePayload($this->fetchRuntimeStatus($supplier, $hostId, $jwt), $host);
+        } catch (\Throwable $exception) {
+            // 传输层失败（网络异常、刷新 JWT 失败）同样只是电源状态读不到，
+            // 降级为仅同步实例详情，并把原因交给调用方留痕。
+            return ['payload' => [], 'error' => $exception->getMessage()];
+        }
     }
 
     /** 上游 host_data.type 是否属于虚拟主机类（无电源状态语义） */
@@ -222,7 +246,10 @@ final class ZjmfStatusService
     private function extractRuntimePayload(array $response, array $host): array
     {
         try {
-            return $this->extractParallelPayload($response, '读取电源状态');
+            return [
+                'payload' => $this->extractParallelPayload($response, '读取电源状态'),
+                'error' => null,
+            ];
         } catch (\Throwable $exception) {
             $runtimeUnavailableContext = $this->resolveRuntimeUnavailableContext($response, $host);
 
@@ -232,10 +259,12 @@ final class ZjmfStatusService
                     'upstream_status' => $runtimeUnavailableContext['upstream_status'],
                 ]);
 
-                return [];
+                return ['payload' => [], 'error' => null];
             }
 
-            throw $exception;
+            // 电源状态是辅助信息，实例详情才是主数据：这里不再抛异常中断整条同步，
+            // 失败原因交给调用方降级并留痕。
+            return ['payload' => [], 'error' => $exception->getMessage()];
         }
     }
 

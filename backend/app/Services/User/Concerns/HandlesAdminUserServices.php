@@ -286,6 +286,7 @@ trait HandlesAdminUserServices
                 $provisionData['upstream_host_id'] = $upstreamHostId;
                 $provisionData['last_manual_linked_at'] = now()->format('Y-m-d H:i:s');
                 $upstreamHostChanged = $upstreamHostId !== $previousUpstreamHostId;
+                $provisionData = $this->syncUpstreamHostIdsAfterSwitch($provisionData, $upstreamHostId, $upstreamHostChanged);
             }
 
             if ($supplierChanged || $supplierProductChanged || $upstreamHostChanged) {
@@ -455,7 +456,22 @@ trait HandlesAdminUserServices
             }
         }
 
-        return $this->clientServiceConsoleService->getDetailForUser($user, $serviceId, true);
+        // 上游绑定切换属于「本地写」：事务提交 + 绑定行同步完成后必须立刻返回。
+        //
+        // 这里此前强制 getDetailForUser($user, $serviceId, true) 同步拉取上游，
+        // 生产实测单次 fetchRemoteState 耗时 26.2s（详情 0.9s + 电源状态 5.4s +
+        // 3 个 area HTML 页 6.7/5.0/6.4s + NAT 抓取），远超管理端 axios 的 10s 超时：
+        // nginx 记 499、界面提示「失败」，但数据库其实已经写入
+        // （service_upstream_bindings 已出现新的 upstream_service_id 行）。
+        //
+        // 因此改为读本地快照立即返回，上游数据交给后台同步任务补齐。
+        if ($supplierChanged || $supplierProductChanged || $upstreamHostChanged) {
+            // 上游侧身份变了，事务里已清空来自上游的本地快照字段：
+            // 派发一次后台同步，把新上游主机的数据拉回来（内部 10 秒节流，不会打爆上游）。
+            app(ServiceDetailService::class)->dispatchBackgroundSync($service);
+        }
+
+        return $this->clientServiceConsoleService->getDetailForUser($user, $serviceId, false);
     }
 
     /**
@@ -1428,6 +1444,27 @@ trait HandlesAdminUserServices
         return $includeSecrets
             ? $provisionData
             : $this->bindingResolver()->sanitizeServiceProvisionData($provisionData);
+    }
+
+    /**
+     * 切换上游主机后收敛 provision_data 里的上游主机 ID 列表。
+     *
+     * upstream_host_ids 是开通时写入的主机列表，切换上游主机后它仍指向切换前的主机；
+     * 继续保留会让绑定快照（service_upstream_bindings.resource_json）与管理端服务列表
+     * 继续显示旧主机，因此切换后统一收敛成新主机。
+     *
+     * @param  array<string, mixed>  $provisionData
+     * @return array<string, mixed>
+     */
+    private function syncUpstreamHostIdsAfterSwitch(array $provisionData, int $upstreamHostId, bool $upstreamHostChanged): array
+    {
+        if (! $upstreamHostChanged) {
+            return $provisionData;
+        }
+
+        $provisionData['upstream_host_ids'] = [$upstreamHostId];
+
+        return $provisionData;
     }
 
     private function resolveManualServiceExpiresAt(mixed $expiresAt, string $billingCycle, int $status): ?Carbon

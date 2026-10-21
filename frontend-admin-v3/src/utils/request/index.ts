@@ -255,3 +255,28 @@ function createAxios(opt?: Partial<CreateAxiosOptions>) {
   );
 }
 export const request = createAxios();
+
+/**
+ * 上游同步类请求专用超时（毫秒）。
+ *
+ * 上游面板接口本身就慢（实测 module-status 约 5.4s、详情 refresh=1 约 26s），
+ * 走全局默认的 10s 会被前端提前掐断并误报「同步失败」，因此只给这几个请求单独放宽，
+ * 不动全局默认超时。
+ */
+export const UPSTREAM_SYNC_TIMEOUT = 60 * 1000;
+
+/**
+ * 判断请求是否因「上游响应过慢」失败。
+ *
+ * 覆盖三类情况：
+ * 1. 前端自身超时：axios 抛 ECONNABORTED / ETIMEDOUT，message 形如 timeout of 60000ms exceeded；
+ * 2. 后端等待上游超时：网关或后端返回 504 Gateway Timeout；
+ * 3. 其余带 timeout 字样的错误信息。
+ */
+export function isSlowResponseError(error: unknown): boolean {
+  const payload = error as { code?: string; message?: string; response?: { status?: number } } | null;
+  if (!payload) return false;
+  if (payload.code === 'ECONNABORTED' || payload.code === 'ETIMEDOUT') return true;
+  if (Number(payload.response?.status || 0) === 504) return true;
+  return /timeout/i.test(String(payload.message || ''));
+}

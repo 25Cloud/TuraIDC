@@ -4,6 +4,7 @@ import { computed, onUnmounted, ref, watch } from 'vue';
 
 import { t } from '@/locales';
 import { formatMoney } from '@/utils/format';
+import { isSlowResponseError } from '@/utils/request';
 
 import { createServiceConsoleApi } from './composables/adminServiceApi';
 import {
@@ -244,7 +245,17 @@ export function useServiceConsole(userId: number | string) {
   async function handleSyncStatus() {
     statusSyncing.value = true;
     try {
-      const powerUnavailable = await refreshHostStatus();
+      const { detailStatus, powerUnavailable } = await refreshHostStatus();
+      if (detailStatus === 'timeout') {
+        // 上游回源太慢，本次没等到结果：同步请求已提交、后台仍在同步，
+        // 用中性提示代替红色失败，避免误导运维
+        MessagePlugin.info(t('services.console.syncStatusPending'));
+        return;
+      }
+      if (detailStatus === 'failed') {
+        // 详情刷新真的失败，loadDetailBase 已经给过错误提示，这里不再补一条成功
+        return;
+      }
       if (powerUnavailable) {
         MessagePlugin.warning(t('services.console.statusSyncedPartial'));
       } else {
@@ -256,6 +267,10 @@ export function useServiceConsole(userId: number | string) {
       }
     } catch (error: unknown) {
       const runtimeError = error as { message?: string };
+      if (isSlowResponseError(error)) {
+        MessagePlugin.info(t('services.console.syncStatusPending'));
+        return;
+      }
       MessagePlugin.error(String(runtimeError?.message || '').trim() || t('services.console.syncStatusFailed'));
     } finally {
       statusSyncing.value = false;

@@ -342,6 +342,82 @@ class AdminUserServiceUpstreamBindingTest extends TestCase
         $this->assertSame(90002, $provisionData['upstream_host_id'] ?? null);
     }
 
+    public function test_switching_upstream_host_converges_stale_upstream_host_ids(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+
+        $user = User::query()->create([
+            'email' => 'service-host-switch-'.$suffix.'@example.com',
+            'password' => 'Temp@123456',
+            'phone' => '13'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT),
+            'status' => 1,
+        ]);
+
+        $supplier = Supplier::query()->create([
+            'name' => 'Zjmf Host Switch Supplier '.$suffix,
+            'code' => 'zjmf-host-switch-'.$suffix,
+            'interface_type' => ProviderKey::ZJMF_FINANCE_API,
+            'api_url' => 'https://supplier-host-switch-'.$suffix.'.example.com',
+            'api_username' => 'demo',
+            'api_key' => 'secret',
+            'status' => 1,
+            'sort_order' => 1,
+        ]);
+
+        $product = Product::query()->create([
+            'name' => 'Zjmf Host Switch Product '.$suffix,
+            'product_type' => 'server',
+            'pricing' => ['monthly' => '86.00'],
+            'setup_fee' => '0.00',
+            'config_options' => [],
+            'purchase_requires' => [],
+            'stock' => -1,
+            'status' => 1,
+            'auto_setup' => 1,
+            'supplier_id' => (int) $supplier->id,
+            'supplier_product_id' => 81001,
+            'provision_module' => ProviderKey::ZJMF_FINANCE_API,
+        ]);
+        $this->createProductUpstreamBinding($supplier, $product, 81001);
+
+        $service = Service::query()->create([
+            'user_id' => (int) $user->id,
+            'product_id' => (int) $product->id,
+            'name' => 'Host Switch Service '.$suffix,
+            'domain' => 'host-switch-'.$suffix.'.example.com',
+            'billing_cycle' => 'monthly',
+            'amount' => '86.00',
+            'status' => ServiceStatus::ACTIVE,
+            'locked_pricing' => [],
+            'provision_data' => [
+                'source_type' => 'upstream',
+                'provider_key' => ProviderKey::ZJMF_FINANCE_API,
+                'supplier_id' => (int) $supplier->id,
+                'upstream_product_id' => 81001,
+                'upstream_host_id' => 92001,
+                // 开通时写入的旧主机列表，切换上游主机后必须收敛成新主机
+                'upstream_host_ids' => [92001],
+            ],
+            'expires_at' => now()->addMonth(),
+            'auto_renew' => 1,
+        ]);
+
+        app(UserService::class)->updateServiceMeta($user, (int) $service->id, [
+            'upstream_host_id' => 92002,
+        ]);
+
+        $provisionData = (array) $service->refresh()->provision_data;
+
+        $this->assertSame(92002, $provisionData['upstream_host_id'] ?? null);
+        $this->assertSame([92002], $provisionData['upstream_host_ids'] ?? null,
+            '切换上游主机后 provision_data 不能继续指向旧主机');
+        $this->assertDatabaseHas('service_upstream_bindings', [
+            'service_id' => (int) $service->id,
+            'provider_key' => ProviderKey::ZJMF_FINANCE_API,
+            'upstream_service_id' => '92002',
+        ]);
+    }
+
     public function test_rebind_supplier_corrects_mismatched_provider(): void
     {
         $suffix = bin2hex(random_bytes(4));
