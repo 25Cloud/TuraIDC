@@ -568,6 +568,12 @@
       "review_by": "2027-01-19"
     },
     {
+      "path": "internal/legal/cla-outreach-template.md",
+      "status": "current",
+      "summary": "R1 补签执行包：联系函模板、追溯覆盖声明原文、签署记录登记与话术边界。",
+      "review_by": "2027-01-19"
+    },
+    {
       "path": "internal/legal/cla-signing-register.md",
       "status": "current",
       "summary": "CLA 签署记录与历史贡献覆盖清单：贡献者身份归并、签署状态与商业版本排除范围。",
