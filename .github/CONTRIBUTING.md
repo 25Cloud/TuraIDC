@@ -50,7 +50,7 @@
 
 ## 许可与 CLA
 
-本项目采用 **AGPL-3.0-or-later + 商业许可** 的双许可模式，完整说明见 [README 的开源许可章节](../README.md#-开源许可) 与 [docs/guide/licensing.md](../docs/guide/licensing.md)。
+本项目采用 **AGPL-3.0-or-later + 商业许可** 的双许可模式，完整说明见 [README 的开源许可章节](../README.md#-开源许可双许可) 与 [docs/guide/licensing.md](../docs/guide/licensing.md)。
 
 提交代码前必须先签署 [贡献者许可协议（CLA）](../CLA.md)：个人贡献者在 PR 中评论「I have read the CLA Document and I hereby sign the CLA」，组织贡献者按 CLA 向 `contact@turaidc.com` 发邮件签署。CLA 自 **2026-10-21** 起生效，明确授予项目方以 AGPL 与商业许可双许可分发贡献的权利；生效日前的历史贡献默认不追溯，贡献者可自愿补签覆盖。
 
