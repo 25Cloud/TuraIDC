@@ -1575,6 +1575,7 @@
       "upstreamBindPending": "The binding request has been submitted and the backend is still processing it. Please refresh later to check the result.",
       "upstreamBindSyncing": "The upstream binding has been saved. Upstream information is syncing; the page will refresh automatically.",
       "upstreamBindSynced": "Upstream information has been synced.",
+      "upstreamBindTimeout": "Upstream information has not been filled in yet and the automatic refresh has stopped. Please refresh the page manually to check it.",
       "updatePriceFailed": "Failed to update pricing",
       "refundSuccess": "The instance has been refunded",
       "refundFailed": "Refund failed",

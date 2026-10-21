@@ -238,7 +238,8 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
       }
       if (bindSyncPollAttempts >= BIND_SYNC_POLL_MAX_ATTEMPTS) {
         stopBindSyncPolling();
-        MessagePlugin.info(t('services.console.syncStatusPending'));
+        // 自动刷新到此为止：文案要说清楚得手动刷新，不能还说「稍后会自动刷新」
+        MessagePlugin.info(t('services.console.upstreamBindTimeout'));
         return;
       }
       bindSyncPollTimer = window.setTimeout(tick, BIND_SYNC_POLL_INTERVAL_MS);

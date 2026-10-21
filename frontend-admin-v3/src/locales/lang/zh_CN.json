@@ -1575,6 +1575,7 @@
       "upstreamBindPending": "绑定请求已提交，后台正在处理，请稍后刷新查看",
       "upstreamBindSyncing": "上游绑定已保存，上游信息正在同步，稍后会自动刷新",
       "upstreamBindSynced": "上游信息已同步",
+      "upstreamBindTimeout": "上游信息暂未回填，自动刷新已停止，请手动刷新页面查看",
       "updatePriceFailed": "更新价格信息失败",
       "refundSuccess": "实例已完成退款",
       "refundFailed": "退款失败",
