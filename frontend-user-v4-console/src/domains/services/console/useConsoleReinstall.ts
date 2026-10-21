@@ -33,6 +33,7 @@ export function useConsoleReinstall(options: UseConsoleReinstallOptions) {
     os: [] as ServiceReinstallOption[],
     os_group: '',
     os_id: '',
+    request_timeout_ms: 0,
   });
 
   const reinstallGroupedOptions = computed<ReinstallGroupOption[]>(() => {
@@ -57,9 +58,12 @@ export function useConsoleReinstall(options: UseConsoleReinstallOptions) {
     reinstallState.os = [];
     reinstallState.os_group = '';
     reinstallState.os_id = '';
+    reinstallState.request_timeout_ms = 0;
     try {
       const res = await clientApi.serviceReinstallOptions(serviceId.value);
       const payload = res.data || {};
+      const timeout = Number(payload.request_timeout_ms);
+      reinstallState.request_timeout_ms = Number.isFinite(timeout) && timeout >= 18000 ? Math.min(timeout, 120000) : 0;
       reinstallState.os = Array.isArray(payload.os) ? payload.os : [];
       const firstGroup = reinstallGroupedOptions.value[0];
       reinstallState.os_group = firstGroup?.group_name || '';
@@ -107,7 +111,11 @@ export function useConsoleReinstall(options: UseConsoleReinstallOptions) {
 
     actionLoading.value = true;
     try {
-      const res = await clientApi.serviceReinstall(serviceId.value, { os_id: reinstallState.os_id });
+      const res = await clientApi.serviceReinstall(
+        serviceId.value,
+        { os_id: reinstallState.os_id },
+        reinstallState.request_timeout_ms ? { timeout: reinstallState.request_timeout_ms } : undefined,
+      );
       const payload = res.data || {};
       setOperationStatus('reinstall', t('serviceConsole.reinstall.running'));
       reinstallVisible.value = false;

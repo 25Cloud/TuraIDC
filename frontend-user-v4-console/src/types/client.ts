@@ -751,6 +751,7 @@ export interface ServiceVncCredentials {
 
 export interface ServiceVncPayload {
   url?: string;
+  launch_mode?: 'external';
   vnc_credentials?: ServiceVncCredentials | null;
   [key: string]: unknown;
 }

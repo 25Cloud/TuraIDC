@@ -28,6 +28,7 @@ use App\Services\ClientServiceConsole\ServiceUpgradeService;
 use App\Services\Integrations\Payments\PaymentGatewayManager;
 use App\Services\Integrations\Payments\PaymentGatewayOperationService;
 use App\Services\Integrations\Plugins\PaymentGatewayBindingResolver;
+use App\Services\Integrations\Plugins\PluginConsolePurchaseService;
 use App\Services\Notification\UserNotificationService;
 use App\Services\Order\PaidOrderBusinessFlowDispatcher;
 use App\Services\Provisioning\ProvisionService;
@@ -2896,7 +2897,9 @@ class PaymentService
             if ($order->type === 'upgrade') {
                 $upgradeKind = (string) data_get($order->config_pricing_snapshot ?? [], 'meta.kind', '');
 
-                if ($upgradeKind === 'host_upgrade') {
+                if ($upgradeKind === 'plugin_purchase') {
+                    app(PluginConsolePurchaseService::class)->fulfill($order);
+                } elseif ($upgradeKind === 'host_upgrade') {
                     app(ServiceUpgradeService::class)
                         ->processPaidUpgradeOrder($order);
                 } else {

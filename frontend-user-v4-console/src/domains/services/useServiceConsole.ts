@@ -158,7 +158,7 @@ export function useServiceConsole() {
   });
 
   // VNC
-  const { vncUrl, handleOpenVnc } = useConsoleVnc({
+  const { vncUrl, externalVncUrl, handleOpenVnc } = useConsoleVnc({
     serviceId,
     actionLoading,
     activeTab,
@@ -404,6 +404,7 @@ export function useServiceConsole() {
     showPassword,
     activeTab,
     vncUrl,
+    externalVncUrl,
     renewVisible,
     renewLoading,
     renewSubmitting,
