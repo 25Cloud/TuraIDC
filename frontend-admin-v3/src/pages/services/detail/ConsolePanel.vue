@@ -330,6 +330,7 @@ const {
   openPasswordDialog,
   openNameDialog,
   loadDetailBase,
+  startBindSyncPolling,
 } = serviceConsole;
 
 const activeTabModel = computed({
@@ -525,6 +526,8 @@ async function submitServiceUpstream() {
     serviceUpstreamVisible.value = false;
     MessagePlugin.success(t('services.cdnConsole.upstreamBindingUpdated'));
     await loadDetailBase();
+    // 上游数据由后台同步任务回填（队列每分钟消费一次），这里轮询等它回来
+    startBindSyncPolling();
   } catch (error) {
     if (isSlowResponseError(error)) {
       // 上游响应过慢：绑定请求已提交、后台仍在处理，用中性提示代替红色失败

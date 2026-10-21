@@ -1,5 +1,5 @@
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, reactive, ref, shallowRef, watch } from 'vue';
+import { computed, onUnmounted, reactive, ref, shallowRef, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { t } from '@/locales';
@@ -183,6 +183,51 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
     }
   }
 
+  // 切换上游绑定后，新上游主机的 IP / 系统 / 连接信息要等后台同步任务回填，
+  // 而队列默认每分钟消费一次；不轮询的话页面会一直空着，只能靠用户手动刷新。
+  let bindSyncPollTimer: number | null = null;
+  let bindSyncPollAttempts = 0;
+
+  const BIND_SYNC_POLL_INTERVAL_MS = 5000;
+  const BIND_SYNC_POLL_MAX_ATTEMPTS = 24;
+
+  function stopBindSyncPolling(): void {
+    if (bindSyncPollTimer !== null) {
+      window.clearTimeout(bindSyncPollTimer);
+      bindSyncPollTimer = null;
+    }
+    bindSyncPollAttempts = 0;
+  }
+
+  function startBindSyncPolling(): void {
+    stopBindSyncPolling();
+    bindSyncPollAttempts = 0;
+
+    const tick = async () => {
+      bindSyncPollAttempts += 1;
+      await loadRemoteStatus(true);
+
+      const synced = String(detail.value.upstream?.dedicated_ip || '').trim() !== '';
+      if (synced) {
+        stopBindSyncPolling();
+        MessagePlugin.success(t('services.console.statusRefreshed'));
+        return;
+      }
+      if (bindSyncPollAttempts >= BIND_SYNC_POLL_MAX_ATTEMPTS) {
+        stopBindSyncPolling();
+        MessagePlugin.info(t('services.console.syncStatusPending'));
+        return;
+      }
+      bindSyncPollTimer = window.setTimeout(tick, BIND_SYNC_POLL_INTERVAL_MS);
+    };
+
+    bindSyncPollTimer = window.setTimeout(tick, 3000);
+  }
+
+  onUnmounted(() => {
+    stopBindSyncPolling();
+  });
+
   /**
    * 同步信息：实例详情必须刷新成功；电源状态读取失败只降级为提示，不阻断同步。
    *
@@ -243,6 +288,8 @@ export function useConsoleDetail(options: UseConsoleDetailOptions) {
     loadDetailBase,
     loadRemoteStatus,
     refreshHostStatus,
+    startBindSyncPolling,
+    stopBindSyncPolling,
     bootstrap,
     fetchConnectionInfo,
   };

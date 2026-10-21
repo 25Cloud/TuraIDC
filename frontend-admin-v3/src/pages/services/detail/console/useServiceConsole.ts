@@ -69,6 +69,7 @@ export function useServiceConsole(userId: number | string) {
     loadDetailBase,
     loadRemoteStatus,
     refreshHostStatus,
+    startBindSyncPolling,
     bootstrap,
   } = detailComposable;
   const route = detailComposable.route;
@@ -543,6 +544,7 @@ export function useServiceConsole(userId: number | string) {
     // Detail loaders（供入口页面挂载管理端专属操作后刷新）
     loadDetailBase,
     loadRemoteStatus,
+    startBindSyncPolling,
     bootstrap,
   };
 }
