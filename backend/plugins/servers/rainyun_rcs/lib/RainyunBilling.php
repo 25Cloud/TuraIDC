@@ -41,15 +41,15 @@ final class RainyunBilling
         $accounts = app(AccountService::class);
         $current = RainyunValues::cents(number_format($accounts->cashBalance((int) $order->user_id, true), 2, '.', ''));
         $balance = $accounts->setCashBalance((int) $order->user_id, RainyunValues::money($current + $cents));
-        $reason = '雨云云盘剩余服务费返还，调整订单 '.$order->order_no;
+        $reason = '云盘剩余服务费返还，调整订单 '.$order->order_no;
         $trace = 'rainyun-resource-refund:'.$order->id;
         $transaction = AccountTransaction::query()->create([
             'user_id' => $order->user_id, 'account_type' => 'cash', 'event_type' => FinanceLedgerEventType::INVOICE_REFUND,
             'change_amount' => RainyunValues::money($cents), 'balance_after' => $balance,
             'source_type' => 'invoice', 'source_id' => $invoice->id, 'origin_type' => 'invoice', 'origin_id' => $invoice->id,
-            'remark' => $reason, 'operator' => '雨云 RCS 插件', 'trace_id' => $trace,
+            'remark' => $reason, 'operator' => 'RCS 插件', 'trace_id' => $trace,
         ]);
         app(FinanceDocumentService::class)->createBalanceRefundDocuments($invoice, null, $transaction, $cents / 100, $reason,
-            ['operator_type' => 'system', 'operator_name' => '雨云 RCS 插件', 'trace_id' => $trace]);
+            ['operator_type' => 'system', 'operator_name' => 'RCS 插件', 'trace_id' => $trace]);
     }
 }

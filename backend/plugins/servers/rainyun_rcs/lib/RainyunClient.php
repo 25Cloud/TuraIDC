@@ -15,9 +15,9 @@ final class RainyunClient
     {
         $method = strtoupper($method);
         $key = trim((string) $supplier->api_key);
-        throw_if($key === '', new BusinessException('请先配置雨云 API 密钥', 42200));
-        throw_if(! in_array($method, ['GET', 'POST', 'PATCH', 'DELETE'], true), new BusinessException('雨云请求方法无效', 42200));
-        throw_if(! str_starts_with($path, '/product/rcs/') && $path !== '/user/', new BusinessException('雨云接口路径无效', 42200));
+        throw_if($key === '', new BusinessException('请先配置 API 密钥', 42200));
+        throw_if(! in_array($method, ['GET', 'POST', 'PATCH', 'DELETE'], true), new BusinessException('请求方法无效', 42200));
+        throw_if(! str_starts_with($path, '/product/rcs/') && $path !== '/user/', new BusinessException('接口路径无效', 42200));
         $options = ['query' => $method === 'GET' ? array_merge($payload, $query) : $query];
         if ($method !== 'GET') {
             $options['json'] = $payload === [] ? new \stdClass : $payload;
@@ -30,19 +30,20 @@ final class RainyunClient
                 ->withOptions(['verify' => false, 'allow_redirects' => false])
                 ->send($method, $this->baseUrl($supplier).$path, $options);
         } catch (ConnectionException) {
-            throw new RainyunApiException('雨云接口连接失败，请检查网络；写操作结果不明时请先核对上游', uncertain: $method !== 'GET');
+            throw new RainyunApiException('接口连接失败，请检查网络；写操作结果不明时请先核对上游', uncertain: $method !== 'GET');
         }
 
         $body = $response->json();
         if (! is_array($body) || ! isset($body['code'])) {
-            throw new RainyunApiException('雨云接口未返回有效结果，请核对操作状态', uncertain: $method !== 'GET');
+            throw new RainyunApiException('接口未返回有效结果，请核对操作状态', uncertain: $method !== 'GET');
         }
         $code = (int) $body['code'];
         if (! $response->successful() || $code !== 200) {
             $message = match ($code) {
                 70027 => '请先关闭实例，再执行重装或该维护操作',
-                10005 => '雨云实例或资源不存在，请核对绑定',
-                default => '雨云操作失败，请检查接口权限、参数和账户状态（错误码 '.$code.'）',
+                70033 => '该区域至少需要一个独立 IP，请配置 IP 数量和线路后重试',
+                10005 => '实例或资源不存在，请核对绑定',
+                default => '操作失败，请检查接口权限、参数和账户状态（错误码 '.$code.'）',
             };
             throw new RainyunApiException($message, $code, $method !== 'GET' && $response->serverError());
         }
@@ -53,15 +54,15 @@ final class RainyunClient
     public function detail(Supplier $supplier, int $hostId, int $timeout = 30): array
     {
         $data = $this->request($supplier, 'GET', $this->hostPath($hostId), timeout: $timeout);
-        throw_if(! is_array($data) || ! is_array($data['Data'] ?? null), new RainyunApiException('雨云实例详情格式不正确'));
-        throw_if((int) ($data['Data']['ID'] ?? 0) !== $hostId, new RainyunApiException('雨云实例详情与绑定不一致'));
+        throw_if(! is_array($data) || ! is_array($data['Data'] ?? null), new RainyunApiException('实例详情格式不正确'));
+        throw_if((int) ($data['Data']['ID'] ?? 0) !== $hostId, new RainyunApiException('实例详情与绑定不一致'));
 
         return $data;
     }
 
     public function hostPath(int $hostId, string $suffix = ''): string
     {
-        throw_if($hostId <= 0, new BusinessException('雨云实例 ID 无效', 42200));
+        throw_if($hostId <= 0, new BusinessException('实例 ID 无效', 42200));
 
         return '/product/rcs/'.$hostId.'/'.ltrim($suffix, '/');
     }
@@ -71,7 +72,7 @@ final class RainyunClient
         $url = rtrim(trim((string) $supplier->api_url), '/');
         $parts = parse_url($url);
         throw_if(! is_array($parts) || empty($parts['host']) || ! in_array($parts['scheme'] ?? '', ['http', 'https'], true)
-            || isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment']), new BusinessException('雨云 API 地址格式不正确', 42200));
+            || isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment']), new BusinessException('API 地址格式不正确', 42200));
 
         return $url;
     }

@@ -15,7 +15,7 @@ final class RainyunActions
     {
         $action = (string) ($input['func'] ?? '');
         $detail = $this->client->detail($supplier, $id);
-        throw_if(in_array($detail['Data']['Status'] ?? '', ['banned', 'expired'], true), new BusinessException('雨云实例已暂停或到期，不能执行该操作', 42200));
+        throw_if(in_array($detail['Data']['Status'] ?? '', ['banned', 'expired'], true), new BusinessException('实例已暂停或到期，不能执行该操作', 42200));
         [$method, $suffix, $body, $query] = $this->requestFor($action, $input, $detail);
         $this->client->request($supplier, $method, $this->client->hostPath($id, $suffix), $body, $query);
 
@@ -85,7 +85,7 @@ final class RainyunActions
                 $suffix = 'toggle_dgpu';
                 break;
             default:
-                throw new BusinessException('不支持的雨云控制台动作', 42200);
+                throw new BusinessException('不支持的控制台动作', 42200);
         }
 
         return [$method, $suffix, $body, $query];
@@ -112,7 +112,7 @@ final class RainyunActions
         $minute = RainyunValues::integer($input['minute'] ?? null, '分钟', -1, 59);
         throw_if(($hour === -1) !== ($minute === -1), new BusinessException('关闭自动任务时小时和分钟必须同时为 -1', 42200));
         $keep = RainyunValues::integer($input['keep_last'] ?? null, '保留数量', 0, 31);
-        throw_if(! in_array($keep, $snapshot ? [1, 2, 3] : [0, 1, 3, 7, 15, 31], true), new BusinessException('保留数量不在雨云允许范围内', 42200));
+        throw_if(! in_array($keep, $snapshot ? [1, 2, 3] : [0, 1, 3, 7, 15, 31], true), new BusinessException('保留数量不在允许范围内', 42200));
         $prefix = $snapshot ? 'auto_snapshot_' : 'auto_backup_';
 
         return [$prefix.'hour' => $hour, $prefix.'minute' => $minute, 'keep_last' => $keep];

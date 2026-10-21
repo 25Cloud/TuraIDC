@@ -96,13 +96,13 @@ final class RainyunConsole
         $end = $end > 100000000000 ? intdiv($end, 1000) : $end;
         throw_if($start <= 0 || $end <= $start || $end - $start > 7 * 86400, new BusinessException('监控时间范围须在七天以内', 42200));
         $data = $this->client->request($supplier, 'GET', $this->client->hostPath($id, 'monitor'), ['start_date' => $start, 'end_date' => $end]);
-        throw_if(! is_array($data) || ! is_array($data['Columns'] ?? null) || ! is_array($data['Values'] ?? null), new BusinessException('雨云监控返回格式不正确', 42200));
+        throw_if(! is_array($data) || ! is_array($data['Columns'] ?? null) || ! is_array($data['Values'] ?? null), new BusinessException('监控返回格式不正确', 42200));
         $columns = array_flip($data['Columns']);
         $fields = match ($type) {
             'cpu' => ['cpu'], 'memory' => ['freemem'], 'disk' => ['diskread', 'diskwrite'], default => ['netin', 'netout']
         };
         foreach (array_merge(['time'], $fields) as $field) {
-            throw_if(! isset($columns[$field]), new BusinessException('雨云监控缺少所需指标', 42200));
+            throw_if(! isset($columns[$field]), new BusinessException('监控缺少所需指标', 42200));
         }
         $maxMem = $type === 'memory' ? (int) ($this->client->detail($supplier, $id)['Data']['UsageData']['MaxMem'] ?? 0) : 0;
         $values = $data['Values'];

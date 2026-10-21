@@ -65,7 +65,7 @@ class RainyunRcs implements ProvidesBatchStatusSync, ProvidesBrowserConsole, Pro
 
     public function label(): string
     {
-        return '雨云 RCS';
+        return 'RCS';
     }
 
     public function capabilities(): array
@@ -101,14 +101,14 @@ class RainyunRcs implements ProvidesBatchStatusSync, ProvidesBrowserConsole, Pro
 
     public function healthCheck(): array
     {
-        return ['healthy' => true, 'message' => '雨云 RCS 插件加载正常'];
+        return ['healthy' => true, 'message' => 'RCS 插件加载正常'];
     }
 
     public function supplierFormSchema(): array
     {
         $fields = [
-            ['key' => 'api_url', 'label' => '雨云 API 地址', 'type' => 'url', 'required' => true, 'placeholder' => 'https://api.v2.rainyun.com'],
-            ['key' => 'api_key', 'label' => '雨云 API Key', 'type' => 'password', 'required' => true, 'secret' => true],
+            ['key' => 'api_url', 'label' => 'API 地址', 'type' => 'url', 'required' => true, 'placeholder' => 'https://api.v2.rainyun.com'],
+            ['key' => 'api_key', 'label' => 'API 密钥', 'type' => 'password', 'required' => true, 'secret' => true],
         ];
         foreach (['disk_ssd_price' => '固态云盘（元/GB/月）', 'disk_hdd_price' => '机械云盘（元/GB/月）',
             'disk_chdd_price' => '系统机械盘（元/GB/月）', 'disk_backup_price' => '云盘备份（元/GB/月）',
@@ -119,12 +119,12 @@ class RainyunRcs implements ProvidesBatchStatusSync, ProvidesBrowserConsole, Pro
         $fields[] = ['key' => 'plan_monthly_prices', 'label' => '套餐月销售价格 JSON', 'type' => 'textarea', 'description' => '格式 {"套餐ID":"月价格"}，升级须同时配置当前与目标套餐。'];
         $fields[] = ['key' => 'ip_monthly_prices', 'label' => 'IP 月销售价格 JSON', 'type' => 'textarea', 'description' => '格式 {"":"默认线路价格","线路标识":"月价格"}，留空不允许购买。'];
 
-        return ['help' => '雨云 RCS 直连插件。价格为本站销售价格，使用现有图拉账单支付；配置留空不开放相关付费操作。', 'fields' => $fields];
+        return ['help' => 'RCS 直连插件。价格为本站销售价格，使用现有图拉账单支付；配置留空不开放相关付费操作。', 'fields' => $fields];
     }
 
     public function login(Supplier $supplier): string
     {
-        throw_if(trim((string) $supplier->api_key) === '', new BusinessException('雨云 API 密钥未配置', 42200));
+        throw_if(trim((string) $supplier->api_key) === '', new BusinessException('API 密钥未配置', 42200));
 
         return 'rainyun_rcs:'.(int) $supplier->id;
     }
@@ -137,7 +137,7 @@ class RainyunRcs implements ProvidesBatchStatusSync, ProvidesBrowserConsole, Pro
     public function getBalance(Supplier $supplier): array
     {
         $data = $this->client->request($supplier, 'GET', '/user/');
-        throw_if(! is_numeric($data['Money'] ?? null), new BusinessException('雨云未返回账户余额', 42200));
+        throw_if(! is_numeric($data['Money'] ?? null), new BusinessException('接口未返回账户余额', 42200));
 
         return ['balance' => number_format((float) $data['Money'], 2, '.', ''), 'currency' => 'CNY'];
     }
@@ -222,7 +222,7 @@ class RainyunRcs implements ProvidesBatchStatusSync, ProvidesBrowserConsole, Pro
     public function powerAction(Supplier $supplier, int $hostId, string $action, ?string $jwt = null): array
     {
         $suffix = match ($action) {
-            'on' => 'start', 'off', 'hard_off' => 'stop', 'reboot', 'hard_reboot' => 'reboot', default => throw new BusinessException('雨云不支持该电源操作', 42200)
+            'on' => 'start', 'off', 'hard_off' => 'stop', 'reboot', 'hard_reboot' => 'reboot', default => throw new BusinessException('不支持该电源操作', 42200)
         };
         $this->client->request($supplier, 'POST', $this->client->hostPath($hostId, $suffix));
 
@@ -268,7 +268,7 @@ class RainyunRcs implements ProvidesBatchStatusSync, ProvidesBrowserConsole, Pro
         $parts = parse_url($url);
         throw_if(! is_array($parts) || ! in_array($parts['scheme'] ?? '', ['http', 'https'], true)
             || preg_match('/(^|\.)raincs\.cn$/i', (string) ($parts['host'] ?? '')) !== 1
-            || isset($parts['user']) || isset($parts['pass']), new BusinessException('雨云未返回可用的官方代理控制台链接', 42200));
+            || isset($parts['user']) || isset($parts['pass']), new BusinessException('未获取到可用的远程控制台链接', 42200));
 
         return ['status' => 200, 'data' => ['url' => $url], 'msg' => '控制台链接已生成'];
     }

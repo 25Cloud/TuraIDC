@@ -99,6 +99,9 @@ class RainyunRcsPurchaseTest extends TestCase
         $b = $this->submit($input);
         $this->assertSame($a['data']['invoice_id'], $b['data']['invoice_id']);
         $this->assertSame(1, Invoice::query()->count());
+        $invoice = Invoice::query()->findOrFail($a['data']['invoice_id']);
+        $this->assertSame('流量包 100 GB', $invoice->product_spec_snapshot);
+        $this->assertSame('流量包 100 GB', $invoice->order->product_spec_snapshot);
         Http::assertNotSent(fn (Request $r) => $r->method() !== 'GET');
     }
 
@@ -252,7 +255,13 @@ class RainyunRcsPurchaseTest extends TestCase
         $this->assertEquals(10, DB::table('user_accounts')->value('cash_balance'));
         $this->assertSame(1, DB::table('account_transactions')->count());
         $this->assertSame('invoice_refund', DB::table('account_transactions')->value('event_type'));
+        $reason = '云盘剩余服务费返还，调整订单 '.$invoice->order->order_no;
+        $this->assertSame('云盘调整', $invoice->product_spec_snapshot);
+        $this->assertSame($reason, DB::table('account_transactions')->value('remark'));
+        $this->assertSame('RCS 插件', DB::table('account_transactions')->value('operator'));
         $this->assertSame(1, DB::table('refunds')->count());
+        $this->assertSame($reason, DB::table('refunds')->value('reason'));
+        $this->assertSame('RCS 插件', DB::table('refunds')->value('operator_name'));
         $this->assertSame(1, Invoice::query()->where('type', 'refund')->count());
         $this->assertCount(1, Http::recorded(fn (Request $r) => $r->method() === 'POST'));
     }

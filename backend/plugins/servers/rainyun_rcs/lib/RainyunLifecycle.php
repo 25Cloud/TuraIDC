@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Servers\RainyunRcs\Lib;
 
+use App\Constants\BillingCycle;
 use App\Exceptions\BusinessException;
 use App\Models\Order;
 use App\Models\Service;
@@ -23,15 +24,15 @@ final class RainyunLifecycle
         if ($existingId > 0) {
             return $this->result($existingId, $this->client->detail($supplier, $existingId));
         }
-        throw_if(($checkpoint['state'] ?? '') === 'submitted', new BusinessException('上次雨云开通结果未确认，请核对上游后绑定实例，禁止重复开通', 42200));
+        throw_if(($checkpoint['state'] ?? '') === 'submitted', new BusinessException('上次开通结果未确认，请核对上游后绑定实例，禁止重复开通', 42200));
         $product = $order->product;
         throw_if($product === null, new BusinessException('订单商品不存在', 42200));
         $planId = (int) $binding->upstreamProductIdForProduct($product);
         $config = $this->orderConfig($order);
         $payload = $this->provisionPayload($config, $planId, (string) $order->billing_cycle);
         $plan = $this->catalog->plan($supplier, $planId);
-        throw_if(! ($plan['is_selling'] ?? false) || (int) ($plan['available_stock'] ?? 0) === 0, new BusinessException('雨云套餐已停售或无库存', 42200));
-        throw_if(! in_array($payload['os_id'], array_column($this->catalog->images($supplier, $plan), 'id'), true), new BusinessException('选定镜像不适用于雨云套餐', 42200));
+        throw_if(! ($plan['is_selling'] ?? false) || (int) ($plan['available_stock'] ?? 0) === 0, new BusinessException('套餐已停售或无库存', 42200));
+        throw_if(! in_array($payload['os_id'], array_column($this->catalog->images($supplier, $plan), 'id'), true), new BusinessException('选定镜像不适用于当前套餐', 42200));
         $this->checkpoint($order, ['state' => 'submitted', 'host_id' => 0]);
         try {
             $created = $this->client->request($supplier, 'POST', '/product/rcs/', $payload);
@@ -42,7 +43,7 @@ final class RainyunLifecycle
             throw $exception;
         }
         $id = (int) ($created['ID'] ?? 0);
-        throw_if($id <= 0, new BusinessException('雨云开通已提交但未返回实例 ID，请人工核对，勿重复下单', 42200));
+        throw_if($id <= 0, new BusinessException('开通已提交但未返回实例 ID，请人工核对，勿重复下单', 42200));
         // 先持久化 ID；详情读取失败后重试只回查该实例，不再购买一次。
         $this->checkpoint($order, ['state' => 'created', 'host_id' => $id]);
 
@@ -51,11 +52,14 @@ final class RainyunLifecycle
 
     public function provisionPayload(array $config, int $planId, string $cycle): array
     {
+        $cycle = BillingCycle::normalize($cycle);
+        $trialCycle = $cycle === BillingCycle::ON_TRIAL;
+        // 雨云试用使用独立开关，duration 仍须传合法月数；不能把试用周期落成正式月付。
         $payload = [
             'plan_id' => RainyunValues::integer($planId, '上游套餐 ID'),
             'os_id' => RainyunValues::integer($config['os_id'] ?? null, '系统镜像 ID'),
-            'duration' => RainyunValues::months($cycle),
-            'try' => RainyunValues::boolean($config['try'] ?? false, '试用'),
+            'duration' => $trialCycle ? 1 : RainyunValues::months($cycle),
+            'try' => $trialCycle || RainyunValues::boolean($config['try'] ?? false, '试用'),
             'with_eip_num' => RainyunValues::integer($config['with_eip_num'] ?? 0, '独立 IP 数量', 0, 20),
             'with_eip_flags' => (string) ($config['with_eip_flags'] ?? ''),
             'with_coupon_id' => RainyunValues::integer($config['with_coupon_id'] ?? 0, '优惠券 ID', 0),

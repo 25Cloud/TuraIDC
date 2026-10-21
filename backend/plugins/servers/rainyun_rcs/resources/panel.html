@@ -532,7 +532,7 @@
           f.finish();
         } else if (data.key === "upgrade") {
           note(
-            "仅显示雨云允许升级的套餐。所有操作先报价、确认，再通过图拉账单支付。",
+            "仅显示当前实例可升级的套餐。所有操作先报价、确认，再通过图拉账单支付。",
           );
           const p = form("plan", "套餐升级报价", true);
           field(
@@ -569,9 +569,9 @@
           );
           ip.finish();
         } else if (data.key === "terminal") {
-          note("在新窗口打开雨云官方终端，连接流量由浏览器直接访问雨云。");
+          note("在新窗口打开终端进行远程连接。");
           const b = element("button", "获取终端入口"),
-            link = element("a", "打开雨云终端");
+            link = element("a", "打开终端");
           b.className = "primary";
           link.hidden = true;
           link.target = "_blank";
@@ -590,7 +590,7 @@
                 throw Error("终端链接无效，请重新获取");
               link.href = result.data.url;
               link.hidden = false;
-              message.textContent = "入口已就绪，请点击「打开雨云终端」";
+              message.textContent = "入口已就绪，请点击「打开终端」";
             });
           content.append(b, link);
         }

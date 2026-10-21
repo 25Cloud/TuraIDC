@@ -10,7 +10,7 @@ final class RainyunPanel
 {
     public function render(array $detail, string $key, string $endpoint): string
     {
-        throw_if(! in_array($key, ['backups', 'snapshots', 'disks', 'traffic', 'gpu', 'terminal', 'upgrade', 'nat_acl'], true), new BusinessException('雨云功能面板不存在', 42200));
+        throw_if(! in_array($key, ['backups', 'snapshots', 'disks', 'traffic', 'gpu', 'terminal', 'upgrade', 'nat_acl'], true), new BusinessException('功能面板不存在', 42200));
         if ($key === 'nat_acl') {
             return $this->nat($detail);
         }
