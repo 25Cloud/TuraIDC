@@ -568,6 +568,12 @@
       "review_by": "2027-01-19"
     },
     {
+      "path": "internal/legal/cla-outreach-letters-2026-10-21.md",
+      "status": "current",
+      "summary": "R1 补签函成稿：9 位早期贡献者逐函草稿与随函商业许可赠与说明。",
+      "review_by": "2027-01-19"
+    },
+    {
       "path": "internal/legal/cla-outreach-template.md",
       "status": "current",
       "summary": "R1 补签执行包：联系函模板、追溯覆盖声明原文、签署记录登记与话术边界。",
