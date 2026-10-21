@@ -468,6 +468,11 @@
       "summary": "tura_open_api 上游驱动插件打通纯自有协议 TuraIDC↔TuraIDC 无限级转售链。"
     },
     {
+      "path": "internal/execution-plans/completed/upstream-binding-switch-and-sync-degradation-2026-10-21.md",
+      "status": "completed",
+      "summary": "切换上游绑定改为本地写立即返回、回源提速、电源状态失败降级为仅同步实例详情。"
+    },
+    {
       "path": "internal/execution-plans/completed/upstream-openapi-hardening-2026-09-12.md",
       "status": "completed",
       "summary": "开放 API 写端点与审计加固、上游能力契约分层、开通失败退款标记与下单幂等 DB 兜底。"
