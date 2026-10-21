@@ -20,7 +20,7 @@ final class RainyunBinding
             || (int) $binding->upstream_service_id !== $hostId
             || (int) $binding->supplierPluginBinding?->supplier_id !== (int) $supplier->id
             || (int) $binding->supplierPluginBinding?->plugin_id !== (int) $binding->plugin_id,
-            new BusinessException('当前实例、供应商与雨云 RCS 插件绑定不一致', 42200));
+            new BusinessException('当前实例、供应商与插件绑定不一致', 42200));
 
         return $binding;
     }

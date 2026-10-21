@@ -14,7 +14,7 @@ final class RainyunCatalog
     public function plans(Supplier $supplier): array
     {
         $plans = $this->client->request($supplier, 'GET', '/product/rcs/plans');
-        throw_if(! is_array($plans), new BusinessException('雨云套餐列表格式不正确', 42200));
+        throw_if(! is_array($plans), new BusinessException('套餐列表格式不正确', 42200));
 
         return array_values(array_filter($plans, fn ($p) => is_array($p) && (int) ($p['id'] ?? 0) > 0));
     }
@@ -26,13 +26,13 @@ final class RainyunCatalog
                 return $plan;
             }
         }
-        throw new BusinessException('雨云套餐不存在或已不可用', 42200);
+        throw new BusinessException('套餐不存在或已不可用', 42200);
     }
 
     public function images(Supplier $supplier, array $plan, int $timeout = 30): array
     {
         $images = $this->client->request($supplier, 'GET', '/product/rcs/os-templates', timeout: $timeout);
-        throw_if(! is_array($images), new BusinessException('雨云系统镜像列表格式不正确', 42200));
+        throw_if(! is_array($images), new BusinessException('系统镜像列表格式不正确', 42200));
 
         return array_values(array_filter($images, static fn ($os) => is_array($os)
             && ($os['is_available'] ?? false)
@@ -56,7 +56,7 @@ final class RainyunCatalog
 
     public function product(array $plan): array
     {
-        $price = RainyunValues::money(RainyunValues::cents($plan['price'] ?? '0', '雨云套餐价格'));
+        $price = RainyunValues::money(RainyunValues::cents($plan['price'] ?? '0', '套餐价格'));
 
         return [
             'id' => (int) $plan['id'], 'name' => (string) ($plan['chinese'] ?? $plan['plan_name']),
@@ -65,7 +65,7 @@ final class RainyunCatalog
             'billingcycle' => 'monthly', 'product_price' => $price, 'monthly_price' => $price,
             'setup_fee' => '0.00', 'allow_qty' => 1, 'stock_control' => 1,
             'stock' => (int) ($plan['available_stock'] ?? 0), 'qty' => (int) ($plan['available_stock'] ?? 0),
-            'first_group_name' => '雨云', 'second_group_name' => (string) ($plan['region'] ?? ''),
+            'first_group_name' => '云服务器', 'second_group_name' => (string) ($plan['region'] ?? ''),
             'group_name' => ($plan['region'] ?? '').' / '.($plan['line'] ?? ''),
         ];
     }
@@ -77,14 +77,14 @@ final class RainyunCatalog
         $diskTypes = ($plan['disk_selling'] ?? null) ?: array_keys($plan['disk_size'] ?? []);
         $ipFlags = ($plan['ip_selling'] ?? null) ?: array_keys($plan['ip_prices'] ?? ['' => 0]);
         $options = [
-            $this->option(1, 'plan_id', '雨云套餐', [(string) $id => (string) ($plan['chinese'] ?? $id)], true),
+            $this->option(1, 'plan_id', '套餐', [(string) $id => (string) ($plan['chinese'] ?? $id)], true),
             $this->option(2, 'os_id', '操作系统', array_column($images, 'chinese_name', 'id')),
             $this->option(3, 'disk_type', '系统盘类型', array_combine($diskTypes, $diskTypes)),
             $this->option(4, 'with_eip_num', '独立 IP 数量', ['0' => '不附加']),
             $this->option(5, 'with_eip_flags', '独立 IP 线路', array_combine($ipFlags, array_map(fn ($v) => $v === '' ? '默认线路' : $v, $ipFlags))),
             $this->option(6, 'add_disk_size', '系统盘附加容量（GB）', ['0' => '不附加']),
             $this->option(7, 'try', '试用', ['false' => '关闭'], true),
-            $this->option(8, 'with_coupon_id', '雨云优惠券 ID', ['0' => '不使用'], true),
+            $this->option(8, 'with_coupon_id', '上游优惠券 ID', ['0' => '不使用'], true),
         ];
 
         return ['product_id' => $id, 'product' => $this->product($plan), 'config_options' => array_values(array_filter($options, fn ($o) => $o['sub'] !== [])), 'auto_filled_fields' => ['plan_id']];

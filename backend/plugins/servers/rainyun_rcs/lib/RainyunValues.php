@@ -23,7 +23,7 @@ final class RainyunValues
             'quarterly' => 3,
             'semiannually' => 6,
             'annually' => 12,
-            default => throw new BusinessException('雨云只支持月付、季付、半年付和年付', 42200),
+            default => throw new BusinessException('当前操作只支持月付、季付、半年付和年付', 42200),
         };
     }
 

@@ -21,11 +21,11 @@ use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use TuraIDC\Plugins\Servers\RainyunRcs\RainyunRcsPlugin;
 
 return [
-    'info' => ['domain' => 'upstream', 'slug' => 'rainyun_rcs', 'key' => 'rainyun_rcs', 'name' => '雨云 RCS',
+    'info' => ['domain' => 'upstream', 'slug' => 'rainyun_rcs', 'key' => 'rainyun_rcs', 'name' => 'RCS',
         'version' => '1.0.0', 'entry' => RainyunRcsPlugin::class, 'capabilities' => [ProvidesConsoleCatalog::class, ProvidesConsoleRuntime::class, ProvidesConsoleAccess::class,
             ProvidesBrowserConsole::class, ProvidesProvisioning::class, ProvidesOrderProvisioning::class, ProvidesRenewal::class,
             ProvidesInvoiceRenewal::class, ProvidesRenewableCycleFiltering::class, ProvidesStatusSync::class, ProvidesBatchStatusSync::class,
             ProvidesSupplierBalance::class, ProvidesHostTermination::class, ProvidesLocalConsoleActions::class, ProvidesConsolePurchaseFulfillment::class, ProvidesReinstallTimeout::class]],
     'config' => ['notice' => ['type' => 'notice', 'title' => '配置说明',
-        'content' => '在供应商中绑定雨云 RCS 并填写 API 地址、密钥和附加服务销售价格；插件重装会自动关机。']],
+        'content' => '在供应商中绑定 RCS 插件并填写 API 地址、密钥和附加服务销售价格；插件重装会自动关机。']],
 ];

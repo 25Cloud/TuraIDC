@@ -123,9 +123,12 @@ test('xtermjs 面板通过明确点击打开官方入口，失败时不保留过
   );
   await context.route('https://fixture-vnc.raincs.cn/**', (route) => route.fulfill({ body: '终端测试页' }));
   await page.goto('/rainyun-panel-fixture');
+  await expect(page.getByText('在新窗口打开终端进行远程连接。', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '获取终端入口' }).click();
-  const link = page.getByRole('link', { name: '打开雨云终端' });
+  const link = page.getByRole('link', { name: '打开终端', exact: true });
   await expect(link).toHaveAttribute('href', officialUrl);
+  await expect(page.getByRole('status')).toHaveText('入口已就绪，请点击「打开终端」');
+  await expect(page.locator('body')).not.toContainText('雨云');
   const popupPromise = context.waitForEvent('page');
   await link.click();
   const popup = await popupPromise;
@@ -135,6 +138,33 @@ test('xtermjs 面板通过明确点击打开官方入口，失败时不保留过
   await page.getByRole('button', { name: '获取终端入口' }).click();
   await expect(page.getByRole('status')).toHaveText('获取入口失败');
   await expect(link).toBeHidden();
+});
+
+test('套餐升级面板使用中性说明并展示可升级套餐', async ({ page }) => {
+  const source = readFileSync(
+    new URL('../../../backend/plugins/servers/rainyun_rcs/resources/panel.html', import.meta.url),
+    'utf8',
+  );
+  await page.route('http://127.0.0.1:5177/rainyun-upgrade-fixture', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: source.replace(
+        '__RAINYUN_DATA__',
+        JSON.stringify({
+          key: 'upgrade',
+          endpoint: '/rainyun-upgrade-action',
+          upgrade_plans: [{ id: 20, chinese: '标准套餐', cpu: 2, memory: 2048 }],
+          ip_flags: ['native'],
+        }),
+      ),
+    }),
+  );
+  await page.goto('/rainyun-upgrade-fixture');
+  await expect(
+    page.getByText('仅显示当前实例可升级的套餐。所有操作先报价、确认，再通过图拉账单支付。', { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('select[name="plan_id"]')).toContainText('标准套餐');
+  await expect(page.locator('body')).not.toContainText('雨云');
 });
 
 test('云盘面板按操作切换字段并使用已确认报价建单', async ({ page }) => {

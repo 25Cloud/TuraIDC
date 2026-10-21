@@ -14,7 +14,11 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 use TuraIDC\Plugins\Servers\RainyunRcs\Lib\RainyunActions;
+use TuraIDC\Plugins\Servers\RainyunRcs\Lib\RainyunApiException;
+use TuraIDC\Plugins\Servers\RainyunRcs\Lib\RainyunCatalog;
 use TuraIDC\Plugins\Servers\RainyunRcs\Lib\RainyunClient;
+use TuraIDC\Plugins\Servers\RainyunRcs\Lib\RainyunConsole;
+use TuraIDC\Plugins\Servers\RainyunRcs\Lib\RainyunLifecycle;
 use TuraIDC\Plugins\Servers\RainyunRcs\Lib\RainyunPanel;
 use TuraIDC\Plugins\Servers\RainyunRcs\Lib\RainyunPurchases;
 use TuraIDC\Plugins\Servers\RainyunRcs\Logic\RainyunRcs;
@@ -37,6 +41,29 @@ class RainyunRcsPluginTest extends TestCase
         $manifest = app(PluginScanner::class)->find('upstream', 'rainyun_rcs');
         $this->assertSame($driver->capabilities(), $manifest->capabilities);
         $this->assertSame('rainyun_rcs', $driver->key());
+    }
+
+    public function test_trial_cycle_sets_trial_flag_without_changing_paid_cycles(): void
+    {
+        $client = new RainyunClient;
+        $catalog = new RainyunCatalog($client);
+        $lifecycle = new RainyunLifecycle($client, $catalog, new RainyunConsole($client, $catalog));
+        foreach (['ontrial', 'trial', 'on_trial'] as $cycle) {
+            $payload = $lifecycle->provisionPayload(['os_id' => 535, 'try' => false], 1344, $cycle);
+            $this->assertTrue($payload['try']);
+            $this->assertSame(1, $payload['duration']);
+            $this->assertSame(0, $payload['with_eip_num']);
+        }
+        $paid = $lifecycle->provisionPayload(['os_id' => 535], 1344, 'quarterly');
+        $this->assertFalse($paid['try']);
+        $this->assertSame(3, $paid['duration']);
+        foreach (['home_ip', 'native'] as $flags) {
+            $payload = $lifecycle->provisionPayload(['os_id' => 535, 'with_eip_num' => 1, 'with_eip_flags' => $flags], 1344, 'ontrial');
+            $this->assertTrue($payload['try']);
+            $this->assertSame($flags, $payload['with_eip_flags']);
+            $this->assertSame(1, $payload['with_eip_num']);
+        }
+        Http::assertNothingSent();
     }
 
     public function test_reinstall_stops_then_waits_before_changing_os(): void
@@ -137,6 +164,38 @@ class RainyunRcsPluginTest extends TestCase
             $this->assertStringContainsString('密钥', $e->getMessage());
         }
         Http::assertNothingSent();
+    }
+
+    public function test_required_ip_error_reports_configuration_requirement(): void
+    {
+        Http::fake(['*' => Http::response(['code' => 70033, 'message' => '本区域的产品至少需要一个IP'], 400)]);
+        try {
+            (new RainyunClient)->request($this->supplier(), 'POST', '/product/rcs/', ['try' => true]);
+            $this->fail('缺少必须的 IP 应拒绝开通');
+        } catch (RainyunApiException $e) {
+            $this->assertSame(70033, $e->upstreamCode);
+            $this->assertFalse($e->uncertain);
+            $this->assertStringContainsString('至少需要一个独立 IP', $e->getMessage());
+        }
+        Http::assertSentCount(1);
+    }
+
+    public function test_upstream_errors_use_neutral_messages_and_preserve_error_codes(): void
+    {
+        Http::fakeSequence()
+            ->push(['code' => 10005, 'message' => '雨云原始错误'], 400)
+            ->push(['code' => 70099, 'message' => '雨云原始错误'], 400);
+        foreach ([10005 => '实例或资源不存在，请核对绑定', 70099 => '操作失败，请检查接口权限、参数和账户状态（错误码 70099）'] as $code => $message) {
+            try {
+                (new RainyunClient)->request($this->supplier(), 'POST', '/product/rcs/42/start');
+                $this->fail('上游错误必须转换为业务异常');
+            } catch (RainyunApiException $e) {
+                $this->assertSame($code, $e->upstreamCode);
+                $this->assertSame($message, $e->getMessage());
+                $this->assertFalse($e->uncertain);
+            }
+        }
+        Http::assertSentCount(2);
     }
 
     public function test_detail_must_match_bound_host(): void

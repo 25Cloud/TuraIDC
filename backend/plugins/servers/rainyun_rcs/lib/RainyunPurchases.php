@@ -116,7 +116,7 @@ final class RainyunPurchases
             throw_if($unit <= 0, new BusinessException('附加资源销售单价必须大于零', 42200));
             $body = [$gpu ? 'hour' : 'traffic_in_gb' => $quantity];
             $cents = $unit * $quantity;
-            $label = $gpu ? '雨云 GPU 时长 '.$quantity.' 小时' : '雨云流量包 '.$quantity.' GB';
+            $label = $gpu ? 'GPU 时长 '.$quantity.' 小时' : '流量包 '.$quantity.' GB';
         } elseif ($kind === 'plan') {
             $target = RainyunValues::integer($input['plan_id'] ?? null, '目标套餐 ID');
             throw_if(! in_array($target, array_map(fn ($p) => (int) $p['id'], $detail['UpgradeablePlans'] ?? []), true),
@@ -132,7 +132,7 @@ final class RainyunPurchases
             throw_if($monthlyDelta <= 0, new BusinessException('该入口仅支持按已配置销售价升级套餐', 42200));
             $body = ['dest_plan' => $target, 'with_coupon_id' => 0];
             $cents = (int) round($monthlyDelta * ((int) $host['ExpDate'] - $now) / (31 * 86400));
-            $label = '雨云套餐升级 '.$target;
+            $label = '套餐升级 '.$target;
         } elseif ($kind === 'ip') {
             $quantity = RainyunValues::integer($input['quantity'] ?? null, '附加 IP 数量', 1, 20);
             $flags = (string) ($input['flags'] ?? '');
@@ -148,7 +148,7 @@ final class RainyunPurchases
             $monthlyDelta = $unit * $quantity;
             $body = ['with_ip_num' => $quantity, 'with_flags' => $flags, 'with_ip_type' => 'IPv4'];
             $cents = (int) round($monthlyDelta * ((int) $host['ExpDate'] - $now) / (31 * 86400));
-            $label = '雨云附加 IPv4 '.$quantity.' 个';
+            $label = '附加 IPv4 '.$quantity.' 个';
         } elseif ($kind === 'disk') {
             $operation = (string) ($input['operation'] ?? '');
             $disks = (array) ($detail['EDiskList'] ?? []);
@@ -182,9 +182,9 @@ final class RainyunPurchases
             // 保留原插件按 31 天折算剩余服务期的口径，计算始终使用整数分。
             $seconds = max(0, (int) $host['ExpDate'] - $now);
             $cents = (int) round($monthlyDelta * $seconds / (31 * 86400));
-            $label = '雨云云盘调整';
+            $label = '云盘调整';
         } else {
-            throw new BusinessException('不支持的雨云购买类型', 42200);
+            throw new BusinessException('不支持的购买类型', 42200);
         }
 
         return ['kind' => $kind, 'body' => $body, 'cents' => $cents, 'monthly_delta' => $monthlyDelta, 'label' => $label];
@@ -200,12 +200,12 @@ final class RainyunPurchases
             }
             $snapshot = (array) $order->config_pricing_snapshot;
             $meta = (array) ($snapshot['meta'] ?? []);
-            throw_if(($meta['provider'] ?? '') !== 'rainyun_rcs', new BusinessException('订单不属于雨云 RCS 插件', 42200));
+            throw_if(($meta['provider'] ?? '') !== 'rainyun_rcs', new BusinessException('订单不属于当前插件', 42200));
             $quote = (array) ($meta['quote'] ?? []);
             $path = match ($quote['kind'] ?? '') {
                 'disk' => 'edisk/', 'traffic' => 'traffic/charge', 'gpu_time' => 'webbar/charge', 'plan' => 'upgrade', 'ip' => 'eip/', default => throw new BusinessException('插件订单类型无效', 42200)
             };
-            throw_if(in_array($meta['state'] ?? '', ['submitted', 'uncertain', 'rejected'], true), new BusinessException('该雨云操作已提交或结果不明，请核对上游；自动重试已停止', 42200));
+            throw_if(in_array($meta['state'] ?? '', ['submitted', 'uncertain', 'rejected'], true), new BusinessException('该操作已提交或结果不明，请核对上游；自动重试已停止', 42200));
             if (($meta['state'] ?? '') !== 'applied') {
                 $detail = $this->client->detail($supplier, $id);
                 throw_if($this->fingerprint($detail, $quote['kind']) !== ($quote['fingerprint'] ?? ''), new BusinessException('上游资源已变化，原报价不能继续执行，请联系管理员处理账单', 42200));
