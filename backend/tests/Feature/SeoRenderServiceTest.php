@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Product;
 use App\Services\Site\SeoRenderService;
 use Tests\TestCase;
 
@@ -67,6 +68,28 @@ HTML);
         $this->assertStringContainsString('/about', $html);
         // shell 的默认标题被动态标题替换
         $this->assertStringNotContainsString('默认标题', $html);
+    }
+
+    public function test_sitemap_contains_on_sale_product_detail_pages(): void
+    {
+        $product = Product::query()->create([
+            'name' => 'SEO Sitemap Product',
+            'product_type' => 'vps',
+            'pricing' => ['monthly' => '20.00'],
+            'setup_fee' => '0.00',
+            'config_options' => [],
+            'purchase_requires' => [],
+            'stock' => 1,
+            'status' => 1,
+            'sort_order' => 0,
+            'provision_module' => null,
+            'auto_setup' => 0,
+        ]);
+
+        $xml = $this->app->make(SeoRenderService::class)->sitemap();
+
+        // 商品详情页必须进 sitemap：它才是 IDC 真正的获客落地页
+        $this->assertStringContainsString('/products/'.(int) $product->id, $xml);
     }
 
     public function test_unknown_path_returns_noindex_brand_404_shell(): void

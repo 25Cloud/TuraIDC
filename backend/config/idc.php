@@ -94,9 +94,17 @@ return [
     // 官网 SEO 动态渲染（Laravel 生成完整 HTML，解决 SPA 无 SEO 问题）
     'seo' => [
         // 前端构建产物 shell（index.html）地址。
-        // 容器内走 compose 内部网络直接取静态文件，不经过任何转发，无循环。
-        // 本地联调可改为 http://127.0.0.1:8081/index.html（本地 nginx/vite 均可）。
-        'frontend_shell_url' => env('SEO_FRONTEND_SHELL_URL', 'http://frontends:8081/index.html'),
+        // 默认值按部署形态自动判定：
+        //   - 源码部署（backend 与三个前端同级）：直接读同机构建产物，零网络依赖，
+        //     也不依赖官网站点自身在线（file:// 方式，前端重建后按 mtime 立即生效）。
+        //   - 容器部署：走 compose 内部网络取静态文件，不经过任何转发，无循环。
+        // 显式配置 SEO_FRONTEND_SHELL_URL 始终优先；本地联调可指向 vite/nginx。
+        'frontend_shell_url' => env(
+            'SEO_FRONTEND_SHELL_URL',
+            is_file(base_path('../frontend-user-v3-www/dist/index.html'))
+                ? 'file://'.base_path('../frontend-user-v3-www/dist/index.html')
+                : 'http://frontends:8081/index.html'
+        ),
         // shell 模板缓存秒数（构建产物 hash 变化后最长延迟该时长生效）
         'shell_cache_ttl' => (int) env('SEO_SHELL_CACHE_TTL', 600),
         // 整页渲染结果缓存秒数（内容版本变化会自动失效，见 ContentPublishedCacheVersion）

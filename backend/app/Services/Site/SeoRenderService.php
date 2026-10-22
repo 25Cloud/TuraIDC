@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Site;
 
 use App\Models\ContentArticle;
+use App\Models\Product;
 use App\Services\Content\ContentArticleService;
 use App\Support\BrandThemeTokens;
 use App\Support\ContentPublishedCacheVersion;
@@ -850,6 +851,21 @@ HTML;
                 'loc' => $siteUrl.$page['path'],
                 'changefreq' => $page['changefreq'],
                 'priority' => $page['priority'],
+            ];
+        }
+
+        // 商品详情页才是 IDC 这类站点的真正获客落地页：只列 /products 浏览页等于
+        // 把最值钱的长尾词全部排除在索引之外，因此按在售状态逐个列出。
+        $products = Product::query()
+            ->onSale()
+            ->get(['id', 'updated_at'])
+            ->sortByDesc('id');
+        foreach ($products as $product) {
+            $urls[] = [
+                'loc' => $siteUrl.'/products/'.(int) $product->id,
+                'lastmod' => optional($product->updated_at)?->toDateString() ?: $now,
+                'changefreq' => 'weekly',
+                'priority' => '0.8',
             ];
         }
 

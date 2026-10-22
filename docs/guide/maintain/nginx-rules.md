@@ -140,6 +140,27 @@ location / {
 - 带 hash 的 JS、CSS、字体和图片可长期缓存；压缩由宝塔 Nginx 的全局能力处理，不需要在伪静态中添加模块指令。
 - 不要在用户控制台、管理端站点重新添加 `/api`、`/uploads`、`/media`、`/ws/vnc` 的 `proxy_pass`（官网的 SEO 转发只针对上述公开路径）。
 
+## 8. SEO 排查
+
+官网是 SPA，裸壳 `index.html` 带 `noindex, nofollow`，正文由 API 站点动态渲染后注入。因此下面几种情况会让搜索引擎「完全抓不到」：
+
+| 现象                                  | 原因                                                                                                                                        | 处理                                                                                                 |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| 爬虫抓到空壳 HTML，源码里有 `noindex` | 官网伪静态没按第 2 节配置，全部请求落进 `try_files ... /index.html`                                                                         | 按第 2 节补齐转发，`/robots.txt`、`/sitemap.xml` 与公开路径转到 API 站点                             |
+| 访问 `/robots.txt` 返回 HTML 而非文本 | 同上，静态回退把该路径也吞了                                                                                                                | 同上                                                                                                 |
+| `robots.txt` 正常但页面 500           | 后端取前端壳失败：源码部署未设 `SEO_FRONTEND_SHELL_URL`，默认值 `http://frontends:8081/index.html` 是 Docker 服务名，源码部署解析不了该主机 | 在 API 站点 `.env` 设 `SEO_FRONTEND_SHELL_URL=file:///绝对路径/frontend-user-v3-www/dist/index.html` |
+| 页面能打开但没有 canonical / JSON-LD  | 路径未登记在 `SeoRenderService::resolvePage`，后端返回 404 壳                                                                               | 确认路径属于公开路径；购买等长路径本就不渲染                                                         |
+
+自查命令：
+
+```bash
+# 爬虫 UA 取首页，看是否拿到服务端渲染的 head
+curl -s -A 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' https://www.example.com/ | grep -E 'canonical|ld\+json|noindex'
+# robots 与 sitemap 必须是真实内容，不是 SPA 壳
+curl -s https://www.example.com/robots.txt | head -3
+curl -s https://www.example.com/sitemap.xml | head -c 200
+```
+
 ## 关联文档
 
 - [部署指南](../deploy/generic.md)：Nginx 配置的完整上下文。
