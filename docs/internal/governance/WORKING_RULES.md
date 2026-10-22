@@ -31,6 +31,17 @@
 - 后端改动运行受影响的 `php artisan test`；前端按受影响应用运行 `pnpm run build`，重构按各应用规范补充 `verify:refactor`。
 - 每个子任务先展示改动与验证摘要；得到用户确认后独立提交，格式为 `Fix:中文描述`、`Feat:中文描述` 或 `Refactor:中文描述`。
 
+## 5. 生产部署
+
+改动推送到 `origin/main` 之后必须完成生产增量部署才算交付；只推代码不部署视为未完成。
+
+- 生产机为宝塔面板 + 独立站点目录 `/www/wwwroot/TuraIDC`，站点域名：`idc.25y.cn`（官网）、`admin.25y.cn`（管理端）、`dash.25y.cn`（控制台）、`api.25y.cn`（API）。nginx 各站点的 root 分别指向对应前端应用的 `dist`。
+- 执行 PHP 命令必须显式用面板内的版本路径（`/www/server/php/83/bin/php`）：系统默认 `php` 指向另一个版本，会加载到不存在的扩展目录并刷启动告警。
+- 部署顺序：数据库备份 → `git fetch && git pull --ff-only origin main` → `php artisan migrate --force` → `php artisan optimize:clear` 与 `config:cache` / `route:cache` → 根目录 `pnpm run build:frontends` → 重启面板 PHP-FPM → `php artisan app:doctor` 与四个域名健康检查。
+- 前端构建产物三端各自落在应用目录的 `dist`，不写入 `backend/public`；不要手工拷贝。
+- 数据库凭据从运行时配置读取（`php artisan tinker` 里读 `config('database.connections.mysql')`），不要把凭据写进仓库、脚本或日志。
+- 部署前后的数据订正一律先备份再改，并在订单/服务操作日志里留痕。
+
 ## 关联文档
 
 - [文档治理策略](DOCUMENTATION_POLICY.md)：文档放置、结构与生命周期。
