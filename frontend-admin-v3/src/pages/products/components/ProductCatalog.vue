@@ -232,6 +232,16 @@
             <t-button variant="outline" @click="openProvisionHostnameDialog">
               {{ $t('products.catalog.batchHostname') }}
             </t-button>
+            <t-button
+              variant="outline"
+              :loading="descriptionSyncLoading"
+              @click="syncProductDescription(selectedProductRows())"
+            >
+              {{ $t('products.catalog.syncUpstreamDescription') }}
+            </t-button>
+            <t-button variant="outline" @click="openDescriptionSyncDialog('products')">
+              {{ $t('products.catalog.descriptionAutoSync') }}
+            </t-button>
             <t-button variant="outline" theme="danger" @click="handleBatchDeleteProducts">
               {{ $t('products.catalog.delete') }}
             </t-button>
@@ -243,6 +253,16 @@
             }}</t-button>
           </t-space>
         </div>
+
+        <description-sync-settings-dialog
+          v-model:visible="descriptionSyncDialogVisible"
+          :scope="descriptionSyncDialogScope"
+          :product-ids="descriptionSyncProductIds"
+          :group-id="descriptionSyncGroupId"
+          :group-level="descriptionSyncGroupLevel"
+          :target-count="descriptionSyncTargetCount"
+          @success="loadProducts"
+        />
 
         <!-- 卡片视图：字段与列表式同源（同一批行数据与格式化函数），不另建一份字段清单 -->
         <div v-if="isProductCardView" class="admin-card-grid product-card-view">
@@ -1541,6 +1561,7 @@ import {
   providerTypeLabel,
   toPlainRecord,
 } from '../composables/useProductShared';
+import DescriptionSyncSettingsDialog from './DescriptionSyncSettingsDialog.vue';
 
 type ProvisionHostnameMode = 'system' | 'fixed' | 'prefix';
 
@@ -2130,6 +2151,7 @@ function productRowMenuOptions(row: ProductRecord): DropdownOption[] {
   }
   return [
     { content: t('products.catalog.edit'), value: 'edit', theme: 'default' },
+    { content: t('products.catalog.syncUpstreamDescription'), value: 'sync-description', theme: 'default' },
     { content: t('products.catalog.specHighlightTitle'), value: 'spec-highlight', theme: 'default' },
     { content: t('products.catalog.consoleType'), value: 'console-template', theme: 'default' },
     { content: t('products.catalog.agentDiscountGroup'), value: 'discount-group', theme: 'default' },
@@ -2148,6 +2170,9 @@ function handleProductRowMenuClick(row: ProductRecord, dropdownItem: DropdownOpt
   switch (value) {
     case 'edit':
       goProductEditPage(row);
+      break;
+    case 'sync-description':
+      void syncProductDescription([row]);
       break;
     case 'spec-highlight':
       openSpecHighlightDialog(row);
@@ -2489,6 +2514,10 @@ function categoryMenuOptions(row: ProductCategoryRecord): DropdownOption[] {
   options.push({ content: t('products.catalog.consoleType'), value: 'batch-console' });
   options.push({ content: t('products.catalog.batchCpu'), value: 'batch-cpu', divider: true });
   options.push(
+    { content: t('products.catalog.syncUpstreamDescription'), value: 'batch-sync-description' },
+    { content: t('products.catalog.descriptionSyncSettings'), value: 'batch-sync-settings' },
+  );
+  options.push(
     { content: t('products.catalog.edit'), value: 'edit', divider: true },
     { content: t('products.catalog.delete'), value: 'delete', theme: 'error' } as DropdownOption,
     { content: t('products.catalog.forceDelete'), value: 'force-delete', theme: 'error' } as DropdownOption,
@@ -2516,6 +2545,14 @@ function handleCategoryMenuClick(row: ProductCategoryRecord, option: DropdownOpt
   }
   if (action === 'force-delete') {
     void handleForceDeleteCategory(row);
+    return;
+  }
+  if (action === 'batch-sync-description') {
+    void syncGroupDescription(row);
+    return;
+  }
+  if (action === 'batch-sync-settings') {
+    openDescriptionSyncDialog('group', row);
     return;
   }
   if (action === 'batch-discount' || action === 'batch-console' || action === 'batch-cpu') {
@@ -3211,6 +3248,88 @@ function handleCategoryMenuVisible(
   scope: CategoryMenuScope = 'desktop',
 ) {
   categoryMenuKey.value = visible ? categoryMenuVisibleKey(scope, item) : null;
+}
+
+// --- 商品描述同步上游 ---
+const descriptionSyncLoading = ref(false);
+const descriptionSyncDialogVisible = ref(false);
+const descriptionSyncDialogScope = ref<'products' | 'group'>('products');
+const descriptionSyncProductIds = ref<number[]>([]);
+const descriptionSyncGroupId = ref(0);
+const descriptionSyncGroupLevel = ref(2);
+const descriptionSyncTargetCount = ref(0);
+
+/** 打开「同步设置」弹窗：products 作用域取当前勾选，group 作用域取分组下全部商品 */
+function openDescriptionSyncDialog(scope: 'products' | 'group', group?: ProductCategoryRecord) {
+  descriptionSyncDialogScope.value = scope;
+  if (scope === 'group' && group) {
+    descriptionSyncGroupId.value = productGroupEffectiveId(group);
+    descriptionSyncGroupLevel.value = productGroupLevel(group);
+    descriptionSyncProductIds.value = [];
+    descriptionSyncTargetCount.value = countValue(group.products_with_trashed_count);
+    if (!descriptionSyncTargetCount.value) {
+      descriptionSyncTargetCount.value = categoryActiveProductCount(group);
+    }
+  } else {
+    const rows = selectedProductRows();
+    descriptionSyncProductIds.value = rows.map((row) => Number(row.id)).filter((id) => id > 0);
+    descriptionSyncGroupId.value = 0;
+    descriptionSyncGroupLevel.value = 2;
+    descriptionSyncTargetCount.value = descriptionSyncProductIds.value.length;
+    if (!descriptionSyncProductIds.value.length) {
+      MessagePlugin.warning(t('products.catalog.selectProductFirst'));
+      return;
+    }
+  }
+  descriptionSyncDialogVisible.value = true;
+}
+
+/** 立即从上游同步描述：逐条结果里有跳过原因，成功后只提示数量 */
+async function syncProductDescription(rows: ProductRecord[]) {
+  const productIds = rows.map((row) => Number(row.id)).filter((id) => id > 0);
+  if (!productIds.length) {
+    MessagePlugin.warning(t('products.catalog.selectProductFirst'));
+    return;
+  }
+
+  descriptionSyncLoading.value = true;
+  try {
+    const response = (await productApi.syncDescriptionBatch({ product_ids: productIds })) as Record<string, unknown>;
+    const summary = (response.summary || {}) as Record<string, number>;
+    MessagePlugin.success(
+      t('products.catalog.descriptionSyncDone', {
+        count: Number(summary.synced || 0),
+        skipped: Number(summary.skipped || 0),
+      }),
+    );
+    await loadProducts();
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, t('products.catalog.descriptionSyncFailed')));
+  } finally {
+    descriptionSyncLoading.value = false;
+  }
+}
+
+/** 分组批量同步：该分组（含其下三级分组）下的商品 */
+async function syncGroupDescription(group: ProductCategoryRecord) {
+  descriptionSyncLoading.value = true;
+  try {
+    const response = (await productApi.syncGroupDescription(productGroupEffectiveId(group), {
+      level: productGroupLevel(group),
+    })) as Record<string, unknown>;
+    const summary = (response.summary || {}) as Record<string, number>;
+    MessagePlugin.success(
+      t('products.catalog.descriptionSyncDone', {
+        count: Number(summary.synced || 0),
+        skipped: Number(summary.skipped || 0),
+      }),
+    );
+    await loadProducts();
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, t('products.catalog.descriptionSyncFailed')));
+  } finally {
+    descriptionSyncLoading.value = false;
+  }
 }
 
 function openProductBatchDialog(

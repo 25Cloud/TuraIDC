@@ -2177,7 +2177,20 @@
       "manualHint": "A manually written description is in use. Clear it to restore auto-generation.",
       "previewTitle": "Auto-generated preview",
       "htmlLabel": "HTML source",
-      "emptyRows": "No description yet. Use Add row to start writing."
+      "emptyRows": "No description yet. Use Add row to start writing.",
+      "syncSettingsTitle": "Description sync settings",
+      "autoSyncEnabled": "Auto sync",
+      "autoSyncOffLabel": "Off",
+      "autoSyncHint": "When enabled, a scheduled task refreshes the description from upstream; manually written descriptions are overwritten too.",
+      "autoSyncTargetCount": "Affects {count} products",
+      "scheduleHint": "Global schedule: {mode} {time}",
+      "autoSyncOpened": "Description auto sync enabled",
+      "autoSyncClosed": "Description auto sync disabled",
+      "autoSyncFailed": "Failed to update description auto sync",
+      "syncFromUpstream": "Sync from upstream",
+      "syncDone": "Upstream description synced",
+      "syncFailed": "Failed to sync description from upstream",
+      "syncSettingsConfirm": "Confirm"
     },
     "couponCampaigns": {
       "searchPlaceholder": "Search by campaign name, description or remark",
@@ -2687,7 +2700,12 @@
       "currentBinding": "Current binding",
       "syncUpstreamFailed": "Failed to sync the upstream product",
       "actionUpdate": "Update",
-      "actionCreate": "Create"
+      "actionCreate": "Create",
+      "syncUpstreamDescription": "Sync description from upstream",
+      "descriptionAutoSync": "Auto sync description",
+      "descriptionSyncSettings": "Sync settings",
+      "descriptionSyncDone": "Synced {count} products, skipped {skipped}",
+      "descriptionSyncFailed": "Failed to sync description"
     },
     "coupons": {
       "add": "Add",
@@ -3535,7 +3553,8 @@
       "fieldMin": "{label} must not be less than {min}",
       "fieldMax": "{label} must not be greater than {max}",
       "fieldPattern": "{label} has an invalid format",
-      "defaultTitle": "Settings"
+      "defaultTitle": "Settings",
+      "productDescriptionSync": "Product description sync"
     }
   },
   "system": {

@@ -1,4 +1,4 @@
-import { request } from '@/utils/request';
+import { request, UPSTREAM_SYNC_TIMEOUT } from '@/utils/request';
 
 import type { PagedListParams } from './types';
 
@@ -232,6 +232,8 @@ export interface ProductDescriptionResponse {
   source?: 'manual' | 'auto' | 'empty' | string;
   auto_html?: string;
   auto_items?: ProductDescriptionItem[];
+  /** 该商品是否参与定时同步上游描述（0/1） */
+  description_sync_enabled?: number;
 }
 
 interface V2ProductDetailResponse {
@@ -524,6 +526,38 @@ export const productApi = {
   /** 商品描述只读：仅用于回填表单与预览自动生成结果，保存仍走商品表单的 description 字段 */
   description: (id: number | string) =>
     request.get<ProductDescriptionResponse>({ url: `/v2/admin/products/${id}/description` }),
+  /**
+   * 描述从上游同步：涉及回源拉目录，单独用上游同步的超时，且不给慢接口开自动重试
+   * （重试会重复触发上游拉取，把等待放大到数倍）。
+   */
+  syncDescription: (id: number | string, data: Record<string, unknown> = {}) =>
+    request.post({
+      url: `/v2/admin/products/${id}/description/sync`,
+      data,
+      timeout: UPSTREAM_SYNC_TIMEOUT,
+    }),
+  syncDescriptionBatch: (data: Record<string, unknown>) =>
+    request.post({
+      url: '/v2/admin/products/description/sync-batch',
+      data,
+      timeout: UPSTREAM_SYNC_TIMEOUT,
+    }),
+  updateDescriptionAutoSync: (data: Record<string, unknown>) =>
+    request.post({ url: '/v2/admin/products/description/auto-sync', data }),
+  syncGroupDescription: (id: number | string, data: Record<string, unknown>) =>
+    request.post({
+      url: `/v2/admin/product-groups/${id}/description/sync`,
+      data,
+      timeout: UPSTREAM_SYNC_TIMEOUT,
+    }),
+  updateGroupDescriptionAutoSync: (id: number | string, data: Record<string, unknown>) =>
+    request.post({ url: `/v2/admin/product-groups/${id}/description/auto-sync`, data }),
+  descriptionSyncSettings: () =>
+    request.get<{
+      schedule_mode?: string;
+      schedule_time?: string;
+      stats?: { total?: number; auto_sync_enabled?: number; synced?: number };
+    }>({ url: '/v2/admin/products/description/sync-settings' }),
   types: () => request.get<ProductTypeRecord[] | { list?: ProductTypeRecord[] }>({ url: '/v2/admin/product-types' }),
   reorderTypes: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/product-types/reorders', data }),
   createType: (data: Record<string, unknown>) => request.post({ url: '/v2/admin/product-types', data }),

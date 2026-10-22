@@ -2177,7 +2177,20 @@
       "manualHint": "当前使用人工填写的描述，留空可恢复自动生成",
       "previewTitle": "自动生成预览",
       "htmlLabel": "HTML 源码",
-      "emptyRows": "还没有描述内容，点击「新增一行」开始填写"
+      "emptyRows": "还没有描述内容，点击「新增一行」开始填写",
+      "syncSettingsTitle": "描述同步设置",
+      "autoSyncEnabled": "自动同步",
+      "autoSyncOffLabel": "不自动",
+      "autoSyncHint": "开启后由定时任务按全局节拍把上游描述刷回本地；人工填写的描述同样会被覆盖。",
+      "autoSyncTargetCount": "将影响 {count} 个商品",
+      "scheduleHint": "全局节拍：{mode} {time}",
+      "autoSyncOpened": "已开启描述自动同步",
+      "autoSyncClosed": "已关闭描述自动同步",
+      "autoSyncFailed": "描述自动同步设置失败",
+      "syncFromUpstream": "从上游同步",
+      "syncDone": "上游描述已同步",
+      "syncFailed": "从上游同步描述失败",
+      "syncSettingsConfirm": "确认"
     },
     "couponCampaigns": {
       "searchPlaceholder": "搜索活动名称 / 描述 / 备注",
@@ -2687,7 +2700,12 @@
       "currentBinding": "当前绑定",
       "syncUpstreamFailed": "同步上游商品失败",
       "actionUpdate": "更新",
-      "actionCreate": "新建"
+      "actionCreate": "新建",
+      "syncUpstreamDescription": "同步上游描述",
+      "descriptionAutoSync": "描述自动同步",
+      "descriptionSyncSettings": "同步设置",
+      "descriptionSyncDone": "已同步 {count} 个商品，跳过 {skipped} 个",
+      "descriptionSyncFailed": "描述同步失败"
     },
     "coupons": {
       "add": "添加",
@@ -3535,7 +3553,8 @@
       "fieldMin": "{label}不能小于 {min}",
       "fieldMax": "{label}不能大于 {max}",
       "fieldPattern": "{label}格式不正确",
-      "defaultTitle": "设置"
+      "defaultTitle": "设置",
+      "productDescriptionSync": "商品描述同步"
     }
   },
   "system": {

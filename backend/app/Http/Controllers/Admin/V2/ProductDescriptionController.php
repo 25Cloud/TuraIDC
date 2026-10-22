@@ -41,6 +41,8 @@ class ProductDescriptionController extends Controller
             // 留空时的自动生成结果
             'auto_html' => $this->descriptionService->renderList($autoItems),
             'auto_items' => $autoItems,
+            // 该商品是否参与定时同步上游描述：与描述同源，故放在描述只读接口里下发
+            'description_sync_enabled' => (int) ($product->description_sync_enabled ?? 0),
         ]);
     }
 }

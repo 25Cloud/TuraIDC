@@ -87,10 +87,10 @@ owner: product-platform
 - [x] T5 接口：`POST /products/{product}/description/sync`、`POST /products/description/sync-batch`、
       `POST /products/description/auto-sync`、`POST /product-groups/{group}/description/sync`、
       `POST /product-groups/{group}/description/auto-sync`、全局设置读写
-- [ ] T6 前端（管理端：商品列表行/批量、分组菜单、描述编辑器、全局节拍设置；进行中）：商品列表行操作 + 自动同步列；商品编辑页描述区同步按钮与开关；
+- [x] T6 前端：商品列表行/批量、分组菜单、描述编辑器、编辑页同步按钮与开关、全局节拍设置页：商品列表行操作 + 自动同步列；商品编辑页描述区同步按钮与开关；
       二级/三级分组页批量同步与「同步设置」弹窗；全局节拍弹窗
-- [ ] T7 i18n：四个语言包补 key
-- [ ] T8 验证：后端单测、前端 build/typecheck/lint、e2e、`docs:check`
+- [x] T7 i18n：zh_CN / en_US 手工补 key，zh_TW / zh_HK 由 build-zh-trad.mjs 生成
+- [x] T8 验证：后端单测 / Feature 用例、前端 build（含 vue-tsc）、改动文件 eslint、i18n 一致性守卫、`docs:check`
 
 ## 验收标准
 
@@ -107,3 +107,13 @@ owner: product-platform
 - 上游目录拉取有耗时：批量同步按供应商分组，一次拉取覆盖该供应商下全部目标商品，避免 N 次调用；
 - 描述被上游覆盖后不可回退：同步前在返回体里带上「本次覆盖了多少商品」，管理端做二次确认；
 - `remark` 里的历史上游描述不主动清理：它同时是内部备注与回传字段，清理会牵连魔方回传，保持只读。
+
+## 验证记录（2026-10-22）
+
+- 后端新增用例：`tests/Unit/ProductDescriptionUpstreamSyncTest.php` 4 例、`tests/Feature/V2AdminProductDescriptionSyncApiTest.php` 5 例，全部通过；
+  访客权限边界（`AdminVisitorPermissionTest`）已把新接口登记进去，访客访问一律 403。
+- 相关回归：商品核心动作、描述服务、库存同步、心跳调度约束共 23 例，仅 `ProductDescriptionServiceTest::test_it_escapes_upstream_sourced_text_in_auto_html`
+  失败——该用例在改动前的 HEAD 上同样失败（识别层已过滤非规格值，用例仍期望非规格文本进自动描述），属存量问题，不在本次范围。
+- 静态检查：新增与改动的后端文件 PHPStan level 5 零错误（绕开仓库存量 baseline 的失效路径）、Pint 干净；
+  管理端 `pnpm run build`（含 vue-tsc）通过，改动文件 eslint 零错误。
+- i18n：`I18nLocaleConsistency` 守卫 9/9 通过，四份语言包键集合一致。

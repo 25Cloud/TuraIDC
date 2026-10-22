@@ -845,6 +845,27 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
         ],
       },
       {
+        title: t('settings.index.productDescriptionSync'),
+        fields: [
+          {
+            key: 'product_description_sync_schedule_mode',
+            label: t('settings.index.taskInterval'),
+            type: 'select',
+            default: 'daily',
+            options: automationScheduleModeOptions,
+          },
+          {
+            key: 'product_description_sync_schedule_time',
+            label: t('settings.index.runAt'),
+            type: 'time',
+            default: '03:45:00',
+            placeholder: t('settings.index.minutePlaceholder'),
+            pattern: /^\d{2}:(00|15|30|45):00$/,
+            patternMessage: t('settings.index.minutePattern'),
+          },
+        ],
+      },
+      {
         title: t('settings.index.ticketCleanup'),
         fields: [
           {

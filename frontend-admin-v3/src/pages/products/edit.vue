@@ -225,7 +225,28 @@
 
             <!-- 商品描述 -->
             <section v-show="activeSection === 'description'" class="product-edit-section">
-              <h3 class="product-edit-section-title">{{ t('products.description.sectionTitle') }}</h3>
+              <div class="product-edit-section-head">
+                <h3 class="product-edit-section-title">{{ t('products.description.sectionTitle') }}</h3>
+                <div class="product-edit-section-actions">
+                  <t-switch
+                    v-model="descriptionAutoSync"
+                    :custom-value="[1, 0]"
+                    :disabled="!isEdit"
+                    :label="[$t('products.description.autoSyncEnabled'), $t('products.description.autoSyncOffLabel')]"
+                    @change="handleDescriptionAutoSyncChange"
+                  />
+                  <t-button
+                    size="small"
+                    variant="outline"
+                    :loading="descriptionSyncing"
+                    :disabled="!isEdit"
+                    @click="syncDescriptionFromUpstream"
+                  >
+                    {{ $t('products.description.syncFromUpstream') }}
+                  </t-button>
+                </div>
+              </div>
+              <p class="product-edit-section-hint">{{ $t('products.description.autoSyncHint') }}</p>
               <t-loading :loading="descriptionLoading" size="small">
                 <product-description-editor
                   v-model="form.description"
@@ -807,6 +828,9 @@ const descriptionLoading = ref(false);
 const descriptionAutoHtml = ref('');
 const descriptionAutoItems = ref<ProductDescriptionItem[]>([]);
 const descriptionSource = ref('empty');
+// 描述自动同步是独立的执行开关：不随商品表单提交，改动即调用专用接口
+const descriptionAutoSync = ref(0);
+const descriptionSyncing = ref(false);
 
 /**
  * 商品描述本身随商品表单一起提交，这里只额外拉一份只读数据：
@@ -820,12 +844,45 @@ async function loadProductDescription() {
     descriptionAutoHtml.value = String(detail.auto_html || '');
     descriptionAutoItems.value = Array.isArray(detail.auto_items) ? detail.auto_items : [];
     descriptionSource.value = String(detail.source || 'empty');
+    descriptionAutoSync.value = Number(detail.description_sync_enabled || 0);
   } catch {
     descriptionAutoHtml.value = '';
     descriptionAutoItems.value = [];
     descriptionSource.value = 'empty';
   } finally {
     descriptionLoading.value = false;
+  }
+}
+
+/** 从上游拉一次描述回填：上游内容可能与本地人工描述不同，同步后重新拉只读数据 */
+async function syncDescriptionFromUpstream() {
+  if (!isEdit.value) return;
+  descriptionSyncing.value = true;
+  try {
+    await productApi.syncDescription(productId.value);
+    MessagePlugin.success(t('products.description.syncDone'));
+    await loadProductDescription();
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, t('products.description.syncFailed')));
+  } finally {
+    descriptionSyncing.value = false;
+  }
+}
+
+/** 自动同步开关：改动即保存；失败时回读一次，避免界面显示与库里不一致 */
+async function handleDescriptionAutoSyncChange(value: unknown) {
+  const enabled = Number(value) === 1 ? 1 : 0;
+  try {
+    await productApi.updateDescriptionAutoSync({
+      product_ids: [Number(productId.value)],
+      enabled,
+    });
+    MessagePlugin.success(
+      enabled ? t('products.description.autoSyncOpened') : t('products.description.autoSyncClosed'),
+    );
+  } catch (error) {
+    MessagePlugin.error(errorMessage(error, t('products.description.autoSyncFailed')));
+    await loadProductDescription();
   }
 }
 
@@ -1607,6 +1664,13 @@ function goBack() {
   font-size: var(--td-font-size-size-4, 16px);
   font-weight: 600;
   line-height: 24px;
+}
+
+.product-edit-section-hint {
+  margin: 0 0 var(--td-comp-margin-l);
+  color: var(--td-text-color-placeholder);
+  font-size: var(--td-font-size-size-2, 12px);
+  line-height: 20px;
 }
 
 .product-edit-section-head .product-edit-section-title {
