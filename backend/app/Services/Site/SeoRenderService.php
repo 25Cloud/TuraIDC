@@ -139,6 +139,8 @@ class SeoRenderService
             '' => $this->homePage(),
             'products' => count($segments) > 2 ? null : $this->productsPage($segments),
             'about' => $this->staticPage('about', '关于我们', '了解 IDC 服务能力、节点覆盖和平台优势。'),
+            // 开源与商业许可：AGPL 强制源码提供入口，页脚有链接，必须可被渲染与索引
+            'open-source' => $this->staticPage('open-source', '开源版本与商业许可', '查看 AGPL-3.0-or-later 开源义务、源码获取方式与商业授权说明。'),
             'terms' => $this->staticPage('terms', '服务条款', '查看服务条款。'),
             'privacy' => $this->staticPage('privacy', '隐私政策', '查看隐私政策。'),
             'notices' => $this->articleListPage('notices', '官方公告', '查看平台公告和服务通知。', ContentArticle::TYPE_NOTICE, $segments),
@@ -165,7 +167,9 @@ class SeoRenderService
 
         return [
             'type' => 'home',
-            'title' => '',
+            // 首页标题取站点配置的 browser_title（与 SPA 首页口径一致）：
+            // 站长可在后台填带关键词的标题，爬虫与服务端渲染拿到同一个值。
+            'title' => (string) ($config['browser_title'] ?? ''),
             'description' => $description,
             'keywords' => '云服务器,独立服务器,高防服务器,云电脑,IDC 服务',
             'canonical' => '/',

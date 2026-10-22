@@ -92,6 +92,17 @@ HTML);
         $this->assertStringContainsString('/products/'.(int) $product->id, $xml);
     }
 
+    public function test_open_source_page_is_rendered_and_indexable(): void
+    {
+        $service = $this->app->make(SeoRenderService::class);
+        $rendered = $service->render('open-source');
+
+        // AGPL 源码提供入口必须可渲染、可索引：页脚有链接，404 壳会让爬虫判定为死链
+        $this->assertSame(200, $rendered['status']);
+        $this->assertStringNotContainsString('content="noindex"', $rendered['html']);
+        $this->assertStringContainsString('rel="canonical" href=', $rendered['html']);
+    }
+
     public function test_unknown_path_returns_noindex_brand_404_shell(): void
     {
         $service = $this->app->make(SeoRenderService::class);
