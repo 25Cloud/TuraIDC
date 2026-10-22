@@ -12,12 +12,18 @@
             <span>{{ $t('services.console.currentTraffic') }}</span>
             <strong
               >{{ trafficData?.traffic?.usage_label || detail.traffic?.usage_label || '0G' }} /
-              {{ trafficData?.traffic?.limit_label || detail.traffic?.limit_label || $t('services.console.unlimited') }}</strong
+              {{
+                trafficData?.traffic?.limit_label || detail.traffic?.limit_label || $t('services.console.unlimited')
+              }}</strong
             >
           </div>
           <div>
             <span>{{ $t('services.console.remainingTraffic') }}</span>
-            <strong>{{ trafficData?.traffic?.remaining_label || detail.traffic?.remaining_label || $t('services.console.unlimited') }}</strong>
+            <strong>{{
+              trafficData?.traffic?.remaining_label ||
+              detail.traffic?.remaining_label ||
+              $t('services.console.unlimited')
+            }}</strong>
           </div>
         </div>
         <t-radio-group
@@ -37,11 +43,16 @@
           </t-radio-button>
         </t-radio-group>
         <div class="traffic-total-line">
-          <span>{{ selectedTrafficPackage?.target_label || selectedTrafficPackage?.label || $t('services.console.selectedTier') }}</span>
+          <span>{{
+            selectedTrafficPackage?.target_label || selectedTrafficPackage?.label || $t('services.console.selectedTier')
+          }}</span>
           <strong>{{ trafficQuoting ? $t('services.console.quoting') : `¥${trafficPayableAmount}` }}</strong>
         </div>
       </template>
-      <t-empty v-else-if="!trafficLoading" :description="trafficData?.message || $t('services.console.noTrafficPackage')" />
+      <t-empty
+        v-else-if="!trafficLoading"
+        :description="trafficData?.message || $t('services.console.noTrafficPackage')"
+      />
     </loading-state>
     <template #footer>
       <t-button variant="outline" @click="trafficVisible = false">{{ $t('services.console.cancel') }}</t-button>

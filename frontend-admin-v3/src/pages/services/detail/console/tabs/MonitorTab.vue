@@ -9,12 +9,17 @@
             <t-radio-button value="7d">{{ $t('services.console.range7d') }}</t-radio-button>
             <t-radio-button value="30d">{{ $t('services.console.range30d') }}</t-radio-button>
           </t-radio-group>
-          <t-button :loading="monitorState.loading" @click="loadMonitor(true)">{{ $t('services.console.refresh') }}</t-button>
+          <t-button :loading="monitorState.loading" @click="loadMonitor(true)">{{
+            $t('services.console.refresh')
+          }}</t-button>
         </t-space>
       </template>
 
       <t-alert v-if="monitorState.error" theme="warning" class="console-inline-alert">{{ monitorState.error }}</t-alert>
-      <t-empty v-if="monitorState.supported === false" :description="monitorState.message || $t('services.console.monitorUnsupported')" />
+      <t-empty
+        v-if="monitorState.supported === false"
+        :description="monitorState.message || $t('services.console.monitorUnsupported')"
+      />
       <div v-else class="monitor-grid">
         <article v-for="chart in monitorChartViews" :key="chart.key" class="monitor-card">
           <header class="monitor-card-header">
@@ -128,7 +133,10 @@
             >
           </div>
         </article>
-        <t-empty v-if="!monitorState.loading && !monitorState.charts.length" :description="$t('services.console.noMonitorData')" />
+        <t-empty
+          v-if="!monitorState.loading && !monitorState.charts.length"
+          :description="$t('services.console.noMonitorData')"
+        />
       </div>
     </t-card>
   </section>

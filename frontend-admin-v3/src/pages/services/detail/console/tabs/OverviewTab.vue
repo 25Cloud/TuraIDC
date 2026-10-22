@@ -21,7 +21,12 @@
           "
           strong
         />
-        <info-cell :label="$t('services.console.instanceId')" :value="String(detail.id || '--')" copyable @copy="copyText" />
+        <info-cell
+          :label="$t('services.console.instanceId')"
+          :value="String(detail.id || '--')"
+          copyable
+          @copy="copyText"
+        />
         <info-cell :label="$t('services.console.os')" :value="serviceOs" strong />
         <info-cell :label="$t('services.console.createdAt')" :value="detail.created_at || '--'" strong />
         <div class="detail-cell">
@@ -106,7 +111,12 @@
 
     <t-card class="console-panel" :title="$t('services.console.credentials')" :bordered="false">
       <div class="credential-grid">
-        <info-cell :label="$t('services.console.username')" :value="detail.connection?.username || '--'" copyable @copy="copyText" />
+        <info-cell
+          :label="$t('services.console.username')"
+          :value="detail.connection?.username || '--'"
+          copyable
+          @copy="copyText"
+        />
         <div class="detail-cell">
           <span>{{ $t('services.console.password') }}</span>
           <div class="detail-cell-value credential-password-value">
@@ -146,18 +156,15 @@
           </div>
         </div>
         <info-cell :label="$t('services.console.port')" :value="connectionPortText" strong copyable @copy="copyText" />
-        <info-cell
-          :label="$t('services.console.hostname')"
-          :value="connectionEndpointText"
-          copyable
-          @copy="copyText"
-        />
+        <info-cell :label="$t('services.console.hostname')" :value="connectionEndpointText" copyable @copy="copyText" />
       </div>
     </t-card>
 
     <t-card class="console-panel console-panel-wide" :title="$t('services.console.billingInfo')" :bordered="false">
       <template #actions>
-        <t-button variant="text" theme="primary" @click="openRenewDialog">{{ $t('services.console.renewManage') }}</t-button>
+        <t-button variant="text" theme="primary" @click="openRenewDialog">{{
+          $t('services.console.renewManage')
+        }}</t-button>
       </template>
       <div class="detail-grid">
         <info-cell :label="$t('services.console.billingMethod')" :value="detail.billing_cycle_label || '--'" strong />
@@ -168,7 +175,12 @@
           strong
           warning
         />
-        <info-cell :label="$t('services.console.orderNo')" :value="detail.invoice?.order_no || '--'" copyable @copy="copyText" />
+        <info-cell
+          :label="$t('services.console.orderNo')"
+          :value="detail.invoice?.order_no || '--'"
+          copyable
+          @copy="copyText"
+        />
       </div>
     </t-card>
   </section>
@@ -182,15 +194,20 @@
     <div class="ip-dialog-list">
       <div v-for="ip in primaryConnectionValues" :key="ip" class="ip-dialog-item">
         <strong>{{ ip }}</strong>
-        <button type="button" class="copy-link" :aria-label="`${$t('services.console.copy')}${ip}`" @click="copyText(ip)">
+        <button
+          type="button"
+          class="copy-link"
+          :aria-label="`${$t('services.console.copy')}${ip}`"
+          @click="copyText(ip)"
+        >
           <copy-icon size="1rem" />
         </button>
       </div>
     </div>
     <template #footer>
-      <t-button v-if="primaryConnectionValues.length > 1" variant="outline" @click="copyText(primaryConnectionText)"
-        >{{ $t('services.console.copyAll') }}</t-button
-      >
+      <t-button v-if="primaryConnectionValues.length > 1" variant="outline" @click="copyText(primaryConnectionText)">{{
+        $t('services.console.copyAll')
+      }}</t-button>
       <t-button theme="primary" @click="ipDialogVisible = false">{{ $t('services.console.close') }}</t-button>
     </template>
   </t-dialog>

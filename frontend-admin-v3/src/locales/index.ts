@@ -1,17 +1,12 @@
+import type { SupportedLocale } from '@turaidc/shared/locale';
+import { applyDocumentLang, localeStorageKey, resolveInitialLocale, SUPPORTED_LOCALES } from '@turaidc/shared/locale';
 import type { DropdownOption } from 'tdesign-vue-next';
+import en_US from 'tdesign-vue-next/es/locale/en_US';
 import zh_CN from 'tdesign-vue-next/es/locale/zh_CN';
 import zh_TW from 'tdesign-vue-next/es/locale/zh_TW';
-import en_US from 'tdesign-vue-next/es/locale/en_US';
 import { computed } from 'vue';
 import type { I18nOptions } from 'vue-i18n';
 import { createI18n } from 'vue-i18n';
-import {
-  SUPPORTED_LOCALES,
-  applyDocumentLang,
-  localeStorageKey,
-  resolveInitialLocale,
-} from '@turaidc/shared/locale';
-import type { SupportedLocale } from '@turaidc/shared/locale';
 
 // 存储 key 从 tdesign 脚手架遗留值换成按应用区分的 key：
 // 管理端与控制台同域部署（子路径）时共用 localStorage 会互相覆盖语言偏好。

@@ -152,9 +152,7 @@ function toPlainRows(): { key: string; value: string }[] {
 
 // source 是后端按「库里有没有值」判定的，商家刚敲进去还没保存时它仍是 auto。
 // 提示要跟着实际内容走，否则会出现「已经填了描述，顶部还在说留空会自动生成」。
-const isManual = computed(
-  () => props.source === 'manual' || String(props.modelValue || '').trim() !== '',
-);
+const isManual = computed(() => props.source === 'manual' || String(props.modelValue || '').trim() !== '');
 
 // --- 双向同步 ---
 /** 最近一次由本组件抛出的 HTML，用来区分「外部回填」与「自身编辑」 */

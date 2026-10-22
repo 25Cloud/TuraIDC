@@ -19,7 +19,11 @@
       </label>
       <label>
         <span>{{ $t('services.console.protocol') }}</span>
-        <t-select v-model="ruleForm.protocol" :placeholder="$t('services.console.selectProtocol')" @change="onProtocolChange">
+        <t-select
+          v-model="ruleForm.protocol"
+          :placeholder="$t('services.console.selectProtocol')"
+          @change="onProtocolChange"
+        >
           <t-option v-for="item in securityState.protocols" :key="item.value" :label="item.label" :value="item.value" />
         </t-select>
       </label>
@@ -53,7 +57,9 @@
     </div>
     <template #footer>
       <t-button variant="outline" @click="ruleVisible = false">{{ $t('services.console.cancel') }}</t-button>
-      <t-button theme="primary" :loading="securityState.submitting" @click="submitSecurityRule">{{ $t('services.console.createRule') }}</t-button>
+      <t-button theme="primary" :loading="securityState.submitting" @click="submitSecurityRule">{{
+        $t('services.console.createRule')
+      }}</t-button>
     </template>
   </t-dialog>
 </template>

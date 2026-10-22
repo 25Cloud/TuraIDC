@@ -3,7 +3,9 @@
     <t-card :title="$t('services.console.securityGroups')" :bordered="false">
       <template #actions>
         <t-space>
-          <t-button :loading="securityState.loading" @click="loadSecurityGroups(true)">{{ $t('services.console.refresh') }}</t-button>
+          <t-button :loading="securityState.loading" @click="loadSecurityGroups(true)">{{
+            $t('services.console.refresh')
+          }}</t-button>
           <t-button
             v-if="securityState.canCreate"
             theme="primary"
@@ -34,7 +36,9 @@
               <div class="security-row__name">
                 <strong>{{ group.name || `${$t('services.console.securityGroupLabel')} #${group.id}` }}</strong>
                 <t-tag size="small" variant="outline">ID {{ group.id }}</t-tag>
-                <t-tag v-if="group.is_applied" size="small" theme="success" variant="light">{{ $t('services.console.applied') }}</t-tag>
+                <t-tag v-if="group.is_applied" size="small" theme="success" variant="light">{{
+                  $t('services.console.applied')
+                }}</t-tag>
                 <t-tag v-else size="small" variant="light">{{ $t('services.console.notApplied') }}</t-tag>
               </div>
               <p>{{ group.description || $t('services.console.noRemarkTip') }}</p>
@@ -74,17 +78,19 @@
         <t-empty
           v-else
           :description="
-          securityState.canCreate
-            ? $t('services.console.noSecurityGroupCreatable')
-            : $t('services.console.noSecurityGroupAppliable')
-        "
+            securityState.canCreate
+              ? $t('services.console.noSecurityGroupCreatable')
+              : $t('services.console.noSecurityGroupAppliable')
+          "
         />
 
         <div v-if="activeSecurityGroup" class="security-rules-panel">
           <div class="security-rules-panel__head">
             <div>
               <strong
-                >{{ activeSecurityGroup.name || `${$t('services.console.securityGroupLabel')} #${activeSecurityGroup.id}` }}
+                >{{
+                  activeSecurityGroup.name || `${$t('services.console.securityGroupLabel')} #${activeSecurityGroup.id}`
+                }}
                 {{ $t('services.console.rulesSuffix') }}</strong
               >
               <span>{{ securityState.rules.length }} {{ $t('services.console.rulesUnit') }}</span>

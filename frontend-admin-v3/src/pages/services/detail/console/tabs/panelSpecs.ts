@@ -47,21 +47,52 @@ export interface PanelCapabilityItem {
 
 /** CDN 配置分组：按业务关注点从「套餐」到「防护」排列 */
 const CDN_GROUPS: Array<{ title: string; hint: string; fields: string[] }> = [
-  { title: t('serviceConsole.panelSpecs.planGroup'), hint: t('serviceConsole.panelSpecs.planGroupHint'), fields: ['plan', 'area', 'bw'] },
-  { title: t('serviceConsole.panelSpecs.quotaGroup'), hint: t('serviceConsole.panelSpecs.quotaGroupHint'), fields: ['flow_limit', 'concurrency', 'sites', 'domains'] },
-  { title: t('serviceConsole.panelSpecs.accelerationGroup'), hint: t('serviceConsole.panelSpecs.accelerationGroupHint'), fields: ['cdn_system', 'l4_forward'] },
-  { title: t('serviceConsole.panelSpecs.securityGroup'), hint: t('serviceConsole.panelSpecs.securityGroupHint'), fields: ['defense_level', 'cc_defense', 'waf_custom', 'waf_security'] },
+  {
+    title: t('serviceConsole.panelSpecs.planGroup'),
+    hint: t('serviceConsole.panelSpecs.planGroupHint'),
+    fields: ['plan', 'area', 'bw'],
+  },
+  {
+    title: t('serviceConsole.panelSpecs.quotaGroup'),
+    hint: t('serviceConsole.panelSpecs.quotaGroupHint'),
+    fields: ['flow_limit', 'concurrency', 'sites', 'domains'],
+  },
+  {
+    title: t('serviceConsole.panelSpecs.accelerationGroup'),
+    hint: t('serviceConsole.panelSpecs.accelerationGroupHint'),
+    fields: ['cdn_system', 'l4_forward'],
+  },
+  {
+    title: t('serviceConsole.panelSpecs.securityGroup'),
+    hint: t('serviceConsole.panelSpecs.securityGroupHint'),
+    fields: ['defense_level', 'cc_defense', 'waf_custom', 'waf_security'],
+  },
 ];
 
 /** 虚拟主机配置分组 */
 const HOSTING_GROUPS: Array<{ title: string; hint: string; fields: string[] }> = [
-  { title: t('serviceConsole.panelSpecs.storageGroup'), hint: t('serviceConsole.panelSpecs.storageGroupHint'), fields: ['web_space', 'database_space', 'disk'] },
-  { title: t('serviceConsole.panelSpecs.bandwidthGroup'), hint: t('serviceConsole.panelSpecs.bandwidthGroupHint'), fields: ['flow_limit', 'bw'] },
-  { title: t('serviceConsole.panelSpecs.bindingGroup'), hint: t('serviceConsole.panelSpecs.bindingGroupHint'), fields: ['domains', 'area'] },
+  {
+    title: t('serviceConsole.panelSpecs.storageGroup'),
+    hint: t('serviceConsole.panelSpecs.storageGroupHint'),
+    fields: ['web_space', 'database_space', 'disk'],
+  },
+  {
+    title: t('serviceConsole.panelSpecs.bandwidthGroup'),
+    hint: t('serviceConsole.panelSpecs.bandwidthGroupHint'),
+    fields: ['flow_limit', 'bw'],
+  },
+  {
+    title: t('serviceConsole.panelSpecs.bindingGroup'),
+    hint: t('serviceConsole.panelSpecs.bindingGroupHint'),
+    fields: ['domains', 'area'],
+  },
 ];
 
 /** 未归入上述分组的字段（如各套餐独有的扩展项）统一收进「其他配置」 */
-const EXTRA_GROUP = { title: t('serviceConsole.panelSpecs.extraGroup'), hint: t('serviceConsole.panelSpecs.extraGroupHint') };
+const EXTRA_GROUP = {
+  title: t('serviceConsole.panelSpecs.extraGroup'),
+  hint: t('serviceConsole.panelSpecs.extraGroupHint'),
+};
 
 /** "放开限制"类语义值：在能力语境下代表「支持且不限量」，应判为支持 */
 const UNLIMITED_TOKENS = ['不限', '不限制', '无限制'];
@@ -102,9 +133,10 @@ export function resolveCapabilityState(value: string): PanelCapabilityState {
 }
 
 /** 能力类字段归入独立区块，不混在参数分组里 */
-export function splitPanelSpecs(
-  specs: Array<{ key?: string; label?: string; value?: unknown }>,
-): { capabilities: PanelCapabilityItem[]; groups: PanelSpecGroup[] } {
+export function splitPanelSpecs(specs: Array<{ key?: string; label?: string; value?: unknown }>): {
+  capabilities: PanelCapabilityItem[];
+  groups: PanelSpecGroup[];
+} {
   const items: PanelSpecItem[] = [];
   const capabilities: PanelCapabilityItem[] = [];
 

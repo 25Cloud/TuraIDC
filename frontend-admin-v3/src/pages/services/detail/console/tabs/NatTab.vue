@@ -3,7 +3,9 @@
     <t-card :title="$t('services.console.portForwarding')" :bordered="false">
       <template #actions>
         <t-space>
-          <t-button :loading="natState.loading" @click="loadNatForwardings">{{ $t('services.console.refresh') }}</t-button>
+          <t-button :loading="natState.loading" @click="loadNatForwardings">{{
+            $t('services.console.refresh')
+          }}</t-button>
           <t-button
             v-if="natState.can_create"
             theme="primary"

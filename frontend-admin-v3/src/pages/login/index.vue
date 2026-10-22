@@ -32,12 +32,7 @@
         -->
         <div v-show="captchaSlotVisible" class="login-captcha">
           <div v-if="captchaPending" class="login-captcha-placeholder" aria-hidden="true"></div>
-          <t-link
-            v-if="captchaInitError"
-            class="login-captcha-retry"
-            theme="primary"
-            @click="handleCaptchaRetry"
-          >
+          <t-link v-if="captchaInitError" class="login-captcha-retry" theme="primary" @click="handleCaptchaRetry">
             {{ $t('login.captchaRetry') }}
           </t-link>
           <div ref="captchaContainer" class="login-captcha-container"></div>
@@ -106,9 +101,7 @@ const {
 // 只有 inline 形态才有内联组件可放；popup 形态不占位
 const captchaNeedsSlot = computed(() => captchaEnabled.value && captchaRenderMode.value === 'inline');
 // 配置还没回来、或 inline 组件还没渲染好时都保留占位（首屏即为 true，先顶住高度）
-const captchaPending = computed(
-  () => !captchaReady.value && !(captchaInitialized.value && !captchaNeedsSlot.value),
-);
+const captchaPending = computed(() => !captchaReady.value && !(captchaInitialized.value && !captchaNeedsSlot.value));
 // popup 形态本来就没有内联区域，但组件加载失败时仍要留一个显式重试入口，
 // 不能只依赖「点登录才报错」
 const captchaSlotVisible = computed(

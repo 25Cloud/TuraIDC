@@ -7,12 +7,7 @@ import { DARK_CHART_COLORS, LIGHT_CHART_COLORS } from '@/config/color';
 import STYLE_CONFIG from '@/config/style';
 import { store } from '@/store';
 import type { ModeType } from '@/types/interface';
-import {
-  generateColorMap,
-  insertRadiusVariables,
-  insertThemeStylesheet,
-  normalizeHexColor,
-} from '@/utils/color';
+import { generateColorMap, insertRadiusVariables, insertThemeStylesheet, normalizeHexColor } from '@/utils/color';
 
 const state: Record<string, any> = {
   ...STYLE_CONFIG,

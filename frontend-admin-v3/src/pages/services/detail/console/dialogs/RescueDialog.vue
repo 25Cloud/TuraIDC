@@ -5,10 +5,7 @@
     width="min(32rem, calc(100vw - 2rem))"
     destroy-on-close
   >
-    <t-alert
-      theme="warning"
-      :message="$t('services.console.rescueModeTip')"
-    />
+    <t-alert theme="warning" :message="$t('services.console.rescueModeTip')" />
     <div class="dialog-form">
       <label>
         <span>{{ $t('services.console.rescueSystem') }}</span>
@@ -20,7 +17,9 @@
     </div>
     <template #footer>
       <t-button variant="outline" @click="rescueVisible = false">{{ $t('services.console.cancel') }}</t-button>
-      <t-button theme="warning" :loading="actionLoading" @click="submitRescue">{{ $t('services.console.confirmEnter') }}</t-button>
+      <t-button theme="warning" :loading="actionLoading" @click="submitRescue">{{
+        $t('services.console.confirmEnter')
+      }}</t-button>
     </template>
   </t-dialog>
 </template>

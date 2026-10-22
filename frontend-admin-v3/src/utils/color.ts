@@ -118,12 +118,12 @@ export function insertThemeStylesheet(theme: string, colorMap: TColorToken, mode
 export function normalizeHexColor(value?: string): string {
   const raw = (value || '').trim();
 
-  if (/^#([0-9a-fA-F]{3})$/.test(raw)) {
+  if (/^#[0-9a-f]{3}$/i.test(raw)) {
     const hex = raw.slice(1);
     return `#${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`.toLowerCase();
   }
 
-  if (/^#([0-9a-fA-F]{6})$/.test(raw)) {
+  if (/^#[0-9a-f]{6}$/i.test(raw)) {
     return raw.toLowerCase();
   }
 

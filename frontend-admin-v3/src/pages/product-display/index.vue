@@ -6,12 +6,7 @@
           <h2 class="product-display-title">{{ t('productDisplay.title') }}</h2>
           <p class="product-display-desc">{{ t('productDisplay.description') }}</p>
         </div>
-        <t-button
-          theme="primary"
-          :loading="saving"
-          :disabled="!canManage"
-          @click="save"
-        >
+        <t-button theme="primary" :loading="saving" :disabled="!canManage" @click="save">
           {{ t('productDisplay.save') }}
         </t-button>
       </div>
@@ -99,7 +94,6 @@
     </t-card>
   </div>
 </template>
-
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core';
 import { MessagePlugin } from 'tdesign-vue-next';
@@ -146,8 +140,7 @@ function applySettings(settings: Record<string, unknown>) {
   form.product_display_mode = String(settings.product_display_mode || '').trim() === 'card' ? 'card' : 'list';
   form.product_card_show_stock = normalizeFlag(settings.product_card_show_stock, true);
   form.product_detail_spec_compare = normalizeFlag(settings.product_detail_spec_compare, true);
-  form.product_page_layout =
-    String(settings.product_page_layout || '').trim() === 'full' ? 'full' : 'contained';
+  form.product_page_layout = String(settings.product_page_layout || '').trim() === 'full' ? 'full' : 'contained';
 
   const width = Number(settings.product_page_max_width);
   form.product_page_max_width = Number.isFinite(width) && width > 0 ? Math.min(Math.max(width, 960), 1920) : 1280;
@@ -198,7 +191,6 @@ async function save() {
 
 onMounted(loadSettings);
 </script>
-
 <style lang="less" scoped>
 .product-display-page {
   padding: 16px;

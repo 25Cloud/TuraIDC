@@ -40,7 +40,6 @@
     </div>
   </div>
 </template>
-
 <script setup lang="ts">
 /**
  * 列表 / 卡片 展示方式开关。
@@ -77,7 +76,6 @@ function select(mode: AdminViewMode): void {
   emit('change', mode);
 }
 </script>
-
 <style lang="less" scoped>
 .admin-view-mode-bar {
   display: flex;

@@ -12,18 +12,15 @@
  *   areas     上游自定义区域（如天理云的「面板信息」），按 key 动态插入
  *   finance   财务日志
  */
-import {
-  BillIcon,
-  DashboardIcon,
-  ServerIcon,
-} from 'tdesign-icons-vue-next';
+import { BillIcon, DashboardIcon, ServerIcon } from 'tdesign-icons-vue-next';
 import type { Component } from 'vue';
+
+import { t } from '@/locales';
 
 import AreaTab from '../console/tabs/AreaTab.vue';
 import FinanceTab from '../console/tabs/FinanceTab.vue';
 import PanelTab from '../console/tabs/PanelTab.vue';
 import CdnOverviewTab from './tabs/CdnOverviewTab.vue';
-import { t } from '@/locales';
 
 export interface CdnConsoleNavItem {
   key: string;
@@ -49,10 +46,7 @@ const cdnBuiltinTabKeys = new Set(Object.keys(cdnTabComponents));
 /** 面板型 key（上游自定义区域）走 iframe 内联渲染 */
 const DEFAULT_AREA_ICON = DashboardIcon;
 
-export function resolveCdnNavItems(
-  tabKeys: string[],
-  areaLabels: Record<string, string> = {},
-): CdnConsoleNavItem[] {
+export function resolveCdnNavItems(tabKeys: string[], areaLabels: Record<string, string> = {}): CdnConsoleNavItem[] {
   return tabKeys.map((key) => ({
     key,
     label: areaLabels[key] || cdnTabMeta[key]?.label || key,

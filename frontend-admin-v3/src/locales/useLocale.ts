@@ -1,9 +1,4 @@
-import {
-  DEFAULT_LOCALE,
-  applyDocumentLang,
-  isSupportedLocale,
-  writeStoredLocale,
-} from '@turaidc/shared/locale';
+import { applyDocumentLang, DEFAULT_LOCALE, isSupportedLocale, writeStoredLocale } from '@turaidc/shared/locale';
 import type { GlobalConfigProvider } from 'tdesign-vue-next';
 import { computed } from 'vue';
 

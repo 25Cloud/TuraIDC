@@ -1,5 +1,6 @@
 import type { Ref } from 'vue';
 import { onMounted, reactive, ref } from 'vue';
+
 import { t } from '@/locales';
 
 export interface ListPageResponse<T> {

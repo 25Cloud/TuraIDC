@@ -9,7 +9,11 @@
       <div class="dialog-form">
         <label>
           <span>{{ $t('services.console.osGroup') }}</span>
-          <t-select v-model="reinstallState.os_group" :placeholder="$t('services.console.selectOsGroup')" @change="handleReinstallGroupChange">
+          <t-select
+            v-model="reinstallState.os_group"
+            :placeholder="$t('services.console.selectOsGroup')"
+            @change="handleReinstallGroupChange"
+          >
             <t-option
               v-for="group in reinstallGroupedOptions"
               :key="group.group_name"
@@ -33,9 +37,9 @@
     </loading-state>
     <template #footer>
       <t-button variant="outline" @click="reinstallVisible = false">{{ $t('services.console.cancel') }}</t-button>
-      <t-button theme="primary" :loading="actionLoading" :disabled="!reinstallState.os_id" @click="submitReinstall"
-        >{{ $t('services.console.submitReinstall') }}</t-button
-      >
+      <t-button theme="primary" :loading="actionLoading" :disabled="!reinstallState.os_id" @click="submitReinstall">{{
+        $t('services.console.submitReinstall')
+      }}</t-button>
     </template>
   </t-dialog>
 </template>

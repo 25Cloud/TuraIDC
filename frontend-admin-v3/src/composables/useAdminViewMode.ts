@@ -107,10 +107,7 @@ export function setDefaultViewMode(mode: AdminViewMode): void {
  * @param pageKey 页面的稳定标识，用于同一会话内记住本页的临时切换
  * @param fallback 从没设置过默认值时该页的兜底形态（工单原本就是卡片）
  */
-export function useAdminViewMode(
-  pageKey: string,
-  fallback: AdminViewMode = 'list',
-) {
+export function useAdminViewMode(pageKey: string, fallback: AdminViewMode = 'list') {
   if (!pageModes.has(pageKey)) {
     // 旧版本可能已把页面偏好写进 localStorage，初始化时顺手清一次，
     // 避免升级后的第一次打开仍被历史值带偏。
