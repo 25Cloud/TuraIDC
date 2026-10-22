@@ -27,14 +27,14 @@ use App\Services\Integrations\Support\ProviderErrorMapper;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\System\NotificationService;
 use App\Services\System\OperationLogService;
-use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
 use App\Services\System\SettingService;
 use App\Services\Upstream\Contracts\ProvidesContextualRenewalRecovery;
 use App\Services\Upstream\Contracts\ProvidesInvoiceRenewal;
 use App\Services\Upstream\Contracts\ProvidesRenewableCycleFiltering;
-use App\Services\Upstream\Contracts\ProvidesRenewalRecovery;
 use App\Services\Upstream\Contracts\ProvidesRenewal;
+use App\Services\Upstream\Contracts\ProvidesRenewalRecovery;
 use App\Services\Upstream\ProviderResolver;
+use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
 use App\Support\OrderInvoiceNoGenerator;
 use App\Support\SensitiveDataSanitizer;
 use Carbon\Carbon;
@@ -766,8 +766,9 @@ class ServiceRenewService
 
             if ($supplier instanceof Supplier && $hostId > 0) {
                 $existingProvisionData = $this->serviceProvisionData($service);
-                $hasCurrentUpstreamRenewInvoice = (int) ($existingProvisionData['upstream_invoice_id'] ?? 0) > 0
-                    && (int) ($existingProvisionData['renew_invoice_id'] ?? 0) === (int) $invoice->id;
+                // 上游账单号归属本续费单时一律走恢复路径：本地履约记账一旦被覆盖，
+                // 只看 renew_invoice_id 会漏判「上游已收单」，重复提交上游续费会二次扣供应商余额。
+                $hasCurrentUpstreamRenewInvoice = $this->resolveInvoiceUpstreamRenewId($service, $invoice) > 0;
 
                 try {
                     if ($hasCurrentUpstreamRenewInvoice) {
@@ -907,13 +908,11 @@ class ServiceRenewService
                     // 恢复：检查上游续费账单是否已生成或已支付（fund 后崩溃保护）
                     $currentService = $service->fresh(['product.supplier']) ?? $service;
                     $currentProvisionData = $this->serviceProvisionData($currentService);
-                    $existingUpstreamInvoiceId = (int) ($currentProvisionData['upstream_invoice_id'] ?? 0);
-                    $currentRenewInvoiceId = (int) ($currentProvisionData['renew_invoice_id'] ?? 0);
+                    $existingUpstreamInvoiceId = $this->resolveInvoiceUpstreamRenewId($currentService, $invoice);
                     $recoveryError = '';
 
                     if (
                         $existingUpstreamInvoiceId > 0
-                        && $currentRenewInvoiceId === (int) $invoice->id
                         && isset($supplier)
                         && $supplier instanceof Supplier
                         && $hostId > 0
@@ -1529,18 +1528,27 @@ class ServiceRenewService
             ?? $configSnapshot[self::RENEW_FULFILLMENT_STATUS_KEY]
             ?? '');
 
+        // 上游续费的到期时间以上游到期日为准：续费履约已按上游结果回写到期时间，
+        // 本地估算（支付时间 + 周期）只在真正缺口（到期时间缺失或已过期）时用来补齐。
+        // 拿本地估算覆盖上游口径会凭空多给或少给周期——上游给多久就生效多久。
+        $expiresAtCoveredByUpstream = (string) ($provisionData['last_renew_source'] ?? '') === 'upstream'
+            && $service->expires_at instanceof Carbon
+            && $service->expires_at->isFuture();
+
         // 履约已确认成功：到期时间没跟上是漂移，补齐后放行，避免用户被永久拦死
         if ($fulfillmentStatus === self::RENEW_FULFILLMENT_SUCCEEDED) {
-            $service->forceFill(['expires_at' => $coveredUntil])->save();
+            if (! $expiresAtCoveredByUpstream) {
+                $service->forceFill(['expires_at' => $coveredUntil])->save();
 
-            Log::warning('[服务续费] 已履约续费的到期时间落后于覆盖期，已自动补齐', [
-                'service_id' => $service->id,
-                'invoice_id' => $latestPaid->id,
-                'invoice_no' => $latestPaid->invoice_no ?? '',
-                'billing_cycle' => $cycle,
-                'expires_at_before' => (string) $service->getOriginal('expires_at'),
-                'expires_at_after' => $coveredUntil->toDateTimeString(),
-            ]);
+                Log::warning('[服务续费] 已履约续费的到期时间落后于覆盖期，已自动补齐', [
+                    'service_id' => $service->id,
+                    'invoice_id' => $latestPaid->id,
+                    'invoice_no' => $latestPaid->invoice_no ?? '',
+                    'billing_cycle' => $cycle,
+                    'expires_at_before' => (string) $service->getOriginal('expires_at'),
+                    'expires_at_after' => $coveredUntil->toDateTimeString(),
+                ]);
+            }
 
             return;
         }
@@ -1576,9 +1584,137 @@ class ServiceRenewService
             return null;
         }
 
+        // 已支付但本地缺履约记录：先与上游对账补齐履约（上游已收款则按上游结果补记），
+        // 补齐后本次续费放行；补不齐（上游不可达、上游账单号未知）才继续拦截。
+        // 否则一笔早已履约的续费会把用户永久挡在同周期续费之外，且没有任何自愈入口。
+        if (! $this->isRenewInvoiceFulfilled($latestPaidInvoice, $service)) {
+            $this->reconcileUnfulfilledRenewInvoice($service, $latestPaidInvoice);
+            $service->refresh();
+        }
+
         return $this->isRenewInvoiceFulfilled($latestPaidInvoice, $service)
             ? null
             : $latestPaidInvoice;
+    }
+
+    /**
+     * 取「属于本续费单」的上游续费账单号。
+     *
+     * 归属判定同时看本地履约记账与续费单快照：本地记账（renew_invoice_id）在后续写入中
+     * 可能被覆盖丢失，只认本地字段会漏判「上游已经收单」的事实，进而重复提交上游续费，
+     * 造成二次扣供应商余额。快照里的 renew_inflight.upstream_invoice_id 是同一笔上游账单
+     * 的旁证，两者一致时视为已提交上游。
+     */
+    private function resolveInvoiceUpstreamRenewId(Service $service, Invoice $invoice): int
+    {
+        $provisionData = $this->serviceProvisionData($service);
+        $upstreamInvoiceId = (int) ($provisionData['upstream_invoice_id'] ?? 0);
+        if ($upstreamInvoiceId <= 0) {
+            return 0;
+        }
+
+        if ((int) ($provisionData['renew_invoice_id'] ?? 0) === (int) $invoice->id) {
+            return $upstreamInvoiceId;
+        }
+
+        $snapshot = is_array($invoice->config_snapshot ?? null) ? $invoice->config_snapshot : [];
+        $inflight = is_array($snapshot['renew_inflight'] ?? null) ? $snapshot['renew_inflight'] : [];
+
+        return (int) ($inflight['upstream_invoice_id'] ?? 0) === $upstreamInvoiceId
+            ? $upstreamInvoiceId
+            : 0;
+    }
+
+    /**
+     * 已支付但本地无履约记录的续费账单：与上游对账并补齐本地履约。
+     *
+     * 场景：上游续费已付款成功，但本地履约记账在后续写入中被覆盖，导致「已支付未履约」
+     * 判定永远为真。此处按上游账单号查一次支付状态：已支付则按上游结果补齐本地履约
+     * （到期时间取上游 nextduedate，与上游口径一致），用户即可正常续下一周期。
+     * 上游不可达或账单号未知时返回 false，保留原有拦截，避免在不确定状态下放行并重复扣款。
+     */
+    private function reconcileUnfulfilledRenewInvoice(Service $service, Invoice $invoice): bool
+    {
+        $upstreamInvoiceId = $this->resolveInvoiceUpstreamRenewId($service, $invoice);
+        if ($upstreamInvoiceId <= 0) {
+            return false;
+        }
+
+        $effectiveProduct = $this->resolveEffectiveProduct($service) ?? $service->product;
+        if (! $effectiveProduct instanceof Product) {
+            return false;
+        }
+
+        $boundSupplier = $this->pluginBindingResolver()->supplierForService($service)
+            ?? $this->pluginBindingResolver()->supplierForProduct($effectiveProduct);
+        $supplier = $boundSupplier instanceof Supplier
+            ? $this->supplierWithRuntimeCredentials($boundSupplier)
+            : null;
+        $hostId = $this->resolveUpstreamHostId($service);
+        if (! $supplier instanceof Supplier || $hostId <= 0) {
+            return false;
+        }
+
+        try {
+            $renewal = $this->resolveRenewalCapability($service, $effectiveProduct);
+            $provisionData = $this->serviceProvisionData($service);
+            $recoveryContext = is_array($provisionData['renew_recovery_context'] ?? null)
+                ? $provisionData['renew_recovery_context']
+                : [];
+
+            if ($renewal instanceof ProvidesContextualRenewalRecovery) {
+                $recovery = $renewal->recoverRenewInvoiceWithContext(
+                    $supplier,
+                    $hostId,
+                    $upstreamInvoiceId,
+                    $recoveryContext
+                );
+            } elseif ($renewal instanceof ProvidesRenewalRecovery) {
+                $recovery = $renewal->recoverRenewInvoice($supplier, $hostId, $upstreamInvoiceId);
+            } else {
+                $recovery = null;
+            }
+
+            if (! is_array($recovery) || ($recovery['payment_completed'] ?? true) !== true) {
+                return false;
+            }
+
+            $hostDetail = is_array($recovery['host_detail'] ?? null) ? $recovery['host_detail'] : [];
+            $billingCycle = (string) ($invoice->billing_cycle ?? $service->billing_cycle);
+            $nextExpiresAt = $this->resolveRenewedExpiry($service, $billingCycle, $hostDetail);
+
+            $provisionData['upstream_status'] = (string) ($hostDetail['domainstatus'] ?? ($provisionData['upstream_status'] ?? ''));
+            $provisionData['upstream_invoice_id'] = $upstreamInvoiceId;
+            $provisionData['renew_error'] = null;
+            $provisionData[self::RENEW_FULFILLMENT_STATUS_KEY] = self::RENEW_FULFILLMENT_SUCCEEDED;
+            $provisionData['last_renewed_at'] = now()->format('Y-m-d H:i:s');
+            $provisionData['last_renew_billing_cycle'] = $billingCycle;
+            $provisionData['last_renew_invoice_id'] = (int) $invoice->id;
+            $provisionData['last_renew_invoice_no'] = (string) $invoice->invoice_no;
+            $provisionData['last_renew_source'] = 'upstream';
+            $provisionData['renew_invoice_id'] = (int) $invoice->id;
+
+            $this->finalizeRenewInvoiceSuccess($service, $invoice, $provisionData, $nextExpiresAt);
+
+            Log::info('[服务续费·对账] 已支付续费缺履约记录，已按上游结果补齐履约', [
+                'invoice_id' => (int) $invoice->id,
+                'invoice_no' => (string) $invoice->invoice_no,
+                'service_id' => (int) $service->id,
+                'upstream_invoice_id' => $upstreamInvoiceId,
+                'expires_at' => $nextExpiresAt?->format('Y-m-d H:i:s'),
+            ]);
+
+            return true;
+        } catch (\Throwable $exception) {
+            Log::warning('[服务续费·对账] 补齐履约失败，保留续费拦截', [
+                'invoice_id' => (int) $invoice->id,
+                'service_id' => (int) $service->id,
+                'upstream_invoice_id' => $upstreamInvoiceId,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     private function findNewerPaidRenewInvoice(Invoice $invoice, ?Service $service = null): ?Invoice
