@@ -94,7 +94,8 @@ final class ProductDescriptionService
      * remark 中保存的上游描述 HTML。
      *
      * 魔方接口返回的描述本身是转义过的 HTML（&lt;li&gt;…），历史导入按原样落库；
-     * 这里解码实体、给裸 &lt;li&gt; 片段补上列表容器，再过白名单消毒。
+     * remark 兜底与上游同步两条路径共用 {@see normalizeUpstreamHtml()} 这条管线，
+     * 同一套规则只保留一份实现。
      */
     private function remarkHtml(Product $product): string
     {
@@ -105,11 +106,29 @@ final class ProductDescriptionService
         }
 
         // remark 是 varchar(255)，截断处可能留下半个多字节字符 / 半个标签，
-        // 先丢弃非法字节与残缺标签，避免前台拿到非法 UTF-8 或破标签。
-        $remark = $this->scrubUtf8($remark);
-        $decoded = html_entity_decode($remark, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // 管线内部会丢弃非法字节与残缺标签，避免前台拿到非法 UTF-8 或破标签。
+        return $this->normalizeUpstreamHtml($remark);
+    }
+
+    /**
+     * 上游描述归一：解码实体 → 补列表容器 → 富文本白名单。
+     *
+     * 上游（魔方类）返回的描述是被转义过的卡片 HTML（&lt;li&gt;…），
+     * 直接落库前台会显示成实体文本；裸 &lt;li&gt; 片段缺容器会被浏览器忽略。
+     * 归一后过一遍 RichHtmlSanitizer，与前台 v-html 的白名单是同一套。
+     */
+    public function normalizeUpstreamHtml(mixed $raw): string
+    {
+        $text = trim((string) $raw);
+
+        if ($text === '') {
+            return '';
+        }
+
+        $decoded = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $decoded = $this->scrubUtf8($decoded);
         $decoded = preg_replace('/<br\s*\/?>/iu', '<br>', $decoded) ?? $decoded;
+        // 上游历史数据可能被截断，去掉末尾残缺标签再消毒
         $decoded = preg_replace('/<[^>]*$/u', '', $decoded) ?? $decoded;
 
         if (preg_match('/<li[\s>]/iu', $decoded) === 1 && preg_match('/<ul[\s>]/iu', $decoded) !== 1) {

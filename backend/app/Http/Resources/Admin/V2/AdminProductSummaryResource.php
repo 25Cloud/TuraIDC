@@ -61,6 +61,8 @@ class AdminProductSummaryResource extends JsonResource
             'lifecycle_status' => $product->trashed() ? 'deleted' : 'active',
             'deleted_at' => $product->deleted_at?->format('Y-m-d H:i:s'),
             'auto_setup' => (int) ($product->auto_setup ?? 0),
+            'description_sync_enabled' => (int) ($product->description_sync_enabled ?? 0),
+            'description_synced_at' => $product->description_synced_at?->format('Y-m-d H:i:s'),
             'provision_hostname' => $provisionHostname,
             'provision_hostname_mode' => (string) ($provisionHostname['mode'] ?? ProductProvisionHostname::MODE_SYSTEM),
             'provision_hostname_summary' => ProductProvisionHostname::summary($provisionHostname),

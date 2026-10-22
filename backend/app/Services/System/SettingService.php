@@ -111,6 +111,8 @@ class SettingService
             'pending_recharge_cleanup_after_days' => 3,
             'order_cleanup_schedule_mode' => AutomationScheduleExpression::MODE_EVERY_FIFTEEN_MINUTES,
             'order_cleanup_schedule_time' => '00:00:00',
+            'product_description_sync_schedule_mode' => AutomationScheduleExpression::MODE_DAILY,
+            'product_description_sync_schedule_time' => '03:45:00',
             'supplier_low_balance_alert_repeat_hours' => 24,
             'supplier_balance_log_retention_days' => 30,
         ];
@@ -304,6 +306,8 @@ class SettingService
             'order_cleanup_schedule_time' => $this->getScheduleTime('automation', 'order_cleanup_schedule_time', $defaults['order_cleanup_schedule_time']),
             // 余额跌破阈值后的重复告警间隔；余额回升到阈值以上会立即清除标记，
             // 因此这个间隔只约束"持续不足"期间的重复提醒，不会延误"再次跌破"的首报。
+            'product_description_sync_schedule_mode' => $this->getScheduleMode('automation', 'product_description_sync_schedule_mode', $defaults['product_description_sync_schedule_mode']),
+            'product_description_sync_schedule_time' => $this->getScheduleTime('automation', 'product_description_sync_schedule_time', $defaults['product_description_sync_schedule_time']),
             'supplier_low_balance_alert_repeat_hours' => $this->getInt('automation', 'supplier_low_balance_alert_repeat_hours', $defaults['supplier_low_balance_alert_repeat_hours'], 1, 720),
             'supplier_balance_log_retention_days' => $this->getInt('automation', 'supplier_balance_log_retention_days', $defaults['supplier_balance_log_retention_days'], 1, 365),
         ];
@@ -726,6 +730,7 @@ class SettingService
             'billing_maintenance' => '账单自动化',
             'ticket_auto_close' => '工单自动关闭',
             'order_cleanup' => '账单与充值清理',
+            'product_description_sync' => '商品描述同步',
         ];
 
         foreach ($definitions as $prefix => $label) {

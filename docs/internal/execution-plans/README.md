@@ -19,6 +19,7 @@
 | [工单上游 CodeRabbit 安全修复](active/coderabbit-security-remediation-ticket-upstream-2026-08-21.md)                   | active | 按 PR #20 CodeRabbit 审查修复工单上游传递安全与一致性问题，含上游 zjmfv376 配套改动。              |
 | [数据库专家团审查修复计划](active/database-expert-review-remediation-2026-08-13.md)                                    | active | 数据库结构专家团审查发现的分组修复与回归计划。                                                     |
 | [购物车展示方式与商品描述](active/product-cart-display-mode-and-description-2026-10-15.md)                             | active | 选购页列表式 / 卡片式切换与商品描述：描述复用规格维度识别自动生成，管理端双模式编辑。              |
+| [商品描述同步上游](active/product-description-upstream-sync-2026-10-22.md)                                             | active | 商品描述同步上游：单商品同步、二级 / 三级分组批量同步与定时自动同步，含同步设置弹窗。              |
 | [商品分类层级与登录注册导向修复](active/product-category-hierarchy-and-console-routing-fix-2026-10-05.md)              | active | 一级 / 二级 / 三级分类显式分层、同类型一级菜单不再并项、官网登录注册导向与按钮可见性修复。         |
 | [专家团审查修复计划](active/expert-review-remediation-2026-08-12.md)                                                   | active | 换绑安全、密码策略、履约锁、升级锁、共享状态常量、回调 URL 与文档索引修复。                        |
 | [日志归档系统可靠性重构方案](active/log-archive-reliability-refactor-2026-08-01.md)                                    | active | 日志写入、检索、归档、存储、运维与恢复实施计划。                                                   |

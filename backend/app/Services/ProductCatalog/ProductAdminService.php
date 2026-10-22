@@ -68,6 +68,8 @@ class ProductAdminService
                         'cpu_model',
                         'cpu_turbo',
                         'product_discount_group_id',
+                        'description_sync_enabled',
+                        'description_synced_at',
                     ]),
                     'updated_at',
                 ])

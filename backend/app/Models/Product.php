@@ -62,6 +62,7 @@ class Product extends Model
         'product_type', 'type',
         'console_template',
         'custom_display_name', 'remark', 'description',
+        'description_sync_enabled',
         'pricing',
         'setup_fee', 'config_options', 'purchase_requires', 'stock', 'status',
         'sort_order', 'auto_setup',
@@ -80,6 +81,8 @@ class Product extends Model
             'sort_order' => 'integer',
             'auto_setup' => 'integer',
             'product_group_id' => 'integer',
+            'description_sync_enabled' => 'integer',
+            'description_synced_at' => 'datetime',
             'product_discount_group_id' => 'integer',
         ];
     }

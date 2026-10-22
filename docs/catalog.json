@@ -401,6 +401,12 @@
       "review_by": "2026-11-04"
     },
     {
+      "path": "internal/execution-plans/active/product-description-upstream-sync-2026-10-22.md",
+      "status": "active",
+      "summary": "商品描述同步上游：单商品同步、二级/三级分组批量同步与定时自动同步，含同步设置弹窗。",
+      "review_by": "2026-11-21"
+    },
+    {
       "path": "internal/execution-plans/active/rainyun-rcs-plugin-2026-10-21.md",
       "status": "active",
       "summary": "雨云 RCS 插件移植、授权联调和交付计划。",

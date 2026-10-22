@@ -102,6 +102,8 @@ class SettingsSeeder extends Seeder
             'billing_maintenance_schedule_time' => '02:30',
             'order_cleanup_schedule_mode' => 'daily',
             'order_cleanup_schedule_time' => '03:30',
+            'product_description_sync_schedule_mode' => 'daily',
+            'product_description_sync_schedule_time' => '03:45',
         ]);
 
         static::seedGroup('product', [

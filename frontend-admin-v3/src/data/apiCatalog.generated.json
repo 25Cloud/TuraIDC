@@ -1,7 +1,7 @@
 {
     "meta": {
-        "generatedAt": "2026-09-18 16:33:35",
-        "total": 405,
+        "generatedAt": "2026-10-22 08:25:01",
+        "total": 447,
         "baseURL": "/api/v2",
         "dataSource": "php artisan route:list --json v2-only",
         "scopeLabels": {
@@ -21,15 +21,15 @@
             "permission": "登录 + 权限"
         },
         "scopeCounts": {
-            "admin": 244,
-            "client": 143,
-            "site": 17,
+            "admin": 284,
+            "client": 144,
+            "site": 18,
             "system": 1
         },
         "accessCounts": {
-            "public": 405
+            "public": 447
         },
-        "moduleCount": 84
+        "moduleCount": 85
     },
     "items": [
         {
@@ -2149,6 +2149,29 @@
             "sourceFiles": []
         },
         {
+            "id": "GET:/api/v2/admin/open-api/upstream-usage-logs",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "open-api",
+            "moduleLabel": "Open Api",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/open-api/upstream-usage-logs",
+            "backendPath": "/api/v2/admin/open-api/upstream-usage-logs",
+            "normalizedPath": "/admin/open-api/upstream-usage-logs",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\OpenApiAdminController@upstreamUsageLogs",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
             "id": "GET:/api/v2/admin/orders",
             "scope": "admin",
             "scopeLabel": "管理端",
@@ -2540,6 +2563,52 @@
             "sourceFiles": []
         },
         {
+            "id": "POST:/api/v2/admin/product-groups/{group}/description/auto-sync",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "product-groups",
+            "moduleLabel": "产品分组",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/product-groups/{group}/description/auto-sync",
+            "backendPath": "/api/v2/admin/product-groups/{group}/description/auto-sync",
+            "normalizedPath": "/admin/product-groups/{param}/description/auto-sync",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\ProductDescriptionSyncController@autoSyncGroup",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/product-groups/{group}/description/sync",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "product-groups",
+            "moduleLabel": "产品分组",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/product-groups/{group}/description/sync",
+            "backendPath": "/api/v2/admin/product-groups/{group}/description/sync",
+            "normalizedPath": "/admin/product-groups/{param}/description/sync",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\ProductDescriptionSyncController@syncGroup",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
             "id": "DELETE:/api/v2/admin/product-groups/{group}/force",
             "scope": "admin",
             "scopeLabel": "管理端",
@@ -2816,6 +2885,98 @@
             "sourceFiles": []
         },
         {
+            "id": "POST:/api/v2/admin/products/description/auto-sync",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "products",
+            "moduleLabel": "产品",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/products/description/auto-sync",
+            "backendPath": "/api/v2/admin/products/description/auto-sync",
+            "normalizedPath": "/admin/products/description/auto-sync",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\ProductDescriptionSyncController@autoSync",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/products/description/sync-batch",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "products",
+            "moduleLabel": "产品",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/products/description/sync-batch",
+            "backendPath": "/api/v2/admin/products/description/sync-batch",
+            "normalizedPath": "/admin/products/description/sync-batch",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\ProductDescriptionSyncController@syncBatch",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/products/description/sync-settings",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "products",
+            "moduleLabel": "产品",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/products/description/sync-settings",
+            "backendPath": "/api/v2/admin/products/description/sync-settings",
+            "normalizedPath": "/admin/products/description/sync-settings",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\ProductDescriptionSyncController@settings",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "PUT:/api/v2/admin/products/description/sync-settings",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "products",
+            "moduleLabel": "产品",
+            "method": "PUT",
+            "methods": [
+                "PUT"
+            ],
+            "callPath": "/admin/products/description/sync-settings",
+            "backendPath": "/api/v2/admin/products/description/sync-settings",
+            "normalizedPath": "/admin/products/description/sync-settings",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\ProductDescriptionSyncController@updateSettings",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
             "id": "POST:/api/v2/admin/products/provision-hostname-batches",
             "scope": "admin",
             "scopeLabel": "管理端",
@@ -2857,6 +3018,29 @@
             "throttle": "",
             "guards": [],
             "handler": "App\\Http\\Controllers\\Admin\\V2\\ProductController@reorder",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/products/sort-order",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "products",
+            "moduleLabel": "产品",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/products/sort-order",
+            "backendPath": "/api/v2/admin/products/sort-order",
+            "normalizedPath": "/admin/products/sort-order",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\ProductController@sortOrder",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []
@@ -3023,6 +3207,52 @@
             "sourceFiles": []
         },
         {
+            "id": "GET:/api/v2/admin/products/{product}/description",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "products",
+            "moduleLabel": "产品",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/products/{product}/description",
+            "backendPath": "/api/v2/admin/products/{product}/description",
+            "normalizedPath": "/admin/products/{param}/description",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\ProductDescriptionController@show",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/products/{product}/description/sync",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "products",
+            "moduleLabel": "产品",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/products/{product}/description/sync",
+            "backendPath": "/api/v2/admin/products/{product}/description/sync",
+            "normalizedPath": "/admin/products/{param}/description/sync",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\ProductDescriptionSyncController@syncProduct",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
             "id": "DELETE:/api/v2/admin/products/{product}/force",
             "scope": "admin",
             "scopeLabel": "管理端",
@@ -3156,6 +3386,52 @@
             "throttle": "",
             "guards": [],
             "handler": "App\\Http\\Controllers\\Admin\\V2\\ProductController@updateStatus",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/redis/cache/flush",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "redis",
+            "moduleLabel": "Redis",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/redis/cache/flush",
+            "backendPath": "/api/v2/admin/redis/cache/flush",
+            "normalizedPath": "/admin/redis/cache/flush",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\RedisStatusController@flushCache",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/redis/status",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "redis",
+            "moduleLabel": "Redis",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/redis/status",
+            "backendPath": "/api/v2/admin/redis/status",
+            "normalizedPath": "/admin/redis/status",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\RedisStatusController@status",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []
@@ -5139,6 +5415,29 @@
             "sourceFiles": []
         },
         {
+            "id": "GET:/api/v2/admin/users/{user}/services/{service}/config",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/config",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/config",
+            "normalizedPath": "/admin/users/{param}/services/{param}/config",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@config",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
             "id": "GET:/api/v2/admin/users/{user}/services/{service}/connection",
             "scope": "admin",
             "scopeLabel": "管理端",
@@ -5157,6 +5456,52 @@
             "throttle": "",
             "guards": [],
             "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@connection",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/users/{user}/services/{service}/console/capabilities",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/console/capabilities",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/console/capabilities",
+            "normalizedPath": "/admin/users/{param}/services/{param}/console/capabilities",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@capabilities",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/users/{user}/services/{service}/console/tickets",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/console/tickets",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/console/tickets",
+            "normalizedPath": "/admin/users/{param}/services/{param}/console/tickets",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@createAreaTicket",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []
@@ -5203,6 +5548,190 @@
             "throttle": "",
             "guards": [],
             "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@updateMeta",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/users/{user}/services/{service}/module-status",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/module-status",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/module-status",
+            "normalizedPath": "/admin/users/{param}/services/{param}/module-status",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@moduleStatus",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/users/{user}/services/{service}/monitor",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/monitor",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/monitor",
+            "normalizedPath": "/admin/users/{param}/services/{param}/monitor",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@monitor",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/users/{user}/services/{service}/monitor/batch",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/monitor/batch",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/monitor/batch",
+            "normalizedPath": "/admin/users/{param}/services/{param}/monitor/batch",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@monitorBatch",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "PUT:/api/v2/admin/users/{user}/services/{service}/name",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "PUT",
+            "methods": [
+                "PUT"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/name",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/name",
+            "normalizedPath": "/admin/users/{param}/services/{param}/name",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@updateName",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/users/{user}/services/{service}/nat-forwardings",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/nat-forwardings",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/nat-forwardings",
+            "normalizedPath": "/admin/users/{param}/services/{param}/nat-forwardings",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@natForwardings",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/users/{user}/services/{service}/nat-forwardings",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/nat-forwardings",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/nat-forwardings",
+            "normalizedPath": "/admin/users/{param}/services/{param}/nat-forwardings",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@createNatForwarding",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "DELETE:/api/v2/admin/users/{user}/services/{service}/nat-forwardings/{forwarding}",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "DELETE",
+            "methods": [
+                "DELETE"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/nat-forwardings/{forwarding}",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/nat-forwardings/{forwarding}",
+            "normalizedPath": "/admin/users/{param}/services/{param}/nat-forwardings/{param}",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@deleteNatForwarding",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/users/{user}/services/{service}/operation-logs",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/operation-logs",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/operation-logs",
+            "normalizedPath": "/admin/users/{param}/services/{param}/operation-logs",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@operationLogs",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []
@@ -5323,6 +5852,29 @@
             "sourceFiles": []
         },
         {
+            "id": "PUT:/api/v2/admin/users/{user}/services/{service}/remark",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "PUT",
+            "methods": [
+                "PUT"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/remark",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/remark",
+            "normalizedPath": "/admin/users/{param}/services/{param}/remark",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@updateRemark",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
             "id": "GET:/api/v2/admin/users/{user}/services/{service}/remote-status",
             "scope": "admin",
             "scopeLabel": "管理端",
@@ -5392,6 +5944,213 @@
             "sourceFiles": []
         },
         {
+            "id": "PUT:/api/v2/admin/users/{user}/services/{service}/renewals/auto",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "PUT",
+            "methods": [
+                "PUT"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/renewals/auto",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/renewals/auto",
+            "normalizedPath": "/admin/users/{param}/services/{param}/renewals/auto",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@updateAutoRenew",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/users/{user}/services/{service}/rescue",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/rescue",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/rescue",
+            "normalizedPath": "/admin/users/{param}/services/{param}/rescue",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@rescue",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/users/{user}/services/{service}/security-groups",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/security-groups",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/security-groups",
+            "normalizedPath": "/admin/users/{param}/services/{param}/security-groups",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@securityGroups",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/users/{user}/services/{service}/security-groups",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/security-groups",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/security-groups",
+            "normalizedPath": "/admin/users/{param}/services/{param}/security-groups",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@createSecurityGroup",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "DELETE:/api/v2/admin/users/{user}/services/{service}/security-groups/{group}",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "DELETE",
+            "methods": [
+                "DELETE"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/security-groups/{group}",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/security-groups/{group}",
+            "normalizedPath": "/admin/users/{param}/services/{param}/security-groups/{param}",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@deleteSecurityGroup",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/users/{user}/services/{service}/security-groups/{group}/apply",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/security-groups/{group}/apply",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/security-groups/{group}/apply",
+            "normalizedPath": "/admin/users/{param}/services/{param}/security-groups/{param}/apply",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@applySecurityGroup",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/users/{user}/services/{service}/security-groups/{group}/rules",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/security-groups/{group}/rules",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/security-groups/{group}/rules",
+            "normalizedPath": "/admin/users/{param}/services/{param}/security-groups/{param}/rules",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@securityGroupRules",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/users/{user}/services/{service}/security-groups/{group}/rules",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/security-groups/{group}/rules",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/security-groups/{group}/rules",
+            "normalizedPath": "/admin/users/{param}/services/{param}/security-groups/{param}/rules",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@createSecurityRule",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "DELETE:/api/v2/admin/users/{user}/services/{service}/security-groups/{group}/rules/{rule}",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "DELETE",
+            "methods": [
+                "DELETE"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/security-groups/{group}/rules/{rule}",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/security-groups/{group}/rules/{rule}",
+            "normalizedPath": "/admin/users/{param}/services/{param}/security-groups/{param}/rules/{param}",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@deleteSecurityRule",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
             "id": "POST:/api/v2/admin/users/{user}/services/{service}/suspend",
             "scope": "admin",
             "scopeLabel": "管理端",
@@ -5415,6 +6174,75 @@
             "sourceFiles": []
         },
         {
+            "id": "GET:/api/v2/admin/users/{user}/services/{service}/traffic-packages",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/traffic-packages",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/traffic-packages",
+            "normalizedPath": "/admin/users/{param}/services/{param}/traffic-packages",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@trafficPackages",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/users/{user}/services/{service}/traffic-packages/orders",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/traffic-packages/orders",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/traffic-packages/orders",
+            "normalizedPath": "/admin/users/{param}/services/{param}/traffic-packages/orders",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@createTrafficPackageOrder",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/users/{user}/services/{service}/traffic-packages/quote",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/traffic-packages/quote",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/traffic-packages/quote",
+            "normalizedPath": "/admin/users/{param}/services/{param}/traffic-packages/quote",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@quoteTrafficPackage",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
             "id": "POST:/api/v2/admin/users/{user}/services/{service}/unsuspend",
             "scope": "admin",
             "scopeLabel": "管理端",
@@ -5433,6 +6261,98 @@
             "throttle": "",
             "guards": [],
             "handler": "App\\Http\\Controllers\\Admin\\V2\\UserController@unsuspendService",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/users/{user}/services/{service}/upgrades",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/upgrades",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/upgrades",
+            "normalizedPath": "/admin/users/{param}/services/{param}/upgrades",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@upgradePreview",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/users/{user}/services/{service}/upgrades/orders",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/upgrades/orders",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/upgrades/orders",
+            "normalizedPath": "/admin/users/{param}/services/{param}/upgrades/orders",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@createHostUpgradeOrder",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/users/{user}/services/{service}/upgrades/quotes",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/upgrades/quotes",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/upgrades/quotes",
+            "normalizedPath": "/admin/users/{param}/services/{param}/upgrades/quotes",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@quoteHostUpgrade",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/users/{user}/services/{service}/vnc",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/vnc",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/vnc",
+            "normalizedPath": "/admin/users/{param}/services/{param}/vnc",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@vnc",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []
@@ -8199,6 +9119,29 @@
             "sourceFiles": []
         },
         {
+            "id": "GET:/api/v2/client/services/{service}/console-area/asset",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "services",
+            "moduleLabel": "服务",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/client/services/{service}/console-area/asset",
+            "backendPath": "/api/v2/client/services/{service}/console-area/asset",
+            "normalizedPath": "/client/services/{param}/console-area/asset",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\ServiceConsoleAreaController@asset",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
             "id": "GET:/api/v2/client/services/{service}/console-area/content",
             "scope": "client",
             "scopeLabel": "客户端",
@@ -9138,6 +10081,29 @@
             "throttle": "",
             "guards": [],
             "handler": "App\\Http\\Controllers\\Site\\V2\\ProductGroupController@index",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/site/product-groups/{group}/catalog",
+            "scope": "site",
+            "scopeLabel": "站点",
+            "module": "product-groups",
+            "moduleLabel": "产品分组",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/site/product-groups/{group}/catalog",
+            "backendPath": "/api/v2/site/product-groups/{group}/catalog",
+            "normalizedPath": "/site/product-groups/{param}/catalog",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Site\\V2\\ProductGroupController@catalog",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []

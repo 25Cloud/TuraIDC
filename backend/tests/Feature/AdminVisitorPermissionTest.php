@@ -55,6 +55,12 @@ class AdminVisitorPermissionTest extends TestCase
             ['postJson', "/api/v2/admin/integration-plugins/{$plugin->id}/tasks", ['type' => 'health_check']],
             ['postJson', '/api/v2/admin/schedule-triggers', ['task' => 'test']],
             ['getJson', '/api/v2/admin/settings/system/secrets/app_key', []],
+            // 商品描述同步：写与执行类接口，访客一律拒绝
+            ['postJson', '/api/v2/admin/products/description/sync-batch', ['product_ids' => [1]]],
+            ['postJson', '/api/v2/admin/products/description/auto-sync', ['product_ids' => [1], 'enabled' => true]],
+            ['getJson', '/api/v2/admin/products/description/sync-settings', []],
+            ['postJson', '/api/v2/admin/product-groups/1/description/sync', ['level' => 2]],
+            ['postJson', '/api/v2/admin/product-groups/1/description/auto-sync', ['level' => 2, 'enabled' => true]],
         ] as [$method, $uri, $payload]) {
             $this->{$method}($uri, $payload)
                 ->assertForbidden()

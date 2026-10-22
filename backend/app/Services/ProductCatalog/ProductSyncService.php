@@ -22,7 +22,6 @@ use App\Services\ProductCatalog\Concerns\HandlesProductCatalogHelpers;
 use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
 use App\Services\Upstream\ProviderResolver;
 use App\Support\ProductGroupHierarchyFields;
-use App\Support\RichHtmlSanitizer;
 use App\Support\TextSanitizer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -713,6 +712,158 @@ class ProductSyncService
     }
 
     /** 定时同步时每批之间的等待毫秒数，避免持续高频请求被上游风控拦截 */
+    /**
+     * 把上游商品描述刷回本地商品。
+     *
+     * 导入路径只在本地描述为空时写上游描述（人工填写的描述不会被覆盖），
+     * 这里提供显式的「从上游拉」路径：按供应商分组拉一次目录，按上游商品 id 命中后
+     * 覆盖 products.description，并记录 description_synced_at。
+     *
+     * @param  array<int, int>  $productIds
+     * @return array{items: array<int, array<string, mixed>>, summary: array<string, int>}
+     */
+    public function syncUpstreamProductDescriptions(array $productIds, bool $overwrite = true): array
+    {
+        $productIds = collect($productIds)
+            ->map(fn ($id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values();
+
+        $summary = ['total' => $productIds->count(), 'synced' => 0, 'skipped' => 0, 'failed' => 0];
+
+        if ($productIds->isEmpty()) {
+            return ['items' => [], 'summary' => $summary];
+        }
+
+        $products = Product::query()
+            ->with(['productGroup.secondProductGroup.firstProductGroup', 'supplier'])
+            ->whereIn('id', $productIds->all())
+            ->get();
+
+        // 按供应商分组：一次目录拉取覆盖该供应商下全部目标商品，避免逐商品打上游
+        $grouped = [];
+        $skipped = [];
+        foreach ($products as $product) {
+            $supplier = $this->resolveProductSupplier($product);
+
+            if (! $supplier instanceof Supplier) {
+                $summary['skipped']++;
+                $skipped[] = [$product, '商品未绑定供应商'];
+
+                continue;
+            }
+
+            $upstreamId = $this->resolveProductUpstreamProductId($product);
+
+            if ($upstreamId <= 0) {
+                $summary['skipped']++;
+                $skipped[] = [$product, '商品未绑定上游商品'];
+
+                continue;
+            }
+
+            if (! $this->providerResolver->resolveForSupplier($supplier)->supports(ProvidesConsoleCatalog::class)) {
+                $summary['skipped']++;
+                $skipped[] = [$product, '当前供应商暂不支持商品目录同步'];
+
+                continue;
+            }
+
+            $grouped[(int) $supplier->id][] = [$product, $upstreamId];
+        }
+
+        $items = [];
+
+        foreach ($skipped as [$product, $reason]) {
+            $items[] = $this->buildDescriptionSyncItem($product, 'skipped', $reason);
+        }
+
+        foreach ($grouped as $entries) {
+
+            /** @var Product $firstProduct */
+            $firstProduct = $entries[0][0];
+            $supplier = $this->resolveProductSupplier($firstProduct);
+
+            if (! $supplier instanceof Supplier) {
+                continue;
+            }
+
+            try {
+                $catalog = $this->resolveCatalogCapability($supplier)->getProductCatalog($supplier);
+            } catch (\Throwable $exception) {
+                foreach ($entries as [$product, $upstreamId]) {
+                    $summary['failed']++;
+                    $items[] = $this->buildDescriptionSyncItem($product, 'failed', '拉取上游商品目录失败：'.$exception->getMessage());
+                }
+
+                continue;
+            }
+
+            $remoteProducts = collect($catalog['products'] ?? [])
+                ->filter(fn ($item): bool => is_array($item))
+                ->keyBy(fn (array $item): int => (int) ($item['id'] ?? 0));
+
+            foreach ($entries as [$product, $upstreamId]) {
+                $remote = $remoteProducts->get((int) $upstreamId);
+
+                if (! is_array($remote)) {
+                    $summary['skipped']++;
+                    $items[] = $this->buildDescriptionSyncItem($product, 'skipped', '上游目录中已找不到该商品');
+
+                    continue;
+                }
+
+                $html = app(ProductDescriptionService::class)->normalizeUpstreamHtml($remote['description'] ?? null);
+
+                if ($html === '') {
+                    $summary['skipped']++;
+                    $items[] = $this->buildDescriptionSyncItem($product, 'skipped', '上游商品没有描述');
+
+                    continue;
+                }
+
+                $before = (string) ($product->description ?? '');
+
+                if (! $overwrite && trim($before) !== '') {
+                    $summary['skipped']++;
+                    $items[] = $this->buildDescriptionSyncItem($product, 'skipped', '本地已有描述，未开启覆盖');
+
+                    continue;
+                }
+
+                $product->description = $html;
+                $product->description_synced_at = now();
+                $product->save();
+
+                $summary['synced']++;
+                $items[] = $this->buildDescriptionSyncItem(
+                    $product,
+                    'synced',
+                    $before === $html ? '描述内容与上游一致' : '已同步上游描述',
+                    ['changed' => $before !== $html]
+                );
+            }
+        }
+
+        return ['items' => $items, 'summary' => $summary];
+    }
+
+    /**
+     * 描述同步的逐条结果。
+     *
+     * @param  array<string, mixed>  $extra
+     * @return array<string, mixed>
+     */
+    private function buildDescriptionSyncItem(Product $product, string $status, string $message, array $extra = []): array
+    {
+        return array_merge([
+            'id' => (int) $product->id,
+            'status' => $status,
+            'message' => $message,
+        ], $extra);
+    }
+
     public const STOCK_SYNC_PACING_MS = 500;
 
     /** 定时同步时每批并发查询的商品数 */
@@ -1675,32 +1826,6 @@ class ProductSyncService
             ->all();
     }
 
-    /**
-     * 上游商品描述归一：魔方返回的是被转义过的卡片 HTML（&lt;li&gt;…），
-     * 解码实体后补上 <ul> 容器再过富文本白名单；为空返回 null。
-     */
-    private function normalizeUpstreamDescription(mixed $raw): ?string
-    {
-        $text = trim((string) $raw);
-
-        if ($text === '') {
-            return null;
-        }
-
-        $decoded = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $decoded = preg_replace('/<br\s*\/?>/iu', '<br>', $decoded) ?? $decoded;
-        // 上游历史数据可能被截断，去掉末尾残缺标签再消毒
-        $decoded = preg_replace('/<[^>]*$/u', '', $decoded) ?? $decoded;
-
-        if (preg_match('/<li[\s>]/iu', $decoded) === 1 && preg_match('/<ul[\s>]/iu', $decoded) !== 1) {
-            $decoded = '<ul>'.$decoded.'</ul>';
-        }
-
-        $sanitized = RichHtmlSanitizer::sanitize($decoded);
-
-        return $sanitized !== '' ? $sanitized : null;
-    }
-
     private function buildImportedPricing(array $supplierProduct): array
     {
         $monthlyBasePrice = $this->resolveMonthlyBaseAmount(
@@ -2153,7 +2278,7 @@ class ProductSyncService
             // 上游商品描述（HTML 片段）在此之前从未导入，前台只能按规格猜一段描述，
             // 与上游商品页文案不一致。这里解码实体、补列表容器并过白名单后落库；
             // 之后同步只补空描述，不覆盖商家在后台改过的描述。
-            'description' => $this->normalizeUpstreamDescription($supplierProduct['description'] ?? null),
+            'description' => app(ProductDescriptionService::class)->normalizeUpstreamHtml($supplierProduct['description'] ?? null) ?: null,
             'stock' => $this->resolveRemoteCatalogStock($supplierProduct),
             'status' => $defaultStatus,
             'sort_order' => 0,

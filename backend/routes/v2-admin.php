@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\V2\OpenApiAdminController;
 use App\Http\Controllers\Admin\V2\OrderController;
 use App\Http\Controllers\Admin\V2\ProductController;
 use App\Http\Controllers\Admin\V2\ProductDescriptionController;
+use App\Http\Controllers\Admin\V2\ProductDescriptionSyncController;
 use App\Http\Controllers\Admin\V2\ProductDiscountGroupController;
 use App\Http\Controllers\Admin\V2\ProductGroupController;
 use App\Http\Controllers\Admin\V2\ProductSpecHighlightController;
@@ -296,6 +297,13 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
 
     Route::middleware(['permission:'.AdminPermissions::PRODUCT_SYNC])->group(function (): void {
         Route::post('/products/traffic-package-pulls', [ProductController::class, 'pullTrafficPackageCatalog']);
+        Route::post('/products/description/sync-batch', [ProductDescriptionSyncController::class, 'syncBatch']);
+        Route::post('/products/description/auto-sync', [ProductDescriptionSyncController::class, 'autoSync']);
+        Route::get('/products/description/sync-settings', [ProductDescriptionSyncController::class, 'settings']);
+        Route::put('/products/description/sync-settings', [ProductDescriptionSyncController::class, 'updateSettings']);
+        Route::post('/products/{product}/description/sync', [ProductDescriptionSyncController::class, 'syncProduct']);
+        Route::post('/product-groups/{group}/description/sync', [ProductDescriptionSyncController::class, 'syncGroup']);
+        Route::post('/product-groups/{group}/description/auto-sync', [ProductDescriptionSyncController::class, 'autoSyncGroup']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::LOG_LIST])->group(function (): void {

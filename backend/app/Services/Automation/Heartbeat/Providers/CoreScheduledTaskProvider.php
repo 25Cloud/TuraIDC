@@ -19,6 +19,7 @@ use App\Services\Automation\ServiceLifecycleAutomationService;
 use App\Services\Automation\ServiceStatusSyncService;
 use App\Services\Finance\CouponCampaignService;
 use App\Services\ProductCatalog\ProductCatalogService;
+use App\Services\ProductCatalog\ProductDescriptionSyncService;
 use App\Services\Referral\ReferralService;
 use App\Services\Supplier\SupplierBalanceService;
 use App\Services\System\SettingService;
@@ -53,6 +54,26 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
                 handler: fn (): array => $this->refreshHostingPanelAuth(),
                 timeout: 600,
                 lockTtlSeconds: 660,
+            ),
+            $this->task(
+                key: 'product-description-sync',
+                title: '商品描述同步',
+                category: '商品目录',
+                description: '按全局节拍把上游商品描述刷回本地，只处理开启了描述自动同步的商品。',
+                triggers: [ScheduleRule::automation(
+                    (string) ($automation['product_description_sync_schedule_mode'] ?? AutomationScheduleExpression::MODE_DAILY),
+                    (string) ($automation['product_description_sync_schedule_time'] ?? '03:45:00'),
+                    AutomationScheduleExpression::MODE_DAILY,
+                    '03:45:00',
+                )],
+                handler: function (): array {
+                    $summary = app(ProductDescriptionSyncService::class)->syncDueProducts();
+                    Log::info('[定时任务] 商品描述同步执行完成', $summary);
+
+                    return $summary;
+                },
+                timeout: 900,
+                lockTtlSeconds: 960,
             ),
             $this->task(
                 key: 'service-auto-renew',
