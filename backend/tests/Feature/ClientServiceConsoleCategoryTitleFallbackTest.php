@@ -193,6 +193,21 @@ class ClientServiceConsoleCategoryTitleFallbackTest extends TestCase
                     ->all()
             );
 
+            // 客户可见范围必须带上已暂停的实例：暂停有多种成因（流量超额、线路清退、
+            // 服务到期等），隐藏后客户找不到自己的实例，也就无法续费或手动解除暂停。
+            $visibleScopeResponse = $this->getJson('/api/v2/client/services?page=1&page_size=10&status_scope=active_pending_suspended')
+                ->assertOk()
+                ->assertJsonPath('code', 0)
+                ->assertJsonPath('data.total', 3);
+
+            $this->assertSame(
+                [ServiceStatus::SUSPENDED, ServiceStatus::PENDING, ServiceStatus::ACTIVE],
+                collect($visibleScopeResponse->json('data.list'))
+                    ->pluck('status')
+                    ->map(fn ($status) => (int) $status)
+                    ->all()
+            );
+
             $overviewResponse = $this->getJson('/api/v2/client/services/grouped-overview')
                 ->assertOk()
                 ->assertJsonPath('code', 0)

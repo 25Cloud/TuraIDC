@@ -41,7 +41,9 @@ export const OS_ICON_MAP: Record<string, string> = {
 };
 
 const SERVICE_VIEW_MODE_STORAGE_KEY = 'client-services-view-mode';
-const DEFAULT_SERVICE_STATUS_SCOPE = 'active_pending';
+// 默认展示客户仍然持有的实例：已开通 + 开通中 + 已暂停。
+// 已暂停（流量超额 / 线路清退 / 服务到期等）也要露出，客户才能续费或手动解除暂停。
+const DEFAULT_SERVICE_STATUS_SCOPE = 'active_pending_suspended';
 const DEFAULT_SERVICE_STATUS = DEFAULT_SERVICE_STATUS_SCOPE;
 const MOBILE_VIEW_MODE_QUERY = '(max-width: 48rem)';
 const DEFAULT_SERVICE_STATUS_OPTION = {
@@ -382,6 +384,19 @@ export function isExpiringSoon(dateText: string) {
 export function isProvisioningService(item: ServiceLike) {
   if (Number(item?.status) === SERVICE_STATUS.PENDING) return true;
   return resolveRuntimeStatusLabel(item) === '开通中';
+}
+
+/**
+ * 暂停原因文案：系统内的固定取值走 i18n（expired = 服务已到期），
+ * 上游给出的自由文本（违规使用、资源超配等）原样展示。
+ * 非暂停状态不展示原因。
+ */
+export function resolveSuspendedReason(item: ServiceLike) {
+  if (Number(item?.status) !== SERVICE_STATUS.SUSPENDED) return '';
+  const reason = String(item?.suspended_reason ?? '').trim();
+  if (!reason) return '';
+  if (reason === 'expired') return t('client.services.suspendReasonExpired');
+  return reason;
 }
 
 export function resolveTdesignStatusTheme(item: ServiceLike): TdesignTagTheme {

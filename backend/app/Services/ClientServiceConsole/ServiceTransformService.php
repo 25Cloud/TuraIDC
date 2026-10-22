@@ -139,6 +139,8 @@ class ServiceTransformService
             'status' => (int) $service->status,
             'status_label' => ServiceStatus::$labels[$service->status] ?? (string) $service->status,
             'status_tone' => $this->resolveServiceTone((int) $service->status),
+            // 暂停原因（流量超额 / 线路清退 / 服务到期等）随列表下发，客户在列表里就能看到为什么被挂
+            'suspended_reason' => (string) ($service->suspended_reason ?? ''),
             'billing_cycle' => (string) $service->billing_cycle,
             'billing_cycle_label' => $this->resolveBillingCycleLabel((string) $service->billing_cycle),
             'amount' => number_format((float) $service->amount, 2, '.', ''),

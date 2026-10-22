@@ -336,6 +336,8 @@ export interface ServiceInstance {
   id: number;
   status?: number | string;
   status_tone?: string;
+  /** 暂停原因（流量超额 / 线路清退 / 服务到期等），仅暂停状态有值 */
+  suspended_reason?: string;
   custom_service_name?: string;
   name?: string;
   remark?: string;

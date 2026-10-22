@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\ClientServiceConsole;
 
-use App\Support\SqlLike;
 use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
 use App\Models\FirstProductGroup;
@@ -14,6 +13,7 @@ use App\Models\ThirdProductGroup;
 use App\Models\User;
 use App\Support\ProductGroupHierarchyFields;
 use App\Support\ProductGroupIcon;
+use App\Support\SqlLike;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -33,6 +33,15 @@ class ServiceOverviewService
     private const OTHER_MENU_CODE = 'other_services';
 
     private const STATUS_SCOPE_ACTIVE_PENDING = 'active_pending';
+
+    /**
+     * 客户可见的实例范围：已开通 + 开通中 + 已暂停。
+     *
+     * 已暂停的实例有多种成因（流量超额、线路清退、服务到期等），都必须出现在列表里：
+     * 隐藏后客户在控制台找不到自己的实例，既看不到暂停原因，也没法续费或手动解除暂停。
+     * 只有被删除的实例才不展示（软删除已由模型全局作用域排除）。
+     */
+    private const STATUS_SCOPE_ACTIVE_PENDING_SUSPENDED = 'active_pending_suspended';
 
     private const QUICK_FILTER_EXPIRING_7D = 'expiring_7d';
 
@@ -97,6 +106,8 @@ class ServiceOverviewService
         $statusScope = trim((string) ($filters['status_scope'] ?? ''));
         if ($statusScope === self::STATUS_SCOPE_ACTIVE_PENDING) {
             $query->whereIn('status', [ServiceStatus::ACTIVE, ServiceStatus::PENDING]);
+        } elseif ($statusScope === self::STATUS_SCOPE_ACTIVE_PENDING_SUSPENDED) {
+            $query->whereIn('status', [ServiceStatus::ACTIVE, ServiceStatus::PENDING, ServiceStatus::SUSPENDED]);
         } elseif (($filters['status'] ?? '') !== '') {
             $query->where('status', (int) $filters['status']);
         }
@@ -290,7 +301,7 @@ class ServiceOverviewService
     /**
      * 前台可见的一级分组，按后台排序输出。
      *
-     * @return \Illuminate\Support\Collection<int, FirstProductGroup>
+     * @return Collection<int, FirstProductGroup>
      */
     private function visibleFirstProductGroups(): Collection
     {

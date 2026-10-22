@@ -245,6 +245,9 @@
                     <t-tag :theme="resolveTdesignStatusTheme(item)" variant="light" class="service-status-tag">
                       {{ resolveRuntimeStatusLabel(item) }}
                     </t-tag>
+                    <span v-if="resolveSuspendedReason(item)" class="service-suspend-reason">{{
+                      resolveSuspendedReason(item)
+                    }}</span>
 
                     <div v-if="isCdnCard(item)" class="service-ip-line">
                       <span class="service-ip-label">{{ $t('client.services.traffic') }}</span>
@@ -371,6 +374,9 @@
                 <t-tag :theme="resolveTdesignStatusTheme(row)" variant="light">{{
                   resolveRuntimeStatusLabel(row)
                 }}</t-tag>
+                <div v-if="resolveSuspendedReason(row)" class="service-suspend-reason">
+                  {{ resolveSuspendedReason(row) }}
+                </div>
               </template>
               <template #ip="{ row }">
                 <span v-if="isCdnCard(row)" class="service-table-traffic">
@@ -546,6 +552,7 @@ import {
   resolveServiceName,
   resolveServiceOsIcon,
   resolveServiceOsText,
+  resolveSuspendedReason,
   resolveTdesignStatusTheme,
   useServiceCenter,
 } from '@/domains/services/useServiceCenter';
@@ -1219,6 +1226,14 @@ function resolveBillingCycleValue(item: Record<string, any>) {
 
 .service-status-tag {
   flex-shrink: 0;
+}
+
+/* 暂停原因：跟在状态标签后面，让客户一眼看到实例为什么被挂 */
+.service-suspend-reason {
+  color: var(--td-text-color-placeholder);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  word-break: break-all;
 }
 
 .service-ip-line {
