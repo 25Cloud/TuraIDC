@@ -393,10 +393,16 @@ export function isProvisioningService(item: ServiceLike) {
  */
 export function resolveSuspendedReason(item: ServiceLike) {
   if (Number(item?.status) !== SERVICE_STATUS.SUSPENDED) return '';
-  const reason = String(item?.suspended_reason ?? '').trim();
-  if (!reason) return '';
-  if (reason === 'expired') return t('client.services.suspendReasonExpired');
-  return reason;
+  const raw = String(item?.suspended_reason ?? '').trim();
+  if (!raw) return '';
+  // 系统内的固定取值：expired = 服务已到期
+  if (raw === 'expired') return t('client.services.suspendReasonExpired');
+  // 魔方上游推送的到期停机原因带 due- 前缀（due-服务已到期），展示时剥掉前缀
+  if (raw.startsWith('due-')) {
+    const stripped = raw.slice(4).trim();
+    if (stripped) return stripped;
+  }
+  return raw;
 }
 
 export function resolveTdesignStatusTheme(item: ServiceLike): TdesignTagTheme {
