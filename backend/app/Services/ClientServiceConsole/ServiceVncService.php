@@ -9,6 +9,7 @@ use App\Models\Service;
 use App\Models\User;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\System\OperationLogService;
+use App\Services\Upstream\Contracts\ProvidesBrowserConsole;
 use App\Support\CacheKey;
 use App\Support\PublicUrl;
 use Illuminate\Support\Facades\Cache;
@@ -63,7 +64,8 @@ class ServiceVncService
             throw new BusinessException('上游未返回VNC链接', 50000);
         }
 
-        $novncBaseUrl = $this->resolveNoVncBaseUrl();
+        $novncBaseUrl = $runtime instanceof ProvidesBrowserConsole
+            ? '' : $this->resolveNoVncBaseUrl();
 
         $message = trim((string) ($response['msg'] ?? '')) ?: '获取VNC链接成功';
         $vncUrl = $upstreamVncUrl;
@@ -129,6 +131,11 @@ class ServiceVncService
             'url' => $vncUrl,
             'detail' => $this->transformService->transformDetail($service),
         ];
+
+        if ($runtime instanceof ProvidesBrowserConsole) {
+            // 仅当前绑定插件显式声明的完整控制台页面直连，其他插件保留现有 relay 流程。
+            $result['launch_mode'] = 'external';
+        }
 
         if ($noVncCredentials !== []) {
             // 仅认证后的取链接接口返回给当前用户端页面，用于本地自动认证；

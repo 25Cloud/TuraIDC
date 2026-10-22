@@ -136,6 +136,12 @@
       "review_by": "2026-12-13"
     },
     {
+      "path": "guide/configure/rainyun-rcs.md",
+      "status": "current",
+      "summary": "雨云 RCS 插件安装、定价、直连控制台与验证边界。",
+      "review_by": "2027-01-21"
+    },
+    {
       "path": "guide/configure/site-settings.md",
       "status": "current",
       "summary": "站点名称、浏览器标题、Logo 与主题色等三端可见配置。",
@@ -308,6 +314,12 @@
       "review_by": "2026-12-13"
     },
     {
+      "path": "internal/designs/backend/rainyun-rcs-plugin.md",
+      "status": "current",
+      "summary": "雨云 RCS 插件的隔离、资源交易与控制台设计。",
+      "review_by": "2027-01-21"
+    },
+    {
       "path": "internal/designs/backend/zjmf-purchase-renewal-document-comparison.md",
       "status": "needs-review",
       "summary": "Zjmf 与 TuraIDC 新购/续费单据创建流程对比与同步创建验证。"
@@ -387,6 +399,12 @@
       "status": "active",
       "summary": "一级 / 二级 / 三级分类显式分层、同类型一级菜单不再并项、官网登录注册导向与按钮可见性修复。",
       "review_by": "2026-11-04"
+    },
+    {
+      "path": "internal/execution-plans/active/rainyun-rcs-plugin-2026-10-21.md",
+      "status": "active",
+      "summary": "雨云 RCS 插件移植、授权联调和交付计划。",
+      "review_by": "2026-11-21"
     },
     {
       "path": "internal/execution-plans/active/scheduler-refactor-2026-08-09.md",

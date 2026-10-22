@@ -4,7 +4,8 @@
 
 | 文档                                                                            | 状态         | 简介                                                             |
 | ------------------------------------------------------------------------------- | ------------ | ---------------------------------------------------------------- |
-| [ARCHITECTURE.md](../../develop/architecture.md)                                           | current      | 当前运行架构、边界和基础设施口径。                               |
+| [雨云 RCS 插件移植](backend/rainyun-rcs-plugin.md)                              | active       | 主机控制、扩展面板与付费履约。                                   |
+| [ARCHITECTURE.md](../../develop/architecture.md)                                | current      | 当前运行架构、边界和基础设施口径。                               |
 | [插件架构说明](architecture/plugin-architecture.md)                             | needs-review | 插件运行时与能力扩展边界。                                       |
 | [API 直接重构方案](backend/direct-api-refactor.md)                              | needs-review | v2 API 约束与历史重构结论。                                      |
 | [日志与归档协同重构方案](backend/log-and-archive-coordination-refactor.md)      | active       | 日志真源、冷热检索、归档与删除边界。                             |

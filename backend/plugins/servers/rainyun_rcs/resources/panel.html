@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>实例功能</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 20px;
+        color: #1f2937;
+        background: #fff;
+        font:
+          14px/1.6 -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          "Microsoft YaHei",
+          sans-serif;
+      }
+      h2 {
+        font-size: 18px;
+        margin: 0 0 16px;
+      }
+      h3 {
+        font-size: 15px;
+        margin: 24px 0 12px;
+      }
+      p {
+        color: #5b6b82;
+      }
+      form {
+        display: flex;
+        align-items: end;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 16px 0;
+        border-bottom: 1px solid #e5eaf3;
+      }
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      input,
+      select,
+      button {
+        font: inherit;
+        min-height: 36px;
+        padding: 6px 12px;
+        border: 1px solid #e5eaf3;
+        border-radius: 4px;
+        background: #fff;
+      }
+      input[type="checkbox"] {
+        min-height: 20px;
+      }
+      button {
+        cursor: pointer;
+        color: #165dff;
+      }
+      button[type="submit"],
+      .primary {
+        background: #165dff;
+        color: #fff;
+        border-color: #165dff;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+      .danger {
+        color: #d54941;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      td,
+      th {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 1px solid #eef2f7;
+      }
+      th {
+        background: #f8fafc;
+      }
+      .scroll {
+        overflow-x: auto;
+      }
+      #message {
+        min-height: 26px;
+        white-space: pre-wrap;
+        margin: 12px 0;
+      }
+      #message.error {
+        color: #d54941;
+      }
+      #message.success {
+        color: #008858;
+      }
+      dialog {
+        border: 1px solid #e5eaf3;
+        border-radius: 8px;
+        max-width: 460px;
+        padding: 24px;
+      }
+      dialog::backdrop {
+        background: #0005;
+      }
+      .buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 12px;
+      }
+      dt {
+        color: #5b6b82;
+      }
+      dd {
+        margin: 0;
+      }
+      a {
+        color: #165dff;
+      }
+      [hidden] {
+        display: none;
+      }
+      @media (max-width: 600px) {
+        body {
+          padding: 12px;
+        }
+        form > label {
+          width: 100%;
+        }
+        dl {
+          grid-template-columns: 110px 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h2 id="title"></h2>
+    <div id="content"></div>
+    <div id="message" role="status" aria-live="polite"></div>
+    <p id="invoice-link" hidden></p>
+    <dialog id="confirmation">
+      <h3>确认操作</h3>
+      <p id="confirmation-text"></p>
+      <div class="buttons">
+        <button id="confirm" class="primary">确认</button
+        ><button id="cancel">取消</button>
+      </div>
+    </dialog>
+    <script>
+      (() => {
+        "use strict";
+        const data = __RAINYUN_DATA__;
+        const content = document.getElementById("content");
+        const message = document.getElementById("message");
+        const titles = {
+          backups: "备份还原",
+          snapshots: "本地快照",
+          disks: "弹性云盘",
+          traffic: "流量与带宽",
+          gpu: "GPU 与时长",
+          upgrade: "套餐与 IP",
+          terminal: "终端",
+        };
+        document.getElementById("title").textContent = titles[data.key];
+        const element = (tag, text) => {
+          const e = document.createElement(tag);
+          if (text !== undefined) e.textContent = String(text);
+          return e;
+        };
+        const note = (text) => content.append(element("p", text));
+        const field = (
+          form,
+          name,
+          title,
+          type = "text",
+          value = "",
+          options = null,
+        ) => {
+          const label = element("label", title),
+            input = element(options ? "select" : "input");
+          input.name = name;
+          if (options)
+            for (const [v, t] of options) {
+              const o = element("option", t);
+              o.value = String(v);
+              input.append(o);
+            }
+          else input.type = type;
+          if (type === "checkbox") input.checked = Boolean(value);
+          else input.value = String(value);
+          if (type === "number") {
+            input.min = "0";
+            input.step = "1";
+          }
+          label.append(input);
+          form.append(label);
+          return input;
+        };
+        const confirm = (text) =>
+          new Promise((resolve) => {
+            const d = document.getElementById("confirmation");
+            document.getElementById("confirmation-text").textContent = text;
+            const finish = (answer) => {
+              d.close();
+              resolve(answer);
+            };
+            document.getElementById("confirm").onclick = () => finish(true);
+            document.getElementById("cancel").onclick = () => finish(false);
+            d.oncancel = (event) => {
+              event.preventDefault();
+              finish(false);
+            };
+            d.showModal();
+          });
+        let busy = false;
+        const request = async (payload) => {
+          const response = await fetch(data.endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+          let result;
+          try {
+            result = await response.json();
+          } catch {
+            throw Error("操作未返回有效结果，请刷新检查状态");
+          }
+          if (!response.ok || Number(result.status) !== 200)
+            throw Error(result.msg || result.message || "操作失败，请稍后重试");
+          return result;
+        };
+        const run = async (callback) => {
+          if (busy) return;
+          busy = true;
+          content
+            .querySelectorAll("button")
+            .forEach((b) => (b.disabled = true));
+          message.className = "";
+          message.textContent = "处理中…";
+          try {
+            await callback();
+          } catch (e) {
+            message.className = "error";
+            message.textContent = e.message || "操作失败，请稍后重试";
+          } finally {
+            busy = false;
+            content
+              .querySelectorAll("button")
+              .forEach((b) => (b.disabled = false));
+          }
+        };
+        const form = (action, label, paid = false) => {
+          const f = element("form");
+          content.append(f);
+          const button = element("button", label);
+          button.type = "submit";
+          f.addEventListener("submit", (event) => {
+            event.preventDefault();
+            run(async () => {
+              const input = Object.fromEntries(new FormData(f));
+              f.querySelectorAll("input[type=checkbox]").forEach(
+                (x) => (input[x.name] = x.checked),
+              );
+              let result;
+              if (paid) {
+                const quote = await request({
+                  ...input,
+                  func: "quote",
+                  kind: action,
+                });
+                if (
+                  !(await confirm(
+                    "本次应付 ¥" +
+                      quote.data.amount +
+                      "，返还余额 ¥" +
+                      quote.data.refund_amount +
+                      "，每月续费变化 ¥" +
+                      quote.data.monthly_change +
+                      "。" +
+                      (input.operation === "delete"
+                        ? "删除云盘将永久丢失盘内数据。"
+                        : ""),
+                  ))
+                ) {
+                  message.textContent = "已取消";
+                  return;
+                }
+                result = await request({
+                  ...input,
+                  func: "checkout",
+                  kind: action,
+                  quote_token: quote.data.quote_token,
+                });
+                const p = document.getElementById("invoice-link");
+                p.hidden = false;
+                p.replaceChildren(
+                  element(
+                    "span",
+                    "账单 #" +
+                      result.data.invoice_id +
+                      "，请到图拉「账单记录」查看并支付。",
+                  ),
+                );
+              } else result = await request({ ...input, func: action });
+              message.className = "success";
+              message.textContent =
+                result.msg || "操作已提交，刷新面板查看结果";
+            });
+          });
+          f.finish = () => f.append(button);
+          return f;
+        };
+        const table = (headers, rows, actions = []) => {
+          const wrap = element("div");
+          wrap.className = "scroll";
+          const t = element("table"),
+            head = element("tr");
+          for (const h of headers) head.append(element("th", h[1]));
+          if (actions.length) head.append(element("th", "操作"));
+          const thead = element("thead");
+          thead.append(head);
+          t.append(thead);
+          const body = element("tbody");
+          for (const row of rows) {
+            const tr = element("tr");
+            for (const h of headers) tr.append(element("td", row[h[0]] ?? "—"));
+            if (actions.length) {
+              const cell = element("td");
+              for (const a of actions) {
+                const b = element("button", a[1]);
+                if (a[2]) b.className = "danger";
+                b.onclick = () =>
+                  run(async () => {
+                    if (!(await confirm(a[2] || "确认执行 " + a[1] + "？"))) {
+                      message.textContent = "已取消";
+                      return;
+                    }
+                    const result = await request({ func: a[0], id: row.id });
+                    message.className = "success";
+                    message.textContent = result.msg + "，请刷新面板查看结果";
+                  });
+                cell.append(b);
+              }
+              tr.append(cell);
+            }
+            body.append(tr);
+          }
+          if (!rows.length) {
+            const tr = element("tr"),
+              td = element("td", "暂无记录");
+            td.colSpan = headers.length + 1;
+            tr.append(td);
+            body.append(tr);
+          }
+          t.append(body);
+          wrap.append(t);
+          content.append(wrap);
+        };
+        if (data.key === "backups" || data.key === "snapshots") {
+          const snap = data.key === "snapshots",
+            prefix = snap ? "snapshot" : "backup";
+          note("还原会覆盖当前系统和数据。请确认已保存需要保留的内容。");
+          table(
+            [
+              ["id", "ID"],
+              ["label", "名称"],
+              ["status", "状态"],
+            ],
+            snap ? data.snapshots : data.backups,
+            [
+              [
+                prefix + "_restore",
+                "还原",
+                "还原将覆盖当前实例数据，确认继续？",
+              ],
+              [prefix + "_delete", "删除", "删除后无法恢复，确认继续？"],
+              ...(!snap ? [["backup_cancel", "取消任务"]] : []),
+            ],
+          );
+          const f = form(prefix + "_create", snap ? "创建快照" : "创建备份");
+          const label = field(f, "label", "名称");
+          label.required = true;
+          label.minLength = 2;
+          label.maxLength = 32;
+          if (snap) field(f, "include_ram", "包含运行内存", "checkbox", false);
+          f.finish();
+          content.append(element("h3", "自动任务"));
+          note("关闭自动任务时，小时和分钟均填 -1。");
+          const time = String(
+            data.host[snap ? "SnapAuto" : "RBSAutoBackup"] || "",
+          ).split(":");
+          const s = form(prefix + "_setting", "保存设置");
+          const h = field(
+            s,
+            "hour",
+            "小时",
+            "number",
+            time.length === 2 ? Number(time[0]) : -1,
+          );
+          h.min = "-1";
+          h.max = "23";
+          const m = field(
+            s,
+            "minute",
+            "分钟",
+            "number",
+            time.length === 2 ? Number(time[1]) : -1,
+          );
+          m.min = "-1";
+          m.max = "59";
+          field(
+            s,
+            "keep_last",
+            "保留份数",
+            "text",
+            data.host[snap ? "SnapKeepLast" : "RBSKeepLast"] ?? (snap ? 1 : 3),
+            (snap ? [1, 2, 3] : [0, 1, 3, 7, 15, 31]).map((v) => [v, v]),
+          );
+          s.finish();
+        } else if (data.key === "disks") {
+          note(
+            "云盘只能扩容，不能缩容；系统盘不可删除。费用按剩余服务期折算，提交前会显示报价。",
+          );
+          table(
+            [
+              ["ID", "ID"],
+              ["Slot", "槽位"],
+              ["DiskType", "类型"],
+              ["Size", "容量 GB"],
+              ["Backup", "备份"],
+            ],
+            data.disks,
+          );
+          const f = form("disk", "获取报价", true);
+          const op = field(f, "operation", "操作", "text", "create", [
+            ["create", "新增云盘"],
+            ["expand", "扩容或调整备份"],
+            ["delete", "删除云盘"],
+          ]);
+          const disk = field(
+            f,
+            "disk_id",
+            "已有云盘",
+            "text",
+            data.disks[0]?.ID || "",
+            data.disks.map((d) => [d.ID, d.ID + " / " + d.Size + " GB"]),
+          );
+          const type = field(
+            f,
+            "disk_type",
+            "类型",
+            "text",
+            data.disk_types[0] || "",
+            data.disk_types.map((t) => [t, t]),
+          );
+          const size = field(f, "size", "目标容量 GB", "number", 50);
+          size.min = "1";
+          size.max = "100000";
+          const backup = field(f, "backup", "启用备份", "checkbox", false);
+          f.finish();
+          const update = () => {
+            disk.closest("label").hidden = op.value === "create";
+            type.closest("label").hidden = op.value !== "create";
+            size.closest("label").hidden = op.value === "delete";
+            backup.closest("label").hidden = op.value === "delete";
+            if (op.value === "expand") {
+              const d = data.disks.find((d) => String(d.ID) === disk.value);
+              if (d) {
+                size.value = d.Size;
+                size.min = d.Size;
+                backup.checked = d.Backup;
+              }
+            }
+          };
+          op.onchange = update;
+          disk.onchange = update;
+          update();
+        } else if (data.key === "traffic") {
+          const dl = element("dl");
+          for (const [name, v] of [
+            ["剩余流量", Number(data.host.TrafficBytes || 0) / 1073741824],
+            ["今日已用", Number(data.host.TrafficBytesToday || 0) / 1073741824],
+          ]) {
+            dl.append(element("dt", name), element("dd", v.toFixed(2) + " GB"));
+          }
+          content.append(dl);
+          const f = form("traffic", "购买流量包", true);
+          const q = field(f, "quantity", "附加流量 GB", "number", 100);
+          q.min = "1";
+          f.finish();
+          content.append(element("h3", "限流设置"));
+          const s = form("traffic_limit", "保存限流");
+          field(
+            s,
+            "day_traffic_in_gb",
+            "每日流量 GB",
+            "number",
+            Math.floor(
+              Number(data.host.TrafficBytesDayLimit || 0) / 1073741824,
+            ),
+          );
+          field(s, "traffic_limit", "限速 Mbps", "number", 0);
+          s.finish();
+        } else if (data.key === "gpu") {
+          note(
+            "显卡：" +
+              (data.host.GPUDevice || "—") +
+              "；剩余时长：" +
+              (data.host.WebbarMinutes || 0) +
+              " 分钟；独显：" +
+              (data.host.DGPUEnable ? "开启" : "关闭"),
+          );
+          form("gpu_toggle", "切换独立显卡").finish();
+          const f = form("gpu_time", "购买时长", true);
+          const q = field(f, "quantity", "小时数", "number", 1);
+          q.min = "1";
+          f.finish();
+        } else if (data.key === "upgrade") {
+          note(
+            "仅显示当前实例可升级的套餐。所有操作先报价、确认，再通过图拉账单支付。",
+          );
+          const p = form("plan", "套餐升级报价", true);
+          field(
+            p,
+            "plan_id",
+            "目标套餐",
+            "text",
+            data.upgrade_plans[0]?.id || "",
+            data.upgrade_plans.map((x) => [
+              x.id,
+              (x.chinese || x.id) + " / " + x.cpu + " 核 / " + x.memory + " MB",
+            ]),
+          );
+          p.finish();
+          content.append(element("h3", "附加 IPv4"));
+          table(
+            [
+              ["ID", "ID"],
+              ["IP", "地址"],
+            ],
+            data.ips,
+          );
+          const ip = form("ip", "附加 IP 报价", true);
+          const q = field(ip, "quantity", "新增数量", "number", 1);
+          q.min = "1";
+          q.max = "20";
+          field(
+            ip,
+            "flags",
+            "线路",
+            "text",
+            data.ip_flags[0] || "",
+            data.ip_flags.map((x) => [x, x || "默认线路"]),
+          );
+          ip.finish();
+        } else if (data.key === "terminal") {
+          note("在新窗口打开终端进行远程连接。");
+          const b = element("button", "获取终端入口"),
+            link = element("a", "打开终端");
+          b.className = "primary";
+          link.hidden = true;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          b.onclick = () =>
+            run(async () => {
+              link.hidden = true;
+              const result = await request({ func: "terminal" });
+              const url = new URL(result.data.url);
+              if (
+                !["http:", "https:"].includes(url.protocol) ||
+                !/(^|\.)raincs\.cn$/i.test(url.hostname) ||
+                url.username ||
+                url.password
+              )
+                throw Error("终端链接无效，请重新获取");
+              link.href = result.data.url;
+              link.hidden = false;
+              message.textContent = "入口已就绪，请点击「打开终端」";
+            });
+          content.append(b, link);
+        }
+      })();
+    </script>
+  </body>
+</html>
