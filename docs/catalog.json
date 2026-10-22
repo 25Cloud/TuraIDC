@@ -427,12 +427,6 @@
       "review_by": "2026-12-13"
     },
     {
-      "path": "internal/execution-plans/active/seo-crawlability-fix-2026-10-22.md",
-      "status": "active",
-      "summary": "官网 SEO 链路修复：nginx 补齐 SEO 转发、源码部署前端壳改走 file://、商品详情页纳入 sitemap。",
-      "review_by": "2026-11-21"
-    },
-    {
       "path": "internal/execution-plans/active/ticket-pre-reply-2026-08-23.md",
       "status": "active",
       "summary": "工单预回复：用户建单后以配置管理员名义自动回复，管理端预回复设置页与独立权限。",
@@ -493,6 +487,12 @@
       "path": "internal/execution-plans/completed/production-backup-local-restore-20260726.md",
       "status": "completed",
       "summary": "生产 MySQL 备份已隔离验证、映射并完整恢复至本地 idc。"
+    },
+    {
+      "path": "internal/execution-plans/completed/seo-crawlability-fix-2026-10-22.md",
+      "status": "completed",
+      "summary": "官网 SEO 链路修复：nginx 补齐 SEO 转发、源码部署前端壳改走 file://、商品详情页纳入 sitemap。",
+      "review_by": "2026-11-21"
     },
     {
       "path": "internal/execution-plans/completed/tura-open-api-driver-2026-09-12.md",
