@@ -257,6 +257,76 @@ bash backend/scripts/backup_mysql.sh
 - [ ] 前端三端产物已部署并刷新缓存
 - [ ] `backend/public/uploads/` 与 `storage` 目录权限正确
 
+## 10. 官网 SEO 部署
+
+官网是 Vue 单页应用，裸壳 `index.html` 带 `noindex, nofollow`，正文由后端 `SeoRenderService` 读数据库动态渲染后注入。**没接上这条链路，搜索引擎抓到的就是一份带 `noindex` 的空壳，站点等于完全不被收录。** 完整伪静态规则见[四端 Nginx 伪静态配置](../maintain/nginx-rules.md)，本节只列各部署形态必须落位的部分与自检方法。
+
+### 10.1 三种部署形态分别要做什么
+
+| 部署形态                       | 转发规则放在哪                                                                                                     | 前端 shell 地址                                                                                                                                                       | 注意点                                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 宝塔面板 / 传统 Nginx 源码部署 | 官网站点「伪静态」照抄[四端 Nginx 伪静态配置](../maintain/nginx-rules.md)第 2 节，见[宝塔部署](bt-panel.md) 4.2 节 | 留空即自动判定为 `file://` 直读同机 `frontend-user-v3-www/dist/index.html`；也可显式填 `SEO_FRONTEND_SHELL_URL=file:///绝对路径/frontend-user-v3-www/dist/index.html` | 内部转发走 `127.0.0.1:80`；API 站点开了强制 HTTPS 时需对本机来源放行，否则回环请求被 301 拦截 |
+| Docker / 1Panel 编排           | 已内置在 `deploy/docker/frontends/nginx-default.conf`，无需重复配置                                                | 默认 `http://frontends:8081/index.html`（compose 内部网络）                                                                                                           | 见[Docker / 1Panel 部署](docker-1panel.md)                                                    |
+| 裸机 systemd 部署              | 照抄[四端 Nginx 伪静态配置](../maintain/nginx-rules.md)第 2 节，见[裸机部署](bare-metal.md) 7.2 节                 | 同宝塔形态，留空自动判定                                                                                                                                              | 同样注意 API 站点强制 HTTPS 的回环跳转                                                        |
+
+### 10.2 环境变量
+
+```bash
+# 官网公开地址：canonical / sitemap / JSON-LD 都以它为准。
+# 不填会退化成 API 域名，全站被规范化到非 HTML 端点。
+SEO_SITE_URL=https://www.你的域名.com
+
+# 前端 shell 模板地址。源码部署留空即自动判定为 file:// 直读同机构建产物；
+# 容器部署留空即用 compose 内部网络地址。只有自定义路径时才需要显式填写。
+# SEO_FRONTEND_SHELL_URL=file:///www/wwwroot/你的项目/frontend-user-v3-www/dist/index.html
+
+# shell 模板 / 渲染结果缓存秒数。站点内容发布后靠内容版本号自动失效，
+# 这两个值只决定静态兜底的最长延迟。
+SEO_SHELL_CACHE_TTL=600
+SEO_CACHE_TTL=300
+```
+
+### 10.3 哪些路径必须交给后端渲染
+
+- 首页 `/`、`/products`、`/products/{商品ID}`、落地页（`/cloud-server` 等）、`/about`、`/terms`、`/privacy`、`/notices`、`/notices/{id}`、`/help`、`/help/{id}`、`/open-source`
+- `/robots.txt`、`/sitemap.xml`（必须由后端生成真实文本与 XML，不能落到 SPA 静态回退）
+- 其余单段路径转给后端后返回品牌 404 壳 + HTTP 404，避免爬虫把 SPA 裸壳 200 当成可索引页面
+- **多段路径**（商品选购流程 `/products/{slug}/{groupId}/{childGroupId}/{productId}`）保持 SPA 静态回退
+
+> 通配转发有个前提：官网自己的单段路由必须先在 `SeoRenderService::resolvePage()` 里登记，否则会被转成 404 壳。新增官网单段路由时同步在后端登记。
+
+### 10.4 上线后自检
+
+```bash
+# 1) robots 与 sitemap 必须是真实内容，不是 SPA 壳
+curl -s https://www.你的域名.com/robots.txt | head -3
+curl -s https://www.你的域名.com/sitemap.xml | head -c 200
+
+# 2) 爬虫 UA 取首页：应有 canonical 与 JSON-LD，且没有 noindex
+curl -s -A 'Mozilla/5.0 (compatible; Googlebot/2.1)' https://www.你的域名.com/ \
+  | grep -E 'rel="canonical"|ld\+json|name="robots"'
+
+# 3) 商品详情页应带 Product 结构化数据
+curl -s -A 'Mozilla/5.0 (compatible; Googlebot/2.1)' https://www.你的域名.com/products/1 \
+  | grep -o '"@type":"Product"'
+```
+
+自检通过后，到百度搜索资源平台提交 `https://www.你的域名.com/sitemap.xml`（站点已带 `msvalidate.01` 验证 meta），并在平台跑一次「抓取诊断」确认实时抓取结果。
+
+### 10.5 常见坑
+
+| 现象                                 | 原因                                                                                   | 处理                                                        |
+| ------------------------------------ | -------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| 爬虫抓到空壳，源码里有 `noindex`     | 伪静态没配，全部请求落进 `try_files ... /index.html`                                   | 按 10.1 补转发规则                                          |
+| `/robots.txt` 返回 HTML              | 静态回退把该路径也吞了                                                                 | 同上                                                        |
+| robots 正常但页面 500                | `SEO_FRONTEND_SHELL_URL` 指向了 Docker 服务名 `frontends:8081`，源码部署解析不了该主机 | 留空让代码自动判定，或显式填 `file://` 本机路径             |
+| 页面有内容但没有 canonical / JSON-LD | 该路径没在后端 `resolvePage()` 登记，返回的是 404 壳                                   | 补登记后重跑                                                |
+| 内容是最旧的                         | 前端重建后 shell 缓存未过期                                                            | 等 `SEO_SHELL_CACHE_TTL` 秒或清缓存                         |
+| 改了没生效                           | 改了仓库但没重新构建前端 / 没重载 Nginx                                                | 重新构建前端并重载 Nginx                                    |
+| 首页标题只有品牌名                   | 站点「浏览器标题」没填关键词                                                           | 后台「站点设置 → 浏览器标题」填带关键词的值，前后端同一口径 |
+
+> 域名走 CDN 时回源规则同样生效，但 CDN 可能缓存旧壳，必要时在 CDN 侧刷新缓存。
+
 ## 关联文档
 
 - [宝塔部署项目指南](bt-panel.md)：面板化部署流程。

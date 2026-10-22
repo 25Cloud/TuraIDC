@@ -328,7 +328,18 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    location / {
+    # 其余单段路径转发后端渲染：已登记路径返回可索引的完整 HTML，
+# 未登记路径返回品牌 404 壳 + HTTP 404，避免爬虫把 SPA 裸壳 200 当可索引页面。
+# 前提：官网自己的单段路由须先在后端 SeoRenderService::resolvePage() 登记。
+location ~ ^/[^./]+/?$ {
+    proxy_pass http://127.0.0.1/seo/www$request_uri;
+    proxy_set_header Host              api.你的域名.com;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location / {
         try_files $uri $uri/ /index.html;
     }
 }
@@ -402,7 +413,7 @@ curl -s -H "Host: api.tura.cloud" http://127.0.0.1/api/ready    # status: ready
 浏览器/构建机侧（配置 hosts 后）：
 
 - [ ] 四端 `http://api|www|console|admin.tura.cloud` 均返回 200
-- [ ] 官网首页 HTML title 为站点名（SEO 动态渲染生效），`/products`、`/notices`、`/sitemap.xml`、`/robots.txt` 返回 200
+- [ ] 官网首页 HTML title 为站点设置的「浏览器标题」（SEO 动态渲染生效，默认回退站点名），`/products`、`/notices`、`/sitemap.xml`、`/robots.txt` 返回 200
 - [ ] 控制台/管理端刷新任意 SPA 路由不 404
 - [ ] 管理端可用 `cerbo` + `INSTALL_ADMIN_PASSWORD` 登录，登录后立即改密
 - [ ] `APP_DEBUG=false`、`.env` 600 且属主 www-data
