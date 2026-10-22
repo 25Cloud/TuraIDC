@@ -57,7 +57,10 @@ export const clientRoutes: RouteRecordRaw[] = [
         meta: {
           title: t("seo.products.title"),
           noSitemap: true,
-          robots: "noindex,nofollow",
+          // 商品详情页（卡片式）用的就是这条四段地址。商品页是官网最值钱的落地页，
+          // 爬虫执行 JS 后地址会被规范到四段路径：这里若带 noindex，渲染后的页面会被
+          // 判成死链，sitemap 里收录的短地址 /products/{id} 也进不了索引。
+          // 目录态（其余三段形态）保持 noindex，避免同一批商品被多个目录地址重复收录。
         },
       },
       {
