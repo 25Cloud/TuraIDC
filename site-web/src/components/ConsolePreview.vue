@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import {
   DashboardIcon,
   MoneyIcon,
@@ -8,34 +8,28 @@ import {
   TicketIcon,
 } from "tdesign-icons-vue-next";
 
+import { useSite } from "../i18n/context";
+
 /**
  * 管理端界面示意。
  *
  * 结构照着真实管理端的骨架（侧栏 + 指标 + 图表 + 列表），数值一律是占位，
- * 页脚与下方 caption 都写明「非真实数据」，避免被当成真实营收截图。
+ * 窗口下方写明「非真实数据」，避免被当成真实营收截图。
  */
-const MENU = [
-  { icon: DashboardIcon, label: "仪表盘", active: true },
-  { icon: ShopIcon, label: "商品" },
-  { icon: TaskIcon, label: "订单" },
-  { icon: ServerIcon, label: "实例" },
-  { icon: MoneyIcon, label: "财务" },
-  { icon: TicketIcon, label: "工单" },
-];
+const { messages } = useSite();
+const ui = messages.console;
 
-const STATS = [
-  { label: "本月营收", value: "¥ 86,420.00", delta: "+12.4%" },
-  { label: "待处理订单", value: "12", delta: "待开通 3" },
-  { label: "在线实例", value: "318", delta: "本月 +26" },
+const MENU_ICONS = [
+  DashboardIcon,
+  ShopIcon,
+  TaskIcon,
+  ServerIcon,
+  MoneyIcon,
+  TicketIcon,
 ];
 
 const BARS = [38, 52, 44, 66, 58, 78, 71];
-
-const ROWS = [
-  { id: "#S-10231", name: "商品 A · 月付", status: "已开通", tone: "ok" },
-  { id: "#S-10232", name: "商品 B · 年付", status: "开通中", tone: "warn" },
-  { id: "#S-10233", name: "商品 A · 季付", status: "待续费", tone: "idle" },
-];
+const TONES = ["ok", "warn", "idle"];
 </script>
 
 <template>
@@ -45,25 +39,25 @@ const ROWS = [
         <span class="dot dot-r"></span>
         <span class="dot dot-y"></span>
         <span class="dot dot-g"></span>
-        <span class="bar-title">TuraIDC · 管理端</span>
+        <span class="bar-title">{{ ui.title }}</span>
       </div>
 
       <div class="body">
         <aside class="side">
           <div
-            v-for="item in MENU"
-            :key="item.label"
+            v-for="(item, index) in ui.menu"
+            :key="item"
             class="side-item"
-            :class="{ active: item.active }"
+            :class="{ active: index === 0 }"
           >
-            <component :is="item.icon" size="15px" aria-hidden="true" />
-            <span>{{ item.label }}</span>
+            <component :is="MENU_ICONS[index]" size="15px" aria-hidden="true" />
+            <span>{{ item }}</span>
           </div>
         </aside>
 
         <div class="main">
           <div class="stat-row">
-            <div v-for="stat in STATS" :key="stat.label" class="card">
+            <div v-for="stat in ui.stats" :key="stat.label" class="card">
               <span class="card-label">{{ stat.label }}</span>
               <strong>{{ stat.value }}</strong>
               <span class="card-delta">{{ stat.delta }}</span>
@@ -72,31 +66,31 @@ const ROWS = [
 
           <div class="chart">
             <div class="chart-head">
-              <span>近 7 日收入</span>
-              <span class="chip">示意</span>
+              <span>{{ ui.chart }}</span>
+              <span class="chip">{{ ui.chip }}</span>
             </div>
             <div class="bars" aria-hidden="true">
               <i
                 v-for="(height, index) in BARS"
                 :key="index"
-                :style="{ height: `${height}%` }"
+                :style="{ height: `${height}%`, '--bar-d': `${index * 70}ms` }"
               />
             </div>
           </div>
 
           <ul class="rows">
-            <li v-for="row in ROWS" :key="row.id" class="row">
+            <li v-for="(row, index) in ui.rows" :key="row.id" class="row">
               <span class="row-id">{{ row.id }}</span>
               <span class="row-name">{{ row.name }}</span>
-              <span class="tag" :data-tone="row.tone">{{ row.status }}</span>
+              <span class="tag" :data-tone="TONES[index]">{{
+                row.status
+              }}</span>
             </li>
           </ul>
         </div>
       </div>
     </div>
-    <figcaption class="caption">
-      界面示意，数值为占位，不是真实数据截图。
-    </figcaption>
+    <figcaption class="caption">{{ ui.caption }}</figcaption>
   </figure>
 </template>
 
@@ -111,6 +105,7 @@ const ROWS = [
   100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -262,8 +257,23 @@ const ROWS = [
   flex: 1;
   min-height: 6px;
   border-radius: 4px 4px 2px 2px;
-  background: linear-gradient(180deg, #6d9bff 0%, #165dff 100%);
-  opacity: 0.9;
+  background: linear-gradient(180deg, var(--brand-hover) 0%, var(--brand) 100%);
+  opacity: 0.92;
+  transform-origin: bottom;
+  animation: grow 0.8s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation-delay: var(--bar-d, 0ms);
+}
+
+@keyframes grow {
+  from {
+    transform: scaleY(0.2);
+    opacity: 0;
+  }
+
+  to {
+    transform: scaleY(1);
+    opacity: 0.92;
+  }
 }
 
 .rows {
@@ -306,12 +316,12 @@ const ROWS = [
 
 .tag[data-tone="ok"] {
   background: var(--success-soft);
-  color: #0b7a45;
+  color: var(--ok-ink);
 }
 
 .tag[data-tone="warn"] {
   background: var(--warning-soft);
-  color: #9a6100;
+  color: var(--warn-ink);
 }
 
 .tag[data-tone="idle"] {
@@ -328,6 +338,10 @@ const ROWS = [
 
 @media (prefers-reduced-motion: reduce) {
   .preview {
+    animation: none;
+  }
+
+  .bars i {
     animation: none;
   }
 }

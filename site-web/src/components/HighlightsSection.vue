@@ -1,30 +1,35 @@
-﻿<script setup lang="ts">
-import { FEATURES } from "../data/content";
+<script setup lang="ts">
+import { FEATURE_ICONS } from "../data/site";
+import { useSite } from "../i18n/context";
 import { ICONS } from "../icons";
+
+const { messages } = useSite();
+const section = messages.features;
 </script>
 
 <template>
   <section id="features" class="section">
     <div class="container">
       <header class="section-head" data-reveal>
-        <span class="eyebrow">能力矩阵</span>
-        <h2>一套系统，覆盖 IDC 的全部日常</h2>
-        <p>
-          从第一次上架商品，到月底对完账、给客户开票，中间的每一步都在同一个后台里，
-          不靠 Excel 拼接，也不靠人手对单。
-        </p>
+        <span class="eyebrow">{{ section.kicker }}</span>
+        <h2>{{ section.title }}</h2>
+        <p>{{ section.lead }}</p>
       </header>
 
       <ul class="grid">
         <li
-          v-for="(item, index) in FEATURES"
+          v-for="(item, index) in section.items"
           :key="item.title"
           class="card"
           data-reveal
           :style="{ '--d': `${index * 45}ms` }"
         >
           <span class="icon">
-            <component :is="ICONS[item.icon]" size="20px" aria-hidden="true" />
+            <component
+              :is="ICONS[FEATURE_ICONS[index]]"
+              size="20px"
+              aria-hidden="true"
+            />
           </span>
           <h3>{{ item.title }}</h3>
           <p>{{ item.desc }}</p>
@@ -61,11 +66,12 @@ import { ICONS } from "../icons";
 
 .card:hover {
   transform: translateY(-4px);
-  border-color: #cfe0ff;
+  border-color: var(--brand-border);
   box-shadow: var(--shadow-md);
 }
 
 .icon {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -74,6 +80,11 @@ import { ICONS } from "../icons";
   border-radius: 11px;
   background: var(--brand-soft);
   color: var(--brand);
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.card:hover .icon {
+  transform: rotate(-6deg) scale(1.04);
 }
 
 h3 {

@@ -1,25 +1,26 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ArrowRightIcon } from "tdesign-icons-vue-next";
 
-import { DEPLOY_PATHS } from "../data/content";
+import { DEPLOY_HREFS, DEPLOY_ICONS } from "../data/site";
+import { useSite } from "../i18n/context";
 import { ICONS } from "../icons";
+
+const { messages } = useSite();
+const section = messages.deploy;
 </script>
 
 <template>
   <section id="deploy" class="section section-alt">
     <div class="container">
       <header class="section-head" data-reveal>
-        <span class="eyebrow">部署</span>
-        <h2>三条路，挑你手上那套机器</h2>
-        <p>
-          同一个仓库、同一份配置，Docker、宝塔、裸机都能装。部署文档里连伪静态和
-          定时任务都写好了，照着抄就行。
-        </p>
+        <span class="eyebrow">{{ section.kicker }}</span>
+        <h2>{{ section.title }}</h2>
+        <p>{{ section.lead }}</p>
       </header>
 
       <ul class="paths">
         <li
-          v-for="(path, index) in DEPLOY_PATHS"
+          v-for="(path, index) in section.items"
           :key="path.title"
           class="path"
           data-reveal
@@ -28,7 +29,7 @@ import { ICONS } from "../icons";
           <div class="path-top">
             <span class="path-icon">
               <component
-                :is="ICONS[path.icon]"
+                :is="ICONS[DEPLOY_ICONS[index]]"
                 size="18px"
                 aria-hidden="true"
               />
@@ -37,8 +38,13 @@ import { ICONS } from "../icons";
           </div>
           <h3>{{ path.title }}</h3>
           <p>{{ path.desc }}</p>
-          <a class="path-link" :href="path.href">
-            {{ path.linkText }}
+          <a
+            class="path-link"
+            :href="DEPLOY_HREFS[index]"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ path.link }}
             <ArrowRightIcon size="14px" aria-hidden="true" />
           </a>
         </li>
@@ -124,7 +130,6 @@ p {
 }
 
 .path-link:hover {
-  color: var(--brand-hover);
   text-decoration: underline;
   text-underline-offset: 3px;
 }

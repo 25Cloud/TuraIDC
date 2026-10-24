@@ -1,30 +1,35 @@
 ﻿<script setup lang="ts">
-import { FLOW_STEPS } from "../data/content";
+import { FLOW_ICONS } from "../data/site";
+import { useSite } from "../i18n/context";
 import { ICONS } from "../icons";
+
+const { messages } = useSite();
+const section = messages.flow;
 </script>
 
 <template>
   <section id="flow" class="section section-alt">
     <div class="container">
       <header class="section-head" data-reveal>
-        <span class="eyebrow">业务闭环</span>
-        <h2>从下单到对账，一条线走到底</h2>
-        <p>
-          六个环节共享同一套订单、账户和账务流水，任何一步失败都能回到上一步重来，
-          不会出现「系统里已开通、账上没收到钱」这类对不上的状态。
-        </p>
+        <span class="eyebrow">{{ section.kicker }}</span>
+        <h2>{{ section.title }}</h2>
+        <p>{{ section.lead }}</p>
       </header>
 
-      <ol class="flow">
+      <ol class="flow" data-reveal>
         <li
-          v-for="(step, index) in FLOW_STEPS"
+          v-for="(step, index) in section.steps"
           :key="step.title"
           class="step"
           data-reveal
           :style="{ '--d': `${index * 60}ms` }"
         >
           <span class="step-icon">
-            <component :is="ICONS[step.icon]" size="18px" aria-hidden="true" />
+            <component
+              :is="ICONS[FLOW_ICONS[index]]"
+              size="18px"
+              aria-hidden="true"
+            />
           </span>
           <span class="step-index">0{{ index + 1 }}</span>
           <h3>{{ step.title }}</h3>
@@ -46,6 +51,7 @@ import { ICONS } from "../icons";
   list-style: none;
 }
 
+/* 连线：进场时从左往右拉开 */
 .flow::before {
   content: "";
   position: absolute;
@@ -60,6 +66,13 @@ import { ICONS } from "../icons";
     var(--border) 88%,
     rgba(229, 234, 243, 0) 100%
   );
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) 0.1s;
+}
+
+.flow.is-revealed::before {
+  transform: scaleX(1);
 }
 
 .step {
@@ -110,6 +123,14 @@ import { ICONS } from "../icons";
   color: var(--text-2);
   font-size: 12.5px;
   line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow::before,
+  .flow.is-revealed::before {
+    transform: none;
+    transition: none;
+  }
 }
 
 @media (max-width: 900px) {

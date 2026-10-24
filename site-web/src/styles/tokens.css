@@ -1,12 +1,11 @@
 /**
  * 站点视觉 token 与公共排版。
  *
- * 数值取自 docs/develop/design.md 的通用视觉 token：主色 #165DFF、页面底色
- * #F5F7FB、边框 #E5EAF3、主文本 #1F2937。官网首页允许更强的表达（大字号、
- * 动效、整段对比），但不换色板、不混第二套圆角与阴影。
+ * 浅色数值取自 docs/develop/design.md 的通用 token（主色 #165DFF、页面底
+ * #F5F7FB、边框 #E5EAF3、主文本 #1F2937）；深色是在同一套 token 上做的
+ * 镜像，不引入第二个品牌色。主题由 <html data-theme> 切换，默认跟随系统。
  */
 
-/* 页面没有框架级 base 样式，这里只补最小必要的重置 */
 html,
 body {
   margin: 0;
@@ -15,14 +14,24 @@ body {
   color-scheme: light;
 }
 
+html[data-theme="dark"] body {
+  background: #0b1220;
+  color-scheme: dark;
+}
+
 .site {
   --brand: #165dff;
   --brand-hover: #0e4fcc;
   --brand-soft: #eaf1ff;
   --brand-ink: #0b3fae;
+  --brand-border: #cfe0ff;
+  --brand-glow: rgba(22, 93, 255, 0.14);
   --bg: #f5f7fb;
   --bg-2: #f8fafc;
+  --hero-top: #ffffff;
   --card: #ffffff;
+  --header-bg: rgba(255, 255, 255, 0.92);
+  --tile: #ffffff;
   --border: #e5eaf3;
   --line: #eef2f7;
   --text: #1f2937;
@@ -30,10 +39,13 @@ body {
   --text-3: #94a0b2;
   --success: #12b76a;
   --success-soft: #eafbf3;
+  --ok-ink: #0b7a45;
   --warning: #f59e0b;
   --warning-soft: #fff6e5;
+  --warn-ink: #9a6100;
   --danger: #f04438;
   --danger-soft: #fff1f0;
+  --danger-ink: #b42318;
   --radius-sm: 8px;
   --radius: 14px;
   --radius-lg: 20px;
@@ -57,6 +69,41 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   text-align: left;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+html[data-theme="dark"] .site {
+  --brand: #4d84ff;
+  --brand-hover: #6f9cff;
+  --brand-soft: #13233d;
+  --brand-ink: #a8c6ff;
+  --brand-border: #27436f;
+  --brand-glow: rgba(77, 132, 255, 0.22);
+  --bg: #0b1220;
+  --bg-2: #0e1728;
+  --hero-top: #0d1729;
+  --card: #111c2f;
+  --header-bg: rgba(11, 18, 32, 0.9);
+  --tile: #f4f7fd;
+  --border: #1e2b41;
+  --line: #182337;
+  --text: #e6edf8;
+  --text-2: #9db0c9;
+  --text-3: #6c7f99;
+  --success: #34d399;
+  --success-soft: #10291f;
+  --ok-ink: #6ee7b7;
+  --warning: #fbbf24;
+  --warning-soft: #2a2110;
+  --warn-ink: #fcd34d;
+  --danger: #f87171;
+  --danger-soft: #2a1518;
+  --danger-ink: #fca5a5;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 18px 40px -24px rgba(0, 0, 0, 0.85);
+  --shadow-lg: 0 32px 80px -40px rgba(0, 0, 0, 0.95);
 }
 
 /* 键盘用户跳过导航直达正文 */
@@ -68,14 +115,22 @@ body {
   padding: 10px 16px;
   border-radius: var(--radius-sm);
   background: var(--text);
-  color: #fff;
+  color: var(--bg);
   font-size: 14px;
   transition: top 0.18s ease;
 }
 
 .site .skip-link:focus-visible {
   top: 12px;
-  color: #fff;
+}
+
+/* 主题三态按钮的选中态：状态挂在 <html>，所以这条规则必须是全局的 */
+html[data-theme-pref="light"] .theme-switch [data-theme-set="light"],
+html[data-theme-pref="dark"] .theme-switch [data-theme-set="dark"],
+html[data-theme-pref="auto"] .theme-switch [data-theme-set="auto"] {
+  background: var(--card);
+  color: var(--brand);
+  box-shadow: var(--shadow-sm);
 }
 
 .site *,
@@ -103,6 +158,18 @@ body {
   max-width: 100%;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 .container {
   width: 100%;
   max-width: var(--maxw);
@@ -122,7 +189,7 @@ body {
 }
 
 .section-head {
-  max-width: 720px;
+  max-width: 760px;
   margin-bottom: 48px;
 }
 
@@ -132,9 +199,10 @@ body {
   gap: 8px;
   margin-bottom: 16px;
   color: var(--brand);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .eyebrow::before {
@@ -146,10 +214,10 @@ body {
 }
 
 .section-head h2 {
-  font-size: clamp(28px, 3.2vw, 40px);
+  font-size: clamp(28px, 3.2vw, 42px);
   font-weight: 800;
   letter-spacing: -0.02em;
-  line-height: 1.2;
+  line-height: 1.18;
   text-wrap: balance;
 }
 
@@ -177,7 +245,8 @@ body {
     transform 0.18s ease,
     background-color 0.18s ease,
     border-color 0.18s ease,
-    box-shadow 0.18s ease;
+    box-shadow 0.18s ease,
+    color 0.18s ease;
 }
 
 .btn:hover {
@@ -231,19 +300,27 @@ body {
 
 .btn-dark {
   background: var(--text);
-  color: #fff;
+  color: var(--bg);
 }
 
 .btn-dark:hover {
-  background: #111a28;
+  background: var(--brand);
+  color: #fff;
 }
 
 /*
  * 按钮多是 <a>，而 `.site a { color: inherit }` 的特异性高于 `.btn-*`，
  * 所以按钮文字色要在这里统一抬一级，否则深色按钮会出现「黑底黑字」。
  */
-.site .btn-primary,
+.site .btn-primary {
+  color: #fff;
+}
+
 .site .btn-dark {
+  color: var(--bg);
+}
+
+.site .btn-dark:hover {
   color: #fff;
 }
 
@@ -267,19 +344,25 @@ body {
    脚本失效或首屏可见时内容始终可见，不拿正文可见性换动效。 */
 [data-reveal] {
   transition:
-    opacity 0.6s cubic-bezier(0.2, 0.7, 0.3, 1),
-    transform 0.6s cubic-bezier(0.2, 0.7, 0.3, 1);
+    opacity 0.65s cubic-bezier(0.2, 0.7, 0.3, 1),
+    transform 0.65s cubic-bezier(0.2, 0.7, 0.3, 1);
   transition-delay: var(--d, 0ms);
 }
 
 [data-reveal].is-pending:not(.is-revealed) {
   opacity: 0;
-  transform: translateY(18px);
+  transform: translateY(22px);
+}
+
+/* 进场后触发的子元素动画：连线、色块、进度条 */
+[data-reveal].is-revealed .stagger-underline {
+  transform: scaleX(1);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .site {
     scroll-behavior: auto;
+    transition: none;
   }
 
   [data-reveal],
@@ -287,6 +370,17 @@ body {
     opacity: 1;
     transform: none;
     transition: none;
+  }
+
+  .stagger-underline {
+    transform: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
 

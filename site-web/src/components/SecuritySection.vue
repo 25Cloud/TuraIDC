@@ -1,28 +1,32 @@
-﻿<script setup lang="ts">
-import { SECURITY_HAVE, SECURITY_NONE } from "../data/content";
+<script setup lang="ts">
+import { useSite } from "../i18n/context";
 import { ICONS } from "../icons";
+
+const { messages } = useSite();
+const section = messages.security;
 </script>
 
 <template>
   <section id="security" class="section">
     <div class="container">
       <header class="section-head" data-reveal>
-        <span class="eyebrow">安全与资金</span>
-        <h2>先说我们没有哪些坑</h2>
-        <p>
-          同类商业系统被骂得最多的几个问题，这里逐条对着代码说清楚。
-          每条都能在仓库里找到对应实现，不用信口头承诺。
-        </p>
+        <span class="eyebrow">{{ section.kicker }}</span>
+        <h2>{{ section.title }}</h2>
+        <p>{{ section.lead }}</p>
       </header>
 
       <div class="compare">
         <div class="panel panel-none" data-reveal>
           <div class="panel-head">
-            <span class="panel-badge panel-badge-none">我们没有</span>
-            <span class="panel-count">{{ SECURITY_NONE.length }} 条常见坑</span>
+            <span class="panel-badge panel-badge-none">
+              {{ section.noneTitle }}
+            </span>
+            <span class="panel-count">
+              {{ section.none.length }} {{ section.noneCount }}
+            </span>
           </div>
           <ul>
-            <li v-for="item in SECURITY_NONE" :key="item.title">
+            <li v-for="item in section.none" :key="item.title">
               <span class="mark mark-none">
                 <component :is="ICONS.close" size="15px" aria-hidden="true" />
               </span>
@@ -36,11 +40,15 @@ import { ICONS } from "../icons";
 
         <div class="panel panel-have" data-reveal style="--d: 120ms">
           <div class="panel-head">
-            <span class="panel-badge panel-badge-have">我们有</span>
-            <span class="panel-count">{{ SECURITY_HAVE.length }} 条兜底</span>
+            <span class="panel-badge panel-badge-have">
+              {{ section.haveTitle }}
+            </span>
+            <span class="panel-count">
+              {{ section.have.length }} {{ section.haveCount }}
+            </span>
           </div>
           <ul>
-            <li v-for="item in SECURITY_HAVE" :key="item.title">
+            <li v-for="item in section.have" :key="item.title">
               <span class="mark mark-have">
                 <component :is="ICONS.check" size="15px" aria-hidden="true" />
               </span>
@@ -82,7 +90,7 @@ import { ICONS } from "../icons";
 
 .panel-head {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 18px;
@@ -97,12 +105,12 @@ import { ICONS } from "../icons";
 
 .panel-badge-none {
   background: var(--danger-soft);
-  color: #b42318;
+  color: var(--danger-ink);
 }
 
 .panel-badge-have {
   background: var(--success-soft);
-  color: #0b7a45;
+  color: var(--ok-ink);
 }
 
 .panel-count {

@@ -1,0 +1,437 @@
+{
+  "lang": "English",
+  "htmlLang": "en",
+  "skipToContent": "Skip to content",
+  "meta": {
+    "title": "TuraIDC · Open-source IDC billing & business system",
+    "description": "Open-source billing and business platform for IDC and cloud providers: catalog, orders, auto-provisioning, finance and tickets on one dataset. Self-hosted, auditable.",
+    "keywords": "open source IDC system,IDC billing system,cloud hosting billing,auto provisioning,WHMCS alternative,AGPL"
+  },
+  "nav": {
+    "features": "Capabilities",
+    "flow": "Pipeline",
+    "security": "Security",
+    "deploy": "Deploy",
+    "pricing": "Licensing",
+    "faq": "FAQ"
+  },
+  "actions": {
+    "docs": "Read the docs",
+    "github": "Source on GitHub",
+    "migrate": "Migration guide",
+    "licensing": "License",
+    "commercial": "Commercial license",
+    "viewDocs": "Docs"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "auto": "System"
+  },
+  "langLabel": "Language",
+  "hero": {
+    "kicker": "AGPL-3.0-or-later · No license checks · Self-hosted",
+    "titleLead": "Open-source",
+    "titleAccent": "IDC",
+    "titleTail": "billing & business system",
+    "lead": "Catalog, orders, billing, auto-provisioning, finance, tickets and resellers: seven stages sharing one dataset.",
+    "note": "Laravel 12 + Vue 3 · three frontends · server-side pricing · auditable source",
+    "stats": [
+      {
+        "value": "3",
+        "unit": "apps",
+        "label": "Admin · storefront · client console"
+      },
+      {
+        "value": "8",
+        "unit": "domains",
+        "label": "Catalog, orders, finance, users and more"
+      },
+      {
+        "value": "6",
+        "unit": "plugins",
+        "label": "Upstream · payment · SMS · captcha · KYC · mail"
+      },
+      {
+        "value": "0",
+        "unit": "USD",
+        "label": "Free under AGPL, no feature gating"
+      }
+    ]
+  },
+  "console": {
+    "title": "TuraIDC · Admin",
+    "menu": [
+      "Overview",
+      "Catalog",
+      "Orders",
+      "Instances",
+      "Finance",
+      "Tickets"
+    ],
+    "stats": [
+      {
+        "label": "Revenue MTD",
+        "value": "¥ 86,420.00",
+        "delta": "+12.4%"
+      },
+      {
+        "label": "Open orders",
+        "value": "12",
+        "delta": "3 pending"
+      },
+      {
+        "label": "Live instances",
+        "value": "318",
+        "delta": "+26 this month"
+      }
+    ],
+    "chart": "Revenue, last 7 days",
+    "chip": "Mock",
+    "rows": [
+      {
+        "id": "#S-10231",
+        "name": "Plan A · monthly",
+        "status": "Active"
+      },
+      {
+        "id": "#S-10232",
+        "name": "Plan B · yearly",
+        "status": "Provisioning"
+      },
+      {
+        "id": "#S-10233",
+        "name": "Plan A · quarterly",
+        "status": "Renew soon"
+      }
+    ],
+    "caption": "Illustrative UI. Values are placeholders, not real data."
+  },
+  "features": {
+    "kicker": "Capabilities",
+    "title": "One backend for the entire IDC workflow",
+    "lead": "From publishing a product to closing the books, without a second spreadsheet.",
+    "items": [
+      {
+        "title": "Catalog & pricing",
+        "desc": "Multi-cycle pricing, configurable options, stock and reseller discounts; totals are always recomputed server-side."
+      },
+      {
+        "title": "Orders & provisioning",
+        "desc": "Checkout, payment callbacks, upstream provisioning, retries, suspend and release on expiry."
+      },
+      {
+        "title": "Finance",
+        "desc": "Balance, top-ups, invoices, refunds, reconciliation and ledger; amounts accumulated in cents."
+      },
+      {
+        "title": "Accounts",
+        "desc": "KYC, membership tiers, reseller commissions, payouts and login risk control."
+      },
+      {
+        "title": "Tickets",
+        "desc": "Department routing, auto-close on timeout, attachment protection, upstream forwarding."
+      },
+      {
+        "title": "Notifications",
+        "desc": "In-app, email and SMS with configurable templates and retries."
+      },
+      {
+        "title": "Automation",
+        "desc": "Scheduled jobs, heartbeat monitoring, reconciliation, log archiving."
+      },
+      {
+        "title": "Plugins",
+        "desc": "Six plugin families with clear boundaries: swap an upstream without touching the core."
+      }
+    ]
+  },
+  "flow": {
+    "kicker": "Pipeline",
+    "title": "One pipeline from checkout to reconciliation",
+    "lead": "Six stages share the same orders, accounts and ledger; a failed step rolls back, so you never see provisioned-but-unpaid.",
+    "steps": [
+      {
+        "title": "Catalog",
+        "desc": "Groups, options, cycles, stock"
+      },
+      {
+        "title": "Checkout",
+        "desc": "Quote token, server-side totals"
+      },
+      {
+        "title": "Provisioning",
+        "desc": "Upstream plugins, automatic retry"
+      },
+      {
+        "title": "Billing & renewal",
+        "desc": "Expiry notices, auto-renew, upgrades"
+      },
+      {
+        "title": "Reconciliation",
+        "desc": "Ledger, refunds, invoices, MRR"
+      },
+      {
+        "title": "Tickets & alerts",
+        "desc": "Auto-close, email and SMS"
+      }
+    ]
+  },
+  "security": {
+    "kicker": "Security & money",
+    "title": "Start with the flaws we don't have",
+    "lead": "The issues commonly reported against commercial IDC systems, each mapped to an implementation you can verify in the repository.",
+    "noneTitle": "We don't have",
+    "noneCount": "issues avoided",
+    "none": [
+      {
+        "title": "Price tampering",
+        "desc": "Order and renewal totals are recomputed server-side; client parameters cannot rewrite the amount due."
+      },
+      {
+        "title": "Leaked upstream credentials",
+        "desc": "Upstream tokens stay server-side; clients and anonymous requests never receive the raw JWT."
+      },
+      {
+        "title": "Arbitrary file upload",
+        "desc": "Uploads require authentication and are validated for type, size and quota."
+      },
+      {
+        "title": "Feature gating and backdoors",
+        "desc": "No license checks, no disabled features, no remote control; the code is fully auditable."
+      },
+      {
+        "title": "Cross-tenant access",
+        "desc": "Queries and mutations bind to the current owner; violations return 403 / 404."
+      },
+      {
+        "title": "Payment replay",
+        "desc": "Idempotent callbacks plus a unique transaction constraint: each payment is booked and fulfilled once."
+      },
+      {
+        "title": "Injection and spoofing",
+        "desc": "Parameterized SQL; untrusted proxy headers ignored for client IP; secure cookies and CSRF protection."
+      }
+    ],
+    "haveTitle": "We do have",
+    "haveCount": "safeguards",
+    "have": [
+      {
+        "title": "Authoritative server-side math",
+        "desc": "Amounts, stock, coupons and renewals recomputed and locked server-side."
+      },
+      {
+        "title": "Complete audit trail",
+        "desc": "Money movements, orders and admin actions are recorded and exportable."
+      },
+      {
+        "title": "Login risk control",
+        "desc": "Soft lockouts per account and IP; captcha throttled per target."
+      },
+      {
+        "title": "Plugin architecture",
+        "desc": "Six plugin families with explicit boundaries, replaceable end to end."
+      },
+      {
+        "title": "Automated fallbacks",
+        "desc": "Scheduling, heartbeats, reconciliation, retries and automatic release."
+      },
+      {
+        "title": "Open and auditable",
+        "desc": "AGPL-3.0-or-later: review, patch and extend in the open."
+      }
+    ]
+  },
+  "deploy": {
+    "kicker": "Deploy",
+    "title": "Three deployment shapes",
+    "lead": "One codebase: Docker Compose, BaoTa panel or bare metal. Rewrite rules and cron setup ship in the docs.",
+    "items": [
+      {
+        "title": "Docker Compose",
+        "tag": "Fastest",
+        "desc": "One compose file brings up the apps, MySQL and Redis; the host only runs containers.",
+        "link": "Docker guide"
+      },
+      {
+        "title": "BaoTa panel",
+        "tag": "Common",
+        "desc": "Four sites plus rewrite rules; PHP and cron managed inside the panel.",
+        "link": "BaoTa guide"
+      },
+      {
+        "title": "Bare metal",
+        "tag": "Explicit",
+        "desc": "Bring your own PHP-FPM, MySQL, Redis and Nginx; every request path stays visible.",
+        "link": "Bare-metal guide"
+      }
+    ]
+  },
+  "migrate": {
+    "kicker": "Migration",
+    "title": "Move over from ZJMF Finance",
+    "desc": "Products, customers, orders, upstreams and KYC records migrate step by step; both systems can talk to each other during the switch.",
+    "points": [
+      "Whole-database migration with checklists before and after",
+      "A ZJMF compatibility plugin lets the legacy system call TuraIDC as an upstream",
+      "ZJMF can also be attached as a supplier"
+    ]
+  },
+  "pricing": {
+    "kicker": "Licensing",
+    "title": "Free to self-host, paid only to close the source",
+    "lead": "Both editions are feature-identical: stay open and pay nothing, or buy a license to keep your fork closed. No per-instance or per-order tax.",
+    "plans": [
+      {
+        "name": "Open source",
+        "price": "0",
+        "unit": "free forever",
+        "license": "AGPL-3.0-or-later",
+        "features": [
+          "Identical features to the commercial edition",
+          "No license checks, no gating, no remote control",
+          "Deploy, modify and audit as you like",
+          "Publishing it as a service requires sharing the corresponding source"
+        ],
+        "cta": "License terms",
+        "currency": ""
+      },
+      {
+        "name": "Commercial",
+        "price": "200",
+        "unit": "CNY · per year",
+        "license": "Optional path for closed source",
+        "features": [
+          "For closed distribution or when AGPL source duties don't fit",
+          "Unlocks no extra features",
+          "Suited to teams with a compliance review",
+          "Terms and attribution follow LICENSE-COMMERCIAL.md"
+        ],
+        "cta": "Commercial license",
+        "currency": "¥"
+      }
+    ],
+    "note": "Pricing and licensing mirror the repository README and LICENSE-COMMERCIAL.md; the files in the repository are authoritative."
+  },
+  "faq": {
+    "kicker": "FAQ",
+    "title": "What to confirm before going live",
+    "items": [
+      {
+        "q": "Is it really free?",
+        "a": "The open-source edition is free under AGPL-3.0-or-later, with no feature gating, no license checks and no backdoors. The full source is auditable."
+      },
+      {
+        "q": "Can I run it closed-source commercially?",
+        "a": "That needs the commercial license (CNY 200 / year), which grants terms outside AGPL. Without it, offering the modified system as a service requires sharing the complete corresponding source, including your changes."
+      },
+      {
+        "q": "Can I migrate from ZJMF Finance?",
+        "a": "Yes. Products, customers, orders, upstreams and KYC data have documented migration paths and checklists; TuraIDC can also act as an upstream so both systems run in parallel first."
+      },
+      {
+        "q": "Which upstreams and payment channels are supported?",
+        "a": "Upstreams, payments, SMS, captcha, KYC and mail are all plugins. ZJMF, KangHostx and EPay ship built in; anything else follows the plugin contract without touching the core."
+      },
+      {
+        "q": "What server environment does it need?",
+        "a": "PHP 8.3+ with Laravel 12, MySQL 5.7.8+ (8.0 recommended) and Redis 6+. The three frontends build to static assets served by Nginx. Sizing details are in the deployment docs."
+      },
+      {
+        "q": "Where do I start customizing?",
+        "a": "Read the architecture and frontend guidelines first, then pick one business domain. Plugins live in backend/plugins/{domain}/{slug}/; do not add logic to system routes, schedules or global middleware."
+      }
+    ],
+    "lead": "The six questions we hear most before launch."
+  },
+  "partners": {
+    "kicker": "Partners",
+    "title": "Providers already running TuraIDC",
+    "note": "No particular order",
+    "items": [
+      {
+        "name": "7iNet",
+        "href": "https://www.7inet.moe/"
+      },
+      {
+        "name": "StarVM",
+        "href": "https://www.starvm.cn/"
+      },
+      {
+        "name": "25Yun",
+        "href": "https://idc.25y.cn/"
+      },
+      {
+        "name": "Xianlin Cloud",
+        "href": "https://www.idcxl.cn/"
+      }
+    ]
+  },
+  "footer": {
+    "tagline": "An open-source business and billing platform for IDC and cloud providers: self-hosted, auditable, extensible.",
+    "groups": [
+      {
+        "title": "Docs",
+        "links": [
+          {
+            "text": "Quick start",
+            "kind": "quickStart"
+          },
+          {
+            "text": "Deployment",
+            "kind": "deploy"
+          },
+          {
+            "text": "API reference",
+            "kind": "api"
+          },
+          {
+            "text": "Plugin guide",
+            "kind": "plugins"
+          }
+        ]
+      },
+      {
+        "title": "Project",
+        "links": [
+          {
+            "text": "Repository",
+            "kind": "repo"
+          },
+          {
+            "text": "Releases",
+            "kind": "releases"
+          },
+          {
+            "text": "Issues",
+            "kind": "issues"
+          },
+          {
+            "text": "License",
+            "kind": "licensing"
+          }
+        ]
+      },
+      {
+        "title": "Contact",
+        "links": [
+          {
+            "text": "contact@turaidc.com",
+            "kind": "mail"
+          },
+          {
+            "text": "Architecture",
+            "kind": "architecture"
+          },
+          {
+            "text": "Migration",
+            "kind": "migrate"
+          }
+        ]
+      }
+    ],
+    "license": "This site is the TuraIDC project homepage. You may modify and self-host the system, but offering it as a service requires sharing the complete corresponding source under AGPL and keeping the original notices and license files.",
+    "copyright": "© 2026 TuraIDC Contributors"
+  }
+}

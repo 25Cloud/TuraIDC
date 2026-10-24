@@ -1,0 +1,154 @@
+---
+import SiteShell from "../components/SiteShell.vue";
+import { buildJsonLd } from "../data/schema";
+import { LOCALES, SITE_URL, absoluteUrl, getLocale } from "../i18n";
+import "../styles/tokens.css";
+
+interface Props {
+  code: string;
+}
+
+const { code } = Astro.props;
+const entry = getLocale(code);
+const messages = entry.messages;
+const canonical = absoluteUrl(entry);
+const jsonLd = buildJsonLd(entry);
+---
+
+<!doctype html>
+<html lang={entry.htmlLang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{messages.meta.title}</title>
+    <meta name="description" content={messages.meta.description} />
+    <meta name="keywords" content={messages.meta.keywords} />
+    <link rel="canonical" href={canonical} />
+    {
+      LOCALES.map((item) => (
+        <link
+          rel="alternate"
+          hreflang={item.htmlLang}
+          href={absoluteUrl(item)}
+        />
+      ))
+    }
+    <link rel="alternate" hreflang="x-default" href={`${SITE_URL}/`} />
+    <meta name="robots" content="index,follow" />
+    <meta name="theme-color" content="#165DFF" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="TuraIDC" />
+    <meta property="og:title" content={messages.meta.title} />
+    <meta property="og:description" content={messages.meta.description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={entry.ogLocale} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={messages.meta.title} />
+    <meta name="twitter:description" content={messages.meta.description} />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+    <!--
+      主题在首帧前定好，避免闪一下白底：存储偏好 > 跟随系统。
+      这里必须是内联脚本，外链会让浏览器先画一帧默认主题。
+    -->
+    <script is:inline>
+      (function () {
+        var KEY = "turaidc-site-theme";
+        var root = document.documentElement;
+        var media = window.matchMedia("(prefers-color-scheme: dark)");
+
+        function resolve(pref) {
+          if (pref === "auto") return media.matches ? "dark" : "light";
+          return pref;
+        }
+
+        var pref = "auto";
+        try {
+          var saved = window.localStorage.getItem(KEY);
+          if (saved === "light" || saved === "dark" || saved === "auto") {
+            pref = saved;
+          }
+        } catch (error) {
+          /* 隐私模式下读不到就走系统偏好 */
+        }
+
+        root.setAttribute("data-theme-pref", pref);
+        root.setAttribute("data-theme", resolve(pref));
+
+        media.addEventListener("change", function () {
+          if (root.getAttribute("data-theme-pref") === "auto") {
+            root.setAttribute("data-theme", resolve("auto"));
+          }
+        });
+
+        document.addEventListener("click", function (event) {
+          var target = event.target;
+          if (!target || !target.closest) return;
+          var button = target.closest("[data-theme-set]");
+          if (!button) return;
+
+          var next = button.getAttribute("data-theme-set");
+          root.setAttribute("data-theme-pref", next);
+          root.setAttribute("data-theme", resolve(next));
+
+          try {
+            window.localStorage.setItem(KEY, next);
+          } catch (error) {
+            /* 存不下就只影响下次访问 */
+          }
+
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) {
+            meta.setAttribute(
+              "content",
+              resolve(next) === "dark" ? "#0b1220" : "#165DFF",
+            );
+          }
+        });
+      })();
+    </script>
+  </head>
+  <body>
+    <SiteShell locale={code} />
+
+    <!--
+      滚动进场：只给「加载时位于视口下方」的元素加隐藏类，首屏与无脚本场景
+      永远看得到正文。组件没有 client 指令，这段是本站唯一的运行时逻辑。
+    -->
+    <script is:inline>
+      (function () {
+        var prefersReduced = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+        if (prefersReduced || !("IntersectionObserver" in window)) return;
+
+        var observer = new IntersectionObserver(
+          function (entries) {
+            for (var i = 0; i < entries.length; i += 1) {
+              var entry = entries[i];
+              if (!entry.isIntersecting) continue;
+              entry.target.classList.add("is-revealed");
+              observer.unobserve(entry.target);
+            }
+          },
+          { threshold: 0.08, rootMargin: "0px 0px -8% 0px" },
+        );
+
+        var foldLimit = window.innerHeight * 0.92;
+        var targets = document.querySelectorAll("[data-reveal]");
+
+        for (var j = 0; j < targets.length; j += 1) {
+          var element = targets[j];
+          if (element.getBoundingClientRect().top <= foldLimit) {
+            element.classList.add("is-revealed");
+            continue;
+          }
+          element.classList.add("is-pending");
+          observer.observe(element);
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,14 +1,18 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ArrowRightIcon, LogoGithubIcon } from "tdesign-icons-vue-next";
 
-import { HERO, HERO_STATS } from "../data/content";
+import { LINKS } from "../data/site";
+import { useSite } from "../i18n/context";
 import ConsolePreview from "./ConsolePreview.vue";
 
+const { messages } = useSite();
+const hero = messages.hero;
+
 const TITLE_PARTS = [
-  { text: HERO.titleLead, accent: false },
+  { text: hero.titleLead, accent: false },
   { text: " ", accent: false },
-  { text: HERO.titleAccent, accent: true },
-  { text: ` ${HERO.titleTail}`, accent: false },
+  { text: hero.titleAccent, accent: true },
+  { text: ` ${hero.titleTail}`, accent: false },
 ];
 </script>
 
@@ -17,13 +21,8 @@ const TITLE_PARTS = [
     <div class="hero-glow" aria-hidden="true"></div>
     <div class="container hero-grid">
       <div class="hero-copy">
-        <span class="badge anim">
-          <i class="badge-dot" aria-hidden="true"></i>
-          {{ HERO.eyebrow }}
-        </span>
+        <span class="kicker anim">{{ hero.kicker }}</span>
 
-        <!-- 标题按片段渲染，空格写在数据里，避免模板换行被压缩后
-             出现「IDC业务」这种粘字；断行位置由 word-break: keep-all 控制 -->
         <h1 class="anim" style="--d: 60ms">
           <span
             v-for="(part, index) in TITLE_PARTS"
@@ -33,35 +32,31 @@ const TITLE_PARTS = [
           >
         </h1>
 
-        <p class="lead anim" style="--d: 120ms">{{ HERO.lead }}</p>
-        <p class="sub anim" style="--d: 170ms">{{ HERO.subLead }}</p>
+        <p class="lead anim" style="--d: 120ms">{{ hero.lead }}</p>
+        <p class="note anim" style="--d: 170ms">{{ hero.note }}</p>
 
         <div class="cta anim" style="--d: 230ms">
-          <a class="btn btn-primary" :href="HERO.primaryCta.href">
-            {{ HERO.primaryCta.text }}
+          <a class="btn btn-primary" :href="LINKS.docs">
+            {{ messages.actions.docs }}
             <ArrowRightIcon size="16px" aria-hidden="true" />
           </a>
           <a
             class="btn btn-outline"
-            :href="HERO.secondaryCta.href"
+            :href="LINKS.repo"
             target="_blank"
             rel="noopener noreferrer"
           >
             <LogoGithubIcon size="16px" aria-hidden="true" />
-            {{ HERO.secondaryCta.text }}
+            {{ messages.actions.github }}
           </a>
         </div>
 
-        <a
-          class="ghost-link anim"
-          :href="HERO.ghostCta.href"
-          style="--d: 270ms"
-        >
-          {{ HERO.ghostCta.text }}
+        <a class="ghost-link anim" :href="LINKS.migrate" style="--d: 270ms">
+          {{ messages.actions.migrate }} →
         </a>
 
         <dl class="stats anim" style="--d: 320ms">
-          <div v-for="stat in HERO_STATS" :key="stat.label" class="stat">
+          <div v-for="stat in hero.stats" :key="stat.label" class="stat">
             <dt>
               <strong>{{ stat.value }}</strong>
               <span>{{ stat.unit }}</span>
@@ -79,29 +74,40 @@ const TITLE_PARTS = [
 <style scoped>
 .hero {
   position: relative;
-  padding: 64px 0 72px;
+  padding: 76px 0 72px;
   overflow: hidden;
   background: linear-gradient(
     180deg,
-    #ffffff 0%,
-    var(--bg) 72%,
+    var(--hero-top) 0%,
+    var(--bg) 78%,
     var(--bg) 100%
   );
 }
 
 .hero-glow {
   position: absolute;
-  top: -160px;
-  right: -120px;
-  width: 640px;
-  height: 640px;
+  top: -180px;
+  right: -140px;
+  width: 680px;
+  height: 680px;
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(22, 93, 255, 0.14) 0%,
+    var(--brand-glow) 0%,
     rgba(22, 93, 255, 0) 68%
   );
   pointer-events: none;
+  animation: drift 16s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(-40px, 30px, 0) scale(1.08);
+  }
 }
 
 .hero-grid {
@@ -112,16 +118,13 @@ const TITLE_PARTS = [
   align-items: center;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--card);
-  color: var(--text-2);
-  font-size: 13px;
+.kicker {
+  display: inline-block;
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 /* 首屏用 CSS 关键帧而不是滚动观察：无论脚本是否就绪，首屏都会显示到位 */
@@ -142,29 +145,16 @@ const TITLE_PARTS = [
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .anim {
-    animation: none;
-  }
-}
-
-.badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 0 3px var(--success-soft);
-}
-
 h1 {
-  margin-top: 22px;
+  margin-top: 20px;
   font-size: clamp(36px, 4.4vw, 60px);
   font-weight: 800;
   letter-spacing: -0.03em;
-  line-height: 1.12;
+  line-height: 1.1;
   /* keep-all：中文只在空格处断行，避免「业务与财务系 / 统」这种拆法 */
   word-break: keep-all;
   overflow-wrap: break-word;
+  text-wrap: balance;
 }
 
 .accent {
@@ -180,23 +170,23 @@ h1 {
   left: 0;
   height: 0.075em;
   border-radius: 999px;
-  background: rgba(22, 93, 255, 0.16);
+  background: var(--brand-glow);
 }
 
 .lead {
   max-width: 34em;
-  margin-top: 22px;
+  margin-top: 24px;
   color: var(--text);
   font-size: clamp(16px, 1.35vw, 19px);
-  line-height: 1.7;
+  line-height: 1.65;
 }
 
-.sub {
-  max-width: 34em;
+.note {
+  max-width: 36em;
   margin-top: 14px;
   color: var(--text-2);
-  font-size: 15px;
-  line-height: 1.75;
+  font-size: 14.5px;
+  line-height: 1.7;
 }
 
 .cta {
@@ -215,7 +205,6 @@ h1 {
 }
 
 .ghost-link:hover {
-  color: var(--brand-hover);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -270,7 +259,7 @@ h1 {
 
 @media (max-width: 680px) {
   .hero {
-    padding: 40px 0 48px;
+    padding: 44px 0 48px;
   }
 
   .stats {

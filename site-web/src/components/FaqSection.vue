@@ -1,23 +1,24 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ChevronDownIcon } from "tdesign-icons-vue-next";
 
-import { FAQ_ITEMS } from "../data/content";
+import { useSite } from "../i18n/context";
+
+const { messages } = useSite();
+const section = messages.faq;
 </script>
 
 <template>
   <section id="faq" class="section">
     <div class="container faq-grid">
       <header class="section-head faq-head" data-reveal>
-        <span class="eyebrow">常见问题</span>
-        <h2>动手之前，先问清楚</h2>
-        <p>
-          没找到答案就去翻文档，基本都在里面；文档里也没有的，直接开 issue。
-        </p>
+        <span class="eyebrow">{{ section.kicker }}</span>
+        <h2>{{ section.title }}</h2>
+        <p>{{ section.lead }}</p>
       </header>
 
       <div class="faq-list">
         <details
-          v-for="(item, index) in FAQ_ITEMS"
+          v-for="(item, index) in section.items"
           :key="item.q"
           class="faq-item"
           data-reveal
@@ -64,7 +65,7 @@ import { FAQ_ITEMS } from "../data/content";
 }
 
 .faq-item[open] {
-  border-color: #cfe0ff;
+  border-color: var(--brand-border);
 }
 
 .faq-item summary {

@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { LogoGithubIcon } from "tdesign-icons-vue-next";
 
-import {
-  CONTACT_MAIL,
-  FOOTER_GROUPS,
-  REPO_URL,
-  SITE,
-  SITE_URL,
-} from "../data/content";
+import { FOOTER_HREFS, LINKS } from "../data/site";
+import { useSite } from "../i18n/context";
+
+const { messages, locale } = useSite();
+const footer = messages.footer;
 </script>
 
 <template>
@@ -17,19 +15,17 @@ import {
         <a class="ft-logo" href="#top">
           <img
             src="/turaidc-logo.webp"
-            alt="TuraIDC 图拉云"
+            alt="TuraIDC"
             width="139"
             height="26"
             loading="lazy"
             decoding="async"
           />
         </a>
-        <p>
-          面向 IDC 与云服务商的开源业务财务系统。可自托管、可审计、可二次开发。
-        </p>
+        <p>{{ footer.tagline }}</p>
         <a
           class="ft-github"
-          :href="REPO_URL"
+          :href="LINKS.repo"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -39,15 +35,15 @@ import {
       </div>
 
       <nav
-        v-for="group in FOOTER_GROUPS"
+        v-for="group in footer.groups"
         :key="group.title"
         class="ft-group"
         :aria-label="group.title"
       >
         <h2>{{ group.title }}</h2>
         <ul>
-          <li v-for="link in group.links" :key="link.href">
-            <a :href="link.href">{{ link.text }}</a>
+          <li v-for="link in group.links" :key="link.kind">
+            <a :href="FOOTER_HREFS[link.kind]">{{ link.text }}</a>
           </li>
         </ul>
       </nav>
@@ -55,17 +51,14 @@ import {
 
     <div class="container ft-bottom">
       <p>
-        <span class="license">{{ SITE.edition }}</span>
-        本站是 TuraIDC 项目官网。系统允许自行修改与部署，但对外提供服务时必须按
-        AGPL 向使用者提供完整对应源码，并保留原有署名与许可文件。
+        <span class="license">AGPL-3.0-or-later</span>
+        {{ footer.license }}
       </p>
       <p class="copy">
-        © 2026 TuraIDC Contributors ·
-        <a :href="`mailto:${CONTACT_MAIL}`">{{ CONTACT_MAIL }}</a>
+        {{ footer.copyright }} ·
+        <a :href="LINKS.licensing">{{ messages.actions.licensing }}</a>
         ·
-        <a :href="SITE_URL" rel="home">{{
-          SITE_URL.replace("https://", "")
-        }}</a>
+        <a :href="locale.path">{{ locale.label }}</a>
       </p>
     </div>
   </footer>
@@ -75,7 +68,7 @@ import {
 .ft {
   padding: 64px 0 40px;
   border-top: 1px solid var(--border);
-  background: #fff;
+  background: var(--card);
 }
 
 .ft-top {
@@ -97,7 +90,7 @@ import {
 }
 
 .ft-brand p {
-  max-width: 26em;
+  max-width: 28em;
   margin-top: 14px;
   color: var(--text-2);
   font-size: 13px;
@@ -162,7 +155,7 @@ import {
 }
 
 .ft-bottom p {
-  max-width: 62em;
+  max-width: 64em;
 }
 
 .license {

@@ -1,8 +1,12 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ArrowRightIcon } from "tdesign-icons-vue-next";
 
-import { MIGRATE } from "../data/content";
+import { LINKS } from "../data/site";
+import { useSite } from "../i18n/context";
 import { ICONS } from "../icons";
+
+const { messages } = useSite();
+const section = messages.migrate;
 </script>
 
 <template>
@@ -13,16 +17,16 @@ import { ICONS } from "../icons";
           <span class="band-icon">
             <component :is="ICONS.swap" size="20px" aria-hidden="true" />
           </span>
-          <h2>{{ MIGRATE.title }}</h2>
-          <p>{{ MIGRATE.desc }}</p>
-          <a class="btn btn-primary" :href="MIGRATE.href">
-            {{ MIGRATE.linkText }}
+          <h2>{{ section.title }}</h2>
+          <p>{{ section.desc }}</p>
+          <a class="btn btn-primary" :href="LINKS.migrate">
+            {{ messages.actions.migrate }}
             <ArrowRightIcon size="16px" aria-hidden="true" />
           </a>
         </div>
 
         <ul class="points">
-          <li v-for="(point, index) in MIGRATE.points" :key="point">
+          <li v-for="(point, index) in section.points" :key="point">
             <span class="num">0{{ index + 1 }}</span>
             <span>{{ point }}</span>
           </li>
@@ -38,13 +42,13 @@ import { ICONS } from "../icons";
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   gap: 48px;
   align-items: center;
-  padding: 44px 44px;
-  border: 1px solid #d6e3ff;
+  padding: 44px;
+  border: 1px solid var(--brand-border);
   border-radius: var(--radius-lg);
   background:
     radial-gradient(
       120% 140% at 100% 0%,
-      rgba(22, 93, 255, 0.1) 0%,
+      var(--brand-glow) 0%,
       rgba(22, 93, 255, 0) 58%
     ),
     var(--card);
@@ -62,15 +66,21 @@ import { ICONS } from "../icons";
   color: var(--brand);
 }
 
+.band-head .eyebrow {
+  display: flex;
+  margin-bottom: 10px;
+}
+
 h2 {
   font-size: clamp(24px, 2.6vw, 32px);
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.25;
+  text-wrap: balance;
 }
 
 .band-head p {
-  max-width: 30em;
+  max-width: 32em;
   margin-top: 12px;
   color: var(--text-2);
   font-size: 14.5px;
@@ -97,7 +107,7 @@ h2 {
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--card);
   color: var(--text);
   font-size: 13.5px;
   line-height: 1.65;

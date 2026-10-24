@@ -1,28 +1,30 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ArrowRightIcon } from "tdesign-icons-vue-next";
 
-import { PRICING } from "../data/content";
+import { LINKS } from "../data/site";
+import { useSite } from "../i18n/context";
 import { ICONS } from "../icons";
+
+const { messages } = useSite();
+const section = messages.pricing;
+const planHref = [LINKS.licensing, LINKS.licensing];
 </script>
 
 <template>
   <section id="pricing" class="section section-alt">
     <div class="container">
       <header class="section-head" data-reveal>
-        <span class="eyebrow">定价</span>
-        <h2>开源免费，闭源商用再谈钱</h2>
-        <p>
-          两条路的功能完全一致：不想开源就买商业授权，愿意开源就一分不花。
-          没有按实例数、按订单量收费的隐藏条款。
-        </p>
+        <span class="eyebrow">{{ section.kicker }}</span>
+        <h2>{{ section.title }}</h2>
+        <p>{{ section.lead }}</p>
       </header>
 
       <div class="plans">
         <article
-          v-for="(plan, index) in PRICING"
+          v-for="(plan, index) in section.plans"
           :key="plan.name"
           class="plan"
-          :class="{ featured: plan.tone === 'featured' }"
+          :class="{ featured: index === 1 }"
           data-reveal
           :style="{ '--d': `${index * 90}ms` }"
         >
@@ -32,7 +34,9 @@ import { ICONS } from "../icons";
           </header>
 
           <p class="price">
-            <span class="currency">¥</span>
+            <span v-if="plan.currency" class="currency">{{
+              plan.currency
+            }}</span>
             <strong>{{ plan.price }}</strong>
             <span class="unit">{{ plan.unit }}</span>
           </p>
@@ -46,19 +50,16 @@ import { ICONS } from "../icons";
 
           <a
             class="btn"
-            :class="plan.tone === 'featured' ? 'btn-primary' : 'btn-outline'"
-            :href="plan.cta.href"
+            :class="index === 1 ? 'btn-primary' : 'btn-outline'"
+            :href="planHref[index]"
           >
-            {{ plan.cta.text }}
+            {{ plan.cta }}
             <ArrowRightIcon size="15px" aria-hidden="true" />
           </a>
         </article>
       </div>
 
-      <p class="note" data-reveal>
-        定价与许可口径来自仓库 README 与
-        LICENSE-COMMERCIAL.md，最终以仓库内许可文件为准。
-      </p>
+      <p class="note" data-reveal>{{ section.note }}</p>
     </div>
   </section>
 </template>
@@ -82,7 +83,7 @@ import { ICONS } from "../icons";
 }
 
 .plan.featured {
-  border-color: #b9d2ff;
+  border-color: var(--brand-border);
   box-shadow: 0 24px 60px -40px rgba(22, 93, 255, 0.9);
 }
 

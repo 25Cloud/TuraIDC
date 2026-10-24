@@ -28,30 +28,35 @@ owner: frontend
 | 图标       | `tdesign-icons-vue-next`               | 与 [视觉规范](../../../develop/design.md) 的图标约束一致，不手绘 SVG、不用 emoji 当功能图标                                                       |
 | 域名       | `www.turaidc.com` 为主域，`docs.` 不动 | 不动已索引的文档 URL；首页与文档站、仓库互相链接形成内链闭环                                                                                      |
 | 加速区域   | 只走境外节点                           | 不办 ICP 备案。代价见第 6 节，接受这个折损                                                                                                        |
-| 文案源     | `src/data/content.ts` 单一文件         | 组件里不写硬编码文案；FAQ 同时喂给页面与 JSON-LD，避免两套口径                                                                                    |
+| 文案源     | `src/i18n/*.json` 四个语言包           | 组件不写硬编码文案；语言代码沿用 `shared/locale`，键结构按模块嵌套，与三端语言包同一套粒度                                                        |
+| 多语言     | 四份预渲染 HTML + hreflang             | `/`（简中）、`/zh-tw/`、`/zh-hk/`、`/en/`；静态页比运行时切换更利于收录，也不需要前端 i18n 运行时                                                 |
+| 主题       | 明 / 暗 / 跟随系统                     | 默认跟随系统；`<html data-theme-pref>` 由首帧内联脚本写入，避免闪白；深色是浅色 token 的镜像，不引入第二套品牌色                                  |
+| 合作伙伴墙 | 取 README 的 Trusted Partners          | 不自行编名单；四家素材按 2 倍显示高度导出到 `public/partners/`，仙林云的远程图已本地化                                                            |
 
 ## 3. 页面结构
 
-单页九段，顺序即说服顺序：
+单页十段，顺序即说服顺序：
 
 1. Hero：定位一句话 + 双 CTA（文档 / GitHub）+ 迁移入口 + 四条事实数字。
-2. 能力矩阵：八个业务域。
-3. 业务闭环：商品配置 → 下单支付 → 自动开通 → 计费续费 → 财务对账 → 工单通知。
-4. 安全与资金：**"我们没有"七条 vs "我们有"六条**，直接取自仓库 README。
-5. 部署：Docker / 宝塔 / 裸机三条路径，各自链到对应文档。
-6. 迁移：从智简魔方财务搬过来的三条路径。
-7. 定价：开源版 0 元（AGPL）与商业授权 200 元/年，功能一致。
-8. FAQ：六个高频问题，同时生成 `FAQPage` 结构化数据。
-9. 页脚：AGPL 声明、仓库、文档、联系方式。
+2. 合作伙伴：README 的四家 Trusted Partners，作为社会证明放在首屏之后。
+3. 能力矩阵：八个业务域。
+4. 业务闭环：商品配置 → 下单支付 → 自动开通 → 计费续费 → 财务对账 → 工单通知。
+5. 安全与资金：**"我们没有"七条 vs "我们有"六条**，直接取自仓库 README。
+6. 部署：Docker / 宝塔 / 裸机三条路径，各自链到对应文档。
+7. 迁移：从智简魔方财务搬过来的三条路径。
+8. 定价：开源版 0 元（AGPL）与商业授权 200 元/年，功能一致。
+9. FAQ：六个高频问题，同时生成 `FAQPage` 结构化数据。
+10. 页脚：AGPL 声明、仓库、文档、联系方式。
 
 事实口径以仓库根 `README.md` 与 `docs/` 为准；首页只做面向访客的重写，不新增能力声明。
 
 ## 4. SEO 口径
 
-- 全站唯一页：唯一 `title`、唯一 `h1`、`description` 控制在 60–160 字，canonical 固定 `https://www.turaidc.com/`。
-- 结构化数据 `@graph`：`Organization`、`SoftwareApplication`（含两款 `Offer`）、`FAQPage`（与可见 FAQ 同源）。
-- `sitemap-index.xml` / `sitemap-0.xml` 由 `@astrojs/sitemap` 生成；`robots.txt` 在 `public/` 里静态给出并指向索引。
-- 首屏零 JS：组件不加 `client:*` 指令，页面里唯一的脚本是原生滚动进场逻辑；`verify-build.mjs` 会断言 HTML 不引用任何外部脚本。
+- 四个语言页各自有唯一 `title`、唯一 `h1`、canonical 指向自己，`description` 控制在 60–220 字（英文按字符计）。
+- 每个页面输出四条 `hreflang` 加一条 `x-default`；语言代码用 `zh-CN` / `zh-TW` / `zh-HK` / `en`。
+- 结构化数据 `@graph`：`Organization`、`SoftwareApplication`（含两款 `Offer`）、`FAQPage`；`FAQPage` 与当前语言的可见 FAQ 同源，`inLanguage` 跟随页面。
+- `sitemap-index.xml` / `sitemap-0.xml` 由 `@astrojs/sitemap` 生成，收录四个语言页；`robots.txt` 在 `public/` 里静态给出并指向索引。
+- 首屏零 JS：组件不加 `client:*` 指令，页面里只有两段内联脚本（主题偏好、滚动进场）；`verify-build.mjs` 会断言 HTML 不引用任何外部脚本。
 - 正文可见性优先于动效：首屏用 CSS 关键帧；滚动进场只对"加载时已在视口下方"的元素生效，脚本失效、`prefers-reduced-motion`、打印三种情况都不隐藏正文。
 - 构建后由 `scripts/verify-build.mjs` 把上述口径变成门禁，EdgeOne 构建命令里跟着 `astro build` 一起跑。
 
@@ -59,11 +64,14 @@ owner: frontend
 
 沿用 [视觉规范](../../../develop/design.md) 的 token：主色 `#165DFF`、页面底 `#F5F7FB`、边框 `#E5EAF3`、主文本 `#1F2937`、系统字体栈。
 
-首页是访客页而不是后台页，允许更大字号、更强对比与动效；但不引入第二套色板与圆角，不整页铺高饱和渐变，不用玻璃拟态堆装饰。
+深色主题是同一套 token 的镜像（页面底 `#0B1220`、卡片 `#111C2F`、边框 `#1E2B41`、主色提亮到 `#4D84FF`），换的是明度不是色相。
+
+首页是访客页而不是后台页，允许更大字号、更强对比与动效；但不引入第二套色板与圆角，不整页铺高饱和渐变，不用玻璃拟态堆装饰。动效集中在三处：首屏入场、滚动揭示（含业务链路连线的拉开）、卡片 hover。
 
 ## 6. 已知取舍与风险
 
 - **境外节点**：不做 ICP 备案就进不了大陆加速。大陆访客首屏会慢，百度抓取频次也低；对外传播以 GitHub、Bing、Google 与社区渠道为主。
 - **没有真实截图**：仓库里没有可用的产品截图，Hero 右侧的 `ConsolePreview` 是结构示意，窗口与图注都写明"数值为占位，不是真实数据截图"。后续补真实截图时替换该组件即可。
-- **文案漂移**：能力清单、许可价格两处最容易和 README 走散。规则是改 README 事实时同步 `content.ts`，反向不成立。
+- **文案漂移**：能力清单、许可价格两处最容易和 README 走散。规则是改 README 事实时同步 `src/i18n/zh_CN.json`，反向不成立。
+- **翻译一致性**：`zh_TW` / `zh_HK` 由 `zh_CN` 经 OpenCC 生成后再人工抽查，`en_US` 为手写。改文案时先改简中，再重跑转换脚本，最后过一遍繁体用词（如「影片/軟體」这类语境差异）。
 - **配置归属待验证**：EdgeOne 说的是"项目根目录下的 `edgeone.json`"，需要确认根目录设成 `site-web/` 后读的是 `site-web/edgeone.json` 还是仓库根那份。验证与回退步骤见[执行计划](../../execution-plans/active/site-web-landing-2026-10-24.md)。
