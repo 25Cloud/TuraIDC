@@ -1,0 +1,17 @@
+{
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build && npm run verify",
+  "outputDirectory": "dist",
+  "nodeVersion": "22.11.0",
+  "headers": [
+    {
+      "source": "/assets/*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}

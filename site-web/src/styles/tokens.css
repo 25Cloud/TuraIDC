@@ -1,0 +1,312 @@
+/**
+ * 站点视觉 token 与公共排版。
+ *
+ * 数值取自 docs/develop/design.md 的通用视觉 token：主色 #165DFF、页面底色
+ * #F5F7FB、边框 #E5EAF3、主文本 #1F2937。官网首页允许更强的表达（大字号、
+ * 动效、整段对比），但不换色板、不混第二套圆角与阴影。
+ */
+
+/* 页面没有框架级 base 样式，这里只补最小必要的重置 */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #f5f7fb;
+  color-scheme: light;
+}
+
+.site {
+  --brand: #165dff;
+  --brand-hover: #0e4fcc;
+  --brand-soft: #eaf1ff;
+  --brand-ink: #0b3fae;
+  --bg: #f5f7fb;
+  --bg-2: #f8fafc;
+  --card: #ffffff;
+  --border: #e5eaf3;
+  --line: #eef2f7;
+  --text: #1f2937;
+  --text-2: #5b6b82;
+  --text-3: #94a0b2;
+  --success: #12b76a;
+  --success-soft: #eafbf3;
+  --warning: #f59e0b;
+  --warning-soft: #fff6e5;
+  --danger: #f04438;
+  --danger-soft: #fff1f0;
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 2px rgba(20, 32, 54, 0.06);
+  --shadow-md: 0 18px 40px -24px rgba(20, 32, 54, 0.35);
+  --shadow-lg: 0 32px 80px -40px rgba(20, 32, 54, 0.45);
+  --maxw: 1180px;
+  --header-h: 68px;
+
+  min-height: 100vh;
+  color: var(--text);
+  background: var(--bg);
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "PingFang SC",
+    "Microsoft YaHei",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  text-align: left;
+}
+
+/* 键盘用户跳过导航直达正文 */
+.site .skip-link {
+  position: absolute;
+  top: -48px;
+  left: 16px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--text);
+  color: #fff;
+  font-size: 14px;
+  transition: top 0.18s ease;
+}
+
+.site .skip-link:focus-visible {
+  top: 12px;
+  color: #fff;
+}
+
+.site *,
+.site *::before,
+.site *::after {
+  box-sizing: border-box;
+}
+
+.site :where(h1, h2, h3, h4, p, ul, ol, li, dl, dt, dd, figure) {
+  margin: 0;
+  padding: 0;
+}
+
+.site :where(ul, ol) {
+  list-style: none;
+}
+
+.site a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site img {
+  display: block;
+  max-width: 100%;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.section {
+  padding: 96px 0;
+  scroll-margin-top: var(--header-h);
+}
+
+.section-alt {
+  background: var(--bg-2);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.section-head {
+  max-width: 720px;
+  margin-bottom: 48px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--brand);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--brand);
+}
+
+.section-head h2 {
+  font-size: clamp(28px, 3.2vw, 40px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.section-head p {
+  margin-top: 16px;
+  color: var(--text-2);
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 22px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+.btn-sm {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 12px 24px -14px rgba(22, 93, 255, 0.9);
+}
+
+.btn-primary:hover {
+  background: var(--brand-hover);
+}
+
+.btn-outline {
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--text);
+}
+
+.btn-outline:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.btn-ghost {
+  color: var(--text-2);
+  background: transparent;
+}
+
+.btn-ghost:hover {
+  color: var(--brand);
+}
+
+.btn-dark {
+  background: var(--text);
+  color: #fff;
+}
+
+.btn-dark:hover {
+  background: #111a28;
+}
+
+/*
+ * 按钮多是 <a>，而 `.site a { color: inherit }` 的特异性高于 `.btn-*`，
+ * 所以按钮文字色要在这里统一抬一级，否则深色按钮会出现「黑底黑字」。
+ */
+.site .btn-primary,
+.site .btn-dark {
+  color: #fff;
+}
+
+.site .btn-outline {
+  color: var(--text);
+}
+
+.site .btn-ghost {
+  color: var(--text-2);
+}
+
+.site .btn-outline:hover {
+  color: var(--brand);
+}
+
+.site .btn-ghost:hover {
+  color: var(--brand);
+}
+
+/* 滚动进场：只有 JS 确认元素在视口外，才会挂上 is-pending 隐藏，
+   脚本失效或首屏可见时内容始终可见，不拿正文可见性换动效。 */
+[data-reveal] {
+  transition:
+    opacity 0.6s cubic-bezier(0.2, 0.7, 0.3, 1),
+    transform 0.6s cubic-bezier(0.2, 0.7, 0.3, 1);
+  transition-delay: var(--d, 0ms);
+}
+
+[data-reveal].is-pending:not(.is-revealed) {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site {
+    scroll-behavior: auto;
+  }
+
+  [data-reveal],
+  [data-reveal].is-pending:not(.is-revealed) {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+@media print {
+  [data-reveal].is-pending:not(.is-revealed) {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 64px 0;
+  }
+
+  .section-head {
+    margin-bottom: 32px;
+  }
+
+  .container {
+    padding: 0 20px;
+  }
+}

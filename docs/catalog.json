@@ -330,6 +330,12 @@
       "summary": "Zjmf 定时任务系统源码深度解析。"
     },
     {
+      "path": "internal/designs/frontend/site-web-landing-design.md",
+      "status": "current",
+      "summary": "项目官网首页 site-web 的定位、页面结构、SEO 口径与已知取舍。",
+      "review_by": "2027-04-24"
+    },
+    {
       "path": "internal/designs/product/product-type-and-primary-menu-refactor.md",
       "status": "needs-review",
       "summary": "产品类型与一级菜单设计。"
@@ -425,6 +431,12 @@
       "status": "active",
       "summary": "定时任务、Hooks、VNC、上游开通、续费与插件链路的专项审查与修复，含续费幂等、同周期双扣、并发开通等资金安全项。",
       "review_by": "2026-12-13"
+    },
+    {
+      "path": "internal/execution-plans/active/site-web-landing-2026-10-24.md",
+      "status": "active",
+      "summary": "项目官网首页落地：site-web 骨架、九段内容、产物自检与 EdgeOne Pages 上线。",
+      "review_by": "2026-12-24"
     },
     {
       "path": "internal/execution-plans/active/ticket-pre-reply-2026-08-23.md",
@@ -592,6 +604,12 @@
       "status": "current",
       "summary": "VitePress 官方文档站的内容、导航、构建和独立发布维护流程。",
       "review_by": "2026-11-20"
+    },
+    {
+      "path": "internal/governance/site-web-maintenance.md",
+      "status": "current",
+      "summary": "项目官网首页 site-web 的构建、部署、文案口径与发布检查清单。",
+      "review_by": "2027-04-24"
     },
     {
       "path": "internal/legal/cla-feasibility-2026-10-21.md",

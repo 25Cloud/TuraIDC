@@ -17,15 +17,16 @@
 
 ## 项目地图
 
-| 目录                        | 职责                                            |
-| --------------------------- | ----------------------------------------------- |
-| `backend/`                  | Laravel 12 API、业务服务、插件与 Artisan 命令。 |
-| `docs-web/`                 | 官方文档站，VitePress 构建，内容源为 `docs/`。  |
-| `frontend-admin-v3/`        | 管理端，Vue 3 + TDesign Vue Next。              |
-| `frontend-user-v3-www/`     | 官网与用户入口，Vue 3 + Element Plus。          |
-| `frontend-user-v4-console/` | 用户控制台，Vue 3 + TDesign Vue Next。          |
-| `shared/`                   | 跨端状态、组件和运行时能力。                    |
-| `docs/`                     | 唯一的长期文档记录系统，按读者分三层（见下）。  |
+| 目录                        | 职责                                                                    |
+| --------------------------- | ----------------------------------------------------------------------- |
+| `backend/`                  | Laravel 12 API、业务服务、插件与 Artisan 命令。                         |
+| `docs-web/`                 | 官方文档站，VitePress 构建，内容源为 `docs/`。                          |
+| `site-web/`                 | 项目官网首页（单页），Astro 构建、零客户端 JS，部署 `www.turaidc.com`。 |
+| `frontend-admin-v3/`        | 管理端，Vue 3 + TDesign Vue Next。                                      |
+| `frontend-user-v3-www/`     | 官网与用户入口，Vue 3 + Element Plus。                                  |
+| `frontend-user-v4-console/` | 用户控制台，Vue 3 + TDesign Vue Next。                                  |
+| `shared/`                   | 跨端状态、组件和运行时能力。                                            |
+| `docs/`                     | 唯一的长期文档记录系统，按读者分三层（见下）。                          |
 
 `docs/` 的分层：`guide/` 给部署并运营这套系统的站长，`develop/` 给二次开发者与贡献者，`internal/` 给维护这个仓库的人。前两层进公开文档站，`internal/` 不上站但同样受文档校验。
 
@@ -40,6 +41,7 @@
 | 后端、API、上游或插件                  | [BACKEND.md](docs/develop/backend.md)、[API 规范](docs/develop/api/format.md)、[插件开发](docs/develop/plugins/index.md)                             |
 | API 重构                               | [API 直接重构方案](docs/internal/designs/backend/direct-api-refactor.md) 与自动生成 [API 清单](docs/develop/api/backend-api-catalog.md)              |
 | 前端或页面                             | [FRONTEND.md](docs/develop/frontend.md) 与 [DESIGN.md](docs/develop/design.md)                                                                       |
+| 项目官网首页 `site-web/`               | [官网首页维护](docs/internal/governance/site-web-maintenance.md) 与 [设计文档](docs/internal/designs/frontend/site-web-landing-design.md)            |
 | 数据库、迁移、归档                     | [DATABASE.md](docs/develop/database.md)、[MySQL 版本兼容基线](docs/develop/mysql-compatibility.md) 与 [日志归档](docs/guide/maintain/log-archive.md) |
 | 产品范围与验收                         | [产品规格索引](docs/internal/product-specs/README.md)                                                                                                |
 | 跨模块、迁移、上线或回滚风险           | [执行计划索引](docs/internal/execution-plans/README.md)；先建或更新计划                                                                              |
@@ -72,6 +74,7 @@
 | `frontend-user-v3-www/`     | `cd frontend-user-v3-www && pnpm run build`；重构追加 `pnpm run verify:refactor`     |
 | `frontend-user-v4-console/` | `cd frontend-user-v4-console && pnpm run build`；重构追加 `pnpm run verify:refactor` |
 | `shared/`                   | `pnpm run typecheck:shared && pnpm run test:shared`，再按影响端构建                  |
+| `site-web/`                 | `cd site-web && npm ci && npm run build && npm run verify`                           |
 
 每个子任务先跑受影响验证；全部完成后跑本次变更覆盖范围的完整验证。不能运行时，说明原因和未覆盖风险。
 

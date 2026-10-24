@@ -14,5 +14,6 @@
 | [产品类型与一级菜单重构方案](product/product-type-and-primary-menu-refactor.md) | needs-review | 产品类型与一级菜单的结构方案。                                   |
 | [代理折扣设计](backend/2026-08-20-agent-discount-design.md)                     | active       | 代理折扣体系：与会员等级独立、矩阵折扣、成本价保护与优惠券兼容。 |
 | [开放 API（Open API v2）设计文档](backend/2026-08-24-open-api-design.md)        | active       | API Key 认证、业务域×读写 scope、实例间对接与转售链路。          |
+| [项目官网首页（site-web）设计](frontend/site-web-landing-design.md)             | current      | 单页产品首页的定位、页面结构、SEO 口径与已知取舍。               |
 
 新设计先在本目录建立文档，再从 [执行计划](../execution-plans/README.md) 链接实施步骤。影响用户范围时，还要建立或更新产品规格。

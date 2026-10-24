@@ -29,6 +29,9 @@
   "scripts": {
     "dev:docs": "pnpm --filter turaidc-docs-web dev",
     "build:docs": "pnpm --filter turaidc-docs-web build",
+    "dev:site": "npm --prefix site-web run dev",
+    "build:site": "npm --prefix site-web run build",
+    "verify:site": "npm --prefix site-web run verify",
     "docs:check": "node backend/scripts/check_docs.mjs",
     "docs:freshness": "node backend/scripts/check_docs.mjs --freshness",
     "dev:admin-v3": "pnpm --filter turaidc-admin-v3 dev",
