@@ -21,6 +21,7 @@
 - **二级 / 三级分组批量同步描述**：分组菜单新增「同步上游描述」与「同步设置」；「同步设置」弹窗可批量开关该分组下商品（含其下三级分组）的「描述自动同步」，并展示受影响商品数
 - **商品描述自动同步（定时）**：新增 `products.description_sync_enabled` 开关与 `description_synced_at` 列；开启后由新增的心跳任务「商品描述同步」按 `automation.product_description_sync_schedule_mode` / `_time` 的节拍刷新（节拍在管理端「系统设置 → 自动化」里配置，沿用既有 `AutomationScheduleExpression` 词表）；未开启的商品不会被定时任务触碰，人工填写的描述也不会被静默覆盖
 - **商品配置页可直接操作描述**：管理端商品编辑页的描述分区新增「自动同步」开关与「从上游同步」按钮，开关改动即保存到商品级开关，从上游同步后会重新拉一次只读描述把自动生成结果与来源一起刷新；全局节拍放在「系统设置 → 自动化 → 商品描述同步」，与既有服务生命周期 / 账单维护的节拍同构
+- **项目官网首页（site-web）**：新增独立营销站 `site-web/`（Astro 静态构建、零客户端 JS），四语言（简中 / 繁中 / 繁港 / 英文）预渲染页与 hreflang，明 / 暗 / 跟随系统三态主题，合作伙伴 Logo 墙与在线演示入口（二五云）；部署在 EdgeOne Pages 独立项目，域名为 `www.turaidc.com`。README 的 Trusted Partners 同步新增山水画路
 - **描述来源口径收敛**：上游描述归一此前在导入路径与 remark 兜底各有一份实现，现抽到 `ProductDescriptionService::normalizeUpstreamHtml()` 统一供给，两条路径对同一段上游 HTML 产出同一结果
 
 ## [v0.4.3] - 2026-10-22
