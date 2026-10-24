@@ -51,9 +51,19 @@ const TITLE_PARTS = [
           </a>
         </div>
 
-        <a class="ghost-link anim" :href="LINKS.migrate" style="--d: 270ms">
-          {{ messages.actions.migrate }} →
-        </a>
+        <div class="hero-links anim" style="--d: 270ms">
+          <a
+            class="ghost-link"
+            :href="LINKS.demo"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ messages.actions.demo }} →
+          </a>
+          <a class="ghost-link" :href="LINKS.migrate">
+            {{ messages.actions.migrate }} →
+          </a>
+        </div>
 
         <dl class="stats anim" style="--d: 320ms">
           <div v-for="stat in hero.stats" :key="stat.label" class="stat">
@@ -196,9 +206,15 @@ h1 {
   margin-top: 30px;
 }
 
+.hero-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 16px;
+}
+
 .ghost-link {
   display: inline-block;
-  margin-top: 16px;
   color: var(--brand);
   font-size: 14px;
   font-weight: 600;

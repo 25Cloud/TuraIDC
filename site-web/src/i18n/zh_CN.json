@@ -21,7 +21,8 @@
     "migrate": "迁移指南",
     "licensing": "许可说明",
     "commercial": "商业授权",
-    "viewDocs": "文档"
+    "viewDocs": "文档",
+    "demo": "在线演示"
   },
   "theme": {
     "label": "主题",
@@ -339,8 +340,8 @@
     "lead": "上线前最常被问到的六件事。"
   },
   "partners": {
-    "kicker": "合作伙伴",
-    "title": "正在使用 TuraIDC 的服务商",
+    "kicker": "生态",
+    "title": "合作伙伴",
     "note": "排名不分先后",
     "items": [
       {
@@ -359,7 +360,13 @@
         "name": "仙林云",
         "href": "https://www.idcxl.cn/"
       }
-    ]
+    ],
+    "demo": {
+      "label": "在线演示",
+      "name": "二五云",
+      "desc": "运行在 TuraIDC 上的生产站点：官网、选购、支付与控制台都能直接体验。",
+      "cta": "打开演示站"
+    }
   },
   "footer": {
     "tagline": "面向 IDC 与云服务商的开源业务财务系统：可自托管、可审计、可二次开发。",

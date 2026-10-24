@@ -21,7 +21,8 @@
     "migrate": "遷移指南",
     "licensing": "許可說明",
     "commercial": "商業授權",
-    "viewDocs": "文檔"
+    "viewDocs": "文檔",
+    "demo": "在線演示"
   },
   "theme": {
     "label": "主題",
@@ -339,8 +340,8 @@
     "lead": "上線前最常被問到的六件事。"
   },
   "partners": {
-    "kicker": "合作伙伴",
-    "title": "正在使用 TuraIDC 的服務商",
+    "kicker": "生態",
+    "title": "合作伙伴",
     "note": "排名不分先後",
     "items": [
       {
@@ -359,7 +360,13 @@
         "name": "仙林雲",
         "href": "https://www.idcxl.cn/"
       }
-    ]
+    ],
+    "demo": {
+      "label": "在線演示",
+      "name": "二五雲",
+      "desc": "運行在 TuraIDC 上的生產站點：官網、選購、支付與控制台都能直接體驗。",
+      "cta": "打開演示站"
+    }
   },
   "footer": {
     "tagline": "面向 IDC 與雲服務商的開源業務財務系統：可自託管、可審計、可二次開發。",

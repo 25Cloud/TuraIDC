@@ -21,7 +21,8 @@
     "migrate": "Migration guide",
     "licensing": "License",
     "commercial": "Commercial license",
-    "viewDocs": "Docs"
+    "viewDocs": "Docs",
+    "demo": "Live demo"
   },
   "theme": {
     "label": "Theme",
@@ -346,8 +347,8 @@
     "lead": "The six questions we hear most before launch."
   },
   "partners": {
-    "kicker": "Partners",
-    "title": "Providers already running TuraIDC",
+    "kicker": "Ecosystem",
+    "title": "Partners",
     "note": "No particular order",
     "items": [
       {
@@ -366,7 +367,13 @@
         "name": "Xianlin Cloud",
         "href": "https://www.idcxl.cn/"
       }
-    ]
+    ],
+    "demo": {
+      "label": "Live demo",
+      "name": "25Yun",
+      "desc": "A production storefront running TuraIDC: catalog, checkout, payment and the client console, all live.",
+      "cta": "Open the demo"
+    }
   },
   "footer": {
     "tagline": "An open-source business and billing platform for IDC and cloud providers: self-hosted, auditable, extensible.",

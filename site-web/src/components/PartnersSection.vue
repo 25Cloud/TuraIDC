@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { PARTNER_LOGOS } from "../data/site";
+import { ArrowRightIcon } from "tdesign-icons-vue-next";
+
+import { LINKS, PARTNER_LOGOS } from "../data/site";
 import { useSite } from "../i18n/context";
 
 const { messages } = useSite();
@@ -42,6 +44,23 @@ const section = messages.partners;
           </a>
         </li>
       </ul>
+
+      <div class="demo" data-reveal>
+        <div class="demo-copy">
+          <span class="demo-label">{{ section.demo.label }}</span>
+          <p class="demo-name">{{ section.demo.name }}</p>
+          <p class="demo-desc">{{ section.demo.desc }}</p>
+        </div>
+        <a
+          class="btn btn-primary"
+          :href="LINKS.demo"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ section.demo.cta }}
+          <ArrowRightIcon size="16px" aria-hidden="true" />
+        </a>
+      </div>
     </div>
   </section>
 </template>
@@ -146,10 +165,60 @@ const section = messages.partners;
   }
 }
 
+/* 在线演示：目前唯一跑着这套系统的生产站，比任何描述都直接 */
+.demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 18px;
+  padding: 20px 24px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(
+      120% 160% at 0% 0%,
+      var(--brand-glow) 0%,
+      rgba(22, 93, 255, 0) 62%
+    ),
+    var(--card);
+}
+
+.demo-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.demo-label {
+  color: var(--brand);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.demo-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.demo-desc {
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 @media (max-width: 480px) {
   .tile {
     height: 108px;
     padding: 14px;
+  }
+
+  .demo {
+    padding: 18px;
   }
 }
 </style>

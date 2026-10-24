@@ -6,6 +6,8 @@
 export const DOCS_URL = "https://docs.turaidc.com";
 export const REPO_URL = "https://github.com/25Cloud/TuraIDC";
 export const CONTACT_MAIL = "contact@turaidc.com";
+/** 二五云：目前唯一跑着 TuraIDC 的生产站点，作为在线演示入口 */
+export const DEMO_URL = "https://idc.25y.cn/";
 
 export const NAV_LINKS = [
   { key: "features", href: "#features" },
@@ -21,6 +23,7 @@ export const LINKS = {
   repo: REPO_URL,
   releases: `${REPO_URL}/releases`,
   issues: `${REPO_URL}/issues`,
+  demo: DEMO_URL,
   quickStart: `${DOCS_URL}/quick-start`,
   deployDocs: `${DOCS_URL}/guide/deploy/scheduling`,
   api: `${DOCS_URL}/develop/api`,

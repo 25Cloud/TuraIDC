@@ -76,6 +76,7 @@ const expectText = [
   "商品配置",
   "我们没有",
   "合作伙伴",
+  "在线演示",
   "从智简魔方财务迁入",
   "这套系统免费吗",
   "AGPL-3.0-or-later",
@@ -83,6 +84,8 @@ const expectText = [
 for (const snippet of expectText) {
   check(`正文包含「${snippet}」`, visibleText.includes(snippet));
 }
+
+check("演示站链接指向二五云", indexHtml.includes("https://idc.25y.cn/"));
 
 for (const page of PAGES) {
   const html = read(page.file);
@@ -125,7 +128,10 @@ for (const page of PAGES) {
       .replace(/\s+/g, " ")
       .trim() ?? "";
   check(`${page.file} h1 含 IDC`, h1Text.includes("IDC"), h1Text);
-  check(`${page.file} 只有一个 h1`, (html.match(/<h1[\s>]/g) ?? []).length === 1);
+  check(
+    `${page.file} 只有一个 h1`,
+    (html.match(/<h1[\s>]/g) ?? []).length === 1,
+  );
 
   const ldMatch = html.match(
     /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
@@ -178,7 +184,11 @@ const sitemap = read("sitemap-0.xml");
 const sitemapUrls = Array.from(sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)).map(
   (match) => match[1],
 );
-check("sitemap 收录 4 个语言页", sitemapUrls.length === 4, sitemapUrls.join(", "));
+check(
+  "sitemap 收录 4 个语言页",
+  sitemapUrls.length === 4,
+  sitemapUrls.join(", "),
+);
 for (const page of PAGES) {
   check(
     `sitemap 含 ${page.canonical}`,

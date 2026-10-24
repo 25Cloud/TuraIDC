@@ -93,7 +93,8 @@ EdgeOne 的文档说 `edgeone.json` 放在"项目根目录"。仓库根也存在
 - 首帧由 `<head>` 里的内联脚本写入 `<html data-theme-pref>` 与 `data-theme`，避免闪白；三个切换按钮是 `[data-theme-set]`，由同一段脚本事件委托处理。
 - 颜色只在 `src/styles/tokens.css`：浅色定义在 `.site`，深色在 `html[data-theme="dark"] .site`。组件里禁止写死颜色，新增颜色必须同时给深色镜像。
 - 品牌素材：`public/turaidc-logo.webp`（页面用，420px 宽）、`public/turaidc-logo.png`（结构化数据用）、`public/favicon.png`（64px）、`public/apple-touch-icon.png`（180px）。
-- 伙伴墙素材在 `public/partners/`，来源是仓库 README 的 Trusted Partners，按 2 倍显示高度导出。新增伙伴时三处必须同时改：README、`zh_CN.json` 的 `partners.items`、`src/data/site.ts` 的 `PARTNER_LOGOS`（顺序一致）。
+- 伙伴墙素材在 `public/partners/`，来源是仓库 README 的 Trusted Partners，按 2 倍显示高度导出。**这些是生态伙伴，不代表都在使用 TuraIDC**；墙下方的「在线演示」单独指向二五云（`idc.25y.cn`，目前唯一跑着系统的生产站），地址在 `src/data/site.ts` 的 `DEMO_URL`。
+- 新增伙伴时三处必须同时改：README、`zh_CN.json` 的 `partners.items`、`src/data/site.ts` 的 `PARTNER_LOGOS`（顺序一致）。
 
 ## 7. 发布检查清单
 
