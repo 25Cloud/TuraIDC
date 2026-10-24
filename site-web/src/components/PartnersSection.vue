@@ -102,7 +102,7 @@ const section = messages.partners;
 
 .wall {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
   margin: 0;
   padding: 0;

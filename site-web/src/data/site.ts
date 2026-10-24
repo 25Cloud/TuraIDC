@@ -75,6 +75,7 @@ export const PARTNER_LOGOS = [
   { src: "/partners/starvm.webp", width: 149, height: 40 },
   { src: "/partners/25yun.webp", width: 110, height: 40 },
   { src: "/partners/xianlin.webp", width: 135, height: 40 },
+  { src: "/partners/shanshui.webp", width: 188, height: 40 },
 ] as const;
 
 export const FOOTER_HREFS: Record<string, string> = {

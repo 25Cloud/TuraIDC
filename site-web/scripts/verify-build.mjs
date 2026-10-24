@@ -247,6 +247,7 @@ const requiredAssets = [
   "partners/starvm.webp",
   "partners/25yun.webp",
   "partners/xianlin.webp",
+  "partners/shanshui.webp",
 ];
 for (const asset of requiredAssets) {
   const target = resolve(dist, asset);

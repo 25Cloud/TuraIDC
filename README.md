@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <img src="./logo.png" alt="TuraIDC Logo" width="360">
 </p>
 
@@ -155,6 +155,9 @@ flowchart TB
   </a><!--
   --><a href="https://www.idcxl.cn/" target="_blank">
     <img src="https://image.mefrp-tpca.yealqp.cn/images/new_logo.webp" alt="仙林云" height="80" />
+  </a><!--
+  --><a href="https://cloud.shanshui.site/" target="_blank">
+    <img src="./docs/images/shanshui.png" alt="山水画路" height="80" />
   </a>
 </p>
 
