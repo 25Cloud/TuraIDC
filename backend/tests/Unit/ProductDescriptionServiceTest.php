@@ -25,7 +25,7 @@ class ProductDescriptionServiceTest extends TestCase
 {
     public function test_it_prefers_manual_description_and_reports_its_source(): void
     {
-        $service = new ProductDescriptionService();
+        $service = new ProductDescriptionService;
 
         $resolved = $service->resolve(new Product([
             'description' => '<ul><li>CPU: 8核</li><li>带宽: 100M</li></ul>',
@@ -38,7 +38,7 @@ class ProductDescriptionServiceTest extends TestCase
 
     public function test_it_strips_dangerous_markup_from_manual_description(): void
     {
-        $service = new ProductDescriptionService();
+        $service = new ProductDescriptionService;
 
         $resolved = $service->resolve(new Product([
             'description' => '<p onclick="steal()">正文</p><script>alert(1)</script><img src=x onerror=alert(1)>',
@@ -53,7 +53,7 @@ class ProductDescriptionServiceTest extends TestCase
 
     public function test_it_auto_generates_a_list_from_spec_dimensions_when_description_is_empty(): void
     {
-        $service = new ProductDescriptionService();
+        $service = new ProductDescriptionService;
 
         $resolved = $service->resolve($this->panelProduct());
 
@@ -70,7 +70,7 @@ class ProductDescriptionServiceTest extends TestCase
      */
     public function test_auto_description_omits_system_dimension(): void
     {
-        $service = new ProductDescriptionService();
+        $service = new ProductDescriptionService;
 
         $resolved = $service->resolve(new Product([
             'config_options' => [
@@ -91,7 +91,7 @@ class ProductDescriptionServiceTest extends TestCase
      */
     public function test_it_matches_dimensions_by_name_when_upstream_reuses_field(): void
     {
-        $service = new ProductDescriptionService();
+        $service = new ProductDescriptionService;
 
         $resolved = $service->resolve(new Product([
             'product_type' => 'hosting',
@@ -112,9 +112,9 @@ class ProductDescriptionServiceTest extends TestCase
         $this->assertStringNotContainsString('12T', $resolved['html']);
     }
 
-    public function test_it_escapes_upstream_sourced_text_in_auto_html(): void
+    public function test_it_strips_markup_from_upstream_sourced_values_in_auto_html(): void
     {
-        $service = new ProductDescriptionService();
+        $service = new ProductDescriptionService;
 
         $resolved = $service->resolve(new Product([
             'config_options' => [
@@ -122,13 +122,17 @@ class ProductDescriptionServiceTest extends TestCase
             ],
         ]));
 
+        // 值清洗（cleanDimensionValue）对带标签的取值整体剥离而非转义展示——
+        // 比转义更强的同一条安全底线：上游配置项值里的标记不允许进入前台 HTML。
+        // 剥离后无剩余文本，条目按「无信息量」丢弃，描述回落 empty 而非 auto。
         $this->assertStringNotContainsString('<img', $resolved['html']);
-        $this->assertStringContainsString('&lt;img', $resolved['html']);
+        $this->assertStringNotContainsString('onerror', $resolved['html']);
+        $this->assertSame(ProductDescriptionService::SOURCE_EMPTY, $resolved['source']);
     }
 
     public function test_it_reports_empty_rather_than_rendering_an_empty_shell(): void
     {
-        $service = new ProductDescriptionService();
+        $service = new ProductDescriptionService;
 
         $resolved = $service->resolve(new Product(['description' => '   ']));
 
@@ -138,7 +142,7 @@ class ProductDescriptionServiceTest extends TestCase
 
     public function test_it_falls_back_to_escaped_upstream_description_in_remark(): void
     {
-        $service = new ProductDescriptionService();
+        $service = new ProductDescriptionService;
 
         $resolved = $service->resolve(new Product([
             // 魔方 description 历史导入后的形态：整段 HTML 被转义
@@ -155,7 +159,7 @@ class ProductDescriptionServiceTest extends TestCase
 
     public function test_remark_fallback_is_sanitized(): void
     {
-        $service = new ProductDescriptionService();
+        $service = new ProductDescriptionService;
 
         $resolved = $service->resolve(new Product([
             'remark' => '&lt;li&gt;正文&lt;script&gt;alert(1)&lt;/script&gt;&lt;/li&gt;',
@@ -168,7 +172,7 @@ class ProductDescriptionServiceTest extends TestCase
 
     public function test_auto_description_reads_select_sub_values_despite_zero_qty_minimum(): void
     {
-        $service = new ProductDescriptionService();
+        $service = new ProductDescriptionService;
 
         // 导入数据给每个配置项都补了 qty_minimum（下拉项为 0）；不能因此把值吞掉
         $resolved = $service->resolve(new Product([
@@ -197,7 +201,7 @@ class ProductDescriptionServiceTest extends TestCase
 
     public function test_it_skips_rows_with_a_missing_label_or_value(): void
     {
-        $service = new ProductDescriptionService();
+        $service = new ProductDescriptionService;
 
         $this->assertSame('', $service->renderList([
             ['key' => 'cpu', 'label' => '', 'value' => '2核'],

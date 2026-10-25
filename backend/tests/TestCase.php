@@ -20,6 +20,13 @@ abstract class TestCase extends BaseTestCase
 
         parent::setUp();
 
+        // 把测试请求的语言协商钉在简体上，与生产前端行为对齐——三端请求拦截器
+        // 总是主动携带 X-Locale。不钉的话，Symfony 测试客户端会给每个请求注入
+        // 默认的 Accept-Language: en-us,en;q=0.5（Request::create 的内建默认），
+        // SetLocale 中间件按浏览器语言把业务消息协商成英文，凡是断言中文消息的
+        // 用例全部翻车。个别用例自己传 X-Locale / Accept-Language 时会覆盖此默认。
+        $this->withHeaders(['X-Locale' => 'zh_CN']);
+
         // 应用已存在的后续测试也再次校验，防止测试中修改连接配置后继续执行。
         $this->guardAgainstProductionDatabaseForTests();
     }

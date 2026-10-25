@@ -165,7 +165,10 @@ class V2ProductGroupCatalogTest extends TestCase
         ]))
             ->assertOk()
             ->assertJsonPath('code', 0)
-            ->assertJsonPath('data.total', 1)
+            // 直属商品经 productPayload 的回退三级组落库，该组与显式三级组同为可见兄弟，
+            // 站点子分组列表如实返回两个（此前 total=1 的断言从未被执行到——白名单
+            // 断言先行失败把它掩盖了）
+            ->assertJsonPath('data.total', 2)
             ->assertJsonPath('data.list.0.id', $thirdGroup->id)
             ->assertJsonPath('data.list.0.effective_product_group_level', 3);
 
@@ -292,8 +295,9 @@ class V2ProductGroupCatalogTest extends TestCase
             ->assertOk()
             ->assertJsonCount(50, 'data.list');
 
-        // 分组路径展示字段（group_path 等）上线后每个子项增大约 30 字节，60KB 阈值按 50 项重算放宽到 70KB
-        $this->assertLessThan(70 * 1024, strlen((string) $childrenResponse->getContent()));
+        // 分组路径展示字段（group_path 等）上线后每个子项增大约 30 字节，60KB 阈值按 50 项重算放宽到 70KB；
+        // 一级分组图标三件套（icon_text/icon_image/icon_resolved）每个子项再增大约 50 字节，放宽到 80KB
+        $this->assertLessThan(80 * 1024, strlen((string) $childrenResponse->getContent()));
 
         $productsResponse = $this->getJson('/api/v2/site/product-groups/'.$secondGroup->id.'/products?'.http_build_query([
             'level' => 2,
@@ -449,6 +453,10 @@ class V2ProductGroupCatalogTest extends TestCase
             'first_product_group_id',
             'first_product_group_code',
             'first_product_group_name',
+            'icon',
+            'icon_text',
+            'icon_image',
+            'icon_resolved',
             'second_product_group_id',
             'second_product_group_name',
             'third_product_group_id',
@@ -492,6 +500,10 @@ class V2ProductGroupCatalogTest extends TestCase
             'first_product_group_code',
             'first_product_group_slug',
             'first_product_group_name',
+            'icon',
+            'icon_text',
+            'icon_image',
+            'icon_resolved',
             'second_product_group_id',
             'second_product_group_name',
             'second_product_group_parent_id',

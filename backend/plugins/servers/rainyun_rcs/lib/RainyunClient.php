@@ -25,9 +25,11 @@ final class RainyunClient
 
         try {
             // 写请求没有上游幂等键，禁止在网络异常后自动重发。
+            // 证书校验保持默认开启：仓库红线是插件不得关闭 verify 或自带 CA
+            // （PluginRuntimeRegistryIntegrationTest 会扫描）。
             $response = Http::acceptJson()->withHeaders(['x-api-key' => $key])
                 ->timeout($timeout)->connectTimeout(min(10, $timeout))
-                ->withOptions(['verify' => false, 'allow_redirects' => false])
+                ->withOptions(['allow_redirects' => false])
                 ->send($method, $this->baseUrl($supplier).$path, $options);
         } catch (ConnectionException) {
             throw new RainyunApiException('接口连接失败，请检查网络；写操作结果不明时请先核对上游', uncertain: $method !== 'GET');

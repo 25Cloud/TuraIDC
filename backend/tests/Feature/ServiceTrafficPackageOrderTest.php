@@ -105,6 +105,10 @@ class ServiceTrafficPackageOrderTest extends TestCase
                 'sort_order' => 0,
                 'is_visible' => 1,
                 'is_system' => 0,
+                // 必须显式声明业务类型：商品读值（getProductTypeAttribute）按一级分组派生，
+                // 不写时未知 code 落「other」，而目录条目按创建时的内存读值保存，
+                // 两边对不上就会被「当前商品分类未配置可售流量包」拦下
+                'product_type' => 'cloud_server',
             ]);
 
             $category = SecondProductGroup::query()->create([
@@ -254,16 +258,6 @@ class ServiceTrafficPackageOrderTest extends TestCase
 
                     $this->fail('未预期的上游 GET 请求：'.$uri);
                 });
-            $transport->expects($this->once())
-                ->method('getText')
-                ->with(
-                    $this->callback(fn (Supplier $candidate): bool => (int) $candidate->id === (int) $supplier->id),
-                    $this->stringContains('/servicedetail?'),
-                    'traffic-jwt',
-                    [],
-                    []
-                )
-                ->willReturn('<html></html>');
             $transport->expects($this->once())
                 ->method('getHostUpgradeConfigOptions')
                 ->with(

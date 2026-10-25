@@ -575,6 +575,9 @@ class V2ProductApiTest extends TestCase
             'first_product_group_code',
             'first_product_group_name',
             'icon',
+            'icon_text',
+            'icon_image',
+            'icon_resolved',
             'group_count',
             'product_count',
         ], array_keys($typesResponse->json('data.list.0')));
@@ -925,6 +928,9 @@ class V2ProductApiTest extends TestCase
             'lifecycle_status',
             'deleted_at',
             'auto_setup',
+            // 描述同步（2026_10_15 迁移）在列表投影的同步状态字段
+            'description_sync_enabled',
+            'description_synced_at',
             'provision_hostname',
             'provision_hostname_mode',
             'provision_hostname_summary',

@@ -270,6 +270,9 @@ class ServiceConsolePayloadSnapshotTest extends TestCase
             'sort_order' => 0,
             'is_visible' => 1,
             'is_system' => 0,
+            // 商品业务类型按一级分组派生（getProductTypeAttribute），不写会落「other」，
+            // 与流量包目录条目保存的 product_type 错位导致解析不到可售包
+            'product_type' => 'cloud_server',
         ]);
 
         $category = SecondProductGroup::query()->create([
