@@ -50,6 +50,15 @@ class AdminPermissions
 
     public const PRODUCT_SYNC = 'product.sync';
 
+    /**
+     * 券生命周期权限与商品目录解耦：发券/改券直接决定用户少付多少钱，
+     * 不该是商品管理的隐含能力。升级兼容由回填迁移保证——存量角色持有的
+     * product.list / product.manage 会被补上对应的 coupon.* 码，能力不变。
+     */
+    public const COUPON_LIST = 'coupon.list';
+
+    public const COUPON_MANAGE = 'coupon.manage';
+
     public const SUPPLIER_LIST = 'supplier.list';
 
     public const SUPPLIER_DETAIL = 'supplier.detail';
@@ -183,6 +192,7 @@ class AdminPermissions
             self::INVOICE_DETAIL,
             self::TICKET_LIST,
             self::PRODUCT_LIST,
+            self::COUPON_LIST,
             self::SUPPLIER_LIST,
             self::SUPPLIER_DETAIL,
             self::SETTINGS_VIEW,
@@ -217,6 +227,7 @@ class AdminPermissions
             self::TICKET_PRE_REPLY_MANAGE,
             self::PRODUCT_MANAGE,
             self::PRODUCT_SYNC,
+            self::COUPON_MANAGE,
             self::SUPPLIER_MANAGE,
             self::SUPPLIER_SYNC,
             self::SITE_MANAGE,
@@ -267,6 +278,7 @@ class AdminPermissions
             self::TICKET_MANAGE => [self::TICKET_LIST, self::TICKET_REPLY],
             self::PRODUCT_MANAGE => [self::PRODUCT_LIST],
             self::PRODUCT_SYNC => [self::PRODUCT_LIST],
+            self::COUPON_MANAGE => [self::COUPON_LIST],
             self::SUPPLIER_DETAIL => [self::SUPPLIER_LIST],
             self::SUPPLIER_MANAGE => [self::SUPPLIER_LIST, self::SUPPLIER_DETAIL],
             self::SUPPLIER_SYNC => [self::SUPPLIER_LIST, self::SUPPLIER_DETAIL],

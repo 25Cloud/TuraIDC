@@ -425,7 +425,7 @@ const page = ref(1);
 const pageSize = ref(20);
 const rowActionState = reactive<Record<string, string>>({});
 const isMobile = useMediaQuery('(max-width: 768px)');
-const canManage = computed(() => hasAdminPermission(AdminPermissions.PRODUCT_MANAGE));
+const canManage = computed(() => hasAdminPermission(AdminPermissions.COUPON_MANAGE));
 
 const filters = reactive({
   keyword: '',

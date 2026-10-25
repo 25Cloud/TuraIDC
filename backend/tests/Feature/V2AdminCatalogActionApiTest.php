@@ -67,7 +67,7 @@ class V2AdminCatalogActionApiTest extends TestCase
         $coupon = $this->createCoupon(['status' => CouponStatus::ACTIVE]);
         $campaign = $this->createCampaign(['status' => CouponStatus::DISABLED]);
 
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::PRODUCT_MANAGE]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::COUPON_MANAGE]));
 
         $couponResponse = $this->patchJson('/api/v2/admin/coupons/'.$coupon->id.'/status', ['enabled' => false])
             ->assertOk()
@@ -95,7 +95,7 @@ class V2AdminCatalogActionApiTest extends TestCase
     {
         $campaign = $this->createCampaign(['status' => CouponStatus::ACTIVE]);
 
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::PRODUCT_MANAGE]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::COUPON_MANAGE]));
 
         $this->postJson('/api/v2/admin/coupon-campaigns/'.$campaign->id.'/tasks', ['type' => 'unknown'])
             ->assertUnprocessable()

@@ -23,7 +23,7 @@ class V2AdminCouponProductGroupTest extends TestCase
             ->assertJsonPath('code', 40100);
     }
 
-    public function test_coupon_product_groups_require_product_list_permission(): void
+    public function test_coupon_product_groups_require_coupon_list_permission(): void
     {
         Sanctum::actingAs($this->createAdmin([]));
 
@@ -34,7 +34,7 @@ class V2AdminCouponProductGroupTest extends TestCase
 
     public function test_coupon_product_groups_reject_legacy_per_page_parameter(): void
     {
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::PRODUCT_LIST]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::COUPON_LIST]));
 
         $this->getJson('/api/v2/admin/coupon-product-groups?per_page=20')
             ->assertUnprocessable()
@@ -61,7 +61,7 @@ class V2AdminCouponProductGroupTest extends TestCase
         $directProduct = Product::query()->create($this->productPayload($secondGroup, null, '直属商品 '.$suffix, '10.00', 1));
         $thirdProduct = Product::query()->create($this->productPayload($secondGroup, $thirdGroup, '三级商品 '.$suffix, '20.00', 2));
 
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::PRODUCT_LIST]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::COUPON_LIST]));
 
         $rootResponse = $this->getJson('/api/v2/admin/coupon-product-groups?'.http_build_query([
             'keyword' => $suffix,
@@ -163,7 +163,7 @@ class V2AdminCouponProductGroupTest extends TestCase
             ));
         }
 
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::PRODUCT_LIST]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::COUPON_LIST]));
 
         $childrenResponse = $this->getJson('/api/v2/admin/coupon-product-groups/'.$firstGroup->id.'/children?'.http_build_query([
             'level' => 1,
@@ -197,7 +197,8 @@ class V2AdminCouponProductGroupTest extends TestCase
         $thirdGroup = $this->createThirdGroup($secondGroup, '批量三级分组 '.$suffix, 1);
         $product = Product::query()->create($this->productPayload($secondGroup, $thirdGroup, '批量商品 '.$suffix, '66.00', 1));
 
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::PRODUCT_LIST]));
+        // batch-products 是写操作，挂在 coupon.manage 之下（隐含展开出 coupon.list）
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::COUPON_MANAGE]));
 
         $batchKey = '3:'.$thirdGroup->id;
         $response = $this->postJson('/api/v2/admin/coupon-product-groups/batch-products', [
@@ -221,7 +222,7 @@ class V2AdminCouponProductGroupTest extends TestCase
 
     public function test_batch_products_empty_groups_uses_the_standard_success_envelope(): void
     {
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::PRODUCT_LIST]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::COUPON_MANAGE]));
 
         $this->postJson('/api/v2/admin/coupon-product-groups/batch-products', [
             'groups' => [],

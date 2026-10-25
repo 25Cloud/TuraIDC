@@ -231,16 +231,6 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::get('/instance-spec-catalog', [InstanceSpecCatalogController::class, 'index']);
         Route::get('/cpu-model-catalog', [CpuModelCatalogController::class, 'index']);
 
-        Route::get('/coupon-product-groups', [CouponProductGroupController::class, 'index']);
-        Route::get('/coupon-product-groups/tree', [CouponProductGroupController::class, 'tree']);
-        Route::get('/coupon-product-groups/{group}/children', [CouponProductGroupController::class, 'children']);
-        Route::get('/coupon-product-groups/{group}/products', [CouponProductGroupController::class, 'products']);
-        Route::post('/coupon-product-groups/batch-products', [CouponProductGroupController::class, 'batchProducts']);
-        Route::get('/coupons/summary', [CouponController::class, 'summary']);
-        Route::get('/coupons', [CouponController::class, 'index']);
-        Route::get('/coupon-campaigns/summary', [CouponCampaignController::class, 'summary']);
-        Route::get('/coupon-campaigns', [CouponCampaignController::class, 'index']);
-
         Route::get('/product-groups', [ProductGroupController::class, 'index']);
         Route::get('/product-groups/tree', [ProductGroupController::class, 'tree']);
         Route::get('/product-groups/{group}/children', [ProductGroupController::class, 'children']);
@@ -269,12 +259,6 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::delete('/product-groups/{group}', [ProductGroupController::class, 'destroy']);
         Route::delete('/product-groups/{group}/force', [ProductGroupController::class, 'forceDelete']);
         Route::post('/product-groups/{group}/batch-update-products', [ProductGroupController::class, 'batchUpdateProducts']);
-        Route::post('/coupons', [CouponController::class, 'store']);
-        Route::put('/coupons/{coupon}', [CouponController::class, 'update']);
-        Route::delete('/coupons/{coupon}', [CouponController::class, 'destroy']);
-        Route::post('/coupon-campaigns', [CouponCampaignController::class, 'store']);
-        Route::put('/coupon-campaigns/{couponCampaign}', [CouponCampaignController::class, 'update']);
-        Route::delete('/coupon-campaigns/{couponCampaign}', [CouponCampaignController::class, 'destroy']);
         Route::post('/products', [ProductController::class, 'store']);
         Route::put('/products/{product}', [ProductController::class, 'update']);
         Route::delete('/products/{product}', [ProductController::class, 'destroy']);
@@ -291,7 +275,30 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/products/batch-force-delete', [ProductController::class, 'batchForceDelete']);
         Route::patch('/products/{product}/status', [ProductController::class, 'updateStatus']);
         Route::post('/products/{product}/spec-highlight', [ProductSpecHighlightController::class, 'update']);
+    });
+
+    // 券生命周期与商品目录解耦：查看/管理各自独立成组，
+    // 存量角色的能力延续由回填迁移保证（见 database/migrations 对应文件）
+    Route::middleware(['permission:'.AdminPermissions::COUPON_LIST])->group(function (): void {
+        Route::get('/coupon-product-groups', [CouponProductGroupController::class, 'index']);
+        Route::get('/coupon-product-groups/tree', [CouponProductGroupController::class, 'tree']);
+        Route::get('/coupon-product-groups/{group}/children', [CouponProductGroupController::class, 'children']);
+        Route::get('/coupon-product-groups/{group}/products', [CouponProductGroupController::class, 'products']);
+        Route::get('/coupons/summary', [CouponController::class, 'summary']);
+        Route::get('/coupons', [CouponController::class, 'index']);
+        Route::get('/coupon-campaigns/summary', [CouponCampaignController::class, 'summary']);
+        Route::get('/coupon-campaigns', [CouponCampaignController::class, 'index']);
+    });
+
+    Route::middleware(['permission:'.AdminPermissions::COUPON_MANAGE])->group(function (): void {
+        Route::post('/coupon-product-groups/batch-products', [CouponProductGroupController::class, 'batchProducts']);
+        Route::post('/coupons', [CouponController::class, 'store']);
+        Route::put('/coupons/{coupon}', [CouponController::class, 'update']);
+        Route::delete('/coupons/{coupon}', [CouponController::class, 'destroy']);
         Route::patch('/coupons/{coupon}/status', [CouponController::class, 'updateStatus']);
+        Route::post('/coupon-campaigns', [CouponCampaignController::class, 'store']);
+        Route::put('/coupon-campaigns/{couponCampaign}', [CouponCampaignController::class, 'update']);
+        Route::delete('/coupon-campaigns/{couponCampaign}', [CouponCampaignController::class, 'destroy']);
         Route::patch('/coupon-campaigns/{couponCampaign}/status', [CouponCampaignController::class, 'updateStatus']);
         Route::post('/coupon-campaigns/{couponCampaign}/tasks', [CouponCampaignController::class, 'runTask']);
     });

@@ -24,7 +24,7 @@ class V2AdminCouponManagementApiTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath('code', 40300);
 
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::PRODUCT_LIST]));
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::COUPON_LIST]));
 
         $this->getJson('/api/v2/admin/coupons?per_page=20')
             ->assertUnprocessable()
@@ -47,8 +47,8 @@ class V2AdminCouponManagementApiTest extends TestCase
     public function test_admin_coupon_create_update_list_and_delete_use_v2_resources(): void
     {
         Sanctum::actingAs($this->createAdmin([
-            AdminPermissions::PRODUCT_LIST,
-            AdminPermissions::PRODUCT_MANAGE,
+            AdminPermissions::COUPON_LIST,
+            AdminPermissions::COUPON_MANAGE,
         ]));
 
         $suffix = bin2hex(random_bytes(4));
@@ -93,8 +93,8 @@ class V2AdminCouponManagementApiTest extends TestCase
     public function test_admin_coupon_campaign_create_update_list_and_delete_use_v2_resources(): void
     {
         Sanctum::actingAs($this->createAdmin([
-            AdminPermissions::PRODUCT_LIST,
-            AdminPermissions::PRODUCT_MANAGE,
+            AdminPermissions::COUPON_LIST,
+            AdminPermissions::COUPON_MANAGE,
         ]));
 
         $suffix = bin2hex(random_bytes(4));
@@ -144,8 +144,8 @@ class V2AdminCouponManagementApiTest extends TestCase
     public function test_admin_coupon_campaign_cannot_update_after_generating_coupon_batch(): void
     {
         Sanctum::actingAs($this->createAdmin([
-            AdminPermissions::PRODUCT_LIST,
-            AdminPermissions::PRODUCT_MANAGE,
+            AdminPermissions::COUPON_LIST,
+            AdminPermissions::COUPON_MANAGE,
         ]));
 
         $suffix = bin2hex(random_bytes(4));

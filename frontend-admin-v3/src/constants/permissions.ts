@@ -24,6 +24,9 @@ export const AdminPermissions = {
   PRODUCT_LIST: 'product.list',
   PRODUCT_MANAGE: 'product.manage',
   PRODUCT_SYNC: 'product.sync',
+  // 券生命周期权限与商品目录解耦（与后端 AdminPermissions 保持一致）
+  COUPON_LIST: 'coupon.list',
+  COUPON_MANAGE: 'coupon.manage',
   SUPPLIER_LIST: 'supplier.list',
   SUPPLIER_DETAIL: 'supplier.detail',
   SUPPLIER_MANAGE: 'supplier.manage',
@@ -156,6 +159,8 @@ export function impliedPermissions(permission: string): string[] {
     case AdminPermissions.PRODUCT_MANAGE:
     case AdminPermissions.PRODUCT_SYNC:
       return [AdminPermissions.PRODUCT_LIST];
+    case AdminPermissions.COUPON_MANAGE:
+      return [AdminPermissions.COUPON_LIST];
     case AdminPermissions.SUPPLIER_DETAIL:
       return [AdminPermissions.SUPPLIER_LIST];
     case AdminPermissions.SUPPLIER_MANAGE:

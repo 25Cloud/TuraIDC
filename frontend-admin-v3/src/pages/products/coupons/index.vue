@@ -558,7 +558,7 @@ const userSearchResults = ref<UserOption[]>([]);
 const userSearchKeyword = ref('');
 const userOptionsLoading = ref(false);
 const isMobile = useMediaQuery('(max-width: 768px)');
-const canManage = computed(() => hasAdminPermission(AdminPermissions.PRODUCT_MANAGE));
+const canManage = computed(() => hasAdminPermission(AdminPermissions.COUPON_MANAGE));
 
 const filters = reactive({
   keyword: '',

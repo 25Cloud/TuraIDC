@@ -98,6 +98,7 @@ class PermissionCatalogService
             AdminPermissions::FINANCE_REPORT => 'finance_report',
             AdminPermissions::TICKET_LIST, AdminPermissions::TICKET_REPLY, AdminPermissions::TICKET_MANAGE, AdminPermissions::TICKET_DELIVERY_MANAGE, AdminPermissions::TICKET_PRE_REPLY_MANAGE => 'support_ticket',
             AdminPermissions::PRODUCT_LIST, AdminPermissions::PRODUCT_MANAGE, AdminPermissions::PRODUCT_SYNC => 'product_catalog',
+            AdminPermissions::COUPON_LIST, AdminPermissions::COUPON_MANAGE => 'product_catalog',
             AdminPermissions::SUPPLIER_LIST, AdminPermissions::SUPPLIER_DETAIL, AdminPermissions::SUPPLIER_MANAGE, AdminPermissions::SUPPLIER_SYNC, AdminPermissions::SUPPLIER_SECRET_REVEAL => 'product_supplier',
             AdminPermissions::CONTENT_LIST, AdminPermissions::CONTENT_MANAGE => 'content_ops',
             AdminPermissions::REFERRAL_LIST, AdminPermissions::REFERRAL_WITHDRAWAL_LIST, AdminPermissions::MEMBER_LEVEL_LIST, AdminPermissions::MEMBER_LEVEL_MANAGE, AdminPermissions::AGENT_DISCOUNT_LIST, AdminPermissions::AGENT_DISCOUNT_MANAGE => 'marketing_growth',
@@ -225,6 +226,8 @@ class PermissionCatalogService
             AdminPermissions::VERIFICATION_UNBIND,
             AdminPermissions::USER_LOGIN_AS => 'high',
             AdminPermissions::SCHEDULE_RETRY, AdminPermissions::SCHEDULE_QUEUE_MANAGE => 'high',
+            // 发券/改券直接决定用户少付多少钱，与资金类操作同级
+            AdminPermissions::COUPON_MANAGE => 'high',
             default => (
                 str_ends_with($permission, '.manage')
                 || str_ends_with($permission, '.reply')
@@ -304,6 +307,8 @@ class PermissionCatalogService
             AdminPermissions::TICKET_PRE_REPLY_MANAGE => '配置工单预回复设置',
             AdminPermissions::PRODUCT_LIST => '查看商品',
             AdminPermissions::PRODUCT_MANAGE => '管理商品',
+            AdminPermissions::COUPON_LIST => '查看优惠券',
+            AdminPermissions::COUPON_MANAGE => '管理优惠券',
             AdminPermissions::PRODUCT_SYNC => '同步商品',
             AdminPermissions::SUPPLIER_LIST => '查看供应商列表',
             AdminPermissions::SUPPLIER_DETAIL => '查看供应商详情',
