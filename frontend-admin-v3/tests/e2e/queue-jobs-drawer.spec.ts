@@ -1,6 +1,8 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
+import type { QueueJobsPage } from '../../src/api/admin/settings';
+
 /**
  * 队列任务抽屉回归：定时任务页环境卡片的「待执行/已失败」计数是抽屉入口。
  *
@@ -19,7 +21,7 @@ const OVERVIEW_ENV = {
   automation_config: { status: 'loaded' },
 };
 
-function failedJobsPage(connection = { runtime: 'database', inspected: 'database' }) {
+function failedJobsPage(connection = { runtime: 'database', inspected: 'database' }): QueueJobsPage {
   return {
     list: [
       {
@@ -45,7 +47,7 @@ function failedJobsPage(connection = { runtime: 'database', inspected: 'database
   };
 }
 
-function pendingJobsPage(connection = { runtime: 'database', inspected: 'database' }) {
+function pendingJobsPage(connection = { runtime: 'database', inspected: 'database' }): QueueJobsPage {
   return {
     list: [
       {
