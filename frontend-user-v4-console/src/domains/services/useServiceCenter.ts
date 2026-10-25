@@ -550,7 +550,11 @@ export function useServiceCenter() {
     }
   }
 
+  // 并发守卫：搜索/翻页/快捷筛选会重复触发同一列表槽位，慢的旧响应晚到会覆盖新结果
+  let listRequestSeq = 0;
+
   async function loadList() {
+    const seq = ++listRequestSeq;
     loading.value = true;
     try {
       const params: ServiceListParams = { page: filters.page, page_size: filters.page_size };
@@ -570,10 +574,13 @@ export function useServiceCenter() {
       if (filters.catalog_type) params.catalog_type = filters.catalog_type;
 
       const res = await clientApi.services(params);
+      if (seq !== listRequestSeq) return;
       list.value = Array.isArray(res.data?.list) ? res.data.list : [];
       total.value = Number(res.data?.total || 0);
     } finally {
-      loading.value = false;
+      if (seq === listRequestSeq) {
+        loading.value = false;
+      }
     }
   }
 

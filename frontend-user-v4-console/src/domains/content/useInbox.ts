@@ -22,6 +22,9 @@ const feedLoading = ref(false);
 let lastCountFetch = 0;
 const COUNT_TTL = 30_000;
 
+// 铃铛/侧栏/Dashboard 都会触发同一个 feed 槽位，慢的旧响应晚到会覆盖新数据
+let feedRequestSeq = 0;
+
 function extractData<T>(res: unknown): T | undefined {
   return (res as { data?: T })?.data;
 }
@@ -40,9 +43,11 @@ export function useInbox() {
   }
 
   async function fetchFeed(limit = 10) {
+    const seq = ++feedRequestSeq;
     feedLoading.value = true;
     try {
       const res = await clientApi.notificationFeed(limit);
+      if (seq !== feedRequestSeq) return;
       const data = extractData<{ list: InboxItem[]; unread_count: number }>(res);
       feedItems.value = data?.list ?? [];
       if (typeof data?.unread_count === 'number') {
@@ -50,9 +55,12 @@ export function useInbox() {
         lastCountFetch = Date.now();
       }
     } catch {
+      if (seq !== feedRequestSeq) return;
       feedItems.value = [];
     } finally {
-      feedLoading.value = false;
+      if (seq === feedRequestSeq) {
+        feedLoading.value = false;
+      }
     }
   }
 

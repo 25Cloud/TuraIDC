@@ -119,31 +119,40 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
   }
 
   async function loadDetailBase(forceRefresh = false) {
-    if (!serviceId.value) return;
+    const id = serviceId.value;
+    if (!id) return;
     detailLoading.value = true;
     try {
-      const res = await clientApi.serviceDetail(serviceId.value, forceRefresh ? { params: { refresh: 1 } } : undefined);
+      const res = await clientApi.serviceDetail(id, forceRefresh ? { params: { refresh: 1 } } : undefined);
+      if (serviceId.value !== id) return;
       const payload = normalizeConsoleDetail(res.data || {});
       detail.value = payload;
       if (consumeSyncChangedMarker(payload)) {
         // 后台同步已产生新数据：本次可能命中旧缓存，重新拉取最新快照并提示
         if (!forceRefresh) {
-          const fresh = await clientApi.serviceDetail(serviceId.value);
+          const fresh = await clientApi.serviceDetail(id);
+          if (serviceId.value !== id) return;
           detail.value = normalizeConsoleDetail(fresh.data || {});
         }
         MessagePlugin.info(t('serviceConsole.detailUpdated'));
       }
     } catch (error: unknown) {
+      if (serviceId.value !== id) return;
       MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.detailLoadFailed')));
     } finally {
-      detailLoading.value = false;
+      if (serviceId.value === id) {
+        detailLoading.value = false;
+      }
     }
   }
 
   async function fetchConnectionInfo() {
-    if (!serviceId.value) return;
+    const id = serviceId.value;
+    if (!id) return;
     try {
-      const res = await clientApi.serviceBaseDetail(serviceId.value);
+      const res = await clientApi.serviceBaseDetail(id);
+      // 快速切换实例时丢弃晚返回的旧实例数据，避免覆盖当前实例详情
+      if (serviceId.value !== id) return;
       detail.value = normalizeConsoleDetail(res.data || {});
     } catch {
       // 静默失败，不影响已展示的页面
@@ -151,9 +160,11 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
   }
 
   async function loadRemoteStatus(silent = false) {
-    if (!serviceId.value) return;
+    const id = serviceId.value;
+    if (!id) return;
     try {
-      const res = await clientApi.serviceRemoteStatus(serviceId.value);
+      const res = await clientApi.serviceRemoteStatus(id);
+      if (serviceId.value !== id) return;
       detail.value = mergeConsoleDetail(detail.value, res.data || {});
       if (consumeSyncChangedMarker(res.data || {})) {
         // 后台有信息变动：自动重拉详情更新页面
@@ -163,7 +174,9 @@ export function useConsoleDetail(_options?: UseConsoleDetailOptions) {
         MessagePlugin.success(t('serviceConsole.statusRefreshed'));
       }
     } catch (error: unknown) {
-      if (!silent) MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.statusRefreshFailed')));
+      if (!silent && serviceId.value === id) {
+        MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.errors.statusRefreshFailed')));
+      }
     }
   }
 

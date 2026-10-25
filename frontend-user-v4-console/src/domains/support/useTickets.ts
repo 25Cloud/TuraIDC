@@ -178,7 +178,11 @@ export function useTicketList() {
     uploadFiles.value = [];
   }
 
+  // 并发守卫：搜索/翻页会重复触发同一列表槽位，慢的旧响应晚到会覆盖新结果
+  let listRequestSeq = 0;
+
   async function loadTickets() {
+    const seq = ++listRequestSeq;
     loading.value = true;
     try {
       const res = await clientApi.tickets({
@@ -187,13 +191,17 @@ export function useTicketList() {
         keyword: filters.keyword || undefined,
         status: filters.status === undefined ? undefined : filters.status,
       });
+      if (seq !== listRequestSeq) return;
       const payload = res.data;
       list.value = normalizeList(payload);
       total.value = Number(payload?.total || list.value.length || 0);
     } catch (error: unknown) {
+      if (seq !== listRequestSeq) return;
       MessagePlugin.error(getErrorMessage(error, t('ticket.errors.listLoadFailed')));
     } finally {
-      loading.value = false;
+      if (seq === listRequestSeq) {
+        loading.value = false;
+      }
     }
   }
 
@@ -337,6 +345,9 @@ export function useTicketDetail() {
   const previewUrl = ref('');
   const activeMobileTab = ref<'chat' | 'detail'>('chat');
 
+  // 并发守卫：详情组件随路由参数复用，快速切换工单时丢弃晚返回的旧工单内容
+  let detailRequestSeq = 0;
+
   const ticketId = computed(() => Number(route.params.id || 0));
   const userName = computed(() =>
     String(
@@ -366,22 +377,29 @@ export function useTicketDetail() {
   }
 
   async function loadDetail() {
-    if (!ticketId.value) {
+    const targetId = ticketId.value;
+    if (!targetId) {
       MessagePlugin.error(t('ticket.detail.notFound'));
       await router.replace('/client/tickets');
       return;
     }
 
+    // 详情组件随路由参数复用，快速切换工单时丢弃晚返回的旧工单内容
+    const seq = ++detailRequestSeq;
     loading.value = true;
     try {
-      const res = await clientApi.ticketDetail(ticketId.value);
+      const res = await clientApi.ticketDetail(targetId);
+      if (seq !== detailRequestSeq || ticketId.value !== targetId) return;
       detail.value = res.data || null;
       if (!detail.value) await router.replace('/client/tickets');
     } catch (error: unknown) {
+      if (seq !== detailRequestSeq || ticketId.value !== targetId) return;
       MessagePlugin.error(getErrorMessage(error, t('ticket.errors.detailLoadFailed')));
       await router.replace('/client/tickets');
     } finally {
-      loading.value = false;
+      if (seq === detailRequestSeq && ticketId.value === targetId) {
+        loading.value = false;
+      }
     }
   }
 

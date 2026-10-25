@@ -101,6 +101,11 @@ export function useRecharge() {
 
   let pollingTimer: number | null = null;
 
+  // 并发守卫：支付单槽位会被「生成订单 / 轮询状态」重复写入，而改金额、换支付方式
+  // 又会清空它。不失效在途请求的话，清空之后晚返回的「已支付」轮询会把旧支付单
+  // 连同 paid 状态一起复活，用户看着已支付实际没有这单。
+  let paymentRequestSeq = 0;
+
   const activePreset = computed(() => (RECHARGE_PRESET_AMOUNTS.includes(inputAmount.value) ? inputAmount.value : null));
   const amountText = computed(() => formatMoney(inputAmount.value).replace(/\.00$/, ''));
   const qrCodeValue = computed(() => String(paymentPayload.value?.qr_code || ''));
@@ -174,6 +179,8 @@ export function useRecharge() {
   }
 
   function clearPaymentPayload() {
+    // 先失效在途的订单创建/状态轮询，再清槽位：晚返回的旧结果不得写回
+    paymentRequestSeq += 1;
     clearPollingTimer();
     rechargePaid.value = false;
     paymentPayload.value = null;
@@ -194,6 +201,7 @@ export function useRecharge() {
 
     submitting.value = true;
     rechargePaid.value = false;
+    const seq = ++paymentRequestSeq;
     try {
       const payload: Record<string, unknown> = { amount: targetAmount, gateway: gateway.key };
       if (gateway.payment_type) {
@@ -201,12 +209,14 @@ export function useRecharge() {
       }
 
       const response = await clientApi.recharge(payload);
+      if (seq !== paymentRequestSeq) return null;
       amount.value = targetAmount;
       inputAmount.value = targetAmount;
       paymentPayload.value = response.data || null;
       MessagePlugin.success(t('recharge.qrCodeGenerated'));
       return paymentPayload.value;
     } catch (error: unknown) {
+      if (seq !== paymentRequestSeq) return null;
       // interceptor 对 HTTP 错误已调用 showError，避免重复弹窗
       const alreadyHandled =
         typeof error === 'object' && error !== null && (error as Record<string, unknown>).__handled === true;
@@ -215,7 +225,9 @@ export function useRecharge() {
       }
       return null;
     } finally {
-      submitting.value = false;
+      if (seq === paymentRequestSeq) {
+        submitting.value = false;
+      }
     }
   }
 
@@ -228,8 +240,10 @@ export function useRecharge() {
     }
 
     polling.value = true;
+    const seq = ++paymentRequestSeq;
     try {
       const response = await clientApi.rechargeStatus(pollPaymentNo, { poll_token: pollToken });
+      if (seq !== paymentRequestSeq) return;
       const payload = response.data || {};
       if (payload.paid) {
         rechargePaid.value = true;
@@ -250,9 +264,12 @@ export function useRecharge() {
         MessagePlugin.info(payload.message || t('finance.messages.notPaidYet'));
       }
     } catch (error: unknown) {
+      if (seq !== paymentRequestSeq) return;
       MessagePlugin.error(getErrorMessage(error, t('finance.messages.queryRechargeStatusFailed')));
     } finally {
-      polling.value = false;
+      if (seq === paymentRequestSeq) {
+        polling.value = false;
+      }
     }
   }
 

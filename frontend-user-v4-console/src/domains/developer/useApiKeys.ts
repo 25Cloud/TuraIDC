@@ -69,17 +69,25 @@ export function useApiKeys() {
   const logKey = ref<ApiKeyRecord | null>(null);
   const logs = ref<ApiKeyUsageLogRecord[]>([]);
 
+  // 并发守卫：创建/启停/删除后都会重拉同一列表槽位，丢弃晚返回的旧结果
+  let listRequestSeq = 0;
+
   async function loadList() {
+    const seq = ++listRequestSeq;
     loading.value = true;
     listError.value = '';
     try {
       const response = await clientApi.apiKeys();
+      if (seq !== listRequestSeq) return;
       list.value = Array.isArray(response.data?.list) ? response.data.list : [];
     } catch (error: unknown) {
+      if (seq !== listRequestSeq) return;
       listError.value = getErrorMessage(error, t('apiKeys.listLoadFailed'));
       MessagePlugin.error(listError.value);
     } finally {
-      loading.value = false;
+      if (seq === listRequestSeq) {
+        loading.value = false;
+      }
     }
   }
 

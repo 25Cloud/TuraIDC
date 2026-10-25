@@ -104,6 +104,12 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
    * 空态 —— 看起来像「这个实例没有数据」，其实是残留标记。
    */
   function resetLazyTabs() {
+    // 同时失效四个槽位的在途请求：切实例后晚返回的旧实例响应不得写入新面板，
+    // 也不得把旧实例的数据行留在新实例的面板里。
+    monitorRequestSeq += 1;
+    natRequestSeq += 1;
+    logsRequestSeq += 1;
+    financeRequestSeq += 1;
     loadedTabs.monitor = false;
     loadedTabs.security = false;
     loadedTabs.nat = false;
@@ -119,13 +125,23 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
     financeState.error = '';
   }
 
+  // 并发守卫：监控的时间范围切换/刷新、日志与流水的翻页筛选都会重复触发同一槽位；
+  // 跨实例复用面板时，旧实例的慢响应还可能把上一个实例的数据写进当前面板。
+  let monitorRequestSeq = 0;
+  let natRequestSeq = 0;
+  let logsRequestSeq = 0;
+  let financeRequestSeq = 0;
+
   async function loadMonitor(force = false) {
+    const seq = ++monitorRequestSeq;
+    const id = serviceId.value;
     monitorState.loading = true;
     monitorState.error = '';
     try {
       const params: Record<string, unknown> = { range: monitorState.range };
       if (force) params.fresh = 1;
-      const res = await clientApi.serviceMonitorBatch(serviceId.value, params, { timeout: 12000 });
+      const res = await clientApi.serviceMonitorBatch(id, params, { timeout: 12000 });
+      if (seq !== monitorRequestSeq || serviceId.value !== id) return;
       const payload = res.data || {};
       monitorState.supported = payload.supported !== false;
       monitorState.message = String(payload.message || '');
@@ -133,17 +149,23 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       monitorState.charts = Array.isArray(payload.charts) ? payload.charts : [];
       monitorState.loaded = true;
     } catch (error: unknown) {
+      if (seq !== monitorRequestSeq || serviceId.value !== id) return;
       monitorState.error = resolveErrorMessage(error, t('serviceConsole.errors.monitorLoadFailed'));
     } finally {
-      monitorState.loading = false;
+      if (seq === monitorRequestSeq && serviceId.value === id) {
+        monitorState.loading = false;
+      }
     }
   }
 
   async function loadNatForwardings() {
+    const seq = ++natRequestSeq;
+    const id = serviceId.value;
     natState.loading = true;
     natState.error = '';
     try {
-      const res = await clientApi.serviceNatForwardings(serviceId.value);
+      const res = await clientApi.serviceNatForwardings(id);
+      if (seq !== natRequestSeq || serviceId.value !== id) return;
       const payload = res.data || {};
       natState.supported = payload.supported !== false;
       natState.message = String(payload.message || '');
@@ -153,9 +175,12 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       natState.list = Array.isArray(payload.list) ? payload.list : [];
       natState.loaded = true;
     } catch (error: unknown) {
+      if (seq !== natRequestSeq || serviceId.value !== id) return;
       natState.error = resolveErrorMessage(error, t('serviceConsole.errors.natLoadFailed'));
     } finally {
-      natState.loading = false;
+      if (seq === natRequestSeq && serviceId.value === id) {
+        natState.loading = false;
+      }
     }
   }
 
@@ -235,13 +260,16 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
    * @param silent 预热阶段传 true：不出 toast，错误留在面板内由错误态统一呈现
    */
   async function loadLogs(silent = false) {
+    const seq = ++logsRequestSeq;
+    const id = serviceId.value;
     logsState.loading = true;
     logsState.error = '';
     try {
       const params: Record<string, unknown> = { page: logsState.page, page_size: logsState.page_size };
       if (logsState.category) params.category = logsState.category;
       if (logsState.keyword.trim()) params.keyword = logsState.keyword.trim();
-      const res = await clientApi.serviceOperationLogs(serviceId.value, params);
+      const res = await clientApi.serviceOperationLogs(id, params);
+      if (seq !== logsRequestSeq || serviceId.value !== id) return;
       const payload: PagedList<ServiceOperationLogRecord> & { summary?: ServiceOperationLogSummary } = res.data || {
         list: [],
         total: 0,
@@ -251,10 +279,13 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       logsState.summary = { ...logsState.summary, ...(payload.summary || {}) };
       logsState.loaded = true;
     } catch (error: unknown) {
+      if (seq !== logsRequestSeq || serviceId.value !== id) return;
       logsState.error = resolveErrorMessage(error, t('serviceConsole.errors.logsLoadFailed'));
       if (!silent) MessagePlugin.error(logsState.error);
     } finally {
-      logsState.loading = false;
+      if (seq === logsRequestSeq && serviceId.value === id) {
+        logsState.loading = false;
+      }
     }
   }
 
@@ -262,6 +293,8 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
    * @param silent 预热阶段传 true：不出 toast，错误留在面板内由错误态统一呈现
    */
   async function loadFinanceLogs(silent = false) {
+    const seq = ++financeRequestSeq;
+    const id = serviceId.value;
     financeState.loading = true;
     try {
       financeState.error = '';
@@ -269,12 +302,13 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
         page: financeState.page,
         page_size: financeState.page_size,
         tab: 'invoices',
-        service_id: serviceId.value,
+        service_id: id,
       };
       const [listRes, summaryRes] = await Promise.all([
         clientApi.financeLedger(params),
-        clientApi.financeLedgerSummary({ tab: 'invoices', service_id: serviceId.value }),
+        clientApi.financeLedgerSummary({ tab: 'invoices', service_id: id }),
       ]);
+      if (seq !== financeRequestSeq || serviceId.value !== id) return;
       const listPayload: PagedList<FinanceLedgerRecord> = listRes.data || { list: [], total: 0 };
       const summaryPayload = summaryRes.data || {};
       financeState.list = Array.isArray(listPayload.list) ? listPayload.list : [];
@@ -282,12 +316,15 @@ export function useConsoleTabs(options: UseConsoleTabsOptions) {
       financeState.summary = { ...financeState.summary, ...summaryPayload };
       financeState.loaded = true;
     } catch (error: unknown) {
+      if (seq !== financeRequestSeq || serviceId.value !== id) return;
       financeState.list = [];
       financeState.total = 0;
       financeState.error = resolveErrorMessage(error, t('serviceConsole.errors.financeLoadFailed'));
       if (!silent) MessagePlugin.error(financeState.error);
     } finally {
-      financeState.loading = false;
+      if (seq === financeRequestSeq && serviceId.value === id) {
+        financeState.loading = false;
+      }
     }
   }
 

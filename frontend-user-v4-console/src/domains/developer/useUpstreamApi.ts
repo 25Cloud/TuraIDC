@@ -51,18 +51,26 @@ export function useUpstreamApi() {
     policyForm.expires_at = source?.expires_at ? String(source.expires_at).slice(0, 16) : '';
   }
 
+  // 并发守卫：启停/改密/改策略后都会重拉同一状态槽位，丢弃晚返回的旧结果
+  let statusRequestSeq = 0;
+
   async function loadStatus() {
+    const seq = ++statusRequestSeq;
     loading.value = true;
     loadError.value = '';
     try {
       const response = await clientApi.upstreamApiStatus();
+      if (seq !== statusRequestSeq) return;
       status.value = (response?.data ?? null) as UpstreamApiStatus | null;
       syncPolicyForm(status.value);
     } catch (error) {
+      if (seq !== statusRequestSeq) return;
       loadError.value = getErrorMessage(error, t('apiKeys.upstream.loadFailed'));
       status.value = null;
     } finally {
-      loading.value = false;
+      if (seq === statusRequestSeq) {
+        loading.value = false;
+      }
     }
   }
 

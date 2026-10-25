@@ -287,6 +287,11 @@ export function useRecordList(fetcher: Fetcher, errorMessage: string, options: {
 
   const hasRows = computed(() => list.value.length > 0);
 
+  // 并发守卫：搜索/翻页/快捷筛选都会重复触发同一列表槽位，
+  // 慢的旧响应晚到会把新筛选结果覆盖掉，必须丢弃晚返回的旧请求。
+  let listRequestSeq = 0;
+  let detailRequestSeq = 0;
+
   function buildParams(): ClientFinanceListParams {
     return compactParams({
       page: filters.page,
@@ -300,16 +305,21 @@ export function useRecordList(fetcher: Fetcher, errorMessage: string, options: {
   }
 
   async function loadList() {
+    const seq = ++listRequestSeq;
     loading.value = true;
     try {
       const response = await fetcher(buildParams());
+      if (seq !== listRequestSeq) return;
       const payload = resolveListPayload(response);
       list.value = payload.list;
       total.value = payload.total;
     } catch (error: unknown) {
+      if (seq !== listRequestSeq) return;
       MessagePlugin.error(getErrorMessage(error, errorMessage));
     } finally {
-      loading.value = false;
+      if (seq === listRequestSeq) {
+        loading.value = false;
+      }
     }
   }
 
@@ -352,18 +362,25 @@ export function useRecordList(fetcher: Fetcher, errorMessage: string, options: {
     detailVisible.value = true;
     if (!options.detailFetcher) return;
 
+    // 连续点击不同行的详情时丢弃晚返回的旧请求，避免旧行内容覆盖当前行
+    const seq = ++detailRequestSeq;
     detailLoading.value = true;
     try {
       const response = await options.detailFetcher(row);
+      if (seq !== detailRequestSeq) return;
       currentRow.value = response.data || row;
     } catch (error: unknown) {
+      if (seq !== detailRequestSeq) return;
       MessagePlugin.error(getErrorMessage(error, t('finance.messages.detailLoadFailed')));
     } finally {
-      detailLoading.value = false;
+      if (seq === detailRequestSeq) {
+        detailLoading.value = false;
+      }
     }
   }
 
   function closeDetail() {
+    detailRequestSeq += 1; // 失效进行中的详情请求，防止其晚返回后写回已关闭的弹层
     detailVisible.value = false;
     currentRow.value = null;
   }

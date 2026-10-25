@@ -2,8 +2,8 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 import clientApi from '@/api/client';
-import type { ApiEnvelope, CouponRecord, PagedList } from '@/types/client';
 import { t } from '@/locales';
+import type { ApiEnvelope, CouponRecord, PagedList } from '@/types/client';
 
 type CouponTab = 'owned' | 'plaza';
 type CouponTabChangeValue = CouponTab | { value?: CouponTab | string } | null | undefined;
@@ -115,9 +115,14 @@ export function useCoupons() {
     return tab === 'plaza' ? plazaState : ownedState;
   }
 
+  // 并发守卫：广场/我的两个槽位各自会被搜索、翻页、领取后刷新重复触发，
+  // 慢的旧响应晚到会覆盖新筛选结果，按页签分别失效。
+  const listRequestSeq: Record<CouponTab, number> = { owned: 0, plaza: 0 };
+
   async function loadList(tab: CouponTab = activeTab.value) {
     const state = getState(tab);
     const requestMethod = tab === 'plaza' ? clientApi.publicCoupons : clientApi.coupons;
+    const seq = ++listRequestSeq[tab];
     state.loading = true;
     try {
       const response = await requestMethod({
@@ -126,13 +131,17 @@ export function useCoupons() {
         keyword: state.keyword || undefined,
         status: state.status || undefined,
       });
+      if (seq !== listRequestSeq[tab]) return;
       const payload = resolveListPayload(response);
       state.list = payload.list;
       state.total = payload.total;
     } catch (error: unknown) {
+      if (seq !== listRequestSeq[tab]) return;
       MessagePlugin.error(getErrorMessage(error, tab === 'plaza' ? '优惠券广场加载失败' : '优惠券列表加载失败'));
     } finally {
-      state.loading = false;
+      if (seq === listRequestSeq[tab]) {
+        state.loading = false;
+      }
     }
   }
 
