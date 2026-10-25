@@ -41,6 +41,9 @@ Route::middleware(['zjmf.upstream', 'throttle:zjmf-upstream-api'])->group(functi
     Route::get('/api/product/prodetail', [ProductController::class, 'proDetail']);
     Route::get('/cart/get_product_config', [ProductController::class, 'config']);
     Route::get('/cart/ontrialmax', [ProductController::class, 'trialLimit']);
+    // 结算前库存检查（zjmf376 home/CartController::getQty）：魔方读 data.product.{qty,stock_control,hidden}，
+    // 缺了它下游会放过已售罄/隐藏商品，用户付款后开通失败
+    Route::get('/cart/stock_control', [ProductController::class, 'stockControl']);
     // 下游管理端面板（上游余额 / 上游信息 / 下游汇总）
     Route::get('/cart/credit', [CartController::class, 'credit']);
     Route::get('/cart/hostinfo', [CartController::class, 'hostInfo']);
@@ -102,5 +105,10 @@ Route::middleware(['zjmf.upstream', 'throttle:zjmf-upstream-write'])->group(func
     Route::post('/ticket/create', [TicketController::class, 'create']);
     Route::post('/ticket/reply', [TicketController::class, 'reply']);
     Route::post('/api/ticket_reply/sync', [PushController::class, 'ticketReplySync']);
-    Route::post('/upload_image', [PushController::class, 'uploadImage']);
 });
+
+// 魔方财务的 curlUpload（common.php）上传工单附件时【不带任何鉴权头】，
+// 该端点不能挂 zjmf.upstream：Bearer 缺失会返回 405，附件被下游静默丢弃。
+// 防护依赖 PushService 的 MIME 白名单/大小限制/随机文件名 + 独立限流。
+Route::post('/upload_image', [PushController::class, 'uploadImage'])
+    ->middleware('throttle:60,1');

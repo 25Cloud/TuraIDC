@@ -63,6 +63,16 @@ class ProductController extends Controller
     }
 
     /**
+     * cart/stock_control：魔方财务下游结算前的上游库存检查。
+     */
+    public function stockControl(Request $request): JsonResponse
+    {
+        $result = $this->products->stockControl((int) $request->query('pid', 0));
+
+        return response()->json($result, 200);
+    }
+
+    /**
      * pids 兼容单值与数组两种传参（魔方财务 http_build_query 数组形式）。
      *
      * @return list<int>

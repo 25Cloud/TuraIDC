@@ -13,7 +13,9 @@ use App\Services\ZjmfUpstream\DcimService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -1077,6 +1079,211 @@ class ZjmfUpstreamApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('status', 200)
             ->assertJsonPath('data.list', []);
+    }
+
+    /**
+     * cart/stock_control 是魔方结算前的库存闸门（zjmf376 home/CartController
+     * 消费 data.product.{qty,stock_control,hidden}）：售罄（stock=0）必须下发
+     * stock_control=1 + qty=0，否则下游把售罄商品当不限量继续卖，用户付款后
+     * 只能等本系统结算预扣失败再退款。
+     */
+    #[Test]
+    public function stock_control_reports_sold_out_unlimited_and_missing_products(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+        $auth = ['Authorization' => 'Bearer '.$jwt];
+
+        $soldOut = $this->createStockProduct($suffix.'-soldout', 0, 1);
+        $unlimited = $this->createStockProduct($suffix.'-unlimited', -1, 1);
+        $stocked = $this->createStockProduct($suffix.'-stocked', 5, 1);
+        $offSale = $this->createStockProduct($suffix.'-offsale', 5, 0);
+
+        // 售罄：控制开启、数量 0，下游按缺货拦截
+        $this->getJson('/api/v2/zjmf/cart/stock_control?pid='.(int) $soldOut->id, $auth)
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('data.product.qty', 0)
+            ->assertJsonPath('data.product.stock_control', 1)
+            ->assertJsonPath('data.product.hidden', 0);
+
+        // 不限量（-1）：控制关闭
+        $this->getJson('/api/v2/zjmf/cart/stock_control?pid='.(int) $unlimited->id, $auth)
+            ->assertOk()
+            ->assertJsonPath('data.product.qty', 0)
+            ->assertJsonPath('data.product.stock_control', 0);
+
+        // 有限库存：数量与控制标记都下发
+        $this->getJson('/api/v2/zjmf/cart/stock_control?pid='.(int) $stocked->id, $auth)
+            ->assertOk()
+            ->assertJsonPath('data.product.qty', 5)
+            ->assertJsonPath('data.product.stock_control', 1);
+
+        // 下架商品：hidden=1，下游据此隐藏本地商品
+        $this->getJson('/api/v2/zjmf/cart/stock_control?pid='.(int) $offSale->id, $auth)
+            ->assertOk()
+            ->assertJsonPath('data.product.hidden', 1);
+
+        // 不存在的商品：空 product，下游按「商品缺货」拦截下单
+        $this->getJson('/api/v2/zjmf/cart/stock_control?pid=99999999', $auth)
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('data.product', []);
+    }
+
+    /**
+     * proinfo 的 stock_control/qty 同样按「stock>=0 才是受控库存」映射：
+     * 售罄商品在定时同步里也必须呈现为「受控且数量 0」，让下游收紧库存。
+     */
+    #[Test]
+    public function proinfo_maps_stock_semantics_for_sold_out_products(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+        $soldOut = $this->createStockProduct($suffix.'-soldout', 0, 1);
+
+        $query = http_build_query(['pids' => [(int) $soldOut->id]]);
+        $this->getJson('/api/v2/zjmf/api/product/proinfo?'.$query, ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('data.info.0.id', (int) $soldOut->id)
+            ->assertJsonPath('data.info.0.qty', 0)
+            ->assertJsonPath('data.info.0.stock_control', 1);
+    }
+
+    /**
+     * ontrialmax 的 qty 是每用户最大持有数（魔方按 clientscount 判定，0=不限制），
+     * 不是库存：把库存数填进去会误限制每人购买台数，售罄 0 反而变「不限购」。
+     */
+    #[Test]
+    public function ontrialmax_qty_is_per_user_limit_and_ignores_stock(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+        $stocked = $this->createStockProduct($suffix.'-stocked', 3, 1);
+
+        $this->getJson('/api/v2/zjmf/cart/ontrialmax?pid='.(int) $stocked->id, ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('data.product.ontrial', 0)
+            ->assertJsonPath('data.product.qty', 0);
+    }
+
+    /**
+     * 魔方 curlUpload（zjmf376 common.php）上传工单附件时不带任何鉴权头，
+     * 端点挂在 zjmf.upstream 组内会得到 405，附件被下游静默丢弃。
+     */
+    #[Test]
+    public function upload_image_accepts_anonymous_attachment_upload(): void
+    {
+        $response = $this->post('/api/v2/zjmf/upload_image', [
+            'file' => UploadedFile::fake()->image('attachment.png', 8, 8),
+        ]);
+
+        $response->assertOk()->assertJsonPath('status', 200);
+        $savename = (string) $response->json('savename');
+        $this->assertNotSame('', $savename);
+
+        File::delete(storage_path('app/private/'.$savename));
+    }
+
+    /**
+     * apply_credit_limit 的 msg 是下游开通失败的最终展示文案（魔方余额支付
+     * 失败后转信用额，再失败则以本响应的 msg 收尾）：必须点明真实原因是余额
+     * 不足，不能只说「暂不支持信用额支付」让下游操作者无从排查。
+     */
+    #[Test]
+    public function apply_credit_limit_message_explains_insufficient_balance(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+        $product = $this->createStockProduct($suffix.'-payable', -1, 1);
+
+        $invoiceId = (int) $this->postJson('/api/v2/zjmf/cart/settle', [
+            'cart_data' => [
+                'pid' => (int) $product->id,
+                'billingcycle' => 'monthly',
+                'qty' => 1,
+            ],
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->json('data.invoiceid');
+
+        $this->postJson('/api/v2/zjmf/apply_credit_limit', [
+            'invoiceid' => $invoiceId,
+            'use_credit_limit' => 1,
+            'enough' => 0,
+        ], ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 400)
+            ->assertJsonPath('msg', '上游账户余额不足，且暂不支持信用额支付，请为对接账户充值后重试');
+    }
+
+    /**
+     * 魔方 zjmfCurl 的多数调用点带前导斜杠传 path（zjmf376 Host.php 等），
+     * 实际请求路径形如 /api/v2/zjmf//user_info；未经过反代折叠时路由也必须命中。
+     */
+    #[Test]
+    public function double_slash_paths_are_normalized_before_routing(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+        $auth = ['Authorization' => 'Bearer '.$jwt];
+
+        $this->getJson('/api/v2/zjmf//user_info', $auth)
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('user.id', (int) $user->id);
+
+        $this->postJson('/api/v2/zjmf//cart/clear', ['downstream_id' => 123], $auth)
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+    }
+
+    /**
+     * 商品同步的 host 字段必须是合法 JSON：魔方 json_decode 后直接取 ["show"]，
+     * 空串会在下游触发 null 数组访问告警。
+     */
+    #[Test]
+    public function get_product_config_returns_parsable_host_json(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $jwt = $this->apiJwt($suffix);
+        $product = $this->createStockProduct($suffix.'-host', -1, 1);
+
+        $response = $this->getJson('/api/v2/zjmf/cart/get_product_config?pid='.(int) $product->id, ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 200);
+
+        $host = (string) $response->json('data.products.host');
+        $decoded = json_decode($host, true);
+        $this->assertIsArray($decoded, 'host 必须是可 json_decode 的字符串');
+        $this->assertSame(0, (int) ($decoded['show'] ?? -1));
+    }
+
+    private function createStockProduct(string $nameSuffix, int $stock, int $status): Product
+    {
+        $product = Product::query()->create([
+            'name' => 'Zjmf Stock '.$nameSuffix,
+            'product_type' => 'server',
+            'pricing' => ['monthly' => '30.00'],
+            'setup_fee' => '0.00',
+            'config_options' => [],
+            'purchase_requires' => [],
+            'stock' => $stock,
+            'status' => $status,
+            'auto_setup' => 0,
+        ]);
+        $this->productIds[] = (int) $product->id;
+
+        return $product;
     }
 
     private function apiJwt(string $suffix): string

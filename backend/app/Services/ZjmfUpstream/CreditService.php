@@ -127,6 +127,10 @@ class CreditService
     /**
      * 信用额支付：TuraIDC 暂不支持信用额记账，返回业务失败。
      *
+     * 魔方财务在 apply_credit（余额不足）之后才调本接口，并把本响应的 msg
+     * 作为下游开通失败的最终原因展示。此前返回「暂不支持信用额支付」会把
+     * 真实原因（余额不足）掩盖掉，下游操作者无从排查。
+     *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
@@ -142,7 +146,7 @@ class CreditService
             return ['status' => 400, 'msg' => '账单不存在'];
         }
 
-        return ['status' => 400, 'msg' => '暂不支持信用额支付'];
+        return ['status' => 400, 'msg' => '上游账户余额不足，且暂不支持信用额支付，请为对接账户充值后重试'];
     }
 
     /**

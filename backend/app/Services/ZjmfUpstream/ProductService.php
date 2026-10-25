@@ -18,7 +18,8 @@ use Illuminate\Support\Collection;
  *   - api/product/proinfo       -> data.info[{id,name,location_version,stock_control,qty}] + data.currency
  *   - api/product/prodetail     -> data.detail[{pid => 商品全量 + product_pricings + flag}]
  *   - cart/get_product_config   -> data = products + product_pricings + flag + config_groups 等
- *   - cart/ontrialmax           -> data.product{ontrial,qty}
+ *   - cart/ontrialmax           -> data.product{ontrial,qty}（qty 为每用户上限，0=不限）
+ *   - cart/stock_control        -> data.product{qty,stock_control,hidden}
  *
  * products 字段清单对齐 ProductModel::syncProduct 的读取点
  * （type/description/host/password/pay_type/auto_setup/qty/pay_method/location_version
@@ -115,7 +116,7 @@ class ProductService
                     'id' => (int) $product->id,
                     'name' => $this->productName($product),
                     'location_version' => $this->versionOf($product),
-                    'stock_control' => $this->stockControl($product),
+                    'stock_control' => $this->stockControlFlag($product),
                     'qty' => $this->stockQty($product),
                 ])
                 ->values()
@@ -177,7 +178,11 @@ class ProductService
 
     /**
      * cart/ontrialmax：API 用户对该商品的试用/数量限制。
-     * TuraIDC 不提供试用，qty 取库存；库存不限时返回 0（魔方财务语义：0 = 不限制）。
+     *
+     * 魔方财务把 data.product.qty 当 clientscount（每用户最大持有数）判定，
+     * 0 = 不限制；这里不是库存语义，绝不能把库存数填进去——否则库存 3 会让
+     * 每个用户最多买 3 台，售罄（0）时反而误判为不限购。库存拦截由
+     * cart/stock_control 与下单预扣负责。
      *
      * @return array{status:int,msg:string,data?:array}
      */
@@ -195,7 +200,46 @@ class ProductService
             'data' => [
                 'product' => [
                     'ontrial' => 0,
+                    'qty' => 0,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * cart/stock_control：下游结算前的上游库存检查。
+     *
+     * 魔方财务（home/CartController::getQty）读 data.product.{qty,stock_control,hidden}：
+     *   product 为空      -> 商品缺货，拦截下单
+     *   product.hidden==1 -> 商品不存在，并把本地商品隐藏
+     *   stock_control 且 qty<=0 -> 按库存不足拦截
+     * 售罄（stock=0）必须返回 stock_control=1 + qty=0，让下游在下单前就拦住，
+     * 而不是等本系统结算预扣时才失败（下游用户已付款，只能走退款）。
+     *
+     * @return array{status:int,msg:string,data:array}
+     */
+    public function stockControl(int $pid): array
+    {
+        $product = Product::query()->find($pid);
+
+        if (! $product instanceof Product) {
+            return [
+                'status' => 200,
+                'msg' => '请求成功',
+                'data' => ['product' => []],
+            ];
+        }
+
+        $hidden = (int) $product->status === 1 ? 0 : 1;
+
+        return [
+            'status' => 200,
+            'msg' => '请求成功',
+            'data' => [
+                'product' => [
                     'qty' => $this->stockQty($product),
+                    'stock_control' => $this->stockControlFlag($product),
+                    'hidden' => $hidden,
                 ],
             ],
         ];
@@ -232,7 +276,9 @@ class ProductService
             'type' => $this->mapType((string) $product->product_type),
             'name' => $this->productName($product),
             'description' => (string) ($product->remark ?? ''),
-            'host' => '',
+            // 魔方财务对 host 列做 json_decode 后直接取 ["show"]，空串会触发
+            // null 数组访问告警；下发合法 JSON（show=0 不要求主机名）保持同行为
+            'host' => '{"show":0}',
             'password' => '',
             'pay_type' => json_encode($this->payType($product), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             'auto_setup' => (int) $product->auto_setup,
@@ -247,7 +293,7 @@ class ProductService
             'qty' => $this->stockQty($product),
             'product_shopping_url' => '',
             'location_version' => $this->versionOf($product),
-            'stock_control' => $this->stockControl($product),
+            'stock_control' => $this->stockControlFlag($product),
             'pay_method' => 'prepayment',
             'api_type' => '',
             'upstream_pid' => 0,
@@ -356,6 +402,9 @@ class ProductService
         return $updatedAt instanceof CarbonInterface ? $updatedAt->getTimestamp() : time();
     }
 
+    /**
+     * 库存数量投影：-1（不限量）与 0（售罄）都投影为 0，由 stockControl 标记区分。
+     */
     private function stockQty(Product $product): int
     {
         $stock = (int) $product->stock;
@@ -363,9 +412,14 @@ class ProductService
         return $stock > 0 ? $stock : 0;
     }
 
-    private function stockControl(Product $product): int
+    /**
+     * 库存控制标记，对齐本系统下单语义（assertProductCanBeProvisioned 只对
+     * stock>=0 拦截）：-1 才是不限量；0 表示售罄，必须照常下发控制标记，
+     * 否则下游会把售罄商品当不限量继续售卖。
+     */
+    private function stockControlFlag(Product $product): int
     {
-        return (int) $product->stock > 0 ? 1 : 0;
+        return (int) $product->stock >= 0 ? 1 : 0;
     }
 
     private function groupName(int $groupId): string

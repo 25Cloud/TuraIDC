@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureAdminAuthenticated;
 use App\Http\Middleware\EnsureClientAuthenticated;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\LogOperation;
+use App\Http\Middleware\NormalizeZjmfUpstreamPath;
 use App\Http\Middleware\SetJsonEncodingOptions;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\TicketUpstreamUploadThrottle;
@@ -83,6 +84,11 @@ return Application::configure(basePath: dirname(__DIR__))
                 | Request::HEADER_X_FORWARDED_PORT
                 | Request::HEADER_X_FORWARDED_PROTO,
         );
+
+        // 魔方财务 zjmfCurl 带前导斜杠拼 path 会产生 /api/v2/zjmf//xxx 这类
+        // 双斜杠路径；部分部署（Apache / merge_slashes off / artisan serve）
+        // 不做折叠，路由直接 404。必须在路由解析前归一化，所以挂全局栈。
+        $middleware->append(NormalizeZjmfUpstreamPath::class);
 
         $middleware->api(
             prepend: [
