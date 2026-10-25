@@ -1029,7 +1029,8 @@
       "cycleEveryNMinutes": "每 {count} 分钟",
       "cycleHourlyAtMinute": "每小时第 {minute} 分钟",
       "cycleDailyAt": "每天 {time}",
-      "cycleCustom": "自定义周期"
+      "cycleCustom": "自定义周期",
+      "queueJobsButton": "管理队列任务"
     },
     "source": {
       "operationLog": "操作日志",
@@ -1213,7 +1214,36 @@
       "confirmTextMismatch": "确认文本必须为 立即清理",
       "done": "日志清理完成"
     },
-    "copyFailed": "复制失败，请手动选择"
+    "copyFailed": "复制失败，请手动选择",
+    "queueDrawer": {
+      "title": "队列任务",
+      "pendingTab": "待执行",
+      "failedTab": "已失败",
+      "clearFailed": "清空失败，请稍后重试",
+      "pendingReadonlyTip": "待执行队列只读：其中是尚未运行的业务任务，删除即静默丢弃；卡死的任务重试耗尽后会自动落到「已失败」。",
+      "connectionMismatch": "当前队列运行时为 {runtime}，本页仅能查看 {inspected} 连接上的任务；两者不一致时此处不代表真实积压。",
+      "queueLabel": "队列",
+      "deleteConfirm": "确认删除这条已失败任务？",
+      "deleteAction": "删除",
+      "readonlyMark": "只读",
+      "back": "返回",
+      "colJob": "任务",
+      "colState": "状态",
+      "colAttempts": "尝试",
+      "colTime": "时间",
+      "colOp": "操作",
+      "stateFailed": "已失败",
+      "stateReserved": "执行中",
+      "statePending": "待执行",
+      "deleteSuccess": "任务已删除",
+      "deleteFailed": "删除失败，请稍后重试",
+      "loadFailed": "队列任务加载失败",
+      "clearConfirmTitle": "清空已失败队列",
+      "clearConfirmBody": "将删除全部 {count} 条已失败任务及其错误堆栈，不可恢复。确认继续？",
+      "clearConfirmYes": "确认清空",
+      "clearSuccess": "已清空 {count} 条失败任务",
+      "cancel": "取消"
+    }
   },
   "openApi": {
     "index": {

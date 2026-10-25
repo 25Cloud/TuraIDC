@@ -26,6 +26,33 @@ interface NotificationTemplateListResponse {
   total?: number;
 }
 
+export interface QueueJobItem {
+  id: number;
+  kind: 'pending' | 'failed';
+  queue: string;
+  display_name: string;
+  attempts: number;
+  max_tries: number | null;
+  state: string;
+  uuid: string;
+  created_at: string | null;
+  available_at: string | null;
+  reserved_at: string | null;
+  failed_at: string | null;
+  exception: string | null;
+}
+
+export interface QueueJobsPage {
+  list: QueueJobItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  connection: {
+    runtime: string;
+    inspected: string;
+  };
+}
+
 function normalizeV2Setting(item: V2SettingItem): SettingItem {
   return {
     ...item,
@@ -64,4 +91,10 @@ export const schedulesApi = {
       const detail = (response as { detail?: { task?: Record<string, unknown> } }).detail;
       return (detail?.task || response) as Record<string, unknown>;
     }),
+  queueJobs: (params: { queue: 'pending' | 'failed'; page?: number; page_size?: number }) =>
+    request.get<QueueJobsPage>({ url: '/v2/admin/schedule-queue-jobs', params }),
+  deleteQueueJob: (queue: 'pending' | 'failed', id: number | string) =>
+    request.delete<Record<string, unknown>>({ url: `/v2/admin/schedule-queue-jobs/${queue}/${id}` }),
+  clearQueueJobs: (queue: 'pending' | 'failed') =>
+    request.delete<{ deleted_count: number }>({ url: `/v2/admin/schedule-queue-jobs/${queue}` }),
 };

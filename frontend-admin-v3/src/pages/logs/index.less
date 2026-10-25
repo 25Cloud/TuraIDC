@@ -66,6 +66,17 @@
   background: var(--td-error-color-container, #fff0f0);
 }
 
+/* 待执行/失败任务计数同时是队列抽屉的入口，可点时给出可点击的观感 */
+.schedule-env-item--clickable {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    box-shadow: var(--td-shadow-1, 0 1px 4px rgba(0, 0, 0, 0.1));
+    transform: translateY(-1px);
+  }
+}
+
 .schedule-execution-tip {
   margin: 12px 0 16px;
 }

@@ -1029,7 +1029,8 @@
       "cycleEveryNMinutes": "每 {count} 分鐘",
       "cycleHourlyAtMinute": "每小時第 {minute} 分鐘",
       "cycleDailyAt": "每天 {time}",
-      "cycleCustom": "自定義週期"
+      "cycleCustom": "自定義週期",
+      "queueJobsButton": "管理佇列任務"
     },
     "source": {
       "operationLog": "操作日誌",
@@ -1213,7 +1214,36 @@
       "confirmTextMismatch": "確認文本必須為 立即清理",
       "done": "日誌清理完成"
     },
-    "copyFailed": "複製失敗，請手動選擇"
+    "copyFailed": "複製失敗，請手動選擇",
+    "queueDrawer": {
+      "title": "佇列任務",
+      "pendingTab": "待執行",
+      "failedTab": "已失敗",
+      "clearFailed": "清空失敗，請稍後重試",
+      "pendingReadonlyTip": "待執行佇列唯讀：其中是尚未執行的業務任務，刪除即靜默丟棄；卡死的任務重試耗盡後會自動落到「已失敗」。",
+      "connectionMismatch": "目前佇列執行時為 {runtime}，本頁僅能檢視 {inspected} 連線上的任務；兩者不一致時此處不代表真實積壓。",
+      "queueLabel": "佇列",
+      "deleteConfirm": "確認刪除這條已失敗任務？",
+      "deleteAction": "刪除",
+      "readonlyMark": "唯讀",
+      "back": "返回",
+      "colJob": "任務",
+      "colState": "狀態",
+      "colAttempts": "嘗試",
+      "colTime": "時間",
+      "colOp": "操作",
+      "stateFailed": "已失敗",
+      "stateReserved": "執行中",
+      "statePending": "待執行",
+      "deleteSuccess": "任務已刪除",
+      "deleteFailed": "刪除失敗，請稍後重試",
+      "loadFailed": "佇列任務載入失敗",
+      "clearConfirmTitle": "清空已失敗佇列",
+      "clearConfirmBody": "將刪除全部 {count} 條已失敗任務及其錯誤堆疊，不可復原。確認繼續？",
+      "clearConfirmYes": "確認清空",
+      "clearSuccess": "已清空 {count} 條失敗任務",
+      "cancel": "取消"
+    }
   },
   "openApi": {
     "index": {

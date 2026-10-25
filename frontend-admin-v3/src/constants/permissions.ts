@@ -41,6 +41,7 @@ export const AdminPermissions = {
   SCHEDULE_VIEW: 'schedule.view',
   SCHEDULE_TRIGGER: 'schedule.trigger',
   SCHEDULE_RETRY: 'schedule.retry',
+  SCHEDULE_QUEUE_MANAGE: 'schedule.queue_manage',
   SITE_VIEW: 'site.view',
   SITE_MANAGE: 'site.manage',
   LOG_LIST: 'log.list',
@@ -169,6 +170,7 @@ export function impliedPermissions(permission: string): string[] {
       return [AdminPermissions.INTEGRATION_PLUGIN_VIEW];
     case AdminPermissions.SCHEDULE_TRIGGER:
     case AdminPermissions.SCHEDULE_RETRY:
+    case AdminPermissions.SCHEDULE_QUEUE_MANAGE:
       return [AdminPermissions.SCHEDULE_VIEW];
     case AdminPermissions.SITE_MANAGE:
       return [AdminPermissions.SITE_VIEW];

@@ -29,6 +29,7 @@ use App\Http\Controllers\Admin\V2\ProductDiscountGroupController;
 use App\Http\Controllers\Admin\V2\ProductGroupController;
 use App\Http\Controllers\Admin\V2\ProductSpecHighlightController;
 use App\Http\Controllers\Admin\V2\ProductTypeController;
+use App\Http\Controllers\Admin\V2\QueueJobController;
 use App\Http\Controllers\Admin\V2\RedisStatusController;
 use App\Http\Controllers\Admin\V2\ReferralController;
 use App\Http\Controllers\Admin\V2\ReferralWithdrawalController;
@@ -329,6 +330,13 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
 
     Route::middleware(['permission:'.AdminPermissions::SCHEDULE_RETRY])->group(function (): void {
         Route::post('/schedule-runs/{run}/retry', [ScheduleTaskController::class, 'retry']);
+    });
+
+    // 队列任务治理：pending 只读，删除/清空仅作用于已失败任务
+    Route::middleware(['permission:'.AdminPermissions::SCHEDULE_QUEUE_MANAGE])->group(function (): void {
+        Route::get('/schedule-queue-jobs', [QueueJobController::class, 'index']);
+        Route::delete('/schedule-queue-jobs/{queue}', [QueueJobController::class, 'clear']);
+        Route::delete('/schedule-queue-jobs/{queue}/{job}', [QueueJobController::class, 'destroy']);
     });
 
     Route::middleware(['permission:'.AdminPermissions::CONTENT_MANAGE])->group(function (): void {

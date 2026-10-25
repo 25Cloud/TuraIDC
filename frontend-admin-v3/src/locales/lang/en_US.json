@@ -1029,7 +1029,8 @@
       "cycleEveryNMinutes": "Every {count} minutes",
       "cycleHourlyAtMinute": "At minute {minute} of every hour",
       "cycleDailyAt": "Daily at {time}",
-      "cycleCustom": "Custom schedule"
+      "cycleCustom": "Custom schedule",
+      "queueJobsButton": "Manage queue jobs"
     },
     "source": {
       "operationLog": "Operation log",
@@ -1213,7 +1214,36 @@
       "confirmTextMismatch": "The confirmation text must be 立即清理",
       "done": "Log cleanup finished"
     },
-    "copyFailed": "Copy failed, please select manually"
+    "copyFailed": "Copy failed, please select manually",
+    "queueDrawer": {
+      "title": "Queue jobs",
+      "pendingTab": "Pending",
+      "failedTab": "Failed",
+      "clearFailed": "Failed to clear the queue, please try again later",
+      "pendingReadonlyTip": "The pending queue is read-only: it holds business jobs that have not run yet, and deleting one silently drops it. A stuck job that exhausts its retries lands in Failed automatically.",
+      "connectionMismatch": "The queue runtime is {runtime}, but this page can only inspect jobs on the {inspected} connection. When they differ this list does not reflect the real backlog.",
+      "queueLabel": "Queue",
+      "deleteConfirm": "Delete this failed job?",
+      "deleteAction": "Delete",
+      "readonlyMark": "Read-only",
+      "back": "Back",
+      "colJob": "Job",
+      "colState": "State",
+      "colAttempts": "Tries",
+      "colTime": "Time",
+      "colOp": "Actions",
+      "stateFailed": "Failed",
+      "stateReserved": "Running",
+      "statePending": "Pending",
+      "deleteSuccess": "Job deleted",
+      "deleteFailed": "Failed to delete the job, please try again later",
+      "loadFailed": "Failed to load queue jobs",
+      "clearConfirmTitle": "Clear failed jobs",
+      "clearConfirmBody": "This deletes all {count} failed jobs together with their stack traces. This cannot be undone. Continue?",
+      "clearConfirmYes": "Clear all",
+      "clearSuccess": "Cleared {count} failed jobs",
+      "cancel": "Cancel"
+    }
   },
   "openApi": {
     "index": {

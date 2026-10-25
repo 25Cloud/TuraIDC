@@ -1,7 +1,7 @@
 {
     "meta": {
-        "generatedAt": "2026-10-22 08:25:01",
-        "total": 447,
+        "generatedAt": "2026-10-25 16:52:51",
+        "total": 450,
         "baseURL": "/api/v2",
         "dataSource": "php artisan route:list --json v2-only",
         "scopeLabels": {
@@ -21,15 +21,15 @@
             "permission": "登录 + 权限"
         },
         "scopeCounts": {
-            "admin": 284,
+            "admin": 287,
             "client": 144,
             "site": 18,
             "system": 1
         },
         "accessCounts": {
-            "public": 447
+            "public": 450
         },
-        "moduleCount": 85
+        "moduleCount": 86
     },
     "items": [
         {
@@ -3708,6 +3708,75 @@
             "throttle": "",
             "guards": [],
             "handler": "App\\Http\\Controllers\\Admin\\V2\\RoleController@copy",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/schedule-queue-jobs",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "schedule-queue-jobs",
+            "moduleLabel": "Schedule Queue Jobs",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/schedule-queue-jobs",
+            "backendPath": "/api/v2/admin/schedule-queue-jobs",
+            "normalizedPath": "/admin/schedule-queue-jobs",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\QueueJobController@index",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "DELETE:/api/v2/admin/schedule-queue-jobs/{queue}",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "schedule-queue-jobs",
+            "moduleLabel": "Schedule Queue Jobs",
+            "method": "DELETE",
+            "methods": [
+                "DELETE"
+            ],
+            "callPath": "/admin/schedule-queue-jobs/{queue}",
+            "backendPath": "/api/v2/admin/schedule-queue-jobs/{queue}",
+            "normalizedPath": "/admin/schedule-queue-jobs/{param}",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\QueueJobController@clear",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "DELETE:/api/v2/admin/schedule-queue-jobs/{queue}/{job}",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "schedule-queue-jobs",
+            "moduleLabel": "Schedule Queue Jobs",
+            "method": "DELETE",
+            "methods": [
+                "DELETE"
+            ],
+            "callPath": "/admin/schedule-queue-jobs/{queue}/{job}",
+            "backendPath": "/api/v2/admin/schedule-queue-jobs/{queue}/{job}",
+            "normalizedPath": "/admin/schedule-queue-jobs/{param}/{param}",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\QueueJobController@destroy",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []

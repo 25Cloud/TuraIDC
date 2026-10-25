@@ -508,7 +508,12 @@
               v-for="alert in scheduleEnvAlerts"
               :key="alert.key"
               class="schedule-env-item"
-              :class="`schedule-env-item--${alert.theme}`"
+              :class="[
+                `schedule-env-item--${alert.theme}`,
+                { 'schedule-env-item--clickable': isQueueEnvKey(alert.key) && canManageQueueJobs },
+              ]"
+              :role="isQueueEnvKey(alert.key) && canManageQueueJobs ? 'button' : undefined"
+              @click="openQueueDrawerFromEnv(alert.key)"
             >
               <div class="schedule-env-item__head">
                 <t-tag :theme="alert.theme" variant="light">{{ alert.label }}</t-tag>
@@ -539,6 +544,9 @@
                 {{ item.label }}
               </t-radio-button>
             </t-radio-group>
+            <t-button v-if="canManageQueueJobs" variant="outline" @click="openQueueDrawer('failed')">
+              {{ $t('logs.index.queueJobsButton') }}
+            </t-button>
           </div>
           <div class="schedule-task-groups">
             <section v-for="group in visibleScheduleTaskGroups" :key="group.key" class="schedule-task-group">
@@ -717,6 +725,13 @@
       :drawer-size="drawerSize"
       @close="closeDetailDrawer"
     />
+
+    <queue-jobs-drawer
+      :visible="queueDrawerVisible"
+      :initial-queue="queueDrawerQueue"
+      @close="queueDrawerVisible = false"
+      @changed="loadScheduleOverview"
+    />
   </div>
 </template>
 <script setup lang="ts">
@@ -739,6 +754,7 @@ import { goTicket, isEntityId } from '@/utils/route/adminEntityLink';
 import { errorMessage } from '@/utils/userMessage';
 
 import LogDetailDrawer from './components/LogDetailDrawer.vue';
+import QueueJobsDrawer from './components/QueueJobsDrawer.vue';
 
 type LogTab =
   | 'system'
@@ -1255,6 +1271,25 @@ const scheduleEnvAlerts = computed(() => {
 });
 const canViewSchedules = computed(() => hasPermission(AdminPermissions.SCHEDULE_VIEW));
 const canTriggerSchedules = computed(() => hasPermission(AdminPermissions.SCHEDULE_TRIGGER));
+const canManageQueueJobs = computed(() => hasPermission(AdminPermissions.SCHEDULE_QUEUE_MANAGE));
+const queueDrawerVisible = ref(false);
+const queueDrawerQueue = ref<'pending' | 'failed'>('failed');
+
+// 环境卡片里的待执行/失败任务计数同时是队列抽屉的入口；没有管理权限时纯展示
+function isQueueEnvKey(key: string) {
+  return key === 'pending_jobs' || key === 'failed_jobs';
+}
+
+function openQueueDrawer(target: 'pending' | 'failed') {
+  queueDrawerQueue.value = target;
+  queueDrawerVisible.value = true;
+}
+
+function openQueueDrawerFromEnv(key: string) {
+  if (!canManageQueueJobs.value || !isQueueEnvKey(key)) return;
+  openQueueDrawer(key === 'pending_jobs' ? 'pending' : 'failed');
+}
+
 const canManageLogCleanup = computed(() => hasPermission(AdminPermissions.LOG_MANAGE));
 const cleanupSubmitDisabled = computed(
   () =>
