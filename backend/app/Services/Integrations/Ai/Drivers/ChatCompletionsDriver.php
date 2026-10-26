@@ -40,7 +40,7 @@ final class ChatCompletionsDriver implements AiProviderInterface
         return 'OpenAI 对话补全（/v1/chat/completions）';
     }
 
-    public function chat(AiChatRequest $request, ?callable $onText = null, ?callable $onReasoning = null): AiChatResult
+    public function chat(AiChatRequest $request, ?callable $onText = null): AiChatResult
     {
         $url = $this->endpoint($this->baseUrl, self::PATH);
         $payload = $this->buildPayload($request, $onText !== null);
@@ -57,7 +57,6 @@ final class ChatCompletionsDriver implements AiProviderInterface
         }
 
         $content = '';
-        $reasoning = '';
         $finishReason = '';
         $usage = new AiUsage;
         /** @var array<int, array{id: string, name: string, arguments: string}> $toolCalls */
@@ -68,7 +67,7 @@ final class ChatCompletionsDriver implements AiProviderInterface
             array_merge($headers, ['Accept: text/event-stream']),
             $payload,
             $request->timeoutSeconds,
-            function (string $event, string $data) use (&$content, &$reasoning, &$toolCalls, &$usage, &$finishReason, $onText, $onReasoning): void {
+            function (string $event, string $data) use (&$content, &$toolCalls, &$usage, &$finishReason, $onText): void {
                 if ($data === '[DONE]') {
                     return;
                 }
@@ -96,14 +95,6 @@ final class ChatCompletionsDriver implements AiProviderInterface
                 if (isset($delta['content']) && is_string($delta['content']) && $delta['content'] !== '') {
                     $content .= $delta['content'];
                     $onText($delta['content']);
-                }
-                // 推理模型：DeepSeek / 部分网关把思考过程放在 reasoning_content（个别网关叫 reasoning）
-                $reasoningDelta = $delta['reasoning_content'] ?? ($delta['reasoning'] ?? null);
-                if (is_string($reasoningDelta) && $reasoningDelta !== '') {
-                    $reasoning .= $reasoningDelta;
-                    if ($onReasoning !== null) {
-                        $onReasoning($reasoningDelta);
-                    }
                 }
                 foreach ((array) ($delta['tool_calls'] ?? []) as $position => $call) {
                     if (! is_array($call)) {
@@ -133,7 +124,6 @@ final class ChatCompletionsDriver implements AiProviderInterface
             $this->normalizeToolCalls($toolCalls),
             $usage,
             $finishReason,
-            $reasoning,
         );
     }
 
@@ -263,18 +253,11 @@ final class ChatCompletionsDriver implements AiProviderInterface
 
         $usage = $decoded['usage'] ?? [];
 
-        $reasoning = '';
-        if (is_array($message)) {
-            $rawReasoning = $message['reasoning_content'] ?? ($message['reasoning'] ?? '');
-            $reasoning = is_string($rawReasoning) ? $rawReasoning : '';
-        }
-
         return new AiChatResult(
             $content,
             $calls,
             new AiUsage((int) ($usage['prompt_tokens'] ?? 0), (int) ($usage['completion_tokens'] ?? 0)),
             (string) (((array) $choice)['finish_reason'] ?? ''),
-            $reasoning,
         );
     }
 }

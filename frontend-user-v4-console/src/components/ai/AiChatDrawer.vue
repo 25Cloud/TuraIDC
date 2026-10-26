@@ -12,65 +12,46 @@
   >
     <template #header>
       <div class="ai-drawer-header">
-        <div class="ai-drawer-header__row">
-          <div class="ai-drawer-header__title">
-            <robot-icon class="ai-drawer-header__logo" />
-            <span class="ai-drawer-header__name">{{ $t('ai.title') }}</span>
-            <t-tag v-if="modelLabel" size="small" variant="light" theme="primary">{{ modelLabel }}</t-tag>
-          </div>
-
-          <div class="ai-drawer-header__tools">
-            <ai-permission-switch
-              :model-value="store.permissionMode"
-              :allowed-modes="store.allowedModes"
-              :disabled="busy"
-              @update:model-value="handlePermissionChange"
-            />
-            <t-button
-              shape="square"
-              size="small"
-              variant="text"
-              :aria-label="$t('ai.newConversation')"
-              :title="$t('ai.newConversation')"
-              @click="handleNewConversation"
-            >
-              <template #icon><add-icon /></template>
-            </t-button>
-            <t-button
-              shape="square"
-              size="small"
-              variant="text"
-              :aria-label="$t('ai.openPageTitle')"
-              :title="$t('ai.openPageTitle')"
-              @click="handleOpenPage"
-            >
-              <template #icon><fullscreen-icon /></template>
-            </t-button>
-          </div>
+        <div class="ai-drawer-header__title">
+          <robot-icon class="ai-drawer-header__logo" />
+          <span class="ai-drawer-header__name">{{ $t('ai.title') }}</span>
+          <t-tag v-if="modelLabel" size="small" variant="light" theme="primary">{{ modelLabel }}</t-tag>
         </div>
 
-        <p v-if="subjectLabel" class="ai-drawer-header__context">
-          {{ $t('ai.context.viewing', { subject: subjectLabel }) }}
+        <div class="ai-drawer-header__tools">
+          <ai-permission-switch
+            :model-value="store.permissionMode"
+            :allowed-modes="store.allowedModes"
+            :disabled="busy"
+            @update:model-value="handlePermissionChange"
+          />
+          <t-button
+            shape="square"
+            size="small"
+            variant="text"
+            :aria-label="$t('ai.newConversation')"
+            :title="$t('ai.newConversation')"
+            @click="handleNewConversation"
+          >
+            <template #icon><add-icon /></template>
+          </t-button>
+          <t-button
+            shape="square"
+            size="small"
+            variant="text"
+            :aria-label="$t('ai.openPageTitle')"
+            :title="$t('ai.openPageTitle')"
+            @click="handleOpenPage"
+          >
+            <template #icon><fullscreen-icon /></template>
+          </t-button>
+        </div>
+
+        <p class="ai-drawer-header__context">
+          {{ subjectLabel ? $t('ai.context.viewing', { subject: subjectLabel }) : $t('ai.context.none') }}
         </p>
       </div>
     </template>
-
-    <div v-if="recentConversations.length" class="ai-drawer-recent">
-      <span class="ai-drawer-recent__label">{{ $t('ai.recent.title') }}</span>
-      <div class="ai-drawer-recent__list">
-        <button
-          v-for="item in recentConversations"
-          :key="item.id"
-          type="button"
-          class="ai-drawer-recent__item"
-          :class="{ 'ai-drawer-recent__item--active': item.id === store.conversation?.id }"
-          :title="item.title || $t('ai.conversation.untitled')"
-          @click="handleOpenRecent(item.id)"
-        >
-          {{ item.title || $t('ai.conversation.untitled') }}
-        </button>
-      </div>
-    </div>
 
     <ai-message-list :messages="store.messages" />
 
@@ -106,7 +87,7 @@
 import type { AiPermissionMode } from '@turaidc/shared/runtime';
 import { describeSubject } from '@turaidc/shared/runtime';
 import { AddIcon, FullscreenIcon, RobotIcon, SendIcon, StopCircleIcon } from 'tdesign-icons-vue-next';
-import { computed, defineAsyncComponent, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { getClientToken } from '@/app/runtime/session';
@@ -197,47 +178,22 @@ const handleOpenPage = (): void => {
   store.enterPageMode();
   void router.push(AI_PAGE_PATH);
 };
-
-/** 抽屉打开时刷新一次最近对话，避免列表停在很久以前的快照 */
-watch(visible, (open) => {
-  if (open) {
-    void store.refreshConversations();
-  }
-});
-
-const recentConversations = computed(() => (store.conversationPage?.list ?? []).slice(0, 8));
-
-/** 点历史对话直接进独立页继续（与 DSH 一致：侧栏点开就是整页会话） */
-const handleOpenRecent = (id: number): void => {
-  store.enterPageMode();
-  store.closeDrawer();
-  void router.push({ path: AI_PAGE_PATH, query: { conversation: String(id) } });
-};
 </script>
 <style scoped lang="less">
 // 抽屉内容会被 teleport 到 body 下，所以这里只用单类选择器，不依赖组件根节点祖先
 .ai-drawer-header {
   display: grid;
-  gap: var(--td-comp-margin-xs);
+  gap: var(--td-comp-margin-s);
   width: 100%;
   padding-right: var(--td-comp-margin-xxl);
   text-align: left;
 }
 
-.ai-drawer-header__row {
+.ai-drawer-header__title {
   display: flex;
   gap: var(--td-comp-margin-s);
   align-items: center;
-  justify-content: space-between;
   min-width: 0;
-}
-
-.ai-drawer-header__title {
-  display: flex;
-  gap: var(--td-comp-margin-xs);
-  align-items: center;
-  min-width: 0;
-  overflow: hidden;
 }
 
 .ai-drawer-header__logo {
@@ -253,25 +209,8 @@ const handleOpenRecent = (id: number): void => {
 
 .ai-drawer-header__tools {
   display: flex;
-  flex-wrap: nowrap;
   gap: var(--td-comp-margin-xs);
   align-items: center;
-}
-
-// 抽屉头部很窄，按钮必须禁止收缩，否则会被挤成几个小点
-.ai-drawer-header__tools > * {
-  flex: 0 0 auto;
-}
-
-.ai-drawer-header__tools :deep(.t-button) {
-  min-width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
-  font-size: 1rem;
-}
-
-.ai-drawer-header__tools :deep(.t-icon) {
-  font-size: 1rem;
 }
 
 .ai-drawer-header__context {
@@ -284,58 +223,6 @@ const handleOpenRecent = (id: number): void => {
 .ai-drawer-composer {
   display: grid;
   gap: var(--td-comp-margin-s);
-}
-
-// —— 最近对话：一排可横滚的胶囊，点一下进独立页 ——
-.ai-drawer-recent {
-  display: flex;
-  flex: 0 0 auto;
-  gap: var(--td-comp-margin-s);
-  align-items: center;
-  padding: var(--td-comp-paddingTB-xs) var(--td-comp-paddingLR-l);
-  border-bottom: thin solid var(--td-component-stroke);
-}
-
-.ai-drawer-recent__label {
-  flex: 0 0 auto;
-  color: var(--td-text-color-placeholder);
-  font: var(--td-font-body-small);
-}
-
-.ai-drawer-recent__list {
-  display: flex;
-  flex: 1;
-  gap: var(--td-comp-margin-xs);
-  min-width: 0;
-  padding-bottom: 2px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-
-.ai-drawer-recent__item {
-  flex: 0 0 auto;
-  max-width: 9rem;
-  padding: 2px var(--td-comp-paddingLR-xs);
-  overflow: hidden;
-  color: var(--td-text-color-secondary);
-  font: var(--td-font-body-small);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-  background: var(--td-bg-color-secondarycontainer);
-  border: thin solid transparent;
-  border-radius: 999px;
-}
-
-.ai-drawer-recent__item:hover {
-  color: var(--td-brand-color);
-  border-color: var(--td-brand-color);
-}
-
-.ai-drawer-recent__item--active {
-  color: var(--td-brand-color);
-  background: var(--td-brand-color-light);
-  border-color: var(--td-brand-color);
 }
 
 .ai-drawer-composer__input {

@@ -37,7 +37,7 @@
         @row-click="handleRowClick"
       >
         <template #id="{ row }">
-          <strong>{{ `#${row.id}` }}</strong>
+          <strong>#{{ row.id }}</strong>
         </template>
         <template #user="{ row }">{{ userLabel(row) }}</template>
         <template #channel="{ row }">
@@ -46,14 +46,10 @@
           </t-tag>
         </template>
         <template #title="{ row }">{{ row.title || '-' }}</template>
-        <template #message_count="{ row }">
-          <span class="ai-conversations-num">{{ row.message_count ?? 0 }}</span>
-        </template>
+        <template #message_count="{ row }">{{ row.message_count ?? 0 }}</template>
         <template #permission_mode="{ row }">{{ modeLabel(row.permission_mode) }}</template>
         <template #last_message_at="{ row }">
-          <span class="ai-conversations-time">
-            {{ row.last_message_at ? formatDateTime(row.last_message_at) : '-' }}
-          </span>
+          {{ row.last_message_at ? formatDateTime(row.last_message_at) : '-' }}
         </template>
         <template #op="{ row }">
           <t-link theme="primary" hover="color" @click.stop="openDetail(row.id)">
@@ -80,7 +76,6 @@
       :visible="detailVisible"
       :header="$t('ai.conversations.drawerTitle', { id: detailId || '' })"
       :size="drawerSize"
-      :footer="false"
       @close="closeDetail"
     >
       <t-loading :loading="detailLoading" size="small" show-overlay>
@@ -100,7 +95,7 @@
             </span>
             <span>
               <em>{{ $t('ai.conversations.drawerMessages') }}</em>
-              <span class="ai-conversations-num">{{ detail.messages.length }}</span>
+              {{ detail.messages.length }}
             </span>
             <span>
               <em>{{ $t('ai.conversations.drawerCreated') }}</em>
@@ -124,81 +119,36 @@
             {{ $t('ai.conversations.noMessages') }}
           </p>
 
-          <!-- 按角色分列：用户靠右、助手带头像靠左，思考过程折叠在正文上方 -->
-          <section class="ai-conversations-transcript">
-            <article
-              v-for="message in detail.messages"
-              :key="message.id"
-              class="ai-conversations-message"
-              :class="`ai-conversations-message--${message.role}`"
-            >
-              <t-avatar v-if="message.role === 'assistant'" class="ai-conversations-message__avatar" size="32px">
-                <template #icon><robot-icon /></template>
-              </t-avatar>
+          <article v-for="message in detail.messages" :key="message.id" class="ai-conversations-message">
+            <header class="ai-conversations-message__head">
+              <t-tag size="small" variant="light" :theme="messageTheme(message.role)">
+                {{ messageRoleLabel(message.role) }}
+              </t-tag>
+              <time>{{ message.created_at ? formatDateTime(message.created_at) : '' }}</time>
+            </header>
+            <p v-if="message.content" class="ai-conversations-message__content">{{ message.content }}</p>
 
-              <div class="ai-conversations-message__body">
-                <header class="ai-conversations-message__head">
-                  <span class="ai-conversations-message__role">{{ messageRoleLabel(message.role) }}</span>
-                  <time v-if="message.created_at">{{ formatDateTime(message.created_at) }}</time>
-                  <span v-if="toolCallRows(message).length" class="ai-conversations-message__count">
-                    {{ $t('ai.conversations.toolCallCount', { count: toolCallRows(message).length }) }}
-                  </span>
-                </header>
-
-                <div class="ai-conversations-message__bubble">
-                  <t-collapse v-if="message.reasoning" class="ai-conversations-reasoning" borderless>
-                    <t-collapse-panel value="reasoning" :header="$t('ai.conversations.reasoning')">
-                      <p class="ai-conversations-reasoning__text">{{ message.reasoning }}</p>
-                    </t-collapse-panel>
-                  </t-collapse>
-
-                  <p v-if="message.content" class="ai-conversations-message__text">{{ message.content }}</p>
-
-                  <div v-if="toolCallRows(message).length" class="ai-conversations-tools">
-                    <t-table
-                      row-key="key"
-                      size="small"
-                      hover
-                      table-layout="fixed"
-                      :data="toolCallRows(message)"
-                      :columns="toolColumns"
-                    >
-                      <template #name="{ row }">
-                        <span class="ai-conversations-mono">{{ row.name }}</span>
-                      </template>
-                      <template #risk="{ row }">
-                        <t-tag v-if="row.risk" size="small" variant="light" :theme="riskTheme(row.risk)">
-                          {{ riskLabel(row.risk) }}
-                        </t-tag>
-                        <span v-else>-</span>
-                      </template>
-                      <template #status="{ row }">{{ row.status || '-' }}</template>
-                      <template #summary="{ row }">{{ row.summary || '-' }}</template>
-                      <template #arguments="{ row }">
-                        <t-tooltip
-                          v-if="row.arguments"
-                          :content="row.arguments"
-                          placement="top-left"
-                          :overlay-inner-style="{ maxWidth: '560px', wordBreak: 'break-all' }"
-                        >
-                          <span class="ai-conversations-mono ai-conversations-ellipsis">{{ row.arguments }}</span>
-                        </t-tooltip>
-                        <span v-else>-</span>
-                      </template>
-                    </t-table>
-                  </div>
-                </div>
+            <div v-if="message.tool_calls && message.tool_calls.length" class="ai-conversations-tools">
+              <span class="ai-conversations-tools__label">{{ $t('ai.conversations.toolCalls') }}</span>
+              <div
+                v-for="(call, index) in message.tool_calls"
+                :key="`${message.id}-${index}`"
+                class="ai-conversations-tool"
+              >
+                <span class="ai-conversations-tool__name">{{ call.name }}</span>
+                <span v-if="call.status" class="ai-conversations-tool__status">{{ call.status }}</span>
+                <span v-if="call.summary" class="ai-conversations-tool__summary">{{ call.summary }}</span>
+                <pre v-if="call.arguments" class="ai-conversations-tool__args">{{ call.arguments }}</pre>
               </div>
-            </article>
-          </section>
+            </div>
+          </article>
         </div>
       </t-loading>
     </t-drawer>
   </div>
 </template>
 <script setup lang="ts">
-import type { AiConversationDetail, AiMessageRow } from '@turaidc/shared/runtime';
-import { RobotIcon } from 'tdesign-icons-vue-next';
+import type { AiConversationDetail } from '@turaidc/shared/runtime';
 import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, ref } from 'vue';
@@ -214,7 +164,7 @@ import { errorMessage } from '@/utils/userMessage';
 defineOptions({ name: 'AdminAiConversations' });
 
 const isMobile = useMediaQuery('(max-width: 768px)');
-const drawerSize = computed(() => (isMobile.value ? '100%' : '760px'));
+const drawerSize = computed(() => (isMobile.value ? '100%' : '720px'));
 
 const CHANNEL_KEYS: Record<string, string> = {
   console: 'ai.conversations.channelConsole',
@@ -228,33 +178,17 @@ const MODE_KEYS: Record<string, string> = {
   auto_approve: 'ai.mode.autoApprove',
 };
 
-const RISK_KEYS: Record<string, string> = {
-  read: 'ai.risk.read',
-  write: 'ai.risk.write',
-  dangerous: 'ai.risk.dangerous',
-};
-
 const channelOptions = computed(() => Object.entries(CHANNEL_KEYS).map(([value, key]) => ({ value, label: t(key) })));
 
-/** 列宽全部按 colKey 固定：table-layout=fixed 下不允许列宽随内容跳动 */
 const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   { colKey: 'id', title: t('ai.conversations.colId'), width: 100 },
-  { colKey: 'user', title: t('ai.conversations.colUser'), width: 180, ellipsis: true },
+  { colKey: 'user', title: t('ai.conversations.colUser'), width: 180 },
   { colKey: 'channel', title: t('ai.conversations.colChannel'), width: 130 },
   { colKey: 'title', title: t('ai.conversations.colTitle'), minWidth: 220, ellipsis: true },
-  { colKey: 'message_count', title: t('ai.conversations.colMessages'), width: 110, align: 'right' },
-  { colKey: 'permission_mode', title: t('ai.conversations.colMode'), width: 140 },
-  { colKey: 'last_message_at', title: t('ai.conversations.colLastMessageAt'), width: 180, align: 'right' },
-  { colKey: 'op', title: t('ai.conversations.colOp'), width: 90, fixed: 'right', align: 'right' },
-]);
-
-/** 抽屉里的工具调用表：参数单独一列，超长用 tooltip，不再整段 JSON 直出 */
-const toolColumns = computed<PrimaryTableCol<TableRowData>[]>(() => [
-  { colKey: 'name', title: t('ai.conversations.toolCalls'), width: 160, ellipsis: true },
-  { colKey: 'risk', title: t('ai.conversations.toolRisk'), width: 84 },
-  { colKey: 'status', title: t('ai.conversations.toolStatus'), width: 84, ellipsis: true },
-  { colKey: 'summary', title: t('ai.conversations.toolSummary'), minWidth: 160, ellipsis: true },
-  { colKey: 'arguments', title: t('ai.conversations.toolArguments'), minWidth: 180, ellipsis: true },
+  { colKey: 'message_count', title: t('ai.conversations.colMessages'), width: 100, align: 'center' },
+  { colKey: 'permission_mode', title: t('ai.conversations.colMode'), width: 130 },
+  { colKey: 'last_message_at', title: t('ai.conversations.colLastMessageAt'), width: 180 },
+  { colKey: 'op', title: t('ai.conversations.colOp'), width: 90, fixed: 'right' },
 ]);
 
 const { filters, list, total, loading, pagination, handleSearch, resetFilters, handlePaginationChange } = useListPage<
@@ -309,23 +243,11 @@ function messageRoleLabel(role: string) {
   return t('ai.conversations.messageSystem');
 }
 
-function riskLabel(risk: string) {
-  const key = RISK_KEYS[String(risk || '')];
-  return key ? t(key) : String(risk || '-');
-}
-
-function riskTheme(risk: string): 'default' | 'warning' | 'danger' {
-  if (risk === 'dangerous') return 'danger';
-  if (risk === 'write') return 'warning';
+function messageTheme(role: string): 'default' | 'primary' | 'success' | 'warning' {
+  if (role === 'user') return 'primary';
+  if (role === 'assistant') return 'success';
+  if (role === 'tool') return 'warning';
   return 'default';
-}
-
-/** 工具调用行：补一个稳定的 key，后端不一定给 id */
-function toolCallRows(message: AiMessageRow) {
-  return (message.tool_calls || []).map((call, index) => ({
-    ...call,
-    key: `${message.id}-${call.id || index}`,
-  }));
 }
 
 function handleRowClick({ row }: { row: TableRowData }) {
@@ -389,17 +311,10 @@ async function loadUsage() {
 onMounted(loadUsage);
 </script>
 <style scoped lang="less">
-.ai-conversations-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--td-comp-margin-xl);
-  padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-l);
-}
-
 .ai-conversations-filter {
   display: flex;
   align-items: center;
-  gap: var(--td-comp-margin-s);
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -412,64 +327,46 @@ onMounted(loadUsage);
 }
 
 .ai-conversations-usage {
-  margin: var(--td-comp-margin-s) 0 0;
-  font-size: var(--td-font-size-body-small);
-  color: var(--td-text-color-secondary);
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--td-text-color-secondary, #4e5969);
 }
 
-/* 数字列固定等宽，避免逐行跳动 */
-.ai-conversations-num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-variant-numeric: tabular-nums;
-}
-
-.ai-conversations-time {
-  font-variant-numeric: tabular-nums;
-}
-
-.ai-conversations-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: var(--td-font-size-body-small);
-}
-
-.ai-conversations-ellipsis {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.ai-conversations-table-card {
+  margin-top: 12px;
 }
 
 .ai-conversations-pagination {
   display: flex;
   justify-content: flex-end;
-  margin-top: var(--td-comp-margin-l);
+  margin-top: 16px;
 }
 
 .ai-conversations-detail__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--td-comp-margin-s) var(--td-comp-margin-xl);
-  padding: 0 0 var(--td-comp-margin-m);
-  border-bottom: 1px solid var(--td-component-stroke);
-  font-size: var(--td-font-size-body-small);
-  color: var(--td-text-color-primary);
+  gap: 8px 24px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--td-component-stroke, #e7e7e7);
+  font-size: 12px;
+  color: var(--td-text-color-primary, #1f2937);
 
   em {
-    margin-right: var(--td-comp-margin-xs);
+    margin-right: 4px;
     font-style: normal;
-    color: var(--td-text-color-placeholder);
+    color: var(--td-text-color-placeholder, #a9aeb8);
   }
 }
 
 .ai-conversations-detail__pending {
-  margin: var(--td-comp-margin-m) 0;
-  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-s);
-  border-radius: var(--td-radius-medium);
-  background: var(--td-warning-color-light);
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--td-warning-color-1, #fff1e9);
 
   h3 {
-    margin: 0 0 var(--td-comp-margin-xs);
-    font-size: var(--td-font-size-body-small);
+    margin: 0 0 6px;
+    font-size: 12px;
     font-weight: 600;
   }
 }
@@ -477,154 +374,98 @@ onMounted(loadUsage);
 .ai-conversations-pending {
   display: flex;
   flex-direction: column;
-  gap: var(--td-comp-margin-xxs);
-  padding: var(--td-comp-paddingTB-xxs) 0;
-  font-size: var(--td-font-size-body-small);
-  color: var(--td-text-color-secondary);
+  gap: 2px;
+  padding: 4px 0;
+  font-size: 12px;
+  color: var(--td-text-color-secondary, #4e5969);
 }
 
 .ai-conversations-detail__empty {
-  margin: var(--td-comp-margin-xl) 0;
+  margin: 24px 0;
   text-align: center;
-  font-size: var(--td-font-size-body-small);
-  color: var(--td-text-color-placeholder);
-}
-
-.ai-conversations-transcript {
-  display: flex;
-  flex-direction: column;
-  gap: var(--td-comp-margin-l);
-  padding-top: var(--td-comp-margin-l);
+  font-size: 12px;
+  color: var(--td-text-color-placeholder, #a9aeb8);
 }
 
 .ai-conversations-message {
-  display: flex;
-  gap: var(--td-comp-margin-s);
-  align-items: flex-start;
-
-  &--user {
-    flex-direction: row-reverse;
-  }
-}
-
-.ai-conversations-message__avatar {
-  flex: none;
-  background: var(--td-brand-color-light);
-  color: var(--td-brand-color);
-}
-
-.ai-conversations-message__body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--td-comp-margin-xs);
-  min-width: 0;
-  max-width: 88%;
-}
-
-.ai-conversations-message--user .ai-conversations-message__body {
-  align-items: flex-end;
-}
-
-.ai-conversations-message--system .ai-conversations-message__body {
-  align-items: center;
-  max-width: 100%;
-  margin: 0 auto;
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--td-component-stroke, #e7e7e7);
 }
 
 .ai-conversations-message__head {
   display: flex;
   align-items: center;
-  gap: var(--td-comp-margin-s);
-  font-size: var(--td-font-size-body-small);
-  color: var(--td-text-color-placeholder);
+  gap: 8px;
 
-  time,
-  .ai-conversations-message__count {
-    font-variant-numeric: tabular-nums;
-  }
-
-  .ai-conversations-message__count {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  time {
+    font-size: 12px;
+    color: var(--td-text-color-placeholder, #a9aeb8);
   }
 }
 
-.ai-conversations-message--user .ai-conversations-message__head {
-  flex-direction: row-reverse;
-}
-
-.ai-conversations-message__bubble {
-  width: 100%;
-  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-s);
-  border-radius: var(--td-radius-medium);
-  background: var(--td-bg-color-container-hover);
-  font-size: var(--td-font-size-body-medium);
-  line-height: var(--td-line-height-body-medium);
-  color: var(--td-text-color-primary);
-  word-break: break-word;
-}
-
-.ai-conversations-message--user .ai-conversations-message__bubble {
-  background: var(--td-brand-color-light);
-}
-
-.ai-conversations-message--system .ai-conversations-message__bubble {
-  background: transparent;
-  font-size: var(--td-font-size-body-small);
-  color: var(--td-text-color-secondary);
-}
-
-.ai-conversations-message__text {
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-/* 思考过程折叠在正文上方：默认收起，想看再点开 */
-.ai-conversations-reasoning {
-  margin-bottom: var(--td-comp-margin-s);
-
-  :deep(.t-collapse-panel__header) {
-    padding: var(--td-comp-paddingTB-xs) 0;
-    font: var(--td-font-body-small);
-    color: var(--td-text-color-secondary);
-  }
-
-  :deep(.t-collapse-panel__body) {
-    background: transparent;
-  }
-
-  :deep(.t-collapse-panel__content) {
-    padding: var(--td-comp-margin-xs) 0 0;
-  }
-}
-
-.ai-conversations-reasoning__text {
-  margin: 0;
-  font-size: var(--td-font-size-body-small);
-  line-height: var(--td-line-height-body-small);
-  color: var(--td-text-color-secondary);
+.ai-conversations-message__content {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--td-text-color-primary, #1f2937);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .ai-conversations-tools {
-  margin-top: var(--td-comp-margin-s);
-  border-radius: var(--td-radius-medium);
-  overflow-x: auto;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--td-bg-color-container-hover, #f3f3f3);
 }
 
-@media (width <= 768px) {
-  .ai-conversations-page {
-    padding: 12px;
-  }
+.ai-conversations-tools__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--td-text-color-secondary, #4e5969);
+}
 
+.ai-conversations-tool {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.ai-conversations-tool__name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--td-brand-color);
+}
+
+.ai-conversations-tool__status {
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--td-bg-color-container, #fff);
+  color: var(--td-text-color-secondary, #4e5969);
+}
+
+.ai-conversations-tool__summary {
+  color: var(--td-text-color-primary, #1f2937);
+}
+
+.ai-conversations-tool__args {
+  flex: 1 0 100%;
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: var(--td-bg-color-container, #fff);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+@media (max-width: 768px) {
   .ai-conversations-filter__user,
   .ai-conversations-filter__channel {
     width: 100%;
-  }
-
-  .ai-conversations-message__body {
-    max-width: 100%;
   }
 }
 </style>
