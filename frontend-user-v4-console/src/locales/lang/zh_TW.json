@@ -2525,6 +2525,8 @@
         }
     },
     "ai": {
+        "reasoning": { "live": "思考中…", "done": "已深度思考" },
+        "recent": { "title": "最近對話" },
         "title": "AI 助理",
         "launcherLabel": "開啟 AI 助理",
         "openPageTitle": "在獨立頁開啟",

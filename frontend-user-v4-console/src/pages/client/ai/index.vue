@@ -148,7 +148,7 @@ import {
   StopCircleIcon,
 } from 'tdesign-icons-vue-next';
 import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import AiMessageList from '@/components/ai/AiMessageList.vue';
 import AiPermissionSwitch from '@/components/ai/AiPermissionSwitch.vue';
@@ -160,6 +160,7 @@ const PAGE_SIZE = 20;
 const DASHBOARD_PATH = '/client/dashboard';
 
 const router = useRouter();
+const route = useRoute();
 const store = useAiStore();
 
 const page = ref(1);
@@ -280,6 +281,12 @@ const handlePermissionChange = (mode: AiPermissionMode): void => {
 onMounted(async () => {
   await store.ensureReady();
   await loadConversations();
+
+  // 从浮窗「最近对话」跳过来时带 ?conversation=id，直接打开那一条继续聊
+  const target = Number.parseInt(String(route.query.conversation ?? ''), 10);
+  if (Number.isFinite(target) && target > 0) {
+    await store.openConversation(target);
+  }
 });
 </script>
 <style scoped lang="less">

@@ -41,7 +41,7 @@ final class ResponsesDriver implements AiProviderInterface
         return 'OpenAI Responses（/v1/responses）';
     }
 
-    public function chat(AiChatRequest $request, ?callable $onText = null): AiChatResult
+    public function chat(AiChatRequest $request, ?callable $onText = null, ?callable $onReasoning = null): AiChatResult
     {
         $url = $this->endpoint($this->baseUrl, self::PATH);
         $payload = $this->buildPayload($request, $onText !== null);
@@ -58,6 +58,7 @@ final class ResponsesDriver implements AiProviderInterface
         }
 
         $content = '';
+        $reasoning = '';
         $usage = new AiUsage;
         /** @var array<string, array{id: string, name: string, arguments: string}> $byItem */
         $byItem = [];
@@ -69,9 +70,21 @@ final class ResponsesDriver implements AiProviderInterface
             array_merge($headers, ['Accept: text/event-stream']),
             $payload,
             $request->timeoutSeconds,
-            function (string $event, string $data) use (&$content, &$usage, &$byItem, &$order, $onText): void {
+            function (string $event, string $data) use (&$content, &$reasoning, &$usage, &$byItem, &$order, $onText, $onReasoning): void {
                 $chunk = json_decode($data, true);
                 if (! is_array($chunk)) {
+                    return;
+                }
+
+                if ($event === 'response.reasoning_summary_text.delta' || $event === 'response.reasoning_text.delta') {
+                    $delta = is_string($chunk['delta'] ?? null) ? $chunk['delta'] : '';
+                    if ($delta !== '') {
+                        $reasoning .= $delta;
+                        if ($onReasoning !== null) {
+                            $onReasoning($delta);
+                        }
+                    }
+
                     return;
                 }
 
@@ -148,7 +161,7 @@ final class ResponsesDriver implements AiProviderInterface
             $calls[] = new AiToolCall($entry['id'], $entry['name'], $entry['arguments'] !== '' ? $entry['arguments'] : '{}');
         }
 
-        return new AiChatResult($content, $calls, $usage);
+        return new AiChatResult($content, $calls, $usage, '', $reasoning);
     }
 
     /**
@@ -226,12 +239,21 @@ final class ResponsesDriver implements AiProviderInterface
     private function parseResponse(array $decoded): AiChatResult
     {
         $text = '';
+        $reasoning = '';
         $calls = [];
         foreach ((array) ($decoded['output'] ?? []) as $item) {
             if (! is_array($item)) {
                 continue;
             }
             $type = (string) ($item['type'] ?? '');
+            if ($type === 'reasoning') {
+                foreach ((array) ($item['summary'] ?? []) as $summary) {
+                    if (is_array($summary)) {
+                        $reasoning .= (string) ($summary['text'] ?? '');
+                    }
+                }
+                continue;
+            }
             if ($type === 'message') {
                 foreach ((array) ($item['content'] ?? []) as $block) {
                     if (is_array($block) && ($block['type'] ?? '') === 'output_text') {
@@ -256,6 +278,7 @@ final class ResponsesDriver implements AiProviderInterface
             $calls,
             new AiUsage((int) ($usage['input_tokens'] ?? 0), (int) ($usage['output_tokens'] ?? 0)),
             (string) ($decoded['status'] ?? ''),
+            $reasoning,
         );
     }
 }

@@ -44,6 +44,8 @@ export interface AiClientOptions {
 
 export interface AiStreamHandlers {
   onMeta?: (payload: { conversation_id: number; message_id: number | null }) => void;
+  /** 推理模型的思考增量（DeepSeek reasoning_content / Claude thinking） */
+  onReasoning?: (text: string) => void;
   onDelta?: (text: string) => void;
   onTool?: (run: AiToolRun) => void;
   onPendingAction?: (action: AiPendingAction) => void;
@@ -51,6 +53,7 @@ export interface AiStreamHandlers {
     conversation_id: number;
     message_id: number | null;
     content: string;
+    reasoning?: string;
     tool_runs: AiToolRun[];
     pending_actions: AiPendingAction[];
     permission_mode: AiPermissionMode;
@@ -218,6 +221,13 @@ export function createAiClient(options: AiClientOptions): AiClient {
             const parsed = parseSseJson<{ text?: string }>(data);
             if (parsed?.text) {
               handlers.onDelta?.(parsed.text);
+            }
+            return;
+          }
+          if (event === 'reasoning') {
+            const parsed = parseSseJson<{ text?: string }>(data);
+            if (parsed?.text) {
+              handlers.onReasoning?.(parsed.text);
             }
             return;
           }
