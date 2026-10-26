@@ -21,6 +21,8 @@
       </t-layout>
     </template>
     <setting-com />
+    <!-- AI 助手浮球与设置抽屉同级挂载：切路由不销毁，会话不随页面切换丢失 -->
+    <ai-admin-launcher />
   </div>
 </template>
 <script setup lang="ts">
@@ -30,6 +32,7 @@ import { storeToRefs } from 'pinia';
 import { computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
+import AiAdminLauncher from '@/components/ai/AiAdminLauncher.vue';
 import { prefix } from '@/config/global';
 import { useSettingStore, useTabsRouterStore } from '@/store';
 

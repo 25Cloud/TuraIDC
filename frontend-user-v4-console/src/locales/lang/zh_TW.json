@@ -2523,5 +2523,76 @@
             "remarkSaveFailed": "備註儲存失敗",
             "ipCopied": "公網 IP 已複製"
         }
+    },
+    "ai": {
+        "title": "AI 助理",
+        "launcherLabel": "開啟 AI 助理",
+        "openPageTitle": "在獨立頁開啟",
+        "collapse": "收合為浮動視窗",
+        "newConversation": "新增對話",
+        "inputPlaceholder": "描述你的問題，Enter 傳送，Shift + Enter 換行",
+        "send": "傳送",
+        "stop": "停止產生",
+        "thinking": "正在思考…",
+        "empty": {
+            "title": "有什麼可以幫你？",
+            "description": "可以詢問實例、帳單、餘額，也能幫你續費、重裝與提交工單。"
+        },
+        "error": {
+            "fallback": "AI 服務暫時無法使用，請稍後再試"
+        },
+        "context": {
+            "viewing": "正在檢視：{subject}",
+            "none": "目前頁面沒有關聯內容"
+        },
+        "permission": {
+            "label": "權限模式",
+            "readOnly": "僅可檢視",
+            "confirm": "完整權限",
+            "autoApprove": "自動核准（beta）"
+        },
+        "tool": {
+            "title": "工具呼叫",
+            "count": "{count} 次",
+            "name": "工具",
+            "risk": {
+                "read": "查詢",
+                "write": "操作",
+                "dangerous": "高風險操作"
+            },
+            "status": {
+                "done": "已完成",
+                "pending": "待確認",
+                "rejected": "已取消",
+                "failed": "失敗"
+            }
+        },
+        "confirm": {
+            "title": "待確認操作",
+            "confirm": "確認執行",
+            "cancel": "取消",
+            "arguments": "參數",
+            "impact": "影響",
+            "amount": "金額",
+            "amountValue": "¥{amount}",
+            "expiresAt": "有效期至 {time}",
+            "expired": "操作已過期，請重新發起"
+        },
+        "conversation": {
+            "list": "歷史對話",
+            "empty": "還沒有歷史對話",
+            "untitled": "未命名對話",
+            "messageCount": "{count} 則訊息",
+            "updatedAt": "最近更新 {time}",
+            "rename": "重新命名",
+            "renamePlaceholder": "請輸入對話名稱",
+            "renameSave": "儲存",
+            "renameCancel": "取消",
+            "delete": "刪除",
+            "deleteConfirm": "刪除後無法復原，確定要刪除這個對話嗎？"
+        },
+        "quota": {
+            "remaining": "今日剩餘 {remaining} / {total} 則"
+        }
     }
 }

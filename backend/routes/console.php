@@ -62,9 +62,16 @@ $pruneOpenApiUsageLogs = Schedule::command('open-api:prune-usage-logs')
     ->name('open-api-prune-usage-logs')
     ->runInBackground();
 
+// AI 会话保留期清理：每天凌晨归档过期会话，并物理删除软删满 7 天的会话与工具记录。
+$pruneAiConversations = Schedule::command('ai:prune-conversations')
+    ->dailyAt('04:40')
+    ->name('ai-prune-conversations')
+    ->runInBackground();
+
 if ($shouldUseScheduleMutex) {
     $cleanupUpstreamUploads->withoutOverlapping(2);
     $pruneOpenApiUsageLogs->withoutOverlapping(2);
+    $pruneAiConversations->withoutOverlapping(2);
 }
 
 if ($shouldUseScheduleMutex) {

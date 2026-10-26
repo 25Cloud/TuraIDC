@@ -109,6 +109,7 @@ class PermissionCatalogService
             AdminPermissions::SCHEDULE_VIEW, AdminPermissions::SCHEDULE_TRIGGER, AdminPermissions::SCHEDULE_RETRY, AdminPermissions::SCHEDULE_QUEUE_MANAGE => 'system_schedule',
             AdminPermissions::SITE_VIEW, AdminPermissions::SITE_MANAGE => 'site_ops',
             AdminPermissions::LOG_LIST, AdminPermissions::LOG_MANAGE => 'system_audit',
+            AdminPermissions::AI_VIEW, AdminPermissions::AI_MANAGE => 'system_config',
             default => $this->detectModule($permission),
         };
     }
@@ -332,6 +333,8 @@ class PermissionCatalogService
             AdminPermissions::SITE_MANAGE => '管理站点展示',
             AdminPermissions::LOG_LIST => '查看日志',
             AdminPermissions::LOG_MANAGE => '管理日志',
+            AdminPermissions::AI_VIEW => '查看 AI 用量与会话',
+            AdminPermissions::AI_MANAGE => '配置 AI 网关',
             AdminPermissions::REFERRAL_LIST => '查看推广返利',
             AdminPermissions::FINANCE_REPORT => '查看财务报表',
             AdminPermissions::FINANCE_WITHDRAW => '处理提现',

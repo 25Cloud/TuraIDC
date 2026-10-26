@@ -9,6 +9,10 @@
           <RouteLoadingFallback v-else with-header />
         </Transition>
       </router-view>
+
+      <!-- AI 导购浮窗只能挂在这里：WebsiteLayout.vue 内部没有 slot，
+          layout 层拿不到稳定挂点，而 App.vue 在路由外层，切页不销毁浮球 -->
+      <AiGuideLauncher />
     </div>
   </el-config-provider>
 </template>
@@ -16,6 +20,7 @@
 <script setup>
 import { computed } from "vue";
 
+import AiGuideLauncher from "@/components/ai/AiGuideLauncher.vue";
 import RouteLoadingFallback from "@/components/common/RouteLoadingFallback.vue";
 import { useLocale } from "@/locales/useLocale";
 

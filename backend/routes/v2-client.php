@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Client\V2\ActionController;
+use App\Http\Controllers\Client\V2\AiController;
 use App\Http\Controllers\Client\V2\ApiKeyController;
 use App\Http\Controllers\Client\V2\UpstreamApiController;
 use App\Http\Controllers\Client\V2\AuthController;
@@ -201,4 +202,21 @@ Route::middleware(['auth:sanctum', 'ensure.client'])->group(function (): void {
         ->middleware('throttle:10,1,client-ticket-recall');
     Route::post('/tickets/{id}/closures', [TicketWorkflowController::class, 'close'])->middleware('throttle:10,1,client-ticket-close');
     Route::post('/tickets/{id}/reopen', [TicketWorkflowController::class, 'reopen'])->middleware('throttle:10,1,client-ticket-reopen');
+
+    // AI 助手：对话、会话管理、确认协议。流式端点单独限流，避免长连接占满配额
+    Route::get('/ai/bootstrap', [AiController::class, 'bootstrap']);
+    Route::get('/ai/conversations', [AiController::class, 'conversations']);
+    Route::post('/ai/conversations', [AiController::class, 'storeConversation'])
+        ->middleware('throttle:20,1,client-ai-conversation-store');
+    Route::get('/ai/conversations/{conversation}', [AiController::class, 'showConversation']);
+    Route::patch('/ai/conversations/{conversation}', [AiController::class, 'updateConversation']);
+    Route::delete('/ai/conversations/{conversation}', [AiController::class, 'destroyConversation']);
+    Route::post('/ai/messages', [AiController::class, 'messages'])
+        ->middleware('throttle:20,1,client-ai-message');
+    Route::post('/ai/messages/stream', [AiController::class, 'stream'])
+        ->middleware('throttle:10,1,client-ai-stream');
+    Route::post('/ai/actions/{action}/confirm', [AiController::class, 'confirmAction'])
+        ->middleware('throttle:30,1,client-ai-confirm');
+    Route::post('/ai/actions/{action}/reject', [AiController::class, 'rejectAction'])
+        ->middleware('throttle:30,1,client-ai-reject');
 });

@@ -1781,6 +1781,7 @@ import {
   Document,
   Ticket,
 } from "@element-plus/icons-vue";
+import { aiContext } from "@turaidc/shared/runtime";
 import { useWebsiteProductsPage } from "@/domains/products/useWebsiteProductsPage";
 import { resolveCpuBrandBadge } from "@/domains/products/cpuBrandBadge";
 import MobileOsPicker from "@/components/MobileOsPicker.vue";
@@ -2055,12 +2056,48 @@ function setupAllocationFooterObserver() {
   }
 }
 
+/* ===== AI 导购上下文：选购页当前选中的商品 =====
+ * 只用于装配提示词与工具默认参数，不构成权限；
+ * 换商品时清掉上一次注册，避免浮窗顶着旧商品名。 */
+let clearAiProductContext = null;
+
+function syncAiProductContext(nextProduct) {
+  if (clearAiProductContext) {
+    clearAiProductContext();
+    clearAiProductContext = null;
+  }
+
+  const productId = Number(nextProduct?.id || 0);
+  if (!productId) {
+    return;
+  }
+
+  clearAiProductContext = aiContext.register({
+    type: "product",
+    id: productId,
+    label: resolveProductDisplayName(nextProduct) || "",
+  });
+}
+
+watch(
+  selectedProduct,
+  (nextProduct) => {
+    syncAiProductContext(nextProduct);
+  },
+  { immediate: true },
+);
+
 onMounted(() => {
   nextTick(setupAllocationFooterObserver);
 });
 
 onBeforeUnmount(() => {
   cleanupAllocationFooterObserver();
+  // 离开选购页后浮窗不该继续说「正在看：某个商品」
+  if (clearAiProductContext) {
+    clearAiProductContext();
+    clearAiProductContext = null;
+  }
 });
 
 watch([isMobile, selectedProduct], () => {

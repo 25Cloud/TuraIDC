@@ -4,6 +4,7 @@ import type { RouteRecordRaw } from 'vue-router';
 
 import Layout from '@/layouts/index.vue';
 
+import { aiRoutes } from './ai';
 import { contentRoutes } from './content';
 import { dashboardRoutes } from './dashboard';
 import { financeRoutes } from './finance';
@@ -37,6 +38,7 @@ const adminRoutes: RouteRecordRaw[] = [
       ...contentRoutes,
       ...marketingRoutes,
       ...systemRoutes,
+      ...aiRoutes,
     ],
   },
 ];

@@ -56,8 +56,11 @@ class HeartbeatSchedulerTest extends TestCase
         $this->assertSame(1, substr_count($output, 'scheduler:heartbeat'));
         $this->assertSame(1, substr_count($output, 'scheduler:liveness'));
         $this->assertSame(1, substr_count($output, 'queue:drain'));
-        // 分钟级除心跳/存活/排空外，另有工单上游附件清理任务共用同一频率
-        $this->assertSame(4, substr_count($output, '* * * * *'));
+        // 分钟级除心跳/存活/排空外，另有工单上游附件清理任务共用同一频率。
+        // 不能按字面 '* * * * *' 计数：schedule:list 的输出会把表达式渲染成 '*  * * * *'（首个星号后两个空格），
+        // 字面量比对会恒为 0，因此按"四个星号被空白分隔"来数。
+        preg_match_all('/\*\s+\*\s+\*\s+\*/', $output, $minuteLevelMatches);
+        $this->assertSame(4, count($minuteLevelMatches[0]));
         $this->assertStringNotContainsString('接口认证刷新', $output);
     }
 

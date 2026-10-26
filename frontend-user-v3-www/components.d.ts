@@ -12,6 +12,10 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AiGuideConfirmCard: typeof import('./src/components/ai/AiGuideConfirmCard.vue')['default']
+    AiGuideLauncher: typeof import('./src/components/ai/AiGuideLauncher.vue')['default']
+    AiGuideMessages: typeof import('./src/components/ai/AiGuideMessages.vue')['default']
+    AiGuidePanel: typeof import('./src/components/ai/AiGuidePanel.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElConfigProvider: typeof import('element-plus/es')['ElConfigProvider']
@@ -25,6 +29,7 @@ declare module 'vue' {
     ElPagination: typeof import('element-plus/es')['ElPagination']
     ElPopover: typeof import('element-plus/es')['ElPopover']
     ElSelect: typeof import('element-plus/es')['ElSelect']
+    ElSkeleton: typeof import('element-plus/es')['ElSkeleton']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     MobileOptionPicker: typeof import('./src/components/MobileOptionPicker.vue')['default']
     MobileOsPicker: typeof import('./src/components/MobileOsPicker.vue')['default']
@@ -41,6 +46,10 @@ declare module 'vue' {
 
 // For TSX support
 declare global {
+  const AiGuideConfirmCard: typeof import('./src/components/ai/AiGuideConfirmCard.vue')['default']
+  const AiGuideLauncher: typeof import('./src/components/ai/AiGuideLauncher.vue')['default']
+  const AiGuideMessages: typeof import('./src/components/ai/AiGuideMessages.vue')['default']
+  const AiGuidePanel: typeof import('./src/components/ai/AiGuidePanel.vue')['default']
   const ElAlert: typeof import('element-plus/es')['ElAlert']
   const ElButton: typeof import('element-plus/es')['ElButton']
   const ElConfigProvider: typeof import('element-plus/es')['ElConfigProvider']
@@ -54,6 +63,7 @@ declare global {
   const ElPagination: typeof import('element-plus/es')['ElPagination']
   const ElPopover: typeof import('element-plus/es')['ElPopover']
   const ElSelect: typeof import('element-plus/es')['ElSelect']
+  const ElSkeleton: typeof import('element-plus/es')['ElSkeleton']
   const ElTooltip: typeof import('element-plus/es')['ElTooltip']
   const MobileOptionPicker: typeof import('./src/components/MobileOptionPicker.vue')['default']
   const MobileOsPicker: typeof import('./src/components/MobileOsPicker.vue')['default']

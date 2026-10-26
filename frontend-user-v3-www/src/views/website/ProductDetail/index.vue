@@ -1130,6 +1130,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus/es/components/message/index.mjs";
+import { aiContext } from "@turaidc/shared/runtime";
 import siteApi from "@/api/site";
 import { t } from "@/locales";
 import { useUserStore } from "@/stores/user";
@@ -2334,6 +2335,38 @@ watch(
   },
   { immediate: true },
 );
+
+/* ===== AI 导购上下文：告诉浮窗「用户正在看哪个商品」 =====
+ * 只影响提示词与工具默认参数，不构成任何权限；
+ * 商品切换时先清旧注册再注册新的，离开页面执行清理，避免上下文串到别的页。 */
+let clearAiProductContext = null;
+
+function syncAiProductContext(nextProduct) {
+  if (clearAiProductContext) {
+    clearAiProductContext();
+    clearAiProductContext = null;
+  }
+
+  const productId = Number(nextProduct?.id || 0);
+  if (!productId) {
+    return;
+  }
+
+  clearAiProductContext = aiContext.register({
+    type: "product",
+    id: productId,
+    label: resolveProductDisplayName(nextProduct) || "",
+  });
+}
+
+watch(
+  product,
+  (nextProduct) => {
+    syncAiProductContext(nextProduct);
+  },
+  { immediate: true },
+);
+
 onMounted(() => {
   updateMobileState();
   window.addEventListener("resize", updateMobileState);
@@ -2347,6 +2380,11 @@ onBeforeUnmount(() => {
   // 使仍在途的 loadProduct 响应失效
   productLoadToken += 1;
   window.removeEventListener("resize", updateMobileState);
+  // 离开商品页后浮窗不该继续说「正在看：某个商品」
+  if (clearAiProductContext) {
+    clearAiProductContext();
+    clearAiProductContext = null;
+  }
 });
 </script>
 

@@ -2523,5 +2523,76 @@
             "remarkSaveFailed": "备注保存失败",
             "ipCopied": "公网 IP 已复制"
         }
+    },
+    "ai": {
+        "title": "AI 助手",
+        "launcherLabel": "打开 AI 助手",
+        "openPageTitle": "在独立页打开",
+        "collapse": "收起为浮窗",
+        "newConversation": "新建会话",
+        "inputPlaceholder": "描述你的问题，Enter 发送，Shift + Enter 换行",
+        "send": "发送",
+        "stop": "停止生成",
+        "thinking": "正在思考…",
+        "empty": {
+            "title": "有什么可以帮你？",
+            "description": "可以询问实例、账单、余额，也能帮你续费、重装与提交工单。"
+        },
+        "error": {
+            "fallback": "AI 服务暂不可用，请稍后再试"
+        },
+        "context": {
+            "viewing": "正在查看：{subject}",
+            "none": "当前页面未关联上下文"
+        },
+        "permission": {
+            "label": "权限模式",
+            "readOnly": "仅可查看",
+            "confirm": "完全权限",
+            "autoApprove": "自动审批（beta）"
+        },
+        "tool": {
+            "title": "工具调用",
+            "count": "{count} 次",
+            "name": "工具",
+            "risk": {
+                "read": "查询",
+                "write": "操作",
+                "dangerous": "高危操作"
+            },
+            "status": {
+                "done": "已完成",
+                "pending": "待确认",
+                "rejected": "已取消",
+                "failed": "失败"
+            }
+        },
+        "confirm": {
+            "title": "待确认操作",
+            "confirm": "确认执行",
+            "cancel": "取消",
+            "arguments": "参数",
+            "impact": "影响",
+            "amount": "金额",
+            "amountValue": "¥{amount}",
+            "expiresAt": "有效期至 {time}",
+            "expired": "操作已过期，请重新发起"
+        },
+        "conversation": {
+            "list": "历史会话",
+            "empty": "还没有历史会话",
+            "untitled": "未命名会话",
+            "messageCount": "{count} 条消息",
+            "updatedAt": "最近更新 {time}",
+            "rename": "重命名",
+            "renamePlaceholder": "请输入会话名称",
+            "renameSave": "保存",
+            "renameCancel": "取消",
+            "delete": "删除",
+            "deleteConfirm": "删除后不可恢复，确定删除该会话吗？"
+        },
+        "quota": {
+            "remaining": "今日剩余 {remaining} / {total} 条"
+        }
     }
 }

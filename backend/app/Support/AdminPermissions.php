@@ -103,6 +103,10 @@ class AdminPermissions
 
     public const LOG_MANAGE = 'log.manage';
 
+    public const AI_VIEW = 'ai.view';
+
+    public const AI_MANAGE = 'ai.manage';
+
     public const REFERRAL_LIST = 'referral.list';
 
     public const FINANCE_REPORT = 'finance.report';
@@ -236,6 +240,8 @@ class AdminPermissions
             self::AGENT_DISCOUNT_MANAGE,
             self::OPEN_API_VIEW,
             self::OPEN_API_MANAGE,
+            self::AI_VIEW,
+            self::AI_MANAGE,
             self::CONTENT_MANAGE,
         ])));
     }

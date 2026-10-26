@@ -1118,5 +1118,48 @@
       "note": "The contact details above are placeholders and may be replaced before the official channel launches. The commercial license and CLA are drafts and require legal review before signing."
     },
     "notice": "This page summarizes licensing for engineering purposes and is not legal advice. The formal terms are LICENSE, LICENSE-COMMERCIAL.md and the signed authorization documents."
+  },
+  "ai": {
+    "launcher": {
+      "label": "AI Guide",
+      "loginRequired": "Sign in to use the AI guide"
+    },
+    "panel": {
+      "title": "AI Guide",
+      "close": "Close",
+      "newConversation": "New chat",
+      "subject": "Viewing: {label}",
+      "empty": "Tell me your use case, region and budget, and I will pick a configuration for you.",
+      "thinking": "Thinking…",
+      "placeholder": "e.g. a small site with a dozen concurrent visitors, CNY 50/month budget — which plan fits?",
+      "send": "Send",
+      "stop": "Stop",
+      "disabled": "The AI guide is not enabled on this site yet. Please contact support.",
+      "quota": "Used {used}/{limit} today",
+      "quotaUnlimited": "Used {used} today"
+    },
+    "message": {
+      "you": "You",
+      "assistant": "AI Guide",
+      "system": "System"
+    },
+    "mode": {
+      "readOnly": "Read only",
+      "confirm": "Confirm writes",
+      "autoApprove": "Auto run"
+    },
+    "risk": {
+      "read": "Lookup",
+      "write": "Change",
+      "dangerous": "High risk"
+    },
+    "confirm": {
+      "amount": "Amount: CNY {amount}",
+      "impact": "Impact: {impact}",
+      "expiresIn": "Valid for {minutes} more minutes",
+      "expired": "This confirmation has expired, please start again",
+      "confirm": "Confirm",
+      "reject": "Cancel"
+    }
   }
 }

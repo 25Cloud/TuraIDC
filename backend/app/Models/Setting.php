@@ -32,6 +32,8 @@ class Setting extends Model
         'geetest_captcha_key',
         'alipay_private_key',
         'alipay_public_key',
+        // AI 网关密钥（group=ai）：只存密文，接口只回 has_value 与掩码
+        'provider_api_key',
     ];
 
     /**

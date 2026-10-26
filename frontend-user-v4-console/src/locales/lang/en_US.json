@@ -2523,5 +2523,76 @@
             "remarkSaveFailed": "Failed to save the remark",
             "ipCopied": "Public IP copied"
         }
+    },
+    "ai": {
+        "title": "AI Assistant",
+        "launcherLabel": "Open AI assistant",
+        "openPageTitle": "Open in full page",
+        "collapse": "Collapse to floating panel",
+        "newConversation": "New conversation",
+        "inputPlaceholder": "Describe your question. Enter to send, Shift + Enter for a new line",
+        "send": "Send",
+        "stop": "Stop",
+        "thinking": "Thinking…",
+        "empty": {
+            "title": "How can I help?",
+            "description": "Ask about your instances, invoices or balance. I can also renew, reinstall and open tickets for you."
+        },
+        "error": {
+            "fallback": "The AI service is temporarily unavailable, please try again later"
+        },
+        "context": {
+            "viewing": "Viewing: {subject}",
+            "none": "No page context"
+        },
+        "permission": {
+            "label": "Permission mode",
+            "readOnly": "Read only",
+            "confirm": "Full access",
+            "autoApprove": "Auto approve (beta)"
+        },
+        "tool": {
+            "title": "Tool calls",
+            "count": "{count} calls",
+            "name": "Tool",
+            "risk": {
+                "read": "Read",
+                "write": "Write",
+                "dangerous": "Dangerous"
+            },
+            "status": {
+                "done": "Done",
+                "pending": "Pending",
+                "rejected": "Rejected",
+                "failed": "Failed"
+            }
+        },
+        "confirm": {
+            "title": "Confirmation required",
+            "confirm": "Confirm",
+            "cancel": "Cancel",
+            "arguments": "Arguments",
+            "impact": "Impact",
+            "amount": "Amount",
+            "amountValue": "¥{amount}",
+            "expiresAt": "Expires at {time}",
+            "expired": "This action has expired, please start again"
+        },
+        "conversation": {
+            "list": "History",
+            "empty": "No conversations yet",
+            "untitled": "Untitled conversation",
+            "messageCount": "{count} messages",
+            "updatedAt": "Updated {time}",
+            "rename": "Rename",
+            "renamePlaceholder": "Conversation name",
+            "renameSave": "Save",
+            "renameCancel": "Cancel",
+            "delete": "Delete",
+            "deleteConfirm": "This cannot be undone. Delete this conversation?"
+        },
+        "quota": {
+            "remaining": "{remaining} / {total} messages left today"
+        }
     }
 }

@@ -1118,5 +1118,48 @@
       "note": "以上聯絡方式為工程佔位，正式管道發布前可替換；商業授權與 CLA 條款為草案，簽署前需法務複核。"
     },
     "notice": "本頁為工程側授權說明，不構成法律意見；正式條款以 LICENSE、LICENSE-COMMERCIAL.md 與雙方簽署的授權文件為準。"
+  },
+  "ai": {
+    "launcher": {
+      "label": "AI 導購",
+      "loginRequired": "登入後使用 AI 導購"
+    },
+    "panel": {
+      "title": "AI 導購",
+      "close": "收起",
+      "newConversation": "新對話",
+      "subject": "正在看：{label}",
+      "empty": "說說你的用途、地區和預算，我來幫你挑配置。",
+      "thinking": "正在思考…",
+      "placeholder": "例如：十來人同時存取的小站，預算 50 元/月，選哪個配置？",
+      "send": "傳送",
+      "stop": "停止",
+      "disabled": "站點尚未開啟 AI 導購，請透過工單聯絡客服。",
+      "quota": "今日已用 {used}/{limit} 則",
+      "quotaUnlimited": "今日已用 {used} 則"
+    },
+    "message": {
+      "you": "我",
+      "assistant": "AI 導購",
+      "system": "系統"
+    },
+    "mode": {
+      "readOnly": "唯讀",
+      "confirm": "確認後執行",
+      "autoApprove": "自動執行"
+    },
+    "risk": {
+      "read": "查詢",
+      "write": "操作",
+      "dangerous": "高風險操作"
+    },
+    "confirm": {
+      "amount": "涉及金額：¥{amount}",
+      "impact": "影響：{impact}",
+      "expiresIn": "剩餘 {minutes} 分鐘有效",
+      "expired": "該確認已過期，請重新發起",
+      "confirm": "確認執行",
+      "reject": "取消"
+    }
   }
 }

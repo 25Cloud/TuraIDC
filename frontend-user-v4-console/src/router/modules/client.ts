@@ -1,6 +1,7 @@
 import {
   ApiIcon,
   CatalogIcon,
+  ChatIcon,
   CouponIcon,
   DashboardIcon,
   FileIcon,
@@ -354,6 +355,22 @@ export default [
             meta: { title: title('API 凭据', 'API Credentials', 'API 憑據'), requireAuth: true, hidden: true },
           },
         ],
+      },
+      {
+        // AI 助手独立页：浮窗「在独立页打开」与侧边栏都进这里。
+        // 路径写成绝对形式（等价于 client/ai）：菜单直接用路由记录的 path 做导航，
+        // 相对路径会按当前页末级段解析，从详情页点进去会跳到错误地址。
+        // keepAlive 关闭，避免离开后仍挂着一份流式会话。
+        path: '/client/ai',
+        name: 'ClientAi',
+        component: () => import('@/pages/client/ai/index.vue'),
+        meta: {
+          title: title('AI 助手', 'AI Assistant', 'AI 助理'),
+          icon: icon(ChatIcon),
+          requireAuth: true,
+          orderNo: 110,
+          keepAlive: false,
+        },
       },
       {
         path: 'order/create',

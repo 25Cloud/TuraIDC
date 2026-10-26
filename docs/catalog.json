@@ -286,6 +286,12 @@
       "review_by": "2026-12-13"
     },
     {
+      "path": "internal/designs/architecture/2026-10-26-ai-assistant.md",
+      "status": "active",
+      "summary": "AI 助手与 AI 导购设计：模型网关、16 个工具分级、写操作确认协议、全局浮窗与控制台独立页形态。",
+      "review_by": "2026-11-25"
+    },
+    {
       "path": "internal/designs/architecture/plugin-architecture.md",
       "status": "needs-review",
       "summary": "插件架构与扩展边界。"
@@ -351,6 +357,12 @@
       "status": "active",
       "summary": "管理端与用户端体验整改：补齐可点击链接、登录验证码首屏、实例台预加载与遮罩、实例详情信息架构、上游跳转、语言自适应。",
       "review_by": "2026-11-14"
+    },
+    {
+      "path": "internal/execution-plans/active/ai-assistant-2026-10-26.md",
+      "status": "active",
+      "summary": "AI 助手与 AI 导购实施计划：P0 网关骨架、P1 只读对话、P2 确认协议与控制台独立页、P3 流式与官网浮窗、P4 管理端治理。",
+      "review_by": "2026-11-25"
     },
     {
       "path": "internal/execution-plans/active/backend-expert-review-remediation-2026-08-13.md",

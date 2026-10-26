@@ -1118,5 +1118,48 @@
       "note": "以上联系方式为工程占位，正式渠道发布前可替换；商业许可与 CLA 条款为草案，签署前需法务复核。"
     },
     "notice": "本页为工程侧许可说明，不构成法律意见；正式条款以 LICENSE、LICENSE-COMMERCIAL.md 与双方签署的授权文件为准。"
+  },
+  "ai": {
+    "launcher": {
+      "label": "AI 导购",
+      "loginRequired": "登录后使用 AI 导购"
+    },
+    "panel": {
+      "title": "AI 导购",
+      "close": "收起",
+      "newConversation": "新对话",
+      "subject": "正在看：{label}",
+      "empty": "说说你的用途、地区和预算，我来帮你挑配置。",
+      "thinking": "正在思考…",
+      "placeholder": "例如：十来人同时访问的小站，预算 50 元/月，选哪个配置？",
+      "send": "发送",
+      "stop": "停止",
+      "disabled": "站点尚未开启 AI 导购，请通过工单联系客服。",
+      "quota": "今日已用 {used}/{limit} 条",
+      "quotaUnlimited": "今日已用 {used} 条"
+    },
+    "message": {
+      "you": "我",
+      "assistant": "AI 导购",
+      "system": "系统"
+    },
+    "mode": {
+      "readOnly": "只读",
+      "confirm": "确认后执行",
+      "autoApprove": "自动执行"
+    },
+    "risk": {
+      "read": "查询",
+      "write": "操作",
+      "dangerous": "高危操作"
+    },
+    "confirm": {
+      "amount": "涉及金额：¥{amount}",
+      "impact": "影响：{impact}",
+      "expiresIn": "剩余 {minutes} 分钟有效",
+      "expired": "该确认已过期，请重新发起",
+      "confirm": "确认执行",
+      "reject": "取消"
+    }
   }
 }
