@@ -121,6 +121,8 @@ export function useAiChat(client: AiClient, options: UseAiChatOptions) {
       tool_runs: runs,
       pending_actions: [],
       created_at: row.created_at,
+      // 历史消息已经落定，缺省值会让「正在思考」占位一直挂着
+      started: true,
     };
   };
 
