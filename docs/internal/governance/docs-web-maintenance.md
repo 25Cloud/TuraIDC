@@ -4,17 +4,21 @@
 
 ## 1. 目录职责
 
-| 路径                                                          | 职责                                                                       |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `docs/guide/`                                                 | 使用者文档（站长/运营）：部署、初始配置、日常运营、维护、迁移、排障。      |
-| `docs/develop/`                                               | 开发者文档：架构、工程规范、数据库、接口、插件与本地开发。                 |
-| `docs/internal/`                                              | 维护者内部记录：执行计划、设计、产品规格、修复记录、治理规则。**不上站**。 |
-| `docs-web/`                                                   | VitePress 应用、主题、首页组件与静态品牌资源。                             |
-| `docs-web/.vitepress/config.ts`                               | 站点元信息、导航、两套侧栏、内部目录排除与中文标题约束。                   |
-| `docs-web/.vitepress/theme/Layout.vue`                        | 首页与默认文档布局的切换入口（挂载 Nolebase 增强阅读面板）。               |
-| `docs-web/.vitepress/theme/components/HomePortal.vue`         | 文档官网首页：使用者与开发者双入口分区。                                   |
-| `docs-web/.vitepress/theme/components/DeploymentSelector.vue` | 部署安装页的生产部署方式选择器。                                           |
-| `docs-web/public/branding/`                                   | Logo 与 favicon 等原样复制的静态资源。                                     |
+| 路径                                                  | 职责                                                                       |
+| ----------------------------------------------------- | -------------------------------------------------------------------------- |
+| `docs/guide/`                                         | 使用者文档（站长/运营）：部署、初始配置、日常运营、维护、迁移、排障。      |
+| `docs/develop/`                                       | 开发者文档：架构、工程规范、数据库、接口、插件与本地开发。                 |
+| `docs/internal/`                                      | 维护者内部记录：执行计划、设计、产品规格、修复记录、治理规则。**不上站**。 |
+| `docs/en/`                                            | 英译镜像子树，URL 前缀 `/en/`；人工/AI 翻译，允许滞后。                    |
+| `docs/zh-tw/` · `docs/zh-hk/`                         | 两种繁体镜像子树，URL 前缀 `/zh-tw/` `/zh-hk/`；**脚本生成，禁止手改**。   |
+| `docs/internal/i18n/`                                 | 文档站翻译规则与术语表（维护者用，不上站）。                               |
+| `docs-web/`                                           | VitePress 应用、主题、首页组件与静态品牌资源。                             |
+| `docs-web/.vitepress/config.ts`                       | 站点元信息、四语言 locales、侧栏蓝图、覆盖校验与 hreflang。                |
+| `docs-web/.vitepress/theme/Layout.vue`                | 各语言首页与默认文档布局的切换入口（挂载 Nolebase 增强阅读面板）。         |
+| `docs-web/.vitepress/theme/components/HomePortal.vue` | 文档官网首页：使用者与开发者双入口分区，文案按语言取自 `theme/data/`。     |
+| `docs-web/.vitepress/theme/data/siteChrome.*.json`    | 首页与部署选择器的四语言文案；简体是源，繁体由 `docs:i18n:trad` 生成。     |
+| `backend/scripts/i18n/docs-i18n.mjs`                  | 译文维护脚本：status / trad / links / sync-code / stamp / verify。         |
+| `docs-web/public/branding/`                           | Logo 与 favicon 等原样复制的静态资源。                                     |
 
 不要在 `docs-web/` 中复制 Markdown 正文。正文始终直接维护在 `docs/`，VitePress 通过 `srcDir: "../docs"` 读取；`srcExclude: ["internal/**"]` 把内部记录挡在站点产物之外。
 
@@ -41,12 +45,32 @@ npx vitepress dev --host 127.0.0.1 --port 5176
 
 ### 中文内容与英文 URL
 
-- 文档正文、文章一级标题、导航文字和侧栏文字保持中文。
+- 简体中文（根路径）的文档正文、文章一级标题、导航文字和侧栏文字保持中文。
 - `docs/` 下的目录名和文件名必须使用 ASCII 英文；Markdown 文件名使用 `kebab-case`。一次性修复记录用 `YYYY-MM-DD-英文词组.md`。
 - Markdown 内部链接必须指向英文路径，不得重新引用迁移前的中文路径。
-- 每篇文章必须包含中文一级标题，例如 `# 宝塔面板部署指南`。
+- 每篇文章必须包含一级标题；简体与繁体页面必须含汉字，英文页面不得含汉字（构建期硬门禁）。
 - 页面标题与侧栏文章名称从文章一级标题读取，不从英文文件名生成。
 - 不为旧 URL 增加重定向页或运行时兼容层。
+
+### 四语言镜像与翻译
+
+语言集合、目录镜像、front matter 契约与翻译硬规则见 [文档站多语言维护规则](../i18n/README.md)，术语见 [术语表](../i18n/glossary.md)。这里只保留最常用的一条链路：
+
+```cmd
+:: 改完中文页后重生成两种繁体（不重跑构建会失败）
+pnpm run docs:i18n:trad
+
+:: 看哪些英文页还没翻 / 已过期
+pnpm run docs:i18n
+
+:: 翻译完成后写入源哈希，再自检
+node backend/scripts/i18n/docs-i18n.mjs stamp en
+node backend/scripts/i18n/docs-i18n.mjs verify en
+```
+
+英文译文允许滞后于中文源，`docs:check` 只报非阻断 finding；`pnpm run docs:i18n:check` 才把滞后当失败。繁体是机器生成物，中文一改就必须重跑，否则 `docs:check` 直接失败。
+
+`internal/` 与两份生成物（`develop/database.md`、`develop/api/backend-api-catalog.md`）没有译文镜像：繁体/英文页面里的对应链接会被脚本改写成 GitHub 链接或中文页的站点绝对路径，不要手工维护这些链接。
 
 新增页面示例：
 
@@ -80,9 +104,9 @@ docs/guide/deploy/reverse-proxy.md
 
 ### 侧栏与阅读顺序
 
-侧栏顺序在 `config.ts` 中**显式维护**（`guideSidebar` 与 `developSidebar`），不按文件名排序——文档的阅读顺序是产品决策。新增页面时必须同时把它加进对应侧栏数组，否则页面只能靠直链访问。
+侧栏顺序在 `config.ts` 的 `guideBlueprint` 与 `developBlueprint` 中**显式维护**，不按文件名排序——文档的阅读顺序是产品决策。四种语言共用同一份页面清单与顺序，只把节标题按语言替换；新增页面时改一处，四种语言的侧栏同步生效，否则页面只能靠直链访问。
 
-侧栏与导航的显示文字来自正文中文一级标题；缺中文标题时构建直接失败，这是有意的硬门禁。
+侧栏与导航的显示文字来自各语言页面的正文一级标题；缺标题、或用简体标题冒充译文，构建都会直接失败，这是有意的硬门禁。
 
 ### 自动生成文档
 
@@ -122,6 +146,13 @@ php backend/scripts/export_api_inventory.php        # 刷新 docs/develop/api/ba
 pnpm run docs:check
 ```
 
+改过中文正文的，还要重生成繁体并复验：
+
+```cmd
+pnpm run docs:i18n:trad
+pnpm run docs:check
+```
+
 官网配置、主题、组件、静态资源或路径变更还必须执行：
 
 ```cmd
@@ -141,11 +172,14 @@ cd docs-web
 npx vitepress preview --host 127.0.0.1 --port 4173
 ```
 
-提交前至少人工抽查首页、`/guide/`、`/develop/`、API 清单和一篇深层目录文章，并确认：
+提交前至少人工抽查首页、`/guide/`、`/develop/`、API 清单和一篇深层目录文章（四种语言各抽一次），并确认：
 
-- 页面 URL 全部为英文；
-- 文章标题和侧栏显示为中文，两个分区的侧栏各自正确；
-- 站内链接没有 `404`，且 `/internal/` 下的页面确实不存在；
+- 页面 URL 全部为英文，语言前缀为 `/en/`、`/zh-tw/`、`/zh-hk/`；
+- 页面标题与侧栏跟随所选语言：简体/繁体显示汉字标题，英文页不出现汉字标题；
+- 抬头语言菜单能落到同一页面的其他语言版本，首页页脚也有一组语言入口；
+- `<html lang>` 分别为 `zh-CN` / `en` / `zh-TW` / `zh-HK`，`<head>` 里的 `hreflang` 成对指向四种语言；
+- 站内链接没有 `404`，且 `/internal/` 下的页面确实不存在（英文站点同样不应出现）；
+- 站内搜索在每种语言下只返回该语言的结果；
 - Logo、favicon 和首页入口正常加载；
 - 移动端没有横向滚动或元素遮挡。
 
@@ -180,9 +214,25 @@ EdgeOne Pages 的构建配置在仓库根的 `edgeone.json`，每次提交到默
 
 ## 7. 常见问题
 
-### 构建提示文档缺少中文一级标题
+### 构建提示文档缺少中文一级标题 / 英文页面标题未翻译
 
-确认 Markdown 中存在以 `# ` 开头的中文一级标题。文件名为英文是正常的，不要把文章标题改成英文来匹配文件名。
+简体与繁体页面必须有以 `# ` 开头的汉字一级标题，英文页面的一级标题不能含汉字。文件名为英文是正常的，不要把文章标题改成英文文件名来匹配。四种语言的 H1 都由 `pageTitle()` 在配置加载阶段读取，缺哪个语言就补哪个语言的镜像页。
+
+### `docs:check` 提示译文已过期
+
+改了中文源但没重生成繁体。执行 `pnpm run docs:i18n:trad` 后重新检查；英文页过期只报非阻断 finding，按节奏补译即可。
+
+### `docs:check` 提示代码块/链接/标题结构与中文源不一致
+
+英文译文动了不该动的东西。按顺序跑：
+
+```cmd
+node backend/scripts/i18n/docs-i18n.mjs sync-code en
+node backend/scripts/i18n/docs-i18n.mjs links en
+node backend/scripts/i18n/docs-i18n.mjs verify en
+```
+
+标题层级不一致只能手工对着中文源改回来。
 
 ### 构建提示找不到页面文件
 
@@ -190,15 +240,19 @@ EdgeOne Pages 的构建配置在仓库根的 `edgeone.json`，每次提交到默
 
 ### `docs:check` 提示缺少目录覆盖记录
 
-`backend/scripts/check_docs.mjs` 要求 `docs/` 下每个非索引 Markdown 都在 `catalog.json` 里有记录，且记录按 `path` 升序排列。补记录时按路径插入正确位置，不要追加到末尾。
+`backend/scripts/check_docs.mjs` 要求 `docs/` 根路径下每个非索引 Markdown 都在 `catalog.json` 里有记录，且记录按 `path` 升序排列。补记录时按路径插入正确位置，不要追加到末尾。译文目录（`en/`、`zh-tw/`、`zh-hk/`）由 front matter 契约治理，不进 `catalog.json`。
 
 ### 新页面返回 404
 
-依次检查文件是否位于 `docs/`（不是 `docs-web/`）、是否已加入侧栏数组、链接是否去掉 `.md`、路径大小写是否一致，以及静态服务器是否支持 clean URL。目录首页还需检查 `README.md` 或 `index.md` 的重写规则。
+依次检查文件是否位于 `docs/`（不是 `docs-web/`）、是否已加入侧栏蓝图、链接是否去掉 `.md`、路径大小写是否一致，以及静态服务器是否支持 clean URL。目录首页还需检查 `README.md` 或 `index.md` 的重写规则。翻译页面还要确认镜像路径一致。
+
+### 站内搜索搜不到东西
+
+本地搜索索引只在顶层 `themeConfig.search` 存在时才生成。搜索配置必须留在 `defineConfig` 顶层的 `themeConfig` 里，各语言只能覆盖 `locales[*].themeConfig.search` 的文案；把它只写进语言级配置会出现「构建成功但零结果」。
 
 ### 文档检查通过但页面入口不可见
 
-`docs:check` 只负责文档结构与链接校验，不会自动决定导航信息架构。需要在 `config.ts` 的 `guideSidebar`／`developSidebar`、`HomePortal.vue` 或对应页面的组件里增加入口。
+`docs:check` 只负责文档结构与链接校验，不会自动决定导航信息架构。需要在 `config.ts` 的 `guideBlueprint`／`developBlueprint`、`theme/data/siteChrome.*.json` 或对应页面的组件里增加入口。
 
 ### 修改没有出现在生产站点
 
@@ -207,12 +261,14 @@ EdgeOne Pages 的构建配置在仓库根的 `edgeone.json`，每次提交到默
 ## 8. 发布检查清单
 
 1. 更新 `docs/` 正文、索引和相关路径引用，确认分区归属正确。
-2. 新页面加入对应侧栏数组；必要时更新首页入口。
+2. 新页面加入侧栏蓝图；必要时更新首页入口与 `theme/data/siteChrome.*.json`。
 3. 必要时更新 `catalog.json` 记录并保持 `path` 升序。
-4. 执行 `pnpm run docs:check`。
-5. 执行 `pnpm run build:docs`。
-6. 预览生产产物并抽查英文 URL、中文标题、两个分区侧栏与移动端布局。
-7. 确认站点产物里没有 `internal/` 页面。
-8. 独立发布 `docs-web/.vitepress/dist/`，不要混入业务前端产物。
+4. 改过中文正文的，执行 `pnpm run docs:i18n:trad` 重生成两种繁体。
+5. 新增或修改英文页后，执行 `docs-i18n.mjs stamp en` 与 `verify en`。
+6. 执行 `pnpm run docs:check`。
+7. 执行 `pnpm run build:docs`。
+8. 预览生产产物，逐个语言抽查 URL 前缀、标题语言、语言菜单、`hreflang`、站内搜索与移动端布局。
+9. 确认站点产物里没有 `internal/` 页面，英文与繁体目录下也没有（`dist/en/internal`、`dist/zh-tw/internal`）。
+10. 独立发布 `docs-web/.vitepress/dist/`，不要混入业务前端产物。
 
 维护过程中不得把密码、Token、私钥、生产数据或测试账号凭据写入正文、配置、构建日志或静态资源。

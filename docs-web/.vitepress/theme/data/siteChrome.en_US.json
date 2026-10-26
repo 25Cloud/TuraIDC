@@ -1,0 +1,167 @@
+{
+  "lang": "English",
+  "prefix": "/en",
+  "brand": "Documentation",
+  "brandAria": "TuraIDC documentation home",
+  "navAria": "Primary navigation",
+  "nav": [
+    { "text": "For operators", "href": "/en/guide/" },
+    { "text": "For developers", "href": "/en/develop/" },
+    {
+      "text": "API reference (Chinese)",
+      "href": "/develop/api/backend-api-catalog"
+    },
+    { "text": "GitHub", "href": "https://github.com/25Cloud/TuraIDC" }
+  ],
+  "hero": {
+    "title": "TuraIDC",
+    "titleTail": "billing and provisioning system",
+    "description": "The documentation is split by audience: site operators who deploy and run the system start with the operator guide, while developers who change code, integrate upstream APIs or maintain the repository start with the developer guide.",
+    "primary": {
+      "text": "I run the site · deploy and operate",
+      "href": "/en/guide/"
+    },
+    "secondary": {
+      "text": "I write code · develop and integrate",
+      "href": "/en/develop/"
+    }
+  },
+  "audiences": [
+    {
+      "id": "guide",
+      "label": "For operators",
+      "title": "Deploy and operate TuraIDC",
+      "description": "Pick a deployment method, finish the initial setup, then run products, orders, billing and tickets day to day — plus upgrades, backups and troubleshooting.",
+      "groups": [
+        {
+          "title": "Installation",
+          "description": "Choose the installation route that matches your server and operations workflow.",
+          "links": [
+            ["Choose a deployment method", "/en/guide/deploy/"],
+            ["BaoTa Panel deployment", "/en/guide/deploy/bt-panel"],
+            ["Docker / 1Panel", "/en/guide/deploy/docker-1panel"],
+            ["Bare-metal from source", "/en/guide/deploy/bare-metal"]
+          ]
+        },
+        {
+          "title": "Initial setup",
+          "description": "Site branding, notification channels, payments and upstream integration.",
+          "links": [
+            ["Site and branding", "/en/guide/configure/site-settings"],
+            ["Email and SMS", "/en/guide/configure/mail-and-sms"],
+            ["Payment channels", "/en/guide/configure/payment"],
+            ["Upstream providers", "/en/guide/configure/upstream"]
+          ]
+        },
+        {
+          "title": "Daily operations",
+          "description": "Publish products, provision orders, reconcile funds and answer tickets.",
+          "links": [
+            ["Products and billing", "/en/guide/operate/products"],
+            ["Orders and auto provisioning", "/en/guide/operate/orders"],
+            ["Finance and invoices", "/en/guide/operate/finance"],
+            ["Tickets and support", "/en/guide/operate/tickets"]
+          ]
+        },
+        {
+          "title": "Maintenance and migration",
+          "description": "Version upgrades, backups, log archiving and troubleshooting.",
+          "links": [
+            ["Upgrade TuraIDC", "/en/guide/maintain/upgrade"],
+            ["Backup and restore", "/en/guide/maintain/backup"],
+            ["Migrate from ZJMF Finance", "/en/guide/migrate/zjmf-finance"],
+            ["Troubleshooting", "/en/guide/troubleshooting"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "develop",
+      "label": "For developers",
+      "title": "Extend TuraIDC and integrate upstreams",
+      "description": "System architecture and module boundaries, engineering standards for all three front ends, database and API contracts, plugin development, plus local development, testing and contribution workflow.",
+      "groups": [
+        {
+          "title": "System overview",
+          "description": "How the running system is structured, where its boundaries are and how it extends.",
+          "links": [
+            ["Architecture", "/en/develop/architecture"],
+            ["Backend standards", "/en/develop/backend"],
+            ["Frontend standards", "/en/develop/frontend"],
+            ["Database snapshot (Chinese)", "/develop/database"]
+          ]
+        },
+        {
+          "title": "APIs and plugins",
+          "description": "API contracts, business domain navigation and plugin extension points.",
+          "links": [
+            ["API format", "/en/develop/api/format"],
+            ["API catalog navigation", "/en/develop/api/catalog-navigation"],
+            [
+              "Backend API catalog (Chinese)",
+              "/develop/api/backend-api-catalog"
+            ],
+            ["Plugin development", "/en/develop/plugins/"]
+          ]
+        },
+        {
+          "title": "Development and testing",
+          "description": "Local bootstrap, test scope, internationalisation and the pitfalls we hit for real.",
+          "links": [
+            ["Local development", "/en/develop/local-development"],
+            ["Testing guide", "/en/develop/testing"],
+            ["Security standards", "/en/develop/security"],
+            ["Engineering pitfalls", "/en/develop/pitfalls"]
+          ]
+        },
+        {
+          "title": "Integrations and contributing",
+          "description": "Upstream protocol integration and the rules for maintaining this repository.",
+          "links": [
+            [
+              "ZJMF upstream protocol",
+              "/en/develop/integrations/zjmf-upstream-api"
+            ],
+            ["Plugin package spec", "/en/develop/plugins/package-spec"],
+            ["MySQL compatibility", "/en/develop/mysql-compatibility"],
+            ["Contributing", "/en/develop/contributing"]
+          ]
+        }
+      ]
+    }
+  ],
+  "footer": {
+    "copyright": "© TuraIDC Contributors",
+    "repo": "GitHub repository"
+  },
+  "deploySelector": [
+    {
+      "kicker": "Generic",
+      "title": "Generic deployment guide",
+      "description": "Not tied to a panel or container: install the backend, the front ends and the process supervisor by hand against the documented requirements.",
+      "link": "/en/guide/deploy/generic",
+      "action": "Read the generic guide"
+    },
+    {
+      "kicker": "Panel",
+      "title": "BaoTa Panel deployment",
+      "description": "For servers where BaoTa Panel manages PHP, Nginx and scheduled tasks.",
+      "link": "/en/guide/deploy/bt-panel",
+      "action": "Read the BaoTa guide"
+    },
+    {
+      "kicker": "Bare metal",
+      "title": "Bare metal from source",
+      "description": "For servers without a panel or containers, running native nginx + PHP-FPM + systemd + cron.",
+      "link": "/en/guide/deploy/bare-metal",
+      "action": "Read the bare metal guide"
+    },
+    {
+      "kicker": "Container",
+      "title": "Docker / 1Panel",
+      "description": "For Docker Compose deployments or environments that manage containers through 1Panel.",
+      "link": "/en/guide/deploy/docker-1panel",
+      "action": "Read the Docker / 1Panel guide"
+    }
+  ]
+}

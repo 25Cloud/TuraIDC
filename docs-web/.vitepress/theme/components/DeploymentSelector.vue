@@ -1,37 +1,11 @@
 <script setup lang="ts">
-const options = [
-  {
-    kicker: "通用",
-    title: "通用部署指南",
-    description:
-      "不绑定具体面板或容器：按环境要求手工完成后端、前端与进程守护的部署。",
-    link: "/guide/deploy/generic",
-    action: "查看通用部署指南",
-  },
-  {
-    kicker: "面板部署",
-    title: "宝塔部署",
-    description: "适用于使用宝塔面板管理 PHP、Nginx 与计划任务的服务器。",
-    link: "/guide/deploy/bt-panel",
-    action: "查看宝塔部署指南",
-  },
-  {
-    kicker: "裸机部署",
-    title: "裸机源码部署",
-    description:
-      "适用于不使用面板与容器、以 nginx + PHP-FPM + systemd + cron 原生服务运行的服务器。",
-    link: "/guide/deploy/bare-metal",
-    action: "查看裸机源码部署指南",
-  },
-  {
-    kicker: "容器部署",
-    title: "Docker / 1Panel",
-    description:
-      "适用于 Docker Compose 部署，或使用 1Panel 统一管理容器的环境。",
-    link: "/guide/deploy/docker-1panel",
-    action: "查看 Docker 与 1Panel 指南",
-  },
-];
+import { computed } from "vue";
+import { useData } from "vitepress";
+import { siteChromeFor } from "../data/siteChrome";
+
+// 部署方式卡片与首页共用同一份多语言文案，避免两处各写一套。
+const { lang } = useData();
+const options = computed(() => siteChromeFor(lang.value).deploySelector);
 </script>
 
 <template>

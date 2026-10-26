@@ -1,0 +1,6 @@
+# 繁体两版由 `pnpm run docs:i18n:trad` 从中文生成，格式由生成器决定；
+# 让 prettier 重排会让「重新生成」每次都产生无意义 diff。
+docs/zh-tw/
+docs/zh-hk/
+docs-web/.vitepress/dist/
+docs-web/.vitepress/cache/

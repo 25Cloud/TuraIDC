@@ -1,0 +1,266 @@
+{
+  "lang": "繁體中文（香港）",
+  "prefix": "/zh-hk",
+  "brand": "文檔中心",
+  "brandAria": "TuraIDC 文檔中心首頁",
+  "navAria": "主要導航",
+  "nav": [
+    {
+      "text": "使用者文檔",
+      "href": "/zh-hk/guide/"
+    },
+    {
+      "text": "開發者文檔",
+      "href": "/zh-hk/develop/"
+    },
+    {
+      "text": "API 參考",
+      "href": "/zh-hk/develop/api/backend-api-catalog"
+    },
+    {
+      "text": "GitHub",
+      "href": "https://github.com/25Cloud/TuraIDC"
+    }
+  ],
+  "hero": {
+    "title": "TuraIDC",
+    "titleTail": "業務/財務系統",
+    "description": "文檔按讀者身份分成兩區：要部署並運營這套系統的站長進入使用者文檔，要改代碼、對接接口或參與維護的開發者進入開發者文檔。",
+    "primary": {
+      "text": "我是使用者 · 部署與運營",
+      "href": "/zh-hk/guide/"
+    },
+    "secondary": {
+      "text": "我是開發者 · 開發與對接",
+      "href": "/zh-hk/develop/"
+    }
+  },
+  "audiences": [
+    {
+      "id": "guide",
+      "label": "我是使用者",
+      "title": "部署並運營 TuraIDC",
+      "description": "從選擇部署方式、完成初始配置，到商品訂單財務工單的日常運營，以及升級、備份與故障排查。",
+      "groups": [
+        {
+          "title": "部署安裝",
+          "description": "選擇與伺服器和運維流程匹配的方式完成上線。",
+          "links": [
+            [
+              "部署方式選擇",
+              "/zh-hk/guide/deploy/"
+            ],
+            [
+              "寶塔面板部署",
+              "/zh-hk/guide/deploy/bt-panel"
+            ],
+            [
+              "Docker / 1Panel",
+              "/zh-hk/guide/deploy/docker-1panel"
+            ],
+            [
+              "裸機源碼部署",
+              "/zh-hk/guide/deploy/bare-metal"
+            ]
+          ]
+        },
+        {
+          "title": "初始配置",
+          "description": "站點品牌、通知渠道、支付與上游的接入配置。",
+          "links": [
+            [
+              "站點與品牌設置",
+              "/zh-hk/guide/configure/site-settings"
+            ],
+            [
+              "郵件與短信",
+              "/zh-hk/guide/configure/mail-and-sms"
+            ],
+            [
+              "支付渠道接入",
+              "/zh-hk/guide/configure/payment"
+            ],
+            [
+              "上游供應商對接",
+              "/zh-hk/guide/configure/upstream"
+            ]
+          ]
+        },
+        {
+          "title": "日常運營",
+          "description": "商品上架、訂單開通、資金對賬與客服工單。",
+          "links": [
+            [
+              "商品與計費",
+              "/zh-hk/guide/operate/products"
+            ],
+            [
+              "訂單與自動開通",
+              "/zh-hk/guide/operate/orders"
+            ],
+            [
+              "財務與賬單",
+              "/zh-hk/guide/operate/finance"
+            ],
+            [
+              "工單與客服",
+              "/zh-hk/guide/operate/tickets"
+            ]
+          ]
+        },
+        {
+          "title": "維護與遷移",
+          "description": "版本升級、數據備份、日誌歸檔與排障。",
+          "links": [
+            [
+              "版本升級",
+              "/zh-hk/guide/maintain/upgrade"
+            ],
+            [
+              "備份與恢復",
+              "/zh-hk/guide/maintain/backup"
+            ],
+            [
+              "從魔方財務遷移",
+              "/zh-hk/guide/migrate/zjmf-finance"
+            ],
+            [
+              "故障排查",
+              "/zh-hk/guide/troubleshooting"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "develop",
+      "label": "我是開發者",
+      "title": "二次開發與上游對接",
+      "description": "系統架構與模塊邊界、三端工程規範、數據庫與接口契約、插件開發，以及本地開發測試與貢獻流程。",
+      "groups": [
+        {
+          "title": "系統概覽",
+          "description": "運行中的系統結構、模塊邊界與擴展架構。",
+          "links": [
+            [
+              "系統架構",
+              "/zh-hk/develop/architecture"
+            ],
+            [
+              "後端規範",
+              "/zh-hk/develop/backend"
+            ],
+            [
+              "前端規範",
+              "/zh-hk/develop/frontend"
+            ],
+            [
+              "數據庫快照",
+              "/zh-hk/develop/database"
+            ]
+          ]
+        },
+        {
+          "title": "接口與插件",
+          "description": "接口契約、業務域導航與插件擴展點。",
+          "links": [
+            [
+              "API 格式規範",
+              "/zh-hk/develop/api/format"
+            ],
+            [
+              "API 清單導航",
+              "/zh-hk/develop/api/catalog-navigation"
+            ],
+            [
+              "後端 API 清單",
+              "/zh-hk/develop/api/backend-api-catalog"
+            ],
+            [
+              "插件開發",
+              "/zh-hk/develop/plugins/"
+            ]
+          ]
+        },
+        {
+          "title": "開發與測試",
+          "description": "本地啟動、測試範圍、國際化與實測踩坑。",
+          "links": [
+            [
+              "本地啟動",
+              "/zh-hk/develop/local-development"
+            ],
+            [
+              "測試指南",
+              "/zh-hk/develop/testing"
+            ],
+            [
+              "安全開發規範",
+              "/zh-hk/develop/security"
+            ],
+            [
+              "工程踩坑記錄",
+              "/zh-hk/develop/pitfalls"
+            ]
+          ]
+        },
+        {
+          "title": "對接與貢獻",
+          "description": "上游協議對接與參與倉庫維護的規則。",
+          "links": [
+            [
+              "魔方上游協議",
+              "/zh-hk/develop/integrations/zjmf-upstream-api"
+            ],
+            [
+              "插件包規範",
+              "/zh-hk/develop/plugins/package-spec"
+            ],
+            [
+              "MySQL 兼容基線",
+              "/zh-hk/develop/mysql-compatibility"
+            ],
+            [
+              "參與貢獻",
+              "/zh-hk/develop/contributing"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "footer": {
+    "copyright": "© TuraIDC Contributors",
+    "repo": "GitHub 倉庫"
+  },
+  "deploySelector": [
+    {
+      "kicker": "通用",
+      "title": "通用部署指南",
+      "description": "不綁定具體面板或容器：按環境要求手工完成後端、前端與進程守護的部署。",
+      "link": "/zh-hk/guide/deploy/generic",
+      "action": "查看通用部署指南"
+    },
+    {
+      "kicker": "面板部署",
+      "title": "寶塔部署",
+      "description": "適用於使用寶塔面板管理 PHP、Nginx 與計劃任務的伺服器。",
+      "link": "/zh-hk/guide/deploy/bt-panel",
+      "action": "查看寶塔部署指南"
+    },
+    {
+      "kicker": "裸機部署",
+      "title": "裸機源碼部署",
+      "description": "適用於不使用面板與容器、以 nginx + PHP-FPM + systemd + cron 原生服務運行的伺服器。",
+      "link": "/zh-hk/guide/deploy/bare-metal",
+      "action": "查看裸機源碼部署指南"
+    },
+    {
+      "kicker": "容器部署",
+      "title": "Docker / 1Panel",
+      "description": "適用於 Docker Compose 部署，或使用 1Panel 統一管理容器的環境。",
+      "link": "/zh-hk/guide/deploy/docker-1panel",
+      "action": "查看 Docker 與 1Panel 指南"
+    }
+  ]
+}

@@ -1,124 +1,52 @@
 <script setup lang="ts">
-// 首页按读者身份分区：使用者（部署并运营本站的站长/运营）与开发者（二次开发、
-// 上游对接与仓库贡献者）。两组卡片共用同一套样式，只有数据不同。
-const audiences = [
-  {
-    id: "guide",
-    label: "我是使用者",
-    title: "部署并运营 TuraIDC",
-    description:
-      "从选择部署方式、完成初始配置，到商品订单财务工单的日常运营，以及升级、备份与故障排查。",
-    groups: [
-      {
-        title: "部署安装",
-        description: "选择与服务器和运维流程匹配的方式完成上线。",
-        links: [
-          ["部署方式选择", "/guide/deploy/"],
-          ["宝塔面板部署", "/guide/deploy/bt-panel"],
-          ["Docker / 1Panel", "/guide/deploy/docker-1panel"],
-          ["裸机源码部署", "/guide/deploy/bare-metal"],
-        ],
-      },
-      {
-        title: "初始配置",
-        description: "站点品牌、通知渠道、支付与上游的接入配置。",
-        links: [
-          ["站点与品牌设置", "/guide/configure/site-settings"],
-          ["邮件与短信", "/guide/configure/mail-and-sms"],
-          ["支付渠道接入", "/guide/configure/payment"],
-          ["上游供应商对接", "/guide/configure/upstream"],
-        ],
-      },
-      {
-        title: "日常运营",
-        description: "商品上架、订单开通、资金对账与客服工单。",
-        links: [
-          ["商品与计费", "/guide/operate/products"],
-          ["订单与自动开通", "/guide/operate/orders"],
-          ["财务与账单", "/guide/operate/finance"],
-          ["工单与客服", "/guide/operate/tickets"],
-        ],
-      },
-      {
-        title: "维护与迁移",
-        description: "版本升级、数据备份、日志归档与排障。",
-        links: [
-          ["版本升级", "/guide/maintain/upgrade"],
-          ["备份与恢复", "/guide/maintain/backup"],
-          ["从魔方财务迁移", "/guide/migrate/zjmf-finance"],
-          ["故障排查", "/guide/troubleshooting"],
-        ],
-      },
-    ],
-  },
-  {
-    id: "develop",
-    label: "我是开发者",
-    title: "二次开发与上游对接",
-    description:
-      "系统架构与模块边界、三端工程规范、数据库与接口契约、插件开发，以及本地开发测试与贡献流程。",
-    groups: [
-      {
-        title: "系统概览",
-        description: "运行中的系统结构、模块边界与扩展架构。",
-        links: [
-          ["系统架构", "/develop/architecture"],
-          ["后端规范", "/develop/backend"],
-          ["前端规范", "/develop/frontend"],
-          ["数据库快照", "/develop/database"],
-        ],
-      },
-      {
-        title: "接口与插件",
-        description: "接口契约、业务域导航与插件扩展点。",
-        links: [
-          ["API 格式规范", "/develop/api/format"],
-          ["API 清单导航", "/develop/api/catalog-navigation"],
-          ["后端 API 清单", "/develop/api/backend-api-catalog"],
-          ["插件开发", "/develop/plugins/"],
-        ],
-      },
-      {
-        title: "开发与测试",
-        description: "本地启动、测试范围、国际化与实测踩坑。",
-        links: [
-          ["本地启动", "/develop/local-development"],
-          ["测试指南", "/develop/testing"],
-          ["安全开发规范", "/develop/security"],
-          ["工程踩坑记录", "/develop/pitfalls"],
-        ],
-      },
-      {
-        title: "对接与贡献",
-        description: "上游协议对接与参与仓库维护的规则。",
-        links: [
-          ["魔方上游协议", "/develop/integrations/zjmf-upstream-api"],
-          ["插件包规范", "/develop/plugins/package-spec"],
-          ["MySQL 兼容基线", "/develop/mysql-compatibility"],
-          ["参与贡献", "/develop/contributing"],
-        ],
-      },
-    ],
-  },
-];
+import { computed } from "vue";
+import { useData } from "vitepress";
+import { siteChromeFor } from "../data/siteChrome";
+
+// 首页文案按语言分文件存放（siteChrome.*.json），这里只负责按当前语言渲染。
+const { lang, localeIndex, site } = useData();
+const copy = computed(() => siteChromeFor(lang.value));
+const audiences = computed(() => copy.value.audiences);
+
+// 首页由本组件整体接管布局，默认导航栏（含 VitePress 语言菜单）不渲染，
+// 所以语言入口要在这里补一份，否则首页本身没法切换语言。
+const LOCALE_SHORT_LABEL: Record<string, string> = {
+  root: "简体中文",
+  en: "English",
+  "zh-tw": "繁體（台）",
+  "zh-hk": "繁體（港）",
+};
+
+const otherLocales = computed(() =>
+  Object.entries(site.value.locales)
+    .filter(([key]) => key !== localeIndex.value)
+    .map(([key, locale]) => ({
+      key,
+      label: LOCALE_SHORT_LABEL[key] ?? locale.label,
+      href: locale.link || (key === "root" ? "/" : `/${key}/`),
+    })),
+);
 </script>
 
 <template>
   <div class="portal">
     <header class="portal-header">
-      <a class="portal-brand" href="/" aria-label="TuraIDC 文档中心首页">
+      <a
+        class="portal-brand"
+        :href="copy.prefix + '/'"
+        :aria-label="copy.brandAria"
+      >
         <img src="/branding/favicon.png" alt="TuraIDC" />
-        <span>文档中心</span>
+        <span>{{ copy.brand }}</span>
       </a>
-      <nav class="portal-nav" aria-label="主要导航">
-        <a href="/guide/">使用者文档</a>
-        <a href="/develop/">开发者文档</a>
-        <a href="/develop/api/backend-api-catalog">API 参考</a>
+      <nav class="portal-nav" :aria-label="copy.navAria">
         <a
-          href="https://github.com/25Cloud/TuraIDC"
-          target="_blank"
-          rel="noreferrer"
-          >GitHub</a
+          v-for="item in copy.nav"
+          :key="item.href"
+          :href="item.href"
+          :target="item.href.startsWith('http') ? '_blank' : undefined"
+          :rel="item.href.startsWith('http') ? 'noreferrer' : undefined"
+          >{{ item.text }}</a
         >
       </nav>
     </header>
@@ -126,17 +54,19 @@ const audiences = [
     <main>
       <section class="portal-hero">
         <div class="portal-hero-copy">
-          <h1><span>TuraIDC</span><br />业务/财务系统</h1>
-          <p>
-            文档按读者身份分成两区：要部署并运营这套系统的站长进入使用者文档，
-            要改代码、对接接口或参与维护的开发者进入开发者文档。
-          </p>
+          <h1>
+            <span>{{ copy.hero.title }}</span
+            ><br />{{ copy.hero.titleTail }}
+          </h1>
+          <p>{{ copy.hero.description }}</p>
           <div class="portal-actions">
-            <a class="portal-primary-action" href="/guide/"
-              >我是使用者 · 部署与运营</a
-            >
-            <a class="portal-secondary-action" href="/develop/"
-              >我是开发者 · 开发与对接</a
+            <a class="portal-primary-action" :href="copy.hero.primary.href">{{
+              copy.hero.primary.text
+            }}</a>
+            <a
+              class="portal-secondary-action"
+              :href="copy.hero.secondary.href"
+              >{{ copy.hero.secondary.text }}</a
             >
           </div>
         </div>
@@ -182,13 +112,21 @@ const audiences = [
     </main>
 
     <footer class="portal-footer">
-      <span>© TuraIDC Contributors</span>
+      <span>{{ copy.footer.copyright }}</span>
       <a
         href="https://github.com/25Cloud/TuraIDC"
         target="_blank"
         rel="noreferrer"
-        >GitHub 仓库</a
+        >{{ copy.footer.repo }}</a
       >
+      <nav class="portal-footer-lang" aria-label="Language">
+        <a
+          v-for="locale in otherLocales"
+          :key="locale.key"
+          :href="locale.href"
+          >{{ locale.label }}</a
+        >
+      </nav>
     </footer>
   </div>
 </template>
@@ -564,6 +502,13 @@ const audiences = [
   justify-content: space-between;
   color: var(--portal-text-2);
   font-size: 13px;
+}
+
+/* 首页的语言入口：页脚空间足够，窄屏自动换行也不会挤压首屏 */
+.portal-footer-lang {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
 }
 
 /* 系统减弱动效时关闭入场、浮动与过渡 */

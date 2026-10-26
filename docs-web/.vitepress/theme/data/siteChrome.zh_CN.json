@@ -1,0 +1,152 @@
+{
+  "lang": "简体中文",
+  "prefix": "",
+  "brand": "文档中心",
+  "brandAria": "TuraIDC 文档中心首页",
+  "navAria": "主要导航",
+  "nav": [
+    { "text": "使用者文档", "href": "/guide/" },
+    { "text": "开发者文档", "href": "/develop/" },
+    { "text": "API 参考", "href": "/develop/api/backend-api-catalog" },
+    { "text": "GitHub", "href": "https://github.com/25Cloud/TuraIDC" }
+  ],
+  "hero": {
+    "title": "TuraIDC",
+    "titleTail": "业务/财务系统",
+    "description": "文档按读者身份分成两区：要部署并运营这套系统的站长进入使用者文档，要改代码、对接接口或参与维护的开发者进入开发者文档。",
+    "primary": { "text": "我是使用者 · 部署与运营", "href": "/guide/" },
+    "secondary": { "text": "我是开发者 · 开发与对接", "href": "/develop/" }
+  },
+  "audiences": [
+    {
+      "id": "guide",
+      "label": "我是使用者",
+      "title": "部署并运营 TuraIDC",
+      "description": "从选择部署方式、完成初始配置，到商品订单财务工单的日常运营，以及升级、备份与故障排查。",
+      "groups": [
+        {
+          "title": "部署安装",
+          "description": "选择与服务器和运维流程匹配的方式完成上线。",
+          "links": [
+            ["部署方式选择", "/guide/deploy/"],
+            ["宝塔面板部署", "/guide/deploy/bt-panel"],
+            ["Docker / 1Panel", "/guide/deploy/docker-1panel"],
+            ["裸机源码部署", "/guide/deploy/bare-metal"]
+          ]
+        },
+        {
+          "title": "初始配置",
+          "description": "站点品牌、通知渠道、支付与上游的接入配置。",
+          "links": [
+            ["站点与品牌设置", "/guide/configure/site-settings"],
+            ["邮件与短信", "/guide/configure/mail-and-sms"],
+            ["支付渠道接入", "/guide/configure/payment"],
+            ["上游供应商对接", "/guide/configure/upstream"]
+          ]
+        },
+        {
+          "title": "日常运营",
+          "description": "商品上架、订单开通、资金对账与客服工单。",
+          "links": [
+            ["商品与计费", "/guide/operate/products"],
+            ["订单与自动开通", "/guide/operate/orders"],
+            ["财务与账单", "/guide/operate/finance"],
+            ["工单与客服", "/guide/operate/tickets"]
+          ]
+        },
+        {
+          "title": "维护与迁移",
+          "description": "版本升级、数据备份、日志归档与排障。",
+          "links": [
+            ["版本升级", "/guide/maintain/upgrade"],
+            ["备份与恢复", "/guide/maintain/backup"],
+            ["从魔方财务迁移", "/guide/migrate/zjmf-finance"],
+            ["故障排查", "/guide/troubleshooting"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "develop",
+      "label": "我是开发者",
+      "title": "二次开发与上游对接",
+      "description": "系统架构与模块边界、三端工程规范、数据库与接口契约、插件开发，以及本地开发测试与贡献流程。",
+      "groups": [
+        {
+          "title": "系统概览",
+          "description": "运行中的系统结构、模块边界与扩展架构。",
+          "links": [
+            ["系统架构", "/develop/architecture"],
+            ["后端规范", "/develop/backend"],
+            ["前端规范", "/develop/frontend"],
+            ["数据库快照", "/develop/database"]
+          ]
+        },
+        {
+          "title": "接口与插件",
+          "description": "接口契约、业务域导航与插件扩展点。",
+          "links": [
+            ["API 格式规范", "/develop/api/format"],
+            ["API 清单导航", "/develop/api/catalog-navigation"],
+            ["后端 API 清单", "/develop/api/backend-api-catalog"],
+            ["插件开发", "/develop/plugins/"]
+          ]
+        },
+        {
+          "title": "开发与测试",
+          "description": "本地启动、测试范围、国际化与实测踩坑。",
+          "links": [
+            ["本地启动", "/develop/local-development"],
+            ["测试指南", "/develop/testing"],
+            ["安全开发规范", "/develop/security"],
+            ["工程踩坑记录", "/develop/pitfalls"]
+          ]
+        },
+        {
+          "title": "对接与贡献",
+          "description": "上游协议对接与参与仓库维护的规则。",
+          "links": [
+            ["魔方上游协议", "/develop/integrations/zjmf-upstream-api"],
+            ["插件包规范", "/develop/plugins/package-spec"],
+            ["MySQL 兼容基线", "/develop/mysql-compatibility"],
+            ["参与贡献", "/develop/contributing"]
+          ]
+        }
+      ]
+    }
+  ],
+  "footer": {
+    "copyright": "© TuraIDC Contributors",
+    "repo": "GitHub 仓库"
+  },
+  "deploySelector": [
+    {
+      "kicker": "通用",
+      "title": "通用部署指南",
+      "description": "不绑定具体面板或容器：按环境要求手工完成后端、前端与进程守护的部署。",
+      "link": "/guide/deploy/generic",
+      "action": "查看通用部署指南"
+    },
+    {
+      "kicker": "面板部署",
+      "title": "宝塔部署",
+      "description": "适用于使用宝塔面板管理 PHP、Nginx 与计划任务的服务器。",
+      "link": "/guide/deploy/bt-panel",
+      "action": "查看宝塔部署指南"
+    },
+    {
+      "kicker": "裸机部署",
+      "title": "裸机源码部署",
+      "description": "适用于不使用面板与容器、以 nginx + PHP-FPM + systemd + cron 原生服务运行的服务器。",
+      "link": "/guide/deploy/bare-metal",
+      "action": "查看裸机源码部署指南"
+    },
+    {
+      "kicker": "容器部署",
+      "title": "Docker / 1Panel",
+      "description": "适用于 Docker Compose 部署，或使用 1Panel 统一管理容器的环境。",
+      "link": "/guide/deploy/docker-1panel",
+      "action": "查看 Docker 与 1Panel 指南"
+    }
+  ]
+}

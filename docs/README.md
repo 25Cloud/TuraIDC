@@ -30,6 +30,7 @@ titleTemplate: false
 | 版本变更记录                 | [变更记录](internal/changelog.md)                                                                                                 |
 | 工作规则与文档治理           | [治理规则](internal/governance/README.md)                                                                                         |
 | 官方文档站维护与发布         | [文档官网维护指南](internal/governance/docs-web-maintenance.md)                                                                   |
+| 文档站翻译与术语             | [多语言维护规则](internal/i18n/README.md)、[术语表](internal/i18n/glossary.md)                                                    |
 
 ## 2. 目录边界
 
@@ -38,10 +39,15 @@ docs/
 ├── guide/            # 使用者：部署、初始配置、日常运营、维护升级与数据迁移（进公开站）
 ├── develop/          # 开发者：架构、工程规范、数据库、接口、插件与本地开发（进公开站）
 ├── internal/         # 维护者：执行计划、设计、产品规格、修复记录、治理规则（不进公开站）
+├── en/               # English 译文镜像（/en/），人工/AI 翻译
+├── zh-tw/            # 繁體中文（台灣）镜像（/zh-tw/），脚本生成，禁止手改
+├── zh-hk/            # 繁體中文（香港）镜像（/zh-hk/），脚本生成，禁止手改
 ├── images/           # 文档引用的图片资源
 ├── catalog.json      # 机器可读目录，记录非索引文档的路径、状态与复核期限
 └── README.md         # 本文件
 ```
+
+中文占根路径，是唯一真源；其余三种语言是它的镜像，路径一一对应。译文页面在 front matter 里记录中文源与源哈希，由 `pnpm run docs:i18n` 跟踪过期情况；繁体两版由 `pnpm run docs:i18n:trad` 从中文生成。
 
 生成物按内容归属放在所属分区内（数据库快照在 `develop/database.md`，后端 API 清单在 `develop/api/backend-api-catalog.md`），不再单独设生成物目录；它们的状态在 `catalog.json` 中标记为 `generated`。
 
@@ -54,5 +60,6 @@ docs/
 ## 4. 公开站与仓库的边界
 
 - 公开文档站的内容源就是 `docs/`，`docs-web/.vitepress/config.ts` 用 `srcExclude` 把 `internal/**` 排除在站点产物之外；它仍受 `docs:check` 校验。
+- 公开站有四种语言：简体中文（`/`）、English（`/en/`）、繁體中文台灣（`/zh-tw/`）、繁體中文香港（`/zh-hk/`）。译文规则见 [多语言维护规则](internal/i18n/README.md)。
 - 判断一篇文档放哪里：读者是站长进 `guide/`，读者是开发者进 `develop/`，只有维护者关心进 `internal/`。
-- `guide/` 与 `develop/` 的正文里不要链接 `internal/` 的文档——那会让站点读者点到 404。需要指向治理规则时用 GitHub 上的 URL。
+- `guide/` 与 `develop/` 的正文里不要链接 `internal/` 的文档——那会让站点读者点到 404。需要指向治理规则时用 GitHub 上的 URL（译文页由脚本自动改写为 GitHub 链接）。

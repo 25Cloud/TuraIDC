@@ -624,6 +624,12 @@
       "review_by": "2027-04-24"
     },
     {
+      "path": "internal/i18n/glossary.md",
+      "status": "current",
+      "summary": "文档站四语言翻译的统一术语表与不翻译词清单。",
+      "review_by": "2027-04-26"
+    },
+    {
       "path": "internal/legal/cla-feasibility-2026-10-21.md",
       "status": "current",
       "summary": "CLA v1.0 双许可链条可行性核对：授权结构、历史贡献处理与剩余法务事项。",

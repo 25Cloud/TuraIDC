@@ -85,6 +85,7 @@
 - 设计、产品规格、执行计划与一次性修复记录进入 `docs/internal/` 的对应分区与索引；生成物按内容归属放在所属分区内。
 - 执行计划必须放在 `internal/execution-plans/` 的 `active/`、`completed/` 或 `tech-debt/`，包含状态、进度和决策日志。
 - `guide/` 与 `develop/` 的正文不要链接 `internal/` 的文档，站点上会是 404。
+- 文档站有四种语言：简体中文占根路径（唯一真源），English 在 `docs/en/`、繁體中文台灣在 `docs/zh-tw/`、繁體中文香港在 `docs/zh-hk/`。改完中文正文必须跑 `pnpm run docs:i18n:trad` 重生成两种繁体（否则 `docs:check` 直接失败）；英文译文按 front matter 契约维护，改完跑 `node backend/scripts/i18n/docs-i18n.mjs stamp en` 与 `verify en`。细则见 [多语言维护规则](docs/internal/i18n/README.md)。
 - 文档链接与目录覆盖由 `pnpm run docs:check` 校验；复核期限由 `pnpm run docs:freshness` 扫描。该脚本也是 EdgeOne 自动部署的构建前置步骤。
 
 ## 开源许可与合规（AGPL-3.0-or-later）

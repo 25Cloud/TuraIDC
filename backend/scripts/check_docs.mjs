@@ -2,17 +2,39 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  LOCALE_DIRS,
+  countProseHan,
+  docsRelative,
+  extractCodeFences,
+  extractHeadingLevels,
+  extractLinkDestinations,
+  expectedLocaleDestination,
+  isLocalePath,
+  listSourcePages,
+  localeTargetPath,
+  parseFrontMatter as parseTranslationFrontMatter,
+  sha256,
+  walkMarkdown as walkLocaleMarkdown,
+} from "./i18n/docs-i18n-lib.mjs";
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(scriptDir, "../..");
 const docsRoot = path.join(root, "docs");
 const flags = new Set(process.argv.slice(2));
-const knownFlags = new Set(["--freshness", "--strict-freshness"]);
+const knownFlags = new Set([
+  "--freshness",
+  "--strict-freshness",
+  "--strict-i18n",
+]);
 const checkFreshness =
   flags.has("--freshness") || flags.has("--strict-freshness");
 const strictFreshness = flags.has("--strict-freshness");
+const strictI18n = flags.has("--strict-i18n");
 
 const errors = [];
 const freshnessFindings = [];
+const i18nFindings = [];
 
 const catalogStatuses = new Set([
   "current",
@@ -574,15 +596,23 @@ function checkCatalog(markdownFiles) {
     }
 
     const relativePath = toDocsPath(markdownFile);
+    if (isLocalePath(relativePath)) {
+      // 译文页面由 docs-i18n 的 front matter 契约治理，不重复登记进中文目录
+      continue;
+    }
     if (!catalogPaths.has(relativePath)) {
       errors.push(`docs/catalog.json is missing a record for ${relativePath}`);
     }
   }
 
   for (const generatedPath of requiredGeneratedCatalogPaths) {
-    const record = validRecords.find(({ path: recordPath }) => recordPath === generatedPath);
+    const record = validRecords.find(
+      ({ path: recordPath }) => recordPath === generatedPath,
+    );
     if (!record) {
-      errors.push(`docs/catalog.json is missing generated record for ${generatedPath}`);
+      errors.push(
+        `docs/catalog.json is missing generated record for ${generatedPath}`,
+      );
       continue;
     }
 
@@ -616,6 +646,135 @@ function checkCatalogFreshness(records) {
   }
 }
 
+/**
+ * 译文页面的契约校验。
+ *
+ * 译文不进 catalog.json，但必须回答三个问题：它翻的是哪一页（source）、翻的是不是
+ * 当前版本（sourceHash）、有没有把不该动的东西动了（代码块、标题层级、链接目标）。
+ * 繁体两版由脚本生成，源一改就必须重跑；英文允许滞后，只在 --strict-i18n 下阻断。
+ */
+function checkDocumentationI18n() {
+  const sourcePages = listSourcePages();
+  const sourceByPath = new Map(
+    sourcePages.map((page) => [page.relativePath, page]),
+  );
+
+  for (const locale of LOCALE_DIRS) {
+    const localeRoot = path.join(docsRoot, locale);
+    for (const markdownFile of walkLocaleMarkdown(localeRoot)) {
+      const relativePath = docsRelative(markdownFile);
+      const mirroredPath = relativePath.slice(locale.length + 1);
+      const markdown = readFileSync(markdownFile, "utf8");
+      const { data, body, hasFrontMatter } =
+        parseTranslationFrontMatter(markdown);
+
+      if (!hasFrontMatter || !data.source) {
+        errors.push(`${relativePath}: 译文页面必须在 front matter 记录 source`);
+        continue;
+      }
+
+      if (data.source !== mirroredPath) {
+        errors.push(
+          `${relativePath}: front matter source 应指向镜像路径 ${mirroredPath}`,
+        );
+      }
+
+      const sourcePage = sourceByPath.get(data.source);
+      if (!sourcePage) {
+        errors.push(
+          `${relativePath}: source 指向的页面不存在或不可翻译 ${data.source}`,
+        );
+        continue;
+      }
+
+      const sourceText = readFileSync(sourcePage.absolutePath, "utf8");
+      const sourceBody = parseTranslationFrontMatter(sourceText).body;
+      const currentHash = sha256(sourceText);
+
+      if (!data.sourceHash) {
+        errors.push(
+          `${relativePath}: front matter 缺少 sourceHash（翻译完成后运行 docs-i18n stamp）`,
+        );
+      } else if (data.sourceHash !== currentHash) {
+        const label = `${relativePath}: 译文已过期（中文源 ${data.source} 有改动）`;
+        if (locale === "en") {
+          i18nFindings.push(label);
+        } else {
+          errors.push(
+            `${label}；运行 node backend/scripts/i18n/docs-i18n.mjs trad ${locale}`,
+          );
+        }
+      }
+
+      if (locale !== "en") {
+        continue;
+      }
+
+      if (data.allowCjk !== "true") {
+        const han = countProseHan(body);
+        if (han > 0) {
+          errors.push(`${relativePath}: 正文残留中文 ${han} 字`);
+        }
+      }
+
+      const sourceFences = extractCodeFences(sourceBody);
+      const targetFences = extractCodeFences(body);
+      if (sourceFences.length !== targetFences.length) {
+        errors.push(
+          `${relativePath}: 代码块数量与中文源不一致（${sourceFences.length} -> ${targetFences.length}）`,
+        );
+      } else {
+        for (const [index, fence] of sourceFences.entries()) {
+          if (fence.body.trim() !== targetFences[index].body.trim()) {
+            errors.push(
+              `${relativePath}: 第 ${index + 1} 个代码块内容与中文源不一致`,
+            );
+          }
+        }
+      }
+
+      if (
+        extractHeadingLevels(sourceBody).join(",") !==
+        extractHeadingLevels(body).join(",")
+      ) {
+        errors.push(`${relativePath}: 标题层级结构与中文源不一致`);
+      }
+
+      const expectedLinks = extractLinkDestinations(sourceBody).map(
+        (destination) => expectedLocaleDestination(destination, data.source),
+      );
+      const balance = new Map();
+      for (const link of expectedLinks) {
+        balance.set(link, (balance.get(link) ?? 0) + 1);
+      }
+      for (const link of extractLinkDestinations(body)) {
+        balance.set(link, (balance.get(link) ?? 0) - 1);
+      }
+      const drifted = [...balance.entries()].filter(([, count]) => count !== 0);
+      if (drifted.length > 0) {
+        errors.push(
+          `${relativePath}: 链接目标与中文源不一致（${drifted
+            .map(([link, count]) => `${count > 0 ? "缺" : "多"} ${link}`)
+            .join("，")}）`,
+        );
+      }
+    }
+
+    const untranslated = sourcePages.filter(
+      ({ relativePath }) => !existsSync(localeTargetPath(locale, relativePath)),
+    );
+    if (untranslated.length > 0) {
+      const sample = untranslated
+        .slice(0, 5)
+        .map(({ relativePath }) => relativePath)
+        .join("，");
+      i18nFindings.push(
+        `${locale}: 还有 ${untranslated.length} 篇未翻译（${sample}${untranslated.length > 5 ? " …" : ""}）`,
+      );
+    }
+  }
+}
+
 if (!isDirectory(docsRoot)) {
   errors.push("required docs/ directory is missing");
 } else {
@@ -632,11 +791,14 @@ if (!isDirectory(docsRoot)) {
   }
 
   const markdownFiles = walkMarkdown(docsRoot);
-  const navigationFiles = [path.join(root, "AGENTS.md"), ...markdownFiles]
-    .filter(isFile);
+  const navigationFiles = [
+    path.join(root, "AGENTS.md"),
+    ...markdownFiles,
+  ].filter(isFile);
   checkMarkdownLinks(navigationFiles);
   const catalogRecords = checkCatalog(markdownFiles);
   checkExecPlanRecords();
+  checkDocumentationI18n();
   if (checkFreshness) {
     checkCatalogFreshness(catalogRecords);
   }
@@ -650,7 +812,19 @@ if (freshnessFindings.length > 0) {
   console.log("");
 }
 
-if (errors.length > 0 || (strictFreshness && freshnessFindings.length > 0)) {
+if (i18nFindings.length > 0) {
+  console.log("Documentation i18n findings:");
+  for (const finding of [...new Set(i18nFindings)].sort()) {
+    console.log(`  - ${finding}`);
+  }
+  console.log("");
+}
+
+if (
+  errors.length > 0 ||
+  (strictFreshness && freshnessFindings.length > 0) ||
+  (strictI18n && i18nFindings.length > 0)
+) {
   console.log("Documentation check failed:");
   for (const error of [...new Set(errors)].sort()) {
     console.log(`  - ${error}`);
@@ -660,12 +834,15 @@ if (errors.length > 0 || (strictFreshness && freshnessFindings.length > 0)) {
       "  - freshness findings fail because --strict-freshness is enabled",
     );
   }
+  if (strictI18n && i18nFindings.length > 0) {
+    console.log("  - i18n findings fail because --strict-i18n is enabled");
+  }
   process.exit(1);
 }
 
-if (freshnessFindings.length > 0) {
+if (freshnessFindings.length > 0 || i18nFindings.length > 0) {
   console.log(
-    "Documentation check passed with non-blocking freshness findings.",
+    "Documentation check passed with non-blocking freshness/i18n findings.",
   );
 } else {
   console.log("Documentation check passed.");

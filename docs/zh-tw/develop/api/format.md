@@ -1,0 +1,499 @@
+---
+source: develop/api/format.md
+sourceHash: ef915f39a3975177dd951681106956e42b5544f34703fa753593f664bfefa98b
+generated: zh-tw
+---
+
+<!-- 本檔案由 docs-i18n.mjs trad zh-tw 從 docs/develop/api/format.md 產生，請勿手動編輯。 -->
+# API 格式規範
+
+- 文件性質：現行方向
+- 對齊時間：`2026-09-13`
+- 讀者畫像：後端開發、前端聯調、介面測試、文件維護人員
+- 適用範圍：`backend` 下所有返回 JSON 的 HTTP API，主要覆蓋 `/api/v2/admin/*`、`/api/v2/client/*`、`/api/v2/site/*`、`/api/v2/open/*`（開放 API）、`/api/v2/zjmf/*`（ZJMF 上游協議）及少量獨立公共介面。
+
+## 1. 文件目標
+
+本文定義本倉庫後端 API 的統一請求處理、統一返回格式、錯誤碼區間、分頁結構、校驗失敗結構和新增介面的落地約束。
+
+發生衝突時按以下順序處理：
+
+1. 當前程式碼真實行為、真實路由、受控驗證結果
+2. `AGENTS.md`
+3. `docs/internal/designs/backend/direct-api-refactor.md`
+4. 本文件
+5. 舊介面習慣或歷史藍圖
+
+注意：當前開發文件、開發規範和其他約束性文件不具備完全真實性。API 治理必須以當前程式碼檢查為主，發現本文件與當前程式碼衝突時，先記錄衝突，再按檢查結論更新本文件或相關實現。
+
+介面審查時，歷史舊介面快照僅作為審查證據；當前目標結構以 `docs/internal/designs/backend/direct-api-refactor.md`、本文和自動生成的 `后端API清单.md` 為準。
+
+### 1.1 直接重構邊界
+
+API 直接重構已完成，後續遵循以下 V2 邊界：
+
+- 舊介面：`/api/admin/*`、`/api/client/*`、`/api/site/*` 已刪除，不保留結構、欄位或引數相容層。
+- 當前介面：統一落在 `/api/v2/admin/*`、`/api/v2/client/*`、`/api/v2/site/*`，按本文和 `docs/internal/designs/backend/direct-api-refactor.md` 一次性採用新規範。
+- 前端呼叫：按頁面或業務域完整消費 V2 介面，不混用歷史結構。
+- 文件維護：路由、請求、響應、測試和欄位邊界以 V2 介面為準。
+
+## 2. 統一響應外層
+
+除檔案流、受控資源檢視等非 JSON 響應外，API 統一返回以下外層結構：
+
+```json
+{
+  "code": 0,
+  "message": "操作成功",
+  "data": {},
+  "timestamp": 1760000000
+}
+```
+
+欄位說明：
+
+- `code`
+  - 業務碼
+  - 成功固定為 `0`
+  - 失敗為非 `0` 整數
+- `message`
+  - 給前端和聯調使用的可讀提示
+  - 必須使用簡體中文，不得返回英文、拼音、繁體中文或第三方原始錯誤文案
+- `data`
+  - 業務資料
+  - 可為物件、陣列、標量或 `null`
+- `timestamp`
+  - Unix 秒級時間戳
+
+當前實現來源：
+
+- `backend/app/Support/ApiResponseBuilder.php`
+- `backend/app/Traits/ApiResponse.php`
+
+## 3. 成功響應規範
+
+### 3.1 普通成功
+
+```json
+{
+  "code": 0,
+  "message": "操作成功",
+  "data": {
+    "id": 123,
+    "name": "示例"
+  },
+  "timestamp": 1760000000
+}
+```
+
+### 3.2 無返回資料
+
+用於刪除、退出、純狀態切換等操作：
+
+```json
+{
+  "code": 0,
+  "message": "已退出登录",
+  "data": null,
+  "timestamp": 1760000000
+}
+```
+
+### 3.3 列表/分頁成功
+
+標準分頁結構放在 `data` 內：
+
+```json
+{
+  "code": 0,
+  "message": "操作成功",
+  "data": {
+    "list": [],
+    "total": 0,
+    "page": 1,
+    "page_size": 20
+  },
+  "timestamp": 1760000000
+}
+```
+
+分頁欄位含義：
+
+- `list`: 當前頁資料
+- `total`: 總條數
+- `page`: 當前頁碼
+- `page_size`: 當前每頁數量
+
+當前標準分頁由 `ApiResponseBuilder::pagination(...)` 生成。
+
+## 4. 失敗響應規範
+
+失敗時外層結構不變，只是 `code != 0`。
+
+```json
+{
+  "code": 40400,
+  "message": "商品不存在或已下架",
+  "data": null,
+  "timestamp": 1760000000
+}
+```
+
+### 4.1 業務碼到 HTTP 狀態碼對映
+
+預設對映規則：
+
+| 業務碼區間 | 預設 HTTP 狀態 |
+| ---------- | -------------- |
+| `50000+`   | `500`          |
+| `42200+`   | `422`          |
+| `40900+`   | `409`          |
+| `40400+`   | `404`          |
+| `40300+`   | `403`          |
+| `40100+`   | `401`          |
+| `40000+`   | `400`          |
+
+說明：
+
+- 當前對映邏輯位於 `ApiResponseBuilder::httpStatusForErrorCode(...)`
+- 個別介面可顯式覆蓋 HTTP 狀態碼，例如回撥驗籤失敗當前返回 `code=40001`，HTTP 狀態為 `401`
+
+### 4.2 當前常見業務碼
+
+| 業務碼  | 語義                             | 當前常見來源                                    |
+| ------- | -------------------------------- | ----------------------------------------------- |
+| `0`     | 成功                             | 全域性統一                                        |
+| `40001` | 簽名驗證失敗                     | `VerifyCallbackSignature`                       |
+| `40100` | 未登入、未認證或登入已過期       | 認證異常、許可權中介軟體                            |
+| `40300` | 無許可權、角色不匹配、賬號被停用   | `ensure.admin` / `ensure.client` / `permission` |
+| `40301` | 電子郵件驗證或實名認證前置條件未滿足 | `EnsureEmailIsVerified`                         |
+| `40400` | 資源不存在                       | 控制器內資源查詢失敗                            |
+| `42200` | 引數驗證失敗或一般業務校驗失敗   | `ValidationException`、`BusinessException`      |
+| `50000` | 通用服務端錯誤                   | 未分類服務異常                                  |
+
+## 5. 引數校驗失敗格式
+
+Laravel `ValidationException` 已統一改寫為 JSON：
+
+```json
+{
+  "code": 42200,
+  "message": "参数验证失败",
+  "data": {
+    "errors": {
+      "email": ["邮箱不能为空"],
+      "page_size": ["page size 必须大于 0"]
+    }
+  },
+  "timestamp": 1760000000
+}
+```
+
+約定：
+
+- HTTP 狀態碼固定 `422`
+- 詳細欄位錯誤放在 `data.errors`
+- `errors` 的值保持 Laravel 原生陣列結構，前端不要假設只有一條訊息
+
+當前實現來源：`backend/bootstrap/app.php`
+
+## 6. 鑑權與許可權相關格式
+
+### 6.1 Token 認證
+
+管理端與使用者端都通過 Header 傳 Bearer Token：
+
+```http
+Authorization: Bearer <token>
+Accept: application/json
+```
+
+### 6.2 認證失敗
+
+示例：
+
+```json
+{
+  "code": 40100,
+  "message": "未登录或登录已过期",
+  "data": null,
+  "timestamp": 1760000000
+}
+```
+
+### 6.3 許可權不足/角色不匹配
+
+示例：
+
+```json
+{
+  "code": 40300,
+  "message": "无操作权限",
+  "data": null,
+  "timestamp": 1760000000
+}
+```
+
+### 6.4 前置條件不滿足
+
+例如電子郵件未驗證或未完成實名認證：
+
+```json
+{
+  "code": 40301,
+  "message": "请先完成实名认证",
+  "data": null,
+  "timestamp": 1760000000
+}
+```
+
+## 7. 分頁與查詢引數規範
+
+### 7.1 標準分頁引數
+
+新增介面統一使用：
+
+- `page`
+- `page_size`
+
+示例：
+
+```http
+GET /api/v2/admin/products?page=1&page_size=20
+```
+
+### 7.2 歷史引數邊界
+
+歷史舊介面曾存在 `per_page` 等相容引數；當前 V2 路由不再接受或返回這些欄位。
+
+規則：
+
+- V2 介面禁止接受 `per_page`、`pageSize`、`limit/offset` 作為標準分頁引數，除非該介面不是分頁列表而是明確的業務限制引數，例如監控點數量上限。
+- V2 分頁返回結構只能使用 `page_size`，不得額外返回 `per_page`。
+- 前端請求統一使用 `page`、`page_size`。
+
+## 8. 欄位與命名規範
+
+### 8.1 通用命名
+
+- URL 路徑：小寫、按資源語義命名
+- 請求欄位：`snake_case`
+- 響應欄位：`snake_case`
+- 表名、欄位名、篩選引數名保持一致優先
+
+### 8.2 布林引數
+
+如果控制器通過 `booleanQuery(...)` 讀取 query 引數，應接受常見布林表達：
+
+- `1` / `0`
+- `true` / `false`
+- `on` / `off`
+- `yes` / `no`
+
+非法布林值應丟擲校驗異常，統一進入 `42200`
+
+## 9. 檔案上傳與非 JSON 例外
+
+### 9.1 檔案上傳
+
+上傳類介面請求體允許使用 `multipart/form-data`，但響應仍應回到統一 JSON 外層。
+
+### 9.2 非 JSON 例外
+
+以下介面可不走統一 JSON 外層：
+
+- 直接檔案流響應
+- 受控資源預覽
+- WebSocket
+
+當前典型例外：
+
+- `/api/secure-assets/view`
+
+除這些例外，普通 HTTP API 不應返回裸陣列、裸字串或自定義包裹結構。
+
+## 10. API 請求工程化規範
+
+API 請求處理必須工程化，避免 Controller 裡散落引數讀取、型別轉換、預設值、許可權上下文和業務前置判斷。
+
+### 10.1 請求入口
+
+- 新增寫操作、複雜查詢、批次操作、匯入匯出、支付/賬單/實名/上游相關介面必須使用 `FormRequest`。
+- 簡單隻讀詳情介面可以使用路由引數，但資源歸屬、許可權和業務可見性必須交給 Service 或 Policy/許可權中介軟體處理。
+- Controller 不應直接呼叫 `$request->validate(...)`，除非是極小範圍相容舊介面，並在後續治理中遷移到 FormRequest。
+- Controller 不應手寫大量 `$request->input(...)`、`$request->query(...)` 後再拼業務陣列；應優先使用 `$request->validated()`。
+
+### 10.2 請求欄位
+
+- 請求欄位統一使用 `snake_case`。
+- 布林、列舉、金額、日期範圍、分頁引數必須在 FormRequest 中完成校驗和歸一化。
+- 金額欄位必須明確單位；涉及財務、餘額、支付時優先使用整數分或字串 decimal，不允許隱式 float。
+- 日期時間欄位必須明確格式和時區，介面文件中需說明。
+- 批次 ID 使用陣列，例如 `ids: [1, 2, 3]`，禁止逗號字串作為新增介面預設格式。
+
+### 10.3 查詢引數歸一化
+
+- 列表介面統一使用 `page`、`page_size`。
+- 排序欄位必須白名單對映，禁止直接把使用者輸入傳給 `orderBy` / `orderByRaw`。
+- 篩選欄位必須有明確型別，避免空字串、`null`、`0`、`false` 在業務層語義混亂。
+- 新介面不做舊引數相容；舊介面如已有相容邏輯，保持原實現邊界，不在重構中擴散到 v2。
+
+### 10.4 請求 DTO 與上下文
+
+當介面引數會跨多個 Service 傳遞，或涉及支付、實名、第三方上游、批次操作時，推薦引入請求 DTO 或命令物件：
+
+```php
+final class CreatePaymentCommand
+{
+    public function __construct(
+        public readonly int $invoiceId,
+        public readonly string $gateway,
+        public readonly int $amountCents,
+        public readonly int $actorId,
+        public readonly string $traceId,
+    ) {}
+}
+```
+
+約束：
+
+- DTO 欄位使用業務語義命名，不照搬第三方欄位。
+- DTO 不直接讀取 Request。
+- DTO 不包含 secret、token、私鑰等敏感值。
+- `actor_id`、`trace_id`、`ip_address`、`operator_*` 等上下文由 Controller 或中介軟體收集後傳入 Service，不在深層 Service 裡重複讀取全域性請求。
+
+## 11. API 響應工程化規範
+
+API 響應必須由統一響應建構子、Resource 或明確 DTO 轉換，避免 Controller、Service、第三方驅動各自拼 JSON。
+
+### 11.1 響應來源
+
+- Controller 返回 `$this->success(...)`、`$this->paginate(...)`、`$this->error(...)` 或丟擲統一業務異常。
+- 業務 Service 返回領域物件、DTO、陣列或分頁器，不直接返回 HTTP Response。
+- 第三方 Provider 返回內部 DTO 或統一異常，不把第三方原始響應直接傳給 Controller 或前端。
+- Model 不應直接作為複雜介面響應暴露，優先通過 Resource 控制欄位。
+
+### 11.2 Resource 與欄位治理
+
+- 面向前端的欄位由 Resource 或專用 Response DTO 統一轉換。
+- 響應欄位統一 `snake_case`。
+- 敏感欄位預設不返回，例如 password、token、secret、身份證完整號、私鑰、第三方原始簽名。
+- 狀態欄位必須返回穩定 code；展示文案可由前端對映或後端明確輸出，但不能散落魔法字串。
+- 涉及金額時必須明確單位，例如 `amount_cents`、`amount` + 文件說明，不允許前端猜測。
+
+### 11.2.1 敏感欄位與憑據輸出
+
+- 設定類介面遇到敏感 key 時，響應 `value` 必須為空字串或安全佔位，不返回原始值。
+- 設定類介面可返回 `has_value` 和 `masked_value`，但 `masked_value` 必須是真掩碼，例如 `******`，不得等於原始值。
+- 敏感配置編輯遵循“空值保留、非空替換”：提交空字串表示不修改舊金鑰；提交非空值才替換並按模型規則加密儲存。
+- 供應商介面不得在列表、詳情、建立、更新響應中返回 `api_key` 原值。
+- 供應商憑據只允許返回 `has_api_key`、必要掩碼或存在狀態，欄位必須由 Resource 或控制器白名單顯式控制。
+- 第三方原始錯誤只能進入脫敏日誌或內部排查上下文，不得作為 API `message` 或前端提示直接展示。
+- `payments` 表記錄屬於真實資金流或財務審計鏈路，維護命令、清理命令、API 和測試均不得物理刪除 Payment 記錄。
+- 公開 VNC token 介面不得返回 VNC `password`，公開 token 必須一次性消費，後續 relay token 只能在受控短 TTL 內使用。
+- 使用者端賬單詳情必須使用獨立 Resource/DTO 白名單，不得複用管理端詳情，不得返回 `raw_status` 等內部審計欄位；使用者本人相關支付記錄可返回 `payment_no`（系統/商家訂單號）與 `trade_no`（第三方支付訂單號）用於對賬展示。
+- 餘額恢復、混合支付撤銷、退款等財務反轉不得刪除原始流水，必須用反向流水、狀態投影或審計記錄保留完整鏈路。
+
+### 11.3 錯誤響應
+
+- 業務異常統一對映為 `code != 0` 的響應。
+- 第三方異常必須轉換成專案內部錯誤碼和簡體中文 `message`，不直接暴露供應商原始錯誤。
+- 表單校驗錯誤統一使用 `42200` 和 `data.errors`。
+- 鑑權、許可權、前置條件必須區分 `40100`、`40300`、`40301`。
+- 不允許介面一部分返回 `code=0` 表示失敗，另一部分用 HTTP 500 表示失敗。
+
+### 11.4 文案語言規範
+
+- 所有 API 返回的 `message` 必須為簡體中文。
+- `data.errors` 中面向前端展示的校驗錯誤必須為簡體中文。
+- 第三方供應商返回的英文、繁體中文、錯誤碼、原始異常資訊，必須在後端對映為專案內部簡體中文提示。
+- 日誌可以保留第三方原始錯誤摘要，但 API 響應不得直接暴露第三方原文。
+- 後端內部異常類、變數名、列舉名可以使用英文；使用者可見響應文案必須使用簡體中文。
+- 自動化測試應優先斷言業務碼和關鍵欄位；涉及使用者展示文案時，應斷言為簡體中文。
+- 前端錯誤提示統一走各端請求層或 `toUserMessage(error, fallback)` 等可信中文兜底，不得直接展示 axios/browser/第三方 `error.message`。
+- 無業務明確要求時，管理端和使用者端不開放英文自動切換入口；403、404、500、登入、表單、通知、空狀態、載入態和操作結果提示均使用簡體中文。
+
+### 11.5 相容與版本邊界
+
+- 舊介面凍結，不得為了 v2 重構刪除、重新命名或新增結構性欄位。
+- v2 新介面不繼承舊介面的冗餘欄位、歷史相容欄位和列表詳情混用結構。
+- 必須變更舊介面行為時，應在報告或需求中說明影響面，並同步前端呼叫、介面文件和測試；這類變更只允許用於安全漏洞或明確 bug。
+- 歷史相容欄位只保留在舊介面內，不進入 v2 介面。
+- 同一業務物件在管理端、使用者端、站點端可有不同 Resource，但核心狀態 code 和金額單位必須一致。
+
+### 11.5.1 大響應與欄位邊界
+
+新介面必須主動控制響應體積：
+
+- 單次 JSON 響應目標上限為 `100KB`。
+- 公開站點首屏介面目標上限為 `50KB`。
+- 管理端樹選擇器、目錄選擇器首包目標上限為 `70KB`。
+- 列表 Resource 不返回詳情欄位、完整長文本、完整配置 schema、完整關聯樹、完整日誌上下文或第三方原始響應。
+- 大文本列表欄位返回 `excerpt`，完整 `content`、`body`、`html` 只在詳情介面返回。
+- 圖片、二維碼、附件、影片返回 `url` 或 `asset_id`，禁止把 base64 放入普通 JSON 響應。
+- 巢狀層級預設不超過 3 層；超過 3 層必須拆為子資源、分頁或獨立詳情介面。
+
+### 11.6 第三方錯誤與回撥
+
+- 支付、實名、簡訊、上游、郵件、物件儲存等第三方錯誤統一經過 `ProviderErrorMapper` 或等價對映層轉換為簡體中文業務提示。
+- 第三方原始 `msg/message/error` 僅允許寫入脫敏日誌，不能進入 API `message`、`data.errors` 或前端提示。
+- 回撥入口必須先通過簽名中介軟體；涉及自研回撥時優先使用 HMAC-SHA256、timestamp、nonce 和 replay cache。
+- 業務 Service 層仍需保留冪等、金額/狀態校驗、事務鎖和審計日誌，不能只依賴路由層驗籤。
+
+## 12. 新增介面落地規則
+
+新增 API 時遵循以下實現方式：
+
+1. 控制器保持薄層，只做引數接收、鑑權、呼叫服務、返回結果。
+2. 成功響應優先使用：
+   - `$this->success(...)`
+   - `$this->paginate(...)`
+3. 失敗響應優先使用：
+   - `$this->error(...)`
+   - `throw new BusinessException(...)`
+4. 引數校驗優先使用 `FormRequest`。
+5. 列表介面預設提供 `page`、`page_size`。
+6. 不要手寫一套與統一外層不同的 JSON 結構。
+
+7. 請求歸一化優先放在 FormRequest 或 Request DTO。
+8. 響應欄位優先通過 Resource 或 Response DTO 管理。
+9. 第三方請求/響應不直接穿透到 Controller 或前端。
+10. v2 新介面必須列表與詳情 Resource 分離。
+11. v2 新介面不得複用舊寬 Resource 作為預設輸出。
+12. v2 新介面必須有 Feature 測試覆蓋鑑權、許可權、校驗失敗、成功響應和欄位白名單。
+
+### 12.1 推薦控制器寫法
+
+```php
+public function index(ListProductsRequest $request)
+{
+    $paginator = $this->productService->paginate($request->validated());
+
+    return $this->paginate($paginator, ProductResource::class);
+}
+
+public function show(int $id)
+{
+    $product = $this->productService->findVisible($id);
+
+    if (! $product) {
+        return $this->error(40400, '商品不存在或已下架');
+    }
+
+    return $this->success(new ProductResource($product));
+}
+```
+
+## 13. 聯調注意事項
+
+- 前端成功判斷以 `code === 0` 為準，不要只看 HTTP 200
+- 前端失敗提示優先讀取 `message`，並按簡體中文展示
+- 表單校驗錯誤優先讀取 `data.errors`
+- 新介面變更欄位名或巢狀層級時，必須同步更新前端呼叫
+- 自動化或第三方回撥介面如果要覆蓋 HTTP 狀態碼，必須保持業務碼和 `message` 仍可讀
+
+## 14. 維護建議
+
+- 返回格式發生變化時，優先更新本文，再更新前後端呼叫
+- 路由清單變化後，重刷 `docs/develop/api/backend-api-catalog.md`
+- 若新增特殊錯誤碼區間，應同步補充本文第 4 節
