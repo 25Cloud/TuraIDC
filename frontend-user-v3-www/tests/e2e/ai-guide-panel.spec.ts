@@ -221,8 +221,9 @@ test.describe("AI 浮窗", () => {
     await expect(pill).toContainText("product.search");
     await expect(pill).toContainText("完成");
 
-    const box = await panel(page).boundingBox();
-    // 入场动画还在缩放时会有零点几像素误差，取整后再比
-    expect(Math.round(box?.width ?? 0)).toBe(400);
+    // 面板带 0.16s 入场缩放，轮询到动画落定再比宽度
+    await expect
+      .poll(async () => Math.round((await panel(page).boundingBox())?.width ?? 0))
+      .toBe(400);
   });
 });

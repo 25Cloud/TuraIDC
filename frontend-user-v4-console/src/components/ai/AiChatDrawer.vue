@@ -12,39 +12,41 @@
   >
     <template #header>
       <div class="ai-drawer-header">
-        <div class="ai-drawer-header__title">
-          <robot-icon class="ai-drawer-header__logo" />
-          <span class="ai-drawer-header__name">{{ $t('ai.title') }}</span>
-          <t-tag v-if="modelLabel" size="small" variant="light" theme="primary">{{ modelLabel }}</t-tag>
-        </div>
+        <div class="ai-drawer-header__row">
+          <div class="ai-drawer-header__title">
+            <robot-icon class="ai-drawer-header__logo" />
+            <span class="ai-drawer-header__name">{{ $t('ai.title') }}</span>
+            <t-tag v-if="modelLabel" size="small" variant="light" theme="primary">{{ modelLabel }}</t-tag>
+          </div>
 
-        <div class="ai-drawer-header__tools">
-          <ai-permission-switch
-            :model-value="store.permissionMode"
-            :allowed-modes="store.allowedModes"
-            :disabled="busy"
-            @update:model-value="handlePermissionChange"
-          />
-          <t-button
-            shape="square"
-            size="small"
-            variant="text"
-            :aria-label="$t('ai.newConversation')"
-            :title="$t('ai.newConversation')"
-            @click="handleNewConversation"
-          >
-            <template #icon><add-icon /></template>
-          </t-button>
-          <t-button
-            shape="square"
-            size="small"
-            variant="text"
-            :aria-label="$t('ai.openPageTitle')"
-            :title="$t('ai.openPageTitle')"
-            @click="handleOpenPage"
-          >
-            <template #icon><fullscreen-icon /></template>
-          </t-button>
+          <div class="ai-drawer-header__tools">
+            <ai-permission-switch
+              :model-value="store.permissionMode"
+              :allowed-modes="store.allowedModes"
+              :disabled="busy"
+              @update:model-value="handlePermissionChange"
+            />
+            <t-button
+              shape="square"
+              size="small"
+              variant="text"
+              :aria-label="$t('ai.newConversation')"
+              :title="$t('ai.newConversation')"
+              @click="handleNewConversation"
+            >
+              <template #icon><add-icon /></template>
+            </t-button>
+            <t-button
+              shape="square"
+              size="small"
+              variant="text"
+              :aria-label="$t('ai.openPageTitle')"
+              :title="$t('ai.openPageTitle')"
+              @click="handleOpenPage"
+            >
+              <template #icon><fullscreen-icon /></template>
+            </t-button>
+          </div>
         </div>
 
         <p v-if="subjectLabel" class="ai-drawer-header__context">
@@ -216,17 +218,26 @@ const handleOpenRecent = (id: number): void => {
 // 抽屉内容会被 teleport 到 body 下，所以这里只用单类选择器，不依赖组件根节点祖先
 .ai-drawer-header {
   display: grid;
-  gap: var(--td-comp-margin-s);
+  gap: var(--td-comp-margin-xs);
   width: 100%;
   padding-right: var(--td-comp-margin-xxl);
   text-align: left;
 }
 
-.ai-drawer-header__title {
+.ai-drawer-header__row {
   display: flex;
   gap: var(--td-comp-margin-s);
   align-items: center;
+  justify-content: space-between;
   min-width: 0;
+}
+
+.ai-drawer-header__title {
+  display: flex;
+  gap: var(--td-comp-margin-xs);
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .ai-drawer-header__logo {
@@ -255,6 +266,12 @@ const handleOpenRecent = (id: number): void => {
 .ai-drawer-header__tools :deep(.t-button) {
   min-width: 1.75rem;
   height: 1.75rem;
+  padding: 0;
+  font-size: 1rem;
+}
+
+.ai-drawer-header__tools :deep(.t-icon) {
+  font-size: 1rem;
 }
 
 .ai-drawer-header__context {
@@ -272,6 +289,7 @@ const handleOpenRecent = (id: number): void => {
 // —— 最近对话：一排可横滚的胶囊，点一下进独立页 ——
 .ai-drawer-recent {
   display: flex;
+  flex: 0 0 auto;
   gap: var(--td-comp-margin-s);
   align-items: center;
   padding: var(--td-comp-paddingTB-xs) var(--td-comp-paddingLR-l);
