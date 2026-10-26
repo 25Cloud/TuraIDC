@@ -238,6 +238,60 @@ use: {
 对策：核查走文件系统级全文搜索（编辑器搜索或 `rg`），或者先 `git add -A` 把它变成已跟踪再搜。
 判定「还有没有残留引用」时，后者更接近提交后的真实状态。
 
+### 3.10 语言包里一个裸 `@` 能让整个应用白屏，而且构建/类型检查全绿
+
+vue-i18n 的消息语法里 `@` 是 **linked message** 前缀（`@:key`、`@.lower:key`）。
+把 `@` 当普通字符写进译文，编译阶段就抛：
+
+```text
+SyntaxError: Message compilation error: Invalid linked format
+1  |  完整邮箱地址，例如 no-reply@example.com
+   |                     ^
+```
+
+报错发生在组件渲染时（`$t()` 首次编译该消息），**整个组件挂载失败、页面全白**，
+而 `vue-tsc`、`eslint`、`vite build` 全部通过——它们都只把 JSON 当数据，不编译消息。
+
+实测后果：管理端插件配置页（SMTP 账号占位符里写了 `no-reply@example.com`）整页空白，
+`#app` 的 `innerHTML` 长度为 0，只有 `pageerror` 里能看到真因。
+
+**对策**：消息里的字面量 `@` 必须写成 `{'@'}`（本项目既有键 `plugins.smtp` 的
+「字母、数字、下划线、点、横线或 `{'@'}`」就是这么写的）。同理要注意 `|`（复数分支）
+与未配对的 `{`/`}`。
+
+**怎么查**：
+
+```js
+// 扫所有语言 JSON，找出仍然裸用 @ 的值
+for (const [k, v] of flatten(JSON.parse(readFileSync(file, 'utf8')))) {
+  if (/@(?![.:])/.test(v.replace(/\{'@'\}/g, ''))) console.log(k, v);
+}
+```
+
+**怎么发现**：e2e 失败截图是一片纯白时，别急着看断言，先挂 `pageerror` 监听把堆栈打出来。
+
+### 3.11 PowerShell 的 `Get-Content -Raw` + `Set-Content` 会把 UTF-8 源码写成乱码
+
+想「批量把某个字符串换成另一个」时，下面这段在 Windows PowerShell 5.1 上会把**整个文件的中文
+全部变成 `浜戞湇鍔″櫒` 这种乱码**：
+
+```powershell
+$c = Get-Content $p -Raw          # 5.1 默认按 ANSI 解码，UTF-8 中文立刻变成乱码字符
+$c = $c.Replace('旧', '新')
+Set-Content -Path $p -Value $c -Encoding UTF8
+```
+
+一次就改坏了 1090 行内容（`git diff` 显示 1090 insertions / 1091 deletions），
+而且**测试仍然能跑**（只是中文断言全挂），很容易被误当成业务回归。
+
+**对策**：
+
+1. 逐处用编辑工具（`edit` 工具 / 编辑器替换）改，不要在 PowerShell 里做整文件读写；
+2. 确实要脚本来做，用 Node 以 buffer 读写：`execFileSync('git', ['show', 'HEAD:' + p])` 取原始字节、
+   `fs.writeFileSync(p, buf)` 写回；
+3. 已经写坏了：`git checkout -- <file>` 会被安全网拦住，用 `git show HEAD:<path>` 取字节写回，
+   再逐处重新应用改动（**注意会同时丢掉这段时间里别人对该文件的改动**，重放前先看清楚要补哪些）。
+
 ## 四、提交
 
 ### 4.1 必须 `--no-verify`

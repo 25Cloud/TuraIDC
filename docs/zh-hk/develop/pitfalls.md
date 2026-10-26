@@ -1,6 +1,6 @@
 ---
 source: develop/pitfalls.md
-sourceHash: 0ee78d8480b082b9c177898e01a9ea9c6036aac2f7e9e277cdf00b88cc8301da
+sourceHash: 9bb4805faddf8ba3e86a80d4466b5f023333aa18ff3157f0bf479baa48d19431
 generated: zh-hk
 ---
 
@@ -244,6 +244,60 @@ use: {
 
 對策：核查走文件系統級全文搜尋（編輯器搜尋或 `rg`），或者先 `git add -A` 把它變成已跟蹤再搜。
 判定「還有沒有殘留引用」時，後者更接近提交後的真實狀態。
+
+### 3.10 語言包裡一個裸 `@` 能讓整個應用白屏，而且構建/類型檢查全綠
+
+vue-i18n 的消息語法裡 `@` 是 **linked message** 前綴（`@:key`、`@.lower:key`）。
+把 `@` 當普通字符寫進譯文，編譯階段就拋：
+
+```text
+SyntaxError: Message compilation error: Invalid linked format
+1  |  完整邮箱地址，例如 no-reply@example.com
+   |                     ^
+```
+
+報錯發生在組件渲染時（`$t()` 首次編譯該消息），**整個組件掛載失敗、頁面全白**，
+而 `vue-tsc`、`eslint`、`vite build` 全部通過——它們都只把 JSON 當數據，不編譯消息。
+
+實測後果：管理端插件配置頁（SMTP 賬號佔位符裡寫了 `no-reply@example.com`）整頁空白，
+`#app` 的 `innerHTML` 長度為 0，只有 `pageerror` 裡能看到真因。
+
+**對策**：消息裡的字面量 `@` 必須寫成 `{'@'}`（本項目既有鍵 `plugins.smtp` 的
+「字母、數字、下劃線、點、橫線或 `{'@'}`」就是這麼寫的）。同理要注意 `|`（複數分支）
+與未配對的 `{`/`}`。
+
+**怎麼查**：
+
+```js
+// 扫所有语言 JSON，找出仍然裸用 @ 的值
+for (const [k, v] of flatten(JSON.parse(readFileSync(file, 'utf8')))) {
+  if (/@(?![.:])/.test(v.replace(/\{'@'\}/g, ''))) console.log(k, v);
+}
+```
+
+**怎麼發現**：e2e 失敗截圖是一片純白時，別急着看斷言，先掛 `pageerror` 監聽把堆棧打出來。
+
+### 3.11 PowerShell 的 `Get-Content -Raw` + `Set-Content` 會把 UTF-8 源碼寫成亂碼
+
+想「批量把某個字符串換成另一個」時，下面這段在 Windows PowerShell 5.1 上會把**整個文件的中文
+全部變成 `浜戞湇鍔″櫒` 這種亂碼**：
+
+```powershell
+$c = Get-Content $p -Raw          # 5.1 默认按 ANSI 解码，UTF-8 中文立刻变成乱码字符
+$c = $c.Replace('旧', '新')
+Set-Content -Path $p -Value $c -Encoding UTF8
+```
+
+一次就改壞了 1090 行內容（`git diff` 顯示 1090 insertions / 1091 deletions），
+而且**測試仍然能跑**（只是中文斷言全掛），很容易被誤當成業務迴歸。
+
+**對策**：
+
+1. 逐處用編輯工具（`edit` 工具 / 編輯器替換）改，不要在 PowerShell 裡做整文件讀寫；
+2. 確實要腳本來做，用 Node 以 buffer 讀寫：`execFileSync('git', ['show', 'HEAD:' + p])` 取原始字節、
+   `fs.writeFileSync(p, buf)` 寫回；
+3. 已經寫壞了：`git checkout -- <file>` 會被安全網攔住，用 `git show HEAD:<path>` 取字節寫回，
+   再逐處重新應用改動（**注意會同時丟掉這段時間裡別人對該文件的改動**，重放前先看清楚要補哪些）。
 
 ## 四、提交
 

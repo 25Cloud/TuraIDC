@@ -51,7 +51,9 @@ function handleToggle() {
 .ai-admin-launcher {
   position: fixed;
   right: 24px;
-  bottom: 32px;
+  /* 比「吸底保存条」高：保存条在页面底部约 64px 高，浮球停在 32px 时会正压在
+     保存按钮右下角，手机上尤其明显（把整个按钮盖掉一半） */
+  bottom: 88px;
   z-index: 100;
 }
 
@@ -96,7 +98,8 @@ function handleToggle() {
 @media (width <= 960px) {
   .ai-admin-launcher {
     right: 16px;
-    bottom: 24px;
+    /* 手机上吸底条更高（含安全区内边距），浮球再抬高一点 */
+    bottom: 96px;
   }
 }
 

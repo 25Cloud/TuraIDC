@@ -1,6 +1,6 @@
 ---
 source: develop/pitfalls.md
-sourceHash: 0ee78d8480b082b9c177898e01a9ea9c6036aac2f7e9e277cdf00b88cc8301da
+sourceHash: 9bb4805faddf8ba3e86a80d4466b5f023333aa18ff3157f0bf479baa48d19431
 translatedAt: 2026-10-26
 ---
 
@@ -196,6 +196,51 @@ Fix: delete `node_modules/.vite` and start the dev server again (a restart alone
 After bulk relocations, renames, or new files, a repository-wide check with `git grep` / `git status` / `git diff` **misses every new file** — they are still untracked at that point. This happened once during a docs-site reorganization: `git grep 'docs/references'` reported 0 hits across 90 documents, while the body actually contained 53 old paths.
 
 Countermeasure: run the check with a filesystem-level full-text search (editor search or `rg`), or `git add -A` first so the files become tracked before searching. For deciding whether leftover references remain, the latter is closer to the real post-commit state.
+
+### 3.10 A single bare `@` in a locale pack blanks the whole app, and the build and type check still pass
+
+In vue-i18n message syntax `@` is the **linked message** prefix (`@:key`, `@.lower:key`). Writing `@` as an ordinary character in a translation throws at compile time:
+
+```text
+SyntaxError: Message compilation error: Invalid linked format
+1  |  完整邮箱地址，例如 no-reply@example.com
+   |                     ^
+```
+
+The error surfaces while the component renders (the first `$t()` that compiles this message), **the whole component fails to mount and the page goes blank**, while `vue-tsc`, `eslint` and `vite build` all pass — they treat the JSON as data and never compile messages.
+
+Measured impact: the admin plugin-config page (an SMTP account placeholder containing `no-reply@example.com`) rendered a completely blank page, with `#app` `innerHTML` length 0 and the real cause visible only through `pageerror`.
+
+**Countermeasure**: a literal `@` inside a message must be written as `{'@'}` (the existing `plugins.smtp` key "letters, digits, underscores, dots, hyphens or `{'@'}`" already does this). The same care applies to `|` (plural branches) and unbalanced `{`/`}`.
+
+**How to scan**:
+
+```js
+// 扫所有语言 JSON，找出仍然裸用 @ 的值
+for (const [k, v] of flatten(JSON.parse(readFileSync(file, 'utf8')))) {
+  if (/@(?![.:])/.test(v.replace(/\{'@'\}/g, ''))) console.log(k, v);
+}
+```
+
+**How to find it**: when a failing e2e screenshot is a solid white page, do not stare at the assertions — attach a `pageerror` listener and print the stack first.
+
+### 3.11 PowerShell `Get-Content -Raw` + `Set-Content` rewrites UTF-8 source files as mojibake
+
+When you want to "bulk replace one string with another", the snippet below turns **every Chinese character in the file into mojibake** such as `浜戞湇鍔″櫒` on Windows PowerShell 5.1:
+
+```powershell
+$c = Get-Content $p -Raw          # 5.1 默认按 ANSI 解码，UTF-8 中文立刻变成乱码字符
+$c = $c.Replace('旧', '新')
+Set-Content -Path $p -Value $c -Encoding UTF8
+```
+
+One run corrupted 1090 lines (`git diff` showed 1090 insertions / 1091 deletions), and the tests **still ran** (only the Chinese assertions failed), which makes it easy to misdiagnose as a behavioural regression.
+
+**Countermeasure**:
+
+1. Change one spot at a time with an editing tool (the `edit` tool or an editor's replace), never whole-file read/write in PowerShell;
+2. If a script is genuinely needed, read and write with Node buffers: fetch raw bytes via `execFileSync('git', ['show', 'HEAD:' + p])` and write them back with `fs.writeFileSync(p, buf)`;
+3. If it is already corrupted: `git checkout -- <file>` is blocked by the safety net, so restore with `git show HEAD:<path>` written back as bytes and then re-apply each change by hand (**this also discards anyone else's edits to that file in the meantime**, so check what else has to be replayed first).
 
 ## 4. Committing
 
