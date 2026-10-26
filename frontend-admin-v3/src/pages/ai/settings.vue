@@ -664,8 +664,11 @@ onMounted(loadSettings);
   z-index: 10;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--td-comp-margin-s);
-  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-l);
+  /* 右下角的 AI 浮球是 fixed 定位，右侧多留一个浮球宽度，别让浮球压住主按钮 */
+  padding: var(--td-comp-paddingTB-s) calc(var(--td-comp-paddingLR-l) + 64px) var(--td-comp-paddingTB-s)
+    var(--td-comp-paddingLR-l);
   border-top: 1px solid var(--td-component-stroke);
   border-radius: var(--td-radius-medium);
   background: var(--td-bg-color-container);
@@ -717,6 +720,7 @@ onMounted(loadSettings);
 
   .ai-settings-actions {
     flex-wrap: wrap;
+    padding-right: calc(12px + 56px);
   }
 
   .ai-settings-actions__hint,

@@ -80,6 +80,7 @@
       :visible="detailVisible"
       :header="$t('ai.conversations.drawerTitle', { id: detailId || '' })"
       :size="drawerSize"
+      :footer="false"
       @close="closeDetail"
     >
       <t-loading :loading="detailLoading" size="small" show-overlay>
@@ -197,9 +198,9 @@
 </template>
 <script setup lang="ts">
 import type { AiConversationDetail, AiMessageRow } from '@turaidc/shared/runtime';
+import { RobotIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { RobotIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, ref } from 'vue';
 
 import type { AiAdminConversation, AiUsageResponse } from '@/api/ai';

@@ -100,11 +100,13 @@ const renderMarkdown = (content: string): string => markdown.render(String(conte
 const openReasoning = ref<Record<string, boolean>>({});
 
 const isReasoningOpen = (message: AiChatMessage): boolean => {
-  if (message.streaming) {
-    return openReasoning.value[message.id] !== false;
+  const explicit = openReasoning.value[message.id];
+  if (explicit !== undefined) {
+    return explicit;
   }
 
-  return openReasoning.value[message.id] === true;
+  // 还没出正文时展开思考（用户能看见它在想什么），一旦开始出正文就自动收起，避免思考块占满面板
+  return message.streaming === true && (message.content ?? '') === '';
 };
 
 const toggleReasoning = (id: string): void => {
