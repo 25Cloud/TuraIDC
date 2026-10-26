@@ -40,7 +40,6 @@ export interface AiAdminSettings {
   user_daily_tokens: number;
   global_daily_tokens: number;
   global_daily_cost_cents: number;
-  cost_per_1k_tokens_cents: number;
   max_tool_rounds: number;
   request_timeout_seconds: number;
   history_message_limit: number;
@@ -48,38 +47,9 @@ export interface AiAdminSettings {
   retention_days: number;
   default_permission_mode: AiPermissionMode;
   max_permission_mode: AiPermissionMode;
-  /** 工具白名单：空数组表示放开全部工具 */
-  enabled_tools: string[];
   /** 密钥只读状态：明文永远不出后端 */
   api_key_has_value: boolean;
   api_key_masked: string;
-}
-
-/** 后端回显的下拉项：协议与权限档位都用 { key, label } 结构 */
-export interface AiAdminSettingsOption {
-  key: string;
-  label: string;
-}
-
-/** 工具目录项：只用于设置页勾选，不参与提交 */
-export interface AiAdminTool {
-  name: string;
-  risk: string;
-  description: string;
-}
-
-/** settings 接口里的只读回显：协议、权限档位与工具目录 */
-export interface AiAdminSettingsCatalog {
-  protocols: AiAdminSettingsOption[];
-  permission_modes: AiAdminSettingsOption[];
-  tools: AiAdminTool[];
-  protocol_label: string;
-}
-
-/** settings 接口的完整视图：生效值 + 只读目录 */
-export interface AiAdminSettingsView {
-  settings: AiAdminSettings;
-  catalog: AiAdminSettingsCatalog;
 }
 
 /** 保存载荷：api_key 为空表示保留旧值，所以只在填写时才带这个键 */
@@ -136,44 +106,33 @@ export interface AiConversationListResponse {
 
 export interface AiSettingsTestResult {
   ok: boolean;
-  /** 后端返回的中文结论（信封 message 或 data.message） */
   message: string;
   model: string;
-  protocol: string;
-  /** 上游回包正文截断片段，用于确认模型真的在回话 */
-  reply: string;
   latency_ms: number | null;
 }
 
-/**
- * 默认值对齐后端 AiConfig 的生效默认值：
- * 未配置过的站点拿到的是可直接投产的数值，而不是一堆需要逐个调的 0。
- * 设置页表单初值也用它，避免首屏渲染出一堆 0 再被接口覆盖。
- */
-export const AI_SETTINGS_DEFAULTS: AiAdminSettings = {
+const DEFAULT_SETTINGS: AiAdminSettings = {
   enabled: false,
   protocol: 'chat_completions',
   base_url: '',
   model: '',
-  temperature: 0.3,
-  max_tokens: 1200,
+  temperature: 0.7,
+  max_tokens: 2048,
   console_enabled: true,
-  site_enabled: true,
-  admin_enabled: true,
+  site_enabled: false,
+  admin_enabled: false,
   allow_balance_pay: false,
-  user_daily_messages: 60,
-  user_daily_tokens: 120000,
-  global_daily_tokens: 3000000,
-  global_daily_cost_cents: 5000,
-  cost_per_1k_tokens_cents: 1,
+  user_daily_messages: 0,
+  user_daily_tokens: 0,
+  global_daily_tokens: 0,
+  global_daily_cost_cents: 0,
   max_tool_rounds: 6,
   request_timeout_seconds: 60,
   history_message_limit: 12,
   redact_pii: true,
   retention_days: 30,
   default_permission_mode: 'confirm',
-  max_permission_mode: 'auto_approve',
-  enabled_tools: [],
+  max_permission_mode: 'confirm',
   api_key_has_value: false,
   api_key_masked: '',
 };
@@ -208,11 +167,6 @@ function toNumber(value: unknown, fallback: number): number {
 function toText(value: unknown, fallback = ''): string {
   if (value === null || value === undefined) return fallback;
   return typeof value === 'string' ? value : String(value);
-}
-
-function toTextList(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.map((item) => toText(item).trim()).filter((item) => item !== '');
 }
 
 function toPermissionMode(value: unknown, fallback: AiPermissionMode): AiPermissionMode {
@@ -252,73 +206,29 @@ export function normalizeAiSettings(raw: Record<string, unknown> | null | undefi
   const apiKey = resolveApiKeyState(data);
 
   return {
-    enabled: toBool(data.enabled, AI_SETTINGS_DEFAULTS.enabled),
+    enabled: toBool(data.enabled, DEFAULT_SETTINGS.enabled),
     protocol: toProtocol(data.protocol),
     base_url: toText(data.base_url),
     model: toText(data.model),
-    temperature: toNumber(data.temperature, AI_SETTINGS_DEFAULTS.temperature),
-    max_tokens: toNumber(data.max_tokens, AI_SETTINGS_DEFAULTS.max_tokens),
-    console_enabled: toBool(data.console_enabled, AI_SETTINGS_DEFAULTS.console_enabled),
-    site_enabled: toBool(data.site_enabled, AI_SETTINGS_DEFAULTS.site_enabled),
-    admin_enabled: toBool(data.admin_enabled, AI_SETTINGS_DEFAULTS.admin_enabled),
-    allow_balance_pay: toBool(data.allow_balance_pay, AI_SETTINGS_DEFAULTS.allow_balance_pay),
-    user_daily_messages: toNumber(data.user_daily_messages, AI_SETTINGS_DEFAULTS.user_daily_messages),
-    user_daily_tokens: toNumber(data.user_daily_tokens, AI_SETTINGS_DEFAULTS.user_daily_tokens),
-    global_daily_tokens: toNumber(data.global_daily_tokens, AI_SETTINGS_DEFAULTS.global_daily_tokens),
-    global_daily_cost_cents: toNumber(data.global_daily_cost_cents, AI_SETTINGS_DEFAULTS.global_daily_cost_cents),
-    cost_per_1k_tokens_cents: toNumber(data.cost_per_1k_tokens_cents, AI_SETTINGS_DEFAULTS.cost_per_1k_tokens_cents),
-    max_tool_rounds: toNumber(data.max_tool_rounds, AI_SETTINGS_DEFAULTS.max_tool_rounds),
-    request_timeout_seconds: toNumber(data.request_timeout_seconds, AI_SETTINGS_DEFAULTS.request_timeout_seconds),
-    history_message_limit: toNumber(data.history_message_limit, AI_SETTINGS_DEFAULTS.history_message_limit),
-    redact_pii: toBool(data.redact_pii, AI_SETTINGS_DEFAULTS.redact_pii),
-    retention_days: toNumber(data.retention_days, AI_SETTINGS_DEFAULTS.retention_days),
-    default_permission_mode: toPermissionMode(
-      data.default_permission_mode,
-      AI_SETTINGS_DEFAULTS.default_permission_mode,
-    ),
-    max_permission_mode: toPermissionMode(data.max_permission_mode, AI_SETTINGS_DEFAULTS.max_permission_mode),
-    enabled_tools: toTextList(data.enabled_tools),
+    temperature: toNumber(data.temperature, DEFAULT_SETTINGS.temperature),
+    max_tokens: toNumber(data.max_tokens, DEFAULT_SETTINGS.max_tokens),
+    console_enabled: toBool(data.console_enabled, DEFAULT_SETTINGS.console_enabled),
+    site_enabled: toBool(data.site_enabled, DEFAULT_SETTINGS.site_enabled),
+    admin_enabled: toBool(data.admin_enabled, DEFAULT_SETTINGS.admin_enabled),
+    allow_balance_pay: toBool(data.allow_balance_pay, DEFAULT_SETTINGS.allow_balance_pay),
+    user_daily_messages: toNumber(data.user_daily_messages, DEFAULT_SETTINGS.user_daily_messages),
+    user_daily_tokens: toNumber(data.user_daily_tokens, DEFAULT_SETTINGS.user_daily_tokens),
+    global_daily_tokens: toNumber(data.global_daily_tokens, DEFAULT_SETTINGS.global_daily_tokens),
+    global_daily_cost_cents: toNumber(data.global_daily_cost_cents, DEFAULT_SETTINGS.global_daily_cost_cents),
+    max_tool_rounds: toNumber(data.max_tool_rounds, DEFAULT_SETTINGS.max_tool_rounds),
+    request_timeout_seconds: toNumber(data.request_timeout_seconds, DEFAULT_SETTINGS.request_timeout_seconds),
+    history_message_limit: toNumber(data.history_message_limit, DEFAULT_SETTINGS.history_message_limit),
+    redact_pii: toBool(data.redact_pii, DEFAULT_SETTINGS.redact_pii),
+    retention_days: toNumber(data.retention_days, DEFAULT_SETTINGS.retention_days),
+    default_permission_mode: toPermissionMode(data.default_permission_mode, DEFAULT_SETTINGS.default_permission_mode),
+    max_permission_mode: toPermissionMode(data.max_permission_mode, DEFAULT_SETTINGS.max_permission_mode),
     api_key_has_value: apiKey.has,
     api_key_masked: apiKey.masked,
-  };
-}
-
-/** 协议 / 权限档位下拉项：后端给什么就渲染什么，前端不再硬编码文案 */
-function toOptionList(value: unknown): AiAdminSettingsOption[] {
-  if (!Array.isArray(value)) return [];
-
-  return value.flatMap<AiAdminSettingsOption>((item) => {
-    if (!item || typeof item !== 'object') return [];
-    const record = item as Record<string, unknown>;
-    const key = toText(record.key ?? record.value ?? record.name).trim();
-    if (!key) return [];
-
-    return [{ key, label: toText(record.label ?? record.title, key) }];
-  });
-}
-
-/** 工具目录：name 是提交用的标识，risk/description 只用于说明 */
-function toToolList(value: unknown): AiAdminTool[] {
-  if (!Array.isArray(value)) return [];
-
-  return value.flatMap<AiAdminTool>((item) => {
-    if (!item || typeof item !== 'object') return [];
-    const record = item as Record<string, unknown>;
-    const name = toText(record.name ?? record.key).trim();
-    if (!name) return [];
-
-    return [{ name, risk: toText(record.risk), description: toText(record.description) }];
-  });
-}
-
-export function normalizeSettingsCatalog(raw: Record<string, unknown> | null | undefined): AiAdminSettingsCatalog {
-  const data = raw || {};
-
-  return {
-    protocols: toOptionList(data.protocols),
-    permission_modes: toOptionList(data.permission_modes),
-    tools: toToolList(data.tools),
-    protocol_label: toText(data.protocol_label),
   };
 }
 
@@ -383,39 +293,19 @@ function normalizeConversationPage(raw: unknown): AiConversationListResponse {
   };
 }
 
-/**
- * 连通性测试走原始信封（isTransformResponse: false）：
- * 后端把中文结论文案放在信封 message 里（例如「连通正常」），
- * 只取 data 会把它丢掉，而这段中文正是要原样展示给站长的内容。
- */
 function normalizeTestResult(raw: unknown): AiSettingsTestResult {
-  const envelope = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
-  const payload = (envelope.data && typeof envelope.data === 'object' ? envelope.data : envelope) as Record<
-    string,
-    unknown
-  >;
+  const record = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
 
   return {
-    ok: toBool(payload.ok ?? payload.success ?? payload.connected, false),
-    message: toText(payload.message ?? envelope.message ?? payload.detail),
-    model: toText(payload.model),
-    protocol: toText(payload.protocol),
-    reply: toText(payload.reply),
-    latency_ms:
-      payload.latency_ms === undefined || payload.latency_ms === null ? null : toNumber(payload.latency_ms, 0),
+    ok: toBool(record.ok ?? record.success ?? record.connected, false),
+    message: toText(record.message ?? record.detail),
+    model: toText(record.model),
+    latency_ms: record.latency_ms === undefined || record.latency_ms === null ? null : toNumber(record.latency_ms, 0),
   };
 }
 
 export const aiAdminApi = {
-  /**
-   * 设置接口一并回显只读目录（协议、权限档位、工具），
-   * 拆成两个请求会让下拉在首屏短暂空着，也容易与后端增删协议脱节。
-   */
-  getSettings: () =>
-    request.get<Record<string, unknown>>({ url: '/v2/admin/ai/settings' }).then<AiAdminSettingsView>((raw) => ({
-      settings: normalizeAiSettings(raw),
-      catalog: normalizeSettingsCatalog(raw),
-    })),
+  getSettings: () => request.get<Record<string, unknown>>({ url: '/v2/admin/ai/settings' }).then(normalizeAiSettings),
 
   saveSettings: (payload: AiAdminSettingsPayload) =>
     request.put<Record<string, unknown>>({ url: '/v2/admin/ai/settings', data: payload }),
@@ -423,10 +313,7 @@ export const aiAdminApi = {
   // 连通性自检在后端要真打一次上游（默认 15s 上限），比全局 10s 超时宽一点
   testSettings: () =>
     request
-      .post<Record<string, unknown>>(
-        { url: '/v2/admin/ai/settings/test', timeout: 30000 },
-        { isTransformResponse: false },
-      )
+      .post<Record<string, unknown>>({ url: '/v2/admin/ai/settings/test', timeout: 30000 })
       .then(normalizeTestResult),
 
   usage: (days = 14) =>

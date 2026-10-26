@@ -65,33 +65,11 @@ class AiAdminController extends Controller
 
     public function settings(): JsonResponse
     {
-        // 回显「生效值」而不是原始空值：未配置过的项直接给可用的默认值，
-        // 站长打开页面就能保存，不用逐项调数字（默认值来自 config/ai_gateway.php 与 AiConfig）。
-        $values = [
-            'enabled' => (int) Setting::getValue(AiConfig::GROUP, 'enabled', 0),
-            'protocol' => $this->config->protocol(),
-            'base_url' => $this->config->baseUrl(),
-            'model' => $this->config->model(),
-            'temperature' => $this->config->temperature(),
-            'max_tokens' => $this->config->maxTokens(),
-            'console_enabled' => (int) Setting::getValue(AiConfig::GROUP, 'console_enabled', 1),
-            'site_enabled' => (int) Setting::getValue(AiConfig::GROUP, 'site_enabled', 1),
-            'admin_enabled' => (int) Setting::getValue(AiConfig::GROUP, 'admin_enabled', 1),
-            'allow_balance_pay' => (int) Setting::getValue(AiConfig::GROUP, 'allow_balance_pay', 0),
-            'user_daily_messages' => $this->config->userDailyMessages(),
-            'user_daily_tokens' => $this->config->userDailyTokens(),
-            'global_daily_tokens' => $this->config->globalDailyTokens(),
-            'global_daily_cost_cents' => $this->config->globalDailyCostCents(),
-            'cost_per_1k_tokens_cents' => $this->config->costPerThousandTokensCents(),
-            'max_tool_rounds' => $this->config->maxToolRounds(),
-            'request_timeout_seconds' => $this->config->requestTimeoutSeconds(),
-            'history_message_limit' => $this->config->historyLimit(),
-            'redact_pii' => $this->config->redactPii() ? 1 : 0,
-            'retention_days' => $this->config->retentionDays(),
-            'default_permission_mode' => $this->config->defaultPermissionMode(),
-            'max_permission_mode' => $this->config->maxPermissionMode(),
-        ];
-
+        $values = [];
+        foreach (self::SETTING_KEYS as $key) {
+            $values[$key] = Setting::getValue(AiConfig::GROUP, $key);
+        }
+        $values['enabled'] = (int) Setting::getValue(AiConfig::GROUP, 'enabled', 0);
         $values['api_key'] = [
             'has_value' => $this->config->hasApiKey(),
             'masked_value' => $this->config->hasApiKey() ? '******' : '',

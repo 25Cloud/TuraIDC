@@ -1,15 +1,13 @@
 <template>
   <div class="ai-guide-launcher">
-    <!-- 只留一个圆形机器人头像按钮：文字在窄视口上挤成一团，也没有任何信息增量 -->
     <button
       type="button"
       class="ai-guide-launcher__ball"
-      data-ai-launcher
       :aria-label="$t('ai.launcher.label')"
-      :aria-expanded="panelVisible ? 'true' : 'false'"
       @click="handleToggle"
     >
-      <el-icon class="ai-guide-launcher__icon"><Service /></el-icon>
+      <el-icon class="ai-guide-launcher__icon"><ChatDotRound /></el-icon>
+      <span class="ai-guide-launcher__text">{{ $t("ai.launcher.label") }}</span>
     </button>
 
     <AiGuidePanel v-model="panelVisible" :chat="chat" />
@@ -17,7 +15,7 @@
 </template>
 
 <script setup>
-import { Service } from "@element-plus/icons-vue";
+import { ChatDotRound } from "@element-plus/icons-vue";
 import { useAiChat } from "@turaidc/shared/runtime";
 import { ElMessage } from "element-plus/es/components/message/index.mjs";
 import { ref } from "vue";
@@ -69,56 +67,62 @@ function handleToggle() {
   position: fixed;
   right: 24px;
   bottom: 28px;
-  /* 浮球层级夹在 Element 全局弹层（3200）与启动骨架（9999）之间，面板与它同层 */
+  /* 浮球层级夹在 Element 全局弹层（3200）与启动骨架（9999）之间，面板再高一层 */
   z-index: 3300;
 }
 
 .ai-guide-launcher__ball {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  padding: 0;
+  gap: 8px;
+  padding: 10px 16px;
   border: none;
-  border-radius: 50%;
-  color: var(--el-color-white);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
   cursor: pointer;
-  /* 左下角品牌色 → 右上角浅一档的品牌色，比纯色更有体积感 */
-  background-image: linear-gradient(
-    to top right,
-    var(--el-color-primary),
-    var(--el-color-primary-light-3)
-  );
-  box-shadow: var(--el-box-shadow);
+  background: var(--el-color-primary);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
   transition:
     transform 0.16s ease,
     box-shadow 0.16s ease;
 
   &:hover {
-    transform: scale(1.06);
-    box-shadow: var(--el-box-shadow-dark);
-  }
-
-  &:active {
-    transform: scale(0.98);
+    transform: translateY(-1px);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.22);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--el-color-primary-light-5);
+    outline: 2px solid var(--el-color-primary-light-5, #c9dbff);
     outline-offset: 2px;
   }
 }
 
 .ai-guide-launcher__icon {
-  font-size: 24px;
+  font-size: 16px;
 }
 
 @media (max-width: 767px) {
   .ai-guide-launcher {
     right: 16px;
-    /* 全面屏手机底部有手势条，浮球必须避让安全区 */
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ai-guide-launcher__ball {
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .ai-guide-launcher__text {
+    display: none;
+  }
+
+  .ai-guide-launcher__icon {
+    font-size: 22px;
   }
 }
 </style>

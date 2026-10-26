@@ -1,14 +1,8 @@
 <template>
   <div v-if="canUseAi" class="ai-admin-launcher">
-    <button
-      type="button"
-      class="ai-admin-launcher__ball"
-      :aria-label="$t('ai.launcher.label')"
-      :title="$t('ai.launcher.label')"
-      :aria-expanded="panelVisible"
-      @click="handleToggle"
-    >
-      <robot-icon class="ai-admin-launcher__icon" />
+    <button type="button" class="ai-admin-launcher__ball" :aria-label="$t('ai.launcher.label')" @click="handleToggle">
+      <robot-icon size="20px" />
+      <span class="ai-admin-launcher__text">{{ $t('ai.launcher.label') }}</span>
     </button>
 
     <ai-admin-panel v-model="panelVisible" :chat="chat" />
@@ -55,55 +49,49 @@ function handleToggle() {
   z-index: 100;
 }
 
-/* 只留图标：48px 圆形悬浮球，hover 微放大给一点按压反馈 */
 .ai-admin-launcher__ball {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  padding: 0;
+  gap: 8px;
+  padding: 10px 16px;
   border: none;
-  border-radius: 50%;
-  color: var(--td-text-color-anti);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--td-text-color-anti, #fff);
   cursor: pointer;
   background: var(--td-brand-color);
-  box-shadow: var(--td-shadow-2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
   transition:
     transform 0.16s ease,
     box-shadow 0.16s ease;
 
   &:hover {
-    transform: scale(1.06);
-    box-shadow: var(--td-shadow-3);
-  }
-
-  &:active {
-    transform: scale(0.98);
+    transform: translateY(-1px);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--td-brand-color-focus);
+    outline: 2px solid var(--td-brand-color-focus, rgba(0, 82, 217, 0.2));
     outline-offset: 2px;
   }
 }
 
-.ai-admin-launcher__icon {
-  width: 24px;
-  height: 24px;
-}
-
-@media (width <= 960px) {
+@media (max-width: 960px) {
   .ai-admin-launcher {
     right: 16px;
     bottom: 24px;
   }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .ai-admin-launcher__ball:hover,
-  .ai-admin-launcher__ball:active {
-    transform: none;
+  .ai-admin-launcher__ball {
+    padding: 0;
+    width: 48px;
+    height: 48px;
+    justify-content: center;
+  }
+
+  .ai-admin-launcher__text {
+    display: none;
   }
 }
 </style>
