@@ -48,9 +48,9 @@ final class FakeAiProvider implements AiProviderInterface
         return $this;
     }
 
-    public function pushText(string $content, int $promptTokens = 10, int $completionTokens = 20, string $reasoning = ''): self
+    public function pushText(string $content, int $promptTokens = 10, int $completionTokens = 20): self
     {
-        return $this->push(new AiChatResult($content, [], new AiUsage($promptTokens, $completionTokens), 'stop', $reasoning));
+        return $this->push(new AiChatResult($content, [], new AiUsage($promptTokens, $completionTokens), 'stop'));
     }
 
     /**
@@ -66,14 +66,11 @@ final class FakeAiProvider implements AiProviderInterface
         ));
     }
 
-    public function chat(AiChatRequest $request, ?callable $onText = null, ?callable $onReasoning = null): AiChatResult
+    public function chat(AiChatRequest $request, ?callable $onText = null): AiChatResult
     {
         $this->requests[] = $request;
         $result = array_shift($this->queue) ?? new AiChatResult('（测试驱动未预置回复）', [], new AiUsage, 'stop');
 
-        if ($onReasoning !== null && $result->reasoning !== '') {
-            $onReasoning($result->reasoning);
-        }
         if ($onText !== null && $result->content !== '') {
             $onText($result->content);
         }

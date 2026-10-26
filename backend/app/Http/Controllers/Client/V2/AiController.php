@@ -173,7 +173,6 @@ class AiController extends Controller
             'conversation_id' => (int) $conversation->id,
             'message_id' => $result['message_id'],
             'content' => $result['content'],
-            'reasoning' => $result['reasoning'] ?? '',
             'tool_runs' => $result['tool_runs'],
             'pending_actions' => $result['pending_actions'],
             'permission_mode' => $result['permission_mode'],
@@ -229,12 +228,6 @@ class AiController extends Controller
                         }
                         $emit('delta', ['text' => $chunk]);
                     },
-                    static function (string $chunk) use ($emit): void {
-                        if (connection_aborted() === 1) {
-                            throw new BusinessException('客户端已断开', 49900, 499);
-                        }
-                        $emit('reasoning', ['text' => $chunk]);
-                    },
                     static function (array $toolRun) use ($emit): void {
                         $emit('tool', $toolRun);
                     },
@@ -247,7 +240,6 @@ class AiController extends Controller
                     'conversation_id' => $conversationId,
                     'message_id' => $result['message_id'],
                     'content' => $result['content'],
-                    'reasoning' => $result['reasoning'] ?? '',
                     'tool_runs' => $result['tool_runs'],
                     'pending_actions' => $result['pending_actions'],
                     'permission_mode' => $result['permission_mode'],

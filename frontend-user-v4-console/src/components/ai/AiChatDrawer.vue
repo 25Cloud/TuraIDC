@@ -53,23 +53,6 @@
       </div>
     </template>
 
-    <div v-if="recentConversations.length" class="ai-drawer-recent">
-      <span class="ai-drawer-recent__label">{{ $t('ai.recent.title') }}</span>
-      <div class="ai-drawer-recent__list">
-        <button
-          v-for="item in recentConversations"
-          :key="item.id"
-          type="button"
-          class="ai-drawer-recent__item"
-          :class="{ 'ai-drawer-recent__item--active': item.id === store.conversation?.id }"
-          :title="item.title || $t('ai.conversation.untitled')"
-          @click="handleOpenRecent(item.id)"
-        >
-          {{ item.title || $t('ai.conversation.untitled') }}
-        </button>
-      </div>
-    </div>
-
     <ai-message-list :messages="store.messages" />
 
     <template #footer>
@@ -104,7 +87,7 @@
 import type { AiPermissionMode } from '@turaidc/shared/runtime';
 import { describeSubject } from '@turaidc/shared/runtime';
 import { AddIcon, FullscreenIcon, RobotIcon, SendIcon, StopCircleIcon } from 'tdesign-icons-vue-next';
-import { computed, defineAsyncComponent, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { getClientToken } from '@/app/runtime/session';
@@ -195,22 +178,6 @@ const handleOpenPage = (): void => {
   store.enterPageMode();
   void router.push(AI_PAGE_PATH);
 };
-
-/** 抽屉打开时刷新一次最近对话，避免列表停在很久以前的快照 */
-watch(visible, (open) => {
-  if (open) {
-    void store.refreshConversations();
-  }
-});
-
-const recentConversations = computed(() => (store.conversationPage?.list ?? []).slice(0, 8));
-
-/** 点历史对话直接进独立页继续（与 DSH 一致：侧栏点开就是整页会话） */
-const handleOpenRecent = (id: number): void => {
-  store.enterPageMode();
-  store.closeDrawer();
-  void router.push({ path: AI_PAGE_PATH, query: { conversation: String(id) } });
-};
 </script>
 <style scoped lang="less">
 // 抽屉内容会被 teleport 到 body 下，所以这里只用单类选择器，不依赖组件根节点祖先
@@ -256,57 +223,6 @@ const handleOpenRecent = (id: number): void => {
 .ai-drawer-composer {
   display: grid;
   gap: var(--td-comp-margin-s);
-}
-
-// —— 最近对话：一排可横滚的胶囊，点一下进独立页 ——
-.ai-drawer-recent {
-  display: flex;
-  gap: var(--td-comp-margin-s);
-  align-items: center;
-  padding: var(--td-comp-paddingTB-xs) var(--td-comp-paddingLR-l);
-  border-bottom: thin solid var(--td-component-stroke);
-}
-
-.ai-drawer-recent__label {
-  flex: 0 0 auto;
-  color: var(--td-text-color-placeholder);
-  font: var(--td-font-body-small);
-}
-
-.ai-drawer-recent__list {
-  display: flex;
-  flex: 1;
-  gap: var(--td-comp-margin-xs);
-  min-width: 0;
-  padding-bottom: 2px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-
-.ai-drawer-recent__item {
-  flex: 0 0 auto;
-  max-width: 9rem;
-  padding: 2px var(--td-comp-paddingLR-xs);
-  overflow: hidden;
-  color: var(--td-text-color-secondary);
-  font: var(--td-font-body-small);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-  background: var(--td-bg-color-secondarycontainer);
-  border: thin solid transparent;
-  border-radius: 999px;
-}
-
-.ai-drawer-recent__item:hover {
-  color: var(--td-brand-color);
-  border-color: var(--td-brand-color);
-}
-
-.ai-drawer-recent__item--active {
-  color: var(--td-brand-color);
-  background: var(--td-brand-color-light);
-  border-color: var(--td-brand-color);
 }
 
 .ai-drawer-composer__input {

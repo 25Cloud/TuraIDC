@@ -2525,8 +2525,6 @@
         }
     },
     "ai": {
-        "reasoning": { "live": "Thinking…", "done": "Reasoning" },
-        "recent": { "title": "Recent" },
         "title": "AI Assistant",
         "launcherLabel": "Open AI assistant",
         "openPageTitle": "Open in full page",

@@ -117,7 +117,6 @@ export function useAiChat(client: AiClient, options: UseAiChatOptions) {
       id: `db-${row.id}`,
       role: row.role === 'user' ? 'user' : row.role === 'assistant' ? 'assistant' : 'system',
       content: row.content ?? '',
-      reasoning: row.reasoning ?? '',
       tool_runs: runs,
       pending_actions: [],
       created_at: row.created_at,
@@ -211,7 +210,6 @@ export function useAiChat(client: AiClient, options: UseAiChatOptions) {
     messageId: string,
     payload: {
       content: string;
-      reasoning?: string;
       tool_runs: AiToolRun[];
       pending_actions: AiPendingAction[];
       conversation_id: number;
@@ -220,11 +218,9 @@ export function useAiChat(client: AiClient, options: UseAiChatOptions) {
   ): void => {
     patchMessage(messageId, {
       content: payload.content,
-      reasoning: payload.reasoning ?? '',
       tool_runs: payload.tool_runs,
       pending_actions: payload.pending_actions,
       streaming: false,
-      started: true,
     });
     if (payload.conversation_id > 0 && conversation.value?.id !== payload.conversation_id) {
       conversation.value = {
@@ -259,12 +255,10 @@ export function useAiChat(client: AiClient, options: UseAiChatOptions) {
     const assistant = pushMessage({
       role: 'assistant',
       content: '',
-      reasoning: '',
       tool_runs: [],
       pending_actions: [],
       created_at: null,
       streaming: true,
-      started: false,
     });
 
     const payload = {
@@ -278,37 +272,6 @@ export function useAiChat(client: AiClient, options: UseAiChatOptions) {
     abortController = new AbortController();
     streaming.value = true;
 
-    // 增量先入缓冲、按帧合并写入：逐 token 直接改响应式数组会让 markdown/列表每一跳都重渲染，
-    // 长回答时肉眼可见地卡顿。这里 16ms 合并一次，观感与逐字打字一致但渲染次数下降到 1/10。
-    let pendingContent = '';
-    let pendingReasoning = '';
-    let flushHandle: ReturnType<typeof setTimeout> | null = null;
-
-    const flushNow = (): void => {
-      if (flushHandle !== null) {
-        clearTimeout(flushHandle);
-        flushHandle = null;
-      }
-      if (pendingContent === '' && pendingReasoning === '') {
-        return;
-      }
-      const current = messages.value.find((item) => item.id === assistant.id);
-      patchMessage(assistant.id, {
-        content: (current?.content ?? '') + pendingContent,
-        reasoning: (current?.reasoning ?? '') + pendingReasoning,
-        started: true,
-      });
-      pendingContent = '';
-      pendingReasoning = '';
-    };
-
-    const scheduleFlush = (): void => {
-      if (flushHandle !== null) {
-        return;
-      }
-      flushHandle = setTimeout(flushNow, 16);
-    };
-
     try {
       const result = await client.sendMessageStream(
         payload,
@@ -319,12 +282,8 @@ export function useAiChat(client: AiClient, options: UseAiChatOptions) {
             }
           },
           onDelta: (chunk) => {
-            pendingContent += chunk;
-            scheduleFlush();
-          },
-          onReasoning: (chunk) => {
-            pendingReasoning += chunk;
-            scheduleFlush();
+            const current = messages.value.find((item) => item.id === assistant.id);
+            patchMessage(assistant.id, { content: (current?.content ?? '') + chunk });
           },
           onTool: (run) => {
             const current = messages.value.find((item) => item.id === assistant.id);
@@ -351,16 +310,13 @@ export function useAiChat(client: AiClient, options: UseAiChatOptions) {
       );
 
       if (result) {
-        flushNow();
         finalizeStream(assistant.id, result);
       } else {
-        flushNow();
         patchMessage(assistant.id, { streaming: false });
       }
     } catch (err) {
       // 流式不可用（网关缓冲、超时、内容类型不对）时回退一次性响应，避免用户看到空白气泡
       try {
-        flushNow();
         const result = await client.sendMessage({ ...payload, conversation_id: conversation.value?.id ?? null });
         finalizeStream(assistant.id, result);
       } catch (fallbackError) {
@@ -372,7 +328,6 @@ export function useAiChat(client: AiClient, options: UseAiChatOptions) {
         error.value = describeError(fallbackError);
       }
     } finally {
-      flushNow();
       streaming.value = false;
       sending.value = false;
       abortController = null;

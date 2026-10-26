@@ -93,13 +93,11 @@ final class AiConversationService
         array $toolRuns = [],
         ?string $toolCallId = null,
         AiUsage $usage = new AiUsage,
-        string $reasoning = '',
     ): AiMessage {
         $message = AiMessage::query()->create([
             'conversation_id' => (int) $conversation->id,
             'role' => $role,
             'content' => $content,
-            'reasoning' => $reasoning !== '' ? $reasoning : null,
             'tool_calls' => $toolRuns !== [] ? $toolRuns : null,
             'tool_call_id' => $toolCallId,
             'prompt_tokens' => $usage->promptTokens,
@@ -221,7 +219,6 @@ final class AiConversationService
             'id' => (int) $message->id,
             'role' => (string) $message->role,
             'content' => (string) ($message->content ?? ''),
-            'reasoning' => (string) ($message->reasoning ?? ''),
             'tool_calls' => is_array($message->tool_calls) ? $message->tool_calls : null,
             'created_at' => $message->created_at?->format('Y-m-d H:i:s'),
         ];
