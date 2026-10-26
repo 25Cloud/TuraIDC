@@ -181,7 +181,7 @@
                           placement="top-left"
                           :overlay-inner-style="{ maxWidth: '560px', wordBreak: 'break-all' }"
                         >
-                          <span class="ai-conversations-mono ai-conversations-ellipsis">{{ row.arguments }}</span>
+                          <span class="ai-conversations-mono ai-conversations-arg">{{ row.arguments }}</span>
                         </t-tooltip>
                         <span v-else>-</span>
                       </template>
@@ -254,7 +254,8 @@ const toolColumns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   { colKey: 'risk', title: t('ai.conversations.toolRisk'), width: 84 },
   { colKey: 'status', title: t('ai.conversations.toolStatus'), width: 84, ellipsis: true },
   { colKey: 'summary', title: t('ai.conversations.toolSummary'), minWidth: 160, ellipsis: true },
-  { colKey: 'arguments', title: t('ai.conversations.toolArguments'), minWidth: 180, ellipsis: true },
+  // 参数不截断成半段 JSON：允许折行两行，完整内容走 tooltip
+  { colKey: 'arguments', title: t('ai.conversations.toolArguments'), minWidth: 180 },
 ]);
 
 const { filters, list, total, loading, pagination, handleSearch, resetFilters, handlePaginationChange } = useListPage<
@@ -432,11 +433,13 @@ onMounted(loadUsage);
   font-size: var(--td-font-size-body-small);
 }
 
-.ai-conversations-ellipsis {
-  display: block;
+/* 工具参数最多两行，完整内容靠 tooltip，不留半段 JSON 悬在单元格里 */
+.ai-conversations-arg {
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-all;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .ai-conversations-pagination {

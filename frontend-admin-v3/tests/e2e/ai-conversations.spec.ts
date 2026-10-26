@@ -1,5 +1,8 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
+import type { AiConversationDetail } from '@turaidc/shared/runtime';
+
+import type { AiAdminConversation } from '@/api/ai';
 
 /**
  * 管理端「AI 会话审计」页的列表与详情抽屉回归。
@@ -14,7 +17,7 @@ import { expect, test } from '@playwright/test';
  *  3) 渲染期没有未捕获错误。
  */
 
-const CONVERSATION = {
+const CONVERSATION: AiAdminConversation = {
   id: 1,
   title: '这个月退款了几单',
   channel: 'admin',
@@ -26,7 +29,7 @@ const CONVERSATION = {
   user: { id: 9, email: 'boss@example.com', nickname: '站长' },
 };
 
-const DETAIL = {
+const DETAIL: AiConversationDetail = {
   conversation: CONVERSATION,
   pending_actions: [],
   messages: [

@@ -478,6 +478,19 @@ watch(
     margin: 0 0 var(--td-comp-margin-s);
   }
 
+  // 控制台全局 reset 把 list-style 清成了 none，markdown 里必须显式还原，否则列表只剩缩进
+  :deep(ul) {
+    list-style: disc;
+  }
+
+  :deep(ol) {
+    list-style: decimal;
+  }
+
+  :deep(li::marker) {
+    color: var(--td-text-color-secondary);
+  }
+
   :deep(li) {
     margin-bottom: var(--td-comp-margin-xs);
   }
