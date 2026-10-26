@@ -86,6 +86,7 @@ export interface AiMessageRow {
   id: number
   role: 'user' | 'assistant' | 'system' | 'tool'
   content: string
+  reasoning?: string
   tool_calls?: AiMessageToolCall[] | null
   created_at: string | null
 }
@@ -102,6 +103,7 @@ export interface AiSendResult {
   conversation_id: number
   message_id: number
   content: string
+  reasoning?: string
   tool_runs: AiToolRun[]
   pending_actions: AiPendingAction[]
   permission_mode: AiPermissionMode
@@ -141,9 +143,13 @@ export interface AiChatMessage {
   id: string
   role: 'user' | 'assistant' | 'system'
   content: string
+  /** 推理模型的思考过程；有值时折叠展示，流式期间自动展开 */
+  reasoning?: string
   tool_runs: AiToolRun[]
   pending_actions: AiPendingAction[]
   created_at: string | null
   streaming?: boolean
+  /** 已收到首个增量（正文或思考），用于收起「思考中」占位 */
+  started?: boolean
   error?: boolean
 }

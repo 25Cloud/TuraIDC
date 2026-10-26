@@ -43,7 +43,7 @@ final class AnthropicMessagesDriver implements AiProviderInterface
         return 'Anthropic Messages（/v1/messages）';
     }
 
-    public function chat(AiChatRequest $request, ?callable $onText = null): AiChatResult
+    public function chat(AiChatRequest $request, ?callable $onText = null, ?callable $onReasoning = null): AiChatResult
     {
         $url = $this->endpoint($this->baseUrl, self::PATH);
         $payload = $this->buildPayload($request, $onText !== null);
@@ -60,6 +60,7 @@ final class AnthropicMessagesDriver implements AiProviderInterface
         }
 
         $content = '';
+        $reasoning = '';
         $usage = new AiUsage;
         /** @var array<int, array{id: string, name: string, arguments: string}> $blocks */
         $blocks = [];
@@ -69,7 +70,7 @@ final class AnthropicMessagesDriver implements AiProviderInterface
             $headers,
             $payload,
             $request->timeoutSeconds,
-            function (string $event, string $data) use (&$content, &$usage, &$blocks, $onText): void {
+            function (string $event, string $data) use (&$content, &$reasoning, &$usage, &$blocks, $onText, $onReasoning): void {
                 $chunk = json_decode($data, true);
                 if (! is_array($chunk)) {
                     return;
@@ -111,6 +112,15 @@ final class AnthropicMessagesDriver implements AiProviderInterface
                             $onText($text);
                         }
                     }
+                    if (($delta['type'] ?? '') === 'thinking_delta') {
+                        $thinking = is_string($delta['thinking'] ?? null) ? $delta['thinking'] : '';
+                        if ($thinking !== '') {
+                            $reasoning .= $thinking;
+                            if ($onReasoning !== null) {
+                                $onReasoning($thinking);
+                            }
+                        }
+                    }
                     if (($delta['type'] ?? '') === 'input_json_delta' && isset($blocks[$index])) {
                         $blocks[$index]['arguments'] .= is_string($delta['partial_json'] ?? null) ? $delta['partial_json'] : '';
                     }
@@ -139,7 +149,7 @@ final class AnthropicMessagesDriver implements AiProviderInterface
             );
         }
 
-        return new AiChatResult($content, $calls, $usage);
+        return new AiChatResult($content, $calls, $usage, '', $reasoning);
     }
 
     /**
@@ -232,12 +242,17 @@ final class AnthropicMessagesDriver implements AiProviderInterface
     private function parseMessage(array $decoded): AiChatResult
     {
         $text = '';
+        $reasoning = '';
         $calls = [];
         foreach ((array) ($decoded['content'] ?? []) as $block) {
             if (! is_array($block)) {
                 continue;
             }
             $type = (string) ($block['type'] ?? '');
+            if ($type === 'thinking') {
+                $reasoning .= (string) ($block['thinking'] ?? '');
+                continue;
+            }
             if ($type === 'text') {
                 $text .= (string) ($block['text'] ?? '');
                 continue;
@@ -259,6 +274,7 @@ final class AnthropicMessagesDriver implements AiProviderInterface
             $calls,
             new AiUsage((int) ($usage['input_tokens'] ?? 0), (int) ($usage['output_tokens'] ?? 0)),
             (string) ($decoded['stop_reason'] ?? ''),
+            $reasoning,
         );
     }
 
