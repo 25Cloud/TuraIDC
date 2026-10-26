@@ -96,9 +96,11 @@ owner: backend-platform
 - [x] P2 确认协议 + 写工具 + 控制台独立页：HMAC 确定性确认令牌、参数指纹、TTL 5 分钟、幂等键、`/ai/actions/{id}/confirm|reject`、`create_draft_invoice`/`renew_invoice`/`power_action`/`reset_service_password`/`create_ticket`/`reinstall_service`。
 - [x] P3 流式 + 官网与 admin 浮窗：`/ai/messages/stream`（SSE：meta/delta/tool/pending_action/done/error）、`shared/runtime/ai/sse.ts` 原生 fetch 流式、官网 Element Plus 浮窗与商品上下文注入、管理端浮窗。
 - [x] P4 管理端治理：`/api/v2/admin/ai/settings|usage|conversations`、权限码 `ai.view`/`ai.manage`、`ai:prune-conversations` 已接入每日调度、用量页数据已供审计页消费。
-- [x] 后端验证：`php artisan test --filter=AiAssistantTest` **14 passed（62 assertions）**。
-- [ ] 三端构建与后端全量测试回归（进行中）。
-- [ ] 提交、推送与生产增量部署。
+- [x] 后端验证：`php artisan test --filter=AiAssistantTest` **14 passed（62 assertions）**；全量 `php artisan test` **2165 passed / 3 skipped / 0 failed**。
+- [x] 三端构建：`frontend-user-v4-console`、`frontend-user-v3-www`、`frontend-admin-v3` 全部构建通过；`pnpm run docs:check` 通过。
+- [x] 生产增量部署（2026-10-26 19:40–20:05）：数据库备份 `db_backup/20261026_194047_predeploy_ai.sql.gz`（15M，83 表）→ 代码更新 → `composer dump-autoload`（6484 classes）→ `migrate --force`（AI 四表）→ 配置/路由/事件缓存 → 三端重新构建 → 重启 PHP-FPM → `ai:doctor` 与四域名健康检查（5 个地址全 200，AI 端点未登录 401）。AI 默认 `enabled=0`，未配置网关前入口不显示。
+- [ ] **推送 GitHub（阻塞）**：本机无可用代理（`127.0.0.1:11210` 未监听、直连 GitHub 被重置、`gh-proxy` 只支持拉取、服务器无 gh-proxy 推送凭据），三个提交仍在本地。生产代码与本地 `ed33e9f3` 的树完全一致（tree `24e8b597`），由 SFTP 打包 + 服务器侧提交实现（服务器提交号 `83af28ea`/`9f8249db`）。
+  - 代理恢复后的收口动作：本机 `git push origin main`；服务器 `cd /www/wwwroot/TuraIDC && git fetch origin && git reset --hard origin/main`（树已验证一致，重置只是把服务器本地提交换成同内容的上游提交，避免历史分叉）。
 
 ## 遗留与偏差（如实记录）
 
