@@ -21,7 +21,9 @@
         :loader="loadPartnerSection"
         skeleton-type="partner"
       />
+      <!-- 没有公告时整段不挂：否则只剩「资讯动态」节头 + 查看更多，下面零卡片 -->
       <DeferredHomeSection
+        v-if="notices.length > 0"
         :loader="loadNewsSection"
         skeleton-type="news"
         :section-props="{ notices }"
@@ -31,7 +33,7 @@
     <div v-else ref="deferredSkeletonRef">
       <HomeSectionSkeleton type="solutions" />
       <HomeSectionSkeleton type="partner" />
-      <HomeSectionSkeleton type="news" />
+      <HomeSectionSkeleton v-if="notices.length > 0" type="news" />
       <HomeSectionSkeleton type="register" />
     </div>
   </div>
