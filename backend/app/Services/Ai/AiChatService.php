@@ -38,15 +38,17 @@ final class AiChatService
 
     /**
      * @param  callable(string): void|null  $onDelta
+     * @param  callable(string): void|null  $onReasoning
      * @param  callable(array<string, mixed>): void|null  $onTool
      * @param  callable(array<string, mixed>): void|null  $onPending
-     * @return array{content: string, tool_runs: array<int, array<string, mixed>>, pending_actions: array<int, array<string, mixed>>, usage: array{prompt_tokens: int, completion_tokens: int}, permission_mode: string, message_id: int}
+     * @return array{content: string, reasoning: string, tool_runs: array<int, array<string, mixed>>, pending_actions: array<int, array<string, mixed>>, usage: array{prompt_tokens: int, completion_tokens: int}, permission_mode: string, message_id: int}
      */
     public function run(
         User $user,
         AiConversation $conversation,
         string $text,
         ?callable $onDelta = null,
+        ?callable $onReasoning = null,
         ?callable $onTool = null,
         ?callable $onPending = null,
     ): array {
@@ -69,6 +71,7 @@ final class AiChatService
         $pendingActions = [];
         $usage = new AiUsage;
         $finalContent = '';
+        $reasoningText = '';
 
         $context = new AiToolContext(
             $user,
@@ -91,9 +94,10 @@ final class AiChatService
                 stream: $onDelta !== null,
             );
 
-            $result = $driver->chat($request, $onDelta);
+            $result = $driver->chat($request, $onDelta, $onReasoning);
             $usage = $usage->plus($result->usage);
             $finalContent .= $result->content;
+            $reasoningText .= $result->reasoning;
 
             if (! $result->hasToolCalls()) {
                 break;
@@ -138,6 +142,7 @@ final class AiChatService
             $toolRuns,
             null,
             $usage,
+            $reasoningText,
         );
 
         $this->conversations->recordUsage($conversation, $usage, $this->estimateCostCents($usage));
@@ -145,6 +150,7 @@ final class AiChatService
 
         return [
             'content' => $finalContent,
+            'reasoning' => $reasoningText,
             'tool_runs' => $toolRuns,
             'pending_actions' => $pendingActions,
             'usage' => [
