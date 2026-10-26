@@ -1120,6 +1120,22 @@
     "notice": "This page summarizes licensing for engineering purposes and is not legal advice. The formal terms are LICENSE, LICENSE-COMMERCIAL.md and the signed authorization documents."
   },
   "ai": {
+    "thinking": "Thinking…",
+    "reasoning": {
+      "done": "Thought it through",
+      "chars": "{count} chars"
+    },
+    "error": {
+      "fallback": "The response was interrupted, please try again"
+    },
+    "tool": {
+      "status": {
+        "done": "Done",
+        "pending": "Running",
+        "rejected": "Cancelled",
+        "failed": "Failed"
+      }
+    },
     "launcher": {
       "label": "AI Guide",
       "loginRequired": "Sign in to use the AI guide"
@@ -1136,7 +1152,8 @@
       "stop": "Stop",
       "disabled": "The AI guide is not enabled on this site yet. Please contact support.",
       "quota": "Used {used}/{limit} today",
-      "quotaUnlimited": "Used {used} today"
+      "quotaUnlimited": "Used {used} today",
+      "recentConversations": "Recent chats"
     },
     "message": {
       "you": "You",

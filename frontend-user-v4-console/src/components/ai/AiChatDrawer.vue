@@ -47,8 +47,8 @@
           </t-button>
         </div>
 
-        <p class="ai-drawer-header__context">
-          {{ subjectLabel ? $t('ai.context.viewing', { subject: subjectLabel }) : $t('ai.context.none') }}
+        <p v-if="subjectLabel" class="ai-drawer-header__context">
+          {{ $t('ai.context.viewing', { subject: subjectLabel }) }}
         </p>
       </div>
     </template>
@@ -242,8 +242,19 @@ const handleOpenRecent = (id: number): void => {
 
 .ai-drawer-header__tools {
   display: flex;
+  flex-wrap: nowrap;
   gap: var(--td-comp-margin-xs);
   align-items: center;
+}
+
+// 抽屉头部很窄，按钮必须禁止收缩，否则会被挤成几个小点
+.ai-drawer-header__tools > * {
+  flex: 0 0 auto;
+}
+
+.ai-drawer-header__tools :deep(.t-button) {
+  min-width: 1.75rem;
+  height: 1.75rem;
 }
 
 .ai-drawer-header__context {

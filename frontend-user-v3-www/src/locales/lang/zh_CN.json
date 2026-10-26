@@ -1120,6 +1120,22 @@
     "notice": "本页为工程侧许可说明，不构成法律意见；正式条款以 LICENSE、LICENSE-COMMERCIAL.md 与双方签署的授权文件为准。"
   },
   "ai": {
+    "thinking": "思考中…",
+    "reasoning": {
+      "done": "已深度思考",
+      "chars": "{count} 字"
+    },
+    "error": {
+      "fallback": "响应中断，请重试"
+    },
+    "tool": {
+      "status": {
+        "done": "完成",
+        "pending": "进行中",
+        "rejected": "已取消",
+        "failed": "失败"
+      }
+    },
     "launcher": {
       "label": "AI 导购",
       "loginRequired": "登录后使用 AI 导购"
@@ -1136,7 +1152,8 @@
       "stop": "停止",
       "disabled": "站点尚未开启 AI 导购，请通过工单联系客服。",
       "quota": "今日已用 {used}/{limit} 条",
-      "quotaUnlimited": "今日已用 {used} 条"
+      "quotaUnlimited": "今日已用 {used} 条",
+      "recentConversations": "最近对话"
     },
     "message": {
       "you": "我",
