@@ -1120,6 +1120,22 @@
     "notice": "本頁為工程側授權說明，不構成法律意見；正式條款以 LICENSE、LICENSE-COMMERCIAL.md 與雙方簽署的授權文件為準。"
   },
   "ai": {
+    "thinking": "思考中…",
+    "reasoning": {
+      "done": "已深度思考",
+      "chars": "{count} 字"
+    },
+    "error": {
+      "fallback": "回應中斷，請重試"
+    },
+    "tool": {
+      "status": {
+        "done": "完成",
+        "pending": "進行中",
+        "rejected": "已取消",
+        "failed": "失敗"
+      }
+    },
     "launcher": {
       "label": "AI 導購",
       "loginRequired": "登入後使用 AI 導購"
@@ -1136,7 +1152,8 @@
       "stop": "停止",
       "disabled": "站點尚未開啟 AI 導購，請透過工單聯絡客服。",
       "quota": "今日已用 {used}/{limit} 則",
-      "quotaUnlimited": "今日已用 {used} 則"
+      "quotaUnlimited": "今日已用 {used} 則",
+      "recentConversations": "最近對話"
     },
     "message": {
       "you": "我",

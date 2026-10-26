@@ -4,6 +4,7 @@
     placement="bottom-right"
     :disabled="disabled"
     :options="menuOptions"
+    :popup-props="{ overlayInnerStyle: { minWidth: '12rem' } }"
     @click="handleSelect"
   >
     <t-button class="ai-permission-switch" size="small" variant="outline" shape="round" :disabled="disabled">

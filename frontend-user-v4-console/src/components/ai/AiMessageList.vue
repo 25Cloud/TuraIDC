@@ -240,6 +240,8 @@ watch(
   flex-direction: column;
   gap: var(--td-comp-margin-s);
   min-width: 0;
+  // 独立页很宽，正文限宽保证行长可读；抽屉里自然撑满
+  max-width: 56rem;
 }
 
 .ai-message__user {
@@ -528,10 +530,10 @@ watch(
 
   :deep(th),
   :deep(td) {
-    padding: var(--td-comp-paddingTB-xs) var(--td-comp-paddingLR-xs);
+    padding: var(--td-comp-paddingTB-xs) var(--td-comp-paddingLR-s);
     border: thin solid var(--td-component-stroke);
     text-align: left;
-    white-space: nowrap;
+    white-space: normal;
   }
 
   :deep(th) {
